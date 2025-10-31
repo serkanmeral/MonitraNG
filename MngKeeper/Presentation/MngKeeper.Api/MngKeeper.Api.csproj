@@ -6,6 +6,16 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591</NoWarn>
+    
+    <!-- Versioning -->
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>1.0.0</InformationalVersion>
+    <Product>MngKeeper API</Product>
+    <Company>iSIM Platform</Company>
+    <Authors>Serkan MERAL</Authors>
+    <Copyright>Copyright © 2025 iSIM Platform</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
