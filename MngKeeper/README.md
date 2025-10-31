@@ -12,13 +12,30 @@ MngKeeper/
 ├── Infrastructure/
 │   ├── MngKeeper.Infrastructure/ # External services (Keycloak, MQTT, Redis)
 │   └── MngKeeper.Persistence/    # Data access layer (MongoDB)
-└── Presentation/
-    └── MngKeeper.Api/            # Web API (Controllers, Middleware)
+├── Presentation/
+│   └── MngKeeper.Api/            # Web API (Controllers, Middleware)
+├── tests/                         # Test scripts ve data
+│   ├── api-test.ps1
+│   ├── domain-crud-test.ps1
+│   ├── user-crud-test.ps1
+│   └── test-domain.json
+├── README.md                      # Bu dosya
+├── VERSION.md                     # Versiyonlama bilgisi
+├── CHANGELOG.md                   # Versiyon geçmişi
+├── version.ps1                    # Versiyon yönetim script'i
+└── release.ps1                    # Otomatik release script'i
 ```
+
+## 📦 Version
+
+**Current Version:** v1.0.0  
+**Git Tag:** `mngkeeper-v1.0.0`
+
+Detaylar için [VERSION.md](VERSION.md) ve [CHANGELOG.md](CHANGELOG.md) dosyalarına bakın.
 
 ## 🚀 Teknoloji Stack
 
-- **Framework:** .NET 8.0
+- **Framework:** .NET 9.0
 - **Architecture:** Clean Architecture
 - **Pattern:** CQRS + MediatR
 - **Database:** MongoDB

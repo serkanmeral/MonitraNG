@@ -58,6 +58,12 @@ docker-compose.override.yml
 logs/
 *.log
 
+## Test outputs
+test-results/
+coverage/
+*.trx
+TestResults/
+
 ## OS
 .DS_Store
 Thumbs.db
