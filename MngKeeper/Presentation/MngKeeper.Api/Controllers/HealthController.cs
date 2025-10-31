@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Reflection;
 
 namespace MngKeeper.Api.Controllers;
 
@@ -9,12 +10,18 @@ public class HealthController : ControllerBase
     [HttpGet]
     public IActionResult Get()
     {
+        var assembly = Assembly.GetExecutingAssembly();
+        var version = assembly.GetName().Version?.ToString() ?? "1.0.0";
+        var informationalVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? version;
+        
         return Ok(new
         {
             Status = "Healthy",
             Timestamp = DateTime.UtcNow,
             Service = "MngKeeper API",
-            Version = "1.0.0"
+            Version = informationalVersion,
+            AssemblyVersion = version,
+            Environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"
         });
     }
 
