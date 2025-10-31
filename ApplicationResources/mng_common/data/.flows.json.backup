@@ -1,0 +1,1382 @@
+[
+    {
+        "id": "94662e6f9bbc9767",
+        "type": "tab",
+        "label": "Configs",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "f13a566ff2d8b3ae",
+        "type": "tab",
+        "label": "HR: Izin Islemleri",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "d358cbd1e654d5c6",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "149134e7a8351b0d",
+        "type": "tls-config",
+        "name": "",
+        "cert": "",
+        "key": "",
+        "ca": "",
+        "certname": "",
+        "keyname": "",
+        "caname": "",
+        "servername": "",
+        "verifyservercert": false,
+        "alpnprotocol": ""
+    },
+    {
+        "id": "21ddd27ac0518c54",
+        "type": "comment",
+        "z": "94662e6f9bbc9767",
+        "name": "TODO: GRUP ID'ler problem",
+        "info": "ortamların configlerini ayırmak için eklendi",
+        "x": 180,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "28a631e95b469227",
+        "type": "config",
+        "z": "94662e6f9bbc9767",
+        "name": "Global Config",
+        "properties": [
+            {
+                "p": "bmsPath",
+                "pt": "global",
+                "to": "https://qateam2.utesk.cloud/bms/",
+                "tot": "str"
+            },
+            {
+                "p": "envPath",
+                "pt": "global",
+                "to": "https://uds.utesk.cloud/",
+                "tot": "str"
+            },
+            {
+                "p": "localPath",
+                "pt": "global",
+                "to": "http://localhost:1880",
+                "tot": "str"
+            },
+            {
+                "p": "gwPath",
+                "pt": "global",
+                "to": "https://qateam2.utesk.cloud/tyk/gw/",
+                "tot": "str"
+            },
+            {
+                "p": "HRDefaultOrg",
+                "pt": "global",
+                "to": "4089cf03-6e1c-4d96-b248-a5ba1efd7bf8",
+                "tot": "str"
+            },
+            {
+                "p": "keycloakPassword",
+                "pt": "global",
+                "to": "12345",
+                "tot": "str"
+            }
+        ],
+        "active": true,
+        "x": 140,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "fb765ae0a90b4a21",
+        "type": "config",
+        "z": "94662e6f9bbc9767",
+        "name": "Owner Config",
+        "properties": [
+            {
+                "p": "owner_co2",
+                "pt": "global",
+                "to": "{\"generatePassword\":false,\"groupHREmployee\":\"254031da-183b-4038-b574-fec18abab09a\",\"groupHRAdmin\":\"a0e0d345-b9eb-4783-8eb5-9fa13e6bbd08\",\"groupHRFinancial\":\"bafbbfba-f1e7-45e2-8b5f-c3afd4c89237\"}",
+                "tot": "json"
+            },
+            {
+                "p": "owner_hr",
+                "pt": "global",
+                "to": "{\"groupHREmployee\":\"d54256b4-ba15-4672-abe5-5d8c668a8857\",\"groupHRAdmin\":\"5a6396f4-a193-4dbc-9d2a-404686b91fb0\",\"groupHRFinancial\":\"06ca92f2-5bde-488f-bac2-b092e67bd359\"}",
+                "tot": "json"
+            },
+            {
+                "p": "owner_demo",
+                "pt": "global",
+                "to": "{\"generatePassword\":false,\"groupHREmployee\":\"20ba8377-699e-4cb6-8fb9-4f873f696888\",\"groupHRAdmin\":\"84c195f1-68d8-48da-9c7c-9bb5c0cb9d5c\",\"groupHRFinancial\":\"eb3cdbe1-b2f1-46d6-94cd-ff5eb0fb03e2\"}",
+                "tot": "json"
+            }
+        ],
+        "active": true,
+        "x": 140,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "05da3d30e8a4e1dd",
+        "type": "config",
+        "z": "94662e6f9bbc9767",
+        "name": "HR: Config",
+        "properties": [
+            {
+                "p": "hr_states",
+                "pt": "global",
+                "to": "{\"newRequest\":\"8f7e44f9-b53a-41af-925e-2cda8caad9db\",\"waiting\":\"335d3274-dd4d-4537-ab42-9c50f225717a\",\"revise\":\"37e2a3bb-f346-484a-942d-bbc14075ba03\",\"approved\":\"cb39487d-d09c-4996-b534-72a89a94880b\",\"rejected\":\"c0f279b0-2372-4e3a-b1bd-7cea3bfe0e02\",\"cancelled\":\"25a51d17-ad11-4d16-8532-8cfa21d7ef34\",\"completed\":\"e86ed5fb-6017-4af9-b10a-ab16b1e7e423\",\"inProgress\":\"63482889-b16d-479c-a5ef-6e557263be65\"}",
+                "tot": "json"
+            }
+        ],
+        "active": true,
+        "x": 130,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "755d4a19d177bc2e",
+        "type": "inject",
+        "z": "f13a566ff2d8b3ae",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "req.headers.authorization",
+                "v": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ5UGsxNEM4ZmRKZ3ZncXFVMnRhV3hHRHdXY1lHZEl4dktDb0trY3ZIZHJFIn0.eyJleHAiOjE3NTY5NzMwNTAsImlhdCI6MTc1NjkzNzA1MCwianRpIjoib25ydHJvOjRjMmNkM2NkLTMyZmUtNGNlMS1hZGMwLTVmNzIwODBkMTU5YSIsImlzcyI6Imh0dHBzOi8vcWF0ZWFtMi51dGVzay5jbG91ZC9rZXljbG9hay9yZWFsbXMvY28yIiwic3ViIjoiZmJkYTA0OWYtZjk1NS00MGY0LTk0MzQtZWI5YWQ4NGMwZDllIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoid2ViX3VpX2NsaWVudCIsInNpZCI6Ijg2MjYzYzViLWE3NjktNDZjZS05MTM1LTA5YThmZGVkMDcyYiIsImFjciI6IjEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiKiJdLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsiZGVmYXVsdC1yb2xlcy1jbzIiXX0sInNjb3BlIjoib3BlbmlkIGN1c3RvbV9zY29wZSBwcm9maWxlIGN1c3RvbV9ncm91cHNfc2NvcGUgY3VzdG9tX2dyb3VwIGVtYWlsIGN1c3RvbV91aWRfc2NvcGUgY3VzdG9tX3VzZXJfYXR0cmlidXRlIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsIl9fZGJOYW1lIjoiaXNpbV9jbzIiLCJyb2xlcyI6WyJIUiBFTVBMT1lFRSIsIkhSIE1BTkFHRVIiXSwiZ3JvdXBzIjpbIi9IUiBFTVBMT1lFRSIsIi9IUiBNQU5BR0VSIl0sImxhc3RfbmFtZSI6IlnEsWxkxLFyxLFtIiwicHJlZmVycmVkX3VzZXJuYW1lIjoidW1pdC55aWxkaXJpbSIsImlzQWRtaW4iOiJmYWxzZSIsImdpdmVuX25hbWUiOiLDnG1pdCIsImRpc3BsYXlfbmFtZSI6IsOcbWl0IFnEsWxkxLFyxLFtIiwiY2xpZW50X2lkIjoid2ViX3VpX2NsaWVudCIsImF1dGhlbnRpY2F0b3JzLWNvbXBsZXRlZCI6IntcIjA3ODU4ZGI0LTBmNDYtNGJmMy04MzE0LTQ0MmE2YTVlODBjNVwiOjE3NTY5MzcwNTAsXCI5YjZmODQ5Yy0yYmUzLTQyNTktOTZlMi05ZjY5YzgyMGY5NDVcIjoxNzU2OTM3MDUwfSIsInVpZCI6ImZiZGEwNDlmLWY5NTUtNDBmNC05NDM0LWViOWFkODRjMGQ5ZSIsIl9fb3duZXIiOiJjbzIiLCJfX2RvbWFpbiI6ImNvMiIsInNjb3BlIjoib3BlbmlkIiwibmFtZSI6IsOcbWl0IFnEsWxkxLFyxLFtIiwiS0NfREVWSUNFX05PVEUiOiJleUpwY0VGa1pISmxjM01pT2lJeE1DNDBNaTR3TGpFaUxDSnZjeUk2SWs5MGFHVnlJaXdpYjNOV1pYSnphVzl1SWpvaVZXNXJibTkzYmlJc0ltSnliM2R6WlhJaU9pSkhieTFvZEhSd0xXTnNhV1Z1ZEM4eExqRWlMQ0prWlhacFkyVWlPaUpQZEdobGNpSXNJbXhoYzNSQlkyTmxjM01pT2pBc0ltMXZZbWxzWlNJNlptRnNjMlY5IiwiZmFtaWx5X25hbWUiOiJZxLFsZMSxcsSxbSIsImZpcnN0X25hbWUiOiLDnG1pdCIsImVtYWlsIjoidW1pdC55aWxkaXJpbUBpc2ltcGxhdGZvcm0uaW8iLCJ1c2VybmFtZSI6InVtaXQueWlsZGlyaW0ifQ.hnOobwxEex3e-rUrL1v4dRQheM2YZXlhPiOlOx0c-Php41V6Jgd_vlzO26ILJGtglmSaoAw44p3t_jsdUHhEZZtEQYZaTaEsD5iE-qB3AUuf11A8tYtlhhMwAjrZpGq3YH_oedTW3YN8wobmi38fDHN1te8sTOeOyjtU9xROmMIlZFAlQ-xfUt6hYWhhuc1TVUwmuiL-YN6_xtRg3b2b2xZMYEOswnEA5x5eM0VCjWRvoLr7lfZDcpDi8otp0ZFKzHOPvII5q3DkHr12M6iSibfdKCD6nIgNFKYw_ShA7W6W3qVdaY5G7mwn5VnYVy-CU2iz0pfsj4HR3K1qmQn3QQ",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"uid\":\"fbda049f-f955-40f4-9434-eb9ad84c0d9e\"}",
+        "payloadType": "json",
+        "x": 90,
+        "y": 40,
+        "wires": [
+            [
+                "37b22eb3442324eb"
+            ]
+        ]
+    },
+    {
+        "id": "37b22eb3442324eb",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Build User Query",
+        "func": "msg.token = msg.req?.headers?.authorization ?? \"Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ5UGsxNEM4ZmRKZ3ZncXFVMnRhV3hHRHdXY1lHZEl4dktDb0trY3ZIZHJFIn0.eyJleHAiOjE3NTE4ODcwMTMsImlhdCI6MTc1MTg4NjcxMywianRpIjoib25ydHJvOjkwMzk5MzQzLTA4MWYtNDJjNy05NDg2LTkzMTM4OTdhYzJjMyIsImlzcyI6Imh0dHBzOi8vcWF0ZWFtMi51dGVzay5jbG91ZC9rZXljbG9hay9yZWFsbXMvY28yIiwic3ViIjoiZmQ4NzBiYzktOGVjZC00OTY1LWFmMTEtNThjY2UxZjg2MTVlIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoid2ViX3VpX2NsaWVudCIsInNpZCI6ImExM2Y1ZWMxLWU0YWMtNDA1ZS04ZjY0LWY3NmFkMTNhZTJiMCIsImFjciI6IjEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiKiJdLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsiZGVmYXVsdC1yb2xlcy1jbzIiXX0sInNjb3BlIjoib3BlbmlkIGN1c3RvbV9zY29wZSBwcm9maWxlIGN1c3RvbV9ncm91cHNfc2NvcGUgY3VzdG9tX2dyb3VwIGVtYWlsIGN1c3RvbV91aWRfc2NvcGUgY3VzdG9tX3VzZXJfYXR0cmlidXRlIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJfX2RiTmFtZSI6ImlzaW1fY28yIiwicm9sZXMiOlsiSFIgRU1QTE9ZRUUiXSwiZ3JvdXBzIjpbIi9IUiBFTVBMT1lFRSJdLCJsYXN0X25hbWUiOiJZxLFsZMSxcsSxbSIsInByZWZlcnJlZF91c2VybmFtZSI6InVtaXQueWlsZGlyaW0iLCJpc0FkbWluIjoiZmFsc2UiLCJnaXZlbl9uYW1lIjoiw5xtaXQiLCJkaXNwbGF5X25hbWUiOiLDnG1pdCBZxLFsZMSxcsSxbSIsImNsaWVudF9pZCI6IndlYl91aV9jbGllbnQiLCJhdXRoZW50aWNhdG9ycy1jb21wbGV0ZWQiOiJ7XCIwNzg1OGRiNC0wZjQ2LTRiZjMtODMxNC00NDJhNmE1ZTgwYzVcIjoxNzUxODg2NzEzLFwiOWI2Zjg0OWMtMmJlMy00MjU5LTk2ZTItOWY2OWM4MjBmOTQ1XCI6MTc1MTg4NjcxM30iLCJ1aWQiOiJmZDg3MGJjOS04ZWNkLTQ5NjUtYWYxMS01OGNjZTFmODYxNWUiLCJwYXNzd29yZCI6IjEyMzQ1IiwiX19vd25lciI6ImNvMiIsImdyYW50X3R5cGUiOiJwYXNzd29yZCIsIl9fZG9tYWluIjoiY28yIiwic2NvcGUiOiJvcGVuaWQiLCJuYW1lIjoiw5xtaXQgWcSxbGTEsXLEsW0iLCJLQ19ERVZJQ0VfTk9URSI6ImV5SnBjRUZrWkhKbGMzTWlPaUl4TUM0ME1pNHdMakVpTENKdmN5STZJazkwYUdWeUlpd2liM05XWlhKemFXOXVJam9pVlc1cmJtOTNiaUlzSW1KeWIzZHpaWElpT2lKSGJ5MW9kSFJ3TFdOc2FXVnVkQzh4TGpFaUxDSmtaWFpwWTJVaU9pSlBkR2hsY2lJc0lteGhjM1JCWTJObGMzTWlPakFzSW0xdlltbHNaU0k2Wm1Gc2MyVjkiLCJmYW1pbHlfbmFtZSI6IlnEsWxkxLFyxLFtIiwiZmlyc3RfbmFtZSI6IsOcbWl0IiwiZW1haWwiOiJ1bWl0LnlpbGRpcmltQGlzaW1wbGF0Zm9ybS5pbyIsInVzZXJuYW1lIjoidW1pdC55aWxkaXJpbSJ9.OGNUd_OsaXsUjIUaq6_0M85UIqeKODQeTaNVJV-tX0aXxo8tdAyRYxWnNpT6XV9_VendBobmWAkndpNt1J-RsNMRiEyrfApKFX8ZaRmT71NHIS9F8jrk5W_dFQBlYTDrkrAEcrjXZE86kjkzdAUJ-yNHNtT4JkoNR-uRJi3vwLZ7XRxmlS7wss5Njs6LnnrdkdE8nUor_sjdqUFKqj6C5TCqN-1h2P9QGfdksCrto0DDsMeKm3qoHpL_UPCyElOaEwE7InMOPvLVSqYmC7gZImfaO4ISiTF0HDecOa7wt549zE7dUO5-zwhckyHF3hdJRTVeH2x9qTexbem_Lgrv4w\"\nmsg.envPath = global.get(\"envPath\")\nmsg.url = msg.envPath + \"bms/bms/api/v1/data/getbyquery?dataset=hr_employees\";\n\nmsg.headers = {\n    \"authorization\":msg.token\n}\n\nmsg.payload={\n    \"query\":msg.payload\n}\n\n\nmsg.rejectUnauthorized = false\n\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 120,
+        "wires": [
+            [
+                "c5cfdce1186c9d85"
+            ]
+        ]
+    },
+    {
+        "id": "2a1ce2593017f9ca",
+        "type": "debug",
+        "z": "f13a566ff2d8b3ae",
+        "name": "debug 4",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1080,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "c5cfdce1186c9d85",
+        "type": "http request",
+        "z": "f13a566ff2d8b3ae",
+        "name": "GetUserData",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "149134e7a8351b0d",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 670,
+        "y": 120,
+        "wires": [
+            [
+                "0652e675419105e9"
+            ]
+        ]
+    },
+    {
+        "id": "0652e675419105e9",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Set UserData",
+        "func": "msg.userData = JSON.parse(msg.payload)[0]\nlet startDate = new Date(msg.userData.employment_start_date)\nlet inputYear = startDate.getFullYear();\nconst currentYear = new Date().getFullYear();\n\nconst years = [];\n\nfor (let year = inputYear; year <= currentYear; year++) {\n    years.push({\"year\":year});\n}\n\nlet gender = !msg.userData.gender ? 1 : (msg.userData.gender === 'Erkek' ? 1 : 0);\n\nmsg.leaveData = {\n    email : msg.userData.email,\n    gender : gender,\n    gains : years\n}\n\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 120,
+        "wires": [
+            [
+                "059c8baf4dc9b4d7"
+            ]
+        ]
+    },
+    {
+        "id": "76050277a3039dfe",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Build GainHistory",
+        "func": "const currentYear = new Date().getFullYear();\n\n\nconst  calcGain_YillikIzin = function(year, idx) {\n\n    function hesaplaIzinHakki(izinObjesi, yil) {\n        // Kural: Dönemin Başında ve yıl 0 ise => izin hakkı 0\n        if (izinObjesi.period === \"Dönemin Sonunda\" && yil === 0) {\n            return 0;\n        }\n\n        const anaLimit = izinObjesi.limit || 0;\n        const seniorities = izinObjesi.seniorities || [];\n\n        let toplam = anaLimit;\n\n        for (const seviye of seniorities) {\n            if (yil >= seviye.seniority) {\n                toplam += seviye.limit || 0;\n            }\n        }\n\n        return toplam;\n    }\n\n    let leaveType = msg.leaveTypes.filter(f => f.name == 'Yıllık İzin');\n    year.yillikIzin = {};\n\n    year.yillikIzin.leaveType = leaveType? leaveType[0]: null;\n\n    year.yillikIzin.gains = hesaplaIzinHakki(year.yillikIzin.leaveType, idx);  \n    \n\n    const filtered = msg.userLeaves.filter(item => {\n        const syear = new Date(item.start).getFullYear();\n        return syear === year.year && item.type === year.yillikIzin.leaveType?.__dataId;//&& item.type?.__dataId === year.yillikIzin.leaveType?.__dataId;\n    });\n\n    \n    year.yillikIzin.used = filtered;\n\n    year.yillikIzin.totalUsedDays = year.yillikIzin.used.reduce((sum, item) => sum + (item.day || 0), 0);\n\n    year.yillikIzin.totalGains = idx === 0 ? 0 - year.yillikIzin.totalUsedDays : msg.leaveData.gains[idx - 1].yillikIzin.totalGains + year.yillikIzin.gains - year.yillikIzin.totalUsedDays;\n\n    if (year.yillikIzin.leaveType?.carry_over === 'Evet')\n    {\n        year.yillikIzin.devir = idx === 0 ? 0 : msg.leaveData.gains[idx - 1].yillikIzin.totalGains;\n        year.yillikIzin.toplamHakedis = idx === 0 ? year.yillikIzin.gains : year.yillikIzin.gains + msg.leaveData.gains[idx - 1].yillikIzin.gains;\n        year.yillikIzin.kayipDevir = 0;\n    }\n    else{\n        year.yillikIzin.devir = 0;\n        year.yillikIzin.toplamHakedis = idx === 0 ? year.yillikIzin.gains : year.yillikIzin.gains;\n        year.yillikIzin.kayipDevir = idx === 0 ? 0 : msg.leaveData.gains[idx - 1].yillikIzin.totalGains;\n\n    }\n\n    return year\n}\nconst  calcGain_Izin = function(year, typeTitle, typeName) {\n    let leaveTypeArr = msg.leaveTypes.filter(f => f.name == typeTitle);\n    let leaveType = leaveTypeArr?leaveTypeArr[0]:null;\n\n    const filtered = msg.userLeaves.filter(item => {\n        const syear = new Date(item.start).getFullYear();\n        return syear === year.year && item.type === leaveType?.__dataId;//&& item.type?.__dataId === leaveType?.__dataId;\n    });    \n\n    let hist = filtered;\n    let usedCount = hist.reduce((sum, item) => sum + (item.day || 0), 0);\n    let usable = year.year === currentYear ? leaveType?.limit - usedCount : 0;\n    return { leaveType : leaveType, useHistory : hist, gain: leaveType?.limit, usedCount : usedCount, usable : usable}\n}\n\n\nfor (let index = 0; index < msg.leaveData.gains.length; index++) {\n    msg.leaveData.gains[index] = calcGain_YillikIzin(msg.leaveData.gains[index], index);    \n    \n    msg.leaveTypes.forEach( e => {\n    //if (!e.seniorities){\n        for (let i = 0; i < msg.leaveData.gains.length; i++) {\n\n            msg.leaveData.gains[index][e.__dataId] = calcGain_Izin(msg.leaveData.gains[index], e.name, e.__dataId);\n\n            if (e.gender == 'Tümü')\n            {\n                msg.leaveData.gains[index][e.__dataId] = calcGain_Izin(msg.leaveData.gains[index], e.name, e.__dataId);\n            }else\n            {\n                if (msg.userData.gender == e.gender)\n                {\n                    msg.leaveData.gains[index][e.__dataId] = calcGain_Izin(msg.leaveData.gains[index], e.name, e.__dataId);\n                }\n            }\n            \n        }\n    //}\n});\n    \n    //msg.leaveData.gains[index][\"evlilikIzin\"] = calcGain_Izin(msg.leaveData.gains[index], \"Evlilik İzni\", \"evlilikIzin\");\n} \n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 360,
+        "wires": [
+            [
+                "1ca7beab5da95499"
+            ]
+        ]
+    },
+    {
+        "id": "059c8baf4dc9b4d7",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Build Type Query",
+        "func": "msg.url = msg.envPath + \"/bms/bms/api/v1/data?dataset=hr_leave_types\";\n\nmsg.headers = {\n    \"authorization\":msg.token\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 200,
+        "wires": [
+            [
+                "d11ae44598189802"
+            ]
+        ]
+    },
+    {
+        "id": "d11ae44598189802",
+        "type": "http request",
+        "z": "f13a566ff2d8b3ae",
+        "name": "GetTypeData",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "149134e7a8351b0d",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 670,
+        "y": 200,
+        "wires": [
+            [
+                "21a1bd644268eabc"
+            ]
+        ]
+    },
+    {
+        "id": "21a1bd644268eabc",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Set Type Data",
+        "func": "msg.leaveTypes = JSON.parse(msg.payload)\n\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 200,
+        "wires": [
+            [
+                "cbf1bc7d7a39e323"
+            ]
+        ]
+    },
+    {
+        "id": "cbf1bc7d7a39e323",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Build Leaves Query",
+        "func": "msg.url = msg.envPath + \"/bms/bms/api/v1/data/getbycustomquery?dataset=hr_leaves\";\n\nmsg.headers = {\n    \"authorization\":msg.token\n}\n\nmsg.payload={\n    \"customquery\": [{\n        \"$match\":{\n            \"employee_uid\": msg.userData.uid\n        }\n    }]\n}\n\n\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 280,
+        "wires": [
+            [
+                "e4dacc77ebf97641"
+            ]
+        ]
+    },
+    {
+        "id": "e4dacc77ebf97641",
+        "type": "http request",
+        "z": "f13a566ff2d8b3ae",
+        "name": "GetLeavesData",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "149134e7a8351b0d",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 680,
+        "y": 280,
+        "wires": [
+            [
+                "d08d31fde33a7adb"
+            ]
+        ]
+    },
+    {
+        "id": "d08d31fde33a7adb",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Set Type Data",
+        "func": "msg.userLeaves = msg.payload == '' ? [] : JSON.parse(msg.payload)\nmsg.allUserLeaves = msg.payload == '' ? [] : JSON.parse(msg.payload)\n\nmsg.deniedStates = [\"25a51d17-ad11-4d16-8532-8cfa21d7ef34\",\"c0f279b0-2372-4e3a-b1bd-7cea3bfe0e02\"]\n\nmsg.userLeaves = msg.userLeaves.filter(item => !msg.deniedStates.includes(item.state));\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 280,
+        "wires": [
+            [
+                "76050277a3039dfe"
+            ]
+        ]
+    },
+    {
+        "id": "1ca7beab5da95499",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Set Leave Results",
+        "func": "const calcLeaveData = function(typeName){\n    //let lobj = msg.leaveData.gains[msg.leaveData.gains.length - 1][typeName]\n\n    return msg.leaveData.gains[msg.leaveData.gains.length - 1][typeName]\n}\n\nif (msg.leaveData.gains.length > 0){\nmsg.leaveResult = {\n    yillikIzin : {\n        gain : msg.leaveData.gains[msg.leaveData.gains.length - 1].yillikIzin?.totalGains,\n        typeName : msg.leaveData.gains[msg.leaveData.gains.length - 1].yillikIzin?.leaveType.name,\n        typeId : msg.leaveData.gains[msg.leaveData.gains.length - 1].yillikIzin?.leaveType.__dataId,\n\n    },\n    \n}\n}\n\nmsg.leaveTypes.forEach( e => {\n//if (!e.seniorities){\n    msg.leaveResult[e.__dataId] = calcLeaveData(e.__dataId)\n//}\n});\n\nmsg.payload = {\n    leaveStatus : msg.leaveResult,\n    history : msg.leaveData,\n    userInfo : msg.userData,\n    leaveTypes : msg.leaveTypes,\n    userLeaves : msg.userLeaves\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 690,
+        "y": 360,
+        "wires": [
+            [
+                "2a1ce2593017f9ca",
+                "0d810d0cbfdf91ce"
+            ]
+        ]
+    },
+    {
+        "id": "9ec9dca83948c3c9",
+        "type": "http in",
+        "z": "f13a566ff2d8b3ae",
+        "name": "",
+        "url": "/get_employee_leave_status",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 160,
+        "y": 160,
+        "wires": [
+            [
+                "37b22eb3442324eb"
+            ]
+        ]
+    },
+    {
+        "id": "0d810d0cbfdf91ce",
+        "type": "http response",
+        "z": "f13a566ff2d8b3ae",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 1250,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "f801587291ac5a49",
+        "type": "inject",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Berfe Yıllık İzin",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"start\":\"2025-06-01T00:00:00+03:00\",\"end\":\"2025-06-13T00:00:00+03:00\",\"day\":5,\"description\":\"Açıklama\",\"type\":\"dcf22d4d-6cdb-47bf-a295-4538f2f5f070\",\"assign_employee_id\":\"146c5347-943a-421d-8b3f-435da271dc05\",\"state\":\"8f7e44f9-b53a-41af-925e-2cda8caad9db\",\"employee_uid\":\"1747136070\"}",
+        "payloadType": "json",
+        "x": 120,
+        "y": 400,
+        "wires": [
+            [
+                "40fa69a3852c6db3"
+            ]
+        ]
+    },
+    {
+        "id": "e9d50686279da3f8",
+        "type": "inject",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Umit 2 Denem 2 İzin",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "req.headers.authorization",
+                "v": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ5UGsxNEM4ZmRKZ3ZncXFVMnRhV3hHRHdXY1lHZEl4dktDb0trY3ZIZHJFIn0.eyJleHAiOjE3NTg2NTQwOTAsImlhdCI6MTc1ODYxODA5MCwianRpIjoib25ydHJvOjY0MDYxYjJlLTZkMTUtNGZhZS05NGY3LTc4ZThiMGQ4NDkzMCIsImlzcyI6Imh0dHBzOi8vcWF0ZWFtMi51dGVzay5jbG91ZC9rZXljbG9hay9yZWFsbXMvY28yIiwic3ViIjoiZmJkYTA0OWYtZjk1NS00MGY0LTk0MzQtZWI5YWQ4NGMwZDllIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoid2ViX3VpX2NsaWVudCIsInNpZCI6IjJiZDJhYzM3LWMyMjItNGVmOS04OWFiLTU0YTIyMThlODdhMiIsImFjciI6IjEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiKiJdLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsiZGVmYXVsdC1yb2xlcy1jbzIiXX0sInNjb3BlIjoib3BlbmlkIGN1c3RvbV9zY29wZSBwcm9maWxlIGN1c3RvbV9ncm91cHNfc2NvcGUgY3VzdG9tX2dyb3VwIGVtYWlsIGN1c3RvbV91aWRfc2NvcGUgY3VzdG9tX3VzZXJfYXR0cmlidXRlIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsIl9fZGJOYW1lIjoiaXNpbV9jbzIiLCJyb2xlcyI6WyJIUiBFTVBMT1lFRSIsIkhSIEZJTkFOQ0lBTCIsIkhSIE1BTkFHRVIiXSwiZ3JvdXBzIjpbIi9IUiBFTVBMT1lFRSIsIi9IUiBGSU5BTkNJQUwiLCIvSFIgTUFOQUdFUiJdLCJsYXN0X25hbWUiOiJZxLFsZMSxcsSxbSIsInByZWZlcnJlZF91c2VybmFtZSI6InVtaXQueWlsZGlyaW0iLCJpc0FkbWluIjoiZmFsc2UiLCJnaXZlbl9uYW1lIjoiw5xtaXQiLCJkaXNwbGF5X25hbWUiOiLDnG1pdCBZxLFsZMSxcsSxbSIsImNsaWVudF9pZCI6IndlYl91aV9jbGllbnQiLCJhdXRoZW50aWNhdG9ycy1jb21wbGV0ZWQiOiJ7XCIwNzg1OGRiNC0wZjQ2LTRiZjMtODMxNC00NDJhNmE1ZTgwYzVcIjoxNzU4NjE4MDg5LFwiOWI2Zjg0OWMtMmJlMy00MjU5LTk2ZTItOWY2OWM4MjBmOTQ1XCI6MTc1ODYxODA5MH0iLCJ1aWQiOiJmYmRhMDQ5Zi1mOTU1LTQwZjQtOTQzNC1lYjlhZDg0YzBkOWUiLCJfX293bmVyIjoiY28yIiwiX19kb21haW4iOiJjbzIiLCJzY29wZSI6Im9wZW5pZCIsIm5hbWUiOiLDnG1pdCBZxLFsZMSxcsSxbSIsIktDX0RFVklDRV9OT1RFIjoiZXlKcGNFRmtaSEpsYzNNaU9pSXhNQzQwTWk0d0xqRWlMQ0p2Y3lJNklrOTBhR1Z5SWl3aWIzTldaWEp6YVc5dUlqb2lWVzVyYm05M2JpSXNJbUp5YjNkelpYSWlPaUpIYnkxb2RIUndMV05zYVdWdWRDOHhMakVpTENKa1pYWnBZMlVpT2lKUGRHaGxjaUlzSW14aGMzUkJZMk5sYzNNaU9qQXNJbTF2WW1sc1pTSTZabUZzYzJWOSIsImZhbWlseV9uYW1lIjoiWcSxbGTEsXLEsW0iLCJmaXJzdF9uYW1lIjoiw5xtaXQiLCJlbWFpbCI6InVtaXQueWlsZGlyaW1AaXNpbXBsYXRmb3JtLmlvIiwidXNlcm5hbWUiOiJ1bWl0LnlpbGRpcmltIn0.fWMc5nwNVwIcMjqvt5Q3uiLcqNUw6i1hv6Iltpe0L2K2CfNh3ZSuw1VyfYyZ-rlz1dwE4mW3yTpb-INzoqWddfftU12yao1YTJEWDQ5SvSdldfauMD3oAO_2s3Qs75RL6B_8nj0EeTVLiX8DTABPrw5-1Qx266NatWwPojfn6PkHLYm-awlGaEPoe5dxuAh97zE-fJgtsSl0CuL-w4zLJaCSVYcBead0mDDg1tqx533Ze8x7jL8YfY_0HnzgmSjj6-x8Ur9G3B6xUwiMlGSXTEegu8wRCjyGw9PSDT3HTlrI6U3CDxhPAxz11ttjvGNzVMYna7c0x9IKzFalvQfbCQ",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"type\":\"89610c5c-2325-4038-8e35-3e0f6c5d65aa\",\"start\":\"2025-08-08T00:00:00+03:00\",\"day\":3,\"end\":\"2025-08-11T00:00:00+03:00\",\"assign_employee_id\":\"fbda049f-f955-40f4-9434-eb9ad84c0d9e\",\"state\":\"8f7e44f9-b53a-41af-925e-2cda8caad9db\",\"employee_uid\":\"fbda049f-f955-40f4-9434-eb9ad84c0d9e\"}",
+        "payloadType": "json",
+        "x": 130,
+        "y": 440,
+        "wires": [
+            [
+                "40fa69a3852c6db3"
+            ]
+        ]
+    },
+    {
+        "id": "1a73ad2cb56ea4c6",
+        "type": "inject",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Berfe iSIM Deneme",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"start\":\"2025-06-11T00:00:00+03:00\",\"end\":\"2025-06-13T00:00:00+03:00\",\"day\":3,\"description\":\"Açıklama\",\"type\":\"2018eb84-cc83-4bd4-b91d-df00f5b18b57\",\"assign_employee_id\":\"146c5347-943a-421d-8b3f-435da271dc05\",\"state\":\"8f7e44f9-b53a-41af-925e-2cda8caad9db\",\"employee_uid\":\"1747136070\"}",
+        "payloadType": "json",
+        "x": 130,
+        "y": 360,
+        "wires": [
+            [
+                "40fa69a3852c6db3"
+            ]
+        ]
+    },
+    {
+        "id": "71a25fc046eaeae9",
+        "type": "inject",
+        "z": "f13a566ff2d8b3ae",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "req.headers.authorization",
+                "v": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ5UGsxNEM4ZmRKZ3ZncXFVMnRhV3hHRHdXY1lHZEl4dktDb0trY3ZIZHJFIn0.eyJleHAiOjE3NTY5NzMwNTAsImlhdCI6MTc1NjkzNzA1MCwianRpIjoib25ydHJvOjRjMmNkM2NkLTMyZmUtNGNlMS1hZGMwLTVmNzIwODBkMTU5YSIsImlzcyI6Imh0dHBzOi8vcWF0ZWFtMi51dGVzay5jbG91ZC9rZXljbG9hay9yZWFsbXMvY28yIiwic3ViIjoiZmJkYTA0OWYtZjk1NS00MGY0LTk0MzQtZWI5YWQ4NGMwZDllIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoid2ViX3VpX2NsaWVudCIsInNpZCI6Ijg2MjYzYzViLWE3NjktNDZjZS05MTM1LTA5YThmZGVkMDcyYiIsImFjciI6IjEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiKiJdLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsiZGVmYXVsdC1yb2xlcy1jbzIiXX0sInNjb3BlIjoib3BlbmlkIGN1c3RvbV9zY29wZSBwcm9maWxlIGN1c3RvbV9ncm91cHNfc2NvcGUgY3VzdG9tX2dyb3VwIGVtYWlsIGN1c3RvbV91aWRfc2NvcGUgY3VzdG9tX3VzZXJfYXR0cmlidXRlIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsIl9fZGJOYW1lIjoiaXNpbV9jbzIiLCJyb2xlcyI6WyJIUiBFTVBMT1lFRSIsIkhSIE1BTkFHRVIiXSwiZ3JvdXBzIjpbIi9IUiBFTVBMT1lFRSIsIi9IUiBNQU5BR0VSIl0sImxhc3RfbmFtZSI6IlnEsWxkxLFyxLFtIiwicHJlZmVycmVkX3VzZXJuYW1lIjoidW1pdC55aWxkaXJpbSIsImlzQWRtaW4iOiJmYWxzZSIsImdpdmVuX25hbWUiOiLDnG1pdCIsImRpc3BsYXlfbmFtZSI6IsOcbWl0IFnEsWxkxLFyxLFtIiwiY2xpZW50X2lkIjoid2ViX3VpX2NsaWVudCIsImF1dGhlbnRpY2F0b3JzLWNvbXBsZXRlZCI6IntcIjA3ODU4ZGI0LTBmNDYtNGJmMy04MzE0LTQ0MmE2YTVlODBjNVwiOjE3NTY5MzcwNTAsXCI5YjZmODQ5Yy0yYmUzLTQyNTktOTZlMi05ZjY5YzgyMGY5NDVcIjoxNzU2OTM3MDUwfSIsInVpZCI6ImZiZGEwNDlmLWY5NTUtNDBmNC05NDM0LWViOWFkODRjMGQ5ZSIsIl9fb3duZXIiOiJjbzIiLCJfX2RvbWFpbiI6ImNvMiIsInNjb3BlIjoib3BlbmlkIiwibmFtZSI6IsOcbWl0IFnEsWxkxLFyxLFtIiwiS0NfREVWSUNFX05PVEUiOiJleUpwY0VGa1pISmxjM01pT2lJeE1DNDBNaTR3TGpFaUxDSnZjeUk2SWs5MGFHVnlJaXdpYjNOV1pYSnphVzl1SWpvaVZXNXJibTkzYmlJc0ltSnliM2R6WlhJaU9pSkhieTFvZEhSd0xXTnNhV1Z1ZEM4eExqRWlMQ0prWlhacFkyVWlPaUpQZEdobGNpSXNJbXhoYzNSQlkyTmxjM01pT2pBc0ltMXZZbWxzWlNJNlptRnNjMlY5IiwiZmFtaWx5X25hbWUiOiJZxLFsZMSxcsSxbSIsImZpcnN0X25hbWUiOiLDnG1pdCIsImVtYWlsIjoidW1pdC55aWxkaXJpbUBpc2ltcGxhdGZvcm0uaW8iLCJ1c2VybmFtZSI6InVtaXQueWlsZGlyaW0ifQ.hnOobwxEex3e-rUrL1v4dRQheM2YZXlhPiOlOx0c-Php41V6Jgd_vlzO26ILJGtglmSaoAw44p3t_jsdUHhEZZtEQYZaTaEsD5iE-qB3AUuf11A8tYtlhhMwAjrZpGq3YH_oedTW3YN8wobmi38fDHN1te8sTOeOyjtU9xROmMIlZFAlQ-xfUt6hYWhhuc1TVUwmuiL-YN6_xtRg3b2b2xZMYEOswnEA5x5eM0VCjWRvoLr7lfZDcpDi8otp0ZFKzHOPvII5q3DkHr12M6iSibfdKCD6nIgNFKYw_ShA7W6W3qVdaY5G7mwn5VnYVy-CU2iz0pfsj4HR3K1qmQn3QQ",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"uid\":\"fbda049f-f955-40f4-9434-eb9ad84c0d9e\",\"type\":\"89610c5c-2325-4038-8e35-3e0f6c5d65aa\"}",
+        "payloadType": "json",
+        "x": 210,
+        "y": 1160,
+        "wires": [
+            [
+                "7ab8d08f951ba758"
+            ]
+        ]
+    },
+    {
+        "id": "774f4101f7c2b742",
+        "type": "debug",
+        "z": "f13a566ff2d8b3ae",
+        "name": "debug 11",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1080,
+        "y": 1140,
+        "wires": []
+    },
+    {
+        "id": "7ab8d08f951ba758",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Init Request",
+        "func": "msg.infoRequest = msg.payload;\n\nmsg.token = msg.req?.headers?.authorization ?? \"Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ5UGsxNEM4ZmRKZ3ZncXFVMnRhV3hHRHdXY1lHZEl4dktDb0trY3ZIZHJFIn0.eyJleHAiOjE3NTE4OTg1MzgsImlhdCI6MTc1MTg5ODIzOCwianRpIjoib25ydHJ0OjM0ZDIyNjU0LTQzZWUtNDlmNC04ZTU3LTU5MmJkYjc3M2MyNyIsImlzcyI6Imh0dHBzOi8vcWF0ZWFtMi51dGVzay5jbG91ZC9rZXljbG9hay9yZWFsbXMvY28yIiwic3ViIjoiZmQ4NzBiYzktOGVjZC00OTY1LWFmMTEtNThjY2UxZjg2MTVlIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoid2ViX3VpX2NsaWVudCIsInNpZCI6ImExM2Y1ZWMxLWU0YWMtNDA1ZS04ZjY0LWY3NmFkMTNhZTJiMCIsImFjciI6IjEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiKiJdLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsiZGVmYXVsdC1yb2xlcy1jbzIiXX0sInNjb3BlIjoib3BlbmlkIGN1c3RvbV9zY29wZSBwcm9maWxlIGN1c3RvbV9ncm91cHNfc2NvcGUgY3VzdG9tX2dyb3VwIGVtYWlsIGN1c3RvbV91aWRfc2NvcGUgY3VzdG9tX3VzZXJfYXR0cmlidXRlIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJfX2RiTmFtZSI6ImlzaW1fY28yIiwicm9sZXMiOlsiSFIgRU1QTE9ZRUUiXSwiZ3JvdXBzIjpbIi9IUiBFTVBMT1lFRSJdLCJsYXN0X25hbWUiOiJZxLFsZMSxcsSxbSIsInByZWZlcnJlZF91c2VybmFtZSI6InVtaXQueWlsZGlyaW0iLCJpc0FkbWluIjoiZmFsc2UiLCJnaXZlbl9uYW1lIjoiw5xtaXQiLCJkaXNwbGF5X25hbWUiOiLDnG1pdCBZxLFsZMSxcsSxbSIsImNsaWVudF9pZCI6IndlYl91aV9jbGllbnQiLCJhdXRoZW50aWNhdG9ycy1jb21wbGV0ZWQiOiJ7XCIwNzg1OGRiNC0wZjQ2LTRiZjMtODMxNC00NDJhNmE1ZTgwYzVcIjoxNzUxODg2NzEzLFwiOWI2Zjg0OWMtMmJlMy00MjU5LTk2ZTItOWY2OWM4MjBmOTQ1XCI6MTc1MTg4NjcxM30iLCJyZWZyZXNoX3Rva2VuIjoiZXlKaGJHY2lPaUpJVXpVeE1pSXNJblI1Y0NJZ09pQWlTbGRVSWl3aWEybGtJaUE2SUNKbE1qUTBaRFZrTkMweE5HUTRMVFJsWTJFdFlUQmpOeTFrTjJReU1qUmpNR1F6TURBaWZRLmV5SmxlSEFpT2pFM05URTRPVGszTkRJc0ltbGhkQ0k2TVRjMU1UZzVOemswTWl3aWFuUnBJam9pT1dOaE5qZGxNakV0WmpRNVpTMDBNRGt5TFdFNFpEVXRNRE0xTURBNFl6ZGxaV05sSWl3aWFYTnpJam9pYUhSMGNITTZMeTl4WVhSbFlXMHlMblYwWlhOckxtTnNiM1ZrTDJ0bGVXTnNiMkZyTDNKbFlXeHRjeTlqYnpJaUxDSmhkV1FpT2lKb2RIUndjem92TDNGaGRHVmhiVEl1ZFhSbGMyc3VZMnh2ZFdRdmEyVjVZMnh2WVdzdmNtVmhiRzF6TDJOdk1pSXNJbk4xWWlJNkltWmtPRGN3WW1NNUxUaGxZMlF0TkRrMk5TMWhaakV4TFRVNFkyTmxNV1k0TmpFMVpTSXNJblI1Y0NJNklsSmxabkpsYzJnaUxDSmhlbkFpT2lKM1pXSmZkV2xmWTJ4cFpXNTBJaXdpYzJsa0lqb2lZVEV6WmpWbFl6RXRaVFJoWXkwME1EVmxMVGhtTmpRdFpqYzJZV1F4TTJGbE1tSXdJaXdpYzJOdmNHVWlPaUp2Y0dWdWFXUWdZM1Z6ZEc5dFgzTmpiM0JsSUhCeWIyWnBiR1VnWTNWemRHOXRYMmR5YjNWd2MxOXpZMjl3WlNCamRYTjBiMjFmWjNKdmRYQWdjbTlzWlhNZ1ltRnphV01nWlcxaGFXd2dZV055SUdOMWMzUnZiVjkxYVdSZmMyTnZjR1VnZDJWaUxXOXlhV2RwYm5NZ1kzVnpkRzl0WDNWelpYSmZZWFIwY21saWRYUmxJbjAubnlrREJIeGlMZzRhUUZCakNycFp2dWt6WnhWODZlN0s2MEJjZUhBRVRnZUZSOHdQTWU4MGY3WGl2M0p3VWdRMzVsTlZCLUI1QlRxU2g1NHdpaktxNXciLCJ1aWQiOiJmZDg3MGJjOS04ZWNkLTQ5NjUtYWYxMS01OGNjZTFmODYxNWUiLCJwYXNzd29yZCI6IjEyMzQ1IiwiX19vd25lciI6ImNvMiIsImdyYW50X3R5cGUiOiJyZWZyZXNoX3Rva2VuIiwiX19kb21haW4iOiJjbzIiLCJzY29wZSI6Im9wZW5pZCIsIm5hbWUiOiLDnG1pdCBZxLFsZMSxcsSxbSIsIktDX0RFVklDRV9OT1RFIjoiZXlKcGNFRmtaSEpsYzNNaU9pSXhNQzQwTWk0d0xqRWlMQ0p2Y3lJNklrOTBhR1Z5SWl3aWIzTldaWEp6YVc5dUlqb2lWVzVyYm05M2JpSXNJbUp5YjNkelpYSWlPaUpIYnkxb2RIUndMV05zYVdWdWRDOHhMakVpTENKa1pYWnBZMlVpT2lKUGRHaGxjaUlzSW14aGMzUkJZMk5sYzNNaU9qQXNJbTF2WW1sc1pTSTZabUZzYzJWOSIsImZhbWlseV9uYW1lIjoiWcSxbGTEsXLEsW0iLCJmaXJzdF9uYW1lIjoiw5xtaXQiLCJlbWFpbCI6InVtaXQueWlsZGlyaW1AaXNpbXBsYXRmb3JtLmlvIiwidXNlcm5hbWUiOiJ1bWl0LnlpbGRpcmltIn0.nQpbD0chuIEBRcfcsuea3FYsSfb0CzDVlfIBOSr7wwvc7mZakm1zNaME0VVQ1SzVMMTLu9aGrz6Mmw2L0d9Jv5a9mNrnLNgdaqJf03CdueBWaQSR9zK0ChhNx-eX2befRObvmcSErjBNsa0NKQRTjYxo8kqsuFUWZh2OqokbsMP_8b2Lf7i0pwiQS6agQ5LvhLlpFcFmYP18p86kw9YxjqyHuwakem8ZDHfOzSYjtX5voCicvLeHeHYCLtML8TNVDHfjFzt7IucCvgqB2sokJQ1OdRXC6W_LpBC7QTenfR8ki_vuy_pvjMXjezGRb11Xj23TjHK-YiP6rTvYr1bBfQ\"\nmsg.envPath = global.get(\"envPath\")\nmsg.localPath = global.get(\"localPath\")\n\nmsg.payload = {\n    uid : msg.infoRequest.uid\n}\n\nmsg.headers = {\n    \"authorization\":msg.token\n}\n\nmsg.url = msg.localPath + \"/get_employee_leave_status\"\n\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 370,
+        "y": 1080,
+        "wires": [
+            [
+                "7d130230a88c2225"
+            ]
+        ]
+    },
+    {
+        "id": "7d130230a88c2225",
+        "type": "http request",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Get Employee Leave Status",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "149134e7a8351b0d",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 620,
+        "y": 1080,
+        "wires": [
+            [
+                "bc68b01d4cfea1c6"
+            ]
+        ]
+    },
+    {
+        "id": "bc68b01d4cfea1c6",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Build Payload",
+        "func": "msg.rawData = JSON.parse(msg.payload);\n\nmsg.leaveType = msg.rawData.leaveTypes.filter(f => f.__dataId === msg.infoRequest.type)[0]\nmsg.isYillikIzin = msg.leaveType?.name === 'Yıllık İzin'\n\nlet toplamHakedis = 0;\nlet usedCount = 0;\n\nfor (let i = 0; i < msg.rawData.history.gains.length; i++){\n    const e = msg.rawData.history.gains[i]\n\n    if (msg.isYillikIzin)\n    {\n        toplamHakedis += e.yillikIzin.gains;\n        usedCount += e.yillikIzin.totalUsedDays;\n    }\n    else\n    {\n        toplamHakedis = e[msg.infoRequest.type].gain;\n        usedCount = e.yillikIzin.usedCount;\n    }\n}\n\n\nlet donemdeKullanilan = msg.isYillikIzin \n    ? msg.rawData.history.gains[msg.rawData.history.gains.length - 1].yillikIzin .totalUsedDays\n    : msg.rawData.history.gains[msg.rawData.history.gains.length - 1][msg.infoRequest.type].usedCount;\n\n\n\n\nlet devir = msg.isYillikIzin \n    ? msg.rawData.history.gains[msg.rawData.history.gains.length - 1].yillikIzin .devir : 0;\n\nlet kayipDevir = msg.isYillikIzin\n    ? msg.rawData.history.gains[msg.rawData.history.gains.length - 1].yillikIzin.kayipDevir : 0;    \n    \nlet bakiye = msg.isYillikIzin ? \n    msg.leaveType.carry_over === 'Evet' ?    msg.rawData.leaveStatus.yillikIzin.gain\n        : msg.rawData.history.gains[msg.rawData.history.gains.length - 1].yillikIzin.gains - donemdeKullanilan : toplamHakedis - donemdeKullanilan;\n\ntoplamHakedis = msg.leaveType.carry_over === 'Hayır' ? toplamHakedis - kayipDevir : toplamHakedis;\n\nfunction sumFutureDays(dataArray) {\n  const now = new Date();\n\n  return dataArray\n    .filter(item => new Date(item.start) > now && item.type === msg.infoRequest.type)\n    .reduce((total, item) => total + (item.day || 0), 0);\n}\n\nfunction sumAllLeaves(dataArray) {\n  const now = new Date();\n\n  return dataArray\n    .filter(item => item.type === msg.infoRequest.type)\n    .reduce((total, item) => total + (item.day || 0), 0);\n}\n\n//const planliGun = msg.isYillikIzin ? sumFutureDays(msg.rawData.userLeaves) : 0;\nconst planliGun = sumFutureDays(msg.rawData.userLeaves);\n\nmsg.payload = {\n    hakedisTarihi : msg.rawData.userInfo.employment_start_date,\n    kidemSuresi : msg.rawData.history.gains.length - 1 + ' Yıl',\n    bakiye : bakiye + planliGun,\n    toplamHakedis : toplamHakedis,\n    //kullanilan : usedCount - planliGun,\n    kullanilan : sumAllLeaves(msg.rawData.userLeaves) - planliGun,\n    planli : planliGun,\n    donemdeKullanilan : donemdeKullanilan - planliGun,\n    //kullanilabilir : msg.leaveType?.limit - donemdeKullanilan,\n    kullanilabilir : bakiye,\n    devreden: devir,\n    kullanilabilirDevir : msg.leaveType.carry_over === 'Evet' ? devir : 0,\n    kayipDevir : kayipDevir\n}\n\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 860,
+        "y": 1080,
+        "wires": [
+            [
+                "774f4101f7c2b742",
+                "6e2454790138f634"
+            ]
+        ]
+    },
+    {
+        "id": "6e2454790138f634",
+        "type": "http response",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Success",
+        "statusCode": "200",
+        "headers": {},
+        "x": 1060,
+        "y": 1080,
+        "wires": []
+    },
+    {
+        "id": "ed5c9cd3c55434fd",
+        "type": "http in",
+        "z": "f13a566ff2d8b3ae",
+        "name": "get_employee_status",
+        "url": "/get_employee_status",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 140,
+        "y": 1080,
+        "wires": [
+            [
+                "7ab8d08f951ba758"
+            ]
+        ]
+    },
+    {
+        "id": "bf586353a5e6ea68",
+        "type": "http in",
+        "z": "f13a566ff2d8b3ae",
+        "name": "POST /set_employee_leave",
+        "url": "/set_employee_leave",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 160,
+        "y": 520,
+        "wires": [
+            [
+                "40fa69a3852c6db3"
+            ]
+        ]
+    },
+    {
+        "id": "40fa69a3852c6db3",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Input Schema Validation",
+        "func": "// Zorunlu alanlar: employee_uid, type, day, start, end\n// Authorization header da kontrol edilir.\nconst err = (code, message, details={}) => {\n    msg.statusCode = code;\n    msg.payload = { success: false, code: \"VALIDATION_ERROR\", message, details };\n    return [null, msg];\n};\n\nconst auth = msg.req?.headers?.authorization;\nif (!auth) return err(401, \"Authorization header eksik.\");\n\nconst r = msg.payload || {};\nconst required = [\"employee_uid\", \"type\", \"day\", \"start\", \"end\"];\nfor (const k of required) {\n    if (r[k] === undefined || r[k] === null || r[k] === \"\") {\n        return err(400, `Eksik alan: ${k}`, { field: k });\n    }\n}\n\n// day sayısal ve > 0 olmalı\nconst day = Number(r.day);\nif (!Number.isFinite(day) || day <= 0) {\n    return err(400, \"'day' pozitif sayısal olmalı\", { field: \"day\" });\n}\n\n// Tarihler ISO önerilir, yine de Date parse deneriz\nconst start = new Date(r.start);\nconst end = new Date(r.end);\nif (isNaN(start.getTime()) || isNaN(end.getTime())) {\n    return err(400, \"Tarih(ler) parse edilemedi. ISO 8601 kullanın.\", { fields: [\"start\",\"end\"] });\n}\n\n// Yetkili mesajı devam etsin\nmsg.leaveRequest = r;\nmsg.token = auth;\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 190,
+        "y": 600,
+        "wires": [
+            [
+                "c49fe590da5e7d40"
+            ],
+            [
+                "626377ab5e395f04"
+            ]
+        ]
+    },
+    {
+        "id": "c49fe590da5e7d40",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Rule Validation (Tarih Kuralları)",
+        "func": "msg.pastDayCount = 7;\n\nconst err = (code, message, details={}) => {\n    msg.statusCode = code;\n    msg.payload = { success:false, code:\"DATE_RULE_ERROR\", message, details };\n    return msg;\n};\n\nconst startDate = new Date(msg.leaveRequest.start);\nconst endDate = new Date(msg.leaveRequest.end);\n\nif (startDate > endDate){\n    return err(400, 'Bitiş tarihi, başlangıç tarihinden önce olamaz', { start: msg.leaveRequest.start, end: msg.leaveRequest.end });\n}\n\nconst now = new Date();\nconst pastDaysAgo = new Date(now);\npastDaysAgo.setDate(now.getDate() - msg.pastDayCount);\n\nmsg.pastDaysAgo = pastDaysAgo;\nmsg.startDate = startDate;\n\n\nif (startDate < pastDaysAgo) {\n    //return err(400, `Geçmişe dönük izin talepleri en fazla ${msg.pastDayCount} gün öncesine kadar yapılabilir.`, { allowedFrom: pastDaysAgo.toISOString() });\n    msg.statusCode = 400;\n    msg.payload = { success:false, code:\"PAST_DATE_LIMIT_EXCEEDED\", message:`Geçmişe dönük izin talepleri en fazla ${msg.pastDayCount} gün öncesine kadar yapılabilir.` };\n    return [null, msg];    \n}\n\n// Onay bayrağı şimdilik true, tip doğrulamada kesinleşecek\nmsg.approved = true;\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 600,
+        "wires": [
+            [
+                "3d03079a0fad30d6",
+                "35368e31f2e1d7f8"
+            ],
+            [
+                "626377ab5e395f04",
+                "8a1e41d18c18eca4"
+            ]
+        ]
+    },
+    {
+        "id": "3d03079a0fad30d6",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Build User Leave Status Query",
+        "func": "const envPath = env.get(\"ENV_PATH\") || global.get(\"envPath\");\nconst localPath = env.get(\"LOCAL_PATH\") || global.get(\"localPath\");\n\nmsg.headers = { authorization: msg.token };\nmsg.url = `${localPath}/get_employee_leave_status`;\nmsg.payload = { uid: msg.leaveRequest.employee_uid };\nmsg.rejectUnauthorized = false;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 600,
+        "wires": [
+            [
+                "cc7dafb2a590b67e"
+            ]
+        ]
+    },
+    {
+        "id": "cc7dafb2a590b67e",
+        "type": "http request",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Get Employee Leave Status",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "149134e7a8351b0d",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": true,
+        "headers": [],
+        "x": 1070,
+        "y": 600,
+        "wires": [
+            [
+                "a5a0eba10ed47778"
+            ]
+        ]
+    },
+    {
+        "id": "a5a0eba10ed47778",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Type Validation (Bakiye/Limit/Cinsiyet/Mevcut izin var)",
+        "func": "const s = msg.payload; // http request (ret=obj) sonucu\nif (!s) {\n    msg.statusCode = 502;\n    msg.payload = { success:false, code:\"UPSTREAM_ERROR\", message:\"Çalışan izin durumu alınamadı.\" };\n    return [null, msg];\n}\n\nmsg.userLeaveStatus = s;\nconst req = msg.leaveRequest;\n\nconst leaveType = (s.leaveTypes || []).find(x => x.__dataId === req.type);\nif (!leaveType) {\n    msg.statusCode = 400;\n    msg.payload = { success:false, code:\"INVALID_LEAVE_TYPE\", message:\"Geçersiz izin tipi.\" };\n    return [null, msg];\n}\n\n// --- Başlangıç tarihi çakışma kontrolü ---\nconst existingLeaves = Array.isArray(s.userLeaves) ? s.userLeaves : [];\n\nconst reqStartMs = new Date(req.start).getTime();\nif (!Number.isFinite(reqStartMs)) {\n    msg.statusCode = 400;\n    msg.payload = {\n        success: false,\n        code: \"INVALID_START_DATE\",\n        message: \"İstek başlangıç tarihi geçersiz.\"\n    };\n    return [null, msg];\n}\n\nconst conflictItem = existingLeaves.find(lv => {\n    if (lv.__isDeleted) return false; // silinmiş kayıtları dikkate alma\n    const st = new Date(lv.start).getTime();\n    const en = new Date(lv.end).getTime();\n    if (!Number.isFinite(st) || !Number.isFinite(en)) return false;\n\n    // Başlangıç tarihi aralıkta mı? (uçlar dahil)\n    return st <= reqStartMs && reqStartMs <= en;\n});\n\nif (conflictItem) {\n    msg.statusCode = 409;\n    msg.payload = {\n        success: false,\n        code: \"DATE_CONFLICT\",\n        message: \"Aynı tarihte başka bir izin başvurusu bulunmaktadır.\",\n        details: {\n            requestedStart: req.start,\n            conflictStart: conflictItem.start,\n            conflictEnd: conflictItem.end,\n            conflictId: conflictItem.__dataId ?? conflictItem._id ?? null\n        }\n    };\n    return [null, msg];\n}\n// --- /Başlangıç tarihi çakışma kontrolü ---\n\n// Cinsiyet kontrolü\nif (leaveType.gender && leaveType.gender !== 'Tümü') {\n    const userGender = s.userInfo?.gender;\n\n    if (!userGender) {\n        msg.statusCode = 400;\n        msg.payload = {\n            success: false,\n            code: \"USER_GENDER_NOT_DEFINED\",\n            message: `${leaveType.name} için kullanıcının cinsiyet bilgisinin tanımlanması gerekmektedir.`\n        };\n        return [null, msg];\n    }\n\n    if (String(leaveType.gender).toLowerCase() !== String(userGender).toLowerCase()) {\n        msg.statusCode = 400;\n        msg.payload = {\n            success: false,\n            code: \"GENDER_MISMATCH\",\n            message: `${leaveType.name} için cinsiyet uyuşmazlığı`\n        };\n        return [null, msg];\n    }\n}\n\n// Gün limitleri\nif (req.day > (leaveType.max_day ?? Number.MAX_SAFE_INTEGER)) {\n    msg.statusCode = 400;\n    msg.payload = { success:false, code:\"MAX_DAY_EXCEEDED\", message:`${leaveType.name} için azami süre aşımı` };\n    return [null, msg];\n}\nif (req.day > (leaveType.limit ?? Number.MAX_SAFE_INTEGER)) {\n    msg.statusCode = 400;\n    msg.payload = { success:false, code:\"LIMIT_EXCEEDED\", message:`${leaveType.name} için limit aşımı` };\n    return [null, msg];\n}\n\n// Bakiye kontrolü\nconst isYillik = leaveType.name === 'Yıllık İzin';\nconst statusKey = isYillik ? 'yillikIzin' : req.type;\nconst leaveUse = s.leaveStatus?.[statusKey] || {};\nconst usable = isYillik ? (leaveUse.gain ?? 0) : (leaveUse.usable ?? 0);\nconst allowNegative = (leaveType.negative_balance === true || leaveType.negative_balance === 'Evet');\n\nif (!allowNegative && req.day > (usable ?? 0)) {\n    msg.statusCode = 400;\n    msg.payload = { success:false, code:\"INSUFFICIENT_BALANCE\", message:`Talep ettiğiniz gün sayısı mevcut izin bakiyenizi aşıyor, en fazla ${usable ?? 0} gün izin kullanabilirsiniz` };\n    return [null, msg];\n}\n\n// Onaylandı → Post aşamasına geç\nmsg.leaveType = leaveType;\nreturn [msg, null];\n",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 240,
+        "y": 700,
+        "wires": [
+            [
+                "85bdf99247e98388"
+            ],
+            [
+                "626377ab5e395f04"
+            ]
+        ]
+    },
+    {
+        "id": "85bdf99247e98388",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Build Post Body (hr_leaves)",
+        "func": "const envPath = env.get(\"ENV_PATH\") || global.get(\"envPath\");\nmsg.url = `${envPath}/bms/bms/api/v1/data?dataset=hr_leaves`;\nmsg.headers = { authorization: msg.token, 'x-webui-request-id': msg.req?.headers?.['x-webui-request-id'] };\nmsg.rejectUnauthorized = false;\n\n// İstersen burada payload formatlama yapabilirsin\n// Şimdilik orijinal leaveRequest'i gönderiyoruz\nmsg.payload = msg.leaveRequest;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 580,
+        "y": 660,
+        "wires": [
+            [
+                "5a26475cca810f02"
+            ]
+        ]
+    },
+    {
+        "id": "5a26475cca810f02",
+        "type": "http request",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Post Leave",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "149134e7a8351b0d",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": true,
+        "headers": [],
+        "x": 790,
+        "y": 660,
+        "wires": [
+            [
+                "557350e3e96e8ac1"
+            ]
+        ]
+    },
+    {
+        "id": "557350e3e96e8ac1",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Set Success",
+        "func": "msg.statusCode = 200;\nmsg.payload = {\n  success: true,\n  code: \"CREATED\",\n  message: \"İzin talebi başarıyla oluşturuldu.\",\n  data: msg.payload // upstream'in döndürdüğü obje\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 970,
+        "y": 660,
+        "wires": [
+            [
+                "ddac981d01d46fb5",
+                "dfb53cecc0c2fb57"
+            ]
+        ]
+    },
+    {
+        "id": "ddac981d01d46fb5",
+        "type": "http response",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Success",
+        "statusCode": "",
+        "headers": {},
+        "x": 1190,
+        "y": 660,
+        "wires": []
+    },
+    {
+        "id": "626377ab5e395f04",
+        "type": "http response",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Error",
+        "statusCode": "",
+        "headers": {},
+        "x": 610,
+        "y": 720,
+        "wires": []
+    },
+    {
+        "id": "dfb53cecc0c2fb57",
+        "type": "debug",
+        "z": "f13a566ff2d8b3ae",
+        "name": "debug (success path)",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1150,
+        "y": 720,
+        "wires": []
+    },
+    {
+        "id": "35368e31f2e1d7f8",
+        "type": "debug",
+        "z": "f13a566ff2d8b3ae",
+        "name": "debug error",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 810,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "aa9ad2628b474019",
+        "type": "http in",
+        "z": "f13a566ff2d8b3ae",
+        "name": "PUT /set_employee_leave",
+        "url": "/set_employee_leave",
+        "method": "put",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 170,
+        "y": 800,
+        "wires": [
+            [
+                "a6b0bd573aaa2fa8"
+            ]
+        ]
+    },
+    {
+        "id": "a6b0bd573aaa2fa8",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Input Schema Validation",
+        "func": "// Zorunlu alanlar: employee_uid, type, day, start, end\n// Authorization header da kontrol edilir.\nconst err = (code, message, details={}) => {\n    msg.statusCode = code;\n    msg.payload = { success: false, code: \"VALIDATION_ERROR\", message, details };\n    return [null, msg];\n};\n\nconst auth = msg.req?.headers?.authorization;\nif (!auth) return err(401, \"Authorization header eksik.\");\n\nconst r = msg.payload || {};\nconst required = [\"employee_uid\", \"type\", \"day\", \"start\", \"end\"];\nfor (const k of required) {\n    if (r[k] === undefined || r[k] === null || r[k] === \"\") {\n        return err(400, `Eksik alan: ${k}`, { field: k });\n    }\n}\n\n// day sayısal ve > 0 olmalı\nconst day = Number(r.day);\nif (!Number.isFinite(day) || day <= 0) {\n    return err(400, \"'day' pozitif sayısal olmalı\", { field: \"day\" });\n}\n\n// Tarihler ISO önerilir, yine de Date parse deneriz\nconst start = new Date(r.start);\nconst end = new Date(r.end);\nif (isNaN(start.getTime()) || isNaN(end.getTime())) {\n    return err(400, \"Tarih(ler) parse edilemedi. ISO 8601 kullanın.\", { fields: [\"start\",\"end\"] });\n}\n\n// Yetkili mesajı devam etsin\nmsg.leaveRequest = r;\nmsg.token = auth;\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 210,
+        "y": 880,
+        "wires": [
+            [
+                "8f710fdc24e8d10d",
+                "cc4a7c5a62c4eeeb"
+            ],
+            [
+                "535742a849da94dd"
+            ]
+        ]
+    },
+    {
+        "id": "8f710fdc24e8d10d",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Rule Validation (Tarih Kuralları)",
+        "func": "msg.pastDayCount = 7;\n\nconst err = (code, message, details={}) => {\n    msg.statusCode = code;\n    msg.payload = { success:false, code:\"DATE_RULE_ERROR\", message, details };\n    return msg;\n};\n\nconst startDate = new Date(msg.leaveRequest.start);\nconst endDate = new Date(msg.leaveRequest.end);\n\nif (startDate > endDate){\n    return err(400, 'Bitiş tarihi, başlangıç tarihinden önce olamaz', { start: msg.leaveRequest.start, end: msg.leaveRequest.end });\n}\n\nconst now = new Date();\nconst pastDaysAgo = new Date(now);\npastDaysAgo.setDate(now.getDate() - msg.pastDayCount);\n\nif (startDate < pastDaysAgo) {\n    return err(400, `Geçmişe dönük izin talepleri en fazla ${msg.pastDayCount} gün öncesine kadar yapılabilir.`, { allowedFrom: pastDaysAgo.toISOString() });\n}\n\n// Onay bayrağı şimdilik true, tip doğrulamada kesinleşecek\nmsg.approved = true;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 880,
+        "wires": [
+            [
+                "6333a4e9a570d17c"
+            ]
+        ]
+    },
+    {
+        "id": "6333a4e9a570d17c",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Build User Leave Status Query",
+        "func": "const envPath = env.get(\"ENV_PATH\") || global.get(\"envPath\");\nconst localPath = env.get(\"LOCAL_PATH\") || global.get(\"localPath\");\n\nmsg.headers = { authorization: msg.token };\nmsg.url = `${localPath}/get_employee_leave_status`;\nmsg.payload = { uid: msg.leaveRequest.employee_uid };\nmsg.rejectUnauthorized = false;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 880,
+        "wires": [
+            [
+                "4672dfd34115652f"
+            ]
+        ]
+    },
+    {
+        "id": "4672dfd34115652f",
+        "type": "http request",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Get Employee Leave Status",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "149134e7a8351b0d",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": true,
+        "headers": [],
+        "x": 1090,
+        "y": 880,
+        "wires": [
+            [
+                "b9438cfd7b99a8df"
+            ]
+        ]
+    },
+    {
+        "id": "b9438cfd7b99a8df",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Type Validation (Bakiye/Limit/Cinsiyet)",
+        "func": "const s = msg.payload; // http request (ret=obj) sonucu\nif (!s) {\n    msg.statusCode = 502;\n    msg.payload = { success:false, code:\"UPSTREAM_ERROR\", message:\"Çalışan izin durumu alınamadı.\" };\n    return [null, msg];\n}\n\nmsg.userLeaveStatus = s;\nconst req = msg.leaveRequest;\n\nconst leaveType = (s.leaveTypes || []).find(x => x.__dataId === req.type);\nif (!leaveType) {\n    msg.statusCode = 400;\n    msg.payload = { success:false, code:\"INVALID_LEAVE_TYPE\", message:\"Geçersiz izin tipi.\" };\n    return [null, msg];\n}\n\n// Cinsiyet kontrolü\nif (leaveType.gender && leaveType.gender !== 'Tümü') {\n    const userGender = s.userInfo?.gender;\n\n    // Kullanıcıda cinsiyet tanımı yoksa\n    if (!userGender) {\n        msg.statusCode = 400;\n        msg.payload = {\n            success: false,\n            code: \"USER_GENDER_NOT_DEFINED\",\n            message: `${leaveType.name} için kullanıcının cinsiyet bilgisinin tanımlanması gerekmektedir.`\n        };\n        return [null, msg];\n    }\n\n    // Kullanıcıda cinsiyet var ama uyuşmuyor\n    if (leaveType.gender !== userGender) {\n        msg.statusCode = 400;\n        msg.payload = {\n            success: false,\n            code: \"GENDER_MISMATCH\",\n            message: `${leaveType.name} için cinsiyet uyuşmazlığı`\n        };\n        return [null, msg];\n    }\n}\n\n\n// Gün limitleri\nif (req.day > (leaveType.max_day ?? Number.MAX_SAFE_INTEGER)) {\n    msg.statusCode = 400;\n    msg.payload = { success:false, code:\"MAX_DAY_EXCEEDED\", message:`${leaveType.name} için azami süre aşımı` };\n    return [null, msg];\n}\nif (req.day > (leaveType.limit ?? Number.MAX_SAFE_INTEGER)) {\n    msg.statusCode = 400;\n    msg.payload = { success:false, code:\"LIMIT_EXCEEDED\", message:`${leaveType.name} için limit aşımı` };\n    return [null, msg];\n}\n\n// Bakiye kontrolü\nconst isYillik = leaveType.name === 'Yıllık İzin';\nconst statusKey = isYillik ? 'yillikIzin' : req.type;\nconst leaveUse = s.leaveStatus?.[statusKey] || {};\nconst usable = isYillik ? (leaveUse.gain ?? 0) : (leaveUse.usable ?? 0);\nconst allowNegative = (leaveType.negative_balance === true || leaveType.negative_balance === 'Evet');\n\nif (!allowNegative && req.day > (usable ?? 0)) {\n    msg.statusCode = 400;\n    msg.payload = { success:false, code:\"INSUFFICIENT_BALANCE\", message:`Talep ettiğiniz gün sayısı mevcut izin bakiyenizi aşıyor, en fazla ${usable ?? 0} gün izin kullanabilirsiniz` };\n    return [null, msg];\n}\n\n// Onaylandı → Post aşamasına geç\nmsg.leaveType = leaveType;\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 250,
+        "y": 940,
+        "wires": [
+            [
+                "259b31e4b550bb46"
+            ],
+            [
+                "535742a849da94dd"
+            ]
+        ]
+    },
+    {
+        "id": "259b31e4b550bb46",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Build PutBody (hr_leaves)",
+        "func": "const envPath = env.get(\"ENV_PATH\") || global.get(\"envPath\");\nmsg.url = `${envPath}/bms/bms/api/v1/data?dataset=hr_leaves`;\nmsg.headers = { authorization: msg.token, 'x-webui-request-id': msg.req?.headers?.['x-webui-request-id'] };\nmsg.rejectUnauthorized = false;\n\n// İstersen burada payload formatlama yapabilirsin\n// Şimdilik orijinal leaveRequest'i gönderiyoruz\nmsg.payload = msg.leaveRequest;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 590,
+        "y": 940,
+        "wires": [
+            [
+                "f3cfce8211da2773",
+                "cc4a7c5a62c4eeeb"
+            ]
+        ]
+    },
+    {
+        "id": "f3cfce8211da2773",
+        "type": "http request",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Put Leave",
+        "method": "PUT",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "149134e7a8351b0d",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": true,
+        "headers": [],
+        "x": 800,
+        "y": 940,
+        "wires": [
+            [
+                "bcf556efdb2703bb"
+            ]
+        ]
+    },
+    {
+        "id": "bcf556efdb2703bb",
+        "type": "function",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Set Success",
+        "func": "msg.statusCode = 200;\nmsg.payload = {\n  success: true,\n  code: \"UPDATED\",\n  message: \"İzin talebi başarıyla güncellendi.\",\n  data: msg.payload // upstream'in döndürdüğü obje\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 990,
+        "y": 940,
+        "wires": [
+            [
+                "2cc90b192dd18eec",
+                "6cb8d53f30b1b7fc"
+            ]
+        ]
+    },
+    {
+        "id": "2cc90b192dd18eec",
+        "type": "http response",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Success",
+        "statusCode": "",
+        "headers": {},
+        "x": 1210,
+        "y": 940,
+        "wires": []
+    },
+    {
+        "id": "535742a849da94dd",
+        "type": "http response",
+        "z": "f13a566ff2d8b3ae",
+        "name": "Error",
+        "statusCode": "",
+        "headers": {},
+        "x": 650,
+        "y": 1000,
+        "wires": []
+    },
+    {
+        "id": "6cb8d53f30b1b7fc",
+        "type": "debug",
+        "z": "f13a566ff2d8b3ae",
+        "name": "debug 7",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1140,
+        "y": 1000,
+        "wires": []
+    },
+    {
+        "id": "cc4a7c5a62c4eeeb",
+        "type": "debug",
+        "z": "f13a566ff2d8b3ae",
+        "name": "debug 41",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 600,
+        "y": 820,
+        "wires": []
+    },
+    {
+        "id": "8a1e41d18c18eca4",
+        "type": "debug",
+        "z": "f13a566ff2d8b3ae",
+        "name": "debug error",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1070,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "3ed8825dc5a16ff3",
+        "type": "inject",
+        "z": "d358cbd1e654d5c6",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "req.headers.authorization",
+                "v": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJnc0tyX012R25qT1lQck50SkRxMWw2bzBnOVhabTljaGRPa0hOdDdNMUZFIn0.eyJleHAiOjE3NTk5Mjk1MTIsImlhdCI6MTc1OTkyOTIxMiwianRpIjoib25ydHJ0Ojc5OTgwNjkzLTQxNDAtNDQxYS1hYTk0LWMxYTg2YTcxZjhhOCIsImlzcyI6Imh0dHBzOi8vdWRzLnV0ZXNrLmNsb3VkL2tleWNsb2FrL3JlYWxtcy9pc2ltIiwiYXVkIjpbImV4Y2hhbmdlX3Byb3h5X2NsaWVudCIsIm5leHRjbG91ZF9jbGllbnQiLCJyZWFsbS1tYW5hZ2VtZW50Il0sInN1YiI6IjgwM2RiYzMxLTJiN2MtNDI1My04MmExLTk1NjczYzQ3MjIyNiIsInR5cCI6IkJlYXJlciIsImF6cCI6IndlYl91aV9jbGllbnQiLCJzaWQiOiIzNGI5NmJkMi1jMjg4LTQ2ZTAtYjk5OC03YzA3Njg0NDEzZjkiLCJhY3IiOiIxIiwiYWxsb3dlZC1vcmlnaW5zIjpbIioiXSwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbImRlZmF1bHQtcm9sZXMtaXNpbSJdfSwicmVzb3VyY2VfYWNjZXNzIjp7InJlYWxtLW1hbmFnZW1lbnQiOnsicm9sZXMiOlsidmlldy11c2VycyIsInF1ZXJ5LWdyb3VwcyIsInF1ZXJ5LXVzZXJzIl19fSwic2NvcGUiOiJvcGVuaWQgY3VzdG9tX2F1ZGllbmNlIGN1c3RvbV9ncm91cCBjdXN0b21fdXNlcl9hdHRyaWJ1dGUgY3VzdG9tX3Njb3BlIHByb2ZpbGUgZW1haWwiLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsIl9fZGJOYW1lIjoiaXNpbV9pc2ltIiwicm9sZXMiOlsiQ08iXSwibGFzdF9uYW1lIjoiTWVyYWwiLCJpc0FkbWluIjoiZmFsc2UiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJzZXJrYW4ubWVyYWwiLCJnaXZlbl9uYW1lIjoiU2Vya2FuIiwiZGlzcGxheV9uYW1lIjoiU2Vya2FuIE1lcmFsIiwiY2xpZW50X2lkIjoid2ViX3VpX2NsaWVudCIsImF1dGhlbnRpY2F0b3JzLWNvbXBsZXRlZCI6IntcIjllMTBmMjhiLWE0NDAtNDZmYi05ZjhhLTk4Y2E2ZDFhNDI3ZVwiOjE3NTk5Mjc5NzUsXCIyNjVkOTQ1YS01ODI5LTQ5MzAtYmYwNS03MGVjZjA1ZWY4ZWRcIjoxNzU5OTI3OTc1fSIsInVpZCI6IjgwM2RiYzMxLTJiN2MtNDI1My04MmExLTk1NjczYzQ3MjIyNiIsIl9fb3duZXIiOiJpc2ltIiwiX19kb21haW4iOiJpc2ltIiwic2NvcGUiOiJvcGVuaWQiLCJuYW1lIjoiU2Vya2FuIE1lcmFsIiwiS0NfREVWSUNFX05PVEUiOiJleUpwY0VGa1pISmxjM01pT2lJeE1DNDBNaTR3TGpFaUxDSnZjeUk2SWs5MGFHVnlJaXdpYjNOV1pYSnphVzl1SWpvaVZXNXJibTkzYmlJc0ltSnliM2R6WlhJaU9pSkhieTFvZEhSd0xXTnNhV1Z1ZEM4eExqRWlMQ0prWlhacFkyVWlPaUpQZEdobGNpSXNJbXhoYzNSQlkyTmxjM01pT2pBc0ltMXZZbWxzWlNJNlptRnNjMlY5IiwiZmFtaWx5X25hbWUiOiJNZXJhbCIsImZpcnN0X25hbWUiOiJTZXJrYW4iLCJlbWFpbCI6InNlcmthbi5tZXJhbEBpc2ltcGxhdGZvcm0uaW8iLCJ1c2VybmFtZSI6InNlcmthbi5tZXJhbCJ9.qzpL-ZMOPFSDqcsWF1-xkamosY6071NO4vZEX51ufgB6joNxPBLAGgkctw9XSAvmzzgSkOKo0Y1xAr904dGVNF5CSD2QiDCcKJ2KaYy33YCZkJSboUstScj2pgXqatyuC_2s1aZaiTT3iRGYl2qMWAzq9QwUXeUK0dA7fLj1yrDoTt-89FXshxXnIsYudbKwCzAUX1DZb35xyZVKvueW-kN1RBCT0L5qSWyV8A7zQFmCFTqrzJuoCJNIN2W9vykPsE1TPR_g7Q78e-mGnsQXiJ3ffxFEFSK-UICgWaGqkj8GUKf9T6T4v7IoCNvcwIWv1aaiQF6G5Y5OZiLNogiYEg",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 100,
+        "y": 80,
+        "wires": [
+            [
+                "e8c7516a2abdab60"
+            ]
+        ]
+    },
+    {
+        "id": "f22bc3d7376077e7",
+        "type": "http request",
+        "z": "d358cbd1e654d5c6",
+        "name": "",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "https://uds.utesk.cloud/keycloak/admin/realms/isim/users?search=*&first=0&max=100",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 470,
+        "y": 80,
+        "wires": [
+            [
+                "78de66a0b642a75c"
+            ]
+        ]
+    },
+    {
+        "id": "78de66a0b642a75c",
+        "type": "debug",
+        "z": "d358cbd1e654d5c6",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 720,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "e8c7516a2abdab60",
+        "type": "function",
+        "z": "d358cbd1e654d5c6",
+        "name": "function 1",
+        "func": "\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 260,
+        "y": 80,
+        "wires": [
+            [
+                "f22bc3d7376077e7"
+            ]
+        ]
+    },
+    {
+        "id": "7df000291ff89a0b",
+        "type": "inject",
+        "z": "d358cbd1e654d5c6",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 120,
+        "y": 240,
+        "wires": [
+            [
+                "5bbd08431fedaa33"
+            ]
+        ]
+    },
+    {
+        "id": "5bbd08431fedaa33",
+        "type": "function",
+        "z": "d358cbd1e654d5c6",
+        "name": "function 2",
+        "func": "const username = \"serkan.meral\";\nconst password = \"%212345Qawsedrf\";\n\nmsg.url = global.get(\"envPath\") + \"tyk/gw/token/realms/isim/protocol/openid-connect/token\";\nmsg.payload = \"client_id=web_ui_client&grant_type=password&username=\"+username+\"&password=\"+password+\"&__owner=isim&__dbName=isim_isim&isAdmin=false&__domain=isim&scope=openid\"\nmsg.headers = {\n    \"accept\": \"application/json\",\n    \"accept-language\": \"en-GB,en-US;q=0.9,en;q=0.8\",\n    \"content-type\": \"application/x-www-form-urlencoded\",\n    \"priority\": \"u=1, i\",\n    \"sec-ch-ua\": \"\\\"Chromium\\\";v=\\\"140\\\", \\\"Not=A?Brand\\\";v=\\\"24\\\", \\\"Google Chrome\\\";v=\\\"140\\\"\",\n    \"sec-ch-ua-mobile\": \"?0\",\n    \"sec-ch-ua-platform\": \"\\\"Windows\\\"\",\n    \"sec-fetch-dest\": \"empty\",\n    \"sec-fetch-mode\": \"cors\",\n    \"sec-fetch-site\": \"same-origin\",\n    \"cookie\": \"locales=tr\",\n    \"Referer\": \"https://uds.utesk.cloud/sign-in\"    \n}\n\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 300,
+        "y": 240,
+        "wires": [
+            [
+                "fa8a038b8c11e392"
+            ]
+        ]
+    },
+    {
+        "id": "b4b12b3095efddc4",
+        "type": "debug",
+        "z": "d358cbd1e654d5c6",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 760,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "fa8a038b8c11e392",
+        "type": "http request",
+        "z": "d358cbd1e654d5c6",
+        "name": "",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 510,
+        "y": 240,
+        "wires": [
+            [
+                "b4b12b3095efddc4"
+            ]
+        ]
+    }
+]

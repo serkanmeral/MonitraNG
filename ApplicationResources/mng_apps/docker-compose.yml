@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  mngkeeper-api:
+    build:
+      context: ../../MngKeeper
+      dockerfile: Presentation/MngKeeper.Api/Dockerfile
+    container_name: mngkeeper_api
+    ports:
+      - "5001:5001"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5001
+      - ConnectionStrings__MongoDB=mongodb://admin:admin123@mongo:27017/mngkeeper?authSource=admin
+      - ConnectionStrings__RabbitMQ=amqp://admin:admin123@rabbitmq:5672
+      - ConnectionStrings__Redis=redis:6379,password=redis123
+      - MongoDB__DatabaseName=mngkeeper
+      - Mqtt__BrokerHost=mosquitto
+      - Mqtt__BrokerPort=1883
+      - Mqtt__Username=monitrang
+      - Mqtt__Password=!2345qawsedrf
+      - Mqtt__TopicPrefix=MNG
+      - Keycloak__BaseUrl=http://keycloak:8080
+      - Keycloak__AdminUsername=admin
+      - Keycloak__AdminPassword=admin123
+      - Keycloak__DefaultAdminPassword=Admin123!
+      - RabbitMQ__Host=rabbitmq
+      - RabbitMQ__Port=5672
+      - RabbitMQ__Username=admin
+      - RabbitMQ__Password=admin123
+      - RabbitMQ__VirtualHost=/
+    networks:
+      - mng_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  mng_network:
+    external: true

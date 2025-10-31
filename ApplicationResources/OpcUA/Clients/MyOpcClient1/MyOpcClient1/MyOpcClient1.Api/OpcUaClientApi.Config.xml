@@ -1,0 +1,21 @@
+﻿<ApplicationConfiguration>
+	<ApplicationName>OpcUaClientApi</ApplicationName>
+	<ApplicationUri>urn:localhost:OpcUaClientApi</ApplicationUri>
+	<SecurityConfiguration>
+		<ApplicationCertificate>
+			<StoreType>Directory</StoreType>
+			<StorePath>Certificates</StorePath>
+			<SubjectName>OpcUaClientApi</SubjectName>
+		</ApplicationCertificate>
+		<TrustedPeerCertificates>
+			<StoreType>Directory</StoreType>
+			<StorePath>Certificates/Trusted</StorePath>
+		</TrustedPeerCertificates>
+		<RejectedCertificateStore>
+			<StoreType>Directory</StoreType>
+			<StorePath>Certificates/Rejected</StorePath>
+		</RejectedCertificateStore>
+		<AutoAcceptUntrustedCertificates>true</AutoAcceptUntrustedCertificates>
+		<AddAppCertToTrustedStore>true</AddAppCertToTrustedStore>
+	</SecurityConfiguration>
+</ApplicationConfiguration>

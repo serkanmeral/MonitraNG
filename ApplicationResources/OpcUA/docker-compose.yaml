@@ -1,0 +1,18 @@
+version: '3.9'
+
+services:
+  opc-plc:
+    image: mcr.microsoft.com/iotedge/opc-plc:latest
+    container_name: opc-plc
+    ports:
+      - "50000:50000"       # OPC UA sunucusu portu
+      - "50001:50001"       # Prometheus endpoint portu
+    environment:
+      - PLC_PORT=50000       # OPC UA sunucusunun çalışacağı port
+      - NODES_TO_SIMULATE=5  # Simüle edilecek node sayısı
+      - SIMULATION_INTERVAL=2000 # Simülasyon güncelleme aralığı (ms)
+      - LOG_LEVEL=Info       # Günlük seviyesi
+      - AUTHENTICATION_USERNAME=yourUsername   # OPC UA kullanıcı adı
+      - AUTHENTICATION_PASSWORD=yourPassword   # OPC UA şifresi
+      - ACCESS_LEVEL=FULL_ACCESS
+    restart: always          # Konteynerin yeniden başlatılmasını sağlar

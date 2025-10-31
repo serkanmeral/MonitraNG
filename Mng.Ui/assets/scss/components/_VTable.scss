@@ -1,0 +1,133 @@
+.v-table .v-table__wrapper>table>tbody>tr:not(:last-child)>td,
+.v-table .v-table__wrapper>table>tbody>tr:not(:last-child)>th,
+.v-table .v-table__wrapper>table>thead>tr:last-child>th {
+    border-bottom: thin solid rgba(var(--v-border-color), 1) !important;
+}
+
+.v-table .v-table__wrapper>table>thead>tr>th {
+    color: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity));
+}
+
+.v-table>.v-table__wrapper>table>tbody>tr>th,
+.v-table>.v-table__wrapper>table>thead>tr>th,
+.v-table>.v-table__wrapper>table>tfoot>tr>th {
+    font-weight: 600;
+}
+
+.v-table {
+    &.v-theme--dark {
+        background: rgb(var(--v-theme-darkbg));
+        color: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity));
+        
+        .v-table__wrapper>table>tbody>tr:not(:last-child)>td {
+            border-bottom: thin solid rgba(var(--v-border-color), var(--v-border-opacity)) !important;
+        }
+        .v-table__wrapper>table>thead>tr:last-child>th{
+            border-bottom: thin solid rgba(var(--v-border-color), var(--v-border-opacity)) !important;
+        }
+    }
+}
+
+.v-data-table{
+    th.v-data-table__th{
+        font-size:16px;
+        color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+    }
+    td.v-data-table__td{
+        font-size: 14px;
+        text-wrap: nowrap;
+    }
+    .v-data-table-footer{
+        padding: 15px 8px;
+    }
+    .v-data-table-header__sort-badge{
+        background-color:rgb(var(--v-theme-borderColor)) !important;
+    }
+    .tdhead{
+        font-size:16px;
+    }
+}
+@media screen and (max-width:767px) {
+    .v-data-table-footer{
+        justify-content: center;
+    }
+}
+
+.crud-tbl{
+    .v-toolbar{
+         background:transparent;
+         .v-toolbar__content{
+              border-radius: 7px;
+         }
+    }
+}
+
+.v-pagination__item--is-active .v-btn__overlay {
+    opacity: 0.15 !important;
+}
+
+.v-table {
+
+
+    &.ticket-table {
+
+        table {
+            thead {
+                th {
+                    font-weight: 600 !important;
+                }
+            }
+
+            tbody {
+                tr {
+
+                    td {
+                        padding: 16px 16px !important;
+                    }
+                }
+            }
+        }
+
+    }
+
+    &.invoice-table {
+        .v-table__wrapper {
+            table {
+                thead {
+                    th {
+                        font-weight: 600 !important;
+                        padding: 0px 24px !important;
+
+                        &:first-child {
+                            padding-left: 0 !important;
+                        }
+
+                        &:last-child {
+                            padding-right: 0 !important;
+                        }
+
+                    }
+                }
+
+                tbody {
+                    tr {
+
+                        td {
+                            padding: 8px 24px !important;
+
+                            &:first-child {
+                                padding-left: 0 !important;
+                            }
+
+                            &:last-child {
+                                padding-right: 0 !important;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+    }
+}

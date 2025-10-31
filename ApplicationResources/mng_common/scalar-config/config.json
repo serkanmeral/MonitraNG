@@ -1,0 +1,32 @@
+{
+  "scalar": {
+    "title": "MngKeeper API Documentation",
+    "description": "Multi-tenant Domain Management System API",
+    "version": "1.0.0",
+    "theme": {
+      "primaryColor": "#6366f1",
+      "sidebar": {
+        "backgroundColor": "#f8fafc",
+        "textColor": "#1e293b"
+      }
+    },
+    "sidebar": {
+      "showSchemas": true,
+      "showServers": true,
+      "showExamples": true
+    },
+    "topbar": {
+      "showSearch": true,
+      "showDownloadButton": true
+    },
+    "footer": {
+      "enabled": true,
+      "text": "MngKeeper API Documentation"
+    }
+  },
+  "apiReference": {
+    "spec": {
+      "url": "http://mngkeeper_service:5001/swagger/v1/swagger.json"
+    }
+  }
+}
