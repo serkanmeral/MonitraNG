@@ -12,6 +12,16 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Load environment variables
+builder.Configuration.AddEnvironmentVariables();
+
+// Replace environment variable placeholders in configuration
+var certPassword = Environment.GetEnvironmentVariable("CERT_PASSWORD");
+if (!string.IsNullOrEmpty(certPassword))
+{
+    builder.Configuration["Kestrel:Endpoints:Https:Certificate:Password"] = certPassword;
+}
+
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -19,11 +29,8 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-// Configure Kestrel to listen on port 5001
-builder.WebHost.ConfigureKestrel(serverOptions =>
-{
-    serverOptions.ListenAnyIP(5001);
-});
+// Configure Kestrel (HTTP and HTTPS endpoints from appsettings)
+// Endpoints are configured in appsettings.Development.json or appsettings.Production.json
 
 // Add services to the container.
 builder.Services.AddControllers();

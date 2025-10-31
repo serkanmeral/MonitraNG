@@ -80,5 +80,11 @@ Desktop.ini
 appsettings.Production.json
 *.key
 *.pem
-*.pfx
+*-password.txt
+
+## Certificates (exclude production)
+ApplicationResources/Cert/production/
+ApplicationResources/Cert/staging/
+# Allow dev certificates (for team)
+!ApplicationResources/Cert/dev/*.pfx
 
