@@ -1,0 +1,6 @@
+{
+  "domainName": "minimal-domain",
+  "displayName": "Minimal Domain",
+  "adminEmail": "admin@minimal-domain.com",
+  "adminPassword": "MinPass123!"
+}

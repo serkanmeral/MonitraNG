@@ -1,0 +1,6 @@
+{
+  "domainName": "new-test-domain",
+  "displayName": "New Test Domain",
+  "adminEmail": "admin@new-test-domain.com",
+  "adminPassword": "Admin123!"
+}

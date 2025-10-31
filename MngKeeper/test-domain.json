@@ -1,0 +1,18 @@
+{
+  "domainName": "test-domain",
+  "displayName": "Test Domain",
+  "adminEmail": "admin@test-domain.com",
+  "adminPassword": "Admin123!",
+  "settings": {
+    "maxUsers": 50,
+    "maxAssets": 500,
+    "enableMqtt": true,
+    "mqttSettings": {
+      "brokerHost": "localhost",
+      "brokerPort": 1883,
+      "username": "testuser",
+      "password": "testpass",
+      "topicPrefix": "TEST"
+    }
+  }
+}

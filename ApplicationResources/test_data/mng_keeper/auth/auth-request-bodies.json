@@ -1,0 +1,102 @@
+{
+  "examples": {
+    "login_request": {
+      "description": "Kullanıcı girişi için request",
+      "request": {
+        "username": "admin@test-domain.com",
+        "password": "Admin123!",
+        "domainId": "test-domain"
+      }
+    },
+    "login_request_email": {
+      "description": "Email ile giriş",
+      "request": {
+        "email": "admin@test-domain.com",
+        "password": "Admin123!",
+        "domainId": "test-domain"
+      }
+    },
+    "refresh_token_request": {
+      "description": "Token yenileme request",
+      "request": {
+        "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "domainId": "test-domain"
+      }
+    },
+    "validate_token_request": {
+      "description": "Token doğrulama request",
+      "request": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "domainId": "test-domain"
+      }
+    },
+    "logout_request": {
+      "description": "Çıkış yapma request",
+      "request": {
+        "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "domainId": "test-domain"
+      }
+    },
+    "invalid_login": {
+      "description": "Geçersiz kullanıcı bilgileri (test için)",
+      "request": {
+        "username": "invalid@test-domain.com",
+        "password": "WrongPassword",
+        "domainId": "test-domain"
+      }
+    },
+    "empty_credentials": {
+      "description": "Boş kullanıcı bilgileri (test için)",
+      "request": {
+        "username": "",
+        "password": "",
+        "domainId": ""
+      }
+    }
+  },
+  "curl_examples": {
+    "login_curl": "curl -X POST http://localhost:5001/api/auth/login -H \"Content-Type: application/json\" -d @login-request.json",
+    "refresh_curl": "curl -X POST http://localhost:5001/api/auth/refresh -H \"Content-Type: application/json\" -d @refresh-token.json",
+    "validate_curl": "curl -X POST http://localhost:5001/api/auth/validate -H \"Content-Type: application/json\" -d @validate-token.json",
+    "logout_curl": "curl -X POST http://localhost:5001/api/auth/logout -H \"Content-Type: application/json\" -d @logout-request.json"
+  },
+  "response_examples": {
+    "successful_login": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+      "expiresIn": 3600,
+      "tokenType": "Bearer",
+      "user": {
+        "userId": "29f60d5f-e64d-4e73-9ec2-edf09f4d8e00",
+        "username": "admin@test-domain.com",
+        "email": "admin@test-domain.com",
+        "domainId": "test-domain",
+        "roles": ["admin", "user"]
+      },
+      "isSuccess": true,
+      "errorMessage": null
+    },
+    "invalid_credentials": {
+      "isSuccess": false,
+      "errorMessage": "Invalid username or password"
+    },
+    "token_validation_success": {
+      "isValid": true,
+      "user": {
+        "userId": "29f60d5f-e64d-4e73-9ec2-edf09f4d8e00",
+        "username": "admin@test-domain.com",
+        "email": "admin@test-domain.com",
+        "domainId": "test-domain",
+        "roles": ["admin", "user"]
+      },
+      "isSuccess": true,
+      "errorMessage": null
+    },
+    "token_validation_failed": {
+      "isValid": false,
+      "user": null,
+      "isSuccess": false,
+      "errorMessage": "Invalid or expired token"
+    }
+  }
+}

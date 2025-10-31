@@ -1,0 +1,99 @@
+{
+  "examples": {
+    "basic_domain": {
+      "description": "Temel domain oluşturma",
+      "request": {
+        "domainName": "test-domain",
+        "displayName": "Test Domain",
+        "adminEmail": "admin@test-domain.com",
+        "adminPassword": "Admin123!",
+        "settings": {
+          "maxUsers": 50,
+          "maxAssets": 500,
+          "enableMqtt": true,
+          "mqttSettings": {
+            "brokerHost": "localhost",
+            "brokerPort": 1883,
+            "username": "testuser",
+            "password": "testpass",
+            "topicPrefix": "TEST"
+          }
+        }
+      }
+    },
+    "production_domain": {
+      "description": "Production ortamı için domain",
+      "request": {
+        "domainName": "production-domain",
+        "displayName": "Production Domain",
+        "adminEmail": "admin@production-domain.com",
+        "adminPassword": "SecurePass123!",
+        "settings": {
+          "maxUsers": 1000,
+          "maxAssets": 10000,
+          "enableMqtt": true,
+          "mqttSettings": {
+            "brokerHost": "mqtt.production-domain.com",
+            "brokerPort": 1883,
+            "username": "produser",
+            "password": "prodpass123",
+            "topicPrefix": "PROD"
+          }
+        }
+      }
+    },
+    "development_domain": {
+      "description": "Development ortamı için domain",
+      "request": {
+        "domainName": "dev-domain",
+        "displayName": "Development Domain",
+        "adminEmail": "dev@dev-domain.com",
+        "adminPassword": "DevPass123!",
+        "settings": {
+          "maxUsers": 100,
+          "maxAssets": 1000,
+          "enableMqtt": false,
+          "mqttSettings": null
+        }
+      }
+    },
+    "minimal_domain": {
+      "description": "Minimum gerekli alanlarla domain",
+      "request": {
+        "domainName": "minimal-domain",
+        "displayName": "Minimal Domain",
+        "adminEmail": "admin@minimal-domain.com",
+        "adminPassword": "MinPass123!"
+      }
+    },
+    "invalid_domain": {
+      "description": "Geçersiz domain (test için)",
+      "request": {
+        "domainName": "",
+        "displayName": "",
+        "adminEmail": "invalid-email",
+        "adminPassword": "weak"
+      }
+    }
+  },
+  "curl_examples": {
+    "basic_curl": "curl -X POST http://localhost:5001/api/domaincrudtest -H \"Content-Type: application/json\" -d @test-domain.json",
+    "powershell_example": "Invoke-RestMethod -Uri \"http://localhost:5001/api/domaincrudtest\" -Method POST -Headers @{\"Content-Type\"=\"application/json\"} -Body $domainData"
+  },
+  "response_examples": {
+    "success_response": {
+      "domainId": "ba27c28f-aec6-4a5f-ae7b-c6f704fc5c54",
+      "domainName": "test-domain",
+      "databaseName": "mng_test-domain",
+      "adminUsername": "admin",
+      "adminEmail": "admin@test-domain.com",
+      "createdAt": "2025-08-12T20:43:26.8678114Z",
+      "isSuccess": true,
+      "errorMessage": null
+    },
+    "error_response": {
+      "isSuccess": false,
+      "errorMessage": "Domain with name 'test-domain' already exists."
+    }
+  }
+}
