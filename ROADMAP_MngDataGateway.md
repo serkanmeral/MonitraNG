@@ -1324,6 +1324,298 @@ GET    /api/datasets/{name}/query/{queryName}
 
 ---
 
+## 🔒 Production Readiness Checklist
+
+### ⚠️ Kritik - Production için Düzeltilmesi Gerekenler
+
+#### 1. JWT Authentication & Validation
+**Durum:** 🔴 Development mode (validation disabled)
+
+**Mevcut:**
+```csharp
+options.TokenValidationParameters = new TokenValidationParameters
+{
+    ValidateAudience = false,
+    ValidateIssuer = false,
+    ValidateIssuerSigningKey = false,
+    SignatureValidator = delegate (string token, TokenValidationParameters parameters)
+    {
+        var jwt = new JsonWebToken(token);
+        return jwt; // Doğrulama yapılmıyor!
+    }
+};
+```
+
+**Yapılacak:**
+- ✅ `ValidateIssuer = true` - Issuer doğrulaması aktif edilmeli
+- ✅ `ValidateIssuerSigningKey = true` - Signature validation aktif edilmeli
+- ✅ `ValidateAudience = true` (opsiyonel) - Audience kontrolü eklenebilir
+- ✅ Certificate validation bypass edilmemeli
+- ✅ Custom signature validator kaldırılmalı (standart validation kullanılmalı)
+
+**Öncelik:** 🔴 Yüksek
+
+---
+
+#### 2. CORS Policy
+**Durum:** 🔴 AllowAnyOrigin aktif
+
+**Mevcut:**
+```csharp
+builder.Services.AddCors(l =>
+{
+    l.AddPolicy("CorsPolicy", b =>
+        b.AllowAnyOrigin()  // ← Tüm origin'lere izin veriyor!
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .WithExposedHeaders("Content-Disposition"));
+});
+```
+
+**Yapılacak:**
+```csharp
+// Production için specific origin'ler tanımlanmalı
+b.WithOrigins(
+    "https://app.yourdomain.com",
+    "https://admin.yourdomain.com"
+)
+.AllowAnyMethod()
+.AllowAnyHeader()
+.WithExposedHeaders("Content-Disposition");
+```
+
+**Öncelik:** 🔴 Yüksek
+
+---
+
+#### 3. Exception Handler - Response Format
+**Durum:** 🟡 HTML yerine JSON dönmeli
+
+**Mevcut:**
+```csharp
+context.Response.ContentType = "text/html";  // ← API için uygun değil
+var errorMessage = $"{exceptionObject.Error.Message}";
+await context.Response.WriteAsync(errorMessage);
+```
+
+**Yapılacak:**
+```csharp
+context.Response.ContentType = "application/json";
+var errorResponse = new
+{
+    error = true,
+    message = exceptionObject.Error.Message,
+    timestamp = DateTime.UtcNow,
+    path = context.Request.Path
+};
+await context.Response.WriteAsJsonAsync(errorResponse);
+```
+
+**Öncelik:** 🟡 Orta
+
+---
+
+#### 4. Certificate Selection Logic
+**Durum:** 🟡 Kontrol edilmeli
+
+**Mevcut:**
+```csharp
+// Line 97-99 CertificateHandler.cs
+return string.IsNullOrEmpty(settings.CertificateSettings.DNS)
+    ? GetSignedCertificate(log, settings)      // DNS boş → signed
+    : CreateSelfSignedCertificate(log, settings.CertificateSettings.DNS); // DNS var → self-signed
+```
+
+**Soru:** 
+- DNS boşsa → Signed certificate kullanılıyor ✅
+- DNS doluysa → Self-signed oluşturuluyor ✅
+
+Bu mantık doğru mu? Yoksa tersine mi olmalı?
+
+**Yapılacak:**
+- Mantık kontrolü
+- Environment variable bazlı seçim (örn: `USE_SELF_SIGNED_CERT=true/false`)
+
+**Öncelik:** 🟡 Orta
+
+---
+
+### 💡 İyileştirme Önerileri
+
+#### 1. Certificate Handler - Error Handling
+**Durum:** ⚪ İyileştirilebilir
+
+**Mevcut:**
+```csharp
+catch (Exception ex)
+{
+    log.Error(ex, "Signed Cert Loading Error");
+}
+// Exception yutulur, boş certWithKey döner!
+```
+
+**Öneri:**
+```csharp
+catch (Exception ex)
+{
+    log.Fatal(ex, "Certificate loading failed - Application cannot start");
+    throw; // Application başlamasın
+}
+```
+
+**Öncelik:** 🟢 Düşük
+
+---
+
+#### 2. Health Check Endpoint
+**Durum:** ⚪ Yok
+
+**Öneri:**
+```csharp
+builder.Services.AddHealthChecks()
+    .AddMongoDb(mongoConnectionString, name: "mongodb")
+    .AddRabbitMQ(rabbitConnectionString, name: "rabbitmq");
+
+// Endpoint
+app.MapHealthChecks("/health");
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
+```
+
+**Faydalar:**
+- Kubernetes liveness/readiness probes
+- Monitoring sistemleri için
+- Dependency kontrolü (MongoDB, RabbitMQ)
+
+**Öncelik:** 🟢 Düşük
+
+---
+
+#### 3. Rate Limiting
+**Durum:** ⚪ Yok
+
+**Öneri:**
+```csharp
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("fixed", opt =>
+    {
+        opt.PermitLimit = 100;
+        opt.Window = TimeSpan.FromMinutes(1);
+    });
+});
+
+app.UseRateLimiter();
+```
+
+**Faydalar:**
+- API abuse önleme
+- DDoS koruması
+- Resource management
+
+**Öncelik:** 🟢 Düşük
+
+---
+
+#### 4. Metrics & Monitoring
+**Durum:** ⚪ Yok
+
+**Öneri:**
+```csharp
+// Application Insights
+builder.Services.AddApplicationInsightsTelemetry();
+
+// Prometheus metrics
+builder.Services.AddOpenTelemetry()
+    .WithMetrics(metrics =>
+    {
+        metrics.AddPrometheusExporter();
+        metrics.AddAspNetCoreInstrumentation();
+        metrics.AddHttpClientInstrumentation();
+    });
+```
+
+**Faydalar:**
+- Performance monitoring
+- Error tracking
+- Business metrics
+
+**Öncelik:** 🟢 Düşük
+
+---
+
+#### 5. Environment Variable Validation
+**Durum:** ⚪ Yok
+
+**Öneri:**
+```csharp
+// Startup'ta required environment variables kontrolü
+if (string.IsNullOrEmpty(datagatewaySettings?.MongoDB?.ConnectionString))
+{
+    throw new InvalidOperationException("MongoDB connection string is required!");
+}
+
+if (string.IsNullOrEmpty(datagatewaySettings?.Actors?.MngKeeper))
+{
+    throw new InvalidOperationException("MngKeeper URL is required!");
+}
+```
+
+**Öncelik:** 🟡 Orta
+
+---
+
+#### 6. Certificate Loading Test
+**Durum:** ⚪ Test edilmedi
+
+**Yapılacak:**
+- File-based certificate loading test
+- Environment variable-based loading test
+- PEM parsing test
+- RSA key import test
+
+**Öncelik:** 🟡 Orta
+
+---
+
+### 📋 Production Deployment Checklist
+
+#### Security
+- [ ] JWT validation aktif
+- [ ] CORS policy kısıtlı
+- [ ] HTTPS zorunlu (HTTP kapalı)
+- [ ] API keys/secrets environment variable'dan
+- [ ] Certificate doğru yükleniyor
+
+#### Performance
+- [ ] Rate limiting aktif
+- [ ] Connection pooling yapılandırıldı
+- [ ] Response caching (opsiyonel)
+- [ ] MongoDB index'ler oluşturuldu
+
+#### Monitoring
+- [ ] Health checks çalışıyor
+- [ ] Structured logging aktif
+- [ ] Metrics collection
+- [ ] Error tracking
+- [ ] Performance monitoring
+
+#### Reliability
+- [ ] Circuit breaker pattern (external API'ler için)
+- [ ] Retry policies
+- [ ] Timeout configuration
+- [ ] Graceful shutdown
+
+#### Documentation
+- [ ] API documentation güncel
+- [ ] Deployment guide hazır
+- [ ] Environment variables dokümante edildi
+- [ ] Troubleshooting guide
+
+---
+
 ## 🎉 Özet
 
 MngDataGateway, **sofistike ve esnek** bir veri yönetim sistemi sunacak:
