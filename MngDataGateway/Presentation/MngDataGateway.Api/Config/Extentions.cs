@@ -156,11 +156,18 @@ namespace MngDataGateway.Api.Config
 
             //if (app.Environment.IsDevelopment())
             {
-                app.UseSwagger();
+                // Swagger with custom route
+                app.UseSwagger(c =>
+                {
+                    c.RouteTemplate = "api-docs/{documentName}/swagger.json";
+                });
+                
                 app.UseSwaggerUI(c =>
                 {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "MngDataGateway API v1");
+                    c.SwaggerEndpoint("/api-docs/v1/swagger.json", "MngDataGateway API v1");
                     c.RoutePrefix = "swagger";
+                    c.DocumentTitle = "MngDataGateway API Documentation";
+                    c.DisplayRequestDuration();
                 });
             }
 
@@ -183,11 +190,11 @@ namespace MngDataGateway.Api.Config
             {
                 options
                     .WithTitle("MngDataGateway API")
-                    .WithTheme(ScalarTheme.Solarized)
+                    .WithTheme(ScalarTheme.Purple)
                     .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
                     .WithOpenApiRoutePattern("/api-docs/{documentName}/swagger.json");
 
-                options.AddServer(new ScalarServer(mngDataGatewaySettings.OpenApiServerPath));
+                options.AddServer(new ScalarServer(mngDataGatewaySettings.OpenApiServerPath, "MngDataGateway Server"));
             });
 
             // 9. Controller ve endpoint tanımlamaları (Map'ler en sonda)

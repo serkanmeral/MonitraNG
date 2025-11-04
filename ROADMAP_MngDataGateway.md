@@ -1467,7 +1467,62 @@ catch (Exception ex)
 
 ---
 
-#### 2. Health Check Endpoint
+#### 2. Scalar API Documentation Fix
+**Durum:** 🔴 Çalışmıyor
+
+**Mevcut Durum:**
+- Swagger UI çalışıyor ✅
+- Scalar UI boş ekran gösteriyor ❌
+- OpenAPI route: `/api-docs/v1/swagger.json` ✅
+- Scalar route pattern tanımlı ✅
+
+**Denenen Çözümler:**
+1. ❌ Route pattern kaldırma (ilk deneme)
+2. ❌ Theme değiştirme (Solarized → Purple)
+3. ❌ Route standardizasyonu (MngKeeper ile uyumlu hale getirme)
+   ```csharp
+   app.UseSwagger(c =>
+   {
+       c.RouteTemplate = "api-docs/{documentName}/swagger.json";
+   });
+   
+   app.MapScalarApiReference(options =>
+   {
+       options
+           .WithTitle("MngDataGateway API")
+           .WithTheme(ScalarTheme.Purple)
+           .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
+           .WithOpenApiRoutePattern("/api-docs/{documentName}/swagger.json");
+       
+       options.AddServer(new ScalarServer(settings.OpenApiServerPath));
+   });
+   ```
+
+**Olası Sebepler:**
+- MapOpenApi() ve Scalar arasında uyumsuzluk
+- .NET 9.0 + Scalar.AspNetCore 2.5.1 version uyumsuzluğu
+- Kestrel configuration ile çakışma
+- HTTPS certificate ile ilgili JavaScript loading problemi
+
+**Yapılacaklar:**
+- [ ] Scalar paket versiyonunu güncelle (2.5.1 → latest)
+- [ ] MapOpenApi() olmadan Scalar kullanmayı dene
+- [ ] Browser console'da JavaScript hatalarını kontrol et
+- [ ] MngKeeper'daki Scalar konfigürasyonu ile karşılaştır
+- [ ] Minimal API test projesi oluştur (isolated test)
+- [ ] Scalar GitHub issues'larını kontrol et
+- [ ] Alternative: Redoc veya SwaggerUI'ya geç
+
+**Workaround:**
+Swagger UI kullan (şu an çalışıyor): `https://localhost:5010/swagger`
+
+**Öncelik:** 🟡 Orta (Swagger çalıştığı için critical değil)
+
+**Not:** MngKeeper'da Scalar çalışıyor, oradaki konfigürasyonu referans al.
+
+---
+
+#### 3. Health Check Endpoint
 **Durum:** ⚪ Yok
 
 **Öneri:**
@@ -1493,7 +1548,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 
 ---
 
-#### 3. Rate Limiting
+#### 4. Rate Limiting
 **Durum:** ⚪ Yok
 
 **Öneri:**
@@ -1519,7 +1574,7 @@ app.UseRateLimiter();
 
 ---
 
-#### 4. Metrics & Monitoring
+#### 5. Metrics & Monitoring
 **Durum:** ⚪ Yok
 
 **Öneri:**
@@ -1546,7 +1601,7 @@ builder.Services.AddOpenTelemetry()
 
 ---
 
-#### 5. Environment Variable Validation
+#### 6. Environment Variable Validation
 **Durum:** ⚪ Yok
 
 **Öneri:**
@@ -1567,7 +1622,7 @@ if (string.IsNullOrEmpty(datagatewaySettings?.Actors?.MngKeeper))
 
 ---
 
-#### 6. Certificate Loading Test
+#### 7. Certificate Loading Test
 **Durum:** ⚪ Test edilmedi
 
 **Yapılacak:**
