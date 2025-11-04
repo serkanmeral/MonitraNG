@@ -1,119 +1,56 @@
-using MngKeeper.Application.Interfaces;
-using MngKeeper.Infrastructure.Services;
-using MngKeeper.Infrastructure.Persistence.Repositories;
-using MediatR;
-using System.Reflection;
-using MongoDB.Driver;
+using MngKeeper.Api.Config;
+using MngKeeper.Application;
+using MngKeeper.Application.Configuration;
+using MngKeeper.Infrastructure.Services.Certificate;
+using Microsoft.Extensions.Logging;
 using Serilog;
-using MngKeeper.Api.Middleware;
-using HotChocolate.AspNetCore;
-using MngKeeper.Api.Configuration;
-using Scalar.AspNetCore;
+using System.Security.Cryptography.X509Certificates;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Load environment variables
 builder.Configuration.AddEnvironmentVariables();
 
-// Replace environment variable placeholders in configuration
-var certPassword = Environment.GetEnvironmentVariable("CERT_PASSWORD");
-if (!string.IsNullOrEmpty(certPassword))
+// Load settings
+var keeperSettings = builder.Configuration.GetSection("MngKeeperSettings").Get<MngKeeperSettings>();
+if (keeperSettings == null)
 {
-    builder.Configuration["Kestrel:Endpoints:Https:Certificate:Password"] = certPassword;
+    throw new InvalidOperationException("MngKeeperSettings configuration is required!");
 }
 
-// Configure Serilog
-Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
-    .CreateLogger();
+// Initialize Serilog
+var log = builder.InitSerilog();
 
-builder.Host.UseSerilog();
-
-// Configure Kestrel (HTTP and HTTPS endpoints from appsettings)
-// Endpoints are configured in appsettings.Development.json or appsettings.Production.json
-
-// Add services to the container.
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-
-// Add Swagger Configuration
-builder.Services.AddSwaggerConfiguration();
-
-// Add GraphQL with HotChocolate
-builder.Services.AddGraphQLServer()
-    .AddQueryType<MngKeeper.Api.GraphQL.Query>();
-
-// Add MediatR
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(MngKeeper.Application.Features.Domain.Commands.CreateDomain.CreateDomainCommand).Assembly));
-
-// Add MongoDB (simplified)
-builder.Services.AddSingleton<IMongoClient>(provider =>
+// Get certificate (if configured)
+X509Certificate2? certificate = null;
+try
 {
-    var connectionString = builder.Configuration["ConnectionStrings:MongoDB"] ?? "mongodb://localhost:27017";
-    return new MongoDB.Driver.MongoClient(connectionString);
-});
-
-builder.Services.AddSingleton<IMongoDatabase>(provider =>
+    if (!string.IsNullOrEmpty(keeperSettings.CertificateSettings?.MNG_CERT_FILE) ||
+        !string.IsNullOrEmpty(keeperSettings.CertificateSettings?.DNS))
+    {
+        // Create a temporary logger factory for certificate handler
+        using var loggerFactory = LoggerFactory.Create(builder => builder.AddSerilog(log));
+        var logger = loggerFactory.CreateLogger("CertificateHandler");
+        certificate = CertificateHandler.GetCertificate(logger, keeperSettings);
+    }
+}
+catch (Exception ex)
 {
-    var client = provider.GetRequiredService<IMongoClient>();
-    var databaseName = builder.Configuration["MongoDB:DatabaseName"] ?? "MngKeeper";
-    return client.GetDatabase(databaseName);
-});
+    log.Warning(ex, "Certificate loading failed, continuing without custom certificate");
+}
 
-// Add Repositories
-builder.Services.AddScoped<IDomainRepository, DomainRepository>();
-builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IGroupRepository, GroupRepository>();
+// Initialize services
+builder.InitWebApp(certificate);
+builder.InitOpenApi();
 
-        // Add Services
-        builder.Services.AddHttpClient();
-        builder.Services.AddScoped<IKeycloakService, KeycloakService>();
-builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
-builder.Services.AddScoped<IJwtTokenParserService, JwtTokenParserService>();
-builder.Services.AddScoped<IRabbitMqService, RabbitMqService>();
-builder.Services.AddScoped<IEventPublisher, EventPublisher>();
-builder.Services.AddScoped<IRedisService, RedisService>();
-builder.Services.AddScoped<ISessionService, SessionService>();
-builder.Services.AddScoped<IMqttService, MqttService>();
-builder.Services.AddHttpContextAccessor();
-
-// Add Services (commented out external dependencies for now)
-// builder.Services.AddScoped<IMqttService, MqttService>();
-// builder.Services.AddScoped<ICacheService, RedisCacheService>();
+// Add application services
+builder.Services.AddApplicationServices(keeperSettings);
+builder.Services.AddInfrastructureServices();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwaggerConfiguration(app.Environment);
-    
-    // Add Scalar API Reference (Modern UI)
-    app.MapScalarApiReference(options =>
-    {
-        options
-            .WithTitle("MngKeeper API")
-            .WithTheme(ScalarTheme.Purple)
-            .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
-            .WithOpenApiRoutePattern("/api-docs/{documentName}/swagger.json");
-    });
-}
-
-app.UseHttpsRedirection();
-
-// Add Global Exception Handler
-app.UseGlobalExceptionHandler();
-
-// Serve static files for Swagger UI customization
-app.UseStaticFiles();
-
-app.UseAuthorization();
-app.MapControllers();
-
-// Map GraphQL endpoint
-app.MapGraphQL();
+// Configure middleware pipeline
+app.UseApplicationSettings(keeperSettings, app.Environment);
 
 try
 {
