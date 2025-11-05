@@ -2344,25 +2344,873 @@ Future: Message analytics
 
 ---
 
+## 💾 Redis Cache Strategy - Domain Users & Groups
+
+### 🎯 Problem Statement
+
+**Performance Issue:**
+```
+MngDataGateway - persons field enrichment:
+
+Scenario: 100 tasks with assignedTo field (type: persons)
+  ↓
+Current: 100 HTTP calls to MngKeeper
+  GET /api/users/{id} × 100
+  Total latency: 100 × 50ms = 5,000ms (5 seconds) 😱
+
+Solution: Redis cache (domain-based)
+  1 Redis batch read
+  Total latency: ~10ms 🚀
+  Performance improvement: 500x faster!
+```
+
+---
+
+### 📋 Cache Structure Design
+
+#### Cache Keys Pattern:
+```
+domain:{domain-name}:users          → Hash<user-id, UserJson>
+domain:{domain-name}:groups         → Hash<group-id, GroupJson>
+domain:{domain-name}:metadata       → String (last update, count)
+```
+
+#### User Hash Entry:
+```
+Key: domain:test-domain:users
+Field: user-id-123
+Value: {
+  "id": "user-id-123",
+  "email": "john@test-domain.com",
+  "firstName": "John",
+  "lastName": "Doe",
+  "username": "john.doe",
+  "groups": [
+    { "id": "group-1", "name": "admins" },
+    { "id": "group-2", "name": "managers" }
+  ]
+}
+```
+
+#### Group Hash Entry:
+```
+Key: domain:test-domain:groups
+Field: group-id-1
+Value: {
+  "id": "group-id-1",
+  "name": "admins",
+  "description": "Administrators",
+  "users": [
+    { 
+      "id": "user-id-123", 
+      "email": "john@test-domain.com", 
+      "firstName": "John", 
+      "lastName": "Doe" 
+    }
+  ]
+}
+```
+
+**Why Hash?**
+- ✅ Partial updates (single user update)
+- ✅ Efficient lookups (O(1) per user)
+- ✅ Memory efficient
+- ✅ Atomic operations
+
+---
+
+### 🔄 MngKeeper - Cache Update Strategy
+
+**Pattern:** Immediate Update (Write-Through)
+
+**CRUD Operations:**
+
+#### CREATE User:
+```csharp
+public async Task<IActionResult> CreateUser(CreateUserRequest request)
+{
+    // 1. Create in Keycloak
+    var userInfo = await _keycloakService.CreateUserAsync(realmName, request);
+    
+    // 2. Save to MongoDB
+    var user = await _userRepository.AddAsync(user);
+    
+    // 3. Update Redis cache ← NEW
+    await _domainCacheService.SetUserCacheAsync(domainName, user);
+    
+    // 4. Publish event (RabbitMQ) - optional
+    await _eventPublisher.PublishAsync(new UserCreatedEvent { ... });
+    
+    return Ok(user);
+}
+```
+
+#### UPDATE User:
+```csharp
+public async Task<IActionResult> UpdateUser(string id, UpdateUserRequest request)
+{
+    // 1. Update in Keycloak
+    await _keycloakService.UpdateUserAsync(realmName, id, request);
+    
+    // 2. Update in MongoDB
+    var user = await _userRepository.UpdateAsync(user);
+    
+    // 3. Update Redis cache ← NEW
+    await _domainCacheService.SetUserCacheAsync(domainName, user);
+    
+    return Ok(user);
+}
+```
+
+#### DELETE User:
+```csharp
+public async Task<IActionResult> DeleteUser(string id)
+{
+    var domainName = GetDomainFromToken();
+    
+    // Get user first (to update related caches)
+    var user = await _userRepository.GetByIdAsync(id);
+    
+    // 1. Delete from Keycloak
+    await _keycloakService.DeleteUserAsync(realmName, id);
+    
+    // 2. Delete from MongoDB
+    await _userRepository.DeleteAsync(id);
+    
+    // 3. Remove from Redis cache ← NEW
+    await _domainCacheService.RemoveUserCacheAsync(domainName, id);
+    
+    // 4. Update group caches (remove user from groups)
+    foreach (var group in user.Groups)
+    {
+        await _domainCacheService.RemoveUserFromGroupCacheAsync(domainName, group.Id, id);
+    }
+    
+    return Ok();
+}
+```
+
+#### Add User to Group:
+```csharp
+public async Task<IActionResult> AddUserToGroup(string userId, string groupId)
+{
+    var domainName = GetDomainFromToken();
+    
+    // 1. Add in Keycloak
+    await _keycloakService.AddUserToGroupAsync(realmName, userId, groupId);
+    
+    // 2. Update in MongoDB
+    await _userRepository.AddToGroupAsync(userId, groupId);
+    await _groupRepository.AddUserAsync(groupId, userId);
+    
+    // 3. Update Redis cache (bidirectional) ← NEW
+    await _domainCacheService.UpdateUserGroupMembershipAsync(domainName, userId, groupId);
+    
+    return Ok();
+}
+```
+
+---
+
+### Bidirectional Cache Update:
+
+```csharp
+// DomainCacheService.cs
+public async Task UpdateUserGroupMembershipAsync(string domainName, string userId, string groupId)
+{
+    // 1. Add group to user's groups list
+    var userKey = $"domain:{domainName}:users";
+    var userData = await _redis.HashGetAsync(userKey, userId);
+    
+    if (!userData.IsNullOrEmpty)
+    {
+        var user = JsonSerializer.Deserialize<UserCacheData>(userData);
+        
+        // Get group info
+        var groupKey = $"domain:{domainName}:groups";
+        var groupData = await _redis.HashGetAsync(groupKey, groupId);
+        var group = JsonSerializer.Deserialize<GroupCacheData>(groupData);
+        
+        // Add group to user
+        if (!user.Groups.Any(g => g.Id == groupId))
+        {
+            user.Groups.Add(new { Id = group.Id, Name = group.Name });
+            await _redis.HashSetAsync(userKey, userId, JsonSerializer.Serialize(user));
+        }
+        
+        // Add user to group
+        if (!group.Users.Any(u => u.Id == userId))
+        {
+            group.Users.Add(new {
+                Id = user.Id,
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName
+            });
+            await _redis.HashSetAsync(groupKey, groupId, JsonSerializer.Serialize(group));
+        }
+    }
+}
+```
+
+---
+
+### 📖 MngDataGateway - Cache Read Implementation
+
+#### Batch User Lookup:
+
+```csharp
+// MngDataGateway - PersonsFieldEnricher.cs
+public async Task<List<UserData>> EnrichPersonsFieldAsync(
+    string domainName, 
+    List<string> userIds)
+{
+    var cacheKey = $"domain:{domainName}:users";
+    var users = new List<UserData>();
+    
+    // Batch read from Redis hash
+    foreach (var userId in userIds)
+    {
+        var userData = await _redis.HashGetAsync(cacheKey, userId);
+        
+        if (!userData.IsNullOrEmpty)
+        {
+            users.Add(JsonSerializer.Deserialize<UserData>(userData));
+        }
+        else
+        {
+            // Cache miss - fallback to API
+            var user = await GetUserFromApiAsync(domainName, userId);
+            if (user != null)
+            {
+                users.Add(user);
+            }
+        }
+    }
+    
+    return users;
+}
+```
+
+#### Query Optimization Example:
+
+```csharp
+// Before cache:
+var tasks = await GetTasksAsync();  // 100 tasks
+foreach (var task in tasks)
+{
+    // 100 HTTP calls
+    task.AssignedToUser = await _httpClient.GetAsync($"/api/users/{task.AssignedTo}");
+}
+// Total: ~5 seconds
+
+// With cache:
+var tasks = await GetTasksAsync();  // 100 tasks
+var userIds = tasks.Select(t => t.AssignedTo).Distinct().ToList();  // 50 unique users
+var users = await _redisService.GetUsersAsync(domainName, userIds);  // 1 call
+var userDict = users.ToDictionary(u => u.Id);
+
+foreach (var task in tasks)
+{
+    task.AssignedToUser = userDict.GetValueOrDefault(task.AssignedTo);
+}
+// Total: ~10ms 🚀
+```
+
+---
+
+### 🔌 MngKeeper Batch API Endpoint:
+
+```csharp
+// UserController.cs
+/// <summary>
+/// Get multiple users by IDs (optimized for cache population)
+/// </summary>
+[HttpPost("batch")]
+public async Task<IActionResult> GetUsersBatch([FromBody] GetUsersBatchRequest request)
+{
+    var domainName = GetDomainFromToken();
+    
+    // Try cache first
+    var users = await _domainCacheService.GetUsersAsync(domainName, request.UserIds);
+    
+    return Ok(new
+    {
+        users = users,
+        source = users.Count == request.UserIds.Count ? "cache" : "mixed",
+        requestedCount = request.UserIds.Count,
+        foundCount = users.Count
+    });
+}
+```
+
+**Usage from MngDataGateway:**
+```csharp
+// Single API call for multiple users
+var response = await _httpClient.PostAsync(
+    "https://localhost:5001/api/users/batch",
+    new { userIds = new[] { "user-1", "user-2", "user-3" } }
+);
+```
+
+---
+
+### ⚡ Performance Benefits
+
+**Comparison Table:**
+
+| Scenario | Without Cache | With Cache | Improvement |
+|----------|--------------|------------|-------------|
+| 100 users lookup | 5,000ms (100 calls) | 10ms (1 call) | **500x** |
+| 50 users lookup | 2,500ms (50 calls) | 8ms (1 call) | **312x** |
+| 10 users lookup | 500ms (10 calls) | 5ms (1 call) | **100x** |
+| Single user lookup | 50ms (1 call) | 2ms (1 call) | **25x** |
+
+**Memory Usage:**
+```
+Average user object: ~500 bytes
+100 users: ~50KB
+1000 users (large domain): ~500KB
+10 domains × 1000 users: ~5MB
+
+Negligible for modern Redis instances
+```
+
+---
+
+### 🔄 Cache Lifecycle
+
+#### Domain Creation:
+```
+Step 9: Initialize Cache
+  ↓
+Load admin user + default groups
+  ↓
+Populate Redis cache
+  ↓
+Cache ready for use
+```
+
+#### User CRUD:
+```
+CREATE → Add to cache
+UPDATE → Update in cache
+DELETE → Remove from cache + update related groups
+```
+
+#### Group CRUD:
+```
+CREATE → Add to cache
+UPDATE → Update in cache
+DELETE → Remove from cache + update related users
+ADD_USER → Update both user and group cache
+REMOVE_USER → Update both user and group cache
+```
+
+---
+
+### 🛡️ Cache Consistency Strategy
+
+**Consistency Model:** Eventual Consistency (acceptable)
+
+**Write Pattern:** Write-Through
+```
+1. Update primary source (Keycloak + MongoDB)
+2. Update cache immediately
+3. If cache update fails → Log error, continue
+   (Cache will be refreshed on next read or periodic refresh)
+```
+
+**Read Pattern:** Cache-Aside
+```
+1. Check cache
+2. If hit → Return from cache
+3. If miss → Load from source + Update cache
+```
+
+**Conflict Resolution:**
+```
+Cache out of sync?
+  ↓
+Periodic refresh (safety net, every 1 hour)
+  ↓
+Or manual refresh endpoint:
+  POST /api/cache/refresh?domain={domain-name}
+```
+
+---
+
+### 🔧 Cache Service Implementation
+
+```csharp
+// MngKeeper.Infrastructure - DomainCacheService.cs
+public interface IDomainCacheService
+{
+    // Users
+    Task SetUserCacheAsync(string domainName, User user);
+    Task RemoveUserCacheAsync(string domainName, string userId);
+    Task<List<UserCacheData>> GetUsersAsync(string domainName, List<string> userIds);
+    Task<UserCacheData?> GetUserAsync(string domainName, string userId);
+    Task RefreshUsersCacheAsync(string domainName);
+    
+    // Groups
+    Task SetGroupCacheAsync(string domainName, Group group);
+    Task RemoveGroupCacheAsync(string domainName, string groupId);
+    Task<List<GroupCacheData>> GetGroupsAsync(string domainName, List<string> groupIds);
+    Task<GroupCacheData?> GetGroupAsync(string domainName, string groupId);
+    Task RefreshGroupsCacheAsync(string domainName);
+    
+    // Membership
+    Task UpdateUserGroupMembershipAsync(string domainName, string userId, string groupId);
+    Task RemoveUserFromGroupCacheAsync(string domainName, string groupId, string userId);
+    
+    // Bulk operations
+    Task InitializeDomainCacheAsync(string domainName);
+    Task ClearDomainCacheAsync(string domainName);
+    
+    // Metadata
+    Task<CacheMetadata> GetMetadataAsync(string domainName);
+}
+```
+
+---
+
+### 📊 Cache Metadata
+
+```csharp
+// Track cache status per domain
+public class CacheMetadata
+{
+    public DateTime UsersLastUpdate { get; set; }
+    public DateTime GroupsLastUpdate { get; set; }
+    public int UsersCount { get; set; }
+    public int GroupsCount { get; set; }
+    public string Status { get; set; }  // "ready", "refreshing", "error"
+}
+
+// Redis key: domain:{domain-name}:metadata
+{
+  "usersLastUpdate": "2025-11-05T14:30:00Z",
+  "groupsLastUpdate": "2025-11-05T14:30:00Z",
+  "usersCount": 45,
+  "groupsCount": 8,
+  "status": "ready"
+}
+```
+
+---
+
+### 🎯 MngDataGateway Integration
+
+#### Cache Read Service:
+
+```csharp
+// MngDataGateway.Infrastructure - MngKeeperCacheService.cs
+public class MngKeeperCacheService : IMngKeeperCacheService
+{
+    private readonly IRedisService _redis;
+    private readonly HttpClient _httpClient;
+    
+    public async Task<List<UserData>> GetUsersAsync(string domainName, List<string> userIds)
+    {
+        var cacheKey = $"domain:{domainName}:users";
+        var users = new List<UserData>();
+        var missedIds = new List<string>();
+        
+        // Batch read from cache
+        foreach (var userId in userIds.Distinct())
+        {
+            var userData = await _redis.HashGetAsync(cacheKey, userId);
+            
+            if (!userData.IsNullOrEmpty)
+            {
+                users.Add(JsonSerializer.Deserialize<UserData>(userData));
+            }
+            else
+            {
+                missedIds.Add(userId);  // Cache miss
+            }
+        }
+        
+        // Fallback: API call for missed users
+        if (missedIds.Any())
+        {
+            var fallbackUsers = await GetUsersFromApiAsync(domainName, missedIds);
+            users.AddRange(fallbackUsers);
+        }
+        
+        return users;
+    }
+    
+    private async Task<List<UserData>> GetUsersFromApiAsync(
+        string domainName, 
+        List<string> userIds)
+    {
+        // Call MngKeeper batch endpoint
+        var response = await _httpClient.PostAsJsonAsync(
+            "https://localhost:5001/api/users/batch",
+            new { userIds }
+        );
+        
+        if (response.IsSuccessStatusCode)
+        {
+            var result = await response.Content.ReadAsAsync<GetUsersBatchResponse>();
+            return result.Users;
+        }
+        
+        return new List<UserData>();
+    }
+}
+```
+
+#### persons Field Enrichment:
+
+```csharp
+// MngDataGateway - DataEnrichmentService.cs
+public async Task<List<object>> EnrichDataAsync(
+    string domainName,
+    List<object> data,
+    Dataset schema)
+{
+    foreach (var record in data)
+    {
+        foreach (var field in schema.Fields.Where(f => f.FieldType == FieldType.Persons))
+        {
+            var userIds = GetFieldValue(record, field.Name) as List<string>;
+            
+            if (userIds?.Any() == true)
+            {
+                // ✅ Single cache call for all users
+                var users = await _mngKeeperCache.GetUsersAsync(domainName, userIds);
+                SetFieldValue(record, $"{field.Name}_data", users);
+            }
+        }
+        
+        foreach (var field in schema.Fields.Where(f => f.FieldType == FieldType.PersonGroups))
+        {
+            var groupIds = GetFieldValue(record, field.Name) as List<string>;
+            
+            if (groupIds?.Any() == true)
+            {
+                // ✅ Single cache call for all groups
+                var groups = await _mngKeeperCache.GetGroupsAsync(domainName, groupIds);
+                SetFieldValue(record, $"{field.Name}_data", groups);
+            }
+        }
+    }
+    
+    return data;
+}
+```
+
+---
+
+### 🔄 Cache Initialization (Domain Creation)
+
+**MngKeeper - CreateDomainPipeline:**
+
+```
+Step 9: Initialize Domain Cache (NEW)
+  ↓
+After admin user and groups created:
+  ↓
+Load all users and groups
+  ↓
+Populate Redis cache:
+  - domain:{domain-name}:users
+  - domain:{domain-name}:groups
+  - domain:{domain-name}:metadata
+```
+
+**Implementation:**
+```csharp
+// Step 9 in CreateDomainPipeline
+public class InitializeDomainCacheStep : IDomainCreationStep
+{
+    public async Task<StepResult> ExecuteAsync(DomainCreationContext context)
+    {
+        var domainName = context.DomainName;
+        
+        // Load users
+        var users = await _userRepository.GetByDomainAsync(domainName);
+        foreach (var user in users)
+        {
+            await _cacheService.SetUserCacheAsync(domainName, user);
+        }
+        
+        // Load groups
+        var groups = await _groupRepository.GetByDomainAsync(domainName);
+        foreach (var group in groups)
+        {
+            await _cacheService.SetGroupCacheAsync(domainName, group);
+        }
+        
+        // Set metadata
+        await _cacheService.UpdateMetadataAsync(domainName, new CacheMetadata
+        {
+            UsersLastUpdate = DateTime.UtcNow,
+            GroupsLastUpdate = DateTime.UtcNow,
+            UsersCount = users.Count,
+            GroupsCount = groups.Count,
+            Status = "ready"
+        });
+        
+        _logger.LogInformation("Domain cache initialized: {DomainName}", domainName);
+        
+        return StepResult.Success();
+    }
+    
+    public async Task RollbackAsync(DomainCreationContext context)
+    {
+        // Clear cache if initialization fails
+        await _cacheService.ClearDomainCacheAsync(context.DomainName);
+    }
+}
+```
+
+---
+
+### 🔄 Cache Refresh Mechanisms
+
+#### Option 1: On-Demand Refresh (Primary)
+```
+Every CRUD operation updates cache immediately
+No periodic refresh needed
+```
+
+#### Option 2: Periodic Refresh (Safety Net)
+```csharp
+// Background service
+public class DomainCacheRefreshService : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+            
+            // Get all active domains
+            var domains = await _domainRepository.GetActiveDomainsAsync();
+            
+            foreach (var domain in domains)
+            {
+                try
+                {
+                    await _cacheService.RefreshUsersCacheAsync(domain.Name);
+                    await _cacheService.RefreshGroupsCacheAsync(domain.Name);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Cache refresh failed for {Domain}", domain.Name);
+                }
+            }
+        }
+    }
+}
+```
+
+#### Option 3: Manual Refresh Endpoint
+```csharp
+// Admin endpoint for manual cache refresh
+[HttpPost("cache/refresh")]
+[Authorize(Roles = "admin")]
+public async Task<IActionResult> RefreshCache([FromQuery] string? domainName = null)
+{
+    if (string.IsNullOrEmpty(domainName))
+    {
+        // Refresh all domains
+        var domains = await _domainRepository.GetAllAsync();
+        foreach (var domain in domains)
+        {
+            await _cacheService.RefreshDomainCacheAsync(domain.Name);
+        }
+    }
+    else
+    {
+        // Refresh specific domain
+        await _cacheService.RefreshDomainCacheAsync(domainName);
+    }
+    
+    return Ok(new { message = "Cache refreshed successfully" });
+}
+```
+
+---
+
+### 🏷️ Cache TTL Strategy
+
+**Recommendation:** No Expiration (Manual Invalidation Only)
+
+**Why:**
+```
+✅ User/Group data doesn't change frequently
+✅ CRUD operations always update cache
+✅ No stale data risk
+✅ Memory efficient (only active domains)
+✅ Predictable behavior
+```
+
+**Alternative (Hybrid):**
+```
+TTL: 24 hours (safety net)
+On CRUD: Update cache + Reset TTL
+On cache miss: Load from source + Cache
+```
+
+**Configuration:**
+```csharp
+// appsettings.json
+"Redis": {
+  "ConnectionString": "localhost:6379,password=redis123",
+  "CacheSettings": {
+    "DomainUsers": {
+      "TTL": null,  // No expiration
+      "RefreshInterval": 3600  // 1 hour (background refresh)
+    },
+    "DomainGroups": {
+      "TTL": null,
+      "RefreshInterval": 3600
+    }
+  }
+}
+```
+
+---
+
+### 🎯 Cache Invalidation Rules
+
+#### User Changes:
+```
+CREATE User       → Add to cache
+UPDATE User       → Update in cache
+DELETE User       → Remove from cache + update related groups
+ADD_TO_GROUP      → Update user cache + group cache
+REMOVE_FROM_GROUP → Update user cache + group cache
+```
+
+#### Group Changes:
+```
+CREATE Group      → Add to cache
+UPDATE Group      → Update in cache (name, description only)
+DELETE Group      → Remove from cache + update related users
+ADD_USER          → Update group cache + user cache
+REMOVE_USER       → Update group cache + user cache
+```
+
+#### Domain Changes:
+```
+CREATE Domain     → Initialize cache
+Status Change     → No cache impact (domain metadata separate)
+```
+
+**Important:** Domain immutable (no update/delete), so no complex invalidation needed!
+
+---
+
+### 🔍 Cache Monitoring
+
+#### Metrics to Track:
+```
+- Cache hit rate (per domain)
+- Cache miss rate
+- Average lookup latency
+- Cache size (per domain)
+- Refresh frequency
+- Stale data incidents
+```
+
+#### Health Check:
+```
+GET /api/health/cache
+
+{
+  "status": "healthy",
+  "domains": [
+    {
+      "domainName": "test-domain",
+      "usersCount": 45,
+      "groupsCount": 8,
+      "lastUpdate": "2025-11-05T14:30:00Z",
+      "status": "ready",
+      "hitRate": 98.5,
+      "avgLatency": "2ms"
+    }
+  ],
+  "totalMemory": "5.2MB"
+}
+```
+
+---
+
+### 🎯 Implementation Priority
+
+#### Phase 1: Basic Cache ✅
+- User hash cache (domain:{domain}:users)
+- Group hash cache (domain:{domain}:groups)
+- CRUD integration
+- Cache initialization on domain creation
+
+#### Phase 2: Optimization 🟡
+- Batch operations
+- Cache metadata
+- Monitoring metrics
+
+#### Phase 3: Advanced 🟢
+- Periodic refresh (background service)
+- Manual refresh endpoint
+- Cache analytics
+
+---
+
+### 🚀 Benefits Summary
+
+**Performance:**
+- ✅ 500x faster user lookups
+- ✅ Sub-10ms latency
+- ✅ Reduced MngKeeper load
+- ✅ Better user experience
+
+**Scalability:**
+- ✅ Handles thousands of users per domain
+- ✅ Minimal memory footprint
+- ✅ Horizontally scalable (Redis cluster)
+
+**Reliability:**
+- ✅ Fallback to API on cache miss
+- ✅ Automatic refresh on CRUD
+- ✅ Consistent data model
+
+**Maintainability:**
+- ✅ Simple cache schema
+- ✅ Clear invalidation rules
+- ✅ Easy to debug
+
+---
+
 ## 🎯 Implementation Priority
 
 ### Phase 1: System Topic ✅
 - CreateDomain publishes to system.mngkeeper.domain.created
 - MngDataGateway consumes for @datasets initialization
 
-### Phase 2: MngWebSocketGateway 🔴
+### Phase 2: Redis Cache (Users & Groups) 🔴
+- MngKeeper cache service implementation
+- CRUD integration
+- Cache initialization on domain creation
+- MngDataGateway cache read service
+
+### Phase 3: MngWebSocketGateway 🟡
 - Create new microservice
 - SignalR hub implementation
 - JWT validation
 - RabbitMQ integration
-- Basic connection management
 
-### Phase 3: Domain Topic 🟡
+### Phase 4: Domain Topic 🟢
 - MngDataGateway publish_mode implementation
 - Real-time data updates
 - Frontend integration
 
-### Phase 4: Global Topic 🟢
+### Phase 5: Global Topic 🟢
 - Admin panel (announcement system)
 - Multi-language support
 - Display options
