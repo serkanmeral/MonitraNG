@@ -1635,6 +1635,740 @@ if (string.IsNullOrEmpty(datagatewaySettings?.Actors?.MngKeeper))
 
 ---
 
+## 📨 RabbitMQ Messaging Architecture
+
+### 🎯 Overview - 3 Katmanlı Topic Yapısı
+
+MonitraNG ekosisteminde 3 farklı messaging topic'i kullanılacak:
+
+1. **System Topic** - Backend-to-Backend (Mikroservis entegrasyonu)
+2. **Global Topic** - System-to-All-Users (Platform geneli duyurular)
+3. **Domain Topic** - Domain-Specific (İş olayları, real-time updates)
+
+**Önemli:** Sadece **TOPIC** kullanılacak (ephemeral, broadcast). **QUEUE** kullanılmayacak (şu an için).
+
+---
+
+### 1️⃣ System Topic - Backend-to-Backend Communication
+
+**Amaç:** Mikroservisler arası sistem olayları
+
+**Exchange:**
+```
+Exchange: mng.topics
+Type: Topic Exchange
+Durable: false (ephemeral)
+Auto-delete: false
+```
+
+**Routing Key Pattern:**
+```
+system.{service}.{entity}.{action}
+
+Examples:
+- system.mngkeeper.domain.created
+- system.mngkeeper.domain.statusChanged
+- system.mngdatagateway.dataset.created
+- system.mngengine.alert.triggered
+- system.mngreactor.workflow.executed
+```
+
+**Message Format:**
+```json
+{
+  "eventId": "uuid",
+  "eventType": "system.mngkeeper.domain.created",
+  "timestamp": "2025-11-05T14:30:00Z",
+  "source": "MngKeeper",
+  "version": "1.0",
+  "payload": {
+    "domainId": "69051b09da18595c1fa866ce",
+    "domainName": "test-domain",
+    "databaseName": "mng_test-domain",
+    "realmName": "test-domain",
+    "status": "Active",
+    "adminEmail": "admin@test-domain.com",
+    "settings": {
+      "maxUsers": 50,
+      "maxAssets": 500,
+      "enableMqtt": true
+    },
+    "createdAt": "2025-11-05T14:30:00Z"
+  }
+}
+```
+
+**Publishers:**
+- MngKeeper → Domain lifecycle events
+- MngDataGateway → Dataset operations
+- MngEngine → Monitoring events
+- MngReactor → Automation events
+
+**Subscribers:**
+```
+MngDataGateway:
+  - system.mngkeeper.domain.created → Initialize @datasets collection
+  
+MngEngine:
+  - system.mngkeeper.domain.created → Setup monitoring
+  
+MngReactor:
+  - system.mngkeeper.domain.created → Setup automation rules
+```
+
+**Characteristics:**
+- ✅ Fire-and-forget
+- ✅ No persistence
+- ✅ Active listeners only
+- ✅ Lightweight
+
+---
+
+### 2️⃣ Global Topic - System-wide Announcements
+
+**Amaç:** Tüm kullanıcılara (tüm domain'ler) sistem duyuruları
+
+**Exchange:**
+```
+Exchange: mng.topics (same)
+Type: Topic Exchange
+```
+
+**Routing Key Pattern:**
+```
+global.{type}
+
+Examples:
+- global.maintenance
+- global.announcement
+- global.security
+- global.feature
+- global.emergency
+```
+
+**Message Format:**
+```json
+{
+  "messageId": "uuid",
+  "messageType": "global.maintenance",
+  "timestamp": "2025-11-05T14:30:00Z",
+  "severity": "critical | warning | info",
+  "payload": {
+    "title": {
+      "en": "Scheduled Maintenance",
+      "tr": "Planlı Bakım"
+    },
+    "message": {
+      "en": "System will be under maintenance on Nov 6, 02:00-04:00 UTC",
+      "tr": "Sistem 6 Kasım 02:00-04:00 arası bakımda olacaktır"
+    },
+    "scheduledAt": "2025-11-06T02:00:00Z",
+    "duration": 7200,
+    "affectedServices": ["MngKeeper", "MngDataGateway"],
+    "displayOptions": {
+      "showPopup": true,
+      "popupDuration": 10000,
+      "showBanner": true,
+      "blockAccess": false
+    }
+  }
+}
+```
+
+**Use Cases:**
+- 🔧 Planlı bakım bildirisi
+- 📢 Sistem güncellemesi duyurusu
+- 🔒 Güvenlik uyarıları
+- ✨ Yeni özellik duyuruları
+- 🚨 Acil durum bildirimleri
+
+**Publisher:**
+- Admin Panel (Future) → Manual announcements
+- MngKeeper → System-triggered announcements
+
+**Subscribers:**
+- Mng.UI (Frontend) → All connected users
+- MngWebSocketGateway → Broadcast to all WebSocket connections
+
+**Characteristics:**
+- ✅ Broadcast to all users (all domains)
+- ✅ Real-time delivery
+- ✅ Multi-language support
+- ✅ Display options
+
+---
+
+### 3️⃣ Domain Topic - Domain-Specific Events
+
+**Amaç:** Belirli bir domain'e özel iş olayları (business events)
+
+**Exchange:**
+```
+Exchange: mng.topics (same)
+Type: Topic Exchange
+```
+
+**Routing Key Pattern:**
+```
+domain.{domain-name}.{dataset}.{action}
+
+Examples:
+- domain.test-domain.tasks.created
+- domain.test-domain.tasks.updated
+- domain.test-domain.tasks.deleted
+- domain.test-domain.tasks.assigned
+- domain.test-domain.assets.statusChanged
+- domain.test-domain.workflows.completed
+- domain.acme-corp.invoices.generated
+```
+
+**Message Format:**
+```json
+{
+  "eventId": "uuid",
+  "eventType": "domain.test-domain.tasks.created",
+  "timestamp": "2025-11-05T14:30:00Z",
+  "source": "MngDataGateway",
+  "domain": {
+    "domainId": "69051b09da18595c1fa866ce",
+    "domainName": "test-domain"
+  },
+  "actor": {
+    "userId": "user-id",
+    "email": "john@test-domain.com",
+    "username": "john.doe"
+  },
+  "payload": {
+    "datasetName": "@tasks",
+    "recordId": "TASK-000001",
+    "action": "created",
+    "data": {
+      "title": "New Task",
+      "assignedTo": "user-id-2",
+      "priority": "high",
+      "dueDate": "2025-11-10"
+    }
+  }
+}
+```
+
+**Publisher:**
+- MngDataGateway → Data CRUD operations (based on publish_mode)
+
+**publish_mode Integration:**
+```
+Dataset definition:
+{
+  "name": "@tasks",
+  "publish_mode": "none | basic | full"
+}
+
+none  → No publishing
+basic → Minimal info (id, action, timestamp only)
+full  → Complete data payload
+```
+
+**Subscribers:**
+- Mng.UI (Frontend) → Domain-specific users only
+- MngEngine → Monitoring & alerting
+- MngReactor → Automation triggers
+
+**Subscription Examples:**
+```
+Frontend (test-domain user):
+  - domain.test-domain.#  (all domain events)
+
+MngEngine:
+  - domain.*.assets.*  (asset events from all domains)
+
+MngReactor:
+  - domain.#  (all domain events for automation)
+```
+
+**Characteristics:**
+- ✅ Domain isolation enforced
+- ✅ Only domain users receive messages
+- ✅ Real-time business events
+- ✅ publish_mode controls verbosity
+
+---
+
+## 🌐 MngWebSocketGateway - New Microservice
+
+### Purpose:
+Separate microservice acting as RabbitMQ ↔ WebSocket bridge for real-time frontend communication.
+
+### Service Details:
+```
+Name: MngWebSocketGateway
+Port: 5020 (HTTPS)
+Technology: ASP.NET Core + SignalR
+Architecture: Clean Architecture
+Authentication: JWT (validated via MngKeeper)
+```
+
+### Responsibilities:
+
+**✅ Does:**
+- Accept WebSocket connections (SignalR)
+- Validate JWT tokens (via MngKeeper API)
+- Subscribe to RabbitMQ topics per connection
+- Bridge RabbitMQ messages to WebSocket clients
+- Connection lifecycle management
+- Domain-based message filtering
+
+**❌ Does NOT:**
+- Business logic
+- Database operations
+- Domain management
+- User management
+- ✅ Pure messaging bridge only
+
+---
+
+### Architecture:
+
+```
+┌─────────────────────────────────────────────────┐
+│  Mng.UI (Browser)                               │
+│  - SignalR client                               │
+│  - JWT token                                    │
+└───────────────┬─────────────────────────────────┘
+                │ WebSocket connection
+                ↓
+┌─────────────────────────────────────────────────┐
+│  MngWebSocketGateway (Port 5020)                │
+│                                                 │
+│  1. Validate JWT (MngKeeper API + cache)        │
+│  2. Extract domain_name from token              │
+│  3. Subscribe to RabbitMQ:                      │
+│     - global.*                                  │
+│     - domain.{domain-name}.*                    │
+│  4. Forward messages to WebSocket               │
+└───────────────┬─────────────────────────────────┘
+                │ RabbitMQ subscription
+                ↓
+┌─────────────────────────────────────────────────┐
+│  RabbitMQ                                       │
+│  Exchange: mng.topics (Topic)                   │
+│                                                 │
+│  Routing keys:                                  │
+│  - global.*                                     │
+│  - domain.{domain-name}.*                       │
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+### SignalR Hub Implementation:
+
+```csharp
+public class NotificationHub : Hub
+{
+    private readonly IConnectionManager _connectionManager;
+    private readonly IRabbitMqConsumer _rabbitMq;
+    private readonly IJwtValidator _jwtValidator;
+    
+    public override async Task OnConnectedAsync()
+    {
+        // 1. Get JWT token
+        var token = Context.GetHttpContext()?.Request.Query["access_token"];
+        
+        // 2. Validate via MngKeeper (cached)
+        var claims = await _jwtValidator.ValidateAsync(token);
+        
+        var domainName = claims["domain_name"];
+        var userId = claims["sub"];
+        
+        // 3. Register connection
+        var connection = new WebSocketConnection
+        {
+            ConnectionId = Context.ConnectionId,
+            UserId = userId,
+            DomainName = domainName,
+            ConnectedAt = DateTime.UtcNow,
+            Subscriptions = new List<string>
+            {
+                "global.*",
+                $"domain.{domainName}.#"
+            }
+        };
+        
+        await _connectionManager.AddAsync(connection);
+        
+        // 4. Setup RabbitMQ subscriptions
+        foreach (var topic in connection.Subscriptions)
+        {
+            await _rabbitMq.SubscribeAsync(topic, 
+                message => ForwardToClient(Context.ConnectionId, message));
+        }
+        
+        await base.OnConnectedAsync();
+    }
+    
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        await _rabbitMq.UnsubscribeAllAsync(Context.ConnectionId);
+        await _connectionManager.RemoveAsync(Context.ConnectionId);
+        await base.OnDisconnectedAsync(exception);
+    }
+}
+```
+
+---
+
+### JWT Validation Strategy:
+
+**Hybrid Approach (Performance):**
+```csharp
+public class JwtValidator : IJwtValidator
+{
+    private readonly HttpClient _httpClient;
+    private readonly IMemoryCache _cache;
+    
+    public async Task<TokenClaims> ValidateAsync(string token)
+    {
+        var cacheKey = $"jwt:{ComputeHash(token)}";
+        
+        // 1. Cache check
+        if (_cache.TryGetValue<TokenClaims>(cacheKey, out var cached))
+        {
+            return cached;  // ✅ ~1ms
+        }
+        
+        // 2. MngKeeper API call
+        var response = await _httpClient.PostAsync(
+            "https://localhost:5001/api/auth/validate",
+            new StringContent(JsonSerializer.Serialize(new { token }))
+        );
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new UnauthorizedException("Invalid token");
+        }
+        
+        var claims = await response.Content.ReadAsAsync<TokenClaims>();
+        
+        // 3. Cache (5 minutes)
+        _cache.Set(cacheKey, claims, TimeSpan.FromMinutes(5));
+        
+        return claims;  // ✅ ~50ms (first time only)
+    }
+}
+```
+
+**Performance:**
+- First validation: ~50ms (MngKeeper API call)
+- Cached validation: ~1ms (memory cache)
+- Cache TTL: 5 minutes
+
+---
+
+### Reconnection Strategy:
+
+**Automatic Reconnection (SignalR):**
+```typescript
+// Frontend - Mng.UI
+const connection = new signalR.HubConnectionBuilder()
+  .withUrl("https://localhost:5020/ws", {
+    accessTokenFactory: () => getJwtToken()
+  })
+  .withAutomaticReconnect({
+    nextRetryDelayInMilliseconds: (retryContext) => {
+      // Exponential backoff
+      if (retryContext.previousRetryCount === 0) return 0;      // Immediate
+      if (retryContext.previousRetryCount === 1) return 2000;   // 2s
+      if (retryContext.previousRetryCount === 2) return 5000;   // 5s
+      return 10000;  // 10s max
+    }
+  })
+  .build();
+
+connection.onreconnecting(() => {
+  showReconnectingBanner();
+});
+
+connection.onreconnected(() => {
+  hideReconnectingBanner();
+  // Optional: Refresh data
+});
+```
+
+**Missed Messages:**
+
+**Phase 1 (Current):**
+- Messages lost during disconnect
+- No server-side buffer
+- Frontend refreshes on reconnect
+- Acceptable for real-time (non-critical) updates
+
+**Phase 2 (Future Enhancement):**
+- Server-side message buffer (per user)
+- Max 100 messages buffered
+- TTL: 5 minutes
+- Flush on reconnection
+
+---
+
+### Performance Guidelines:
+
+**Per Instance Limits:**
+```
+Max concurrent connections: 5,000
+Connection timeout: 30 minutes idle
+Heartbeat interval: 30 seconds
+Max message size: 32KB
+Rate limit: 100 messages/minute per connection
+```
+
+**Kestrel Configuration:**
+```csharp
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxConcurrentConnections = 5000;
+    options.Limits.MaxConcurrentUpgradedConnections = 5000;
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(2);
+});
+```
+
+**SignalR Configuration:**
+```csharp
+builder.Services.AddSignalR(options =>
+{
+    options.KeepAliveInterval = TimeSpan.FromSeconds(30);
+    options.ClientTimeoutInterval = TimeSpan.FromMinutes(1);
+    options.HandshakeTimeout = TimeSpan.FromSeconds(15);
+    options.MaximumReceiveMessageSize = 32 * 1024;  // 32KB
+});
+```
+
+**Scalability:**
+- Redis backplane for multi-instance deployment
+- Target: 50,000+ concurrent users
+- Horizontal scaling: 10+ instances
+
+---
+
+### RabbitMQ Consumer Configuration:
+
+**Per-Connection Subscription:**
+```csharp
+public async Task SubscribeAsync(string connectionId, string[] topics)
+{
+    foreach (var topic in topics)
+    {
+        // Create temporary, exclusive queue
+        var queueName = $"ws.{connectionId}.{Guid.NewGuid()}";
+        
+        await _channel.QueueDeclareAsync(
+            queue: queueName,
+            durable: false,      // ← Ephemeral
+            exclusive: true,     // ← Connection-specific
+            autoDelete: true     // ← Auto-delete on disconnect
+        );
+        
+        await _channel.QueueBindAsync(
+            queue: queueName,
+            exchange: "mng.topics",
+            routingKey: topic
+        );
+        
+        await _channel.BasicConsumeAsync(
+            queue: queueName,
+            autoAck: true,       // ← No persistence needed
+            consumer: CreateConsumer(connectionId)
+        );
+    }
+}
+```
+
+---
+
+### Complete Message Flow Example:
+
+**Scenario:** Task created in test-domain
+
+```
+Step 1: User creates task
+  ↓
+  POST https://localhost:5010/api/datasets/@tasks/data
+  
+Step 2: MngDataGateway
+  ↓
+  - Save to MongoDB
+  - Check publish_mode: "full"
+  - Publish to RabbitMQ:
+      Exchange: mng.topics
+      Routing Key: domain.test-domain.tasks.created
+      
+Step 3: RabbitMQ broadcasts
+  ↓
+  - Find bindings: domain.test-domain.#
+  - Forward to temporary queues
+  
+Step 4: MngWebSocketGateway
+  ↓
+  - Consumer receives message
+  - Find connections for "test-domain"
+  - Filter: Only test-domain users
+  
+Step 5: SignalR push
+  ↓
+  await Clients.Users(testDomainUserIds)
+      .SendAsync("ReceiveMessage", message);
+      
+Step 6: Mng.UI handles
+  ↓
+  connection.on("ReceiveMessage", (msg) => {
+    refreshTaskList();
+    showNotification("New task created!");
+  });
+```
+
+---
+
+### Project Structure:
+
+```
+MngWebSocketGateway/
+├── Core/
+│   ├── MngWebSocketGateway.Domain/
+│   │   ├── Entities/
+│   │   │   └── WebSocketConnection.cs
+│   │   └── Enums/
+│   │       └── MessageType.cs
+│   └── MngWebSocketGateway.Application/
+│       ├── Configuration/
+│       │   └── MngWebSocketGatewaySettings.cs
+│       ├── Interfaces/
+│       │   ├── IConnectionManager.cs
+│       │   ├── IRabbitMqConsumer.cs
+│       │   └── IJwtValidator.cs
+│       └── ServiceRegistration.cs
+├── Infrastructure/
+│   └── MngWebSocketGateway.Infrastructure/
+│       ├── Services/
+│       │   ├── ConnectionManager.cs
+│       │   ├── RabbitMqConsumer.cs
+│       │   └── JwtValidator.cs
+│       └── Certificate/
+│           └── CertificateHandler.cs
+└── Presentation/
+    └── MngWebSocketGateway.Api/
+        ├── Config/
+        │   └── Extensions.cs
+        ├── Hubs/
+        │   └── NotificationHub.cs
+        ├── Middleware/
+        │   └── JwtAuthenticationMiddleware.cs
+        ├── Program.cs
+        └── appsettings.json
+```
+
+---
+
+### Security:
+
+**JWT Validation:**
+- ✅ MngKeeper API call for validation
+- ✅ Memory cache (5 minutes TTL)
+- ✅ Cache invalidation on token refresh
+
+**Domain Isolation:**
+- ✅ Users only receive messages from their domain
+- ✅ Subscription validation (can't subscribe to other domains)
+- ✅ Connection-level filtering
+
+**Rate Limiting:**
+- ✅ 100 messages/minute per connection
+- ✅ Connection throttling
+- ✅ DDoS protection
+
+---
+
+### Monitoring:
+
+**Metrics:**
+- Active connections count
+- Messages per second
+- Connection duration average
+- Reconnection rate
+- Message delivery latency
+- RabbitMQ consumer lag
+
+**Health Checks:**
+```
+GET /health
+{
+  "status": "healthy",
+  "checks": {
+    "rabbitmq": "healthy",
+    "redis": "healthy",
+    "mngkeeper": "healthy"
+  },
+  "metrics": {
+    "activeConnections": 1500,
+    "messagesPerSecond": 45,
+    "avgLatency": "12ms"
+  }
+}
+```
+
+---
+
+### Future Enhancements:
+
+**Message Filtering (User-level):**
+```
+Future: Users can filter messages based on preferences
+- Only assigned tasks
+- Only high priority items
+- Custom filter rules
+```
+
+**Message Persistence:**
+```
+Future: Optional message history
+- Store recent messages in MongoDB
+- Replay on reconnect
+- Notification center
+```
+
+**Analytics:**
+```
+Future: Message analytics
+- Delivery statistics
+- User engagement metrics
+- Event correlation
+```
+
+---
+
+## 🎯 Implementation Priority
+
+### Phase 1: System Topic ✅
+- CreateDomain publishes to system.mngkeeper.domain.created
+- MngDataGateway consumes for @datasets initialization
+
+### Phase 2: MngWebSocketGateway 🔴
+- Create new microservice
+- SignalR hub implementation
+- JWT validation
+- RabbitMQ integration
+- Basic connection management
+
+### Phase 3: Domain Topic 🟡
+- MngDataGateway publish_mode implementation
+- Real-time data updates
+- Frontend integration
+
+### Phase 4: Global Topic 🟢
+- Admin panel (announcement system)
+- Multi-language support
+- Display options
+
+---
+
 ### 📋 Production Deployment Checklist
 
 #### Security
