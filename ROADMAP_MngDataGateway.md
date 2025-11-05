@@ -3217,6 +3217,1066 @@ GET /api/health/cache
 
 ---
 
+## 📁 File Storage Architecture - MinIO Integration
+
+### 🎯 Overview
+
+MonitraNG file storage system using MinIO (S3-compatible object storage) for scalable, secure, and domain-isolated file management.
+
+**Why MinIO?**
+- ✅ S3-compatible API (industry standard)
+- ✅ Self-hosted (data privacy & control)
+- ✅ High performance (distributed architecture)
+- ✅ Built-in access policies
+- ✅ Versioning support (optional)
+- ✅ Encryption at rest
+- ✅ Docker deployment
+- ✅ .NET SDK available
+- ✅ Horizontally scalable
+
+---
+
+### 🗂️ Bucket Strategy - Domain Isolation
+
+**One Bucket Per Domain (Recommended):**
+
+```
+MinIO Buckets:
+├── mng-test-domain          (Domain: test-domain)
+│   ├── users/
+│   │   ├── {user-id}/
+│   │   │   ├── documents/
+│   │   │   ├── images/
+│   │   │   └── uploads/
+│   ├── shared/
+│   │   ├── public/
+│   │   ├── groups/{group-id}/
+│   │   └── templates/
+│   ├── datasets/
+│   │   └── {dataset-name}/{record-id}/
+│   └── system/
+│       ├── logos/
+│       └── exports/
+├── mng-acme-corp
+└── mng-other-domain
+```
+
+**Bucket Naming:**
+```
+Pattern: mng-{domain-name}
+Example: mng-test-domain
+```
+
+**Benefits:**
+- ✅ Perfect domain isolation (bucket-level)
+- ✅ Bucket policies per domain
+- ✅ Easy backup/restore (per domain)
+- ✅ Storage quotas (per domain)
+- ✅ Easy deletion (drop bucket)
+
+---
+
+### 📂 Folder Structure (Standardized)
+
+```
+Bucket: mng-{domain-name}
+├── users/                      (User personal files)
+│   └── {user-id}/
+│       ├── documents/
+│       ├── images/
+│       ├── videos/
+│       ├── uploads/
+│       └── trash/          (Soft delete - 30 days retention)
+│
+├── shared/                     (Shared files)
+│   ├── public/             (All domain users)
+│   ├── groups/{group-id}/  (Group-specific)
+│   └── templates/          (Document templates)
+│
+├── datasets/                   (Dataset attachments)
+│   └── {dataset-name}/
+│       └── {record-id}/
+│           ├── attachments/
+│           └── images/
+│
+└── system/                     (System files)
+    ├── logos/              (Domain branding)
+    ├── exports/            (Data exports)
+    └── reports/            (Generated reports)
+```
+
+---
+
+### 🔐 Access Control - Multi-Layer Security
+
+#### Layer 1: MinIO Bucket Policy (Domain Isolation)
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": ["arn:aws:iam::mng:user/mngfilestorage-service"]
+      },
+      "Action": ["s3:*"],
+      "Resource": [
+        "arn:aws:s3:::mng-{domain-name}/*",
+        "arn:aws:s3:::mng-{domain-name}"
+      ]
+    }
+  ]
+}
+```
+
+**Only MngFileStorage service can access buckets**
+
+#### Layer 2: Application-Level Access Control
+```csharp
+// MngFileStorage - FileAccessService.cs
+public async Task<AccessResult> CheckAccessAsync(string userId, string filePath)
+{
+    // 1. Domain check (via JWT)
+    var userDomain = GetDomainFromToken();
+    
+    // 2. Get file metadata
+    var file = await _fileRepository.GetByPathAsync(filePath);
+    
+    // 3. Check permissions
+    if (file.OwnerId == userId)
+        return AccessResult.Allowed();  // Owner
+    
+    if (file.Permissions.Public)
+        return AccessResult.Allowed();  // Public file
+    
+    if (file.Permissions.Users.Contains(userId))
+        return AccessResult.Allowed();  // Shared with user
+    
+    var userGroups = await GetUserGroupsAsync(userId);
+    if (file.Permissions.Groups.Any(g => userGroups.Contains(g)))
+        return AccessResult.Allowed();  // Shared with group
+    
+    if (await IsAdminAsync(userId))
+        return AccessResult.Allowed();  // Admin override
+    
+    return AccessResult.Denied();
+}
+```
+
+**Access Levels:**
+- Owner (full access)
+- Shared users (read/download)
+- Shared groups (read/download)
+- Public (all domain users)
+- Admin (override)
+
+---
+
+### 🌐 MngFileStorage - New Microservice
+
+**Service Details:**
+```
+Name: MngFileStorage
+Port: 5030 (HTTPS)
+Technology: ASP.NET Core + MinIO SDK
+Architecture: Clean Architecture
+Authentication: JWT (via MngKeeper)
+```
+
+**Responsibilities:**
+- ✅ File upload/download
+- ✅ Folder management (CRUD)
+- ✅ Access control (domain & user level)
+- ✅ File metadata management (MongoDB)
+- ✅ Thumbnail generation (images)
+- ✅ File search & indexing
+- ✅ Storage quota management
+- ✅ Soft delete (trash mechanism)
+
+**Does NOT:**
+- ❌ File content processing (use MngEngine)
+- ❌ Advanced transformations
+- ❌ Business logic
+
+---
+
+### 📤 File Upload Flow
+
+```
+1. Frontend uploads file
+   ↓
+   POST /api/files/upload
+   Content-Type: multipart/form-data
+   Authorization: Bearer {jwt-token}
+
+2. MngFileStorage receives
+   ↓
+   - Validate JWT → domain_name, user_id
+   - Validate file (size, type)
+   - Generate file ID (uuid)
+   - Determine path: users/{user-id}/documents/{file-id}.pdf
+
+3. Upload to MinIO
+   ↓
+   - Bucket: mng-{domain-name}
+   - Object: users/{user-id}/documents/{file-id}.pdf
+   - Metadata: content-type, user-id, upload-date
+
+4. Save metadata to MongoDB
+   ↓
+   - Database: mng_{domain-name}
+   - Collection: files
+   - Document: { fileName, filePath, ownerId, permissions, ... }
+
+5. Generate thumbnail (async, if image)
+   ↓
+   - Background job (ImageSharp)
+   - Upload thumbnail: .thumbnails/{file-id}.jpg
+
+6. Publish event (RabbitMQ)
+   ↓
+   - Routing Key: domain.{domain-name}.files.uploaded
+   - Message: { fileId, fileName, ownerId, ... }
+
+7. Return response
+   ↓
+   {
+     "fileId": "uuid",
+     "fileName": "document.pdf",
+     "downloadUrl": "/api/files/{fileId}/download"
+   }
+```
+
+---
+
+### 📥 File Download Flow
+
+```csharp
+[HttpGet("{fileId}/download")]
+public async Task<IActionResult> DownloadFile(string fileId)
+{
+    // 1. Get file metadata
+    var file = await _fileRepository.GetByIdAsync(fileId);
+    
+    // 2. Check access
+    var access = await _accessService.CheckAccessAsync(userId, file.FilePath);
+    if (!access.Allowed)
+        return Forbid();
+    
+    // 3. Get from MinIO
+    var stream = await _minioClient.GetObjectAsync(
+        new GetObjectArgs()
+            .WithBucket(file.BucketName)
+            .WithObject(file.FilePath)
+    );
+    
+    // 4. Return file stream
+    return File(stream, file.MimeType, file.OriginalFileName);
+}
+```
+
+**Alternative: Presigned URL (Direct Download)**
+```csharp
+// Generate temporary direct download link (bypass API)
+var presignedUrl = await _minioClient.PresignedGetObjectAsync(
+    new PresignedGetObjectArgs()
+        .WithBucket(bucketName)
+        .WithObject(filePath)
+        .WithExpiry(3600)  // 1 hour
+);
+```
+
+---
+
+### 📊 File Metadata Storage (MongoDB)
+
+**Collection:** files (per domain database)
+
+```json
+{
+  "_id": ObjectId,
+  "__dataId": "uuid",
+  "fileName": "document.pdf",
+  "originalFileName": "Monthly Report.pdf",
+  "filePath": "users/user-123/documents/uuid.pdf",
+  "bucketName": "mng-test-domain",
+  "fileSize": 1048576,
+  "mimeType": "application/pdf",
+  "extension": ".pdf",
+  "category": "users",
+  "ownerId": "user-123",
+  "ownerEmail": "john@test-domain.com",
+  "permissions": {
+    "public": false,
+    "groups": ["group-id-1"],
+    "users": ["user-456"]
+  },
+  "metadata": {
+    "width": 1920,
+    "height": 1080,
+    "thumbnail": "users/user-123/.thumbnails/uuid.jpg"
+  },
+  "tags": ["report", "monthly", "2025"],
+  "description": "Monthly performance report",
+  "isDeleted": false,
+  "createdBy": "user-123",
+  "createdAt": ISODate("2025-11-05T14:30:00Z"),
+  "updatedAt": ISODate("2025-11-05T14:30:00Z")
+}
+```
+
+**MongoDB Indexes:**
+```javascript
+// Search optimization
+db.files.createIndex({ "fileName": "text", "description": "text", "tags": "text" });
+db.files.createIndex({ "ownerId": 1, "isDeleted": 1 });
+db.files.createIndex({ "category": 1, "isDeleted": 1 });
+db.files.createIndex({ "tags": 1 });
+db.files.createIndex({ "createdAt": -1 });
+```
+
+---
+
+### 🖼️ Thumbnail Generation
+
+**Automatic Thumbnail for Images:**
+
+```csharp
+// Background Service
+public class ThumbnailGeneratorService
+{
+    public async Task GenerateThumbnailAsync(string fileId)
+    {
+        var file = await _fileRepository.GetByIdAsync(fileId);
+        
+        // Only for images
+        if (!file.MimeType.StartsWith("image/"))
+            return;
+        
+        // Download from MinIO
+        var stream = await _minioService.DownloadAsync(file.BucketName, file.FilePath);
+        
+        // Generate thumbnail (ImageSharp)
+        using var image = await Image.LoadAsync(stream);
+        image.Mutate(x => x.Resize(new ResizeOptions
+        {
+            Size = new Size(200, 200),
+            Mode = ResizeMode.Max
+        }));
+        
+        // Upload thumbnail to MinIO
+        var thumbnailPath = $"{Path.GetDirectoryName(file.FilePath)}/.thumbnails/{file.FileName}";
+        using var thumbnailStream = new MemoryStream();
+        await image.SaveAsJpegAsync(thumbnailStream);
+        thumbnailStream.Position = 0;
+        
+        await _minioClient.PutObjectAsync(new PutObjectArgs()
+            .WithBucket(file.BucketName)
+            .WithObject(thumbnailPath)
+            .WithStreamData(thumbnailStream)
+            .WithObjectSize(thumbnailStream.Length)
+            .WithContentType("image/jpeg")
+        );
+        
+        // Update metadata
+        file.Metadata.Thumbnail = thumbnailPath;
+        await _fileRepository.UpdateAsync(file);
+    }
+}
+```
+
+**Thumbnail Access:**
+```
+GET /api/files/{fileId}/thumbnail
+```
+
+---
+
+### 🗑️ Soft Delete Strategy
+
+**Trash Mechanism:**
+
+```csharp
+[HttpDelete("{fileId}")]
+public async Task<IActionResult> DeleteFile(string fileId)
+{
+    // Soft delete (mark as deleted)
+    file.IsDeleted = true;
+    file.DeletedAt = DateTime.UtcNow;
+    file.DeletedBy = userId;
+    await _fileRepository.UpdateAsync(file);
+    
+    // Move to trash folder
+    var trashPath = $"users/{userId}/trash/{file.FileName}";
+    await _minioClient.CopyObjectAsync(...);
+    
+    return Ok(new { message = "File moved to trash" });
+}
+```
+
+**Auto Cleanup (Background Service):**
+```csharp
+// Delete files in trash older than 30 days
+public class TrashCleanupService : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            var cutoffDate = DateTime.UtcNow.AddDays(-30);
+            var deletedFiles = await _fileRepository.GetDeletedFilesAsync(cutoffDate);
+            
+            foreach (var file in deletedFiles)
+            {
+                await PermanentDeleteAsync(file);
+            }
+            
+            await Task.Delay(TimeSpan.FromDays(1), stoppingToken);
+        }
+    }
+}
+```
+
+---
+
+### 📊 Storage Quota Management
+
+**Domain Storage Quota:**
+
+```csharp
+// Domain entity
+public class Domain
+{
+    public string StorageBucket { get; set; }  // mng-{domain-name}
+    public long StorageQuota { get; set; } = 10737418240;  // 10GB default
+    public long StorageUsed { get; set; }
+}
+```
+
+**Quota Enforcement:**
+```csharp
+// On upload
+public async Task<bool> CheckQuotaAsync(string domainName, long fileSize)
+{
+    var domain = await _domainRepository.GetByNameAsync(domainName);
+    
+    if (domain.StorageUsed + fileSize > domain.StorageQuota)
+    {
+        return false;  // Quota exceeded
+    }
+    
+    return true;
+}
+
+// Reject if quota exceeded
+if (!await _quotaService.CheckQuotaAsync(domainName, file.Length))
+{
+    return BadRequest(new { error = "Storage quota exceeded" });
+}
+```
+
+**Storage Usage API:**
+```
+GET /api/storage/usage
+
+Response:
+{
+  "domainName": "test-domain",
+  "totalUsed": 1073741824,     // 1GB
+  "quota": 10737418240,         // 10GB
+  "usagePercent": 10,
+  "fileCount": 245,
+  "userBreakdown": [
+    {
+      "userId": "user-123",
+      "email": "john@test-domain.com",
+      "usage": 524288000,
+      "fileCount": 45
+    }
+  ]
+}
+```
+
+---
+
+### 🔗 Dataset Integration - File Attachments
+
+**New Field Type: file**
+
+```json
+Dataset: @tasks
+Field definition:
+{
+  "fieldType": "file",
+  "name": "attachments",
+  "title": "Task Attachments",
+  "isArray": true,
+  "fileOptions": {
+    "maxSize": 10485760,        // 10MB
+    "allowedTypes": [".pdf", ".docx", ".xlsx", ".jpg", ".png"],
+    "maxFiles": 5,
+    "storagePath": "datasets/@tasks/{__dataId}/"
+  }
+}
+```
+
+**Task Record with Attachments:**
+```json
+{
+  "__dataId": "TASK-000001",
+  "title": "Complete Report",
+  "attachments": [
+    {
+      "fileId": "file-uuid-1",
+      "fileName": "requirements.pdf",
+      "fileSize": 524288,
+      "uploadedBy": "user-123",
+      "uploadedAt": "2025-11-05T14:30:00Z",
+      "downloadUrl": "/api/files/file-uuid-1/download"
+    }
+  ]
+}
+```
+
+**Upload Endpoint:**
+```
+POST /api/datasets/@tasks/data/{recordId}/files
+Content-Type: multipart/form-data
+```
+
+---
+
+### 🔍 File Search
+
+**MongoDB Text Search:**
+```javascript
+// Index
+db.files.createIndex({
+  "fileName": "text",
+  "description": "text",
+  "tags": "text"
+});
+```
+
+**Search API:**
+```
+GET /api/files/search?q=report&tags=important&category=documents&page=1
+
+Response:
+{
+  "items": [...],
+  "totalCount": 45,
+  "page": 1,
+  "pageSize": 20
+}
+```
+
+---
+
+### 🎯 Phase 1 - MVP Features (High Priority)
+
+**Must Have:**
+1. ✅ Basic upload/download (<100MB files)
+2. ✅ Folder CRUD (create, list, delete)
+3. ✅ Domain isolation (bucket per domain)
+4. ✅ User isolation (users/{user-id}/)
+5. ✅ Access control (owner, shared, public)
+6. ✅ File metadata (MongoDB)
+7. ✅ Thumbnail generation (images)
+8. ✅ File search (name, tags)
+9. ✅ Storage quota (per domain)
+10. ✅ Soft delete (trash, 30 days)
+
+**Nice to Have (Phase 1.5):**
+- 🟡 File preview (PDF, images in browser)
+- 🟡 Bulk download (ZIP multiple files)
+- 🟡 Copy/Move operations
+
+---
+
+### 🎯 Phase 2 - Advanced Features (Medium Priority)
+
+#### 1. File Versioning
+
+**Optional Per-Field:**
+```json
+{
+  "fieldType": "file",
+  "name": "contract",
+  "fileOptions": {
+    "enableVersioning": true,
+    "maxVersions": 10
+  }
+}
+```
+
+**Version Storage:**
+```
+users/user-123/documents/contract.pdf         (latest)
+users/user-123/documents/.versions/contract.pdf.v1
+users/user-123/documents/.versions/contract.pdf.v2
+```
+
+**Metadata:**
+```json
+{
+  "fileName": "contract.pdf",
+  "currentVersion": 2,
+  "versions": [
+    {
+      "version": 1,
+      "filePath": ".../.versions/contract.pdf.v1",
+      "uploadedAt": "...",
+      "fileSize": 1048576
+    }
+  ]
+}
+```
+
+**Priority:** 🟢 Low (nice to have)
+
+---
+
+#### 2. Virus Scanning (ClamAV)
+
+**Architecture:**
+```
+Upload → Save to MinIO → Status: "scanning"
+  ↓
+Background Service → ClamAV scan
+  ↓
+Clean → Status: "ready"
+Infected → Move to quarantine, Status: "infected"
+  ↓
+Notify user (WebSocket/Email)
+```
+
+**ClamAV Docker:**
+```yaml
+clamav:
+  image: clamav/clamav:latest
+  container_name: clamav
+  ports:
+    - "3310:3310"
+  volumes:
+    - clamav_data:/var/lib/clamav
+```
+
+**Scan on Download:**
+```csharp
+if (file.ScanStatus == ScanStatus.Infected)
+{
+    return BadRequest(new { error: "File is infected" });
+}
+
+if (file.ScanStatus == ScanStatus.Scanning)
+{
+    return Accepted(new { message: "File is being scanned" });
+}
+```
+
+**Priority:** 🟡 Medium (important for production)
+
+---
+
+#### 3. Public Share Links
+
+**Create Share Link:**
+```csharp
+POST /api/files/{fileId}/share
+
+Request:
+{
+  "expiryDate": "2025-11-12T14:30:00Z",  // Optional
+  "password": "secret123",                // Optional
+  "maxDownloads": 10                      // Optional
+}
+
+Response:
+{
+  "shareUrl": "https://files.monitrang.com/share/a7f3k9m2p5q8r1s4",
+  "token": "a7f3k9m2p5q8r1s4",
+  "expiresAt": "2025-11-12T14:30:00Z",
+  "passwordProtected": true
+}
+```
+
+**Public Download (Anonymous):**
+```
+GET /share/{token}?password=secret123
+```
+
+**Features:**
+- ✅ Password protection
+- ✅ Expiry date
+- ✅ Download limit
+- ✅ Download tracking
+- ✅ Revoke anytime
+
+**Priority:** 🟡 Medium (useful feature)
+
+---
+
+#### 4. Chunked/Resumable Upload
+
+**For Large Files (>100MB):**
+
+**TUS Protocol (Recommended):**
+```
+Industry standard for resumable uploads
+Client libraries: tus-js-client (frontend), Tusdotnet (backend)
+```
+
+**Custom Implementation:**
+```csharp
+POST /api/files/upload/chunk
+
+{
+  "uploadId": "session-uuid",
+  "chunkIndex": 1,
+  "totalChunks": 20,
+  "chunk": <binary>
+}
+```
+
+**Configuration:**
+```json
+{
+  "Storage": {
+    "MaxFileSize": 104857600,           // 100MB (simple upload)
+    "ChunkedUploadThreshold": 104857600, // >100MB → chunked
+    "MaxChunkedFileSize": 5368709120,   // 5GB max
+    "ChunkSize": 5242880                // 5MB per chunk
+  }
+}
+```
+
+**Priority:** 🟢 Low (Phase 1'de 100MB yeterli)
+
+---
+
+#### 5. CDN Integration
+
+**Phase 1: Direct MinIO (Current)**
+```
+Browser → MinIO presigned URL → Direct download
+Latency: Low (local network)
+Good for: Internal deployment
+```
+
+**Phase 2: CDN Layer (Future)**
+```
+Browser → CDN (CloudFlare) → MinIO (origin)
+Latency: Ultra-low (edge servers)
+Good for: Global deployment, public files
+```
+
+**Use Cases:**
+- Public files (logos, images)
+- Video streaming
+- Global user base (>1000 concurrent)
+
+**Priority:** 🟢 Low (needed only for global deployment)
+
+---
+
+### 🎯 MinIO Configuration
+
+**Docker Setup:**
+```yaml
+minio:
+  image: minio/minio:latest
+  container_name: minio
+  command: server /data --console-address ":9091"
+  environment:
+    MINIO_ROOT_USER: admin
+    MINIO_ROOT_PASSWORD: admin123
+  ports:
+    - "9090:9000"   # MinIO API
+    - "9091:9091"   # MinIO Console
+  volumes:
+    - minio_data:/data
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+```
+
+**Access:**
+- API: http://localhost:9090
+- Console: http://localhost:9091
+- Credentials: admin / admin123
+
+**.NET Client:**
+```csharp
+var minioClient = new MinioClient()
+    .WithEndpoint("localhost:9090")
+    .WithCredentials("admin", "admin123")
+    .WithSSL(false)
+    .Build();
+```
+
+---
+
+### 🏗️ MngFileStorage Project Structure
+
+```
+MngFileStorage/
+├── Core/
+│   ├── MngFileStorage.Domain/
+│   │   ├── Entities/
+│   │   │   ├── FileMetadata.cs
+│   │   │   └── FolderMetadata.cs
+│   │   └── Enums/
+│   │       ├── FileCategory.cs
+│   │       ├── ScanStatus.cs
+│   │       └── AccessLevel.cs
+│   └── MngFileStorage.Application/
+│       ├── Configuration/
+│       │   └── MngFileStorageSettings.cs
+│       ├── Features/
+│       │   ├── Files/
+│       │   │   ├── Commands/
+│       │   │   │   ├── UploadFile/
+│       │   │   │   ├── DeleteFile/
+│       │   │   │   └── UpdateMetadata/
+│       │   │   └── Queries/
+│       │   │       ├── GetFile/
+│       │   │       ├── SearchFiles/
+│       │   │       └── GetStorageUsage/
+│       │   └── Folders/
+│       ├── Interfaces/
+│       │   ├── IMinioService.cs
+│       │   ├── IFileAccessService.cs
+│       │   ├── IThumbnailService.cs
+│       │   └── IVirusScanService.cs
+│       └── ServiceRegistration.cs
+├── Infrastructure/
+│   └── MngFileStorage.Infrastructure/
+│       ├── Services/
+│       │   ├── MinioService.cs
+│       │   ├── FileAccessService.cs
+│       │   ├── ThumbnailService.cs
+│       │   └── VirusScanService.cs
+│       ├── Persistence/
+│       │   └── FileRepository.cs
+│       └── Certificate/
+│           └── CertificateHandler.cs
+└── Presentation/
+    └── MngFileStorage.Api/
+        ├── Controllers/
+        │   ├── FilesController.cs
+        │   ├── FoldersController.cs
+        │   └── StorageController.cs
+        ├── Config/
+        │   └── Extensions.cs
+        ├── BackgroundServices/
+        │   ├── ThumbnailGeneratorService.cs
+        │   ├── TrashCleanupService.cs
+        │   └── VirusScanService.cs
+        └── Program.cs
+```
+
+---
+
+### 📋 API Endpoints
+
+#### File Operations:
+```http
+POST   /api/files/upload              # Upload file
+GET    /api/files/{fileId}            # Get file metadata
+GET    /api/files/{fileId}/download   # Download file
+GET    /api/files/{fileId}/thumbnail  # Get thumbnail
+PUT    /api/files/{fileId}            # Update metadata
+DELETE /api/files/{fileId}            # Soft delete
+DELETE /api/files/{fileId}/permanent  # Permanent delete (admin)
+GET    /api/files/{fileId}/download-url # Presigned URL
+POST   /api/files/{fileId}/share      # Create share link
+```
+
+#### Folder Operations:
+```http
+POST   /api/folders                   # Create folder
+GET    /api/folders?path={path}       # List contents
+PUT    /api/folders/{folderId}        # Rename folder
+DELETE /api/folders/{folderId}        # Delete folder
+```
+
+#### Search & Query:
+```http
+GET    /api/files/search?q={query}&tags={tags}&category={category}
+GET    /api/files/recent?limit=10
+GET    /api/files/by-tag/{tag}
+GET    /api/files/my-files
+```
+
+#### Storage Management:
+```http
+GET    /api/storage/usage             # Get usage stats
+PUT    /api/storage/quota             # Set quota (admin)
+POST   /api/cache/refresh             # Refresh cache (admin)
+```
+
+#### Dataset Attachments:
+```http
+POST   /api/datasets/{name}/data/{recordId}/files
+GET    /api/datasets/{name}/data/{recordId}/files
+DELETE /api/datasets/{name}/data/{recordId}/files/{fileId}
+```
+
+---
+
+### 🔄 CreateDomain Integration
+
+**New Pipeline Step:**
+
+```
+Step 10: Create MinIO Bucket
+  ↓
+Create bucket: mng-{domain-name}
+  ↓
+Set bucket policy
+  ↓
+Create base folder structure
+  ↓
+Update domain entity (storageBucket field)
+```
+
+**Implementation:**
+```csharp
+public class CreateMinIOBucketStep : IDomainCreationStep
+{
+    public async Task<StepResult> ExecuteAsync(DomainCreationContext context)
+    {
+        var bucketName = $"mng-{context.DomainName}";
+        
+        // Create bucket
+        if (!await _minioClient.BucketExistsAsync(bucketName))
+        {
+            await _minioClient.MakeBucketAsync(bucketName);
+        }
+        
+        // Set policy
+        await SetBucketPolicyAsync(bucketName);
+        
+        // Create base folders (object markers)
+        await CreateFolderStructureAsync(bucketName);
+        
+        // Update domain
+        context.Domain.StorageBucket = bucketName;
+        
+        return StepResult.Success();
+    }
+    
+    public async Task RollbackAsync(DomainCreationContext context)
+    {
+        // Remove bucket on failure
+        await _minioClient.RemoveBucketAsync($"mng-{context.DomainName}");
+    }
+}
+```
+
+---
+
+### 🎯 Technology Stack
+
+**Phase 1 (MVP):**
+- ✅ MinIO (Object storage)
+- ✅ Minio.AspNetCore (.NET SDK)
+- ✅ MongoDB (Metadata)
+- ✅ ImageSharp (Thumbnails)
+- ✅ System.IO.Compression (ZIP files)
+
+**Phase 2 (Production):**
+- 🟡 nClam (ClamAV .NET client)
+- 🟡 Tus.NET (Resumable uploads)
+
+**Phase 3 (Advanced):**
+- 🟢 iTextSharp / PDFium (PDF preview)
+- 🟢 FFmpeg (Video thumbnails)
+- 🟢 CloudFlare CDN
+
+---
+
+### ⚡ Performance Optimization
+
+**Presigned URLs (Direct Download):**
+```
+Instead of: Browser → API → MinIO → API → Browser
+Use: Browser → MinIO (direct, presigned URL)
+
+Benefits:
+- No API bottleneck
+- Lower latency
+- Reduced server load
+- Better for large files
+```
+
+**Parallel Upload/Download:**
+```
+Multiple files → Parallel operations
+Task.WhenAll() for batch operations
+```
+
+**Caching:**
+```
+File metadata → Redis cache
+Thumbnail URLs → Browser cache headers
+```
+
+---
+
+### 📊 Implementation Timeline
+
+**Sprint 1: Core Infrastructure (1 week)**
+- MinIO setup ✅
+- MngFileStorage project structure
+- Basic upload/download
+- File metadata (MongoDB)
+- Bucket creation on domain creation
+
+**Sprint 2: Access & Management (1 week)**
+- Access control service
+- Folder management
+- File search
+- Soft delete (trash)
+
+**Sprint 3: Optimization (1 week)**
+- Thumbnail generation
+- Storage quota enforcement
+- Presigned URLs
+- Performance tuning
+
+**Sprint 4: Advanced (2 weeks)**
+- Virus scanning (ClamAV)
+- Share links
+- File preview
+- Analytics
+
+---
+
+### 🔒 Security Considerations
+
+**Upload Security:**
+- ✅ File type validation (whitelist)
+- ✅ File size limits
+- ✅ Virus scanning (Phase 2)
+- ✅ Content-Type verification
+- ✅ Filename sanitization
+
+**Download Security:**
+- ✅ Access control check
+- ✅ JWT authentication
+- ✅ Domain isolation
+- ✅ Rate limiting
+- ✅ Audit logging
+
+**Storage Security:**
+- ✅ Bucket policies (MinIO)
+- ✅ Encryption at rest (MinIO feature)
+- ✅ HTTPS only (production)
+- ✅ Presigned URL expiration
+
+---
+
 ### 📋 Production Deployment Checklist
 
 #### Security
