@@ -97,6 +97,7 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
                 var user = new MngKeeper.Domain.Entities.User
                 {
                     Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(), // Generate new MongoDB ObjectId
+                    KeycloakUserId = keycloakUser.Id, // Store Keycloak UUID for later operations
                     Username = request.Username,
                     Email = request.Email,
                     FirstName = request.FirstName,

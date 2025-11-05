@@ -7,17 +7,20 @@ namespace MngKeeper.Application.Features.User.Commands.RemoveUserFromGroup
     public class RemoveUserFromGroupCommandHandler : IRequestHandler<RemoveUserFromGroupCommand, RemoveUserFromGroupResponse>
     {
         private readonly IUserRepository _userRepository;
+        private readonly IGroupRepository _groupRepository;
         private readonly IDomainRepository _domainRepository;
         private readonly IKeycloakService _keycloakService;
         private readonly ILogger<RemoveUserFromGroupCommandHandler> _logger;
 
         public RemoveUserFromGroupCommandHandler(
             IUserRepository userRepository,
+            IGroupRepository groupRepository,
             IDomainRepository domainRepository,
             IKeycloakService keycloakService,
             ILogger<RemoveUserFromGroupCommandHandler> logger)
         {
             _userRepository = userRepository;
+            _groupRepository = groupRepository;
             _domainRepository = domainRepository;
             _keycloakService = keycloakService;
             _logger = logger;
@@ -52,8 +55,19 @@ namespace MngKeeper.Application.Features.User.Commands.RemoveUserFromGroup
                     };
                 }
 
-                // Check if user is in the group
-                if (!user.Groups.Contains(request.GroupId))
+                // Get group to get its name
+                var group = await _groupRepository.GetByIdAsync(request.GroupId);
+                if (group == null)
+                {
+                    return new RemoveUserFromGroupResponse
+                    {
+                        IsSuccess = false,
+                        ErrorMessage = "Group not found."
+                    };
+                }
+
+                // Check if user is in the group (by group NAME)
+                if (!user.Groups.Contains(group.Name))
                 {
                     return new RemoveUserFromGroupResponse
                     {
@@ -62,11 +76,11 @@ namespace MngKeeper.Application.Features.User.Commands.RemoveUserFromGroup
                     };
                 }
 
-                // TODO: Remove from group in Keycloak (Keycloak API doesn't have direct remove from group endpoint)
+                // TODO: Remove from group in Keycloak (implement when Keycloak service supports it)
                 // For now, we'll just update our database
 
-                // Remove from user groups in database
-                user.Groups.Remove(request.GroupId);
+                // Remove from user groups in database (by group NAME for consistency)
+                user.Groups.Remove(group.Name);
                 user.UpdatedAt = DateTime.UtcNow;
                 user.UpdatedBy = "system"; // TODO: Get from current user context
 

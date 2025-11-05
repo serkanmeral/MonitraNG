@@ -7,17 +7,20 @@ namespace MngKeeper.Application.Features.User.Commands.AddUserToGroup
     public class AddUserToGroupCommandHandler : IRequestHandler<AddUserToGroupCommand, AddUserToGroupResponse>
     {
         private readonly IUserRepository _userRepository;
+        private readonly IGroupRepository _groupRepository;
         private readonly IDomainRepository _domainRepository;
         private readonly IKeycloakService _keycloakService;
         private readonly ILogger<AddUserToGroupCommandHandler> _logger;
 
         public AddUserToGroupCommandHandler(
             IUserRepository userRepository,
+            IGroupRepository groupRepository,
             IDomainRepository domainRepository,
             IKeycloakService keycloakService,
             ILogger<AddUserToGroupCommandHandler> logger)
         {
             _userRepository = userRepository;
+            _groupRepository = groupRepository;
             _domainRepository = domainRepository;
             _keycloakService = keycloakService;
             _logger = logger;
@@ -52,6 +55,17 @@ namespace MngKeeper.Application.Features.User.Commands.AddUserToGroup
                     };
                 }
 
+                // Get group to get its name for Keycloak
+                var group = await _groupRepository.GetByIdAsync(request.GroupId);
+                if (group == null)
+                {
+                    return new AddUserToGroupResponse
+                    {
+                        IsSuccess = false,
+                        ErrorMessage = "Group not found."
+                    };
+                }
+
                 // Check if user is already in the group
                 if (user.Groups.Contains(request.GroupId))
                 {
@@ -62,8 +76,8 @@ namespace MngKeeper.Application.Features.User.Commands.AddUserToGroup
                     };
                 }
 
-                // Add to group in Keycloak
-                var success = await _keycloakService.AddUserToGroupAsync(domain.RealmName, request.UserId, request.GroupId);
+                // Add to group in Keycloak (use Keycloak UUIDs and group name)
+                var success = await _keycloakService.AddUserToGroupAsync(domain.RealmName, user.KeycloakUserId, group.Name);
                 if (!success)
                 {
                     return new AddUserToGroupResponse
@@ -73,19 +87,21 @@ namespace MngKeeper.Application.Features.User.Commands.AddUserToGroup
                     };
                 }
 
-                // Update user groups in database
-                user.Groups.Add(request.GroupId);
+                // Update user groups in database (store group NAME for consistency)
+                user.Groups.Add(group.Name);
                 user.UpdatedAt = DateTime.UtcNow;
                 user.UpdatedBy = "system"; // TODO: Get from current user context
 
                 await _userRepository.UpdateAsync(user);
 
-                _logger.LogInformation("User {UserId} added to group {GroupId} in domain {DomainId}", 
-                    request.UserId, request.GroupId, request.DomainId);
+                _logger.LogInformation("User {UserId} added to group {GroupName} ({GroupId}) in domain {DomainId}", 
+                    request.UserId, group.Name, request.GroupId, request.DomainId);
 
                 return new AddUserToGroupResponse
                 {
-                    IsSuccess = true
+                    IsSuccess = true,
+                    Username = user.Username,
+                    GroupName = group.Name
                 };
             }
             catch (Exception ex)

@@ -1,7 +1,6 @@
 using MediatR;
 using MngKeeper.Application.Interfaces;
 using Microsoft.Extensions.Logging;
-using Microsoft.AspNetCore.Http;
 
 namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
 {
@@ -11,43 +10,27 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
         private readonly IDomainRepository _domainRepository;
         private readonly IKeycloakService _keycloakService;
         private readonly ILogger<DeleteGroupCommandHandler> _logger;
-        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public DeleteGroupCommandHandler(
             IGroupRepository groupRepository,
             IDomainRepository domainRepository,
             IKeycloakService keycloakService,
-            ILogger<DeleteGroupCommandHandler> logger,
-            IHttpContextAccessor httpContextAccessor)
+            ILogger<DeleteGroupCommandHandler> logger)
         {
             _groupRepository = groupRepository;
             _domainRepository = domainRepository;
             _keycloakService = keycloakService;
             _logger = logger;
-            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<DeleteGroupResponse> Handle(DeleteGroupCommand request, CancellationToken cancellationToken)
         {
-            TokenClaims? claims = null;
             try
             {
-                _logger.LogInformation("Deleting group: {GroupId}", request.GroupId);
-
-                // Get domain from token claims
-                claims = _httpContextAccessor.HttpContext?.Items["TokenClaims"] as TokenClaims;
-                
-                if (claims?.DomainId == null)
-                {
-                    return new DeleteGroupResponse
-                    {
-                        IsSuccess = false,
-                        ErrorMessage = "Domain information not found in token."
-                    };
-                }
+                _logger.LogInformation("Deleting group {GroupId} in domain {DomainId}", request.GroupId, request.DomainId);
 
                 // Get domain to get realm name
-                var domain = await _domainRepository.GetByIdAsync(claims.DomainId);
+                var domain = await _domainRepository.GetByIdAsync(request.DomainId);
                 if (domain == null)
                 {
                     return new DeleteGroupResponse
@@ -69,7 +52,7 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
                 }
 
                 // Check if group belongs to the current domain
-                if (existingGroup.DomainId != claims.DomainId)
+                if (existingGroup.DomainId != request.DomainId)
                 {
                     return new DeleteGroupResponse
                     {
@@ -78,9 +61,10 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
                     };
                 }
 
-                // Check if group is a system group (admins, managers, guests)
+                // Check if group is a system group (admins, managers, users, guests)
                 if (existingGroup.Name.ToLower() == "admins" || 
                     existingGroup.Name.ToLower() == "managers" || 
+                    existingGroup.Name.ToLower() == "users" ||
                     existingGroup.Name.ToLower() == "guests")
                 {
                     return new DeleteGroupResponse
@@ -104,7 +88,7 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
                     };
                 }
 
-                _logger.LogInformation("Group deleted successfully: {GroupId} in domain: {DomainId}", request.GroupId, claims.DomainId);
+                _logger.LogInformation("Group deleted successfully: {GroupId} in domain: {DomainId}", request.GroupId, request.DomainId);
 
                 return new DeleteGroupResponse
                 {
@@ -113,7 +97,7 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting group: {GroupId} in domain: {DomainId}", request.GroupId, claims?.DomainId);
+                _logger.LogError(ex, "Error deleting group: {GroupId} in domain: {DomainId}", request.GroupId, request.DomainId);
                 return new DeleteGroupResponse
                 {
                     IsSuccess = false,

@@ -13,5 +13,7 @@ namespace MngKeeper.Application.Features.User.Commands.AddUserToGroup
     {
         public bool IsSuccess { get; set; }
         public string? ErrorMessage { get; set; }
+        public string? Username { get; set; }
+        public string? GroupName { get; set; }
     }
 }

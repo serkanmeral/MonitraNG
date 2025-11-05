@@ -57,18 +57,17 @@ namespace MngKeeper.Api.Controllers
             return Ok(response);
         }
 
-        // Temporarily disabled due to schema conflicts
-        // [HttpGet("{groupId}")]
-        // public async Task<ActionResult<GetGroupResponse>> GetGroup(string groupId)
-        // {
-        //     var query = new GetGroupQuery { GroupId = groupId };
-        //     var response = await _mediator.Send(query);
-        //     
-        //     if (!response.IsSuccess)
-        //         return NotFound(response);
-        // 
-        //     return Ok(response);
-        // }
+        [HttpGet("{groupId}")]
+        public async Task<ActionResult<GetGroupResponse>> GetGroup(string groupId)
+        {
+            var query = new GetGroupQuery { GroupId = groupId };
+            var response = await _mediator.Send(query);
+            
+            if (!response.IsSuccess)
+                return NotFound(response);
+        
+            return Ok(response);
+        }
 
         [HttpPut("{groupId}")]
         public async Task<ActionResult<UpdateGroupResponse>> UpdateGroup(string groupId, [FromBody] UpdateGroupCommand command)
@@ -86,7 +85,24 @@ namespace MngKeeper.Api.Controllers
         [HttpDelete("{groupId}")]
         public async Task<ActionResult<DeleteGroupResponse>> DeleteGroup(string groupId)
         {
-            var command = new DeleteGroupCommand { GroupId = groupId };
+            // Get domain from token claims
+            var claims = HttpContext.Items["TokenClaims"] as TokenClaims;
+            
+            if (claims?.DomainId == null)
+            {
+                return BadRequest(new DeleteGroupResponse
+                {
+                    IsSuccess = false,
+                    ErrorMessage = "Domain information not found in token."
+                });
+            }
+            
+            var command = new DeleteGroupCommand 
+            { 
+                GroupId = groupId,
+                DomainId = claims.DomainId
+            };
+            
             var response = await _mediator.Send(command);
             
             if (!response.IsSuccess)

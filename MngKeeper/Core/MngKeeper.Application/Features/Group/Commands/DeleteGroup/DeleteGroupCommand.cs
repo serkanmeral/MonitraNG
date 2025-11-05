@@ -5,6 +5,7 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
     public class DeleteGroupCommand : IRequest<DeleteGroupResponse>
     {
         public string GroupId { get; set; } = string.Empty;
+        public string DomainId { get; set; } = string.Empty;
     }
 
     public class DeleteGroupResponse
