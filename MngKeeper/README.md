@@ -63,6 +63,15 @@ dotnet run
 
 ## 📬 API Endpoints
 
+**Toplam: 18 Production-Ready Endpoints**
+
+- 🏢 Domain Management (2)
+- 🔐 Authentication (3)
+- 🔧 Admin Operations (1)
+- 👥 User Management (5)
+- 👪 Group Management (5)
+- 🔗 User-Group Assignment (2)
+
 ### 🏢 Domain Management
 
 #### Create Domain
@@ -232,7 +241,11 @@ POST https://localhost:5001/api/admin/realms/acme-corp/configure-mappers
 
 ### 👥 User Management
 
+Tüm user endpoint'leri JWT token ile korunur ve domain bazlıdır.
+
 #### Create User
+**Domain içinde yeni kullanıcı oluşturur.**
+
 ```http
 POST https://localhost:5001/api/user
 Authorization: Bearer {token}
@@ -244,46 +257,146 @@ Content-Type: application/json
   "password": "SecurePass123!",
   "firstName": "John",
   "lastName": "Doe",
-  "groups": ["users"]
+  "groupIds": ["users"],
+  "isActive": true
 }
 ```
 
-#### Get Users
+**Response:**
+```json
+{
+  "userId": "507f1f77bcf86cd799439011",
+  "username": "john.doe",
+  "email": "john@acme.com",
+  "firstName": "John",
+  "lastName": "Doe",
+  "groups": ["users"],
+  "isActive": true,
+  "createdAt": "2025-11-05T10:00:00Z",
+  "isSuccess": true
+}
+```
+
+---
+
+#### Get Users (List)
+**Domain içindeki kullanıcıları listeler. Pagination ve search desteği.**
+
 ```http
-GET https://localhost:5001/api/user?page=1&pageSize=20
+GET https://localhost:5001/api/user?page=1&pageSize=20&searchTerm=john&isActive=true
 Authorization: Bearer {token}
 ```
+
+**Query Parameters:**
+- `page` (default: 1) - Sayfa numarası
+- `pageSize` (default: 10) - Sayfa başına kayıt
+- `searchTerm` (optional) - Username, email veya ad/soyad araması
+- `isActive` (optional) - Aktif/pasif filtreleme
+
+**Response:**
+```json
+{
+  "users": [
+    {
+      "userId": "507f1f77bcf86cd799439011",
+      "username": "john.doe",
+      "email": "john@acme.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "isActive": true,
+      "groups": ["users"],
+      "createdAt": "2025-11-05T10:00:00Z"
+    }
+  ],
+  "totalCount": 42,
+  "page": 1,
+  "pageSize": 20,
+  "isSuccess": true
+}
+```
+
+---
 
 #### Get User by ID
+**Kullanıcı detaylarını getirir.**
+
 ```http
-GET https://localhost:5001/api/user/{userId}
+GET https://localhost:5001/api/user/507f1f77bcf86cd799439011
 Authorization: Bearer {token}
 ```
 
+**Response:**
+```json
+{
+  "user": {
+    "userId": "507f1f77bcf86cd799439011",
+    "username": "john.doe",
+    "email": "john@acme.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "isActive": true,
+    "groups": ["users", "developers"],
+    "roles": [],
+    "createdAt": "2025-11-05T10:00:00Z",
+    "lastLoginAt": "2025-11-05T11:30:00Z"
+  },
+  "isSuccess": true
+}
+```
+
+---
+
 #### Update User
+**Kullanıcı bilgilerini günceller.**
+
 ```http
-PUT https://localhost:5001/api/user/{userId}
+PUT https://localhost:5001/api/user/507f1f77bcf86cd799439011
 Authorization: Bearer {token}
 Content-Type: application/json
 
 {
-  "firstName": "John Updated",
-  "lastName": "Doe",
-  "email": "john.updated@acme.com"
+  "firstName": "John",
+  "lastName": "Doe Updated",
+  "email": "john.updated@acme.com",
+  "isActive": true
 }
 ```
 
+**Response:**
+```json
+{
+  "userId": "507f1f77bcf86cd799439011",
+  "username": "john.doe",
+  "email": "john.updated@acme.com",
+  "firstName": "John",
+  "lastName": "Doe Updated",
+  "isActive": true,
+  "updatedAt": "2025-11-05T12:00:00Z",
+  "isSuccess": true
+}
+```
+
+---
+
 #### Delete User
+**Kullanıcıyı siler (soft delete).**
+
 ```http
-DELETE https://localhost:5001/api/user/{userId}
+DELETE https://localhost:5001/api/user/507f1f77bcf86cd799439011
 Authorization: Bearer {token}
 ```
+
+**Response:** `204 No Content`
 
 ---
 
 ### 👪 Group Management
 
+Tüm group endpoint'leri JWT token ile korunur ve domain bazlıdır.
+
 #### Create Group
+**Domain içinde yeni grup oluşturur.**
+
 ```http
 POST https://localhost:5001/api/group
 Authorization: Bearer {token}
@@ -291,33 +404,160 @@ Content-Type: application/json
 
 {
   "name": "developers",
-  "description": "Development team"
+  "description": "Development Team Members"
 }
 ```
 
-#### Get Groups
+**Response:**
+```json
+{
+  "groupId": "507f1f77bcf86cd799439012",
+  "name": "developers",
+  "description": "Development Team Members",
+  "permissions": [],
+  "isActive": true,
+  "createdAt": "2025-11-05T10:00:00Z",
+  "isSuccess": true
+}
+```
+
+---
+
+#### Get Groups (List)
+**Domain içindeki grupları listeler. Pagination ve search desteği.**
+
 ```http
-GET https://localhost:5001/api/group
+GET https://localhost:5001/api/group?page=1&pageSize=20&searchTerm=dev&isActive=true
 Authorization: Bearer {token}
 ```
 
-#### Update Group
+**Query Parameters:**
+- `page` (default: 1) - Sayfa numarası
+- `pageSize` (default: 10) - Sayfa başına kayıt
+- `searchTerm` (optional) - Grup adı veya açıklama araması
+- `isActive` (optional) - Aktif/pasif filtreleme
+
+**Response:**
+```json
+{
+  "groups": [
+    {
+      "groupId": "507f1f77bcf86cd799439012",
+      "name": "developers",
+      "description": "Development Team Members",
+      "memberCount": 5,
+      "isActive": true,
+      "createdAt": "2025-11-05T10:00:00Z"
+    }
+  ],
+  "totalCount": 5,
+  "page": 1,
+  "pageSize": 20,
+  "isSuccess": true
+}
+```
+
+---
+
+#### Get Group by ID
+**Grup detaylarını getirir.**
+
 ```http
-PUT https://localhost:5001/api/group/{groupId}
+GET https://localhost:5001/api/group/507f1f77bcf86cd799439012
+Authorization: Bearer {token}
+```
+
+**Response:**
+```json
+{
+  "group": {
+    "groupId": "507f1f77bcf86cd799439012",
+    "name": "developers",
+    "description": "Development Team Members",
+    "permissions": [],
+    "memberCount": 5,
+    "isActive": true,
+    "createdAt": "2025-11-05T10:00:00Z"
+  },
+  "isSuccess": true
+}
+```
+
+---
+
+#### Update Group
+**Grup bilgilerini günceller.**
+
+```http
+PUT https://localhost:5001/api/group/507f1f77bcf86cd799439012
 Authorization: Bearer {token}
 Content-Type: application/json
 
 {
   "name": "developers",
-  "description": "Updated description"
+  "description": "Updated: Development Team Members"
 }
 ```
 
+**Response:**
+```json
+{
+  "groupId": "507f1f77bcf86cd799439012",
+  "name": "developers",
+  "description": "Updated: Development Team Members",
+  "updatedAt": "2025-11-05T12:00:00Z",
+  "isSuccess": true
+}
+```
+
+---
+
 #### Delete Group
+**Grubu siler. Sistem grupları (admins, managers, users, guests) korunur.**
+
 ```http
-DELETE https://localhost:5001/api/group/{groupId}
+DELETE https://localhost:5001/api/group/507f1f77bcf86cd799439012
 Authorization: Bearer {token}
 ```
+
+**Response:** `204 No Content`
+
+**Not:** Sistem grupları silinmeye karşı korumalıdır.
+
+---
+
+### 🔗 User-Group Assignment
+
+Kullanıcıları gruplara ekleme ve çıkarma işlemleri.
+
+#### Add User to Group
+**Kullanıcıyı bir gruba ekler.**
+
+```http
+POST https://localhost:5001/api/user/507f1f77bcf86cd799439011/groups/507f1f77bcf86cd799439012
+Authorization: Bearer {token}
+```
+
+**Response:**
+```json
+{
+  "isSuccess": true,
+  "username": "john.doe",
+  "groupName": "developers"
+}
+```
+
+---
+
+#### Remove User from Group
+**Kullanıcıyı bir gruptan çıkarır.**
+
+```http
+DELETE https://localhost:5001/api/user/507f1f77bcf86cd799439011/groups/507f1f77bcf86cd799439012
+Authorization: Bearer {token}
+```
+
+**Response:** `204 No Content`
 
 ---
 
@@ -607,13 +847,34 @@ Write-Host "Access Token: $token"
 # 4. Token ile API çağrısı yap
 $headers = @{
     "Authorization" = "Bearer $token"
+    "Content-Type" = "application/json"
 }
 
+# Kullanıcı oluştur
+$newUserBody = @{
+    username = "john.doe"
+    email = "john@acme.com"
+    password = "JohnPass123!"
+    firstName = "John"
+    lastName = "Doe"
+    groupIds = @("users")
+    isActive = $true
+} | ConvertTo-Json
+
+$newUser = Invoke-RestMethod -Uri "https://localhost:5001/api/user" `
+  -Method POST `
+  -Headers $headers `
+  -Body $newUserBody `
+  -SkipCertificateCheck
+
+Write-Host "Created user: $($newUser.username) (ID: $($newUser.userId))"
+
+# Kullanıcıları listele
 $users = Invoke-RestMethod -Uri "https://localhost:5001/api/user" `
   -Headers $headers `
   -SkipCertificateCheck
 
-Write-Host "User count: $($users.Count)"
+Write-Host "Total users: $($users.totalCount)"
 ```
 
 ---
@@ -763,23 +1024,35 @@ docker exec minio sh -c "mc alias set local http://localhost:9000 admin admin123
 
 ## 🎯 Roadmap
 
-**Tamamlanan:**
+**✅ Tamamlanan (Phase 1):**
 - ✅ Domain Creation Pipeline (11 steps)
 - ✅ Authentication API (token, refresh, revoke)
-- ✅ Infrastructure Integration (MongoDB, Keycloak, Redis, RabbitMQ, MinIO)
-- ✅ Clean Architecture
-- ✅ Pipeline Pattern
+- ✅ User Management (5 endpoints)
+  - Create, List, Get, Update, Delete
+- ✅ Group Management (5 endpoints)
+  - Create, List, Get, Update, Delete
+  - System group protection
+- ✅ User-Group Assignment (2 endpoints)
+  - Add to group, Remove from group
+- ✅ Infrastructure Integration
+  - MongoDB (multi-database)
+  - Keycloak (multi-realm)
+  - Redis (domain cache)
+  - RabbitMQ (event publishing)
+  - MinIO (bucket per domain)
+- ✅ Clean Architecture + CQRS
+- ✅ JWT Middleware (custom claims)
+- ✅ **Toplam: 18 Production-Ready Endpoints**
 
-**Devam Eden:**
-- 🔄 User Management (MediatR commands/queries)
-- 🔄 Group Management
-
-**Planlanan:**
+**📋 Planlanan (Phase 2):**
 - ⏸️ WebSocket Gateway integration
 - ⏸️ Dataset Management (MngDataGateway ile)
-- ⏸️ File Storage API (MinIO integration)
-- ⏸️ Audit logging
-- ⏸️ Rate limiting
+- ⏸️ File Storage API (MinIO direct integration)
+- ⏸️ Audit logging (user actions)
+- ⏸️ Rate limiting & throttling
+- ⏸️ Admin dashboard
+- ⏸️ Password reset flow
+- ⏸️ Email notifications
 
 Detaylı roadmap: [ROADMAP_MngKeeper.md](../ROADMAP_MngKeeper.md)
 
@@ -827,5 +1100,6 @@ MIT License - MonitraNG Project
 ---
 
 **Son Güncelleme:** 2025-11-05  
-**Version:** 1.0.0  
-**Maintainer:** MonitraNG Team
+**Version:** 1.0.0 (Phase 1 Complete - 18 Endpoints)  
+**Maintainer:** MonitraNG Team  
+**Status:** ✅ Production Ready (User & Group Management Complete)
