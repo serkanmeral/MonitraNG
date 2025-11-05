@@ -19,7 +19,7 @@ public class CertificateHandler
         return Convert.FromBase64String(pem.Substring(index1, index2 - index1));
     }
 
-    private static X509Certificate2 GetSignedCertificate(ILogger log, MngKeeperSettings settings)
+    private static X509Certificate2 GetSignedCertificate(Serilog.Core.Logger log, MngKeeperSettings settings)
     {
         X509Certificate2 certWithKey = new X509Certificate2();
 
@@ -42,17 +42,17 @@ public class CertificateHandler
                 rsa.ImportPkcs8PrivateKey(keyDer, out _);
                 certWithKey = certOnly.CopyWithPrivateKey(rsa);
             }
-            log.LogInformation("Signed Cert Issuer : {Issuer}", certWithKey.Issuer);
+            log.Information("Signed Cert Issuer : {0}", certWithKey.Issuer);
         }
         catch (Exception ex)
         {
-            log.LogError(ex, "Signed Cert Loading Error");
+            log.Error(ex, "Signed Cert Loading Error");
         }
 
         return new X509Certificate2(certWithKey.Export(X509ContentType.Pkcs12));
     }
 
-    private static X509Certificate2 CreateSelfSignedCertificate(ILogger log, string dns)
+    private static X509Certificate2 CreateSelfSignedCertificate(Serilog.Core.Logger log, string dns)
     {
         string countryName = "TR";
         string stateOrProvinceName = "ISTANBUL";
@@ -77,7 +77,7 @@ public class CertificateHandler
             // Sertifika oluştur
             var cert = request.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddYears(1));
 
-            log.LogInformation("Self Signed Cert Issuer : {Issuer}", cert.Issuer);
+            log.Information("Self Signed Cert Issuer : {0}", cert.Issuer);
 
             // .NET Core 3.0 ve üzerinde önerilen bir yöntemle sertifikayı X509Certificate2'ye dönüştür
 
@@ -87,7 +87,7 @@ public class CertificateHandler
         }
     }
 
-    public static X509Certificate2 GetCertificate(ILogger log, MngKeeperSettings settings)
+    public static X509Certificate2 GetCertificate(Serilog.Core.Logger log, MngKeeperSettings settings)
     {
 
         return string.IsNullOrEmpty(settings.CertificateSettings.DNS)

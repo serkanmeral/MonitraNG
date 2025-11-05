@@ -4,6 +4,7 @@ using MngKeeper.Application.Configuration;
 using MngKeeper.Infrastructure.Services.Certificate;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,26 +22,21 @@ if (keeperSettings == null)
 // Initialize Serilog
 var log = builder.InitSerilog();
 
-// Get certificate (if configured)
-X509Certificate2? certificate = null;
+// Get certificate
+X509Certificate2 certificate;
 try
 {
-    if (!string.IsNullOrEmpty(keeperSettings.CertificateSettings?.MNG_CERT_FILE) ||
-        !string.IsNullOrEmpty(keeperSettings.CertificateSettings?.DNS))
-    {
-        // Create a temporary logger factory for certificate handler
-        using var loggerFactory = LoggerFactory.Create(builder => builder.AddSerilog(log));
-        var logger = loggerFactory.CreateLogger("CertificateHandler");
-        certificate = CertificateHandler.GetCertificate(logger, keeperSettings);
-    }
+    certificate = CertificateHandler.GetCertificate(log, keeperSettings);
+    log.Information("Certificate loaded successfully");
 }
 catch (Exception ex)
 {
-    log.Warning(ex, "Certificate loading failed, continuing without custom certificate");
+    log.Fatal(ex, "Failed to load certificate - Application cannot start without valid SSL certificate");
+    throw;
 }
 
 // Initialize services
-builder.InitWebApp(certificate);
+builder.InitWebAPP(certificate!);
 builder.InitOpenApi();
 
 // Add application services

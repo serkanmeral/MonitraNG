@@ -59,17 +59,20 @@ namespace MngDataGateway.Api.Config
             });
         }
 
-        public static void InitWebAPP(this WebApplicationBuilder builder, X509Certificate2 certificate)
+    public static void InitWebAPP(this WebApplicationBuilder builder, X509Certificate2 certificate)
+    {
+        builder.WebHost.ConfigureKestrel(options =>
         {
-            builder.WebHost.ConfigureKestrel(options =>
-            {
-                options.AddServerHeader = false;
+            options.AddServerHeader = false;
 
-                options.ListenAnyIP(5010, _opt =>
+            options.ListenAnyIP(5010, _opt =>
+            {
+                _opt.UseHttps(httpsOptions =>
                 {
-                    _opt.UseHttps(certificate);
+                    httpsOptions.ServerCertificate = certificate;
                 });
             });
+        });
 
             builder.Services.AddControllers().AddJsonOptions(o =>
             {

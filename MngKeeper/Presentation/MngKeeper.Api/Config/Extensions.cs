@@ -1,13 +1,14 @@
+using HotChocolate.AspNetCore;
 using Microsoft.AspNetCore.Diagnostics;
-using MngKeeper.Application.Configuration;
 using MngKeeper.Api.Configuration;
 using MngKeeper.Api.Middleware;
-using HotChocolate.AspNetCore;
+using MngKeeper.Application.Configuration;
 using Scalar.AspNetCore;
 using Serilog;
 using System.Net;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json.Serialization;
 
 namespace MngKeeper.Api.Config;
 
@@ -33,24 +34,66 @@ public static class Extensions
     public static void InitOpenApi(this WebApplicationBuilder builder)
     {
         builder.Services.AddEndpointsApiExplorer();
-        
+
         // Add Swagger Configuration (uses existing SwaggerConfiguration)
         builder.Services.AddSwaggerConfiguration();
     }
 
-    public static void InitWebApp(this WebApplicationBuilder builder, X509Certificate2? certificate)
-    {
-        if (certificate != null)
-        {
-            builder.WebHost.ConfigureKestrel(options =>
-            {
-                options.AddServerHeader = false;
-                // Port configuration from appsettings.json
-            });
-        }
+    //public static void InitWebApp(this WebApplicationBuilder builder, X509Certificate2? certificate)
+    //{
+    //    if (certificate != null)
+    //    {
+    //        builder.WebHost.ConfigureKestrel(options =>
+    //        {
+    //            options.AddServerHeader = false;
+    //            // Port configuration from appsettings.json
+    //        });
+    //    }
 
+    //    builder.Services.AddControllers();
+
+    //    // Add GraphQL
+    //    builder.Services.AddGraphQLServer()
+    //        .AddQueryType<MngKeeper.Api.GraphQL.Query>();
+    //}
+
+    public static void InitWebAPP(this WebApplicationBuilder builder, X509Certificate2 certificate)
+    {
+        builder.WebHost.ConfigureKestrel(options =>
+        {
+            options.AddServerHeader = false;
+
+            options.ListenAnyIP(5001, _opt =>
+            {
+                _opt.UseHttps(httpsOptions =>
+                {
+                    httpsOptions.ServerCertificate = certificate;
+                });
+            });
+        });
+
+        builder.Services.AddControllers().AddJsonOptions(o =>
+        {
+            o.JsonSerializerOptions.ReferenceHandler
+                = ReferenceHandler.IgnoreCycles;
+            o.JsonSerializerOptions.MaxDepth = 64;
+        });
+        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+        builder.Services.AddCors(l =>
+        {
+            l.AddPolicy("CorsPolicy", b =>
+                b.AllowAnyOrigin()
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                 .WithExposedHeaders("Content-Disposition")
+                );
+        });
+
+
+        // Add services to the container
         builder.Services.AddControllers();
-        
+
         // Add GraphQL
         builder.Services.AddGraphQLServer()
             .AddQueryType<MngKeeper.Api.GraphQL.Query>();
@@ -83,7 +126,7 @@ public static class Extensions
         if (env.IsDevelopment())
         {
             app.UseSwaggerConfiguration(env);
-            
+
             // Add Scalar API Reference (Modern UI)
             app.MapScalarApiReference(options =>
             {

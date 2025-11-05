@@ -5,6 +5,7 @@ using MngDataGateway.Application.Configuration;
 using MngDataGateway.Infrastructure.Services.Certificate;
 using MongoDB.Driver;
 using Serilog;
+using System.Security.Cryptography.X509Certificates;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,10 +13,25 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 
 var datagatewaySettings = builder.Configuration.GetSection("MngDataGatewaySettings").Get<MngDataGatewaySettings>();
+if (datagatewaySettings == null)
+{
+    throw new InvalidOperationException("MngDataGatewaySettings configuration is required!");
+}
 
 var log = builder.InitSerilog(datagatewaySettings);
 
-var certificate = CertificateHandler.GetCertificate(log, datagatewaySettings);
+// Get certificate
+X509Certificate2 certificate;
+try
+{
+    certificate = CertificateHandler.GetCertificate(log, datagatewaySettings);
+    log.Information("Certificate loaded successfully");
+}
+catch (Exception ex)
+{
+    log.Fatal(ex, "Failed to load certificate - Application cannot start without valid SSL certificate");
+    throw;
+}
 
 builder.InitWebAPP(certificate);
 builder.InitOpenApi();
