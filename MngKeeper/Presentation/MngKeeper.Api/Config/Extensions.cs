@@ -162,7 +162,10 @@ public static class Extensions
         // 5. Serilog request logging
         app.UseSerilogRequestLogging();
 
-        // 6. Authorization
+        // 6. JWT Claims extraction
+        app.UseJwtClaims();
+
+        // 7. Authorization
         app.UseAuthorization();
 
         // 7. Map controllers

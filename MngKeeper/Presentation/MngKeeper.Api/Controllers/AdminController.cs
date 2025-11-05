@@ -95,6 +95,10 @@ public class AdminController : ControllerBase
             var isAdminMapperAdded = await AddIsAdminMapperAsync(httpClient, realmName, clientId!);
             if (isAdminMapperAdded) mappersAdded.Add("isAdmin");
 
+            // Add domain_name mapper
+            var domainNameMapperAdded = await AddDomainNameMapperAsync(httpClient, realmName, clientId!);
+            if (domainNameMapperAdded) mappersAdded.Add("domain_name");
+
             _logger.LogInformation("Mappers configured successfully for realm: {RealmName}. Added: {Mappers}", 
                 realmName, string.Join(", ", mappersAdded));
 
@@ -237,6 +241,49 @@ public class AdminController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error adding isAdmin mapper");
+            return false;
+        }
+    }
+
+    private async Task<bool> AddDomainNameMapperAsync(HttpClient httpClient, string realmName, string clientId)
+    {
+        try
+        {
+            // Hardcoded claim mapper - domain name is the realm name
+            var mapperData = new
+            {
+                name = "domain-name-mapper",
+                protocol = "openid-connect",
+                protocolMapper = "oidc-hardcoded-claim-mapper",
+                config = new Dictionary<string, string>
+                {
+                    ["claim.name"] = "domain_name",
+                    ["claim.value"] = realmName,
+                    ["id.token.claim"] = "true",
+                    ["access.token.claim"] = "true",
+                    ["userinfo.token.claim"] = "true",
+                    ["jsonType.label"] = "String"
+                }
+            };
+
+            var json = JsonSerializer.Serialize(mapperData);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await httpClient.PostAsync($"/admin/realms/{realmName}/clients/{clientId}/protocol-mappers/models", content);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Failed to add domain_name mapper. Error: {Error}", error);
+                return false;
+            }
+
+            _logger.LogInformation("domain_name mapper added successfully");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error adding domain_name mapper");
             return false;
         }
     }
