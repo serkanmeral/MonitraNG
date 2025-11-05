@@ -5,6 +5,7 @@ namespace MngKeeper.Application.Interfaces
     public interface IKeycloakService
     {
         Task<RealmInfo> CreateRealmAsync(string realmName, DomainSettingsDto settings);
+        Task<ClientInfo> CreateClientAsync(string realmName, CreateClientRequest request);
         Task<UserInfo> CreateUserAsync(string realmName, CreateUserRequest request);
         Task<GroupInfo> CreateGroupAsync(string realmName, CreateGroupRequest request);
         Task<bool> AddUserToGroupAsync(string realmName, string userId, string groupName);
@@ -44,6 +45,15 @@ namespace MngKeeper.Application.Interfaces
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 
+    public class ClientInfo
+    {
+        public string Id { get; set; } = string.Empty;
+        public string ClientId { get; set; } = string.Empty;
+        public string ClientSecret { get; set; } = string.Empty;
+        public bool Enabled { get; set; } = true;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+
     public class CreateUserRequest
     {
         public string Username { get; set; } = string.Empty;
@@ -60,6 +70,15 @@ namespace MngKeeper.Application.Interfaces
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public List<string> Permissions { get; set; } = new();
+    }
+
+    public class CreateClientRequest
+    {
+        public string ClientId { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public bool Enabled { get; set; } = true;
+        public bool DirectAccessGrantsEnabled { get; set; } = true;
+        public bool ServiceAccountsEnabled { get; set; } = true;
     }
 
     public class KeycloakTokenResponse

@@ -10,5 +10,7 @@ namespace MngKeeper.Application.Features.Domain.Commands.CreateDomain
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public bool IsSuccess { get; set; } = true;
         public string? ErrorMessage { get; set; }
+        public string? Message { get; set; }
+        public string? FailedStep { get; set; }
     }
 }

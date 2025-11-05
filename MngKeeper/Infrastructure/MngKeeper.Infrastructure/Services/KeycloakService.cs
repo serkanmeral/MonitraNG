@@ -30,7 +30,6 @@ namespace MngKeeper.Infrastructure.Services
 
                 await EnsureAdminTokenAsync();
 
-                var baseUrl = _configuration["Keycloak:BaseUrl"];
                 var realmData = new
                 {
                     realm = realmName,
@@ -44,7 +43,7 @@ namespace MngKeeper.Infrastructure.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
-                var response = await _httpClient.PostAsync($"{baseUrl}/admin/realms", content);
+                var response = await _httpClient.PostAsync($"/admin/realms", content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -56,6 +55,28 @@ namespace MngKeeper.Infrastructure.Services
 
                 // Create custom client scope for domain claims
                 await CreateCustomClientScopeAsync(realmName);
+
+                // Note: Protocol mappers (user_groups, isAdmin) should be configured separately
+                // using the /api/admin/realms/{realmName}/configure-mappers endpoint
+                // This is due to Keycloak permission constraints during realm creation
+
+                // Create default client for the realm (non-critical)
+                try
+                {
+                    await CreateClientAsync(realmName, new CreateClientRequest
+                    {
+                        ClientId = $"{realmName}-client",
+                        Name = $"{realmName} Client",
+                        Enabled = true,
+                        DirectAccessGrantsEnabled = true,
+                        ServiceAccountsEnabled = true
+                    });
+                    _logger.LogInformation("Client created for realm: {RealmName}", realmName);
+                }
+                catch (Exception clientEx)
+                {
+                    _logger.LogWarning(clientEx, "Failed to create client for realm {RealmName} (non-critical)", realmName);
+                }
 
                 _logger.LogInformation("Realm created successfully: {RealmName}", realmName);
 
@@ -81,7 +102,9 @@ namespace MngKeeper.Infrastructure.Services
 
                 await EnsureAdminTokenAsync();
 
-                var baseUrl = _configuration["Keycloak:BaseUrl"];
+                // Check if user should be admin
+                var isAdmin = request.Groups.Contains("admins");
+
                 var userData = new
                 {
                     username = request.Username,
@@ -90,9 +113,10 @@ namespace MngKeeper.Infrastructure.Services
                     lastName = request.LastName,
                     enabled = true,
                     emailVerified = true,
-                    attributes = new
+                    attributes = new Dictionary<string, string[]>
                     {
-                        domain = new[] { realmName } // Add domain attribute
+                        ["domain"] = new[] { realmName },
+                        ["isAdmin"] = new[] { isAdmin.ToString().ToLower() }
                     },
                     credentials = new[]
                     {
@@ -110,7 +134,7 @@ namespace MngKeeper.Infrastructure.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
-                var response = await _httpClient.PostAsync($"{baseUrl}/admin/realms/{realmName}/users", content);
+                var response = await _httpClient.PostAsync($"/admin/realms/{realmName}/users", content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -144,6 +168,78 @@ namespace MngKeeper.Infrastructure.Services
             }
         }
 
+        public async Task<ClientInfo> CreateClientAsync(string realmName, CreateClientRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("Creating client: {ClientId} in realm {RealmName}", request.ClientId, realmName);
+
+                await EnsureAdminTokenAsync();
+
+                var clientData = new
+                {
+                    clientId = request.ClientId,
+                    name = request.Name,
+                    enabled = request.Enabled,
+                    clientAuthenticatorType = "client-secret",
+                    redirectUris = new[] { "*" },
+                    webOrigins = new[] { "*" },
+                    publicClient = false,
+                    directAccessGrantsEnabled = request.DirectAccessGrantsEnabled,
+                    serviceAccountsEnabled = request.ServiceAccountsEnabled,
+                    standardFlowEnabled = true,
+                    implicitFlowEnabled = false,
+                    protocol = "openid-connect"
+                };
+
+                var json = JsonSerializer.Serialize(clientData);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
+
+                var response = await _httpClient.PostAsync($"/admin/realms/{realmName}/clients", content);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Failed to create client {ClientId} in realm {RealmName}. Status: {StatusCode}, Error: {Error}", 
+                        request.ClientId, realmName, response.StatusCode, errorContent);
+                    throw new Exception($"Failed to create client: {response.StatusCode} - {errorContent}");
+                }
+
+                // Get the created client ID from the Location header
+                var locationHeader = response.Headers.Location?.ToString();
+                var clientUuid = locationHeader?.Split('/').Last() ?? Guid.NewGuid().ToString();
+
+                // Get client secret
+                var secretResponse = await _httpClient.GetAsync($"/admin/realms/{realmName}/clients/{clientUuid}/client-secret");
+                string clientSecret = string.Empty;
+                
+                if (secretResponse.IsSuccessStatusCode)
+                {
+                    var secretJson = await secretResponse.Content.ReadAsStringAsync();
+                    var secretData = JsonSerializer.Deserialize<JsonElement>(secretJson);
+                    clientSecret = secretData.GetProperty("value").GetString() ?? string.Empty;
+                }
+
+                _logger.LogInformation("Client created successfully: {ClientId} in realm {RealmName}", request.ClientId, realmName);
+
+                return new ClientInfo
+                {
+                    Id = clientUuid,
+                    ClientId = request.ClientId,
+                    ClientSecret = clientSecret,
+                    Enabled = request.Enabled,
+                    CreatedAt = DateTime.UtcNow
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating client: {ClientId} in realm {RealmName}", request.ClientId, realmName);
+                throw;
+            }
+        }
+
         public async Task<GroupInfo> CreateGroupAsync(string realmName, CreateGroupRequest request)
         {
             try
@@ -152,7 +248,6 @@ namespace MngKeeper.Infrastructure.Services
 
                 await EnsureAdminTokenAsync();
 
-                var baseUrl = _configuration["Keycloak:BaseUrl"];
                 var groupData = new
                 {
                     name = request.Name
@@ -163,7 +258,7 @@ namespace MngKeeper.Infrastructure.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
-                var response = await _httpClient.PostAsync($"{baseUrl}/admin/realms/{realmName}/groups", content);
+                var response = await _httpClient.PostAsync($"/admin/realms/{realmName}/groups", content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -202,11 +297,10 @@ namespace MngKeeper.Infrastructure.Services
 
                 await EnsureAdminTokenAsync();
 
-                var baseUrl = _configuration["Keycloak:BaseUrl"];
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
                 // First, get the group ID by name
-                var groupsResponse = await _httpClient.GetAsync($"{baseUrl}/admin/realms/{realmName}/groups");
+                var groupsResponse = await _httpClient.GetAsync($"/admin/realms/{realmName}/groups");
                 if (!groupsResponse.IsSuccessStatusCode)
                 {
                     _logger.LogError("Failed to get groups for realm {RealmName}", realmName);
@@ -233,7 +327,7 @@ namespace MngKeeper.Infrastructure.Services
                 }
 
                 // Add user to group
-                var response = await _httpClient.PutAsync($"{baseUrl}/admin/realms/{realmName}/users/{userId}/groups/{groupId}", null);
+                var response = await _httpClient.PutAsync($"/admin/realms/{realmName}/users/{userId}/groups/{groupId}", null);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -261,11 +355,10 @@ namespace MngKeeper.Infrastructure.Services
 
                 await EnsureAdminTokenAsync();
 
-                var baseUrl = _configuration["Keycloak:BaseUrl"];
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
                 // First, get the user by username
-                var usersResponse = await _httpClient.GetAsync($"{baseUrl}/admin/realms/{realmName}/users?username={username}");
+                var usersResponse = await _httpClient.GetAsync($"/admin/realms/{realmName}/users?username={username}");
                 if (!usersResponse.IsSuccessStatusCode)
                 {
                     _logger.LogError("Failed to get user {Username} for realm {RealmName}", username, realmName);
@@ -289,7 +382,7 @@ namespace MngKeeper.Infrastructure.Services
                 }
 
                 // Get user's groups
-                var userGroupsResponse = await _httpClient.GetAsync($"{baseUrl}/admin/realms/{realmName}/users/{userId}/groups");
+                var userGroupsResponse = await _httpClient.GetAsync($"/admin/realms/{realmName}/users/{userId}/groups");
                 if (!userGroupsResponse.IsSuccessStatusCode)
                 {
                     _logger.LogError("Failed to get groups for user {Username} in realm {RealmName}", username, realmName);
@@ -332,8 +425,7 @@ namespace MngKeeper.Infrastructure.Services
             {
                 _logger.LogInformation("Getting token for user: {Username} in realm {RealmName}", username, realmName);
 
-                var baseUrl = _configuration["Keycloak:BaseUrl"];
-
+                // Use admin-cli client (available in all realms by default)
                 var formContent = new FormUrlEncodedContent(new[]
                 {
                     new KeyValuePair<string, string>("username", username),
@@ -343,14 +435,32 @@ namespace MngKeeper.Infrastructure.Services
                     new KeyValuePair<string, string>("scope", "profile email offline_access") // offline_access for refresh token
                 });
 
-                var response = await _httpClient.PostAsync($"{baseUrl}/realms/{realmName}/protocol/openid-connect/token", formContent);
+                var response = await _httpClient.PostAsync($"/realms/{realmName}/protocol/openid-connect/token", formContent);
                 
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
                     _logger.LogError("Failed to get token for user {Username} in realm {RealmName}. Status: {StatusCode}, Error: {Error}", 
                         username, realmName, response.StatusCode, errorContent);
-                    throw new Exception($"Failed to get token: {response.StatusCode} - {errorContent}");
+                    
+                    // Parse error response
+                    try
+                    {
+                        var errorJson = JsonSerializer.Deserialize<JsonElement>(errorContent);
+                        var error = errorJson.GetProperty("error").GetString();
+                        
+                        return new KeycloakTokenResponse
+                        {
+                            Error = error ?? "unknown_error"
+                        };
+                    }
+                    catch
+                    {
+                        return new KeycloakTokenResponse
+                        {
+                            Error = "authentication_failed"
+                        };
+                    }
                 }
 
                 var tokenResponseJson = await response.Content.ReadAsStringAsync();
@@ -382,8 +492,7 @@ namespace MngKeeper.Infrastructure.Services
             {
                 _logger.LogInformation("Refreshing token for realm {RealmName}", realmName);
 
-                var baseUrl = _configuration["Keycloak:BaseUrl"];
-
+                // Use admin-cli client (available in all realms by default)
                 var formContent = new FormUrlEncodedContent(new[]
                 {
                     new KeyValuePair<string, string>("grant_type", "refresh_token"),
@@ -391,7 +500,7 @@ namespace MngKeeper.Infrastructure.Services
                     new KeyValuePair<string, string>("client_id", "admin-cli")
                 });
 
-                var response = await _httpClient.PostAsync($"{baseUrl}/realms/{realmName}/protocol/openid-connect/token", formContent);
+                var response = await _httpClient.PostAsync($"/realms/{realmName}/protocol/openid-connect/token", formContent);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -430,8 +539,7 @@ namespace MngKeeper.Infrastructure.Services
             {
                 _logger.LogInformation("Revoking token for realm {RealmName}", realmName);
 
-                var baseUrl = _configuration["Keycloak:BaseUrl"];
-
+                // Use admin-cli client (available in all realms by default)
                 var formContent = new FormUrlEncodedContent(new[]
                 {
                     new KeyValuePair<string, string>("token", refreshToken),
@@ -439,7 +547,7 @@ namespace MngKeeper.Infrastructure.Services
                     new KeyValuePair<string, string>("token_type_hint", "refresh_token")
                 });
 
-                var response = await _httpClient.PostAsync($"{baseUrl}/realms/{realmName}/protocol/openid-connect/revoke", formContent);
+                var response = await _httpClient.PostAsync($"/realms/{realmName}/protocol/openid-connect/revoke", formContent);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -539,27 +647,21 @@ namespace MngKeeper.Infrastructure.Services
 
             try
             {
-                var baseUrl = _configuration["Keycloak:BaseUrl"];
-                var adminUsername = _configuration["Keycloak:AdminUsername"];
-                var adminPassword = _configuration["Keycloak:AdminPassword"];
-
-                var tokenData = new
-                {
-                    username = adminUsername,
-                    password = adminPassword,
-                    grant_type = "password",
-                    client_id = "admin-cli"
-                };
+                var adminUsername = _configuration["MngKeeperSettings:Keycloak:AdminUsername"];
+                var adminPassword = _configuration["MngKeeperSettings:Keycloak:AdminPassword"];
+                var clientId = _configuration["MngKeeperSettings:Keycloak:ClientId"];
+                var clientSecret = _configuration["MngKeeperSettings:Keycloak:ClientSecret"];
 
                 var formContent = new FormUrlEncodedContent(new[]
                 {
                     new KeyValuePair<string, string>("username", adminUsername!),
                     new KeyValuePair<string, string>("password", adminPassword!),
                     new KeyValuePair<string, string>("grant_type", "password"),
-                    new KeyValuePair<string, string>("client_id", "admin-cli")
+                    new KeyValuePair<string, string>("client_id", clientId!),
+                    new KeyValuePair<string, string>("client_secret", clientSecret!)
                 });
 
-                var response = await _httpClient.PostAsync($"{baseUrl}/realms/master/protocol/openid-connect/token", formContent);
+                var response = await _httpClient.PostAsync($"/realms/master/protocol/openid-connect/token", formContent);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -590,8 +692,6 @@ namespace MngKeeper.Infrastructure.Services
 
                 await EnsureAdminTokenAsync();
 
-                var baseUrl = _configuration["Keycloak:BaseUrl"];
-
                 // Create client scope
                 var clientScopeData = new
                 {
@@ -612,7 +712,7 @@ namespace MngKeeper.Infrastructure.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
-                var response = await _httpClient.PostAsync($"{baseUrl}/admin/realms/{realmName}/client-scopes", content);
+                var response = await _httpClient.PostAsync($"/admin/realms/{realmName}/client-scopes", content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -644,8 +744,6 @@ namespace MngKeeper.Infrastructure.Services
         {
             try
             {
-                var baseUrl = _configuration["Keycloak:BaseUrl"];
-
                 var mapperData = new
                 {
                     name = "domain-claim",
@@ -667,7 +765,7 @@ namespace MngKeeper.Infrastructure.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
-                var response = await _httpClient.PostAsync($"{baseUrl}/admin/realms/{realmName}/client-scopes/{scopeId}/protocol-mappers/models", content);
+                var response = await _httpClient.PostAsync($"/admin/realms/{realmName}/client-scopes/{scopeId}/protocol-mappers/models", content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -685,5 +783,6 @@ namespace MngKeeper.Infrastructure.Services
                 _logger.LogWarning(ex, "Error adding domain protocol mapper for realm: {RealmName}", realmName);
             }
         }
+
     }
 }

@@ -21,6 +21,15 @@ namespace MngKeeper.Domain.Entities
         [BsonElement("realmName")]
         public string RealmName { get; set; } = string.Empty;
 
+        [BsonElement("storageBucket")]
+        public string StorageBucket { get; set; } = string.Empty;
+
+        [BsonElement("storageQuota")]
+        public long StorageQuota { get; set; } = 10737418240;  // 10GB default
+
+        [BsonElement("storageUsed")]
+        public long StorageUsed { get; set; } = 0;
+
         [BsonElement("status")]
         public DomainStatus Status { get; set; } = DomainStatus.Pending;
 
@@ -49,7 +58,8 @@ namespace MngKeeper.Domain.Entities
         Active,
         Suspended,
         Expired,
-        Deleted
+        Deleted,
+        Failed
     }
 
     public class DomainSettings

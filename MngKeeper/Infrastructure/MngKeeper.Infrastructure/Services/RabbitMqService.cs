@@ -35,11 +35,11 @@ namespace MngKeeper.Infrastructure.Services
 
                 var factory = new ConnectionFactory
                 {
-                    HostName = _configuration["RabbitMQ:Host"] ?? "localhost",
-                    Port = int.Parse(_configuration["RabbitMQ:Port"] ?? "5672"),
-                    UserName = _configuration["RabbitMQ:Username"] ?? "guest",
-                    Password = _configuration["RabbitMQ:Password"] ?? "guest",
-                    VirtualHost = _configuration["RabbitMQ:VirtualHost"] ?? "/"
+                    HostName = _configuration["MngKeeperSettings:RabbitMQ:Host"] ?? "localhost",
+                    Port = int.Parse(_configuration["MngKeeperSettings:RabbitMQ:Port"] ?? "5672"),
+                    UserName = _configuration["MngKeeperSettings:RabbitMQ:Username"] ?? "admin",
+                    Password = _configuration["MngKeeperSettings:RabbitMQ:Password"] ?? "admin123",
+                    VirtualHost = _configuration["MngKeeperSettings:RabbitMQ:VirtualHost"] ?? "/"
                 };
 
                 _connection = factory.CreateConnection();

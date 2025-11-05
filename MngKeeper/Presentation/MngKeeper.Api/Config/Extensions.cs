@@ -109,7 +109,18 @@ public static class Extensions
 
         // Add Services
         services.AddHttpClient();
-        services.AddScoped<MngKeeper.Application.Interfaces.IKeycloakService, MngKeeper.Infrastructure.Services.KeycloakService>();
+        
+        // Configure HttpClient for KeycloakService
+        services.AddHttpClient<MngKeeper.Application.Interfaces.IKeycloakService, MngKeeper.Infrastructure.Services.KeycloakService>((serviceProvider, client) =>
+        {
+            var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+            var baseUrl = configuration["MngKeeperSettings:Keycloak:BaseUrl"];
+            if (!string.IsNullOrEmpty(baseUrl))
+            {
+                client.BaseAddress = new Uri(baseUrl);
+            }
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
         services.AddScoped<MngKeeper.Application.Interfaces.IJwtTokenService, MngKeeper.Infrastructure.Services.JwtTokenService>();
         services.AddScoped<MngKeeper.Application.Interfaces.IJwtTokenParserService, MngKeeper.Infrastructure.Services.JwtTokenParserService>();
         services.AddScoped<MngKeeper.Application.Interfaces.IRabbitMqService, MngKeeper.Infrastructure.Services.RabbitMqService>();
@@ -117,6 +128,7 @@ public static class Extensions
         services.AddScoped<MngKeeper.Application.Interfaces.IRedisService, MngKeeper.Infrastructure.Services.RedisService>();
         services.AddScoped<MngKeeper.Application.Interfaces.ISessionService, MngKeeper.Infrastructure.Services.SessionService>();
         services.AddScoped<MngKeeper.Application.Interfaces.IMqttService, MngKeeper.Infrastructure.Services.MqttService>();
+        services.AddScoped<MngKeeper.Application.Interfaces.IMinioService, MngKeeper.Infrastructure.Services.MinioService>();
         services.AddHttpContextAccessor();
     }
 

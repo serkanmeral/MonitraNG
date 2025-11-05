@@ -1,6 +1,8 @@
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using MngKeeper.Application.Configuration;
+using MngKeeper.Application.Pipelines.DomainCreation;
+using MngKeeper.Application.Pipelines.DomainCreation.Steps;
 using MongoDB.Driver;
 using System.Reflection;
 
@@ -18,6 +20,7 @@ public static class ServiceRegistration
             _.Redis = settings.Redis;
             _.Mqtt = settings.Mqtt;
             _.Keycloak = settings.Keycloak;
+            _.MinIO = settings.MinIO;
             _.CertificateSettings = settings.CertificateSettings;
             _.OpenApiServerPath = settings.OpenApiServerPath;
         });
@@ -40,6 +43,22 @@ public static class ServiceRegistration
             var databaseName = settings.MongoDB.DatabaseName ?? "MngKeeper";
             return client.GetDatabase(databaseName);
         });
+        
+        // Add Pipeline Steps
+        services.AddScoped<ValidateDomainStep>();
+        services.AddScoped<CreateDomainEntityStep>();
+        services.AddScoped<CreateDatabaseStep>();
+        services.AddScoped<InitializeDatabaseCollectionsStep>();
+        services.AddScoped<CreateKeycloakRealmStep>();
+        services.AddScoped<CreateDefaultGroupsStep>();
+        services.AddScoped<CreateAdminUserStep>();
+        services.AddScoped<PublishDomainCreatedEventStep>();
+        services.AddScoped<InitializeDomainCacheStep>();
+        services.AddScoped<CreateMinIOBucketStep>();
+        services.AddScoped<ActivateDomainStep>();
+        
+        // Add Pipeline
+        services.AddScoped<DomainCreationPipeline>();
     }
 }
 

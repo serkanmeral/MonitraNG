@@ -7,6 +7,7 @@ public class MngKeeperSettings
     public RedisSettings Redis { get; set; } = null!;
     public MqttSettings Mqtt { get; set; } = null!;
     public KeycloakSettings Keycloak { get; set; } = null!;
+    public MinIOSettings MinIO { get; set; } = null!;
     public CertificateSettings CertificateSettings { get; set; } = null!;
     public string OpenApiServerPath { get; set; } = null!;
 }
@@ -46,6 +47,15 @@ public class KeycloakSettings
     public string AdminUsername { get; set; } = null!;
     public string AdminPassword { get; set; } = null!;
     public string DefaultAdminPassword { get; set; } = "Admin123!";
+}
+
+public class MinIOSettings
+{
+    public string Endpoint { get; set; } = "localhost:9000";
+    public string AccessKey { get; set; } = null!;
+    public string SecretKey { get; set; } = null!;
+    public bool UseSSL { get; set; } = false;
+    public string Region { get; set; } = "us-east-1";
 }
 
 public class CertificateSettings

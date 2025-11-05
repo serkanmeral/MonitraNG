@@ -1,104 +1,229 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MediatR;
-using MngKeeper.Application.Features.Auth.Commands.GetToken;
-using MngKeeper.Application.Features.Auth.Commands.RefreshToken;
-using System.ComponentModel.DataAnnotations;
+using MngKeeper.Application.Interfaces;
 
-namespace MngKeeper.Api.Controllers
+namespace MngKeeper.Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class AuthController : ControllerBase
 {
+    private readonly IKeycloakService _keycloakService;
+    private readonly ILogger<AuthController> _logger;
+
+    public AuthController(
+        IKeycloakService keycloakService,
+        ILogger<AuthController> logger)
+    {
+        _keycloakService = keycloakService;
+        _logger = logger;
+    }
+
     /// <summary>
-    /// Authentication controller for managing user authentication and token generation
+    /// Get authentication token for a user
     /// </summary>
-    [ApiController]
-    [Route("api/[controller]")]
-    [Produces("application/json")]
-    [ApiExplorerSettings(GroupName = "Authentication")]
-    public class AuthController : ControllerBase
+    /// <param name="request">Login credentials</param>
+    /// <returns>JWT token response</returns>
+    [HttpPost("token")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetToken([FromBody] TokenRequest request)
     {
-        private readonly IMediator _mediator;
-
-        public AuthController(IMediator mediator)
+        try
         {
-            _mediator = mediator;
-        }
-
-        /// <summary>
-        /// Authenticates a user and returns a JWT token
-        /// </summary>
-        /// <param name="command">The authentication command containing username and password</param>
-        /// <returns>JWT token response with access token and user information</returns>
-        /// <response code="200">Returns the JWT token and user information</response>
-        /// <response code="400">If the authentication fails or credentials are invalid</response>
-        /// <response code="401">If the user is not authorized</response>
-        [HttpPost("token")]
-        [ProducesResponseType(typeof(GetTokenResponse), 200)]
-        [ProducesResponseType(typeof(GetTokenResponse), 400)]
-        [ProducesResponseType(401)]
-        public async Task<ActionResult<GetTokenResponse>> GetToken([FromBody] GetTokenCommand command)
-        {
-            var response = await _mediator.Send(command);
-            
-            if (!response.IsSuccess)
-                return BadRequest(response);
-
-            return Ok(response);
-        }
-
-        /// <summary>
-        /// Refreshes an expired access token using a refresh token
-        /// </summary>
-        /// <param name="command">The refresh token command containing the refresh token</param>
-        /// <returns>New access token and refresh token</returns>
-        /// <response code="200">Returns the new tokens</response>
-        /// <response code="400">If the refresh token is invalid or expired</response>
-        [HttpPost("refresh")]
-        [ProducesResponseType(typeof(RefreshTokenResponse), 200)]
-        [ProducesResponseType(typeof(RefreshTokenResponse), 400)]
-        public async Task<ActionResult<RefreshTokenResponse>> RefreshToken([FromBody] RefreshTokenCommand command)
-        {
-            var response = await _mediator.Send(command);
-            
-            if (!response.IsSuccess)
-                return BadRequest(response);
-
-            return Ok(response);
-        }
-
-        /// <summary>
-        /// Logs out a user by revoking their refresh token
-        /// </summary>
-        /// <param name="request">The logout request containing the refresh token</param>
-        /// <returns>Success response</returns>
-        /// <response code="200">Successfully logged out</response>
-        /// <response code="400">If the logout fails</response>
-        [HttpPost("logout")]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(400)]
-        public async Task<ActionResult> Logout([FromBody] LogoutRequest request)
-        {
-            try
+            if (string.IsNullOrWhiteSpace(request.Username) || 
+                string.IsNullOrWhiteSpace(request.Password) ||
+                string.IsNullOrWhiteSpace(request.Domain))
             {
-                // Parse domain from refresh token or use provided domain name
-                var realmName = request.DomainName?.ToLower().Replace(" ", "_") ?? "default";
+                return BadRequest(new ErrorResponse
+                {
+                    Error = "invalid_request",
+                    ErrorDescription = "Username, password and domain are required"
+                });
+            }
+
+            _logger.LogInformation("Token request for user: {Username} in domain: {Domain}", 
+                request.Username, request.Domain);
+
+            var tokenResponse = await _keycloakService.GetTokenAsync(
+                request.Domain, 
+                request.Username, 
+                request.Password);
+
+            if (!string.IsNullOrEmpty(tokenResponse.Error))
+            {
+                _logger.LogWarning("Token request failed for user: {Username} in domain: {Domain}. Error: {Error}", 
+                    request.Username, request.Domain, tokenResponse.Error);
                 
-                var keycloakService = HttpContext.RequestServices.GetRequiredService<MngKeeper.Application.Interfaces.IKeycloakService>();
-                var success = await keycloakService.RevokeTokenAsync(realmName, request.RefreshToken);
-
-                if (!success)
-                    return BadRequest(new { message = "Failed to revoke token" });
-
-                return Ok(new { message = "Successfully logged out" });
+                return Unauthorized(new ErrorResponse
+                {
+                    Error = tokenResponse.Error,
+                    ErrorDescription = "Invalid username or password"
+                });
             }
-            catch (Exception ex)
+
+            _logger.LogInformation("Token issued successfully for user: {Username} in domain: {Domain}", 
+                request.Username, request.Domain);
+
+            return Ok(new TokenResponse
             {
-                return BadRequest(new { message = $"Logout failed: {ex.Message}" });
-            }
+                AccessToken = tokenResponse.AccessToken,
+                RefreshToken = tokenResponse.RefreshToken,
+                TokenType = tokenResponse.TokenType,
+                ExpiresIn = tokenResponse.ExpiresIn,
+                RefreshExpiresIn = tokenResponse.RefreshExpiresIn
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing token request for user: {Username} in domain: {Domain}", 
+                request.Username, request.Domain);
+            
+            return StatusCode(500, new ErrorResponse
+            {
+                Error = "server_error",
+                ErrorDescription = "An error occurred while processing your request"
+            });
         }
     }
 
-    public class LogoutRequest
+    /// <summary>
+    /// Refresh an expired access token
+    /// </summary>
+    /// <param name="request">Refresh token request</param>
+    /// <returns>New JWT token response</returns>
+    [HttpPost("refresh")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
     {
-        public string RefreshToken { get; set; } = string.Empty;
-        public string? DomainName { get; set; }
+        try
+        {
+            if (string.IsNullOrWhiteSpace(request.RefreshToken) || 
+                string.IsNullOrWhiteSpace(request.Domain))
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    Error = "invalid_request",
+                    ErrorDescription = "Refresh token and domain are required"
+                });
+            }
+
+            _logger.LogInformation("Refresh token request for domain: {Domain}", request.Domain);
+
+            var tokenResponse = await _keycloakService.RefreshTokenAsync(
+                request.Domain, 
+                request.RefreshToken);
+
+            if (!string.IsNullOrEmpty(tokenResponse.Error))
+            {
+                return Unauthorized(new ErrorResponse
+                {
+                    Error = tokenResponse.Error,
+                    ErrorDescription = "Invalid or expired refresh token"
+                });
+            }
+
+            _logger.LogInformation("Token refreshed successfully for domain: {Domain}", request.Domain);
+
+            return Ok(new TokenResponse
+            {
+                AccessToken = tokenResponse.AccessToken,
+                RefreshToken = tokenResponse.RefreshToken,
+                TokenType = tokenResponse.TokenType,
+                ExpiresIn = tokenResponse.ExpiresIn,
+                RefreshExpiresIn = tokenResponse.RefreshExpiresIn
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error refreshing token for domain: {Domain}", request.Domain);
+            
+            return StatusCode(500, new ErrorResponse
+            {
+                Error = "server_error",
+                ErrorDescription = "An error occurred while processing your request"
+            });
+        }
     }
+
+    /// <summary>
+    /// Revoke a refresh token (logout)
+    /// </summary>
+    /// <param name="request">Revoke token request</param>
+    /// <returns>Success status</returns>
+    [HttpPost("revoke")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> RevokeToken([FromBody] RefreshTokenRequest request)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(request.RefreshToken) || 
+                string.IsNullOrWhiteSpace(request.Domain))
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    Error = "invalid_request",
+                    ErrorDescription = "Refresh token and domain are required"
+                });
+            }
+
+            _logger.LogInformation("Revoke token request for domain: {Domain}", request.Domain);
+
+            var success = await _keycloakService.RevokeTokenAsync(
+                request.Domain, 
+                request.RefreshToken);
+
+            if (!success)
+            {
+                _logger.LogWarning("Failed to revoke token for domain: {Domain}", request.Domain);
+            }
+
+            return Ok(new { message = "Token revoked successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error revoking token for domain: {Domain}", request.Domain);
+            
+            return StatusCode(500, new ErrorResponse
+            {
+                Error = "server_error",
+                ErrorDescription = "An error occurred while processing your request"
+            });
+        }
+    }
+}
+
+// DTOs
+public class TokenRequest
+{
+    public string Username { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public string Domain { get; set; } = string.Empty;
+}
+
+public class RefreshTokenRequest
+{
+    public string RefreshToken { get; set; } = string.Empty;
+    public string Domain { get; set; } = string.Empty;
+}
+
+public class TokenResponse
+{
+    public string AccessToken { get; set; } = string.Empty;
+    public string RefreshToken { get; set; } = string.Empty;
+    public string TokenType { get; set; } = "Bearer";
+    public int ExpiresIn { get; set; }
+    public int RefreshExpiresIn { get; set; }
+}
+
+public class ErrorResponse
+{
+    public string Error { get; set; } = string.Empty;
+    public string ErrorDescription { get; set; } = string.Empty;
 }

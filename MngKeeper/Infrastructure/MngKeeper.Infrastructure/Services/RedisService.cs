@@ -33,7 +33,7 @@ namespace MngKeeper.Infrastructure.Services
                     return;
                 }
 
-                var connectionString = _configuration["ConnectionStrings:Redis"] ?? "localhost:6379";
+                var connectionString = _configuration["MngKeeperSettings:Redis:ConnectionString"] ?? "localhost:6379,password=redis123";
                 _redis = await ConnectionMultiplexer.ConnectAsync(connectionString);
                 _database = _redis.GetDatabase();
 

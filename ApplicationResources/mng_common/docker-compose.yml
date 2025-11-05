@@ -90,6 +90,20 @@ services:
       timeout: 10s
       retries: 3
 
+  # Redis Commander (Redis GUI)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    environment:
+      - REDIS_HOSTS=local:redis:6379:0:redis123
+    ports:
+      - "8001:8081"
+    networks:
+      - mng_network
+    restart: unless-stopped
+    depends_on:
+      - redis
+
   # RabbitMQ (Message Queue)
   rabbitmq:
     image: rabbitmq:3-management-alpine
