@@ -1,439 +1,276 @@
-# MngDataGateway - Proje Durumu
+# MngDataGateway - Current Status
 
-**Son Güncelleme:** 3 Kasım 2025
+**Last Updated:** 6 Kasım 2025  
+**Session:** Ready for Dataset Implementation  
+**Test Domain:** `seven`  
+**Test User:** `serkan` (admin)
 
 ---
 
-## ✅ Tamamlanan İşlemler
+## ✅ Completed Tasks
 
-### 🏗️ Proje Yapısı (Clean Architecture)
+### 🏗️ Project Structure (Clean Architecture)
 
 ```
 MngDataGateway/
 ├── Core/
-│   ├── MngDataGateway.Domain/          ✅ Oluşturuldu
-│   └── MngDataGateway.Application/     ✅ Oluşturuldu
+│   ├── MngDataGateway.Domain/          ✅ Created
+│   └── MngDataGateway.Application/     ✅ Created
 ├── Infrastructure/
-│   ├── MngDataGateway.Infrastructure/  ✅ Oluşturuldu
-│   └── MngDataGateway.Persistence/     ✅ Oluşturuldu
+│   ├── MngDataGateway.Infrastructure/  ✅ Created
+│   └── MngDataGateway.Persistence/     ✅ Created
 ├── Presentation/
-│   └── MngDataGateway.Api/            ✅ Oluşturuldu
-├── MngDataGateway.sln                  ✅ Oluşturuldu
-├── README.md                           ✅ Oluşturuldu
-└── ROADMAP_MngDataGateway.md          ✅ Oluşturuldu (1343 satır)
+│   └── MngDataGateway.Api/            ✅ Created
+├── MngDataGateway.sln                  ✅ Created
+├── README.md                           ✅ Created
+├── ROADMAP_MngDataGateway.md          ✅ Created (1343+ lines)
+└── STATUS.md                           ✅ This file
 ```
 
 ---
 
-### 📦 Domain Layer
+### 📦 Configuration & Infrastructure
 
-**Dosyalar:**
-- ✅ `Exceptions/DataGatewayException.cs`
-  - `DataGatewayException` (base)
-  - `ValidationException`
-  - `NotFoundException`
-  - `UnauthorizedException`
+**✅ Completed:**
+- Clean Architecture setup
+- IOptions<> pattern implementation
+- Serilog logging (Console + Seq)
+- Global Exception Handler
+- MongoDB.Driver 3.3.0
+- RabbitMQ.Client 7.0.0
+- MediatR 13.0.0
+- FluentValidation 11.3.1
 
----
-
-### 📦 Application Layer
-
-**Configuration (IOptions Pattern):**
-- ✅ `Configuration/MongoDbOptions.cs`
-  - ConnectionString
-  - DatabaseName
-- ✅ `Configuration/RabbitMqOptions.cs`
-  - Host, Port
-  - Username, Password
-  - VirtualHost
-
-**Paketler:**
-- ✅ MediatR 13.0.0
-- ✅ FluentValidation.AspNetCore 11.3.1
-
----
-
-### 📦 Infrastructure Layer
-
-**Paketler:**
-- ✅ MongoDB.Driver 3.3.0
-- ✅ RabbitMQ.Client 7.0.0
-
-**Not:** Servis implementasyonları henüz eklenmedi (gerektiğinde eklenecek)
-
----
-
-### 📦 Persistence Layer
-
-**Paketler:**
-- ✅ MongoDB.Driver 3.3.0
-
-**Not:** Repository implementasyonları henüz eklenmedi (gerektiğinde eklenecek)
-
----
-
-### 📦 API Layer (Presentation)
-
-**Controllers:**
-- ✅ `Controllers/VersionController.cs`
-  - `GET /api/version` - Detaylı versiyon bilgisi
-  - `GET /api/version/short` - Kısa versiyon
-
-**Middleware:**
-- ✅ `Middleware/GlobalExceptionHandlerMiddleware.cs`
-  - Exception handling
-  - Structured error responses
-  - Logging integration
+**✅ Parametric Configuration (NEW - 6 Nov 2025):**
+- Added `ServerSettings` class (Host, Port, Scheme)
+- Environment variable support
+- Dynamic Kestrel configuration (like MngKeeper)
+- Supports: 0.0.0.0, localhost, specific IP
 
 **Configuration:**
-- ✅ `Program.cs`
-  - Serilog yapılandırması (Console + Seq)
-  - MongoDB client yapılandırması
-  - IOptions<> pattern kullanımı
-  - Swagger yapılandırması
-  - Global exception handler
-  - MediatR registration (hazır, kullanılacak)
-  
-- ✅ `appsettings.json`
-  - Serilog (Console + Seq)
-  - MongoDB connection
-  - RabbitMQ connection
-  - HTTP endpoint: port 5010
-  
-- ✅ `appsettings.Development.json`
-  - Debug level logging
-
-- ✅ `launchSettings.json`
-  - HTTP profile: localhost:5010
-
-**Paketler:**
-- ✅ MongoDB.Driver 3.3.0
-- ✅ Serilog.AspNetCore 8.0.0
-- ✅ Serilog.Sinks.Console 5.0.1
-- ✅ Serilog.Sinks.Seq 9.0.0
-- ✅ Serilog.Enrichers.Environment 2.3.0
-- ✅ Serilog.Enrichers.Thread 3.1.0
-- ✅ Swashbuckle.AspNetCore 7.0.0
+```json
+{
+  "MngDataGatewaySettings": {
+    "Server": {
+      "Host": "0.0.0.0",
+      "Port": 5010,
+      "Scheme": "https"
+    },
+    "OpenApiServerPath": "https://localhost:5010",
+    "MongoDB": {
+      "ConnectionString": "mongodb://admin:admin123@localhost:27017"
+    },
+    "Actors": {
+      "MngKeeper": "https://localhost:5001"
+    }
+  }
+}
+```
 
 ---
 
-## 🚀 Çalışan Uygulama
+### 🔐 JWT Authentication
 
-### Port Bilgileri:
-- **HTTP:** http://localhost:5010
-- **Swagger UI:** http://localhost:5010/swagger
+**✅ Status:** READY & TESTED
 
-### Çalıştırma:
+**Implementation:**
+- JWT Bearer authentication configured
+- Token validation from MngKeeper
+- No signature validation (trust MngKeeper)
+- Claims extraction working
+
+**Test Controller:** `AuthTestController.cs`
+- ✅ `GET /api/authtest/public` - Public endpoint
+- ✅ `GET /api/authtest/decode` - Decode JWT claims
+- ✅ `GET /api/authtest/domain` - Extract domain info
+- ✅ `GET /api/authtest/roles` - Check roles
+- ✅ `GET /api/authtest/health` - Auth system health
+
+**Working Endpoints:**
+- ✅ `GET https://localhost:5010/api/version`
+- ✅ `GET https://localhost:5010/swagger`
+- ✅ `GET https://localhost:5010/api/authtest/*` (with valid token)
+
+---
+
+### 🏢 Test Environment Ready
+
+**Seven Domain (Created 6 Nov 2025):**
+- Domain ID: `690cda3aae502df7d3330bba`
+- Domain Name: `seven`
+- Database: `mng_seven`
+- Realm: `seven`
+- Status: Active ✅
+
+**Serkan MERAL User:**
+- Username: `serkan`
+- Password: `Serkan123!`
+- Email: `serkan@seven.com`
+- User ID: `690cdb7fae502df7d3330bbb`
+- Groups: `admins`
+- Is Admin: `true` ✅
+
+**Token Helper:**
 ```powershell
-cd C:\Serkan\iSIM\MonitraNG\MngDataGateway\Presentation\MngDataGateway.Api
-dotnet run
+# Get fresh token
+cd C:\Serkan\iSIM\MonitraNG\MngKeeper\tests
+.\get-serkan-token.ps1
+
+# Token saved to: %TEMP%\serkan_token.txt
+# Global variable: $global:serkanToken
 ```
 
-### Test Edildi:
-- ✅ `/api/version` endpoint çalışıyor
-- ✅ `/api/version/short` endpoint çalışıyor
-- ✅ Swagger UI erişilebilir
-- ✅ Serilog logging çalışıyor
-- ✅ Global exception handler çalışıyor
-
----
-
-## 📚 Planlama Dökümanları
-
-### ROADMAP_MngDataGateway.md (1343 satır)
-
-**Konuşulan ve Dokümante Edilen Konular:**
-
-#### 1. Genel Mimari
-- ✅ Clean Architecture yapısı
-- ✅ Multi-tenant izolasyon (JWT token + domain_name)
-- ✅ Database bağlantısı: JWT token'dan `domain_name` → `mng_{domain_name}`
-- ✅ Event-driven architecture (RabbitMQ)
-
-#### 2. Datasets Kavramı
-- ✅ `@datasets` collection = Meta-schema layer
-- ✅ Çift katmanlı yapı (meta-schema + actual data)
-
-#### 3. Dataset Alanları (Detaylı)
-- ✅ **category** (uuid | null) - Dataset kategorilendirme
-- ✅ **__dataId** (GUID) - Primary key, tüm lookup'larda kullanılacak
-- ✅ **name** (string, unique) - Dataset adı = Collection adı
-- ✅ **description** (string, optional) - Açıklama
-- ✅ **logging** (enum: self | none | common) - History stratejisi
-- ✅ **publish_mode** (enum: none | basic | full) - RabbitMQ event publishing
-- ✅ **forceSchema** (boolean) - Strict/Flexible schema
-
-#### 4. Field Types (9 Tip)
-- ✅ **text** - String
-- ✅ **number** - Number
-- ✅ **bool** - Boolean
-- ✅ **datetime** - Date
-- ✅ **object** - JSON Object
-- ✅ **relation** - Dataset referansı (MongoDB lookup)
-- ✅ **persons** - User referansı (MngKeeper entegrasyonu)
-- ✅ **personGroups** - Group referansı (MngKeeper entegrasyonu)
-- ✅ **incremental** - Auto-increment (format desteği ile)
-
-#### 5. Field Özellikleri
-- ✅ **name** - Field adı = MongoDB field adı
-- ✅ **title** - Display name (UI için)
-- ✅ **description** - Açıklama
-- ✅ **mandatory** - Zorunlu alan
-- ✅ **unique** - Unique constraint
-- ✅ **isArray** - Array field
-- ✅ **relation** - İlişki tanımı (relatedDataset, relationField)
-- ✅ **incrementalOptions** - Auto-increment ayarları
-
-#### 6. Incremental Field (Detaylı)
-- ✅ Format desteği (TASK-{0:D6}, INV-{year}{month}-{0:D4})
-- ✅ Placeholders: {0}, {domain}, {year}, {month}, {day}, {yy}
-- ✅ Scope: Per domain + per collection + per field
-- ✅ @__counters collection yapısı
-- ✅ Atomic increment (concurrent-safe)
-- ✅ Immutable (update edilemez)
-
-#### 7. Validations
-- ✅ External HTTP validation
-- ✅ Request/Response format
-- ✅ Sequential execution strategy
-- ✅ Multiple validation support
-
-#### 8. Queries
-- ✅ Predefined MongoDB aggregation pipelines
-- ✅ Parameter injection (##current_workspace_id)
-- ⏳ Detaylar sonra konuşulacak
-
-#### 9. Index Management
-- ✅ indexList tanımı
-- ✅ Index types: unique, ascending, descending, sparse, TTL
-- ✅ Compound index support
-- ✅ System indexes (__dataId)
-
-#### 10. Öneriler (Gelecek İçin)
-- 🔴 **Yüksek Öncelik:**
-  - Field-level permissions
-  - Default values
-  - Field validation rules
-  - Cascade delete strategy
-  
-- 🟡 **Orta Öncelik:**
-  - Computed fields
-  - Lifecycle hooks
-  - UI metadata
-  - Bulk operations
-  
-- 🟢 **Düşük Öncelik:**
-  - Conditional fields
-  - Data versioning
-  - Schema migration
-  - Import/Export
-
----
-
-## ❓ Karar Verilecek Sorular
-
-### persons/personGroups İmplementasyonu:
-- ❓ MngKeeper HTTP API call mı? Cache'den mi?
-- ❓ Batch request endpoint'i var mı?
-- ❓ JWT token forward edilecek mi?
-- ❓ User bulunamazsa ne olur?
-- ❓ Create/Update sırasında user ID doğrulanacak mı?
-
-### Logging (common mode):
-- ❓ @data_logs için index stratejisi?
-- ❓ Log retention policy?
-- ❓ Log cleanup mekanizması?
-
-### Validation:
-- ❓ Multiple validation execution: Sequential mi, parallel mi?
-- ❓ Token'ı validation endpoint'e forward etmeli miyiz?
-- ❓ Timeout sonrası ne olsun?
-
-### Queries:
-- ❓ Parameter injection nasıl çalışacak?
-- ❓ Güvenlik: SQL injection benzeri saldırılara karşı korunma?
-- ❓ Query caching?
-
-### Performance:
-- ❓ Redis cache entegrasyonu?
-- ❓ Query result caching?
-- ❓ persons/personGroups için cache stratejisi?
-
----
-
-## 🎯 Sıradaki Adımlar (Yarın)
-
-### 1. API Endpoints Tasarımı
-```http
-# Dataset Management
-POST   /api/datasets                    # Schema oluştur
-GET    /api/datasets                    # Schema listesi
-GET    /api/datasets/{name}             # Schema detay
-PUT    /api/datasets/{name}             # Schema güncelle
-DELETE /api/datasets/{name}             # Schema sil
-
-# Data CRUD
-POST   /api/datasets/{name}/data        # Veri ekle
-GET    /api/datasets/{name}/data        # Veri listesi
-GET    /api/datasets/{name}/data/{id}   # Tekil veri
-PUT    /api/datasets/{name}/data/{id}   # Veri güncelle
-DELETE /api/datasets/{name}/data/{id}   # Veri sil
-
-# Predefined Queries
-GET    /api/datasets/{name}/query/{queryName}?param1=value1
+**Token Claims (Important):**
+```json
+{
+  "preferred_username": "serkan",
+  "email": "serkan@seven.com",
+  "domain_name": "seven",          ← Database: mng_seven
+  "isAdmin": true,
+  "user_groups": ["admins"]
+}
 ```
 
-### 2. Request/Response Models
-- CreateDatasetRequest
-- UpdateDatasetRequest
-- CreateDataRequest
-- UpdateDataRequest
-- PaginatedResponse<T>
-- StandardResponse<T>
+---
 
-### 3. JWT Authentication
-- Token validation middleware
-- Domain extraction (domain_name → database)
-- User context extraction
+## 🎯 Next Steps - Implementation Priority
 
-### 4. Dataset Schema Management
-- Dataset CRUD operations
-- Schema validation
-- Collection management
+### 🔴 HIGH PRIORITY - Core Functionality
 
-### 5. Data CRUD Operations
-- Create with __dataId generation
-- Create with incremental fields
-- Update (with validation)
-- Delete (hard delete)
-- Get with lookup resolution
+#### 1. MongoDB Context Service
+**Purpose:** Extract domain from JWT and select correct database
 
-### 6. Query Execution
-- Parameter injection mechanism
-- Aggregation pipeline execution
+**Interface:**
+```csharp
+public interface IMongoContextService
+{
+    // Get database for current request (from JWT)
+    IMongoDatabase GetDatabase();
+    
+    // Get database by domain name
+    IMongoDatabase GetDatabase(string domainName);
+    
+    // Get domain name from current user's token
+    string GetCurrentDomainName();
+    
+    // Get user ID from current user's token
+    string GetCurrentUserId();
+}
+```
+
+**Implementation:**
+```csharp
+// From JWT token:
+var domainName = HttpContext.User.FindFirst("domain_name")?.Value;
+var databaseName = $"mng_{domainName}";  // "mng_seven"
+return _mongoClient.GetDatabase(databaseName);
+```
+
+---
+
+#### 2. Dataset Schema Controller
+**Endpoints:**
+```
+POST   /api/datasets                    # Create schema
+GET    /api/datasets                    # List schemas (pagination)
+GET    /api/datasets/{name}             # Get schema detail
+PUT    /api/datasets/{name}             # Update schema
+DELETE /api/datasets/{name}             # Delete schema
+```
+
+**Features:**
+- CRUD operations on `@datasets` collection
+- Schema validation before save
+- Index management
+- Collection creation/deletion
+
+---
+
+#### 3. Data CRUD Controller
+**Endpoints:**
+```
+POST   /api/datasets/{name}/data        # Create data
+GET    /api/datasets/{name}/data        # List data (pagination)
+GET    /api/datasets/{name}/data/{id}   # Get single data
+PUT    /api/datasets/{name}/data/{id}   # Update data
+DELETE /api/datasets/{name}/data/{id}   # Delete data
+```
+
+**Features:**
+- Dynamic schema validation
+- __dataId generation (GUID)
+- Incremental field support
+- Relation lookups
+- persons/personGroups resolution
+
+---
+
+### 🟡 MEDIUM PRIORITY
+
+#### 4. Incremental Service
+**Purpose:** Handle auto-increment fields
+
+**Interface:**
+```csharp
+public interface IIncrementalService
+{
+    Task<string> GetNextValueAsync(string domainName, string datasetName, string fieldName, IncrementalOptions options);
+}
+```
+
+**Implementation:**
+- Uses `@__counters` collection
+- Atomic increment (FindAndModify)
+- Format support: `TASK-{0:D6}`, `INV-{year}{month}-{0:D4}`
+- Concurrent-safe
+
+---
+
+#### 5. Query Execution Service
+**Endpoints:**
+```
+GET /api/datasets/{name}/query/{queryName}?param1=value1
+```
+
+**Features:**
+- Predefined MongoDB aggregation pipelines
+- Parameter injection
 - persons/personGroups enrichment
 
-### 7. Event Publishing
+---
+
+#### 6. Validation Service
+**Purpose:** External HTTP validation
+
+**Interface:**
+```csharp
+public interface IValidationService
+{
+    Task<ValidationResult> ValidateAsync(object data, List<ValidationDefinition> validations);
+}
+```
+
+---
+
+### 🟢 LOW PRIORITY
+
+#### 7. Event Publishing
 - RabbitMQ integration
 - publish_mode handling (none, basic, full)
-- Message format standardization
+
+#### 8. Category Management
+- `@dataset_categories` CRUD
 
 ---
 
-## 🔧 Teknik Notlar
+## 📋 Dataset Schema Structure (Reference)
 
-### MongoDB Bağlantısı
-```csharp
-// Program.cs'te yapılandırıldı
-builder.Services.AddSingleton<IMongoClient>(...)
-
-// Kullanım (JWT token'dan):
-var domainName = ParseDomainFromToken(jwtToken);  // "test-domain"
-var databaseName = $"mng_{domainName}";           // "mng_test-domain"
-var database = mongoClient.GetDatabase(databaseName);
-```
-
-### IOptions<> Pattern
-```csharp
-// Configuration
-builder.Services.Configure<MongoDbOptions>(
-    builder.Configuration.GetSection(MongoDbOptions.SectionName));
-
-// Kullanım
-public class MyService
-{
-    private readonly MongoDbOptions _options;
-    
-    public MyService(IOptions<MongoDbOptions> options)
-    {
-        _options = options.Value;
-    }
-}
-```
-
-### Serilog
-- ✅ Console sink (colored output)
-- ✅ Seq sink (http://localhost:5341)
-- ✅ Enrichers: MachineName, ThreadId, EnvironmentUserName
-- ✅ Structured logging
-
----
-
-## 🚫 HTTPS Yapılandırması
-- ⏸️ Şu anda devre dışı (sertifika yok)
-- ⏸️ Sadece HTTP (port 5010)
-- 📌 Sertifika yapılandırması sonra eklenecek
-
----
-
-## 🧪 Test Edildi
-
-### ✅ Çalışan Endpoint'ler:
-```
-GET http://localhost:5010/api/version       ✅ Çalışıyor
-GET http://localhost:5010/api/version/short ✅ Çalışıyor
-GET http://localhost:5010/swagger           ✅ Çalışıyor
-```
-
-### Version Response Örneği:
-```json
-{
-  "product": "MngDataGateway API",
-  "version": "1.0.0",
-  "assemblyVersion": "1.0.0.0",
-  "buildDate": "2025-11-03T...",
-  "company": "iSIM Platform",
-  "copyright": "Copyright © 2025",
-  "environment": "Development",
-  "runtime": {
-    "framework": "9.0.0",
-    "os": "...",
-    "machineName": "...",
-    "processorCount": 8
-  },
-  "dependencies": {
-    "mongoDb": "7.0",
-    "rabbitMq": "3-management"
-  }
-}
-```
-
----
-
-## 🔐 JWT Token Yapısı (MngKeeper'dan)
-
-```json
-{
-  "sub": "user-id",
-  "email": "admin@test-domain.com",
-  "preferred_username": "test-domain_admin",
-  "domain_id": "69051b09da18595c1fa866ce",
-  "domain_name": "test-domain",           // ← Database seçimi için kritik!
-  "domain_realm": "test-domain",
-  "is_admin": false,
-  "realm_access": {
-    "roles": ["offline_access"]
-  }
-}
-```
-
-**Kullanım:**
-```csharp
-var domainName = token.Claims.FirstOrDefault(c => c.Type == "domain_name")?.Value;
-var databaseName = $"mng_{domainName}";
-```
-
----
-
-## 📊 Datasets Meta-Schema Yapısı
-
-### Örnek Dataset Kaydı (@datasets collection):
 ```json
 {
   "__dataId": "uuid",
   "category": "uuid | null",
   "name": "@tasks",
-  "description": "Task management data",
+  "description": "Task management",
   "forceSchema": false,
   "logging": "self | none | common",
   "publish_mode": "none | basic | full",
@@ -443,119 +280,169 @@ var databaseName = $"mng_{domainName}";
       "fieldType": "text | number | bool | datetime | object | relation | persons | personGroups | incremental",
       "name": "field_name",
       "title": "Display Name",
-      "description": "Field açıklaması",
-      "mandatory": true | false,
-      "unique": true | false,
-      "isArray": true | false,
-      "relation": {
-        "relatedDataset": "@other_dataset",
-        "relationField": "__dataId"
-      },
-      "incrementalOptions": {
-        "startValue": 1,
-        "incrementStep": 1,
-        "format": "TASK-{0:D6}"
-      }
+      "mandatory": true,
+      "unique": false,
+      "isArray": false
     }
   ],
   
-  "validations": [
-    {
-      "name": "validation_name",
-      "endpoint": "https://...",
-      "method": "POST",
-      "when": ["create", "update"],
-      "order": 1,
-      "enabled": true
-    }
-  ],
-  
-  "queries": [
-    {
-      "name": "query_name",
-      "filter": {
-        "customquery": [ /* MongoDB Aggregation Pipeline */ ]
-      }
-    }
-  ],
-  
-  "indexList": [
-    {
-      "name": "idx_name",
-      "fields": { "field_name": 1 },
-      "unique": true,
-      "sparse": false,
-      "ttl": 3600
-    }
-  ]
+  "validations": [],
+  "queries": [],
+  "indexList": []
 }
 ```
 
 ---
 
-## 🎯 Yarın Devam Edilecek Konular
+## 🔧 Technical Notes
 
-### 1. API Endpoints İmplementasyonu
-- DatasetsController (schema CRUD)
-- DataController (data CRUD)
-- QueryController (predefined queries)
+### MongoDB Database Selection Logic
+```csharp
+// 1. Get domain from JWT
+var domainName = User.FindFirst("domain_name")?.Value;  // "seven"
 
-### 2. JWT Authentication
-- Middleware
-- Token parsing
-- Domain extraction
-- User context
+// 2. Build database name
+var databaseName = $"mng_{domainName}";  // "mng_seven"
 
-### 3. Core Services
-- DatasetSchemaService
-- DataCrudService
-- QueryExecutionService
-- IncrementalService (counter management)
-- ValidationService (external HTTP)
+// 3. Get database
+var db = _mongoClient.GetDatabase(databaseName);
 
-### 4. MongoDB Integration
-- Dynamic database selection
-- Collection operations
-- Aggregation pipeline execution
-- Lookup resolution
+// 4. Access collections
+var datasetsCollection = db.GetCollection<BsonDocument>("@datasets");
+var dataCollection = db.GetCollection<BsonDocument>("@tasks");
+```
 
-### 5. RabbitMQ Integration
-- Event publisher
-- Message formats (basic, full)
-- Routing strategies
+### Collections in `mng_seven` Database
+- `@datasets` - Schema definitions (meta-data)
+- `@dataset_categories` - Categories
+- `@__counters` - Incremental counters
+- `@tasks`, `@users`, etc. - Dynamic data collections
 
 ---
 
-## 📝 Önemli Notlar
+## 🧪 Testing Strategy
 
-- MongoDB `_id` alanı hiç kullanılmayacak → Sadece `__dataId`
-- Hard delete (soft delete yok)
-- Tüm lookup'larda varsayılan: `foreignField: "__dataId"`
-- `@` prefix'i kullanıcı tercihi (sistem için önemli değil)
-- Incremental field'lar immutable (update edilemez)
-- persons/personGroups implementasyonu sonra detaylandırılacak
+### Phase 1: Dataset Schema (Start Here)
+1. Create a simple dataset schema
+2. Verify it's saved in `@datasets` collection
+3. List schemas
+4. Update schema
+5. Delete schema
 
----
+### Phase 2: Data CRUD
+1. Create data with __dataId
+2. Create data with incremental field
+3. Read data with pagination
+4. Update data
+5. Delete data
 
-## 🛠️ Çalışma Ortamı
-
-- **OS:** Windows 10
-- **.NET:** 9.0
-- **IDE:** Cursor
-- **Database:** MongoDB (localhost:27017)
-- **Message Broker:** RabbitMQ (localhost:5672)
-- **Logging:** Seq (localhost:5341)
-
----
-
-## 🎉 Başarılı Milestone
-
-MngDataGateway projesi **başarıyla oluşturuldu** ve **çalışır durumda!**
-
-**Sonraki oturum:** API endpoint'leri ve core business logic implementasyonu.
+### Phase 3: Advanced Features
+1. Relation lookups
+2. persons/personGroups resolution
+3. Validation execution
+4. Query execution
 
 ---
 
-**Proje Durumu:** 🟢 Aktif Geliştirme  
-**Son Test:** 3 Kasım 2025 - Başarılı ✅
+## 💻 Running the Application
 
+### Development (Local)
+```powershell
+cd C:\Serkan\iSIM\MonitraNG\MngDataGateway\Presentation\MngDataGateway.Api
+dotnet run
+```
+
+**Access:**
+- HTTPS: https://localhost:5010
+- Swagger: https://localhost:5010/swagger
+- Scalar: https://localhost:5010/scalar/v1
+
+### With Custom Port
+```powershell
+$env:MngDataGatewaySettings__Server__Port = "8080"
+dotnet run
+```
+
+---
+
+## 📊 Project Statistics
+
+| Component | Status | Files |
+|-----------|--------|-------|
+| Domain Layer | ✅ Ready | 2 |
+| Application Layer | 🔄 In Progress | 3 |
+| Infrastructure Layer | 🔄 In Progress | 2 |
+| Persistence Layer | 🔄 In Progress | 1 |
+| API Layer | 🔄 In Progress | 3 |
+
+**Total Lines:** ~500 (scaffold)  
+**Next Target:** 2000+ (with Dataset & Data CRUD)
+
+---
+
+## 🚀 Recommended Next Action
+
+**Start with MongoDB Context Service:**
+
+1. Create `IMongoContextService` interface
+2. Implement `MongoContextService` class
+3. Extract `domain_name` from JWT
+4. Return correct database instance
+5. Add to DI container
+
+**Then:**
+
+6. Create `DatasetsController`
+7. Implement Create Dataset endpoint
+8. Test with Serkan's token
+
+---
+
+## 🔗 Related Documentation
+
+- [ROADMAP_MngDataGateway.md](../ROADMAP_MngDataGateway.md) - Full implementation plan (1343 lines)
+- [README.md](README.md) - Project overview
+- [MngKeeper/tests/SEVEN_DOMAIN_INFO.md](../../MngKeeper/tests/SEVEN_DOMAIN_INFO.md) - Seven domain credentials
+- [MngKeeper/tests/get-serkan-token.ps1](../../MngKeeper/tests/get-serkan-token.ps1) - Token helper script
+
+---
+
+## 📝 Important Decisions Made
+
+1. **Primary Key:** Always `__dataId` (GUID), never MongoDB `_id`
+2. **Database Naming:** `mng_{domain_name}` format
+3. **Delete Strategy:** Hard delete (no soft delete)
+4. **Lookup Field:** Always `__dataId` for relations
+5. **System Collections:** Use `@` prefix (optional, user preference)
+
+---
+
+## ⚠️ Known Issues
+
+1. **None currently** - Project is in clean state
+2. All dependencies installed
+3. Authentication tested and working
+4. MongoDB connection verified
+
+---
+
+## 🎯 Session Goal
+
+**Implement Dataset Schema Management:**
+- MongoContextService (JWT → Database)
+- DatasetsController (5 endpoints)
+- Schema validation
+- Basic CRUD operations
+
+**Success Criteria:**
+- Create a dataset schema via API
+- Verify in MongoDB `@datasets` collection
+- List, update, delete schemas
+- All operations use correct database (mng_seven)
+
+---
+
+**Status:** 🟢 Ready to Code  
+**Blocked:** ❌ None  
+**Dependencies:** ✅ All Met  
+**Test User:** ✅ serkan@seven.com (admin)
