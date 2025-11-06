@@ -1,43 +1,73 @@
 version: '3.8'
 
 services:
-  mngkeeper-api:
+  mngkeeper:
     build:
       context: ../../MngKeeper
       dockerfile: Presentation/MngKeeper.Api/Dockerfile
-    container_name: mngkeeper_api
+    container_name: mngkeeper
     ports:
       - "5001:5001"
     environment:
+      # ASP.NET Core Environment
       - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:5001
-      - ConnectionStrings__MongoDB=mongodb://admin:admin123@mongo:27017/mngkeeper?authSource=admin
-      - ConnectionStrings__RabbitMQ=amqp://admin:admin123@rabbitmq:5672
-      - ConnectionStrings__Redis=redis:6379,password=redis123
-      - MongoDB__DatabaseName=mngkeeper
-      - Mqtt__BrokerHost=mosquitto
-      - Mqtt__BrokerPort=1883
-      - Mqtt__Username=monitrang
-      - Mqtt__Password=!2345qawsedrf
-      - Mqtt__TopicPrefix=MNG
-      - Keycloak__BaseUrl=http://keycloak:8080
-      - Keycloak__AdminUsername=admin
-      - Keycloak__AdminPassword=admin123
-      - Keycloak__DefaultAdminPassword=Admin123!
-      - RabbitMQ__Host=rabbitmq
-      - RabbitMQ__Port=5672
-      - RabbitMQ__Username=admin
-      - RabbitMQ__Password=admin123
-      - RabbitMQ__VirtualHost=/
+      
+      # Server Configuration
+      - MngKeeperSettings__Server__Host=0.0.0.0
+      - MngKeeperSettings__Server__Port=5001
+      - MngKeeperSettings__Server__Scheme=https
+      - MngKeeperSettings__OpenApiServerPath=https://localhost:5001
+      
+      # MongoDB Configuration
+      - MngKeeperSettings__MongoDB__ConnectionString=mongodb://admin:admin123@mongodb:27017
+      - MngKeeperSettings__MongoDB__DatabaseName=mngkeeper
+      
+      # Keycloak Configuration
+      - MngKeeperSettings__Keycloak__BaseUrl=http://keycloak:8080
+      - MngKeeperSettings__Keycloak__AdminUsername=admin
+      - MngKeeperSettings__Keycloak__AdminPassword=admin123
+      - MngKeeperSettings__Keycloak__ClientId=mng-keeper-admin
+      - MngKeeperSettings__Keycloak__ClientSecret=MSG9QBXtnFNlPHCA8DrmTqXpQHXhZ2HK
+      - MngKeeperSettings__Keycloak__DefaultAdminPassword=Admin123!
+      
+      # Redis Configuration
+      - MngKeeperSettings__Redis__ConnectionString=redis:6379,password=redis123
+      
+      # RabbitMQ Configuration
+      - MngKeeperSettings__RabbitMQ__Host=rabbitmq
+      - MngKeeperSettings__RabbitMQ__Port=5672
+      - MngKeeperSettings__RabbitMQ__Username=admin
+      - MngKeeperSettings__RabbitMQ__Password=admin123
+      - MngKeeperSettings__RabbitMQ__VirtualHost=/
+      
+      # MQTT Configuration
+      - MngKeeperSettings__Mqtt__BrokerHost=mosquitto
+      - MngKeeperSettings__Mqtt__BrokerPort=1883
+      - MngKeeperSettings__Mqtt__Username=monitrang
+      - MngKeeperSettings__Mqtt__Password=!2345qawsedrf
+      - MngKeeperSettings__Mqtt__TopicPrefix=MNG
+      
+      # MinIO Configuration
+      - MngKeeperSettings__MinIO__Endpoint=minio:9000
+      - MngKeeperSettings__MinIO__AccessKey=admin
+      - MngKeeperSettings__MinIO__SecretKey=admin123
+      - MngKeeperSettings__MinIO__UseSSL=false
+      - MngKeeperSettings__MinIO__Region=us-east-1
+      
+      # Certificate Settings (auto-generate self-signed)
+      - MngKeeperSettings__CertificateSettings__DNS=mngkeeper
+    
     networks:
       - mng_network
+    
     restart: unless-stopped
+    
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5001/health || exit 1"]
+      test: ["CMD-SHELL", "curl -k -f https://localhost:5001/api/health || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 40s
+      retries: 5
+      start_period: 60s
 
 networks:
   mng_network:
