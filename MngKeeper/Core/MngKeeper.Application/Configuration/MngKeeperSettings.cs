@@ -2,6 +2,7 @@ namespace MngKeeper.Application.Configuration;
 
 public class MngKeeperSettings
 {
+    public ServerSettings Server { get; set; } = null!;
     public MongoDbSettings MongoDB { get; set; } = null!;
     public RabbitMqSettings RabbitMQ { get; set; } = null!;
     public RedisSettings Redis { get; set; } = null!;
@@ -10,6 +11,13 @@ public class MngKeeperSettings
     public MinIOSettings MinIO { get; set; } = null!;
     public CertificateSettings CertificateSettings { get; set; } = null!;
     public string OpenApiServerPath { get; set; } = null!;
+}
+
+public class ServerSettings
+{
+    public string Host { get; set; } = "0.0.0.0";
+    public int Port { get; set; } = 5001;
+    public string Scheme { get; set; } = "https";
 }
 
 public class MongoDbSettings

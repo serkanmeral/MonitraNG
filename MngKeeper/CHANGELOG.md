@@ -7,6 +7,18 @@ Versiyonlama [Semantic Versioning](https://semver.org/spec/v2.0.0.html) kullanı
 
 ## [Unreleased]
 
+### Added
+- **Server Configuration** - Host and Port now configurable via environment variables
+  - Added `ServerSettings` class with `Host`, `Port`, and `Scheme` properties
+  - Support for multiple host options: `0.0.0.0` (all interfaces), `localhost`, or specific IP
+  - Full environment variable support: `MngKeeperSettings__Server__Host`, `MngKeeperSettings__Server__Port`
+  - Comprehensive documentation in new `ENVIRONMENT_VARIABLES.md` file
+
+### Changed
+- `InitWebAPP` method now reads host/port from configuration instead of hard-coded values
+- Updated README.md with environment variable configuration examples
+- Updated appsettings.json to include Server section
+
 ## [1.0.0] - 2025-10-31
 
 ### Added

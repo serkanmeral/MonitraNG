@@ -59,6 +59,26 @@ dotnet run
 
 **API:** `https://localhost:5001`
 
+#### Custom Port/Host ile Başlatma
+
+**PowerShell:**
+```powershell
+$env:MngKeeperSettings__Server__Port = "8443"
+$env:MngKeeperSettings__Server__Host = "0.0.0.0"
+dotnet run
+```
+
+**Linux/macOS:**
+```bash
+export MngKeeperSettings__Server__Port=8443
+export MngKeeperSettings__Server__Host=0.0.0.0
+dotnet run
+```
+
+**API:** `https://0.0.0.0:8443`
+
+> 📘 **Not:** Tüm environment değişkenleri için [ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md) dosyasına bakınız.
+
 ---
 
 ## 📬 API Endpoints
@@ -766,6 +786,11 @@ mng-{domainName}/
 ```json
 {
   "MngKeeperSettings": {
+    "Server": {
+      "Host": "0.0.0.0",
+      "Port": 5001,
+      "Scheme": "https"
+    },
     "OpenApiServerPath": "https://localhost:5001",
     "MongoDB": {
       "ConnectionString": "mongodb://admin:admin123@localhost:27017",
@@ -799,6 +824,28 @@ mng-{domainName}/
   }
 }
 ```
+
+### Environment Variables
+
+Tüm konfigürasyon ayarları environment değişkenleri ile override edilebilir:
+
+**Örnekler:**
+
+```bash
+# Server configuration
+MngKeeperSettings__Server__Host=0.0.0.0
+MngKeeperSettings__Server__Port=8443
+MngKeeperSettings__OpenApiServerPath=https://api.monitrang.com:8443
+
+# MongoDB
+MngKeeperSettings__MongoDB__ConnectionString=mongodb://admin:pass@mongo:27017
+
+# Keycloak
+MngKeeperSettings__Keycloak__BaseUrl=http://keycloak:8080
+MngKeeperSettings__Keycloak__ClientSecret=your-secret
+```
+
+> 📘 **Detaylı Döküman:** [ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md) - Tüm environment değişkenleri ve kullanım örnekleri
 
 ---
 
