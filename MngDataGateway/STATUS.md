@@ -1,7 +1,7 @@
 # MngDataGateway - Current Status
 
-**Last Updated:** 6 Kasım 2025  
-**Session:** Ready for Dataset Implementation  
+**Last Updated:** 6 Kasım 2025 (18:52 UTC)  
+**Session:** DatasetCategories CRUD Completed ✅  
 **Test Domain:** `seven`  
 **Test User:** `serkan` (admin)
 
@@ -133,42 +133,146 @@ cd C:\Serkan\iSIM\MonitraNG\MngKeeper\tests
 
 ---
 
-## 🎯 Next Steps - Implementation Priority
+### 🔥 MongoDB Context Service (COMPLETED - 6 Nov 2025)
 
-### 🔴 HIGH PRIORITY - Core Functionality
-
-#### 1. MongoDB Context Service
-**Purpose:** Extract domain from JWT and select correct database
-
-**Interface:**
-```csharp
-public interface IMongoContextService
-{
-    // Get database for current request (from JWT)
-    IMongoDatabase GetDatabase();
-    
-    // Get database by domain name
-    IMongoDatabase GetDatabase(string domainName);
-    
-    // Get domain name from current user's token
-    string GetCurrentDomainName();
-    
-    // Get user ID from current user's token
-    string GetCurrentUserId();
-}
-```
+**✅ Status:** READY & TESTED
 
 **Implementation:**
-```csharp
-// From JWT token:
-var domainName = HttpContext.User.FindFirst("domain_name")?.Value;
-var databaseName = $"mng_{domainName}";  // "mng_seven"
-return _mongoClient.GetDatabase(databaseName);
+- Created `IMongoContextService` interface in Application layer
+- Implemented `MongoContextService` in Persistence layer
+- Registered service in DI container
+- Added `HttpContextAccessor` for JWT claims access
+
+**Features:**
+- ✅ `GetDatabase()` - Gets database from JWT token
+- ✅ `GetDatabase(domainName)` - Gets database by domain name
+- ✅ `GetCurrentDomainName()` - Extracts domain from JWT
+- ✅ `GetCurrentUserId()` - Extracts user ID from JWT
+- ✅ `GetCurrentUsername()` - Extracts username from JWT
+- ✅ `IsCurrentUserAdmin()` - Checks admin status
+
+**Test Controller:** `MongoContextTestController.cs`
+- ✅ `GET /api/mongocontexttest/health` - Service health check
+- ✅ `GET /api/mongocontexttest/info` - Domain & user info
+- ✅ `GET /api/mongocontexttest/database` - Database info & collections
+- ✅ `GET /api/mongocontexttest/datasets-collection` - @datasets collection test
+- ✅ `GET /api/mongocontexttest/database/{domainName}` - Database by domain (admin only)
+
+**Test Results (6 Nov 2025):**
+```
+✅ Health Check: PASSED
+✅ Context Info: PASSED (Domain: seven, DB: mng_seven)
+✅ Database Info: PASSED (6 collections found)
+✅ Datasets Collection: PASSED (0 datasets)
+✅ Database by Domain: PASSED
+```
+
+**Files Created:**
+```
+Application/Services/IMongoContextService.cs
+Persistence/Services/MongoContextService.cs
+Persistence/ServiceRegistration.cs
+Api/Controllers/MongoContextTestController.cs
+tests/test-mongo-context-service.ps1
 ```
 
 ---
 
-#### 2. Dataset Schema Controller
+### 🔥 Dataset Categories CRUD (COMPLETED - 6 Nov 2025)
+
+**✅ Status:** READY & TESTED (7/7 tests passed)
+
+**Implementation:**
+- Created Base Entity pattern (Full Metadata)
+- Implemented DatasetCategory entity with MongoDB mapping
+- Created complete CRUD service
+- Built REST API controller with 6 endpoints
+- Added comprehensive test suite
+
+**Base Entity Pattern (Full Metadata):**
+- ✅ `__dataId` - GUID primary key (backend auto-generated)
+- ✅ `__createInfo` - Creation metadata from JWT
+- ✅ `__lastUpdateInfo` - Last update metadata
+- ✅ `__history` - Self-logging audit trail (MaxHistoryEntries: 50)
+
+**UserInfo Structure (Simplified):**
+```json
+{
+  "uid": "user-guid",
+  "userName": "serkan",
+  "domain": "seven"
+}
+```
+
+**Features:**
+- ✅ JWT-based multi-tenancy (domain → mng_{domain})
+- ✅ Automatic metadata population
+- ✅ History tracking (only changed fields)
+- ✅ Hard delete + `__deletedDatas` backup (TTL: 7 days)
+- ✅ Restore functionality
+- ✅ Pagination support
+- ✅ MongoDB conventions (BsonElement, BsonIgnoreExtraElements)
+
+**Endpoints:**
+```
+POST   /api/dataset-categories          - Create category
+GET    /api/dataset-categories          - List (pagination)
+GET    /api/dataset-categories/{dataId} - Get by ID
+PUT    /api/dataset-categories/{dataId} - Update
+DELETE /api/dataset-categories/{dataId} - Delete (hard + backup)
+POST   /api/dataset-categories/{dataId}/restore - Restore
+```
+
+**Test Results (6 Nov 2025 - 18:51 UTC):**
+```
+✅ CREATE: PASSED
+✅ LIST (Pagination): PASSED (4 categories)
+✅ GET BY ID: PASSED
+✅ UPDATE: PASSED (__lastUpdateInfo added, historyCount: 2)
+✅ GET UPDATED: PASSED
+✅ DELETE: PASSED (backed up to __deletedDatas)
+✅ RESTORE: PASSED (historyCount: 3 with restore entry)
+```
+
+**MongoDB Collections:**
+- `@dataset_categories` - Main collection
+- `__deletedDatas` - Deleted data backup (TTL: 7 days)
+
+**Files Created:**
+```
+Domain/Entities/Base/BaseEntity.cs
+Domain/Entities/DatasetCategory.cs
+Application/Services/IUserInfoService.cs
+Application/Services/IDatasetCategoryService.cs
+Application/DTOs/DatasetCategory/CreateDatasetCategoryDto.cs
+Application/DTOs/DatasetCategory/UpdateDatasetCategoryDto.cs
+Application/DTOs/DatasetCategory/DatasetCategoryResponseDto.cs
+Application/DTOs/Common/PagedResultDto.cs
+Persistence/Services/UserInfoService.cs
+Persistence/Services/DatasetCategoryService.cs
+Api/Controllers/DatasetCategoriesController.cs
+tests/test-dataset-categories.ps1
+```
+
+**Configuration Added:**
+```json
+{
+  "History": {
+    "MaxHistoryEntries": 50
+  },
+  "DeletedData": {
+    "RetentionDays": 7
+  }
+}
+```
+
+---
+
+## 🎯 Next Steps - Implementation Priority
+
+### 🔴 HIGH PRIORITY - Core Functionality
+
+#### 1. Dataset Schema Controller (NEXT TASK)
 **Endpoints:**
 ```
 POST   /api/datasets                    # Create schema

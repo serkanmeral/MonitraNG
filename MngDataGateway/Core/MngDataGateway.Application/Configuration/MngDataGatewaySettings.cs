@@ -15,6 +15,8 @@ namespace MngDataGateway.Application.Configuration
         public CertificateSettings CertificateSettings { get; set; }
         public string OpenApiServerPath { get; set; }
         public Actors Actors { get; set; }
+        public HistorySettings History { get; set; } = new();
+        public DeletedDataSettings DeletedData { get; set; } = new();
     }
 
     public class ServerSettings
@@ -49,6 +51,22 @@ namespace MngDataGateway.Application.Configuration
         public string Username { get; set; }
         public string Password { get; set; }
         public string VirtualHost { get; set; }
+    }
+
+    public class HistorySettings
+    {
+        /// <summary>
+        /// Maximum number of history entries per entity (default: 50)
+        /// </summary>
+        public int MaxHistoryEntries { get; set; } = 50;
+    }
+
+    public class DeletedDataSettings
+    {
+        /// <summary>
+        /// Retention period for deleted data in days (default: 7)
+        /// </summary>
+        public int RetentionDays { get; set; } = 7;
     }
 
 }

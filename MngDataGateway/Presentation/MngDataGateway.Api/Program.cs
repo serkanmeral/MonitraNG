@@ -3,6 +3,7 @@ using MngDataGateway.Api.Middleware;
 using MngDataGateway.Application;
 using MngDataGateway.Application.Configuration;
 using MngDataGateway.Infrastructure.Services.Certificate;
+using MngDataGateway.Persistence;
 using MongoDB.Driver;
 using Serilog;
 using System.Security.Cryptography.X509Certificates;
@@ -37,7 +38,12 @@ builder.InitWebAPP(certificate);
 builder.InitOpenApi();
 builder.InitAuthentication(datagatewaySettings);
 
+// HttpContextAccessor - MongoContextService için gerekli
+builder.Services.AddHttpContextAccessor();
+
+// Application & Persistence Services
 builder.Services.AddApplicationServices(datagatewaySettings);
+builder.Services.AddPersistenceServices();
 
 var app = builder.Build();
 

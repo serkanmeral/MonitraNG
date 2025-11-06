@@ -26,6 +26,17 @@ namespace MngDataGateway.Application
             collection.AddSingleton<IMongoClient>(provider =>
             {
                 var connectionString = mngDataGatewaySettings.MongoDB.ConnectionString ?? "mongodb://localhost:27017";
+                
+                // MongoDB conventions for DateTime serialization
+                var conventionPack = new MongoDB.Bson.Serialization.Conventions.ConventionPack
+                {
+                    new MongoDB.Bson.Serialization.Conventions.StringObjectIdIdGeneratorConvention()
+                };
+                MongoDB.Bson.Serialization.Conventions.ConventionRegistry.Register(
+                    "MngDataGatewayConventions",
+                    conventionPack,
+                    t => true);
+                
                 return new MongoClient(connectionString);
             });
 
