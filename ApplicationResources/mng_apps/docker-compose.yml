@@ -19,7 +19,7 @@ services:
       - MngKeeperSettings__OpenApiServerPath=https://localhost:5001
       
       # MongoDB Configuration
-      - MngKeeperSettings__MongoDB__ConnectionString=mongodb://admin:admin123@mongodb:27017
+      - MngKeeperSettings__MongoDB__ConnectionString=mongodb://admin:admin123@mongo:27017
       - MngKeeperSettings__MongoDB__DatabaseName=mngkeeper
       
       # Keycloak Configuration
