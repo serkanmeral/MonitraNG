@@ -16,6 +16,9 @@ public static class ServiceRegistration
         
         // Dataset Category Service - @dataset_categories CRUD
         services.AddScoped<IDatasetCategoryService, DatasetCategoryService>();
+        
+        // Dataset Service - @datasets CRUD
+        services.AddScoped<IDatasetService, DatasetService>();
     }
 }
 

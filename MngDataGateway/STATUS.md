@@ -1,7 +1,7 @@
 # MngDataGateway - Current Status
 
-**Last Updated:** 6 Kasım 2025 (18:52 UTC)  
-**Session:** DatasetCategories CRUD Completed ✅  
+**Last Updated:** 6 Kasım 2025 (19:45 UTC)  
+**Session:** Dataset Schema CRUD Completed ✅  
 **Test Domain:** `seven`  
 **Test User:** `serkan` (admin)
 
@@ -265,6 +265,95 @@ tests/test-dataset-categories.ps1
   }
 }
 ```
+
+---
+
+### 🔥 Dataset Schema CRUD (COMPLETED - 6 Nov 2025)
+
+**✅ Status:** READY & TESTED (8/8 tests passed)
+
+**Collection:** `@datasets` in `mng_{domain}` database
+
+**Implementation:**
+- Updated DatasetSchema entity (BaseEntity inheritance)
+- Implemented complete CRUD service with validations
+- Built REST API controller with 6 endpoints
+- Field type validation and incremental field checks
+- Comprehensive test suite with minimal and full schemas
+
+**Supported Field Types (9):**
+1. ✅ `text` - String values
+2. ✅ `number` - Integer/Decimal
+3. ✅ `bool` - Boolean
+4. ✅ `datetime` - ISO 8601 UTC
+5. ✅ `object` - JSON object
+6. ✅ `relation` - Dataset reference
+7. ✅ `persons` - User reference (MngKeeper)
+8. ✅ `personGroups` - Group reference (MngKeeper)
+9. ✅ `incremental` - Auto-increment with prefix support
+
+**Incremental Field Features:**
+- ✅ Format templates: `{0}`, `{year}`, `{month}`, `{day}`, `{yy}`, `{domain}`, `{fieldName}`
+- ✅ Prefix-based scope (per unique prefix)
+- ✅ Field reference support (dynamic prefix)
+- ✅ Configurable increment step
+- ✅ NO reset period (continuous counter)
+
+**Schema Properties:**
+- Required: `name` (unique, collection name)
+- Optional: `description`, `category`, `forceSchema`, `logging`, `publish_mode`
+- Arrays: `fields[]`, `validations[]`, `queries[]`, `indexList[]`
+- Defaults: `forceSchema: true`, `logging: "none"`, `publish_mode: "none"`
+
+**Lazy Features (not executed, only stored):**
+- Validations: Definition stored, execution postponed to data controller
+- Queries: Definition stored, execution postponed to data controller
+- Indexes: Definition stored, creation postponed to first data insert
+- Collections: Not created until first data insert
+
+**Endpoints:**
+```
+POST   /api/datasets              - Create schema (metadata only)
+GET    /api/datasets              - List schemas (pagination)
+GET    /api/datasets/{name}       - Get schema (with field details)
+PUT    /api/datasets/{name}       - Update schema
+DELETE /api/datasets/{name}       - Delete schema (collection preserved!)
+POST   /api/datasets/{name}/restore - Restore schema
+```
+
+**Test Results (6 Nov 2025 - 19:43 UTC):**
+```
+✅ CREATE (Minimal): PASSED (only name)
+✅ CREATE (Full): PASSED (6 fields, 2 indexes, incremental)
+✅ LIST: PASSED (5 datasets)
+✅ GET BY NAME: PASSED (field details included)
+✅ UPDATE: PASSED (fields 6→2, __lastUpdateInfo added)
+✅ GET UPDATED: PASSED (historyCount: 2)
+✅ DELETE: PASSED (backed up to __deletedDatas)
+✅ RESTORE: PASSED (historyCount: 3)
+```
+
+**Field Validations:**
+- ✅ Duplicate field name detection
+- ✅ Invalid field type rejection
+- ✅ Relation field must have relationDataset
+- ✅ Incremental field must be unique + mandatory + non-array
+- ✅ Incremental field must have incrementalOptions
+
+**Files Created:**
+```
+Application/Services/IDatasetService.cs
+Application/DTOs/Dataset/CreateDatasetDto.cs
+Application/DTOs/Dataset/UpdateDatasetDto.cs
+Application/DTOs/Dataset/DatasetResponseDto.cs
+Persistence/Services/DatasetService.cs
+Api/Controllers/DatasetsController.cs
+tests/test-datasets.ps1
+```
+
+**Configuration:**
+- Uses existing History and DeletedData settings
+- Field conversion: object → BsonValue for MongoDB compatibility
 
 ---
 

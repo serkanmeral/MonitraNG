@@ -1,89 +1,84 @@
+using MngDataGateway.Domain.Entities.Base;
+using MongoDB.Bson.Serialization.Attributes;
+
 namespace MngDataGateway.Domain.Entities;
 
 /// <summary>
 /// Dataset Schema Entity - @datasets collection
+/// Defines the structure and behavior of dynamic data collections
 /// </summary>
-public class DatasetSchema
+[BsonIgnoreExtraElements]
+public class DatasetSchema : BaseEntity
 {
     /// <summary>
-    /// Unique identifier for dataset (GUID)
+    /// Dataset name (unique, e.g., "@tasks", "@users") - REQUIRED
+    /// This will be the MongoDB collection name
     /// </summary>
-    public string __dataId { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Category ID (optional)
-    /// </summary>
-    public string? category { get; set; }
-
-    /// <summary>
-    /// Dataset name (unique, e.g., "@tasks", "@users")
-    /// </summary>
+    [BsonElement("name")]
     public string name { get; set; } = string.Empty;
 
     /// <summary>
-    /// Dataset description
+    /// Dataset description (optional)
     /// </summary>
+    [BsonElement("description")]
     public string? description { get; set; }
 
     /// <summary>
-    /// Force schema validation
+    /// Category ID reference (optional)
+    /// References __dataId from @dataset_categories
     /// </summary>
-    public bool forceSchema { get; set; } = false;
+    [BsonElement("category")]
+    public string? category { get; set; }
 
     /// <summary>
-    /// Logging mode: "self", "none", "common"
+    /// Force schema validation (default: true)
+    /// true = strict (only defined fields), false = flexible (allow extra fields)
     /// </summary>
+    [BsonElement("forceSchema")]
+    public bool forceSchema { get; set; } = true;
+
+    /// <summary>
+    /// Logging mode: "self", "none", "common" (default: "none")
+    /// self = each record has __history, none = no logging, common = @data_logs collection
+    /// </summary>
+    [BsonElement("logging")]
     public string logging { get; set; } = "none";
 
     /// <summary>
-    /// Publish mode for events: "none", "basic", "full"
+    /// Publish mode for RabbitMQ events: "none", "basic", "full" (default: "none")
     /// </summary>
+    [BsonElement("publish_mode")]
     public string publish_mode { get; set; } = "none";
 
     /// <summary>
-    /// Field definitions
+    /// Field definitions (optional - can be empty array)
     /// </summary>
+    [BsonElement("fields")]
     public List<FieldDefinition> fields { get; set; } = new();
 
     /// <summary>
-    /// Validation rules
+    /// Validation rules (optional - definition only, execution in data controller)
     /// </summary>
+    [BsonElement("validations")]
     public List<ValidationDefinition> validations { get; set; } = new();
 
     /// <summary>
-    /// Predefined queries
+    /// Predefined queries (optional - definition only, execution in data controller)
     /// </summary>
+    [BsonElement("queries")]
     public List<QueryDefinition> queries { get; set; } = new();
 
     /// <summary>
-    /// Index definitions
+    /// Index definitions (optional - lazy creation on first data insert)
     /// </summary>
+    [BsonElement("indexList")]
     public List<IndexDefinition> indexList { get; set; } = new();
-
-    /// <summary>
-    /// Creation metadata
-    /// </summary>
-    public DateTime? createdAt { get; set; }
-
-    /// <summary>
-    /// Update metadata
-    /// </summary>
-    public DateTime? updatedAt { get; set; }
-
-    /// <summary>
-    /// Created by user ID
-    /// </summary>
-    public string? createdBy { get; set; }
-
-    /// <summary>
-    /// Updated by user ID
-    /// </summary>
-    public string? updatedBy { get; set; }
 }
 
 /// <summary>
 /// Field definition in dataset schema
 /// </summary>
+[BsonIgnoreExtraElements]
 public class FieldDefinition
 {
     /// <summary>
@@ -117,9 +112,10 @@ public class FieldDefinition
     public bool isArray { get; set; } = false;
 
     /// <summary>
-    /// Default value (optional)
+    /// Default value (optional) - stored as BsonValue for MongoDB compatibility
     /// </summary>
-    public object? defaultValue { get; set; }
+    [BsonIgnoreIfNull]
+    public MongoDB.Bson.BsonValue? defaultValue { get; set; }
 
     /// <summary>
     /// For relation type: target dataset name
@@ -138,19 +134,20 @@ public class FieldDefinition
 public class IncrementalOptions
 {
     /// <summary>
-    /// Format template (e.g., "TASK-{0:D6}", "INV-{year}{month}-{0:D4}")
+    /// Format template (e.g., "TASK-{0:D6}", "{projectCode}-{year}{month}-{0:D4}")
+    /// Placeholders: {0}, {year}, {month}, {day}, {yy}, {domain}, {fieldName}
     /// </summary>
     public string? format { get; set; }
 
     /// <summary>
-    /// Starting value
+    /// Starting value (default: 1)
     /// </summary>
     public int startValue { get; set; } = 1;
 
     /// <summary>
-    /// Reset period: none, daily, monthly, yearly
+    /// Increment step (default: 1)
     /// </summary>
-    public string resetPeriod { get; set; } = "none";
+    public int incrementStep { get; set; } = 1;
 }
 
 /// <summary>
