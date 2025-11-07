@@ -2,6 +2,7 @@ using MngDataGateway.Api.Config;
 using MngDataGateway.Api.Middleware;
 using MngDataGateway.Application;
 using MngDataGateway.Application.Configuration;
+using MngDataGateway.Infrastructure;
 using MngDataGateway.Infrastructure.Services.Certificate;
 using MngDataGateway.Persistence;
 using MongoDB.Driver;
@@ -41,11 +42,24 @@ builder.InitAuthentication(datagatewaySettings);
 // HttpContextAccessor - MongoContextService için gerekli
 builder.Services.AddHttpContextAccessor();
 
-// Application & Persistence Services
+// Application, Infrastructure & Persistence Services
 builder.Services.AddApplicationServices(datagatewaySettings);
+builder.Services.AddInfrastructureServices();
 builder.Services.AddPersistenceServices();
 
 var app = builder.Build();
+
+// Initialize RabbitMQ connection on startup
+try
+{
+    var rabbitMqService = app.Services.GetRequiredService<MngDataGateway.Application.Services.IRabbitMqService>();
+    await rabbitMqService.ConnectAsync();
+    Log.Information("RabbitMQ connection initialized");
+}
+catch (Exception ex)
+{
+    Log.Warning(ex, "Failed to connect to RabbitMQ on startup - will retry on first publish");
+}
 
 app.UseApplicationSettings(datagatewaySettings);
 

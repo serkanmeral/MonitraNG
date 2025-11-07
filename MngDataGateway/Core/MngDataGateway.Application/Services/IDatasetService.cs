@@ -1,5 +1,6 @@
 using MngDataGateway.Application.DTOs.Common;
 using MngDataGateway.Application.DTOs.Dataset;
+using MngDataGateway.Domain.Entities;
 
 namespace MngDataGateway.Application.Services;
 
@@ -39,5 +40,10 @@ public interface IDatasetService
     /// Silinen dataset schema'yı geri yükler (__deletedDatas'dan)
     /// </summary>
     Task<DatasetResponseDto> RestoreAsync(string name);
+
+    /// <summary>
+    /// Name'e göre dataset schema entity getirir (internal use for data operations)
+    /// </summary>
+    Task<DatasetSchema?> GetSchemaEntityByNameAsync(string name);
 }
 

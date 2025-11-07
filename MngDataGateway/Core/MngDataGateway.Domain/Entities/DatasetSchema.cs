@@ -73,6 +73,16 @@ public class DatasetSchema : BaseEntity
     /// </summary>
     [BsonElement("indexList")]
     public List<IndexDefinition> indexList { get; set; } = new();
+
+    // Helper properties for compatibility (not stored in MongoDB)
+    [BsonIgnore]
+    public string DatasetName => name;
+
+    [BsonIgnore]
+    public string CollectionName => name;
+
+    [BsonIgnore]
+    public string? DatasetCategoryCode => category;
 }
 
 /// <summary>

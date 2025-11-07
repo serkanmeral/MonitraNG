@@ -19,6 +19,24 @@ public static class ServiceRegistration
         
         // Dataset Service - @datasets CRUD
         services.AddScoped<IDatasetService, DatasetService>();
+        
+        // Notification Service - RabbitMQ event publishing
+        services.AddScoped<INotificationService, NotificationService>();
+        
+        // Validation Service - Data validation
+        services.AddScoped<IValidationService, ValidationService>();
+        
+        // Incremental Field Service - Auto-increment field generation
+        services.AddScoped<IIncrementalFieldService, IncrementalFieldService>();
+        
+        // Data Process Service - Defaults, metadata, collection/index management
+        services.AddScoped<IDataProcessService, DataProcessService>();
+        
+        // Data Repository - MongoDB CRUD operations
+        services.AddScoped<IDataRepository, DataRepository>();
+        
+        // Data Service - Main orchestrator for data operations
+        services.AddScoped<IDataService, DataService>();
     }
 }
 

@@ -3701,6 +3701,15 @@ Response:
 
 ### 🔗 Dataset Integration - File Attachments
 
+**⚠️ DISCUSSION NOTE (6 Nov 2025):**
+Strategies discussed:
+- A) Multipart form-data upload
+- B) Base64 inline in JSON
+- C) Separate upload endpoint + reference
+- Storage: Minio (domain-based buckets: mng-{domain})
+- Metadata: Inline vs separate @__files collection
+- Decision: POSTPONED - Implement after basic Dataset Schema CRUD
+
 **New Field Type: file**
 
 ```json

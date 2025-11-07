@@ -1,7 +1,11 @@
+using System.Collections.Generic;
+
 namespace MngDataGateway.Domain.Exceptions;
 
 public class DataGatewayException : Exception
 {
+    public List<object>? ValidationErrors { get; set; }
+
     public DataGatewayException(string message) : base(message)
     {
     }

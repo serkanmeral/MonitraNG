@@ -501,5 +501,15 @@ public class DatasetService : IDatasetService
             HistoryCount = entity.__history.Count
         };
     }
+
+    /// <summary>
+    /// Name'e göre dataset schema entity getirir (internal use for data operations)
+    /// </summary>
+    public async Task<DatasetSchema?> GetSchemaEntityByNameAsync(string name)
+    {
+        var collection = GetCollection();
+        var filter = Builders<DatasetSchema>.Filter.Eq(x => x.name, name);
+        return await collection.Find(filter).FirstOrDefaultAsync();
+    }
 }
 
