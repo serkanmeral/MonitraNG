@@ -261,7 +261,7 @@ namespace MngDataGateway.Api.Controllers
                     Meta = new ResponseMetaDto
                     {
                         Timestamp = DateTime.UtcNow,
-                        Path = $"/api/datasets/{datasetName}/data/{dataId}"
+                        Path = $"/api/data/{datasetName}/{dataId}"
                     }
                 });
             }
@@ -280,7 +280,7 @@ namespace MngDataGateway.Api.Controllers
                     Meta = new ResponseMetaDto
                     {
                         Timestamp = DateTime.UtcNow,
-                        Path = $"/api/datasets/{datasetName}/data/{dataId}"
+                        Path = $"/api/data/{datasetName}/{dataId}"
                     }
                 });
             }
@@ -347,7 +347,7 @@ namespace MngDataGateway.Api.Controllers
                     Meta = new ResponseMetaDto
                     {
                         Timestamp = DateTime.UtcNow,
-                        Path = $"/api/datasets/{datasetName}/data/{dataId}"
+                        Path = $"/api/data/{datasetName}/{dataId}"
                     }
                 });
             }
@@ -365,7 +365,7 @@ namespace MngDataGateway.Api.Controllers
                     Meta = new ResponseMetaDto
                     {
                         Timestamp = DateTime.UtcNow,
-                        Path = $"/api/datasets/{datasetName}/data/{dataId}"
+                        Path = $"/api/data/{datasetName}/{dataId}"
                     }
                 });
             }
@@ -384,7 +384,7 @@ namespace MngDataGateway.Api.Controllers
                     Meta = new ResponseMetaDto
                     {
                         Timestamp = DateTime.UtcNow,
-                        Path = $"/api/datasets/{datasetName}/data/{dataId}"
+                        Path = $"/api/data/{datasetName}/{dataId}"
                     }
                 });
             }
@@ -444,7 +444,7 @@ namespace MngDataGateway.Api.Controllers
                     Meta = new ResponseMetaDto
                     {
                         Timestamp = DateTime.UtcNow,
-                        Path = $"/api/datasets/{datasetName}/data/{dataId}"
+                        Path = $"/api/data/{datasetName}/{dataId}"
                     }
                 });
             }
@@ -463,7 +463,7 @@ namespace MngDataGateway.Api.Controllers
                     Meta = new ResponseMetaDto
                     {
                         Timestamp = DateTime.UtcNow,
-                        Path = $"/api/datasets/{datasetName}/data/{dataId}"
+                        Path = $"/api/data/{datasetName}/{dataId}"
                     }
                 });
             }

@@ -10,12 +10,12 @@
 
 ### Endpoint Structure:
 ```
-POST   /api/datasets/{datasetName}/data          - Create data
-GET    /api/datasets/{datasetName}/data          - List data (pagination)
-GET    /api/datasets/{datasetName}/data/{dataId} - Get single data
-PUT    /api/datasets/{datasetName}/data/{dataId} - Update data
-DELETE /api/datasets/{datasetName}/data/{dataId} - Delete data
-POST   /api/datasets/{datasetName}/data/{dataId}/restore - Restore data
+POST   /api/data/{datasetName}                   - Create data
+GET    /api/data/{datasetName}                   - List data (pagination)
+GET    /api/data/{datasetName}/{dataId}          - Get single data
+PUT    /api/data/{datasetName}/{dataId}          - Update data
+DELETE /api/data/{datasetName}/{dataId}          - Delete data
+POST   /api/data/{datasetName}/{dataId}/restore  - Restore data
 ```
 
 ---

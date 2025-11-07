@@ -382,11 +382,12 @@ DELETE /api/datasets/{name}             # Delete schema
 #### 3. Data CRUD Controller
 **Endpoints:**
 ```
-POST   /api/datasets/{name}/data        # Create data
-GET    /api/datasets/{name}/data        # List data (pagination)
-GET    /api/datasets/{name}/data/{id}   # Get single data
-PUT    /api/datasets/{name}/data/{id}   # Update data
-DELETE /api/datasets/{name}/data/{id}   # Delete data
+POST   /api/data/{name}                 # Create data
+GET    /api/data/{name}                 # List data (pagination)
+GET    /api/data/{name}/{id}            # Get single data
+PUT    /api/data/{name}/{id}            # Update data
+DELETE /api/data/{name}/{id}            # Delete data
+POST   /api/data/{name}/{id}/restore    # Restore data
 ```
 
 **Features:**
