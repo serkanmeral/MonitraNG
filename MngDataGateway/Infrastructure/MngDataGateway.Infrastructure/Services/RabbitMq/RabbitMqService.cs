@@ -22,7 +22,7 @@ namespace MngDataGateway.Infrastructure.Services.RabbitMq
         private IConnection? _connection;
         private IChannel? _channel;
         private readonly HashSet<string> _declaredExchanges = new();
-        private readonly object _lock = new();
+        private readonly SemaphoreSlim _connectionLock = new(1, 1);
         private bool _disposed = false;
 
         public RabbitMqService(
@@ -43,38 +43,40 @@ namespace MngDataGateway.Infrastructure.Services.RabbitMq
                 return;
             }
 
-            lock (_lock)
+            await _connectionLock.WaitAsync();
+            try
             {
                 if (IsConnected) return;
 
-                try
+                _logger.LogInformation("Connecting to RabbitMQ at {Host}:{Port}", 
+                    _rabbitMqSettings.Host, 
+                    _rabbitMqSettings.Port);
+
+                var factory = new ConnectionFactory
                 {
-                    _logger.LogInformation("Connecting to RabbitMQ at {Host}:{Port}", 
-                        _rabbitMqSettings.Host, 
-                        _rabbitMqSettings.Port);
+                    HostName = _rabbitMqSettings.Host,
+                    Port = _rabbitMqSettings.Port,
+                    UserName = _rabbitMqSettings.Username,
+                    Password = _rabbitMqSettings.Password,
+                    VirtualHost = _rabbitMqSettings.VirtualHost,
+                    AutomaticRecoveryEnabled = true,
+                    NetworkRecoveryInterval = TimeSpan.FromSeconds(10),
+                    RequestedHeartbeat = TimeSpan.FromSeconds(60)
+                };
 
-                    var factory = new ConnectionFactory
-                    {
-                        HostName = _rabbitMqSettings.Host,
-                        Port = _rabbitMqSettings.Port,
-                        UserName = _rabbitMqSettings.Username,
-                        Password = _rabbitMqSettings.Password,
-                        VirtualHost = _rabbitMqSettings.VirtualHost,
-                        AutomaticRecoveryEnabled = true,
-                        NetworkRecoveryInterval = TimeSpan.FromSeconds(10),
-                        RequestedHeartbeat = TimeSpan.FromSeconds(60)
-                    };
+                _connection = await factory.CreateConnectionAsync();
+                _channel = await _connection.CreateChannelAsync();
 
-                    _connection = factory.CreateConnectionAsync().GetAwaiter().GetResult();
-                    _channel = _connection.CreateChannelAsync().GetAwaiter().GetResult();
-
-                    _logger.LogInformation("RabbitMQ connected successfully");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to connect to RabbitMQ");
-                    throw;
-                }
+                _logger.LogInformation("RabbitMQ connected successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to connect to RabbitMQ");
+                throw;
+            }
+            finally
+            {
+                _connectionLock.Release();
             }
         }
 
@@ -194,14 +196,20 @@ namespace MngDataGateway.Infrastructure.Services.RabbitMq
         {
             if (_channel != null)
             {
-                await _channel.CloseAsync();
+                if (_channel.IsOpen)
+                {
+                    await _channel.CloseAsync();
+                }
                 _channel.Dispose();
                 _channel = null;
             }
 
             if (_connection != null)
             {
-                await _connection.CloseAsync();
+                if (_connection.IsOpen)
+                {
+                    await _connection.CloseAsync();
+                }
                 _connection.Dispose();
                 _connection = null;
             }
@@ -271,7 +279,19 @@ namespace MngDataGateway.Infrastructure.Services.RabbitMq
         {
             if (_disposed) return;
 
-            DisconnectAsync().GetAwaiter().GetResult();
+            try
+            {
+                DisconnectAsync().GetAwaiter().GetResult();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during RabbitMQ disposal");
+            }
+            finally
+            {
+                _connectionLock?.Dispose();
+            }
+            
             _disposed = true;
             GC.SuppressFinalize(this);
         }
