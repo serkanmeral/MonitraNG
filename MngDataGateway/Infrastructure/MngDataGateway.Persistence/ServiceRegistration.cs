@@ -37,6 +37,9 @@ public static class ServiceRegistration
         
         // Data Service - Main orchestrator for data operations
         services.AddScoped<IDataService, DataService>();
+        
+        // Health Check Service - Application health monitoring
+        services.AddScoped<IHealthCheckService, HealthCheckService>();
     }
 }
 
