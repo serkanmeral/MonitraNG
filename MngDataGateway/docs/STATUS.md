@@ -699,13 +699,15 @@ POST   /api/data/{datasetName}/{dataId}/restore ✅ Restore
 
 ### 🔗 Related Files
 
-**Planning:**
-- `DATA_CRUD_PLANNING.md` - Complete planning document
-- `SESSION_6NOV2025_FINAL.md` - Session summary
+**Documentation:**
+- `docs/GET_OPERATIONS_ROADMAP.md` - GET operations detailed roadmap
+- `docs/PHASE_2_PLANNING.md` - Phase 2 planning document
+- `docs/PHASE_3_NOTES.md` - Phase 3 future features notes
+- `docs/DATASET_SCHEMA_SUMMARY.md` - Dataset schema structure summary
+- `docs/ARCHITECTURE_GUIDE.md` - Architecture guide
 
 **Tests:**
-- `tests/test-data-crud.ps1` - Automated test script
+- `tests/test-data-crud.ps1` - Data CRUD test script
+- `tests/test-bulk-insert.ps1` - Bulk insert test script
+- `tests/test-get-operations.ps1` - GET operations test script
 - `tests/TEST_GUIDE.md` - Test guide
-
-**Quick Start:**
-- `TOMORROW_START_HERE.md` - Quick start for next session
