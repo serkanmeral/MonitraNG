@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using MngDataGateway.Application.DTOs.Data;
 
 namespace MngDataGateway.Application.Services
 {
@@ -14,6 +15,18 @@ namespace MngDataGateway.Application.Services
         Task<Dictionary<string, object>> CreateAsync(
             string datasetName,
             Dictionary<string, object> data,
+            string domainName,
+            string databaseName,
+            string userId,
+            string userEmail,
+            string? ipAddress = null);
+
+        /// <summary>
+        /// Bulk create multiple data records
+        /// </summary>
+        Task<BulkInsertResultDto> BulkCreateAsync(
+            string datasetName,
+            List<Dictionary<string, object>> items,
             string domainName,
             string databaseName,
             string userId,
@@ -73,6 +86,49 @@ namespace MngDataGateway.Application.Services
             string userId,
             string userEmail,
             string? ipAddress = null);
+
+        /// <summary>
+        /// Query data using aggregate pipeline with all query options
+        /// </summary>
+        Task<QueryResultDto> QueryAsync(
+            string datasetName,
+            string databaseName,
+            QueryOptionsDto options);
+
+        /// <summary>
+        /// Query single data by ID using aggregate pipeline with all query options
+        /// </summary>
+        Task<QueryResultDto> QueryByIdAsync(
+            string datasetName,
+            string dataId,
+            string databaseName,
+            QueryOptionsDto options);
+
+        /// <summary>
+        /// Query data using MongoDB native match object with all query options
+        /// </summary>
+        Task<QueryResultDto> QueryWithMatchAsync(
+            string datasetName,
+            string databaseName,
+            Dictionary<string, object>? match,
+            QueryOptionsDto options);
+
+        /// <summary>
+        /// Execute predefined query from dataset schema
+        /// </summary>
+        Task<List<Dictionary<string, object>>> ExecutePredefinedQueryAsync(
+            string datasetName,
+            string queryName,
+            string databaseName,
+            Dictionary<string, object> parameters);
+
+        /// <summary>
+        /// Execute raw MongoDB aggregate pipeline
+        /// </summary>
+        Task<List<Dictionary<string, object>>> ExecuteRawAggregateAsync(
+            string datasetName,
+            string databaseName,
+            List<MongoDB.Bson.BsonDocument> pipeline);
     }
 }
 

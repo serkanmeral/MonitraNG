@@ -20,6 +20,15 @@ namespace MngDataGateway.Application.Services
             IClientSessionHandle? session = null);
 
         /// <summary>
+        /// Insert multiple documents
+        /// </summary>
+        Task InsertManyAsync(
+            string databaseName,
+            string collectionName,
+            List<Dictionary<string, object>> items,
+            IClientSessionHandle? session = null);
+
+        /// <summary>
         /// Find document by __dataId
         /// </summary>
         Task<BsonDocument?> FindByIdAsync(
@@ -74,6 +83,15 @@ namespace MngDataGateway.Application.Services
         /// Start MongoDB session for transaction
         /// </summary>
         Task<IClientSessionHandle> StartSessionAsync();
+
+        /// <summary>
+        /// Execute aggregate pipeline
+        /// </summary>
+        Task<List<BsonDocument>> AggregateAsync(
+            string databaseName,
+            string collectionName,
+            List<BsonDocument> pipeline,
+            IClientSessionHandle? session = null);
     }
 }
 

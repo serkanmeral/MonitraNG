@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -214,8 +215,17 @@ public class DatasetService : IDatasetService
 
         if (dto.Queries != null)
         {
-            changes["queries"] = new ChangeDetail { oldValue = $"{entity.queries.Count} queries", newValue = $"{dto.Queries.Count} queries" };
-            entity.queries = dto.Queries;
+            // Convert queries, handling JsonElement in pipeline
+            var convertedQueries = dto.Queries.Select(q => new QueryDefinition
+            {
+                name = q.name,
+                description = q.description,
+                parameters = q.parameters,
+                pipeline = q.pipeline != null ? ConvertPipelineToObjectList(q.pipeline) : null
+            }).ToList();
+            
+            changes["queries"] = new ChangeDetail { oldValue = $"{entity.queries.Count} queries", newValue = $"{convertedQueries.Count} queries" };
+            entity.queries = convertedQueries;
         }
 
         if (dto.IndexList != null)
@@ -510,6 +520,67 @@ public class DatasetService : IDatasetService
         var collection = GetCollection();
         var filter = Builders<DatasetSchema>.Filter.Eq(x => x.name, name);
         return await collection.Find(filter).FirstOrDefaultAsync();
+    }
+
+    /// <summary>
+    /// Convert pipeline from List<object> (which may contain JsonElement) to List<object> with proper types
+    /// Recursively converts JsonElement to proper objects
+    /// </summary>
+    private List<object>? ConvertPipelineToObjectList(List<object>? pipeline)
+    {
+        if (pipeline == null)
+            return null;
+
+        var result = new List<object>();
+        foreach (var item in pipeline)
+        {
+            result.Add(ConvertJsonElementToObject(item));
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Recursively convert JsonElement to object
+    /// </summary>
+    private object ConvertJsonElementToObject(object? value)
+    {
+        if (value == null)
+            return new object();
+
+        if (value is JsonElement jsonElement)
+        {
+            return jsonElement.ValueKind switch
+            {
+                JsonValueKind.Object => ConvertJsonObjectToDictionary(jsonElement),
+                JsonValueKind.Array => jsonElement.EnumerateArray().Select(e => ConvertJsonElementToObject(e)).ToList(),
+                JsonValueKind.String => jsonElement.GetString() ?? string.Empty,
+                JsonValueKind.Number => jsonElement.TryGetInt64(out var longVal) ? longVal : jsonElement.GetDouble(),
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                JsonValueKind.Null => (object?)null,
+                _ => jsonElement.GetRawText()
+            };
+        }
+
+        if (value is System.Collections.IEnumerable enumerable && !(value is string))
+        {
+            return enumerable.Cast<object>().Select(ConvertJsonElementToObject).ToList();
+        }
+
+        return value;
+    }
+
+    /// <summary>
+    /// Convert JsonElement object to Dictionary<string, object>
+    /// </summary>
+    private Dictionary<string, object> ConvertJsonObjectToDictionary(JsonElement jsonElement)
+    {
+        var dict = new Dictionary<string, object>();
+        foreach (var prop in jsonElement.EnumerateObject())
+        {
+            dict[prop.Name] = ConvertJsonElementToObject(prop.Value);
+        }
+        return dict;
     }
 }
 

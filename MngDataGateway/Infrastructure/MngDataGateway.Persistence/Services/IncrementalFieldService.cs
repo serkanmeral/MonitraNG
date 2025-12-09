@@ -48,12 +48,21 @@ namespace MngDataGateway.Persistence.Services
             {
                 // 1. Parse format and resolve placeholders
                 var format = field.incrementalOptions.format;
-                var resolvedPrefix = ResolvePlaceholders(format, data, out var counterPlaceholder);
+                var resolvedPrefix = ResolvePlaceholders(format, data, out var counterPlaceholder, out var missingPlaceholders);
 
-                // 2. Build counter key
+                // 2. Validate that all placeholders are resolved
+                if (missingPlaceholders.Any())
+                {
+                    var missingFields = string.Join(", ", missingPlaceholders);
+                    throw new InvalidOperationException(
+                        $"Incremental field '{field.name}' format '{format}' contains unresolved placeholders: {missingFields}. " +
+                        $"These fields must be provided in the data or have default values.");
+                }
+
+                // 3. Build counter key
                 var counterKey = BuildCounterKey(schema.DatasetName, field.name, resolvedPrefix);
 
-                // 3. Get next counter value (atomic increment)
+                // 4. Get next counter value (atomic increment)
                 var counterValue = await GetNextCounterValueAsync(
                     databaseName,
                     counterKey,
@@ -61,7 +70,7 @@ namespace MngDataGateway.Persistence.Services
                     field.incrementalOptions.incrementStep,
                     session);
 
-                // 4. Format final value
+                // 5. Format final value
                 var finalValue = FormatValue(format, resolvedPrefix, counterValue, counterPlaceholder);
 
                 _logger.LogDebug(
@@ -82,17 +91,19 @@ namespace MngDataGateway.Persistence.Services
         /// <summary>
         /// Resolve placeholders in format template
         /// Supported: {year}, {month}, {day}, {yy}, {mm}, {dd}, {fieldName}
-        /// Returns: resolved prefix and counter placeholder info
+        /// Returns: resolved prefix, counter placeholder info, and list of missing placeholders
         /// </summary>
         private string ResolvePlaceholders(
             string format,
             Dictionary<string, object> data,
-            out string counterPlaceholder)
+            out string counterPlaceholder,
+            out List<string> missingPlaceholders)
         {
             var now = DateTime.UtcNow;
             var resolved = format;
+            missingPlaceholders = new List<string>();
 
-            // Date placeholders
+            // Date placeholders (always available)
             resolved = resolved.Replace("{year}", now.Year.ToString("D4"));
             resolved = resolved.Replace("{yy}", now.ToString("yy"));
             resolved = resolved.Replace("{month}", now.Month.ToString("D2"));
@@ -100,19 +111,41 @@ namespace MngDataGateway.Persistence.Services
             resolved = resolved.Replace("{day}", now.Day.ToString("D2"));
             resolved = resolved.Replace("{dd}", now.Day.ToString("D2"));
 
-            // Field placeholders (e.g., {projectCode})
-            foreach (var key in data.Keys)
-            {
-                var placeholder = $"{{{key}}}";
-                if (resolved.Contains(placeholder) && data[key] != null)
-                {
-                    resolved = resolved.Replace(placeholder, data[key].ToString());
-                }
-            }
-
-            // Extract counter placeholder (e.g., {0:D6}, {0:D4})
+            // Extract counter placeholder first (e.g., {0:D6}, {0:D4})
             var counterMatch = Regex.Match(resolved, @"\{0(:D\d+)?\}");
             counterPlaceholder = counterMatch.Success ? counterMatch.Value : "{0}";
+            
+            // Remove counter placeholder temporarily to check for other unresolved placeholders
+            var resolvedWithoutCounter = resolved.Replace(counterPlaceholder, "");
+
+            // Field placeholders (e.g., {projectCode})
+            // Find all {fieldName} patterns in the format
+            var fieldPlaceholderPattern = @"\{([a-zA-Z_][a-zA-Z0-9_]*)\}";
+            var fieldMatches = Regex.Matches(resolvedWithoutCounter, fieldPlaceholderPattern);
+            
+            foreach (Match match in fieldMatches)
+            {
+                var fieldName = match.Groups[1].Value;
+                var placeholder = $"{{{fieldName}}}";
+                
+                // Skip if it's a date placeholder (already resolved)
+                if (new[] { "year", "yy", "month", "mm", "day", "dd" }.Contains(fieldName))
+                    continue;
+                
+                // Check if field exists in data and has value
+                if (data.ContainsKey(fieldName) && data[fieldName] != null)
+                {
+                    resolved = resolved.Replace(placeholder, data[fieldName].ToString());
+                }
+                else
+                {
+                    // Field not found or null - add to missing list
+                    if (!missingPlaceholders.Contains(fieldName))
+                    {
+                        missingPlaceholders.Add(fieldName);
+                    }
+                }
+            }
 
             return resolved;
         }

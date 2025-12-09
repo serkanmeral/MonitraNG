@@ -40,6 +40,12 @@ public static class ServiceRegistration
         
         // Health Check Service - Application health monitoring
         services.AddScoped<IHealthCheckService, HealthCheckService>();
+
+        // Filter Parser - Parse RESTful filter query parameter
+        services.AddScoped<FilterParser>();
+
+        // Sort Parser - Parse MongoDB-style sort query parameter
+        services.AddScoped<SortParser>();
     }
 }
 

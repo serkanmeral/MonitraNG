@@ -51,6 +51,39 @@ namespace MngDataGateway.Persistence.Services
                 data.GetValueOrDefault("__dataId"), databaseName, collectionName);
         }
 
+        public async Task InsertManyAsync(
+            string databaseName,
+            string collectionName,
+            List<Dictionary<string, object>> items,
+            IClientSessionHandle? session = null)
+        {
+            if (items == null || !items.Any())
+            {
+                _logger.LogWarning("InsertManyAsync called with empty items list");
+                return;
+            }
+
+            var database = _mongoClient.GetDatabase(databaseName);
+            var collection = database.GetCollection<BsonDocument>(collectionName);
+
+            var documents = items.Select(item => 
+                new BsonDocument(item.Select(kvp => 
+                    new BsonElement(kvp.Key, BsonValue.Create(kvp.Value))))).ToList();
+
+            if (session != null)
+            {
+                await collection.InsertManyAsync(session, documents);
+            }
+            else
+            {
+                await collection.InsertManyAsync(documents);
+            }
+
+            _logger.LogDebug(
+                "Inserted {Count} documents into {Database}.{Collection}",
+                items.Count, databaseName, collectionName);
+        }
+
         public async Task<BsonDocument?> FindByIdAsync(
             string databaseName,
             string collectionName,
@@ -241,6 +274,34 @@ namespace MngDataGateway.Persistence.Services
         public async Task<IClientSessionHandle> StartSessionAsync()
         {
             return await _mongoClient.StartSessionAsync();
+        }
+
+        public async Task<List<BsonDocument>> AggregateAsync(
+            string databaseName,
+            string collectionName,
+            List<BsonDocument> pipeline,
+            IClientSessionHandle? session = null)
+        {
+            var database = _mongoClient.GetDatabase(databaseName);
+            var collection = database.GetCollection<BsonDocument>(collectionName);
+
+            PipelineDefinition<BsonDocument, BsonDocument> pipelineDefinition = pipeline;
+
+            List<BsonDocument> results;
+            if (session != null)
+            {
+                results = await collection.AggregateAsync(session, pipelineDefinition).Result.ToListAsync();
+            }
+            else
+            {
+                results = await collection.AggregateAsync(pipelineDefinition).Result.ToListAsync();
+            }
+
+            _logger.LogDebug(
+                "Aggregate executed on {Database}.{Collection}, returned {Count} documents",
+                databaseName, collectionName, results.Count);
+
+            return results;
         }
     }
 }

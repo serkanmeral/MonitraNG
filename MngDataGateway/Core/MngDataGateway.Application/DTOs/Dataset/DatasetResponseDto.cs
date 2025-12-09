@@ -59,14 +59,29 @@ public class DatasetResponseDto
     public int ValidationsCount { get; set; }
 
     /// <summary>
+    /// Validation rules (full details)
+    /// </summary>
+    public List<ValidationDefinition>? Validations { get; set; }
+
+    /// <summary>
     /// Predefined queries count
     /// </summary>
     public int QueriesCount { get; set; }
 
     /// <summary>
+    /// Predefined queries (full details)
+    /// </summary>
+    public List<QueryDefinition>? Queries { get; set; }
+
+    /// <summary>
     /// Index definitions count
     /// </summary>
     public int IndexListCount { get; set; }
+
+    /// <summary>
+    /// Index definitions (full details)
+    /// </summary>
+    public List<IndexDefinition>? IndexList { get; set; }
 
     /// <summary>
     /// Creation information

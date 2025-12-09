@@ -17,6 +17,7 @@ namespace MngDataGateway.Application.Configuration
         public Actors Actors { get; set; }
         public HistorySettings History { get; set; } = new();
         public DeletedDataSettings DeletedData { get; set; } = new();
+        public QuerySettings Query { get; set; } = new();
     }
 
     public class ServerSettings
@@ -67,6 +68,25 @@ namespace MngDataGateway.Application.Configuration
         /// Retention period for deleted data in days (default: 7)
         /// </summary>
         public int RetentionDays { get; set; } = 7;
+    }
+
+    public class QuerySettings
+    {
+        /// <summary>
+        /// Maximum depth for relation expansion (default: 2)
+        /// Can be overridden by ?deep query parameter
+        /// </summary>
+        public int RelationExpansionMaxDepth { get; set; } = 2;
+
+        /// <summary>
+        /// Default page size for list queries (default: 50)
+        /// </summary>
+        public int DefaultPageSize { get; set; } = 50;
+
+        /// <summary>
+        /// Maximum page size for list queries (default: 1000)
+        /// </summary>
+        public int MaxPageSize { get; set; } = 1000;
     }
 
 }

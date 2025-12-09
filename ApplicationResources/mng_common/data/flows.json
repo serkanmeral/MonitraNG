@@ -18,7 +18,7 @@
     {
         "id": "d358cbd1e654d5c6",
         "type": "tab",
-        "label": "Flow 1",
+        "label": "MNG",
         "disabled": false,
         "info": "",
         "env": []
@@ -36,6 +36,16 @@
         "servername": "",
         "verifyservercert": false,
         "alpnprotocol": ""
+    },
+    {
+        "id": "209f045a8e4c6d99",
+        "type": "amqp-broker",
+        "name": "",
+        "host": "rabbitmq",
+        "port": 5672,
+        "vhost": "",
+        "tls": false,
+        "credsFromSettings": false
     },
     {
         "id": "21ddd27ac0518c54",
@@ -166,7 +176,7 @@
         "payload": "{\"uid\":\"fbda049f-f955-40f4-9434-eb9ad84c0d9e\"}",
         "payloadType": "json",
         "x": 90,
-        "y": 40,
+        "y": 60,
         "wires": [
             [
                 "37b22eb3442324eb"
@@ -1199,61 +1209,34 @@
         "wires": []
     },
     {
-        "id": "3ed8825dc5a16ff3",
-        "type": "inject",
+        "id": "6342420901fcf7e5",
+        "type": "amqp-in",
         "z": "d358cbd1e654d5c6",
         "name": "",
-        "props": [
-            {
-                "p": "payload"
-            },
-            {
-                "p": "req.headers.authorization",
-                "v": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJnc0tyX012R25qT1lQck50SkRxMWw2bzBnOVhabTljaGRPa0hOdDdNMUZFIn0.eyJleHAiOjE3NTk5Mjk1MTIsImlhdCI6MTc1OTkyOTIxMiwianRpIjoib25ydHJ0Ojc5OTgwNjkzLTQxNDAtNDQxYS1hYTk0LWMxYTg2YTcxZjhhOCIsImlzcyI6Imh0dHBzOi8vdWRzLnV0ZXNrLmNsb3VkL2tleWNsb2FrL3JlYWxtcy9pc2ltIiwiYXVkIjpbImV4Y2hhbmdlX3Byb3h5X2NsaWVudCIsIm5leHRjbG91ZF9jbGllbnQiLCJyZWFsbS1tYW5hZ2VtZW50Il0sInN1YiI6IjgwM2RiYzMxLTJiN2MtNDI1My04MmExLTk1NjczYzQ3MjIyNiIsInR5cCI6IkJlYXJlciIsImF6cCI6IndlYl91aV9jbGllbnQiLCJzaWQiOiIzNGI5NmJkMi1jMjg4LTQ2ZTAtYjk5OC03YzA3Njg0NDEzZjkiLCJhY3IiOiIxIiwiYWxsb3dlZC1vcmlnaW5zIjpbIioiXSwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbImRlZmF1bHQtcm9sZXMtaXNpbSJdfSwicmVzb3VyY2VfYWNjZXNzIjp7InJlYWxtLW1hbmFnZW1lbnQiOnsicm9sZXMiOlsidmlldy11c2VycyIsInF1ZXJ5LWdyb3VwcyIsInF1ZXJ5LXVzZXJzIl19fSwic2NvcGUiOiJvcGVuaWQgY3VzdG9tX2F1ZGllbmNlIGN1c3RvbV9ncm91cCBjdXN0b21fdXNlcl9hdHRyaWJ1dGUgY3VzdG9tX3Njb3BlIHByb2ZpbGUgZW1haWwiLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsIl9fZGJOYW1lIjoiaXNpbV9pc2ltIiwicm9sZXMiOlsiQ08iXSwibGFzdF9uYW1lIjoiTWVyYWwiLCJpc0FkbWluIjoiZmFsc2UiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJzZXJrYW4ubWVyYWwiLCJnaXZlbl9uYW1lIjoiU2Vya2FuIiwiZGlzcGxheV9uYW1lIjoiU2Vya2FuIE1lcmFsIiwiY2xpZW50X2lkIjoid2ViX3VpX2NsaWVudCIsImF1dGhlbnRpY2F0b3JzLWNvbXBsZXRlZCI6IntcIjllMTBmMjhiLWE0NDAtNDZmYi05ZjhhLTk4Y2E2ZDFhNDI3ZVwiOjE3NTk5Mjc5NzUsXCIyNjVkOTQ1YS01ODI5LTQ5MzAtYmYwNS03MGVjZjA1ZWY4ZWRcIjoxNzU5OTI3OTc1fSIsInVpZCI6IjgwM2RiYzMxLTJiN2MtNDI1My04MmExLTk1NjczYzQ3MjIyNiIsIl9fb3duZXIiOiJpc2ltIiwiX19kb21haW4iOiJpc2ltIiwic2NvcGUiOiJvcGVuaWQiLCJuYW1lIjoiU2Vya2FuIE1lcmFsIiwiS0NfREVWSUNFX05PVEUiOiJleUpwY0VGa1pISmxjM01pT2lJeE1DNDBNaTR3TGpFaUxDSnZjeUk2SWs5MGFHVnlJaXdpYjNOV1pYSnphVzl1SWpvaVZXNXJibTkzYmlJc0ltSnliM2R6WlhJaU9pSkhieTFvZEhSd0xXTnNhV1Z1ZEM4eExqRWlMQ0prWlhacFkyVWlPaUpQZEdobGNpSXNJbXhoYzNSQlkyTmxjM01pT2pBc0ltMXZZbWxzWlNJNlptRnNjMlY5IiwiZmFtaWx5X25hbWUiOiJNZXJhbCIsImZpcnN0X25hbWUiOiJTZXJrYW4iLCJlbWFpbCI6InNlcmthbi5tZXJhbEBpc2ltcGxhdGZvcm0uaW8iLCJ1c2VybmFtZSI6InNlcmthbi5tZXJhbCJ9.qzpL-ZMOPFSDqcsWF1-xkamosY6071NO4vZEX51ufgB6joNxPBLAGgkctw9XSAvmzzgSkOKo0Y1xAr904dGVNF5CSD2QiDCcKJ2KaYy33YCZkJSboUstScj2pgXqatyuC_2s1aZaiTT3iRGYl2qMWAzq9QwUXeUK0dA7fLj1yrDoTt-89FXshxXnIsYudbKwCzAUX1DZb35xyZVKvueW-kN1RBCT0L5qSWyV8A7zQFmCFTqrzJuoCJNIN2W9vykPsE1TPR_g7Q78e-mGnsQXiJ3ffxFEFSK-UICgWaGqkj8GUKf9T6T4v7IoCNvcwIWv1aaiQF6G5Y5OZiLNogiYEg",
-                "vt": "str"
-            }
-        ],
-        "repeat": "",
-        "crontab": "",
-        "once": false,
-        "onceDelay": 0.1,
-        "topic": "",
-        "payload": "",
-        "payloadType": "date",
-        "x": 100,
-        "y": 80,
+        "broker": "209f045a8e4c6d99",
+        "prefetch": "10",
+        "reconnectOnError": false,
+        "noAck": true,
+        "exchangeName": "monitra.data.events.seven",
+        "exchangeType": "topic",
+        "exchangeRoutingKey": "dataset.@test_tasks_224334.created",
+        "exchangeDurable": true,
+        "queueName": "",
+        "queueType": "quorum",
+        "queueExclusive": false,
+        "queueDurable": false,
+        "queueAutoDelete": false,
+        "headers": "{}",
+        "x": 420,
+        "y": 160,
         "wires": [
             [
-                "e8c7516a2abdab60"
+                "1ca8114644ccefdf"
             ]
         ]
     },
     {
-        "id": "f22bc3d7376077e7",
-        "type": "http request",
-        "z": "d358cbd1e654d5c6",
-        "name": "",
-        "method": "GET",
-        "ret": "txt",
-        "paytoqs": "ignore",
-        "url": "https://uds.utesk.cloud/keycloak/admin/realms/isim/users?search=*&first=0&max=100",
-        "tls": "",
-        "persist": false,
-        "proxy": "",
-        "insecureHTTPParser": false,
-        "authType": "",
-        "senderr": false,
-        "headers": [],
-        "x": 470,
-        "y": 80,
-        "wires": [
-            [
-                "78de66a0b642a75c"
-            ]
-        ]
-    },
-    {
-        "id": "78de66a0b642a75c",
+        "id": "1ca8114644ccefdf",
         "type": "debug",
         "z": "d358cbd1e654d5c6",
         "name": "debug 1",
@@ -1261,122 +1244,11 @@
         "tosidebar": true,
         "console": false,
         "tostatus": false,
-        "complete": "true",
-        "targetType": "full",
+        "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 720,
-        "y": 80,
+        "x": 980,
+        "y": 160,
         "wires": []
-    },
-    {
-        "id": "e8c7516a2abdab60",
-        "type": "function",
-        "z": "d358cbd1e654d5c6",
-        "name": "function 1",
-        "func": "\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 260,
-        "y": 80,
-        "wires": [
-            [
-                "f22bc3d7376077e7"
-            ]
-        ]
-    },
-    {
-        "id": "7df000291ff89a0b",
-        "type": "inject",
-        "z": "d358cbd1e654d5c6",
-        "name": "",
-        "props": [
-            {
-                "p": "payload"
-            },
-            {
-                "p": "topic",
-                "vt": "str"
-            }
-        ],
-        "repeat": "",
-        "crontab": "",
-        "once": false,
-        "onceDelay": 0.1,
-        "topic": "",
-        "payload": "",
-        "payloadType": "date",
-        "x": 120,
-        "y": 240,
-        "wires": [
-            [
-                "5bbd08431fedaa33"
-            ]
-        ]
-    },
-    {
-        "id": "5bbd08431fedaa33",
-        "type": "function",
-        "z": "d358cbd1e654d5c6",
-        "name": "function 2",
-        "func": "const username = \"serkan.meral\";\nconst password = \"%212345Qawsedrf\";\n\nmsg.url = global.get(\"envPath\") + \"tyk/gw/token/realms/isim/protocol/openid-connect/token\";\nmsg.payload = \"client_id=web_ui_client&grant_type=password&username=\"+username+\"&password=\"+password+\"&__owner=isim&__dbName=isim_isim&isAdmin=false&__domain=isim&scope=openid\"\nmsg.headers = {\n    \"accept\": \"application/json\",\n    \"accept-language\": \"en-GB,en-US;q=0.9,en;q=0.8\",\n    \"content-type\": \"application/x-www-form-urlencoded\",\n    \"priority\": \"u=1, i\",\n    \"sec-ch-ua\": \"\\\"Chromium\\\";v=\\\"140\\\", \\\"Not=A?Brand\\\";v=\\\"24\\\", \\\"Google Chrome\\\";v=\\\"140\\\"\",\n    \"sec-ch-ua-mobile\": \"?0\",\n    \"sec-ch-ua-platform\": \"\\\"Windows\\\"\",\n    \"sec-fetch-dest\": \"empty\",\n    \"sec-fetch-mode\": \"cors\",\n    \"sec-fetch-site\": \"same-origin\",\n    \"cookie\": \"locales=tr\",\n    \"Referer\": \"https://uds.utesk.cloud/sign-in\"    \n}\n\n\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 300,
-        "y": 240,
-        "wires": [
-            [
-                "fa8a038b8c11e392"
-            ]
-        ]
-    },
-    {
-        "id": "b4b12b3095efddc4",
-        "type": "debug",
-        "z": "d358cbd1e654d5c6",
-        "name": "debug 2",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "true",
-        "targetType": "full",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 760,
-        "y": 240,
-        "wires": []
-    },
-    {
-        "id": "fa8a038b8c11e392",
-        "type": "http request",
-        "z": "d358cbd1e654d5c6",
-        "name": "",
-        "method": "GET",
-        "ret": "txt",
-        "paytoqs": "ignore",
-        "url": "",
-        "tls": "149134e7a8351b0d",
-        "persist": false,
-        "proxy": "",
-        "insecureHTTPParser": false,
-        "authType": "",
-        "senderr": false,
-        "headers": [],
-        "x": 510,
-        "y": 240,
-        "wires": [
-            [
-                "b4b12b3095efddc4"
-            ]
-        ]
     }
 ]
