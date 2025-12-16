@@ -17,6 +17,7 @@ public class DomainCreationPipeline
         CreateDomainEntityStep createDomainEntityStep,
         CreateDatabaseStep createDatabaseStep,
         InitializeDatabaseCollectionsStep initializeDatabaseCollectionsStep,
+        InitializeDataGatewayCollectionsStep initializeDataGatewayCollectionsStep,
         CreateKeycloakRealmStep createKeycloakRealmStep,
         CreateDefaultGroupsStep createDefaultGroupsStep,
         CreateAdminUserStep createAdminUserStep,
@@ -35,7 +36,8 @@ public class DomainCreationPipeline
             .AddStep(validateDomainStep)                    // Step 1
             .AddStep(createDomainEntityStep)                // Step 2
             .AddStep(createDatabaseStep)                    // Step 3
-            .AddStep(initializeDatabaseCollectionsStep)     // Step 4 - Initialize Collections
+            .AddStep(initializeDatabaseCollectionsStep)     // Step 4 - Initialize @datasets, @dataset_categories
+            .AddStep(initializeDataGatewayCollectionsStep)  // Step 4.5 - Initialize @users, @groups
             .AddStep(createKeycloakRealmStep)               // Step 5
             .AddStep(createDefaultGroupsStep)               // Step 6
             .AddStep(createAdminUserStep)                   // Step 7

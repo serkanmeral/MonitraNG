@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using MngKeeper.Application.Interfaces;
 
 namespace MngKeeper.Api.Controllers;
 
@@ -13,15 +14,18 @@ public class AdminController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly ILogger<AdminController> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IDomainRepository _domainRepository;
 
     public AdminController(
         IConfiguration configuration,
         ILogger<AdminController> logger,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        IDomainRepository domainRepository)
     {
         _configuration = configuration;
         _logger = logger;
         _httpClientFactory = httpClientFactory;
+        _domainRepository = domainRepository;
     }
 
     /// <summary>
@@ -98,6 +102,10 @@ public class AdminController : ControllerBase
             // Add domain_name mapper
             var domainNameMapperAdded = await AddDomainNameMapperAsync(httpClient, realmName, clientId!);
             if (domainNameMapperAdded) mappersAdded.Add("domain_name");
+
+            // Add domain_id mapper (requires domain lookup)
+            var domainIdMapperAdded = await AddDomainIdMapperAsync(httpClient, realmName, clientId!);
+            if (domainIdMapperAdded) mappersAdded.Add("domain_id");
 
             _logger.LogInformation("Mappers configured successfully for realm: {RealmName}. Added: {Mappers}", 
                 realmName, string.Join(", ", mappersAdded));
@@ -284,6 +292,56 @@ public class AdminController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error adding domain_name mapper");
+            return false;
+        }
+    }
+
+    private async Task<bool> AddDomainIdMapperAsync(HttpClient httpClient, string realmName, string clientId)
+    {
+        try
+        {
+            // Get domain ID from domain name (realm name)
+            var domain = await _domainRepository.GetByNameAsync(realmName);
+            if (domain == null)
+            {
+                _logger.LogWarning("Domain not found for realm: {RealmName}, skipping domain_id mapper", realmName);
+                return false;
+            }
+
+            var mapperData = new
+            {
+                name = "domain-id-mapper",
+                protocol = "openid-connect",
+                protocolMapper = "oidc-hardcoded-claim-mapper",
+                config = new Dictionary<string, string>
+                {
+                    ["claim.name"] = "domain_id",
+                    ["claim.value"] = domain.Id,
+                    ["id.token.claim"] = "true",
+                    ["access.token.claim"] = "true",
+                    ["userinfo.token.claim"] = "true",
+                    ["jsonType.label"] = "String"
+                }
+            };
+
+            var json = JsonSerializer.Serialize(mapperData);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var response = await httpClient.PostAsync($"/admin/realms/{realmName}/clients/{clientId}/protocol-mappers/models", content);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Failed to add domain_id mapper. Error: {Error}", error);
+                return false;
+            }
+
+            _logger.LogInformation("domain_id mapper added successfully with domain ID: {DomainId}", domain.Id);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error adding domain_id mapper");
             return false;
         }
     }

@@ -12,6 +12,7 @@ namespace MngKeeper.Application.Features.Group.Commands.CreateGroup
         private readonly IDomainRepository _domainRepository;
         private readonly IKeycloakService _keycloakService;
         private readonly IEventPublisher _eventPublisher;
+        private readonly IDataGatewaySyncService _dataGatewaySyncService;
         private readonly ILogger<CreateGroupCommandHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -20,6 +21,7 @@ namespace MngKeeper.Application.Features.Group.Commands.CreateGroup
             IDomainRepository domainRepository,
             IKeycloakService keycloakService,
             IEventPublisher eventPublisher,
+            IDataGatewaySyncService dataGatewaySyncService,
             ILogger<CreateGroupCommandHandler> logger,
             IHttpContextAccessor httpContextAccessor)
         {
@@ -27,6 +29,7 @@ namespace MngKeeper.Application.Features.Group.Commands.CreateGroup
             _domainRepository = domainRepository;
             _keycloakService = keycloakService;
             _eventPublisher = eventPublisher;
+            _dataGatewaySyncService = dataGatewaySyncService;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -41,25 +44,36 @@ namespace MngKeeper.Application.Features.Group.Commands.CreateGroup
                 // Get domain from token claims
                 claims = _httpContextAccessor.HttpContext?.Items["TokenClaims"] as TokenClaims;
                 
-                if (claims?.DomainId == null)
+                MngKeeper.Domain.Entities.Domain? domain = null;
+                
+                // Try to get domain by ID first
+                if (claims?.DomainId != null)
+                {
+                    domain = await _domainRepository.GetByIdAsync(claims.DomainId);
+                }
+                
+                // If domain not found by ID, try to find by name
+                if (domain is null && !string.IsNullOrEmpty(claims?.DomainName))
+                {
+                    domain = await _domainRepository.GetByNameAsync(claims.DomainName);
+                    // Update claims with the found domain ID
+                    if (domain is not null && claims is not null)
+                    {
+                        claims.DomainId = domain!.Id;
+                    }
+                }
+                
+                if (domain is null)
                 {
                     return new CreateGroupResponse
                     {
                         IsSuccess = false,
-                        ErrorMessage = "Domain information not found in token."
+                        ErrorMessage = "Domain information not found in token or domain does not exist."
                     };
                 }
 
-                // Get domain to get realm name
-                var domain = await _domainRepository.GetByIdAsync(claims.DomainId);
-                if (domain == null)
-                {
-                    return new CreateGroupResponse
-                    {
-                        IsSuccess = false,
-                        ErrorMessage = "Domain not found."
-                    };
-                }
+                // At this point, domain is guaranteed to be non-null
+                MngKeeper.Domain.Entities.Domain domainValue = domain!;
 
                 // Check if group already exists
                 if (await _groupRepository.ExistsByNameAsync(request.Name))
@@ -78,7 +92,7 @@ namespace MngKeeper.Application.Features.Group.Commands.CreateGroup
                     Description = request.Description
                 };
 
-                var keycloakGroup = await _keycloakService.CreateGroupAsync(domain.RealmName, keycloakGroupRequest);
+                var keycloakGroup = await _keycloakService.CreateGroupAsync(domainValue.RealmName, keycloakGroupRequest);
                 if (keycloakGroup == null)
                 {
                     return new CreateGroupResponse
@@ -104,7 +118,23 @@ namespace MngKeeper.Application.Features.Group.Commands.CreateGroup
                 // Save to database
                 var savedGroup = await _groupRepository.AddAsync(group);
 
-                // Publish group created event
+                // Sync to DataGateway MongoDB (mng_{domain} database) with custom data
+                try
+                {
+                    await _dataGatewaySyncService.SyncGroupToDataGatewayAsync(
+                        savedGroup, 
+                        claims.DomainId,
+                        request.CustomData);
+                    _logger.LogInformation("Group synced to DataGateway: GroupId={GroupId}", savedGroup.Id);
+                }
+                catch (Exception syncEx)
+                {
+                    // Log error but don't fail the group creation
+                    _logger.LogError(syncEx, "Failed to sync group to DataGateway MongoDB: GroupId={GroupId}", savedGroup.Id);
+                    // Continue - group is created in Keycloak and MngKeeper DB
+                }
+
+                // Publish group created event (notification only)
                 var groupCreatedEvent = new GroupCreatedEvent
                 {
                     GroupId = savedGroup.Id,

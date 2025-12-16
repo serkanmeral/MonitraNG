@@ -8,6 +8,12 @@ namespace MngKeeper.Application.Features.Group.Commands.CreateGroup
         public string Description { get; set; } = string.Empty;
         public List<string> Permissions { get; set; } = new();
         public bool IsActive { get; set; } = true;
+        
+        /// <summary>
+        /// Custom data dictionary - MngDataGateway MongoDB'ye sync edilecek
+        /// Keycloak'a yazılmaz, sadece DataGateway'de tutulur
+        /// </summary>
+        public Dictionary<string, object>? CustomData { get; set; }
     }
 
     public class CreateGroupResponse

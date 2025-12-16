@@ -11,6 +11,12 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
         public string LastName { get; set; } = string.Empty;
         public List<string> GroupIds { get; set; } = new();
         public bool IsActive { get; set; } = true;
+        
+        /// <summary>
+        /// Custom data dictionary - MngDataGateway MongoDB'ye sync edilecek
+        /// Keycloak'a yazılmaz, sadece DataGateway'de tutulur
+        /// </summary>
+        public Dictionary<string, object>? CustomData { get; set; }
     }
 
     public class CreateUserResponse

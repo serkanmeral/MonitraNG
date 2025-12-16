@@ -11,6 +11,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
         private readonly IUserRepository _userRepository;
         private readonly IDomainRepository _domainRepository;
         private readonly IKeycloakService _keycloakService;
+        private readonly IDataGatewaySyncService _dataGatewaySyncService;
         private readonly ILogger<UpdateUserCommandHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -18,12 +19,14 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
             IUserRepository userRepository,
             IDomainRepository domainRepository,
             IKeycloakService keycloakService,
+            IDataGatewaySyncService dataGatewaySyncService,
             ILogger<UpdateUserCommandHandler> logger,
             IHttpContextAccessor httpContextAccessor)
         {
             _userRepository = userRepository;
             _domainRepository = domainRepository;
             _keycloakService = keycloakService;
+            _dataGatewaySyncService = dataGatewaySyncService;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -114,6 +117,22 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
 
                 // Save to database
                 var updatedUser = await _userRepository.UpdateAsync(existingUser);
+
+                // Sync to DataGateway MongoDB (mng_{domain} database) with custom data
+                try
+                {
+                    await _dataGatewaySyncService.SyncUserToDataGatewayAsync(
+                        updatedUser, 
+                        claims.DomainId,
+                        request.CustomData);
+                    _logger.LogInformation("User synced to DataGateway: UserId={UserId}", updatedUser.Id);
+                }
+                catch (Exception syncEx)
+                {
+                    // Log error but don't fail the user update
+                    _logger.LogError(syncEx, "Failed to sync user to DataGateway MongoDB: UserId={UserId}", updatedUser.Id);
+                    // Continue - user is updated in MngKeeper DB
+                }
 
                 _logger.LogInformation("User updated successfully: {UserId} in domain: {DomainId}", request.UserId, claims.DomainId);
 

@@ -48,8 +48,11 @@ namespace MngKeeper.Infrastructure.Services
                 if (payloadJson.TryGetProperty("domain_realm", out var domainRealmElement))
                     claims.DomainRealm = domainRealmElement.GetString();
                 
-                if (payloadJson.TryGetProperty("is_admin", out var isAdminElement))
-                    claims.IsAdmin = isAdminElement.GetBoolean();
+                // Check for isAdmin in both camelCase and snake_case
+                if (payloadJson.TryGetProperty("isAdmin", out var isAdminElementCamel))
+                    claims.IsAdmin = isAdminElementCamel.GetBoolean();
+                else if (payloadJson.TryGetProperty("is_admin", out var isAdminElementSnake))
+                    claims.IsAdmin = isAdminElementSnake.GetBoolean();
                 
                 _logger.LogInformation("Token parsed successfully for user: {Username}, domain: {DomainName}, isAdmin: {IsAdmin}", 
                     claims.Username, claims.DomainName, claims.IsAdmin);

@@ -49,6 +49,7 @@ public static class ServiceRegistration
         services.AddScoped<CreateDomainEntityStep>();
         services.AddScoped<CreateDatabaseStep>();
         services.AddScoped<InitializeDatabaseCollectionsStep>();
+        services.AddScoped<InitializeDataGatewayCollectionsStep>();
         services.AddScoped<CreateKeycloakRealmStep>();
         services.AddScoped<CreateDefaultGroupsStep>();
         services.AddScoped<CreateAdminUserStep>();

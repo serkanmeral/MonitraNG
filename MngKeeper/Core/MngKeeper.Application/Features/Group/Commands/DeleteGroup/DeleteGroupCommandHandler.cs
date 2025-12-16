@@ -1,6 +1,7 @@
 using MediatR;
 using MngKeeper.Application.Interfaces;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 
 namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
 {
@@ -9,17 +10,23 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
         private readonly IGroupRepository _groupRepository;
         private readonly IDomainRepository _domainRepository;
         private readonly IKeycloakService _keycloakService;
+        private readonly IDataGatewaySyncService _dataGatewaySyncService;
+        private readonly IMongoClient _mongoClient;
         private readonly ILogger<DeleteGroupCommandHandler> _logger;
 
         public DeleteGroupCommandHandler(
             IGroupRepository groupRepository,
             IDomainRepository domainRepository,
             IKeycloakService keycloakService,
+            IDataGatewaySyncService dataGatewaySyncService,
+            IMongoClient mongoClient,
             ILogger<DeleteGroupCommandHandler> logger)
         {
             _groupRepository = groupRepository;
             _domainRepository = domainRepository;
             _keycloakService = keycloakService;
+            _dataGatewaySyncService = dataGatewaySyncService;
+            _mongoClient = mongoClient;
             _logger = logger;
         }
 
@@ -86,6 +93,35 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
                         IsSuccess = false,
                         ErrorMessage = "Failed to delete group from database."
                     };
+                }
+
+                // Sync soft delete to DataGateway MongoDB (mng_{domain} database)
+                // Set IsDeleted = true in DataGateway
+                try
+                {
+                    // Get group before deletion for sync (or use existingGroup)
+                    existingGroup.IsActive = false; // Mark as inactive
+                    await _dataGatewaySyncService.SyncGroupToDataGatewayAsync(
+                        existingGroup, 
+                        request.DomainId,
+                        null);
+                    
+                    // Update IsDeleted flag in DataGateway
+                    var database = _mongoClient.GetDatabase(domain.DatabaseName);
+                    var collection = database.GetCollection<MongoDB.Bson.BsonDocument>("@groups");
+                    var filter = Builders<MongoDB.Bson.BsonDocument>.Filter.Eq("__dataId", existingGroup.Id);
+                    var update = Builders<MongoDB.Bson.BsonDocument>.Update
+                        .Set("__isDeleted", true)
+                        .Set("__lastUpdateInfo.updatedAt", DateTime.UtcNow);
+                    await collection.UpdateOneAsync(filter, update);
+                    
+                    _logger.LogInformation("Group soft deleted in DataGateway: GroupId={GroupId}", existingGroup.Id);
+                }
+                catch (Exception syncEx)
+                {
+                    // Log error but don't fail the group deletion
+                    _logger.LogError(syncEx, "Failed to sync group deletion to DataGateway MongoDB: GroupId={GroupId}", existingGroup.Id);
+                    // Continue - group is deleted from MngKeeper DB
                 }
 
                 _logger.LogInformation("Group deleted successfully: {GroupId} in domain: {DomainId}", request.GroupId, request.DomainId);

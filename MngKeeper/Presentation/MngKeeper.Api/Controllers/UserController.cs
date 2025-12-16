@@ -14,7 +14,7 @@ namespace MngKeeper.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    // [AdminAuthorization] // Temporarily disabled for testing
+    [AdminAuthorization] // Re-enabled for proper token parsing
     public class UserController : ControllerBase
     {
         private readonly IMediator _mediator;

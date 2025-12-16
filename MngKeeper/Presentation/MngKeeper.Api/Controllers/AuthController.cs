@@ -9,13 +9,19 @@ namespace MngKeeper.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IKeycloakService _keycloakService;
+    private readonly IUserRepository _userRepository;
+    private readonly IDomainRepository _domainRepository;
     private readonly ILogger<AuthController> _logger;
 
     public AuthController(
         IKeycloakService keycloakService,
+        IUserRepository userRepository,
+        IDomainRepository domainRepository,
         ILogger<AuthController> logger)
     {
         _keycloakService = keycloakService;
+        _userRepository = userRepository;
+        _domainRepository = domainRepository;
         _logger = logger;
     }
 
@@ -46,6 +52,35 @@ public class AuthController : ControllerBase
 
             _logger.LogInformation("Token request for user: {Username} in domain: {Domain}", 
                 request.Username, request.Domain);
+
+            // Check if user is active in MngKeeper database before authenticating
+            var domain = await _domainRepository.GetByNameAsync(request.Domain);
+            if (domain == null)
+            {
+                _logger.LogWarning("Domain not found: {Domain}", request.Domain);
+                return Unauthorized(new ErrorResponse
+                {
+                    Error = "invalid_domain",
+                    ErrorDescription = "Domain not found"
+                });
+            }
+
+            // Get user from database to check IsActive status
+            var user = await _userRepository.GetByUsernameAsync(request.Username);
+            if (user != null && user.DomainId == domain.Id)
+            {
+                if (!user.IsActive)
+                {
+                    _logger.LogWarning("Inactive user attempted to get token: {Username} in domain: {Domain}", 
+                        request.Username, request.Domain);
+                    
+                    return Unauthorized(new ErrorResponse
+                    {
+                        Error = "user_inactive",
+                        ErrorDescription = "User account is inactive"
+                    });
+                }
+            }
 
             var tokenResponse = await _keycloakService.GetTokenAsync(
                 request.Domain, 

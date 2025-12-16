@@ -2,6 +2,7 @@ using MediatR;
 using MngKeeper.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
+using MongoDB.Driver;
 
 namespace MngKeeper.Application.Features.User.Commands.DeleteUser
 {
@@ -10,6 +11,8 @@ namespace MngKeeper.Application.Features.User.Commands.DeleteUser
         private readonly IUserRepository _userRepository;
         private readonly IDomainRepository _domainRepository;
         private readonly IKeycloakService _keycloakService;
+        private readonly IDataGatewaySyncService _dataGatewaySyncService;
+        private readonly IMongoClient _mongoClient;
         private readonly ILogger<DeleteUserCommandHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -17,12 +20,16 @@ namespace MngKeeper.Application.Features.User.Commands.DeleteUser
             IUserRepository userRepository,
             IDomainRepository domainRepository,
             IKeycloakService keycloakService,
+            IDataGatewaySyncService dataGatewaySyncService,
+            IMongoClient mongoClient,
             ILogger<DeleteUserCommandHandler> logger,
             IHttpContextAccessor httpContextAccessor)
         {
             _userRepository = userRepository;
             _domainRepository = domainRepository;
             _keycloakService = keycloakService;
+            _dataGatewaySyncService = dataGatewaySyncService;
+            _mongoClient = mongoClient;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -100,6 +107,39 @@ namespace MngKeeper.Application.Features.User.Commands.DeleteUser
                         IsSuccess = false,
                         ErrorMessage = "Failed to delete user from database."
                     };
+                }
+
+                // Sync soft delete to DataGateway MongoDB (mng_{domain} database)
+                // Set IsDeleted = true in DataGateway
+                try
+                {
+                    // Get user before deletion for sync (or use existingUser)
+                    existingUser.IsActive = false; // Mark as inactive
+                    await _dataGatewaySyncService.SyncUserToDataGatewayAsync(
+                        existingUser, 
+                        claims.DomainId,
+                        null);
+                    
+                    // Update IsDeleted flag in DataGateway
+                    var domainForSync = await _domainRepository.GetByIdAsync(claims.DomainId);
+                    if (domainForSync != null)
+                    {
+                        var database = _mongoClient.GetDatabase(domainForSync.DatabaseName);
+                        var collection = database.GetCollection<MongoDB.Bson.BsonDocument>("@users");
+                        var filter = Builders<MongoDB.Bson.BsonDocument>.Filter.Eq("__dataId", existingUser.Id);
+                        var update = Builders<MongoDB.Bson.BsonDocument>.Update
+                            .Set("__isDeleted", true)
+                            .Set("__lastUpdateInfo.updatedAt", DateTime.UtcNow);
+                        await collection.UpdateOneAsync(filter, update);
+                    }
+                    
+                    _logger.LogInformation("User soft deleted in DataGateway: UserId={UserId}", existingUser.Id);
+                }
+                catch (Exception syncEx)
+                {
+                    // Log error but don't fail the user deletion
+                    _logger.LogError(syncEx, "Failed to sync user deletion to DataGateway MongoDB: UserId={UserId}", existingUser.Id);
+                    // Continue - user is deleted from MngKeeper DB
                 }
 
                 _logger.LogInformation("User deleted successfully: {UserId} in domain: {DomainId}", request.UserId, claims.DomainId);

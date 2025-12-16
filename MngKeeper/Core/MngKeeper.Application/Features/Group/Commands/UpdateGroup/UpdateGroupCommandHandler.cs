@@ -11,6 +11,7 @@ namespace MngKeeper.Application.Features.Group.Commands.UpdateGroup
         private readonly IGroupRepository _groupRepository;
         private readonly IDomainRepository _domainRepository;
         private readonly IKeycloakService _keycloakService;
+        private readonly IDataGatewaySyncService _dataGatewaySyncService;
         private readonly ILogger<UpdateGroupCommandHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -18,12 +19,14 @@ namespace MngKeeper.Application.Features.Group.Commands.UpdateGroup
             IGroupRepository groupRepository,
             IDomainRepository domainRepository,
             IKeycloakService keycloakService,
+            IDataGatewaySyncService dataGatewaySyncService,
             ILogger<UpdateGroupCommandHandler> logger,
             IHttpContextAccessor httpContextAccessor)
         {
             _groupRepository = groupRepository;
             _domainRepository = domainRepository;
             _keycloakService = keycloakService;
+            _dataGatewaySyncService = dataGatewaySyncService;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -102,6 +105,22 @@ namespace MngKeeper.Application.Features.Group.Commands.UpdateGroup
 
                 // Save to database
                 var updatedGroup = await _groupRepository.UpdateAsync(existingGroup);
+
+                // Sync to DataGateway MongoDB (mng_{domain} database) with custom data
+                try
+                {
+                    await _dataGatewaySyncService.SyncGroupToDataGatewayAsync(
+                        updatedGroup, 
+                        claims.DomainId,
+                        request.CustomData);
+                    _logger.LogInformation("Group synced to DataGateway: GroupId={GroupId}", updatedGroup.Id);
+                }
+                catch (Exception syncEx)
+                {
+                    // Log error but don't fail the group update
+                    _logger.LogError(syncEx, "Failed to sync group to DataGateway MongoDB: GroupId={GroupId}", updatedGroup.Id);
+                    // Continue - group is updated in MngKeeper DB
+                }
 
                 _logger.LogInformation("Group updated successfully: {GroupId} in domain: {DomainId}", request.GroupId, claims.DomainId);
 

@@ -162,6 +162,9 @@ public static class Extensions
         services.AddScoped<MngKeeper.Application.Interfaces.ISessionService, MngKeeper.Infrastructure.Services.SessionService>();
         services.AddScoped<MngKeeper.Application.Interfaces.IMqttService, MngKeeper.Infrastructure.Services.MqttService>();
         services.AddScoped<MngKeeper.Application.Interfaces.IMinioService, MngKeeper.Infrastructure.Services.MinioService>();
+        
+        // DataGateway Sync Service
+        services.AddScoped<MngKeeper.Application.Interfaces.IDataGatewaySyncService, MngKeeper.Infrastructure.Services.DataGatewaySyncService>();
         services.AddHttpContextAccessor();
     }
 
