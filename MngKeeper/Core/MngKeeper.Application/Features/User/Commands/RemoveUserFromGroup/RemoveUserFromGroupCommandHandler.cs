@@ -33,17 +33,6 @@ namespace MngKeeper.Application.Features.User.Commands.RemoveUserFromGroup
                 _logger.LogInformation("Removing user {UserId} from group {GroupId} in domain {DomainId}", 
                     request.UserId, request.GroupId, request.DomainId);
 
-                // Get user
-                var user = await _userRepository.GetByIdAsync(request.UserId);
-                if (user == null)
-                {
-                    return new RemoveUserFromGroupResponse
-                    {
-                        IsSuccess = false,
-                        ErrorMessage = "User not found."
-                    };
-                }
-
                 // Get domain
                 var domain = await _domainRepository.GetByIdAsync(request.DomainId);
                 if (domain == null)
@@ -55,8 +44,19 @@ namespace MngKeeper.Application.Features.User.Commands.RemoveUserFromGroup
                     };
                 }
 
+                // Get user
+                var user = await _userRepository.GetByIdAsync(request.UserId, request.DomainId);
+                if (user == null)
+                {
+                    return new RemoveUserFromGroupResponse
+                    {
+                        IsSuccess = false,
+                        ErrorMessage = "User not found."
+                    };
+                }
+
                 // Get group to get its name
-                var group = await _groupRepository.GetByIdAsync(request.GroupId);
+                var group = await _groupRepository.GetByIdAsync(request.GroupId, request.DomainId);
                 if (group == null)
                 {
                     return new RemoveUserFromGroupResponse
@@ -82,7 +82,7 @@ namespace MngKeeper.Application.Features.User.Commands.RemoveUserFromGroup
                 // Remove from user groups in database (by group NAME for consistency)
                 user.Groups.Remove(group.Name);
                 user.UpdatedAt = DateTime.UtcNow;
-                user.UpdatedBy = "system"; // TODO: Get from current user context
+                user.UpdatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser; // TODO: Get from current user context
 
                 await _userRepository.UpdateAsync(user);
 

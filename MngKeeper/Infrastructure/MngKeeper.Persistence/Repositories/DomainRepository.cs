@@ -76,34 +76,22 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 // Create a new database with the domain-specific name
+                // Note: MongoDB creates database automatically on first write
+                // We don't need to create empty collections here because:
+                // - @users and @groups are created by InitializeDataGatewayCollectionsStep
+                // - @datasets and @dataset_categories are created by InitializeDatabaseCollectionsStep
+                // - Other collections will be created on-demand when needed
+                
                 var domainDatabase = _database.Client.GetDatabase(databaseName);
                 
-                // Create initial collections for the domain using MongoDB commands
-                var command = new MongoDB.Bson.BsonDocument
-                {
-                    { "create", "users" }
-                };
-                await domainDatabase.RunCommandAsync<MongoDB.Bson.BsonDocument>(command);
-                
-                command = new MongoDB.Bson.BsonDocument
-                {
-                    { "create", "groups" }
-                };
-                await domainDatabase.RunCommandAsync<MongoDB.Bson.BsonDocument>(command);
-                
-                command = new MongoDB.Bson.BsonDocument
-                {
-                    { "create", "audit_logs" }
-                };
-                await domainDatabase.RunCommandAsync<MongoDB.Bson.BsonDocument>(command);
-                
-                command = new MongoDB.Bson.BsonDocument
-                {
-                    { "create", "assets" }
-                };
-                await domainDatabase.RunCommandAsync<MongoDB.Bson.BsonDocument>(command);
+                // Verify database exists by creating a test collection and dropping it
+                // This ensures the database is created in MongoDB
+                var testCollection = domainDatabase.GetCollection<MongoDB.Bson.BsonDocument>("__test");
+                await testCollection.InsertOneAsync(new MongoDB.Bson.BsonDocument { { "_id", MongoDB.Bson.ObjectId.GenerateNewId() } });
+                await domainDatabase.DropCollectionAsync("__test");
                 
                 _logger.LogInformation("Domain database created successfully: {DatabaseName}", databaseName);
+                _logger.LogInformation("Note: Collections will be created by pipeline steps (@users, @groups, @datasets, etc.)");
                 return true;
             }
             catch (Exception ex)

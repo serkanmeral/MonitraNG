@@ -76,7 +76,7 @@ namespace MngKeeper.Application.Features.Group.Commands.CreateGroup
                 MngKeeper.Domain.Entities.Domain domainValue = domain!;
 
                 // Check if group already exists
-                if (await _groupRepository.ExistsByNameAsync(request.Name))
+                if (await _groupRepository.ExistsByNameAsync(request.Name, claims.DomainId))
                 {
                     return new CreateGroupResponse
                     {
@@ -102,7 +102,7 @@ namespace MngKeeper.Application.Features.Group.Commands.CreateGroup
                     };
                 }
 
-                // Create group entity
+                // Create group entity (only for sync to domain database, not saved to mngkeeper database)
                 var group = new MngKeeper.Domain.Entities.Group
                 {
                     Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(),
@@ -111,27 +111,28 @@ namespace MngKeeper.Application.Features.Group.Commands.CreateGroup
                     Permissions = request.Permissions,
                     IsActive = request.IsActive,
                     DomainId = claims.DomainId,
-                    CreatedBy = "system", // TODO: Get from current user context
+                    CreatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser, // TODO: Get from current user context
                     CreatedAt = DateTime.UtcNow
                 };
 
-                // Save to database
+                // Save to domain-specific database (groups collection)
                 var savedGroup = await _groupRepository.AddAsync(group);
+                _logger.LogInformation("Group saved to domain database groups collection: GroupId={GroupId}", savedGroup.Id);
 
-                // Sync to DataGateway MongoDB (mng_{domain} database) with custom data
+                // Sync to domain database (@groups collection for DataGateway) with custom data
                 try
                 {
                     await _dataGatewaySyncService.SyncGroupToDataGatewayAsync(
                         savedGroup, 
                         claims.DomainId,
                         request.CustomData);
-                    _logger.LogInformation("Group synced to DataGateway: GroupId={GroupId}", savedGroup.Id);
+                    _logger.LogInformation("Group synced to domain database @groups collection: GroupId={GroupId}", savedGroup.Id);
                 }
                 catch (Exception syncEx)
                 {
                     // Log error but don't fail the group creation
-                    _logger.LogError(syncEx, "Failed to sync group to DataGateway MongoDB: GroupId={GroupId}", savedGroup.Id);
-                    // Continue - group is created in Keycloak and MngKeeper DB
+                    _logger.LogError(syncEx, "Failed to sync group to domain database @groups collection: GroupId={GroupId}", savedGroup.Id);
+                    // Continue - group is created in Keycloak and domain database
                 }
 
                 // Publish group created event (notification only)

@@ -9,6 +9,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
     public class UpdateUserCommandHandler : IRequestHandler<UpdateUserCommand, UpdateUserResponse>
     {
         private readonly IUserRepository _userRepository;
+        private readonly IGroupRepository _groupRepository;
         private readonly IDomainRepository _domainRepository;
         private readonly IKeycloakService _keycloakService;
         private readonly IDataGatewaySyncService _dataGatewaySyncService;
@@ -17,6 +18,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
 
         public UpdateUserCommandHandler(
             IUserRepository userRepository,
+            IGroupRepository groupRepository,
             IDomainRepository domainRepository,
             IKeycloakService keycloakService,
             IDataGatewaySyncService dataGatewaySyncService,
@@ -24,6 +26,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
             IHttpContextAccessor httpContextAccessor)
         {
             _userRepository = userRepository;
+            _groupRepository = groupRepository;
             _domainRepository = domainRepository;
             _keycloakService = keycloakService;
             _dataGatewaySyncService = dataGatewaySyncService;
@@ -62,7 +65,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                 }
 
                 // Get existing user
-                var existingUser = await _userRepository.GetByIdAsync(request.UserId);
+                var existingUser = await _userRepository.GetByIdAsync(request.UserId, claims.DomainId);
                 if (existingUser == null)
                 {
                     return new UpdateUserResponse
@@ -83,7 +86,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                 }
 
                 // Check if new email conflicts with existing user (excluding current user)
-                if (request.Email != existingUser.Email && await _userRepository.ExistsByEmailAsync(request.Email))
+                if (request.Email != existingUser.Email && await _userRepository.ExistsByEmailAsync(request.Email, claims.DomainId))
                 {
                     return new UpdateUserResponse
                     {
@@ -93,7 +96,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                 }
 
                 // Check if new username conflicts with existing user (excluding current user)
-                if (request.Username != existingUser.Username && await _userRepository.ExistsByUsernameAsync(request.Username))
+                if (request.Username != existingUser.Username && await _userRepository.ExistsByUsernameAsync(request.Username, claims.DomainId))
                 {
                     return new UpdateUserResponse
                     {
@@ -110,9 +113,28 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                 existingUser.Email = request.Email;
                 existingUser.FirstName = request.FirstName;
                 existingUser.LastName = request.LastName;
-                existingUser.Groups = request.GroupIds;
+                
+                // Convert group IDs to group names (User.Groups stores group names, not IDs)
+                if (request.GroupIds != null && request.GroupIds.Any())
+                {
+                    var groupNames = new List<string>();
+                    foreach (var groupId in request.GroupIds)
+                    {
+                        var group = await _groupRepository.GetByIdAsync(groupId, claims.DomainId);
+                        if (group != null && group.DomainId == claims.DomainId)
+                        {
+                            groupNames.Add(group.Name);
+                        }
+                    }
+                    existingUser.Groups = groupNames;
+                }
+                else
+                {
+                    existingUser.Groups = new List<string>();
+                }
+                
                 existingUser.IsActive = request.IsActive;
-                existingUser.UpdatedBy = "system"; // TODO: Get from current user context
+                existingUser.UpdatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser; // TODO: Get from current user context
                 existingUser.UpdatedAt = DateTime.UtcNow;
 
                 // Save to database

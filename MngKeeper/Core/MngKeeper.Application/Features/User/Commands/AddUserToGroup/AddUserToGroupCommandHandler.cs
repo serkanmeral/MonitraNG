@@ -33,17 +33,6 @@ namespace MngKeeper.Application.Features.User.Commands.AddUserToGroup
                 _logger.LogInformation("Adding user {UserId} to group {GroupId} in domain {DomainId}", 
                     request.UserId, request.GroupId, request.DomainId);
 
-                // Get user
-                var user = await _userRepository.GetByIdAsync(request.UserId);
-                if (user == null)
-                {
-                    return new AddUserToGroupResponse
-                    {
-                        IsSuccess = false,
-                        ErrorMessage = "User not found."
-                    };
-                }
-
                 // Get domain
                 var domain = await _domainRepository.GetByIdAsync(request.DomainId);
                 if (domain == null)
@@ -55,8 +44,19 @@ namespace MngKeeper.Application.Features.User.Commands.AddUserToGroup
                     };
                 }
 
+                // Get user
+                var user = await _userRepository.GetByIdAsync(request.UserId, request.DomainId);
+                if (user == null)
+                {
+                    return new AddUserToGroupResponse
+                    {
+                        IsSuccess = false,
+                        ErrorMessage = "User not found."
+                    };
+                }
+
                 // Get group to get its name for Keycloak
-                var group = await _groupRepository.GetByIdAsync(request.GroupId);
+                var group = await _groupRepository.GetByIdAsync(request.GroupId, request.DomainId);
                 if (group == null)
                 {
                     return new AddUserToGroupResponse
@@ -66,8 +66,8 @@ namespace MngKeeper.Application.Features.User.Commands.AddUserToGroup
                     };
                 }
 
-                // Check if user is already in the group
-                if (user.Groups.Contains(request.GroupId))
+                // Check if user is already in the group (by group name)
+                if (user.Groups.Contains(group.Name))
                 {
                     return new AddUserToGroupResponse
                     {
@@ -90,7 +90,7 @@ namespace MngKeeper.Application.Features.User.Commands.AddUserToGroup
                 // Update user groups in database (store group NAME for consistency)
                 user.Groups.Add(group.Name);
                 user.UpdatedAt = DateTime.UtcNow;
-                user.UpdatedBy = "system"; // TODO: Get from current user context
+                user.UpdatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser; // TODO: Get from current user context
 
                 await _userRepository.UpdateAsync(user);
 

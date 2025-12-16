@@ -8,7 +8,7 @@ using System.Text;
 
 namespace MngKeeper.Infrastructure.Services
 {
-    public class RedisService : IRedisService, IDisposable
+    public class RedisService : IRedisService, IDisposable, IAsyncDisposable
     {
         private readonly ILogger<RedisService> _logger;
         private readonly IConfiguration _configuration;
@@ -518,7 +518,25 @@ namespace MngKeeper.Infrastructure.Services
 
         public void Dispose()
         {
-            DisconnectAsync().Wait();
+            // Fire-and-forget async disposal to avoid blocking
+            // Use DisposeAsync for proper async disposal
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await DisconnectAsync().ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error during async disposal");
+                }
+            });
+            GC.SuppressFinalize(this);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await DisconnectAsync().ConfigureAwait(false);
             GC.SuppressFinalize(this);
         }
     }

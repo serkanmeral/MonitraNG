@@ -1,6 +1,6 @@
 # MngKeeper Versiyonlama
 
-## Mevcut Versiyon: v1.0.0
+## Mevcut Versiyon: v1.1.0
 
 ## Semantic Versioning (SemVer)
 
@@ -89,5 +89,6 @@ git push origin mngkeeper-v1.0.0
 
 | Version | Date | Git Tag | Description |
 |---------|------|---------|-------------|
+| 1.1.0 | 2025-12-16 | mngkeeper-v1.1.0 | Code optimization & performance improvements (Redis cache, MongoDB indexes, exception handling) |
 | 1.0.0 | 2025-10-31 | mngkeeper-v1.0.0 | Initial production release |
 

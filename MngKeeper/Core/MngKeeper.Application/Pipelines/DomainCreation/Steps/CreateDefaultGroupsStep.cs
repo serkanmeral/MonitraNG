@@ -53,7 +53,7 @@ public class CreateDefaultGroupsStep : IPipelineStep<DomainCreationContext>
                         Description = description
                     });
 
-                // Create in MngKeeper DB
+                // Create group entity (only for sync to domain database, not saved to mngkeeper database)
                 var group = new Group
                 {
                     Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(),
@@ -62,49 +62,50 @@ public class CreateDefaultGroupsStep : IPipelineStep<DomainCreationContext>
                     Permissions = new List<string>(),
                     IsActive = true,
                     DomainId = context.Domain.Id,
-                    CreatedBy = "system",
+                    CreatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser,
                     CreatedAt = DateTime.UtcNow
                 };
 
+                // Save to domain-specific database (groups collection)
                 var savedGroup = await _groupRepository.AddAsync(group);
-                _logger.LogInformation("Group saved to MngKeeper DB: {Name} (ID: {GroupId})", name, savedGroup.Id);
+                _logger.LogInformation("Group saved to domain database groups collection: {Name} (ID: {GroupId})", name, savedGroup.Id);
 
-                // Sync to DataGateway MongoDB
+                // Sync to domain database (@groups collection for DataGateway)
                 try
                 {
                     await _dataGatewaySyncService.SyncGroupToDataGatewayAsync(
                         savedGroup,
                         context.Domain.Id,
                         null);
-                    _logger.LogInformation("Group synced to DataGateway: {Name}", name);
+                    _logger.LogInformation("Group synced to domain database @groups collection: {Name} (ID: {GroupId})", name, savedGroup.Id);
                 }
                 catch (Exception syncEx)
                 {
-                    _logger.LogWarning(syncEx, "Failed to sync group {Name} to DataGateway, continuing...", name);
+                    _logger.LogWarning(syncEx, "Failed to sync group {Name} to domain database @groups collection, continuing...", name);
                 }
 
                 return keycloakGroup;
             }
             
             // Create admins group
-            var adminsGroup = await CreateGroupInBothSystems("admins", "Administrators group");
+            var adminsGroup = await CreateGroupInBothSystems(MngKeeper.Application.Common.Constants.SystemGroups.Admins, "Administrators group");
             context.AdminsGroup = adminsGroup;
-            _logger.LogInformation("Created group: admins");
+            _logger.LogInformation("Created group: {GroupName}", MngKeeper.Application.Common.Constants.SystemGroups.Admins);
             
             // Create managers group
-            var managersGroup = await CreateGroupInBothSystems("managers", "Managers group");
+            var managersGroup = await CreateGroupInBothSystems(MngKeeper.Application.Common.Constants.SystemGroups.Managers, "Managers group");
             context.ManagersGroup = managersGroup;
-            _logger.LogInformation("Created group: managers");
+            _logger.LogInformation("Created group: {GroupName}", MngKeeper.Application.Common.Constants.SystemGroups.Managers);
             
             // Create users group
-            var usersGroup = await CreateGroupInBothSystems("users", "Standard users group");
+            var usersGroup = await CreateGroupInBothSystems(MngKeeper.Application.Common.Constants.SystemGroups.Users, "Standard users group");
             context.UsersGroup = usersGroup;
-            _logger.LogInformation("Created group: users");
+            _logger.LogInformation("Created group: {GroupName}", MngKeeper.Application.Common.Constants.SystemGroups.Users);
             
             // Create guests group
-            var guestsGroup = await CreateGroupInBothSystems("guests", "Guests group");
+            var guestsGroup = await CreateGroupInBothSystems(MngKeeper.Application.Common.Constants.SystemGroups.Guests, "Guests group");
             context.GuestsGroup = guestsGroup;
-            _logger.LogInformation("Created group: guests");
+            _logger.LogInformation("Created group: {GroupName}", MngKeeper.Application.Common.Constants.SystemGroups.Guests);
             
             return StepResult.Success(new Dictionary<string, object>
             {

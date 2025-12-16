@@ -8,7 +8,7 @@ using System.Text.Json;
 
 namespace MngKeeper.Infrastructure.Services
 {
-    public class MqttService : IMqttService, IDisposable
+    public class MqttService : IMqttService, IDisposable, IAsyncDisposable
     {
         private readonly ILogger<MqttService> _logger;
         private readonly IConfiguration _configuration;
@@ -276,7 +276,26 @@ namespace MngKeeper.Infrastructure.Services
 
         public void Dispose()
         {
-            DisconnectAsync().Wait();
+            // Fire-and-forget async disposal to avoid blocking
+            // Use DisposeAsync for proper async disposal
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await DisconnectAsync().ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error during async disposal");
+                }
+            });
+            _mqttClient?.Dispose();
+            GC.SuppressFinalize(this);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await DisconnectAsync().ConfigureAwait(false);
             _mqttClient?.Dispose();
             GC.SuppressFinalize(this);
         }

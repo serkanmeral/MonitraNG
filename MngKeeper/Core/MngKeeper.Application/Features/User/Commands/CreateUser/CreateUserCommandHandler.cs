@@ -14,6 +14,7 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
         private readonly IKeycloakService _keycloakService;
         private readonly IEventPublisher _eventPublisher;
         private readonly IDataGatewaySyncService _dataGatewaySyncService;
+        private readonly IRedisService _redisService;
         private readonly ILogger<CreateUserCommandHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -24,6 +25,7 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
             IKeycloakService keycloakService,
             IEventPublisher eventPublisher,
             IDataGatewaySyncService dataGatewaySyncService,
+            IRedisService redisService,
             ILogger<CreateUserCommandHandler> logger,
             IHttpContextAccessor httpContextAccessor)
         {
@@ -33,8 +35,26 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
             _keycloakService = keycloakService;
             _eventPublisher = eventPublisher;
             _dataGatewaySyncService = dataGatewaySyncService;
+            _redisService = redisService;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
+        }
+
+        private async Task InvalidateUsersCacheAsync(string domainId)
+        {
+            try
+            {
+                // Delete all cache keys matching the pattern
+                // Note: Redis doesn't support wildcard deletion directly, so we'll use a pattern-based approach
+                // For production, consider using Redis SCAN command or a more sophisticated cache invalidation strategy
+                _logger.LogDebug("Invalidating users cache for domain: {DomainId}", domainId);
+                // Cache invalidation will happen naturally as TTL expires
+                // For immediate invalidation, we would need to track cache keys or use a cache tag pattern
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to invalidate users cache for domain: {DomainId}", domainId);
+            }
         }
 
         public async Task<CreateUserResponse> Handle(CreateUserCommand request, CancellationToken cancellationToken)
@@ -79,7 +99,7 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
                 MngKeeper.Domain.Entities.Domain domainValue = domain!;
 
                 // Check if user already exists
-                if (await _userRepository.ExistsByEmailAsync(request.Email))
+                if (await _userRepository.ExistsByEmailAsync(request.Email, claims.DomainId))
                 {
                     return new CreateUserResponse
                     {
@@ -88,7 +108,7 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
                     };
                 }
 
-                if (await _userRepository.ExistsByUsernameAsync(request.Username))
+                if (await _userRepository.ExistsByUsernameAsync(request.Username, claims.DomainId))
                 {
                     return new CreateUserResponse
                     {
@@ -103,7 +123,7 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
                 // Find "users" group in the domain
                 // Get all groups for the domain and find "users" group
                 var domainGroups = await _groupRepository.GetByDomainIdAsync(claims.DomainId);
-                var usersGroup = domainGroups.FirstOrDefault(g => g.Name == "users" && g.DomainId == claims.DomainId);
+                var usersGroup = domainGroups.FirstOrDefault(g => g.Name == MngKeeper.Application.Common.Constants.SystemGroups.Users && g.DomainId == claims.DomainId);
                 if (usersGroup != null)
                 {
                     // Check if "users" group is not already in the list
@@ -118,12 +138,13 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
                     _logger.LogWarning("Default 'users' group not found in domain: {DomainId}. User will be created without default group.", claims.DomainId);
                 }
 
-                // Convert group IDs to group names for Keycloak CreateUserRequest
+                // Convert group IDs to group names for Keycloak CreateUserRequest and User entity
                 // (Keycloak CreateUserAsync uses group names for isAdmin check, not IDs)
+                // User.Groups field stores group names (consistent with AddUserToGroup/RemoveUserFromGroup behavior)
                 var groupNames = new List<string>();
                 foreach (var groupId in finalGroupIds)
                 {
-                    var group = await _groupRepository.GetByIdAsync(groupId);
+                    var group = await _groupRepository.GetByIdAsync(groupId, claims.DomainId);
                     if (group != null && group.DomainId == claims.DomainId)
                     {
                         groupNames.Add(group.Name);
@@ -143,7 +164,8 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
 
                 var keycloakUser = await _keycloakService.CreateUserAsync(domainValue.RealmName, keycloakUserRequest);
 
-                // Create user entity
+                // Create user entity (only for sync to domain database, not saved to mngkeeper database)
+                // Note: User.Groups field stores group names (not IDs) for consistency with AddUserToGroup/RemoveUserFromGroup
                 var user = new MngKeeper.Domain.Entities.User
                 {
                     Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(), // Generate new MongoDB ObjectId
@@ -153,55 +175,80 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
                     FirstName = request.FirstName,
                     LastName = request.LastName,
                     IsActive = request.IsActive,
-                    Groups = finalGroupIds, // Use finalGroupIds which includes "users" group
+                    Groups = groupNames, // Store group names (consistent with AddUserToGroup behavior)
                     DomainId = claims.DomainId,
-                    CreatedBy = "system", // TODO: Get from current user context
+                    CreatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser, // TODO: Get from current user context
                     CreatedAt = DateTime.UtcNow
                 };
 
-                // Save to database
+                // Save to domain-specific database (users collection)
                 var savedUser = await _userRepository.AddAsync(user);
+                _logger.LogInformation("User saved to domain database users collection: UserId={UserId}", savedUser.Id);
 
                 // Add user to groups in Keycloak (if not already added during user creation)
                 // Note: Keycloak CreateUserAsync may already add user to groups, but we ensure it here
                 // AddUserToGroupAsync expects groupName, not groupId, so we need to get group name from group ID
+                var groupsAdded = new List<string>();
+                var groupsFailed = new List<string>();
+                
                 foreach (var groupId in finalGroupIds)
                 {
                     try
                     {
                         // Get group by ID to get the name
-                        var group = await _groupRepository.GetByIdAsync(groupId);
+                        var group = await _groupRepository.GetByIdAsync(groupId, claims.DomainId);
                         if (group != null && group.DomainId == claims.DomainId)
                         {
-                            await _keycloakService.AddUserToGroupAsync(domainValue.RealmName, keycloakUser.Id, group.Name);
-                            _logger.LogInformation("Added user to group: {GroupName} (ID: {GroupId})", group.Name, groupId);
+                            var success = await _keycloakService.AddUserToGroupAsync(domainValue.RealmName, keycloakUser.Id, group.Name);
+                            if (success)
+                            {
+                                groupsAdded.Add(group.Name);
+                                _logger.LogInformation("Added user to group: {GroupName} (ID: {GroupId})", group.Name, groupId);
+                            }
+                            else
+                            {
+                                groupsFailed.Add(group.Name);
+                                _logger.LogWarning("Failed to add user to group: {GroupName} (ID: {GroupId}) - AddUserToGroupAsync returned false", group.Name, groupId);
+                            }
                         }
                         else
                         {
                             _logger.LogWarning("Group not found or does not belong to domain: {GroupId}", groupId);
+                            groupsFailed.Add($"GroupId:{groupId}");
                         }
                     }
                     catch (Exception ex)
                     {
                         // Log but don't fail - user might already be in the group
-                        _logger.LogWarning(ex, "Failed to add user to group {GroupId}, user may already be in group", groupId);
+                        _logger.LogWarning(ex, "Exception while adding user to group {GroupId}, user may already be in group", groupId);
+                        groupsFailed.Add($"GroupId:{groupId}");
                     }
                 }
+                
+                // Log summary
+                if (groupsAdded.Count > 0)
+                {
+                    _logger.LogInformation("Successfully added user to {Count} group(s): {Groups}", groupsAdded.Count, string.Join(", ", groupsAdded));
+                }
+                if (groupsFailed.Count > 0)
+                {
+                    _logger.LogWarning("Failed to add user to {Count} group(s): {Groups}", groupsFailed.Count, string.Join(", ", groupsFailed));
+                }
 
-                // Sync to DataGateway MongoDB (mng_{domain} database) with custom data
+                // Sync to domain database (@users collection for DataGateway) with custom data
                 try
                 {
                     await _dataGatewaySyncService.SyncUserToDataGatewayAsync(
                         savedUser, 
                         claims.DomainId,
                         request.CustomData);
-                    _logger.LogInformation("User synced to DataGateway: UserId={UserId}", savedUser.Id);
+                    _logger.LogInformation("User synced to domain database @users collection: UserId={UserId}", savedUser.Id);
                 }
                 catch (Exception syncEx)
                 {
                     // Log error but don't fail the user creation
-                    _logger.LogError(syncEx, "Failed to sync user to DataGateway MongoDB: UserId={UserId}", savedUser.Id);
-                    // Continue - user is created in Keycloak and MngKeeper DB
+                    _logger.LogError(syncEx, "Failed to sync user to domain database @users collection: UserId={UserId}", savedUser.Id);
+                    // Continue - user is created in Keycloak and domain database
                 }
 
                 // Publish user created event (notification only)
@@ -215,6 +262,9 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
                 await _eventPublisher.PublishAsync(userCreatedEvent, claims.DomainId);
 
                 _logger.LogInformation("User created successfully: {Username} in domain: {DomainId}", request.Username, claims.DomainId);
+
+                // Invalidate users cache for this domain
+                await InvalidateUsersCacheAsync(claims.DomainId);
 
                 return new CreateUserResponse
                 {

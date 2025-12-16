@@ -44,12 +44,16 @@ public static class ServiceRegistration
             return client.GetDatabase(databaseName);
         });
         
+        // Add Index Manager
+        services.AddScoped<MngKeeper.Application.Services.IndexManager>();
+        
         // Add Pipeline Steps
         services.AddScoped<ValidateDomainStep>();
         services.AddScoped<CreateDomainEntityStep>();
         services.AddScoped<CreateDatabaseStep>();
         services.AddScoped<InitializeDatabaseCollectionsStep>();
         services.AddScoped<InitializeDataGatewayCollectionsStep>();
+        services.AddScoped<CreateIndexesStep>();
         services.AddScoped<CreateKeycloakRealmStep>();
         services.AddScoped<CreateDefaultGroupsStep>();
         services.AddScoped<CreateAdminUserStep>();

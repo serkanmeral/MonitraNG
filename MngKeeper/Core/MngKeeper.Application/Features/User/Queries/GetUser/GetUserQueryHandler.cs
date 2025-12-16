@@ -41,7 +41,7 @@ namespace MngKeeper.Application.Features.User.Queries.GetUser
                 }
 
                 // Get user by ID
-                var user = await _userRepository.GetByIdAsync(request.UserId);
+                var user = await _userRepository.GetByIdAsync(request.UserId, claims.DomainId);
                 if (user == null)
                 {
                     return new GetUserResponse

@@ -1,6 +1,9 @@
 using MediatR;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Application.Common.DTOs;
+using MngKeeper.Application.Common.Constants;
+using MngKeeper.Application.Common.Exceptions;
+using MngKeeper.Application.Common.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using System;
@@ -10,15 +13,18 @@ namespace MngKeeper.Application.Features.Group.Queries.GetGroups
     public class GetGroupsQueryHandler : IRequestHandler<GetGroupsQuery, GetGroupsResponse>
     {
         private readonly IGroupRepository _groupRepository;
+        private readonly IRedisService _redisService;
         private readonly ILogger<GetGroupsQueryHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         public GetGroupsQueryHandler(
             IGroupRepository groupRepository,
+            IRedisService redisService,
             ILogger<GetGroupsQueryHandler> logger,
             IHttpContextAccessor httpContextAccessor)
         {
             _groupRepository = groupRepository;
+            _redisService = redisService;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -42,72 +48,61 @@ namespace MngKeeper.Application.Features.Group.Queries.GetGroups
                     };
                 }
 
-                var groups = await _groupRepository.GetByDomainIdAsync(claims.DomainId);
-                var groupsList = groups.ToList();
-                var filteredGroups = new List<MngKeeper.Domain.Entities.Group>();
-                
-                // Apply search filter
-                if (!string.IsNullOrEmpty(request.SearchTerm))
-                {
-                    var searchTerm = request.SearchTerm.ToLower();
-                    foreach (var group in groupsList)
+                // Build cache key
+                var cacheKey = CacheExtensions.BuildCacheKey(
+                    "groups",
+                    claims.DomainId,
+                    request.Page,
+                    request.PageSize,
+                    request.SearchTerm,
+                    request.IsActive);
+
+                // Get or set from cache
+                var response = await _redisService.GetOrSetAsync(
+                    cacheKey,
+                    async () =>
                     {
-                        if (group.Name.ToLower().Contains(searchTerm) ||
-                            group.Description.ToLower().Contains(searchTerm))
+                        // Optimized: Database-level filtering and pagination
+                        var queryResult = await _groupRepository.GetByDomainIdWithPaginationAsync(
+                            claims.DomainId,
+                            request.Page,
+                            request.PageSize,
+                            request.SearchTerm,
+                            request.IsActive);
+
+                        var groupDtos = queryResult.Items.Select(g => new GetGroupsResponseDto
                         {
-                            filteredGroups.Add(group);
-                        }
-                    }
-                }
-                else
-                {
-                    filteredGroups = groupsList;
-                }
+                            GroupId = g.Id,
+                            Name = g.Name,
+                            Description = g.Description,
+                            Permissions = g.Permissions,
+                            IsActive = g.IsActive,
+                            CreatedAt = g.CreatedAt,
+                            UpdatedAt = g.UpdatedAt
+                        }).ToList();
 
-                // Apply active filter
-                if (request.IsActive.HasValue)
-                {
-                    var activeFiltered = filteredGroups.Where(g => g.IsActive == request.IsActive.Value);
-                    filteredGroups = activeFiltered.ToList();
-                }
+                        return new GetGroupsResponse
+                        {
+                            Groups = groupDtos,
+                            TotalCount = queryResult.TotalCount,
+                            Page = queryResult.Page,
+                            PageSize = queryResult.PageSize,
+                            TotalPages = queryResult.TotalPages,
+                            IsSuccess = true
+                        };
+                    },
+                    TimeSpan.FromMinutes(SystemConstants.Cache.GroupsList),
+                    _logger);
 
-                var totalCount = filteredGroups.Count;
-                var totalPages = (int)Math.Ceiling((double)totalCount / request.PageSize);
-
-                // Apply pagination
-                var pagedGroups = filteredGroups
-                    .Skip((request.Page - 1) * request.PageSize)
-                    .Take(request.PageSize)
-                    .ToList();
-
-                var groupDtos = pagedGroups.Select(g => new GetGroupsResponseDto
-                {
-                    GroupId = g.Id,
-                    Name = g.Name,
-                    Description = g.Description,
-                    Permissions = g.Permissions,
-                    IsActive = g.IsActive,
-                    CreatedAt = g.CreatedAt,
-                    UpdatedAt = g.UpdatedAt
-                }).ToList();
-
-                return new GetGroupsResponse
-                {
-                    Groups = groupDtos,
-                    TotalCount = totalCount,
-                    Page = request.Page,
-                    PageSize = request.PageSize,
-                    TotalPages = totalPages,
-                    IsSuccess = true
-                };
+                return response;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting groups");
+                ExceptionHelper.LogException(_logger, ex, "GetGroups", request.Page, request.PageSize);
                 return new GetGroupsResponse
                 {
                     IsSuccess = false,
-                    ErrorMessage = $"Failed to get groups: {ex.Message}"
+                    ErrorMessage = ExceptionHelper.GetUserFriendlyMessage(ex)
                 };
             }
         }

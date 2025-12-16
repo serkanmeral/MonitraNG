@@ -62,7 +62,7 @@ namespace MngKeeper.Application.Features.Group.Commands.UpdateGroup
                 }
 
                 // Get existing group
-                var existingGroup = await _groupRepository.GetByIdAsync(request.GroupId);
+                var existingGroup = await _groupRepository.GetByIdAsync(request.GroupId, claims.DomainId);
                 if (existingGroup == null)
                 {
                     return new UpdateGroupResponse
@@ -83,7 +83,7 @@ namespace MngKeeper.Application.Features.Group.Commands.UpdateGroup
                 }
 
                 // Check if new name conflicts with existing group (excluding current group)
-                if (request.Name != existingGroup.Name && await _groupRepository.ExistsByNameAsync(request.Name))
+                if (request.Name != existingGroup.Name && await _groupRepository.ExistsByNameAsync(request.Name, claims.DomainId))
                 {
                     return new UpdateGroupResponse
                     {
@@ -100,7 +100,7 @@ namespace MngKeeper.Application.Features.Group.Commands.UpdateGroup
                 existingGroup.Description = request.Description;
                 existingGroup.Permissions = request.Permissions;
                 existingGroup.IsActive = request.IsActive;
-                existingGroup.UpdatedBy = "system"; // TODO: Get from current user context
+                existingGroup.UpdatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser; // TODO: Get from current user context
                 existingGroup.UpdatedAt = DateTime.UtcNow;
 
                 // Save to database

@@ -56,7 +56,7 @@ public class CreateDomainEntityStep : IPipelineStep<DomainCreationContext>
                 },
                 StorageQuota = 10737418240,  // 10GB default
                 StorageUsed = 0,
-                CreatedBy = "system",  // TODO: Get from JWT context in future
+                CreatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser,  // TODO: Get from JWT context in future
                 CreatedAt = DateTime.UtcNow
             };
             

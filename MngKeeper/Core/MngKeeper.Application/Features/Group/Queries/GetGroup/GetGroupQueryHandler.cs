@@ -41,7 +41,7 @@ namespace MngKeeper.Application.Features.Group.Queries.GetGroup
                 }
 
                 // Get group by ID
-                var group = await _groupRepository.GetByIdAsync(request.GroupId);
+                var group = await _groupRepository.GetByIdAsync(request.GroupId, claims.DomainId);
                 if (group == null)
                 {
                     return new GetGroupResponse

@@ -38,7 +38,7 @@ public class ActivateDomainStep : IPipelineStep<DomainCreationContext>
             // Update domain status to Active
             context.Domain.Status = DomainStatus.Active;
             context.Domain.UpdatedAt = DateTime.UtcNow;
-            context.Domain.UpdatedBy = "system";
+            context.Domain.UpdatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser;
             
             await _domainRepository.UpdateAsync(context.Domain);
             
@@ -69,7 +69,7 @@ public class ActivateDomainStep : IPipelineStep<DomainCreationContext>
             {
                 context.Domain.Status = DomainStatus.Failed;
                 context.Domain.UpdatedAt = DateTime.UtcNow;
-                context.Domain.UpdatedBy = "system";
+                context.Domain.UpdatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser;
                 
                 await _domainRepository.UpdateAsync(context.Domain);
                 

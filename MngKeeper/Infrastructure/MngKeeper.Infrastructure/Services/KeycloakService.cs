@@ -326,11 +326,38 @@ namespace MngKeeper.Infrastructure.Services
                     return false;
                 }
 
+                // Check if user is already in the group
+                var userGroupsResponse = await _httpClient.GetAsync($"/admin/realms/{realmName}/users/{userId}/groups");
+                if (userGroupsResponse.IsSuccessStatusCode)
+                {
+                    var userGroupsJson = await userGroupsResponse.Content.ReadAsStringAsync();
+                    var userGroups = JsonSerializer.Deserialize<JsonElement[]>(userGroupsJson);
+                    
+                    if (userGroups != null)
+                    {
+                        foreach (var group in userGroups)
+                        {
+                            if (group.GetProperty("id").GetString() == groupId)
+                            {
+                                _logger.LogInformation("User {UserId} is already in group {GroupName} in realm {RealmName}", userId, groupName, realmName);
+                                return true; // User is already in the group, consider it success
+                            }
+                        }
+                    }
+                }
+
                 // Add user to group
                 var response = await _httpClient.PutAsync($"/admin/realms/{realmName}/users/{userId}/groups/{groupId}", null);
                 
                 if (!response.IsSuccessStatusCode)
                 {
+                    // Check if it's a conflict (user already in group) - this can happen in race conditions
+                    if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+                    {
+                        _logger.LogInformation("User {UserId} is already in group {GroupName} in realm {RealmName} (409 Conflict)", userId, groupName, realmName);
+                        return true; // User is already in the group, consider it success
+                    }
+                    
                     var errorContent = await response.Content.ReadAsStringAsync();
                     _logger.LogError("Failed to add user {UserId} to group {GroupName} in realm {RealmName}. Status: {StatusCode}, Error: {Error}", 
                         userId, groupName, realmName, response.StatusCode, errorContent);

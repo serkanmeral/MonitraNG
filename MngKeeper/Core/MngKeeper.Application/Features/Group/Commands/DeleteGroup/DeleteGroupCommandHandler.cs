@@ -48,7 +48,7 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
                 }
 
                 // Get existing group
-                var existingGroup = await _groupRepository.GetByIdAsync(request.GroupId);
+                var existingGroup = await _groupRepository.GetByIdAsync(request.GroupId, request.DomainId);
                 if (existingGroup == null)
                 {
                     return new DeleteGroupResponse
@@ -85,7 +85,7 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
                 // For now, we'll just delete from our database
 
                 // Delete from database
-                var deleted = await _groupRepository.DeleteAsync(request.GroupId);
+                var deleted = await _groupRepository.DeleteAsync(request.GroupId, request.DomainId);
                 if (!deleted)
                 {
                     return new DeleteGroupResponse

@@ -65,7 +65,7 @@ namespace MngKeeper.Application.Features.User.Commands.DeleteUser
                 }
 
                 // Get existing user
-                var existingUser = await _userRepository.GetByIdAsync(request.UserId);
+                var existingUser = await _userRepository.GetByIdAsync(request.UserId, claims.DomainId);
                 if (existingUser == null)
                 {
                     return new DeleteUserResponse
@@ -99,7 +99,7 @@ namespace MngKeeper.Application.Features.User.Commands.DeleteUser
                 // For now, we'll just delete from our database
 
                 // Delete from database
-                var deleted = await _userRepository.DeleteAsync(request.UserId);
+                var deleted = await _userRepository.DeleteAsync(request.UserId, claims.DomainId);
                 if (!deleted)
                 {
                     return new DeleteUserResponse

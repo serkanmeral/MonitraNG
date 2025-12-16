@@ -66,7 +66,7 @@ public class AuthController : ControllerBase
             }
 
             // Get user from database to check IsActive status
-            var user = await _userRepository.GetByUsernameAsync(request.Username);
+            var user = await _userRepository.GetByUsernameAsync(request.Username, domain.Id);
             if (user != null && user.DomainId == domain.Id)
             {
                 if (!user.IsActive)
