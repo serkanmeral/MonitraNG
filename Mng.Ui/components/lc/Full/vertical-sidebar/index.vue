@@ -1,9 +1,67 @@
 <script setup lang="ts">
-import { ref, shallowRef } from 'vue';
+import { ref, shallowRef, computed } from 'vue';
 import { useCustomizerStore } from '@/stores/customizer';
+import { useAuthStore } from '@/stores/auth';
 import sidebarItems from './sidebarItem';
+import { PowerIcon } from 'vue-tabler-icons';
+
 const customizer = useCustomizerStore();
+const authStore = useAuthStore();
 const sidebarMenu = shallowRef(sidebarItems);
+
+// Get user display name
+const userDisplayName = computed(() => {
+  if (!authStore.userInfo) return 'Kullanıcı';
+  
+  // Try to get full name from firstName + lastName
+  if (authStore.userInfo.given_name && authStore.userInfo.family_name) {
+    return `${authStore.userInfo.given_name} ${authStore.userInfo.family_name}`;
+  }
+  
+  // Try to get name from token (if available)
+  const name = authStore.userInfo.name || authStore.userInfo.given_name || authStore.userInfo.preferred_username;
+  if (name) return name;
+  
+  // Fallback to username
+  return authStore.userInfo.username || 'Kullanıcı';
+});
+
+// Get user initials for avatar
+const userInitials = computed(() => {
+  if (!authStore.userInfo) return 'U';
+  
+  // If we have firstName and lastName, use their first letters
+  if (authStore.userInfo.given_name && authStore.userInfo.family_name) {
+    const first = authStore.userInfo.given_name[0]?.toUpperCase() || '';
+    const last = authStore.userInfo.family_name[0]?.toUpperCase() || '';
+    return (first + last) || 'U';
+  }
+  
+  // Try to get name from token
+  const name = authStore.userInfo.name || authStore.userInfo.given_name || authStore.userInfo.preferred_username || authStore.userInfo.username || '';
+  
+  // If name contains space, get first letters of first and last word
+  if (name.includes(' ')) {
+    const parts = name.trim().split(' ').filter(p => p.length > 0);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return parts[0][0].toUpperCase();
+  }
+  
+  // If single word, get first 2 letters
+  if (name.length >= 2) {
+    return name.substring(0, 2).toUpperCase();
+  }
+  
+  return name[0]?.toUpperCase() || 'U';
+});
+
+// Logout handler
+const handleLogout = async () => {
+  await authStore.logout();
+  navigateTo('/auth/login');
+};
 </script>
 
 <template>
@@ -23,16 +81,22 @@ const sidebarMenu = shallowRef(sidebarItems);
         <perfect-scrollbar class="scrollnavbar">
             <div class="profile">
                 <div class="profile-pic profile-pic py-7 px-3">
-                    <v-avatar size="45">
-                        <img src="/images/profile/user2.jpg" width="50" alt="Julia" />
+                    <v-avatar size="45" color="primary">
+                        <span class="text-white font-weight-bold">{{ userInitials }}</span>
                     </v-avatar>
                 </div>
                 <div class="profile-name d-flex align-center px-3">
-                    <h5 class="text-white font-weight-medium">Julia Roberts</h5>
+                    <h5 class="text-white font-weight-medium">{{ userDisplayName }}</h5>
                     <div class="ml-auto profile-logout">
-                        <v-btn variant="text" icon rounded="md" color="white" to="/auth/login">
+                        <v-btn 
+                            variant="text" 
+                            icon 
+                            rounded="md" 
+                            color="white" 
+                            @click="handleLogout"
+                        >
                             <PowerIcon size="22"/>
-                            <v-tooltip activator="parent" location="top">Logout</v-tooltip>
+                            <v-tooltip activator="parent" location="top">Çıkış Yap</v-tooltip>
                         </v-btn>
                     </div>
                 </div>

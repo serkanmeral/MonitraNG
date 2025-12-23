@@ -175,6 +175,11 @@ const sidebarItem: menu[] = [
     chipColor: "surface",
     chipBgColor: "secondary",
   },
+  {
+    title: "Kullanıcı Yönetimi",
+    icon: UserCircleIcon,
+    to: "/apps/users",
+  },
 
   {
     title: "Blog",
