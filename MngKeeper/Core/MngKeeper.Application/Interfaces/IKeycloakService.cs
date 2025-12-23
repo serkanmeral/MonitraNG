@@ -17,6 +17,8 @@ namespace MngKeeper.Application.Interfaces
         Task<bool> DeleteRealmAsync(string realmName);
         Task<bool> DeleteUserAsync(string realmName, string userId);
         Task<bool> DeleteGroupAsync(string realmName, string groupId);
+        Task<bool> UpdateUserPasswordAsync(string realmName, string userId, string newPassword, bool temporary = false);
+        Task<bool> ValidateUserPasswordAsync(string realmName, string username, string password);
     }
 
     public class RealmInfo

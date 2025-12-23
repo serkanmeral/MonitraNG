@@ -13,6 +13,7 @@ namespace MngKeeper.Application.Features.User.Commands.DeleteUser
         private readonly IKeycloakService _keycloakService;
         private readonly IDataGatewaySyncService _dataGatewaySyncService;
         private readonly IMongoClient _mongoClient;
+        private readonly IEventPublisher _eventPublisher;
         private readonly ILogger<DeleteUserCommandHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -22,6 +23,7 @@ namespace MngKeeper.Application.Features.User.Commands.DeleteUser
             IKeycloakService keycloakService,
             IDataGatewaySyncService dataGatewaySyncService,
             IMongoClient mongoClient,
+            IEventPublisher eventPublisher,
             ILogger<DeleteUserCommandHandler> logger,
             IHttpContextAccessor httpContextAccessor)
         {
@@ -30,6 +32,7 @@ namespace MngKeeper.Application.Features.User.Commands.DeleteUser
             _keycloakService = keycloakService;
             _dataGatewaySyncService = dataGatewaySyncService;
             _mongoClient = mongoClient;
+            _eventPublisher = eventPublisher;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -141,6 +144,14 @@ namespace MngKeeper.Application.Features.User.Commands.DeleteUser
                     _logger.LogError(syncEx, "Failed to sync user deletion to DataGateway MongoDB: UserId={UserId}", existingUser.Id);
                     // Continue - user is deleted from MngKeeper DB
                 }
+
+                // Publish user deleted event
+                var userDeletedEvent = new UserDeletedEvent
+                {
+                    UserId = existingUser.Id,
+                    Username = existingUser.Username
+                };
+                await _eventPublisher.PublishAsync(userDeletedEvent, claims.DomainId);
 
                 _logger.LogInformation("User deleted successfully: {UserId} in domain: {DomainId}", request.UserId, claims.DomainId);
 

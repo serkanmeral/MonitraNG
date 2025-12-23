@@ -10,6 +10,7 @@ namespace MngKeeper.Application.Features.User.Commands.RemoveUserFromGroup
         private readonly IGroupRepository _groupRepository;
         private readonly IDomainRepository _domainRepository;
         private readonly IKeycloakService _keycloakService;
+        private readonly IEventPublisher _eventPublisher;
         private readonly ILogger<RemoveUserFromGroupCommandHandler> _logger;
 
         public RemoveUserFromGroupCommandHandler(
@@ -17,12 +18,14 @@ namespace MngKeeper.Application.Features.User.Commands.RemoveUserFromGroup
             IGroupRepository groupRepository,
             IDomainRepository domainRepository,
             IKeycloakService keycloakService,
+            IEventPublisher eventPublisher,
             ILogger<RemoveUserFromGroupCommandHandler> logger)
         {
             _userRepository = userRepository;
             _groupRepository = groupRepository;
             _domainRepository = domainRepository;
             _keycloakService = keycloakService;
+            _eventPublisher = eventPublisher;
             _logger = logger;
         }
 
@@ -85,6 +88,25 @@ namespace MngKeeper.Application.Features.User.Commands.RemoveUserFromGroup
                 user.UpdatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser; // TODO: Get from current user context
 
                 await _userRepository.UpdateAsync(user);
+
+                // Publish user removed from group event (non-blocking)
+                try
+                {
+                    var userRemovedFromGroupEvent = new UserRemovedFromGroupEvent
+                    {
+                        UserId = user.Id,
+                        Username = user.Username,
+                        GroupId = group.Id,
+                        GroupName = group.Name
+                    };
+                    await _eventPublisher.PublishAsync(userRemovedFromGroupEvent, request.DomainId);
+                }
+                catch (Exception eventEx)
+                {
+                    // Log error but don't fail the operation
+                    _logger.LogError(eventEx, "Failed to publish UserRemovedFromGroupEvent for user {UserId} and group {GroupId} in domain {DomainId}", 
+                        request.UserId, request.GroupId, request.DomainId);
+                }
 
                 _logger.LogInformation("User {UserId} removed from group {GroupId} in domain {DomainId}", 
                     request.UserId, request.GroupId, request.DomainId);

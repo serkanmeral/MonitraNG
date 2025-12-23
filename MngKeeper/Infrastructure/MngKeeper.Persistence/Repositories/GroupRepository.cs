@@ -23,7 +23,7 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             _logger = logger;
         }
 
-        private async Task<IMongoCollection<Group>> GetCollectionAsync(string domainId)
+        private async Task<IMongoCollection<BsonDocument>> GetCollectionAsync(string domainId)
         {
             var domain = await _domainRepository.GetByIdAsync(domainId);
             if (domain == null)
@@ -31,7 +31,30 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                 throw new InvalidOperationException($"Domain not found: {domainId}");
             }
             var database = _mongoClient.GetDatabase(domain.DatabaseName);
-            return database.GetCollection<Group>("groups");
+            return database.GetCollection<BsonDocument>("@groups");
+        }
+
+        private Group? MapBsonDocumentToGroup(BsonDocument? doc)
+        {
+            if (doc == null) return null;
+            
+            // Get ID from __dataId if exists, otherwise from _id
+            var idValue = doc.Contains("__dataId") ? doc["__dataId"] : doc["_id"];
+            var id = idValue.IsObjectId ? idValue.AsObjectId.ToString() : idValue.ToString();
+            
+            return new Group
+            {
+                Id = id,
+                Name = doc.GetValue("name", "").AsString,
+                Description = doc.GetValue("description", BsonNull.Value).IsBsonNull ? null : doc.GetValue("description").AsString,
+                Permissions = doc.GetValue("permissions", new BsonArray()).AsBsonArray.Select(x => x.AsString).ToList(),
+                DomainId = doc.GetValue("domainId", "").AsString,
+                IsActive = doc.GetValue("isActive", true).AsBoolean,
+                CreatedAt = doc.GetValue("createdAt", DateTime.UtcNow).ToUniversalTime(),
+                CreatedBy = doc.GetValue("createdBy", "").AsString,
+                UpdatedAt = doc.GetValue("updatedAt", BsonNull.Value).IsBsonNull ? null : doc.GetValue("updatedAt").ToUniversalTime(),
+                UpdatedBy = doc.GetValue("updatedBy", BsonNull.Value).IsBsonNull ? null : doc.GetValue("updatedBy").AsString
+            };
         }
 
         public async Task<Group?> GetByIdAsync(string id, string domainId)
@@ -39,8 +62,9 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filter = Builders<Group>.Filter.Eq("_id", ObjectId.Parse(id));
-                return await collection.Find(filter).FirstOrDefaultAsync();
+                var filter = Builders<BsonDocument>.Filter.Eq("__dataId", id);
+                var doc = await collection.Find(filter).FirstOrDefaultAsync();
+                return MapBsonDocumentToGroup(doc);
             }
             catch (Exception ex)
             {
@@ -54,7 +78,24 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(entity.DomainId);
-                await collection.InsertOneAsync(entity);
+                
+                // Convert Group entity to BsonDocument and add __dataId field for DataGateway compatibility
+                var document = new BsonDocument
+                {
+                    ["_id"] = MongoDB.Bson.ObjectId.Parse(entity.Id),
+                    ["__dataId"] = entity.Id, // Required for DataGateway @groups collection
+                    ["name"] = entity.Name,
+                    ["description"] = string.IsNullOrEmpty(entity.Description) ? BsonNull.Value : entity.Description,
+                    ["permissions"] = new BsonArray(entity.Permissions ?? new List<string>()),
+                    ["domainId"] = entity.DomainId,
+                    ["isActive"] = entity.IsActive,
+                    ["createdAt"] = entity.CreatedAt,
+                    ["createdBy"] = entity.CreatedBy,
+                    ["updatedAt"] = entity.UpdatedAt.HasValue ? entity.UpdatedAt.Value : BsonNull.Value,
+                    ["updatedBy"] = string.IsNullOrEmpty(entity.UpdatedBy) ? BsonNull.Value : entity.UpdatedBy
+                };
+                
+                await collection.InsertOneAsync(document);
                 _logger.LogDebug("Group added successfully to domain database: {GroupId}, DomainId: {DomainId}", entity.Id, entity.DomainId);
                 return entity;
             }
@@ -70,9 +111,25 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(entity.DomainId);
-                var filter = Builders<Group>.Filter.Eq("_id", ObjectId.Parse(entity.Id));
+                var filter = Builders<BsonDocument>.Filter.Eq("__dataId", entity.Id);
+                
+                var document = new BsonDocument
+                {
+                    ["_id"] = MongoDB.Bson.ObjectId.Parse(entity.Id),
+                    ["__dataId"] = entity.Id,
+                    ["name"] = entity.Name,
+                    ["description"] = string.IsNullOrEmpty(entity.Description) ? BsonNull.Value : entity.Description,
+                    ["permissions"] = new BsonArray(entity.Permissions ?? new List<string>()),
+                    ["domainId"] = entity.DomainId,
+                    ["isActive"] = entity.IsActive,
+                    ["createdAt"] = entity.CreatedAt,
+                    ["createdBy"] = entity.CreatedBy,
+                    ["updatedAt"] = entity.UpdatedAt.HasValue ? entity.UpdatedAt.Value : BsonNull.Value,
+                    ["updatedBy"] = string.IsNullOrEmpty(entity.UpdatedBy) ? BsonNull.Value : entity.UpdatedBy
+                };
+                
                 var options = new ReplaceOptions { IsUpsert = true };
-                await collection.ReplaceOneAsync(filter, entity, options);
+                await collection.ReplaceOneAsync(filter, document, options);
                 _logger.LogDebug("Group updated successfully: {Id}, DomainId: {DomainId}", entity.Id, entity.DomainId);
                 return entity;
             }
@@ -88,7 +145,7 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filter = Builders<Group>.Filter.Eq("_id", ObjectId.Parse(id));
+                var filter = Builders<BsonDocument>.Filter.Eq("__dataId", id);
                 var result = await collection.DeleteOneAsync(filter);
                 _logger.LogDebug("Group deleted successfully: {Id}, DomainId: {DomainId}", id, domainId);
                 return result.DeletedCount > 0;
@@ -105,7 +162,7 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filter = Builders<Group>.Filter.Eq("_id", ObjectId.Parse(id));
+                var filter = Builders<BsonDocument>.Filter.Eq("__dataId", id);
                 return await collection.Find(filter).AnyAsync();
             }
             catch (Exception ex)
@@ -120,8 +177,9 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filter = Builders<Group>.Filter.Eq(x => x.Name, name);
-                return await collection.Find(filter).FirstOrDefaultAsync();
+                var filter = Builders<BsonDocument>.Filter.Eq("name", name);
+                var doc = await collection.Find(filter).FirstOrDefaultAsync();
+                return MapBsonDocumentToGroup(doc);
             }
             catch (Exception ex)
             {
@@ -135,8 +193,9 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filter = Builders<Group>.Filter.Eq(x => x.DomainId, domainId);
-                return await collection.Find(filter).ToListAsync();
+                var filter = Builders<BsonDocument>.Filter.Eq("domainId", domainId);
+                var docs = await collection.Find(filter).ToListAsync();
+                return docs.Select(doc => MapBsonDocumentToGroup(doc)).Where(g => g != null).Cast<Group>();
             }
             catch (Exception ex)
             {
@@ -155,15 +214,15 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filterBuilder = Builders<Group>.Filter;
-                var filter = filterBuilder.Eq(x => x.DomainId, domainId);
+                var filterBuilder = Builders<BsonDocument>.Filter;
+                var filter = filterBuilder.Eq("domainId", domainId);
 
                 // Apply search filter (case-insensitive regex)
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
                     var searchFilter = filterBuilder.Or(
-                        filterBuilder.Regex(x => x.Name, new BsonRegularExpression(searchTerm, "i")),
-                        filterBuilder.Regex(x => x.Description, new BsonRegularExpression(searchTerm, "i"))
+                        filterBuilder.Regex("name", new BsonRegularExpression(searchTerm, "i")),
+                        filterBuilder.Regex("description", new BsonRegularExpression(searchTerm, "i"))
                     );
                     filter &= searchFilter;
                 }
@@ -171,7 +230,7 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                 // Apply active filter
                 if (isActive.HasValue)
                 {
-                    filter &= filterBuilder.Eq(x => x.IsActive, isActive.Value);
+                    filter &= filterBuilder.Eq("isActive", isActive.Value);
                 }
 
                 // Get total count
@@ -179,11 +238,13 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
 
                 // Apply pagination
                 var skip = (page - 1) * pageSize;
-                var groups = await collection
+                var docs = await collection
                     .Find(filter)
                     .Skip(skip)
                     .Limit(pageSize)
                     .ToListAsync();
+
+                var groups = docs.Select(doc => MapBsonDocumentToGroup(doc)).Where(g => g != null).Cast<Group>();
 
                 return new QueryResult<Group>
                 {
@@ -211,7 +272,7 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filter = Builders<Group>.Filter.Eq(x => x.Name, name);
+                var filter = Builders<BsonDocument>.Filter.Eq("name", name);
                 return await collection.Find(filter).AnyAsync();
             }
             catch (Exception ex)

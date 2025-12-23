@@ -10,6 +10,7 @@ namespace MngKeeper.Application.Features.User.Commands.AddUserToGroup
         private readonly IGroupRepository _groupRepository;
         private readonly IDomainRepository _domainRepository;
         private readonly IKeycloakService _keycloakService;
+        private readonly IEventPublisher _eventPublisher;
         private readonly ILogger<AddUserToGroupCommandHandler> _logger;
 
         public AddUserToGroupCommandHandler(
@@ -17,12 +18,14 @@ namespace MngKeeper.Application.Features.User.Commands.AddUserToGroup
             IGroupRepository groupRepository,
             IDomainRepository domainRepository,
             IKeycloakService keycloakService,
+            IEventPublisher eventPublisher,
             ILogger<AddUserToGroupCommandHandler> logger)
         {
             _userRepository = userRepository;
             _groupRepository = groupRepository;
             _domainRepository = domainRepository;
             _keycloakService = keycloakService;
+            _eventPublisher = eventPublisher;
             _logger = logger;
         }
 
@@ -93,6 +96,25 @@ namespace MngKeeper.Application.Features.User.Commands.AddUserToGroup
                 user.UpdatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser; // TODO: Get from current user context
 
                 await _userRepository.UpdateAsync(user);
+
+                // Publish user added to group event (non-blocking)
+                try
+                {
+                    var userAddedToGroupEvent = new UserAddedToGroupEvent
+                    {
+                        UserId = user.Id,
+                        Username = user.Username,
+                        GroupId = group.Id,
+                        GroupName = group.Name
+                    };
+                    await _eventPublisher.PublishAsync(userAddedToGroupEvent, request.DomainId);
+                }
+                catch (Exception eventEx)
+                {
+                    // Log error but don't fail the operation
+                    _logger.LogError(eventEx, "Failed to publish UserAddedToGroupEvent for user {UserId} and group {GroupId} in domain {DomainId}", 
+                        request.UserId, request.GroupId, request.DomainId);
+                }
 
                 _logger.LogInformation("User {UserId} added to group {GroupName} ({GroupId}) in domain {DomainId}", 
                     request.UserId, group.Name, request.GroupId, request.DomainId);

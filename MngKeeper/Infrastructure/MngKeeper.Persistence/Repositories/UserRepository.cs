@@ -23,7 +23,7 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             _logger = logger;
         }
 
-        private async Task<IMongoCollection<User>> GetCollectionAsync(string domainId)
+        private async Task<IMongoCollection<BsonDocument>> GetCollectionAsync(string domainId)
         {
             var domain = await _domainRepository.GetByIdAsync(domainId);
             if (domain == null)
@@ -31,7 +31,35 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                 throw new InvalidOperationException($"Domain not found: {domainId}");
             }
             var database = _mongoClient.GetDatabase(domain.DatabaseName);
-            return database.GetCollection<User>("users");
+            return database.GetCollection<BsonDocument>("@users");
+        }
+
+        private User? MapBsonDocumentToUser(BsonDocument? doc)
+        {
+            if (doc == null) return null;
+            
+            // Get ID from __dataId if exists, otherwise from _id
+            var idValue = doc.Contains("__dataId") ? doc["__dataId"] : doc["_id"];
+            var id = idValue.IsObjectId ? idValue.AsObjectId.ToString() : idValue.ToString();
+            
+            return new User
+            {
+                Id = id,
+                DomainId = doc.GetValue("domainId", "").AsString,
+                KeycloakUserId = doc.GetValue("keycloakUserId", "").AsString,
+                Username = doc.GetValue("username", "").AsString,
+                Email = doc.GetValue("email", "").AsString,
+                FirstName = doc.GetValue("firstName", "").AsString,
+                LastName = doc.GetValue("lastName", "").AsString,
+                IsActive = doc.GetValue("isActive", true).AsBoolean,
+                Groups = doc.GetValue("groups", new BsonArray()).AsBsonArray.Select(x => x.AsString).ToList(),
+                Roles = doc.GetValue("roles", new BsonArray()).AsBsonArray.Select(x => x.AsString).ToList(),
+                CreatedAt = doc.GetValue("createdAt", DateTime.UtcNow).ToUniversalTime(),
+                LastLoginAt = doc.GetValue("lastLoginAt", BsonNull.Value).IsBsonNull ? null : doc.GetValue("lastLoginAt").ToUniversalTime(),
+                CreatedBy = doc.GetValue("createdBy", "").AsString,
+                UpdatedAt = doc.GetValue("updatedAt", BsonNull.Value).IsBsonNull ? null : doc.GetValue("updatedAt").ToUniversalTime(),
+                UpdatedBy = doc.GetValue("updatedBy", BsonNull.Value).IsBsonNull ? null : doc.GetValue("updatedBy").AsString
+            };
         }
 
         public async Task<User?> GetByIdAsync(string id)
@@ -46,8 +74,9 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filter = Builders<User>.Filter.Eq("_id", ObjectId.Parse(id));
-                return await collection.Find(filter).FirstOrDefaultAsync();
+                var filter = Builders<BsonDocument>.Filter.Eq("__dataId", id);
+                var doc = await collection.Find(filter).FirstOrDefaultAsync();
+                return MapBsonDocumentToUser(doc);
             }
             catch (Exception ex)
             {
@@ -73,7 +102,29 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(entity.DomainId);
-                await collection.InsertOneAsync(entity);
+                
+                // Convert User entity to BsonDocument and add __dataId field for DataGateway compatibility
+                var document = new BsonDocument
+                {
+                    ["_id"] = MongoDB.Bson.ObjectId.Parse(entity.Id),
+                    ["__dataId"] = entity.Id, // Required for DataGateway @users collection
+                    ["domainId"] = entity.DomainId,
+                    ["keycloakUserId"] = entity.KeycloakUserId,
+                    ["username"] = entity.Username,
+                    ["email"] = entity.Email,
+                    ["firstName"] = entity.FirstName,
+                    ["lastName"] = entity.LastName,
+                    ["isActive"] = entity.IsActive,
+                    ["groups"] = new BsonArray(entity.Groups ?? new List<string>()),
+                    ["roles"] = new BsonArray(entity.Roles ?? new List<string>()),
+                    ["createdAt"] = entity.CreatedAt,
+                    ["lastLoginAt"] = entity.LastLoginAt.HasValue ? entity.LastLoginAt.Value : BsonNull.Value,
+                    ["createdBy"] = entity.CreatedBy,
+                    ["updatedAt"] = entity.UpdatedAt.HasValue ? entity.UpdatedAt.Value : BsonNull.Value,
+                    ["updatedBy"] = string.IsNullOrEmpty(entity.UpdatedBy) ? BsonNull.Value : entity.UpdatedBy
+                };
+                
+                await collection.InsertOneAsync(document);
                 _logger.LogDebug("User added successfully to domain database: {UserId}, DomainId: {DomainId}", entity.Id, entity.DomainId);
                 return entity;
             }
@@ -89,9 +140,30 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(entity.DomainId);
-                var filter = Builders<User>.Filter.Eq("_id", ObjectId.Parse(entity.Id));
+                var filter = Builders<BsonDocument>.Filter.Eq("__dataId", entity.Id);
+                
+                var document = new BsonDocument
+                {
+                    ["_id"] = MongoDB.Bson.ObjectId.Parse(entity.Id),
+                    ["__dataId"] = entity.Id,
+                    ["domainId"] = entity.DomainId,
+                    ["keycloakUserId"] = entity.KeycloakUserId,
+                    ["username"] = entity.Username,
+                    ["email"] = entity.Email,
+                    ["firstName"] = entity.FirstName,
+                    ["lastName"] = entity.LastName,
+                    ["isActive"] = entity.IsActive,
+                    ["groups"] = new BsonArray(entity.Groups ?? new List<string>()),
+                    ["roles"] = new BsonArray(entity.Roles ?? new List<string>()),
+                    ["createdAt"] = entity.CreatedAt,
+                    ["lastLoginAt"] = entity.LastLoginAt.HasValue ? entity.LastLoginAt.Value : BsonNull.Value,
+                    ["createdBy"] = entity.CreatedBy,
+                    ["updatedAt"] = entity.UpdatedAt.HasValue ? entity.UpdatedAt.Value : BsonNull.Value,
+                    ["updatedBy"] = string.IsNullOrEmpty(entity.UpdatedBy) ? BsonNull.Value : entity.UpdatedBy
+                };
+                
                 var options = new ReplaceOptions { IsUpsert = true };
-                await collection.ReplaceOneAsync(filter, entity, options);
+                await collection.ReplaceOneAsync(filter, document, options);
                 _logger.LogDebug("User updated successfully: {Id}, DomainId: {DomainId}", entity.Id, entity.DomainId);
                 return entity;
             }
@@ -113,7 +185,7 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filter = Builders<User>.Filter.Eq("_id", ObjectId.Parse(id));
+                var filter = Builders<BsonDocument>.Filter.Eq("__dataId", id);
                 var result = await collection.DeleteOneAsync(filter);
                 _logger.LogDebug("User deleted successfully: {Id}, DomainId: {DomainId}", id, domainId);
                 return result.DeletedCount > 0;
@@ -136,7 +208,7 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filter = Builders<User>.Filter.Eq("_id", ObjectId.Parse(id));
+                var filter = Builders<BsonDocument>.Filter.Eq("__dataId", id);
                 return await collection.Find(filter).AnyAsync();
             }
             catch (Exception ex)
@@ -151,8 +223,9 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filter = Builders<User>.Filter.Eq(x => x.Email, email);
-                return await collection.Find(filter).FirstOrDefaultAsync();
+                var filter = Builders<BsonDocument>.Filter.Eq("email", email);
+                var doc = await collection.Find(filter).FirstOrDefaultAsync();
+                return MapBsonDocumentToUser(doc);
             }
             catch (Exception ex)
             {
@@ -166,8 +239,9 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filter = Builders<User>.Filter.Eq(x => x.Username, username);
-                return await collection.Find(filter).FirstOrDefaultAsync();
+                var filter = Builders<BsonDocument>.Filter.Eq("username", username);
+                var doc = await collection.Find(filter).FirstOrDefaultAsync();
+                return MapBsonDocumentToUser(doc);
             }
             catch (Exception ex)
             {
@@ -181,8 +255,9 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filter = Builders<User>.Filter.AnyEq(x => x.Groups, groupId);
-                return await collection.Find(filter).ToListAsync();
+                var filter = Builders<BsonDocument>.Filter.AnyEq("groups", groupId);
+                var docs = await collection.Find(filter).ToListAsync();
+                return docs.Select(doc => MapBsonDocumentToUser(doc)).Where(u => u != null).Cast<User>();
             }
             catch (Exception ex)
             {
@@ -196,7 +271,7 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filter = Builders<User>.Filter.Eq(x => x.Email, email);
+                var filter = Builders<BsonDocument>.Filter.Eq("email", email);
                 return await collection.Find(filter).AnyAsync();
             }
             catch (Exception ex)
@@ -211,7 +286,7 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filter = Builders<User>.Filter.Eq(x => x.Username, username);
+                var filter = Builders<BsonDocument>.Filter.Eq("username", username);
                 return await collection.Find(filter).AnyAsync();
             }
             catch (Exception ex)
@@ -226,8 +301,9 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filter = Builders<User>.Filter.Eq(x => x.DomainId, domainId);
-                return await collection.Find(filter).ToListAsync();
+                var filter = Builders<BsonDocument>.Filter.Eq("domainId", domainId);
+                var docs = await collection.Find(filter).ToListAsync();
+                return docs.Select(doc => MapBsonDocumentToUser(doc)).Where(u => u != null).Cast<User>();
             }
             catch (Exception ex)
             {
@@ -246,18 +322,17 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filterBuilder = Builders<User>.Filter;
-                var filter = filterBuilder.Eq(x => x.DomainId, domainId);
+                var filterBuilder = Builders<BsonDocument>.Filter;
+                var filter = filterBuilder.Eq("domainId", domainId);
 
                 // Apply search filter (case-insensitive regex)
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
-                    var searchLower = searchTerm.ToLower();
                     var searchFilter = filterBuilder.Or(
-                        filterBuilder.Regex(x => x.Username, new BsonRegularExpression(searchTerm, "i")),
-                        filterBuilder.Regex(x => x.Email, new BsonRegularExpression(searchTerm, "i")),
-                        filterBuilder.Regex(x => x.FirstName, new BsonRegularExpression(searchTerm, "i")),
-                        filterBuilder.Regex(x => x.LastName, new BsonRegularExpression(searchTerm, "i"))
+                        filterBuilder.Regex("username", new BsonRegularExpression(searchTerm, "i")),
+                        filterBuilder.Regex("email", new BsonRegularExpression(searchTerm, "i")),
+                        filterBuilder.Regex("firstName", new BsonRegularExpression(searchTerm, "i")),
+                        filterBuilder.Regex("lastName", new BsonRegularExpression(searchTerm, "i"))
                     );
                     filter &= searchFilter;
                 }
@@ -265,7 +340,7 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                 // Apply active filter
                 if (isActive.HasValue)
                 {
-                    filter &= filterBuilder.Eq(x => x.IsActive, isActive.Value);
+                    filter &= filterBuilder.Eq("isActive", isActive.Value);
                 }
 
                 // Get total count
@@ -273,11 +348,13 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
 
                 // Apply pagination
                 var skip = (page - 1) * pageSize;
-                var users = await collection
+                var docs = await collection
                     .Find(filter)
                     .Skip(skip)
                     .Limit(pageSize)
                     .ToListAsync();
+
+                var users = docs.Select(doc => MapBsonDocumentToUser(doc)).Where(u => u != null).Cast<User>();
 
                 return new QueryResult<User>
                 {

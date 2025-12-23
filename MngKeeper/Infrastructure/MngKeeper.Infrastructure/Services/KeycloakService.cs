@@ -811,5 +811,64 @@ namespace MngKeeper.Infrastructure.Services
             }
         }
 
+        public async Task<bool> UpdateUserPasswordAsync(string realmName, string userId, string newPassword, bool temporary = false)
+        {
+            try
+            {
+                _logger.LogInformation("Updating password for user {UserId} in realm {RealmName}", userId, realmName);
+
+                await EnsureAdminTokenAsync();
+
+                var passwordData = new
+                {
+                    type = "password",
+                    value = newPassword,
+                    temporary = temporary
+                };
+
+                var json = JsonSerializer.Serialize(passwordData);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
+
+                var response = await _httpClient.PutAsync($"/admin/realms/{realmName}/users/{userId}/reset-password", content);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Failed to update password for user {UserId} in realm {RealmName}. Status: {StatusCode}, Error: {Error}", 
+                        userId, realmName, response.StatusCode, errorContent);
+                    return false;
+                }
+
+                _logger.LogInformation("Password updated successfully for user {UserId} in realm {RealmName}", userId, realmName);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating password for user {UserId} in realm {RealmName}", userId, realmName);
+                return false;
+            }
+        }
+
+        public async Task<bool> ValidateUserPasswordAsync(string realmName, string username, string password)
+        {
+            try
+            {
+                _logger.LogDebug("Validating password for user {Username} in realm {RealmName}", username, realmName);
+
+                // Try to get token with provided credentials
+                var tokenResponse = await GetTokenAsync(realmName, username, password);
+                
+                // If token is obtained successfully, password is valid
+                return string.IsNullOrEmpty(tokenResponse.Error);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error validating password for user {Username} in realm {RealmName}", username, realmName);
+                return false;
+            }
+        }
+
     }
 }

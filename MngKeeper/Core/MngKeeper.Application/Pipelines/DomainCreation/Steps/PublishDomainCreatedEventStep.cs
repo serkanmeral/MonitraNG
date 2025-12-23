@@ -28,7 +28,8 @@ public class PublishDomainCreatedEventStep : IPipelineStep<DomainCreationContext
     {
         try
         {
-            _logger.LogInformation("Publishing domain created event: {DomainName}", context.DomainName);
+            _logger.LogInformation("Publishing domain created event: {DomainName}, DomainId: {DomainId}", 
+                context.DomainName, context.Domain?.Id);
             
             var eventMessage = new
             {
@@ -57,13 +58,16 @@ public class PublishDomainCreatedEventStep : IPipelineStep<DomainCreationContext
             };
             
             var message = JsonSerializer.Serialize(eventMessage);
+            _logger.LogDebug("Domain created event message serialized. Size: {Size} bytes, EventId: {EventId}", 
+                message.Length, eventMessage.eventId);
             
             await _rabbitMqService.PublishAsync(
                 exchange: "mng.topics",
                 routingKey: "system.mngkeeper.domain.created",
                 message: message);
             
-            _logger.LogInformation("Domain created event published successfully");
+            _logger.LogInformation("Domain created event published successfully. Exchange: mng.topics, RoutingKey: system.mngkeeper.domain.created, EventId: {EventId}", 
+                eventMessage.eventId);
             
             return StepResult.Success(new Dictionary<string, object>
             {

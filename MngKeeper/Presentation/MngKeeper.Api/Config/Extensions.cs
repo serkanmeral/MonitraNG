@@ -139,6 +139,7 @@ public static class Extensions
         services.AddScoped<MngKeeper.Application.Interfaces.IAuditLogRepository, MngKeeper.Infrastructure.Persistence.Repositories.AuditLogRepository>();
         services.AddScoped<MngKeeper.Application.Interfaces.IUserRepository, MngKeeper.Infrastructure.Persistence.Repositories.UserRepository>();
         services.AddScoped<MngKeeper.Application.Interfaces.IGroupRepository, MngKeeper.Infrastructure.Persistence.Repositories.GroupRepository>();
+        services.AddScoped<MngKeeper.Application.Interfaces.IPasswordResetTokenRepository, MngKeeper.Infrastructure.Persistence.Repositories.PasswordResetTokenRepository>();
 
         // Add Services
         services.AddHttpClient();

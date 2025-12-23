@@ -40,12 +40,19 @@ try {
         adminPassword = $adminPassword
     } | ConvertTo-Json
     
-    $domainResponse = Invoke-RestMethod -Uri "$baseUrl/api/domain" `
-        -Method POST `
-        -Body $domainBody `
-        -ContentType "application/json" `
-        -SkipCertificateCheck `
-        -ErrorAction Stop
+    try {
+        $domainResponse = Invoke-RestMethod -Uri "$baseUrl/api/domain" `
+            -Method POST `
+            -Body $domainBody `
+            -ContentType "application/json" `
+            -SkipCertificateCheck `
+            -ErrorAction Stop
+    } catch {
+        $errorResponse = $_.ErrorDetails.Message
+        Write-Host "  ✗ Domain oluşturma hatası: $errorResponse" -ForegroundColor Red
+        Write-Host "  Hata detayı: $($_.Exception.Message)" -ForegroundColor Red
+        throw
+    }
     
     if (-not $domainResponse.isSuccess) {
         Write-Host "✗ Domain oluşturulamadı: $($domainResponse.message)" -ForegroundColor Red
@@ -55,6 +62,12 @@ try {
     Write-Host "✓ Domain oluşturuldu: $($domainResponse.domainName)" -ForegroundColor Green
     Write-Host "  Domain ID: $($domainResponse.domainId)" -ForegroundColor Gray
     Write-Host "  Admin Username: $($domainResponse.adminUsername)" -ForegroundColor Gray
+    Write-Host ""
+    
+    # Wait for domain setup to complete (pipeline steps: database, keycloak, groups, etc.)
+    Write-Host "Domain setup tamamlanması bekleniyor (15 saniye)..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 15
+    Write-Host "✓ Bekleme tamamlandı" -ForegroundColor Green
     Write-Host ""
     
     # Step 2: Configure Realm Mappers
@@ -122,7 +135,7 @@ try {
     }
     Write-Host ""
     
-    # Get all groups to create name-to-ID mapping
+    # Get all groups to create name-to-ID mapping (including default groups)
     Write-Host "Gruplar listeleniyor (ID mapping için)..." -ForegroundColor Yellow
     try {
         $allGroupsResponse = Invoke-RestMethod -Uri "$baseUrl/api/group?page=1&pageSize=100" `
@@ -135,7 +148,10 @@ try {
         foreach ($grp in $allGroupsResponse.groups) {
             $groupNameToId[$grp.name] = $grp.groupId
         }
-        Write-Host "  ✓ $($groupNameToId.Count) grup bulundu" -ForegroundColor Green
+        Write-Host "  ✓ $($groupNameToId.Count) grup bulundu (default + ek gruplar)" -ForegroundColor Green
+        if ($groupNameToId.Count -gt 0) {
+            Write-Host "    Gruplar: $($groupNameToId.Keys -join ', ')" -ForegroundColor Gray
+        }
     }
     catch {
         Write-Host "  ✗ Gruplar listelenemedi: $($_.Exception.Message)" -ForegroundColor Red

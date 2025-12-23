@@ -73,8 +73,10 @@ namespace MngKeeper.Infrastructure.Services
                     {
                         ["lastSyncedAt"] = DateTime.UtcNow,
                         ["syncSource"] = "mngkeeper",
-                        ["syncVersion"] = existingUser != null 
-                            ? (existingUser.GetValue("__syncInfo")?.AsBsonDocument?.GetValue("syncVersion")?.AsInt32 ?? 0) + 1
+                        ["syncVersion"] = existingUser != null && existingUser.Contains("__syncInfo")
+                            ? (existingUser["__syncInfo"].AsBsonDocument?.Contains("syncVersion") == true
+                                ? existingUser["__syncInfo"].AsBsonDocument["syncVersion"].AsInt32 + 1
+                                : 1)
                             : 1
                     },
                     ["__createInfo"] = existingUser != null && existingUser.Contains("__createInfo")
@@ -167,8 +169,10 @@ namespace MngKeeper.Infrastructure.Services
                     {
                         ["lastSyncedAt"] = DateTime.UtcNow,
                         ["syncSource"] = "mngkeeper",
-                        ["syncVersion"] = existingGroup != null 
-                            ? (existingGroup.GetValue("__syncInfo")?.AsBsonDocument?.GetValue("syncVersion")?.AsInt32 ?? 0) + 1
+                        ["syncVersion"] = existingGroup != null && existingGroup.Contains("__syncInfo")
+                            ? (existingGroup["__syncInfo"].AsBsonDocument?.Contains("syncVersion") == true
+                                ? existingGroup["__syncInfo"].AsBsonDocument["syncVersion"].AsInt32 + 1
+                                : 1)
                             : 1
                     },
                     ["__createInfo"] = existingGroup != null && existingGroup.Contains("__createInfo")
@@ -241,9 +245,9 @@ namespace MngKeeper.Infrastructure.Services
                     return result;
                 }
 
-                // Get users from MngKeeper database
-                var mngKeeperDatabase = _mongoClient.GetDatabase(_settings.MongoDB.DatabaseName);
-                var usersCollection = mngKeeperDatabase.GetCollection<User>("users");
+                // Get users from domain database
+                var domainDatabase = _mongoClient.GetDatabase(domain.DatabaseName);
+                var usersCollection = domainDatabase.GetCollection<User>("@users");
                 var usersFilter = Builders<User>.Filter.Eq(x => x.DomainId, domainId);
                 var users = await usersCollection.Find(usersFilter).ToListAsync();
                 result.TotalCount = users.Count;
@@ -298,9 +302,9 @@ namespace MngKeeper.Infrastructure.Services
                     return result;
                 }
 
-                // Get groups from MngKeeper database
-                var mngKeeperDatabase = _mongoClient.GetDatabase(_settings.MongoDB.DatabaseName);
-                var groupsCollection = mngKeeperDatabase.GetCollection<Group>("groups");
+                // Get groups from domain database
+                var domainDatabase = _mongoClient.GetDatabase(domain.DatabaseName);
+                var groupsCollection = domainDatabase.GetCollection<Group>("@groups");
                 var groupsFilter = Builders<Group>.Filter.Eq(x => x.DomainId, domainId);
                 var groups = await groupsCollection.Find(groupsFilter).ToListAsync();
                 result.TotalCount = groups.Count;

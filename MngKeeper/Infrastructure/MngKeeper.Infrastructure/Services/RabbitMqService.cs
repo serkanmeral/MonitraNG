@@ -102,16 +102,25 @@ namespace MngKeeper.Infrastructure.Services
         {
             try
             {
+                _logger.LogDebug("Publishing message. Exchange: {Exchange}, RoutingKey: {RoutingKey}, MessageSize: {Size} bytes", 
+                    exchange, routingKey, message.Length);
+                
                 await EnsureConnectionAsync();
+                _logger.LogDebug("RabbitMQ connection ensured. Connection open: {IsOpen}, Channel open: {ChannelOpen}", 
+                    _connection?.IsOpen ?? false, _channel?.IsOpen ?? false);
 
                 // Ensure exchange exists
                 await CreateExchangeAsync(exchange);
+                _logger.LogDebug("Exchange ensured: {Exchange}", exchange);
 
                 var body = Encoding.UTF8.GetBytes(message);
                 var properties = _channel!.CreateBasicProperties();
                 properties.Persistent = true;
                 properties.MessageId = Guid.NewGuid().ToString();
                 properties.Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+
+                _logger.LogDebug("Publishing message to RabbitMQ. Exchange: {Exchange}, RoutingKey: {RoutingKey}, MessageId: {MessageId}", 
+                    exchange, routingKey, properties.MessageId);
 
                 _channel.BasicPublish(
                     exchange: exchange,
@@ -123,16 +132,19 @@ namespace MngKeeper.Infrastructure.Services
                 // Wait for publisher confirmation
                 if (_channel.WaitForConfirms(TimeSpan.FromSeconds(5)))
                 {
-                    _logger.LogInformation("Message published successfully to exchange: {Exchange}, routing key: {RoutingKey}", exchange, routingKey);
+                    _logger.LogInformation("Message published successfully to exchange: {Exchange}, routing key: {RoutingKey}, MessageId: {MessageId}", 
+                        exchange, routingKey, properties.MessageId);
                 }
                 else
                 {
-                    _logger.LogWarning("Message publish confirmation not received for exchange: {Exchange}, routing key: {RoutingKey}", exchange, routingKey);
+                    _logger.LogWarning("Message publish confirmation not received for exchange: {Exchange}, routing key: {RoutingKey}, MessageId: {MessageId}", 
+                        exchange, routingKey, properties.MessageId);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to publish message to exchange: {Exchange}, routing key: {RoutingKey}", exchange, routingKey);
+                _logger.LogError(ex, "Failed to publish message to exchange: {Exchange}, routing key: {RoutingKey}. Error: {ErrorMessage}", 
+                    exchange, routingKey, ex.Message);
                 throw;
             }
         }
@@ -200,12 +212,15 @@ namespace MngKeeper.Infrastructure.Services
             try
             {
                 await EnsureConnectionAsync();
+                
+                // Check if exchange already exists (declare is idempotent)
                 _channel!.ExchangeDeclare(exchange, exchangeType, durable: true, autoDelete: false);
-                _logger.LogInformation("Exchange created: {Exchange}, type: {ExchangeType}", exchange, exchangeType);
+                _logger.LogDebug("Exchange declared/verified: {Exchange}, type: {ExchangeType}", exchange, exchangeType);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to create exchange: {Exchange}", exchange);
+                _logger.LogError(ex, "Failed to create/declare exchange: {Exchange}, type: {ExchangeType}. Error: {ErrorMessage}", 
+                    exchange, exchangeType, ex.Message);
                 throw;
             }
         }

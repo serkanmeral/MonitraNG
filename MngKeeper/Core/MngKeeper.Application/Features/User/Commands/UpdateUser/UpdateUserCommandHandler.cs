@@ -13,6 +13,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
         private readonly IDomainRepository _domainRepository;
         private readonly IKeycloakService _keycloakService;
         private readonly IDataGatewaySyncService _dataGatewaySyncService;
+        private readonly IEventPublisher _eventPublisher;
         private readonly ILogger<UpdateUserCommandHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -22,6 +23,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
             IDomainRepository domainRepository,
             IKeycloakService keycloakService,
             IDataGatewaySyncService dataGatewaySyncService,
+            IEventPublisher eventPublisher,
             ILogger<UpdateUserCommandHandler> logger,
             IHttpContextAccessor httpContextAccessor)
         {
@@ -30,6 +32,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
             _domainRepository = domainRepository;
             _keycloakService = keycloakService;
             _dataGatewaySyncService = dataGatewaySyncService;
+            _eventPublisher = eventPublisher;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -155,6 +158,16 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                     _logger.LogError(syncEx, "Failed to sync user to DataGateway MongoDB: UserId={UserId}", updatedUser.Id);
                     // Continue - user is updated in MngKeeper DB
                 }
+
+                // Publish user updated event
+                var userUpdatedEvent = new UserUpdatedEvent
+                {
+                    UserId = updatedUser.Id,
+                    Username = updatedUser.Username,
+                    Email = updatedUser.Email,
+                    Groups = updatedUser.Groups
+                };
+                await _eventPublisher.PublishAsync(userUpdatedEvent, claims.DomainId);
 
                 _logger.LogInformation("User updated successfully: {UserId} in domain: {DomainId}", request.UserId, claims.DomainId);
 
