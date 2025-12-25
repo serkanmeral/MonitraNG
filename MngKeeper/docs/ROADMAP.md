@@ -2,7 +2,7 @@
 
 **Microservice:** Identity & Access Management (IAM)  
 **Version:** 1.1.0  
-**Last Updated:** 23 Aralık 2025
+**Last Updated:** 30 Aralık 2025
 
 ---
 
@@ -20,6 +20,8 @@
 | Code Optimization | ✅ Complete | 100% |
 | RabbitMQ Events | ✅ Complete | 100% |
 | Password Management | 🔄 Partial | 67% |
+| User Profile Enhancement | 📋 Planned | 0% |
+| Manager Role & Authorization | 📋 Planned | 0% |
 
 **Overall Progress:** **98%** of Core Features
 
@@ -67,6 +69,7 @@
 **Custom Token Claims:**
 - ✅ `user_groups`: Array - Kullanıcının bağlı olduğu gruplar
 - ✅ `isAdmin`: Boolean - admins grubunda ise true
+- ✅ `isManager`: Boolean - managers grubunda ise true (Planlanıyor - Yüksek Öncelik)
 - ✅ `domain_id`: String - Domain ID
 - ✅ `domain_name`: String - Domain name
 
@@ -272,7 +275,179 @@ Group Events:
 
 ---
 
-### 2. Permission Management System - ORTA ÖNCELİK
+### 2. User Profile Enhancement - YÜKSEK ÖNCELİK ⭐
+
+**Amaç:** Kullanıcı profil bilgilerini genişletme (Title, Department, Gender, Photo)
+
+**Yeni Alanlar:**
+- [ ] **Title (Unvan/İş Unvanı)**: String field (opsiyonel, max 100 karakter)
+- [ ] **Department (Departman)**: String field (opsiyonel, max 100 karakter)
+- [ ] **Gender (Cinsiyet)**: Enum field (NotSpecified, Male, Female)
+- [ ] **PhoneNumber (Telefon Numarası)**: String field (opsiyonel, max 20 karakter)
+- [ ] **PhotoUrl (Profil Fotoğrafı)**: String field (MinIO URL, opsiyonel)
+
+**Implementasyon Detayları:**
+
+**Backend (MngKeeper):**
+- [ ] Gender enum oluşturma (`Gender.NotSpecified`, `Gender.Male`, `Gender.Female`)
+- [ ] User entity'ye yeni alanlar ekleme (Title, Department, Gender, PhotoUrl)
+- [ ] UserDto'ya yeni alanlar ekleme
+- [ ] KeycloakService'de attributes'a yeni alanları ekleme
+- [ ] CreateUser/UpdateUser command'larına yeni alanları ekleme
+- [ ] UserRepository mapping'lerini güncelleme
+- [ ] DataGatewaySyncService'de yeni alanları sync etme
+- [ ] PhoneNumber validation (format kontrolü - opsiyonel)
+
+**Photo Upload Sistemi:**
+- [ ] Photo upload endpoint (`POST /api/user/{userId}/photo`)
+- [ ] Photo get endpoint (`GET /api/user/{userId}/photo`)
+- [ ] MinIO storage yapısı (`{domainName}/users/{userId}/photo.{ext}`)
+- [ ] Photo validation (max 5MB, jpg/jpeg/png/webp, max 2000x2000px)
+- [ ] Photo URL formatı (proxy URL: `/api/user/{userId}/photo`)
+
+**Frontend (Mng.UI):**
+- [ ] User interface'e yeni alanlar ekleme
+- [ ] Avatar color computed property (Gender'a göre: Male=info, Female=pink, NotSpecified=primary)
+- [ ] Avatar component'lerini güncelleme (PhotoUrl varsa fotoğraf, yoksa initials)
+- [ ] User form'larına yeni alanları ekleme (Title, Department, Gender select, Photo upload)
+- [ ] User list/detail sayfalarında yeni alanları gösterme
+
+**Avatar Stratejisi:**
+- PhotoUrl varsa → MinIO'dan fotoğraf göster
+- PhotoUrl yoksa → Gender'a göre renkli initials avatar:
+  - Erkek (Male): `info` (açık mavi)
+  - Kadın (Female): `pink` (pembe)
+  - Belirtilmemiş (NotSpecified): `primary` (mavi)
+
+**Not:** Offline sistemler için Gravatar kullanılmayacak, sadece MinIO ve initials avatar kullanılacak.
+
+---
+
+### 3. Server-Side Pagination & Performance Optimization - ORTA ÖNCELİK ⚡
+
+**Amaç:** Binlerce kullanıcı/grup için performans optimizasyonu ve ölçeklenebilirlik
+
+**Mevcut Durum:**
+- ✅ Backend zaten server-side pagination destekliyor (MongoDB Skip/Limit)
+- ✅ Database-level filtering ve search mevcut
+- ✅ Redis cache entegrasyonu var
+- ❌ Frontend client-side pagination kullanıyor (tüm veriler çekiliyor)
+
+**Sorunlar:**
+- Binlerce kullanıcı olduğunda ilk yüklemede 100 kullanıcı çekiliyor (yavaş)
+- Tüm veriler frontend'de tutuluyor (memory sorunu)
+- Search ve filter client-side yapılıyor (tüm veriler üzerinde)
+- Gereksiz network trafiği
+
+**Çözüm: Server-Side Pagination (Frontend)**
+
+**Frontend (Mng.UI) Güncellemeleri:**
+- [ ] `v-data-table`'ı server-side pagination moduna geçirme
+- [ ] `server-items-length` prop'unu kullanma
+- [ ] `@update:options` event'ini handle etme
+- [ ] Search input'unu backend'e gönderme (debounce ile)
+- [ ] Filter'ları backend'e gönderme (status, department, vb.)
+- [ ] User Store'da `fetchUsers` metodunu optimize etme (default pageSize: 10)
+- [ ] Group Store'da aynı optimizasyonları uygulama
+
+**Backend (MngKeeper) İyileştirmeleri:**
+- [ ] Sorting desteği ekleme (şu anda sadece pagination var)
+- [ ] Multiple column sorting desteği
+- [ ] Advanced filtering (department, title, gender vb.)
+- [ ] Search index optimizasyonu (full-text search için)
+- [ ] Cache key stratejisi iyileştirme (sorting ve filter'ları dahil etme)
+
+**Performans Karşılaştırması:**
+
+| Senaryo | Client-side (Mevcut) | Server-side (Hedef) |
+|---------|---------------------|---------------------|
+| 100 kullanıcı | ✅ Hızlı | ✅ Hızlı |
+| 1,000 kullanıcı | ⚠️ Yavaş (100 çekiliyor) | ✅ Hızlı (10 çekiliyor) |
+| 10,000 kullanıcı | ❌ Çok yavaş | ✅ Hızlı (10 çekiliyor) |
+| Search (10K) | ❌ Tüm veriler üzerinde | ✅ Database index ile |
+| Memory | ❌ Yüksek | ✅ Düşük |
+
+**Implementasyon Detayları:**
+
+**1. v-data-table Server-Side Mode:**
+```vue
+<v-data-table
+  :items="userStore.users"
+  :server-items-length="userStore.totalCount"
+  :items-per-page="tableOptions.itemsPerPage"
+  :page="tableOptions.page"
+  @update:options="handleOptionsUpdate"
+/>
+```
+
+**2. Options Update Handler:**
+```typescript
+const handleOptionsUpdate = async (options: any) => {
+  await userStore.fetchUsers({
+    page: options.page,
+    pageSize: options.itemsPerPage,
+    search: search.value,
+    isActive: statusFilter.value === 'active' ? true : undefined,
+  });
+};
+```
+
+**3. Debounced Search:**
+```typescript
+const debouncedSearch = debounce(async (searchTerm: string) => {
+  await handleOptionsUpdate({ ...tableOptions.value, page: 1 });
+}, 300);
+```
+
+**Öncelik:** Orta (küçük sistemlerde sorun yok, büyük sistemler için kritik)
+
+---
+
+### 4. Manager Role & Enhanced Authorization System - YÜKSEK ÖNCELİK ⭐
+
+**Amaç:** Admin ve Manager rolleri ile hiyerarşik yetkilendirme sistemi
+
+**Yetkilendirme Hiyerarşisi:**
+```
+Admin (isAdmin = true)
+  ├─ Sistem yönetimi (dataset tanımı, domain yönetimi vb.)
+  └─ Management işlemleri (kullanıcı oluşturma, listeleme vb.)
+
+Manager (isManager = true, isAdmin = false)
+  └─ Management işlemleri (kullanıcı oluşturma, listeleme vb.)
+
+Normal User (isAdmin = false, isManager = false)
+  └─ Sınırlı yetkiler
+```
+
+**Özellikler:**
+- [ ] `isManager` claim'i ekleme (TokenClaims, JWT token)
+- [ ] `isManager` attribute'unu Keycloak'ta set etme (managers grubundaki kullanıcılar için)
+- [ ] Protocol mapper ekleme (`isManager` claim'i için)
+- [ ] `ManagerAuthorizationAttribute` oluşturma (Admin veya Manager kontrolü)
+- [ ] `AdminOnlyAuthorizationAttribute` oluşturma (Sadece Admin kontrolü)
+- [ ] Mevcut `AdminAuthorizationAttribute`'u `ManagerAuthorizationAttribute`'a dönüştürme
+- [ ] API endpoint yetkilendirmelerini güncelleme:
+  - User Management: `ManagerAuthorizationAttribute` (Admin veya Manager)
+  - Group Management: `ManagerAuthorizationAttribute` (Admin veya Manager)
+  - Domain Management: `AdminOnlyAuthorizationAttribute` (Sadece Admin)
+  - Dataset Management (MngDataGateway): `AdminOnlyAuthorizationAttribute` (Sadece Admin)
+
+**Implementasyon Detayları:**
+- [ ] `TokenClaims` class'ına `IsManager` property ekleme
+- [ ] `JwtTokenParserService`'de `isManager` claim'ini parse etme
+- [ ] `JwtTokenService.AddDomainClaimToToken` metoduna `isManager` parametresi ekleme
+- [ ] `GetTokenCommandHandler`'da `isManager` kontrolü yapma (managers grubunda mı?)
+- [ ] `KeycloakService.CreateUserAsync`'de `isManager` attribute'unu set etme
+- [ ] `KeycloakService.UpdateUserAsync`'de `isManager` attribute'unu güncelleme
+- [ ] `AdminController.ConfigureMappersAsync`'de `isManager` protocol mapper ekleme
+- [ ] Authorization attribute'larını oluşturma ve mevcut endpoint'lere uygulama
+
+**Not:** Admin otomatik olarak Manager yetkilerine sahiptir (isAdmin = true ise Manager kontrolüne gerek yok).
+
+---
+
+### 3. Permission Management System - ORTA ÖNCELİK
 
 **Amaç:** Group-based permission yönetimi
 
@@ -284,7 +459,7 @@ Group Events:
 
 ---
 
-### 3. Audit Logging - ORTA ÖNCELİK
+### 6. Audit Logging - ORTA ÖNCELİK
 
 **Amaç:** Tüm işlemlerin audit log'lanması
 
@@ -297,7 +472,7 @@ Group Events:
 
 ---
 
-### 4. Password Management - 🔄 %67 TAMAMLANDI
+### 7. Password Management - 🔄 %67 TAMAMLANDI
 
 **Amaç:** Kullanıcı şifre yönetimi (forgot password, reset, change)
 
@@ -346,7 +521,7 @@ Group Events:
 
 ---
 
-### 5. Code Optimization - ✅ TAMAMLANDI (v1.1.0)
+### 8. Code Optimization - ✅ TAMAMLANDI (v1.1.0)
 
 **Durum:** v1.1.0'da tamamlandı. Detaylar için "TAMAMLANAN ÖZELLİKLER" bölümüne bakın.
 
@@ -405,7 +580,32 @@ Group Events:
    - Routing key formatı: `{domainId}.useraddedtogroupevent` / `{domainId}.userremovedfromgroupevent`
    - Exchange: `mngkeeper.events` (topic exchange)
 
-3. ~~**Password Management (Change & Reset)**~~ - ✅ TAMAMLANDI (23 Aralık 2025)
+2. **User Profile Enhancement** - ⭐ YENİ ÖZELLİK
+   - [ ] Title, Department, Gender, PhotoUrl alanları ekleme
+   - [ ] Photo upload sistemi (MinIO)
+   - [ ] Gender-based avatar renkleri
+   - Detaylar için "GELECEK PLANLAR" bölümüne bakın
+
+3. **User Profile Enhancement** - ⭐ YENİ ÖZELLİK
+   - [ ] Title, Department, Gender, PhoneNumber, PhotoUrl alanları
+   - [ ] Photo upload sistemi (MinIO)
+   - [ ] Gender-based avatar renkleri
+   - Detaylar için "GELECEK PLANLAR" bölümüne bakın
+
+4. **Manager Role & Enhanced Authorization System** - ⭐ YENİ ÖZELLİK
+   - [ ] `isManager` claim'i ekleme ve token generation
+   - [ ] `ManagerAuthorizationAttribute` oluşturma (Admin veya Manager)
+   - [ ] `AdminOnlyAuthorizationAttribute` oluşturma (Sadece Admin)
+   - [ ] API endpoint yetkilendirmelerini güncelleme
+   - Detaylar için "GELECEK PLANLAR" bölümüne bakın
+
+5. **Server-Side Pagination & Performance Optimization** - ⚡ YENİ ÖZELLİK
+   - [ ] Frontend'de server-side pagination implementasyonu
+   - [ ] Search ve filter'ları backend'e taşıma
+   - [ ] Backend'de sorting ve advanced filtering desteği
+   - Detaylar için "GELECEK PLANLAR" bölümüne bakın
+
+6. ~~**Password Management (Change & Reset)**~~ - ✅ TAMAMLANDI (23 Aralık 2025)
    - ✅ `POST /api/auth/change-password` - Şifre değiştirme
    - ✅ `POST /api/auth/reset-password` - Şifre sıfırlama
    - ✅ `POST /api/auth/create-reset-token` - Reset token oluşturma (test için)
@@ -413,7 +613,7 @@ Group Events:
    **Eksik:**
    - [ ] `POST /api/auth/forgot-password` - Şifremi unuttum (karar bekleniyor)
 
-4. **RabbitMQ Event System Completion** - Event retry ve DLQ
+5. **RabbitMQ Event System Completion** - Event retry ve DLQ
    - [ ] Event retry mechanism
    - [ ] Dead Letter Queue (DLQ) handling
    - [ ] Event versioning
@@ -446,8 +646,21 @@ Group Events:
 
 ## 🚀 NEXT STEPS
 
-1. **Forgot Password Endpoint** - Email ile reset token gönderme (Karar bekleniyor)
-2. **RabbitMQ Event System Completion** - Event retry ve DLQ (Orta Öncelik)
+1. **User Profile Enhancement** - ⭐ YÜKSEK ÖNCELİK
+   - Title, Department, Gender, PhoneNumber, PhotoUrl alanları
+   - Photo upload sistemi (MinIO)
+   - Gender-based avatar renkleri
+   - User form ve list sayfalarını güncelleme
+2. **Manager Role & Enhanced Authorization System** - ⭐ YÜKSEK ÖNCELİK
+   - `isManager` claim'i ve token generation
+   - Authorization attribute'ları (ManagerAuthorization, AdminOnlyAuthorization)
+   - API endpoint yetkilendirmelerini güncelleme
+3. **Server-Side Pagination & Performance Optimization** - ⚡ ORTA ÖNCELİK
+   - Frontend'de server-side pagination implementasyonu
+   - Search ve filter'ları backend'e taşıma
+   - Backend'de sorting ve advanced filtering desteği
+4. **Forgot Password Endpoint** - Email ile reset token gönderme (Karar bekleniyor)
+3. **RabbitMQ Event System Completion** - Event retry ve DLQ (Orta Öncelik)
 4. **Permission Management** - Group-based permissions (Orta Öncelik)
 5. **Audit Logging** - Comprehensive audit trail (Orta Öncelik)
 6. **Test Coverage** - Unit ve integration testleri (Orta Öncelik)
@@ -462,8 +675,8 @@ Group Events:
 
 ---
 
-**Son Güncelleme:** 23 Aralık 2025  
-**Status:** Core features complete (98%), Bug fixes ve iyileştirmeler tamamlandı  
+**Son Güncelleme:** 30 Aralık 2025  
+**Status:** Core features complete (98%), Manager Role & Authorization System planlandı  
 **Son Tamamlanan:** 
 - MongoDB Collection Bug Fix (@users ve @groups collection'larına yazma düzeltildi) - 23 Aralık 2025
 - DataGatewaySyncService __syncInfo hatası düzeltildi - 23 Aralık 2025
@@ -472,4 +685,9 @@ Group Events:
 - RabbitMQ User Group Assignment Events (user.group.added, user.group.removed) - 23 Aralık 2025
 - RabbitMQ User Events (user.updated, user.deleted) - 23 Aralık 2025
 - Authentication API iyileştirmeleri (domain@username formatı, tek domain otomatik seçimi) - 23 Aralık 2025
+
+**Planlanan:**
+- User Profile Enhancement (Title, Department, Gender, PhoneNumber, PhotoUrl, Photo Upload) - 30 Aralık 2025
+- Manager Role & Enhanced Authorization System (isManager claim, ManagerAuthorizationAttribute, AdminOnlyAuthorizationAttribute) - 30 Aralık 2025
+- Server-Side Pagination & Performance Optimization (Frontend server-side pagination, backend sorting/filtering) - 30 Aralık 2025
 

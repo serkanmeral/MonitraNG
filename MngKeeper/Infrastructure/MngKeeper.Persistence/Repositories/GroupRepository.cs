@@ -113,23 +113,43 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                 var collection = await GetCollectionAsync(entity.DomainId);
                 var filter = Builders<BsonDocument>.Filter.Eq("__dataId", entity.Id);
                 
-                var document = new BsonDocument
-                {
-                    ["_id"] = MongoDB.Bson.ObjectId.Parse(entity.Id),
-                    ["__dataId"] = entity.Id,
-                    ["name"] = entity.Name,
-                    ["description"] = string.IsNullOrEmpty(entity.Description) ? BsonNull.Value : entity.Description,
-                    ["permissions"] = new BsonArray(entity.Permissions ?? new List<string>()),
-                    ["domainId"] = entity.DomainId,
-                    ["isActive"] = entity.IsActive,
-                    ["createdAt"] = entity.CreatedAt,
-                    ["createdBy"] = entity.CreatedBy,
-                    ["updatedAt"] = entity.UpdatedAt.HasValue ? entity.UpdatedAt.Value : BsonNull.Value,
-                    ["updatedBy"] = string.IsNullOrEmpty(entity.UpdatedBy) ? BsonNull.Value : entity.UpdatedBy
-                };
+                // Use UpdateOneAsync instead of ReplaceOneAsync to avoid _id immutable field error
+                var updateBuilder = Builders<BsonDocument>.Update;
+                var updateDefinition = updateBuilder
+                    .Set("name", (BsonValue)entity.Name)
+                    .Set("permissions", new BsonArray(entity.Permissions ?? new List<string>()))
+                    .Set("isActive", (BsonValue)entity.IsActive)
+                    .Set("updatedAt", entity.UpdatedAt.HasValue ? (BsonValue)entity.UpdatedAt.Value : BsonNull.Value);
                 
-                var options = new ReplaceOptions { IsUpsert = true };
-                await collection.ReplaceOneAsync(filter, document, options);
+                // Handle description (can be null or empty)
+                if (string.IsNullOrEmpty(entity.Description))
+                {
+                    updateDefinition = updateDefinition.Set("description", BsonNull.Value);
+                }
+                else
+                {
+                    updateDefinition = updateDefinition.Set("description", (BsonValue)entity.Description);
+                }
+                
+                // Handle updatedBy (can be null or empty)
+                if (string.IsNullOrEmpty(entity.UpdatedBy))
+                {
+                    updateDefinition = updateDefinition.Set("updatedBy", BsonNull.Value);
+                }
+                else
+                {
+                    updateDefinition = updateDefinition.Set("updatedBy", (BsonValue)entity.UpdatedBy);
+                }
+                
+                // Note: We don't update __dataId, domainId, createdAt, createdBy as these should not change
+                
+                var result = await collection.UpdateOneAsync(filter, updateDefinition);
+                
+                if (result.MatchedCount == 0)
+                {
+                    throw new InvalidOperationException($"Group with id {entity.Id} not found in domain {entity.DomainId}");
+                }
+                
                 _logger.LogDebug("Group updated successfully: {Id}, DomainId: {DomainId}", entity.Id, entity.DomainId);
                 return entity;
             }
@@ -200,6 +220,44 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting groups by domain id: {DomainId}", domainId);
+                return Enumerable.Empty<Group>();
+            }
+        }
+
+        public async Task<IEnumerable<Group>> GetAllByDomainIdAsync(
+            string domainId,
+            string? searchTerm = null,
+            bool? isActive = null)
+        {
+            try
+            {
+                var collection = await GetCollectionAsync(domainId);
+                var filterBuilder = Builders<BsonDocument>.Filter;
+                var filter = filterBuilder.Eq("domainId", domainId);
+
+                // Apply search filter (case-insensitive regex)
+                if (!string.IsNullOrWhiteSpace(searchTerm))
+                {
+                    var searchFilter = filterBuilder.Or(
+                        filterBuilder.Regex("name", new BsonRegularExpression(searchTerm, "i")),
+                        filterBuilder.Regex("description", new BsonRegularExpression(searchTerm, "i"))
+                    );
+                    filter &= searchFilter;
+                }
+
+                // Apply active filter
+                if (isActive.HasValue)
+                {
+                    filter &= filterBuilder.Eq("isActive", isActive.Value);
+                }
+
+                // Get all documents (no pagination)
+                var docs = await collection.Find(filter).ToListAsync();
+                return docs.Select(doc => MapBsonDocumentToGroup(doc)).Where(g => g != null).Cast<Group>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting all groups by domain id: {DomainId}", domainId);
                 return Enumerable.Empty<Group>();
             }
         }

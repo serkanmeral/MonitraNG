@@ -2,7 +2,6 @@
 import { ref, onMounted } from "vue";
 import { Form } from "vee-validate";
 import { useAuthStore } from "@/stores/auth";
-import { fetchFromMngKeeper } from "@/services/apiService";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -10,8 +9,6 @@ const authStore = useAuthStore();
 const password = ref("");
 const username = ref("");
 const domain = ref("");
-const showDomain = ref(false);
-const domains = ref<Array<{ id: string; name: string; displayName: string }>>([]);
 const errorMessage = ref("");
 const isLoading = ref(false);
 
@@ -24,23 +21,11 @@ const usernameRules = ref([
   (v: string) => !!v || "Kullanıcı adı gereklidir",
 ]);
 
-// Load domains on mount
-onMounted(async () => {
-  try {
-    const response = await fetchFromMngKeeper("/api/domain", "GET");
-    if (response.domains && Array.isArray(response.domains)) {
-      domains.value = response.domains;
-      // If only one domain, auto-select it
-      if (domains.value.length === 1) {
-        domain.value = domains.value[0].name;
-        showDomain.value = false;
-      } else if (domains.value.length > 1) {
-        showDomain.value = true;
-      }
-    }
-  } catch (error) {
-    console.error("Domain listesi yüklenemedi:", error);
-    // Continue without domain selection if it fails
+// Development ortamında varsayılan değerleri ayarla
+onMounted(() => {
+  if (process.env.NODE_ENV === 'development') {
+    username.value = 'serkan.meral';
+    password.value = 'Serkan123!';
   }
 });
 
@@ -48,9 +33,9 @@ async function validate() {
   errorMessage.value = "";
   isLoading.value = true;
 
-  try {
+    try {
     // Parse domain from username if format is "domain@username"
-    let selectedDomain = domain.value;
+    let selectedDomain: string | undefined = undefined;
     let selectedUsername = username.value;
 
     if (username.value.includes("@")) {
@@ -61,7 +46,7 @@ async function validate() {
       }
     }
 
-    await authStore.login(selectedUsername, password.value, selectedDomain || undefined);
+    await authStore.login(selectedUsername, password.value, selectedDomain);
     
     // Redirect to dashboard
     router.push({ path: "/dashboards/analytical" });
@@ -80,31 +65,6 @@ async function validate() {
 
 <template>
   <Form @submit="validate" v-slot="{ errors, isSubmitting }" class="mt-5">
-    <!-- Domain Selection (if multiple domains available) -->
-    <div v-if="showDomain && domains.length > 0" class="mb-4">
-      <v-label class="text-subtitle-1 font-weight-medium pb-2 text-lightText"
-        >Domain</v-label
-      >
-      <VSelect
-        v-model="domain"
-        :items="domains"
-        item-title="displayName"
-        item-value="name"
-        variant="outlined"
-        density="comfortable"
-        hide-details="auto"
-        placeholder="Domain seçiniz"
-      >
-        <template v-slot:item="{ props, item }">
-          <v-list-item v-bind="props" :title="item.raw.displayName" :subtitle="item.raw.name">
-          </v-list-item>
-        </template>
-      </VSelect>
-      <div class="text-caption text-medium-emphasis mt-2">
-        Veya kullanıcı adınızı "domain@kullaniciadi" formatında girebilirsiniz
-      </div>
-    </div>
-
     <!-- Username Field -->
     <v-label class="text-subtitle-1 font-weight-medium pb-2 text-lightText"
       >Kullanıcı Adı</v-label

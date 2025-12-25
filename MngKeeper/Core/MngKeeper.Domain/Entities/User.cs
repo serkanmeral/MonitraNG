@@ -1,5 +1,6 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using MngKeeper.Domain.Enums;
 
 namespace MngKeeper.Domain.Entities
 {
@@ -26,6 +27,22 @@ namespace MngKeeper.Domain.Entities
 
         [BsonElement("lastName")]
         public string LastName { get; set; } = string.Empty;
+
+        [BsonElement("title")]
+        public string? Title { get; set; }
+
+        [BsonElement("department")]
+        public string? Department { get; set; }
+
+        [BsonElement("gender")]
+        [BsonRepresentation(BsonType.Int32)]
+        public Gender Gender { get; set; } = Gender.NotSpecified;
+
+        [BsonElement("phoneNumber")]
+        public string? PhoneNumber { get; set; }
+
+        [BsonElement("photoUrl")]
+        public string? PhotoUrl { get; set; }
 
         [BsonElement("isActive")]
         public bool IsActive { get; set; } = true;

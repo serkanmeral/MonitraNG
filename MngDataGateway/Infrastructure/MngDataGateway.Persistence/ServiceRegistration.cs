@@ -41,6 +41,10 @@ public static class ServiceRegistration
         // Health Check Service - Application health monitoring
         services.AddScoped<IHealthCheckService, HealthCheckService>();
 
+        // Domain Lookup Service - DomainId'den domain name ve database name lookup
+        // (Başka amaçlar için kullanılabilir, şimdilik tutuyoruz)
+        services.AddSingleton<IDomainLookupService, DomainLookupService>();
+
         // Filter Parser - Parse RESTful filter query parameter
         services.AddScoped<FilterParser>();
 

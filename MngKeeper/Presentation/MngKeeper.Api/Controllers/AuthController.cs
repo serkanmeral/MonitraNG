@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Application.Helpers;
 using MngKeeper.Api.Attributes;
+using MediatR;
+using MngKeeper.Application.Features.Auth.Commands.GetToken;
 
 namespace MngKeeper.Api.Controllers;
 
@@ -14,6 +16,7 @@ public class AuthController : ControllerBase
     private readonly IUserRepository _userRepository;
     private readonly IDomainRepository _domainRepository;
     private readonly IPasswordResetTokenRepository _passwordResetTokenRepository;
+    private readonly IMediator _mediator;
     private readonly ILogger<AuthController> _logger;
 
     public AuthController(
@@ -21,12 +24,14 @@ public class AuthController : ControllerBase
         IUserRepository userRepository,
         IDomainRepository domainRepository,
         IPasswordResetTokenRepository passwordResetTokenRepository,
+        IMediator mediator,
         ILogger<AuthController> logger)
     {
         _keycloakService = keycloakService;
         _userRepository = userRepository;
         _domainRepository = domainRepository;
         _passwordResetTokenRepository = passwordResetTokenRepository;
+        _mediator = mediator;
         _logger = logger;
     }
 
@@ -103,49 +108,25 @@ public class AuthController : ControllerBase
             _logger.LogInformation("Token request for user: {Username} in domain: {Domain}", 
                 username, domainName);
 
-            // Check if user is active in MngKeeper database before authenticating
-            var domain = await _domainRepository.GetByNameAsync(domainName);
-            if (domain == null)
+            // Use GetTokenCommandHandler to get token with enhanced claims
+            var getTokenCommand = new GetTokenCommand
             {
-                _logger.LogWarning("Domain not found: {Domain}", domainName);
-                return Unauthorized(new ErrorResponse
-                {
-                    Error = "invalid_domain",
-                    ErrorDescription = "Domain not found"
-                });
-            }
+                Username = username,
+                Password = request.Password,
+                DomainName = domainName
+            };
 
-            // Get user from database to check IsActive status
-            var user = await _userRepository.GetByUsernameAsync(username, domain.Id);
-            if (user != null && user.DomainId == domain.Id)
-            {
-                if (!user.IsActive)
-                {
-                    _logger.LogWarning("Inactive user attempted to get token: {Username} in domain: {Domain}", 
-                        username, domainName);
-                    
-                    return Unauthorized(new ErrorResponse
-                    {
-                        Error = "user_inactive",
-                        ErrorDescription = "User account is inactive"
-                    });
-                }
-            }
+            var getTokenResponse = await _mediator.Send(getTokenCommand);
 
-            var tokenResponse = await _keycloakService.GetTokenAsync(
-                domainName, 
-                username, 
-                request.Password);
-
-            if (!string.IsNullOrEmpty(tokenResponse.Error))
+            if (!getTokenResponse.IsSuccess)
             {
                 _logger.LogWarning("Token request failed for user: {Username} in domain: {Domain}. Error: {Error}", 
-                    username, domainName, tokenResponse.Error);
+                    username, domainName, getTokenResponse.ErrorMessage);
                 
                 return Unauthorized(new ErrorResponse
                 {
-                    Error = tokenResponse.Error,
-                    ErrorDescription = "Invalid username or password"
+                    Error = "invalid_credentials",
+                    ErrorDescription = getTokenResponse.ErrorMessage ?? "Invalid username or password"
                 });
             }
 
@@ -154,11 +135,11 @@ public class AuthController : ControllerBase
 
             return Ok(new TokenResponse
             {
-                AccessToken = tokenResponse.AccessToken,
-                RefreshToken = tokenResponse.RefreshToken,
-                TokenType = tokenResponse.TokenType,
-                ExpiresIn = tokenResponse.ExpiresIn,
-                RefreshExpiresIn = tokenResponse.RefreshExpiresIn
+                AccessToken = getTokenResponse.AccessToken,
+                RefreshToken = getTokenResponse.RefreshToken,
+                TokenType = getTokenResponse.TokenType,
+                ExpiresIn = getTokenResponse.ExpiresIn,
+                RefreshExpiresIn = getTokenResponse.RefreshExpiresIn
             });
         }
         catch (Exception ex)

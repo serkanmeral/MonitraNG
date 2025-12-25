@@ -14,7 +14,7 @@ namespace MngKeeper.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [AdminAuthorization] // Re-enabled for proper token parsing
+    [ManagerAuthorization] // Allows both Admin and Manager users
     public class UserController : ControllerBase
     {
         private readonly IMediator _mediator;

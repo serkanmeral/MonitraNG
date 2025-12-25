@@ -1,9 +1,7 @@
 using MediatR;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Application.Common.DTOs;
-using MngKeeper.Application.Common.Constants;
 using MngKeeper.Application.Common.Exceptions;
-using MngKeeper.Application.Common.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using System;
@@ -13,18 +11,18 @@ namespace MngKeeper.Application.Features.Group.Queries.GetGroups
     public class GetGroupsQueryHandler : IRequestHandler<GetGroupsQuery, GetGroupsResponse>
     {
         private readonly IGroupRepository _groupRepository;
-        private readonly IRedisService _redisService;
+        private readonly IUserRepository _userRepository;
         private readonly ILogger<GetGroupsQueryHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         public GetGroupsQueryHandler(
             IGroupRepository groupRepository,
-            IRedisService redisService,
+            IUserRepository userRepository,
             ILogger<GetGroupsQueryHandler> logger,
             IHttpContextAccessor httpContextAccessor)
         {
             _groupRepository = groupRepository;
-            _redisService = redisService;
+            _userRepository = userRepository;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -48,53 +46,43 @@ namespace MngKeeper.Application.Features.Group.Queries.GetGroups
                     };
                 }
 
-                // Build cache key
-                var cacheKey = CacheExtensions.BuildCacheKey(
-                    "groups",
+                // Get groups directly from database (no cache)
+                var queryResult = await _groupRepository.GetByDomainIdWithPaginationAsync(
                     claims.DomainId,
                     request.Page,
                     request.PageSize,
                     request.SearchTerm,
                     request.IsActive);
 
-                // Get or set from cache
-                var response = await _redisService.GetOrSetAsync(
-                    cacheKey,
-                    async () =>
+                // Calculate member count for each group
+                var groupDtos = new List<GetGroupsResponseDto>();
+                foreach (var g in queryResult.Items)
+                {
+                    var usersInGroup = await _userRepository.GetByGroupIdAsync(g.Id, claims.DomainId);
+                    var memberCount = usersInGroup.Count();
+                    
+                    groupDtos.Add(new GetGroupsResponseDto
                     {
-                        // Optimized: Database-level filtering and pagination
-                        var queryResult = await _groupRepository.GetByDomainIdWithPaginationAsync(
-                            claims.DomainId,
-                            request.Page,
-                            request.PageSize,
-                            request.SearchTerm,
-                            request.IsActive);
+                        GroupId = g.Id,
+                        Name = g.Name,
+                        Description = g.Description,
+                        Permissions = g.Permissions,
+                        IsActive = g.IsActive,
+                        MemberCount = memberCount,
+                        CreatedAt = g.CreatedAt,
+                        UpdatedAt = g.UpdatedAt
+                    });
+                }
 
-                        var groupDtos = queryResult.Items.Select(g => new GetGroupsResponseDto
-                        {
-                            GroupId = g.Id,
-                            Name = g.Name,
-                            Description = g.Description,
-                            Permissions = g.Permissions,
-                            IsActive = g.IsActive,
-                            CreatedAt = g.CreatedAt,
-                            UpdatedAt = g.UpdatedAt
-                        }).ToList();
-
-                        return new GetGroupsResponse
-                        {
-                            Groups = groupDtos,
-                            TotalCount = queryResult.TotalCount,
-                            Page = queryResult.Page,
-                            PageSize = queryResult.PageSize,
-                            TotalPages = queryResult.TotalPages,
-                            IsSuccess = true
-                        };
-                    },
-                    TimeSpan.FromMinutes(SystemConstants.Cache.GroupsList),
-                    _logger);
-
-                return response;
+                return new GetGroupsResponse
+                {
+                    Groups = groupDtos,
+                    TotalCount = queryResult.TotalCount,
+                    Page = queryResult.Page,
+                    PageSize = queryResult.PageSize,
+                    TotalPages = queryResult.TotalPages,
+                    IsSuccess = true
+                };
             }
             catch (Exception ex)
             {

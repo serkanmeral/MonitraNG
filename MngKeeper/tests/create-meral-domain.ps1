@@ -162,14 +162,20 @@ try {
     # Step 5: Create Users
     Write-Host "5. Kullanıcılar oluşturuluyor..." -ForegroundColor Yellow
     
-    $users = @(
+    # Özel kullanıcılar (serkan.meral managers grubunda olacak)
+    $specialUsers = @(
         @{
             username = "serkan.meral"
             email = "serkan.meral@outlook.com"
             password = "Serkan123!"
             firstName = "Serkan"
             lastName = "MERAL"
-            groupNames = @("users", "developers")  # Changed to groupNames
+            title = "Senior Developer"
+            department = "IT Department"
+            gender = 1  # 0: NotSpecified, 1: Male, 2: Female
+            phoneNumber = "+905551234567"
+            photoUrl = $null  # Boş bırakılacak
+            groupNames = @("users", "managers")  # managers grubuna eklendi
             isActive = $true
         },
         @{
@@ -178,7 +184,12 @@ try {
             password = "Test123!"
             firstName = "Test"
             lastName = "User1"
-            groupNames = @("users")  # Changed to groupNames
+            title = "Junior Developer"
+            department = "Development"
+            gender = 0
+            phoneNumber = "+905551111111"
+            photoUrl = $null
+            groupNames = @("users")
             isActive = $true
         },
         @{
@@ -187,7 +198,12 @@ try {
             password = "Test123!"
             firstName = "Test"
             lastName = "User2"
-            groupNames = @("users", "testers")  # Changed to groupNames
+            title = "QA Engineer"
+            department = "Quality Assurance"
+            gender = 2
+            phoneNumber = "+905552222222"
+            photoUrl = $null
+            groupNames = @("users", "testers")
             isActive = $true
         },
         @{
@@ -196,13 +212,57 @@ try {
             password = "Manager123!"
             firstName = "Manager"
             lastName = "User"
-            groupNames = @("users", "managers")  # Changed to groupNames
+            title = "Team Lead"
+            department = "Management"
+            gender = 1
+            phoneNumber = "+905553333333"
+            photoUrl = $null
+            groupNames = @("users", "managers")
             isActive = $true
         }
     )
     
+    # Toplam 200 kullanıcı için test kullanıcıları oluştur
+    $testUsers = @()
+    $userCount = 200 - $specialUsers.Count  # Özel kullanıcılar hariç
+    
+    Write-Host "  $userCount test kullanıcısı oluşturulacak..." -ForegroundColor Gray
+    
+    for ($i = 1; $i -le $userCount; $i++) {
+        # Rastgele title ve department seç
+        $titles = @("Developer", "QA Engineer", "Designer", "Analyst", "Manager", "Consultant")
+        $departments = @("IT", "Development", "QA", "Design", "Management", "Sales")
+        $randomTitle = $titles | Get-Random
+        $randomDepartment = $departments | Get-Random
+        $randomGender = Get-Random -Minimum 0 -Maximum 3  # 0, 1, veya 2
+        
+        $testUsers += @{
+            username = "test.user$i"
+            email = "test.user$i@meral.com"
+            password = "Test123!"
+            firstName = "Test"
+            lastName = "User$i"
+            title = $randomTitle
+            department = $randomDepartment
+            gender = $randomGender
+            phoneNumber = "+90555" + (Get-Random -Minimum 1000000 -Maximum 9999999).ToString()
+            photoUrl = $null  # Boş bırakılacak
+            groupNames = @("users")  # Varsayılan olarak sadece users grubu
+            isActive = $true
+        }
+    }
+    
+    # Tüm kullanıcıları birleştir
+    $users = $specialUsers + $testUsers
+    
     $createdUsers = @()
+    $failedUsers = @()
+    $userIndex = 0
+    
     foreach ($user in $users) {
+        $userIndex++
+        $progress = [math]::Round(($userIndex / $users.Count) * 100, 1)
+        
         try {
             # Convert group names to IDs
             $groupIds = @()
@@ -217,7 +277,7 @@ try {
                 }
             }
             
-            # Create user object with groupIds
+            # Create user object with groupIds and new fields
             $userToCreate = @{
                 username = $user.username
                 email = $user.email
@@ -228,6 +288,13 @@ try {
                 isActive = $user.isActive
             }
             
+            # Add optional fields if they exist
+            if ($user.title) { $userToCreate["title"] = $user.title }
+            if ($user.department) { $userToCreate["department"] = $user.department }
+            if ($user.gender -ne $null) { $userToCreate["gender"] = $user.gender }
+            if ($user.phoneNumber) { $userToCreate["phoneNumber"] = $user.phoneNumber }
+            if ($user.photoUrl) { $userToCreate["photoUrl"] = $user.photoUrl }
+            
             $userBody = $userToCreate | ConvertTo-Json -Depth 3
             $userResponse = Invoke-RestMethod -Uri "$baseUrl/api/user" `
                 -Method POST `
@@ -236,15 +303,30 @@ try {
                 -SkipCertificateCheck `
                 -ErrorAction Stop
             
-            Write-Host "  ✓ Kullanıcı oluşturuldu: $($user.username) ($($user.email))" -ForegroundColor Green
-            if ($groupIds.Count -gt 0) {
-                Write-Host "    Gruplar: $($user.groupNames -join ', ')" -ForegroundColor Gray
+            # Özel kullanıcılar için detaylı log, test kullanıcıları için sadece progress
+            if ($user.username -like "serkan.meral" -or $user.username -like "test.user1" -or $user.username -like "test.user2" -or $user.username -like "manager.user") {
+                Write-Host "  ✓ Kullanıcı oluşturuldu: $($user.username) ($($user.email))" -ForegroundColor Green
+                if ($groupIds.Count -gt 0) {
+                    Write-Host "    Gruplar: $($user.groupNames -join ', ')" -ForegroundColor Gray
+                }
+            } else {
+                # Her 10 kullanıcıda bir progress göster
+                if ($userIndex % 10 -eq 0 -or $userIndex -eq $users.Count) {
+                    Write-Host "  Progress: $userIndex/$($users.Count) ($progress%)" -ForegroundColor Cyan
+                }
             }
+            
             $createdUsers += $userResponse
         }
         catch {
             Write-Host "  ✗ Kullanıcı oluşturulamadı: $($user.username) - $($_.Exception.Message)" -ForegroundColor Red
+            $failedUsers += $user.username
         }
+    }
+    
+    if ($failedUsers.Count -gt 0) {
+        Write-Host ""
+        Write-Host "  ⚠ Başarısız kullanıcı sayısı: $($failedUsers.Count)" -ForegroundColor Yellow
     }
     Write-Host ""
     
@@ -262,7 +344,7 @@ try {
     Write-Host "  - Username: serkan.meral" -ForegroundColor Gray
     Write-Host "  - Email: serkan.meral@outlook.com" -ForegroundColor Gray
     Write-Host "  - Name: Serkan MERAL" -ForegroundColor Gray
-    Write-Host "  - Groups: users, developers" -ForegroundColor Gray
+    Write-Host "  - Groups: users, managers" -ForegroundColor Gray
     Write-Host ""
     Write-Host "✓ Test verileri başarıyla oluşturuldu!" -ForegroundColor Green
     

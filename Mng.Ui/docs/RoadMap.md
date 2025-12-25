@@ -689,38 +689,589 @@ t('common.save'); // TypeScript otomatik tamamlama
 
 ### Phase 7: User & Group Management Sayfaları 👥
 
-**Durum:** Planlama Aşaması
+**Durum:** Kısmen Tamamlandı (User Management CRUD sayfaları oluşturuldu)
 
-#### 6.1 User Management
-- **Route:** `/apps/users`
-- **Component:** `pages/apps/users/index.vue`
-- **Özellikler:**
-  - User listesi
-  - User oluşturma/düzenleme
-  - User detay sayfası
-  - User-group assignment
-  - Yetki kontrolü: Admin veya `users` sayfası için edit yetkisi
+#### 7.1 User Management ✅ (Kısmen)
+- ✅ **List Sayfası:** `/apps/users` - Kullanıcı listesi (v-data-table)
+- ✅ **Create Sayfası:** `/apps/users/create` - Yeni kullanıcı oluşturma
+- ✅ **Edit Sayfası:** `/apps/users/edit/[id]` - Kullanıcı düzenleme
+- ✅ **Detail Sayfası:** `/apps/users/details/[id]` - Kullanıcı detayları
+- ✅ **User Store:** `stores/apps/user.ts` - Pinia store (API entegrasyonu)
+- ✅ **Temel Özellikler:**
+  - CRUD işlemleri
+  - Pagination, sorting, filtering
+  - Group assignment
+  - Status management (active/inactive)
 
-#### 6.2 Group Management
-- **Route:** `/apps/groups`
-- **Component:** `pages/apps/groups/index.vue`
-- **Özellikler:**
-  - Group listesi
-  - Group oluşturma/düzenleme
-  - Group detay sayfası
-  - Group-user assignment
-  - Group-permission assignment (sayfa bazlı)
-  - Yetki kontrolü: Admin veya `groups` sayfası için edit yetkisi
+#### 7.2 User Profile Enhancement 📋 (Planlanıyor) ⭐
+- [ ] **Yeni Alanlar:**
+  - Title (Unvan/İş Unvanı) - String, opsiyonel, max 100 karakter
+  - Department (Departman) - String, opsiyonel, max 100 karakter
+  - Gender (Cinsiyet) - Enum (NotSpecified, Male, Female)
+  - PhoneNumber (Telefon Numarası) - String, opsiyonel, max 20 karakter
+  - PhotoUrl (Profil Fotoğrafı) - String, MinIO URL, opsiyonel
+
+- [ ] **Avatar Sistemi:**
+  - PhotoUrl varsa → MinIO'dan fotoğraf göster
+  - PhotoUrl yoksa → Gender'a göre renkli initials avatar:
+    - Erkek (Male): `info` (açık mavi)
+    - Kadın (Female): `pink` (pembe)
+    - Belirtilmemiş (NotSpecified): `primary` (mavi)
+
+- [ ] **Photo Upload:**
+  - Photo upload component'i
+  - MinIO entegrasyonu
+  - Photo validation (max 5MB, jpg/jpeg/png/webp, max 2000x2000px)
+  - Photo preview
+
+- [ ] **UI Güncellemeleri:**
+  - User form'larına yeni alanları ekleme (Title, Department, Gender, PhoneNumber, Photo)
+  - User list/detail sayfalarında yeni alanları gösterme
+  - Avatar component'lerini güncelleme (sidebar, header, user list)
+  - Gender-based avatar renkleri
+  - PhoneNumber formatı (mask veya validation - opsiyonel)
+
+- [ ] **Backend Entegrasyonu:**
+  - User interface'e yeni alanlar ekleme
+  - API response mapping güncellemeleri
+  - Photo upload endpoint entegrasyonu
+
+#### 7.3 Server-Side Pagination & Performance Optimization ⚡ (Planlanıyor)
+
+**Amaç:** Binlerce kullanıcı/grup için performans optimizasyonu
+
+**Mevcut Durum:**
+- ✅ Backend server-side pagination destekliyor
+- ❌ Frontend client-side pagination kullanıyor (tüm veriler çekiliyor)
+
+**Sorunlar:**
+- Binlerce kullanıcı olduğunda ilk yüklemede 100 kullanıcı çekiliyor
+- Tüm veriler frontend'de tutuluyor (memory sorunu)
+- Search ve filter client-side yapılıyor
+- Gereksiz network trafiği
+
+**Çözüm:**
+- [ ] `v-data-table`'ı server-side pagination moduna geçirme
+- [ ] `server-items-length` prop'unu kullanma
+- [ ] `@update:options` event'ini handle etme
+- [ ] Search input'unu backend'e gönderme (debounce ile)
+- [ ] Filter'ları backend'e gönderme (status, department, vb.)
+- [ ] User Store'da `fetchUsers` metodunu optimize etme (default pageSize: 10)
+- [ ] Group Store'da aynı optimizasyonları uygulama
+
+**Performans İyileştirmeleri:**
+- [ ] Debounced search (300ms)
+- [ ] Loading states iyileştirme
+- [ ] Cache stratejisi (opsiyonel)
+- [ ] Virtual scrolling (çok büyük listeler için - opsiyonel)
+
+**Öncelik:** Orta (küçük sistemlerde sorun yok, büyük sistemler için kritik)
+
+#### 7.4 Group Management 📋 (Planlanıyor) ⭐
+
+**Durum:** Planlama Aşaması  
+**Yetki Gereksinimi:** Manager veya Admin (`isManager` veya `isAdmin`)
+
+**Route:** `/apps/groups`  
+**Component:** `pages/apps/groups/index.vue`
+
+##### 7.4.1 Group List Sayfası
+
+**Özellikler:**
+- ✅ **Server-side Pagination** - Kullanıcı listesi gibi (önerilen)
+- ✅ **Server-side Filtering** - Arama ve filtreleme backend'de
+- ✅ **v-data-table** kullanımı (kullanıcı listesi ile aynı yapı)
+- ✅ **Tabloda Gösterilecek Kolonlar:**
+  - Grup Adı (name) - Sortable
+  - Kişi Sayısı (memberCount) - Sortable
+  - Oluşturulma Tarihi (createdAt) - Sortable
+  - İşlemler (actions) - View, Edit, Delete butonları
+
+**Table Headers:**
+```typescript
+const headers = [
+  { title: 'Grup Adı', key: 'name', sortable: true },
+  { title: 'Kişi Sayısı', key: 'memberCount', sortable: true },
+  { title: 'Oluşturulma', key: 'createdAt', sortable: true },
+  { title: 'İşlemler', key: 'actions', sortable: false, align: 'end' },
+];
+```
+
+**Pagination & Filtering:**
+- Server-side pagination (page, pageSize)
+- Server-side search (searchTerm - grup adına göre)
+- Server-side filtering (isActive - opsiyonel)
+- Debounced search input (500ms)
+- Items per page: 10, 25, 50, 100
+
+##### 7.4.2 Group Store
+
+**Store:** `stores/apps/group.ts`
+
+**State:**
+```typescript
+interface GroupState {
+  groups: Group[];
+  currentGroup: Group | null;
+  loading: boolean;
+  error: string | null;
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+```
+
+**Group Interface:**
+```typescript
+export interface Group {
+  id: string;
+  groupId: string;
+  name: string;
+  description?: string;
+  memberCount: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date | null;
+  createdBy: string;
+  updatedBy?: string | null;
+}
+```
+
+**Actions:**
+- `fetchGroups(params?: { page?, pageSize?, search?, isActive? })` - Server-side pagination ile grup listesi
+- `fetchGroupById(groupId: string)` - Grup detayı
+- `createGroup(group: CreateGroupRequest)` - Yeni grup oluştur
+- `updateGroup(groupId: string, group: UpdateGroupRequest)` - Grup güncelle (sadece name)
+- `deleteGroup(groupId: string)` - Grup sil (memberCount > 0 ise hata)
+- `addUserToGroup(groupId: string, userId: string)` - Gruba kullanıcı ekle
+- `removeUserFromGroup(groupId: string, userId: string)` - Gruptan kullanıcı çıkar
+
+##### 7.4.3 Group CRUD Sayfaları
+
+**Create Sayfası:**
+- **Route:** `/apps/groups/create`
+- **Component:** `pages/apps/groups/create/index.vue`
+- **Form Alanları:**
+  - Grup Adı (name) - Required, unique, max 100 karakter
+  - Açıklama (description) - Opsiyonel, max 500 karakter
+- **Validation:** VeeValidate + Yup
+
+**Edit Sayfası:**
+- **Route:** `/apps/groups/edit/[id].vue`
+- **Component:** `pages/apps/groups/edit/[id].vue`
+- **Düzenlenebilir Alanlar:**
+  - ✅ **Sadece Grup Adı (name)** - Diğer alanlar read-only
+- **Read-only Alanlar:**
+  - Açıklama (description)
+  - Kişi Sayısı (memberCount)
+  - Oluşturulma Tarihi (createdAt)
+  - Oluşturan (createdBy)
+- **Not:** API'de sadece name güncellenebilir
+
+**Detail Sayfası:**
+- **Route:** `/apps/groups/details/[id].vue`
+- **Component:** `pages/apps/groups/details/[id].vue`
+- **Gösterilecek Bilgiler:**
+  - Grup adı, açıklama
+  - Kişi sayısı
+  - Oluşturulma tarihi, güncellenme tarihi
+  - Oluşturan, güncelleyen
+  - Grup üyeleri listesi (opsiyonel - gelecekte eklenebilir)
+- **Actions:**
+  - Edit butonu (edit sayfasına yönlendirir)
+  - Delete butonu (silme onayı ile)
+  - "Kullanıcı Yönet" butonu (modal açar)
+
+##### 7.4.4 Group Silme İşlemi
+
+**Kısıtlamalar:**
+- ❌ **İçinde kullanıcı olan gruplar silinemez** (`memberCount > 0`)
+- ✅ Silme işlemi öncesi `memberCount` kontrolü yapılır
+- ✅ Eğer `memberCount > 0` ise hata mesajı gösterilir:
+  - "Bu grup içinde kullanıcılar bulunmaktadır. Önce tüm kullanıcıları gruptan çıkarmanız gerekmektedir."
+- ✅ Sistem grupları (admins, managers, users, guests) silinemez (backend'de korumalı)
+
+**Delete Confirmation Dialog:**
+- Silme işlemi öncesi onay dialog'u
+- Grup adı ve kişi sayısı gösterilir
+- Eğer `memberCount > 0` ise dialog'da uyarı mesajı
+
+##### 7.4.5 Group User Management Modal
+
+**Component:** `components/apps/groups/GroupUserManagementModal.vue`
+
+**Özellikler:**
+- ✅ Modal component (v-dialog)
+- ✅ Grup üyelerini listeleme
+- ✅ Kullanıcı ekleme (multi-select veya search + add)
+- ✅ Kullanıcı çıkarma (remove button)
+- ✅ Kullanıcı arama (search input)
+- ✅ Loading states
+- ✅ Error handling
+
+**Modal Props:**
+```typescript
+interface Props {
+  groupId: string;
+  groupName: string;
+  isOpen: boolean;
+}
+```
+
+**Modal Events:**
+```typescript
+interface Emits {
+  (e: 'close'): void;
+  (e: 'updated'): void; // Kullanıcı ekleme/çıkarma sonrası
+}
+```
+
+**Kullanım:**
+- Detail sayfasında "Kullanıcı Yönet" butonu modal'ı açar
+- Edit sayfasında da kullanılabilir (opsiyonel)
+- List sayfasında action butonu olarak da eklenebilir (opsiyonel)
+
+**Modal İçeriği:**
+- **Mevcut Üyeler Listesi:**
+  - Kullanıcı adı, email, ad soyad
+  - Remove butonu (her kullanıcı için)
+  - Search input (mevcut üyeleri filtrele)
+- **Kullanıcı Ekleme:**
+  - Search input (tüm kullanıcıları ara)
+  - Multi-select veya checkbox list
+  - "Ekle" butonu
+- **Loading States:**
+  - Üye listesi yüklenirken
+  - Kullanıcı ekleme/çıkarma sırasında
 
 **API Endpoints:**
-- `GET /api/users` - User listesi
-- `POST /api/users` - User oluşturma
-- `GET /api/users/{userId}` - User detayı
-- `PUT /api/users/{userId}` - User güncelleme
-- `GET /api/groups` - Group listesi
-- `POST /api/groups` - Group oluşturma
-- `GET /api/groups/{groupId}` - Group detayı
-- `PUT /api/groups/{groupId}` - Group güncelleme
+- `GET /api/user?page=1&pageSize=100` - Tüm kullanıcıları listele (ekleme için)
+- `GET /api/group/{groupId}` - Grup detayı (üye listesi için - gelecekte)
+- `POST /api/user/{userId}/groups/{groupId}` - Kullanıcıyı gruba ekle
+- `DELETE /api/user/{userId}/groups/{groupId}` - Kullanıcıyı gruptan çıkar
+
+**Not:** Şu an için grup detayında üye listesi yok. Kullanıcı listesinden grup filtresi ile üyeleri bulabiliriz veya backend'e üye listesi endpoint'i eklenebilir.
+
+##### 7.4.6 Yetkilendirme
+
+**Middleware:** `middleware/auth.global.js` (zaten mevcut)
+
+**Sayfa Bazlı Kontrol:**
+- Manager veya Admin yetkisi gerekli (`authStore.isManager`)
+- Sayfa yüklemeden önce yetki kontrolü
+- Yetkisiz erişimde uyarı mesajı veya yönlendirme
+
+**Component İçinde Kontrol:**
+```typescript
+const authStore = useAuthStore();
+
+if (!authStore.isManager) {
+  // Uyarı mesajı göster veya yönlendir
+}
+```
+
+##### 7.4.7 Sayfalama ve Filtreleme Stratejisi
+
+**Önerilen Yaklaşım: Server-Side Pagination & Filtering** ⚡
+
+**Neden Server-Side?**
+- ✅ Kullanıcı listesi ile tutarlılık
+- ✅ Büyük veri setleri için performans
+- ✅ Backend zaten destekliyor (pagination, search, filter)
+- ✅ Network trafiği optimizasyonu
+- ✅ Memory kullanımı optimizasyonu
+
+**Implementasyon:**
+- `v-data-table` ile `server-items-length` prop'u
+- `v-model:options` ile pagination state yönetimi
+- `@update:options` event'i ile API çağrısı
+- Debounced search input (500ms)
+- Watch ile filter değişikliklerini dinleme
+
+**Alternatif (Client-Side):**
+- Küçük sistemler için (< 100 grup) client-side yeterli
+- Ancak server-side daha ölçeklenebilir ve tutarlı
+
+##### 7.4.8 API Endpoints (MngKeeper)
+
+**Group Management:**
+- ✅ `GET /api/group?page=1&pageSize=10&searchTerm=...&isActive=...` - Grup listesi
+- ✅ `POST /api/group` - Grup oluşturma
+- ✅ `GET /api/group/{groupId}` - Grup detayı
+- ✅ `PUT /api/group/{groupId}` - Grup güncelleme (sadece name)
+- ✅ `DELETE /api/group/{groupId}` - Grup silme
+
+**User-Group Management:**
+- ✅ `POST /api/user/{userId}/groups/{groupId}` - Kullanıcıyı gruba ekle
+- ✅ `DELETE /api/user/{userId}/groups/{groupId}` - Kullanıcıyı gruptan çıkar
+
+**Response Format:**
+```typescript
+// GetGroupsResponse
+{
+  groups: Group[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  isSuccess: boolean;
+  errorMessage?: string;
+}
+```
+
+##### 7.4.9 Sidebar Menu Entegrasyonu
+
+**Menu Item:**
+- **Title:** "Grup Yönetimi"
+- **Icon:** `UsersIcon` veya `GroupIcon` (vue-tabler-icons)
+- **Route:** `/apps/groups`
+- **Position:** "Apps" section altında, "Kullanıcı Yönetimi" altında veya yanında
+
+**Menu Item Definition:**
+```typescript
+// components/lc/Full/vertical-sidebar/sidebarItem.ts
+{
+  title: "Grup Yönetimi",
+  icon: UsersIcon, // veya GroupIcon
+  to: "/apps/groups",
+}
+```
+
+##### 7.4.10 Implementation Checklist
+
+**Phase 1: Store & API Integration**
+- [x] `stores/apps/group.ts` oluştur
+- [x] Group interface tanımla
+- [x] `fetchGroups` action (server-side pagination)
+- [x] `fetchGroupById` action
+- [x] `createGroup` action
+- [x] `updateGroup` action (sadece name)
+- [x] `deleteGroup` action (memberCount kontrolü) - ⚠️ NoContent response handling düzeltilecek
+- [x] `addUserToGroup` action
+- [x] `removeUserFromGroup` action
+
+**Phase 2: List Page**
+- [x] `pages/apps/groups/index.vue` oluştur
+- [x] `v-data-table` entegrasyonu
+- [x] Server-side pagination
+- [x] Server-side search (debounced)
+- [x] Table headers (name, memberCount, createdAt, actions)
+- [x] View, Edit, Delete action butonları
+- [x] Manager yetki kontrolü
+- [x] Loading states
+- [x] Error handling
+- [x] Refresh butonu eklendi
+- [x] Otomatik yenileme (route query ile)
+
+**Phase 3: CRUD Pages**
+- [x] `pages/apps/groups/create/index.vue` - Create form
+- [x] `pages/apps/groups/edit/[id].vue` - Edit form (sadece name)
+- [x] `pages/apps/groups/details/[id].vue` - Detail page
+- [x] Form validation (VeeValidate + Yup)
+- [x] Success/Error messages
+
+**Phase 4: Delete Functionality**
+- [x] Delete confirmation dialog
+- [x] `memberCount > 0` kontrolü
+- [x] Hata mesajı gösterimi
+- [x] Sistem grupları koruması (backend'de)
+- [ ] ⚠️ Delete işlemi çalışmıyor - NoContent (204) response handling düzeltilecek
+
+**Phase 5: User Management Modal**
+- [ ] `components/apps/groups/GroupUserManagementModal.vue` oluştur
+- [ ] Mevcut üyeleri listeleme
+- [ ] Kullanıcı arama (tüm kullanıcılar)
+- [ ] Kullanıcı ekleme (multi-select veya checkbox)
+- [ ] Kullanıcı çıkarma (remove button)
+- [ ] Loading states
+- [ ] Error handling
+- [ ] Detail sayfasına entegrasyon
+
+**Phase 6: Menu Integration**
+- [x] Sidebar menu'ye "Grup Yönetimi" ekle
+- [x] Icon seçimi (UserGroupIcon)
+- [x] Route tanımı
+
+**Phase 7: Testing & Polish**
+- [x] Pagination test (çalışıyor)
+- [x] Search test (çalışıyor)
+- [x] CRUD işlemleri test (Create/Edit çalışıyor, Delete düzeltilecek)
+- [x] Delete kısıtlamaları test (memberCount kontrolü çalışıyor)
+- [ ] User management modal test
+- [ ] ⚠️ Backend'de totalCount hesaplama sorunu kontrol edilecek (ilk sayfada yanlış değer)
+
+**Bilinen Sorunlar:**
+- ⚠️ **Group Delete:** NoContent (204) response için uygun handling yapılmalı
+- ⚠️ **totalCount:** Backend'de ilk sayfa için yanlış değer dönüyor (11 yerine 12 olmalı)
+- ✅ **refreshToken hatası:** Düzeltildi (refreshAccessToken olarak değiştirildi)
+- [ ] Yetki kontrolü test
+- [ ] Error handling test
+
+**Öncelik:** Yüksek (User Management ile birlikte kritik)  
+**Tahmini Süre:** 2-3 gün (User Management benzeri yapı olduğu için)
+
+**Notlar:**
+- Kullanıcı listesi ile aynı yapı ve pattern kullanılacak
+- Server-side pagination önerilir (tutarlılık ve performans için)
+- Manager yetkisi gerekli (Admin otomatik Manager)
+- Grup silme işlemi için `memberCount` kontrolü kritik
+
+#### 7.5 List Export Functionality 📊 (Planlanıyor) ⭐
+
+**Durum:** Planlama Aşaması  
+**Kapsam:** User List ve Group List için CSV/Excel/PDF export
+
+##### 7.5.1 Mimari Yaklaşım
+
+**Backend Export (Önerilen):**
+- ✅ **Güvenlik:** Tüm veri backend'de kalır
+- ✅ **Performans:** Büyük veri setleri için optimize edilmiş
+- ✅ **Tutarlılık:** Aynı filtrelerle export
+- ✅ **Bellek:** Frontend'de büyük veri tutulmaz
+
+**Export Formatları:**
+1. **CSV** (Öncelik 1 - En basit ve yaygın)
+2. **Excel (XLSX)** (Öncelik 2 - Daha zengin formatlama)
+3. **PDF** (Öncelik 3 - Yazdırma ve raporlama için - opsiyonel)
+
+##### 7.5.2 Backend Implementation (MngKeeper)
+
+**Yeni Endpoints:**
+```
+GET /api/group/export?format=csv&searchTerm=...&isActive=...
+GET /api/group/export?format=xlsx&searchTerm=...&isActive=...
+GET /api/user/export?format=csv&searchTerm=...&isActive=...
+GET /api/user/export?format=xlsx&searchTerm=...&isActive=...
+```
+
+**Yeni Query Handlers:**
+- `ExportGroupsQuery` / `ExportGroupsQueryHandler`
+- `ExportUsersQuery` / `ExportUsersQueryHandler`
+
+**Repository Methods:**
+- `GetAllByDomainIdAsync(domainId, searchTerm, isActive)` - Pagination OLMADAN tüm veriyi çeker
+- Mevcut `GetByDomainIdWithPaginationAsync`'den farklı olarak skip/limit olmaz
+
+**Export Service:**
+- CSV: `CsvHelper` NuGet paketi (MIT lisanslı, performanslı)
+- Excel: `ClosedXML` NuGet paketi (MIT lisanslı, EPPlus alternatifi)
+- PDF: `iTextSharp` veya `QuestPDF` (opsiyonel, daha sonra eklenebilir)
+
+**Response:**
+- `FileResult` (binary stream)
+- Content-Type: `text/csv`, `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
+- Content-Disposition: `attachment; filename="groups_2025-01-XX.csv"`
+
+##### 7.5.3 Frontend Implementation (Nuxt 3)
+
+**Export Button Component:**
+- Dropdown menü (CSV, Excel seçenekleri)
+- Loading state gösterimi
+- Mevcut filtreleri export endpoint'ine aktarma
+- Dosya indirme fonksiyonu
+
+**Store Actions:**
+- `exportGroups(format: 'csv' | 'xlsx', filters?: ExportFilters)`
+- `exportUsers(format: 'csv' | 'xlsx', filters?: ExportFilters)`
+
+**Utils:**
+- `downloadFile(blob: Blob, filename: string)` - Blob API ile dosya indirme
+
+**Export Filters:**
+- Mevcut search/filter değerleri export endpoint'ine query parameter olarak gönderilir
+- Export işlemi pagination olmadan tüm filtrelenmiş veriyi içerir
+
+##### 7.5.4 Implementation Plan
+
+**Faz 1: CSV Export (Öncelik 1)**
+- [ ] Backend: `ExportGroupsQuery` + `CsvHelper` entegrasyonu
+- [ ] Backend: `ExportUsersQuery` + `CsvHelper` entegrasyonu
+- [ ] Backend: Repository'de `GetAllByDomainIdAsync` methodları
+- [ ] Frontend: Export butonu (CSV)
+- [ ] Frontend: Export fonksiyonu ve dosya indirme
+- [ ] Test: Group list CSV export
+- [ ] Test: User list CSV export
+
+**Faz 2: Excel Export (Öncelik 2)**
+- [ ] Backend: `ClosedXML` entegrasyonu
+- [ ] Backend: Excel formatında export
+- [ ] Frontend: Excel format seçeneği
+- [ ] Test: Group list Excel export
+- [ ] Test: User list Excel export
+
+**Faz 3: PDF Export (Opsiyonel)**
+- [ ] Backend: PDF library entegrasyonu
+- [ ] Backend: PDF formatında export
+- [ ] Frontend: PDF format seçeneği
+- [ ] Test: PDF export
+
+##### 7.5.5 Export Columns
+
+**Group Export:**
+- Grup Adı (name)
+- Açıklama (description)
+- Kişi Sayısı (memberCount)
+- Durum (isActive - Aktif/Pasif)
+- Oluşturulma Tarihi (createdAt)
+- Güncellenme Tarihi (updatedAt)
+
+**User Export:**
+- Kullanıcı Adı (username)
+- Email
+- Ad (firstName)
+- Soyad (lastName)
+- Ünvan (title)
+- Departman (department)
+- Durum (isActive - Aktif/Pasif)
+- Gruplar (groups - comma-separated)
+- Oluşturulma Tarihi (createdAt)
+- Güncellenme Tarihi (updatedAt)
+
+##### 7.5.6 UI/UX
+
+**Export Button Location:**
+- Group List: Tablo üstünde, search bar yanında
+- User List: Tablo üstünde, search bar yanında
+
+**Export Button Design:**
+- Icon: `DownloadIcon` (vue-tabler-icons)
+- Dropdown menü: "CSV olarak indir", "Excel olarak indir"
+- Loading state: Export sırasında spinner gösterimi
+- Success feedback: Toast notification ("Export başarılı!")
+
+**Error Handling:**
+- Export başarısız olursa hata mesajı gösterimi
+- Büyük veri setleri için timeout yönetimi
+- Network hataları için retry mekanizması (opsiyonel)
+
+##### 7.5.7 Gerekli Paketler
+
+**Backend (MngKeeper - NuGet):**
+- `CsvHelper` (CSV export için)
+- `ClosedXML` (Excel export için)
+
+**Frontend (Nuxt 3 - NPM):**
+- CSV: Native Blob API (ek paket gerekmez)
+- Excel: `xlsx` (SheetJS) - Opsiyonel, backend önerilir
+
+##### 7.5.8 Öncelik
+
+**Öncelik:** Orta-Yüksek
+- CSV export: Yüksek öncelik (en basit ve en yaygın kullanım)
+- Excel export: Orta öncelik (daha zengin formatlama gerekiyorsa)
+- PDF export: Düşük öncelik (opsiyonel, yazdırma gereksinimleri varsa)
+
+**Tahmini Süre:**
+- CSV Export: 1-2 gün
+- Excel Export: 1 gün (CSV'den sonra)
+- PDF Export: 1-2 gün (opsiyonel)
+
+**Notlar:**
+- Export işlemleri server-side pagination kullanmaz
+- Tüm filtrelenmiş veriyi export eder
+- Büyük veri setleri için backend'de streaming export önerilir (gelecekte optimize edilebilir)
+- Export dosya isimleri: `groups_YYYY-MM-DD_HHmmss.csv`, `users_YYYY-MM-DD_HHmmss.xlsx`
 
 ---
 
@@ -820,6 +1371,40 @@ t('common.save'); // TypeScript otomatik tamamlama
 
 ---
 
+### Phase 11: Backend Infrastructure & Logging Improvements 🔧
+
+**Durum:** Planlama Aşaması
+
+#### 11.1 Seq Retention Policy Configuration 📊 (Planlanıyor)
+
+**Amaç:** Seq'de log retention policy'lerini otomatik olarak yapılandırmak
+
+**Gereksinimler:**
+- Information loglar: 1 gün retention
+- Warning loglar: 5 gün retention
+- Error/Fatal loglar: 5 gün retention
+
+**Mevcut Durum:**
+- ✅ Console log formatı sadeleştirildi (detaylar Seq'de kalıyor)
+- ✅ Seq retention policy configuration kodu eklendi (`SeqRetentionPolicy.cs`)
+- ⚠️ Seq API endpoint'leri ile ilgili sorunlar var (404/401 hataları)
+- ⚠️ Programatik yapılandırma şu an çalışmıyor
+
+**Yapılacaklar:**
+- [ ] Seq API endpoint'lerini doğrulama ve düzeltme
+- [ ] Seq API authentication gereksinimlerini kontrol etme
+- [ ] Retention policy'lerin programatik olarak ayarlanmasını sağlama
+- [ ] Alternatif: Seq UI'dan manuel yapılandırma dokümantasyonu
+
+**Notlar:**
+- Seq API Key gerekli değil (development ortamında)
+- Retention policy'ler Seq UI'dan manuel olarak da ayarlanabilir
+- Bu özellik kritik değil, uygulama çalışmaya devam eder
+
+**Öncelik:** Düşük (manuel yapılandırma mümkün)
+
+---
+
 ## 🔗 Backend Entegrasyonları
 
 ### MngKeeper API
@@ -916,13 +1501,17 @@ t('common.save'); // TypeScript otomatik tamamlama
 
 1. **Phase 2** - Domain Yönetimi (Temel CRUD işlemleri)
 2. **Phase 5** - Yetkilendirme ve Sayfa Yönetimi Sistemi ⭐ (Öncelikli - Güvenlik için kritik)
-3. **Phase 3** - Dataset Yönetimi (Schema yönetimi)
-4. **Phase 4** - Data Management (Veri CRUD işlemleri)
-5. **Phase 6** - User & Group Management
-6. **Phase 7** - Component Library (Yeniden kullanılabilir component'ler)
-7. **Phase 8** - State Management & API Integration
-8. **Phase 9** - UI/UX İyileştirmeleri
-9. **Phase 10** - Testing & Documentation
+3. **Phase 7.2** - User Profile Enhancement ⭐ (Title, Department, Gender, PhoneNumber, Photo) - Yüksek Öncelik
+4. **Phase 7.3** - Server-Side Pagination & Performance Optimization ⚡ - Orta Öncelik (Büyük sistemler için kritik)
+5. **Phase 7.5** - List Export Functionality 📊 (CSV/Excel/PDF) - Orta-Yüksek Öncelik
+6. **Phase 3** - Dataset Yönetimi (Schema yönetimi)
+7. **Phase 4** - Data Management (Veri CRUD işlemleri)
+8. **Phase 7.4** - Group Management (Planlanıyor)
+9. **Phase 7** - Component Library (Yeniden kullanılabilir component'ler)
+10. **Phase 8** - State Management & API Integration
+11. **Phase 9** - UI/UX İyileştirmeleri
+12. **Phase 10** - Testing & Documentation
+13. **Phase 11** - Backend Infrastructure & Logging Improvements 🔧 (Seq Retention Policy) - Düşük Öncelik
 
 **Not:** Phase 5 (Yetkilendirme) Phase 2'den hemen sonra yapılmalı çünkü diğer sayfaların güvenliği için kritik.
 

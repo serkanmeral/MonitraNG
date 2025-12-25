@@ -42,6 +42,9 @@ builder.InitAuthentication(datagatewaySettings);
 // HttpContextAccessor - MongoContextService için gerekli
 builder.Services.AddHttpContextAccessor();
 
+// Memory Cache - Domain lookup service için
+builder.Services.AddMemoryCache();
+
 // Application, Infrastructure & Persistence Services
 builder.Services.AddApplicationServices(datagatewaySettings);
 builder.Services.AddInfrastructureServices();

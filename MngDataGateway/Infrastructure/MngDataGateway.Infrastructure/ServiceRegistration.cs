@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using MngDataGateway.Application.Services;
+using MngDataGateway.Infrastructure.Services;
 using MngDataGateway.Infrastructure.Services.RabbitMq;
 
 namespace MngDataGateway.Infrastructure

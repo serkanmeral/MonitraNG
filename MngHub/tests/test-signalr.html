@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MngHub SignalR Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        input {
+            width: 400px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.connecting {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .messages {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .message {
+            padding: 5px;
+            margin: 5px 0;
+            border-left: 3px solid #007bff;
+            padding-left: 10px;
+        }
+        .message.system {
+            border-left-color: #28a745;
+        }
+        .message.domain {
+            border-left-color: #ffc107;
+        }
+        .message.global {
+            border-left-color: #17a2b8;
+        }
+        .message.error {
+            border-left-color: #dc3545;
+        }
+        .message.domain-created {
+            border-left-color: #28a745;
+            background: #f0fff4;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .domain-created-header {
+            font-weight: bold;
+            color: #28a745;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        .domain-created-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .domain-created-detail {
+            padding: 5px;
+            background: white;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        .domain-created-detail strong {
+            color: #495057;
+        }
+        .timestamp {
+            color: #6c757d;
+            font-size: 10px;
+        }
+        .message-header {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        .routing-key {
+            display: inline-block;
+            padding: 2px 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+            margin-left: 5px;
+        }
+        .clear-btn {
+            background: #dc3545;
+        }
+        .clear-btn:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔌 MngHub SignalR Test Client</h1>
+        
+        <div class="section">
+            <h2>Bağlantı Ayarları</h2>
+            <div>
+                <label>MngHub URL:</label><br>
+                <input type="text" id="hubUrl" value="http://localhost:5020/ws" placeholder="http://localhost:5020/ws">
+            </div>
+            <div style="margin-top: 10px;">
+                <label>JWT Token:</label><br>
+                <input type="text" id="token" placeholder="JWT token'ı buraya yapıştırın" style="width: 600px;">
+            </div>
+            <div style="margin-top: 10px;">
+                <button id="connectBtn" onclick="connect()">Bağlan</button>
+                <button id="disconnectBtn" onclick="disconnect()" disabled>Bağlantıyı Kes</button>
+            </div>
+            <div id="status" class="status disconnected">Bağlantı Yok</div>
+        </div>
+
+        <div class="section">
+            <h2>Mesajlar</h2>
+            <div style="margin-bottom: 10px;">
+                <button class="clear-btn" onclick="clearMessages()">Mesajları Temizle</button>
+                <span style="margin-left: 15px; font-size: 12px; color: #6c757d;">
+                    <strong>Toplam:</strong> <span id="messageCount">0</span> mesaj
+                </span>
+            </div>
+            <div id="messages" class="messages"></div>
+        </div>
+
+        <div class="section">
+            <h2>Bilgiler</h2>
+            <div id="info">
+                <p><strong>Domain Name:</strong> <span id="domainName">-</span></p>
+                <p><strong>Domain ID:</strong> <span id="domainId">-</span></p>
+                <p><strong>User ID:</strong> <span id="userId">-</span></p>
+                <p><strong>Connection ID:</strong> <span id="connectionId">-</span></p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 İstatistikler</h2>
+            <div id="stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                <div style="padding: 10px; background: white; border-radius: 5px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #28a745;" id="systemCount">0</div>
+                    <div style="font-size: 12px; color: #6c757d;">System Events</div>
+                </div>
+                <div style="padding: 10px; background: white; border-radius: 5px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #ffc107;" id="domainCount">0</div>
+                    <div style="font-size: 12px; color: #6c757d;">Domain Events</div>
+                </div>
+                <div style="padding: 10px; background: white; border-radius: 5px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #17a2b8;" id="globalCount">0</div>
+                    <div style="font-size: 12px; color: #6c757d;">Global Events</div>
+                </div>
+                <div style="padding: 10px; background: white; border-radius: 5px; text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #28a745;" id="domainCreatedCount">0</div>
+                    <div style="font-size: 12px; color: #6c757d;">Domain Created</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let connection = null;
+        const messagesDiv = document.getElementById('messages');
+        const statusDiv = document.getElementById('status');
+        let messageCount = 0;
+        let systemCount = 0;
+        let domainCount = 0;
+        let globalCount = 0;
+        let domainCreatedCount = 0;
+
+        function updateStats() {
+            document.getElementById('messageCount').textContent = messageCount;
+            document.getElementById('systemCount').textContent = systemCount;
+            document.getElementById('domainCount').textContent = domainCount;
+            document.getElementById('globalCount').textContent = globalCount;
+            document.getElementById('domainCreatedCount').textContent = domainCreatedCount;
+        }
+
+        function addMessage(message, type = 'message', routingKey = null) {
+            messageCount++;
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            
+            let content = '';
+            
+            // Domain created event'i özel olarak göster
+            if (routingKey === 'system.mngkeeper.domain.created' && message.Message) {
+                try {
+                    // message.Message string veya object olabilir
+                    let eventData;
+                    if (typeof message.Message === 'string') {
+                        eventData = JSON.parse(message.Message);
+                    } else {
+                        eventData = message.Message;
+                    }
+                    
+                    if (eventData.eventType === 'system.mngkeeper.domain.created' && eventData.payload) {
+                        const payload = eventData.payload;
+                        domainCreatedCount++;
+                        updateStats();
+                        
+                        content = `
+                            <div class="domain-created-header">
+                                🎉 Yeni Domain Oluşturuldu!
+                                <span class="routing-key">${routingKey}</span>
+                            </div>
+                            <div class="domain-created-details">
+                                <div class="domain-created-detail">
+                                    <strong>Domain Adı:</strong> ${payload.domainName || 'N/A'}
+                                </div>
+                                <div class="domain-created-detail">
+                                    <strong>Domain ID:</strong> ${payload.domainId || 'N/A'}
+                                </div>
+                                <div class="domain-created-detail">
+                                    <strong>Database:</strong> ${payload.databaseName || 'N/A'}
+                                </div>
+                                <div class="domain-created-detail">
+                                    <strong>Realm:</strong> ${payload.realmName || 'N/A'}
+                                </div>
+                                <div class="domain-created-detail">
+                                    <strong>Bucket:</strong> ${payload.bucketName || 'N/A'}
+                                </div>
+                                <div class="domain-created-detail">
+                                    <strong>Admin Email:</strong> ${payload.adminEmail || 'N/A'}
+                                </div>
+                                <div class="domain-created-detail">
+                                    <strong>Status:</strong> ${payload.status || 'N/A'}
+                                </div>
+                                <div class="domain-created-detail">
+                                    <strong>Event ID:</strong> ${eventData.eventId || 'N/A'}
+                                </div>
+                            </div>
+                            <div style="margin-top: 8px; font-size: 11px; color: #6c757d;">
+                                <span class="timestamp">[${timestamp}]</span>
+                                <span style="margin-left: 10px;">Source: ${eventData.source || 'Unknown'}</span>
+                            </div>
+                        `;
+                        
+                        // Bilgiler bölümünü güncelle
+                        if (payload.domainName) {
+                            document.getElementById('domainName').textContent = payload.domainName;
+                        }
+                        if (payload.domainId) {
+                            document.getElementById('domainId').textContent = payload.domainId;
+                        }
+                    } else {
+                        throw new Error('Not a domain created event');
+                    }
+                } catch (e) {
+                    // Parse edilemezse normal mesaj olarak göster
+                    content = `
+                        <div class="message-header">
+                            System Event
+                            <span class="routing-key">${routingKey || message.RoutingKey || 'unknown'}</span>
+                        </div>
+                        <span class="timestamp">[${timestamp}]</span>
+                        <pre>${JSON.stringify(message, null, 2)}</pre>
+                    `;
+                }
+            } else {
+                // Normal mesaj
+                const routingKeyDisplay = routingKey || message.RoutingKey || 'unknown';
+                let messageType = 'Mesaj';
+                
+                if (routingKeyDisplay.startsWith('system.')) {
+                    messageType = 'System Event';
+                    systemCount++;
+                } else if (routingKeyDisplay.startsWith('domain.')) {
+                    messageType = 'Domain Event';
+                    domainCount++;
+                } else if (routingKeyDisplay.startsWith('global.')) {
+                    messageType = 'Global Event';
+                    globalCount++;
+                }
+                
+                updateStats();
+                
+                content = `
+                    <div class="message-header">
+                        ${messageType}
+                        <span class="routing-key">${routingKeyDisplay}</span>
+                    </div>
+                    <span class="timestamp">[${timestamp}]</span>
+                    <pre>${JSON.stringify(message, null, 2)}</pre>
+                `;
+            }
+            
+            messageDiv.innerHTML = content;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function updateStatus(status, text) {
+            statusDiv.className = `status ${status}`;
+            statusDiv.textContent = text;
+        }
+
+        function clearMessages() {
+            messagesDiv.innerHTML = '';
+            messageCount = 0;
+            systemCount = 0;
+            domainCount = 0;
+            globalCount = 0;
+            domainCreatedCount = 0;
+            updateStats();
+        }
+
+        async function connect() {
+            const hubUrl = document.getElementById('hubUrl').value;
+            const token = document.getElementById('token').value;
+
+            if (!token) {
+                alert('Lütfen JWT token girin!');
+                return;
+            }
+
+            try {
+                updateStatus('connecting', 'Bağlanıyor...');
+                document.getElementById('connectBtn').disabled = true;
+
+                // SignalR bağlantısı oluştur
+                connection = new signalR.HubConnectionBuilder()
+                    .withUrl(hubUrl, {
+                        accessTokenFactory: () => token,
+                        skipNegotiation: false, // Negotiation endpoint kullan
+                        transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling // Fallback
+                    })
+                    .withAutomaticReconnect({
+                        nextRetryDelayInMilliseconds: retryContext => {
+                            return Math.min(1000 * Math.pow(2, retryContext.previousRetryCount), 30000);
+                        }
+                    })
+                    .configureLogging(signalR.LogLevel.Information)
+                    .build();
+
+                // Mesaj dinleyicisi
+                connection.on('ReceiveMessage', (message) => {
+                    console.log('=== SignalR Message Received ===');
+                    console.log('Full message object:', message);
+                    console.log('RoutingKey:', message.RoutingKey);
+                    console.log('Message property:', message.Message);
+                    console.log('Message type:', typeof message.Message);
+                    
+                    const routingKey = message.RoutingKey || '';
+                    let messageType = 'message';
+                    
+                    // Routing key'e göre mesaj tipini belirle
+                    if (routingKey.startsWith('system.')) {
+                        messageType = 'system';
+                        console.log('Detected as System event');
+                    } else if (routingKey.startsWith('domain.')) {
+                        messageType = 'domain';
+                        console.log('Detected as Domain event');
+                    } else if (routingKey.startsWith('global.')) {
+                        messageType = 'global';
+                        console.log('Detected as Global event');
+                    }
+                    
+                    addMessage(message, messageType, routingKey);
+                    console.log('Message added to UI');
+                });
+
+                // Bağlantı durumu
+                connection.onreconnecting(() => {
+                    updateStatus('connecting', 'Yeniden bağlanıyor...');
+                });
+
+                connection.onreconnected(() => {
+                    updateStatus('connected', 'Bağlandı');
+                });
+
+                connection.onclose(() => {
+                    updateStatus('disconnected', 'Bağlantı Kesildi');
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('disconnectBtn').disabled = true;
+                });
+
+                // Bağlan
+                await connection.start();
+                console.log('SignalR connection started successfully');
+                updateStatus('connected', 'Bağlandı ✓');
+                document.getElementById('disconnectBtn').disabled = false;
+                
+                // İstatistikleri sıfırla
+                messageCount = 0;
+                systemCount = 0;
+                domainCount = 0;
+                globalCount = 0;
+                domainCreatedCount = 0;
+                updateStats();
+                
+                addMessage({ type: 'system', message: 'SignalR bağlantısı kuruldu. System event\'leri dinleniyor...' }, 'system');
+                console.log('Waiting for messages...');
+
+                // Connection ID'yi al (eğer hub'dan gönderiliyorsa)
+                // connection.invoke('GetConnectionId').then(id => {
+                //     document.getElementById('connectionId').textContent = id;
+                // });
+
+            } catch (error) {
+                updateStatus('disconnected', 'Bağlantı Hatası');
+                addMessage({ type: 'error', error: error.message }, 'error');
+                document.getElementById('connectBtn').disabled = false;
+                console.error('=== Connection Error ===');
+                console.error('Error:', error);
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
+            }
+        }
+
+        async function disconnect() {
+            if (connection) {
+                try {
+                    await connection.stop();
+                    updateStatus('disconnected', 'Bağlantı Kesildi');
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('disconnectBtn').disabled = true;
+                    addMessage({ type: 'system', message: 'Bağlantı kapatıldı' }, 'system');
+                } catch (error) {
+                    addMessage({ type: 'error', error: error.message }, 'error');
+                }
+            }
+        }
+
+        // Token'ı URL'den al (eğer query string'de varsa)
+        const urlParams = new URLSearchParams(window.location.search);
+        const tokenParam = urlParams.get('token');
+        if (tokenParam) {
+            document.getElementById('token').value = tokenParam;
+        }
+    </script>
+</body>
+</html>
+

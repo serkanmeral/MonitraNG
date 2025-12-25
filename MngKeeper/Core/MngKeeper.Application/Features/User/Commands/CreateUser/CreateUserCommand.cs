@@ -1,4 +1,5 @@
 using MediatR;
+using MngKeeper.Domain.Enums;
 
 namespace MngKeeper.Application.Features.User.Commands.CreateUser
 {
@@ -9,6 +10,11 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
         public string Password { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
+        public string? Title { get; set; }
+        public string? Department { get; set; }
+        public Gender Gender { get; set; } = Gender.NotSpecified;
+        public string? PhoneNumber { get; set; }
+        public string? PhotoUrl { get; set; }
         public List<string> GroupIds { get; set; } = new();
         public bool IsActive { get; set; } = true;
         
@@ -26,6 +32,11 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
         public string Email { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
+        public string? Title { get; set; }
+        public string? Department { get; set; }
+        public Gender Gender { get; set; } = Gender.NotSpecified;
+        public string? PhoneNumber { get; set; }
+        public string? PhotoUrl { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public bool IsSuccess { get; set; }

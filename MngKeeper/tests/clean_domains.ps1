@@ -2,7 +2,8 @@
 # Tüm test domain'lerini (Keycloak realm, MongoDB database, MinIO bucket) temizler
 
 param(
-    [switch]$Force = $false
+    [switch]$Force = $false,
+    [switch]$SkipMongoDB = $false
 )
 
 Write-Host "`n=== DOMAIN TEMİZLEME SCRIPT'İ ===" -ForegroundColor Red
@@ -10,7 +11,11 @@ Write-Host "⚠️  DİKKAT: Bu script TÜM test domain'lerini SİLECEK!" -Foreg
 Write-Host ""
 Write-Host "Temizlenecek Veriler:" -ForegroundColor Cyan
 Write-Host "  - Keycloak: Master dışındaki TÜM realm'ler" -ForegroundColor Gray
-Write-Host "  - MongoDB: Tüm 'mng_*' database'leri" -ForegroundColor Gray
+if (-not $SkipMongoDB) {
+    Write-Host "  - MongoDB: Tüm 'mng_*' database'leri" -ForegroundColor Gray
+} else {
+    Write-Host "  - MongoDB: Atlanacak (SkipMongoDB parametresi)" -ForegroundColor Yellow
+}
 Write-Host "  - MinIO: TÜM bucket'lar" -ForegroundColor Gray
 Write-Host ""
 
@@ -103,7 +108,12 @@ try {
 # ============================================
 # 2. MONGODB DATABASE'LERİNİ TEMİZLEME
 # ============================================
-Write-Host "`n=== 2. MONGODB DATABASE'LERİNİ TEMİZLEME ===" -ForegroundColor Cyan
+if ($SkipMongoDB) {
+    Write-Host "`n=== 2. MONGODB DATABASE'LERİNİ TEMİZLEME ===" -ForegroundColor Cyan
+    Write-Host "⊘ MongoDB cleanup atlandı (SkipMongoDB parametresi)" -ForegroundColor Gray
+    Write-Host ""
+} else {
+    Write-Host "`n=== 2. MONGODB DATABASE'LERİNİ TEMİZLEME ===" -ForegroundColor Cyan
 
 try {
     Write-Host "MongoDB'ye bağlanılıyor..." -ForegroundColor Yellow
@@ -185,6 +195,7 @@ deleted.forEach(function(db) {
 } catch {
     Write-Host "✗ MongoDB temizliği başarısız: $($_.Exception.Message)" -ForegroundColor Red
     Write-Host "  Manuel temizlik için: http://localhost:8081 (MongoDB Compass)" -ForegroundColor Yellow
+}
 }
 
 # ============================================

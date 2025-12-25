@@ -14,7 +14,6 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
         private readonly IKeycloakService _keycloakService;
         private readonly IEventPublisher _eventPublisher;
         private readonly IDataGatewaySyncService _dataGatewaySyncService;
-        private readonly IRedisService _redisService;
         private readonly ILogger<CreateUserCommandHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -25,7 +24,6 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
             IKeycloakService keycloakService,
             IEventPublisher eventPublisher,
             IDataGatewaySyncService dataGatewaySyncService,
-            IRedisService redisService,
             ILogger<CreateUserCommandHandler> logger,
             IHttpContextAccessor httpContextAccessor)
         {
@@ -35,27 +33,10 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
             _keycloakService = keycloakService;
             _eventPublisher = eventPublisher;
             _dataGatewaySyncService = dataGatewaySyncService;
-            _redisService = redisService;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
 
-        private async Task InvalidateUsersCacheAsync(string domainId)
-        {
-            try
-            {
-                // Delete all cache keys matching the pattern
-                // Note: Redis doesn't support wildcard deletion directly, so we'll use a pattern-based approach
-                // For production, consider using Redis SCAN command or a more sophisticated cache invalidation strategy
-                _logger.LogDebug("Invalidating users cache for domain: {DomainId}", domainId);
-                // Cache invalidation will happen naturally as TTL expires
-                // For immediate invalidation, we would need to track cache keys or use a cache tag pattern
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to invalidate users cache for domain: {DomainId}", domainId);
-            }
-        }
 
         public async Task<CreateUserResponse> Handle(CreateUserCommand request, CancellationToken cancellationToken)
         {
@@ -159,6 +140,11 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
                     Password = request.Password,
                     FirstName = request.FirstName,
                     LastName = request.LastName,
+                    Title = request.Title,
+                    Department = request.Department,
+                    Gender = (int)request.Gender,
+                    PhoneNumber = request.PhoneNumber,
+                    PhotoUrl = request.PhotoUrl,
                     Groups = groupNames  // Use group names, not IDs
                 };
 
@@ -174,6 +160,11 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
                     Email = request.Email,
                     FirstName = request.FirstName,
                     LastName = request.LastName,
+                    Title = request.Title,
+                    Department = request.Department,
+                    Gender = request.Gender,
+                    PhoneNumber = request.PhoneNumber,
+                    PhotoUrl = request.PhotoUrl,
                     IsActive = request.IsActive,
                     Groups = groupNames, // Store group names (consistent with AddUserToGroup behavior)
                     DomainId = claims.DomainId,
@@ -263,9 +254,6 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
 
                 _logger.LogInformation("User created successfully: {Username} in domain: {DomainId}", request.Username, claims.DomainId);
 
-                // Invalidate users cache for this domain
-                await InvalidateUsersCacheAsync(claims.DomainId);
-
                 return new CreateUserResponse
                 {
                     UserId = savedUser.Id,
@@ -273,6 +261,11 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
                     Email = savedUser.Email,
                     FirstName = savedUser.FirstName,
                     LastName = savedUser.LastName,
+                    Title = savedUser.Title,
+                    Department = savedUser.Department,
+                    Gender = savedUser.Gender,
+                    PhoneNumber = savedUser.PhoneNumber,
+                    PhotoUrl = savedUser.PhotoUrl,
                     IsActive = savedUser.IsActive,
                     CreatedAt = savedUser.CreatedAt,
                     IsSuccess = true

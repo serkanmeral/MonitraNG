@@ -197,6 +197,27 @@ $tasksSchema = @{
             name = "dueDate"
             title = "Due Date"
             mandatory = $false
+        },
+        @{
+            fieldType = "persons"
+            name = "assign_user"
+            title = "Assigned User"
+            mandatory = $false
+            isArray = $false
+        },
+        @{
+            fieldType = "persons"
+            name = "watcher_users"
+            title = "Watcher Users"
+            mandatory = $false
+            isArray = $true
+        },
+        @{
+            fieldType = "personGroups"
+            name = "signedGroups"
+            title = "Signed Groups"
+            mandatory = $false
+            isArray = $false
         }
     )
     Queries = @(

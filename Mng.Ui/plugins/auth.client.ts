@@ -1,7 +1,7 @@
-export default defineNuxtPlugin(() => {
+export default defineNuxtPlugin(async () => {
   const authStore = useAuthStore();
   
   // Initialize auth state from cookies/localStorage
-  authStore.initializeAuth();
+  await authStore.initializeAuth();
 });
 

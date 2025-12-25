@@ -24,6 +24,13 @@
         "env": []
     },
     {
+        "id": "mnghub-signalr",
+        "type": "tab",
+        "label": "MngHub SignalR",
+        "disabled": false,
+        "info": "MngHub SignalR bağlantısı - Varsayılan WebSocket node'ları ile"
+    },
+    {
         "id": "149134e7a8351b0d",
         "type": "tls-config",
         "name": "",
@@ -38,14 +45,20 @@
         "alpnprotocol": ""
     },
     {
-        "id": "209f045a8e4c6d99",
-        "type": "amqp-broker",
-        "name": "",
-        "host": "rabbitmq",
-        "port": 5672,
-        "vhost": "",
-        "tls": false,
-        "credsFromSettings": false
+        "id": "60dfd4a3a2574811",
+        "type": "websocket-client",
+        "path": "ws://localhost:5020/ws?access_token=eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJXcVBnOTJSckpuMnY4MVpyOThrN1Z3NXIwQ3RvT2NINTBibnNtakE4cDlzIn0.eyJleHAiOjE3NjY0NTA1OTUsImlhdCI6MTc2NjQ1MDI5NSwianRpIjoiODNiNjcwNjItZWNjNi00M2E4LWI1NTYtY2Y4MWM1Y2M2ZmI2IiwiaXNzIjoiaHR0cDovL2tleWNsb2FrOjgwODAvcmVhbG1zL3Rlc3QtZG9tYWluLTIwMjUxMjIzMDMwOTAwIiwic3ViIjoiYTUyOWNjZWYtZTIzNi00YzI5LThkMzQtNTA1MjNmNWFjZDdkIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiYWRtaW4tY2xpIiwic2Vzc2lvbl9zdGF0ZSI6IjVhYWRmZjU0LTNlOGEtNGUzMS05N2UwLTUyZTUzZDgzOWQxYSIsImFjciI6IjEiLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsib2ZmbGluZV9hY2Nlc3MiXX0sInNjb3BlIjoib2ZmbGluZV9hY2Nlc3MgZW1haWwgcHJvZmlsZSIsInNpZCI6IjVhYWRmZjU0LTNlOGEtNGUzMS05N2UwLTUyZTUzZDgzOWQxYSIsImRvbWFpbl9pZCI6IjY5NDlkZDljOTE1N2IzNzUxZWIzMWQ3YSIsImRvbWFpbl9uYW1lIjoidGVzdC1kb21haW4tMjAyNTEyMjMwMzA5MDAiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibmFtZSI6IkFkbWluIHRlc3QtZG9tYWluLTIwMjUxMjIzMDMwOTAwIiwiaXNBZG1pbiI6dHJ1ZSwicHJlZmVycmVkX3VzZXJuYW1lIjoidGVzdC1kb21haW4tMjAyNTEyMjMwMzA5MDBfYWRtaW4iLCJnaXZlbl9uYW1lIjoiQWRtaW4iLCJmYW1pbHlfbmFtZSI6InRlc3QtZG9tYWluLTIwMjUxMjIzMDMwOTAwIiwiZW1haWwiOiJhZG1pbkB0ZXN0LmNvbSIsInVzZXJfZ3JvdXBzIjpbImFkbWlucyJdfQ.xOwPJEdoG-jBcUaGOfKvgy_mu9HQibPVLpab-GVGVEXVeGyzDbifBL8T5yOEje9KTvwYTsCXVuzmatTxUGFOgQanjNTP4CQybtuK1TYuuKI0HcevX5zUP6hEEPMtunrqT2g2TIDOk_IfkTBYnN07tHYuQp1mRT5th6q8d1PXiGTNxFEyHketyfbjtvHmVwya5pp7KGm_0OwJH2_cP_KMIESxha13PYcQjLI3gJoFWc7oYy75Yh25rTdLfs772vFu_zGsQOWokpjxC-L56rzPsr8KhRgD7MBkjhazA3HJadu-dX4kmEqxaxeQtRWaHhlOXVLA6MytM0IihY9Vk29rqQ",
+        "tls": "",
+        "wholemsg": "false",
+        "hb": "0",
+        "subprotocol": "",
+        "headers": []
+    },
+    {
+        "id": "b66d8db6577dd0f2",
+        "type": "websocket-listener",
+        "path": "ws://localhost:5020/ws?access_token=eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJXcVBnOTJSckpuMnY4MVpyOThrN1Z3NXIwQ3RvT2NINTBibnNtakE4cDlzIn0.eyJleHAiOjE3NjY0NTA1OTUsImlhdCI6MTc2NjQ1MDI5NSwianRpIjoiODNiNjcwNjItZWNjNi00M2E4LWI1NTYtY2Y4MWM1Y2M2ZmI2IiwiaXNzIjoiaHR0cDovL2tleWNsb2FrOjgwODAvcmVhbG1zL3Rlc3QtZG9tYWluLTIwMjUxMjIzMDMwOTAwIiwic3ViIjoiYTUyOWNjZWYtZTIzNi00YzI5LThkMzQtNTA1MjNmNWFjZDdkIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiYWRtaW4tY2xpIiwic2Vzc2lvbl9zdGF0ZSI6IjVhYWRmZjU0LTNlOGEtNGUzMS05N2UwLTUyZTUzZDgzOWQxYSIsImFjciI6IjEiLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsib2ZmbGluZV9hY2Nlc3MiXX0sInNjb3BlIjoib2ZmbGluZV9hY2Nlc3MgZW1haWwgcHJvZmlsZSIsInNpZCI6IjVhYWRmZjU0LTNlOGEtNGUzMS05N2UwLTUyZTUzZDgzOWQxYSIsImRvbWFpbl9pZCI6IjY5NDlkZDljOTE1N2IzNzUxZWIzMWQ3YSIsImRvbWFpbl9uYW1lIjoidGVzdC1kb21haW4tMjAyNTEyMjMwMzA5MDAiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibmFtZSI6IkFkbWluIHRlc3QtZG9tYWluLTIwMjUxMjIzMDMwOTAwIiwiaXNBZG1pbiI6dHJ1ZSwicHJlZmVycmVkX3VzZXJuYW1lIjoidGVzdC1kb21haW4tMjAyNTEyMjMwMzA5MDBfYWRtaW4iLCJnaXZlbl9uYW1lIjoiQWRtaW4iLCJmYW1pbHlfbmFtZSI6InRlc3QtZG9tYWluLTIwMjUxMjIzMDMwOTAwIiwiZW1haWwiOiJhZG1pbkB0ZXN0LmNvbSIsInVzZXJfZ3JvdXBzIjpbImFkbWlucyJdfQ.xOwPJEdoG-jBcUaGOfKvgy_mu9HQibPVLpab-GVGVEXVeGyzDbifBL8T5yOEje9KTvwYTsCXVuzmatTxUGFOgQanjNTP4CQybtuK1TYuuKI0HcevX5zUP6hEEPMtunrqT2g2TIDOk_IfkTBYnN07tHYuQp1mRT5th6q8d1PXiGTNxFEyHketyfbjtvHmVwya5pp7KGm_0OwJH2_cP_KMIESxha13PYcQjLI3gJoFWc7oYy75Yh25rTdLfs772vFu_zGsQOWokpjxC-L56rzPsr8KhRgD7MBkjhazA3HJadu-dX4kmEqxaxeQtRWaHhlOXVLA6MytM0IihY9Vk29rqQ",
+        "wholemsg": "false"
     },
     {
         "id": "21ddd27ac0518c54",
@@ -1209,46 +1222,188 @@
         "wires": []
     },
     {
-        "id": "6342420901fcf7e5",
-        "type": "amqp-in",
-        "z": "d358cbd1e654d5c6",
-        "name": "",
-        "broker": "209f045a8e4c6d99",
-        "prefetch": "10",
-        "reconnectOnError": false,
-        "noAck": true,
-        "exchangeName": "monitra.data.events.seven",
-        "exchangeType": "topic",
-        "exchangeRoutingKey": "dataset.@test_tasks_224334.created",
-        "exchangeDurable": true,
-        "queueName": "",
-        "queueType": "quorum",
-        "queueExclusive": false,
-        "queueDurable": false,
-        "queueAutoDelete": false,
-        "headers": "{}",
-        "x": 420,
-        "y": 160,
+        "id": "websocket-in",
+        "type": "websocket in",
+        "z": "mnghub-signalr",
+        "name": "MngHub SignalR",
+        "server": "",
+        "client": "60dfd4a3a2574811",
+        "x": 120,
+        "y": 100,
         "wires": [
             [
-                "1ca8114644ccefdf"
+                "parse-signalr",
+                "debug-raw"
             ]
         ]
     },
     {
-        "id": "1ca8114644ccefdf",
+        "id": "parse-signalr",
+        "type": "function",
+        "z": "mnghub-signalr",
+        "name": "Parse SignalR",
+        "func": "// SignalR mesajını parse et\nconst raw = msg.payload;\nlet parsed = {};\n\ntry {\n    // String ise JSON parse et\n    const data = typeof raw === 'string' ? JSON.parse(raw) : raw;\n    \n    // SignalR message types:\n    // 1 = Invocation (hub method call)\n    // 2 = StreamItem\n    // 3 = Completion\n    // 4 = StreamInvocation\n    // 5 = CancelInvocation\n    // 6 = Ping\n    // 7 = Close\n    \n    if (data.type === 1 && data.target === 'ReceiveMessage') {\n        // ReceiveMessage hub method invocation\n        const messageData = data.arguments && data.arguments[0] ? data.arguments[0] : {};\n        \n        msg.payload = {\n            event: 'ReceiveMessage',\n            routingKey: messageData.routingKey || 'unknown',\n            message: messageData.message || messageData,\n            timestamp: messageData.timestamp || new Date().toISOString(),\n            domain: messageData.domain || 'unknown'\n        };\n        \n        msg.topic = messageData.routingKey || 'unknown';\n        msg.eventType = 'domain-event';\n        \n    } else if (data.type === 1) {\n        // Diğer hub method'ları\n        msg.payload = {\n            event: 'HubMethod',\n            method: data.target,\n            arguments: data.arguments,\n            raw: data\n        };\n        msg.topic = data.target || 'unknown';\n        \n    } else if (data.type === 6) {\n        // Ping - heartbeat\n        msg.payload = {\n            event: 'Ping',\n            type: 'heartbeat'\n        };\n        msg.topic = 'ping';\n        \n    } else if (data.type === 7) {\n        // Close\n        msg.payload = {\n            event: 'Close',\n            error: data.error,\n            allowReconnect: data.allowReconnect\n        };\n        msg.topic = 'close';\n        \n    } else {\n        // Diğer mesaj tipleri\n        msg.payload = {\n            event: 'Unknown',\n            type: data.type,\n            raw: data\n        };\n        msg.topic = 'unknown';\n    }\n    \n} catch (e) {\n    msg.payload = {\n        event: 'ParseError',\n        error: e.message,\n        raw: raw\n    };\n    msg.topic = 'error';\n}\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 100,
+        "wires": [
+            [
+                "debug-parsed",
+                "switch-routing"
+            ]
+        ]
+    },
+    {
+        "id": "debug-raw",
         "type": "debug",
-        "z": "d358cbd1e654d5c6",
-        "name": "debug 1",
+        "z": "mnghub-signalr",
+        "name": "Raw SignalR",
         "active": true,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
-        "complete": "false",
+        "complete": "payload",
+        "targetType": "full",
         "statusVal": "",
         "statusType": "auto",
-        "x": 980,
+        "x": 340,
         "y": 160,
+        "wires": []
+    },
+    {
+        "id": "debug-parsed",
+        "type": "debug",
+        "z": "mnghub-signalr",
+        "name": "Parsed Message",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 560,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "switch-routing",
+        "type": "switch",
+        "z": "mnghub-signalr",
+        "name": "Routing Key Filter",
+        "property": "topic",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "cont",
+                "v": "system.",
+                "vt": "str"
+            },
+            {
+                "t": "cont",
+                "v": "domain.",
+                "vt": "str"
+            },
+            {
+                "t": "cont",
+                "v": "global.",
+                "vt": "str"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 4,
+        "x": 560,
+        "y": 160,
+        "wires": [
+            [
+                "debug-system"
+            ],
+            [
+                "debug-domain"
+            ],
+            [
+                "debug-global"
+            ],
+            [
+                "debug-other"
+            ]
+        ]
+    },
+    {
+        "id": "debug-system",
+        "type": "debug",
+        "z": "mnghub-signalr",
+        "name": "System Events",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 780,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "debug-domain",
+        "type": "debug",
+        "z": "mnghub-signalr",
+        "name": "Domain Events",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 780,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "debug-global",
+        "type": "debug",
+        "z": "mnghub-signalr",
+        "name": "Global Events",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 780,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "debug-other",
+        "type": "debug",
+        "z": "mnghub-signalr",
+        "name": "Other Events",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 810,
+        "y": 220,
         "wires": []
     }
 ]

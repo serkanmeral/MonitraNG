@@ -8,24 +8,24 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
     public class DeleteGroupCommandHandler : IRequestHandler<DeleteGroupCommand, DeleteGroupResponse>
     {
         private readonly IGroupRepository _groupRepository;
+        private readonly IUserRepository _userRepository;
         private readonly IDomainRepository _domainRepository;
         private readonly IKeycloakService _keycloakService;
-        private readonly IDataGatewaySyncService _dataGatewaySyncService;
         private readonly IMongoClient _mongoClient;
         private readonly ILogger<DeleteGroupCommandHandler> _logger;
 
         public DeleteGroupCommandHandler(
             IGroupRepository groupRepository,
+            IUserRepository userRepository,
             IDomainRepository domainRepository,
             IKeycloakService keycloakService,
-            IDataGatewaySyncService dataGatewaySyncService,
             IMongoClient mongoClient,
             ILogger<DeleteGroupCommandHandler> logger)
         {
             _groupRepository = groupRepository;
+            _userRepository = userRepository;
             _domainRepository = domainRepository;
             _keycloakService = keycloakService;
-            _dataGatewaySyncService = dataGatewaySyncService;
             _mongoClient = mongoClient;
             _logger = logger;
         }
@@ -81,10 +81,38 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
                     };
                 }
 
-                // Delete group from Keycloak (TODO: Implement Keycloak group deletion)
-                // For now, we'll just delete from our database
+                // Check if group has users - groups with users cannot be deleted
+                var usersInGroup = await _userRepository.GetByGroupIdAsync(request.GroupId, request.DomainId);
+                var userList = usersInGroup.ToList();
+                if (userList.Any())
+                {
+                    return new DeleteGroupResponse
+                    {
+                        IsSuccess = false,
+                        ErrorMessage = $"Group cannot be deleted because it contains {userList.Count} user(s). Please remove all users from the group before deleting."
+                    };
+                }
 
-                // Delete from database
+                // Delete group from Keycloak first
+                try
+                {
+                    var keycloakDeleted = await _keycloakService.DeleteGroupAsync(domain.RealmName, existingGroup.Name);
+                    if (!keycloakDeleted)
+                    {
+                        _logger.LogWarning("Failed to delete group {GroupName} from Keycloak, but continuing with MongoDB deletion", existingGroup.Name);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("Group {GroupName} deleted from Keycloak successfully", existingGroup.Name);
+                    }
+                }
+                catch (Exception keycloakEx)
+                {
+                    // Log error but don't fail the group deletion - continue with MongoDB deletion
+                    _logger.LogError(keycloakEx, "Error deleting group {GroupName} from Keycloak, but continuing with MongoDB deletion", existingGroup.Name);
+                }
+
+                // Hard delete from MongoDB (MngKeeper database)
                 var deleted = await _groupRepository.DeleteAsync(request.GroupId, request.DomainId);
                 if (!deleted)
                 {
@@ -95,33 +123,27 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
                     };
                 }
 
-                // Sync soft delete to DataGateway MongoDB (mng_{domain} database)
-                // Set IsDeleted = true in DataGateway
+                // Hard delete from DataGateway MongoDB (mng_{domain} database)
                 try
                 {
-                    // Get group before deletion for sync (or use existingGroup)
-                    existingGroup.IsActive = false; // Mark as inactive
-                    await _dataGatewaySyncService.SyncGroupToDataGatewayAsync(
-                        existingGroup, 
-                        request.DomainId,
-                        null);
-                    
-                    // Update IsDeleted flag in DataGateway
                     var database = _mongoClient.GetDatabase(domain.DatabaseName);
                     var collection = database.GetCollection<MongoDB.Bson.BsonDocument>("@groups");
                     var filter = Builders<MongoDB.Bson.BsonDocument>.Filter.Eq("__dataId", existingGroup.Id);
-                    var update = Builders<MongoDB.Bson.BsonDocument>.Update
-                        .Set("__isDeleted", true)
-                        .Set("__lastUpdateInfo.updatedAt", DateTime.UtcNow);
-                    await collection.UpdateOneAsync(filter, update);
+                    var deleteResult = await collection.DeleteOneAsync(filter);
                     
-                    _logger.LogInformation("Group soft deleted in DataGateway: GroupId={GroupId}", existingGroup.Id);
+                    if (deleteResult.DeletedCount > 0)
+                    {
+                        _logger.LogInformation("Group hard deleted from DataGateway MongoDB: GroupId={GroupId}", existingGroup.Id);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Group not found in DataGateway MongoDB for deletion: GroupId={GroupId}", existingGroup.Id);
+                    }
                 }
-                catch (Exception syncEx)
+                catch (Exception dataGatewayEx)
                 {
-                    // Log error but don't fail the group deletion
-                    _logger.LogError(syncEx, "Failed to sync group deletion to DataGateway MongoDB: GroupId={GroupId}", existingGroup.Id);
-                    // Continue - group is deleted from MngKeeper DB
+                    // Log error but don't fail the group deletion - group is already deleted from MngKeeper DB
+                    _logger.LogError(dataGatewayEx, "Failed to delete group from DataGateway MongoDB: GroupId={GroupId}", existingGroup.Id);
                 }
 
                 _logger.LogInformation("Group deleted successfully: {GroupId} in domain: {DomainId}", request.GroupId, request.DomainId);

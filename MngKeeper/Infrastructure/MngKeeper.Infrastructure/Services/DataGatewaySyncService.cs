@@ -104,6 +104,25 @@ namespace MngKeeper.Infrastructure.Services
                     ["__isDeleted"] = false
                 };
 
+                // Add optional fields if they have values
+                if (!string.IsNullOrEmpty(user.Title))
+                {
+                    userDocument["title"] = user.Title;
+                }
+                if (!string.IsNullOrEmpty(user.Department))
+                {
+                    userDocument["department"] = user.Department;
+                }
+                userDocument["gender"] = (int)user.Gender;
+                if (!string.IsNullOrEmpty(user.PhoneNumber))
+                {
+                    userDocument["phoneNumber"] = user.PhoneNumber;
+                }
+                if (!string.IsNullOrEmpty(user.PhotoUrl))
+                {
+                    userDocument["photoUrl"] = user.PhotoUrl;
+                }
+
                 // Add custom data if provided
                 if (customData != null && customData.Any())
                 {

@@ -674,6 +674,7 @@ namespace MngDataGateway.Persistence.Services
                 builder
                     .AddMatch(matchFilter)
                     .AddRelationExpansion(options.Expand, maxDepth, 0, null)
+                    .AddPersonExpansion(options.Expand)
                     .AddProject(fields, options.ShowHistory)
                     .AddSort(sortDefinition)
                     .AddPagination(skip, limit);
@@ -760,6 +761,7 @@ namespace MngDataGateway.Persistence.Services
                 builder
                     .AddMatchById(dataId)
                     .AddRelationExpansion(options.Expand, maxDepth, 0, null)
+                    .AddPersonExpansion(options.Expand)
                     .AddProject(fields, options.ShowHistory)
                     .AddSort(sortDefinition);
 
@@ -861,6 +863,7 @@ namespace MngDataGateway.Persistence.Services
                 builder
                     .AddMatch(matchFilter)
                     .AddRelationExpansion(options.Expand, maxDepth, 0, null)
+                    .AddPersonExpansion(options.Expand)
                     .AddProject(fields, options.ShowHistory)
                     .AddSort(sortDefinition)
                     .AddPagination(skip, limit);

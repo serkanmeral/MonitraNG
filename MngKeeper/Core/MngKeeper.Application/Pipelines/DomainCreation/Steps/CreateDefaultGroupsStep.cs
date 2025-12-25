@@ -136,7 +136,7 @@ public class CreateDefaultGroupsStep : IPipelineStep<DomainCreationContext>
             {
                 try
                 {
-                    await _keycloakService.DeleteGroupAsync(context.RealmName, group.Id);
+                    await _keycloakService.DeleteGroupAsync(context.RealmName, group.Name);
                     _logger.LogInformation("Deleted group: {GroupName}", group.Name);
                 }
                 catch (Exception ex)

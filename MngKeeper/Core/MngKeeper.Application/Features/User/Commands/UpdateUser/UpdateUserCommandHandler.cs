@@ -116,6 +116,11 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                 existingUser.Email = request.Email;
                 existingUser.FirstName = request.FirstName;
                 existingUser.LastName = request.LastName;
+                existingUser.Title = request.Title;
+                existingUser.Department = request.Department;
+                existingUser.Gender = request.Gender;
+                existingUser.PhoneNumber = request.PhoneNumber;
+                existingUser.PhotoUrl = request.PhotoUrl;
                 
                 // Convert group IDs to group names (User.Groups stores group names, not IDs)
                 if (request.GroupIds != null && request.GroupIds.Any())
@@ -178,6 +183,11 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                     Email = updatedUser.Email,
                     FirstName = updatedUser.FirstName,
                     LastName = updatedUser.LastName,
+                    Title = updatedUser.Title,
+                    Department = updatedUser.Department,
+                    Gender = updatedUser.Gender,
+                    PhoneNumber = updatedUser.PhoneNumber,
+                    PhotoUrl = updatedUser.PhotoUrl,
                     GroupIds = updatedUser.Groups,
                     IsActive = updatedUser.IsActive,
                     UpdatedAt = updatedUser.UpdatedAt ?? DateTime.UtcNow,

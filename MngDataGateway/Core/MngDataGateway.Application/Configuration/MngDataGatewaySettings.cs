@@ -43,6 +43,12 @@ namespace MngDataGateway.Application.Configuration
     public class Mongodb
     {
         public string ConnectionString { get; set; }
+        
+        /// <summary>
+        /// MngKeeper database name (default: "mngkeeper")
+        /// Used for domain lookup service
+        /// </summary>
+        public string MngKeeperDatabaseName { get; set; } = "mngkeeper";
     }
 
     public class Rabbitmq

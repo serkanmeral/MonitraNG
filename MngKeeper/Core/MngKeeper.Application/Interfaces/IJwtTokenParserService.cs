@@ -12,6 +12,7 @@ namespace MngKeeper.Application.Interfaces
         public string? DomainName { get; set; }
         public string? DomainRealm { get; set; }
         public bool IsAdmin { get; set; }
+        public bool IsManager { get; set; }
         public string? Username { get; set; }
         public string? Email { get; set; }
         public List<string> Groups { get; set; } = new();

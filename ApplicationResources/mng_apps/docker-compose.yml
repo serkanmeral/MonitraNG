@@ -1,10 +1,6 @@
-version: '3.8'
-
 services:
   mngkeeper:
-    build:
-      context: ../../MngKeeper
-      dockerfile: Presentation/MngKeeper.Api/Dockerfile
+    image: localhost:5000/mngkeeper:1.1.0
     container_name: mngkeeper
     ports:
       - "5001:5001"
@@ -58,17 +54,17 @@ services:
       - MngKeeperSettings__CertificateSettings__DNS=mngkeeper
     
     networks:
-      - mng_network
+      - mng_common_mng_network
     
     restart: unless-stopped
     
     healthcheck:
-      test: ["CMD-SHELL", "curl -k -f https://localhost:5001/api/health || exit 1"]
+      test: ["CMD-SHELL", "curl -k -f https://localhost:5001/api/version/short || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 60s
 
 networks:
-  mng_network:
+  mng_common_mng_network:
     external: true

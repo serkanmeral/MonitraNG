@@ -180,6 +180,11 @@ const sidebarItem: menu[] = [
     icon: UserCircleIcon,
     to: "/apps/users",
   },
+  {
+    title: "Grup Yönetimi",
+    icon: UserCircleIcon,
+    to: "/apps/groups",
+  },
 
   {
     title: "Blog",

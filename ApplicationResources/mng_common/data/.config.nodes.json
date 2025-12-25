@@ -446,55 +446,121 @@
             }
         }
     },
-    "@mnn-o/node-red-rabbitmq": {
-        "name": "@mnn-o/node-red-rabbitmq",
-        "version": "1.0.2",
+    "node-red-contrib-uibuilder": {
+        "name": "node-red-contrib-uibuilder",
+        "version": "7.5.0",
         "local": true,
         "user": true,
         "nodes": {
-            "amqp-in": {
-                "name": "amqp-in",
+            "uibuilder": {
+                "name": "uibuilder",
                 "types": [
-                    "amqp-in"
+                    "uibuilder"
                 ],
                 "enabled": true,
                 "local": true,
                 "user": false,
-                "module": "@mnn-o/node-red-rabbitmq",
-                "file": "/data/node_modules/@mnn-o/node-red-rabbitmq/build/src/nodes/amqp-in.js"
+                "module": "node-red-contrib-uibuilder",
+                "file": "/data/node_modules/node-red-contrib-uibuilder/nodes/uibuilder/uibuilder.js"
             },
-            "amqp-out": {
-                "name": "amqp-out",
+            "uib-cache": {
+                "name": "uib-cache",
                 "types": [
-                    "amqp-out"
+                    "uib-cache"
                 ],
                 "enabled": true,
                 "local": true,
                 "user": false,
-                "module": "@mnn-o/node-red-rabbitmq",
-                "file": "/data/node_modules/@mnn-o/node-red-rabbitmq/build/src/nodes/amqp-out.js"
+                "module": "node-red-contrib-uibuilder",
+                "file": "/data/node_modules/node-red-contrib-uibuilder/nodes/uib-cache/uib-cache.js"
             },
-            "amqp-broker": {
-                "name": "amqp-broker",
+            "uib-element": {
+                "name": "uib-element",
                 "types": [
-                    "amqp-broker"
+                    "uib-element"
                 ],
                 "enabled": true,
                 "local": true,
                 "user": false,
-                "module": "@mnn-o/node-red-rabbitmq",
-                "file": "/data/node_modules/@mnn-o/node-red-rabbitmq/build/src/nodes/amqp-broker.js"
+                "module": "node-red-contrib-uibuilder",
+                "file": "/data/node_modules/node-red-contrib-uibuilder/nodes/uib-element/customNode.js"
             },
-            "amqp-in-manual-ack": {
-                "name": "amqp-in-manual-ack",
+            "uib-file-list": {
+                "name": "uib-file-list",
                 "types": [
-                    "amqp-in-manual-ack"
+                    "uib-file-list"
                 ],
                 "enabled": true,
                 "local": true,
                 "user": false,
-                "module": "@mnn-o/node-red-rabbitmq",
-                "file": "/data/node_modules/@mnn-o/node-red-rabbitmq/build/src/nodes/amqp-in-manual-ack.js"
+                "module": "node-red-contrib-uibuilder",
+                "file": "/data/node_modules/node-red-contrib-uibuilder/nodes/uib-file-list/customNode.js"
+            },
+            "uib-html": {
+                "name": "uib-html",
+                "types": [
+                    "uib-html"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-uibuilder",
+                "file": "/data/node_modules/node-red-contrib-uibuilder/nodes/uib-html/customNode.js"
+            },
+            "uib-save": {
+                "name": "uib-save",
+                "types": [
+                    "uib-save"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-uibuilder",
+                "file": "/data/node_modules/node-red-contrib-uibuilder/nodes/uib-save/customNode.js"
+            },
+            "uib-sender": {
+                "name": "uib-sender",
+                "types": [
+                    "uib-sender"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-uibuilder",
+                "file": "/data/node_modules/node-red-contrib-uibuilder/nodes/uib-sender/uib-sender.js"
+            },
+            "uib-sidebar": {
+                "name": "uib-sidebar",
+                "types": [
+                    "uib-sidebar"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-uibuilder",
+                "file": "/data/node_modules/node-red-contrib-uibuilder/nodes/uib-sidebar/customNode.js"
+            },
+            "uib-tag": {
+                "name": "uib-tag",
+                "types": [
+                    "uib-tag"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-uibuilder",
+                "file": "/data/node_modules/node-red-contrib-uibuilder/nodes/uib-tag/customNode.js"
+            },
+            "uib-update": {
+                "name": "uib-update",
+                "types": [
+                    "uib-update"
+                ],
+                "enabled": true,
+                "local": true,
+                "user": false,
+                "module": "node-red-contrib-uibuilder",
+                "file": "/data/node_modules/node-red-contrib-uibuilder/nodes/uib-update/customNode.js"
             }
         }
     }

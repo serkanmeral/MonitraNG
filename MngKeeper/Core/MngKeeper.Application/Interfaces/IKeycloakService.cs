@@ -9,6 +9,7 @@ namespace MngKeeper.Application.Interfaces
         Task<UserInfo> CreateUserAsync(string realmName, CreateUserRequest request);
         Task<GroupInfo> CreateGroupAsync(string realmName, CreateGroupRequest request);
         Task<bool> AddUserToGroupAsync(string realmName, string userId, string groupName);
+        Task<bool> RemoveUserFromGroupAsync(string realmName, string userId, string groupName);
         Task<bool> IsUserInGroupAsync(string realmName, string username, string groupName);
         Task<KeycloakTokenResponse> GetTokenAsync(string realmName, string username, string password);
         Task<KeycloakTokenResponse> RefreshTokenAsync(string realmName, string refreshToken);
@@ -16,9 +17,11 @@ namespace MngKeeper.Application.Interfaces
         Task<bool> ValidateTokenAsync(string token);
         Task<bool> DeleteRealmAsync(string realmName);
         Task<bool> DeleteUserAsync(string realmName, string userId);
-        Task<bool> DeleteGroupAsync(string realmName, string groupId);
+        Task<bool> DeleteGroupAsync(string realmName, string groupName);
+        Task<bool> UpdateGroupAsync(string realmName, string oldGroupName, string newGroupName, string? description = null);
         Task<bool> UpdateUserPasswordAsync(string realmName, string userId, string newPassword, bool temporary = false);
         Task<bool> ValidateUserPasswordAsync(string realmName, string username, string password);
+        Task<Dictionary<string, string>?> GetUserAttributesAsync(string realmName, string username);
     }
 
     public class RealmInfo
@@ -63,6 +66,11 @@ namespace MngKeeper.Application.Interfaces
         public string Password { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
+        public string? Title { get; set; }
+        public string? Department { get; set; }
+        public int Gender { get; set; } = 0; // 0: NotSpecified, 1: Male, 2: Female
+        public string? PhoneNumber { get; set; }
+        public string? PhotoUrl { get; set; }
         public List<string> Groups { get; set; } = new();
         public List<string> Roles { get; set; } = new();
     }

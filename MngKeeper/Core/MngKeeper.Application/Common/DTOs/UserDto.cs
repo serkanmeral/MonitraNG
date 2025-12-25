@@ -1,3 +1,5 @@
+using MngKeeper.Domain.Enums;
+
 namespace MngKeeper.Application.Common.DTOs
 {
     public class UserDto
@@ -7,6 +9,11 @@ namespace MngKeeper.Application.Common.DTOs
         public string Email { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
+        public string? Title { get; set; }
+        public string? Department { get; set; }
+        public Gender Gender { get; set; } = Gender.NotSpecified;
+        public string? PhoneNumber { get; set; }
+        public string? PhotoUrl { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

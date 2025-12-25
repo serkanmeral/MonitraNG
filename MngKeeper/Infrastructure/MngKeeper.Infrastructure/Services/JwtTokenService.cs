@@ -13,11 +13,22 @@ namespace MngKeeper.Infrastructure.Services
             _logger = logger;
         }
 
-        public string AddDomainClaimToToken(string originalToken, string domainId, string domainName, bool isAdmin = false)
+        public string AddDomainClaimToToken(
+            string originalToken, 
+            string domainId, 
+            string domainName, 
+            bool isAdmin = false, 
+            bool isManager = false,
+            string? title = null,
+            string? department = null,
+            int? gender = null,
+            string? phoneNumber = null,
+            string? photoUrl = null)
         {
             try
             {
-                _logger.LogInformation("Adding domain claim to token for domain: {DomainName}, isAdmin: {IsAdmin}", domainName, isAdmin);
+                _logger.LogInformation("Adding domain claim to token for domain: {DomainName}, isAdmin: {IsAdmin}, isManager: {IsManager}", 
+                    domainName, isAdmin, isManager);
 
                 // Parse the original token
                 var tokenParts = originalToken.Split('.');
@@ -45,15 +56,49 @@ namespace MngKeeper.Infrastructure.Services
                 newPayload["domain_name"] = domainName;
                 newPayload["domain_realm"] = domainName.ToLower().Replace(" ", "_");
                 newPayload["is_admin"] = isAdmin;
+                newPayload["is_manager"] = isManager; // snake_case for consistency with is_admin
+
+                // Add user profile fields if provided
+                if (!string.IsNullOrEmpty(title))
+                {
+                    newPayload["title"] = title;
+                    _logger.LogInformation("Added title to token: {Title}", title);
+                }
+                if (!string.IsNullOrEmpty(department))
+                {
+                    newPayload["department"] = department;
+                    _logger.LogInformation("Added department to token: {Department}", department);
+                }
+                if (gender.HasValue)
+                {
+                    newPayload["gender"] = gender.Value;
+                    _logger.LogInformation("Added gender to token: {Gender}", gender.Value);
+                }
+                if (!string.IsNullOrEmpty(phoneNumber))
+                {
+                    newPayload["phoneNumber"] = phoneNumber;
+                    _logger.LogInformation("Added phoneNumber to token: {PhoneNumber}", phoneNumber);
+                }
+                if (!string.IsNullOrEmpty(photoUrl))
+                {
+                    newPayload["photoUrl"] = photoUrl;
+                    _logger.LogInformation("Added photoUrl to token: {PhotoUrl}", photoUrl);
+                }
+
+                _logger.LogInformation("Adding claims - isManager: {IsManager}, title: {Title}, department: {Department}, gender: {Gender}, phoneNumber: {PhoneNumber}, photoUrl: {PhotoUrl}", 
+                    isManager, title ?? "null", department ?? "null", gender?.ToString() ?? "null", phoneNumber ?? "null", photoUrl ?? "null");
 
                 // Serialize the new payload
                 var newPayloadJson = JsonSerializer.Serialize(newPayload);
                 var newPayloadBase64 = EncodeJwtPart(newPayloadJson);
 
                 // Create new token (we'll keep the same header and signature for now)
+                // NOTE: This will invalidate the signature, but the token will still be readable
+                // For production, we should re-sign the token with our private key
                 var newToken = $"{tokenParts[0]}.{newPayloadBase64}.{tokenParts[2]}";
 
-                _logger.LogInformation("Domain claim added to token successfully for domain: {DomainName}, isAdmin: {IsAdmin}", domainName, isAdmin);
+                _logger.LogInformation("Domain claim added to token successfully for domain: {DomainName}, isAdmin: {IsAdmin}, isManager: {IsManager}", 
+                    domainName, isAdmin, isManager);
 
                 return newToken;
             }

@@ -9,15 +9,18 @@ namespace MngKeeper.Application.Features.Group.Queries.GetGroup
     public class GetGroupQueryHandler : IRequestHandler<GetGroupQuery, GetGroupResponse>
     {
         private readonly IGroupRepository _groupRepository;
+        private readonly IUserRepository _userRepository;
         private readonly ILogger<GetGroupQueryHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         public GetGroupQueryHandler(
             IGroupRepository groupRepository,
+            IUserRepository userRepository,
             ILogger<GetGroupQueryHandler> logger,
             IHttpContextAccessor httpContextAccessor)
         {
             _groupRepository = groupRepository;
+            _userRepository = userRepository;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -61,6 +64,10 @@ namespace MngKeeper.Application.Features.Group.Queries.GetGroup
                     };
                 }
 
+                // Calculate member count (users with this group name in their Groups list)
+                var usersInGroup = await _userRepository.GetByGroupIdAsync(group.Id, claims.DomainId);
+                var memberCount = usersInGroup.Count();
+
                 var groupDto = new GetGroupResponseDto
                 {
                     GroupId = group.Id,
@@ -68,6 +75,7 @@ namespace MngKeeper.Application.Features.Group.Queries.GetGroup
                     Description = group.Description,
                     Permissions = group.Permissions,
                     IsActive = group.IsActive,
+                    MemberCount = memberCount,
                     CreatedAt = group.CreatedAt,
                     UpdatedAt = group.UpdatedAt,
                     CreatedBy = group.CreatedBy,

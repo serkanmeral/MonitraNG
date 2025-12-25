@@ -1,4 +1,5 @@
 using MediatR;
+using MngKeeper.Domain.Enums;
 
 namespace MngKeeper.Application.Features.User.Commands.UpdateUser
 {
@@ -9,6 +10,11 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
         public string Email { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
+        public string? Title { get; set; }
+        public string? Department { get; set; }
+        public Gender Gender { get; set; } = Gender.NotSpecified;
+        public string? PhoneNumber { get; set; }
+        public string? PhotoUrl { get; set; }
         public List<string> GroupIds { get; set; } = new();
         public bool IsActive { get; set; } = true;
         
@@ -26,6 +32,11 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
         public string Email { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
+        public string? Title { get; set; }
+        public string? Department { get; set; }
+        public Gender Gender { get; set; } = Gender.NotSpecified;
+        public string? PhoneNumber { get; set; }
+        public string? PhotoUrl { get; set; }
         public List<string> GroupIds { get; set; } = new();
         public bool IsActive { get; set; }
         public DateTime UpdatedAt { get; set; }

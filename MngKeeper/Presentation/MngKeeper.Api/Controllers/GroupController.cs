@@ -6,13 +6,14 @@ using MngKeeper.Application.Features.Group.Commands.UpdateGroup;
 using MngKeeper.Application.Features.Group.Commands.DeleteGroup;
 using MngKeeper.Application.Features.Group.Queries.GetGroups;
 using MngKeeper.Application.Features.Group.Queries.GetGroup;
+using MngKeeper.Application.Features.Group.Queries.ExportGroups;
 using MngKeeper.Application.Interfaces;
 
 namespace MngKeeper.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [AdminAuthorization] // Re-enabled for proper token parsing
+    [ManagerAuthorization] // Allows both Admin and Manager users
     public class GroupController : ControllerBase
     {
         private readonly IMediator _mediator;
@@ -109,6 +110,29 @@ namespace MngKeeper.Api.Controllers
                 return BadRequest(response);
 
             return NoContent();
+        }
+
+        [HttpGet("export")]
+        public async Task<IActionResult> ExportGroups(
+            [FromQuery] string format = "csv",
+            [FromQuery] string? searchTerm = null,
+            [FromQuery] bool? isActive = null)
+        {
+            var query = new ExportGroupsQuery
+            {
+                Format = format,
+                SearchTerm = searchTerm,
+                IsActive = isActive
+            };
+            
+            var response = await _mediator.Send(query);
+            
+            if (!response.IsSuccess)
+            {
+                return BadRequest(new { message = response.ErrorMessage });
+            }
+
+            return File(response.FileContent, response.ContentType, response.FileName);
         }
 
         [HttpGet("health")]

@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { loginToMngKeeper, refreshMngKeeperToken, revokeMngKeeperToken, type TokenResponse } from "@/services/apiService";
 import { decodeJwt } from "jose";
+import { isTokenExpired } from "@/utils/tokenUtils";
 
 export interface UserInfo {
   sub: string;
@@ -12,6 +13,7 @@ export interface UserInfo {
   preferred_username?: string;
   user_groups?: string[];
   isAdmin?: boolean;
+  is_manager?: boolean; // Manager privilege (snake_case for consistency with is_admin)
   domain_id?: string;
   domain_name?: string;
   [key: string]: any;
@@ -37,6 +39,10 @@ export const useAuthStore = defineStore("auth", {
   getters: {
     isAdmin: (state): boolean => {
       return state.userInfo?.isAdmin === true || false;
+    },
+    isManager: (state): boolean => {
+      // Admin users automatically have Manager privileges
+      return state.userInfo?.isAdmin === true || state.userInfo?.is_manager === true || false;
     },
     userGroups: (state): string[] => {
       return state.userInfo?.user_groups || [];
@@ -100,14 +106,23 @@ export const useAuthStore = defineStore("auth", {
       }
     },
 
-    async refreshToken() {
-      if (!this.refreshToken || !this.domainName) {
+    async refreshAccessToken(): Promise<boolean> {
+      // Refresh token'ı cookie'den al (state'deki güncel olmayabilir)
+      const refreshTokenCookie = useCookie("refresh_token");
+      const refreshTokenValue = refreshTokenCookie.value || this.refreshToken;
+      
+      if (!refreshTokenValue || !this.domainName) {
         throw new Error("Refresh token veya domain bilgisi bulunamadı");
+      }
+
+      // Refresh token'ın kendisi expire olmuş mu kontrol et
+      if (isTokenExpired(refreshTokenValue, 0)) {
+        throw new Error("Refresh token süresi dolmuş");
       }
 
       try {
         const response: TokenResponse = await refreshMngKeeperToken(
-          this.refreshToken,
+          refreshTokenValue,
           this.domainName
         );
         
@@ -116,33 +131,64 @@ export const useAuthStore = defineStore("auth", {
         
         // Update cookies
         const accessTokenCookie = useCookie("access_token", {
-          maxAge: response.expiresIn,
-          secure: true,
+          maxAge: response.expiresIn || 300,
+          secure: process.env.NODE_ENV === 'production',
           sameSite: "strict",
         });
-        const refreshTokenCookie = useCookie("refresh_token", {
-          maxAge: response.refreshExpiresIn,
-          secure: true,
+        const newRefreshTokenCookie = useCookie("refresh_token", {
+          maxAge: response.refreshExpiresIn || 1800,
+          secure: process.env.NODE_ENV === 'production',
           sameSite: "strict",
         });
         
         accessTokenCookie.value = response.accessToken;
-        refreshTokenCookie.value = response.refreshToken;
+        newRefreshTokenCookie.value = response.refreshToken;
         
         // Decode and update user info
         try {
           const decoded = decodeJwt(response.accessToken) as UserInfo;
           this.userInfo = decoded;
+          this.isAuthenticated = true;
+          
+          // Update localStorage
+          localStorage.setItem("userInfo", JSON.stringify(decoded));
         } catch (error) {
           console.error("JWT decode error:", error);
         }
         
-        return { success: true };
+        return true;
       } catch (error) {
         // If refresh fails, logout
         await this.logout();
         throw error;
       }
+    },
+
+    /**
+     * Access token'ı kontrol eder ve gerekirse refresh eder
+     * @returns true if token is valid or was successfully refreshed
+     */
+    async ensureValidToken(): Promise<boolean> {
+      // Token yoksa false döndür
+      if (!this.accessToken) {
+        return false;
+      }
+
+      // Token expire olmuş mu kontrol et (60 saniye buffer ile)
+      if (isTokenExpired(this.accessToken, 60)) {
+        try {
+          // Refresh token ile yenile
+          await this.refreshAccessToken();
+          return true;
+        } catch (error) {
+          // Refresh başarısız, logout yap
+          console.error("Token refresh failed:", error);
+          await this.logout();
+          return false;
+        }
+      }
+
+      return true;
     },
 
     async logout() {
@@ -171,7 +217,7 @@ export const useAuthStore = defineStore("auth", {
       localStorage.removeItem("userInfo");
     },
 
-    initializeAuth() {
+    async initializeAuth() {
       // Check if tokens exist in cookies
       const accessTokenCookie = useCookie("access_token");
       const refreshTokenCookie = useCookie("refresh_token");
@@ -179,6 +225,20 @@ export const useAuthStore = defineStore("auth", {
       if (accessTokenCookie.value && refreshTokenCookie.value) {
         this.accessToken = accessTokenCookie.value;
         this.refreshToken = refreshTokenCookie.value;
+        
+        // Token expire olmuş mu kontrol et
+        if (isTokenExpired(accessTokenCookie.value, 60)) {
+          // Expire olmuşsa refresh et
+          try {
+            await this.refreshAccessToken();
+            return;
+          } catch (error) {
+            // Refresh başarısız, logout yap
+            console.error("Token refresh failed during initialization:", error);
+            await this.logout();
+            return;
+          }
+        }
         
         // Try to decode token
         try {
@@ -198,7 +258,7 @@ export const useAuthStore = defineStore("auth", {
         } catch (error) {
           console.error("JWT decode error:", error);
           // If decode fails, clear everything
-          this.logout();
+          await this.logout();
         }
       }
     },

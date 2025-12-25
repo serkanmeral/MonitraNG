@@ -31,6 +31,12 @@ public static class Extensions
         return log;
     }
 
+    public static async Task ConfigureSeqRetentionPoliciesAsync(this WebApplication app, IConfiguration configuration)
+    {
+        var logger = app.Services.GetRequiredService<ILogger<Program>>();
+        await SeqRetentionPolicy.ConfigureRetentionPoliciesAsync(configuration, logger);
+    }
+
     public static void InitOpenApi(this WebApplicationBuilder builder)
     {
         builder.Services.AddEndpointsApiExplorer();
@@ -187,28 +193,31 @@ public static class Extensions
             });
         }
 
-        // 2. HTTPS redirection
+        // 2. CORS - Must be before UseHttpsRedirection
+        app.UseCors("CorsPolicy");
+
+        // 3. HTTPS redirection
         app.UseHttpsRedirection();
 
-        // 3. Global exception handler
+        // 4. Global exception handler
         app.UseGlobalExceptionHandler();
 
-        // 4. Serve static files for Swagger UI customization
+        // 5. Serve static files for Swagger UI customization
         app.UseStaticFiles();
 
-        // 5. Serilog request logging
+        // 6. Serilog request logging
         app.UseSerilogRequestLogging();
 
-        // 6. JWT Claims extraction
+        // 7. JWT Claims extraction
         app.UseJwtClaims();
 
-        // 7. Authorization
+        // 8. Authorization
         app.UseAuthorization();
 
-        // 7. Map controllers
+        // 9. Map controllers
         app.MapControllers();
 
-        // 8. Map GraphQL endpoint
+        // 10. Map GraphQL endpoint
         app.MapGraphQL();
     }
 }

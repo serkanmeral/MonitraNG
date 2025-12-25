@@ -197,6 +197,220 @@ namespace MngDataGateway.Persistence.Services
             }
 
         /// <summary>
+        /// Add persons/personGroups expansion stages ($lookup from @users and @groups)
+        /// </summary>
+        public AggregatePipelineBuilder AddPersonExpansion(bool expand = true)
+        {
+            if (!expand)
+            {
+                _logger.LogDebug("Person expansion disabled, skipping $lookup stages");
+                return this;
+            }
+
+            // persons field expansion
+            var personFields = _schema.fields
+                .Where(f => f.fieldType == "persons")
+                .ToList();
+
+            foreach (var field in personFields)
+            {
+                try
+                {
+                    var lookupStage = BuildPersonLookupStage(field);
+                    if (lookupStage != null)
+                    {
+                        _pipeline.Add(lookupStage);
+                        _logger.LogDebug("Added $lookup stage for persons field: {FieldName} -> @users", field.name);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to build $lookup stage for persons field {FieldName}", field.name);
+                }
+            }
+
+            // personGroups field expansion
+            var personGroupFields = _schema.fields
+                .Where(f => f.fieldType == "personGroups")
+                .ToList();
+
+            foreach (var field in personGroupFields)
+            {
+                try
+                {
+                    var lookupStage = BuildPersonGroupLookupStage(field);
+                    if (lookupStage != null)
+                    {
+                        _pipeline.Add(lookupStage);
+                        _logger.LogDebug("Added $lookup stage for personGroups field: {FieldName} -> @groups", field.name);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to build $lookup stage for personGroups field {FieldName}", field.name);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Build $lookup stage for persons field
+        /// </summary>
+        private BsonDocument? BuildPersonLookupStage(FieldDefinition field)
+        {
+            BsonDocument lookup;
+
+            if (field.isArray)
+            {
+                // Array persons field - use pipeline with $in
+                lookup = new BsonDocument
+                {
+                    ["from"] = "@users",
+                    ["let"] = new BsonDocument(field.name, $"${field.name}"),
+                    ["pipeline"] = new BsonArray
+                    {
+                        new BsonDocument
+                        {
+                            ["$match"] = new BsonDocument
+                            {
+                                ["$expr"] = new BsonDocument
+                                {
+                                    ["$in"] = new BsonArray
+                                    {
+                                        "$__dataId",
+                                        $"$${field.name}"
+                                    }
+                                },
+                                ["__isDeleted"] = new BsonDocument("$ne", true)
+                            }
+                        },
+                        new BsonDocument
+                        {
+                            ["$project"] = new BsonDocument
+                            {
+                                ["_id"] = 0,
+                                ["__isDeleted"] = 0,
+                                ["__history"] = 0
+                            }
+                        }
+                    },
+                    ["as"] = field.name
+                };
+            }
+            else
+            {
+                // Single person field - use simple lookup with pipeline for soft delete filter
+                lookup = new BsonDocument
+                {
+                    ["from"] = "@users",
+                    ["localField"] = field.name,
+                    ["foreignField"] = "__dataId",
+                    ["as"] = field.name,
+                    ["pipeline"] = new BsonArray
+                    {
+                        new BsonDocument
+                        {
+                            ["$match"] = new BsonDocument
+                            {
+                                ["__isDeleted"] = new BsonDocument("$ne", true)
+                            }
+                        },
+                        new BsonDocument
+                        {
+                            ["$project"] = new BsonDocument
+                            {
+                                ["_id"] = 0,
+                                ["__isDeleted"] = 0,
+                                ["__history"] = 0
+                            }
+                        }
+                    }
+                };
+            }
+
+            return new BsonDocument("$lookup", lookup);
+        }
+
+        /// <summary>
+        /// Build $lookup stage for personGroups field
+        /// </summary>
+        private BsonDocument? BuildPersonGroupLookupStage(FieldDefinition field)
+        {
+            BsonDocument lookup;
+
+            if (field.isArray)
+            {
+                // Array personGroups field - use pipeline with $in
+                lookup = new BsonDocument
+                {
+                    ["from"] = "@groups",
+                    ["let"] = new BsonDocument(field.name, $"${field.name}"),
+                    ["pipeline"] = new BsonArray
+                    {
+                        new BsonDocument
+                        {
+                            ["$match"] = new BsonDocument
+                            {
+                                ["$expr"] = new BsonDocument
+                                {
+                                    ["$in"] = new BsonArray
+                                    {
+                                        "$__dataId",
+                                        $"$${field.name}"
+                                    }
+                                },
+                                ["__isDeleted"] = new BsonDocument("$ne", true)
+                            }
+                        },
+                        new BsonDocument
+                        {
+                            ["$project"] = new BsonDocument
+                            {
+                                ["_id"] = 0,
+                                ["__isDeleted"] = 0,
+                                ["__history"] = 0
+                            }
+                        }
+                    },
+                    ["as"] = field.name
+                };
+            }
+            else
+            {
+                // Single personGroup field - use simple lookup with pipeline for soft delete filter
+                lookup = new BsonDocument
+                {
+                    ["from"] = "@groups",
+                    ["localField"] = field.name,
+                    ["foreignField"] = "__dataId",
+                    ["as"] = field.name,
+                    ["pipeline"] = new BsonArray
+                    {
+                        new BsonDocument
+                        {
+                            ["$match"] = new BsonDocument
+                            {
+                                ["__isDeleted"] = new BsonDocument("$ne", true)
+                            }
+                        },
+                        new BsonDocument
+                        {
+                            ["$project"] = new BsonDocument
+                            {
+                                ["_id"] = 0,
+                                ["__isDeleted"] = 0,
+                                ["__history"] = 0
+                            }
+                        }
+                    }
+                };
+            }
+
+            return new BsonDocument("$lookup", lookup);
+        }
+
+        /// <summary>
         /// Build and return the pipeline
         /// </summary>
         public List<BsonDocument> Build()

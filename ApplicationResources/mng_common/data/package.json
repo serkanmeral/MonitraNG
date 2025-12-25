@@ -4,7 +4,7 @@
     "version": "0.0.1",
     "private": true,
     "dependencies": {
-        "@mnn-o/node-red-rabbitmq": "~1.0.2",
-        "node-red-contrib-config": "~1.2.1"
+        "node-red-contrib-config": "~1.2.1",
+        "node-red-contrib-uibuilder": "~7.5.0"
     }
 }

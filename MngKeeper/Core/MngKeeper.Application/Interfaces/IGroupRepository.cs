@@ -26,6 +26,14 @@ namespace MngKeeper.Application.Interfaces
             string? searchTerm = null,
             bool? isActive = null);
         
+        /// <summary>
+        /// Get all groups by domain (without pagination) with search and filtering support - for export purposes
+        /// </summary>
+        Task<IEnumerable<Group>> GetAllByDomainIdAsync(
+            string domainId,
+            string? searchTerm = null,
+            bool? isActive = null);
+        
         Task<bool> ExistsByNameAsync(string name, string domainId);
     }
 }

@@ -79,8 +79,24 @@ namespace MngKeeper.Application.Features.User.Commands.RemoveUserFromGroup
                     };
                 }
 
-                // TODO: Remove from group in Keycloak (implement when Keycloak service supports it)
-                // For now, we'll just update our database
+                // Remove from group in Keycloak first
+                try
+                {
+                    var keycloakRemoved = await _keycloakService.RemoveUserFromGroupAsync(domain.RealmName, user.KeycloakUserId, group.Name);
+                    if (!keycloakRemoved)
+                    {
+                        _logger.LogWarning("Failed to remove user {UserId} from group {GroupName} in Keycloak, but continuing with MongoDB update", user.Id, group.Name);
+                    }
+                    else
+                    {
+                        _logger.LogInformation("User {UserId} removed from group {GroupName} in Keycloak successfully", user.Id, group.Name);
+                    }
+                }
+                catch (Exception keycloakEx)
+                {
+                    // Log error but don't fail the operation - continue with MongoDB update
+                    _logger.LogError(keycloakEx, "Error removing user {UserId} from group {GroupName} in Keycloak, but continuing with MongoDB update", user.Id, group.Name);
+                }
 
                 // Remove from user groups in database (by group NAME for consistency)
                 user.Groups.Remove(group.Name);

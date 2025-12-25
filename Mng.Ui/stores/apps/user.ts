@@ -26,6 +26,9 @@ interface UserState {
   loading: boolean;
   error: string | null;
   totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 export const useUserStore = defineStore('user', {
@@ -35,6 +38,9 @@ export const useUserStore = defineStore('user', {
     loading: false,
     error: null,
     totalCount: 0,
+    page: 1,
+    pageSize: 10,
+    totalPages: 1,
   }),
 
   getters: {
@@ -69,55 +75,47 @@ export const useUserStore = defineStore('user', {
         const url = `/user${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
         const response = await fetchFromMngKeeper(url, 'GET');
         
-        console.log('API Response:', response); // Debug için
-        
-        // API response yapısı: GetUsersResponse { IsSuccess, Users, TotalCount, ErrorMessage }
+        // API response yapısı kontrolü: Hem büyük harf (IsSuccess, Users, TotalCount) hem küçük harf (users, totalCount) destekleniyor
         if (response.IsSuccess === false) {
           throw new Error(response.ErrorMessage || 'Kullanıcılar yüklenirken bir hata oluştu');
         }
         
-        // Response.Users (büyük U) kontrolü
-        if (response.Users && Array.isArray(response.Users)) {
-          this.users = response.Users.map((user: any) => ({
-            id: user.UserId || user.userId || '',
-            userId: user.UserId || user.userId,
-            domainId: user.domainId || '',
-            keycloakUserId: user.keycloakUserId,
-            username: user.Username || user.username || '',
-            email: user.Email || user.email || '',
-            firstName: user.FirstName || user.firstName || '',
-            lastName: user.LastName || user.lastName || '',
-            isActive: user.IsActive !== undefined ? user.IsActive : (user.isActive !== undefined ? user.isActive : true),
-            groups: user.Groups || user.groups || [],
-            roles: user.Roles || user.roles || [],
-            createdAt: user.CreatedAt || user.createdAt || new Date(),
-            lastLoginAt: user.LastLoginAt || user.lastLoginAt || null,
-            createdBy: user.CreatedBy || user.createdBy,
-            updatedAt: user.UpdatedAt || user.updatedAt || null,
-            updatedBy: user.UpdatedBy || user.updatedBy || null,
+        // Önce küçük harf kontrolü (API'den gelen format: users, totalCount, page, pageSize, totalPages)
+        const usersArray = response.users || response.Users;
+        const totalCountValue = response.totalCount ?? response.TotalCount ?? 0;
+        const pageValue = response.page ?? response.Page ?? 1;
+        const pageSizeValue = response.pageSize ?? response.PageSize ?? 10;
+        const totalPagesValue = response.totalPages ?? response.TotalPages ?? 1;
+        
+        // Response.users (küçük harf) veya Response.Users (büyük harf) kontrolü
+        if (usersArray && Array.isArray(usersArray)) {
+          this.users = usersArray.map((user: any) => ({
+            id: user.userId || user.UserId || user.id || '',
+            userId: user.userId || user.UserId || user.id,
+            domainId: user.domainId || user.DomainId || '',
+            keycloakUserId: user.keycloakUserId || user.KeycloakUserId,
+            username: user.username || user.Username || '',
+            email: user.email || user.Email || '',
+            firstName: user.firstName || user.FirstName || '',
+            lastName: user.lastName || user.LastName || '',
+            title: user.title || user.Title || null,
+            department: user.department || user.Department || null,
+            gender: user.gender !== undefined ? user.gender : (user.Gender !== undefined ? user.Gender : Gender.NotSpecified),
+            phoneNumber: user.phoneNumber || user.PhoneNumber || null,
+            photoUrl: user.photoUrl || user.PhotoUrl || null,
+            isActive: user.isActive !== undefined ? user.isActive : (user.IsActive !== undefined ? user.IsActive : true),
+            groups: user.groups || user.Groups || [],
+            roles: user.roles || user.Roles || [],
+            createdAt: user.createdAt || user.CreatedAt || new Date(),
+            lastLoginAt: user.lastLoginAt || user.LastLoginAt || null,
+            createdBy: user.createdBy || user.CreatedBy,
+            updatedAt: user.updatedAt || user.UpdatedAt || null,
+            updatedBy: user.updatedBy || user.UpdatedBy || null,
           }));
-          this.totalCount = response.TotalCount || response.totalCount || response.Users.length;
-        } else if (response.users && Array.isArray(response.users)) {
-          // Küçük harf ile dönerse (fallback)
-          this.users = response.users.map((user: any) => ({
-            id: user.userId || user.id || '',
-            userId: user.userId || user.id,
-            domainId: user.domainId || '',
-            keycloakUserId: user.keycloakUserId,
-            username: user.username || '',
-            email: user.email || '',
-            firstName: user.firstName || '',
-            lastName: user.lastName || '',
-            isActive: user.isActive !== undefined ? user.isActive : true,
-            groups: user.groups || [],
-            roles: user.roles || [],
-            createdAt: user.createdAt || new Date(),
-            lastLoginAt: user.lastLoginAt || null,
-            createdBy: user.createdBy,
-            updatedAt: user.updatedAt || null,
-            updatedBy: user.updatedBy || null,
-          }));
-          this.totalCount = response.totalCount || response.users.length;
+          this.totalCount = totalCountValue;
+          this.page = pageValue;
+          this.pageSize = pageSizeValue;
+          this.totalPages = totalPagesValue;
         } else if (Array.isArray(response)) {
           // Direkt array dönerse
           this.users = response.map((user: any) => ({

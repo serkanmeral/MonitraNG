@@ -140,6 +140,10 @@ export function getAccessToken(): string | null {
   return tokenCookie.value || null;
 }
 
+// Flag to prevent multiple simultaneous refresh attempts
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
 // Helper function to get refresh token from cookie
 export function getRefreshToken(): string | null {
   const refreshTokenCookie = useCookie("refresh_token");
@@ -155,6 +159,14 @@ export function fetchFromMngKeeper(
 ): Promise<any> {
   return new Promise(async (resolve, reject) => {
     try {
+      const authStore = useAuthStore();
+      
+      // Ensure token is valid (refresh if needed)
+      const isValid = await authStore.ensureValidToken();
+      if (!isValid) {
+        throw new Error("Token geçersiz veya süresi dolmuş. Lütfen tekrar giriş yapın.");
+      }
+      
       // Get token from cookie (NOT from localStorage for security)
       const token = getAccessToken();
       
@@ -164,19 +176,108 @@ export function fetchFromMngKeeper(
       
       // Remove leading slash if exists
       const cleanUrl = url.startsWith('/') ? url.slice(1) : url;
+      const fullUrl = `/api/keeper/${cleanUrl}`;
+      
+      // LOG: Sadece PUT (güncelleme) request'leri için log
+      if (process.env.NODE_ENV === 'development' && method === 'PUT' && cleanUrl.startsWith('group')) {
+        console.log('[ApiService] Update Group Request:', {
+          url: fullUrl,
+          method,
+          body
+        });
+      }
       
       // Use Nuxt server-side proxy to avoid SSL issues
-      const response = await $fetch(`/api/keeper/${cleanUrl}`, {
-        method,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          ...headers,
-        },
-        ...(body && { body }),
-      });
+      // DELETE işlemleri için 204 NoContent response'u handle et
+      let response: any;
+      
+      if (method === 'DELETE') {
+        try {
+          // DELETE için $fetch.raw kullanarak status code'u kontrol et
+          const rawResponse = await $fetch.raw(fullUrl, {
+            method,
+            headers: {
+              Authorization: `Bearer ${token}`,
+              ...headers,
+            },
+            ...(body && { body }),
+          });
+          
+          // 204 NoContent durumu - başarılı, body yok
+          if (rawResponse.status === 204) {
+            response = { success: true, statusCode: 204 };
+          } else {
+            // Diğer başarılı durumlar
+            response = rawResponse._data;
+          }
+        } catch (fetchError: any) {
+          // 204 NoContent için $fetch.raw hata vermez, ama kontrol edelim
+          if (fetchError.statusCode === 204 || fetchError.response?.status === 204) {
+            response = { success: true, statusCode: 204 };
+          } else {
+            throw fetchError;
+          }
+        }
+      } else {
+        // GET, POST, PUT için normal $fetch kullan
+        response = await $fetch(fullUrl, {
+          method,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            ...headers,
+          },
+          ...(body && { body }),
+        });
+      }
+
+      // LOG: Sadece PUT (güncelleme) response'ları için log
+      if (process.env.NODE_ENV === 'development' && method === 'PUT' && cleanUrl.startsWith('group')) {
+        console.log('[ApiService] Update Group Response:', response);
+      }
 
       resolve(response);
     } catch (error: any) {
+      // 401 Unauthorized hatası - token expire olmuş olabilir
+      if (error.statusCode === 401 || error.status === 401) {
+        const authStore = useAuthStore();
+        
+        // Token'ı refresh etmeyi dene
+        try {
+          const refreshed = await authStore.refreshAccessToken();
+          
+          if (refreshed) {
+            // Token refresh başarılı, isteği tekrar dene
+            const token = getAccessToken();
+            if (token) {
+              const cleanUrl = url.startsWith('/') ? url.slice(1) : url;
+              try {
+                const retryResponse = await $fetch(`/api/keeper/${cleanUrl}`, {
+                  method,
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    ...headers,
+                  },
+                  ...(body && { body }),
+                });
+                resolve(retryResponse);
+                return;
+              } catch (retryError: any) {
+                // Retry de başarısız, normal hata akışına devam et
+                error = retryError;
+              }
+            }
+          }
+        } catch (refreshError) {
+          // Refresh başarısız, logout yap ve login sayfasına yönlendir
+          await authStore.logout();
+          if (process.client) {
+            navigateTo('/auth/login');
+          }
+          reject(new Error("Oturum süresi dolmuş. Lütfen tekrar giriş yapın."));
+          return;
+        }
+      }
+      
       // Hata mesajını düzgün formatla
       let errorMessage = 'İstek başarısız';
       

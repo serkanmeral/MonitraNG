@@ -105,6 +105,35 @@ namespace MngKeeper.Infrastructure.Services
                 // Check if user should be admin
                 var isAdmin = request.Groups.Contains("admins");
 
+                // Build attributes dictionary
+                var attributes = new Dictionary<string, string[]>
+                {
+                    ["domain"] = new[] { realmName },
+                    ["isAdmin"] = new[] { isAdmin.ToString().ToLower() }
+                };
+
+                // Add optional attributes if provided
+                if (!string.IsNullOrEmpty(request.Title))
+                {
+                    attributes["title"] = new[] { request.Title };
+                }
+                if (!string.IsNullOrEmpty(request.Department))
+                {
+                    attributes["department"] = new[] { request.Department };
+                }
+                if (request.Gender >= 0 && request.Gender <= 2)
+                {
+                    attributes["gender"] = new[] { request.Gender.ToString() };
+                }
+                if (!string.IsNullOrEmpty(request.PhoneNumber))
+                {
+                    attributes["phoneNumber"] = new[] { request.PhoneNumber };
+                }
+                if (!string.IsNullOrEmpty(request.PhotoUrl))
+                {
+                    attributes["photoUrl"] = new[] { request.PhotoUrl };
+                }
+
                 var userData = new
                 {
                     username = request.Username,
@@ -113,11 +142,7 @@ namespace MngKeeper.Infrastructure.Services
                     lastName = request.LastName,
                     enabled = true,
                     emailVerified = true,
-                    attributes = new Dictionary<string, string[]>
-                    {
-                        ["domain"] = new[] { realmName },
-                        ["isAdmin"] = new[] { isAdmin.ToString().ToLower() }
-                    },
+                    attributes = attributes,
                     credentials = new[]
                     {
                         new
@@ -374,6 +399,71 @@ namespace MngKeeper.Infrastructure.Services
             }
         }
 
+        public async Task<bool> RemoveUserFromGroupAsync(string realmName, string userId, string groupName)
+        {
+            try
+            {
+                _logger.LogInformation("Removing user {UserId} from group {GroupName} in realm {RealmName}", userId, groupName, realmName);
+
+                await EnsureAdminTokenAsync();
+
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
+
+                // First, get the group ID by name
+                var groupsResponse = await _httpClient.GetAsync($"/admin/realms/{realmName}/groups");
+                if (!groupsResponse.IsSuccessStatusCode)
+                {
+                    _logger.LogError("Failed to get groups for realm {RealmName}", realmName);
+                    return false;
+                }
+
+                var groupsJson = await groupsResponse.Content.ReadAsStringAsync();
+                var groups = JsonSerializer.Deserialize<JsonElement[]>(groupsJson);
+                
+                string? groupId = null;
+                foreach (var group in groups ?? Array.Empty<JsonElement>())
+                {
+                    if (group.GetProperty("name").GetString() == groupName)
+                    {
+                        groupId = group.GetProperty("id").GetString();
+                        break;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(groupId))
+                {
+                    _logger.LogWarning("Group {GroupName} not found in realm {RealmName}", groupName, realmName);
+                    return false;
+                }
+
+                // Remove user from group
+                var response = await _httpClient.DeleteAsync($"/admin/realms/{realmName}/users/{userId}/groups/{groupId}");
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    // 404 means user is not in the group, which is acceptable (idempotent operation)
+                    if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                    {
+                        _logger.LogInformation("User {UserId} is not in group {GroupName} in realm {RealmName} (404 Not Found) - considering success", userId, groupName, realmName);
+                        return true;
+                    }
+                    
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Failed to remove user {UserId} from group {GroupName} in realm {RealmName}. Status: {StatusCode}, Error: {Error}", 
+                        userId, groupName, realmName, response.StatusCode, errorContent);
+                    return false;
+                }
+
+                _logger.LogInformation("User {UserId} removed from group {GroupName} in realm {RealmName}", userId, groupName, realmName);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error removing user {UserId} from group {GroupName} in realm {RealmName}", userId, groupName, realmName);
+                return false;
+            }
+        }
+
         public async Task<bool> IsUserInGroupAsync(string realmName, string username, string groupName)
         {
             try
@@ -443,6 +533,64 @@ namespace MngKeeper.Infrastructure.Services
             {
                 _logger.LogError(ex, "Error checking if user {Username} is in group {GroupName} in realm {RealmName}", username, groupName, realmName);
                 return false;
+            }
+        }
+
+        public async Task<Dictionary<string, string>?> GetUserAttributesAsync(string realmName, string username)
+        {
+            try
+            {
+                _logger.LogInformation("Getting user attributes for: {Username} in realm {RealmName}", username, realmName);
+
+                await EnsureAdminTokenAsync();
+
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
+
+                // First, get the user by username
+                var usersResponse = await _httpClient.GetAsync($"/admin/realms/{realmName}/users?username={username}");
+                if (!usersResponse.IsSuccessStatusCode)
+                {
+                    _logger.LogError("Failed to get user {Username} for realm {RealmName}", username, realmName);
+                    return null;
+                }
+
+                var usersJson = await usersResponse.Content.ReadAsStringAsync();
+                var users = JsonSerializer.Deserialize<JsonElement[]>(usersJson);
+                
+                if (users == null || users.Length == 0)
+                {
+                    _logger.LogError("User {Username} not found in realm {RealmName}", username, realmName);
+                    return null;
+                }
+
+                var user = users[0];
+                
+                // Extract attributes
+                var attributes = new Dictionary<string, string>();
+                
+                if (user.TryGetProperty("attributes", out var attributesElement))
+                {
+                    foreach (var attr in attributesElement.EnumerateObject())
+                    {
+                        // Keycloak attributes are arrays, take first element
+                        if (attr.Value.ValueKind == JsonValueKind.Array && attr.Value.GetArrayLength() > 0)
+                        {
+                            attributes[attr.Name] = attr.Value[0].GetString() ?? string.Empty;
+                        }
+                        else if (attr.Value.ValueKind == JsonValueKind.String)
+                        {
+                            attributes[attr.Name] = attr.Value.GetString() ?? string.Empty;
+                        }
+                    }
+                }
+
+                _logger.LogInformation("User attributes retrieved for {Username}: {AttributeCount} attributes", username, attributes.Count);
+                return attributes;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user attributes for {Username} in realm {RealmName}", username, realmName);
+                return null;
             }
         }
 
@@ -649,20 +797,126 @@ namespace MngKeeper.Infrastructure.Services
             }
         }
 
-        public async Task<bool> DeleteGroupAsync(string realmName, string groupId)
+        public async Task<bool> DeleteGroupAsync(string realmName, string groupName)
         {
             try
             {
-                _logger.LogInformation("Deleting group: {GroupId} in realm {RealmName}", groupId, realmName);
+                _logger.LogInformation("Deleting group: {GroupName} in realm {RealmName}", groupName, realmName);
 
-                // TODO: Implement actual Keycloak integration
-                await Task.Delay(100); // Simulate async operation
+                await EnsureAdminTokenAsync();
 
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
+
+                // First, get the group ID by name
+                var groupsResponse = await _httpClient.GetAsync($"/admin/realms/{realmName}/groups");
+                if (!groupsResponse.IsSuccessStatusCode)
+                {
+                    _logger.LogError("Failed to get groups for realm {RealmName}", realmName);
+                    return false;
+                }
+
+                var groupsJson = await groupsResponse.Content.ReadAsStringAsync();
+                var groups = JsonSerializer.Deserialize<JsonElement[]>(groupsJson);
+                
+                string? groupId = null;
+                foreach (var group in groups ?? Array.Empty<JsonElement>())
+                {
+                    if (group.GetProperty("name").GetString() == groupName)
+                    {
+                        groupId = group.GetProperty("id").GetString();
+                        break;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(groupId))
+                {
+                    _logger.LogWarning("Group {GroupName} not found in realm {RealmName} - may have been already deleted", groupName, realmName);
+                    return true; // Group doesn't exist, consider it success
+                }
+
+                // Delete the group from Keycloak
+                var deleteResponse = await _httpClient.DeleteAsync($"/admin/realms/{realmName}/groups/{groupId}");
+                if (!deleteResponse.IsSuccessStatusCode)
+                {
+                    var errorContent = await deleteResponse.Content.ReadAsStringAsync();
+                    _logger.LogError("Failed to delete group {GroupName} (ID: {GroupId}) in realm {RealmName}. Status: {StatusCode}, Error: {Error}", 
+                        groupName, groupId, realmName, deleteResponse.StatusCode, errorContent);
+                    return false;
+                }
+
+                _logger.LogInformation("Group deleted successfully: {GroupName} (ID: {GroupId}) in realm {RealmName}", groupName, groupId, realmName);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting group: {GroupId} in realm {RealmName}", groupId, realmName);
+                _logger.LogError(ex, "Error deleting group: {GroupName} in realm {RealmName}", groupName, realmName);
+                return false;
+            }
+        }
+
+        public async Task<bool> UpdateGroupAsync(string realmName, string oldGroupName, string newGroupName, string? description = null)
+        {
+            try
+            {
+                _logger.LogInformation("Updating group: {OldGroupName} to {NewGroupName} in realm {RealmName}", oldGroupName, newGroupName, realmName);
+
+                await EnsureAdminTokenAsync();
+
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
+
+                // First, get the group ID by old name
+                var groupsResponse = await _httpClient.GetAsync($"/admin/realms/{realmName}/groups");
+                if (!groupsResponse.IsSuccessStatusCode)
+                {
+                    _logger.LogError("Failed to get groups for realm {RealmName}", realmName);
+                    return false;
+                }
+
+                var groupsJson = await groupsResponse.Content.ReadAsStringAsync();
+                var groups = JsonSerializer.Deserialize<JsonElement[]>(groupsJson);
+                
+                string? groupId = null;
+                foreach (var group in groups ?? Array.Empty<JsonElement>())
+                {
+                    if (group.GetProperty("name").GetString() == oldGroupName)
+                    {
+                        groupId = group.GetProperty("id").GetString();
+                        break;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(groupId))
+                {
+                    _logger.LogWarning("Group {OldGroupName} not found in realm {RealmName}", oldGroupName, realmName);
+                    return false;
+                }
+
+                // Prepare update data - Keycloak only allows updating name
+                var updateData = new Dictionary<string, object>
+                {
+                    ["name"] = newGroupName
+                };
+
+                var json = JsonSerializer.Serialize(updateData);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                // Update the group in Keycloak using PUT request
+                var updateResponse = await _httpClient.PutAsync($"/admin/realms/{realmName}/groups/{groupId}", content);
+                if (!updateResponse.IsSuccessStatusCode)
+                {
+                    var errorContent = await updateResponse.Content.ReadAsStringAsync();
+                    _logger.LogError("Failed to update group {OldGroupName} (ID: {GroupId}) in realm {RealmName}. Status: {StatusCode}, Error: {Error}", 
+                        oldGroupName, groupId, realmName, updateResponse.StatusCode, errorContent);
+                    return false;
+                }
+
+                _logger.LogInformation("Group updated successfully: {OldGroupName} to {NewGroupName} (ID: {GroupId}) in realm {RealmName}", 
+                    oldGroupName, newGroupName, groupId, realmName);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating group {OldGroupName} to {NewGroupName} in realm {RealmName}", oldGroupName, newGroupName, realmName);
                 return false;
             }
         }

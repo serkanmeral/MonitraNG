@@ -1,6 +1,7 @@
 using MongoDB.Driver;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Domain.Entities;
+using MngKeeper.Domain.Enums;
 using MngKeeper.Application.Common.DTOs;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
@@ -11,15 +12,18 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
     {
         private readonly IMongoClient _mongoClient;
         private readonly IDomainRepository _domainRepository;
+        private readonly IGroupRepository _groupRepository;
         private readonly ILogger<UserRepository> _logger;
 
         public UserRepository(
             IMongoClient mongoClient,
             IDomainRepository domainRepository,
+            IGroupRepository groupRepository,
             ILogger<UserRepository> logger)
         {
             _mongoClient = mongoClient;
             _domainRepository = domainRepository;
+            _groupRepository = groupRepository;
             _logger = logger;
         }
 
@@ -51,6 +55,11 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                 Email = doc.GetValue("email", "").AsString,
                 FirstName = doc.GetValue("firstName", "").AsString,
                 LastName = doc.GetValue("lastName", "").AsString,
+                Title = doc.Contains("title") && !doc["title"].IsBsonNull ? doc["title"].AsString : null,
+                Department = doc.Contains("department") && !doc["department"].IsBsonNull ? doc["department"].AsString : null,
+                Gender = doc.Contains("gender") && !doc["gender"].IsBsonNull ? (Gender)doc["gender"].AsInt32 : Gender.NotSpecified,
+                PhoneNumber = doc.Contains("phoneNumber") && !doc["phoneNumber"].IsBsonNull ? doc["phoneNumber"].AsString : null,
+                PhotoUrl = doc.Contains("photoUrl") && !doc["photoUrl"].IsBsonNull ? doc["photoUrl"].AsString : null,
                 IsActive = doc.GetValue("isActive", true).AsBoolean,
                 Groups = doc.GetValue("groups", new BsonArray()).AsBsonArray.Select(x => x.AsString).ToList(),
                 Roles = doc.GetValue("roles", new BsonArray()).AsBsonArray.Select(x => x.AsString).ToList(),
@@ -254,8 +263,17 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
         {
             try
             {
+                // Get group by ID to get the group name (User.Groups stores group names, not IDs)
+                var group = await _groupRepository.GetByIdAsync(groupId, domainId);
+                if (group == null)
+                {
+                    _logger.LogWarning("Group not found: {GroupId}, DomainId: {DomainId}", groupId, domainId);
+                    return Enumerable.Empty<User>();
+                }
+
+                // Filter users by group name (User.Groups contains group names)
                 var collection = await GetCollectionAsync(domainId);
-                var filter = Builders<BsonDocument>.Filter.AnyEq("groups", groupId);
+                var filter = Builders<BsonDocument>.Filter.AnyEq("groups", group.Name);
                 var docs = await collection.Find(filter).ToListAsync();
                 return docs.Select(doc => MapBsonDocumentToUser(doc)).Where(u => u != null).Cast<User>();
             }
