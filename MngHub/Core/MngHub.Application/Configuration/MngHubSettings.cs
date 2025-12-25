@@ -9,6 +9,7 @@ public class MngHubSettings
     public Actors Actors { get; set; } = new();
     public SignalRSettings SignalR { get; set; } = new();
     public ConnectionSettings Connection { get; set; } = new();
+    public CorsSettings Cors { get; set; } = new();
 }
 
 public class ServerSettings
@@ -58,5 +59,11 @@ public class ConnectionSettings
     public TimeSpan HeartbeatInterval { get; set; } = TimeSpan.FromSeconds(30);
     public int MaxMessageSize { get; set; } = 32 * 1024; // 32KB
     public int RateLimitPerConnection { get; set; } = 100; // messages/minute
+}
+
+public class CorsSettings
+{
+    public List<string> AllowedOrigins { get; set; } = new() { "http://localhost:3000", "https://localhost:3000" };
+    public bool AllowCredentials { get; set; } = true;
 }
 

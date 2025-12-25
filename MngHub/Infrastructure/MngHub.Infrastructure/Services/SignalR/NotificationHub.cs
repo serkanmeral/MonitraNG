@@ -4,6 +4,7 @@ using MngHub.Application.DTOs.Common;
 using MngHub.Application.Services;
 using MngHub.Domain.Constants;
 using MngHub.Domain.Exceptions;
+using MngHub.Infrastructure.Extensions;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -15,25 +16,32 @@ public class NotificationHub : Hub
     private readonly IRabbitMqConsumer _rabbitMqConsumer;
     private readonly IJwtValidator _jwtValidator;
     private readonly ILogger<NotificationHub> _logger;
+    private readonly IHubContext<NotificationHub> _hubContext;
+    private readonly MessageRouter _messageRouter;
 
     public NotificationHub(
         IConnectionManager connectionManager,
         IRabbitMqConsumer rabbitMqConsumer,
         IJwtValidator jwtValidator,
-        ILogger<NotificationHub> logger)
+        ILogger<NotificationHub> logger,
+        IHubContext<NotificationHub> hubContext,
+        MessageRouter messageRouter)
     {
         _connectionManager = connectionManager;
         _rabbitMqConsumer = rabbitMqConsumer;
         _jwtValidator = jwtValidator;
         _logger = logger;
+        _hubContext = hubContext;
+        _messageRouter = messageRouter;
     }
 
     public override async Task OnConnectedAsync()
     {
         try
         {
-            // 1. Get JWT token from query string
-            var token = Context.GetHttpContext()?.Request.Query["access_token"].ToString();
+            // 1. Get JWT token from query string or Authorization header
+            var httpContext = Context.GetHttpContext();
+            var token = httpContext.ExtractJwtToken();
             
             if (string.IsNullOrEmpty(token))
             {
@@ -60,16 +68,17 @@ public class NotificationHub : Hub
             }
 
             // 3. Register connection
+            var connectionId = Context.ConnectionId; // Capture connectionId before closure
             var connectionInfo = await _connectionManager.AddConnectionAsync(
-                Context.ConnectionId, 
+                connectionId, 
                 userId, 
                 domainName);
 
             var domainRoomName = _connectionManager.GetDomainRoomName(domainName);
-            await Groups.AddToGroupAsync(Context.ConnectionId, domainRoomName);
+            await Groups.AddToGroupAsync(connectionId, domainRoomName);
             
             var globalRoomName = _connectionManager.GetGlobalRoomName();
-            await Groups.AddToGroupAsync(Context.ConnectionId, globalRoomName);
+            await Groups.AddToGroupAsync(connectionId, globalRoomName);
 
             // Subscribe to RabbitMQ topics
             var routingKeys = new List<string>
@@ -84,48 +93,50 @@ public class NotificationHub : Hub
                 routingKeys.Add(RoutingKeyPatterns.GetDomainPatternById(domainId));
             }
 
+            // Log subscribed routing keys
+            _logger.LogInformation(
+                "Subscribing connection {ConnectionId} to routing keys: {RoutingKeys}, DomainId: {DomainId}, DomainName: {DomainName}",
+                connectionId, string.Join(", ", routingKeys), domainId ?? "N/A", domainName);
+
+            // Capture values for closure (avoid accessing Context/Clients after disposal)
+            var capturedDomainName = domainName;
+            var capturedDomainId = domainId;
+            var capturedDomainRoomName = domainRoomName;
+            var capturedGlobalRoomName = globalRoomName;
+
             await _rabbitMqConsumer.SubscribeAsync(
-                Context.ConnectionId,
+                connectionId,
                 routingKeys,
                 async (routingKey, message) =>
                 {
-                    if (routingKey.StartsWith("global.") || routingKey.StartsWith("system."))
+                    try
                     {
-                        await Clients.Group(globalRoomName).SendAsync("ReceiveMessage", new MessageDto
-                        {
-                            RoutingKey = routingKey,
-                            Message = message,
-                            Timestamp = DateTime.UtcNow
-                        });
-                        _logger.LogInformation("Message routed to global room. RoutingKey: {RoutingKey}, Room: {Room}, ConnectionId: {ConnectionId}", 
-                            routingKey, globalRoomName, Context.ConnectionId);
+                        // Log event information
+                        var messageJson = JsonSerializer.Serialize(message, new JsonSerializerOptions { WriteIndented = false });
+                        _logger.LogInformation(
+                            "[RabbitMQ Event Received] RoutingKey: {RoutingKey}, Domain: {DomainName}, DomainId: {DomainId}, Message: {Message}",
+                            routingKey, capturedDomainName, capturedDomainId ?? "N/A", messageJson);
+
+                        // Route message to appropriate SignalR group
+                        await _messageRouter.RouteMessageAsync(
+                            routingKey,
+                            message,
+                            capturedDomainName,
+                            capturedDomainId,
+                            capturedDomainRoomName,
+                            capturedGlobalRoomName,
+                            connectionId);
                     }
-                    else if (routingKey.StartsWith($"domain.{domainName}."))
+                    catch (ObjectDisposedException)
                     {
-                        await Clients.Group(domainRoomName).SendAsync("ReceiveMessage", new MessageDto
-                        {
-                            RoutingKey = routingKey,
-                            Message = message,
-                            Timestamp = DateTime.UtcNow
-                        });
-                        _logger.LogDebug("Message routed to domain room {DomainRoom}. RoutingKey: {RoutingKey}", 
-                            domainRoomName, routingKey);
+                        _logger.LogDebug("Hub disposed, skipping message. RoutingKey: {RoutingKey}, ConnectionId: {ConnectionId}", 
+                            routingKey, connectionId);
+                        // Connection is disposed, ignore the message
                     }
-                    else if (!string.IsNullOrEmpty(domainId) && routingKey.StartsWith($"{domainId}."))
+                    catch (Exception ex)
                     {
-                        await Clients.Group(domainRoomName).SendAsync("ReceiveMessage", new MessageDto
-                        {
-                            RoutingKey = routingKey,
-                            Message = message,
-                            Timestamp = DateTime.UtcNow
-                        });
-                        _logger.LogDebug("Message routed to domain room {DomainRoom} (by domainId). RoutingKey: {RoutingKey}", 
-                            domainRoomName, routingKey);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("No matching routing pattern for routing key: {RoutingKey}, Domain: {DomainName}", 
-                            routingKey, domainName);
+                        _logger.LogError(ex, "Error processing message. RoutingKey: {RoutingKey}, ConnectionId: {ConnectionId}", 
+                            routingKey, connectionId);
                     }
                 });
 
@@ -178,12 +189,7 @@ public class NotificationHub : Hub
 
     public async Task SendMessage(string message)
     {
-        await Clients.Caller.SendAsync("ReceiveMessage", new MessageDto
-        {
-            RoutingKey = "client.message",
-            Message = message,
-            Timestamp = DateTime.UtcNow
-        });
+        await Clients.Caller.SendAsync("ReceiveMessage", MessageDto.Create("client.message", message));
     }
 }
 

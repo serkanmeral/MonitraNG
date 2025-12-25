@@ -60,18 +60,8 @@ public class RabbitMqConsumerService : IRabbitMqConsumer, IDisposable
             _channel = _connection.CreateModel();
 
             // Ensure exchanges exist
-            _channel.ExchangeDeclare(
-                exchange: _settings.RabbitMQ.ExchangeName,
-                type: ExchangeType.Topic,
-                durable: true,
-                autoDelete: false);
-
-            // Also declare mngkeeper.events exchange (for user/group events)
-            _channel.ExchangeDeclare(
-                exchange: _settings.RabbitMQ.EventPublisherExchangeName,
-                type: ExchangeType.Topic,
-                durable: true,
-                autoDelete: false);
+            EnsureExchangeExists(_settings.RabbitMQ.ExchangeName);
+            EnsureExchangeExists(_settings.RabbitMQ.EventPublisherExchangeName);
 
             _logger.LogInformation("RabbitMQ connected successfully. Exchanges: {Exchange1}, {Exchange2}", 
                 _settings.RabbitMQ.ExchangeName, _settings.RabbitMQ.EventPublisherExchangeName);
@@ -118,26 +108,13 @@ public class RabbitMqConsumerService : IRabbitMqConsumer, IDisposable
             foreach (var routingKey in routingKeys)
             {
                 // Bind to mng.topics exchange (for system/domain events)
-                consumerChannel.QueueBind(
-                    queue: queueName,
-                    exchange: _settings.RabbitMQ.ExchangeName,
-                    routingKey: routingKey);
-
-                _logger.LogDebug("Bound queue {QueueName} to {Exchange} with routing key {RoutingKey}",
-                    queueName, _settings.RabbitMQ.ExchangeName, routingKey);
+                BindQueueToExchange(consumerChannel, queueName, _settings.RabbitMQ.ExchangeName, routingKey);
 
                 // Also bind to mngkeeper.events exchange (for user/group events)
                 // Only bind domainId-based patterns to this exchange
-                if (!routingKey.StartsWith("global.") && !routingKey.StartsWith("system.") && !routingKey.StartsWith("domain."))
+                if (IsDomainIdBasedPattern(routingKey))
                 {
-                    // This is likely a domainId-based pattern (e.g., "507f1f77bcf86cd799439011.*")
-                    consumerChannel.QueueBind(
-                        queue: queueName,
-                        exchange: _settings.RabbitMQ.EventPublisherExchangeName,
-                        routingKey: routingKey);
-
-                    _logger.LogDebug("Bound queue {QueueName} to {Exchange} with routing key {RoutingKey}",
-                        queueName, _settings.RabbitMQ.EventPublisherExchangeName, routingKey);
+                    BindQueueToExchange(consumerChannel, queueName, _settings.RabbitMQ.EventPublisherExchangeName, routingKey);
                 }
             }
 
@@ -151,10 +128,12 @@ public class RabbitMqConsumerService : IRabbitMqConsumer, IDisposable
                     var messageJson = Encoding.UTF8.GetString(body);
                     var message = JsonSerializer.Deserialize<object>(messageJson);
                     var routingKey = ea.RoutingKey;
+                    var exchange = ea.Exchange;
 
+                    // Console'a detaylı log yazdır
                     _logger.LogInformation(
-                        "RabbitMQ message received for SignalR client. RoutingKey: {RoutingKey}, ConnectionId: {ConnectionId}, MessageSize: {MessageSize} bytes",
-                        routingKey, connectionId, body.Length);
+                        "[RabbitMQ Consumer] Message received. Exchange: {Exchange}, RoutingKey: {RoutingKey}, ConnectionId: {ConnectionId}, MessageSize: {MessageSize} bytes, Message: {Message}",
+                        exchange, routingKey, connectionId, body.Length, messageJson);
 
                     await messageHandler(routingKey, message!);
                 }
@@ -237,6 +216,37 @@ public class RabbitMqConsumerService : IRabbitMqConsumer, IDisposable
             return _subscriptions.ContainsKey(connectionId) &&
                    _subscriptions[connectionId].Contains(routingKey);
         }
+    }
+
+    private void EnsureExchangeExists(string exchangeName)
+    {
+        if (_channel == null)
+            throw new InvalidOperationException("Channel is not initialized");
+
+        _channel.ExchangeDeclare(
+            exchange: exchangeName,
+            type: ExchangeType.Topic,
+            durable: true,
+            autoDelete: false);
+    }
+
+    private void BindQueueToExchange(IModel channel, string queueName, string exchangeName, string routingKey)
+    {
+        channel.QueueBind(
+            queue: queueName,
+            exchange: exchangeName,
+            routingKey: routingKey);
+
+        _logger.LogInformation("Bound queue {QueueName} to {Exchange} with routing key {RoutingKey}",
+            queueName, exchangeName, routingKey);
+    }
+
+    private static bool IsDomainIdBasedPattern(string routingKey)
+    {
+        // DomainId-based patterns don't start with global, system, or domain prefixes
+        return !routingKey.StartsWith("global.") && 
+               !routingKey.StartsWith("system.") && 
+               !routingKey.StartsWith("domain.");
     }
 
     public void Dispose()

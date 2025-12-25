@@ -65,10 +65,17 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.AllowAnyOrigin()
+        var allowedOrigins = settings.Cors.AllowedOrigins.ToArray();
+        
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyMethod()
               .AllowAnyHeader()
               .WithExposedHeaders("*"); // SignalR için gerekli
+        
+        if (settings.Cors.AllowCredentials)
+        {
+            policy.AllowCredentials(); // SignalR için credentials gerekli
+        }
     });
 });
 
@@ -160,6 +167,14 @@ app.MapHub<NotificationHub>("/ws");
 // Health check endpoint
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "MngHub", timestamp = DateTime.UtcNow }))
     .WithName("HealthCheck");
+
+// SignalR negotiation test endpoint
+app.MapGet("/ws/negotiate", () => Results.Ok(new { 
+    url = "/ws", 
+    accessToken = "test-token",
+    availableTransports = new[] { "WebSockets", "LongPolling" }
+}))
+    .WithName("SignalRNegotiateTest");
 
 // Test page redirect (for easy access)
 app.MapGet("/test", () => Results.Redirect("/tests/test-signalr.html"))

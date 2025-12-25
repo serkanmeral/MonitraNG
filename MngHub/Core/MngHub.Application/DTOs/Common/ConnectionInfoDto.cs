@@ -15,13 +15,3 @@ public class ConnectionInfoDto
     public List<string> RoomNames { get; set; } = new();
 }
 
-/// <summary>
-/// Message DTO for SignalR
-/// </summary>
-public class MessageDto
-{
-    public string RoutingKey { get; set; } = string.Empty;
-    public object Message { get; set; } = new();
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
-}
-
