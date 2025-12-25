@@ -208,8 +208,11 @@ public class QueryDefinition
 
     /// <summary>
     /// MongoDB aggregation pipeline
+    /// Stored as BsonDocument array for MongoDB compatibility
     /// </summary>
-    public List<object>? pipeline { get; set; }
+    [BsonElement("pipeline")]
+    [BsonIgnoreIfNull]
+    public List<MongoDB.Bson.BsonDocument>? pipeline { get; set; }
 
     /// <summary>
     /// Query parameters

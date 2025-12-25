@@ -37,6 +37,22 @@ namespace MngDataGateway.Application.Services
         /// Disconnect from RabbitMQ
         /// </summary>
         Task DisconnectAsync();
+
+        /// <summary>
+        /// Ensure unified exchange exists (MngKeeper-style)
+        /// Exchange: mngdatagateway.events (single exchange for all domains)
+        /// </summary>
+        Task EnsureUnifiedExchangeAsync();
+
+        /// <summary>
+        /// Publish event to unified exchange (MngKeeper-style)
+        /// Exchange: mngdatagateway.events
+        /// Routing key: {domainId}.{eventType}
+        /// </summary>
+        /// <param name="domainId">Domain ID for routing and isolation</param>
+        /// <param name="routingKey">Routing key (e.g., "meral.datacreatedevent")</param>
+        /// <param name="eventPayload">Event payload object</param>
+        Task PublishToUnifiedExchangeAsync(string domainId, string routingKey, object eventPayload);
     }
 }
 

@@ -223,7 +223,7 @@ namespace MngDataGateway.Api.Controllers
                         ["publish_mode"] = schemaDto.PublishMode,
                         ["fields"] = (object?)(schemaDto.Fields ?? new List<FieldDefinition>()),
                         ["validations"] = (object?)(schemaDto.Validations ?? new List<ValidationDefinition>()),
-                        ["queries"] = (object?)(schemaDto.Queries ?? new List<QueryDefinition>()),
+                        ["queries"] = (object?)(schemaDto.Queries ?? new List<MngDataGateway.Application.DTOs.Dataset.QueryDefinitionResponseDto>()),
                         ["indexList"] = (object?)(schemaDto.IndexList ?? new List<IndexDefinition>())
                     };
 
@@ -383,7 +383,7 @@ namespace MngDataGateway.Api.Controllers
                         ["publish_mode"] = schemaDto.PublishMode,
                         ["fields"] = (object?)(schemaDto.Fields ?? new List<FieldDefinition>()),
                         ["validations"] = (object?)(schemaDto.Validations ?? new List<ValidationDefinition>()),
-                        ["queries"] = (object?)(schemaDto.Queries ?? new List<QueryDefinition>()),
+                        ["queries"] = (object?)(schemaDto.Queries ?? new List<MngDataGateway.Application.DTOs.Dataset.QueryDefinitionResponseDto>()),
                         ["indexList"] = (object?)(schemaDto.IndexList ?? new List<IndexDefinition>())
                     };
 
@@ -804,7 +804,7 @@ namespace MngDataGateway.Api.Controllers
                         ["publish_mode"] = schemaDto.PublishMode,
                         ["fields"] = (object?)(schemaDto.Fields ?? new List<FieldDefinition>()),
                         ["validations"] = (object?)(schemaDto.Validations ?? new List<ValidationDefinition>()),
-                        ["queries"] = (object?)(schemaDto.Queries ?? new List<QueryDefinition>()),
+                        ["queries"] = (object?)(schemaDto.Queries ?? new List<MngDataGateway.Application.DTOs.Dataset.QueryDefinitionResponseDto>()),
                         ["indexList"] = (object?)(schemaDto.IndexList ?? new List<IndexDefinition>())
                     };
 

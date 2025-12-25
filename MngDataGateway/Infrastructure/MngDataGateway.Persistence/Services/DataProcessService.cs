@@ -59,6 +59,7 @@ namespace MngDataGateway.Persistence.Services
             DatasetSchema schema,
             Dictionary<string, object> data,
             string databaseName,
+            string? domainName = null,
             IClientSessionHandle? session = null)
         {
             var incrementalFields = schema.fields.Where(f => f.fieldType == "incremental").ToList();
@@ -71,7 +72,7 @@ namespace MngDataGateway.Persistence.Services
                 try
                 {
                     var value = await _incrementalFieldService.GenerateValueAsync(
-                        schema, field, data, databaseName, session);
+                        schema, field, data, databaseName, domainName, session);
                     
                     data[field.name] = value;
                     

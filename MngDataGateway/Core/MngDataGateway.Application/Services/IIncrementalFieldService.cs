@@ -25,6 +25,7 @@ namespace MngDataGateway.Application.Services
             FieldDefinition field,
             Dictionary<string, object> data,
             string databaseName,
+            string? domainName = null,
             IClientSessionHandle? session = null);
     }
 }

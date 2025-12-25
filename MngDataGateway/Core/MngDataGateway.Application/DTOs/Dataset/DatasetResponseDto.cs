@@ -71,7 +71,7 @@ public class DatasetResponseDto
     /// <summary>
     /// Predefined queries (full details)
     /// </summary>
-    public List<QueryDefinition>? Queries { get; set; }
+    public List<QueryDefinitionResponseDto>? Queries { get; set; }
 
     /// <summary>
     /// Index definitions count

@@ -1,5 +1,7 @@
 using MediatR;
 using MngKeeper.Application.Interfaces;
+using MngKeeper.Application.Common.Helpers;
+using MngKeeper.Application.Common.Exceptions;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 
@@ -12,6 +14,7 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
         private readonly IDomainRepository _domainRepository;
         private readonly IKeycloakService _keycloakService;
         private readonly IMongoClient _mongoClient;
+        private readonly IEventPublisher _eventPublisher;
         private readonly ILogger<DeleteGroupCommandHandler> _logger;
 
         public DeleteGroupCommandHandler(
@@ -20,6 +23,7 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
             IDomainRepository domainRepository,
             IKeycloakService keycloakService,
             IMongoClient mongoClient,
+            IEventPublisher eventPublisher,
             ILogger<DeleteGroupCommandHandler> logger)
         {
             _groupRepository = groupRepository;
@@ -27,6 +31,7 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
             _domainRepository = domainRepository;
             _keycloakService = keycloakService;
             _mongoClient = mongoClient;
+            _eventPublisher = eventPublisher;
             _logger = logger;
         }
 
@@ -146,6 +151,20 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
                     _logger.LogError(dataGatewayEx, "Failed to delete group from DataGateway MongoDB: GroupId={GroupId}", existingGroup.Id);
                 }
 
+                // Publish group deleted event (before returning success)
+                var groupDeletedEvent = new GroupDeletedEvent
+                {
+                    GroupId = existingGroup.Id,
+                    GroupName = existingGroup.Name
+                };
+                await EventPublishingHelper.PublishEventSafelyAsync(
+                    _eventPublisher,
+                    _logger,
+                    groupDeletedEvent,
+                    request.DomainId,
+                    "GroupDeletedEvent",
+                    request.GroupId);
+
                 _logger.LogInformation("Group deleted successfully: {GroupId} in domain: {DomainId}", request.GroupId, request.DomainId);
 
                 return new DeleteGroupResponse
@@ -155,12 +174,12 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting group: {GroupId} in domain: {DomainId}", request.GroupId, request.DomainId);
-                return new DeleteGroupResponse
-                {
-                    IsSuccess = false,
-                    ErrorMessage = $"Failed to delete group: {ex.Message}"
-                };
+                return ResponseHelper.CreateErrorResponse<DeleteGroupResponse>(
+                    _logger,
+                    ex,
+                    "DeleteGroup",
+                    request.GroupId,
+                    request.DomainId);
             }
         }
     }

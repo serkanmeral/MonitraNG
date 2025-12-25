@@ -1,5 +1,7 @@
 using MediatR;
 using MngKeeper.Application.Interfaces;
+using MngKeeper.Application.Common.Helpers;
+using MngKeeper.Application.Common.Exceptions;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using MongoDB.Driver;
@@ -151,7 +153,13 @@ namespace MngKeeper.Application.Features.User.Commands.DeleteUser
                     UserId = existingUser.Id,
                     Username = existingUser.Username
                 };
-                await _eventPublisher.PublishAsync(userDeletedEvent, claims.DomainId);
+                await EventPublishingHelper.PublishEventSafelyAsync(
+                    _eventPublisher,
+                    _logger,
+                    userDeletedEvent,
+                    claims.DomainId,
+                    "UserDeletedEvent",
+                    request.UserId);
 
                 _logger.LogInformation("User deleted successfully: {UserId} in domain: {DomainId}", request.UserId, claims.DomainId);
 
@@ -162,12 +170,12 @@ namespace MngKeeper.Application.Features.User.Commands.DeleteUser
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting user: {UserId} in domain: {DomainId}", request.UserId, claims?.DomainId);
-                return new DeleteUserResponse
-                {
-                    IsSuccess = false,
-                    ErrorMessage = $"Failed to delete user: {ex.Message}"
-                };
+                return ResponseHelper.CreateErrorResponse<DeleteUserResponse>(
+                    _logger,
+                    ex,
+                    "DeleteUser",
+                    request.UserId,
+                    claims?.DomainId ?? "N/A");
             }
         }
     }

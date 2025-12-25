@@ -22,7 +22,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       keeperUrl: process.env.KEEPER_URL,
-      reactorUrl : process.env.SERVER_URL      
+      reactorUrl : process.env.SERVER_URL,
+      hubUrl: process.env.HUB_URL || 'http://localhost:5020'
     }
   },
   build: { transpile: ["vuetify"] },

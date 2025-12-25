@@ -1,5 +1,8 @@
 services:
   mngkeeper:
+    build:
+      context: ../../MngKeeper
+      dockerfile: Presentation/MngKeeper.Api/Dockerfile
     image: localhost:5000/mngkeeper:1.1.0
     container_name: mngkeeper
     ports:
@@ -60,6 +63,56 @@ services:
     
     healthcheck:
       test: ["CMD-SHELL", "curl -k -f https://localhost:5001/api/version/short || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  mnghub:
+    build:
+      context: ../../MngHub
+      dockerfile: Presentation/MngHub.Api/Dockerfile
+    image: localhost:5000/mnghub:1.0.0
+    container_name: mnghub
+    ports:
+      - "5020:5020"
+    environment:
+      # ASP.NET Core Environment
+      - ASPNETCORE_ENVIRONMENT=Development
+      
+      # Server Configuration
+      - MngHubSettings__Server__Host=0.0.0.0
+      - MngHubSettings__Server__Port=5020
+      - MngHubSettings__Server__Scheme=http
+      - MngHubSettings__OpenApiServerPath=http://localhost:5020
+      
+      # RabbitMQ Configuration
+      - MngHubSettings__RabbitMQ__Host=rabbitmq
+      - MngHubSettings__RabbitMQ__Port=5672
+      - MngHubSettings__RabbitMQ__Username=admin
+      - MngHubSettings__RabbitMQ__Password=admin123
+      - MngHubSettings__RabbitMQ__VirtualHost=/
+      - MngHubSettings__RabbitMQ__ExchangeName=mng.topics
+      - MngHubSettings__RabbitMQ__EventPublisherExchangeName=mngkeeper.events
+      
+      # Actors Configuration
+      - MngHubSettings__Actors__MngKeeper=https://mngkeeper:5001
+      
+      # CORS Configuration
+      - MngHubSettings__Cors__AllowedOrigins__0=http://localhost:3000
+      - MngHubSettings__Cors__AllowedOrigins__1=https://localhost:3000
+      - MngHubSettings__Cors__AllowCredentials=true
+      
+      # Certificate Settings
+      - MngHubSettings__CertificateSettings__DNS=mnghub
+    
+    networks:
+      - mng_common_mng_network
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5020/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

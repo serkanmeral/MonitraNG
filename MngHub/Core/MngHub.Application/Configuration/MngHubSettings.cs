@@ -28,6 +28,7 @@ public class Rabbitmq
     public string VirtualHost { get; set; } = "/";
     public string ExchangeName { get; set; } = "mng.topics";
     public string EventPublisherExchangeName { get; set; } = "mngkeeper.events"; // For user/group events
+    public string DataGatewayExchangeName { get; set; } = "mngdatagateway.events"; // For data events
 }
 
 public class CertificateSettings

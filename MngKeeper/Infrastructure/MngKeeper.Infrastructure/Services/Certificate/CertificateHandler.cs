@@ -57,7 +57,7 @@ public class CertificateHandler
         string countryName = "TR";
         string stateOrProvinceName = "ISTANBUL";
         string localityName = "UMRANIYE";
-        string organizationName = "iSIMPLATFORM A.S.";
+        string organizationName = "Serkan MERAL";
         string commonName = dns;
         string dnsName = dns;  // DNS adını buraya ekleyin
 

@@ -260,6 +260,80 @@ namespace MngDataGateway.Infrastructure.Services.RabbitMq
             return $"monitra.data.events.{domainName.ToLowerInvariant()}";
         }
 
+        private const string UnifiedExchangeName = "mngdatagateway.events";
+
+        public async Task EnsureUnifiedExchangeAsync()
+        {
+            // Check if already declared (cache)
+            if (_declaredExchanges.Contains(UnifiedExchangeName))
+            {
+                _logger.LogDebug("Unified exchange {ExchangeName} already declared", UnifiedExchangeName);
+                return;
+            }
+
+            await EnsureConnectedAsync();
+
+            try
+            {
+                _logger.LogInformation("Declaring unified exchange: {ExchangeName}", UnifiedExchangeName);
+
+                await _channel!.ExchangeDeclareAsync(
+                    exchange: UnifiedExchangeName,
+                    type: ExchangeType.Topic,
+                    durable: true,
+                    autoDelete: false,
+                    arguments: null
+                );
+
+                _declaredExchanges.Add(UnifiedExchangeName);
+                _logger.LogInformation("Unified exchange {ExchangeName} declared successfully", UnifiedExchangeName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to declare unified exchange {ExchangeName}", UnifiedExchangeName);
+                throw;
+            }
+        }
+
+        public async Task PublishToUnifiedExchangeAsync(string domainId, string routingKey, object eventPayload)
+        {
+            if (string.IsNullOrWhiteSpace(domainId))
+                throw new ArgumentException("Domain ID cannot be empty", nameof(domainId));
+
+            if (string.IsNullOrWhiteSpace(routingKey))
+                throw new ArgumentException("Routing key cannot be empty", nameof(routingKey));
+
+            if (eventPayload == null)
+                throw new ArgumentNullException(nameof(eventPayload));
+
+            await EnsureUnifiedExchangeAsync();
+
+            // Serialize payload
+            var jsonPayload = JsonSerializer.Serialize(eventPayload, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = false
+            });
+
+            var body = Encoding.UTF8.GetBytes(jsonPayload);
+
+            try
+            {
+                await PublishInternalAsync(UnifiedExchangeName, routingKey, body, eventPayload);
+                
+                _logger.LogInformation(
+                    "Event published successfully to unified exchange {Exchange} with routing key {RoutingKey}",
+                    UnifiedExchangeName, routingKey);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Failed to publish event to unified exchange {Exchange}, RoutingKey: {RoutingKey}",
+                    UnifiedExchangeName, routingKey);
+                throw;
+            }
+        }
+
         private static string GetEventId(object eventPayload)
         {
             // Try to extract eventId from payload using reflection

@@ -1,6 +1,8 @@
 using MediatR;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Domain.Entities;
+using MngKeeper.Application.Common.Helpers;
+using MngKeeper.Application.Common.Exceptions;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 
@@ -142,7 +144,13 @@ namespace MngKeeper.Application.Features.Group.Commands.CreateGroup
                     GroupName = savedGroup.Name,
                     Permissions = savedGroup.Permissions
                 };
-                await _eventPublisher.PublishAsync(groupCreatedEvent, claims.DomainId);
+                await EventPublishingHelper.PublishEventSafelyAsync(
+                    _eventPublisher,
+                    _logger,
+                    groupCreatedEvent,
+                    claims.DomainId,
+                    "GroupCreatedEvent",
+                    savedGroup.Id);
 
                 _logger.LogInformation("Group created successfully: {Name} in domain: {DomainId}", request.Name, claims.DomainId);
 
@@ -159,12 +167,12 @@ namespace MngKeeper.Application.Features.Group.Commands.CreateGroup
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating group: {Name} in domain: {DomainId}", request.Name, claims?.DomainId);
-                return new CreateGroupResponse
-                {
-                    IsSuccess = false,
-                    ErrorMessage = $"Failed to create group: {ex.Message}"
-                };
+                return ResponseHelper.CreateErrorResponse<CreateGroupResponse>(
+                    _logger,
+                    ex,
+                    "CreateGroup",
+                    request.Name,
+                    claims?.DomainId ?? "N/A");
             }
         }
     }

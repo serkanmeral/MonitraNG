@@ -73,7 +73,7 @@ public class DatasetService : IDatasetService
             publish_mode = dto.PublishMode,
             fields = ConvertFieldDefinitions(dto.Fields),
             validations = dto.Validations ?? new(),
-            queries = dto.Queries ?? new(),
+            queries = dto.Queries != null ? ConvertQueryDefinitions(dto.Queries) : new(),
             indexList = dto.IndexList ?? new(),
 
             __createInfo = new CreateInfo
@@ -216,13 +216,7 @@ public class DatasetService : IDatasetService
         if (dto.Queries != null)
         {
             // Convert queries, handling JsonElement in pipeline
-            var convertedQueries = dto.Queries.Select(q => new QueryDefinition
-            {
-                name = q.name,
-                description = q.description,
-                parameters = q.parameters,
-                pipeline = q.pipeline != null ? ConvertPipelineToObjectList(q.pipeline) : null
-            }).ToList();
+            var convertedQueries = ConvertQueryDefinitions(dto.Queries);
             
             changes["queries"] = new ChangeDetail { oldValue = $"{entity.queries.Count} queries", newValue = $"{convertedQueries.Count} queries" };
             entity.queries = convertedQueries;
@@ -423,6 +417,78 @@ public class DatasetService : IDatasetService
     }
 
     /// <summary>
+    /// Convert QueryDefinitionDto from DTO to Entity QueryDefinition, handling JsonElement in pipeline
+    /// </summary>
+    private static List<QueryDefinition> ConvertQueryDefinitions(List<MngDataGateway.Application.DTOs.Dataset.QueryDefinitionDto>? queries)
+    {
+        if (queries == null || queries.Count == 0)
+        {
+            return new List<QueryDefinition>();
+        }
+
+        var result = new List<QueryDefinition>();
+
+        foreach (var query in queries)
+        {
+            var converted = new QueryDefinition
+            {
+                name = query.Name,
+                description = query.Description,
+                parameters = query.Parameters,
+                pipeline = ConvertPipelineToBsonDocuments(query.Pipeline)
+            };
+
+            result.Add(converted);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Convert pipeline from List<object> (which may contain JsonElement) to List<BsonDocument>
+    /// </summary>
+    private static List<MongoDB.Bson.BsonDocument>? ConvertPipelineToBsonDocuments(List<object>? pipeline)
+    {
+        if (pipeline == null || pipeline.Count == 0)
+        {
+            return null;
+        }
+
+        var result = new List<MongoDB.Bson.BsonDocument>();
+
+        foreach (var stage in pipeline)
+        {
+            MongoDB.Bson.BsonDocument bsonDoc;
+
+            // Handle JsonElement (from JSON deserialization)
+            if (stage is System.Text.Json.JsonElement jsonElement)
+            {
+                bsonDoc = MongoDB.Bson.BsonDocument.Parse(jsonElement.GetRawText());
+            }
+            // Handle BsonDocument (already converted)
+            else if (stage is MongoDB.Bson.BsonDocument bsonDocument)
+            {
+                bsonDoc = bsonDocument;
+            }
+            // Handle Dictionary<string, object> (from model binding)
+            else if (stage is Dictionary<string, object> dict)
+            {
+                bsonDoc = MongoDB.Bson.BsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(dict));
+            }
+            // Try to serialize and parse
+            else
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(stage);
+                bsonDoc = MongoDB.Bson.BsonDocument.Parse(json);
+            }
+
+            result.Add(bsonDoc);
+        }
+
+        return result;
+    }
+
+    /// <summary>
     /// Field definitions validation
     /// </summary>
     private void ValidateFieldDefinitions(List<FieldDefinition> fields)
@@ -488,6 +554,35 @@ public class DatasetService : IDatasetService
     }
 
     /// <summary>
+    /// Convert BsonDocument to object for JSON serialization
+    /// </summary>
+    private static object ConvertBsonDocumentToObject(MongoDB.Bson.BsonDocument doc)
+    {
+        // Convert BsonDocument to JSON string, then deserialize to object
+        var json = doc.ToJson();
+        return System.Text.Json.JsonSerializer.Deserialize<object>(json) ?? new object();
+    }
+
+    /// <summary>
+    /// Convert QueryDefinition list for response (BsonDocument -> serializable format)
+    /// </summary>
+    private static List<MngDataGateway.Application.DTOs.Dataset.QueryDefinitionResponseDto>? ConvertQueriesForResponse(List<QueryDefinition>? queries)
+    {
+        if (queries == null || queries.Count == 0)
+        {
+            return null;
+        }
+
+        return queries.Select(q => new MngDataGateway.Application.DTOs.Dataset.QueryDefinitionResponseDto
+        {
+            Name = q.name,
+            Description = q.description,
+            Parameters = q.parameters,
+            Pipeline = q.pipeline?.Select(doc => ConvertBsonDocumentToObject(doc)).ToList()
+        }).ToList();
+    }
+
+    /// <summary>
     /// Entity to DTO mapper
     /// </summary>
     private static DatasetResponseDto MapToDto(DatasetSchema entity, bool includeDetails = false)
@@ -504,8 +599,11 @@ public class DatasetService : IDatasetService
             FieldsCount = entity.fields.Count,
             Fields = includeDetails ? entity.fields : null,
             ValidationsCount = entity.validations.Count,
+            Validations = includeDetails ? entity.validations : null,
             QueriesCount = entity.queries.Count,
+            Queries = includeDetails ? ConvertQueriesForResponse(entity.queries) : null,
             IndexListCount = entity.indexList.Count,
+            IndexList = includeDetails ? entity.indexList : null,
             CreateInfo = entity.__createInfo,
             LastUpdateInfo = entity.__lastUpdateInfo,
             HistoryCount = entity.__history.Count

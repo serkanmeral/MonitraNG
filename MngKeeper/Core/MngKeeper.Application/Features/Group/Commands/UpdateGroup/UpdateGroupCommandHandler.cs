@@ -1,6 +1,8 @@
 using MediatR;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Domain.Entities;
+using MngKeeper.Application.Common.Helpers;
+using MngKeeper.Application.Common.Exceptions;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 
@@ -13,6 +15,7 @@ namespace MngKeeper.Application.Features.Group.Commands.UpdateGroup
         private readonly IUserRepository _userRepository;
         private readonly IKeycloakService _keycloakService;
         private readonly IDataGatewaySyncService _dataGatewaySyncService;
+        private readonly IEventPublisher _eventPublisher;
         private readonly ILogger<UpdateGroupCommandHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -22,6 +25,7 @@ namespace MngKeeper.Application.Features.Group.Commands.UpdateGroup
             IUserRepository userRepository,
             IKeycloakService keycloakService,
             IDataGatewaySyncService dataGatewaySyncService,
+            IEventPublisher eventPublisher,
             ILogger<UpdateGroupCommandHandler> logger,
             IHttpContextAccessor httpContextAccessor)
         {
@@ -30,6 +34,7 @@ namespace MngKeeper.Application.Features.Group.Commands.UpdateGroup
             _userRepository = userRepository;
             _keycloakService = keycloakService;
             _dataGatewaySyncService = dataGatewaySyncService;
+            _eventPublisher = eventPublisher;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -208,6 +213,21 @@ namespace MngKeeper.Application.Features.Group.Commands.UpdateGroup
                     // Continue - group is updated in MngKeeper DB
                 }
 
+                // Publish group updated event
+                var groupUpdatedEvent = new GroupUpdatedEvent
+                {
+                    GroupId = updatedGroup.Id,
+                    GroupName = updatedGroup.Name,
+                    Permissions = updatedGroup.Permissions
+                };
+                await EventPublishingHelper.PublishEventSafelyAsync(
+                    _eventPublisher,
+                    _logger,
+                    groupUpdatedEvent,
+                    claims.DomainId,
+                    "GroupUpdatedEvent",
+                    request.GroupId);
+
                 _logger.LogInformation("Group updated successfully: {GroupId} in domain: {DomainId}", request.GroupId, claims.DomainId);
 
                 return new UpdateGroupResponse
@@ -223,12 +243,12 @@ namespace MngKeeper.Application.Features.Group.Commands.UpdateGroup
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating group: {GroupId} in domain: {DomainId}", request.GroupId, claims?.DomainId);
-                return new UpdateGroupResponse
-                {
-                    IsSuccess = false,
-                    ErrorMessage = $"Failed to update group: {ex.Message}"
-                };
+                return ResponseHelper.CreateErrorResponse<UpdateGroupResponse>(
+                    _logger,
+                    ex,
+                    "UpdateGroup",
+                    request.GroupId,
+                    claims?.DomainId ?? "N/A");
             }
         }
     }

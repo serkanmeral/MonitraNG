@@ -5,6 +5,7 @@ using MngHub.Application.Services;
 using MngHub.Domain.Constants;
 using MngHub.Domain.Exceptions;
 using MngHub.Infrastructure.Extensions;
+using MngHub.Infrastructure.Helpers;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -54,18 +55,17 @@ public class NotificationHub : Hub
             // 2. Validate JWT token
             var claims = await _jwtValidator.ValidateAsync(token);
             
-            var domainName = claims.GetValueOrDefault("domain_name");
-            var domainId = claims.GetValueOrDefault("domain_id"); // MongoDB ObjectId
-            var userId = claims.GetValueOrDefault("sub") ?? claims.GetValueOrDefault(ClaimTypes.NameIdentifier);
-            var username = claims.GetValueOrDefault("preferred_username") ?? claims.GetValueOrDefault("username");
-
-            if (string.IsNullOrEmpty(domainName) || string.IsNullOrEmpty(userId))
+            // Extract claims using helper
+            if (!ClaimsHelper.TryExtractRequiredClaims(claims, out var domainName, out var userId))
             {
                 _logger.LogWarning("Connection rejected: Invalid token claims. ConnectionId: {ConnectionId}", 
                     Context.ConnectionId);
                 Context.Abort();
                 return;
             }
+
+            var domainId = ClaimsHelper.GetDomainId(claims); // MongoDB ObjectId
+            var username = ClaimsHelper.GetUsername(claims);
 
             // 3. Register connection
             var connectionId = Context.ConnectionId; // Capture connectionId before closure
@@ -80,18 +80,8 @@ public class NotificationHub : Hub
             var globalRoomName = _connectionManager.GetGlobalRoomName();
             await Groups.AddToGroupAsync(connectionId, globalRoomName);
 
-            // Subscribe to RabbitMQ topics
-            var routingKeys = new List<string>
-            {
-                RoutingKeyPatterns.Global,
-                RoutingKeyPatterns.System,
-                RoutingKeyPatterns.GetDomainPattern(domainName)
-            };
-
-            if (!string.IsNullOrEmpty(domainId))
-            {
-                routingKeys.Add(RoutingKeyPatterns.GetDomainPatternById(domainId));
-            }
+            // Subscribe to RabbitMQ topics using helper
+            var routingKeys = RoutingKeyHelper.BuildRoutingKeysForConnection(domainName, domainId);
 
             // Log subscribed routing keys
             _logger.LogInformation(
@@ -111,8 +101,8 @@ public class NotificationHub : Hub
                 {
                     try
                     {
-                        // Log event information
-                        var messageJson = JsonSerializer.Serialize(message, new JsonSerializerOptions { WriteIndented = false });
+                        // Log event information using helper
+                        var messageJson = MessageSerializationHelper.Serialize(message);
                         _logger.LogInformation(
                             "[RabbitMQ Event Received] RoutingKey: {RoutingKey}, Domain: {DomainName}, DomainId: {DomainId}, Message: {Message}",
                             routingKey, capturedDomainName, capturedDomainId ?? "N/A", messageJson);

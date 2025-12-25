@@ -1,10 +1,12 @@
 using System.Reflection;
+using Asp.Versioning;
 using MngHub.Application;
 using MngHub.Application.Configuration;
 using MngHub.Application.Services;
 using MngHub.Infrastructure;
 using MngHub.Infrastructure.Services.SignalR;
 using Microsoft.Extensions.FileProviders;
+using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
 
@@ -33,6 +35,10 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
+// Log version on startup
+var version = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion?.Split('+')[0] ?? "unknown";
+Log.Information("MngHub Starting. Version {Version}", version);
+
 // Configure Kestrel
 builder.WebHost.ConfigureKestrel(options =>
 {
@@ -47,6 +53,26 @@ builder.WebHost.ConfigureKestrel(options =>
 
 // Add services
 builder.Services.AddControllers();
+
+// API Versioning
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+    options.ApiVersionReader = ApiVersionReader.Combine(
+        new QueryStringApiVersionReader("version"),
+        new HeaderApiVersionReader("Api-Version"),
+        new UrlSegmentApiVersionReader()
+    );
+})
+.AddMvc()
+.AddApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
 
@@ -140,6 +166,16 @@ catch (Exception ex)
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    
+    // Add Scalar API Reference (Modern UI)
+    app.MapScalarApiReference(options =>
+    {
+        options
+            .WithTitle("MngHub API")
+            .WithTheme(ScalarTheme.Purple)
+            .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
+            .WithOpenApiRoutePattern("/openapi/v1.json");
+    });
 }
 
 // Static files (for test HTML page)
@@ -161,8 +197,9 @@ app.UseRouting();
 app.UseAuthorization();
 app.MapControllers();
 
-// SignalR Hub endpoint
-app.MapHub<NotificationHub>("/ws");
+// SignalR Hub endpoints (versioned)
+app.MapHub<NotificationHub>("/ws/v1");
+app.MapHub<NotificationHub>("/ws"); // Legacy endpoint (backward compatibility)
 
 // Health check endpoint
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "MngHub", timestamp = DateTime.UtcNow }))

@@ -29,6 +29,7 @@ namespace MngDataGateway.Persistence.Services
         private readonly IDataProcessService _dataProcessService;
         private readonly IDataRepository _dataRepository;
         private readonly INotificationService _notificationService;
+        private readonly MngDataGateway.Application.Interfaces.IEventPublisher? _eventPublisher;
         private readonly IConfiguration _configuration;
         private readonly FilterParser _filterParser;
         private readonly SortParser _sortParser;
@@ -43,7 +44,8 @@ namespace MngDataGateway.Persistence.Services
             INotificationService notificationService,
             IConfiguration configuration,
             FilterParser filterParser,
-            SortParser sortParser)
+            SortParser sortParser,
+            MngDataGateway.Application.Interfaces.IEventPublisher? eventPublisher = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -52,6 +54,7 @@ namespace MngDataGateway.Persistence.Services
             _dataProcessService = dataProcessService ?? throw new ArgumentNullException(nameof(dataProcessService));
             _dataRepository = dataRepository ?? throw new ArgumentNullException(nameof(dataRepository));
             _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
+            _eventPublisher = eventPublisher; // Optional - for backward compatibility
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _filterParser = filterParser ?? throw new ArgumentNullException(nameof(filterParser));
             _sortParser = sortParser ?? throw new ArgumentNullException(nameof(sortParser));
@@ -90,10 +93,14 @@ namespace MngDataGateway.Persistence.Services
                 // 4. Ensure collection & indexes
                 await _dataProcessService.EnsureCollectionAndIndexesAsync(schema, databaseName);
 
-                // 5. Transaction decision
+                // 5. Generate incremental fields (before transaction decision)
+                await _dataProcessService.GenerateIncrementalFieldsAsync(
+                    schema, data, databaseName, domainName, session: null);
+
+                // 6. Transaction decision
                 var needsTransaction = DetermineTransactionNeed(schema);
 
-                // 6. Insert data
+                // 7. Insert data
                 if (needsTransaction)
                 {
                     await InsertWithTransactionAsync(schema, data, databaseName, userId, userEmail, ipAddress);
@@ -106,8 +113,15 @@ namespace MngDataGateway.Persistence.Services
                 // 7. Publish event (async - fire & forget)
                 if (ShouldPublishEvent(schema))
                 {
+                    // Legacy NotificationService (domain-based exchange)
                     _ = _notificationService.PublishDataCreatedEventAsync(
                         domainName, databaseName, schema, data, userId, userEmail, ipAddress);
+
+                    // New EventPublisher (MngKeeper-style unified exchange)
+                    if (_eventPublisher != null)
+                    {
+                        _ = PublishDataCreatedEventAsync(domainName, schema, data, userId, userEmail, ipAddress);
+                    }
                 }
 
                 _logger.LogInformation(
@@ -212,8 +226,15 @@ namespace MngDataGateway.Persistence.Services
                 // 7. Publish event (async)
                 if (ShouldPublishEvent(schema) && result != null)
                 {
+                    // Legacy NotificationService (domain-based exchange)
                     _ = _notificationService.PublishDataUpdatedEventAsync(
                         domainName, databaseName, schema, result, userId, userEmail, ipAddress);
+
+                    // New EventPublisher (MngKeeper-style unified exchange)
+                    if (_eventPublisher != null)
+                    {
+                        _ = PublishDataUpdatedEventAsync(domainName, schema, result, userId, userEmail, ipAddress);
+                    }
                 }
 
                 _logger.LogInformation(
@@ -284,8 +305,15 @@ namespace MngDataGateway.Persistence.Services
             // Publish event (async)
             if (ShouldPublishEvent(schema))
             {
+                // Legacy NotificationService (domain-based exchange)
                 _ = _notificationService.PublishDataRestoredEventAsync(
                     domainName, databaseName, schema, dataId, userId, userEmail, ipAddress);
+
+                // New EventPublisher (MngKeeper-style unified exchange)
+                if (_eventPublisher != null)
+                {
+                    _ = PublishDataRestoredEventAsync(domainName, schema, dataId, userId, userEmail, ipAddress);
+                }
             }
 
             _logger.LogInformation(
@@ -352,7 +380,7 @@ namespace MngDataGateway.Persistence.Services
                 {
                     // Transaction içinde tüm item'ları process et ve insert et
                     await ProcessAndInsertItemsInTransactionAsync(
-                        schema, validItems, databaseName, userId, userEmail, ipAddress, processedItems);
+                        schema, validItems, databaseName, domainName, userId, userEmail, ipAddress, processedItems);
                 }
                 else
                 {
@@ -362,7 +390,7 @@ namespace MngDataGateway.Persistence.Services
                         var processedItem = new Dictionary<string, object>(item);
                         _dataProcessService.ApplyDefaultValues(schema, processedItem);
                         _dataProcessService.GenerateMetadata(schema, processedItem, userId, userEmail, ipAddress);
-                        await _dataProcessService.GenerateIncrementalFieldsAsync(schema, processedItem, databaseName, session: null);
+                        await _dataProcessService.GenerateIncrementalFieldsAsync(schema, processedItem, databaseName, domainName, session: null);
                         processedItems.Add(processedItem);
                     }
 
@@ -395,8 +423,15 @@ namespace MngDataGateway.Persistence.Services
                 {
                     foreach (var item in processedItems)
                     {
+                        // Legacy NotificationService (domain-based exchange)
                         _ = _notificationService.PublishDataCreatedEventAsync(
                             domainName, databaseName, schema, item, userId, userEmail, ipAddress);
+
+                        // New EventPublisher (MngKeeper-style unified exchange)
+                        if (_eventPublisher != null)
+                        {
+                            _ = PublishDataCreatedEventAsync(domainName, schema, item, userId, userEmail, ipAddress);
+                        }
                     }
                 }
 
@@ -462,9 +497,7 @@ namespace MngDataGateway.Persistence.Services
 
                 try
                 {
-                    // Generate incremental fields inside transaction
-                    await _dataProcessService.GenerateIncrementalFieldsAsync(
-                        schema, data, databaseName, session);
+                    // Note: Incremental fields are already generated before transaction
 
                     // Insert data
                     await _dataRepository.InsertOneAsync(
@@ -497,10 +530,7 @@ namespace MngDataGateway.Persistence.Services
             Dictionary<string, object> data,
             string databaseName)
         {
-            // Generate incremental fields without transaction
-            await _dataProcessService.GenerateIncrementalFieldsAsync(
-                schema, data, databaseName, session: null);
-
+            // Note: Incremental fields are already generated before this method
             // Insert data
             await _dataRepository.InsertOneAsync(
                 databaseName, schema.CollectionName, data, session: null);
@@ -510,6 +540,7 @@ namespace MngDataGateway.Persistence.Services
             DatasetSchema schema,
             List<(int index, Dictionary<string, object> item)> validItems,
             string databaseName,
+            string domainName,
             string userId,
             string userEmail,
             string? ipAddress,
@@ -529,7 +560,7 @@ namespace MngDataGateway.Persistence.Services
                         _dataProcessService.ApplyDefaultValues(schema, processedItem);
                         _dataProcessService.GenerateMetadata(schema, processedItem, userId, userEmail, ipAddress);
                         await _dataProcessService.GenerateIncrementalFieldsAsync(
-                            schema, processedItem, databaseName, session);
+                            schema, processedItem, databaseName, domainName, session);
                         processedItems.Add(processedItem);
                     }
 
@@ -586,6 +617,145 @@ namespace MngDataGateway.Persistence.Services
             // Phase 1: Simple check - publish_mode != "none"
             return schema.publish_mode != "none";
         }
+
+        #region EventPublisher Helpers (MngKeeper-style)
+
+        /// <summary>
+        /// Publish DataCreatedEvent using EventPublisher (MngKeeper-style)
+        /// </summary>
+        private async Task PublishDataCreatedEventAsync(
+            string domainName,
+            DatasetSchema schema,
+            Dictionary<string, object> data,
+            string userId,
+            string userEmail,
+            string? ipAddress)
+        {
+            if (_eventPublisher == null) return;
+
+            try
+            {
+                var dataId = data.GetValueOrDefault("__dataId")?.ToString() ?? string.Empty;
+                
+                var @event = new MngDataGateway.Application.Events.DataCreatedEvent
+                {
+                    DatasetName = schema.DatasetName,
+                    DataId = dataId,
+                    Data = data,
+                    UserId = userId,
+                    UserEmail = userEmail,
+                    IpAddress = ipAddress
+                };
+
+                // Use domainName as domainId (they're typically the same)
+                await _eventPublisher.PublishAsync(@event, domainName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to publish DataCreatedEvent via EventPublisher for dataset {DatasetName}", schema.DatasetName);
+            }
+        }
+
+        /// <summary>
+        /// Publish DataUpdatedEvent using EventPublisher (MngKeeper-style)
+        /// </summary>
+        private async Task PublishDataUpdatedEventAsync(
+            string domainName,
+            DatasetSchema schema,
+            Dictionary<string, object> data,
+            string userId,
+            string userEmail,
+            string? ipAddress)
+        {
+            if (_eventPublisher == null) return;
+
+            try
+            {
+                var dataId = data.GetValueOrDefault("__dataId")?.ToString() ?? string.Empty;
+                
+                var @event = new MngDataGateway.Application.Events.DataUpdatedEvent
+                {
+                    DatasetName = schema.DatasetName,
+                    DataId = dataId,
+                    Data = data,
+                    UserId = userId,
+                    UserEmail = userEmail,
+                    IpAddress = ipAddress
+                };
+
+                await _eventPublisher.PublishAsync(@event, domainName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to publish DataUpdatedEvent via EventPublisher for dataset {DatasetName}", schema.DatasetName);
+            }
+        }
+
+        /// <summary>
+        /// Publish DataDeletedEvent using EventPublisher (MngKeeper-style)
+        /// </summary>
+        private async Task PublishDataDeletedEventAsync(
+            string domainName,
+            DatasetSchema schema,
+            string dataId,
+            string userId,
+            string userEmail,
+            string? ipAddress)
+        {
+            if (_eventPublisher == null) return;
+
+            try
+            {
+                var @event = new MngDataGateway.Application.Events.DataDeletedEvent
+                {
+                    DatasetName = schema.DatasetName,
+                    DataId = dataId,
+                    UserId = userId,
+                    UserEmail = userEmail,
+                    IpAddress = ipAddress
+                };
+
+                await _eventPublisher.PublishAsync(@event, domainName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to publish DataDeletedEvent via EventPublisher for dataset {DatasetName}", schema.DatasetName);
+            }
+        }
+
+        /// <summary>
+        /// Publish DataRestoredEvent using EventPublisher (MngKeeper-style)
+        /// </summary>
+        private async Task PublishDataRestoredEventAsync(
+            string domainName,
+            DatasetSchema schema,
+            string dataId,
+            string userId,
+            string userEmail,
+            string? ipAddress)
+        {
+            if (_eventPublisher == null) return;
+
+            try
+            {
+                var @event = new MngDataGateway.Application.Events.DataRestoredEvent
+                {
+                    DatasetName = schema.DatasetName,
+                    DataId = dataId,
+                    UserId = userId,
+                    UserEmail = userEmail,
+                    IpAddress = ipAddress
+                };
+
+                await _eventPublisher.PublishAsync(@event, domainName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to publish DataRestoredEvent via EventPublisher for dataset {DatasetName}", schema.DatasetName);
+            }
+        }
+
+        #endregion
 
         private void AddHistoryEntry(
             BsonDocument existingDoc,

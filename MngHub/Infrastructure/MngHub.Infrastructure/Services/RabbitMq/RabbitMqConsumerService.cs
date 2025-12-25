@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MngHub.Application.Configuration;
 using MngHub.Application.Services;
+using MngHub.Infrastructure.Helpers;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
@@ -44,27 +45,23 @@ public class RabbitMqConsumerService : IRabbitMqConsumer, IDisposable
                 _settings.RabbitMQ.Host,
                 _settings.RabbitMQ.Port);
 
-            var factory = new ConnectionFactory
-            {
-                HostName = _settings.RabbitMQ.Host,
-                Port = _settings.RabbitMQ.Port,
-                UserName = _settings.RabbitMQ.Username,
-                Password = _settings.RabbitMQ.Password,
-                VirtualHost = _settings.RabbitMQ.VirtualHost,
-                AutomaticRecoveryEnabled = true,
-                NetworkRecoveryInterval = TimeSpan.FromSeconds(10),
-                RequestedHeartbeat = TimeSpan.FromSeconds(60)
-            };
-
+            var factory = RabbitMqConnectionHelper.CreateConnectionFactory(_settings);
             _connection = factory.CreateConnection();
             _channel = _connection.CreateModel();
 
-            // Ensure exchanges exist
-            EnsureExchangeExists(_settings.RabbitMQ.ExchangeName);
-            EnsureExchangeExists(_settings.RabbitMQ.EventPublisherExchangeName);
+            // Ensure exchanges exist using helper
+            RabbitMqConnectionHelper.EnsureExchangesExist(
+                _channel,
+                new[]
+                {
+                    _settings.RabbitMQ.ExchangeName,
+                    _settings.RabbitMQ.EventPublisherExchangeName,
+                    _settings.RabbitMQ.DataGatewayExchangeName
+                },
+                _logger);
 
-            _logger.LogInformation("RabbitMQ connected successfully. Exchanges: {Exchange1}, {Exchange2}", 
-                _settings.RabbitMQ.ExchangeName, _settings.RabbitMQ.EventPublisherExchangeName);
+            _logger.LogInformation("RabbitMQ connected successfully. Exchanges: {Exchange1}, {Exchange2}, {Exchange3}", 
+                _settings.RabbitMQ.ExchangeName, _settings.RabbitMQ.EventPublisherExchangeName, _settings.RabbitMQ.DataGatewayExchangeName);
         }
         catch (Exception ex)
         {
@@ -115,6 +112,10 @@ public class RabbitMqConsumerService : IRabbitMqConsumer, IDisposable
                 if (IsDomainIdBasedPattern(routingKey))
                 {
                     BindQueueToExchange(consumerChannel, queueName, _settings.RabbitMQ.EventPublisherExchangeName, routingKey);
+                    
+                    // Also bind to mngdatagateway.events exchange (for data events)
+                    // Same domainId-based pattern works for DataGateway events
+                    BindQueueToExchange(consumerChannel, queueName, _settings.RabbitMQ.DataGatewayExchangeName, routingKey);
                 }
             }
 
@@ -126,7 +127,7 @@ public class RabbitMqConsumerService : IRabbitMqConsumer, IDisposable
                 {
                     var body = ea.Body.ToArray();
                     var messageJson = Encoding.UTF8.GetString(body);
-                    var message = JsonSerializer.Deserialize<object>(messageJson);
+                    var message = MessageSerializationHelper.Deserialize(messageJson);
                     var routingKey = ea.RoutingKey;
                     var exchange = ea.Exchange;
 
@@ -218,17 +219,6 @@ public class RabbitMqConsumerService : IRabbitMqConsumer, IDisposable
         }
     }
 
-    private void EnsureExchangeExists(string exchangeName)
-    {
-        if (_channel == null)
-            throw new InvalidOperationException("Channel is not initialized");
-
-        _channel.ExchangeDeclare(
-            exchange: exchangeName,
-            type: ExchangeType.Topic,
-            durable: true,
-            autoDelete: false);
-    }
 
     private void BindQueueToExchange(IModel channel, string queueName, string exchangeName, string routingKey)
     {

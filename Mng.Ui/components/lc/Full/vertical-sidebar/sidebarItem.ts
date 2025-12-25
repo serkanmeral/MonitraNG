@@ -65,6 +65,7 @@ import {
   FileCheckIcon,
   MailIcon,
   TicketIcon,
+  BellIcon,
 } from "vue-tabler-icons";
 
 export interface menu {
@@ -184,6 +185,11 @@ const sidebarItem: menu[] = [
     title: "Grup Yönetimi",
     icon: UserCircleIcon,
     to: "/apps/groups",
+  },
+  {
+    title: "Event Mesajları",
+    icon: BellIcon,
+    to: "/apps/events",
   },
 
   {

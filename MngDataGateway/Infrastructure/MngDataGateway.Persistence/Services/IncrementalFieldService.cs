@@ -36,6 +36,7 @@ namespace MngDataGateway.Persistence.Services
             FieldDefinition field,
             Dictionary<string, object> data,
             string databaseName,
+            string? domainName = null,
             IClientSessionHandle? session = null)
         {
             if (field.fieldType != "incremental")
@@ -48,7 +49,7 @@ namespace MngDataGateway.Persistence.Services
             {
                 // 1. Parse format and resolve placeholders
                 var format = field.incrementalOptions.format;
-                var resolvedPrefix = ResolvePlaceholders(format, data, out var counterPlaceholder, out var missingPlaceholders);
+                var resolvedPrefix = ResolvePlaceholders(format, data, domainName, out var counterPlaceholder, out var missingPlaceholders);
 
                 // 2. Validate that all placeholders are resolved
                 if (missingPlaceholders.Any())
@@ -90,12 +91,13 @@ namespace MngDataGateway.Persistence.Services
 
         /// <summary>
         /// Resolve placeholders in format template
-        /// Supported: {year}, {month}, {day}, {yy}, {mm}, {dd}, {fieldName}
+        /// Supported: {year}, {month}, {day}, {yy}, {mm}, {dd}, {domain}, {fieldName}
         /// Returns: resolved prefix, counter placeholder info, and list of missing placeholders
         /// </summary>
         private string ResolvePlaceholders(
             string format,
             Dictionary<string, object> data,
+            string? domainName,
             out string counterPlaceholder,
             out List<string> missingPlaceholders)
         {
@@ -110,6 +112,17 @@ namespace MngDataGateway.Persistence.Services
             resolved = resolved.Replace("{mm}", now.Month.ToString("D2"));
             resolved = resolved.Replace("{day}", now.Day.ToString("D2"));
             resolved = resolved.Replace("{dd}", now.Day.ToString("D2"));
+            
+            // Domain placeholder (if provided)
+            if (!string.IsNullOrEmpty(domainName))
+            {
+                resolved = resolved.Replace("{domain}", domainName);
+            }
+            else if (resolved.Contains("{domain}"))
+            {
+                // Domain placeholder exists but domainName is not provided
+                missingPlaceholders.Add("domain");
+            }
 
             // Extract counter placeholder first (e.g., {0:D6}, {0:D4})
             var counterMatch = Regex.Match(resolved, @"\{0(:D\d+)?\}");
@@ -128,8 +141,8 @@ namespace MngDataGateway.Persistence.Services
                 var fieldName = match.Groups[1].Value;
                 var placeholder = $"{{{fieldName}}}";
                 
-                // Skip if it's a date placeholder (already resolved)
-                if (new[] { "year", "yy", "month", "mm", "day", "dd" }.Contains(fieldName))
+                // Skip if it's a date placeholder or domain placeholder (already resolved)
+                if (new[] { "year", "yy", "month", "mm", "day", "dd", "domain" }.Contains(fieldName))
                     continue;
                 
                 // Check if field exists in data and has value

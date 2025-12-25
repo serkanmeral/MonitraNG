@@ -1,6 +1,8 @@
 using MediatR;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Application.Common.DTOs;
+using MngKeeper.Application.Common.Helpers;
+using MngKeeper.Application.Common.Exceptions;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 
@@ -90,12 +92,11 @@ namespace MngKeeper.Application.Features.Group.Queries.GetGroup
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting group: {GroupId}", request.GroupId);
-                return new GetGroupResponse
-                {
-                    IsSuccess = false,
-                    ErrorMessage = $"Failed to get group: {ex.Message}"
-                };
+                return ResponseHelper.CreateErrorResponse<GetGroupResponse>(
+                    _logger,
+                    ex,
+                    "GetGroup",
+                    request.GroupId);
             }
         }
     }

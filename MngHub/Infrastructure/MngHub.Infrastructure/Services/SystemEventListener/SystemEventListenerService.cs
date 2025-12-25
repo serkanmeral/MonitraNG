@@ -2,6 +2,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MngHub.Application.Configuration;
+using MngHub.Infrastructure.Helpers;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
@@ -73,26 +74,15 @@ public class SystemEventListenerService : BackgroundService
         {
             if (_connection?.IsOpen != true)
             {
-                var factory = new ConnectionFactory
-                {
-                    HostName = _settings.RabbitMQ.Host,
-                    Port = _settings.RabbitMQ.Port,
-                    UserName = _settings.RabbitMQ.Username,
-                    Password = _settings.RabbitMQ.Password,
-                    VirtualHost = _settings.RabbitMQ.VirtualHost,
-                    AutomaticRecoveryEnabled = true,
-                    NetworkRecoveryInterval = TimeSpan.FromSeconds(10),
-                    RequestedHeartbeat = TimeSpan.FromSeconds(60)
-                };
-
+                var factory = RabbitMqConnectionHelper.CreateConnectionFactory(_settings);
                 _connection = factory.CreateConnection();
                 _channel = _connection.CreateModel();
 
-                _channel.ExchangeDeclare(
-                    exchange: _settings.RabbitMQ.ExchangeName,
-                    type: ExchangeType.Topic,
-                    durable: true,
-                    autoDelete: false);
+                // Ensure exchange exists using helper
+                RabbitMqConnectionHelper.EnsureExchangeExists(
+                    _channel,
+                    _settings.RabbitMQ.ExchangeName,
+                    _logger);
 
                 _logger.LogDebug("RabbitMQ connected for system event listener");
             }

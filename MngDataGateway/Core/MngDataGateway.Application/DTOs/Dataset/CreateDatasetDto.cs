@@ -57,7 +57,7 @@ public class CreateDatasetDto
     /// <summary>
     /// Predefined queries (optional)
     /// </summary>
-    public List<QueryDefinition>? Queries { get; set; }
+    public List<QueryDefinitionDto>? Queries { get; set; }
 
     /// <summary>
     /// Index definitions (optional)

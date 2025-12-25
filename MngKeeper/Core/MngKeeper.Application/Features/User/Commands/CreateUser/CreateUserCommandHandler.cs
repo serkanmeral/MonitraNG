@@ -1,6 +1,8 @@
 using MediatR;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Domain.Entities;
+using MngKeeper.Application.Common.Helpers;
+using MngKeeper.Application.Common.Exceptions;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 
@@ -250,7 +252,13 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
                     Email = savedUser.Email,
                     Groups = savedUser.Groups
                 };
-                await _eventPublisher.PublishAsync(userCreatedEvent, claims.DomainId);
+                await EventPublishingHelper.PublishEventSafelyAsync(
+                    _eventPublisher,
+                    _logger,
+                    userCreatedEvent,
+                    claims.DomainId,
+                    "UserCreatedEvent",
+                    savedUser.Id);
 
                 _logger.LogInformation("User created successfully: {Username} in domain: {DomainId}", request.Username, claims.DomainId);
 
@@ -273,12 +281,12 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating user: {Username} in domain: {DomainId}", request.Username, claims?.DomainId);
-                return new CreateUserResponse
-                {
-                    IsSuccess = false,
-                    ErrorMessage = $"Failed to create user: {ex.Message}"
-                };
+                return ResponseHelper.CreateErrorResponse<CreateUserResponse>(
+                    _logger,
+                    ex,
+                    "CreateUser",
+                    request.Username,
+                    claims?.DomainId ?? "N/A");
             }
         }
     }

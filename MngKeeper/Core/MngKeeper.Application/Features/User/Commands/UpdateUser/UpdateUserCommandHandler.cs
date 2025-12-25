@@ -1,6 +1,8 @@
 using MediatR;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Domain.Entities;
+using MngKeeper.Application.Common.Helpers;
+using MngKeeper.Application.Common.Exceptions;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 
@@ -172,7 +174,13 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                     Email = updatedUser.Email,
                     Groups = updatedUser.Groups
                 };
-                await _eventPublisher.PublishAsync(userUpdatedEvent, claims.DomainId);
+                await EventPublishingHelper.PublishEventSafelyAsync(
+                    _eventPublisher,
+                    _logger,
+                    userUpdatedEvent,
+                    claims.DomainId,
+                    "UserUpdatedEvent",
+                    request.UserId);
 
                 _logger.LogInformation("User updated successfully: {UserId} in domain: {DomainId}", request.UserId, claims.DomainId);
 
@@ -196,12 +204,12 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating user: {UserId} in domain: {DomainId}", request.UserId, claims?.DomainId);
-                return new UpdateUserResponse
-                {
-                    IsSuccess = false,
-                    ErrorMessage = $"Failed to update user: {ex.Message}"
-                };
+                return ResponseHelper.CreateErrorResponse<UpdateUserResponse>(
+                    _logger,
+                    ex,
+                    "UpdateUser",
+                    request.UserId,
+                    claims?.DomainId ?? "N/A");
             }
         }
     }

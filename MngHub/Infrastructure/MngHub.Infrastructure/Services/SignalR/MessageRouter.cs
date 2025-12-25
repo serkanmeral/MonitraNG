@@ -51,6 +51,12 @@ public class MessageRouter
             targetRoom = domainRoomName;
             logLevel = LogLevel.Information;
         }
+        else if (routingKey.StartsWith($"{domainName}."))
+        {
+            // DataGateway events use domainName as domainId (e.g., "meral.datacreatedevent")
+            targetRoom = domainRoomName;
+            logLevel = LogLevel.Information;
+        }
         else
         {
             _logger.LogWarning(

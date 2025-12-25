@@ -50,7 +50,7 @@ public class UpdateDatasetDto
     /// <summary>
     /// Predefined queries (optional - replaces entire array if provided)
     /// </summary>
-    public List<QueryDefinition>? Queries { get; set; }
+    public List<QueryDefinitionDto>? Queries { get; set; }
 
     /// <summary>
     /// Index definitions (optional - adds new indexes, keeps old ones)

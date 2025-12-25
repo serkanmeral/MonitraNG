@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using MngHub.Application.Services;
 using MngHub.Application.Configuration;
@@ -7,7 +8,8 @@ using RabbitMQ.Client;
 namespace MngHub.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[ApiVersion(1.0)]
+[Route("api/v{version:apiVersion}/[controller]")]
 public class TestController : ControllerBase
 {
     private readonly IConnectionManager _connectionManager;
@@ -74,9 +76,10 @@ public class TestController : ControllerBase
             timestamp = DateTime.UtcNow,
             endpoints = new
             {
-                signalR = "/ws",
+                signalR = "/ws/v1",
+                signalRLegacy = "/ws",
                 health = "/health",
-                connections = "/api/test/connections"
+                connections = "/api/v1/test/connections"
             }
         });
     }

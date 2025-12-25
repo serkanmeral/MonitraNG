@@ -22,6 +22,7 @@ namespace MngDataGateway.Application.Services
             DatasetSchema schema,
             Dictionary<string, object> data,
             string databaseName,
+            string? domainName = null,
             IClientSessionHandle? session = null);
 
         /// <summary>
