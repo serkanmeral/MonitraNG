@@ -280,11 +280,22 @@ pages:
   image: python:3.11
   tags:
     - docker
+  needs:
+    - deploy-docs
   dependencies:
     - deploy-docs
   script:
     - echo "Deploying to GitLab Pages..."
     - echo "Checking for docs/site directory..."
+    - |
+      if [ ! -d "docs/site" ]; then
+        echo "ERROR: docs/site directory not found. deploy-docs job may have failed."
+        echo "Building documentation as fallback..."
+        cd docs
+        pip install -r requirements.txt
+        mkdocs build
+        cd ..
+      fi
     - ls -la docs/site/
     - mkdir -p public
     - cp -r docs/site/* public/
