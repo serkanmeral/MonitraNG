@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Core\MngDataGateway.Application\MngDataGateway.Application.csproj" />
+    <ProjectReference Include="..\..\Core\MngDataGateway.Domain\MngDataGateway.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>
