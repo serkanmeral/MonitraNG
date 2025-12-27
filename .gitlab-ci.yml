@@ -1,0 +1,212 @@
+# GitLab CI/CD Pipeline Configuration for MonitraNG
+# Bu dosya GitLab'da CI/CD pipeline'larını tanımlar
+
+# Default image ve before_script
+image: mcr.microsoft.com/dotnet/sdk:9.0
+
+# Cache ayarları (daha hızlı build için)
+cache:
+  paths:
+    - .nuget/
+
+# Pipeline stages
+stages:
+  - build
+  - test
+  - build-docker
+  - deploy-docs
+
+# Variables (genel değişkenler)
+variables:
+  DOTNET_VERSION: "9.0"
+  NODE_VERSION: "18"
+  SOLUTION_PATH_MNGKEEPER: "MngKeeper/MngKeeper.sln"
+  SOLUTION_PATH_DATAGATEWAY: "MngDataGateway/MngDataGateway.sln"
+  SOLUTION_PATH_HUB: "MngHub/MngHub.sln"
+
+# ============================================
+# BUILD STAGE
+# ============================================
+
+# MngKeeper Build
+build-mngkeeper:
+  stage: build
+  tags:
+    - docker
+  script:
+    - echo "Building MngKeeper..."
+    - dotnet restore $SOLUTION_PATH_MNGKEEPER
+    - dotnet build $SOLUTION_PATH_MNGKEEPER --no-restore -c Release
+  artifacts:
+    paths:
+      - MngKeeper/**/bin/
+      - MngKeeper/**/obj/
+    expire_in: 1 hour
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# MngDataGateway Build
+build-mngdatagateway:
+  stage: build
+  tags:
+    - docker
+  script:
+    - echo "Building MngDataGateway..."
+    - dotnet restore $SOLUTION_PATH_DATAGATEWAY
+    - dotnet build $SOLUTION_PATH_DATAGATEWAY --no-restore -c Release
+  artifacts:
+    paths:
+      - MngDataGateway/**/bin/
+      - MngDataGateway/**/obj/
+    expire_in: 1 hour
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# MngHub Build
+build-mnghub:
+  stage: build
+  tags:
+    - docker
+  script:
+    - echo "Building MngHub..."
+    - dotnet restore $SOLUTION_PATH_HUB
+    - dotnet build $SOLUTION_PATH_HUB --no-restore -c Release
+  artifacts:
+    paths:
+      - MngHub/**/bin/
+      - MngHub/**/obj/
+    expire_in: 1 hour
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# Frontend Build (Mng.Ui)
+build-frontend:
+  stage: build
+  image: node:18
+  tags:
+    - docker
+  script:
+    - echo "Building Frontend (Mng.Ui)..."
+    - cd Mng.Ui
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - Mng.Ui/.nuxt/
+      - Mng.Ui/.output/
+      - Mng.Ui/dist/
+    expire_in: 1 hour
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# ============================================
+# TEST STAGE
+# ============================================
+
+# MngKeeper Tests
+test-mngkeeper:
+  stage: test
+  tags:
+    - docker
+  dependencies:
+    - build-mngkeeper
+  script:
+    - echo "Running MngKeeper tests..."
+    - dotnet test $SOLUTION_PATH_MNGKEEPER --no-build --verbosity normal
+  allow_failure: true
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# MngDataGateway Tests
+test-mngdatagateway:
+  stage: test
+  tags:
+    - docker
+  dependencies:
+    - build-mngdatagateway
+  script:
+    - echo "Running MngDataGateway tests..."
+    - dotnet test $SOLUTION_PATH_DATAGATEWAY --no-build --verbosity normal
+  allow_failure: true
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# MngHub Tests
+test-mnghub:
+  stage: test
+  tags:
+    - docker
+  dependencies:
+    - build-mnghub
+  script:
+    - echo "Running MngHub tests..."
+    - dotnet test $SOLUTION_PATH_HUB --no-build --verbosity normal
+  allow_failure: true
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# ============================================
+# DOCKER BUILD STAGE (İleride)
+# ============================================
+
+# Docker build jobs buraya eklenecek (şimdilik boş)
+# build-docker-mngkeeper:
+#   stage: build-docker
+#   script:
+#     - docker build -t mngkeeper:latest -f MngKeeper/Presentation/MngKeeper.Api/Dockerfile .
+#   only:
+#     - main
+
+# ============================================
+# DOCS DEPLOYMENT STAGE
+# ============================================
+
+# MkDocs Build and Deploy to GitLab Pages
+deploy-docs:
+  stage: deploy-docs
+  image: python:3.11
+  tags:
+    - docker
+  script:
+    - echo "Building documentation with MkDocs..."
+    - cd docs
+    - pip install -r requirements.txt
+    - mkdocs build
+  artifacts:
+    paths:
+      - docs/site/
+    expire_in: 1 day
+  only:
+    - main
+  # GitLab Pages için pages job'u özel bir isim olmalı
+  # Bu job'u "pages" olarak adlandırırsak GitLab otomatik deploy eder
+
+# GitLab Pages Deployment (otomatik)
+pages:
+  stage: deploy-docs
+  dependencies:
+    - deploy-docs
+  script:
+    - echo "Deploying to GitLab Pages..."
+    - mkdir -p public
+    - cp -r docs/site/* public/
+  artifacts:
+    paths:
+      - public
+  only:
+    - main
+
