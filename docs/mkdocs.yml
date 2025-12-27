@@ -3,10 +3,24 @@ site_description: Multi-Tenant IoT Monitoring Platform Documentation
 site_author: iSIM Platform
 site_url: https://serkanmeral.github.io/MonitraNG/
 
+# Version info (can be overridden by CI/CD)
+# CI/CD will inject version info during build
+site_version: "latest"
+
+# Build output directory (relative to mkdocs.yml location)
+# mkdocs.yml is now in docs/ folder
+site_dir: site
+
+# Documentation directory (relative to mkdocs.yml location)
+# MkDocs default is 'docs' folder, but since mkdocs.yml is in docs/, we use current directory
+# However, MkDocs doesn't allow docs_dir to be the same as config file directory
+# So we create a subdirectory for documentation content
+docs_dir: content
+
 # Repository
 repo_name: serkanmeral/MonitraNG
 repo_url: https://github.com/serkanmeral/MonitraNG
-edit_uri: edit/main/docs/docs/
+edit_uri: edit/main/docs/
 
 # Theme
 theme:
@@ -42,8 +56,13 @@ theme:
 plugins:
   - search:
       lang: en
-  - swagger-ui-tag:
-      default-expand: list
+  - swagger-ui-tag
+  - minify:
+      minify_html: true
+      minify_js: true
+      minify_css: true
+      htmlmin_opts:
+        remove_comments: true
 
 # Extensions
 markdown_extensions:
@@ -67,48 +86,43 @@ markdown_extensions:
 # Navigation
 nav:
   - Home: index.md
-  - Getting Started:
-    - user-guide/getting-started.md
-    - user-guide/installation.md
-    - user-guide/configuration.md
-  - User Guide:
-    - user-guide/datasets.md
-    - user-guide/authentication.md
-    - user-guide/api-usage.md
+  # - Getting Started:
+  #   - user-guide/getting-started.md
+  #   - user-guide/installation.md
+  #   - user-guide/configuration.md
+  # - User Guide:
+  #   - user-guide/datasets.md
+  #   - user-guide/authentication.md
+  #   - user-guide/api-usage.md
   - API Documentation:
-    - api/overview.md
-    - MngKeeper:
-      - api/mngkeeper/index.md
-      - api/mngkeeper/authentication.md
-      - api/mngkeeper/endpoints.md
-      - api/mngkeeper/openapi.json
-    - MngDataGateway:
-      - api/mngdatagateway/index.md
-      - api/mngdatagateway/datasets.md
-      - api/mngdatagateway/endpoints.md
-      - api/mngdatagateway/openapi.json
-    - MngHub:
-      - api/mnghub/index.md
-      - api/mnghub/endpoints.md
-      - api/mnghub/openapi.json
+      - api/overview.md
+      - MngKeeper:
+          - api/mngkeeper/index.md
+          - api/mngkeeper/openapi.json
+      - MngDataGateway:
+          - api/mngdatagateway/index.md
+          - api/mngdatagateway/openapi.json
+      - MngHub:
+          - api/mnghub/index.md
+          - api/mnghub/openapi.json
   - Services:
-    - MngKeeper:
-      - services/mngkeeper/architecture.md
-      - services/mngkeeper/roadmap.md
-      - services/mngkeeper/changelog.md
-    - MngDataGateway:
-      - services/mngdatagateway/architecture.md
-      - services/mngdatagateway/roadmap.md
-      - services/mngdatagateway/status.md
-    - MngHub:
-      - services/mnghub/architecture.md
-      - services/mnghub/roadmap.md
-  - Development:
-    - development/contributing.md
-    - development/coding-standards.md
-    - development/testing.md
+      - MngKeeper:
+          - Architecture: MngKeeper/architecture/ARCHITECTURE_GUIDE.md
+          - Guides: MngKeeper/guides/GATEWAY_INTEGRATION.md
+          - Changelog: MngKeeper/changelog/CHANGELOG.md
+      - MngDataGateway:
+          - Architecture: MngDataGateway/architecture/ARCHITECTURE_GUIDE.md
+          - Guides: MngDataGateway/guides/GATEWAY_INTEGRATION.md
+          - API: MngDataGateway/api/API_VERSIONING.md
+      - MngHub:
+          - Architecture: MngHub/architecture/ARCHITECTURE_PLAN.md
+          - Guides: MngHub/guides/GATEWAY_INTEGRATION.md
+      - Mng.Ui:
+          - Docker Deployment: Mng.Ui/guides/DOCKER_DEPLOYMENT.md
+          - Gateway Integration: Mng.Ui/guides/GATEWAY_INTEGRATION.md
   - DevOps:
-    - devops-roadmap.md
+      - CI/CD: cicd/current_status.md
+      - DevOps Roadmap: devops-roadmap.md
 
 # Copyright
 copyright: Copyright &copy; 2025 iSIM Platform

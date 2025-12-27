@@ -8,6 +8,8 @@ image: mcr.microsoft.com/dotnet/sdk:9.0
 cache:
   paths:
     - .nuget/
+    - .pip-cache/  # Python pip cache for MkDocs
+    - docs/.cache/  # MkDocs cache
 
 # Pipeline stages
 stages:
@@ -15,6 +17,8 @@ stages:
   - build
   - test
   - build-docker
+  - openapi-extract  # Separate stage for OpenAPI extraction
+  - validate-docs    # Documentation quality checks
   - deploy-docs
 
 # Variables (genel değişkenler)
@@ -235,6 +239,93 @@ test-mnghub:
     - merge_requests
 
 # ============================================
+# OPENAPI EXTRACT STAGE
+# ============================================
+
+# ============================================
+# OPENAPI EXTRACTION STAGE
+# ============================================
+
+# Extract OpenAPI specs from built services using Swashbuckle
+# This job extracts OpenAPI specs directly from built assemblies
+extract-openapi-specs:
+  stage: openapi-extract
+  image: mcr.microsoft.com/dotnet/sdk:9.0
+  tags:
+    - docker
+  dependencies:
+    - build-mngkeeper
+    - build-mngdatagateway
+  before_script:
+    - apt-get update && apt-get install -y curl jq || true
+    - |
+      # Install Swashbuckle CLI tool for OpenAPI extraction
+      dotnet tool install -g Swashbuckle.AspNetCore.Cli || dotnet tool update -g Swashbuckle.AspNetCore.Cli || true
+  script:
+    - echo "=== Extracting OpenAPI specs from built services ==="
+    - |
+      # Create output directories
+      mkdir -p docs/content/api/mngkeeper
+      mkdir -p docs/content/api/mngdatagateway
+      mkdir -p docs/content/api/mnghub
+      
+      # Method 1: Extract from built assemblies using Swashbuckle CLI
+      # Find API project DLLs
+      KEEPER_DLL=$(find MngKeeper -name "*.Api.dll" -path "*/bin/Release/*" | head -1)
+      DATAGATEWAY_DLL=$(find MngDataGateway -name "*.Api.dll" -path "*/bin/Release/*" | head -1)
+      
+      # Extract MngKeeper spec
+      if [ -n "$KEEPER_DLL" ]; then
+        echo "Extracting MngKeeper OpenAPI spec from $KEEPER_DLL"
+        swashbuckle aspnetcore tofile "$KEEPER_DLL" "v1" docs/content/api/mngkeeper/openapi.json || {
+          echo "Swashbuckle extraction failed, trying alternative method..."
+          # Fallback: Create placeholder with metadata
+          echo '{"info":{"title":"MngKeeper API","version":"v1","description":"OpenAPI spec - extraction pending"}}' > docs/content/api/mngkeeper/openapi.json
+        }
+      else
+        echo "MngKeeper API DLL not found, creating placeholder"
+        echo '{"info":{"title":"MngKeeper API","version":"v1","description":"OpenAPI spec - build artifact not found"}}' > docs/content/api/mngkeeper/openapi.json
+      fi
+      
+      # Extract MngDataGateway spec
+      if [ -n "$DATAGATEWAY_DLL" ]; then
+        echo "Extracting MngDataGateway OpenAPI spec from $DATAGATEWAY_DLL"
+        swashbuckle aspnetcore tofile "$DATAGATEWAY_DLL" "v1.0" docs/content/api/mngdatagateway/openapi.json || {
+          echo "Swashbuckle extraction failed, trying v1..."
+          swashbuckle aspnetcore tofile "$DATAGATEWAY_DLL" "v1" docs/content/api/mngdatagateway/openapi.json || {
+            echo "Swashbuckle extraction failed, creating placeholder"
+            echo '{"info":{"title":"MngDataGateway API","version":"v1.0","description":"OpenAPI spec - extraction pending"}}' > docs/content/api/mngdatagateway/openapi.json
+          }
+        }
+      else
+        echo "MngDataGateway API DLL not found, creating placeholder"
+        echo '{"info":{"title":"MngDataGateway API","version":"v1.0","description":"OpenAPI spec - build artifact not found"}}' > docs/content/api/mngdatagateway/openapi.json
+      fi
+      
+      # MngHub placeholder (if needed)
+      echo '{"info":{"title":"MngHub API","version":"v1","description":"OpenAPI spec - not yet available"}}' > docs/content/api/mnghub/openapi.json
+      
+      echo "=== OpenAPI spec extraction completed ==="
+      echo "Files created:"
+      ls -la docs/content/api/*/
+  artifacts:
+    paths:
+      - docs/content/api/
+    expire_in: 1 day
+  cache:
+    key: openapi-specs-$CI_COMMIT_REF_SLUG
+    paths:
+      - docs/content/api/
+  only:
+    - main
+    - develop
+    - merge_requests
+  # Note: If Swashbuckle CLI doesn't work, we can fall back to:
+  # 1. Running services temporarily and extracting via HTTP
+  # 2. Pre-generated spec files in repository
+  # 3. Manual extraction script
+
+# ============================================
 # DOCKER BUILD STAGE
 # ============================================
 
@@ -266,6 +357,45 @@ build-docker-ui:
   # Not: Runner'ın privileged mode'da olması gerekiyor (config.toml'da privileged: true)
 
 # ============================================
+# DOCUMENTATION VALIDATION STAGE
+# ============================================
+
+# Validate documentation quality (links, linting, spelling)
+validate-docs:
+  stage: validate-docs
+  image: node:18
+  tags:
+    - docker
+  before_script:
+    - npm install -g markdown-link-check@0.11.0 markdownlint-cli2@0.11.0
+  script:
+    - echo "=== Validating documentation quality ==="
+    - |
+      # Markdown linting
+      echo "Running markdown linting..."
+      markdownlint-cli2 "docs/content/**/*.md" "!docs/content/**/node_modules/**" || {
+        echo "WARNING: Markdown linting found issues (non-blocking)"
+        exit 0  # Non-blocking, just warn
+      }
+    - |
+      # Link checking (internal links only, external links can be flaky)
+      echo "Checking internal links..."
+      find docs/content -name "*.md" -type f | while read file; do
+        echo "Checking links in: $file"
+        markdown-link-check "$file" --config '{"timeout": "10s", "retryOn429": true, "retryCount": 3}' || true
+      done
+    - echo "=== Documentation validation completed ==="
+  allow_failure: true  # Don't block pipeline on validation failures
+  only:
+    - main
+    - develop
+    - merge_requests
+  cache:
+    key: validate-docs-$CI_COMMIT_REF_SLUG
+    paths:
+      - node_modules/
+
+# ============================================
 # DOCS DEPLOYMENT STAGE
 # ============================================
 
@@ -275,22 +405,133 @@ deploy-docs:
   image: python:3.11
   tags:
     - docker
+  dependencies:
+    - extract-openapi-specs
+  variables:
+    PIP_CACHE_DIR: .pip-cache
+  before_script:
+    - python --version
+    - pip --version
+    - |
+      # Incremental build: Check if documentation files changed
+      if [ -n "$CI_COMMIT_BEFORE_SHA" ] && [ "$CI_COMMIT_BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
+        CHANGED_FILES=$(git diff --name-only $CI_COMMIT_BEFORE_SHA $CI_COMMIT_SHA | grep -E "docs/(content|mkdocs\.yml|requirements\.txt)" || true)
+        if [ -z "$CHANGED_FILES" ]; then
+          echo "No documentation changes detected. Skipping build."
+          echo "CHANGED_FILES_EMPTY=true" >> .env
+          exit 0
+        else
+          echo "Documentation changes detected:"
+          echo "$CHANGED_FILES"
+          echo "CHANGED_FILES_EMPTY=false" >> .env
+        fi
+      else
+        echo "First commit or no previous commit, building all documentation"
+        echo "CHANGED_FILES_EMPTY=false" >> .env
+      fi
   script:
-    - echo "Building documentation with MkDocs..."
+    - |
+      # Check if we should skip build
+      if [ -f .env ] && grep -q "CHANGED_FILES_EMPTY=true" .env; then
+        echo "Skipping documentation build (no changes)"
+        mkdir -p docs/site
+        echo "<html><body>No changes in this commit</body></html>" > docs/site/index.html
+        exit 0
+      fi
+    - echo "=== Building documentation with MkDocs ==="
     - cd docs
-    - pip install -r requirements.txt
-    - mkdocs build
-    - echo "Verifying build output..."
-    - ls -la site/
+    - |
+      # Install dependencies with cache
+      pip install --cache-dir ../.pip-cache -r requirements.txt
+    - |
+      # Build documentation
+      echo "Building MkDocs site..."
+      mkdocs build --verbose
+    - |
+      # Verify build output
+      echo "=== Verifying build output ==="
+      ls -la site/
+      echo "Build completed successfully!"
+      echo "Site size:"
+      du -sh site/
     - cd ..
+  after_script:
+    - |
+      # Build notifications
+      if [ "$CI_JOB_STATUS" == "failed" ]; then
+        echo "❌ Documentation build failed!"
+        echo "Pipeline: $CI_PIPELINE_URL"
+        echo "Job: $CI_JOB_URL"
+        # Slack/Teams notification can be added here
+        # curl -X POST $SLACK_WEBHOOK_URL -d "{\"text\":\"❌ Docs build failed: $CI_PIPELINE_URL\"}"
+      elif [ "$CI_JOB_STATUS" == "success" ]; then
+        echo "✅ Documentation build succeeded!"
+        echo "Pipeline: $CI_PIPELINE_URL"
+      fi
   artifacts:
     paths:
       - docs/site/
     expire_in: 1 day
+  cache:
+    key: mkdocs-deps-$CI_COMMIT_REF_SLUG
+    paths:
+      - .pip-cache/
+      - docs/.cache/
   only:
     - main
+  # Build timeout
+  timeout: 15m
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
   # GitLab Pages için pages job'u özel bir isim olmalı
   # Bu job'u "pages" olarak adlandırırsak GitLab otomatik deploy eder
+
+# Preview Deployment for Merge Requests
+# Deploys documentation preview for each MR
+deploy-docs-preview:
+  stage: deploy-docs
+  image: python:3.11
+  tags:
+    - docker
+  dependencies:
+    - extract-openapi-specs
+  variables:
+    PIP_CACHE_DIR: .pip-cache
+  before_script:
+    - python --version
+    - pip --version
+  script:
+    - echo "=== Building preview documentation for MR ==="
+    - cd docs
+    - pip install --cache-dir ../.pip-cache -r requirements.txt
+    - mkdocs build --verbose
+    - cd ..
+  artifacts:
+    paths:
+      - docs/site/
+    expire_in: 7 days  # Preview artifacts last longer
+  cache:
+    key: mkdocs-deps-$CI_COMMIT_REF_SLUG
+    paths:
+      - .pip-cache/
+      - docs/.cache/
+  only:
+    - merge_requests
+  environment:
+    name: docs-preview/mr-$CI_MERGE_REQUEST_IID
+    url: https://$CI_PROJECT_NAMESPACE.gitlab.io/$CI_PROJECT_NAME/-/docs-preview/mr-$CI_MERGE_REQUEST_IID
+    auto_stop_in: 7 days
+  after_script:
+    - |
+      if [ "$CI_JOB_STATUS" == "failed" ]; then
+        echo "❌ Preview documentation build failed for MR #$CI_MERGE_REQUEST_IID"
+      elif [ "$CI_JOB_STATUS" == "success" ]; then
+        echo "✅ Preview documentation ready for MR #$CI_MERGE_REQUEST_IID"
+        echo "Preview URL: https://$CI_PROJECT_NAMESPACE.gitlab.io/$CI_PROJECT_NAME/-/docs-preview/mr-$CI_MERGE_REQUEST_IID"
+      fi
 
 # GitLab Pages Deployment (otomatik)
 # Not: pages job'u özel bir isimdir ve GitLab otomatik olarak Pages'e deploy eder
@@ -303,26 +544,68 @@ pages:
     - deploy-docs
   dependencies:
     - deploy-docs
+  variables:
+    PIP_CACHE_DIR: .pip-cache
   script:
-    - echo "Deploying to GitLab Pages..."
+    - echo "=== Deploying to GitLab Pages ==="
     - echo "Checking for docs/site directory..."
     - |
       if [ ! -d "docs/site" ]; then
-        echo "ERROR: docs/site directory not found. deploy-docs job may have failed."
+        echo "WARNING: docs/site directory not found. deploy-docs job may have failed."
         echo "Building documentation as fallback..."
         cd docs
-        pip install -r requirements.txt
-        mkdocs build
+        pip install --cache-dir ../.pip-cache -r requirements.txt
+        mkdocs build --verbose
         cd ..
+        
+        if [ ! -d "docs/site" ]; then
+          echo "ERROR: Failed to build documentation. Exiting."
+          exit 1
+        fi
       fi
-    - ls -la docs/site/
-    - mkdir -p public
-    - cp -r docs/site/* public/
-    - echo "Files copied to public directory:"
-    - ls -la public/
+    - |
+      # Verify site structure
+      echo "=== Verifying site structure ==="
+      ls -la docs/site/
+      echo "Site contains $(find docs/site -type f | wc -l) files"
+    - |
+      # Copy to public directory (GitLab Pages requirement)
+      echo "=== Copying to public directory ==="
+      mkdir -p public
+      cp -r docs/site/* public/
+      echo "Files copied successfully"
+      echo "Public directory contains:"
+      ls -la public/ | head -20
+    - |
+      # Add version info if available
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        echo "Documentation version: $CI_COMMIT_TAG" > public/VERSION.txt
+      elif [ -n "$CI_COMMIT_SHORT_SHA" ]; then
+        echo "Documentation commit: $CI_COMMIT_SHORT_SHA" > public/VERSION.txt
+        echo "Branch: $CI_COMMIT_REF_NAME" >> public/VERSION.txt
+      fi
+  after_script:
+    - |
+      # Build notifications for Pages deployment
+      if [ "$CI_JOB_STATUS" == "failed" ]; then
+        echo "❌ GitLab Pages deployment failed!"
+        echo "Pipeline: $CI_PIPELINE_URL"
+        # Slack/Teams notification can be added here
+        # curl -X POST $SLACK_WEBHOOK_URL -d "{\"text\":\"❌ Pages deploy failed: $CI_PIPELINE_URL\"}"
+      elif [ "$CI_JOB_STATUS" == "success" ]; then
+        echo "✅ GitLab Pages deployed successfully!"
+        echo "Pages URL: https://$CI_PROJECT_NAMESPACE.gitlab.io/$CI_PROJECT_NAME"
+      fi
   artifacts:
     paths:
       - public
+    expire_in: 30 days  # Pages artifacts should last longer
+  cache:
+    key: mkdocs-deps-$CI_COMMIT_REF_SLUG
+    paths:
+      - .pip-cache/
   only:
     - main
+  # Only deploy to Pages on main branch
+  timeout: 10m
 
