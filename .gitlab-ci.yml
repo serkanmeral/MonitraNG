@@ -85,8 +85,8 @@ build-mngdatagateway:
   script:
     - echo "Building MngDataGateway..."
     - dotnet clean MngDataGateway/MngDataGateway.sln
-    - dotnet restore MngDataGateway/MngDataGateway.sln
-    - dotnet build MngDataGateway/MngDataGateway.sln -c Release
+    - dotnet restore MngDataGateway/MngDataGateway.sln --force
+    - dotnet build MngDataGateway/MngDataGateway.sln -c Release --no-incremental
   artifacts:
     paths:
       - MngDataGateway/**/bin/
