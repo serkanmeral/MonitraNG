@@ -367,7 +367,7 @@ validate-docs:
   tags:
     - docker
   before_script:
-    - npm install -g markdown-link-check@0.11.0 markdownlint-cli2@0.11.0
+    - npm install -g markdown-link-check@latest markdownlint-cli2@latest
   script:
     - echo "=== Validating documentation quality ==="
     - |
@@ -576,6 +576,16 @@ pages:
       echo "Files copied successfully"
       echo "Public directory contains:"
       ls -la public/ | head -20
+      echo ""
+      echo "=== Verifying Pages requirements ==="
+      if [ ! -f "public/index.html" ]; then
+        echo "ERROR: public/index.html not found! Pages will not work."
+        exit 1
+      else
+        echo "✓ public/index.html exists"
+      fi
+      echo "Total files in public/: $(find public -type f | wc -l)"
+      echo "Public directory size: $(du -sh public | cut -f1)"
     - |
       # Add version info if available
       if [ -n "$CI_COMMIT_TAG" ]; then
@@ -606,6 +616,10 @@ pages:
       - .pip-cache/
   only:
     - main
-  # Only deploy to Pages on main branch
+  # GitLab Pages için özel gereksinimler:
+  # 1. Job adı "pages" olmalı (✓)
+  # 2. artifacts.paths "public" içermeli (✓)
+  # 3. public/ klasöründe index.html olmalı (✓)
+  # 4. GitLab Settings > Pages'de aktif olmalı
   timeout: 10m
 
