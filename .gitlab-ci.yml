@@ -20,9 +20,6 @@ stages:
 variables:
   DOTNET_VERSION: "9.0"
   NODE_VERSION: "18"
-  SOLUTION_PATH_MNGKEEPER: "MngKeeper/MngKeeper.sln"
-  SOLUTION_PATH_DATAGATEWAY: "MngDataGateway/MngDataGateway.sln"
-  SOLUTION_PATH_HUB: "MngHub/MngHub.sln"
 
 # ============================================
 # BUILD STAGE
@@ -31,12 +28,13 @@ variables:
 # MngKeeper Build
 build-mngkeeper:
   stage: build
+  image: mcr.microsoft.com/dotnet/sdk:9.0
   tags:
     - docker
   script:
     - echo "Building MngKeeper..."
-    - dotnet restore $SOLUTION_PATH_MNGKEEPER
-    - dotnet build $SOLUTION_PATH_MNGKEEPER --no-restore -c Release
+    - dotnet restore MngKeeper/MngKeeper.sln
+    - dotnet build MngKeeper/MngKeeper.sln --no-restore -c Release
   artifacts:
     paths:
       - MngKeeper/**/bin/
@@ -50,12 +48,13 @@ build-mngkeeper:
 # MngDataGateway Build
 build-mngdatagateway:
   stage: build
+  image: mcr.microsoft.com/dotnet/sdk:9.0
   tags:
     - docker
   script:
     - echo "Building MngDataGateway..."
-    - dotnet restore $SOLUTION_PATH_DATAGATEWAY
-    - dotnet build $SOLUTION_PATH_DATAGATEWAY --no-restore -c Release
+    - dotnet restore MngDataGateway/MngDataGateway.sln
+    - dotnet build MngDataGateway/MngDataGateway.sln --no-restore -c Release
   artifacts:
     paths:
       - MngDataGateway/**/bin/
@@ -69,12 +68,13 @@ build-mngdatagateway:
 # MngHub Build
 build-mnghub:
   stage: build
+  image: mcr.microsoft.com/dotnet/sdk:9.0
   tags:
     - docker
   script:
     - echo "Building MngHub..."
-    - dotnet restore $SOLUTION_PATH_HUB
-    - dotnet build $SOLUTION_PATH_HUB --no-restore -c Release
+    - dotnet restore MngHub/MngHub.sln
+    - dotnet build MngHub/MngHub.sln --no-restore -c Release
   artifacts:
     paths:
       - MngHub/**/bin/
@@ -114,13 +114,14 @@ build-frontend:
 # MngKeeper Tests
 test-mngkeeper:
   stage: test
+  image: mcr.microsoft.com/dotnet/sdk:9.0
   tags:
     - docker
   dependencies:
     - build-mngkeeper
   script:
     - echo "Running MngKeeper tests..."
-    - dotnet test $SOLUTION_PATH_MNGKEEPER --no-build --verbosity normal
+    - dotnet test MngKeeper/MngKeeper.sln --no-build --verbosity normal
   allow_failure: true
   only:
     - main
@@ -130,13 +131,14 @@ test-mngkeeper:
 # MngDataGateway Tests
 test-mngdatagateway:
   stage: test
+  image: mcr.microsoft.com/dotnet/sdk:9.0
   tags:
     - docker
   dependencies:
     - build-mngdatagateway
   script:
     - echo "Running MngDataGateway tests..."
-    - dotnet test $SOLUTION_PATH_DATAGATEWAY --no-build --verbosity normal
+    - dotnet test MngDataGateway/MngDataGateway.sln --no-build --verbosity normal
   allow_failure: true
   only:
     - main
@@ -146,13 +148,14 @@ test-mngdatagateway:
 # MngHub Tests
 test-mnghub:
   stage: test
+  image: mcr.microsoft.com/dotnet/sdk:9.0
   tags:
     - docker
   dependencies:
     - build-mnghub
   script:
     - echo "Running MngHub tests..."
-    - dotnet test $SOLUTION_PATH_HUB --no-build --verbosity normal
+    - dotnet test MngHub/MngHub.sln --no-build --verbosity normal
   allow_failure: true
   only:
     - main
@@ -198,6 +201,9 @@ deploy-docs:
 # GitLab Pages Deployment (otomatik)
 pages:
   stage: deploy-docs
+  image: python:3.11
+  tags:
+    - docker
   dependencies:
     - deploy-docs
   script:
