@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   # Keycloak Identity Management
   keycloak:
@@ -208,7 +206,106 @@ services:
       - TZ=Europe/Istanbul
     restart: always    
     networks:
-      - mng_network    
+      - mng_network
+
+  # PostgreSQL for GitLab
+  gitlab-postgres:
+    image: postgres:16-alpine
+    container_name: gitlab-postgres
+    environment:
+      POSTGRES_DB: gitlab
+      POSTGRES_USER: gitlab
+      POSTGRES_PASSWORD: gitlab123
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+    volumes:
+      - gitlab_postgres_data:/var/lib/postgresql/data
+    networks:
+      - mng_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gitlab"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis for GitLab
+  gitlab-redis:
+    image: redis:7-alpine
+    container_name: gitlab-redis
+    command: redis-server --requirepass gitlab123 --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - gitlab_redis_data:/data
+    networks:
+      - mng_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # GitLab CE
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab
+    hostname: gitlab.local
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://gitlab'
+        gitlab_rails['gitlab_shell_ssh_port'] = 2222
+        postgresql['enable'] = false
+        gitlab_rails['db_adapter'] = 'postgresql'
+        gitlab_rails['db_encoding'] = 'unicode'
+        gitlab_rails['db_host'] = 'gitlab-postgres'
+        gitlab_rails['db_port'] = 5432
+        gitlab_rails['db_username'] = 'gitlab'
+        gitlab_rails['db_password'] = 'gitlab123'
+        gitlab_rails['db_database'] = 'gitlab'
+        redis['enable'] = false
+        gitlab_rails['redis_host'] = 'gitlab-redis'
+        gitlab_rails['redis_port'] = 6379
+        gitlab_rails['redis_password'] = 'gitlab123'
+        gitlab_rails['redis_database'] = 0
+        # Reduce memory usage
+        puma['worker_processes'] = 2
+        sidekiq['max_concurrency'] = 10
+        # Disable features to save resources (optional)
+        # prometheus_monitoring['enable'] = false
+        # grafana['enable'] = false
+    ports:
+      - "80:80"           # HTTP
+      - "443:443"         # HTTPS
+      - "2222:22"         # SSH (mapped to 2222 to avoid conflict)
+    volumes:
+      - gitlab_config:/etc/gitlab
+      - gitlab_logs:/var/log/gitlab
+      - gitlab_data:/var/opt/gitlab
+    depends_on:
+      - gitlab-postgres
+      - gitlab-redis
+    networks:
+      - mng_network
+    restart: unless-stopped
+    shm_size: '256m'
+    # Note: Resource limits removed for Windows compatibility
+    # GitLab requires at least 4GB RAM. Ensure your system has sufficient resources.
+
+  # GitLab Runner
+  gitlab-runner:
+    image: gitlab/gitlab-runner:latest
+    container_name: gitlab-runner
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - gitlab_runner_config:/etc/gitlab-runner
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    networks:
+      - mng_network
+    restart: unless-stopped
+    depends_on:
+      - gitlab
+    # Note: Runner registration must be done manually after GitLab starts
+    # docker exec -it gitlab-runner gitlab-runner register
 
 networks:
   mng_network:
@@ -222,3 +319,9 @@ volumes:
   minio_data:
   seq_data:
   portainer_data:
+  gitlab_postgres_data:
+  gitlab_redis_data:
+  gitlab_config:
+  gitlab_logs:
+  gitlab_data:
+  gitlab_runner_config:

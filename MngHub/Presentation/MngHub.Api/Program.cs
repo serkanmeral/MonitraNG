@@ -168,6 +168,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     
     // Add Scalar API Reference (Modern UI)
+    // Get OpenAPI Server Path from configuration (for API Gateway)
+    var openApiServerPath = settings.OpenApiServerPath;
+    
     app.MapScalarApiReference(options =>
     {
         options
@@ -175,6 +178,12 @@ if (app.Environment.IsDevelopment())
             .WithTheme(ScalarTheme.Purple)
             .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
             .WithOpenApiRoutePattern("/openapi/v1.json");
+        
+        // Configure Server URL from settings (for API Gateway)
+        if (!string.IsNullOrEmpty(openApiServerPath))
+        {
+            options.AddServer(new ScalarServer(openApiServerPath, "API Gateway Server"));
+        }
     });
 }
 

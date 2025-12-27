@@ -56,6 +56,17 @@ namespace MngDataGateway.Application.DTOs.Data
         /// Field selection (comma-separated: "field1,field2,field3")
         /// </summary>
         public string? Fields { get; set; }
+
+        /// <summary>
+        /// Search term for text search across searchable fields (case-insensitive)
+        /// Searches in main text fields and relation text fields
+        /// </summary>
+        public string? Search { get; set; }
+
+        /// <summary>
+        /// Response format: "json" (default) or "csv"
+        /// </summary>
+        public string Format { get; set; } = "json";
     }
 }
 

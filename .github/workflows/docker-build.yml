@@ -1,0 +1,58 @@
+name: Docker Build
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Docker image tag'
+        required: true
+        default: 'latest'
+
+jobs:
+  build-images:
+    name: Build Docker Images
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Determine tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build MngKeeper
+        run: |
+          docker build \
+            -t mngkeeper:${{ steps.tag.outputs.tag }} \
+            -f MngKeeper/Presentation/MngKeeper.Api/Dockerfile \
+            MngKeeper/
+
+      - name: Build MngDataGateway
+        run: |
+          docker build \
+            -t mngdatagateway:${{ steps.tag.outputs.tag }} \
+            -f MngDataGateway/Presentation/MngDataGateway.Api/Dockerfile \
+            MngDataGateway/
+
+      - name: Build MngHub
+        run: |
+          docker build \
+            -t mnghub:${{ steps.tag.outputs.tag }} \
+            -f MngHub/Presentation/MngHub.Api/Dockerfile \
+            MngHub/
+
+      - name: List images
+        run: |
+          docker images | grep -E "mngkeeper|mngdatagateway|mnghub"
+

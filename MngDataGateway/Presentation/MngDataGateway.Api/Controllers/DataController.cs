@@ -2,14 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MngDataGateway.Api.Helpers;
 using MngDataGateway.Application.DTOs.Common;
 using MngDataGateway.Application.DTOs.Data;
 using MngDataGateway.Application.DTOs.Validation;
 using MngDataGateway.Application.Services;
 using MngDataGateway.Domain.Entities;
 using MngDataGateway.Domain.Exceptions;
+using MngDataGateway.Persistence.Services;
 
 namespace MngDataGateway.Api.Controllers
 {
@@ -18,7 +21,8 @@ namespace MngDataGateway.Api.Controllers
     /// Dynamic data management for datasets
     /// </summary>
     [ApiController]
-    [Route("api/data/{datasetName}")]
+    [ApiVersion(1.0)]
+    [Route("api/v{version:apiVersion}/data/{datasetName}")]
     [Authorize]
     public class DataController : ControllerBase
     {
@@ -27,19 +31,48 @@ namespace MngDataGateway.Api.Controllers
         private readonly IMongoContextService _mongoContextService;
         private readonly IUserInfoService _userInfoService;
         private readonly IDatasetService _datasetService;
+        private readonly IPermissionService _permissionService;
+        private readonly CsvConverter _csvConverter;
 
         public DataController(
             ILogger<DataController> logger,
             IDataService dataService,
             IMongoContextService mongoContextService,
             IUserInfoService userInfoService,
-            IDatasetService datasetService)
+            IDatasetService datasetService,
+            IPermissionService permissionService,
+            CsvConverter csvConverter)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _dataService = dataService ?? throw new ArgumentNullException(nameof(dataService));
             _mongoContextService = mongoContextService ?? throw new ArgumentNullException(nameof(mongoContextService));
             _userInfoService = userInfoService ?? throw new ArgumentNullException(nameof(userInfoService));
             _datasetService = datasetService ?? throw new ArgumentNullException(nameof(datasetService));
+            _permissionService = permissionService ?? throw new ArgumentNullException(nameof(permissionService));
+            _csvConverter = csvConverter ?? throw new ArgumentNullException(nameof(csvConverter));
+        }
+
+        /// <summary>
+        /// Check permission for dataset operation
+        /// Returns 403 Forbidden if user doesn't have permission
+        /// </summary>
+        private IActionResult? CheckDatasetPermission(DatasetSchema schema, string permissionType)
+        {
+            var domainName = _mongoContextService.GetCurrentDomainName();
+            if (string.IsNullOrEmpty(domainName))
+            {
+                return this.ErrorResponse(HttpContext.Request.Path, "FORBIDDEN", "Domain information not found in token", statusCode: 403);
+            }
+
+            var userGroups = _permissionService.GetUserGroups(HttpContext);
+            var hasPermission = _permissionService.CheckPermission(schema, permissionType, userGroups, domainName);
+
+            if (!hasPermission)
+            {
+                return this.ErrorResponse(HttpContext.Request.Path, "FORBIDDEN", $"You don't have '{permissionType}' permission for dataset '{schema.name}'", statusCode: 403);
+            }
+
+            return null; // Permission granted
         }
 
         /// <summary>
@@ -61,11 +94,24 @@ namespace MngDataGateway.Api.Controllers
             {
                 var domainName = _mongoContextService.GetCurrentDomainName() ?? throw new UnauthorizedAccessException("Domain not found in token");
                 var database = _mongoContextService.GetDatabase();
+                
+                // Get dataset schema for permission check
+                var schema = await _datasetService.GetSchemaEntityByNameAsync(datasetName);
+                if (schema == null)
+                {
+                    return this.ErrorResponse(GetApiPath(datasetName), "DATASET_NOT_FOUND", $"Dataset '{datasetName}' not found", statusCode: 404);
+                }
+
+                // Check permission
+                var permissionResult = CheckDatasetPermission(schema, "create");
+                if (permissionResult != null)
+                    return permissionResult;
+
                 var userInfo = _userInfoService.GetCurrentUserInfo();
                 var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
 
                 // Convert JsonElement to Dictionary with proper types
-                var data = JsonElementToDictionary(request);
+                var data = request.ToDictionary();
 
                 var result = await _dataService.CreateAsync(
                     datasetName,
@@ -76,80 +122,23 @@ namespace MngDataGateway.Api.Controllers
                     userInfo.userName,
                     ipAddress);
 
-                return Ok(new DataResponseDto<Dictionary<string, object>>
-                {
-                    Success = true,
-                    Data = result,
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}"
-                    }
-                });
+                var path = $"/api/v1/data/{datasetName}";
+                return this.SuccessResponse(result, path);
             }
             catch (DataGatewayException ex) when (ex.ValidationErrors != null)
             {
-                return BadRequest(new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "VALIDATION_ERROR",
-                        Message = ex.Message,
-                        Details = ex.ValidationErrors
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}"
-                    }
-                });
+                var path = $"/api/v1/data/{datasetName}";
+                return this.HandleValidationError(ex, path, _logger);
             }
             catch (DataGatewayException ex) when (ex.Message.Contains("not found"))
             {
-                return NotFound(new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "DATASET_NOT_FOUND",
-                        Message = ex.Message
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}"
-                    }
-                });
+                var path = $"/api/v1/data/{datasetName}";
+                return this.HandleNotFoundError(ex, path, _logger);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to create data in dataset {DatasetName}", datasetName);
-                
-                // Include inner exception for debugging
-                var errorMessage = ex.Message;
-                var innerMessage = ex.InnerException?.Message;
-                var stackTrace = ex.StackTrace;
-                
-                return StatusCode(500, new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "CREATE_FAILED",
-                        Message = "Failed to create data",
-                        Details = new {
-                            message = errorMessage,
-                            innerException = innerMessage,
-                            stackTrace = stackTrace?.Split('\n').Take(5).ToArray()
-                        }
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}"
-                    }
-                });
+                var path = $"/api/v1/data/{datasetName}";
+                return this.HandleError(ex, path, "CREATE_FAILED", "Failed to create data", _logger, includeStackTrace: true);
             }
         }
 
@@ -167,6 +156,8 @@ namespace MngDataGateway.Api.Controllers
         /// <param name="sort">Sort definition (MongoDB style: "field1,-field2")</param>
         /// <param name="filter">Filter definition (RESTful style: "field:operator:value")</param>
         /// <param name="fields">Field selection (comma-separated: "field1,field2,field3")</param>
+        /// <param name="search">Search term for text search</param>
+        /// <param name="format">Response format: "json" or "csv" (default: "json")</param>
         /// <returns>List of data (always array format)</returns>
         [HttpGet]
         [ProducesResponseType(typeof(List<Dictionary<string, object>>), StatusCodes.Status200OK)]
@@ -184,11 +175,28 @@ namespace MngDataGateway.Api.Controllers
             [FromQuery] bool showDataset = false,
             [FromQuery] string? sort = null,
             [FromQuery] string? filter = null,
-            [FromQuery] string? fields = null)
+            [FromQuery] string? fields = null,
+            [FromQuery] string? search = null,
+            [FromQuery] string format = "json")
         {
             try
             {
                 var database = _mongoContextService.GetDatabase();
+
+                // Get dataset schema for permission check
+                var schema = await _datasetService.GetSchemaEntityByNameAsync(datasetName);
+                if (schema == null)
+                {
+                    return this.ErrorResponse(GetApiPath(datasetName), "DATASET_NOT_FOUND", $"Dataset '{datasetName}' not found", statusCode: 404);
+                }
+
+                // Check permission (skip if showDataset or showQuery, they are metadata operations)
+                if (!showDataset && !showQuery)
+                {
+                    var permissionResult = CheckDatasetPermission(schema, "read");
+                    if (permissionResult != null)
+                        return permissionResult;
+                }
 
                 // Handle showDataset
                 if (showDataset)
@@ -196,20 +204,7 @@ namespace MngDataGateway.Api.Controllers
                     var schemaDto = await _datasetService.GetByNameAsync(datasetName);
                     if (schemaDto == null)
                     {
-                        return NotFound(new ErrorResponseDto
-                        {
-                            Success = false,
-                            Error = new ErrorDetailDto
-                            {
-                                Code = "DATASET_NOT_FOUND",
-                                Message = $"Dataset '{datasetName}' not found"
-                            },
-                            Meta = new ResponseMetaDto
-                            {
-                                Timestamp = DateTime.UtcNow,
-                                Path = $"/api/data/{datasetName}"
-                            }
-                        });
+                        return this.ErrorResponse(GetApiPath(datasetName), "DATASET_NOT_FOUND", $"Dataset '{datasetName}' not found", statusCode: 404);
                     }
 
                     // Convert DTO to Dictionary
@@ -241,7 +236,9 @@ namespace MngDataGateway.Api.Controllers
                     ShowQuery = showQuery,
                     Sort = sort,
                     Filter = filter,
-                    Fields = fields
+                    Fields = fields,
+                    Search = search,
+                    Format = format?.ToLowerInvariant() ?? "json"
                 };
 
                 var result = await _dataService.QueryAsync(
@@ -255,66 +252,27 @@ namespace MngDataGateway.Api.Controllers
                     return Ok(new { query = result.Query ?? new List<object>() });
                 }
 
+                // Handle CSV format
+                if (options.Format == "csv")
+                {
+                    var csvContent = _csvConverter.ConvertToCsv(result.Data);
+                    return Content(csvContent, "text/csv", System.Text.Encoding.UTF8);
+                }
+
                 // Always return array (even if single item)
                 return Ok(result.Data);
             }
             catch (DataGatewayException ex) when (ex.ValidationErrors != null)
             {
-                return BadRequest(new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "VALIDATION_ERROR",
-                        Message = ex.Message,
-                        Details = ex.ValidationErrors
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}"
-                    }
-                });
+                return this.HandleValidationError(ex, GetApiPath(datasetName), _logger);
             }
             catch (DataGatewayException ex)
             {
-                _logger.LogWarning(ex, "DataGatewayException in List for dataset {DatasetName}: {Message}, Inner: {InnerMessage}", 
-                    datasetName, ex.Message, ex.InnerException?.Message);
-                return NotFound(new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "DATASET_NOT_FOUND",
-                        Message = ex.Message,
-                        Details = ex.InnerException?.Message
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}"
-                    }
-                });
+                return this.HandleNotFoundError(ex, GetApiPath(datasetName), _logger);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to list data in dataset {DatasetName}. Exception: {ExceptionType}, Message: {Message}, Inner: {InnerMessage}, StackTrace: {StackTrace}", 
-                    datasetName, ex.GetType().Name, ex.Message, ex.InnerException?.Message, ex.StackTrace);
-                return StatusCode(500, new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "LIST_FAILED",
-                        Message = "Failed to list data",
-                        Details = $"{ex.GetType().Name}: {ex.Message}"
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}"
-                    }
-                });
+                return this.HandleError(ex, GetApiPath(datasetName), "LIST_FAILED", "Failed to list data", _logger);
             }
         }
 
@@ -350,26 +308,28 @@ namespace MngDataGateway.Api.Controllers
             {
                 var database = _mongoContextService.GetDatabase();
 
+                // Get dataset schema for permission check
+                var schema = await _datasetService.GetSchemaEntityByNameAsync(datasetName);
+                if (schema == null)
+                {
+                    return this.ErrorResponse(GetApiPath(datasetName, dataId), "DATASET_NOT_FOUND", $"Dataset '{datasetName}' not found", statusCode: 404);
+                }
+
+                // Check permission (skip if showDataset or showQuery, they are metadata operations)
+                if (!showDataset && !showQuery)
+                {
+                    var permissionResult = CheckDatasetPermission(schema, "read");
+                    if (permissionResult != null)
+                        return permissionResult;
+                }
+
                 // Handle showDataset
                 if (showDataset)
                 {
                     var schemaDto = await _datasetService.GetByNameAsync(datasetName);
                     if (schemaDto == null)
                     {
-                        return NotFound(new ErrorResponseDto
-                        {
-                            Success = false,
-                            Error = new ErrorDetailDto
-                            {
-                                Code = "DATASET_NOT_FOUND",
-                                Message = $"Dataset '{datasetName}' not found"
-                            },
-                            Meta = new ResponseMetaDto
-                            {
-                                Timestamp = DateTime.UtcNow,
-                                Path = $"/api/data/{datasetName}/{dataId}"
-                            }
-                        });
+                        return this.ErrorResponse(GetApiPath(datasetName, dataId), "DATASET_NOT_FOUND", $"Dataset '{datasetName}' not found", statusCode: 404);
                     }
 
                     // Convert DTO to Dictionary
@@ -409,20 +369,7 @@ namespace MngDataGateway.Api.Controllers
 
                 if (queryResult.Data == null || !queryResult.Data.Any())
                 {
-                    return NotFound(new ErrorResponseDto
-                    {
-                        Success = false,
-                        Error = new ErrorDetailDto
-                        {
-                            Code = "DATA_NOT_FOUND",
-                            Message = $"Data with __dataId '{dataId}' not found"
-                        },
-                        Meta = new ResponseMetaDto
-                        {
-                            Timestamp = DateTime.UtcNow,
-                            Path = $"/api/data/{datasetName}/{dataId}"
-                        }
-                    });
+                    return this.ErrorResponse(GetApiPath(datasetName, dataId), "DATA_NOT_FOUND", $"Data with __dataId '{dataId}' not found", statusCode: 404);
                 }
 
                 // Handle showQuery - return pipeline
@@ -436,39 +383,11 @@ namespace MngDataGateway.Api.Controllers
             }
             catch (DataGatewayException ex)
             {
-                return NotFound(new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "DATASET_NOT_FOUND",
-                        Message = ex.Message
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/{dataId}"
-                    }
-                });
+                return this.HandleNotFoundError(ex, GetApiPath(datasetName, dataId), _logger);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get data {DataId} in dataset {DatasetName}", dataId, datasetName);
-                return StatusCode(500, new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "GET_FAILED",
-                        Message = "Failed to get data",
-                        Details = ex.Message
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/{dataId}"
-                    }
-                });
+                return this.HandleError(ex, GetApiPath(datasetName, dataId), "GET_FAILED", "Failed to get data", _logger);
             }
         }
 
@@ -492,11 +411,24 @@ namespace MngDataGateway.Api.Controllers
             {
                 var domainName = _mongoContextService.GetCurrentDomainName() ?? throw new UnauthorizedAccessException("Domain not found in token");
                 var database = _mongoContextService.GetDatabase();
+                
+                // Get dataset schema for permission check
+                var schema = await _datasetService.GetSchemaEntityByNameAsync(datasetName);
+                if (schema == null)
+                {
+                    return this.ErrorResponse(GetApiPath(datasetName, dataId), "DATASET_NOT_FOUND", $"Dataset '{datasetName}' not found", statusCode: 404);
+                }
+
+                // Check permission
+                var permissionResult = CheckDatasetPermission(schema, "update");
+                if (permissionResult != null)
+                    return permissionResult;
+
                 var userInfo = _userInfoService.GetCurrentUserInfo();
                 var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
 
                 // Convert JsonElement to Dictionary with proper types
-                var data = JsonElementToDictionary(request);
+                var data = request.ToDictionary();
 
                 var result = await _dataService.UpdateAsync(
                     datasetName,
@@ -510,69 +442,18 @@ namespace MngDataGateway.Api.Controllers
 
                 if (result == null)
                 {
-                    return NotFound(new ErrorResponseDto
-                    {
-                        Success = false,
-                        Error = new ErrorDetailDto
-                        {
-                            Code = "DATA_NOT_FOUND",
-                            Message = $"Data with __dataId '{dataId}' not found"
-                        },
-                        Meta = new ResponseMetaDto
-                        {
-                            Timestamp = DateTime.UtcNow,
-                            Path = $"/api/data/{datasetName}/{dataId}"
-                        }
-                    });
+                    return this.ErrorResponse(GetApiPath(datasetName, dataId), "DATA_NOT_FOUND", $"Data with __dataId '{dataId}' not found", statusCode: 404);
                 }
 
-                return Ok(new DataResponseDto<Dictionary<string, object>>
-                {
-                    Success = true,
-                    Data = result,
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/{dataId}"
-                    }
-                });
+                return this.SuccessResponse(result, GetApiPath(datasetName, dataId));
             }
             catch (DataGatewayException ex) when (ex.ValidationErrors != null)
             {
-                return BadRequest(new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "VALIDATION_ERROR",
-                        Message = ex.Message,
-                        Details = ex.ValidationErrors
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/{dataId}"
-                    }
-                });
+                return this.HandleValidationError(ex, GetApiPath(datasetName, dataId), _logger);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to update data {DataId} in dataset {DatasetName}", dataId, datasetName);
-                return StatusCode(500, new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "UPDATE_FAILED",
-                        Message = "Failed to update data",
-                        Details = ex.Message
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/{dataId}"
-                    }
-                });
+                return this.HandleError(ex, GetApiPath(datasetName, dataId), "UPDATE_FAILED", "Failed to update data", _logger);
             }
         }
 
@@ -593,6 +474,19 @@ namespace MngDataGateway.Api.Controllers
             {
                 var domainName = _mongoContextService.GetCurrentDomainName() ?? throw new UnauthorizedAccessException("Domain not found in token");
                 var database = _mongoContextService.GetDatabase();
+                
+                // Get dataset schema for permission check
+                var schema = await _datasetService.GetSchemaEntityByNameAsync(datasetName);
+                if (schema == null)
+                {
+                    return this.ErrorResponse(GetApiPath(datasetName, dataId), "DATASET_NOT_FOUND", $"Dataset '{datasetName}' not found", statusCode: 404);
+                }
+
+                // Check permission
+                var permissionResult = CheckDatasetPermission(schema, "delete");
+                if (permissionResult != null)
+                    return permissionResult;
+
                 var userInfo = _userInfoService.GetCurrentUserInfo();
                 var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
 
@@ -607,51 +501,14 @@ namespace MngDataGateway.Api.Controllers
 
                 if (!success)
                 {
-                    return NotFound(new ErrorResponseDto
-                    {
-                        Success = false,
-                        Error = new ErrorDetailDto
-                        {
-                            Code = "DATA_NOT_FOUND",
-                            Message = $"Data with __dataId '{dataId}' not found"
-                        },
-                        Meta = new ResponseMetaDto
-                        {
-                            Timestamp = DateTime.UtcNow,
-                            Path = $"/api/data/{datasetName}/{dataId}"
-                        }
-                    });
+                    return this.ErrorResponse(GetApiPath(datasetName, dataId), "DATA_NOT_FOUND", $"Data with __dataId '{dataId}' not found", statusCode: 404);
                 }
 
-                return Ok(new DataResponseDto<object>
-                {
-                    Success = true,
-                    Data = new { message = "Data deleted successfully", dataId },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/{dataId}"
-                    }
-                });
+                return this.SuccessResponse(GetApiPath(datasetName, dataId), new { message = "Data deleted successfully", dataId });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to delete data {DataId} in dataset {DatasetName}", dataId, datasetName);
-                return StatusCode(500, new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "DELETE_FAILED",
-                        Message = "Failed to delete data",
-                        Details = ex.Message
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/{dataId}"
-                    }
-                });
+                return this.HandleError(ex, GetApiPath(datasetName, dataId), "DELETE_FAILED", "Failed to delete data", _logger);
             }
         }
 
@@ -686,51 +543,14 @@ namespace MngDataGateway.Api.Controllers
 
                 if (!success)
                 {
-                    return NotFound(new ErrorResponseDto
-                    {
-                        Success = false,
-                        Error = new ErrorDetailDto
-                        {
-                            Code = "DATA_NOT_FOUND",
-                            Message = $"Deleted data with __dataId '{dataId}' not found"
-                        },
-                        Meta = new ResponseMetaDto
-                        {
-                            Timestamp = DateTime.UtcNow,
-                            Path = $"/api/data/{datasetName}/{dataId}/restore"
-                        }
-                    });
+                    return this.ErrorResponse(GetApiPath(datasetName, dataId, "restore"), "DATA_NOT_FOUND", $"Deleted data with __dataId '{dataId}' not found", statusCode: 404);
                 }
 
-                return Ok(new DataResponseDto<object>
-                {
-                    Success = true,
-                    Data = new { message = "Data restored successfully", dataId },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/{dataId}/restore"
-                    }
-                });
+                return this.SuccessResponse(GetApiPath(datasetName, dataId, "restore"), new { message = "Data restored successfully", dataId });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to restore data {DataId} in dataset {DatasetName}", dataId, datasetName);
-                return StatusCode(500, new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "RESTORE_FAILED",
-                        Message = "Failed to restore data",
-                        Details = ex.Message
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/{dataId}/restore"
-                    }
-                });
+                return this.HandleError(ex, GetApiPath(datasetName, dataId, "restore"), "RESTORE_FAILED", "Failed to restore data", _logger);
             }
         }
 
@@ -777,20 +597,7 @@ namespace MngDataGateway.Api.Controllers
                     var schemaDto = await _datasetService.GetByNameAsync(datasetName);
                     if (schemaDto == null)
                     {
-                        return NotFound(new ErrorResponseDto
-                        {
-                            Success = false,
-                            Error = new ErrorDetailDto
-                            {
-                                Code = "DATASET_NOT_FOUND",
-                                Message = $"Dataset '{datasetName}' not found"
-                            },
-                            Meta = new ResponseMetaDto
-                            {
-                                Timestamp = DateTime.UtcNow,
-                                Path = $"/api/data/{datasetName}/query"
-                            }
-                        });
+                        return this.ErrorResponse(GetApiPath(datasetName, action: "query"), "DATASET_NOT_FOUND", $"Dataset '{datasetName}' not found", statusCode: 404);
                     }
 
                     // Convert DTO to Dictionary
@@ -828,7 +635,7 @@ namespace MngDataGateway.Api.Controllers
                 Dictionary<string, object>? matchDict = null;
                 if (request.Match.ValueKind != JsonValueKind.Null && request.Match.ValueKind != JsonValueKind.Undefined)
                 {
-                    matchDict = JsonElementToDictionary(request.Match);
+                    matchDict = request.Match.ToDictionary();
                 }
 
                 var result = await _dataService.QueryWithMatchAsync(
@@ -848,57 +655,15 @@ namespace MngDataGateway.Api.Controllers
             }
             catch (DataGatewayException ex) when (ex.ValidationErrors != null)
             {
-                return BadRequest(new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "VALIDATION_ERROR",
-                        Message = ex.Message,
-                        Details = ex.ValidationErrors
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/query"
-                    }
-                });
+                return this.HandleValidationError(ex, GetApiPath(datasetName, action: "query"), _logger);
             }
             catch (DataGatewayException ex)
             {
-                return NotFound(new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "DATASET_NOT_FOUND",
-                        Message = ex.Message
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/query"
-                    }
-                });
+                return this.HandleNotFoundError(ex, GetApiPath(datasetName, action: "query"), _logger);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to query data in dataset {DatasetName}", datasetName);
-                return StatusCode(500, new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "QUERY_FAILED",
-                        Message = "Failed to query data",
-                        Details = ex.Message
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/query"
-                    }
-                });
+                return this.HandleError(ex, GetApiPath(datasetName, action: "query"), "QUERY_FAILED", "Failed to query data", _logger);
             }
         }
 
@@ -925,20 +690,7 @@ namespace MngDataGateway.Api.Controllers
                 var schema = await _datasetService.GetSchemaEntityByNameAsync(datasetName);
                 if (schema == null)
                 {
-                    return NotFound(new ErrorResponseDto
-                    {
-                        Success = false,
-                        Error = new ErrorDetailDto
-                        {
-                            Code = "DATASET_NOT_FOUND",
-                            Message = $"Dataset '{datasetName}' not found"
-                        },
-                        Meta = new ResponseMetaDto
-                        {
-                            Timestamp = DateTime.UtcNow,
-                            Path = $"/api/data/{datasetName}/aggregate"
-                        }
-                    });
+                    return this.ErrorResponse(GetApiPath(datasetName, action: "aggregate"), "DATASET_NOT_FOUND", $"Dataset '{datasetName}' not found", statusCode: 404);
                 }
 
                 // Convert pipeline to BsonDocument list
@@ -961,60 +713,15 @@ namespace MngDataGateway.Api.Controllers
             }
             catch (MongoDB.Bson.BsonException ex)
             {
-                _logger.LogError(ex, "Invalid aggregate pipeline for dataset {DatasetName}", datasetName);
-                return BadRequest(new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "INVALID_PIPELINE",
-                        Message = "Invalid aggregate pipeline",
-                        Details = ex.Message
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/aggregate"
-                    }
-                });
+                return this.ErrorResponse(GetApiPath(datasetName, action: "aggregate"), "INVALID_PIPELINE", "Invalid aggregate pipeline", ex.Message);
             }
             catch (MongoDB.Driver.MongoCommandException ex)
             {
-                _logger.LogError(ex, "MongoDB command error for dataset {DatasetName}", datasetName);
-                return BadRequest(new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "MONGO_ERROR",
-                        Message = "MongoDB error",
-                        Details = ex.Message
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/aggregate"
-                    }
-                });
+                return this.ErrorResponse(GetApiPath(datasetName, action: "aggregate"), "MONGO_ERROR", "MongoDB error", ex.Message);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to execute aggregate in dataset {DatasetName}", datasetName);
-                return StatusCode(500, new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "AGGREGATE_FAILED",
-                        Message = "Failed to execute aggregate",
-                        Details = ex.Message
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/aggregate"
-                    }
-                });
+                return this.HandleError(ex, GetApiPath(datasetName, action: "aggregate"), "AGGREGATE_FAILED", "Failed to execute aggregate", _logger);
             }
         }
 
@@ -1053,96 +760,34 @@ namespace MngDataGateway.Api.Controllers
             }
             catch (DataGatewayException ex)
             {
+                var queryPath = GetApiPath(datasetName, action: $"queries/{queryName}");
                 if (ex.Message.Contains("not found"))
                 {
-                    return NotFound(new ErrorResponseDto
-                    {
-                        Success = false,
-                        Error = new ErrorDetailDto
-                        {
-                            Code = "QUERY_NOT_FOUND",
-                            Message = ex.Message
-                        },
-                        Meta = new ResponseMetaDto
-                        {
-                            Timestamp = DateTime.UtcNow,
-                            Path = $"/api/data/{datasetName}/queries/{queryName}"
-                        }
-                    });
+                    return this.ErrorResponse(queryPath, "QUERY_NOT_FOUND", ex.Message, statusCode: 404);
                 }
 
-                _logger.LogError(ex, "DataGatewayException in ExecutePredefinedQuery for dataset {DatasetName}. Message: {Message}, Inner: {InnerMessage}, StackTrace: {StackTrace}", 
-                    datasetName, ex.Message, ex.InnerException?.Message, ex.StackTrace);
-                return BadRequest(new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "QUERY_ERROR",
-                        Message = $"Failed to execute predefined query '{queryName}'",
-                        Details = $"{ex.GetType().Name}: {ex.Message}" + (ex.InnerException != null ? $" | Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}" : "")
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/queries/{queryName}"
-                    }
-                });
+                return this.HandleDataGatewayError(ex, queryPath, "QUERY_ERROR", _logger);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to execute predefined query '{QueryName}' in dataset {DatasetName}", queryName, datasetName);
-                return StatusCode(500, new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "QUERY_EXECUTION_FAILED",
-                        Message = "Failed to execute predefined query",
-                        Details = ex.Message
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/queries/{queryName}"
-                    }
-                });
+                var queryPath = GetApiPath(datasetName, action: $"queries/{queryName}");
+                return this.HandleError(ex, queryPath, "QUERY_EXECUTION_FAILED", "Failed to execute predefined query", _logger);
             }
         }
 
         #region Helper Methods
 
         /// <summary>
-        /// Convert JsonElement to Dictionary with proper type preservation
+        /// Get API path for current endpoint
         /// </summary>
-        private Dictionary<string, object> JsonElementToDictionary(JsonElement element)
+        private string GetApiPath(string datasetName, string? dataId = null, string? action = null)
         {
-            var dictionary = new Dictionary<string, object>();
-
-            if (element.ValueKind != JsonValueKind.Object)
-                return dictionary;
-
-            foreach (var property in element.EnumerateObject())
-            {
-                dictionary[property.Name] = GetValue(property.Value);
-            }
-
-            return dictionary;
-        }
-
-        private object GetValue(JsonElement element)
-        {
-            return element.ValueKind switch
-            {
-                JsonValueKind.String => element.GetString()!,
-                JsonValueKind.Number => element.TryGetInt32(out var intValue) ? intValue : element.GetDouble(),
-                JsonValueKind.True => true,
-                JsonValueKind.False => false,
-                JsonValueKind.Null => null!,
-                JsonValueKind.Array => element.EnumerateArray().Select(GetValue).ToList(),
-                JsonValueKind.Object => JsonElementToDictionary(element),
-                _ => element.ToString()!
-            };
+            var basePath = $"/api/v1/data/{datasetName}";
+            if (!string.IsNullOrEmpty(dataId))
+                basePath += $"/{dataId}";
+            if (!string.IsNullOrEmpty(action))
+                basePath += $"/{action}";
+            return basePath;
         }
 
         /// <summary>
@@ -1160,70 +805,27 @@ namespace MngDataGateway.Api.Controllers
             [FromRoute] string datasetName,
             [FromBody] JsonElement request)
         {
+            var bulkPath = GetApiPath(datasetName, action: "bulk");
             try
             {
                 // Parse request body
                 if (request.ValueKind != JsonValueKind.Object || !request.TryGetProperty("items", out var itemsElement))
                 {
-                    return BadRequest(new ErrorResponseDto
-                    {
-                        Success = false,
-                        Error = new ErrorDetailDto
-                        {
-                            Code = "INVALID_REQUEST",
-                            Message = "Request must contain 'items' array"
-                        },
-                        Meta = new ResponseMetaDto
-                        {
-                            Timestamp = DateTime.UtcNow,
-                            Path = $"/api/data/{datasetName}/bulk"
-                        }
-                    });
+                    return this.ErrorResponse(bulkPath, "INVALID_REQUEST", "Request must contain 'items' array");
                 }
 
                 if (itemsElement.ValueKind != JsonValueKind.Array || itemsElement.GetArrayLength() == 0)
                 {
-                    return BadRequest(new ErrorResponseDto
-                    {
-                        Success = false,
-                        Error = new ErrorDetailDto
-                        {
-                            Code = "INVALID_REQUEST",
-                            Message = "Items array is required and cannot be empty"
-                        },
-                        Meta = new ResponseMetaDto
-                        {
-                            Timestamp = DateTime.UtcNow,
-                            Path = $"/api/data/{datasetName}/bulk"
-                        }
-                    });
+                    return this.ErrorResponse(bulkPath, "INVALID_REQUEST", "Items array is required and cannot be empty");
                 }
 
                 // Convert JsonElement array to List<Dictionary<string, object>>
-                var items = new List<Dictionary<string, object>>();
-                foreach (var itemElement in itemsElement.EnumerateArray())
-                {
-                    var itemDict = JsonElementToDictionary(itemElement);
-                    items.Add(itemDict);
-                }
+                var items = itemsElement.ToDictionaryList();
 
                 // Limit check (prevent DoS)
                 if (items.Count > 1000)
                 {
-                    return BadRequest(new ErrorResponseDto
-                    {
-                        Success = false,
-                        Error = new ErrorDetailDto
-                        {
-                            Code = "BATCH_SIZE_EXCEEDED",
-                            Message = "Maximum 1000 items allowed per bulk insert"
-                        },
-                        Meta = new ResponseMetaDto
-                        {
-                            Timestamp = DateTime.UtcNow,
-                            Path = $"/api/data/{datasetName}/bulk"
-                        }
-                    });
+                    return this.ErrorResponse(bulkPath, "BATCH_SIZE_EXCEEDED", "Maximum 1000 items allowed per bulk insert");
                 }
 
                 var domainName = _mongoContextService.GetCurrentDomainName()
@@ -1241,52 +843,15 @@ namespace MngDataGateway.Api.Controllers
                     userInfo.userName,
                     ipAddress);
 
-                return Ok(new DataResponseDto<BulkInsertResultDto>
-                {
-                    Success = true,
-                    Data = result,
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/bulk"
-                    }
-                });
+                return this.SuccessResponse(result, bulkPath);
             }
             catch (DataGatewayException ex) when (ex.Message.Contains("not found"))
             {
-                return NotFound(new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "DATASET_NOT_FOUND",
-                        Message = ex.Message
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/bulk"
-                    }
-                });
+                return this.HandleNotFoundError(ex, bulkPath, _logger);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to bulk create data in dataset {DatasetName}", datasetName);
-                return StatusCode(500, new ErrorResponseDto
-                {
-                    Success = false,
-                    Error = new ErrorDetailDto
-                    {
-                        Code = "BULK_CREATE_FAILED",
-                        Message = "Failed to bulk create data",
-                        Details = ex.Message
-                    },
-                    Meta = new ResponseMetaDto
-                    {
-                        Timestamp = DateTime.UtcNow,
-                        Path = $"/api/data/{datasetName}/bulk"
-                    }
-                });
+                return this.HandleError(ex, bulkPath, "BULK_CREATE_FAILED", "Failed to bulk create data", _logger);
             }
         }
 

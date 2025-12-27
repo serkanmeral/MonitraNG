@@ -63,14 +63,27 @@ build-mngkeeper:
   tags:
     - docker
   script:
-    - echo "Building MngKeeper..."
-    - dotnet restore MngKeeper/MngKeeper.sln
-    - dotnet build MngKeeper/MngKeeper.sln --no-restore -c Release
+    - echo "=== Building MngKeeper ==="
+    - echo "Working directory:"
+    - pwd
+    - echo "Checking solution file:"
+    - ls -la MngKeeper/MngKeeper.sln || echo "ERROR: Solution file not found!"
+    - echo "Restoring packages..."
+    - dotnet restore MngKeeper/MngKeeper.sln --verbosity normal
+    - echo "Building solution..."
+    - dotnet build MngKeeper/MngKeeper.sln --no-restore -c Release --verbosity normal
+    - echo "=== Build completed successfully ==="
   artifacts:
     paths:
       - MngKeeper/**/bin/
       - MngKeeper/**/obj/
     expire_in: 1 hour
+  timeout: 30m
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
   only:
     - main
     - develop
@@ -83,15 +96,29 @@ build-mngdatagateway:
   tags:
     - docker
   script:
-    - echo "Building MngDataGateway..."
-    - dotnet clean MngDataGateway/MngDataGateway.sln
-    - dotnet restore MngDataGateway/MngDataGateway.sln --force
-    - dotnet build MngDataGateway/MngDataGateway.sln -c Release --no-incremental
+    - echo "=== Building MngDataGateway ==="
+    - echo "Working directory:"
+    - pwd
+    - echo "Checking solution file:"
+    - ls -la MngDataGateway/MngDataGateway.sln || echo "ERROR: Solution file not found!"
+    - echo "Cleaning solution..."
+    - dotnet clean MngDataGateway/MngDataGateway.sln || echo "WARNING: Clean failed, continuing..."
+    - echo "Restoring packages..."
+    - dotnet restore MngDataGateway/MngDataGateway.sln --force --verbosity normal
+    - echo "Building solution..."
+    - dotnet build MngDataGateway/MngDataGateway.sln -c Release --no-incremental --verbosity normal
+    - echo "=== Build completed successfully ==="
   artifacts:
     paths:
       - MngDataGateway/**/bin/
       - MngDataGateway/**/obj/
     expire_in: 1 hour
+  timeout: 30m
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
   only:
     - main
     - develop
@@ -104,14 +131,27 @@ build-mnghub:
   tags:
     - docker
   script:
-    - echo "Building MngHub..."
-    - dotnet restore MngHub/MngHub.sln
-    - dotnet build MngHub/MngHub.sln --no-restore -c Release
+    - echo "=== Building MngHub ==="
+    - echo "Working directory:"
+    - pwd
+    - echo "Checking solution file:"
+    - ls -la MngHub/MngHub.sln || echo "ERROR: Solution file not found!"
+    - echo "Restoring packages..."
+    - dotnet restore MngHub/MngHub.sln --verbosity normal
+    - echo "Building solution..."
+    - dotnet build MngHub/MngHub.sln --no-restore -c Release --verbosity normal
+    - echo "=== Build completed successfully ==="
   artifacts:
     paths:
       - MngHub/**/bin/
       - MngHub/**/obj/
     expire_in: 1 hour
+  timeout: 30m
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
   only:
     - main
     - develop

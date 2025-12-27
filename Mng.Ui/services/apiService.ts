@@ -316,9 +316,12 @@ export function fetchFromDataGateway(
       }
       
       const config = useRuntimeConfig();
-      const gatewayUrl = config.public.reactorUrl || 'https://localhost:5011';
+      // Use gateway URL if available, otherwise use direct DataGateway URL
+      const baseUrl = config.public.gatewayUrl 
+        ? `${config.public.gatewayUrl}/data`
+        : (config.public.reactorUrl || 'https://localhost:5010');
       
-      const response = await fetch(`${gatewayUrl}${url}`, {
+      const response = await fetch(`${baseUrl}${url}`, {
         method,
         headers: {
           "Content-Type": "application/json",

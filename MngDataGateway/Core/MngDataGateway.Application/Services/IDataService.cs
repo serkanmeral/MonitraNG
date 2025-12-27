@@ -64,7 +64,7 @@ namespace MngDataGateway.Application.Services
             string? ipAddress = null);
 
         /// <summary>
-        /// Delete data (soft delete)
+        /// Delete data (hard delete + archive to __deletedDatas with TTL)
         /// </summary>
         Task<bool> DeleteAsync(
             string datasetName,

@@ -22,8 +22,9 @@ public class QueryDefinitionResponseDto
     public List<object>? Pipeline { get; set; }
 
     /// <summary>
-    /// Query parameters
+    /// Query parameters (with type definitions)
+    /// Returns List<QueryParameterDefinitionResponseDto> for new format, List<string> for legacy format
     /// </summary>
-    public List<string>? Parameters { get; set; }
+    public object? Parameters { get; set; }
 }
 

@@ -1,0 +1,115 @@
+site_name: MonitraNG Documentation
+site_description: Multi-Tenant IoT Monitoring Platform Documentation
+site_author: iSIM Platform
+site_url: https://serkanmeral.github.io/MonitraNG/
+
+# Repository
+repo_name: serkanmeral/MonitraNG
+repo_url: https://github.com/serkanmeral/MonitraNG
+edit_uri: edit/main/docs/docs/
+
+# Theme
+theme:
+  name: material
+  palette:
+    # Light mode
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.tabs.link
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+
+# Plugins
+plugins:
+  - search:
+      lang: en
+  - swagger-ui-tag:
+      default-expand: list
+
+# Extensions
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - admonition
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - attr_list
+  - md_in_html
+
+# Navigation
+nav:
+  - Home: index.md
+  - Getting Started:
+    - user-guide/getting-started.md
+    - user-guide/installation.md
+    - user-guide/configuration.md
+  - User Guide:
+    - user-guide/datasets.md
+    - user-guide/authentication.md
+    - user-guide/api-usage.md
+  - API Documentation:
+    - api/overview.md
+    - MngKeeper:
+      - api/mngkeeper/index.md
+      - api/mngkeeper/authentication.md
+      - api/mngkeeper/endpoints.md
+      - api/mngkeeper/openapi.json
+    - MngDataGateway:
+      - api/mngdatagateway/index.md
+      - api/mngdatagateway/datasets.md
+      - api/mngdatagateway/endpoints.md
+      - api/mngdatagateway/openapi.json
+    - MngHub:
+      - api/mnghub/index.md
+      - api/mnghub/endpoints.md
+      - api/mnghub/openapi.json
+  - Services:
+    - MngKeeper:
+      - services/mngkeeper/architecture.md
+      - services/mngkeeper/roadmap.md
+      - services/mngkeeper/changelog.md
+    - MngDataGateway:
+      - services/mngdatagateway/architecture.md
+      - services/mngdatagateway/roadmap.md
+      - services/mngdatagateway/status.md
+    - MngHub:
+      - services/mnghub/architecture.md
+      - services/mnghub/roadmap.md
+  - Development:
+    - development/contributing.md
+    - development/coding-standards.md
+    - development/testing.md
+  - DevOps:
+    - devops-roadmap.md
+
+# Copyright
+copyright: Copyright &copy; 2025 iSIM Platform
+

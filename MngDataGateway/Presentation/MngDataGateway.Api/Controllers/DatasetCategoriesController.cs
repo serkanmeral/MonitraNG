@@ -1,5 +1,7 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MngDataGateway.Api.Helpers;
 using MngDataGateway.Application.DTOs.Common;
 using MngDataGateway.Application.DTOs.DatasetCategory;
 using MngDataGateway.Application.Services;
@@ -7,7 +9,8 @@ using MngDataGateway.Application.Services;
 namespace MngDataGateway.Api.Controllers;
 
 [ApiController]
-[Route("api/dataset-categories")]
+[ApiVersion(1.0)]
+[Route("api/v{version:apiVersion}/dataset-categories")]
 [Authorize]
 [Produces("application/json")]
 public class DatasetCategoriesController : ControllerBase
@@ -49,13 +52,11 @@ public class DatasetCategoriesController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Failed to create category: {Message}", ex.Message);
-            return BadRequest(new { error = ex.Message });
+            return this.ErrorResponse("/api/v1/dataset-categories", "INVALID_OPERATION", ex.Message);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating dataset category");
-            return StatusCode(500, new { error = "Kategori oluşturulurken hata oluştu", details = ex.Message, innerException = ex.InnerException?.Message });
+            return this.HandleError(ex, "/api/v1/dataset-categories", "CREATE_CATEGORY_FAILED", "Kategori oluşturulurken hata oluştu", _logger);
         }
     }
 
@@ -82,8 +83,7 @@ public class DatasetCategoriesController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error listing dataset categories");
-            return StatusCode(500, new { error = "Kategoriler listelenirken hata oluştu", details = ex.Message, innerException = ex.InnerException?.Message });
+            return this.HandleError(ex, "/api/v1/dataset-categories", "LIST_CATEGORIES_FAILED", "Kategoriler listelenirken hata oluştu", _logger);
         }
     }
 
@@ -104,8 +104,7 @@ public class DatasetCategoriesController : ControllerBase
 
             if (result == null)
             {
-                _logger.LogWarning("Dataset category not found: {DataId}", dataId);
-                return NotFound(new { error = "Kategori bulunamadı" });
+                return this.ErrorResponse($"/api/v1/dataset-categories/{dataId}", "CATEGORY_NOT_FOUND", "Kategori bulunamadı", statusCode: 404);
             }
 
             _logger.LogInformation("Retrieved dataset category: {DataId}", dataId);
@@ -113,8 +112,7 @@ public class DatasetCategoriesController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting dataset category: {DataId}", dataId);
-            return StatusCode(500, new { error = "Kategori getirilirken hata oluştu" });
+            return this.HandleError(ex, $"/api/v1/dataset-categories/{dataId}", "GET_CATEGORY_FAILED", "Kategori getirilirken hata oluştu", _logger);
         }
     }
 
@@ -143,19 +141,16 @@ public class DatasetCategoriesController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Failed to update category {DataId}: {Message}", dataId, ex.Message);
-            
+            var path = $"/api/v1/dataset-categories/{dataId}";
             if (ex.Message.Contains("bulunamadı"))
             {
-                return NotFound(new { error = ex.Message });
+                return this.ErrorResponse(path, "CATEGORY_NOT_FOUND", ex.Message, statusCode: 404);
             }
-            
-            return BadRequest(new { error = ex.Message });
+            return this.ErrorResponse(path, "INVALID_OPERATION", ex.Message);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating dataset category: {DataId}", dataId);
-            return StatusCode(500, new { error = "Kategori güncellenirken hata oluştu" });
+            return this.HandleError(ex, $"/api/v1/dataset-categories/{dataId}", "UPDATE_CATEGORY_FAILED", "Kategori güncellenirken hata oluştu", _logger);
         }
     }
 
@@ -176,8 +171,7 @@ public class DatasetCategoriesController : ControllerBase
 
             if (!result)
             {
-                _logger.LogWarning("Dataset category not found for deletion: {DataId}", dataId);
-                return NotFound(new { error = "Kategori bulunamadı" });
+                return this.ErrorResponse($"/api/v1/dataset-categories/{dataId}", "CATEGORY_NOT_FOUND", "Kategori bulunamadı", statusCode: 404);
             }
 
             _logger.LogInformation("Dataset category deleted: {DataId}", dataId);
@@ -185,8 +179,7 @@ public class DatasetCategoriesController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting dataset category: {DataId}", dataId);
-            return StatusCode(500, new { error = "Kategori silinirken hata oluştu" });
+            return this.HandleError(ex, $"/api/v1/dataset-categories/{dataId}", "DELETE_CATEGORY_FAILED", "Kategori silinirken hata oluştu", _logger);
         }
     }
 
@@ -214,19 +207,16 @@ public class DatasetCategoriesController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Failed to restore category {DataId}: {Message}", dataId, ex.Message);
-            
+            var path = $"/api/v1/dataset-categories/{dataId}/restore";
             if (ex.Message.Contains("bulunamadı"))
             {
-                return NotFound(new { error = ex.Message });
+                return this.ErrorResponse(path, "CATEGORY_NOT_FOUND", ex.Message, statusCode: 404);
             }
-            
-            return BadRequest(new { error = ex.Message });
+            return this.ErrorResponse(path, "INVALID_OPERATION", ex.Message);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error restoring dataset category: {DataId}", dataId);
-            return StatusCode(500, new { error = "Kategori geri yüklenirken hata oluştu" });
+            return this.HandleError(ex, $"/api/v1/dataset-categories/{dataId}/restore", "RESTORE_CATEGORY_FAILED", "Kategori geri yüklenirken hata oluştu", _logger);
         }
     }
 }

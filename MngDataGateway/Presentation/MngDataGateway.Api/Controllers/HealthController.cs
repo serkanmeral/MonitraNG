@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MngDataGateway.Application.Services;
@@ -8,7 +9,8 @@ namespace MngDataGateway.Api.Controllers
     /// Health check controller for monitoring application health
     /// </summary>
     [ApiController]
-    [Route("api/health")]
+    [ApiVersion(1.0)]
+    [Route("api/v{version:apiVersion}/health")]
     [AllowAnonymous] // Health check should be accessible without authentication
     public class HealthController : ControllerBase
     {

@@ -26,6 +26,9 @@ public static class ServiceRegistration
         // Validation Service - Data validation
         services.AddScoped<IValidationService, ValidationService>();
         
+        // Permission Service - Dataset access control
+        services.AddScoped<IPermissionService, PermissionService>();
+        
         // Incremental Field Service - Auto-increment field generation
         services.AddScoped<IIncrementalFieldService, IncrementalFieldService>();
         
@@ -50,6 +53,9 @@ public static class ServiceRegistration
 
         // Sort Parser - Parse MongoDB-style sort query parameter
         services.AddScoped<SortParser>();
+
+        // CSV Converter - Convert data dictionaries to CSV format
+        services.AddScoped<CsvConverter>();
     }
 }
 

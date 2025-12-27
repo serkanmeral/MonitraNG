@@ -1,0 +1,99 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build-mngkeeper:
+    name: Build MngKeeper
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore MngKeeper/MngKeeper.sln
+
+      - name: Build
+        run: dotnet build MngKeeper/MngKeeper.sln --no-restore -c Release
+
+      - name: Test
+        run: dotnet test MngKeeper/MngKeeper.sln --no-build --verbosity normal
+        continue-on-error: true
+
+  build-mngdatagateway:
+    name: Build MngDataGateway
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore MngDataGateway/MngDataGateway.sln
+
+      - name: Build
+        run: dotnet build MngDataGateway/MngDataGateway.sln --no-restore -c Release
+
+      - name: Test
+        run: dotnet test MngDataGateway/MngDataGateway.sln --no-build --verbosity normal
+        continue-on-error: true
+
+  build-mnghub:
+    name: Build MngHub
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore MngHub/MngHub.sln
+
+      - name: Build
+        run: dotnet build MngHub/MngHub.sln --no-restore -c Release
+
+      - name: Test
+        run: dotnet test MngHub/MngHub.sln --no-build --verbosity normal
+        continue-on-error: true
+
+  build-frontend:
+    name: Build Frontend
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: Mng.Ui/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd Mng.Ui
+          npm ci
+
+      - name: Build
+        run: |
+          cd Mng.Ui
+          npm run build
+

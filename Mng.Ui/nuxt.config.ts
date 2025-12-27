@@ -21,8 +21,11 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      keeperUrl: process.env.KEEPER_URL,
-      reactorUrl : process.env.SERVER_URL,
+      // Gateway URL (if using API Gateway, set this and leave other URLs empty)
+      gatewayUrl: process.env.GATEWAY_URL || '',
+      // Individual service URLs (used if gatewayUrl is not set)
+      keeperUrl: process.env.KEEPER_URL || 'https://localhost:5001',
+      reactorUrl: process.env.SERVER_URL || process.env.DATAGATEWAY_URL || 'https://localhost:5010',
       hubUrl: process.env.HUB_URL || 'http://localhost:5020'
     }
   },

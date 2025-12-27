@@ -19,10 +19,33 @@
 ✅ MinIO            - Self-hosted
 ✅ KeyCloak         - Self-hosted
 ✅ MngKeeper API    - Self-hosted
+✅ MngDataGateway   - Self-hosted
+✅ MngHub           - Self-hosted
+✅ MngChatBot       - Self-hosted (Qdrant + Ollama)
+✅ Qdrant           - Self-hosted (Vector DB)
+✅ Ollama           - Self-hosted (LLM + Embeddings)
 ✅ Diğer servisler  - Self-hosted
 ```
 
 **Tüm bileşenler offline çalışabilir! 🎉**
+
+### AI Chat Bot - Air-Gapped Uyumluluk:
+
+**✅ TAMAMEN OFFLINE ÇALIŞABİLİR**
+
+**Bileşenler:**
+- ✅ **Qdrant:** Tamamen offline, external dependency yok
+- ✅ **Ollama:** Tamamen offline, modeller önceden indirilebilir
+- ✅ **Modeller:** Volume mount ile offline ortama taşınabilir
+- ✅ **MngDataGateway:** Zaten offline çalışıyor
+- ✅ **MngKeeper:** Zaten offline çalışıyor
+
+**Kurulum:**
+1. Online ortamda modelleri indir
+2. Docker image'ları export et
+3. Offline ortama taşı
+4. Volume mount ile modelleri yükle
+5. Tamamen offline çalışır
 
 ---
 
@@ -1419,7 +1442,977 @@ GET    /api/data/{collection}/count              # Count documents
 
 ---
 
-### 8. MinIO Infrastructure Setup 📁 Altyapı Kurulumu
+### 8. MngChatBot Servisi 🤖 AI Destekli Dokümantasyon Asistanı
+
+**KARAR: Self-hosted, ücretsiz AI chat bot servisi geliştirilecek ✅**
+
+**Amaç:** Kullanıcılara MkDocs dokümantasyonlarından bilgi sağlayan, RAG (Retrieval Augmented Generation) tabanlı AI chat bot servisi. Tamamen self-hosted ve ücretsiz çözüm.
+
+#### Mimari:
+
+```
+┌──────────────┐
+│   MkDocs     │ ← Dokümantasyonlar (docs/)
+│  Dokümantasyon│
+└──────┬───────┘
+       │ Indexing (startup + periodic)
+       ↓
+┌────────────────────┐
+│   MngChatBot       │
+│  - RAG Service     │
+│  - Vector Search   │
+│  - Chat API        │
+└─────────┬──────────┘
+          │
+          ├→ Qdrant (Vector DB)
+          ├→ Ollama (LLM + Embeddings)
+          └→ MngHub (SignalR - Real-time)
+```
+
+#### Temel Özellikler:
+
+**1. RAG (Retrieval Augmented Generation):**
+- ✅ MkDocs dokümantasyonlarını otomatik indexleme
+- ✅ Vector embeddings ile semantic search
+- ✅ Context-aware yanıtlar (dokümantasyonlara dayalı)
+- ✅ Kaynak referansları (hangi dokümantasyondan geldiği)
+
+**2. Function Calling (Tool Use) - Veri İşlemleri:**
+- ✅ **MngDataGateway API entegrasyonu** - Gerçek veri işlemleri
+- ✅ Dataset query (list, get, search, filter)
+- ✅ Data CRUD (create, update, delete)
+- ✅ Predefined query execution
+- ✅ LLM'in hangi tool'u kullanacağına karar vermesi
+- ✅ Otomatik API çağrıları ve sonuç yorumlama
+- ✅ Örnek: "Yayıncıların listesini getir" → `GET /api/data/tst_publishers`
+- ✅ Örnek: "Penguin Random House'a ait kitap ekle" → `POST /api/data/tst_books`
+
+**3. Self-Hosted AI Stack:**
+- ✅ **Qdrant** - Vector database (self-hosted, ücretsiz)
+- ✅ **Ollama** - LLM ve embedding modelleri (self-hosted, ücretsiz)
+- ✅ **Türkçe destekli modeller** (turkcell-llm-7b-v1, rn_tr_r1)
+- ✅ Tamamen offline çalışabilir (air-gapped uyumlu)
+
+**4. Real-time Chat:**
+- ✅ SignalR ile streaming responses
+- ✅ Token-by-token yanıt gösterimi
+- ✅ Chat session yönetimi
+- ✅ Konuşma geçmişi (MongoDB)
+
+**5. Multi-tenant Support:**
+- ✅ Domain-based context izolasyonu
+- ✅ Domain bazlı dokümantasyon filtreleme
+- ✅ Domain bazlı veri işlemleri (JWT'den domain çekme)
+- ✅ JWT authentication entegrasyonu
+
+**6. Dokümantasyon Entegrasyonu:**
+- ✅ MkDocs markdown dosyalarını parse etme
+- ✅ Chunk-based indexing (500-1000 karakter)
+- ✅ Otomatik re-indexing (dokümantasyon güncellemelerinde)
+- ✅ Service/category bazlı filtreleme
+
+#### Teknoloji Stack:
+
+- **Framework:** ASP.NET Core 9.0 Web API
+- **Vector Database:** Qdrant (self-hosted)
+- **LLM & Embeddings:** Ollama (self-hosted)
+- **Real-time:** SignalR (MngHub entegrasyonu)
+- **Database:** MongoDB (chat sessions, metadata)
+- **Authentication:** JWT (KeyCloak)
+- **Logging:** Serilog
+
+#### REST API Endpoints:
+
+```http
+# Chat Operations
+POST   /api/v1/chat/message
+       Body: { question: "Dataset nasıl oluşturulur?", sessionId?: "..." }
+       Response: { answer: "...", sources: [...], sessionId: "...", toolsUsed: [...] }
+
+POST   /api/v1/chat/stream
+       Body: { question: "...", sessionId?: "..." }
+       Response: SSE (Server-Sent Events) streaming
+
+# Session Management
+GET    /api/v1/chat/sessions
+       Response: [{ sessionId, createdAt, lastMessageAt, messageCount }]
+
+GET    /api/v1/chat/sessions/{sessionId}
+       Response: { sessionId, messages: [...], createdAt }
+
+DELETE /api/v1/chat/sessions/{sessionId}
+       Response: 204 No Content
+
+# Documentation Indexing
+POST   /api/v1/chat/index
+       Body: { path: "../../docs", force: false }
+       Response: { indexed: 150, duration: "2.5s" }
+
+GET    /api/v1/chat/index/status
+       Response: { lastIndexed: "2025-01-15T10:00:00Z", totalDocuments: 150 }
+
+# Tool Definitions (Available Functions)
+GET    /api/v1/chat/tools
+       Response: [{ name, description, parameters, examples }]
+```
+
+#### SignalR Hub (MngHub Entegrasyonu):
+
+```csharp
+// Real-time chat streaming
+hubConnection.on("ChatResponse", (token: string) => {
+    // Token-by-token yanıt alımı
+    appendToChat(token);
+});
+
+hubConnection.on("ChatComplete", (response: ChatResponse) => {
+    // Yanıt tamamlandı
+    showSources(response.sources);
+});
+```
+
+#### MongoDB Schema:
+
+**ChatSession Collection:**
+```javascript
+{
+  "_id": "session_123",
+  "domainId": "domain_456",
+  "userId": "user_789",
+  "createdAt": "2025-01-15T10:00:00Z",
+  "lastMessageAt": "2025-01-15T10:05:00Z",
+  "messageCount": 5,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Dataset nasıl oluşturulur?",
+      "timestamp": "2025-01-15T10:00:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "Dataset oluşturmak için...",
+      "sources": [
+        { "file": "docs/MngDataGateway/api/DATASET_SCHEMA_SUMMARY.md", "chunk": 3 }
+      ],
+      "timestamp": "2025-01-15T10:00:15Z"
+    }
+  ]
+}
+```
+
+**DocumentIndex Collection:**
+```javascript
+{
+  "_id": "doc_123",
+  "filePath": "docs/MngDataGateway/api/DATASET_SCHEMA_SUMMARY.md",
+  "service": "MngDataGateway",
+  "category": "api",
+  "chunks": [
+    {
+      "chunkId": "chunk_1",
+      "content": "Dataset oluşturmak için...",
+      "embedding": [0.123, -0.456, ...],  // Vector embedding
+      "startIndex": 0,
+      "endIndex": 500
+    }
+  ],
+  "indexedAt": "2025-01-15T10:00:00Z",
+  "version": "1.0"
+}
+```
+
+#### Docker Configuration:
+
+**docker-compose.yml (mng_common):**
+```yaml
+# Qdrant Vector Database
+qdrant:
+  image: qdrant/qdrant:latest
+  container_name: qdrant
+  ports:
+    - "6333:6333"      # REST API
+    - "6334:6334"      # gRPC
+  volumes:
+    - qdrant_data:/qdrant/storage
+  networks:
+    - mng_network
+  restart: unless-stopped
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+
+# Ollama - Self-hosted LLM & Embeddings
+ollama:
+  image: ollama/ollama:latest
+  container_name: ollama
+  ports:
+    - "11434:11434"    # Ollama API
+  volumes:
+    - ollama_data:/root/.ollama
+  networks:
+    - mng_network
+  restart: unless-stopped
+  # GPU desteği için (opsiyonel)
+  # deploy:
+  #   resources:
+  #     reservations:
+  #       devices:
+  #         - driver: nvidia
+  #           count: 1
+  #           capabilities: [gpu]
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+
+volumes:
+  # ... mevcut volumes ...
+  qdrant_data:
+  ollama_data:
+```
+
+**docker-compose.yml (mng_apps):**
+```yaml
+mngchatbot:
+  build:
+    context: ../../MngChatBot
+    dockerfile: Presentation/MngChatBot.Api/Dockerfile
+  image: localhost:5000/mngchatbot:1.0.0
+  container_name: mngchatbot
+  ports:
+    - "5030:5030"
+  environment:
+    # ASP.NET Core Environment
+    - ASPNETCORE_ENVIRONMENT=Development
+    
+    # Server Configuration
+    - MngChatBotSettings__Server__Host=0.0.0.0
+    - MngChatBotSettings__Server__Port=5030
+    - MngChatBotSettings__Server__Scheme=https
+    
+    # Ollama Configuration
+    - MngChatBotSettings__Ollama__BaseUrl=http://ollama:11434
+    - MngChatBotSettings__Ollama__LlmModel=refinedneuro/turkcell-llm-7b-v1
+    - MngChatBotSettings__Ollama__EmbeddingModel=nomic-embed-text
+    
+    # Qdrant Configuration
+    - MngChatBotSettings__Qdrant__BaseUrl=http://qdrant:6333
+    - MngChatBotSettings__Qdrant__CollectionName=monitra_docs
+    
+    # Documentation Configuration
+    - MngChatBotSettings__Documentation__Path=../../docs
+    - MngChatBotSettings__Documentation__ChunkSize=1000
+    - MngChatBotSettings__Documentation__ChunkOverlap=200
+    
+    # MongoDB Configuration
+    - MngChatBotSettings__MongoDB__ConnectionString=mongodb://admin:admin123@mongo:27017
+    - MngChatBotSettings__MongoDB__DatabaseName=mngchatbot
+    
+    # Actors Configuration
+    - MngChatBotSettings__Actors__MngKeeper=https://mngkeeper:5001
+    - MngChatBotSettings__Actors__MngHub=http://mnghub:5020
+    
+    # Certificate Settings
+    - MngChatBotSettings__CertificateSettings__DNS=mngchatbot
+  
+  networks:
+    - mng_common_mng_network
+  
+  depends_on:
+    - qdrant
+    - ollama
+    - mngkeeper
+    - mnghub
+  
+  restart: unless-stopped
+  
+  healthcheck:
+    test: ["CMD-SHELL", "curl -k -f https://localhost:5030/api/v1/health || exit 1"]
+    interval: 30s
+    timeout: 10s
+    retries: 5
+    start_period: 60s
+```
+
+#### Model Kurulumu (Ollama):
+
+```bash
+# 1. Ollama container'ı başlat
+docker-compose up -d ollama
+
+# 2. Türkçe LLM model indir
+docker exec -it ollama ollama pull refinedneuro/turkcell-llm-7b-v1
+# Alternatif: docker exec -it ollama ollama pull refinedneuro/rn_tr_r1
+
+# 3. Embedding model indir
+docker exec -it ollama ollama pull nomic-embed-text
+# Alternatif: docker exec -it ollama ollama pull mxbai-embed-large
+
+# 4. Test et
+docker exec -it ollama ollama run refinedneuro/turkcell-llm-7b-v1 "Merhaba, Türkçe konuşabilir misin?"
+```
+
+#### Önerilen Modeller:
+
+**LLM Modelleri (Chat için):**
+- **refinedneuro/turkcell-llm-7b-v1** ⭐ (Önerilen - Türkçe öncelikli, 5 milyar Türkçe token)
+- **refinedneuro/rn_tr_r1** (Alternatif - Daha küçük, Türkçe öncelikli)
+- **llama3.1:8b** (Multilingual - TR + EN)
+
+**Embedding Modelleri:**
+- **nomic-embed-text** (Multilingual, küçük, hızlı)
+- **mxbai-embed-large** (Multilingual, daha kaliteli, daha büyük)
+
+#### Core Components:
+
+**1. DocumentationIndexerService:**
+```csharp
+// MkDocs markdown dosyalarını okuyup Qdrant'a indexler
+// Startup'ta ve dokümantasyon güncellemelerinde çalışır
+public class DocumentationIndexerService
+{
+    Task IndexDocumentationAsync(string docsPath);
+    Task ReIndexAsync(string filePath);
+    Task<List<DocumentChunk>> GetChunksAsync(string filePath);
+}
+```
+
+**2. RagService:**
+```csharp
+// RAG orchestration: Soru → Embedding → Vector Search → LLM
+public class RagService
+{
+    Task<ChatResponse> GetAnswerAsync(string question, string domainId, string? sessionId);
+    IAsyncEnumerable<string> GetAnswerStreamAsync(string question, string domainId, string? sessionId);
+}
+```
+
+**3. OllamaEmbeddingService:**
+```csharp
+// Ollama API ile embedding oluşturma
+public class OllamaEmbeddingService : IEmbeddingService
+{
+    Task<float[]> GetEmbeddingAsync(string text);
+}
+```
+
+**4. OllamaChatService:**
+```csharp
+// Ollama API ile LLM çağrıları
+public class OllamaChatService : IChatService
+{
+    Task<string> GetCompletionAsync(string prompt);
+    IAsyncEnumerable<string> GetCompletionStreamAsync(string prompt);
+}
+```
+
+**5. QdrantVectorService:**
+```csharp
+// Qdrant vector database işlemleri
+public class QdrantVectorService : IVectorSearchService
+{
+    Task<List<VectorDocument>> SearchAsync(float[] embedding, int topK, Dictionary<string, object>? filter);
+    Task UpsertAsync(VectorDocument document);
+    Task CreateCollectionAsync(string collectionName);
+}
+```
+
+**6. FunctionCallingService (Tool Use):**
+```csharp
+// MngDataGateway API entegrasyonu - Gerçek veri işlemleri
+public class FunctionCallingService
+{
+    // Dataset query operations
+    Task<List<Dictionary<string, object>>> QueryDatasetAsync(
+        string datasetName, 
+        Dictionary<string, object>? filters = null,
+        int? limit = null,
+        string? sort = null);
+    
+    Task<Dictionary<string, object>?> GetDataByIdAsync(string datasetName, string dataId);
+    
+    // Data CRUD operations
+    Task<Dictionary<string, object>> CreateDataAsync(
+        string datasetName, 
+        Dictionary<string, object> data);
+    
+    Task<Dictionary<string, object>> UpdateDataAsync(
+        string datasetName, 
+        string dataId, 
+        Dictionary<string, object> data);
+    
+    Task DeleteDataAsync(string datasetName, string dataId);
+    
+    // Predefined queries
+    Task<List<Dictionary<string, object>>> ExecutePredefinedQueryAsync(
+        string datasetName, 
+        string queryName, 
+        Dictionary<string, object>? parameters = null);
+}
+```
+
+**7. ToolOrchestratorService:**
+```csharp
+// LLM'in tool kullanımını yönetir
+public class ToolOrchestratorService
+{
+    // LLM'e tool'ları tanıtır ve tool çağrılarını yönetir
+    Task<ChatResponse> ProcessWithToolsAsync(
+        string userQuestion, 
+        string domainId, 
+        List<ToolDefinition> availableTools);
+    
+    // LLM'in tool kullanım kararını parse eder
+    Task<ToolCall?> ParseToolCallAsync(string llmResponse);
+    
+    // Tool'u execute eder ve sonucu LLM'e verir
+    Task<string> ExecuteToolAsync(ToolCall toolCall, string domainId);
+}
+```
+
+#### Prompt Engineering (Türkçe):
+
+```csharp
+var systemPrompt = @"
+Sen MonitraNG platformunun yardımcı AI asistanısın. 
+Kullanıcılara dokümantasyonlara dayanarak yardımcı oluyorsun.
+
+ÖNEMLİ KURALLAR:
+1. Kullanıcı Türkçe konuşuyorsa MUTLAKA Türkçe yanıt ver
+2. Türkçe yanıtlar profesyonel, net ve anlaşılır olmalı
+3. Teknik terimleri Türkçe karşılıklarıyla birlikte kullan
+4. Kod örnekleri ve komutlar aynen göster (değiştirme)
+5. Sadece verilen dokümantasyonlardan bilgi ver
+6. Bilmediğin bir şey varsa 'Dokümantasyonlarda bu bilgi bulunmuyor' de
+
+Yanıt Dili: Türkçe
+";
+```
+
+#### Güvenlik Özellikleri:
+
+- [ ] **JWT Authentication:** KeyCloak token validation
+- [ ] **Domain Isolation:** Domain bazlı context filtreleme
+- [ ] **Rate Limiting:** Chat request limits (30 req/min per user)
+- [ ] **Input Validation:** Prompt injection koruması
+- [ ] **Output Filtering:** Hassas veri sızıntısı önleme
+- [ ] **Audit Logging:** Tüm chat mesajları loglanır
+
+#### Function Calling (Tool Use) Özellikleri:
+
+**Kullanım Senaryoları:**
+
+**1. Veri Sorgulama:**
+```
+Kullanıcı: "Yayıncıların listesini getir"
+  ↓
+LLM: Tool kullanımına karar verir → `query_dataset`
+  ↓
+FunctionCallingService: GET /api/data/tst_publishers
+  ↓
+Sonuç: [{ name: "Penguin Random House", ... }, ...]
+  ↓
+LLM: Sonucu yorumlar ve kullanıcıya sunar
+```
+
+**2. Veri Ekleme:**
+```
+Kullanıcı: "Penguin Random House yayıncısına ait 'Yeni Kitap' adında bir kitap ekle, 
+            yazarı ben olayım, sayfa sayısı 300 olsun"
+  ↓
+LLM: Tool kullanımına karar verir → `create_data`
+  ↓
+FunctionCallingService: 
+  1. Önce publisher'ı bulur (query_dataset: tst_publishers, filter: name="Penguin Random House")
+  2. Publisher ID'sini alır
+  3. POST /api/data/tst_books
+     {
+       "title": "Yeni Kitap",
+       "publisher": "publisher-001",  // Bulunan publisher ID
+       "author": "690cdb7fae502df7d3330bbb",  // Kullanıcı ID (JWT'den)
+       "pageCount": 300
+     }
+  ↓
+Sonuç: { __dataId: "book-123", ... }
+  ↓
+LLM: "Kitap başarıyla eklendi. Kitap ID: book-123"
+```
+
+**3. Filtreleme ve Arama:**
+```
+Kullanıcı: "Penguin Random House'a ait kitapları listele"
+  ↓
+LLM: Tool kullanımına karar verir → `query_dataset`
+  ↓
+FunctionCallingService: 
+  1. Publisher'ı bulur (query_dataset: tst_publishers)
+  2. GET /api/data/tst_books?filter=publisher:eq:publisher-001
+  ↓
+Sonuç: [{ title: "The Great Gatsby", ... }, ...]
+  ↓
+LLM: Sonuçları formatlar ve sunar
+```
+
+**Tool Definitions (Ollama Function Calling):**
+
+```json
+{
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "query_dataset",
+        "description": "Dataset'ten veri sorgular. Liste, filtreleme, sıralama yapabilir.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "datasetName": {
+              "type": "string",
+              "description": "Dataset adı (örn: tst_books, tst_publishers)"
+            },
+            "filters": {
+              "type": "object",
+              "description": "Filtre kriterleri (örn: { publisher: 'publisher-001' })"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maksimum kayıt sayısı (default: 50)"
+            },
+            "sort": {
+              "type": "string",
+              "description": "Sıralama (örn: 'title', '-publicationDate')"
+            }
+          },
+          "required": ["datasetName"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "get_data_by_id",
+        "description": "Dataset'ten ID ile tek bir kayıt getirir.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "datasetName": {
+              "type": "string",
+              "description": "Dataset adı"
+            },
+            "dataId": {
+              "type": "string",
+              "description": "Kayıt ID'si (__dataId)"
+            }
+          },
+          "required": ["datasetName", "dataId"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "create_data",
+        "description": "Dataset'e yeni kayıt ekler.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "datasetName": {
+              "type": "string",
+              "description": "Dataset adı"
+            },
+            "data": {
+              "type": "object",
+              "description": "Eklenecek veri (field'lar dataset schema'ya göre)"
+            }
+          },
+          "required": ["datasetName", "data"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "update_data",
+        "description": "Dataset'teki bir kaydı günceller.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "datasetName": {
+              "type": "string",
+              "description": "Dataset adı"
+            },
+            "dataId": {
+              "type": "string",
+              "description": "Güncellenecek kayıt ID'si"
+            },
+            "data": {
+              "type": "object",
+              "description": "Güncellenecek field'lar"
+            }
+          },
+          "required": ["datasetName", "dataId", "data"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "delete_data",
+        "description": "Dataset'ten bir kaydı siler.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "datasetName": {
+              "type": "string",
+              "description": "Dataset adı"
+            },
+            "dataId": {
+              "type": "string",
+              "description": "Silinecek kayıt ID'si"
+            }
+          },
+          "required": ["datasetName", "dataId"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "execute_predefined_query",
+        "description": "Dataset'teki önceden tanımlı query'yi çalıştırır.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "datasetName": {
+              "type": "string",
+              "description": "Dataset adı"
+            },
+            "queryName": {
+              "type": "string",
+              "description": "Predefined query adı"
+            },
+            "parameters": {
+              "type": "object",
+              "description": "Query parametreleri (key-value pairs)"
+            }
+          },
+          "required": ["datasetName", "queryName"]
+        }
+      }
+    }
+  ]
+}
+```
+
+**Ollama Function Calling Format:**
+
+Ollama'da function calling için özel format kullanılır (OpenAI format'ına benzer):
+
+```json
+{
+  "model": "refinedneuro/turkcell-llm-7b-v1",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Sen MonitraNG platformunun AI asistanısın. Kullanıcıların sorularını yanıtla ve gerektiğinde tool'ları kullan."
+    },
+    {
+      "role": "user",
+      "content": "Yayıncıların listesini getir"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "query_dataset",
+        "description": "...",
+        "parameters": { ... }
+      }
+    }
+  ],
+  "tool_choice": "auto"  // veya "required" veya belirli bir tool
+}
+```
+
+**LLM Response (Tool Call):**
+```json
+{
+  "role": "assistant",
+  "content": null,
+  "tool_calls": [
+    {
+      "id": "call_123",
+      "type": "function",
+      "function": {
+        "name": "query_dataset",
+        "arguments": "{\"datasetName\": \"tst_publishers\"}"
+      }
+    }
+  ]
+}
+```
+
+**Tool Execution Flow:**
+```
+1. LLM tool kullanımına karar verir
+2. Tool call parse edilir
+3. FunctionCallingService tool'u execute eder
+4. Sonuç LLM'e geri verilir
+5. LLM sonucu yorumlar ve kullanıcıya sunar
+```
+
+#### İmplementasyon Adımları:
+
+- [ ] 1. **Project Setup:**
+  - MngChatBot.Api project
+  - MngChatBot.Application layer
+  - MngChatBot.Domain layer
+  - MngChatBot.Infrastructure layer
+
+- [ ] 2. **Docker Infrastructure:**
+  - Qdrant container ekleme (mng_common)
+  - Ollama container ekleme (mng_common)
+  - Model indirme scriptleri
+
+- [ ] 3. **Core Services:**
+  - OllamaEmbeddingService (embedding oluşturma)
+  - OllamaChatService (LLM çağrıları + function calling)
+  - QdrantVectorService (vector search)
+  - DocumentationIndexerService (dokümantasyon indexleme)
+
+- [ ] 4. **RAG Implementation:**
+  - RagService (orchestration)
+  - Prompt template'leri
+  - Context building
+  - Source attribution
+
+- [ ] 5. **Function Calling Implementation:**
+  - FunctionCallingService (MngDataGateway API client)
+  - ToolOrchestratorService (tool kullanım yönetimi)
+  - Tool definitions (JSON schema)
+  - Tool call parsing
+  - Tool execution ve sonuç yorumlama
+  - Multi-step tool calls (örn: önce publisher bul, sonra kitap ekle)
+
+- [ ] 6. **Chat API:**
+  - ChatController (REST API)
+  - Session management
+  - Message history
+  - Streaming support
+  - Tool usage tracking
+
+- [ ] 7. **MngHub Integration:**
+  - SignalR hub entegrasyonu
+  - Real-time streaming
+  - Connection management
+  - Tool execution progress
+
+- [ ] 8. **Documentation Indexing:**
+  - Markdown parser
+  - Chunk splitting
+  - Automatic re-indexing
+  - Index status API
+
+- [ ] 9. **MngDataGateway Integration:**
+  - HTTP client setup
+  - JWT token forwarding
+  - API endpoint mapping
+  - Error handling
+  - Response transformation
+
+- [ ] 10. **Multi-tenant Support:**
+  - Domain-based filtering
+  - Context isolation
+  - JWT integration
+  - Domain bazlı veri işlemleri
+
+- [ ] 11. **Testing:**
+  - Unit tests
+  - Integration tests (Qdrant, Ollama, MngDataGateway)
+  - End-to-end tests
+  - Türkçe yanıt kalitesi testleri
+  - Function calling testleri (books dataset senaryoları)
+
+- [ ] 12. **Docker & Deployment:**
+  - Dockerfile
+  - docker-compose integration
+  - Health checks
+  - Model pre-loading
+
+#### NuGet Packages:
+
+```xml
+<PackageReference Include="Qdrant.Client" Version="1.0.0" />
+<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.0" />
+<PackageReference Include="MongoDB.Driver" Version="2.23.0" />
+<PackageReference Include="Serilog.AspNetCore" Version="8.0.0" />
+```
+
+#### Kullanım Senaryoları:
+
+**1. Kullanıcı Soruları:**
+```
+Kullanıcı: "Dataset nasıl oluşturulur?"
+  ↓
+MngChatBot: RAG işlemi
+  - Soru → Embedding
+  - Qdrant'ta arama → En ilgili 5 dokümantasyon parçası
+  - Context + Soru → Ollama LLM
+  - Yanıt: "Dataset oluşturmak için..."
+  - Kaynaklar: [docs/MngDataGateway/api/DATASET_SCHEMA_SUMMARY.md]
+```
+
+**2. Real-time Streaming:**
+```
+Frontend → SignalR Hub → MngChatBot
+  ↓
+Ollama streaming response (token-by-token)
+  ↓
+Frontend → Real-time yanıt gösterimi
+```
+
+**3. Dokümantasyon Güncellemesi:**
+```
+MkDocs build → Dokümantasyon güncellendi
+  ↓
+MngChatBot → Otomatik re-indexing
+  ↓
+Yeni bilgiler chat bot'a dahil edildi
+```
+
+#### Sistem Gereksinimleri:
+
+**Minimum (turkcell-llm-7b-v1 + nomic-embed-text):**
+- RAM: 12GB (Ollama için ~10GB + sistem)
+- CPU: 4 core
+- Disk: 15GB (modeller için)
+
+**Önerilen:**
+- RAM: 16GB+
+- CPU: 8 core+
+- Disk: 20GB+
+- GPU: Opsiyonel (NVIDIA GPU varsa çok daha hızlı)
+
+#### Avantajlar:
+
+1. ✅ **Tamamen Ücretsiz:** Tüm bileşenler açık kaynak
+2. ✅ **Self-Hosted:** Veri gizliliği, tam kontrol
+3. ✅ **Air-Gapped Uyumlu:** İnternet bağlantısı gerekmez
+4. ✅ **Türkçe Destekli:** Türkçe öncelikli modeller
+5. ✅ **RAG ile Doğruluk:** Dokümantasyonlara dayalı yanıtlar
+6. ✅ **Function Calling:** Gerçek veri işlemleri (CRUD, query)
+7. ✅ **Akıllı Tool Kullanımı:** LLM hangi tool'u kullanacağına karar verir
+8. ✅ **Multi-step Operations:** Birden fazla tool'u sırayla kullanabilir
+9. ✅ **Real-time:** Streaming responses
+10. ✅ **Multi-tenant:** Domain izolasyonu
+11. ✅ **Ölçeklenebilir:** Qdrant ve Ollama ölçeklenebilir
+
+#### Air-Gapped (Offline) Deployment:
+
+**✅ TAMAMEN OFFLINE ÇALIŞABİLİR**
+
+**Gereksinimler:**
+1. **Docker Image'ları:** Tüm image'lar offline ortama taşınabilir
+2. **Ollama Modelleri:** Önceden indirilip volume olarak taşınabilir
+3. **Qdrant:** Tamamen offline çalışır
+4. **MngDataGateway:** Zaten offline çalışıyor
+
+**Kurulum Adımları (Offline Ortam):**
+
+**1. Online Ortamda Hazırlık:**
+```bash
+# 1. Docker image'ları export et
+docker save qdrant/qdrant:latest -o qdrant.tar
+docker save ollama/ollama:latest -o ollama.tar
+docker save localhost:5000/mngchatbot:1.0.0 -o mngchatbot.tar
+
+# 2. Ollama modellerini indir ve export et
+docker run -d --name ollama-temp ollama/ollama:latest
+docker exec ollama-temp ollama pull refinedneuro/turkcell-llm-7b-v1
+docker exec ollama-temp ollama pull nomic-embed-text
+
+# Model dosyalarını volume'dan kopyala
+docker cp ollama-temp:/root/.ollama ./ollama-models
+tar -czf ollama-models.tar.gz ollama-models/
+
+# 3. Tüm dosyaları offline ortama taşı
+# qdrant.tar, ollama.tar, mngchatbot.tar, ollama-models.tar.gz
+```
+
+**2. Offline Ortamda Kurulum:**
+```bash
+# 1. Docker image'ları import et
+docker load -i qdrant.tar
+docker load -i ollama.tar
+docker load -i mngchatbot.tar
+
+# 2. Ollama modellerini yükle
+tar -xzf ollama-models.tar.gz
+# Volume mount ile modelleri kullan
+```
+
+**3. Docker Compose (Offline):**
+```yaml
+# mng_common/docker-compose.yml
+qdrant:
+  image: qdrant/qdrant:latest  # Local image
+  volumes:
+    - qdrant_data:/qdrant/storage
+  # Internet gerekmez
+
+ollama:
+  image: ollama/ollama:latest  # Local image
+  volumes:
+    - ./ollama-models:/root/.ollama  # Pre-downloaded models
+    - ollama_data:/root/.ollama
+  # Internet gerekmez - modeller zaten volume'da
+```
+
+**4. Model Pre-loading (Opsiyonel - Dockerfile'da):**
+```dockerfile
+# MngChatBot için özel Dockerfile (modelleri içeren)
+FROM ollama/ollama:latest AS ollama-base
+
+# Modelleri image'a ekle (opsiyonel - büyük image olur)
+COPY ollama-models/ /root/.ollama/
+
+# Veya runtime'da volume mount kullan (önerilen)
+```
+
+**Avantajlar:**
+- ✅ **Tamamen Offline:** İnternet bağlantısı gerekmez
+- ✅ **Pre-loaded Models:** Modeller önceden indirilip taşınabilir
+- ✅ **Docker Image Export/Import:** Standart Docker komutları ile
+- ✅ **Volume Mount:** Modeller volume olarak taşınabilir (daha esnek)
+- ✅ **Air-Gapped Uyumlu:** Tüm bileşenler offline çalışır
+
+**Notlar:**
+- Modeller büyük dosyalar (7B model ~4-5GB), transfer süresi dikkate alınmalı
+- Volume mount yöntemi daha esnek (image güncellemelerinde modeller korunur)
+- Qdrant ve Ollama tamamen self-contained, external dependency yok
+
+#### Notlar:
+
+- **Model Seçimi:** Türkçe için `turkcell-llm-7b-v1` önerilir (5 milyar Türkçe token ile fine-tuned)
+- **Embedding Model:** `nomic-embed-text` multilingual ve hızlı
+- **Indexing:** Startup'ta otomatik, dokümantasyon güncellemelerinde manuel veya scheduled
+- **Performance:** GPU varsa çok daha hızlı, CPU ile de çalışır
+- **Offline:** ✅ Tamamen offline çalışabilir (air-gapped sistemler için uygun)
+- **API Gateway:** `/chat/*` route'u eklenecek
+- **Function Calling:** Ollama'da function calling desteği kontrol edilmeli (llama3.1+ modeller destekler)
+- **Tool Definitions:** MngDataGateway API endpoint'lerine göre dinamik tool tanımları oluşturulabilir
+- **Multi-step Operations:** LLM birden fazla tool'u sırayla kullanabilir (örn: önce publisher bul, sonra kitap ekle)
+- **Error Handling:** Tool execution hatalarında LLM'e hata mesajı verilir, kullanıcıya açıklama yapılır
+- **Security:** Tool execution'lar JWT token ile yapılır, domain izolasyonu korunur
+- **Air-Gapped Deployment:** Modeller önceden indirilip volume olarak taşınabilir, tamamen offline çalışır
+
+---
+
+### 9. MinIO Infrastructure Setup 📁 Altyapı Kurulumu
 
 **Not:** Bu bölüm MngStorage servisinin kullanacağı MinIO altyapısını kurar.
 
@@ -1625,6 +2618,10 @@ await _storageService.UploadFileAsync(
 | MngScheduler Servis (Dynamic Jobs) | 1-2 gün | 🟡 Orta |
 | MngScheduler Servis (API & Dashboard) | 1 gün | 🟢 Düşük |
 | MngDataGateway Servis | TBD | ⏳ Planlanıyor |
+| MngChatBot Servis (Docker Infrastructure) | 1 gün | 🟡 Orta |
+| MngChatBot Servis (Core Services & RAG) | 2-3 gün | 🟡 Orta |
+| MngChatBot Servis (Function Calling & Tool Use) | 2-3 gün | 🟡 Orta |
+| MngChatBot Servis (API & Integration) | 1-2 gün | 🟡 Orta |
 | MinIO Infrastructure Setup | 3-4 saat | 🟢 Düşük |
 
 ---
@@ -1678,6 +2675,26 @@ await _storageService.UploadFileAsync(
 13. **Bucket oluşturma:** ✅ CreateDomain event handler ile otomatik
 14. **Encapsulation:** ✅ MinIO'yu sadece MngStorage bilir
 
+### ✅ AI Chat Bot - KARARLAŞTIRILDI:
+1. **Mimari:** ✅ Ayrı mikroservis (MngChatBot)
+2. **AI Stack:** ✅ Self-hosted, ücretsiz (Qdrant + Ollama)
+3. **LLM Model:** ✅ refinedneuro/turkcell-llm-7b-v1 (Türkçe öncelikli)
+4. **Embedding Model:** ✅ nomic-embed-text (multilingual)
+5. **RAG:** ✅ Retrieval Augmented Generation (dokümantasyon tabanlı)
+6. **Function Calling:** ✅ Tool Use (MngDataGateway API entegrasyonu)
+7. **Vector Database:** ✅ Qdrant (self-hosted)
+8. **Real-time:** ✅ SignalR streaming (MngHub entegrasyonu)
+9. **Dokümantasyon:** ✅ MkDocs markdown dosyalarından otomatik indexleme
+10. **Veri İşlemleri:** ✅ Dataset query, CRUD operations (MngDataGateway)
+11. **Multi-tenant:** ✅ Domain bazlı context izolasyonu
+12. **Authentication:** ✅ JWT (KeyCloak)
+13. **Offline:** ✅ Tamamen offline çalışabilir (air-gapped uyumlu)
+14. **Türkçe Desteği:** ✅ Türkçe öncelikli modeller
+15. **API Gateway:** ✅ `/chat/*` route'u eklenecek
+16. **Session Management:** ✅ MongoDB'de chat geçmişi saklama
+17. **Tool Definitions:** ✅ MngDataGateway API'lerine göre dinamik tool tanımları
+18. **Multi-step Operations:** ✅ LLM birden fazla tool'u sırayla kullanabilir
+
 ---
 
 ## 📝 Notlar
@@ -1699,6 +2716,17 @@ await _storageService.UploadFileAsync(
 - CreateDomain event handler storage yapısını otomatik kuracak
 - Her domain'in dosyaları tamamen izole ve bağımsız (bucket-per-domain)
 - Scheduled jobs runtime'da eklenip düzenlenebilir (no deployment needed)
+- **MngChatBot servisi:** AI destekli dokümantasyon asistanı, RAG tabanlı, self-hosted ve ücretsiz
+- **Qdrant + Ollama:** Vector database ve LLM için tamamen self-hosted çözüm
+- **Türkçe modeller:** turkcell-llm-7b-v1 veya rn_tr_r1 ile Türkçe öncelikli yanıtlar
+- **RAG ile doğruluk:** Dokümantasyonlardan bilgi çekerek doğru yanıtlar üretir
+- **Function Calling:** LLM gerçek veri işlemleri yapabilir (query, create, update, delete)
+- **Tool Use örnekleri:** "Yayıncıların listesini getir" → query_dataset tool, "Kitap ekle" → create_data tool
+- **Multi-step operations:** LLM birden fazla tool'u sırayla kullanabilir (örn: önce publisher bul, sonra kitap ekle)
+- **Real-time streaming:** SignalR ile token-by-token yanıt gösterimi
+- **Air-gapped uyumlu:** Tamamen offline çalışabilir, internet bağlantısı gerekmez
+- **Dokümantasyon indexleme:** MkDocs markdown dosyalarından otomatik vector embedding oluşturma
+- **MngDataGateway entegrasyonu:** Chat bot MngDataGateway API'lerini kullanarak gerçek veri işlemleri yapar
 
 **Yeni session'da bu roadmap'e göre ilerleriz!**
 

@@ -1,6 +1,9 @@
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
-  const keeperUrl = config.public.keeperUrl || 'https://localhost:5001';
+  // Use gateway URL if available, otherwise use direct keeper URL
+  const keeperUrl = config.public.gatewayUrl 
+    ? `${config.public.gatewayUrl}/keeper`
+    : (config.public.keeperUrl || 'https://localhost:5001');
   
   // Get the path from the route
   const path = getRouterParam(event, 'path') || '';

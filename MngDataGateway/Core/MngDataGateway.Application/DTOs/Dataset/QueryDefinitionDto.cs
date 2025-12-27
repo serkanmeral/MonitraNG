@@ -23,8 +23,9 @@ public class QueryDefinitionDto
     public List<object>? Pipeline { get; set; }
 
     /// <summary>
-    /// Query parameters
+    /// Query parameters (with type definitions)
+    /// Supports both new format (List<QueryParameterDefinitionDto>) and legacy format (List<string>)
     /// </summary>
-    public List<string>? Parameters { get; set; }
+    public object? Parameters { get; set; }
 }
 

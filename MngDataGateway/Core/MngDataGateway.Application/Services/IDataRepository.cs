@@ -58,20 +58,21 @@ namespace MngDataGateway.Application.Services
             IClientSessionHandle? session = null);
 
         /// <summary>
-        /// Soft delete document
+        /// Hard delete document and archive to __deletedDatas
         /// </summary>
-        Task<bool> SoftDeleteAsync(
+        Task<bool> HardDeleteAndArchiveAsync(
             string databaseName,
             string collectionName,
             string dataId,
             string userId,
             string userEmail,
+            DateTime expireAt,
             string? ipAddress = null);
 
         /// <summary>
-        /// Restore soft-deleted document
+        /// Restore deleted document from __deletedDatas
         /// </summary>
-        Task<bool> RestoreAsync(
+        Task<bool> RestoreFromArchiveAsync(
             string databaseName,
             string collectionName,
             string dataId,

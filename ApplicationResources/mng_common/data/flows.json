@@ -1405,5 +1405,89 @@
         "x": 810,
         "y": 220,
         "wires": []
+    },
+    {
+        "id": "f57943630e2726b1",
+        "type": "http in",
+        "z": "mnghub-signalr",
+        "name": "",
+        "url": "/dg_validasyontest",
+        "method": "post",
+        "upload": false,
+        "skipBodyParsing": false,
+        "swaggerDoc": "",
+        "x": 250,
+        "y": 360,
+        "wires": [
+            [
+                "7eeafcccf1522e64",
+                "af0f938f6f11dd8e"
+            ]
+        ]
+    },
+    {
+        "id": "af0f938f6f11dd8e",
+        "type": "debug",
+        "z": "mnghub-signalr",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 560,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "7eeafcccf1522e64",
+        "type": "function",
+        "z": "mnghub-signalr",
+        "name": "function 1",
+        "func": "let valid = msg.payload.price > 50\n\nlet mms = valid?'':'Price 50 den küçük olamaz'\n\nmsg.payload = {\n    \"isValid\":valid,\n    \"errorMessage\":mms\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 360,
+        "wires": [
+            [
+                "409dd6d858f490b2",
+                "26a25369ef194e65"
+            ]
+        ]
+    },
+    {
+        "id": "409dd6d858f490b2",
+        "type": "http response",
+        "z": "mnghub-signalr",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 690,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "26a25369ef194e65",
+        "type": "debug",
+        "z": "mnghub-signalr",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 760,
+        "y": 500,
+        "wires": []
     }
 ]

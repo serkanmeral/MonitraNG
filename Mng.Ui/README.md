@@ -34,15 +34,35 @@ pnpm install
 
 Proje root dizininde `.env` dosyası oluşturun:
 
-```env
-# MngKeeper API URL (Zorunlu)
-KEEPER_URL=https://localhost:5001
+#### Gateway Kullanımı (Önerilen - Production için)
 
-# MngReactor/MngDataGateway API URL (Opsiyonel)
-SERVER_URL=https://localhost:5011
+```env
+# API Gateway URL (Tüm servisler için merkezi erişim)
+GATEWAY_URL=https://localhost:5040
+
+# Not: Gateway kullanıldığında diğer URL'ler kullanılmaz
 ```
 
-**Not:** `.env` dosyası `.gitignore` içinde olduğu için commit edilmez. `.env.example` dosyasını referans olarak kullanabilirsiniz.
+#### Direkt Servis Erişimi (Development için)
+
+```env
+# MngKeeper API URL
+KEEPER_URL=https://localhost:5001
+
+# MngDataGateway API URL
+DATAGATEWAY_URL=https://localhost:5010
+# veya eski isim (geriye dönük uyumluluk)
+SERVER_URL=https://localhost:5010
+
+# MngHub API URL (SignalR için)
+HUB_URL=http://localhost:5020
+```
+
+**Önemli Notlar:**
+- `GATEWAY_URL` tanımlı ise, diğer URL'ler (`KEEPER_URL`, `DATAGATEWAY_URL`, `HUB_URL`) göz ardı edilir
+- Gateway kullanımı production için önerilir (merkezi yönetim, SSL termination, rate limiting)
+- Development için direkt servis erişimi de mümkündür
+- `.env` dosyası `.gitignore` içinde olduğu için commit edilmez
 
 ### 3. Development Server
 
@@ -107,8 +127,21 @@ Detaylı geliştirme planı için: [docs/RoadMap.md](docs/RoadMap.md)
 
 ## 🔗 Backend API'ler
 
-### MngKeeper API
-- **Base URL:** `KEEPER_URL` environment variable'dan alınır
+### API Gateway Kullanımı (Önerilen)
+
+Tüm backend servislere API Gateway üzerinden erişilir:
+
+- **Gateway URL:** `GATEWAY_URL` environment variable'dan alınır (örn: `https://localhost:5040`)
+- **Keeper Endpoints:** `{GATEWAY_URL}/keeper/api/*`
+- **DataGateway Endpoints:** `{GATEWAY_URL}/data/api/*`
+- **Hub Endpoints:** `{GATEWAY_URL}/hub/ws/*` (SignalR WebSocket)
+
+### Direkt Servis Erişimi (Development)
+
+Gateway kullanılmadığında, her servis için ayrı URL tanımlanabilir:
+
+#### MngKeeper API
+- **Base URL:** `KEEPER_URL` environment variable'dan alınır (varsayılan: `https://localhost:5001`)
 - **Endpoints:**
   - `POST /api/auth/token` - Login
   - `POST /api/auth/refresh` - Token yenileme
@@ -117,12 +150,18 @@ Detaylı geliştirme planı için: [docs/RoadMap.md](docs/RoadMap.md)
   - `GET /api/user` - User listesi
   - `GET /api/group` - Group listesi
 
-### MngDataGateway API
-- **Base URL:** `SERVER_URL` environment variable'dan alınır
+#### MngDataGateway API
+- **Base URL:** `DATAGATEWAY_URL` veya `SERVER_URL` environment variable'dan alınır (varsayılan: `https://localhost:5010`)
 - **Endpoints:**
   - `GET /api/datasets` - Dataset listesi
   - `POST /api/datasets` - Dataset oluşturma
   - `GET /api/data/{datasetName}` - Data listesi
+
+#### MngHub API (SignalR)
+- **Base URL:** `HUB_URL` environment variable'dan alınır (varsayılan: `http://localhost:5020`)
+- **Endpoints:**
+  - `GET /ws` - SignalR WebSocket connection
+  - `GET /health` - Health check
 
 ## 🐛 Troubleshooting
 

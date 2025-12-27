@@ -41,8 +41,11 @@ public static class Extensions
     {
         builder.Services.AddEndpointsApiExplorer();
 
+        // Get OpenAPI Server Path from configuration
+        var openApiServerPath = builder.Configuration["MngKeeperSettings:OpenApiServerPath"];
+
         // Add Swagger Configuration (uses existing SwaggerConfiguration)
-        builder.Services.AddSwaggerConfiguration();
+        builder.Services.AddSwaggerConfiguration(openApiServerPath);
     }
 
     //public static void InitWebApp(this WebApplicationBuilder builder, X509Certificate2? certificate)

@@ -7,7 +7,7 @@ namespace MngKeeper.Api.Configuration
 {
     public static class SwaggerConfiguration
     {
-        public static IServiceCollection AddSwaggerConfiguration(this IServiceCollection services)
+        public static IServiceCollection AddSwaggerConfiguration(this IServiceCollection services, string? openApiServerPath = null)
         {
             services.AddSwaggerGen(c =>
             {
@@ -58,6 +58,16 @@ namespace MngKeeper.Api.Configuration
                         Url = new Uri("https://opensource.org/licenses/MIT")
                     }
                 });
+
+                // Configure Server URL from settings
+                if (!string.IsNullOrEmpty(openApiServerPath))
+                {
+                    c.AddServer(new OpenApiServer
+                    {
+                        Url = openApiServerPath,
+                        Description = "API Gateway Server"
+                    });
+                }
 
                 // Add JWT Authentication
                 c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme

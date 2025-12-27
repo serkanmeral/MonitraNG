@@ -100,9 +100,12 @@ const connectToHub = async () => {
       throw new Error('Access token bulunamadı. Lütfen tekrar giriş yapın.');
     }
 
-    const hubUrl = config.public.hubUrl || 'http://localhost:5020';
+    // Use gateway URL if available, otherwise use direct hub URL
+    const hubBaseUrl = config.public.gatewayUrl 
+      ? `${config.public.gatewayUrl}/hub`
+      : (config.public.hubUrl || 'http://localhost:5020');
     // Use query string for token (more compatible with SignalR negotiation)
-    const connectionUrl = `${hubUrl}/ws?access_token=${encodeURIComponent(token)}`;
+    const connectionUrl = `${hubBaseUrl}/ws?access_token=${encodeURIComponent(token)}`;
 
     const hubConnection = new HubConnectionBuilder()
       .withUrl(connectionUrl, {

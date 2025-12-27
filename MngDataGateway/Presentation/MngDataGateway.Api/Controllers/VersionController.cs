@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using System.Reflection;
 
@@ -7,7 +8,8 @@ namespace MngDataGateway.Api.Controllers;
 /// Version information controller
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[ApiVersion(1.0)]
+[Route("api/v{version:apiVersion}/[controller]")]
 public class VersionController : ControllerBase
 {
     /// <summary>

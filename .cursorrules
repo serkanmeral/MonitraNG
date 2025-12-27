@@ -1,0 +1,217 @@
+# MonitraNG Project Working Rules
+# Bu dosya her AI chat session'ında otomatik olarak okunur ve uygulanır.
+
+## Proje Kısaltmaları (Abbreviations)
+
+Aşağıdaki kısaltmaları kullanırken tam isimlerini kullan:
+
+- **DG** → `MngDataGateway` (veya `MngDataGateway/` dizini)
+- **BMS** → `MngDataGateway` (Building Management System için kullanılıyorsa)
+- **Keeper** → `MngKeeper` (veya `MngKeeper/` dizini)
+- **Engine** → `MngEngine` (veya `MngEngine/` dizini)
+- **Hub** → `MngHub` (veya `MngHub/` dizini)
+- **Reactor** → `MngReactor` (veya `MngReactor/` dizini)
+- **UI** → `Mng.Ui` (veya `Mng.Ui/` dizini)
+
+## Dil ve İletişim Kuralları
+
+1. **Yanıt Dili**: Tüm yanıtlar ve açıklamalar **Türkçe** olmalı (kullanıcı İngilizce sorarsa İngilizce cevap ver)
+2. **Kod Yorumları**: Kod içindeki yorumlar İngilizce olabilir (kod standardına uygun)
+3. **Değişken İsimleri**: İngilizce kullan (camelCase veya PascalCase standartlarına uygun)
+
+## Proje Yapısı ve Standartlar
+
+### DataGateway (MngDataGateway)
+- **Namespace Pattern**: `MngDataGateway.{Layer}.{Component}`
+- **Katmanlar**:
+  - `Core/MngDataGateway.Application` → Application layer (services, DTOs, interfaces)
+  - `Core/MngDataGateway.Domain` → Domain layer (entities, exceptions)
+  - `Infrastructure/MngDataGateway.Persistence` → Data access layer
+  - `Infrastructure/MngDataGateway.Infrastructure` → Infrastructure services
+  - `Presentation/MngDataGateway.Api` → API controllers
+
+### Test Dosyaları
+- **Test scriptleri organizasyonu**: 
+  - **KURAL**: Tüm test dosyaları `scripts/tests/{ServiceName}/` altında amaca uygun klasörler içinde organize edilir
+  - Test dosyaları **ASLA** projelerin kendi `tests/` klasöründe değil, **her zaman** root'taki `scripts/tests/` klasöründe
+  - Her servis için ayrı klasör: `scripts/tests/MngDataGateway/`, `scripts/tests/MngKeeper/`, `scripts/tests/MngHub/`, vb.
+  
+- **Test dosyası oluşturma kuralları**:
+  - Yeni bir test dosyası oluştururken:
+    1. Servis adını belirle (örn: MngDataGateway, MngKeeper)
+    2. Testin amacını belirle (validation, query, auth, dataset, vb.)
+    3. `scripts/tests/{ServiceName}/{Category}/` klasörüne koy
+    4. Klasör yoksa **otomatik olarak oluştur**
+  
+- **MngDataGateway test kategorileri** (örnek yapı):
+  - `auth/` → Token ile ilgili scriptler (get-token.ps1, load-token.ps1, vb.)
+  - `dataset/` → Dataset CRUD ve yönetim testleri
+  - `data/` → Data CRUD işlemleri testleri
+  - `validation/` → Validasyon testleri
+  - `query/` → Query ve sorgulama testleri
+  - `search/` → Arama testleri
+  - `filter/` → Filtreleme testleri
+  - `aggregate/` → Aggregate işlem testleri
+  - `export/` → Export işlem testleri
+  - `events/` → Event ve notification testleri
+  - `index/` → Index yönetimi testleri
+  - `persons/` → Person field type testleri
+  - `dataset-categories/` → Dataset kategori testleri
+  - `docs/` → Dokümantasyon ve genel test rehberleri
+  - `config/` → Test konfigürasyon scriptleri
+  
+- **Token kullanımı**:
+  - Test dosyalarında token almak için: `../auth/get-token.ps1` veya `../auth/load-token.ps1` kullan
+  - Token scriptleri: `scripts/tests/{ServiceName}/auth/get-token.ps1` ve `load-token.ps1`
+  - Relative path kullan: `Join-Path $scriptPath "..\auth\get-token.ps1"`
+  
+- **PowerShell test scriptleri**: `test-*.ps1` formatında
+
+### Dokümantasyon Dosyaları
+- **Dokümantasyon organizasyonu**: 
+  - **KURAL**: Tüm dokümantasyon dosyaları `docs/{ServiceName}/` altında amaca uygun klasörler içinde organize edilir
+  - Servislerin kendi klasörlerinde **SADECE** `README.md` ve `ROADMAP.md` (veya `RoadMap.md`) dosyaları bulunabilir
+  - Diğer tüm dokümantasyon dosyaları (API dokümantasyonu, mimari dokümantasyon, kurulum rehberleri, vb.) **ASLA** servis klasörlerinde değil, **her zaman** root'taki `docs/` klasöründe
+  - Her servis için ayrı klasör: `docs/MngDataGateway/`, `docs/MngKeeper/`, `docs/MngHub/`, vb.
+  
+- **Dokümantasyon dosyası oluşturma kuralları**:
+  - Yeni bir dokümantasyon dosyası oluştururken:
+    1. Servis adını belirle (örn: MngDataGateway, MngKeeper)
+    2. Dokümantasyonun amacını/kategorisini belirle (api, architecture, setup, guide, vb.)
+    3. `docs/{ServiceName}/{Category}/` klasörüne koy
+    4. Klasör yoksa **otomatik olarak oluştur**
+  
+- **Dokümantasyon kategorileri** (örnek yapı):
+  - `api/` → API endpoint dokümantasyonu, OpenAPI/Swagger dokümantasyonu
+  - `architecture/` → Mimari kararlar, sistem tasarımı, diyagramlar
+  - `setup/` → Kurulum rehberleri, konfigürasyon dokümantasyonu
+  - `guides/` → Kullanım rehberleri, öğreticiler
+  - `deployment/` → Deployment dokümantasyonu, CI/CD rehberleri
+  - `troubleshooting/` → Sorun giderme rehberleri
+  - `changelog/` → Değişiklik kayıtları, release notları
+  - `specs/` → Teknik spesifikasyonlar, detaylı açıklamalar
+  
+- **Servis klasörlerinde izin verilen dosyalar**:
+  - `README.md` → Servisin genel açıklaması, hızlı başlangıç
+  - `ROADMAP.md` veya `RoadMap.md` → Yol haritası, gelecek planlar
+  - Bu dosyalar dışında servis klasörlerinde dokümantasyon dosyası **OLMAZ**
+
+### Kod Standartları
+- **C#**: .NET 9.0, C# 12 features kullanılabilir
+- **PowerShell**: PowerShell 7+ uyumlu
+- **API**: RESTful API design principles
+- **Validation**: Field-level ve expression-based validation destekleniyor
+
+## Çalışma Prensipleri
+
+1. **Değişiklik Öncesi**: Önce ilgili dosyaları oku, mevcut yapıyı anla
+2. **Test Et**: Değişiklik yaptıktan sonra testleri çalıştır
+3. **Çalışma Oturumu Yönetimi**:
+   - **Kaydet**: Kullanıcı "kaydet", "kaydedelim", "durumu kaydet" veya benzeri bir talep yaptığında:
+     1. İlgili servisi belirle (hangi servis üzerinde çalışıldığını konteksten anla)
+     2. `docs/{ServiceName}/current_status.md` dosyasını oluştur veya güncelle
+     3. Dosyaya şu bilgileri yaz:
+        - **Son Çalışılan Konu**: Ne üzerinde çalışıldığı
+        - **Tamamlanan İşler**: Bu oturumda bitirilen görevler
+        - **Devam Eden İşler**: Yarıda kalan veya tamamlanmayan işler
+        - **Sonraki Adımlar**: Bir sonraki oturumda yapılması gerekenler
+        - **Önemli Notlar**: Hatırlanması gereken detaylar, kararlar, karşılaşılan sorunlar
+        - **Son Güncelleme**: Tarih ve kısa özet
+   - **Nerede Kalmıştık**: Kullanıcı "nerede kalmıştık", "nerede kaldık", "son durum" veya benzeri bir soru sorduğunda:
+     1. İlgili servisi belirle (eğer belirtilmemişse, mevcut klasör veya son çalışılan servisi kontrol et)
+     2. `docs/{ServiceName}/current_status.md` dosyasını oku
+     3. Dosya varsa, içeriğini analiz et ve kullanıcıya özetle
+     4. Dosya yoksa, son çalışmaları hatırlat (chat geçmişinden)
+     5. Son durumdan devam etmek için gerekli adımları öner
+   - **Dosya Konumu**: `docs/{ServiceName}/current_status.md` (örnek: `docs/MngDataGateway/current_status.md`)
+   - **Format**: Markdown formatında, başlıklar ve listeler kullanılarak yapılandırılmış olmalı
+
+4. **Commit Mesajları**: Conventional Commits formatı kullan
+   - `feat:` → Yeni özellik
+   - `fix:` → Hata düzeltme
+   - `refactor:` → Kod refactoring
+   - `test:` → Test ekleme/düzeltme
+   - `docs:` → Dokümantasyon
+
+4. **Dosya Değişiklikleri**: 
+   - Birden fazla dosya değişecekse, önce planla, sonra uygula
+   - Related changes aynı commit'te olmalı
+   - Breaking changes varsa belirt
+
+5. **Hata Ayıklama**: 
+   - Önce hatayı anla (log, exception mesajları)
+   - Test scriptleri ile reproduce et
+   - Fix sonrası testleri tekrar çalıştır
+
+## Özel Notlar
+
+### Token Yönetimi
+- Test scriptlerinde `get-token.ps1` kullanılmalı (MngKeeper'dan token almak için)
+- Token `$env:TEMP\serkan_token.txt` dosyasına kaydedilir
+
+### Validation Rules
+- Expression-based validation için aritmetik işlemler destekleniyor (örn: `price / pageCount <= 10`)
+- Field-level validation: min, max, minLength, maxLength, pattern, minDate, maxDate
+
+### MongoDB
+- Database isimleri: `monitra_{domain}_com` formatında (örn: `monitra_meral_com`)
+- Collection isimleri: Dataset name ile aynı
+- Incremental fields için counter collection: `@__counters`
+
+### Docker Çalıştırma
+- **Docker Run Komutu**: Kullanıcı bir servis için "docker run yap", "docker çalıştır" veya benzeri bir talep yaptığında:
+  1. **Servis Dockerfile'ını bul**: İlgili servisin `Presentation/{ServiceName}.Api/Dockerfile` dosyasını kontrol et
+  2. **Docker Build**: Servisin Docker image'ını build et (gerekli context ile)
+  3. **Docker Compose Güncelleme**: `ApplicationResources/mng_apps/docker-compose.yml` dosyasını güncelle:
+     - Servis için gerekli service tanımını ekle veya güncelle
+     - Build context'i servis klasörüne ayarla (örn: `context: ../../MngDataGateway`)
+     - Dockerfile path'ini belirt (örn: `dockerfile: Presentation/MngDataGateway.Api/Dockerfile`)
+     - Gerekli environment variable'ları ekle
+     - Port mapping'leri ayarla
+     - Network ayarlarını yap (genellikle `mng_common_mng_network` external network)
+     - Health check ekle (varsa)
+  4. **Docker Compose Run**: `ApplicationResources/mng_apps/` klasöründe `docker-compose up -d` komutunu çalıştır
+  5. **Gerekli Bağımlılıklar**: `mng_common` servislerinin çalıştığından emin ol (MongoDB, RabbitMQ, Redis, vb.)
+  
+- **Docker Compose Dosyası Konumu**: `ApplicationResources/mng_apps/docker-compose.yml`
+- **Build Context**: Servis klasörü (örn: `../../MngDataGateway`)
+- **Dockerfile Konumu**: `Presentation/{ServiceName}.Api/Dockerfile`
+
+## İletişim Kuralları
+
+1. **Kodlama/Implementasyon Politikası**:
+   - **ÖNEMLİ**: Kullanıcı açıkça kodlama/implementasyon talep etmedikçe kod değişikliği yapma
+   - Kullanıcı sadece konuşmak, tartışmak, karar vermek istiyorsa:
+     - Kod yazma, dosya değiştirme veya implementasyon yapma
+     - Sadece konuş, öner, tartış, açıkla
+     - Kullanıcı "kodla", "implement et", "ekle", "değiştir", "uygula" gibi açık talep verdiğinde kodlamaya geç
+   - Kullanıcının amacı belirsizse, önce sor: "Bu konuyu tartışmak mı istiyorsunuz, yoksa direkt implementasyona geçelim mi?"
+   - Kod örnekleri göstermek ile kod dosyası değiştirmek farklıdır: Örnek göstermek tartışma kapsamındadır, dosya değiştirmek implementasyondur
+
+2. **Sorular**: Belirsizlik varsa, önce sor, tahmin yapma
+3. **Açıklamalar**: Yaptığın değişiklikleri açıkça açıkla
+4. **Kod Örnekleri**: Kod gösterirken dosya yolu ve satır numaraları belirt
+5. **Hata Mesajları**: Hata varsa tam mesajı göster
+
+## Git Repository Yönetimi
+
+### GitHub + GitLab Dual Sync
+- **Yapılandırma**: Origin remote'u hem GitHub hem GitLab'a push yapacak şekilde yapılandırılmıştır
+- **Kullanım**: `git push origin <branch>` komutu otomatik olarak hem GitHub hem GitLab'a push yapar
+- **Remote URL'leri**:
+  - GitHub: `https://github.com/serkanmeral/MonitraNG.git`
+  - GitLab: `http://localhost/root/MonitraNG.git` (Personal Access Token ile)
+- **Not**: GitLab token'ı remote URL'de saklanmıştır, güvenlik için dikkatli olunmalıdır
+- **Yeni ortamda kurulum**: Eğer yeni bir ortamda çalışıyorsanız, dual sync yapılandırmasını yeniden yapın:
+  ```powershell
+  git remote set-url --add --push origin https://github.com/serkanmeral/MonitraNG.git
+  git remote set-url --add --push origin http://root:TOKEN@localhost/root/MonitraNG.git
+  ```
+
+## Dikkat Edilecek Noktalar
+
+- Test scriptleri çalıştırmadan önce API'nin çalıştığından emin ol
+- MongoDB ve RabbitMQ servislerinin çalıştığını kontrol et
+- SSL certificate validation hatalarını test scriptlerinde bypass ediyoruz (`-SkipCertificateCheck`)
+- Unique index'ler için test verilerinde duplicate key hatalarına dikkat et
+

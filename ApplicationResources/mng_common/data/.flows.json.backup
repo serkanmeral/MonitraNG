@@ -55,6 +55,12 @@
         "headers": []
     },
     {
+        "id": "b66d8db6577dd0f2",
+        "type": "websocket-listener",
+        "path": "ws://localhost:5020/ws?access_token=eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJXcVBnOTJSckpuMnY4MVpyOThrN1Z3NXIwQ3RvT2NINTBibnNtakE4cDlzIn0.eyJleHAiOjE3NjY0NTA1OTUsImlhdCI6MTc2NjQ1MDI5NSwianRpIjoiODNiNjcwNjItZWNjNi00M2E4LWI1NTYtY2Y4MWM1Y2M2ZmI2IiwiaXNzIjoiaHR0cDovL2tleWNsb2FrOjgwODAvcmVhbG1zL3Rlc3QtZG9tYWluLTIwMjUxMjIzMDMwOTAwIiwic3ViIjoiYTUyOWNjZWYtZTIzNi00YzI5LThkMzQtNTA1MjNmNWFjZDdkIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiYWRtaW4tY2xpIiwic2Vzc2lvbl9zdGF0ZSI6IjVhYWRmZjU0LTNlOGEtNGUzMS05N2UwLTUyZTUzZDgzOWQxYSIsImFjciI6IjEiLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsib2ZmbGluZV9hY2Nlc3MiXX0sInNjb3BlIjoib2ZmbGluZV9hY2Nlc3MgZW1haWwgcHJvZmlsZSIsInNpZCI6IjVhYWRmZjU0LTNlOGEtNGUzMS05N2UwLTUyZTUzZDgzOWQxYSIsImRvbWFpbl9pZCI6IjY5NDlkZDljOTE1N2IzNzUxZWIzMWQ3YSIsImRvbWFpbl9uYW1lIjoidGVzdC1kb21haW4tMjAyNTEyMjMwMzA5MDAiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibmFtZSI6IkFkbWluIHRlc3QtZG9tYWluLTIwMjUxMjIzMDMwOTAwIiwiaXNBZG1pbiI6dHJ1ZSwicHJlZmVycmVkX3VzZXJuYW1lIjoidGVzdC1kb21haW4tMjAyNTEyMjMwMzA5MDBfYWRtaW4iLCJnaXZlbl9uYW1lIjoiQWRtaW4iLCJmYW1pbHlfbmFtZSI6InRlc3QtZG9tYWluLTIwMjUxMjIzMDMwOTAwIiwiZW1haWwiOiJhZG1pbkB0ZXN0LmNvbSIsInVzZXJfZ3JvdXBzIjpbImFkbWlucyJdfQ.xOwPJEdoG-jBcUaGOfKvgy_mu9HQibPVLpab-GVGVEXVeGyzDbifBL8T5yOEje9KTvwYTsCXVuzmatTxUGFOgQanjNTP4CQybtuK1TYuuKI0HcevX5zUP6hEEPMtunrqT2g2TIDOk_IfkTBYnN07tHYuQp1mRT5th6q8d1PXiGTNxFEyHketyfbjtvHmVwya5pp7KGm_0OwJH2_cP_KMIESxha13PYcQjLI3gJoFWc7oYy75Yh25rTdLfs772vFu_zGsQOWokpjxC-L56rzPsr8KhRgD7MBkjhazA3HJadu-dX4kmEqxaxeQtRWaHhlOXVLA6MytM0IihY9Vk29rqQ",
+        "wholemsg": "false"
+    },
+    {
         "id": "21ddd27ac0518c54",
         "type": "comment",
         "z": "94662e6f9bbc9767",
@@ -1398,6 +1404,90 @@
         "statusType": "auto",
         "x": 810,
         "y": 220,
+        "wires": []
+    },
+    {
+        "id": "f57943630e2726b1",
+        "type": "http in",
+        "z": "mnghub-signalr",
+        "name": "",
+        "url": "/dg_validasyontest",
+        "method": "post",
+        "upload": false,
+        "skipBodyParsing": false,
+        "swaggerDoc": "",
+        "x": 250,
+        "y": 360,
+        "wires": [
+            [
+                "7eeafcccf1522e64",
+                "af0f938f6f11dd8e"
+            ]
+        ]
+    },
+    {
+        "id": "af0f938f6f11dd8e",
+        "type": "debug",
+        "z": "mnghub-signalr",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 560,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "7eeafcccf1522e64",
+        "type": "function",
+        "z": "mnghub-signalr",
+        "name": "function 1",
+        "func": "let valid = msg.payload.price > 50\n\nlet mms = valid?'':'Price 50 den küçük olamaz'\n\nmsg.payload = {\n    \"isValid\":valid,\n    \"errorMessage\":mms\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 360,
+        "wires": [
+            [
+                "409dd6d858f490b2",
+                "26a25369ef194e65"
+            ]
+        ]
+    },
+    {
+        "id": "409dd6d858f490b2",
+        "type": "http response",
+        "z": "mnghub-signalr",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 690,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "26a25369ef194e65",
+        "type": "debug",
+        "z": "mnghub-signalr",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 760,
+        "y": 500,
         "wires": []
     }
 ]

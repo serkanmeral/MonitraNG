@@ -43,6 +43,16 @@ namespace MngDataGateway.Application.Services
             Dictionary<string, object> data,
             string databaseName,
             string? excludeDataId = null);
+
+        /// <summary>
+        /// Validate field-level validation rules (min/max, regex, range, etc.)
+        /// </summary>
+        ValidationResult ValidateFieldLevelRules(DatasetSchema schema, Dictionary<string, object> data);
+
+        /// <summary>
+        /// Validate expression-based validation rules
+        /// </summary>
+        ValidationResult ValidateExpressions(DatasetSchema schema, Dictionary<string, object> data, bool isUpdate);
     }
 }
 

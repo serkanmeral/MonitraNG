@@ -39,11 +39,5 @@ public class GroupSync : BaseEntity
     /// </summary>
     [BsonElement("__syncInfo")]
     public SyncInfo SyncInfo { get; set; } = new();
-
-    /// <summary>
-    /// Soft delete flag
-    /// </summary>
-    [BsonElement("__isDeleted")]
-    public bool IsDeleted { get; set; } = false;
 }
 

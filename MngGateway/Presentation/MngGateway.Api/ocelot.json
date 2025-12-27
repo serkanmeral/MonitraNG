@@ -1,0 +1,144 @@
+{
+  "Routes": [
+    {
+      "DownstreamPathTemplate": "/api/auth/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngkeeper",
+          "Port": 5001
+        }
+      ],
+      "DangerousAcceptAnyServerCertificateValidator": true,
+      "UpstreamPathTemplate": "/keeper/api/auth/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
+      "RateLimitOptions": {
+        "ClientWhitelist": [],
+        "EnableRateLimiting": true,
+        "Period": "1m",
+        "PeriodTimespan": 60,
+        "Limit": 30
+      },
+      "Priority": 2
+    },
+    {
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngkeeper",
+          "Port": 5001
+        }
+      ],
+      "DangerousAcceptAnyServerCertificateValidator": true,
+      "UpstreamPathTemplate": "/keeper/api/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
+      // Authentication handled by MngKeeper, not Gateway
+      "RateLimitOptions": {
+        "ClientWhitelist": [],
+        "EnableRateLimiting": true,
+        "Period": "1m",
+        "PeriodTimespan": 60,
+        "Limit": 100
+      },
+      "Priority": 1
+    },
+    {
+      "DownstreamPathTemplate": "/api/v1/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngdatagateway",
+          "Port": 5010
+        }
+      ],
+      "DangerousAcceptAnyServerCertificateValidator": true,
+      "UpstreamPathTemplate": "/data/api/v1/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
+      // Authentication handled by MngDataGateway, not Gateway
+      "RateLimitOptions": {
+        "EnableRateLimiting": true,
+        "Period": "1m",
+        "Limit": 100
+      },
+      "Priority": 1
+    },
+    {
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngdatagateway",
+          "Port": 5010
+        }
+      ],
+      "DangerousAcceptAnyServerCertificateValidator": true,
+      "UpstreamPathTemplate": "/data/api/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
+      // Authentication handled by MngDataGateway, not Gateway
+      "RateLimitOptions": {
+        "EnableRateLimiting": true,
+        "Period": "1m",
+        "Limit": 100
+      },
+      "Priority": 0
+    },
+    {
+      "DownstreamPathTemplate": "/ws/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mnghub",
+          "Port": 5020
+        }
+      ],
+      "UpstreamPathTemplate": "/hub/ws/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "Priority": 1
+    },
+    {
+      "DownstreamPathTemplate": "/health",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mnghub",
+          "Port": 5020
+        }
+      ],
+      "UpstreamPathTemplate": "/hub/health",
+      "UpstreamHttpMethod": [ "GET" ],
+      "Priority": 1
+    },
+    {
+      "DownstreamPathTemplate": "/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "keycloak",
+          "Port": 8080
+        }
+      ],
+      "UpstreamPathTemplate": "/auth/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "RateLimitOptions": {
+        "EnableRateLimiting": true,
+        "Period": "1m",
+        "Limit": 30
+      },
+      "Priority": 0
+    }
+  ],
+  "GlobalConfiguration": {
+    "BaseUrl": "https://api.monitra.local",
+    "RateLimitOptions": {
+      "DisableRateLimitHeaders": false,
+      "QuotaExceededMessage": "API rate limit exceeded. Please try again later.",
+      "HttpStatusCode": 429,
+      "ClientIdHeader": "X-ClientId"
+    }
+  }
+}
+

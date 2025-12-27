@@ -1,5 +1,7 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MngDataGateway.Api.Helpers;
 using MngDataGateway.Application.DTOs.Common;
 using MngDataGateway.Application.DTOs.Dataset;
 using MngDataGateway.Application.Services;
@@ -7,7 +9,8 @@ using MngDataGateway.Application.Services;
 namespace MngDataGateway.Api.Controllers;
 
 [ApiController]
-[Route("api/datasets")]
+[ApiVersion(1.0)]
+[Route("api/v{version:apiVersion}/datasets")]
 [Authorize]
 [Produces("application/json")]
 public class DatasetsController : ControllerBase
@@ -49,13 +52,11 @@ public class DatasetsController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Failed to create dataset: {Message}", ex.Message);
-            return BadRequest(new { error = ex.Message });
+            return this.ErrorResponse($"/api/v1/datasets", "INVALID_OPERATION", ex.Message);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating dataset schema");
-            return StatusCode(500, new { error = "Dataset oluşturulurken hata oluştu", details = ex.Message });
+            return this.HandleError(ex, "/api/v1/datasets", "CREATE_DATASET_FAILED", "Dataset oluşturulurken hata oluştu", _logger);
         }
     }
 
@@ -82,8 +83,7 @@ public class DatasetsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error listing datasets");
-            return StatusCode(500, new { error = "Datasets listelenirken hata oluştu", details = ex.Message });
+            return this.HandleError(ex, "/api/v1/datasets", "LIST_DATASETS_FAILED", "Datasets listelenirken hata oluştu", _logger);
         }
     }
 
@@ -104,8 +104,7 @@ public class DatasetsController : ControllerBase
 
             if (result == null)
             {
-                _logger.LogWarning("Dataset not found: {Name}", name);
-                return NotFound(new { error = "Dataset bulunamadı" });
+                return this.ErrorResponse($"/api/v1/datasets/{name}", "DATASET_NOT_FOUND", "Dataset bulunamadı", statusCode: 404);
             }
 
             _logger.LogInformation("Retrieved dataset: {Name}", name);
@@ -113,8 +112,7 @@ public class DatasetsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting dataset: {Name}", name);
-            return StatusCode(500, new { error = "Dataset getirilirken hata oluştu", details = ex.Message });
+            return this.HandleError(ex, $"/api/v1/datasets/{name}", "GET_DATASET_FAILED", "Dataset getirilirken hata oluştu", _logger);
         }
     }
 
@@ -141,19 +139,16 @@ public class DatasetsController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Failed to update dataset {Name}: {Message}", name, ex.Message);
-            
+            var path = $"/api/v1/datasets/{name}";
             if (ex.Message.Contains("bulunamadı"))
             {
-                return NotFound(new { error = ex.Message });
+                return this.ErrorResponse(path, "DATASET_NOT_FOUND", ex.Message, statusCode: 404);
             }
-            
-            return BadRequest(new { error = ex.Message });
+            return this.ErrorResponse(path, "INVALID_OPERATION", ex.Message);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating dataset: {Name}", name);
-            return StatusCode(500, new { error = "Dataset güncellenirken hata oluştu", details = ex.Message });
+            return this.HandleError(ex, $"/api/v1/datasets/{name}", "UPDATE_DATASET_FAILED", "Dataset güncellenirken hata oluştu", _logger);
         }
     }
 
@@ -178,8 +173,7 @@ public class DatasetsController : ControllerBase
 
             if (!result)
             {
-                _logger.LogWarning("Dataset not found for deletion: {Name}", name);
-                return NotFound(new { error = "Dataset bulunamadı" });
+                return this.ErrorResponse($"/api/v1/datasets/{name}", "DATASET_NOT_FOUND", "Dataset bulunamadı", statusCode: 404);
             }
 
             _logger.LogInformation("Dataset deleted: {Name} (collection NOT deleted)", name);
@@ -187,8 +181,7 @@ public class DatasetsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting dataset: {Name}", name);
-            return StatusCode(500, new { error = "Dataset silinirken hata oluştu", details = ex.Message });
+            return this.HandleError(ex, $"/api/v1/datasets/{name}", "DELETE_DATASET_FAILED", "Dataset silinirken hata oluştu", _logger);
         }
     }
 
@@ -214,19 +207,16 @@ public class DatasetsController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogWarning(ex, "Failed to restore dataset {Name}: {Message}", name, ex.Message);
-            
+            var path = $"/api/v1/datasets/{name}/restore";
             if (ex.Message.Contains("bulunamadı"))
             {
-                return NotFound(new { error = ex.Message });
+                return this.ErrorResponse(path, "DATASET_NOT_FOUND", ex.Message, statusCode: 404);
             }
-            
-            return BadRequest(new { error = ex.Message });
+            return this.ErrorResponse(path, "INVALID_OPERATION", ex.Message);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error restoring dataset: {Name}", name);
-            return StatusCode(500, new { error = "Dataset geri yüklenirken hata oluştu", details = ex.Message });
+            return this.HandleError(ex, $"/api/v1/datasets/{name}/restore", "RESTORE_DATASET_FAILED", "Dataset geri yüklenirken hata oluştu", _logger);
         }
     }
 }

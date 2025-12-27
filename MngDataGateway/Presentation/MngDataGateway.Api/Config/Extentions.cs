@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Diagnostics;
+﻿using Asp.Versioning.ApiExplorer;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.Extensions.Options;
 using MngDataGateway.Application.Configuration;
 using Scalar.AspNetCore;
 using Serilog;
@@ -37,27 +39,16 @@ namespace MngDataGateway.Api.Config
         public static void InitOpenApi(this WebApplicationBuilder builder)
         {
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen(c =>
+            
+            // Swagger configuration with API versioning support
+            builder.Services.AddSwaggerGen(options =>
             {
-                c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
-                {
-                    Title = "MngDataGateway API",
-                    Version = "v1.0.0",
-                    Description = "Dynamic Data Gateway for MongoDB with schema management",
-                    Contact = new Microsoft.OpenApi.Models.OpenApiContact
-                    {
-                        Name = "iSIM Platform",
-                        Email = "serkan.meral@isimplatform.io"
-                    }
-                });
-
-                var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-                if (File.Exists(xmlPath))
-                {
-                    c.IncludeXmlComments(xmlPath);
-                }
+                // Use ApiExplorer to discover versioned APIs
+                options.CustomSchemaIds(type => type.FullName);
             });
+            
+            // Register Swagger configure options for API versioning
+            builder.Services.AddTransient<IConfigureOptions<Swashbuckle.AspNetCore.SwaggerGen.SwaggerGenOptions>, SwaggerConfigureOptions>();
         }
 
     public static void InitWebAPP(this WebApplicationBuilder builder, X509Certificate2 certificate)
@@ -193,7 +184,9 @@ namespace MngDataGateway.Api.Config
 
             //if (app.Environment.IsDevelopment())
             {
-                // Swagger with custom route
+                var apiVersionDescriptionProvider = app.Services.GetRequiredService<Asp.Versioning.ApiExplorer.IApiVersionDescriptionProvider>();
+                
+                // Swagger with custom route and API versioning support
                 app.UseSwagger(c =>
                 {
                     c.RouteTemplate = "api-docs/{documentName}/swagger.json";
@@ -201,7 +194,14 @@ namespace MngDataGateway.Api.Config
                 
                 app.UseSwaggerUI(c =>
                 {
-                    c.SwaggerEndpoint("/api-docs/v1/swagger.json", "MngDataGateway API v1");
+                    // Add Swagger UI endpoints for each API version
+                    foreach (var description in apiVersionDescriptionProvider.ApiVersionDescriptions.OrderByDescending(d => d.ApiVersion))
+                    {
+                        c.SwaggerEndpoint(
+                            $"/api-docs/{description.GroupName}/swagger.json",
+                            $"MngDataGateway API {description.GroupName.ToUpperInvariant()}");
+                    }
+                    
                     c.RoutePrefix = "swagger";
                     c.DocumentTitle = "MngDataGateway API Documentation";
                     c.DisplayRequestDuration();

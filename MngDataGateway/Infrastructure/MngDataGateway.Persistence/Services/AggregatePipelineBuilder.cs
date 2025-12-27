@@ -89,6 +89,79 @@ namespace MngDataGateway.Persistence.Services
         }
 
         /// <summary>
+        /// Add search filter stage ($match) for text search across searchable fields
+        /// Searches in main text fields and relation text fields (pre-expansion)
+        /// </summary>
+        /// <param name="searchTerm">Search term to match in text fields</param>
+        /// <param name="relationSearchIds">Dictionary of relation field names to matching IDs (from pre-expansion search)</param>
+        public AggregatePipelineBuilder AddSearch(
+            string? searchTerm,
+            Dictionary<string, List<BsonValue>>? relationSearchIds = null)
+        {
+            if (string.IsNullOrWhiteSpace(searchTerm) && (relationSearchIds == null || relationSearchIds.Count == 0))
+            {
+                return this;
+            }
+
+            _logger.LogDebug("Adding search filter for term: {SearchTerm}", searchTerm);
+
+            var orConditions = new BsonArray();
+
+            // 1. Search in main collection text fields
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                // Escape special regex characters in search term
+                var escapedTerm = System.Text.RegularExpressions.Regex.Escape(searchTerm);
+                var regexPattern = new BsonRegularExpression(escapedTerm, "i"); // case-insensitive
+
+                var textFields = _schema.fields
+                    .Where(f => f.fieldType == "text" && !f.name.StartsWith("__"))
+                    .ToList();
+
+                foreach (var field in textFields)
+                {
+                    orConditions.Add(new BsonDocument(field.name, regexPattern));
+                }
+            }
+
+            // 2. Search in relation fields using pre-collected IDs
+            if (relationSearchIds != null && relationSearchIds.Count > 0)
+            {
+                var relationFields = _schema.fields
+                    .Where(f => f.fieldType == "relation" && !string.IsNullOrEmpty(f.relationDataset))
+                    .ToList();
+
+                foreach (var relationField in relationFields)
+                {
+                    if (relationSearchIds.TryGetValue(relationField.name, out var matchingIds) && matchingIds.Count > 0)
+                    {
+                        // Add condition: relationField.name IN matchingIds
+                        orConditions.Add(new BsonDocument(
+                            relationField.name,
+                            new BsonDocument("$in", new BsonArray(matchingIds))));
+                        
+                        _logger.LogDebug(
+                            "Added relation field search condition for {FieldName} with {Count} matching IDs",
+                            relationField.name, matchingIds.Count);
+                    }
+                }
+            }
+
+            if (orConditions.Count > 0)
+            {
+                var searchMatch = new BsonDocument("$match", new BsonDocument("$or", orConditions));
+                _pipeline.Add(searchMatch);
+                _logger.LogDebug("Added search $match stage with {Count} conditions", orConditions.Count);
+            }
+            else
+            {
+                _logger.LogWarning("No searchable fields found in schema for dataset {DatasetName}", _schema.name);
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Add relation expansion stages ($lookup)
         /// </summary>
         public AggregatePipelineBuilder AddRelationExpansion(
@@ -133,6 +206,12 @@ namespace MngDataGateway.Persistence.Services
                     {
                         _pipeline.Add(lookupStage);
                         _logger.LogDebug("Added $lookup stage for relation field: {FieldName} -> {RelationDataset}", 
+                            field.name, field.relationDataset);
+                    }
+                    // If lookupStage is null, it means stages were already added (for single fields with unwrap)
+                    else if (!field.isArray)
+                    {
+                        _logger.LogDebug("Added $lookup stage(s) with unwrap for single relation field: {FieldName} -> {RelationDataset}", 
                             field.name, field.relationDataset);
                     }
                 }
@@ -216,11 +295,14 @@ namespace MngDataGateway.Persistence.Services
             {
                 try
                 {
-                    var lookupStage = BuildPersonLookupStage(field);
-                    if (lookupStage != null)
+                    var stages = BuildPersonLookupStages(field);
+                    if (stages != null && stages.Count > 0)
                     {
-                        _pipeline.Add(lookupStage);
-                        _logger.LogDebug("Added $lookup stage for persons field: {FieldName} -> @users", field.name);
+                        foreach (var stage in stages)
+                        {
+                            _pipeline.Add(stage);
+                        }
+                        _logger.LogDebug("Added $lookup stage(s) for persons field: {FieldName} -> @users", field.name);
                     }
                 }
                 catch (Exception ex)
@@ -238,11 +320,14 @@ namespace MngDataGateway.Persistence.Services
             {
                 try
                 {
-                    var lookupStage = BuildPersonGroupLookupStage(field);
-                    if (lookupStage != null)
+                    var stages = BuildPersonGroupLookupStages(field);
+                    if (stages != null && stages.Count > 0)
                     {
-                        _pipeline.Add(lookupStage);
-                        _logger.LogDebug("Added $lookup stage for personGroups field: {FieldName} -> @groups", field.name);
+                        foreach (var stage in stages)
+                        {
+                            _pipeline.Add(stage);
+                        }
+                        _logger.LogDebug("Added $lookup stage(s) for personGroups field: {FieldName} -> @groups", field.name);
                     }
                 }
                 catch (Exception ex)
@@ -255,15 +340,18 @@ namespace MngDataGateway.Persistence.Services
         }
 
         /// <summary>
-        /// Build $lookup stage for persons field
+        /// Build $lookup stage(s) for persons field
+        /// Returns list of stages (for single fields, includes unwrap stages)
         /// </summary>
-        private BsonDocument? BuildPersonLookupStage(FieldDefinition field)
+        private List<BsonDocument>? BuildPersonLookupStages(FieldDefinition field)
         {
+            var stages = new List<BsonDocument>();
             BsonDocument lookup;
 
             if (field.isArray)
             {
                 // Array persons field - use pipeline with $in
+                // Handle null/undefined field values by checking if field exists and is array before using $in
                 lookup = new BsonDocument
                 {
                     ["from"] = "@users",
@@ -276,13 +364,33 @@ namespace MngDataGateway.Persistence.Services
                             {
                                 ["$expr"] = new BsonDocument
                                 {
-                                    ["$in"] = new BsonArray
+                                    ["$and"] = new BsonArray
                                     {
-                                        "$__dataId",
-                                        $"$${field.name}"
+                                        // Check if field exists and is not null
+                                        new BsonDocument
+                                        {
+                                            ["$ne"] = new BsonArray
+                                            {
+                                                $"$${field.name}",
+                                                BsonNull.Value
+                                            }
+                                        },
+                                        // Check if field is array
+                                        new BsonDocument
+                                        {
+                                            ["$isArray"] = $"$${field.name}"
+                                        },
+                                        // Then check if __dataId is in array (this also ensures array is not empty)
+                                        new BsonDocument
+                                        {
+                                            ["$in"] = new BsonArray
+                                            {
+                                                "$__dataId",
+                                                $"$${field.name}"
+                                            }
+                                        }
                                     }
-                                },
-                                ["__isDeleted"] = new BsonDocument("$ne", true)
+                                }
                             }
                         },
                         new BsonDocument
@@ -290,58 +398,93 @@ namespace MngDataGateway.Persistence.Services
                             ["$project"] = new BsonDocument
                             {
                                 ["_id"] = 0,
-                                ["__isDeleted"] = 0,
-                                ["__history"] = 0
+                                ["__dataId"] = 1,
+                                ["username"] = 1,
+                                ["email"] = 1,
+                                ["firstName"] = 1,
+                                ["lastName"] = 1,
+                                ["title"] = 1,
+                                ["isActive"] = 1
                             }
                         }
                     },
                     ["as"] = field.name
                 };
+                
+                stages.Add(new BsonDocument("$lookup", lookup));
             }
             else
             {
-                // Single person field - use simple lookup with pipeline for soft delete filter
+                // Single person field - use lookup, then unwrap array to single object
+                // MongoDB $lookup always returns an array, so we need to unwrap it for single fields
                 lookup = new BsonDocument
                 {
                     ["from"] = "@users",
                     ["localField"] = field.name,
                     ["foreignField"] = "__dataId",
-                    ["as"] = field.name,
+                    ["as"] = $"{field.name}_lookup",  // Temporary name
                     ["pipeline"] = new BsonArray
                     {
-                        new BsonDocument
-                        {
-                            ["$match"] = new BsonDocument
-                            {
-                                ["__isDeleted"] = new BsonDocument("$ne", true)
-                            }
-                        },
                         new BsonDocument
                         {
                             ["$project"] = new BsonDocument
                             {
                                 ["_id"] = 0,
-                                ["__isDeleted"] = 0,
-                                ["__history"] = 0
+                                ["__dataId"] = 1,
+                                ["username"] = 1,
+                                ["email"] = 1,
+                                ["firstName"] = 1,
+                                ["lastName"] = 1,
+                                ["title"] = 1,
+                                ["isActive"] = 1
                             }
                         }
                     }
                 };
+                
+                stages.Add(new BsonDocument("$lookup", lookup));
+                
+                // Add $addFields stage to unwrap array to single object (or null if not found)
+                var unwrapStage = new BsonDocument
+                {
+                    ["$addFields"] = new BsonDocument
+                    {
+                        [field.name] = new BsonDocument
+                        {
+                            ["$arrayElemAt"] = new BsonArray
+                            {
+                                $"${field.name}_lookup",
+                                0
+                            }
+                        }
+                    }
+                };
+                stages.Add(unwrapStage);
+                
+                // Add $unset to remove temporary lookup field
+                var unsetStage = new BsonDocument
+                {
+                    ["$unset"] = $"{field.name}_lookup"
+                };
+                stages.Add(unsetStage);
             }
 
-            return new BsonDocument("$lookup", lookup);
+            return stages;
         }
 
         /// <summary>
-        /// Build $lookup stage for personGroups field
+        /// Build $lookup stage(s) for personGroups field
+        /// Returns list of stages (for single fields, includes unwrap stages)
         /// </summary>
-        private BsonDocument? BuildPersonGroupLookupStage(FieldDefinition field)
+        private List<BsonDocument>? BuildPersonGroupLookupStages(FieldDefinition field)
         {
+            var stages = new List<BsonDocument>();
             BsonDocument lookup;
 
             if (field.isArray)
             {
                 // Array personGroups field - use pipeline with $in
+                // Handle null/undefined field values by checking if field exists and is array before using $in
                 lookup = new BsonDocument
                 {
                     ["from"] = "@groups",
@@ -354,13 +497,33 @@ namespace MngDataGateway.Persistence.Services
                             {
                                 ["$expr"] = new BsonDocument
                                 {
-                                    ["$in"] = new BsonArray
+                                    ["$and"] = new BsonArray
                                     {
-                                        "$__dataId",
-                                        $"$${field.name}"
+                                        // Check if field exists and is not null
+                                        new BsonDocument
+                                        {
+                                            ["$ne"] = new BsonArray
+                                            {
+                                                $"$${field.name}",
+                                                BsonNull.Value
+                                            }
+                                        },
+                                        // Check if field is array
+                                        new BsonDocument
+                                        {
+                                            ["$isArray"] = $"$${field.name}"
+                                        },
+                                        // Then check if __dataId is in array (this also ensures array is not empty)
+                                        new BsonDocument
+                                        {
+                                            ["$in"] = new BsonArray
+                                            {
+                                                "$__dataId",
+                                                $"$${field.name}"
+                                            }
+                                        }
                                     }
-                                },
-                                ["__isDeleted"] = new BsonDocument("$ne", true)
+                                }
                             }
                         },
                         new BsonDocument
@@ -368,46 +531,70 @@ namespace MngDataGateway.Persistence.Services
                             ["$project"] = new BsonDocument
                             {
                                 ["_id"] = 0,
-                                ["__isDeleted"] = 0,
-                                ["__history"] = 0
+                                ["__dataId"] = 1,
+                                ["name"] = 1,
+                                ["description"] = 1
                             }
                         }
                     },
                     ["as"] = field.name
                 };
+                
+                stages.Add(new BsonDocument("$lookup", lookup));
             }
             else
             {
-                // Single personGroup field - use simple lookup with pipeline for soft delete filter
+                // Single personGroup field - use lookup, then unwrap array to single object
+                // MongoDB $lookup always returns an array, so we need to unwrap it for single fields
                 lookup = new BsonDocument
                 {
                     ["from"] = "@groups",
                     ["localField"] = field.name,
                     ["foreignField"] = "__dataId",
-                    ["as"] = field.name,
+                    ["as"] = $"{field.name}_lookup",  // Temporary name
                     ["pipeline"] = new BsonArray
                     {
-                        new BsonDocument
-                        {
-                            ["$match"] = new BsonDocument
-                            {
-                                ["__isDeleted"] = new BsonDocument("$ne", true)
-                            }
-                        },
                         new BsonDocument
                         {
                             ["$project"] = new BsonDocument
                             {
                                 ["_id"] = 0,
-                                ["__isDeleted"] = 0,
-                                ["__history"] = 0
+                                ["__dataId"] = 1,
+                                ["name"] = 1,
+                                ["description"] = 1
                             }
                         }
                     }
                 };
+                
+                stages.Add(new BsonDocument("$lookup", lookup));
+                
+                // Add $addFields stage to unwrap array to single object (or null if not found)
+                var unwrapStage = new BsonDocument
+                {
+                    ["$addFields"] = new BsonDocument
+                    {
+                        [field.name] = new BsonDocument
+                        {
+                            ["$arrayElemAt"] = new BsonArray
+                            {
+                                $"${field.name}_lookup",
+                                0
+                            }
+                        }
+                    }
+                };
+                stages.Add(unwrapStage);
+                
+                // Add $unset to remove temporary lookup field
+                var unsetStage = new BsonDocument
+                {
+                    ["$unset"] = $"{field.name}_lookup"
+                };
+                stages.Add(unsetStage);
             }
 
-            return new BsonDocument("$lookup", lookup);
+            return stages;
         }
 
         /// <summary>
@@ -444,6 +631,7 @@ namespace MngDataGateway.Persistence.Services
             // For array relations, use pipeline with $in
             if (field.isArray)
             {
+                // Handle null/undefined field values by checking if field exists and is array before using $in
                 lookup = new BsonDocument
                 {
                     ["from"] = field.relationDataset,
@@ -456,10 +644,30 @@ namespace MngDataGateway.Persistence.Services
                             {
                                 ["$expr"] = new BsonDocument
                                 {
-                                    ["$in"] = new BsonArray
+                                    ["$and"] = new BsonArray
                                     {
-                                        "$__dataId",
-                                        $"$${field.name}"
+                                        // Check if field exists and is array
+                                        new BsonDocument
+                                        {
+                                            ["$ne"] = new BsonArray
+                                            {
+                                                $"$${field.name}",
+                                                BsonNull.Value
+                                            }
+                                        },
+                                        new BsonDocument
+                                        {
+                                            ["$isArray"] = $"$${field.name}"
+                                        },
+                                        // Then check if __dataId is in array (this also ensures array is not empty)
+                                        new BsonDocument
+                                        {
+                                            ["$in"] = new BsonArray
+                                            {
+                                                "$__dataId",
+                                                $"$${field.name}"
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -468,8 +676,7 @@ namespace MngDataGateway.Persistence.Services
                         {
                             ["$project"] = new BsonDocument
                             {
-                                ["_id"] = 0,
-                                ["__isDeleted"] = 0
+                                ["_id"] = 0
                             }
                         }
                     },
@@ -479,16 +686,64 @@ namespace MngDataGateway.Persistence.Services
             else
             {
                 // Simple lookup for non-array relations
+                // Use pipeline to exclude _id field, then unwrap array to single object
+                // MongoDB $lookup always returns an array, so we need to unwrap it for single fields
                 lookup = new BsonDocument
                 {
                     ["from"] = field.relationDataset,
                     ["localField"] = field.name,
                     ["foreignField"] = "__dataId",
-                    ["as"] = field.name
+                    ["as"] = $"{field.name}_lookup",  // Temporary name
+                    ["pipeline"] = new BsonArray
+                    {
+                        new BsonDocument
+                        {
+                            ["$project"] = new BsonDocument
+                            {
+                                ["_id"] = 0
+                            }
+                        }
+                    }
                 };
             }
 
-            return new BsonDocument("$lookup", lookup);
+            var lookupStage = new BsonDocument("$lookup", lookup);
+            
+            // For single fields, unwrap the array result to a single object
+            if (!field.isArray)
+            {
+                // Add $addFields stage to unwrap array to single object (or null if not found)
+                var unwrapStage = new BsonDocument
+                {
+                    ["$addFields"] = new BsonDocument
+                    {
+                        [field.name] = new BsonDocument
+                        {
+                            ["$arrayElemAt"] = new BsonArray
+                            {
+                                $"${field.name}_lookup",
+                                0
+                            }
+                        }
+                    }
+                };
+                
+                // Add $unset to remove temporary lookup field
+                var unsetStage = new BsonDocument
+                {
+                    ["$unset"] = $"{field.name}_lookup"
+                };
+                
+                // Return lookup + unwrap + unset stages as a list
+                // We'll add them separately to the pipeline
+                _pipeline.Add(lookupStage);
+                _pipeline.Add(unwrapStage);
+                _pipeline.Add(unsetStage);
+                
+                return null; // Return null because we already added stages
+            }
+            
+            return lookupStage;
         }
     }
 }

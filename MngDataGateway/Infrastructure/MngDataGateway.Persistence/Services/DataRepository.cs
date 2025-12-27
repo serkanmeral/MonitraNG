@@ -93,20 +93,7 @@ namespace MngDataGateway.Persistence.Services
             var database = _mongoClient.GetDatabase(databaseName);
             var collection = database.GetCollection<BsonDocument>(collectionName);
 
-            var filterBuilder = Builders<BsonDocument>.Filter;
-            var filter = filterBuilder.Eq("__dataId", dataId);
-
-            // Exclude soft-deleted unless requested
-            if (!includeDeleted)
-            {
-                filter = filterBuilder.And(
-                    filter,
-                    filterBuilder.Or(
-                        filterBuilder.Eq("__isDeleted", false),
-                        filterBuilder.Exists("__isDeleted", false)
-                    )
-                );
-            }
+            var filter = Builders<BsonDocument>.Filter.Eq("__dataId", dataId);
 
             return await collection.Find(filter).FirstOrDefaultAsync();
         }
@@ -121,17 +108,8 @@ namespace MngDataGateway.Persistence.Services
             var database = _mongoClient.GetDatabase(databaseName);
             var collection = database.GetCollection<BsonDocument>(collectionName);
 
-            var filterBuilder = Builders<BsonDocument>.Filter;
-            FilterDefinition<BsonDocument> filter = filterBuilder.Empty;
-
-            // Exclude soft-deleted unless requested
-            if (!includeDeleted)
-            {
-                filter = filterBuilder.Or(
-                    filterBuilder.Eq("__isDeleted", false),
-                    filterBuilder.Exists("__isDeleted", false)
-                );
-            }
+            // No soft-delete filter needed - hard delete means data is physically removed
+            FilterDefinition<BsonDocument> filter = Builders<BsonDocument>.Filter.Empty;
 
             // Get total count
             var totalCount = await collection.CountDocumentsAsync(filter);
@@ -160,14 +138,7 @@ namespace MngDataGateway.Persistence.Services
             var database = _mongoClient.GetDatabase(databaseName);
             var collection = database.GetCollection<BsonDocument>(collectionName);
 
-            var filterBuilder = Builders<BsonDocument>.Filter;
-            var filter = filterBuilder.And(
-                filterBuilder.Eq("__dataId", dataId),
-                filterBuilder.Or(
-                    filterBuilder.Eq("__isDeleted", false),
-                    filterBuilder.Exists("__isDeleted", false)
-                )
-            );
+            var filter = Builders<BsonDocument>.Filter.Eq("__dataId", dataId);
 
             var updateBuilder = Builders<BsonDocument>.Update;
             var updateDefinitions = updates.Select(kvp =>
@@ -192,48 +163,65 @@ namespace MngDataGateway.Persistence.Services
             return result.MatchedCount > 0;
         }
 
-        public async Task<bool> SoftDeleteAsync(
+        public async Task<bool> HardDeleteAndArchiveAsync(
             string databaseName,
             string collectionName,
             string dataId,
             string userId,
             string userEmail,
+            DateTime expireAt,
             string? ipAddress = null)
         {
             var database = _mongoClient.GetDatabase(databaseName);
             var collection = database.GetCollection<BsonDocument>(collectionName);
+            var deletedCollection = database.GetCollection<BsonDocument>("__deletedDatas");
 
-            var filterBuilder = Builders<BsonDocument>.Filter;
-            var filter = filterBuilder.And(
-                filterBuilder.Eq("__dataId", dataId),
-                filterBuilder.Or(
-                    filterBuilder.Eq("__isDeleted", false),
-                    filterBuilder.Exists("__isDeleted", false)
-                )
-            );
+            // Find document to delete
+            var filter = Builders<BsonDocument>.Filter.Eq("__dataId", dataId);
+            var document = await collection.Find(filter).FirstOrDefaultAsync();
 
-            var deleteInfo = new BsonDocument
+            if (document == null)
+            {
+                _logger.LogWarning(
+                    "Document __dataId: {DataId} not found in {Database}.{Collection}",
+                    dataId, databaseName, collectionName);
+                return false;
+            }
+
+            var now = DateTime.UtcNow;
+            var deletionInfo = new BsonDocument
             {
                 { "userId", userId },
                 { "userEmail", userEmail },
-                { "timestamp", DateTime.UtcNow },
+                { "timestamp", now },
                 { "ipAddress", string.IsNullOrEmpty(ipAddress) ? BsonNull.Value : (BsonValue)ipAddress }
             };
 
-            var update = Builders<BsonDocument>.Update
-                .Set("__isDeleted", true)
-                .Set("__deleteInfo", deleteInfo);
+            // Archive to __deletedDatas
+            var archivedData = new BsonDocument
+            {
+                ["originalCollection"] = collectionName,
+                ["deletedData"] = document,
+                ["deletionInfo"] = deletionInfo,
+                ["expireAt"] = expireAt
+            };
 
-            var result = await collection.UpdateOneAsync(filter, update);
+            await deletedCollection.InsertOneAsync(archivedData);
+
+            // Ensure TTL index exists on __deletedDatas
+            await EnsureTTLIndexAsync(database, "__deletedDatas");
+
+            // Hard delete from main collection
+            var deleteResult = await collection.DeleteOneAsync(filter);
 
             _logger.LogInformation(
-                "Soft-deleted document __dataId: {DataId} in {Database}.{Collection} by user {UserId}",
-                dataId, databaseName, collectionName, userId);
+                "Hard-deleted and archived document __dataId: {DataId} from {Database}.{Collection} by user {UserId} (expires at {ExpireAt})",
+                dataId, databaseName, collectionName, userId, expireAt);
 
-            return result.MatchedCount > 0;
+            return deleteResult.DeletedCount > 0;
         }
 
-        public async Task<bool> RestoreAsync(
+        public async Task<bool> RestoreFromArchiveAsync(
             string databaseName,
             string collectionName,
             string dataId,
@@ -243,13 +231,38 @@ namespace MngDataGateway.Persistence.Services
         {
             var database = _mongoClient.GetDatabase(databaseName);
             var collection = database.GetCollection<BsonDocument>(collectionName);
+            var deletedCollection = database.GetCollection<BsonDocument>("__deletedDatas");
 
-            var filterBuilder = Builders<BsonDocument>.Filter;
-            var filter = filterBuilder.And(
-                filterBuilder.Eq("__dataId", dataId),
-                filterBuilder.Eq("__isDeleted", true)
+            // Find in __deletedDatas
+            var filter = Builders<BsonDocument>.Filter.And(
+                Builders<BsonDocument>.Filter.Eq("originalCollection", collectionName),
+                Builders<BsonDocument>.Filter.Eq("deletedData.__dataId", dataId)
             );
 
+            var archivedDoc = await deletedCollection.Find(filter).FirstOrDefaultAsync();
+            if (archivedDoc == null)
+            {
+                _logger.LogWarning(
+                    "Archived document __dataId: {DataId} not found in {Database}.__deletedDatas",
+                    dataId, databaseName);
+                return false;
+            }
+
+            // Check if already exists in main collection
+            var existsFilter = Builders<BsonDocument>.Filter.Eq("__dataId", dataId);
+            var exists = await collection.Find(existsFilter).AnyAsync();
+            if (exists)
+            {
+                _logger.LogWarning(
+                    "Document __dataId: {DataId} already exists in {Database}.{Collection}",
+                    dataId, databaseName, collectionName);
+                return false;
+            }
+
+            // Restore document
+            var restoredDocument = archivedDoc["deletedData"].AsBsonDocument;
+
+            // Add restore info
             var restoreInfo = new BsonDocument
             {
                 { "userId", userId },
@@ -257,18 +270,62 @@ namespace MngDataGateway.Persistence.Services
                 { "timestamp", DateTime.UtcNow },
                 { "ipAddress", string.IsNullOrEmpty(ipAddress) ? BsonNull.Value : (BsonValue)ipAddress }
             };
+            restoredDocument["__restoreInfo"] = restoreInfo;
 
-            var update = Builders<BsonDocument>.Update
-                .Set("__isDeleted", false)
-                .Set("__restoreInfo", restoreInfo);
+            // Insert back to main collection
+            await collection.InsertOneAsync(restoredDocument);
 
-            var result = await collection.UpdateOneAsync(filter, update);
+            // Remove from __deletedDatas
+            await deletedCollection.DeleteOneAsync(filter);
 
             _logger.LogInformation(
-                "Restored document __dataId: {DataId} in {Database}.{Collection} by user {UserId}",
+                "Restored document __dataId: {DataId} from archive to {Database}.{Collection} by user {UserId}",
                 dataId, databaseName, collectionName, userId);
 
-            return result.MatchedCount > 0;
+            return true;
+        }
+
+        /// <summary>
+        /// Ensure TTL index exists on __deletedDatas collection for expireAt field
+        /// </summary>
+        private async Task EnsureTTLIndexAsync(IMongoDatabase database, string collectionName)
+        {
+            try
+            {
+                var collection = database.GetCollection<BsonDocument>(collectionName);
+                var indexes = await collection.Indexes.ListAsync();
+                var indexList = await indexes.ToListAsync();
+
+                // Check if TTL index already exists
+                var hasTTLIndex = indexList.Any(idx =>
+                {
+                    var keys = idx["key"].AsBsonDocument;
+                    return keys.Contains("expireAt");
+                });
+
+                if (!hasTTLIndex)
+                {
+                    var indexKeys = Builders<BsonDocument>.IndexKeys.Ascending("expireAt");
+                    var indexOptions = new CreateIndexOptions
+                    {
+                        ExpireAfter = TimeSpan.Zero, // MongoDB will use expireAt field value directly
+                        Name = "idx_expireAt_ttl"
+                    };
+
+                    var indexModel = new CreateIndexModel<BsonDocument>(indexKeys, indexOptions);
+                    await collection.Indexes.CreateOneAsync(indexModel);
+
+                    _logger.LogInformation(
+                        "Created TTL index on {CollectionName}.expireAt",
+                        collectionName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "Failed to ensure TTL index on {CollectionName} (may already exist)",
+                    collectionName);
+            }
         }
 
         public async Task<IClientSessionHandle> StartSessionAsync()

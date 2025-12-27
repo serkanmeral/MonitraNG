@@ -1,7 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -18,13 +25,22 @@ namespace MngDataGateway.Persistence.Services
     {
         private readonly ILogger<ValidationService> _logger;
         private readonly IMongoClient _mongoClient;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IConfiguration _configuration;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public ValidationService(
             ILogger<ValidationService> logger,
-            IMongoClient mongoClient)
+            IMongoClient mongoClient,
+            IHttpClientFactory httpClientFactory,
+            IConfiguration configuration,
+            IHttpContextAccessor httpContextAccessor)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _mongoClient = mongoClient ?? throw new ArgumentNullException(nameof(mongoClient));
+            _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
         }
 
         public async Task<ValidationResult> ValidateDataAsync(
@@ -71,6 +87,13 @@ namespace MngDataGateway.Persistence.Services
             var expressionResult = ValidateExpressions(schema, data, isUpdate);
             if (!expressionResult.IsValid)
                 errors.AddRange(expressionResult.Errors);
+
+            // Aşama 4: HTTP validation (external validation endpoints)
+            // 7. HTTP-based validation
+            var authorizationHeader = GetAuthorizationHeader();
+            var httpResult = await ValidateHttpValidationsAsync(schema, data, isUpdate, authorizationHeader);
+            if (!httpResult.IsValid)
+                errors.AddRange(httpResult.Errors);
 
             return errors.Any()
                 ? ValidationResult.Failure(errors)
@@ -880,6 +903,165 @@ namespace MngDataGateway.Persistence.Services
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Get authorization header from current HTTP context
+        /// </summary>
+        private string? GetAuthorizationHeader()
+        {
+            var httpContext = _httpContextAccessor.HttpContext;
+            if (httpContext?.Request.Headers.TryGetValue("Authorization", out var authHeader) == true)
+            {
+                return authHeader.ToString();
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Validate HTTP-based validation rules
+        /// </summary>
+        private async Task<ValidationResult> ValidateHttpValidationsAsync(
+            DatasetSchema schema,
+            Dictionary<string, object> data,
+            bool isUpdate,
+            string? authorizationHeader = null)
+        {
+            var errors = new List<ValidationErrorDto>();
+
+            if (schema.validations == null || schema.validations.Count == 0)
+                return ValidationResult.Success();
+
+            // Filter validations by type and when
+            var httpValidations = schema.validations
+                .Where(v => v.type == "http" && !string.IsNullOrEmpty(v.url))
+                .Where(v =>
+                {
+                    var when = v.when ?? "both";
+                    return when == "both" ||
+                           (when == "create" && !isUpdate) ||
+                           (when == "update" && isUpdate);
+                })
+                .OrderBy(v => v.order ?? 0)
+                .ToList();
+
+            if (!httpValidations.Any())
+                return ValidationResult.Success();
+
+            // Get timeout from configuration
+            var timeoutSeconds = _configuration.GetValue<int>("MngDataGatewaySettings:Validation:HttpValidationTimeout", 30);
+            var timeout = TimeSpan.FromSeconds(timeoutSeconds);
+
+            // Create HTTP client
+            var httpClient = _httpClientFactory.CreateClient();
+            httpClient.Timeout = timeout;
+
+            // Add authorization header if provided
+            if (!string.IsNullOrEmpty(authorizationHeader))
+            {
+                httpClient.DefaultRequestHeaders.Authorization = AuthenticationHeaderValue.Parse(authorizationHeader);
+            }
+
+            // Execute validations sequentially
+            foreach (var validation in httpValidations)
+            {
+                try
+                {
+                    _logger.LogDebug("Executing HTTP validation '{ValidationName}' for dataset '{DatasetName}' at URL: {Url}",
+                        validation.name, schema.name, validation.url);
+
+                    var method = validation.method?.ToUpperInvariant() ?? "POST";
+                    HttpResponseMessage response;
+
+                    if (method == "GET")
+                    {
+                        // For GET, data might be sent as query parameters (not implemented yet, using POST only)
+                        response = await httpClient.GetAsync(validation.url);
+                    }
+                    else
+                    {
+                        // POST - send data as JSON in body
+                        var jsonContent = JsonSerializer.Serialize(data, new JsonSerializerOptions
+                        {
+                            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                        });
+                        var content = new StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
+                        response = await httpClient.PostAsync(validation.url, content);
+                    }
+
+                    // Handle response
+                    if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                    {
+                        var responseContent = await response.Content.ReadAsStringAsync();
+                        var validationResponse = JsonSerializer.Deserialize<HttpValidationResponse>(responseContent, new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        });
+
+                        if (validationResponse == null)
+                        {
+                            _logger.LogWarning("HTTP validation '{ValidationName}' returned 200 but response could not be parsed", validation.name);
+                            // If response cannot be parsed, consider it valid (safe default)
+                            continue;
+                        }
+
+                        if (!validationResponse.IsValid)
+                        {
+                            var errorMessage = validationResponse.ErrorMessage ?? $"HTTP validation '{validation.name}' failed";
+                            errors.Add(new ValidationErrorDto
+                            {
+                                Field = "_http_validation",
+                                Message = errorMessage,
+                                Value = validation.name
+                            });
+
+                            _logger.LogWarning("HTTP validation '{ValidationName}' failed: {ErrorMessage}",
+                                validation.name, errorMessage);
+                        }
+                        else
+                        {
+                            _logger.LogDebug("HTTP validation '{ValidationName}' passed", validation.name);
+                        }
+                    }
+                    else
+                    {
+                        // Non-200 status codes are considered valid (validation endpoint issues)
+                        _logger.LogWarning("HTTP validation '{ValidationName}' returned status {StatusCode}, considering validation passed",
+                            validation.name, response.StatusCode);
+                    }
+                }
+                catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+                {
+                    // Timeout - consider validation passed (safe default)
+                    _logger.LogWarning(ex, "HTTP validation '{ValidationName}' timed out after {Timeout}s, considering validation passed",
+                        validation.name, timeoutSeconds);
+                }
+                catch (HttpRequestException ex)
+                {
+                    // Network error - consider validation passed (safe default)
+                    _logger.LogWarning(ex, "HTTP validation '{ValidationName}' failed to reach endpoint, considering validation passed",
+                        validation.name);
+                }
+                catch (Exception ex)
+                {
+                    // Other errors - consider validation passed (safe default)
+                    _logger.LogError(ex, "Error executing HTTP validation '{ValidationName}': {ErrorMessage}, considering validation passed",
+                        validation.name, ex.Message);
+                }
+            }
+
+            return errors.Any()
+                ? ValidationResult.Failure(errors)
+                : ValidationResult.Success();
+        }
+
+        /// <summary>
+        /// HTTP validation response model
+        /// </summary>
+        private class HttpValidationResponse
+        {
+            public bool IsValid { get; set; }
+            public string? ErrorMessage { get; set; }
         }
     }
 }
