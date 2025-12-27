@@ -1,13 +1,13 @@
 # CI/CD Çalışma Durumu
 
 **Son Güncelleme:** 27 Aralık 2024  
-**Çalışma Oturumu:** GitLab Kurulumu ve CI/CD Pipeline Yapılandırması
+**Çalışma Oturumu:** GitLab Runner Sorun Giderme ve Pipeline İyileştirmeleri
 
 ---
 
 ## 🎯 Son Çalışılan Konu
 
-GitLab lokal kurulumu, repository yapılandırması ve CI/CD pipeline kurulumu.
+GitLab runner sorunlarının giderilmesi, pipeline iyileştirmeleri ve full commit/push işlemleri.
 
 ---
 
@@ -74,11 +74,11 @@ GitLab lokal kurulumu, repository yapılandırması ve CI/CD pipeline kurulumu.
 
 ## 🔄 Devam Eden İşler
 
-### MngDataGateway Build Sorunu
-- ✅ Visual Studio'da terminal penceresi kapanma sorunu düzeltildi (Program.cs'e exception handling eklendi)
-- ✅ API Gateway (MngGateway) durduruldu - Port çakışması çözüldü
-- ⏳ GitLab CI pipeline'da build-mngdatagateway job'u başarısız oluyor
-- ⏳ Runner'ın network/connectivity sorunları kontrol edilecek
+### Pipeline Optimizasyonu (Gelecek)
+- ⏳ Cache mekanizmasını optimize etme
+- ⏳ Build sürelerini azaltma
+- ⏳ Docker build job'larını ekleme
+- ⏳ Deployment pipeline'larını ekleme
 
 ---
 
@@ -117,12 +117,22 @@ GitLab lokal kurulumu, repository yapılandırması ve CI/CD pipeline kurulumu.
 - **Container Network:** `http://gitlab` (container içinden)
 - **Root Şifresi:** İlk kurulumda değiştirildi
 - **Runner Token:** `GR13489412RjqCx9gFWW9xx_R34GW` (proje runner token)
+- **Runner ID:** 2
+- **Runner Status:** ✅ Online ve çalışıyor
 
 ### Docker Container Durumu
 - **GitLab:** ✅ Çalışıyor (healthy)
-- **GitLab Runner:** ✅ Çalışıyor (is alive)
+- **GitLab Runner:** ✅ Çalışıyor (is alive, verify edildi)
 - **MngGateway (API Gateway):** ⚠️ Durduruldu (MngDataGateway ile port çakışması)
 - **MngDataGateway:** ✅ Çalışıyor (local, port 5010)
+
+### Runner Konfigürasyonu (Güncellendi)
+- **Privileged Mode:** ✅ Aktif
+- **Docker Socket:** ✅ Mount edildi
+- **Network Mode:** `mng_common_mng_network`
+- **Extra Hosts:** `gitlab:172.18.0.13`
+- **Shared Memory:** 256MB
+- **Pull Policy:** `if-not-present`
 
 ### Repository Yapılandırması
 - **GitLab Remote:** `gitlab` → `http://root:TOKEN@localhost/root/MonitraNG.git`
@@ -189,6 +199,17 @@ GitLab lokal kurulumu, repository yapılandırması ve CI/CD pipeline kurulumu.
 
 ---
 
-**Durum:** ⚠️ Pipeline build job'ları başarısız, runner connectivity sorunları var  
-**Sonraki Oturum:** GitLab runner network sorunlarını çözme ve pipeline'ı başarılı hale getirme
+**Durum:** ✅ Pipeline başarıyla çalışıyor - Tüm job'lar passed!  
+**Sonraki Oturum:** Pipeline optimizasyonu ve ek özellikler (Docker build, deployment, vb.)
+
+### Son Yapılan İşlemler (27 Aralık 2024)
+1. ✅ Pipeline'a detaylı logging ve error handling eklendi
+2. ✅ Build job'larına timeout (30m) ve retry mekanizması eklendi
+3. ✅ Tüm değişiklikler commit edildi ve push yapıldı (208 dosya)
+4. ✅ Runner yeniden kaydedildi (eski bozuk config.toml temizlendi)
+5. ✅ Runner konfigürasyonu iyileştirildi (privileged mode, volumes, network, shm_size)
+6. ✅ Runner verify edildi ve çalışıyor
+7. ✅ GitLab CI script syntax hataları düzeltildi (|| operatörleri kaldırıldı)
+8. ✅ Pages job'u için needs ve fallback build mekanizması eklendi
+9. ✅ **Pipeline başarıyla çalıştı - Tüm job'lar passed!** 🎉
 
