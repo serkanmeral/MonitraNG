@@ -241,6 +241,36 @@ services:
       retries: 5
       start_period: 60s
 
+  mngui:
+    build:
+      context: ../../Mng.Ui
+      dockerfile: Dockerfile
+    image: localhost:5000/mngui:1.0.0
+    container_name: mngui
+    ports:
+      - "3000:80"
+    environment:
+      # Individual service URLs (Browser'dan erişilebilir URL'ler kullanılmalı)
+      # Docker container içinde değil, browser'da çalıştığı için localhost kullanıyoruz
+      - KEEPER_URL=https://localhost:5001
+      - DATAGATEWAY_URL=https://localhost:5010
+      - HUB_URL=http://localhost:5020
+      # Gateway URL boş bırakılıyor (şimdilik direkt servisler kullanılıyor)
+      - GATEWAY_URL=
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngkeeper
+      - mngdatagateway
+      - mnghub
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
 networks:
   mng_common_mng_network:
     external: true

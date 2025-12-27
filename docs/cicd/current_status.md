@@ -1,13 +1,13 @@
 # CI/CD Çalışma Durumu
 
-**Son Güncelleme:** 27 Aralık 2024  
-**Çalışma Oturumu:** GitLab Runner Sorun Giderme ve Pipeline İyileştirmeleri
+**Son Güncelleme:** 30 Aralık 2024  
+**Çalışma Oturumu:** UI Dockerfile ve Deployment, CI/CD Pipeline Güncellemeleri
 
 ---
 
 ## 🎯 Son Çalışılan Konu
 
-GitLab runner sorunlarının giderilmesi, pipeline iyileştirmeleri ve full commit/push işlemleri.
+UI Dockerfile ve deployment yapılandırması, Nginx proxy ayarları, port numarası sorunlarının çözülmesi ve CI/CD pipeline güncellemeleri.
 
 ---
 
@@ -84,25 +84,32 @@ GitLab runner sorunlarının giderilmesi, pipeline iyileştirmeleri ve full comm
 
 ## 📋 Sonraki Adımlar
 
-### 1. Pipeline Testi ve Doğrulama
-- [ ] GitLab'ın tamamen başladığını kontrol et (2-3 dakika)
-- [ ] Pipeline'ı tekrar çalıştır (yeni push veya manual trigger)
-- [ ] `test-setup` job'unun başarılı olduğunu kontrol et
-- [ ] Build job'larının çalıştığını doğrula
-- [ ] Test job'larının sonuçlarını kontrol et
+### 1. UI Dockerfile ve Deployment (Tamamlandı ✅)
+- [x] UI Dockerfile oluşturuldu
+- [x] Nginx yapılandırması eklendi
+- [x] Docker Compose entegrasyonu yapıldı
+- [x] API proxy yapılandırıldı
+- [x] Port numarası sorunu çözüldü
 
-### 2. Pipeline İyileştirmeleri
+### 2. CI/CD Pipeline Güncellemeleri
+- [x] `build-frontend` job'u `npm run generate` kullanacak şekilde güncellendi
+- [ ] Pipeline'ı test et (yeni push veya manual trigger)
+- [ ] `build-docker-ui` job'unun başarılı olduğunu doğrula
+- [ ] Docker image'ın doğru şekilde build edildiğini kontrol et
+
+### 3. Pipeline İyileştirmeleri (Gelecek)
 - [ ] Build job'ları optimize et (cache kullanımı)
 - [ ] Test job'larını düzelt (varsa hatalar)
 - [ ] Artifact'leri optimize et
+- [ ] Docker image'ları registry'ye push etme (opsiyonel)
 
-### 3. Dokümantasyon Pipeline'ı
-- [ ] MkDocs build job'unu test et
-- [ ] GitLab Pages deployment'ı kontrol et
+### 4. Dokümantasyon Pipeline'ı
+- [x] MkDocs build job'u çalışıyor
+- [x] GitLab Pages deployment çalışıyor
 - [ ] Dokümantasyonun erişilebilir olduğunu doğrula
 
-### 4. CI/CD İyileştirmeleri (Gelecek)
-- [ ] Docker build job'ları ekle
+### 5. CI/CD İyileştirmeleri (Gelecek)
+- [ ] Backend servisler için Docker build job'ları ekle
 - [ ] SonarQube entegrasyonu (opsiyonel)
 - [ ] Deployment pipeline'ları (test/production)
 - [ ] Branch protection rules
@@ -200,9 +207,21 @@ GitLab runner sorunlarının giderilmesi, pipeline iyileştirmeleri ve full comm
 ---
 
 **Durum:** ✅ Pipeline başarıyla çalışıyor - Tüm job'lar passed!  
-**Sonraki Oturum:** Pipeline optimizasyonu ve ek özellikler (Docker build, deployment, vb.)
+**UI Dockerfile:** ✅ Tamamlandı ve Docker Compose'a entegre edildi  
+**Sonraki Oturum:** Pipeline testi ve Docker image build doğrulaması
 
-### Son Yapılan İşlemler (27 Aralık 2024)
+### Son Yapılan İşlemler (30 Aralık 2024)
+1. ✅ **UI Dockerfile eklendi** - Multi-stage build (Node.js build + Nginx serve)
+2. ✅ **Nginx yapılandırması** - SPA routing, API proxy, health check
+3. ✅ **Docker Compose entegrasyonu** - `mngui` servisi eklendi (dev ve production)
+4. ✅ **API proxy yapılandırması** - `/api/auth/` ve `/api/keeper/` route'ları backend'e proxy ediliyor
+5. ✅ **Frontend API route'ları güncellendi** - Nginx proxy üzerinden backend servislere bağlanıyor
+6. ✅ **Port numarası sorunu çözüldü** - Nginx redirect ayarları (`port_in_redirect off`, `absolute_redirect off`)
+7. ✅ **Nuxt baseURL yapılandırması** - Port numarasını korumak için ayarlandı
+8. ✅ **CI/CD pipeline güncellemesi** - `build-frontend` job'u `npm run generate` kullanacak şekilde güncellendi
+9. ✅ **Docker build job'u** - `build-docker-ui` job'u zaten mevcut ve çalışıyor
+
+### Önceki İşlemler (27 Aralık 2024)
 1. ✅ Pipeline'a detaylı logging ve error handling eklendi
 2. ✅ Build job'larına timeout (30m) ve retry mekanizması eklendi
 3. ✅ Tüm değişiklikler commit edildi ve push yapıldı (208 dosya)

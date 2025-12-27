@@ -25,7 +25,7 @@ export default defineNuxtConfig({
       gatewayUrl: process.env.GATEWAY_URL || '',
       // Individual service URLs (used if gatewayUrl is not set)
       keeperUrl: process.env.KEEPER_URL || 'https://localhost:5001',
-      reactorUrl: process.env.SERVER_URL || process.env.DATAGATEWAY_URL || 'https://localhost:5010',
+      reactorUrl: process.env.SERVER_URL || process.env.DATAGATEWAY_URL || process.env.REACTOR_URL || 'https://localhost:5010',
       hubUrl: process.env.HUB_URL || 'http://localhost:5020'
     }
   },
@@ -49,6 +49,10 @@ export default defineNuxtConfig({
       title:
         "Monitra NG",
     },
+    // Base URL ayarı (port numarasını korumak için)
+    // Not: Bu build time'da belirlenir, runtime'da değiştirilemez
+    // Port numarası browser'dan alınır, bu yüzden boş bırakıyoruz
+    baseURL: process.env.BASE_URL || '/',
   },
 
   nitro: {

@@ -37,7 +37,7 @@ export async function loginToMngKeeper(
   };
 
   try {
-    // Nuxt server-side API route kullan (SSL sertifika sorununu çözer)
+    // Nginx proxy üzerinden istek yap (SSL sertifika sorunu olmaz)
     const response = await $fetch<TokenResponse>('/api/auth/token', {
       method: 'POST',
       body: requestBody,
@@ -71,7 +71,7 @@ export async function refreshMngKeeperToken(
   domain: string
 ): Promise<TokenResponse> {
   try {
-    // Nuxt server-side API route kullan (SSL sertifika sorununu çözer)
+    // Nginx proxy üzerinden istek yap
     const response = await $fetch<TokenResponse>('/api/keeper/auth/refresh', {
       method: 'POST',
       body: {
@@ -107,7 +107,7 @@ export async function revokeMngKeeperToken(
   domain: string
 ): Promise<void> {
   try {
-    // Nuxt server-side API route kullan (SSL sertifika sorununu çözer)
+    // Nginx proxy üzerinden istek yap
     await $fetch('/api/keeper/auth/revoke', {
       method: 'POST',
       body: {
@@ -187,7 +187,6 @@ export function fetchFromMngKeeper(
         });
       }
       
-      // Use Nuxt server-side proxy to avoid SSL issues
       // DELETE işlemleri için 204 NoContent response'u handle et
       let response: any;
       
@@ -250,8 +249,9 @@ export function fetchFromMngKeeper(
             const token = getAccessToken();
             if (token) {
               const cleanUrl = url.startsWith('/') ? url.slice(1) : url;
+              const retryFullUrl = `/api/keeper/${cleanUrl}`;
               try {
-                const retryResponse = await $fetch(`/api/keeper/${cleanUrl}`, {
+                const retryResponse = await $fetch(retryFullUrl, {
                   method,
                   headers: {
                     Authorization: `Bearer ${token}`,

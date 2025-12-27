@@ -222,6 +222,43 @@ services:
           cpus: '0.25'
           memory: 256M
 
+  mngui:
+    build:
+      context: ../../Mng.Ui
+      dockerfile: Dockerfile
+    image: mngui:${VERSION:-latest}
+    container_name: mngui
+    ports:
+      - "${UI_PORT:-3000}:80"
+    environment:
+      # Individual service URLs (Gateway kullanılmıyor şimdilik)
+      - KEEPER_URL=${KEEPER_URL:-https://mngkeeper:5001}
+      - DATAGATEWAY_URL=${DATAGATEWAY_URL:-https://mngdatagateway:5010}
+      - HUB_URL=${HUB_URL:-http://mnghub:5020}
+      # Gateway URL boş bırakılıyor (şimdilik direkt servisler kullanılıyor)
+      - GATEWAY_URL=${GATEWAY_URL:-}
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngkeeper
+      - mngdatagateway
+      - mnghub
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
 networks:
   mng_common_mng_network:
     external: true

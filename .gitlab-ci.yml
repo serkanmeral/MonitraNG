@@ -166,13 +166,13 @@ build-frontend:
   script:
     - echo "Building Frontend (Mng.Ui)..."
     - cd Mng.Ui
-    - npm ci
-    - npm run build
+    - npm ci || npm install
+    - npm run generate
+    - echo "Frontend build completed successfully"
   artifacts:
     paths:
-      - Mng.Ui/.nuxt/
       - Mng.Ui/.output/
-      - Mng.Ui/dist/
+      - Mng.Ui/.nuxt/
     expire_in: 1 hour
   only:
     - main
@@ -235,16 +235,35 @@ test-mnghub:
     - merge_requests
 
 # ============================================
-# DOCKER BUILD STAGE (İleride)
+# DOCKER BUILD STAGE
 # ============================================
 
-# Docker build jobs buraya eklenecek (şimdilik boş)
-# build-docker-mngkeeper:
-#   stage: build-docker
-#   script:
-#     - docker build -t mngkeeper:latest -f MngKeeper/Presentation/MngKeeper.Api/Dockerfile .
-#   only:
-#     - main
+# Frontend (Mng.Ui) Docker Build
+build-docker-ui:
+  stage: build-docker
+  image: docker:latest
+  tags:
+    - docker
+  services:
+    - docker:dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_DRIVER: overlay2
+  before_script:
+    - docker info
+  script:
+    - echo "Building Mng.Ui Docker image..."
+    - cd Mng.Ui
+    - docker build -t mngui:$CI_COMMIT_SHORT_SHA -t mngui:latest -f Dockerfile .
+    - echo "Docker image built successfully"
+    - docker images | grep mngui
+  artifacts:
+    expire_in: 1 day
+  only:
+    - main
+    - develop
+    - merge_requests
+  # Not: Runner'ın privileged mode'da olması gerekiyor (config.toml'da privileged: true)
 
 # ============================================
 # DOCS DEPLOYMENT STAGE
