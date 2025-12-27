@@ -74,6 +74,14 @@ public class DatasetSchema : BaseEntity
     [BsonElement("indexList")]
     public List<IndexDefinition> indexList { get; set; } = new();
 
+    /// <summary>
+    /// Permissions definitions (optional - access control)
+    /// null or undefined = no authorization check (everyone can access)
+    /// </summary>
+    [BsonElement("permissions")]
+    [BsonIgnoreIfNull]
+    public PermissionsDefinition? permissions { get; set; }
+
     // Helper properties for compatibility (not stored in MongoDB)
     [BsonIgnore]
     public string DatasetName => name;
@@ -136,6 +144,12 @@ public class FieldDefinition
     /// For incremental type: options
     /// </summary>
     public IncrementalOptions? incrementalOptions { get; set; }
+
+    /// <summary>
+    /// Field-level validation rules (optional)
+    /// </summary>
+    [BsonIgnoreIfNull]
+    public FieldValidationRules? validation { get; set; }
 }
 
 /// <summary>
@@ -171,24 +185,53 @@ public class ValidationDefinition
     public string name { get; set; } = string.Empty;
 
     /// <summary>
+    /// Validation description (optional)
+    /// </summary>
+    [BsonIgnoreIfNull]
+    public string? description { get; set; }
+
+    /// <summary>
     /// Validation type: http, expression
     /// </summary>
     public string type { get; set; } = "http";
 
     /// <summary>
-    /// HTTP URL for validation
+    /// HTTP URL for validation (for type: "http")
     /// </summary>
+    [BsonIgnoreIfNull]
     public string? url { get; set; }
 
     /// <summary>
-    /// HTTP method: GET, POST
+    /// HTTP method: GET, POST (for type: "http")
     /// </summary>
+    [BsonIgnoreIfNull]
     public string? method { get; set; } = "POST";
 
     /// <summary>
-    /// Fields to validate
+    /// Expression for validation (for type: "expression")
+    /// Can reference field names: field1, field2, etc.
+    /// Examples: "endDate > startDate", "total == (price * quantity)"
     /// </summary>
+    [BsonIgnoreIfNull]
+    public string? expression { get; set; }
+
+    /// <summary>
+    /// Fields to validate (for type: "http")
+    /// </summary>
+    [BsonIgnoreIfNull]
     public List<string>? fields { get; set; }
+
+    /// <summary>
+    /// When to execute: "create", "update", "both" (default: "both")
+    /// </summary>
+    [BsonIgnoreIfNull]
+    public string? when { get; set; } = "both";
+
+    /// <summary>
+    /// Execution order (lower number = earlier execution, default: 0)
+    /// </summary>
+    [BsonIgnoreIfNull]
+    public int? order { get; set; } = 0;
 }
 
 /// <summary>
@@ -215,9 +258,13 @@ public class QueryDefinition
     public List<MongoDB.Bson.BsonDocument>? pipeline { get; set; }
 
     /// <summary>
-    /// Query parameters
+    /// Query parameters (with type definitions)
+    /// Supports both new format (List<QueryParameterDefinition>) and legacy format (List<string>)
+    /// Stored as BsonArray in MongoDB for compatibility
     /// </summary>
-    public List<string>? parameters { get; set; }
+    [BsonElement("parameters")]
+    [BsonIgnoreIfNull]
+    public MongoDB.Bson.BsonArray? parameters { get; set; }
 }
 
 /// <summary>
@@ -239,5 +286,50 @@ public class IndexDefinition
     /// Is unique index
     /// </summary>
     public bool unique { get; set; } = false;
+}
+
+/// <summary>
+/// Permissions definition for dataset access control
+/// </summary>
+[BsonIgnoreExtraElements]
+public class PermissionsDefinition
+{
+    /// <summary>
+    /// Read permission (GET operations)
+    /// </summary>
+    [BsonIgnoreIfNull]
+    public PermissionDefinition? read { get; set; }
+
+    /// <summary>
+    /// Create permission (POST operations)
+    /// </summary>
+    [BsonIgnoreIfNull]
+    public PermissionDefinition? create { get; set; }
+
+    /// <summary>
+    /// Update permission (PUT operations)
+    /// </summary>
+    [BsonIgnoreIfNull]
+    public PermissionDefinition? update { get; set; }
+
+    /// <summary>
+    /// Delete permission (DELETE operations)
+    /// </summary>
+    [BsonIgnoreIfNull]
+    public PermissionDefinition? delete { get; set; }
+}
+
+/// <summary>
+/// Permission definition for a specific operation type
+/// </summary>
+[BsonIgnoreExtraElements]
+public class PermissionDefinition
+{
+    /// <summary>
+    /// Allowed group names (from MngKeeper)
+    /// Empty array = no one is authorized
+    /// </summary>
+    [BsonElement("groups")]
+    public List<string> groups { get; set; } = new();
 }
 
