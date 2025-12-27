@@ -262,7 +262,7 @@ deploy-docs:
     - pip install -r requirements.txt
     - mkdocs build
     - echo "Verifying build output..."
-    - ls -la site/ || echo "ERROR: mkdocs build failed - site directory not found"
+    - ls -la site/
     - cd ..
   artifacts:
     paths:
