@@ -418,6 +418,7 @@ public class DatasetService : IDatasetService
 
     /// <summary>
     /// Convert QueryDefinitionDto from DTO to Entity QueryDefinition, handling JsonElement in pipeline
+    /// Supports both new format (List<QueryParameterDefinitionDto>) and legacy format (List<string>)
     /// </summary>
     private static List<QueryDefinition> ConvertQueryDefinitions(List<MngDataGateway.Application.DTOs.Dataset.QueryDefinitionDto>? queries)
     {
@@ -430,11 +431,142 @@ public class DatasetService : IDatasetService
 
         foreach (var query in queries)
         {
+            // Convert parameters: support both new format (List<QueryParameterDefinitionDto>) and legacy format (List<string>)
+            object? parameters = null;
+            if (query.Parameters != null)
+            {
+                // Check if it's a list of strings (legacy format)
+                if (query.Parameters is System.Text.Json.JsonElement jsonElement)
+                {
+                    if (jsonElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    {
+                        var firstItem = jsonElement.EnumerateArray().FirstOrDefault();
+                        if (firstItem.ValueKind == System.Text.Json.JsonValueKind.String)
+                        {
+                            // Legacy format: List<string>
+                            var paramNames = new List<string>();
+                            foreach (var item in jsonElement.EnumerateArray())
+                            {
+                                paramNames.Add(item.GetString() ?? string.Empty);
+                            }
+                            parameters = paramNames;
+                        }
+                        else if (firstItem.ValueKind == System.Text.Json.JsonValueKind.Object)
+                        {
+                            // New format: List<QueryParameterDefinitionDto>
+                            var paramDefs = new List<QueryParameterDefinition>();
+                            foreach (var item in jsonElement.EnumerateArray())
+                            {
+                                var name = item.GetProperty("name").GetString() ?? item.GetProperty("Name").GetString() ?? string.Empty;
+                                var type = item.GetProperty("type").GetString() ?? item.GetProperty("Type").GetString() ?? "text";
+                                var description = item.TryGetProperty("description", out var descProp) ? descProp.GetString() 
+                                    : (item.TryGetProperty("Description", out var descProp2) ? descProp2.GetString() : null);
+                                var required = item.TryGetProperty("required", out var reqProp) ? reqProp.GetBoolean() 
+                                    : (item.TryGetProperty("Required", out var reqProp2) ? reqProp2.GetBoolean() : true);
+                                
+                                paramDefs.Add(new QueryParameterDefinition
+                                {
+                                    name = name,
+                                    type = type,
+                                    description = description,
+                                    required = required
+                                });
+                            }
+                            parameters = paramDefs;
+                        }
+                    }
+                }
+                else if (query.Parameters is List<string> stringList)
+                {
+                    // Legacy format: List<string>
+                    parameters = stringList;
+                }
+                else if (query.Parameters is List<MngDataGateway.Application.DTOs.Dataset.QueryParameterDefinitionDto> paramDtoList)
+                {
+                    // New format: List<QueryParameterDefinitionDto>
+                    var paramDefs = paramDtoList.Select(p => new QueryParameterDefinition
+                    {
+                        name = p.Name,
+                        type = p.Type,
+                        description = p.Description,
+                        required = p.Required
+                    }).ToList();
+                    parameters = paramDefs;
+                }
+                else
+                {
+                    // Try to deserialize as one of the formats
+                    try
+                    {
+                        var json = System.Text.Json.JsonSerializer.Serialize(query.Parameters);
+                        var deserialized = System.Text.Json.JsonSerializer.Deserialize<List<object>>(json);
+                        if (deserialized != null && deserialized.Count > 0)
+                        {
+                            if (deserialized[0] is string)
+                            {
+                                // Legacy format
+                                parameters = deserialized.Cast<string>().ToList();
+                            }
+                            else
+                            {
+                                // Try new format
+                                var paramDefs = System.Text.Json.JsonSerializer.Deserialize<List<MngDataGateway.Application.DTOs.Dataset.QueryParameterDefinitionDto>>(json);
+                                if (paramDefs != null)
+                                {
+                                    parameters = paramDefs.Select(p => new QueryParameterDefinition
+                                    {
+                                        name = p.Name,
+                                        type = p.Type,
+                                        description = p.Description,
+                                        required = p.Required
+                                    }).ToList();
+                                }
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // If deserialization fails, keep as-is (will be stored as BsonValue)
+                        parameters = query.Parameters;
+                    }
+                }
+            }
+
+            // Convert parameters to BsonArray for MongoDB serialization
+            MongoDB.Bson.BsonArray? parametersBson = null;
+            if (parameters != null)
+            {
+                if (parameters is List<string> stringList)
+                {
+                    // Legacy format: List<string> -> BsonArray of strings
+                    parametersBson = new MongoDB.Bson.BsonArray(stringList.Select(s => new MongoDB.Bson.BsonString(s)));
+                }
+                else if (parameters is List<QueryParameterDefinition> paramDefList)
+                {
+                    // New format: List<QueryParameterDefinition> -> BsonArray of BsonDocuments
+                    parametersBson = new MongoDB.Bson.BsonArray();
+                    foreach (var paramDef in paramDefList)
+                    {
+                        var paramDoc = new MongoDB.Bson.BsonDocument
+                        {
+                            { "name", paramDef.name },
+                            { "type", paramDef.type },
+                            { "required", paramDef.required }
+                        };
+                        if (!string.IsNullOrEmpty(paramDef.description))
+                        {
+                            paramDoc["description"] = paramDef.description;
+                        }
+                        parametersBson.Add(paramDoc);
+                    }
+                }
+            }
+
             var converted = new QueryDefinition
             {
                 name = query.Name,
                 description = query.Description,
-                parameters = query.Parameters,
+                parameters = parametersBson, // Store as BsonArray for MongoDB compatibility
                 pipeline = ConvertPipelineToBsonDocuments(query.Pipeline)
             };
 
@@ -446,6 +578,7 @@ public class DatasetService : IDatasetService
 
     /// <summary>
     /// Convert pipeline from List<object> (which may contain JsonElement) to List<BsonDocument>
+    /// Preserves numeric types correctly (especially for $sort stage with -1 and 1 values)
     /// </summary>
     private static List<MongoDB.Bson.BsonDocument>? ConvertPipelineToBsonDocuments(List<object>? pipeline)
     {
@@ -463,7 +596,7 @@ public class DatasetService : IDatasetService
             // Handle JsonElement (from JSON deserialization)
             if (stage is System.Text.Json.JsonElement jsonElement)
             {
-                bsonDoc = MongoDB.Bson.BsonDocument.Parse(jsonElement.GetRawText());
+                bsonDoc = ConvertJsonElementToBsonDocument(jsonElement);
             }
             // Handle BsonDocument (already converted)
             else if (stage is MongoDB.Bson.BsonDocument bsonDocument)
@@ -473,7 +606,7 @@ public class DatasetService : IDatasetService
             // Handle Dictionary<string, object> (from model binding)
             else if (stage is Dictionary<string, object> dict)
             {
-                bsonDoc = MongoDB.Bson.BsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(dict));
+                bsonDoc = ConvertDictionaryToBsonDocument(dict);
             }
             // Try to serialize and parse
             else
@@ -486,6 +619,155 @@ public class DatasetService : IDatasetService
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Convert JsonElement to BsonDocument, preserving numeric types correctly
+    /// </summary>
+    private static MongoDB.Bson.BsonDocument ConvertJsonElementToBsonDocument(System.Text.Json.JsonElement element)
+    {
+        if (element.ValueKind != System.Text.Json.JsonValueKind.Object)
+        {
+            throw new InvalidOperationException("Pipeline stage must be an object");
+        }
+
+        var bsonDoc = new MongoDB.Bson.BsonDocument();
+
+        foreach (var prop in element.EnumerateObject())
+        {
+            bsonDoc[prop.Name] = ConvertJsonElementToBsonValue(prop.Value);
+        }
+
+        return bsonDoc;
+    }
+
+    /// <summary>
+    /// Convert JsonElement to BsonValue, preserving numeric types correctly
+    /// </summary>
+    private static MongoDB.Bson.BsonValue ConvertJsonElementToBsonValue(System.Text.Json.JsonElement element)
+    {
+        switch (element.ValueKind)
+        {
+            case System.Text.Json.JsonValueKind.String:
+                return new MongoDB.Bson.BsonString(element.GetString() ?? string.Empty);
+
+            case System.Text.Json.JsonValueKind.Number:
+                // Try to preserve as integer if possible (important for $sort: { field: 1 } or { field: -1 })
+                if (element.TryGetInt32(out var intVal))
+                {
+                    return new MongoDB.Bson.BsonInt32(intVal);
+                }
+                if (element.TryGetInt64(out var longVal))
+                {
+                    return new MongoDB.Bson.BsonInt64(longVal);
+                }
+                return new MongoDB.Bson.BsonDouble(element.GetDouble());
+
+            case System.Text.Json.JsonValueKind.True:
+                return MongoDB.Bson.BsonBoolean.True;
+
+            case System.Text.Json.JsonValueKind.False:
+                return MongoDB.Bson.BsonBoolean.False;
+
+            case System.Text.Json.JsonValueKind.Null:
+                return MongoDB.Bson.BsonNull.Value;
+
+            case System.Text.Json.JsonValueKind.Object:
+                var objDoc = new MongoDB.Bson.BsonDocument();
+                foreach (var prop in element.EnumerateObject())
+                {
+                    objDoc[prop.Name] = ConvertJsonElementToBsonValue(prop.Value);
+                }
+                return objDoc;
+
+            case System.Text.Json.JsonValueKind.Array:
+                var array = new MongoDB.Bson.BsonArray();
+                foreach (var item in element.EnumerateArray())
+                {
+                    array.Add(ConvertJsonElementToBsonValue(item));
+                }
+                return array;
+
+            default:
+                return new MongoDB.Bson.BsonString(element.GetRawText());
+        }
+    }
+
+    /// <summary>
+    /// Convert Dictionary to BsonDocument, preserving numeric types correctly
+    /// </summary>
+    private static MongoDB.Bson.BsonDocument ConvertDictionaryToBsonDocument(Dictionary<string, object> dict)
+    {
+        var bsonDoc = new MongoDB.Bson.BsonDocument();
+
+        foreach (var kvp in dict)
+        {
+            bsonDoc[kvp.Key] = ConvertObjectToBsonValue(kvp.Value);
+        }
+
+        return bsonDoc;
+    }
+
+    /// <summary>
+    /// Convert object to BsonValue, preserving numeric types correctly
+    /// </summary>
+    private static MongoDB.Bson.BsonValue ConvertObjectToBsonValue(object? value)
+    {
+        if (value == null)
+            return MongoDB.Bson.BsonNull.Value;
+
+        // Handle BsonValue types directly
+        if (value is MongoDB.Bson.BsonValue bsonValue)
+            return bsonValue;
+
+        // Handle primitive types
+        if (value is int intVal)
+            return new MongoDB.Bson.BsonInt32(intVal);
+
+        if (value is long longVal)
+            return new MongoDB.Bson.BsonInt64(longVal);
+
+        if (value is double doubleVal)
+            return new MongoDB.Bson.BsonDouble(doubleVal);
+
+        if (value is bool boolVal)
+            return new MongoDB.Bson.BsonBoolean(boolVal);
+
+        if (value is string strVal)
+            return new MongoDB.Bson.BsonString(strVal);
+
+        if (value is DateTime dateTimeVal)
+            return new MongoDB.Bson.BsonDateTime(dateTimeVal);
+
+        // Handle Dictionary
+        if (value is Dictionary<string, object> dict)
+            return ConvertDictionaryToBsonDocument(dict);
+
+        // Handle List/Array
+        if (value is System.Collections.IEnumerable enumerable && !(value is string))
+        {
+            var bsonArray = new MongoDB.Bson.BsonArray();
+            foreach (var item in enumerable)
+            {
+                bsonArray.Add(ConvertObjectToBsonValue(item));
+            }
+            return bsonArray;
+        }
+
+        // Handle JsonElement
+        if (value is System.Text.Json.JsonElement jsonElement)
+            return ConvertJsonElementToBsonValue(jsonElement);
+
+        // Fallback: serialize to JSON and parse
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(value);
+            return MongoDB.Bson.BsonDocument.Parse(json);
+        }
+        catch
+        {
+            return new MongoDB.Bson.BsonString(value.ToString() ?? string.Empty);
+        }
     }
 
     /// <summary>
@@ -577,9 +859,75 @@ public class DatasetService : IDatasetService
         {
             Name = q.name,
             Description = q.description,
-            Parameters = q.parameters,
+            Parameters = ConvertParametersForResponse(q.parameters),
             Pipeline = q.pipeline?.Select(doc => ConvertBsonDocumentToObject(doc)).ToList()
         }).ToList();
+    }
+
+    /// <summary>
+    /// Convert parameters for response - supports both new format (List<QueryParameterDefinition>) and legacy format (List<string>)
+    /// </summary>
+    private static object? ConvertParametersForResponse(object? parameters)
+    {
+        if (parameters == null)
+            return null;
+
+        // Check if it's a list of QueryParameterDefinition (new format)
+        if (parameters is List<QueryParameterDefinition> paramDefs)
+        {
+            return paramDefs.Select(p => new QueryParameterDefinitionResponseDto
+            {
+                Name = p.name,
+                Type = p.type,
+                Description = p.description,
+                Required = p.required
+            }).ToList();
+        }
+
+        // Check if it's a list of strings (legacy format)
+        if (parameters is List<string> stringList)
+        {
+            return stringList;
+        }
+
+        // Try to deserialize from BsonValue
+        try
+        {
+            if (parameters is BsonArray bsonArray)
+            {
+                var firstElement = bsonArray.FirstOrDefault();
+                if (firstElement != null)
+                {
+                    if (firstElement is BsonString)
+                    {
+                        // Legacy format: List<string>
+                        return bsonArray.Select(e => e.AsString).ToList();
+                    }
+                    else if (firstElement is BsonDocument)
+                    {
+                        // New format: List<QueryParameterDefinition>
+                        return bsonArray.Select(e => 
+                        {
+                            var doc = e.AsBsonDocument;
+                            return new QueryParameterDefinitionResponseDto
+                            {
+                                Name = doc.GetValue("name", "").AsString,
+                                Type = doc.GetValue("type", "text").AsString,
+                                Description = doc.Contains("description") ? doc["description"].AsString : null,
+                                Required = doc.Contains("required") ? doc["required"].AsBoolean : true
+                            };
+                        }).ToList();
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // If conversion fails, return as-is
+        }
+
+        // Fallback: return as-is (will be serialized as JSON)
+        return parameters;
     }
 
     /// <summary>

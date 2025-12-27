@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -12,6 +13,7 @@ using MngDataGateway.Application.DTOs.Validation;
 using MngDataGateway.Application.Services;
 using MngDataGateway.Domain.Entities;
 using MngDataGateway.Domain.Exceptions;
+using MngDataGateway.Persistence.Extensions;
 using MngDataGateway.Persistence.Services;
 
 namespace MngDataGateway.Persistence.Services
@@ -152,7 +154,7 @@ namespace MngDataGateway.Persistence.Services
             if (document == null)
                 return null;
 
-            return BsonDocumentToDictionary(document);
+            return document.ToDictionary();
         }
 
         public async Task<(List<Dictionary<string, object>> data, long totalCount)> ListAsync(
@@ -165,7 +167,7 @@ namespace MngDataGateway.Persistence.Services
             var (documents, totalCount) = await _dataRepository.FindManyAsync(
                 databaseName, schema.CollectionName, skip, limit);
 
-            var data = documents.Select(BsonDocumentToDictionary).ToList();
+            var data = documents.ToDictionaryList();
 
             return (data, totalCount);
         }
@@ -221,7 +223,7 @@ namespace MngDataGateway.Persistence.Services
 
                 // 6. Get updated data
                 var updatedDoc = await _dataRepository.FindByIdAsync(databaseName, schema.CollectionName, dataId);
-                var result = updatedDoc != null ? BsonDocumentToDictionary(updatedDoc) : null;
+                var result = updatedDoc?.ToDictionary();
 
                 // 7. Publish event (async)
                 if (ShouldPublishEvent(schema) && result != null)
@@ -265,8 +267,13 @@ namespace MngDataGateway.Persistence.Services
         {
             var schema = await LoadSchemaAsync(datasetName, databaseName);
             
-            var success = await _dataRepository.SoftDeleteAsync(
-                databaseName, schema.CollectionName, dataId, userId, userEmail, ipAddress);
+            // Get retention days from settings
+            var settings = _configuration.GetSection("MngDataGatewaySettings").Get<MngDataGatewaySettings>();
+            var retentionDays = settings?.DeletedData?.RetentionDays ?? 7;
+            var expireAt = DateTime.UtcNow.AddDays(retentionDays);
+
+            var success = await _dataRepository.HardDeleteAndArchiveAsync(
+                databaseName, schema.CollectionName, dataId, userId, userEmail, expireAt, ipAddress);
 
             if (!success)
                 return false;
@@ -279,8 +286,8 @@ namespace MngDataGateway.Persistence.Services
             }
 
             _logger.LogInformation(
-                "Deleted data in dataset {DatasetName} with __dataId: {DataId}",
-                datasetName, dataId);
+                "Hard-deleted and archived data in dataset {DatasetName} with __dataId: {DataId} (expires at {ExpireAt})",
+                datasetName, dataId, expireAt);
 
             return true;
         }
@@ -296,7 +303,7 @@ namespace MngDataGateway.Persistence.Services
         {
             var schema = await LoadSchemaAsync(datasetName, databaseName);
             
-            var success = await _dataRepository.RestoreAsync(
+            var success = await _dataRepository.RestoreFromArchiveAsync(
                 databaseName, schema.CollectionName, dataId, userId, userEmail, ipAddress);
 
             if (!success)
@@ -317,7 +324,7 @@ namespace MngDataGateway.Persistence.Services
             }
 
             _logger.LogInformation(
-                "Restored data in dataset {DatasetName} with __dataId: {DataId}",
+                "Restored data from archive in dataset {DatasetName} with __dataId: {DataId}",
                 datasetName, dataId);
 
             return true;
@@ -462,6 +469,8 @@ namespace MngDataGateway.Persistence.Services
                 throw new DataGatewayException($"Dataset '{datasetName}' not found");
             }
 
+            // No need to fix query pipeline - it's already stored correctly in MongoDB as BsonDocument
+
             // Note: IsActive check can be added later if needed
             // For now, all schemas in collection are considered active
 
@@ -599,7 +608,7 @@ namespace MngDataGateway.Persistence.Services
                     _dataProcessService.ApplyDefaultValues(schema, processedItem);
                     _dataProcessService.GenerateMetadata(schema, processedItem, userId, userEmail, ipAddress);
                     await _dataProcessService.GenerateIncrementalFieldsAsync(
-                        schema, processedItem, databaseName, session: null);
+                        schema, processedItem, databaseName, domainName, session: null);
                     processedItems.Add(processedItem);
                 }
 
@@ -788,17 +797,6 @@ namespace MngDataGateway.Persistence.Services
             updates["__history"] = history;
         }
 
-        private Dictionary<string, object> BsonDocumentToDictionary(BsonDocument document)
-        {
-            var dictionary = new Dictionary<string, object>();
-
-            foreach (var element in document)
-            {
-                dictionary[element.Name] = BsonTypeMapper.MapToDotNetValue(element.Value);
-            }
-
-            return dictionary;
-        }
 
         public async Task<QueryResultDto> QueryAsync(
             string datasetName,
@@ -835,6 +833,16 @@ namespace MngDataGateway.Persistence.Services
                         .ToList();
                 }
 
+                // Search in relation collections and collect matching IDs (pre-expansion search)
+                Dictionary<string, List<BsonValue>>? relationSearchIds = null;
+                if (!string.IsNullOrWhiteSpace(options.Search))
+                {
+                    relationSearchIds = await SearchInRelationCollectionsAsync(
+                        schema,
+                        databaseName,
+                        options.Search);
+                }
+
                 // Build pipeline
                 var builder = new AggregatePipelineBuilder(
                     _loggerFactory.CreateLogger<AggregatePipelineBuilder>(),
@@ -843,6 +851,7 @@ namespace MngDataGateway.Persistence.Services
 
                 builder
                     .AddMatch(matchFilter)
+                    .AddSearch(options.Search, relationSearchIds)  // Add search before expansion (pre-expansion search)
                     .AddRelationExpansion(options.Expand, maxDepth, 0, null)
                     .AddPersonExpansion(options.Expand)
                     .AddProject(fields, options.ShowHistory)
@@ -869,7 +878,7 @@ namespace MngDataGateway.Persistence.Services
                     pipeline);
 
                 // Convert to dictionary list
-                var data = results.Select(BsonDocumentToDictionary).ToList();
+                var data = results.ToDictionaryList();
 
                 _logger.LogDebug(
                     "Query executed on dataset {DatasetName}, returned {Count} documents",
@@ -959,7 +968,7 @@ namespace MngDataGateway.Persistence.Services
                 var data = new List<Dictionary<string, object>>();
                 if (result != null)
                 {
-                    data.Add(BsonDocumentToDictionary(result));
+                    data.Add(result.ToDictionary());
                 }
 
                 _logger.LogDebug(
@@ -1024,6 +1033,16 @@ namespace MngDataGateway.Persistence.Services
                         .ToList();
                 }
 
+                // Search in relation collections and collect matching IDs (pre-expansion search)
+                Dictionary<string, List<BsonValue>>? relationSearchIds = null;
+                if (!string.IsNullOrWhiteSpace(options.Search))
+                {
+                    relationSearchIds = await SearchInRelationCollectionsAsync(
+                        schema,
+                        databaseName,
+                        options.Search);
+                }
+
                 // Build pipeline
                 var builder = new AggregatePipelineBuilder(
                     _loggerFactory.CreateLogger<AggregatePipelineBuilder>(),
@@ -1032,6 +1051,7 @@ namespace MngDataGateway.Persistence.Services
 
                 builder
                     .AddMatch(matchFilter)
+                    .AddSearch(options.Search, relationSearchIds)  // Add search before expansion (pre-expansion search)
                     .AddRelationExpansion(options.Expand, maxDepth, 0, null)
                     .AddPersonExpansion(options.Expand)
                     .AddProject(fields, options.ShowHistory)
@@ -1058,7 +1078,7 @@ namespace MngDataGateway.Persistence.Services
                     pipeline);
 
                 // Convert to dictionary list
-                var data = results.Select(BsonDocumentToDictionary).ToList();
+                var data = results.ToDictionaryList();
 
                 _logger.LogDebug(
                     "QueryWithMatch executed on dataset {DatasetName}, returned {Count} documents",
@@ -1099,16 +1119,18 @@ namespace MngDataGateway.Persistence.Services
                     throw new DataGatewayException($"Predefined query '{queryName}' not found in dataset '{datasetName}'");
                 }
 
-                // Validate parameters
-                var requiredParams = queryDef.parameters ?? new List<string>();
-                if (requiredParams.Any())
-                {
-                    var missingParams = requiredParams.Where(p => !parameters.ContainsKey(p)).ToList();
-                    if (missingParams.Any())
-                    {
-                        throw new DataGatewayException($"Missing required parameters: {string.Join(", ", missingParams)}");
-                    }
-                }
+                // Log parameter definitions for debugging
+                _logger.LogInformation("Query '{QueryName}' parameter definitions type: {Type}, Value: {Value}", 
+                    queryName, 
+                    queryDef.parameters?.GetType().FullName ?? "null",
+                    queryDef.parameters is MongoDB.Bson.BsonArray ? ((MongoDB.Bson.BsonArray)queryDef.parameters).ToJson() : queryDef.parameters?.ToString() ?? "null");
+
+                // Validate and convert parameters based on type definitions
+                var validatedParameters = ValidateAndConvertParameters(queryDef.parameters, parameters, queryName);
+                
+                _logger.LogInformation("Query '{QueryName}' validated parameters: {Parameters}", 
+                    queryName, 
+                    System.Text.Json.JsonSerializer.Serialize(validatedParameters));
 
                 // Convert pipeline to BsonDocument list and replace parameters
                 var pipeline = new List<BsonDocument>();
@@ -1122,41 +1144,59 @@ namespace MngDataGateway.Persistence.Services
                         try
                         {
                             // Log original stage type and content
-                            var originalStageJson = System.Text.Json.JsonSerializer.Serialize(stage);
-                            _logger.LogDebug("Original stage type: {StageType}, Content: {StageJson}", 
-                                stage?.GetType().FullName ?? "null", 
-                                originalStageJson);
+                            _logger.LogInformation("Processing stage for query '{QueryName}': Type={StageType}, IsBsonDocument={IsBsonDoc}", 
+                                queryName,
+                                stage?.GetType().FullName ?? "null",
+                                stage is MongoDB.Bson.BsonDocument);
                             
-                            // Replace parameters in the stage object before serialization
-                            var stageWithParams = ReplaceParametersInObject(stage, parameters);
-                            
-                            // Log stage after replacement (before serialization)
-                            _logger.LogDebug("Stage after replacement (object): Type: {Type}, Value: {Value}", 
-                                stageWithParams?.GetType().FullName ?? "null",
-                                System.Text.Json.JsonSerializer.Serialize(stageWithParams));
-                            
-                            // Serialize stage to JSON string
-                            var stageJson = System.Text.Json.JsonSerializer.Serialize(stageWithParams);
-                            _logger.LogDebug("Stage after parameter replacement (JSON): {StageJson}", stageJson);
-                            
-                            // Validate stage is not empty
-                            if (string.IsNullOrWhiteSpace(stageJson) || stageJson == "{}" || stageJson == "[]")
+                            if (stage is MongoDB.Bson.BsonDocument originalBsonDoc)
                             {
-                                _logger.LogWarning("Skipping empty stage for query '{QueryName}'", queryName);
-                                continue;
+                                _logger.LogInformation("Stage is BsonDocument. Content: {StageJson}", originalBsonDoc.ToJson());
+                                
+                                // Deep clone to avoid modifying original
+                                var clonedDoc = originalBsonDoc.DeepClone().AsBsonDocument;
+                                
+                                // Only replace parameters - no other modifications needed
+                                // BsonValue types (including $sort integers) are preserved as-is
+                                var stageBson = ReplaceParametersInBsonDocument(clonedDoc, parameters);
+                                
+                                _logger.LogInformation("Stage after parameter replacement: {StageJson}", stageBson.ToJson());
+                                
+                                pipeline.Add(stageBson);
                             }
-                            
-                            // Parse to BsonDocument
-                            var stageBson = BsonDocument.Parse(stageJson);
-                            
-                            // Validate BsonDocument is not empty
-                            if (stageBson.ElementCount == 0)
+                            else
                             {
-                                _logger.LogWarning("Skipping empty BsonDocument stage for query '{QueryName}'", queryName);
-                                continue;
+                                _logger.LogWarning("Stage is NOT BsonDocument! Type: {Type}. This should not happen for predefined queries.", 
+                                    stage?.GetType().FullName ?? "null");
+                                
+                                // This should not happen - predefined queries should be stored as BsonDocument
+                                // But handle it anyway for safety
+                                var stageWithParams = ReplaceParametersInObject(stage, validatedParameters);
+                                
+                                BsonDocument stageBson;
+                                if (stageWithParams is Dictionary<string, object> dict)
+                                {
+                                    stageBson = DictionaryToBsonDocument(dict);
+                                }
+                                else
+                                {
+                                    var stageJson = System.Text.Json.JsonSerializer.Serialize(stageWithParams);
+                                    if (string.IsNullOrWhiteSpace(stageJson) || stageJson == "{}" || stageJson == "[]")
+                                    {
+                                        _logger.LogWarning("Skipping empty stage for query '{QueryName}'", queryName);
+                                        continue;
+                                    }
+                                    stageBson = BsonDocument.Parse(stageJson);
+                                }
+                                
+                                if (stageBson.ElementCount == 0)
+                                {
+                                    _logger.LogWarning("Skipping empty BsonDocument stage for query '{QueryName}'", queryName);
+                                    continue;
+                                }
+                                
+                                pipeline.Add(stageBson);
                             }
-                            
-                            pipeline.Add(stageBson);
                         }
                         catch (Exception ex)
                         {
@@ -1173,6 +1213,13 @@ namespace MngDataGateway.Persistence.Services
                     }
                 }
 
+                // Log final pipeline for debugging
+                _logger.LogDebug("Final pipeline for query '{QueryName}' ({StageCount} stages):", queryName, pipeline.Count);
+                for (int i = 0; i < pipeline.Count; i++)
+                {
+                    _logger.LogDebug("  Stage {Index}: {StageJson}", i + 1, pipeline[i].ToJson());
+                }
+
                 // Execute aggregate
                 var results = await _dataRepository.AggregateAsync(
                     databaseName,
@@ -1180,7 +1227,7 @@ namespace MngDataGateway.Persistence.Services
                     pipeline);
 
                 // Convert to dictionary list
-                var data = results.Select(BsonDocumentToDictionary).ToList();
+                var data = results.ToDictionaryList();
 
                 _logger.LogDebug(
                     "Predefined query '{QueryName}' executed on dataset {DatasetName}, returned {Count} documents",
@@ -1217,7 +1264,7 @@ namespace MngDataGateway.Persistence.Services
                     pipeline);
 
                 // Convert to dictionary list
-                var data = results.Select(BsonDocumentToDictionary).ToList();
+                var data = results.ToDictionaryList();
 
                 _logger.LogDebug(
                     "Raw aggregate executed on dataset {DatasetName}, returned {Count} documents",
@@ -1302,6 +1349,7 @@ namespace MngDataGateway.Persistence.Services
 
         /// <summary>
         /// Replace parameters in JsonElement
+        /// Preserves numeric types correctly (especially for $sort stage with -1 and 1 values)
         /// </summary>
         private object ReplaceParametersInJsonElement(System.Text.Json.JsonElement element, Dictionary<string, object> parameters)
         {
@@ -1335,7 +1383,16 @@ namespace MngDataGateway.Persistence.Services
                         return list;
                     }
                 case System.Text.Json.JsonValueKind.Number:
-                    return element.TryGetInt64(out var longVal) ? longVal : element.GetDouble();
+                    // Preserve as integer if possible (critical for $sort: { field: 1 } or { field: -1 })
+                    if (element.TryGetInt32(out var intVal))
+                    {
+                        return intVal;
+                    }
+                    if (element.TryGetInt64(out var longVal))
+                    {
+                        return longVal;
+                    }
+                    return element.GetDouble();
                 case System.Text.Json.JsonValueKind.True:
                     return true;
                 case System.Text.Json.JsonValueKind.False:
@@ -1345,6 +1402,713 @@ namespace MngDataGateway.Persistence.Services
                 default:
                     return element.GetRawText();
             }
+        }
+
+        /// <summary>
+        /// Replace parameters in BsonDocument recursively
+        /// Only replaces parameter placeholders (":paramName"), preserves all other BsonValue types as-is
+        /// </summary>
+        private MongoDB.Bson.BsonDocument ReplaceParametersInBsonDocument(MongoDB.Bson.BsonDocument bsonDoc, Dictionary<string, object> parameters)
+        {
+            var result = new MongoDB.Bson.BsonDocument();
+            
+            foreach (var element in bsonDoc)
+            {
+                // Simply replace parameters in the value - no special handling needed
+                // BsonValue types (including $sort integers) are preserved as-is
+                result[element.Name] = ReplaceParametersInBsonValue(element.Value, parameters);
+            }
+            
+            return result;
+        }
+
+        /// <summary>
+        /// Replace parameters in BsonValue recursively
+        /// </summary>
+        private MongoDB.Bson.BsonValue ReplaceParametersInBsonValue(MongoDB.Bson.BsonValue value, Dictionary<string, object> parameters)
+        {
+            // Handle string values (parameter placeholders)
+            if (value is MongoDB.Bson.BsonString bsonString)
+            {
+                var str = bsonString.Value;
+                if (str.StartsWith(":") && parameters.ContainsKey(str.Substring(1)))
+                {
+                    var paramValue = parameters[str.Substring(1)];
+                    return ConvertToBsonValue(paramValue);
+                }
+                return value;
+            }
+            
+            // Handle BsonDocument (nested objects)
+            if (value is MongoDB.Bson.BsonDocument bsonDoc)
+            {
+                return ReplaceParametersInBsonDocument(bsonDoc, parameters);
+            }
+            
+            // Handle BsonArray (arrays)
+            if (value is MongoDB.Bson.BsonArray bsonArray)
+            {
+                var result = new MongoDB.Bson.BsonArray();
+                foreach (var item in bsonArray)
+                {
+                    result.Add(ReplaceParametersInBsonValue(item, parameters));
+                }
+                return result;
+            }
+            
+            // Preserve all other BsonValue types as-is (numbers, booleans, null, etc.)
+            // This is critical for $sort stage where 1 and -1 must remain as BsonInt32
+            return value;
+        }
+
+        /// <summary>
+        /// Convert Dictionary to BsonDocument recursively
+        /// </summary>
+        private MongoDB.Bson.BsonDocument DictionaryToBsonDocument(Dictionary<string, object> dict)
+        {
+            var bsonDoc = new MongoDB.Bson.BsonDocument();
+            
+            foreach (var kvp in dict)
+            {
+                bsonDoc[kvp.Key] = ConvertToBsonValue(kvp.Value);
+            }
+            
+            return bsonDoc;
+        }
+
+        /// <summary>
+        /// Convert object to BsonValue recursively
+        /// Preserves numeric types correctly (especially for $sort stage with -1 and 1 values)
+        /// </summary>
+        private MongoDB.Bson.BsonValue ConvertToBsonValue(object? value)
+        {
+            if (value == null)
+                return MongoDB.Bson.BsonNull.Value;
+
+            // Handle BsonValue types directly
+            if (value is MongoDB.Bson.BsonValue bsonValue)
+                return bsonValue;
+
+            // Handle numeric types FIRST (before string check) to preserve integer values
+            // This is critical for $sort stage where 1 and -1 must remain as BsonInt32
+            if (value is int intVal)
+                return new MongoDB.Bson.BsonInt32(intVal);
+            
+            if (value is long longVal)
+                return new MongoDB.Bson.BsonInt64(longVal);
+            
+            if (value is double doubleVal)
+                return new MongoDB.Bson.BsonDouble(doubleVal);
+            
+            if (value is float floatVal)
+                return new MongoDB.Bson.BsonDouble(floatVal);
+            
+            if (value is decimal decimalVal)
+                return new MongoDB.Bson.BsonDecimal128(decimalVal);
+            
+            if (value is short shortVal)
+                return new MongoDB.Bson.BsonInt32(shortVal);
+            
+            if (value is byte byteVal)
+                return new MongoDB.Bson.BsonInt32(byteVal);
+
+            // Handle boolean
+            if (value is bool boolVal)
+                return new MongoDB.Bson.BsonBoolean(boolVal);
+            
+            // Handle DateTime types
+            if (value is DateTime dateTimeVal)
+                return new MongoDB.Bson.BsonDateTime(dateTimeVal);
+            
+            if (value is DateTimeOffset dateTimeOffsetVal)
+                return new MongoDB.Bson.BsonDateTime(dateTimeOffsetVal.UtcDateTime);
+            
+            // Handle string (check for DateTime after numeric types)
+            if (value is string strValue)
+            {
+                // Try to parse as DateTime
+                if (DateTime.TryParse(strValue, out var parsedDateTime))
+                {
+                    return new MongoDB.Bson.BsonDateTime(parsedDateTime);
+                }
+                return new MongoDB.Bson.BsonString(strValue);
+            }
+
+            // Handle JsonElement (from JSON deserialization)
+            if (value is System.Text.Json.JsonElement jsonElement)
+            {
+                return ConvertJsonElementToBsonValue(jsonElement);
+            }
+
+            // Handle Dictionary
+            if (value is Dictionary<string, object> dict)
+                return DictionaryToBsonDocument(dict);
+
+            // Handle List/Array
+            if (value is System.Collections.IEnumerable enumerable && !(value is string))
+            {
+                var bsonArray = new MongoDB.Bson.BsonArray();
+                foreach (var item in enumerable)
+                {
+                    bsonArray.Add(ConvertToBsonValue(item));
+                }
+                return bsonArray;
+            }
+
+            // Fallback: serialize to JSON and parse
+            try
+            {
+                var json = System.Text.Json.JsonSerializer.Serialize(value);
+                return MongoDB.Bson.BsonDocument.Parse(json);
+            }
+            catch
+            {
+                // Last resort: convert to string
+                return new MongoDB.Bson.BsonString(value.ToString() ?? string.Empty);
+            }
+        }
+
+        /// <summary>
+        /// Convert JsonElement to BsonValue, preserving numeric types correctly
+        /// </summary>
+        private MongoDB.Bson.BsonValue ConvertJsonElementToBsonValue(System.Text.Json.JsonElement element)
+        {
+            switch (element.ValueKind)
+            {
+                case System.Text.Json.JsonValueKind.String:
+                    {
+                        var str = element.GetString() ?? string.Empty;
+                        // Try to parse as DateTime
+                        if (DateTime.TryParse(str, out var parsedDateTime))
+                        {
+                            return new MongoDB.Bson.BsonDateTime(parsedDateTime);
+                        }
+                        return new MongoDB.Bson.BsonString(str);
+                    }
+
+                case System.Text.Json.JsonValueKind.Number:
+                    // Preserve as integer if possible (critical for $sort: { field: 1 } or { field: -1 })
+                    if (element.TryGetInt32(out var intVal))
+                    {
+                        return new MongoDB.Bson.BsonInt32(intVal);
+                    }
+                    if (element.TryGetInt64(out var longVal))
+                    {
+                        return new MongoDB.Bson.BsonInt64(longVal);
+                    }
+                    return new MongoDB.Bson.BsonDouble(element.GetDouble());
+
+                case System.Text.Json.JsonValueKind.True:
+                    return MongoDB.Bson.BsonBoolean.True;
+
+                case System.Text.Json.JsonValueKind.False:
+                    return MongoDB.Bson.BsonBoolean.False;
+
+                case System.Text.Json.JsonValueKind.Null:
+                    return MongoDB.Bson.BsonNull.Value;
+
+                case System.Text.Json.JsonValueKind.Object:
+                    var objDoc = new MongoDB.Bson.BsonDocument();
+                    foreach (var prop in element.EnumerateObject())
+                    {
+                        objDoc[prop.Name] = ConvertJsonElementToBsonValue(prop.Value);
+                    }
+                    return objDoc;
+
+                case System.Text.Json.JsonValueKind.Array:
+                    var array = new MongoDB.Bson.BsonArray();
+                    foreach (var item in element.EnumerateArray())
+                    {
+                        array.Add(ConvertJsonElementToBsonValue(item));
+                    }
+                    return array;
+
+                default:
+                    return new MongoDB.Bson.BsonString(element.GetRawText());
+            }
+        }
+
+        /// <summary>
+        /// Fix $sort stage values - ensure they are integers, not booleans or documents
+        /// This fixes issues where sort values are incorrectly parsed from JSON
+        /// </summary>
+        private void FixSortStageValues(MongoDB.Bson.BsonDocument stage)
+        {
+            if (stage.Contains("$sort") && stage["$sort"] is MongoDB.Bson.BsonDocument sortDoc)
+            {
+                var fixedSort = new MongoDB.Bson.BsonDocument();
+                foreach (var sortField in sortDoc)
+                {
+                    var sortValue = sortField.Value;
+                    
+                    // If value is a BsonDocument (incorrectly parsed), use default
+                    if (sortValue is MongoDB.Bson.BsonDocument)
+                    {
+                        _logger.LogWarning("Fixing BsonDocument in $sort field '{FieldName}', using default sort direction 1", sortField.Name);
+                        fixedSort[sortField.Name] = new MongoDB.Bson.BsonInt32(1);
+                    }
+                    // If value is a BsonBoolean (incorrectly parsed), convert to integer
+                    else if (sortValue is MongoDB.Bson.BsonBoolean bsonBool)
+                    {
+                        fixedSort[sortField.Name] = new MongoDB.Bson.BsonInt32(bsonBool.Value ? 1 : -1);
+                        _logger.LogDebug("Fixed BsonBoolean to BsonInt32 in $sort field '{FieldName}': {Value} -> {IntValue}", 
+                            sortField.Name, bsonBool.Value, bsonBool.Value ? 1 : -1);
+                    }
+                    // If value is already a number, ensure it's an integer
+                    else if (sortValue is MongoDB.Bson.BsonInt32 || sortValue is MongoDB.Bson.BsonInt64)
+                    {
+                        fixedSort[sortField.Name] = sortValue;
+                    }
+                    // If value is a double, convert to integer
+                    else if (sortValue is MongoDB.Bson.BsonDouble bsonDouble)
+                    {
+                        fixedSort[sortField.Name] = new MongoDB.Bson.BsonInt32((int)bsonDouble.Value);
+                    }
+                    // Otherwise, try to preserve or use default
+                    else
+                    {
+                        var intValue = MongoDB.Bson.BsonTypeMapper.MapToDotNetValue(sortValue);
+                        if (intValue is int intVal)
+                        {
+                            fixedSort[sortField.Name] = new MongoDB.Bson.BsonInt32(intVal);
+                        }
+                        else if (intValue is long longVal)
+                        {
+                            fixedSort[sortField.Name] = new MongoDB.Bson.BsonInt64(longVal);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Fixing unexpected type in $sort field '{FieldName}': {Type}, using default sort direction 1", 
+                                sortField.Name, sortValue.GetType().Name);
+                            fixedSort[sortField.Name] = new MongoDB.Bson.BsonInt32(1);
+                        }
+                    }
+                }
+                stage["$sort"] = fixedSort;
+            }
+        }
+
+        /// <summary>
+        /// Validate and convert parameters based on type definitions
+        /// Supports both new format (List<QueryParameterDefinition>) and legacy format (List<string>)
+        /// </summary>
+        private Dictionary<string, object> ValidateAndConvertParameters(
+            object? parameterDefinitions,
+            Dictionary<string, object> providedParameters,
+            string queryName)
+        {
+            var result = new Dictionary<string, object>();
+
+            _logger.LogInformation("ValidateAndConvertParameters called for query '{QueryName}'. ParameterDefinitions type: {Type}, IsNull: {IsNull}, IsBsonArray: {IsBsonArray}", 
+                queryName, 
+                parameterDefinitions?.GetType().FullName ?? "null",
+                parameterDefinitions == null,
+                parameterDefinitions is MongoDB.Bson.BsonArray);
+
+            if (parameterDefinitions == null)
+            {
+                // No parameter definitions - return provided parameters as-is
+                _logger.LogWarning("No parameter definitions for query '{QueryName}', returning provided parameters as-is", queryName);
+                return providedParameters;
+            }
+
+            // Handle legacy format: List<string>
+            if (parameterDefinitions is List<string> legacyParamNames)
+            {
+                // Validate required parameters
+                var missingParams = legacyParamNames.Where(p => !providedParameters.ContainsKey(p)).ToList();
+                if (missingParams.Any())
+                {
+                    throw new DataGatewayException($"Missing required parameters: {string.Join(", ", missingParams)}");
+                }
+
+                // Convert parameters (no type checking, just pass through)
+                foreach (var paramName in legacyParamNames)
+                {
+                    if (providedParameters.ContainsKey(paramName))
+                    {
+                        result[paramName] = providedParameters[paramName];
+                    }
+                }
+
+                return result;
+            }
+
+            // Handle new format: List<QueryParameterDefinition>
+            if (parameterDefinitions is List<QueryParameterDefinition> newParamDefs)
+            {
+                foreach (var paramDef in newParamDefs)
+                {
+                    var paramName = paramDef.name;
+                    var paramType = paramDef.type?.ToLowerInvariant() ?? "text";
+                    var isRequired = paramDef.required;
+
+                    // Check if parameter is provided
+                    if (!providedParameters.ContainsKey(paramName))
+                    {
+                        if (isRequired)
+                        {
+                            throw new DataGatewayException($"Missing required parameter '{paramName}' (type: {paramType})");
+                        }
+                        continue; // Skip optional parameters
+                    }
+
+                    var paramValue = providedParameters[paramName];
+
+                    // Convert parameter based on type
+                    try
+                    {
+                        var convertedValue = ConvertParameterByType(paramValue, paramType, paramName);
+                        result[paramName] = convertedValue;
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new DataGatewayException(
+                            $"Invalid parameter '{paramName}': Expected type '{paramType}', but received '{paramValue?.GetType().Name}'. {ex.Message}");
+                    }
+                }
+
+                return result;
+            }
+
+            // Try to deserialize from BsonValue
+            try
+            {
+                if (parameterDefinitions is MongoDB.Bson.BsonArray bsonArray)
+                {
+                    _logger.LogInformation("Query '{QueryName}' parameters is BsonArray with {Count} elements", queryName, bsonArray.Count);
+                    var firstElement = bsonArray.FirstOrDefault();
+                    if (firstElement != null)
+                    {
+                        _logger.LogInformation("Query '{QueryName}' first element type: {Type}", queryName, firstElement.GetType().FullName);
+                        if (firstElement is MongoDB.Bson.BsonString)
+                        {
+                            // Legacy format: List<string>
+                            _logger.LogInformation("Query '{QueryName}' using legacy format (List<string>)", queryName);
+                            var bsonParamNames = bsonArray.Select(e => e.AsString).ToList();
+                            var missingParams = bsonParamNames.Where(p => !providedParameters.ContainsKey(p)).ToList();
+                            if (missingParams.Any())
+                            {
+                                throw new DataGatewayException($"Missing required parameters: {string.Join(", ", missingParams)}");
+                            }
+                            foreach (var paramName in bsonParamNames)
+                            {
+                                if (providedParameters.ContainsKey(paramName))
+                                {
+                                    result[paramName] = providedParameters[paramName];
+                                }
+                            }
+                            return result;
+                        }
+                        else if (firstElement is MongoDB.Bson.BsonDocument)
+                        {
+                            // New format: List<QueryParameterDefinition>
+                            _logger.LogInformation("Query '{QueryName}' using new format (List<QueryParameterDefinition>)", queryName);
+                            var bsonParamDefs = new List<QueryParameterDefinition>();
+                            foreach (var element in bsonArray)
+                            {
+                                var doc = element.AsBsonDocument;
+                                bsonParamDefs.Add(new QueryParameterDefinition
+                                {
+                                    name = doc.GetValue("name", "").AsString,
+                                    type = doc.GetValue("type", "text").AsString,
+                                    description = doc.Contains("description") ? doc["description"].AsString : null,
+                                    required = doc.Contains("required") ? doc["required"].AsBoolean : true
+                                });
+                            }
+                            _logger.LogInformation("Query '{QueryName}' parsed {Count} parameter definitions: {Params}", 
+                                queryName, bsonParamDefs.Count, 
+                                string.Join(", ", bsonParamDefs.Select(p => $"{p.name}({p.type}, required={p.required})")));
+                            return ValidateAndConvertParameters(bsonParamDefs, providedParameters, queryName);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Query '{QueryName}' BsonArray first element is neither BsonString nor BsonDocument: {Type}", 
+                                queryName, firstElement.GetType().FullName);
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Query '{QueryName}' BsonArray is empty", queryName);
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("Query '{QueryName}' parameterDefinitions is not BsonArray: {Type}", 
+                        queryName, parameterDefinitions.GetType().FullName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to parse parameter definitions for query '{QueryName}'. Type: {Type}", 
+                    queryName, parameterDefinitions?.GetType().FullName ?? "null");
+                throw new DataGatewayException($"Invalid parameter definitions format for query '{queryName}': {ex.Message}", ex);
+            }
+
+            // If we reach here, parameterDefinitions is in an unknown format
+            _logger.LogWarning("Unknown parameter definitions format for query '{QueryName}'. Type: {Type}, Value: {Value}", 
+                queryName, 
+                parameterDefinitions?.GetType().FullName ?? "null",
+                parameterDefinitions?.ToString() ?? "null");
+            throw new DataGatewayException($"Unknown parameter definitions format for query '{queryName}'. Expected List<string> or List<QueryParameterDefinition>.");
+        }
+
+        /// <summary>
+        /// Convert parameter value based on type definition
+        /// </summary>
+        private object ConvertParameterByType(object value, string type, string paramName)
+        {
+            if (value == null)
+            {
+                throw new ArgumentException($"Parameter '{paramName}' cannot be null");
+            }
+
+            // Handle JsonElement (from JSON deserialization)
+            if (value is JsonElement jsonElement)
+            {
+                return ConvertJsonElementByType(jsonElement, type, paramName);
+            }
+
+            switch (type.ToLowerInvariant())
+            {
+                case "text":
+                    return value.ToString() ?? string.Empty;
+
+                case "number":
+                    if (value is int || value is long || value is double || value is decimal || value is float)
+                    {
+                        return value;
+                    }
+                    if (value is string strValue)
+                    {
+                        if (int.TryParse(strValue, out var intVal))
+                            return intVal;
+                        if (long.TryParse(strValue, out var longVal))
+                            return longVal;
+                        if (double.TryParse(strValue, out var doubleVal))
+                            return doubleVal;
+                        throw new ArgumentException($"Parameter '{paramName}' cannot be converted to number: '{strValue}'");
+                    }
+                    throw new ArgumentException($"Parameter '{paramName}' must be a number, but received '{value.GetType().Name}'");
+
+                case "bool":
+                case "boolean":
+                    if (value is bool boolVal)
+                    {
+                        return boolVal;
+                    }
+                    if (value is string boolStr)
+                    {
+                        if (bool.TryParse(boolStr, out var parsedBool))
+                            return parsedBool;
+                        if (boolStr.Equals("true", StringComparison.OrdinalIgnoreCase))
+                            return true;
+                        if (boolStr.Equals("false", StringComparison.OrdinalIgnoreCase))
+                            return false;
+                        throw new ArgumentException($"Parameter '{paramName}' cannot be converted to boolean: '{boolStr}'");
+                    }
+                    throw new ArgumentException($"Parameter '{paramName}' must be a boolean, but received '{value.GetType().Name}'");
+
+                case "datetime":
+                case "date":
+                    if (value is DateTime dateTimeVal)
+                    {
+                        return dateTimeVal;
+                    }
+                    if (value is DateTimeOffset dateTimeOffsetVal)
+                    {
+                        return dateTimeOffsetVal.UtcDateTime;
+                    }
+                    // Reject numeric values for datetime (they should be strings in ISO 8601 format)
+                    if (value is int || value is long || value is double || value is decimal || value is float)
+                    {
+                        throw new ArgumentException($"Parameter '{paramName}' must be a DateTime string (ISO 8601 format), but received a number: '{value}'. Use format like '2025-01-01T00:00:00Z'");
+                    }
+                    if (value is string dateStr)
+                    {
+                        if (DateTime.TryParse(dateStr, out var parsedDateTime))
+                            return parsedDateTime;
+                        throw new ArgumentException($"Parameter '{paramName}' cannot be converted to DateTime: '{dateStr}'. Expected ISO 8601 format (e.g., '2025-01-01T00:00:00Z')");
+                    }
+                    throw new ArgumentException($"Parameter '{paramName}' must be a DateTime, but received '{value.GetType().Name}'");
+
+                default:
+                    _logger.LogWarning("Unknown parameter type '{Type}' for parameter '{ParamName}', using value as-is", type, paramName);
+                    return value;
+            }
+        }
+
+        /// <summary>
+        /// Convert JsonElement to the specified type
+        /// </summary>
+        private object ConvertJsonElementByType(JsonElement jsonElement, string type, string paramName)
+        {
+            switch (type.ToLowerInvariant())
+            {
+                case "text":
+                    return jsonElement.GetString() ?? string.Empty;
+
+                case "number":
+                    if (jsonElement.ValueKind == JsonValueKind.Number)
+                    {
+                        if (jsonElement.TryGetInt32(out var intVal))
+                            return intVal;
+                        if (jsonElement.TryGetInt64(out var longVal))
+                            return longVal;
+                        if (jsonElement.TryGetDouble(out var doubleVal))
+                            return doubleVal;
+                    }
+                    if (jsonElement.ValueKind == JsonValueKind.String)
+                    {
+                        var strValue = jsonElement.GetString();
+                        if (int.TryParse(strValue, out var intVal))
+                            return intVal;
+                        if (long.TryParse(strValue, out var longVal))
+                            return longVal;
+                        if (double.TryParse(strValue, out var doubleVal))
+                            return doubleVal;
+                        throw new ArgumentException($"Parameter '{paramName}' cannot be converted to number: '{strValue}'");
+                    }
+                    throw new ArgumentException($"Parameter '{paramName}' must be a number, but received JsonElement with ValueKind '{jsonElement.ValueKind}'");
+
+                case "bool":
+                case "boolean":
+                    if (jsonElement.ValueKind == JsonValueKind.True)
+                        return true;
+                    if (jsonElement.ValueKind == JsonValueKind.False)
+                        return false;
+                    if (jsonElement.ValueKind == JsonValueKind.String)
+                    {
+                        var boolStr = jsonElement.GetString();
+                        if (bool.TryParse(boolStr, out var parsedBool))
+                            return parsedBool;
+                        if (boolStr?.Equals("true", StringComparison.OrdinalIgnoreCase) == true)
+                            return true;
+                        if (boolStr?.Equals("false", StringComparison.OrdinalIgnoreCase) == true)
+                            return false;
+                        throw new ArgumentException($"Parameter '{paramName}' cannot be converted to boolean: '{boolStr}'");
+                    }
+                    throw new ArgumentException($"Parameter '{paramName}' must be a boolean, but received JsonElement with ValueKind '{jsonElement.ValueKind}'");
+
+                case "datetime":
+                case "date":
+                    // Reject numeric values for datetime
+                    if (jsonElement.ValueKind == JsonValueKind.Number)
+                    {
+                        throw new ArgumentException($"Parameter '{paramName}' must be a DateTime string (ISO 8601 format), but received a number: '{jsonElement}'. Use format like '2025-01-01T00:00:00Z'");
+                    }
+                    if (jsonElement.ValueKind == JsonValueKind.String)
+                    {
+                        var dateStr = jsonElement.GetString();
+                        if (DateTime.TryParse(dateStr, out var parsedDateTime))
+                            return parsedDateTime;
+                        throw new ArgumentException($"Parameter '{paramName}' cannot be converted to DateTime: '{dateStr}'. Expected ISO 8601 format (e.g., '2025-01-01T00:00:00Z')");
+                    }
+                    throw new ArgumentException($"Parameter '{paramName}' must be a DateTime string, but received JsonElement with ValueKind '{jsonElement.ValueKind}'");
+
+                default:
+                    // For unknown types, try to get string value
+                    if (jsonElement.ValueKind == JsonValueKind.String)
+                        return jsonElement.GetString() ?? string.Empty;
+                    return jsonElement.ToString();
+            }
+        }
+
+        /// <summary>
+        /// Search in relation collections and return matching IDs grouped by field name
+        /// </summary>
+        private async Task<Dictionary<string, List<BsonValue>>> SearchInRelationCollectionsAsync(
+            DatasetSchema schema,
+            string databaseName,
+            string searchTerm)
+        {
+            var relationSearchIds = new Dictionary<string, List<BsonValue>>();
+
+            var relationFields = schema.fields
+                .Where(f => f.fieldType == "relation" && !string.IsNullOrEmpty(f.relationDataset))
+                .ToList();
+
+            if (relationFields.Count == 0)
+            {
+                return relationSearchIds;
+            }
+
+            _logger.LogDebug(
+                "Searching in {Count} relation collections for term: {SearchTerm}",
+                relationFields.Count, searchTerm);
+
+            // Escape special regex characters in search term
+            var escapedTerm = System.Text.RegularExpressions.Regex.Escape(searchTerm);
+            var regexPattern = new BsonRegularExpression(escapedTerm, "i"); // case-insensitive
+
+            foreach (var relationField in relationFields)
+            {
+                try
+                {
+                    // Load relation schema
+                    var relationSchema = await LoadSchemaAsync(relationField.relationDataset!, databaseName);
+
+                    // Find text fields in relation schema
+                    var textFields = relationSchema.fields
+                        .Where(f => f.fieldType == "text" && !f.name.StartsWith("__"))
+                        .ToList();
+
+                    if (textFields.Count == 0)
+                    {
+                        _logger.LogDebug(
+                            "No searchable text fields found in relation dataset {RelationDataset} for field {FieldName}",
+                            relationField.relationDataset, relationField.name);
+                        continue;
+                    }
+
+                    // Build search pipeline for relation collection
+                    var searchPipeline = new List<BsonDocument>();
+
+                    // Build $or conditions for text fields
+                    var orConditions = new BsonArray();
+                    foreach (var textField in textFields)
+                    {
+                        orConditions.Add(new BsonDocument(textField.name, regexPattern));
+                    }
+
+                    // Add $match stage
+                    searchPipeline.Add(new BsonDocument("$match", new BsonDocument("$or", orConditions)));
+
+                    // Add $project stage to only return __dataId
+                    searchPipeline.Add(new BsonDocument("$project", new BsonDocument("__dataId", 1)));
+
+                    // Execute search in relation collection
+                    var relationResults = await _dataRepository.AggregateAsync(
+                        databaseName,
+                        relationSchema.CollectionName,
+                        searchPipeline);
+
+                    // Collect matching IDs
+                    var matchingIds = relationResults
+                        .Where(doc => doc.Contains("__dataId"))
+                        .Select(doc => doc["__dataId"])
+                        .Where(id => id != null && !id.IsBsonNull)
+                        .ToList();
+
+                    if (matchingIds.Count > 0)
+                    {
+                        relationSearchIds[relationField.name] = matchingIds;
+                        _logger.LogDebug(
+                            "Found {Count} matching documents in relation dataset {RelationDataset} for field {FieldName}",
+                            matchingIds.Count, relationField.relationDataset, relationField.name);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(
+                        ex,
+                        "Failed to search in relation dataset {RelationDataset} for field {FieldName}",
+                        relationField.relationDataset, relationField.name);
+                    // Continue with other relation fields
+                }
+            }
+
+            return relationSearchIds;
         }
 
         #endregion
