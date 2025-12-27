@@ -84,8 +84,9 @@ build-mngdatagateway:
     - docker
   script:
     - echo "Building MngDataGateway..."
+    - dotnet clean MngDataGateway/MngDataGateway.sln
     - dotnet restore MngDataGateway/MngDataGateway.sln
-    - dotnet build MngDataGateway/MngDataGateway.sln --no-restore -c Release
+    - dotnet build MngDataGateway/MngDataGateway.sln -c Release
   artifacts:
     paths:
       - MngDataGateway/**/bin/
