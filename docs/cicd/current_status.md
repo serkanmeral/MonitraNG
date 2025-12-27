@@ -63,14 +63,22 @@ GitLab lokal kurulumu, repository yapılandırması ve CI/CD pipeline kurulumu.
 - ✅ GitLab external_url sorunu tespit edildi ve düzeltildi
   - `external_url 'http://gitlab.local'` → `external_url 'http://gitlab'`
   - GitLab container yeniden başlatıldı
+- ✅ MngDataGateway build hatası düzeltildi (FieldValidationRules missing reference)
+  - `MngDataGateway.Persistence.csproj`'e `MngDataGateway.Domain` reference eklendi
+- ✅ Visual Studio terminal kapanma sorunu düzeltildi
+  - `Program.cs`'e detaylı exception handling ve `Console.ReadKey()` eklendi
+- ✅ API Gateway port çakışması tespit edildi
+  - MngGateway container'ı durduruldu, MngDataGateway artık çalışıyor
 
 ---
 
 ## 🔄 Devam Eden İşler
 
-### Pipeline Testi
-- ⏳ GitLab external_url düzeltmesi sonrası pipeline test edilecek
-- ⏳ Pipeline'ın başarıyla çalışıp çalışmadığı kontrol edilecek
+### MngDataGateway Build Sorunu
+- ✅ Visual Studio'da terminal penceresi kapanma sorunu düzeltildi (Program.cs'e exception handling eklendi)
+- ✅ API Gateway (MngGateway) durduruldu - Port çakışması çözüldü
+- ⏳ GitLab CI pipeline'da build-mngdatagateway job'u başarısız oluyor
+- ⏳ Runner'ın network/connectivity sorunları kontrol edilecek
 
 ---
 
@@ -108,7 +116,13 @@ GitLab lokal kurulumu, repository yapılandırması ve CI/CD pipeline kurulumu.
 - **URL:** `http://localhost` (browser'dan)
 - **Container Network:** `http://gitlab` (container içinden)
 - **Root Şifresi:** İlk kurulumda değiştirildi
-- **Runner Token:** `GR1348941XP1z9hxtHGGKgz77S4WN` (proje runner token)
+- **Runner Token:** `GR13489412RjqCx9gFWW9xx_R34GW` (proje runner token)
+
+### Docker Container Durumu
+- **GitLab:** ✅ Çalışıyor (healthy)
+- **GitLab Runner:** ✅ Çalışıyor (is alive)
+- **MngGateway (API Gateway):** ⚠️ Durduruldu (MngDataGateway ile port çakışması)
+- **MngDataGateway:** ✅ Çalışıyor (local, port 5010)
 
 ### Repository Yapılandırması
 - **GitLab Remote:** `gitlab` → `http://root:TOKEN@localhost/root/MonitraNG.git`
@@ -155,24 +169,26 @@ GitLab lokal kurulumu, repository yapılandırması ve CI/CD pipeline kurulumu.
 
 ---
 
-## 🎯 Yarın Yapılacaklar
+## 🎯 Sonraki Adımlar
 
-1. **Pipeline Testi:**
-   - GitLab'ın tamamen başladığını kontrol et
-   - Pipeline'ı çalıştır ve sonuçları kontrol et
-   - Başarısız job'lar varsa düzelt
+1. **GitLab Runner Sorun Giderme:**
+   - Runner'ın GitLab'a bağlanabildiğini kontrol et
+   - Job container'larının network erişimini kontrol et
+   - `extra_hosts` ve `network_mode` yapılandırmasını doğrula
+   - Pipeline'ı tekrar çalıştır ve logları incele
 
-2. **Dokümantasyon Pipeline:**
-   - MkDocs build job'unu test et
-   - GitLab Pages deployment'ı kontrol et
+2. **MngGateway Yapılandırması:**
+   - API Gateway'in MngDataGateway ile port çakışmasını önle
+   - Docker Compose'da port mapping'leri kontrol et
+   - API Gateway'in sadece gerekli olduğunda çalıştırılmasını sağla
 
-3. **İyileştirmeler:**
-   - Pipeline cache yapılandırması
-   - Build sürelerini optimize et
-   - Test sonuçlarını analiz et
+3. **Pipeline İyileştirmeleri:**
+   - Build job'larının başarılı olduğunu doğrula
+   - Test job'larını düzelt (varsa hatalar)
+   - Cache yapılandırması optimize et
 
 ---
 
-**Durum:** ✅ Temel kurulum tamamlandı, pipeline test aşamasında  
-**Sonraki Oturum:** Pipeline testi ve doğrulama
+**Durum:** ⚠️ Pipeline build job'ları başarısız, runner connectivity sorunları var  
+**Sonraki Oturum:** GitLab runner network sorunlarını çözme ve pipeline'ı başarılı hale getirme
 
