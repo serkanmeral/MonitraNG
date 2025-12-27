@@ -43,9 +43,9 @@ test-setup:
     - echo "=== Directory Structure ==="
     - ls -la
     - echo "=== Checking Solution Files ==="
-    - ls -la MngKeeper/MngKeeper.sln || echo "MngKeeper.sln NOT FOUND"
-    - ls -la MngDataGateway/MngDataGateway.sln || echo "MngDataGateway.sln NOT FOUND"
-    - ls -la MngHub/MngHub.sln || echo "MngHub.sln NOT FOUND"
+    - ls -la MngKeeper/MngKeeper.sln
+    - ls -la MngDataGateway/MngDataGateway.sln
+    - ls -la MngHub/MngHub.sln
     - echo "=== Test Setup Complete ==="
   only:
     - main
@@ -67,7 +67,7 @@ build-mngkeeper:
     - echo "Working directory:"
     - pwd
     - echo "Checking solution file:"
-    - ls -la MngKeeper/MngKeeper.sln || echo "ERROR: Solution file not found!"
+    - ls -la MngKeeper/MngKeeper.sln
     - echo "Restoring packages..."
     - dotnet restore MngKeeper/MngKeeper.sln --verbosity normal
     - echo "Building solution..."
@@ -100,9 +100,9 @@ build-mngdatagateway:
     - echo "Working directory:"
     - pwd
     - echo "Checking solution file:"
-    - ls -la MngDataGateway/MngDataGateway.sln || echo "ERROR: Solution file not found!"
+    - ls -la MngDataGateway/MngDataGateway.sln
     - echo "Cleaning solution..."
-    - dotnet clean MngDataGateway/MngDataGateway.sln || echo "WARNING: Clean failed, continuing..."
+    - dotnet clean MngDataGateway/MngDataGateway.sln
     - echo "Restoring packages..."
     - dotnet restore MngDataGateway/MngDataGateway.sln --force --verbosity normal
     - echo "Building solution..."
@@ -135,7 +135,7 @@ build-mnghub:
     - echo "Working directory:"
     - pwd
     - echo "Checking solution file:"
-    - ls -la MngHub/MngHub.sln || echo "ERROR: Solution file not found!"
+    - ls -la MngHub/MngHub.sln
     - echo "Restoring packages..."
     - dotnet restore MngHub/MngHub.sln --verbosity normal
     - echo "Building solution..."
