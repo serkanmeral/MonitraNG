@@ -11,6 +11,7 @@ cache:
 
 # Pipeline stages
 stages:
+  - test-setup
   - build
   - test
   - build-docker
@@ -20,6 +21,36 @@ stages:
 variables:
   DOTNET_VERSION: "9.0"
   NODE_VERSION: "18"
+
+# ============================================
+# TEST SETUP STAGE (Debug)
+# ============================================
+
+# Test Setup - Environment Check
+test-setup:
+  stage: test-setup
+  image: mcr.microsoft.com/dotnet/sdk:9.0
+  tags:
+    - docker
+  script:
+    - echo "=== Environment Check ==="
+    - echo "Working directory:"
+    - pwd
+    - echo "User:"
+    - whoami
+    - echo "Dotnet version:"
+    - dotnet --version
+    - echo "=== Directory Structure ==="
+    - ls -la
+    - echo "=== Checking Solution Files ==="
+    - ls -la MngKeeper/MngKeeper.sln || echo "MngKeeper.sln NOT FOUND"
+    - ls -la MngDataGateway/MngDataGateway.sln || echo "MngDataGateway.sln NOT FOUND"
+    - ls -la MngHub/MngHub.sln || echo "MngHub.sln NOT FOUND"
+    - echo "=== Test Setup Complete ==="
+  only:
+    - main
+    - develop
+    - merge_requests
 
 # ============================================
 # BUILD STAGE
