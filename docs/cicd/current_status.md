@@ -98,7 +98,16 @@ UI Dockerfile ve deployment yapılandırması, Nginx proxy ayarları, port numar
 - [ ] Docker image'ın doğru şekilde build edildiğini kontrol et
 
 ### 3. Pipeline İyileştirmeleri (Gelecek)
-- [ ] Build job'ları optimize et (cache kullanımı)
+- [ ] **Build süresini optimize etme (cache)**
+  - [ ] .NET NuGet package cache yapılandırması
+  - [ ] Node.js npm cache yapılandırması
+  - [ ] Docker layer cache optimizasyonu
+  - [ ] Artifact cache stratejisi
+- [ ] **CI/CD pipeline'da parallel build**
+  - [ ] Build job'larının paralel çalışmasını optimize et
+  - [ ] Test job'larının paralel çalışmasını sağla
+  - [ ] Dependency yönetimi ve job sıralaması
+  - [ ] Pipeline süresini ölçme ve optimizasyon
 - [ ] Test job'larını düzelt (varsa hatalar)
 - [ ] Artifact'leri optimize et
 - [ ] Docker image'ları registry'ye push etme (opsiyonel)
@@ -107,13 +116,42 @@ UI Dockerfile ve deployment yapılandırması, Nginx proxy ayarları, port numar
 - [x] MkDocs build job'u çalışıyor
 - [x] GitLab Pages deployment çalışıyor
 - [ ] Dokümantasyonun erişilebilir olduğunu doğrula
+- [ ] **Dokümantasyon versiyonlama**
+  - [ ] MkDocs versiyonlama yapılandırması
+  - [ ] Git tag'leri ile dokümantasyon versiyonlama
+  - [ ] Versiyon seçici UI ekleme
+  - [ ] Eski versiyonların saklanması
 
 ### 5. CI/CD İyileştirmeleri (Gelecek)
+- [ ] **Build süresini optimize etme (cache)**
+  - [ ] .NET NuGet package cache yapılandırması
+  - [ ] Node.js npm cache yapılandırması
+  - [ ] Docker layer cache optimizasyonu
+  - [ ] Artifact cache stratejisi
+- [ ] **CI/CD pipeline'da parallel build**
+  - [ ] Build job'larının paralel çalışmasını optimize et
+  - [ ] Test job'larının paralel çalışmasını sağla
+  - [ ] Dependency yönetimi ve job sıralaması
+  - [ ] Pipeline süresini ölçme ve optimizasyon
 - [ ] Backend servisler için Docker build job'ları ekle
 - [ ] SonarQube entegrasyonu (opsiyonel)
 - [ ] Deployment pipeline'ları (test/production)
 - [ ] Branch protection rules
 - [ ] Merge request pipeline'ları
+
+### 6. Dokümantasyon İyileştirmeleri (Gelecek)
+- [ ] **Dokümantasyon versiyonlama**
+  - [ ] MkDocs versiyonlama yapılandırması
+  - [ ] Git tag'leri ile dokümantasyon versiyonlama
+  - [ ] Versiyon seçici UI ekleme
+  - [ ] Eski versiyonların saklanması
+- [ ] **API dokümantasyonu için Swagger/OpenAPI entegrasyonu**
+  - [ ] MngKeeper API için Swagger/OpenAPI dokümantasyonu
+  - [ ] MngDataGateway API için Swagger/OpenAPI dokümantasyonu
+  - [ ] MngHub API için Swagger/OpenAPI dokümantasyonu
+  - [ ] OpenAPI spec'lerinin otomatik generate edilmesi
+  - [ ] MkDocs ile Swagger/OpenAPI entegrasyonu
+  - [ ] API dokümantasyonunun GitLab Pages'de yayınlanması
 
 ---
 
