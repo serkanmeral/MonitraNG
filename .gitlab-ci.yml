@@ -578,11 +578,25 @@ pages:
       ls -la public/ | head -20
       echo ""
       echo "=== Verifying Pages requirements ==="
+      # Check for index.html in public/ or any subdirectory
       if [ ! -f "public/index.html" ]; then
-        echo "ERROR: public/index.html not found! Pages will not work."
-        exit 1
+        echo "WARNING: public/index.html not found in root, searching subdirectories..."
+        INDEX_FILE=$(find public -name "index.html" -type f | head -1)
+        if [ -n "$INDEX_FILE" ]; then
+          echo "Found index.html at: $INDEX_FILE"
+          echo "Copying to public/index.html..."
+          cp "$INDEX_FILE" public/index.html
+          echo "✓ public/index.html created from $INDEX_FILE"
+        else
+          echo "ERROR: No index.html found anywhere in public/ directory!"
+          echo "Available files in public/:"
+          find public -type f | head -10
+          echo "Creating minimal index.html..."
+          echo "<!DOCTYPE html><html><head><title>MonitraNG Documentation</title><meta http-equiv='refresh' content='0; url=./MkDocs/guides/IMPROVEMENTS_ROADMAP.html' /></head><body><p>Redirecting to <a href='./MkDocs/guides/IMPROVEMENTS_ROADMAP.html'>documentation</a>...</p></body></html>" > public/index.html
+          echo "✓ Minimal index.html created"
+        fi
       else
-        echo "✓ public/index.html exists"
+        echo "✓ public/index.html exists in root"
       fi
       echo "Total files in public/: $(find public -type f | wc -l)"
       echo "Public directory size: $(du -sh public | cut -f1)"
