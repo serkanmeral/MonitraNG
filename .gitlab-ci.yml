@@ -50,6 +50,7 @@ test-setup:
     - ls -la MngKeeper/MngKeeper.sln
     - ls -la MngDataGateway/MngDataGateway.sln
     - ls -la MngHub/MngHub.sln
+    - ls -la MngGateway/MngGateway.sln
     - echo "=== Test Setup Complete ==="
   only:
     - main
@@ -161,6 +162,39 @@ build-mnghub:
     - develop
     - merge_requests
 
+# MngGateway Build
+build-mnggateway:
+  stage: build
+  image: mcr.microsoft.com/dotnet/sdk:9.0
+  tags:
+    - docker
+  script:
+    - echo "=== Building MngGateway ==="
+    - echo "Working directory:"
+    - pwd
+    - echo "Checking solution file:"
+    - ls -la MngGateway/MngGateway.sln
+    - echo "Restoring packages..."
+    - dotnet restore MngGateway/MngGateway.sln --verbosity normal
+    - echo "Building solution..."
+    - dotnet build MngGateway/MngGateway.sln --no-restore -c Release --verbosity normal
+    - echo "=== Build completed successfully ==="
+  artifacts:
+    paths:
+      - MngGateway/**/bin/
+      - MngGateway/**/obj/
+    expire_in: 1 hour
+  timeout: 30m
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+  only:
+    - main
+    - develop
+    - merge_requests
+
 # Frontend Build (Mng.Ui)
 build-frontend:
   stage: build
@@ -238,6 +272,23 @@ test-mnghub:
     - develop
     - merge_requests
 
+# MngGateway Tests
+test-mnggateway:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:9.0
+  tags:
+    - docker
+  dependencies:
+    - build-mnggateway
+  script:
+    - echo "Running MngGateway tests..."
+    - dotnet test MngGateway/MngGateway.sln --no-build --verbosity normal
+  allow_failure: true
+  only:
+    - main
+    - develop
+    - merge_requests
+
 # ============================================
 # OPENAPI EXTRACT STAGE
 # ============================================
@@ -256,6 +307,7 @@ extract-openapi-specs:
   dependencies:
     - build-mngkeeper
     - build-mngdatagateway
+    - build-mnggateway
   before_script:
     - apt-get update && apt-get install -y curl jq || true
     - |
@@ -268,11 +320,13 @@ extract-openapi-specs:
       mkdir -p docs/content/api/mngkeeper
       mkdir -p docs/content/api/mngdatagateway
       mkdir -p docs/content/api/mnghub
+      mkdir -p docs/content/api/mnggateway
       
       # Method 1: Extract from built assemblies using Swashbuckle CLI
       # Find API project DLLs
       KEEPER_DLL=$(find MngKeeper -name "*.Api.dll" -path "*/bin/Release/*" | head -1)
       DATAGATEWAY_DLL=$(find MngDataGateway -name "*.Api.dll" -path "*/bin/Release/*" | head -1)
+      GATEWAY_DLL=$(find MngGateway -name "*.Api.dll" -path "*/bin/Release/*" | head -1)
       
       # Extract MngKeeper spec
       if [ -n "$KEEPER_DLL" ]; then
@@ -304,6 +358,19 @@ extract-openapi-specs:
       
       # MngHub placeholder (if needed)
       echo '{"info":{"title":"MngHub API","version":"v1","description":"OpenAPI spec - not yet available"}}' > docs/content/api/mnghub/openapi.json
+      
+      # Extract MngGateway spec
+      if [ -n "$GATEWAY_DLL" ]; then
+        echo "Extracting MngGateway OpenAPI spec from $GATEWAY_DLL"
+        swashbuckle aspnetcore tofile "$GATEWAY_DLL" "v1" docs/content/api/mnggateway/openapi.json || {
+          echo "Swashbuckle extraction failed, trying alternative method..."
+          # Fallback: Create placeholder with metadata
+          echo '{"info":{"title":"MngGateway API","version":"v1","description":"OpenAPI spec - extraction pending"}}' > docs/content/api/mnggateway/openapi.json
+        }
+      else
+        echo "MngGateway API DLL not found, creating placeholder"
+        echo '{"info":{"title":"MngGateway API","version":"v1","description":"OpenAPI spec - build artifact not found"}}' > docs/content/api/mnggateway/openapi.json
+      fi
       
       echo "=== OpenAPI spec extraction completed ==="
       echo "Files created:"
@@ -348,6 +415,35 @@ build-docker-ui:
     - docker build -t mngui:$CI_COMMIT_SHORT_SHA -t mngui:latest -f Dockerfile .
     - echo "Docker image built successfully"
     - docker images | grep mngui
+  artifacts:
+    expire_in: 1 day
+  only:
+    - main
+    - develop
+    - merge_requests
+  # Not: Runner'ın privileged mode'da olması gerekiyor (config.toml'da privileged: true)
+
+# MngGateway Docker Build
+build-docker-gateway:
+  stage: build-docker
+  image: docker:latest
+  tags:
+    - docker
+  services:
+    - docker:dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_DRIVER: overlay2
+  dependencies:
+    - build-mnggateway
+  before_script:
+    - docker info
+  script:
+    - echo "Building MngGateway Docker image..."
+    - cd MngGateway
+    - docker build -t mnggateway:$CI_COMMIT_SHORT_SHA -t mnggateway:latest -f Presentation/MngGateway.Api/Dockerfile .
+    - echo "Docker image built successfully"
+    - docker images | grep mnggateway
   artifacts:
     expire_in: 1 day
   only:
@@ -624,6 +720,8 @@ pages:
     paths:
       - public
     expire_in: 30 days  # Pages artifacts should last longer
+    # GitLab Pages için public/ klasörü artifacts olarak yayınlanmalı
+    # GitLab otomatik olarak pages job'unun artifacts'ını Pages'e deploy eder
   cache:
     key: mkdocs-deps-$CI_COMMIT_REF_SLUG
     paths:
@@ -634,6 +732,8 @@ pages:
   # 1. Job adı "pages" olmalı (✓)
   # 2. artifacts.paths "public" içermeli (✓)
   # 3. public/ klasöründe index.html olmalı (✓)
-  # 4. GitLab Settings > Pages'de aktif olmalı
+  # 4. GitLab CE'de Pages özelliği aktif olmalı (Settings > General > Visibility)
+  # 5. Pages URL: http://<gitlab-host>/<namespace>/<project-name>/-/pages
+  #    veya: https://<namespace>.gitlab.io/<project-name>/
   timeout: 10m
 
