@@ -403,9 +403,10 @@ build-docker-ui:
   tags:
     - docker
   services:
-    - docker:dind
+    - name: docker:dind
+      alias: docker
   variables:
-    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_TLS_CERTDIR: ""
     DOCKER_DRIVER: overlay2
     DOCKER_HOST: "tcp://docker:2375"
   before_script:
@@ -431,9 +432,10 @@ build-docker-gateway:
   tags:
     - docker
   services:
-    - docker:dind
+    - name: docker:dind
+      alias: docker
   variables:
-    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_TLS_CERTDIR: ""
     DOCKER_DRIVER: overlay2
     DOCKER_HOST: "tcp://docker:2375"
   dependencies:
