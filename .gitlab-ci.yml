@@ -407,6 +407,7 @@ build-docker-ui:
   variables:
     DOCKER_TLS_CERTDIR: "/certs"
     DOCKER_DRIVER: overlay2
+    DOCKER_HOST: "tcp://docker:2375"
   before_script:
     - docker info
   script:
@@ -434,6 +435,7 @@ build-docker-gateway:
   variables:
     DOCKER_TLS_CERTDIR: "/certs"
     DOCKER_DRIVER: overlay2
+    DOCKER_HOST: "tcp://docker:2375"
   dependencies:
     - build-mnggateway
   before_script:
