@@ -778,8 +778,8 @@ deploy-services:
     - echo "Services deployed successfully"
   after_script:
     - echo "Pipeline status: $CI_JOB_STATUS"
-    - if [ "$CI_JOB_STATUS" == "failed" ]; then echo "❌ Deployment failed!"; fi
-    - if [ "$CI_JOB_STATUS" == "success" ]; then echo "✅ Deployment succeeded!"; fi
+    - if [ "$CI_JOB_STATUS" == "failed" ]; then echo "Deployment failed!"; fi
+    - if [ "$CI_JOB_STATUS" == "success" ]; then echo "Deployment succeeded!"; fi
   only:
     - main
   when: manual  # Manuel tetikleme için (güvenlik)
