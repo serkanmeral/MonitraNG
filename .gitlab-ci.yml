@@ -1,6 +1,6 @@
 # GitLab CI/CD Pipeline Configuration for MonitraNG
 # Bu dosya GitLab'da CI/CD pipeline'larını tanımlar
-# Runner extra_hosts yapılandırması ile artifacts upload sorunu çözüldü
+# Runner network_mode yapılandırması ile artifacts upload timeout sorunu çözüldü
 
 # Default image ve before_script
 image: mcr.microsoft.com/dotnet/sdk:9.0
