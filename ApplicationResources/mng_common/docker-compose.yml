@@ -13,6 +13,8 @@ services:
       KC_DB_PASSWORD: keycloak123
       KC_HOSTNAME_STRICT: false
       KC_HOSTNAME_STRICT_HTTPS: false
+      KC_PROXY: edge
+      KC_HTTP_RELATIVE_PATH: /
     ports:
       - "8080:8080"
     depends_on:
@@ -269,13 +271,20 @@ services:
         # Reduce memory usage
         puma['worker_processes'] = 2
         sidekiq['max_concurrency'] = 10
+        # GitLab Pages configuration
+        pages_external_url 'http://localhost'
+        gitlab_pages['enable'] = true
+        gitlab_pages['external_http'] = ['0.0.0.0:8090']
+        pages_nginx['enable'] = true
         # Disable features to save resources (optional)
         # prometheus_monitoring['enable'] = false
         # grafana['enable'] = false
     ports:
-      - "80:80"           # HTTP
+      - "8090:80"           # HTTP
       - "443:443"         # HTTPS
       - "2222:22"         # SSH (mapped to 2222 to avoid conflict)
+      - "8090:8090"       # GitLab Pages HTTP
+      - "8091:8091"       # GitLab Pages HTTPS
     volumes:
       - gitlab_config:/etc/gitlab
       - gitlab_logs:/var/log/gitlab
@@ -306,6 +315,26 @@ services:
       - gitlab
     # Note: Runner registration must be done manually after GitLab starts
     # docker exec -it gitlab-runner gitlab-runner register
+
+  # MkDocs Documentation Server
+  mkdocs:
+    image: python:3.11
+    container_name: mkdocs
+    working_dir: /docs
+    command: >
+      sh -c "
+        pip install -q -r requirements.txt &&
+        mkdocs serve --dev-addr=0.0.0.0:8000
+      "
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../../docs:/docs
+    networks:
+      - mng_network
+    restart: unless-stopped
+    # Alternative: Use 'build' command instead of 'serve' for one-time builds
+    # command: sh -c "pip install -q -r requirements.txt && mkdocs build"
 
 networks:
   mng_network:

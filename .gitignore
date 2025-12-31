@@ -81,6 +81,26 @@ appsettings.Production.json
 *.key
 *.pem
 *-password.txt
+scripts/deployment-config
+
+## Production-specific files (should not be committed)
+ApplicationResources/mng_apps/.env
+ApplicationResources/mng_apps/docker-compose.production.yml.backup*
+ApplicationResources/mng_apps/*.backup*
+*.backup
+*.backup2
+*.backup3
+
+## Server-specific scripts (may contain sensitive info)
+get-docker.sh
+scripts/add-swap.sh
+scripts/create-swap-on-server.sh
+scripts/check-*.sh
+scripts/verify-*.sh
+scripts/infrastructure-*.sh
+scripts/cpu-*.sh
+scripts/memory-*.sh
+scripts/disk-*.sh
 
 ## Certificates (exclude production)
 ApplicationResources/Cert/production/
