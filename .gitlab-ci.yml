@@ -79,14 +79,11 @@ build-mngkeeper:
     - dotnet --version
     - echo "Restoring packages..."
     - dotnet restore MngKeeper/MngKeeper.sln --verbosity normal
-    - echo "Restore completed. Checking restore status..."
-    - dotnet restore MngKeeper/MngKeeper.sln --verbosity minimal 2>&1 | tail -20 || true
     - echo "Building solution..."
-    - dotnet build MngKeeper/MngKeeper.sln --no-restore -c Release --verbosity normal 2>&1 | tee build.log
-    - echo "Build exit code: $?"
+    - dotnet build MngKeeper/MngKeeper.sln --no-restore -c Release --verbosity normal
     - echo "=== Build completed successfully ==="
     - echo "Build artifacts:"
-    - find MngKeeper -name "*.dll" -path "*/bin/Release/*" | head -10 || echo "No DLLs found"
+    - find MngKeeper -name "*.dll" -path "*/bin/Release/*" | head -10
   artifacts:
     paths:
       - MngKeeper/**/bin/
