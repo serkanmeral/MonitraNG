@@ -775,7 +775,9 @@ deploy-services:
     - ssh -o StrictHostKeyChecking=no -p ${DEPLOY_SERVER_PORT:-22} $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST "cd $DEPLOY_SERVER_PATH/ApplicationResources/mng_apps && docker compose -f docker-compose.production.yml ps"
     - echo "✅ Services deployed successfully!"
   after_script:
-    - if [ "$CI_JOB_STATUS" == "failed" ]; then echo "❌ Deployment failed!"; echo "Pipeline: $CI_PIPELINE_URL"; echo "Job: $CI_JOB_URL"; elif [ "$CI_JOB_STATUS" == "success" ]; then echo "✅ Deployment succeeded!"; echo "Services are running on: $DEPLOY_SERVER_HOST"; fi
+    - echo "Pipeline status: $CI_JOB_STATUS"
+    - if [ "$CI_JOB_STATUS" == "failed" ]; then echo "❌ Deployment failed!"; fi
+    - if [ "$CI_JOB_STATUS" == "success" ]; then echo "✅ Deployment succeeded!"; fi
   only:
     - main
   when: manual  # Manuel tetikleme için (güvenlik)
