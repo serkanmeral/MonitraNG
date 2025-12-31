@@ -82,8 +82,6 @@ build-mngkeeper:
     - echo "Building solution..."
     - dotnet build MngKeeper/MngKeeper.sln --no-restore -c Release --verbosity normal
     - echo "=== Build completed successfully ==="
-    - echo "Build artifacts:"
-    - find MngKeeper -name "*.dll" -path "*/bin/Release/*" | head -10
   artifacts:
     paths:
       - MngKeeper/**/bin/
