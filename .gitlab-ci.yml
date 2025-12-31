@@ -1,5 +1,6 @@
 # GitLab CI/CD Pipeline Configuration for MonitraNG
 # Bu dosya GitLab'da CI/CD pipeline'larını tanımlar
+# Runner extra_hosts yapılandırması ile artifacts upload sorunu çözüldü
 
 # Default image ve before_script
 image: mcr.microsoft.com/dotnet/sdk:9.0
@@ -74,11 +75,18 @@ build-mngkeeper:
     - pwd
     - echo "Checking solution file:"
     - ls -la MngKeeper/MngKeeper.sln
+    - echo "Dotnet version:"
+    - dotnet --version
     - echo "Restoring packages..."
     - dotnet restore MngKeeper/MngKeeper.sln --verbosity normal
+    - echo "Restore completed. Checking restore status..."
+    - dotnet restore MngKeeper/MngKeeper.sln --verbosity minimal 2>&1 | tail -20 || true
     - echo "Building solution..."
-    - dotnet build MngKeeper/MngKeeper.sln --no-restore -c Release --verbosity normal
+    - dotnet build MngKeeper/MngKeeper.sln --no-restore -c Release --verbosity normal 2>&1 | tee build.log
+    - echo "Build exit code: $?"
     - echo "=== Build completed successfully ==="
+    - echo "Build artifacts:"
+    - find MngKeeper -name "*.dll" -path "*/bin/Release/*" | head -10 || echo "No DLLs found"
   artifacts:
     paths:
       - MngKeeper/**/bin/
