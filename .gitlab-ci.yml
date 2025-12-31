@@ -20,6 +20,7 @@ stages:
   - openapi-extract  # Separate stage for OpenAPI extraction
   - validate-docs    # Documentation quality checks
   - deploy-docs
+  - deploy  # Deployment to remote server
 
 # Variables (genel değişkenler)
 variables:
@@ -741,3 +742,82 @@ pages:
   #    veya: https://<namespace>.gitlab.io/<project-name>/
   timeout: 10m
 
+
+# ============================================
+# DEPLOYMENT STAGE
+# ============================================
+
+# Deployment job - Remote server'a deploy
+deploy-services:
+  stage: deploy
+  image: alpine:latest
+  tags:
+    - docker
+    - production
+  before_script:
+    - apk add --no-cache openssh-client rsync git
+    - eval $(ssh-agent -s)
+    - echo "$DEPLOY_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H $DEPLOY_SERVER_HOST >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - echo "=== Deploying to Remote Server ==="
+    - echo "Server: $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST:$DEPLOY_SERVER_PORT"
+    - echo "Path: $DEPLOY_SERVER_PATH"
+    - |
+      ssh -o StrictHostKeyChecking=no -p ${DEPLOY_SERVER_PORT:-22} $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST << 'ENDSSH'
+        set -e
+        cd $DEPLOY_SERVER_PATH
+        
+        echo "1. Pulling latest code..."
+        git fetch origin
+        git reset --hard origin/main
+        
+        echo "2. Updating infrastructure services..."
+        cd ApplicationResources/mng_common
+        docker compose pull || true
+        docker compose up -d
+        
+        echo "3. Waiting for infrastructure to be ready..."
+        sleep 10
+        
+        echo "4. Updating application services..."
+        cd ../mng_apps
+        docker compose -f docker-compose.production.yml pull || true
+        
+        echo "5. Building and starting application services..."
+        docker compose -f docker-compose.production.yml up -d --build
+        
+        echo "6. Waiting for services to be healthy..."
+        sleep 15
+        
+        echo "7. Checking service status..."
+        docker compose -f docker-compose.production.yml ps
+        
+        echo "=== Deployment completed successfully ==="
+      ENDSSH
+    - echo "✅ Services deployed successfully!"
+  after_script:
+    - |
+      if [ "$CI_JOB_STATUS" == "failed" ]; then
+        echo "❌ Deployment failed!"
+        echo "Pipeline: $CI_PIPELINE_URL"
+        echo "Job: $CI_JOB_URL"
+      elif [ "$CI_JOB_STATUS" == "success" ]; then
+        echo "✅ Deployment succeeded!"
+        echo "Services are running on: $DEPLOY_SERVER_HOST"
+      fi
+  only:
+    - main
+  when: manual  # Manuel tetikleme için (güvenlik)
+  environment:
+    name: production
+    url: http://$DEPLOY_SERVER_HOST
+  timeout: 30m
+  retry:
+    max: 1
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
