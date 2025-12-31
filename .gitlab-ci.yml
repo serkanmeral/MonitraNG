@@ -748,7 +748,8 @@ pages:
 # ============================================
 
 # Deployment job - Remote server'a deploy
-deploy-services:
+# TEMPORARILY DISABLED FOR DEBUGGING
+# deploy-services:
   stage: deploy
   image: alpine:latest
   tags:
