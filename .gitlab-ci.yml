@@ -766,29 +766,16 @@ deploy-services:
     - echo "=== Deploying to Remote Server ==="
     - echo "Server: $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST:$DEPLOY_SERVER_PORT"
     - echo "Path: $DEPLOY_SERVER_PATH"
-    - |
-      ssh -o StrictHostKeyChecking=no -p ${DEPLOY_SERVER_PORT:-22} $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST "cd $DEPLOY_SERVER_PATH && git fetch origin && git reset --hard origin/main"
-    - |
-      ssh -o StrictHostKeyChecking=no -p ${DEPLOY_SERVER_PORT:-22} $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST "cd $DEPLOY_SERVER_PATH/ApplicationResources/mng_common && docker compose pull || true && docker compose up -d"
+    - ssh -o StrictHostKeyChecking=no -p ${DEPLOY_SERVER_PORT:-22} $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST "cd $DEPLOY_SERVER_PATH && git fetch origin && git reset --hard origin/main"
+    - ssh -o StrictHostKeyChecking=no -p ${DEPLOY_SERVER_PORT:-22} $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST "cd $DEPLOY_SERVER_PATH/ApplicationResources/mng_common && docker compose pull || true && docker compose up -d"
     - sleep 10
-    - |
-      ssh -o StrictHostKeyChecking=no -p ${DEPLOY_SERVER_PORT:-22} $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST "cd $DEPLOY_SERVER_PATH/ApplicationResources/mng_apps && docker compose -f docker-compose.production.yml pull || true"
-    - |
-      ssh -o StrictHostKeyChecking=no -p ${DEPLOY_SERVER_PORT:-22} $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST "cd $DEPLOY_SERVER_PATH/ApplicationResources/mng_apps && docker compose -f docker-compose.production.yml up -d --build"
+    - ssh -o StrictHostKeyChecking=no -p ${DEPLOY_SERVER_PORT:-22} $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST "cd $DEPLOY_SERVER_PATH/ApplicationResources/mng_apps && docker compose -f docker-compose.production.yml pull || true"
+    - ssh -o StrictHostKeyChecking=no -p ${DEPLOY_SERVER_PORT:-22} $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST "cd $DEPLOY_SERVER_PATH/ApplicationResources/mng_apps && docker compose -f docker-compose.production.yml up -d --build"
     - sleep 15
-    - |
-      ssh -o StrictHostKeyChecking=no -p ${DEPLOY_SERVER_PORT:-22} $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST "cd $DEPLOY_SERVER_PATH/ApplicationResources/mng_apps && docker compose -f docker-compose.production.yml ps"
+    - ssh -o StrictHostKeyChecking=no -p ${DEPLOY_SERVER_PORT:-22} $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST "cd $DEPLOY_SERVER_PATH/ApplicationResources/mng_apps && docker compose -f docker-compose.production.yml ps"
     - echo "✅ Services deployed successfully!"
   after_script:
-    - |
-      if [ "$CI_JOB_STATUS" == "failed" ]; then
-        echo "❌ Deployment failed!"
-        echo "Pipeline: $CI_PIPELINE_URL"
-        echo "Job: $CI_JOB_URL"
-      elif [ "$CI_JOB_STATUS" == "success" ]; then
-        echo "✅ Deployment succeeded!"
-        echo "Services are running on: $DEPLOY_SERVER_HOST"
-      fi
+    - if [ "$CI_JOB_STATUS" == "failed" ]; then echo "❌ Deployment failed!"; echo "Pipeline: $CI_PIPELINE_URL"; echo "Job: $CI_JOB_URL"; elif [ "$CI_JOB_STATUS" == "success" ]; then echo "✅ Deployment succeeded!"; echo "Services are running on: $DEPLOY_SERVER_HOST"; fi
   only:
     - main
   when: manual  # Manuel tetikleme için (güvenlik)
