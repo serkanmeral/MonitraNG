@@ -924,6 +924,12 @@ pages:
       mkdir -p public
       cp -r docs/site/* public/
       echo "Files copied successfully"
+      # Gereksiz dosyaları temizle (artifacts size'ı küçültmek için)
+      echo "Cleaning up unnecessary files to reduce artifacts size..."
+      find public -name "*.map" -type f -delete 2>/dev/null || true
+      find public -name "*.log" -type f -delete 2>/dev/null || true
+      find public -type d -name ".cache" -exec rm -rf {} + 2>/dev/null || true
+      echo "Cleanup completed"
       echo "Public directory contains:"
       ls -la public/ | head -20
       echo ""
