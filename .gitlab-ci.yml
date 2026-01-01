@@ -406,13 +406,8 @@ build-docker-ui:
   image: docker:latest
   tags:
     - docker
-  services:
-    - name: docker:dind
-      alias: docker
   variables:
-    DOCKER_TLS_CERTDIR: ""
-    DOCKER_DRIVER: overlay2
-    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_HOST: "unix:///var/run/docker.sock"
   before_script:
     - docker info
   script:
@@ -427,7 +422,7 @@ build-docker-ui:
     - main
     - develop
     - merge_requests
-  # Not: Runner'ın privileged mode'da olması gerekiyor (config.toml'da privileged: true)
+  # Not: Runner'ın privileged mode'da olması ve Docker socket mount edilmesi gerekiyor
 
 # MngGateway Docker Build
 build-docker-gateway:
@@ -435,13 +430,8 @@ build-docker-gateway:
   image: docker:latest
   tags:
     - docker
-  services:
-    - name: docker:dind
-      alias: docker
   variables:
-    DOCKER_TLS_CERTDIR: ""
-    DOCKER_DRIVER: overlay2
-    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_HOST: "unix:///var/run/docker.sock"
   dependencies:
     - build-mnggateway
   before_script:
@@ -458,7 +448,7 @@ build-docker-gateway:
     - main
     - develop
     - merge_requests
-  # Not: Runner'ın privileged mode'da olması gerekiyor (config.toml'da privileged: true)
+  # Not: Runner'ın privileged mode'da olması ve Docker socket mount edilmesi gerekiyor
 
 # ============================================
 # DOCUMENTATION VALIDATION STAGE
