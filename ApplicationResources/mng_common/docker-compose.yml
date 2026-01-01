@@ -276,6 +276,8 @@ services:
         gitlab_pages['enable'] = true
         gitlab_pages['external_http'] = ['0.0.0.0:8090']
         pages_nginx['enable'] = true
+        # Artifact size limit (100MB) - For Pages artifacts
+        gitlab_rails['artifacts_max_size'] = 100.megabytes
         # Disable features to save resources (optional)
         # prometheus_monitoring['enable'] = false
         # grafana['enable'] = false
@@ -283,8 +285,9 @@ services:
       - "8090:80"           # HTTP
       - "443:443"         # HTTPS
       - "2222:22"         # SSH (mapped to 2222 to avoid conflict)
-      - "8090:8090"       # GitLab Pages HTTP
-      - "8091:8091"       # GitLab Pages HTTPS
+      # GitLab Pages ports removed - causing port conflict
+      # - "8090:8090"       # GitLab Pages HTTP
+      # - "8091:8091"       # GitLab Pages HTTPS
     volumes:
       - gitlab_config:/etc/gitlab
       - gitlab_logs:/var/log/gitlab
