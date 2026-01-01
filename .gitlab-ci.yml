@@ -1166,4 +1166,5 @@ deploy-services:
       when: never
     - if: $CI_COMMIT_BRANCH == "main"
       when: manual
+  allow_failure: true  # Pipeline'ı başarılı saymak için (deploy manuel)
   timeout: 30m
