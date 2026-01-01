@@ -1212,11 +1212,8 @@ deploy-services:
         fi
         
         # Docker işlemleri
-        echo "Pulling latest Docker images..."
-        docker compose -f docker-compose.production.yml pull || exit 1
-        
-        echo "Starting/updating services..."
-        docker compose -f docker-compose.production.yml up -d || exit 1
+        echo "Building and starting Docker services..."
+        docker compose -f docker-compose.production.yml up -d --build || exit 1
         
         echo "Checking service status..."
         docker compose -f docker-compose.production.yml ps
