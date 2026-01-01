@@ -282,6 +282,8 @@ services:
         nginx['client_max_body_size'] = '100m'
         # GitLab Workhorse max request size (100MB) - For artifact uploads
         gitlab_workhorse['max_request_size'] = 100 * 1024 * 1024
+        # GitLab Workhorse max filesize (100MB) - For artifact uploads
+        gitlab_workhorse['max_filesize'] = 100 * 1024 * 1024
         # Disable features to save resources (optional)
         # prometheus_monitoring['enable'] = false
         # grafana['enable'] = false
