@@ -991,11 +991,26 @@ pages:
       find public -name "sitemap.xml.gz" -type f -delete 2>/dev/null || true
       find public -name "sitemap.xml.bz2" -type f -delete 2>/dev/null || true
       find public -name "sitemap.xml.br" -type f -delete 2>/dev/null || true
-      # Büyük asset dosyalarını kontrol et (eğer varsa)
-      find public -type f -size +1M -exec ls -lh {} \; 2>/dev/null | head -10 || true
+      # Büyük dosyaları bul ve listele (debug için)
+      echo "=== Large files analysis ==="
+      find public -type f -size +500k -exec ls -lh {} \; 2>/dev/null | head -20 || true
+      # Büyük asset dosyalarını sil (eğer gereksizse)
+      # Not: Bu dosyalar genellikle gereksizdir ve tarayıcı tarafından cache'lenebilir
+      find public/assets -type f -size +500k -name "*.png" -delete 2>/dev/null || true
+      find public/assets -type f -size +500k -name "*.jpg" -delete 2>/dev/null || true
+      find public/assets -type f -size +500k -name "*.jpeg" -delete 2>/dev/null || true
+      find public/assets -type f -size +500k -name "*.svg" -delete 2>/dev/null || true
+      # Büyük font dosyalarını kontrol et
+      find public/assets -type f -size +500k -name "*.woff" -delete 2>/dev/null || true
+      find public/assets -type f -size +500k -name "*.woff2" -delete 2>/dev/null || true
+      find public/assets -type f -size +500k -name "*.ttf" -delete 2>/dev/null || true
+      find public/assets -type f -size +500k -name "*.otf" -delete 2>/dev/null || true
       echo "Cleanup completed"
       echo "After cleanup - Total files: $(find public -type f | wc -l)"
       echo "After cleanup - Total size: $(du -sh public | cut -f1)"
+      # Dosya boyutlarını detaylı göster
+      echo "=== File size distribution ==="
+      du -h public | sort -rh | head -20 || true
       echo "Public directory contains:"
       ls -la public/ | head -20
       echo ""
@@ -1022,11 +1037,18 @@ pages:
       fi
       echo "Total files in public/: $(find public -type f | wc -l)"
       echo "Public directory size: $(du -sh public | cut -f1)"
-      # Boyut kontrolü - eğer çok büyükse uyar
+      # Boyut kontrolü - eğer çok büyükse uyar ve büyük dosyaları listele
       SIZE_MB=$(du -sm public | cut -f1)
-      if [ "$SIZE_MB" -gt 10 ]; then
+      if [ "$SIZE_MB" -gt 5 ]; then
         echo "WARNING: Public directory size is ${SIZE_MB}MB, which may be too large for GitLab Pages"
-        echo "Consider further optimization or compression"
+        echo "GitLab CE default artifact size limit is usually 5MB"
+        echo "Consider:"
+        echo "  1. Increasing artifact size limit in GitLab config"
+        echo "  2. Further file optimization"
+        echo "  3. Removing large asset files"
+        echo ""
+        echo "Top 20 largest files:"
+        find public -type f -exec ls -lh {} \; 2>/dev/null | sort -k5 -rh | head -20 || true
       fi
     - |
       # Add version info if available
