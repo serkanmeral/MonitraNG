@@ -303,18 +303,21 @@ services:
   gitlab-runner:
     image: gitlab/gitlab-runner:latest
     container_name: gitlab-runner
+    network_mode: host  # Host network for external IP access
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - gitlab_runner_config:/etc/gitlab-runner
     environment:
       - DOCKER_HOST=unix:///var/run/docker.sock
-    networks:
-      - mng_network
+    # networks:  # Removed - using network_mode: host instead
+    #   - mng_network
     restart: unless-stopped
     depends_on:
       - gitlab
     # Note: Runner registration must be done manually after GitLab starts
     # docker exec -it gitlab-runner gitlab-runner register
+    # Note: Runner URL must be set to GitLab IP (http://172.18.0.6 or http://45.141.151.52:8090)
+    # when using network_mode: host, as hostname 'gitlab' won't resolve
 
   # MkDocs Documentation Server
   mkdocs:
