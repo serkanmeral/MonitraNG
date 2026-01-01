@@ -1,6 +1,7 @@
 # GitLab CI/CD Pipeline Configuration for MonitraNG
 # Bu dosya GitLab'da CI/CD pipeline'larını tanımlar
 # Artifacts optional - jobs build locally instead of using artifacts to avoid upload failures
+# Pipeline skip desteği: [skip ci] veya [ci skip] kullanarak pipeline'ı atlayabilirsiniz
 
 # Default image ve before_script
 image: mcr.microsoft.com/dotnet/sdk:9.0
@@ -27,6 +28,8 @@ stages:
 variables:
   DOTNET_VERSION: "9.0"
   NODE_VERSION: "18"
+  # Pipeline skip kontrolü
+  CI_SKIP_PATTERN: "\\[skip ci\\]|\\[ci skip\\]"
   # Network resilience ayarları
   GIT_HTTP_LOW_SPEED_LIMIT: "1000"
   GIT_HTTP_LOW_SPEED_TIME: "300"
@@ -71,10 +74,13 @@ test-setup:
     - ls -la MngHub/MngHub.sln
     - ls -la MngGateway/MngGateway.sln
     - echo "=== Test Setup Complete ==="
-  only:
-    - main
-    - develop
-    - merge_requests
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
 
 # ============================================
 # BUILD STAGE
@@ -121,10 +127,13 @@ build-mngkeeper:
       - runner_system_failure
       - stuck_or_timeout_failure
       - api_failure
-  only:
-    - main
-    - develop
-    - merge_requests
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
 
 # MngDataGateway Build
 build-mngdatagateway:
@@ -167,10 +176,13 @@ build-mngdatagateway:
       - runner_system_failure
       - stuck_or_timeout_failure
       - api_failure
-  only:
-    - main
-    - develop
-    - merge_requests
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
 
 # MngHub Build
 build-mnghub:
@@ -211,10 +223,13 @@ build-mnghub:
       - runner_system_failure
       - stuck_or_timeout_failure
       - api_failure
-  only:
-    - main
-    - develop
-    - merge_requests
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
 
 # MngGateway Build
 build-mnggateway:
@@ -255,10 +270,13 @@ build-mnggateway:
       - runner_system_failure
       - stuck_or_timeout_failure
       - api_failure
-  only:
-    - main
-    - develop
-    - merge_requests
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
 
 # Frontend Build (Mng.Ui)
 build-frontend:
@@ -288,10 +306,13 @@ build-frontend:
     - npm run generate
     - echo "Frontend build completed successfully"
   # Artifacts removed - optional to avoid upload failures
-  only:
-    - main
-    - develop
-    - merge_requests
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
 
 # ============================================
 # TEST STAGE
@@ -324,10 +345,13 @@ test-mngkeeper:
     - dotnet build MngKeeper/MngKeeper.sln --no-restore -c Release --verbosity normal
     - dotnet test MngKeeper/MngKeeper.sln --no-build --verbosity normal
   allow_failure: true
-  only:
-    - main
-    - develop
-    - merge_requests
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
 
 # MngDataGateway Tests
 test-mngdatagateway:
@@ -356,10 +380,13 @@ test-mngdatagateway:
     - dotnet build MngDataGateway/MngDataGateway.sln -c Release --verbosity normal
     - dotnet test MngDataGateway/MngDataGateway.sln --no-build --verbosity normal
   allow_failure: true
-  only:
-    - main
-    - develop
-    - merge_requests
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
 
 # MngHub Tests
 test-mnghub:
@@ -388,10 +415,13 @@ test-mnghub:
     - dotnet build MngHub/MngHub.sln --no-restore -c Release --verbosity normal
     - dotnet test MngHub/MngHub.sln --no-build --verbosity normal
   allow_failure: true
-  only:
-    - main
-    - develop
-    - merge_requests
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
 
 # MngGateway Tests
 test-mnggateway:
@@ -420,10 +450,13 @@ test-mnggateway:
     - dotnet build MngGateway/MngGateway.sln --no-restore -c Release --verbosity normal
     - dotnet test MngGateway/MngGateway.sln --no-build --verbosity normal
   allow_failure: true
-  only:
-    - main
-    - develop
-    - merge_requests
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
 
 # ============================================
 # OPENAPI EXTRACT STAGE
@@ -595,10 +628,12 @@ extract-openapi-specs:
     key: openapi-specs-$CI_COMMIT_REF_SLUG
     paths:
       - docs/content/api/
-  only:
-    - main
-    - develop
-    - merge_requests
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
   # Note: If Swashbuckle CLI doesn't work, we can fall back to:
   # 1. Running services temporarily and extracting via HTTP
   # 2. Pre-generated spec files in repository
@@ -626,10 +661,12 @@ build-docker-ui:
     - docker images | grep mngui
   artifacts:
     expire_in: 1 day
-  only:
-    - main
-    - develop
-    - merge_requests
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
   # Not: Runner'ın privileged mode'da olması ve Docker socket mount edilmesi gerekiyor
 
 # MngGateway Docker Build
@@ -651,10 +688,12 @@ build-docker-gateway:
     - docker images | grep mnggateway
   artifacts:
     expire_in: 1 day
-  only:
-    - main
-    - develop
-    - merge_requests
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
   # Not: Runner'ın privileged mode'da olması ve Docker socket mount edilmesi gerekiyor
 
 # ============================================
@@ -687,10 +726,12 @@ validate-docs:
       done
     - echo "=== Documentation validation completed ==="
   allow_failure: true  # Don't block pipeline on validation failures
-  only:
-    - main
-    - develop
-    - merge_requests
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
   cache:
     key: validate-docs-$CI_COMMIT_REF_SLUG
     paths:
@@ -792,8 +833,10 @@ deploy-docs:
     paths:
       - .pip-cache/
       - docs/.cache/
-  only:
-    - main
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
   # Build timeout
   timeout: 15m
   retry:
@@ -849,8 +892,10 @@ deploy-docs-preview:
     paths:
       - .pip-cache/
       - docs/.cache/
-  only:
-    - merge_requests
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_MERGE_REQUEST_IID
   environment:
     name: docs-preview/mr-$CI_MERGE_REQUEST_IID
     url: https://$CI_PROJECT_NAMESPACE.gitlab.io/$CI_PROJECT_NAME/-/docs-preview/mr-$CI_MERGE_REQUEST_IID
@@ -987,8 +1032,10 @@ pages:
     key: mkdocs-deps-$CI_COMMIT_REF_SLUG
     paths:
       - .pip-cache/
-  only:
-    - main
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
   # GitLab Pages için özel gereksinimler:
   # 1. Job adı "pages" olmalı (✓)
   # 2. artifacts.paths "public" içermeli (✓)
@@ -1032,7 +1079,9 @@ deploy-services:
   environment:
     name: production
     url: http://$DEPLOY_SERVER_HOST
-  only:
-    - main
-  when: manual
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
   timeout: 30m
