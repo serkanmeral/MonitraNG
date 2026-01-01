@@ -1,6 +1,6 @@
 # GitLab CI/CD Pipeline Configuration for MonitraNG
 # Bu dosya GitLab'da CI/CD pipeline'larını tanımlar
-# Runner network_mode = "mng_common_mng_network" ile test ediliyor (artifacts upload için)
+# Artifacts optional - jobs build locally instead of using artifacts to avoid upload failures
 
 # Default image ve before_script
 image: mcr.microsoft.com/dotnet/sdk:9.0
@@ -82,11 +82,7 @@ build-mngkeeper:
     - echo "Building solution..."
     - dotnet build MngKeeper/MngKeeper.sln --no-restore -c Release --verbosity normal
     - echo "=== Build completed successfully ==="
-  artifacts:
-    paths:
-      - MngKeeper/**/bin/
-      - MngKeeper/**/obj/
-    expire_in: 1 hour
+  # Artifacts removed - optional to avoid upload failures
   timeout: 30m
   retry:
     max: 2
@@ -117,11 +113,7 @@ build-mngdatagateway:
     - echo "Building solution..."
     - dotnet build MngDataGateway/MngDataGateway.sln -c Release --no-incremental --verbosity normal
     - echo "=== Build completed successfully ==="
-  artifacts:
-    paths:
-      - MngDataGateway/**/bin/
-      - MngDataGateway/**/obj/
-    expire_in: 1 hour
+  # Artifacts removed - optional to avoid upload failures
   timeout: 30m
   retry:
     max: 2
@@ -150,11 +142,7 @@ build-mnghub:
     - echo "Building solution..."
     - dotnet build MngHub/MngHub.sln --no-restore -c Release --verbosity normal
     - echo "=== Build completed successfully ==="
-  artifacts:
-    paths:
-      - MngHub/**/bin/
-      - MngHub/**/obj/
-    expire_in: 1 hour
+  # Artifacts removed - optional to avoid upload failures
   timeout: 30m
   retry:
     max: 2
@@ -183,11 +171,7 @@ build-mnggateway:
     - echo "Building solution..."
     - dotnet build MngGateway/MngGateway.sln --no-restore -c Release --verbosity normal
     - echo "=== Build completed successfully ==="
-  artifacts:
-    paths:
-      - MngGateway/**/bin/
-      - MngGateway/**/obj/
-    expire_in: 1 hour
+  # Artifacts removed - optional to avoid upload failures
   timeout: 30m
   retry:
     max: 2
@@ -211,11 +195,7 @@ build-frontend:
     - npm ci || npm install
     - npm run generate
     - echo "Frontend build completed successfully"
-  artifacts:
-    paths:
-      - Mng.Ui/.output/
-      - Mng.Ui/.nuxt/
-    expire_in: 1 hour
+  # Artifacts removed - optional to avoid upload failures
   only:
     - main
     - develop
@@ -231,10 +211,11 @@ test-mngkeeper:
   image: mcr.microsoft.com/dotnet/sdk:9.0
   tags:
     - docker
-  dependencies:
-    - build-mngkeeper
+  # Dependencies removed - artifacts optional, building locally instead
   script:
-    - echo "Running MngKeeper tests..."
+    - echo "Building and running MngKeeper tests..."
+    - dotnet restore MngKeeper/MngKeeper.sln --verbosity normal
+    - dotnet build MngKeeper/MngKeeper.sln --no-restore -c Release --verbosity normal
     - dotnet test MngKeeper/MngKeeper.sln --no-build --verbosity normal
   allow_failure: true
   only:
@@ -248,10 +229,11 @@ test-mngdatagateway:
   image: mcr.microsoft.com/dotnet/sdk:9.0
   tags:
     - docker
-  dependencies:
-    - build-mngdatagateway
+  # Dependencies removed - artifacts optional, building locally instead
   script:
-    - echo "Running MngDataGateway tests..."
+    - echo "Building and running MngDataGateway tests..."
+    - dotnet restore MngDataGateway/MngDataGateway.sln --verbosity normal
+    - dotnet build MngDataGateway/MngDataGateway.sln -c Release --verbosity normal
     - dotnet test MngDataGateway/MngDataGateway.sln --no-build --verbosity normal
   allow_failure: true
   only:
@@ -265,10 +247,11 @@ test-mnghub:
   image: mcr.microsoft.com/dotnet/sdk:9.0
   tags:
     - docker
-  dependencies:
-    - build-mnghub
+  # Dependencies removed - artifacts optional, building locally instead
   script:
-    - echo "Running MngHub tests..."
+    - echo "Building and running MngHub tests..."
+    - dotnet restore MngHub/MngHub.sln --verbosity normal
+    - dotnet build MngHub/MngHub.sln --no-restore -c Release --verbosity normal
     - dotnet test MngHub/MngHub.sln --no-build --verbosity normal
   allow_failure: true
   only:
@@ -282,10 +265,11 @@ test-mnggateway:
   image: mcr.microsoft.com/dotnet/sdk:9.0
   tags:
     - docker
-  dependencies:
-    - build-mnggateway
+  # Dependencies removed - artifacts optional, building locally instead
   script:
-    - echo "Running MngGateway tests..."
+    - echo "Building and running MngGateway tests..."
+    - dotnet restore MngGateway/MngGateway.sln --verbosity normal
+    - dotnet build MngGateway/MngGateway.sln --no-restore -c Release --verbosity normal
     - dotnet test MngGateway/MngGateway.sln --no-build --verbosity normal
   allow_failure: true
   only:
@@ -308,16 +292,23 @@ extract-openapi-specs:
   image: mcr.microsoft.com/dotnet/sdk:9.0
   tags:
     - docker
-  dependencies:
-    - build-mngkeeper
-    - build-mngdatagateway
-    - build-mnggateway
+  # Dependencies removed - artifacts optional, building locally instead
   before_script:
     - apt-get update && apt-get install -y curl jq || true
     - |
       # Install Swashbuckle CLI tool for OpenAPI extraction
       dotnet tool install -g Swashbuckle.AspNetCore.Cli || dotnet tool update -g Swashbuckle.AspNetCore.Cli || true
   script:
+    - echo "=== Building services for OpenAPI extraction ==="
+    - echo "Building MngKeeper..."
+    - dotnet restore MngKeeper/MngKeeper.sln --verbosity normal
+    - dotnet build MngKeeper/MngKeeper.sln --no-restore -c Release --verbosity normal
+    - echo "Building MngDataGateway..."
+    - dotnet restore MngDataGateway/MngDataGateway.sln --verbosity normal
+    - dotnet build MngDataGateway/MngDataGateway.sln -c Release --verbosity normal
+    - echo "Building MngGateway..."
+    - dotnet restore MngGateway/MngGateway.sln --verbosity normal
+    - dotnet build MngGateway/MngGateway.sln --no-restore -c Release --verbosity normal
     - echo "=== Extracting OpenAPI specs from built services ==="
     - |
       # Create output directories
@@ -432,8 +423,7 @@ build-docker-gateway:
     - docker
   variables:
     DOCKER_HOST: "unix:///var/run/docker.sock"
-  dependencies:
-    - build-mnggateway
+  # Dependencies removed - Docker build uses source code, not artifacts
   before_script:
     - docker info
   script:
