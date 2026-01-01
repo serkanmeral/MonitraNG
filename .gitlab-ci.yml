@@ -1,6 +1,6 @@
 # GitLab CI/CD Pipeline Configuration for MonitraNG
 # Bu dosya GitLab'da CI/CD pipeline'larını tanımlar
-# Runner network_mode = "host" ile test ediliyor (hem external hem internal erişim)
+# Runner network_mode = "mng_common_mng_network" ile test ediliyor (artifacts upload için)
 
 # Default image ve before_script
 image: mcr.microsoft.com/dotnet/sdk:9.0
