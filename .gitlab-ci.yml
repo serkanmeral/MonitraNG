@@ -994,18 +994,34 @@ pages:
       find public -name "sitemap.xml.br" -type f -delete 2>/dev/null || true
       # Büyük dosyaları bul ve listele (debug için)
       echo "=== Large files analysis ==="
-      find public -type f -size +500k -exec ls -lh {} \; 2>/dev/null | head -20 || true
+      find public -type f -size +200k -exec ls -lh {} \; 2>/dev/null | head -30 || true
+      # Büyük JavaScript dosyalarını sil (minified versiyonlar yeterli)
+      find public/assets -type f -size +200k -name "*.js" -delete 2>/dev/null || true
+      find public/assets -type f -size +200k -name "*.js.map" -delete 2>/dev/null || true
+      # Büyük CSS dosyalarını sil (minified versiyonlar yeterli)
+      find public/assets -type f -size +200k -name "*.css" -delete 2>/dev/null || true
+      find public/assets -type f -size +200k -name "*.css.map" -delete 2>/dev/null || true
       # Büyük asset dosyalarını sil (eğer gereksizse)
       # Not: Bu dosyalar genellikle gereksizdir ve tarayıcı tarafından cache'lenebilir
-      find public/assets -type f -size +500k -name "*.png" -delete 2>/dev/null || true
-      find public/assets -type f -size +500k -name "*.jpg" -delete 2>/dev/null || true
-      find public/assets -type f -size +500k -name "*.jpeg" -delete 2>/dev/null || true
-      find public/assets -type f -size +500k -name "*.svg" -delete 2>/dev/null || true
+      find public/assets -type f -size +200k -name "*.png" -delete 2>/dev/null || true
+      find public/assets -type f -size +200k -name "*.jpg" -delete 2>/dev/null || true
+      find public/assets -type f -size +200k -name "*.jpeg" -delete 2>/dev/null || true
+      find public/assets -type f -size +200k -name "*.svg" -delete 2>/dev/null || true
       # Büyük font dosyalarını kontrol et
-      find public/assets -type f -size +500k -name "*.woff" -delete 2>/dev/null || true
-      find public/assets -type f -size +500k -name "*.woff2" -delete 2>/dev/null || true
-      find public/assets -type f -size +500k -name "*.ttf" -delete 2>/dev/null || true
-      find public/assets -type f -size +500k -name "*.otf" -delete 2>/dev/null || true
+      find public/assets -type f -size +200k -name "*.woff" -delete 2>/dev/null || true
+      find public/assets -type f -size +200k -name "*.woff2" -delete 2>/dev/null || true
+      find public/assets -type f -size +200k -name "*.ttf" -delete 2>/dev/null || true
+      find public/assets -type f -size +200k -name "*.otf" -delete 2>/dev/null || true
+      # Search index dosyasını kontrol et ve gerekirse küçült
+      if [ -f "public/search/search_index.json" ]; then
+        SEARCH_SIZE=$(du -k public/search/search_index.json | cut -f1)
+        if [ "$SEARCH_SIZE" -gt 500 ]; then
+          echo "Search index is large (${SEARCH_SIZE}KB), keeping only essential data..."
+          # Search index'i küçült (sadece temel bilgileri tut)
+          jq 'del(.docs[] | select(.location == null))' public/search/search_index.json > public/search/search_index.json.tmp 2>/dev/null || true
+          mv public/search/search_index.json.tmp public/search/search_index.json 2>/dev/null || true
+        fi
+      fi
       echo "Cleanup completed"
       echo "After cleanup - Total files: $(find public -type f | wc -l)"
       echo "After cleanup - Total size: $(du -sh public | cut -f1)"
