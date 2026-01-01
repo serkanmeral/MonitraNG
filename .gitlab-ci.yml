@@ -27,6 +27,23 @@ stages:
 variables:
   DOTNET_VERSION: "9.0"
   NODE_VERSION: "18"
+  # Network resilience ayarları
+  GIT_HTTP_LOW_SPEED_LIMIT: "1000"
+  GIT_HTTP_LOW_SPEED_TIME: "300"
+  GIT_STRATEGY: "clone"
+  # .NET network ayarları
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  # NPM network ayarları
+  NPM_CONFIG_FETCH_RETRIES: "5"
+  NPM_CONFIG_FETCH_RETRY_MINTIMEOUT: "20000"
+  NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT: "120000"
+  # PIP network ayarları
+  PIP_DEFAULT_TIMEOUT: "300"
+  PIP_RETRIES: "5"
+  # Docker network ayarları
+  DOCKER_CLIENT_TIMEOUT: "300"
 
 # ============================================
 # TEST SETUP STAGE (Debug)
@@ -77,18 +94,34 @@ build-mngkeeper:
     - ls -la MngKeeper/MngKeeper.sln
     - echo "Dotnet version:"
     - dotnet --version
-    - echo "Restoring packages..."
-    - dotnet restore MngKeeper/MngKeeper.sln --verbosity normal
+    - echo "Restoring packages (with retry)..."
+    - |
+      for i in {1..3}; do
+        echo "Restore attempt $i/3..."
+        if dotnet restore MngKeeper/MngKeeper.sln --verbosity normal; then
+          echo "Restore succeeded on attempt $i"
+          break
+        else
+          if [ $i -eq 3 ]; then
+            echo "Restore failed after 3 attempts"
+            exit 1
+          fi
+          echo "Restore failed, waiting 10 seconds before retry..."
+          sleep 10
+        fi
+      done
     - echo "Building solution..."
     - dotnet build MngKeeper/MngKeeper.sln --no-restore -c Release --verbosity normal
     - echo "=== Build completed successfully ==="
   # Artifacts removed - optional to avoid upload failures
   timeout: 30m
   retry:
-    max: 2
+    max: 3
     when:
       - runner_system_failure
       - stuck_or_timeout_failure
+      - api_failure
+      - network_failure
   only:
     - main
     - develop
@@ -108,18 +141,34 @@ build-mngdatagateway:
     - ls -la MngDataGateway/MngDataGateway.sln
     - echo "Cleaning solution..."
     - dotnet clean MngDataGateway/MngDataGateway.sln
-    - echo "Restoring packages..."
-    - dotnet restore MngDataGateway/MngDataGateway.sln --force --verbosity normal
+    - echo "Restoring packages (with retry)..."
+    - |
+      for i in {1..3}; do
+        echo "Restore attempt $i/3..."
+        if dotnet restore MngDataGateway/MngDataGateway.sln --force --verbosity normal; then
+          echo "Restore succeeded on attempt $i"
+          break
+        else
+          if [ $i -eq 3 ]; then
+            echo "Restore failed after 3 attempts"
+            exit 1
+          fi
+          echo "Restore failed, waiting 10 seconds before retry..."
+          sleep 10
+        fi
+      done
     - echo "Building solution..."
     - dotnet build MngDataGateway/MngDataGateway.sln -c Release --no-incremental --verbosity normal
     - echo "=== Build completed successfully ==="
   # Artifacts removed - optional to avoid upload failures
   timeout: 30m
   retry:
-    max: 2
+    max: 3
     when:
       - runner_system_failure
       - stuck_or_timeout_failure
+      - api_failure
+      - network_failure
   only:
     - main
     - develop
@@ -137,18 +186,34 @@ build-mnghub:
     - pwd
     - echo "Checking solution file:"
     - ls -la MngHub/MngHub.sln
-    - echo "Restoring packages..."
-    - dotnet restore MngHub/MngHub.sln --verbosity normal
+    - echo "Restoring packages (with retry)..."
+    - |
+      for i in {1..3}; do
+        echo "Restore attempt $i/3..."
+        if dotnet restore MngHub/MngHub.sln --verbosity normal; then
+          echo "Restore succeeded on attempt $i"
+          break
+        else
+          if [ $i -eq 3 ]; then
+            echo "Restore failed after 3 attempts"
+            exit 1
+          fi
+          echo "Restore failed, waiting 10 seconds before retry..."
+          sleep 10
+        fi
+      done
     - echo "Building solution..."
     - dotnet build MngHub/MngHub.sln --no-restore -c Release --verbosity normal
     - echo "=== Build completed successfully ==="
   # Artifacts removed - optional to avoid upload failures
   timeout: 30m
   retry:
-    max: 2
+    max: 3
     when:
       - runner_system_failure
       - stuck_or_timeout_failure
+      - api_failure
+      - network_failure
   only:
     - main
     - develop
@@ -166,18 +231,34 @@ build-mnggateway:
     - pwd
     - echo "Checking solution file:"
     - ls -la MngGateway/MngGateway.sln
-    - echo "Restoring packages..."
-    - dotnet restore MngGateway/MngGateway.sln --verbosity normal
+    - echo "Restoring packages (with retry)..."
+    - |
+      for i in {1..3}; do
+        echo "Restore attempt $i/3..."
+        if dotnet restore MngGateway/MngGateway.sln --verbosity normal; then
+          echo "Restore succeeded on attempt $i"
+          break
+        else
+          if [ $i -eq 3 ]; then
+            echo "Restore failed after 3 attempts"
+            exit 1
+          fi
+          echo "Restore failed, waiting 10 seconds before retry..."
+          sleep 10
+        fi
+      done
     - echo "Building solution..."
     - dotnet build MngGateway/MngGateway.sln --no-restore -c Release --verbosity normal
     - echo "=== Build completed successfully ==="
   # Artifacts removed - optional to avoid upload failures
   timeout: 30m
   retry:
-    max: 2
+    max: 3
     when:
       - runner_system_failure
       - stuck_or_timeout_failure
+      - api_failure
+      - network_failure
   only:
     - main
     - develop
@@ -192,7 +273,22 @@ build-frontend:
   script:
     - echo "Building Frontend (Mng.Ui)..."
     - cd Mng.Ui
-    - npm ci || npm install
+    - |
+      echo "Installing npm packages (with retry)..."
+      for i in {1..3}; do
+        echo "npm install attempt $i/3..."
+        if npm ci || npm install; then
+          echo "npm install succeeded on attempt $i"
+          break
+        else
+          if [ $i -eq 3 ]; then
+            echo "npm install failed after 3 attempts"
+            exit 1
+          fi
+          echo "npm install failed, waiting 10 seconds before retry..."
+          sleep 10
+        fi
+      done
     - npm run generate
     - echo "Frontend build completed successfully"
   # Artifacts removed - optional to avoid upload failures
@@ -214,7 +310,21 @@ test-mngkeeper:
   # Dependencies removed - artifacts optional, building locally instead
   script:
     - echo "Building and running MngKeeper tests..."
-    - dotnet restore MngKeeper/MngKeeper.sln --verbosity normal
+    - |
+      for i in {1..3}; do
+        echo "Restore attempt $i/3..."
+        if dotnet restore MngKeeper/MngKeeper.sln --verbosity normal; then
+          echo "Restore succeeded on attempt $i"
+          break
+        else
+          if [ $i -eq 3 ]; then
+            echo "Restore failed after 3 attempts"
+            exit 1
+          fi
+          echo "Restore failed, waiting 10 seconds before retry..."
+          sleep 10
+        fi
+      done
     - dotnet build MngKeeper/MngKeeper.sln --no-restore -c Release --verbosity normal
     - dotnet test MngKeeper/MngKeeper.sln --no-build --verbosity normal
   allow_failure: true
@@ -232,7 +342,21 @@ test-mngdatagateway:
   # Dependencies removed - artifacts optional, building locally instead
   script:
     - echo "Building and running MngDataGateway tests..."
-    - dotnet restore MngDataGateway/MngDataGateway.sln --verbosity normal
+    - |
+      for i in {1..3}; do
+        echo "Restore attempt $i/3..."
+        if dotnet restore MngDataGateway/MngDataGateway.sln --verbosity normal; then
+          echo "Restore succeeded on attempt $i"
+          break
+        else
+          if [ $i -eq 3 ]; then
+            echo "Restore failed after 3 attempts"
+            exit 1
+          fi
+          echo "Restore failed, waiting 10 seconds before retry..."
+          sleep 10
+        fi
+      done
     - dotnet build MngDataGateway/MngDataGateway.sln -c Release --verbosity normal
     - dotnet test MngDataGateway/MngDataGateway.sln --no-build --verbosity normal
   allow_failure: true
@@ -250,7 +374,21 @@ test-mnghub:
   # Dependencies removed - artifacts optional, building locally instead
   script:
     - echo "Building and running MngHub tests..."
-    - dotnet restore MngHub/MngHub.sln --verbosity normal
+    - |
+      for i in {1..3}; do
+        echo "Restore attempt $i/3..."
+        if dotnet restore MngHub/MngHub.sln --verbosity normal; then
+          echo "Restore succeeded on attempt $i"
+          break
+        else
+          if [ $i -eq 3 ]; then
+            echo "Restore failed after 3 attempts"
+            exit 1
+          fi
+          echo "Restore failed, waiting 10 seconds before retry..."
+          sleep 10
+        fi
+      done
     - dotnet build MngHub/MngHub.sln --no-restore -c Release --verbosity normal
     - dotnet test MngHub/MngHub.sln --no-build --verbosity normal
   allow_failure: true
@@ -268,7 +406,21 @@ test-mnggateway:
   # Dependencies removed - artifacts optional, building locally instead
   script:
     - echo "Building and running MngGateway tests..."
-    - dotnet restore MngGateway/MngGateway.sln --verbosity normal
+    - |
+      for i in {1..3}; do
+        echo "Restore attempt $i/3..."
+        if dotnet restore MngGateway/MngGateway.sln --verbosity normal; then
+          echo "Restore succeeded on attempt $i"
+          break
+        else
+          if [ $i -eq 3 ]; then
+            echo "Restore failed after 3 attempts"
+            exit 1
+          fi
+          echo "Restore failed, waiting 10 seconds before retry..."
+          sleep 10
+        fi
+      done
     - dotnet build MngGateway/MngGateway.sln --no-restore -c Release --verbosity normal
     - dotnet test MngGateway/MngGateway.sln --no-build --verbosity normal
   allow_failure: true
@@ -294,20 +446,89 @@ extract-openapi-specs:
     - docker
   # Dependencies removed - artifacts optional, building locally instead
   before_script:
-    - apt-get update && apt-get install -y curl jq || true
     - |
-      # Install Swashbuckle CLI tool for OpenAPI extraction
-      dotnet tool install -g Swashbuckle.AspNetCore.Cli || dotnet tool update -g Swashbuckle.AspNetCore.Cli || true
+      for i in {1..3}; do
+        echo "apt-get update attempt $i/3..."
+        if apt-get update && apt-get install -y curl jq; then
+          echo "apt-get succeeded on attempt $i"
+          break
+        else
+          if [ $i -eq 3 ]; then
+            echo "apt-get failed after 3 attempts, continuing anyway..."
+          else
+            echo "apt-get failed, waiting 5 seconds before retry..."
+            sleep 5
+          fi
+        fi
+      done || true
+    - |
+      # Install Swashbuckle CLI tool for OpenAPI extraction (with retry)
+      for i in {1..3}; do
+        echo "Swashbuckle install attempt $i/3..."
+        if dotnet tool install -g Swashbuckle.AspNetCore.Cli || dotnet tool update -g Swashbuckle.AspNetCore.Cli; then
+          echo "Swashbuckle install succeeded on attempt $i"
+          break
+        else
+          if [ $i -eq 3 ]; then
+            echo "Swashbuckle install failed after 3 attempts, continuing anyway..."
+          else
+            echo "Swashbuckle install failed, waiting 10 seconds before retry..."
+            sleep 10
+          fi
+        fi
+      done || true
   script:
     - echo "=== Building services for OpenAPI extraction ==="
     - echo "Building MngKeeper..."
-    - dotnet restore MngKeeper/MngKeeper.sln --verbosity normal
+    - |
+      for i in {1..3}; do
+        echo "Restore attempt $i/3..."
+        if dotnet restore MngKeeper/MngKeeper.sln --verbosity normal; then
+          echo "Restore succeeded on attempt $i"
+          break
+        else
+          if [ $i -eq 3 ]; then
+            echo "Restore failed after 3 attempts"
+            exit 1
+          fi
+          echo "Restore failed, waiting 10 seconds before retry..."
+          sleep 10
+        fi
+      done
     - dotnet build MngKeeper/MngKeeper.sln --no-restore -c Release --verbosity normal
     - echo "Building MngDataGateway..."
-    - dotnet restore MngDataGateway/MngDataGateway.sln --verbosity normal
+    - |
+      for i in {1..3}; do
+        echo "Restore attempt $i/3..."
+        if dotnet restore MngDataGateway/MngDataGateway.sln --verbosity normal; then
+          echo "Restore succeeded on attempt $i"
+          break
+        else
+          if [ $i -eq 3 ]; then
+            echo "Restore failed after 3 attempts"
+            exit 1
+          fi
+          echo "Restore failed, waiting 10 seconds before retry..."
+          sleep 10
+        fi
+      done
     - dotnet build MngDataGateway/MngDataGateway.sln -c Release --verbosity normal
     - echo "Building MngGateway..."
-    - dotnet restore MngGateway/MngGateway.sln --verbosity normal
+    - |
+      for i in {1..3}; do
+        echo "Restore attempt $i/3..."
+        if dotnet restore MngGateway/MngGateway.sln --verbosity normal; then
+          echo "Restore succeeded on attempt $i"
+          break
+        else
+          if [ $i -eq 3 ]; then
+            echo "Restore failed after 3 attempts"
+            exit 1
+          fi
+          echo "Restore failed, waiting 10 seconds before retry..."
+          sleep 10
+        fi
+      done
     - dotnet build MngGateway/MngGateway.sln --no-restore -c Release --verbosity normal
     - echo "=== Extracting OpenAPI specs from built services ==="
     - |
@@ -525,8 +746,22 @@ deploy-docs:
     - echo "=== Building documentation with MkDocs ==="
     - cd docs
     - |
-      # Install dependencies with cache
-      pip install --cache-dir ../.pip-cache -r requirements.txt
+      # Install dependencies with cache (with retry)
+      echo "Installing pip packages (with retry)..."
+      for i in {1..3}; do
+        echo "pip install attempt $i/3..."
+        if pip install --cache-dir ../.pip-cache -r requirements.txt; then
+          echo "pip install succeeded on attempt $i"
+          break
+        else
+          if [ $i -eq 3 ]; then
+            echo "pip install failed after 3 attempts"
+            exit 1
+          fi
+          echo "pip install failed, waiting 10 seconds before retry..."
+          sleep 10
+        fi
+      done
     - |
       # Build documentation
       echo "Building MkDocs site..."
@@ -566,10 +801,12 @@ deploy-docs:
   # Build timeout
   timeout: 15m
   retry:
-    max: 2
+    max: 3
     when:
       - runner_system_failure
       - stuck_or_timeout_failure
+      - api_failure
+      - network_failure
   # GitLab Pages için pages job'u özel bir isim olmalı
   # Bu job'u "pages" olarak adlandırırsak GitLab otomatik deploy eder
 
@@ -590,7 +827,22 @@ deploy-docs-preview:
   script:
     - echo "=== Building preview documentation for MR ==="
     - cd docs
-    - pip install --cache-dir ../.pip-cache -r requirements.txt
+    - |
+      echo "Installing pip packages (with retry)..."
+      for i in {1..3}; do
+        echo "pip install attempt $i/3..."
+        if pip install --cache-dir ../.pip-cache -r requirements.txt; then
+          echo "pip install succeeded on attempt $i"
+          break
+        else
+          if [ $i -eq 3 ]; then
+            echo "pip install failed after 3 attempts"
+            exit 1
+          fi
+          echo "pip install failed, waiting 10 seconds before retry..."
+          sleep 10
+        fi
+      done
     - mkdocs build --verbose
     - cd ..
   artifacts:
@@ -638,7 +890,21 @@ pages:
         echo "WARNING: docs/site directory not found. deploy-docs job may have failed."
         echo "Building documentation as fallback..."
         cd docs
-        pip install --cache-dir ../.pip-cache -r requirements.txt
+        echo "Installing pip packages (with retry)..."
+        for i in {1..3}; do
+          echo "pip install attempt $i/3..."
+          if pip install --cache-dir ../.pip-cache -r requirements.txt; then
+            echo "pip install succeeded on attempt $i"
+            break
+          else
+            if [ $i -eq 3 ]; then
+              echo "pip install failed after 3 attempts"
+              exit 1
+            fi
+            echo "pip install failed, waiting 10 seconds before retry..."
+            sleep 10
+          fi
+        done
         mkdocs build --verbose
         cd ..
         
@@ -707,9 +973,15 @@ pages:
   artifacts:
     paths:
       - public
+    exclude:
+      # Gereksiz dosyaları hariç tut (cache, log, vb.)
+      - public/**/*.map
+      - public/**/*.log
+      - public/.cache/
     expire_in: 30 days  # Pages artifacts should last longer
     # GitLab Pages için public/ klasörü artifacts olarak yayınlanmalı
     # GitLab otomatik olarak pages job'unun artifacts'ını Pages'e deploy eder
+    # Not: Artifacts size limit'i varsa, gereksiz dosyaları exclude ediyoruz
   cache:
     key: mkdocs-deps-$CI_COMMIT_REF_SLUG
     paths:
