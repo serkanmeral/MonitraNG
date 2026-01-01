@@ -121,7 +121,6 @@ build-mngkeeper:
       - runner_system_failure
       - stuck_or_timeout_failure
       - api_failure
-      - network_failure
   only:
     - main
     - develop
@@ -168,7 +167,6 @@ build-mngdatagateway:
       - runner_system_failure
       - stuck_or_timeout_failure
       - api_failure
-      - network_failure
   only:
     - main
     - develop
@@ -213,7 +211,6 @@ build-mnghub:
       - runner_system_failure
       - stuck_or_timeout_failure
       - api_failure
-      - network_failure
   only:
     - main
     - develop
@@ -258,7 +255,6 @@ build-mnggateway:
       - runner_system_failure
       - stuck_or_timeout_failure
       - api_failure
-      - network_failure
   only:
     - main
     - develop
@@ -806,7 +802,6 @@ deploy-docs:
       - runner_system_failure
       - stuck_or_timeout_failure
       - api_failure
-      - network_failure
   # GitLab Pages için pages job'u özel bir isim olmalı
   # Bu job'u "pages" olarak adlandırırsak GitLab otomatik deploy eder
 
