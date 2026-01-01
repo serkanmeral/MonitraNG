@@ -278,6 +278,8 @@ services:
         pages_nginx['enable'] = true
         # Artifact size limit (100MB) - For Pages artifacts
         gitlab_rails['artifacts_max_size'] = 100.megabytes
+        # Nginx client max body size (100MB) - For artifact uploads
+        nginx['client_max_body_size'] = '100m'
         # Disable features to save resources (optional)
         # prometheus_monitoring['enable'] = false
         # grafana['enable'] = false
