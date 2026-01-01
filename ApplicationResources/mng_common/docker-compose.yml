@@ -284,6 +284,8 @@ services:
         gitlab_workhorse['max_request_size'] = 100 * 1024 * 1024
         # GitLab Workhorse max filesize (100MB) - For artifact uploads
         gitlab_workhorse['max_filesize'] = 100 * 1024 * 1024
+        # GitLab Rails receive max input size (100MB) - For HTTP push
+        gitlab_rails['receive_max_input_size'] = 100.megabytes
         # Disable features to save resources (optional)
         # prometheus_monitoring['enable'] = false
         # grafana['enable'] = false
