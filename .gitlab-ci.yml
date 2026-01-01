@@ -966,10 +966,36 @@ pages:
       echo "Files copied successfully"
       # Gereksiz dosyaları temizle (artifacts size'ı küçültmek için)
       echo "Cleaning up unnecessary files to reduce artifacts size..."
+      # Source map dosyaları
       find public -name "*.map" -type f -delete 2>/dev/null || true
+      # Log dosyaları
       find public -name "*.log" -type f -delete 2>/dev/null || true
+      # Cache klasörleri
       find public -type d -name ".cache" -exec rm -rf {} + 2>/dev/null || true
+      find public -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+      # Compressed dosyalar (gzip, brotli - bunlar zaten tarayıcı tarafından oluşturulabilir)
+      find public -name "*.gz" -type f -delete 2>/dev/null || true
+      find public -name "*.br" -type f -delete 2>/dev/null || true
+      find public -name "*.bz2" -type f -delete 2>/dev/null || true
+      # Temporary dosyalar
+      find public -name "*.tmp" -type f -delete 2>/dev/null || true
+      find public -name "*.temp" -type f -delete 2>/dev/null || true
+      find public -name "*.swp" -type f -delete 2>/dev/null || true
+      find public -name "*.swo" -type f -delete 2>/dev/null || true
+      # Python cache
+      find public -name "*.pyc" -type f -delete 2>/dev/null || true
+      find public -name "*.pyo" -type f -delete 2>/dev/null || true
+      # Node modules (eğer varsa)
+      find public -type d -name "node_modules" -exec rm -rf {} + 2>/dev/null || true
+      # Sitemap compressed dosyaları (sitemap.xml.gz gibi - bunlar gereksiz)
+      find public -name "sitemap.xml.gz" -type f -delete 2>/dev/null || true
+      find public -name "sitemap.xml.bz2" -type f -delete 2>/dev/null || true
+      find public -name "sitemap.xml.br" -type f -delete 2>/dev/null || true
+      # Büyük asset dosyalarını kontrol et (eğer varsa)
+      find public -type f -size +1M -exec ls -lh {} \; 2>/dev/null | head -10 || true
       echo "Cleanup completed"
+      echo "After cleanup - Total files: $(find public -type f | wc -l)"
+      echo "After cleanup - Total size: $(du -sh public | cut -f1)"
       echo "Public directory contains:"
       ls -la public/ | head -20
       echo ""
@@ -996,6 +1022,12 @@ pages:
       fi
       echo "Total files in public/: $(find public -type f | wc -l)"
       echo "Public directory size: $(du -sh public | cut -f1)"
+      # Boyut kontrolü - eğer çok büyükse uyar
+      SIZE_MB=$(du -sm public | cut -f1)
+      if [ "$SIZE_MB" -gt 10 ]; then
+        echo "WARNING: Public directory size is ${SIZE_MB}MB, which may be too large for GitLab Pages"
+        echo "Consider further optimization or compression"
+      fi
     - |
       # Add version info if available
       if [ -n "$CI_COMMIT_TAG" ]; then
@@ -1023,7 +1055,18 @@ pages:
       # Gereksiz dosyaları hariç tut (cache, log, vb.)
       - public/**/*.map
       - public/**/*.log
+      - public/**/*.gz
+      - public/**/*.br
+      - public/**/*.bz2
+      - public/**/*.tmp
+      - public/**/*.temp
+      - public/**/*.swp
+      - public/**/*.swo
+      - public/**/*.pyc
+      - public/**/*.pyo
       - public/.cache/
+      - public/**/__pycache__/
+      - public/**/node_modules/
     expire_in: 30 days  # Pages artifacts should last longer
     # GitLab Pages için public/ klasörü artifacts olarak yayınlanmalı
     # GitLab otomatik olarak pages job'unun artifacts'ını Pages'e deploy eder
