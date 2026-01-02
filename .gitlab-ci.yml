@@ -1280,13 +1280,13 @@ deploy-services:
                 fi
                 ;;
               mngdatagateway)
-                if curl -f -k https://localhost:5010/api/version/short 2>/dev/null; then
+                if curl -f -k https://localhost:5010/api/v1/health 2>/dev/null || curl -f -k https://localhost:5010/api/version/short 2>/dev/null; then
                   HEALTH_CHECK_PASSED=1
                   break
                 fi
                 ;;
               mnghub)
-                if curl -f http://localhost:5020/api/version/short 2>/dev/null; then
+                if curl -f http://localhost:5020/health 2>/dev/null || curl -f http://localhost:5020/api/version/short 2>/dev/null; then
                   HEALTH_CHECK_PASSED=1
                   break
                 fi
@@ -1403,6 +1403,16 @@ deploy-services:
         fi
         
         echo "=== Deployment completed successfully ==="
+        
+        # Post-deployment monitoring setup (optional)
+        echo ""
+        echo "Setting up post-deployment monitoring..."
+        if [ -f "scripts/monitor-services.sh" ]; then
+          chmod +x scripts/monitor-services.sh
+          echo "✓ Monitoring script is available"
+          echo "  To start monitoring: scripts/monitor-services.sh"
+          echo "  For single check: scripts/monitor-services.sh --single"
+        fi
       ENDSSH
     - echo "✅ Deployment completed successfully!"
   environment:
