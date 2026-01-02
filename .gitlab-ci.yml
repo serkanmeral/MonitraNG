@@ -1211,9 +1211,25 @@ deploy-services:
           exit 1
         fi
         
+        # Port 443 mapping'ini kontrol et ve düzelt (eğer 443:443 varsa 5443:443'e değiştir)
+        echo "Checking port mappings in docker-compose.production.yml..."
+        if grep -q "443:443" docker-compose.production.yml; then
+          echo "WARNING: Found 443:443 mapping, fixing to 5443:443..."
+          sed -i 's/443:443/5443:443/g' docker-compose.production.yml || true
+        fi
+        
         # Docker işlemleri
         echo "Stopping existing containers (if any)..."
         docker compose -f docker-compose.production.yml down || true
+        
+        # Port 443'ü kullanan container'ları kontrol et ve durdur
+        echo "Checking for containers using port 443 or 5443..."
+        CONTAINER_USING_443=$(docker ps --format "{{.Names}}" --filter "publish=443" --filter "publish=5443" 2>/dev/null || true)
+        if [ -n "$CONTAINER_USING_443" ]; then
+          echo "Found container(s) using port 443/5443: $CONTAINER_USING_443"
+          echo "$CONTAINER_USING_443" | xargs -r docker stop 2>/dev/null || true
+          echo "$CONTAINER_USING_443" | xargs -r docker rm 2>/dev/null || true
+        fi
         
         echo "Building and starting Docker services..."
         docker compose -f docker-compose.production.yml up -d --build || exit 1
