@@ -26,10 +26,11 @@ mkdir -p "$BACKUP_PATH/git-state"
 # 1. MongoDB Backup
 echo "Backing up MongoDB..."
 if docker ps | grep -q mongo; then
-  docker exec mongo mongodump --archive --gzip > "$BACKUP_PATH/mongodb/mongodb_$DATE.archive.gz" || {
+  if docker exec mongo mongodump --archive --gzip > "$BACKUP_PATH/mongodb/mongodb_$DATE.archive.gz" 2>/dev/null; then
+    echo "✓ MongoDB backup completed"
+  else
     echo "WARNING: MongoDB backup failed, continuing..."
-  }
-  echo "✓ MongoDB backup completed"
+  fi
 else
   echo "WARNING: MongoDB container not running, skipping backup"
 fi
@@ -37,10 +38,11 @@ fi
 # 2. Keycloak (PostgreSQL) Backup
 echo "Backing up Keycloak database..."
 if docker ps | grep -q postgres; then
-  docker exec postgres pg_dump -U keycloak keycloak 2>/dev/null | gzip > "$BACKUP_PATH/postgres/keycloak_$DATE.sql.gz" || {
+  if docker exec postgres pg_dump -U keycloak keycloak 2>/dev/null | gzip > "$BACKUP_PATH/postgres/keycloak_$DATE.sql.gz" 2>/dev/null; then
+    echo "✓ Keycloak backup completed"
+  else
     echo "WARNING: PostgreSQL backup failed, continuing..."
-  }
-  echo "✓ Keycloak backup completed"
+  fi
 else
   echo "WARNING: PostgreSQL container not running, skipping backup"
 fi
@@ -48,13 +50,14 @@ fi
 # 3. Docker Volumes Backup (if volumes exist)
 echo "Backing up Docker volumes..."
 if docker volume ls | grep -q mng_common_mongo_data; then
-  docker run --rm \
+  if docker run --rm \
     -v mng_common_mongo_data:/data:ro \
     -v "$BACKUP_PATH/docker-volumes:/backup" \
-    alpine tar czf "/backup/mongo_data_$DATE.tar.gz" -C /data . 2>/dev/null || {
+    alpine tar czf "/backup/mongo_data_$DATE.tar.gz" -C /data . 2>/dev/null; then
+    echo "✓ Docker volumes backup completed"
+  else
     echo "WARNING: Docker volume backup failed, continuing..."
-  }
-  echo "✓ Docker volumes backup completed"
+  fi
 else
   echo "WARNING: Docker volumes not found, skipping backup"
 fi
@@ -62,13 +65,14 @@ fi
 # 4. Configuration Backup
 echo "Backing up configuration files..."
 CONFIG_BACKUP="$BACKUP_PATH/config/config_$DATE.tar.gz"
-tar czf "$CONFIG_BACKUP" \
+if tar czf "$CONFIG_BACKUP" \
   -C /root/MonitraNG/ApplicationResources/mng_apps \
   docker-compose.production.yml \
-  .env 2>/dev/null || {
+  .env 2>/dev/null; then
+  echo "✓ Configuration backup completed"
+else
   echo "WARNING: Configuration backup failed, continuing..."
-}
-echo "✓ Configuration backup completed"
+fi
 
 # 5. Git State Backup (current commit hash)
 echo "Backing up Git state..."
