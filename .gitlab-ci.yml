@@ -1267,108 +1267,198 @@ deploy-services:
         
         # MngKeeper
         SERVICE="mngkeeper"
-          echo ""
-          echo "=========================================="
-          echo "Updating service: $SERVICE"
-          echo "=========================================="
-          
-          # Servisi build et (image'ı oluştur)
-          echo "Building $SERVICE..."
-          if ! docker compose -f docker-compose.production.yml build "$SERVICE"; then
-            echo "ERROR: Failed to build $SERVICE"
-            exit 1
+        echo ""
+        echo "=========================================="
+        echo "Updating service: $SERVICE"
+        echo "=========================================="
+        echo "Building $SERVICE..."
+        if ! docker compose -f docker-compose.production.yml build "$SERVICE"; then
+          echo "ERROR: Failed to build $SERVICE"
+          exit 1
+        fi
+        echo "Updating $SERVICE container (rolling update)..."
+        if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate "$SERVICE"; then
+          echo "ERROR: Failed to update $SERVICE"
+          exit 1
+        fi
+        echo "Waiting for $SERVICE to start (10 seconds)..."
+        sleep 10
+        HEALTH_CHECK_PASSED=0
+        MAX_RETRIES=6
+        RETRY_COUNT=0
+        while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          if curl -f -k https://localhost:5001/api/version/short 2>/dev/null; then
+            HEALTH_CHECK_PASSED=1
+            break
           fi
-          
-          # Eski container'ı durdur ve yeni container'ı başlat (rolling update)
-          echo "Updating $SERVICE container (rolling update)..."
-          if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate "$SERVICE"; then
-            echo "ERROR: Failed to update $SERVICE"
-            exit 1
+          RETRY_COUNT=$((RETRY_COUNT + 1))
+          if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+            echo "  Health check attempt $RETRY_COUNT/$MAX_RETRIES failed, retrying in 5 seconds..."
+            sleep 5
           fi
-          
-          # Container'ın başlamasını bekle
-          echo "Waiting for $SERVICE to start (10 seconds)..."
-          sleep 10
-          
-          # Health check (servis bazlı)
-          echo "Performing health check for $SERVICE..."
-          HEALTH_CHECK_PASSED=0
-          MAX_RETRIES=6
-          RETRY_COUNT=0
-          
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            case $SERVICE in
-              mnggateway)
-                if curl -f -k https://localhost:5443/health 2>/dev/null || curl -f http://localhost:5000/health 2>/dev/null; then
-                  HEALTH_CHECK_PASSED=1
-                  break
-                fi
-                ;;
-              mngkeeper)
-                if curl -f -k https://localhost:5001/api/version/short 2>/dev/null; then
-                  HEALTH_CHECK_PASSED=1
-                  break
-                fi
-                ;;
-              mngdatagateway)
-                if curl -f -k https://localhost:5010/api/v1/health 2>/dev/null || curl -f -k https://localhost:5010/api/version/short 2>/dev/null; then
-                  HEALTH_CHECK_PASSED=1
-                  break
-                fi
-                ;;
-              mnghub)
-                if curl -f http://localhost:5020/health 2>/dev/null || curl -f http://localhost:5020/api/version/short 2>/dev/null; then
-                  HEALTH_CHECK_PASSED=1
-                  break
-                fi
-                ;;
-              mngui)
-                if curl -f http://localhost:3000 2>/dev/null; then
-                  HEALTH_CHECK_PASSED=1
-                  break
-                fi
-                ;;
-            esac
-            
-            RETRY_COUNT=$((RETRY_COUNT + 1))
-            if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-              echo "  Health check attempt $RETRY_COUNT/$MAX_RETRIES failed, retrying in 5 seconds..."
-              sleep 5
-            fi
-          done
-          
-          if [ $HEALTH_CHECK_PASSED -eq 1 ]; then
-            echo "✓ $SERVICE is healthy and running"
-          else
-            echo "✗ $SERVICE health check failed after $MAX_RETRIES attempts"
-            echo ""
-            echo "⚠️ WARNING: $SERVICE deployment failed!"
-            echo "Rolling back $SERVICE..."
-            
-            # Rollback: Eski image'ı kullan (eğer varsa)
-            if [ -f /tmp/deployment_backup.txt ]; then
-              BACKUP_NAME=$(cat /tmp/deployment_backup.txt | cut -d= -f2)
-              echo "Backup available: $BACKUP_NAME"
-              echo "To restore, run: /root/MonitraNG/scripts/restore-backup.sh $BACKUP_NAME"
-            fi
-            
-            # Servisi durdur (kullanıcı manuel müdahale edebilir)
-            echo "Stopping failed $SERVICE container..."
-            docker compose -f docker-compose.production.yml stop "$SERVICE" || true
-            
-            echo ""
-            echo "ERROR: Deployment failed at $SERVICE"
-            echo "Please check logs and restore from backup if needed"
-            exit 1
-          fi
-        }
+        done
+        if [ $HEALTH_CHECK_PASSED -eq 1 ]; then
+          echo "✓ $SERVICE is healthy and running"
+        else
+          echo "✗ $SERVICE health check failed"
+          exit 1
+        fi
         
-        # Her servisi tek tek güncelle
-        update_service mngkeeper
-        update_service mngdatagateway
-        update_service mnghub
-        update_service mnggateway
-        update_service mngui
+        # MngDataGateway
+        SERVICE="mngdatagateway"
+        echo ""
+        echo "=========================================="
+        echo "Updating service: $SERVICE"
+        echo "=========================================="
+        echo "Building $SERVICE..."
+        if ! docker compose -f docker-compose.production.yml build "$SERVICE"; then
+          echo "ERROR: Failed to build $SERVICE"
+          exit 1
+        fi
+        echo "Updating $SERVICE container (rolling update)..."
+        if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate "$SERVICE"; then
+          echo "ERROR: Failed to update $SERVICE"
+          exit 1
+        fi
+        echo "Waiting for $SERVICE to start (10 seconds)..."
+        sleep 10
+        HEALTH_CHECK_PASSED=0
+        MAX_RETRIES=6
+        RETRY_COUNT=0
+        while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          if curl -f -k https://localhost:5010/api/v1/health 2>/dev/null || curl -f -k https://localhost:5010/api/version/short 2>/dev/null; then
+            HEALTH_CHECK_PASSED=1
+            break
+          fi
+          RETRY_COUNT=$((RETRY_COUNT + 1))
+          if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+            echo "  Health check attempt $RETRY_COUNT/$MAX_RETRIES failed, retrying in 5 seconds..."
+            sleep 5
+          fi
+        done
+        if [ $HEALTH_CHECK_PASSED -eq 1 ]; then
+          echo "✓ $SERVICE is healthy and running"
+        else
+          echo "✗ $SERVICE health check failed"
+          exit 1
+        fi
+        
+        # MngHub
+        SERVICE="mnghub"
+        echo ""
+        echo "=========================================="
+        echo "Updating service: $SERVICE"
+        echo "=========================================="
+        echo "Building $SERVICE..."
+        if ! docker compose -f docker-compose.production.yml build "$SERVICE"; then
+          echo "ERROR: Failed to build $SERVICE"
+          exit 1
+        fi
+        echo "Updating $SERVICE container (rolling update)..."
+        if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate "$SERVICE"; then
+          echo "ERROR: Failed to update $SERVICE"
+          exit 1
+        fi
+        echo "Waiting for $SERVICE to start (10 seconds)..."
+        sleep 10
+        HEALTH_CHECK_PASSED=0
+        MAX_RETRIES=6
+        RETRY_COUNT=0
+        while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          if curl -f http://localhost:5020/health 2>/dev/null || curl -f http://localhost:5020/api/version/short 2>/dev/null; then
+            HEALTH_CHECK_PASSED=1
+            break
+          fi
+          RETRY_COUNT=$((RETRY_COUNT + 1))
+          if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+            echo "  Health check attempt $RETRY_COUNT/$MAX_RETRIES failed, retrying in 5 seconds..."
+            sleep 5
+          fi
+        done
+        if [ $HEALTH_CHECK_PASSED -eq 1 ]; then
+          echo "✓ $SERVICE is healthy and running"
+        else
+          echo "✗ $SERVICE health check failed"
+          exit 1
+        fi
+        
+        # MngGateway
+        SERVICE="mnggateway"
+        echo ""
+        echo "=========================================="
+        echo "Updating service: $SERVICE"
+        echo "=========================================="
+        echo "Building $SERVICE..."
+        if ! docker compose -f docker-compose.production.yml build "$SERVICE"; then
+          echo "ERROR: Failed to build $SERVICE"
+          exit 1
+        fi
+        echo "Updating $SERVICE container (rolling update)..."
+        if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate "$SERVICE"; then
+          echo "ERROR: Failed to update $SERVICE"
+          exit 1
+        fi
+        echo "Waiting for $SERVICE to start (10 seconds)..."
+        sleep 10
+        HEALTH_CHECK_PASSED=0
+        MAX_RETRIES=6
+        RETRY_COUNT=0
+        while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          if curl -f -k https://localhost:5443/health 2>/dev/null || curl -f http://localhost:5000/health 2>/dev/null; then
+            HEALTH_CHECK_PASSED=1
+            break
+          fi
+          RETRY_COUNT=$((RETRY_COUNT + 1))
+          if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+            echo "  Health check attempt $RETRY_COUNT/$MAX_RETRIES failed, retrying in 5 seconds..."
+            sleep 5
+          fi
+        done
+        if [ $HEALTH_CHECK_PASSED -eq 1 ]; then
+          echo "✓ $SERVICE is healthy and running"
+        else
+          echo "✗ $SERVICE health check failed"
+          exit 1
+        fi
+        
+        # MngUI
+        SERVICE="mngui"
+        echo ""
+        echo "=========================================="
+        echo "Updating service: $SERVICE"
+        echo "=========================================="
+        echo "Building $SERVICE..."
+        if ! docker compose -f docker-compose.production.yml build "$SERVICE"; then
+          echo "ERROR: Failed to build $SERVICE"
+          exit 1
+        fi
+        echo "Updating $SERVICE container (rolling update)..."
+        if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate "$SERVICE"; then
+          echo "ERROR: Failed to update $SERVICE"
+          exit 1
+        fi
+        echo "Waiting for $SERVICE to start (10 seconds)..."
+        sleep 10
+        HEALTH_CHECK_PASSED=0
+        MAX_RETRIES=6
+        RETRY_COUNT=0
+        while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          if curl -f http://localhost:3000 2>/dev/null; then
+            HEALTH_CHECK_PASSED=1
+            break
+          fi
+          RETRY_COUNT=$((RETRY_COUNT + 1))
+          if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+            echo "  Health check attempt $RETRY_COUNT/$MAX_RETRIES failed, retrying in 5 seconds..."
+            sleep 5
+          fi
+        done
+        if [ $HEALTH_CHECK_PASSED -eq 1 ]; then
+          echo "✓ $SERVICE is healthy and running"
+        else
+          echo "✗ $SERVICE health check failed"
+          exit 1
+        fi
         
         echo ""
         echo "=========================================="
