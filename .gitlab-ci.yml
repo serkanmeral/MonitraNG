@@ -1266,22 +1266,21 @@ deploy-services:
         # Her servisi tek tek işle (function yerine inline)
         
         # MngKeeper
-        SERVICE="mngkeeper"
         echo ""
         echo "=========================================="
-        echo "Updating service: $SERVICE"
+        echo "Updating service: mngkeeper"
         echo "=========================================="
-        echo "Building $SERVICE..."
-        if ! docker compose -f docker-compose.production.yml build "$SERVICE"; then
-          echo "ERROR: Failed to build $SERVICE"
+        echo "Building mngkeeper..."
+        if ! docker compose -f docker-compose.production.yml build mngkeeper; then
+          echo "ERROR: Failed to build mngkeeper"
           exit 1
         fi
-        echo "Updating $SERVICE container (rolling update)..."
-        if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate "$SERVICE"; then
-          echo "ERROR: Failed to update $SERVICE"
+        echo "Updating mngkeeper container (rolling update)..."
+        if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate mngkeeper; then
+          echo "ERROR: Failed to update mngkeeper"
           exit 1
         fi
-        echo "Waiting for $SERVICE to start (10 seconds)..."
+        echo "Waiting for mngkeeper to start (10 seconds)..."
         sleep 10
         HEALTH_CHECK_PASSED=0
         MAX_RETRIES=6
@@ -1298,9 +1297,9 @@ deploy-services:
           fi
         done
         if [ $HEALTH_CHECK_PASSED -eq 1 ]; then
-          echo "✓ $SERVICE is healthy and running"
+          echo "✓ mngkeeper is healthy and running"
         else
-          echo "✗ $SERVICE health check failed"
+          echo "✗ mngkeeper health check failed"
           exit 1
         fi
         
@@ -1344,22 +1343,21 @@ deploy-services:
         fi
         
         # MngHub
-        SERVICE="mnghub"
         echo ""
         echo "=========================================="
-        echo "Updating service: $SERVICE"
+        echo "Updating service: mnghub"
         echo "=========================================="
-        echo "Building $SERVICE..."
-        if ! docker compose -f docker-compose.production.yml build "$SERVICE"; then
-          echo "ERROR: Failed to build $SERVICE"
+        echo "Building mnghub..."
+        if ! docker compose -f docker-compose.production.yml build mnghub; then
+          echo "ERROR: Failed to build mnghub"
           exit 1
         fi
-        echo "Updating $SERVICE container (rolling update)..."
-        if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate "$SERVICE"; then
-          echo "ERROR: Failed to update $SERVICE"
+        echo "Updating mnghub container (rolling update)..."
+        if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate mnghub; then
+          echo "ERROR: Failed to update mnghub"
           exit 1
         fi
-        echo "Waiting for $SERVICE to start (10 seconds)..."
+        echo "Waiting for mnghub to start (10 seconds)..."
         sleep 10
         HEALTH_CHECK_PASSED=0
         MAX_RETRIES=6
@@ -1376,29 +1374,28 @@ deploy-services:
           fi
         done
         if [ $HEALTH_CHECK_PASSED -eq 1 ]; then
-          echo "✓ $SERVICE is healthy and running"
+          echo "✓ mnghub is healthy and running"
         else
-          echo "✗ $SERVICE health check failed"
+          echo "✗ mnghub health check failed"
           exit 1
         fi
         
         # MngGateway
-        SERVICE="mnggateway"
         echo ""
         echo "=========================================="
-        echo "Updating service: $SERVICE"
+        echo "Updating service: mnggateway"
         echo "=========================================="
-        echo "Building $SERVICE..."
-        if ! docker compose -f docker-compose.production.yml build "$SERVICE"; then
-          echo "ERROR: Failed to build $SERVICE"
+        echo "Building mnggateway..."
+        if ! docker compose -f docker-compose.production.yml build mnggateway; then
+          echo "ERROR: Failed to build mnggateway"
           exit 1
         fi
-        echo "Updating $SERVICE container (rolling update)..."
-        if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate "$SERVICE"; then
-          echo "ERROR: Failed to update $SERVICE"
+        echo "Updating mnggateway container (rolling update)..."
+        if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate mnggateway; then
+          echo "ERROR: Failed to update mnggateway"
           exit 1
         fi
-        echo "Waiting for $SERVICE to start (10 seconds)..."
+        echo "Waiting for mnggateway to start (10 seconds)..."
         sleep 10
         HEALTH_CHECK_PASSED=0
         MAX_RETRIES=6
@@ -1415,29 +1412,28 @@ deploy-services:
           fi
         done
         if [ $HEALTH_CHECK_PASSED -eq 1 ]; then
-          echo "✓ $SERVICE is healthy and running"
+          echo "✓ mnggateway is healthy and running"
         else
-          echo "✗ $SERVICE health check failed"
+          echo "✗ mnggateway health check failed"
           exit 1
         fi
         
         # MngUI
-        SERVICE="mngui"
         echo ""
         echo "=========================================="
-        echo "Updating service: $SERVICE"
+        echo "Updating service: mngui"
         echo "=========================================="
-        echo "Building $SERVICE..."
-        if ! docker compose -f docker-compose.production.yml build "$SERVICE"; then
-          echo "ERROR: Failed to build $SERVICE"
+        echo "Building mngui..."
+        if ! docker compose -f docker-compose.production.yml build mngui; then
+          echo "ERROR: Failed to build mngui"
           exit 1
         fi
-        echo "Updating $SERVICE container (rolling update)..."
-        if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate "$SERVICE"; then
-          echo "ERROR: Failed to update $SERVICE"
+        echo "Updating mngui container (rolling update)..."
+        if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate mngui; then
+          echo "ERROR: Failed to update mngui"
           exit 1
         fi
-        echo "Waiting for $SERVICE to start (10 seconds)..."
+        echo "Waiting for mngui to start (10 seconds)..."
         sleep 10
         HEALTH_CHECK_PASSED=0
         MAX_RETRIES=6
@@ -1454,9 +1450,9 @@ deploy-services:
           fi
         done
         if [ $HEALTH_CHECK_PASSED -eq 1 ]; then
-          echo "✓ $SERVICE is healthy and running"
+          echo "✓ mngui is healthy and running"
         else
-          echo "✗ $SERVICE health check failed"
+          echo "✗ mngui health check failed"
           exit 1
         fi
         
