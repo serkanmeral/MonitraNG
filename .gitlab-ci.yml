@@ -1364,7 +1364,7 @@ deploy-services:
         fi
         
         # Check MngDataGateway
-        if curl -f -k https://localhost:5010/api/version/short 2>/dev/null; then
+        if curl -f -k https://localhost:5010/api/v1/health 2>/dev/null || curl -f -k https://localhost:5010/api/version/short 2>/dev/null; then
           echo "✓ MngDataGateway is healthy"
         else
           echo "✗ MngDataGateway health check failed"
@@ -1372,7 +1372,7 @@ deploy-services:
         fi
         
         # Check MngHub
-        if curl -f http://localhost:5020/api/version/short 2>/dev/null; then
+        if curl -f http://localhost:5020/health 2>/dev/null || curl -f http://localhost:5020/api/version/short 2>/dev/null; then
           echo "✓ MngHub is healthy"
         else
           echo "✗ MngHub health check failed"
