@@ -12,6 +12,53 @@
 - ⚠️ External API çağrıları yapılamaz
 - ⚠️ Online license validation yapılamaz
 
+---
+
+## 🚀 CI/CD ve Production Deployment
+
+**Durum:** ✅ **Başarıyla Tamamlandı** (1 Ocak 2026)
+
+### GitLab CI/CD Pipeline
+
+- ✅ **GitLab CE Kurulumu:** Self-hosted GitLab CE Docker container'ı çalışıyor
+- ✅ **GitLab Runner:** Docker executor ile yapılandırıldı, host network'te çalışıyor
+- ✅ **Pipeline Job'ları:** Tüm job'lar başarıyla çalışıyor:
+  - Build (MngKeeper, MngDataGateway, MngHub, MngGateway, Frontend)
+  - Test (Unit testler)
+  - OpenAPI Extract (Swashbuckle ile API spec çıkarımı)
+  - Pages (MkDocs dokümantasyon deployment)
+  - Deploy Services (Production deployment)
+
+### Production Deployment
+
+- ✅ **SSH Tabanlı Deployment:** Production sunucusuna SSH ile güvenli bağlantı
+- ✅ **Otomatik Git Sync:** Repository'den en son kodu çeker
+- ✅ **Docker Build & Deploy:** Image'ları build edip container'ları başlatır
+- ✅ **Port Çakışması Önleme:** Otomatik port kontrolü ve düzeltme (443:443 → 5443:443)
+- ✅ **Hata Kontrolü:** Detaylı hata mesajları ve kontroller
+- ✅ **Zero-Downtime Hazırlığı:** Mevcut container'ları güvenli şekilde durdurur
+
+### Çalışan Servisler (Production)
+
+- ✅ **MngGateway:** Port 5000 (HTTP), 5443 (HTTPS)
+- ✅ **MngKeeper:** Port 5001
+- ✅ **MngDataGateway:** Port 5010
+- ✅ **MngHub:** Port 5020
+- ✅ **MngUI:** Port 3000
+
+### Dokümantasyon
+
+- ✅ **Deployment Rehberi:** `docs/content/cicd/DEPLOYMENT_GUIDE.md`
+- ✅ **CI/CD Durum:** `docs/content/cicd/current_status.md`
+- ✅ **Runner Yapılandırması:** `docs/content/cicd/SUCCESSFUL_RUNNER_CONFIGURATION.md`
+
+### Sonraki Adımlar
+
+- [ ] **Zero-Downtime Deployment:** Blue-Green veya Rolling Update stratejisi
+- [ ] **Health Check'ler:** Otomatik rollback mekanizması
+- [ ] **Monitoring:** Deployment sonrası otomatik health check ve alerting
+- [ ] **Backup Stratejisi:** Deployment öncesi otomatik backup
+
 ### Stack Kontrolü:
 ```yaml
 ✅ MongoDB          - Self-hosted
