@@ -107,7 +107,6 @@ build-mngkeeper:
     key: nuget-$CI_COMMIT_REF_SLUG
     paths:
       - .nuget/
-      - ~/.nuget/packages/
     policy: pull-push
   variables:
     NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
@@ -167,7 +166,6 @@ build-mngdatagateway:
     key: nuget-$CI_COMMIT_REF_SLUG
     paths:
       - .nuget/
-      - ~/.nuget/packages/
     policy: pull-push
   variables:
     NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
@@ -227,7 +225,6 @@ build-mnghub:
     key: nuget-$CI_COMMIT_REF_SLUG
     paths:
       - .nuget/
-      - ~/.nuget/packages/
     policy: pull-push
   variables:
     NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
@@ -285,7 +282,6 @@ build-mnggateway:
     key: nuget-$CI_COMMIT_REF_SLUG
     paths:
       - .nuget/
-      - ~/.nuget/packages/
     policy: pull-push
   variables:
     NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
@@ -392,7 +388,6 @@ test-mngkeeper:
     key: nuget-$CI_COMMIT_REF_SLUG
     paths:
       - .nuget/
-      - ~/.nuget/packages/
     policy: pull-push
   variables:
     NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
@@ -438,7 +433,6 @@ test-mngdatagateway:
     key: nuget-$CI_COMMIT_REF_SLUG
     paths:
       - .nuget/
-      - ~/.nuget/packages/
     policy: pull-push
   variables:
     NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
@@ -484,7 +478,6 @@ test-mnghub:
     key: nuget-$CI_COMMIT_REF_SLUG
     paths:
       - .nuget/
-      - ~/.nuget/packages/
     policy: pull-push
   variables:
     NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
@@ -530,7 +523,6 @@ test-mnggateway:
     key: nuget-$CI_COMMIT_REF_SLUG
     paths:
       - .nuget/
-      - ~/.nuget/packages/
     policy: pull-push
   variables:
     NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
