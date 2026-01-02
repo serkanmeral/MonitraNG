@@ -1225,9 +1225,15 @@ deploy-services:
         
         # Git işlemleri (backup'tan SONRA)
         echo "Fetching latest code..."
-        git fetch origin || exit 1
+        if ! git fetch origin; then
+          echo "ERROR: Failed to fetch from origin"
+          exit 1
+        fi
         echo "Resetting to origin/main..."
-        git reset --hard origin/main || exit 1
+        if ! git reset --hard origin/main; then
+          echo "ERROR: Failed to reset to origin/main"
+          exit 1
+        fi
         
         # Docker compose dizinine git
         echo "Changing to ApplicationResources/mng_apps..."
@@ -1235,7 +1241,10 @@ deploy-services:
           echo "ERROR: ApplicationResources/mng_apps directory does not exist!"
           exit 1
         fi
-        cd ApplicationResources/mng_apps || exit 1
+        if ! cd ApplicationResources/mng_apps; then
+          echo "ERROR: Cannot change to ApplicationResources/mng_apps"
+          exit 1
+        fi
         
         # Docker compose dosyası kontrolü
         if [ ! -f "docker-compose.production.yml" ]; then
