@@ -1263,9 +1263,9 @@ deploy-services:
         echo "Starting zero-downtime rolling update..."
         
         # Servis sırası: Önce backend servisler, sonra gateway, en son UI
-        # Array syntax sh-compatible değil, bu yüzden space-separated string kullanıyoruz
-        # Her servisi ayrı ayrı işle (sh-compatible)
-        for SERVICE in mngkeeper mngdatagateway mnghub mnggateway mngui; do
+        # Her servisi ayrı ayrı işle (for loop yerine tek tek)
+        update_service() {
+          SERVICE=$1
           echo ""
           echo "=========================================="
           echo "Updating service: $SERVICE"
@@ -1360,7 +1360,14 @@ deploy-services:
             echo "Please check logs and restore from backup if needed"
             exit 1
           fi
-        done
+        }
+        
+        # Her servisi tek tek güncelle
+        update_service mngkeeper
+        update_service mngdatagateway
+        update_service mnghub
+        update_service mnggateway
+        update_service mngui
         
         echo ""
         echo "=========================================="
