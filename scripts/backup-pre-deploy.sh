@@ -67,7 +67,8 @@ echo "Backing up configuration files..."
 CONFIG_BACKUP="$BACKUP_PATH/config/config_$DATE.tar.gz"
 CONFIG_DIR="/root/MonitraNG/ApplicationResources/mng_apps"
 if [ -d "$CONFIG_DIR" ] && [ -f "$CONFIG_DIR/docker-compose.production.yml" ]; then
-  if cd "$CONFIG_DIR 2>/dev/null; then
+  cd "$CONFIG_DIR" 2>/dev/null
+  if [ $? -eq 0 ]; then
     if tar czf "$CONFIG_BACKUP" docker-compose.production.yml .env 2>/dev/null; then
       echo "✓ Configuration backup completed"
     else
