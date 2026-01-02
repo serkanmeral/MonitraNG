@@ -253,7 +253,7 @@ services:
     hostname: gitlab.local
     environment:
       GITLAB_OMNIBUS_CONFIG: |
-        external_url 'http://45.141.151.52:8090'
+        external_url 'http://gitlab'
         gitlab_rails['gitlab_shell_ssh_port'] = 2222
         postgresql['enable'] = false
         gitlab_rails['db_adapter'] = 'postgresql'
@@ -277,21 +277,23 @@ services:
         gitlab_pages['external_http'] = ['0.0.0.0:8090']
         pages_nginx['enable'] = true
         # Artifact size limit (100MB) - For Pages artifacts
-        gitlab_rails['artifacts_max_size'] = 100.megabytes
+        gitlab_rails['artifacts_max_size'] = 104857600
         # Nginx client max body size (100MB) - For artifact uploads
         nginx['client_max_body_size'] = '100m'
         # GitLab Workhorse max request size (100MB) - For artifact uploads
-        gitlab_workhorse['max_request_size'] = 100 * 1024 * 1024
+        gitlab_workhorse['max_request_size'] = 104857600
         # GitLab Workhorse max filesize (100MB) - For artifact uploads
-        gitlab_workhorse['max_filesize'] = 100 * 1024 * 1024
+        gitlab_workhorse['max_filesize'] = 104857600
         # GitLab Rails receive max input size (100MB) - For HTTP push
-        gitlab_rails['receive_max_input_size'] = 100.megabytes
+        gitlab_rails['receive_max_input_size'] = 104857600
         # Disable features to save resources (optional)
         # prometheus_monitoring['enable'] = false
         # grafana['enable'] = false
     ports:
-      - "8090:80"           # HTTP
-      - "443:443"         # HTTPS
+      # Port 80 and 443 removed - Nginx will handle HTTP/HTTPS
+      # GitLab will be accessible via Nginx reverse proxy at gitlab.monitrang.com
+      # Direct access via port 8090 is still available for internal use
+      - "8090:80"           # HTTP (internal access only - Nginx will proxy)
       - "2222:22"         # SSH (mapped to 2222 to avoid conflict)
       # GitLab Pages ports removed - causing port conflict
       # - "8090:8090"       # GitLab Pages HTTP
