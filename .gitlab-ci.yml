@@ -1297,6 +1297,24 @@ deploy-services:
         done
         if [ $HEALTH_CHECK_PASSED -eq 0 ]; then
           echo "⚠ WARNING: mngkeeper health check failed after 6 attempts"
+          echo "Attempting automatic rollback..."
+          if [ -f /tmp/deployment_backup.txt ]; then
+            BACKUP_NAME=$(cat /tmp/deployment_backup.txt | cut -d= -f2)
+            if [ -n "$BACKUP_NAME" ]; then
+              echo "Rolling back mngkeeper using backup: $BACKUP_NAME"
+              if [ -f "scripts/restore-backup.sh" ]; then
+                chmod +x scripts/restore-backup.sh || true
+                SKIP_CONFIRM=true sh scripts/restore-backup.sh "$BACKUP_NAME" --skip-confirm || true
+                echo "Restarting mngkeeper container..."
+                docker compose -f docker-compose.production.yml restart mngkeeper || true
+                echo "⚠ Rollback completed for mngkeeper"
+              else
+                echo "ERROR: restore-backup.sh not found, cannot rollback"
+              fi
+            fi
+          else
+            echo "ERROR: Backup information not found, cannot rollback"
+          fi
           echo "Continuing deployment despite health check failure..."
         fi
         
@@ -1367,6 +1385,24 @@ deploy-services:
         done
         if [ $HEALTH_CHECK_PASSED -eq 0 ]; then
           echo "⚠ WARNING: mnghub health check failed after 6 attempts"
+          echo "Attempting automatic rollback..."
+          if [ -f /tmp/deployment_backup.txt ]; then
+            BACKUP_NAME=$(cat /tmp/deployment_backup.txt | cut -d= -f2)
+            if [ -n "$BACKUP_NAME" ]; then
+              echo "Rolling back mnghub using backup: $BACKUP_NAME"
+              if [ -f "scripts/restore-backup.sh" ]; then
+                chmod +x scripts/restore-backup.sh || true
+                SKIP_CONFIRM=true sh scripts/restore-backup.sh "$BACKUP_NAME" --skip-confirm || true
+                echo "Restarting mnghub container..."
+                docker compose -f docker-compose.production.yml restart mnghub || true
+                echo "⚠ Rollback completed for mnghub"
+              else
+                echo "ERROR: restore-backup.sh not found, cannot rollback"
+              fi
+            fi
+          else
+            echo "ERROR: Backup information not found, cannot rollback"
+          fi
           echo "Continuing deployment despite health check failure..."
         fi
         
@@ -1402,6 +1438,24 @@ deploy-services:
         done
         if [ $HEALTH_CHECK_PASSED -eq 0 ]; then
           echo "⚠ WARNING: mnggateway health check failed after 6 attempts"
+          echo "Attempting automatic rollback..."
+          if [ -f /tmp/deployment_backup.txt ]; then
+            BACKUP_NAME=$(cat /tmp/deployment_backup.txt | cut -d= -f2)
+            if [ -n "$BACKUP_NAME" ]; then
+              echo "Rolling back mnggateway using backup: $BACKUP_NAME"
+              if [ -f "scripts/restore-backup.sh" ]; then
+                chmod +x scripts/restore-backup.sh || true
+                SKIP_CONFIRM=true sh scripts/restore-backup.sh "$BACKUP_NAME" --skip-confirm || true
+                echo "Restarting mnggateway container..."
+                docker compose -f docker-compose.production.yml restart mnggateway || true
+                echo "⚠ Rollback completed for mnggateway"
+              else
+                echo "ERROR: restore-backup.sh not found, cannot rollback"
+              fi
+            fi
+          else
+            echo "ERROR: Backup information not found, cannot rollback"
+          fi
           echo "Continuing deployment despite health check failure..."
         fi
         
@@ -1437,6 +1491,24 @@ deploy-services:
         done
         if [ $HEALTH_CHECK_PASSED -eq 0 ]; then
           echo "⚠ WARNING: mngui health check failed after 6 attempts"
+          echo "Attempting automatic rollback..."
+          if [ -f /tmp/deployment_backup.txt ]; then
+            BACKUP_NAME=$(cat /tmp/deployment_backup.txt | cut -d= -f2)
+            if [ -n "$BACKUP_NAME" ]; then
+              echo "Rolling back mngui using backup: $BACKUP_NAME"
+              if [ -f "scripts/restore-backup.sh" ]; then
+                chmod +x scripts/restore-backup.sh || true
+                SKIP_CONFIRM=true sh scripts/restore-backup.sh "$BACKUP_NAME" --skip-confirm || true
+                echo "Restarting mngui container..."
+                docker compose -f docker-compose.production.yml restart mngui || true
+                echo "⚠ Rollback completed for mngui"
+              else
+                echo "ERROR: restore-backup.sh not found, cannot rollback"
+              fi
+            fi
+          else
+            echo "ERROR: Backup information not found, cannot rollback"
+          fi
           echo "Continuing deployment despite health check failure..."
         fi
         
@@ -1498,13 +1570,29 @@ deploy-services:
         if [ $FINAL_HEALTH_CHECK_FAILED -eq 1 ]; then
           echo ""
           echo "⚠️ WARNING: Some final health checks failed!"
-          echo "Backup available for rollback:"
+          echo "Attempting automatic rollback..."
           if [ -f /tmp/deployment_backup.txt ]; then
             BACKUP_NAME=$(cat /tmp/deployment_backup.txt | cut -d= -f2)
-            echo "  /root/MonitraNG/scripts/restore-backup.sh $BACKUP_NAME"
+            if [ -n "$BACKUP_NAME" ]; then
+              echo "Rolling back deployment using backup: $BACKUP_NAME"
+              if [ -f "scripts/restore-backup.sh" ]; then
+                chmod +x scripts/restore-backup.sh || true
+                SKIP_CONFIRM=true sh scripts/restore-backup.sh "$BACKUP_NAME" --skip-confirm || true
+                echo "Restarting all services..."
+                docker compose -f docker-compose.production.yml restart || true
+                echo "⚠ Rollback completed. Please investigate the failed services."
+              else
+                echo "ERROR: restore-backup.sh not found, cannot rollback"
+                echo "Manual rollback required:"
+                echo "  /root/MonitraNG/scripts/restore-backup.sh $BACKUP_NAME"
+              fi
+            else
+              echo "ERROR: Backup name not found, cannot rollback"
+            fi
+          else
+            echo "ERROR: Backup information not found, cannot rollback"
+            echo "Please investigate the failed services manually."
           fi
-          echo ""
-          echo "Please investigate the failed services."
         else
           echo ""
           echo "✓ All services are healthy!"
