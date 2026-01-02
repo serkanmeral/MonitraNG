@@ -1172,7 +1172,7 @@ deploy-services:
       echo "Deploying to $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST:$DEPLOY_SERVER_PATH..."
     - |
       ssh -o StrictHostKeyChecking=no -p ${DEPLOY_SERVER_PORT:-22} $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST sh -s << ENDSSH
-        set -e  # Hata durumunda dur
+        # set -e kaldırıldı - hataları manuel kontrol ediyoruz
         DEPLOY_SERVER_PATH="$DEPLOY_SERVER_PATH"
         echo "=== Starting Deployment ==="
         echo "Current directory: $(pwd)"
@@ -1190,7 +1190,10 @@ deploy-services:
           echo "ERROR: Directory $DEPLOY_SERVER_PATH does not exist!"
           exit 1
         fi
-        cd "$DEPLOY_SERVER_PATH" || exit 1
+        if ! cd "$DEPLOY_SERVER_PATH"; then
+          echo "ERROR: Cannot change to $DEPLOY_SERVER_PATH"
+          exit 1
+        fi
         
         # Git repository kontrolü
         if [ ! -d ".git" ]; then
