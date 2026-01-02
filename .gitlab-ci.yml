@@ -1170,7 +1170,7 @@ deploy-services:
       fi
       echo "Deploying to $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST:$DEPLOY_SERVER_PATH..."
     - |
-      ssh -o StrictHostKeyChecking=no -p ${DEPLOY_SERVER_PORT:-22} $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST bash -s << ENDSSH
+      ssh -o StrictHostKeyChecking=no -p ${DEPLOY_SERVER_PORT:-22} $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST sh -s << ENDSSH
         set -e  # Hata durumunda dur
         DEPLOY_SERVER_PATH="$DEPLOY_SERVER_PATH"
         echo "=== Starting Deployment ==="
@@ -1209,9 +1209,18 @@ deploy-services:
         if [ -f "scripts/backup-pre-deploy.sh" ]; then
           chmod +x scripts/backup-pre-deploy.sh || true
           export BACKUP_DIR="/root/backups"
-          BACKUP_NAME=$(bash scripts/backup-pre-deploy.sh)
-          echo "✓ Backup created: $BACKUP_NAME"
-          echo "BACKUP_NAME=$BACKUP_NAME" > /tmp/deployment_backup.txt
+          # bash yoksa sh ile çalıştır (script'in başında #!/bin/bash var, sh da çalıştırabilir)
+          if command -v bash >/dev/null 2>&1; then
+            BACKUP_NAME=$(bash scripts/backup-pre-deploy.sh 2>&1 | tail -1)
+          else
+            BACKUP_NAME=$(sh scripts/backup-pre-deploy.sh 2>&1 | tail -1)
+          fi
+          if [ -n "$BACKUP_NAME" ]; then
+            echo "✓ Backup created: $BACKUP_NAME"
+            echo "BACKUP_NAME=$BACKUP_NAME" > /tmp/deployment_backup.txt
+          else
+            echo "WARNING: Backup script did not return backup name"
+          fi
         else
           echo "WARNING: backup-pre-deploy.sh not found, skipping backup"
         fi
