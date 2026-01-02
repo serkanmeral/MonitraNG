@@ -52,12 +52,21 @@
 - ✅ **CI/CD Durum:** `docs/content/cicd/current_status.md`
 - ✅ **Runner Yapılandırması:** `docs/content/cicd/SUCCESSFUL_RUNNER_CONFIGURATION.md`
 
+### Tamamlanan Özellikler (1 Ocak 2026)
+
+- ✅ **Zero-Downtime Deployment:** Rolling update stratejisi başarıyla uygulanıyor
+- ✅ **Pre-Deployment Backup:** Otomatik backup mekanizması çalışıyor (`scripts/backup-pre-deploy.sh`)
+- ✅ **Health Check'ler:** Her servis için health check mekanizması çalışıyor
+- ✅ **Rolling Update:** Servisler sırayla güncelleniyor (mngkeeper → mngdatagateway → mnghub → mnggateway → mngui)
+- ✅ **Deployment Script:** Sh-compatible, tüm syntax sorunları çözüldü
+- ✅ **Monitoring Script:** `scripts/monitor-services.sh` hazır
+
 ### Sonraki Adımlar
 
-- [ ] **Zero-Downtime Deployment:** Blue-Green veya Rolling Update stratejisi
-- [ ] **Health Check'ler:** Otomatik rollback mekanizması
-- [ ] **Monitoring:** Deployment sonrası otomatik health check ve alerting
-- [ ] **Backup Stratejisi:** Deployment öncesi otomatik backup
+- [ ] **Automated Rollback:** Health check başarısız olursa otomatik rollback
+- [ ] **Deployment Notifications:** Deployment durumu için bildirimler
+- [ ] **Multi-Environment:** Staging ve production ortamları ayrımı
+- [ ] **Canary Deployment:** Aşamalı deployment stratejisi
 
 ### Stack Kontrolü:
 ```yaml
