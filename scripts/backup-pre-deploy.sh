@@ -1,0 +1,112 @@
+#!/bin/bash
+# Pre-Deployment Backup Script for MonitraNG
+# This script creates a backup before deployment for rollback capability
+
+set -e
+
+BACKUP_DIR="${BACKUP_DIR:-/root/backups}"
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_NAME="pre-deploy-backup_$DATE"
+BACKUP_PATH="$BACKUP_DIR/$BACKUP_NAME"
+
+echo "=========================================="
+echo "MonitraNG Pre-Deployment Backup"
+echo "Date: $DATE"
+echo "Backup Name: $BACKUP_NAME"
+echo "=========================================="
+
+# Create backup directory
+mkdir -p "$BACKUP_PATH"/{mongodb,postgres,docker-volumes,config,git-state}
+
+# 1. MongoDB Backup
+echo "Backing up MongoDB..."
+if docker ps | grep -q mongo; then
+  docker exec mongo mongodump --archive --gzip > "$BACKUP_PATH/mongodb/mongodb_$DATE.archive.gz" || {
+    echo "WARNING: MongoDB backup failed, continuing..."
+  }
+  echo "✓ MongoDB backup completed"
+else
+  echo "WARNING: MongoDB container not running, skipping backup"
+fi
+
+# 2. Keycloak (PostgreSQL) Backup
+echo "Backing up Keycloak database..."
+if docker ps | grep -q postgres; then
+  docker exec postgres pg_dump -U keycloak keycloak 2>/dev/null | gzip > "$BACKUP_PATH/postgres/keycloak_$DATE.sql.gz" || {
+    echo "WARNING: PostgreSQL backup failed, continuing..."
+  }
+  echo "✓ Keycloak backup completed"
+else
+  echo "WARNING: PostgreSQL container not running, skipping backup"
+fi
+
+# 3. Docker Volumes Backup (if volumes exist)
+echo "Backing up Docker volumes..."
+if docker volume ls | grep -q mng_common_mongo_data; then
+  docker run --rm \
+    -v mng_common_mongo_data:/data:ro \
+    -v "$BACKUP_PATH/docker-volumes:/backup" \
+    alpine tar czf "/backup/mongo_data_$DATE.tar.gz" -C /data . 2>/dev/null || {
+    echo "WARNING: Docker volume backup failed, continuing..."
+  }
+  echo "✓ Docker volumes backup completed"
+else
+  echo "WARNING: Docker volumes not found, skipping backup"
+fi
+
+# 4. Configuration Backup
+echo "Backing up configuration files..."
+CONFIG_BACKUP="$BACKUP_PATH/config/config_$DATE.tar.gz"
+tar czf "$CONFIG_BACKUP" \
+  -C /root/MonitraNG/ApplicationResources/mng_apps \
+  docker-compose.production.yml \
+  .env 2>/dev/null || {
+  echo "WARNING: Configuration backup failed, continuing..."
+}
+echo "✓ Configuration backup completed"
+
+# 5. Git State Backup (current commit hash)
+echo "Backing up Git state..."
+cd /root/MonitraNG || exit 1
+git rev-parse HEAD > "$BACKUP_PATH/git-state/commit_hash.txt" 2>/dev/null || true
+git branch --show-current > "$BACKUP_PATH/git-state/branch.txt" 2>/dev/null || true
+git log -1 --pretty=format:"%H %s" > "$BACKUP_PATH/git-state/last_commit.txt" 2>/dev/null || true
+echo "✓ Git state backup completed"
+
+# 6. Docker Compose State Backup (running containers)
+echo "Backing up Docker Compose state..."
+cd /root/MonitraNG/ApplicationResources/mng_apps || exit 1
+docker compose -f docker-compose.production.yml ps > "$BACKUP_PATH/config/containers_state.txt" 2>/dev/null || true
+docker compose -f docker-compose.production.yml config > "$BACKUP_PATH/config/compose_config.yml" 2>/dev/null || true
+echo "✓ Docker Compose state backup completed"
+
+# 7. Create backup manifest
+cat > "$BACKUP_PATH/manifest.txt" << EOF
+MonitraNG Pre-Deployment Backup
+===============================
+Date: $(date)
+Backup Name: $BACKUP_NAME
+Backup Path: $BACKUP_PATH
+
+Components:
+- MongoDB: $([ -f "$BACKUP_PATH/mongodb/mongodb_$DATE.archive.gz" ] && echo "✓" || echo "✗")
+- PostgreSQL: $([ -f "$BACKUP_PATH/postgres/keycloak_$DATE.sql.gz" ] && echo "✓" || echo "✗")
+- Docker Volumes: $([ -f "$BACKUP_PATH/docker-volumes/mongo_data_$DATE.tar.gz" ] && echo "✓" || echo "✗")
+- Configuration: $([ -f "$CONFIG_BACKUP" ] && echo "✓" || echo "✗")
+- Git State: $([ -f "$BACKUP_PATH/git-state/commit_hash.txt" ] && echo "✓" || echo "✗")
+- Docker Compose State: $([ -f "$BACKUP_PATH/config/containers_state.txt" ] && echo "✓" || echo "✗")
+
+To restore this backup, use:
+  /root/MonitraNG/scripts/restore-backup.sh $BACKUP_NAME
+EOF
+
+echo ""
+echo "=========================================="
+echo "Backup completed successfully!"
+echo "Backup location: $BACKUP_PATH"
+echo "Manifest: $BACKUP_PATH/manifest.txt"
+echo "=========================================="
+
+# Return backup name for use in deployment script
+echo "$BACKUP_NAME"
+

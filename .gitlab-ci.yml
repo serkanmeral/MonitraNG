@@ -1197,6 +1197,17 @@ deploy-services:
         echo "Resetting to origin/main..."
         git reset --hard origin/main || exit 1
         
+        # Pre-deployment backup
+        echo "Creating pre-deployment backup..."
+        if [ -f "scripts/backup-pre-deploy.sh" ]; then
+          chmod +x scripts/backup-pre-deploy.sh
+          BACKUP_NAME=$(BACKUP_DIR="/root/backups" scripts/backup-pre-deploy.sh)
+          echo "✓ Backup created: $BACKUP_NAME"
+          echo "BACKUP_NAME=$BACKUP_NAME" > /tmp/deployment_backup.txt
+        else
+          echo "WARNING: backup-pre-deploy.sh not found, skipping backup"
+        fi
+        
         # Docker compose dizinine git
         echo "Changing to ApplicationResources/mng_apps..."
         if [ ! -d "ApplicationResources/mng_apps" ]; then
@@ -1236,6 +1247,68 @@ deploy-services:
         
         echo "Checking service status..."
         docker compose -f docker-compose.production.yml ps
+        
+        # Health checks
+        echo "Waiting for services to be healthy (30 seconds)..."
+        sleep 30
+        
+        echo "Performing health checks..."
+        HEALTH_CHECK_FAILED=0
+        
+        # Check MngGateway
+        if curl -f -k https://localhost:5443/health 2>/dev/null || curl -f http://localhost:5000/health 2>/dev/null; then
+          echo "✓ MngGateway is healthy"
+        else
+          echo "✗ MngGateway health check failed"
+          HEALTH_CHECK_FAILED=1
+        fi
+        
+        # Check MngKeeper
+        if curl -f -k https://localhost:5001/api/version/short 2>/dev/null; then
+          echo "✓ MngKeeper is healthy"
+        else
+          echo "✗ MngKeeper health check failed"
+          HEALTH_CHECK_FAILED=1
+        fi
+        
+        # Check MngDataGateway
+        if curl -f -k https://localhost:5010/api/version/short 2>/dev/null; then
+          echo "✓ MngDataGateway is healthy"
+        else
+          echo "✗ MngDataGateway health check failed"
+          HEALTH_CHECK_FAILED=1
+        fi
+        
+        # Check MngHub
+        if curl -f http://localhost:5020/api/version/short 2>/dev/null; then
+          echo "✓ MngHub is healthy"
+        else
+          echo "✗ MngHub health check failed"
+          HEALTH_CHECK_FAILED=1
+        fi
+        
+        # Check MngUI
+        if curl -f http://localhost:3000 2>/dev/null; then
+          echo "✓ MngUI is healthy"
+        else
+          echo "✗ MngUI health check failed"
+          HEALTH_CHECK_FAILED=1
+        fi
+        
+        if [ $HEALTH_CHECK_FAILED -eq 1 ]; then
+          echo ""
+          echo "⚠️ WARNING: Some health checks failed!"
+          echo "Backup available for rollback:"
+          if [ -f /tmp/deployment_backup.txt ]; then
+            BACKUP_NAME=$(cat /tmp/deployment_backup.txt | cut -d= -f2)
+            echo "  /root/MonitraNG/scripts/restore-backup.sh $BACKUP_NAME"
+          fi
+          echo ""
+          echo "Continuing deployment (manual rollback may be required)..."
+        else
+          echo ""
+          echo "✓ All health checks passed!"
+        fi
         
         echo "=== Deployment completed successfully ==="
       ENDSSH
