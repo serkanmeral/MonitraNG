@@ -195,6 +195,18 @@ Aşağıdaki kısaltmaları kullanırken tam isimlerini kullan:
 
 ## Git Repository Yönetimi
 
+### Git Commit ve Push Politikası
+- **KRİTİK KURAL**: Kullanıcı açıkça "commit yap", "push yap", "commit ve push yap" veya benzeri bir talep vermedikçe **ASLA** `git commit` veya `git push` komutları çalıştırılmamalıdır
+- **Onay Gereksinimi**: 
+  - Kullanıcı commit/push talep etse bile, önce ne commit edileceğini ve commit mesajını göster
+  - Kullanıcı onayladıktan sonra commit ve push yap
+  - Kullanıcı "tamam", "evet", "onaylıyorum", "yap" gibi açık onay vermedikçe commit/push yapma
+- **İstisnalar**: 
+  - Kullanıcı açıkça "commit yap" veya "push yap" dediğinde direkt yapılabilir (onay zaten verilmiş sayılır)
+  - Kullanıcı "kaydet" dediğinde sadece dosya kaydet, commit/push yapma (onay gerektirir)
+- **Commit Mesajları**: Conventional Commits formatı kullan (feat:, fix:, docs:, vb.)
+- **Güvenlik**: Her commit ve push işleminden önce kullanıcıya bilgi ver ve onay al
+
 ### GitHub + GitLab Dual Sync
 - **Yapılandırma**: Origin remote'u hem GitHub hem GitLab'a push yapacak şekilde yapılandırılmıştır
 - **Kullanım**: `git push origin <branch>` komutu otomatik olarak hem GitHub hem GitLab'a push yapar
@@ -214,4 +226,10 @@ Aşağıdaki kısaltmaları kullanırken tam isimlerini kullan:
 - MongoDB ve RabbitMQ servislerinin çalıştığını kontrol et
 - SSL certificate validation hatalarını test scriptlerinde bypass ediyoruz (`-SkipCertificateCheck`)
 - Unique index'ler için test verilerinde duplicate key hatalarına dikkat et
+
+### SSH Bağlantısı
+- **Production Sunucu SSH**: Production sunucusuna SSH ile bağlanırken `ssh root@monitrang-server` komutunu kullan
+- **SSH Key Yapılandırması**: SSH key ile yapılandırma tamamlandı, password gerektirmez
+- **Sunucu Hostname**: `monitrang-server` hostname'i kullanılmalı (IP adresi yerine)
+- **Not**: Eğer hostname çalışmazsa, IP adresi kullanılabilir: `ssh root@45.141.151.52`
 
