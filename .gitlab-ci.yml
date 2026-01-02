@@ -1229,38 +1229,130 @@ deploy-services:
           sed -i 's/443:443/5443:443/g' docker-compose.production.yml || true
         fi
         
-        # Docker işlemleri
-        echo "Stopping existing containers (if any)..."
-        docker compose -f docker-compose.production.yml down || true
+        # Zero-downtime deployment: Rolling update stratejisi
+        echo "Starting zero-downtime rolling update..."
         
-        # Port 443'ü kullanan container'ları kontrol et ve durdur
-        echo "Checking for containers using port 443 or 5443..."
-        CONTAINER_USING_443=$(docker ps --format "{{.Names}}" --filter "publish=443" --filter "publish=5443" 2>/dev/null || true)
-        if [ -n "$CONTAINER_USING_443" ]; then
-          echo "Found container(s) using port 443/5443: $CONTAINER_USING_443"
-          echo "$CONTAINER_USING_443" | xargs -r docker stop 2>/dev/null || true
-          echo "$CONTAINER_USING_443" | xargs -r docker rm 2>/dev/null || true
-        fi
+        # Servis sırası: Önce backend servisler, sonra gateway, en son UI
+        SERVICES=("mngkeeper" "mngdatagateway" "mnghub" "mnggateway" "mngui")
         
-        echo "Building and starting Docker services..."
-        docker compose -f docker-compose.production.yml up -d --build || exit 1
+        for SERVICE in "${SERVICES[@]}"; do
+          echo ""
+          echo "=========================================="
+          echo "Updating service: $SERVICE"
+          echo "=========================================="
+          
+          # Servisi build et (image'ı oluştur)
+          echo "Building $SERVICE..."
+          docker compose -f docker-compose.production.yml build "$SERVICE" || {
+            echo "ERROR: Failed to build $SERVICE"
+            exit 1
+          }
+          
+          # Eski container'ı durdur ve yeni container'ı başlat (rolling update)
+          echo "Updating $SERVICE container (rolling update)..."
+          docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate "$SERVICE" || {
+            echo "ERROR: Failed to update $SERVICE"
+            exit 1
+          }
+          
+          # Container'ın başlamasını bekle
+          echo "Waiting for $SERVICE to start (10 seconds)..."
+          sleep 10
+          
+          # Health check (servis bazlı)
+          echo "Performing health check for $SERVICE..."
+          HEALTH_CHECK_PASSED=0
+          MAX_RETRIES=6
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            case $SERVICE in
+              mnggateway)
+                if curl -f -k https://localhost:5443/health 2>/dev/null || curl -f http://localhost:5000/health 2>/dev/null; then
+                  HEALTH_CHECK_PASSED=1
+                  break
+                fi
+                ;;
+              mngkeeper)
+                if curl -f -k https://localhost:5001/api/version/short 2>/dev/null; then
+                  HEALTH_CHECK_PASSED=1
+                  break
+                fi
+                ;;
+              mngdatagateway)
+                if curl -f -k https://localhost:5010/api/version/short 2>/dev/null; then
+                  HEALTH_CHECK_PASSED=1
+                  break
+                fi
+                ;;
+              mnghub)
+                if curl -f http://localhost:5020/api/version/short 2>/dev/null; then
+                  HEALTH_CHECK_PASSED=1
+                  break
+                fi
+                ;;
+              mngui)
+                if curl -f http://localhost:3000 2>/dev/null; then
+                  HEALTH_CHECK_PASSED=1
+                  break
+                fi
+                ;;
+            esac
+            
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+              echo "  Health check attempt $RETRY_COUNT/$MAX_RETRIES failed, retrying in 5 seconds..."
+              sleep 5
+            fi
+          done
+          
+          if [ $HEALTH_CHECK_PASSED -eq 1 ]; then
+            echo "✓ $SERVICE is healthy and running"
+          else
+            echo "✗ $SERVICE health check failed after $MAX_RETRIES attempts"
+            echo ""
+            echo "⚠️ WARNING: $SERVICE deployment failed!"
+            echo "Rolling back $SERVICE..."
+            
+            # Rollback: Eski image'ı kullan (eğer varsa)
+            if [ -f /tmp/deployment_backup.txt ]; then
+              BACKUP_NAME=$(cat /tmp/deployment_backup.txt | cut -d= -f2)
+              echo "Backup available: $BACKUP_NAME"
+              echo "To restore, run: /root/MonitraNG/scripts/restore-backup.sh $BACKUP_NAME"
+            fi
+            
+            # Servisi durdur (kullanıcı manuel müdahale edebilir)
+            echo "Stopping failed $SERVICE container..."
+            docker compose -f docker-compose.production.yml stop "$SERVICE" || true
+            
+            echo ""
+            echo "ERROR: Deployment failed at $SERVICE"
+            echo "Please check logs and restore from backup if needed"
+            exit 1
+          fi
+        done
         
-        echo "Checking service status..."
+        echo ""
+        echo "=========================================="
+        echo "All services updated successfully!"
+        echo "=========================================="
+        
+        # Final service status check
+        echo ""
+        echo "Checking final service status..."
         docker compose -f docker-compose.production.yml ps
         
-        # Health checks
-        echo "Waiting for services to be healthy (30 seconds)..."
-        sleep 30
-        
-        echo "Performing health checks..."
-        HEALTH_CHECK_FAILED=0
+        # Final comprehensive health check (all services)
+        echo ""
+        echo "Performing final comprehensive health check..."
+        FINAL_HEALTH_CHECK_FAILED=0
         
         # Check MngGateway
         if curl -f -k https://localhost:5443/health 2>/dev/null || curl -f http://localhost:5000/health 2>/dev/null; then
           echo "✓ MngGateway is healthy"
         else
           echo "✗ MngGateway health check failed"
-          HEALTH_CHECK_FAILED=1
+          FINAL_HEALTH_CHECK_FAILED=1
         fi
         
         # Check MngKeeper
@@ -1268,7 +1360,7 @@ deploy-services:
           echo "✓ MngKeeper is healthy"
         else
           echo "✗ MngKeeper health check failed"
-          HEALTH_CHECK_FAILED=1
+          FINAL_HEALTH_CHECK_FAILED=1
         fi
         
         # Check MngDataGateway
@@ -1276,7 +1368,7 @@ deploy-services:
           echo "✓ MngDataGateway is healthy"
         else
           echo "✗ MngDataGateway health check failed"
-          HEALTH_CHECK_FAILED=1
+          FINAL_HEALTH_CHECK_FAILED=1
         fi
         
         # Check MngHub
@@ -1284,7 +1376,7 @@ deploy-services:
           echo "✓ MngHub is healthy"
         else
           echo "✗ MngHub health check failed"
-          HEALTH_CHECK_FAILED=1
+          FINAL_HEALTH_CHECK_FAILED=1
         fi
         
         # Check MngUI
@@ -1292,22 +1384,22 @@ deploy-services:
           echo "✓ MngUI is healthy"
         else
           echo "✗ MngUI health check failed"
-          HEALTH_CHECK_FAILED=1
+          FINAL_HEALTH_CHECK_FAILED=1
         fi
         
-        if [ $HEALTH_CHECK_FAILED -eq 1 ]; then
+        if [ $FINAL_HEALTH_CHECK_FAILED -eq 1 ]; then
           echo ""
-          echo "⚠️ WARNING: Some health checks failed!"
+          echo "⚠️ WARNING: Some final health checks failed!"
           echo "Backup available for rollback:"
           if [ -f /tmp/deployment_backup.txt ]; then
             BACKUP_NAME=$(cat /tmp/deployment_backup.txt | cut -d= -f2)
             echo "  /root/MonitraNG/scripts/restore-backup.sh $BACKUP_NAME"
           fi
           echo ""
-          echo "Continuing deployment (manual rollback may be required)..."
+          echo "Please investigate the failed services."
         else
           echo ""
-          echo "✓ All health checks passed!"
+          echo "✓ All services are healthy!"
         fi
         
         echo "=== Deployment completed successfully ==="
