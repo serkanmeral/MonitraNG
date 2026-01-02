@@ -104,7 +104,7 @@ build-mngkeeper:
       - .nuget/
     policy: pull-push
   variables:
-    NUGET_PACKAGES: .nuget
+    NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
     DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
     DOTNET_NOLOGO: "true"
     DOTNET_CLI_TELEMETRY_OPTOUT: "true"
@@ -120,7 +120,7 @@ build-mngkeeper:
     - |
       for i in {1..3}; do
         echo "Restore attempt $i/3..."
-        if dotnet restore MngKeeper/MngKeeper.sln --packages .nuget --verbosity normal; then
+        if dotnet restore MngKeeper/MngKeeper.sln --packages ${CI_PROJECT_DIR}/.nuget --verbosity normal; then
           echo "Restore succeeded on attempt $i"
           break
         else
@@ -163,7 +163,7 @@ build-mngdatagateway:
       - .nuget/
     policy: pull-push
   variables:
-    NUGET_PACKAGES: .nuget
+    NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
     DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
     DOTNET_NOLOGO: "true"
     DOTNET_CLI_TELEMETRY_OPTOUT: "true"
@@ -179,7 +179,7 @@ build-mngdatagateway:
     - |
       for i in {1..3}; do
         echo "Restore attempt $i/3..."
-        if dotnet restore MngDataGateway/MngDataGateway.sln --packages .nuget --force --verbosity normal; then
+        if dotnet restore MngDataGateway/MngDataGateway.sln --packages ${CI_PROJECT_DIR}/.nuget --force --verbosity normal; then
           echo "Restore succeeded on attempt $i"
           break
         else
@@ -222,7 +222,7 @@ build-mnghub:
       - .nuget/
     policy: pull-push
   variables:
-    NUGET_PACKAGES: .nuget
+    NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
     DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
     DOTNET_NOLOGO: "true"
     DOTNET_CLI_TELEMETRY_OPTOUT: "true"
@@ -236,7 +236,7 @@ build-mnghub:
     - |
       for i in {1..3}; do
         echo "Restore attempt $i/3..."
-        if dotnet restore MngHub/MngHub.sln --packages .nuget --verbosity normal; then
+        if dotnet restore MngHub/MngHub.sln --packages ${CI_PROJECT_DIR}/.nuget --verbosity normal; then
           echo "Restore succeeded on attempt $i"
           break
         else
@@ -279,7 +279,7 @@ build-mnggateway:
       - .nuget/
     policy: pull-push
   variables:
-    NUGET_PACKAGES: .nuget
+    NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
     DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
     DOTNET_NOLOGO: "true"
     DOTNET_CLI_TELEMETRY_OPTOUT: "true"
@@ -293,7 +293,7 @@ build-mnggateway:
     - |
       for i in {1..3}; do
         echo "Restore attempt $i/3..."
-        if dotnet restore MngGateway/MngGateway.sln --packages .nuget --verbosity normal; then
+        if dotnet restore MngGateway/MngGateway.sln --packages ${CI_PROJECT_DIR}/.nuget --verbosity normal; then
           echo "Restore succeeded on attempt $i"
           break
         else
@@ -385,7 +385,7 @@ test-mngkeeper:
       - .nuget/
     policy: pull-push
   variables:
-    NUGET_PACKAGES: .nuget
+    NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
     DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
     DOTNET_NOLOGO: "true"
     DOTNET_CLI_TELEMETRY_OPTOUT: "true"
@@ -395,7 +395,7 @@ test-mngkeeper:
     - |
       for i in {1..3}; do
         echo "Restore attempt $i/3..."
-        if dotnet restore MngKeeper/MngKeeper.sln --packages .nuget --verbosity normal; then
+        if dotnet restore MngKeeper/MngKeeper.sln --packages ${CI_PROJECT_DIR}/.nuget --verbosity normal; then
           echo "Restore succeeded on attempt $i"
           break
         else
@@ -430,7 +430,7 @@ test-mngdatagateway:
       - .nuget/
     policy: pull-push
   variables:
-    NUGET_PACKAGES: .nuget
+    NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
     DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
     DOTNET_NOLOGO: "true"
     DOTNET_CLI_TELEMETRY_OPTOUT: "true"
@@ -440,7 +440,7 @@ test-mngdatagateway:
     - |
       for i in {1..3}; do
         echo "Restore attempt $i/3..."
-        if dotnet restore MngDataGateway/MngDataGateway.sln --packages .nuget --verbosity normal; then
+        if dotnet restore MngDataGateway/MngDataGateway.sln --packages ${CI_PROJECT_DIR}/.nuget --verbosity normal; then
           echo "Restore succeeded on attempt $i"
           break
         else
@@ -475,7 +475,7 @@ test-mnghub:
       - .nuget/
     policy: pull-push
   variables:
-    NUGET_PACKAGES: .nuget
+    NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
     DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
     DOTNET_NOLOGO: "true"
     DOTNET_CLI_TELEMETRY_OPTOUT: "true"
@@ -485,7 +485,7 @@ test-mnghub:
     - |
       for i in {1..3}; do
         echo "Restore attempt $i/3..."
-        if dotnet restore MngHub/MngHub.sln --packages .nuget --verbosity normal; then
+        if dotnet restore MngHub/MngHub.sln --packages ${CI_PROJECT_DIR}/.nuget --verbosity normal; then
           echo "Restore succeeded on attempt $i"
           break
         else
@@ -520,7 +520,7 @@ test-mnggateway:
       - .nuget/
     policy: pull-push
   variables:
-    NUGET_PACKAGES: .nuget
+    NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
     DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
     DOTNET_NOLOGO: "true"
     DOTNET_CLI_TELEMETRY_OPTOUT: "true"
@@ -530,7 +530,7 @@ test-mnggateway:
     - |
       for i in {1..3}; do
         echo "Restore attempt $i/3..."
-        if dotnet restore MngGateway/MngGateway.sln --packages .nuget --verbosity normal; then
+        if dotnet restore MngGateway/MngGateway.sln --packages ${CI_PROJECT_DIR}/.nuget --verbosity normal; then
           echo "Restore succeeded on attempt $i"
           break
         else
@@ -607,7 +607,7 @@ extract-openapi-specs:
     - |
       for i in {1..3}; do
         echo "Restore attempt $i/3..."
-        if dotnet restore MngKeeper/MngKeeper.sln --packages .nuget --verbosity normal; then
+        if dotnet restore MngKeeper/MngKeeper.sln --packages ${CI_PROJECT_DIR}/.nuget --verbosity normal; then
           echo "Restore succeeded on attempt $i"
           break
         else
@@ -624,7 +624,7 @@ extract-openapi-specs:
     - |
       for i in {1..3}; do
         echo "Restore attempt $i/3..."
-        if dotnet restore MngDataGateway/MngDataGateway.sln --packages .nuget --verbosity normal; then
+        if dotnet restore MngDataGateway/MngDataGateway.sln --packages ${CI_PROJECT_DIR}/.nuget --verbosity normal; then
           echo "Restore succeeded on attempt $i"
           break
         else
@@ -641,7 +641,7 @@ extract-openapi-specs:
     - |
       for i in {1..3}; do
         echo "Restore attempt $i/3..."
-        if dotnet restore MngGateway/MngGateway.sln --packages .nuget --verbosity normal; then
+        if dotnet restore MngGateway/MngGateway.sln --packages ${CI_PROJECT_DIR}/.nuget --verbosity normal; then
           echo "Restore succeeded on attempt $i"
           break
         else
