@@ -1304,22 +1304,21 @@ deploy-services:
         fi
         
         # MngDataGateway
-        SERVICE="mngdatagateway"
         echo ""
         echo "=========================================="
-        echo "Updating service: $SERVICE"
+        echo "Updating service: mngdatagateway"
         echo "=========================================="
-        echo "Building $SERVICE..."
-        if ! docker compose -f docker-compose.production.yml build "$SERVICE"; then
-          echo "ERROR: Failed to build $SERVICE"
+        echo "Building mngdatagateway..."
+        if ! docker compose -f docker-compose.production.yml build mngdatagateway; then
+          echo "ERROR: Failed to build mngdatagateway"
           exit 1
         fi
-        echo "Updating $SERVICE container (rolling update)..."
-        if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate "$SERVICE"; then
-          echo "ERROR: Failed to update $SERVICE"
+        echo "Updating mngdatagateway container (rolling update)..."
+        if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate mngdatagateway; then
+          echo "ERROR: Failed to update mngdatagateway"
           exit 1
         fi
-        echo "Waiting for $SERVICE to start (10 seconds)..."
+        echo "Waiting for mngdatagateway to start (10 seconds)..."
         sleep 10
         HEALTH_CHECK_PASSED=0
         MAX_RETRIES=6
@@ -1336,9 +1335,9 @@ deploy-services:
           fi
         done
         if [ $HEALTH_CHECK_PASSED -eq 1 ]; then
-          echo "✓ $SERVICE is healthy and running"
+          echo "✓ mngdatagateway is healthy and running"
         else
-          echo "✗ $SERVICE health check failed"
+          echo "✗ mngdatagateway health check failed"
           exit 1
         fi
         
