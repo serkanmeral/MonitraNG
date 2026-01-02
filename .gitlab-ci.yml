@@ -1,4 +1,5 @@
 # GitLab CI/CD Pipeline Configuration for MonitraNG
+# Pipeline restart - testing deployment fixes
 # Bu dosya GitLab'da CI/CD pipeline'larını tanımlar
 # Artifacts optional - jobs build locally instead of using artifacts to avoid upload failures
 # Pipeline skip desteği: [skip ci] veya [ci skip] kullanarak pipeline'ı atlayabilirsiniz
