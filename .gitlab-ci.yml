@@ -182,7 +182,12 @@ build-mngdatagateway:
     - echo "Restoring packages (with retry)..."
     - echo "Checking NuGet cache location: $NUGET_PACKAGES"
     - echo "Cache directory contents:"
-    - ls -la ${CI_PROJECT_DIR}/.nuget/ 2>/dev/null || echo "Cache directory does not exist yet"
+    - |
+      if [ -d "${CI_PROJECT_DIR}/.nuget" ]; then
+        ls -la ${CI_PROJECT_DIR}/.nuget/
+      else
+        echo "Cache directory does not exist yet"
+      fi
     - |
       for i in {1..3}; do
         echo "Restore attempt $i/3..."
