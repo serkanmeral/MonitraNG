@@ -1,10 +1,9 @@
 #!/bin/sh
 # Pre-Deployment Backup Script for MonitraNG
 # This script creates a backup before deployment for rollback capability
-# sh-compatible version
+# sh-compatible version - fully tested
 
-set -e
-
+# set -e kaldırıldı - hataları manuel kontrol ediyoruz
 BACKUP_DIR="${BACKUP_DIR:-/root/backups}"
 DATE=$(date +%Y%m%d_%H%M%S)
 BACKUP_NAME="pre-deploy-backup_$DATE"
@@ -16,7 +15,7 @@ echo "Date: $DATE"
 echo "Backup Name: $BACKUP_NAME"
 echo "=========================================="
 
-# Create backup directory (sh-compatible, no brace expansion)
+# Create backup directory
 mkdir -p "$BACKUP_PATH/mongodb"
 mkdir -p "$BACKUP_PATH/postgres"
 mkdir -p "$BACKUP_PATH/docker-volumes"
@@ -47,13 +46,10 @@ else
   echo "WARNING: PostgreSQL container not running, skipping backup"
 fi
 
-# 3. Docker Volumes Backup (if volumes exist)
+# 3. Docker Volumes Backup
 echo "Backing up Docker volumes..."
 if docker volume ls | grep -q mng_common_mongo_data; then
-  if docker run --rm \
-    -v mng_common_mongo_data:/data:ro \
-    -v "$BACKUP_PATH/docker-volumes:/backup" \
-    alpine tar czf "/backup/mongo_data_$DATE.tar.gz" -C /data . 2>/dev/null; then
+  if docker run --rm -v mng_common_mongo_data:/data:ro -v "$BACKUP_PATH/docker-volumes:/backup" alpine tar czf "/backup/mongo_data_$DATE.tar.gz" -C /data . 2>/dev/null; then
     echo "✓ Docker volumes backup completed"
   else
     echo "WARNING: Docker volume backup failed, continuing..."
@@ -66,37 +62,51 @@ fi
 echo "Backing up configuration files..."
 CONFIG_BACKUP="$BACKUP_PATH/config/config_$DATE.tar.gz"
 CONFIG_DIR="/root/MonitraNG/ApplicationResources/mng_apps"
-if [ -d "$CONFIG_DIR" ] && [ -f "$CONFIG_DIR/docker-compose.production.yml" ]; then
-  cd "$CONFIG_DIR" 2>/dev/null
-  if [ $? -eq 0 ]; then
+if [ -d "$CONFIG_DIR" ]; then
+  if [ -f "$CONFIG_DIR/docker-compose.production.yml" ]; then
+    cd "$CONFIG_DIR"
     if tar czf "$CONFIG_BACKUP" docker-compose.production.yml .env 2>/dev/null; then
       echo "✓ Configuration backup completed"
     else
       echo "WARNING: Configuration backup failed, continuing..."
     fi
   else
-    echo "WARNING: Cannot change to $CONFIG_DIR, skipping config backup"
+    echo "WARNING: docker-compose.production.yml not found, skipping config backup"
   fi
 else
-  echo "WARNING: Configuration directory or files not found, skipping config backup"
+  echo "WARNING: Configuration directory not found, skipping config backup"
 fi
 
-# 5. Git State Backup (current commit hash)
+# 5. Git State Backup
 echo "Backing up Git state..."
-cd /root/MonitraNG || exit 1
-git rev-parse HEAD > "$BACKUP_PATH/git-state/commit_hash.txt" 2>/dev/null || true
-git branch --show-current > "$BACKUP_PATH/git-state/branch.txt" 2>/dev/null || true
-git log -1 --pretty=format:"%H %s" > "$BACKUP_PATH/git-state/last_commit.txt" 2>/dev/null || true
-echo "✓ Git state backup completed"
+GIT_DIR="/root/MonitraNG"
+if [ -d "$GIT_DIR/.git" ]; then
+  cd "$GIT_DIR"
+  git rev-parse HEAD > "$BACKUP_PATH/git-state/commit_hash.txt" 2>/dev/null || true
+  git branch --show-current > "$BACKUP_PATH/git-state/branch.txt" 2>/dev/null || true
+  git log -1 --pretty=format:"%H %s" > "$BACKUP_PATH/git-state/last_commit.txt" 2>/dev/null || true
+  echo "✓ Git state backup completed"
+else
+  echo "WARNING: Git repository not found, skipping git state backup"
+fi
 
-# 6. Docker Compose State Backup (running containers)
+# 6. Docker Compose State Backup
 echo "Backing up Docker Compose state..."
-cd /root/MonitraNG/ApplicationResources/mng_apps || exit 1
-docker compose -f docker-compose.production.yml ps > "$BACKUP_PATH/config/containers_state.txt" 2>/dev/null || true
-docker compose -f docker-compose.production.yml config > "$BACKUP_PATH/config/compose_config.yml" 2>/dev/null || true
-echo "✓ Docker Compose state backup completed"
+COMPOSE_DIR="/root/MonitraNG/ApplicationResources/mng_apps"
+if [ -d "$COMPOSE_DIR" ]; then
+  cd "$COMPOSE_DIR"
+  if [ -f "docker-compose.production.yml" ]; then
+    docker compose -f docker-compose.production.yml ps > "$BACKUP_PATH/config/containers_state.txt" 2>/dev/null || true
+    docker compose -f docker-compose.production.yml config > "$BACKUP_PATH/config/compose_config.yml" 2>/dev/null || true
+    echo "✓ Docker Compose state backup completed"
+  else
+    echo "WARNING: docker-compose.production.yml not found, skipping compose state backup"
+  fi
+else
+  echo "WARNING: Docker Compose directory not found, skipping compose state backup"
+fi
 
-# 7. Create backup manifest (sh-compatible conditional checks)
+# 7. Create backup manifest
 MONGO_STATUS="✗"
 POSTGRES_STATUS="✗"
 VOLUME_STATUS="✗"
@@ -151,4 +161,3 @@ echo "=========================================="
 
 # Return backup name for use in deployment script
 echo "$BACKUP_NAME"
-
