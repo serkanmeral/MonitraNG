@@ -85,6 +85,7 @@ scripts/deployment-config
 
 ## Production-specific files (should not be committed)
 ApplicationResources/mng_apps/.env
+ApplicationResources/mng_common/.env
 ApplicationResources/mng_apps/docker-compose.production.yml.backup*
 ApplicationResources/mng_apps/*.backup*
 *.backup
