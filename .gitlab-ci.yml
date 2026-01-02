@@ -1262,17 +1262,17 @@ deploy-services:
           
           # Servisi build et (image'ı oluştur)
           echo "Building $SERVICE..."
-          docker compose -f docker-compose.production.yml build "$SERVICE" || {
+          if ! docker compose -f docker-compose.production.yml build "$SERVICE"; then
             echo "ERROR: Failed to build $SERVICE"
             exit 1
-          }
+          fi
           
           # Eski container'ı durdur ve yeni container'ı başlat (rolling update)
           echo "Updating $SERVICE container (rolling update)..."
-          docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate "$SERVICE" || {
+          if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate "$SERVICE"; then
             echo "ERROR: Failed to update $SERVICE"
             exit 1
-          }
+          fi
           
           # Container'ın başlamasını bekle
           echo "Waiting for $SERVICE to start (10 seconds)..."
