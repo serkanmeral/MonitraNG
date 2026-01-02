@@ -1350,6 +1350,24 @@ deploy-services:
         done
         if [ $HEALTH_CHECK_PASSED -eq 0 ]; then
           echo "⚠ WARNING: mngdatagateway health check failed after 6 attempts"
+          echo "Attempting automatic rollback..."
+          if [ -f /tmp/deployment_backup.txt ]; then
+            BACKUP_NAME=$(cat /tmp/deployment_backup.txt | cut -d= -f2)
+            if [ -n "$BACKUP_NAME" ]; then
+              echo "Rolling back mngdatagateway using backup: $BACKUP_NAME"
+              if [ -f "scripts/restore-backup.sh" ]; then
+                chmod +x scripts/restore-backup.sh || true
+                SKIP_CONFIRM=true sh scripts/restore-backup.sh "$BACKUP_NAME" --skip-confirm || true
+                echo "Restarting mngdatagateway container..."
+                docker compose -f docker-compose.production.yml restart mngdatagateway || true
+                echo "⚠ Rollback completed for mngdatagateway"
+              else
+                echo "ERROR: restore-backup.sh not found, cannot rollback"
+              fi
+            fi
+          else
+            echo "ERROR: Backup information not found, cannot rollback"
+          fi
           echo "Continuing deployment despite health check failure..."
         fi
         
