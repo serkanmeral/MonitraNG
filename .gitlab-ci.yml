@@ -1207,8 +1207,9 @@ deploy-services:
         # Pre-deployment backup
         echo "Creating pre-deployment backup..."
         if [ -f "scripts/backup-pre-deploy.sh" ]; then
-          chmod +x scripts/backup-pre-deploy.sh
-          BACKUP_NAME=$(BACKUP_DIR="/root/backups" scripts/backup-pre-deploy.sh)
+          chmod +x scripts/backup-pre-deploy.sh || true
+          export BACKUP_DIR="/root/backups"
+          BACKUP_NAME=$(bash scripts/backup-pre-deploy.sh)
           echo "✓ Backup created: $BACKUP_NAME"
           echo "BACKUP_NAME=$BACKUP_NAME" > /tmp/deployment_backup.txt
         else
@@ -1240,9 +1241,10 @@ deploy-services:
         echo "Starting zero-downtime rolling update..."
         
         # Servis sırası: Önce backend servisler, sonra gateway, en son UI
-        SERVICES=("mngkeeper" "mngdatagateway" "mnghub" "mnggateway" "mngui")
+        # Array syntax sh-compatible değil, bu yüzden space-separated string kullanıyoruz
+        SERVICES="mngkeeper mngdatagateway mnghub mnggateway mngui"
         
-        for SERVICE in "${SERVICES[@]}"; do
+        for SERVICE in $SERVICES; do
           echo ""
           echo "=========================================="
           echo "Updating service: $SERVICE"
