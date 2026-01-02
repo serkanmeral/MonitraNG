@@ -1252,9 +1252,8 @@ deploy-services:
         
         # Servis sırası: Önce backend servisler, sonra gateway, en son UI
         # Array syntax sh-compatible değil, bu yüzden space-separated string kullanıyoruz
-        SERVICES="mngkeeper mngdatagateway mnghub mnggateway mngui"
-        
-        for SERVICE in $SERVICES; do
+        # Her servisi ayrı ayrı işle (sh-compatible)
+        for SERVICE in mngkeeper mngdatagateway mnghub mnggateway mngui; do
           echo ""
           echo "=========================================="
           echo "Updating service: $SERVICE"
