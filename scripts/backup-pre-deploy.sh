@@ -66,22 +66,18 @@ fi
 echo "Backing up configuration files..."
 CONFIG_BACKUP="$BACKUP_PATH/config/config_$DATE.tar.gz"
 CONFIG_DIR="/root/MonitraNG/ApplicationResources/mng_apps"
-if [ -d "$CONFIG_DIR" ]; then
-  cd "$CONFIG_DIR" || {
-    echo "WARNING: Cannot change to $CONFIG_DIR, skipping config backup"
-    CONFIG_BACKUP=""
-  }
-  if [ -n "$CONFIG_BACKUP" ] && [ -f "docker-compose.production.yml" ]; then
+if [ -d "$CONFIG_DIR" ] && [ -f "$CONFIG_DIR/docker-compose.production.yml" ]; then
+  if cd "$CONFIG_DIR 2>/dev/null; then
     if tar czf "$CONFIG_BACKUP" docker-compose.production.yml .env 2>/dev/null; then
       echo "✓ Configuration backup completed"
     else
       echo "WARNING: Configuration backup failed, continuing..."
     fi
   else
-    echo "WARNING: Configuration files not found, skipping config backup"
+    echo "WARNING: Cannot change to $CONFIG_DIR, skipping config backup"
   fi
 else
-  echo "WARNING: Configuration directory not found, skipping config backup"
+  echo "WARNING: Configuration directory or files not found, skipping config backup"
 fi
 
 # 5. Git State Backup (current commit hash)
