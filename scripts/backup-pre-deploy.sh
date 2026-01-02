@@ -1,6 +1,7 @@
-#!/bin/bash
+#!/bin/sh
 # Pre-Deployment Backup Script for MonitraNG
 # This script creates a backup before deployment for rollback capability
+# sh-compatible version
 
 set -e
 
@@ -15,8 +16,12 @@ echo "Date: $DATE"
 echo "Backup Name: $BACKUP_NAME"
 echo "=========================================="
 
-# Create backup directory
-mkdir -p "$BACKUP_PATH"/{mongodb,postgres,docker-volumes,config,git-state}
+# Create backup directory (sh-compatible, no brace expansion)
+mkdir -p "$BACKUP_PATH/mongodb"
+mkdir -p "$BACKUP_PATH/postgres"
+mkdir -p "$BACKUP_PATH/docker-volumes"
+mkdir -p "$BACKUP_PATH/config"
+mkdir -p "$BACKUP_PATH/git-state"
 
 # 1. MongoDB Backup
 echo "Backing up MongoDB..."
@@ -80,7 +85,33 @@ docker compose -f docker-compose.production.yml ps > "$BACKUP_PATH/config/contai
 docker compose -f docker-compose.production.yml config > "$BACKUP_PATH/config/compose_config.yml" 2>/dev/null || true
 echo "✓ Docker Compose state backup completed"
 
-# 7. Create backup manifest
+# 7. Create backup manifest (sh-compatible conditional checks)
+MONGO_STATUS="✗"
+POSTGRES_STATUS="✗"
+VOLUME_STATUS="✗"
+CONFIG_STATUS="✗"
+GIT_STATUS="✗"
+COMPOSE_STATUS="✗"
+
+if [ -f "$BACKUP_PATH/mongodb/mongodb_$DATE.archive.gz" ]; then
+  MONGO_STATUS="✓"
+fi
+if [ -f "$BACKUP_PATH/postgres/keycloak_$DATE.sql.gz" ]; then
+  POSTGRES_STATUS="✓"
+fi
+if [ -f "$BACKUP_PATH/docker-volumes/mongo_data_$DATE.tar.gz" ]; then
+  VOLUME_STATUS="✓"
+fi
+if [ -f "$CONFIG_BACKUP" ]; then
+  CONFIG_STATUS="✓"
+fi
+if [ -f "$BACKUP_PATH/git-state/commit_hash.txt" ]; then
+  GIT_STATUS="✓"
+fi
+if [ -f "$BACKUP_PATH/config/containers_state.txt" ]; then
+  COMPOSE_STATUS="✓"
+fi
+
 cat > "$BACKUP_PATH/manifest.txt" << EOF
 MonitraNG Pre-Deployment Backup
 ===============================
@@ -89,12 +120,12 @@ Backup Name: $BACKUP_NAME
 Backup Path: $BACKUP_PATH
 
 Components:
-- MongoDB: $([ -f "$BACKUP_PATH/mongodb/mongodb_$DATE.archive.gz" ] && echo "✓" || echo "✗")
-- PostgreSQL: $([ -f "$BACKUP_PATH/postgres/keycloak_$DATE.sql.gz" ] && echo "✓" || echo "✗")
-- Docker Volumes: $([ -f "$BACKUP_PATH/docker-volumes/mongo_data_$DATE.tar.gz" ] && echo "✓" || echo "✗")
-- Configuration: $([ -f "$CONFIG_BACKUP" ] && echo "✓" || echo "✗")
-- Git State: $([ -f "$BACKUP_PATH/git-state/commit_hash.txt" ] && echo "✓" || echo "✗")
-- Docker Compose State: $([ -f "$BACKUP_PATH/config/containers_state.txt" ] && echo "✓" || echo "✗")
+- MongoDB: $MONGO_STATUS
+- PostgreSQL: $POSTGRES_STATUS
+- Docker Volumes: $VOLUME_STATUS
+- Configuration: $CONFIG_STATUS
+- Git State: $GIT_STATUS
+- Docker Compose State: $COMPOSE_STATUS
 
 To restore this backup, use:
   /root/MonitraNG/scripts/restore-backup.sh $BACKUP_NAME
