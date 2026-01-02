@@ -1263,9 +1263,10 @@ deploy-services:
         echo "Starting zero-downtime rolling update..."
         
         # Servis sırası: Önce backend servisler, sonra gateway, en son UI
-        # Her servisi ayrı ayrı işle (for loop yerine tek tek)
-        update_service() {
-          SERVICE=$1
+        # Her servisi tek tek işle (function yerine inline)
+        
+        # MngKeeper
+        SERVICE="mngkeeper"
           echo ""
           echo "=========================================="
           echo "Updating service: $SERVICE"
