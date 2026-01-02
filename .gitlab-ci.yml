@@ -121,8 +121,6 @@ build-mngkeeper:
     - echo "Dotnet version:"
     - dotnet --version
     - echo "Restoring packages (with retry)..."
-    - echo "Checking NuGet cache location: $NUGET_PACKAGES"
-    - test -d "${CI_PROJECT_DIR}/.nuget" && ls -la ${CI_PROJECT_DIR}/.nuget/ || echo "Cache directory does not exist yet"
     - |
       for i in {1..3}; do
         echo "Restore attempt $i/3..."
@@ -182,8 +180,6 @@ build-mngdatagateway:
     - echo "Cleaning solution..."
     - dotnet clean MngDataGateway/MngDataGateway.sln
     - echo "Restoring packages (with retry)..."
-    - echo "Checking NuGet cache location: $NUGET_PACKAGES"
-    - test -d "${CI_PROJECT_DIR}/.nuget" && ls -la ${CI_PROJECT_DIR}/.nuget/ || echo "Cache directory does not exist yet"
     - |
       for i in {1..3}; do
         echo "Restore attempt $i/3..."
@@ -1739,6 +1735,6 @@ deploy-services:
     - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
       when: never
     - if: $CI_COMMIT_BRANCH == "main"
-      when: manual
+  when: manual
   allow_failure: true  # Pipeline'ı başarılı saymak için (deploy manuel)
   timeout: 30m
