@@ -1212,6 +1212,9 @@ deploy-services:
         fi
         
         # Docker işlemleri
+        echo "Stopping existing containers (if any)..."
+        docker compose -f docker-compose.production.yml down || true
+        
         echo "Building and starting Docker services..."
         docker compose -f docker-compose.production.yml up -d --build || exit 1
         
