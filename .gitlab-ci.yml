@@ -1263,7 +1263,6 @@ deploy-docs-to-server:
     DEPLOY_SERVER_USER: "${DEPLOY_SERVER_USER:-root}"
   before_script:
     - apk add --no-cache openssh-client rsync base64
-    - eval $(ssh-agent -s)
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
     - |
@@ -1288,17 +1287,15 @@ deploy-docs-to-server:
         echo "✅ SSH key decoded from base64"
       fi
       chmod 600 ~/.ssh/deploy_key
-      # Add key to ssh-agent from file (non-interactive)
-      DISPLAY=:0 SSH_ASKPASS=/bin/echo ssh-add ~/.ssh/deploy_key < /dev/null 2>&1
-      SSH_ADD_EXIT=$?
-      if [ $SSH_ADD_EXIT -ne 0 ]; then
-        echo "❌ Failed to add SSH key to ssh-agent (exit code: $SSH_ADD_EXIT)"
+      # Validate key format
+      if ! ssh-keygen -l -f ~/.ssh/deploy_key > /dev/null 2>&1; then
+        echo "❌ Invalid SSH key format"
         exit 1
       fi
-      echo "✅ SSH key added to ssh-agent"
       # Show key fingerprint for debugging
-      echo "Keys in ssh-agent:"
-      ssh-add -l || echo "⚠️  Could not list keys in ssh-agent"
+      echo "SSH key fingerprint:"
+      ssh-keygen -l -f ~/.ssh/deploy_key | head -1
+      echo "✅ SSH key validated and ready to use"
     - ssh-keyscan -H $DEPLOY_SERVER_HOST >> ~/.ssh/known_hosts 2>/dev/null || echo "SSH keyscan failed, continuing..."
     - chmod 644 ~/.ssh/known_hosts
   script:
@@ -1315,7 +1312,7 @@ deploy-docs-to-server:
       
       # Artifacts'ı sunucuya kopyala
       echo "Copying artifacts to server..."
-      rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts" \
+      rsync -avz --delete -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts -o IdentitiesOnly=yes" \
         public/ $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST:/tmp/docs-public/ || {
         echo "❌ Failed to copy artifacts to server"
         exit 1
@@ -1323,7 +1320,7 @@ deploy-docs-to-server:
       
       # Deploy script'i çalıştır
       echo "Running deploy script on server..."
-      ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST << 'EOF'
+      ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts -o IdentitiesOnly=yes $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST << 'EOF'
         cd /root/MonitraNG
         if [ -f "scripts/infrastructure/deploy-docs-from-artifacts.sh" ]; then
           chmod +x scripts/infrastructure/deploy-docs-from-artifacts.sh
