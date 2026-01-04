@@ -1250,7 +1250,7 @@ pages:
 # Deploys documentation artifacts to production server via SSH
 deploy-docs-to-server:
   stage: deploy-docs
-  image: alpine/git
+  image: alpine:latest
   dependencies:
     - pages  # pages job'ının artifacts'ını kullan
   needs:
