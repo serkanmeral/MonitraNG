@@ -368,6 +368,8 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
       # Let's Encrypt challenge files
       - /var/www/html:/var/www/html:ro
+      # Documentation (GitLab Pages artifacts)
+      - /var/www/docs.monitrang.com:/var/www/docs.monitrang.com:ro
       # Logs
       - nginx_logs:/var/log/nginx
     networks:
