@@ -1271,26 +1271,31 @@ deploy-docs-to-server:
         echo "⚠️  SSH_PRIVATE_KEY not set. Skipping deployment."
         exit 0
       fi
-      # Base64 decode if needed (check if it starts with -----BEGIN)
+      # Base64 decode if needed and write to file
       if echo "$SSH_PRIVATE_KEY" | head -1 | grep -q "^-----BEGIN"; then
         # Already decoded, use as is
-        echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
-        SSH_ADD_EXIT=$?
-        if [ $SSH_ADD_EXIT -ne 0 ]; then
-          echo "❌ Failed to add SSH key to ssh-agent (exit code: $SSH_ADD_EXIT)"
-          exit 1
-        fi
-        echo "✅ Using SSH key as-is (already decoded) and added to ssh-agent"
+        echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+        echo "✅ Using SSH key as-is (already decoded)"
       else
         # Base64 encoded, decode first
-        echo "$SSH_PRIVATE_KEY" | base64 -d | tr -d '\r' | ssh-add -
-        SSH_ADD_EXIT=$?
-        if [ $SSH_ADD_EXIT -ne 0 ]; then
-          echo "❌ Failed to decode base64 SSH key or add to ssh-agent (exit code: $SSH_ADD_EXIT)"
+        echo "$SSH_PRIVATE_KEY" | base64 -d > ~/.ssh/deploy_key.tmp 2>&1
+        if [ $? -ne 0 ]; then
+          echo "❌ Failed to decode base64 SSH key"
           exit 1
         fi
-        echo "✅ SSH key decoded from base64 and added to ssh-agent"
+        tr -d '\r' < ~/.ssh/deploy_key.tmp > ~/.ssh/deploy_key
+        rm -f ~/.ssh/deploy_key.tmp
+        echo "✅ SSH key decoded from base64"
       fi
+      chmod 600 ~/.ssh/deploy_key
+      # Add key to ssh-agent from file
+      ssh-add ~/.ssh/deploy_key
+      SSH_ADD_EXIT=$?
+      if [ $SSH_ADD_EXIT -ne 0 ]; then
+        echo "❌ Failed to add SSH key to ssh-agent (exit code: $SSH_ADD_EXIT)"
+        exit 1
+      fi
+      echo "✅ SSH key added to ssh-agent"
       # Show key fingerprint for debugging
       echo "Keys in ssh-agent:"
       ssh-add -l || echo "⚠️  Could not list keys in ssh-agent"
