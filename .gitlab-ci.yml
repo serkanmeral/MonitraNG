@@ -576,6 +576,9 @@ extract-openapi-specs:
   image: mcr.microsoft.com/dotnet/sdk:9.0
   tags:
     - docker
+  variables:
+    # Use GitLab's internal URL for artifact uploads
+    GITLAB_URL: "${CI_SERVER_URL:-http://gitlab}"
   # Dependencies removed - artifacts optional, building locally instead
   before_script:
     - |
@@ -609,6 +612,8 @@ extract-openapi-specs:
           fi
         fi
       done || true
+    - export PATH="$PATH:/root/.dotnet/tools"
+    - swashbuckle --version || echo "Swashbuckle not in PATH, will use dotnet tool run"
   script:
     - echo "=== Building services for OpenAPI extraction ==="
     - echo "Building MngKeeper..."
@@ -679,7 +684,7 @@ extract-openapi-specs:
       # Extract MngKeeper spec
       if [ -n "$KEEPER_DLL" ]; then
         echo "Extracting MngKeeper OpenAPI spec from $KEEPER_DLL"
-        swashbuckle aspnetcore tofile "$KEEPER_DLL" "v1" docs/content/api/mngkeeper/openapi.json || {
+        dotnet tool run swashbuckle aspnetcore tofile "$KEEPER_DLL" "v1" docs/content/api/mngkeeper/openapi.json || {
           echo "Swashbuckle extraction failed, trying alternative method..."
           # Fallback: Create placeholder with metadata
           echo '{"info":{"title":"MngKeeper API","version":"v1","description":"OpenAPI spec - extraction pending"}}' > docs/content/api/mngkeeper/openapi.json
@@ -692,9 +697,9 @@ extract-openapi-specs:
       # Extract MngDataGateway spec
       if [ -n "$DATAGATEWAY_DLL" ]; then
         echo "Extracting MngDataGateway OpenAPI spec from $DATAGATEWAY_DLL"
-        swashbuckle aspnetcore tofile "$DATAGATEWAY_DLL" "v1.0" docs/content/api/mngdatagateway/openapi.json || {
+        dotnet tool run swashbuckle aspnetcore tofile "$DATAGATEWAY_DLL" "v1.0" docs/content/api/mngdatagateway/openapi.json || {
           echo "Swashbuckle extraction failed, trying v1..."
-          swashbuckle aspnetcore tofile "$DATAGATEWAY_DLL" "v1" docs/content/api/mngdatagateway/openapi.json || {
+          dotnet tool run swashbuckle aspnetcore tofile "$DATAGATEWAY_DLL" "v1" docs/content/api/mngdatagateway/openapi.json || {
             echo "Swashbuckle extraction failed, creating placeholder"
             echo '{"info":{"title":"MngDataGateway API","version":"v1.0","description":"OpenAPI spec - extraction pending"}}' > docs/content/api/mngdatagateway/openapi.json
           }
@@ -710,7 +715,7 @@ extract-openapi-specs:
       # Extract MngGateway spec
       if [ -n "$GATEWAY_DLL" ]; then
         echo "Extracting MngGateway OpenAPI spec from $GATEWAY_DLL"
-        swashbuckle aspnetcore tofile "$GATEWAY_DLL" "v1" docs/content/api/mnggateway/openapi.json || {
+        dotnet tool run swashbuckle aspnetcore tofile "$GATEWAY_DLL" "v1" docs/content/api/mnggateway/openapi.json || {
           echo "Swashbuckle extraction failed, trying alternative method..."
           # Fallback: Create placeholder with metadata
           echo '{"info":{"title":"MngGateway API","version":"v1","description":"OpenAPI spec - extraction pending"}}' > docs/content/api/mnggateway/openapi.json
