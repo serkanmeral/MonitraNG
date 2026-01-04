@@ -1277,10 +1277,11 @@ deploy-docs-to-server:
         echo "✅ Using SSH key as-is (already decoded)"
       else
         # Base64 encoded, decode first
-        echo "$SSH_PRIVATE_KEY" | base64 -d > ~/.ssh/deploy_key.tmp 2>&1 || {
+        echo "$SSH_PRIVATE_KEY" | base64 -d > ~/.ssh/deploy_key.tmp 2>&1
+        if [ $? -ne 0 ]; then
           echo "❌ Failed to decode base64 SSH key"
           exit 1
-        }
+        fi
         tr -d '\r' < ~/.ssh/deploy_key.tmp > ~/.ssh/deploy_key
         rm -f ~/.ssh/deploy_key.tmp
         echo "✅ SSH key decoded from base64"
@@ -1289,9 +1290,11 @@ deploy-docs-to-server:
       # Basic key format check (just check first line)
       if ! head -1 ~/.ssh/deploy_key | grep -q "^-----BEGIN"; then
         echo "❌ Invalid SSH key format (does not start with -----BEGIN)"
-        echo "First 50 chars: $(head -c 50 ~/.ssh/deploy_key)"
+        echo "First 100 chars: $(head -c 100 ~/.ssh/deploy_key | cat -A)"
         exit 1
       fi
+      # Show key fingerprint for debugging
+      ssh-keygen -l -f ~/.ssh/deploy_key 2>/dev/null | head -1 || echo "⚠️  Could not get key fingerprint"
       echo "✅ SSH key format validated"
     - ssh-keyscan -H $DEPLOY_SERVER_HOST >> ~/.ssh/known_hosts 2>/dev/null || echo "SSH keyscan failed, continuing..."
     - chmod 644 ~/.ssh/known_hosts
