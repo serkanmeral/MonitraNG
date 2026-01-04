@@ -1310,6 +1310,16 @@ deploy-docs-to-server:
       echo "Server: $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST"
       echo "Artifacts path: public/"
       
+      # Test SSH connection first
+      echo "Testing SSH connection..."
+      ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts -o IdentitiesOnly=yes -v $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST "echo 'SSH connection successful!'" || {
+        echo "❌ SSH connection test failed"
+        echo "Key file exists: $(test -f ~/.ssh/deploy_key && echo 'yes' || echo 'no')"
+        echo "Key file permissions: $(ls -la ~/.ssh/deploy_key 2>/dev/null || echo 'not found')"
+        exit 1
+      }
+      echo "✅ SSH connection test successful"
+      
       # Artifacts'ı sunucuya kopyala
       echo "Copying artifacts to server..."
       rsync -avz --delete -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts -o IdentitiesOnly=yes" \
