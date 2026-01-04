@@ -1246,6 +1246,86 @@ pages:
   #    veya: https://<namespace>.gitlab.io/<project-name>/
   timeout: 10m
 
+# Documentation Deployment to Server
+# Deploys documentation artifacts to production server via SSH
+deploy-docs-to-server:
+  stage: deploy-docs
+  image: alpine/git
+  dependencies:
+    - pages  # pages job'ının artifacts'ını kullan
+  needs:
+    - pages  # pages job'ı tamamlandıktan sonra çalış
+  only:
+    - main  # Sadece main branch'te
+  when: manual  # Manuel trigger (güvenlik için)
+  variables:
+    DEPLOY_SERVER_HOST: "${DEPLOY_SERVER_HOST:-monitrang-server}"
+    DEPLOY_SERVER_USER: "${DEPLOY_SERVER_USER:-root}"
+  before_script:
+    - apk add --no-cache openssh-client rsync
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - || echo "SSH_PRIVATE_KEY not set, skipping SSH deploy"
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -H $DEPLOY_SERVER_HOST >> ~/.ssh/known_hosts 2>/dev/null || echo "SSH keyscan failed, continuing..."
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - |
+      if [ -z "$SSH_PRIVATE_KEY" ]; then
+        echo "⚠️  SSH_PRIVATE_KEY not set. Skipping deployment."
+        echo "Please set SSH_PRIVATE_KEY in CI/CD variables to enable automatic deployment."
+        exit 0
+      fi
+      
+      echo "=== Deploying Documentation to Server ==="
+      echo "Server: $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST"
+      echo "Artifacts path: public/"
+      
+      # Artifacts'ı sunucuya kopyala
+      echo "Copying artifacts to server..."
+      rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" \
+        public/ $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST:/tmp/docs-public/ || {
+        echo "❌ Failed to copy artifacts to server"
+        exit 1
+      }
+      
+      # Deploy script'i çalıştır
+      echo "Running deploy script on server..."
+      ssh -o StrictHostKeyChecking=no $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST << 'EOF'
+        cd /root/MonitraNG
+        if [ -f "scripts/infrastructure/deploy-docs-from-artifacts.sh" ]; then
+          chmod +x scripts/infrastructure/deploy-docs-from-artifacts.sh
+          ./scripts/infrastructure/deploy-docs-from-artifacts.sh /tmp/docs-public
+        else
+          echo "⚠️  Deploy script not found, using manual deployment"
+          mkdir -p /var/www/docs.monitrang.com
+          rm -rf /var/www/docs.monitrang.com/*
+          cp -r /tmp/docs-public/* /var/www/docs.monitrang.com/
+          chown -R root:root /var/www/docs.monitrang.com
+          chmod -R 755 /var/www/docs.monitrang.com
+          echo "✅ Documentation deployed manually"
+        fi
+        
+        # Nginx reload (gerekirse)
+        cd ApplicationResources/mng_common 2>/dev/null || true
+        docker compose exec -T nginx nginx -s reload 2>/dev/null || echo "⚠️  Nginx reload skipped (container may not be running)"
+      EOF
+      
+      echo "✅ Documentation deployed successfully!"
+      echo "URL: https://docs.monitrang.com"
+  after_script:
+    - |
+      if [ "$CI_JOB_STATUS" == "failed" ]; then
+        echo "❌ Documentation deployment failed!"
+        echo "Check SSH connection and server access."
+      fi
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+  timeout: 10m
+
 
 # ============================================
 # DEPLOYMENT STAGE
