@@ -251,7 +251,7 @@ certbot --version
 
 Nginx reverse proxy yapılandırması için [Nginx Yapılandırması](#nginx-reverse-proxy-yapılandırması) bölümüne bakın.
 
-**Durum:** ⏳ Nginx konfigürasyon dosyaları hazırlanmalı
+**Durum:** ✅ Tamamlandı (4 Ocak 2026) - Nginx container olarak çalışıyor
 
 ---
 
@@ -467,7 +467,7 @@ sudo chmod 600 /etc/nginx/ssl/monitrang.key
 sudo chmod 644 /etc/nginx/ssl/monitrang.crt
 ```
 
-**Durum:** ⏳ SSL yapılandırması için Nginx config dosyaları hazırlanmalı
+**Durum:** ✅ Tamamlandı (4 Ocak 2026) - Let's Encrypt sertifikaları yapılandırıldı
 
 ---
 
@@ -615,7 +615,7 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-**Durum:** ⏳ Nginx yapılandırma dosyası template olarak hazırlanmalı
+**Durum:** ✅ Tamamlandı (4 Ocak 2026) - Nginx container yapılandırması hazır
 
 ---
 
@@ -1331,12 +1331,19 @@ docker compose logs --since 1h
   - [ ] Şifre oluşturma ve yapılandırma
   - [ ] Environment variables doğrulama
 
-- [ ] **SSL/HTTPS Yapılandırması**
-  - [ ] Let's Encrypt sertifikası alma (production)
-  - [ ] Self-signed certificate (test)
-  - [ ] Nginx yapılandırması
+- [x] **SSL/HTTPS Yapılandırması** ✅ TAMAMLANDI (2 Ocak 2026)
+  - [x] Let's Encrypt wildcard sertifikası alma (production)
+    - Domain: `monitrang.com` ve `*.monitrang.com`
+    - DNS-01 challenge kullanıldı
+    - Sertifika geçerlilik: 2 Nisan 2026'ya kadar
+  - [x] Nginx SSL yapılandırması
+    - SSL sertifikaları aktif
+    - HTTP → HTTPS redirect
+    - Tüm subdomain'ler için SSL aktif
+  - [ ] Otomatik yenileme hook script'i (gelecekte eklenecek)
+  - [ ] Self-signed certificate (test için - gerekirse)
 
-**Durum:** ⏳ Devam ediyor
+**Durum:** ✅ Tamamlandı
 
 ---
 
@@ -1377,9 +1384,11 @@ docker compose logs --since 1h
 
 - [ ] **Production Deployment**
   - [ ] Production deployment (deploy.sh)
-  - [ ] DNS yapılandırması
-  - [ ] SSL sertifikası (Let's Encrypt)
-  - [ ] Nginx reverse proxy yapılandırması
+  - [x] DNS yapılandırması ✅ (2 Ocak 2026)
+  - [x] SSL sertifikası (Let's Encrypt) ✅ (2 Ocak 2026)
+  - [x] Nginx reverse proxy yapılandırması ✅ (2 Ocak 2026)
+  - [x] Nginx containerization ✅ (4 Ocak 2026)
+  - [x] Port yönetimi tamamlandı ✅ (4 Ocak 2026)
 
 - [ ] **Production Doğrulama**
   - [ ] End-to-end tests
@@ -1478,16 +1487,21 @@ docker compose logs --since 1h
 
 ## 📝 Son Güncelleme
 
-**Tarih:** 15 Ocak 2025  
-**Versiyon:** 1.0.0  
-**Durum:** Detaylandırma tamamlandı, implementation başlatılabilir
+**Tarih:** 4 Ocak 2026  
+**Versiyon:** 1.1.0  
+**Durum:** Nginx containerization tamamlandı, port yönetimi tamamlandı
 
 ---
 
 ## 🎯 Sonraki Adımlar
 
 1. ✅ **Deployment Roadmap Detaylandırıldı** (Bu dokümantasyon)
-2. ⏳ **Nginx Yapılandırma Template Hazırlama**
+2. ✅ **Nginx Yapılandırma Template Hazırlama** ✅ (4 Ocak 2026)
+3. ⏳ **Port Yönetimi - Kalan Opsiyonel İşler:**
+   - [ ] Application servislerin kalan port mapping'lerini kaldır (mngui:3000, mnggateway:5000, keycloak:8080)
+   - [ ] Internal servislerin port mapping'lerini kaldır (MongoDB:27017, PostgreSQL:5432, Redis:6379, RabbitMQ:5672) - Güvenlik için
+   - [ ] Admin/UI servislerini Nginx üzerinden erişilebilir hale getir
+   - [ ] Nginx yapılandırma uyarılarını düzelt (http2 directive deprecated)
 3. ⏳ **Backup Script'leri Geliştirme**
 4. ⏳ **Post-Deployment Test Script'leri**
 5. ⏳ **Sorun Giderme Rehberi Genişletme**

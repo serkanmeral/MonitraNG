@@ -40,11 +40,16 @@
 
 ### Çalışan Servisler (Production)
 
-- ✅ **MngGateway:** Port 5000 (HTTP), 5443 (HTTPS)
-- ✅ **MngKeeper:** Port 5001
-- ✅ **MngDataGateway:** Port 5010
-- ✅ **MngHub:** Port 5020
-- ✅ **MngUI:** Port 3000
+- ✅ **Nginx:** Port 80 (HTTP), 443 (HTTPS) - Container olarak çalışıyor ✅ (4 Ocak 2026)
+- ✅ **MngGateway:** Container name `mnggateway:5000` - Nginx üzerinden erişilebilir (`api.monitrang.com`)
+- ✅ **MngKeeper:** Container name `mngkeeper:5001` - Internal network'te
+- ✅ **MngDataGateway:** Container name `mngdatagateway:5010` - Internal network'te
+- ✅ **MngHub:** Container name `mnghub:5020` - Internal network'te
+- ✅ **MngUI:** Container name `mngui:80` - Nginx üzerinden erişilebilir (`app.monitrang.com`)
+- ✅ **Keycloak:** Container name `keycloak:8080` - Nginx üzerinden erişilebilir (`auth.monitrang.com`)
+- ✅ **GitLab:** Container name `gitlab:80` - Nginx üzerinden erişilebilir (`gitlab.monitrang.com`)
+
+**Not:** Port yönetimi projesi tamamlandı. Tüm servisler container name'ler üzerinden erişilebilir. Detaylar: `docs/infrastructure/port-management-completion-report.md`
 
 ### Dokümantasyon
 
@@ -52,21 +57,271 @@
 - ✅ **CI/CD Durum:** `docs/content/cicd/current_status.md`
 - ✅ **Runner Yapılandırması:** `docs/content/cicd/SUCCESSFUL_RUNNER_CONFIGURATION.md`
 
-### Tamamlanan Özellikler (1 Ocak 2026)
+### Tamamlanan Özellikler
 
+**1 Ocak 2026:**
 - ✅ **Zero-Downtime Deployment:** Rolling update stratejisi başarıyla uygulanıyor
 - ✅ **Pre-Deployment Backup:** Otomatik backup mekanizması çalışıyor (`scripts/backup-pre-deploy.sh`)
 - ✅ **Health Check'ler:** Her servis için health check mekanizması çalışıyor
 - ✅ **Rolling Update:** Servisler sırayla güncelleniyor (mngkeeper → mngdatagateway → mnghub → mnggateway → mngui)
 - ✅ **Deployment Script:** Sh-compatible, tüm syntax sorunları çözüldü
 - ✅ **Monitoring Script:** `scripts/monitor-services.sh` hazır
+- ✅ **Automated Rollback:** Health check başarısız olursa otomatik rollback mekanizması çalışıyor
+
+**2 Ocak 2026:**
+- ✅ **Pipeline Performans Optimizasyonu:** Cache mekanizması yapılandırıldı
+  - ✅ .NET NuGet package cache (`.nuget/` klasörü - 8847 dosya)
+  - ✅ NPM cache (frontend build için)
+  - ✅ Docker layer cache (BuildKit + cache-from)
+  - ✅ Global cache yapılandırması (branch bazlı cache key'ler)
+  - ⚠️ **Durum:** Cache çalışıyor ancak etkisi beklenenden düşük (8:14 dakika)
+  - ⚠️ **Not:** NuGet global cache mekanizması farklı çalışıyor, gelecekte optimize edilebilir
 
 ### Sonraki Adımlar
 
+- [x] **Pipeline Performans Optimizasyonu:** Cache mekanizması yapılandırıldı (2 Ocak 2026)
+  - [x] .NET NuGet package cache (`.nuget/` klasörü - 8847 dosya)
+  - [x] NPM cache (frontend build için)
+  - [x] Docker layer cache (BuildKit + cache-from)
+  - [x] Global cache yapılandırması
+  - ⚠️ **Durum:** Cache çalışıyor ancak etkisi beklenenden düşük (8:14 dakika)
+  - ⏳ **Gelecek:** NuGet global cache mekanizması optimize edilebilir
 - [ ] **Automated Rollback:** Health check başarısız olursa otomatik rollback
 - [ ] **Deployment Notifications:** Deployment durumu için bildirimler
 - [ ] **Multi-Environment:** Staging ve production ortamları ayrımı
 - [ ] **Canary Deployment:** Aşamalı deployment stratejisi
+
+---
+
+## 🔐 Altyapı ve Güvenlik
+
+**Durum:** ⏳ **Planlama Aşamasında** (2 Ocak 2026)
+
+### Alan Adı ve DNS Yapılandırması
+
+- [x] **Alan Adı Satın Alma ve Yapılandırma:** ✅ Tamamlandı (2 Ocak 2026)
+  - [x] Domain satın alma: `monitrang.com` ✅
+  - [x] Nameserver yapılandırması: `dns1.hostingdunyam.net`, `dns2.hostingdunyam.net` ✅
+  - [x] DNS kayıtları yapılandırma (A kayıtları) ✅
+  - [x] Subdomain'ler tanımlama: ✅
+    - `monitrang.com` → `45.141.151.52` (ana domain) ✅
+    - `app.monitrang.com` → `45.141.151.52` (Frontend - MngUI) ✅
+    - `api.monitrang.com` → `45.141.151.52` (API Gateway) ✅
+    - `auth.monitrang.com` → `45.141.151.52` (Keycloak) ✅
+    - `docs.monitrang.com` → `45.141.151.52` (GitLab Pages) ✅
+    - `gitlab.monitrang.com` → `45.141.151.52` (GitLab UI) ✅
+  - [x] DNS propagation kontrolü ✅
+  - [x] Domain doğrulama ✅
+
+### Mail Sunucusu Kurulumu
+
+- [ ] **Self-Hosted Mail Sunucusu:**
+  - [ ] Mail sunucusu seçimi (Postfix + Dovecot veya Mail-in-a-Box)
+  - [ ] Docker container kurulumu
+  - [ ] SMTP/IMAP/POP3 port yapılandırması
+  - [ ] SSL/TLS sertifikası yapılandırması
+  - [ ] SPF, DKIM, DMARC kayıtları
+  - [ ] Reverse DNS (PTR) kaydı
+  - [ ] Mail gönderim testleri
+  - [ ] Spam filtreleme yapılandırması
+  - [ ] Mail kotaları ve limitler
+  - [ ] Backup ve restore stratejisi
+
+- [ ] **Mail Sunucusu Entegrasyonu:**
+  - [ ] Keycloak SMTP yapılandırması (şifre sıfırlama, doğrulama e-postaları)
+  - [ ] GitLab SMTP yapılandırması (bildirimler)
+  - [ ] Application servisleri için mail servisi entegrasyonu
+  - [ ] Test e-postaları gönderimi
+
+### Güvenlik ve Şifre Yönetimi
+
+- [ ] **Şifrelerin Elden Geçirilmesi:**
+  - [ ] Tüm servislerin şifrelerini liste çıkarma:
+    - MongoDB (admin/admin123)
+    - PostgreSQL/Keycloak (keycloak/keycloak123)
+    - Redis (redis123)
+    - RabbitMQ (guest/guest)
+    - MinIO (minioadmin/minioadmin)
+    - Keycloak Admin (admin/admin123)
+    - GitLab (root şifresi)
+    - GitLab PostgreSQL (gitlab/gitlab123)
+    - GitLab Redis (gitlab123)
+    - Mongo Express (admin/admin123)
+    - Diğer servisler
+  - [ ] Güçlü şifre politikası belirleme:
+    - Minimum 16 karakter
+    - Büyük/küçük harf, rakam, özel karakter
+    - Şifre rotation stratejisi
+  - [ ] Şifreleri güvenli şekilde değiştirme:
+    - Environment variable'ları güncelleme
+    - Docker Compose dosyalarını güncelleme
+    - Application config dosyalarını güncelleme
+    - Şifreleri secrets management sistemine taşıma (opsiyonel)
+  - [ ] Şifreleri dokümante etme (güvenli bir yerde)
+  - [ ] Şifre değişikliklerini test etme
+  - [ ] Backup alınması (şifre değişikliği öncesi)
+
+- [ ] **Secrets Management (Opsiyonel - Gelecek):**
+  - [ ] HashiCorp Vault veya benzeri tool değerlendirmesi
+  - [ ] Secrets rotation stratejisi
+  - [ ] Secrets encryption at rest
+
+### SonarQube Karar ve Kurulumu
+
+- [ ] **SonarQube Değerlendirmesi:**
+  - [ ] SonarQube Community Edition vs Enterprise Edition karşılaştırması
+  - [ ] Self-hosted vs Cloud (SonarCloud) değerlendirmesi
+  - [ ] Air-gapped sistem uyumluluğu kontrolü
+  - [ ] Kaynak kullanımı analizi (RAM, CPU, Disk)
+  - [ ] Karar: SonarQube Community Edition (self-hosted) ✅ veya SonarCloud ❌
+  - [ ] Alternatif: CodeQL, CodeClimate, vb. değerlendirmesi
+
+- [ ] **SonarQube Kurulumu (Eğer karar verilirse):**
+  - [ ] SonarQube Docker container kurulumu
+  - [ ] PostgreSQL database yapılandırması (SonarQube için)
+  - [ ] Port yapılandırması (9000:9000)
+  - [ ] Nginx reverse proxy yapılandırması (`/sonarqube/`)
+  - [ ] SSL/TLS sertifikası yapılandırması
+  - [ ] İlk admin kullanıcı oluşturma
+  - [ ] GitLab CI/CD entegrasyonu:
+    - [ ] SonarQube token oluşturma
+    - [ ] `.gitlab-ci.yml`'a SonarQube job'u ekleme
+    - [ ] SonarQube scanner yapılandırması
+    - [ ] Quality gate yapılandırması
+  - [ ] Proje ekleme ve yapılandırma
+  - [ ] Test analizi çalıştırma
+
+### Port ve Nginx Yapılandırması ✅
+
+**Durum:** ✅ **Tamamlandı** (4 Ocak 2026)
+
+- [x] **Nginx Containerization:** ✅ Tamamlandı
+  - [x] Nginx Docker Compose yapılandırması ✅
+  - [x] Nginx yapılandırma dosyaları oluşturuldu ✅
+  - [x] Container name'ler kullanımı ✅
+  - [x] Nginx container başarıyla çalışıyor ✅
+  - [x] Port 80 ve 443 sadece Nginx tarafından kullanılıyor ✅
+
+- [x] **Application Servisleri Port Yapılandırması:** ✅ Tamamlandı
+  - [x] GitLab port mapping'leri kaldırıldı (`80:80`, `443:443`) ✅
+  - [x] Application servislerin port mapping'leri kaldırıldı (docker-compose.production.yml) ✅
+  - [x] Keycloak port mapping'i kaldırıldı ✅
+  - [x] Container name erişimi test edildi ✅
+  - [x] Domain yapılandırmaları tamamlandı:
+    - [x] `app.monitrang.com` → `mngui:80` ✅
+    - [x] `api.monitrang.com` → `mnggateway:5000` ✅
+    - [x] `auth.monitrang.com` → `keycloak:8080` ✅
+    - [x] `gitlab.monitrang.com` → `gitlab:80` ✅
+    - [x] `mail.monitrang.com` → `mailu-front-1:80` ✅
+
+- [ ] **Kalan Opsiyonel İşler:** (Sonra yapılacak - Detaylar: `docs/infrastructure/port-management-remaining-tasks.md`)
+  - [ ] Application servislerin kalan port mapping'lerini kaldır (mngui:3000, mnggateway:5000, keycloak:8080) - Development için bırakılabilir
+  - [ ] **Infrastructure Servisleri Port Yapılandırması:**
+    - [ ] **Redis:**
+      - [ ] Mevcut port: `6379:6379` - Güvenlik için kaldırılmalı
+      - [ ] Nginx reverse proxy yapılandırması (opsiyonel - Redis Commander için)
+      - [ ] Güvenlik: Redis şifre koruması kontrolü
+      - [ ] Redis Commander port: `8082:8081` (opsiyonel)
+  
+    - [x] **Keycloak:** ✅ Tamamlandı
+      - [x] Port mapping kaldırıldı (`8080:8080`) ✅
+      - [x] Nginx reverse proxy yapılandırması (`auth.monitrang.com` → `keycloak:8080`) ✅
+      - [x] SSL/TLS sertifikası yapılandırması ✅
+      - [x] Keycloak proxy ayarları (`KC_PROXY: edge`) ✅
+      - [x] Subdomain yapılandırması (`auth.monitrang.com`) ✅
+  
+  - [ ] **MongoDB:**
+    - [ ] Mevcut port: `27017:27017`
+    - [ ] Güvenlik: MongoDB authentication kontrolü
+    - [ ] Mongo Express port: `8081:8081`
+    - [ ] Nginx reverse proxy yapılandırması (opsiyonel - Mongo Express için)
+  
+  - [ ] **RabbitMQ:**
+    - [ ] Mevcut port: `5672:5672` (AMQP), `15672:15672` (Management UI)
+    - [ ] Nginx reverse proxy yapılandırması (`/rabbitmq/` → `http://localhost:15672/`)
+    - [ ] SSL/TLS sertifikası yapılandırması
+    - [ ] Management UI authentication kontrolü
+  
+  - [ ] **MinIO:**
+    - [ ] Mevcut port: `9090:9000` (API), `9091:9091` (Console)
+    - [ ] Nginx reverse proxy yapılandırması (`/minio/` → `http://localhost:9091/`)
+    - [ ] SSL/TLS sertifikası yapılandırması
+    - [ ] MinIO Console authentication kontrolü
+  
+  - [ ] **PostgreSQL:**
+    - [ ] Mevcut port: `5432:5432` (Keycloak için)
+    - [ ] Güvenlik: PostgreSQL authentication kontrolü
+    - [ ] PgAdmin kurulumu (opsiyonel - port `5050:80`)
+    - [ ] Nginx reverse proxy yapılandırması (opsiyonel - PgAdmin için)
+
+    - [x] **MngGateway:** ✅ Tamamlandı
+      - [x] Port mapping kaldırıldı (docker-compose.production.yml) ✅
+      - [x] Nginx reverse proxy yapılandırması (`api.monitrang.com` → `mnggateway:5000`) ✅
+      - [x] SSL/TLS sertifikası yapılandırması ✅
+      - [x] Subdomain yapılandırması (`api.monitrang.com`) ✅
+    
+    - [x] **MngKeeper:** ✅ Tamamlandı
+      - [x] Port mapping kaldırıldı (docker-compose.production.yml) ✅
+      - [x] Container name erişimi (`mngkeeper:5001`) ✅
+    
+    - [x] **MngDataGateway:** ✅ Tamamlandı
+      - [x] Port mapping kaldırıldı (docker-compose.production.yml) ✅
+      - [x] Container name erişimi (`mngdatagateway:5010`) ✅
+    
+    - [x] **MngHub:** ✅ Tamamlandı
+      - [x] Port mapping kaldırıldı (docker-compose.production.yml) ✅
+      - [x] Container name erişimi (`mnghub:5020`) ✅
+    
+    - [x] **MngUI:** ✅ Tamamlandı
+      - [x] Port mapping kaldırıldı (docker-compose.production.yml) ✅
+      - [x] Nginx reverse proxy yapılandırması (`app.monitrang.com` → `mngui:80`) ✅
+      - [x] SSL/TLS sertifikası yapılandırması ✅
+      - [x] Subdomain yapılandırması (`app.monitrang.com`) ✅
+
+- [x] **Nginx Yapılandırması:** ✅ Tamamlandı
+  - [x] Nginx container yapılandırması (`ApplicationResources/mng_common/nginx/`) ✅
+  - [x] Domain yapılandırmaları (`nginx/conf.d/monitrang.conf`) ✅
+  - [x] SSL/TLS sertifikası yapılandırması (Let's Encrypt) ✅
+  - [x] HTTP → HTTPS redirect yapılandırması ✅
+  - [x] Security headers yapılandırması ✅
+  - [x] Logging yapılandırması ✅
+  - [x] Nginx yapılandırmasını test etme (`nginx -t`) ✅
+  - [x] Nginx container başarıyla çalışıyor ✅
+
+- [x] **Port Güvenliği:** ✅ Temel Güvenlik Sağlandı
+  - [x] Port 80 ve 443 sadece Nginx tarafından kullanılıyor ✅
+  - [x] Application servislerin port mapping'leri kaldırıldı ✅
+  - [ ] Internal servislerin port mapping'lerini kaldırma (güvenlik için önerilir) - Sonra yapılacak
+  - [ ] Port tarama testleri - Sonra yapılacak
+  - [ ] Güvenlik açığı taraması - Sonra yapılacak
+
+**Detaylar:** `docs/infrastructure/port-management-completion-report.md`  
+**Kalan İşler:** `docs/infrastructure/port-management-remaining-tasks.md`
+
+### Dokümantasyon
+
+- [ ] **Altyapı Dokümantasyonu:**
+  - [ ] Port yapılandırması dokümantasyonu (`docs/infrastructure/ports.md`)
+  - [ ] Nginx yapılandırması dokümantasyonu (`docs/infrastructure/nginx.md`)
+  - [ ] Mail sunucusu kurulum rehberi (`docs/infrastructure/mail-server.md`)
+  - [ ] Domain ve DNS yapılandırması rehberi (`docs/infrastructure/domain-dns.md`)
+  - [ ] Güvenlik ve şifre yönetimi rehberi (`docs/infrastructure/security.md`)
+  - [ ] SonarQube kurulum rehberi (eğer kurulursa) (`docs/infrastructure/sonarqube.md`)
+
+---
+
+### Öncelik Sırası
+
+1. **🔴 Yüksek Öncelik:**
+   - Şifrelerin elden geçirilmesi (güvenlik kritik)
+   - Port ve Nginx yapılandırması (mevcut yapılandırmanın düzenlenmesi)
+
+2. **🟡 Orta Öncelik:**
+   - Alan adı kurulumu (production için gerekli)
+   - Mail sunucusu kurulumu (bildirimler için gerekli)
+
+3. **🟢 Düşük Öncelik:**
+   - SonarQube karar ve kurulumu (code quality için opsiyonel)
 
 ### Stack Kontrolü:
 ```yaml
@@ -2660,25 +2915,33 @@ await _storageService.UploadFileAsync(
 
 ## 📅 Tahmini Süre
 
-| Görev | Süre | Öncelik |
-|-------|------|---------|
-| User CRUD Test | 2-3 saat | 🔴 Yüksek |
-| Group CRUD Test | 1-2 saat | 🔴 Yüksek |
-| RabbitMQ Events | 1 gün | 🟡 Orta |
-| MngStorage Servis (Project Setup) | 1 gün | 🟡 Orta |
-| MngStorage Servis (Core Features) | 2-3 gün | 🟡 Orta |
-| MngStorage Servis (gRPC & Tests) | 1-2 gün | 🟡 Orta |
-| API Gateway (Ocelot Setup) | 1 gün | 🟡 Orta |
-| API Gateway (Advanced Features) | 1-2 gün | 🟢 Düşük |
-| MngScheduler Servis (Hangfire Setup) | 1 gün | 🟡 Orta |
-| MngScheduler Servis (Dynamic Jobs) | 1-2 gün | 🟡 Orta |
-| MngScheduler Servis (API & Dashboard) | 1 gün | 🟢 Düşük |
-| MngDataGateway Servis | TBD | ⏳ Planlanıyor |
-| MngChatBot Servis (Docker Infrastructure) | 1 gün | 🟡 Orta |
-| MngChatBot Servis (Core Services & RAG) | 2-3 gün | 🟡 Orta |
-| MngChatBot Servis (Function Calling & Tool Use) | 2-3 gün | 🟡 Orta |
-| MngChatBot Servis (API & Integration) | 1-2 gün | 🟡 Orta |
-| MinIO Infrastructure Setup | 3-4 saat | 🟢 Düşük |
+| Görev | Süre | Öncelik | Durum |
+|-------|------|---------|-------|
+| **Altyapı ve Güvenlik** | | | |
+| Şifrelerin Elden Geçirilmesi | 1 gün | 🔴 Yüksek | ⏳ Bekliyor |
+| Port ve Nginx Yapılandırması | 1-2 gün | 🔴 Yüksek | ⏳ Bekliyor |
+| Alan Adı Kurulumu | 2-3 saat | 🟡 Orta | ✅ Tamamlandı (2 Ocak 2026) |
+| Mail Sunucusu Kurulumu | 1-2 gün | 🟡 Orta | ⏳ Bekliyor |
+| SonarQube Karar ve Kurulumu | 1-2 gün | 🟢 Düşük | ⏳ Bekliyor |
+| **Uygulama Geliştirme** | | | |
+| User CRUD Test | 2-3 saat | 🔴 Yüksek | ⏳ Bekliyor |
+| Group CRUD Test | 1-2 saat | 🔴 Yüksek | ⏳ Bekliyor |
+| RabbitMQ Events | 1 gün | 🟡 Orta | ⏳ Bekliyor |
+| Pipeline Performans Optimizasyonu | 1 gün | 🟡 Orta | ✅ Kısmen Tamamlandı (2 Ocak 2026) |
+| MngStorage Servis (Project Setup) | 1 gün | 🟡 Orta | ⏳ Bekliyor |
+| MngStorage Servis (Core Features) | 2-3 gün | 🟡 Orta | ⏳ Bekliyor |
+| MngStorage Servis (gRPC & Tests) | 1-2 gün | 🟡 Orta | ⏳ Bekliyor |
+| API Gateway (Ocelot Setup) | 1 gün | 🟡 Orta | ⏳ Bekliyor |
+| API Gateway (Advanced Features) | 1-2 gün | 🟢 Düşük | ⏳ Bekliyor |
+| MngScheduler Servis (Hangfire Setup) | 1 gün | 🟡 Orta | ⏳ Bekliyor |
+| MngScheduler Servis (Dynamic Jobs) | 1-2 gün | 🟡 Orta | ⏳ Bekliyor |
+| MngScheduler Servis (API & Dashboard) | 1 gün | 🟢 Düşük | ⏳ Bekliyor |
+| MngDataGateway Servis | TBD | ⏳ Planlanıyor | ⏳ Planlanıyor |
+| MngChatBot Servis (Docker Infrastructure) | 1 gün | 🟡 Orta | ⏳ Bekliyor |
+| MngChatBot Servis (Core Services & RAG) | 2-3 gün | 🟡 Orta | ⏳ Bekliyor |
+| MngChatBot Servis (Function Calling & Tool Use) | 2-3 gün | 🟡 Orta | ⏳ Bekliyor |
+| MngChatBot Servis (API & Integration) | 1-2 gün | 🟡 Orta | ⏳ Bekliyor |
+| MinIO Infrastructure Setup | 3-4 saat | 🟢 Düşük | ⏳ Bekliyor |
 
 ---
 
