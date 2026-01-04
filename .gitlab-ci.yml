@@ -1264,21 +1264,23 @@ deploy-docs-to-server:
   before_script:
     - apk add --no-cache openssh-client rsync base64
     - eval $(ssh-agent -s)
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
     - |
       if [ -z "$SSH_PRIVATE_KEY" ]; then
         echo "⚠️  SSH_PRIVATE_KEY not set. Skipping deployment."
         exit 0
       fi
       # Base64 decode if needed (check if it starts with -----BEGIN)
-      if echo "$SSH_PRIVATE_KEY" | grep -q "^-----BEGIN"; then
+      if echo "$SSH_PRIVATE_KEY" | head -1 | grep -q "^-----BEGIN"; then
         # Already decoded, use as is
-        echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+        echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/deploy_key
       else
         # Base64 encoded, decode first
-        echo "$SSH_PRIVATE_KEY" | base64 -d | tr -d '\r' | ssh-add -
+        echo "$SSH_PRIVATE_KEY" | base64 -d | tr -d '\r' > ~/.ssh/deploy_key
       fi
-    - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
+      chmod 600 ~/.ssh/deploy_key
+      ssh-add ~/.ssh/deploy_key
     - ssh-keyscan -H $DEPLOY_SERVER_HOST >> ~/.ssh/known_hosts 2>/dev/null || echo "SSH keyscan failed, continuing..."
     - chmod 644 ~/.ssh/known_hosts
   script:
