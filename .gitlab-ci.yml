@@ -1255,9 +1255,9 @@ deploy-docs-to-server:
     - pages  # pages job'ının artifacts'ını kullan
   needs:
     - pages  # pages job'ı tamamlandıktan sonra çalış
-  only:
-    - main  # Sadece main branch'te
-  when: manual  # Manuel trigger (güvenlik için)
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual  # Manuel trigger (güvenlik için)
   variables:
     DEPLOY_SERVER_HOST: "${DEPLOY_SERVER_HOST:-monitrang-server}"
     DEPLOY_SERVER_USER: "${DEPLOY_SERVER_USER:-root}"
