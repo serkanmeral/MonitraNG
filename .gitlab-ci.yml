@@ -732,6 +732,9 @@ extract-openapi-specs:
     paths:
       - docs/content/api/
     expire_in: 1 day
+    when: on_success
+    # Artifact upload may fail if GitLab hostname cannot be resolved
+    # This is non-critical - cache is used as backup
   cache:
     key: openapi-specs-$CI_COMMIT_REF_SLUG
     paths:
