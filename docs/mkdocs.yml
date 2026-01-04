@@ -1,7 +1,7 @@
 site_name: MonitraNG Documentation
 site_description: Multi-Tenant IoT Monitoring Platform Documentation
 site_author: iSIM Platform
-site_url: https://serkanmeral.github.io/MonitraNG/
+site_url: https://docs.monitrang.com
 
 # Version info (can be overridden by CI/CD)
 # CI/CD will inject version info during build
@@ -18,8 +18,8 @@ site_dir: site
 docs_dir: content
 
 # Repository
-repo_name: serkanmeral/MonitraNG
-repo_url: https://github.com/serkanmeral/MonitraNG
+repo_name: root/MonitraNG
+repo_url: https://gitlab.monitrang.com/root/MonitraNG
 edit_uri: edit/main/docs/
 
 # Theme
