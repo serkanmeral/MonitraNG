@@ -15,8 +15,9 @@ services:
       KC_HOSTNAME_STRICT_HTTPS: false
       KC_PROXY: edge
       KC_HTTP_RELATIVE_PATH: /
-    ports:
-      - "8080:8080"
+    # Port mapping removed - Access via Nginx reverse proxy only
+    # ports:
+    #   - "8080:8080"
     depends_on:
       - postgres
     networks:
@@ -290,11 +291,10 @@ services:
         # prometheus_monitoring['enable'] = false
         # grafana['enable'] = false
     ports:
-      # Port 80 and 443 removed - Nginx will handle HTTP/HTTPS
-      # GitLab will be accessible via Nginx reverse proxy at gitlab.monitrang.com
-      # Direct access via port 8090 is still available for internal use
-      - "8090:80"           # HTTP (internal access only - Nginx will proxy)
-      - "2222:22"         # SSH (mapped to 2222 to avoid conflict)
+      # Port mapping for GitLab Runner access (host network mode)
+      # GitLab Runner needs direct access to GitLab API
+      - "8090:80"         # GitLab HTTP (for Runner access)
+      - "2222:22"         # SSH (mapped to 2222 to avoid conflict - kept for Git operations)
       # GitLab Pages ports removed - causing port conflict
       # - "8090:8090"       # GitLab Pages HTTP
       # - "8091:8091"       # GitLab Pages HTTPS
@@ -352,9 +352,58 @@ services:
     # Alternative: Use 'build' command instead of 'serve' for one-time builds
     # command: sh -c "pip install -q -r requirements.txt && mkdocs build"
 
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Nginx configuration files
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      # SSL certificates (Let's Encrypt)
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      # Let's Encrypt challenge files
+      - /var/www/html:/var/www/html:ro
+      # Logs
+      - nginx_logs:/var/log/nginx
+    networks:
+      - mng_network
+      - mailu_default  # Mailu network for mailu-front-1 access
+    restart: unless-stopped
+    depends_on:
+      - keycloak
+      - gitlab
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 networks:
   mng_network:
     driver: bridge
+  mailu_default:
+    external: true  # Mailu network (created by Mailu docker-compose)
+
+volumes:
+  postgres_data:
+  mongo_data:
+  redis_data:
+  rabbitmq_data:
+  minio_data:
+  seq_data:
+  portainer_data:
+  gitlab_postgres_data:
+  gitlab_redis_data:
+  gitlab_config:
+  gitlab_logs:
+  gitlab_data:
+  gitlab_runner_config:
+  nginx_logs:
 
 volumes:
   postgres_data:
