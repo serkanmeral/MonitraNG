@@ -1262,9 +1262,21 @@ deploy-docs-to-server:
     DEPLOY_SERVER_HOST: "${DEPLOY_SERVER_HOST:-monitrang-server}"
     DEPLOY_SERVER_USER: "${DEPLOY_SERVER_USER:-root}"
   before_script:
-    - apk add --no-cache openssh-client rsync
+    - apk add --no-cache openssh-client rsync base64
     - eval $(ssh-agent -s)
-    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - || echo "SSH_PRIVATE_KEY not set, skipping SSH deploy"
+    - |
+      if [ -z "$SSH_PRIVATE_KEY" ]; then
+        echo "⚠️  SSH_PRIVATE_KEY not set. Skipping deployment."
+        exit 0
+      fi
+      # Base64 decode if needed (check if it starts with -----BEGIN)
+      if echo "$SSH_PRIVATE_KEY" | grep -q "^-----BEGIN"; then
+        # Already decoded, use as is
+        echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+      else
+        # Base64 encoded, decode first
+        echo "$SSH_PRIVATE_KEY" | base64 -d | tr -d '\r' | ssh-add -
+      fi
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
     - ssh-keyscan -H $DEPLOY_SERVER_HOST >> ~/.ssh/known_hosts 2>/dev/null || echo "SSH keyscan failed, continuing..."
