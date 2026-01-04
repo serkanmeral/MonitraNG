@@ -1288,8 +1288,8 @@ deploy-docs-to-server:
         echo "✅ SSH key decoded from base64"
       fi
       chmod 600 ~/.ssh/deploy_key
-      # Add key to ssh-agent from file
-      ssh-add ~/.ssh/deploy_key
+      # Add key to ssh-agent from file (non-interactive)
+      DISPLAY=:0 SSH_ASKPASS=/bin/echo ssh-add ~/.ssh/deploy_key < /dev/null 2>&1
       SSH_ADD_EXIT=$?
       if [ $SSH_ADD_EXIT -ne 0 ]; then
         echo "❌ Failed to add SSH key to ssh-agent (exit code: $SSH_ADD_EXIT)"
