@@ -5,6 +5,7 @@
 # NuGet global cache test - 2026-01-02
 # Pipeline test - 2026-01-04
 # Pipeline restart test - 2026-01-04
+# Pipeline test - 2026-01-04 (Runner fix sonrası)
 # Bu dosya GitLab'da CI/CD pipeline'larını tanımlar
 # Artifacts optional - jobs build locally instead of using artifacts to avoid upload failures
 # Pipeline skip desteği: [skip ci] veya [ci skip] kullanarak pipeline'ı atlayabilirsiniz
