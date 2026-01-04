@@ -406,18 +406,3 @@ volumes:
   gitlab_data:
   gitlab_runner_config:
   nginx_logs:
-
-volumes:
-  postgres_data:
-  mongo_data:
-  redis_data:
-  rabbitmq_data:
-  minio_data:
-  seq_data:
-  portainer_data:
-  gitlab_postgres_data:
-  gitlab_redis_data:
-  gitlab_config:
-  gitlab_logs:
-  gitlab_data:
-  gitlab_runner_config:
