@@ -26,20 +26,32 @@ NC='\033[0m' # No Color
 # 1. DNS Kontrolü
 # ============================================
 echo -e "${YELLOW}[1/5] DNS kaydı kontrol ediliyor...${NC}"
-if host admin.monitrang.com > /dev/null 2>&1; then
-    RESOLVED_IP=$(host admin.monitrang.com | grep "has address" | awk '{print $4}' | head -1)
-    echo -e "${GREEN}✓ DNS kaydı bulundu: admin.monitrang.com → $RESOLVED_IP${NC}"
+
+# Prefer 'host' if available; fallback to getent.
+if command -v host >/dev/null 2>&1; then
+    if host admin.monitrang.com > /dev/null 2>&1; then
+        RESOLVED_IP=$(host admin.monitrang.com | grep "has address" | awk '{print $4}' | head -1)
+        echo -e "${GREEN}✓ DNS kaydı bulundu: admin.monitrang.com → $RESOLVED_IP${NC}"
+    else
+        echo -e "${RED}✗ DNS kaydı bulunamadı!${NC}"
+        echo ""
+        echo "Lütfen DNS sağlayıcınızda aşağıdaki kaydı ekleyin:"
+        echo "  Type: A"
+        echo "  Name: admin"
+        echo "  Value: 45.141.151.52"
+        echo "  TTL: 300 (veya Auto)"
+        echo ""
+        echo "DNS kaydı eklendikten sonra bu scripti tekrar çalıştırın."
+        exit 1
+    fi
 else
-    echo -e "${RED}✗ DNS kaydı bulunamadı!${NC}"
-    echo ""
-    echo "Lütfen DNS sağlayıcınızda aşağıdaki kaydı ekleyin:"
-    echo "  Type: A"
-    echo "  Name: admin"
-    echo "  Value: 45.141.151.52"
-    echo "  TTL: 300 (veya Auto)"
-    echo ""
-    echo "DNS kaydı eklendikten sonra bu scripti tekrar çalıştırın."
-    exit 1
+    if getent ahostsv4 admin.monitrang.com >/dev/null 2>&1; then
+        RESOLVED_IP=$(getent ahostsv4 admin.monitrang.com | awk '{print $1}' | head -1)
+        echo -e "${GREEN}✓ DNS kaydı bulundu (getent): admin.monitrang.com → $RESOLVED_IP${NC}"
+    else
+        echo -e "${YELLOW}⚠ DNS kontrol aracı bulunamadı veya DNS çözümlenemedi.${NC}"
+        echo "Devam ediyorum; DNS propagation tamamlanmadıysa HTTPS erişimi gecikebilir."
+    fi
 fi
 echo ""
 
@@ -51,6 +63,7 @@ echo -e "${YELLOW}[2/5] HTTP Basic Auth şifre dosyası oluşturuluyor...${NC}"
 # htpasswd kurulu mu kontrol et
 if ! command -v htpasswd &> /dev/null; then
     echo -e "${YELLOW}htpasswd kurulu değil, yükleniyor...${NC}"
+    export DEBIAN_FRONTEND=noninteractive
     apt-get update -qq
     apt-get install -y -qq apache2-utils
 fi
@@ -109,6 +122,23 @@ echo ""
 # 4. Nginx Config Test
 # ============================================
 echo -e "${YELLOW}[4/5] Nginx config test ediliyor...${NC}"
+
+# Ensure nginx container sees /etc/nginx/.htpasswd (volume mount). If nginx was started before the file existed,
+# Docker may have created a directory mount; restarting nginx fixes it.
+if ! docker exec nginx test -f /etc/nginx/.htpasswd; then
+    echo -e "${YELLOW}⚠ nginx container içinde /etc/nginx/.htpasswd bulunamadı. nginx restart deneniyor...${NC}"
+    if [ -f /root/MonitraNG/ApplicationResources/mng_common/docker-compose.yml ]; then
+        cd /root/MonitraNG/ApplicationResources/mng_common
+        if command -v docker-compose >/dev/null 2>&1; then
+            docker-compose up -d nginx
+        else
+            docker compose up -d nginx
+        fi
+    else
+        docker restart nginx
+    fi
+fi
+
 if docker exec nginx nginx -t; then
     echo -e "${GREEN}✓ Nginx config geçerli${NC}"
 else
