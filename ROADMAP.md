@@ -93,6 +93,50 @@
 
 ---
 
+## ⏸️ Ertelenen İşler (Backlog)
+
+Bu maddeler **şu an ele alınmayacak**, ancak sonraki oturumlarda tekrar değerlendirilecek.
+
+- [ ] **Mail UI sorunu:** `mail.monitrang.com/webmail` çalışmıyor (Mailu/Webmail routing veya container/port/Nginx config kontrol edilecek)
+- [ ] **CI/CD job sorunu:** `deploy-docs-to-server` job hata üretiyor / devre dışı (SSH non-interactive + key/permission akışı daha sonra ele alınacak)
+- [ ] **MkDocs görünüm sorunu:** Dokümantasyon sayfasında CSS/asset’ler düzgün yüklenmiyor (base_url/site_url, reverse proxy path ve static asset yolları incelenecek)
+- [ ] **Dokümantasyon sadeleştirme:** Gereksiz/tekrarlı dokümanlar temizlenecek, yapı konsolide edilecek
+
+---
+
+## 🧭 Planlanan Çalışma Sırası (Yakın Dönem)
+
+1. **Bileşen doğrulama (Infra):** ✅ Tamamlandı (4 Ocak 2026)
+   - **Çözüm:** `admin.monitrang.com` subdomain ile HTTP Basic Auth korumalı erişim
+   - **Erişim:** Portainer, RabbitMQ, Seq, Mongo Express, Redis Commander, Node-RED
+   - **Dokümantasyon:** `docs/infrastructure/admin-subdomain-setup.md`
+   - **Nginx Config:** `ApplicationResources/mng_common/nginx/conf.d/admin.monitrang.conf`
+   - **Setup Script:** `scripts/deployment/setup-admin-subdomain.sh`
+
+2. **Şifre/erişim düzeni:** ⏳ Devam ediyor
+   - ✅ Admin UI'lar HTTP Basic Auth ile korundu
+   - ⏳ Tüm bileşenlerin şifre envanteri
+   - ⏳ Güçlü şifre rotasyonu
+   - ⏳ Erişim doğrulama ve güvenli saklama yaklaşımı
+
+3. **MinIO subdomain:** ⏳ Planlanıyor
+   - `files.monitrang.com` → MinIO API (9000) - Public, S3 endpoint
+   - `minio.monitrang.com` → MinIO Console (9091) - Admin only
+   - Nginx/TLS yapılandırması
+
+4. **RabbitMQ optimizasyon:** ⏳ Planlanıyor
+   - Kaynak kullanımını azaltma (queue/policy/retention/limits)
+   - Gözlem metrikleri
+
+5. **Backend + API Gateway doğrulama:** ⏳ Planlanıyor
+   - Servis health endpoint'leri
+   - Gateway routing/auth akışının smoke test'i
+
+6. **Sunucuda çalışacak scriptler:** ⏳ Planlanıyor
+   - `create_domain`, `clear_domain`, `create_datasets` vb. scriptlerin server'da çalışabilir hale getirilmesi
+
+---
+
 ## 🔐 Altyapı ve Güvenlik
 
 **Durum:** ⏳ **Planlama Aşamasında** (2 Ocak 2026)
