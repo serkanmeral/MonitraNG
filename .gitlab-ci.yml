@@ -1400,6 +1400,7 @@ deploy-docs-to-server:
       # Sunucuda deployment işlemi
       echo ""
       echo "=== Deploying on Server ==="
+      # Heredoc yerine tek satırlık komutlar kullan (YAML parser sorunlarını önlemek için)
       ssh -i ~/.ssh/deploy_key \
           -o StrictHostKeyChecking=no \
           -o UserKnownHostsFile=~/.ssh/known_hosts \
@@ -1410,78 +1411,8 @@ deploy-docs-to-server:
           -o ConnectTimeout=10 \
           -o ServerAliveInterval=60 \
           -o ServerAliveCountMax=3 \
-          $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST << 'HEREDOC_END_MARKER'
-        set -e
-        echo "Starting deployment on server..."
-        
-        # Deployment dizini
-        DOCS_DIR="/var/www/docs.monitrang.com"
-        
-        # Dizini oluştur
-        mkdir -p "$DOCS_DIR"
-        echo "✅ Directory created: $DOCS_DIR"
-        
-        # Backup oluştur (eğer mevcut dosyalar varsa)
-        if [ -d "$DOCS_DIR" ] && [ "$(ls -A $DOCS_DIR 2>/dev/null)" ]; then
-          BACKUP_DIR="/tmp/docs-backup-$(date +%Y%m%d-%H%M%S)"
-          echo "Creating backup: $BACKUP_DIR"
-          cp -r "$DOCS_DIR" "$BACKUP_DIR" || echo "⚠️  Backup failed (continuing anyway)"
-        fi
-        
-        # Yeni dokümantasyonu kopyala
-        echo "Copying new documentation..."
-        rm -rf "$DOCS_DIR"/*
-        cp -r /tmp/docs-site/* "$DOCS_DIR/" || {
-          echo "❌ ERROR: Failed to copy documentation"
-          # Backup'tan geri yükle (eğer varsa)
-          if [ -d "$BACKUP_DIR" ]; then
-            echo "Restoring from backup..."
-            cp -r "$BACKUP_DIR"/* "$DOCS_DIR/" || true
-          fi
-          exit 1
-        }
-        
-        # İzinleri ayarla
-        chown -R root:root "$DOCS_DIR"
-        chmod -R 755 "$DOCS_DIR"
-        
-        # Index.html kontrolü
-        if [ ! -f "$DOCS_DIR/index.html" ]; then
-          echo "⚠️  WARNING: index.html not found in root"
-          # Alt dizinlerde ara
-          INDEX_FILE=$(find "$DOCS_DIR" -name "index.html" -type f | head -1)
-          if [ -n "$INDEX_FILE" ]; then
-            echo "Found index.html at: $INDEX_FILE"
-            cp "$INDEX_FILE" "$DOCS_DIR/index.html"
-          else
-            echo "Creating minimal index.html..."
-            echo '<!DOCTYPE html><html><head><title>MonitraNG Documentation</title><meta charset="utf-8"></head><body><h1>MonitraNG Documentation</h1><p>Documentation is being deployed...</p></body></html>' > "$DOCS_DIR/index.html"
-          fi
-        fi
-        
-        echo "✅ Documentation deployed successfully"
-        echo "Directory: $DOCS_DIR"
-        echo "Files: $(find $DOCS_DIR -type f | wc -l)"
-        echo "Size: $(du -sh $DOCS_DIR | cut -f1)"
-        
-        # Nginx reload (eğer Nginx container çalışıyorsa)
-        if docker ps | grep -q nginx; then
-          echo "Reloading Nginx..."
-          docker compose -f /root/MonitraNG/ApplicationResources/mng_common/docker-compose.yml exec -T nginx nginx -s reload 2>/dev/null || \
-          docker exec nginx nginx -s reload 2>/dev/null || \
-          echo "⚠️  Nginx reload skipped (container not found or not accessible)"
-        else
-          echo "⚠️  Nginx container not running, skipping reload"
-        fi
-        
-        echo ""
-        echo "=== Deployment Summary ==="
-        echo "✅ Documentation deployed to: $DOCS_DIR"
-        echo "✅ URL: https://docs.monitrang.com"
-        if [ -d "$BACKUP_DIR" ]; then
-          echo "✅ Backup created: $BACKUP_DIR"
-        fi
-HEREDOC_END_MARKER
+          $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST \
+          "set -e && DOCS_DIR=\"/var/www/docs.monitrang.com\" && mkdir -p \"\$DOCS_DIR\" && if [ -d \"\$DOCS_DIR\" ] && [ \"\$(ls -A \$DOCS_DIR 2>/dev/null)\" ]; then BACKUP_DIR=\"/tmp/docs-backup-\$(date +%Y%m%d-%H%M%S)\" && cp -r \"\$DOCS_DIR\" \"\$BACKUP_DIR\" || echo 'Backup failed'; fi && rm -rf \"\$DOCS_DIR\"/* && cp -r /tmp/docs-site/* \"\$DOCS_DIR/\" && chown -R root:root \"\$DOCS_DIR\" && chmod -R 755 \"\$DOCS_DIR\" && if [ ! -f \"\$DOCS_DIR/index.html\" ]; then INDEX_FILE=\$(find \"\$DOCS_DIR\" -name \"index.html\" -type f | head -1) && if [ -n \"\$INDEX_FILE\" ]; then cp \"\$INDEX_FILE\" \"\$DOCS_DIR/index.html\"; else echo '<!DOCTYPE html><html><head><title>MonitraNG Documentation</title></head><body><h1>MonitraNG Documentation</h1></body></html>' > \"\$DOCS_DIR/index.html\"; fi; fi && echo 'Documentation deployed successfully'"
       
       if [ $? -eq 0 ]; then
         echo ""
