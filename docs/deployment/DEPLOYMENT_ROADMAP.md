@@ -1508,9 +1508,38 @@ docker compose logs --since 1h
 
 ## 📝 Son Güncelleme
 
-**Tarih:** 4 Ocak 2026  
-**Versiyon:** 1.1.0  
-**Durum:** Nginx containerization tamamlandı, port yönetimi tamamlandı
+**Tarih:** 7 Ocak 2026  
+**Versiyon:** 1.1.1  
+**Durum:** Nginx containerization tamamlandı, port yönetimi tamamlandı, admin.monitrang.com Basic Auth geçici olarak devre dışı bırakıldı
+
+### ⚠️ Önemli Notlar
+
+#### admin.monitrang.com HTTP Basic Authentication - Geçici Devre Dışı (7 Ocak 2026)
+
+**Durum:** Tüm admin UI'lar için HTTP Basic Auth geçici olarak devre dışı bırakıldı.
+
+**Sebep:** Tarayıcı Basic Auth modal'ında şifre kabul edilme sorunu yaşandı. curl ile test başarılı olmasına rağmen tarayıcıdan erişimde sorun devam etti.
+
+**Yapılan Değişiklikler:**
+- `ApplicationResources/mng_common/nginx/conf.d/admin.monitrang.conf` dosyasında:
+  - Server-level Basic Auth yorum satırına alındı
+  - Tüm location'lara (`/`, `/portainer/`, `/rabbitmq/`, `/seq/`, `/mongo/`, `/redis/`, `/nodered/`) `auth_basic off;` eklendi
+  - Notlar eklendi: "Basic Auth devre dışı (geçici - 7 Ocak 2026)"
+
+**Güvenlik Etkisi:**
+- ⚠️ **Düşük Risk:** admin.monitrang.com artık Basic Auth olmadan erişilebilir
+- ✅ **Kısmi Koruma:** Her admin UI'ın kendi authentication mekanizması var (Portainer, RabbitMQ, vb.)
+- ✅ **SSL/TLS:** HTTPS ile şifrelenmiş iletişim devam ediyor
+
+**Sonraki Adımlar (Orta Vade):**
+1. Basic Auth sorununu çöz (tarayıcı cache, realm, veya farklı bir yaklaşım)
+2. Basic Auth'u tekrar aktif et
+3. Alternatif: IP whitelist ekle (double protection)
+4. Uzun vade: VPN entegrasyonu (production için)
+
+**İlgili Dosyalar:**
+- `ApplicationResources/mng_common/nginx/conf.d/admin.monitrang.conf`
+- `.htpasswd` dosyası mevcut ve hazır (şifre: `mc0HKkBaE4Qan65Nd0xSJv3X`)
 
 ---
 
