@@ -1458,6 +1458,27 @@ docker compose logs --since 1h
   - [ ] CI/CD pipeline entegrasyonu
   - [ ] Automated testing
   - [ ] Automated deployment (opsiyonel)
+  - [ ] **deploy-docs-to-server job (DEVRE DIŞI - 4 Ocak 2026)**
+    - **Durum:** ⏸️ Devre dışı bırakıldı
+    - **Sebep:** SSH passphrase sorunu ve key authentication problemleri
+    - **Yapılan Denemeler:**
+      1. ✅ Job optimize edildi (`pages` yerine `deploy-docs` artifacts kullanılıyor)
+      2. ✅ SSH key yönetimi iyileştirildi (base64 decode, format kontrolü)
+      3. ✅ Backup mekanizması eklendi
+      4. ✅ SSH BatchMode ve PasswordAuthentication ayarları eklendi
+      5. ✅ Daha iyi hata mesajları ve diagnostics eklendi
+    - **Sorunlar:**
+      - SSH key passphrase sorunu (`read_passphrase: can't open /dev/tty`)
+      - SSH public key'in sunucunun `~/.ssh/authorized_keys` dosyasına eklenmesi gerekiyor
+      - Job başarısız oldu (Permission denied)
+    - **Çözüm İçin Gerekenler:**
+      1. SSH public key'in sunucuya eklenmesi
+      2. Passphrase'siz SSH key kullanılması
+      3. SSH key'in `authorized_keys` dosyasına doğru formatta eklenmesi
+    - **Gelecek Planlar:**
+      - Manuel deployment script'leri kullanılabilir
+      - Alternatif deployment yöntemleri değerlendirilebilir
+      - SSH key yapılandırması tamamlandığında job tekrar aktif edilebilir
 
 **Durum:** ⏳ Devam ediyor
 

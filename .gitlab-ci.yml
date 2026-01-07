@@ -1248,122 +1248,277 @@ pages:
 
 # Documentation Deployment to Server
 # Deploys documentation artifacts to production server via SSH
+# ⚠️ DEVRE DIŞI: SSH passphrase sorunu nedeniyle geçici olarak devre dışı bırakıldı (4 Ocak 2026)
+# Aktif etmek için: rules kısmındaki 'when: never' satırlarını kaldırın
+# Detaylar: docs/deployment/DEPLOYMENT_ROADMAP.md - Phase 6: Dokümantasyon ve İyileştirme
 deploy-docs-to-server:
   stage: deploy-docs
   image: alpine:latest
   dependencies:
-    - pages  # pages job'ının artifacts'ını kullan
+    - deploy-docs  # deploy-docs job'ının artifacts'ını kullan (pages yerine)
   needs:
-    - pages  # pages job'ı tamamlandıktan sonra çalış
+    - deploy-docs  # deploy-docs job'ı tamamlandıktan sonra çalış
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-      when: manual  # Manuel trigger (güvenlik için)
+    - when: never  # ⚠️ DEVRE DIŞI - SSH key yapılandırması tamamlandığında kaldırılacak
+    # Aktif etmek için aşağıdaki satırları kullanın:
+    # - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+    #   when: never
+    # - if: $CI_COMMIT_BRANCH == "main"
+    #   when: manual  # Manuel trigger (güvenlik için)
   variables:
-    DEPLOY_SERVER_HOST: "${DEPLOY_SERVER_HOST:-monitrang-server}"
+    DEPLOY_SERVER_HOST: "${DEPLOY_SERVER_HOST:-45.141.151.52}"
     DEPLOY_SERVER_USER: "${DEPLOY_SERVER_USER:-root}"
   before_script:
-    - apk add --no-cache openssh-client rsync base64
+    - echo "=== Preparing SSH for Documentation Deployment ==="
+    - apk add --no-cache openssh-client rsync
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
     - |
-      if [ -z "$SSH_PRIVATE_KEY" ]; then
-        echo "⚠️  SSH_PRIVATE_KEY not set. Skipping deployment."
+      # SSH key kontrolü ve hazırlığı
+      if [ -z "$SSH_PRIVATE_KEY" ] && [ -z "$DEPLOY_SSH_PRIVATE_KEY" ]; then
+        echo "⚠️  WARNING: SSH_PRIVATE_KEY or DEPLOY_SSH_PRIVATE_KEY not set!"
+        echo "This job requires SSH key for deployment."
+        echo "Please set SSH_PRIVATE_KEY or DEPLOY_SSH_PRIVATE_KEY in CI/CD variables."
+        echo "Job will exit with success (no deployment performed)."
         exit 0
       fi
-      # Base64 decode if needed and write to file
-      if echo "$SSH_PRIVATE_KEY" | head -1 | grep -q "^-----BEGIN"; then
-        # Already decoded, use as is
-        echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/deploy_key
-        echo "✅ Using SSH key as-is (already decoded)"
-      else
-        # Base64 encoded, decode first
-        echo "$SSH_PRIVATE_KEY" | base64 -d > ~/.ssh/deploy_key.tmp 2>&1
-        if [ $? -ne 0 ]; then
-          echo "❌ Failed to decode base64 SSH key"
-          exit 1
-        fi
-        tr -d '\r' < ~/.ssh/deploy_key.tmp > ~/.ssh/deploy_key
-        rm -f ~/.ssh/deploy_key.tmp
-        echo "✅ SSH key decoded from base64"
-      fi
+      
+      # SSH key'i al (DEPLOY_SSH_PRIVATE_KEY öncelikli)
+      SSH_KEY="${DEPLOY_SSH_PRIVATE_KEY:-$SSH_PRIVATE_KEY}"
+      
+      # SSH key'i dosyaya yaz
+      echo "$SSH_KEY" | tr -d '\r' > ~/.ssh/deploy_key
       chmod 600 ~/.ssh/deploy_key
-      # Validate key format
+      
+      # SSH key formatını kontrol et
       if ! ssh-keygen -l -f ~/.ssh/deploy_key > /dev/null 2>&1; then
-        echo "❌ Invalid SSH key format"
+        echo "❌ ERROR: Invalid SSH key format!"
+        echo "Please check your SSH_PRIVATE_KEY or DEPLOY_SSH_PRIVATE_KEY variable."
         exit 1
       fi
-      # Show key fingerprint for debugging
+      
+      echo "✅ SSH key loaded successfully"
       echo "SSH key fingerprint:"
       ssh-keygen -l -f ~/.ssh/deploy_key | head -1
-      echo "✅ SSH key validated and ready to use"
-    - ssh-keyscan -H $DEPLOY_SERVER_HOST >> ~/.ssh/known_hosts 2>/dev/null || echo "SSH keyscan failed, continuing..."
+      
+    # SSH known_hosts ayarı
+    - ssh-keyscan -H $DEPLOY_SERVER_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
     - chmod 644 ~/.ssh/known_hosts
+    - echo "✅ SSH setup completed"
   script:
     - |
-      if [ -z "$SSH_PRIVATE_KEY" ]; then
-        echo "⚠️  SSH_PRIVATE_KEY not set. Skipping deployment."
-        echo "Please set SSH_PRIVATE_KEY in CI/CD variables to enable automatic deployment."
+      # SSH key kontrolü
+      if [ -z "$SSH_PRIVATE_KEY" ] && [ -z "$DEPLOY_SSH_PRIVATE_KEY" ]; then
+        echo "⚠️  Skipping deployment (SSH key not configured)"
         exit 0
       fi
       
       echo "=== Deploying Documentation to Server ==="
       echo "Server: $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST"
-      echo "Artifacts path: public/"
+      echo "Branch: $CI_COMMIT_REF_NAME"
+      echo "Commit: $CI_COMMIT_SHORT_SHA"
       
-      # Test SSH connection first
-      echo "Testing SSH connection..."
-      ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts -o IdentitiesOnly=yes -v $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST "echo 'SSH connection successful!'" || {
-        echo "❌ SSH connection test failed"
-        echo "Key file exists: $(test -f ~/.ssh/deploy_key && echo 'yes' || echo 'no')"
-        echo "Key file permissions: $(ls -la ~/.ssh/deploy_key 2>/dev/null || echo 'not found')"
+      # Artifacts kontrolü
+      if [ ! -d "docs/site" ]; then
+        echo "❌ ERROR: docs/site directory not found!"
+        echo "deploy-docs job may have failed or artifacts not available."
+        echo "Checking available directories:"
+        ls -la
+        exit 1
+      fi
+      
+      echo "✅ Documentation artifacts found"
+      echo "Artifacts size: $(du -sh docs/site | cut -f1)"
+      echo "Number of files: $(find docs/site -type f | wc -l)"
+      
+      # SSH bağlantı testi
+      echo ""
+      echo "=== Testing SSH Connection ==="
+      # Passphrase prompt'larını tamamen devre dışı bırak
+      export SSH_ASKPASS_REQUIRE=never
+      export DISPLAY=""
+      ssh -i ~/.ssh/deploy_key \
+          -o StrictHostKeyChecking=no \
+          -o UserKnownHostsFile=~/.ssh/known_hosts \
+          -o IdentitiesOnly=yes \
+          -o BatchMode=yes \
+          -o PasswordAuthentication=no \
+          -o PubkeyAuthentication=yes \
+          -o ConnectTimeout=10 \
+          -o ServerAliveInterval=60 \
+          -o ServerAliveCountMax=3 \
+          $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST \
+          "echo 'SSH connection successful!' && uname -a" || {
+        echo "❌ ERROR: SSH connection test failed!"
+        echo "Server: $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST"
+        echo ""
+        echo "Diagnostics:"
+        echo "  - SSH key fingerprint: $(ssh-keygen -l -f ~/.ssh/deploy_key | head -1)"
+        echo "  - Key file exists: $(test -f ~/.ssh/deploy_key && echo 'yes' || echo 'no')"
+        echo "  - Key permissions: $(ls -la ~/.ssh/deploy_key | awk '{print $1}')"
+        echo ""
+        echo "Please check:"
+        echo "  1. SSH key is passphrase-free (no passphrase)"
+        echo "  2. SSH public key is added to server's ~/.ssh/authorized_keys"
+        echo "  3. Server is accessible: ping $DEPLOY_SERVER_HOST"
+        echo "  4. SSH key matches the one on server"
         exit 1
       }
       echo "✅ SSH connection test successful"
       
-      # Artifacts'ı sunucuya kopyala
-      echo "Copying artifacts to server..."
-      rsync -avz --delete -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts -o IdentitiesOnly=yes" \
-        public/ $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST:/tmp/docs-public/ || {
-        echo "❌ Failed to copy artifacts to server"
+      # Artifacts'ı geçici dizine kopyala
+      echo ""
+      echo "=== Copying Documentation to Server ==="
+      # SSH options for rsync (passphrase-free)
+      RSYNC_SSH_OPTS="ssh -i ~/.ssh/deploy_key \
+        -o StrictHostKeyChecking=no \
+        -o UserKnownHostsFile=~/.ssh/known_hosts \
+        -o IdentitiesOnly=yes \
+        -o BatchMode=yes \
+        -o PasswordAuthentication=no \
+        -o PubkeyAuthentication=yes \
+        -o ConnectTimeout=10 \
+        -o ServerAliveInterval=60 \
+        -o ServerAliveCountMax=3"
+      
+      rsync -avz --delete \
+          --exclude='.cache' \
+          --exclude='__pycache__' \
+          --exclude='*.pyc' \
+          --exclude='*.pyo' \
+          --exclude='*.log' \
+          --exclude='*.tmp' \
+          -e "$RSYNC_SSH_OPTS" \
+          docs/site/ \
+          $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST:/tmp/docs-site/ || {
+        echo "❌ ERROR: Failed to copy artifacts to server"
+        echo "Check SSH connection and rsync permissions."
         exit 1
       }
+      echo "✅ Documentation copied to server successfully"
       
-      # Deploy script'i çalıştır
-      echo "Running deploy script on server..."
-      ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts -o IdentitiesOnly=yes $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST << 'EOF'
-        cd /root/MonitraNG
-        if [ -f "scripts/infrastructure/deploy-docs-from-artifacts.sh" ]; then
-          chmod +x scripts/infrastructure/deploy-docs-from-artifacts.sh
-          ./scripts/infrastructure/deploy-docs-from-artifacts.sh /tmp/docs-public
-        else
-          echo "⚠️  Deploy script not found, using manual deployment"
-          mkdir -p /var/www/docs.monitrang.com
-          rm -rf /var/www/docs.monitrang.com/*
-          cp -r /tmp/docs-public/* /var/www/docs.monitrang.com/
-          chown -R root:root /var/www/docs.monitrang.com
-          chmod -R 755 /var/www/docs.monitrang.com
-          echo "✅ Documentation deployed manually"
+      # Sunucuda deployment işlemi
+      echo ""
+      echo "=== Deploying on Server ==="
+      ssh -i ~/.ssh/deploy_key \
+          -o StrictHostKeyChecking=no \
+          -o UserKnownHostsFile=~/.ssh/known_hosts \
+          -o IdentitiesOnly=yes \
+          -o BatchMode=yes \
+          -o PasswordAuthentication=no \
+          -o PubkeyAuthentication=yes \
+          -o ConnectTimeout=10 \
+          -o ServerAliveInterval=60 \
+          -o ServerAliveCountMax=3 \
+          $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST << 'DEPLOY_EOF'
+        set -e
+        echo "Starting deployment on server..."
+        
+        # Deployment dizini
+        DOCS_DIR="/var/www/docs.monitrang.com"
+        
+        # Dizini oluştur
+        mkdir -p "$DOCS_DIR"
+        echo "✅ Directory created: $DOCS_DIR"
+        
+        # Backup oluştur (eğer mevcut dosyalar varsa)
+        if [ -d "$DOCS_DIR" ] && [ "$(ls -A $DOCS_DIR 2>/dev/null)" ]; then
+          BACKUP_DIR="/tmp/docs-backup-$(date +%Y%m%d-%H%M%S)"
+          echo "Creating backup: $BACKUP_DIR"
+          cp -r "$DOCS_DIR" "$BACKUP_DIR" || echo "⚠️  Backup failed (continuing anyway)"
         fi
         
-        # Nginx reload (gerekirse)
-        cd ApplicationResources/mng_common 2>/dev/null || true
-        docker compose exec -T nginx nginx -s reload 2>/dev/null || echo "⚠️  Nginx reload skipped (container may not be running)"
-      EOF
+        # Yeni dokümantasyonu kopyala
+        echo "Copying new documentation..."
+        rm -rf "$DOCS_DIR"/*
+        cp -r /tmp/docs-site/* "$DOCS_DIR/" || {
+          echo "❌ ERROR: Failed to copy documentation"
+          # Backup'tan geri yükle (eğer varsa)
+          if [ -d "$BACKUP_DIR" ]; then
+            echo "Restoring from backup..."
+            cp -r "$BACKUP_DIR"/* "$DOCS_DIR/" || true
+          fi
+          exit 1
+        }
+        
+        # İzinleri ayarla
+        chown -R root:root "$DOCS_DIR"
+        chmod -R 755 "$DOCS_DIR"
+        
+        # Index.html kontrolü
+        if [ ! -f "$DOCS_DIR/index.html" ]; then
+          echo "⚠️  WARNING: index.html not found in root"
+          # Alt dizinlerde ara
+          INDEX_FILE=$(find "$DOCS_DIR" -name "index.html" -type f | head -1)
+          if [ -n "$INDEX_FILE" ]; then
+            echo "Found index.html at: $INDEX_FILE"
+            cp "$INDEX_FILE" "$DOCS_DIR/index.html"
+          else
+            echo "Creating minimal index.html..."
+            cat > "$DOCS_DIR/index.html" << 'INDEX_EOF'
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MonitraNG Documentation</title>
+  <meta charset="utf-8">
+</head>
+<body>
+  <h1>MonitraNG Documentation</h1>
+  <p>Documentation is being deployed...</p>
+</body>
+</html>
+INDEX_EOF
+          fi
+        fi
+        
+        echo "✅ Documentation deployed successfully"
+        echo "Directory: $DOCS_DIR"
+        echo "Files: $(find $DOCS_DIR -type f | wc -l)"
+        echo "Size: $(du -sh $DOCS_DIR | cut -f1)"
+        
+        # Nginx reload (eğer Nginx container çalışıyorsa)
+        if docker ps | grep -q nginx; then
+          echo "Reloading Nginx..."
+          docker compose -f /root/MonitraNG/ApplicationResources/mng_common/docker-compose.yml exec -T nginx nginx -s reload 2>/dev/null || \
+          docker exec nginx nginx -s reload 2>/dev/null || \
+          echo "⚠️  Nginx reload skipped (container not found or not accessible)"
+        else
+          echo "⚠️  Nginx container not running, skipping reload"
+        fi
+        
+        echo ""
+        echo "=== Deployment Summary ==="
+        echo "✅ Documentation deployed to: $DOCS_DIR"
+        echo "✅ URL: https://docs.monitrang.com"
+        if [ -d "$BACKUP_DIR" ]; then
+          echo "✅ Backup created: $BACKUP_DIR"
+        fi
+DEPLOY_EOF
       
-      echo "✅ Documentation deployed successfully!"
-      echo "URL: https://docs.monitrang.com"
+      if [ $? -eq 0 ]; then
+        echo ""
+        echo "✅ === Documentation Deployment Completed Successfully ==="
+        echo "URL: https://docs.monitrang.com"
+        echo "Server: $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST"
+      else
+        echo ""
+        echo "❌ === Documentation Deployment Failed ==="
+        exit 1
+      fi
   after_script:
     - |
       if [ "$CI_JOB_STATUS" == "failed" ]; then
-        echo "❌ Documentation deployment failed!"
-        echo "Check SSH connection and server access."
+        echo ""
+        echo "❌ === Deployment Failed ==="
+        echo "Check the logs above for error details."
+        echo "Common issues:"
+        echo "  1. SSH key not configured (set SSH_PRIVATE_KEY or DEPLOY_SSH_PRIVATE_KEY)"
+        echo "  2. Server not accessible"
+        echo "  3. Permission issues on server"
+        echo "  4. deploy-docs job failed (no artifacts available)"
       fi
-  rules:
-    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
-      when: never
-    - if: $CI_COMMIT_BRANCH == "main"
-      when: manual
-  timeout: 10m
+  allow_failure: true  # Pipeline'ı bloklamasın
+  timeout: 15m
 
 
 # ============================================
