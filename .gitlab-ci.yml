@@ -1455,19 +1455,7 @@ deploy-docs-to-server:
             cp "$INDEX_FILE" "$DOCS_DIR/index.html"
           else
             echo "Creating minimal index.html..."
-            cat > "$DOCS_DIR/index.html" << 'INDEX_EOF'
-<!DOCTYPE html>
-<html>
-<head>
-  <title>MonitraNG Documentation</title>
-  <meta charset="utf-8">
-</head>
-<body>
-  <h1>MonitraNG Documentation</h1>
-  <p>Documentation is being deployed...</p>
-</body>
-</html>
-INDEX_EOF
+            echo '<!DOCTYPE html><html><head><title>MonitraNG Documentation</title><meta charset="utf-8"></head><body><h1>MonitraNG Documentation</h1><p>Documentation is being deployed...</p></body></html>' > "$DOCS_DIR/index.html"
           fi
         fi
         
