@@ -1,194 +1,115 @@
-# Infrastructure - Mevcut Durum
+# Infrastructure - Güncel Durum
 
-**Son Güncelleme:** 3 Ocak 2026  
-**Çalışılan Konu:** Mailu Mail Sunucusu Kurulumu ve Nginx Reverse Proxy Yapılandırması
-
----
-
-## Son Çalışılan Konu
-
-Mailu mail sunucusu kurulumu ve Nginx reverse proxy yapılandırması tamamlandı. Mailu container'ları çalışıyor ve `mail.monitrang.com` üzerinden erişilebilir durumda.
+**Son Güncelleme:** 4 Ocak 2026  
+**Konu:** GitLab CI/CD SSH Key Yapılandırması ve Dokümantasyon Deployment
 
 ---
 
-## Tamamlanan İşler
+## 📋 Son Çalışılan Konu
 
-### 1. Mailu Kurulumu ✅
-- **Repository Clone:** Mailu repository'si `/root/MonitraNG/ApplicationResources/mng_common/mailu/` klasörüne clone edildi
-- **Yapılandırma Dosyaları:**
-  - `.env` dosyası oluşturuldu (domain: `monitrang.com`, hostname: `mail.monitrang.com`)
-  - Secret key'ler oluşturuldu (SECRET_KEY, DB_PW, JWT_SECRET_KEY)
-  - TLS_FLAVOR: `letsencrypt`
-  - ADMIN: `true`
-  - WEBMAIL: `roundcube`
-  - ANTIVIRUS: `clamav`
-- **Docker Compose:**
-  - Image isimleri `ghcr.io/mailu/` formatına güncellendi
-  - Container'lar başarıyla başlatıldı:
-    - `mailu-front-1` (Nginx)
-    - `mailu-imap-1` (Dovecot)
-    - `mailu-smtp-1` (Postfix)
-    - `mailu-antispam-1` (Rspamd)
-    - `mailu-antivirus-1` (ClamAV)
-    - `mailu-webmail-1` (Roundcube)
-    - `mailu-redis-1`
-    - `mailu-fetchmail-1`
-
-### 2. Nginx Reverse Proxy Yapılandırması ✅
-- **Yapılandırma Dosyası:** `scripts/mailu-nginx-config.conf` oluşturuldu
-- **Port Mapping:** Mailu front container'ı `localhost:8081` portunda çalışıyor
-- **Nginx Yapılandırması:**
-  - `mail.monitrang.com` için HTTP → HTTPS redirect eklendi
-  - HTTPS server block eklendi (Let's Encrypt sertifikaları kullanılıyor)
-  - Reverse proxy: `https://mail.monitrang.com` → `http://127.0.0.1:8081`
-  - Security headers eklendi
-  - Log dosyaları: `/var/log/nginx/mail.monitrang.com-*.log`
-- **Durum:** Nginx başarıyla reload edildi, yapılandırma test edildi ✅
-
-### 3. Erişim Kontrolü ✅
-- **URL:** `https://mail.monitrang.com`
-- **Durum:** HTTP 401 (Unauthorized) - Bu normal, admin sayfası için login gerekiyor
-- **Admin Panel:** `https://mail.monitrang.com/admin` (login gerekiyor)
-- **Webmail:** `https://mail.monitrang.com/webmail` (Roundcube)
+GitLab CI/CD pipeline'ı için `deploy-docs-to-server` job'ının SSH key yapılandırması yapılıyor. Dokümantasyon artifacts'larını production sunucusuna deploy etmek için SSH key kullanılacak.
 
 ---
 
-## Devam Eden İşler
+## ✅ Tamamlanan İşler
 
-### 1. Mailu Container Durumu
-- **mailu-front-1:** Unhealthy durumda (Let's Encrypt hatası var, ancak Nginx üzerinden erişim çalışıyor)
-- **mailu-antispam-1:** Unhealthy durumda
-- **Diğer container'lar:** Healthy ✅
+### 1. SSH Key Oluşturma ve Yapılandırma
+- ✅ SSH key oluşturuldu: `gitlab_deploy_key` (RSA 4096 bit, passphrase'siz)
+- ✅ Public key sunucuya eklendi: `root@monitrang-server` → `~/.ssh/authorized_keys`
+- ✅ Local SSH bağlantısı test edildi ve başarılı
 
-**Not:** Let's Encrypt hatası Mailu'nun kendi Let's Encrypt yapılandırması ile ilgili. Nginx reverse proxy üzerinden erişim çalışıyor, bu yüzden kritik değil.
+### 2. GitLab CI/CD Variables
+- ✅ `SSH_PRIVATE_KEY` variable'ı GitLab CI/CD Variables'a eklendi
+- ✅ Key base64 encoded olarak saklanıyor (whitespace sorunlarını önlemek için)
+- ✅ Pipeline'da base64 decode desteği eklendi
 
----
+### 3. Pipeline Yapılandırması
+- ✅ `deploy-docs-to-server` job'ı `.gitlab-ci.yml`'e eklendi
+- ✅ Job `alpine:latest` image kullanıyor
+- ✅ Key decode ve format kontrolü eklendi
+- ✅ SSH key fingerprint kontrolü eklendi
+- ✅ SSH connection test ve debug bilgileri eklendi
 
-## Sonraki Adımlar
-
-### 1. DKIM Key Oluşturma ve DNS Kaydı ⏳
-- Mailu admin panelinden DKIM public key'i alınacak
-- DNS'e DKIM TXT kaydı eklenecek: `default._domainkey.monitrang.com`
-- Format: `v=DKIM1; k=rsa; p=[public key]`
-
-### 2. Mailu Admin Panel Yapılandırması ⏳
-- İlk admin kullanıcısı oluşturulacak
-- Domain yapılandırması kontrol edilecek
-- Mail hesapları oluşturulacak
-
-### 3. Mail Port Yapılandırması ⏳
-- SMTP (25, 587, 465) portları kontrol edilecek
-- IMAP (143, 993) portları kontrol edilecek
-- Firewall kuralları kontrol edilecek
-
-### 4. Test Mail Gönderimi ⏳
-- Test mail hesapları oluşturulacak
-- Dış servislere (Gmail, Outlook) test mail gönderilecek
-- Mail alımı test edilecek
+### 4. Dokümantasyon
+- ✅ `docs/infrastructure/gitlab-ssh-key-setup.md` - SSH key setup rehberi
+- ✅ `docs/infrastructure/gitlab-ssh-key-base64-setup.md` - Base64 encoding rehberi
+- ✅ `docs/infrastructure/gitlab-ssh-key-troubleshooting.md` - Troubleshooting rehberi
+- ✅ `docs/infrastructure/gitlab-ssh-key-passphrase-issue.md` - Passphrase sorunu dokümantasyonu
 
 ---
 
-## Önemli Notlar
+## ⏳ Devam Eden İşler
 
-### Docker Compose Yapılandırması
-- **Konum:** `/root/MonitraNG/ApplicationResources/mng_common/mailu/`
-- **Network:** `mailu_default` (172.19.0.0/16)
-- **Port Mapping:** Front container `127.0.0.1:8081:80` olarak map edildi
-- **Data Klasörü:** `/root/MonitraNG/ApplicationResources/mng_common/mailu/data/`
+### SSH Key Yapılandırması Sorunu
 
-### Nginx Yapılandırması
-- **Dosya:** `/etc/nginx/sites-available/monitrang`
-- **Proxy Pass:** `http://127.0.0.1:8081`
-- **SSL:** Let's Encrypt sertifikaları (`/etc/letsencrypt/live/monitrang.com/`)
+**Durum:** Pipeline'da SSH bağlantısı "Permission denied" veriyor, ancak key formatı doğru ve key decode ediliyor.
 
-### DNS Kayıtları
-- ✅ A kaydı: `mail.monitrang.com` → `45.141.151.52`
-- ✅ MX kaydı: `monitrang.com` → `mail.monitrang.com` (priority: 10)
-- ✅ SPF kaydı: `v=spf1 mx a:mail.monitrang.com ~all`
-- ✅ DMARC kaydı: `_dmarc.monitrang.com` → `v=DMARC1; p=quarantine; rua=mailto:admin@monitrang.com`
-- ⏳ DKIM kaydı: Mailu kurulumundan sonra eklenecek
+**Bulgular:**
+- ✅ Key decode başarılı
+- ✅ Key fingerprint doğru: `SHA256:WnWrez5BuDu2w4JG3euXocMPf9LKnGGewYTu0uCgSkQ`
+- ✅ Key format doğru (UNENCRYPTED, passphrase yok)
+- ✅ Local'de SSH bağlantısı başarılı
+- ✅ Sunucu key'i kabul ediyor (verbose log'larda görüldü)
+- ❌ Pipeline'da SSH bağlantısı "Permission denied" veriyor
+- ❌ SSH verbose log'larında "read_passphrase: can't open /dev/tty" hatası var
 
-### Mailu Yapılandırma Değişkenleri
-- **DOMAIN:** `monitrang.com`
-- **HOSTNAMES:** `mail.monitrang.com,monitrang.com`
-- **POSTMASTER:** `admin`
-- **TLS_FLAVOR:** `letsencrypt`
-- **ADMIN:** `true`
-- **WEBMAIL:** `roundcube`
-- **ANTIVIRUS:** `clamav`
-
----
-
-## Karşılaşılan Sorunlar ve Çözümler
-
-### 1. Port 80 Çakışması
-- **Sorun:** Mailu front container'ı port 80'i kullanmaya çalıştı, ancak Nginx zaten kullanıyordu
-- **Çözüm:** Mailu front container'ı `127.0.0.1:8081:80` olarak map edildi, Nginx reverse proxy üzerinden erişim sağlandı
-
-### 2. Container IP Erişimi
-- **Sorun:** Container IP'si ile erişim sağlanamadı (Connection refused)
-- **Çözüm:** Container name yerine localhost port mapping kullanıldı
-
-### 3. PowerShell Heredoc Sorunları
-- **Sorun:** PowerShell'de heredoc ve escape karakterleri sorun çıkardı
-- **Çözüm:** Dosya local'de oluşturulup SCP ile sunucuya kopyalandı
-
-### 4. Let's Encrypt Hatası (Mailu İçinde)
-- **Sorun:** Mailu'nun kendi Let's Encrypt yapılandırması port 80'e erişemiyor
-- **Durum:** Kritik değil, Nginx reverse proxy üzerinden erişim çalışıyor
-- **Not:** Mailu'nun Let's Encrypt yapılandırması devre dışı bırakılabilir veya daha sonra düzeltilebilir
-
----
-
-## Dosya Konumları
-
-### Mailu
-- **Docker Compose:** `/root/MonitraNG/ApplicationResources/mng_common/mailu/docker-compose.yml`
-- **Environment:** `/root/MonitraNG/ApplicationResources/mng_common/mailu/.env`
-- **Data:** `/root/MonitraNG/ApplicationResources/mng_common/mailu/data/`
-
-### Nginx
-- **Yapılandırma:** `/etc/nginx/sites-available/monitrang`
-- **Template:** `scripts/mailu-nginx-config.conf`
-- **Logs:** `/var/log/nginx/mail.monitrang.com-*.log`
-
-### DNS Dokümantasyonu
-- **DNS Kayıtları:** `docs/infrastructure/domain-dns.md`
-- **Mail DNS Setup:** `docs/infrastructure/mail-dns-setup.md`
-
----
-
-## Sonraki Oturum İçin Hazırlık
-
-1. **Mailu Admin Panel:** `https://mail.monitrang.com/admin` adresinden giriş yapılacak
-2. **DKIM Key:** Admin panelden DKIM public key alınacak
-3. **DNS Güncelleme:** DKIM TXT kaydı DNS'e eklenecek
-4. **Test:** Mail gönderimi/alımı test edilecek
-
----
-
-## Komutlar (Referans)
-
-```bash
-# Mailu container durumu
-cd /root/MonitraNG/ApplicationResources/mng_common/mailu
-docker compose ps
-
-# Mailu logları
-docker compose logs front
-
-# Nginx test
-nginx -t
-
-# Nginx reload
-systemctl reload nginx
-
-# Mailu erişim testi
-curl -I https://mail.monitrang.com
-curl -L https://mail.monitrang.com/admin
+**Verbose Log Çıktısı:**
+```
+debug1: Server accepts key: /root/.ssh/deploy_key RSA SHA256:WnWrez5BuDu2w4JG3euXocMPf9LKnGGewYTu0uCgSkQ explicit
+debug1: read_passphrase: can't open /dev/tty: No such device or address
+Permission denied, please try again.
 ```
 
+**Olası Nedenler:**
+1. Key formatı sorunlu olabilir (OpenSSH formatı bazı durumlarda sorun çıkarabilir)
+2. Key pipeline'da decode edilirken bozulmuş olabilir
+3. Key dosyası yazılırken bir encoding sorunu olmuş olabilir
+
+**Çözüm Önerileri:**
+- Key'i RSA formatında (OpenSSH yerine) yeniden oluşturmayı denemek
+- Key formatını kontrol etmek
+- Key'in pipeline'da doğru yazıldığını doğrulamak
+
 ---
 
-**Not:** Bu dosya her oturum sonunda güncellenmelidir.
+## 🔄 Sonraki Adımlar
 
+1. **SSH Key Sorunu Çözümü:**
+   - Key formatını kontrol etmek
+   - Gerekirse key'i RSA formatında yeniden oluşturmak
+   - Pipeline'da key'in doğru yazıldığını doğrulamak
+   - SSH bağlantısını test etmek
+
+2. **Pipeline Test:**
+   - SSH bağlantısı başarılı olduktan sonra
+   - `deploy-docs-to-server` job'ını test etmek
+   - Dokümantasyon deployment'ını doğrulamak
+
+3. **Dokümantasyon:**
+   - Sorun çözüldükten sonra final dokümantasyonu güncellemek
+
+---
+
+## 📝 Önemli Notlar
+
+- Key local'de çalışıyor, sorun pipeline'da
+- Key UNENCRYPTED (passphrase yok), ama SSH passphrase soruyor
+- Sunucu key'i kabul ediyor, sorun authentication aşamasında
+- `ssh-agent` yaklaşımı timeout verdi, key direkt kullanılıyor (`-i` parametresi)
+- Base64 encoding/decoding çalışıyor
+- Key fingerprint eşleşiyor (local ve pipeline'da aynı)
+
+---
+
+## 🔗 İlgili Dosyalar
+
+- `.gitlab-ci.yml` - Pipeline yapılandırması (deploy-docs-to-server job'ı)
+- `docs/infrastructure/gitlab-ssh-key-setup.md` - SSH key setup rehberi
+- `docs/infrastructure/gitlab-ssh-key-base64-setup.md` - Base64 encoding rehberi
+- `docs/infrastructure/gitlab-ssh-key-troubleshooting.md` - Troubleshooting rehberi
+- `docs/infrastructure/gitlab-ssh-key-passphrase-issue.md` - Passphrase sorunu dokümantasyonu
+- `scripts/infrastructure/deploy-docs-from-artifacts.sh` - Deploy script (sunucuda)
+
+---
+
+**Son Güncelleme:** 4 Ocak 2026

@@ -1,7 +1,7 @@
 # Pipeline Performans Optimizasyonu
 
-**Tarih:** 1 Ocak 2026  
-**Durum:** ✅ Optimizasyonlar Uygulandı
+**Tarih:** 2 Ocak 2026  
+**Durum:** ⚠️ Kısmen Tamamlandı - Cache çalışıyor ancak etkisi beklenenden düşük
 
 ---
 
@@ -219,5 +219,32 @@ Pipeline süreleri GitLab UI'da görülebilir:
 
 ---
 
-**Son Güncelleme:** 1 Ocak 2026
+**Son Güncelleme:** 2 Ocak 2026
+
+---
+
+## 📊 Gerçek Performans Sonuçları
+
+### Pipeline Süreleri (Gerçek Ölçümler)
+
+| Build | Süre | Cache Durumu | Notlar |
+|-------|------|--------------|--------|
+| İlk build | 8:55 | Cache yok | Tüm package'lar indirildi |
+| İkinci build | 8:18 | Cache restore edildi | NuGet global cache yoktu |
+| Üçüncü build | 8:42 | Cache restore edildi | NuGet global cache yoktu |
+| Dördüncü build | 8:14 | Cache oluşturuldu | NuGet global cache path eklendi |
+| Beşinci build | 8:14 | Cache restore edildi | Cache çalışıyor (8847 dosya) |
+
+### Analiz
+
+**Beklenen:** %40-50 iyileştirme (~4-5 dakika)  
+**Gerçek:** %7-8 iyileştirme (8:55 → 8:14)
+
+**Nedenler:**
+1. ✅ Cache mekanizması çalışıyor (8847 dosya cache'leniyor)
+2. ⚠️ NuGet'in global cache mekanizması farklı çalışıyor
+3. ⚠️ `~/.nuget/packages/` absolute path olduğu için cache'lenemiyor
+4. ⚠️ Build süresinin çoğu restore değil, compile/build işlemlerinde geçiyor olabilir
+
+**Sonuç:** Cache çalışıyor ancak etkisi beklenenden düşük. Mevcut süre (8:14 dakika) idare edilebilir seviyede.
 

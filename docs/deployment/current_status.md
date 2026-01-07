@@ -1,14 +1,14 @@
 # Deployment Durumu
 
-**Son Güncelleme:** 1 Ocak 2026 (04:30)  
+**Son Güncelleme:** 2 Ocak 2026  
 **Sunucu:** 45.141.151.52 (Debian 12)  
-**Durum:** ⚠️ GitLab CI/CD Pipeline - Git Fetch Sorunu Devam Ediyor
+**Durum:** ✅ SSL Sertifikaları Kuruldu, GitLab Çalışıyor
 
 ---
 
 ## 🎯 Son Çalışılan Konu
 
-GitLab CI/CD pipeline'ında Git fetch sorunu çözülemedi. Artifacts optional yapıldı, network_mode=host denendi, external_url external IP'ye güncellendi ancak build container'ları hala external IP'ye (`45.141.151.52:8090`) erişemiyor. Pipeline hiç başlayamıyor çünkü Git fetch başarısız oluyor. Sorun Docker network yapısından kaynaklanıyor - runner container'ı `mng_common_mng_network` network'ünde, build container'ları host network'te olmalı ama çalışmıyor.
+Let's Encrypt wildcard SSL sertifikası kurulumu tamamlandı. `monitrang.com` ve `*.monitrang.com` için SSL sertifikaları alındı ve Nginx yapılandırması güncellendi. GitLab port çakışması düzeltildi (8090:80) ve root şifresi reset edildi. Tüm servisler HTTPS üzerinden erişilebilir durumda.
 
 ---
 
@@ -49,9 +49,25 @@ GitLab CI/CD pipeline'ında Git fetch sorunu çözülemedi. Artifacts optional y
   - Redis Commander ✅
 
 ### 4. Port Yapılandırmaları
-- ✅ GitLab port'u değiştirildi: `80:80` → `8080:80` (Nginx ile çakışma önlendi)
-- ✅ Keycloak port'u: `8080:8080` (GitLab ile çakışma yok)
+- ✅ GitLab port'u değiştirildi: `80:80` → `8090:80` (Nginx ile çakışma önlendi)
+- ✅ Keycloak port'u: `8080:8080`
 - ✅ Mongo Express port'u: `8081:8081`
+
+### 8. SSL/HTTPS Yapılandırması (2 Ocak 2026)
+- ✅ Let's Encrypt wildcard SSL sertifikası kuruldu
+  - Domain: `monitrang.com` ve `*.monitrang.com`
+  - Sertifika yolu: `/etc/letsencrypt/live/monitrang.com/`
+  - Fullchain: `/etc/letsencrypt/live/monitrang.com/fullchain.pem`
+  - Private Key: `/etc/letsencrypt/live/monitrang.com/privkey.pem`
+  - Sertifika geçerlilik: 2 Nisan 2026'ya kadar
+- ✅ Nginx SSL yapılandırması güncellendi
+  - SSL sertifikaları aktif
+  - HTTP → HTTPS redirect yapılandırıldı
+  - Tüm subdomain'ler için SSL aktif
+- ✅ SSL test scriptleri eklendi
+  - `scripts/test-ssl-certificate.sh` - SSL sertifika testi
+  - `scripts/check-dns-txt.ps1` - DNS TXT record kontrolü
+- ⏳ Otomatik yenileme hook script'i (gelecekte eklenecek)
 
 ---
 
@@ -74,7 +90,11 @@ GitLab CI/CD pipeline'ında Git fetch sorunu çözülemedi. Artifacts optional y
 - ✅ Nginx yapılandırması tamamlandı
 - ✅ Reverse proxy aktif (`/etc/nginx/sites-available/monitrang`)
 - ✅ Frontend, API ve Keycloak routing yapılandırıldı
-- ⚠️ SSL sertifikası henüz kurulmadı (self-signed certificate kullanılabilir)
+- ✅ Let's Encrypt wildcard SSL sertifikası kuruldu
+  - Domain: `monitrang.com` ve `*.monitrang.com`
+  - Sertifika yolu: `/etc/letsencrypt/live/monitrang.com/`
+  - Nginx SSL yapılandırması aktif
+  - Sertifika geçerlilik: 2 Nisan 2026'ya kadar
 
 ---
 
@@ -108,6 +128,12 @@ GitLab CI/CD pipeline'ında Git fetch sorunu çözülemedi. Artifacts optional y
   - Testing pipeline
 - ⏳ CI/CD environment variables yapılandırması
 - ⏳ Automated build ve deployment
+- ⚠️ **deploy-docs-to-server job (SON DENEME - 4 Ocak 2026)**
+  - Job optimize edildi ve sadeleştirildi
+  - `pages` yerine `deploy-docs` artifacts kullanıyor
+  - SSH key yönetimi iyileştirildi
+  - Backup mekanizması eklendi
+  - **NOT:** Bu son deneme. Çalışmazsa job kaldırılacak
 
 ### 4. Dokümantasyon (MkDocs)
 - ⏳ MkDocs yapılandırması
@@ -147,10 +173,15 @@ GitLab CI/CD pipeline'ında Git fetch sorunu çözülemedi. Artifacts optional y
   - Port: 9000
   - Zaten erişilebilir: `http://45.141.151.52:9000`
 
-### 7. SSL Sertifikası (Opsiyonel)
-- ⏳ Domain kurulumu (sonra yapılacak)
-- ⏳ Let's Encrypt SSL sertifikası kurulumu (domain kurulduktan sonra)
-- ⏳ Self-signed certificate kurulumu (test için)
+### 7. SSL Sertifikası ✅ TAMAMLANDI (2 Ocak 2026)
+- ✅ Domain kurulumu tamamlandı (`monitrang.com`)
+- ✅ DNS yapılandırması tamamlandı (A record: `45.141.151.52`)
+- ✅ Let's Encrypt wildcard SSL sertifikası kuruldu
+  - Domain: `monitrang.com` ve `*.monitrang.com`
+  - Sertifika geçerlilik: 2 Nisan 2026'ya kadar
+  - Nginx SSL yapılandırması aktif
+- ⏳ Otomatik yenileme hook script'i (gelecekte eklenecek)
+- ⏳ Self-signed certificate (test için - gerekirse)
 
 ---
 
@@ -248,17 +279,18 @@ GitLab CI/CD pipeline'ında Git fetch sorunu çözülemedi. Artifacts optional y
   - Secrets rotation
   - GitLab CI/CD secrets management
 
-### 7. SSL Sertifikası (Opsiyonel - Domain sonrası)
-- [ ] **Domain kurulumu**
-  - Domain satın alma ve DNS yapılandırması
-  - A record: `45.141.151.52`
-- [ ] **Let's Encrypt SSL sertifikası**
-  - Certbot kurulumu
-  - SSL sertifikası alma
-  - Otomatik yenileme yapılandırması
-  - Nginx SSL yapılandırması
+### 7. SSL Sertifikası ✅ TAMAMLANDI (2 Ocak 2026)
+- [x] **Domain kurulumu** ✅
+  - Domain satın alma ve DNS yapılandırması ✅
+  - A record: `45.141.151.52` ✅
+- [x] **Let's Encrypt wildcard SSL sertifikası** ✅
+  - Certbot kurulumu ✅
+  - SSL sertifikası alma ✅ (wildcard: `*.monitrang.com` ve `monitrang.com`)
+  - Sertifika geçerlilik: 2 Nisan 2026'ya kadar
+  - Nginx SSL yapılandırması ✅
+  - [ ] Otomatik yenileme hook script'i (gelecekte eklenecek)
 - [ ] **Self-signed certificate (test için)**
-  - Test ortamı için self-signed certificate
+  - Test ortamı için self-signed certificate (gerekirse)
   - Development için kullanılabilir
 
 ---
@@ -312,14 +344,20 @@ GitLab CI/CD pipeline'ında Git fetch sorunu çözülemedi. Artifacts optional y
 - **MngUI:** 3000:80 (HTTP)
 
 ### Erişim URL'leri
-- **Frontend (UI):** `http://45.141.151.52/`
-- **API Gateway:** `http://45.141.151.52/api/`
-- **MngKeeper API:** `http://45.141.151.52/api/keeper/`
-- **MngDataGateway API:** `http://45.141.151.52/api/datagateway/`
-- **MngHub API:** `http://45.141.151.52/api/hub/`
-- **Keycloak:** `http://45.141.151.52/auth/`
-- **MngDataGateway Swagger:** `https://45.141.151.52:5010/swagger/`
+
+**HTTPS (SSL Aktif):**
+- **Frontend (UI):** `https://monitrang.com/` veya `https://ui.monitrang.com/`
+- **API Gateway:** `https://monitrang.com/api/` veya `https://api.monitrang.com/`
+- **MngKeeper API:** `https://monitrang.com/api/keeper/` veya `https://keeper.monitrang.com/`
+- **MngDataGateway API:** `https://monitrang.com/api/datagateway/` veya `https://datagateway.monitrang.com/`
+- **MngHub API:** `https://monitrang.com/api/hub/` veya `https://hub.monitrang.com/`
+- **Keycloak:** `https://monitrang.com/auth/` veya `https://keycloak.monitrang.com/`
+- **GitLab:** `https://gitlab.monitrang.com/`
+- **MngDataGateway Swagger:** `https://45.141.151.52:5010/swagger/` (port üzerinden)
 - **MngKeeper Swagger:** Production'da kapalı (sadece Development modunda)
+
+**HTTP (Eski - Redirect edilecek):**
+- Tüm HTTP istekleri otomatik olarak HTTPS'e yönlendirilir
 
 ### Bilinen Sorunlar
 1. ✅ **Redis Şifre Uyumsuzluğu:** Çözüldü
@@ -330,7 +368,8 @@ GitLab CI/CD pipeline'ında Git fetch sorunu çözülemedi. Artifacts optional y
 6. ⚠️ **Nginx Location Sırası:** `/auth/` location'ı `/` location'ından sonra geliyor, düzeltilmesi gerekiyor
 7. ⚠️ **Keycloak HTTPS Gereksinimi:** KC_PROXY: edge eklendi, container yeniden başlatılması gerekiyor
 8. ⚠️ **Health Check'ler:** Bazı servislerde health check'ler başarısız ama servisler çalışıyor
-9. ⚠️ **SSL Sertifikası:** Henüz kurulmadı (self-signed certificate kullanılabilir)
+9. ✅ **SSL Sertifikası:** Let's Encrypt wildcard sertifikası kuruldu (2 Nisan 2026'ya kadar geçerli)
+10. ⏳ **SSL Otomatik Yenileme:** Hook script'i eklenecek
 
 ---
 
@@ -450,12 +489,65 @@ GitLab CI/CD pipeline'ında Git fetch sorunu çözülemedi. Artifacts optional y
 
 ---
 
-**Son Güncelleme:** 1 Ocak 2026 (04:30)  
-**Durum:** ⚠️ GitLab CI/CD Pipeline - Git Fetch Sorunu Devam Ediyor (Pipeline başlayamıyor)
+**Son Güncelleme:** 2 Ocak 2026  
+**Durum:** ✅ SSL Sertifikaları Kuruldu, GitLab Çalışıyor
 
 ---
 
-## 📝 Bu Oturumda Yapılanlar (1 Ocak 2026)
+## 📝 Bu Oturumda Yapılanlar (2 Ocak 2026)
+
+### 1. Let's Encrypt SSL Sertifikası Kurulumu ✅
+- ✅ Let's Encrypt wildcard SSL sertifikası alındı
+  - Domain: `monitrang.com` ve `*.monitrang.com`
+  - DNS-01 challenge kullanıldı
+  - İki TXT record eklendi: `_acme-challenge.monitrang.com`
+  - Sertifika yolu: `/etc/letsencrypt/live/monitrang.com/`
+  - Geçerlilik: 2 Nisan 2026'ya kadar
+- ✅ Nginx SSL yapılandırması güncellendi
+  - SSL sertifikaları aktif edildi
+  - HTTP → HTTPS redirect yapılandırıldı
+  - Tüm subdomain'ler için SSL aktif
+- ✅ SSL test scriptleri oluşturuldu
+  - `scripts/test-ssl-certificate.sh` - SSL sertifika testi
+  - `scripts/check-dns-txt.ps1` - DNS TXT record kontrolü (PowerShell)
+  - `scripts/check-dns-txt.sh` - DNS TXT record kontrolü (Bash)
+- ✅ Infrastructure dokümantasyonu eklendi
+  - `docs/infrastructure/lets-encrypt-installation-guide.md` - Detaylı kurulum rehberi
+  - `docs/infrastructure/ssl-certificates.md` - SSL sertifika seçenekleri
+  - `docs/infrastructure/domain-dns.md` - DNS yapılandırması
+  - `docs/infrastructure/gitlab-credentials.md` - GitLab kullanıcı bilgileri
+  - `docs/infrastructure/gitlab-502-issue.md` - GitLab sorun giderme
+
+### 2. GitLab Yapılandırması ✅
+- ✅ GitLab port çakışması düzeltildi
+  - Port mapping: `80:80` → `8090:80` (Nginx ile çakışma önlendi)
+  - GitLab container'ı `mng_common_mng_network` network'üne bağlandı
+  - Container sağlık durumu: Healthy
+- ✅ GitLab root şifresi reset edildi
+  - Kullanıcı: `root`
+  - Şifre: `MonitraNG2026!`
+  - URL: `https://gitlab.monitrang.com/`
+- ✅ GitLab network sorunları çözüldü
+  - Redis ve PostgreSQL bağlantıları test edildi
+  - Container'lar arası iletişim çalışıyor
+
+### 3. Script ve Dokümantasyon Güncellemeleri ✅
+- ✅ Let's Encrypt scriptleri eklendi
+  - `scripts/get-letsencrypt-cert.sh` - Sertifika alma script'i
+  - `scripts/update-nginx-ssl.sh` - Nginx SSL güncelleme script'i
+  - `scripts/deploy-nginx-ssl-update.sh` - Sunucuya deployment script'i
+  - `scripts/find-certbot-process.sh` - Certbot process bulma
+  - `scripts/kill-certbot-and-restart.sh` - Certbot restart
+  - `scripts/letsencrypt-renewal-hook.sh` - Yenileme hook (şablon)
+- ✅ Nginx yapılandırma scriptleri
+  - `scripts/nginx-config-template.conf` - Nginx SSL template
+  - `scripts/setup-nginx.sh` - Nginx kurulum script'i
+- ✅ GitLab fix scriptleri
+  - `scripts/fix-gitlab-network.sh` - GitLab network düzeltme
+
+---
+
+## 📝 Önceki Oturumda Yapılanlar (1 Ocak 2026)
 
 ### 1. GitLab CI/CD Pipeline Sorunları ve Çözüm Denemeleri
 

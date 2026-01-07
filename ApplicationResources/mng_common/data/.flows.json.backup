@@ -31,6 +31,13 @@
         "info": "MngHub SignalR bağlantısı - Varsayılan WebSocket node'ları ile"
     },
     {
+        "id": "mail-sender-flow",
+        "type": "tab",
+        "label": "Mail Sender - MonitraNG",
+        "disabled": false,
+        "info": "Mail gönderme flow'u. Function bloğunda parametreleri ayarlayarak mail gönderebilirsiniz.\n\nParametreler:\n- to: Alıcı email adresi\n- subject: Mail konusu\n- text: Mail içeriği (plain text)\n- html: Mail içeriği (HTML formatında, opsiyonel)"
+    },
+    {
         "id": "149134e7a8351b0d",
         "type": "tls-config",
         "name": "",
@@ -1488,6 +1495,133 @@
         "statusType": "auto",
         "x": 760,
         "y": 500,
+        "wires": []
+    },
+    {
+        "id": "function-mail-params",
+        "type": "function",
+        "z": "mail-sender-flow",
+        "name": "Mail Parametreleri",
+        "func": "// Mail gönderme parametrelerini burada ayarlayın\n\n// Alıcı email adresi\nmsg.to = \"serkan.meral@outlook.com\";\n\n// Mail konusu\nmsg.subject = \"Test Mail from Node-RED - MonitraNG\";\n\n// Mail içeriği (Plain Text)\nmsg.text = \"Bu bir test mailidir.\\n\\nNode-RED flow'undan gönderilmiştir.\";\n\n// Mail içeriği (HTML formatında - opsiyonel)\n// HTML kullanıyorsanız, text yerine html kullanın\nmsg.html = `\n    <html>\n        <body>\n            <h2>Test Mail from Node-RED</h2>\n            <p>Bu bir test mailidir.</p>\n            <p>Node-RED flow'undan gönderilmiştir.</p>\n            <hr>\n            <p><small>MonitraNG Mail Server</small></p>\n        </body>\n    </html>\n`;\n\n// Gönderen adresi (noreply@monitrang.com)\nmsg.from = \"noreply@monitrang.com\";\n\n// Gönderen adı (opsiyonel)\nmsg.fromName = \"MonitraNG\";\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 300,
+        "y": 200,
+        "wires": [
+            [
+                "email-sender"
+            ]
+        ]
+    },
+    {
+        "id": "email-sender",
+        "type": "e-mail",
+        "z": "mail-sender-flow",
+        "server": "mail.monitrang.com",
+        "port": "25",
+        "authtype": "BASIC",
+        "saslformat": false,
+        "token": "oauth2Response.access_token",
+        "secure": false,
+        "tls": false,
+        "name": "SMTP Mail Sender",
+        "dname": "",
+        "x": 550,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "inject-test",
+        "type": "inject",
+        "z": "mail-sender-flow",
+        "name": "Test Mail Gönder",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 200,
+        "wires": [
+            [
+                "function-mail-params"
+            ]
+        ]
+    },
+    {
+        "id": "debug-output",
+        "type": "debug",
+        "z": "mail-sender-flow",
+        "name": "Mail Sonucu",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 800,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "http-endpoint",
+        "type": "http in",
+        "z": "mail-sender-flow",
+        "name": "Mail Gönder",
+        "url": "/mail/send",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 300,
+        "wires": [
+            [
+                "function-http-params"
+            ]
+        ]
+    },
+    {
+        "id": "function-http-params",
+        "type": "function",
+        "z": "mail-sender-flow",
+        "name": "HTTP Parametrelerini İşle",
+        "func": "// HTTP POST request'inden gelen parametreleri işle\n\n// Request body'den parametreleri al\nconst body = msg.payload;\n\n// Alıcı email adresi (zorunlu)\nmsg.to = body.to || \"serkan.meral@outlook.com\";\n\n// Mail konusu (zorunlu)\nmsg.subject = body.subject || \"Mail from Node-RED - MonitraNG\";\n\n// Mail içeriği (Plain Text)\nmsg.text = body.text || body.message || \"\";\n\n// Mail içeriği (HTML formatında - opsiyonel)\nif (body.html) {\n    msg.html = body.html;\n}\n\n// Gönderen adresi (noreply@monitrang.com)\nmsg.from = \"noreply@monitrang.com\";\n\n// Gönderen adı (opsiyonel)\nmsg.fromName = body.fromName || \"MonitraNG\";\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 300,
+        "wires": [
+            [
+                "email-sender"
+            ]
+        ]
+    },
+    {
+        "id": "http-response",
+        "type": "http response",
+        "z": "mail-sender-flow",
+        "name": "HTTP Response",
+        "statusCode": "200",
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "x": 800,
+        "y": 300,
         "wires": []
     }
 ]

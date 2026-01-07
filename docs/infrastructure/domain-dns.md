@@ -40,6 +40,7 @@ Aşağıdaki A kayıtlarını Hosting Dünyam DNS panelinde oluşturun:
 | `auth` | A | `45.141.151.52` | 3600 | Keycloak |
 | `docs` | A | `45.141.151.52` | 3600 | GitLab Pages (Dokümantasyon) |
 | `gitlab` | A | `45.141.151.52` | 3600 | GitLab UI |
+| `mail` | A | `45.141.151.52` | 3600 | Mail Sunucusu (Mailu) |
 
 ### AAAA Kayıtları (IPv6) - Opsiyonel
 
@@ -64,6 +65,87 @@ Eğer bazı servisler için CNAME kullanmak isterseniz:
 | Host | Type | Value | TTL | Açıklama |
 |------|------|-------|-----|----------|
 | `mail` | CNAME | `mail.hostingdunyam.net` | 3600 | Mail sunucusu (eğer hosting dünyam mail servisi kullanılıyorsa) |
+
+**Not:** Mailu için `mail` subdomain'i A kaydı olarak kullanılacak (yukarıda eklendi). Detaylı mail DNS kurulum rehberi için [Mail DNS Setup Guide](mail-dns-setup.md) dosyasına bakın.
+
+---
+
+### MX Kayıtları (Mail Exchange)
+
+Mail sunucusu için MX kaydı:
+
+| Host | Type | Value | Priority | TTL | Açıklama |
+|------|------|-------|----------|-----|----------|
+| `@` | MX | `mail.monitrang.com` | 10 | 3600 | Mail sunucusu (Mailu) |
+
+**DNS Paneline Ekleme:**
+1. **Type:** `MX` seçin
+2. **Name:** `@` veya `monitrang.com.` (ana domain)
+3. **Content/Value:** `mail.monitrang.com`
+4. **Priority:** `10`
+5. **TTL:** `3600`
+
+---
+
+### TXT Kayıtları (SPF, DKIM, DMARC)
+
+#### SPF Record (Sender Policy Framework)
+
+| Host | Type | Value | TTL | Açıklama |
+|------|------|-------|-----|----------|
+| `@` | TXT | `v=spf1 mx a:mail.monitrang.com ~all` | 3600 | SPF kaydı (spam önleme) |
+
+**DNS Paneline Ekleme:**
+1. **Type:** `TXT` seçin
+2. **Name:** `@` veya `monitrang.com.` (ana domain)
+3. **Content/Value:** `v=spf1 mx a:mail.monitrang.com ~all`
+4. **TTL:** `3600`
+
+**Açıklama:**
+- `v=spf1`: SPF versiyonu
+- `mx`: MX kaydında belirtilen sunucular mail gönderebilir
+- `a:mail.monitrang.com`: mail.monitrang.com IP'sinden mail gönderilebilir
+- `~all`: Diğer kaynaklardan gelen mailler "soft fail" (test için uygun)
+- Production'da `-all` (hard fail) kullanılabilir
+
+#### DMARC Record (Domain-based Message Authentication)
+
+| Host | Type | Value | TTL | Açıklama |
+|------|------|-------|-----|----------|
+| `_dmarc` | TXT | `v=DMARC1; p=quarantine; rua=mailto:admin@monitrang.com; ruf=mailto:admin@monitrang.com` | 3600 | DMARC kaydı (spam önleme) |
+
+**DNS Paneline Ekleme:**
+1. **Type:** `TXT` seçin
+2. **Name:** `_dmarc` (alt çizgi ile başlar)
+3. **Content/Value:** `v=DMARC1; p=quarantine; rua=mailto:admin@monitrang.com; ruf=mailto:admin@monitrang.com`
+4. **TTL:** `3600`
+
+**Açıklama:**
+- `v=DMARC1`: DMARC versiyonu
+- `p=quarantine`: SPF/DKIM başarısız mailler quarantine (test için uygun)
+- Production'da `p=reject` kullanılabilir
+- `rua=mailto:admin@monitrang.com`: Aggregate raporlar için email
+- `ruf=mailto:admin@monitrang.com`: Forensic raporlar için email
+
+#### DKIM Record (DomainKeys Identified Mail)
+
+**⚠️ ÖNEMLİ:** DKIM kaydı Mailu kurulumundan **sonra** oluşturulacak.
+
+Mailu admin panelinden DKIM public key alındıktan sonra:
+
+| Host | Type | Value | TTL | Açıklama |
+|------|------|-------|-----|----------|
+| `default._domainkey` | TXT | `v=DKIM1; k=rsa; p=[PUBLIC_KEY]` | 3600 | DKIM public key (Mailu'dan alınacak) |
+
+**DNS Paneline Ekleme (Mailu kurulumundan sonra):**
+1. Mailu admin panelinden DKIM public key'i alın
+2. **Type:** `TXT` seçin
+3. **Name:** `default._domainkey`
+4. **Content/Value:** `v=DKIM1; k=rsa; p=[Mailu'dan alınan public key]`
+5. **TTL:** `3600`
+
+**Not:** DKIM key'i Mailu admin panelinde şu yoldan alabilirsiniz:
+- Admin Panel → Domains → monitrang.com → DKIM Keys
 
 ---
 
@@ -170,6 +252,13 @@ Aşağıdaki DNS kayıtlarının tümünü eklediğinizden emin olun:
 - [ ] `auth` → `45.141.151.52`
 - [ ] `docs` → `45.141.151.52`
 - [ ] `gitlab` → `45.141.151.52`
+- [ ] `mail` → `45.141.151.52` (Mailu mail sunucusu)
+
+**Mail Sunucusu DNS Kayıtları:**
+- [ ] MX: `monitrang.com` → `mail.monitrang.com` (priority: 10)
+- [ ] SPF: `monitrang.com` → `v=spf1 mx a:mail.monitrang.com ~all`
+- [ ] DMARC: `_dmarc.monitrang.com` → `v=DMARC1; p=quarantine; rua=mailto:admin@monitrang.com`
+- [ ] DKIM: `default._domainkey.monitrang.com` → (Mailu kurulumundan sonra eklenecek)
 
 ---
 
