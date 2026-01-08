@@ -48,39 +48,33 @@ export default defineEventHandler(async (event) => {
   }
   
   try {
-    // Server-side fetch - Use undici for proper SSL bypass with agent support
-    // Native fetch doesn't support agent, so we use undici directly
-    const { request } = await import('undici')
-    const https = await import('https')
-    const httpsAgent = new https.Agent({ rejectUnauthorized: false })
-    
-    // Use undici request with custom agent for SSL bypass
-    const response = await request(url, {
-      method: method,
-      ...(body && { body: JSON.stringify(body) }),
-      headers: {
-        'Content-Type': 'application/json',
-        ...(event.node.req.headers.authorization && {
-          'Authorization': event.node.req.headers.authorization as string
-        })
-      },
-      // undici supports connect option for custom agent
-      connect: url.startsWith('https') ? {
-        rejectUnauthorized: false
-      } : undefined
-    })
-    
-    if (response.statusCode >= 400) {
-      const errorText = await response.body.text().catch(() => 'Unknown error')
-      throw new Error(`HTTP ${response.statusCode}: ${errorText}`)
-    }
-    
-    // Parse response based on content type
-    const contentType = response.headers['content-type']
-    if (contentType?.includes('application/json')) {
-      return await response.body.json()
-    } else {
-      return await response.body.text()
+    // Server-side fetch - Use $fetch with SSL bypass via NODE_TLS_REJECT_UNAUTHORIZED
+    // Set environment variable temporarily for this request
+    const originalRejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED
+    try {
+      // Temporarily disable SSL verification for container-to-container HTTPS
+      if (url.startsWith('https')) {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+      }
+      
+      const response = await $fetch(url, {
+        method: method as any,
+        ...(body && { body }),
+        headers: {
+          ...(event.node.req.headers.authorization && {
+            'Authorization': event.node.req.headers.authorization as string
+          })
+        }
+      })
+
+      return response
+    } finally {
+      // Restore original value
+      if (originalRejectUnauthorized !== undefined) {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalRejectUnauthorized
+      } else {
+        delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
+      }
     }
   } catch (error: any) {
     console.error('[Keeper Proxy] Error:', error.message, 'URL:', url)
