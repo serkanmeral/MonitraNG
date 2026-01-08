@@ -281,7 +281,11 @@ services:
     # ports:
     #   - "3001:3000"
     environment:
-      # Backend service URLs
+      # Backend service URLs (server-side for container-to-container communication)
+      - SERVER_KEEPER_URL=${SERVER_KEEPER_URL:-https://mngkeeper:5001}
+      - SERVER_DATAGATEWAY_URL=${SERVER_DATAGATEWAY_URL:-https://mngdatagateway:5010}
+      - SERVER_HUB_URL=${SERVER_HUB_URL:-http://mnghub:5020}
+      # Public service URLs (client-side for browser access)
       - KEEPER_URL=${KEEPER_URL:-https://mngkeeper:5001}
       - DATAGATEWAY_URL=${DATAGATEWAY_URL:-https://mngdatagateway:5010}
       - HUB_URL=${HUB_URL:-http://mnghub:5020}

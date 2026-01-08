@@ -39,6 +39,23 @@ export default defineEventHandler(async (event) => {
     console.log('[Create Test Datasets] Domain:', domainName)
   }
 
+  // Helper function for SSL bypass in container-to-container HTTPS communication
+  const fetchWithSSLBypass = async (url: string, options: any = {}) => {
+    const originalRejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED
+    try {
+      if (url.startsWith('https')) {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+      }
+      return await $fetch(url, options)
+    } finally {
+      if (originalRejectUnauthorized !== undefined) {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalRejectUnauthorized
+      } else {
+        delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
+      }
+    }
+  }
+
   // Use provided token or get new token from MngKeeper
   let accessToken: string
   if (token) {
@@ -53,17 +70,12 @@ export default defineEventHandler(async (event) => {
     const adminPwd = adminPassword || process.env.DEFAULT_ADMIN_PASSWORD || 'Admin123!'
     
     try {
-      const tokenResponse = await $fetch(`${keeperUrl}/api/auth/token`, {
+      const tokenResponse = await fetchWithSSLBypass(`${keeperUrl}/api/auth/token`, {
         method: 'POST',
         body: {
           username: adminUsername,
           password: adminPwd
-        },
-        // Bypass SSL certificate validation in development
-        ...(process.dev && {
-          // @ts-ignore - Nitro internal option
-          httpsAgent: new https.Agent({ rejectUnauthorized: false })
-        })
+        }
       }) as any
 
       accessToken = tokenResponse.accessToken
@@ -110,7 +122,7 @@ export default defineEventHandler(async (event) => {
       if (process.dev) {
         console.log('[Create Test Datasets] Category URL:', categoryUrl)
       }
-      const categoryResponse = await $fetch(categoryUrl, {
+      const categoryResponse = await fetchWithSSLBypass(categoryUrl, {
         method: 'POST',
         body: categoryData,
         headers: {
@@ -123,7 +135,7 @@ export default defineEventHandler(async (event) => {
     } catch (error: any) {
       if (error.statusCode === 409 || error.status === 409) {
         // Category already exists, try to find it
-        const categories = await $fetch(`${datagatewayUrl}/api/v1/dataset-categories?pageNumber=1&pageSize=100`, {
+        const categories = await fetchWithSSLBypass(`${datagatewayUrl}/api/v1/dataset-categories?pageNumber=1&pageSize=100`, {
           headers: {
             'Authorization': `Bearer ${accessToken}`
           }
@@ -191,7 +203,7 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-      await $fetch(`${datagatewayUrl}/api/v1/datasets`, {
+      await fetchWithSSLBypass(`${datagatewayUrl}/api/v1/datasets`, {
         method: 'POST',
         body: publishersSchema,
         headers: {
@@ -241,7 +253,7 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-      await $fetch(`${datagatewayUrl}/api/v1/datasets`, {
+      await fetchWithSSLBypass(`${datagatewayUrl}/api/v1/datasets`, {
         method: 'POST',
         body: genresSchema,
         headers: {
@@ -935,7 +947,7 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-      await $fetch(`${datagatewayUrl}/api/v1/datasets`, {
+      await fetchWithSSLBypass(`${datagatewayUrl}/api/v1/datasets`, {
         method: 'POST',
         body: booksSchema,
         headers: {
