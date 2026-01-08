@@ -50,6 +50,15 @@ namespace MngKeeper.Domain.Entities
 
         [BsonElement("updatedBy")]
         public string? UpdatedBy { get; set; }
+
+        [BsonElement("relatedPersonPhone")]
+        public string? RelatedPersonPhone { get; set; }
+
+        [BsonElement("logo")]
+        public string? Logo { get; set; }
+
+        [BsonElement("logoUrl")]
+        public string? LogoUrl { get; set; }
     }
 
     public enum DomainStatus

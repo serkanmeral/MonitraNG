@@ -57,7 +57,10 @@ public class CreateDomainEntityStep : IPipelineStep<DomainCreationContext>
                 StorageQuota = 10737418240,  // 10GB default
                 StorageUsed = 0,
                 CreatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser,  // TODO: Get from JWT context in future
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                RelatedPersonPhone = context.RelatedPersonPhone,
+                Logo = context.Logo,
+                LogoUrl = context.LogoUrl
             };
             
             var savedDomain = await _domainRepository.AddAsync(domain);

@@ -153,6 +153,9 @@ namespace MngKeeper.Api.Controllers
                 // Update properties
                 existingDomain.DisplayName = domain.DisplayName;
                 existingDomain.Settings = domain.Settings;
+                existingDomain.RelatedPersonPhone = domain.RelatedPersonPhone;
+                existingDomain.Logo = domain.Logo;
+                existingDomain.LogoUrl = domain.LogoUrl;
                 existingDomain.UpdatedAt = DateTime.UtcNow;
                 existingDomain.UpdatedBy = "system"; // TODO: Get from current user context
 

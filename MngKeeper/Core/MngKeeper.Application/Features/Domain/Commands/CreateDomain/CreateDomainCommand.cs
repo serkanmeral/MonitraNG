@@ -9,6 +9,9 @@ namespace MngKeeper.Application.Features.Domain.Commands.CreateDomain
         public string AdminEmail { get; set; } = string.Empty;
         public string AdminPassword { get; set; } = string.Empty;
         public DomainSettingsDto Settings { get; set; } = new();
+        public string? RelatedPersonPhone { get; set; }
+        public string? Logo { get; set; }
+        public string? LogoUrl { get; set; }
     }
 
     public class DomainSettingsDto
