@@ -296,7 +296,7 @@ services:
       # Keycloak Configuration (server-side)
       # Note: Keycloak runs under /keycloak path (KC_HTTP_RELATIVE_PATH)
       - KEYCLOAK_BASE_URL=${KEYCLOAK_BASE_URL:-http://keycloak:8080/keycloak}
-      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-monitra}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-master}
       - KEYCLOAK_ADMIN_USER=${KEYCLOAK_ADMIN_USERNAME:-admin}
       - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin123}
     networks:
