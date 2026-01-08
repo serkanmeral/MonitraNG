@@ -14,7 +14,9 @@ services:
       KC_HOSTNAME_STRICT: false
       KC_HOSTNAME_STRICT_HTTPS: false
       KC_PROXY: edge
-      KC_HTTP_RELATIVE_PATH: /
+      KC_HTTP_RELATIVE_PATH: /keycloak
+      KC_HOSTNAME: admin.monitrang.com
+      KC_HOSTNAME_PATH: /keycloak
     # Port mapping removed - Access via Nginx reverse proxy only
     # ports:
     #   - "8080:8080"
@@ -64,8 +66,11 @@ services:
       ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASSWORD}
       ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ROOT_USERNAME:-admin}:${MONGO_ROOT_PASSWORD}@mongo:27017/
       # Basic Auth devre dışı (geçici - 7 Ocak 2026)
-      # ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USERNAME:-admin}
-      # ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD}
+      ME_CONFIG_BASICAUTH_ENABLED: "false"
+      ME_CONFIG_BASICAUTH_USERNAME: ""
+      ME_CONFIG_BASICAUTH_PASSWORD: ""
+    volumes:
+      - ./mongo-express/config.js:/app/config.js:ro
     ports:
       - "8081:8081"
     depends_on:
