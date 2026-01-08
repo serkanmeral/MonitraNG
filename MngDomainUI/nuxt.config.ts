@@ -36,6 +36,8 @@ export default defineNuxtConfig({
   },
 
   app: {
+    // Base URL for production (when served under /domain/ path)
+    baseURL: process.env.NUXT_APP_BASE_URL || process.env.BASE_URL || '/',
     head: {
       title: 'MonitraNG - IoT Monitoring',
       meta: [
