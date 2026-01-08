@@ -21,77 +21,89 @@ export default defineEventHandler(async (event) => {
   // 1. KEYCLOAK REALM'LERİNİ TEMİZLEME
   // ============================================
   try {
-    // Get Keycloak admin token
-    const tokenResponse = await $fetch<any>(
-      `${config.keycloakBaseUrl}/realms/master/protocol/openid-connect/token`,
-      {
-        method: 'POST',
-        body: new URLSearchParams({
-          username: config.keycloakAdminUser,
-          password: config.keycloakAdminPassword,
-          grant_type: 'password',
-          client_id: 'admin-cli'
-        }),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        // SSL bypass for development
-        agent: config.keycloakBaseUrl.startsWith('https')
-          ? new https.Agent({ rejectUnauthorized: false })
-          : undefined
+    // Get Keycloak base URL - ensure /keycloak path is included
+    let keycloakBaseUrl = process.env.KEYCLOAK_BASE_URL || config.keycloakBaseUrl || 'http://localhost:8080'
+    
+    // Always add /keycloak path if using keycloak:8080 (production Docker setup)
+    if (keycloakBaseUrl.includes('keycloak:8080') && !keycloakBaseUrl.includes('/keycloak')) {
+      keycloakBaseUrl = keycloakBaseUrl.replace(':8080', ':8080/keycloak')
+    }
+    
+    console.log('[Clear All Domains] Keycloak URL:', keycloakBaseUrl)
+    
+    // SSL bypass for container-to-container HTTPS
+    const originalRejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED
+    try {
+      if (keycloakBaseUrl.startsWith('https')) {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
       }
-    )
-
-    const keycloakToken = tokenResponse.access_token
-
-    // Get all realms
-    const realms = await $fetch<any[]>(
-      `${config.keycloakBaseUrl}/admin/realms`,
-      {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${keycloakToken}`,
-          'Content-Type': 'application/json'
-        },
-        // SSL bypass for development
-        agent: config.keycloakBaseUrl.startsWith('https')
-          ? new https.Agent({ rejectUnauthorized: false })
-          : undefined
-      }
-    )
-
-    // Delete all realms except 'master'
-    let deletedCount = 0
-    for (const realm of realms) {
-      const realmName = realm.realm
       
-      if (realmName === 'master') {
-        continue // Skip master realm
+      // Get Keycloak admin token
+      const tokenResponse = await $fetch<any>(
+        `${keycloakBaseUrl}/realms/master/protocol/openid-connect/token`,
+        {
+          method: 'POST',
+          body: new URLSearchParams({
+            username: config.keycloakAdminUser,
+            password: config.keycloakAdminPassword,
+            grant_type: 'password',
+            client_id: 'admin-cli'
+          }),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        }
+      )
+
+      const keycloakToken = tokenResponse.access_token
+
+      // Get all realms
+      const realms = await $fetch<any[]>(
+        `${keycloakBaseUrl}/admin/realms`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${keycloakToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      // Delete all realms except 'master'
+      let deletedCount = 0
+      for (const realm of realms) {
+        const realmName = realm.realm
+        
+        if (realmName === 'master') {
+          continue // Skip master realm
+        }
+
+        try {
+          await $fetch(
+            `${keycloakBaseUrl}/admin/realms/${realmName}`,
+            {
+              method: 'DELETE',
+              headers: {
+                Authorization: `Bearer ${keycloakToken}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          )
+          deletedCount++
+        } catch (error: any) {
+          console.error(`Failed to delete realm ${realmName}:`, error.message)
+        }
       }
 
-      try {
-        await $fetch(
-          `${config.keycloakBaseUrl}/admin/realms/${realmName}`,
-          {
-            method: 'DELETE',
-            headers: {
-              Authorization: `Bearer ${keycloakToken}`,
-              'Content-Type': 'application/json'
-            },
-            // SSL bypass for development
-            agent: config.keycloakBaseUrl.startsWith('https')
-              ? new https.Agent({ rejectUnauthorized: false })
-              : undefined
-          }
-        )
-        deletedCount++
-      } catch (error: any) {
-        console.error(`Failed to delete realm ${realmName}:`, error.message)
+      results.keycloak.success = true
+      results.keycloak.deletedCount = deletedCount
+    } finally {
+      if (originalRejectUnauthorized !== undefined) {
+        process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalRejectUnauthorized
+      } else {
+        delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
       }
     }
-
-    results.keycloak.success = true
-    results.keycloak.deletedCount = deletedCount
   } catch (error: any) {
     results.keycloak.error = error.message || 'Unknown error'
     console.error('Keycloak cleanup failed:', error)
@@ -101,21 +113,36 @@ export default defineEventHandler(async (event) => {
   // 2. MINIO BUCKET'LARINI TEMİZLEME
   // ============================================
   try {
+    // Get MinIO config from environment or runtime config
+    const minioEndpoint = process.env.MINIO_ENDPOINT || config.minioEndpoint || 'minio:9000'
+    const minioUseSSL = process.env.MINIO_USE_SSL === 'true' || config.minioUseSSL || false
+    const minioAccessKey = process.env.MINIO_ACCESS_KEY || config.minioAccessKey || 'admin'
+    const minioSecretKey = process.env.MINIO_SECRET_KEY || config.minioSecretKey || 'admin123'
+    
+    console.log('[Clear All Domains] MinIO Endpoint:', minioEndpoint)
+    console.log('[Clear All Domains] MinIO UseSSL:', minioUseSSL)
+    
     // Parse endpoint (host:port)
-    const [host, portStr] = config.minioEndpoint.split(':')
-    const port = portStr ? parseInt(portStr, 10) : (config.minioUseSSL ? 443 : 9000)
+    const [host, portStr] = minioEndpoint.split(':')
+    const port = portStr ? parseInt(portStr, 10) : (minioUseSSL ? 443 : 9000)
 
     // Create MinIO client
     const minioClient = new Minio.Client({
       endPoint: host,
       port: port,
-      useSSL: config.minioUseSSL,
-      accessKey: config.minioAccessKey,
-      secretKey: config.minioSecretKey
+      useSSL: minioUseSSL,
+      accessKey: minioAccessKey,
+      secretKey: minioSecretKey,
+      // Disable SSL verification for self-signed certificates
+      ...(minioUseSSL && {
+        // @ts-ignore - MinIO client options
+        rejectUnauthorized: false
+      })
     })
 
     // List all buckets
     const buckets = await minioClient.listBuckets()
+    console.log('[Clear All Domains] Found buckets:', buckets.length)
 
     // Delete all buckets
     let deletedCount = 0
@@ -145,8 +172,13 @@ export default defineEventHandler(async (event) => {
     results.minio.success = true
     results.minio.deletedCount = deletedCount
   } catch (error: any) {
-    results.minio.error = error.message || 'Unknown error'
+    results.minio.error = error.message || error.toString() || 'Unknown error'
     console.error('MinIO cleanup failed:', error)
+    console.error('MinIO error details:', {
+      endpoint: process.env.MINIO_ENDPOINT || config.minioEndpoint,
+      useSSL: process.env.MINIO_USE_SSL || config.minioUseSSL,
+      accessKey: process.env.MINIO_ACCESS_KEY || config.minioAccessKey ? '***' : 'not set'
+    })
   }
 
   // Return results
