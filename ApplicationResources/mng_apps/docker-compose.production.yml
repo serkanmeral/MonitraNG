@@ -271,6 +271,47 @@ services:
           cpus: '0.25'
           memory: 128M
 
+  mngdomainui:
+    build:
+      context: ../../MngDomainUI
+      dockerfile: Dockerfile
+    image: mngdomainui:${VERSION:-latest}
+    container_name: mngdomainui
+    # Port mapping removed - Access via Nginx reverse proxy only
+    # ports:
+    #   - "3001:3000"
+    environment:
+      # Backend service URLs
+      - KEEPER_URL=${KEEPER_URL:-https://mngkeeper:5001}
+      - DATAGATEWAY_URL=${DATAGATEWAY_URL:-https://mngdatagateway:5010}
+      - HUB_URL=${HUB_URL:-http://mnghub:5020}
+      # Gateway URL (optional)
+      - GATEWAY_URL=${GATEWAY_URL:-}
+      # Node.js environment
+      - NODE_ENV=production
+      - PORT=3000
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngkeeper
+      - mngdatagateway
+      - mnghub
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
 networks:
   mng_common_mng_network:
     external: true
