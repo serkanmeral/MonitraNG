@@ -48,22 +48,42 @@ export default defineEventHandler(async (event) => {
   }
   
   try {
-    // Server-side fetch - SSL validation is bypassed by nitro plugin
-    // Use https agent for HTTPS URLs to bypass SSL validation
+    // Server-side fetch - Use native fetch with undici for proper SSL bypass
+    // ofetch doesn't support agent directly, so we use native fetch with undici
     const https = await import('https')
-    const response = await $fetch(url, {
-      method: method as any,
-      ...(body && { body }),
-      // SSL bypass for container-to-container HTTPS communication
-      ...(url.startsWith('https') && {
-        // @ts-ignore - httpsAgent is a valid option
-        agent: new https.Agent({ rejectUnauthorized: false })
-      })
-    })
-
-    return response
+    const httpsAgent = new https.Agent({ rejectUnauthorized: false })
+    
+    // Use native fetch with custom agent for SSL bypass
+    const fetchOptions: RequestInit = {
+      method: method,
+      ...(body && { body: JSON.stringify(body) }),
+      headers: {
+        'Content-Type': 'application/json',
+        ...(event.node.req.headers.authorization && {
+          'Authorization': event.node.req.headers.authorization
+        })
+      },
+      // @ts-ignore - agent is valid for node-fetch/undici
+      agent: url.startsWith('https') ? httpsAgent : undefined
+    }
+    
+    const response = await fetch(url, fetchOptions)
+    
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error')
+      throw new Error(`HTTP ${response.status}: ${errorText}`)
+    }
+    
+    // Parse response based on content type
+    const contentType = response.headers.get('content-type')
+    if (contentType?.includes('application/json')) {
+      return await response.json()
+    } else {
+      return await response.text()
+    }
   } catch (error: any) {
     console.error('[Keeper Proxy] Error:', error.message, 'URL:', url)
+    console.error('[Keeper Proxy] Error details:', error)
     throw createError({
       statusCode: error.statusCode || error.status || 500,
       statusMessage: error.message || 'API call failed',
