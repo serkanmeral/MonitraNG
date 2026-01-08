@@ -2,7 +2,7 @@
 
 **Microservice:** Identity & Access Management (IAM)  
 **Version:** 1.1.0  
-**Last Updated:** 30 Aralık 2025
+**Last Updated:** 31 Aralık 2025
 
 ---
 
@@ -33,7 +33,7 @@
 
 **12 Adımlı Pipeline:**
 1. ✅ ValidateDomain - Domain name validation
-2. ✅ CreateDomainEntity - MongoDB entity creation
+2. ✅ CreateDomainEntity - MongoDB entity creation (RelatedPersonPhone, Logo, LogoUrl desteği ile)
 3. ✅ CreateDatabase - Dedicated domain database
 4. ✅ InitializeDatabaseCollections - Default collections (@datasets, @dataset_categories)
 5. ✅ InitializeDataGatewayCollections - DataGateway collections (@users, @groups)
@@ -44,6 +44,26 @@
 10. ✅ InitializeDomainCache - Redis cache (users, groups, metadata)
 11. ✅ CreateMinIOBucket - S3-compatible storage bucket + folders (system, data, backups)
 12. ✅ ActivateDomain - Domain activation
+
+**Domain Model Enhancement (v1.1) - ✅ TAMAMLANDI (31 Aralık 2025)**
+
+**Yeni Alanlar:**
+- ✅ `RelatedPersonPhone` (string?, nullable) - İlgili kişinin telefon numarası (gelecekte SMS özellikleri için)
+- ✅ `Logo` (string?, nullable) - Base64 formatında domain logosu
+- ✅ `LogoUrl` (string?, nullable) - İnternet üzerindeki logo URL'i (offline sistemlerde mail gönderirken kullanım için)
+
+**Güncellenen Bileşenler:**
+- ✅ Domain Entity (`MngKeeper.Domain.Entities.Domain`)
+- ✅ CreateDomainCommand ve CreateDomainRequest
+- ✅ DomainCreationContext
+- ✅ CreateDomainEntityStep (pipeline step)
+- ✅ DomainController UpdateDomain endpoint
+
+**Kullanım Senaryoları:**
+- Domain oluştururken logo ve iletişim bilgileri eklenebilir
+- Domain güncelleme işlemlerinde yeni alanlar güncellenebilir
+- Logo base64 formatında saklanır (file upload ile otomatik dönüşüm)
+- LogoUrl offline sistemlerde email template'lerinde kullanılabilir
 
 **Test Edildi:**
 - ✅ MongoDB: Database + Collections + Indexes (MngKeeper + DataGateway)
@@ -679,6 +699,8 @@ Normal User (isAdmin = false, isManager = false)
 **Son Güncelleme:** 30 Aralık 2025  
 **Status:** Core features complete (98%), Manager Role & Authorization System planlandı  
 **Son Tamamlanan:** 
+- Domain Model Enhancement (RelatedPersonPhone, Logo, LogoUrl alanları eklendi) - 31 Aralık 2025
+- Domain Creation Pipeline güncellemesi (yeni alanlar için destek) - 31 Aralık 2025
 - MongoDB Collection Bug Fix (@users ve @groups collection'larına yazma düzeltildi) - 23 Aralık 2025
 - DataGatewaySyncService __syncInfo hatası düzeltildi - 23 Aralık 2025
 - UserRepository ve GroupRepository BsonDocument uyumluluğu - 23 Aralık 2025
