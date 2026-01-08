@@ -20,13 +20,9 @@ export default defineEventHandler(async (event) => {
   let keycloakBaseUrl = process.env.KEYCLOAK_BASE_URL || config.keycloakBaseUrl || 'http://localhost:8080'
   
   // Always add /keycloak path if using keycloak:8080 (production Docker setup)
-  // This matches MngKeeper's approach where BaseAddress doesn't include /keycloak
-  // Use indexOf for more reliable check
-  const hasKeycloakHost = keycloakBaseUrl.indexOf('keycloak:8080') !== -1
-  const hasKeycloakPath = keycloakBaseUrl.indexOf('/keycloak') !== -1
-  
-  if (hasKeycloakHost && !hasKeycloakPath) {
-    keycloakBaseUrl = keycloakBaseUrl.replace('keycloak:8080', 'keycloak:8080/keycloak')
+  // Simple replacement: if URL contains 'keycloak:8080' and doesn't already have '/keycloak', add it
+  if (keycloakBaseUrl.includes('keycloak:8080') && !keycloakBaseUrl.includes('/keycloak')) {
+    keycloakBaseUrl = keycloakBaseUrl.replace(':8080', ':8080/keycloak')
   }
   
   // Keycloak realm - use master realm (same as MngKeeper's EnsureAdminTokenAsync)
