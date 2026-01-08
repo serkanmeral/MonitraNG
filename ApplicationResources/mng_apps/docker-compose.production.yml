@@ -293,6 +293,10 @@ services:
       # Nuxt base URL - Nuxt.js handles /domain/ prefix internally
       - BASE_URL=/domain/
       - NUXT_APP_BASE_URL=/domain/
+      # Keycloak Configuration (server-side)
+      - KEYCLOAK_BASE_URL=${KEYCLOAK_BASE_URL:-http://keycloak:8080}
+      - KEYCLOAK_ADMIN_USER=${KEYCLOAK_ADMIN_USERNAME:-admin}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin123}
     networks:
       - mng_common_mng_network
     depends_on:
