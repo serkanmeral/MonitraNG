@@ -87,6 +87,9 @@ services:
       # ASP.NET Core Environment
       - ASPNETCORE_ENVIRONMENT=Production
       
+      # Swagger Configuration (enable in production)
+      - EnableSwagger=true
+      
       # Server Configuration
       - MngKeeperSettings__Server__Host=0.0.0.0
       - MngKeeperSettings__Server__Port=5001
