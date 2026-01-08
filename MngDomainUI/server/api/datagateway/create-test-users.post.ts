@@ -35,21 +35,30 @@ export default defineEventHandler(async (event) => {
     const adminPwd = adminPassword || process.env.DEFAULT_ADMIN_PASSWORD || 'Admin123!'
     
     try {
-      const tokenResponse = await $fetch(`${keeperUrl}/api/auth/token`, {
-        method: 'POST',
-        body: {
-          username: adminUsername,
-          password: adminPwd
-        },
-        ...(process.dev && {
-          // @ts-ignore
-          httpsAgent: new https.Agent({ rejectUnauthorized: false })
-        })
-      }) as any
+      // SSL bypass for container-to-container HTTPS
+      const originalRejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED
+      try {
+        if (keeperUrl.startsWith('https')) {
+          process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+        }
+        const tokenResponse = await $fetch(`${keeperUrl}/api/auth/token`, {
+          method: 'POST',
+          body: {
+            username: adminUsername,
+            password: adminPwd
+          }
+        }) as any
 
-      accessToken = tokenResponse.accessToken
-      if (!accessToken) {
-        throw new Error('Token not found in response')
+        accessToken = tokenResponse.accessToken
+        if (!accessToken) {
+          throw new Error('Token not found in response')
+        }
+      } finally {
+        if (originalRejectUnauthorized !== undefined) {
+          process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalRejectUnauthorized
+        } else {
+          delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
+        }
       }
     } catch (error: any) {
       throw createError({
@@ -68,22 +77,31 @@ export default defineEventHandler(async (event) => {
     // Get all groups to map group names to IDs
     const groupNameToId: Record<string, string> = {}
     try {
-      const groupsResponse = await $fetch(`${keeperUrl}/api/group?page=1&pageSize=100`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        },
-        ...(process.dev && {
-          // @ts-ignore
-          httpsAgent: new https.Agent({ rejectUnauthorized: false })
-        })
-      }) as any
-
-      if (groupsResponse.groups && Array.isArray(groupsResponse.groups)) {
-        groupsResponse.groups.forEach((group: any) => {
-          if (group.groupId && group.name) {
-            groupNameToId[group.name] = group.groupId
+      // SSL bypass for container-to-container HTTPS
+      const originalRejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED
+      try {
+        if (keeperUrl.startsWith('https')) {
+          process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+        }
+        const groupsResponse = await $fetch(`${keeperUrl}/api/group?page=1&pageSize=100`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
           }
-        })
+        }) as any
+
+        if (groupsResponse.groups && Array.isArray(groupsResponse.groups)) {
+          groupsResponse.groups.forEach((group: any) => {
+            if (group.groupId && group.name) {
+              groupNameToId[group.name] = group.groupId
+            }
+          })
+        }
+      } finally {
+        if (originalRejectUnauthorized !== undefined) {
+          process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalRejectUnauthorized
+        } else {
+          delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
+        }
       }
     } catch (error: any) {
       if (process.dev) {
@@ -181,20 +199,29 @@ export default defineEventHandler(async (event) => {
         if (user.gender !== undefined) userToCreate.gender = user.gender
         if (user.phoneNumber) userToCreate.phoneNumber = user.phoneNumber
 
-        const response = await $fetch(`${keeperUrl}/api/user`, {
-          method: 'POST',
-          body: userToCreate,
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
-          },
-          ...(process.dev && {
-            // @ts-ignore
-            httpsAgent: new https.Agent({ rejectUnauthorized: false })
-          })
-        }) as any
+        // SSL bypass for container-to-container HTTPS
+        const originalRejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED
+        try {
+          if (keeperUrl.startsWith('https')) {
+            process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+          }
+          const response = await $fetch(`${keeperUrl}/api/user`, {
+            method: 'POST',
+            body: userToCreate,
+            headers: {
+              'Authorization': `Bearer ${accessToken}`
+            }
+          }) as any
 
-        const userId = response.userId || response.user?.userId
-        results.users.push({ username: user.username, created: true, id: userId })
+          const userId = response.userId || response.user?.userId
+          results.users.push({ username: user.username, created: true, id: userId })
+        } finally {
+          if (originalRejectUnauthorized !== undefined) {
+            process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalRejectUnauthorized
+          } else {
+            delete process.env.NODE_TLS_REJECT_UNAUTHORIZED
+          }
+        }
       } catch (error: any) {
         if (error.statusCode === 409 || error.status === 409) {
           results.users.push({ username: user.username, created: false, message: 'Already exists' })
