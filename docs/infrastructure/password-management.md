@@ -1,7 +1,7 @@
 # Password Management
 
-**Tarih:** 2 Ocak 2026  
-**Durum:** Test ortamı için standartlaştırıldı
+**Tarih:** 7 Ocak 2026  
+**Durum:** Test ortamı için standartlaştırıldı (parola rotasyonu uygulandı)
 
 ---
 
@@ -13,7 +13,7 @@ Tüm infrastructure servisleri için varsayılan şifre standartlaştırıldı. 
 
 ## 🔐 Varsayılan Şifre
 
-**Test Ortamı Şifresi:** `!2345Qawsedrf*`
+**Test Ortamı Şifresi:** `Admin2026MonitraNG`
 
 > ⚠️ **Not:** Production ortamlarında her servis için farklı güçlü şifreler kullanılmalıdır.
 
@@ -39,15 +39,15 @@ Tüm infrastructure servisleri için varsayılan şifre standartlaştırıldı. 
 
 | Servis | Environment Variable | Varsayılan Değer |
 |--------|---------------------|------------------|
-| MongoDB | `MONGO_ROOT_PASSWORD` | `!2345Qawsedrf*` |
-| MongoDB Express | `MONGO_EXPRESS_PASSWORD` | `!2345Qawsedrf*` |
-| Keycloak | `KEYCLOAK_ADMIN_PASSWORD` | `!2345Qawsedrf*` |
-| PostgreSQL (Keycloak) | `POSTGRES_PASSWORD` | `!2345Qawsedrf*` |
-| Redis | `REDIS_PASSWORD` | `!2345Qawsedrf*` |
-| RabbitMQ | `RABBITMQ_DEFAULT_PASS` | `!2345Qawsedrf*` |
-| MinIO | `MINIO_ROOT_PASSWORD` | `!2345Qawsedrf*` |
-| Seq | `SEQ_ADMIN_PASSWORD` | `!2345Qawsedrf*` |
-| Node-RED | `NODE_RED_PASSWORD` | `!2345Qawsedrf*` |
+| MongoDB | `MONGO_ROOT_PASSWORD` | `Admin2026MonitraNG` |
+| MongoDB Express | `MONGO_EXPRESS_PASSWORD` | `Admin2026MonitraNG` |
+| Keycloak | `KEYCLOAK_ADMIN_PASSWORD` | `Admin2026MonitraNG` |
+| PostgreSQL (Keycloak) | `POSTGRES_PASSWORD` | `Admin2026MonitraNG` |
+| Redis | `REDIS_PASSWORD` | `Admin2026MonitraNG` |
+| RabbitMQ | `RABBITMQ_DEFAULT_PASS` | `Admin2026MonitraNG` |
+| MinIO | `MINIO_ROOT_PASSWORD` | `Admin2026MonitraNG` |
+| Seq | `SEQ_ADMIN_PASSWORD` | `Admin2026MonitraNG` |
+| Node-RED | `NODE_RED_PASSWORD` | `Admin2026MonitraNG` |
 
 ### GitLab Servisleri (Dışarıda Tutuldu)
 
@@ -71,7 +71,7 @@ chmod +x create-env-file.sh
 # Veya manuel olarak
 cd ApplicationResources/mng_common
 cp env.example .env
-# .env dosyasını düzenle ve CHANGE_ME değerlerini !2345Qawsedrf* ile değiştir
+# .env dosyasını düzenle ve CHANGE_ME değerlerini Admin2026MonitraNG ile değiştir
 ```
 
 ### 2. Mevcut Ortamı Güncelleme
@@ -99,19 +99,19 @@ Script şunları yapar:
 ### MongoDB Connection String
 
 ```bash
-mongodb://admin:!2345Qawsedrf*@mongo:27017
+mongodb://admin:Admin2026MonitraNG@mongo:27017
 ```
 
 URL encoding gerekirse:
 ```bash
-# ! karakteri %21 olur
-mongodb://admin:%212345Qawsedrf%2A@mongo:27017
+# Special karakterler varsa URL encode gerekir
+mongodb://admin:Admin2026MonitraNG@mongo:27017
 ```
 
 ### Redis Connection String
 
 ```bash
-redis:6379,password=!2345Qawsedrf*
+redis:6379,password=Admin2026MonitraNG
 ```
 
 ### RabbitMQ Connection
@@ -120,7 +120,7 @@ redis:6379,password=!2345Qawsedrf*
 Host: rabbitmq
 Port: 5672
 Username: admin
-Password: !2345Qawsedrf*
+Password: Admin2026MonitraNG
 ```
 
 ---
@@ -131,20 +131,31 @@ Application servisleri için `ApplicationResources/mng_apps/.env` dosyasında ş
 
 ```bash
 # MongoDB
-MONGO_CONNECTION_STRING=mongodb://admin:!2345Qawsedrf*@mongo:27017
+MONGO_CONNECTION_STRING=mongodb://admin:Admin2026MonitraNG@mongo:27017
 
 # Redis
-REDIS_CONNECTION_STRING=redis:6379,password=!2345Qawsedrf*
+REDIS_CONNECTION_STRING=redis:6379,password=Admin2026MonitraNG
 
 # RabbitMQ
-RABBITMQ_PASSWORD=!2345Qawsedrf*
+RABBITMQ_PASSWORD=Admin2026MonitraNG
 
 # Keycloak
-KEYCLOAK_ADMIN_PASSWORD=!2345Qawsedrf*
+KEYCLOAK_ADMIN_PASSWORD=Admin2026MonitraNG
 
 # MinIO
-MINIO_SECRET_KEY=!2345Qawsedrf*
+MINIO_SECRET_KEY=Admin2026MonitraNG
 ```
+
+---
+
+## ✅ 7 Ocak 2026 - Uygulanan Değişiklikler (Prod Sunucu)
+
+- **MinIO**: `MINIO_ROOT_PASSWORD` güncellendi ve servis yeniden başlatıldı.
+- **RabbitMQ**: `admin` kullanıcısının parolası `rabbitmqctl change_password` ile güncellendi (env değişkeni tek başına yeterli değil).
+- **MongoDB**: Mevcut root parolası env ile değişmedi; `mongosh` üzerinden `db.updateUser(..., { pwd: ... })` ile güncellendi.
+- **Redis**: `--requirepass ${REDIS_PASSWORD}` aktif; parola doğrulandı.
+- **Keycloak / Seq**: Admin parolaları UI üzerinden güncellendi (first-run env tek başına yeterli değil).
+- **Node-RED**: Runtime adminAuth kapalı; `NODE_RED_PASSWORD` sadece env’de tutuluyor (ileride adminAuth etkinleştirilebilir).
 
 ---
 
@@ -204,5 +215,5 @@ MongoDB init script'i (`mongo-init/init.js`) hala eski şifreyi (`admin123`) kul
 
 ---
 
-**Son Güncelleme:** 2 Ocak 2026
+**Son Güncelleme:** 7 Ocak 2026
 

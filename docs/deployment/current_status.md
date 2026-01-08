@@ -1,14 +1,14 @@
 # Deployment Durumu
 
-**Son Güncelleme:** 2 Ocak 2026  
+**Son Güncelleme:** 7 Ocak 2026  
 **Sunucu:** 45.141.151.52 (Debian 12)  
-**Durum:** ✅ SSL Sertifikaları Kuruldu, GitLab Çalışıyor
+**Durum:** ✅ Admin UI erişimleri doğrulandı (Node-RED/Keycloak/MinIO/Mongo Express), şifre rotasyonu tamamlandı
 
 ---
 
 ## 🎯 Son Çalışılan Konu
 
-Let's Encrypt wildcard SSL sertifikası kurulumu tamamlandı. `monitrang.com` ve `*.monitrang.com` için SSL sertifikaları alındı ve Nginx yapılandırması güncellendi. GitLab port çakışması düzeltildi (8090:80) ve root şifresi reset edildi. Tüm servisler HTTPS üzerinden erişilebilir durumda.
+`admin.monitrang.com` altında infra admin UI’larını path-based reverse proxy ile erişilebilir hale getirme ve tek tek doğrulama. Ardından tüm infra şifrelerini `Admin2026MonitraNG` etrafında standardize etme/rotate etme (env + runtime değişiklikler).
 
 ---
 
@@ -52,6 +52,41 @@ Let's Encrypt wildcard SSL sertifikası kurulumu tamamlandı. `monitrang.com` ve
 - ✅ GitLab port'u değiştirildi: `80:80` → `8090:80` (Nginx ile çakışma önlendi)
 - ✅ Keycloak port'u: `8080:8080`
 - ✅ Mongo Express port'u: `8081:8081`
+
+### 9. Admin Subdomain + UI Doğrulama (7 Ocak 2026)
+- ✅ `admin.monitrang.com` Nginx config’i eklendi: `ApplicationResources/mng_common/nginx/conf.d/admin.monitrang.conf`
+- ✅ Admin UI’lar path-based çalışır hale getirildi:
+  - Portainer: `/portainer/`
+  - RabbitMQ: `/rabbitmq/`
+  - Seq: `/seq/`
+  - Mongo Express: `/mongo/`
+  - Redis Commander: `/redis/`
+  - Node-RED: `/nodered/`
+  - Keycloak: `/keycloak/`
+  - MinIO: `/minio/`
+- ✅ Admin dashboard HTML ayrı dosyaya alındı: `ApplicationResources/mng_common/nginx/html/admin-dashboard.html`
+- ✅ Nginx içinde Docker DNS çözümleme için resolver kullanıldı (upstream name resolution sorunları giderildi)
+- ✅ Mongo Express:
+  - BasicAuth kapatıldı (ME_CONFIG_BASICAUTH_ENABLED=false + config.js)
+  - CSS ve link path sorunları Nginx `sub_filter` ile düzeltildi
+- ✅ Node-RED:
+  - `httpAdminRoot: '/nodered'` ile subpath altında stabil çalışacak şekilde ayarlandı
+- ✅ Keycloak:
+  - `/keycloak` base path (KC_HTTP_RELATIVE_PATH=/keycloak) ile çalışacak şekilde düzenlendi
+  - `/admin` convenience redirect’leri eklendi
+  - `/resources` ve `/realms` absolute path çağrıları için Nginx location’ları eklendi
+- ✅ MinIO:
+  - UI path sorunları `<base href>` düzeltmesiyle giderildi
+
+### 10. Şifre Rotasyonu (7 Ocak 2026)
+- ✅ Ortak hedef parola: `Admin2026MonitraNG`
+- ✅ MinIO: .env güncellendi, servis restart edildi
+- ✅ RabbitMQ: `admin` parolası `rabbitmqctl change_password` ile güncellendi
+- ✅ MongoDB: `admin` parolası `mongosh db.updateUser(..., { pwd: ... })` ile güncellendi ve doğrulandı
+- ✅ Redis: `--requirepass ${REDIS_PASSWORD}` ile parolalı çalıştığı doğrulandı
+- ✅ Keycloak admin parolası UI’dan güncellendi
+- ✅ Seq admin parolası UI’dan güncellendi
+- ✅ Dokümantasyon güncellendi: `docs/infrastructure/password-management.md`
 
 ### 8. SSL/HTTPS Yapılandırması (2 Ocak 2026)
 - ✅ Let's Encrypt wildcard SSL sertifikası kuruldu
@@ -134,6 +169,12 @@ Let's Encrypt wildcard SSL sertifikası kurulumu tamamlandı. `monitrang.com` ve
   - SSH key yönetimi iyileştirildi
   - Backup mekanizması eklendi
   - **NOT:** Bu son deneme. Çalışmazsa job kaldırılacak
+
+> Not: `deploy-docs-to-server` şimdilik ertelendi/devre dışı. Tekrar ele alınacak.
+
+### 8. Admin Basic Auth (Geçici Olarak Devre Dışı)
+- ⚠️ Admin panel Basic Auth şimdilik kapalı (kolay erişim/çakışan auth header sorunları nedeniyle)
+- ⏳ Daha sonra yeniden aktif edilecek; özellikle Portainer/RabbitMQ gibi servislerde header çakışmalarını önleyecek şekilde finalize edilecek
 
 ### 4. Dokümantasyon (MkDocs)
 - ⏳ MkDocs yapılandırması
@@ -362,12 +403,12 @@ Let's Encrypt wildcard SSL sertifikası kurulumu tamamlandı. `monitrang.com` ve
 ### Bilinen Sorunlar
 1. ✅ **Redis Şifre Uyumsuzluğu:** Çözüldü
 2. ✅ **Port Çakışmaları:** Çözüldü (GitLab port'u değiştirildi, MngGateway port'u 5443'e taşındı)
-3. ✅ **MongoDB Connection String:** Çözüldü (admin123 şifresi kullanılıyor)
+3. ✅ **MongoDB Parolası:** `Admin2026MonitraNG` (admin123’den rotate edildi)
 4. ✅ **Keycloak Client:** Çözüldü (mng-keeper-admin client'ı oluşturuldu)
-5. ✅ **Keycloak Admin Credentials:** Çözüldü (admin/admin123)
+5. ✅ **Keycloak Admin Credentials:** `admin / Admin2026MonitraNG`
 6. ⚠️ **Nginx Location Sırası:** `/auth/` location'ı `/` location'ından sonra geliyor, düzeltilmesi gerekiyor
 7. ⚠️ **Keycloak HTTPS Gereksinimi:** KC_PROXY: edge eklendi, container yeniden başlatılması gerekiyor
-8. ⚠️ **Health Check'ler:** Bazı servislerde health check'ler başarısız ama servisler çalışıyor
+8. ⚠️ **Health Check'ler:** Bazı servislerde health check'ler başarısız olabilir; UI’lar doğrulandı
 9. ✅ **SSL Sertifikası:** Let's Encrypt wildcard sertifikası kuruldu (2 Nisan 2026'ya kadar geçerli)
 10. ⏳ **SSL Otomatik Yenileme:** Hook script'i eklenecek
 
@@ -489,8 +530,8 @@ Let's Encrypt wildcard SSL sertifikası kurulumu tamamlandı. `monitrang.com` ve
 
 ---
 
-**Son Güncelleme:** 2 Ocak 2026  
-**Durum:** ✅ SSL Sertifikaları Kuruldu, GitLab Çalışıyor
+**Son Güncelleme:** 7 Ocak 2026  
+**Durum:** ✅ Admin UI erişimleri doğrulandı, şifre rotasyonu tamamlandı
 
 ---
 
