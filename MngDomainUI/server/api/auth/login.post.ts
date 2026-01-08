@@ -15,13 +15,16 @@ export default defineEventHandler(async (event) => {
   // Keycloak base URL - read from environment or runtime config
   // In Docker, use keycloak hostname; in development, use localhost
   const keycloakBaseUrl = process.env.KEYCLOAK_BASE_URL || config.keycloakBaseUrl || 'http://localhost:8080'
+  // Keycloak realm - use monitra realm (same as Gateway), fallback to master for development
+  const keycloakRealm = process.env.KEYCLOAK_REALM || 'monitra'
   
   console.log('[Login] Keycloak URL:', keycloakBaseUrl)
+  console.log('[Login] Keycloak Realm:', keycloakRealm)
 
   try {
-    // Get token from Keycloak master realm
+    // Get token from Keycloak realm
     const tokenResponse = await $fetch<any>(
-      `${keycloakBaseUrl}/realms/master/protocol/openid-connect/token`,
+      `${keycloakBaseUrl}/realms/${keycloakRealm}/protocol/openid-connect/token`,
       {
         method: 'POST',
         body: new URLSearchParams({
