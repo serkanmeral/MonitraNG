@@ -18,15 +18,22 @@ export default defineEventHandler(async (event) => {
   // MngKeeper uses BaseAddress=http://keycloak:8080 and adds /keycloak to paths
   // For MngDomainUI, we need to ensure /keycloak is included
   let keycloakBaseUrl = process.env.KEYCLOAK_BASE_URL || config.keycloakBaseUrl || 'http://localhost:8080'
+  
   // Add /keycloak path if using keycloak:8080 and path is missing
-  if (keycloakBaseUrl.includes('keycloak:8080') && !keycloakBaseUrl.endsWith('/keycloak') && !keycloakBaseUrl.includes('/keycloak/')) {
-    keycloakBaseUrl = keycloakBaseUrl.endsWith('/') ? keycloakBaseUrl + 'keycloak' : keycloakBaseUrl + '/keycloak'
+  // This matches MngKeeper's approach where BaseAddress doesn't include /keycloak
+  if (keycloakBaseUrl.includes('keycloak:8080')) {
+    if (!keycloakBaseUrl.includes('/keycloak')) {
+      // Add /keycloak before any path or at the end
+      keycloakBaseUrl = keycloakBaseUrl.replace('keycloak:8080', 'keycloak:8080/keycloak')
+    }
   }
+  
   // Keycloak realm - use master realm (same as MngKeeper's EnsureAdminTokenAsync)
   const keycloakRealm = process.env.KEYCLOAK_REALM || 'master'
   
   console.log('[Login] Keycloak URL:', keycloakBaseUrl)
   console.log('[Login] Keycloak Realm:', keycloakRealm)
+  console.log('[Login] Full token URL:', `${keycloakBaseUrl}/realms/${keycloakRealm}/protocol/openid-connect/token`)
 
   try {
     // Get token from Keycloak realm
