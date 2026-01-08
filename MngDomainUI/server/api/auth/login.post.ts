@@ -15,8 +15,13 @@ export default defineEventHandler(async (event) => {
   // Keycloak base URL - read from environment or runtime config
   // In Docker, use keycloak hostname; in development, use localhost
   // Note: Keycloak runs under /keycloak path in production (KC_HTTP_RELATIVE_PATH)
-  // Environment variable should include /keycloak path: http://keycloak:8080/keycloak
-  const keycloakBaseUrl = process.env.KEYCLOAK_BASE_URL || config.keycloakBaseUrl || 'http://localhost:8080'
+  // MngKeeper uses BaseAddress=http://keycloak:8080 and adds /keycloak to paths
+  // For MngDomainUI, we need to ensure /keycloak is included
+  let keycloakBaseUrl = process.env.KEYCLOAK_BASE_URL || config.keycloakBaseUrl || 'http://localhost:8080'
+  // Add /keycloak path if using keycloak:8080 and path is missing
+  if (keycloakBaseUrl.includes('keycloak:8080') && !keycloakBaseUrl.endsWith('/keycloak') && !keycloakBaseUrl.includes('/keycloak/')) {
+    keycloakBaseUrl = keycloakBaseUrl.endsWith('/') ? keycloakBaseUrl + 'keycloak' : keycloakBaseUrl + '/keycloak'
+  }
   // Keycloak realm - use master realm (same as MngKeeper's EnsureAdminTokenAsync)
   const keycloakRealm = process.env.KEYCLOAK_REALM || 'master'
   
