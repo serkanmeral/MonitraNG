@@ -48,38 +48,39 @@ export default defineEventHandler(async (event) => {
   }
   
   try {
-    // Server-side fetch - Use native fetch with undici for proper SSL bypass
-    // ofetch doesn't support agent directly, so we use native fetch with undici
+    // Server-side fetch - Use undici for proper SSL bypass with agent support
+    // Native fetch doesn't support agent, so we use undici directly
+    const { request } = await import('undici')
     const https = await import('https')
     const httpsAgent = new https.Agent({ rejectUnauthorized: false })
     
-    // Use native fetch with custom agent for SSL bypass
-    const fetchOptions: RequestInit = {
+    // Use undici request with custom agent for SSL bypass
+    const response = await request(url, {
       method: method,
       ...(body && { body: JSON.stringify(body) }),
       headers: {
         'Content-Type': 'application/json',
         ...(event.node.req.headers.authorization && {
-          'Authorization': event.node.req.headers.authorization
+          'Authorization': event.node.req.headers.authorization as string
         })
       },
-      // @ts-ignore - agent is valid for node-fetch/undici
-      agent: url.startsWith('https') ? httpsAgent : undefined
-    }
+      // undici supports connect option for custom agent
+      connect: url.startsWith('https') ? {
+        rejectUnauthorized: false
+      } : undefined
+    })
     
-    const response = await fetch(url, fetchOptions)
-    
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error')
-      throw new Error(`HTTP ${response.status}: ${errorText}`)
+    if (response.statusCode >= 400) {
+      const errorText = await response.body.text().catch(() => 'Unknown error')
+      throw new Error(`HTTP ${response.statusCode}: ${errorText}`)
     }
     
     // Parse response based on content type
-    const contentType = response.headers.get('content-type')
+    const contentType = response.headers['content-type']
     if (contentType?.includes('application/json')) {
-      return await response.json()
+      return await response.body.json()
     } else {
-      return await response.text()
+      return await response.body.text()
     }
   } catch (error: any) {
     console.error('[Keeper Proxy] Error:', error.message, 'URL:', url)
