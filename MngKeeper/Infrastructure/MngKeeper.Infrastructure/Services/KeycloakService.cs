@@ -43,7 +43,7 @@ namespace MngKeeper.Infrastructure.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
-                var response = await _httpClient.PostAsync($"/admin/realms", content);
+                var response = await _httpClient.PostAsync("/keycloak/admin/realms", content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -159,7 +159,7 @@ namespace MngKeeper.Infrastructure.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
-                var response = await _httpClient.PostAsync($"/admin/realms/{realmName}/users", content);
+                var response = await _httpClient.PostAsync($"/keycloak/admin/realms/{realmName}/users", content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -222,7 +222,7 @@ namespace MngKeeper.Infrastructure.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
-                var response = await _httpClient.PostAsync($"/admin/realms/{realmName}/clients", content);
+                var response = await _httpClient.PostAsync($"/keycloak/admin/realms/{realmName}/clients", content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -237,7 +237,7 @@ namespace MngKeeper.Infrastructure.Services
                 var clientUuid = locationHeader?.Split('/').Last() ?? Guid.NewGuid().ToString();
 
                 // Get client secret
-                var secretResponse = await _httpClient.GetAsync($"/admin/realms/{realmName}/clients/{clientUuid}/client-secret");
+                var secretResponse = await _httpClient.GetAsync($"/keycloak/admin/realms/{realmName}/clients/{clientUuid}/client-secret");
                 string clientSecret = string.Empty;
                 
                 if (secretResponse.IsSuccessStatusCode)
@@ -283,7 +283,7 @@ namespace MngKeeper.Infrastructure.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
-                var response = await _httpClient.PostAsync($"/admin/realms/{realmName}/groups", content);
+                var response = await _httpClient.PostAsync($"/keycloak/admin/realms/{realmName}/groups", content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -325,7 +325,7 @@ namespace MngKeeper.Infrastructure.Services
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
                 // First, get the group ID by name
-                var groupsResponse = await _httpClient.GetAsync($"/admin/realms/{realmName}/groups");
+                var groupsResponse = await _httpClient.GetAsync($"/keycloak/admin/realms/{realmName}/groups");
                 if (!groupsResponse.IsSuccessStatusCode)
                 {
                     _logger.LogError("Failed to get groups for realm {RealmName}", realmName);
@@ -352,7 +352,7 @@ namespace MngKeeper.Infrastructure.Services
                 }
 
                 // Check if user is already in the group
-                var userGroupsResponse = await _httpClient.GetAsync($"/admin/realms/{realmName}/users/{userId}/groups");
+                var userGroupsResponse = await _httpClient.GetAsync($"/keycloak/admin/realms/{realmName}/users/{userId}/groups");
                 if (userGroupsResponse.IsSuccessStatusCode)
                 {
                     var userGroupsJson = await userGroupsResponse.Content.ReadAsStringAsync();
@@ -372,7 +372,7 @@ namespace MngKeeper.Infrastructure.Services
                 }
 
                 // Add user to group
-                var response = await _httpClient.PutAsync($"/admin/realms/{realmName}/users/{userId}/groups/{groupId}", null);
+                var response = await _httpClient.PutAsync($"/keycloak/admin/realms/{realmName}/users/{userId}/groups/{groupId}", null);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -410,7 +410,7 @@ namespace MngKeeper.Infrastructure.Services
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
                 // First, get the group ID by name
-                var groupsResponse = await _httpClient.GetAsync($"/admin/realms/{realmName}/groups");
+                var groupsResponse = await _httpClient.GetAsync($"/keycloak/admin/realms/{realmName}/groups");
                 if (!groupsResponse.IsSuccessStatusCode)
                 {
                     _logger.LogError("Failed to get groups for realm {RealmName}", realmName);
@@ -437,7 +437,7 @@ namespace MngKeeper.Infrastructure.Services
                 }
 
                 // Remove user from group
-                var response = await _httpClient.DeleteAsync($"/admin/realms/{realmName}/users/{userId}/groups/{groupId}");
+                var response = await _httpClient.DeleteAsync($"/keycloak/admin/realms/{realmName}/users/{userId}/groups/{groupId}");
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -475,7 +475,7 @@ namespace MngKeeper.Infrastructure.Services
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
                 // First, get the user by username
-                var usersResponse = await _httpClient.GetAsync($"/admin/realms/{realmName}/users?username={username}");
+                var usersResponse = await _httpClient.GetAsync($"/keycloak/admin/realms/{realmName}/users?username={username}");
                 if (!usersResponse.IsSuccessStatusCode)
                 {
                     _logger.LogError("Failed to get user {Username} for realm {RealmName}", username, realmName);
@@ -499,7 +499,7 @@ namespace MngKeeper.Infrastructure.Services
                 }
 
                 // Get user's groups
-                var userGroupsResponse = await _httpClient.GetAsync($"/admin/realms/{realmName}/users/{userId}/groups");
+                var userGroupsResponse = await _httpClient.GetAsync($"/keycloak/admin/realms/{realmName}/users/{userId}/groups");
                 if (!userGroupsResponse.IsSuccessStatusCode)
                 {
                     _logger.LogError("Failed to get groups for user {Username} in realm {RealmName}", username, realmName);
@@ -547,7 +547,7 @@ namespace MngKeeper.Infrastructure.Services
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
                 // First, get the user by username
-                var usersResponse = await _httpClient.GetAsync($"/admin/realms/{realmName}/users?username={username}");
+                var usersResponse = await _httpClient.GetAsync($"/keycloak/admin/realms/{realmName}/users?username={username}");
                 if (!usersResponse.IsSuccessStatusCode)
                 {
                     _logger.LogError("Failed to get user {Username} for realm {RealmName}", username, realmName);
@@ -610,7 +610,8 @@ namespace MngKeeper.Infrastructure.Services
                     new KeyValuePair<string, string>("scope", "profile email offline_access") // offline_access for refresh token
                 });
 
-                var response = await _httpClient.PostAsync($"/realms/{realmName}/protocol/openid-connect/token", formContent);
+                // BaseAddress is http://keycloak:8080, so we need to include /keycloak prefix
+                var response = await _httpClient.PostAsync($"/keycloak/realms/{realmName}/protocol/openid-connect/token", formContent);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -675,7 +676,8 @@ namespace MngKeeper.Infrastructure.Services
                     new KeyValuePair<string, string>("client_id", "admin-cli")
                 });
 
-                var response = await _httpClient.PostAsync($"/realms/{realmName}/protocol/openid-connect/token", formContent);
+                // BaseAddress is http://keycloak:8080, so we need to include /keycloak prefix
+                var response = await _httpClient.PostAsync($"/keycloak/realms/{realmName}/protocol/openid-connect/token", formContent);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -808,7 +810,7 @@ namespace MngKeeper.Infrastructure.Services
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
                 // First, get the group ID by name
-                var groupsResponse = await _httpClient.GetAsync($"/admin/realms/{realmName}/groups");
+                var groupsResponse = await _httpClient.GetAsync($"/keycloak/admin/realms/{realmName}/groups");
                 if (!groupsResponse.IsSuccessStatusCode)
                 {
                     _logger.LogError("Failed to get groups for realm {RealmName}", realmName);
@@ -835,7 +837,7 @@ namespace MngKeeper.Infrastructure.Services
                 }
 
                 // Delete the group from Keycloak
-                var deleteResponse = await _httpClient.DeleteAsync($"/admin/realms/{realmName}/groups/{groupId}");
+                var deleteResponse = await _httpClient.DeleteAsync($"/keycloak/admin/realms/{realmName}/groups/{groupId}");
                 if (!deleteResponse.IsSuccessStatusCode)
                 {
                     var errorContent = await deleteResponse.Content.ReadAsStringAsync();
@@ -865,7 +867,7 @@ namespace MngKeeper.Infrastructure.Services
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
                 // First, get the group ID by old name
-                var groupsResponse = await _httpClient.GetAsync($"/admin/realms/{realmName}/groups");
+                var groupsResponse = await _httpClient.GetAsync($"/keycloak/admin/realms/{realmName}/groups");
                 if (!groupsResponse.IsSuccessStatusCode)
                 {
                     _logger.LogError("Failed to get groups for realm {RealmName}", realmName);
@@ -901,7 +903,7 @@ namespace MngKeeper.Infrastructure.Services
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
                 // Update the group in Keycloak using PUT request
-                var updateResponse = await _httpClient.PutAsync($"/admin/realms/{realmName}/groups/{groupId}", content);
+                var updateResponse = await _httpClient.PutAsync($"/keycloak/admin/realms/{realmName}/groups/{groupId}", content);
                 if (!updateResponse.IsSuccessStatusCode)
                 {
                     var errorContent = await updateResponse.Content.ReadAsStringAsync();
@@ -933,16 +935,24 @@ namespace MngKeeper.Infrastructure.Services
                 var clientId = _configuration["MngKeeperSettings:Keycloak:ClientId"];
                 var clientSecret = _configuration["MngKeeperSettings:Keycloak:ClientSecret"];
 
-                var formContent = new FormUrlEncodedContent(new[]
+                var formData = new List<KeyValuePair<string, string>>
                 {
                     new KeyValuePair<string, string>("username", adminUsername!),
                     new KeyValuePair<string, string>("password", adminPassword!),
                     new KeyValuePair<string, string>("grant_type", "password"),
-                    new KeyValuePair<string, string>("client_id", clientId!),
-                    new KeyValuePair<string, string>("client_secret", clientSecret!)
-                });
+                    new KeyValuePair<string, string>("client_id", clientId!)
+                };
+                
+                // Only add client_secret if it's provided (for confidential clients)
+                if (!string.IsNullOrEmpty(clientSecret))
+                {
+                    formData.Add(new KeyValuePair<string, string>("client_secret", clientSecret!));
+                }
+                
+                var formContent = new FormUrlEncodedContent(formData);
 
-                var response = await _httpClient.PostAsync($"/realms/master/protocol/openid-connect/token", formContent);
+                // BaseAddress is http://keycloak:8080, so we need to include /keycloak prefix
+                var response = await _httpClient.PostAsync("/keycloak/realms/master/protocol/openid-connect/token", formContent);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -993,7 +1003,7 @@ namespace MngKeeper.Infrastructure.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
-                var response = await _httpClient.PostAsync($"/admin/realms/{realmName}/client-scopes", content);
+                var response = await _httpClient.PostAsync($"/keycloak/admin/realms/{realmName}/client-scopes", content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -1046,7 +1056,7 @@ namespace MngKeeper.Infrastructure.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
-                var response = await _httpClient.PostAsync($"/admin/realms/{realmName}/client-scopes/{scopeId}/protocol-mappers/models", content);
+                var response = await _httpClient.PostAsync($"/keycloak/admin/realms/{realmName}/client-scopes/{scopeId}/protocol-mappers/models", content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -1085,7 +1095,7 @@ namespace MngKeeper.Infrastructure.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
-                var response = await _httpClient.PutAsync($"/admin/realms/{realmName}/users/{userId}/reset-password", content);
+                var response = await _httpClient.PutAsync($"/keycloak/admin/realms/{realmName}/users/{userId}/reset-password", content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
