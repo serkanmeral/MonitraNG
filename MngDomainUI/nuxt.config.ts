@@ -36,8 +36,8 @@ export default defineNuxtConfig({
   },
 
   app: {
-    // Base URL for production (when served under /domain/ path)
-    baseURL: process.env.NUXT_APP_BASE_URL || process.env.BASE_URL || '/',
+    // Base URL - Nginx handles the /domain/ prefix, Nuxt should use root path
+    baseURL: '/',
     head: {
       title: 'MonitraNG - IoT Monitoring',
       meta: [
