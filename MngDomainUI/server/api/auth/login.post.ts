@@ -14,7 +14,12 @@ export default defineEventHandler(async (event) => {
 
   // Keycloak base URL - read from environment or runtime config
   // In Docker, use keycloak hostname; in development, use localhost
-  const keycloakBaseUrl = process.env.KEYCLOAK_BASE_URL || config.keycloakBaseUrl || 'http://localhost:8080'
+  // Note: Keycloak runs under /keycloak path in production
+  let keycloakBaseUrl = process.env.KEYCLOAK_BASE_URL || config.keycloakBaseUrl || 'http://localhost:8080'
+  // Ensure /keycloak path is included if not present (production setup)
+  if (keycloakBaseUrl.includes('keycloak:8080') && !keycloakBaseUrl.includes('/keycloak')) {
+    keycloakBaseUrl = keycloakBaseUrl.replace(':8080', ':8080/keycloak')
+  }
   // Keycloak realm - use monitra realm (same as Gateway), fallback to master for development
   const keycloakRealm = process.env.KEYCLOAK_REALM || 'monitra'
   
