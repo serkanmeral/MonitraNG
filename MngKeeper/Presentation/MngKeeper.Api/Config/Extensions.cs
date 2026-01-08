@@ -180,20 +180,27 @@ public static class Extensions
 
     public static void UseApplicationSettings(this WebApplication app, MngKeeperSettings settings, IWebHostEnvironment env)
     {
-        // 1. Development-specific middleware
-        if (env.IsDevelopment())
+        // 1. Swagger/OpenAPI Documentation
+        // Enable Swagger in Development or if explicitly enabled via environment variable
+        var enableSwagger = env.IsDevelopment() || 
+                           string.Equals(app.Configuration["EnableSwagger"], "true", StringComparison.OrdinalIgnoreCase);
+        
+        if (enableSwagger)
         {
             app.UseSwaggerConfiguration(env);
 
-            // Add Scalar API Reference (Modern UI)
-            app.MapScalarApiReference(options =>
+            // Add Scalar API Reference (Modern UI) - Only in Development
+            if (env.IsDevelopment())
             {
-                options
-                    .WithTitle("MngKeeper API")
-                    .WithTheme(ScalarTheme.Purple)
-                    .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
-                    .WithOpenApiRoutePattern("/api-docs/{documentName}/swagger.json");
-            });
+                app.MapScalarApiReference(options =>
+                {
+                    options
+                        .WithTitle("MngKeeper API")
+                        .WithTheme(ScalarTheme.Purple)
+                        .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
+                        .WithOpenApiRoutePattern("/api-docs/{documentName}/swagger.json");
+                });
+            }
         }
 
         // 2. CORS - Must be before UseHttpsRedirection
