@@ -291,8 +291,8 @@ services:
       - NODE_ENV=production
       - PORT=3000
       # Nuxt base URL - Nginx handles /domain/ prefix, Nuxt uses root path
-      - BASE_URL=/
-      - NUXT_APP_BASE_URL=/
+      - BASE_URL=${BASE_URL:-/}
+      - NUXT_APP_BASE_URL=${NUXT_APP_BASE_URL:-/}
     networks:
       - mng_common_mng_network
     depends_on:
