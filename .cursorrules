@@ -220,6 +220,29 @@ Aşağıdaki kısaltmaları kullanırken tam isimlerini kullan:
   git remote set-url --add --push origin http://root:TOKEN@localhost/root/MonitraNG.git
   ```
 
+### Local ve Sunucu Kod Senkronizasyon Stratejisi
+- **Temel Prensip**: `main` branch tek kaynak, her zaman **pull before push**
+- **Sunucuda Değişiklik Yapıldığında** (AI tarafında):
+  1. Değişiklikleri hemen commit ve push et
+  2. Kullanıcıyı bilgilendir: "Sunucuda X değişikliği yapıldı, lütfen local'de pull yapın"
+  3. Commit mesajında `[SERVER]` prefix'i kullan (opsiyonel, takip için)
+- **Local'de Push Yapmadan Önce** (Kullanıcı tarafında):
+  1. **MUTLAKA** `git pull origin main` yap
+  2. Çakışma varsa çöz (sunucu değişiklikleri öncelikli - production'da test edilmiş sayılır)
+  3. Test et (Docker Desktop'ta)
+  4. Sonra push yap
+- **Çakışma Çözümü**:
+  - Sunucu değişiklikleri production'da test edilmiş sayılır, önceliklidir
+  - Local değişikliklerle birleştirilir
+  - Manuel merge gerekebilir
+  - Çakışmaları dikkatli çöz, otomatik merge'den kaçın
+- **Senkronizasyon Senaryoları**:
+  - **Senaryo A (Local Geliştirme)**: Local'de geliştirme → Docker Desktop'ta test → Pull → Çakışma kontrolü → Push
+  - **Senaryo B (Sunucu Acil Düzeltme)**: Sunucuda değişiklik → Test → Commit & Push → Kullanıcıyı bilgilendir
+  - **Senaryo C (Çakışma Durumu)**: Her iki tarafta değişiklik → Pull sırasında çakışma → Sunucu değişiklikleri öncelikli → Birleştir → Test → Commit & Push
+- **Yedekleme**: Senkronizasyon öncesi mutlaka yedek al (git stash veya branch oluştur)
+- **Detaylı Dokümantasyon**: `docs/deployment/sync-strategy.md` dosyasında detaylı senaryolar ve komutlar mevcuttur
+
 ## Dikkat Edilecek Noktalar
 
 - Test scriptleri çalıştırmadan önce API'nin çalıştığından emin ol

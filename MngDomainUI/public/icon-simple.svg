@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Alternative: Minimalist IoT Monitoring Icon -->
+  
+  <!-- Background gradient circle -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.15" />
+      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:0.1" />
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="url(#bgGradient)"/>
+  
+  <!-- Central monitoring center (simplified) -->
+  <rect x="22" y="22" width="20" height="20" rx="4" fill="#3b82f6" stroke="#1e40af" stroke-width="2"/>
+  
+  <!-- Monitoring waves/data visualization -->
+  <path d="M 26 30 Q 28 28, 30 30 T 34 30 T 38 30" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M 26 34 Q 28 32, 30 34 T 34 34 T 38 34" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.8"/>
+  <path d="M 26 38 Q 28 36, 30 38 T 34 38 T 38 38" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.6"/>
+  
+  <!-- IoT sensors (simplified as dots with connection lines) -->
+  <!-- Top -->
+  <circle cx="32" cy="10" r="3.5" fill="#10b981" stroke="#059669" stroke-width="1.5"/>
+  <line x1="32" y1="13.5" x2="32" y2="22" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  
+  <!-- Right -->
+  <circle cx="54" cy="32" r="3.5" fill="#10b981" stroke="#059669" stroke-width="1.5"/>
+  <line x1="50.5" y1="32" x2="42" y2="32" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  
+  <!-- Bottom -->
+  <circle cx="32" cy="54" r="3.5" fill="#10b981" stroke="#059669" stroke-width="1.5"/>
+  <line x1="32" y1="50.5" x2="32" y2="42" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  
+  <!-- Left -->
+  <circle cx="10" cy="32" r="3.5" fill="#10b981" stroke="#059669" stroke-width="1.5"/>
+  <line x1="13.5" y1="32" x2="22" y2="32" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+</svg>
