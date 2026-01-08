@@ -271,6 +271,49 @@ services:
       retries: 3
       start_period: 10s
 
+  mngdomainui:
+    build:
+      context: ../../MngDomainUI
+      dockerfile: Dockerfile
+    image: localhost:5000/mngdomainui:1.0.0
+    container_name: mngdomainui
+    ports:
+      - "3001:3000"
+    environment:
+      # Server-side only (private) - Keycloak and MinIO config
+      # Note: keycloak and minio are in mng_common network, accessible via hostnames
+      - KEYCLOAK_BASE_URL=http://keycloak:8080
+      - KEYCLOAK_ADMIN_USER=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin123
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=admin
+      - MINIO_SECRET_KEY=admin123
+      - MINIO_USE_SSL=false
+      # Server-side API URLs (for container-to-container communication)
+      - SERVER_KEEPER_URL=https://mngkeeper:5001
+      - SERVER_DATAGATEWAY_URL=https://mngdatagateway:5010
+      - SERVER_HUB_URL=http://mnghub:5020
+      # SSL bypass for container-to-container HTTPS (self-signed certificates)
+      - ENABLE_SSL_BYPASS=true
+      # Public (client-side) - API URLs (Browser'dan erişilebilir URL'ler)
+      - KEEPER_URL=https://localhost:5001
+      - DATAGATEWAY_URL=https://localhost:5010
+      - HUB_URL=http://localhost:5020
+      - GATEWAY_URL=
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngkeeper
+      - mngdatagateway
+      - mnghub
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
 networks:
   mng_common_mng_network:
     external: true
