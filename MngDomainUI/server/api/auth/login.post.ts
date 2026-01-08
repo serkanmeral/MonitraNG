@@ -21,7 +21,11 @@ export default defineEventHandler(async (event) => {
   
   // Always add /keycloak path if using keycloak:8080 (production Docker setup)
   // This matches MngKeeper's approach where BaseAddress doesn't include /keycloak
-  if (keycloakBaseUrl.includes('keycloak:8080') && !keycloakBaseUrl.includes('/keycloak')) {
+  // Use indexOf for more reliable check
+  const hasKeycloakHost = keycloakBaseUrl.indexOf('keycloak:8080') !== -1
+  const hasKeycloakPath = keycloakBaseUrl.indexOf('/keycloak') !== -1
+  
+  if (hasKeycloakHost && !hasKeycloakPath) {
     keycloakBaseUrl = keycloakBaseUrl.replace('keycloak:8080', 'keycloak:8080/keycloak')
   }
   
