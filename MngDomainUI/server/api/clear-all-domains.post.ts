@@ -38,14 +38,20 @@ export default defineEventHandler(async (event) => {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
       }
       
+      // Get Keycloak admin credentials from environment or config
+      const keycloakAdminUser = process.env.KEYCLOAK_ADMIN_USER || config.keycloakAdminUser || 'admin'
+      const keycloakAdminPassword = process.env.KEYCLOAK_ADMIN_PASSWORD || config.keycloakAdminPassword || 'admin123'
+      
+      console.log('[Clear All Domains] Keycloak Admin User:', keycloakAdminUser)
+      
       // Get Keycloak admin token
       const tokenResponse = await $fetch<any>(
         `${keycloakBaseUrl}/realms/master/protocol/openid-connect/token`,
         {
           method: 'POST',
           body: new URLSearchParams({
-            username: config.keycloakAdminUser,
-            password: config.keycloakAdminPassword,
+            username: keycloakAdminUser,
+            password: keycloakAdminPassword,
             grant_type: 'password',
             client_id: 'admin-cli'
           }),
