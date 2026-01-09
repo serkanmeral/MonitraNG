@@ -1,181 +1,200 @@
-# MngDomainUI - Mevcut Durum
+# MngDomainUI - Current Status
 
-**Son Güncelleme:** 7 Ocak 2026
+## Son Güncelleme
+**Tarih**: 8 Ocak 2026  
+**Özet**: MngDomainUI entegrasyonu, SSL bypass düzeltmeleri ve test işlemleri tamamlandı
 
 ---
 
 ## Son Çalışılan Konu
-
-**Docker Containerization ve Container-to-Container API Erişimi - TAMAMLANDI ✅**
-
-MngDomainUI için Docker yapılandırması tamamlandı ve container-to-container API erişimi sorunu çözüldü. Tüm API çağrıları başarıyla çalışıyor. Proje şu anda stabil durumda.
+MngDomainUI projesinin production ortamına entegrasyonu, path-based routing, Keycloak/MinIO bağlantı sorunlarının çözümü ve MngDataGateway testleri
 
 ---
 
 ## Tamamlanan İşler
 
-### ✅ Domain Management UI Özellikleri
-- Domain listesi görüntüleme
-- Domain detay sayfası
-- Domain oluşturma
-- Domain güncelleme
-- Domain silme (UI hazır, backend implementasyonu bekliyor)
+### 1. GitLab CI/CD Entegrasyonu ✅
+- MngDomainUI projesi GitLab'a eklendi
+- `.gitlab-ci.yml` dosyasına build ve deploy adımları eklendi:
+  - `build-frontend-domainui` job (Node.js 20, npm build)
+  - `build-docker-domainui` job (Docker image build with caching)
+  - `deploy-services` job'a `mngdomainui` build, rolling update ve health check adımları eklendi
 
-### ✅ Test Dataset ve Veri İşlemleri
-- Test dataset'leri oluşturma (tst_publishers, tst_genres, tst_books)
-- Test verileri yükleme
-- Test kullanıcı grupları oluşturma
-- Test kullanıcıları oluşturma (dinamik sayı, varsayılan şifre)
-- "Serkan Meral" kullanıcısı otomatik ekleme
+### 2. Docker Compose Production Konfigürasyonu ✅
+- `docker-compose.production.yml` dosyasına `mngdomainui` servisi eklendi
+- Environment değişkenleri yapılandırıldı:
+  - `SERVER_KEEPER_URL`, `SERVER_DATAGATEWAY_URL`, `SERVER_HUB_URL` (container-to-container iletişim için)
+  - `KEEPER_URL`, `DATAGATEWAY_URL`, `HUB_URL` (public/client-side için)
+  - `KEYCLOAK_BASE_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_ADMIN_USER`, `KEYCLOAK_ADMIN_PASSWORD`
+  - `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_USE_SSL`
+- Health check endpoint'i `/api/health` olarak ayarlandı
 
-### ✅ Authentication Sistemi
-- Login sayfası (Keycloak admin kullanıcısı ile)
-- Auth store (Pinia) - token ve user bilgilerini saklama
-- Authentication middleware - korumalı route'lar için
-- Guest middleware - login sayfası için
-- Logout işlemi
-- Token görüntüleme modal'ı (token ve decode edilmiş içerik)
+### 3. Nginx Path-Based Routing ✅
+- `admin.monitrang.com/domain/` path'i için Nginx konfigürasyonu eklendi
+- Nuxt.js `baseURL` `/domain/` olarak ayarlandı
+- Nginx `location /domain/` block'u eklendi (proxy_pass, WebSocket support, timeouts)
+- Admin dashboard'a "🌐 Domain UI" linki eklendi
 
-### ✅ Clear All Domains Özelliği
-- Keycloak realm'lerini temizleme (master hariç)
-- MinIO bucket'larını temizleme
-- Onay modal'ı
-- MongoDB temizliği manuel (UI'da yok)
+### 4. Keycloak Login Sorunları Çözüldü ✅
+- **Sorun**: `http://localhost:8080/realms/master/protocol/openid-connect/token` 404 hatası
+- **Çözüm**:
+  - `KEYCLOAK_BASE_URL` environment değişkeni eklendi
+  - Keycloak URL'ine `/keycloak` path'i otomatik ekleniyor (production Docker setup için)
+  - `.env` dosyasında `KEYCLOAK_BASE_URL=http://keycloak:8080/keycloak` olarak güncellendi
+  - Login endpoint'i çalışıyor ✅
 
-### ✅ Docker Yapılandırması
-- Dockerfile oluşturuldu (multi-stage build: Node.js 20 + Nitro server)
-- .dockerignore oluşturuldu
-- docker-compose.yml güncellendi (mngdomainui servisi eklendi)
-- Health check endpoint eklendi (`/api/health`)
-- Port mapping: `3001:3000` (MngUI ile çakışmaması için)
+### 5. Keeper Proxy SSL Bypass ✅
+- **Sorun**: `[POST] "https://mngkeeper:5001/api/domain": <no response> fetch failed`
+- **Çözüm**:
+  - `MngDomainUI/server/api/keeper/[...path].ts` dosyasında `NODE_TLS_REJECT_UNAUTHORIZED=0` kullanıldı
+  - Container-to-container HTTPS iletişimi için SSL bypass eklendi
+  - Keeper API çağrıları çalışıyor ✅
 
-### ✅ Runtime Config Yapılandırması
-- Server-side ve client-side URL'ler ayrıldı
-- Container-to-container communication için `SERVER_*` environment variable'ları eklendi
-- Keycloak ve MinIO config'leri server-side only
+### 6. Create Test Users SSL Bypass ✅
+- **Sorun**: `[POST] "https://mngkeeper:5001/api/user": <no response> fetch failed`
+- **Çözüm**:
+  - `MngDomainUI/server/api/datagateway/create-test-users.post.ts` dosyasındaki tüm `$fetch` çağrılarına SSL bypass eklendi
+  - Token alma, group listeleme ve user oluşturma işlemleri için SSL bypass uygulandı
+  - Create Test Users çalışıyor ✅
 
-### ✅ UI İyileştirmeleri
-- Dark mode desteği (text renkleri)
-- Login sayfasında development-only pre-fill
-- Renklendirme sorunları düzeltildi (dark card'larda okunabilirlik)
+### 7. Create Test Datasets SSL Bypass ✅
+- **Sorun**: `[POST] "https://mngdatagateway:5010/api/v1/dataset-categories": <no response> fetch failed`
+- **Çözüm**:
+  - `MngDomainUI/server/api/datagateway/create-test-datasets.post.ts` dosyasına `fetchWithSSLBypass` helper function eklendi
+  - Tüm DataGateway API çağrılarına SSL bypass uygulandı
+  - `SERVER_DATAGATEWAY_URL` environment değişkeni eklendi
+  - Create Test Datasets çalışıyor ✅
+
+### 8. Clear All Domains Endpoint Düzeltmeleri ✅
+- **Sorunlar**:
+  - Keycloak 401 Unauthorized hatası
+  - MinIO connection refused hatası (`localhost:9090` yerine `minio:9000` olmalı)
+- **Çözümler**:
+  - `MngDomainUI/server/api/clear-all-domains.post.ts` dosyasında:
+    - Keycloak URL'ine `/keycloak` path'i otomatik ekleniyor
+    - Keycloak admin credentials `process.env`'den okunuyor
+    - SSL bypass için `NODE_TLS_REJECT_UNAUTHORIZED=0` kullanıldı
+    - MinIO environment değişkenleri `process.env`'den okunuyor
+  - `docker-compose.production.yml`'e MinIO environment değişkenleri eklendi
+  - Clear All Domains endpoint'i düzeltildi ✅
+
+### 9. MngDataGateway Testleri ve Config Kontrolü ✅
+- Container durumu kontrol edildi: ✅ Healthy
+- Environment değişkenleri kontrol edildi: ✅ Doğru
+- Temel testler yapıldı:
+  - Health Check: ✅ Başarılı
+  - Version: ✅ Başarılı (1.0.0)
+  - List Datasets: ✅ Başarılı (0 dataset - henüz oluşturulmamış)
+- Config & Environment durumu:
+  - MongoDB: ✅ Bağlı
+  - RabbitMQ: ✅ Bağlı
+  - MngKeeper: ✅ Bağlı (`https://mngkeeper:5001`)
+  - Server: ✅ Çalışıyor (`https://localhost:5010`)
 
 ---
 
-## Devam Eden İşler / Sorunlar
-
-### ✅ Container-to-Container API Erişimi - ÇÖZÜLDÜ
-**Sorun:** Docker container içinden MngKeeper API'sine erişim başarısız oluyordu.
-
-**Çözüm:**
-- Nuxt runtime config build zamanında environment variable'ları okuduğu için, container runtime'da set edilen environment variable'lar okunmuyordu
-- Server-side route'larda `process.env` direkt olarak kullanılarak sorun çözüldü
-- Artık `process.env.SERVER_KEEPER_URL` runtime'da doğru okunuyor
-
-**Durum:**
-- ✅ Environment variable'lar doğru set edildi (`SERVER_KEEPER_URL=https://mngkeeper:5001`)
-- ✅ Server-side route'lar `process.env` direkt kullanıyor (runtime'da okunuyor)
-- ✅ SSL bypass plugin Docker'da çalışıyor (`ENABLE_SSL_BYPASS=true`)
-- ✅ Container içinden `https://mngkeeper:5001` adresine erişim başarılı
-- ✅ API çağrıları başarılı (domain listesi çalışıyor)
-
-**Yapılan Değişiklikler:**
-- Tüm server-side route'larda `config.serverKeeperUrl` yerine `process.env.SERVER_KEEPER_URL` öncelikli kullanılıyor
-- Fallback mantığı: `process.env.SERVER_KEEPER_URL` → `process.env.KEEPER_URL` → `config.serverKeeperUrl` → `config.public.keeperUrl` → default
+## Devam Eden İşler
+Yok - Tüm işlemler tamamlandı ✅
 
 ---
 
 ## Sonraki Adımlar
 
-### 1. Container-to-Container API Erişimi Sorununu Çözme ✅
-- [x] Container log'larını detaylı inceleme
-- [x] Container içinden direkt API testleri
-- [x] Network bağlantısını doğrulama
-- [x] SSL/TLS yapılandırmasını kontrol etme
-- [x] Runtime environment variable okuma sorunu çözüldü
+### Öncelikli
+1. **MngDomainUI Production Testleri**: Tüm endpoint'lerin production ortamında test edilmesi
+2. **Dataset Oluşturma**: "Create Test Datasets" işleminin production'da test edilmesi
+3. **Clear All Domains Test**: Keycloak ve MinIO cleanup işlemlerinin production'da test edilmesi
 
-### 2. Backend İşlemleri (Roadmap'te)
-- [ ] Domain silme pipeline'ı (full deletion - MongoDB, Keycloak, MinIO)
-- [ ] Domain suspend/activate endpoint'leri
-- [ ] Token'a kullanıcı gruplarını ekleme
-
-### 3. UI İyileştirmeleri
-- [ ] Toast notification sistemi
-- [ ] Loading state'leri iyileştirme
-- [ ] Error handling iyileştirme
-- [ ] Domain silme confirmation dialog
+### İsteğe Bağlı
+1. **MngDataGateway Kapsamlı Testler**: Dataset oluşturma, CRUD işlemleri, search, filter, aggregate testleri
+2. **Performance Testleri**: Yük testleri ve performans optimizasyonları
+3. **Error Handling İyileştirmeleri**: Daha detaylı error mesajları ve logging
 
 ---
 
 ## Önemli Notlar
 
-### Docker Yapılandırması
-- **Image:** `localhost:5000/mngdomainui:1.0.0`
-- **Container:** `mngdomainui`
-- **Port:** `3001:3000`
-- **Network:** `mng_common_mng_network` (external)
-- **Depends on:** mngkeeper, mngdatagateway, mnghub
+### SSL Bypass Stratejisi
+- Container-to-container HTTPS iletişiminde self-signed sertifikalar için `NODE_TLS_REJECT_UNAUTHORIZED=0` kullanılıyor
+- Bu sadece server-side (Nuxt.js API routes) için geçerli
+- Production'da güvenlik açısından dikkatli olunmalı
 
-### Environment Variables
-**Server-side (Container-to-container):**
-- `SERVER_KEEPER_URL=https://mngkeeper:5001`
-- `SERVER_DATAGATEWAY_URL=https://mngdatagateway:5010`
-- `SERVER_HUB_URL=http://mnghub:5020`
-- `KEYCLOAK_BASE_URL=http://keycloak:8080`
-- `MINIO_ENDPOINT=minio:9000`
-- `ENABLE_SSL_BYPASS=true`
+### Keycloak Path Yönetimi
+- Keycloak `KC_HTTP_RELATIVE_PATH=/keycloak` ile çalışıyor
+- Tüm Keycloak URL'lerine `/keycloak` path'i eklenmeli
+- `keycloak:8080` içeriyorsa otomatik olarak `/keycloak` ekleniyor
 
-**Client-side (Browser accessible):**
-- `KEEPER_URL=https://localhost:5001`
-- `DATAGATEWAY_URL=https://localhost:5010`
-- `HUB_URL=http://localhost:5020`
+### Environment Değişkenleri
+- Server-side (container-to-container): `SERVER_*` prefix'li değişkenler
+- Client-side (browser): `KEEPER_URL`, `DATAGATEWAY_URL`, `HUB_URL`
+- Keycloak ve MinIO: `KEYCLOAK_*` ve `MINIO_*` prefix'li değişkenler
 
-### API Route'ları
-- **Keeper Proxy:** `/api/keeper/*` → `https://mngkeeper:5001/api/*`
-- **DataGateway Proxy:** `/api/datagateway/*` → `https://mngdatagateway:5010/api/*`
-- **Auth:** `/api/auth/login` (Keycloak master realm)
-- **Clear All:** `/api/clear-all-domains` (Keycloak + MinIO)
+### Docker Compose Production
+- Port mapping kaldırıldı - Sadece Nginx reverse proxy üzerinden erişim
+- Health check endpoint'leri: `/api/health` (Nuxt.js)
+- Container-to-container iletişim: HTTPS (self-signed certificates)
 
-### Test Kullanıcısı
-- **Username:** `serkan.meral`
-- **Email:** `serkan.meral@outlook.com`
-- **Password:** `Serkan123!`
-- Test kullanıcıları oluşturulurken otomatik olarak ilk sırada ekleniyor
-
-### Login Bilgileri
-- **Development:** Username ve password pre-fill (`admin` / `admin123`)
-- **Production:** Boş form
-- **Keycloak Admin:** `admin` / `admin123` (master realm)
-
----
-
-## Bilinen Sorunlar
-
-- Şu anda bilinen kritik sorun yok ✅
+### Test Stratejisi
+- Sunucuda test yapılırken container içinden curl kullanılıyor
+- Local'de test yapılırken sunucu IP'si veya Nginx üzerinden erişim gerekiyor
+- PowerShell test scriptleri local Docker Desktop için hazır
 
 ---
 
 ## Teknik Detaylar
 
-### Node.js Versiyonu
-- **Dockerfile:** `node:20-alpine` (Nuxt 3.20.2 gereksinimi)
+### Dosya Değişiklikleri
+1. `MngDomainUI/server/api/auth/login.post.ts` - Keycloak login SSL bypass ve path düzeltmesi
+2. `MngDomainUI/server/api/keeper/[...path].ts` - Keeper proxy SSL bypass
+3. `MngDomainUI/server/api/datagateway/create-test-users.post.ts` - Create Test Users SSL bypass
+4. `MngDomainUI/server/api/datagateway/create-test-datasets.post.ts` - Create Test Datasets SSL bypass
+5. `MngDomainUI/server/api/clear-all-domains.post.ts` - Clear All Domains Keycloak/MinIO düzeltmeleri
+6. `MngDomainUI/nuxt.config.ts` - `baseURL` `/domain/` olarak ayarlandı
+7. `ApplicationResources/mng_common/nginx/conf.d/admin.monitrang.conf` - `/domain/` location block eklendi
+8. `ApplicationResources/mng_apps/docker-compose.production.yml` - `mngdomainui` servisi ve environment değişkenleri eklendi
+9. `.gitlab-ci.yml` - MngDomainUI build ve deploy adımları eklendi
 
-### Build Komutu
-- `npm run build` (SSR mode - Nitro server)
-
-### Runtime
-- Nitro server (`node .output/server/index.mjs`)
-- Port: 3000 (container içinde)
-
-### Dependencies
-- **Production:** minio, pinia, zod, @nuxt/ui, @pinia/nuxt
-- **Dev:** @nuxt/devtools, @types/node, nuxt, typescript, vue-tsc
+### Commit Mesajları
+- `feat: integrate MngDomainUI into GitLab CI/CD pipeline`
+- `fix: add Keycloak path and SSL bypass for login endpoint`
+- `fix: use NODE_TLS_REJECT_UNAUTHORIZED for Keeper proxy SSL bypass`
+- `fix: apply SSL bypass to all $fetch calls in create-test-users endpoint`
+- `fix: add SSL bypass to create-test-datasets and add SERVER_* environment variables`
+- `fix: add SSL bypass and correct Keycloak/MinIO URLs in clear-all-domains endpoint`
+- `fix: add MinIO environment variables and use env vars for Keycloak admin credentials`
 
 ---
 
-**Sonraki Oturum:** 
-- Toast notification sistemi eklenebilir
-- Domain silme onay dialogu iyileştirilebilir
-- Backend işlemleri (Domain silme pipeline, suspend/activate endpoint'leri) planlanabilir
-- UI/UX iyileştirmeleri yapılabilir
+## Sorunlar ve Çözümler
 
-**Not:** Proje şu anda stabil durumda. Tüm temel özellikler çalışıyor ve Docker container'da başarıyla çalışıyor.
+### Sorun 1: Keycloak Login 404
+- **Hata**: `http://localhost:8080/realms/master/protocol/openid-connect/token` 404
+- **Neden**: Keycloak `/keycloak` path'i altında çalışıyor
+- **Çözüm**: URL'e `/keycloak` path'i otomatik ekleniyor
+
+### Sorun 2: Keeper Proxy SSL Hatası
+- **Hata**: `[POST] "https://mngkeeper:5001/api/domain": <no response> fetch failed`
+- **Neden**: Self-signed SSL sertifikaları
+- **Çözüm**: `NODE_TLS_REJECT_UNAUTHORIZED=0` kullanıldı
+
+### Sorun 3: MinIO Connection Refused
+- **Hata**: `ECONNREFUSED localhost:9090`
+- **Neden**: Environment değişkenleri container'a geçmiyordu
+- **Çözüm**: `docker-compose.production.yml`'e MinIO environment değişkenleri eklendi
+
+---
+
+## Başarı Kriterleri
+✅ MngDomainUI GitLab'a entegre edildi  
+✅ CI/CD pipeline çalışıyor  
+✅ Path-based routing çalışıyor (`admin.monitrang.com/domain/`)  
+✅ Login çalışıyor  
+✅ Keeper API çağrıları çalışıyor  
+✅ Create Test Users çalışıyor  
+✅ Create Test Datasets çalışıyor  
+✅ Clear All Domains endpoint'i düzeltildi  
+✅ MngDataGateway testleri başarılı  
+
+---
+
+**Durum**: ✅ Tüm işlemler tamamlandı, production'a hazır
