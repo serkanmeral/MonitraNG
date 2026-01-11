@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { languageDD } from '@/_mockApis/headerData';
+import flagTR from '/images/flag/icon-flag-tr.svg';
 import flag1 from '/images/flag/icon-flag-en.svg';
 import flag2 from '/images/flag/icon-flag-ro.svg';
 import flag3 from '/images/flag/icon-flag-zh.svg';
@@ -14,6 +15,7 @@ import flag4 from '/images/flag/icon-flag-fr.svg';
         <template v-slot:activator="{ props }">
             <v-btn icon variant="text" color="primary" v-bind="props">
                 <v-avatar size="22">
+                    <img v-if="$i18n.locale === 'tr'" :src="flagTR" :alt="$i18n.locale" width="22" height="22" class="obj-cover" />
                     <img v-if="$i18n.locale === 'en'" :src="flag1" :alt="$i18n.locale" width="22" height="22" class="obj-cover" />
                     <img v-if="$i18n.locale === 'fr'" :src="flag4" :alt="$i18n.locale" width="22" height="22" class="obj-cover" />
                     <img v-if="$i18n.locale === 'ro'" :src="flag2" :alt="$i18n.locale" width="22" height="22" class="obj-cover" />
