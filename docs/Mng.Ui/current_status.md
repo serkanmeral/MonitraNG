@@ -72,11 +72,23 @@ Side Menu Manager'dan menü item'ları için dil dosyalarını otomatik olarak g
 ## Sonraki Adımlar
 
 ### 🔄 Kısa Vadede (Gelecek Chat'te)
-1. **LLM Entegrasyonu (Ollama)**
-   - Backend'de `ITranslationService` ve `OllamaTranslationService` implementasyonu
-   - Side Menu Manager'a "Ollama ile Çevir" butonu ekleme
-   - Otomatik çeviri özelliği
-   - RoadMap'te planlandı (Phase 6.13)
+1. **API Gateway Entegrasyonu (MngLLM)**
+   - MngLLM için gatewayUrl kontrolü eklenmesi
+   - Şu anda sadece direkt servis URL'i kullanılıyor
+   - Keeper ve DataGateway pattern'i takip edilmeli
+   - `server/api/llm/[...path].ts` dosyasına gatewayUrl kontrolü eklenmeli
+
+### ✅ Tamamlanan İşler (Bu Oturumda)
+
+1. **✅ LLM Entegrasyonu (MngLLM Service)**
+   - ✅ MngLLM Service oluşturuldu ve çalışıyor
+   - ✅ Side Menu Manager'a LLM çeviri entegrasyonu eklendi
+   - ✅ Otomatik çeviri özelliği aktif (Türkçe → EN, FR, AR, ZH)
+   - ✅ `MenuItemForm.vue` - `updateLocales` fonksiyonu LLM API çağrısı yapıyor
+   - ✅ Fallback mekanizması (LLM çalışmıyorsa placeholder)
+   - ✅ `apiService.ts` - `fetchFromMngLLM` fonksiyonu eklendi
+   - ✅ Nuxt server API route: `server/api/llm/[...path].ts`
+   - ✅ `nuxt.config.ts` - `llmUrl` eklendi (https://localhost:5030)
 
 2. **Dokümantasyon**
    - `docs/Mng.Ui/i18n/` klasöründeki eski dokümantasyon dosyalarının durumu netleştirilmeli

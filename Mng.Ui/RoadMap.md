@@ -952,25 +952,39 @@ t('common.save'); // TypeScript otomatik tamamlama
 - Locale Editor sayfası ile manuel düzenleme yapılabiliyor
 - API endpoint'leri: `GET /api/system/locales/{locale}`, `PUT /api/system/locales/{locale}`
 
-#### 6.13 Otomatik Çeviri Özelliği (Gelecek Planlama) 🤖
+#### 6.13 Otomatik Çeviri Özelliği ✅ (Tamamlandı - 2026-01-15)
 
-**Durum:** 📋 Gelecek Özellik (RoadMap'te)
+**Durum:** ✅ Tamamlandı
 
 **Hedef:**
 - Side Menu Manager'dan menü item'ı düzenlerken, "Dil Dosyalarını Güncelle" butonu ile otomatik olarak dil dosyalarına key ekleme
-- İleride Ollama gibi dahili LLM kullanarak otomatik çeviri desteği
+- Ollama (MngLLM Service) kullanarak otomatik çeviri desteği
 
-**Şu Anki Yaklaşım (Basit):**
+**Tamamlanan İşler:**
 - ✅ Side Menu Manager'da "Dil Dosyalarını Güncelle" butonu eklendi
 - ✅ Butona tıklandığında `pageCode` key'i tüm dil dosyalarına eklenir
 - ✅ Source language (Türkçe) için `title`/`header` değeri kullanılır
-- ✅ Diğer dillere aynı değer placeholder olarak eklenir (manuel düzenlenebilir)
+- ✅ **MngLLM Service entegrasyonu tamamlandı**
+  - ✅ `MenuItemForm.vue` - `updateLocales` fonksiyonu LLM API çağrısı yapıyor
+  - ✅ Otomatik çeviri: Türkçe → İngilizce, Fransızca, Arapça, Çince
+  - ✅ Fallback mekanizması (LLM çalışmıyorsa placeholder)
+  - ✅ `apiService.ts` - `fetchFromMngLLM` fonksiyonu eklendi
+  - ✅ Nuxt server API route: `server/api/llm/[...path].ts`
+  - ✅ `nuxt.config.ts` - `llmUrl` eklendi (https://localhost:5030)
 
-**Gelecek Geliştirmeler:**
-- [ ] Ollama veya benzeri dahili LLM entegrasyonu
-- [ ] Otomatik çeviri API'si (Google Translate, DeepL, Azure Translator)
+**Notlar:**
+- MngLLM Service ayrı bir mikroservis olarak implement edildi
+- API Gateway entegrasyonu tamamlandı (backend)
+- Şu anda direkt servis URL'i kullanılıyor (gatewayUrl kontrolü henüz yok - ileride eklenebilir)
+
+**İlgili Dokümantasyon:**
+- `docs/MngLLM/ROADMAP.md` - MngLLM Service roadmap
+- `docs/MngLLM/current_status.md` - MngLLM mevcut durum
+
+**Gelecek Geliştirmeler (Opsiyonel):**
 - [ ] Çeviri kalitesi kontrolü ve onay mekanizması
 - [ ] Toplu çeviri işlemleri
+- [ ] API Gateway üzerinden erişim (gatewayUrl kontrolü)
 
 **Öncelik:**
 - Phase 5'ten (Yetkilendirme) sonra
