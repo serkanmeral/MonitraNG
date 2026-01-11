@@ -23,12 +23,6 @@ import messages from "@/utils/locales/messages";
 //ScrollTop
 import VueScrollTo from "vue-scrollto";
 
-const i18n = createI18n({
-  locale: "en",
-  messages: messages,
-  silentTranslationWarn: true,
-  silentFallbackWarn: true,
-});
 import {
   BLUE_THEME,
   AQUA_THEME,
@@ -116,6 +110,10 @@ export default defineNuxtPlugin((nuxtApp) => {
   nuxtApp.vueApp.use(VueTablerIcons);
   nuxtApp.vueApp.use(Maska);
   nuxtApp.vueApp.use(i18n);
+  
+  // Make i18n instance available in globalProperties for other plugins
+  nuxtApp.vueApp.config.globalProperties.$i18n = i18n.global || i18n;
+  
   nuxtApp.vueApp.use(VueEasyLightbox);
   nuxtApp.vueApp.use(VueScrollTo, {
     duration: 1000,

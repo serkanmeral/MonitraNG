@@ -129,5 +129,29 @@
 
     "Banners Widgets": "لافتات الحاجيات",
     "Cards Widgets": "الحاجيات بطاقات",
-    "Charts Widgets": "الحاجيات الرسوم البيانية"
+    "Charts Widgets": "الحاجيات الرسوم البيانية",
+    "menu": {
+        "apps-dataset-categories": "فئات Dataset",
+        "datasets": "Datasets",
+        "two-steps": "خطوتين",
+        "apps-events": "رسائل الأحداث",
+        "apps-side-menu-manager": "مدير القائمة الجانبية",
+        "apps-users": "إدارة المستخدمين",
+        "apps-groups": "إدارة المجموعات",
+        "headers": {
+            "home": "الرئيسية",
+            "assets": "الأصول",
+            "apps": "التطبيقات",
+            "pages": "الصفحات",
+            "components": "المكونات",
+            "charts": "الرسوم البيانية",
+            "forms": "النماذج",
+            "widget": "الحاجيات",
+            "tables": "الجداول",
+            "data-tables": "جداول البيانات",
+            "authentication": "المصادقة",
+            "icons": "الأيقونات",
+            "administration": "الإدارة"
+        }
+    }
 }

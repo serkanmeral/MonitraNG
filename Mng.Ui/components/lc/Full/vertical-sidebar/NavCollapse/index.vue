@@ -7,6 +7,7 @@ interface Props {
     iconType?: 'mdi' | 'tabler';
     iconName?: string;
     title?: string;
+    pageCode?: string; // i18n key için kullanılacak unique identifier
     header?: string;
     subCaption?: string;
     children?: any[];
@@ -47,7 +48,13 @@ const props = withDefaults(defineProps<Props>(), {
         <!---Title  -->
         <v-list-item-title
           class="mr-auto"
-        >{{ item.title ? $t(item.title) : '' }}</v-list-item-title>
+        >
+          {{ 
+            item.pageCode && $t(`menu.${item.pageCode}`) !== `menu.${item.pageCode}` 
+              ? $t(`menu.${item.pageCode}`) 
+              : (item.title ? $t(item.title) : '')
+          }}
+        </v-list-item-title>
         <!---If Caption-->
         <v-list-item-subtitle
           v-if="item.subCaption"

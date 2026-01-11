@@ -29,5 +29,15 @@ public interface IMinioService
     /// Sets bucket policy
     /// </summary>
     Task<bool> SetBucketPolicyAsync(string bucketName, string policy, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Gets an object from MinIO as a stream
+    /// </summary>
+    Task<Stream?> GetObjectAsync(string bucketName, string objectName, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Uploads an object to MinIO from a stream
+    /// </summary>
+    Task<bool> PutObjectAsync(string bucketName, string objectName, Stream content, string contentType, CancellationToken cancellationToken = default);
 }
 

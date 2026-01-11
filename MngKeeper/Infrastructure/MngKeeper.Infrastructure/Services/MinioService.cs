@@ -152,5 +152,108 @@ public class MinioService : IMinioService
             return false;
         }
     }
+
+    public async Task<Stream?> GetObjectAsync(string bucketName, string objectName, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Getting object from MinIO: {BucketName}/{ObjectName}", bucketName, objectName);
+
+            // Check if bucket exists
+            var bucketExists = await BucketExistsAsync(bucketName, cancellationToken);
+            if (!bucketExists)
+            {
+                _logger.LogWarning("Bucket does not exist: {BucketName}", bucketName);
+                return null;
+            }
+
+            var memoryStream = new MemoryStream();
+            
+            var getObjectArgs = new GetObjectArgs()
+                .WithBucket(bucketName)
+                .WithObject(objectName)
+                .WithCallbackStream(stream => stream.CopyTo(memoryStream));
+
+            await _minioClient.GetObjectAsync(getObjectArgs, cancellationToken);
+            
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            
+            _logger.LogInformation("Object retrieved successfully: {BucketName}/{ObjectName}", bucketName, objectName);
+            return memoryStream;
+        }
+        catch (Minio.Exceptions.ObjectNotFoundException)
+        {
+            _logger.LogInformation("Object not found: {BucketName}/{ObjectName}", bucketName, objectName);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get object from MinIO: {BucketName}/{ObjectName}", bucketName, objectName);
+            return null;
+        }
+    }
+
+    public async Task<bool> PutObjectAsync(string bucketName, string objectName, Stream content, string contentType, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Putting object to MinIO: {BucketName}/{ObjectName}", bucketName, objectName);
+
+            // Ensure bucket exists
+            var bucketExists = await BucketExistsAsync(bucketName, cancellationToken);
+            if (!bucketExists)
+            {
+                _logger.LogInformation("Bucket does not exist, creating: {BucketName}", bucketName);
+                await CreateBucketAsync(bucketName, cancellationToken);
+            }
+
+            Stream streamToUse = content;
+            long streamLength;
+            bool shouldDisposeStream = false;
+
+            // Get stream length (if stream supports it)
+            if (content.CanSeek && content.Length >= 0)
+            {
+                streamLength = content.Length - content.Position;
+            }
+            else
+            {
+                // If stream doesn't support Length/Seek, copy to MemoryStream
+                var memoryStream = new MemoryStream();
+                await content.CopyToAsync(memoryStream, cancellationToken);
+                memoryStream.Seek(0, SeekOrigin.Begin);
+                streamLength = memoryStream.Length;
+                streamToUse = memoryStream;
+                shouldDisposeStream = true;
+            }
+
+            try
+            {
+                var putObjectArgs = new PutObjectArgs()
+                    .WithBucket(bucketName)
+                    .WithObject(objectName)
+                    .WithStreamData(streamToUse)
+                    .WithObjectSize(streamLength)
+                    .WithContentType(contentType);
+
+                await _minioClient.PutObjectAsync(putObjectArgs, cancellationToken);
+
+                _logger.LogInformation("Object uploaded successfully: {BucketName}/{ObjectName}", bucketName, objectName);
+                return true;
+            }
+            finally
+            {
+                if (shouldDisposeStream && streamToUse != content)
+                {
+                    streamToUse.Dispose();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to put object to MinIO: {BucketName}/{ObjectName}", bucketName, objectName);
+            return false;
+        }
+    }
 }
 

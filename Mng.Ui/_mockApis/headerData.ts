@@ -74,12 +74,14 @@ const profileDD: profileType[] = [
 // 
 // Language
 // 
+import flagTR from '/images/flag/icon-flag-tr.svg';
 import flag1 from '/images/flag/icon-flag-en.svg';
 import flag2 from '/images/flag/icon-flag-fr.svg';
 import flag3 from '/images/flag/icon-flag-ro.svg';
 import flag4 from '/images/flag/icon-flag-zh.svg';
 
 const languageDD: languageType[] = [
+    { title: 'Türkçe', subtext: 'Turkish', value: 'tr', avatar: flagTR },
     { title: 'English', subtext: 'UK', value: 'en', avatar: flag1 },
     { title: 'français', subtext: 'French', value: 'fr', avatar: flag2 },
     { title: 'عربي', subtext: 'Arbic', value: 'ro', avatar: flag3 },
