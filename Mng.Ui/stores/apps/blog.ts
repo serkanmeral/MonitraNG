@@ -35,7 +35,7 @@ export const useBlogStore = defineStore({
                 this.blogposts = data.data;
             } catch (error) {
                 alert(error);
-                console.log(error);
+                console.error(error);
             }
         },
         async fetchPost(title: string) {
@@ -44,7 +44,7 @@ export const useBlogStore = defineStore({
                 this.selectedPost = response.data.post;
             } catch (error) {
                 alert(error);
-                console.log(error);
+                console.error(error);
             }
         }
     }

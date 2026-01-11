@@ -112,6 +112,8 @@
 #### 4.1 Görsel İyileştirmeler ✅
 - [x] Dark mode desteği (text renkleri için)
 - [x] Renklendirme sorunları düzeltildi
+- [x] Layout genişlik sorunları düzeltildi (2 Ocak 2026)
+- [x] Domain edit sayfası başlık rengi iyileştirildi (2 Ocak 2026)
 - [ ] Tema özelleştirme - İleride eklenecek
 - [ ] Animasyonlar ve transitions - İleride eklenecek
 - [ ] Loading skeletons - İleride eklenecek
@@ -120,6 +122,7 @@
 #### 4.2 Kullanıcı Deneyimi
 - [ ] Toast notifications (başarı/hata mesajları) - İleride eklenecek
 - [x] Form validation (zod ile - modals için)
+- [x] Application Version gösterimi (2 Ocak 2026)
 - [ ] Keyboard shortcuts - İleride eklenecek
 - [ ] Breadcrumb navigation - İleride eklenecek
 - [ ] Search ve filtreleme özellikleri - İleride eklenecek
@@ -139,6 +142,7 @@
 #### 5.1 Login Sayfası ✅
 - [x] Login formu (Keycloak admin auth)
 - [x] Keycloak admin auth entegrasyonu
+- [x] Keycloak PathPrefix configurable yapısı (2 Ocak 2026)
 - [x] JWT token yönetimi (Auth store - Pinia)
 - [x] Session yönetimi (localStorage ile)
 - [x] Token görüntüleme modal'ı (token ve decode edilmiş içerik)
@@ -170,6 +174,10 @@
   - [x] SSL/TLS yapılandırması kontrolü - SSL bypass aktif
   - [x] Network bağlantısı doğrulama - Başarılı
   - [x] Runtime environment variable okuma sorunu çözüldü
+- [x] Keycloak PathPrefix configurable yapısı (2 Ocak 2026)
+  - [x] `KEYCLOAK_PATH_PREFIX` environment variable desteği
+  - [x] Lokal ve sunucu ortamları için farklı PathPrefix desteği
+  - [x] Docker container içinde Keycloak erişimi test edildi - Başarılı
 
 #### 6.2 Deployment
 - [ ] Production build yapılandırması
@@ -211,12 +219,14 @@ MngDomainUI/
 │   │   ├── DomainList.vue          ✅
 │   │   ├── DomainForm.vue          ✅
 │   │   └── DomainCard.vue          (gelecek)
+│   ├── AppVersion.vue              ✅ (2 Ocak 2026)
 │   └── common/
 │       ├── ConfirmDialog.vue       (gelecek)
 │       └── DataTable.vue           (gelecek)
 ├── composables/
 │   ├── useApi.ts                   ✅
-│   └── useDomain.ts                ✅
+│   ├── useDomain.ts                ✅
+│   └── useVersion.ts               ✅ (2 Ocak 2026)
 ├── pages/
 │   ├── index.vue                   ✅
 │   └── domains/
@@ -226,12 +236,19 @@ MngDomainUI/
 │   └── domain.ts                   ✅
 ├── server/
 │   ├── api/
+│   │   ├── auth/
+│   │   │   └── login.post.ts       ✅ (Keycloak PathPrefix desteği - 2 Ocak 2026)
+│   │   ├── clear-all-domains.post.ts ✅ (Keycloak PathPrefix desteği - 2 Ocak 2026)
 │   │   └── keeper/
 │   │       └── [...path].ts        ✅
+│   ├── utils/
+│   │   └── keycloak.ts             ✅ (2 Ocak 2026)
 │   └── plugins/
 │       └── ssl-fix.ts              ✅
 ├── types/
 │   └── domain.ts                   ✅
+├── public/
+│   └── version.json                ✅ (2 Ocak 2026)
 └── utils/
     └── (gelecek)
 ```
@@ -288,10 +305,13 @@ DomainStatus enum'ında `Suspended` durumu var ama UpdateDomain endpoint'i statu
 - `SERVER_DATAGATEWAY_URL` - MngDataGateway API URL (Docker: `https://mngdatagateway:5010`)
 - `SERVER_HUB_URL` - MngHub API URL (Docker: `http://mnghub:5020`)
 - `KEYCLOAK_BASE_URL` - Keycloak URL (Docker: `http://keycloak:8080`)
+- `KEYCLOAK_PATH_PREFIX` - Keycloak Path Prefix (Lokal: `""`, Sunucu: `/keycloak`)
+- `KEYCLOAK_ADMIN_USER` - Keycloak admin kullanıcı adı (varsayılan: `admin`)
+- `KEYCLOAK_ADMIN_PASSWORD` - Keycloak admin şifresi (varsayılan: `admin123`)
 - `MINIO_ENDPOINT` - MinIO endpoint (Docker: `minio:9000`)
 - `ENABLE_SSL_BYPASS` - SSL bypass aktif et (Docker: `true`)
 
-**Not:** Server-side route'larda `process.env` direkt kullanılıyor (runtime'da okunuyor), çünkü Nuxt runtime config build zamanında environment variable'ları okuyor.
+**Not:** Server-side route'larda `process.env` direkt kullanılıyor (runtime'da okunuyor), çünkü Nuxt runtime config build zamanında environment variable'ları okuyor. Keycloak URL helper fonksiyonları (`server/utils/keycloak.ts`) `process.env` değerlerini öncelikli olarak kontrol eder.
 
 ### Domain Creation Pipeline
 Domain oluşturma işlemi MngKeeper'da 11 adımlı bir pipeline ile gerçekleştirilir:
@@ -315,6 +335,9 @@ Domain oluşturma işlemi MngKeeper'da 11 adımlı bir pipeline ile gerçekleşt
 
 1. **Acil/Yüksek Öncelik:**
    - ✅ Container-to-container API erişimi sorunu çözüldü
+   - ✅ Keycloak PathPrefix configurable yapısı tamamlandı
+   - ✅ Application Version yapısı tamamlandı
+   - ✅ UI/UX iyileştirmeleri (layout, renkler) tamamlandı
    - Domain silme onay dialogu (UI hazır, backend pipeline bekliyor)
    - Toast notification sistemi
 
@@ -341,12 +364,43 @@ Domain oluşturma işlemi MngKeeper'da 11 adımlı bir pipeline ile gerçekleşt
 
 ---
 
-**Son Güncelleme:** 2026-01-07
+**Son Güncelleme:** 2 Ocak 2026
 **Versiyon:** 1.0.0
 
 ---
 
-## ✅ Son Tamamlanan İşler
+## ✅ Son Tamamlanan İşler (v1.0.0 - 2 Ocak 2026)
+
+### Keycloak PathPrefix Configurable Yapısı (2 Ocak 2026)
+- ✅ Keycloak URL helper fonksiyonları eklendi (`server/utils/keycloak.ts`)
+- ✅ `buildKeycloakUrl` fonksiyonu eklendi (MngKeeper ile uyumlu)
+- ✅ `getKeycloakConfig` fonksiyonu eklendi (`process.env` öncelikli)
+- ✅ Login API route'u güncellendi (configurable PathPrefix)
+- ✅ Clear All Domains API route'u güncellendi (configurable PathPrefix)
+- ✅ `nuxt.config.ts`'de `keycloakPathPrefix` runtime config eklendi
+- ✅ Docker Compose'da `KEYCLOAK_PATH_PREFIX` environment variable eklendi
+- ✅ Lokal ve sunucu ortamları için farklı PathPrefix desteği
+
+### Application Version Yapısı (2 Ocak 2026)
+- ✅ `public/version.json` dosyası oluşturuldu (version ve buildDate)
+- ✅ `composables/useVersion.ts` composable eklendi
+- ✅ `components/AppVersion.vue` component eklendi
+- ✅ Footer'da versiyon bilgisi gösterimi
+- ✅ Runtime config'e `appVersion` eklendi
+- ✅ Server-side rendering desteği (SSR-safe)
+
+### UI/UX İyileştirmeleri (2 Ocak 2026)
+- ✅ Layout genişlik sorunu düzeltildi (main content tam genişlik)
+- ✅ Footer genişlik sorunu düzeltildi (tam genişlik)
+- ✅ Domain edit sayfası başlık rengi iyileştirildi (daha koyu, okunabilir)
+- ✅ Domain edit sayfası subtitle rengi iyileştirildi (font-medium eklendi)
+- ✅ `useVersion` composable'da server-side check eklendi (html.replace hatası çözüldü)
+
+### Docker Build ve Deployment (2 Ocak 2026)
+- ✅ Docker build başarıyla tamamlandı (`localhost:5000/mngdomainui:1.0.0`)
+- ✅ Container başarıyla çalışıyor (healthy)
+- ✅ Keycloak erişimi düzgün çalışıyor (`http://keycloak:8080`)
+- ✅ Environment variable'lar doğru ayarlandı (Docker container içinde)
 
 ### Domain Model Enhancement ve UI Güncellemeleri (31 Aralık 2025)
 - ✅ Domain model'e yeni alanlar eklendi (RelatedPersonPhone, Logo, LogoUrl)

@@ -1,4 +1,5 @@
 import https from 'https'
+import { buildKeycloakUrl, getKeycloakConfig } from '~/server/utils/keycloak'
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
@@ -12,37 +13,25 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Keycloak base URL - read from environment or runtime config
-  // In Docker, use keycloak hostname; in development, use localhost
-  // Note: Keycloak runs under /keycloak path in production (KC_HTTP_RELATIVE_PATH)
-  // MngKeeper uses BaseAddress=http://keycloak:8080 and adds /keycloak to paths
-  // For MngDomainUI, we need to ensure /keycloak is included
-  let keycloakBaseUrl = process.env.KEYCLOAK_BASE_URL || config.keycloakBaseUrl || 'http://localhost:8080'
-  
-  // Always add /keycloak path if using keycloak:8080 (production Docker setup)
-  // Force add /keycloak - no complex checks, just simple string replacement
-  const keycloakHostPattern = 'keycloak:8080'
-  if (keycloakBaseUrl.includes(keycloakHostPattern)) {
-    // Check if /keycloak is missing using multiple methods
-    const hasPath = keycloakBaseUrl.includes('/keycloak')
-    if (!hasPath) {
-      // Direct replacement - most reliable
-      keycloakBaseUrl = keycloakBaseUrl.replace(keycloakHostPattern, keycloakHostPattern + '/keycloak')
-    }
-  }
+  // Get Keycloak configuration (base URL and path prefix)
+  const keycloakConfig = getKeycloakConfig(config)
   
   // Keycloak realm - use master realm (same as MngKeeper's EnsureAdminTokenAsync)
   const keycloakRealm = process.env.KEYCLOAK_REALM || 'master'
   
-  console.log('[Login] Keycloak URL (raw):', process.env.KEYCLOAK_BASE_URL || config.keycloakBaseUrl || 'http://localhost:8080')
-  console.log('[Login] Keycloak URL (final):', keycloakBaseUrl)
+  // Build Keycloak token URL with configurable path prefix
+  const tokenEndpoint = `realms/${keycloakRealm}/protocol/openid-connect/token`
+  const tokenUrl = buildKeycloakUrl(keycloakConfig.baseUrl, keycloakConfig.pathPrefix, tokenEndpoint)
+  
+  console.log('[Login] Keycloak Base URL:', keycloakConfig.baseUrl)
+  console.log('[Login] Keycloak Path Prefix:', keycloakConfig.pathPrefix || '(empty - direct access)')
   console.log('[Login] Keycloak Realm:', keycloakRealm)
-  console.log('[Login] Full token URL:', `${keycloakBaseUrl}/realms/${keycloakRealm}/protocol/openid-connect/token`)
+  console.log('[Login] Full token URL:', tokenUrl)
 
   try {
     // Get token from Keycloak realm
     const tokenResponse = await $fetch<any>(
-      `${keycloakBaseUrl}/realms/${keycloakRealm}/protocol/openid-connect/token`,
+      tokenUrl,
       {
         method: 'POST',
         body: new URLSearchParams({
@@ -55,7 +44,7 @@ export default defineEventHandler(async (event) => {
           'Content-Type': 'application/x-www-form-urlencoded'
         },
         // SSL bypass for development
-        agent: keycloakBaseUrl.startsWith('https')
+        agent: keycloakConfig.baseUrl.startsWith('https')
           ? new https.Agent({ rejectUnauthorized: false })
           : undefined
       }

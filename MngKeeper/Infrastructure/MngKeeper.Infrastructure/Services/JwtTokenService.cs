@@ -19,6 +19,7 @@ namespace MngKeeper.Infrastructure.Services
             string domainName, 
             bool isAdmin = false, 
             bool isManager = false,
+            List<string>? userGroups = null,
             string? title = null,
             string? department = null,
             int? gender = null,
@@ -27,8 +28,8 @@ namespace MngKeeper.Infrastructure.Services
         {
             try
             {
-                _logger.LogInformation("Adding domain claim to token for domain: {DomainName}, isAdmin: {IsAdmin}, isManager: {IsManager}", 
-                    domainName, isAdmin, isManager);
+                _logger.LogInformation("Adding domain claim to token for domain: {DomainName}, isAdmin: {IsAdmin}, isManager: {IsManager}, userGroups: {UserGroups}", 
+                    domainName, isAdmin, isManager, userGroups != null ? string.Join(", ", userGroups) : "null");
 
                 // Parse the original token
                 var tokenParts = originalToken.Split('.');
@@ -58,6 +59,19 @@ namespace MngKeeper.Infrastructure.Services
                 newPayload["is_admin"] = isAdmin;
                 newPayload["is_manager"] = isManager; // snake_case for consistency with is_admin
 
+                // Add user_groups claim if provided
+                if (userGroups != null && userGroups.Count > 0)
+                {
+                    newPayload["user_groups"] = userGroups;
+                    _logger.LogInformation("Added user_groups to token: {UserGroups}", string.Join(", ", userGroups));
+                }
+                else
+                {
+                    // Ensure user_groups is always present, even if empty
+                    newPayload["user_groups"] = new List<string>();
+                    _logger.LogInformation("Added empty user_groups array to token");
+                }
+
                 // Add user profile fields if provided
                 if (!string.IsNullOrEmpty(title))
                 {
@@ -85,8 +99,8 @@ namespace MngKeeper.Infrastructure.Services
                     _logger.LogInformation("Added photoUrl to token: {PhotoUrl}", photoUrl);
                 }
 
-                _logger.LogInformation("Adding claims - isManager: {IsManager}, title: {Title}, department: {Department}, gender: {Gender}, phoneNumber: {PhoneNumber}, photoUrl: {PhotoUrl}", 
-                    isManager, title ?? "null", department ?? "null", gender?.ToString() ?? "null", phoneNumber ?? "null", photoUrl ?? "null");
+                _logger.LogInformation("Adding claims - isManager: {IsManager}, userGroups: {UserGroups}, title: {Title}, department: {Department}, gender: {Gender}, phoneNumber: {PhoneNumber}, photoUrl: {PhotoUrl}", 
+                    isManager, userGroups != null ? string.Join(", ", userGroups) : "null", title ?? "null", department ?? "null", gender?.ToString() ?? "null", phoneNumber ?? "null", photoUrl ?? "null");
 
                 // Serialize the new payload
                 var newPayloadJson = JsonSerializer.Serialize(newPayload);

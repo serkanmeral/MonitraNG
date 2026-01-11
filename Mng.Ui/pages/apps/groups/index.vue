@@ -81,23 +81,9 @@ const fetchGroups = async (options?: any) => {
     params.isActive = false;
   }
   
-  // LOG: Frontend fetchGroups çağrısı
-  console.log('[GroupsPage] fetchGroups çağrılıyor...');
-  console.log('[GroupsPage] Table Options:', currentOptions);
-  console.log('[GroupsPage] Search:', search.value);
-  console.log('[GroupsPage] Status Filter:', statusFilter.value);
-  console.log('[GroupsPage] Request Params:', params);
-  
   // Fetch groups with new parameters
   try {
     await groupStore.fetchGroups(params);
-    console.log('[GroupsPage] ✅ fetchGroups tamamlandı');
-    console.log('[GroupsPage] Store state:');
-    console.log('[GroupsPage] - groups.length:', groupStore.groups.length);
-    console.log('[GroupsPage] - totalCount:', groupStore.totalCount);
-    console.log('[GroupsPage] - page:', groupStore.page);
-    console.log('[GroupsPage] - pageSize:', groupStore.pageSize);
-    console.log('[GroupsPage] - totalPages:', groupStore.totalPages);
   } catch (error) {
     console.error('[GroupsPage] ❌ Error loading groups:', error);
   }
@@ -138,7 +124,6 @@ watch([search, statusFilter], () => {
 onMounted(async () => {
   // Manager/Admin kontrolü
   if (!authStore.isManager) {
-    console.warn('Kullanıcı manager veya admin değil. Group management sayfasına erişim için manager/admin yetkisi gereklidir.');
   }
   
   // Initial load

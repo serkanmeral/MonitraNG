@@ -113,7 +113,9 @@ Mng.Ui/
 
 ### Phase 3: Dataset Yönetimi Sayfaları 📋
 
-**Durum:** Planlama Aşaması
+**Durum:** ⚠️ Kontrol Edilmesi Gerekiyor (Daha önce yapılmış olabilir)
+
+**Not:** Dataset kategorileri ve datasetler için CRUD ve list sayfaları daha önce yapılmış olabilir. Mevcut sayfalar kontrol edilmeli.
 
 #### 3.1 Dataset Listesi Sayfası
 - **Route:** `/apps/datasets`
@@ -134,6 +136,7 @@ Mng.Ui/
   - Query definitions
   - Index management
   - Incremental field configuration
+  - **Permissions Management** ⚠️ (Backend DTO/Service katmanında eksik - Phase 3.3 olarak planlanıyor)
 
 #### 3.3 Dataset Detay Sayfası
 - **Route:** `/apps/datasets/[name].vue`
@@ -151,6 +154,31 @@ Mng.Ui/
 - `GET /api/datasets/{name}` - Dataset detayı
 - `PUT /api/datasets/{name}` - Dataset güncelleme
 - `DELETE /api/datasets/{name}` - Dataset silme
+
+#### 3.3 Dataset Permissions Yönetimi (Future) ⚠️
+
+**Durum:** Backend DTO/Service katmanında eksiklikler var
+
+**Backend Eksiklikleri:**
+- [ ] `CreateDatasetDto` - Permissions field'ı eksik
+- [ ] `UpdateDatasetDto` - Permissions field'ı eksik
+- [ ] `DatasetResponseDto` - Permissions field'ı eksik
+- [ ] `DatasetService.CreateAsync` - Permissions mapping eksik
+- [ ] `DatasetService.UpdateAsync` - Permissions mapping eksik
+- [ ] `DatasetService.MapToDto` - Permissions mapping eksik
+
+**Not:** Domain entity (`PermissionsDefinition`) ve `PermissionService` mevcut. Sadece DTO ve Service katmanlarında permissions field'ı eksik.
+
+**UI Gereksinimleri (Backend tamamlandıktan sonra):**
+- [ ] Permissions step'i Dataset form'da (Step 5)
+- [ ] `PermissionsEditor.vue` component
+- [ ] Group/User selection (MngKeeper API)
+- [ ] Multi-select component (Groups)
+- [ ] Read, Create, Update, Delete permissions için ayrı grup seçimleri
+
+**Referans:** 
+- Backend: `MngDataGateway/ROADMAP.md` - Phase 3: Dataset Authorization
+- UI Design: `docs/Mng.Ui/specs/DATASET_UI_DESIGN.md` - Step 5: Permissions
 
 ---
 
@@ -199,6 +227,197 @@ Mng.Ui/
 ---
 
 ### Phase 5: Yetkilendirme ve Sayfa Yönetimi Sistemi 🔐
+
+**Durum:** Kısmen Tamamlandı (Side Menu MongoDB Entegrasyonu ✅, Sayfa Yönetimi 📋 Planlanıyor)
+
+#### 5.0 Side Menu MongoDB Entegrasyonu ✅ (Tamamlandı - 2026-01-09)
+
+**Durum:** Tamamlandı
+
+**Özet:**
+Side Menu artık MongoDB'de `@side_menu` dataset'i üzerinden dinamik olarak yönetiliyor. Hard-coded menu items MongoDB'ye migrate edildi ve Side Menu Manager sayfası oluşturuldu.
+
+**Tamamlanan İşler:**
+
+##### 5.0.1 Dataset ve Backend Hazırlığı ✅
+- ✅ `@side_menu` dataset'i oluşturuldu (System Datasets kategorisinde)
+- ✅ Dataset schema tanımlandı:
+  - `itemType`: 'header' | 'item'
+  - `pageType`: 'user' | 'manager' | 'admin'
+  - `title`, `header`, `to`, `icon`, `iconType` ('mdi' | 'tabler')
+  - `parentId`, `level`, `order` (hiyerarşi ve sıralama)
+  - `pageCode` (unique index ile)
+  - `permissions`: Group-based permissions (view, create, update, delete, export)
+  - `disabled`, `chip`, `subCaption`, vb.
+- ✅ Hard-coded menu items MongoDB'ye migrate edildi (137 item)
+- ✅ `parentId` hiyerarşisi kuruldu
+- ✅ `pageCode` field'ı eklendi (unique index)
+
+##### 5.0.2 Frontend Store ve Composable ✅
+- ✅ `useSideMenuStore` Pinia store oluşturuldu:
+  - API'den menu items yükleme (`loadMenuItems`)
+  - Cache mekanizması (localStorage, 10 dakika TTL)
+  - Tree yapısı oluşturma (`buildMenuTree`)
+  - Permission bazlı filtreleme (`filterMenuItemsByPermission`)
+  - Menu item format dönüşümü (`convertToMenuFormat`)
+- ✅ `usePagePermissions` composable oluşturuldu:
+  - Route bazlı permission kontrolü
+  - Read-only UI state yönetimi
+  - `canView`, `canCreate`, `canUpdate`, `canDelete`, `canExport` computed properties
+- ✅ `iconUtils.ts` utility oluşturuldu:
+  - Tabler ve MDI icon desteği
+  - Icon resolution ve component lookup
+  - Icon list'leri (icon picker için)
+
+##### 5.0.3 Sidebar Component Entegrasyonu ✅
+- ✅ Sidebar component MongoDB entegrasyonu:
+  - API'den menu yükleme (fallback: hard-coded)
+  - Dynamic icon rendering (Tabler/MDI)
+  - Header children render desteği eklendi
+- ✅ `Icon.vue` component güncellendi (dynamic icon rendering)
+- ✅ `NavItem`, `NavCollapse`, `NavGroup` component'leri güncellendi
+- ✅ Global middleware eklendi (`menu-permission.global.ts`):
+  - Route bazlı permission kontrolü
+  - Admin bypass
+  - Page type kontrolü (admin/manager/user)
+  - Root path (`/`) bypass
+- ✅ Unauthorized page oluşturuldu (`/unauthorized`)
+
+##### 5.0.4 Side Menu Manager UI ✅
+- ✅ `sideMenuManager.ts` Pinia store oluşturuldu
+- ✅ Side Menu Manager sayfası oluşturuldu (`/apps/side-menu-manager`):
+  - 3-column layout (Toolbar, Tree View, Form)
+- ✅ `MenuItemToolbar.vue` component (Yeni item/header ekleme, arama, yenileme)
+- ✅ `MenuTreeView.vue` ve `TreeItem.vue` components (recursive tree display)
+- ✅ `MenuItemForm.vue` component:
+  - PageCode auto-generation
+  - Parent selection (circular reference prevention)
+  - Automatic level calculation
+  - Icon picker entegrasyonu
+  - Permission editor entegrasyonu
+- ✅ `IconPicker.vue` component (Tabler + MDI icon selection with search)
+- ✅ `PermissionEditor.vue` component (group-based permissions grid)
+- ✅ Side Menu Manager link'i MongoDB'ye eklendi (Apps header altında)
+
+##### 5.0.5 API Proxy ve SSL Düzeltmeleri ✅
+- ✅ Nuxt server API route oluşturuldu (`/api/data/[...path]`):
+  - DataGateway API proxy
+  - SSL certificate bypass (development)
+- ✅ `fetchFromDataGateway` fonksiyonu güncellendi:
+  - Nuxt server route üzerinden proxy
+  - Browser SSL sorunları çözüldü
+
+##### 5.0.6 Auth ve Permission Düzeltmeleri ✅
+- ✅ Token field normalization (`is_admin` → `isAdmin`)
+- ✅ Admin bypass kontrolü düzeltildi
+- ✅ Root path (`/`) bypass eklendi
+- ✅ Debug logları eklendi
+- ✅ Welcome page oluşturuldu (`/welcome`)
+- ✅ Permission filtreleme iyileştirildi (pageType ve permissions kontrolü)
+- ✅ Menu sorting by order eklendi
+
+#### 5.1 Side Menu Manager İyileştirmeleri ✅ (Tamamlandı - 2026-01-09)
+
+**Durum:** Tamamlandı
+
+**Özet:**
+Drag & drop özelliği eklendi, menu item'ları artık sürükleyip bırakarak sıralanabilir ve parent değiştirilebilir.
+
+**Tamamlanan İşler:**
+
+##### 5.1.1 Drag & Drop Özelliği ✅
+- ✅ `vue-draggable-next` entegrasyonu
+- ✅ Menu item'ları için drag & drop sıralama
+- ✅ Parent değiştirme (drag & drop ile)
+- ✅ Cross-level drag & drop desteği
+- ✅ Empty header'lara item ekleme desteği
+- ✅ Tüm item'ların expandable olması (collapse için children gereksinimi sorunu çözüldü)
+
+##### 5.1.2 UI İyileştirmeleri ✅
+- ✅ Empty drop zone göstergesi (dashed border)
+- ✅ Auto-expand all items with children
+- ✅ Drag handle icon (GripVerticalIcon)
+
+#### 5.2 Real-time Menu Updates (SignalR) ✅ (Tamamlandı - 2026-01-10)
+
+**Durum:** Tamamlandı
+
+**Özet:**
+SignalR entegrasyonu ile Side Menu Manager'da yapılan CRUD işlemleri tüm açık client'larda otomatik olarak sol menüyü güncelliyor.
+
+**Tamamlanan İşler:**
+
+##### 5.2.1 SignalR Hub Entegrasyonu ✅
+- ✅ `sideMenu.ts` store'a SignalR bağlantısı eklendi
+- ✅ `connectToHub()` action'ı: SignalR bağlantısını başlatır
+- ✅ `disconnectFromHub()` action'ı: SignalR bağlantısını kapatır
+- ✅ Sidebar component'inde bağlantı yönetimi (onMounted, auth watch, logout)
+- ✅ Automatic reconnect desteği
+
+##### 5.2.2 Event Handling ✅
+- ✅ `ReceiveMessage` event listener: `@side_menu` dataset event'lerini dinliyor
+- ✅ Event filtering: Sadece `@side_menu` dataset'i için çalışıyor
+  - `DatasetName === '@side_menu'` kontrolü
+  - Dataset event type'ları: `datacreatedevent`, `dataupdatedevent`, `datadeletedevent`, `datarestoredevent`
+- ✅ Otomatik menu refresh (CRUD işlemlerinde)
+- ✅ Debounce mekanizması (500ms) - ardışık event'ler tek refresh'e indirgeniyor
+
+##### 5.2.3 Sorun Düzeltmeleri ✅
+- ✅ Duplicate handler sorunu çözüldü (eski bağlantı temizleniyor)
+- ✅ Detaylı debug logları eklendi
+- ✅ Error handling iyileştirildi
+
+**Bilinen Sorunlar:**
+- ⚠️ **Nested Header Rendering**: İleride düzeltilebilir, şu an bağımsız header'lar gibi çalışıyor. Etki: Düşük (kritik değil)
+
+**API Endpoints:**
+- `GET /api/v1/data/@side_menu` - Menu items listesi
+- `POST /api/v1/data/@side_menu` - Yeni menu item
+- `PUT /api/v1/data/@side_menu/{id}` - Menu item güncelleme
+- `DELETE /api/v1/data/@side_menu/{id}` - Menu item silme
+
+**Store Yapısı:**
+- `useSideMenuStore`: Menu items yönetimi, tree yapısı, permission filtreleme
+- `useSideMenuManagerStore`: Side Menu Manager UI state yönetimi
+- `usePagePermissions`: Route bazlı permission kontrolü
+
+**Component Yapısı:**
+- Sidebar: `components/lc/Full/vertical-sidebar/`
+- Side Menu Manager: `components/apps/side-menu-manager/`
+- Middleware: `middleware/menu-permission.global.ts`
+
+**Sonraki Adımlar:**
+1. ~~MenuItemToolbar.vue hatası düzeltilecek~~ ✅ Tamamlandı
+2. ~~Side Menu Manager görünürlük sorunu çözülecek~~ ✅ Tamamlandı
+3. ~~Drag & Drop özelliği~~ ✅ Tamamlandı (2026-01-09)
+4. ~~Real-time updates (SignalR/MngHub entegrasyonu)~~ ✅ Tamamlandı (2026-01-10)
+5. **Export/Import özelliği** (gelecek)
+   - Menu item'larını JSON olarak export etme
+   - JSON'dan menu item'ları import etme
+   - Backup/restore fonksiyonları
+6. **Menu item duplication (kopyalama)** (gelecek)
+   - Bir menu item'ını kopyalama (aynı özelliklerle yeni item oluşturma)
+   - Parent ve child'ları ile birlikte kopyalama seçeneği
+7. **Keyboard navigation** (gelecek)
+   - Arrow keys ile menu'de gezinme
+   - Enter ile expand/collapse
+   - Tab ile field'lar arasında gezinme
+8. **Menu search/filter özelliği** (gelecek)
+   - Sidebar'da menu item'larını arama
+   - Filtreleme (pageType, itemType, vb.)
+   - Real-time search
+9. **Nested header rendering düzeltmesi** (ileride - düşük öncelik)
+   - İç içe header'ların doğru görüntülenmesi
+   - Template-based recursive rendering iyileştirmesi
+
+**Dokümantasyon:**
+- Detaylı planlama: `docs/Mng.Ui/specs/SIDE_MENU_PLANNING.md`
+- Mevcut durum: `docs/Mng.Ui/current_status.md`
+- Bilinen hatalar: `docs/Mng.Ui/known-issues.md`
+
+---
+
+#### 5.1 Sayfa ve Menü Yönetimi Dataset'i
 
 **Durum:** Planlama Aşaması
 
@@ -1523,10 +1742,30 @@ GET /api/user/export?format=xlsx&searchTerm=...&isActive=...
 - Template analizi tamamlandı
 - Phase planlaması yapıldı
 - **2025-01-XX** - Phase 5: Yetkilendirme ve Sayfa Yönetimi Sistemi eklendi
+- **2026-01-09** - Phase 5.0: Side Menu MongoDB Entegrasyonu tamamlandı
+  - `@side_menu` dataset oluşturuldu
+  - Hard-coded menu items MongoDB'ye migrate edildi
+  - Side Menu Manager sayfası oluşturuldu
+  - Permission sistemi entegre edildi
+  - API proxy ve SSL sorunları çözüldü
+- **2026-01-09** - Phase 5.1: Side Menu Manager iyileştirmeleri
+  - Drag & drop ile menu item sıralama ve parent değiştirme
+  - Empty header'lara item ekleme desteği
+  - Tüm item'ların expandable olması (collapse gereksinimi sorunu çözüldü)
+  - Welcome page oluşturuldu
+  - Menu sorting by order eklendi
+- **2026-01-10** - Phase 5.2: Real-time Menu Updates (SignalR)
+  - SignalR Hub entegrasyonu (`sideMenu.ts` store)
+  - `@side_menu` dataset event'lerini dinleme (DataCreatedEvent, DataUpdatedEvent, DataDeletedEvent, DataRestoredEvent)
+  - Otomatik menu refresh (CRUD işlemlerinde)
+  - Event filtering: Sadece `@side_menu` dataset'i için çalışıyor
+  - Duplicate handler sorunu çözüldü
+  - Debounce mekanizması (500ms) - ardışık event'ler tek refresh'e indirgeniyor
+  - Sidebar component'inde SignalR bağlantı yönetimi
 
 ---
 
-**Son Güncelleme:** 2025-01-XX  
-**Version:** 1.0.0  
-**Status:** 📋 Planning Phase
+**Son Güncelleme:** 2026-01-10  
+**Version:** 1.2.0  
+**Status:** 🚧 Development Phase (Side Menu ✅, Real-time Updates ✅, Diğer Phase'ler 📋 Planning)
 

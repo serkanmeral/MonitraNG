@@ -29,7 +29,7 @@ export const useChatStore = defineStore({
                 this.chats = data.data;
             } catch (error) {
                 alert(error);
-                console.log(error);
+                console.error(error);
             }
         },
         //select chat

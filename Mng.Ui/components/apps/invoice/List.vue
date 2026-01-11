@@ -13,7 +13,6 @@ onMounted(async () => {
 });
 
 const getInvoice = computed(() => store.invoice);
-console.log('list', getInvoice);
 let FinalInvoice = ref([...getInvoice.value]);
 
 const searchValue = ref('');
@@ -21,13 +20,11 @@ const InvoiceTypeVal = ref('total');
 
 const setInvoiceType = (type: string) => {
     InvoiceTypeVal.value = type;
-    console.log(`InvoiceTypeVal changed to: ${type}`);
 
     if (InvoiceTypeVal.value === 'total') {
         FinalInvoice.value = [...getInvoice.value];
     } else {
         FinalInvoice.value = getInvoice.value.filter((ticket: any) => {
-            console.log('Filtering ticket:', ticket);
             return ticket.status && ticket.status.toLowerCase() === InvoiceTypeVal.value.toLowerCase();
         });
     }

@@ -8,6 +8,7 @@ namespace MngKeeper.Application.Interfaces
             string domainName, 
             bool isAdmin = false, 
             bool isManager = false,
+            List<string>? userGroups = null,
             string? title = null,
             string? department = null,
             int? gender = null,

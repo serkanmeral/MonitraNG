@@ -1,7 +1,28 @@
-<script setup>
+<script setup lang="ts">
 import Icon from '../Icon.vue';
 
-const props = defineProps({ item: Object, level: Number });
+interface Props {
+  item: {
+    icon?: any;
+    iconType?: 'mdi' | 'tabler';
+    iconName?: string;
+    title?: string;
+    to?: string;
+    type?: string;
+    disabled?: boolean;
+    subCaption?: string;
+    chip?: string;
+    chipColor?: string;
+    chipBgColor?: string;
+    chipVariant?: string;
+    chipIcon?: string;
+  };
+  level?: number;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  level: 0,
+});
 </script>
 
 <template>
@@ -17,9 +38,14 @@ const props = defineProps({ item: Object, level: Number });
     >
         <!---If icon-->
         <template v-slot:prepend>
-            <Icon :item="item.icon" :level="level" />
+            <Icon 
+                :item="item.icon" 
+                :iconName="item.iconName || (typeof item.icon === 'string' ? item.icon : null)"
+                :iconType="item.iconType || 'tabler'"
+                :level="level" 
+            />
         </template>
-        <v-list-item-title>{{ $t(item.title) }}</v-list-item-title>
+        <v-list-item-title>{{ item.title ? $t(item.title) : '' }}</v-list-item-title>
         <!---If Caption-->
         <v-list-item-subtitle v-if="item.subCaption" class="text-caption mt-n1 hide-menu">
             {{ item.subCaption }}

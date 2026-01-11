@@ -33,10 +33,9 @@ export const useTicketstore = defineStore({
             try {
                 const data = await axios.get('/api/data/tickets/TicketData');
                 this.ticket = data.data;
-                console.log(data);
             } catch (error) {
                 alert(error);
-                console.log(error);
+                console.error(error);
             }
         },
 

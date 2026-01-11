@@ -60,8 +60,27 @@ namespace MngKeeper.Infrastructure.Services
                 else if (payloadJson.TryGetProperty("is_manager", out var isManagerElementSnake))
                     claims.IsManager = isManagerElementSnake.GetBoolean();
                 
-                _logger.LogInformation("Token parsed successfully for user: {Username}, domain: {DomainName}, isAdmin: {IsAdmin}, isManager: {IsManager}", 
-                    claims.Username, claims.DomainName, claims.IsAdmin, claims.IsManager);
+                // Extract user_groups claim (array of strings)
+                if (payloadJson.TryGetProperty("user_groups", out var userGroupsElement))
+                {
+                    if (userGroupsElement.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var groupElement in userGroupsElement.EnumerateArray())
+                        {
+                            if (groupElement.ValueKind == JsonValueKind.String)
+                            {
+                                var groupName = groupElement.GetString();
+                                if (!string.IsNullOrEmpty(groupName))
+                                {
+                                    claims.Groups.Add(groupName);
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                _logger.LogInformation("Token parsed successfully for user: {Username}, domain: {DomainName}, isAdmin: {IsAdmin}, isManager: {IsManager}, groups: {Groups}", 
+                    claims.Username, claims.DomainName, claims.IsAdmin, claims.IsManager, string.Join(", ", claims.Groups));
                 
                 return claims;
             }

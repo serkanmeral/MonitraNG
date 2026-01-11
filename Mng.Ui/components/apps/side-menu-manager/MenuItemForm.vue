@@ -1,0 +1,522 @@
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue';
+import type { SideMenuItem } from '@/stores/apps/sideMenu';
+import { TrashIcon, XIcon } from 'vue-tabler-icons';
+import IconPicker from './IconPicker.vue';
+import PermissionEditor from './PermissionEditor.vue';
+
+const props = defineProps<{
+  item: SideMenuItem | null;
+  allItems: SideMenuItem[];
+  loading?: boolean;
+}>();
+
+const emit = defineEmits<{
+  'save': [itemData: Partial<SideMenuItem>];
+  'delete': [itemId: string];
+  'cancel': [];
+}>();
+
+// Form data
+const formData = ref<Partial<SideMenuItem>>({
+  itemType: 'item',
+  pageType: 'admin',
+  level: 0,
+  parentId: null,
+  order: 0,
+  disabled: false,
+  type: 'internal',
+  iconType: 'tabler',
+});
+
+// Watch item changes
+watch(
+  () => props.item,
+  (newItem) => {
+    if (newItem) {
+      formData.value = {
+        ...newItem,
+      };
+    } else {
+      // Reset form for new item
+      formData.value = {
+        itemType: 'item',
+        pageType: 'admin',
+        level: 0,
+        parentId: null,
+        order: props.allItems.length,
+        disabled: false,
+        type: 'internal',
+        iconType: 'tabler',
+      };
+    }
+  },
+  { immediate: true }
+);
+
+// Computed properties
+const isEditMode = computed(() => {
+  return props.item?.__dataId !== undefined;
+});
+
+const parentOptions = computed(() => {
+  // Filter out self and descendants for circular reference prevention
+  const excludeIds = new Set<string>();
+  if (props.item?.__dataId) {
+    excludeIds.add(props.item.__dataId);
+    // Add all descendants (find recursively in flat array)
+    const addDescendants = (parentId: string) => {
+      props.allItems.forEach((item) => {
+        if (item.parentId === parentId && item.__dataId) {
+          excludeIds.add(item.__dataId);
+          addDescendants(item.__dataId);
+        }
+      });
+    };
+    addDescendants(props.item.__dataId);
+  }
+
+  // Filter: Only show headers as parent options
+  // Build tree structure from flat array (only headers)
+  const headerItems = props.allItems
+    .filter(item => item.itemType === 'header' && item.__dataId && !excludeIds.has(item.__dataId))
+    .sort((a, b) => (a.order || 0) - (b.order || 0)); // Sort headers by order
+
+  // Build flat list for dropdown (only headers)
+  const flatItems: Array<{ value: string | null; title: string; level: number }> = [
+    { value: null, title: '(Yok - Root)', level: 0 },
+  ];
+
+  // Add headers to dropdown
+  headerItems.forEach((item) => {
+    const label = item.header || item.title || 'Untitled';
+    flatItems.push({
+      value: item.__dataId!,
+      title: label,
+      level: item.level || 0,
+    });
+  });
+
+  return flatItems;
+});
+
+// Calculate level based on selected parent
+watch(
+  () => formData.value.parentId,
+  (parentId) => {
+    if (parentId) {
+      const parent = findItemById(props.allItems, parentId);
+      if (parent) {
+        formData.value.level = (parent.level || 0) + 1;
+      }
+    } else {
+      formData.value.level = 0;
+    }
+  }
+);
+
+const findItemById = (items: SideMenuItem[], id: string): SideMenuItem | null => {
+  for (const item of items) {
+    if (item.__dataId === id) {
+      return item;
+    }
+    if (item.children) {
+      const found = findItemById(item.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
+// Handle save
+const handleSave = () => {
+  // Validate required fields
+  if (formData.value.itemType === 'header' && !formData.value.header) {
+    alert('Header metni gereklidir');
+    return;
+  }
+  if (formData.value.itemType === 'item' && !formData.value.title) {
+    alert('Menu başlığı gereklidir');
+    return;
+  }
+
+  // Prepare data for save
+  const itemData: Partial<SideMenuItem> = {
+    ...formData.value,
+  };
+
+  // Remove undefined fields
+  Object.keys(itemData).forEach((key) => {
+    if (itemData[key as keyof SideMenuItem] === undefined) {
+      delete itemData[key as keyof SideMenuItem];
+    }
+  });
+
+  emit('save', itemData);
+};
+
+// Handle delete
+const handleDelete = () => {
+  if (props.item?.__dataId) {
+    emit('delete', props.item.__dataId);
+  }
+};
+
+// Handle icon selection
+const handleIconSelect = (iconName: string, iconType: 'mdi' | 'tabler') => {
+  formData.value.icon = iconName;
+  formData.value.iconType = iconType;
+};
+
+// Handle permissions change
+const handlePermissionsChange = (permissions: SideMenuItem['permissions']) => {
+  formData.value.permissions = permissions;
+};
+
+// Navigate to route
+const navigateToRoute = async (route: string) => {
+  if (!route || !route.trim()) {
+    return;
+  }
+  
+  if (!process.client) {
+    return;
+  }
+  
+  try {
+    // Clean route
+    const cleanRoute = route.trim();
+    
+    // Check if external link
+    if (formData.value.type === 'external' || cleanRoute.startsWith('http://') || cleanRoute.startsWith('https://')) {
+      window.open(cleanRoute, '_blank');
+      return;
+    }
+    
+    // Internal route - navigate using Nuxt router
+    // navigateTo is auto-imported in Nuxt 3
+    await navigateTo(cleanRoute);
+  } catch (error) {
+    // Fallback: try window.location
+    window.location.href = route;
+  }
+};
+
+// Generate pageCode automatically
+const generatePageCode = () => {
+  if (formData.value.to && formData.value.to.startsWith('/')) {
+    // Generate from route: /dashboards/analytical -> dashboards-analytical
+    formData.value.pageCode = formData.value.to.substring(1).replace(/\//g, '-').replace(/[^a-zA-Z0-9-_]/g, '').toLowerCase();
+  } else if (formData.value.title) {
+    // Generate from title: "Analytical Dashboard" -> analytical-dashboard
+    formData.value.pageCode = formData.value.title.toLowerCase()
+      .replace(/[^a-zA-Z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  } else if (formData.value.header) {
+    // Generate from header
+    formData.value.pageCode = formData.value.header.toLowerCase()
+      .replace(/[^a-zA-Z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+  
+  // If still no pageCode, use item type + order
+  if (!formData.value.pageCode) {
+    formData.value.pageCode = `${formData.value.itemType}-${formData.value.order || 0}`;
+  }
+};
+</script>
+
+<template>
+  <div class="menu-item-form">
+    <div v-if="!item" class="text-center pa-8 text-medium-emphasis">
+      <p>Yeni menu item oluşturmak için sol taraftan "Yeni Menu Item" veya "Yeni Header" butonuna tıklayın.</p>
+    </div>
+
+    <v-form v-else @submit.prevent="handleSave">
+      <v-row>
+        <!-- Item Type -->
+        <v-col cols="12" md="6">
+          <v-select
+            v-model="formData.itemType"
+            :items="[
+              { title: 'Header', value: 'header' },
+              { title: 'Menu Item', value: 'item' },
+            ]"
+            label="Item Tipi"
+            variant="outlined"
+            required
+          ></v-select>
+        </v-col>
+
+        <!-- Page Type -->
+        <v-col cols="12" md="6">
+          <v-select
+            v-model="formData.pageType"
+            :items="[
+              { title: 'User', value: 'user' },
+              { title: 'Manager', value: 'manager' },
+              { title: 'Administration', value: 'admin' },
+            ]"
+            label="Sayfa Tipi"
+            variant="outlined"
+          ></v-select>
+        </v-col>
+
+        <!-- Header (for header type) -->
+        <v-col v-if="formData.itemType === 'header'" cols="12">
+          <v-text-field
+            v-model="formData.header"
+            label="Header Metni"
+            variant="outlined"
+            required
+          ></v-text-field>
+        </v-col>
+
+        <!-- Title (for item type) -->
+        <v-col v-if="formData.itemType === 'item'" cols="12">
+          <v-text-field
+            v-model="formData.title"
+            label="Menü Başlığı"
+            variant="outlined"
+            required
+          ></v-text-field>
+        </v-col>
+
+        <!-- Page Code -->
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="formData.pageCode"
+            label="Sayfa Kodu (Unique)"
+            variant="outlined"
+            hint="Route veya başlıktan otomatik oluşturulabilir"
+            persistent-hint
+          >
+            <template #append-inner>
+              <v-btn
+                icon
+                size="small"
+                variant="text"
+                @click="generatePageCode"
+                title="Otomatik oluştur"
+              >
+                <v-icon size="18">mdi-auto-fix</v-icon>
+              </v-btn>
+            </template>
+          </v-text-field>
+        </v-col>
+
+        <!-- Order -->
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model.number="formData.order"
+            label="Sıralama"
+            type="number"
+            variant="outlined"
+            min="0"
+          ></v-text-field>
+        </v-col>
+
+        <!-- Parent Selector -->
+        <v-col cols="12">
+          <v-select
+            v-model="formData.parentId"
+            :items="parentOptions"
+            item-title="title"
+            item-value="value"
+            label="Parent Menu Item"
+            variant="outlined"
+            clearable
+          ></v-select>
+        </v-col>
+
+        <!-- Level (auto-calculated, readonly) -->
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model.number="formData.level"
+            label="Seviye"
+            type="number"
+            variant="outlined"
+            readonly
+            hint="Parent seçimine göre otomatik hesaplanır"
+            persistent-hint
+          ></v-text-field>
+        </v-col>
+
+        <!-- Disabled -->
+        <v-col cols="12" md="6">
+          <v-switch
+            v-model="formData.disabled"
+            label="Devre Dışı"
+            color="error"
+          ></v-switch>
+        </v-col>
+
+        <!-- Route Path (for item type) -->
+        <v-col v-if="formData.itemType === 'item'" cols="12" md="6">
+          <v-text-field
+            v-model="formData.to"
+            label="Route Path"
+            variant="outlined"
+            hint="Örn: /dashboards/analytical"
+            persistent-hint
+          >
+            <template #append-inner v-if="formData.to && formData.to.trim()">
+              <v-btn
+                icon
+                size="small"
+                variant="text"
+                @click="navigateToRoute(formData.to!)"
+                title="Bu sayfaya git"
+              >
+                <v-icon size="18">mdi-open-in-new</v-icon>
+              </v-btn>
+            </template>
+          </v-text-field>
+        </v-col>
+
+        <!-- Link Type (for item type) -->
+        <v-col v-if="formData.itemType === 'item'" cols="12" md="6">
+          <v-select
+            v-model="formData.type"
+            :items="[
+              { title: 'Internal', value: 'internal' },
+              { title: 'External', value: 'external' },
+            ]"
+            label="Link Tipi"
+            variant="outlined"
+          ></v-select>
+        </v-col>
+
+        <!-- Icon Type & Icon (for item type) -->
+        <v-col v-if="formData.itemType === 'item'" cols="12">
+          <IconPicker
+            :icon-type="formData.iconType || 'tabler'"
+            :icon-name="formData.icon || ''"
+            @icon-select="handleIconSelect"
+          />
+        </v-col>
+
+        <!-- Sub Caption -->
+        <v-col cols="12">
+          <v-text-field
+            v-model="formData.subCaption"
+            label="Alt Başlık"
+            variant="outlined"
+          ></v-text-field>
+        </v-col>
+
+        <!-- Chip Section -->
+        <v-col cols="12">
+          <v-divider class="mb-4"></v-divider>
+          <h3 class="text-h6 mb-4">Chip/Badge Ayarları</h3>
+        </v-col>
+
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="formData.chip"
+            label="Chip Metni"
+            variant="outlined"
+          ></v-text-field>
+        </v-col>
+
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="formData.chipVariant"
+            label="Chip Variant"
+            variant="outlined"
+          ></v-text-field>
+        </v-col>
+
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="formData.chipColor"
+            label="Chip Metin Rengi"
+            variant="outlined"
+          ></v-text-field>
+        </v-col>
+
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="formData.chipBgColor"
+            label="Chip Arka Plan Rengi"
+            variant="outlined"
+          ></v-text-field>
+        </v-col>
+
+        <v-col cols="12">
+          <v-text-field
+            v-model="formData.chipIcon"
+            label="Chip Icon"
+            variant="outlined"
+          ></v-text-field>
+        </v-col>
+
+        <!-- Permissions Section -->
+        <v-col cols="12">
+          <v-divider class="mb-4"></v-divider>
+          <h3 class="text-h6 mb-4">Yetkilendirme</h3>
+          <PermissionEditor
+            :permissions="formData.permissions"
+            @change="handlePermissionsChange"
+          />
+        </v-col>
+
+        <!-- Action Buttons -->
+        <v-col cols="12">
+          <v-divider class="mb-4"></v-divider>
+          <div class="d-flex gap-2">
+            <v-btn
+              type="submit"
+              color="primary"
+              variant="flat"
+              :loading="loading"
+            >
+              <template #prepend>
+                <v-icon>mdi-content-save</v-icon>
+              </template>
+              {{ isEditMode ? 'Güncelle' : 'Kaydet' }}
+            </v-btn>
+
+            <v-btn
+              v-if="isEditMode"
+              color="error"
+              variant="flat"
+              :loading="loading"
+              prepend-icon="TrashIcon"
+              @click="handleDelete"
+            >
+              <template #prepend>
+                <TrashIcon size="20" />
+              </template>
+              Sil
+            </v-btn>
+
+            <v-spacer></v-spacer>
+
+            <v-btn
+              color="default"
+              variant="outlined"
+              prepend-icon="XIcon"
+              @click="emit('cancel')"
+            >
+              <template #prepend>
+                <XIcon size="20" />
+              </template>
+              İptal
+            </v-btn>
+          </div>
+        </v-col>
+      </v-row>
+    </v-form>
+  </div>
+</template>
+
+<style scoped>
+.menu-item-form {
+  padding: 16px 0;
+}
+</style>

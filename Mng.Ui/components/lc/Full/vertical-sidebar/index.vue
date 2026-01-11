@@ -1,13 +1,115 @@
 <script setup lang="ts">
-import { ref, shallowRef, computed } from 'vue';
+import { ref, shallowRef, computed, onMounted, watch } from 'vue';
 import { useCustomizerStore } from '@/stores/customizer';
 import { useAuthStore } from '@/stores/auth';
-import sidebarItems from './sidebarItem';
+import { useSideMenuStore } from '@/stores/apps/sideMenu';
 import { PowerIcon } from 'vue-tabler-icons';
+import type { SideMenuItem } from '@/stores/apps/sideMenu';
+import type { menu } from './sidebarItem';
 
 const customizer = useCustomizerStore();
 const authStore = useAuthStore();
-const sidebarMenu = shallowRef(sidebarItems);
+const menuStore = useSideMenuStore();
+const config = useRuntimeConfig();
+
+// Check if fallback menu is enabled (default: false - disabled)
+const enableFallbackMenu = computed(() => config.public.enableFallbackMenu === true);
+
+// Try to load menu items from API, fallback to hard-coded (if enabled)
+const sidebarMenu = shallowRef<menu[]>([]);
+const menuLoading = ref(true); // Track loading state
+
+// Load menu from store (API) or fallback to hard-coded
+const loadMenu = async (forceRefresh: boolean = false) => {
+  menuLoading.value = true;
+  
+  try {
+    // Try to load from API
+    await menuStore.loadMenuItems(forceRefresh);
+    
+    if (menuStore.visibleMenuItems && menuStore.visibleMenuItems.length > 0) {
+      // Convert store items to menu format
+      sidebarMenu.value = menuStore.visibleMenuItems.map(item => menuStore.convertToMenuFormat(item));
+      menuLoading.value = false;
+      return;
+    } else {
+      if (!enableFallbackMenu.value) {
+        sidebarMenu.value = [];
+        menuLoading.value = false;
+        return;
+      }
+    }
+  } catch (error) {
+    if (!enableFallbackMenu.value) {
+      sidebarMenu.value = [];
+      menuLoading.value = false;
+      return;
+    }
+  }
+  
+  // Fallback: Hard-coded menu (only if enabled)
+  if (!enableFallbackMenu.value) {
+    sidebarMenu.value = [];
+    menuLoading.value = false;
+    return;
+  }
+  
+  try {
+    const sidebarItemsModule = await import('./sidebarItem');
+    sidebarMenu.value = sidebarItemsModule.default || [];
+  } catch (error) {
+    sidebarMenu.value = [];
+  } finally {
+    menuLoading.value = false;
+  }
+};
+
+// Watch for auth changes to reload menu
+watch(() => authStore.isAuthenticated, async (isAuth) => {
+  if (isAuth) {
+    await loadMenu();
+    
+    // SignalR bağlantısını başlat
+    try {
+      await menuStore.connectToHub();
+    } catch (error) {
+      // SignalR bağlantı hatası kritik değil, sessizce devam et
+    }
+  } else {
+    // Logout durumunda SignalR bağlantısını kapat
+    try {
+      await menuStore.disconnectFromHub();
+    } catch (error) {
+      // Hata önemli değil
+    }
+  }
+});
+
+// Watch for menu store changes
+watch(() => menuStore.visibleMenuItems, () => {
+  if (menuStore.visibleMenuItems && menuStore.visibleMenuItems.length > 0) {
+    sidebarMenu.value = menuStore.visibleMenuItems.map(item => menuStore.convertToMenuFormat(item));
+    menuLoading.value = false;
+  } else if (menuStore.loading === false) {
+    // Menu yükleme tamamlandı ama boş
+    menuLoading.value = false;
+  }
+}, { deep: true });
+
+// Load menu on mount (force refresh to bypass cache on initial load)
+onMounted(async () => {
+  if (authStore.isAuthenticated) {
+    // İlk yüklemede cache'i bypass et, sonraki yüklemelerde cache kullan
+    await loadMenu(true);
+    
+    // SignalR bağlantısını başlat (real-time menu updates için)
+    try {
+      await menuStore.connectToHub();
+    } catch (error) {
+      // SignalR bağlantı hatası kritik değil, menu yine çalışır
+    }
+  }
+});
 
 // Get user display name
 const userDisplayName = computed(() => {
@@ -59,6 +161,13 @@ const userInitials = computed(() => {
 
 // Logout handler
 const handleLogout = async () => {
+  // SignalR bağlantısını kapat
+  try {
+    await menuStore.disconnectFromHub();
+  } catch (error) {
+    // Hata önemli değil
+  }
+  
   await authStore.logout();
   navigateTo('/auth/login');
 };
@@ -101,18 +210,88 @@ const handleLogout = async () => {
                     </div>
                 </div>
             </div>
-            <v-list class="py-5 px-4 bg-muted" density="compact">
-                <!---Menu Loop -->
-                <template v-for="(item, i) in sidebarMenu">
+            <v-list class="py-5 px-4 bg-muted" density="compact" v-if="sidebarMenu && sidebarMenu.length > 0">
+                <!---Menu Loop - Recursive rendering -->
+                <template v-for="(item, i) in sidebarMenu" :key="`menu-${i}-${item.title || item.header || i}`">
                     <!---Item Sub Header -->
-                    <LcFullVerticalSidebarNavGroup :item="item" v-if="item.header" :key="item.title" />
-                    <!---If Has Child -->
-                    <LcFullVerticalSidebarNavCollapse class="leftPadding" :item="item" :level="0" v-else-if="item.children" />
+                    <template v-if="item.header">
+                        <LcFullVerticalSidebarNavGroup :item="item" />
+                        <!-- Header'ın children'larını recursive olarak render et -->
+                        <template v-if="item.children && item.children.length > 0">
+                            <template v-for="(child, j) in item.children" :key="`child-${i}-${j}-${child.title || child.header || j}`">
+                                <!-- Nested Header: Eğer child bir header ise -->
+                                <template v-if="child.header">
+                                    <LcFullVerticalSidebarNavGroup :item="child" />
+                                    <!-- Nested header'ın children'larını recursive olarak render et -->
+                                    <template v-if="child.children && child.children.length > 0">
+                                        <template v-for="(grandchild, k) in child.children" :key="`grandchild-${i}-${j}-${k}-${grandchild.title || grandchild.header || k}`">
+                                            <!-- Deep nested: Eğer grandchild da bir header ise -->
+                                            <template v-if="grandchild.header">
+                                                <LcFullVerticalSidebarNavGroup :item="grandchild" />
+                                                <template v-if="grandchild.children && grandchild.children.length > 0">
+                                                    <template v-for="(greatGrandchild, l) in grandchild.children" :key="`greatGrandchild-${i}-${j}-${k}-${l}-${greatGrandchild.title || greatGrandchild.header || l}`">
+                                                        <LcFullVerticalSidebarNavCollapse 
+                                                            v-if="greatGrandchild.children && greatGrandchild.children.length > 0"
+                                                            :item="greatGrandchild" 
+                                                            :level="0" 
+                                                            class="leftPadding" 
+                                                        />
+                                                        <LcFullVerticalSidebarNavItem 
+                                                            v-else
+                                                            :item="greatGrandchild" 
+                                                            :level="0" 
+                                                            class="leftPadding" 
+                                                        />
+                                                    </template>
+                                                </template>
+                                            </template>
+                                            <!-- Normal Item veya Collapse: Eğer grandchild header değilse -->
+                                            <template v-else>
+                                                <LcFullVerticalSidebarNavCollapse 
+                                                    v-if="grandchild.children && grandchild.children.length > 0"
+                                                    :item="grandchild" 
+                                                    :level="0" 
+                                                    class="leftPadding" 
+                                                />
+                                                <LcFullVerticalSidebarNavItem 
+                                                    v-else
+                                                    :item="grandchild" 
+                                                    :level="0" 
+                                                    class="leftPadding" 
+                                                />
+                                            </template>
+                                        </template>
+                                    </template>
+                                </template>
+                                <!-- Normal Item veya Collapse: Eğer child header değilse -->
+                                <template v-else>
+                                    <LcFullVerticalSidebarNavCollapse 
+                                        v-if="child.children && child.children.length > 0"
+                                        :item="child" 
+                                        :level="0" 
+                                        class="leftPadding" 
+                                    />
+                                    <LcFullVerticalSidebarNavItem 
+                                        v-else
+                                        :item="child" 
+                                        :level="0" 
+                                        class="leftPadding" 
+                                    />
+                                </template>
+                            </template>
+                        </template>
+                    </template>
+                    <!---If Has Child (no header) -->
+                    <LcFullVerticalSidebarNavCollapse class="leftPadding" :item="item" :level="0" v-else-if="item.children && item.children.length > 0" />
                     <!---Single Item-->
                     <LcFullVerticalSidebarNavItem :item="item" v-else class="leftPadding" />
                     <!---End Single Item-->
                 </template>
             </v-list>
+            <div v-else-if="menuLoading" class="pa-4 text-center text-body-2 text-medium-emphasis">
+                Menü yükleniyor...
+            </div>
+            <!-- Menu boş ve yükleme tamamlandı - hiçbir şey gösterme -->
         </perfect-scrollbar>
     </v-navigation-drawer>
 </template>

@@ -65,19 +65,23 @@ public class DatasetCategoriesController : ControllerBase
     /// </summary>
     /// <param name="pageNumber">Sayfa numarası (default: 1)</param>
     /// <param name="pageSize">Sayfa boyutu (default: 20, max: 100)</param>
+    /// <param name="search">Arama terimi (kategori adı veya açıklama)</param>
     /// <returns>Sayfalı kategori listesi</returns>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResultDto<DatasetCategoryResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
+    public async Task<IActionResult> GetAll(
+        [FromQuery] int pageNumber = 1, 
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null)
     {
         try
         {
-            var result = await _categoryService.GetAllAsync(pageNumber, pageSize);
+            var result = await _categoryService.GetAllAsync(pageNumber, pageSize, search);
             
             _logger.LogInformation(
-                "Listed dataset categories: Page {Page}, Size {Size}, Total {Total}",
-                pageNumber, pageSize, result.TotalCount);
+                "Listed dataset categories: Page {Page}, Size {Size}, Search: {Search}, Total {Total}",
+                pageNumber, pageSize, search ?? "None", result.TotalCount);
 
             return Ok(result);
         }

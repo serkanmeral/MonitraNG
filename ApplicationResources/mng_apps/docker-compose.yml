@@ -66,7 +66,7 @@ services:
     build:
       context: ../../MngKeeper
       dockerfile: Presentation/MngKeeper.Api/Dockerfile
-    image: localhost:5000/mngkeeper:1.1.0
+    image: localhost:5000/mngkeeper:1.2.1
     container_name: mngkeeper
     ports:
       - "5001:5001"
@@ -86,6 +86,7 @@ services:
       
       # Keycloak Configuration
       - MngKeeperSettings__Keycloak__BaseUrl=http://keycloak:8080
+      - MngKeeperSettings__Keycloak__PathPrefix=
       - MngKeeperSettings__Keycloak__AdminUsername=admin
       - MngKeeperSettings__Keycloak__AdminPassword=admin123
       - MngKeeperSettings__Keycloak__ClientId=mng-keeper-admin
@@ -283,6 +284,7 @@ services:
       # Server-side only (private) - Keycloak and MinIO config
       # Note: keycloak and minio are in mng_common network, accessible via hostnames
       - KEYCLOAK_BASE_URL=http://keycloak:8080
+      - KEYCLOAK_PATH_PREFIX=
       - KEYCLOAK_ADMIN_USER=admin
       - KEYCLOAK_ADMIN_PASSWORD=admin123
       - MINIO_ENDPOINT=minio:9000

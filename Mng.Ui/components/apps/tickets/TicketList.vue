@@ -9,7 +9,6 @@ const store = useTicketstore();
 // Fetch tickets and ensure tickets are available
 onMounted(async () => {
     await store.fetchTicket();
-    console.log('Fetched tickets:', getTickets.value);
     setTicketType(TicketTypeVal.value);
 });
 
@@ -50,13 +49,11 @@ const createTicket = () => {
 // Function to set the ticket type and filter based on status
 const setTicketType = (type: string) => {
     TicketTypeVal.value = type;
-    console.log(`TicketTypeVal changed to: ${type}`);
 
     if (TicketTypeVal.value === 'total') {
         FinalTickets.value = [...getTickets.value];
     } else {
         FinalTickets.value = getTickets.value.filter((ticket) => {
-            console.log('Filtering ticket:', ticket);
             return ticket.Status && ticket.Status.toLowerCase() === TicketTypeVal.value.toLowerCase();
         });
     }

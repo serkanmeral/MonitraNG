@@ -33,7 +33,7 @@ export const useEmailStore = defineStore({
         this.emails = data.data;
       } catch (error) {
         alert(error);
-        console.log(error);
+        console.error(error);
       }
     },
     selectEmail(email: any) {

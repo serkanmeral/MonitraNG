@@ -13,6 +13,7 @@ namespace MngKeeper.Infrastructure.Services
         private readonly ILogger<KeycloakService> _logger;
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
+        private readonly string _pathPrefix;
         private string? _adminToken;
 
         public KeycloakService(ILogger<KeycloakService> logger, HttpClient httpClient, IConfiguration configuration)
@@ -20,6 +21,44 @@ namespace MngKeeper.Infrastructure.Services
             _logger = logger;
             _httpClient = httpClient;
             _configuration = configuration;
+            
+            // Get path prefix from configuration (default: empty string for local, /keycloak for server)
+            _pathPrefix = configuration["MngKeeperSettings:Keycloak:PathPrefix"] ?? "";
+            
+            // Ensure prefix starts with / if not empty and doesn't already start with /
+            if (!string.IsNullOrEmpty(_pathPrefix) && !_pathPrefix.StartsWith("/"))
+            {
+                _pathPrefix = "/" + _pathPrefix;
+            }
+            
+            // Remove trailing slash if exists
+            if (_pathPrefix.EndsWith("/"))
+            {
+                _pathPrefix = _pathPrefix.TrimEnd('/');
+            }
+            
+            _logger.LogInformation("KeycloakService initialized with PathPrefix: '{PathPrefix}'", 
+                string.IsNullOrEmpty(_pathPrefix) ? "(empty - direct access)" : _pathPrefix);
+        }
+
+        /// <summary>
+        /// Builds a Keycloak API endpoint path with the configured path prefix
+        /// </summary>
+        /// <param name="path">The endpoint path (e.g., "/realms/{realmName}/protocol/openid-connect/token" or "/admin/realms")</param>
+        /// <returns>The full path with prefix if configured</returns>
+        private string BuildEndpointPath(string path)
+        {
+            // Remove leading slash from path if it exists (we'll add it after prefix)
+            path = path.TrimStart('/');
+            
+            // If prefix is empty, return path with leading slash
+            if (string.IsNullOrEmpty(_pathPrefix))
+            {
+                return "/" + path;
+            }
+            
+            // Prefix already has leading slash from constructor, so just combine
+            return _pathPrefix + "/" + path;
         }
 
         public async Task<RealmInfo> CreateRealmAsync(string realmName, DomainSettingsDto settings)
@@ -43,7 +82,7 @@ namespace MngKeeper.Infrastructure.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
-                var response = await _httpClient.PostAsync("/keycloak/admin/realms", content);
+                var response = await _httpClient.PostAsync(BuildEndpointPath("admin/realms"), content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -159,7 +198,7 @@ namespace MngKeeper.Infrastructure.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
-                var response = await _httpClient.PostAsync($"/keycloak/admin/realms/{realmName}/users", content);
+                var response = await _httpClient.PostAsync(BuildEndpointPath($"admin/realms/{realmName}/users"), content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -222,7 +261,7 @@ namespace MngKeeper.Infrastructure.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
-                var response = await _httpClient.PostAsync($"/keycloak/admin/realms/{realmName}/clients", content);
+                var response = await _httpClient.PostAsync(BuildEndpointPath($"admin/realms/{realmName}/clients"), content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -237,7 +276,7 @@ namespace MngKeeper.Infrastructure.Services
                 var clientUuid = locationHeader?.Split('/').Last() ?? Guid.NewGuid().ToString();
 
                 // Get client secret
-                var secretResponse = await _httpClient.GetAsync($"/keycloak/admin/realms/{realmName}/clients/{clientUuid}/client-secret");
+                var secretResponse = await _httpClient.GetAsync(BuildEndpointPath($"admin/realms/{realmName}/clients/{clientUuid}/client-secret"));
                 string clientSecret = string.Empty;
                 
                 if (secretResponse.IsSuccessStatusCode)
@@ -283,7 +322,7 @@ namespace MngKeeper.Infrastructure.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
-                var response = await _httpClient.PostAsync($"/keycloak/admin/realms/{realmName}/groups", content);
+                var response = await _httpClient.PostAsync(BuildEndpointPath($"admin/realms/{realmName}/groups"), content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -325,7 +364,7 @@ namespace MngKeeper.Infrastructure.Services
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
                 // First, get the group ID by name
-                var groupsResponse = await _httpClient.GetAsync($"/keycloak/admin/realms/{realmName}/groups");
+                var groupsResponse = await _httpClient.GetAsync(BuildEndpointPath($"admin/realms/{realmName}/groups"));
                 if (!groupsResponse.IsSuccessStatusCode)
                 {
                     _logger.LogError("Failed to get groups for realm {RealmName}", realmName);
@@ -352,7 +391,7 @@ namespace MngKeeper.Infrastructure.Services
                 }
 
                 // Check if user is already in the group
-                var userGroupsResponse = await _httpClient.GetAsync($"/keycloak/admin/realms/{realmName}/users/{userId}/groups");
+                var userGroupsResponse = await _httpClient.GetAsync(BuildEndpointPath($"admin/realms/{realmName}/users/{userId}/groups"));
                 if (userGroupsResponse.IsSuccessStatusCode)
                 {
                     var userGroupsJson = await userGroupsResponse.Content.ReadAsStringAsync();
@@ -372,7 +411,7 @@ namespace MngKeeper.Infrastructure.Services
                 }
 
                 // Add user to group
-                var response = await _httpClient.PutAsync($"/keycloak/admin/realms/{realmName}/users/{userId}/groups/{groupId}", null);
+                var response = await _httpClient.PutAsync(BuildEndpointPath($"admin/realms/{realmName}/users/{userId}/groups/{groupId}"), null);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -410,7 +449,7 @@ namespace MngKeeper.Infrastructure.Services
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
                 // First, get the group ID by name
-                var groupsResponse = await _httpClient.GetAsync($"/keycloak/admin/realms/{realmName}/groups");
+                var groupsResponse = await _httpClient.GetAsync(BuildEndpointPath($"admin/realms/{realmName}/groups"));
                 if (!groupsResponse.IsSuccessStatusCode)
                 {
                     _logger.LogError("Failed to get groups for realm {RealmName}", realmName);
@@ -437,7 +476,7 @@ namespace MngKeeper.Infrastructure.Services
                 }
 
                 // Remove user from group
-                var response = await _httpClient.DeleteAsync($"/keycloak/admin/realms/{realmName}/users/{userId}/groups/{groupId}");
+                var response = await _httpClient.DeleteAsync(BuildEndpointPath($"admin/realms/{realmName}/users/{userId}/groups/{groupId}"));
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -475,7 +514,7 @@ namespace MngKeeper.Infrastructure.Services
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
                 // First, get the user by username
-                var usersResponse = await _httpClient.GetAsync($"/keycloak/admin/realms/{realmName}/users?username={username}");
+                var usersResponse = await _httpClient.GetAsync(BuildEndpointPath($"admin/realms/{realmName}/users?username={username}"));
                 if (!usersResponse.IsSuccessStatusCode)
                 {
                     _logger.LogError("Failed to get user {Username} for realm {RealmName}", username, realmName);
@@ -499,7 +538,7 @@ namespace MngKeeper.Infrastructure.Services
                 }
 
                 // Get user's groups
-                var userGroupsResponse = await _httpClient.GetAsync($"/keycloak/admin/realms/{realmName}/users/{userId}/groups");
+                var userGroupsResponse = await _httpClient.GetAsync(BuildEndpointPath($"admin/realms/{realmName}/users/{userId}/groups"));
                 if (!userGroupsResponse.IsSuccessStatusCode)
                 {
                     _logger.LogError("Failed to get groups for user {Username} in realm {RealmName}", username, realmName);
@@ -547,7 +586,7 @@ namespace MngKeeper.Infrastructure.Services
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
                 // First, get the user by username
-                var usersResponse = await _httpClient.GetAsync($"/keycloak/admin/realms/{realmName}/users?username={username}");
+                var usersResponse = await _httpClient.GetAsync(BuildEndpointPath($"admin/realms/{realmName}/users?username={username}"));
                 if (!usersResponse.IsSuccessStatusCode)
                 {
                     _logger.LogError("Failed to get user {Username} for realm {RealmName}", username, realmName);
@@ -610,8 +649,7 @@ namespace MngKeeper.Infrastructure.Services
                     new KeyValuePair<string, string>("scope", "profile email offline_access") // offline_access for refresh token
                 });
 
-                // BaseAddress is http://keycloak:8080, so we need to include /keycloak prefix
-                var response = await _httpClient.PostAsync($"/keycloak/realms/{realmName}/protocol/openid-connect/token", formContent);
+                var response = await _httpClient.PostAsync(BuildEndpointPath($"realms/{realmName}/protocol/openid-connect/token"), formContent);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -676,8 +714,7 @@ namespace MngKeeper.Infrastructure.Services
                     new KeyValuePair<string, string>("client_id", "admin-cli")
                 });
 
-                // BaseAddress is http://keycloak:8080, so we need to include /keycloak prefix
-                var response = await _httpClient.PostAsync($"/keycloak/realms/{realmName}/protocol/openid-connect/token", formContent);
+                var response = await _httpClient.PostAsync(BuildEndpointPath($"realms/{realmName}/protocol/openid-connect/token"), formContent);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -724,7 +761,7 @@ namespace MngKeeper.Infrastructure.Services
                     new KeyValuePair<string, string>("token_type_hint", "refresh_token")
                 });
 
-                var response = await _httpClient.PostAsync($"/realms/{realmName}/protocol/openid-connect/revoke", formContent);
+                var response = await _httpClient.PostAsync(BuildEndpointPath($"realms/{realmName}/protocol/openid-connect/revoke"), formContent);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -810,7 +847,7 @@ namespace MngKeeper.Infrastructure.Services
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
                 // First, get the group ID by name
-                var groupsResponse = await _httpClient.GetAsync($"/keycloak/admin/realms/{realmName}/groups");
+                var groupsResponse = await _httpClient.GetAsync(BuildEndpointPath($"admin/realms/{realmName}/groups"));
                 if (!groupsResponse.IsSuccessStatusCode)
                 {
                     _logger.LogError("Failed to get groups for realm {RealmName}", realmName);
@@ -837,7 +874,7 @@ namespace MngKeeper.Infrastructure.Services
                 }
 
                 // Delete the group from Keycloak
-                var deleteResponse = await _httpClient.DeleteAsync($"/keycloak/admin/realms/{realmName}/groups/{groupId}");
+                var deleteResponse = await _httpClient.DeleteAsync(BuildEndpointPath($"admin/realms/{realmName}/groups/{groupId}"));
                 if (!deleteResponse.IsSuccessStatusCode)
                 {
                     var errorContent = await deleteResponse.Content.ReadAsStringAsync();
@@ -867,7 +904,7 @@ namespace MngKeeper.Infrastructure.Services
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
                 // First, get the group ID by old name
-                var groupsResponse = await _httpClient.GetAsync($"/keycloak/admin/realms/{realmName}/groups");
+                var groupsResponse = await _httpClient.GetAsync(BuildEndpointPath($"admin/realms/{realmName}/groups"));
                 if (!groupsResponse.IsSuccessStatusCode)
                 {
                     _logger.LogError("Failed to get groups for realm {RealmName}", realmName);
@@ -903,7 +940,7 @@ namespace MngKeeper.Infrastructure.Services
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
                 // Update the group in Keycloak using PUT request
-                var updateResponse = await _httpClient.PutAsync($"/keycloak/admin/realms/{realmName}/groups/{groupId}", content);
+                var updateResponse = await _httpClient.PutAsync(BuildEndpointPath($"admin/realms/{realmName}/groups/{groupId}"), content);
                 if (!updateResponse.IsSuccessStatusCode)
                 {
                     var errorContent = await updateResponse.Content.ReadAsStringAsync();
@@ -951,8 +988,7 @@ namespace MngKeeper.Infrastructure.Services
                 
                 var formContent = new FormUrlEncodedContent(formData);
 
-                // BaseAddress is http://keycloak:8080, so we need to include /keycloak prefix
-                var response = await _httpClient.PostAsync("/keycloak/realms/master/protocol/openid-connect/token", formContent);
+                var response = await _httpClient.PostAsync(BuildEndpointPath("realms/master/protocol/openid-connect/token"), formContent);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -1003,7 +1039,7 @@ namespace MngKeeper.Infrastructure.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
-                var response = await _httpClient.PostAsync($"/keycloak/admin/realms/{realmName}/client-scopes", content);
+                var response = await _httpClient.PostAsync(BuildEndpointPath($"admin/realms/{realmName}/client-scopes"), content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -1056,7 +1092,7 @@ namespace MngKeeper.Infrastructure.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
-                var response = await _httpClient.PostAsync($"/keycloak/admin/realms/{realmName}/client-scopes/{scopeId}/protocol-mappers/models", content);
+                var response = await _httpClient.PostAsync(BuildEndpointPath($"admin/realms/{realmName}/client-scopes/{scopeId}/protocol-mappers/models"), content);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -1095,7 +1131,7 @@ namespace MngKeeper.Infrastructure.Services
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
-                var response = await _httpClient.PutAsync($"/keycloak/admin/realms/{realmName}/users/{userId}/reset-password", content);
+                var response = await _httpClient.PutAsync(BuildEndpointPath($"admin/realms/{realmName}/users/{userId}/reset-password"), content);
                 
                 if (!response.IsSuccessStatusCode)
                 {

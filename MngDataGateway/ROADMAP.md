@@ -1,6 +1,6 @@
 # MngDataGateway - Geliştirme Yol Haritası
 
-**Son Güncelleme:** 26 Aralık 2025  
+**Son Güncelleme:** 2 Ocak 2026  
 **Versiyon:** 1.0.0  
 **Durum:** 🚀 Aktif Geliştirme
 
@@ -450,25 +450,39 @@ public class DatasetSchema
 
 **Amaç:** Dataset bazlı yetkilendirme implementasyonu
 
+**Mevcut Durum:**
+- ✅ `PermissionsDefinition` entity (Domain layer'da mevcut)
+- ✅ `PermissionService` ve `IPermissionService` (implementasyon tamamlandı)
+- ✅ Permission check helper methods
+- ✅ MngKeeper integration (user groups)
+- ✅ DataController'da permission checks
+- ❌ **DTO Layer Eksiklikleri:**
+  - [ ] `CreateDatasetDto` - Permissions field'ı eklenmeli
+  - [ ] `UpdateDatasetDto` - Permissions field'ı eklenmeli
+  - [ ] `DatasetResponseDto` - Permissions field'ı eklenmeli
+- ❌ **Service Layer Eksiklikleri:**
+  - [ ] `DatasetService.CreateAsync` - Permissions mapping'i eklenmeli
+  - [ ] `DatasetService.UpdateAsync` - Permissions mapping'i eklenmeli
+  - [ ] `DatasetService.MapToDto` - Permissions mapping'i eklenmeli
+
 **Gereksinimler:**
-- [ ] `PermissionsDefinition` entity
-- [ ] Permission check helper methods
-- [ ] MngKeeper integration (user groups)
-- [ ] DataController'da permission checks
-- [ ] Group-based and user-based permissions
+- [ ] DTO'lara Permissions field'ı ekleme
+- [ ] Service layer'da Permissions mapping
+- [ ] Group-based permissions (zaten mevcut, DTO/Service entegrasyonu eksik)
 
 **Permission Types:**
 - `read` - Read access
-- `write` - Write access (create, update, delete)
 - `create` - Create only
 - `update` - Update only
 - `delete` - Delete only
+
+**Not:** Domain entity ve PermissionService mevcut. Sadece DTO ve Service katmanlarında permissions field'ı eksik.
 
 **Test Scenarios:**
 - [ ] Unauthorized access (403 Forbidden)
 - [ ] Authorized access (success)
 - [ ] Group-based permissions
-- [ ] User-based permissions
+- [ ] DTO mapping testleri (Create/Update/Response)
 
 **Öncelik:** Orta (Books dataset planında Phase 6)
 
@@ -570,7 +584,65 @@ public class IndexDefinition
 
 ---
 
-### Phase 9: Advanced Validation - ORTA ÖNCELİK
+### Phase 9: Data Metadata Tracking - YÜKSEK ÖNCELİK
+
+**Amaç:** Data kayıtlarına oluşturma ve güncelleme bilgilerini eklemek
+
+**Gereksinimler:**
+- [ ] `__createInfo` alanı ekleme (create işleminde)
+  - [ ] `createdAt` - Oluşturulma tarihi/saati (DateTime)
+  - [ ] `createdBy` - Oluşturan kullanıcı ID (string)
+  - [ ] `createdByEmail` - Oluşturan kullanıcı email (string)
+  - [ ] `ipAddress` - Oluşturulma IP adresi (string, optional)
+- [ ] `__lastUpdateInfo` alanı ekleme/güncelleme (update işleminde)
+  - [ ] `updatedAt` - Son güncelleme tarihi/saati (DateTime)
+  - [ ] `updatedBy` - Son güncelleyen kullanıcı ID (string)
+  - [ ] `updatedByEmail` - Son güncelleyen kullanıcı email (string)
+  - [ ] `ipAddress` - Güncelleme IP adresi (string, optional)
+
+**Implementation Details:**
+- `DataProcessService.GenerateMetadata` metoduna `__createInfo` ekleme mantığı eklenecek
+- `DataService.UpdateAsync` metoduna `__lastUpdateInfo` güncelleme mantığı eklenecek
+- Metadata alanları query sonuçlarında otomatik olarak döndürülecek
+- CSV export'ta internal field olarak işaretlenip opsiyonel olarak export edilebilir
+
+**Metadata Yapısı:**
+```csharp
+public class CreateInfo
+{
+    public DateTime createdAt { get; set; }
+    public string createdBy { get; set; } = string.Empty;
+    public string createdByEmail { get; set; } = string.Empty;
+    public string? ipAddress { get; set; }
+}
+
+public class LastUpdateInfo
+{
+    public DateTime updatedAt { get; set; }
+    public string updatedBy { get; set; } = string.Empty;
+    public string updatedByEmail { get; set; } = string.Empty;
+    public string? ipAddress { get; set; }
+}
+```
+
+**Benefits:**
+- ✅ Audit trail (kim, ne zaman oluşturdu/güncelledi)
+- ✅ Compliance desteği
+- ✅ Data lineage tracking
+- ✅ Debugging ve troubleshooting kolaylığı
+- ✅ Dataset'lerdeki `__createInfo` ile tutarlılık
+
+**Not:** Bu özellik mevcut `__history` alanından farklıdır:
+- `__history`: Sadece `logging: "self"` olan dataset'lerde, her değişiklik için ayrı entry
+- `__createInfo` / `__lastUpdateInfo`: Her dataset'te, create/update bilgileri
+
+**Öncelik:** Yüksek (Data tracking ve audit için önemli)
+
+**Tarih:** 2 Ocak 2026 (Planlandı)
+
+---
+
+### Phase 10: Advanced Validation - ORTA ÖNCELİK
 
 **Amaç:** Validation mekanizmasını geliştirmek
 
@@ -586,7 +658,7 @@ public class IndexDefinition
 
 ---
 
-### Phase 10: API Gateway Service - DÜŞÜK ÖNCELİK
+### Phase 11: API Gateway Service - DÜŞÜK ÖNCELİK
 
 **Amaç:** Merkezi API Gateway servisi geliştirmek
 
@@ -606,7 +678,7 @@ public class IndexDefinition
 
 ---
 
-### Phase 11: Monitoring & Metrics - DÜŞÜK ÖNCELİK
+### Phase 12: Monitoring & Metrics - DÜŞÜK ÖNCELİK
 
 **Amaç:** Dataset ve data operasyonları için monitoring
 
@@ -620,7 +692,7 @@ public class IndexDefinition
 
 ---
 
-### Phase 12: UI Implementation - YÜKSEK ÖNCELİK (Mng.Ui)
+### Phase 13: UI Implementation - YÜKSEK ÖNCELİK (Mng.Ui)
 
 **Amaç:** Dataset yönetimi için UI sayfaları
 

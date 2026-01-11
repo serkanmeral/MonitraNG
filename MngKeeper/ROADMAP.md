@@ -1,8 +1,8 @@
 # MngKeeper API - Development Roadmap
 
 **Microservice:** Identity & Access Management (IAM)  
-**Version:** 1.1.0  
-**Last Updated:** 31 Aralık 2025
+**Version:** 1.2.0  
+**Last Updated:** 2 Ocak 2026
 
 ---
 
@@ -74,22 +74,26 @@
 
 ---
 
-### 2. Authentication API - ✅ TAMAMLANDI
+### 2. Authentication API - ✅ TAMAMLANDI (v1.2.0)
 
 **Endpoints:**
 - ✅ `POST /api/auth/token` - Get JWT token (username + password + domain)
   - ✅ Domain parametresi opsiyonel (domain@username formatı desteği)
   - ✅ Tek domain varsa otomatik domain seçimi
+  - ✅ Token alma hata yönetimi iyileştirildi (v1.2.0 - 2 Ocak 2026)
 - ✅ `POST /api/auth/refresh` - Refresh expired token
+  - ✅ User groups refresh token'da da güncelleniyor (v1.2.0 - 2 Ocak 2026)
 - ✅ `POST /api/auth/revoke` - Revoke refresh token (logout)
 - ✅ `POST /api/auth/change-password` - Change password (authenticated user) - 23 Aralık 2025
 - ✅ `POST /api/auth/reset-password` - Reset password (reset token ile) - 23 Aralık 2025
 - ✅ `POST /api/auth/create-reset-token` - Create reset token (admin only, test için) - 23 Aralık 2025
 
 **Custom Token Claims:**
-- ✅ `user_groups`: Array - Kullanıcının bağlı olduğu gruplar
+- ✅ `user_groups`: Array - Kullanıcının bağlı olduğu gruplar (v1.2.0 - 2 Ocak 2026)
+  - MongoDB'den kullanıcı grupları token'a ekleniyor
+  - Refresh token işleminde de güncel gruplar token'a ekleniyor
 - ✅ `isAdmin`: Boolean - admins grubunda ise true
-- ✅ `isManager`: Boolean - managers grubunda ise true (Planlanıyor - Yüksek Öncelik)
+- ✅ `isManager`: Boolean - managers grubunda ise true
 - ✅ `domain_id`: String - Domain ID
 - ✅ `domain_name`: String - Domain name
 
@@ -98,6 +102,13 @@
 - Refresh Token Expiry: 1800 seconds (30 minutes)
 - Token Type: Bearer
 - Client: admin-cli (Keycloak default)
+
+**Token Enhancement (v1.2.0 - 2 Ocak 2026):**
+- ✅ `GetTokenCommandHandler`: Kullanıcı grupları MongoDB'den alınıp token'a ekleniyor
+- ✅ `RefreshTokenCommandHandler`: Refresh token işleminde de güncel kullanıcı grupları token'a ekleniyor
+- ✅ `JwtTokenService.AddDomainClaimToToken`: `userGroups` parametresi eklendi
+- ✅ `JwtTokenParserService`: `user_groups` claim'i parse ediliyor
+- ✅ Token alma hata yönetimi iyileştirildi (boş token parse hatası düzeltildi)
 
 **Password Management:**
 - ✅ `POST /api/auth/change-password` - Şifre değiştirme (authenticated user) - 23 Aralık 2025
@@ -172,15 +183,20 @@
 
 ---
 
-### 6. Infrastructure Services - ✅ TAMAMLANDI
+### 6. Infrastructure Services - ✅ TAMAMLANDI (v1.2.0)
 
 **Implemented:**
 - ✅ KeycloakService (Realm, User, Group, Token management)
+  - ✅ PathPrefix desteği eklendi (v1.2.0 - 2 Ocak 2026)
+    - Lokal ortam için: `PathPrefix: ""` (direkt erişim)
+    - Sunucu ortamı için: `PathPrefix: "/keycloak"` (reverse proxy)
+    - Tüm Keycloak endpoint'leri `BuildEndpointPath()` metodu ile oluşturuluyor
 - ✅ RedisService (Cache operations)
 - ✅ RabbitMqService (Message publishing)
 - ✅ MinioService (S3 object storage)
 - ✅ MongoDbService (Database operations)
 - ✅ JwtTokenService (Token generation/validation)
+  - ✅ `user_groups` claim desteği eklendi (v1.2.0 - 2 Ocak 2026)
 - ✅ CertificateHandler (SSL/TLS certificate management)
 - ✅ DataGatewaySyncService (MngDataGateway MongoDB sync)
 
@@ -575,11 +591,24 @@ Normal User (isAdmin = false, isManager = false)
 
 ### Version Management
 
-**Mevcut Versiyon:** 1.1.0
+**Mevcut Versiyon:** 1.2.0
 
 **Version Endpoints:**
 - `GET /api/version` - Detaylı versiyon bilgisi
 - `GET /api/version/short` - Kısa versiyon string'i
+
+**Versiyon Geçmişi:**
+- **v1.2.0** (2 Ocak 2026):
+  - Token'a `user_groups` claim'i eklendi
+  - Keycloak PathPrefix desteği eklendi (local ve production için)
+  - Token alma hata yönetimi iyileştirildi
+  - RefreshTokenCommandHandler güncellendi (user groups desteği)
+  - JwtTokenParserService güncellendi (user_groups parse desteği)
+- **v1.1.0** (31 Aralık 2025):
+  - Domain Model Enhancement (RelatedPersonPhone, Logo, LogoUrl)
+  - Code Optimization & Performance Improvements
+- **v1.0.0** (Initial Release):
+  - Core features (Domain, User, Group, Authentication)
 
 ---
 
@@ -696,9 +725,24 @@ Normal User (isAdmin = false, isManager = false)
 
 ---
 
-**Son Güncelleme:** 30 Aralık 2025  
-**Status:** Core features complete (98%), Manager Role & Authorization System planlandı  
-**Son Tamamlanan:** 
+**Son Güncelleme:** 2 Ocak 2026  
+**Status:** Core features complete (98%), Token enhancement ve Keycloak PathPrefix desteği tamamlandı  
+**Son Tamamlanan (v1.2.0 - 2 Ocak 2026):** 
+- Token'a `user_groups` claim'i eklendi
+  - MongoDB'den kullanıcı grupları token'a ekleniyor
+  - Refresh token işleminde de güncel gruplar token'a ekleniyor
+  - `IJwtTokenService`, `JwtTokenService`, `GetTokenCommandHandler`, `RefreshTokenCommandHandler` güncellendi
+  - `JwtTokenParserService` user_groups parse desteği eklendi
+- Keycloak PathPrefix desteği eklendi
+  - Lokal ortam için: `PathPrefix: ""` (direkt erişim)
+  - Sunucu ortamı için: `PathPrefix: "/keycloak"` (reverse proxy)
+  - `KeycloakService`'e `BuildEndpointPath()` metodu eklendi
+  - Tüm Keycloak endpoint'leri configurable prefix ile çalışıyor
+- Token alma hata yönetimi iyileştirildi
+  - Keycloak'tan token alınamadığında boş token parse hatası düzeltildi
+  - Daha açıklayıcı hata mesajları eklendi
+
+**Önceki Versiyonlar:**
 - Domain Model Enhancement (RelatedPersonPhone, Logo, LogoUrl alanları eklendi) - 31 Aralık 2025
 - Domain Creation Pipeline güncellemesi (yeni alanlar için destek) - 31 Aralık 2025
 - MongoDB Collection Bug Fix (@users ve @groups collection'larına yazma düzeltildi) - 23 Aralık 2025

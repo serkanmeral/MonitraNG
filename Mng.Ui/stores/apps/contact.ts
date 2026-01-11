@@ -16,7 +16,7 @@ export const useContactStore = defineStore({
                 this.contacts = response.data.contacts;
             } catch (error) {
                 alert(error);
-                console.log(error);
+                console.error(error);
             }
         }
     }

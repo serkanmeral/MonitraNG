@@ -131,7 +131,6 @@ watch([search, statusFilter], () => {
 onMounted(async () => {
   // Manager/Admin kontrolü
   if (!authStore.isManager) {
-    console.warn('Kullanıcı manager veya admin değil. User management sayfasına erişim için manager/admin yetkisi gereklidir.');
     // İsteğe bağlı: Kullanıcıyı başka bir sayfaya yönlendirebilirsiniz
     // router.push('/dashboards/analytical');
   }

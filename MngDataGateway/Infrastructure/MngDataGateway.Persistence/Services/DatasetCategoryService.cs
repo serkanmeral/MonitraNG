@@ -92,7 +92,7 @@ public class DatasetCategoryService : IDatasetCategoryService
     /// <summary>
     /// Kategorileri sayfalı olarak listeler
     /// </summary>
-    public async Task<PagedResultDto<DatasetCategoryResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 20)
+    public async Task<PagedResultDto<DatasetCategoryResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 20, string? search = null)
     {
         var collection = GetCollection();
 
@@ -103,12 +103,26 @@ public class DatasetCategoryService : IDatasetCategoryService
 
         var skip = (pageNumber - 1) * pageSize;
 
+        // Build filter for search
+        var filterBuilder = Builders<DatasetCategory>.Filter;
+        var filter = filterBuilder.Empty;
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var searchLower = search.Trim().ToLower();
+            // Search in categoryName and categoryDescription
+            filter = filterBuilder.Or(
+                filterBuilder.Regex(x => x.categoryName, new MongoDB.Bson.BsonRegularExpression(searchLower, "i")),
+                filterBuilder.Regex(x => x.categoryDescription, new MongoDB.Bson.BsonRegularExpression(searchLower, "i"))
+            );
+        }
+
         // Get total count
-        var totalCount = await collection.CountDocumentsAsync(new BsonDocument());
+        var totalCount = await collection.CountDocumentsAsync(filter);
 
         // Get items
         var items = await collection
-            .Find(new BsonDocument())
+            .Find(filter)
             .Sort(Builders<DatasetCategory>.Sort.Descending(x => x.__createInfo.createdAt))
             .Skip(skip)
             .Limit(pageSize)

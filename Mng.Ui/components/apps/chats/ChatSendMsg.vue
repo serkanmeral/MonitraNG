@@ -6,7 +6,6 @@ const msg = ref('');
 const store = useChatStore();
 
 function addItemAndClear(item: string) {
-    console.log(item);
     if (item.length === 0) {
         return;
     }

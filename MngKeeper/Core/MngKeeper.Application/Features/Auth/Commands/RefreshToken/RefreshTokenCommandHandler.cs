@@ -10,6 +10,7 @@ namespace MngKeeper.Application.Features.Auth.Commands.RefreshToken
         private readonly IJwtTokenParserService _jwtTokenParserService;
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IDomainRepository _domainRepository;
+        private readonly IUserRepository _userRepository;
         private readonly ILogger<RefreshTokenCommandHandler> _logger;
 
         public RefreshTokenCommandHandler(
@@ -17,12 +18,14 @@ namespace MngKeeper.Application.Features.Auth.Commands.RefreshToken
             IJwtTokenParserService jwtTokenParserService,
             IJwtTokenService jwtTokenService,
             IDomainRepository domainRepository,
+            IUserRepository userRepository,
             ILogger<RefreshTokenCommandHandler> logger)
         {
             _keycloakService = keycloakService;
             _jwtTokenParserService = jwtTokenParserService;
             _jwtTokenService = jwtTokenService;
             _domainRepository = domainRepository;
+            _userRepository = userRepository;
             _logger = logger;
         }
 
@@ -63,12 +66,68 @@ namespace MngKeeper.Application.Features.Auth.Commands.RefreshToken
                 // Refresh token from Keycloak
                 var keycloakTokenResponse = await _keycloakService.RefreshTokenAsync(domain.RealmName, request.RefreshToken);
 
-                // Add domain claims to the new access token
+                // Parse the new access token to get user information
+                var tokenClaims = _jwtTokenParserService.ParseToken(keycloakTokenResponse.AccessToken);
+                
+                // Get user from MongoDB to retrieve current groups and profile information
+                bool isAdmin = false;
+                bool isManager = false;
+                List<string>? userGroups = null;
+                string? title = null;
+                string? department = null;
+                int? gender = null;
+                string? phoneNumber = null;
+                string? photoUrl = null;
+                
+                if (tokenClaims != null && !string.IsNullOrEmpty(tokenClaims.Username))
+                {
+                    var user = await _userRepository.GetByUsernameAsync(tokenClaims.Username, domain.Id);
+                    if (user != null)
+                    {
+                        // Get user groups from MongoDB
+                        userGroups = user.Groups ?? new List<string>();
+                        _logger.LogInformation("User groups retrieved from MongoDB for refresh: {UserGroups}", string.Join(", ", userGroups));
+                        
+                        // Check if user is admin or manager by checking groups
+                        isAdmin = userGroups.Contains("admins");
+                        isManager = userGroups.Contains("managers");
+                        
+                        // Get profile fields
+                        title = user.Title;
+                        department = user.Department;
+                        gender = (int)user.Gender;
+                        phoneNumber = user.PhoneNumber;
+                        photoUrl = user.PhotoUrl;
+                    }
+                    else
+                    {
+                        _logger.LogWarning("User not found in MongoDB for refresh token - Username: {Username}, DomainId: {DomainId}", 
+                            tokenClaims.Username, domain.Id);
+                        // Fallback: try to get from token claims or use empty list
+                        userGroups = tokenClaims.Groups ?? new List<string>();
+                        isAdmin = tokenClaims.IsAdmin;
+                        isManager = tokenClaims.IsManager;
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("Could not parse token claims from refreshed token");
+                    userGroups = new List<string>();
+                }
+
+                // Add domain claims to the new access token with updated user information
                 var enhancedToken = _jwtTokenService.AddDomainClaimToToken(
                     keycloakTokenResponse.AccessToken, 
                     domain.Id, 
                     domain.Name, 
-                    true // Assume admin for now, you can parse from original token if needed
+                    isAdmin,
+                    isManager,
+                    userGroups,
+                    title,
+                    department,
+                    gender,
+                    phoneNumber,
+                    photoUrl
                 );
 
                 var expiresAt = DateTime.UtcNow.AddSeconds(keycloakTokenResponse.ExpiresIn);

@@ -138,7 +138,6 @@ export const useUserStore = defineStore('user', {
           }));
           this.totalCount = response.length;
         } else {
-          console.warn('Unexpected API response format:', response);
           this.users = [];
           this.totalCount = 0;
         }
@@ -160,7 +159,6 @@ export const useUserStore = defineStore('user', {
       try {
         const response = await fetchFromMngKeeper(`/user/${userId}`, 'GET');
         
-        console.log('GetUser API Response:', response); // Debug için
         
         // API response yapısı: GetUserResponse { IsSuccess, User, ErrorMessage }
         if (response.IsSuccess === false) {

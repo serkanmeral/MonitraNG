@@ -16,7 +16,7 @@ export const useGalleryStore = defineStore({
                 this.gallery = response.data.gallery;
             } catch (error) {
                 alert(error);
-                console.log(error);
+                console.error(error);
             }
         }
     }

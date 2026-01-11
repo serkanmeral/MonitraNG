@@ -5,6 +5,7 @@ using MngKeeper.Application.Helpers;
 using MngKeeper.Api.Attributes;
 using MediatR;
 using MngKeeper.Application.Features.Auth.Commands.GetToken;
+using MngKeeper.Application.Features.Auth.Commands.RefreshToken;
 
 namespace MngKeeper.Api.Controllers;
 
@@ -180,16 +181,24 @@ public class AuthController : ControllerBase
 
             _logger.LogInformation("Refresh token request for domain: {Domain}", request.Domain);
 
-            var tokenResponse = await _keycloakService.RefreshTokenAsync(
-                request.Domain, 
-                request.RefreshToken);
-
-            if (!string.IsNullOrEmpty(tokenResponse.Error))
+            // Use RefreshTokenCommandHandler to get token with enhanced claims (including domain_name)
+            var refreshTokenCommand = new RefreshTokenCommand
             {
+                RefreshToken = request.RefreshToken,
+                DomainName = request.Domain
+            };
+
+            var refreshTokenResponse = await _mediator.Send(refreshTokenCommand);
+
+            if (!refreshTokenResponse.IsSuccess)
+            {
+                _logger.LogWarning("Token refresh failed for domain: {Domain}. Error: {Error}", 
+                    request.Domain, refreshTokenResponse.ErrorMessage);
+                
                 return Unauthorized(new ErrorResponse
                 {
-                    Error = tokenResponse.Error,
-                    ErrorDescription = "Invalid or expired refresh token"
+                    Error = "invalid_token",
+                    ErrorDescription = refreshTokenResponse.ErrorMessage ?? "Invalid or expired refresh token"
                 });
             }
 
@@ -197,11 +206,11 @@ public class AuthController : ControllerBase
 
             return Ok(new TokenResponse
             {
-                AccessToken = tokenResponse.AccessToken,
-                RefreshToken = tokenResponse.RefreshToken,
-                TokenType = tokenResponse.TokenType,
-                ExpiresIn = tokenResponse.ExpiresIn,
-                RefreshExpiresIn = tokenResponse.RefreshExpiresIn
+                AccessToken = refreshTokenResponse.AccessToken,
+                RefreshToken = refreshTokenResponse.RefreshToken,
+                TokenType = refreshTokenResponse.TokenType,
+                ExpiresIn = refreshTokenResponse.ExpiresIn,
+                RefreshExpiresIn = refreshTokenResponse.RefreshExpiresIn
             });
         }
         catch (Exception ex)

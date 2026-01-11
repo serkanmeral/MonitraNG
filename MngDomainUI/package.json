@@ -2,6 +2,7 @@
   "name": "mng-domain-ui",
   "version": "1.0.0",
   "private": true,
+  "description": "MonitraNG Domain Management UI",
   "type": "module",
   "scripts": {
     "build": "nuxt build",

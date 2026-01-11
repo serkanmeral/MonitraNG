@@ -1,5 +1,13 @@
-<script setup>
-const props = defineProps({ item: Object });
+<script setup lang="ts">
+import { DotsIcon } from 'vue-tabler-icons';
+
+interface Props {
+  item: {
+    header?: string;
+  };
+}
+
+const props = defineProps<Props>();
 </script>
 
 <template>

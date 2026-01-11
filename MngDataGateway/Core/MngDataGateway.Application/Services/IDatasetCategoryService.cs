@@ -17,7 +17,10 @@ public interface IDatasetCategoryService
     /// <summary>
     /// Kategorileri sayfalı olarak listeler
     /// </summary>
-    Task<PagedResultDto<DatasetCategoryResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 20);
+    /// <param name="pageNumber">Sayfa numarası</param>
+    /// <param name="pageSize">Sayfa boyutu</param>
+    /// <param name="search">Arama terimi (kategori adı veya açıklama)</param>
+    Task<PagedResultDto<DatasetCategoryResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 20, string? search = null);
 
     /// <summary>
     /// ID'ye göre kategori getirir

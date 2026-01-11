@@ -17,7 +17,7 @@ export const usePostsStore = defineStore({
                 this.posts = response.data;
             } catch (error) {
                 alert(error);
-                console.log(error);
+                console.error(error);
             }
         },
         // like post
@@ -27,7 +27,7 @@ export const usePostsStore = defineStore({
                 this.posts = response.data.posts;
             } catch (error) {
                 alert(error);
-                console.log(error);
+                console.error(error);
             }
         },
         // add Comment
@@ -37,7 +37,7 @@ export const usePostsStore = defineStore({
                 this.posts = response.data.posts;
             } catch (error) {
                 alert(error);
-                console.log(error);
+                console.error(error);
             }
         },
         // add Comment
@@ -47,7 +47,7 @@ export const usePostsStore = defineStore({
                 this.posts = response.data.posts;
             } catch (error) {
                 alert(error);
-                console.log(error);
+                console.error(error);
             }
         }
     }

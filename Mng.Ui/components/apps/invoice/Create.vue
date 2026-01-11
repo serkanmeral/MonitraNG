@@ -61,8 +61,6 @@ const submitInvoice = () => {
         store.addInvoice(invoice.value);
         // Navigate to the invoice list page after successful submission
         router.push('/apps/invoice');
-    } else {
-        console.log('Form is invalid');
     }
 };
 

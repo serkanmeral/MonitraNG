@@ -16,7 +16,7 @@ export const useFollowersStore = defineStore({
                 this.followers = response.data.followers;
             } catch (error) {
                 alert(error);
-                console.log(error);
+                console.error(error);
             }
         }
     }

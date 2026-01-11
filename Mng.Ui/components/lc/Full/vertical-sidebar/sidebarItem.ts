@@ -72,6 +72,8 @@ export interface menu {
   header?: string;
   title?: string;
   icon?: any;
+  iconType?: 'mdi' | 'tabler'; // Icon type (for new format)
+  iconName?: string; // Icon name (for new format)
   to?: string;
   chip?: string;
   chipBgColor?: string;

@@ -20,7 +20,7 @@
       <div class="flex justify-between items-start">
         <div>
           <div class="flex items-center gap-3 mb-2">
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">{{ domain.displayName }}</h1>
+            <h1 class="text-3xl font-bold" style="color: #111827;">{{ domain.displayName }}</h1>
             <UBadge
               :color="getStatusColor(domain.status)"
               variant="soft"
@@ -29,7 +29,7 @@
               {{ domain.status }}
             </UBadge>
           </div>
-          <p class="text-gray-600 dark:text-gray-300">{{ domain.name }}</p>
+          <p class="font-medium" style="color: #1f2937;">{{ domain.name }}</p>
         </div>
         <div class="flex gap-2">
           <UButton

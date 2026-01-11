@@ -3,7 +3,9 @@
 </script>
 
 <template>
-    AssetDetail
+    <div>
+        AssetDetail
+    </div>
 </template>
 
 

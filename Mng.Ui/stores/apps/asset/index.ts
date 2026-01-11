@@ -24,7 +24,7 @@ export const useAssetStore = defineStore({
           this.assets = data.data;          
         })
         .catch((err) => {
-          console.log(err);
+          console.error(err);
         });
     },
     selectAsset(asset: any) {

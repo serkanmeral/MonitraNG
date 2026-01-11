@@ -1,5 +1,6 @@
 import * as Minio from 'minio'
 import https from 'https'
+import { buildKeycloakUrl, getKeycloakConfig } from '~/server/utils/keycloak'
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig()
@@ -21,37 +22,33 @@ export default defineEventHandler(async (event) => {
   // 1. KEYCLOAK REALM'LERİNİ TEMİZLEME
   // ============================================
   try {
-    // Get Keycloak base URL - ensure /keycloak path is included
-    let keycloakBaseUrl = process.env.KEYCLOAK_BASE_URL || config.keycloakBaseUrl || 'http://localhost:8080'
+    // Get Keycloak configuration (base URL and path prefix)
+    const keycloakConfig = getKeycloakConfig(config)
     
-    // Always add /keycloak path if using keycloak:8080 (production Docker setup)
-    if (keycloakBaseUrl.includes('keycloak:8080') && !keycloakBaseUrl.includes('/keycloak')) {
-      keycloakBaseUrl = keycloakBaseUrl.replace(':8080', ':8080/keycloak')
-    }
-    
-    console.log('[Clear All Domains] Keycloak URL:', keycloakBaseUrl)
+    console.log('[Clear All Domains] Keycloak Base URL:', keycloakConfig.baseUrl)
+    console.log('[Clear All Domains] Keycloak Path Prefix:', keycloakConfig.pathPrefix || '(empty - direct access)')
     
     // SSL bypass for container-to-container HTTPS
     const originalRejectUnauthorized = process.env.NODE_TLS_REJECT_UNAUTHORIZED
     try {
-      if (keycloakBaseUrl.startsWith('https')) {
+      if (keycloakConfig.baseUrl.startsWith('https')) {
         process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
       }
       
-      // Get Keycloak admin credentials from environment or config
-      const keycloakAdminUser = process.env.KEYCLOAK_ADMIN_USER || config.keycloakAdminUser || 'admin'
-      const keycloakAdminPassword = process.env.KEYCLOAK_ADMIN_PASSWORD || config.keycloakAdminPassword || 'admin123'
+      console.log('[Clear All Domains] Keycloak Admin User:', keycloakConfig.adminUser)
       
-      console.log('[Clear All Domains] Keycloak Admin User:', keycloakAdminUser)
+      // Build Keycloak admin token URL with configurable path prefix
+      const tokenEndpoint = 'realms/master/protocol/openid-connect/token'
+      const tokenUrl = buildKeycloakUrl(keycloakConfig.baseUrl, keycloakConfig.pathPrefix, tokenEndpoint)
       
       // Get Keycloak admin token
       const tokenResponse = await $fetch<any>(
-        `${keycloakBaseUrl}/realms/master/protocol/openid-connect/token`,
+        tokenUrl,
         {
           method: 'POST',
           body: new URLSearchParams({
-            username: keycloakAdminUser,
-            password: keycloakAdminPassword,
+            username: keycloakConfig.adminUser,
+            password: keycloakConfig.adminPassword,
             grant_type: 'password',
             client_id: 'admin-cli'
           }),
@@ -63,9 +60,13 @@ export default defineEventHandler(async (event) => {
 
       const keycloakToken = tokenResponse.access_token
 
+      // Build admin realms list URL
+      const realmsListEndpoint = 'admin/realms'
+      const realmsListUrl = buildKeycloakUrl(keycloakConfig.baseUrl, keycloakConfig.pathPrefix, realmsListEndpoint)
+      
       // Get all realms
       const realms = await $fetch<any[]>(
-        `${keycloakBaseUrl}/admin/realms`,
+        realmsListUrl,
         {
           method: 'GET',
           headers: {
@@ -85,8 +86,12 @@ export default defineEventHandler(async (event) => {
         }
 
         try {
+          // Build delete realm URL
+          const deleteRealmEndpoint = `admin/realms/${realmName}`
+          const deleteRealmUrl = buildKeycloakUrl(keycloakConfig.baseUrl, keycloakConfig.pathPrefix, deleteRealmEndpoint)
+          
           await $fetch(
-            `${keycloakBaseUrl}/admin/realms/${realmName}`,
+            deleteRealmUrl,
             {
               method: 'DELETE',
               headers: {

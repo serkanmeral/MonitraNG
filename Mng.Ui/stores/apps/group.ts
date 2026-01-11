@@ -202,18 +202,7 @@ export const useGroupStore = defineStore('group', {
           Permissions: groupData.permissions || [],
         };
         
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[GroupStore] Update Group Request:', {
-            groupId,
-            body: requestBody
-          });
-        }
-        
         const response = await fetchFromMngKeeper(`/group/${groupId}`, 'PUT', requestBody);
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[GroupStore] Update Group Response:', response);
-        }
         
         if (response.IsSuccess === false) {
           throw new Error(response.ErrorMessage || 'Grup güncellenemedi');

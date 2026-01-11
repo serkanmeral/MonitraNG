@@ -48,8 +48,8 @@ async function validate() {
 
     await authStore.login(selectedUsername, password.value, selectedDomain);
     
-    // Redirect to dashboard
-    router.push({ path: "/dashboards/analytical" });
+    // Redirect to welcome page
+    router.push({ path: "/welcome" });
   } catch (error) {
     if (error instanceof Error) {
       errorMessage.value = error.message;

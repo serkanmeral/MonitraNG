@@ -81,6 +81,38 @@ namespace MngKeeper.Application.Features.Auth.Commands.GetToken
                 // Get token from Keycloak
                 var keycloakTokenResponse = await _keycloakService.GetTokenAsync(domain.RealmName, actualUsername, request.Password);
 
+                // Check if token was obtained successfully
+                if (!string.IsNullOrEmpty(keycloakTokenResponse.Error))
+                {
+                    _logger.LogWarning("Failed to get token from Keycloak for user: {Username} in realm: {RealmName}. Error: {Error}", 
+                        actualUsername, domain.RealmName, keycloakTokenResponse.Error);
+                    
+                    return new GetTokenResponse
+                    {
+                        IsSuccess = false,
+                        ErrorMessage = keycloakTokenResponse.Error switch
+                        {
+                            "invalid_grant" => "Invalid username or password",
+                            "invalid_client" => "Client authentication failed",
+                            "unauthorized_client" => "Client not authorized",
+                            _ => $"Authentication failed: {keycloakTokenResponse.Error}"
+                        }
+                    };
+                }
+
+                // Check if AccessToken is empty
+                if (string.IsNullOrEmpty(keycloakTokenResponse.AccessToken))
+                {
+                    _logger.LogError("Keycloak returned empty access token for user: {Username} in realm: {RealmName}", 
+                        actualUsername, domain.RealmName);
+                    
+                    return new GetTokenResponse
+                    {
+                        IsSuccess = false,
+                        ErrorMessage = "Failed to obtain access token from authentication server"
+                    };
+                }
+
                 // Check if user is admin by checking their groups
                 var isAdmin = await _keycloakService.IsUserInGroupAsync(domain.RealmName, actualUsername, "admins");
                 
@@ -140,8 +172,21 @@ namespace MngKeeper.Application.Features.Auth.Commands.GetToken
                     }
                 }
                 
-                _logger.LogInformation("Final values before adding to token - isManager: {IsManager}, isAdmin: {IsAdmin}, Title: {Title}, Department: {Department}, Gender: {Gender}, PhoneNumber: {PhoneNumber}, PhotoUrl: {PhotoUrl}", 
-                    isManager, isAdmin, title ?? "null", department ?? "null", gender?.ToString() ?? "null", phoneNumber ?? "null", photoUrl ?? "null");
+                // Get user groups from MongoDB (user.Groups field)
+                List<string>? userGroups = null;
+                if (user != null && user.Groups != null && user.Groups.Count > 0)
+                {
+                    userGroups = user.Groups;
+                    _logger.LogInformation("User groups retrieved from MongoDB: {UserGroups}", string.Join(", ", userGroups));
+                }
+                else
+                {
+                    _logger.LogWarning("User groups not found in MongoDB for user: {Username}, DomainId: {DomainId}", actualUsername, domain.Id);
+                    userGroups = new List<string>();
+                }
+
+                _logger.LogInformation("Final values before adding to token - isManager: {IsManager}, isAdmin: {IsAdmin}, UserGroups: {UserGroups}, Title: {Title}, Department: {Department}, Gender: {Gender}, PhoneNumber: {PhoneNumber}, PhotoUrl: {PhotoUrl}", 
+                    isManager, isAdmin, userGroups != null ? string.Join(", ", userGroups) : "null", title ?? "null", department ?? "null", gender?.ToString() ?? "null", phoneNumber ?? "null", photoUrl ?? "null");
 
                 // Add domain claims and user profile fields to the token
                 var enhancedToken = _jwtTokenService.AddDomainClaimToToken(
@@ -150,6 +195,7 @@ namespace MngKeeper.Application.Features.Auth.Commands.GetToken
                     domain.Name, 
                     isAdmin,
                     isManager,
+                    userGroups,
                     title,
                     department,
                     gender,

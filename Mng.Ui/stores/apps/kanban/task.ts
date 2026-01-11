@@ -40,7 +40,7 @@ export const useTaskStore = defineStore({
                 this.tasks = data.data;
             } catch (error) {
                 alert(error);
-                console.log(error);
+                console.error(error);
             }
         },
 

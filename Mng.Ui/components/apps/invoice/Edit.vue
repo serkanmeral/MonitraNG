@@ -75,8 +75,6 @@ const submitInvoice = async () => {
       console.error("Update failed:", error);
       
     }
-  } else {
-    console.log("Form is invalid or invoice not found");
   }
 };
 

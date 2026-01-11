@@ -16,7 +16,7 @@ export const usePhotosStore = defineStore({
                 this.photos = response.data.photos;
             } catch (error) {
                 alert(error);
-                console.log(error);
+                console.error(error);
             }
         }
     }

@@ -28,7 +28,7 @@ export const useEcomStore = defineStore({
                 this.products = data.data;
             } catch (error) {
                 alert(error);
-                console.log(error);
+                console.error(error);
             }
         },
         // Fetch Customers from addresses
@@ -38,7 +38,7 @@ export const useEcomStore = defineStore({
                 this.addresses = data.data;
             } catch (error) {
                 alert(error);
-                console.log(error);
+                console.error(error);
             }
         },
         //select gender

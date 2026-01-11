@@ -161,10 +161,14 @@ export function fetchFromMngKeeper(
     try {
       const authStore = useAuthStore();
       
-      // Ensure token is valid (refresh if needed)
-      const isValid = await authStore.ensureValidToken();
-      if (!isValid) {
-        throw new Error("Token geçersiz veya süresi dolmuş. Lütfen tekrar giriş yapın.");
+      // Try to ensure token is valid (refresh if needed) - BEFORE making the request
+      // But don't fail if it returns false, let the server decide (it will return 401 if needed)
+      try {
+        await authStore.ensureValidToken();
+      } catch (tokenError: any) {
+        // If ensureValidToken throws an error, it means refresh failed
+        // In this case, we should still try the request (server might accept it)
+        // Don't throw here, let the request proceed (server will return 401 if needed)
       }
       
       // Get token from cookie (NOT from localStorage for security)
@@ -177,15 +181,6 @@ export function fetchFromMngKeeper(
       // Remove leading slash if exists
       const cleanUrl = url.startsWith('/') ? url.slice(1) : url;
       const fullUrl = `/api/keeper/${cleanUrl}`;
-      
-      // LOG: Sadece PUT (güncelleme) request'leri için log
-      if (process.env.NODE_ENV === 'development' && method === 'PUT' && cleanUrl.startsWith('group')) {
-        console.log('[ApiService] Update Group Request:', {
-          url: fullUrl,
-          method,
-          body
-        });
-      }
       
       // DELETE işlemleri için 204 NoContent response'u handle et
       let response: any;
@@ -227,11 +222,6 @@ export function fetchFromMngKeeper(
           },
           ...(body && { body }),
         });
-      }
-
-      // LOG: Sadece PUT (güncelleme) response'ları için log
-      if (process.env.NODE_ENV === 'development' && method === 'PUT' && cleanUrl.startsWith('group')) {
-        console.log('[ApiService] Update Group Response:', response);
       }
 
       resolve(response);
@@ -300,6 +290,7 @@ export function fetchFromMngKeeper(
 }
 
 // MngDataGateway API Functions (with token)
+// Uses Nuxt server API route to avoid SSL certificate issues in browser
 export function fetchFromDataGateway(
   url: string,
   method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
@@ -308,44 +299,135 @@ export function fetchFromDataGateway(
 ): Promise<any> {
   return new Promise(async (resolve, reject) => {
     try {
-      // Get token from cookie (NOT from localStorage for security)
-      const token = getAccessToken();
+      const authStore = useAuthStore();
       
-      if (!token) {
-        throw new Error("Access token bulunamadı. Lütfen tekrar giriş yapın.");
+      // Try to ensure token is valid (refresh if needed) - BEFORE making the request
+      // But don't fail if it returns false, let the server decide (it will return 401 if needed)
+      try {
+        await authStore.ensureValidToken();
+      } catch (tokenError: any) {
+        // If ensureValidToken throws an error, it means refresh failed
+        // In this case, we should still try the request (server might accept it)
+        // Don't throw here, let the request proceed (server will return 401 if needed)
+      }
+
+      // URL formatı: '/api/v1/data/@side_menu?skip=0&limit=1000'
+      // Query string'i ayrı çıkar
+      const [pathPart, queryPart] = url.split('?');
+      const cleanPath = pathPart.startsWith('/') ? pathPart : `/${pathPart}`;
+      
+      // Server route: '/api/data/[...path]'
+      // Path: 'api/v1/data/@side_menu' olmalı (başındaki '/' olmadan)
+      // Ama biz '/api/v1/data/@side_menu' gönderiyoruz, bu durumda server route'a '/api/data/api/v1/data/@side_menu' gider
+      // Bunun yerine path'ten '/api/' kısmını çıkarıp direkt 'v1/data/@side_menu' gönderelim
+      let serverPath = cleanPath;
+      if (serverPath.startsWith('/api/v1/')) {
+        serverPath = serverPath.replace('/api/v1/', 'v1/');
+      } else if (serverPath.startsWith('/api/')) {
+        serverPath = serverPath.replace('/api/', '');
       }
       
-      const config = useRuntimeConfig();
-      // Use gateway URL if available, otherwise use direct DataGateway URL
-      const baseUrl = config.public.gatewayUrl 
-        ? `${config.public.gatewayUrl}/data`
-        : (config.public.reactorUrl || 'https://localhost:5010');
+      // Query string'i tekrar ekle
+      const fullUrl = queryPart 
+        ? `/api/data/${serverPath}?${queryPart}`
+        : `/api/data/${serverPath}`;
       
-      const response = await fetch(`${baseUrl}${url}`, {
+      let response: any;
+      
+      try {
+        // Use $fetch which automatically handles server-side routing
+        response = await $fetch(fullUrl, {
         method,
+          ...(body && { body }),
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
           ...headers,
         },
-        ...(body && { body: JSON.stringify(body) }),
-      });
-
-      if (!response.ok) {
-        let errorMessage = 'İstek başarısız';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.errorDescription || errorData.error || errorMessage;
-        } catch {
-          const errorText = await response.text();
-          errorMessage = errorText || errorMessage;
+        });
+        
+        resolve(response);
+      } catch (fetchError: any) {
+        // 401 Unauthorized hatası - token expire olmuş olabilir
+        if (fetchError.statusCode === 401 || fetchError.status === 401) {
+          try {
+            // Token'ı refresh etmeyi dene
+            const refreshed = await authStore.refreshAccessToken();
+            
+            if (refreshed) {
+              // Token refresh başarılı, isteği tekrar dene
+              try {
+                const retryResponse = await $fetch(fullUrl, {
+                  method,
+                  ...(body && { body }),
+                  headers: {
+                    ...headers,
+                  },
+                });
+                resolve(retryResponse);
+                return;
+              } catch (retryError: any) {
+                // Retry de başarısız, normal hata akışına devam et
+                fetchError = retryError;
+                // Retry'de de 401 alırsak aşağıdaki hata handling'e devam et
+              }
+            }
+          } catch (refreshError: any) {
+            // Refresh başarısız, check if refresh token really expired
+            const refreshErrorMessage = refreshError.message || refreshError.toString();
+            const refreshErrorStatus = refreshError.statusCode || refreshError.status || refreshError.response?.status;
+            
+            // Check error message for refresh token expiration indicators
+            const errorMessageIndicatesExpiration = 
+              refreshErrorMessage.includes('Refresh token süresi dolmuş') || 
+              refreshErrorMessage.includes('Refresh token süresi dolmuş veya geçersiz') ||
+              refreshErrorMessage.includes('refresh token expired') ||
+              refreshErrorMessage.includes('Refresh token veya domain bilgisi bulunamadı');
+            
+            // Check if API returned 401/403 (token expired/invalid)
+            const is401or403 = refreshErrorStatus === 401 || refreshErrorStatus === 403;
+            
+            // Check the actual refresh token expiration
+            // Since ensureValidToken already checked, we trust the error message
+            // But also verify by checking if error message clearly indicates expiration
+            const isRefreshTokenActuallyExpired = errorMessageIndicatesExpiration || is401or403;
+            
+            // Only logout if error clearly indicates refresh token expiration
+            if (isRefreshTokenActuallyExpired) {
+              // Refresh token expired, logout and redirect to login
+              await authStore.logout();
+              if (process.client) {
+                navigateTo('/auth/login');
+              }
+              reject(new Error("Oturum süresi dolmuş. Lütfen tekrar giriş yapın."));
+              return;
+            } else {
+              // Refresh token still valid but refresh failed (network error, server error, etc.)
+              // Don't logout, just reject with the original error
+              // Re-throw the original fetch error, not the refresh error
+              // The caller can handle it appropriately
+              throw fetchError;
+            }
+          }
         }
-        throw new Error(errorMessage);
+        
+        // Handle H3 errors (from server API route)
+        if (fetchError.data) {
+          const errorData = fetchError.data;
+          if (typeof errorData === 'object') {
+            throw new Error(errorData.errorDescription || errorData.error || errorData.message || 'İstek başarısız');
+          } else if (typeof errorData === 'string') {
+            throw new Error(errorData);
+          }
+        }
+        
+        // Handle status messages
+        if (fetchError.statusMessage) {
+          throw new Error(fetchError.statusMessage);
+        }
+        
+        // Handle regular errors
+        throw fetchError;
       }
-
-      const data = await response.json();
-      resolve(data);
-    } catch (error) {
+    } catch (error: any) {
       reject(error);
     }
   });

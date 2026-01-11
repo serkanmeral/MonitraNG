@@ -26,7 +26,9 @@ export default defineNuxtConfig({
       // Individual service URLs (used if gatewayUrl is not set)
       keeperUrl: process.env.KEEPER_URL || 'https://localhost:5001',
       reactorUrl: process.env.SERVER_URL || process.env.DATAGATEWAY_URL || process.env.REACTOR_URL || 'https://localhost:5010',
-      hubUrl: process.env.HUB_URL || 'http://localhost:5020'
+      hubUrl: process.env.HUB_URL || 'http://localhost:5020',
+      // Fallback menu control (default: false - disabled)
+      enableFallbackMenu: process.env.ENABLE_FALLBACK_MENU === 'true' || false
     }
   },
   build: { transpile: ["vuetify"] },

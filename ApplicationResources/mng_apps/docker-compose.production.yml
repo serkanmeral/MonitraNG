@@ -299,9 +299,10 @@ services:
       - NUXT_APP_BASE_URL=/domain/
       # Keycloak Configuration (server-side)
       # Note: Keycloak runs under /keycloak path (KC_HTTP_RELATIVE_PATH)
-      # MngKeeper uses BaseAddress=http://keycloak:8080 and adds /keycloak to paths
-      # For MngDomainUI, we include /keycloak in BASE_URL to match
-      - KEYCLOAK_BASE_URL=${KEYCLOAK_BASE_URL:-http://keycloak:8080/keycloak}
+      # MngKeeper uses BaseAddress=http://keycloak:8080 and PathPrefix=/keycloak
+      # For MngDomainUI, we use the same approach: BaseURL + PathPrefix
+      - KEYCLOAK_BASE_URL=${KEYCLOAK_BASE_URL:-http://keycloak:8080}
+      - KEYCLOAK_PATH_PREFIX=${KEYCLOAK_PATH_PREFIX:-/keycloak}
       - KEYCLOAK_REALM=${KEYCLOAK_REALM:-master}
       - KEYCLOAK_ADMIN_USER=${KEYCLOAK_ADMIN_USERNAME:-admin}
       - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin123}

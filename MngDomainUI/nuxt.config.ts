@@ -14,6 +14,8 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
+      // Application Version
+      appVersion: process.env.APP_VERSION ?? '1.0.0',
       // MngKeeper API URL (for client-side - browser accessible URLs)
       keeperUrl: process.env.KEEPER_URL ?? 'https://localhost:5001',
       // MngDataGateway API URL (for client-side - browser accessible URLs)
@@ -27,6 +29,7 @@ export default defineNuxtConfig({
     serverDataGatewayUrl: process.env.SERVER_DATAGATEWAY_URL ?? process.env.DATAGATEWAY_URL ?? 'https://localhost:5010',
     serverHubUrl: process.env.SERVER_HUB_URL ?? process.env.HUB_URL ?? 'http://localhost:5020',
     keycloakBaseUrl: process.env.KEYCLOAK_BASE_URL ?? 'http://localhost:8080',
+    keycloakPathPrefix: process.env.KEYCLOAK_PATH_PREFIX ?? '',
     keycloakAdminUser: process.env.KEYCLOAK_ADMIN_USER ?? 'admin',
     keycloakAdminPassword: process.env.KEYCLOAK_ADMIN_PASSWORD ?? 'admin123',
     minioEndpoint: process.env.MINIO_ENDPOINT ?? 'localhost:9090',

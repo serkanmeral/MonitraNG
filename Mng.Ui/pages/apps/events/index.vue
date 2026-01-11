@@ -100,10 +100,22 @@ const connectToHub = async () => {
       throw new Error('Access token bulunamadı. Lütfen tekrar giriş yapın.');
     }
 
-    // Use gateway URL if available, otherwise use direct hub URL
-    const hubBaseUrl = config.public.gatewayUrl 
-      ? `${config.public.gatewayUrl}/hub`
-      : (config.public.hubUrl || 'http://localhost:5020');
+    // Hub URL belirleme
+    // Development'ta direkt Hub URL'ini HTTP olarak kullan (SSL sertifika hatası önlemek için)
+    // Production'da gateway URL üzerinden HTTPS kullanılacak
+    let hubBaseUrl: string;
+    
+    if (process.env.NODE_ENV === 'development') {
+      // Development: Direkt Hub URL'ini HTTP olarak kullan (gateway bypass)
+      // Bu, SSL sertifika hatasını önler
+      hubBaseUrl = config.public.hubUrl || 'http://localhost:5020';
+    } else {
+      // Production: Gateway URL varsa onu kullan, yoksa direkt Hub URL'i
+      hubBaseUrl = config.public.gatewayUrl 
+        ? `${config.public.gatewayUrl}/hub`
+        : (config.public.hubUrl || 'http://localhost:5020');
+    }
+    
     // Use query string for token (more compatible with SignalR negotiation)
     const connectionUrl = `${hubBaseUrl}/ws?access_token=${encodeURIComponent(token)}`;
 
@@ -120,7 +132,7 @@ const connectToHub = async () => {
           return 5000; // 5 saniye
         },
       })
-      .configureLogging(LogLevel.Information)
+      .configureLogging(process.env.NODE_ENV === 'development' ? LogLevel.Warning : LogLevel.Error)
       .build();
 
     // Message handler
@@ -145,7 +157,6 @@ const connectToHub = async () => {
       isConnected.value = false;
       if (error) {
         connectionError.value = `Bağlantı kapatıldı: ${error.message}`;
-        console.error('SignalR connection closed with error:', error);
       }
     });
 
@@ -153,9 +164,7 @@ const connectToHub = async () => {
     connection.value = hubConnection;
     isConnected.value = true;
     connectionError.value = null;
-    console.log('SignalR connected successfully');
   } catch (error: any) {
-    console.error('SignalR connection error:', error);
     connectionError.value = error.message || 'Bağlantı hatası oluştu.';
     isConnected.value = false;
   } finally {
@@ -169,9 +178,8 @@ const disconnectFromHub = async () => {
       await connection.value.stop();
       connection.value = null;
       isConnected.value = false;
-      console.log('SignalR disconnected');
     } catch (error) {
-      console.error('SignalR disconnect error:', error);
+      // Hata önemli değil, sessizce devam et
     }
   }
 };

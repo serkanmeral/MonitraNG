@@ -45,8 +45,6 @@ const schema = yup.object({
 });
 
 const onSubmit = async (values: any) => {
-  console.log('onSubmit called with values:', values);
-  
   loading.value = true;
   errorMessage.value = '';
   
@@ -57,10 +55,8 @@ const onSubmit = async (values: any) => {
       isActive: formData.value.isActive, // Switch value comes from formData
     };
     
-    console.log('Calling groupStore.createGroup with:', groupData);
     await groupStore.createGroup(groupData);
     
-    console.log('Group created successfully, redirecting...');
     // Success - redirect to list with refresh parameter
     router.push({ path: '/apps/groups', query: { refresh: Date.now() } });
   } catch (error: any) {
