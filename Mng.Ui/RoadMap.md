@@ -113,40 +113,98 @@ Mng.Ui/
 
 ### Phase 3: Dataset Yönetimi Sayfaları 📋
 
-**Durum:** ⚠️ Kontrol Edilmesi Gerekiyor (Daha önce yapılmış olabilir)
+**Durum:** ✅ Tamamlandı (10 Ocak 2026)
 
-**Not:** Dataset kategorileri ve datasetler için CRUD ve list sayfaları daha önce yapılmış olabilir. Mevcut sayfalar kontrol edilmeli.
+#### 3.0 Dataset Categories Sayfaları ✅ (Tamamlandı - 2026-01-10)
 
-#### 3.1 Dataset Listesi Sayfası
-- **Route:** `/apps/datasets`
-- **Component:** `pages/apps/datasets/index.vue`
-- **Özellikler:**
-  - Dataset listesi (pagination)
-  - Kategori filtreleme
-  - Dataset arama
-  - Dataset durumu
+**Durum:** Tamamlandı
 
-#### 3.2 Dataset Oluşturma/Düzenleme Sayfası
-- **Route:** `/apps/datasets/create` | `/apps/datasets/edit/[name].vue`
-- **Component:** `pages/apps/datasets/form.vue`
-- **Özellikler:**
-  - Dataset schema formu
-  - Field tanımlama (9 field type)
-  - Validation rules
-  - Query definitions
-  - Index management
-  - Incremental field configuration
-  - **Permissions Management** ⚠️ (Backend DTO/Service katmanında eksik - Phase 3.3 olarak planlanıyor)
+**Tamamlanan İşler:**
+- ✅ Dataset Categories listesi sayfası (`/apps/dataset-categories`)
+- ✅ Dataset Categories oluşturma sayfası (`/apps/dataset-categories/create`)
+- ✅ Dataset Categories düzenleme sayfası (`/apps/dataset-categories/edit/[dataId]`)
+- ✅ Dataset Categories form component (`form.vue`)
+- ✅ Search functionality (backend'de implement edildi)
+- ✅ CRUD operations (Create, Read, Update, Delete)
+- ✅ Pagination desteği
+- ✅ Category store (`datasetCategory.ts`)
 
-#### 3.3 Dataset Detay Sayfası
-- **Route:** `/apps/datasets/[name].vue`
-- **Component:** `pages/apps/datasets/[name].vue`
-- **Özellikler:**
-  - Schema görüntüleme
-  - Field listesi ve detayları
-  - Validation rules
-  - Query definitions
-  - Dataset istatistikleri
+**API Endpoints:**
+- `GET /api/v1/dataset-categories` - Kategori listesi (search desteği ile)
+- `POST /api/v1/dataset-categories` - Kategori oluşturma
+- `GET /api/v1/dataset-categories/{dataId}` - Kategori detayı
+- `PUT /api/v1/dataset-categories/{dataId}` - Kategori güncelleme
+- `DELETE /api/v1/dataset-categories/{dataId}` - Kategori silme
+
+---
+
+#### 3.1 Dataset Listesi Sayfası ✅ (Tamamlandı - 2026-01-10)
+
+**Durum:** Tamamlandı
+
+**Route:** `/apps/datasets`  
+**Component:** `pages/apps/datasets/index.vue`
+
+**Tamamlanan Özellikler:**
+- ✅ Dataset listesi (pagination)
+- ✅ Kategori filtreleme (kategori adı gösterimi)
+- ✅ Dataset arama (UI hazır, backend henüz desteklemiyor)
+- ✅ Dataset durumu
+- ✅ Export functionality (CSV/JSON)
+- ✅ Dataset store (`dataset.ts`)
+
+**Export Features:**
+- ✅ CSV export (tüm kolonlar, UTF-8 BOM)
+- ✅ JSON export (pretty print)
+- ✅ Tarih/saat ile dosya isimlendirme
+- ✅ Filtrelenmiş sonuçlar için export
+
+#### 3.2 Dataset Oluşturma/Düzenleme Sayfası ✅ (Tamamlandı - 2026-01-10)
+
+**Durum:** Tamamlandı
+
+**Route:** `/apps/datasets/create` | `/apps/datasets/edit/[name].vue`  
+**Component:** `pages/apps/datasets/form.vue`
+
+**Tamamlanan Özellikler:**
+- ✅ Dataset schema formu (Stepper yapısı ile 5 step)
+- ✅ Step 1: Temel Bilgiler (Name, Description, Category, Force Schema, Logging, Publish Mode)
+- ✅ Step 2: Field Definitions
+  - ✅ Field tanımlama (tüm field type'lar: text, number, bool, datetime, object, relation, persons, personGroups, incremental)
+  - ✅ Default Value desteği (field type'a göre dinamik input)
+  - ✅ Field-level Validation Rules (min/max, minLength/maxLength, pattern, minDate/maxDate, minItems/maxItems)
+  - ✅ Relation field lookup (dataset seçimi)
+  - ✅ Incremental field configuration (format, startValue, incrementStep)
+  - ✅ Object schema desteği
+- ✅ Step 3: Predefined Queries
+  - ✅ Query ekleme/düzenleme modal
+  - ✅ Query parameters (yeni format: QueryParameterDefinition listesi - name, type, description, required)
+  - ✅ Pipeline JSON editor (textarea)
+- ✅ Step 4: Validation Definitions
+  - ✅ Expression-based validations
+  - ✅ HTTP-based validations (URL, method, fields, when, order)
+  - ✅ Validation ekleme/düzenleme/silme
+- ✅ Step 5: Index Definitions
+  - ✅ Index ekleme/düzenleme modal
+  - ✅ Field seçimi ve order (asc/desc)
+  - ✅ Unique index desteği
+- ⚠️ **Permissions Management** (Backend DTO/Service katmanında eksik - Phase 3.3 olarak planlanıyor)
+
+#### 3.3 Dataset Detay Sayfası ✅ (Tamamlandı - 2026-01-10)
+
+**Durum:** Tamamlandı
+
+**Route:** `/apps/datasets/[name].vue`  
+**Component:** `pages/apps/datasets/[name].vue`
+
+**Tamamlanan Özellikler:**
+- ✅ Schema görüntüleme
+- ✅ Field listesi ve detayları (tüm field properties)
+- ✅ Validation rules listesi (Expression-based ve HTTP-based)
+- ✅ Query definitions listesi (parameters ile birlikte)
+- ✅ Index definitions listesi
+- ✅ Dataset istatistikleri
+- ✅ Export functionality (JSON export)
 
 **API Endpoints:**
 - `GET /api/datasets` - Dataset listesi
@@ -630,7 +688,7 @@ function checkPermission(pageName: string, level: 'view' | 'edit'): boolean {
 
 ### Phase 6: Dil Desteği (i18n) Sistemi 🌐
 
-**Durum:** Planlama Aşaması
+**Durum:** ✅ Temel Altyapı Tamamlandı, ⏳ Geliştirmeler Devam Ediyor
 
 #### 6.1 Mevcut Durum
 
@@ -890,8 +948,29 @@ t('common.save'); // TypeScript otomatik tamamlama
 ```
 
 **API Endpoints:**
-- Çeviri dosyaları statik JSON dosyaları olarak tutulur
-- Runtime'da API'den çeviri yükleme (gelecekte eklenebilir)
+- Çeviri dosyaları MinIO'da runtime olarak yönetiliyor (`System/locales/`)
+- Locale Editor sayfası ile manuel düzenleme yapılabiliyor
+- API endpoint'leri: `GET /api/system/locales/{locale}`, `PUT /api/system/locales/{locale}`
+
+#### 6.13 Otomatik Çeviri Özelliği (Gelecek Planlama) 🤖
+
+**Durum:** 📋 Gelecek Özellik (RoadMap'te)
+
+**Hedef:**
+- Side Menu Manager'dan menü item'ı düzenlerken, "Dil Dosyalarını Güncelle" butonu ile otomatik olarak dil dosyalarına key ekleme
+- İleride Ollama gibi dahili LLM kullanarak otomatik çeviri desteği
+
+**Şu Anki Yaklaşım (Basit):**
+- ✅ Side Menu Manager'da "Dil Dosyalarını Güncelle" butonu eklendi
+- ✅ Butona tıklandığında `pageCode` key'i tüm dil dosyalarına eklenir
+- ✅ Source language (Türkçe) için `title`/`header` değeri kullanılır
+- ✅ Diğer dillere aynı değer placeholder olarak eklenir (manuel düzenlenebilir)
+
+**Gelecek Geliştirmeler:**
+- [ ] Ollama veya benzeri dahili LLM entegrasyonu
+- [ ] Otomatik çeviri API'si (Google Translate, DeepL, Azure Translator)
+- [ ] Çeviri kalitesi kontrolü ve onay mekanizması
+- [ ] Toplu çeviri işlemleri
 
 **Öncelik:**
 - Phase 5'ten (Yetkilendirme) sonra

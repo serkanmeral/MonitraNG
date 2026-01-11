@@ -1,0 +1,60 @@
+{
+  "order": 150,
+  "itemType": "item",
+  "level": 0,
+  "parentId": null,
+  "pageType": "admin",
+  "title": "Locale Editor",
+  "pageCode": "apps-locale-editor",
+  "icon": "LanguageIcon",
+  "iconType": "tabler",
+  "to": "/apps/locale-editor",
+  "type": "internal",
+  "disabled": false,
+  "permissions": {
+    "groups": {
+      "admins": {
+        "view": true,
+        "create": false,
+        "update": false,
+        "delete": false,
+        "export": false
+      },
+      "managers": {
+        "view": false,
+        "create": false,
+        "update": false,
+        "delete": false,
+        "export": false
+      },
+      "users": {
+        "view": false,
+        "create": false,
+        "update": false,
+        "delete": false,
+        "export": false
+      },
+      "guests": {
+        "view": false,
+        "create": false,
+        "update": false,
+        "delete": false,
+        "export": false
+      },
+      "developers": {
+        "view": false,
+        "create": false,
+        "update": false,
+        "delete": false,
+        "export": false
+      },
+      "testers": {
+        "view": false,
+        "create": false,
+        "update": false,
+        "delete": false,
+        "export": false
+      }
+    }
+  }
+}

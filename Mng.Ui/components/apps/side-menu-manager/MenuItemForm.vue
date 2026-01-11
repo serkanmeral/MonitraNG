@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import type { SideMenuItem } from '@/stores/apps/sideMenu';
-import { TrashIcon, XIcon } from 'vue-tabler-icons';
+import { TrashIcon, XIcon, LanguageIcon } from 'vue-tabler-icons';
 import IconPicker from './IconPicker.vue';
 import PermissionEditor from './PermissionEditor.vue';
+import { fetchFromMngKeeper } from '@/services/apiService';
 
 const props = defineProps<{
   item: SideMenuItem | null;
@@ -226,6 +227,121 @@ const generatePageCode = () => {
   // If still no pageCode, use item type + order
   if (!formData.value.pageCode) {
     formData.value.pageCode = `${formData.value.itemType}-${formData.value.order || 0}`;
+  }
+};
+
+// Update locale files
+const updatingLocales = ref(false);
+const localeUpdateMessage = ref('');
+const localeUpdateError = ref('');
+
+const updateLocaleFiles = async () => {
+  // Validate pageCode
+  if (!formData.value.pageCode) {
+    localeUpdateError.value = 'Sayfa kodu (pageCode) gereklidir. Lütfen önce pageCode oluşturun.';
+    setTimeout(() => {
+      localeUpdateError.value = '';
+    }, 5000);
+    return;
+  }
+
+  // Get source text (title for item, header for header)
+  const sourceText = formData.value.itemType === 'header' 
+    ? formData.value.header 
+    : formData.value.title;
+  
+  if (!sourceText) {
+    localeUpdateError.value = formData.value.itemType === 'header' 
+      ? 'Header metni gereklidir.'
+      : 'Menu başlığı gereklidir.';
+    setTimeout(() => {
+      localeUpdateError.value = '';
+    }, 5000);
+    return;
+  }
+
+  updatingLocales.value = true;
+  localeUpdateMessage.value = '';
+  localeUpdateError.value = '';
+
+  try {
+    // Available locales
+    const locales = ['tr', 'en', 'fr', 'ar', 'zh'];
+    const isHeader = formData.value.itemType === 'header';
+    
+    // Update each locale file
+    for (const locale of locales) {
+      try {
+        // Load existing locale file
+        let localeData: any = {};
+        try {
+          localeData = await fetchFromMngKeeper(`/system/locales/${locale}`, 'GET');
+        } catch (error: any) {
+          // 404 means file doesn't exist, which is OK - we'll create it
+          if (error.message?.includes('404') || error.statusCode === 404) {
+            localeData = {};
+          } else {
+            throw error;
+          }
+        }
+
+        // Ensure menu object exists
+        if (!localeData.menu) {
+          localeData.menu = {};
+        }
+
+        if (isHeader) {
+          // For headers: menu.headers.{pageCode}
+          if (!localeData.menu.headers) {
+            localeData.menu.headers = {};
+          }
+          // Use source text (Turkish) as default, others use same as placeholder
+          localeData.menu.headers[formData.value.pageCode] = sourceText;
+        } else {
+          // For items: menu.{pageCode}
+          // Use source text (Turkish) as default, others use same as placeholder
+          localeData.menu[formData.value.pageCode] = sourceText;
+        }
+
+        // Save locale file
+        await fetchFromMngKeeper(`/system/locales/${locale}`, 'PUT', localeData);
+      } catch (error: any) {
+        console.error(`Failed to update locale ${locale}:`, error);
+        localeUpdateError.value = `Dil dosyası güncellenirken hata oluştu: ${error.message || error}`;
+        updatingLocales.value = false;
+        setTimeout(() => {
+          localeUpdateError.value = '';
+        }, 10000);
+        return;
+      }
+    }
+
+    // Invalidate cache for all locales
+    if (process.client) {
+      try {
+        const nuxtApp = useNuxtApp();
+        const invalidateCache = (nuxtApp as any).$invalidateLocaleCache;
+        if (invalidateCache) {
+          invalidateCache(); // Invalidate all locales
+          console.log('[MenuItemForm] Locale cache invalidated');
+        }
+      } catch (cacheError) {
+        console.warn('Failed to invalidate cache:', cacheError);
+      }
+    }
+
+    localeUpdateMessage.value = `Dil dosyaları başarıyla güncellendi! (${formData.value.pageCode})`;
+    setTimeout(() => {
+      localeUpdateMessage.value = '';
+    }, 5000);
+  } catch (error: any) {
+    console.error('Failed to update locale files:', error);
+    localeUpdateError.value = `Dil dosyaları güncellenirken hata oluştu: ${error.message || error}`;
+    setTimeout(() => {
+      localeUpdateError.value = '';
+    }, 10000);
+  } finally {
+    updatingLocales.value = false;
   }
 };
 </script>
@@ -463,6 +579,55 @@ const generatePageCode = () => {
             :permissions="formData.permissions"
             @change="handlePermissionsChange"
           />
+        </v-col>
+
+        <!-- Locale Update Section -->
+        <v-col cols="12" v-if="isEditMode && formData.pageCode">
+          <v-divider class="mb-4"></v-divider>
+          <h3 class="text-h6 mb-4">Dil Desteği</h3>
+          
+          <!-- Success Message -->
+          <v-alert
+            v-if="localeUpdateMessage"
+            type="success"
+            variant="tonal"
+            density="compact"
+            class="mb-4"
+            closable
+            @click:close="localeUpdateMessage = ''"
+          >
+            {{ localeUpdateMessage }}
+          </v-alert>
+          
+          <!-- Error Message -->
+          <v-alert
+            v-if="localeUpdateError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-4"
+            closable
+            @click:close="localeUpdateError = ''"
+          >
+            {{ localeUpdateError }}
+          </v-alert>
+          
+          <v-btn
+            color="info"
+            variant="outlined"
+            :loading="updatingLocales"
+            :disabled="!formData.pageCode || updatingLocales || loading"
+            @click="updateLocaleFiles"
+          >
+            <template #prepend>
+              <LanguageIcon size="18" />
+            </template>
+            Dil Dosyalarını Güncelle
+          </v-btn>
+          <p class="text-caption text-disabled mt-2">
+            Bu buton, mevcut sayfa kodunu ({{ formData.pageCode }}) tüm dil dosyalarına ekler. 
+            Türkçe için mevcut başlık/header kullanılır, diğer dillere aynı değer placeholder olarak eklenir.
+          </p>
         </v-col>
 
         <!-- Action Buttons -->
