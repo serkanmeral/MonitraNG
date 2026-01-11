@@ -130,5 +130,29 @@
 
     "Banners Widgets":"横幅小部件",
     "Cards Widgets":"卡片小部件",
-    "Charts Widgets":"图表小工具"
+    "Charts Widgets":"图表小工具",
+    "menu": {
+        "apps-dataset-categories": "数据集类别",
+        "datasets": "数据集",
+        "two-steps": "两步",
+        "apps-events": "事件消息",
+        "apps-side-menu-manager": "侧边菜单管理器",
+        "apps-users": "用户管理",
+        "apps-groups": "组管理",
+        "headers": {
+            "home": "首页",
+            "assets": "资产",
+            "apps": "应用",
+            "pages": "页面",
+            "components": "组件",
+            "charts": "图表",
+            "forms": "表单",
+            "widget": "小部件",
+            "tables": "表格",
+            "data-tables": "数据表",
+            "authentication": "身份验证",
+            "icons": "图标",
+            "administration": "管理"
+        }
+    }
 }

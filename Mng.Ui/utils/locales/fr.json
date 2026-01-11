@@ -129,5 +129,29 @@
 
     "Banners Widgets":"Widgets de bannières",
     "Cards Widgets":"Widgets de cartes",
-    "Charts Widgets":"Widgets graphiques"
+    "Charts Widgets":"Widgets graphiques",
+    "menu": {
+        "apps-dataset-categories": "Catégories de Dataset",
+        "datasets": "Datasets",
+        "two-steps": "Deux étapes",
+        "apps-events": "Messages d'événement",
+        "apps-side-menu-manager": "Gestionnaire de menu latéral",
+        "apps-users": "Gestion des utilisateurs",
+        "apps-groups": "Gestion des groupes",
+        "headers": {
+            "home": "Accueil",
+            "assets": "Actifs",
+            "apps": "Applications",
+            "pages": "Pages",
+            "components": "Composants",
+            "charts": "Graphiques",
+            "forms": "Formulaires",
+            "widget": "Widget",
+            "tables": "Tableaux",
+            "data-tables": "Tableaux de données",
+            "authentication": "Authentification",
+            "icons": "Icônes",
+            "administration": "Administration"
+        }
+    }
 }

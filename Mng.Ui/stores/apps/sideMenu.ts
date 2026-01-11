@@ -18,6 +18,7 @@ export interface SideMenuItem {
   
   // Item için
   title?: string;
+  pageCode?: string; // i18n key için kullanılacak unique identifier
   icon?: string;
   iconType?: 'mdi' | 'tabler';
   to?: string;
@@ -426,6 +427,7 @@ export const useSideMenuStore = defineStore('sideMenu', {
       const menuItem: menu = {
         header: item.header,
         title: item.title,
+        pageCode: item.pageCode, // pageCode'u kopyala (i18n için gerekli)
         to: item.to,
         chip: item.chip,
         chipBgColor: item.chipBgColor,

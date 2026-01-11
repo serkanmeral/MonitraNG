@@ -99,6 +99,30 @@
     "Pages":"Pages",
     "Forms":"Forms",
     "Tables":"Tables",
-    "Icons":"Icons"
+    "Icons":"Icons",
+    "menu": {
+        "apps-dataset-categories": "Dataset Categories",
+        "datasets": "Datasets",
+        "two-steps": "Two Steps",
+        "apps-events": "Event Messages",
+        "apps-side-menu-manager": "Side Menu Manager",
+        "apps-users": "User Management",
+        "apps-groups": "Group Management",
+        "headers": {
+            "home": "Home",
+            "assets": "Assets",
+            "apps": "Apps",
+            "pages": "Pages",
+            "components": "Components",
+            "charts": "Charts",
+            "forms": "Forms",
+            "widget": "Widget",
+            "tables": "Tables",
+            "data-tables": "Data Tables",
+            "authentication": "Authentication",
+            "icons": "Icons",
+            "administration": "Administration"
+        }
+    }
 
 }

@@ -136,6 +136,25 @@
     "menu": {
         "apps-dataset-categories": "Dataset Kategorileri",
         "datasets": "Datasetler",
-        "two-steps": "İki Adım"
+        "two-steps": "İki Adım",
+        "apps-events": "Event Mesajları",
+        "apps-side-menu-manager": "Side Menu Manager",
+        "apps-users": "Kullanıcı Yönetimi",
+        "apps-groups": "Grup Yönetimi",
+        "headers": {
+            "home": "Ana Sayfa",
+            "assets": "Varlıklar",
+            "apps": "Uygulamalar",
+            "pages": "Sayfalar",
+            "components": "Bileşenler",
+            "charts": "Grafikler",
+            "forms": "Formlar",
+            "widget": "Widget",
+            "tables": "Tablolar",
+            "data-tables": "Veri Tabloları",
+            "authentication": "Kimlik Doğrulama",
+            "icons": "İkonlar",
+            "administration": "Yönetim"
+        }
     }
 }

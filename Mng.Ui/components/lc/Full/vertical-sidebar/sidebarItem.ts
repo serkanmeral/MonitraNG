@@ -71,6 +71,7 @@ import {
 export interface menu {
   header?: string;
   title?: string;
+  pageCode?: string; // i18n key için kullanılacak unique identifier
   icon?: any;
   iconType?: 'mdi' | 'tabler'; // Icon type (for new format)
   iconName?: string; // Icon name (for new format)
