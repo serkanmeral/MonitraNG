@@ -3,11 +3,9 @@ using MngDataGateway.Api.Middleware;
 using MngDataGateway.Application;
 using MngDataGateway.Application.Configuration;
 using MngDataGateway.Infrastructure;
-using MngDataGateway.Infrastructure.Services.Certificate;
 using MngDataGateway.Persistence;
 using MongoDB.Driver;
 using Serilog;
-using System.Security.Cryptography.X509Certificates;
 
 try
 {
@@ -40,30 +38,9 @@ try
         throw;
     }
 
-// Get certificate
-X509Certificate2 certificate;
 try
 {
-    certificate = CertificateHandler.GetCertificate(log, datagatewaySettings);
-    log.Information("Certificate loaded successfully");
-}
-catch (Exception ex)
-{
-    Console.WriteLine($"FATAL ERROR: Failed to load certificate - Application cannot start without valid SSL certificate");
-    Console.WriteLine($"Exception: {ex.Message}");
-    Console.WriteLine($"Stack Trace: {ex.StackTrace}");
-    if (log != null)
-    {
-        log.Fatal(ex, "Failed to load certificate - Application cannot start without valid SSL certificate");
-    }
-    Console.WriteLine("Press any key to exit...");
-    Console.ReadKey();
-    throw;
-}
-
-try
-{
-    builder.InitWebAPP(certificate);
+    builder.InitWebAPP();
 }
 catch (Exception ex)
 {

@@ -1,8 +1,8 @@
 # MngKeeper API - Development Roadmap
 
 **Microservice:** Identity & Access Management (IAM)  
-**Version:** 1.2.0  
-**Last Updated:** 2 Ocak 2026
+**Version:** 1.2.1  
+**Last Updated:** 11 Ocak 2026
 
 ---
 
@@ -222,6 +222,31 @@
 - ✅ Extension Methods (Clean Program.cs)
 - ✅ Serilog (Structured logging)
 - ✅ Global Exception Handler
+
+---
+
+### 9. API Gateway Integration (v1.2.1) - ✅ TAMAMLANDI (11 Ocak 2026)
+
+**Yapılan Değişiklikler:**
+- ✅ HTTPS'den HTTP'ye geçiş (SSL/TLS termination artık Gateway'de)
+- ✅ CORS yapılandırması kaldırıldı (Gateway'de merkezi yönetim)
+- ✅ Sertifika yönetimi kaldırıldı (Gateway'de yönetiliyor)
+- ✅ Health endpoint standartlaştırıldı (`/health`)
+- ✅ Internal network'te çalışıyor (external exposure yok)
+
+**Faydalar:**
+- ✅ Tek sertifika yönetimi (Gateway'de)
+- ✅ Merkezi CORS yönetimi
+- ✅ Servis basitleştirildi (CORS, sertifika kaldırıldı)
+- ✅ API Gateway pattern'ine uygun mimari
+- ✅ Production'da Nginx ile Let's Encrypt SSL termination
+
+**Gateway URL:**
+- Production: `https://api.monitra.local/keeper/api/*`
+- Development: `https://localhost:5040/keeper/api/*`
+
+**Internal URL (Docker network):**
+- `http://mngkeeper:5001/api/*`
 
 ---
 
@@ -725,9 +750,19 @@ Normal User (isAdmin = false, isManager = false)
 
 ---
 
-**Son Güncelleme:** 2 Ocak 2026  
-**Status:** Core features complete (98%), Token enhancement ve Keycloak PathPrefix desteği tamamlandı  
-**Son Tamamlanan (v1.2.0 - 2 Ocak 2026):** 
+**Son Güncelleme:** 11 Ocak 2026  
+**Status:** Core features complete (98%), API Gateway entegrasyonu tamamlandı  
+**Son Tamamlanan (v1.2.1 - 11 Ocak 2026):** 
+- API Gateway Pattern entegrasyonu tamamlandı
+  - HTTPS'den HTTP'ye geçiş (SSL/TLS termination artık Gateway'de)
+  - CORS yapılandırması kaldırıldı (Gateway'de merkezi yönetim)
+  - Health endpoint standartlaştırıldı (`/health`)
+  - Internal network'te çalışıyor (external exposure yok)
+  - Sertifika yönetimi kaldırıldı (Gateway'de yönetiliyor)
+- Gateway URL: `https://localhost:5040/keeper/api/*`
+- Internal URL: `http://localhost:5001/api/*` (Docker network)
+
+**Önceki Versiyon (v1.2.0 - 2 Ocak 2026):** 
 - Token'a `user_groups` claim'i eklendi
   - MongoDB'den kullanıcı grupları token'a ekleniyor
   - Refresh token işleminde de güncel gruplar token'a ekleniyor

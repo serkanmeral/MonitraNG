@@ -35,7 +35,7 @@ services:
       - MngGatewaySettings__RateLimit__AdminLimit=500
       - MngGatewaySettings__RateLimit__Period=1m
       
-      # Backend Services Configuration
+      # Backend Services Configuration (HTTP for internal communication)
       - MngGatewaySettings__BackendServices__MngKeeper=http://mngkeeper:5001
       - MngGatewaySettings__BackendServices__MngDataGateway=http://mngdatagateway:5010
       - MngGatewaySettings__BackendServices__MngHub=http://mnghub:5020
@@ -79,8 +79,8 @@ services:
       # Server Configuration
       - MngKeeperSettings__Server__Host=0.0.0.0
       - MngKeeperSettings__Server__Port=5001
-      - MngKeeperSettings__Server__Scheme=https
-      - MngKeeperSettings__OpenApiServerPath=https://localhost:5001
+      - MngKeeperSettings__Server__Scheme=http
+      - MngKeeperSettings__OpenApiServerPath=http://localhost:5001
       
       # MongoDB Configuration
       - MngKeeperSettings__MongoDB__ConnectionString=mongodb://admin:admin123@mongo:27017
@@ -119,16 +119,13 @@ services:
       - MngKeeperSettings__MinIO__UseSSL=false
       - MngKeeperSettings__MinIO__Region=us-east-1
       
-      # Certificate Settings (auto-generate self-signed)
-      - MngKeeperSettings__CertificateSettings__DNS=mngkeeper
-    
     networks:
       - mng_common_mng_network
     
     restart: unless-stopped
     
     healthcheck:
-      test: ["CMD-SHELL", "curl -k -f https://localhost:5001/api/version/short || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5001/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -162,12 +159,7 @@ services:
       - MngHubSettings__RabbitMQ__EventPublisherExchangeName=mngkeeper.events
       
       # Actors Configuration
-      - MngHubSettings__Actors__MngKeeper=https://mngkeeper:5001
-      
-      # CORS Configuration
-      - MngHubSettings__Cors__AllowedOrigins__0=http://localhost:3000
-      - MngHubSettings__Cors__AllowedOrigins__1=https://localhost:3000
-      - MngHubSettings__Cors__AllowCredentials=true
+      - MngHubSettings__Actors__MngKeeper=http://mngkeeper:5001
       
       # Certificate Settings
       - MngHubSettings__CertificateSettings__DNS=mnghub
@@ -199,14 +191,14 @@ services:
       # Server Configuration
       - MngDataGatewaySettings__Server__Host=0.0.0.0
       - MngDataGatewaySettings__Server__Port=5010
-      - MngDataGatewaySettings__Server__Scheme=https
-      - MngDataGatewaySettings__OpenApiServerPath=https://localhost:5010
+      - MngDataGatewaySettings__Server__Scheme=http
+      - MngDataGatewaySettings__OpenApiServerPath=http://localhost:5010
       
       # MongoDB Configuration
       - MngDataGatewaySettings__MongoDB__ConnectionString=mongodb://admin:admin123@mongo:27017
       
       # Actors Configuration (MngKeeper)
-      - MngDataGatewaySettings__Actors__MngKeeper=https://mngkeeper:5001
+      - MngDataGatewaySettings__Actors__MngKeeper=http://mngkeeper:5001
       
       # RabbitMQ Configuration
       - MngDataGatewaySettings__RabbitMQ__Host=rabbitmq
@@ -228,9 +220,6 @@ services:
       
       # Validation Configuration
       - MngDataGatewaySettings__Validation__HttpValidationTimeout=30
-      
-      # Certificate Settings (auto-generate self-signed)
-      - MngDataGatewaySettings__CertificateSettings__DNS=mngdatagateway
     
     networks:
       - mng_common_mng_network
@@ -238,7 +227,7 @@ services:
     restart: unless-stopped
     
     healthcheck:
-      test: ["CMD-SHELL", "curl -k -f https://localhost:5010/api/v1/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5010/api/v1/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -277,13 +266,8 @@ services:
       - MngLLMSettings__Translation__CacheTTL=3600
       
       # Actors Configuration
-      - MngLLMSettings__Actors__MngKeeper=https://mngkeeper:5001
-      - MngLLMSettings__Actors__MngDataGateway=https://mngdatagateway:5010
-      
-      # CORS Configuration
-      - MngLLMSettings__Cors__AllowedOrigins__0=http://localhost:3000
-      - MngLLMSettings__Cors__AllowedOrigins__1=https://localhost:3000
-      - MngLLMSettings__Cors__AllowCredentials=true
+      - MngLLMSettings__Actors__MngKeeper=http://mngkeeper:5001
+      - MngLLMSettings__Actors__MngDataGateway=http://mngdatagateway:5010
       
       # Certificate Settings (auto-generate self-signed)
       - MngLLMSettings__CertificateSettings__DNS=mngllm
@@ -297,7 +281,7 @@ services:
     restart: unless-stopped
     
     healthcheck:
-      test: ["CMD-SHELL", "curl -k -f https://localhost:5030/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5030/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -314,8 +298,8 @@ services:
     environment:
       # Individual service URLs (Browser'dan erişilebilir URL'ler kullanılmalı)
       # Docker container içinde değil, browser'da çalıştığı için localhost kullanıyoruz
-      - KEEPER_URL=https://localhost:5001
-      - DATAGATEWAY_URL=https://localhost:5010
+      - KEEPER_URL=http://localhost:5001
+      - DATAGATEWAY_URL=http://localhost:5010
       - HUB_URL=http://localhost:5020
       # Gateway URL boş bırakılıyor (şimdilik direkt servisler kullanılıyor)
       - GATEWAY_URL=
@@ -354,14 +338,12 @@ services:
       - MINIO_SECRET_KEY=admin123
       - MINIO_USE_SSL=false
       # Server-side API URLs (for container-to-container communication)
-      - SERVER_KEEPER_URL=https://mngkeeper:5001
-      - SERVER_DATAGATEWAY_URL=https://mngdatagateway:5010
+      - SERVER_KEEPER_URL=http://mngkeeper:5001
+      - SERVER_DATAGATEWAY_URL=http://mngdatagateway:5010
       - SERVER_HUB_URL=http://mnghub:5020
-      # SSL bypass for container-to-container HTTPS (self-signed certificates)
-      - ENABLE_SSL_BYPASS=true
       # Public (client-side) - API URLs (Browser'dan erişilebilir URL'ler)
-      - KEEPER_URL=https://localhost:5001
-      - DATAGATEWAY_URL=https://localhost:5010
+      - KEEPER_URL=http://localhost:5001
+      - DATAGATEWAY_URL=http://localhost:5010
       - HUB_URL=http://localhost:5020
       - GATEWAY_URL=
     networks:

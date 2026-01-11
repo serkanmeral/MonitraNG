@@ -1,7 +1,7 @@
 # MngDataGateway - Geliştirme Yol Haritası
 
-**Son Güncelleme:** 2 Ocak 2026  
-**Versiyon:** 1.0.0  
+**Son Güncelleme:** 11 Ocak 2026  
+**Versiyon:** 1.0.1  
 **Durum:** 🚀 Aktif Geliştirme
 
 **Not:** Sonraki session için yapılacaklar için `docs/NEXT_SESSION_ROADMAP.md` dosyasına bakın.
@@ -264,6 +264,33 @@ GET /api/data/{dataset}?format=csv&filter=price:gte:20
 ```
 
 **Tarih:** 26 Aralık 2025
+
+---
+
+### 10. API Gateway Integration (v1.0.1) - ✅ TAMAMLANDI (11 Ocak 2026)
+
+**Yapılan Değişiklikler:**
+- ✅ HTTPS'den HTTP'ye geçiş (SSL/TLS termination artık Gateway'de)
+- ✅ CORS yapılandırması kaldırıldı (Gateway'de merkezi yönetim)
+- ✅ Sertifika yönetimi kaldırıldı (Gateway'de yönetiliyor)
+- ✅ Internal network'te çalışıyor (external exposure yok)
+
+**Faydalar:**
+- ✅ Tek sertifika yönetimi (Gateway'de)
+- ✅ Merkezi CORS yönetimi
+- ✅ Servis basitleştirildi (CORS, sertifika kaldırıldı)
+- ✅ API Gateway pattern'ine uygun mimari
+- ✅ Production'da Nginx ile Let's Encrypt SSL termination
+
+**Gateway URL:**
+- Production: `https://api.monitra.local/data/api/v1/*`
+- Development: `https://localhost:5040/data/api/v1/*`
+
+**Internal URL (Docker network):**
+- `http://mngdatagateway:5010/api/v1/*`
+
+**Health Endpoint:**
+- `/api/v1/health` (mevcut, değişmedi)
 
 ---
 

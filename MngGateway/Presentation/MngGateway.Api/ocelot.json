@@ -2,14 +2,13 @@
   "Routes": [
     {
       "DownstreamPathTemplate": "/api/auth/{everything}",
-      "DownstreamScheme": "https",
+      "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
           "Host": "mngkeeper",
           "Port": 5001
         }
       ],
-      "DangerousAcceptAnyServerCertificateValidator": true,
       "UpstreamPathTemplate": "/keeper/api/auth/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
       "RateLimitOptions": {
@@ -23,14 +22,13 @@
     },
     {
       "DownstreamPathTemplate": "/api/{everything}",
-      "DownstreamScheme": "https",
+      "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
           "Host": "mngkeeper",
           "Port": 5001
         }
       ],
-      "DangerousAcceptAnyServerCertificateValidator": true,
       "UpstreamPathTemplate": "/keeper/api/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
       // Authentication handled by MngKeeper, not Gateway
@@ -45,14 +43,13 @@
     },
     {
       "DownstreamPathTemplate": "/api/v1/{everything}",
-      "DownstreamScheme": "https",
+      "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
           "Host": "mngdatagateway",
           "Port": 5010
         }
       ],
-      "DangerousAcceptAnyServerCertificateValidator": true,
       "UpstreamPathTemplate": "/data/api/v1/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
       // Authentication handled by MngDataGateway, not Gateway
@@ -65,14 +62,13 @@
     },
     {
       "DownstreamPathTemplate": "/api/{everything}",
-      "DownstreamScheme": "https",
+      "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
           "Host": "mngdatagateway",
           "Port": 5010
         }
       ],
-      "DangerousAcceptAnyServerCertificateValidator": true,
       "UpstreamPathTemplate": "/data/api/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
       // Authentication handled by MngDataGateway, not Gateway
@@ -139,7 +135,6 @@
           "Port": 5030
         }
       ],
-      "DangerousAcceptAnyServerCertificateValidator": true,
       "UpstreamPathTemplate": "/llm/api/v1/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
       "AuthenticationOptions": {
@@ -161,7 +156,6 @@
           "Port": 5030
         }
       ],
-      "DangerousAcceptAnyServerCertificateValidator": true,
       "UpstreamPathTemplate": "/llm/api/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
       "AuthenticationOptions": {

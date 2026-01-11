@@ -1,11 +1,8 @@
 using MngKeeper.Api.Config;
 using MngKeeper.Application;
 using MngKeeper.Application.Configuration;
-using MngKeeper.Infrastructure.Services.Certificate;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,21 +19,8 @@ if (keeperSettings == null)
 // Initialize Serilog
 var log = builder.InitSerilog();
 
-// Get certificate
-X509Certificate2 certificate;
-try
-{
-    certificate = CertificateHandler.GetCertificate(log, keeperSettings);
-    log.Information("Certificate loaded successfully");
-}
-catch (Exception ex)
-{
-    log.Fatal(ex, "Failed to load certificate - Application cannot start without valid SSL certificate");
-    throw;
-}
-
 // Initialize services
-builder.InitWebAPP(certificate!);
+builder.InitWebAPP();
 builder.InitOpenApi();
 
 // Add application services

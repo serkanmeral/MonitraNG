@@ -1,11 +1,11 @@
 using MngLLM.Application.Configuration;
-using System.Security.Cryptography.X509Certificates;
+using System.Net;
 
 namespace MngLLM.Api.Config;
 
 public static class Extensions
 {
-    public static void InitWebAPP(this WebApplicationBuilder builder, X509Certificate2 certificate)
+    public static void InitWebAPP(this WebApplicationBuilder builder)
     {
         // Get server settings from configuration
         var serverSettings = builder.Configuration.GetSection("MngLLMSettings:Server").Get<ServerSettings>() 
@@ -18,34 +18,16 @@ public static class Extensions
             // Parse host - if "0.0.0.0" or "*" listen on any IP
             if (serverSettings.Host == "0.0.0.0" || serverSettings.Host == "*")
             {
-                options.ListenAnyIP(serverSettings.Port, _opt =>
-                {
-                    _opt.UseHttps(httpsOptions =>
-                    {
-                        httpsOptions.ServerCertificate = certificate;
-                    });
-                });
+                options.ListenAnyIP(serverSettings.Port);
             }
             else if (serverSettings.Host == "localhost" || serverSettings.Host == "127.0.0.1")
             {
-                options.ListenLocalhost(serverSettings.Port, _opt =>
-                {
-                    _opt.UseHttps(httpsOptions =>
-                    {
-                        httpsOptions.ServerCertificate = certificate;
-                    });
-                });
+                options.ListenLocalhost(serverSettings.Port);
             }
             else
             {
                 // Specific IP address
-                options.Listen(System.Net.IPAddress.Parse(serverSettings.Host), serverSettings.Port, _opt =>
-                {
-                    _opt.UseHttps(httpsOptions =>
-                    {
-                        httpsOptions.ServerCertificate = certificate;
-                    });
-                });
+                options.Listen(IPAddress.Parse(serverSettings.Host), serverSettings.Port);
             }
 
             // Log the configuration

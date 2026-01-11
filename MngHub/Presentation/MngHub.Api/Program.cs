@@ -86,24 +86,8 @@ builder.Services.AddSignalR(options =>
     options.MaximumReceiveMessageSize = settings.SignalR.MaximumReceiveMessageSize;
 });
 
-// CORS (if needed for frontend)
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-    {
-        var allowedOrigins = settings.Cors.AllowedOrigins.ToArray();
-        
-        policy.WithOrigins(allowedOrigins)
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .WithExposedHeaders("*"); // SignalR için gerekli
-        
-        if (settings.Cors.AllowCredentials)
-        {
-            policy.AllowCredentials(); // SignalR için credentials gerekli
-        }
-    });
-});
+// CORS is handled by API Gateway, not needed here (backend services are internal)
+// SignalR connections go through Gateway, so CORS is handled at Gateway level
 
 // Application & Infrastructure Services
 try
@@ -201,7 +185,6 @@ if (Directory.Exists(testsPath))
 }
 
 // app.UseHttpsRedirection(); // Disabled for development
-app.UseCors(); // CORS must be before UseRouting and MapHub
 app.UseRouting();
 app.UseAuthorization();
 app.MapControllers();

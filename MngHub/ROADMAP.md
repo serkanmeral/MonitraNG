@@ -1,8 +1,8 @@
 # MngHub API - Development Roadmap
 
 **Microservice:** Real-time Event Hub & SignalR Gateway  
-**Version:** 1.0.0  
-**Last Updated:** 25 Aralık 2025
+**Version:** 1.0.1  
+**Last Updated:** 11 Ocak 2026
 
 ---
 
@@ -75,7 +75,32 @@
 
 ---
 
-### 3. Domain-based Event Routing - ✅ TAMAMLANDI
+### 3. API Gateway Integration (v1.0.1) - ✅ TAMAMLANDI (11 Ocak 2026)
+
+**Yapılan Değişiklikler:**
+- ✅ CORS yapılandırması kaldırıldı (Gateway'de merkezi yönetim)
+- ✅ Internal network'te çalışıyor (external exposure yok)
+- ✅ SignalR WebSocket bağlantıları Gateway üzerinden yönetiliyor
+
+**Faydalar:**
+- ✅ Merkezi CORS yönetimi (Gateway'de)
+- ✅ Servis basitleştirildi (CORS kaldırıldı)
+- ✅ API Gateway pattern'ine uygun mimari
+- ✅ SignalR bağlantıları Gateway üzerinden güvenli
+
+**Gateway URL:**
+- Production: `https://api.monitra.local/hub/ws/*`
+- Development: `https://localhost:5040/hub/ws/*`
+
+**Internal URL (Docker network):**
+- `http://mnghub:5020/ws/*`
+
+**Health Endpoint:**
+- `/health` (mevcut, değişmedi)
+
+---
+
+### 4. Domain-based Event Routing - ✅ TAMAMLANDI
 
 **Features:**
 - ✅ Domain isolation garantisi
@@ -503,6 +528,6 @@
 
 ---
 
-**Son Güncelleme:** 25 Aralık 2025  
-**Durum:** ✅ Core Features Complete, Monitoring & Security Enhancements Planned
+**Son Güncelleme:** 11 Ocak 2026  
+**Durum:** ✅ Core Features Complete, API Gateway Integration Complete, Monitoring & Security Enhancements Planned
 

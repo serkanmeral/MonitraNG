@@ -6,7 +6,6 @@ using Scalar.AspNetCore;
 using Serilog;
 using System.Net;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 using System.Text.Json.Serialization;
 using static MngDataGateway.Application.Configuration.MngDataGatewaySettings;
 
@@ -51,7 +50,7 @@ namespace MngDataGateway.Api.Config
             builder.Services.AddTransient<IConfigureOptions<Swashbuckle.AspNetCore.SwaggerGen.SwaggerGenOptions>, SwaggerConfigureOptions>();
         }
 
-    public static void InitWebAPP(this WebApplicationBuilder builder, X509Certificate2 certificate)
+    public static void InitWebAPP(this WebApplicationBuilder builder)
     {
         // Get server settings from configuration
         var serverSettings = builder.Configuration.GetSection("MngDataGatewaySettings:Server").Get<ServerSettings>() 
@@ -64,34 +63,16 @@ namespace MngDataGateway.Api.Config
             // Parse host - if "0.0.0.0" or "*" listen on any IP
             if (serverSettings.Host == "0.0.0.0" || serverSettings.Host == "*")
             {
-                options.ListenAnyIP(serverSettings.Port, _opt =>
-                {
-                    _opt.UseHttps(httpsOptions =>
-                    {
-                        httpsOptions.ServerCertificate = certificate;
-                    });
-                });
+                options.ListenAnyIP(serverSettings.Port);
             }
             else if (serverSettings.Host == "localhost" || serverSettings.Host == "127.0.0.1")
             {
-                options.ListenLocalhost(serverSettings.Port, _opt =>
-                {
-                    _opt.UseHttps(httpsOptions =>
-                    {
-                        httpsOptions.ServerCertificate = certificate;
-                    });
-                });
+                options.ListenLocalhost(serverSettings.Port);
             }
             else
             {
                 // Specific IP address
-                options.Listen(System.Net.IPAddress.Parse(serverSettings.Host), serverSettings.Port, _opt =>
-                {
-                    _opt.UseHttps(httpsOptions =>
-                    {
-                        httpsOptions.ServerCertificate = certificate;
-                    });
-                });
+                options.Listen(System.Net.IPAddress.Parse(serverSettings.Host), serverSettings.Port);
             }
 
             // Log the configuration
@@ -107,16 +88,7 @@ namespace MngDataGateway.Api.Config
             });
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 
-            builder.Services.AddCors(l =>
-            {
-                l.AddPolicy("CorsPolicy", b =>
-                    b.AllowAnyOrigin()
-                    .AllowAnyMethod()
-                    .AllowAnyHeader()
-                     .WithExposedHeaders("Content-Disposition")
-                    );
-            });
-
+            // CORS is handled by API Gateway, not needed here (backend services are internal)
 
             // Add services to the container
             builder.Services.AddControllers();
@@ -130,11 +102,6 @@ namespace MngDataGateway.Api.Config
                     options.Authority = settings.Actors.MngKeeper;
 
                     options.RequireHttpsMetadata = false;
-
-                    options.BackchannelHttpHandler = new HttpClientHandler
-                    {
-                        ServerCertificateCustomValidationCallback = delegate { return true; }
-                    };
 
 
                     options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
@@ -173,10 +140,7 @@ namespace MngDataGateway.Api.Config
                 });
             });
 
-            // 2. HTTPS yönlendirmesi erkenden
-            app.UseHttpsRedirection();
-
-            // 3. Serilog ile request loglama
+            // 2. Serilog ile request loglama
             app.UseSerilogRequestLogging(options =>
             {
                 // options.RequestProjection = r => new { r.IsHttps, QueryString = r.QueryString.Value };
@@ -211,10 +175,7 @@ namespace MngDataGateway.Api.Config
             // 4. Routing middleware
             app.UseRouting();
 
-            // 5. CORS
-            app.UseCors("CorsPolicy");
-
-            // 6. Authentication (kimlik doğrulama)
+            // 5. Authentication (kimlik doğrulama)
             app.UseAuthentication();
 
             // 7. Authorization (yetkilendirme)

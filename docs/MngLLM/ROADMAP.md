@@ -1,8 +1,8 @@
 # MngLLM - LLM Service Roadmap
 
 **Microservice:** LLM Service (Ollama Integration)  
-**Version:** 1.0.0  
-**Son Güncelleme:** 15 Ocak 2026  
+**Version:** 1.0.1  
+**Son Güncelleme:** 11 Ocak 2026  
 **Durum:** ✅ Faz 1 Tamamlandı - Çoklu Dil Desteği Aktif
 
 ---
@@ -83,9 +83,15 @@ Side Menu Manager'daki "Dil Dosyalarını Güncelle" butonu, Türkçe metinleri 
 - ✅ Swagger/Scalar dokümantasyon
 - ✅ API versioning
 - ✅ API Gateway entegrasyonu
-- ✅ HTTPS ve certificate yönetimi
-- ✅ Health check ve version endpoints
+- ✅ HTTP (SSL/TLS termination Gateway'de)
+- ✅ Health check ve version endpoints (`/health`)
 - ✅ Docker containerization
+- ✅ API Gateway Pattern entegrasyonu (v1.0.1 - 11 Ocak 2026)
+  - HTTPS'den HTTP'ye geçiş (SSL/TLS termination artık Gateway'de)
+  - CORS yapılandırması kaldırıldı (Gateway'de merkezi yönetim)
+  - Sertifika yönetimi kaldırıldı (Gateway'de yönetiliyor)
+  - Health endpoint standartlaştırıldı (`/health`)
+  - Internal network'te çalışıyor (external exposure yok)
 
 **Side Menu Manager:**
 - ✅ "Dil Dosyalarını Güncelle" butonu LLM entegrasyonu ile çalışıyor
@@ -197,11 +203,28 @@ MngLLM/
 - ✅ `MngGatewaySettings` güncellendi
 - ✅ Rate limiting yapılandırıldı
 
-**7. ✅ HTTPS ve Certificate Yönetimi**
+**7. ✅ API Gateway Integration (v1.0.1 - 11 Ocak 2026)**
 
-- ✅ `CertificateHandler` servisi
-- ✅ Self-signed certificate desteği
-- ✅ HTTPS yapılandırması
+**Yapılan Değişiklikler:**
+- ✅ HTTPS'den HTTP'ye geçiş (SSL/TLS termination artık Gateway'de)
+- ✅ CORS yapılandırması kaldırıldı (Gateway'de merkezi yönetim)
+- ✅ Sertifika yönetimi kaldırıldı (Gateway'de yönetiliyor)
+- ✅ Health endpoint standartlaştırıldı (`/health`)
+- ✅ Internal network'te çalışıyor (external exposure yok)
+
+**Faydalar:**
+- ✅ Tek sertifika yönetimi (Gateway'de)
+- ✅ Merkezi CORS yönetimi
+- ✅ Servis basitleştirildi (CORS, sertifika kaldırıldı)
+- ✅ API Gateway pattern'ine uygun mimari
+- ✅ Production'da Nginx ile Let's Encrypt SSL termination
+
+**Gateway URL:**
+- Production: `https://api.monitra.local/llm/api/v1/*`
+- Development: `https://localhost:5040/llm/api/v1/*`
+
+**Internal URL (Docker network):**
+- `http://mngllm:5030/api/v1/*`
 
 **8. ✅ Docker Entegrasyonu**
 
@@ -551,4 +574,4 @@ MngLLM servisi, MngDataGateway pattern'ini takip eder:
 
 ---
 
-**Son Güncelleme:** 15 Ocak 2026
+**Son Güncelleme:** 11 Ocak 2026

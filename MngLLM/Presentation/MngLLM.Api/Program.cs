@@ -5,12 +5,10 @@ using MngLLM.Api.Config;
 using MngLLM.Application;
 using MngLLM.Application.Configuration;
 using MngLLM.Infrastructure;
-using MngLLM.Infrastructure.Services.Certificate;
 using Microsoft.Extensions.Options;
 using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
-using System.Security.Cryptography.X509Certificates;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,27 +39,10 @@ builder.Host.UseSerilog();
 var version = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion?.Split('+')[0] ?? "unknown";
 Log.Information("MngLLM Starting. Version {Version}", version);
 
-// Get certificate
-X509Certificate2 certificate;
+// Initialize WebApp (HTTP - SSL termination at API Gateway)
 try
 {
-    certificate = CertificateHandler.GetCertificate(Log.Logger, settings);
-    Log.Information("Certificate loaded successfully");
-}
-catch (Exception ex)
-{
-    Console.WriteLine($"FATAL ERROR: Failed to load certificate - Application cannot start without valid SSL certificate");
-    Console.WriteLine($"Exception: {ex.Message}");
-    Console.WriteLine($"Stack Trace: {ex.StackTrace}");
-    Log.Fatal(ex, "Failed to load certificate - Application cannot start without valid SSL certificate");
-    Console.WriteLine("Press any key to exit...");
-    Console.ReadKey();
-    throw;
-}
-
-try
-{
-    builder.InitWebAPP(certificate);
+    builder.InitWebAPP();
 }
 catch (Exception ex)
 {
@@ -110,17 +91,7 @@ builder.Services.AddTransient<IConfigureOptions<Swashbuckle.AspNetCore.SwaggerGe
 
 builder.Services.AddOpenApi();
 
-// CORS
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("CorsPolicy", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .WithExposedHeaders("Content-Disposition");
-    });
-});
+// CORS is handled by API Gateway, not needed here (backend services are internal)
 
 // Authentication
 builder.Services.AddAuthentication(settings);
@@ -177,10 +148,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseSerilogRequestLogging();
 
-// HTTPS redirection
-app.UseHttpsRedirection();
-
-app.UseCors("CorsPolicy");
+// HTTP redirection disabled (SSL termination at API Gateway)
 
 app.UseAuthentication();
 app.UseAuthorization();
