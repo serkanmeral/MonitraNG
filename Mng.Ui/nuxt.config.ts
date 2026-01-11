@@ -27,6 +27,7 @@ export default defineNuxtConfig({
       keeperUrl: process.env.KEEPER_URL || 'https://localhost:5001',
       reactorUrl: process.env.SERVER_URL || process.env.DATAGATEWAY_URL || process.env.REACTOR_URL || 'https://localhost:5010',
       hubUrl: process.env.HUB_URL || 'http://localhost:5020',
+      llmUrl: process.env.LLM_URL || 'https://localhost:5030',
       // Fallback menu control (default: false - disabled)
       enableFallbackMenu: process.env.ENABLE_FALLBACK_MENU === 'true' || false
     }

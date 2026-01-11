@@ -55,6 +55,7 @@ public class BackendServices
     public string MngDataGateway { get; set; } = "http://mngdatagateway:5010";
     public string MngHub { get; set; } = "http://mnghub:5020";
     public string MngReactor { get; set; } = "http://mngreactor:5003";
+    public string MngLLM { get; set; } = "http://mngllm:5030";
     public string KeyCloak { get; set; } = "http://keycloak:8080";
 }
 

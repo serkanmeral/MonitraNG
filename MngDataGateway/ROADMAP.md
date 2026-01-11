@@ -28,7 +28,7 @@
 - ✅ Field definitions (text, number, bool, datetime, object, relation, incremental)
 - ✅ Index definitions (unique, non-unique, composite)
 - ✅ Predefined queries (MongoDB aggregation pipeline)
-- ✅ Dataset categories
+- ✅ Dataset categories (CRUD + search functionality)
 
 **API Endpoints:**
 - ✅ `GET /api/datasets` - List datasets

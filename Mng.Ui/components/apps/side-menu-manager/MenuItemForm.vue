@@ -4,7 +4,7 @@ import type { SideMenuItem } from '@/stores/apps/sideMenu';
 import { TrashIcon, XIcon, LanguageIcon } from 'vue-tabler-icons';
 import IconPicker from './IconPicker.vue';
 import PermissionEditor from './PermissionEditor.vue';
-import { fetchFromMngKeeper } from '@/services/apiService';
+import { fetchFromMngKeeper, fetchFromMngLLM } from '@/services/apiService';
 
 const props = defineProps<{
   item: SideMenuItem | null;
@@ -269,6 +269,30 @@ const updateLocaleFiles = async () => {
     const locales = ['tr', 'en', 'fr', 'ar', 'zh'];
     const isHeader = formData.value.itemType === 'header';
     
+    // Get translations from MngLLM API (skip Turkish - it's the source)
+    const targetLocales = locales.filter(locale => locale !== 'tr');
+    let translations: Record<string, string> = {};
+    
+    try {
+      // Call MngLLM translation API
+      const translationResponse = await fetchFromMngLLM('/api/v1/llm/translate', 'POST', {
+        text: sourceText,
+        sourceLanguage: 'tr',
+        targetLanguages: targetLocales,
+      });
+      
+      if (translationResponse?.translations) {
+        translations = translationResponse.translations;
+        console.log('[MenuItemForm] Translations received:', translations);
+      }
+    } catch (translationError: any) {
+      console.warn('[MenuItemForm] Translation API failed, using source text as fallback:', translationError);
+      // If translation fails, use source text as fallback for all languages
+      targetLocales.forEach(locale => {
+        translations[locale] = sourceText;
+      });
+    }
+    
     // Update each locale file
     for (const locale of locales) {
       try {
@@ -290,17 +314,28 @@ const updateLocaleFiles = async () => {
           localeData.menu = {};
         }
 
+        // Get translation text for this locale
+        let translationText = sourceText; // Default to source text
+        if (locale === 'tr') {
+          // Turkish is the source language
+          translationText = sourceText;
+        } else if (translations[locale]) {
+          // Use translated text
+          translationText = translations[locale];
+        } else {
+          // Fallback to source text if translation not available
+          translationText = sourceText;
+        }
+
         if (isHeader) {
           // For headers: menu.headers.{pageCode}
           if (!localeData.menu.headers) {
             localeData.menu.headers = {};
           }
-          // Use source text (Turkish) as default, others use same as placeholder
-          localeData.menu.headers[formData.value.pageCode] = sourceText;
+          localeData.menu.headers[formData.value.pageCode] = translationText;
         } else {
           // For items: menu.{pageCode}
-          // Use source text (Turkish) as default, others use same as placeholder
-          localeData.menu[formData.value.pageCode] = sourceText;
+          localeData.menu[formData.value.pageCode] = translationText;
         }
 
         // Save locale file
