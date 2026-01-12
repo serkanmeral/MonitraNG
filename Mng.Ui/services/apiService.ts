@@ -458,23 +458,38 @@ export function fetchFromMngLLM(
         // Don't throw here, let the request proceed (server will return 401 if needed)
       }
 
-      // URL formatı: '/api/v1/llm/translate'
+      // URL formatı: '/api/v1/llm/translate' veya 'v1/llm/translate'
       // Query string'i ayrı çıkar
       const [pathPart, queryPart] = url.split('?');
       const cleanPath = pathPart.startsWith('/') ? pathPart : `/${pathPart}`;
       
       // Server route: '/api/llm/[...path]'
-      // Path: 'api/v1/llm/translate' olmalı (başındaki '/' olmadan)
-      // Ama biz '/api/v1/llm/translate' gönderiyoruz, bu durumda server route'a '/api/llm/api/v1/llm/translate' gider
-      // Bunun yerine path'ten '/api/' kısmını çıkarıp direkt 'v1/llm/translate' gönderelim
+      // Server route receives path and forwards to MngLLM as: llmUrl + '/api/' + path
+      // Example: path='v1/llm/translate' -> MngLLM: 'https://localhost:5030/api/v1/llm/translate' ✓
+      // So we need to extract 'v1/llm/translate' from '/api/v1/llm/translate'
       let serverPath = cleanPath;
-      if (serverPath.startsWith('/api/v1/')) {
+      if (serverPath.startsWith('/api/v1/llm/')) {
+        // '/api/v1/llm/translate' -> 'v1/llm/translate'
+        // Server route '/api/llm/[...path]' receives 'v1/llm/translate'
+        // Server route forwards to MngLLM as: llmUrl + '/api/' + path = 'https://localhost:5030/api/v1/llm/translate' ✓
+        serverPath = serverPath.replace('/api/v1/llm/', 'v1/llm/');
+      } else if (serverPath.startsWith('/api/v1/')) {
+        // '/api/v1/translate' -> 'v1/translate'
         serverPath = serverPath.replace('/api/v1/', 'v1/');
       } else if (serverPath.startsWith('/api/')) {
+        // '/api/...' -> '...'
         serverPath = serverPath.replace('/api/', '');
       }
       
+      // Remove leading slash if exists (server route expects path without leading slash)
+      if (serverPath.startsWith('/')) {
+        serverPath = serverPath.slice(1);
+      }
+      
       // Query string'i tekrar ekle
+      // Server route: '/api/llm/[...path]' - path will be 'v1/llm/translate'
+      // Full URL to server route: '/api/llm/v1/llm/translate'
+      // Server route extracts 'v1/llm/translate' and forwards to MngLLM as '/api/v1/llm/translate'
       const fullUrl = queryPart 
         ? `/api/llm/${serverPath}?${queryPart}`
         : `/api/llm/${serverPath}`;

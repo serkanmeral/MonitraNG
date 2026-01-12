@@ -16,13 +16,19 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  // Determine base URL (MngLLM base URL)
+  // Determine base URL - use Gateway if available, otherwise use direct LLM URL
+  const gatewayUrl = config.public.gatewayUrl;
   const llmUrl = config.public.llmUrl || 'https://localhost:5030';
   
-  // Path formatı: 'v1/llm/translate' (client'tan gelen path'ten '/api/' kısmı çıkarılmış)
-  // MngLLM endpoint: '/api/v1/llm/translate'
-  // Full URL: llmUrl + '/api/' + path
-  const fullUrl = `${llmUrl}/api/${path}`;
+  let fullUrl: string;
+  if (gatewayUrl) {
+    // Use Gateway: path='v1/llm/translate' -> Gateway: 'https://localhost:5040/llm/api/v1/llm/translate'
+    // Gateway forwards to MngLLM as: 'http://mngllm:5030/api/v1/llm/translate'
+    fullUrl = `${gatewayUrl}/llm/api/${path}`;
+  } else {
+    // Direct to MngLLM: path='v1/llm/translate' -> MngLLM: 'https://localhost:5030/api/v1/llm/translate'
+    fullUrl = `${llmUrl}/api/${path}`;
+  }
   
   // Get query parameters
   const query = getQuery(event);
