@@ -75,6 +75,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return navigateTo('/unauthorized');
   }
 
+  // Manager sayfaları: Manager kullanıcılar kısıtlamasız erişebilir (permission kontrolü yok)
+  if (pageType === 'manager' && authStore.isManager) {
+    return; // Bypass permission kontrolü
+  }
+
   // Check view permission
   if (menuItem.permissions?.groups) {
     const userGroups = authStore.userGroups;

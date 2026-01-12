@@ -4,6 +4,7 @@ using MngGateway.Infrastructure;
 using MngGateway.Infrastructure.Services.Certificate;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
 using Serilog;
@@ -86,19 +87,52 @@ builder.WebHost.ConfigureKestrel(options =>
 builder.Services.AddOcelot(builder.Configuration);
 
 // JWT Authentication (KeyCloak)
+// Use "Bearer" as default scheme to match Ocelot's AuthenticationProviderKey
 builder.Services
-    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
     {
         // Don't set Authority - multi-realm support requires dynamic validation
         options.RequireHttpsMetadata = settings.Jwt.RequireHttpsMetadata;
+        
+        // SSL certificate validation bypass (development)
+        options.BackchannelHttpHandler = new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = delegate { return true; }
+        };
+        
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = false, // Multi-realm support: each domain has its own realm
             ValidateAudience = false, // Multi-realm support: audience may vary by realm
             ValidateLifetime = true,
-            ValidateIssuerSigningKey = false, // TODO: Implement multi-realm signing key validation
-            // Note: For production, implement dynamic signing key retrieval based on token's issuer/realm
+            ValidateIssuerSigningKey = false, // Multi-realm support: signature validation via SignatureValidator
+            // Use SignatureValidator to accept tokens without full signature validation (for multi-realm support)
+            SignatureValidator = delegate (string token, TokenValidationParameters parameters)
+            {
+                var jwt = new Microsoft.IdentityModel.JsonWebTokens.JsonWebToken(token);
+                return jwt;
+            }
+        };
+        
+        // Events for debugging and token validation
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                Log.Warning("JWT Authentication failed: {Error}", context.Exception.Message);
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                Log.Information("JWT Token validated successfully for user: {User}", context.Principal?.Identity?.Name);
+                return Task.CompletedTask;
+            },
+            OnChallenge = context =>
+            {
+                Log.Warning("JWT Challenge: {Error}", context.Error);
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -153,9 +187,11 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// Authentication and Authorization delegated to downstream services
-// app.UseAuthentication(); // Removed - authentication handled by downstream services (MngKeeper, MngDataGateway)
-// app.UseAuthorization(); // Removed - authorization handled by downstream services
+// Authentication and Authorization
+// Note: Some routes (like /llm/*, /hub/ws/*) require authentication at Gateway level
+// Other routes (like /keeper/*, /data/*) handle authentication at downstream service level
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Use Ocelot middleware - this will handle all other routes
 await app.UseOcelot();

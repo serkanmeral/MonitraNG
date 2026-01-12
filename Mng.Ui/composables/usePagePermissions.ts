@@ -72,6 +72,13 @@ export function usePagePermissions() {
       return false;
     }
 
+    const pageType = menuItem.value.pageType || 'user';
+
+    // Manager sayfaları: Manager kullanıcılar kısıtlamasız erişebilir (permission kontrolü yok)
+    if (pageType === 'manager' && authStore.isManager) {
+      return true;
+    }
+
     // Permission kontrolü
     if (!menuItem.value.permissions || !menuItem.value.permissions.groups) {
       return true; // Permission yoksa herkes erişebilir (backward compatibility)
@@ -100,6 +107,13 @@ export function usePagePermissions() {
     // Sayfa tipi kontrolü
     if (!canAccessPageType.value) {
       return false;
+    }
+
+    const pageType = menuItem.value.pageType || 'user';
+
+    // Manager sayfaları: Manager kullanıcılar kısıtlamasız erişebilir (permission kontrolü yok)
+    if (pageType === 'manager' && authStore.isManager) {
+      return true;
     }
 
     // Permission kontrolü
@@ -132,6 +146,13 @@ export function usePagePermissions() {
       return false;
     }
 
+    const pageType = menuItem.value.pageType || 'user';
+
+    // Manager sayfaları: Manager kullanıcılar kısıtlamasız erişebilir (permission kontrolü yok)
+    if (pageType === 'manager' && authStore.isManager) {
+      return true;
+    }
+
     // Permission kontrolü
     if (!menuItem.value.permissions || !menuItem.value.permissions.groups) {
       return false; // Permission yoksa varsayılan olarak false
@@ -162,6 +183,13 @@ export function usePagePermissions() {
       return false;
     }
 
+    const pageType = menuItem.value.pageType || 'user';
+
+    // Manager sayfaları: Manager kullanıcılar kısıtlamasız erişebilir (permission kontrolü yok)
+    if (pageType === 'manager' && authStore.isManager) {
+      return true;
+    }
+
     // Permission kontrolü
     if (!menuItem.value.permissions || !menuItem.value.permissions.groups) {
       return false; // Permission yoksa varsayılan olarak false
@@ -190,6 +218,13 @@ export function usePagePermissions() {
     // Sayfa tipi kontrolü
     if (!canAccessPageType.value) {
       return false;
+    }
+
+    const pageType = menuItem.value.pageType || 'user';
+
+    // Manager sayfaları: Manager kullanıcılar kısıtlamasız erişebilir (permission kontrolü yok)
+    if (pageType === 'manager' && authStore.isManager) {
+      return true;
     }
 
     // Permission kontrolü
@@ -246,6 +281,13 @@ export function usePagePermissions() {
     // Sayfa tipi kontrolü
     if (!canAccessPageType.value) {
       return false;
+    }
+
+    const pageType = menuItem.value.pageType || 'user';
+
+    // Manager sayfaları: Manager kullanıcılar kısıtlamasız erişebilir (permission kontrolü yok)
+    if (pageType === 'manager' && authStore.isManager) {
+      return true;
     }
 
     // Permission kontrolü

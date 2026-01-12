@@ -30,6 +30,8 @@ export default defineComponent({
   emits: ['toggle-expand', 'item-select', 'item-order-change'],
   setup(props, { emit }) {
     const router = useRouter();
+    // Note: In Event Messages, $t() is only used in template, not in script setup
+    // Template uses $t() directly
     
     // Local children for drag & drop (reactive)
     const localChildren = ref<SideMenuItem[]>([...(props.item.children || [])]);
@@ -236,34 +238,34 @@ export default defineComponent({
           'tree-item-header': item.itemType === 'header',
         },
       ]"
-      :style="{ paddingLeft: `${level * 20 + 8}px` }"
+      :style="{ paddingLeft: `${level * 24 + 12}px` }"
       @click="handleItemClick"
     >
-      <div class="d-flex align-center" style="min-height: 36px; cursor: pointer;">
+      <div class="d-flex align-center tree-item-content">
         <!-- Drag Handle -->
-        <div class="drag-handle mr-1" style="cursor: move; opacity: 0.5;">
-          <GripVerticalIcon size="16" />
+        <div class="drag-handle mr-2" style="cursor: move; opacity: 0.5;">
+          <GripVerticalIcon size="18" />
         </div>
 
         <!-- Expand/Collapse Icon -->
         <v-btn
           v-if="canHaveChildren"
           icon
-          size="x-small"
+          size="small"
           variant="text"
           class="mr-1"
           @click="handleToggleExpand"
         >
-          <ChevronDownIcon v-if="isExpanded" size="16" />
-          <ChevronRightIcon v-else size="16" />
+          <ChevronDownIcon v-if="isExpanded" size="20" />
+          <ChevronRightIcon v-else size="20" />
         </v-btn>
-        <div v-else style="width: 24px;"></div>
+        <div v-else style="width: 32px;"></div>
 
         <!-- Item Icon -->
-        <component :is="ItemIcon" size="18" :class="['mr-2', item.itemType === 'header' ? 'text-primary' : '']" />
+        <component :is="ItemIcon" size="22" :class="['mr-3', item.itemType === 'header' ? 'text-primary' : '']" />
 
         <!-- Item Label -->
-        <span class="text-body-2 flex-grow-1">
+        <span class="text-body-1 flex-grow-1">
           {{ itemLabel }}
         </span>
 
@@ -271,17 +273,17 @@ export default defineComponent({
         <v-btn
           v-if="hasRoute"
           icon
-          size="x-small"
+          size="small"
           variant="text"
-          class="ml-1"
+          class="ml-2"
           @click="handleNavigateToRoute"
-          title="Sayfaya git"
+          :title="$t('side-menu-manager.tree.navigate')"
         >
-          <ExternalLinkIcon size="16" />
+          <ExternalLinkIcon size="18" />
         </v-btn>
 
         <!-- Page Type Badge -->
-        <v-chip v-if="item.pageType" size="x-small" variant="tonal" class="ml-2">
+        <v-chip v-if="item.pageType" size="small" variant="tonal" class="ml-2">
           {{ item.pageType }}
         </v-chip>
       </div>
@@ -328,8 +330,14 @@ export default defineComponent({
 
 .tree-item {
   transition: background-color 0.2s;
-  border-radius: 4px;
-  margin: 2px 0;
+  border-radius: 6px;
+  margin: 3px 0;
+}
+
+.tree-item-content {
+  min-height: 48px;
+  cursor: pointer;
+  padding: 4px 8px;
 }
 
 .tree-item:hover {
@@ -345,13 +353,17 @@ export default defineComponent({
   font-weight: 600;
 }
 
+.tree-item-header .tree-item-content {
+  min-height: 52px;
+}
+
 .tree-item-children {
   margin-left: 0;
 }
 
 .draggable-children {
-  min-height: 40px; /* Boş durumda da drop zone için yeterli alan */
-  padding: 4px 0;
+  min-height: 48px; /* Boş durumda da drop zone için yeterli alan */
+  padding: 6px 0;
   transition: background-color 0.2s;
 }
 

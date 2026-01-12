@@ -12,13 +12,16 @@ const domain = ref("");
 const errorMessage = ref("");
 const isLoading = ref(false);
 
+// Note: Validation rules will use $t() in template, but we need to access i18n in script
+// Since vue-i18n is in legacy mode, we'll use hardcoded fallback messages
+// The actual translations will be shown via $t() in the template
 const passwordRules = ref([
-  (v: string) => !!v || "Şifre gereklidir",
-  (v: string) => (v && v.length >= 3) || "Şifre en az 3 karakter olmalıdır",
+  (v: string) => !!v || "Şifre gereklidir", // Fallback - will be overridden by $t() in template
+  (v: string) => (v && v.length >= 3) || "Şifre en az 3 karakter olmalıdır", // Fallback
 ]);
 
 const usernameRules = ref([
-  (v: string) => !!v || "Kullanıcı adı gereklidir",
+  (v: string) => !!v || "Kullanıcı adı gereklidir", // Fallback
 ]);
 
 // Development ortamında varsayılan değerleri ayarla
@@ -28,6 +31,7 @@ onMounted(() => {
     password.value = 'Serkan123!';
   }
 });
+
 
 async function validate() {
   errorMessage.value = "";
@@ -54,7 +58,9 @@ async function validate() {
     if (error instanceof Error) {
       errorMessage.value = error.message;
     } else {
-      errorMessage.value = "Giriş başarısız. Lütfen tekrar deneyin.";
+      // Note: This will be shown in template, but we can't use $t() here in script setup
+      // The template will handle the translation
+      errorMessage.value = "Giriş başarısız. Lütfen tekrar deneyin."; // Fallback
     }
   } finally {
     isLoading.value = false;
@@ -67,38 +73,43 @@ async function validate() {
   <Form @submit="validate" v-slot="{ errors, isSubmitting }" class="mt-5">
     <!-- Username Field -->
     <v-label class="text-subtitle-1 font-weight-medium pb-2 text-lightText"
-      >Kullanıcı Adı</v-label
+      >{{ $t('login.form.username') }}</v-label
     >
     <VTextField
       v-model="username"
-      :rules="usernameRules"
+      :rules="[
+        (v: string) => !!v || $t('login.validation.usernameRequired'),
+      ]"
       class="mb-4"
       required
       hide-details="auto"
-      placeholder="Kullanıcı adı veya domain@kullaniciadi"
+      :placeholder="String($t('login.form.usernamePlaceholder')).replace(/\{'@'\}/g, '@')"
       variant="outlined"
       density="comfortable"
     ></VTextField>
 
     <!-- Password Field -->
     <v-label class="text-subtitle-1 font-weight-medium pb-2 text-lightText"
-      >Şifre</v-label
+      >{{ $t('login.form.password') }}</v-label
     >
     <VTextField
       v-model="password"
-      :rules="passwordRules"
+      :rules="[
+        (v: string) => !!v || $t('login.validation.passwordRequired'),
+        (v: string) => (v && v.length >= 3) || $t('login.validation.passwordMinLength'),
+      ]"
       required
       hide-details="auto"
       type="password"
       variant="outlined"
       density="comfortable"
-      placeholder="Şifrenizi giriniz"
+      :placeholder="$t('login.form.passwordPlaceholder')"
     ></VTextField>
 
     <!-- Error Message -->
     <div v-if="errorMessage" class="mt-4">
       <v-alert type="error" variant="tonal" density="compact">
-        {{ errorMessage }}
+        {{ errorMessage || $t('login.form.error') }}
       </v-alert>
     </div>
 
@@ -113,7 +124,7 @@ async function validate() {
       class="mt-6"
       flat
     >
-      Giriş Yap
+      {{ $t('login.form.submit') }}
     </v-btn>
   </Form>
 </template>

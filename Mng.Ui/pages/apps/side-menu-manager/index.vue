@@ -5,13 +5,16 @@ import { useSideMenuManagerStore } from '@/stores/apps/sideMenuManager';
 import MenuTreeView from '@/components/apps/side-menu-manager/MenuTreeView.vue';
 import MenuItemForm from '@/components/apps/side-menu-manager/MenuItemForm.vue';
 import MenuItemToolbar from '@/components/apps/side-menu-manager/MenuItemToolbar.vue';
+import { ChevronDownIcon, ChevronUpIcon } from 'vue-tabler-icons';
 
 definePageMeta({
   layout: 'default',
 });
 
 const menuManagerStore = useSideMenuManagerStore();
+const menuTreeViewRef = ref<InstanceType<typeof MenuTreeView> | null>(null);
 
+// Page and breadcrumbs will be computed in template using $t()
 const page = ref({ title: 'Side Menu Manager' });
 const breadcrumbs = ref([
   {
@@ -44,7 +47,7 @@ const handleNewItem = (itemType: 'header' | 'item') => {
     itemType,
     level: 0,
     parentId: null,
-    pageType: 'admin',
+    pageType: 'user', // Her zaman 'user' olarak başlar
     disabled: false,
   } as any);
 };
@@ -66,6 +69,8 @@ const handleSave = async (itemData: any) => {
 
 // Handle delete
 const handleDelete = async (itemId: string) => {
+  // Note: confirm() doesn't support i18n easily, so we use hardcoded text
+  // For better UX, consider using a dialog component with $t() in template
   if (confirm('Bu menu item\'ı silmek istediğinize emin misiniz?')) {
     try {
       await menuManagerStore.deleteMenuItem(itemId);
@@ -112,6 +117,16 @@ const handleItemsReordered = async (items: any[]) => {
   // This should not be called anymore as we only update moved items individually
   // Keeping for backward compatibility but should not trigger batch updates
 };
+
+// Handle expand all
+const handleExpandAll = () => {
+  menuTreeViewRef.value?.expandAll();
+};
+
+// Handle collapse all
+const handleCollapseAll = () => {
+  menuTreeViewRef.value?.collapseAll();
+};
 </script>
 
 <template>
@@ -144,11 +159,31 @@ const handleItemsReordered = async (items: any[]) => {
       <!-- Main Content: Tree View + Form -->
       <v-row>
         <!-- Left: Tree View -->
-        <v-col cols="12" md="4" lg="3">
+        <v-col cols="12" md="5" lg="4">
           <v-card elevation="2">
             <v-card-title class="d-flex align-center">
-              <span>Menu Items</span>
+              <span>{{ $t('side-menu-manager.tree.title') }}</span>
               <v-spacer></v-spacer>
+              <v-btn
+                icon
+                size="small"
+                variant="text"
+                @click="handleExpandAll"
+                :title="$t('side-menu-manager.tree.expandAll')"
+                class="mr-1"
+              >
+                <ChevronDownIcon size="18" />
+              </v-btn>
+              <v-btn
+                icon
+                size="small"
+                variant="text"
+                @click="handleCollapseAll"
+                :title="$t('side-menu-manager.tree.collapseAll')"
+                class="mr-2"
+              >
+                <ChevronUpIcon size="18" />
+              </v-btn>
               <v-chip size="small" color="primary">
                 {{ menuManagerStore.filteredMenuItemsTree.length }}
               </v-chip>
@@ -156,6 +191,7 @@ const handleItemsReordered = async (items: any[]) => {
             <v-divider></v-divider>
             <v-card-text class="pa-0" style="max-height: calc(100vh - 280px); overflow-y: auto;">
               <MenuTreeView
+                ref="menuTreeViewRef"
                 :items="menuManagerStore.filteredMenuItemsTree"
                 :selected-item="menuManagerStore.selectedItem"
                 @item-select="handleItemSelect"
@@ -167,14 +203,14 @@ const handleItemsReordered = async (items: any[]) => {
         </v-col>
 
         <!-- Right: Form/Detail -->
-        <v-col cols="12" md="8" lg="9">
+        <v-col cols="12" md="7" lg="8">
           <v-card elevation="2">
             <v-card-title>
               <span v-if="menuManagerStore.selectedItem?.__dataId">
-                Menu Item Düzenle
+                {{ $t('side-menu-manager.form.title.edit') }}
               </span>
               <span v-else>
-                Yeni Menu Item
+                {{ $t('side-menu-manager.form.title.new') }}
               </span>
             </v-card-title>
             <v-divider></v-divider>

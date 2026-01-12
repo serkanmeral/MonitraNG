@@ -109,9 +109,39 @@ export default defineNuxtPlugin((nuxtApp) => {
   }
 
   /**
-   * Load and merge locale files
+   * Deep merge two objects (target is modified in place)
    */
-  async function loadRuntimeLocales(): Promise<void> {
+  function deepMerge(target: any, source: any): any {
+    if (!source || typeof source !== 'object') {
+      return target;
+    }
+    
+    if (!target || typeof target !== 'object') {
+      return source;
+    }
+    
+    const result = { ...target };
+    
+    for (const key in source) {
+      if (source.hasOwnProperty(key)) {
+        if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+          // Recursively merge nested objects
+          result[key] = deepMerge(target[key] || {}, source[key]);
+        } else {
+          // Override with source value (for primitives and arrays)
+          result[key] = source[key];
+        }
+      }
+    }
+    
+    return result;
+  }
+
+  /**
+   * Load and merge locale files
+   * @param forceReload If true, skip cache and reload from MinIO
+   */
+  async function loadRuntimeLocales(forceReload: boolean = false): Promise<void> {
     try {
       // Get i18n instance (vue-i18n legacy mode)
       const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
@@ -132,13 +162,14 @@ export default defineNuxtPlugin((nuxtApp) => {
         // Skip 'ro' (it's actually 'ar' - Arabic)
         if (locale === 'ro') continue;
 
-        // Check cache first
-        const cached = getCachedLocale(locale);
-        if (cached) {
-          // Merge cached data into i18n messages (deep merge to preserve existing keys)
-          // In legacy mode, messages is a plain object, we can directly assign
-          messages[locale] = { ...messages[locale], ...cached.data };
-          continue;
+        // Check cache first (unless force reload)
+        if (!forceReload) {
+          const cached = getCachedLocale(locale);
+          if (cached) {
+            // Deep merge cached data into i18n messages
+            messages[locale] = deepMerge(messages[locale] || {}, cached.data);
+            continue;
+          }
         }
 
         // Try to load from MinIO
@@ -148,9 +179,8 @@ export default defineNuxtPlugin((nuxtApp) => {
           // Cache the data
           setCachedLocale(locale, minioData);
           
-          // Merge into i18n messages (deep merge to preserve existing keys)
-          // In legacy mode, messages is a plain object, we can directly assign
-          messages[locale] = { ...messages[locale], ...minioData };
+          // Deep merge into i18n messages (preserves existing keys, merges nested objects)
+          messages[locale] = deepMerge(messages[locale] || {}, minioData);
         }
       }
     } catch (error) {
@@ -159,27 +189,37 @@ export default defineNuxtPlugin((nuxtApp) => {
     }
   }
 
-  // Expose invalidateCache function globally for use in locale editor
+  // Expose invalidateCache and reloadLocales functions globally
   (nuxtApp as any).$invalidateLocaleCache = invalidateCache;
+  (nuxtApp as any).$reloadLocales = async () => {
+    // Invalidate cache first
+    invalidateCache();
+    // Then reload from MinIO (force reload - skip cache)
+    await loadRuntimeLocales(true);
+  };
 
   // Wait for app to be mounted, then load locales
   nuxtApp.hook('app:mounted', async () => {
-    // Small delay to ensure auth store is ready and user is authenticated
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Small delay to ensure auth store is ready
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     // Check if user is authenticated before loading from MinIO
+    // For login page, we'll load build-time locales only (no MinIO access needed)
     try {
       const { useAuthStore } = await import('@/stores/auth');
       const authStore = useAuthStore();
       
-      if (!authStore.isAuthenticated) {
-        return;
+      // Only load from MinIO if user is authenticated
+      // For login page, build-time locale files will be used
+      if (authStore.isAuthenticated) {
+        await loadRuntimeLocales();
+      } else {
+        // On login page, just ensure build-time locales are available
+        // They should already be loaded from messages.ts
+        console.log('[Locale Loader] User not authenticated, using build-time locale files');
       }
     } catch (error) {
-      console.warn('[Locale Loader] Could not check authentication, proceeding anyway:', error);
+      console.warn('[Locale Loader] Could not check authentication, using build-time locales:', error);
     }
-    
-    // Load locales from MinIO
-    await loadRuntimeLocales();
   });
 });

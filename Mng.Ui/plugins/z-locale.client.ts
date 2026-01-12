@@ -28,11 +28,15 @@ export default defineNuxtPlugin((nuxtApp) => {
   
   if (i18n) {
     // Set initial i18n locale from store
-    i18n.locale = localeStore.locale;
+    // IMPORTANT: In messages.ts, Arabic is stored as 'ro', not 'ar'
+    const initialI18nLocale = localeStore.locale === 'ar' ? 'ro' : localeStore.locale;
+    i18n.locale = initialI18nLocale;
     
     // Watch locale store changes and update i18n locale
     watch(() => localeStore.locale, (newLocale) => {
-      i18n.locale = newLocale;
+      // Map 'ar' to 'ro' for i18n (because messages.ts uses 'ro' for Arabic)
+      const i18nLocale = newLocale === 'ar' ? 'ro' : newLocale;
+      i18n.locale = i18nLocale;
     }, { immediate: false });
   } else {
     console.warn('[z-locale Plugin] i18n instance NOT FOUND in nuxtApp.$i18n or globalProperties');

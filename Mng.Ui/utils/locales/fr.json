@@ -138,6 +138,10 @@
         "apps-side-menu-manager": "Gestionnaire de menu latéral",
         "apps-users": "Gestion des utilisateurs",
         "apps-groups": "Gestion des groupes",
+        "books": "Livres",
+        "apps-books": "Livres",
+        "automated-forms": "Formulaires Automatiques",
+        "apps-automated-forms": "Formulaires Automatiques",
         "headers": {
             "home": "Accueil",
             "assets": "Actifs",
@@ -190,6 +194,141 @@
         },
         "breadcrumbs": {
             "home": "Accueil"
+        }
+    },
+    "side-menu-manager": {
+        "title": "Gestionnaire de menu latéral",
+        "description": "Gérer dynamiquement les éléments du menu latéral",
+        "breadcrumbs": {
+            "home": "Accueil",
+            "title": "Gestionnaire de menu latéral"
+        },
+        "tree": {
+            "title": "Éléments de menu",
+            "expandAll": "Tout développer",
+            "collapseAll": "Tout réduire",
+            "empty": "Aucun élément de menu trouvé",
+            "navigate": "Aller à la page"
+        },
+        "toolbar": {
+            "newItem": "Nouvel élément de menu",
+            "newHeader": "Nouvel en-tête",
+            "search": "Rechercher des éléments de menu...",
+            "refresh": "Actualiser"
+        },
+        "form": {
+            "title": {
+                "edit": "Modifier l'élément de menu",
+                "new": "Nouvel élément de menu"
+            },
+            "empty": "Cliquez sur le bouton \"Nouvel élément de menu\" ou \"Nouvel en-tête\" à gauche pour créer un nouvel élément de menu.",
+            "fields": {
+                "itemType": "Type d'élément",
+                "pageType": "Type de page",
+                "header": "Texte d'en-tête",
+                "title": "Titre du menu",
+                "pageCode": "Code de page (Unique)",
+                "pageCodeHint": "Peut être généré automatiquement à partir de la route ou du titre",
+                "order": "Ordre",
+                "parent": "Élément de menu parent",
+                "parentNone": "(Aucun - Racine)",
+                "level": "Niveau",
+                "levelHint": "Calculé automatiquement en fonction de la sélection du parent",
+                "disabled": "Désactivé",
+                "forms": "Formulaires enregistrés",
+                "formsPlaceholder": "Sélectionner un formulaire (optionnel)",
+                "formsHint": "Sélectionner parmi les formulaires enregistrés ou saisir un chemin manuel",
+                "route": "Chemin de route",
+                "routeHint": "Ex: /dashboards/analytical ou sélectionner un formulaire",
+                "linkType": "Type de lien",
+                "subCaption": "Sous-titre",
+                "chip": "Texte de la puce",
+                "chipVariant": "Variante de puce",
+                "chipColor": "Couleur du texte de la puce",
+                "chipBgColor": "Couleur d'arrière-plan de la puce",
+                "chipIcon": "Icône de puce"
+            },
+            "sections": {
+                "chip": "Paramètres de puce/badge",
+                "permissions": "Autorisation",
+                "locale": "Support linguistique"
+            },
+            "buttons": {
+                "save": "Enregistrer",
+                "update": "Mettre à jour",
+                "delete": "Supprimer",
+                "cancel": "Annuler",
+                "generatePageCode": "Générer automatiquement",
+                "navigate": "Aller à cette page",
+                "updateLocales": "Mettre à jour les fichiers de paramètres régionaux"
+            },
+            "locale": {
+                "success": "Fichiers de paramètres régionaux mis à jour avec succès ! ({pageCode})",
+                "error": "Erreur lors de la mise à jour du fichier de paramètres régionaux : {error}",
+                "pageCodeRequired": "Le code de page (pageCode) est requis. Veuillez d'abord créer le pageCode.",
+                "headerRequired": "Le texte d'en-tête est requis.",
+                "titleRequired": "Le titre du menu est requis.",
+                "description": "Ce bouton ajoute le code de page actuel ({pageCode}) à tous les fichiers de paramètres régionaux. Le turc utilise l'en-tête/titre actuel, les autres langues obtiennent la même valeur comme espace réservé."
+            },
+            "validation": {
+                "headerRequired": "Le texte d'en-tête est requis",
+                "titleRequired": "Le titre du menu est requis"
+            }
+        },
+        "permissions": {
+            "loading": "Chargement des groupes...",
+            "empty": "Aucun groupe actif trouvé pour le moment.",
+            "emptyFiltered": "Aucun groupe actif visible trouvé.",
+            "retry": "Réessayer",
+            "bulkActions": "Actions groupées :",
+            "openAll": "Tout ouvrir",
+            "closeAll": "Tout fermer",
+            "group": "Groupe",
+            "actions": "Actions",
+            "all": "Tout",
+            "none": "Aucun",
+            "labels": {
+                "view": "Voir",
+                "create": "Créer",
+                "update": "Mettre à jour",
+                "delete": "Supprimer",
+                "export": "Exporter"
+            }
+        },
+        "messages": {
+            "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cet élément de menu ?",
+            "success": {
+                "created": "Élément de menu créé avec succès",
+                "updated": "Élément de menu mis à jour avec succès",
+                "deleted": "Élément de menu supprimé avec succès"
+            },
+            "errors": {
+                "create": "Erreur lors de la création de l'élément de menu",
+                "update": "Erreur lors de la mise à jour de l'élément de menu",
+                "delete": "Erreur lors de la suppression de l'élément de menu",
+                "load": "Erreur lors du chargement des éléments de menu"
+            }
+        }
+    },
+    "login": {
+        "title": "Bienvenue sur MonitraNG",
+        "subtitle": "Outil de surveillance avancé",
+        "form": {
+            "username": "Nom d'utilisateur",
+            "usernamePlaceholder": "Nom d'utilisateur ou domaine{'@'}nomutilisateur",
+            "password": "Mot de passe",
+            "passwordPlaceholder": "Entrez votre mot de passe",
+            "submit": "Se connecter",
+            "error": "Échec de la connexion. Veuillez réessayer."
+        },
+        "validation": {
+            "usernameRequired": "Le nom d'utilisateur est requis",
+            "passwordRequired": "Le mot de passe est requis",
+            "passwordMinLength": "Le mot de passe doit contenir au moins 3 caractères"
+        },
+        "language": {
+            "label": "Langue",
+            "select": "Sélectionner la langue"
         }
     }
 }

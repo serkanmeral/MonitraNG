@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import { useCustomizerStore } from "@/stores/customizer";
+import { useLocaleStore } from "@/stores/locale";
 import { useEcomStore } from "@/stores/apps/eCommerce";
 // Icon Imports
 import {
@@ -12,6 +13,11 @@ import {
   ShoppingCartIcon,
 } from "vue-tabler-icons";
 const customizer = useCustomizerStore();
+const localeStore = useLocaleStore();
+
+// RTL support: Use locale store's isRTL instead of customizer.setRTLLayout
+const isRTL = computed(() => localeStore.isRTL);
+
 const showSearch = ref(false);
 const drawer = ref(false);
 const appsdrawer = ref(false);
@@ -39,7 +45,7 @@ const getCart = computed(() => {
     id="top"
   >
     <!---LOGO RTL/LTR--->
-    <v-locale-provider v-if="customizer.setRTLLayout" rtl>
+    <v-locale-provider v-if="isRTL" rtl>
       <div class="d-sm-flex d-none">
         <LcFullLogoRtlLogo />
       </div>

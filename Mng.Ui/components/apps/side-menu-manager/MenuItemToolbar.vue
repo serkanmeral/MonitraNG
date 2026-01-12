@@ -42,7 +42,7 @@ const clearSearch = () => {
           <template #prepend>
             <PlusIcon size="20" />
           </template>
-          Yeni Menu Item
+          {{ $t('side-menu-manager.toolbar.newItem') }}
         </v-btn>
 
         <v-btn
@@ -55,7 +55,7 @@ const clearSearch = () => {
           <template #prepend>
             <PlusIcon size="20" />
           </template>
-          Yeni Header
+          {{ $t('side-menu-manager.toolbar.newHeader') }}
         </v-btn>
 
         <v-divider vertical class="mx-2"></v-divider>
@@ -65,7 +65,7 @@ const clearSearch = () => {
           v-model="searchQuery"
           @input="handleSearch($event.target.value)"
           @click:clear="clearSearch"
-          placeholder="Menu item ara..."
+          :placeholder="$t('side-menu-manager.toolbar.search')"
           prepend-inner-icon="SearchIcon"
           variant="outlined"
           density="compact"

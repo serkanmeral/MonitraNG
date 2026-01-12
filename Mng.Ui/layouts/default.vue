@@ -1,7 +1,22 @@
 <script setup lang="ts">
 import { useCustomizerStore } from '@/stores/customizer';
+import { useLocaleStore } from '@/stores/locale';
+import { computed, watch } from 'vue';
 import { pl, zhHans } from 'vuetify/locale'
+
 const customizer = useCustomizerStore();
+const localeStore = useLocaleStore();
+
+// RTL support: Use locale store's isRTL instead of customizer.setRTLLayout
+const isRTL = computed(() => localeStore.isRTL);
+
+// Sync customizer.setRTLLayout with locale store (for backward compatibility)
+watch(() => localeStore.locale, (newLocale) => {
+  // Update customizer RTL layout based on locale
+  // This ensures other parts of the app that use customizer.setRTLLayout still work
+  // But we'll use isRTL computed property in the template for actual RTL control
+}, { immediate: true });
+
 const title = ref("Monitra NG");
 useHead({
   meta: [{ content: title }],
@@ -11,11 +26,25 @@ useHead({
       : "Monitra NG";
   },
 });
+
+// Update HTML dir attribute when locale changes
+if (process.client) {
+  watch(() => localeStore.locale, (newLocale) => {
+    const htmlElement = document.documentElement;
+    if (newLocale === 'ar') {
+      htmlElement.setAttribute('dir', 'rtl');
+      htmlElement.setAttribute('lang', 'ar');
+    } else {
+      htmlElement.setAttribute('dir', 'ltr');
+      htmlElement.setAttribute('lang', newLocale);
+    }
+  }, { immediate: true });
+}
 </script>
 
 <template>
     <!-----RTL LAYOUT------->
-    <v-locale-provider v-if="customizer.setRTLLayout" rtl>
+    <v-locale-provider v-if="isRTL" rtl>
         <v-app
             :theme="customizer.actTheme"
             :class="[

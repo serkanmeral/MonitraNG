@@ -306,6 +306,8 @@ Side Menu artık MongoDB'de `@side_menu` dataset'i üzerinden dinamik olarak yö
   - `parentId`, `level`, `order` (hiyerarşi ve sıralama)
   - `pageCode` (unique index ile)
   - `permissions`: Group-based permissions (view, create, update, delete, export)
+    - **Not:** Admin kullanıcılar (`is_admin: true`) için permission kontrolü bypass edilir
+    - Admin kullanıcılar Side Menu Manager'da tüm menu item'ları görebilir ve düzenleyebilir
   - `disabled`, `chip`, `subCaption`, vb.
 - ✅ Hard-coded menu items MongoDB'ye migrate edildi (137 item)
 - ✅ `parentId` hiyerarşisi kuruldu
@@ -635,17 +637,40 @@ export function usePermissions() {
 #### 5.7 Admin Bypass Mekanizması
 
 **Mantık:**
-- JWT token'da `isAdmin: true` ise tüm yetkiler verilir
-- Admin kullanıcılar için permission kontrolü bypass edilir
+- JWT token'da `is_admin: true` (veya `isAdmin: true`) olan kullanıcılar **tam yetkili admin** kullanıcılardır
+- Admin kullanıcılar için **tüm yetkilendirme kontrolleri bypass edilir**
 - `authStore.isAdmin` getter'ı kullanılır
+
+**Admin Kullanıcıların Yetkileri:**
+1. **Tüm Sayfalara Erişim:**
+   - Tüm sayfalara (view, create, update, delete, export) tam erişim
+   - Hiçbir permission kontrolüne takılmaz
+   - Route bazlı yetki kontrolü bypass edilir
+   - Middleware'lerde admin kontrolü öncelikli yapılır
+
+2. **Side Menu Manager Erişimi:**
+   - Side Menu Manager'da (`/apps/side-menu-manager`) **tüm menu item tanımlamalarını görebilir**
+   - Tüm menu item'ları düzenleyebilir, silebilir, oluşturabilir
+   - Permission editor'da tüm grupları görebilir ve düzenleyebilir
+   - Filtreleme veya gizleme yapılmaz (tüm item'lar görünür)
+
+3. **Menu Filtreleme:**
+   - Sidebar'da tüm menu item'ları görünür
+   - Permission bazlı filtreleme yapılmaz
+   - `pageType` kontrolü yapılmaz (admin, manager, user fark etmez)
+
+4. **Dataset ve Data Erişimi:**
+   - Tüm dataset'lere tam erişim
+   - Tüm data kayıtlarına erişim
+   - Dataset permission kontrolü bypass edilir
 
 **Implementation:**
 ```typescript
 // stores/permission.ts
 function checkPermission(pageName: string, level: 'view' | 'edit'): boolean {
-  // Admin bypass
+  // Admin bypass - ÖNCE KONTROL ET!
   if (authStore.isAdmin) {
-    return true;
+    return true; // Tüm yetkiler verilir
   }
   
   // Normal kullanıcı kontrolü
@@ -663,6 +688,209 @@ function checkPermission(pageName: string, level: 'view' | 'edit'): boolean {
   return false;
 }
 ```
+
+**Middleware'de Admin Kontrolü:**
+```typescript
+// middleware/permission.ts veya menu-permission.global.ts
+// ÖNCE admin kontrolü yapılmalı!
+if (authStore.isAdmin) {
+  return; // Bypass - tüm erişimler serbest
+}
+
+// Sonra normal kullanıcı kontrolleri...
+```
+
+**Side Menu Store'da Admin Kontrolü:**
+```typescript
+// stores/apps/sideMenu.ts
+visibleMenuItems(state): SideMenuItem[] {
+  const authStore = useAuthStore();
+  
+  // Admin bypass - tüm menu item'ları göster
+  if (authStore.isAdmin) {
+    return state.menuItemsTree;
+  }
+  
+  // Normal kullanıcı için permission filtreleme
+  return this.filterMenuItemsByPermission(state.menuItemsTree, authStore.userGroups);
+}
+```
+
+**Side Menu Manager Store'da Admin Kontrolü:**
+```typescript
+// stores/apps/sideMenuManager.ts
+// Admin kullanıcılar için filtreleme yapılmaz
+// Tüm menu item'ları yüklenir ve gösterilir
+async loadMenuItems() {
+  // Admin kontrolü yapılmaz - tüm item'lar yüklenir
+  // UI'da admin kullanıcılar tüm item'ları görebilir
+}
+```
+
+---
+
+#### 5.8 Manager Kullanıcı Durumu ve Kısıtlamaları
+
+**Mantık:**
+- JWT token'da `is_manager: true` (veya `isManager: true`) olan kullanıcılar **manager** kullanıcılardır
+- Manager kullanıcılar **sayfa tipi bazlı erişim kontrolüne** tabidir
+- `authStore.isManager` getter'ı kullanılır
+
+**Sayfa Tipleri (pageType):**
+- **`admin` (Administration):** Sadece admin kullanıcılar görebilir
+- **`manager` (Manager):** Manager ve admin kullanıcılar görebilir
+- **`user` (User):** Tüm kullanıcılar görebilir
+
+**Manager Kullanıcıların Kısıtlamaları:**
+
+1. **Administration Sayfalarına Erişim YOK:**
+   - `pageType: 'admin'` olan menu item'ları **göremez**
+   - Sidebar'da admin sayfaları görünmez
+   - URL üzerinden direkt erişim engellenir (middleware tarafından)
+   - Side Menu Manager'da admin sayfaları tree view'da görünmez
+
+2. **Side Menu Manager Kısıtlamaları:**
+   - **Sayfa Tipi Combobox:** "Administration" seçeneği görünmez
+   - **Yeni Menu Item:** Administrator sayfası ekleyemez
+   - **Tree View:** `pageType: 'admin'` olan item'lar filtrelenir ve gösterilmez
+   - **Düzenleme:** Mevcut admin sayfalarını göremez, dolayısıyla düzenleyemez
+   - **Permission Editor:** "admins" grubunu göremez ve o gruba yetki tanımı yapamaz
+
+3. **Manager ve User Sayfalarına Erişim:**
+   - `pageType: 'manager'` olan sayfalara **kısıtlamasız erişebilir** (permission kontrolü yapılmaz)
+   - `pageType: 'user'` olan sayfalara erişebilir
+   - User sayfaları için permission kontrolü yapılır (grup bazlı)
+
+4. **Menu Filtreleme:**
+   - Sidebar'da sadece `pageType: 'manager'` ve `pageType: 'user'` olan item'lar görünür
+   - `pageType: 'admin'` olan item'lar filtrelenir
+
+**Implementation:**
+
+**Side Menu Store'da Manager Kontrolü:**
+```typescript
+// stores/apps/sideMenu.ts
+filterMenuItemsByPermission(items: SideMenuItem[], userGroups: string[]): SideMenuItem[] {
+  const authStore = useAuthStore();
+  
+  // Admin bypass
+  if (authStore.isAdmin) {
+    return items; // Tüm item'lar
+  }
+  
+  return items
+    .filter(item => {
+      const pageType = item.pageType || 'user';
+      
+      // Manager kullanıcılar admin sayfalarını göremez
+      if (pageType === 'admin' && !authStore.isAdmin) {
+        return false;
+      }
+      
+      // Manager sayfaları sadece manager veya admin görebilir
+      if (pageType === 'manager' && !authStore.isManager && !authStore.isAdmin) {
+        return false;
+      }
+      
+      // Permission kontrolü...
+      // ...
+    });
+}
+```
+
+**Side Menu Manager Store'da Manager Kontrolü:**
+```typescript
+// stores/apps/sideMenuManager.ts
+// Manager kullanıcılar için admin sayfaları filtrelenir
+buildMenuTree() {
+  // ... tree building logic ...
+  
+  // Manager kullanıcılar için admin sayfalarını filtrele
+  if (!authStore.isAdmin && authStore.isManager) {
+    this.menuItemsTree = this.menuItemsTree.filter(item => 
+      item.pageType !== 'admin'
+    );
+  }
+}
+```
+
+**Side Menu Manager Form'da Manager Kontrolü:**
+```typescript
+// components/apps/side-menu-manager/MenuItemForm.vue
+const pageTypeOptions = computed(() => {
+  const authStore = useAuthStore();
+  
+  const options = [
+    { title: 'User', value: 'user' },
+    { title: 'Manager', value: 'manager' },
+  ];
+  
+  // Sadece admin kullanıcılar "Administration" seçeneğini görebilir
+  if (authStore.isAdmin) {
+    options.push({ title: 'Administration', value: 'admin' });
+  }
+  
+  return options;
+});
+```
+
+**Permission Editor'da Manager Kontrolü:**
+```typescript
+// components/apps/side-menu-manager/PermissionEditor.vue
+// Manager kullanıcılar "admins" grubunu göremez
+const filteredGroups = computed(() => {
+  if (authStore.isAdmin) {
+    // Admin kullanıcılar tüm grupları görebilir
+    return groups.value.filter(g => g.isActive);
+  }
+  // Manager kullanıcılar "admins" grubunu göremez
+  return groups.value.filter(g => g.isActive && g.name.toLowerCase() !== 'admins');
+});
+```
+
+**Middleware'de Manager Kontrolü:**
+```typescript
+// middleware/menu-permission.global.ts
+// Manager kullanıcılar admin sayfalarına erişemez
+if (pageType === 'admin' && !authStore.isAdmin) {
+  // Manager kullanıcı admin sayfasına erişmeye çalışıyor
+  return navigateTo('/unauthorized');
+}
+
+// Manager sayfaları sadece manager veya admin görebilir
+if (pageType === 'manager' && !authStore.isManager && !authStore.isAdmin) {
+  return navigateTo('/unauthorized');
+}
+
+// Manager sayfaları: Manager kullanıcılar kısıtlamasız erişebilir (permission kontrolü yok)
+if (pageType === 'manager' && authStore.isManager) {
+  return; // Bypass permission kontrolü
+}
+```
+
+**usePagePermissions Composable'da Manager Kontrolü:**
+```typescript
+// composables/usePagePermissions.ts
+// Manager sayfaları için permission kontrolü bypass edilir
+const canView = computed<boolean>(() => {
+  // ... admin bypass ...
+  
+  const pageType = menuItem.value.pageType || 'user';
+  
+  // Manager sayfaları: Manager kullanıcılar kısıtlamasız erişebilir
+  if (pageType === 'manager' && authStore.isManager) {
+    return true; // Permission kontrolü yapılmaz
+  }
+  
+  // ... diğer kontroller ...
+});
+```
+
+**Manager ve Admin İlişkisi:**
+- Admin kullanıcılar (`is_admin: true`) otomatik olarak manager yetkilerine de sahiptir
+- Manager kullanıcılar admin olamaz (ayrı yetki seviyesi)
+- Admin kullanıcılar tüm sayfa tiplerine erişebilir (admin, manager, user)
+- Manager kullanıcılar sadece manager ve user sayfalarına erişebilir
 
 **API Endpoints (MngDataGateway):**
 - `GET /api/data/@pages` - Sayfa listesi
@@ -1781,26 +2009,63 @@ GET /api/user/export?format=xlsx&searchTerm=...&isActive=...
 
 ### Yetkilendirme Sistemi Notları
 
-**Admin Kullanıcılar:**
-- JWT token'da `isAdmin: true` olan kullanıcılar
-- Tüm sayfalara tüm yetkilerle (view + edit) erişir
-- Permission kontrolü bypass edilir
+**Admin Kullanıcılar (`is_admin: true` veya `isAdmin: true`):**
+- **Tam Yetkili Admin:** JWT token'da `is_admin: true` olan kullanıcılar
+- **Tüm Sayfalara Erişim:** Tüm sayfalara (view, create, update, delete, export) tam erişim
+- **Permission Bypass:** Hiçbir yetkilendirme kontrolüne takılmaz
+- **Side Menu Manager:** Tüm menu item tanımlamalarını görebilir, düzenleyebilir
+- **Menu Filtreleme:** Sidebar'da tüm menu item'ları görünür (filtreleme yapılmaz)
+- **Dataset Erişimi:** Tüm dataset'lere ve data kayıtlarına tam erişim
+- **Öncelik:** Tüm middleware ve permission kontrollerinde admin kontrolü **ÖNCE** yapılır
+
+**Manager Kullanıcılar (`is_manager: true` veya `isManager: true`):**
+- **Sayfa Tipi Bazlı Erişim:** Manager kullanıcılar sayfa tipi (`pageType`) bazlı erişim kontrolüne tabidir
+- **Administration Sayfalarına Erişim YOK:**
+  - `pageType: 'admin'` olan menu item'ları **göremez**
+  - Sidebar'da admin sayfaları görünmez
+  - URL üzerinden direkt erişim engellenir (middleware tarafından)
+  - Side Menu Manager'da admin sayfaları tree view'da görünmez
+- **Side Menu Manager Kısıtlamaları:**
+  - Sayfa Tipi combobox'ında "Administration" seçeneği görünmez
+  - Yeni menu item eklerken Administrator sayfası ekleyemez
+  - Tree view'da `pageType: 'admin'` olan item'lar filtrelenir
+- **Manager ve User Sayfalarına Erişim:**
+  - `pageType: 'manager'` olan sayfalara erişebilir
+  - `pageType: 'user'` olan sayfalara erişebilir
+  - Permission kontrolü yapılır (grup bazlı)
+- **Menu Filtreleme:** Sidebar'da sadece `pageType: 'manager'` ve `pageType: 'user'` olan item'lar görünür
 
 **Normal Kullanıcılar:**
 - JWT token'da `user_groups` array'inden grup bilgileri alınır
 - Her sayfa için `viewGroups` ve `editGroups` kontrol edilir
 - Kullanıcının en az bir grubu sayfa yetkilerinde varsa erişim verilir
+- Side Menu Manager'da sadece yetkili olduğu menu item'ları görebilir
+- Sadece `pageType: 'user'` olan sayfalara erişebilir (permission kontrolü ile)
+
+**Sayfa Tipleri (pageType):**
+- **`admin` (Administration):** Sadece admin kullanıcılar görebilir
+- **`manager` (Manager):** Manager ve admin kullanıcılar görebilir
+- **`user` (User):** Tüm kullanıcılar görebilir (permission kontrolü ile)
 
 **Sayfa Yetkilendirme Mantığı:**
 1. Sayfa yüklemeden önce `permission` middleware kontrol eder
-2. Admin ise → Erişim verilir
-3. Normal kullanıcı ise → Grup bazlı kontrol yapılır
-4. Yetki yoksa → 403 Forbidden sayfasına yönlendirilir
+2. **Admin ise → Erişim verilir (bypass)** ⚡ ÖNCE KONTROL ET!
+3. **Manager ise → Sayfa tipi kontrolü yapılır:**
+   - `pageType: 'admin'` → Erişim engellenir (403 Forbidden)
+   - `pageType: 'manager'` veya `pageType: 'user'` → Permission kontrolü yapılır
+4. **Normal kullanıcı ise → Sayfa tipi ve grup bazlı kontrol yapılır:**
+   - `pageType: 'admin'` veya `pageType: 'manager'` → Erişim engellenir
+   - `pageType: 'user'` → Grup bazlı permission kontrolü yapılır
+5. Yetki yoksa → 403 Forbidden sayfasına yönlendirilir
 
 **Menü Filtreleme:**
-- Menü component'i sadece kullanıcının erişebileceği sayfaları gösterir
+- **Admin:** Tüm menü öğelerini görür (filtreleme yapılmaz)
+- **Manager:** Sadece `pageType: 'manager'` ve `pageType: 'user'` olan item'ları görür
+  - Manager sayfalarına **kısıtlamasız erişebilir** (permission kontrolü yok)
+  - User sayfaları için permission kontrolü yapılır
+- **Normal Kullanıcı:** Sadece `pageType: 'user'` ve erişebileceği sayfaları görür
 - View yetkisi olmayan sayfalar menüde görünmez
-- Admin kullanıcılar tüm menü öğelerini görür
+- Permission bazlı filtreleme yapılır
 
 **Dataset Yapısı:**
 - `@pages` dataset'i MngDataGateway'de domain bazlı tutulur
@@ -1855,10 +2120,52 @@ GET /api/user/export?format=xlsx&searchTerm=...&isActive=...
   - Duplicate handler sorunu çözüldü
   - Debounce mekanizması (500ms) - ardışık event'ler tek refresh'e indirgeniyor
   - Sidebar component'inde SignalR bağlantı yönetimi
+- **2026-01-15** - Phase 5.3: Side Menu Manager UI/UX İyileştirmeleri ✅
+  - Tree view genişliği ve görsel iyileştirmeler (layout column sizes: md="5" lg="4" tree, md="7" lg="8" form)
+  - Tree item boyutları artırıldı (min-height: 48px, font-size: text-body-1, icon sizes: 22px)
+  - Expand All / Collapse All butonları eklendi (MenuTreeView component'inde recursive expand/collapse)
+  - Tree item padding ve spacing iyileştirmeleri
+- **2026-01-15** - Phase 5.4: Side Menu Manager Yetkilendirme İyileştirmeleri ✅
+  - Manager kullanıcılar için kısıtlamalar:
+    - Side Menu Manager'da admin sayfalarını göremez (tree view'da filtrelenir)
+    - Yeni menu item eklerken "Administration" seçeneği görünmez
+    - Default pageType değeri "User" olarak ayarlandı
+    - Permission Editor'da "admins" grubu görünmez
+  - Manager kullanıcılar manager ve user sayfalarını görebilir
+  - Manager sayfalarına kısıtlamasız erişim (permission kontrolü bypass)
+  - usePagePermissions composable'da manager bypass eklendi
+  - menu-permission.global.ts middleware'de manager kontrolü iyileştirildi
+- **2026-01-15** - Phase 5.5: Side Menu Manager Localization ✅
+  - Event Messages sayfası benzeri dil desteği yapısı uygulandı
+  - Tüm UI metinleri i18n'e çevrildi (index.vue, MenuItemForm.vue, MenuTreeView.vue, TreeItem.vue, PermissionEditor.vue)
+  - Locale dosyalarına `side-menu-manager` namespace'i eklendi (hierarchical key structure)
+  - vue-i18n legacy mode uyumluluğu (template'te $t() kullanımı, script setup'ta useI18n kullanılmıyor)
+- **2026-01-15** - Phase 6.14: Login Sayfası Localization ve RTL Desteği ✅
+  - Login sayfasına dil seçici combobox eklendi (bayrak gösterimi ile)
+  - Login sayfası metinleri i18n'e çevrildi (LoginForm.vue component'i)
+  - Locale dosyalarına `login` namespace'i eklendi
+  - RTL/LTR desteği eklendi (Arapça için)
+  - Locale store entegrasyonu (login sayfasında initializeLocale)
+  - HTML dir attribute dinamik güncelleme
+  - v-locale-provider ile Vuetify RTL desteği
+- **2026-01-15** - Phase 6.15: Anasayfa RTL/LTR Dinamik Dönüşümleri ✅
+  - LanguageDD component'inde localeStore entegrasyonu
+  - Dil değiştiğinde otomatik RTL/LTR dönüşümü
+  - default.vue ve blank.vue layout'larında localeStore.isRTL kullanımı
+  - vertical-header/index.vue'da logo RTL desteği
+  - Arabic locale mapping düzeltmesi (ar → ro mapping)
+  - z-locale.client.ts plugin'inde locale store sync
+- **2026-01-15** - Phase 6.16: API Gateway Entegrasyonu ve Locale Güncelleme Yetkilendirmesi ✅
+  - MngLLM API çağrılarının Gateway üzerinden yapılması
+  - MngGateway'de JWT authentication middleware aktifleştirildi
+  - Nuxt server route'larında gatewayUrl kontrolü
+  - Locale güncelleme yetkilendirmesi: ManagerOrAdminAuthorization attribute eklendi
+  - MngKeeper SystemLocalesController'da PutLocale endpoint'i manager ve admin kullanıcılar için açıldı
+  - Locale cache invalidation mekanizması ($reloadLocales fonksiyonu)
 
 ---
 
-**Son Güncelleme:** 2026-01-10  
-**Version:** 1.2.0  
-**Status:** 🚧 Development Phase (Side Menu ✅, Real-time Updates ✅, Diğer Phase'ler 📋 Planning)
+**Son Güncelleme:** 2026-01-15  
+**Version:** 1.3.0  
+**Status:** 🚧 Development Phase (Side Menu ✅, Real-time Updates ✅, Localization ✅, Diğer Phase'ler 📋 Planning)
 

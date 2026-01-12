@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { fetchFromDataGateway } from '@/services/apiService';
 import type { SideMenuItem } from './sideMenu';
+import { useAuthStore } from '@/stores/auth';
 
 interface SideMenuManagerState {
   menuItems: SideMenuItem[];
@@ -152,7 +153,40 @@ export const useSideMenuManagerStore = defineStore('sideMenuManager', {
       // Sort all children recursively
       sortChildren(rootItems);
 
-      this.menuItemsTree = rootItems;
+      // Manager kullanıcılar için admin sayfalarını filtrele (Manager ve User sayfaları görünür)
+      const authStore = useAuthStore();
+      if (!authStore.isAdmin && authStore.isManager) {
+        // Recursive filter function to remove admin items only
+        // Manager ve User sayfaları (ve pageType undefined/null olanlar) görünür
+        const filterAdminItems = (items: SideMenuItem[]): SideMenuItem[] => {
+          return items
+            .filter(item => {
+              // Sadece admin sayfalarını filtrele
+              // Manager, User ve undefined/null olanlar görünür
+              return item.pageType !== 'admin';
+            })
+            .map(item => {
+              if (item.children && item.children.length > 0) {
+                return {
+                  ...item,
+                  children: filterAdminItems(item.children),
+                };
+              }
+              return item;
+            })
+            .filter(item => {
+              // Remove headers that have no children after filtering
+              if (item.itemType === 'header' && (!item.children || item.children.length === 0)) {
+                return false;
+              }
+              return true;
+            });
+        };
+        
+        this.menuItemsTree = filterAdminItems(rootItems);
+      } else {
+        this.menuItemsTree = rootItems;
+      }
     },
 
     /**

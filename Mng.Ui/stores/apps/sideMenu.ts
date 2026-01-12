@@ -330,7 +330,12 @@ export const useSideMenuStore = defineStore('sideMenu', {
               return false;
             }
 
-            // Permission kontrolü
+            // Manager sayfaları: Manager kullanıcılar kısıtlamasız erişebilir (permission kontrolü yok)
+            if (pageType === 'manager' && authStore.isManager) {
+              return true; // Permission kontrolü yapılmaz, direkt göster
+            }
+
+            // Permission kontrolü (sadece user sayfaları ve admin sayfaları için)
             if (item.permissions?.groups && Object.keys(item.permissions.groups).length > 0) {
               // Permissions tanımlı - kullanıcının herhangi bir grubunda view yetkisi var mı?
               const hasViewPermission = userGroups.some(groupName => {
@@ -345,11 +350,12 @@ export const useSideMenuStore = defineStore('sideMenu', {
             } else {
               // Permissions tanımlı değil veya boş
               // Güvenli varsayılan: Sadece user type item'lar gösterilir
-              // Admin ve manager type item'lar permissions olmadan gösterilmez
-              if (pageType === 'admin' || pageType === 'manager') {
-                // Admin veya manager type ama permissions yok - gizle (güvenlik için)
+              // Admin type item'lar permissions olmadan gösterilmez (manager zaten yukarıda handle edildi)
+              if (pageType === 'admin') {
+                // Admin type ama permissions yok - gizle (güvenlik için)
                 return false;
               }
+              // User type ve permissions yok - göster (backward compatibility)
             }
 
             return true;

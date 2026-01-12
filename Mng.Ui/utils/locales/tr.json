@@ -141,6 +141,10 @@
         "apps-side-menu-manager": "Side Menu Manager",
         "apps-users": "Kullanıcı Yönetimi",
         "apps-groups": "Grup Yönetimi",
+        "books": "Kitaplar",
+        "apps-books": "Kitaplar",
+        "automated-forms": "Otomatik Formlar",
+        "apps-automated-forms": "Otomatik Formlar",
         "headers": {
             "home": "Ana Sayfa",
             "assets": "Varlıklar",
@@ -193,6 +197,141 @@
         },
         "breadcrumbs": {
             "home": "Ana Sayfa"
+        }
+    },
+    "side-menu-manager": {
+        "title": "Side Menu Manager",
+        "description": "Yan menü öğelerini dinamik olarak yönetin",
+        "breadcrumbs": {
+            "home": "Ana Sayfa",
+            "title": "Side Menu Manager"
+        },
+        "tree": {
+            "title": "Menu Items",
+            "expandAll": "Tümünü Genişlet",
+            "collapseAll": "Tümünü Daralt",
+            "empty": "Menu item bulunamadı",
+            "navigate": "Sayfaya git"
+        },
+        "toolbar": {
+            "newItem": "Yeni Menu Item",
+            "newHeader": "Yeni Header",
+            "search": "Menu item ara...",
+            "refresh": "Yenile"
+        },
+        "form": {
+            "title": {
+                "edit": "Menu Item Düzenle",
+                "new": "Yeni Menu Item"
+            },
+            "empty": "Yeni menu item oluşturmak için sol taraftan \"Yeni Menu Item\" veya \"Yeni Header\" butonuna tıklayın.",
+            "fields": {
+                "itemType": "Item Tipi",
+                "pageType": "Sayfa Tipi",
+                "header": "Header Metni",
+                "title": "Menü Başlığı",
+                "pageCode": "Sayfa Kodu (Unique)",
+                "pageCodeHint": "Route veya başlıktan otomatik oluşturulabilir",
+                "order": "Sıralama",
+                "parent": "Parent Menu Item",
+                "parentNone": "(Yok - Root)",
+                "level": "Seviye",
+                "levelHint": "Parent seçimine göre otomatik hesaplanır",
+                "disabled": "Devre Dışı",
+                "forms": "Kayıtlı Formlar",
+                "formsPlaceholder": "Form seçin (opsiyonel)",
+                "formsHint": "Kayıtlı formlardan birini seçin veya manuel path girin",
+                "route": "Route Path",
+                "routeHint": "Örn: /dashboards/analytical veya form seçin",
+                "linkType": "Link Tipi",
+                "subCaption": "Alt Başlık",
+                "chip": "Chip Metni",
+                "chipVariant": "Chip Variant",
+                "chipColor": "Chip Metin Rengi",
+                "chipBgColor": "Chip Arka Plan Rengi",
+                "chipIcon": "Chip Icon"
+            },
+            "sections": {
+                "chip": "Chip/Badge Ayarları",
+                "permissions": "Yetkilendirme",
+                "locale": "Dil Desteği"
+            },
+            "buttons": {
+                "save": "Kaydet",
+                "update": "Güncelle",
+                "delete": "Sil",
+                "cancel": "İptal",
+                "generatePageCode": "Otomatik oluştur",
+                "navigate": "Bu sayfaya git",
+                "updateLocales": "Dil Dosyalarını Güncelle"
+            },
+            "locale": {
+                "success": "Dil dosyaları başarıyla güncellendi! ({pageCode})",
+                "error": "Dil dosyası güncellenirken hata oluştu: {error}",
+                "pageCodeRequired": "Sayfa kodu (pageCode) gereklidir. Lütfen önce pageCode oluşturun.",
+                "headerRequired": "Header metni gereklidir.",
+                "titleRequired": "Menu başlığı gereklidir.",
+                "description": "Bu buton, mevcut sayfa kodunu ({pageCode}) tüm dil dosyalarına ekler. Türkçe için mevcut başlık/header kullanılır, diğer dillere aynı değer placeholder olarak eklenir."
+            },
+            "validation": {
+                "headerRequired": "Header metni gereklidir",
+                "titleRequired": "Menu başlığı gereklidir"
+            }
+        },
+        "permissions": {
+            "loading": "Gruplar yükleniyor...",
+            "empty": "Henüz aktif grup bulunamadı.",
+            "emptyFiltered": "Görüntülenebilir aktif grup bulunamadı.",
+            "retry": "Yeniden Dene",
+            "bulkActions": "Toplu İşlemler:",
+            "openAll": "Tümünü Aç",
+            "closeAll": "Tümünü Kapat",
+            "group": "Grup",
+            "actions": "İşlemler",
+            "all": "Tümü",
+            "none": "Hiçbiri",
+            "labels": {
+                "view": "Görüntüle",
+                "create": "Oluştur",
+                "update": "Güncelle",
+                "delete": "Sil",
+                "export": "Export"
+            }
+        },
+        "messages": {
+            "deleteConfirm": "Bu menu item'ı silmek istediğinize emin misiniz?",
+            "success": {
+                "created": "Menu item başarıyla oluşturuldu",
+                "updated": "Menu item başarıyla güncellendi",
+                "deleted": "Menu item başarıyla silindi"
+            },
+            "errors": {
+                "create": "Menu item oluşturulurken hata oluştu",
+                "update": "Menu item güncellenirken hata oluştu",
+                "delete": "Menu item silinirken hata oluştu",
+                "load": "Menu item'lar yüklenirken hata oluştu"
+            }
+        }
+    },
+    "login": {
+        "title": "MonitraNG'ye Hoş Geldiniz",
+        "subtitle": "Gelişmiş İzleme Aracı",
+        "form": {
+            "username": "Kullanıcı Adı",
+            "usernamePlaceholder": "Kullanıcı adı veya domain{'@'}kullaniciadi",
+            "password": "Şifre",
+            "passwordPlaceholder": "Şifrenizi giriniz",
+            "submit": "Giriş Yap",
+            "error": "Giriş başarısız. Lütfen tekrar deneyin."
+        },
+        "validation": {
+            "usernameRequired": "Kullanıcı adı gereklidir",
+            "passwordRequired": "Şifre gereklidir",
+            "passwordMinLength": "Şifre en az 3 karakter olmalıdır"
+        },
+        "language": {
+            "label": "Dil",
+            "select": "Dil Seçin"
         }
     }
 }

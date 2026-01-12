@@ -83,7 +83,7 @@ public class SystemLocalesController : ControllerBase
     /// <response code="200">Locale file updated successfully</response>
     /// <response code="400">Invalid locale data</response>
     [HttpPut("{locale}")]
-    [AdminAuthorization]
+    [ManagerOrAdminAuthorization]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
