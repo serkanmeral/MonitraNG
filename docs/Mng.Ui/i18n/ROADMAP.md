@@ -32,18 +32,22 @@ Bu dokümantasyon, MonitraNG projesi için **Frontend (Mng.Ui)** ve **Backend (M
 **✅ Mevcut:**
 - `vue-i18n` 9.9.1 kurulu
 - `plugins/vuetify.ts` içinde i18n yapılandırması var
-- `utils/locales/` klasöründe dil dosyaları mevcut (en, fr, ar, zh)
+- `utils/locales/` klasöründe dil dosyaları mevcut (tr, en, fr, ar, zh)
 - `messages.ts` ile dil dosyaları import ediliyor
 - Header'da `LanguageDD` component'i var (en, fr, ro, zh)
+- ✅ **Locale Store (Pinia)** - `stores/locale.ts` oluşturuldu
+- ✅ **Login Sayfası Localization** - Tam i18n desteği eklendi
+- ✅ **Side Menu Manager Localization** - Tüm UI metinleri i18n'e çevrildi
+- ✅ **RTL/LTR Desteği** - Arapça için dinamik RTL/LTR dönüşümleri
+- ✅ **Dinamik Locale Loading** - MinIO'dan runtime locale yükleme (`z-locale-loader.client.ts`)
+- ✅ **Locale Cache Management** - localStorage cache ve invalidation mekanizması
+- ✅ **API Gateway Entegrasyonu** - MngLLM API çağrıları Gateway üzerinden
+- ✅ **ManagerOrAdminAuthorization** - Locale güncelleme yetkilendirmesi
 
 **❌ Eksikler:**
-- Türkçe (tr) dil desteği yok
-- Dinamik dil değiştirme localStorage kaydı yok
-- Component'lerde i18n kullanımı yok (hardcoded metinler)
-- Sayfa bazlı çeviri yönetimi yok
-- Locale store yok (Pinia)
-- Vuetify locale entegrasyonu eksik
-- Error mesajları için i18n desteği yok
+- Component'lerde i18n kullanımı (kısmen tamamlandı - Side Menu Manager ve Login sayfası tamamlandı)
+- Vuetify locale entegrasyonu (RTL desteği var, Vuetify component mesajları için eksik)
+- Error mesajları için i18n desteği (planlanıyor)
 
 ### Backend
 

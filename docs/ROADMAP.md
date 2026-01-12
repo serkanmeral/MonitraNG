@@ -1,8 +1,8 @@
 # MngNotifier - Geliştirme Yol Haritası
 
-**Son Güncelleme:** 11 Ocak 2026  
-**Versiyon:** 0.1.0 (Planlama Aşaması)  
-**Durum:** 📋 Planlama
+**Son Güncelleme:** 12 Ocak 2026  
+**Versiyon:** 1.0.0 (Temel Özellikler Tamamlandı)  
+**Durum:** ✅ Temel Özellikler Tamamlandı
 
 ---
 
@@ -83,61 +83,62 @@ MngNotifier/
 
 ## ✅ TAMAMLANACAK ÖZELLİKLER
 
-### Phase 1: Proje Yapısı ve Temel Altyapı - YÜKSEK ÖNCELİK
+### Phase 1: Proje Yapısı ve Temel Altyapı - ✅ TAMAMLANDI
 
 **Amaç:** Clean Architecture yapısını kurmak ve temel altyapıyı hazırlamak
 
 **Gereksinimler:**
-- [ ] Solution ve proje dosyalarını oluştur
-  - [ ] `MngNotifier.sln`
-  - [ ] `Core/MngNotifier.Domain/MngNotifier.Domain.csproj`
-  - [ ] `Core/MngNotifier.Application/MngNotifier.Application.csproj`
-  - [ ] `Infrastructure/MngNotifier.Infrastructure/MngNotifier.Infrastructure.csproj`
-  - [ ] `Infrastructure/MngNotifier.Persistence/MngNotifier.Persistence.csproj`
-  - [ ] `Presentation/MngNotifier.Api/MngNotifier.Api.csproj`
-- [ ] Proje referanslarını ayarla
-  - [ ] Application → Domain
-  - [ ] Infrastructure → Application
-  - [ ] Persistence → Application, Domain
-  - [ ] Api → Application, Infrastructure, Persistence
-- [ ] Temel konfigürasyon dosyalarını oluştur
-  - [ ] `appsettings.json`
-  - [ ] `appsettings.Development.json`
-  - [ ] `Program.cs` (temel yapı)
-- [ ] NuGet paketlerini ekle
-  - [ ] MongoDB.Driver
-  - [ ] RabbitMQ.Client
-  - [ ] Serilog (Console + Seq)
-  - [ ] Asp.Versioning.Mvc
-  - [ ] Asp.Versioning.Mvc.ApiExplorer
-  - [ ] Swashbuckle.AspNetCore (Swagger)
-  - [ ] Scalar.AspNetCore (Scalar API Reference)
-  - [ ] FluentValidation
-  - [ ] MediatR (opsiyonel)
+- [x] Solution ve proje dosyalarını oluştur
+  - [x] `MngNotifier.sln`
+  - [x] `Core/MngNotifier.Domain/MngNotifier.Domain.csproj`
+  - [x] `Core/MngNotifier.Application/MngNotifier.Application.csproj`
+  - [x] `Infrastructure/MngNotifier.Infrastructure/MngNotifier.Infrastructure.csproj`
+  - [x] `Infrastructure/MngNotifier.Persistence/MngNotifier.Persistence.csproj`
+  - [x] `Presentation/MngNotifier.Api/MngNotifier.Api.csproj`
+- [x] Proje referanslarını ayarla
+  - [x] Application → Domain
+  - [x] Infrastructure → Application
+  - [x] Persistence → Application, Domain
+  - [x] Api → Application, Infrastructure, Persistence
+- [x] Temel konfigürasyon dosyalarını oluştur
+  - [x] `appsettings.json`
+  - [x] `appsettings.Development.json`
+  - [x] `Program.cs` (temel yapı)
+- [x] NuGet paketlerini ekle
+  - [x] Serilog (Console + Seq)
+  - [x] Asp.Versioning.Mvc
+  - [x] Asp.Versioning.Mvc.ApiExplorer
+  - [x] Swashbuckle.AspNetCore (Swagger)
+  - [x] Scalar.AspNetCore (Scalar API Reference)
+  - [ ] FluentValidation (gelecekte)
+  - [ ] MediatR (opsiyonel - gelecekte)
 
-**Öncelik:** Yüksek (Temel yapı)
+**Not:** MongoDB kullanılmıyor (sadece RabbitMQ ve Disk health check)
 
-**Tahmini Süre:** 1-2 saat
+**Tamamlanma Tarihi:** 12 Ocak 2026
 
 ---
 
-### Phase 2: Health Check Servisi - YÜKSEK ÖNCELİK
+### Phase 2: Health Check Servisi - ✅ TAMAMLANDI
 
 **Amaç:** Uygulama sağlık durumunu kontrol eden servis implementasyonu
 
 **Gereksinimler:**
-- [ ] `IHealthCheckService` interface (Application layer)
-- [ ] `HealthCheckService` implementation (Persistence layer)
-- [ ] `HealthController` (Api layer)
-- [ ] Health check bileşenleri:
-  - [ ] MongoDB connection check
-  - [ ] RabbitMQ connection check
-  - [ ] Disk space check
-  - [ ] Mail provider connection check (opsiyonel - Phase 4'te)
-- [ ] Health check endpoint'leri:
-  - [ ] `GET /api/v1/health` - Comprehensive health check
-  - [ ] `GET /api/v1/health/live` - Liveness probe
-  - [ ] `GET /api/v1/health/ready` - Readiness probe
+- [x] `IHealthCheckService` interface (Application layer)
+- [x] `HealthCheckService` implementation (Persistence layer)
+- [x] `HealthController` (Api layer)
+- [x] Health check bileşenleri:
+  - [x] RabbitMQ connection check (degraded status - implementasyon bekleniyor)
+  - [x] Disk space check
+  - [ ] Mail provider connection check (opsiyonel - gelecekte)
+- [x] Health check endpoint'leri:
+  - [x] `GET /api/v1/health` - Comprehensive health check
+  - [x] `GET /api/v1/health/live` - Liveness probe
+  - [x] `GET /api/v1/health/ready` - Readiness probe
+
+**Not:** MongoDB kullanılmıyor, sadece RabbitMQ ve Disk check mevcut.
+
+**Tamamlanma Tarihi:** 12 Ocak 2026
 
 **Referans:** MngDataGateway Health Check implementasyonu
 
@@ -172,28 +173,30 @@ MngNotifier/
 
 ---
 
-### Phase 3: Version Servisi - YÜKSEK ÖNCELİK
+### Phase 3: Version Servisi - ✅ TAMAMLANDI
 
 **Amaç:** API versiyonlama ve uygulama versiyon bilgisi servisi
 
 **Gereksinimler:**
-- [ ] API Versioning yapılandırması (Program.cs)
-  - [ ] URL-based versioning (`/api/v1/...`)
-  - [ ] Query string-based versioning (`?version=1.0`)
-  - [ ] Header-based versioning (`Api-Version: 1.0`)
-  - [ ] Default version: v1.0
-- [ ] `VersionController` (Api layer)
-  - [ ] `GET /api/v1/version` - Detailed version information
-  - [ ] `GET /api/v1/version/short` - Simple version string
-- [ ] Version bilgileri:
-  - [ ] Product name
-  - [ ] Assembly version
-  - [ ] Informational version
-  - [ ] Build date
-  - [ ] Company/Copyright
-  - [ ] Environment
-  - [ ] Runtime information (.NET version, OS, vb.)
-  - [ ] Dependencies (MongoDB, RabbitMQ, Mail provider, vb.)
+- [x] API Versioning yapılandırması (Program.cs)
+  - [x] URL-based versioning (`/api/v1/...`)
+  - [x] Query string-based versioning (`?version=1.0`)
+  - [x] Header-based versioning (`Api-Version: 1.0`)
+  - [x] Default version: v1.0
+- [x] `VersionController` (Api layer)
+  - [x] `GET /api/v1/version` - Detailed version information
+  - [x] `GET /api/v1/version/short` - Simple version string
+- [x] Version bilgileri:
+  - [x] Product name
+  - [x] Assembly version
+  - [x] Informational version
+  - [x] Build date
+  - [x] Company/Copyright
+  - [x] Environment
+  - [x] Runtime information (.NET version, OS, vb.)
+  - [x] Dependencies (RabbitMQ, SMTP Mail provider)
+
+**Tamamlanma Tarihi:** 12 Ocak 2026
 
 **Referans:** MngDataGateway Version Controller implementasyonu
 
@@ -227,68 +230,61 @@ MngNotifier/
 
 ---
 
-### Phase 4: Swagger ve Scalar Desteği - YÜKSEK ÖNCELİK
+### Phase 4: Swagger ve Scalar Desteği - ✅ TAMAMLANDI
 
 **Amaç:** API dokümantasyonu için Swagger ve Scalar entegrasyonu
 
 **Gereksinimler:**
-- [ ] Swagger yapılandırması (Program.cs)
-  - [ ] `AddSwaggerGen` configuration
-  - [ ] API versioning desteği (SwaggerConfigureOptions)
-  - [ ] Custom schema ID strategy
-- [ ] Scalar API Reference yapılandırması
-  - [ ] `MapScalarApiReference` configuration
-  - [ ] Theme: Purple (diğer servislerle uyumlu)
-  - [ ] OpenAPI route pattern: `/api-docs/{documentName}/swagger.json`
-  - [ ] Server path configuration
-- [ ] Swagger UI endpoint'leri
-  - [ ] `/swagger` - Swagger UI
-  - [ ] `/api-docs/{version}/swagger.json` - OpenAPI JSON
-  - [ ] Scalar UI (otomatik map edilir)
+- [x] Swagger yapılandırması (Program.cs)
+  - [x] `AddSwaggerGen` configuration
+  - [x] API versioning desteği (SwaggerConfigureOptions)
+  - [x] Custom schema ID strategy
+- [x] Scalar API Reference yapılandırması
+  - [x] `MapScalarApiReference` configuration
+  - [x] Theme: Purple (diğer servislerle uyumlu)
+  - [x] OpenAPI route pattern: `/api-docs/{documentName}/swagger.json`
+  - [x] Server path configuration
+- [x] Swagger UI endpoint'leri
+  - [x] `/swagger` - Swagger UI
+  - [x] `/api-docs/{version}/swagger.json` - OpenAPI JSON
+  - [x] Scalar UI (otomatik map edilir)
+
+**Tamamlanma Tarihi:** 12 Ocak 2026
 
 **Referans:** MngDataGateway ve MngLLM Swagger/Scalar implementasyonu
 
-**Öncelik:** Yüksek (API dokümantasyonu için kritik)
-
-**Tahmini Süre:** 1-2 saat
-
 ---
 
-### Phase 5: Mail Notification Servisi - YÜKSEK ÖNCELİK
+### Phase 5: Mail Notification Servisi - ✅ KISMEN TAMAMLANDI
 
 **Amaç:** Mail notification gönderme servisi (iki farklı yöntemle)
 
 **Gereksinimler:**
-- [ ] Mail provider interface (`IMailProvider`)
-- [ ] SMTP implementation (`SmtpMailProvider`)
-- [ ] Mail notification entity (Domain)
-- [ ] Notification service (`INotificationService`)
-- [ ] Notification controller (`NotificationController`)
+- [x] Mail provider interface (`IMailProvider`)
+- [x] SMTP implementation (`SmtpMailProvider`)
+- [x] Notification controller (`NotificationController`)
 
 **Mail Notification Yöntemleri:**
 
-**1. Direct API Endpoint (Unauthenticated):**
-- [ ] `POST /api/v1/notifications/send` - Direct mail gönderme
+**1. Direct API Endpoint (Unauthenticated):** ✅ TAMAMLANDI
+- [x] `POST /api/v1/notifications/mail` - Direct mail gönderme
   - **Authentication:** ❌ No authentication required (AllowAnonymous)
   - Request body: `to`, `cc` (optional), `from` (optional), `subject`, `body`, `isHtml` (optional)
   - `from`: `{ "email": "string", "name": "string (optional)" }` - Default: appsettings'ten alınır
   - Response: Notification ID ve status
-  - Async processing (RabbitMQ queue'ya ekle)
   - **Kullanım:** Domain oluşturulduğunda, bootstrap senaryoları, external sistemler
-  - **Güvenlik:** Rate limiting önerilir (gelecekte)
+  - **Not:** Şu anda sync gönderim yapılıyor, RabbitMQ queue'ya ekleme gelecekte eklenecek
 
-**2. RabbitMQ Event Consumer:**
+**2. RabbitMQ Event Consumer:** ❌ BEKLİYOR
 - [ ] RabbitMQ consumer service (`NotificationEventConsumer`)
 - [ ] Event model: `MailNotificationEvent`
 - [ ] Queue: `mngnotifier.mail.send` (veya configurable)
 - [ ] Event structure: `to`, `cc`, `subject`, `body`
 - [ ] Auto-acknowledgment veya manual acknowledgment (retry için)
 
+**Tamamlanma Tarihi:** 12 Ocak 2026 (Direct API Endpoint)
+
 **Referans:** Detaylı tasarım için `docs/MngNotifier/MAIL_NOTIFICATION_DESIGN.md`
-
-**Öncelik:** Yüksek (Temel özellik)
-
-**Tahmini Süre:** 4-6 saat
 
 ---
 
@@ -509,15 +505,24 @@ MngNotifier/
 
 ### Development Port
 
-- **HTTP:** `http://localhost:5030`
-- **HTTPS:** `https://localhost:5031` (opsiyonel - Gateway'de SSL termination)
+- **HTTP:** `http://localhost:5070`
+- **HTTPS:** `https://localhost:5070` (opsiyonel - Gateway'de SSL termination)
+- **Not:** Port 5060 Chrome'un unsafe ports listesinde olduğu için 5070'e değiştirildi
 
-### Docker Integration
+### Docker Integration - ✅ TAMAMLANDI
 
-- **Dockerfile:** `Presentation/MngNotifier.Api/Dockerfile`
-- **Docker Compose:** `ApplicationResources/mng_apps/docker-compose.yml` içine eklenecek
+- **Dockerfile:** `Presentation/MngNotifier.Api/Dockerfile` ✅
+- **Docker Compose:** `ApplicationResources/mng_apps/docker-compose.yml` ✅
+- **Port Mapping:** `5070:5070`
+- **Health Check:** `/api/v1/health` endpoint'i kullanılıyor
 - **Network:** `mng_common_mng_network` (external network)
+
+### API Gateway Integration - ✅ TAMAMLANDI
+
+- **Ocelot Routes:** `/notifier/api/v1/{everything}` → `http://mngnotifier:5070/api/v1/{everything}`
+- **Gateway URL:** `https://localhost:5040/notifier/api/v1/...`
+- **Test Edildi:** ✅ Mail gönderme testi başarılı
 
 ---
 
-**Son Güncelleme:** 11 Ocak 2026
+**Son Güncelleme:** 12 Ocak 2026

@@ -41,6 +41,7 @@ services:
       - MngGatewaySettings__BackendServices__MngHub=http://mnghub:5020
       - MngGatewaySettings__BackendServices__MngReactor=http://mngreactor:5003
       - MngGatewaySettings__BackendServices__MngLLM=http://mngllm:5030
+      - MngGatewaySettings__BackendServices__MngNotifier=http://mngnotifier:5070
       - MngGatewaySettings__BackendServices__KeyCloak=http://keycloak:8080
       
       # Certificate Settings
@@ -282,6 +283,56 @@ services:
     
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5030/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  mngnotifier:
+    build:
+      context: ../../MngNotifier
+      dockerfile: Presentation/MngNotifier.Api/Dockerfile
+    image: localhost:5000/mngnotifier:1.0.0
+    container_name: mngnotifier
+    ports:
+      - "5070:5070"
+    environment:
+      # ASP.NET Core Environment
+      - ASPNETCORE_ENVIRONMENT=Development
+      
+      # Server Configuration
+      - MngNotifierSettings__Server__Host=0.0.0.0
+      - MngNotifierSettings__Server__Port=5070
+      - MngNotifierSettings__Server__Scheme=http
+      
+      # RabbitMQ Configuration
+      - MngNotifierSettings__RabbitMQ__Host=rabbitmq
+      - MngNotifierSettings__RabbitMQ__Port=5672
+      - MngNotifierSettings__RabbitMQ__Username=admin
+      - MngNotifierSettings__RabbitMQ__Password=admin123
+      - MngNotifierSettings__RabbitMQ__VirtualHost=/
+      
+      # Mail Configuration (Gmail for testing)
+      - MngNotifierSettings__Mail__Provider=SMTP
+      - MngNotifierSettings__Mail__DefaultFrom__Email=sermeral@gmail.com
+      - MngNotifierSettings__Mail__DefaultFrom__Name=MonitraNG Test
+      - MngNotifierSettings__Mail__Smtp__Host=smtp.gmail.com
+      - MngNotifierSettings__Mail__Smtp__Port=587
+      - MngNotifierSettings__Mail__Smtp__Username=sermeral@gmail.com
+      - MngNotifierSettings__Mail__Smtp__Password=uluhrleijgwhjxmw
+      - MngNotifierSettings__Mail__Smtp__EnableSsl=true
+      
+      # DataGateway Configuration
+      - MngNotifierSettings__DataGateway__BaseUrl=http://mngdatagateway:5010
+      - MngNotifierSettings__DataGateway__ApiVersion=v1
+    
+    networks:
+      - mng_common_mng_network
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5070/api/v1/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
