@@ -108,6 +108,10 @@
         "apps-side-menu-manager": "Side Menu Manager",
         "apps-users": "User Management",
         "apps-groups": "Group Management",
+        "books": "Books",
+        "apps-books": "Books",
+        "automated-forms": "Automated Forms",
+        "apps-automated-forms": "Automated Forms",
         "headers": {
             "home": "Home",
             "assets": "Assets",
@@ -160,6 +164,141 @@
         },
         "breadcrumbs": {
             "home": "Home"
+        }
+    },
+    "side-menu-manager": {
+        "title": "Side Menu Manager",
+        "description": "Dynamically manage side menu items",
+        "breadcrumbs": {
+            "home": "Home",
+            "title": "Side Menu Manager"
+        },
+        "tree": {
+            "title": "Menu Items",
+            "expandAll": "Expand All",
+            "collapseAll": "Collapse All",
+            "empty": "No menu items found",
+            "navigate": "Go to page"
+        },
+        "toolbar": {
+            "newItem": "New Menu Item",
+            "newHeader": "New Header",
+            "search": "Search menu items...",
+            "refresh": "Refresh"
+        },
+        "form": {
+            "title": {
+                "edit": "Edit Menu Item",
+                "new": "New Menu Item"
+            },
+            "empty": "Click \"New Menu Item\" or \"New Header\" button on the left to create a new menu item.",
+            "fields": {
+                "itemType": "Item Type",
+                "pageType": "Page Type",
+                "header": "Header Text",
+                "title": "Menu Title",
+                "pageCode": "Page Code (Unique)",
+                "pageCodeHint": "Can be auto-generated from route or title",
+                "order": "Order",
+                "parent": "Parent Menu Item",
+                "parentNone": "(None - Root)",
+                "level": "Level",
+                "levelHint": "Automatically calculated based on parent selection",
+                "disabled": "Disabled",
+                "forms": "Saved Forms",
+                "formsPlaceholder": "Select form (optional)",
+                "formsHint": "Select from saved forms or enter manual path",
+                "route": "Route Path",
+                "routeHint": "E.g: /dashboards/analytical or select form",
+                "linkType": "Link Type",
+                "subCaption": "Sub Caption",
+                "chip": "Chip Text",
+                "chipVariant": "Chip Variant",
+                "chipColor": "Chip Text Color",
+                "chipBgColor": "Chip Background Color",
+                "chipIcon": "Chip Icon"
+            },
+            "sections": {
+                "chip": "Chip/Badge Settings",
+                "permissions": "Authorization",
+                "locale": "Language Support"
+            },
+            "buttons": {
+                "save": "Save",
+                "update": "Update",
+                "delete": "Delete",
+                "cancel": "Cancel",
+                "generatePageCode": "Auto generate",
+                "navigate": "Go to this page",
+                "updateLocales": "Update Locale Files"
+            },
+            "locale": {
+                "success": "Locale files updated successfully! ({pageCode})",
+                "error": "Error updating locale file: {error}",
+                "pageCodeRequired": "Page code (pageCode) is required. Please create pageCode first.",
+                "headerRequired": "Header text is required.",
+                "titleRequired": "Menu title is required.",
+                "description": "This button adds the current page code ({pageCode}) to all locale files. Turkish uses the current header/title, other languages get the same value as placeholder."
+            },
+            "validation": {
+                "headerRequired": "Header text is required",
+                "titleRequired": "Menu title is required"
+            }
+        },
+        "permissions": {
+            "loading": "Loading groups...",
+            "empty": "No active groups found yet.",
+            "emptyFiltered": "No viewable active groups found.",
+            "retry": "Retry",
+            "bulkActions": "Bulk Actions:",
+            "openAll": "Open All",
+            "closeAll": "Close All",
+            "group": "Group",
+            "actions": "Actions",
+            "all": "All",
+            "none": "None",
+            "labels": {
+                "view": "View",
+                "create": "Create",
+                "update": "Update",
+                "delete": "Delete",
+                "export": "Export"
+            }
+        },
+        "messages": {
+            "deleteConfirm": "Are you sure you want to delete this menu item?",
+            "success": {
+                "created": "Menu item created successfully",
+                "updated": "Menu item updated successfully",
+                "deleted": "Menu item deleted successfully"
+            },
+            "errors": {
+                "create": "Error creating menu item",
+                "update": "Error updating menu item",
+                "delete": "Error deleting menu item",
+                "load": "Error loading menu items"
+            }
+        }
+    },
+    "login": {
+        "title": "Welcome to MonitraNG",
+        "subtitle": "Advanced Monitoring Tool",
+        "form": {
+            "username": "Username",
+            "usernamePlaceholder": "Username or domain{'@'}username",
+            "password": "Password",
+            "passwordPlaceholder": "Enter your password",
+            "submit": "Sign In",
+            "error": "Login failed. Please try again."
+        },
+        "validation": {
+            "usernameRequired": "Username is required",
+            "passwordRequired": "Password is required",
+            "passwordMinLength": "Password must be at least 3 characters"
+        },
+        "language": {
+            "label": "Language",
+            "select": "Select Language"
         }
     }
 

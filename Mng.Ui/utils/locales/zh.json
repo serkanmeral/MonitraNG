@@ -139,6 +139,10 @@
         "apps-side-menu-manager": "侧边菜单管理器",
         "apps-users": "用户管理",
         "apps-groups": "组管理",
+        "books": "书籍",
+        "apps-books": "书籍",
+        "automated-forms": "自动表单",
+        "apps-automated-forms": "自动表单",
         "headers": {
             "home": "首页",
             "assets": "资产",
@@ -191,6 +195,141 @@
         },
         "breadcrumbs": {
             "home": "首页"
+        }
+    },
+    "side-menu-manager": {
+        "title": "侧边菜单管理器",
+        "description": "动态管理侧边菜单项",
+        "breadcrumbs": {
+            "home": "首页",
+            "title": "侧边菜单管理器"
+        },
+        "tree": {
+            "title": "菜单项",
+            "expandAll": "全部展开",
+            "collapseAll": "全部折叠",
+            "empty": "未找到菜单项",
+            "navigate": "转到页面"
+        },
+        "toolbar": {
+            "newItem": "新建菜单项",
+            "newHeader": "新建标题",
+            "search": "搜索菜单项...",
+            "refresh": "刷新"
+        },
+        "form": {
+            "title": {
+                "edit": "编辑菜单项",
+                "new": "新建菜单项"
+            },
+            "empty": "单击左侧的\"新建菜单项\"或\"新建标题\"按钮以创建新菜单项。",
+            "fields": {
+                "itemType": "项目类型",
+                "pageType": "页面类型",
+                "header": "标题文本",
+                "title": "菜单标题",
+                "pageCode": "页面代码（唯一）",
+                "pageCodeHint": "可以从路由或标题自动生成",
+                "order": "顺序",
+                "parent": "父菜单项",
+                "parentNone": "（无 - 根）",
+                "level": "级别",
+                "levelHint": "根据父选择自动计算",
+                "disabled": "已禁用",
+                "forms": "已保存的表单",
+                "formsPlaceholder": "选择表单（可选）",
+                "formsHint": "从已保存的表单中选择或手动输入路径",
+                "route": "路由路径",
+                "routeHint": "例如：/dashboards/analytical 或选择表单",
+                "linkType": "链接类型",
+                "subCaption": "副标题",
+                "chip": "芯片文本",
+                "chipVariant": "芯片变体",
+                "chipColor": "芯片文本颜色",
+                "chipBgColor": "芯片背景颜色",
+                "chipIcon": "芯片图标"
+            },
+            "sections": {
+                "chip": "芯片/徽章设置",
+                "permissions": "授权",
+                "locale": "语言支持"
+            },
+            "buttons": {
+                "save": "保存",
+                "update": "更新",
+                "delete": "删除",
+                "cancel": "取消",
+                "generatePageCode": "自动生成",
+                "navigate": "转到此页面",
+                "updateLocales": "更新语言环境文件"
+            },
+            "locale": {
+                "success": "语言环境文件更新成功！({pageCode})",
+                "error": "更新语言环境文件时出错：{error}",
+                "pageCodeRequired": "需要页面代码（pageCode）。请先创建 pageCode。",
+                "headerRequired": "需要标题文本。",
+                "titleRequired": "需要菜单标题。",
+                "description": "此按钮将当前页面代码 ({pageCode}) 添加到所有语言环境文件。土耳其语使用当前标题/标题，其他语言获得相同的值作为占位符。"
+            },
+            "validation": {
+                "headerRequired": "需要标题文本",
+                "titleRequired": "需要菜单标题"
+            }
+        },
+        "permissions": {
+            "loading": "正在加载组...",
+            "empty": "尚未找到活动组。",
+            "emptyFiltered": "未找到可查看的活动组。",
+            "retry": "重试",
+            "bulkActions": "批量操作：",
+            "openAll": "全部打开",
+            "closeAll": "全部关闭",
+            "group": "组",
+            "actions": "操作",
+            "all": "全部",
+            "none": "无",
+            "labels": {
+                "view": "查看",
+                "create": "创建",
+                "update": "更新",
+                "delete": "删除",
+                "export": "导出"
+            }
+        },
+        "messages": {
+            "deleteConfirm": "您确定要删除此菜单项吗？",
+            "success": {
+                "created": "菜单项创建成功",
+                "updated": "菜单项更新成功",
+                "deleted": "菜单项删除成功"
+            },
+            "errors": {
+                "create": "创建菜单项时出错",
+                "update": "更新菜单项时出错",
+                "delete": "删除菜单项时出错",
+                "load": "加载菜单项时出错"
+            }
+        }
+    },
+    "login": {
+        "title": "欢迎使用 MonitraNG",
+        "subtitle": "高级监控工具",
+        "form": {
+            "username": "用户名",
+            "usernamePlaceholder": "用户名或 domain{'@'}username",
+            "password": "密码",
+            "passwordPlaceholder": "请输入您的密码",
+            "submit": "登录",
+            "error": "登录失败。请重试。"
+        },
+        "validation": {
+            "usernameRequired": "需要用户名",
+            "passwordRequired": "需要密码",
+            "passwordMinLength": "密码至少需要3个字符"
+        },
+        "language": {
+            "label": "语言",
+            "select": "选择语言"
         }
     }
 }
