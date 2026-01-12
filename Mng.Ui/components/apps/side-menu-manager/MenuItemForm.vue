@@ -6,6 +6,11 @@ import IconPicker from './IconPicker.vue';
 import PermissionEditor from './PermissionEditor.vue';
 import { fetchFromMngKeeper, fetchFromMngLLM } from '@/services/apiService';
 import { useAutomatedFormsStore } from '@/stores/apps/automatedForms';
+import { useAuthStore } from '@/stores/auth';
+
+// Note: In Event Messages, $t() is only used in template, not in script setup
+// For script setup, we'll use hardcoded text for alerts/confirms
+// Template uses $t() directly
 
 const props = defineProps<{
   item: SideMenuItem | null;
@@ -22,13 +27,21 @@ const emit = defineEmits<{
 // Automated Forms Store
 const automatedFormsStore = useAutomatedFormsStore();
 
+// Auth Store
+const authStore = useAuthStore();
+
 // Selected form code (for dropdown)
 const selectedFormCode = ref<string | null>(null);
 
-// Form data
+// Default page type - Her zaman "user" olarak başlar
+const getDefaultPageType = (): 'admin' | 'manager' | 'user' => {
+  return 'user';
+};
+
+// Form data - Her zaman pageType: 'user' olarak başlar
 const formData = ref<Partial<SideMenuItem>>({
   itemType: 'item',
-  pageType: 'admin',
+  pageType: 'user', // Her zaman 'user' olarak başlar
   level: 0,
   parentId: null,
   order: 0,
@@ -53,10 +66,10 @@ watch(
         selectedFormCode.value = null;
       }
     } else {
-      // Reset form for new item
+      // Reset form for new item - Her zaman pageType: 'user' olarak başlar
       formData.value = {
         itemType: 'item',
-        pageType: 'admin',
+        pageType: 'user', // Her zaman 'user' olarak başlar
         level: 0,
         parentId: null,
         order: props.allItems.length,
@@ -129,6 +142,8 @@ const parentOptions = computed(() => {
     .sort((a, b) => (a.order || 0) - (b.order || 0)); // Sort headers by order
 
   // Build flat list for dropdown (only headers)
+  // Note: For i18n support in dropdown, we use hardcoded text for now
+  // Template uses $t() for labels, but dropdown items use hardcoded text
   const flatItems: Array<{ value: string | null; title: string; level: number }> = [
     { value: null, title: '(Yok - Root)', level: 0 },
   ];
@@ -187,6 +202,7 @@ const findItemById = (items: SideMenuItem[], id: string): SideMenuItem | null =>
 // Handle save
 const handleSave = () => {
   // Validate required fields
+  // Note: Using hardcoded text for alerts (Event Messages approach - $t() only in template)
   if (formData.value.itemType === 'header' && !formData.value.header) {
     alert('Header metni gereklidir');
     return;
@@ -228,6 +244,21 @@ const handleIconSelect = (iconName: string, iconType: 'mdi' | 'tabler') => {
 const handlePermissionsChange = (permissions: SideMenuItem['permissions']) => {
   formData.value.permissions = permissions;
 };
+
+// Page Type Options - Manager kullanıcılar "Administration" seçeneğini göremez
+const pageTypeOptions = computed(() => {
+  const options = [
+    { title: 'User', value: 'user' },
+    { title: 'Manager', value: 'manager' },
+  ];
+  
+  // Sadece admin kullanıcılar "Administration" seçeneğini görebilir
+  if (authStore.isAdmin) {
+    options.push({ title: 'Administration', value: 'admin' });
+  }
+  
+  return options;
+});
 
 // Navigate to route
 const navigateToRoute = async (route: string) => {
@@ -292,6 +323,7 @@ const localeUpdateError = ref('');
 
 const updateLocaleFiles = async () => {
   // Validate pageCode
+  // Note: Error messages will be shown in template using $t(), here we use hardcoded text
   if (!formData.value.pageCode) {
     localeUpdateError.value = 'Sayfa kodu (pageCode) gereklidir. Lütfen önce pageCode oluşturun.';
     setTimeout(() => {
@@ -330,6 +362,10 @@ const updateLocaleFiles = async () => {
     
     try {
       // Call MngLLM translation API
+      // Path format: '/api/v1/llm/translate'
+      // apiService.ts converts '/api/v1/llm/translate' to 'v1/llm/translate'
+      // Sends to server route: '/api/llm/v1/llm/translate'
+      // Server route extracts 'v1/llm/translate' and forwards to MngLLM as 'https://localhost:5030/api/v1/llm/translate'
       const translationResponse = await fetchFromMngLLM('/api/v1/llm/translate', 'POST', {
         text: sourceText,
         sourceLanguage: 'tr',
@@ -397,6 +433,7 @@ const updateLocaleFiles = async () => {
         await fetchFromMngKeeper(`/system/locales/${locale}`, 'PUT', localeData);
       } catch (error: any) {
         console.error(`Failed to update locale ${locale}:`, error);
+        // Note: Error message shown in template using $t()
         localeUpdateError.value = `Dil dosyası güncellenirken hata oluştu: ${error.message || error}`;
         updatingLocales.value = false;
         setTimeout(() => {
@@ -406,26 +443,35 @@ const updateLocaleFiles = async () => {
       }
     }
 
-    // Invalidate cache for all locales
+    // Invalidate cache and reload locales from MinIO
     if (process.client) {
       try {
         const nuxtApp = useNuxtApp();
-        const invalidateCache = (nuxtApp as any).$invalidateLocaleCache;
-        if (invalidateCache) {
-          invalidateCache(); // Invalidate all locales
-          console.log('[MenuItemForm] Locale cache invalidated');
+        const reloadLocales = (nuxtApp as any).$reloadLocales;
+        if (reloadLocales) {
+          await reloadLocales(); // Invalidate cache and reload from MinIO
+          console.log('[MenuItemForm] Locale cache invalidated and locales reloaded from MinIO');
+        } else {
+          // Fallback: just invalidate cache if reloadLocales is not available
+          const invalidateCache = (nuxtApp as any).$invalidateLocaleCache;
+          if (invalidateCache) {
+            invalidateCache();
+            console.log('[MenuItemForm] Locale cache invalidated (reload not available)');
+          }
         }
       } catch (cacheError) {
-        console.warn('Failed to invalidate cache:', cacheError);
+        console.warn('Failed to reload locales:', cacheError);
       }
     }
 
+    // Note: Success message shown in template using $t()
     localeUpdateMessage.value = `Dil dosyaları başarıyla güncellendi! (${formData.value.pageCode})`;
     setTimeout(() => {
       localeUpdateMessage.value = '';
     }, 5000);
   } catch (error: any) {
     console.error('Failed to update locale files:', error);
+    // Note: Error message shown in template using $t()
     localeUpdateError.value = `Dil dosyaları güncellenirken hata oluştu: ${error.message || error}`;
     setTimeout(() => {
       localeUpdateError.value = '';
@@ -450,7 +496,7 @@ onMounted(async () => {
 <template>
   <div class="menu-item-form">
     <div v-if="!item" class="text-center pa-8 text-medium-emphasis">
-      <p>Yeni menu item oluşturmak için sol taraftan "Yeni Menu Item" veya "Yeni Header" butonuna tıklayın.</p>
+      <p>{{ $t('side-menu-manager.form.empty') }}</p>
     </div>
 
     <v-form v-else @submit.prevent="handleSave">
@@ -463,7 +509,7 @@ onMounted(async () => {
               { title: 'Header', value: 'header' },
               { title: 'Menu Item', value: 'item' },
             ]"
-            label="Item Tipi"
+            :label="$t('side-menu-manager.form.fields.itemType')"
             variant="outlined"
             required
           ></v-select>
@@ -473,12 +519,8 @@ onMounted(async () => {
         <v-col cols="12" md="6">
           <v-select
             v-model="formData.pageType"
-            :items="[
-              { title: 'User', value: 'user' },
-              { title: 'Manager', value: 'manager' },
-              { title: 'Administration', value: 'admin' },
-            ]"
-            label="Sayfa Tipi"
+            :items="pageTypeOptions"
+            :label="$t('side-menu-manager.form.fields.pageType')"
             variant="outlined"
           ></v-select>
         </v-col>
@@ -487,7 +529,7 @@ onMounted(async () => {
         <v-col v-if="formData.itemType === 'header'" cols="12">
           <v-text-field
             v-model="formData.header"
-            label="Header Metni"
+            :label="$t('side-menu-manager.form.fields.header')"
             variant="outlined"
             required
           ></v-text-field>
@@ -497,7 +539,7 @@ onMounted(async () => {
         <v-col v-if="formData.itemType === 'item'" cols="12">
           <v-text-field
             v-model="formData.title"
-            label="Menü Başlığı"
+            :label="$t('side-menu-manager.form.fields.title')"
             variant="outlined"
             required
           ></v-text-field>
@@ -507,9 +549,9 @@ onMounted(async () => {
         <v-col cols="12" md="6">
           <v-text-field
             v-model="formData.pageCode"
-            label="Sayfa Kodu (Unique)"
+            :label="$t('side-menu-manager.form.fields.pageCode')"
             variant="outlined"
-            hint="Route veya başlıktan otomatik oluşturulabilir"
+            :hint="$t('side-menu-manager.form.fields.pageCodeHint')"
             persistent-hint
           >
             <template #append-inner>
@@ -518,7 +560,7 @@ onMounted(async () => {
                 size="small"
                 variant="text"
                 @click="generatePageCode"
-                title="Otomatik oluştur"
+                :title="$t('side-menu-manager.form.buttons.generatePageCode')"
               >
                 <v-icon size="18">mdi-auto-fix</v-icon>
               </v-btn>
@@ -530,7 +572,7 @@ onMounted(async () => {
         <v-col cols="12" md="6">
           <v-text-field
             v-model.number="formData.order"
-            label="Sıralama"
+            :label="$t('side-menu-manager.form.fields.order')"
             type="number"
             variant="outlined"
             min="0"
@@ -544,7 +586,7 @@ onMounted(async () => {
             :items="parentOptions"
             item-title="title"
             item-value="value"
-            label="Parent Menu Item"
+            :label="$t('side-menu-manager.form.fields.parent')"
             variant="outlined"
             clearable
           ></v-select>
@@ -554,11 +596,11 @@ onMounted(async () => {
         <v-col cols="12" md="6">
           <v-text-field
             v-model.number="formData.level"
-            label="Seviye"
+            :label="$t('side-menu-manager.form.fields.level')"
             type="number"
             variant="outlined"
             readonly
-            hint="Parent seçimine göre otomatik hesaplanır"
+            :hint="$t('side-menu-manager.form.fields.levelHint')"
             persistent-hint
           ></v-text-field>
         </v-col>
@@ -567,7 +609,7 @@ onMounted(async () => {
         <v-col cols="12" md="6">
           <v-switch
             v-model="formData.disabled"
-            label="Devre Dışı"
+            :label="$t('side-menu-manager.form.fields.disabled')"
             color="error"
           ></v-switch>
         </v-col>
@@ -577,11 +619,11 @@ onMounted(async () => {
           <v-select
             v-model="selectedFormCode"
             :items="formOptions"
-            label="Kayıtlı Formlar"
-            placeholder="Form seçin (opsiyonel)"
+            :label="$t('side-menu-manager.form.fields.forms')"
+            :placeholder="$t('side-menu-manager.form.fields.formsPlaceholder')"
             variant="outlined"
             clearable
-            hint="Kayıtlı formlardan birini seçin veya manuel path girin"
+            :hint="$t('side-menu-manager.form.fields.formsHint')"
             persistent-hint
             prepend-inner-icon="mdi-form-select"
           >
@@ -604,9 +646,9 @@ onMounted(async () => {
         <v-col v-if="formData.itemType === 'item'" cols="12" md="6">
           <v-text-field
             v-model="formData.to"
-            label="Route Path"
+            :label="$t('side-menu-manager.form.fields.route')"
             variant="outlined"
-            hint="Örn: /dashboards/analytical veya form seçin"
+            :hint="$t('side-menu-manager.form.fields.routeHint')"
             persistent-hint
           >
             <template #append-inner v-if="formData.to && formData.to.trim()">
@@ -615,7 +657,7 @@ onMounted(async () => {
                 size="small"
                 variant="text"
                 @click="navigateToRoute(formData.to!)"
-                title="Bu sayfaya git"
+                :title="$t('side-menu-manager.form.buttons.navigate')"
               >
                 <v-icon size="18">mdi-open-in-new</v-icon>
               </v-btn>
@@ -631,7 +673,7 @@ onMounted(async () => {
               { title: 'Internal', value: 'internal' },
               { title: 'External', value: 'external' },
             ]"
-            label="Link Tipi"
+            :label="$t('side-menu-manager.form.fields.linkType')"
             variant="outlined"
           ></v-select>
         </v-col>
@@ -649,7 +691,7 @@ onMounted(async () => {
         <v-col cols="12">
           <v-text-field
             v-model="formData.subCaption"
-            label="Alt Başlık"
+            :label="$t('side-menu-manager.form.fields.subCaption')"
             variant="outlined"
           ></v-text-field>
         </v-col>
@@ -657,13 +699,13 @@ onMounted(async () => {
         <!-- Chip Section -->
         <v-col cols="12">
           <v-divider class="mb-4"></v-divider>
-          <h3 class="text-h6 mb-4">Chip/Badge Ayarları</h3>
+          <h3 class="text-h6 mb-4">{{ $t('side-menu-manager.form.sections.chip') }}</h3>
         </v-col>
 
         <v-col cols="12" md="6">
           <v-text-field
             v-model="formData.chip"
-            label="Chip Metni"
+            :label="$t('side-menu-manager.form.fields.chip')"
             variant="outlined"
           ></v-text-field>
         </v-col>
@@ -671,7 +713,7 @@ onMounted(async () => {
         <v-col cols="12" md="6">
           <v-text-field
             v-model="formData.chipVariant"
-            label="Chip Variant"
+            :label="$t('side-menu-manager.form.fields.chipVariant')"
             variant="outlined"
           ></v-text-field>
         </v-col>
@@ -679,7 +721,7 @@ onMounted(async () => {
         <v-col cols="12" md="6">
           <v-text-field
             v-model="formData.chipColor"
-            label="Chip Metin Rengi"
+            :label="$t('side-menu-manager.form.fields.chipColor')"
             variant="outlined"
           ></v-text-field>
         </v-col>
@@ -687,7 +729,7 @@ onMounted(async () => {
         <v-col cols="12" md="6">
           <v-text-field
             v-model="formData.chipBgColor"
-            label="Chip Arka Plan Rengi"
+            :label="$t('side-menu-manager.form.fields.chipBgColor')"
             variant="outlined"
           ></v-text-field>
         </v-col>
@@ -695,7 +737,7 @@ onMounted(async () => {
         <v-col cols="12">
           <v-text-field
             v-model="formData.chipIcon"
-            label="Chip Icon"
+            :label="$t('side-menu-manager.form.fields.chipIcon')"
             variant="outlined"
           ></v-text-field>
         </v-col>
@@ -703,7 +745,7 @@ onMounted(async () => {
         <!-- Permissions Section -->
         <v-col cols="12">
           <v-divider class="mb-4"></v-divider>
-          <h3 class="text-h6 mb-4">Yetkilendirme</h3>
+          <h3 class="text-h6 mb-4">{{ $t('side-menu-manager.form.sections.permissions') }}</h3>
           <PermissionEditor
             :permissions="formData.permissions"
             @change="handlePermissionsChange"
@@ -713,7 +755,7 @@ onMounted(async () => {
         <!-- Locale Update Section -->
         <v-col cols="12" v-if="isEditMode && formData.pageCode">
           <v-divider class="mb-4"></v-divider>
-          <h3 class="text-h6 mb-4">Dil Desteği</h3>
+          <h3 class="text-h6 mb-4">{{ $t('side-menu-manager.form.sections.locale') }}</h3>
           
           <!-- Success Message -->
           <v-alert
@@ -751,11 +793,10 @@ onMounted(async () => {
             <template #prepend>
               <LanguageIcon size="18" />
             </template>
-            Dil Dosyalarını Güncelle
+            {{ $t('side-menu-manager.form.buttons.updateLocales') }}
           </v-btn>
           <p class="text-caption text-disabled mt-2">
-            Bu buton, mevcut sayfa kodunu ({{ formData.pageCode }}) tüm dil dosyalarına ekler. 
-            Türkçe için mevcut başlık/header kullanılır, diğer dillere aynı değer placeholder olarak eklenir.
+            {{ $t('side-menu-manager.form.locale.description', { pageCode: formData.pageCode }) }}
           </p>
         </v-col>
 
@@ -772,7 +813,7 @@ onMounted(async () => {
               <template #prepend>
                 <v-icon>mdi-content-save</v-icon>
               </template>
-              {{ isEditMode ? 'Güncelle' : 'Kaydet' }}
+              {{ isEditMode ? $t('side-menu-manager.form.buttons.update') : $t('side-menu-manager.form.buttons.save') }}
             </v-btn>
 
             <v-btn
@@ -786,7 +827,7 @@ onMounted(async () => {
               <template #prepend>
                 <TrashIcon size="20" />
               </template>
-              Sil
+              {{ $t('side-menu-manager.form.buttons.delete') }}
             </v-btn>
 
             <v-spacer></v-spacer>
@@ -800,7 +841,7 @@ onMounted(async () => {
               <template #prepend>
                 <XIcon size="20" />
               </template>
-              İptal
+              {{ $t('side-menu-manager.form.buttons.cancel') }}
             </v-btn>
           </div>
         </v-col>

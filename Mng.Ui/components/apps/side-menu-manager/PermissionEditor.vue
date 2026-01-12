@@ -2,6 +2,11 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { fetchFromMngKeeper } from '@/services/apiService';
 import type { SideMenuItem } from '@/stores/apps/sideMenu';
+import { useAuthStore } from '@/stores/auth';
+
+// Note: In Event Messages, $t() is only used in template, not in script setup
+// For script setup computed properties, we'll access $t via template
+// permissionTypes will be computed in template using $t()
 
 const props = defineProps<{
   permissions?: SideMenuItem['permissions'];
@@ -11,18 +16,31 @@ const emit = defineEmits<{
   'change': [permissions: SideMenuItem['permissions']];
 }>();
 
-// Permission types
+// Permission types - labels will be translated in template using $t()
 const permissionTypes = [
-  { key: 'view', label: 'Görüntüle', color: 'info' },
-  { key: 'create', label: 'Oluştur', color: 'success' },
-  { key: 'update', label: 'Güncelle', color: 'warning' },
-  { key: 'delete', label: 'Sil', color: 'error' },
-  { key: 'export', label: 'Export', color: 'primary' },
+  { key: 'view', labelKey: 'side-menu-manager.permissions.labels.view', color: 'info' },
+  { key: 'create', labelKey: 'side-menu-manager.permissions.labels.create', color: 'success' },
+  { key: 'update', labelKey: 'side-menu-manager.permissions.labels.update', color: 'warning' },
+  { key: 'delete', labelKey: 'side-menu-manager.permissions.labels.delete', color: 'error' },
+  { key: 'export', labelKey: 'side-menu-manager.permissions.labels.export', color: 'primary' },
 ] as const;
+
+// Auth Store
+const authStore = useAuthStore();
 
 // Groups list
 const groups = ref<Array<{ id: string; name: string; isActive: boolean }>>([]);
 const loadingGroups = ref(false);
+
+// Filtered groups - Manager kullanıcılar "admins" grubunu göremez
+const filteredGroups = computed(() => {
+  if (authStore.isAdmin) {
+    // Admin kullanıcılar tüm grupları görebilir
+    return groups.value.filter(g => g.isActive);
+  }
+  // Manager kullanıcılar "admins" grubunu göremez
+  return groups.value.filter(g => g.isActive && g.name.toLowerCase() !== 'admins');
+});
 
 // Load groups from MngKeeper
 const loadGroups = async () => {
@@ -92,9 +110,9 @@ const initPermissions = () => {
       groups: { ...props.permissions.groups },
     };
   } else {
-    // Initialize with all groups having no permissions
+    // Initialize with filtered groups having no permissions
     const initialGroups: { [key: string]: any } = {};
-    groups.value.forEach((group) => {
+    filteredGroups.value.forEach((group) => {
       initialGroups[group.name] = {
         view: false,
         create: false,
@@ -107,8 +125,8 @@ const initPermissions = () => {
   }
 };
 
-// Watch props.permissions and groups to reinitialize
-watch([() => props.permissions, groups], () => {
+// Watch props.permissions and filteredGroups to reinitialize
+watch([() => props.permissions, filteredGroups], () => {
   initPermissions();
 }, { immediate: true, deep: true });
 
@@ -140,18 +158,16 @@ const setGroupPermissions = (groupName: string, permission: string, value: boole
   setPermission(groupName, permission, value);
 };
 
-// Bulk set permission for all groups
+// Bulk set permission for all groups (filtered)
 const setAllGroupsPermission = (permission: string, value: boolean) => {
-  groups.value.forEach((group) => {
-    if (group.isActive) {
-      setPermission(group.name, permission, value);
-    }
+  filteredGroups.value.forEach((group) => {
+    setPermission(group.name, permission, value);
   });
 };
 
 // Bulk set all permissions for a group
 const setAllPermissionsForGroup = (groupName: string, value: boolean) => {
-  permissionTypes.forEach((perm) => {
+  permissionTypes.value.forEach((perm) => {
     setPermission(groupName, perm.key, value);
   });
 };
@@ -161,26 +177,30 @@ const setAllPermissionsForGroup = (groupName: string, value: boolean) => {
   <div class="permission-editor">
     <div v-if="loadingGroups" class="text-center pa-4">
       <v-progress-circular indeterminate color="primary"></v-progress-circular>
-      <p class="text-caption mt-2">Gruplar yükleniyor...</p>
+      <p class="text-caption mt-2">{{ $t('side-menu-manager.permissions.loading') }}</p>
     </div>
 
     <div v-else-if="groups.length === 0" class="text-center pa-4 text-medium-emphasis">
-      <p>Henüz aktif grup bulunamadı.</p>
+      <p>{{ $t('side-menu-manager.permissions.empty') }}</p>
       <v-btn variant="text" size="small" @click="loadGroups" class="mt-2">
-        Yeniden Dene
+        {{ $t('side-menu-manager.permissions.retry') }}
       </v-btn>
+    </div>
+
+    <div v-else-if="filteredGroups.length === 0" class="text-center pa-4 text-medium-emphasis">
+      <p>{{ $t('side-menu-manager.permissions.emptyFiltered') }}</p>
     </div>
 
     <div v-else>
       <!-- Bulk Actions -->
       <div class="d-flex align-center gap-2 mb-4">
-        <span class="text-caption text-medium-emphasis">Toplu İşlemler:</span>
+        <span class="text-caption text-medium-emphasis">{{ $t('side-menu-manager.permissions.bulkActions') }}</span>
         <v-btn-toggle density="compact" variant="outlined" divided>
           <v-btn size="x-small" @click="permissionTypes.forEach(p => setAllGroupsPermission(p.key, true))">
-            Tümünü Aç
+            {{ $t('side-menu-manager.permissions.openAll') }}
           </v-btn>
           <v-btn size="x-small" @click="permissionTypes.forEach(p => setAllGroupsPermission(p.key, false))">
-            Tümünü Kapat
+            {{ $t('side-menu-manager.permissions.closeAll') }}
           </v-btn>
         </v-btn-toggle>
       </div>
@@ -190,15 +210,15 @@ const setAllPermissionsForGroup = (groupName: string, value: boolean) => {
         <v-table density="compact" class="permissions-table">
           <thead>
             <tr>
-              <th class="text-left" style="min-width: 200px;">Grup</th>
+              <th class="text-left" style="min-width: 200px;">{{ $t('side-menu-manager.permissions.group') }}</th>
               <th v-for="perm in permissionTypes" :key="perm.key" class="text-center" style="min-width: 100px;">
-                {{ perm.label }}
+                {{ $t(perm.labelKey) }}
               </th>
-              <th class="text-center" style="min-width: 120px;">İşlemler</th>
+              <th class="text-center" style="min-width: 120px;">{{ $t('side-menu-manager.permissions.actions') }}</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="group in groups.filter(g => g.isActive)" :key="group.id">
+            <tr v-for="group in filteredGroups" :key="group.id">
               <td>
                 <div class="d-flex align-center">
                   <v-chip size="small" variant="flat" color="primary">
@@ -222,10 +242,10 @@ const setAllPermissionsForGroup = (groupName: string, value: boolean) => {
               <td class="text-center">
                 <v-btn-toggle density="compact" variant="text" divided>
                   <v-btn size="x-small" @click="setAllPermissionsForGroup(group.name, true)">
-                    Tümü
+                    {{ $t('side-menu-manager.permissions.all') }}
                   </v-btn>
                   <v-btn size="x-small" @click="setAllPermissionsForGroup(group.name, false)">
-                    Hiçbiri
+                    {{ $t('side-menu-manager.permissions.none') }}
                   </v-btn>
                 </v-btn-toggle>
               </td>
@@ -234,10 +254,6 @@ const setAllPermissionsForGroup = (groupName: string, value: boolean) => {
         </v-table>
       </div>
 
-      <!-- Empty State -->
-      <div v-if="groups.filter(g => g.isActive).length === 0" class="text-center pa-4 text-medium-emphasis">
-        Aktif grup bulunamadı
-      </div>
     </div>
   </div>
 </template>

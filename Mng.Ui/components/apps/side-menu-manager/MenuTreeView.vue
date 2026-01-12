@@ -188,6 +188,41 @@ const handleDragAdd = (event: any) => {
     emit('item-order-change', addedItem.__dataId, newOrder, finalParentId);
   }
 };
+
+// Expand all items recursively
+const expandAllItems = (items: SideMenuItem[]) => {
+  items.forEach(item => {
+    if (item.__dataId && (item.children && item.children.length > 0)) {
+      expandedItems.value.add(item.__dataId);
+      if (item.children && item.children.length > 0) {
+        expandAllItems(item.children);
+      }
+    }
+  });
+};
+
+// Collapse all items
+const collapseAllItems = () => {
+  expandedItems.value.clear();
+};
+
+// Expand all function
+const expandAll = () => {
+  if (localItems.value && localItems.value.length > 0) {
+    expandAllItems(localItems.value);
+  }
+};
+
+// Collapse all function
+const collapseAll = () => {
+  collapseAllItems();
+};
+
+// Expose functions to parent
+defineExpose({
+  expandAll,
+  collapseAll,
+});
 </script>
 
 <template>
@@ -195,7 +230,7 @@ const handleDragAdd = (event: any) => {
     <v-progress-linear v-if="loading" indeterminate color="primary"></v-progress-linear>
     
     <div v-if="!loading && (!items || items.length === 0 || !localItems || localItems.length === 0)" class="text-center pa-4 text-medium-emphasis">
-      Menu item bulunamadı
+      {{ $t('side-menu-manager.tree.empty') }}
     </div>
 
     <div v-else-if="localItems && localItems.length > 0" class="tree-view-container">
@@ -235,7 +270,7 @@ const handleDragAdd = (event: any) => {
 }
 
 .tree-view-container {
-  padding: 8px 0;
+  padding: 12px 8px;
 }
 
 .draggable-list {
