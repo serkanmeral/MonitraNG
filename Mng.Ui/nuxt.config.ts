@@ -49,8 +49,16 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title:
-        "Monitra NG",
+      title: "Monitra NG",
+      meta: [
+        { charset: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'description', content: 'MonitraNG - IoT Monitoring and Management Platform' }
+      ],
+      link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+        { rel: 'alternate icon', type: 'image/svg+xml', href: '/icon-simple.svg' }
+      ]
     },
     // Base URL ayarı (port numarasını korumak için)
     // Not: Bu build time'da belirlenir, runtime'da değiştirilemez

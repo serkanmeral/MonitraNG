@@ -154,5 +154,43 @@
             "icons": "图标",
             "administration": "管理"
         }
+    },
+    "events": {
+        "title": "事件消息",
+        "description": "来自 RabbitMQ 的组、用户和数据 CRUD 操作的实时通知",
+        "buttons": {
+            "connect": "连接",
+            "disconnect": "断开连接",
+            "clearMessages": "清除消息"
+        },
+        "status": {
+            "connected": "已连接",
+            "connecting": "正在连接...",
+            "error": "连接错误",
+            "disconnected": "未连接",
+            "closed": "连接已关闭"
+        },
+        "types": {
+            "user": "用户",
+            "group": "组",
+            "system": "系统",
+            "data": "数据",
+            "unknown": "未知"
+        },
+        "empty": {
+            "title": "还没有消息",
+            "description": "组、用户或数据操作将显示在这里"
+        },
+        "details": {
+            "view": "查看详情"
+        },
+        "errors": {
+            "tokenNotFound": "未找到访问令牌。请重新登录。",
+            "connectionError": "发生连接错误。",
+            "connectionClosed": "连接已关闭"
+        },
+        "breadcrumbs": {
+            "home": "首页"
+        }
     }
 }

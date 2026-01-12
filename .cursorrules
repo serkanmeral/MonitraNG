@@ -138,7 +138,19 @@ Aşağıdaki kısaltmaları kullanırken tam isimlerini kullan:
    - Related changes aynı commit'te olmalı
    - Breaking changes varsa belirt
 
-5. **Hata Ayıklama**: 
+5. **Dosya ve Klasör Taşıma İşlemleri - KRİTİK KURAL**:
+   - **ASLA** MonitraNG root klasörü (`C:\Serkan\iSIM\MonitraNG`) dışına dosya veya klasör taşıma
+   - **ASLA** proje klasörleme yapısını bozma
+   - Dosya/klasör taşıma işlemlerinde:
+     1. **Hedef konum kontrolü**: Taşınacak hedef konumun MonitraNG root klasörü içinde olduğundan emin ol
+     2. **Relative path kullan**: Absolute path yerine MonitraNG root'undan relative path kullan
+     3. **Klasör yapısını koru**: Mevcut klasör yapısını (servis klasörleri, docs/, scripts/, vb.) asla bozma
+     4. **Doğrulama**: Taşıma işleminden önce hedef konumun doğru olduğunu kontrol et
+     5. **Güvenlik kontrolü**: Taşıma komutlarında (`Move-Item`, `mv`, vb.) hedef path'in MonitraNG root'u içinde olduğunu doğrula
+   - **İstisna yok**: Bu kural hiçbir durumda ihlal edilmemelidir
+   - **Hata durumu**: Eğer yanlışlıkla MonitraNG dışına taşıma yapılırsa, hemen kullanıcıyı bilgilendir ve düzelt
+
+6. **Hata Ayıklama**: 
    - Önce hatayı anla (log, exception mesajları)
    - Test scriptleri ile reproduce et
    - Fix sonrası testleri tekrar çalıştır

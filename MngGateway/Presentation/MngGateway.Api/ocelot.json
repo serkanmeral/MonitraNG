@@ -89,7 +89,7 @@
         }
       ],
       "UpstreamPathTemplate": "/hub/ws/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST" ],
+      "UpstreamHttpMethod": [ "GET", "POST", "OPTIONS" ],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "Bearer"
       },

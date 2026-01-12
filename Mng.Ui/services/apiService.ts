@@ -317,14 +317,14 @@ export function fetchFromDataGateway(
       const cleanPath = pathPart.startsWith('/') ? pathPart : `/${pathPart}`;
       
       // Server route: '/api/data/[...path]'
-      // Path: 'api/v1/data/@side_menu' olmalı (başındaki '/' olmadan)
-      // Ama biz '/api/v1/data/@side_menu' gönderiyoruz, bu durumda server route'a '/api/data/api/v1/data/@side_menu' gider
-      // Bunun yerine path'ten '/api/' kısmını çıkarıp direkt 'v1/data/@side_menu' gönderelim
+      // Path'ten '/api/' kısmını çıkar: '/api/v1/data/@side_menu' -> 'v1/data/@side_menu'
       let serverPath = cleanPath;
       if (serverPath.startsWith('/api/v1/')) {
-        serverPath = serverPath.replace('/api/v1/', 'v1/');
+        serverPath = serverPath.replace(/^\/api\/v1\//, 'v1/');
       } else if (serverPath.startsWith('/api/')) {
-        serverPath = serverPath.replace('/api/', '');
+        serverPath = serverPath.replace(/^\/api\//, '');
+      } else if (serverPath.startsWith('/')) {
+        serverPath = serverPath.substring(1);
       }
       
       // Query string'i tekrar ekle

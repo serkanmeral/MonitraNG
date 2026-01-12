@@ -153,5 +153,43 @@
             "icons": "الأيقونات",
             "administration": "الإدارة"
         }
+    },
+    "events": {
+        "title": "رسائل الأحداث",
+        "description": "إشعارات في الوقت الفعلي لعمليات CRUD للمجموعة والمستخدم والبيانات من RabbitMQ",
+        "buttons": {
+            "connect": "اتصل",
+            "disconnect": "قطع الاتصال",
+            "clearMessages": "مسح الرسائل"
+        },
+        "status": {
+            "connected": "متصل",
+            "connecting": "جاري الاتصال...",
+            "error": "خطأ في الاتصال",
+            "disconnected": "غير متصل",
+            "closed": "تم إغلاق الاتصال"
+        },
+        "types": {
+            "user": "مستخدم",
+            "group": "مجموعة",
+            "system": "نظام",
+            "data": "بيانات",
+            "unknown": "غير معروف"
+        },
+        "empty": {
+            "title": "لا توجد رسائل بعد",
+            "description": "ستظهر عمليات المجموعة أو المستخدم أو البيانات هنا"
+        },
+        "details": {
+            "view": "عرض التفاصيل"
+        },
+        "errors": {
+            "tokenNotFound": "لم يتم العثور على رمز الوصول. يرجى تسجيل الدخول مرة أخرى.",
+            "connectionError": "حدث خطأ في الاتصال.",
+            "connectionClosed": "تم إغلاق الاتصال"
+        },
+        "breadcrumbs": {
+            "home": "الرئيسية"
+        }
     }
 }

@@ -109,3 +109,10 @@ ApplicationResources/Cert/staging/
 # Allow dev certificates (for team)
 !ApplicationResources/Cert/dev/*.pfx
 
+## Large ISO files (exceed GitHub 100MB limit)
+ApplicationResources/Office/*.iso
+ApplicationResources/Windows/*.iso
+
+## Large ISO files (exceed GitHub 100MB limit)
+ApplicationResources/Office/*.iso
+ApplicationResources/Windows/*.iso

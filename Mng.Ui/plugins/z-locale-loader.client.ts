@@ -127,8 +127,6 @@ export default defineNuxtPlugin((nuxtApp) => {
       const messages = i18n.messages || {};
       const availableLocales = Object.keys(messages);
 
-      console.log('[Locale Loader] Starting runtime locale loading...', { currentLocale, availableLocales });
-
       // Try to load each locale from MinIO
       for (const locale of availableLocales) {
         // Skip 'ro' (it's actually 'ar' - Arabic)
@@ -137,7 +135,6 @@ export default defineNuxtPlugin((nuxtApp) => {
         // Check cache first
         const cached = getCachedLocale(locale);
         if (cached) {
-          console.log(`[Locale Loader] Using cached locale: ${locale}`);
           // Merge cached data into i18n messages (deep merge to preserve existing keys)
           // In legacy mode, messages is a plain object, we can directly assign
           messages[locale] = { ...messages[locale], ...cached.data };
@@ -145,7 +142,6 @@ export default defineNuxtPlugin((nuxtApp) => {
         }
 
         // Try to load from MinIO
-        console.log(`[Locale Loader] Loading ${locale} from MinIO...`);
         const minioData = await loadLocaleFromMinIO(locale);
         
         if (minioData) {
@@ -155,14 +151,8 @@ export default defineNuxtPlugin((nuxtApp) => {
           // Merge into i18n messages (deep merge to preserve existing keys)
           // In legacy mode, messages is a plain object, we can directly assign
           messages[locale] = { ...messages[locale], ...minioData };
-          
-          console.log(`[Locale Loader] Successfully loaded ${locale} from MinIO`);
-        } else {
-          console.log(`[Locale Loader] Using build-time locale file for ${locale}`);
         }
       }
-
-      console.log('[Locale Loader] Runtime locale loading completed');
     } catch (error) {
       console.error('[Locale Loader] Error loading runtime locales:', error);
       // Don't throw - fallback to build files
@@ -183,7 +173,6 @@ export default defineNuxtPlugin((nuxtApp) => {
       const authStore = useAuthStore();
       
       if (!authStore.isAuthenticated) {
-        console.log('[Locale Loader] User not authenticated, skipping MinIO locale loading');
         return;
       }
     } catch (error) {

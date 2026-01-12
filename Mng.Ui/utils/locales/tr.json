@@ -156,5 +156,43 @@
             "icons": "İkonlar",
             "administration": "Yönetim"
         }
+    },
+    "events": {
+        "title": "Event Mesajları",
+        "description": "RabbitMQ üzerinden gelen grup, kullanıcı ve veri CRUD işlemlerinin gerçek zamanlı bildirimleri",
+        "buttons": {
+            "connect": "Bağlan",
+            "disconnect": "Bağlantıyı Kes",
+            "clearMessages": "Mesajları Temizle"
+        },
+        "status": {
+            "connected": "Bağlı",
+            "connecting": "Bağlanıyor...",
+            "error": "Bağlantı Hatası",
+            "disconnected": "Bağlantı Yok",
+            "closed": "Bağlantı kapatıldı"
+        },
+        "types": {
+            "user": "Kullanıcı",
+            "group": "Grup",
+            "system": "Sistem",
+            "data": "Veri",
+            "unknown": "Bilinmeyen"
+        },
+        "empty": {
+            "title": "Henüz mesaj yok",
+            "description": "Grup, kullanıcı veya veri işlemleri yapıldığında burada görünecek"
+        },
+        "details": {
+            "view": "Detayları Gör"
+        },
+        "errors": {
+            "tokenNotFound": "Access token bulunamadı. Lütfen tekrar giriş yapın.",
+            "connectionError": "Bağlantı hatası oluştu.",
+            "connectionClosed": "Bağlantı kapatıldı"
+        },
+        "breadcrumbs": {
+            "home": "Ana Sayfa"
+        }
     }
 }

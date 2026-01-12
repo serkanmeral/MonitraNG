@@ -1,34 +1,15 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { HubConnection, HubConnectionBuilder, LogLevel, HttpTransportType } from '@microsoft/signalr';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useAuthStore } from '@/stores/auth';
+import { useLocaleStore } from '@/stores/locale';
+import { useHubStore } from '@/stores/hub';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { BellIcon, CheckIcon, XIcon } from 'vue-tabler-icons';
 
 const authStore = useAuthStore();
-const config = useRuntimeConfig();
+const localeStore = useLocaleStore();
+const hubStore = useHubStore();
 
-const page = {
-  title: 'Event Mesajları',
-};
-
-const breadcrumbs = [
-  {
-    text: 'Ana Sayfa',
-    disabled: false,
-    href: '/dashboards/analytical',
-  },
-  {
-    text: 'Event Mesajları',
-    disabled: true,
-    href: '#',
-  },
-];
-
-const connection = ref<HubConnection | null>(null);
-const isConnected = ref(false);
-const isConnecting = ref(false);
-const connectionError = ref<string | null>(null);
 const messages = ref<Array<{
   id: string;
   routingKey: string;
@@ -36,6 +17,14 @@ const messages = ref<Array<{
   timestamp: Date;
   type: 'user' | 'group' | 'system' | 'data' | 'unknown';
 }>>([]);
+
+// Hub store'dan connection state'lerini al
+const isConnected = computed(() => hubStore.connected);
+const isConnecting = computed(() => hubStore.connecting);
+const connectionError = computed(() => hubStore.error);
+
+// Subscription ID
+const subscriptionId = 'events-page';
 
 const getEventType = (routingKey: string): 'user' | 'group' | 'system' | 'data' | 'unknown' => {
   if (routingKey.includes('user')) return 'user';
@@ -60,23 +49,19 @@ const getEventTypeColor = (type: string) => {
   }
 };
 
-const getEventTypeLabel = (type: string) => {
-  switch (type) {
-    case 'user':
-      return 'Kullanıcı';
-    case 'group':
-      return 'Grup';
-    case 'system':
-      return 'Sistem';
-    case 'data':
-      return 'Veri';
-    default:
-      return 'Bilinmeyen';
-  }
-};
+// getEventTypeLabel function removed - use $t('events.types.' + type) directly in template
 
 const formatTimestamp = (date: Date) => {
-  return new Intl.DateTimeFormat('tr-TR', {
+  const localeMap: Record<string, string> = {
+    tr: 'tr-TR',
+    en: 'en-US',
+    fr: 'fr-FR',
+    ar: 'ar-SA',
+    zh: 'zh-CN',
+  };
+  const locale = localeMap[localeStore.locale] || 'tr-TR';
+  
+  return new Intl.DateTimeFormat(locale, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -87,101 +72,58 @@ const formatTimestamp = (date: Date) => {
 };
 
 const connectToHub = async () => {
-  if (connection.value?.state === 'Connected') {
-    return;
+  console.log('[Events Page] connectToHub called', {
+    hasSubscription: hubStore.hasSubscription(subscriptionId),
+    subscriptionCount: hubStore.subscriptionCount
+  });
+  
+  // Hub store'dan bağlantıyı başlat (eğer bağlı değilse)
+  await hubStore.connectToHub();
+
+  // Subscription zaten varsa, önce kaldır
+  if (hubStore.hasSubscription(subscriptionId)) {
+    console.log('[Events Page] Removing existing subscription');
+    hubStore.unsubscribe(subscriptionId);
   }
+  
+  // Filter: Tüm mesajları kabul et (filtreleme yok)
+  const filter = (data: { routingKey: string; message: any; timestamp: string }) => {
+    return true; // Tüm mesajları kabul et
+  };
 
-  isConnecting.value = true;
-  connectionError.value = null;
-
-  try {
-    const token = authStore.accessToken;
-    if (!token) {
-      throw new Error('Access token bulunamadı. Lütfen tekrar giriş yapın.');
-    }
-
-    // Hub URL belirleme
-    // Development'ta direkt Hub URL'ini HTTP olarak kullan (SSL sertifika hatası önlemek için)
-    // Production'da gateway URL üzerinden HTTPS kullanılacak
-    let hubBaseUrl: string;
+  // Handler: Mesajları ekle
+  const handler = (data: { routingKey: string; message: any; timestamp: string }) => {
+    console.log('[Events Page] Handler called', {
+      routingKey: data.routingKey,
+      currentMessageCount: messages.value.length
+    });
     
-    if (process.env.NODE_ENV === 'development') {
-      // Development: Direkt Hub URL'ini HTTP olarak kullan (gateway bypass)
-      // Bu, SSL sertifika hatasını önler
-      hubBaseUrl = config.public.hubUrl || 'http://localhost:5020';
-    } else {
-      // Production: Gateway URL varsa onu kullan, yoksa direkt Hub URL'i
-      hubBaseUrl = config.public.gatewayUrl 
-        ? `${config.public.gatewayUrl}/hub`
-        : (config.public.hubUrl || 'http://localhost:5020');
-    }
-    
-    // Use query string for token (more compatible with SignalR negotiation)
-    const connectionUrl = `${hubBaseUrl}/ws?access_token=${encodeURIComponent(token)}`;
-
-    const hubConnection = new HubConnectionBuilder()
-      .withUrl(connectionUrl, {
-        skipNegotiation: false, // Use negotiation endpoint
-        transport: HttpTransportType.WebSockets | HttpTransportType.LongPolling // Fallback transport
-      })
-      .withAutomaticReconnect({
-        nextRetryDelayInMilliseconds: (retryContext) => {
-          if (retryContext.previousRetryCount < 3) {
-            return 2000; // 2 saniye
-          }
-          return 5000; // 5 saniye
-        },
-      })
-      .configureLogging(process.env.NODE_ENV === 'development' ? LogLevel.Warning : LogLevel.Error)
-      .build();
-
-    // Message handler
-    hubConnection.on('ReceiveMessage', (data: { routingKey: string; message: any; timestamp: string }) => {
-      const eventType = getEventType(data.routingKey);
-      messages.value.unshift({
-        id: `${Date.now()}-${Math.random()}`,
-        routingKey: data.routingKey,
-        message: data.message,
-        timestamp: new Date(data.timestamp),
-        type: eventType,
-      });
-
-      // Keep only last 100 messages
-      if (messages.value.length > 100) {
-        messages.value = messages.value.slice(0, 100);
-      }
+    const eventType = getEventType(data.routingKey);
+    messages.value.unshift({
+      id: `${Date.now()}-${Math.random()}`,
+      routingKey: data.routingKey,
+      message: data.message,
+      timestamp: new Date(data.timestamp),
+      type: eventType,
     });
 
-    // Connection state handlers
-    hubConnection.onclose((error) => {
-      isConnected.value = false;
-      if (error) {
-        connectionError.value = `Bağlantı kapatıldı: ${error.message}`;
-      }
-    });
+    // Keep only last 100 messages
+    if (messages.value.length > 100) {
+      messages.value = messages.value.slice(0, 100);
+    }
+  };
 
-    await hubConnection.start();
-    connection.value = hubConnection;
-    isConnected.value = true;
-    connectionError.value = null;
-  } catch (error: any) {
-    connectionError.value = error.message || 'Bağlantı hatası oluştu.';
-    isConnected.value = false;
-  } finally {
-    isConnecting.value = false;
-  }
+  // Subscription'ı ekle
+  const subscribed = hubStore.subscribe(subscriptionId, { filter, handler });
+  console.log('[Events Page] Subscription added', {
+    subscribed,
+    subscriptionCount: hubStore.subscriptionCount
+  });
 };
 
 const disconnectFromHub = async () => {
-  if (connection.value) {
-    try {
-      await connection.value.stop();
-      connection.value = null;
-      isConnected.value = false;
-    } catch (error) {
-      // Hata önemli değil, sessizce devam et
-    }
-  }
+  // Subscription'ı kaldır
+  hubStore.unsubscribe(subscriptionId);
 };
 
 const clearMessages = () => {
@@ -198,15 +140,29 @@ onUnmounted(async () => {
 </script>
 
 <template>
-  <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs" />
+  <BaseBreadcrumb 
+    :title="$t('events.title')" 
+    :breadcrumbs="[
+      {
+        text: $t('events.breadcrumbs.home'),
+        disabled: false,
+        href: '/dashboards/analytical',
+      },
+      {
+        text: $t('events.title'),
+        disabled: true,
+        href: '#',
+      },
+    ]"
+  />
 
   <v-card elevation="10">
     <v-card-item>
       <div class="d-flex justify-space-between align-center mb-4">
         <div>
-          <h3 class="text-h5 mb-1">Event Mesajları</h3>
+          <h3 class="text-h5 mb-1">{{ $t('events.title') }}</h3>
           <p class="text-subtitle-1 text-medium-emphasis">
-            RabbitMQ üzerinden gelen grup, kullanıcı ve veri CRUD işlemlerinin gerçek zamanlı bildirimleri
+            {{ $t('events.description') }}
           </p>
         </div>
         <div class="d-flex ga-2">
@@ -217,7 +173,7 @@ onUnmounted(async () => {
             @click="connectToHub"
           >
             <BellIcon class="mr-2" size="20" />
-            Bağlan
+            {{ $t('events.buttons.connect') }}
           </v-btn>
           <v-btn
             v-if="isConnected"
@@ -226,7 +182,7 @@ onUnmounted(async () => {
             @click="disconnectFromHub"
           >
             <XIcon class="mr-2" size="20" />
-            Bağlantıyı Kes
+            {{ $t('events.buttons.disconnect') }}
           </v-btn>
           <v-btn
             color="secondary"
@@ -234,7 +190,7 @@ onUnmounted(async () => {
             @click="clearMessages"
             :disabled="messages.length === 0"
           >
-            Mesajları Temizle
+            {{ $t('events.buttons.clearMessages') }}
           </v-btn>
         </div>
       </div>
@@ -249,10 +205,10 @@ onUnmounted(async () => {
         <div class="d-flex align-center">
           <BellIcon class="mr-2" size="20" />
           <div>
-            <strong v-if="isConnected">Bağlı</strong>
-            <strong v-else-if="isConnecting">Bağlanıyor...</strong>
-            <strong v-else-if="connectionError">Bağlantı Hatası</strong>
-            <strong v-else>Bağlantı Yok</strong>
+            <strong v-if="isConnected">{{ $t('events.status.connected') }}</strong>
+            <strong v-else-if="isConnecting">{{ $t('events.status.connecting') }}</strong>
+            <strong v-else-if="connectionError">{{ $t('events.status.error') }}</strong>
+            <strong v-else>{{ $t('events.status.disconnected') }}</strong>
             <span v-if="connectionError" class="ml-2">{{ connectionError }}</span>
           </div>
         </div>
@@ -261,9 +217,9 @@ onUnmounted(async () => {
       <!-- Messages List -->
       <div v-if="messages.length === 0" class="text-center py-8">
         <BellIcon size="48" class="mb-4 text-medium-emphasis" />
-        <p class="text-h6 text-medium-emphasis">Henüz mesaj yok</p>
+        <p class="text-h6 text-medium-emphasis">{{ $t('events.empty.title') }}</p>
         <p class="text-body-2 text-medium-emphasis">
-          Grup, kullanıcı veya veri işlemleri yapıldığında burada görünecek
+          {{ $t('events.empty.description') }}
         </p>
       </div>
 
@@ -279,7 +235,7 @@ onUnmounted(async () => {
               size="small"
               class="mr-3"
             >
-              {{ getEventTypeLabel(msg.type) }}
+              {{ $t(`events.types.${msg.type}`) }}
             </v-chip>
           </template>
 
@@ -294,7 +250,7 @@ onUnmounted(async () => {
             <v-expansion-panels variant="accordion" class="mt-2">
               <v-expansion-panel>
                 <v-expansion-panel-title>
-                  <span class="text-caption">Detayları Gör</span>
+                  <span class="text-caption">{{ $t('events.details.view') }}</span>
                 </v-expansion-panel-title>
                 <v-expansion-panel-text>
                   <pre class="text-caption bg-grey-lighten-4 pa-3 rounded">{{ JSON.stringify(msg.message, null, 2) }}</pre>

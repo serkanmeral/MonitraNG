@@ -123,6 +123,44 @@
             "icons": "Icons",
             "administration": "Administration"
         }
+    },
+    "events": {
+        "title": "Event Messages",
+        "description": "Real-time notifications for group, user and data CRUD operations from RabbitMQ",
+        "buttons": {
+            "connect": "Connect",
+            "disconnect": "Disconnect",
+            "clearMessages": "Clear Messages"
+        },
+        "status": {
+            "connected": "Connected",
+            "connecting": "Connecting...",
+            "error": "Connection Error",
+            "disconnected": "Disconnected",
+            "closed": "Connection closed"
+        },
+        "types": {
+            "user": "User",
+            "group": "Group",
+            "system": "System",
+            "data": "Data",
+            "unknown": "Unknown"
+        },
+        "empty": {
+            "title": "No messages yet",
+            "description": "Group, user or data operations will appear here"
+        },
+        "details": {
+            "view": "View Details"
+        },
+        "errors": {
+            "tokenNotFound": "Access token not found. Please login again.",
+            "connectionError": "Connection error occurred.",
+            "connectionClosed": "Connection closed"
+        },
+        "breadcrumbs": {
+            "home": "Home"
+        }
     }
 
 }

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import type { SideMenuItem } from '@/stores/apps/sideMenu';
 import { TrashIcon, XIcon, LanguageIcon } from 'vue-tabler-icons';
 import IconPicker from './IconPicker.vue';
 import PermissionEditor from './PermissionEditor.vue';
 import { fetchFromMngKeeper, fetchFromMngLLM } from '@/services/apiService';
+import { useAutomatedFormsStore } from '@/stores/apps/automatedForms';
 
 const props = defineProps<{
   item: SideMenuItem | null;
@@ -17,6 +18,12 @@ const emit = defineEmits<{
   'delete': [itemId: string];
   'cancel': [];
 }>();
+
+// Automated Forms Store
+const automatedFormsStore = useAutomatedFormsStore();
+
+// Selected form code (for dropdown)
+const selectedFormCode = ref<string | null>(null);
 
 // Form data
 const formData = ref<Partial<SideMenuItem>>({
@@ -38,6 +45,13 @@ watch(
       formData.value = {
         ...newItem,
       };
+      // Check if route path matches a form route
+      if (newItem.to && newItem.to.startsWith('/apps/automated-forms/view/')) {
+        const formCode = newItem.to.replace('/apps/automated-forms/view/', '');
+        selectedFormCode.value = formCode;
+      } else {
+        selectedFormCode.value = null;
+      }
     } else {
       // Reset form for new item
       formData.value = {
@@ -50,9 +64,40 @@ watch(
         type: 'internal',
         iconType: 'tabler',
       };
+      selectedFormCode.value = null;
     }
   },
   { immediate: true }
+);
+
+// Watch form selection to update route path
+watch(
+  () => selectedFormCode.value,
+  (newFormCode) => {
+    if (newFormCode) {
+      // Set route path to form view route
+      formData.value.to = `/apps/automated-forms/view/${newFormCode}`;
+    }
+  }
+);
+
+// Watch route path changes to clear form selection if path doesn't match form route
+watch(
+  () => formData.value.to,
+  (newRoutePath) => {
+    if (!newRoutePath || !newRoutePath.startsWith('/apps/automated-forms/view/')) {
+      // If route path doesn't match form route pattern, clear form selection
+      if (selectedFormCode.value) {
+        selectedFormCode.value = null;
+      }
+    } else if (newRoutePath.startsWith('/apps/automated-forms/view/')) {
+      // If route path matches form route pattern, update form selection
+      const formCode = newRoutePath.replace('/apps/automated-forms/view/', '');
+      if (selectedFormCode.value !== formCode) {
+        selectedFormCode.value = formCode;
+      }
+    }
+  }
 );
 
 // Computed properties
@@ -99,6 +144,16 @@ const parentOptions = computed(() => {
   });
 
   return flatItems;
+});
+
+// Available forms for dropdown (only active forms)
+const formOptions = computed(() => {
+  const activeForms = automatedFormsStore.activeForms || [];
+  return activeForms.map(form => ({
+    title: form.formName || form.formCode,
+    value: form.formCode,
+    subtitle: form.datasetName,
+  }));
 });
 
 // Calculate level based on selected parent
@@ -379,6 +434,17 @@ const updateLocaleFiles = async () => {
     updatingLocales.value = false;
   }
 };
+
+// Load forms on mount
+onMounted(async () => {
+  try {
+    if (automatedFormsStore.forms.length === 0) {
+      await automatedFormsStore.fetchForms({ pageNumber: 1, pageSize: 1000, isActive: true });
+    }
+  } catch (error) {
+    console.error('Failed to load forms:', error);
+  }
+});
 </script>
 
 <template>
@@ -506,13 +572,41 @@ const updateLocaleFiles = async () => {
           ></v-switch>
         </v-col>
 
+        <!-- Automated Form Selection (for item type) -->
+        <v-col v-if="formData.itemType === 'item'" cols="12" md="6">
+          <v-select
+            v-model="selectedFormCode"
+            :items="formOptions"
+            label="Kayıtlı Formlar"
+            placeholder="Form seçin (opsiyonel)"
+            variant="outlined"
+            clearable
+            hint="Kayıtlı formlardan birini seçin veya manuel path girin"
+            persistent-hint
+            prepend-inner-icon="mdi-form-select"
+          >
+            <template #item="{ props: itemProps, item }">
+              <v-list-item v-bind="itemProps">
+                <template #prepend>
+                  <v-icon>mdi-form-select</v-icon>
+                </template>
+                <v-list-item-title>{{ item.raw.title }}</v-list-item-title>
+                <v-list-item-subtitle v-if="item.raw.subtitle">{{ item.raw.subtitle }}</v-list-item-subtitle>
+              </v-list-item>
+            </template>
+            <template #selection="{ item }">
+              <span>{{ item.raw.title }}</span>
+            </template>
+          </v-select>
+        </v-col>
+
         <!-- Route Path (for item type) -->
         <v-col v-if="formData.itemType === 'item'" cols="12" md="6">
           <v-text-field
             v-model="formData.to"
             label="Route Path"
             variant="outlined"
-            hint="Örn: /dashboards/analytical"
+            hint="Örn: /dashboards/analytical veya form seçin"
             persistent-hint
           >
             <template #append-inner v-if="formData.to && formData.to.trim()">

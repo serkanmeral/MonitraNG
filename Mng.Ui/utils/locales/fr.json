@@ -153,5 +153,43 @@
             "icons": "Icônes",
             "administration": "Administration"
         }
+    },
+    "events": {
+        "title": "Messages d'événement",
+        "description": "Notifications en temps réel pour les opérations CRUD de groupe, utilisateur et données depuis RabbitMQ",
+        "buttons": {
+            "connect": "Se connecter",
+            "disconnect": "Se déconnecter",
+            "clearMessages": "Effacer les messages"
+        },
+        "status": {
+            "connected": "Connecté",
+            "connecting": "Connexion...",
+            "error": "Erreur de connexion",
+            "disconnected": "Déconnecté",
+            "closed": "Connexion fermée"
+        },
+        "types": {
+            "user": "Utilisateur",
+            "group": "Groupe",
+            "system": "Système",
+            "data": "Données",
+            "unknown": "Inconnu"
+        },
+        "empty": {
+            "title": "Aucun message pour le moment",
+            "description": "Les opérations de groupe, utilisateur ou données apparaîtront ici"
+        },
+        "details": {
+            "view": "Voir les détails"
+        },
+        "errors": {
+            "tokenNotFound": "Token d'accès introuvable. Veuillez vous reconnecter.",
+            "connectionError": "Une erreur de connexion s'est produite.",
+            "connectionClosed": "Connexion fermée"
+        },
+        "breadcrumbs": {
+            "home": "Accueil"
+        }
     }
 }

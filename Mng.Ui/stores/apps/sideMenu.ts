@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
-import { HubConnection, HubConnectionBuilder, LogLevel, HttpTransportType } from '@microsoft/signalr';
 import { fetchFromDataGateway } from '@/services/apiService';
 import { useAuthStore } from '@/stores/auth';
+import { useHubStore } from '@/stores/hub';
 import type { menu } from '@/components/lc/Full/vertical-sidebar/sidebarItem';
 
 /**
@@ -77,8 +77,6 @@ interface SideMenuState {
   loading: boolean;
   error: string | null;
   lastUpdated: number | null;
-  hubConnection: HubConnection | null;
-  isHubConnected: boolean;
 }
 
 export const useSideMenuStore = defineStore('sideMenu', {
@@ -88,8 +86,6 @@ export const useSideMenuStore = defineStore('sideMenu', {
     loading: false,
     error: null,
     lastUpdated: null,
-    hubConnection: null,
-    isHubConnected: false,
   }),
 
   getters: {
@@ -465,161 +461,93 @@ export const useSideMenuStore = defineStore('sideMenu', {
 
     /**
      * SignalR Hub bağlantısını başlat (real-time menu updates için)
+     * Uses shared Hub store connection with subscription pattern
      */
     async connectToHub() {
       // Client-side only
       if (process.server) return;
 
-      // Zaten bağlıysa tekrar bağlanma
-      if (this.hubConnection?.state === 'Connected') {
-        return;
+      const hubStore = useHubStore();
+      const subscriptionId = 'side-menu';
+      
+      // Hub store'dan bağlantıyı başlat (eğer bağlı değilse)
+      await hubStore.connectToHub();
+
+      // Subscription zaten varsa, önce kaldır
+      if (hubStore.hasSubscription(subscriptionId)) {
+        hubStore.unsubscribe(subscriptionId);
       }
 
-      // Bağlantı kuruluyorsa bekle
-      if (this.hubConnection?.state === 'Connecting') {
-        return;
-      }
-
-      // Eski bağlantıyı temizle (handler'ları kaldırmak için)
-      if (this.hubConnection) {
-        try {
-          await this.hubConnection.stop();
-        } catch (error) {
-          // Hata önemli değil
+      // Filter: @side_menu dataset event'lerini filtrele
+      const filter = (data: { routingKey: string; message: any; timestamp: string }) => {
+        // Routing key formatları:
+        // MngDataGateway: {domainName}.{eventType} (örn: "meral.datacreatedevent")
+        // MngKeeper: {domainId}.{eventType} veya "domain.{domainName}.{eventType}"
+        
+        const routingKey = data.routingKey || '';
+        const routingKeyLower = routingKey.toLowerCase();
+        
+        // 1. Dataset event type'larını kontrol et (sadece data event'leri)
+        const isDatasetEvent = routingKeyLower.includes('datacreatedevent') || 
+                               routingKeyLower.includes('dataupdatedevent') || 
+                               routingKeyLower.includes('datadeletedevent') ||
+                               routingKeyLower.includes('datarestoredevent');
+        
+        if (!isDatasetEvent) {
+          return false;
         }
-        this.hubConnection = null;
-      }
+        
+        // 2. Message içinde DatasetName kontrolü (en güvenilir yöntem)
+        let datasetName: string | null = null;
+        
+        if (data.message && typeof data.message === 'object') {
+          datasetName = data.message.DatasetName || 
+                       data.message.datasetName || 
+                       data.message.Dataset || 
+                       data.message.dataset || 
+                       null;
+          
+          if (datasetName && typeof datasetName !== 'string') {
+            datasetName = String(datasetName);
+          }
+        }
+        
+        // 3. Sadece @side_menu dataset'i için true dön
+        return datasetName?.toLowerCase() === '@side_menu';
+      };
 
-      const authStore = useAuthStore();
-      const config = useRuntimeConfig();
-
-      try {
-        const token = authStore.accessToken;
-        if (!token) {
+      // Handler: Menu'yu refresh et
+      const handler = (data: { routingKey: string; message: any; timestamp: string }) => {
+        // Debounce: Eğer çok hızlı ardışık event'ler gelirse sadece bir kez refresh yap
+        const now = Date.now();
+        const lastRefreshTime = (this as any).lastRefreshTime || 0;
+        const refreshDebounceMs = 500; // 500ms debounce
+        
+        if (now - lastRefreshTime < refreshDebounceMs) {
           return;
         }
-
-        // Hub URL belirleme (Event Mesajları sayfasıyla aynı mantık)
-        let hubBaseUrl: string;
         
-        if (process.env.NODE_ENV === 'development') {
-          // Development: Direkt Hub URL'ini HTTP olarak kullan
-          hubBaseUrl = config.public.hubUrl || 'http://localhost:5020';
-        } else {
-          // Production: Gateway URL varsa onu kullan, yoksa direkt Hub URL'i
-          hubBaseUrl = config.public.gatewayUrl 
-            ? `${config.public.gatewayUrl}/hub`
-            : (config.public.hubUrl || 'http://localhost:5020');
-        }
+        (this as any).lastRefreshTime = now;
         
-        const connectionUrl = `${hubBaseUrl}/ws?access_token=${encodeURIComponent(token)}`;
-
-        const hubConnection = new HubConnectionBuilder()
-          .withUrl(connectionUrl, {
-            skipNegotiation: false,
-            transport: HttpTransportType.WebSockets | HttpTransportType.LongPolling
-          })
-          .withAutomaticReconnect({
-            nextRetryDelayInMilliseconds: (retryContext) => {
-              if (retryContext.previousRetryCount < 3) {
-                return 2000; // 2 saniye
-              }
-              return 5000; // 5 saniye
-            },
-          })
-          .configureLogging(process.env.NODE_ENV === 'development' ? LogLevel.Warning : LogLevel.Error)
-          .build();
-
-        // Message handler: @side_menu dataset event'lerini dinle
-        // ÖNEMLİ: Her connectToHub çağrısında yeni handler eklenmemesi için
-        // sadece bir kez eklenmeli, bu yüzden eski bağlantıyı temizledik
-        hubConnection.on('ReceiveMessage', (data: { routingKey: string; message: any; timestamp: string }) => {
-          // Routing key formatları:
-          // MngDataGateway: {domainName}.{eventType} (örn: "meral.datacreatedevent")
-          // MngKeeper: {domainId}.{eventType} veya "domain.{domainName}.{eventType}"
-          
-          const routingKey = data.routingKey || '';
-          const routingKeyLower = routingKey.toLowerCase();
-          
-          // 1. Dataset event type'larını kontrol et (sadece data event'leri)
-          const isDatasetEvent = routingKeyLower.includes('datacreatedevent') || 
-                                 routingKeyLower.includes('dataupdatedevent') || 
-                                 routingKeyLower.includes('datadeletedevent') ||
-                                 routingKeyLower.includes('datarestoredevent');
-          
-          if (!isDatasetEvent) {
-            // Dataset event değil, ignore et
-            return;
-          }
-          
-          // 2. Message içinde DatasetName kontrolü (en güvenilir yöntem)
-          // DataCreatedEvent, DataUpdatedEvent, DataDeletedEvent, DataRestoredEvent
-          // hepsinde DatasetName property'si var
-          let datasetName: string | null = null;
-          
-          if (data.message && typeof data.message === 'object') {
-            // DatasetName property'sini kontrol et (case-insensitive)
-            datasetName = data.message.DatasetName || 
-                         data.message.datasetName || 
-                         data.message.Dataset || 
-                         data.message.dataset || 
-                         null;
-            
-            // String değilse string'e çevir
-            if (datasetName && typeof datasetName !== 'string') {
-              datasetName = String(datasetName);
-            }
-          }
-          
-          // 3. Sadece @side_menu dataset'i için işlem yap
-          if (!datasetName || datasetName.toLowerCase() !== '@side_menu') {
-            // @side_menu dataset'i değil, ignore et
-            return;
-          }
-
-          // 4. Menu'yu refresh et (cache'i bypass et)
-          // Debounce: Eğer çok hızlı ardışık event'ler gelirse sadece bir kez refresh yap
-          const now = Date.now();
-          const lastRefreshTime = (this as any).lastRefreshTime || 0;
-          const refreshDebounceMs = 500; // 500ms debounce
-          
-          if (now - lastRefreshTime < refreshDebounceMs) {
-            return;
-          }
-          
-          (this as any).lastRefreshTime = now;
-          
-          // 5. Refresh işlemini başlat
-          this.refreshMenuItems();
-        });
-
-        // Connection state handlers
-        hubConnection.onclose(() => {
-          this.isHubConnected = false;
-        });
-
-        await hubConnection.start();
-        this.hubConnection = hubConnection;
-        this.isHubConnected = true;
-      } catch (error: any) {
-        this.isHubConnected = false;
-        // Hata durumunda sessizce devam et (menu yine çalışır)
-      }
+        // Refresh işlemini başlat
+        this.refreshMenuItems();
+      };
+      
+      // Subscription'ı ekle
+      hubStore.subscribe(subscriptionId, { filter, handler });
     },
 
     /**
      * SignalR Hub bağlantısını kapat
+     * Note: Hub store connection is shared, so we don't disconnect here
+     * Subscription'ı kaldır
      */
     async disconnectFromHub() {
-      if (this.hubConnection) {
-        try {
-          await this.hubConnection.stop();
-          this.hubConnection = null;
-          this.isHubConnected = false;
-        } catch (error) {
-          // Hata önemli değil, sessizce devam et
-        }
-      }
+      const hubStore = useHubStore();
+      const subscriptionId = 'side-menu';
+      
+      // Subscription'ı kaldır
+      hubStore.unsubscribe(subscriptionId);
     },
   },
 });
