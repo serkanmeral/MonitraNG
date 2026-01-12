@@ -3,6 +3,7 @@ import { ref, shallowRef, computed, onMounted, watch } from 'vue';
 import { useCustomizerStore } from '@/stores/customizer';
 import { useAuthStore } from '@/stores/auth';
 import { useSideMenuStore } from '@/stores/apps/sideMenu';
+import { useLocaleStore } from '@/stores/locale';
 import { PowerIcon } from 'vue-tabler-icons';
 import type { SideMenuItem } from '@/stores/apps/sideMenu';
 import type { menu } from './sidebarItem';
@@ -10,7 +11,9 @@ import type { menu } from './sidebarItem';
 const customizer = useCustomizerStore();
 const authStore = useAuthStore();
 const menuStore = useSideMenuStore();
+const localeStore = useLocaleStore();
 const config = useRuntimeConfig();
+const nuxtApp = useNuxtApp();
 
 // Check if fallback menu is enabled (default: false - disabled)
 const enableFallbackMenu = computed(() => config.public.enableFallbackMenu === true);
@@ -96,6 +99,28 @@ watch(() => menuStore.visibleMenuItems, () => {
   }
 }, { deep: true });
 
+// Watch locale changes and update i18n locale (for Arabic support)
+watch(() => localeStore.locale, (newLocale) => {
+  // Get i18n instance
+  const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
+  
+  if (i18n) {
+    // IMPORTANT: In messages.ts, Arabic is stored as 'ro', not 'ar'
+    // So we need to map 'ar' to 'ro' for i18n
+    const i18nLocale = newLocale === 'ar' ? 'ro' : newLocale;
+    i18n.locale = i18nLocale;
+    
+    // Also try to update global.locale if it exists (for composition API mode)
+    if (i18n.global && i18n.global.locale) {
+      if (typeof i18n.global.locale === 'object' && 'value' in i18n.global.locale) {
+        i18n.global.locale.value = i18nLocale;
+      } else {
+        i18n.global.locale = i18nLocale;
+      }
+    }
+  }
+}, { immediate: true });
+
 // Load menu on mount (force refresh to bypass cache on initial load)
 onMounted(async () => {
   if (authStore.isAuthenticated) {
@@ -107,6 +132,21 @@ onMounted(async () => {
       await menuStore.connectToHub();
     } catch (error) {
       // SignalR bağlantı hatası kritik değil, menu yine çalışır
+    }
+  }
+  
+  // Ensure i18n locale is set correctly on mount (for Arabic support)
+  const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
+  if (i18n) {
+    const i18nLocale = localeStore.locale === 'ar' ? 'ro' : localeStore.locale;
+    i18n.locale = i18nLocale;
+    
+    if (i18n.global && i18n.global.locale) {
+      if (typeof i18n.global.locale === 'object' && 'value' in i18n.global.locale) {
+        i18n.global.locale.value = i18nLocale;
+      } else {
+        i18n.global.locale = i18nLocale;
+      }
     }
   }
 });
@@ -190,8 +230,8 @@ const handleLogout = async () => {
         <perfect-scrollbar class="scrollnavbar">
             <div class="profile">
                 <div class="profile-pic profile-pic py-7 px-3">
-                    <v-avatar size="45" color="primary">
-                        <span class="text-white font-weight-bold">{{ userInitials }}</span>
+                    <v-avatar size="45" color="primary" class="text-white font-weight-bold">
+                        {{ userInitials }}
                     </v-avatar>
                 </div>
                 <div class="profile-name d-flex align-center px-3">
