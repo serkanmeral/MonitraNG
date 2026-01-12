@@ -167,6 +167,44 @@
         "Limit": 100
       },
       "Priority": 0
+    },
+    {
+      "DownstreamPathTemplate": "/api/v1/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngnotifier",
+          "Port": 5070
+        }
+      ],
+      "UpstreamPathTemplate": "/notifier/api/v1/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
+      // Authentication handled by MngNotifier, not Gateway
+      "RateLimitOptions": {
+        "EnableRateLimiting": true,
+        "Period": "1m",
+        "Limit": 100
+      },
+      "Priority": 1
+    },
+    {
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngnotifier",
+          "Port": 5070
+        }
+      ],
+      "UpstreamPathTemplate": "/notifier/api/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
+      // Authentication handled by MngNotifier, not Gateway
+      "RateLimitOptions": {
+        "EnableRateLimiting": true,
+        "Period": "1m",
+        "Limit": 100
+      },
+      "Priority": 0
     }
   ],
   "GlobalConfiguration": {
