@@ -42,6 +42,7 @@ services:
       - MngGatewaySettings__BackendServices__MngReactor=http://mngreactor:5003
       - MngGatewaySettings__BackendServices__MngLLM=http://mngllm:5030
       - MngGatewaySettings__BackendServices__MngNotifier=http://mngnotifier:5070
+      - MngGatewaySettings__BackendServices__MngAdmin=http://mngadmin:5080
       - MngGatewaySettings__BackendServices__KeyCloak=http://keycloak:8080
       
       # Certificate Settings
@@ -55,6 +56,7 @@ services:
       - mngdatagateway
       - mnghub
       - mngllm
+      - mngadmin
     
     restart: unless-stopped
     
@@ -417,6 +419,72 @@ services:
       retries: 3
       start_period: 30s
 
+  mngadmin:
+    build:
+      context: ../../MngAdmin
+      dockerfile: Presentation/MngAdmin.Api/Dockerfile
+    image: localhost:5000/mngadmin:1.0.0
+    container_name: mngadmin
+    ports:
+      - "5080:5080"
+    environment:
+      # ASP.NET Core Environment
+      - ASPNETCORE_ENVIRONMENT=Development
+      
+      # Server Configuration
+      - MngAdminSettings__Server__Host=0.0.0.0
+      - MngAdminSettings__Server__Port=5080
+      - MngAdminSettings__Server__Scheme=http
+      - MngAdminSettings__OpenApiServerPath=https://api.monitra.local/admin
+      
+      # MongoDB Configuration
+      - MngAdminSettings__MongoDB__ConnectionString=mongodb://admin:admin123@mongo:27017
+      - MngAdminSettings__MongoDB__MngKeeperDatabaseName=mngkeeper
+      
+      # Actors Configuration
+      - MngAdminSettings__Actors__MngKeeper=http://mngkeeper:5001
+      
+      # RabbitMQ Configuration
+      - MngAdminSettings__RabbitMQ__Host=rabbitmq
+      - MngAdminSettings__RabbitMQ__Port=5672
+      - MngAdminSettings__RabbitMQ__Username=admin
+      - MngAdminSettings__RabbitMQ__Password=admin123
+      - MngAdminSettings__RabbitMQ__VirtualHost=/
+      
+      # Backup Configuration
+      - MngAdminSettings__Backup__MaxBackupCount=10
+      - MngAdminSettings__Backup__MinIO__SystemBucket=system
+      - MngAdminSettings__Backup__MinIO__SystemBackupPath=backup
+      - MngAdminSettings__Backup__MinIO__DomainBackupPath=backups
+      - MngAdminSettings__Backup__MongoDB__Compression=zip
+      - MngAdminSettings__Backup__PostgreSQL__Compression=gzip
+      - MngAdminSettings__Backup__PostgreSQL__Databases__0=keycloak
+      - MngAdminSettings__Backup__PostgreSQL__ConnectionString=Host=postgres;Port=5432;Database={database};Username=keycloak;Password=keycloak123
+      # PgDumpPath is not needed in Docker (pg_dump is in PATH)
+      
+      # MinIO Configuration
+      - MngAdminSettings__MinIO__Endpoint=minio:9000
+      - MngAdminSettings__MinIO__AccessKey=admin
+      - MngAdminSettings__MinIO__SecretKey=admin123
+      - MngAdminSettings__MinIO__UseSSL=false
+      - MngAdminSettings__MinIO__Region=us-east-1
+      
+      # Certificate Settings
+      - MngAdminSettings__CertificateSettings__DNS=mngadmin
+    
+    networks:
+      - mng_common_mng_network
+      - mng_network  # PostgreSQL erişimi için
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5080/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
@@ -450,4 +518,6 @@ volumes:
 
 networks:
   mng_common_mng_network:
+    external: true
+  mng_network:
     external: true
