@@ -3,6 +3,7 @@ using MediatR;
 using MngKeeper.Application.Features.Domain.Commands.CreateDomain;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Domain.Entities;
+using MongoDB.Driver;
 
 namespace MngKeeper.Api.Controllers
 {
@@ -18,15 +19,18 @@ namespace MngKeeper.Api.Controllers
     {
         private readonly IMediator _mediator;
         private readonly IDomainRepository _domainRepository;
+        private readonly IMongoClient _mongoClient;
         private readonly ILogger<DomainController> _logger;
 
         public DomainController(
             IMediator mediator,
             IDomainRepository domainRepository,
+            IMongoClient mongoClient,
             ILogger<DomainController> logger)
         {
             _mediator = mediator;
             _domainRepository = domainRepository;
+            _mongoClient = mongoClient;
             _logger = logger;
         }
 
@@ -196,5 +200,74 @@ namespace MngKeeper.Api.Controllers
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
+
+        /// <summary>
+        /// Get collections from domain database
+        /// </summary>
+        /// <param name="id">The domain ID</param>
+        /// <returns>List of collections with document counts</returns>
+        /// <response code="200">Collections found and returned</response>
+        /// <response code="404">If the domain is not found</response>
+        [HttpGet("{id}/collections")]
+        [ProducesResponseType(typeof(List<CollectionInfoDto>), 200)]
+        [ProducesResponseType(404)]
+        public async Task<ActionResult<List<CollectionInfoDto>>> GetDomainCollections(string id)
+        {
+            try
+            {
+                var domain = await _domainRepository.GetByIdAsync(id);
+                
+                if (domain == null)
+                {
+                    return NotFound(new { error = "Domain not found" });
+                }
+
+                var database = _mongoClient.GetDatabase(domain.DatabaseName);
+                var collectionNames = await database.ListCollectionNamesAsync();
+                var collections = await collectionNames.ToListAsync();
+
+                var result = new List<CollectionInfoDto>();
+                foreach (var collectionName in collections)
+                {
+                    // Skip system collections
+                    if (collectionName.StartsWith("system.") || collectionName == "fs.chunks" || collectionName == "fs.files")
+                    {
+                        continue;
+                    }
+
+                    var collection = database.GetCollection<MongoDB.Bson.BsonDocument>(collectionName);
+                    var documentCount = await collection.CountDocumentsAsync(FilterDefinition<MongoDB.Bson.BsonDocument>.Empty);
+                    
+                    // Check if collection has indexes
+                    var indexes = await collection.Indexes.ListAsync();
+                    var indexList = await indexes.ToListAsync();
+                    var hasIndexes = indexList.Count > 1; // More than just the default _id index
+
+                    result.Add(new CollectionInfoDto
+                    {
+                        Name = collectionName,
+                        DocumentCount = (int)documentCount,
+                        HasIndexes = hasIndexes
+                    });
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting collections for domain with id: {Id}", id);
+                return StatusCode(500, new { error = "Internal server error", message = ex.Message });
+            }
+        }
+    }
+
+    /// <summary>
+    /// Collection information DTO
+    /// </summary>
+    public class CollectionInfoDto
+    {
+        public string Name { get; set; } = string.Empty;
+        public int DocumentCount { get; set; }
+        public bool HasIndexes { get; set; }
     }
 }

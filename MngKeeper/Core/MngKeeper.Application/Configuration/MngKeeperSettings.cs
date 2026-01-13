@@ -9,6 +9,7 @@ public class MngKeeperSettings
     public MqttSettings Mqtt { get; set; } = null!;
     public KeycloakSettings Keycloak { get; set; } = null!;
     public MinIOSettings MinIO { get; set; } = null!;
+    public NotifierSettings Notifier { get; set; } = null!;
     public CertificateSettings CertificateSettings { get; set; } = null!;
     public string OpenApiServerPath { get; set; } = null!;
 }
@@ -64,6 +65,16 @@ public class MinIOSettings
     public string SecretKey { get; set; } = null!;
     public bool UseSSL { get; set; } = false;
     public string Region { get; set; } = "us-east-1";
+    /// <summary>
+    /// Base folder path for system files in MinIO (e.g., "System" for system/System/ structure)
+    /// </summary>
+    public string SystemFolderPath { get; set; } = "System";
+}
+
+public class NotifierSettings
+{
+    public string BaseUrl { get; set; } = "http://mngnotifier:5070";
+    public string ApiVersion { get; set; } = "v1";
 }
 
 public class CertificateSettings

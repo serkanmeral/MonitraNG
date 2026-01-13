@@ -119,6 +119,11 @@ services:
       - MngKeeperSettings__MinIO__SecretKey=admin123
       - MngKeeperSettings__MinIO__UseSSL=false
       - MngKeeperSettings__MinIO__Region=us-east-1
+      - MngKeeperSettings__MinIO__SystemFolderPath=System
+      
+      # Notifier Configuration
+      - MngKeeperSettings__Notifier__BaseUrl=http://mngnotifier:5070
+      - MngKeeperSettings__Notifier__ApiVersion=v1
       
     networks:
       - mng_common_mng_network
@@ -345,7 +350,7 @@ services:
     image: localhost:5000/mngui:1.0.0
     container_name: mngui
     ports:
-      - "3000:80"
+      - "4000:80"
     environment:
       # Individual service URLs (Browser'dan erişilebilir URL'ler kullanılmalı)
       # Docker container içinde değil, browser'da çalıştığı için localhost kullanıyoruz

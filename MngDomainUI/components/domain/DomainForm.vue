@@ -75,6 +75,22 @@
 
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">
+          Related Person Email
+        </label>
+        <UInput
+          v-model="formState.relatedPersonEmail"
+          type="email"
+          placeholder="related.person@example.com"
+          :disabled="loading"
+          class="w-full"
+        />
+        <p class="mt-1 text-xs text-gray-500">
+          Email address for related person (domain creation notification will be sent to this address)
+        </p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">
           Logo
         </label>
         <div class="space-y-2">
@@ -117,6 +133,38 @@
         />
         <p class="mt-1 text-xs text-gray-500">
           External logo URL (for offline systems when sending emails)
+        </p>
+      </div>
+
+      <!-- Initial Data Template -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          Initial Data Template
+        </label>
+        <USelectMenu
+          v-model="formState.initialDataTemplateName"
+          :options="templateOptions"
+          :disabled="loading || loadingTemplates"
+          placeholder="Select a template (optional)"
+          class="w-full"
+          :loading="loadingTemplates"
+          searchable
+          value-attribute="value"
+        >
+          <template #option="{ option }">
+            <div class="flex items-center justify-between w-full">
+              <div class="flex-1">
+                <div class="font-medium">{{ option.label }}</div>
+                <div v-if="option.description" class="text-xs text-gray-500">{{ option.description }}</div>
+              </div>
+              <UBadge v-if="option.value" color="gray" variant="soft" size="xs" class="ml-2">
+                {{ option.collections }} collections
+              </UBadge>
+            </div>
+          </template>
+        </USelectMenu>
+        <p class="mt-1 text-xs text-gray-500">
+          Select a template to automatically populate the domain with initial data (collections, documents, and indexes)
         </p>
       </div>
 
@@ -206,10 +254,13 @@ const emit = defineEmits<{
 }>()
 
 const { createDomain } = useDomain()
+const { getAllTemplates } = useTemplate()
 const loading = ref(false)
+const loadingTemplates = ref(false)
 const error = ref<string | null>(null)
 const logoFileInput = ref<HTMLInputElement | null>(null)
 const logoPreview = ref<string | null>(null)
+const templates = ref<Array<{ value: string; label: string; description?: string; collections: number }>>([])
 
 const formState = reactive({
   domainName: '',
@@ -217,8 +268,10 @@ const formState = reactive({
   adminEmail: '',
   adminPassword: '',
   relatedPersonPhone: '',
+  relatedPersonEmail: '',
   logo: '',
   logoUrl: '',
+  initialDataTemplateName: '',
   settings: {
     maxUsers: 100,
     maxAssets: 1000,
@@ -227,6 +280,36 @@ const formState = reactive({
 })
 
 const showAdvanced = ref(false)
+
+const templateOptions = computed(() => {
+  return [
+    { value: '', label: 'None (No initial data)' },
+    ...templates.value
+  ]
+})
+
+// Fetch templates on mount
+onMounted(async () => {
+  await fetchTemplates()
+})
+
+const fetchTemplates = async () => {
+  loadingTemplates.value = true
+  try {
+    const allTemplates = await getAllTemplates()
+    templates.value = allTemplates.map(t => ({
+      value: t.name,
+      label: t.name,
+      description: t.description || undefined,
+      collections: t.collections.length
+    }))
+  } catch (err: any) {
+    console.error('Failed to fetch templates:', err)
+    // Don't show error to user, just log it - template selection is optional
+  } finally {
+    loadingTemplates.value = false
+  }
+}
 
 const handleLogoFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement
@@ -317,14 +400,27 @@ const handleSubmit = async () => {
   error.value = null
 
   try {
+    // Extract template name value (USelectMenu may return the entire option object)
+    let templateName: string | undefined = undefined
+    if (formState.initialDataTemplateName) {
+      if (typeof formState.initialDataTemplateName === 'string') {
+        templateName = formState.initialDataTemplateName.trim() || undefined
+      } else if (typeof formState.initialDataTemplateName === 'object' && formState.initialDataTemplateName !== null) {
+        // If it's an object, extract the value property
+        templateName = (formState.initialDataTemplateName as any)?.value?.trim() || undefined
+      }
+    }
+
     await createDomain({
       domainName: formState.domainName,
       displayName: formState.displayName,
       adminEmail: formState.adminEmail,
       adminPassword: formState.adminPassword,
       relatedPersonPhone: formState.relatedPersonPhone || undefined,
+      relatedPersonEmail: formState.relatedPersonEmail || undefined,
       logo: formState.logo || undefined,
       logoUrl: formState.logoUrl || undefined,
+      initialDataTemplateName: templateName,
       settings: {
         maxUsers: formState.settings.maxUsers,
         maxAssets: formState.settings.maxAssets,
@@ -338,8 +434,10 @@ const handleSubmit = async () => {
     formState.adminEmail = ''
     formState.adminPassword = ''
     formState.relatedPersonPhone = ''
+    formState.relatedPersonEmail = ''
     formState.logo = ''
     formState.logoUrl = ''
+    formState.initialDataTemplateName = ''
     logoPreview.value = null
     if (logoFileInput.value) {
       logoFileInput.value.value = ''
@@ -352,7 +450,18 @@ const handleSubmit = async () => {
 
     emit('success')
   } catch (err: any) {
-    error.value = err.message || 'Failed to create domain'
+    // Extract detailed error message
+    let errorMessage = 'Failed to create domain'
+    if (err.data?.errorMessage) {
+      errorMessage = err.data.errorMessage
+    } else if (err.data?.message) {
+      errorMessage = err.data.message
+    } else if (err.message) {
+      errorMessage = err.message
+    } else if (err.data) {
+      errorMessage = typeof err.data === 'string' ? err.data : JSON.stringify(err.data)
+    }
+    error.value = errorMessage
     console.error('Domain creation error:', err)
   } finally {
     loading.value = false

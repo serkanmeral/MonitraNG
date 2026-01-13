@@ -6,12 +6,13 @@ export default defineEventHandler(async (event) => {
   
   // Use server-side URL (for Docker container-to-container communication)
   // Read directly from process.env first (runtime), then fallback to config (build-time)
-  // In Docker, this will be https://mngkeeper:5001; in local dev, https://localhost:5001
+  // In Docker, this will be https://mngkeeper:5001; in local dev, http://localhost:5001
+  // Priority: SERVER_KEEPER_URL > KEEPER_URL > config.serverKeeperUrl > config.public.keeperUrl > default
   const keeperUrl = process.env.SERVER_KEEPER_URL 
     || process.env.KEEPER_URL 
     || config.serverKeeperUrl 
     || config.public.keeperUrl 
-    || 'https://localhost:5001'
+    || 'http://localhost:5001'
   
   // Always log the URL being used (for debugging)
   console.log('[Keeper Proxy] Using URL:', keeperUrl)
@@ -24,8 +25,14 @@ export default defineEventHandler(async (event) => {
   })
   
   // Get the path from the route
-  const path = getRouterParam(event, 'path') || ''
+  let path = getRouterParam(event, 'path') || ''
   const method = getMethod(event)
+  
+  // Remove 'keeper/' prefix if present (since we're already in /api/keeper/ route)
+  // The path should be relative to /api/ (e.g., 'domain' not 'keeper/domain')
+  if (path.startsWith('keeper/')) {
+    path = path.substring('keeper/'.length)
+  }
   
   // Get request body if exists
   let body = null
@@ -79,9 +86,23 @@ export default defineEventHandler(async (event) => {
   } catch (error: any) {
     console.error('[Keeper Proxy] Error:', error.message, 'URL:', url)
     console.error('[Keeper Proxy] Error details:', error)
+    
+    // Extract error message properly
+    let errorMessage = 'API call failed'
+    if (typeof error === 'string') {
+      errorMessage = error
+    } else if (error?.message) {
+      errorMessage = String(error.message)
+    } else if (error?.data?.message) {
+      errorMessage = String(error.data.message)
+    } else if (error?.data) {
+      errorMessage = typeof error.data === 'string' ? error.data : JSON.stringify(error.data)
+    }
+    
     throw createError({
       statusCode: error.statusCode || error.status || 500,
-      statusMessage: error.message || 'API call failed',
+      statusMessage: errorMessage,
+      data: error.data || { error: errorMessage }
     })
   }
 })

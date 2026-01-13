@@ -47,7 +47,7 @@
 
 ### Phase 2: Domain Yönetimi İşlemleri ✅
 
-**Durum:** Kısmen Tamamlandı
+**Durum:** Kısmen Tamamlandı (Template Management eklendi - 11 Ocak 2026)
 
 #### 2.1 Domain Silme İşlemi
 - [x] Domain silme fonksiyonu (UI hazır)
@@ -70,10 +70,26 @@
 - [x] Domain model enhancement alanları (RelatedPersonPhone, Logo, LogoUrl) - 31 Aralık 2025
 - [x] Logo file upload özelliği (base64 dönüşümü ile) - 31 Aralık 2025
 - [x] Logo önizleme ve remove özelliği - 31 Aralık 2025
+- [x] Tabbed interface (Overview, Templates) - 11 Ocak 2026
 - [ ] **Backend:** Domain suspend/activate endpoint'leri (gelecek)
   - [ ] `POST /api/domain/{id}/suspend` - Domain'i pasife al
   - [ ] `POST /api/domain/{id}/activate` - Domain'i aktif et
   - [ ] UpdateDomain endpoint'inde status güncelleme desteği
+
+#### 2.4 Template Management System ✅ (11 Ocak 2026)
+- [x] Template Management UI (`DomainTemplateManagement.vue` component)
+- [x] Template listesi görüntüleme
+- [x] Template oluşturma (domain'den collection seçimi)
+- [x] Template düzenleme
+- [x] Template silme
+- [x] Collection seçimi (checkbox listesi)
+- [x] Index seçimi (her collection için ayrı)
+- [x] Template form validation
+- [x] `useTemplate` composable (template API operations)
+- [x] Domain collection listesi API entegrasyonu
+- [x] Domain oluşturma formuna template seçimi eklendi
+- [x] Template dropdown (USelectMenu component)
+- [x] Template seçimi ile domain oluşturma
 
 #### 2.3 Toplu İşlemler ✅
 - [x] Tüm domainleri temizleme özelliği (Clear All Domains)
@@ -217,7 +233,9 @@ MngDomainUI/
 ├── components/
 │   ├── domain/
 │   │   ├── DomainList.vue          ✅
-│   │   ├── DomainForm.vue          ✅
+│   │   ├── DomainForm.vue          ✅ (Template seçimi eklendi - 11 Ocak 2026)
+│   │   ├── DomainOverview.vue      ✅ (11 Ocak 2026)
+│   │   ├── DomainTemplateManagement.vue ✅ (11 Ocak 2026)
 │   │   └── DomainCard.vue          (gelecek)
 │   ├── AppVersion.vue              ✅ (2 Ocak 2026)
 │   └── common/
@@ -226,6 +244,7 @@ MngDomainUI/
 ├── composables/
 │   ├── useApi.ts                   ✅
 │   ├── useDomain.ts                ✅
+│   ├── useTemplate.ts              ✅ (11 Ocak 2026)
 │   └── useVersion.ts               ✅ (2 Ocak 2026)
 ├── pages/
 │   ├── index.vue                   ✅
@@ -261,10 +280,16 @@ MngDomainUI/
 
 - `GET /api/keeper/domain` - Tüm domainleri listele
 - `GET /api/keeper/domain/{id}` - Domain detayı
+- `GET /api/keeper/domain/{id}/collections` - Domain collection'larını listele (template oluşturma için)
 - `GET /api/keeper/domain/name/{name}` - İsim ile domain getir
-- `POST /api/keeper/domain` - Yeni domain oluştur
+- `POST /api/keeper/domain` - Yeni domain oluştur (template seçimi ile)
 - `PUT /api/keeper/domain/{id}` - Domain güncelle
 - `DELETE /api/keeper/domain/{id}` - Domain sil
+- `GET /api/keeper/templates` - Tüm template'leri listele
+- `GET /api/keeper/templates/{name}` - Template detayı
+- `POST /api/keeper/templates` - Yeni template oluştur
+- `PUT /api/keeper/templates/{name}` - Template güncelle
+- `DELETE /api/keeper/templates/{name}` - Template sil
 
 ---
 
@@ -364,12 +389,30 @@ Domain oluşturma işlemi MngKeeper'da 11 adımlı bir pipeline ile gerçekleşt
 
 ---
 
-**Son Güncelleme:** 2 Ocak 2026
-**Versiyon:** 1.0.0
+**Son Güncelleme:** 11 Ocak 2026
+**Versiyon:** 1.1.0
 
 ---
 
-## ✅ Son Tamamlanan İşler (v1.0.0 - 2 Ocak 2026)
+## ✅ Son Tamamlanan İşler
+
+### Template Management System (v1.1.0 - 11 Ocak 2026)
+- ✅ Template Management UI component (`DomainTemplateManagement.vue`)
+- ✅ Template CRUD operations (Create, Read, Update, Delete)
+- ✅ Domain collection listesi görüntüleme
+- ✅ Collection seçimi (checkbox listesi)
+- ✅ Index seçimi (her collection için ayrı)
+- ✅ Template form validation
+- ✅ `useTemplate` composable (template API operations)
+- ✅ Domain oluşturma formuna template seçimi eklendi
+- ✅ Template dropdown (USelectMenu component)
+- ✅ Template seçimi ile domain oluşturma
+- ✅ Tabbed interface (Overview, Templates) domain detay sayfasında
+- ✅ DomainOverview component (extracted from [id].vue)
+- ✅ API proxy path düzeltmesi (`keeper/` prefix kaldırıldı)
+- ✅ Docker build ve compose up tamamlandı
+
+### Önceki Versiyon (v1.0.0 - 2 Ocak 2026)
 
 ### Keycloak PathPrefix Configurable Yapısı (2 Ocak 2026)
 - ✅ Keycloak URL helper fonksiyonları eklendi (`server/utils/keycloak.ts`)

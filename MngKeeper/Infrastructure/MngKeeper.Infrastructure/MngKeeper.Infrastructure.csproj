@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\..\Core\MngKeeper.Application\MngKeeper.Application.csproj" />
+    <ProjectReference Include="..\MngKeeper.Persistence\MngKeeper.Persistence.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Keycloak.Net" Version="1.0.17" />

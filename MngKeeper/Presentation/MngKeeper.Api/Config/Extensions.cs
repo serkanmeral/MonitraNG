@@ -136,6 +136,9 @@ public static class Extensions
             }
             client.Timeout = TimeSpan.FromSeconds(30);
         });
+        
+        // Configure HttpClient for NotifierService
+        services.AddHttpClient<MngKeeper.Application.Interfaces.INotifierService, MngKeeper.Infrastructure.Services.NotifierService>();
         services.AddScoped<MngKeeper.Application.Interfaces.IJwtTokenService, MngKeeper.Infrastructure.Services.JwtTokenService>();
         services.AddScoped<MngKeeper.Application.Interfaces.IJwtTokenParserService, MngKeeper.Infrastructure.Services.JwtTokenParserService>();
         services.AddScoped<MngKeeper.Application.Interfaces.IRabbitMqService, MngKeeper.Infrastructure.Services.RabbitMqService>();
@@ -144,6 +147,10 @@ public static class Extensions
         services.AddScoped<MngKeeper.Application.Interfaces.ISessionService, MngKeeper.Infrastructure.Services.SessionService>();
         services.AddScoped<MngKeeper.Application.Interfaces.IMqttService, MngKeeper.Infrastructure.Services.MqttService>();
         services.AddScoped<MngKeeper.Application.Interfaces.IMinioService, MngKeeper.Infrastructure.Services.MinioService>();
+        
+        // Template Repository and Service
+        services.AddScoped<MngKeeper.Application.Interfaces.ITemplateRepository, MngKeeper.Infrastructure.Persistence.Repositories.TemplateRepository>();
+        services.AddScoped<MngKeeper.Application.Interfaces.ITemplateService, MngKeeper.Infrastructure.Services.TemplateService>();
         
         // DataGateway Sync Service
         services.AddScoped<MngKeeper.Application.Interfaces.IDataGatewaySyncService, MngKeeper.Infrastructure.Services.DataGatewaySyncService>();

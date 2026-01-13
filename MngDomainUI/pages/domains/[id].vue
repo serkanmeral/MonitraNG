@@ -51,132 +51,51 @@
         </div>
       </div>
 
-      <!-- Authentication Section -->
-      <UCard v-if="!isEditing" class="bg-gray-50 border-gray-200">
-        <template #header>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Authentication</h3>
-        </template>
-        <div class="space-y-3">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-600">
-                Authenticate to enable dataset operations
-              </p>
-              <p v-if="accessToken" class="text-xs text-green-600 mt-1">
-                ✓ Authenticated as {{ authenticatedUsername }}
-              </p>
-              <p v-else class="text-xs text-gray-500 mt-1">
-                ⚠ Not authenticated
-              </p>
-            </div>
-            <div class="flex gap-2">
-              <UButton
-                color="primary"
-                variant="outline"
-                icon="i-heroicons-key"
-                @click="showAuthModal = true"
-              >
-                {{ accessToken ? 'Re-authenticate' : 'Authenticate' }}
-              </UButton>
-              <UButton
-                v-if="accessToken"
-                color="gray"
-                variant="outline"
-                icon="i-heroicons-eye"
-                @click="showTokenModal = true"
-              >
-                View Token
-              </UButton>
-            </div>
+      <!-- Tabs (shown when not editing) -->
+      <UTabs v-if="!isEditing" :items="tabs" v-model="activeTab" class="w-full">
+        <template #default="{ item }">
+          <div class="flex items-center gap-2">
+            <UIcon :name="item.icon" class="w-4 h-4" />
+            <span>{{ item.label }}</span>
           </div>
-        </div>
-      </UCard>
-
-      <!-- Test Users & Groups Actions -->
-      <UCard v-if="!isEditing" class="bg-purple-50 border-purple-200">
-        <template #header>
-          <h3 class="text-lg font-semibold text-purple-900">Test Users & Groups</h3>
         </template>
-        <div class="space-y-3">
-          <p class="text-sm text-gray-600">
-            Create test users and groups for testing purposes.
-          </p>
-          <div class="flex gap-2">
-            <UButton
-              color="purple"
-              variant="outline"
-              icon="i-heroicons-user-group"
-              :loading="creatingGroups"
-              :disabled="!accessToken"
-              @click="handleCreateTestGroupsClick"
-            >
-              Create Test Groups
-            </UButton>
-            <UButton
-              color="indigo"
-              variant="outline"
-              icon="i-heroicons-users"
-              :loading="creatingUsers"
-              :disabled="!accessToken"
-              @click="handleCreateTestUsersClick"
-            >
-              Create Test Users
-            </UButton>
-          </div>
-          <UAlert
-            v-if="userGroupActionMessage"
-            :color="userGroupActionSuccess ? 'green' : 'red'"
-            variant="soft"
-            :title="userGroupActionMessage"
-            class="mt-2"
-            @close="userGroupActionMessage = null"
-          />
-        </div>
-      </UCard>
 
-      <!-- Test Dataset Actions -->
-      <UCard v-if="!isEditing" class="bg-blue-50 border-blue-200">
-        <template #header>
-          <h3 class="text-lg font-semibold text-blue-900">Test Dataset Actions</h3>
+        <template #item="{ item, index }">
+          <div v-if="index === 0" class="space-y-6">
+            <!-- Overview Content -->
+            <DomainOverview
+              :domain="domain"
+              :access-token="accessToken"
+              :authenticated-username="authenticatedUsername"
+              :creating-datasets="creatingDatasets"
+              :loading-test-data="loadingTestData"
+              :creating-users="creatingUsers"
+              :creating-groups="creatingGroups"
+              :dataset-action-message="datasetActionMessage"
+              :dataset-action-success="datasetActionSuccess"
+              :user-group-action-message="userGroupActionMessage"
+              :user-group-action-success="userGroupActionSuccess"
+              @authenticate="showAuthModal = true"
+              @view-token="showTokenModal = true"
+              @create-test-groups="handleCreateTestGroupsClick"
+              @create-test-users="handleCreateTestUsersClick"
+              @create-test-datasets="handleCreateTestDatasetsClick"
+              @insert-test-data="handleInsertTestDataClick"
+              @clear-dataset-message="datasetActionMessage = null"
+              @clear-user-group-message="userGroupActionMessage = null"
+            />
+          </div>
+          <div v-else-if="index === 1" class="space-y-6">
+            <!-- Template Management -->
+            <DomainTemplateManagement
+              :domain-id="domain.id"
+              :domain-name="domain.name"
+            />
+          </div>
         </template>
-        <div class="space-y-3">
-          <p class="text-sm text-gray-600">
-            Create test datasets (tst_publishers, tst_genres, tst_books) and load sample data for testing purposes.
-          </p>
-          <div class="flex gap-2">
-            <UButton
-              color="blue"
-              variant="outline"
-              icon="i-heroicons-document-plus"
-              :loading="creatingDatasets"
-              :disabled="!accessToken"
-              @click="handleCreateTestDatasetsClick"
-            >
-              Create Test Datasets
-            </UButton>
-            <UButton
-              color="green"
-              variant="outline"
-              icon="i-heroicons-arrow-down-tray"
-              :loading="loadingTestData"
-              :disabled="!accessToken"
-              @click="handleInsertTestDataClick"
-            >
-              Load Test Data
-            </UButton>
-          </div>
-          <UAlert
-            v-if="datasetActionMessage"
-            :color="datasetActionSuccess ? 'green' : 'red'"
-            variant="soft"
-            :title="datasetActionMessage"
-            class="mt-2"
-            @close="datasetActionMessage = null"
-          />
-        </div>
-      </UCard>
+      </UTabs>
 
-      <!-- Admin Authentication Modal -->
+      <!-- Modals (shared across tabs) -->
       <DomainAdminAuthModal
         v-model="showAuthModal"
         :domain-name="domain?.name || ''"
@@ -184,121 +103,19 @@
         @cancel="handleAuthCancel"
       />
 
-      <!-- Create Users Modal -->
       <DomainCreateUsersModal
         v-model="showCreateUsersModal"
         @confirmed="handleCreateUsersConfirmed"
         @cancel="showCreateUsersModal = false"
       />
 
-      <!-- Token View Modal -->
       <DomainTokenViewModal
         v-model="showTokenModal"
         :token="accessToken"
       />
 
-      <!-- Domain Information Cards -->
-      <div v-if="!isEditing" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Basic Information -->
-        <UCard class="bg-white dark:bg-gray-800">
-          <template #header>
-            <h3 class="text-lg font-semibold">Basic Information</h3>
-          </template>
-          <div class="space-y-4">
-            <div>
-              <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Domain Name</label>
-              <p class="text-gray-900 dark:text-gray-100">{{ domain.name }}</p>
-            </div>
-            <div>
-              <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Display Name</label>
-              <p class="text-gray-900 dark:text-gray-100">{{ domain.displayName }}</p>
-            </div>
-            <div>
-              <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Database Name</label>
-              <p class="text-gray-900 dark:text-gray-100 font-mono text-sm">{{ domain.databaseName }}</p>
-            </div>
-            <div>
-              <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Realm Name</label>
-              <p class="text-gray-900 dark:text-gray-100 font-mono text-sm">{{ domain.realmName }}</p>
-            </div>
-            <div>
-              <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Storage Bucket</label>
-              <p class="text-gray-900 dark:text-gray-100 font-mono text-sm">{{ domain.storageBucket }}</p>
-            </div>
-          </div>
-        </UCard>
-
-        <!-- Storage & Status -->
-        <UCard class="bg-white dark:bg-gray-800">
-          <template #header>
-            <h3 class="text-lg font-semibold">Storage & Status</h3>
-          </template>
-          <div class="space-y-4">
-            <div>
-              <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Storage Used</label>
-              <div class="mt-1">
-                <p class="text-gray-900 dark:text-gray-100">{{ formatBytes(domain.storageUsed) }} / {{ formatBytes(domain.storageQuota) }}</p>
-                <UProgress
-                  :value="(domain.storageUsed / domain.storageQuota) * 100"
-                  color="primary"
-                  class="mt-2"
-                />
-              </div>
-            </div>
-            <div>
-              <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Status</label>
-              <p>
-                <UBadge
-                  :color="getStatusColor(domain.status)"
-                  variant="soft"
-                >
-                  {{ domain.status }}
-                </UBadge>
-              </p>
-            </div>
-            <div>
-              <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Created At</label>
-              <p class="text-gray-900 dark:text-gray-100">{{ formatDate(domain.createdAt) }}</p>
-            </div>
-            <div v-if="domain.updatedAt">
-              <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Updated At</label>
-              <p class="text-gray-900 dark:text-gray-100">{{ formatDate(domain.updatedAt) }}</p>
-            </div>
-            <div v-if="domain.expiresAt">
-              <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Expires At</label>
-              <p class="text-gray-900 dark:text-gray-100">{{ formatDate(domain.expiresAt) }}</p>
-            </div>
-          </div>
-        </UCard>
-
-        <!-- Settings -->
-        <UCard class="md:col-span-2 bg-white dark:bg-gray-800">
-          <template #header>
-            <h3 class="text-lg font-semibold">Settings</h3>
-          </template>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Max Users</label>
-              <p class="text-gray-900 dark:text-gray-100">{{ domain.settings?.maxUsers || 'N/A' }}</p>
-            </div>
-            <div>
-              <label class="text-sm font-medium text-gray-500 dark:text-gray-400">Max Assets</label>
-              <p class="text-gray-900 dark:text-gray-100">{{ domain.settings?.maxAssets || 'N/A' }}</p>
-            </div>
-            <div>
-              <label class="text-sm font-medium text-gray-500 dark:text-gray-400">MQTT Enabled</label>
-              <p class="text-gray-900 dark:text-gray-100">
-                <UBadge :color="domain.settings?.enableMqtt ? 'green' : 'gray'" variant="soft">
-                  {{ domain.settings?.enableMqtt ? 'Yes' : 'No' }}
-                </UBadge>
-              </p>
-            </div>
-          </div>
-        </UCard>
-      </div>
-
-      <!-- Edit Form -->
-      <UCard v-else>
+      <!-- Edit Form (shown when editing) -->
+      <UCard v-if="isEditing">
         <template #header>
           <div class="flex justify-between items-center">
             <h3 class="text-lg font-semibold">Edit Domain</h3>
@@ -350,6 +167,12 @@ const showCreateUsersModal = ref(false)
 const showTokenModal = ref(false)
 const accessToken = ref<string | null>(null)
 const authenticatedUsername = ref<string | null>(null)
+const activeTab = ref(0)
+
+const tabs = [
+  { label: 'Overview', value: 'overview', icon: 'i-heroicons-home' },
+  { label: 'Templates', value: 'templates', icon: 'i-heroicons-document-duplicate' },
+]
 
 const domainId = route.params.id as string
 

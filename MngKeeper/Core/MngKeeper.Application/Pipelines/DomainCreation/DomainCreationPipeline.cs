@@ -17,6 +17,7 @@ public class DomainCreationPipeline
         CreateDomainEntityStep createDomainEntityStep,
         CreateDatabaseStep createDatabaseStep,
         InitializeDatabaseCollectionsStep initializeDatabaseCollectionsStep,
+        InitializeInitialDataStep initializeInitialDataStep,
         InitializeDataGatewayCollectionsStep initializeDataGatewayCollectionsStep,
         CreateIndexesStep createIndexesStep,
         CreateKeycloakRealmStep createKeycloakRealmStep,
@@ -26,6 +27,7 @@ public class DomainCreationPipeline
         InitializeDomainCacheStep initializeDomainCacheStep,
         CreateMinIOBucketStep createMinIOBucketStep,
         ActivateDomainStep activateDomainStep,
+        SendDomainCreatedEmailStep sendDomainCreatedEmailStep,
         ILogger<DomainCreationPipeline> logger,
         ILogger<Pipeline<DomainCreationContext>> pipelineLogger)
     {
@@ -38,15 +40,17 @@ public class DomainCreationPipeline
             .AddStep(createDomainEntityStep)                // Step 2
             .AddStep(createDatabaseStep)                    // Step 3
             .AddStep(initializeDatabaseCollectionsStep)     // Step 4 - Initialize @datasets, @dataset_categories
-            .AddStep(initializeDataGatewayCollectionsStep)  // Step 4.5 - Initialize @users, @groups
-            .AddStep(createIndexesStep)                     // Step 4.6 - Create indexes for users and groups
+            .AddStep(initializeInitialDataStep)             // Step 4.5 - Copy initial data from mng_templates
+            .AddStep(initializeDataGatewayCollectionsStep)  // Step 4.6 - Initialize @users, @groups
+            .AddStep(createIndexesStep)                     // Step 4.7 - Create indexes for users and groups
             .AddStep(createKeycloakRealmStep)               // Step 5
             .AddStep(createDefaultGroupsStep)               // Step 6
             .AddStep(createAdminUserStep)                   // Step 7
             .AddStep(publishDomainCreatedEventStep)         // Step 8 - RabbitMQ
             .AddStep(initializeDomainCacheStep)             // Step 9 - Redis
             .AddStep(createMinIOBucketStep)                 // Step 10 - MinIO
-            .AddStep(activateDomainStep);                   // Step 11 - Final
+            .AddStep(activateDomainStep)                    // Step 11 - Final
+            .AddStep(sendDomainCreatedEmailStep);           // Step 12 - Send email (non-critical)
     }
     
     /// <summary>

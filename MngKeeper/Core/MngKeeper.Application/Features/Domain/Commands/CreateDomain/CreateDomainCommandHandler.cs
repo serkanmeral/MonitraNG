@@ -30,8 +30,10 @@ namespace MngKeeper.Application.Features.Domain.Commands.CreateDomain
                 AdminPassword = request.AdminPassword,
                 Settings = request.Settings,
                 RelatedPersonPhone = request.RelatedPersonPhone,
+                RelatedPersonEmail = request.RelatedPersonEmail,
                 Logo = request.Logo,
-                LogoUrl = request.LogoUrl
+                LogoUrl = request.LogoUrl,
+                TemplateName = request.TemplateName
             };
             
             // Execute pipeline

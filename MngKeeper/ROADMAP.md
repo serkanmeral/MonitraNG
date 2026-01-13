@@ -1,7 +1,7 @@
 # MngKeeper API - Development Roadmap
 
 **Microservice:** Identity & Access Management (IAM)  
-**Version:** 1.2.1  
+**Version:** 1.2.2  
 **Last Updated:** 11 Ocak 2026
 
 ---
@@ -19,11 +19,12 @@
 | Clean Architecture | ✅ Complete | 100% |
 | Code Optimization | ✅ Complete | 100% |
 | RabbitMQ Events | ✅ Complete | 100% |
+| Template Management System | ✅ Complete | 100% |
 | Password Management | 🔄 Partial | 67% |
 | User Profile Enhancement | 📋 Planned | 0% |
 | Manager Role & Authorization | 📋 Planned | 0% |
 
-**Overall Progress:** **98%** of Core Features
+**Overall Progress:** **99%** of Core Features
 
 ---
 
@@ -31,19 +32,21 @@
 
 ### 1. Domain Creation Pipeline (v1.0) - ✅ TAMAMLANDI
 
-**12 Adımlı Pipeline:**
+**13 Adımlı Pipeline:**
 1. ✅ ValidateDomain - Domain name validation
 2. ✅ CreateDomainEntity - MongoDB entity creation (RelatedPersonPhone, Logo, LogoUrl desteği ile)
 3. ✅ CreateDatabase - Dedicated domain database
 4. ✅ InitializeDatabaseCollections - Default collections (@datasets, @dataset_categories)
-5. ✅ InitializeDataGatewayCollections - DataGateway collections (@users, @groups)
-6. ✅ CreateKeycloakRealm - Keycloak realm creation
-7. ✅ CreateDefaultGroups - 4 default groups (admins, managers, users, guests) + Keycloak + MongoDB + DataGateway sync
-8. ✅ CreateAdminUser - Domain admin user with isAdmin attribute
-9. ✅ PublishDomainCreatedEvent - RabbitMQ event publishing
-10. ✅ InitializeDomainCache - Redis cache (users, groups, metadata)
-11. ✅ CreateMinIOBucket - S3-compatible storage bucket + folders (system, data, backups)
-12. ✅ ActivateDomain - Domain activation
+5. ✅ InitializeInitialData - Copy initial data from template (collections, documents, indexes) - v1.2.2 (11 Ocak 2026)
+6. ✅ InitializeDataGatewayCollections - DataGateway collections (@users, @groups)
+7. ✅ CreateIndexes - Create indexes for users and groups
+8. ✅ CreateKeycloakRealm - Keycloak realm creation
+9. ✅ CreateDefaultGroups - 4 default groups (admins, managers, users, guests) + Keycloak + MongoDB + DataGateway sync
+10. ✅ CreateAdminUser - Domain admin user with isAdmin attribute
+11. ✅ PublishDomainCreatedEvent - RabbitMQ event publishing
+12. ✅ InitializeDomainCache - Redis cache (users, groups, metadata)
+13. ✅ CreateMinIOBucket - S3-compatible storage bucket + folders (system, data, backups)
+14. ✅ ActivateDomain - Domain activation
 
 **Domain Model Enhancement (v1.1) - ✅ TAMAMLANDI (31 Aralık 2025)**
 
@@ -225,7 +228,61 @@
 
 ---
 
-### 9. API Gateway Integration (v1.2.1) - ✅ TAMAMLANDI (11 Ocak 2026)
+### 9. Template Management System (v1.2.2) - ✅ TAMAMLANDI (11 Ocak 2026)
+
+**Amaç:** Domain oluşturulurken initial data (collections, documents, indexes) template'lerden otomatik kopyalanması
+
+**Özellikler:**
+- ✅ Template CRUD operations (Create, Read, Update, Delete)
+- ✅ Template metadata MongoDB'de saklanıyor (`mngkeeper.templates` collection)
+- ✅ Template content MinIO'da JSON formatında saklanıyor (`System/templates/{templateName}.json`)
+- ✅ Template oluşturma: Domain'den collection'ları seçerek template oluşturma
+- ✅ Template güncelleme: Mevcut template'i güncelleme
+- ✅ Template silme: Template ve içeriğini silme
+- ✅ Domain creation pipeline'a template desteği eklendi (`InitializeInitialDataStep`)
+- ✅ MinIO SystemFolderPath configurable yapıldı (varsayılan: `System`)
+
+**Template Entity:**
+- ✅ `Template` entity (MongoDB)
+- ✅ `TemplateRepository` (IRepository pattern)
+- ✅ `ITemplateService` interface
+- ✅ `TemplateService` implementation (MinIO + MongoDB)
+
+**API Endpoints:**
+- ✅ `GET /api/templates` - Tüm template'leri listele
+- ✅ `GET /api/templates/{name}` - Template detayı
+- ✅ `POST /api/templates` - Yeni template oluştur
+- ✅ `PUT /api/templates/{name}` - Template güncelle
+- ✅ `DELETE /api/templates/{name}` - Template sil
+- ✅ `GET /api/templates/{name}/content` - Template content (MinIO'dan)
+- ✅ `GET /api/domain/{id}/collections` - Domain collection'larını listele (template oluşturma için)
+
+**Domain Creation Integration:**
+- ✅ `CreateDomainCommand`'a `TemplateName` field'ı eklendi
+- ✅ `DomainCreationContext`'e `TemplateName` field'ı eklendi
+- ✅ `InitializeInitialDataStep` pipeline step'i eklendi
+- ✅ Template seçildiğinde MinIO'dan template content okunuyor
+- ✅ Template'teki collection'lar, documents ve indexes yeni domain'e kopyalanıyor
+- ✅ Veriler as-is kopyalanıyor (__dataId, __createInfo, __history vb. değiştirilmiyor)
+
+**MinIO Storage:**
+- ✅ Template content JSON formatında (`TemplateContent` DTO)
+- ✅ Storage path: `{SystemFolderPath}/templates/{templateName}.json`
+- ✅ SystemFolderPath configurable (`MngKeeperSettings.MinIO.SystemFolderPath`)
+- ✅ Varsayılan: `System` (locale dosyaları ile uyumlu)
+
+**Test Edildi:**
+- ✅ Template oluşturma (domain'den collection seçimi)
+- ✅ Template content MinIO'da saklanıyor
+- ✅ Template metadata MongoDB'de saklanıyor
+- ✅ Domain oluşturma sırasında template seçimi
+- ✅ Template'teki veriler yeni domain'e kopyalanıyor
+- ✅ Indexes kopyalanıyor
+- ✅ Veriler as-is kopyalanıyor (değişiklik yok)
+
+---
+
+### 10. API Gateway Integration (v1.2.1) - ✅ TAMAMLANDI (11 Ocak 2026)
 
 **Yapılan Değişiklikler:**
 - ✅ HTTPS'den HTTP'ye geçiş (SSL/TLS termination artık Gateway'de)
@@ -751,8 +808,20 @@ Normal User (isAdmin = false, isManager = false)
 ---
 
 **Son Güncelleme:** 11 Ocak 2026  
-**Status:** Core features complete (98%), API Gateway entegrasyonu tamamlandı  
-**Son Tamamlanan (v1.2.1 - 11 Ocak 2026):** 
+**Status:** Core features complete (99%), Template Management System tamamlandı  
+**Son Tamamlanan (v1.2.2 - 11 Ocak 2026):**
+- Template Management System tamamlandı
+  - Template CRUD operations (Create, Read, Update, Delete)
+  - Template metadata MongoDB'de (`mngkeeper.templates`)
+  - Template content MinIO'da JSON formatında (`System/templates/{templateName}.json`)
+  - Domain creation pipeline'a template desteği eklendi (`InitializeInitialDataStep`)
+  - MinIO SystemFolderPath configurable yapıldı (varsayılan: `System`)
+  - Domain oluşturulurken template seçimi ile initial data kopyalanıyor
+  - Veriler as-is kopyalanıyor (__dataId, __createInfo, __history vb. değiştirilmiyor)
+- API Endpoints: `/api/templates/*`, `/api/domain/{id}/collections`
+- Docker build ve compose up tamamlandı
+
+**Önceki Versiyon (v1.2.1 - 11 Ocak 2026):** 
 - API Gateway Pattern entegrasyonu tamamlandı
   - HTTPS'den HTTP'ye geçiş (SSL/TLS termination artık Gateway'de)
   - CORS yapılandırması kaldırıldı (Gateway'de merkezi yönetim)

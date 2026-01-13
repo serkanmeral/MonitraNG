@@ -49,8 +49,10 @@ export interface CreateDomainRequest {
   adminPassword: string
   settings?: DomainSettings
   relatedPersonPhone?: string
+  relatedPersonEmail?: string
   logo?: string
   logoUrl?: string
+  initialDataTemplateName?: string
 }
 
 export interface CreateDomainResponse {

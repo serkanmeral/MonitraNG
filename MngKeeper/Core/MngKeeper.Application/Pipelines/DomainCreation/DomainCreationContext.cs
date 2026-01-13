@@ -17,8 +17,12 @@ public class DomainCreationContext
     public string AdminPassword { get; set; } = string.Empty;
     public DomainSettingsDto Settings { get; set; } = new();
     public string? RelatedPersonPhone { get; set; }
+    public string? RelatedPersonEmail { get; set; }
     public string? Logo { get; set; }
     public string? LogoUrl { get; set; }
+    
+    // Template Selection
+    public string? TemplateName { get; set; }  // Template name to use for initial data (optional)
     
     // Generated/Computed
     public string DatabaseName { get; set; } = string.Empty;

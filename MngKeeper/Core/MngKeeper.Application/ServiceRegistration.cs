@@ -21,6 +21,7 @@ public static class ServiceRegistration
             _.Mqtt = settings.Mqtt;
             _.Keycloak = settings.Keycloak;
             _.MinIO = settings.MinIO;
+            _.Notifier = settings.Notifier;
             _.CertificateSettings = settings.CertificateSettings;
             _.OpenApiServerPath = settings.OpenApiServerPath;
         });
@@ -52,6 +53,7 @@ public static class ServiceRegistration
         services.AddScoped<CreateDomainEntityStep>();
         services.AddScoped<CreateDatabaseStep>();
         services.AddScoped<InitializeDatabaseCollectionsStep>();
+        services.AddScoped<InitializeInitialDataStep>();
         services.AddScoped<InitializeDataGatewayCollectionsStep>();
         services.AddScoped<CreateIndexesStep>();
         services.AddScoped<CreateKeycloakRealmStep>();
@@ -61,6 +63,7 @@ public static class ServiceRegistration
         services.AddScoped<InitializeDomainCacheStep>();
         services.AddScoped<CreateMinIOBucketStep>();
         services.AddScoped<ActivateDomainStep>();
+        services.AddScoped<SendDomainCreatedEmailStep>();
         
         // Add Pipeline
         services.AddScoped<DomainCreationPipeline>();

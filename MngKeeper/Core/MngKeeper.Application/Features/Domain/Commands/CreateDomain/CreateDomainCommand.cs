@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using MediatR;
 
 namespace MngKeeper.Application.Features.Domain.Commands.CreateDomain
@@ -10,8 +11,12 @@ namespace MngKeeper.Application.Features.Domain.Commands.CreateDomain
         public string AdminPassword { get; set; } = string.Empty;
         public DomainSettingsDto Settings { get; set; } = new();
         public string? RelatedPersonPhone { get; set; }
+        public string? RelatedPersonEmail { get; set; }
         public string? Logo { get; set; }
         public string? LogoUrl { get; set; }
+        
+        [JsonPropertyName("initialDataTemplateName")]
+        public string? TemplateName { get; set; }  // Optional template name for initial data
     }
 
     public class DomainSettingsDto
