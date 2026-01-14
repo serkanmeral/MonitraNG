@@ -159,8 +159,30 @@ export default defineNuxtPlugin((nuxtApp) => {
 
       // Try to load each locale from MinIO
       for (const locale of availableLocales) {
-        // Skip 'ro' (it's actually 'ar' - Arabic)
-        if (locale === 'ro') continue;
+        // Special handling for 'ro' (Arabic): Load from MinIO as 'ar' but store in 'ro'
+        if (locale === 'ro') {
+          // Check cache first (unless force reload)
+          if (!forceReload) {
+            const cached = getCachedLocale('ar'); // Cache key is 'ar' (MinIO file name)
+            if (cached) {
+              // Deep merge cached data into i18n messages for 'ro'
+              messages[locale] = deepMerge(messages[locale] || {}, cached.data);
+              continue;
+            }
+          }
+
+          // Try to load from MinIO as 'ar' (MinIO stores it as ar.json)
+          const minioData = await loadLocaleFromMinIO('ar');
+          
+          if (minioData) {
+            // Cache the data with 'ar' key (MinIO file name)
+            setCachedLocale('ar', minioData);
+            
+            // Deep merge into i18n messages for 'ro' (i18n uses 'ro' key)
+            messages[locale] = deepMerge(messages[locale] || {}, minioData);
+          }
+          continue;
+        }
 
         // Check cache first (unless force reload)
         if (!forceReload) {

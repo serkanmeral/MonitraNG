@@ -7,6 +7,23 @@ Versiyonlama [Semantic Versioning](https://semver.org/spec/v2.0.0.html) kullanı
 
 ## [Unreleased]
 
+### Added
+- **Domain Creation Email Notification**
+  - Automatic email notification when domain is created
+  - Email sent to related person (RelatedPersonEmail field)
+  - HTML formatted email with domain and admin user information
+  - SendDomainCreatedEmailStep added to domain creation pipeline
+  - Non-critical step: Pipeline continues even if email sending fails
+  - INotifierService interface and NotifierService implementation for MngNotifier API integration
+  - RelatedPersonEmail field added to DomainCreationContext and CreateDomainCommand
+  - RelatedPersonEmail input field added to MngDomainUI domain creation form
+  - Email template service infrastructure (IEmailTemplateService, EmailTemplateService)
+  - Email template file (domain-created.html) prepared for future use
+
+### Changed
+- Domain creation pipeline now includes email notification step (Step 12, after ActivateDomainStep)
+- MngKeeperSettings configuration extended with NotifierSettings
+
 ## [1.1.0] - 2025-12-16
 
 ### Added

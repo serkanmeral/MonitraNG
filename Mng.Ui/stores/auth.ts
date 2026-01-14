@@ -2,6 +2,8 @@ import { defineStore } from "pinia";
 import { loginToMngKeeper, refreshMngKeeperToken, revokeMngKeeperToken, type TokenResponse } from "@/services/apiService";
 import { decodeJwt } from "jose";
 import { isTokenExpired } from "@/utils/tokenUtils";
+import type { Domain } from "@/composables/useDomain";
+import { useDomain } from "@/composables/useDomain";
 
 export interface UserInfo {
   sub: string;
@@ -23,6 +25,7 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   userInfo: UserInfo | null;
+  domainInfo: Domain | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   isRefreshing: boolean;
@@ -34,6 +37,7 @@ export const useAuthStore = defineStore("auth", {
     accessToken: null,
     refreshToken: null,
     userInfo: null,
+    domainInfo: null,
     isAuthenticated: false,
     isLoading: false,
     isRefreshing: false,
@@ -115,6 +119,14 @@ export const useAuthStore = defineStore("auth", {
           
           // Store user info in localStorage
           localStorage.setItem("userInfo", JSON.stringify(normalizedUserInfo));
+          
+          // Load domain information after successful login
+          try {
+            await this.loadDomainInfo();
+          } catch (domainError) {
+            // Domain bilgisi yüklenemezse hata verme, sadece logla
+            console.warn('Domain bilgisi yüklenemedi:', domainError);
+          }
         } catch (error) {
           throw new Error("Token decode hatası");
         }
@@ -365,6 +377,7 @@ export const useAuthStore = defineStore("auth", {
       this.accessToken = null;
       this.refreshToken = null;
       this.userInfo = null;
+      this.domainInfo = null;
       this.isAuthenticated = false;
       this.isRefreshing = false;
       this.refreshPromise = null;
@@ -431,10 +444,47 @@ export const useAuthStore = defineStore("auth", {
               // Failed to parse stored user info - continue without it
             }
           }
+          
+          // Load domain information
+          try {
+            await this.loadDomainInfo();
+          } catch (domainError) {
+            // Domain bilgisi yüklenemezse hata verme, sadece logla
+            console.warn('Domain bilgisi yüklenemedi:', domainError);
+          }
         } catch (error) {
           // JWT decode error - clear everything
           await this.logout();
         }
+      }
+    },
+
+    /**
+     * Load domain information from MngKeeper
+     */
+    async loadDomainInfo(): Promise<void> {
+      if (!this.userInfo) {
+        return;
+      }
+
+      const domainName = this.userInfo.domain_name;
+      const domainId = this.userInfo.domain_id;
+
+      if (!domainName && !domainId) {
+        return;
+      }
+
+      try {
+        // Use composable to get domain info
+        const { getCurrentDomain } = useDomain();
+        const domain = await getCurrentDomain();
+        
+        if (domain) {
+          this.domainInfo = domain;
+        }
+      } catch (error) {
+        console.error('Error loading domain info:', error);
+        // Don't throw - domain info is optional
       }
     },
   },

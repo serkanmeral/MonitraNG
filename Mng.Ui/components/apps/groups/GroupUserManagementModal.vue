@@ -4,6 +4,20 @@ import { useGroupStore } from '@/stores/apps/group';
 import { useUserStore, type User } from '@/stores/apps/user';
 import { UserMinusIcon, UserPlusIcon } from 'vue-tabler-icons';
 
+// Get i18n instance for legacy mode
+const nuxtApp = useNuxtApp();
+const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
+const t = (key: string, params?: any) => {
+  if (i18n && i18n.t) {
+    return i18n.t(key, params);
+  }
+  // Fallback: try global.t if available
+  if (i18n?.global?.t) {
+    return i18n.global.t(key, params);
+  }
+  return key;
+};
+
 interface Props {
   groupId: string;
   groupName: string;
@@ -89,7 +103,7 @@ const loadUsers = async () => {
     
     allUsers.value = [...userStore.users];
   } catch (error: any) {
-    errorMessage.value = error.message || 'Kullanıcılar yüklenirken bir hata oluştu';
+    errorMessage.value = error.message || t('groups.userManagement.errors.load');
     console.error('Error loading users:', error);
   } finally {
     loading.value = false;
@@ -110,7 +124,7 @@ watch(() => props.isOpen, (newVal) => {
 // Add users to group (batch)
 const addUsersToGroup = async () => {
   if (selectedUserIds.value.length === 0) {
-    errorMessage.value = 'Lütfen en az bir kullanıcı seçin';
+    errorMessage.value = t('groups.userManagement.errors.noSelection');
     return;
   }
   
@@ -125,7 +139,7 @@ const addUsersToGroup = async () => {
     
     await Promise.all(promises);
     
-    successMessage.value = `${selectedUserIds.value.length} kullanıcı gruba başarıyla eklendi`;
+    successMessage.value = t('groups.userManagement.success.added', { count: selectedUserIds.value.length });
     selectedUserIds.value = [];
     
     // Kullanıcı listesini yenile
@@ -139,7 +153,7 @@ const addUsersToGroup = async () => {
       successMessage.value = '';
     }, 3000);
   } catch (error: any) {
-    errorMessage.value = error.message || 'Kullanıcılar gruba eklenirken bir hata oluştu';
+    errorMessage.value = error.message || t('groups.userManagement.errors.add');
     console.error('Error adding users to group:', error);
   } finally {
     addingUsers.value = false;
@@ -155,7 +169,7 @@ const removeUserFromGroup = async (userId: string) => {
   try {
     await groupStore.removeUserFromGroup(props.groupId, userId);
     
-    successMessage.value = 'Kullanıcı gruptan başarıyla çıkarıldı';
+    successMessage.value = t('groups.userManagement.success.removed');
     
     // Kullanıcı listesini yenile
     await loadUsers();
@@ -168,7 +182,7 @@ const removeUserFromGroup = async (userId: string) => {
       successMessage.value = '';
     }, 3000);
   } catch (error: any) {
-    errorMessage.value = error.message || 'Kullanıcı gruptan çıkarılırken bir hata oluştu';
+    errorMessage.value = error.message || t('groups.userManagement.errors.remove');
     console.error('Error removing user from group:', error);
   } finally {
     removingUserId.value = null;
@@ -206,7 +220,7 @@ const closeModal = () => {
     <v-card>
       <v-card-title class="pa-4 bg-primary text-white d-flex justify-space-between align-center">
         <div>
-          <span class="text-h6">Üye Yönetimi</span>
+          <span class="text-h6">{{ t('groups.userManagement.title') }}</span>
           <div class="text-caption mt-1">{{ groupName }}</div>
         </div>
         <v-btn icon variant="text" color="white" @click="closeModal" size="small">
@@ -243,7 +257,7 @@ const closeModal = () => {
         <!-- Loading State -->
         <div v-if="loading" class="text-center py-12">
           <v-progress-circular indeterminate color="primary" size="48" />
-          <p class="text-subtitle-1 mt-4 text-medium-emphasis">Kullanıcılar yükleniyor...</p>
+          <p class="text-subtitle-1 mt-4 text-medium-emphasis">{{ t('groups.userManagement.loading') }}</p>
         </div>
 
         <!-- Content -->
@@ -252,7 +266,7 @@ const closeModal = () => {
           <v-text-field
             v-model="searchQuery"
             prepend-inner-icon="mdi-magnify"
-            label="Kullanıcı Ara (Kullanıcı adı, Email, Ad Soyad)"
+            :label="t('groups.userManagement.search')"
             variant="outlined"
             density="compact"
             clearable
@@ -266,7 +280,7 @@ const closeModal = () => {
                 <v-card-title class="bg-secondary text-white pa-3">
                   <div class="d-flex justify-space-between align-center w-100">
                     <span class="text-subtitle-1 font-weight-medium">
-                      Mevcut Üyeler ({{ filteredCurrentMembers.length }})
+                      {{ t('groups.userManagement.currentMembers') }} ({{ filteredCurrentMembers.length }})
                     </span>
                   </div>
                 </v-card-title>
@@ -274,7 +288,7 @@ const closeModal = () => {
                 <v-card-text class="pa-0">
                   <div v-if="filteredCurrentMembers.length === 0" class="text-center py-8 text-medium-emphasis">
                     <UserMinusIcon size="48" class="mb-2" />
-                    <p class="text-subtitle-2">Üye bulunamadı</p>
+                    <p class="text-subtitle-2">{{ t('groups.userManagement.noMembers') }}</p>
                   </div>
                   
                   <v-list density="compact" v-else>
@@ -308,7 +322,7 @@ const closeModal = () => {
                 <v-card-title class="bg-info text-white pa-3">
                   <div class="d-flex justify-space-between align-center w-100">
                     <span class="text-subtitle-1 font-weight-medium">
-                      Kullanıcı Ekle ({{ availableUsers.length }})
+                      {{ t('groups.userManagement.addUsers') }} ({{ availableUsers.length }})
                     </span>
                   </div>
                 </v-card-title>
@@ -324,7 +338,7 @@ const closeModal = () => {
                         @click="selectAll"
                         :disabled="availableUsers.length === 0"
                       >
-                        Tümünü Seç
+                        {{ t('groups.userManagement.selectAll') }}
                       </v-btn>
                       <v-btn
                         size="small"
@@ -333,7 +347,7 @@ const closeModal = () => {
                         @click="deselectAll"
                         :disabled="selectedUserIds.length === 0"
                       >
-                        Seçimi Temizle
+                        {{ t('groups.userManagement.deselectAll') }}
                       </v-btn>
                     </div>
                     <v-chip
@@ -342,7 +356,7 @@ const closeModal = () => {
                       size="small"
                       variant="flat"
                     >
-                      {{ selectedUserIds.length }} seçili
+                      {{ selectedUserIds.length }} {{ t('groups.userManagement.selected') }}
                     </v-chip>
                   </div>
                   <v-btn
@@ -355,15 +369,15 @@ const closeModal = () => {
                     block
                   >
                     <UserPlusIcon class="mr-2" size="18" />
-                    Seçilen {{ selectedUserIds.length }} Kullanıcıyı Ekle
+                    {{ t('groups.userManagement.addSelected', { count: selectedUserIds.length }) }}
                   </v-btn>
                 </div>
                 
                 <v-card-text class="pa-0 flex-grow-1" style="overflow-y: auto;">
                   <div v-if="availableUsers.length === 0" class="text-center py-8 text-medium-emphasis">
                     <UserPlusIcon size="48" class="mb-2" />
-                    <p class="text-subtitle-2">Eklenecek kullanıcı bulunamadı</p>
-                    <p class="text-caption mt-2">Tüm kullanıcılar zaten bu grupta olabilir</p>
+                    <p class="text-subtitle-2">{{ t('groups.userManagement.noUsersToAdd') }}</p>
+                    <p class="text-caption mt-2">{{ t('groups.userManagement.noUsersToAddDescription') }}</p>
                   </div>
                   
                   <v-list density="compact" v-else>
@@ -401,7 +415,7 @@ const closeModal = () => {
           variant="flat"
           @click="closeModal"
         >
-          Kapat
+          {{ t('groups.userManagement.close') }}
         </v-btn>
       </v-card-actions>
     </v-card>

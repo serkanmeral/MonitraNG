@@ -112,20 +112,33 @@ Application = Evin içindeki mobilyalar, eşyalar
 
 ---
 
-### 5. 🔄 Scheduler System (Planlanmış)
+### 5. 🔄 Scheduler System
+
+**MngScheduler - Zamanlanmış Görev Yönetimi**
 
 **Ne sağlar?**
-- ✅ Scheduled tasks
-- ✅ Cron job support
-- ✅ Recurring tasks
-- ✅ Task management
+- ✅ Database-driven jobs (MongoDB)
+- ✅ Cron expression ile zamanlanmış görevler
+- ✅ HTTP POST endpoint çağrıları
+- ✅ Runtime'da job ekleme/güncelleme/silme
+- ✅ Job durumu takibi ve execution history
+- ✅ Retry mekanizması
+- ✅ Event publishing (RabbitMQ)
+
+**Teknoloji:**
+- Quartz.NET (Mevcut projede kullanılıyor)
+- MongoDB (Job tanımları)
+- RabbitMQ (Event publishing)
 
 **Neden infrastructure?**
 - Her uygulama zamanlanmış görevlere ihtiyaç duyar
-- Email gönderimi, rapor oluşturma, vb.
+- Backup, rapor oluşturma, periyodik işlemler
 - Tek bir scheduler servisi = Tüm uygulamalar için
+- Dinamik job yönetimi (kod değişikliği gerektirmez)
 
-**Durum:** ⏳ Planlanmış
+**Durum:** ⏳ Planlanmış - Roadmap hazır
+
+**Roadmap:** `docs/MngScheduler/ROADMAP.md`
 
 ---
 
@@ -193,7 +206,7 @@ Application = Evin içindeki mobilyalar, eşyalar
 | **MngKeeper** | Identity & Access Management | ✅ Tamamlandı |
 | **MngDataGateway** | Generic Data Layer | ✅ Tamamlandı |
 | **MngHub** | Event Hub & Real-time | ✅ Tamamlandı |
-| **MngScheduler** | Task Scheduling | ⏳ Planlanmış |
+| **MngScheduler** | Task Scheduling (Quartz.NET) | ⏳ Planlanmış |
 
 ### Supporting Infrastructure
 
@@ -282,7 +295,7 @@ Application = Evin içindeki mobilyalar, eşyalar
 ## 🎯 Sonraki Adımlar
 
 ### Infrastructure Tamamlama
-- [ ] MngScheduler servisi
+- [ ] MngScheduler servisi (Quartz.NET tabanlı - Roadmap hazır)
 - [ ] SonarQube kurulumu
 - [ ] CI/CD pipeline'ları aktifleştirme
 - [ ] Production deployment

@@ -330,5 +330,131 @@
             "label": "Langue",
             "select": "Sélectionner la langue"
         }
+    },
+    "groups": {
+        "title": "Gestion des groupes",
+        "breadcrumbs": {
+            "home": "Accueil",
+            "groups": "Gestion des groupes",
+            "create": "Nouveau groupe",
+            "edit": "Modifier le groupe",
+            "details": "Détails du groupe"
+        },
+        "list": {
+            "search": "Rechercher des groupes",
+            "status": "Statut",
+            "statusAll": "Tous",
+            "statusActive": "Actif",
+            "statusInactive": "Inactif",
+            "export": "Exporter",
+            "exportCsv": "Télécharger en CSV",
+            "exportExcel": "Télécharger en Excel",
+            "exportSoon": "Bientôt disponible",
+            "refresh": "Actualiser",
+            "newGroup": "Nouveau groupe",
+            "noData": "Aucun groupe trouvé",
+            "createFirst": "Créer le premier groupe",
+            "total": "Total",
+            "records": "enregistrements",
+            "page": "Page",
+            "of": "/",
+            "showing": "affichage",
+            "itemsPerPage": "Éléments par page :",
+            "warning": "Avertissement",
+            "warningMessage": "Une autorisation de manager ou d'administrateur est requise pour accéder à cette page. Veuillez contacter un administrateur pour effectuer des opérations de gestion de groupe."
+        },
+        "table": {
+            "name": "Nom du groupe",
+            "memberCount": "Nombre de membres",
+            "createdAt": "Créé le",
+            "actions": "Actions",
+            "view": "Voir",
+            "edit": "Modifier",
+            "delete": "Supprimer",
+            "deleteTooltip": "Le groupe a des membres, ne peut pas être supprimé"
+        },
+        "create": {
+            "title": "Créer un nouveau groupe",
+            "name": "Nom du groupe *",
+            "description": "Description",
+            "isActive": "Actif",
+            "cancel": "Annuler",
+            "create": "Créer"
+        },
+        "edit": {
+            "title": "Modifier le groupe",
+            "loading": "Chargement...",
+            "name": "Nom du groupe *",
+            "description": "Description",
+            "isActive": "Actif",
+            "cancel": "Annuler",
+            "save": "Enregistrer"
+        },
+        "details": {
+            "title": "Détails du groupe",
+            "loading": "Chargement...",
+            "notFound": "Groupe non trouvé",
+            "backToList": "Retour à la liste",
+            "userManagement": "Gestion des membres",
+            "edit": "Modifier",
+            "groupInfo": "Informations du groupe",
+            "metadata": "Métadonnées",
+            "name": "Nom du groupe :",
+            "description": "Description :",
+            "status": "Statut :",
+            "statusActive": "Actif",
+            "statusInactive": "Inactif",
+            "memberCount": "Nombre de membres :",
+            "createdAt": "Créé le :",
+            "updatedAt": "Dernière mise à jour :",
+            "createdBy": "Créé par :",
+            "updatedBy": "Mis à jour par :",
+            "permissions": "Permissions :"
+        },
+        "delete": {
+            "title": "Supprimer le groupe",
+            "confirm": "Êtes-vous sûr de vouloir supprimer ce groupe ? Cette action ne peut pas être annulée.",
+            "cancel": "Annuler",
+            "close": "Fermer",
+            "confirmButton": "Oui, supprimer",
+            "error": "Ce groupe contient {count} utilisateurs. Vous devez d'abord retirer tous les utilisateurs du groupe."
+        },
+        "validation": {
+            "nameRequired": "Le nom du groupe est requis",
+            "nameMinLength": "Le nom du groupe doit contenir au moins 2 caractères",
+            "descriptionMaxLength": "La description peut contenir au maximum 500 caractères"
+        },
+        "errors": {
+            "load": "Une erreur s'est produite lors du chargement du groupe",
+            "create": "Une erreur s'est produite lors de la création du groupe",
+            "update": "Une erreur s'est produite lors de la mise à jour du groupe",
+            "delete": "Une erreur s'est produite lors de la suppression du groupe",
+            "export": "Une erreur s'est produite lors de l'exportation."
+        },
+        "userManagement": {
+            "title": "Gestion des membres",
+            "search": "Rechercher des utilisateurs (Nom d'utilisateur, Email, Nom complet)",
+            "currentMembers": "Membres actuels",
+            "addUsers": "Ajouter des utilisateurs",
+            "loading": "Chargement des utilisateurs...",
+            "noMembers": "Aucun membre trouvé",
+            "noUsersToAdd": "Aucun utilisateur disponible à ajouter",
+            "noUsersToAddDescription": "Tous les utilisateurs peuvent déjà être dans ce groupe",
+            "selectAll": "Tout sélectionner",
+            "deselectAll": "Effacer la sélection",
+            "selected": "sélectionné",
+            "addSelected": "Ajouter {count} utilisateurs sélectionnés",
+            "close": "Fermer",
+            "errors": {
+                "load": "Une erreur s'est produite lors du chargement des utilisateurs",
+                "add": "Une erreur s'est produite lors de l'ajout des utilisateurs au groupe",
+                "remove": "Une erreur s'est produite lors de la suppression de l'utilisateur du groupe",
+                "noSelection": "Veuillez sélectionner au moins un utilisateur"
+            },
+            "success": {
+                "added": "{count} utilisateurs ajoutés avec succès au groupe",
+                "removed": "Utilisateur supprimé avec succès du groupe"
+            }
+        }
     }
 }

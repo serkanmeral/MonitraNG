@@ -73,14 +73,34 @@ module.exports = {
     /** To password protect the Node-RED editor and admin API, the following
      * property can be used. See https://nodered.org/docs/security.html for details.
      */
-    //adminAuth: {
-    //    type: "credentials",
-    //    users: [{
-    //        username: "admin",
-    //        password: "$2a$08$zZWtXTja0fB1pzD4sHCMyOCMYz2Z6dNbM6tl8sJogENOMcxWV9DN.",
-    //        permissions: "*"
-    //    }]
-    //},
+    adminAuth: (function() {
+        // Enable adminAuth if username and password are provided via environment variables
+        const username = process.env.NODE_RED_USERNAME;
+        const password = process.env.NODE_RED_PASSWORD;
+        
+        if (username && password) {
+            // Use bcrypt to hash the password (bcryptjs is available in Node-RED)
+            try {
+                const bcrypt = require('bcryptjs');
+                const hash = bcrypt.hashSync(password, 8);
+                
+                return {
+                    type: "credentials",
+                    users: [{
+                        username: username,
+                        password: hash,
+                        permissions: "*"
+                    }]
+                };
+            } catch (e) {
+                // If bcryptjs is not available, use plain password (NOT RECOMMENDED for production)
+                // For production, install bcryptjs: npm install bcryptjs
+                console.warn("bcryptjs not available, adminAuth disabled. Install bcryptjs for secure password hashing.");
+                return undefined;
+            }
+        }
+        return undefined;
+    })(),
 
     /** The following property can be used to enable HTTPS
      * This property can be either an object, containing both a (private) key

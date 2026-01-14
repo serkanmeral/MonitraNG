@@ -58,6 +58,7 @@ public class BackendServices
     public string MngLLM { get; set; } = "http://mngllm:5030";
     public string MngNotifier { get; set; } = "http://mngnotifier:5070";
     public string MngAdmin { get; set; } = "http://mngadmin:5080";
+    public string MngScheduler { get; set; } = "http://mngscheduler:5090";
     public string KeyCloak { get; set; } = "http://keycloak:8080";
 }
 

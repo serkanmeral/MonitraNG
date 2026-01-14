@@ -3,65 +3,86 @@
     <div class="flex justify-between items-center mb-6">
       <div>
         <h1 class="text-3xl font-bold text-gray-900">Domain Management</h1>
-        <p class="text-gray-600 mt-1">Manage your domains</p>
-      </div>
-      <div class="flex gap-2">
-        <UButton
-          color="gray"
-          variant="outline"
-          @click="refreshDomains"
-          :loading="domainStore.loading"
-        >
-          Refresh
-        </UButton>
-        <UButton
-          color="primary"
-          @click="showCreateModal = true"
-        >
-          Create Domain
-        </UButton>
+        <p class="text-gray-600 mt-1">Manage your domains and system jobs</p>
       </div>
     </div>
 
-    <!-- Error Message -->
-    <UAlert
-      v-if="domainStore.error"
-      color="red"
-      variant="soft"
-      :title="domainStore.error"
-      class="mb-4"
-      @close="domainStore.clearError"
-    />
+    <!-- Tabs -->
+    <UTabs :items="tabs" v-model="activeTab" class="w-full">
+      <template #default="{ item }">
+        <div class="flex items-center gap-2">
+          <UIcon :name="item.icon" class="w-4 h-4" />
+          <span>{{ item.label }}</span>
+        </div>
+      </template>
 
-    <!-- Domain List -->
-    <DomainList
-      :domains="domainStore.domains"
-      :loading="domainStore.loading"
-      @refresh="refreshDomains"
-      @delete="handleDelete"
-      @clearAll="showClearAllModal = true"
-    />
+      <template #item="{ item, index }">
+        <div v-if="index === 0" class="space-y-6">
+          <!-- Domain Management Tab -->
+          <div class="flex justify-end gap-2 mb-4">
+            <UButton
+              color="gray"
+              variant="outline"
+              @click="refreshDomains"
+              :loading="domainStore.loading"
+            >
+              Refresh
+            </UButton>
+            <UButton
+              color="primary"
+              @click="showCreateModal = true"
+            >
+              Create Domain
+            </UButton>
+          </div>
 
-    <!-- Create Domain Modal -->
-    <UModal v-model="showCreateModal">
-      <UCard>
-        <template #header>
-          <h3 class="text-lg font-semibold">Create New Domain</h3>
-        </template>
-        <DomainForm @success="handleCreateSuccess" @cancel="showCreateModal = false" />
-      </UCard>
-    </UModal>
+          <!-- Error Message -->
+          <UAlert
+            v-if="domainStore.error"
+            color="red"
+            variant="soft"
+            :title="domainStore.error"
+            class="mb-4"
+            @close="domainStore.clearError"
+          />
 
-    <!-- Clear All Domains Modal -->
-    <DomainClearAllDomainsModal
-      v-model="showClearAllModal"
-      @confirmed="handleClearAll"
-    />
+          <!-- Domain List -->
+          <DomainList
+            :domains="domainStore.domains"
+            :loading="domainStore.loading"
+            @refresh="refreshDomains"
+            @delete="handleDelete"
+            @clearAll="showClearAllModal = true"
+          />
+
+          <!-- Create Domain Modal -->
+          <UModal v-model="showCreateModal">
+            <UCard>
+              <template #header>
+                <h3 class="text-lg font-semibold">Create New Domain</h3>
+              </template>
+              <DomainForm @success="handleCreateSuccess" @cancel="showCreateModal = false" />
+            </UCard>
+          </UModal>
+
+          <!-- Clear All Domains Modal -->
+          <DomainClearAllDomainsModal
+            v-model="showClearAllModal"
+            @confirmed="handleClearAll"
+          />
+        </div>
+        <div v-else-if="index === 1" class="space-y-6">
+          <!-- System Jobs Tab -->
+          <DomainSystemJobList />
+        </div>
+      </template>
+    </UTabs>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useDomainStore } from '~/stores/domain'
+import DomainSystemJobList from '~/components/domain/SystemJobList.vue'
 
 definePageMeta({
   layout: 'default',
@@ -71,6 +92,18 @@ definePageMeta({
 const domainStore = useDomainStore()
 const showCreateModal = ref(false)
 const showClearAllModal = ref(false)
+const activeTab = ref(0)
+
+const tabs = [
+  {
+    label: 'Domains',
+    icon: 'i-heroicons-folder',
+  },
+  {
+    label: 'System Jobs',
+    icon: 'i-heroicons-clock',
+  },
+]
 
 // Fetch domains on mount
 onMounted(() => {

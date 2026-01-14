@@ -20,6 +20,8 @@ export default defineNuxtConfig({
       keeperUrl: process.env.KEEPER_URL ?? 'http://localhost:5001',
       // MngDataGateway API URL (for client-side - browser accessible URLs)
       datagatewayUrl: process.env.DATAGATEWAY_URL ?? 'https://localhost:5010',
+      // MngScheduler API URL (for client-side - browser accessible URLs)
+      schedulerUrl: process.env.SCHEDULER_URL ?? 'http://localhost:5090',
       // API Gateway URL (if using gateway, set this and leave other URLs empty)
       gatewayUrl: process.env.GATEWAY_URL ?? ''
     },
@@ -27,6 +29,7 @@ export default defineNuxtConfig({
     // For Docker containers, use container hostnames; for local dev, use localhost
     serverKeeperUrl: process.env.SERVER_KEEPER_URL ?? process.env.KEEPER_URL ?? 'http://localhost:5001',
     serverDataGatewayUrl: process.env.SERVER_DATAGATEWAY_URL ?? process.env.DATAGATEWAY_URL ?? 'https://localhost:5010',
+    serverSchedulerUrl: process.env.SERVER_SCHEDULER_URL ?? process.env.SCHEDULER_URL ?? 'http://localhost:5090',
     serverHubUrl: process.env.SERVER_HUB_URL ?? process.env.HUB_URL ?? 'http://localhost:5020',
     keycloakBaseUrl: process.env.KEYCLOAK_BASE_URL ?? 'http://localhost:8080',
     keycloakPathPrefix: process.env.KEYCLOAK_PATH_PREFIX ?? '',

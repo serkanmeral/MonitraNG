@@ -1885,7 +1885,62 @@ GET /api/user/export?format=xlsx&searchTerm=...&isActive=...
 
 ### Phase 9: UI/UX İyileştirmeleri 🎨
 
-**Durum:** Planlama Aşaması
+**Durum:** Kısmen Tamamlandı
+
+#### 9.1 Domain Logo Support ✅ (Tamamlandı - 2026-01-XX)
+
+**Durum:** ✅ Tamamlandı
+
+**Özet:**
+Login olan kullanıcının domain bilgisi token'dan alınarak MngKeeper'dan getiriliyor ve side menu'de kullanıcı adının arka planında domain logosu gösteriliyor.
+
+**Tamamlanan İşler:**
+
+##### 9.1.1 Domain Composable ✅
+- ✅ `composables/useDomain.ts` oluşturuldu
+- ✅ `getCurrentDomain()` fonksiyonu: Token'dan domain bilgisini alıp MngKeeper'dan domain verisini getiriyor
+- ✅ `getDomainById()` ve `getDomainByName()` helper fonksiyonları
+
+##### 9.1.2 Auth Store Entegrasyonu ✅
+- ✅ `stores/auth.ts`'a `domainInfo` state eklendi
+- ✅ `loadDomainInfo()` action eklendi: Login sonrası otomatik domain bilgisi yükleme
+- ✅ `initializeAuth()` içinde domain bilgisi yükleme
+- ✅ Logout'ta domain bilgisi temizleme
+
+##### 9.1.3 Side Menu Logo Gösterimi ✅
+- ✅ `components/lc/Full/vertical-sidebar/index.vue`'da `domainLogoStyle` computed property eklendi
+- ✅ Logo öncelik sırası:
+  1. `logoUrl` varsa kullanılır (daha performanslı)
+  2. `logo` (base64) varsa data URI formatına dönüştürülüp kullanılır
+  3. Logo yoksa veya hata varsa varsayılan resim kullanılır (`/images/backgrounds/user-info.jpg`)
+- ✅ Base64 logo formatı otomatik algılanıyor (JPEG, PNG, GIF, WebP)
+- ✅ Logo `backgroundSize: 'contain'` ile tam olarak sığdırılıyor (kırpılmadan)
+- ✅ Fallback mekanizması: Logo yoksa veya bozuksa sessizce varsayılan resme geçiş
+
+**Özellikler:**
+- ✅ Logo yoksa veya bozuksa varsayılan resim gösterilir (fallback)
+- ✅ Base64 logo formatı otomatik algılanır
+- ✅ LogoUrl varsa öncelikli kullanılır (performans)
+- ✅ Hata durumunda sessizce fallback'e geçer
+- ✅ Logo tam olarak sığdırılır (contain mode)
+
+**API Endpoints:**
+- `GET /api/keeper/domain/{id}` - Domain bilgisi ID ile
+- `GET /api/keeper/domain/name/{name}` - Domain bilgisi name ile
+
+**İlgili Dosyalar:**
+- `composables/useDomain.ts` - Domain bilgisi getirme
+- `stores/auth.ts` - Domain bilgisi saklama
+- `components/lc/Full/vertical-sidebar/index.vue` - Logo gösterimi
+- `assets/scss/layout/_sidebar.scss` - CSS (fallback background)
+
+**Notlar:**
+- Domain bilgisi login sonrası otomatik yüklenir
+- Logo base64 string olarak MongoDB'de saklanıyor
+- LogoUrl varsa daha performanslı (base64 yerine URL)
+- Logo formatı otomatik algılanıyor (JPEG, PNG, GIF, WebP)
+
+#### 9.2 Diğer UI/UX İyileştirmeleri 📋 (Planlanıyor)
 
 - Loading states ve skeleton screens
 - Error handling ve user feedback
@@ -2125,6 +2180,13 @@ GET /api/user/export?format=xlsx&searchTerm=...&isActive=...
   - Tree item boyutları artırıldı (min-height: 48px, font-size: text-body-1, icon sizes: 22px)
   - Expand All / Collapse All butonları eklendi (MenuTreeView component'inde recursive expand/collapse)
   - Tree item padding ve spacing iyileştirmeleri
+- **2026-01-15** - Phase 5.6: Side Menu Tooltip Desteği ✅
+  - NavItem ve NavCollapse component'lerine tooltip eklendi
+  - Menu item'ların üzerine gelindiğinde tam ad ve açıklama (subCaption) gösteriliyor
+  - Tooltip sağ tarafta görünüyor (location="right")
+  - Tooltip içeriği: başlık (kalın) ve altında açıklama (varsa)
+  - Tüm menu item'lar için tooltip aktif (subCaption olsun ya da olmasın)
+  - Vuetify v-tooltip component kullanıldı
 - **2026-01-15** - Phase 5.4: Side Menu Manager Yetkilendirme İyileştirmeleri ✅
   - Manager kullanıcılar için kısıtlamalar:
     - Side Menu Manager'da admin sayfalarını göremez (tree view'da filtrelenir)
@@ -2162,6 +2224,12 @@ GET /api/user/export?format=xlsx&searchTerm=...&isActive=...
   - Locale güncelleme yetkilendirmesi: ManagerOrAdminAuthorization attribute eklendi
   - MngKeeper SystemLocalesController'da PutLocale endpoint'i manager ve admin kullanıcılar için açıldı
   - Locale cache invalidation mekanizması ($reloadLocales fonksiyonu)
+- **2026-01-XX** - Phase 9.1: Domain Logo Support ✅
+  - Login sonrası domain bilgisi otomatik yükleme
+  - Side menu'de domain logosu gösterimi (kullanıcı adı arka planı)
+  - LogoUrl ve base64 logo desteği
+  - Fallback mekanizması (logo yoksa varsayılan resim)
+  - Logo formatı otomatik algılama (JPEG, PNG, GIF, WebP)
 
 ---
 

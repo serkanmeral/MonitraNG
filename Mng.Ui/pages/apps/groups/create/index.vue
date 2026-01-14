@@ -1,28 +1,43 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { Form, Field } from 'vee-validate';
 import * as yup from 'yup';
+import { useLocaleStore } from '@/stores/locale';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useGroupStore } from '@/stores/apps/group';
 
+// Get i18n instance for legacy mode
+const nuxtApp = useNuxtApp();
+const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
+const t = (key: string, params?: any) => {
+  if (i18n && i18n.t) {
+    return i18n.t(key, params);
+  }
+  // Fallback: try global.t if available
+  if (i18n?.global?.t) {
+    return i18n.global.t(key, params);
+  }
+  return key;
+};
+const localeStore = useLocaleStore();
 const router = useRouter();
 const groupStore = useGroupStore();
 
-const page = ref({ title: 'Yeni Grup Oluştur' });
-const breadcrumbs = ref([
+const page = computed(() => ({ title: t('groups.create.title') }));
+const breadcrumbs = computed(() => [
   {
-    text: 'Dashboard',
+    text: t('groups.breadcrumbs.home'),
     disabled: false,
     href: '/dashboards/analytical',
   },
   {
-    text: 'Grup Yönetimi',
+    text: t('groups.breadcrumbs.groups'),
     disabled: false,
     href: '/apps/groups',
   },
   {
-    text: 'Yeni Grup',
+    text: t('groups.breadcrumbs.create'),
     disabled: true,
     href: '#',
   },
@@ -39,10 +54,10 @@ const formData = ref({
 });
 
 // Validation schema
-const schema = yup.object({
-  name: yup.string().required('Grup adı gereklidir').min(2, 'Grup adı en az 2 karakter olmalıdır'),
-  description: yup.string().max(500, 'Açıklama en fazla 500 karakter olabilir'),
-});
+const schema = computed(() => yup.object({
+  name: yup.string().required(t('groups.validation.nameRequired')).min(2, t('groups.validation.nameMinLength')),
+  description: yup.string().max(500, t('groups.validation.descriptionMaxLength')),
+}));
 
 const onSubmit = async (values: any) => {
   loading.value = true;
@@ -61,7 +76,7 @@ const onSubmit = async (values: any) => {
     router.push({ path: '/apps/groups', query: { refresh: Date.now() } });
   } catch (error: any) {
     console.error('Error in onSubmit:', error);
-    errorMessage.value = error.message || 'Grup oluşturulurken bir hata oluştu';
+    errorMessage.value = error.message || t('groups.errors.create');
   } finally {
     loading.value = false;
   }
@@ -73,7 +88,7 @@ const onSubmit = async (values: any) => {
   
   <v-card elevation="10">
     <v-card-item>
-      <h5 class="text-h5 mb-6 font-weight-semibold">Yeni Grup Oluştur</h5>
+      <h5 class="text-h5 mb-6 font-weight-semibold">{{ t('groups.create.title') }}</h5>
       
       <Form
         v-slot="{ handleSubmit, errors: formErrors }"
@@ -108,7 +123,7 @@ const onSubmit = async (values: any) => {
               <Field name="name" v-slot="{ field, errors }">
                 <v-text-field
                   v-bind="field"
-                  label="Grup Adı *"
+                  :label="t('groups.create.name')"
                   variant="outlined"
                   :error-messages="errors"
                   required
@@ -120,7 +135,7 @@ const onSubmit = async (values: any) => {
             <v-col cols="12" md="4">
               <v-switch
                 v-model="formData.isActive"
-                label="Aktif"
+                :label="t('groups.create.isActive')"
                 color="success"
                 hide-details
                 class="mt-4"
@@ -132,7 +147,7 @@ const onSubmit = async (values: any) => {
               <Field name="description" v-slot="{ field, errors }">
                 <v-textarea
                   v-bind="field"
-                  label="Açıklama"
+                  :label="t('groups.create.description')"
                   variant="outlined"
                   :error-messages="errors"
                   rows="3"
@@ -150,7 +165,7 @@ const onSubmit = async (values: any) => {
               @click="router.push('/apps/groups')"
               :disabled="loading"
             >
-              İptal
+              {{ t('groups.create.cancel') }}
             </v-btn>
             <v-btn
               color="primary"
@@ -158,7 +173,7 @@ const onSubmit = async (values: any) => {
               type="submit"
               :loading="loading"
             >
-              Oluştur
+              {{ t('groups.create.create') }}
             </v-btn>
           </div>
         </v-form>

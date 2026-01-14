@@ -199,6 +199,80 @@ const userInitials = computed(() => {
   return name[0]?.toUpperCase() || 'U';
 });
 
+// Get domain logo for background
+const domainLogoStyle = computed(() => {
+  const domainInfo = authStore.domainInfo;
+  
+  // If no domain info, use fallback
+  if (!domainInfo) {
+    return {
+      backgroundImage: 'url("/images/backgrounds/user-info.jpg")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+    };
+  }
+
+  // Prefer logoUrl if available (more efficient than base64)
+  if (domainInfo.logoUrl) {
+    try {
+      return {
+        backgroundImage: `url("${domainInfo.logoUrl}")`,
+        backgroundSize: 'contain',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      };
+    } catch (error) {
+      console.warn('Error using logoUrl, trying logo:', error);
+      // Fall through to try logo base64
+    }
+  }
+
+  // Try to use base64 logo if available
+  if (domainInfo.logo) {
+    try {
+      // Check if logo is already a data URI
+      let logoData = domainInfo.logo;
+      
+      // If not a data URI, assume it's base64 and add data URI prefix
+      if (!logoData.startsWith('data:')) {
+        // Try to detect image type from base64 or default to image/png
+        // Common base64 image formats: /9j/ (JPEG), iVBORw0KGgo (PNG), R0lGODlh (GIF), UklGR (WebP)
+        let mimeType = 'image/png'; // default
+        if (logoData.startsWith('/9j/') || logoData.startsWith('/9j/')) {
+          mimeType = 'image/jpeg';
+        } else if (logoData.startsWith('iVBORw0KGgo')) {
+          mimeType = 'image/png';
+        } else if (logoData.startsWith('R0lGODlh')) {
+          mimeType = 'image/gif';
+        } else if (logoData.startsWith('UklGR')) {
+          mimeType = 'image/webp';
+        }
+        
+        logoData = `data:${mimeType};base64,${logoData}`;
+      }
+      
+      return {
+        backgroundImage: `url("${logoData}")`,
+        backgroundSize: 'contain',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      };
+    } catch (error) {
+      console.warn('Error parsing domain logo, using fallback:', error);
+      // Fall through to fallback
+    }
+  }
+
+  // Fallback to default background image
+  return {
+    backgroundImage: 'url("/images/backgrounds/user-info.jpg")',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat',
+  };
+});
+
 // Logout handler
 const handleLogout = async () => {
   // SignalR bağlantısını kapat
@@ -228,7 +302,7 @@ const handleLogout = async () => {
         <!---Navigation -->
         <!-- ---------------------------------------------- -->
         <perfect-scrollbar class="scrollnavbar">
-            <div class="profile">
+            <div class="profile" :style="domainLogoStyle">
                 <div class="profile-pic profile-pic py-7 px-3">
                     <v-avatar size="45" color="primary" class="text-white font-weight-bold">
                         {{ userInitials }}

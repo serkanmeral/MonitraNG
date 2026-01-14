@@ -1229,6 +1229,127 @@
         "wires": []
     },
     {
+        "id": "60994420b06c601a",
+        "type": "http in",
+        "z": "d358cbd1e654d5c6",
+        "name": "",
+        "url": "/system_job1",
+        "method": "post",
+        "upload": false,
+        "skipBodyParsing": false,
+        "swaggerDoc": "",
+        "x": 170,
+        "y": 100,
+        "wires": [
+            [
+                "6eb317e5fd449713"
+            ]
+        ]
+    },
+    {
+        "id": "6eb317e5fd449713",
+        "type": "function",
+        "z": "d358cbd1e654d5c6",
+        "name": "function 2",
+        "func": "\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 100,
+        "wires": [
+            [
+                "c941ca0e15ea2c3c",
+                "043e5b221ad6d630"
+            ]
+        ]
+    },
+    {
+        "id": "c941ca0e15ea2c3c",
+        "type": "http response",
+        "z": "d358cbd1e654d5c6",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 670,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "043e5b221ad6d630",
+        "type": "debug",
+        "z": "d358cbd1e654d5c6",
+        "name": "debug 3",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 660,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "b082e8fb83110b4f",
+        "type": "http in",
+        "z": "d358cbd1e654d5c6",
+        "name": "",
+        "url": "/system_job2",
+        "method": "get",
+        "upload": false,
+        "skipBodyParsing": false,
+        "swaggerDoc": "",
+        "x": 170,
+        "y": 160,
+        "wires": [
+            [
+                "6eb317e5fd449713"
+            ]
+        ]
+    },
+    {
+        "id": "127b3aaf31acf768",
+        "type": "http in",
+        "z": "d358cbd1e654d5c6",
+        "name": "",
+        "url": "/user_job1",
+        "method": "post",
+        "upload": false,
+        "skipBodyParsing": false,
+        "swaggerDoc": "",
+        "x": 160,
+        "y": 220,
+        "wires": [
+            [
+                "6eb317e5fd449713"
+            ]
+        ]
+    },
+    {
+        "id": "88b7bbe2bc5e1b7c",
+        "type": "http in",
+        "z": "d358cbd1e654d5c6",
+        "name": "",
+        "url": "/user_job2",
+        "method": "get",
+        "upload": false,
+        "skipBodyParsing": false,
+        "swaggerDoc": "",
+        "x": 160,
+        "y": 280,
+        "wires": [
+            [
+                "6eb317e5fd449713"
+            ]
+        ]
+    },
+    {
         "id": "websocket-in",
         "type": "websocket in",
         "z": "mnghub-signalr",

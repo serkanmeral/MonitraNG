@@ -332,13 +332,16 @@ const updateLocaleFiles = async () => {
     return;
   }
 
+  // Check if this is a header item
+  const isHeader = formData.value.itemType === 'header';
+
   // Get source text (title for item, header for header)
-  const sourceText = formData.value.itemType === 'header' 
+  const sourceText = isHeader
     ? formData.value.header 
     : formData.value.title;
   
   if (!sourceText) {
-    localeUpdateError.value = formData.value.itemType === 'header' 
+    localeUpdateError.value = isHeader
       ? 'Header metni gereklidir.'
       : 'Menu başlığı gereklidir.';
     setTimeout(() => {
@@ -347,6 +350,11 @@ const updateLocaleFiles = async () => {
     return;
   }
 
+  // Get subCaption source text (if exists and not header)
+  const sourceSubCaption = !isHeader && formData.value.subCaption 
+    ? formData.value.subCaption 
+    : null;
+
   updatingLocales.value = true;
   localeUpdateMessage.value = '';
   localeUpdateError.value = '';
@@ -354,18 +362,14 @@ const updateLocaleFiles = async () => {
   try {
     // Available locales
     const locales = ['tr', 'en', 'fr', 'ar', 'zh'];
-    const isHeader = formData.value.itemType === 'header';
     
     // Get translations from MngLLM API (skip Turkish - it's the source)
     const targetLocales = locales.filter(locale => locale !== 'tr');
     let translations: Record<string, string> = {};
+    let subCaptionTranslations: Record<string, string> = {};
     
     try {
-      // Call MngLLM translation API
-      // Path format: '/api/v1/llm/translate'
-      // apiService.ts converts '/api/v1/llm/translate' to 'v1/llm/translate'
-      // Sends to server route: '/api/llm/v1/llm/translate'
-      // Server route extracts 'v1/llm/translate' and forwards to MngLLM as 'https://localhost:5030/api/v1/llm/translate'
+      // Call MngLLM translation API for title/header
       const translationResponse = await fetchFromMngLLM('/api/v1/llm/translate', 'POST', {
         text: sourceText,
         sourceLanguage: 'tr',
@@ -374,14 +378,36 @@ const updateLocaleFiles = async () => {
       
       if (translationResponse?.translations) {
         translations = translationResponse.translations;
-        console.log('[MenuItemForm] Translations received:', translations);
+        console.log('[MenuItemForm] Title translations received:', translations);
       }
     } catch (translationError: any) {
-      console.warn('[MenuItemForm] Translation API failed, using source text as fallback:', translationError);
+      console.warn('[MenuItemForm] Translation API failed for title, using source text as fallback:', translationError);
       // If translation fails, use source text as fallback for all languages
       targetLocales.forEach(locale => {
         translations[locale] = sourceText;
       });
+    }
+
+    // Translate subCaption if exists
+    if (sourceSubCaption) {
+      try {
+        const subCaptionTranslationResponse = await fetchFromMngLLM('/api/v1/llm/translate', 'POST', {
+          text: sourceSubCaption,
+          sourceLanguage: 'tr',
+          targetLanguages: targetLocales,
+        });
+        
+        if (subCaptionTranslationResponse?.translations) {
+          subCaptionTranslations = subCaptionTranslationResponse.translations;
+          console.log('[MenuItemForm] SubCaption translations received:', subCaptionTranslations);
+        }
+      } catch (subCaptionTranslationError: any) {
+        console.warn('[MenuItemForm] Translation API failed for subCaption, using source text as fallback:', subCaptionTranslationError);
+        // If translation fails, use source text as fallback for all languages
+        targetLocales.forEach(locale => {
+          subCaptionTranslations[locale] = sourceSubCaption;
+        });
+      }
     }
     
     // Update each locale file
@@ -418,6 +444,21 @@ const updateLocaleFiles = async () => {
           translationText = sourceText;
         }
 
+        // Get subCaption translation text for this locale (if exists)
+        let subCaptionTranslationText: string | null = null;
+        if (sourceSubCaption) {
+          if (locale === 'tr') {
+            // Turkish is the source language
+            subCaptionTranslationText = sourceSubCaption;
+          } else if (subCaptionTranslations[locale]) {
+            // Use translated text
+            subCaptionTranslationText = subCaptionTranslations[locale];
+          } else {
+            // Fallback to source text if translation not available
+            subCaptionTranslationText = sourceSubCaption;
+          }
+        }
+
         if (isHeader) {
           // For headers: menu.headers.{pageCode}
           if (!localeData.menu.headers) {
@@ -425,8 +466,24 @@ const updateLocaleFiles = async () => {
           }
           localeData.menu.headers[formData.value.pageCode] = translationText;
         } else {
-          // For items: menu.{pageCode}
+          // For items: menu.{pageCode} (title)
           localeData.menu[formData.value.pageCode] = translationText;
+          
+          // For items: menu.{pageCode}.subCaption (subCaption, if exists)
+          if (subCaptionTranslationText) {
+            // Store as nested object: menu.{pageCode}.subCaption
+            if (typeof localeData.menu[formData.value.pageCode] === 'string') {
+              // Convert string to object if it's currently a string
+              const existingTitle = localeData.menu[formData.value.pageCode];
+              localeData.menu[formData.value.pageCode] = {
+                title: existingTitle,
+                subCaption: subCaptionTranslationText
+              };
+            } else if (typeof localeData.menu[formData.value.pageCode] === 'object') {
+              // Already an object, just add/update subCaption
+              localeData.menu[formData.value.pageCode].subCaption = subCaptionTranslationText;
+            }
+          }
         }
 
         // Save locale file

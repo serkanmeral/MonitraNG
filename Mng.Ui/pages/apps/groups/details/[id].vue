@@ -1,31 +1,46 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useLocaleStore } from '@/stores/locale';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import GroupUserManagementModal from '@/components/apps/groups/GroupUserManagementModal.vue';
 import { useGroupStore } from '@/stores/apps/group';
 import { EditIcon, UserPlusIcon, UsersIcon } from 'vue-tabler-icons';
 
+// Get i18n instance for legacy mode
+const nuxtApp = useNuxtApp();
+const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
+const t = (key: string, params?: any) => {
+  if (i18n && i18n.t) {
+    return i18n.t(key, params);
+  }
+  // Fallback: try global.t if available
+  if (i18n?.global?.t) {
+    return i18n.global.t(key, params);
+  }
+  return key;
+};
+const localeStore = useLocaleStore();
 const route = useRoute();
 const router = useRouter();
 const groupStore = useGroupStore();
 
 const groupId = route.params.id as string;
 
-const page = ref({ title: 'Grup Detayı' });
-const breadcrumbs = ref([
+const page = computed(() => ({ title: t('groups.details.title') }));
+const breadcrumbs = computed(() => [
   {
-    text: 'Dashboard',
+    text: t('groups.breadcrumbs.home'),
     disabled: false,
     href: '/dashboards/analytical',
   },
   {
-    text: 'Grup Yönetimi',
+    text: t('groups.breadcrumbs.groups'),
     disabled: false,
     href: '/apps/groups',
   },
   {
-    text: 'Grup Detayı',
+    text: t('groups.breadcrumbs.details'),
     disabled: true,
     href: '#',
   },
@@ -59,7 +74,16 @@ watch(() => route.params.id, async (newId) => {
 const formatDate = (date: string | Date | null | undefined) => {
   if (!date) return '-';
   try {
-    return new Date(date).toLocaleString('tr-TR', {
+    const localeMap: Record<string, string> = {
+      tr: 'tr-TR',
+      en: 'en-US',
+      fr: 'fr-FR',
+      ar: 'ar-SA',
+      zh: 'zh-CN',
+    };
+    const locale = localeMap[localeStore.locale] || 'tr-TR';
+    
+    return new Date(date).toLocaleString(locale, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -91,22 +115,22 @@ const onUserManagementUpdated = async () => {
   <v-card elevation="10" v-if="!loading || groupStore.currentGroup">
     <v-card-item>
       <div class="d-flex justify-space-between align-center mb-6">
-        <h5 class="text-h5 font-weight-semibold">Grup Detayı</h5>
+        <h5 class="text-h5 font-weight-semibold">{{ t('groups.details.title') }}</h5>
         <div class="d-flex ga-2">
           <v-btn color="info" @click="openUserManagement" flat>
             <UserPlusIcon class="mr-2" size="18" />
-            Üye Yönetimi
+            {{ t('groups.details.userManagement') }}
           </v-btn>
           <v-btn color="primary" @click="editGroup" flat>
             <EditIcon class="mr-2" size="18" />
-            Düzenle
+            {{ t('groups.details.edit') }}
           </v-btn>
         </div>
       </div>
 
       <div v-if="loading && !groupStore.currentGroup" class="text-center py-8">
         <v-progress-circular indeterminate color="primary" />
-        <p class="text-subtitle-1 mt-4">Yükleniyor...</p>
+        <p class="text-subtitle-1 mt-4">{{ t('groups.details.loading') }}</p>
       </div>
 
       <div v-else-if="groupStore.currentGroup" class="pa-4">
@@ -114,12 +138,12 @@ const onUserManagementUpdated = async () => {
           <!-- Group Info Card -->
           <v-col cols="12" md="6">
             <v-card variant="outlined" class="pa-4">
-              <h6 class="text-h6 mb-4 font-weight-semibold">Grup Bilgileri</h6>
+              <h6 class="text-h6 mb-4 font-weight-semibold">{{ t('groups.details.groupInfo') }}</h6>
               
               <v-list lines="two" density="compact">
                 <v-list-item>
                   <template v-slot:prepend>
-                    <v-label class="text-subtitle-2 font-weight-medium">Grup Adı:</v-label>
+                    <v-label class="text-subtitle-2 font-weight-medium">{{ t('groups.details.name') }}</v-label>
                   </template>
                   <v-list-item-title class="text-subtitle-1">
                     {{ groupStore.currentGroup.name }}
@@ -128,7 +152,7 @@ const onUserManagementUpdated = async () => {
 
                 <v-list-item v-if="groupStore.currentGroup.description">
                   <template v-slot:prepend>
-                    <v-label class="text-subtitle-2 font-weight-medium">Açıklama:</v-label>
+                    <v-label class="text-subtitle-2 font-weight-medium">{{ t('groups.details.description') }}</v-label>
                   </template>
                   <v-list-item-title class="text-subtitle-1">
                     {{ groupStore.currentGroup.description }}
@@ -137,18 +161,18 @@ const onUserManagementUpdated = async () => {
 
                 <v-list-item>
                   <template v-slot:prepend>
-                    <v-label class="text-subtitle-2 font-weight-medium">Durum:</v-label>
+                    <v-label class="text-subtitle-2 font-weight-medium">{{ t('groups.details.status') }}</v-label>
                   </template>
                   <v-list-item-title>
                     <v-chip :color="groupStore.currentGroup.isActive ? 'success' : 'error'" size="small" variant="flat">
-                      {{ groupStore.currentGroup.isActive ? 'Aktif' : 'Pasif' }}
+                      {{ groupStore.currentGroup.isActive ? t('groups.details.statusActive') : t('groups.details.statusInactive') }}
                     </v-chip>
                   </v-list-item-title>
                 </v-list-item>
 
                 <v-list-item>
                   <template v-slot:prepend>
-                    <v-label class="text-subtitle-2 font-weight-medium">Üye Sayısı:</v-label>
+                    <v-label class="text-subtitle-2 font-weight-medium">{{ t('groups.details.memberCount') }}</v-label>
                   </template>
                   <v-list-item-title>
                     <div class="d-flex align-center ga-2">
@@ -166,12 +190,12 @@ const onUserManagementUpdated = async () => {
           <!-- Metadata Card -->
           <v-col cols="12" md="6">
             <v-card variant="outlined" class="pa-4">
-              <h6 class="text-h6 mb-4 font-weight-semibold">Metadata</h6>
+              <h6 class="text-h6 mb-4 font-weight-semibold">{{ t('groups.details.metadata') }}</h6>
               
               <v-list lines="two" density="compact">
                 <v-list-item>
                   <template v-slot:prepend>
-                    <v-label class="text-subtitle-2 font-weight-medium">Oluşturulma:</v-label>
+                    <v-label class="text-subtitle-2 font-weight-medium">{{ t('groups.details.createdAt') }}</v-label>
                   </template>
                   <v-list-item-title class="text-subtitle-1">
                     {{ formatDate(groupStore.currentGroup.createdAt) }}
@@ -180,7 +204,7 @@ const onUserManagementUpdated = async () => {
 
                 <v-list-item v-if="groupStore.currentGroup.updatedAt">
                   <template v-slot:prepend>
-                    <v-label class="text-subtitle-2 font-weight-medium">Son Güncelleme:</v-label>
+                    <v-label class="text-subtitle-2 font-weight-medium">{{ t('groups.details.updatedAt') }}</v-label>
                   </template>
                   <v-list-item-title class="text-subtitle-1">
                     {{ formatDate(groupStore.currentGroup.updatedAt) }}
@@ -189,7 +213,7 @@ const onUserManagementUpdated = async () => {
 
                 <v-list-item v-if="groupStore.currentGroup.createdBy">
                   <template v-slot:prepend>
-                    <v-label class="text-subtitle-2 font-weight-medium">Oluşturan:</v-label>
+                    <v-label class="text-subtitle-2 font-weight-medium">{{ t('groups.details.createdBy') }}</v-label>
                   </template>
                   <v-list-item-title class="text-subtitle-1">
                     {{ groupStore.currentGroup.createdBy }}
@@ -198,7 +222,7 @@ const onUserManagementUpdated = async () => {
 
                 <v-list-item v-if="groupStore.currentGroup.updatedBy">
                   <template v-slot:prepend>
-                    <v-label class="text-subtitle-2 font-weight-medium">Güncelleyen:</v-label>
+                    <v-label class="text-subtitle-2 font-weight-medium">{{ t('groups.details.updatedBy') }}</v-label>
                   </template>
                   <v-list-item-title class="text-subtitle-1">
                     {{ groupStore.currentGroup.updatedBy }}
@@ -207,7 +231,7 @@ const onUserManagementUpdated = async () => {
 
                 <v-list-item v-if="groupStore.currentGroup.permissions && groupStore.currentGroup.permissions.length > 0">
                   <template v-slot:prepend>
-                    <v-label class="text-subtitle-2 font-weight-medium">İzinler:</v-label>
+                    <v-label class="text-subtitle-2 font-weight-medium">{{ t('groups.details.permissions') }}</v-label>
                   </template>
                   <v-list-item-title>
                     <div class="d-flex ga-1 flex-wrap mt-2">
@@ -231,15 +255,15 @@ const onUserManagementUpdated = async () => {
         <!-- Actions -->
         <div class="d-flex justify-end ga-3 mt-6">
           <v-btn color="primary" variant="flat" @click="router.push('/apps/groups')">
-            Listeye Dön
+            {{ t('groups.details.backToList') }}
           </v-btn>
         </div>
       </div>
 
       <div v-else class="text-center py-8">
-        <p class="text-subtitle-1 text-medium-emphasis">Grup bulunamadı</p>
+        <p class="text-subtitle-1 text-medium-emphasis">{{ t('groups.details.notFound') }}</p>
         <v-btn color="primary" @click="router.push('/apps/groups')" class="mt-4">
-          Listeye Dön
+          {{ t('groups.details.backToList') }}
         </v-btn>
       </div>
     </v-card-item>

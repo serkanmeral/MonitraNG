@@ -3,6 +3,7 @@ import { ref, watch, computed } from "vue";
 import { useCustomizerStore } from "@/stores/customizer";
 import { useLocaleStore } from "@/stores/locale";
 import { useEcomStore } from "@/stores/apps/eCommerce";
+import { useAuthStore } from "@/stores/auth";
 // Icon Imports
 import {
   GridDotsIcon,
@@ -14,6 +15,7 @@ import {
 } from "vue-tabler-icons";
 const customizer = useCustomizerStore();
 const localeStore = useLocaleStore();
+const authStore = useAuthStore();
 
 // RTL support: Use locale store's isRTL instead of customizer.setRTLLayout
 const isRTL = computed(() => localeStore.isRTL);
@@ -101,18 +103,24 @@ const getCart = computed(() => {
     <LcFullVerticalHeaderLanguageDD />
 
     <!-- ---------------------------------------------- -->
-    <!-- ShoppingCart -->
+    <!-- ShoppingCart (Admin Only) -->
     <!-- ---------------------------------------------- -->
-    <v-btn icon variant="text" color="primary" to="/apps/ecommerce/checkout">
+    <v-btn 
+      v-if="authStore.isAdmin"
+      icon 
+      variant="text" 
+      color="primary" 
+      to="/apps/ecommerce/checkout"
+    >
       <v-badge color="error" :content="getCart?.length">
         <v-icon size="22">mdi-cart</v-icon>
       </v-badge>
     </v-btn>
 
     <!-- ------------------------------------------------>
-    <!-- Notification -->
+    <!-- Notification (Admin Only) -->
     <!-- ------------------------------------------------>
-    <LcFullVerticalHeaderNotificationDD />
+    <LcFullVerticalHeaderNotificationDD v-if="authStore.isAdmin" />
 
     <!-- ---------------------------------------------- -->
     <!-- User Profile -->

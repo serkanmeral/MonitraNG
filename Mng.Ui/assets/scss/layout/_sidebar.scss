@@ -13,6 +13,7 @@
         display: block;
     }
     .profile {
+        // Default background (fallback) - will be overridden by inline style if domain logo exists
         background: url("/images/backgrounds/user-info.jpg") no-repeat;
         background-size: cover;
       }

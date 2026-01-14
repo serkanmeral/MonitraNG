@@ -43,6 +43,7 @@ services:
       - MngGatewaySettings__BackendServices__MngLLM=http://mngllm:5030
       - MngGatewaySettings__BackendServices__MngNotifier=http://mngnotifier:5070
       - MngGatewaySettings__BackendServices__MngAdmin=http://mngadmin:5080
+      - MngGatewaySettings__BackendServices__MngScheduler=http://mngscheduler:5090
       - MngGatewaySettings__BackendServices__KeyCloak=http://keycloak:8080
       
       # Certificate Settings
@@ -57,6 +58,7 @@ services:
       - mnghub
       - mngllm
       - mngadmin
+      - mngscheduler
     
     restart: unless-stopped
     
@@ -399,10 +401,12 @@ services:
       - SERVER_KEEPER_URL=http://mngkeeper:5001
       - SERVER_DATAGATEWAY_URL=http://mngdatagateway:5010
       - SERVER_HUB_URL=http://mnghub:5020
+      - SERVER_SCHEDULER_URL=http://mngscheduler:5090
       # Public (client-side) - API URLs (Browser'dan erişilebilir URL'ler)
       - KEEPER_URL=http://localhost:5001
       - DATAGATEWAY_URL=http://localhost:5010
       - HUB_URL=http://localhost:5020
+      - SCHEDULER_URL=http://localhost:5090
       - GATEWAY_URL=
     networks:
       - mng_common_mng_network
@@ -411,6 +415,7 @@ services:
       - mngdatagateway
       - mnghub
       - mngllm
+      - mngscheduler
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
@@ -480,6 +485,73 @@ services:
     
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5080/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  mngscheduler:
+    build:
+      context: ../../MngScheduler
+      dockerfile: Presentation/MngScheduler.Api/Dockerfile
+    image: localhost:5000/mngscheduler:1.0.0
+    container_name: mngscheduler
+    ports:
+      - "5090:5090"
+    environment:
+      # ASP.NET Core Environment
+      - ASPNETCORE_ENVIRONMENT=Development
+      
+      # Server Configuration
+      - MngSchedulerSettings__Server__Host=0.0.0.0
+      - MngSchedulerSettings__Server__Port=5090
+      - MngSchedulerSettings__Server__Scheme=http
+      - MngSchedulerSettings__OpenApiServerPath=https://api.monitra.local/scheduler
+      
+      # MongoDB Configuration
+      - MngSchedulerSettings__MongoDB__ConnectionString=mongodb://admin:admin123@mongo:27017
+      - MngSchedulerSettings__MongoDB__KeeperDatabaseName=mngkeeper
+      
+      # Actors Configuration
+      - MngSchedulerSettings__Actors__MngKeeper=http://mngkeeper:5001
+      
+      # RabbitMQ Configuration
+      - MngSchedulerSettings__RabbitMQ__Host=rabbitmq
+      - MngSchedulerSettings__RabbitMQ__Port=5672
+      - MngSchedulerSettings__RabbitMQ__Username=admin
+      - MngSchedulerSettings__RabbitMQ__Password=admin123
+      - MngSchedulerSettings__RabbitMQ__VirtualHost=/
+      
+      # DataGateway Configuration
+      - MngSchedulerSettings__DataGateway__BaseUrl=http://mngdatagateway:5010
+      - MngSchedulerSettings__DataGateway__ApiVersion=v1
+      
+      # JobSync Configuration
+      - MngSchedulerSettings__JobSync__SyncIntervalSeconds=30
+      - MngSchedulerSettings__JobSync__Enabled=true
+      
+      # Quartz Configuration
+      - MngSchedulerSettings__Quartz__SchedulerName=MngScheduler
+      - MngSchedulerSettings__Quartz__ThreadPool__ThreadCount=10
+      
+      # HttpClient Configuration
+      - MngSchedulerSettings__HttpClient__TimeoutSeconds=300
+      - MngSchedulerSettings__HttpClient__MaxRetries=3
+      
+      # Certificate Settings
+      - MngSchedulerSettings__CertificateSettings__DNS=mngscheduler
+    
+    networks:
+      - mng_common_mng_network
+    
+    depends_on:
+      - mngkeeper
+      - mngdatagateway
+    
+    restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5090/api/v1/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

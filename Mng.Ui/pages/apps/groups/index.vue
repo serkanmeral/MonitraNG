@@ -1,25 +1,40 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { useLocaleStore } from '@/stores/locale';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useGroupStore } from '@/stores/apps/group';
 import { useAuthStore } from '@/stores/auth';
 import { EditIcon, EyeIcon, TrashIcon, PlusIcon, UsersIcon, RefreshIcon, DownloadIcon } from 'vue-tabler-icons';
 
+// Get i18n instance for legacy mode
+const nuxtApp = useNuxtApp();
+const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
+const t = (key: string, params?: any) => {
+  if (i18n && i18n.t) {
+    return i18n.t(key, params);
+  }
+  // Fallback: try global.t if available
+  if (i18n?.global?.t) {
+    return i18n.global.t(key, params);
+  }
+  return key;
+};
+const localeStore = useLocaleStore();
 const groupStore = useGroupStore();
 const authStore = useAuthStore();
 const router = useRouter();
 const route = useRoute();
 
-const page = ref({ title: 'Grup Yönetimi' });
-const breadcrumbs = ref([
+const page = ref({ title: t('groups.title') });
+const breadcrumbs = computed(() => [
   {
-    text: 'Dashboard',
+    text: t('groups.breadcrumbs.home'),
     disabled: false,
     href: '/dashboards/analytical',
   },
   {
-    text: 'Grup Yönetimi',
+    text: t('groups.breadcrumbs.groups'),
     disabled: true,
     href: '#',
   },
@@ -41,12 +56,12 @@ const tableOptions = ref({
   sortBy: [] as Array<{ key: string; order: 'asc' | 'desc' }>,
 });
 
-const headers = [
-  { title: 'Grup Adı', key: 'name', sortable: true },
-  { title: 'Kişi Sayısı', key: 'memberCount', sortable: true },
-  { title: 'Oluşturulma', key: 'createdAt', sortable: true },
-  { title: 'İşlemler', key: 'actions', sortable: false, align: 'end' },
-];
+const headers = computed(() => [
+  { title: t('groups.table.name'), key: 'name', sortable: true },
+  { title: t('groups.table.memberCount'), key: 'memberCount', sortable: true },
+  { title: t('groups.table.createdAt'), key: 'createdAt', sortable: true },
+  { title: t('groups.table.actions'), key: 'actions', sortable: false, align: 'end' },
+]);
 
 // Computed: Server items length (reactive)
 const serverItemsLength = computed(() => {
@@ -178,7 +193,7 @@ const exportGroups = async (format: 'csv' | 'xlsx') => {
     
     // Success - file will be downloaded automatically
   } catch (error: any) {
-    exportError.value = error.message || 'Export işlemi sırasında bir hata oluştu.';
+    exportError.value = error.message || t('groups.errors.export');
     console.error('Export error:', error);
   } finally {
     isExporting.value = false;
@@ -197,7 +212,7 @@ const deleteGroup = (item: any) => {
   // Check if group has members
   if (item.memberCount > 0) {
     // Show error message in dialog
-    deleteError.value = `Bu grup içinde ${item.memberCount} kullanıcı bulunmaktadır. Önce tüm kullanıcıları gruptan çıkarmanız gerekmektedir.`;
+    deleteError.value = t('groups.delete.error', { count: item.memberCount });
     groupToDelete.value = item.id || item.groupId;
     showDeleteDialog.value = true;
     return;
@@ -219,7 +234,7 @@ const confirmDelete = async () => {
       await fetchGroups();
     } catch (error: any) {
       // Show error message in dialog
-      deleteError.value = error.message || 'Grup silinirken bir hata oluştu.';
+      deleteError.value = error.message || t('groups.errors.delete');
       console.error('Error deleting group:', error);
     }
   }
@@ -228,7 +243,16 @@ const confirmDelete = async () => {
 const formatDate = (date: string | Date | null | undefined) => {
   if (!date) return '-';
   try {
-    return new Date(date).toLocaleDateString('tr-TR', {
+    const localeMap: Record<string, string> = {
+      tr: 'tr-TR',
+      en: 'en-US',
+      fr: 'fr-FR',
+      ar: 'ar-SA',
+      zh: 'zh-CN',
+    };
+    const locale = localeMap[localeStore.locale] || 'tr-TR';
+    
+    return new Date(date).toLocaleDateString(locale, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -250,7 +274,7 @@ const formatDate = (date: string | Date | null | undefined) => {
           <v-text-field
             v-model="search"
             prepend-inner-icon="mdi-magnify"
-            label="Grup Ara"
+            :label="t('groups.list.search')"
             variant="outlined"
             density="compact"
             hide-details
@@ -261,11 +285,11 @@ const formatDate = (date: string | Date | null | undefined) => {
           <v-select
             v-model="statusFilter"
             :items="[
-              { title: 'Tümü', value: 'all' },
-              { title: 'Aktif', value: 'active' },
-              { title: 'Pasif', value: 'inactive' },
+              { title: t('groups.list.statusAll'), value: 'all' },
+              { title: t('groups.list.statusActive'), value: 'active' },
+              { title: t('groups.list.statusInactive'), value: 'inactive' },
             ]"
-            label="Durum"
+            :label="t('groups.list.status')"
             variant="outlined"
             density="compact"
             hide-details
@@ -285,7 +309,7 @@ const formatDate = (date: string | Date | null | undefined) => {
                 :disabled="isExporting"
               >
                 <DownloadIcon class="mr-2" size="20" />
-                Dışa Aktar
+                {{ t('groups.list.export') }}
                 <v-icon class="ml-1" size="16">mdi-chevron-down</v-icon>
               </v-btn>
             </template>
@@ -294,15 +318,15 @@ const formatDate = (date: string | Date | null | undefined) => {
                 <template v-slot:prepend>
                   <v-icon>mdi-file-delimited</v-icon>
                 </template>
-                <v-list-item-title>CSV olarak indir</v-list-item-title>
+                <v-list-item-title>{{ t('groups.list.exportCsv') }}</v-list-item-title>
               </v-list-item>
               <v-list-item @click="exportGroups('xlsx')" disabled>
                 <template v-slot:prepend>
                   <v-icon>mdi-file-excel</v-icon>
                 </template>
-                <v-list-item-title>Excel olarak indir</v-list-item-title>
+                <v-list-item-title>{{ t('groups.list.exportExcel') }}</v-list-item-title>
                 <template v-slot:append>
-                  <v-chip size="x-small" color="warning">Yakında</v-chip>
+                  <v-chip size="x-small" color="warning">{{ t('groups.list.exportSoon') }}</v-chip>
                 </template>
               </v-list-item>
             </v-list>
@@ -316,11 +340,11 @@ const formatDate = (date: string | Date | null | undefined) => {
             :loading="groupStore.loading"
           >
             <RefreshIcon class="mr-2" size="20" />
-            Yenile
+            {{ t('groups.list.refresh') }}
           </v-btn>
           <v-btn color="primary" to="/apps/groups/create" flat>
             <PlusIcon class="mr-2" size="20" />
-            Yeni Grup
+            {{ t('groups.list.newGroup') }}
           </v-btn>
         </div>
       </div>
@@ -333,8 +357,7 @@ const formatDate = (date: string | Date | null | undefined) => {
         density="compact"
         class="mb-4"
       >
-        <strong>Uyarı:</strong> Bu sayfaya erişim için manager veya admin yetkisi gereklidir. 
-        Grup yönetimi işlemlerini gerçekleştirmek için lütfen bir yönetici ile iletişime geçin.
+        <strong>{{ t('groups.list.warning') }}:</strong> {{ t('groups.list.warningMessage') }}
       </v-alert>
 
       <!-- Export Error Message -->
@@ -408,7 +431,7 @@ const formatDate = (date: string | Date | null | undefined) => {
               @click="viewGroup(item)"
             >
               <EyeIcon size="18" />
-              <v-tooltip activator="parent" location="top">Görüntüle</v-tooltip>
+              <v-tooltip activator="parent" location="top">{{ t('groups.table.view') }}</v-tooltip>
             </v-btn>
             <v-btn
               icon
@@ -418,7 +441,7 @@ const formatDate = (date: string | Date | null | undefined) => {
               @click="editGroup(item)"
             >
               <EditIcon size="18" />
-              <v-tooltip activator="parent" location="top">Düzenle</v-tooltip>
+              <v-tooltip activator="parent" location="top">{{ t('groups.table.edit') }}</v-tooltip>
             </v-btn>
             <v-btn
               icon
@@ -430,7 +453,7 @@ const formatDate = (date: string | Date | null | undefined) => {
             >
               <TrashIcon size="18" />
               <v-tooltip activator="parent" location="top">
-                {{ item.memberCount > 0 ? 'Grup içinde kullanıcı var, silinemez' : 'Sil' }}
+                {{ item.memberCount > 0 ? t('groups.table.deleteTooltip') : t('groups.table.delete') }}
               </v-tooltip>
             </v-btn>
           </div>
@@ -439,10 +462,10 @@ const formatDate = (date: string | Date | null | undefined) => {
         <!-- No Data -->
         <template v-slot:no-data>
           <div class="text-center py-8">
-            <p class="text-subtitle-1 text-medium-emphasis">Grup bulunamadı</p>
+            <p class="text-subtitle-1 text-medium-emphasis">{{ t('groups.list.noData') }}</p>
             <v-btn color="primary" to="/apps/groups/create" class="mt-4">
               <PlusIcon class="mr-2" size="20" />
-              İlk Grubu Oluştur
+              {{ t('groups.list.createFirst') }}
             </v-btn>
           </div>
         </template>
@@ -451,18 +474,18 @@ const formatDate = (date: string | Date | null | undefined) => {
         <template v-slot:bottom>
           <div class="d-flex justify-space-between align-center pa-3 border-top">
             <div class="text-caption text-medium-emphasis">
-              <strong>Toplam:</strong> {{ groupStore.totalCount }} kayıt
+              <strong>{{ t('groups.list.total') }}:</strong> {{ groupStore.totalCount }} {{ t('groups.list.records') }}
               <span v-if="groupStore.totalPages > 1" class="ml-2">
-                (Sayfa {{ tableOptions.page }} / {{ groupStore.totalPages }})
+                ({{ t('groups.list.page') }} {{ tableOptions.page }} {{ t('groups.list.of') }} {{ groupStore.totalPages }})
               </span>
               <span class="ml-2">
                 | {{ ((tableOptions.page - 1) * tableOptions.itemsPerPage) + 1 }} - 
                 {{ Math.min(tableOptions.page * tableOptions.itemsPerPage, groupStore.totalCount) }} 
-                / {{ groupStore.totalCount }} gösteriliyor
+                {{ t('groups.list.of') }} {{ groupStore.totalCount }} {{ t('groups.list.showing') }}
               </span>
             </div>
             <div class="d-flex align-center ga-2">
-              <span class="text-caption text-medium-emphasis">Sayfa başına kayıt:</span>
+              <span class="text-caption text-medium-emphasis">{{ t('groups.list.itemsPerPage') }}</span>
               <v-select
                 v-model="tableOptions.itemsPerPage"
                 :items="[10, 25, 50, 100]"
@@ -490,7 +513,7 @@ const formatDate = (date: string | Date | null | undefined) => {
   <v-dialog v-model="showDeleteDialog" max-width="500px">
     <v-card>
       <v-card-title class="pa-4 bg-error text-white">
-        <span class="text-h6">Grubu Sil</span>
+        <span class="text-h6">{{ t('groups.delete.title') }}</span>
       </v-card-title>
       <v-card-text class="pa-6">
         <!-- Error Message -->
@@ -505,7 +528,7 @@ const formatDate = (date: string | Date | null | undefined) => {
         </v-alert>
         
         <p v-if="!deleteError" class="text-subtitle-1">
-          Bu grubu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+          {{ t('groups.delete.confirm') }}
         </p>
       </v-card-text>
       <v-card-actions class="pa-4">
@@ -515,7 +538,7 @@ const formatDate = (date: string | Date | null | undefined) => {
           variant="flat" 
           @click="showDeleteDialog = false; deleteError = ''; groupToDelete = null"
         >
-          {{ deleteError ? 'Kapat' : 'İptal' }}
+          {{ deleteError ? t('groups.delete.close') : t('groups.delete.cancel') }}
         </v-btn>
         <v-btn 
           v-if="!deleteError"
@@ -524,7 +547,7 @@ const formatDate = (date: string | Date | null | undefined) => {
           @click="confirmDelete"
           :loading="groupStore.loading"
         >
-          Evet, Sil
+          {{ t('groups.delete.confirmButton') }}
         </v-btn>
       </v-card-actions>
     </v-card>

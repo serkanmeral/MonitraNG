@@ -191,14 +191,40 @@ export const useHubStore = defineStore('hub', {
                 return 5000; // 5 saniye
               },
             })
+            .withServerTimeout(60000) // 60 saniye server timeout (default 30 saniye)
+            .withKeepAliveInterval(15000) // 15 saniye keep-alive (default 15 saniye)
             .configureLogging(process.env.NODE_ENV === 'development' ? LogLevel.Warning : LogLevel.Error)
             .build();
 
           // Connection state handlers
           hubConnection.onclose((error) => {
             this.isConnected = false;
+            
+            // Timeout hatalarını sessizce handle et (sürekli console error'ları engellemek için)
             if (error) {
+              const errorMessage = error.message || '';
+              const isTimeoutError = errorMessage.includes('timeout') || 
+                                    errorMessage.includes('Server timeout') ||
+                                    errorMessage.includes('elapsed without receiving');
+              
+              if (isTimeoutError) {
+                // Timeout hatalarını sessizce handle et (console'a yazma)
+                // Bu hatalar genellikle geçici network sorunları veya sunucu yanıt vermeme durumlarıdır
+                // Automatic reconnect mekanizması zaten bu durumu handle ediyor
+                this.connectionError = null; // Timeout hatalarını state'de saklama
+                return;
+              }
+              
+              // Diğer hatalar için normal işlem
               this.connectionError = `Bağlantı kapatıldı: ${error.message}`;
+              
+              // Sadece gerçek bağlantı hatalarını console'a yaz (timeout değilse)
+              if (process.env.NODE_ENV === 'development') {
+                console.warn('[Hub Store] Connection closed', {
+                  message: error.message,
+                  error: error.name
+                });
+              }
             }
           });
 

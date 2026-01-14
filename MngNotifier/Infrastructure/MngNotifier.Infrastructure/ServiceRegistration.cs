@@ -10,5 +10,8 @@ public static class ServiceRegistration
     {
         // Mail Provider
         services.AddScoped<IMailProvider, SmtpMailProvider>();
+        
+        // Email Template Service
+        services.AddScoped<IEmailTemplateService, EmailTemplateService>();
     }
 }

@@ -333,5 +333,131 @@
             "label": "Dil",
             "select": "Dil Seçin"
         }
+    },
+    "groups": {
+        "title": "Grup Yönetimi",
+        "breadcrumbs": {
+            "home": "Ana Sayfa",
+            "groups": "Grup Yönetimi",
+            "create": "Yeni Grup",
+            "edit": "Grup Düzenle",
+            "details": "Grup Detayı"
+        },
+        "list": {
+            "search": "Grup Ara",
+            "status": "Durum",
+            "statusAll": "Tümü",
+            "statusActive": "Aktif",
+            "statusInactive": "Pasif",
+            "export": "Dışa Aktar",
+            "exportCsv": "CSV olarak indir",
+            "exportExcel": "Excel olarak indir",
+            "exportSoon": "Yakında",
+            "refresh": "Yenile",
+            "newGroup": "Yeni Grup",
+            "noData": "Grup bulunamadı",
+            "createFirst": "İlk Grubu Oluştur",
+            "total": "Toplam",
+            "records": "kayıt",
+            "page": "Sayfa",
+            "of": "/",
+            "showing": "gösteriliyor",
+            "itemsPerPage": "Sayfa başına kayıt:",
+            "warning": "Uyarı",
+            "warningMessage": "Bu sayfaya erişim için manager veya admin yetkisi gereklidir. Grup yönetimi işlemlerini gerçekleştirmek için lütfen bir yönetici ile iletişime geçin."
+        },
+        "table": {
+            "name": "Grup Adı",
+            "memberCount": "Kişi Sayısı",
+            "createdAt": "Oluşturulma",
+            "actions": "İşlemler",
+            "view": "Görüntüle",
+            "edit": "Düzenle",
+            "delete": "Sil",
+            "deleteTooltip": "Grup içinde kullanıcı var, silinemez"
+        },
+        "create": {
+            "title": "Yeni Grup Oluştur",
+            "name": "Grup Adı *",
+            "description": "Açıklama",
+            "isActive": "Aktif",
+            "cancel": "İptal",
+            "create": "Oluştur"
+        },
+        "edit": {
+            "title": "Grup Düzenle",
+            "loading": "Yükleniyor...",
+            "name": "Grup Adı *",
+            "description": "Açıklama",
+            "isActive": "Aktif",
+            "cancel": "İptal",
+            "save": "Kaydet"
+        },
+        "details": {
+            "title": "Grup Detayı",
+            "loading": "Yükleniyor...",
+            "notFound": "Grup bulunamadı",
+            "backToList": "Listeye Dön",
+            "userManagement": "Üye Yönetimi",
+            "edit": "Düzenle",
+            "groupInfo": "Grup Bilgileri",
+            "metadata": "Metadata",
+            "name": "Grup Adı:",
+            "description": "Açıklama:",
+            "status": "Durum:",
+            "statusActive": "Aktif",
+            "statusInactive": "Pasif",
+            "memberCount": "Üye Sayısı:",
+            "createdAt": "Oluşturulma:",
+            "updatedAt": "Son Güncelleme:",
+            "createdBy": "Oluşturan:",
+            "updatedBy": "Güncelleyen:",
+            "permissions": "İzinler:"
+        },
+        "delete": {
+            "title": "Grubu Sil",
+            "confirm": "Bu grubu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+            "cancel": "İptal",
+            "close": "Kapat",
+            "confirmButton": "Evet, Sil",
+            "error": "Bu grup içinde {count} kullanıcı bulunmaktadır. Önce tüm kullanıcıları gruptan çıkarmanız gerekmektedir."
+        },
+        "validation": {
+            "nameRequired": "Grup adı gereklidir",
+            "nameMinLength": "Grup adı en az 2 karakter olmalıdır",
+            "descriptionMaxLength": "Açıklama en fazla 500 karakter olabilir"
+        },
+        "errors": {
+            "load": "Grup yüklenirken bir hata oluştu",
+            "create": "Grup oluşturulurken bir hata oluştu",
+            "update": "Grup güncellenirken bir hata oluştu",
+            "delete": "Grup silinirken bir hata oluştu",
+            "export": "Export işlemi sırasında bir hata oluştu."
+        },
+        "userManagement": {
+            "title": "Üye Yönetimi",
+            "search": "Kullanıcı Ara (Kullanıcı adı, Email, Ad Soyad)",
+            "currentMembers": "Mevcut Üyeler",
+            "addUsers": "Kullanıcı Ekle",
+            "loading": "Kullanıcılar yükleniyor...",
+            "noMembers": "Üye bulunamadı",
+            "noUsersToAdd": "Eklenecek kullanıcı bulunamadı",
+            "noUsersToAddDescription": "Tüm kullanıcılar zaten bu grupta olabilir",
+            "selectAll": "Tümünü Seç",
+            "deselectAll": "Seçimi Temizle",
+            "selected": "seçili",
+            "addSelected": "Seçilen {count} Kullanıcıyı Ekle",
+            "close": "Kapat",
+            "errors": {
+                "load": "Kullanıcılar yüklenirken bir hata oluştu",
+                "add": "Kullanıcılar gruba eklenirken bir hata oluştu",
+                "remove": "Kullanıcı gruptan çıkarılırken bir hata oluştu",
+                "noSelection": "Lütfen en az bir kullanıcı seçin"
+            },
+            "success": {
+                "added": "{count} kullanıcı gruba başarıyla eklendi",
+                "removed": "Kullanıcı gruptan başarıyla çıkarıldı"
+            }
+        }
     }
 }

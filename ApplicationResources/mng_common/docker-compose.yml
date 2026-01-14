@@ -205,6 +205,7 @@ services:
 
   nodered:
     image: nodered/node-red:latest
+    container_name: nodered
     ports:
       - "1880:1880"
     volumes:
@@ -213,9 +214,16 @@ services:
       - NODE_RED_USERNAME=${NODE_RED_USERNAME:-admin}
       - NODE_RED_PASSWORD=${NODE_RED_PASSWORD}
       - TZ=Europe/Istanbul
-    restart: always    
+    restart: unless-stopped
     networks:
       - mng_network
+      - mng_common_mng_network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:1880/nodered/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # PostgreSQL for GitLab
   gitlab-postgres:
@@ -398,6 +406,8 @@ services:
 networks:
   mng_network:
     driver: bridge
+  mng_common_mng_network:
+    external: true  # External network (created by mng_apps docker-compose)
   mailu_default:
     external: true  # Mailu network (created by Mailu docker-compose)
 

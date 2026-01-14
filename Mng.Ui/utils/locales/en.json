@@ -300,6 +300,132 @@
             "label": "Language",
             "select": "Select Language"
         }
+    },
+    "groups": {
+        "title": "Group Management",
+        "breadcrumbs": {
+            "home": "Home",
+            "groups": "Group Management",
+            "create": "New Group",
+            "edit": "Edit Group",
+            "details": "Group Details"
+        },
+        "list": {
+            "search": "Search Groups",
+            "status": "Status",
+            "statusAll": "All",
+            "statusActive": "Active",
+            "statusInactive": "Inactive",
+            "export": "Export",
+            "exportCsv": "Download as CSV",
+            "exportExcel": "Download as Excel",
+            "exportSoon": "Coming Soon",
+            "refresh": "Refresh",
+            "newGroup": "New Group",
+            "noData": "No groups found",
+            "createFirst": "Create First Group",
+            "total": "Total",
+            "records": "records",
+            "page": "Page",
+            "of": "/",
+            "showing": "showing",
+            "itemsPerPage": "Items per page:",
+            "warning": "Warning",
+            "warningMessage": "Manager or admin permission is required to access this page. Please contact an administrator to perform group management operations."
+        },
+        "table": {
+            "name": "Group Name",
+            "memberCount": "Member Count",
+            "createdAt": "Created At",
+            "actions": "Actions",
+            "view": "View",
+            "edit": "Edit",
+            "delete": "Delete",
+            "deleteTooltip": "Group has members, cannot be deleted"
+        },
+        "create": {
+            "title": "Create New Group",
+            "name": "Group Name *",
+            "description": "Description",
+            "isActive": "Active",
+            "cancel": "Cancel",
+            "create": "Create"
+        },
+        "edit": {
+            "title": "Edit Group",
+            "loading": "Loading...",
+            "name": "Group Name *",
+            "description": "Description",
+            "isActive": "Active",
+            "cancel": "Cancel",
+            "save": "Save"
+        },
+        "details": {
+            "title": "Group Details",
+            "loading": "Loading...",
+            "notFound": "Group not found",
+            "backToList": "Back to List",
+            "userManagement": "Member Management",
+            "edit": "Edit",
+            "groupInfo": "Group Information",
+            "metadata": "Metadata",
+            "name": "Group Name:",
+            "description": "Description:",
+            "status": "Status:",
+            "statusActive": "Active",
+            "statusInactive": "Inactive",
+            "memberCount": "Member Count:",
+            "createdAt": "Created At:",
+            "updatedAt": "Last Updated:",
+            "createdBy": "Created By:",
+            "updatedBy": "Updated By:",
+            "permissions": "Permissions:"
+        },
+        "delete": {
+            "title": "Delete Group",
+            "confirm": "Are you sure you want to delete this group? This action cannot be undone.",
+            "cancel": "Cancel",
+            "close": "Close",
+            "confirmButton": "Yes, Delete",
+            "error": "This group contains {count} users. You must remove all users from the group first."
+        },
+        "validation": {
+            "nameRequired": "Group name is required",
+            "nameMinLength": "Group name must be at least 2 characters",
+            "descriptionMaxLength": "Description can be at most 500 characters"
+        },
+        "errors": {
+            "load": "An error occurred while loading the group",
+            "create": "An error occurred while creating the group",
+            "update": "An error occurred while updating the group",
+            "delete": "An error occurred while deleting the group",
+            "export": "An error occurred during export."
+        },
+        "userManagement": {
+            "title": "Member Management",
+            "search": "Search Users (Username, Email, Full Name)",
+            "currentMembers": "Current Members",
+            "addUsers": "Add Users",
+            "loading": "Loading users...",
+            "noMembers": "No members found",
+            "noUsersToAdd": "No users available to add",
+            "noUsersToAddDescription": "All users may already be in this group",
+            "selectAll": "Select All",
+            "deselectAll": "Clear Selection",
+            "selected": "selected",
+            "addSelected": "Add Selected {count} Users",
+            "close": "Close",
+            "errors": {
+                "load": "An error occurred while loading users",
+                "add": "An error occurred while adding users to the group",
+                "remove": "An error occurred while removing user from the group",
+                "noSelection": "Please select at least one user"
+            },
+            "success": {
+                "added": "{count} users successfully added to the group",
+                "removed": "User successfully removed from the group"
+            }
+        }
     }
 
 }
