@@ -1151,6 +1151,76 @@ namespace MngKeeper.Infrastructure.Services
             }
         }
 
+        public async Task<bool> UpdateUserAsync(string realmName, string userId, UpdateUserRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("Updating user {UserId} in realm {RealmName}", userId, realmName);
+
+                await EnsureAdminTokenAsync();
+
+                // Build user update data
+                var userData = new Dictionary<string, object>();
+
+                // Basic user properties
+                if (!string.IsNullOrEmpty(request.Username))
+                    userData["username"] = request.Username;
+                
+                if (!string.IsNullOrEmpty(request.Email))
+                    userData["email"] = request.Email;
+                
+                if (!string.IsNullOrEmpty(request.FirstName))
+                    userData["firstName"] = request.FirstName;
+                
+                if (!string.IsNullOrEmpty(request.LastName))
+                    userData["lastName"] = request.LastName;
+
+                // Attributes (custom fields)
+                var attributes = new Dictionary<string, object>();
+                
+                if (!string.IsNullOrEmpty(request.Title))
+                    attributes["title"] = new[] { request.Title };
+                
+                if (!string.IsNullOrEmpty(request.Department))
+                    attributes["department"] = new[] { request.Department };
+                
+                if (request.Gender.HasValue)
+                    attributes["gender"] = new[] { request.Gender.Value.ToString() };
+                
+                if (!string.IsNullOrEmpty(request.PhoneNumber))
+                    attributes["phoneNumber"] = new[] { request.PhoneNumber };
+                
+                if (!string.IsNullOrEmpty(request.PhotoUrl))
+                    attributes["photoUrl"] = new[] { request.PhotoUrl };
+
+                if (attributes.Any())
+                    userData["attributes"] = attributes;
+
+                var json = JsonSerializer.Serialize(userData);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
+
+                var response = await _httpClient.PutAsync(BuildEndpointPath($"admin/realms/{realmName}/users/{userId}"), content);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Failed to update user {UserId} in realm {RealmName}. Status: {StatusCode}, Error: {Error}", 
+                        userId, realmName, response.StatusCode, errorContent);
+                    return false;
+                }
+
+                _logger.LogInformation("User updated successfully: {UserId} in realm {RealmName}", userId, realmName);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating user {UserId} in realm {RealmName}", userId, realmName);
+                return false;
+            }
+        }
+
         public async Task<bool> ValidateUserPasswordAsync(string realmName, string username, string password)
         {
             try

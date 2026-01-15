@@ -2,9 +2,12 @@
 import { MailIcon } from "vue-tabler-icons";
 import { profileDD } from "@/_mockApis/headerData";
 import { useAuthStore } from "@/stores/auth";
-import { computed } from "vue";
+import { useUserStore } from "@/stores/apps/user";
+import AvatarDisplay from "@/components/apps/profile/AvatarDisplay.vue";
+import { computed, onMounted } from "vue";
 
 const authStore = useAuthStore();
+const userStore = useUserStore();
 
 // Get user info from store
 const userInfo = computed(() => authStore.userInfo);
@@ -62,6 +65,59 @@ const userEmail = computed(() => {
   return userInfo.value?.email || '';
 });
 
+// Get current user for AvatarDisplay component
+const currentUser = computed(() => {
+  // First try to get from userStore.currentUser (if loaded)
+  if (userStore.currentUser) {
+    return userStore.currentUser;
+  }
+  
+  // Fallback to authStore.userInfo
+  const info = authStore.userInfo;
+  if (!info) return null;
+  
+  return {
+    id: info.sub || info.username || '',
+    userId: info.sub || info.username,
+    domainId: info.domain_id || '',
+    username: info.username || info.preferred_username || info.sub || '',
+    email: info.email || '',
+    firstName: info.given_name || info.name?.split(' ')[0] || '',
+    lastName: info.family_name || info.name?.split(' ').slice(1).join(' ') || '',
+    title: null,
+    department: null,
+    gender: 'NotSpecified' as const,
+    phoneNumber: null,
+    photoUrl: null, // Will be loaded from backend if available
+    isActive: true,
+    groups: authStore.userGroups || [],
+    roles: [],
+  };
+});
+
+// Load current user data (for photoUrl) on mount
+onMounted(async () => {
+  if (authStore.isAuthenticated && !userStore.currentUser && authStore.userInfo) {
+    try {
+      const searchTerm = authStore.userInfo.username || authStore.userInfo.email || authStore.userInfo.preferred_username || '';
+      if (searchTerm) {
+        await userStore.fetchUsers({ search: searchTerm, pageSize: 10 });
+        const foundUser = userStore.users.find(u => 
+          u.username === authStore.userInfo?.username || 
+          u.email === authStore.userInfo?.email ||
+          u.username === authStore.userInfo?.preferred_username
+        );
+        if (foundUser) {
+          userStore.currentUser = foundUser;
+        }
+      }
+    } catch (error) {
+      // User fetch error is not critical, continue without photo
+      console.warn('Could not load user data for avatar:', error);
+    }
+  }
+});
+
 // Logout handler
 const logOut = async function(){
   await authStore.logout();
@@ -77,18 +133,14 @@ const logOut = async function(){
   <v-menu :close-on-content-click="false">
     <template v-slot:activator="{ props }">
       <v-btn variant="text" v-bind="props" icon>
-        <v-avatar size="35" color="primary">
-          <span class="text-white font-weight-bold text-caption">{{ userInitials }}</span>
-        </v-avatar>
+        <AvatarDisplay :user="currentUser" :size="35" />
       </v-btn>
     </template>
     <v-sheet rounded="md" width="360" elevation="10">
       <div class="px-8 pt-6">
         <h6 class="text-h5 font-weight-medium">Kullanıcı Profili</h6>
         <div class="d-flex align-center mt-4 pb-6">
-          <v-avatar size="80" color="primary">
-            <span class="text-white font-weight-bold text-h5">{{ userInitials }}</span>
-          </v-avatar>
+          <AvatarDisplay :user="currentUser" :size="80" />
           <div class="ml-3">
             <h6 class="text-h6 mb-n1">{{ userDisplayName }}</h6>
             <span class="text-subtitle-1 font-weight-regular textSecondary" v-if="userInfo?.isAdmin"

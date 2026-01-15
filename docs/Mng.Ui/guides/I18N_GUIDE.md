@@ -426,6 +426,143 @@ const t = (key: string, params?: any) => {
 };
 ```
 
+## Side Menu Dil Desteği
+
+Side Menu item'ları için dil desteği özel bir yapı kullanır. Menu item'lar veritabanından gelir ve dinamik olarak render edilir.
+
+### Menu Item Yapısı
+
+Menu item'lar için locale dosyalarında iki farklı yapı kullanılabilir:
+
+**1. Sadece Title (String):**
+```json
+{
+  "menu": {
+    "apps-users": "Kullanıcı Yönetimi",
+    "apps-groups": "Grup Yönetimi"
+  }
+}
+```
+
+**2. Title ve SubCaption (Object):**
+```json
+{
+  "menu": {
+    "apps-automated-forms": {
+      "title": "Otomatik Formlar",
+      "subCaption": "Otomatik formlar oluşturmaya yarar."
+    },
+    "apps-side-menu-manager": {
+      "title": "Side Menu Manager",
+      "subCaption": "Menü yönetim sayfası"
+    }
+  }
+}
+```
+
+### MenuItemForm ile Otomatik Çeviri
+
+Side Menu Manager sayfasında menu item'ları düzenlerken "Update Locale Files" butonu ile otomatik çeviri yapılabilir:
+
+1. Menu item'ın `title` ve `subCaption` değerleri MngLLM servisi ile çevrilir
+2. Çeviriler tüm dil dosyalarına (`tr.json`, `en.json`, `ar.json`, `fr.json`, `zh.json`) eklenir
+3. Eğer menu item'da `subCaption` varsa, locale dosyasında object yapısı kullanılır
+4. Eğer `subCaption` yoksa, sadece string olarak saklanır
+
+**Örnek Kullanım:**
+```vue
+<!-- MenuItemForm.vue içinde -->
+<v-btn @click="updateLocaleFiles">
+  Update Locale Files
+</v-btn>
+```
+
+Bu buton:
+- `title` değerini tüm dillere çevirir
+- `subCaption` varsa, onu da tüm dillere çevirir
+- Locale dosyalarını günceller (MinIO'ya kaydeder)
+- Build-time locale dosyalarını da günceller
+
+### NavItem ve NavCollapse Component'leri
+
+Menu item'ları render eden component'ler (`NavItem/index.vue` ve `NavCollapse/index.vue`) otomatik olarak:
+
+1. `pageCode` değerine göre locale dosyasından çeviriyi bulur
+2. Eğer object yapısı varsa, `title` ve `subCaption` property'lerini kullanır
+3. Eğer string yapısı varsa, direkt değeri kullanır
+4. Fallback olarak database'den gelen `item.title` ve `item.subCaption` değerlerini kullanır
+
+**Önemli Not:** Vue-i18n'de `i18n.t()` fonksiyonu object döndürmeyebilir. Bu yüzden component'lerde direkt messages objesine erişim kullanılır:
+
+```typescript
+// NavItem/index.vue içinde
+const menuTitle = computed(() => {
+  const currentLocale = localeStore.locale;
+  
+  if (!props.item.pageCode || !i18n) {
+    return props.item.title || '';
+  }
+  
+  // Direct access to messages (i18n.t() may not return objects correctly)
+  const i18nGlobal = i18n?.global || i18n;
+  const messages = i18nGlobal?.messages || {};
+  const localeMessages = messages[currentLocale] || messages.value?.[currentLocale] || {};
+  
+  let menuValue: any = null;
+  
+  // Try direct access: menu.apps-automated-forms
+  if (localeMessages.menu && localeMessages.menu[props.item.pageCode]) {
+    menuValue = localeMessages.menu[props.item.pageCode];
+  } else {
+    // Fallback to i18n.t() if direct access doesn't work
+    menuValue = i18n.t(`menu.${props.item.pageCode}`);
+  }
+  
+  // If it's an object, get title property, otherwise use the value directly
+  if (typeof menuValue === 'object' && menuValue !== null && menuValue.title) {
+    return menuValue.title;
+  }
+  
+  return menuValue || props.item.title;
+});
+```
+
+### MinIO'dan Locale Yükleme
+
+Locale dosyaları öncelik sırasına göre yüklenir:
+
+1. **MinIO (Öncelikli):** Authenticated kullanıcılar için MinIO'dan locale dosyaları yüklenir
+2. **Build-time Files:** Login sayfası veya MinIO'da bulunmayan diller için build-time dosyalar kullanılır
+
+**Deep Merge Stratejisi:**
+- MinIO'dan gelen data (source) build-time data'yı (target) override eder
+- Eğer build-time'da string olan bir değer MinIO'da object olarak gelirse, tamamen override edilir
+- Object yapıları recursive olarak merge edilir
+
+**Örnek:**
+```typescript
+// Build-time: "apps-automated-forms": "Otomatik Formlar"
+// MinIO: "apps-automated-forms": { "title": "Otomatik Formlar 3", "subCaption": "..." }
+// Sonuç: MinIO değeri kullanılır (tamamen override)
+```
+
+### Reactivity
+
+Menu item'ların dil değişimine reaktif olması için:
+
+1. `computed` property'ler kullanılır
+2. `localeStore.locale` değerine erişilir (reactive dependency)
+3. Locale değiştiğinde computed property'ler otomatik olarak yeniden hesaplanır
+
+**Örnek:**
+```typescript
+const menuTitle = computed(() => {
+  // Access localeStore.locale to make this computed reactive
+  const currentLocale = localeStore.locale;
+  // ... rest of the logic
+});
+```
+
 ## Mevcut Çeviriler
 
 Aşağıdaki sayfalar için tam dil desteği mevcuttur:
@@ -434,6 +571,7 @@ Aşağıdaki sayfalar için tam dil desteği mevcuttur:
 - ✅ **Kullanıcı Grupları** (`groups`)
 - ✅ **Giriş Sayfası** (`login`)
 - ✅ **Side Menu Manager** (`side-menu-manager`)
+- ✅ **Side Menu Items** (`menu.*`) - Title ve SubCaption desteği ile
 
 ## Sorun Giderme
 
@@ -458,19 +596,69 @@ const t = (key: string) => i18n?.t?.(key) || key;
 2. i18n instance'ının locale'ını manuel güncelleyin (gerekirse)
 3. Component'i force re-render edin (key kullanarak)
 
+### Problem: Side Menu item'ların title'ı dil değişimine uğramıyor (SubCaption'lı item'lar)
+
+**Çözüm:** 
+1. Vue-i18n'de `i18n.t()` fonksiyonu object döndürmeyebilir. Direkt messages objesine erişin:
+   ```typescript
+   const i18nGlobal = i18n?.global || i18n;
+   const messages = i18nGlobal?.messages || {};
+   const localeMessages = messages[currentLocale] || messages.value?.[currentLocale] || {};
+   const menuValue = localeMessages.menu?.[pageCode];
+   ```
+2. `computed` property kullanın ve `localeStore.locale`'a erişin (reactive dependency)
+3. Locale dosyasında object yapısının doğru olduğundan emin olun:
+   ```json
+   {
+     "menu": {
+       "apps-automated-forms": {
+         "title": "Otomatik Formlar",
+         "subCaption": "..."
+       }
+     }
+   }
+   ```
+4. MinIO'dan locale yükleme işleminin tamamlandığından emin olun (console log'larını kontrol edin)
+5. Browser console'da debug fonksiyonlarını kullanın:
+   ```javascript
+   // Locale cache'i temizle
+   clearLocaleCache();
+   
+   // Locale cache'i kontrol et
+   checkLocaleCache();
+   
+   // i18n messages'ı kontrol et
+   checkI18nMessages('tr');
+   
+   // Locale'leri yeniden yükle
+   reloadLocales();
+   ```
+
+### Problem: Menu item'ın pageCode'u ile locale key'i eşleşmiyor
+
+**Çözüm:**
+1. MongoDB'deki menu item'ın `pageCode` değerini kontrol edin
+2. Locale dosyasındaki key'in `menu.{pageCode}` formatında olduğundan emin olun
+3. Console'da debug log'larını kontrol edin (NavItem component'inde otomatik log'lar var)
+
 ## Referans Dosyalar
 
 - **Örnek Implementasyon:** `Mng.Ui/pages/apps/groups/index.vue`
 - **Locale Store:** `Mng.Ui/stores/locale.ts`
 - **i18n Plugin:** `Mng.Ui/plugins/vuetify.ts`
+- **Locale Loader:** `Mng.Ui/plugins/z-locale-loader.client.ts` (MinIO'dan locale yükleme)
 - **Locale Files:** `Mng.Ui/utils/locales/*.json`
+- **Side Menu Components:**
+  - `Mng.Ui/components/lc/Full/vertical-sidebar/NavItem/index.vue` (Menu item render)
+  - `Mng.Ui/components/lc/Full/vertical-sidebar/NavCollapse/index.vue` (Collapsible menu item)
+  - `Mng.Ui/components/apps/side-menu-manager/MenuItemForm.vue` (Menu item form ve locale update)
 
 ## Gelecek Geliştirmeler
 
 - [ ] Tüm sayfalar için dil desteği
-- [ ] Dinamik çeviri yükleme (MinIO'dan)
+- [x] Dinamik çeviri yükleme (MinIO'dan) ✅
 - [ ] Çeviri editörü UI
-- [ ] Otomatik çeviri entegrasyonu (MngLLM)
+- [x] Otomatik çeviri entegrasyonu (MngLLM) ✅ (Side Menu için)
 - [ ] Çeviri key type safety (TypeScript)
 
 ## Notlar

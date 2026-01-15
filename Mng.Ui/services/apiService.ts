@@ -214,6 +214,7 @@ export function fetchFromMngKeeper(
         }
       } else {
         // GET, POST, PUT için normal $fetch kullan
+        // FormData için Nuxt server route'u handle ediyor
         response = await $fetch(fullUrl, {
           method,
           headers: {

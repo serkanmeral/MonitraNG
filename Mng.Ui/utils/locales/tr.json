@@ -143,8 +143,8 @@
         "apps-groups": "Grup Yönetimi",
         "books": "Kitaplar",
         "apps-books": "Kitaplar",
-        "automated-forms": "Otomatik Formlar",
-        "apps-automated-forms": "Otomatik Formlar",
+        "automated-forms": "Otomatik Formlar 4",
+        "apps-automated-forms": "Otomatik Formlar 5",
         "headers": {
             "home": "Ana Sayfa",
             "assets": "Varlıklar",
@@ -458,6 +458,97 @@
                 "added": "{count} kullanıcı gruba başarıyla eklendi",
                 "removed": "Kullanıcı gruptan başarıyla çıkarıldı"
             }
+        }
+    },
+    "profile": {
+        "title": "Profil",
+        "user": "Kullanıcı",
+        "breadcrumbs": {
+            "home": "Ana Sayfa",
+            "profile": "Profil"
+        },
+        "tabs": {
+            "general": "Genel Bilgiler",
+            "account": "Hesap Ayarları",
+            "security": "Güvenlik",
+            "preferences": "Tercihler"
+        },
+        "comingSoon": "Yakında gelecek",
+        "roles": {
+            "admin": "Yönetici",
+            "manager": "Yönetici",
+            "user": "Kullanıcı"
+        },
+        "personalInfo": {
+            "title": "Kişisel Bilgiler",
+            "firstName": "Ad",
+            "lastName": "Soyad",
+            "title": "Unvan",
+            "department": "Departman",
+            "gender": "Cinsiyet",
+            "phoneNumber": "Telefon"
+        },
+        "accountInfo": {
+            "title": "Hesap Bilgileri",
+            "username": "Kullanıcı Adı",
+            "email": "Email",
+            "domain": "Domain",
+            "status": "Durum",
+            "createdAt": "Oluşturulma",
+            "updatedAt": "Son Güncelleme"
+        },
+        "status": {
+            "active": "Aktif",
+            "inactive": "Pasif"
+        },
+        "groups": {
+            "title": "Gruplar",
+            "manage": "Grup Yönetimi",
+            "noGroups": "Henüz grup atanmamış"
+        },
+        "photo": {
+            "title": "Profil Fotoğrafı",
+            "upload": "Fotoğraf Yükle",
+            "remove": "Fotoğrafı Kaldır",
+            "maxSize": "Max: 5MB",
+            "formats": "Format: JPG, PNG, WebP",
+            "errors": {
+                "maxSize": "Dosya boyutu 5MB'dan büyük olamaz",
+                "invalidFormat": "Sadece JPG, PNG ve WebP formatları desteklenir",
+                "maxDimensions": "Fotoğraf boyutu 2000x2000 pikselden büyük olamaz",
+                "invalidImage": "Geçersiz görüntü dosyası",
+                "readError": "Dosya okunamadı",
+                "uploadFailed": "Fotoğraf yüklenirken bir hata oluştu"
+            }
+        },
+        "gender": {
+            "notSpecified": "Belirtilmemiş",
+            "male": "Erkek",
+            "female": "Kadın"
+        },
+        "buttons": {
+            "edit": "Düzenle",
+            "save": "Kaydet",
+            "cancel": "İptal"
+        },
+        "validation": {
+            "firstNameRequired": "Ad gereklidir",
+            "firstNameMinLength": "Ad en az 2 karakter olmalıdır",
+            "firstNameMaxLength": "Ad en fazla 50 karakter olabilir",
+            "lastNameRequired": "Soyad gereklidir",
+            "lastNameMinLength": "Soyad en az 2 karakter olmalıdır",
+            "lastNameMaxLength": "Soyad en fazla 50 karakter olabilir",
+            "titleMaxLength": "Unvan en fazla 100 karakter olabilir",
+            "departmentMaxLength": "Departman en fazla 100 karakter olabilir",
+            "phoneNumberMaxLength": "Telefon numarası en fazla 20 karakter olabilir"
+        },
+        "messages": {
+            "saveSuccess": "Profil başarıyla güncellendi",
+            "saveError": "Profil güncellenirken bir hata oluştu",
+            "photoUploadSuccess": "Fotoğraf başarıyla yüklendi",
+            "photoUploadError": "Fotoğraf yüklenirken bir hata oluştu",
+            "photoRemoveSuccess": "Fotoğraf başarıyla kaldırıldı",
+            "photoRemoveError": "Fotoğraf kaldırılırken bir hata oluştu"
         }
     }
 }

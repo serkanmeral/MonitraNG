@@ -55,7 +55,7 @@ const profileDD: profileType[] = [
         avatar: proUser1,
         title: 'My Profile',
         subtitle: 'Account settings',
-        href: '/apps/user/profile'
+        href: '/apps/profile'
     },
     {
         avatar: proUser2,

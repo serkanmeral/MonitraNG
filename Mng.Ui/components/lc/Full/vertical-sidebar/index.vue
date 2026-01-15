@@ -2,14 +2,17 @@
 import { ref, shallowRef, computed, onMounted, watch } from 'vue';
 import { useCustomizerStore } from '@/stores/customizer';
 import { useAuthStore } from '@/stores/auth';
+import { useUserStore } from '@/stores/apps/user';
 import { useSideMenuStore } from '@/stores/apps/sideMenu';
 import { useLocaleStore } from '@/stores/locale';
 import { PowerIcon } from 'vue-tabler-icons';
+import AvatarDisplay from '@/components/apps/profile/AvatarDisplay.vue';
 import type { SideMenuItem } from '@/stores/apps/sideMenu';
 import type { menu } from './sidebarItem';
 
 const customizer = useCustomizerStore();
 const authStore = useAuthStore();
+const userStore = useUserStore();
 const menuStore = useSideMenuStore();
 const localeStore = useLocaleStore();
 const config = useRuntimeConfig();
@@ -133,6 +136,27 @@ onMounted(async () => {
     } catch (error) {
       // SignalR bağlantı hatası kritik değil, menu yine çalışır
     }
+    
+    // Load current user data (for photoUrl) if not already loaded
+    if (!userStore.currentUser && authStore.userInfo) {
+      try {
+        const searchTerm = authStore.userInfo.username || authStore.userInfo.email || authStore.userInfo.preferred_username || '';
+        if (searchTerm) {
+          await userStore.fetchUsers({ search: searchTerm, pageSize: 10 });
+          const foundUser = userStore.users.find(u => 
+            u.username === authStore.userInfo?.username || 
+            u.email === authStore.userInfo?.email ||
+            u.username === authStore.userInfo?.preferred_username
+          );
+          if (foundUser) {
+            userStore.currentUser = foundUser;
+          }
+        }
+      } catch (error) {
+        // User fetch error is not critical, continue without photo
+        console.warn('Could not load user data for avatar:', error);
+      }
+    }
   }
   
   // Ensure i18n locale is set correctly on mount (for Arabic support)
@@ -197,6 +221,36 @@ const userInitials = computed(() => {
   }
   
   return name[0]?.toUpperCase() || 'U';
+});
+
+// Get current user for AvatarDisplay component
+const currentUser = computed(() => {
+  // First try to get from userStore.currentUser (if loaded)
+  if (userStore.currentUser) {
+    return userStore.currentUser;
+  }
+  
+  // Fallback to authStore.userInfo
+  const info = authStore.userInfo;
+  if (!info) return null;
+  
+  return {
+    id: info.sub || info.username || '',
+    userId: info.sub || info.username,
+    domainId: info.domain_id || '',
+    username: info.username || info.preferred_username || info.sub || '',
+    email: info.email || '',
+    firstName: info.given_name || info.name?.split(' ')[0] || '',
+    lastName: info.family_name || info.name?.split(' ').slice(1).join(' ') || '',
+    title: null,
+    department: null,
+    gender: 'NotSpecified' as const,
+    phoneNumber: null,
+    photoUrl: null, // Will be loaded from backend if available
+    isActive: true,
+    groups: authStore.userGroups || [],
+    roles: [],
+  };
 });
 
 // Get domain logo for background
@@ -304,9 +358,7 @@ const handleLogout = async () => {
         <perfect-scrollbar class="scrollnavbar">
             <div class="profile" :style="domainLogoStyle">
                 <div class="profile-pic profile-pic py-7 px-3">
-                    <v-avatar size="45" color="primary" class="text-white font-weight-bold">
-                        {{ userInitials }}
-                    </v-avatar>
+                    <AvatarDisplay :user="currentUser" :size="45" />
                 </div>
                 <div class="profile-name d-flex align-center px-3">
                     <h5 class="text-white font-weight-medium">{{ userDisplayName }}</h5>

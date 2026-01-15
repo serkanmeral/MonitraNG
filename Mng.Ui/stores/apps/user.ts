@@ -1,6 +1,18 @@
 import { defineStore } from 'pinia';
 import { fetchFromMngKeeper } from '@/services/apiService';
 
+export enum Gender {
+  NotSpecified = 'NotSpecified',
+  Male = 'Male',
+  Female = 'Female'
+}
+
+export enum Gender {
+  NotSpecified = 'NotSpecified',
+  Male = 'Male',
+  Female = 'Female'
+}
+
 export interface User {
   id: string;
   userId?: string; // API response'da userId olabilir
@@ -10,6 +22,11 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  title?: string | null; // Unvan/İş Unvanı
+  department?: string | null; // Departman
+  gender?: Gender | 'NotSpecified' | 'Male' | 'Female'; // Cinsiyet
+  phoneNumber?: string | null; // Telefon Numarası
+  photoUrl?: string | null; // Profil Fotoğrafı URL (MinIO)
   isActive: boolean;
   groups: string[];
   roles?: string[];
@@ -177,6 +194,11 @@ export const useUserStore = defineStore('user', {
             email: user.Email || user.email || '',
             firstName: user.FirstName || user.firstName || '',
             lastName: user.LastName || user.lastName || '',
+            title: user.title || user.Title || null,
+            department: user.department || user.Department || null,
+            gender: user.gender !== undefined ? user.gender : (user.Gender !== undefined ? user.Gender : Gender.NotSpecified),
+            phoneNumber: user.phoneNumber || user.PhoneNumber || null,
+            photoUrl: user.photoUrl || user.PhotoUrl || null,
             isActive: user.IsActive !== undefined ? user.IsActive : (user.isActive !== undefined ? user.isActive : true),
             groups: user.Groups || user.groups || [],
             roles: user.Roles || user.roles || [],
@@ -245,9 +267,15 @@ export const useUserStore = defineStore('user', {
     },
 
     async updateUser(userId: string, userData: {
+      username?: string;
       email?: string;
       firstName?: string;
       lastName?: string;
+      title?: string;
+      department?: string;
+      gender?: Gender | 'NotSpecified' | 'Male' | 'Female';
+      phoneNumber?: string;
+      photoUrl?: string;
       isActive?: boolean;
       groups?: string[];
       roles?: string[];
@@ -256,23 +284,130 @@ export const useUserStore = defineStore('user', {
       this.error = null;
       
       try {
-        const response = await fetchFromMngKeeper(`/user/${userId}`, 'PUT', userData);
+        // Get current user to include required fields (Username, Email)
+        const currentUser = this.currentUser || this.users.find(u => u.id === userId || u.userId === userId);
         
-        // Store'daki kullanıcıyı güncelle
+        // Convert gender string to integer (backend expects 0, 1, 2)
+        const genderValue = userData.gender || currentUser?.gender || Gender.NotSpecified;
+        let genderInt: number;
+        if (typeof genderValue === 'string') {
+          switch (genderValue) {
+            case 'Male':
+              genderInt = 1;
+              break;
+            case 'Female':
+              genderInt = 2;
+              break;
+            case 'NotSpecified':
+            default:
+              genderInt = 0;
+              break;
+          }
+        } else {
+          // Already a Gender enum (number)
+          genderInt = genderValue as number;
+        }
+        
+        // Backend UpdateUserCommand requires Username and Email
+        // Also, backend expects GroupIds, not groups
+        // Gender must be integer (0, 1, 2)
+        const requestData: any = {
+          username: userData.username || currentUser?.username || '',
+          email: userData.email || currentUser?.email || '',
+          firstName: userData.firstName || currentUser?.firstName || '',
+          lastName: userData.lastName || currentUser?.lastName || '',
+          title: userData.title,
+          department: userData.department,
+          gender: genderInt, // Integer value (0, 1, 2)
+          phoneNumber: userData.phoneNumber,
+          photoUrl: userData.photoUrl,
+          isActive: userData.isActive !== undefined ? userData.isActive : (currentUser?.isActive ?? true),
+        };
+        
+        // Only include groupIds if groups are explicitly provided in userData
+        // If groups are not provided, don't send groupIds (backend will keep existing groups)
+        if (userData.groups !== undefined) {
+          requestData.groupIds = userData.groups;
+        }
+        // If userData.groups is undefined, don't include groupIds in request
+        // This allows backend to preserve existing groups when only other fields are updated
+        
+        // Remove undefined values
+        Object.keys(requestData).forEach(key => {
+          if (requestData[key] === undefined) {
+            delete requestData[key];
+          }
+        });
+        
+        const response = await fetchFromMngKeeper(`/user/${userId}`, 'PUT', requestData);
+        
+        // Response'dan güncellenmiş kullanıcı bilgilerini al
+        // Response yapısı: UpdateUserResponse { UserId, Username, Email, FirstName, LastName, ... }
+        const updatedUserData = response.User || response.user || response;
+        
+        // Store'daki kullanıcıyı güncelle - response'dan gelen değerleri kullan
         const index = this.users.findIndex(u => u.id === userId || u.userId === userId);
         if (index !== -1) {
           this.users[index] = {
             ...this.users[index],
-            ...userData,
-            updatedAt: new Date(),
+            id: updatedUserData.UserId || updatedUserData.userId || updatedUserData.id || this.users[index].id,
+            userId: updatedUserData.UserId || updatedUserData.userId || updatedUserData.id || this.users[index].userId,
+            username: updatedUserData.Username || updatedUserData.username || this.users[index].username,
+            email: updatedUserData.Email || updatedUserData.email || this.users[index].email,
+            firstName: updatedUserData.FirstName || updatedUserData.firstName || this.users[index].firstName,
+            lastName: updatedUserData.LastName || updatedUserData.lastName || this.users[index].lastName,
+            title: updatedUserData.Title || updatedUserData.title !== undefined ? updatedUserData.title : this.users[index].title,
+            department: updatedUserData.Department || updatedUserData.department !== undefined ? updatedUserData.department : this.users[index].department,
+            gender: updatedUserData.Gender !== undefined ? updatedUserData.Gender : (updatedUserData.gender !== undefined ? updatedUserData.gender : this.users[index].gender),
+            phoneNumber: updatedUserData.PhoneNumber || updatedUserData.phoneNumber !== undefined ? updatedUserData.phoneNumber : this.users[index].phoneNumber,
+            photoUrl: updatedUserData.PhotoUrl || updatedUserData.photoUrl !== undefined ? updatedUserData.photoUrl : this.users[index].photoUrl,
+            isActive: updatedUserData.IsActive !== undefined ? updatedUserData.IsActive : (updatedUserData.isActive !== undefined ? updatedUserData.isActive : this.users[index].isActive),
+            groups: updatedUserData.GroupIds || updatedUserData.groupIds || updatedUserData.Groups || updatedUserData.groups || this.users[index].groups,
+            updatedAt: updatedUserData.UpdatedAt || updatedUserData.updatedAt || new Date(),
           };
         }
         
+        // currentUser'ı güncelle - response'dan gelen değerleri kullan
         if (this.currentUser && (this.currentUser.id === userId || this.currentUser.userId === userId)) {
+          // Convert gender from integer to Gender enum/string if needed
+          let genderValue: Gender | 'NotSpecified' | 'Male' | 'Female' = this.currentUser.gender || Gender.NotSpecified;
+          if (updatedUserData.Gender !== undefined || updatedUserData.gender !== undefined) {
+            const genderInt = updatedUserData.Gender !== undefined ? updatedUserData.Gender : updatedUserData.gender;
+            if (typeof genderInt === 'number') {
+              // Backend returns integer (0, 1, 2), convert to Gender enum
+              switch (genderInt) {
+                case 1:
+                  genderValue = Gender.Male;
+                  break;
+                case 2:
+                  genderValue = Gender.Female;
+                  break;
+                case 0:
+                default:
+                  genderValue = Gender.NotSpecified;
+                  break;
+              }
+            } else {
+              genderValue = genderInt as Gender | 'NotSpecified' | 'Male' | 'Female';
+            }
+          }
+          
           this.currentUser = {
             ...this.currentUser,
-            ...userData,
-            updatedAt: new Date(),
+            id: updatedUserData.UserId || updatedUserData.userId || updatedUserData.id || this.currentUser.id,
+            userId: updatedUserData.UserId || updatedUserData.userId || updatedUserData.id || this.currentUser.userId,
+            username: updatedUserData.Username || updatedUserData.username || this.currentUser.username,
+            email: updatedUserData.Email || updatedUserData.email || this.currentUser.email,
+            firstName: updatedUserData.FirstName || updatedUserData.firstName || this.currentUser.firstName,
+            lastName: updatedUserData.LastName || updatedUserData.lastName || this.currentUser.lastName,
+            title: updatedUserData.Title || updatedUserData.title !== undefined ? updatedUserData.title : this.currentUser.title,
+            department: updatedUserData.Department || updatedUserData.department !== undefined ? updatedUserData.department : this.currentUser.department,
+            gender: genderValue,
+            phoneNumber: updatedUserData.PhoneNumber || updatedUserData.phoneNumber !== undefined ? updatedUserData.phoneNumber : this.currentUser.phoneNumber,
+            photoUrl: updatedUserData.PhotoUrl || updatedUserData.photoUrl !== undefined ? updatedUserData.photoUrl : this.currentUser.photoUrl,
+            isActive: updatedUserData.IsActive !== undefined ? updatedUserData.IsActive : (updatedUserData.isActive !== undefined ? updatedUserData.isActive : this.currentUser.isActive),
+            groups: updatedUserData.GroupIds || updatedUserData.groupIds || updatedUserData.Groups || updatedUserData.groups || this.currentUser.groups,
+            updatedAt: updatedUserData.UpdatedAt || updatedUserData.updatedAt || new Date(),
           };
         }
         

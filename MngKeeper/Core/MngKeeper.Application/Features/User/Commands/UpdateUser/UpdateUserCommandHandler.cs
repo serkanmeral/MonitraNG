@@ -110,8 +110,45 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                     };
                 }
 
-                // Update user in Keycloak (TODO: Implement Keycloak user update)
-                // For now, we'll just update in our database
+                // Update user in Keycloak
+                try
+                {
+                    var keycloakUpdateRequest = new MngKeeper.Application.Interfaces.UpdateUserRequest
+                    {
+                        Username = request.Username,
+                        Email = request.Email,
+                        FirstName = request.FirstName,
+                        LastName = request.LastName,
+                        Title = request.Title,
+                        Department = request.Department,
+                        Gender = (int)request.Gender,
+                        PhoneNumber = request.PhoneNumber,
+                        PhotoUrl = request.PhotoUrl
+                    };
+
+                    var keycloakUpdated = await _keycloakService.UpdateUserAsync(
+                        domain.RealmName, 
+                        existingUser.KeycloakUserId ?? existingUser.Id, 
+                        keycloakUpdateRequest);
+
+                    if (!keycloakUpdated)
+                    {
+                        _logger.LogWarning("Failed to update user in Keycloak: {UserId} in realm {RealmName}", 
+                            existingUser.Id, domain.RealmName);
+                        // Continue with database update even if Keycloak update fails
+                    }
+                    else
+                    {
+                        _logger.LogInformation("User updated in Keycloak: {UserId} in realm {RealmName}", 
+                            existingUser.Id, domain.RealmName);
+                    }
+                }
+                catch (Exception keycloakEx)
+                {
+                    _logger.LogError(keycloakEx, "Error updating user in Keycloak: {UserId} in realm {RealmName}", 
+                        existingUser.Id, domain.RealmName);
+                    // Continue with database update even if Keycloak update fails
+                }
 
                 // Update user entity
                 existingUser.Username = request.Username;
@@ -125,23 +162,31 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                 existingUser.PhotoUrl = request.PhotoUrl;
                 
                 // Convert group IDs to group names (User.Groups stores group names, not IDs)
-                if (request.GroupIds != null && request.GroupIds.Any())
+                // Only update groups if GroupIds is explicitly provided (not null)
+                // If GroupIds is null, keep existing groups unchanged
+                // If GroupIds is empty list, clear groups (explicit intent to remove all groups)
+                if (request.GroupIds != null)
                 {
-                    var groupNames = new List<string>();
-                    foreach (var groupId in request.GroupIds)
+                    if (request.GroupIds.Any())
                     {
-                        var group = await _groupRepository.GetByIdAsync(groupId, claims.DomainId);
-                        if (group != null && group.DomainId == claims.DomainId)
+                        var groupNames = new List<string>();
+                        foreach (var groupId in request.GroupIds)
                         {
-                            groupNames.Add(group.Name);
+                            var group = await _groupRepository.GetByIdAsync(groupId, claims.DomainId);
+                            if (group != null && group.DomainId == claims.DomainId)
+                            {
+                                groupNames.Add(group.Name);
+                            }
                         }
+                        existingUser.Groups = groupNames;
                     }
-                    existingUser.Groups = groupNames;
+                    else
+                    {
+                        // Empty list means explicitly remove all groups
+                        existingUser.Groups = new List<string>();
+                    }
                 }
-                else
-                {
-                    existingUser.Groups = new List<string>();
-                }
+                // If GroupIds is null, keep existing groups unchanged (don't modify existingUser.Groups)
                 
                 existingUser.IsActive = request.IsActive;
                 existingUser.UpdatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser; // TODO: Get from current user context

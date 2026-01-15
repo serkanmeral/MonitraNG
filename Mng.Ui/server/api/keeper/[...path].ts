@@ -1,7 +1,12 @@
+import { getCookie } from 'h3';
+
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
   // Use gateway URL if available, otherwise use direct keeper URL
-  const keeperUrl = config.public.gatewayUrl 
+  // If gatewayUrl is set, backend is accessed through gateway at /keeper path
+  // If keeperUrl is set, backend is accessed directly
+  const useGateway = !!config.public.gatewayUrl;
+  const backendBaseUrl = useGateway 
     ? `${config.public.gatewayUrl}/keeper`
     : (config.public.keeperUrl || 'https://localhost:5001');
   
@@ -11,10 +16,46 @@ export default defineEventHandler(async (event) => {
   
   // Get request body if exists
   let body = null;
+  let isFormData = false;
   if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
     try {
-      body = await readBody(event);
-    } catch {
+      // Check if request is multipart/form-data
+      const contentType = getHeader(event, 'content-type') || '';
+      console.log('[Nuxt Proxy] Content-Type:', contentType);
+      console.log('[Nuxt Proxy] Method:', method);
+      console.log('[Nuxt Proxy] Path:', path);
+      
+      if (contentType.includes('multipart/form-data')) {
+        console.log('[Nuxt Proxy] Detected multipart/form-data, parsing...');
+        // FormData için readMultipartFormData kullan
+        const formData = await readMultipartFormData(event);
+        console.log('[Nuxt Proxy] Parsed formData fields:', formData?.length || 0);
+        if (formData && formData.length > 0) {
+          // FormData'yı FormData object'ine çevir (backend'e göndermek için)
+          const formDataObj = new FormData();
+          for (const field of formData) {
+            if (field.filename) {
+              // File field
+              const blob = new Blob([field.data], { type: field.type || 'application/octet-stream' });
+              formDataObj.append(field.name, blob, field.filename);
+              console.log('[Nuxt Proxy] Added file field:', field.name, field.filename, field.type);
+            } else {
+              // Text field
+              formDataObj.append(field.name, field.data.toString());
+              console.log('[Nuxt Proxy] Added text field:', field.name);
+            }
+          }
+          body = formDataObj;
+          isFormData = true;
+          console.log('[Nuxt Proxy] FormData created successfully');
+        }
+      } else {
+        // JSON body için readBody kullan
+        body = await readBody(event);
+        console.log('[Nuxt Proxy] JSON body:', body ? 'present' : 'empty');
+      }
+    } catch (error) {
+      console.error('[Nuxt Proxy] Error reading body:', error);
       // No body
     }
   }
@@ -22,10 +63,25 @@ export default defineEventHandler(async (event) => {
   // Get query parameters
   const query = getQuery(event);
   const queryString = new URLSearchParams(query as Record<string, string>).toString();
-  const url = queryString ? `${keeperUrl}/api/${path}?${queryString}` : `${keeperUrl}/api/${path}`;
+  // Backend route is always /api/{path}, regardless of gateway or direct access
+  const url = queryString ? `${backendBaseUrl}/api/${path}?${queryString}` : `${backendBaseUrl}/api/${path}`;
   
   // Get authorization header from request
-  const authHeader = getHeader(event, 'authorization');
+  let authHeader = getHeader(event, 'authorization');
+  
+  // If no Authorization header, try to get token from cookie (for <img> tags)
+  if (!authHeader) {
+    try {
+      // Try to get token from cookie using getCookie (h3 function)
+      const tokenCookie = getCookie(event, 'access_token');
+      if (tokenCookie) {
+        authHeader = `Bearer ${tokenCookie}`;
+      }
+    } catch (cookieError) {
+      // Cookie read error is not critical, continue without token
+      console.warn('[Nuxt Proxy] Could not read access_token cookie:', cookieError);
+    }
+  }
   
   try {
     // Development için SSL sertifika doğrulamasını geçici olarak devre dışı bırak
@@ -35,16 +91,21 @@ export default defineEventHandler(async (event) => {
     }
     
     try {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
+      const headers: Record<string, string> = {};
+      
+      // FormData için Content-Type header'ını set etme (boundary otomatik eklenir)
+      if (!isFormData) {
+        headers['Content-Type'] = 'application/json';
+      }
       
       if (authHeader) {
         headers['Authorization'] = authHeader;
       }
       
-      // Export endpoint'leri için binary response handling
-      if (path.startsWith('group/export') || path.startsWith('user/export')) {
+      // Export endpoint'leri ve photo GET endpoint'leri için binary response handling
+      // POST /user/{userId}/photo JSON döndürür, GET /user/{userId}/photo binary döndürür
+      // Note: user/[userId]/photo.ts was deleted to allow POST requests to go through [...path].ts
+      if (method === 'GET' && (path.startsWith('group/export') || path.startsWith('user/export') || (path.includes('/photo') && !path.includes('/photo.')))) {
         try {
           // Binary response için responseType: 'arrayBuffer' kullan
           const rawResponse = await $fetch.raw(url, {
@@ -123,18 +184,50 @@ export default defineEventHandler(async (event) => {
           throw fetchError;
         }
       } else {
-        // GET, POST, PUT için normal $fetch kullan
-        response = await $fetch(url, {
-          method: method as any,
-          headers,
-          ...(body && { body }),
-        });
-        
-        // Orijinal ayarı geri yükle
-        if (originalRejectUnauthorized !== undefined) {
-          process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalRejectUnauthorized;
+        // FormData için özel handling
+        if (isFormData && body instanceof FormData) {
+          console.log('[Nuxt Proxy] Sending FormData to backend:', url);
+          console.log('[Nuxt Proxy] Method:', method);
+          // FormData için $fetch kullan, ancak Content-Type header'ını set etme
+          // $fetch FormData'yı handle edebilir, ancak Content-Type'ı otomatik ayarlar
+          const fetchHeaders: Record<string, string> = {};
+          if (authHeader) {
+            fetchHeaders['Authorization'] = authHeader;
+          }
+          // Content-Type header'ını set etme - $fetch otomatik olarak multipart/form-data ile boundary ekler
+          
+          try {
+            response = await $fetch(url, {
+              method: method as any,
+              headers: fetchHeaders,
+              body: body,
+            });
+            console.log('[Nuxt Proxy] Backend response received:', response ? 'success' : 'empty');
+          } catch (fetchError: any) {
+            console.error('[Nuxt Proxy] Backend fetch error:', fetchError);
+            throw fetchError;
+          }
+          
+          // Orijinal ayarı geri yükle
+          if (originalRejectUnauthorized !== undefined) {
+            process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalRejectUnauthorized;
+          } else {
+            delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+          }
         } else {
-          delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+          // GET, POST, PUT için normal $fetch kullan (FormData değilse)
+          response = await $fetch(url, {
+            method: method as any,
+            headers,
+            ...(body && { body }),
+          });
+          
+          // Orijinal ayarı geri yükle
+          if (originalRejectUnauthorized !== undefined) {
+            process.env.NODE_TLS_REJECT_UNAUTHORIZED = originalRejectUnauthorized;
+          } else {
+            delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+          }
         }
       }
       return response;

@@ -255,5 +255,40 @@ public class MinioService : IMinioService
             return false;
         }
     }
+
+    public async Task<bool> RemoveObjectAsync(string bucketName, string objectName, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Removing object from MinIO: {BucketName}/{ObjectName}", bucketName, objectName);
+
+            // Check if bucket exists
+            var bucketExists = await BucketExistsAsync(bucketName, cancellationToken);
+            if (!bucketExists)
+            {
+                _logger.LogWarning("Bucket does not exist: {BucketName}", bucketName);
+                return false;
+            }
+
+            var removeObjectArgs = new RemoveObjectArgs()
+                .WithBucket(bucketName)
+                .WithObject(objectName);
+
+            await _minioClient.RemoveObjectAsync(removeObjectArgs, cancellationToken);
+
+            _logger.LogInformation("Object removed successfully: {BucketName}/{ObjectName}", bucketName, objectName);
+            return true;
+        }
+        catch (Minio.Exceptions.ObjectNotFoundException)
+        {
+            _logger.LogInformation("Object not found (may have been already deleted): {BucketName}/{ObjectName}", bucketName, objectName);
+            return true; // Object doesn't exist, consider it success (idempotent)
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to remove object from MinIO: {BucketName}/{ObjectName}", bucketName, objectName);
+            return false;
+        }
+    }
 }
 

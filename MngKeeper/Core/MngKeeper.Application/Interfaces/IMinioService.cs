@@ -39,5 +39,7 @@ public interface IMinioService
     /// Uploads an object to MinIO from a stream
     /// </summary>
     Task<bool> PutObjectAsync(string bucketName, string objectName, Stream content, string contentType, CancellationToken cancellationToken = default);
+    
+    Task<bool> RemoveObjectAsync(string bucketName, string objectName, CancellationToken cancellationToken = default);
 }
 
