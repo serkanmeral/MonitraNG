@@ -1,0 +1,60 @@
+{
+  "name": "@user_notes",
+  "description": "Kullanıcı notları - Her kullanıcı kendi notlarını kaydedebilir",
+  "forceSchema": true,
+  "logging": "none",
+  "publishMode": "none",
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "userId",
+      "title": "Kullanıcı ID",
+      "mandatory": true
+    },
+    {
+      "fieldType": "text",
+      "name": "title",
+      "title": "Not Başlığı/İçeriği",
+      "mandatory": true
+    },
+    {
+      "fieldType": "text",
+      "name": "color",
+      "title": "Not Rengi",
+      "mandatory": false,
+      "validation": {
+        "pattern": "^(primary|secondary|error|warning|success|info)$",
+        "message": "Geçerli bir renk seçiniz (primary, secondary, error, warning, success, info)"
+      }
+    },
+    {
+      "fieldType": "datetime",
+      "name": "createdAt",
+      "title": "Oluşturulma Tarihi",
+      "mandatory": false
+    },
+    {
+      "fieldType": "datetime",
+      "name": "updatedAt",
+      "title": "Güncellenme Tarihi",
+      "mandatory": false
+    }
+  ],
+  "indexList": [
+    {
+      "name": "userId_index",
+      "fields": {
+        "userId": 1
+      },
+      "unique": false
+    },
+    {
+      "name": "userId_createdAt_index",
+      "fields": {
+        "userId": 1,
+        "createdAt": -1
+      },
+      "unique": false
+    }
+  ]
+}

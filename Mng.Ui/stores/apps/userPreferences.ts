@@ -9,6 +9,11 @@ export interface UserPreferences {
   userId: string;
   locale?: SupportedLocale;
   theme?: string;
+  // Layout preferences
+  horizontalLayout?: boolean;
+  boxed?: boolean;
+  miniSidebar?: boolean;
+  borderCard?: boolean;
   // Future preferences can be added here
   // timezone?: string;
   // dateFormat?: string;
@@ -63,6 +68,10 @@ export const useUserPreferencesStore = defineStore('userPreferences', {
             userId: pref.userId || userId,
             locale: pref.locale,
             theme: pref.theme,
+            horizontalLayout: pref.horizontalLayout,
+            boxed: pref.boxed,
+            miniSidebar: pref.miniSidebar,
+            borderCard: pref.borderCard,
           };
           return this.preferences;
         }
@@ -129,6 +138,10 @@ export const useUserPreferencesStore = defineStore('userPreferences', {
               userId,
               locale: preferences.locale ?? existing.locale,
               theme: preferences.theme ?? existing.theme,
+              horizontalLayout: preferences.horizontalLayout ?? existing.horizontalLayout,
+              boxed: preferences.boxed ?? existing.boxed,
+              miniSidebar: preferences.miniSidebar ?? existing.miniSidebar,
+              borderCard: preferences.borderCard ?? existing.borderCard,
             };
 
             await fetchFromDataGateway(
@@ -147,6 +160,10 @@ export const useUserPreferencesStore = defineStore('userPreferences', {
           userId,
           locale: preferences.locale,
           theme: preferences.theme,
+          horizontalLayout: preferences.horizontalLayout,
+          boxed: preferences.boxed,
+          miniSidebar: preferences.miniSidebar,
+          borderCard: preferences.borderCard,
         };
 
         await fetchFromDataGateway(
@@ -188,6 +205,20 @@ export const useUserPreferencesStore = defineStore('userPreferences', {
       // Apply theme
       if (preferences.theme) {
         customizerStore.SET_THEME(preferences.theme);
+      }
+
+      // Apply layout preferences
+      if (preferences.horizontalLayout !== undefined) {
+        customizerStore.SET_LAYOUT(preferences.horizontalLayout);
+      }
+      if (preferences.boxed !== undefined) {
+        customizerStore.boxed = preferences.boxed;
+      }
+      if (preferences.miniSidebar !== undefined) {
+        customizerStore.SET_MINI_SIDEBAR(preferences.miniSidebar);
+      }
+      if (preferences.borderCard !== undefined) {
+        customizerStore.SET_CARD_BORDER(preferences.borderCard);
       }
     },
 

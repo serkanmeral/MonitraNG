@@ -21,15 +21,10 @@ export default defineEventHandler(async (event) => {
     try {
       // Check if request is multipart/form-data
       const contentType = getHeader(event, 'content-type') || '';
-      console.log('[Nuxt Proxy] Content-Type:', contentType);
-      console.log('[Nuxt Proxy] Method:', method);
-      console.log('[Nuxt Proxy] Path:', path);
       
       if (contentType.includes('multipart/form-data')) {
-        console.log('[Nuxt Proxy] Detected multipart/form-data, parsing...');
         // FormData için readMultipartFormData kullan
         const formData = await readMultipartFormData(event);
-        console.log('[Nuxt Proxy] Parsed formData fields:', formData?.length || 0);
         if (formData && formData.length > 0) {
           // FormData'yı FormData object'ine çevir (backend'e göndermek için)
           const formDataObj = new FormData();
@@ -38,24 +33,19 @@ export default defineEventHandler(async (event) => {
               // File field
               const blob = new Blob([field.data], { type: field.type || 'application/octet-stream' });
               formDataObj.append(field.name, blob, field.filename);
-              console.log('[Nuxt Proxy] Added file field:', field.name, field.filename, field.type);
             } else {
               // Text field
               formDataObj.append(field.name, field.data.toString());
-              console.log('[Nuxt Proxy] Added text field:', field.name);
             }
           }
           body = formDataObj;
           isFormData = true;
-          console.log('[Nuxt Proxy] FormData created successfully');
         }
       } else {
         // JSON body için readBody kullan
         body = await readBody(event);
-        console.log('[Nuxt Proxy] JSON body:', body ? 'present' : 'empty');
       }
     } catch (error) {
-      console.error('[Nuxt Proxy] Error reading body:', error);
       // No body
     }
   }
@@ -79,7 +69,6 @@ export default defineEventHandler(async (event) => {
       }
     } catch (cookieError) {
       // Cookie read error is not critical, continue without token
-      console.warn('[Nuxt Proxy] Could not read access_token cookie:', cookieError);
     }
   }
   
@@ -186,8 +175,6 @@ export default defineEventHandler(async (event) => {
       } else {
         // FormData için özel handling
         if (isFormData && body instanceof FormData) {
-          console.log('[Nuxt Proxy] Sending FormData to backend:', url);
-          console.log('[Nuxt Proxy] Method:', method);
           // FormData için $fetch kullan, ancak Content-Type header'ını set etme
           // $fetch FormData'yı handle edebilir, ancak Content-Type'ı otomatik ayarlar
           const fetchHeaders: Record<string, string> = {};
@@ -202,9 +189,7 @@ export default defineEventHandler(async (event) => {
               headers: fetchHeaders,
               body: body,
             });
-            console.log('[Nuxt Proxy] Backend response received:', response ? 'success' : 'empty');
           } catch (fetchError: any) {
-            console.error('[Nuxt Proxy] Backend fetch error:', fetchError);
             throw fetchError;
           }
           

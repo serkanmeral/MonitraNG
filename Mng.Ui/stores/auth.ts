@@ -420,6 +420,14 @@ export const useAuthStore = defineStore("auth", {
           // Preferences store might not be loaded yet
         }
         
+        try {
+          const { useUserNotesStore } = await import('@/stores/apps/userNotes');
+          const notesStore = useUserNotesStore();
+          notesStore.clearNotes();
+        } catch (error) {
+          // Notes store might not be loaded yet
+        }
+        
         // Clear user store currentUser
         try {
           const { useUserStore } = await import('@/stores/apps/user');

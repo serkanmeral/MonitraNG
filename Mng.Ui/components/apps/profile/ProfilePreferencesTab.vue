@@ -5,6 +5,14 @@ import { useCustomizerStore } from '@/stores/customizer';
 import { useUserPreferencesStore } from '@/stores/apps/userPreferences';
 import { useAuthStore } from '@/stores/auth';
 import type { SupportedLocale } from '@/stores/locale';
+import {
+  LayoutColumnsIcon,
+  LayoutNavbarIcon,
+  LayoutDistributeVerticalIcon,
+  LayoutDistributeHorizontalIcon,
+  LayoutSidebarIcon,
+  LayoutSidebarLeftCollapseIcon,
+} from 'vue-tabler-icons';
 
 // Get i18n instance for legacy mode
 const nuxtApp = useNuxtApp();
@@ -28,6 +36,10 @@ const authStore = useAuthStore();
 const formData = ref({
   locale: localeStore.locale,
   theme: customizerStore.actTheme,
+  horizontalLayout: customizerStore.setHorizontalLayout,
+  boxed: customizerStore.boxed,
+  miniSidebar: customizerStore.mini_sidebar,
+  borderCard: customizerStore.setBorderCard,
 });
 
 // Loading state
@@ -71,6 +83,10 @@ const savePreferences = async () => {
     await preferencesStore.savePreferences({
       locale: formData.value.locale,
       theme: formData.value.theme,
+      horizontalLayout: formData.value.horizontalLayout,
+      boxed: formData.value.boxed,
+      miniSidebar: formData.value.miniSidebar,
+      borderCard: formData.value.borderCard,
     });
     
     saveSuccess.value = true;
@@ -131,6 +147,42 @@ const handleThemeChange = async (theme: string) => {
   await savePreferences();
 };
 
+// Handle layout change
+const handleHorizontalLayoutChange = async (value: boolean) => {
+  customizerStore.SET_LAYOUT(value);
+  formData.value.horizontalLayout = value;
+  
+  // Auto-save to dataset
+  await savePreferences();
+};
+
+// Handle boxed change
+const handleBoxedChange = async (value: boolean) => {
+  customizerStore.boxed = value;
+  formData.value.boxed = value;
+  
+  // Auto-save to dataset
+  await savePreferences();
+};
+
+// Handle mini sidebar change
+const handleMiniSidebarChange = async (value: boolean) => {
+  customizerStore.SET_MINI_SIDEBAR(value);
+  formData.value.miniSidebar = value;
+  
+  // Auto-save to dataset
+  await savePreferences();
+};
+
+// Handle border card change
+const handleBorderCardChange = async (value: boolean) => {
+  customizerStore.SET_CARD_BORDER(value);
+  formData.value.borderCard = value;
+  
+  // Auto-save to dataset
+  await savePreferences();
+};
+
 onMounted(async () => {
   // Try to load preferences from dataset
   const userId = authStore.userInfo?.sub || authStore.userInfo?.username;
@@ -143,12 +195,20 @@ onMounted(async () => {
         formData.value = {
           locale: prefs.locale || localeStore.locale,
           theme: prefs.theme || customizerStore.actTheme,
+          horizontalLayout: prefs.horizontalLayout ?? customizerStore.setHorizontalLayout,
+          boxed: prefs.boxed ?? customizerStore.boxed,
+          miniSidebar: prefs.miniSidebar ?? customizerStore.mini_sidebar,
+          borderCard: prefs.borderCard ?? customizerStore.setBorderCard,
         };
       } else {
         // No preferences found, use current store values
         formData.value = {
           locale: localeStore.locale,
           theme: customizerStore.actTheme,
+          horizontalLayout: customizerStore.setHorizontalLayout,
+          boxed: customizerStore.boxed,
+          miniSidebar: customizerStore.mini_sidebar,
+          borderCard: customizerStore.setBorderCard,
         };
       }
     } catch (error) {
@@ -156,6 +216,10 @@ onMounted(async () => {
       formData.value = {
         locale: localeStore.locale,
         theme: customizerStore.actTheme,
+        horizontalLayout: customizerStore.setHorizontalLayout,
+        boxed: customizerStore.boxed,
+        miniSidebar: customizerStore.mini_sidebar,
+        borderCard: customizerStore.setBorderCard,
       };
     }
   } else {
@@ -163,6 +227,10 @@ onMounted(async () => {
     formData.value = {
       locale: localeStore.locale,
       theme: customizerStore.actTheme,
+      horizontalLayout: customizerStore.setHorizontalLayout,
+      boxed: customizerStore.boxed,
+      miniSidebar: customizerStore.mini_sidebar,
+      borderCard: customizerStore.setBorderCard,
     };
   }
 });
@@ -242,14 +310,99 @@ onMounted(async () => {
       </v-card>
     </v-col>
 
-    <!-- Future: UI Preferences, Notification Preferences, etc. -->
-    <v-col cols="12">
-      <v-card elevation="10">
+    <!-- Layout Preferences -->
+    <v-col cols="12" lg="6" md="12">
+      <v-card elevation="10" class="mb-4">
         <v-card-item>
-          <h5 class="text-h5 mb-4">{{ t('profile.preferences.other.title') }}</h5>
-          <p class="text-body-2 text-medium-emphasis">
-            {{ t('profile.preferences.other.description') }}
-          </p>
+          <h5 class="text-h5 mb-4">{{ t('profile.preferences.layout.title') }}</h5>
+          
+          <!-- Sidebar Layout -->
+          <div class="mb-6">
+            <h6 class="text-subtitle-1 mb-3">{{ t('profile.preferences.layout.sidebarLayout') }}</h6>
+            <v-btn-toggle 
+              v-model="formData.horizontalLayout" 
+              color="primary" 
+              class="btn-group-custom gap-3" 
+              rounded="0" 
+              group
+              @update:model-value="handleHorizontalLayoutChange"
+            >
+              <v-btn :value="false" variant="text" elevation="9" class="rounded-md">
+                <LayoutColumnsIcon stroke-width="1.5" size="21" class="mr-2 icon" />
+                {{ t('profile.preferences.layout.vertical') }}
+              </v-btn>
+              <v-btn :value="true" variant="text" elevation="9" class="rounded-md">
+                <LayoutNavbarIcon stroke-width="1.5" size="21" class="mr-2 icon" />
+                {{ t('profile.preferences.layout.horizontal') }}
+              </v-btn>
+            </v-btn-toggle>
+          </div>
+
+          <!-- Container Option -->
+          <div class="mb-6">
+            <h6 class="text-subtitle-1 mb-3">{{ t('profile.preferences.layout.containerOption') }}</h6>
+            <v-btn-toggle 
+              v-model="formData.boxed" 
+              color="primary" 
+              class="btn-group-custom gap-3" 
+              rounded="0" 
+              group
+              @update:model-value="handleBoxedChange"
+            >
+              <v-btn :value="true" variant="text" elevation="9" class="rounded-md">
+                <LayoutDistributeVerticalIcon stroke-width="1.5" size="21" class="mr-2 icon" />
+                {{ t('profile.preferences.layout.boxed') }}
+              </v-btn>
+              <v-btn :value="false" variant="text" elevation="9" class="rounded-md">
+                <LayoutDistributeHorizontalIcon stroke-width="1.5" size="21" class="mr-2 icon" />
+                {{ t('profile.preferences.layout.full') }}
+              </v-btn>
+            </v-btn-toggle>
+          </div>
+
+          <!-- Sidebar Type (only for vertical layout) -->
+          <div class="mb-6" v-if="!formData.horizontalLayout">
+            <h6 class="text-subtitle-1 mb-3">{{ t('profile.preferences.layout.sidebarType') }}</h6>
+            <v-btn-toggle 
+              v-model="formData.miniSidebar" 
+              color="primary" 
+              class="btn-group-custom gap-3" 
+              rounded="0" 
+              group
+              @update:model-value="handleMiniSidebarChange"
+            >
+              <v-btn :value="false" variant="text" elevation="9" class="rounded-md">
+                <LayoutSidebarIcon stroke-width="1.5" size="21" class="mr-2 icon" />
+                {{ t('profile.preferences.layout.full') }}
+              </v-btn>
+              <v-btn :value="true" variant="text" elevation="9" class="rounded-md">
+                <LayoutSidebarLeftCollapseIcon stroke-width="1.5" size="21" class="mr-2 icon" />
+                {{ t('profile.preferences.layout.collapse') }}
+              </v-btn>
+            </v-btn-toggle>
+          </div>
+
+          <!-- Card Style -->
+          <div>
+            <h6 class="text-subtitle-1 mb-3">{{ t('profile.preferences.layout.cardStyle') }}</h6>
+            <v-btn-toggle 
+              v-model="formData.borderCard" 
+              color="primary" 
+              class="btn-group-custom gap-3" 
+              rounded="0" 
+              group
+              @update:model-value="handleBorderCardChange"
+            >
+              <v-btn :value="false" variant="text" elevation="9" class="rounded-md">
+                <LayoutSidebarLeftCollapseIcon stroke-width="1.5" size="21" class="mr-2 icon" />
+                {{ t('profile.preferences.layout.shadow') }}
+              </v-btn>
+              <v-btn :value="true" variant="text" elevation="9" class="rounded-md">
+                <LayoutSidebarIcon stroke-width="1.5" size="21" class="mr-2 icon" />
+                {{ t('profile.preferences.layout.border') }}
+              </v-btn>
+            </v-btn-toggle>
+          </div>
         </v-card-item>
       </v-card>
     </v-col>

@@ -378,10 +378,9 @@ const updateLocaleFiles = async () => {
       
       if (translationResponse?.translations) {
         translations = translationResponse.translations;
-        console.log('[MenuItemForm] Title translations received:', translations);
       }
     } catch (translationError: any) {
-      console.warn('[MenuItemForm] Translation API failed for title, using source text as fallback:', translationError);
+      // Translation API failed for title, using source text as fallback
       // If translation fails, use source text as fallback for all languages
       targetLocales.forEach(locale => {
         translations[locale] = sourceText;
@@ -399,10 +398,9 @@ const updateLocaleFiles = async () => {
         
         if (subCaptionTranslationResponse?.translations) {
           subCaptionTranslations = subCaptionTranslationResponse.translations;
-          console.log('[MenuItemForm] SubCaption translations received:', subCaptionTranslations);
         }
       } catch (subCaptionTranslationError: any) {
-        console.warn('[MenuItemForm] Translation API failed for subCaption, using source text as fallback:', subCaptionTranslationError);
+        // Translation API failed for subCaption, using source text as fallback
         // If translation fails, use source text as fallback for all languages
         targetLocales.forEach(locale => {
           subCaptionTranslations[locale] = sourceSubCaption;
@@ -507,17 +505,15 @@ const updateLocaleFiles = async () => {
         const reloadLocales = (nuxtApp as any).$reloadLocales;
         if (reloadLocales) {
           await reloadLocales(); // Invalidate cache and reload from MinIO
-          console.log('[MenuItemForm] Locale cache invalidated and locales reloaded from MinIO');
         } else {
           // Fallback: just invalidate cache if reloadLocales is not available
           const invalidateCache = (nuxtApp as any).$invalidateLocaleCache;
           if (invalidateCache) {
             invalidateCache();
-            console.log('[MenuItemForm] Locale cache invalidated (reload not available)');
           }
         }
       } catch (cacheError) {
-        console.warn('Failed to reload locales:', cacheError);
+        // Failed to reload locales, silently continue
       }
     }
 

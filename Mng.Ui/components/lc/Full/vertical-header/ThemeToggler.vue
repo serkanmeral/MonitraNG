@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useTheme } from 'vuetify';
 import { useCustomizerStore } from '@/stores/customizer';
+import { useUserPreferencesStore } from '@/stores/apps/userPreferences';
+import { useAuthStore } from '@/stores/auth';
 import { MoonFilledIcon, SunFilledIcon } from 'vue-tabler-icons';
 
 const theme = useTheme();
 const customizer = useCustomizerStore();
+const preferencesStore = useUserPreferencesStore();
+const authStore = useAuthStore();
 
 // template skin color options
 const themeColors = ref([
@@ -18,6 +22,21 @@ const themeColors = ref([
         bg: 'togglethemeDarkBlue'
     }
 ]);
+
+// Watch for theme changes and save to preferences
+watch(() => customizer.actTheme, async (newTheme) => {
+  // Only save if user is authenticated
+  if (authStore.isAuthenticated) {
+    try {
+      await preferencesStore.savePreferences({
+        theme: newTheme,
+      });
+    } catch (error) {
+      // Silently handle errors - preference save failure shouldn't block theme change
+      // Dataset might not exist yet, which is OK
+    }
+  }
+});
 </script>
 
 <template>

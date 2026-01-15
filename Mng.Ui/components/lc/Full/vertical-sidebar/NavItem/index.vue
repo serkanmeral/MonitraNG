@@ -39,24 +39,8 @@ const menuTitle = computed(() => {
   // Access localeStore.locale to make this computed reactive to locale changes
   const currentLocale = localeStore.locale;
   
-  // Debug: Always log for automated-forms to see what's happening
-  const isAutomatedForms = props.item.title && (
-    props.item.title.includes('Otomatik') || 
-    props.item.title.includes('Automated') ||
-    props.item.title.includes('自动') ||
-    (props.item.pageCode && (props.item.pageCode.includes('automated') || props.item.pageCode.includes('forms')))
-  );
-  
-  if (isAutomatedForms) {
-    console.log(`[NavItem] Automated Forms Item - pageCode: "${props.item.pageCode}", item.title: "${props.item.title}"`);
-  }
-  
   if (!props.item.pageCode || !i18n) {
-    const fallbackTitle = props.item.title ? i18n?.t?.(props.item.title) || props.item.title : '';
-    if (isAutomatedForms) {
-      console.log(`[NavItem] No pageCode, using fallback (item.title):`, fallbackTitle);
-    }
-    return fallbackTitle;
+    return props.item.title ? i18n?.t?.(props.item.title) || props.item.title : '';
   }
   
   const translationKey = `menu.${props.item.pageCode}`;
@@ -70,45 +54,22 @@ const menuTitle = computed(() => {
   const messages = i18nGlobal?.messages || {};
   const localeMessages = messages[currentLocale] || messages.value?.[currentLocale] || {};
   
-  if (isAutomatedForms) {
-    console.log(`[NavItem] pageCode: "${props.item.pageCode}", translationKey: "${translationKey}"`);
-    console.log(`[NavItem] currentLocale: "${currentLocale}"`);
-    console.log(`[NavItem] localeMessages.menu:`, localeMessages.menu);
-  }
-  
   // Try direct access: menu.apps-automated-forms
   if (localeMessages.menu && localeMessages.menu[props.item.pageCode]) {
     menuValue = localeMessages.menu[props.item.pageCode];
-    if (isAutomatedForms) {
-      console.log(`[NavItem] Found via direct access:`, menuValue, 'type:', typeof menuValue);
-    }
   } else {
     // Fallback to i18n.t() if direct access doesn't work
     menuValue = i18n.t(translationKey);
-    if (isAutomatedForms) {
-      console.log(`[NavItem] Using i18n.t():`, menuValue, 'type:', typeof menuValue);
-    }
   }
   
   // If translation not found, return original title
   if (!menuValue || menuValue === translationKey || (typeof menuValue === 'string' && menuValue.startsWith('menu.'))) {
-    const fallbackTitle = props.item.title ? i18n?.t?.(props.item.title) || props.item.title : '';
-    if (isAutomatedForms) {
-      console.log(`[NavItem] Translation not found, using fallback (item.title):`, fallbackTitle);
-    }
-    return fallbackTitle;
+    return props.item.title ? i18n?.t?.(props.item.title) || props.item.title : '';
   }
   
   // If it's an object, get title property, otherwise use the value directly
   if (typeof menuValue === 'object' && menuValue !== null && menuValue.title) {
-    if (isAutomatedForms) {
-      console.log(`[NavItem] Using object.title:`, menuValue.title);
-    }
     return menuValue.title;
-  }
-  
-  if (isAutomatedForms) {
-    console.log(`[NavItem] Using direct value:`, menuValue);
   }
   
   return menuValue;

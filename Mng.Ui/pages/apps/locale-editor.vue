@@ -126,10 +126,9 @@ const saveLocale = async () => {
         const invalidateCache = (nuxtApp as any).$invalidateLocaleCache;
         if (invalidateCache) {
           invalidateCache(selectedLocale.value);
-          console.log(`[Locale Editor] Cache invalidated for ${selectedLocale.value}`);
         }
       } catch (cacheError) {
-        console.warn('Failed to invalidate cache:', cacheError);
+        // Failed to invalidate cache, silently continue
       }
     }
     

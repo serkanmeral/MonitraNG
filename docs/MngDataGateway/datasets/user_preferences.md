@@ -39,6 +39,30 @@ Bu dataset, kullanıcıların uygulama tercihlerini saklamak için kullanılır.
       "pattern": "^(BLUE_THEME|AQUA_THEME|PURPLE_THEME|GREEN_THEME|CYAN_THEME|ORANGE_THEME|DARK_BLUE_THEME|DARK_AQUA_THEME|DARK_PURPLE_THEME|DARK_GREEN_THEME|DARK_CYAN_THEME|DARK_ORANGE_THEME)$",
       "message": "Geçerli bir tema seçiniz"
     }
+  },
+  {
+    "fieldType": "bool",
+    "name": "horizontalLayout",
+    "title": "Yatay Layout",
+    "mandatory": false
+  },
+  {
+    "fieldType": "bool",
+    "name": "boxed",
+    "title": "Kutulu Konteyner",
+    "mandatory": false
+  },
+  {
+    "fieldType": "bool",
+    "name": "miniSidebar",
+    "title": "Daraltılmış Sidebar",
+    "mandatory": false
+  },
+  {
+    "fieldType": "bool",
+    "name": "borderCard",
+    "title": "Kart Kenarlığı",
+    "mandatory": false
   }
 ]
 ```
@@ -102,6 +126,30 @@ Content-Type: application/json
         "pattern": "^(BLUE_THEME|AQUA_THEME|PURPLE_THEME|GREEN_THEME|CYAN_THEME|ORANGE_THEME|DARK_BLUE_THEME|DARK_AQUA_THEME|DARK_PURPLE_THEME|DARK_GREEN_THEME|DARK_CYAN_THEME|DARK_ORANGE_THEME)$",
         "message": "Geçerli bir tema seçiniz"
       }
+    },
+    {
+      "fieldType": "bool",
+      "name": "horizontalLayout",
+      "title": "Yatay Layout",
+      "mandatory": false
+    },
+    {
+      "fieldType": "bool",
+      "name": "boxed",
+      "title": "Kutulu Konteyner",
+      "mandatory": false
+    },
+    {
+      "fieldType": "bool",
+      "name": "miniSidebar",
+      "title": "Daraltılmış Sidebar",
+      "mandatory": false
+    },
+    {
+      "fieldType": "bool",
+      "name": "borderCard",
+      "title": "Kart Kenarlığı",
+      "mandatory": false
     }
   ],
   "indexList": [
