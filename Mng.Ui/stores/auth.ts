@@ -127,6 +127,25 @@ export const useAuthStore = defineStore("auth", {
             // Domain bilgisi yüklenemezse hata verme, sadece logla
             console.warn('Domain bilgisi yüklenemedi:', domainError);
           }
+          
+          // Load user preferences after successful login
+          if (process.client) {
+            try {
+              const { useUserPreferencesStore } = await import('@/stores/apps/userPreferences');
+              const preferencesStore = useUserPreferencesStore();
+              const userId = normalizedUserInfo.sub || normalizedUserInfo.username;
+              if (userId) {
+                const prefs = await preferencesStore.loadPreferences(userId);
+                if (prefs) {
+                  preferencesStore.applyPreferences(prefs);
+                }
+              }
+            } catch (prefError) {
+              // Preferences yüklenemezse hata verme, sadece logla
+              // Dataset henüz oluşturulmamış olabilir
+              console.warn('Kullanıcı tercihleri yüklenemedi:', prefError);
+            }
+          }
         } catch (error) {
           throw new Error("Token decode hatası");
         }
@@ -390,7 +409,25 @@ export const useAuthStore = defineStore("auth", {
       
       // Clear localStorage
       if (process.client) {
-      localStorage.removeItem("userInfo");
+        localStorage.removeItem("userInfo");
+        
+        // Clear user preferences
+        try {
+          const { useUserPreferencesStore } = await import('@/stores/apps/userPreferences');
+          const preferencesStore = useUserPreferencesStore();
+          preferencesStore.clearPreferences();
+        } catch (error) {
+          // Preferences store might not be loaded yet
+        }
+        
+        // Clear user store currentUser
+        try {
+          const { useUserStore } = await import('@/stores/apps/user');
+          const userStore = useUserStore();
+          userStore.currentUser = null;
+        } catch (error) {
+          // User store might not be loaded yet
+        }
       }
     },
 
@@ -451,6 +488,25 @@ export const useAuthStore = defineStore("auth", {
           } catch (domainError) {
             // Domain bilgisi yüklenemezse hata verme, sadece logla
             console.warn('Domain bilgisi yüklenemedi:', domainError);
+          }
+          
+          // Load user preferences after initialization
+          if (process.client) {
+            try {
+              const { useUserPreferencesStore } = await import('@/stores/apps/userPreferences');
+              const preferencesStore = useUserPreferencesStore();
+              const userId = normalizedUserInfo.sub || normalizedUserInfo.username;
+              if (userId) {
+                const prefs = await preferencesStore.loadPreferences(userId);
+                if (prefs) {
+                  preferencesStore.applyPreferences(prefs);
+                }
+              }
+            } catch (prefError) {
+              // Preferences yüklenemezse hata verme, sadece logla
+              // Dataset henüz oluşturulmamış olabilir
+              console.warn('Kullanıcı tercihleri yüklenemedi:', prefError);
+            }
           }
         } catch (error) {
           // JWT decode error - clear everything

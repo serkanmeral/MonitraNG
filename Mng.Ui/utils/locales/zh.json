@@ -457,5 +457,181 @@
                 "removed": "成功从组中移除用户"
             }
         }
+    },
+    "profile": {
+        "title": "个人资料",
+        "user": "用户",
+        "breadcrumbs": {
+            "home": "首页",
+            "profile": "个人资料"
+        },
+        "tabs": {
+            "general": "一般信息",
+            "account": "账户设置",
+            "security": "安全",
+            "preferences": "偏好设置"
+        },
+        "comingSoon": "即将推出",
+        "roles": {
+            "admin": "管理员",
+            "manager": "经理",
+            "user": "用户"
+        },
+        "personalInfo": {
+            "title": "个人信息",
+            "firstName": "名字",
+            "lastName": "姓氏",
+            "email": "电子邮件",
+            "jobTitle": "职位",
+            "department": "部门",
+            "gender": "性别",
+            "phoneNumber": "电话"
+        },
+        "accountInfo": {
+            "title": "账户信息",
+            "username": "用户名",
+            "email": "电子邮件",
+            "domain": "域名",
+            "status": "状态",
+            "createdAt": "创建时间",
+            "updatedAt": "最后更新"
+        },
+        "status": {
+            "active": "活跃",
+            "inactive": "非活跃"
+        },
+        "groups": {
+            "title": "组",
+            "manage": "组管理",
+            "noGroups": "尚未分配组"
+        },
+        "photo": {
+            "title": "个人资料照片",
+            "upload": "上传照片",
+            "remove": "删除照片",
+            "maxSize": "最大：5MB",
+            "formats": "格式：JPG, PNG, WebP",
+            "errors": {
+                "maxSize": "文件大小不能超过 5MB",
+                "invalidFormat": "仅支持 JPG、PNG 和 WebP 格式",
+                "maxDimensions": "照片大小不能超过 2000x2000 像素",
+                "invalidImage": "无效的图像文件",
+                "readError": "无法读取文件",
+                "uploadFailed": "上传照片时发生错误"
+            }
+        },
+        "gender": {
+            "notSpecified": "未指定",
+            "male": "男",
+            "female": "女"
+        },
+        "buttons": {
+            "edit": "编辑",
+            "save": "保存",
+            "cancel": "取消"
+        },
+        "validation": {
+            "firstNameRequired": "名字是必需的",
+            "firstNameMinLength": "名字至少需要 2 个字符",
+            "firstNameMaxLength": "名字最多 50 个字符",
+            "lastNameRequired": "姓氏是必需的",
+            "lastNameMinLength": "姓氏至少需要 2 个字符",
+            "lastNameMaxLength": "姓氏最多 50 个字符",
+            "emailRequired": "电子邮件是必需的",
+            "emailInvalid": "请输入有效的电子邮件地址",
+            "titleMaxLength": "职位最多 100 个字符",
+            "departmentMaxLength": "部门最多 100 个字符",
+            "phoneNumberMaxLength": "电话号码最多 20 个字符"
+        },
+        "messages": {
+            "saveSuccess": "个人资料更新成功",
+            "saveError": "更新个人资料时发生错误",
+            "photoUploadSuccess": "照片上传成功",
+            "photoUploadError": "上传照片时发生错误",
+            "photoRemoveSuccess": "照片删除成功",
+            "photoRemoveError": "删除照片时发生错误",
+            "userNotFound": "未找到用户"
+        },
+        "accountSettings": {
+            "accountInfo": {
+                "title": "账户信息",
+                "username": "用户名",
+                "email": "电子邮件",
+                "domain": "域名",
+                "createdAt": "账户创建",
+                "updatedAt": "最后更新"
+            },
+            "dangerZone": {
+                "title": "危险区域",
+                "description": "如果您想永久删除您的账户，请点击下面的按钮。此操作无法撤销。",
+                "deleteAccount": "删除账户",
+                "notImplemented": "账户删除功能尚未实现。"
+            }
+        },
+        "preferences": {
+            "language": {
+                "title": "语言偏好",
+                "label": "选择语言",
+                "description": "选择应用程序语言。更改会立即应用。"
+            },
+            "theme": {
+                "title": "主题偏好",
+                "description": "选择应用程序主题。提供浅色和深色主题选项。"
+            },
+            "other": {
+                "title": "其他偏好",
+                "description": "即将推出：将添加 UI 偏好、通知设置等。"
+            },
+            "saveSuccess": "偏好设置保存成功",
+            "saveError": "保存偏好设置时发生错误"
+        },
+        "security": {
+            "changePassword": {
+                "title": "更改密码",
+                "description": "建议定期更改密码以确保账户安全。",
+                "currentPassword": "当前密码",
+                "newPassword": "新密码",
+                "confirmPassword": "新密码（确认）",
+                "passwordStrength": "密码强度",
+                "requirements": {
+                    "title": "密码要求",
+                    "minLength": "至少 8 个字符",
+                    "uppercase": "至少一个大写字母 (A-Z)",
+                    "lowercase": "至少一个小写字母 (a-z)",
+                    "number": "至少一个数字 (0-9)",
+                    "special": "至少一个特殊字符 (! ? # $ % ^ & *)"
+                },
+                "save": "更改密码",
+                "cancel": "取消"
+            },
+            "passwordStrength": {
+                "weak": "弱",
+                "fair": "中等",
+                "good": "良好",
+                "strong": "强"
+            },
+            "validation": {
+                "currentPasswordRequired": "需要当前密码",
+                "newPasswordRequired": "需要新密码",
+                "passwordMinLength": "密码必须至少 8 个字符",
+                "passwordLowercase": "密码必须包含至少一个小写字母",
+                "passwordUppercase": "密码必须包含至少一个大写字母",
+                "passwordNumber": "密码必须包含至少一个数字",
+                "passwordSpecial": "密码必须包含至少一个特殊字符",
+                "confirmPasswordRequired": "需要确认密码",
+                "passwordsDoNotMatch": "密码不匹配"
+            },
+            "messages": {
+                "changePasswordSuccess": "密码已成功更改",
+                "changePasswordError": "更改密码时发生错误"
+            },
+            "tips": {
+                "title": "安全提示",
+                "tip1": "定期更改密码（至少每 3-6 个月）",
+                "tip2": "为不同账户使用不同的密码",
+                "tip3": "不要与任何人分享您的密码",
+                "tip4": "如果发现可疑活动，请立即更改密码"
+            }
+        }
     }
 }

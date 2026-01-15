@@ -43,7 +43,7 @@ export default defineNuxtPlugin((nuxtApp) => {
       localStorage.removeItem(cacheKey);
       return null;
     } catch (error) {
-      console.warn('[Locale Loader] Failed to read cache:', error);
+      // Silently fail - cache read error is not critical
       return null;
     }
   }
@@ -102,12 +102,10 @@ export default defineNuxtPlugin((nuxtApp) => {
     } catch (error: any) {
       // 404 means file doesn't exist in MinIO, which is OK (fallback to build files)
       if (error.message?.includes('404') || error.statusCode === 404) {
-        console.info(`[Locale Loader] Locale file ${locale}.json not found in MinIO, using build files`);
         return null;
       }
       
-      // Network errors, authentication errors, etc. - log but don't fail
-      console.warn(`[Locale Loader] Failed to load ${locale} from MinIO:`, error.message || error);
+      // Network errors, authentication errors, etc. - silently fail
       return null;
     }
   }
@@ -190,7 +188,6 @@ export default defineNuxtPlugin((nuxtApp) => {
               const merged = deepMerge(messages[locale] || {}, cached.data);
               // Force Vue reactivity by creating new object reference
               messages[locale] = { ...merged };
-              console.log(`[Locale Loader] Loaded ${locale} (ar) from cache (MinIO priority)`);
               continue;
             }
           }
@@ -208,34 +205,12 @@ export default defineNuxtPlugin((nuxtApp) => {
             // Force Vue reactivity by creating new object reference
             messages[locale] = { ...merged };
             
-            // Debug: Log merged menu items to verify object structure
-            if (merged.menu) {
-              const menuKeys = Object.keys(merged.menu).filter(k => 
-                typeof merged.menu[k] === 'object' && merged.menu[k] !== null && merged.menu[k].title
-              );
-              if (menuKeys.length > 0) {
-                console.log(`[Locale Loader] Merged menu items with object structure (${locale}):`, menuKeys);
-                menuKeys.forEach(key => {
-                  console.log(`  - ${key}:`, merged.menu[key]);
-                });
-              }
-            }
-            
             // Force Vue-i18n to recognize the change by triggering locale update
             // This ensures components using $t() will re-render
             const currentLocale = i18n.locale;
             i18n.locale = currentLocale; // Trigger reactivity
-            
-            console.log(`[Locale Loader] Loaded ${locale} (ar) from MinIO (MinIO priority)`);
           } else {
-            // MinIO data not found
-            if (requireMinIO) {
-              // For authenticated users, MinIO is required - log warning
-              console.warn(`[Locale Loader] WARNING: ${locale} (ar) not found in MinIO but required for authenticated users. Using build-time files as fallback.`);
-            } else {
-              // For login page, build-time files are acceptable
-              console.log(`[Locale Loader] ${locale} (ar) not found in MinIO, using build-time files (login page fallback)`);
-            }
+            // MinIO data not found - silently use build-time files
           }
           continue;
         }
@@ -254,8 +229,6 @@ export default defineNuxtPlugin((nuxtApp) => {
             // This ensures components using $t() will re-render
             const currentLocale = i18n.locale;
             i18n.locale = currentLocale; // Trigger reactivity
-            
-            console.log(`[Locale Loader] Loaded ${locale} from cache (MinIO priority)`);
             continue;
           }
         }
@@ -273,39 +246,16 @@ export default defineNuxtPlugin((nuxtApp) => {
           // Force Vue reactivity by creating new object reference
           messages[locale] = { ...merged };
           
-          // Debug: Log merged menu items to verify object structure
-          if (merged.menu) {
-            const menuKeys = Object.keys(merged.menu).filter(k => 
-              typeof merged.menu[k] === 'object' && merged.menu[k] !== null && merged.menu[k].title
-            );
-            if (menuKeys.length > 0) {
-              console.log(`[Locale Loader] Merged menu items with object structure (${locale}):`, menuKeys);
-              menuKeys.forEach(key => {
-                console.log(`  - ${key}:`, merged.menu[key]);
-              });
-            }
-          }
-          
           // Force Vue-i18n to recognize the change by triggering locale update
           // This ensures components using $t() will re-render
           const currentLocale = i18n.locale;
           i18n.locale = currentLocale; // Trigger reactivity
-          
-          console.log(`[Locale Loader] Loaded ${locale} from MinIO (MinIO priority)`);
         } else {
-          // MinIO data not found
-          if (requireMinIO) {
-            // For authenticated users, MinIO is required - log warning
-            console.warn(`[Locale Loader] WARNING: ${locale} not found in MinIO but required for authenticated users. Using build-time files as fallback.`);
-          } else {
-            // For login page, build-time files are acceptable
-            console.log(`[Locale Loader] ${locale} not found in MinIO, using build-time files (login page fallback)`);
-          }
+          // MinIO data not found - silently use build-time files
         }
       }
     } catch (error) {
-      console.error('[Locale Loader] Error loading runtime locales:', error);
-      // Don't throw - fallback to build files
+      // Silently fail - fallback to build files
     }
   }
 
@@ -339,10 +289,8 @@ export default defineNuxtPlugin((nuxtApp) => {
     (window as any).checkLocaleCache = (locale: string) => {
       const cached = getCachedLocale(locale);
       if (cached) {
-        console.log(`[Locale Cache] ${locale}:`, cached.data);
         return cached.data;
       } else {
-        console.log(`[Locale Cache] ${locale}: No cache found`);
         return null;
       }
     };
@@ -351,20 +299,8 @@ export default defineNuxtPlugin((nuxtApp) => {
       if (i18n && i18n.messages && i18n.messages[locale]) {
         // Convert Proxy to plain object to avoid infinite loop
         const messages = JSON.parse(JSON.stringify(i18n.messages[locale]));
-        console.log(`[i18n Messages] ${locale}:`, messages);
-        if (messages.menu) {
-          console.log(`[i18n Messages] ${locale}.menu:`, messages.menu);
-          // Check specific menu items
-          if (messages.menu['apps-automated-forms']) {
-            console.log(`[i18n Messages] ${locale}.menu.apps-automated-forms:`, messages.menu['apps-automated-forms']);
-          }
-          if (messages.menu['automated-forms']) {
-            console.log(`[i18n Messages] ${locale}.menu.automated-forms:`, messages.menu['automated-forms']);
-          }
-        }
         return messages;
       } else {
-        console.log(`[i18n Messages] ${locale}: Not found`);
         return null;
       }
     };
@@ -382,16 +318,14 @@ export default defineNuxtPlugin((nuxtApp) => {
       if (authStore.isAuthenticated) {
         // For authenticated users: MinIO is required (priority source)
         // Build-time files are fallback only
-        console.log('[Locale Loader] User authenticated, loading from MinIO...');
         await loadRuntimeLocales(false, true); // requireMinIO = true
       } else {
         // On login page: Build-time locale files are acceptable
         // MinIO is not required for unauthenticated users
-        console.log('[Locale Loader] User not authenticated, using build-time locale files (login page)');
         // Don't load from MinIO for login page - build-time files are sufficient
       }
     } catch (error) {
-      console.warn('[Locale Loader] Could not check authentication, using build-time locales:', error);
+      // Silently fail - use build-time locales
     }
   }
 
@@ -416,17 +350,13 @@ export default defineNuxtPlugin((nuxtApp) => {
         async (isAuthenticated, wasAuthenticated) => {
           // Only reload if authentication state actually changed
           if (isAuthenticated !== wasAuthenticated) {
-            console.log(`[Locale Loader] Authentication state changed: ${wasAuthenticated} -> ${isAuthenticated}`);
-            
             if (isAuthenticated) {
               // User just logged in - invalidate cache and force reload from MinIO
-              console.log('[Locale Loader] User logged in, invalidating cache and force reloading from MinIO...');
               invalidateCache();
               // Force reload (skip cache) to ensure fresh data from MinIO
               await loadRuntimeLocales(true, true); // forceReload = true, requireMinIO = true
             } else {
               // User logged out - clear cache (next login will reload)
-              console.log('[Locale Loader] User logged out, clearing cache...');
               invalidateCache();
             }
           }

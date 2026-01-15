@@ -154,7 +154,7 @@ onMounted(async () => {
         }
       } catch (error) {
         // User fetch error is not critical, continue without photo
-        console.warn('Could not load user data for avatar:', error);
+        // Silently handle error - will use authStore.userInfo as fallback
       }
     }
   }
@@ -225,18 +225,39 @@ const userInitials = computed(() => {
 
 // Get current user for AvatarDisplay component
 const currentUser = computed(() => {
-  // First try to get from userStore.currentUser (if loaded)
-  if (userStore.currentUser) {
-    return userStore.currentUser;
-  }
-  
-  // Fallback to authStore.userInfo
   const info = authStore.userInfo;
   if (!info) return null;
   
+  const currentKeycloakUserId = info.sub || info.username;
+  
+  // Only use userStore.currentUser if it matches the current authenticated user
+  // Compare using keycloakUserId (if available) or username/email
+  if (userStore.currentUser) {
+    const storedKeycloakUserId = userStore.currentUser.keycloakUserId;
+    const storedUsername = userStore.currentUser.username;
+    const storedEmail = userStore.currentUser.email;
+    const authUsername = info.username || info.preferred_username;
+    const authEmail = info.email;
+    
+    // Match if keycloakUserId matches, or username/email matches
+    const isMatch = 
+      (storedKeycloakUserId && storedKeycloakUserId === currentKeycloakUserId) ||
+      (storedUsername && storedUsername === authUsername) ||
+      (storedEmail && storedEmail === authEmail);
+    
+    if (isMatch) {
+      return userStore.currentUser;
+    } else {
+      // Mismatch - clear the stored user (it's from a different user)
+      userStore.currentUser = null;
+    }
+  }
+  
+  // Fallback to authStore.userInfo
   return {
-    id: info.sub || info.username || '',
-    userId: info.sub || info.username,
+    id: currentKeycloakUserId || '',
+    userId: currentKeycloakUserId,
+    keycloakUserId: currentKeycloakUserId,
     domainId: info.domain_id || '',
     username: info.username || info.preferred_username || info.sub || '',
     email: info.email || '',
@@ -277,7 +298,7 @@ const domainLogoStyle = computed(() => {
         backgroundRepeat: 'no-repeat',
       };
     } catch (error) {
-      console.warn('Error using logoUrl, trying logo:', error);
+      // Silently handle error - will try fallback logo
       // Fall through to try logo base64
     }
   }
@@ -313,7 +334,7 @@ const domainLogoStyle = computed(() => {
         backgroundRepeat: 'no-repeat',
       };
     } catch (error) {
-      console.warn('Error parsing domain logo, using fallback:', error);
+      // Silently handle error - will use fallback logo
       // Fall through to fallback
     }
   }

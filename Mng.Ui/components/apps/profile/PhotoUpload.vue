@@ -148,12 +148,9 @@ const uploadFile = async (file: File) => {
       // Don't set Content-Type header - browser will set it with boundary for multipart/form-data
     });
     
-    console.log('[PhotoUpload] Upload response:', response);
-    
     // Check for photoUrl in response
     if (response && (response.photoUrl || response.url || response.fileUrl)) {
       const photoUrl = response.photoUrl || response.url || response.fileUrl;
-      console.log('[PhotoUpload] Photo uploaded successfully, photoUrl:', photoUrl);
       previewUrl.value = photoUrl;
       emit('uploaded', photoUrl);
     } else {

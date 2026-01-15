@@ -61,7 +61,6 @@ const userInitials = computed(() => {
 const photoUrl = computed(() => {
   const url = props.user?.photoUrl || null;
   if (!url) {
-    console.log('[AvatarDisplay] No photoUrl, user:', props.user);
     return null;
   }
   
@@ -71,9 +70,6 @@ const photoUrl = computed(() => {
   let normalizedUrl = url;
   if (url.startsWith('/keeper/api/')) {
     normalizedUrl = url.replace('/keeper/api/', '/api/keeper/');
-    console.log('[AvatarDisplay] Normalized photoUrl:', url, '->', normalizedUrl);
-  } else {
-    console.log('[AvatarDisplay] photoUrl computed:', url);
   }
   
   return normalizedUrl;
@@ -81,14 +77,13 @@ const photoUrl = computed(() => {
 
 // Image error handler
 const handleImageError = (event: Event) => {
-  console.error('[AvatarDisplay] Image load error:', event);
-  const img = event.target as HTMLImageElement;
-  console.error('[AvatarDisplay] Failed to load image from:', img.src);
+  // Silently handle image load errors
+  // Image will fallback to initials display
 };
 
 // Image load handler
 const handleImageLoad = () => {
-  console.log('[AvatarDisplay] Image loaded successfully');
+  // Image loaded successfully
 };
 </script>
 

@@ -23,18 +23,39 @@ const userStore = useUserStore();
 
 // Get current user
 const currentUser = computed(() => {
-  // First try to get from userStore.currentUser (if loaded)
-  if (userStore.currentUser) {
-    return userStore.currentUser;
-  }
-  
-  // Fallback to authStore.userInfo
   const userInfo = authStore.userInfo;
   if (!userInfo) return null;
   
+  const currentKeycloakUserId = userInfo.sub || userInfo.username;
+  
+  // Only use userStore.currentUser if it matches the current authenticated user
+  // Compare using keycloakUserId (if available) or username/email
+  if (userStore.currentUser) {
+    const storedKeycloakUserId = userStore.currentUser.keycloakUserId;
+    const storedUsername = userStore.currentUser.username;
+    const storedEmail = userStore.currentUser.email;
+    const authUsername = userInfo.username || userInfo.preferred_username;
+    const authEmail = userInfo.email;
+    
+    // Match if keycloakUserId matches, or username/email matches
+    const isMatch = 
+      (storedKeycloakUserId && storedKeycloakUserId === currentKeycloakUserId) ||
+      (storedUsername && storedUsername === authUsername) ||
+      (storedEmail && storedEmail === authEmail);
+    
+    if (isMatch) {
+      return userStore.currentUser;
+    } else {
+      // Mismatch - clear the stored user (it's from a different user)
+      userStore.currentUser = null;
+    }
+  }
+  
+  // Fallback to authStore.userInfo
   return {
-    id: userInfo.sub || userInfo.username || '',
-    userId: userInfo.sub || userInfo.username,
+    id: currentKeycloakUserId || '',
+    userId: currentKeycloakUserId,
+    keycloakUserId: currentKeycloakUserId,
     domainId: userInfo.domain_id || '',
     username: userInfo.username || userInfo.preferred_username || userInfo.sub || '',
     email: userInfo.email || '',

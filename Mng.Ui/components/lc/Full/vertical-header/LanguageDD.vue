@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useLocaleStore } from '@/stores/locale';
+import { useUserPreferencesStore } from '@/stores/apps/userPreferences';
+import { useAuthStore } from '@/stores/auth';
+import { useCustomizerStore } from '@/stores/customizer';
 import { languageDD } from '@/_mockApis/headerData';
 import flagTR from '/images/flag/icon-flag-tr.svg';
 import flag1 from '/images/flag/icon-flag-en.svg';
@@ -9,6 +12,9 @@ import flag3 from '/images/flag/icon-flag-zh.svg';
 import flag4 from '/images/flag/icon-flag-fr.svg';
 
 const localeStore = useLocaleStore();
+const preferencesStore = useUserPreferencesStore();
+const authStore = useAuthStore();
+const customizerStore = useCustomizerStore();
 
 // Get current i18n locale (mapped: ar -> ro)
 const currentI18nLocale = computed(() => {
@@ -51,6 +57,19 @@ const handleLanguageChange = async (locale: string) => {
     } else {
       htmlElement.setAttribute('dir', 'ltr');
       htmlElement.setAttribute('lang', storeLocale);
+    }
+  }
+  
+  // Save locale preference to dataset (if user is authenticated)
+  if (authStore.isAuthenticated) {
+    try {
+      await preferencesStore.savePreferences({
+        locale: storeLocale as any,
+        theme: customizerStore.actTheme, // Preserve current theme
+      });
+    } catch (error) {
+      // Silently handle errors - preference save failure shouldn't block language change
+      // Dataset might not exist yet, which is OK
     }
   }
 };

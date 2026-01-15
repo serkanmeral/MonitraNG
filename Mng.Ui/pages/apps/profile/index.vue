@@ -6,6 +6,9 @@ import { useUserStore } from '@/stores/apps/user';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import ProfileHeader from '@/components/apps/profile/ProfileHeader.vue';
 import ProfileGeneralTab from '@/components/apps/profile/ProfileGeneralTab.vue';
+import ProfileAccountTab from '@/components/apps/profile/ProfileAccountTab.vue';
+import ProfileSecurityTab from '@/components/apps/profile/ProfileSecurityTab.vue';
+import ProfilePreferencesTab from '@/components/apps/profile/ProfilePreferencesTab.vue';
 
 // Get i18n instance for legacy mode
 const nuxtApp = useNuxtApp();
@@ -67,10 +70,10 @@ onMounted(async () => {
       } else {
         // If not found, try to fetch by Keycloak user ID (might work if it matches)
         // But this usually fails, so we'll create a fallback user from authStore
-        console.warn('User not found in backend by username/email, using authStore data');
+        // User not found in backend, using authStore data as fallback
       }
     } catch (error) {
-      console.warn('Could not fetch user from backend, using authStore data:', error);
+      // Silently handle error - will use authStore.userInfo as fallback
       // Continue with authStore.userInfo - this is fine for display, but update will fail
     }
   }
@@ -90,15 +93,15 @@ onMounted(async () => {
             <UserCircleIcon size="18" class="mr-2" />
             {{ t('profile.tabs.general') }}
           </v-tab>
-          <v-tab value="account" disabled>
+          <v-tab value="account">
             <SettingsIcon size="18" class="mr-2" />
             {{ t('profile.tabs.account') }}
           </v-tab>
-          <v-tab value="security" disabled>
+          <v-tab value="security">
             <LockIcon size="18" class="mr-2" />
             {{ t('profile.tabs.security') }}
           </v-tab>
-          <v-tab value="preferences" disabled>
+          <v-tab value="preferences">
             <BellIcon size="18" class="mr-2" />
             {{ t('profile.tabs.preferences') }}
           </v-tab>
@@ -110,19 +113,13 @@ onMounted(async () => {
               <ProfileGeneralTab />
             </v-window-item>
             <v-window-item value="account">
-              <div class="text-center py-8">
-                <p class="text-subtitle-1">{{ t('profile.comingSoon') }}</p>
-              </div>
+              <ProfileAccountTab />
             </v-window-item>
             <v-window-item value="security">
-              <div class="text-center py-8">
-                <p class="text-subtitle-1">{{ t('profile.comingSoon') }}</p>
-              </div>
+              <ProfileSecurityTab />
             </v-window-item>
             <v-window-item value="preferences">
-              <div class="text-center py-8">
-                <p class="text-subtitle-1">{{ t('profile.comingSoon') }}</p>
-              </div>
+              <ProfilePreferencesTab />
             </v-window-item>
           </v-window>
         </v-card-text>

@@ -456,5 +456,181 @@
                 "removed": "تم إزالة المستخدم بنجاح من المجموعة"
             }
         }
+    },
+    "profile": {
+        "title": "الملف الشخصي",
+        "user": "المستخدم",
+        "breadcrumbs": {
+            "home": "الرئيسية",
+            "profile": "الملف الشخصي"
+        },
+        "tabs": {
+            "general": "المعلومات العامة",
+            "account": "إعدادات الحساب",
+            "security": "الأمان",
+            "preferences": "التفضيلات"
+        },
+        "comingSoon": "قريباً",
+        "roles": {
+            "admin": "المسؤول",
+            "manager": "المدير",
+            "user": "المستخدم"
+        },
+        "personalInfo": {
+            "title": "المعلومات الشخصية",
+            "firstName": "الاسم الأول",
+            "lastName": "اسم العائلة",
+            "email": "البريد الإلكتروني",
+            "jobTitle": "المسمى الوظيفي",
+            "department": "القسم",
+            "gender": "الجنس",
+            "phoneNumber": "الهاتف"
+        },
+        "accountInfo": {
+            "title": "معلومات الحساب",
+            "username": "اسم المستخدم",
+            "email": "البريد الإلكتروني",
+            "domain": "النطاق",
+            "status": "الحالة",
+            "createdAt": "تم الإنشاء",
+            "updatedAt": "آخر تحديث"
+        },
+        "status": {
+            "active": "نشط",
+            "inactive": "غير نشط"
+        },
+        "groups": {
+            "title": "المجموعات",
+            "manage": "إدارة المجموعات",
+            "noGroups": "لم يتم تعيين أي مجموعات بعد"
+        },
+        "photo": {
+            "title": "صورة الملف الشخصي",
+            "upload": "رفع صورة",
+            "remove": "إزالة الصورة",
+            "maxSize": "الحد الأقصى: 5 ميجابايت",
+            "formats": "التنسيق: JPG, PNG, WebP",
+            "errors": {
+                "maxSize": "لا يمكن أن يتجاوز حجم الملف 5 ميجابايت",
+                "invalidFormat": "يتم دعم تنسيقات JPG و PNG و WebP فقط",
+                "maxDimensions": "لا يمكن أن يتجاوز حجم الصورة 2000x2000 بكسل",
+                "invalidImage": "ملف صورة غير صالح",
+                "readError": "تعذر قراءة الملف",
+                "uploadFailed": "حدث خطأ أثناء رفع الصورة"
+            }
+        },
+        "gender": {
+            "notSpecified": "غير محدد",
+            "male": "ذكر",
+            "female": "أنثى"
+        },
+        "buttons": {
+            "edit": "تعديل",
+            "save": "حفظ",
+            "cancel": "إلغاء"
+        },
+        "validation": {
+            "firstNameRequired": "الاسم الأول مطلوب",
+            "firstNameMinLength": "يجب أن يكون الاسم الأول على الأقل حرفين",
+            "firstNameMaxLength": "يمكن أن يكون الاسم الأول على الأكثر 50 حرفاً",
+            "lastNameRequired": "اسم العائلة مطلوب",
+            "lastNameMinLength": "يجب أن يكون اسم العائلة على الأقل حرفين",
+            "lastNameMaxLength": "يمكن أن يكون اسم العائلة على الأكثر 50 حرفاً",
+            "emailRequired": "البريد الإلكتروني مطلوب",
+            "emailInvalid": "يرجى إدخال عنوان بريد إلكتروني صالح",
+            "titleMaxLength": "يمكن أن يكون المسمى الوظيفي على الأكثر 100 حرف",
+            "departmentMaxLength": "يمكن أن يكون القسم على الأكثر 100 حرف",
+            "phoneNumberMaxLength": "يمكن أن يكون رقم الهاتف على الأكثر 20 حرفاً"
+        },
+        "messages": {
+            "saveSuccess": "تم تحديث الملف الشخصي بنجاح",
+            "saveError": "حدث خطأ أثناء تحديث الملف الشخصي",
+            "photoUploadSuccess": "تم رفع الصورة بنجاح",
+            "photoUploadError": "حدث خطأ أثناء رفع الصورة",
+            "photoRemoveSuccess": "تم إزالة الصورة بنجاح",
+            "photoRemoveError": "حدث خطأ أثناء إزالة الصورة",
+            "userNotFound": "المستخدم غير موجود"
+        },
+        "accountSettings": {
+            "accountInfo": {
+                "title": "معلومات الحساب",
+                "username": "اسم المستخدم",
+                "email": "البريد الإلكتروني",
+                "domain": "النطاق",
+                "createdAt": "تم إنشاء الحساب",
+                "updatedAt": "آخر تحديث"
+            },
+            "dangerZone": {
+                "title": "منطقة الخطر",
+                "description": "إذا كنت تريد حذف حسابك نهائياً، انقر على الزر أدناه. لا يمكن التراجع عن هذا الإجراء.",
+                "deleteAccount": "حذف الحساب",
+                "notImplemented": "لم يتم تطبيق ميزة حذف الحساب بعد."
+            }
+        },
+        "preferences": {
+            "language": {
+                "title": "تفضيل اللغة",
+                "label": "اختر اللغة",
+                "description": "اختر لغة التطبيق. يتم تطبيق التغييرات على الفور."
+            },
+            "theme": {
+                "title": "تفضيل السمة",
+                "description": "اختر سمة التطبيق. خيارات السمة الفاتحة والداكنة متاحة."
+            },
+            "other": {
+                "title": "تفضيلات أخرى",
+                "description": "قريباً: سيتم إضافة تفضيلات واجهة المستخدم وإعدادات الإشعارات والمزيد."
+            },
+            "saveSuccess": "تم حفظ التفضيلات بنجاح",
+            "saveError": "حدث خطأ أثناء حفظ التفضيلات"
+        },
+        "security": {
+            "changePassword": {
+                "title": "تغيير كلمة المرور",
+                "description": "يُنصح بتغيير كلمة المرور بانتظام لأمان حسابك.",
+                "currentPassword": "كلمة المرور الحالية",
+                "newPassword": "كلمة المرور الجديدة",
+                "confirmPassword": "كلمة المرور الجديدة (تأكيد)",
+                "passwordStrength": "قوة كلمة المرور",
+                "requirements": {
+                    "title": "متطلبات كلمة المرور",
+                    "minLength": "8 أحرف على الأقل",
+                    "uppercase": "حرف كبير واحد على الأقل (A-Z)",
+                    "lowercase": "حرف صغير واحد على الأقل (a-z)",
+                    "number": "رقم واحد على الأقل (0-9)",
+                    "special": "حرف خاص واحد على الأقل (! ? # $ % ^ & *)"
+                },
+                "save": "تغيير كلمة المرور",
+                "cancel": "إلغاء"
+            },
+            "passwordStrength": {
+                "weak": "ضعيف",
+                "fair": "متوسط",
+                "good": "جيد",
+                "strong": "قوي"
+            },
+            "validation": {
+                "currentPasswordRequired": "كلمة المرور الحالية مطلوبة",
+                "newPasswordRequired": "كلمة المرور الجديدة مطلوبة",
+                "passwordMinLength": "يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل",
+                "passwordLowercase": "يجب أن تحتوي كلمة المرور على حرف صغير واحد على الأقل",
+                "passwordUppercase": "يجب أن تحتوي كلمة المرور على حرف كبير واحد على الأقل",
+                "passwordNumber": "يجب أن تحتوي كلمة المرور على رقم واحد على الأقل",
+                "passwordSpecial": "يجب أن تحتوي كلمة المرور على حرف خاص واحد على الأقل",
+                "confirmPasswordRequired": "تأكيد كلمة المرور مطلوب",
+                "passwordsDoNotMatch": "كلمات المرور غير متطابقة"
+            },
+            "messages": {
+                "changePasswordSuccess": "تم تغيير كلمة المرور بنجاح",
+                "changePasswordError": "حدث خطأ أثناء تغيير كلمة المرور"
+            },
+            "tips": {
+                "title": "نصائح الأمان",
+                "tip1": "غيّر كلمة المرور بانتظام (على الأقل كل 3-6 أشهر)",
+                "tip2": "استخدم كلمات مرور مختلفة لحسابات مختلفة",
+                "tip3": "لا تشارك كلمة المرور مع أي شخص",
+                "tip4": "إذا لاحظت نشاطاً مشبوهاً، غيّر كلمة المرور على الفور"
+            }
+        }
     }
 }

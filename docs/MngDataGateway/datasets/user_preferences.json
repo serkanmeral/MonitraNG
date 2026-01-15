@@ -1,0 +1,45 @@
+{
+  "name": "@user_preferences",
+  "description": "Kullanıcı tercihleri (dil, tema, vb.)",
+  "forceSchema": true,
+  "logging": "none",
+  "publishMode": "none",
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "userId",
+      "title": "Kullanıcı ID",
+      "mandatory": true,
+      "unique": true
+    },
+    {
+      "fieldType": "text",
+      "name": "locale",
+      "title": "Dil Tercihi",
+      "mandatory": false,
+      "validation": {
+        "pattern": "^(tr|en|fr|ar|zh)$",
+        "message": "Geçerli bir dil kodu giriniz (tr, en, fr, ar, zh)"
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "theme",
+      "title": "Tema Tercihi",
+      "mandatory": false,
+      "validation": {
+        "pattern": "^(BLUE_THEME|AQUA_THEME|PURPLE_THEME|GREEN_THEME|CYAN_THEME|ORANGE_THEME|DARK_BLUE_THEME|DARK_AQUA_THEME|DARK_PURPLE_THEME|DARK_GREEN_THEME|DARK_CYAN_THEME|DARK_ORANGE_THEME)$",
+        "message": "Geçerli bir tema seçiniz"
+      }
+    }
+  ],
+  "indexList": [
+    {
+      "name": "userId_unique",
+      "fields": {
+        "userId": 1
+      },
+      "unique": true
+    }
+  ]
+}

@@ -456,5 +456,181 @@
                 "removed": "Utilisateur supprimé avec succès du groupe"
             }
         }
+    },
+    "profile": {
+        "title": "Profil",
+        "user": "Utilisateur",
+        "breadcrumbs": {
+            "home": "Accueil",
+            "profile": "Profil"
+        },
+        "tabs": {
+            "general": "Informations générales",
+            "account": "Paramètres du compte",
+            "security": "Sécurité",
+            "preferences": "Préférences"
+        },
+        "comingSoon": "Bientôt disponible",
+        "roles": {
+            "admin": "Administrateur",
+            "manager": "Gestionnaire",
+            "user": "Utilisateur"
+        },
+        "personalInfo": {
+            "title": "Informations personnelles",
+            "firstName": "Prénom",
+            "lastName": "Nom de famille",
+            "email": "E-mail",
+            "jobTitle": "Titre du poste",
+            "department": "Département",
+            "gender": "Genre",
+            "phoneNumber": "Téléphone"
+        },
+        "accountInfo": {
+            "title": "Informations du compte",
+            "username": "Nom d'utilisateur",
+            "email": "E-mail",
+            "domain": "Domaine",
+            "status": "Statut",
+            "createdAt": "Créé",
+            "updatedAt": "Dernière mise à jour"
+        },
+        "status": {
+            "active": "Actif",
+            "inactive": "Inactif"
+        },
+        "groups": {
+            "title": "Groupes",
+            "manage": "Gestion des groupes",
+            "noGroups": "Aucun groupe assigné pour le moment"
+        },
+        "photo": {
+            "title": "Photo de profil",
+            "upload": "Télécharger une photo",
+            "remove": "Supprimer la photo",
+            "maxSize": "Max : 5 Mo",
+            "formats": "Format : JPG, PNG, WebP",
+            "errors": {
+                "maxSize": "La taille du fichier ne peut pas dépasser 5 Mo",
+                "invalidFormat": "Seuls les formats JPG, PNG et WebP sont pris en charge",
+                "maxDimensions": "La taille de la photo ne peut pas dépasser 2000x2000 pixels",
+                "invalidImage": "Fichier image invalide",
+                "readError": "Le fichier n'a pas pu être lu",
+                "uploadFailed": "Une erreur s'est produite lors du téléchargement de la photo"
+            }
+        },
+        "gender": {
+            "notSpecified": "Non spécifié",
+            "male": "Homme",
+            "female": "Femme"
+        },
+        "buttons": {
+            "edit": "Modifier",
+            "save": "Enregistrer",
+            "cancel": "Annuler"
+        },
+        "validation": {
+            "firstNameRequired": "Le prénom est requis",
+            "firstNameMinLength": "Le prénom doit contenir au moins 2 caractères",
+            "firstNameMaxLength": "Le prénom peut contenir au maximum 50 caractères",
+            "lastNameRequired": "Le nom de famille est requis",
+            "lastNameMinLength": "Le nom de famille doit contenir au moins 2 caractères",
+            "lastNameMaxLength": "Le nom de famille peut contenir au maximum 50 caractères",
+            "emailRequired": "L'e-mail est requis",
+            "emailInvalid": "Veuillez entrer une adresse e-mail valide",
+            "titleMaxLength": "Le titre du poste peut contenir au maximum 100 caractères",
+            "departmentMaxLength": "Le département peut contenir au maximum 100 caractères",
+            "phoneNumberMaxLength": "Le numéro de téléphone peut contenir au maximum 20 caractères"
+        },
+        "messages": {
+            "saveSuccess": "Profil mis à jour avec succès",
+            "saveError": "Une erreur s'est produite lors de la mise à jour du profil",
+            "photoUploadSuccess": "Photo téléchargée avec succès",
+            "photoUploadError": "Une erreur s'est produite lors du téléchargement de la photo",
+            "photoRemoveSuccess": "Photo supprimée avec succès",
+            "photoRemoveError": "Une erreur s'est produite lors de la suppression de la photo",
+            "userNotFound": "Utilisateur non trouvé"
+        },
+        "accountSettings": {
+            "accountInfo": {
+                "title": "Informations du compte",
+                "username": "Nom d'utilisateur",
+                "email": "E-mail",
+                "domain": "Domaine",
+                "createdAt": "Compte créé",
+                "updatedAt": "Dernière mise à jour"
+            },
+            "dangerZone": {
+                "title": "Zone de danger",
+                "description": "Si vous souhaitez supprimer définitivement votre compte, cliquez sur le bouton ci-dessous. Cette action ne peut pas être annulée.",
+                "deleteAccount": "Supprimer le compte",
+                "notImplemented": "La fonctionnalité de suppression de compte n'a pas encore été implémentée."
+            }
+        },
+        "preferences": {
+            "language": {
+                "title": "Préférence de langue",
+                "label": "Sélectionner la langue",
+                "description": "Sélectionnez la langue de l'application. Les modifications sont appliquées immédiatement."
+            },
+            "theme": {
+                "title": "Préférence de thème",
+                "description": "Sélectionnez le thème de l'application. Les options de thème clair et sombre sont disponibles."
+            },
+            "other": {
+                "title": "Autres préférences",
+                "description": "Bientôt : préférences d'interface utilisateur, paramètres de notification et plus encore seront ajoutés."
+            },
+            "saveSuccess": "Préférences enregistrées avec succès",
+            "saveError": "Une erreur s'est produite lors de l'enregistrement des préférences"
+        },
+        "security": {
+            "changePassword": {
+                "title": "Changer le mot de passe",
+                "description": "Il est recommandé de changer régulièrement votre mot de passe pour la sécurité de votre compte.",
+                "currentPassword": "Mot de passe actuel",
+                "newPassword": "Nouveau mot de passe",
+                "confirmPassword": "Nouveau mot de passe (Confirmer)",
+                "passwordStrength": "Force du mot de passe",
+                "requirements": {
+                    "title": "Exigences du mot de passe",
+                    "minLength": "Au moins 8 caractères",
+                    "uppercase": "Au moins une lettre majuscule (A-Z)",
+                    "lowercase": "Au moins une lettre minuscule (a-z)",
+                    "number": "Au moins un chiffre (0-9)",
+                    "special": "Au moins un caractère spécial (! ? # $ % ^ & *)"
+                },
+                "save": "Changer le mot de passe",
+                "cancel": "Annuler"
+            },
+            "passwordStrength": {
+                "weak": "Faible",
+                "fair": "Moyen",
+                "good": "Bon",
+                "strong": "Fort"
+            },
+            "validation": {
+                "currentPasswordRequired": "Le mot de passe actuel est requis",
+                "newPasswordRequired": "Le nouveau mot de passe est requis",
+                "passwordMinLength": "Le mot de passe doit contenir au moins 8 caractères",
+                "passwordLowercase": "Le mot de passe doit contenir au moins une lettre minuscule",
+                "passwordUppercase": "Le mot de passe doit contenir au moins une lettre majuscule",
+                "passwordNumber": "Le mot de passe doit contenir au moins un chiffre",
+                "passwordSpecial": "Le mot de passe doit contenir au moins un caractère spécial",
+                "confirmPasswordRequired": "La confirmation du mot de passe est requise",
+                "passwordsDoNotMatch": "Les mots de passe ne correspondent pas"
+            },
+            "messages": {
+                "changePasswordSuccess": "Votre mot de passe a été changé avec succès",
+                "changePasswordError": "Une erreur s'est produite lors du changement du mot de passe"
+            },
+            "tips": {
+                "title": "Conseils de sécurité",
+                "tip1": "Changez votre mot de passe régulièrement (au moins tous les 3-6 mois)",
+                "tip2": "Utilisez des mots de passe différents pour différents comptes",
+                "tip3": "Ne partagez pas votre mot de passe avec qui que ce soit",
+                "tip4": "Si vous remarquez une activité suspecte, changez immédiatement votre mot de passe"
+            }
+        }
     }
 }

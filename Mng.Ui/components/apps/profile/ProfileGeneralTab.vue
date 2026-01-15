@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useUserStore } from '@/stores/apps/user';
 import type { User, Gender } from '@/stores/apps/user';
@@ -26,7 +26,6 @@ const userStore = useUserStore();
 // Snackbar için basit bir fonksiyon (şimdilik)
 const showSnackbar = (message: string, type: 'success' | 'error' = 'success') => {
   // TODO: Vuetify snackbar kullanılacak
-  console.log(`[${type.toUpperCase()}] ${message}`);
   // Geçici olarak alert kullanıyoruz
   if (type === 'error') {
     alert(message);
@@ -37,6 +36,7 @@ const showSnackbar = (message: string, type: 'success' | 'error' = 'success') =>
 const formData = ref({
   firstName: '',
   lastName: '',
+  email: '',
   title: '',
   department: '',
   gender: 'NotSpecified' as Gender | 'NotSpecified' | 'Male' | 'Female',
@@ -55,6 +55,9 @@ const genderOptions = [
   { value: 'Female', title: t('profile.gender.female') },
 ];
 
+// Email regex pattern
+const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
 // Validation schema
 const schema = computed(() => yup.object({
   firstName: yup.string()
@@ -65,6 +68,9 @@ const schema = computed(() => yup.object({
     .required(t('profile.validation.lastNameRequired'))
     .min(2, t('profile.validation.lastNameMinLength'))
     .max(50, t('profile.validation.lastNameMaxLength')),
+  email: yup.string()
+    .required(t('profile.validation.emailRequired'))
+    .matches(emailRegex, t('profile.validation.emailInvalid')),
   title: yup.string()
     .max(100, t('profile.validation.titleMaxLength')),
   department: yup.string()
@@ -75,16 +81,41 @@ const schema = computed(() => yup.object({
 
 // Get current user
 const currentUser = computed(() => {
-  if (userStore.currentUser) {
-    return userStore.currentUser;
-  }
-  
   const userInfo = authStore.userInfo;
   if (!userInfo) return null;
   
+  const currentKeycloakUserId = userInfo.sub || userInfo.username;
+  
+  // Only use userStore.currentUser if it matches the current authenticated user
+  // Compare using keycloakUserId (if available) or username/email
+  if (userStore.currentUser) {
+    const storedKeycloakUserId = userStore.currentUser.keycloakUserId;
+    const storedUsername = userStore.currentUser.username;
+    const storedEmail = userStore.currentUser.email;
+    const authUsername = userInfo.username || userInfo.preferred_username;
+    const authEmail = userInfo.email;
+    
+    // Match if keycloakUserId matches, or username/email matches
+    const isMatch = 
+      (storedKeycloakUserId && storedKeycloakUserId === currentKeycloakUserId) ||
+      (storedUsername && storedUsername === authUsername) ||
+      (storedEmail && storedEmail === authEmail);
+    
+    if (isMatch) {
+      return userStore.currentUser;
+    } else {
+      // Mismatch - clear the stored user (it's from a different user)
+      userStore.currentUser = null;
+    }
+  }
+  
+  // Fallback to authStore.userInfo
+  // Note: This fallback user doesn't have a backend MongoDB id, so photo upload won't work
+  // until userStore.currentUser is populated from backend
   return {
-    id: userInfo.sub || userInfo.username || '',
-    userId: userInfo.sub || userInfo.username,
+    id: currentKeycloakUserId || '',
+    userId: currentKeycloakUserId,
+    keycloakUserId: currentKeycloakUserId,
     domainId: userInfo.domain_id || '',
     username: userInfo.username || userInfo.preferred_username || userInfo.sub || '',
     email: userInfo.email || '',
@@ -186,48 +217,70 @@ onMounted(async () => {
       }
     } catch (error) {
       // Silently fail - we'll use authStore data instead
-      console.warn('Could not fetch additional user data from backend:', error);
     }
   }
 });
 
-// Watch for user changes
+// Helper function to update formData from user
+const updateFormDataFromUser = (user: any) => {
+  if (!user) return;
+  
+  // Convert gender from integer to string if needed
+  let genderValue: Gender | 'NotSpecified' | 'Male' | 'Female' = 'NotSpecified';
+  if (user.gender !== undefined && user.gender !== null) {
+    if (typeof user.gender === 'number') {
+      // Backend returns integer (0, 1, 2), convert to string
+      switch (user.gender) {
+        case 1:
+          genderValue = 'Male';
+          break;
+        case 2:
+          genderValue = 'Female';
+          break;
+        case 0:
+        default:
+          genderValue = 'NotSpecified';
+          break;
+      }
+    } else {
+      // Already a string
+      genderValue = user.gender as Gender | 'NotSpecified' | 'Male' | 'Female';
+    }
+  }
+  
+  formData.value = {
+    firstName: user.firstName || '',
+    lastName: user.lastName || '',
+    email: user.email || '',
+    title: user.title || '',
+    department: user.department || '',
+    gender: genderValue,
+    phoneNumber: user.phoneNumber || '',
+    photoUrl: user.photoUrl || null,
+  };
+};
+
+// Watch for user changes - only update formData when not editing
 watch(() => currentUser.value, (user) => {
   if (user && !isEditing.value) {
-    // Convert gender from integer to string if needed
-    let genderValue: Gender | 'NotSpecified' | 'Male' | 'Female' = 'NotSpecified';
-    if (user.gender !== undefined && user.gender !== null) {
-      if (typeof user.gender === 'number') {
-        // Backend returns integer (0, 1, 2), convert to string
-        switch (user.gender) {
-          case 1:
-            genderValue = 'Male';
-            break;
-          case 2:
-            genderValue = 'Female';
-            break;
-          case 0:
-          default:
-            genderValue = 'NotSpecified';
-            break;
-        }
-      } else {
-        // Already a string
-        genderValue = user.gender as Gender | 'NotSpecified' | 'Male' | 'Female';
-      }
-    }
-    
-    formData.value = {
-      firstName: user.firstName || '',
-      lastName: user.lastName || '',
-      title: user.title || '',
-      department: user.department || '',
-      gender: genderValue,
-      phoneNumber: user.phoneNumber || '',
-      photoUrl: user.photoUrl || null,
-    };
+    updateFormDataFromUser(user);
   }
 }, { deep: true });
+
+// Watch for isEditing changes - when exiting edit mode, refresh formData from currentUser
+watch(() => isEditing.value, (newValue, oldValue) => {
+  if (oldValue === true && newValue === false && currentUser.value) {
+    // Just exited edit mode, refresh formData from currentUser
+    // Use nextTick to ensure userStore.currentUser is updated
+    nextTick(() => {
+      if (userStore.currentUser) {
+        updateFormDataFromUser(userStore.currentUser);
+      } else if (currentUser.value) {
+        updateFormDataFromUser(currentUser.value);
+      }
+    });
+  }
+});
 
 // Save handler
 const handleSave = async () => {
@@ -242,13 +295,12 @@ const handleSave = async () => {
     
     isLoading.value = true;
     
-    // Get user ID - MUST be the real backend userId, not Keycloak sub
-    // If currentUser is from userStore (backend), use its userId/id
-    // Otherwise, we need to fetch the user first to get the real ID
-    let userId = currentUser.value.userId || currentUser.value.id;
+    // Get user ID - MUST be the real backend userId (MongoDB ObjectId), not Keycloak sub
+    // Use userStore.currentUser.id if available
+    let userId = userStore.currentUser?.id;
     
-    // If userId is still Keycloak sub (starts with UUID pattern), try to find real user
-    if (!userId || userId === authStore.userInfo?.sub) {
+    // If userStore.currentUser doesn't exist, try to find user in backend
+    if (!userId) {
       // Try to find user in backend by username/email
       const searchTerm = currentUser.value.username || currentUser.value.email || authStore.userInfo?.username || authStore.userInfo?.email || '';
       if (searchTerm) {
@@ -262,25 +314,26 @@ const handleSave = async () => {
           );
           
           if (foundUser) {
-            userId = foundUser.userId || foundUser.id;
+            userId = foundUser.id;
             // Update currentUser with the found user
             userStore.currentUser = foundUser;
           }
         } catch (error) {
-          console.warn('Could not find user in backend:', error);
+          // Silently handle error - will throw error below
         }
       }
     }
     
-    if (!userId || userId === authStore.userInfo?.sub) {
-      throw new Error('Kullanıcı ID bulunamadı. Lütfen sayfayı yenileyin ve tekrar deneyin.');
+    if (!userId) {
+      throw new Error('User ID not found. Please refresh the page.');
     }
+    
     
     // Update user - Backend requires username and email, so we include them
     // Don't include groups - backend will preserve existing groups if groupIds is not provided
-    await userStore.updateUser(userId, {
+    const response = await userStore.updateUser(userId, {
       username: currentUser.value.username || authStore.userInfo?.username || authStore.userInfo?.preferred_username || '',
-      email: currentUser.value.email || authStore.userInfo?.email || '', // Backend requires email
+      email: formData.value.email || currentUser.value.email || authStore.userInfo?.email || '', // Use formData email
       firstName: formData.value.firstName,
       lastName: formData.value.lastName,
       title: formData.value.title || undefined,
@@ -291,11 +344,20 @@ const handleSave = async () => {
       // groups is intentionally omitted - backend will preserve existing groups
     });
     
+    // Wait for Vue reactivity to update userStore.currentUser
+    await nextTick();
+    
+    // Update formData with the latest userStore.currentUser data to ensure reactivity
+    if (userStore.currentUser) {
+      updateFormDataFromUser(userStore.currentUser);
+    }
+    
     // Update authStore.userInfo to reflect changes in header and side menu
     // This ensures the UI updates immediately without requiring a token refresh
     if (authStore.userInfo) {
       authStore.userInfo.given_name = formData.value.firstName;
       authStore.userInfo.family_name = formData.value.lastName;
+      authStore.userInfo.email = formData.value.email;
       // Update full name if it exists
       if (authStore.userInfo.name) {
         authStore.userInfo.name = `${formData.value.firstName} ${formData.value.lastName}`;
@@ -338,21 +400,48 @@ const handlePhotoUploaded = async (photoUrl: string) => {
   // Auto-save photo
   if (currentUser.value) {
     try {
-      const userId = currentUser.value.userId || currentUser.value.id;
+      // MUST use userStore.currentUser.id (MongoDB ObjectId), not Keycloak sub
+      // If userStore.currentUser doesn't exist, fetch it first
+      let userId = userStore.currentUser?.id;
       
-      // Update user with photoUrl (backend requires username and email)
+      if (!userId) {
+        // Try to find user in backend by username/email
+        const searchTerm = currentUser.value.username || currentUser.value.email || authStore.userInfo?.username || authStore.userInfo?.email || '';
+        if (searchTerm) {
+          await userStore.fetchUsers({ search: searchTerm, pageSize: 10 });
+          const foundUser = userStore.users.find(u => 
+            u.username === currentUser.value?.username || 
+            u.email === currentUser.value?.email ||
+            u.username === authStore.userInfo?.username ||
+            u.email === authStore.userInfo?.email
+          );
+          
+          if (foundUser) {
+            userId = foundUser.id;
+            userStore.currentUser = foundUser;
+          }
+        }
+      }
+      
+      if (!userId) {
+        throw new Error('User ID not found. Please refresh the page.');
+      }
+      
+      // Update user with photoUrl - include all current user data to prevent data loss
+      // Backend requires username and email, and we need to preserve other fields
+      // Use currentUser.value as source of truth, fallback to formData if needed
       const response = await userStore.updateUser(userId, {
         username: currentUser.value.username || authStore.userInfo?.username || authStore.userInfo?.preferred_username || '',
-        email: currentUser.value.email || authStore.userInfo?.email || '',
+        email: formData.value.email || currentUser.value.email || authStore.userInfo?.email || '',
+        firstName: currentUser.value.firstName || formData.value.firstName || '',
+        lastName: currentUser.value.lastName || formData.value.lastName || '',
+        title: currentUser.value.title ?? formData.value.title ?? null,
+        department: currentUser.value.department ?? formData.value.department ?? null,
+        gender: currentUser.value.gender || formData.value.gender || 'NotSpecified',
+        phoneNumber: currentUser.value.phoneNumber ?? formData.value.phoneNumber ?? null,
         photoUrl: photoUrl,
       });
       
-      // Debug logs
-      console.log('[ProfileGeneralTab] Photo uploaded successfully');
-      console.log('[ProfileGeneralTab] photoUrl:', photoUrl);
-      console.log('[ProfileGeneralTab] updateUser response:', response);
-      console.log('[ProfileGeneralTab] userStore.currentUser after update:', userStore.currentUser);
-      console.log('[ProfileGeneralTab] currentUser computed after update:', currentUser.value);
       
       // Force reactivity: explicitly update currentUser.photoUrl
       // Add cache-busting query parameter to force browser to reload the image
@@ -432,7 +521,7 @@ const formatDate = (date: string | Date | null | undefined) => {
               <PhotoUpload 
                 @uploaded="handlePhotoUploaded"
                 :currentPhotoUrl="formData.photoUrl"
-                :userId="currentUser?.userId || currentUser?.id || null"
+                :userId="userStore.currentUser?.id || null"
               />
               <v-btn
                 v-if="formData.photoUrl"
@@ -476,8 +565,18 @@ const formatDate = (date: string | Date | null | undefined) => {
               required
             />
             <v-text-field
+              v-model="formData.email"
+              :label="t('profile.personalInfo.email')"
+              variant="outlined"
+              density="comfortable"
+              class="mt-3"
+              :disabled="!isEditing"
+              type="email"
+              required
+            />
+            <v-text-field
               v-model="formData.title"
-              :label="t('profile.personalInfo.title')"
+              :label="t('profile.personalInfo.jobTitle')"
               variant="outlined"
               density="comfortable"
               class="mt-3"

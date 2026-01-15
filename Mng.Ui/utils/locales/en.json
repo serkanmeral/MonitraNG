@@ -426,6 +426,182 @@
                 "removed": "User successfully removed from the group"
             }
         }
+    },
+    "profile": {
+        "title": "Profile",
+        "user": "User",
+        "breadcrumbs": {
+            "home": "Home",
+            "profile": "Profile"
+        },
+        "tabs": {
+            "general": "General Information",
+            "account": "Account Settings",
+            "security": "Security",
+            "preferences": "Preferences"
+        },
+        "comingSoon": "Coming soon",
+        "roles": {
+            "admin": "Administrator",
+            "manager": "Manager",
+            "user": "User"
+        },
+        "personalInfo": {
+            "title": "Personal Information",
+            "firstName": "First Name",
+            "lastName": "Last Name",
+            "email": "Email",
+            "jobTitle": "Job Title",
+            "department": "Department",
+            "gender": "Gender",
+            "phoneNumber": "Phone"
+        },
+        "accountInfo": {
+            "title": "Account Information",
+            "username": "Username",
+            "email": "Email",
+            "domain": "Domain",
+            "status": "Status",
+            "createdAt": "Created",
+            "updatedAt": "Last Updated"
+        },
+        "status": {
+            "active": "Active",
+            "inactive": "Inactive"
+        },
+        "groups": {
+            "title": "Groups",
+            "manage": "Group Management",
+            "noGroups": "No groups assigned yet"
+        },
+        "photo": {
+            "title": "Profile Photo",
+            "upload": "Upload Photo",
+            "remove": "Remove Photo",
+            "maxSize": "Max: 5MB",
+            "formats": "Format: JPG, PNG, WebP",
+            "errors": {
+                "maxSize": "File size cannot exceed 5MB",
+                "invalidFormat": "Only JPG, PNG and WebP formats are supported",
+                "maxDimensions": "Photo size cannot exceed 2000x2000 pixels",
+                "invalidImage": "Invalid image file",
+                "readError": "File could not be read",
+                "uploadFailed": "An error occurred while uploading the photo"
+            }
+        },
+        "gender": {
+            "notSpecified": "Not Specified",
+            "male": "Male",
+            "female": "Female"
+        },
+        "buttons": {
+            "edit": "Edit",
+            "save": "Save",
+            "cancel": "Cancel"
+        },
+        "validation": {
+            "firstNameRequired": "First name is required",
+            "firstNameMinLength": "First name must be at least 2 characters",
+            "firstNameMaxLength": "First name can be at most 50 characters",
+            "lastNameRequired": "Last name is required",
+            "lastNameMinLength": "Last name must be at least 2 characters",
+            "lastNameMaxLength": "Last name can be at most 50 characters",
+            "emailRequired": "Email is required",
+            "emailInvalid": "Please enter a valid email address",
+            "titleMaxLength": "Job title can be at most 100 characters",
+            "departmentMaxLength": "Department can be at most 100 characters",
+            "phoneNumberMaxLength": "Phone number can be at most 20 characters"
+        },
+        "messages": {
+            "saveSuccess": "Profile updated successfully",
+            "saveError": "An error occurred while updating the profile",
+            "photoUploadSuccess": "Photo uploaded successfully",
+            "photoUploadError": "An error occurred while uploading the photo",
+            "photoRemoveSuccess": "Photo removed successfully",
+            "photoRemoveError": "An error occurred while removing the photo",
+            "userNotFound": "User not found"
+        },
+        "accountSettings": {
+            "accountInfo": {
+                "title": "Account Information",
+                "username": "Username",
+                "email": "Email",
+                "domain": "Domain",
+                "createdAt": "Account Created",
+                "updatedAt": "Last Updated"
+            },
+            "dangerZone": {
+                "title": "Danger Zone",
+                "description": "If you want to permanently delete your account, click the button below. This action cannot be undone.",
+                "deleteAccount": "Delete Account",
+                "notImplemented": "Account deletion feature has not been implemented yet."
+            }
+        },
+        "preferences": {
+            "language": {
+                "title": "Language Preference",
+                "label": "Select Language",
+                "description": "Select the application language. Changes are applied immediately."
+            },
+            "theme": {
+                "title": "Theme Preference",
+                "description": "Select the application theme. Light and dark theme options are available."
+            },
+            "other": {
+                "title": "Other Preferences",
+                "description": "Coming soon: UI preferences, notification settings and more will be added."
+            },
+            "saveSuccess": "Preferences saved successfully",
+            "saveError": "An error occurred while saving preferences"
+        },
+        "security": {
+            "changePassword": {
+                "title": "Change Password",
+                "description": "It is recommended to change your password regularly for the security of your account.",
+                "currentPassword": "Current Password",
+                "newPassword": "New Password",
+                "confirmPassword": "New Password (Confirm)",
+                "passwordStrength": "Password Strength",
+                "requirements": {
+                    "title": "Password Requirements",
+                    "minLength": "At least 8 characters",
+                    "uppercase": "At least one uppercase letter (A-Z)",
+                    "lowercase": "At least one lowercase letter (a-z)",
+                    "number": "At least one number (0-9)",
+                    "special": "At least one special character (! ? # $ % ^ & *)"
+                },
+                "save": "Change Password",
+                "cancel": "Cancel"
+            },
+            "passwordStrength": {
+                "weak": "Weak",
+                "fair": "Fair",
+                "good": "Good",
+                "strong": "Strong"
+            },
+            "validation": {
+                "currentPasswordRequired": "Current password is required",
+                "newPasswordRequired": "New password is required",
+                "passwordMinLength": "Password must be at least 8 characters",
+                "passwordLowercase": "Password must contain at least one lowercase letter",
+                "passwordUppercase": "Password must contain at least one uppercase letter",
+                "passwordNumber": "Password must contain at least one number",
+                "passwordSpecial": "Password must contain at least one special character",
+                "confirmPasswordRequired": "Password confirmation is required",
+                "passwordsDoNotMatch": "Passwords do not match"
+            },
+            "messages": {
+                "changePasswordSuccess": "Your password has been changed successfully",
+                "changePasswordError": "An error occurred while changing the password"
+            },
+            "tips": {
+                "title": "Security Tips",
+                "tip1": "Change your password regularly (at least every 3-6 months)",
+                "tip2": "Use different passwords for different accounts",
+                "tip3": "Do not share your password with anyone",
+                "tip4": "If you notice suspicious activity, change your password immediately"
+            }
+        }
     }
 
 }

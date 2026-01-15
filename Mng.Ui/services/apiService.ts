@@ -318,13 +318,20 @@ export function fetchFromDataGateway(
       const cleanPath = pathPart.startsWith('/') ? pathPart : `/${pathPart}`;
       
       // Server route: '/api/data/[...path]'
-      // Path'ten '/api/' kısmını çıkar: '/api/v1/data/@side_menu' -> 'v1/data/@side_menu'
+      // Path'ten '/api/v1/data/' kısmını çıkar: '/api/v1/data/@side_menu' -> 'v1/data/@side_menu'
+      // Veya '/api/v1/data/@side_menu' -> 'v1/data/@side_menu'
       let serverPath = cleanPath;
-      if (serverPath.startsWith('/api/v1/')) {
+      if (serverPath.startsWith('/api/v1/data/')) {
+        // '/api/v1/data/@side_menu' -> 'v1/data/@side_menu'
+        serverPath = serverPath.replace(/^\/api\/v1\/data\//, 'v1/data/');
+      } else if (serverPath.startsWith('/api/v1/')) {
+        // '/api/v1/...' -> 'v1/...'
         serverPath = serverPath.replace(/^\/api\/v1\//, 'v1/');
       } else if (serverPath.startsWith('/api/')) {
+        // '/api/...' -> '...'
         serverPath = serverPath.replace(/^\/api\//, '');
       } else if (serverPath.startsWith('/')) {
+        // '/...' -> '...'
         serverPath = serverPath.substring(1);
       }
       
