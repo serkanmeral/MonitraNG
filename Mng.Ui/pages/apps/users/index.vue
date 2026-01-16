@@ -5,7 +5,21 @@ import { useLocaleStore } from '@/stores/locale';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useUserStore } from '@/stores/apps/user';
 import { useAuthStore } from '@/stores/auth';
-import { EditIcon, EyeIcon, TrashIcon, UserPlusIcon, RefreshIcon } from 'vue-tabler-icons';
+import { EditIcon, EyeIcon, TrashIcon, UserPlusIcon, RefreshIcon, DownloadIcon } from 'vue-tabler-icons';
+
+// Get i18n instance for legacy mode
+const nuxtApp = useNuxtApp();
+const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
+const t = (key: string, params?: any) => {
+  if (i18n && i18n.t) {
+    return i18n.t(key, params);
+  }
+  // Fallback: try global.t if available
+  if (i18n?.global?.t) {
+    return i18n.global.t(key, params);
+  }
+  return key;
+};
 
 const userStore = useUserStore();
 const authStore = useAuthStore();
@@ -13,15 +27,17 @@ const localeStore = useLocaleStore();
 const router = useRouter();
 const route = useRoute();
 
-const page = ref({ title: 'Kullanıcı Yönetimi' });
-const breadcrumbs = ref([
+const page = computed(() => ({ 
+  title: t('users.title') 
+}));
+const breadcrumbs = computed(() => [
   {
-    text: 'Dashboard',
+    text: t('users.breadcrumbs.home'),
     disabled: false,
     href: '/dashboards/analytical',
   },
   {
-    text: 'Kullanıcı Yönetimi',
+    text: t('users.breadcrumbs.users'),
     disabled: true,
     href: '#',
   },
@@ -33,6 +49,8 @@ const showDeleteDialog = ref(false);
 const userToDelete = ref<string | null>(null);
 const deleteError = ref('');
 const statusFilter = ref<string>('all'); // all, active, inactive
+const isExporting = ref(false);
+const exportError = ref('');
 
 // Server-side pagination options
 const tableOptions = ref({
@@ -41,15 +59,15 @@ const tableOptions = ref({
   sortBy: [] as Array<{ key: string; order: 'asc' | 'desc' }>,
 });
 
-const headers = [
-  { title: 'Kullanıcı Adı', key: 'username', sortable: true },
-  { title: 'Email', key: 'email', sortable: true },
-  { title: 'Ad Soyad', key: 'fullName', sortable: true },
-  { title: 'Durum', key: 'isActive', sortable: true },
-  { title: 'Gruplar', key: 'groups', sortable: false },
-  { title: 'Oluşturulma', key: 'createdAt', sortable: true },
-  { title: 'İşlemler', key: 'actions', sortable: false, align: 'end' },
-];
+const headers = computed(() => [
+  { title: t('users.table.username'), key: 'username', sortable: true },
+  { title: t('users.table.email'), key: 'email', sortable: true },
+  { title: t('users.table.fullName'), key: 'fullName', sortable: true },
+  { title: t('users.table.status'), key: 'isActive', sortable: true },
+  { title: t('users.table.groups'), key: 'groups', sortable: false },
+  { title: t('users.table.createdAt'), key: 'createdAt', sortable: true },
+  { title: t('users.table.actions'), key: 'actions', sortable: false, align: 'end' },
+]);
 
 // Computed: Full name (for display only)
 const usersWithFullName = computed(() => {
@@ -73,6 +91,8 @@ const serverItemsLength = computed(() => {
       pageSize?: number;
       search?: string;
       isActive?: boolean;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
     } = {
       page: tableOptions.value.page || 1,
       pageSize: tableOptions.value.itemsPerPage || 10,
@@ -88,6 +108,25 @@ const serverItemsLength = computed(() => {
       params.isActive = true;
     } else if (statusFilter.value === 'inactive') {
       params.isActive = false;
+    }
+    
+    // Add sorting if exists
+    if (tableOptions.value.sortBy && tableOptions.value.sortBy.length > 0) {
+      const sortOption = tableOptions.value.sortBy[0]; // Vuetify supports single sort
+      // Map frontend field names to backend field names
+      const fieldMapping: Record<string, string> = {
+        'username': 'username',
+        'email': 'email',
+        'fullName': 'firstName', // Backend uses firstName for sorting
+        'isActive': 'isActive',
+        'createdAt': 'createdAt',
+      };
+      
+      const backendField = fieldMapping[sortOption.key] || sortOption.key;
+      if (backendField) {
+        params.sortBy = backendField;
+        params.sortOrder = sortOption.order || 'asc';
+      }
     }
     
     // Fetch users with new parameters
@@ -158,6 +197,30 @@ watch(
   }
 );
 
+// Watch tableOptions.sortBy for changes (when user changes sorting)
+watch(
+  () => tableOptions.value.sortBy,
+  async (newSortBy, oldSortBy) => {
+    // Skip initial load (handled in onMounted)
+    if (isInitialLoad.value) {
+      return;
+    }
+    
+    // Only fetch if sorting actually changed
+    const newSortStr = JSON.stringify(newSortBy || []);
+    const oldSortStr = JSON.stringify(oldSortBy || []);
+    if (newSortStr !== oldSortStr) {
+      // Reset to first page when sorting changes
+      if (tableOptions.value.page !== 1) {
+        tableOptions.value.page = 1;
+      }
+      await nextTick();
+      fetchUsers();
+    }
+  },
+  { deep: true }
+);
+
 // Watch for search and status filter changes
 let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 watch([search, statusFilter], () => {
@@ -207,6 +270,60 @@ const refreshUsers = async () => {
   await fetchUsers();
 };
 
+// Export users function
+const exportUsers = async (format: 'csv' | 'xlsx' | 'json') => {
+  exportError.value = '';
+  isExporting.value = true;
+  
+  try {
+    const params: {
+      search?: string;
+      isActive?: boolean;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+    } = {};
+    
+    // Add search term if exists
+    if (search.value && search.value.trim()) {
+      params.search = search.value.trim();
+    }
+    
+    // Add status filter if not 'all'
+    if (statusFilter.value === 'active') {
+      params.isActive = true;
+    } else if (statusFilter.value === 'inactive') {
+      params.isActive = false;
+    }
+    
+    // Add sorting if exists
+    if (tableOptions.value.sortBy && tableOptions.value.sortBy.length > 0) {
+      const sortOption = tableOptions.value.sortBy[0];
+      const fieldMapping: Record<string, string> = {
+        'username': 'username',
+        'email': 'email',
+        'fullName': 'firstName',
+        'isActive': 'isActive',
+        'createdAt': 'createdAt',
+      };
+      
+      const backendField = fieldMapping[sortOption.key] || sortOption.key;
+      if (backendField) {
+        params.sortBy = backendField;
+        params.sortOrder = sortOption.order || 'asc';
+      }
+    }
+    
+    await userStore.exportUsers(format, params);
+    
+    // Success - file will be downloaded automatically
+  } catch (error: any) {
+    exportError.value = error.message || t('users.export.error');
+    console.error('Export error:', error);
+  } finally {
+    isExporting.value = false;
+  }
+};
+
 const editUser = (user: any) => {
   // Try id first (if not empty), then userId, then keycloakUserId
   const userId = (user.id && user.id.trim() !== '') ? user.id : (user.userId || user.keycloakUserId);
@@ -214,7 +331,7 @@ const editUser = (user: any) => {
   if (userId && userId.trim() !== '') {
     router.push(`/apps/users/edit/${userId}`);
   } else {
-    userStore.error = 'Kullanıcı ID bulunamadı';
+    userStore.error = t('users.errors.userIdNotFound');
   }
 };
 
@@ -225,7 +342,7 @@ const viewUser = (user: any) => {
   if (userId && userId.trim() !== '') {
     router.push(`/apps/users/details/${userId}`);
   } else {
-    userStore.error = 'Kullanıcı ID bulunamadı';
+    userStore.error = t('users.errors.userIdNotFound');
   }
 };
 
@@ -245,7 +362,7 @@ const confirmDelete = async () => {
       await fetchUsers();
     } catch (error: any) {
       // Show error message in dialog
-      deleteError.value = error.message || 'Kullanıcı silinirken bir hata oluştu';
+      deleteError.value = error.message || t('users.errors.deleteFailed');
       console.error('Error deleting user:', error);
     }
   }
@@ -285,7 +402,7 @@ const formatDate = (date: string | Date | null | undefined) => {
           <v-text-field
             v-model="search"
             prepend-inner-icon="mdi-magnify"
-            label="Kullanıcı Ara"
+            :label="t('users.search.placeholder')"
             variant="outlined"
             density="compact"
             hide-details
@@ -296,11 +413,11 @@ const formatDate = (date: string | Date | null | undefined) => {
           <v-select
             v-model="statusFilter"
             :items="[
-              { title: 'Tümü', value: 'all' },
-              { title: 'Aktif', value: 'active' },
-              { title: 'Pasif', value: 'inactive' },
+              { title: t('users.status.all'), value: 'all' },
+              { title: t('users.status.active'), value: 'active' },
+              { title: t('users.status.inactive'), value: 'inactive' },
             ]"
-            label="Durum"
+            :label="t('users.status.label')"
             variant="outlined"
             density="compact"
             hide-details
@@ -309,6 +426,46 @@ const formatDate = (date: string | Date | null | undefined) => {
         </div>
         
         <div class="d-flex ga-2">
+          <v-menu>
+            <template v-slot:activator="{ props }">
+              <v-btn
+                color="primary"
+                variant="outlined"
+                flat
+                v-bind="props"
+                :loading="isExporting"
+                :disabled="isExporting"
+              >
+                <DownloadIcon class="mr-2" size="20" />
+                {{ t('users.buttons.export') }}
+                <v-icon class="ml-1" size="16">mdi-chevron-down</v-icon>
+              </v-btn>
+            </template>
+            <v-list>
+              <v-list-item @click="exportUsers('csv')">
+                <template v-slot:prepend>
+                  <v-icon>mdi-file-delimited</v-icon>
+                </template>
+                <v-list-item-title>{{ t('users.export.csv') }}</v-list-item-title>
+              </v-list-item>
+              <v-list-item @click="exportUsers('json')">
+                <template v-slot:prepend>
+                  <v-icon>mdi-code-json</v-icon>
+                </template>
+                <v-list-item-title>{{ t('users.export.json') }}</v-list-item-title>
+              </v-list-item>
+              <v-list-item @click="exportUsers('xlsx')" disabled>
+                <template v-slot:prepend>
+                  <v-icon>mdi-file-excel</v-icon>
+                </template>
+                <v-list-item-title>{{ t('users.export.xlsx') }}</v-list-item-title>
+                <template v-slot:append>
+                  <v-chip size="x-small" color="warning">{{ t('users.export.comingSoon') }}</v-chip>
+                </template>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+          
           <v-btn
             color="primary"
             variant="outlined"
@@ -317,11 +474,11 @@ const formatDate = (date: string | Date | null | undefined) => {
             :loading="userStore.loading"
           >
             <RefreshIcon class="mr-2" size="20" />
-            Yenile
+            {{ t('users.buttons.refresh') }}
           </v-btn>
           <v-btn color="primary" to="/apps/users/create" flat>
             <UserPlusIcon class="mr-2" size="20" />
-            Yeni Kullanıcı
+            {{ t('users.buttons.newUser') }}
           </v-btn>
         </div>
       </div>
@@ -334,8 +491,20 @@ const formatDate = (date: string | Date | null | undefined) => {
         density="compact"
         class="mb-4"
       >
-        <strong>Uyarı:</strong> Bu sayfaya erişim için manager veya admin yetkisi gereklidir. 
-        Kullanıcı yönetimi işlemlerini gerçekleştirmek için lütfen bir yönetici ile iletişime geçin.
+        <strong>{{ t('users.warning.title') }}</strong> {{ t('users.warning.message') }}
+      </v-alert>
+
+      <!-- Export Error Message -->
+      <v-alert
+        v-if="exportError"
+        type="error"
+        variant="tonal"
+        density="compact"
+        class="mb-4"
+        closable
+        @click:close="exportError = ''"
+      >
+        {{ exportError }}
       </v-alert>
 
       <!-- Error Message -->
@@ -350,7 +519,7 @@ const formatDate = (date: string | Date | null | undefined) => {
       >
         {{ userStore.error }}
         <div v-if="userStore.error.includes('403') || userStore.error.includes('Forbidden')" class="mt-2 text-caption">
-          <strong>Not:</strong> Bu hata, admin yetkisi gerektirdiğini gösterir. Kullanıcınızın "admins" grubunda olduğundan emin olun.
+          <strong>{{ t('users.errors.forbiddenNote') }}</strong>
         </div>
       </v-alert>
 
@@ -380,7 +549,7 @@ const formatDate = (date: string | Date | null | undefined) => {
         <!-- Status Column -->
         <template v-slot:item.isActive="{ value }">
           <v-chip :color="value ? 'success' : 'error'" size="small" variant="flat">
-            {{ value ? 'Aktif' : 'Pasif' }}
+            {{ value ? t('users.status.active') : t('users.status.inactive') }}
           </v-chip>
         </template>
 
@@ -397,7 +566,7 @@ const formatDate = (date: string | Date | null | undefined) => {
               {{ group }}
             </v-chip>
             <span v-if="!item.groups || item.groups.length === 0" class="text-caption text-medium-emphasis">
-              Grup yok
+              {{ t('users.groups.none') }}
             </span>
           </div>
         </template>
@@ -420,7 +589,7 @@ const formatDate = (date: string | Date | null | undefined) => {
               @click="viewUser(item)"
             >
               <EyeIcon size="18" />
-              <v-tooltip activator="parent" location="top">Görüntüle</v-tooltip>
+              <v-tooltip activator="parent" location="top">{{ t('users.actions.view') }}</v-tooltip>
             </v-btn>
             <v-btn
               icon
@@ -430,7 +599,7 @@ const formatDate = (date: string | Date | null | undefined) => {
               @click="editUser(item)"
             >
               <EditIcon size="18" />
-              <v-tooltip activator="parent" location="top">Düzenle</v-tooltip>
+              <v-tooltip activator="parent" location="top">{{ t('users.actions.edit') }}</v-tooltip>
             </v-btn>
             <v-btn
               icon
@@ -440,7 +609,7 @@ const formatDate = (date: string | Date | null | undefined) => {
               @click="deleteUser(item)"
             >
               <TrashIcon size="18" />
-              <v-tooltip activator="parent" location="top">Sil</v-tooltip>
+              <v-tooltip activator="parent" location="top">{{ t('users.actions.delete') }}</v-tooltip>
             </v-btn>
           </div>
         </template>
@@ -448,10 +617,10 @@ const formatDate = (date: string | Date | null | undefined) => {
         <!-- No Data -->
         <template v-slot:no-data>
           <div class="text-center py-8">
-            <p class="text-subtitle-1 text-medium-emphasis">Kullanıcı bulunamadı</p>
+            <p class="text-subtitle-1 text-medium-emphasis">{{ t('users.noData.title') }}</p>
             <v-btn color="primary" to="/apps/users/create" class="mt-4">
               <UserPlusIcon class="mr-2" size="20" />
-              İlk Kullanıcıyı Oluştur
+              {{ t('users.noData.button') }}
             </v-btn>
           </div>
         </template>
@@ -460,18 +629,18 @@ const formatDate = (date: string | Date | null | undefined) => {
         <template v-slot:bottom>
           <div class="d-flex justify-space-between align-center pa-3 border-top">
             <div class="text-caption text-medium-emphasis">
-              <strong>Toplam:</strong> {{ userStore.totalCount }} kayıt
+              <strong>{{ t('users.pagination.total') }}</strong> {{ userStore.totalCount }} {{ t('users.pagination.records') }}
               <span v-if="userStore.totalPages > 1" class="ml-2">
-                (Sayfa {{ tableOptions.page }} / {{ userStore.totalPages }})
+                ({{ t('users.pagination.page') }} {{ tableOptions.page }} / {{ userStore.totalPages }})
               </span>
               <span class="ml-2">
                 | {{ ((tableOptions.page - 1) * tableOptions.itemsPerPage) + 1 }} - 
                 {{ Math.min(tableOptions.page * tableOptions.itemsPerPage, userStore.totalCount) }} 
-                / {{ userStore.totalCount }} gösteriliyor
+                / {{ userStore.totalCount }} {{ t('users.pagination.showing') }}
               </span>
             </div>
             <div class="d-flex align-center ga-2">
-              <span class="text-caption text-medium-emphasis">Sayfa başına kayıt:</span>
+              <span class="text-caption text-medium-emphasis">{{ t('users.pagination.itemsPerPage') }}</span>
               <v-select
                 v-model="tableOptions.itemsPerPage"
                 :items="[10, 25, 50, 100]"
@@ -499,7 +668,7 @@ const formatDate = (date: string | Date | null | undefined) => {
   <v-dialog v-model="showDeleteDialog" max-width="500px">
     <v-card>
       <v-card-title class="pa-4 bg-error text-white">
-        <span class="text-h6">Kullanıcıyı Sil</span>
+        <span class="text-h6">{{ t('users.delete.title') }}</span>
       </v-card-title>
       <v-card-text class="pa-6">
         <!-- Error Message -->
@@ -514,7 +683,7 @@ const formatDate = (date: string | Date | null | undefined) => {
         </v-alert>
         
         <p v-if="!deleteError" class="text-subtitle-1">
-          Bu kullanıcıyı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+          {{ t('users.delete.message') }}
         </p>
       </v-card-text>
       <v-card-actions class="pa-4">
@@ -524,7 +693,7 @@ const formatDate = (date: string | Date | null | undefined) => {
           variant="flat" 
           @click="showDeleteDialog = false; deleteError = ''; userToDelete = null"
         >
-          {{ deleteError ? 'Kapat' : 'İptal' }}
+          {{ deleteError ? t('users.delete.close') : t('users.delete.cancel') }}
         </v-btn>
         <v-btn 
           v-if="!deleteError"
@@ -533,7 +702,7 @@ const formatDate = (date: string | Date | null | undefined) => {
           @click="confirmDelete"
           :loading="userStore.loading"
         >
-          Evet, Sil
+          {{ t('users.delete.confirm') }}
         </v-btn>
       </v-card-actions>
     </v-card>

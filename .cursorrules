@@ -220,16 +220,30 @@ Aşağıdaki kısaltmaları kullanırken tam isimlerini kullan:
 - **Güvenlik**: Her commit ve push işleminden önce kullanıcıya bilgi ver ve onay al
 
 ### GitHub + GitLab Dual Sync
-- **Yapılandırma**: Origin remote'u hem GitHub hem GitLab'a push yapacak şekilde yapılandırılmıştır
-- **Kullanım**: `git push origin <branch>` komutu otomatik olarak hem GitHub hem GitLab'a push yapar
-- **Remote URL'leri**:
-  - GitHub: `https://github.com/serkanmeral/MonitraNG.git`
-  - GitLab: `http://localhost/root/MonitraNG.git` (Personal Access Token ile)
-- **Not**: GitLab token'ı remote URL'de saklanmıştır, güvenlik için dikkatli olunmalıdır
+- **Strateji**: Remote GitLab (gitlab.monitrang.com) öncelikli kaynak, GitHub yedekleme için
+- **Yapılandırma**: 
+  - **Fetch URL**: Remote GitLab (`https://gitlab.monitrang.com/root/MonitraNG.git`) - Öncelikli kaynak
+  - **Push URL'leri**: 
+    1. Remote GitLab (öncelikli): `https://gitlab.monitrang.com/root/MonitraNG.git`
+    2. GitHub (yedekleme): `https://github.com/serkanmeral/MonitraNG.git`
+- **Kullanım**: 
+  - `git pull` / `git fetch` → Remote GitLab'dan çeker
+  - `git push origin <branch>` → Hem Remote GitLab hem GitHub'a push yapar (otomatik dual sync)
+- **Avantajlar**: 
+  - Öncelikli kaynak: Remote GitLab (gitlab.monitrang.com)
+  - Otomatik yedekleme: Her push GitHub'a da gider
+  - Local GitLab bağımlılığı: Yok (artık kullanılmıyor)
 - **Yeni ortamda kurulum**: Eğer yeni bir ortamda çalışıyorsanız, dual sync yapılandırmasını yeniden yapın:
   ```powershell
+  # Fetch URL'ini Remote GitLab'a ayarla (öncelikli kaynak)
+  git remote set-url origin https://gitlab.monitrang.com/root/MonitraNG.git
+  
+  # Push URL'lerini ekle (önce GitLab, sonra GitHub)
+  git remote set-url --add --push origin https://gitlab.monitrang.com/root/MonitraNG.git
   git remote set-url --add --push origin https://github.com/serkanmeral/MonitraNG.git
-  git remote set-url --add --push origin http://root:TOKEN@localhost/root/MonitraNG.git
+  
+  # Yapılandırmayı kontrol et
+  git remote -v
   ```
 
 ### Local ve Sunucu Kod Senkronizasyon Stratejisi

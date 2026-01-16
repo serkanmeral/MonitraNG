@@ -1,698 +1,910 @@
 {
-    "Modern": "Moderne",
-    "eCommerce": "commerce électronique",
-    "Analytical": "Analytique",
-    "Classic": "Classique",
-    "Demographical": "démographique",
-    "Minimal": "Minimale",
-    "Contact": "a lua legatura",
-    "Blog": "Blog",
-    "Posts": "Des postes",
-    "Detail": "Détail",
-    "E-Commerce": "Commerce électronique",
-    "Shop": "Boutique",
-    "List": "Liste",
-    "Checkout": "Vérifier",
-    "Chats": "Chattes",
-    "User Profile": "Profil des utilisateurs",
-    "Notes": "Remarques",
-    "Calendar": "Calendrier",
-    "Profile": "Profil",
-    "Followers": "Suiveuses",
-    "Friends": "Amies",
-    "Gallery": "Galerie",
-    "Email": "E-mail",
-    "Pricing": "Tarification",
-    "Account Setting": "Paramètre du compte",
-    "FAQ": "FAQ",
-    "Widget": "Widget",
-    "Landing Page": "Page de destination",
-    "Form Elements": "Éléments de formulaire",
-    "Autocomplete": "Saisie automatique",
-    "Combobox": "Boîte combo",
-    "Button": "Bouton",
-    "Checkbox": "Case à cocher",
-    "Custom Inputs": "Entrées personnalisées",
-    "File Inputs": "Entrées de fichier",
-    "Radio": "Radio",
-    "Date Time": "Date Heure",
-    "Select": "Sélectionner",
-    "Slider": "Glissière",
-    "Switch": "Changer",
-    "Form Layout": "Disposition du formulaire",
-    "Form Horizontal": "Forme horizontale",
-    "Form Vertical": "Forme verticale",
-    "Form Custom": "Formulaire personnalisé",
-    "Form Validation": "Validation du formulaire",
-    "Editor": "Éditrice",
-    "Basic Table": "Tableau de base",
-    "Dark Table": "Tableau noir",
-    "Density Table": "Tableau de densité",
-    "Fixed Header Table": "Table d'en-tête fixe",
-    "Height Table": "Tableau des hauteurs",
-    "Ui Components": "Composants de l'interface utilisateur",
-    "Alert": "Alerte",
-    "Accordion": "Accordéon",
-    "Avatar": "Avatar",
-    "Chip": "Ébrécher",
-    "Dialog": "Dialogue",
-    "Menus": "Menus",
-    "Rating": "Notation",
-    "Tabs": "Filele",
-    "Tooltip": "Info-bulle",
-    "Typography": "Typographie",
-    "Line": "Doubler",
-    "Gredient": "Ils entreront",
-    "Area": "Zone",
-    "Candlestick": "Chandelier",
-    "Column": "Colonne",
-    "Doughnut & Pie": "Donut et Tarte",
-    "Radialbar & Radar": "Barre radiale et radar",
-    "Login": "Connexion",
-    "Side Login": "Connexion latérale",
-    "Boxed Login": "Connexion en boîte",
-    "Register": "Enregistrer",
-    "Side Register": "Registre latéral",
-    "Boxed Register": "Registre en boîte",
-    "Forgot Password": "Mot de passe oublié",
-    "Side Forgot Password": "Mot de passe oublié",
-    "Boxed Forgot Password": "Mot de passe oublié",
-    "Two Steps": "Deux étapes",
-    "Side Two Steps": "Côté deux étapes",
-    "Boxed Two Steps": "Deux étapes en boîte",
-    "Error": "Erreur",
-    "Maintenance": "Entretien",
-    "Menu Level": "Niveau menus",
-    "Level 1": "Niveau 1",
-    "Level 2": "Niveau 2",
-    "Level 3": "Niveau 3",
-    "Disabled": "Désactivé",
-    "Sub Caption": "Sous-titre",
-    "Outlined": "Décrite",
-    "External Link": "lien externe",
-    "Editable Table": "Tableau modifiable",
-    "Cards": "Cartes",
-    "Banners": "Bannières",
-    "Material": "Matériel",
-    "Tabler": "Tableur",
-    "Add Product": "Ajouter un produit",
-    "Edit Product": "Modifier le produit",
-    "Kanban": "Kanban",
-    "Gallery Lightbox": "Galerie Lumineuse",
-    "Search Results": "Résultats de la recherche",
-    "Social Contacts": "Contacts sociaux",
-    "Treeview": "Vue arborescente",
-    "Header Table": "Tableau d'en-tête",
-    "Selection Table": "Tableau de sélection",
-    "Sorting Table": "Tableau de tri",
-    "Pagination Table": "Tableau de pagination",
-    "Filtering Table": "Tableau de filtrage",
-    "Grouping Table": "Tableau de regroupement",
-    "Table Slots": "Emplacements de table",
-    "CRUD Table": "Tableau CRUD",
-    "Time Picker": "Sélecteur de temps",
-    "Stepper": "Pas à pas",
-    "Front Pages": "Premières pages",
-    "Homepage": "Page d'accueil",
-    "About Us": "À propos de nous",
-    "Contact Us": "Contactez-nous",
-    "Blog Details": "Détails du blog",
-    "Portfolio": "Portefeuille",
-    "Invoice": "Facture",
-    "Create": "Créer",
-    "Edit": "Modifier",
-    "Tickets": "Billets",
-    "Details": "Détails",
-    "Banners Widgets": "Widgets de bannières",
-    "Cards Widgets": "Widgets de cartes",
-    "Charts Widgets": "Widgets graphiques",
-    "menu": {
-      "apps-dataset-categories": "Catégories de Dataset",
-      "datasets": "Datasets",
-      "two-steps": "Deux étapes",
-      "apps-events": "Messages d'événement",
-      "apps-side-menu-manager": {
-        "title": "Menu Gérant",
-        "subCaption": "Gestion de menu\tpage"
-      },
-      "apps-users": "Gestion des utilisateurs",
-      "apps-groups": "Gestion des groupes",
-      "books": "Livres",
-      "apps-books": "Livres",
-      "automated-forms": "Formulaires Automatiques",
-      "apps-automated-forms": {
-        "title": "Form Automatisés",
-        "subCaption": "Les formulaires automatiques en profitent."
-      },
-      "headers": {
-        "home": "Accueil",
-        "assets": "Actifs",
-        "apps": "Applications",
-        "pages": "Pages",
-        "components": "Composants",
-        "charts": "Graphiques",
-        "forms": "Formulaires",
-        "widget": "Widget",
-        "tables": "Tableaux",
-        "data-tables": "Tableaux de données",
-        "authentication": "Authentification",
-        "icons": "Icônes",
-        "administration": "Administration",
-        "examples_header": "Exemples",
-        "management": "Gestion"
-      },
-      "book_definitions": "Déclaration de Livres",
-      "book-genres": "Genres de Livres",
-      "tst_publishers": "Éditeurs",
-      "tst_books": "Livres"
+  "Modern": "Moderne",
+  "eCommerce": "commerce électronique",
+  "Analytical": "Analytique",
+  "Classic": "Classique",
+  "Demographical": "démographique",
+  "Minimal": "Minimale",
+  "Contact": "a lua legatura",
+  "Blog": "Blog",
+  "Posts": "Des postes",
+  "Detail": "Détail",
+  "E-Commerce": "Commerce électronique",
+  "Shop": "Boutique",
+  "List": "Liste",
+  "Checkout": "Vérifier",
+  "Chats": "Chattes",
+  "User Profile": "Profil des utilisateurs",
+  "Notes": "Remarques",
+  "Calendar": "Calendrier",
+  "Profile": "Profil",
+  "Followers": "Suiveuses",
+  "Friends": "Amies",
+  "Gallery": "Galerie",
+  "Email": "E-mail",
+  "Pricing": "Tarification",
+  "Account Setting": "Paramètre du compte",
+  "FAQ": "FAQ",
+  "Widget": "Widget",
+  "Landing Page": "Page de destination",
+  "Form Elements": "Éléments de formulaire",
+  "Autocomplete": "Saisie automatique",
+  "Combobox": "Boîte combo",
+  "Button": "Bouton",
+  "Checkbox": "Case à cocher",
+  "Custom Inputs": "Entrées personnalisées",
+  "File Inputs": "Entrées de fichier",
+  "Radio": "Radio",
+  "Date Time": "Date Heure",
+  "Select": "Sélectionner",
+  "Slider": "Glissière",
+  "Switch": "Changer",
+  "Form Layout": "Disposition du formulaire",
+  "Form Horizontal": "Forme horizontale",
+  "Form Vertical": "Forme verticale",
+  "Form Custom": "Formulaire personnalisé",
+  "Form Validation": "Validation du formulaire",
+  "Editor": "Éditrice",
+  "Basic Table": "Tableau de base",
+  "Dark Table": "Tableau noir",
+  "Density Table": "Tableau de densité",
+  "Fixed Header Table": "Table d'en-tête fixe",
+  "Height Table": "Tableau des hauteurs",
+  "Ui Components": "Composants de l'interface utilisateur",
+  "Alert": "Alerte",
+  "Accordion": "Accordéon",
+  "Avatar": "Avatar",
+  "Chip": "Ébrécher",
+  "Dialog": "Dialogue",
+  "Menus": "Menus",
+  "Rating": "Notation",
+  "Tabs": "Filele",
+  "Tooltip": "Info-bulle",
+  "Typography": "Typographie",
+  "Line": "Doubler",
+  "Gredient": "Ils entreront",
+  "Area": "Zone",
+  "Candlestick": "Chandelier",
+  "Column": "Colonne",
+  "Doughnut & Pie": "Donut et Tarte",
+  "Radialbar & Radar": "Barre radiale et radar",
+  "Login": "Connexion",
+  "Side Login": "Connexion latérale",
+  "Boxed Login": "Connexion en boîte",
+  "Register": "Enregistrer",
+  "Side Register": "Registre latéral",
+  "Boxed Register": "Registre en boîte",
+  "Forgot Password": "Mot de passe oublié",
+  "Side Forgot Password": "Mot de passe oublié",
+  "Boxed Forgot Password": "Mot de passe oublié",
+  "Two Steps": "Deux étapes",
+  "Side Two Steps": "Côté deux étapes",
+  "Boxed Two Steps": "Deux étapes en boîte",
+  "Error": "Erreur",
+  "Maintenance": "Entretien",
+  "Menu Level": "Niveau menus",
+  "Level 1": "Niveau 1",
+  "Level 2": "Niveau 2",
+  "Level 3": "Niveau 3",
+  "Disabled": "Désactivé",
+  "Sub Caption": "Sous-titre",
+  "Outlined": "Décrite",
+  "External Link": "lien externe",
+  "Editable Table": "Tableau modifiable",
+  "Cards": "Cartes",
+  "Banners": "Bannières",
+  "Material": "Matériel",
+  "Tabler": "Tableur",
+  "Add Product": "Ajouter un produit",
+  "Edit Product": "Modifier le produit",
+  "Kanban": "Kanban",
+  "Gallery Lightbox": "Galerie Lumineuse",
+  "Search Results": "Résultats de la recherche",
+  "Social Contacts": "Contacts sociaux",
+  "Treeview": "Vue arborescente",
+  "Header Table": "Tableau d'en-tête",
+  "Selection Table": "Tableau de sélection",
+  "Sorting Table": "Tableau de tri",
+  "Pagination Table": "Tableau de pagination",
+  "Filtering Table": "Tableau de filtrage",
+  "Grouping Table": "Tableau de regroupement",
+  "Table Slots": "Emplacements de table",
+  "CRUD Table": "Tableau CRUD",
+  "Time Picker": "Sélecteur de temps",
+  "Stepper": "Pas à pas",
+  "Front Pages": "Premières pages",
+  "Homepage": "Page d'accueil",
+  "About Us": "À propos de nous",
+  "Contact Us": "Contactez-nous",
+  "Blog Details": "Détails du blog",
+  "Portfolio": "Portefeuille",
+  "Invoice": "Facture",
+  "Create": "Créer",
+  "Edit": "Modifier",
+  "Tickets": "Billets",
+  "Details": "Détails",
+  "Banners Widgets": "Widgets de bannières",
+  "Cards Widgets": "Widgets de cartes",
+  "Charts Widgets": "Widgets graphiques",
+  "menu": {
+    "apps-dataset-categories": "Catégories de Dataset",
+    "datasets": "Datasets",
+    "two-steps": "Deux étapes",
+    "apps-events": "Messages d'événement",
+    "apps-side-menu-manager": {
+      "title": "Menu Gérant",
+      "subCaption": "Gestion de menu\tpage"
     },
-    "events": {
-      "title": "Messages d'événement",
-      "description": "Notifications en temps réel pour les opérations CRUD de groupe, utilisateur et données depuis RabbitMQ",
+    "apps-users": "Gestion des utilisateurs",
+    "apps-groups": "Gestion des groupes",
+    "books": "Livres",
+    "apps-books": "Livres",
+    "automated-forms": "Formulaires Automatiques",
+    "apps-automated-forms": {
+      "title": "Form Automatisés",
+      "subCaption": "Les formulaires automatiques en profitent."
+    },
+    "headers": {
+      "home": "Accueil",
+      "assets": "Actifs",
+      "apps": "Applications",
+      "pages": "Pages",
+      "components": "Composants",
+      "charts": "Graphiques",
+      "forms": "Formulaires",
+      "widget": "Widget",
+      "tables": "Tableaux",
+      "data-tables": "Tableaux de données",
+      "authentication": "Authentification",
+      "icons": "Icônes",
+      "administration": "Administration",
+      "examples_header": "Exemples",
+      "management": "Gestion"
+    },
+    "book_definitions": "Déclaration de Livres",
+    "book-genres": "Genres de Livres",
+    "tst_publishers": "Éditeurs",
+    "tst_books": "Livres"
+  },
+  "events": {
+    "title": "Messages d'événement",
+    "description": "Notifications en temps réel pour les opérations CRUD de groupe, utilisateur et données depuis RabbitMQ",
+    "buttons": {
+      "connect": "Se connecter",
+      "disconnect": "Se déconnecter",
+      "clearMessages": "Effacer les messages"
+    },
+    "status": {
+      "connected": "Connecté",
+      "connecting": "Connexion...",
+      "error": "Erreur de connexion",
+      "disconnected": "Déconnecté",
+      "closed": "Connexion fermée"
+    },
+    "types": {
+      "user": "Utilisateur",
+      "group": "Groupe",
+      "system": "Système",
+      "data": "Données",
+      "unknown": "Inconnu"
+    },
+    "empty": {
+      "title": "Aucun message pour le moment",
+      "description": "Les opérations de groupe, utilisateur ou données apparaîtront ici"
+    },
+    "details": {
+      "view": "Voir les détails"
+    },
+    "errors": {
+      "tokenNotFound": "Token d'accès introuvable. Veuillez vous reconnecter.",
+      "connectionError": "Une erreur de connexion s'est produite.",
+      "connectionClosed": "Connexion fermée"
+    },
+    "breadcrumbs": {
+      "home": "Accueil"
+    }
+  },
+  "side-menu-manager": {
+    "title": "Gestionnaire de menu latéral",
+    "description": "Gérer dynamiquement les éléments du menu latéral",
+    "breadcrumbs": {
+      "home": "Accueil",
+      "title": "Gestionnaire de menu latéral"
+    },
+    "tree": {
+      "title": "Éléments de menu",
+      "expandAll": "Tout développer",
+      "collapseAll": "Tout réduire",
+      "empty": "Aucun élément de menu trouvé",
+      "navigate": "Aller à la page"
+    },
+    "toolbar": {
+      "newItem": "Nouvel élément de menu",
+      "newHeader": "Nouvel en-tête",
+      "search": "Rechercher des éléments de menu...",
+      "refresh": "Actualiser"
+    },
+    "form": {
+      "title": {
+        "edit": "Modifier l'élément de menu",
+        "new": "Nouvel élément de menu"
+      },
+      "empty": "Cliquez sur le bouton \"Nouvel élément de menu\" ou \"Nouvel en-tête\" à gauche pour créer un nouvel élément de menu.",
+      "fields": {
+        "itemType": "Type d'élément",
+        "pageType": "Type de page",
+        "header": "Texte d'en-tête",
+        "title": "Titre du menu",
+        "pageCode": "Code de page (Unique)",
+        "pageCodeHint": "Peut être généré automatiquement à partir de la route ou du titre",
+        "order": "Ordre",
+        "parent": "Élément de menu parent",
+        "parentNone": "(Aucun - Racine)",
+        "level": "Niveau",
+        "levelHint": "Calculé automatiquement en fonction de la sélection du parent",
+        "disabled": "Désactivé",
+        "forms": "Formulaires enregistrés",
+        "formsPlaceholder": "Sélectionner un formulaire (optionnel)",
+        "formsHint": "Sélectionner parmi les formulaires enregistrés ou saisir un chemin manuel",
+        "route": "Chemin de route",
+        "routeHint": "Ex: /dashboards/analytical ou sélectionner un formulaire",
+        "linkType": "Type de lien",
+        "subCaption": "Sous-titre",
+        "chip": "Texte de la puce",
+        "chipVariant": "Variante de puce",
+        "chipColor": "Couleur du texte de la puce",
+        "chipBgColor": "Couleur d'arrière-plan de la puce",
+        "chipIcon": "Icône de puce"
+      },
+      "sections": {
+        "chip": "Paramètres de puce/badge",
+        "permissions": "Autorisation",
+        "locale": "Support linguistique"
+      },
       "buttons": {
-        "connect": "Se connecter",
-        "disconnect": "Se déconnecter",
-        "clearMessages": "Effacer les messages"
+        "save": "Enregistrer",
+        "update": "Mettre à jour",
+        "delete": "Supprimer",
+        "cancel": "Annuler",
+        "generatePageCode": "Générer automatiquement",
+        "navigate": "Aller à cette page",
+        "updateLocales": "Mettre à jour les fichiers de paramètres régionaux"
       },
-      "status": {
-        "connected": "Connecté",
-        "connecting": "Connexion...",
-        "error": "Erreur de connexion",
-        "disconnected": "Déconnecté",
-        "closed": "Connexion fermée"
-      },
-      "types": {
-        "user": "Utilisateur",
-        "group": "Groupe",
-        "system": "Système",
-        "data": "Données",
-        "unknown": "Inconnu"
-      },
-      "empty": {
-        "title": "Aucun message pour le moment",
-        "description": "Les opérations de groupe, utilisateur ou données apparaîtront ici"
-      },
-      "details": {
-        "view": "Voir les détails"
-      },
-      "errors": {
-        "tokenNotFound": "Token d'accès introuvable. Veuillez vous reconnecter.",
-        "connectionError": "Une erreur de connexion s'est produite.",
-        "connectionClosed": "Connexion fermée"
-      },
-      "breadcrumbs": {
-        "home": "Accueil"
-      }
-    },
-    "side-menu-manager": {
-      "title": "Gestionnaire de menu latéral",
-      "description": "Gérer dynamiquement les éléments du menu latéral",
-      "breadcrumbs": {
-        "home": "Accueil",
-        "title": "Gestionnaire de menu latéral"
-      },
-      "tree": {
-        "title": "Éléments de menu",
-        "expandAll": "Tout développer",
-        "collapseAll": "Tout réduire",
-        "empty": "Aucun élément de menu trouvé",
-        "navigate": "Aller à la page"
-      },
-      "toolbar": {
-        "newItem": "Nouvel élément de menu",
-        "newHeader": "Nouvel en-tête",
-        "search": "Rechercher des éléments de menu...",
-        "refresh": "Actualiser"
-      },
-      "form": {
-        "title": {
-          "edit": "Modifier l'élément de menu",
-          "new": "Nouvel élément de menu"
-        },
-        "empty": "Cliquez sur le bouton \"Nouvel élément de menu\" ou \"Nouvel en-tête\" à gauche pour créer un nouvel élément de menu.",
-        "fields": {
-          "itemType": "Type d'élément",
-          "pageType": "Type de page",
-          "header": "Texte d'en-tête",
-          "title": "Titre du menu",
-          "pageCode": "Code de page (Unique)",
-          "pageCodeHint": "Peut être généré automatiquement à partir de la route ou du titre",
-          "order": "Ordre",
-          "parent": "Élément de menu parent",
-          "parentNone": "(Aucun - Racine)",
-          "level": "Niveau",
-          "levelHint": "Calculé automatiquement en fonction de la sélection du parent",
-          "disabled": "Désactivé",
-          "forms": "Formulaires enregistrés",
-          "formsPlaceholder": "Sélectionner un formulaire (optionnel)",
-          "formsHint": "Sélectionner parmi les formulaires enregistrés ou saisir un chemin manuel",
-          "route": "Chemin de route",
-          "routeHint": "Ex: /dashboards/analytical ou sélectionner un formulaire",
-          "linkType": "Type de lien",
-          "subCaption": "Sous-titre",
-          "chip": "Texte de la puce",
-          "chipVariant": "Variante de puce",
-          "chipColor": "Couleur du texte de la puce",
-          "chipBgColor": "Couleur d'arrière-plan de la puce",
-          "chipIcon": "Icône de puce"
-        },
-        "sections": {
-          "chip": "Paramètres de puce/badge",
-          "permissions": "Autorisation",
-          "locale": "Support linguistique"
-        },
-        "buttons": {
-          "save": "Enregistrer",
-          "update": "Mettre à jour",
-          "delete": "Supprimer",
-          "cancel": "Annuler",
-          "generatePageCode": "Générer automatiquement",
-          "navigate": "Aller à cette page",
-          "updateLocales": "Mettre à jour les fichiers de paramètres régionaux"
-        },
-        "locale": {
-          "success": "Fichiers de paramètres régionaux mis à jour avec succès ! ({pageCode})",
-          "error": "Erreur lors de la mise à jour du fichier de paramètres régionaux : {error}",
-          "pageCodeRequired": "Le code de page (pageCode) est requis. Veuillez d'abord créer le pageCode.",
-          "headerRequired": "Le texte d'en-tête est requis.",
-          "titleRequired": "Le titre du menu est requis.",
-          "description": "Ce bouton ajoute le code de page actuel ({pageCode}) à tous les fichiers de paramètres régionaux. Le turc utilise l'en-tête/titre actuel, les autres langues obtiennent la même valeur comme espace réservé."
-        },
-        "validation": {
-          "headerRequired": "Le texte d'en-tête est requis",
-          "titleRequired": "Le titre du menu est requis"
-        }
-      },
-      "permissions": {
-        "loading": "Chargement des groupes...",
-        "empty": "Aucun groupe actif trouvé pour le moment.",
-        "emptyFiltered": "Aucun groupe actif visible trouvé.",
-        "retry": "Réessayer",
-        "bulkActions": "Actions groupées :",
-        "openAll": "Tout ouvrir",
-        "closeAll": "Tout fermer",
-        "group": "Groupe",
-        "actions": "Actions",
-        "all": "Tout",
-        "none": "Aucun",
-        "labels": {
-          "view": "Voir",
-          "create": "Créer",
-          "update": "Mettre à jour",
-          "delete": "Supprimer",
-          "export": "Exporter"
-        }
-      },
-      "messages": {
-        "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cet élément de menu ?",
-        "success": {
-          "created": "Élément de menu créé avec succès",
-          "updated": "Élément de menu mis à jour avec succès",
-          "deleted": "Élément de menu supprimé avec succès"
-        },
-        "errors": {
-          "create": "Erreur lors de la création de l'élément de menu",
-          "update": "Erreur lors de la mise à jour de l'élément de menu",
-          "delete": "Erreur lors de la suppression de l'élément de menu",
-          "load": "Erreur lors du chargement des éléments de menu"
-        }
-      }
-    },
-    "login": {
-      "title": "Bienvenue sur MonitraNG",
-      "subtitle": "Outil de surveillance avancé",
-      "form": {
-        "username": "Nom d'utilisateur",
-        "usernamePlaceholder": "Nom d'utilisateur ou domaine{'@'}nomutilisateur",
-        "password": "Mot de passe",
-        "passwordPlaceholder": "Entrez votre mot de passe",
-        "submit": "Se connecter",
-        "error": "Échec de la connexion. Veuillez réessayer."
+      "locale": {
+        "success": "Fichiers de paramètres régionaux mis à jour avec succès ! ({pageCode})",
+        "error": "Erreur lors de la mise à jour du fichier de paramètres régionaux : {error}",
+        "pageCodeRequired": "Le code de page (pageCode) est requis. Veuillez d'abord créer le pageCode.",
+        "headerRequired": "Le texte d'en-tête est requis.",
+        "titleRequired": "Le titre du menu est requis.",
+        "description": "Ce bouton ajoute le code de page actuel ({pageCode}) à tous les fichiers de paramètres régionaux. Le turc utilise l'en-tête/titre actuel, les autres langues obtiennent la même valeur comme espace réservé."
       },
       "validation": {
-        "usernameRequired": "Le nom d'utilisateur est requis",
-        "passwordRequired": "Le mot de passe est requis",
-        "passwordMinLength": "Le mot de passe doit contenir au moins 3 caractères"
-      },
-      "language": {
-        "label": "Langue",
-        "select": "Sélectionner la langue"
+        "headerRequired": "Le texte d'en-tête est requis",
+        "titleRequired": "Le titre du menu est requis"
       }
+    },
+    "permissions": {
+      "loading": "Chargement des groupes...",
+      "empty": "Aucun groupe actif trouvé pour le moment.",
+      "emptyFiltered": "Aucun groupe actif visible trouvé.",
+      "retry": "Réessayer",
+      "bulkActions": "Actions groupées :",
+      "openAll": "Tout ouvrir",
+      "closeAll": "Tout fermer",
+      "group": "Groupe",
+      "actions": "Actions",
+      "all": "Tout",
+      "none": "Aucun",
+      "labels": {
+        "view": "Voir",
+        "create": "Créer",
+        "update": "Mettre à jour",
+        "delete": "Supprimer",
+        "export": "Exporter"
+      }
+    },
+    "messages": {
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cet élément de menu ?",
+      "success": {
+        "created": "Élément de menu créé avec succès",
+        "updated": "Élément de menu mis à jour avec succès",
+        "deleted": "Élément de menu supprimé avec succès"
+      },
+      "errors": {
+        "create": "Erreur lors de la création de l'élément de menu",
+        "update": "Erreur lors de la mise à jour de l'élément de menu",
+        "delete": "Erreur lors de la suppression de l'élément de menu",
+        "load": "Erreur lors du chargement des éléments de menu"
+      }
+    }
+  },
+  "login": {
+    "title": "Bienvenue sur MonitraNG",
+    "subtitle": "Outil de surveillance avancé",
+    "form": {
+      "username": "Nom d'utilisateur",
+      "usernamePlaceholder": "Nom d'utilisateur ou domaine{'@'}nomutilisateur",
+      "password": "Mot de passe",
+      "passwordPlaceholder": "Entrez votre mot de passe",
+      "submit": "Se connecter",
+      "error": "Échec de la connexion. Veuillez réessayer."
+    },
+    "validation": {
+      "usernameRequired": "Le nom d'utilisateur est requis",
+      "passwordRequired": "Le mot de passe est requis",
+      "passwordMinLength": "Le mot de passe doit contenir au moins 3 caractères"
+    },
+    "language": {
+      "label": "Langue",
+      "select": "Sélectionner la langue"
+    }
+  },
+  "groups": {
+    "title": "Gestion des groupes",
+    "breadcrumbs": {
+      "home": "Accueil",
+      "groups": "Gestion des groupes",
+      "create": "Nouveau groupe",
+      "edit": "Modifier le groupe",
+      "details": "Détails du groupe"
+    },
+    "list": {
+      "search": "Rechercher des groupes",
+      "status": "Statut",
+      "statusAll": "Tous",
+      "statusActive": "Actif",
+      "statusInactive": "Inactif",
+      "export": "Exporter",
+      "exportCsv": "Télécharger en CSV",
+      "exportExcel": "Télécharger en Excel",
+      "exportSoon": "Bientôt disponible",
+      "refresh": "Actualiser",
+      "newGroup": "Nouveau groupe",
+      "noData": "Aucun groupe trouvé",
+      "createFirst": "Créer le premier groupe",
+      "total": "Total",
+      "records": "enregistrements",
+      "page": "Page",
+      "of": "/",
+      "showing": "affichage",
+      "itemsPerPage": "Éléments par page :",
+      "warning": "Avertissement",
+      "warningMessage": "Une autorisation de manager ou d'administrateur est requise pour accéder à cette page. Veuillez contacter un administrateur pour effectuer des opérations de gestion de groupe."
+    },
+    "table": {
+      "name": "Nom du groupe",
+      "memberCount": "Nombre de membres",
+      "createdAt": "Créé le",
+      "actions": "Actions",
+      "view": "Voir",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "deleteTooltip": "Le groupe a des membres, ne peut pas être supprimé"
+    },
+    "create": {
+      "title": "Créer un nouveau groupe",
+      "name": "Nom du groupe *",
+      "description": "Description",
+      "isActive": "Actif",
+      "cancel": "Annuler",
+      "create": "Créer"
+    },
+    "edit": {
+      "title": "Modifier le groupe",
+      "loading": "Chargement...",
+      "name": "Nom du groupe *",
+      "description": "Description",
+      "isActive": "Actif",
+      "cancel": "Annuler",
+      "save": "Enregistrer"
+    },
+    "details": {
+      "title": "Détails du groupe",
+      "loading": "Chargement...",
+      "notFound": "Groupe non trouvé",
+      "backToList": "Retour à la liste",
+      "userManagement": "Gestion des membres",
+      "edit": "Modifier",
+      "groupInfo": "Informations du groupe",
+      "metadata": "Métadonnées",
+      "name": "Nom du groupe :",
+      "description": "Description :",
+      "status": "Statut :",
+      "statusActive": "Actif",
+      "statusInactive": "Inactif",
+      "memberCount": "Nombre de membres :",
+      "createdAt": "Créé le :",
+      "updatedAt": "Dernière mise à jour :",
+      "createdBy": "Créé par :",
+      "updatedBy": "Mis à jour par :",
+      "permissions": "Permissions :"
+    },
+    "delete": {
+      "title": "Supprimer le groupe",
+      "confirm": "Êtes-vous sûr de vouloir supprimer ce groupe ? Cette action ne peut pas être annulée.",
+      "cancel": "Annuler",
+      "close": "Fermer",
+      "confirmButton": "Oui, supprimer",
+      "error": "Ce groupe contient {count} utilisateurs. Vous devez d'abord retirer tous les utilisateurs du groupe."
+    },
+    "validation": {
+      "nameRequired": "Le nom du groupe est requis",
+      "nameMinLength": "Le nom du groupe doit contenir au moins 2 caractères",
+      "descriptionMaxLength": "La description peut contenir au maximum 500 caractères"
+    },
+    "errors": {
+      "load": "Une erreur s'est produite lors du chargement du groupe",
+      "create": "Une erreur s'est produite lors de la création du groupe",
+      "update": "Une erreur s'est produite lors de la mise à jour du groupe",
+      "delete": "Une erreur s'est produite lors de la suppression du groupe",
+      "export": "Une erreur s'est produite lors de l'exportation."
+    },
+    "userManagement": {
+      "title": "Gestion des membres",
+      "search": "Rechercher des utilisateurs (Nom d'utilisateur, Email, Nom complet)",
+      "currentMembers": "Membres actuels",
+      "addUsers": "Ajouter des utilisateurs",
+      "loading": "Chargement des utilisateurs...",
+      "noMembers": "Aucun membre trouvé",
+      "noUsersToAdd": "Aucun utilisateur disponible à ajouter",
+      "noUsersToAddDescription": "Tous les utilisateurs peuvent déjà être dans ce groupe",
+      "selectAll": "Tout sélectionner",
+      "deselectAll": "Effacer la sélection",
+      "selected": "sélectionné",
+      "addSelected": "Ajouter {count} utilisateurs sélectionnés",
+      "close": "Fermer",
+      "errors": {
+        "load": "Une erreur s'est produite lors du chargement des utilisateurs",
+        "add": "Une erreur s'est produite lors de l'ajout des utilisateurs au groupe",
+        "remove": "Une erreur s'est produite lors de la suppression de l'utilisateur du groupe",
+        "noSelection": "Veuillez sélectionner au moins un utilisateur"
+      },
+      "success": {
+        "added": "{count} utilisateurs ajoutés avec succès au groupe",
+        "removed": "Utilisateur supprimé avec succès du groupe"
+      }
+    }
+  },
+  "profile": {
+    "title": "Profil",
+    "user": "Utilisateur",
+    "breadcrumbs": {
+      "home": "Accueil",
+      "profile": "Profil"
+    },
+    "tabs": {
+      "general": "Informations générales",
+      "account": "Paramètres du compte",
+      "security": "Sécurité",
+      "preferences": "Préférences"
+    },
+    "comingSoon": "Bientôt disponible",
+    "roles": {
+      "admin": "Administrateur",
+      "manager": "Gestionnaire",
+      "user": "Utilisateur"
+    },
+    "personalInfo": {
+      "title": "Informations personnelles",
+      "firstName": "Prénom",
+      "lastName": "Nom de famille",
+      "email": "E-mail",
+      "jobTitle": "Titre du poste",
+      "department": "Département",
+      "gender": "Genre",
+      "phoneNumber": "Téléphone"
+    },
+    "accountInfo": {
+      "title": "Informations du compte",
+      "username": "Nom d'utilisateur",
+      "email": "E-mail",
+      "domain": "Domaine",
+      "status": "Statut",
+      "createdAt": "Créé",
+      "updatedAt": "Dernière mise à jour"
+    },
+    "status": {
+      "active": "Actif",
+      "inactive": "Inactif"
     },
     "groups": {
-      "title": "Gestion des groupes",
-      "breadcrumbs": {
-        "home": "Accueil",
-        "groups": "Gestion des groupes",
-        "create": "Nouveau groupe",
-        "edit": "Modifier le groupe",
-        "details": "Détails du groupe"
-      },
-      "list": {
-        "search": "Rechercher des groupes",
-        "status": "Statut",
-        "statusAll": "Tous",
-        "statusActive": "Actif",
-        "statusInactive": "Inactif",
-        "export": "Exporter",
-        "exportCsv": "Télécharger en CSV",
-        "exportExcel": "Télécharger en Excel",
-        "exportSoon": "Bientôt disponible",
-        "refresh": "Actualiser",
-        "newGroup": "Nouveau groupe",
-        "noData": "Aucun groupe trouvé",
-        "createFirst": "Créer le premier groupe",
-        "total": "Total",
-        "records": "enregistrements",
-        "page": "Page",
-        "of": "/",
-        "showing": "affichage",
-        "itemsPerPage": "Éléments par page :",
-        "warning": "Avertissement",
-        "warningMessage": "Une autorisation de manager ou d'administrateur est requise pour accéder à cette page. Veuillez contacter un administrateur pour effectuer des opérations de gestion de groupe."
-      },
-      "table": {
-        "name": "Nom du groupe",
-        "memberCount": "Nombre de membres",
-        "createdAt": "Créé le",
-        "actions": "Actions",
-        "view": "Voir",
-        "edit": "Modifier",
-        "delete": "Supprimer",
-        "deleteTooltip": "Le groupe a des membres, ne peut pas être supprimé"
-      },
-      "create": {
-        "title": "Créer un nouveau groupe",
-        "name": "Nom du groupe *",
-        "description": "Description",
-        "isActive": "Actif",
-        "cancel": "Annuler",
-        "create": "Créer"
-      },
-      "edit": {
-        "title": "Modifier le groupe",
-        "loading": "Chargement...",
-        "name": "Nom du groupe *",
-        "description": "Description",
-        "isActive": "Actif",
-        "cancel": "Annuler",
-        "save": "Enregistrer"
-      },
-      "details": {
-        "title": "Détails du groupe",
-        "loading": "Chargement...",
-        "notFound": "Groupe non trouvé",
-        "backToList": "Retour à la liste",
-        "userManagement": "Gestion des membres",
-        "edit": "Modifier",
-        "groupInfo": "Informations du groupe",
-        "metadata": "Métadonnées",
-        "name": "Nom du groupe :",
-        "description": "Description :",
-        "status": "Statut :",
-        "statusActive": "Actif",
-        "statusInactive": "Inactif",
-        "memberCount": "Nombre de membres :",
-        "createdAt": "Créé le :",
-        "updatedAt": "Dernière mise à jour :",
-        "createdBy": "Créé par :",
-        "updatedBy": "Mis à jour par :",
-        "permissions": "Permissions :"
-      },
-      "delete": {
-        "title": "Supprimer le groupe",
-        "confirm": "Êtes-vous sûr de vouloir supprimer ce groupe ? Cette action ne peut pas être annulée.",
-        "cancel": "Annuler",
-        "close": "Fermer",
-        "confirmButton": "Oui, supprimer",
-        "error": "Ce groupe contient {count} utilisateurs. Vous devez d'abord retirer tous les utilisateurs du groupe."
-      },
-      "validation": {
-        "nameRequired": "Le nom du groupe est requis",
-        "nameMinLength": "Le nom du groupe doit contenir au moins 2 caractères",
-        "descriptionMaxLength": "La description peut contenir au maximum 500 caractères"
-      },
+      "title": "Groupes",
+      "manage": "Gestion des groupes",
+      "noGroups": "Aucun groupe assigné pour le moment"
+    },
+    "photo": {
+      "title": "Photo de profil",
+      "upload": "Télécharger une photo",
+      "remove": "Supprimer la photo",
+      "maxSize": "Max : 5 Mo",
+      "formats": "Format : JPG, PNG, WebP",
       "errors": {
-        "load": "Une erreur s'est produite lors du chargement du groupe",
-        "create": "Une erreur s'est produite lors de la création du groupe",
-        "update": "Une erreur s'est produite lors de la mise à jour du groupe",
-        "delete": "Une erreur s'est produite lors de la suppression du groupe",
-        "export": "Une erreur s'est produite lors de l'exportation."
-      },
-      "userManagement": {
-        "title": "Gestion des membres",
-        "search": "Rechercher des utilisateurs (Nom d'utilisateur, Email, Nom complet)",
-        "currentMembers": "Membres actuels",
-        "addUsers": "Ajouter des utilisateurs",
-        "loading": "Chargement des utilisateurs...",
-        "noMembers": "Aucun membre trouvé",
-        "noUsersToAdd": "Aucun utilisateur disponible à ajouter",
-        "noUsersToAddDescription": "Tous les utilisateurs peuvent déjà être dans ce groupe",
-        "selectAll": "Tout sélectionner",
-        "deselectAll": "Effacer la sélection",
-        "selected": "sélectionné",
-        "addSelected": "Ajouter {count} utilisateurs sélectionnés",
-        "close": "Fermer",
-        "errors": {
-          "load": "Une erreur s'est produite lors du chargement des utilisateurs",
-          "add": "Une erreur s'est produite lors de l'ajout des utilisateurs au groupe",
-          "remove": "Une erreur s'est produite lors de la suppression de l'utilisateur du groupe",
-          "noSelection": "Veuillez sélectionner au moins un utilisateur"
-        },
-        "success": {
-          "added": "{count} utilisateurs ajoutés avec succès au groupe",
-          "removed": "Utilisateur supprimé avec succès du groupe"
-        }
+        "maxSize": "La taille du fichier ne peut pas dépasser 5 Mo",
+        "invalidFormat": "Seuls les formats JPG, PNG et WebP sont pris en charge",
+        "maxDimensions": "La taille de la photo ne peut pas dépasser 2000x2000 pixels",
+        "invalidImage": "Fichier image invalide",
+        "readError": "Le fichier n'a pas pu être lu",
+        "uploadFailed": "Une erreur s'est produite lors du téléchargement de la photo"
       }
     },
-    "profile": {
-      "title": "Profil",
-      "user": "Utilisateur",
-      "breadcrumbs": {
-        "home": "Accueil",
-        "profile": "Profil"
-      },
-      "tabs": {
-        "general": "Informations générales",
-        "account": "Paramètres du compte",
-        "security": "Sécurité",
-        "preferences": "Préférences"
-      },
-      "comingSoon": "Bientôt disponible",
-      "roles": {
-        "admin": "Administrateur",
-        "manager": "Gestionnaire",
-        "user": "Utilisateur"
-      },
-      "personalInfo": {
-        "title": "Informations personnelles",
-        "firstName": "Prénom",
-        "lastName": "Nom de famille",
-        "email": "E-mail",
-        "jobTitle": "Titre du poste",
-        "department": "Département",
-        "gender": "Genre",
-        "phoneNumber": "Téléphone"
-      },
+    "gender": {
+      "notSpecified": "Non spécifié",
+      "male": "Homme",
+      "female": "Femme"
+    },
+    "buttons": {
+      "edit": "Modifier",
+      "save": "Enregistrer",
+      "cancel": "Annuler"
+    },
+    "validation": {
+      "firstNameRequired": "Le prénom est requis",
+      "firstNameMinLength": "Le prénom doit contenir au moins 2 caractères",
+      "firstNameMaxLength": "Le prénom peut contenir au maximum 50 caractères",
+      "lastNameRequired": "Le nom de famille est requis",
+      "lastNameMinLength": "Le nom de famille doit contenir au moins 2 caractères",
+      "lastNameMaxLength": "Le nom de famille peut contenir au maximum 50 caractères",
+      "emailRequired": "L'e-mail est requis",
+      "emailInvalid": "Veuillez entrer une adresse e-mail valide",
+      "titleMaxLength": "Le titre du poste peut contenir au maximum 100 caractères",
+      "departmentMaxLength": "Le département peut contenir au maximum 100 caractères",
+      "phoneNumberMaxLength": "Le numéro de téléphone peut contenir au maximum 20 caractères"
+    },
+    "messages": {
+      "saveSuccess": "Profil mis à jour avec succès",
+      "saveError": "Une erreur s'est produite lors de la mise à jour du profil",
+      "photoUploadSuccess": "Photo téléchargée avec succès",
+      "photoUploadError": "Une erreur s'est produite lors du téléchargement de la photo",
+      "photoRemoveSuccess": "Photo supprimée avec succès",
+      "photoRemoveError": "Une erreur s'est produite lors de la suppression de la photo",
+      "userNotFound": "Utilisateur non trouvé"
+    },
+    "accountSettings": {
       "accountInfo": {
         "title": "Informations du compte",
         "username": "Nom d'utilisateur",
         "email": "E-mail",
         "domain": "Domaine",
-        "status": "Statut",
-        "createdAt": "Créé",
+        "createdAt": "Compte créé",
         "updatedAt": "Dernière mise à jour"
       },
-      "status": {
-        "active": "Actif",
-        "inactive": "Inactif"
+      "dangerZone": {
+        "title": "Zone de danger",
+        "description": "Si vous souhaitez supprimer définitivement votre compte, cliquez sur le bouton ci-dessous. Cette action ne peut pas être annulée.",
+        "deleteAccount": "Supprimer le compte",
+        "notImplemented": "La fonctionnalité de suppression de compte n'a pas encore été implémentée."
+      }
+    },
+    "preferences": {
+      "language": {
+        "title": "Préférence de langue",
+        "label": "Sélectionner la langue",
+        "description": "Sélectionnez la langue de l'application. Les modifications sont appliquées immédiatement."
       },
-      "groups": {
-        "title": "Groupes",
-        "manage": "Gestion des groupes",
-        "noGroups": "Aucun groupe assigné pour le moment"
+      "theme": {
+        "title": "Préférence de thème",
+        "description": "Sélectionnez le thème de l'application. Les options de thème clair et sombre sont disponibles."
       },
-      "photo": {
-        "title": "Photo de profil",
-        "upload": "Télécharger une photo",
-        "remove": "Supprimer la photo",
-        "maxSize": "Max : 5 Mo",
-        "formats": "Format : JPG, PNG, WebP",
-        "errors": {
-          "maxSize": "La taille du fichier ne peut pas dépasser 5 Mo",
-          "invalidFormat": "Seuls les formats JPG, PNG et WebP sont pris en charge",
-          "maxDimensions": "La taille de la photo ne peut pas dépasser 2000x2000 pixels",
-          "invalidImage": "Fichier image invalide",
-          "readError": "Le fichier n'a pas pu être lu",
-          "uploadFailed": "Une erreur s'est produite lors du téléchargement de la photo"
-        }
+      "layout": {
+        "title": "Préférences de mise en page",
+        "sidebarLayout": "Disposition de la barre latérale",
+        "vertical": "Vertical",
+        "horizontal": "Horizontal",
+        "containerOption": "Option de conteneur",
+        "boxed": "Encadré",
+        "full": "Pleine largeur",
+        "sidebarType": "Type de barre latérale",
+        "collapse": "Réduit",
+        "cardStyle": "Style de carte",
+        "shadow": "Ombre",
+        "border": "Bordure"
       },
-      "gender": {
-        "notSpecified": "Non spécifié",
-        "male": "Homme",
-        "female": "Femme"
-      },
-      "buttons": {
-        "edit": "Modifier",
-        "save": "Enregistrer",
+      "saveSuccess": "Préférences enregistrées avec succès",
+      "saveError": "Une erreur s'est produite lors de l'enregistrement des préférences"
+    },
+    "security": {
+      "changePassword": {
+        "title": "Changer le mot de passe",
+        "description": "Il est recommandé de changer régulièrement votre mot de passe pour la sécurité de votre compte.",
+        "currentPassword": "Mot de passe actuel",
+        "newPassword": "Nouveau mot de passe",
+        "confirmPassword": "Nouveau mot de passe (Confirmer)",
+        "passwordStrength": "Force du mot de passe",
+        "requirements": {
+          "title": "Exigences du mot de passe",
+          "minLength": "Au moins 8 caractères",
+          "uppercase": "Au moins une lettre majuscule (A-Z)",
+          "lowercase": "Au moins une lettre minuscule (a-z)",
+          "number": "Au moins un chiffre (0-9)",
+          "special": "Au moins un caractère spécial (! ? # $ % ^ & *)"
+        },
+        "save": "Changer le mot de passe",
         "cancel": "Annuler"
+      },
+      "passwordStrength": {
+        "weak": "Faible",
+        "fair": "Moyen",
+        "good": "Bon",
+        "strong": "Fort"
       },
       "validation": {
-        "firstNameRequired": "Le prénom est requis",
-        "firstNameMinLength": "Le prénom doit contenir au moins 2 caractères",
-        "firstNameMaxLength": "Le prénom peut contenir au maximum 50 caractères",
-        "lastNameRequired": "Le nom de famille est requis",
-        "lastNameMinLength": "Le nom de famille doit contenir au moins 2 caractères",
-        "lastNameMaxLength": "Le nom de famille peut contenir au maximum 50 caractères",
-        "emailRequired": "L'e-mail est requis",
-        "emailInvalid": "Veuillez entrer une adresse e-mail valide",
-        "titleMaxLength": "Le titre du poste peut contenir au maximum 100 caractères",
-        "departmentMaxLength": "Le département peut contenir au maximum 100 caractères",
-        "phoneNumberMaxLength": "Le numéro de téléphone peut contenir au maximum 20 caractères"
+        "currentPasswordRequired": "Le mot de passe actuel est requis",
+        "newPasswordRequired": "Le nouveau mot de passe est requis",
+        "passwordMinLength": "Le mot de passe doit contenir au moins 8 caractères",
+        "passwordLowercase": "Le mot de passe doit contenir au moins une lettre minuscule",
+        "passwordUppercase": "Le mot de passe doit contenir au moins une lettre majuscule",
+        "passwordNumber": "Le mot de passe doit contenir au moins un chiffre",
+        "passwordSpecial": "Le mot de passe doit contenir au moins un caractère spécial",
+        "confirmPasswordRequired": "La confirmation du mot de passe est requise",
+        "passwordsDoNotMatch": "Les mots de passe ne correspondent pas"
       },
       "messages": {
-        "saveSuccess": "Profil mis à jour avec succès",
-        "saveError": "Une erreur s'est produite lors de la mise à jour du profil",
-        "photoUploadSuccess": "Photo téléchargée avec succès",
-        "photoUploadError": "Une erreur s'est produite lors du téléchargement de la photo",
-        "photoRemoveSuccess": "Photo supprimée avec succès",
-        "photoRemoveError": "Une erreur s'est produite lors de la suppression de la photo",
-        "userNotFound": "Utilisateur non trouvé"
+        "changePasswordSuccess": "Votre mot de passe a été changé avec succès",
+        "changePasswordError": "Une erreur s'est produite lors du changement du mot de passe"
       },
-      "accountSettings": {
-        "role": {
-          "admin": "Administrateur",
-          "user": "Utilisateur"
-        },
-        "accountInfo": {
-          "title": "Informations du compte",
-          "username": "Nom d'utilisateur",
-          "email": "E-mail",
-          "domain": "Domaine",
-          "createdAt": "Compte créé",
-          "updatedAt": "Dernière mise à jour"
-        },
-        "dangerZone": {
-          "title": "Zone de danger",
-          "description": "Si vous souhaitez supprimer définitivement votre compte, cliquez sur le bouton ci-dessous. Cette action ne peut pas être annulée.",
-          "deleteAccount": "Supprimer le compte",
-          "notImplemented": "La fonctionnalité de suppression de compte n'a pas encore été implémentée."
-        }
-      },
-      "preferences": {
-        "language": {
-          "title": "Préférence de langue",
-          "label": "Sélectionner la langue",
-          "description": "Sélectionnez la langue de l'application. Les modifications sont appliquées immédiatement."
-        },
-        "theme": {
-          "title": "Préférence de thème",
-          "description": "Sélectionnez le thème de l'application. Les options de thème clair et sombre sont disponibles."
-        },
-        "layout": {
-          "title": "Préférences de mise en page",
-          "sidebarLayout": "Disposition de la barre latérale",
-          "vertical": "Vertical",
-          "horizontal": "Horizontal",
-          "containerOption": "Option de conteneur",
-          "boxed": "Encadré",
-          "full": "Pleine largeur",
-          "sidebarType": "Type de barre latérale",
-          "collapse": "Réduit",
-          "cardStyle": "Style de carte",
-          "shadow": "Ombre",
-          "border": "Bordure"
-        },
-        "saveSuccess": "Préférences enregistrées avec succès",
-        "saveError": "Une erreur s'est produite lors de l'enregistrement des préférences"
-      },
-      "security": {
-        "changePassword": {
-          "title": "Changer le mot de passe",
-          "description": "Il est recommandé de changer régulièrement votre mot de passe pour la sécurité de votre compte.",
-          "currentPassword": "Mot de passe actuel",
-          "newPassword": "Nouveau mot de passe",
-          "confirmPassword": "Nouveau mot de passe (Confirmer)",
-          "passwordStrength": "Force du mot de passe",
-          "requirements": {
-            "title": "Exigences du mot de passe",
-            "minLength": "Au moins 8 caractères",
-            "uppercase": "Au moins une lettre majuscule (A-Z)",
-            "lowercase": "Au moins une lettre minuscule (a-z)",
-            "number": "Au moins un chiffre (0-9)",
-            "special": "Au moins un caractère spécial (! ? # $ % ^ & *)"
-          },
-          "save": "Changer le mot de passe",
-          "cancel": "Annuler"
-        },
-        "passwordStrength": {
-          "weak": "Faible",
-          "fair": "Moyen",
-          "good": "Bon",
-          "strong": "Fort"
-        },
-        "validation": {
-          "currentPasswordRequired": "Le mot de passe actuel est requis",
-          "newPasswordRequired": "Le nouveau mot de passe est requis",
-          "passwordMinLength": "Le mot de passe doit contenir au moins 8 caractères",
-          "passwordLowercase": "Le mot de passe doit contenir au moins une lettre minuscule",
-          "passwordUppercase": "Le mot de passe doit contenir au moins une lettre majuscule",
-          "passwordNumber": "Le mot de passe doit contenir au moins un chiffre",
-          "passwordSpecial": "Le mot de passe doit contenir au moins un caractère spécial",
-          "confirmPasswordRequired": "La confirmation du mot de passe est requise",
-          "passwordsDoNotMatch": "Les mots de passe ne correspondent pas"
-        },
-        "messages": {
-          "changePasswordSuccess": "Votre mot de passe a été changé avec succès",
-          "changePasswordError": "Une erreur s'est produite lors du changement du mot de passe"
-        },
-        "tips": {
-          "title": "Conseils de sécurité",
-          "tip1": "Changez votre mot de passe régulièrement (au moins tous les 3-6 mois)",
-          "tip2": "Utilisez des mots de passe différents pour différents comptes",
-          "tip3": "Ne partagez pas votre mot de passe avec qui que ce soit",
-          "tip4": "Si vous remarquez une activité suspecte, changez immédiatement votre mot de passe"
-        }
-      }
-    },
-    "notes": {
-      "pageTitle": "Mes Notes",
-      "breadcrumb": "Mes Notes",
-      "listing": {
-        "title": "Toutes les Notes",
-        "searchPlaceholder": "Rechercher des Notes",
-        "deleteNote": "Supprimer la Note",
-        "noNotesTitle": "Info",
-        "noNotesText": "La note que vous recherchez n'a pas été trouvée"
-      },
-      "content": {
-        "editTitle": "Modifier la Note",
-        "changeTitle": "Changer le Titre",
-        "titlePlaceholder": "Écrivez le contenu de votre note ici...",
-        "changeColor": "Changer la Couleur de la Note",
-        "noNoteSelectedTitle": "Info",
-        "noNoteSelectedText": "Veuillez sélectionner une note"
-      },
-      "add": {
-        "button": "Ajouter une Note",
-        "title": "Ajouter une Note",
-        "placeholder": "Écrivez le contenu de votre note ici...",
-        "selectColor": "Sélectionner la Couleur de la Note",
-        "save": "Enregistrer",
-        "cancel": "Annuler"
-      }
-    },
-    "header": {
-      "profileDD": {
-        "myProfile": {
-          "title": "Mon Profil",
-          "subtitle": "Paramètres du compte"
-        },
-        "myNotes": {
-          "title": "Mes Notes",
-          "subtitle": "Mes notes quotidiennes"
-        },
-        "logout": "Déconnexion"
+      "tips": {
+        "title": "Conseils de sécurité",
+        "tip1": "Changez votre mot de passe régulièrement (au moins tous les 3-6 mois)",
+        "tip2": "Utilisez des mots de passe différents pour différents comptes",
+        "tip3": "Ne partagez pas votre mot de passe avec qui que ce soit",
+        "tip4": "Si vous remarquez une activité suspecte, changez immédiatement votre mot de passe"
       }
     }
+  },
+  "notes": {
+    "pageTitle": "Mes Notes",
+    "breadcrumb": "Mes Notes",
+    "listing": {
+      "title": "Toutes les Notes",
+      "searchPlaceholder": "Rechercher des Notes",
+      "deleteNote": "Supprimer la Note",
+      "noNotesTitle": "Info",
+      "noNotesText": "La note que vous recherchez n'a pas été trouvée"
+    },
+    "content": {
+      "editTitle": "Modifier la Note",
+      "changeTitle": "Changer le Titre",
+      "titlePlaceholder": "Écrivez le contenu de votre note ici...",
+      "changeColor": "Changer la Couleur de la Note",
+      "noNoteSelectedTitle": "Info",
+      "noNoteSelectedText": "Veuillez sélectionner une note"
+    },
+    "add": {
+      "button": "Ajouter une Note",
+      "title": "Ajouter une Note",
+      "placeholder": "Écrivez le contenu de votre note ici...",
+      "selectColor": "Sélectionner la Couleur de la Note",
+      "save": "Enregistrer",
+      "cancel": "Annuler"
+    }
+  },
+  "users": {
+    "title": "Gestion des Utilisateurs",
+    "breadcrumbs": {
+      "home": "Tableau de bord",
+      "users": "Gestion des Utilisateurs"
+    },
+    "table": {
+      "username": "Nom d'utilisateur",
+      "email": "Email",
+      "fullName": "Nom Complet",
+      "status": "Statut",
+      "groups": "Groupes",
+      "createdAt": "Date de Création",
+      "actions": "Actions"
+    },
+    "search": {
+      "placeholder": "Rechercher des Utilisateurs"
+    },
+    "status": {
+      "label": "Statut",
+      "all": "Tous",
+      "active": "Actif",
+      "inactive": "Inactif"
+    },
+    "buttons": {
+      "export": "Exporter",
+      "refresh": "Actualiser",
+      "newUser": "Nouvel Utilisateur"
+    },
+    "export": {
+      "csv": "Exporter en CSV",
+      "json": "Exporter en JSON",
+      "xlsx": "Exporter en Excel",
+      "comingSoon": "Bientôt Disponible",
+      "error": "L'opération d'exportation a échoué"
+    },
+    "warning": {
+      "title": "Avertissement :",
+      "message": "Des privilèges de gestionnaire ou d'administrateur sont requis pour accéder à cette page. Veuillez contacter un administrateur pour effectuer des opérations de gestion des utilisateurs."
+    },
+    "noData": {
+      "title": "Aucun utilisateur trouvé",
+      "button": "Créer le Premier Utilisateur"
+    },
+    "pagination": {
+      "total": "Total :",
+      "records": "enregistrements",
+      "page": "Page",
+      "showing": "affichage",
+      "itemsPerPage": "Éléments par page :"
+    },
+    "delete": {
+      "title": "Supprimer l'Utilisateur",
+      "message": "Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action ne peut pas être annulée.",
+      "cancel": "Annuler",
+      "close": "Fermer",
+      "confirm": "Oui, Supprimer",
+      "error": "Une erreur s'est produite lors de la suppression de l'utilisateur"
+    },
+    "actions": {
+      "view": "Voir",
+      "edit": "Modifier",
+      "delete": "Supprimer"
+    },
+    "errors": {
+      "userIdNotFound": "ID utilisateur non trouvé",
+      "deleteFailed": "Une erreur s'est produite lors de la suppression de l'utilisateur",
+      "exportFailed": "L'opération d'exportation a échoué",
+      "forbiddenNote": "Remarque : Cette erreur indique que des privilèges d'administrateur sont requis. Assurez-vous que votre utilisateur est dans le groupe \"admins\"."
+    },
+    "groups": {
+      "none": "Aucun groupe"
+    },
+    "details": {
+      "title": "Détails de l'Utilisateur",
+      "breadcrumbs": {
+        "home": "Tableau de bord",
+        "users": "Gestion des Utilisateurs",
+        "details": "Détails de l'Utilisateur"
+      },
+      "buttons": {
+        "resetPassword": "Réinitialiser le Mot de Passe",
+        "edit": "Modifier",
+        "backToList": "Retour à la Liste"
+      },
+      "cards": {
+        "userInfo": "Informations Utilisateur",
+        "groupsAndRoles": "Groupes et Rôles",
+        "photo": "Photo"
+      },
+      "fields": {
+        "userId": "ID Utilisateur",
+        "username": "Nom d'utilisateur",
+        "email": "Email",
+        "fullName": "Nom Complet",
+        "title": "Titre",
+        "department": "Département",
+        "phone": "Téléphone",
+        "gender": "Genre",
+        "status": "Statut",
+        "groups": "Groupes",
+        "roles": "Rôles",
+        "createdAt": "Date de Création",
+        "createdBy": "Créé par",
+        "lastLogin": "Dernière Connexion",
+        "updatedAt": "Dernière Mise à Jour",
+        "updatedBy": "Mis à jour par"
+      },
+      "gender": {
+        "male": "Homme",
+        "female": "Femme",
+        "notSpecified": "Non Spécifié"
+      },
+      "photo": {
+        "loadError": "La photo n'a pas pu être chargée",
+        "none": "Aucune photo"
+      },
+      "loading": "Chargement...",
+      "notFound": "Utilisateur non trouvé",
+      "resetPassword": {
+        "success": "E-mail de réinitialisation du mot de passe envoyé avec succès. Veuillez demander à l'utilisateur de vérifier son adresse e-mail.",
+        "error": "L'e-mail de réinitialisation du mot de passe n'a pas pu être envoyé.",
+        "userIdNotFound": "ID utilisateur non trouvé.",
+        "genericError": "Une erreur s'est produite."
+      }
+    },
+    "edit": {
+      "title": "Modifier l'Utilisateur",
+      "breadcrumbs": {
+        "home": "Tableau de bord",
+        "users": "Gestion des Utilisateurs",
+        "edit": "Modifier l'Utilisateur"
+      },
+      "fields": {
+        "username": "Nom d'utilisateur",
+        "usernameNote": "Le nom d'utilisateur ne peut pas être modifié",
+        "email": "Email",
+        "firstName": "Prénom",
+        "lastName": "Nom de famille",
+        "title": "Titre",
+        "titlePlaceholder": "Ex. : Manager, Developer, QA Engineer",
+        "department": "Département",
+        "departmentPlaceholder": "Ex. : IT, Development, QA",
+        "phoneNumber": "Numéro de Téléphone",
+        "phonePlaceholder": "+90XXXXXXXXXX",
+        "photoUrl": "URL de la Photo",
+        "photoUrlPlaceholder": "https://...",
+        "photoUrlNote": "L'URL de la photo ne peut pas être modifiée",
+        "isActive": "Actif",
+        "groups": "Groupes",
+        "groupsSelect": "Sélectionner les Groupes"
+      },
+      "validation": {
+        "emailRequired": "L'email est requis",
+        "emailInvalid": "Veuillez entrer une adresse e-mail valide",
+        "firstNameRequired": "Le prénom est requis",
+        "lastNameRequired": "Le nom de famille est requis"
+      },
+      "buttons": {
+        "cancel": "Annuler",
+        "save": "Enregistrer"
+      },
+      "loading": "Chargement...",
+      "errors": {
+        "loadFailed": "Une erreur s'est produite lors du chargement de l'utilisateur",
+        "updateFailed": "Une erreur s'est produite lors de la mise à jour de l'utilisateur",
+        "usernameNotFound": "Nom d'utilisateur non trouvé",
+        "userInfoNotFound": "Informations utilisateur non trouvées"
+      }
+    },
+    "create": {
+      "title": "Créer un Nouvel Utilisateur",
+      "breadcrumbs": {
+        "home": "Tableau de bord",
+        "users": "Gestion des Utilisateurs",
+        "create": "Nouvel Utilisateur"
+      },
+      "fields": {
+        "username": "Nom d'utilisateur",
+        "email": "Email",
+        "password": "Mot de Passe",
+        "confirmPassword": "Confirmer le Mot de Passe",
+        "firstName": "Prénom",
+        "lastName": "Nom de famille",
+        "title": "Titre",
+        "titlePlaceholder": "Ex. : Manager, Developer, QA Engineer",
+        "department": "Département",
+        "departmentPlaceholder": "Ex. : IT, Development, QA",
+        "phoneNumber": "Numéro de Téléphone",
+        "phonePlaceholder": "+90XXXXXXXXXX",
+        "isActive": "Actif",
+        "groups": "Groupes",
+        "groupsSelect": "Sélectionner les Groupes",
+        "groupsNote": "L'utilisateur sera automatiquement assigné au groupe \"users\""
+      },
+      "validation": {
+        "usernameRequired": "Le nom d'utilisateur est requis",
+        "usernameMinLength": "Le nom d'utilisateur doit contenir au moins 3 caractères",
+        "emailRequired": "L'email est requis",
+        "emailInvalid": "Veuillez entrer une adresse e-mail valide",
+        "passwordRequired": "Le mot de passe est requis",
+        "passwordMinLength": "Le mot de passe doit contenir au moins 6 caractères",
+        "confirmPasswordRequired": "La confirmation du mot de passe est requise",
+        "passwordsNotMatch": "Les mots de passe ne correspondent pas",
+        "firstNameRequired": "Le prénom est requis",
+        "lastNameRequired": "Le nom de famille est requis"
+      },
+      "buttons": {
+        "cancel": "Annuler",
+        "create": "Créer"
+      },
+      "errors": {
+        "createFailed": "Une erreur s'est produite lors de la création de l'utilisateur"
+      }
+    }
+  },
+  "header": {
+    "profileDD": {
+      "myProfile": {
+        "title": "Mon Profil",
+        "subtitle": "Paramètres du compte"
+      },
+      "myNotes": {
+        "title": "Mes Notes",
+        "subtitle": "Mes notes quotidiennes"
+      },
+      "logout": "Déconnexion"
+    }
   }
+}

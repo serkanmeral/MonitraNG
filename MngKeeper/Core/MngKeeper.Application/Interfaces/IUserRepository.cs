@@ -18,14 +18,26 @@ namespace MngKeeper.Application.Interfaces
         Task<IEnumerable<User>> GetByDomainIdAsync(string domainId);
         
         /// <summary>
-        /// Get users by domain with pagination, search and filtering support
+        /// Get all users by domain with search, filtering and sorting support (no pagination)
+        /// </summary>
+        Task<IEnumerable<User>> GetAllByDomainIdAsync(
+            string domainId,
+            string? searchTerm = null,
+            bool? isActive = null,
+            string? sortBy = null,
+            string? sortOrder = null);
+        
+        /// <summary>
+        /// Get users by domain with pagination, search, filtering and sorting support
         /// </summary>
         Task<QueryResult<User>> GetByDomainIdWithPaginationAsync(
             string domainId,
             int page,
             int pageSize,
             string? searchTerm = null,
-            bool? isActive = null);
+            bool? isActive = null,
+            string? sortBy = null,
+            string? sortOrder = null);
         
         Task<bool> ExistsByUsernameAsync(string username, string domainId);
         Task<bool> ExistsByEmailAsync(string email, string domainId);

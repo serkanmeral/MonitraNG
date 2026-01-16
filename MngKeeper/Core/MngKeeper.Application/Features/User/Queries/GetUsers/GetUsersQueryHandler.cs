@@ -49,7 +49,9 @@ namespace MngKeeper.Application.Features.User.Queries.GetUsers
                     request.Page,
                     request.PageSize,
                     request.SearchTerm,
-                    request.IsActive);
+                    request.IsActive,
+                    request.SortBy,
+                    request.SortOrder);
 
                 var userDtos = queryResult.Items.Select(u => new UserDto
                 {

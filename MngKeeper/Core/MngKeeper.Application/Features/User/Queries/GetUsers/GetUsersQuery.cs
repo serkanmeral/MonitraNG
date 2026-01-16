@@ -9,6 +9,8 @@ namespace MngKeeper.Application.Features.User.Queries.GetUsers
         public int PageSize { get; set; } = 10;
         public string? SearchTerm { get; set; }
         public bool? IsActive { get; set; }
+        public string? SortBy { get; set; }
+        public string? SortOrder { get; set; } // "asc" or "desc"
     }
 
     public class GetUsersResponse

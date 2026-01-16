@@ -340,12 +340,78 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             }
         }
 
+        public async Task<IEnumerable<User>> GetAllByDomainIdAsync(
+            string domainId,
+            string? searchTerm = null,
+            bool? isActive = null,
+            string? sortBy = null,
+            string? sortOrder = null)
+        {
+            try
+            {
+                var collection = await GetCollectionAsync(domainId);
+                var filterBuilder = Builders<BsonDocument>.Filter;
+                var filter = filterBuilder.Eq("domainId", domainId);
+
+                // Apply search filter (case-insensitive regex)
+                if (!string.IsNullOrWhiteSpace(searchTerm))
+                {
+                    var searchFilter = filterBuilder.Or(
+                        filterBuilder.Regex("username", new BsonRegularExpression(searchTerm, "i")),
+                        filterBuilder.Regex("email", new BsonRegularExpression(searchTerm, "i")),
+                        filterBuilder.Regex("firstName", new BsonRegularExpression(searchTerm, "i")),
+                        filterBuilder.Regex("lastName", new BsonRegularExpression(searchTerm, "i"))
+                    );
+                    filter &= searchFilter;
+                }
+
+                // Apply active filter
+                if (isActive.HasValue)
+                {
+                    filter &= filterBuilder.Eq("isActive", isActive.Value);
+                }
+
+                // Build sort definition
+                var sortBuilder = Builders<BsonDocument>.Sort;
+                SortDefinition<BsonDocument>? sortDefinition = null;
+                
+                if (!string.IsNullOrWhiteSpace(sortBy))
+                {
+                    var isAscending = string.IsNullOrWhiteSpace(sortOrder) || 
+                                     sortOrder.Equals("asc", StringComparison.OrdinalIgnoreCase);
+                    
+                    sortDefinition = isAscending 
+                        ? sortBuilder.Ascending(sortBy)
+                        : sortBuilder.Descending(sortBy);
+                }
+
+                // Apply sorting and get all results (no pagination)
+                var findQuery = collection.Find(filter);
+                
+                if (sortDefinition != null)
+                {
+                    findQuery = findQuery.Sort(sortDefinition);
+                }
+                
+                var docs = await findQuery.ToListAsync();
+
+                return docs.Select(doc => MapBsonDocumentToUser(doc)).Where(u => u != null).Cast<User>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting all users by domain id: {DomainId}", domainId);
+                return Enumerable.Empty<User>();
+            }
+        }
+
         public async Task<QueryResult<User>> GetByDomainIdWithPaginationAsync(
             string domainId,
             int page,
             int pageSize,
             string? searchTerm = null,
-            bool? isActive = null)
+            bool? isActive = null,
+            string? sortBy = null,
+            string? sortOrder = null)
         {
             try
             {
@@ -374,10 +440,30 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                 // Get total count
                 var totalCount = await collection.CountDocumentsAsync(filter);
 
-                // Apply pagination
+                // Build sort definition
+                var sortBuilder = Builders<BsonDocument>.Sort;
+                SortDefinition<BsonDocument>? sortDefinition = null;
+                
+                if (!string.IsNullOrWhiteSpace(sortBy))
+                {
+                    var isAscending = string.IsNullOrWhiteSpace(sortOrder) || 
+                                     sortOrder.Equals("asc", StringComparison.OrdinalIgnoreCase);
+                    
+                    sortDefinition = isAscending 
+                        ? sortBuilder.Ascending(sortBy)
+                        : sortBuilder.Descending(sortBy);
+                }
+
+                // Apply pagination and sorting
                 var skip = (page - 1) * pageSize;
-                var docs = await collection
-                    .Find(filter)
+                var findQuery = collection.Find(filter);
+                
+                if (sortDefinition != null)
+                {
+                    findQuery = findQuery.Sort(sortDefinition);
+                }
+                
+                var docs = await findQuery
                     .Skip(skip)
                     .Limit(pageSize)
                     .ToListAsync();

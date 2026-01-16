@@ -1,672 +1,884 @@
 {
-    "Modern": "Modern",
-    "eCommerce": "eCommerce",
-    "Analytical": "Analytical",
-    "Classic": "Classic",
-    "Demographical": "Demographical",
-    "Minimal": "Minimal",
-    "Contact": "Contact",
-    "Blog": "Blog",
-    "Posts": "Posts",
-    "Detail": "Detail",
-    "E-Commerce": "E-Commerce",
-    "Shop": "Shop",
-    "List": "List",
-    "Checkout": "Checkout",
-    "Chats": "Chats",
-    "User Profile": "Users Profile",
-    "Profile": "Profile",
-    "Followers": "Followers",
-    "Friends": "Friends",
-    "Gallery": "Gallery",
-    "Email": "Email",
-    "Pricing": "Pricing",
-    "Account Setting": "Account Setting",
-    "FAQ": "FAQ",
-    "Widget": "Widget",
-    "Landing Page": "Landing Page",
-    "Form Elements": "Form Elements",
-    "Autocomplete": "Autocomplete",
-    "Combobox": "Combobox",
-    "Button": "Button",
-    "Checkbox": "Checkbox",
-    "Custom Inputs": "Custom Inputs",
-    "File Inputs": "File Inputs",
-    "Radio": "Radio",
-    "Date Time": "Date Time",
-    "Select": "Select",
-    "Slider": "Slider",
-    "Switch": "Switch",
-    "Form Layout": "Form Layout",
-    "Form Horizontal": "Form Horizontal",
-    "Form Vertical": "Form Vertical",
-    "Form Custom": "Form Custom",
-    "Form Validation": "Form Validation",
-    "Editor": "Editor",
-    "Basic Table": "Basic Table",
-    "Dark Table": "Dark Table",
-    "Density Table": "Density Table",
-    "Fixed Header Table": "Fixed Header Table",
-    "Height Table": "Height Table",
-    "Ui Components": "Ui Components",
-    "Alert": "Alert",
-    "Accordion": "Accordion",
-    "Avatar": "Avatar",
-    "Chip": "Chip",
-    "Dialog": "Dialog",
-    "Menus": "Menus",
-    "Rating": "Rating",
-    "Tabs": "Tabs",
-    "Tooltip": "Tooltip",
-    "Typography": "Typography",
-    "Line": "Line",
-    "Gredient": "Gredient",
-    "Area": "Area",
-    "Candlestick": "Candlestick",
-    "Column": "Column",
-    "Doughnut & Pie": "Doughnut & Pie",
-    "Radialbar & Radar": "Radialbar & Radar",
-    "Login": "Login",
-    "Side Login": "Side Login",
-    "Boxed Login": "Boxed Login",
-    "Register": "Register",
-    "Side Register": "Side Register",
-    "Boxed Register": "Boxed Register",
-    "Forgot Password": "Forgot Password",
-    "Side Forgot Password": "Side Forgot Password",
-    "Boxed Forgot Password": "Boxed Forgot Password",
-    "Two Steps": "Two Steps",
-    "Side Two Steps": "Side Two Steps",
-    "Boxed Two Steps": "Boxed Two Steps",
-    "Error": "Error",
-    "Maintenance": "Maintenance",
-    "Menu Level": "Menu level",
-    "Level 1": "Level 1",
-    "Level 2": "Level 2",
-    "Level 3": "Level 3",
-    "Disabled": "Disabled",
-    "Sub Caption": "Sub Caption",
-    "Outlined": "Outlined",
-    "External Link": "External Link",
-    "Editable Table": "Editable Table",
-    "Cards": "Cards",
-    "Banners": "Banners",
-    "Charts": "Charts",
-    "Material": "Material",
-    "Tabler": "Tabler",
-    "Dashboard": "Dashboard",
-    "Apps": "Apps",
-    "Pages": "Pages",
-    "Forms": "Forms",
-    "Tables": "Tables",
-    "Icons": "Icons",
-    "menu": {
-      "apps-dataset-categories": "Dataset Categories",
-      "datasets": "Datasets",
-      "two-steps": "Two Steps",
-      "apps-events": "Event Messages",
-      "apps-side-menu-manager": {
-        "title": "Side Menu Manager",
-        "subCaption": "Menu management page"
-      },
-      "apps-users": "User Management",
-      "apps-groups": "Group Management",
-      "books": "Books",
-      "apps-books": "Books",
-      "automated-forms": "Automated Forms",
-      "apps-automated-forms": {
-        "title": "Automated Forms",
-        "subCaption": "Automated form creation helps."
-      },
-      "headers": {
-        "home": "Home",
-        "assets": "Assets",
-        "apps": "Apps",
-        "pages": "Pages",
-        "components": "Components",
-        "charts": "Charts",
-        "forms": "Forms",
-        "widget": "Widget",
-        "tables": "Tables",
-        "data-tables": "Data Tables",
-        "authentication": "Authentication",
-        "icons": "Icons",
-        "administration": "Administration",
-        "examples_header": "Examples",
-        "management": "Management"
-      },
-      "book_definitions": "Book Definitions",
-      "book-genres": "Book Types",
-      "tst_publishers": "Publishers",
-      "tst_books": "Books"
-    },
-    "events": {
-      "title": "Event Messages",
-      "description": "Real-time notifications for group, user and data CRUD operations from RabbitMQ",
-      "buttons": {
-        "connect": "Connect",
-        "disconnect": "Disconnect",
-        "clearMessages": "Clear Messages"
-      },
-      "status": {
-        "connected": "Connected",
-        "connecting": "Connecting...",
-        "error": "Connection Error",
-        "disconnected": "Disconnected",
-        "closed": "Connection closed"
-      },
-      "types": {
-        "user": "User",
-        "group": "Group",
-        "system": "System",
-        "data": "Data",
-        "unknown": "Unknown"
-      },
-      "empty": {
-        "title": "No messages yet",
-        "description": "Group, user or data operations will appear here"
-      },
-      "details": {
-        "view": "View Details"
-      },
-      "errors": {
-        "tokenNotFound": "Access token not found. Please login again.",
-        "connectionError": "Connection error occurred.",
-        "connectionClosed": "Connection closed"
-      },
-      "breadcrumbs": {
-        "home": "Home"
-      }
-    },
-    "side-menu-manager": {
+  "Modern": "Modern",
+  "eCommerce": "eCommerce",
+  "Analytical": "Analytical",
+  "Classic": "Classic",
+  "Demographical": "Demographical",
+  "Minimal": "Minimal",
+  "Contact": "Contact",
+  "Blog": "Blog",
+  "Posts": "Posts",
+  "Detail": "Detail",
+  "E-Commerce": "E-Commerce",
+  "Shop": "Shop",
+  "List": "List",
+  "Checkout": "Checkout",
+  "Chats": "Chats",
+  "User Profile": "Users Profile",
+  "Profile": "Profile",
+  "Followers": "Followers",
+  "Friends": "Friends",
+  "Gallery": "Gallery",
+  "Email": "Email",
+  "Pricing": "Pricing",
+  "Account Setting": "Account Setting",
+  "FAQ": "FAQ",
+  "Widget": "Widget",
+  "Landing Page": "Landing Page",
+  "Form Elements": "Form Elements",
+  "Autocomplete": "Autocomplete",
+  "Combobox": "Combobox",
+  "Button": "Button",
+  "Checkbox": "Checkbox",
+  "Custom Inputs": "Custom Inputs",
+  "File Inputs": "File Inputs",
+  "Radio": "Radio",
+  "Date Time": "Date Time",
+  "Select": "Select",
+  "Slider": "Slider",
+  "Switch": "Switch",
+  "Form Layout": "Form Layout",
+  "Form Horizontal": "Form Horizontal",
+  "Form Vertical": "Form Vertical",
+  "Form Custom": "Form Custom",
+  "Form Validation": "Form Validation",
+  "Editor": "Editor",
+  "Basic Table": "Basic Table",
+  "Dark Table": "Dark Table",
+  "Density Table": "Density Table",
+  "Fixed Header Table": "Fixed Header Table",
+  "Height Table": "Height Table",
+  "Ui Components": "Ui Components",
+  "Alert": "Alert",
+  "Accordion": "Accordion",
+  "Avatar": "Avatar",
+  "Chip": "Chip",
+  "Dialog": "Dialog",
+  "Menus": "Menus",
+  "Rating": "Rating",
+  "Tabs": "Tabs",
+  "Tooltip": "Tooltip",
+  "Typography": "Typography",
+  "Line": "Line",
+  "Gredient": "Gredient",
+  "Area": "Area",
+  "Candlestick": "Candlestick",
+  "Column": "Column",
+  "Doughnut & Pie": "Doughnut & Pie",
+  "Radialbar & Radar": "Radialbar & Radar",
+  "Login": "Login",
+  "Side Login": "Side Login",
+  "Boxed Login": "Boxed Login",
+  "Register": "Register",
+  "Side Register": "Side Register",
+  "Boxed Register": "Boxed Register",
+  "Forgot Password": "Forgot Password",
+  "Side Forgot Password": "Side Forgot Password",
+  "Boxed Forgot Password": "Boxed Forgot Password",
+  "Two Steps": "Two Steps",
+  "Side Two Steps": "Side Two Steps",
+  "Boxed Two Steps": "Boxed Two Steps",
+  "Error": "Error",
+  "Maintenance": "Maintenance",
+  "Menu Level": "Menu level",
+  "Level 1": "Level 1",
+  "Level 2": "Level 2",
+  "Level 3": "Level 3",
+  "Disabled": "Disabled",
+  "Sub Caption": "Sub Caption",
+  "Outlined": "Outlined",
+  "External Link": "External Link",
+  "Editable Table": "Editable Table",
+  "Cards": "Cards",
+  "Banners": "Banners",
+  "Charts": "Charts",
+  "Material": "Material",
+  "Tabler": "Tabler",
+  "Dashboard": "Dashboard",
+  "Apps": "Apps",
+  "Pages": "Pages",
+  "Forms": "Forms",
+  "Tables": "Tables",
+  "Icons": "Icons",
+  "menu": {
+    "apps-dataset-categories": "Dataset Categories",
+    "datasets": "Datasets",
+    "two-steps": "Two Steps",
+    "apps-events": "Event Messages",
+    "apps-side-menu-manager": {
       "title": "Side Menu Manager",
-      "description": "Dynamically manage side menu items",
-      "breadcrumbs": {
-        "home": "Home",
-        "title": "Side Menu Manager"
-      },
-      "tree": {
-        "title": "Menu Items",
-        "expandAll": "Expand All",
-        "collapseAll": "Collapse All",
-        "empty": "No menu items found",
-        "navigate": "Go to page"
-      },
-      "toolbar": {
-        "newItem": "New Menu Item",
-        "newHeader": "New Header",
-        "search": "Search menu items...",
-        "refresh": "Refresh"
-      },
-      "form": {
-        "title": {
-          "edit": "Edit Menu Item",
-          "new": "New Menu Item"
-        },
-        "empty": "Click \"New Menu Item\" or \"New Header\" button on the left to create a new menu item.",
-        "fields": {
-          "itemType": "Item Type",
-          "pageType": "Page Type",
-          "header": "Header Text",
-          "title": "Menu Title",
-          "pageCode": "Page Code (Unique)",
-          "pageCodeHint": "Can be auto-generated from route or title",
-          "order": "Order",
-          "parent": "Parent Menu Item",
-          "parentNone": "(None - Root)",
-          "level": "Level",
-          "levelHint": "Automatically calculated based on parent selection",
-          "disabled": "Disabled",
-          "forms": "Saved Forms",
-          "formsPlaceholder": "Select form (optional)",
-          "formsHint": "Select from saved forms or enter manual path",
-          "route": "Route Path",
-          "routeHint": "E.g: /dashboards/analytical or select form",
-          "linkType": "Link Type",
-          "subCaption": "Sub Caption",
-          "chip": "Chip Text",
-          "chipVariant": "Chip Variant",
-          "chipColor": "Chip Text Color",
-          "chipBgColor": "Chip Background Color",
-          "chipIcon": "Chip Icon"
-        },
-        "sections": {
-          "chip": "Chip/Badge Settings",
-          "permissions": "Authorization",
-          "locale": "Language Support"
-        },
-        "buttons": {
-          "save": "Save",
-          "update": "Update",
-          "delete": "Delete",
-          "cancel": "Cancel",
-          "generatePageCode": "Auto generate",
-          "navigate": "Go to this page",
-          "updateLocales": "Update Locale Files"
-        },
-        "locale": {
-          "success": "Locale files updated successfully! ({pageCode})",
-          "error": "Error updating locale file: {error}",
-          "pageCodeRequired": "Page code (pageCode) is required. Please create pageCode first.",
-          "headerRequired": "Header text is required.",
-          "titleRequired": "Menu title is required.",
-          "description": "This button adds the current page code ({pageCode}) to all locale files. Turkish uses the current header/title, other languages get the same value as placeholder."
-        },
-        "validation": {
-          "headerRequired": "Header text is required",
-          "titleRequired": "Menu title is required"
-        }
-      },
-      "permissions": {
-        "loading": "Loading groups...",
-        "empty": "No active groups found yet.",
-        "emptyFiltered": "No viewable active groups found.",
-        "retry": "Retry",
-        "bulkActions": "Bulk Actions:",
-        "openAll": "Open All",
-        "closeAll": "Close All",
-        "group": "Group",
-        "actions": "Actions",
-        "all": "All",
-        "none": "None",
-        "labels": {
-          "view": "View",
-          "create": "Create",
-          "update": "Update",
-          "delete": "Delete",
-          "export": "Export"
-        }
-      },
-      "messages": {
-        "deleteConfirm": "Are you sure you want to delete this menu item?",
-        "success": {
-          "created": "Menu item created successfully",
-          "updated": "Menu item updated successfully",
-          "deleted": "Menu item deleted successfully"
-        },
-        "errors": {
-          "create": "Error creating menu item",
-          "update": "Error updating menu item",
-          "delete": "Error deleting menu item",
-          "load": "Error loading menu items"
-        }
-      }
+      "subCaption": "Menu management page"
     },
-    "login": {
-      "title": "Welcome to MonitraNG",
-      "subtitle": "Advanced Monitoring Tool",
-      "form": {
-        "username": "Username",
-        "usernamePlaceholder": "Username or domain{'@'}username",
-        "password": "Password",
-        "passwordPlaceholder": "Enter your password",
-        "submit": "Sign In",
-        "error": "Login failed. Please try again."
+    "apps-users": "User Management",
+    "apps-groups": "Group Management",
+    "books": "Books",
+    "apps-books": "Books",
+    "automated-forms": "Automated Forms",
+    "apps-automated-forms": {
+      "title": "Automated Forms",
+      "subCaption": "Automated form creation helps."
+    },
+    "headers": {
+      "home": "Home",
+      "assets": "Assets",
+      "apps": "Apps",
+      "pages": "Pages",
+      "components": "Components",
+      "charts": "Charts",
+      "forms": "Forms",
+      "widget": "Widget",
+      "tables": "Tables",
+      "data-tables": "Data Tables",
+      "authentication": "Authentication",
+      "icons": "Icons",
+      "administration": "Administration",
+      "examples_header": "Examples",
+      "management": "Management"
+    },
+    "book_definitions": "Book Definitions",
+    "book-genres": "Book Types",
+    "tst_publishers": "Publishers",
+    "tst_books": "Books"
+  },
+  "events": {
+    "title": "Event Messages",
+    "description": "Real-time notifications for group, user and data CRUD operations from RabbitMQ",
+    "buttons": {
+      "connect": "Connect",
+      "disconnect": "Disconnect",
+      "clearMessages": "Clear Messages"
+    },
+    "status": {
+      "connected": "Connected",
+      "connecting": "Connecting...",
+      "error": "Connection Error",
+      "disconnected": "Disconnected",
+      "closed": "Connection closed"
+    },
+    "types": {
+      "user": "User",
+      "group": "Group",
+      "system": "System",
+      "data": "Data",
+      "unknown": "Unknown"
+    },
+    "empty": {
+      "title": "No messages yet",
+      "description": "Group, user or data operations will appear here"
+    },
+    "details": {
+      "view": "View Details"
+    },
+    "errors": {
+      "tokenNotFound": "Access token not found. Please login again.",
+      "connectionError": "Connection error occurred.",
+      "connectionClosed": "Connection closed"
+    },
+    "breadcrumbs": {
+      "home": "Home"
+    }
+  },
+  "side-menu-manager": {
+    "title": "Side Menu Manager",
+    "description": "Dynamically manage side menu items",
+    "breadcrumbs": {
+      "home": "Home",
+      "title": "Side Menu Manager"
+    },
+    "tree": {
+      "title": "Menu Items",
+      "expandAll": "Expand All",
+      "collapseAll": "Collapse All",
+      "empty": "No menu items found",
+      "navigate": "Go to page"
+    },
+    "toolbar": {
+      "newItem": "New Menu Item",
+      "newHeader": "New Header",
+      "search": "Search menu items...",
+      "refresh": "Refresh"
+    },
+    "form": {
+      "title": {
+        "edit": "Edit Menu Item",
+        "new": "New Menu Item"
+      },
+      "empty": "Click \"New Menu Item\" or \"New Header\" button on the left to create a new menu item.",
+      "fields": {
+        "itemType": "Item Type",
+        "pageType": "Page Type",
+        "header": "Header Text",
+        "title": "Menu Title",
+        "pageCode": "Page Code (Unique)",
+        "pageCodeHint": "Can be auto-generated from route or title",
+        "order": "Order",
+        "parent": "Parent Menu Item",
+        "parentNone": "(None - Root)",
+        "level": "Level",
+        "levelHint": "Automatically calculated based on parent selection",
+        "disabled": "Disabled",
+        "forms": "Saved Forms",
+        "formsPlaceholder": "Select form (optional)",
+        "formsHint": "Select from saved forms or enter manual path",
+        "route": "Route Path",
+        "routeHint": "E.g: /dashboards/analytical or select form",
+        "linkType": "Link Type",
+        "subCaption": "Sub Caption",
+        "chip": "Chip Text",
+        "chipVariant": "Chip Variant",
+        "chipColor": "Chip Text Color",
+        "chipBgColor": "Chip Background Color",
+        "chipIcon": "Chip Icon"
+      },
+      "sections": {
+        "chip": "Chip/Badge Settings",
+        "permissions": "Authorization",
+        "locale": "Language Support"
+      },
+      "buttons": {
+        "save": "Save",
+        "update": "Update",
+        "delete": "Delete",
+        "cancel": "Cancel",
+        "generatePageCode": "Auto generate",
+        "navigate": "Go to this page",
+        "updateLocales": "Update Locale Files"
+      },
+      "locale": {
+        "success": "Locale files updated successfully! ({pageCode})",
+        "error": "Error updating locale file: {error}",
+        "pageCodeRequired": "Page code (pageCode) is required. Please create pageCode first.",
+        "headerRequired": "Header text is required.",
+        "titleRequired": "Menu title is required.",
+        "description": "This button adds the current page code ({pageCode}) to all locale files. Turkish uses the current header/title, other languages get the same value as placeholder."
       },
       "validation": {
-        "usernameRequired": "Username is required",
-        "passwordRequired": "Password is required",
-        "passwordMinLength": "Password must be at least 3 characters"
-      },
-      "language": {
-        "label": "Language",
-        "select": "Select Language"
+        "headerRequired": "Header text is required",
+        "titleRequired": "Menu title is required"
       }
+    },
+    "permissions": {
+      "loading": "Loading groups...",
+      "empty": "No active groups found yet.",
+      "emptyFiltered": "No viewable active groups found.",
+      "retry": "Retry",
+      "bulkActions": "Bulk Actions:",
+      "openAll": "Open All",
+      "closeAll": "Close All",
+      "group": "Group",
+      "actions": "Actions",
+      "all": "All",
+      "none": "None",
+      "labels": {
+        "view": "View",
+        "create": "Create",
+        "update": "Update",
+        "delete": "Delete",
+        "export": "Export"
+      }
+    },
+    "messages": {
+      "deleteConfirm": "Are you sure you want to delete this menu item?",
+      "success": {
+        "created": "Menu item created successfully",
+        "updated": "Menu item updated successfully",
+        "deleted": "Menu item deleted successfully"
+      },
+      "errors": {
+        "create": "Error creating menu item",
+        "update": "Error updating menu item",
+        "delete": "Error deleting menu item",
+        "load": "Error loading menu items"
+      }
+    }
+  },
+  "login": {
+    "title": "Welcome to MonitraNG",
+    "subtitle": "Advanced Monitoring Tool",
+    "form": {
+      "username": "Username",
+      "usernamePlaceholder": "Username or domain{'@'}username",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "submit": "Sign In",
+      "error": "Login failed. Please try again."
+    },
+    "validation": {
+      "usernameRequired": "Username is required",
+      "passwordRequired": "Password is required",
+      "passwordMinLength": "Password must be at least 3 characters"
+    },
+    "language": {
+      "label": "Language",
+      "select": "Select Language"
+    }
+  },
+  "groups": {
+    "title": "Group Management",
+    "breadcrumbs": {
+      "home": "Home",
+      "groups": "Group Management",
+      "create": "New Group",
+      "edit": "Edit Group",
+      "details": "Group Details"
+    },
+    "list": {
+      "search": "Search Groups",
+      "status": "Status",
+      "statusAll": "All",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "export": "Export",
+      "exportCsv": "Download as CSV",
+      "exportExcel": "Download as Excel",
+      "exportSoon": "Coming Soon",
+      "refresh": "Refresh",
+      "newGroup": "New Group",
+      "noData": "No groups found",
+      "createFirst": "Create First Group",
+      "total": "Total",
+      "records": "records",
+      "page": "Page",
+      "of": "/",
+      "showing": "showing",
+      "itemsPerPage": "Items per page:",
+      "warning": "Warning",
+      "warningMessage": "Manager or admin permission is required to access this page. Please contact an administrator to perform group management operations."
+    },
+    "table": {
+      "name": "Group Name",
+      "memberCount": "Member Count",
+      "createdAt": "Created At",
+      "actions": "Actions",
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteTooltip": "Group has members, cannot be deleted"
+    },
+    "create": {
+      "title": "Create New Group",
+      "name": "Group Name *",
+      "description": "Description",
+      "isActive": "Active",
+      "cancel": "Cancel",
+      "create": "Create"
+    },
+    "edit": {
+      "title": "Edit Group",
+      "loading": "Loading...",
+      "name": "Group Name *",
+      "description": "Description",
+      "isActive": "Active",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "details": {
+      "title": "Group Details",
+      "loading": "Loading...",
+      "notFound": "Group not found",
+      "backToList": "Back to List",
+      "userManagement": "Member Management",
+      "edit": "Edit",
+      "groupInfo": "Group Information",
+      "metadata": "Metadata",
+      "name": "Group Name:",
+      "description": "Description:",
+      "status": "Status:",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "memberCount": "Member Count:",
+      "createdAt": "Created At:",
+      "updatedAt": "Last Updated:",
+      "createdBy": "Created By:",
+      "updatedBy": "Updated By:",
+      "permissions": "Permissions:"
+    },
+    "delete": {
+      "title": "Delete Group",
+      "confirm": "Are you sure you want to delete this group? This action cannot be undone.",
+      "cancel": "Cancel",
+      "close": "Close",
+      "confirmButton": "Yes, Delete",
+      "error": "This group contains {count} users. You must remove all users from the group first."
+    },
+    "validation": {
+      "nameRequired": "Group name is required",
+      "nameMinLength": "Group name must be at least 2 characters",
+      "descriptionMaxLength": "Description can be at most 500 characters"
+    },
+    "errors": {
+      "load": "An error occurred while loading the group",
+      "create": "An error occurred while creating the group",
+      "update": "An error occurred while updating the group",
+      "delete": "An error occurred while deleting the group",
+      "export": "An error occurred during export."
+    },
+    "userManagement": {
+      "title": "Member Management",
+      "search": "Search Users (Username, Email, Full Name)",
+      "currentMembers": "Current Members",
+      "addUsers": "Add Users",
+      "loading": "Loading users...",
+      "noMembers": "No members found",
+      "noUsersToAdd": "No users available to add",
+      "noUsersToAddDescription": "All users may already be in this group",
+      "selectAll": "Select All",
+      "deselectAll": "Clear Selection",
+      "selected": "selected",
+      "addSelected": "Add Selected {count} Users",
+      "close": "Close",
+      "errors": {
+        "load": "An error occurred while loading users",
+        "add": "An error occurred while adding users to the group",
+        "remove": "An error occurred while removing user from the group",
+        "noSelection": "Please select at least one user"
+      },
+      "success": {
+        "added": "{count} users successfully added to the group",
+        "removed": "User successfully removed from the group"
+      }
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "user": "User",
+    "breadcrumbs": {
+      "home": "Home",
+      "profile": "Profile"
+    },
+    "tabs": {
+      "general": "General Information",
+      "account": "Account Settings",
+      "security": "Security",
+      "preferences": "Preferences"
+    },
+    "comingSoon": "Coming soon",
+    "roles": {
+      "admin": "Administrator",
+      "manager": "Manager",
+      "user": "User"
+    },
+    "personalInfo": {
+      "title": "Personal Information",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "jobTitle": "Job Title",
+      "department": "Department",
+      "gender": "Gender",
+      "phoneNumber": "Phone"
+    },
+    "accountInfo": {
+      "title": "Account Information",
+      "username": "Username",
+      "email": "Email",
+      "domain": "Domain",
+      "status": "Status",
+      "createdAt": "Created",
+      "updatedAt": "Last Updated"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
     },
     "groups": {
-      "title": "Group Management",
-      "breadcrumbs": {
-        "home": "Home",
-        "groups": "Group Management",
-        "create": "New Group",
-        "edit": "Edit Group",
-        "details": "Group Details"
-      },
-      "list": {
-        "search": "Search Groups",
-        "status": "Status",
-        "statusAll": "All",
-        "statusActive": "Active",
-        "statusInactive": "Inactive",
-        "export": "Export",
-        "exportCsv": "Download as CSV",
-        "exportExcel": "Download as Excel",
-        "exportSoon": "Coming Soon",
-        "refresh": "Refresh",
-        "newGroup": "New Group",
-        "noData": "No groups found",
-        "createFirst": "Create First Group",
-        "total": "Total",
-        "records": "records",
-        "page": "Page",
-        "of": "/",
-        "showing": "showing",
-        "itemsPerPage": "Items per page:",
-        "warning": "Warning",
-        "warningMessage": "Manager or admin permission is required to access this page. Please contact an administrator to perform group management operations."
-      },
-      "table": {
-        "name": "Group Name",
-        "memberCount": "Member Count",
-        "createdAt": "Created At",
-        "actions": "Actions",
-        "view": "View",
-        "edit": "Edit",
-        "delete": "Delete",
-        "deleteTooltip": "Group has members, cannot be deleted"
-      },
-      "create": {
-        "title": "Create New Group",
-        "name": "Group Name *",
-        "description": "Description",
-        "isActive": "Active",
-        "cancel": "Cancel",
-        "create": "Create"
-      },
-      "edit": {
-        "title": "Edit Group",
-        "loading": "Loading...",
-        "name": "Group Name *",
-        "description": "Description",
-        "isActive": "Active",
-        "cancel": "Cancel",
-        "save": "Save"
-      },
-      "details": {
-        "title": "Group Details",
-        "loading": "Loading...",
-        "notFound": "Group not found",
-        "backToList": "Back to List",
-        "userManagement": "Member Management",
-        "edit": "Edit",
-        "groupInfo": "Group Information",
-        "metadata": "Metadata",
-        "name": "Group Name:",
-        "description": "Description:",
-        "status": "Status:",
-        "statusActive": "Active",
-        "statusInactive": "Inactive",
-        "memberCount": "Member Count:",
-        "createdAt": "Created At:",
-        "updatedAt": "Last Updated:",
-        "createdBy": "Created By:",
-        "updatedBy": "Updated By:",
-        "permissions": "Permissions:"
-      },
-      "delete": {
-        "title": "Delete Group",
-        "confirm": "Are you sure you want to delete this group? This action cannot be undone.",
-        "cancel": "Cancel",
-        "close": "Close",
-        "confirmButton": "Yes, Delete",
-        "error": "This group contains {count} users. You must remove all users from the group first."
-      },
-      "validation": {
-        "nameRequired": "Group name is required",
-        "nameMinLength": "Group name must be at least 2 characters",
-        "descriptionMaxLength": "Description can be at most 500 characters"
-      },
+      "title": "Groups",
+      "manage": "Group Management",
+      "noGroups": "No groups assigned yet"
+    },
+    "photo": {
+      "title": "Profile Photo",
+      "upload": "Upload Photo",
+      "remove": "Remove Photo",
+      "maxSize": "Max: 5MB",
+      "formats": "Format: JPG, PNG, WebP",
       "errors": {
-        "load": "An error occurred while loading the group",
-        "create": "An error occurred while creating the group",
-        "update": "An error occurred while updating the group",
-        "delete": "An error occurred while deleting the group",
-        "export": "An error occurred during export."
-      },
-      "userManagement": {
-        "title": "Member Management",
-        "search": "Search Users (Username, Email, Full Name)",
-        "currentMembers": "Current Members",
-        "addUsers": "Add Users",
-        "loading": "Loading users...",
-        "noMembers": "No members found",
-        "noUsersToAdd": "No users available to add",
-        "noUsersToAddDescription": "All users may already be in this group",
-        "selectAll": "Select All",
-        "deselectAll": "Clear Selection",
-        "selected": "selected",
-        "addSelected": "Add Selected {count} Users",
-        "close": "Close",
-        "errors": {
-          "load": "An error occurred while loading users",
-          "add": "An error occurred while adding users to the group",
-          "remove": "An error occurred while removing user from the group",
-          "noSelection": "Please select at least one user"
-        },
-        "success": {
-          "added": "{count} users successfully added to the group",
-          "removed": "User successfully removed from the group"
-        }
+        "maxSize": "File size cannot exceed 5MB",
+        "invalidFormat": "Only JPG, PNG and WebP formats are supported",
+        "maxDimensions": "Photo size cannot exceed 2000x2000 pixels",
+        "invalidImage": "Invalid image file",
+        "readError": "File could not be read",
+        "uploadFailed": "An error occurred while uploading the photo"
       }
     },
-    "profile": {
-      "title": "Profile",
-      "user": "User",
-      "breadcrumbs": {
-        "home": "Home",
-        "profile": "Profile"
-      },
-      "tabs": {
-        "general": "General Information",
-        "account": "Account Settings",
-        "security": "Security",
-        "preferences": "Preferences"
-      },
-      "comingSoon": "Coming soon",
-      "roles": {
-        "admin": "Administrator",
-        "manager": "Manager",
-        "user": "User"
-      },
-      "personalInfo": {
-        "title": "Personal Information",
-        "firstName": "First Name",
-        "lastName": "Last Name",
-        "email": "Email",
-        "jobTitle": "Job Title",
-        "department": "Department",
-        "gender": "Gender",
-        "phoneNumber": "Phone"
-      },
+    "gender": {
+      "notSpecified": "Not Specified",
+      "male": "Male",
+      "female": "Female"
+    },
+    "buttons": {
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "validation": {
+      "firstNameRequired": "First name is required",
+      "firstNameMinLength": "First name must be at least 2 characters",
+      "firstNameMaxLength": "First name can be at most 50 characters",
+      "lastNameRequired": "Last name is required",
+      "lastNameMinLength": "Last name must be at least 2 characters",
+      "lastNameMaxLength": "Last name can be at most 50 characters",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email address",
+      "titleMaxLength": "Job title can be at most 100 characters",
+      "departmentMaxLength": "Department can be at most 100 characters",
+      "phoneNumberMaxLength": "Phone number can be at most 20 characters"
+    },
+    "messages": {
+      "saveSuccess": "Profile updated successfully",
+      "saveError": "An error occurred while updating the profile",
+      "photoUploadSuccess": "Photo uploaded successfully",
+      "photoUploadError": "An error occurred while uploading the photo",
+      "photoRemoveSuccess": "Photo removed successfully",
+      "photoRemoveError": "An error occurred while removing the photo",
+      "userNotFound": "User not found"
+    },
+    "accountSettings": {
       "accountInfo": {
         "title": "Account Information",
         "username": "Username",
         "email": "Email",
         "domain": "Domain",
-        "status": "Status",
-        "createdAt": "Created",
+        "createdAt": "Account Created",
         "updatedAt": "Last Updated"
       },
-      "status": {
-        "active": "Active",
-        "inactive": "Inactive"
+      "dangerZone": {
+        "title": "Danger Zone",
+        "description": "If you want to permanently delete your account, click the button below. This action cannot be undone.",
+        "deleteAccount": "Delete Account",
+        "notImplemented": "Account deletion feature has not been implemented yet."
+      }
+    },
+    "preferences": {
+      "language": {
+        "title": "Language Preference",
+        "label": "Select Language",
+        "description": "Select the application language. Changes are applied immediately."
       },
-      "groups": {
-        "title": "Groups",
-        "manage": "Group Management",
-        "noGroups": "No groups assigned yet"
+      "theme": {
+        "title": "Theme Preference",
+        "description": "Select the application theme. Light and dark theme options are available."
       },
-      "photo": {
-        "title": "Profile Photo",
-        "upload": "Upload Photo",
-        "remove": "Remove Photo",
-        "maxSize": "Max: 5MB",
-        "formats": "Format: JPG, PNG, WebP",
-        "errors": {
-          "maxSize": "File size cannot exceed 5MB",
-          "invalidFormat": "Only JPG, PNG and WebP formats are supported",
-          "maxDimensions": "Photo size cannot exceed 2000x2000 pixels",
-          "invalidImage": "Invalid image file",
-          "readError": "File could not be read",
-          "uploadFailed": "An error occurred while uploading the photo"
-        }
+      "layout": {
+        "title": "Layout Preferences",
+        "sidebarLayout": "Sidebar Layout",
+        "vertical": "Vertical",
+        "horizontal": "Horizontal",
+        "containerOption": "Container Option",
+        "boxed": "Boxed",
+        "full": "Full Width",
+        "sidebarType": "Sidebar Type",
+        "collapse": "Collapsed",
+        "cardStyle": "Card Style",
+        "shadow": "Shadow",
+        "border": "Border"
       },
-      "gender": {
-        "notSpecified": "Not Specified",
-        "male": "Male",
-        "female": "Female"
-      },
-      "buttons": {
-        "edit": "Edit",
-        "save": "Save",
+      "saveSuccess": "Preferences saved successfully",
+      "saveError": "An error occurred while saving preferences"
+    },
+    "security": {
+      "changePassword": {
+        "title": "Change Password",
+        "description": "It is recommended to change your password regularly for the security of your account.",
+        "currentPassword": "Current Password",
+        "newPassword": "New Password",
+        "confirmPassword": "New Password (Confirm)",
+        "passwordStrength": "Password Strength",
+        "requirements": {
+          "title": "Password Requirements",
+          "minLength": "At least 8 characters",
+          "uppercase": "At least one uppercase letter (A-Z)",
+          "lowercase": "At least one lowercase letter (a-z)",
+          "number": "At least one number (0-9)",
+          "special": "At least one special character (! ? # $ % ^ & *)"
+        },
+        "save": "Change Password",
         "cancel": "Cancel"
+      },
+      "passwordStrength": {
+        "weak": "Weak",
+        "fair": "Fair",
+        "good": "Good",
+        "strong": "Strong"
       },
       "validation": {
-        "firstNameRequired": "First name is required",
-        "firstNameMinLength": "First name must be at least 2 characters",
-        "firstNameMaxLength": "First name can be at most 50 characters",
-        "lastNameRequired": "Last name is required",
-        "lastNameMinLength": "Last name must be at least 2 characters",
-        "lastNameMaxLength": "Last name can be at most 50 characters",
-        "emailRequired": "Email is required",
-        "emailInvalid": "Please enter a valid email address",
-        "titleMaxLength": "Job title can be at most 100 characters",
-        "departmentMaxLength": "Department can be at most 100 characters",
-        "phoneNumberMaxLength": "Phone number can be at most 20 characters"
+        "currentPasswordRequired": "Current password is required",
+        "newPasswordRequired": "New password is required",
+        "passwordMinLength": "Password must be at least 8 characters",
+        "passwordLowercase": "Password must contain at least one lowercase letter",
+        "passwordUppercase": "Password must contain at least one uppercase letter",
+        "passwordNumber": "Password must contain at least one number",
+        "passwordSpecial": "Password must contain at least one special character",
+        "confirmPasswordRequired": "Password confirmation is required",
+        "passwordsDoNotMatch": "Passwords do not match"
       },
       "messages": {
-        "saveSuccess": "Profile updated successfully",
-        "saveError": "An error occurred while updating the profile",
-        "photoUploadSuccess": "Photo uploaded successfully",
-        "photoUploadError": "An error occurred while uploading the photo",
-        "photoRemoveSuccess": "Photo removed successfully",
-        "photoRemoveError": "An error occurred while removing the photo",
-        "userNotFound": "User not found"
+        "changePasswordSuccess": "Your password has been changed successfully",
+        "changePasswordError": "An error occurred while changing the password"
       },
-      "accountSettings": {
-        "role": {
-          "admin": "Admin",
-          "user": "User"
-        },
-        "accountInfo": {
-          "title": "Account Information",
-          "username": "Username",
-          "email": "Email",
-          "domain": "Domain",
-          "createdAt": "Account Created",
-          "updatedAt": "Last Updated"
-        },
-        "dangerZone": {
-          "title": "Danger Zone",
-          "description": "If you want to permanently delete your account, click the button below. This action cannot be undone.",
-          "deleteAccount": "Delete Account",
-          "notImplemented": "Account deletion feature has not been implemented yet."
-        }
-      },
-      "preferences": {
-        "language": {
-          "title": "Language Preference",
-          "label": "Select Language",
-          "description": "Select the application language. Changes are applied immediately."
-        },
-        "theme": {
-          "title": "Theme Preference",
-          "description": "Select the application theme. Light and dark theme options are available."
-        },
-        "layout": {
-          "title": "Layout Preferences",
-          "sidebarLayout": "Sidebar Layout",
-          "vertical": "Vertical",
-          "horizontal": "Horizontal",
-          "containerOption": "Container Option",
-          "boxed": "Boxed",
-          "full": "Full Width",
-          "sidebarType": "Sidebar Type",
-          "collapse": "Collapsed",
-          "cardStyle": "Card Style",
-          "shadow": "Shadow",
-          "border": "Border"
-        },
-        "saveSuccess": "Preferences saved successfully",
-        "saveError": "An error occurred while saving preferences"
-      },
-      "security": {
-        "changePassword": {
-          "title": "Change Password",
-          "description": "It is recommended to change your password regularly for the security of your account.",
-          "currentPassword": "Current Password",
-          "newPassword": "New Password",
-          "confirmPassword": "New Password (Confirm)",
-          "passwordStrength": "Password Strength",
-          "requirements": {
-            "title": "Password Requirements",
-            "minLength": "At least 8 characters",
-            "uppercase": "At least one uppercase letter (A-Z)",
-            "lowercase": "At least one lowercase letter (a-z)",
-            "number": "At least one number (0-9)",
-            "special": "At least one special character (! ? # $ % ^ & *)"
-          },
-          "save": "Change Password",
-          "cancel": "Cancel"
-        },
-        "passwordStrength": {
-          "weak": "Weak",
-          "fair": "Fair",
-          "good": "Good",
-          "strong": "Strong"
-        },
-        "validation": {
-          "currentPasswordRequired": "Current password is required",
-          "newPasswordRequired": "New password is required",
-          "passwordMinLength": "Password must be at least 8 characters",
-          "passwordLowercase": "Password must contain at least one lowercase letter",
-          "passwordUppercase": "Password must contain at least one uppercase letter",
-          "passwordNumber": "Password must contain at least one number",
-          "passwordSpecial": "Password must contain at least one special character",
-          "confirmPasswordRequired": "Password confirmation is required",
-          "passwordsDoNotMatch": "Passwords do not match"
-        },
-        "messages": {
-          "changePasswordSuccess": "Your password has been changed successfully",
-          "changePasswordError": "An error occurred while changing the password"
-        },
-        "tips": {
-          "title": "Security Tips",
-          "tip1": "Change your password regularly (at least every 3-6 months)",
-          "tip2": "Use different passwords for different accounts",
-          "tip3": "Do not share your password with anyone",
-          "tip4": "If you notice suspicious activity, change your password immediately"
-        }
-      }
-    },
-    "notes": {
-      "pageTitle": "My Notes",
-      "breadcrumb": "My Notes",
-      "listing": {
-        "title": "All Notes",
-        "searchPlaceholder": "Search Notes",
-        "deleteNote": "Delete Note",
-        "noNotesTitle": "Info",
-        "noNotesText": "The note you are looking for was not found"
-      },
-      "content": {
-        "editTitle": "Edit Note",
-        "changeTitle": "Change Title",
-        "titlePlaceholder": "Write your note content here...",
-        "changeColor": "Change Note Color",
-        "noNoteSelectedTitle": "Info",
-        "noNoteSelectedText": "Please select a note"
-      },
-      "add": {
-        "button": "Add Note",
-        "title": "Add Note",
-        "placeholder": "Write your note content here...",
-        "selectColor": "Select Note Color",
-        "save": "Save",
-        "cancel": "Cancel"
-      }
-    },
-    "header": {
-      "profileDD": {
-        "myProfile": {
-          "title": "My Profile",
-          "subtitle": "Account settings"
-        },
-        "myNotes": {
-          "title": "My Notes",
-          "subtitle": "My Daily Notes"
-        },
-        "logout": "Logout"
+      "tips": {
+        "title": "Security Tips",
+        "tip1": "Change your password regularly (at least every 3-6 months)",
+        "tip2": "Use different passwords for different accounts",
+        "tip3": "Do not share your password with anyone",
+        "tip4": "If you notice suspicious activity, change your password immediately"
       }
     }
+  },
+  "notes": {
+    "pageTitle": "My Notes",
+    "breadcrumb": "My Notes",
+    "listing": {
+      "title": "All Notes",
+      "searchPlaceholder": "Search Notes",
+      "deleteNote": "Delete Note",
+      "noNotesTitle": "Info",
+      "noNotesText": "The note you are looking for was not found"
+    },
+    "content": {
+      "editTitle": "Edit Note",
+      "changeTitle": "Change Title",
+      "titlePlaceholder": "Write your note content here...",
+      "changeColor": "Change Note Color",
+      "noNoteSelectedTitle": "Info",
+      "noNoteSelectedText": "Please select a note"
+    },
+    "add": {
+      "button": "Add Note",
+      "title": "Add Note",
+      "placeholder": "Write your note content here...",
+      "selectColor": "Select Note Color",
+      "save": "Save",
+      "cancel": "Cancel"
+    }
+  },
+  "users": {
+    "title": "User Management",
+    "breadcrumbs": {
+      "home": "Dashboard",
+      "users": "User Management"
+    },
+    "table": {
+      "username": "Username",
+      "email": "Email",
+      "fullName": "Full Name",
+      "status": "Status",
+      "groups": "Groups",
+      "createdAt": "Created At",
+      "actions": "Actions"
+    },
+    "search": {
+      "placeholder": "Search Users"
+    },
+    "status": {
+      "label": "Status",
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "buttons": {
+      "export": "Export",
+      "refresh": "Refresh",
+      "newUser": "New User"
+    },
+    "export": {
+      "csv": "Export as CSV",
+      "json": "Export as JSON",
+      "xlsx": "Export as Excel",
+      "comingSoon": "Coming Soon",
+      "error": "Export operation failed"
+    },
+    "warning": {
+      "title": "Warning:",
+      "message": "Manager or admin privileges are required to access this page. Please contact an administrator to perform user management operations."
+    },
+    "noData": {
+      "title": "No users found",
+      "button": "Create First User"
+    },
+    "pagination": {
+      "total": "Total:",
+      "records": "records",
+      "page": "Page",
+      "showing": "showing",
+      "itemsPerPage": "Items per page:"
+    },
+    "delete": {
+      "title": "Delete User",
+      "message": "Are you sure you want to delete this user? This action cannot be undone.",
+      "cancel": "Cancel",
+      "close": "Close",
+      "confirm": "Yes, Delete",
+      "error": "An error occurred while deleting the user"
+    },
+    "actions": {
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "errors": {
+      "userIdNotFound": "User ID not found",
+      "deleteFailed": "An error occurred while deleting the user",
+      "exportFailed": "Export operation failed",
+      "forbiddenNote": "Note: This error indicates that admin privileges are required. Make sure your user is in the \"admins\" group."
+    },
+    "groups": {
+      "none": "No groups"
+    },
+    "details": {
+      "title": "User Details",
+      "breadcrumbs": {
+        "home": "Dashboard",
+        "users": "User Management",
+        "details": "User Details"
+      },
+      "buttons": {
+        "resetPassword": "Reset Password",
+        "edit": "Edit",
+        "backToList": "Back to List"
+      },
+      "cards": {
+        "userInfo": "User Information",
+        "groupsAndRoles": "Groups and Roles",
+        "photo": "Photo"
+      },
+      "fields": {
+        "userId": "User ID",
+        "username": "Username",
+        "email": "Email",
+        "fullName": "Full Name",
+        "title": "Title",
+        "department": "Department",
+        "phone": "Phone",
+        "gender": "Gender",
+        "status": "Status",
+        "groups": "Groups",
+        "roles": "Roles",
+        "createdAt": "Created At",
+        "createdBy": "Created By",
+        "lastLogin": "Last Login",
+        "updatedAt": "Last Updated",
+        "updatedBy": "Updated By"
+      },
+      "gender": {
+        "male": "Male",
+        "female": "Female",
+        "notSpecified": "Not Specified"
+      },
+      "photo": {
+        "loadError": "Photo could not be loaded",
+        "none": "No photo"
+      },
+      "loading": "Loading...",
+      "notFound": "User not found",
+      "resetPassword": {
+        "success": "Password reset email sent successfully. Please ask the user to check their email address.",
+        "error": "Password reset email could not be sent.",
+        "userIdNotFound": "User ID not found.",
+        "genericError": "An error occurred."
+      }
+    },
+    "edit": {
+      "title": "Edit User",
+      "breadcrumbs": {
+        "home": "Dashboard",
+        "users": "User Management",
+        "edit": "Edit User"
+      },
+      "fields": {
+        "username": "Username",
+        "usernameNote": "Username cannot be changed",
+        "email": "Email",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "title": "Title",
+        "titlePlaceholder": "E.g.: Manager, Developer, QA Engineer",
+        "department": "Department",
+        "departmentPlaceholder": "E.g.: IT, Development, QA",
+        "phoneNumber": "Phone Number",
+        "phonePlaceholder": "+90XXXXXXXXXX",
+        "photoUrl": "Photo URL",
+        "photoUrlPlaceholder": "https://...",
+        "photoUrlNote": "Photo URL cannot be changed",
+        "isActive": "Active",
+        "groups": "Groups",
+        "groupsSelect": "Select Groups"
+      },
+      "validation": {
+        "emailRequired": "Email is required",
+        "emailInvalid": "Please enter a valid email address",
+        "firstNameRequired": "First name is required",
+        "lastNameRequired": "Last name is required"
+      },
+      "buttons": {
+        "cancel": "Cancel",
+        "save": "Save"
+      },
+      "loading": "Loading...",
+      "errors": {
+        "loadFailed": "An error occurred while loading the user",
+        "updateFailed": "An error occurred while updating the user",
+        "usernameNotFound": "Username not found",
+        "userInfoNotFound": "User information not found"
+      }
+    },
+    "create": {
+      "title": "Create New User",
+      "breadcrumbs": {
+        "home": "Dashboard",
+        "users": "User Management",
+        "create": "New User"
+      },
+      "fields": {
+        "username": "Username",
+        "email": "Email",
+        "password": "Password",
+        "confirmPassword": "Confirm Password",
+        "firstName": "First Name",
+        "lastName": "Last Name",
+        "title": "Title",
+        "titlePlaceholder": "E.g.: Manager, Developer, QA Engineer",
+        "department": "Department",
+        "departmentPlaceholder": "E.g.: IT, Development, QA",
+        "phoneNumber": "Phone Number",
+        "phonePlaceholder": "+90XXXXXXXXXX",
+        "isActive": "Active",
+        "groups": "Groups",
+        "groupsSelect": "Select Groups",
+        "groupsNote": "User will be automatically assigned to the \"users\" group"
+      },
+      "validation": {
+        "usernameRequired": "Username is required",
+        "usernameMinLength": "Username must be at least 3 characters",
+        "emailRequired": "Email is required",
+        "emailInvalid": "Please enter a valid email address",
+        "passwordRequired": "Password is required",
+        "passwordMinLength": "Password must be at least 6 characters",
+        "confirmPasswordRequired": "Confirm password is required",
+        "passwordsNotMatch": "Passwords do not match",
+        "firstNameRequired": "First name is required",
+        "lastNameRequired": "Last name is required"
+      },
+      "buttons": {
+        "cancel": "Cancel",
+        "create": "Create"
+      },
+      "errors": {
+        "createFailed": "An error occurred while creating the user"
+      }
+    }
+  },
+  "header": {
+    "profileDD": {
+      "myProfile": {
+        "title": "My Profile",
+        "subtitle": "Account settings"
+      },
+      "myNotes": {
+        "title": "My Notes",
+        "subtitle": "My Daily Notes"
+      },
+      "logout": "Logout"
+    }
   }
+}

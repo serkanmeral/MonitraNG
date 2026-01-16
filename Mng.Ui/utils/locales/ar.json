@@ -1,698 +1,910 @@
 {
-    "Modern": "حديث",
-    "eCommerce": "التجارة الإلكترونية",
-    "Analytical": "تحليلي",
-    "Classic": "كلاسيك",
-    "Demographical": "ديموغرافي",
-    "Minimal": "الحد الأدنى",
-    "Contact": "اتصال",
-    "Blog": "مدونة",
-    "Posts": "دعامات",
-    "Detail": "التفاصيل",
-    "E-Commerce": "التجارة الإلكترونية",
-    "Shop": "محل",
-    "List": "قائمة",
-    "Checkout": "الدفع",
-    "Chats": "الدردشات",
-    "User Profile": "ملف تعريف المستخدمين",
-    "Notes": "ملحوظات",
-    "Calendar": "تقويم",
-    "Profile": "حساب تعريفي",
-    "Followers": "متابعون",
-    "Friends": "أصدقاء",
-    "Gallery": "صالة عرض",
-    "Email": "بريد إلكتروني",
-    "Pricing": "التسعير",
-    "Account Setting": "إعدادات الحساب",
-    "FAQ": "التعليمات",
-    "Widget": "القطعة",
-    "Landing Page": "الصفحة المقصودة",
-    "Form Elements": "عناصر النموذج",
-    "Autocomplete": "الإكمال التلقائي",
-    "Combobox": "صندوق التحرير",
-    "Button": "زر",
-    "Checkbox": "خانة اختيار",
-    "Custom Inputs": "المدخلات المخصصة",
-    "File Inputs": "مدخلات الملف",
-    "Radio": "مذياع",
-    "Date Time": "تاريخ الوقت",
-    "Select": "يختار",
-    "Slider": "المنزلق",
-    "Switch": "يُحوّل",
-    "Form Layout": "تخطيط النموذج",
-    "Form Horizontal": "شكل أفقي",
-    "Form Vertical": "شكل عمودي",
-    "Form Custom": "نموذج مخصص",
-    "Form Validation": "التحقق من صحة النموذج",
-    "Editor": "محرر",
-    "Basic Table": "الجدول الأساسي",
-    "Dark Table": "طاولة مظلمة",
-    "Density Table": "جدول الكثافة",
-    "Fixed Header Table": "جدول الرأس الثابت",
-    "Height Table": "جدول الارتفاع",
-    "Ui Components": "مكونات واجهة المستخدم",
-    "Alert": "يُحذًِر",
-    "Accordion": "الأكورديون",
-    "Avatar": "الصورة الرمزية",
-    "Chip": "رقاقة",
-    "Dialog": "حوار",
-    "Menus": "القوائم",
-    "Rating": "تقييم",
-    "Tabs": "نوافذ التبويب",
-    "Tooltip": "تلميح",
-    "Typography": "الطباعة",
-    "Line": "خط",
-    "Gredient": "طفيف",
-    "Area": "منطقة",
-    "Candlestick": "شمعدان",
-    "Column": "عمود",
-    "Doughnut & Pie": "دونات وفطيرة",
-    "Radialbar & Radar": "راديال بار ورادار",
-    "Login": "تسجيل الدخول",
-    "Side Login": "تسجيل الدخول الجانبي",
-    "Boxed Login": "تسجيل الدخول محاصر",
-    "Register": "يسجل",
-    "Side Register": "تسجيل جانبي",
-    "Boxed Register": "سجل محاصر",
-    "Forgot Password": "هل نسيت كلمة السر",
-    "Side Forgot Password": "الجانب نسيت كلمة المرور",
-    "Boxed Forgot Password": "محاصر نسيت كلمة المرور",
-    "Two Steps": "خطوتين",
-    "Side Two Steps": "الجانب ذو خطوتين",
-    "Boxed Two Steps": "خطوتين محاصر",
-    "Error": "خطأ",
-    "Maintenance": "صيانة",
-    "Menu Level": "مستوى القائمة",
-    "Level 1": "المستوى 1",
-    "Level 2": "المستوي 2",
-    "Level 3": "مستوى 3",
-    "Disabled": "عاجز",
-    "Sub Caption": "التسمية التوضيحية الفرعية",
-    "Outlined": "موجز",
-    "External Link": "رابط خارجي",
-    "Editable Table": "جدول قابل للتحرير",
-    "Cards": "البطاقات",
-    "Banners": "لافتات",
-    "Material": "مادة",
-    "Tabler": "طاولة",
-    "Add Product": "أضف منتج",
-    "Edit Product": "تحرير المنتج",
-    "Kanban": "كانبان",
-    "Gallery Lightbox": "المعرض المبسط",
-    "Search Results": "نتائج البحث",
-    "Social Contacts": "جهات الاتصال الاجتماعية",
-    "Treeview": "تريفيو",
-    "Header Table": "جدول الرأس",
-    "Selection Table": "جدول الاختيار",
-    "Sorting Table": "جدول الفرز",
-    "Pagination Table": "جدول ترقيم الصفحات",
-    "Filtering Table": "جدول التصفية",
-    "Grouping Table": "جدول التجميع",
-    "Table Slots": "فتحات الجدول",
-    "CRUD Table": "الجدول الخام",
-    "Time Picker": "منتقي الوقت",
-    "Stepper": "السائر",
-    "Front Pages": "الصفحات الأولى",
-    "Homepage": "الصفحة الرئيسية",
-    "About Us": "معلومات عنا",
-    "Contact Us": "اتصل بنا",
-    "Blog Details": "تفاصيل المدونة",
-    "Portfolio": "مَلَفّ",
-    "Invoice": "فاتورة",
-    "Create": "يخلق",
-    "Edit": "يحرر",
-    "Tickets": "التذاكر",
-    "Details": "تفاصيل",
-    "Banners Widgets": "لافتات الحاجيات",
-    "Cards Widgets": "الحاجيات بطاقات",
-    "Charts Widgets": "الحاجيات الرسوم البيانية",
-    "menu": {
-      "apps-dataset-categories": "فئات Dataset",
-      "datasets": "Datasets",
-      "two-steps": "خطوتين",
-      "apps-events": "رسائل الأحداث",
-      "apps-side-menu-manager": {
-        "title": "قائمة الفئات المدفوعة",
-        "subCaption": "الصفحة لوحة التحكم من القائمة"
-      },
-      "apps-users": "إدارة المستخدمين",
-      "apps-groups": "إدارة المجموعات",
-      "books": "الكتب",
-      "apps-books": "الكتب",
-      "automated-forms": "النماذج الآلية",
-      "apps-automated-forms": {
-        "title": "الآلاتFORMات",
-        "subCaption": "formulaire إنشاء تطوع"
-      },
-      "headers": {
-        "home": "الرئيسية",
-        "assets": "الأصول",
-        "apps": "التطبيقات",
-        "pages": "الصفحات",
-        "components": "المكونات",
-        "charts": "الرسوم البيانية",
-        "forms": "النماذج",
-        "widget": "الحاجيات",
-        "tables": "الجداول",
-        "data-tables": "جداول البيانات",
-        "authentication": "المصادقة",
-        "icons": "الأيقونات",
-        "administration": "الإدارة",
-        "examples_header": "exemples",
-        "management": "الإدارة"
-      },
-      "book_definitions": "التعريفsWithout any further context, \"Kitap Tanımlamaları\" translates to \"Defsination of Books\" in English. If you need a more specific translation or have additional information about what this phrase might mean, please provide it.",
-      "book-genres": "أنواع الكتب",
-      "tst_publishers": "م publishers",
-      "tst_books": "الكتب"
+  "Modern": "حديث",
+  "eCommerce": "التجارة الإلكترونية",
+  "Analytical": "تحليلي",
+  "Classic": "كلاسيك",
+  "Demographical": "ديموغرافي",
+  "Minimal": "الحد الأدنى",
+  "Contact": "اتصال",
+  "Blog": "مدونة",
+  "Posts": "دعامات",
+  "Detail": "التفاصيل",
+  "E-Commerce": "التجارة الإلكترونية",
+  "Shop": "محل",
+  "List": "قائمة",
+  "Checkout": "الدفع",
+  "Chats": "الدردشات",
+  "User Profile": "ملف تعريف المستخدمين",
+  "Notes": "ملحوظات",
+  "Calendar": "تقويم",
+  "Profile": "حساب تعريفي",
+  "Followers": "متابعون",
+  "Friends": "أصدقاء",
+  "Gallery": "صالة عرض",
+  "Email": "بريد إلكتروني",
+  "Pricing": "التسعير",
+  "Account Setting": "إعدادات الحساب",
+  "FAQ": "التعليمات",
+  "Widget": "القطعة",
+  "Landing Page": "الصفحة المقصودة",
+  "Form Elements": "عناصر النموذج",
+  "Autocomplete": "الإكمال التلقائي",
+  "Combobox": "صندوق التحرير",
+  "Button": "زر",
+  "Checkbox": "خانة اختيار",
+  "Custom Inputs": "المدخلات المخصصة",
+  "File Inputs": "مدخلات الملف",
+  "Radio": "مذياع",
+  "Date Time": "تاريخ الوقت",
+  "Select": "يختار",
+  "Slider": "المنزلق",
+  "Switch": "يُحوّل",
+  "Form Layout": "تخطيط النموذج",
+  "Form Horizontal": "شكل أفقي",
+  "Form Vertical": "شكل عمودي",
+  "Form Custom": "نموذج مخصص",
+  "Form Validation": "التحقق من صحة النموذج",
+  "Editor": "محرر",
+  "Basic Table": "الجدول الأساسي",
+  "Dark Table": "طاولة مظلمة",
+  "Density Table": "جدول الكثافة",
+  "Fixed Header Table": "جدول الرأس الثابت",
+  "Height Table": "جدول الارتفاع",
+  "Ui Components": "مكونات واجهة المستخدم",
+  "Alert": "يُحذًِر",
+  "Accordion": "الأكورديون",
+  "Avatar": "الصورة الرمزية",
+  "Chip": "رقاقة",
+  "Dialog": "حوار",
+  "Menus": "القوائم",
+  "Rating": "تقييم",
+  "Tabs": "نوافذ التبويب",
+  "Tooltip": "تلميح",
+  "Typography": "الطباعة",
+  "Line": "خط",
+  "Gredient": "طفيف",
+  "Area": "منطقة",
+  "Candlestick": "شمعدان",
+  "Column": "عمود",
+  "Doughnut & Pie": "دونات وفطيرة",
+  "Radialbar & Radar": "راديال بار ورادار",
+  "Login": "تسجيل الدخول",
+  "Side Login": "تسجيل الدخول الجانبي",
+  "Boxed Login": "تسجيل الدخول محاصر",
+  "Register": "يسجل",
+  "Side Register": "تسجيل جانبي",
+  "Boxed Register": "سجل محاصر",
+  "Forgot Password": "هل نسيت كلمة السر",
+  "Side Forgot Password": "الجانب نسيت كلمة المرور",
+  "Boxed Forgot Password": "محاصر نسيت كلمة المرور",
+  "Two Steps": "خطوتين",
+  "Side Two Steps": "الجانب ذو خطوتين",
+  "Boxed Two Steps": "خطوتين محاصر",
+  "Error": "خطأ",
+  "Maintenance": "صيانة",
+  "Menu Level": "مستوى القائمة",
+  "Level 1": "المستوى 1",
+  "Level 2": "المستوي 2",
+  "Level 3": "مستوى 3",
+  "Disabled": "عاجز",
+  "Sub Caption": "التسمية التوضيحية الفرعية",
+  "Outlined": "موجز",
+  "External Link": "رابط خارجي",
+  "Editable Table": "جدول قابل للتحرير",
+  "Cards": "البطاقات",
+  "Banners": "لافتات",
+  "Material": "مادة",
+  "Tabler": "طاولة",
+  "Add Product": "أضف منتج",
+  "Edit Product": "تحرير المنتج",
+  "Kanban": "كانبان",
+  "Gallery Lightbox": "المعرض المبسط",
+  "Search Results": "نتائج البحث",
+  "Social Contacts": "جهات الاتصال الاجتماعية",
+  "Treeview": "تريفيو",
+  "Header Table": "جدول الرأس",
+  "Selection Table": "جدول الاختيار",
+  "Sorting Table": "جدول الفرز",
+  "Pagination Table": "جدول ترقيم الصفحات",
+  "Filtering Table": "جدول التصفية",
+  "Grouping Table": "جدول التجميع",
+  "Table Slots": "فتحات الجدول",
+  "CRUD Table": "الجدول الخام",
+  "Time Picker": "منتقي الوقت",
+  "Stepper": "السائر",
+  "Front Pages": "الصفحات الأولى",
+  "Homepage": "الصفحة الرئيسية",
+  "About Us": "معلومات عنا",
+  "Contact Us": "اتصل بنا",
+  "Blog Details": "تفاصيل المدونة",
+  "Portfolio": "مَلَفّ",
+  "Invoice": "فاتورة",
+  "Create": "يخلق",
+  "Edit": "يحرر",
+  "Tickets": "التذاكر",
+  "Details": "تفاصيل",
+  "Banners Widgets": "لافتات الحاجيات",
+  "Cards Widgets": "الحاجيات بطاقات",
+  "Charts Widgets": "الحاجيات الرسوم البيانية",
+  "menu": {
+    "apps-dataset-categories": "فئات Dataset",
+    "datasets": "Datasets",
+    "two-steps": "خطوتين",
+    "apps-events": "رسائل الأحداث",
+    "apps-side-menu-manager": {
+      "title": "قائمة الفئات المدفوعة",
+      "subCaption": "الصفحة لوحة التحكم من القائمة"
     },
-    "events": {
-      "title": "رسائل الأحداث",
-      "description": "إشعارات في الوقت الفعلي لعمليات CRUD للمجموعة والمستخدم والبيانات من RabbitMQ",
+    "apps-users": "إدارة المستخدمين",
+    "apps-groups": "إدارة المجموعات",
+    "books": "الكتب",
+    "apps-books": "الكتب",
+    "automated-forms": "النماذج الآلية",
+    "apps-automated-forms": {
+      "title": "الآلاتFORMات",
+      "subCaption": "formulaire إنشاء تطوع"
+    },
+    "headers": {
+      "home": "الرئيسية",
+      "assets": "الأصول",
+      "apps": "التطبيقات",
+      "pages": "الصفحات",
+      "components": "المكونات",
+      "charts": "الرسوم البيانية",
+      "forms": "النماذج",
+      "widget": "الحاجيات",
+      "tables": "الجداول",
+      "data-tables": "جداول البيانات",
+      "authentication": "المصادقة",
+      "icons": "الأيقونات",
+      "administration": "الإدارة",
+      "examples_header": "exemples",
+      "management": "الإدارة"
+    },
+    "book_definitions": "التعريفsWithout any further context, \"Kitap Tanımlamaları\" translates to \"Defsination of Books\" in English. If you need a more specific translation or have additional information about what this phrase might mean, please provide it.",
+    "book-genres": "أنواع الكتب",
+    "tst_publishers": "م publishers",
+    "tst_books": "الكتب"
+  },
+  "events": {
+    "title": "رسائل الأحداث",
+    "description": "إشعارات في الوقت الفعلي لعمليات CRUD للمجموعة والمستخدم والبيانات من RabbitMQ",
+    "buttons": {
+      "connect": "اتصل",
+      "disconnect": "قطع الاتصال",
+      "clearMessages": "مسح الرسائل"
+    },
+    "status": {
+      "connected": "متصل",
+      "connecting": "جاري الاتصال...",
+      "error": "خطأ في الاتصال",
+      "disconnected": "غير متصل",
+      "closed": "تم إغلاق الاتصال"
+    },
+    "types": {
+      "user": "مستخدم",
+      "group": "مجموعة",
+      "system": "نظام",
+      "data": "بيانات",
+      "unknown": "غير معروف"
+    },
+    "empty": {
+      "title": "لا توجد رسائل بعد",
+      "description": "ستظهر عمليات المجموعة أو المستخدم أو البيانات هنا"
+    },
+    "details": {
+      "view": "عرض التفاصيل"
+    },
+    "errors": {
+      "tokenNotFound": "لم يتم العثور على رمز الوصول. يرجى تسجيل الدخول مرة أخرى.",
+      "connectionError": "حدث خطأ في الاتصال.",
+      "connectionClosed": "تم إغلاق الاتصال"
+    },
+    "breadcrumbs": {
+      "home": "الرئيسية"
+    }
+  },
+  "side-menu-manager": {
+    "title": "مدير القائمة الجانبية",
+    "description": "إدارة عناصر القائمة الجانبية ديناميكيًا",
+    "breadcrumbs": {
+      "home": "الرئيسية",
+      "title": "مدير القائمة الجانبية"
+    },
+    "tree": {
+      "title": "عناصر القائمة",
+      "expandAll": "توسيع الكل",
+      "collapseAll": "طي الكل",
+      "empty": "لم يتم العثور على عناصر القائمة",
+      "navigate": "انتقل إلى الصفحة"
+    },
+    "toolbar": {
+      "newItem": "عنصر قائمة جديد",
+      "newHeader": "رأس جديد",
+      "search": "البحث في عناصر القائمة...",
+      "refresh": "تحديث"
+    },
+    "form": {
+      "title": {
+        "edit": "تعديل عنصر القائمة",
+        "new": "عنصر قائمة جديد"
+      },
+      "empty": "انقر على زر \"عنصر قائمة جديد\" أو \"رأس جديد\" على اليسار لإنشاء عنصر قائمة جديد.",
+      "fields": {
+        "itemType": "نوع العنصر",
+        "pageType": "نوع الصفحة",
+        "header": "نص الرأس",
+        "title": "عنوان القائمة",
+        "pageCode": "رمز الصفحة (فريد)",
+        "pageCodeHint": "يمكن إنشاؤه تلقائيًا من المسار أو العنوان",
+        "order": "الترتيب",
+        "parent": "عنصر القائمة الأب",
+        "parentNone": "(لا شيء - الجذر)",
+        "level": "المستوى",
+        "levelHint": "يتم حسابه تلقائيًا بناءً على اختيار الأب",
+        "disabled": "معطل",
+        "forms": "النماذج المحفوظة",
+        "formsPlaceholder": "حدد النموذج (اختياري)",
+        "formsHint": "حدد من النماذج المحفوظة أو أدخل المسار يدويًا",
+        "route": "مسار المسار",
+        "routeHint": "مثال: /dashboards/analytical أو حدد النموذج",
+        "linkType": "نوع الرابط",
+        "subCaption": "التسمية التوضيحية الفرعية",
+        "chip": "نص الرقاقة",
+        "chipVariant": "متغير الرقاقة",
+        "chipColor": "لون نص الرقاقة",
+        "chipBgColor": "لون خلفية الرقاقة",
+        "chipIcon": "أيقونة الرقاقة"
+      },
+      "sections": {
+        "chip": "إعدادات الرقاقة/الشارة",
+        "permissions": "التفويض",
+        "locale": "دعم اللغة"
+      },
       "buttons": {
-        "connect": "اتصل",
-        "disconnect": "قطع الاتصال",
-        "clearMessages": "مسح الرسائل"
+        "save": "حفظ",
+        "update": "تحديث",
+        "delete": "حذف",
+        "cancel": "إلغاء",
+        "generatePageCode": "إنشاء تلقائي",
+        "navigate": "انتقل إلى هذه الصفحة",
+        "updateLocales": "تحديث ملفات اللغة"
       },
-      "status": {
-        "connected": "متصل",
-        "connecting": "جاري الاتصال...",
-        "error": "خطأ في الاتصال",
-        "disconnected": "غير متصل",
-        "closed": "تم إغلاق الاتصال"
-      },
-      "types": {
-        "user": "مستخدم",
-        "group": "مجموعة",
-        "system": "نظام",
-        "data": "بيانات",
-        "unknown": "غير معروف"
-      },
-      "empty": {
-        "title": "لا توجد رسائل بعد",
-        "description": "ستظهر عمليات المجموعة أو المستخدم أو البيانات هنا"
-      },
-      "details": {
-        "view": "عرض التفاصيل"
-      },
-      "errors": {
-        "tokenNotFound": "لم يتم العثور على رمز الوصول. يرجى تسجيل الدخول مرة أخرى.",
-        "connectionError": "حدث خطأ في الاتصال.",
-        "connectionClosed": "تم إغلاق الاتصال"
-      },
-      "breadcrumbs": {
-        "home": "الرئيسية"
-      }
-    },
-    "side-menu-manager": {
-      "title": "مدير القائمة الجانبية",
-      "description": "إدارة عناصر القائمة الجانبية ديناميكيًا",
-      "breadcrumbs": {
-        "home": "الرئيسية",
-        "title": "مدير القائمة الجانبية"
-      },
-      "tree": {
-        "title": "عناصر القائمة",
-        "expandAll": "توسيع الكل",
-        "collapseAll": "طي الكل",
-        "empty": "لم يتم العثور على عناصر القائمة",
-        "navigate": "انتقل إلى الصفحة"
-      },
-      "toolbar": {
-        "newItem": "عنصر قائمة جديد",
-        "newHeader": "رأس جديد",
-        "search": "البحث في عناصر القائمة...",
-        "refresh": "تحديث"
-      },
-      "form": {
-        "title": {
-          "edit": "تعديل عنصر القائمة",
-          "new": "عنصر قائمة جديد"
-        },
-        "empty": "انقر على زر \"عنصر قائمة جديد\" أو \"رأس جديد\" على اليسار لإنشاء عنصر قائمة جديد.",
-        "fields": {
-          "itemType": "نوع العنصر",
-          "pageType": "نوع الصفحة",
-          "header": "نص الرأس",
-          "title": "عنوان القائمة",
-          "pageCode": "رمز الصفحة (فريد)",
-          "pageCodeHint": "يمكن إنشاؤه تلقائيًا من المسار أو العنوان",
-          "order": "الترتيب",
-          "parent": "عنصر القائمة الأب",
-          "parentNone": "(لا شيء - الجذر)",
-          "level": "المستوى",
-          "levelHint": "يتم حسابه تلقائيًا بناءً على اختيار الأب",
-          "disabled": "معطل",
-          "forms": "النماذج المحفوظة",
-          "formsPlaceholder": "حدد النموذج (اختياري)",
-          "formsHint": "حدد من النماذج المحفوظة أو أدخل المسار يدويًا",
-          "route": "مسار المسار",
-          "routeHint": "مثال: /dashboards/analytical أو حدد النموذج",
-          "linkType": "نوع الرابط",
-          "subCaption": "التسمية التوضيحية الفرعية",
-          "chip": "نص الرقاقة",
-          "chipVariant": "متغير الرقاقة",
-          "chipColor": "لون نص الرقاقة",
-          "chipBgColor": "لون خلفية الرقاقة",
-          "chipIcon": "أيقونة الرقاقة"
-        },
-        "sections": {
-          "chip": "إعدادات الرقاقة/الشارة",
-          "permissions": "التفويض",
-          "locale": "دعم اللغة"
-        },
-        "buttons": {
-          "save": "حفظ",
-          "update": "تحديث",
-          "delete": "حذف",
-          "cancel": "إلغاء",
-          "generatePageCode": "إنشاء تلقائي",
-          "navigate": "انتقل إلى هذه الصفحة",
-          "updateLocales": "تحديث ملفات اللغة"
-        },
-        "locale": {
-          "success": "تم تحديث ملفات اللغة بنجاح! ({pageCode})",
-          "error": "خطأ في تحديث ملف اللغة: {error}",
-          "pageCodeRequired": "رمز الصفحة (pageCode) مطلوب. يرجى إنشاء pageCode أولاً.",
-          "headerRequired": "نص الرأس مطلوب.",
-          "titleRequired": "عنوان القائمة مطلوب.",
-          "description": "يضيف هذا الزر رمز الصفحة الحالي ({pageCode}) إلى جميع ملفات اللغة. يستخدم التركي الرأس/العنوان الحالي، وتحصل اللغات الأخرى على نفس القيمة كعنصر نائب."
-        },
-        "validation": {
-          "headerRequired": "نص الرأس مطلوب",
-          "titleRequired": "عنوان القائمة مطلوب"
-        }
-      },
-      "permissions": {
-        "loading": "جاري تحميل المجموعات...",
-        "empty": "لم يتم العثور على مجموعات نشطة بعد.",
-        "emptyFiltered": "لم يتم العثور على مجموعات نشطة قابلة للعرض.",
-        "retry": "إعادة المحاولة",
-        "bulkActions": "الإجراءات المجمعة:",
-        "openAll": "فتح الكل",
-        "closeAll": "إغلاق الكل",
-        "group": "المجموعة",
-        "actions": "الإجراءات",
-        "all": "الكل",
-        "none": "لا شيء",
-        "labels": {
-          "view": "عرض",
-          "create": "إنشاء",
-          "update": "تحديث",
-          "delete": "حذف",
-          "export": "تصدير"
-        }
-      },
-      "messages": {
-        "deleteConfirm": "هل أنت متأكد أنك تريد حذف عنصر القائمة هذا؟",
-        "success": {
-          "created": "تم إنشاء عنصر القائمة بنجاح",
-          "updated": "تم تحديث عنصر القائمة بنجاح",
-          "deleted": "تم حذف عنصر القائمة بنجاح"
-        },
-        "errors": {
-          "create": "خطأ في إنشاء عنصر القائمة",
-          "update": "خطأ في تحديث عنصر القائمة",
-          "delete": "خطأ في حذف عنصر القائمة",
-          "load": "خطأ في تحميل عناصر القائمة"
-        }
-      }
-    },
-    "login": {
-      "title": "مرحباً بك في MonitraNG",
-      "subtitle": "أداة مراقبة متقدمة",
-      "form": {
-        "username": "اسم المستخدم",
-        "usernamePlaceholder": "اسم المستخدم أو domain{'@'}username",
-        "password": "كلمة المرور",
-        "passwordPlaceholder": "أدخل كلمة المرور",
-        "submit": "تسجيل الدخول",
-        "error": "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى."
+      "locale": {
+        "success": "تم تحديث ملفات اللغة بنجاح! ({pageCode})",
+        "error": "خطأ في تحديث ملف اللغة: {error}",
+        "pageCodeRequired": "رمز الصفحة (pageCode) مطلوب. يرجى إنشاء pageCode أولاً.",
+        "headerRequired": "نص الرأس مطلوب.",
+        "titleRequired": "عنوان القائمة مطلوب.",
+        "description": "يضيف هذا الزر رمز الصفحة الحالي ({pageCode}) إلى جميع ملفات اللغة. يستخدم التركي الرأس/العنوان الحالي، وتحصل اللغات الأخرى على نفس القيمة كعنصر نائب."
       },
       "validation": {
-        "usernameRequired": "اسم المستخدم مطلوب",
-        "passwordRequired": "كلمة المرور مطلوبة",
-        "passwordMinLength": "يجب أن تكون كلمة المرور 3 أحرف على الأقل"
-      },
-      "language": {
-        "label": "اللغة",
-        "select": "اختر اللغة"
+        "headerRequired": "نص الرأس مطلوب",
+        "titleRequired": "عنوان القائمة مطلوب"
       }
+    },
+    "permissions": {
+      "loading": "جاري تحميل المجموعات...",
+      "empty": "لم يتم العثور على مجموعات نشطة بعد.",
+      "emptyFiltered": "لم يتم العثور على مجموعات نشطة قابلة للعرض.",
+      "retry": "إعادة المحاولة",
+      "bulkActions": "الإجراءات المجمعة:",
+      "openAll": "فتح الكل",
+      "closeAll": "إغلاق الكل",
+      "group": "المجموعة",
+      "actions": "الإجراءات",
+      "all": "الكل",
+      "none": "لا شيء",
+      "labels": {
+        "view": "عرض",
+        "create": "إنشاء",
+        "update": "تحديث",
+        "delete": "حذف",
+        "export": "تصدير"
+      }
+    },
+    "messages": {
+      "deleteConfirm": "هل أنت متأكد أنك تريد حذف عنصر القائمة هذا؟",
+      "success": {
+        "created": "تم إنشاء عنصر القائمة بنجاح",
+        "updated": "تم تحديث عنصر القائمة بنجاح",
+        "deleted": "تم حذف عنصر القائمة بنجاح"
+      },
+      "errors": {
+        "create": "خطأ في إنشاء عنصر القائمة",
+        "update": "خطأ في تحديث عنصر القائمة",
+        "delete": "خطأ في حذف عنصر القائمة",
+        "load": "خطأ في تحميل عناصر القائمة"
+      }
+    }
+  },
+  "login": {
+    "title": "مرحباً بك في MonitraNG",
+    "subtitle": "أداة مراقبة متقدمة",
+    "form": {
+      "username": "اسم المستخدم",
+      "usernamePlaceholder": "اسم المستخدم أو domain{'@'}username",
+      "password": "كلمة المرور",
+      "passwordPlaceholder": "أدخل كلمة المرور",
+      "submit": "تسجيل الدخول",
+      "error": "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى."
+    },
+    "validation": {
+      "usernameRequired": "اسم المستخدم مطلوب",
+      "passwordRequired": "كلمة المرور مطلوبة",
+      "passwordMinLength": "يجب أن تكون كلمة المرور 3 أحرف على الأقل"
+    },
+    "language": {
+      "label": "اللغة",
+      "select": "اختر اللغة"
+    }
+  },
+  "groups": {
+    "title": "إدارة المجموعات",
+    "breadcrumbs": {
+      "home": "الرئيسية",
+      "groups": "إدارة المجموعات",
+      "create": "مجموعة جديدة",
+      "edit": "تعديل المجموعة",
+      "details": "تفاصيل المجموعة"
+    },
+    "list": {
+      "search": "البحث في المجموعات",
+      "status": "الحالة",
+      "statusAll": "الكل",
+      "statusActive": "نشط",
+      "statusInactive": "غير نشط",
+      "export": "تصدير",
+      "exportCsv": "تحميل كـ CSV",
+      "exportExcel": "تحميل كـ Excel",
+      "exportSoon": "قريباً",
+      "refresh": "تحديث",
+      "newGroup": "مجموعة جديدة",
+      "noData": "لم يتم العثور على مجموعات",
+      "createFirst": "إنشاء أول مجموعة",
+      "total": "المجموع",
+      "records": "سجل",
+      "page": "الصفحة",
+      "of": "/",
+      "showing": "عرض",
+      "itemsPerPage": "عناصر لكل صفحة:",
+      "warning": "تحذير",
+      "warningMessage": "يتطلب الوصول إلى هذه الصفحة صلاحيات المدير أو المسؤول. يرجى الاتصال بالمسؤول لتنفيذ عمليات إدارة المجموعات."
+    },
+    "table": {
+      "name": "اسم المجموعة",
+      "memberCount": "عدد الأعضاء",
+      "createdAt": "تاريخ الإنشاء",
+      "actions": "الإجراءات",
+      "view": "عرض",
+      "edit": "تعديل",
+      "delete": "حذف",
+      "deleteTooltip": "المجموعة تحتوي على أعضاء، لا يمكن حذفها"
+    },
+    "create": {
+      "title": "إنشاء مجموعة جديدة",
+      "name": "اسم المجموعة *",
+      "description": "الوصف",
+      "isActive": "نشط",
+      "cancel": "إلغاء",
+      "create": "إنشاء"
+    },
+    "edit": {
+      "title": "تعديل المجموعة",
+      "loading": "جاري التحميل...",
+      "name": "اسم المجموعة *",
+      "description": "الوصف",
+      "isActive": "نشط",
+      "cancel": "إلغاء",
+      "save": "حفظ"
+    },
+    "details": {
+      "title": "تفاصيل المجموعة",
+      "loading": "جاري التحميل...",
+      "notFound": "لم يتم العثور على المجموعة",
+      "backToList": "العودة إلى القائمة",
+      "userManagement": "إدارة الأعضاء",
+      "edit": "تعديل",
+      "groupInfo": "معلومات المجموعة",
+      "metadata": "البيانات الوصفية",
+      "name": "اسم المجموعة:",
+      "description": "الوصف:",
+      "status": "الحالة:",
+      "statusActive": "نشط",
+      "statusInactive": "غير نشط",
+      "memberCount": "عدد الأعضاء:",
+      "createdAt": "تاريخ الإنشاء:",
+      "updatedAt": "آخر تحديث:",
+      "createdBy": "تم الإنشاء بواسطة:",
+      "updatedBy": "تم التحديث بواسطة:",
+      "permissions": "الأذونات:"
+    },
+    "delete": {
+      "title": "حذف المجموعة",
+      "confirm": "هل أنت متأكد أنك تريد حذف هذه المجموعة؟ لا يمكن التراجع عن هذا الإجراء.",
+      "cancel": "إلغاء",
+      "close": "إغلاق",
+      "confirmButton": "نعم، احذف",
+      "error": "تحتوي هذه المجموعة على {count} مستخدم. يجب إزالة جميع المستخدمين من المجموعة أولاً."
+    },
+    "validation": {
+      "nameRequired": "اسم المجموعة مطلوب",
+      "nameMinLength": "يجب أن يكون اسم المجموعة على الأقل حرفين",
+      "descriptionMaxLength": "يمكن أن يكون الوصف بحد أقصى 500 حرف"
+    },
+    "errors": {
+      "load": "حدث خطأ أثناء تحميل المجموعة",
+      "create": "حدث خطأ أثناء إنشاء المجموعة",
+      "update": "حدث خطأ أثناء تحديث المجموعة",
+      "delete": "حدث خطأ أثناء حذف المجموعة",
+      "export": "حدث خطأ أثناء التصدير."
+    },
+    "userManagement": {
+      "title": "إدارة الأعضاء",
+      "search": "البحث عن المستخدمين (اسم المستخدم، البريد الإلكتروني، الاسم الكامل)",
+      "currentMembers": "الأعضاء الحاليون",
+      "addUsers": "إضافة المستخدمين",
+      "loading": "جاري تحميل المستخدمين...",
+      "noMembers": "لم يتم العثور على أعضاء",
+      "noUsersToAdd": "لا يوجد مستخدمون متاحون للإضافة",
+      "noUsersToAddDescription": "قد يكون جميع المستخدمين بالفعل في هذه المجموعة",
+      "selectAll": "تحديد الكل",
+      "deselectAll": "مسح التحديد",
+      "selected": "محدد",
+      "addSelected": "إضافة {count} مستخدم محدد",
+      "close": "إغلاق",
+      "errors": {
+        "load": "حدث خطأ أثناء تحميل المستخدمين",
+        "add": "حدث خطأ أثناء إضافة المستخدمين إلى المجموعة",
+        "remove": "حدث خطأ أثناء إزالة المستخدم من المجموعة",
+        "noSelection": "يرجى تحديد مستخدم واحد على الأقل"
+      },
+      "success": {
+        "added": "تم إضافة {count} مستخدم بنجاح إلى المجموعة",
+        "removed": "تم إزالة المستخدم بنجاح من المجموعة"
+      }
+    }
+  },
+  "profile": {
+    "title": "الملف الشخصي",
+    "user": "المستخدم",
+    "breadcrumbs": {
+      "home": "الرئيسية",
+      "profile": "الملف الشخصي"
+    },
+    "tabs": {
+      "general": "المعلومات العامة",
+      "account": "إعدادات الحساب",
+      "security": "الأمان",
+      "preferences": "التفضيلات"
+    },
+    "comingSoon": "قريباً",
+    "roles": {
+      "admin": "المسؤول",
+      "manager": "المدير",
+      "user": "المستخدم"
+    },
+    "personalInfo": {
+      "title": "المعلومات الشخصية",
+      "firstName": "الاسم الأول",
+      "lastName": "اسم العائلة",
+      "email": "البريد الإلكتروني",
+      "jobTitle": "المسمى الوظيفي",
+      "department": "القسم",
+      "gender": "الجنس",
+      "phoneNumber": "الهاتف"
+    },
+    "accountInfo": {
+      "title": "معلومات الحساب",
+      "username": "اسم المستخدم",
+      "email": "البريد الإلكتروني",
+      "domain": "النطاق",
+      "status": "الحالة",
+      "createdAt": "تم الإنشاء",
+      "updatedAt": "آخر تحديث"
+    },
+    "status": {
+      "active": "نشط",
+      "inactive": "غير نشط"
     },
     "groups": {
-      "title": "إدارة المجموعات",
-      "breadcrumbs": {
-        "home": "الرئيسية",
-        "groups": "إدارة المجموعات",
-        "create": "مجموعة جديدة",
-        "edit": "تعديل المجموعة",
-        "details": "تفاصيل المجموعة"
-      },
-      "list": {
-        "search": "البحث في المجموعات",
-        "status": "الحالة",
-        "statusAll": "الكل",
-        "statusActive": "نشط",
-        "statusInactive": "غير نشط",
-        "export": "تصدير",
-        "exportCsv": "تحميل كـ CSV",
-        "exportExcel": "تحميل كـ Excel",
-        "exportSoon": "قريباً",
-        "refresh": "تحديث",
-        "newGroup": "مجموعة جديدة",
-        "noData": "لم يتم العثور على مجموعات",
-        "createFirst": "إنشاء أول مجموعة",
-        "total": "المجموع",
-        "records": "سجل",
-        "page": "الصفحة",
-        "of": "/",
-        "showing": "عرض",
-        "itemsPerPage": "عناصر لكل صفحة:",
-        "warning": "تحذير",
-        "warningMessage": "يتطلب الوصول إلى هذه الصفحة صلاحيات المدير أو المسؤول. يرجى الاتصال بالمسؤول لتنفيذ عمليات إدارة المجموعات."
-      },
-      "table": {
-        "name": "اسم المجموعة",
-        "memberCount": "عدد الأعضاء",
-        "createdAt": "تاريخ الإنشاء",
-        "actions": "الإجراءات",
-        "view": "عرض",
-        "edit": "تعديل",
-        "delete": "حذف",
-        "deleteTooltip": "المجموعة تحتوي على أعضاء، لا يمكن حذفها"
-      },
-      "create": {
-        "title": "إنشاء مجموعة جديدة",
-        "name": "اسم المجموعة *",
-        "description": "الوصف",
-        "isActive": "نشط",
-        "cancel": "إلغاء",
-        "create": "إنشاء"
-      },
-      "edit": {
-        "title": "تعديل المجموعة",
-        "loading": "جاري التحميل...",
-        "name": "اسم المجموعة *",
-        "description": "الوصف",
-        "isActive": "نشط",
-        "cancel": "إلغاء",
-        "save": "حفظ"
-      },
-      "details": {
-        "title": "تفاصيل المجموعة",
-        "loading": "جاري التحميل...",
-        "notFound": "لم يتم العثور على المجموعة",
-        "backToList": "العودة إلى القائمة",
-        "userManagement": "إدارة الأعضاء",
-        "edit": "تعديل",
-        "groupInfo": "معلومات المجموعة",
-        "metadata": "البيانات الوصفية",
-        "name": "اسم المجموعة:",
-        "description": "الوصف:",
-        "status": "الحالة:",
-        "statusActive": "نشط",
-        "statusInactive": "غير نشط",
-        "memberCount": "عدد الأعضاء:",
-        "createdAt": "تاريخ الإنشاء:",
-        "updatedAt": "آخر تحديث:",
-        "createdBy": "تم الإنشاء بواسطة:",
-        "updatedBy": "تم التحديث بواسطة:",
-        "permissions": "الأذونات:"
-      },
-      "delete": {
-        "title": "حذف المجموعة",
-        "confirm": "هل أنت متأكد أنك تريد حذف هذه المجموعة؟ لا يمكن التراجع عن هذا الإجراء.",
-        "cancel": "إلغاء",
-        "close": "إغلاق",
-        "confirmButton": "نعم، احذف",
-        "error": "تحتوي هذه المجموعة على {count} مستخدم. يجب إزالة جميع المستخدمين من المجموعة أولاً."
-      },
-      "validation": {
-        "nameRequired": "اسم المجموعة مطلوب",
-        "nameMinLength": "يجب أن يكون اسم المجموعة على الأقل حرفين",
-        "descriptionMaxLength": "يمكن أن يكون الوصف بحد أقصى 500 حرف"
-      },
+      "title": "المجموعات",
+      "manage": "إدارة المجموعات",
+      "noGroups": "لم يتم تعيين أي مجموعات بعد"
+    },
+    "photo": {
+      "title": "صورة الملف الشخصي",
+      "upload": "رفع صورة",
+      "remove": "إزالة الصورة",
+      "maxSize": "الحد الأقصى: 5 ميجابايت",
+      "formats": "التنسيق: JPG, PNG, WebP",
       "errors": {
-        "load": "حدث خطأ أثناء تحميل المجموعة",
-        "create": "حدث خطأ أثناء إنشاء المجموعة",
-        "update": "حدث خطأ أثناء تحديث المجموعة",
-        "delete": "حدث خطأ أثناء حذف المجموعة",
-        "export": "حدث خطأ أثناء التصدير."
-      },
-      "userManagement": {
-        "title": "إدارة الأعضاء",
-        "search": "البحث عن المستخدمين (اسم المستخدم، البريد الإلكتروني، الاسم الكامل)",
-        "currentMembers": "الأعضاء الحاليون",
-        "addUsers": "إضافة المستخدمين",
-        "loading": "جاري تحميل المستخدمين...",
-        "noMembers": "لم يتم العثور على أعضاء",
-        "noUsersToAdd": "لا يوجد مستخدمون متاحون للإضافة",
-        "noUsersToAddDescription": "قد يكون جميع المستخدمين بالفعل في هذه المجموعة",
-        "selectAll": "تحديد الكل",
-        "deselectAll": "مسح التحديد",
-        "selected": "محدد",
-        "addSelected": "إضافة {count} مستخدم محدد",
-        "close": "إغلاق",
-        "errors": {
-          "load": "حدث خطأ أثناء تحميل المستخدمين",
-          "add": "حدث خطأ أثناء إضافة المستخدمين إلى المجموعة",
-          "remove": "حدث خطأ أثناء إزالة المستخدم من المجموعة",
-          "noSelection": "يرجى تحديد مستخدم واحد على الأقل"
-        },
-        "success": {
-          "added": "تم إضافة {count} مستخدم بنجاح إلى المجموعة",
-          "removed": "تم إزالة المستخدم بنجاح من المجموعة"
-        }
+        "maxSize": "لا يمكن أن يتجاوز حجم الملف 5 ميجابايت",
+        "invalidFormat": "يتم دعم تنسيقات JPG و PNG و WebP فقط",
+        "maxDimensions": "لا يمكن أن يتجاوز حجم الصورة 2000x2000 بكسل",
+        "invalidImage": "ملف صورة غير صالح",
+        "readError": "تعذر قراءة الملف",
+        "uploadFailed": "حدث خطأ أثناء رفع الصورة"
       }
     },
-    "profile": {
-      "title": "الملف الشخصي",
-      "user": "المستخدم",
-      "breadcrumbs": {
-        "home": "الرئيسية",
-        "profile": "الملف الشخصي"
-      },
-      "tabs": {
-        "general": "المعلومات العامة",
-        "account": "إعدادات الحساب",
-        "security": "الأمان",
-        "preferences": "التفضيلات"
-      },
-      "comingSoon": "قريباً",
-      "roles": {
-        "admin": "المسؤول",
-        "manager": "المدير",
-        "user": "المستخدم"
-      },
-      "personalInfo": {
-        "title": "المعلومات الشخصية",
-        "firstName": "الاسم الأول",
-        "lastName": "اسم العائلة",
-        "email": "البريد الإلكتروني",
-        "jobTitle": "المسمى الوظيفي",
-        "department": "القسم",
-        "gender": "الجنس",
-        "phoneNumber": "الهاتف"
-      },
+    "gender": {
+      "notSpecified": "غير محدد",
+      "male": "ذكر",
+      "female": "أنثى"
+    },
+    "buttons": {
+      "edit": "تعديل",
+      "save": "حفظ",
+      "cancel": "إلغاء"
+    },
+    "validation": {
+      "firstNameRequired": "الاسم الأول مطلوب",
+      "firstNameMinLength": "يجب أن يكون الاسم الأول على الأقل حرفين",
+      "firstNameMaxLength": "يمكن أن يكون الاسم الأول على الأكثر 50 حرفاً",
+      "lastNameRequired": "اسم العائلة مطلوب",
+      "lastNameMinLength": "يجب أن يكون اسم العائلة على الأقل حرفين",
+      "lastNameMaxLength": "يمكن أن يكون اسم العائلة على الأكثر 50 حرفاً",
+      "emailRequired": "البريد الإلكتروني مطلوب",
+      "emailInvalid": "يرجى إدخال عنوان بريد إلكتروني صالح",
+      "titleMaxLength": "يمكن أن يكون المسمى الوظيفي على الأكثر 100 حرف",
+      "departmentMaxLength": "يمكن أن يكون القسم على الأكثر 100 حرف",
+      "phoneNumberMaxLength": "يمكن أن يكون رقم الهاتف على الأكثر 20 حرفاً"
+    },
+    "messages": {
+      "saveSuccess": "تم تحديث الملف الشخصي بنجاح",
+      "saveError": "حدث خطأ أثناء تحديث الملف الشخصي",
+      "photoUploadSuccess": "تم رفع الصورة بنجاح",
+      "photoUploadError": "حدث خطأ أثناء رفع الصورة",
+      "photoRemoveSuccess": "تم إزالة الصورة بنجاح",
+      "photoRemoveError": "حدث خطأ أثناء إزالة الصورة",
+      "userNotFound": "المستخدم غير موجود"
+    },
+    "accountSettings": {
       "accountInfo": {
         "title": "معلومات الحساب",
         "username": "اسم المستخدم",
         "email": "البريد الإلكتروني",
         "domain": "النطاق",
-        "status": "الحالة",
-        "createdAt": "تم الإنشاء",
+        "createdAt": "تم إنشاء الحساب",
         "updatedAt": "آخر تحديث"
       },
-      "status": {
-        "active": "نشط",
-        "inactive": "غير نشط"
+      "dangerZone": {
+        "title": "منطقة الخطر",
+        "description": "إذا كنت تريد حذف حسابك نهائياً، انقر على الزر أدناه. لا يمكن التراجع عن هذا الإجراء.",
+        "deleteAccount": "حذف الحساب",
+        "notImplemented": "لم يتم تطبيق ميزة حذف الحساب بعد."
+      }
+    },
+    "preferences": {
+      "language": {
+        "title": "تفضيل اللغة",
+        "label": "اختر اللغة",
+        "description": "اختر لغة التطبيق. يتم تطبيق التغييرات على الفور."
       },
-      "groups": {
-        "title": "المجموعات",
-        "manage": "إدارة المجموعات",
-        "noGroups": "لم يتم تعيين أي مجموعات بعد"
+      "theme": {
+        "title": "تفضيل السمة",
+        "description": "اختر سمة التطبيق. خيارات السمة الفاتحة والداكنة متاحة."
       },
-      "photo": {
-        "title": "صورة الملف الشخصي",
-        "upload": "رفع صورة",
-        "remove": "إزالة الصورة",
-        "maxSize": "الحد الأقصى: 5 ميجابايت",
-        "formats": "التنسيق: JPG, PNG, WebP",
-        "errors": {
-          "maxSize": "لا يمكن أن يتجاوز حجم الملف 5 ميجابايت",
-          "invalidFormat": "يتم دعم تنسيقات JPG و PNG و WebP فقط",
-          "maxDimensions": "لا يمكن أن يتجاوز حجم الصورة 2000x2000 بكسل",
-          "invalidImage": "ملف صورة غير صالح",
-          "readError": "تعذر قراءة الملف",
-          "uploadFailed": "حدث خطأ أثناء رفع الصورة"
-        }
+      "layout": {
+        "title": "تفضيلات التخطيط",
+        "sidebarLayout": "تخطيط الشريط الجانبي",
+        "vertical": "عمودي",
+        "horizontal": "أفقي",
+        "containerOption": "خيار الحاوية",
+        "boxed": "مربع",
+        "full": "عرض كامل",
+        "sidebarType": "نوع الشريط الجانبي",
+        "collapse": "مطوي",
+        "cardStyle": "نمط البطاقة",
+        "shadow": "ظل",
+        "border": "حد"
       },
-      "gender": {
-        "notSpecified": "غير محدد",
-        "male": "ذكر",
-        "female": "أنثى"
-      },
-      "buttons": {
-        "edit": "تعديل",
-        "save": "حفظ",
+      "saveSuccess": "تم حفظ التفضيلات بنجاح",
+      "saveError": "حدث خطأ أثناء حفظ التفضيلات"
+    },
+    "security": {
+      "changePassword": {
+        "title": "تغيير كلمة المرور",
+        "description": "يُنصح بتغيير كلمة المرور بانتظام لأمان حسابك.",
+        "currentPassword": "كلمة المرور الحالية",
+        "newPassword": "كلمة المرور الجديدة",
+        "confirmPassword": "كلمة المرور الجديدة (تأكيد)",
+        "passwordStrength": "قوة كلمة المرور",
+        "requirements": {
+          "title": "متطلبات كلمة المرور",
+          "minLength": "8 أحرف على الأقل",
+          "uppercase": "حرف كبير واحد على الأقل (A-Z)",
+          "lowercase": "حرف صغير واحد على الأقل (a-z)",
+          "number": "رقم واحد على الأقل (0-9)",
+          "special": "حرف خاص واحد على الأقل (! ? # $ % ^ & *)"
+        },
+        "save": "تغيير كلمة المرور",
         "cancel": "إلغاء"
+      },
+      "passwordStrength": {
+        "weak": "ضعيف",
+        "fair": "متوسط",
+        "good": "جيد",
+        "strong": "قوي"
       },
       "validation": {
-        "firstNameRequired": "الاسم الأول مطلوب",
-        "firstNameMinLength": "يجب أن يكون الاسم الأول على الأقل حرفين",
-        "firstNameMaxLength": "يمكن أن يكون الاسم الأول على الأكثر 50 حرفاً",
-        "lastNameRequired": "اسم العائلة مطلوب",
-        "lastNameMinLength": "يجب أن يكون اسم العائلة على الأقل حرفين",
-        "lastNameMaxLength": "يمكن أن يكون اسم العائلة على الأكثر 50 حرفاً",
-        "emailRequired": "البريد الإلكتروني مطلوب",
-        "emailInvalid": "يرجى إدخال عنوان بريد إلكتروني صالح",
-        "titleMaxLength": "يمكن أن يكون المسمى الوظيفي على الأكثر 100 حرف",
-        "departmentMaxLength": "يمكن أن يكون القسم على الأكثر 100 حرف",
-        "phoneNumberMaxLength": "يمكن أن يكون رقم الهاتف على الأكثر 20 حرفاً"
+        "currentPasswordRequired": "كلمة المرور الحالية مطلوبة",
+        "newPasswordRequired": "كلمة المرور الجديدة مطلوبة",
+        "passwordMinLength": "يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل",
+        "passwordLowercase": "يجب أن تحتوي كلمة المرور على حرف صغير واحد على الأقل",
+        "passwordUppercase": "يجب أن تحتوي كلمة المرور على حرف كبير واحد على الأقل",
+        "passwordNumber": "يجب أن تحتوي كلمة المرور على رقم واحد على الأقل",
+        "passwordSpecial": "يجب أن تحتوي كلمة المرور على حرف خاص واحد على الأقل",
+        "confirmPasswordRequired": "تأكيد كلمة المرور مطلوب",
+        "passwordsDoNotMatch": "كلمات المرور غير متطابقة"
       },
       "messages": {
-        "saveSuccess": "تم تحديث الملف الشخصي بنجاح",
-        "saveError": "حدث خطأ أثناء تحديث الملف الشخصي",
-        "photoUploadSuccess": "تم رفع الصورة بنجاح",
-        "photoUploadError": "حدث خطأ أثناء رفع الصورة",
-        "photoRemoveSuccess": "تم إزالة الصورة بنجاح",
-        "photoRemoveError": "حدث خطأ أثناء إزالة الصورة",
-        "userNotFound": "المستخدم غير موجود"
+        "changePasswordSuccess": "تم تغيير كلمة المرور بنجاح",
+        "changePasswordError": "حدث خطأ أثناء تغيير كلمة المرور"
       },
-      "accountSettings": {
-        "role": {
-          "admin": "مدير",
-          "user": "مستخدم"
-        },
-        "accountInfo": {
-          "title": "معلومات الحساب",
-          "username": "اسم المستخدم",
-          "email": "البريد الإلكتروني",
-          "domain": "النطاق",
-          "createdAt": "تم إنشاء الحساب",
-          "updatedAt": "آخر تحديث"
-        },
-        "dangerZone": {
-          "title": "منطقة الخطر",
-          "description": "إذا كنت تريد حذف حسابك نهائياً، انقر على الزر أدناه. لا يمكن التراجع عن هذا الإجراء.",
-          "deleteAccount": "حذف الحساب",
-          "notImplemented": "لم يتم تطبيق ميزة حذف الحساب بعد."
-        }
-      },
-      "preferences": {
-        "language": {
-          "title": "تفضيل اللغة",
-          "label": "اختر اللغة",
-          "description": "اختر لغة التطبيق. يتم تطبيق التغييرات على الفور."
-        },
-        "theme": {
-          "title": "تفضيل السمة",
-          "description": "اختر سمة التطبيق. خيارات السمة الفاتحة والداكنة متاحة."
-        },
-        "layout": {
-          "title": "تفضيلات التخطيط",
-          "sidebarLayout": "تخطيط الشريط الجانبي",
-          "vertical": "عمودي",
-          "horizontal": "أفقي",
-          "containerOption": "خيار الحاوية",
-          "boxed": "مربع",
-          "full": "عرض كامل",
-          "sidebarType": "نوع الشريط الجانبي",
-          "collapse": "مطوي",
-          "cardStyle": "نمط البطاقة",
-          "shadow": "ظل",
-          "border": "حد"
-        },
-        "saveSuccess": "تم حفظ التفضيلات بنجاح",
-        "saveError": "حدث خطأ أثناء حفظ التفضيلات"
-      },
-      "security": {
-        "changePassword": {
-          "title": "تغيير كلمة المرور",
-          "description": "يُنصح بتغيير كلمة المرور بانتظام لأمان حسابك.",
-          "currentPassword": "كلمة المرور الحالية",
-          "newPassword": "كلمة المرور الجديدة",
-          "confirmPassword": "كلمة المرور الجديدة (تأكيد)",
-          "passwordStrength": "قوة كلمة المرور",
-          "requirements": {
-            "title": "متطلبات كلمة المرور",
-            "minLength": "8 أحرف على الأقل",
-            "uppercase": "حرف كبير واحد على الأقل (A-Z)",
-            "lowercase": "حرف صغير واحد على الأقل (a-z)",
-            "number": "رقم واحد على الأقل (0-9)",
-            "special": "حرف خاص واحد على الأقل (! ? # $ % ^ & *)"
-          },
-          "save": "تغيير كلمة المرور",
-          "cancel": "إلغاء"
-        },
-        "passwordStrength": {
-          "weak": "ضعيف",
-          "fair": "متوسط",
-          "good": "جيد",
-          "strong": "قوي"
-        },
-        "validation": {
-          "currentPasswordRequired": "كلمة المرور الحالية مطلوبة",
-          "newPasswordRequired": "كلمة المرور الجديدة مطلوبة",
-          "passwordMinLength": "يجب أن تحتوي كلمة المرور على 8 أحرف على الأقل",
-          "passwordLowercase": "يجب أن تحتوي كلمة المرور على حرف صغير واحد على الأقل",
-          "passwordUppercase": "يجب أن تحتوي كلمة المرور على حرف كبير واحد على الأقل",
-          "passwordNumber": "يجب أن تحتوي كلمة المرور على رقم واحد على الأقل",
-          "passwordSpecial": "يجب أن تحتوي كلمة المرور على حرف خاص واحد على الأقل",
-          "confirmPasswordRequired": "تأكيد كلمة المرور مطلوب",
-          "passwordsDoNotMatch": "كلمات المرور غير متطابقة"
-        },
-        "messages": {
-          "changePasswordSuccess": "تم تغيير كلمة المرور بنجاح",
-          "changePasswordError": "حدث خطأ أثناء تغيير كلمة المرور"
-        },
-        "tips": {
-          "title": "نصائح الأمان",
-          "tip1": "غيّر كلمة المرور بانتظام (على الأقل كل 3-6 أشهر)",
-          "tip2": "استخدم كلمات مرور مختلفة لحسابات مختلفة",
-          "tip3": "لا تشارك كلمة المرور مع أي شخص",
-          "tip4": "إذا لاحظت نشاطاً مشبوهاً، غيّر كلمة المرور على الفور"
-        }
-      }
-    },
-    "notes": {
-      "pageTitle": "ملاحظاتي",
-      "breadcrumb": "ملاحظاتي",
-      "listing": {
-        "title": "جميع الملاحظات",
-        "searchPlaceholder": "البحث في الملاحظات",
-        "deleteNote": "حذف الملاحظة",
-        "noNotesTitle": "معلومات",
-        "noNotesText": "الملاحظة التي تبحث عنها غير موجودة"
-      },
-      "content": {
-        "editTitle": "تعديل الملاحظة",
-        "changeTitle": "تغيير العنوان",
-        "titlePlaceholder": "اكتب محتوى ملاحظتك هنا...",
-        "changeColor": "تغيير لون الملاحظة",
-        "noNoteSelectedTitle": "معلومات",
-        "noNoteSelectedText": "يرجى اختيار ملاحظة"
-      },
-      "add": {
-        "button": "إضافة ملاحظة",
-        "title": "إضافة ملاحظة",
-        "placeholder": "اكتب محتوى ملاحظتك هنا...",
-        "selectColor": "اختر لون الملاحظة",
-        "save": "حفظ",
-        "cancel": "إلغاء"
-      }
-    },
-    "header": {
-      "profileDD": {
-        "myProfile": {
-          "title": "ملفي الشخصي",
-          "subtitle": "إعدادات الحساب"
-        },
-        "myNotes": {
-          "title": "ملاحظاتي",
-          "subtitle": "ملاحظاتي اليومية"
-        },
-        "logout": "تسجيل الخروج"
+      "tips": {
+        "title": "نصائح الأمان",
+        "tip1": "غيّر كلمة المرور بانتظام (على الأقل كل 3-6 أشهر)",
+        "tip2": "استخدم كلمات مرور مختلفة لحسابات مختلفة",
+        "tip3": "لا تشارك كلمة المرور مع أي شخص",
+        "tip4": "إذا لاحظت نشاطاً مشبوهاً، غيّر كلمة المرور على الفور"
       }
     }
+  },
+  "notes": {
+    "pageTitle": "ملاحظاتي",
+    "breadcrumb": "ملاحظاتي",
+    "listing": {
+      "title": "جميع الملاحظات",
+      "searchPlaceholder": "البحث في الملاحظات",
+      "deleteNote": "حذف الملاحظة",
+      "noNotesTitle": "معلومات",
+      "noNotesText": "الملاحظة التي تبحث عنها غير موجودة"
+    },
+    "content": {
+      "editTitle": "تعديل الملاحظة",
+      "changeTitle": "تغيير العنوان",
+      "titlePlaceholder": "اكتب محتوى ملاحظتك هنا...",
+      "changeColor": "تغيير لون الملاحظة",
+      "noNoteSelectedTitle": "معلومات",
+      "noNoteSelectedText": "يرجى اختيار ملاحظة"
+    },
+    "add": {
+      "button": "إضافة ملاحظة",
+      "title": "إضافة ملاحظة",
+      "placeholder": "اكتب محتوى ملاحظتك هنا...",
+      "selectColor": "اختر لون الملاحظة",
+      "save": "حفظ",
+      "cancel": "إلغاء"
+    }
+  },
+  "users": {
+    "title": "إدارة المستخدمين",
+    "breadcrumbs": {
+      "home": "لوحة التحكم",
+      "users": "إدارة المستخدمين"
+    },
+    "table": {
+      "username": "اسم المستخدم",
+      "email": "البريد الإلكتروني",
+      "fullName": "الاسم الكامل",
+      "status": "الحالة",
+      "groups": "المجموعات",
+      "createdAt": "تاريخ الإنشاء",
+      "actions": "الإجراءات"
+    },
+    "search": {
+      "placeholder": "البحث عن المستخدمين"
+    },
+    "status": {
+      "label": "الحالة",
+      "all": "الكل",
+      "active": "نشط",
+      "inactive": "غير نشط"
+    },
+    "buttons": {
+      "export": "تصدير",
+      "refresh": "تحديث",
+      "newUser": "مستخدم جديد"
+    },
+    "export": {
+      "csv": "تصدير كـ CSV",
+      "json": "تصدير كـ JSON",
+      "xlsx": "تصدير كـ Excel",
+      "comingSoon": "قريباً",
+      "error": "فشلت عملية التصدير"
+    },
+    "warning": {
+      "title": "تحذير:",
+      "message": "مطلوب صلاحيات المدير أو المسؤول للوصول إلى هذه الصفحة. يرجى الاتصال بالمسؤول لتنفيذ عمليات إدارة المستخدمين."
+    },
+    "noData": {
+      "title": "لم يتم العثور على مستخدمين",
+      "button": "إنشاء أول مستخدم"
+    },
+    "pagination": {
+      "total": "الإجمالي:",
+      "records": "سجل",
+      "page": "الصفحة",
+      "showing": "عرض",
+      "itemsPerPage": "عناصر لكل صفحة:"
+    },
+    "delete": {
+      "title": "حذف المستخدم",
+      "message": "هل أنت متأكد من أنك تريد حذف هذا المستخدم؟ لا يمكن التراجع عن هذا الإجراء.",
+      "cancel": "إلغاء",
+      "close": "إغلاق",
+      "confirm": "نعم، احذف",
+      "error": "حدث خطأ أثناء حذف المستخدم"
+    },
+    "actions": {
+      "view": "عرض",
+      "edit": "تعديل",
+      "delete": "حذف"
+    },
+    "errors": {
+      "userIdNotFound": "لم يتم العثور على معرف المستخدم",
+      "deleteFailed": "حدث خطأ أثناء حذف المستخدم",
+      "exportFailed": "فشلت عملية التصدير",
+      "forbiddenNote": "ملاحظة: يشير هذا الخطأ إلى أن صلاحيات المسؤول مطلوبة. تأكد من أن المستخدم في مجموعة \"admins\"."
+    },
+    "groups": {
+      "none": "لا توجد مجموعات"
+    },
+    "details": {
+      "title": "تفاصيل المستخدم",
+      "breadcrumbs": {
+        "home": "لوحة التحكم",
+        "users": "إدارة المستخدمين",
+        "details": "تفاصيل المستخدم"
+      },
+      "buttons": {
+        "resetPassword": "إعادة تعيين كلمة المرور",
+        "edit": "تعديل",
+        "backToList": "العودة إلى القائمة"
+      },
+      "cards": {
+        "userInfo": "معلومات المستخدم",
+        "groupsAndRoles": "المجموعات والأدوار",
+        "photo": "الصورة"
+      },
+      "fields": {
+        "userId": "معرف المستخدم",
+        "username": "اسم المستخدم",
+        "email": "البريد الإلكتروني",
+        "fullName": "الاسم الكامل",
+        "title": "المنصب",
+        "department": "القسم",
+        "phone": "الهاتف",
+        "gender": "الجنس",
+        "status": "الحالة",
+        "groups": "المجموعات",
+        "roles": "الأدوار",
+        "createdAt": "تاريخ الإنشاء",
+        "createdBy": "تم الإنشاء بواسطة",
+        "lastLogin": "آخر تسجيل دخول",
+        "updatedAt": "آخر تحديث",
+        "updatedBy": "تم التحديث بواسطة"
+      },
+      "gender": {
+        "male": "ذكر",
+        "female": "أنثى",
+        "notSpecified": "غير محدد"
+      },
+      "photo": {
+        "loadError": "تعذر تحميل الصورة",
+        "none": "لا توجد صورة"
+      },
+      "loading": "جاري التحميل...",
+      "notFound": "لم يتم العثور على المستخدم",
+      "resetPassword": {
+        "success": "تم إرسال بريد إعادة تعيين كلمة المرور بنجاح. يرجى مطالبة المستخدم بالتحقق من عنوان بريده الإلكتروني.",
+        "error": "تعذر إرسال بريد إعادة تعيين كلمة المرور.",
+        "userIdNotFound": "لم يتم العثور على معرف المستخدم.",
+        "genericError": "حدث خطأ."
+      }
+    },
+    "edit": {
+      "title": "تعديل المستخدم",
+      "breadcrumbs": {
+        "home": "لوحة التحكم",
+        "users": "إدارة المستخدمين",
+        "edit": "تعديل المستخدم"
+      },
+      "fields": {
+        "username": "اسم المستخدم",
+        "usernameNote": "لا يمكن تغيير اسم المستخدم",
+        "email": "البريد الإلكتروني",
+        "firstName": "الاسم الأول",
+        "lastName": "اسم العائلة",
+        "title": "المنصب",
+        "titlePlaceholder": "مثال: Manager, Developer, QA Engineer",
+        "department": "القسم",
+        "departmentPlaceholder": "مثال: IT, Development, QA",
+        "phoneNumber": "رقم الهاتف",
+        "phonePlaceholder": "+90XXXXXXXXXX",
+        "photoUrl": "رابط الصورة",
+        "photoUrlPlaceholder": "https://...",
+        "photoUrlNote": "لا يمكن تغيير رابط الصورة",
+        "isActive": "نشط",
+        "groups": "المجموعات",
+        "groupsSelect": "اختر المجموعات"
+      },
+      "validation": {
+        "emailRequired": "البريد الإلكتروني مطلوب",
+        "emailInvalid": "يرجى إدخال عنوان بريد إلكتروني صالح",
+        "firstNameRequired": "الاسم الأول مطلوب",
+        "lastNameRequired": "اسم العائلة مطلوب"
+      },
+      "buttons": {
+        "cancel": "إلغاء",
+        "save": "حفظ"
+      },
+      "loading": "جاري التحميل...",
+      "errors": {
+        "loadFailed": "حدث خطأ أثناء تحميل المستخدم",
+        "updateFailed": "حدث خطأ أثناء تحديث المستخدم",
+        "usernameNotFound": "لم يتم العثور على اسم المستخدم",
+        "userInfoNotFound": "لم يتم العثور على معلومات المستخدم"
+      }
+    },
+    "create": {
+      "title": "إنشاء مستخدم جديد",
+      "breadcrumbs": {
+        "home": "لوحة التحكم",
+        "users": "إدارة المستخدمين",
+        "create": "مستخدم جديد"
+      },
+      "fields": {
+        "username": "اسم المستخدم",
+        "email": "البريد الإلكتروني",
+        "password": "كلمة المرور",
+        "confirmPassword": "تأكيد كلمة المرور",
+        "firstName": "الاسم الأول",
+        "lastName": "اسم العائلة",
+        "title": "المنصب",
+        "titlePlaceholder": "مثال: Manager, Developer, QA Engineer",
+        "department": "القسم",
+        "departmentPlaceholder": "مثال: IT, Development, QA",
+        "phoneNumber": "رقم الهاتف",
+        "phonePlaceholder": "+90XXXXXXXXXX",
+        "isActive": "نشط",
+        "groups": "المجموعات",
+        "groupsSelect": "اختر المجموعات",
+        "groupsNote": "سيتم تعيين المستخدم تلقائياً إلى مجموعة \"users\""
+      },
+      "validation": {
+        "usernameRequired": "اسم المستخدم مطلوب",
+        "usernameMinLength": "يجب أن يكون اسم المستخدم 3 أحرف على الأقل",
+        "emailRequired": "البريد الإلكتروني مطلوب",
+        "emailInvalid": "يرجى إدخال عنوان بريد إلكتروني صالح",
+        "passwordRequired": "كلمة المرور مطلوبة",
+        "passwordMinLength": "يجب أن تكون كلمة المرور 6 أحرف على الأقل",
+        "confirmPasswordRequired": "تأكيد كلمة المرور مطلوب",
+        "passwordsNotMatch": "كلمات المرور غير متطابقة",
+        "firstNameRequired": "الاسم الأول مطلوب",
+        "lastNameRequired": "اسم العائلة مطلوب"
+      },
+      "buttons": {
+        "cancel": "إلغاء",
+        "create": "إنشاء"
+      },
+      "errors": {
+        "createFailed": "حدث خطأ أثناء إنشاء المستخدم"
+      }
+    }
+  },
+  "header": {
+    "profileDD": {
+      "myProfile": {
+        "title": "ملفي الشخصي",
+        "subtitle": "إعدادات الحساب"
+      },
+      "myNotes": {
+        "title": "ملاحظاتي",
+        "subtitle": "ملاحظاتي اليومية"
+      },
+      "logout": "تسجيل الخروج"
+    }
   }
+}

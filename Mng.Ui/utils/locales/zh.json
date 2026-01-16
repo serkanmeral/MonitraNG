@@ -1,698 +1,910 @@
 {
-    "Modern": "现代的",
-    "eCommerce": "电子商务",
-    "Analytical": "分析性的",
-    "Classic": "经典的",
-    "Demographical": "人口统计学",
-    "Minimal": "最小的",
-    "Contact": "接触",
-    "Blog": "博客",
-    "Posts": "帖子",
-    "Detail": "细节",
-    "E-Commerce": "电子商务",
-    "Shop": "店铺",
-    "List": "列表",
-    "Checkout": "查看",
-    "Chats": "聊天记录",
-    "User Profile": "用户资料",
-    "Notes": "笔记",
-    "Calendar": "日历",
-    "Profile": "轮廓",
-    "Followers": "追随者",
-    "Friends": "朋友们",
-    "Gallery": "画廊",
-    "Email": "电子邮件",
-    "Pricing": "价钱",
-    "Account Setting": "账户设置",
-    "FAQ": "常问问题",
-    "Widget": "微件",
-    "Landing Page": "登陆页面",
-    "Form Elements": "表单元素",
-    "Autocomplete": "自动完成",
-    "Combobox": "组合框",
-    "Button": "按钮",
-    "Checkbox": "复选框",
-    "Custom Inputs": "自定义输入",
-    "File Inputs": "文件输入",
-    "Radio": "收音机",
-    "Date Time": "约会时间",
-    "Select": "选择",
-    "Slider": "滑块",
-    "Switch": "转变",
-    "Form Layout": "表单布局",
-    "Form Horizontal": "表格水平",
-    "Form Vertical": "垂直形式",
-    "Form Custom": "表格定制",
-    "Form Validation": "表单验证",
-    "Editor": "编辑",
-    "Basic Table": "基本表",
-    "Dark Table": "暗表",
-    "Density Table": "密度表",
-    "Fixed Header Table": "固定头表",
-    "Height Table": "身高表",
-    "Ui Components": "用户界面组件",
-    "Alert": "警报",
-    "Accordion": "手风琴",
-    "Avatar": "头像",
-    "Chip": "芯片",
-    "Dialog": "对话",
-    "Menus": "菜单",
-    "Rating": "评分",
-    "Tabs": "选项卡",
-    "Tooltip": "工具提示",
-    "Typography": "排版",
-    "Line": "线",
-    "Gredient": "他们将进入",
-    "Area": "区域",
-    "Candlestick": "烛台",
-    "Column": "柱子",
-    "Doughnut & Pie": "甜甜圈和馅饼",
-    "Radialbar & Radar": "径向杆和雷达",
-    "Login": "登录",
-    "Side Login": "侧登录",
-    "Boxed Login": "盒装登录",
-    "Register": "登记",
-    "Side Register": "边寄存器",
-    "Boxed Register": "盒装寄存器",
-    "Forgot Password": "忘记密码",
-    "Side Forgot Password": "方忘记密码",
-    "Boxed Forgot Password": "盒装忘记密码",
-    "Two Steps": "两步",
-    "Side Two Steps": "侧面两步",
-    "Boxed Two Steps": "盒装两步",
-    "Error": "错误",
-    "Maintenance": "维护",
-    "Menu Level": "菜单层",
-    "Level 1": "等级 1",
-    "Level 2": "等级 2",
-    "Level 3": "等级 3",
-    "Disabled": "残疾人",
-    "Sub Caption": "副标题",
-    "Outlined": "概述",
-    "External Link": "外部链接",
-    "Editable Table": "可编辑表格",
-    "Cards": "牌",
-    "Banners": "横幅",
-    "Material": "材料",
-    "Tabler": "桌子",
-    "Add Product": "添加產品",
-    "Edit Product": "編輯產品",
-    "Kanban": "看板",
-    "Gallery Lightbox": "畫廊燈箱",
-    "Search Results": "搜尋結果",
-    "Social Contacts": "社會交往",
-    "Treeview": "樹狀視圖",
-    "Header Table": "標題表",
-    "Selection Table": "選型表",
-    "Sorting Table": "排序表",
-    "Pagination Table": "分頁表",
-    "Filtering Table": "篩選表",
-    "Grouping Table": "分組表",
-    "Table Slots": "桌子槽位",
-    "CRUD Table": "增刪改查表",
-    "Time Picker": "時間選擇器",
-    "Stepper": "步進機",
-    "Front Pages": "首頁",
-    "Homepage": "首頁",
-    "Blog Details": "博客詳細信息",
-    "About Us": "關於我們",
-    "Contact Us": "聯絡我們",
-    "Portfolio": "資料夾",
-    "Invoice": "发票",
-    "Create": "创造",
-    "Edit": "编辑",
-    "Tickets": "门票",
-    "Details": "细节",
-    "Banners Widgets": "横幅小部件",
-    "Cards Widgets": "卡片小部件",
-    "Charts Widgets": "图表小工具",
-    "menu": {
-      "apps-dataset-categories": "数据集类别",
-      "datasets": "数据集",
-      "two-steps": "两步",
-      "apps-events": "事件消息",
-      "apps-side-menu-manager": {
-        "title": "侧边菜单管理",
-        "subCaption": "菜单管理页面"
-      },
-      "apps-users": "用户管理",
-      "apps-groups": "组管理",
-      "books": "书籍",
-      "apps-books": "书籍",
-      "automated-forms": "自动表单",
-      "apps-automated-forms": {
-        "title": "自动表单",
-        "subCaption": "自动表单的创建有帮助。"
-      },
-      "headers": {
-        "home": "首页",
-        "assets": "资产",
-        "apps": "应用",
-        "pages": "页面",
-        "components": "组件",
-        "charts": "图表",
-        "forms": "表单",
-        "widget": "小部件",
-        "tables": "表格",
-        "data-tables": "数据表",
-        "authentication": "身份验证",
-        "icons": "图标",
-        "administration": "管理",
-        "examples_header": "例子",
-        "management": "管理"
-      },
-      "book_definitions": "书籍说明",
-      "book-genres": "书籍类型",
-      "tst_publishers": "出版社",
-      "tst_books": "书籍"
+  "Modern": "现代的",
+  "eCommerce": "电子商务",
+  "Analytical": "分析性的",
+  "Classic": "经典的",
+  "Demographical": "人口统计学",
+  "Minimal": "最小的",
+  "Contact": "接触",
+  "Blog": "博客",
+  "Posts": "帖子",
+  "Detail": "细节",
+  "E-Commerce": "电子商务",
+  "Shop": "店铺",
+  "List": "列表",
+  "Checkout": "查看",
+  "Chats": "聊天记录",
+  "User Profile": "用户资料",
+  "Notes": "笔记",
+  "Calendar": "日历",
+  "Profile": "轮廓",
+  "Followers": "追随者",
+  "Friends": "朋友们",
+  "Gallery": "画廊",
+  "Email": "电子邮件",
+  "Pricing": "价钱",
+  "Account Setting": "账户设置",
+  "FAQ": "常问问题",
+  "Widget": "微件",
+  "Landing Page": "登陆页面",
+  "Form Elements": "表单元素",
+  "Autocomplete": "自动完成",
+  "Combobox": "组合框",
+  "Button": "按钮",
+  "Checkbox": "复选框",
+  "Custom Inputs": "自定义输入",
+  "File Inputs": "文件输入",
+  "Radio": "收音机",
+  "Date Time": "约会时间",
+  "Select": "选择",
+  "Slider": "滑块",
+  "Switch": "转变",
+  "Form Layout": "表单布局",
+  "Form Horizontal": "表格水平",
+  "Form Vertical": "垂直形式",
+  "Form Custom": "表格定制",
+  "Form Validation": "表单验证",
+  "Editor": "编辑",
+  "Basic Table": "基本表",
+  "Dark Table": "暗表",
+  "Density Table": "密度表",
+  "Fixed Header Table": "固定头表",
+  "Height Table": "身高表",
+  "Ui Components": "用户界面组件",
+  "Alert": "警报",
+  "Accordion": "手风琴",
+  "Avatar": "头像",
+  "Chip": "芯片",
+  "Dialog": "对话",
+  "Menus": "菜单",
+  "Rating": "评分",
+  "Tabs": "选项卡",
+  "Tooltip": "工具提示",
+  "Typography": "排版",
+  "Line": "线",
+  "Gredient": "他们将进入",
+  "Area": "区域",
+  "Candlestick": "烛台",
+  "Column": "柱子",
+  "Doughnut & Pie": "甜甜圈和馅饼",
+  "Radialbar & Radar": "径向杆和雷达",
+  "Login": "登录",
+  "Side Login": "侧登录",
+  "Boxed Login": "盒装登录",
+  "Register": "登记",
+  "Side Register": "边寄存器",
+  "Boxed Register": "盒装寄存器",
+  "Forgot Password": "忘记密码",
+  "Side Forgot Password": "方忘记密码",
+  "Boxed Forgot Password": "盒装忘记密码",
+  "Two Steps": "两步",
+  "Side Two Steps": "侧面两步",
+  "Boxed Two Steps": "盒装两步",
+  "Error": "错误",
+  "Maintenance": "维护",
+  "Menu Level": "菜单层",
+  "Level 1": "等级 1",
+  "Level 2": "等级 2",
+  "Level 3": "等级 3",
+  "Disabled": "残疾人",
+  "Sub Caption": "副标题",
+  "Outlined": "概述",
+  "External Link": "外部链接",
+  "Editable Table": "可编辑表格",
+  "Cards": "牌",
+  "Banners": "横幅",
+  "Material": "材料",
+  "Tabler": "桌子",
+  "Add Product": "添加產品",
+  "Edit Product": "編輯產品",
+  "Kanban": "看板",
+  "Gallery Lightbox": "畫廊燈箱",
+  "Search Results": "搜尋結果",
+  "Social Contacts": "社會交往",
+  "Treeview": "樹狀視圖",
+  "Header Table": "標題表",
+  "Selection Table": "選型表",
+  "Sorting Table": "排序表",
+  "Pagination Table": "分頁表",
+  "Filtering Table": "篩選表",
+  "Grouping Table": "分組表",
+  "Table Slots": "桌子槽位",
+  "CRUD Table": "增刪改查表",
+  "Time Picker": "時間選擇器",
+  "Stepper": "步進機",
+  "Front Pages": "首頁",
+  "Homepage": "首頁",
+  "Blog Details": "博客詳細信息",
+  "About Us": "關於我們",
+  "Contact Us": "聯絡我們",
+  "Portfolio": "資料夾",
+  "Invoice": "发票",
+  "Create": "创造",
+  "Edit": "编辑",
+  "Tickets": "门票",
+  "Details": "细节",
+  "Banners Widgets": "横幅小部件",
+  "Cards Widgets": "卡片小部件",
+  "Charts Widgets": "图表小工具",
+  "menu": {
+    "apps-dataset-categories": "数据集类别",
+    "datasets": "数据集",
+    "two-steps": "两步",
+    "apps-events": "事件消息",
+    "apps-side-menu-manager": {
+      "title": "侧边菜单管理",
+      "subCaption": "菜单管理页面"
     },
-    "events": {
-      "title": "事件消息",
-      "description": "来自 RabbitMQ 的组、用户和数据 CRUD 操作的实时通知",
+    "apps-users": "用户管理",
+    "apps-groups": "组管理",
+    "books": "书籍",
+    "apps-books": "书籍",
+    "automated-forms": "自动表单",
+    "apps-automated-forms": {
+      "title": "自动表单",
+      "subCaption": "自动表单的创建有帮助。"
+    },
+    "headers": {
+      "home": "首页",
+      "assets": "资产",
+      "apps": "应用",
+      "pages": "页面",
+      "components": "组件",
+      "charts": "图表",
+      "forms": "表单",
+      "widget": "小部件",
+      "tables": "表格",
+      "data-tables": "数据表",
+      "authentication": "身份验证",
+      "icons": "图标",
+      "administration": "管理",
+      "examples_header": "例子",
+      "management": "管理"
+    },
+    "book_definitions": "书籍说明",
+    "book-genres": "书籍类型",
+    "tst_publishers": "出版社",
+    "tst_books": "书籍"
+  },
+  "events": {
+    "title": "事件消息",
+    "description": "来自 RabbitMQ 的组、用户和数据 CRUD 操作的实时通知",
+    "buttons": {
+      "connect": "连接",
+      "disconnect": "断开连接",
+      "clearMessages": "清除消息"
+    },
+    "status": {
+      "connected": "已连接",
+      "connecting": "正在连接...",
+      "error": "连接错误",
+      "disconnected": "未连接",
+      "closed": "连接已关闭"
+    },
+    "types": {
+      "user": "用户",
+      "group": "组",
+      "system": "系统",
+      "data": "数据",
+      "unknown": "未知"
+    },
+    "empty": {
+      "title": "还没有消息",
+      "description": "组、用户或数据操作将显示在这里"
+    },
+    "details": {
+      "view": "查看详情"
+    },
+    "errors": {
+      "tokenNotFound": "未找到访问令牌。请重新登录。",
+      "connectionError": "发生连接错误。",
+      "connectionClosed": "连接已关闭"
+    },
+    "breadcrumbs": {
+      "home": "首页"
+    }
+  },
+  "side-menu-manager": {
+    "title": "侧边菜单管理器",
+    "description": "动态管理侧边菜单项",
+    "breadcrumbs": {
+      "home": "首页",
+      "title": "侧边菜单管理器"
+    },
+    "tree": {
+      "title": "菜单项",
+      "expandAll": "全部展开",
+      "collapseAll": "全部折叠",
+      "empty": "未找到菜单项",
+      "navigate": "转到页面"
+    },
+    "toolbar": {
+      "newItem": "新建菜单项",
+      "newHeader": "新建标题",
+      "search": "搜索菜单项...",
+      "refresh": "刷新"
+    },
+    "form": {
+      "title": {
+        "edit": "编辑菜单项",
+        "new": "新建菜单项"
+      },
+      "empty": "单击左侧的\"新建菜单项\"或\"新建标题\"按钮以创建新菜单项。",
+      "fields": {
+        "itemType": "项目类型",
+        "pageType": "页面类型",
+        "header": "标题文本",
+        "title": "菜单标题",
+        "pageCode": "页面代码（唯一）",
+        "pageCodeHint": "可以从路由或标题自动生成",
+        "order": "顺序",
+        "parent": "父菜单项",
+        "parentNone": "（无 - 根）",
+        "level": "级别",
+        "levelHint": "根据父选择自动计算",
+        "disabled": "已禁用",
+        "forms": "已保存的表单",
+        "formsPlaceholder": "选择表单（可选）",
+        "formsHint": "从已保存的表单中选择或手动输入路径",
+        "route": "路由路径",
+        "routeHint": "例如：/dashboards/analytical 或选择表单",
+        "linkType": "链接类型",
+        "subCaption": "副标题",
+        "chip": "芯片文本",
+        "chipVariant": "芯片变体",
+        "chipColor": "芯片文本颜色",
+        "chipBgColor": "芯片背景颜色",
+        "chipIcon": "芯片图标"
+      },
+      "sections": {
+        "chip": "芯片/徽章设置",
+        "permissions": "授权",
+        "locale": "语言支持"
+      },
       "buttons": {
-        "connect": "连接",
-        "disconnect": "断开连接",
-        "clearMessages": "清除消息"
+        "save": "保存",
+        "update": "更新",
+        "delete": "删除",
+        "cancel": "取消",
+        "generatePageCode": "自动生成",
+        "navigate": "转到此页面",
+        "updateLocales": "更新语言环境文件"
       },
-      "status": {
-        "connected": "已连接",
-        "connecting": "正在连接...",
-        "error": "连接错误",
-        "disconnected": "未连接",
-        "closed": "连接已关闭"
-      },
-      "types": {
-        "user": "用户",
-        "group": "组",
-        "system": "系统",
-        "data": "数据",
-        "unknown": "未知"
-      },
-      "empty": {
-        "title": "还没有消息",
-        "description": "组、用户或数据操作将显示在这里"
-      },
-      "details": {
-        "view": "查看详情"
-      },
-      "errors": {
-        "tokenNotFound": "未找到访问令牌。请重新登录。",
-        "connectionError": "发生连接错误。",
-        "connectionClosed": "连接已关闭"
-      },
-      "breadcrumbs": {
-        "home": "首页"
-      }
-    },
-    "side-menu-manager": {
-      "title": "侧边菜单管理器",
-      "description": "动态管理侧边菜单项",
-      "breadcrumbs": {
-        "home": "首页",
-        "title": "侧边菜单管理器"
-      },
-      "tree": {
-        "title": "菜单项",
-        "expandAll": "全部展开",
-        "collapseAll": "全部折叠",
-        "empty": "未找到菜单项",
-        "navigate": "转到页面"
-      },
-      "toolbar": {
-        "newItem": "新建菜单项",
-        "newHeader": "新建标题",
-        "search": "搜索菜单项...",
-        "refresh": "刷新"
-      },
-      "form": {
-        "title": {
-          "edit": "编辑菜单项",
-          "new": "新建菜单项"
-        },
-        "empty": "单击左侧的\"新建菜单项\"或\"新建标题\"按钮以创建新菜单项。",
-        "fields": {
-          "itemType": "项目类型",
-          "pageType": "页面类型",
-          "header": "标题文本",
-          "title": "菜单标题",
-          "pageCode": "页面代码（唯一）",
-          "pageCodeHint": "可以从路由或标题自动生成",
-          "order": "顺序",
-          "parent": "父菜单项",
-          "parentNone": "（无 - 根）",
-          "level": "级别",
-          "levelHint": "根据父选择自动计算",
-          "disabled": "已禁用",
-          "forms": "已保存的表单",
-          "formsPlaceholder": "选择表单（可选）",
-          "formsHint": "从已保存的表单中选择或手动输入路径",
-          "route": "路由路径",
-          "routeHint": "例如：/dashboards/analytical 或选择表单",
-          "linkType": "链接类型",
-          "subCaption": "副标题",
-          "chip": "芯片文本",
-          "chipVariant": "芯片变体",
-          "chipColor": "芯片文本颜色",
-          "chipBgColor": "芯片背景颜色",
-          "chipIcon": "芯片图标"
-        },
-        "sections": {
-          "chip": "芯片/徽章设置",
-          "permissions": "授权",
-          "locale": "语言支持"
-        },
-        "buttons": {
-          "save": "保存",
-          "update": "更新",
-          "delete": "删除",
-          "cancel": "取消",
-          "generatePageCode": "自动生成",
-          "navigate": "转到此页面",
-          "updateLocales": "更新语言环境文件"
-        },
-        "locale": {
-          "success": "语言环境文件更新成功！({pageCode})",
-          "error": "更新语言环境文件时出错：{error}",
-          "pageCodeRequired": "需要页面代码（pageCode）。请先创建 pageCode。",
-          "headerRequired": "需要标题文本。",
-          "titleRequired": "需要菜单标题。",
-          "description": "此按钮将当前页面代码 ({pageCode}) 添加到所有语言环境文件。土耳其语使用当前标题/标题，其他语言获得相同的值作为占位符。"
-        },
-        "validation": {
-          "headerRequired": "需要标题文本",
-          "titleRequired": "需要菜单标题"
-        }
-      },
-      "permissions": {
-        "loading": "正在加载组...",
-        "empty": "尚未找到活动组。",
-        "emptyFiltered": "未找到可查看的活动组。",
-        "retry": "重试",
-        "bulkActions": "批量操作：",
-        "openAll": "全部打开",
-        "closeAll": "全部关闭",
-        "group": "组",
-        "actions": "操作",
-        "all": "全部",
-        "none": "无",
-        "labels": {
-          "view": "查看",
-          "create": "创建",
-          "update": "更新",
-          "delete": "删除",
-          "export": "导出"
-        }
-      },
-      "messages": {
-        "deleteConfirm": "您确定要删除此菜单项吗？",
-        "success": {
-          "created": "菜单项创建成功",
-          "updated": "菜单项更新成功",
-          "deleted": "菜单项删除成功"
-        },
-        "errors": {
-          "create": "创建菜单项时出错",
-          "update": "更新菜单项时出错",
-          "delete": "删除菜单项时出错",
-          "load": "加载菜单项时出错"
-        }
-      }
-    },
-    "login": {
-      "title": "欢迎使用 MonitraNG",
-      "subtitle": "高级监控工具",
-      "form": {
-        "username": "用户名",
-        "usernamePlaceholder": "用户名或 domain{'@'}username",
-        "password": "密码",
-        "passwordPlaceholder": "请输入您的密码",
-        "submit": "登录",
-        "error": "登录失败。请重试。"
+      "locale": {
+        "success": "语言环境文件更新成功！({pageCode})",
+        "error": "更新语言环境文件时出错：{error}",
+        "pageCodeRequired": "需要页面代码（pageCode）。请先创建 pageCode。",
+        "headerRequired": "需要标题文本。",
+        "titleRequired": "需要菜单标题。",
+        "description": "此按钮将当前页面代码 ({pageCode}) 添加到所有语言环境文件。土耳其语使用当前标题/标题，其他语言获得相同的值作为占位符。"
       },
       "validation": {
-        "usernameRequired": "需要用户名",
-        "passwordRequired": "需要密码",
-        "passwordMinLength": "密码至少需要3个字符"
-      },
-      "language": {
-        "label": "语言",
-        "select": "选择语言"
+        "headerRequired": "需要标题文本",
+        "titleRequired": "需要菜单标题"
       }
+    },
+    "permissions": {
+      "loading": "正在加载组...",
+      "empty": "尚未找到活动组。",
+      "emptyFiltered": "未找到可查看的活动组。",
+      "retry": "重试",
+      "bulkActions": "批量操作：",
+      "openAll": "全部打开",
+      "closeAll": "全部关闭",
+      "group": "组",
+      "actions": "操作",
+      "all": "全部",
+      "none": "无",
+      "labels": {
+        "view": "查看",
+        "create": "创建",
+        "update": "更新",
+        "delete": "删除",
+        "export": "导出"
+      }
+    },
+    "messages": {
+      "deleteConfirm": "您确定要删除此菜单项吗？",
+      "success": {
+        "created": "菜单项创建成功",
+        "updated": "菜单项更新成功",
+        "deleted": "菜单项删除成功"
+      },
+      "errors": {
+        "create": "创建菜单项时出错",
+        "update": "更新菜单项时出错",
+        "delete": "删除菜单项时出错",
+        "load": "加载菜单项时出错"
+      }
+    }
+  },
+  "login": {
+    "title": "欢迎使用 MonitraNG",
+    "subtitle": "高级监控工具",
+    "form": {
+      "username": "用户名",
+      "usernamePlaceholder": "用户名或 domain{'@'}username",
+      "password": "密码",
+      "passwordPlaceholder": "请输入您的密码",
+      "submit": "登录",
+      "error": "登录失败。请重试。"
+    },
+    "validation": {
+      "usernameRequired": "需要用户名",
+      "passwordRequired": "需要密码",
+      "passwordMinLength": "密码至少需要3个字符"
+    },
+    "language": {
+      "label": "语言",
+      "select": "选择语言"
+    }
+  },
+  "groups": {
+    "title": "组管理",
+    "breadcrumbs": {
+      "home": "首页",
+      "groups": "组管理",
+      "create": "新建组",
+      "edit": "编辑组",
+      "details": "组详情"
+    },
+    "list": {
+      "search": "搜索组",
+      "status": "状态",
+      "statusAll": "全部",
+      "statusActive": "活跃",
+      "statusInactive": "非活跃",
+      "export": "导出",
+      "exportCsv": "下载为 CSV",
+      "exportExcel": "下载为 Excel",
+      "exportSoon": "即将推出",
+      "refresh": "刷新",
+      "newGroup": "新建组",
+      "noData": "未找到组",
+      "createFirst": "创建第一个组",
+      "total": "总计",
+      "records": "条记录",
+      "page": "页码",
+      "of": "/",
+      "showing": "显示",
+      "itemsPerPage": "每页条目数：",
+      "warning": "警告",
+      "warningMessage": "访问此页面需要管理员或管理员权限。请联系管理员执行组管理操作。"
+    },
+    "table": {
+      "name": "组名",
+      "memberCount": "成员数",
+      "createdAt": "创建时间",
+      "actions": "操作",
+      "view": "查看",
+      "edit": "编辑",
+      "delete": "删除",
+      "deleteTooltip": "组有成员，无法删除"
+    },
+    "create": {
+      "title": "创建新组",
+      "name": "组名 *",
+      "description": "描述",
+      "isActive": "活跃",
+      "cancel": "取消",
+      "create": "创建"
+    },
+    "edit": {
+      "title": "编辑组",
+      "loading": "加载中...",
+      "name": "组名 *",
+      "description": "描述",
+      "isActive": "活跃",
+      "cancel": "取消",
+      "save": "保存"
+    },
+    "details": {
+      "title": "组详情",
+      "loading": "加载中...",
+      "notFound": "未找到组",
+      "backToList": "返回列表",
+      "userManagement": "成员管理",
+      "edit": "编辑",
+      "groupInfo": "组信息",
+      "metadata": "元数据",
+      "name": "组名：",
+      "description": "描述：",
+      "status": "状态：",
+      "statusActive": "活跃",
+      "statusInactive": "非活跃",
+      "memberCount": "成员数：",
+      "createdAt": "创建时间：",
+      "updatedAt": "最后更新：",
+      "createdBy": "创建者：",
+      "updatedBy": "更新者：",
+      "permissions": "权限："
+    },
+    "delete": {
+      "title": "删除组",
+      "confirm": "您确定要删除此组吗？此操作无法撤销。",
+      "cancel": "取消",
+      "close": "关闭",
+      "confirmButton": "是的，删除",
+      "error": "此组包含 {count} 个用户。您必须先从组中移除所有用户。"
+    },
+    "validation": {
+      "nameRequired": "组名是必需的",
+      "nameMinLength": "组名至少需要2个字符",
+      "descriptionMaxLength": "描述最多500个字符"
+    },
+    "errors": {
+      "load": "加载组时发生错误",
+      "create": "创建组时发生错误",
+      "update": "更新组时发生错误",
+      "delete": "删除组时发生错误",
+      "export": "导出过程中发生错误。"
+    },
+    "userManagement": {
+      "title": "成员管理",
+      "search": "搜索用户（用户名、电子邮件、全名）",
+      "currentMembers": "当前成员",
+      "addUsers": "添加用户",
+      "loading": "正在加载用户...",
+      "noMembers": "未找到成员",
+      "noUsersToAdd": "没有可添加的用户",
+      "noUsersToAddDescription": "所有用户可能已在此组中",
+      "selectAll": "全选",
+      "deselectAll": "清除选择",
+      "selected": "已选择",
+      "addSelected": "添加选中的 {count} 个用户",
+      "close": "关闭",
+      "errors": {
+        "load": "加载用户时发生错误",
+        "add": "将用户添加到组时发生错误",
+        "remove": "从组中移除用户时发生错误",
+        "noSelection": "请至少选择一个用户"
+      },
+      "success": {
+        "added": "成功将 {count} 个用户添加到组",
+        "removed": "成功从组中移除用户"
+      }
+    }
+  },
+  "profile": {
+    "title": "个人资料",
+    "user": "用户",
+    "breadcrumbs": {
+      "home": "首页",
+      "profile": "个人资料"
+    },
+    "tabs": {
+      "general": "一般信息",
+      "account": "账户设置",
+      "security": "安全",
+      "preferences": "偏好设置"
+    },
+    "comingSoon": "即将推出",
+    "roles": {
+      "admin": "管理员",
+      "manager": "经理",
+      "user": "用户"
+    },
+    "personalInfo": {
+      "title": "个人信息",
+      "firstName": "名字",
+      "lastName": "姓氏",
+      "email": "电子邮件",
+      "jobTitle": "职位",
+      "department": "部门",
+      "gender": "性别",
+      "phoneNumber": "电话"
+    },
+    "accountInfo": {
+      "title": "账户信息",
+      "username": "用户名",
+      "email": "电子邮件",
+      "domain": "域名",
+      "status": "状态",
+      "createdAt": "创建时间",
+      "updatedAt": "最后更新"
+    },
+    "status": {
+      "active": "活跃",
+      "inactive": "非活跃"
     },
     "groups": {
-      "title": "组管理",
-      "breadcrumbs": {
-        "home": "首页",
-        "groups": "组管理",
-        "create": "新建组",
-        "edit": "编辑组",
-        "details": "组详情"
-      },
-      "list": {
-        "search": "搜索组",
-        "status": "状态",
-        "statusAll": "全部",
-        "statusActive": "活跃",
-        "statusInactive": "非活跃",
-        "export": "导出",
-        "exportCsv": "下载为 CSV",
-        "exportExcel": "下载为 Excel",
-        "exportSoon": "即将推出",
-        "refresh": "刷新",
-        "newGroup": "新建组",
-        "noData": "未找到组",
-        "createFirst": "创建第一个组",
-        "total": "总计",
-        "records": "条记录",
-        "page": "页码",
-        "of": "/",
-        "showing": "显示",
-        "itemsPerPage": "每页条目数：",
-        "warning": "警告",
-        "warningMessage": "访问此页面需要管理员或管理员权限。请联系管理员执行组管理操作。"
-      },
-      "table": {
-        "name": "组名",
-        "memberCount": "成员数",
-        "createdAt": "创建时间",
-        "actions": "操作",
-        "view": "查看",
-        "edit": "编辑",
-        "delete": "删除",
-        "deleteTooltip": "组有成员，无法删除"
-      },
-      "create": {
-        "title": "创建新组",
-        "name": "组名 *",
-        "description": "描述",
-        "isActive": "活跃",
-        "cancel": "取消",
-        "create": "创建"
-      },
-      "edit": {
-        "title": "编辑组",
-        "loading": "加载中...",
-        "name": "组名 *",
-        "description": "描述",
-        "isActive": "活跃",
-        "cancel": "取消",
-        "save": "保存"
-      },
-      "details": {
-        "title": "组详情",
-        "loading": "加载中...",
-        "notFound": "未找到组",
-        "backToList": "返回列表",
-        "userManagement": "成员管理",
-        "edit": "编辑",
-        "groupInfo": "组信息",
-        "metadata": "元数据",
-        "name": "组名：",
-        "description": "描述：",
-        "status": "状态：",
-        "statusActive": "活跃",
-        "statusInactive": "非活跃",
-        "memberCount": "成员数：",
-        "createdAt": "创建时间：",
-        "updatedAt": "最后更新：",
-        "createdBy": "创建者：",
-        "updatedBy": "更新者：",
-        "permissions": "权限："
-      },
-      "delete": {
-        "title": "删除组",
-        "confirm": "您确定要删除此组吗？此操作无法撤销。",
-        "cancel": "取消",
-        "close": "关闭",
-        "confirmButton": "是的，删除",
-        "error": "此组包含 {count} 个用户。您必须先从组中移除所有用户。"
-      },
-      "validation": {
-        "nameRequired": "组名是必需的",
-        "nameMinLength": "组名至少需要2个字符",
-        "descriptionMaxLength": "描述最多500个字符"
-      },
+      "title": "组",
+      "manage": "组管理",
+      "noGroups": "尚未分配组"
+    },
+    "photo": {
+      "title": "个人资料照片",
+      "upload": "上传照片",
+      "remove": "删除照片",
+      "maxSize": "最大：5MB",
+      "formats": "格式：JPG, PNG, WebP",
       "errors": {
-        "load": "加载组时发生错误",
-        "create": "创建组时发生错误",
-        "update": "更新组时发生错误",
-        "delete": "删除组时发生错误",
-        "export": "导出过程中发生错误。"
-      },
-      "userManagement": {
-        "title": "成员管理",
-        "search": "搜索用户（用户名、电子邮件、全名）",
-        "currentMembers": "当前成员",
-        "addUsers": "添加用户",
-        "loading": "正在加载用户...",
-        "noMembers": "未找到成员",
-        "noUsersToAdd": "没有可添加的用户",
-        "noUsersToAddDescription": "所有用户可能已在此组中",
-        "selectAll": "全选",
-        "deselectAll": "清除选择",
-        "selected": "已选择",
-        "addSelected": "添加选中的 {count} 个用户",
-        "close": "关闭",
-        "errors": {
-          "load": "加载用户时发生错误",
-          "add": "将用户添加到组时发生错误",
-          "remove": "从组中移除用户时发生错误",
-          "noSelection": "请至少选择一个用户"
-        },
-        "success": {
-          "added": "成功将 {count} 个用户添加到组",
-          "removed": "成功从组中移除用户"
-        }
+        "maxSize": "文件大小不能超过 5MB",
+        "invalidFormat": "仅支持 JPG、PNG 和 WebP 格式",
+        "maxDimensions": "照片大小不能超过 2000x2000 像素",
+        "invalidImage": "无效的图像文件",
+        "readError": "无法读取文件",
+        "uploadFailed": "上传照片时发生错误"
       }
     },
-    "profile": {
-      "title": "个人资料",
-      "user": "用户",
-      "breadcrumbs": {
-        "home": "首页",
-        "profile": "个人资料"
-      },
-      "tabs": {
-        "general": "一般信息",
-        "account": "账户设置",
-        "security": "安全",
-        "preferences": "偏好设置"
-      },
-      "comingSoon": "即将推出",
-      "roles": {
-        "admin": "管理员",
-        "manager": "经理",
-        "user": "用户"
-      },
-      "personalInfo": {
-        "title": "个人信息",
-        "firstName": "名字",
-        "lastName": "姓氏",
-        "email": "电子邮件",
-        "jobTitle": "职位",
-        "department": "部门",
-        "gender": "性别",
-        "phoneNumber": "电话"
-      },
+    "gender": {
+      "notSpecified": "未指定",
+      "male": "男",
+      "female": "女"
+    },
+    "buttons": {
+      "edit": "编辑",
+      "save": "保存",
+      "cancel": "取消"
+    },
+    "validation": {
+      "firstNameRequired": "名字是必需的",
+      "firstNameMinLength": "名字至少需要 2 个字符",
+      "firstNameMaxLength": "名字最多 50 个字符",
+      "lastNameRequired": "姓氏是必需的",
+      "lastNameMinLength": "姓氏至少需要 2 个字符",
+      "lastNameMaxLength": "姓氏最多 50 个字符",
+      "emailRequired": "电子邮件是必需的",
+      "emailInvalid": "请输入有效的电子邮件地址",
+      "titleMaxLength": "职位最多 100 个字符",
+      "departmentMaxLength": "部门最多 100 个字符",
+      "phoneNumberMaxLength": "电话号码最多 20 个字符"
+    },
+    "messages": {
+      "saveSuccess": "个人资料更新成功",
+      "saveError": "更新个人资料时发生错误",
+      "photoUploadSuccess": "照片上传成功",
+      "photoUploadError": "上传照片时发生错误",
+      "photoRemoveSuccess": "照片删除成功",
+      "photoRemoveError": "删除照片时发生错误",
+      "userNotFound": "未找到用户"
+    },
+    "accountSettings": {
       "accountInfo": {
         "title": "账户信息",
         "username": "用户名",
         "email": "电子邮件",
         "domain": "域名",
-        "status": "状态",
-        "createdAt": "创建时间",
+        "createdAt": "账户创建",
         "updatedAt": "最后更新"
       },
-      "status": {
-        "active": "活跃",
-        "inactive": "非活跃"
+      "dangerZone": {
+        "title": "危险区域",
+        "description": "如果您想永久删除您的账户，请点击下面的按钮。此操作无法撤销。",
+        "deleteAccount": "删除账户",
+        "notImplemented": "账户删除功能尚未实现。"
+      }
+    },
+    "preferences": {
+      "language": {
+        "title": "语言偏好",
+        "label": "选择语言",
+        "description": "选择应用程序语言。更改会立即应用。"
       },
-      "groups": {
-        "title": "组",
-        "manage": "组管理",
-        "noGroups": "尚未分配组"
+      "theme": {
+        "title": "主题偏好",
+        "description": "选择应用程序主题。提供浅色和深色主题选项。"
       },
-      "photo": {
-        "title": "个人资料照片",
-        "upload": "上传照片",
-        "remove": "删除照片",
-        "maxSize": "最大：5MB",
-        "formats": "格式：JPG, PNG, WebP",
-        "errors": {
-          "maxSize": "文件大小不能超过 5MB",
-          "invalidFormat": "仅支持 JPG、PNG 和 WebP 格式",
-          "maxDimensions": "照片大小不能超过 2000x2000 像素",
-          "invalidImage": "无效的图像文件",
-          "readError": "无法读取文件",
-          "uploadFailed": "上传照片时发生错误"
-        }
+      "layout": {
+        "title": "布局偏好",
+        "sidebarLayout": "侧边栏布局",
+        "vertical": "垂直",
+        "horizontal": "水平",
+        "containerOption": "容器选项",
+        "boxed": "盒装",
+        "full": "全宽",
+        "sidebarType": "侧边栏类型",
+        "collapse": "折叠",
+        "cardStyle": "卡片样式",
+        "shadow": "阴影",
+        "border": "边框"
       },
-      "gender": {
-        "notSpecified": "未指定",
-        "male": "男",
-        "female": "女"
-      },
-      "buttons": {
-        "edit": "编辑",
-        "save": "保存",
+      "saveSuccess": "偏好设置保存成功",
+      "saveError": "保存偏好设置时发生错误"
+    },
+    "security": {
+      "changePassword": {
+        "title": "更改密码",
+        "description": "建议定期更改密码以确保账户安全。",
+        "currentPassword": "当前密码",
+        "newPassword": "新密码",
+        "confirmPassword": "新密码（确认）",
+        "passwordStrength": "密码强度",
+        "requirements": {
+          "title": "密码要求",
+          "minLength": "至少 8 个字符",
+          "uppercase": "至少一个大写字母 (A-Z)",
+          "lowercase": "至少一个小写字母 (a-z)",
+          "number": "至少一个数字 (0-9)",
+          "special": "至少一个特殊字符 (! ? # $ % ^ & *)"
+        },
+        "save": "更改密码",
         "cancel": "取消"
+      },
+      "passwordStrength": {
+        "weak": "弱",
+        "fair": "中等",
+        "good": "良好",
+        "strong": "强"
       },
       "validation": {
-        "firstNameRequired": "名字是必需的",
-        "firstNameMinLength": "名字至少需要 2 个字符",
-        "firstNameMaxLength": "名字最多 50 个字符",
-        "lastNameRequired": "姓氏是必需的",
-        "lastNameMinLength": "姓氏至少需要 2 个字符",
-        "lastNameMaxLength": "姓氏最多 50 个字符",
-        "emailRequired": "电子邮件是必需的",
-        "emailInvalid": "请输入有效的电子邮件地址",
-        "titleMaxLength": "职位最多 100 个字符",
-        "departmentMaxLength": "部门最多 100 个字符",
-        "phoneNumberMaxLength": "电话号码最多 20 个字符"
+        "currentPasswordRequired": "需要当前密码",
+        "newPasswordRequired": "需要新密码",
+        "passwordMinLength": "密码必须至少 8 个字符",
+        "passwordLowercase": "密码必须包含至少一个小写字母",
+        "passwordUppercase": "密码必须包含至少一个大写字母",
+        "passwordNumber": "密码必须包含至少一个数字",
+        "passwordSpecial": "密码必须包含至少一个特殊字符",
+        "confirmPasswordRequired": "需要确认密码",
+        "passwordsDoNotMatch": "密码不匹配"
       },
       "messages": {
-        "saveSuccess": "个人资料更新成功",
-        "saveError": "更新个人资料时发生错误",
-        "photoUploadSuccess": "照片上传成功",
-        "photoUploadError": "上传照片时发生错误",
-        "photoRemoveSuccess": "照片删除成功",
-        "photoRemoveError": "删除照片时发生错误",
-        "userNotFound": "未找到用户"
+        "changePasswordSuccess": "密码已成功更改",
+        "changePasswordError": "更改密码时发生错误"
       },
-      "accountSettings": {
-        "role": {
-          "admin": "管理员",
-          "user": "用户"
-        },
-        "accountInfo": {
-          "title": "账户信息",
-          "username": "用户名",
-          "email": "电子邮件",
-          "domain": "域名",
-          "createdAt": "账户创建",
-          "updatedAt": "最后更新"
-        },
-        "dangerZone": {
-          "title": "危险区域",
-          "description": "如果您想永久删除您的账户，请点击下面的按钮。此操作无法撤销。",
-          "deleteAccount": "删除账户",
-          "notImplemented": "账户删除功能尚未实现。"
-        }
-      },
-      "preferences": {
-        "language": {
-          "title": "语言偏好",
-          "label": "选择语言",
-          "description": "选择应用程序语言。更改会立即应用。"
-        },
-        "theme": {
-          "title": "主题偏好",
-          "description": "选择应用程序主题。提供浅色和深色主题选项。"
-        },
-        "layout": {
-          "title": "布局偏好",
-          "sidebarLayout": "侧边栏布局",
-          "vertical": "垂直",
-          "horizontal": "水平",
-          "containerOption": "容器选项",
-          "boxed": "盒装",
-          "full": "全宽",
-          "sidebarType": "侧边栏类型",
-          "collapse": "折叠",
-          "cardStyle": "卡片样式",
-          "shadow": "阴影",
-          "border": "边框"
-        },
-        "saveSuccess": "偏好设置保存成功",
-        "saveError": "保存偏好设置时发生错误"
-      },
-      "security": {
-        "changePassword": {
-          "title": "更改密码",
-          "description": "建议定期更改密码以确保账户安全。",
-          "currentPassword": "当前密码",
-          "newPassword": "新密码",
-          "confirmPassword": "新密码（确认）",
-          "passwordStrength": "密码强度",
-          "requirements": {
-            "title": "密码要求",
-            "minLength": "至少 8 个字符",
-            "uppercase": "至少一个大写字母 (A-Z)",
-            "lowercase": "至少一个小写字母 (a-z)",
-            "number": "至少一个数字 (0-9)",
-            "special": "至少一个特殊字符 (! ? # $ % ^ & *)"
-          },
-          "save": "更改密码",
-          "cancel": "取消"
-        },
-        "passwordStrength": {
-          "weak": "弱",
-          "fair": "中等",
-          "good": "良好",
-          "strong": "强"
-        },
-        "validation": {
-          "currentPasswordRequired": "需要当前密码",
-          "newPasswordRequired": "需要新密码",
-          "passwordMinLength": "密码必须至少 8 个字符",
-          "passwordLowercase": "密码必须包含至少一个小写字母",
-          "passwordUppercase": "密码必须包含至少一个大写字母",
-          "passwordNumber": "密码必须包含至少一个数字",
-          "passwordSpecial": "密码必须包含至少一个特殊字符",
-          "confirmPasswordRequired": "需要确认密码",
-          "passwordsDoNotMatch": "密码不匹配"
-        },
-        "messages": {
-          "changePasswordSuccess": "密码已成功更改",
-          "changePasswordError": "更改密码时发生错误"
-        },
-        "tips": {
-          "title": "安全提示",
-          "tip1": "定期更改密码（至少每 3-6 个月）",
-          "tip2": "为不同账户使用不同的密码",
-          "tip3": "不要与任何人分享您的密码",
-          "tip4": "如果发现可疑活动，请立即更改密码"
-        }
-      }
-    },
-    "notes": {
-      "pageTitle": "我的笔记",
-      "breadcrumb": "我的笔记",
-      "listing": {
-        "title": "所有笔记",
-        "searchPlaceholder": "搜索笔记",
-        "deleteNote": "删除笔记",
-        "noNotesTitle": "信息",
-        "noNotesText": "未找到您要查找的笔记"
-      },
-      "content": {
-        "editTitle": "编辑笔记",
-        "changeTitle": "更改标题",
-        "titlePlaceholder": "在此处写下您的笔记内容...",
-        "changeColor": "更改笔记颜色",
-        "noNoteSelectedTitle": "信息",
-        "noNoteSelectedText": "请选择笔记"
-      },
-      "add": {
-        "button": "添加笔记",
-        "title": "添加笔记",
-        "placeholder": "在此处写下您的笔记内容...",
-        "selectColor": "选择笔记颜色",
-        "save": "保存",
-        "cancel": "取消"
-      }
-    },
-    "header": {
-      "profileDD": {
-        "myProfile": {
-          "title": "我的个人资料",
-          "subtitle": "账户设置"
-        },
-        "myNotes": {
-          "title": "我的笔记",
-          "subtitle": "我的每日笔记"
-        },
-        "logout": "登出"
+      "tips": {
+        "title": "安全提示",
+        "tip1": "定期更改密码（至少每 3-6 个月）",
+        "tip2": "为不同账户使用不同的密码",
+        "tip3": "不要与任何人分享您的密码",
+        "tip4": "如果发现可疑活动，请立即更改密码"
       }
     }
+  },
+  "notes": {
+    "pageTitle": "我的笔记",
+    "breadcrumb": "我的笔记",
+    "listing": {
+      "title": "所有笔记",
+      "searchPlaceholder": "搜索笔记",
+      "deleteNote": "删除笔记",
+      "noNotesTitle": "信息",
+      "noNotesText": "未找到您要查找的笔记"
+    },
+    "content": {
+      "editTitle": "编辑笔记",
+      "changeTitle": "更改标题",
+      "titlePlaceholder": "在此处写下您的笔记内容...",
+      "changeColor": "更改笔记颜色",
+      "noNoteSelectedTitle": "信息",
+      "noNoteSelectedText": "请选择笔记"
+    },
+    "add": {
+      "button": "添加笔记",
+      "title": "添加笔记",
+      "placeholder": "在此处写下您的笔记内容...",
+      "selectColor": "选择笔记颜色",
+      "save": "保存",
+      "cancel": "取消"
+    }
+  },
+  "users": {
+    "title": "用户管理",
+    "breadcrumbs": {
+      "home": "仪表板",
+      "users": "用户管理"
+    },
+    "table": {
+      "username": "用户名",
+      "email": "电子邮件",
+      "fullName": "全名",
+      "status": "状态",
+      "groups": "组",
+      "createdAt": "创建时间",
+      "actions": "操作"
+    },
+    "search": {
+      "placeholder": "搜索用户"
+    },
+    "status": {
+      "label": "状态",
+      "all": "全部",
+      "active": "活跃",
+      "inactive": "非活跃"
+    },
+    "buttons": {
+      "export": "导出",
+      "refresh": "刷新",
+      "newUser": "新用户"
+    },
+    "export": {
+      "csv": "导出为 CSV",
+      "json": "导出为 JSON",
+      "xlsx": "导出为 Excel",
+      "comingSoon": "即将推出",
+      "error": "导出操作失败"
+    },
+    "warning": {
+      "title": "警告：",
+      "message": "访问此页面需要管理员或管理员权限。请联系管理员以执行用户管理操作。"
+    },
+    "noData": {
+      "title": "未找到用户",
+      "button": "创建第一个用户"
+    },
+    "pagination": {
+      "total": "总计：",
+      "records": "记录",
+      "page": "页",
+      "showing": "显示",
+      "itemsPerPage": "每页项目："
+    },
+    "delete": {
+      "title": "删除用户",
+      "message": "您确定要删除此用户吗？此操作无法撤销。",
+      "cancel": "取消",
+      "close": "关闭",
+      "confirm": "是的，删除",
+      "error": "删除用户时发生错误"
+    },
+    "actions": {
+      "view": "查看",
+      "edit": "编辑",
+      "delete": "删除"
+    },
+    "errors": {
+      "userIdNotFound": "未找到用户 ID",
+      "deleteFailed": "删除用户时发生错误",
+      "exportFailed": "导出操作失败",
+      "forbiddenNote": "注意：此错误表示需要管理员权限。请确保您的用户在 \"admins\" 组中。"
+    },
+    "groups": {
+      "none": "无组"
+    },
+    "details": {
+      "title": "用户详情",
+      "breadcrumbs": {
+        "home": "仪表板",
+        "users": "用户管理",
+        "details": "用户详情"
+      },
+      "buttons": {
+        "resetPassword": "重置密码",
+        "edit": "编辑",
+        "backToList": "返回列表"
+      },
+      "cards": {
+        "userInfo": "用户信息",
+        "groupsAndRoles": "组和角色",
+        "photo": "照片"
+      },
+      "fields": {
+        "userId": "用户 ID",
+        "username": "用户名",
+        "email": "电子邮件",
+        "fullName": "全名",
+        "title": "职位",
+        "department": "部门",
+        "phone": "电话",
+        "gender": "性别",
+        "status": "状态",
+        "groups": "组",
+        "roles": "角色",
+        "createdAt": "创建时间",
+        "createdBy": "创建者",
+        "lastLogin": "最后登录",
+        "updatedAt": "最后更新",
+        "updatedBy": "更新者"
+      },
+      "gender": {
+        "male": "男",
+        "female": "女",
+        "notSpecified": "未指定"
+      },
+      "photo": {
+        "loadError": "无法加载照片",
+        "none": "无照片"
+      },
+      "loading": "加载中...",
+      "notFound": "未找到用户",
+      "resetPassword": {
+        "success": "密码重置电子邮件已成功发送。请要求用户检查其电子邮件地址。",
+        "error": "无法发送密码重置电子邮件。",
+        "userIdNotFound": "未找到用户 ID。",
+        "genericError": "发生错误。"
+      }
+    },
+    "edit": {
+      "title": "编辑用户",
+      "breadcrumbs": {
+        "home": "仪表板",
+        "users": "用户管理",
+        "edit": "编辑用户"
+      },
+      "fields": {
+        "username": "用户名",
+        "usernameNote": "用户名无法更改",
+        "email": "电子邮件",
+        "firstName": "名字",
+        "lastName": "姓氏",
+        "title": "职位",
+        "titlePlaceholder": "例如：Manager, Developer, QA Engineer",
+        "department": "部门",
+        "departmentPlaceholder": "例如：IT, Development, QA",
+        "phoneNumber": "电话号码",
+        "phonePlaceholder": "+90XXXXXXXXXX",
+        "photoUrl": "照片 URL",
+        "photoUrlPlaceholder": "https://...",
+        "photoUrlNote": "照片 URL 无法更改",
+        "isActive": "活跃",
+        "groups": "组",
+        "groupsSelect": "选择组"
+      },
+      "validation": {
+        "emailRequired": "电子邮件是必需的",
+        "emailInvalid": "请输入有效的电子邮件地址",
+        "firstNameRequired": "名字是必需的",
+        "lastNameRequired": "姓氏是必需的"
+      },
+      "buttons": {
+        "cancel": "取消",
+        "save": "保存"
+      },
+      "loading": "加载中...",
+      "errors": {
+        "loadFailed": "加载用户时发生错误",
+        "updateFailed": "更新用户时发生错误",
+        "usernameNotFound": "未找到用户名",
+        "userInfoNotFound": "未找到用户信息"
+      }
+    },
+    "create": {
+      "title": "创建新用户",
+      "breadcrumbs": {
+        "home": "仪表板",
+        "users": "用户管理",
+        "create": "新用户"
+      },
+      "fields": {
+        "username": "用户名",
+        "email": "电子邮件",
+        "password": "密码",
+        "confirmPassword": "确认密码",
+        "firstName": "名字",
+        "lastName": "姓氏",
+        "title": "职位",
+        "titlePlaceholder": "例如：Manager, Developer, QA Engineer",
+        "department": "部门",
+        "departmentPlaceholder": "例如：IT, Development, QA",
+        "phoneNumber": "电话号码",
+        "phonePlaceholder": "+90XXXXXXXXXX",
+        "isActive": "活跃",
+        "groups": "组",
+        "groupsSelect": "选择组",
+        "groupsNote": "用户将自动分配到 \"users\" 组"
+      },
+      "validation": {
+        "usernameRequired": "用户名是必需的",
+        "usernameMinLength": "用户名必须至少 3 个字符",
+        "emailRequired": "电子邮件是必需的",
+        "emailInvalid": "请输入有效的电子邮件地址",
+        "passwordRequired": "密码是必需的",
+        "passwordMinLength": "密码必须至少 6 个字符",
+        "confirmPasswordRequired": "确认密码是必需的",
+        "passwordsNotMatch": "密码不匹配",
+        "firstNameRequired": "名字是必需的",
+        "lastNameRequired": "姓氏是必需的"
+      },
+      "buttons": {
+        "cancel": "取消",
+        "create": "创建"
+      },
+      "errors": {
+        "createFailed": "创建用户时发生错误"
+      }
+    }
+  },
+  "header": {
+    "profileDD": {
+      "myProfile": {
+        "title": "我的个人资料",
+        "subtitle": "账户设置"
+      },
+      "myNotes": {
+        "title": "我的笔记",
+        "subtitle": "我的每日笔记"
+      },
+      "logout": "登出"
+    }
   }
+}

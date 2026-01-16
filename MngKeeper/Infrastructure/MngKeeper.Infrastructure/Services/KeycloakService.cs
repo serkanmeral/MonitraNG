@@ -173,16 +173,23 @@ namespace MngKeeper.Infrastructure.Services
                     attributes["photoUrl"] = new[] { request.PhotoUrl };
                 }
 
-                var userData = new
+                // Build user data object - only include credentials if password is provided
+                var userDataObject = new Dictionary<string, object>
                 {
-                    username = request.Username,
-                    email = request.Email,
-                    firstName = request.FirstName,
-                    lastName = request.LastName,
-                    enabled = true,
-                    emailVerified = true,
-                    attributes = attributes,
-                    credentials = new[]
+                    ["username"] = request.Username,
+                    ["email"] = request.Email,
+                    ["firstName"] = request.FirstName,
+                    ["lastName"] = request.LastName,
+                    ["enabled"] = true,
+                    ["emailVerified"] = true,
+                    ["attributes"] = attributes
+                };
+
+                // Only include credentials if password is provided
+                // If no password, user can set it later via reset password
+                if (!string.IsNullOrEmpty(request.Password))
+                {
+                    userDataObject["credentials"] = new[]
                     {
                         new
                         {
@@ -190,8 +197,10 @@ namespace MngKeeper.Infrastructure.Services
                             value = request.Password,
                             temporary = false
                         }
-                    }
-                };
+                    };
+                }
+
+                var userData = userDataObject;
 
                 var json = JsonSerializer.Serialize(userData);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");

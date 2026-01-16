@@ -1,29 +1,46 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { Form, Field } from 'vee-validate';
 import * as yup from 'yup';
+import { useLocaleStore } from '@/stores/locale';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useUserStore } from '@/stores/apps/user';
 import { fetchFromMngKeeper } from '@/services/apiService';
 
+// Get i18n instance for legacy mode
+const nuxtApp = useNuxtApp();
+const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
+const t = (key: string, params?: any) => {
+  if (i18n && i18n.t) {
+    return i18n.t(key, params);
+  }
+  if (i18n?.global?.t) {
+    return i18n.global.t(key, params);
+  }
+  return key;
+};
+
 const router = useRouter();
 const userStore = useUserStore();
+const localeStore = useLocaleStore();
 
-const page = ref({ title: 'Yeni Kullanıcı Oluştur' });
-const breadcrumbs = ref([
+const page = computed(() => ({ 
+  title: t('users.create.title') 
+}));
+const breadcrumbs = computed(() => [
   {
-    text: 'Dashboard',
+    text: t('users.create.breadcrumbs.home'),
     disabled: false,
     href: '/dashboards/analytical',
   },
   {
-    text: 'Kullanıcı Yönetimi',
+    text: t('users.create.breadcrumbs.users'),
     disabled: false,
     href: '/apps/users',
   },
   {
-    text: 'Yeni Kullanıcı',
+    text: t('users.create.breadcrumbs.create'),
     disabled: true,
     href: '#',
   },
@@ -37,8 +54,6 @@ const groups = ref<Array<{ id: string; name: string }>>([]);
 const formData = ref({
   username: '',
   email: '',
-  password: '',
-  confirmPassword: '',
   firstName: '',
   lastName: '',
   selectedGroups: [] as string[],
@@ -48,17 +63,13 @@ const formData = ref({
   isActive: true,
 });
 
-// Validation schema
-const schema = yup.object({
-  username: yup.string().required('Kullanıcı adı gereklidir').min(3, 'Kullanıcı adı en az 3 karakter olmalıdır'),
-  email: yup.string().email('Geçerli bir email adresi giriniz').required('Email gereklidir'),
-  password: yup.string().required('Şifre gereklidir').min(6, 'Şifre en az 6 karakter olmalıdır'),
-  confirmPassword: yup.string()
-    .required('Şifre tekrarı gereklidir')
-    .oneOf([yup.ref('password')], 'Şifreler eşleşmiyor'),
-  firstName: yup.string().required('Ad gereklidir'),
-  lastName: yup.string().required('Soyad gereklidir'),
-});
+// Validation schema (computed to react to locale changes)
+const schema = computed(() => yup.object({
+  username: yup.string().required(t('users.create.validation.usernameRequired')).min(3, t('users.create.validation.usernameMinLength')),
+  email: yup.string().email(t('users.create.validation.emailInvalid')).required(t('users.create.validation.emailRequired')),
+  firstName: yup.string().required(t('users.create.validation.firstNameRequired')),
+  lastName: yup.string().required(t('users.create.validation.lastNameRequired')),
+}));
 
 // Load groups
 onMounted(async () => {
@@ -95,7 +106,6 @@ const onSubmit = async (values: any) => {
     const userData: any = {
       username: formData.value.username,
       email: formData.value.email,
-      password: formData.value.password,
       firstName: formData.value.firstName,
       lastName: formData.value.lastName,
       groups: formData.value.selectedGroups,
@@ -118,7 +128,7 @@ const onSubmit = async (values: any) => {
     // Success - redirect to list
     router.push('/apps/users');
   } catch (error: any) {
-    errorMessage.value = error.message || 'Kullanıcı oluşturulurken bir hata oluştu';
+    errorMessage.value = error.message || t('users.create.errors.createFailed');
   } finally {
     loading.value = false;
   }
@@ -130,7 +140,7 @@ const onSubmit = async (values: any) => {
   
   <v-card elevation="10">
     <v-card-item>
-      <h5 class="text-h5 mb-6 font-weight-semibold">Yeni Kullanıcı Oluştur</h5>
+      <h5 class="text-h5 mb-6 font-weight-semibold">{{ t('users.create.title') }}</h5>
       
       <Form
         v-slot="{ handleSubmit }"
@@ -155,7 +165,7 @@ const onSubmit = async (values: any) => {
                 <v-text-field
                   v-bind="field"
                   v-model="formData.username"
-                  label="Kullanıcı Adı *"
+                  :label="t('users.create.fields.username') + ' *'"
                   variant="outlined"
                   :error-messages="errors"
                   required
@@ -169,38 +179,8 @@ const onSubmit = async (values: any) => {
                 <v-text-field
                   v-bind="field"
                   v-model="formData.email"
-                  label="Email *"
+                  :label="t('users.create.fields.email') + ' *'"
                   type="email"
-                  variant="outlined"
-                  :error-messages="errors"
-                  required
-                />
-              </Field>
-            </v-col>
-
-            <!-- Password -->
-            <v-col cols="12" md="6">
-              <Field name="password" v-slot="{ field, errors }">
-                <v-text-field
-                  v-bind="field"
-                  v-model="formData.password"
-                  label="Şifre *"
-                  type="password"
-                  variant="outlined"
-                  :error-messages="errors"
-                  required
-                />
-              </Field>
-            </v-col>
-
-            <!-- Confirm Password -->
-            <v-col cols="12" md="6">
-              <Field name="confirmPassword" v-slot="{ field, errors }">
-                <v-text-field
-                  v-bind="field"
-                  v-model="formData.confirmPassword"
-                  label="Şifre Tekrar *"
-                  type="password"
                   variant="outlined"
                   :error-messages="errors"
                   required
@@ -214,7 +194,7 @@ const onSubmit = async (values: any) => {
                 <v-text-field
                   v-bind="field"
                   v-model="formData.firstName"
-                  label="Ad *"
+                  :label="t('users.create.fields.firstName') + ' *'"
                   variant="outlined"
                   :error-messages="errors"
                   required
@@ -228,7 +208,7 @@ const onSubmit = async (values: any) => {
                 <v-text-field
                   v-bind="field"
                   v-model="formData.lastName"
-                  label="Soyad *"
+                  :label="t('users.create.fields.lastName') + ' *'"
                   variant="outlined"
                   :error-messages="errors"
                   required
@@ -240,9 +220,9 @@ const onSubmit = async (values: any) => {
             <v-col cols="12" md="6">
               <v-text-field
                 v-model="formData.title"
-                label="Ünvan"
+                :label="t('users.create.fields.title')"
                 variant="outlined"
-                placeholder="Örn: Manager, Developer, QA Engineer"
+                :placeholder="t('users.create.fields.titlePlaceholder')"
               />
             </v-col>
 
@@ -250,9 +230,9 @@ const onSubmit = async (values: any) => {
             <v-col cols="12" md="6">
               <v-text-field
                 v-model="formData.department"
-                label="Departman"
+                :label="t('users.create.fields.department')"
                 variant="outlined"
-                placeholder="Örn: IT, Development, QA"
+                :placeholder="t('users.create.fields.departmentPlaceholder')"
               />
             </v-col>
 
@@ -260,9 +240,9 @@ const onSubmit = async (values: any) => {
             <v-col cols="12" md="6">
               <v-text-field
                 v-model="formData.phoneNumber"
-                label="Telefon Numarası"
+                :label="t('users.create.fields.phoneNumber')"
                 variant="outlined"
-                placeholder="+90XXXXXXXXXX"
+                :placeholder="t('users.create.fields.phonePlaceholder')"
               />
             </v-col>
 
@@ -270,7 +250,7 @@ const onSubmit = async (values: any) => {
             <v-col cols="12" md="6">
               <v-switch
                 v-model="formData.isActive"
-                label="Aktif"
+                :label="t('users.create.fields.isActive')"
                 color="success"
                 hide-details
               />
@@ -278,13 +258,13 @@ const onSubmit = async (values: any) => {
 
             <!-- Groups -->
             <v-col cols="12">
-              <v-label class="mb-2">Gruplar</v-label>
+              <v-label class="mb-2">{{ t('users.create.fields.groups') }}</v-label>
               <v-select
                 v-model="formData.selectedGroups"
                 :items="groups"
                 item-title="name"
                 item-value="id"
-                label="Gruplar Seçiniz"
+                :label="t('users.create.fields.groupsSelect')"
                 variant="outlined"
                 multiple
                 chips
@@ -295,7 +275,7 @@ const onSubmit = async (values: any) => {
                 </template>
               </v-select>
               <div class="text-caption text-medium-emphasis mt-1">
-                Kullanıcı otomatik olarak "users" grubuna atanacaktır
+                {{ t('users.create.fields.groupsNote') }}
               </div>
             </v-col>
           </v-row>
@@ -308,7 +288,7 @@ const onSubmit = async (values: any) => {
               @click="router.push('/apps/users')"
               :disabled="loading"
             >
-              İptal
+              {{ t('users.create.buttons.cancel') }}
             </v-btn>
             <v-btn
               color="primary"
@@ -316,7 +296,7 @@ const onSubmit = async (values: any) => {
               type="submit"
               :loading="loading"
             >
-              Oluştur
+              {{ t('users.create.buttons.create') }}
             </v-btn>
           </div>
         </v-form>

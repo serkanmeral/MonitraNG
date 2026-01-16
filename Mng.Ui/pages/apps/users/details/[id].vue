@@ -1,30 +1,47 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick } from 'vue';
+import { ref, onMounted, watch, nextTick, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useLocaleStore } from '@/stores/locale';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useUserStore } from '@/stores/apps/user';
 import { EditIcon } from 'vue-tabler-icons';
 
+// Get i18n instance for legacy mode
+const nuxtApp = useNuxtApp();
+const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
+const t = (key: string, params?: any) => {
+  if (i18n && i18n.t) {
+    return i18n.t(key, params);
+  }
+  if (i18n?.global?.t) {
+    return i18n.global.t(key, params);
+  }
+  return key;
+};
+
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+const localeStore = useLocaleStore();
 
 const userId = route.params.id as string;
 
-const page = ref({ title: 'Kullanıcı Detayı' });
-const breadcrumbs = ref([
+const page = computed(() => ({ 
+  title: t('users.details.title') 
+}));
+const breadcrumbs = computed(() => [
   {
-    text: 'Dashboard',
+    text: t('users.details.breadcrumbs.home'),
     disabled: false,
     href: '/dashboards/analytical',
   },
   {
-    text: 'Kullanıcı Yönetimi',
+    text: t('users.details.breadcrumbs.users'),
     disabled: false,
     href: '/apps/users',
   },
   {
-    text: 'Kullanıcı Detayı',
+    text: t('users.details.breadcrumbs.details'),
     disabled: true,
     href: '#',
   },
@@ -120,7 +137,16 @@ const getPhotoUrl = () => {
 const formatDate = (date: string | Date | null | undefined) => {
   if (!date) return '-';
   try {
-    return new Date(date).toLocaleString('tr-TR', {
+    const localeMap: Record<string, string> = {
+      tr: 'tr-TR',
+      en: 'en-US',
+      fr: 'fr-FR',
+      ar: 'ar-SA',
+      zh: 'zh-CN',
+    };
+    const locale = localeMap[localeStore.locale] || 'tr-TR';
+    
+    return new Date(date).toLocaleString(locale, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -135,30 +161,101 @@ const formatDate = (date: string | Date | null | undefined) => {
 const editUser = () => {
   router.push(`/apps/users/edit/${userId}`);
 };
+
+const resettingPassword = ref(false);
+const resetPasswordSuccess = ref(false);
+const resetPasswordError = ref<string | null>(null);
+
+const handleResetPassword = async () => {
+  if (!userStore.viewingUser) return;
+  
+  resettingPassword.value = true;
+  resetPasswordSuccess.value = false;
+  resetPasswordError.value = null;
+  
+  try {
+    const userId = userStore.viewingUser.id || userStore.viewingUser.userId;
+    if (!userId) {
+      resetPasswordError.value = t('users.details.resetPassword.userIdNotFound');
+      return;
+    }
+    
+    const result = await userStore.requestPasswordReset(userId);
+    
+    if (result.isSuccess) {
+      resetPasswordSuccess.value = true;
+      // Hide success message after 5 seconds
+      setTimeout(() => {
+        resetPasswordSuccess.value = false;
+      }, 5000);
+    } else {
+      resetPasswordError.value = result.error || t('users.details.resetPassword.error');
+    }
+  } catch (error: any) {
+    resetPasswordError.value = error.message || t('users.details.resetPassword.genericError');
+  } finally {
+    resettingPassword.value = false;
+  }
+};
 </script>
 
 <template>
   <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs" />
   
+  <!-- Success/Error Messages -->
+  <v-alert
+    v-if="resetPasswordSuccess"
+    type="success"
+    variant="tonal"
+    closable
+    class="mb-4"
+    @click:close="resetPasswordSuccess = false"
+  >
+    {{ t('users.details.resetPassword.success') }}
+  </v-alert>
+  
+  <v-alert
+    v-if="resetPasswordError"
+    type="error"
+    variant="tonal"
+    closable
+    class="mb-4"
+    @click:close="resetPasswordError = null"
+  >
+    {{ resetPasswordError }}
+  </v-alert>
+  
   <v-card elevation="10" v-if="!loading || userStore.viewingUser">
     <v-card-item>
       <div class="d-flex justify-space-between align-center mb-6">
         <div>
-          <h5 class="text-h5 font-weight-semibold mb-1">Kullanıcı Detayı</h5>
+          <h5 class="text-h5 font-weight-semibold mb-1">{{ t('users.details.title') }}</h5>
           <div class="text-caption text-medium-emphasis" v-if="userStore.viewingUser">
             <v-icon size="14" class="mr-1">mdi-identifier</v-icon>
             ID: {{ userStore.viewingUser.id || userStore.viewingUser.userId }}
           </div>
         </div>
-        <v-btn color="primary" @click="editUser" flat>
-          <EditIcon class="mr-2" size="18" />
-          Düzenle
-        </v-btn>
+        <div class="d-flex ga-2">
+          <v-btn 
+            color="warning" 
+            @click="handleResetPassword" 
+            flat
+            :loading="resettingPassword"
+            :disabled="resettingPassword || !userStore.viewingUser?.email"
+          >
+            <v-icon class="mr-2" size="18">mdi-lock-reset</v-icon>
+            {{ t('users.details.buttons.resetPassword') }}
+          </v-btn>
+          <v-btn color="primary" @click="editUser" flat>
+            <EditIcon class="mr-2" size="18" />
+            {{ t('users.details.buttons.edit') }}
+          </v-btn>
+        </div>
       </div>
 
       <div v-if="loading && !userStore.viewingUser" class="text-center py-8">
         <v-progress-circular indeterminate color="primary" />
-        <p class="text-subtitle-1 mt-4">Yükleniyor...</p>
+        <p class="text-subtitle-1 mt-4">{{ t('users.details.loading') }}</p>
       </div>
 
       <div v-else-if="userStore.viewingUser" class="pa-4">
@@ -168,7 +265,7 @@ const editUser = () => {
             <v-card variant="outlined" class="pa-4">
               <div class="d-flex align-center mb-4">
                 <v-icon class="mr-2" color="primary">mdi-account-circle</v-icon>
-                <h6 class="text-h6 font-weight-semibold">Kullanıcı Bilgileri</h6>
+                <h6 class="text-h6 font-weight-semibold">{{ t('users.details.cards.userInfo') }}</h6>
               </div>
               
               <v-list lines="two" density="comfortable">
@@ -176,7 +273,7 @@ const editUser = () => {
                   <template v-slot:prepend>
                     <v-icon size="20" class="mr-2" color="primary">mdi-identifier</v-icon>
                   </template>
-                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">Kullanıcı ID</v-list-item-title>
+                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">{{ t('users.details.fields.userId') }}</v-list-item-title>
                   <v-list-item-subtitle class="text-body-1 font-mono">
                     {{ userStore.viewingUser.id || userStore.viewingUser.userId }}
                   </v-list-item-subtitle>
@@ -188,7 +285,7 @@ const editUser = () => {
                   <template v-slot:prepend>
                     <v-icon size="20" class="mr-2" color="primary">mdi-account</v-icon>
                   </template>
-                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">Kullanıcı Adı</v-list-item-title>
+                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">{{ t('users.details.fields.username') }}</v-list-item-title>
                   <v-list-item-subtitle class="text-body-1">
                     {{ userStore.viewingUser.username }}
                   </v-list-item-subtitle>
@@ -200,7 +297,7 @@ const editUser = () => {
                   <template v-slot:prepend>
                     <v-icon size="20" class="mr-2" color="primary">mdi-email</v-icon>
                   </template>
-                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">Email</v-list-item-title>
+                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">{{ t('users.details.fields.email') }}</v-list-item-title>
                   <v-list-item-subtitle class="text-body-1">
                     {{ userStore.viewingUser.email }}
                   </v-list-item-subtitle>
@@ -212,7 +309,7 @@ const editUser = () => {
                   <template v-slot:prepend>
                     <v-icon size="20" class="mr-2" color="primary">mdi-account-box</v-icon>
                   </template>
-                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">Ad Soyad</v-list-item-title>
+                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">{{ t('users.details.fields.fullName') }}</v-list-item-title>
                   <v-list-item-subtitle class="text-body-1">
                     {{ userStore.viewingUser.firstName }} {{ userStore.viewingUser.lastName }}
                   </v-list-item-subtitle>
@@ -222,7 +319,7 @@ const editUser = () => {
                   <template v-slot:prepend>
                     <v-icon size="20" class="mr-2" color="primary">mdi-briefcase</v-icon>
                   </template>
-                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">Ünvan</v-list-item-title>
+                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">{{ t('users.details.fields.title') }}</v-list-item-title>
                   <v-list-item-subtitle class="text-body-1">
                     {{ userStore.viewingUser.title }}
                   </v-list-item-subtitle>
@@ -232,7 +329,7 @@ const editUser = () => {
                   <template v-slot:prepend>
                     <v-icon size="20" class="mr-2" color="primary">mdi-office-building</v-icon>
                   </template>
-                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">Departman</v-list-item-title>
+                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">{{ t('users.details.fields.department') }}</v-list-item-title>
                   <v-list-item-subtitle class="text-body-1">
                     {{ userStore.viewingUser.department }}
                   </v-list-item-subtitle>
@@ -242,7 +339,7 @@ const editUser = () => {
                   <template v-slot:prepend>
                     <v-icon size="20" class="mr-2" color="primary">mdi-phone</v-icon>
                   </template>
-                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">Telefon</v-list-item-title>
+                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">{{ t('users.details.fields.phone') }}</v-list-item-title>
                   <v-list-item-subtitle class="text-body-1">
                     {{ userStore.viewingUser.phoneNumber }}
                   </v-list-item-subtitle>
@@ -254,12 +351,12 @@ const editUser = () => {
                   <template v-slot:prepend>
                     <v-icon size="20" class="mr-2" color="primary">mdi-gender-male-female</v-icon>
                   </template>
-                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">Cinsiyet</v-list-item-title>
+                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">{{ t('users.details.fields.gender') }}</v-list-item-title>
                   <v-list-item-subtitle class="text-body-1">
                     {{ 
-                      userStore.viewingUser.gender === 1 ? 'Erkek' : 
-                      userStore.viewingUser.gender === 2 ? 'Kadın' : 
-                      'Belirtilmemiş' 
+                      userStore.viewingUser.gender === 1 ? t('users.details.gender.male') : 
+                      userStore.viewingUser.gender === 2 ? t('users.details.gender.female') : 
+                      t('users.details.gender.notSpecified') 
                     }}
                   </v-list-item-subtitle>
                 </v-list-item>
@@ -270,10 +367,10 @@ const editUser = () => {
                   <template v-slot:prepend>
                     <v-icon size="20" class="mr-2" :color="userStore.viewingUser.isActive ? 'success' : 'error'">mdi-check-circle</v-icon>
                   </template>
-                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">Durum</v-list-item-title>
+                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">{{ t('users.details.fields.status') }}</v-list-item-title>
                   <v-list-item-subtitle>
                     <v-chip :color="userStore.viewingUser.isActive ? 'success' : 'error'" size="small" variant="flat">
-                      {{ userStore.viewingUser.isActive ? 'Aktif' : 'Pasif' }}
+                      {{ userStore.viewingUser.isActive ? t('users.status.active') : t('users.status.inactive') }}
                     </v-chip>
                   </v-list-item-subtitle>
                 </v-list-item>
@@ -286,7 +383,7 @@ const editUser = () => {
             <v-card variant="outlined" class="pa-4">
               <div class="d-flex align-center mb-4">
                 <v-icon class="mr-2" color="primary">mdi-account-group</v-icon>
-                <h6 class="text-h6 font-weight-semibold">Gruplar ve Roller</h6>
+                <h6 class="text-h6 font-weight-semibold">{{ t('users.details.cards.groupsAndRoles') }}</h6>
               </div>
               
               <v-list lines="two" density="comfortable">
@@ -294,7 +391,7 @@ const editUser = () => {
                   <template v-slot:prepend>
                     <v-icon size="20" class="mr-2" color="primary">mdi-account-multiple</v-icon>
                   </template>
-                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-2">Gruplar</v-list-item-title>
+                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-2">{{ t('users.details.fields.groups') }}</v-list-item-title>
                   <v-list-item-subtitle>
                     <div class="d-flex ga-1 flex-wrap">
                       <v-chip
@@ -307,7 +404,7 @@ const editUser = () => {
                         {{ group }}
                       </v-chip>
                       <span v-if="!userStore.viewingUser.groups || userStore.viewingUser.groups.length === 0" class="text-caption text-medium-emphasis">
-                        Grup yok
+                        {{ t('users.groups.none') }}
                       </span>
                     </div>
                   </v-list-item-subtitle>
@@ -319,7 +416,7 @@ const editUser = () => {
                   <template v-slot:prepend>
                     <v-icon size="20" class="mr-2" color="primary">mdi-shield-account</v-icon>
                   </template>
-                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-2">Roller</v-list-item-title>
+                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-2">{{ t('users.details.fields.roles') }}</v-list-item-title>
                   <v-list-item-subtitle>
                     <div class="d-flex ga-1 flex-wrap">
                       <v-chip
@@ -341,7 +438,7 @@ const editUser = () => {
                   <template v-slot:prepend>
                     <v-icon size="20" class="mr-2" color="primary">mdi-calendar-plus</v-icon>
                   </template>
-                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">Oluşturulma</v-list-item-title>
+                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">{{ t('users.details.fields.createdAt') }}</v-list-item-title>
                   <v-list-item-subtitle class="text-body-1">
                     {{ formatDate(userStore.viewingUser.createdAt) }}
                   </v-list-item-subtitle>
@@ -351,7 +448,7 @@ const editUser = () => {
                   <template v-slot:prepend>
                     <v-icon size="20" class="mr-2" color="primary">mdi-account-plus</v-icon>
                   </template>
-                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">Oluşturan</v-list-item-title>
+                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">{{ t('users.details.fields.createdBy') }}</v-list-item-title>
                   <v-list-item-subtitle class="text-body-1">
                     {{ userStore.viewingUser.createdBy }}
                   </v-list-item-subtitle>
@@ -363,7 +460,7 @@ const editUser = () => {
                   <template v-slot:prepend>
                     <v-icon size="20" class="mr-2" color="primary">mdi-login</v-icon>
                   </template>
-                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">Son Giriş</v-list-item-title>
+                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">{{ t('users.details.fields.lastLogin') }}</v-list-item-title>
                   <v-list-item-subtitle class="text-body-1">
                     {{ formatDate(userStore.viewingUser.lastLoginAt) }}
                   </v-list-item-subtitle>
@@ -375,7 +472,7 @@ const editUser = () => {
                   <template v-slot:prepend>
                     <v-icon size="20" class="mr-2" color="primary">mdi-calendar-edit</v-icon>
                   </template>
-                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">Son Güncelleme</v-list-item-title>
+                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">{{ t('users.details.fields.updatedAt') }}</v-list-item-title>
                   <v-list-item-subtitle class="text-body-1">
                     {{ formatDate(userStore.viewingUser.updatedAt) }}
                   </v-list-item-subtitle>
@@ -385,7 +482,7 @@ const editUser = () => {
                   <template v-slot:prepend>
                     <v-icon size="20" class="mr-2" color="primary">mdi-account-edit</v-icon>
                   </template>
-                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">Güncelleyen</v-list-item-title>
+                  <v-list-item-title class="text-subtitle-2 font-weight-medium mb-1">{{ t('users.details.fields.updatedBy') }}</v-list-item-title>
                   <v-list-item-subtitle class="text-body-1">
                     {{ userStore.viewingUser.updatedBy }}
                   </v-list-item-subtitle>
@@ -397,7 +494,7 @@ const editUser = () => {
               <div class="text-center">
                 <div class="d-flex align-center justify-center mb-3">
                   <v-icon class="mr-2" color="primary">mdi-camera</v-icon>
-                  <h6 class="text-h6 font-weight-semibold">Fotoğraf</h6>
+                  <h6 class="text-h6 font-weight-semibold">{{ t('users.details.cards.photo') }}</h6>
                 </div>
                 <div class="d-flex justify-center mb-2">
                   <div v-if="hasValidPhoto()" style="position: relative; width: 200px; height: 200px; border-radius: 8px; overflow: hidden; border: 2px solid rgba(var(--v-theme-on-surface), 0.12);">
@@ -419,7 +516,7 @@ const editUser = () => {
                   {{ getPhotoUrl() }}
                 </div>
                 <div v-else class="text-caption text-medium-emphasis mt-2">
-                  {{ userStore.viewingUser?.photoUrl ? 'Fotoğraf yüklenemedi' : 'Fotoğraf yok' }}
+                  {{ userStore.viewingUser?.photoUrl ? t('users.details.photo.loadError') : t('users.details.photo.none') }}
                 </div>
               </div>
             </v-card>
@@ -429,15 +526,15 @@ const editUser = () => {
         <!-- Actions -->
         <div class="d-flex justify-end ga-3 mt-6">
           <v-btn color="primary" variant="flat" @click="router.push('/apps/users')">
-            Listeye Dön
+            {{ t('users.details.buttons.backToList') }}
           </v-btn>
         </div>
       </div>
 
       <div v-else class="text-center py-8">
-        <p class="text-subtitle-1 text-medium-emphasis">Kullanıcı bulunamadı</p>
+        <p class="text-subtitle-1 text-medium-emphasis">{{ t('users.details.notFound') }}</p>
         <v-btn color="primary" @click="router.push('/apps/users')" class="mt-4">
-          Listeye Dön
+          {{ t('users.details.buttons.backToList') }}
         </v-btn>
       </div>
     </v-card-item>

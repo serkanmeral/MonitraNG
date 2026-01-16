@@ -1,32 +1,49 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { Form, Field } from 'vee-validate';
 import * as yup from 'yup';
+import { useLocaleStore } from '@/stores/locale';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useUserStore } from '@/stores/apps/user';
 import { fetchFromMngKeeper } from '@/services/apiService';
 
+// Get i18n instance for legacy mode
+const nuxtApp = useNuxtApp();
+const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
+const t = (key: string, params?: any) => {
+  if (i18n && i18n.t) {
+    return i18n.t(key, params);
+  }
+  if (i18n?.global?.t) {
+    return i18n.global.t(key, params);
+  }
+  return key;
+};
+
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+const localeStore = useLocaleStore();
 
 const userId = route.params.id as string;
 
-const page = ref({ title: 'Kullanıcı Düzenle' });
-const breadcrumbs = ref([
+const page = computed(() => ({ 
+  title: t('users.edit.title') 
+}));
+const breadcrumbs = computed(() => [
   {
-    text: 'Dashboard',
+    text: t('users.edit.breadcrumbs.home'),
     disabled: false,
     href: '/dashboards/analytical',
   },
   {
-    text: 'Kullanıcı Yönetimi',
+    text: t('users.edit.breadcrumbs.users'),
     disabled: false,
     href: '/apps/users',
   },
   {
-    text: 'Kullanıcı Düzenle',
+    text: t('users.edit.breadcrumbs.edit'),
     disabled: true,
     href: '#',
   },
@@ -50,12 +67,12 @@ const formData = ref({
   photoUrl: null as string | null,
 });
 
-// Validation schema
-const schema = yup.object({
-  email: yup.string().email('Geçerli bir email adresi giriniz').required('Email gereklidir'),
-  firstName: yup.string().required('Ad gereklidir'),
-  lastName: yup.string().required('Soyad gereklidir'),
-});
+// Validation schema (computed to react to locale changes)
+const schema = computed(() => yup.object({
+  email: yup.string().email(t('users.edit.validation.emailInvalid')).required(t('users.edit.validation.emailRequired')),
+  firstName: yup.string().required(t('users.edit.validation.firstNameRequired')),
+  lastName: yup.string().required(t('users.edit.validation.lastNameRequired')),
+}));
 
 // Load user data
 const loadUser = async () => {
@@ -80,7 +97,7 @@ const loadUser = async () => {
       formKey.value++;
     }
   } catch (error: any) {
-    errorMessage.value = error.message || 'Kullanıcı yüklenirken bir hata oluştu';
+    errorMessage.value = error.message || t('users.edit.errors.loadFailed');
   } finally {
     loading.value = false;
   }
@@ -131,13 +148,13 @@ const onSubmit = async (values: any) => {
     // Get username from viewingUser (required by backend)
     const username = userStore.viewingUser?.username || '';
     if (!username) {
-      throw new Error('Kullanıcı adı bulunamadı');
+      throw new Error(t('users.edit.errors.usernameNotFound'));
     }
     
     // Get current user data to preserve fields not in the form
     const currentUser = userStore.viewingUser;
     if (!currentUser) {
-      throw new Error('Kullanıcı bilgileri bulunamadı');
+      throw new Error(t('users.edit.errors.userInfoNotFound'));
     }
     
     // Check if groups were changed by comparing with original user groups
@@ -185,7 +202,7 @@ const onSubmit = async (values: any) => {
     router.push({ path: '/apps/users', query: { refresh: Date.now() } });
   } catch (error: any) {
     console.error('[UserEdit] Error updating user:', error);
-    errorMessage.value = error.message || 'Kullanıcı güncellenirken bir hata oluştu';
+    errorMessage.value = error.message || t('users.edit.errors.updateFailed');
   } finally {
     loading.value = false;
   }
@@ -197,11 +214,11 @@ const onSubmit = async (values: any) => {
   
   <v-card elevation="10" v-if="!loading || userStore.viewingUser">
     <v-card-item>
-      <h5 class="text-h5 mb-6 font-weight-semibold">Kullanıcı Düzenle</h5>
+      <h5 class="text-h5 mb-6 font-weight-semibold">{{ t('users.edit.title') }}</h5>
       
       <div v-if="loading && !userStore.viewingUser" class="text-center py-8">
         <v-progress-circular indeterminate color="primary" />
-        <p class="text-subtitle-1 mt-4">Yükleniyor...</p>
+        <p class="text-subtitle-1 mt-4">{{ t('users.edit.loading') }}</p>
       </div>
 
       <Form
@@ -228,12 +245,12 @@ const onSubmit = async (values: any) => {
             <v-col cols="12" md="6">
               <v-text-field
                 :model-value="userStore.viewingUser?.username || ''"
-                label="Kullanıcı Adı"
+                :label="t('users.edit.fields.username')"
                 variant="outlined"
                 disabled
               />
               <div class="text-caption text-medium-emphasis mt-1">
-                Kullanıcı adı değiştirilemez
+                {{ t('users.edit.fields.usernameNote') }}
               </div>
             </v-col>
 
@@ -243,7 +260,7 @@ const onSubmit = async (values: any) => {
                 <v-text-field
                   v-bind="field"
                   v-model="formData.email"
-                  label="Email *"
+                  :label="t('users.edit.fields.email') + ' *'"
                   type="email"
                   variant="outlined"
                   :error-messages="errors"
@@ -258,7 +275,7 @@ const onSubmit = async (values: any) => {
                 <v-text-field
                   v-bind="field"
                   v-model="formData.firstName"
-                  label="Ad *"
+                  :label="t('users.edit.fields.firstName') + ' *'"
                   variant="outlined"
                   :error-messages="errors"
                   required
@@ -272,7 +289,7 @@ const onSubmit = async (values: any) => {
                 <v-text-field
                   v-bind="field"
                   v-model="formData.lastName"
-                  label="Soyad *"
+                  :label="t('users.edit.fields.lastName') + ' *'"
                   variant="outlined"
                   :error-messages="errors"
                   required
@@ -284,9 +301,9 @@ const onSubmit = async (values: any) => {
             <v-col cols="12" md="6">
               <v-text-field
                 v-model="formData.title"
-                label="Ünvan"
+                :label="t('users.edit.fields.title')"
                 variant="outlined"
-                placeholder="Örn: Manager, Developer, QA Engineer"
+                :placeholder="t('users.edit.fields.titlePlaceholder')"
               />
             </v-col>
 
@@ -294,9 +311,9 @@ const onSubmit = async (values: any) => {
             <v-col cols="12" md="6">
               <v-text-field
                 v-model="formData.department"
-                label="Departman"
+                :label="t('users.edit.fields.department')"
                 variant="outlined"
-                placeholder="Örn: IT, Development, QA"
+                :placeholder="t('users.edit.fields.departmentPlaceholder')"
               />
             </v-col>
 
@@ -304,9 +321,9 @@ const onSubmit = async (values: any) => {
             <v-col cols="12" md="6">
               <v-text-field
                 v-model="formData.phoneNumber"
-                label="Telefon Numarası"
+                :label="t('users.edit.fields.phoneNumber')"
                 variant="outlined"
-                placeholder="+90XXXXXXXXXX"
+                :placeholder="t('users.edit.fields.phonePlaceholder')"
               />
             </v-col>
 
@@ -314,13 +331,13 @@ const onSubmit = async (values: any) => {
             <v-col cols="12" md="6">
               <v-text-field
                 v-model="formData.photoUrl"
-                label="Fotoğraf URL"
+                :label="t('users.edit.fields.photoUrl')"
                 variant="outlined"
-                placeholder="https://..."
+                :placeholder="t('users.edit.fields.photoUrlPlaceholder')"
                 disabled
               />
               <div class="text-caption text-medium-emphasis mt-1">
-                Fotoğraf URL değiştirilemez
+                {{ t('users.edit.fields.photoUrlNote') }}
               </div>
             </v-col>
 
@@ -328,7 +345,7 @@ const onSubmit = async (values: any) => {
             <v-col cols="12" md="6">
               <v-switch
                 v-model="formData.isActive"
-                label="Aktif"
+                :label="t('users.edit.fields.isActive')"
                 color="success"
                 hide-details
               />
@@ -336,13 +353,13 @@ const onSubmit = async (values: any) => {
 
             <!-- Groups -->
             <v-col cols="12">
-              <v-label class="mb-2">Gruplar</v-label>
+              <v-label class="mb-2">{{ t('users.edit.fields.groups') }}</v-label>
               <v-select
                 v-model="formData.selectedGroups"
                 :items="groups"
                 item-title="name"
                 item-value="id"
-                label="Gruplar Seçiniz"
+                :label="t('users.edit.fields.groupsSelect')"
                 variant="outlined"
                 multiple
                 chips
@@ -363,7 +380,7 @@ const onSubmit = async (values: any) => {
               @click="router.push('/apps/users')"
               :disabled="loading"
             >
-              İptal
+              {{ t('users.edit.buttons.cancel') }}
             </v-btn>
             <v-btn
               color="primary"
@@ -371,7 +388,7 @@ const onSubmit = async (values: any) => {
               type="submit"
               :loading="loading"
             >
-              Kaydet
+              {{ t('users.edit.buttons.save') }}
             </v-btn>
           </div>
         </v-form>

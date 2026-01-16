@@ -1,5 +1,11 @@
 import { defineStore } from 'pinia';
 import { fetchFromMngKeeper } from '@/services/apiService';
+import { useAuthStore } from '@/stores/auth';
+
+function getAccessToken(): string | null {
+  const authStore = useAuthStore();
+  return authStore.accessToken;
+}
 
 export enum Gender {
   NotSpecified = 'NotSpecified',
@@ -80,6 +86,8 @@ export const useUserStore = defineStore('user', {
       pageSize?: number; 
       search?: string;
       isActive?: boolean;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
     }) {
       this.loading = true;
       this.error = null;
@@ -90,6 +98,8 @@ export const useUserStore = defineStore('user', {
         if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
         if (params?.search) queryParams.append('searchTerm', params.search); // API'de searchTerm kullanılıyor
         if (params?.isActive !== undefined) queryParams.append('isActive', params.isActive.toString());
+        if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+        if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
         
         const url = `/user${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
         const response = await fetchFromMngKeeper(url, 'GET');
@@ -297,7 +307,7 @@ export const useUserStore = defineStore('user', {
     async createUser(userData: {
       username: string;
       email: string;
-      password: string;
+      password?: string; // Optional - user can set password via reset password
       firstName: string;
       lastName: string;
       title?: string | null;
@@ -315,11 +325,15 @@ export const useUserStore = defineStore('user', {
         const requestData: any = {
           username: userData.username,
           email: userData.email,
-          password: userData.password,
           firstName: userData.firstName,
           lastName: userData.lastName,
           isActive: userData.isActive !== undefined ? userData.isActive : true,
         };
+        
+        // Only include password if provided (optional - user can set via reset password)
+        if (userData.password) {
+          requestData.password = userData.password;
+        }
         
         // Only include nullable fields if they have values
         if (userData.title) {
@@ -681,6 +695,161 @@ export const useUserStore = defineStore('user', {
 
     clearError() {
       this.error = null;
+    },
+
+    /**
+     * Request password reset for a user (sends email with reset link)
+     */
+    async requestPasswordReset(userId: string): Promise<{ isSuccess: boolean; message?: string; error?: string }> {
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        const response = await fetchFromMngKeeper(`/user/${userId}/request-password-reset`, 'POST');
+        
+        if (response.isSuccess) {
+          return { isSuccess: true, message: response.message || 'Password reset email sent successfully.' };
+        } else {
+          const errorMsg = response.errorDescription || response.error || 'Failed to send password reset email.';
+          this.error = errorMsg;
+          return { isSuccess: false, error: errorMsg };
+        }
+      } catch (error: any) {
+        const errorMsg = error.message || 'Failed to send password reset email.';
+        this.error = errorMsg;
+        console.error('Error requesting password reset:', error);
+        return { isSuccess: false, error: errorMsg };
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Reset password using reset token
+     * Note: This endpoint is public and does not require authentication token
+     */
+    async resetPassword(token: string, newPassword: string): Promise<{ isSuccess: boolean; message?: string; error?: string }> {
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        // This is a public endpoint, so we call it directly without token
+        const response = await $fetch('/api/keeper/auth/reset-password', {
+          method: 'POST',
+          body: {
+            token,
+            newPassword,
+          },
+        });
+        
+        if (response.message) {
+          return { isSuccess: true, message: response.message };
+        } else {
+          const errorMsg = response.errorDescription || response.error || 'Failed to reset password.';
+          this.error = errorMsg;
+          return { isSuccess: false, error: errorMsg };
+        }
+      } catch (error: any) {
+        // Handle H3 errors (from server API route)
+        let errorMsg = 'Failed to reset password.';
+        
+        if (error.data) {
+          const errorData = error.data;
+          if (typeof errorData === 'object') {
+            errorMsg = errorData.errorDescription || errorData.error || errorData.message || errorMsg;
+          } else if (typeof errorData === 'string') {
+            errorMsg = errorData;
+          }
+        } else if (error.statusMessage) {
+          errorMsg = error.statusMessage;
+        } else if (error.message) {
+          errorMsg = error.message;
+        }
+        
+        this.error = errorMsg;
+        console.error('Error resetting password:', error);
+        return { isSuccess: false, error: errorMsg };
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Export users to CSV, XLSX or JSON format (backend endpoint)
+     */
+    async exportUsers(format: 'csv' | 'xlsx' | 'json', params?: { 
+      search?: string;
+      isActive?: boolean;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+    }) {
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        // Build query string for export endpoint
+        const queryParams = new URLSearchParams();
+        queryParams.append('format', format);
+        
+        if (params?.search) {
+          queryParams.append('searchTerm', params.search);
+        }
+        
+        if (params?.isActive !== undefined) {
+          queryParams.append('isActive', params.isActive.toString());
+        }
+        
+        if (params?.sortBy) {
+          queryParams.append('sortBy', params.sortBy);
+        }
+        
+        if (params?.sortOrder) {
+          queryParams.append('sortOrder', params.sortOrder);
+        }
+        
+        // Call backend export endpoint with blob response
+        const url = `/api/keeper/user/export?${queryParams.toString()}`;
+        const token = getAccessToken();
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json',
+        };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers,
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || 'Export işlemi başarısız oldu');
+        }
+        
+        // Create a download link from blob response
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        
+        // Generate filename based on format and current date
+        const timestamp = new Date().toISOString().split('T')[0];
+        const extension = format === 'csv' ? 'csv' : format === 'json' ? 'json' : 'xlsx';
+        link.download = `kullanicilar_${timestamp}.${extension}`;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(downloadUrl);
+      } catch (error: any) {
+        const errorMsg = error.message || 'Export işlemi başarısız oldu';
+        this.error = errorMsg;
+        console.error('Error exporting users:', error);
+        throw error;
+      } finally {
+        this.loading = false;
+      }
     },
   },
 });

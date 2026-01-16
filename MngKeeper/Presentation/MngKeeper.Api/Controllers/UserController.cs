@@ -8,6 +8,7 @@ using MngKeeper.Application.Features.User.Commands.AddUserToGroup;
 using MngKeeper.Application.Features.User.Commands.RemoveUserFromGroup;
 using MngKeeper.Application.Features.User.Queries.GetUser;
 using MngKeeper.Application.Features.User.Queries.GetUsers;
+using MngKeeper.Application.Features.User.Queries.ExportUsers;
 using MngKeeper.Api.Attributes;
 using MngKeeper.Application.Interfaces;
 
@@ -21,13 +22,29 @@ namespace MngKeeper.Api.Controllers
         private readonly IMediator _mediator;
         private readonly IMinioService _minioService;
         private readonly IDomainRepository _domainRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly IPasswordResetTokenRepository _passwordResetTokenRepository;
+        private readonly INotifierService _notifierService;
+        private readonly IConfiguration _configuration;
         private readonly ILogger<UserController> _logger;
 
-        public UserController(IMediator mediator, IMinioService minioService, IDomainRepository domainRepository, ILogger<UserController> logger)
+        public UserController(
+            IMediator mediator, 
+            IMinioService minioService, 
+            IDomainRepository domainRepository,
+            IUserRepository userRepository,
+            IPasswordResetTokenRepository passwordResetTokenRepository,
+            INotifierService notifierService,
+            IConfiguration configuration,
+            ILogger<UserController> logger)
         {
             _mediator = mediator;
             _minioService = minioService;
             _domainRepository = domainRepository;
+            _userRepository = userRepository;
+            _passwordResetTokenRepository = passwordResetTokenRepository;
+            _notifierService = notifierService;
+            _configuration = configuration;
             _logger = logger;
         }
 
@@ -61,14 +78,18 @@ namespace MngKeeper.Api.Controllers
             [FromQuery] int page = 1, 
             [FromQuery] int pageSize = 10,
             [FromQuery] string? searchTerm = null,
-            [FromQuery] bool? isActive = null)
+            [FromQuery] bool? isActive = null,
+            [FromQuery] string? sortBy = null,
+            [FromQuery] string? sortOrder = null)
         {
             var query = new GetUsersQuery 
             { 
                 Page = page, 
                 PageSize = pageSize,
                 SearchTerm = searchTerm,
-                IsActive = isActive
+                IsActive = isActive,
+                SortBy = sortBy,
+                SortOrder = sortOrder
             };
             var response = await _mediator.Send(query);
             
@@ -400,6 +421,171 @@ namespace MngKeeper.Api.Controllers
                 _logger.LogError(ex, "Error removing photo for user {UserId}", userId);
                 return StatusCode(500, new { error = "An error occurred while removing the photo." });
             }
+        }
+
+        /// <summary>
+        /// Request password reset for a user (sends email with reset link)
+        /// </summary>
+        /// <param name="userId">User ID</param>
+        /// <returns>Success status</returns>
+        [HttpPost("{userId}/request-password-reset")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> RequestPasswordReset(string userId)
+        {
+            try
+            {
+                // Get domain from token claims
+                var claims = HttpContext.Items["TokenClaims"] as TokenClaims;
+                
+                if (claims?.DomainId == null)
+                {
+                    return BadRequest(new { error = "invalid_request", errorDescription = "Domain information not found in token." });
+                }
+
+                _logger.LogInformation("Requesting password reset for user: {UserId} in domain: {DomainId}", userId, claims.DomainId);
+
+                // Get user
+                var user = await _userRepository.GetByIdAsync(userId, claims.DomainId);
+                if (user == null)
+                {
+                    _logger.LogWarning("User not found: {UserId} in domain: {DomainId}", userId, claims.DomainId);
+                    return NotFound(new { error = "user_not_found", errorDescription = "User not found." });
+                }
+
+                // Check if user has email
+                if (string.IsNullOrWhiteSpace(user.Email))
+                {
+                    _logger.LogWarning("User {UserId} does not have an email address", userId);
+                    return BadRequest(new { error = "invalid_request", errorDescription = "User does not have an email address." });
+                }
+
+                // Generate secure random token
+                var tokenBytes = new byte[32];
+                using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
+                {
+                    rng.GetBytes(tokenBytes);
+                }
+                // Convert to Base64Url (URL-safe base64)
+                var base64Token = Convert.ToBase64String(tokenBytes);
+                var token = base64Token.TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+                // Create token entity (1 day expiration)
+                var resetToken = new MngKeeper.Domain.Entities.PasswordResetToken
+                {
+                    Token = token,
+                    UserId = user.Id,
+                    DomainId = claims.DomainId,
+                    ExpiresAt = DateTime.UtcNow.AddDays(1), // 1 day expiration
+                    IsUsed = false,
+                    CreatedAt = DateTime.UtcNow,
+                    IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
+                };
+
+                // Save token
+                await _passwordResetTokenRepository.AddAsync(resetToken);
+
+                _logger.LogInformation("Password reset token created for user: {UserId}, Token expires at: {ExpiresAt}", userId, resetToken.ExpiresAt);
+
+                // Get UI base URL from configuration (default to localhost:3000 for development)
+                var uiBaseUrl = _configuration["MngKeeperSettings:UiBaseUrl"] ?? "http://localhost:3000";
+                var resetLink = $"{uiBaseUrl}/auth/reset-password?token={Uri.EscapeDataString(token)}";
+
+                // Prepare email content
+                var subject = "Şifre Sıfırlama Talebi";
+                var body = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset=""utf-8"">
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: #4CAF50; color: white; padding: 20px; text-align: center; }}
+        .content {{ padding: 20px; background-color: #f9f9f9; }}
+        .button {{ display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; }}
+        .footer {{ padding: 20px; text-align: center; font-size: 12px; color: #666; }}
+    </style>
+</head>
+<body>
+    <div class=""container"">
+        <div class=""header"">
+            <h1>Şifre Sıfırlama</h1>
+        </div>
+        <div class=""content"">
+            <p>Merhaba {user.FirstName} {user.LastName},</p>
+            <p>Hesabınız için şifre sıfırlama talebi alındı. Şifrenizi sıfırlamak için aşağıdaki bağlantıya tıklayın:</p>
+            <p style=""text-align: center;"">
+                <a href=""{resetLink}"" class=""button"">Şifremi Sıfırla</a>
+            </p>
+            <p>Bu bağlantı 24 saat geçerlidir.</p>
+            <p>Eğer bu talebi siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.</p>
+            <p>Bağlantı çalışmıyorsa, aşağıdaki URL'yi tarayıcınıza kopyalayıp yapıştırabilirsiniz:</p>
+            <p style=""word-break: break-all; font-size: 12px; color: #666;"">{resetLink}</p>
+        </div>
+        <div class=""footer"">
+            <p>Bu e-posta otomatik olarak gönderilmiştir. Lütfen yanıtlamayın.</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+                // Send email via MngNotifier
+                await _notifierService.SendEmailAsync(
+                    to: new List<string> { user.Email },
+                    subject: subject,
+                    body: body,
+                    isHtml: true,
+                    cancellationToken: default);
+
+                _logger.LogInformation("Password reset email sent successfully to user: {UserId}, Email: {Email}", userId, user.Email);
+
+                return Ok(new { 
+                    isSuccess = true, 
+                    message = "Password reset email sent successfully.",
+                    expiresAt = resetToken.ExpiresAt
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error requesting password reset for user: {UserId}", userId);
+                return StatusCode(500, new { 
+                    error = "server_error", 
+                    errorDescription = "An error occurred while processing your request." 
+                });
+            }
+        }
+
+        /// <summary>
+        /// Export users to CSV, XLSX or JSON format
+        /// </summary>
+        [HttpGet("export")]
+        public async Task<IActionResult> ExportUsers(
+            [FromQuery] string format = "csv",
+            [FromQuery] string? searchTerm = null,
+            [FromQuery] bool? isActive = null,
+            [FromQuery] string? sortBy = null,
+            [FromQuery] string? sortOrder = null)
+        {
+            var query = new ExportUsersQuery
+            {
+                Format = format,
+                SearchTerm = searchTerm,
+                IsActive = isActive,
+                SortBy = sortBy,
+                SortOrder = sortOrder
+            };
+            
+            var response = await _mediator.Send(query);
+            
+            if (!response.IsSuccess)
+            {
+                return BadRequest(new { message = response.ErrorMessage });
+            }
+
+            return File(response.FileContent, response.ContentType, response.FileName);
         }
     }
 }
