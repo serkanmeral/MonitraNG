@@ -152,8 +152,8 @@ function Bump-BackendVersion {
         [string]$BumpType
     )
     
-    if (-not (Test-Path $CsprojPath)) {
-        Write-Host "  ⚠️  File not found: $CsprojPath" -ForegroundColor Yellow
+        if (-not (Test-Path $CsprojPath)) {
+        Write-Host "  [WARN] File not found: $CsprojPath" -ForegroundColor Yellow
         return $null
     }
     
@@ -163,7 +163,7 @@ function Bump-BackendVersion {
     $propertyGroup = $csproj.Project.PropertyGroup | Where-Object { $_.Version -ne $null } | Select-Object -First 1
     
     if (-not $propertyGroup) {
-        Write-Host "  ⚠️  Version not found in: $CsprojPath" -ForegroundColor Yellow
+        Write-Host "  [WARN] Version not found in: $CsprojPath" -ForegroundColor Yellow
         return $null
     }
     
@@ -216,14 +216,14 @@ function Bump-WebUIVersion {
     )
     
     if (-not (Test-Path $PackageJsonPath)) {
-        Write-Host "  ⚠️  File not found: $PackageJsonPath" -ForegroundColor Yellow
+        Write-Host "  [WARN] File not found: $PackageJsonPath" -ForegroundColor Yellow
         return $null
     }
     
     $packageJson = Get-Content $PackageJsonPath | ConvertFrom-Json
     
     if (-not $packageJson.version) {
-        Write-Host "  ⚠️  Version not found in: $PackageJsonPath" -ForegroundColor Yellow
+        Write-Host "  [WARN] Version not found in: $PackageJsonPath" -ForegroundColor Yellow
         return $null
     }
     
@@ -291,7 +291,7 @@ Write-Host "`n1. Detecting changed files..." -ForegroundColor Yellow
 $changedFiles = Get-ChangedFiles
 
 if (-not $changedFiles) {
-    Write-Host "  ℹ️  No changed files detected. Skipping version bump." -ForegroundColor Gray
+    Write-Host "  [INFO] No changed files detected. Skipping version bump." -ForegroundColor Gray
     exit 0
 }
 
@@ -302,7 +302,7 @@ Write-Host "`n2. Detecting changed services..." -ForegroundColor Yellow
 $changedServices = Get-ChangedServices -ChangedFiles $changedFiles
 
 if ($changedServices.Count -eq 0) {
-    Write-Host "  ℹ️  No service changes detected. Skipping version bump." -ForegroundColor Gray
+    Write-Host "  [INFO] No service changes detected. Skipping version bump." -ForegroundColor Gray
     exit 0
 }
 
@@ -341,18 +341,18 @@ foreach ($serviceName in $changedServices.Keys) {
 }
 
 if ($updatedServices.Count -eq 0) {
-    Write-Host "`n  ℹ️  No versions were updated." -ForegroundColor Gray
+    Write-Host "`n  [INFO] No versions were updated." -ForegroundColor Gray
     exit 0
 }
 
-Write-Host "`n✅ Version bump completed!" -ForegroundColor Green
+Write-Host "`n[OK] Version bump completed!" -ForegroundColor Green
 Write-Host "`nSummary:" -ForegroundColor Cyan
 foreach ($updated in $updatedServices) {
     Write-Host "  $($updated.Name): v$($updated.Version) ($($updated.Type))" -ForegroundColor Gray
 }
 
 if (-not $DryRun) {
-    Write-Host "`n⚠️  Version files have been updated. Don't forget to:" -ForegroundColor Yellow
+    Write-Host "`nWARNING: Version files have been updated. Don't forget to:" -ForegroundColor Yellow
     Write-Host "  1. Review the changes (git diff)" -ForegroundColor Gray
     Write-Host "  2. Stage the version files (git add)" -ForegroundColor Gray
     Write-Host "  3. Commit the version updates" -ForegroundColor Gray
@@ -360,7 +360,7 @@ if (-not $DryRun) {
     
     # Auto-stage version files if not in hook context
     if (-not $env:GIT_HOOK_RUNNING) {
-        Write-Host "`n💡 Tip: Run 'git add' to stage the version changes before committing." -ForegroundColor Cyan
+        Write-Host "`nTip: Run 'git add' to stage the version changes before committing." -ForegroundColor Cyan
     }
 }
 
