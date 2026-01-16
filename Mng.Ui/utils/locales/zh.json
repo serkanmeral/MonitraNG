@@ -560,6 +560,10 @@
         "userNotFound": "未找到用户"
       },
       "accountSettings": {
+        "role": {
+          "admin": "管理员",
+          "user": "用户"
+        },
         "accountInfo": {
           "title": "账户信息",
           "username": "用户名",
@@ -676,6 +680,19 @@
         "selectColor": "选择笔记颜色",
         "save": "保存",
         "cancel": "取消"
+      }
+    },
+    "header": {
+      "profileDD": {
+        "myProfile": {
+          "title": "我的个人资料",
+          "subtitle": "账户设置"
+        },
+        "myNotes": {
+          "title": "我的笔记",
+          "subtitle": "我的每日笔记"
+        },
+        "logout": "登出"
       }
     }
   }

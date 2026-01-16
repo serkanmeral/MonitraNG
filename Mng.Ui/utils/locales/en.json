@@ -534,6 +534,10 @@
         "userNotFound": "User not found"
       },
       "accountSettings": {
+        "role": {
+          "admin": "Admin",
+          "user": "User"
+        },
         "accountInfo": {
           "title": "Account Information",
           "username": "Username",
@@ -650,6 +654,19 @@
         "selectColor": "Select Note Color",
         "save": "Save",
         "cancel": "Cancel"
+      }
+    },
+    "header": {
+      "profileDD": {
+        "myProfile": {
+          "title": "My Profile",
+          "subtitle": "Account settings"
+        },
+        "myNotes": {
+          "title": "My Notes",
+          "subtitle": "My Daily Notes"
+        },
+        "logout": "Logout"
       }
     }
   }

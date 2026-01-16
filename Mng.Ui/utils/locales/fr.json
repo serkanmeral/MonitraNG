@@ -560,6 +560,10 @@
         "userNotFound": "Utilisateur non trouvé"
       },
       "accountSettings": {
+        "role": {
+          "admin": "Administrateur",
+          "user": "Utilisateur"
+        },
         "accountInfo": {
           "title": "Informations du compte",
           "username": "Nom d'utilisateur",
@@ -676,6 +680,19 @@
         "selectColor": "Sélectionner la Couleur de la Note",
         "save": "Enregistrer",
         "cancel": "Annuler"
+      }
+    },
+    "header": {
+      "profileDD": {
+        "myProfile": {
+          "title": "Mon Profil",
+          "subtitle": "Paramètres du compte"
+        },
+        "myNotes": {
+          "title": "Mes Notes",
+          "subtitle": "Mes notes quotidiennes"
+        },
+        "logout": "Déconnexion"
       }
     }
   }

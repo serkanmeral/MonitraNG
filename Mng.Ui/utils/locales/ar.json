@@ -560,6 +560,10 @@
         "userNotFound": "المستخدم غير موجود"
       },
       "accountSettings": {
+        "role": {
+          "admin": "مدير",
+          "user": "مستخدم"
+        },
         "accountInfo": {
           "title": "معلومات الحساب",
           "username": "اسم المستخدم",
@@ -676,6 +680,19 @@
         "selectColor": "اختر لون الملاحظة",
         "save": "حفظ",
         "cancel": "إلغاء"
+      }
+    },
+    "header": {
+      "profileDD": {
+        "myProfile": {
+          "title": "ملفي الشخصي",
+          "subtitle": "إعدادات الحساب"
+        },
+        "myNotes": {
+          "title": "ملاحظاتي",
+          "subtitle": "ملاحظاتي اليومية"
+        },
+        "logout": "تسجيل الخروج"
       }
     }
   }

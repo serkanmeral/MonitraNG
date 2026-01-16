@@ -26,7 +26,9 @@ const authStore = useAuthStore();
 const router = useRouter();
 const route = useRoute();
 
-const page = ref({ title: t('groups.title') });
+const page = computed(() => ({ 
+  title: t('groups.title') 
+}));
 const breadcrumbs = computed(() => [
   {
     text: t('groups.breadcrumbs.home'),

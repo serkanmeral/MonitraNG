@@ -35,6 +35,7 @@ const breadcrumbs = ref([
 const loading = ref(false);
 const errorMessage = ref('');
 const groups = ref<Array<{ id: string; name: string }>>([]);
+const formKey = ref(0); // Key for form re-rendering
 
 // Form data
 const formData = ref({
@@ -43,6 +44,10 @@ const formData = ref({
   lastName: '',
   isActive: true,
   selectedGroups: [] as string[],
+  title: null as string | null,
+  department: null as string | null,
+  phoneNumber: null as string | null,
+  photoUrl: null as string | null,
 });
 
 // Validation schema
@@ -58,15 +63,21 @@ const loadUser = async () => {
   try {
     await userStore.fetchUserById(userId);
     
-    if (userStore.currentUser) {
-      const user = userStore.currentUser;
+    if (userStore.viewingUser) {
+      const user = userStore.viewingUser;
       formData.value = {
         email: user.email || '',
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         isActive: user.isActive,
         selectedGroups: user.groups || [],
+        title: user.title || null,
+        department: user.department || null,
+        phoneNumber: user.phoneNumber || null,
+        photoUrl: user.photoUrl || null,
       };
+      // Force form re-render to pick up initial values
+      formKey.value++;
     }
   } catch (error: any) {
     errorMessage.value = error.message || 'Kullanıcı yüklenirken bir hata oluştu';
@@ -79,17 +90,24 @@ const loadUser = async () => {
 const loadGroups = async () => {
   try {
     const response = await fetchFromMngKeeper('/group', 'GET');
+    let allGroups: any[] = [];
+    
     if (response.groups && Array.isArray(response.groups)) {
-      groups.value = response.groups.map((g: any) => ({
-        id: g.id || g.groupId || '',
-        name: g.name || '',
-      }));
+      allGroups = response.groups;
     } else if (Array.isArray(response)) {
-      groups.value = response.map((g: any) => ({
+      allGroups = response;
+    }
+    
+    // Filter out 'admins' group (case-insensitive)
+    groups.value = allGroups
+      .filter((g: any) => {
+        const groupName = (g.name || '').toLowerCase();
+        return groupName !== 'admins';
+      })
+      .map((g: any) => ({
         id: g.id || g.groupId || '',
         name: g.name || '',
       }));
-    }
   } catch (error) {
     console.error('Error loading groups:', error);
   }
@@ -110,19 +128,63 @@ const onSubmit = async (values: any) => {
   errorMessage.value = '';
   
   try {
-    const userData = {
+    // Get username from viewingUser (required by backend)
+    const username = userStore.viewingUser?.username || '';
+    if (!username) {
+      throw new Error('Kullanıcı adı bulunamadı');
+    }
+    
+    // Get current user data to preserve fields not in the form
+    const currentUser = userStore.viewingUser;
+    if (!currentUser) {
+      throw new Error('Kullanıcı bilgileri bulunamadı');
+    }
+    
+    // Check if groups were changed by comparing with original user groups
+    const originalGroups = currentUser.groups || [];
+    const selectedGroups = formData.value.selectedGroups || [];
+    
+    // Compare arrays (order doesn't matter, just membership)
+    const groupsChanged = 
+      originalGroups.length !== selectedGroups.length ||
+      !originalGroups.every((g: string) => selectedGroups.includes(g)) ||
+      !selectedGroups.every((g: string) => originalGroups.includes(g));
+    
+    const userData: any = {
+      username: username, // Required by backend
       email: formData.value.email,
       firstName: formData.value.firstName,
       lastName: formData.value.lastName,
       isActive: formData.value.isActive,
-      groups: formData.value.selectedGroups,
     };
+    
+    // Only include groups if they were actually changed
+    // If groups weren't changed, don't send them - backend will preserve existing groups
+    if (groupsChanged) {
+      userData.groups = selectedGroups;
+    }
+    
+    // Include nullable fields from form data
+    // These fields are now in the form, so we always send them (even if null)
+    if (formData.value.title !== undefined) {
+      userData.title = formData.value.title || null;
+    }
+    if (formData.value.department !== undefined) {
+      userData.department = formData.value.department || null;
+    }
+    if (formData.value.phoneNumber !== undefined) {
+      userData.phoneNumber = formData.value.phoneNumber || null;
+    }
+    if (formData.value.photoUrl !== undefined) {
+      userData.photoUrl = formData.value.photoUrl || null;
+    }
     
     await userStore.updateUser(userId, userData);
     
-    // Success - redirect to list
-    router.push('/apps/users');
+    // Success - redirect to list with refresh parameter
+    router.push({ path: '/apps/users', query: { refresh: Date.now() } });
   } catch (error: any) {
+    console.error('[UserEdit] Error updating user:', error);
     errorMessage.value = error.message || 'Kullanıcı güncellenirken bir hata oluştu';
   } finally {
     loading.value = false;
@@ -133,22 +195,23 @@ const onSubmit = async (values: any) => {
 <template>
   <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs" />
   
-  <v-card elevation="10" v-if="!loading || userStore.currentUser">
+  <v-card elevation="10" v-if="!loading || userStore.viewingUser">
     <v-card-item>
       <h5 class="text-h5 mb-6 font-weight-semibold">Kullanıcı Düzenle</h5>
       
-      <div v-if="loading && !userStore.currentUser" class="text-center py-8">
+      <div v-if="loading && !userStore.viewingUser" class="text-center py-8">
         <v-progress-circular indeterminate color="primary" />
         <p class="text-subtitle-1 mt-4">Yükleniyor...</p>
       </div>
 
       <Form
-        v-else
+        v-else-if="userStore.viewingUser"
         v-slot="{ handleSubmit }"
         :validation-schema="schema"
-        @submit="onSubmit"
+        :initial-values="formData"
+        :key="`form-${userId}-${formKey}`"
       >
-        <v-form @submit.prevent="handleSubmit">
+        <v-form @submit.prevent="handleSubmit(onSubmit)">
           <!-- Error Message -->
           <v-alert
             v-if="errorMessage"
@@ -164,7 +227,7 @@ const onSubmit = async (values: any) => {
             <!-- Username (Read-only) -->
             <v-col cols="12" md="6">
               <v-text-field
-                :model-value="userStore.currentUser?.username || ''"
+                :model-value="userStore.viewingUser?.username || ''"
                 label="Kullanıcı Adı"
                 variant="outlined"
                 disabled
@@ -215,6 +278,50 @@ const onSubmit = async (values: any) => {
                   required
                 />
               </Field>
+            </v-col>
+
+            <!-- Title -->
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="formData.title"
+                label="Ünvan"
+                variant="outlined"
+                placeholder="Örn: Manager, Developer, QA Engineer"
+              />
+            </v-col>
+
+            <!-- Department -->
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="formData.department"
+                label="Departman"
+                variant="outlined"
+                placeholder="Örn: IT, Development, QA"
+              />
+            </v-col>
+
+            <!-- Phone Number -->
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="formData.phoneNumber"
+                label="Telefon Numarası"
+                variant="outlined"
+                placeholder="+90XXXXXXXXXX"
+              />
+            </v-col>
+
+            <!-- Photo URL (Read-only) -->
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="formData.photoUrl"
+                label="Fotoğraf URL"
+                variant="outlined"
+                placeholder="https://..."
+                disabled
+              />
+              <div class="text-caption text-medium-emphasis mt-1">
+                Fotoğraf URL değiştirilemez
+              </div>
             </v-col>
 
             <!-- Is Active -->

@@ -42,6 +42,10 @@ const formData = ref({
   firstName: '',
   lastName: '',
   selectedGroups: [] as string[],
+  title: null as string | null,
+  department: null as string | null,
+  phoneNumber: null as string | null,
+  isActive: true,
 });
 
 // Validation schema
@@ -60,17 +64,24 @@ const schema = yup.object({
 onMounted(async () => {
   try {
     const response = await fetchFromMngKeeper('/group', 'GET');
+    let allGroups: any[] = [];
+    
     if (response.groups && Array.isArray(response.groups)) {
-      groups.value = response.groups.map((g: any) => ({
-        id: g.id || g.groupId || '',
-        name: g.name || '',
-      }));
+      allGroups = response.groups;
     } else if (Array.isArray(response)) {
-      groups.value = response.map((g: any) => ({
+      allGroups = response;
+    }
+    
+    // Filter out 'admins' group (case-insensitive)
+    groups.value = allGroups
+      .filter((g: any) => {
+        const groupName = (g.name || '').toLowerCase();
+        return groupName !== 'admins';
+      })
+      .map((g: any) => ({
         id: g.id || g.groupId || '',
         name: g.name || '',
       }));
-    }
   } catch (error) {
     console.error('Error loading groups:', error);
   }
@@ -81,14 +92,26 @@ const onSubmit = async (values: any) => {
   errorMessage.value = '';
   
   try {
-    const userData = {
+    const userData: any = {
       username: formData.value.username,
       email: formData.value.email,
       password: formData.value.password,
       firstName: formData.value.firstName,
       lastName: formData.value.lastName,
       groups: formData.value.selectedGroups,
+      isActive: formData.value.isActive,
     };
+    
+    // Only include nullable fields if they have values
+    if (formData.value.title) {
+      userData.title = formData.value.title;
+    }
+    if (formData.value.department) {
+      userData.department = formData.value.department;
+    }
+    if (formData.value.phoneNumber) {
+      userData.phoneNumber = formData.value.phoneNumber;
+    }
     
     await userStore.createUser(userData);
     
@@ -112,9 +135,8 @@ const onSubmit = async (values: any) => {
       <Form
         v-slot="{ handleSubmit }"
         :validation-schema="schema"
-        @submit="onSubmit"
       >
-        <v-form @submit.prevent="handleSubmit">
+        <v-form @submit.prevent="handleSubmit(onSubmit)">
           <!-- Error Message -->
           <v-alert
             v-if="errorMessage"
@@ -212,6 +234,46 @@ const onSubmit = async (values: any) => {
                   required
                 />
               </Field>
+            </v-col>
+
+            <!-- Title -->
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="formData.title"
+                label="Ünvan"
+                variant="outlined"
+                placeholder="Örn: Manager, Developer, QA Engineer"
+              />
+            </v-col>
+
+            <!-- Department -->
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="formData.department"
+                label="Departman"
+                variant="outlined"
+                placeholder="Örn: IT, Development, QA"
+              />
+            </v-col>
+
+            <!-- Phone Number -->
+            <v-col cols="12" md="6">
+              <v-text-field
+                v-model="formData.phoneNumber"
+                label="Telefon Numarası"
+                variant="outlined"
+                placeholder="+90XXXXXXXXXX"
+              />
+            </v-col>
+
+            <!-- Is Active -->
+            <v-col cols="12" md="6">
+              <v-switch
+                v-model="formData.isActive"
+                label="Aktif"
+                color="success"
+                hide-details
+              />
             </v-col>
 
             <!-- Groups -->

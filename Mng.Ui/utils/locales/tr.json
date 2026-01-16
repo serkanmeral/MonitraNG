@@ -566,6 +566,10 @@
         "photoRemoveError": "Fotoğraf kaldırılırken bir hata oluştu"
       },
       "accountSettings": {
+        "role": {
+          "admin": "Yönetici",
+          "user": "Kullanıcı"
+        },
         "accountInfo": {
           "title": "Hesap Bilgileri",
           "username": "Kullanıcı Adı",
@@ -682,6 +686,19 @@
         "selectColor": "Not Rengi Seç",
         "save": "Kaydet",
         "cancel": "İptal"
+      }
+    },
+    "header": {
+      "profileDD": {
+        "myProfile": {
+          "title": "Profilim",
+          "subtitle": "Hesap ayarları"
+        },
+        "myNotes": {
+          "title": "Notlarım",
+          "subtitle": "Günlük notlarım"
+        },
+        "logout": "Çıkış Yap"
       }
     }
   }

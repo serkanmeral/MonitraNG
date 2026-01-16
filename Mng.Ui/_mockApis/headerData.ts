@@ -49,7 +49,6 @@ const notifications:notificationType[] = [
 // 
 import proUser1 from '/images/svgs/icon-account.svg';
 import proUser2 from '/images/svgs/icon-inbox.svg';
-import proUser3 from '/images/svgs/icon-tasks.svg';
 const profileDD: profileType[] = [
     {
         avatar: proUser1,
@@ -62,12 +61,6 @@ const profileDD: profileType[] = [
         title: 'My Notes',
         subtitle: 'My Daily Notes',
         href: '/apps/notes'
-    },
-    {
-        avatar: proUser3,
-        title: 'My Tasks',
-        subtitle: 'To-do and Daily tasks',
-        href: '/apps/kanban'
     }
 ];
 

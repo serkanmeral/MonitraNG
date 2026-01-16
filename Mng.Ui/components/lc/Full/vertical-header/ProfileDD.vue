@@ -9,12 +9,25 @@ import { computed, onMounted } from "vue";
 const authStore = useAuthStore();
 const userStore = useUserStore();
 
+// Get i18n instance for legacy mode
+const nuxtApp = useNuxtApp();
+const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
+const t = (key: string) => {
+  if (i18n && i18n.t) {
+    return i18n.t(key);
+  }
+  if (i18n?.global?.t) {
+    return i18n.global.t(key);
+  }
+  return key;
+};
+
 // Get user info from store
 const userInfo = computed(() => authStore.userInfo);
 
 // Get user display name
 const userDisplayName = computed(() => {
-  if (!userInfo.value) return 'Kullanıcı';
+  if (!userInfo.value) return t('header.profileDD.myProfile.title') || 'Kullanıcı';
   
   // Try to get full name from firstName + lastName
   if (userInfo.value.given_name && userInfo.value.family_name) {
@@ -26,7 +39,30 @@ const userDisplayName = computed(() => {
   if (name) return name;
   
   // Fallback to username
-  return userInfo.value.username || 'Kullanıcı';
+  return userInfo.value.username || t('header.profileDD.myProfile.title') || 'Kullanıcı';
+});
+
+// Get translated profile menu items
+const translatedProfileDD = computed(() => {
+  return profileDD.map(item => {
+    let title = item.title;
+    let subtitle = item.subtitle;
+    
+    // Map items to i18n keys
+    if (item.href === '/apps/profile') {
+      title = t('header.profileDD.myProfile.title') || item.title;
+      subtitle = t('header.profileDD.myProfile.subtitle') || item.subtitle;
+    } else if (item.href === '/apps/notes') {
+      title = t('header.profileDD.myNotes.title') || item.title;
+      subtitle = t('header.profileDD.myNotes.subtitle') || item.subtitle;
+    }
+    
+    return {
+      ...item,
+      title,
+      subtitle
+    };
+  });
 });
 
 // Get user initials for avatar
@@ -159,16 +195,16 @@ const logOut = async function(){
     </template>
     <v-sheet rounded="md" width="360" elevation="10">
       <div class="px-8 pt-6">
-        <h6 class="text-h5 font-weight-medium">Kullanıcı Profili</h6>
+        <h6 class="text-h5 font-weight-medium">{{ t('header.profileDD.myProfile.title') || 'Kullanıcı Profili' }}</h6>
         <div class="d-flex align-center mt-4 pb-6">
           <AvatarDisplay :user="currentUser" :size="80" />
           <div class="ml-3">
             <h6 class="text-h6 mb-n1">{{ userDisplayName }}</h6>
             <span class="text-subtitle-1 font-weight-regular textSecondary" v-if="userInfo?.isAdmin"
-              >Yönetici</span
+              >{{ t('profile.accountSettings.role.admin') || 'Yönetici' }}</span
             >
             <span class="text-subtitle-1 font-weight-regular textSecondary" v-else
-              >Kullanıcı</span
+              >{{ t('profile.accountSettings.role.user') || 'Kullanıcı' }}</span
             >
             <div class="d-flex align-center mt-1" v-if="userEmail">
               <MailIcon size="18" stroke-width="1.5" />
@@ -187,7 +223,7 @@ const logOut = async function(){
       <perfect-scrollbar style="height: calc(100vh - 240px); max-height: 240px">
         <v-list class="py-0 theme-list" lines="two">
           <v-list-item
-            v-for="item in profileDD"
+            v-for="item in translatedProfileDD"
             :key="item.title"
             class="py-4 px-8 custom-text-primary"
             :to="item.href"
@@ -219,7 +255,7 @@ const logOut = async function(){
       </perfect-scrollbar>
       <div class="pt-4 pb-6 px-8 text-center">
         <v-btn color="primary" variant="outlined" block @click="logOut"
-          >Çıkış Yap</v-btn
+          >{{ t('header.profileDD.logout') || 'Çıkış Yap' }}</v-btn
         >
       </div>
     </v-sheet>

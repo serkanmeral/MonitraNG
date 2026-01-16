@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, nextTick } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useLocaleStore } from '@/stores/locale';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useUserStore } from '@/stores/apps/user';
 import { useAuthStore } from '@/stores/auth';
-import { EditIcon, EyeIcon, TrashIcon, UserPlusIcon } from 'vue-tabler-icons';
+import { EditIcon, EyeIcon, TrashIcon, UserPlusIcon, RefreshIcon } from 'vue-tabler-icons';
 
 const userStore = useUserStore();
 const authStore = useAuthStore();
+const localeStore = useLocaleStore();
 const router = useRouter();
+const route = useRoute();
 
 const page = ref({ title: 'Kullanıcı Yönetimi' });
 const breadcrumbs = ref([
@@ -27,6 +31,7 @@ const search = ref('');
 const selectedUsers = ref([]);
 const showDeleteDialog = ref(false);
 const userToDelete = ref<string | null>(null);
+const deleteError = ref('');
 const statusFilter = ref<string>('all'); // all, active, inactive
 
 // Server-side pagination options
@@ -60,10 +65,8 @@ const serverItemsLength = computed(() => {
 });
 
   // Fetch users function
-  const fetchUsers = async (options?: any) => {
-    // Use provided options or current tableOptions
-    const currentOptions = options || tableOptions.value;
-    
+  const fetchUsers = async () => {
+    // Always use current tableOptions.value to ensure we have the latest values
     // Build query parameters for server-side pagination/filtering
     const params: {
       page?: number;
@@ -71,8 +74,8 @@ const serverItemsLength = computed(() => {
       search?: string;
       isActive?: boolean;
     } = {
-      page: currentOptions.page || 1,
-      pageSize: currentOptions.itemsPerPage || 10,
+      page: tableOptions.value.page || 1,
+      pageSize: tableOptions.value.itemsPerPage || 10,
     };
     
     // Add search term if exists
@@ -95,19 +98,63 @@ const serverItemsLength = computed(() => {
     }
   };
 
-// Flag to prevent watch from triggering on initial load
-const isInitialLoad = ref(true);
-
-// Watch tableOptions for changes (pagination, itemsPerPage, sorting)
-// This will trigger when user changes page or items per page
-watch(
-  () => [tableOptions.value.page, tableOptions.value.itemsPerPage],
-  () => {
+  // Handle table options update (when user changes page or items per page)
+  const handleTableOptionsUpdate = (newOptions: any) => {
+    // Update tableOptions with new values
+    tableOptions.value = {
+      ...tableOptions.value,
+      ...newOptions,
+    };
+    
     // Skip initial load (handled in onMounted)
     if (isInitialLoad.value) {
       return;
     }
+    
+    // Fetch users (will use updated tableOptions.value)
     fetchUsers();
+  };
+
+// Flag to prevent handler from triggering on initial load
+const isInitialLoad = ref(true);
+
+// Watch tableOptions.itemsPerPage for changes (when user changes items per page via custom select)
+watch(
+  () => tableOptions.value.itemsPerPage,
+  async (newItemsPerPage, oldItemsPerPage) => {
+    // Skip initial load (handled in onMounted)
+    if (isInitialLoad.value) {
+      return;
+    }
+    
+    // Only fetch if itemsPerPage actually changed
+    if (newItemsPerPage !== oldItemsPerPage && oldItemsPerPage !== undefined) {
+      // Wait for next tick to ensure tableOptions.value is fully updated
+      await nextTick();
+      // Reset to first page when items per page changes
+      tableOptions.value.page = 1;
+      // Wait again after page reset
+      await nextTick();
+      fetchUsers();
+    }
+  }
+);
+
+// Watch tableOptions.page for changes (when user changes page via pagination)
+watch(
+  () => tableOptions.value.page,
+  async (newPage, oldPage) => {
+    // Skip initial load (handled in onMounted)
+    if (isInitialLoad.value) {
+      return;
+    }
+    
+    // Only fetch if page actually changed
+    if (newPage !== oldPage && oldPage !== undefined) {
+      // Wait for next tick to ensure tableOptions.value is fully updated
+      await nextTick();
+      fetchUsers();
+    }
   }
 );
 
@@ -141,12 +188,45 @@ onMounted(async () => {
   isInitialLoad.value = false;
 });
 
+// Watch route query for refresh parameter
+watch(() => route.query.refresh, async (refreshParam) => {
+  if (refreshParam) {
+    // Reset to first page when returning to list (to see newly created items)
+    if (tableOptions.value.page !== 1) {
+      tableOptions.value.page = 1;
+    }
+    // Refresh users list
+    await fetchUsers();
+    // Remove refresh parameter from URL
+    router.replace({ path: route.path, query: {} });
+  }
+});
+
+// Manual refresh function
+const refreshUsers = async () => {
+  await fetchUsers();
+};
+
 const editUser = (user: any) => {
-  router.push(`/apps/users/edit/${user.id || user.userId}`);
+  // Try id first (if not empty), then userId, then keycloakUserId
+  const userId = (user.id && user.id.trim() !== '') ? user.id : (user.userId || user.keycloakUserId);
+  
+  if (userId && userId.trim() !== '') {
+    router.push(`/apps/users/edit/${userId}`);
+  } else {
+    userStore.error = 'Kullanıcı ID bulunamadı';
+  }
 };
 
 const viewUser = (user: any) => {
-  router.push(`/apps/users/details/${user.id || user.userId}`);
+  // Try id first (if not empty), then userId, then keycloakUserId
+  const userId = (user.id && user.id.trim() !== '') ? user.id : (user.userId || user.keycloakUserId);
+  
+  if (userId && userId.trim() !== '') {
+    router.push(`/apps/users/details/${userId}`);
+  } else {
+    userStore.error = 'Kullanıcı ID bulunamadı';
+  }
 };
 
 const deleteUser = (user: any) => {
@@ -156,11 +236,16 @@ const deleteUser = (user: any) => {
 
 const confirmDelete = async () => {
   if (userToDelete.value) {
+    deleteError.value = '';
     try {
       await userStore.deleteUser(userToDelete.value);
       showDeleteDialog.value = false;
       userToDelete.value = null;
-    } catch (error) {
+      // Refresh list after deletion
+      await fetchUsers();
+    } catch (error: any) {
+      // Show error message in dialog
+      deleteError.value = error.message || 'Kullanıcı silinirken bir hata oluştu';
       console.error('Error deleting user:', error);
     }
   }
@@ -169,7 +254,16 @@ const confirmDelete = async () => {
 const formatDate = (date: string | Date | null | undefined) => {
   if (!date) return '-';
   try {
-    return new Date(date).toLocaleDateString('tr-TR', {
+    const localeMap: Record<string, string> = {
+      tr: 'tr-TR',
+      en: 'en-US',
+      fr: 'fr-FR',
+      ar: 'ar-SA',
+      zh: 'zh-CN',
+    };
+    const locale = localeMap[localeStore.locale] || 'tr-TR';
+    
+    return new Date(date).toLocaleDateString(locale, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -214,10 +308,22 @@ const formatDate = (date: string | Date | null | undefined) => {
           />
         </div>
         
-        <v-btn color="primary" to="/apps/users/create" flat>
-          <UserPlusIcon class="mr-2" size="20" />
-          Yeni Kullanıcı
-        </v-btn>
+        <div class="d-flex ga-2">
+          <v-btn
+            color="primary"
+            variant="outlined"
+            flat
+            @click="refreshUsers"
+            :loading="userStore.loading"
+          >
+            <RefreshIcon class="mr-2" size="20" />
+            Yenile
+          </v-btn>
+          <v-btn color="primary" to="/apps/users/create" flat>
+            <UserPlusIcon class="mr-2" size="20" />
+            Yeni Kullanıcı
+          </v-btn>
+        </div>
       </div>
 
       <!-- Manager/Admin Warning -->
@@ -256,11 +362,13 @@ const formatDate = (date: string | Date | null | undefined) => {
         :items="usersWithFullName"
         :loading="userStore.loading"
         :server-items-length="serverItemsLength"
+        :items-per-page="tableOptions.itemsPerPage"
         :items-per-page-options="[10, 25, 50, 100]"
         show-select
         item-value="id"
         class="border rounded-md"
         hide-default-footer
+        @update:options="handleTableOptionsUpdate"
       >
         <!-- Full Name Column -->
         <template v-slot:item.fullName="{ item }">
@@ -394,16 +502,37 @@ const formatDate = (date: string | Date | null | undefined) => {
         <span class="text-h6">Kullanıcıyı Sil</span>
       </v-card-title>
       <v-card-text class="pa-6">
-        <p class="text-subtitle-1">
+        <!-- Error Message -->
+        <v-alert
+          v-if="deleteError"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          {{ deleteError }}
+        </v-alert>
+        
+        <p v-if="!deleteError" class="text-subtitle-1">
           Bu kullanıcıyı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
         </p>
       </v-card-text>
       <v-card-actions class="pa-4">
         <v-spacer />
-        <v-btn color="error" variant="flat" @click="showDeleteDialog = false">
-          İptal
+        <v-btn 
+          color="error" 
+          variant="flat" 
+          @click="showDeleteDialog = false; deleteError = ''; userToDelete = null"
+        >
+          {{ deleteError ? 'Kapat' : 'İptal' }}
         </v-btn>
-        <v-btn color="success" variant="flat" @click="confirmDelete">
+        <v-btn 
+          v-if="!deleteError"
+          color="success" 
+          variant="flat" 
+          @click="confirmDelete"
+          :loading="userStore.loading"
+        >
           Evet, Sil
         </v-btn>
       </v-card-actions>
