@@ -23,6 +23,19 @@ definePageMeta({
   layout: 'default',
 });
 
+// Get i18n instance for legacy mode
+const nuxtApp = useNuxtApp();
+const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
+const t = (key: string, params?: any) => {
+  if (i18n && i18n.t) {
+    return i18n.t(key, params);
+  }
+  if (i18n?.global?.t) {
+    return i18n.global.t(key, params);
+  }
+  return key;
+};
+
 const route = useRoute();
 const router = useRouter();
 const datasetStore = useDatasetStore();
@@ -32,17 +45,17 @@ const authStore = useAuthStore();
 const datasetName = computed(() => decodeURIComponent(route.params.name as string));
 
 const page = computed(() => ({
-  title: `Dataset: ${datasetName.value}`,
+  title: `${t('datasets.view.title')}: ${datasetName.value}`,
 }));
 
 const breadcrumbs = computed(() => [
   {
-    text: 'Dashboard',
+    text: t('datasets.breadcrumbs.home'),
     disabled: false,
     href: '/dashboards/analytical',
   },
   {
-    text: 'Datasets',
+    text: t('datasets.breadcrumbs.datasets'),
     disabled: false,
     href: '/apps/datasets',
   },
@@ -80,15 +93,15 @@ const getCategoryName = (categoryId: string | undefined | null): string => {
 // Get field type display name
 const getFieldTypeDisplay = (type: string): string => {
   const typeMap: { [key: string]: string } = {
-    text: 'Text',
-    number: 'Number',
-    bool: 'Boolean',
-    datetime: 'DateTime',
-    object: 'Object',
-    relation: 'Relation',
-    persons: 'Persons',
-    personGroups: 'Person Groups',
-    incremental: 'Incremental',
+    text: t('datasets.fieldTypes.text'),
+    number: t('datasets.fieldTypes.number'),
+    bool: t('datasets.fieldTypes.bool'),
+    datetime: t('datasets.fieldTypes.datetime'),
+    object: t('datasets.fieldTypes.object'),
+    relation: t('datasets.fieldTypes.relation'),
+    persons: t('datasets.fieldTypes.persons'),
+    personGroups: t('datasets.fieldTypes.personGroups'),
+    incremental: t('datasets.fieldTypes.incremental'),
   };
   return typeMap[type] || type;
 };
@@ -120,7 +133,8 @@ const formatDate = (date: string | Date | undefined): string => {
   if (!date) return '-';
   try {
     const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toLocaleString('tr-TR', {
+    const locale = i18n?.locale || i18n?.global?.locale?.value || 'tr';
+    return d.toLocaleString(locale === 'en' ? 'en-US' : locale === 'zh' ? 'zh-CN' : locale === 'fr' ? 'fr-FR' : locale === 'ar' ? 'ar-SA' : 'tr-TR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -149,7 +163,7 @@ const handleExportJSON = () => {
 // Load dataset
 const loadDataset = async () => {
   if (!datasetName.value) {
-    errorMessage.value = 'Dataset adı bulunamadı';
+    errorMessage.value = t('datasets.view.messages.nameNotFound');
     return;
   }
 
@@ -161,10 +175,10 @@ const loadDataset = async () => {
     if (fetchedDataset) {
       dataset.value = fetchedDataset;
     } else {
-      errorMessage.value = 'Dataset bulunamadı';
+      errorMessage.value = t('datasets.view.messages.notFound');
     }
   } catch (error: any) {
-    errorMessage.value = error.message || 'Dataset yüklenirken bir hata oluştu';
+    errorMessage.value = error.message || t('datasets.view.messages.loadError');
   } finally {
     loading.value = false;
   }
@@ -191,7 +205,7 @@ const deleteDataset = async () => {
     // Redirect to list after successful deletion
     router.push('/apps/datasets?refresh=true');
   } catch (error: any) {
-    errorMessage.value = error.message || 'Dataset silinirken bir hata oluştu';
+    errorMessage.value = error.message || t('datasets.view.messages.deleteError');
   } finally {
     loading.value = false;
   }
@@ -218,7 +232,7 @@ onMounted(async () => {
         <!-- Loading State -->
         <v-card v-if="loading && !dataset" class="pa-8 text-center">
           <v-progress-circular indeterminate color="primary" size="64" class="mb-4"></v-progress-circular>
-          <p class="text-body-1 text-medium-emphasis">Dataset yükleniyor...</p>
+          <p class="text-body-1 text-medium-emphasis">{{ t('datasets.view.messages.loading') }}</p>
         </v-card>
 
         <!-- Error State -->
@@ -248,7 +262,7 @@ onMounted(async () => {
                     @click="backToList"
                   >
                     <ArrowLeftIcon class="mr-2" size="18" />
-                    Listeye Dön
+                    {{ t('datasets.view.buttons.backToList') }}
                   </v-btn>
                   
                   <v-btn
@@ -259,7 +273,7 @@ onMounted(async () => {
                     :loading="loading"
                   >
                     <RefreshIcon class="mr-2" size="18" />
-                    Yenile
+                    {{ t('datasets.buttons.refresh') }}
                   </v-btn>
                 </div>
                 
@@ -272,7 +286,7 @@ onMounted(async () => {
                     :disabled="!dataset"
                   >
                     <DownloadIcon class="mr-2" size="18" />
-                    Export JSON
+                    {{ t('datasets.view.buttons.exportJSON') }}
                   </v-btn>
                   
                   <v-btn
@@ -282,7 +296,7 @@ onMounted(async () => {
                     @click="editDataset"
                   >
                     <EditIcon class="mr-2" size="18" />
-                    Düzenle
+                    {{ t('datasets.buttons.edit') }}
                   </v-btn>
                   
                   <v-btn
@@ -292,7 +306,7 @@ onMounted(async () => {
                     @click="showDeleteDialog = true"
                   >
                     <TrashIcon class="mr-2" size="18" />
-                    Sil
+                    {{ t('datasets.buttons.delete') }}
                   </v-btn>
                 </div>
               </div>
@@ -303,7 +317,7 @@ onMounted(async () => {
           <v-card class="mb-4" variant="outlined">
             <v-card-title class="pa-4 bg-primary text-white d-flex align-center">
               <DatabaseIcon class="mr-2" size="20" />
-              Schema Bilgileri
+              {{ t('datasets.view.schemaInfo') }}
             </v-card-title>
             
             <v-divider></v-divider>
@@ -312,14 +326,14 @@ onMounted(async () => {
               <v-row>
                 <v-col cols="12" md="6">
                   <div class="mb-3">
-                    <span class="text-caption text-medium-emphasis d-block mb-1">Dataset Adı</span>
+                    <span class="text-caption text-medium-emphasis d-block mb-1">{{ t('datasets.view.fields.name') }}</span>
                     <span class="text-body-1 font-weight-medium">{{ dataset.name }}</span>
                   </div>
                 </v-col>
                 
                 <v-col cols="12" md="6">
                   <div class="mb-3">
-                    <span class="text-caption text-medium-emphasis d-block mb-1">Kategori</span>
+                    <span class="text-caption text-medium-emphasis d-block mb-1">{{ t('datasets.view.fields.category') }}</span>
                     <span class="text-body-1">
                       <v-chip size="small" variant="tonal" color="primary" v-if="dataset.category">
                         <TagIcon size="14" class="mr-1" />
@@ -332,14 +346,14 @@ onMounted(async () => {
                 
                 <v-col cols="12">
                   <div class="mb-3">
-                    <span class="text-caption text-medium-emphasis d-block mb-1">Açıklama</span>
+                    <span class="text-caption text-medium-emphasis d-block mb-1">{{ t('datasets.view.fields.description') }}</span>
                     <span class="text-body-1">{{ dataset.description || '-' }}</span>
                   </div>
                 </v-col>
                 
                 <v-col cols="12" md="4">
                   <div class="mb-3">
-                    <span class="text-caption text-medium-emphasis d-block mb-1">Force Schema</span>
+                    <span class="text-caption text-medium-emphasis d-block mb-1">{{ t('datasets.view.fields.forceSchema') }}</span>
                     <v-chip 
                       :color="dataset.forceSchema ? 'success' : 'default'" 
                       size="small" 
@@ -347,14 +361,14 @@ onMounted(async () => {
                     >
                       <CheckIcon v-if="dataset.forceSchema" size="14" class="mr-1" />
                       <XIcon v-else size="14" class="mr-1" />
-                      {{ dataset.forceSchema ? 'Evet' : 'Hayır' }}
+                      {{ dataset.forceSchema ? t('datasets.common.yes') : t('datasets.common.no') }}
                     </v-chip>
                   </div>
                 </v-col>
                 
                 <v-col cols="12" md="4">
                   <div class="mb-3">
-                    <span class="text-caption text-medium-emphasis d-block mb-1">Logging Mode</span>
+                    <span class="text-caption text-medium-emphasis d-block mb-1">{{ t('datasets.view.fields.loggingMode') }}</span>
                     <v-chip size="small" variant="tonal" color="info">
                       {{ dataset.logging || 'none' }}
                     </v-chip>
@@ -363,7 +377,7 @@ onMounted(async () => {
                 
                 <v-col cols="12" md="4">
                   <div class="mb-3">
-                    <span class="text-caption text-medium-emphasis d-block mb-1">Publish Mode</span>
+                    <span class="text-caption text-medium-emphasis d-block mb-1">{{ t('datasets.view.fields.publishMode') }}</span>
                     <v-chip size="small" variant="tonal" color="warning">
                       {{ dataset.publishMode || 'none' }}
                     </v-chip>
@@ -372,14 +386,14 @@ onMounted(async () => {
                 
                 <v-col cols="12" md="4">
                   <div class="mb-3">
-                    <span class="text-caption text-medium-emphasis d-block mb-1">Oluşturulma</span>
+                    <span class="text-caption text-medium-emphasis d-block mb-1">{{ t('datasets.view.fields.createdAt') }}</span>
                     <span class="text-body-2">{{ formatDate(dataset.createInfo?.createdAt) }}</span>
                   </div>
                 </v-col>
                 
                 <v-col cols="12" md="4">
                   <div class="mb-3">
-                    <span class="text-caption text-medium-emphasis d-block mb-1">Oluşturan</span>
+                    <span class="text-caption text-medium-emphasis d-block mb-1">{{ t('datasets.view.fields.createdBy') }}</span>
                     <span class="text-body-2">
                       {{ dataset.createInfo?.userInfo?.userName || '-' }}
                       <span v-if="dataset.createInfo?.userInfo?.domain" class="text-caption text-medium-emphasis">
@@ -391,7 +405,7 @@ onMounted(async () => {
                 
                 <v-col cols="12" md="4" v-if="dataset.lastUpdateInfo">
                   <div class="mb-3">
-                    <span class="text-caption text-medium-emphasis d-block mb-1">Son Güncelleme</span>
+                    <span class="text-caption text-medium-emphasis d-block mb-1">{{ t('datasets.view.fields.updatedAt') }}</span>
                     <span class="text-body-2">{{ formatDate(dataset.lastUpdateInfo?.updatedAt) }}</span>
                   </div>
                 </v-col>
@@ -404,7 +418,7 @@ onMounted(async () => {
             <v-card-title class="pa-4 bg-primary text-white d-flex align-center justify-space-between">
               <div class="d-flex align-center">
                 <DatabaseIcon class="mr-2" size="20" />
-                Fields ({{ dataset.fieldsCount || 0 }})
+                {{ t('datasets.view.fieldsTitle') }} ({{ dataset.fieldsCount || 0 }})
               </div>
             </v-card-title>
             
@@ -426,13 +440,13 @@ onMounted(async () => {
                           {{ getFieldTypeDisplay(field.fieldType) }}
                         </v-chip>
                         <v-chip v-if="field.mandatory" size="x-small" variant="tonal" color="success">
-                          Mandatory
+                          {{ t('datasets.view.fieldProperties.mandatory') }}
                         </v-chip>
                         <v-chip v-if="field.unique" size="x-small" variant="tonal" color="warning">
-                          Unique
+                          {{ t('datasets.view.fieldProperties.unique') }}
                         </v-chip>
                         <v-chip v-if="field.isArray" size="x-small" variant="tonal" color="primary">
-                          Array
+                          {{ t('datasets.view.fieldProperties.array') }}
                         </v-chip>
                       </div>
                       
@@ -442,17 +456,17 @@ onMounted(async () => {
                       
                       <!-- Relation Field Info -->
                       <div v-if="field.fieldType === 'relation' && field.relationDataset" class="text-caption text-medium-emphasis">
-                        <strong>Relation:</strong> {{ field.relationDataset }} → {{ field.relationField || '__dataId' }}
+                        <strong>{{ t('datasets.view.fieldInfo.relation') }}:</strong> {{ field.relationDataset }} → {{ field.relationField || '__dataId' }}
                       </div>
                       
                       <!-- Incremental Field Info -->
                       <div v-if="field.fieldType === 'incremental' && field.incrementalOptions" class="text-caption text-medium-emphasis">
-                        <strong>Format:</strong> {{ field.incrementalOptions.format }}
+                        <strong>{{ t('datasets.view.fieldInfo.format') }}:</strong> {{ field.incrementalOptions.format }}
                         <span v-if="field.incrementalOptions.startValue !== undefined">
-                          | <strong>Start:</strong> {{ field.incrementalOptions.startValue }}
+                          | <strong>{{ t('datasets.view.fieldInfo.start') }}:</strong> {{ field.incrementalOptions.startValue }}
                         </span>
                         <span v-if="field.incrementalOptions.incrementStep !== undefined">
-                          | <strong>Step:</strong> {{ field.incrementalOptions.incrementStep }}
+                          | <strong>{{ t('datasets.view.fieldInfo.step') }}:</strong> {{ field.incrementalOptions.incrementStep }}
                         </span>
                       </div>
                     </div>
@@ -463,7 +477,7 @@ onMounted(async () => {
               <v-card v-else variant="outlined" class="pa-8 text-center">
                 <v-icon size="48" color="grey-lighten-1" class="mb-4">mdi-database</v-icon>
                 <p class="text-subtitle-1 text-medium-emphasis">
-                  Henüz field tanımlanmamış
+                  {{ t('datasets.view.noFields') }}
                 </p>
               </v-card>
             </v-card-text>
@@ -474,7 +488,7 @@ onMounted(async () => {
             <v-card-title class="pa-4 bg-primary text-white d-flex align-center justify-space-between">
               <div class="d-flex align-center">
                 <FileCodeIcon class="mr-2" size="20" />
-                Predefined Queries ({{ dataset.queriesCount || 0 }})
+                {{ t('datasets.view.queriesTitle') }} ({{ dataset.queriesCount || 0 }})
               </div>
             </v-card-title>
             
@@ -500,7 +514,7 @@ onMounted(async () => {
                       </div>
                       
                       <div class="mb-2">
-                        <span class="text-caption text-medium-emphasis">Parameters: </span>
+                        <span class="text-caption text-medium-emphasis">{{ t('datasets.view.queryParameters') }}: </span>
                         <v-chip size="x-small" variant="tonal" color="info">
                           {{ getParametersDisplay(query.parameters) }}
                         </v-chip>
@@ -510,7 +524,7 @@ onMounted(async () => {
                         <v-expansion-panels variant="accordion" density="compact">
                           <v-expansion-panel>
                             <v-expansion-panel-title class="text-caption">
-                              Pipeline'i Görüntüle ({{ query.pipeline.length }} stage)
+                              {{ t('datasets.view.viewPipeline') }} ({{ query.pipeline.length }} {{ t('datasets.view.stages') }})
                             </v-expansion-panel-title>
                             <v-expansion-panel-text>
                               <pre class="text-caption bg-grey-lighten-4 pa-3 rounded font-monospace" style="max-height: 400px; overflow-y: auto;">{{ JSON.stringify(query.pipeline, null, 2) }}</pre>
@@ -526,7 +540,7 @@ onMounted(async () => {
               <v-card v-else variant="outlined" class="pa-8 text-center">
                 <v-icon size="48" color="grey-lighten-1" class="mb-4">mdi-code-braces</v-icon>
                 <p class="text-subtitle-1 text-medium-emphasis">
-                  Henüz predefined query tanımlanmamış
+                  {{ t('datasets.view.noQueries') }}
                 </p>
               </v-card>
             </v-card-text>
@@ -537,7 +551,7 @@ onMounted(async () => {
             <v-card-title class="pa-4 bg-primary text-white d-flex align-center justify-space-between">
               <div class="d-flex align-center">
                 <KeyIcon class="mr-2" size="20" />
-                Index Definitions ({{ dataset.indexListCount || 0 }})
+                {{ t('datasets.view.indexesTitle') }} ({{ dataset.indexListCount || 0 }})
               </div>
             </v-card-title>
             
@@ -562,12 +576,12 @@ onMounted(async () => {
                           variant="tonal"
                           color="success"
                         >
-                          Unique
+                          {{ t('datasets.view.fieldProperties.unique') }}
                         </v-chip>
                       </div>
                       
                       <div class="mb-2">
-                        <span class="text-caption text-medium-emphasis">Fields: </span>
+                        <span class="text-caption text-medium-emphasis">{{ t('datasets.view.indexFields') }}: </span>
                         <span class="text-body-2">{{ getFieldsDisplay(index.fields) }}</span>
                       </div>
                     </div>
@@ -578,7 +592,7 @@ onMounted(async () => {
               <v-card v-else variant="outlined" class="pa-8 text-center">
                 <v-icon size="48" color="grey-lighten-1" class="mb-4">mdi-key</v-icon>
                 <p class="text-subtitle-1 text-medium-emphasis">
-                  Henüz index tanımlanmamış
+                  {{ t('datasets.view.noIndexes') }}
                 </p>
               </v-card>
             </v-card-text>
@@ -592,17 +606,17 @@ onMounted(async () => {
       <v-card>
         <v-card-title class="pa-4 bg-error text-white d-flex align-center">
           <TrashIcon class="mr-2" size="20" />
-          Dataset Sil
+          {{ t('datasets.view.delete.title') }}
         </v-card-title>
         
         <v-divider></v-divider>
         
         <v-card-text class="pa-6">
           <p class="text-body-1 mb-4">
-            <strong>{{ dataset?.name }}</strong> adlı dataset'i silmek istediğinizden emin misiniz?
+            {{ t('datasets.view.delete.confirmMessage', { name: dataset?.name }) }}
           </p>
           <v-alert type="warning" variant="tonal" density="compact" class="mb-0">
-            <strong>Uyarı:</strong> Bu işlem geri alınamaz. Dataset ve tüm verileri kalıcı olarak silinecektir.
+            <strong>{{ t('datasets.view.delete.warning') }}:</strong> {{ t('datasets.view.delete.warningDetail') }}
           </v-alert>
         </v-card-text>
         
@@ -617,7 +631,7 @@ onMounted(async () => {
             :disabled="loading"
           >
             <XIcon class="mr-2" size="18" />
-            İptal
+            {{ t('datasets.delete.cancel') }}
           </v-btn>
           <v-btn
             color="error"
@@ -626,7 +640,7 @@ onMounted(async () => {
             :loading="loading"
           >
             <TrashIcon class="mr-2" size="18" />
-            Sil
+            {{ t('datasets.buttons.delete') }}
           </v-btn>
         </v-card-actions>
       </v-card>

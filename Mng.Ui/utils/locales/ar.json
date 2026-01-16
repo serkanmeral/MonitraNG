@@ -894,6 +894,501 @@
       }
     }
   },
+  "domain": {
+    "title": "إدارة النطاق",
+    "breadcrumbs": {
+      "home": "لوحة التحكم",
+      "domain": "إدارة النطاق"
+    },
+    "warning": {
+      "title": "تحذير:",
+      "message": "مطلوب صلاحيات المدير أو المسؤول للوصول إلى هذه الصفحة. يرجى الاتصال بمسؤول لإجراء عمليات إدارة النطاق."
+    },
+    "cards": {
+      "domainInfo": "معلومات النطاق",
+      "domainSettings": "إعدادات النطاق"
+    },
+    "fields": {
+      "name": "اسم النطاق",
+      "displayName": "اسم العرض",
+      "databaseName": "اسم قاعدة البيانات",
+      "realmName": "اسم المجال",
+      "status": "الحالة",
+      "storageQuota": "حصة التخزين",
+      "storageUsed": "المساحة المستخدمة",
+      "createdAt": "تاريخ الإنشاء",
+      "updatedAt": "آخر تحديث",
+      "expiresAt": "تاريخ الانتهاء",
+      "relatedPersonPhone": "هاتف الشخص ذي الصلة",
+      "logo": "الشعار",
+      "logoUrl": "رابط الشعار",
+      "maxUsers": "الحد الأقصى للمستخدمين",
+      "maxAssets": "الحد الأقصى للأصول",
+      "enableMqtt": "تمكين MQTT"
+    },
+    "status": {
+      "pending": "قيد الانتظار",
+      "active": "نشط",
+      "suspended": "معلق",
+      "expired": "منتهي الصلاحية",
+      "deleted": "محذوف",
+      "failed": "فاشل"
+    },
+    "buttons": {
+      "edit": "تعديل",
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "refresh": "تحديث",
+      "uploadLogo": "رفع الشعار",
+      "removeLogo": "إزالة الشعار"
+    },
+    "edit": {
+      "title": "تعديل النطاق",
+      "displayName": "اسم العرض",
+      "displayNamePlaceholder": "أدخل اسم عرض النطاق",
+      "relatedPersonPhone": "هاتف الشخص ذي الصلة",
+      "relatedPersonPhonePlaceholder": "+90XXXXXXXXXX",
+      "logoUrl": "رابط الشعار",
+      "logoUrlPlaceholder": "https://...",
+      "maxUsers": "الحد الأقصى للمستخدمين",
+      "maxAssets": "الحد الأقصى للأصول",
+      "enableMqtt": "تمكين MQTT",
+      "validation": {
+        "displayNameRequired": "اسم العرض مطلوب"
+      }
+    },
+    "messages": {
+      "loading": "جاري التحميل...",
+      "loadError": "حدث خطأ أثناء تحميل معلومات النطاق",
+      "updateSuccess": "تم تحديث معلومات النطاق بنجاح",
+      "updateError": "حدث خطأ أثناء تحديث معلومات النطاق",
+      "notFound": "لم يتم العثور على النطاق",
+      "notManager": "مطلوب صلاحيات المدير للوصول إلى هذه الصفحة"
+    },
+    "storage": {
+      "bytes": "بايت",
+      "kb": "كيلوبايت",
+      "mb": "ميجابايت",
+      "gb": "جيجابايت",
+      "tb": "تيرابايت"
+    },
+    "logo": {
+      "uploaded": "تم رفع الشعار",
+      "noImage": "لا يوجد شعار",
+      "errors": {
+        "invalidFormat": "تنسيق الملف غير صالح. يتم قبول ملفات JPEG و PNG و WebP أو GIF فقط.",
+        "maxSize": "حجم الملف كبير جدًا. الحد الأقصى المسموح به 2 ميجابايت.",
+        "readError": "حدث خطأ أثناء قراءة الملف"
+      }
+    }
+  },
+  "datasetCategories": {
+    "title": "فئات مجموعة البيانات",
+    "breadcrumbs": {
+      "home": "لوحة المعلومات",
+      "categories": "فئات مجموعة البيانات",
+      "create": "فئة جديدة",
+      "edit": "تحرير الفئة"
+    },
+    "warning": {
+      "title": "تحذير:",
+      "message": "يتم الحصول على صلاحيات المدير أو المشرف للوصول إلى هذه الصفحة."
+    },
+    "search": {
+      "placeholder": "البحث في الفئات",
+      "hint": "البحث حسب اسم الفئة أو الوصف"
+    },
+    "buttons": {
+      "newCategory": "فئة جديدة",
+      "refresh": "تحديث",
+      "view": "عرض",
+      "edit": "تحرير",
+      "delete": "حذف",
+      "cancel": "إلغاء",
+      "save": "حفظ",
+      "update": "تحديث",
+      "create": "إنشاء",
+      "close": "إغلاق",
+      "back": "رجوع"
+    },
+    "table": {
+      "headers": {
+        "categoryName": "اسم الفئة",
+        "description": "الوصف",
+        "createdAt": "تاريخ الإنشاء",
+        "createdBy": "أنشأه",
+        "updatedAt": "آخر تحديث",
+        "updatedBy": "آخر تحديث بواسطة",
+        "historyCount": "السجل",
+        "actions": "الإجراءات"
+      }
+    },
+    "noData": {
+      "title": "لم يتم العثور على فئات",
+      "button": "إنشاء الفئة الأولى"
+    },
+    "pagination": {
+      "total": "الإجمالي:",
+      "records": "سجل",
+      "page": "الصفحة",
+      "showing": "عرض",
+      "itemsPerPage": "عدد السجلات في الصفحة:"
+    },
+    "delete": {
+      "title": "حذف الفئة",
+      "message": "هل أنت متأكد من أنك تريد حذف هذه الفئة؟ لا يمكن التراجع عن هذا الإجراء.",
+      "note": "ملاحظة: يمكن استعادة الفئات المحذوفة.",
+      "cancel": "إلغاء",
+      "confirm": "نعم، احذف"
+    },
+    "view": {
+      "title": "تفاصيل الفئة",
+      "description": "الوصف:",
+      "createdAt": "تاريخ الإنشاء:",
+      "updatedAt": "آخر تحديث:",
+      "historyCount": "عدد سجلات السجل:",
+      "noDescription": "لا يوجد وصف",
+      "edit": "تحرير"
+    },
+    "form": {
+      "create": {
+        "title": "فئة جديدة",
+        "submit": "إنشاء"
+      },
+      "edit": {
+        "title": "تحرير الفئة",
+        "submit": "تحديث"
+      },
+      "fields": {
+        "categoryName": "اسم الفئة",
+        "categoryNamePlaceholder": "مثال: مجموعات بيانات النظام، مجموعات بيانات الكتب",
+        "categoryNameHint": "2-100 حرف، يجب أن يكون فريدًا",
+        "description": "الوصف",
+        "descriptionPlaceholder": "وصف الفئة (اختياري)",
+        "descriptionHint": "بحد أقصى 500 حرف"
+      },
+      "validation": {
+        "categoryNameRequired": "اسم الفئة مطلوب",
+        "categoryNameMinLength": "يجب أن يكون اسم الفئة على الأقل حرفين",
+        "categoryNameMaxLength": "يمكن أن يكون اسم الفئة 100 حرف كحد أقصى",
+        "descriptionMaxLength": "يمكن أن يكون الوصف 500 حرف كحد أقصى",
+        "duplicateName": "اسم الفئة هذا مستخدم بالفعل. يرجى اختيار اسم مختلف."
+      },
+      "messages": {
+        "loading": "جارٍ تحميل الفئة...",
+        "notFound": "لم يتم العثور على الفئة",
+        "loadError": "حدث خطأ أثناء تحميل الفئة",
+        "createSuccess": "تم إنشاء الفئة بنجاح!",
+        "updateSuccess": "تم تحديث الفئة بنجاح!",
+        "saveError": "حدث خطأ أثناء حفظ الفئة"
+      }
+    }
+  },
+  "datasets": {
+    "title": "مجموعات البيانات",
+    "breadcrumbs": {
+      "home": "لوحة المعلومات",
+      "datasets": "مجموعات البيانات",
+      "create": "مجموعة بيانات جديدة",
+      "edit": "تحرير مجموعة البيانات"
+    },
+    "warning": {
+      "title": "تحذير:",
+      "message": "يتم الحصول على صلاحيات المدير أو المشرف للوصول إلى هذه الصفحة."
+    },
+    "search": {
+      "placeholder": "البحث في مجموعات البيانات",
+      "comingSoon": "ستتم إضافة ميزة البحث قريبًا",
+      "notImplemented": {
+        "title": "ملاحظة:",
+        "message": "لم يتم تطبيق ميزة البحث في الخادم الخلفي بعد. ستتم إضافة هذه الميزة قريبًا."
+      }
+    },
+    "buttons": {
+      "newDataset": "مجموعة بيانات جديدة",
+      "refresh": "تحديث",
+      "view": "عرض",
+      "edit": "تحرير",
+      "delete": "حذف",
+      "cancel": "إلغاء",
+      "save": "حفظ",
+      "update": "تحديث",
+      "create": "إنشاء",
+      "close": "إغلاق",
+      "back": "رجوع",
+      "export": "تصدير"
+    },
+    "table": {
+      "headers": {
+        "name": "اسم مجموعة البيانات",
+        "category": "الفئة",
+        "description": "الوصف",
+        "fieldsCount": "عدد الحقول",
+        "createdAt": "تاريخ الإنشاء",
+        "createdBy": "أنشأه",
+        "updatedAt": "آخر تحديث",
+        "actions": "الإجراءات"
+      },
+      "fields": "حقل"
+    },
+    "noData": {
+      "title": "لم يتم العثور على مجموعات بيانات",
+      "button": "إنشاء أول مجموعة بيانات"
+    },
+    "pagination": {
+      "total": "الإجمالي:",
+      "records": "سجل",
+      "page": "الصفحة",
+      "showing": "عرض",
+      "itemsPerPage": "عدد السجلات في الصفحة:"
+    },
+    "delete": {
+      "title": "حذف مجموعة البيانات",
+      "message": "هل أنت متأكد من أنك تريد حذف هذه مجموعة البيانات؟ لا يمكن التراجع عن هذا الإجراء.",
+      "note": "ملاحظة:",
+      "noteDetail": "يمكن استعادة مجموعات البيانات المحذوفة. ومع ذلك، عند حذف مخطط مجموعة البيانات، لا يتم حذف المجموعة والبيانات.",
+      "cancel": "إلغاء",
+      "confirm": "نعم، احذف"
+    },
+    "view": {
+      "title": "مجموعة البيانات",
+      "schemaInfo": "معلومات المخطط",
+      "fieldsTitle": "الحقول",
+      "queriesTitle": "الاستعلامات المحددة مسبقًا",
+      "indexesTitle": "تعريفات الفهرس",
+      "queryParameters": "المعاملات",
+      "indexFields": "الحقول",
+      "viewPipeline": "عرض خط الأنابيب",
+      "stages": "مرحلة",
+      "noFields": "لم يتم تعريف حقول بعد",
+      "noQueries": "لم يتم تعريف استعلامات محددة مسبقًا بعد",
+      "noIndexes": "لم يتم تعريف فهارس بعد",
+      "buttons": {
+        "backToList": "العودة إلى القائمة",
+        "exportJSON": "تصدير JSON"
+      },
+      "fields": {
+        "name": "اسم مجموعة البيانات",
+        "category": "الفئة",
+        "description": "الوصف",
+        "forceSchema": "فرض المخطط",
+        "loggingMode": "وضع السجل",
+        "publishMode": "وضع النشر",
+        "createdAt": "تاريخ الإنشاء",
+        "createdBy": "أنشأه",
+        "updatedAt": "آخر تحديث"
+      },
+      "fieldProperties": {
+        "mandatory": "إجباري",
+        "unique": "فريد",
+        "array": "مصفوفة"
+      },
+      "fieldInfo": {
+        "relation": "العلاقة",
+        "format": "التنسيق",
+        "start": "البداية",
+        "step": "الخطوة"
+      },
+      "delete": {
+        "title": "حذف مجموعة البيانات",
+        "confirmMessage": "هل أنت متأكد من أنك تريد حذف مجموعة البيانات المسماة {name}؟",
+        "warning": "تحذير",
+        "warningDetail": "لا يمكن التراجع عن هذا الإجراء. سيتم حذف مجموعة البيانات وجميع بياناتها بشكل دائم."
+      },
+      "messages": {
+        "loading": "جارٍ تحميل مجموعة البيانات...",
+        "nameNotFound": "لم يتم العثور على اسم مجموعة البيانات",
+        "notFound": "لم يتم العثور على مجموعة البيانات",
+        "loadError": "حدث خطأ أثناء تحميل مجموعة البيانات",
+        "deleteError": "حدث خطأ أثناء حذف مجموعة البيانات"
+      }
+    },
+    "export": {
+      "csv": "تحميل CSV",
+      "json": "تحميل JSON",
+      "createdAt": "تاريخ الإنشاء",
+      "forceSchema": "فرض المخطط",
+      "logging": "السجل",
+      "publishMode": "وضع النشر"
+    },
+    "common": {
+      "yes": "نعم",
+      "no": "لا"
+    },
+    "fieldTypes": {
+      "text": "نص",
+      "number": "رقم",
+      "bool": "منطقي",
+      "datetime": "تاريخ ووقت",
+      "object": "كائن",
+      "relation": "علاقة",
+      "persons": "أشخاص",
+      "personGroups": "مجموعات الأشخاص",
+      "incremental": "تدريجي"
+    },
+    "form": {
+      "steps": {
+        "basicInfo": "المعلومات الأساسية",
+        "fieldDefinitions": "تعريفات الحقول",
+        "predefinedQueries": "الاستعلامات المحددة مسبقًا",
+        "validationDefinitions": "تعريفات التحقق",
+        "indexDefinitions": "تعريفات الفهرس"
+      },
+      "validation": {
+        "nameRequired": "اسم مجموعة البيانات مطلوب",
+        "nameMinLength": "يجب أن يكون اسم مجموعة البيانات على الأقل حرفين",
+        "nameMaxLength": "يمكن أن يكون اسم مجموعة البيانات 100 حرف كحد أقصى",
+        "nameInvalidFormat": "تنسيق اسم مجموعة البيانات غير صالح (مثال: @books, @tasks)",
+        "descriptionMaxLength": "يمكن أن يكون الوصف 1000 حرف كحد أقصى",
+        "fieldNameRequired": "اسم الحقل مطلوب",
+        "fieldNameInvalidFormat": "تنسيق اسم الحقل غير صالح (يجب أن يبدأ بحرف، يمكن أن يحتوي فقط على أحرف وأرقام و _)",
+        "fieldNameDuplicate": "اسم الحقل هذا مستخدم بالفعل",
+        "fieldTitleMaxLength": "يمكن أن يكون عنوان الحقل 200 حرف كحد أقصى",
+        "formatRequired": "قالب التنسيق مطلوب",
+        "formatMustContainPlaceholder": "يجب أن يحتوي قالب التنسيق على عنصر نائب {0}",
+        "relationDatasetRequired": "يجب اختيار مجموعة بيانات لحقل العلاقة",
+        "incrementalFormatRequired": "قالب التنسيق مطلوب لحقل التدريج",
+        "incrementalFormatPlaceholder": "يجب أن يحتوي قالب التنسيق على عنصر نائب {0}",
+        "objectSchemaInvalid": "يجب أن يكون مخطط الكائن كائن JSON صالح",
+        "objectSchemaInvalidJSON": "تنسيق JSON غير صالح لمخطط الكائن"
+      },
+      "messages": {
+        "notFound": "لم يتم العثور على مجموعة البيانات",
+        "loadError": "حدث خطأ أثناء تحميل مجموعة البيانات",
+        "updateSuccess": "تم تحديث مجموعة البيانات بنجاح!",
+        "createSuccess": "تم إنشاء مجموعة البيانات بنجاح!",
+        "saveError": "حدث خطأ أثناء حفظ مجموعة البيانات",
+        "duplicateName": "اسم مجموعة البيانات هذا مستخدم بالفعل. يرجى اختيار اسم مختلف."
+      },
+      "fieldTypes": {
+        "text": {
+          "title": "نص",
+          "description": "قيم السلسلة"
+        },
+        "number": {
+          "title": "رقم",
+          "description": "قيم رقمية (عدد صحيح/عشري)"
+        },
+        "bool": {
+          "title": "منطقي",
+          "description": "قيم صحيحة/خاطئة"
+        },
+        "datetime": {
+          "title": "تاريخ ووقت",
+          "description": "التاريخ والوقت (ISO 8601 UTC)"
+        },
+        "object": {
+          "title": "كائن",
+          "description": "كائن JSON"
+        },
+        "relation": {
+          "title": "علاقة",
+          "description": "مرجع مجموعة البيانات"
+        },
+        "persons": {
+          "title": "أشخاص",
+          "description": "مرجع المستخدم (MngKeeper)"
+        },
+        "personGroups": {
+          "title": "مجموعات الأشخاص",
+          "description": "مرجع المجموعة (MngKeeper)"
+        },
+        "incremental": {
+          "title": "تدريجي",
+          "description": "قيمة تلقائية متزايدة"
+        }
+      },
+      "fields": {
+        "name": {
+          "label": "اسم مجموعة البيانات",
+          "placeholder": "مثال: @books, @tasks",
+          "hint": "بادئة اختيارية (يضيفها الخادم الخلفي تلقائيًا)، 2-100 حرف، يجب أن تكون فريدة",
+          "editNote": "ملاحظة: لا يمكن تحرير اسم مجموعة البيانات."
+        },
+        "category": {
+          "label": "الفئة",
+          "placeholder": "اختر الفئة (اختياري)",
+          "hint": "يمكنك تعيين مجموعة البيانات إلى فئة"
+        },
+        "description": {
+          "label": "الوصف",
+          "placeholder": "وصف مجموعة البيانات (اختياري)",
+          "hint": "بحد أقصى 1000 حرف"
+        },
+        "schemaSettings": {
+          "title": "إعدادات المخطط",
+          "forceSchema": {
+            "label": "فرض التحقق من المخطط",
+            "hint": "يتم قبول الحقول المحددة فقط (الوضع الصارم)",
+            "active": "نشط (صارم)",
+            "passive": "غير نشط (مرن)"
+          },
+          "loggingMode": {
+            "label": "وضع السجل",
+            "hint": "لا شيء: لا يوجد سجل، ذاتي: كل سجل يحتوي على __history، مشترك: يكتب في مجموعة @data_logs",
+            "none": "لا شيء",
+            "self": "ذاتي",
+            "common": "مشترك"
+          },
+          "publishMode": {
+            "label": "وضع النشر",
+            "hint": "وضع نشر أحداث RabbitMQ",
+            "none": "لا شيء",
+            "basic": "أساسي",
+            "full": "كامل"
+          }
+        }
+      },
+      "buttons": {
+        "previous": "السابق",
+        "next": "التالي",
+        "cancel": "إلغاء",
+        "save": "حفظ",
+        "addField": "إضافة حقل جديد",
+        "addQuery": "إضافة استعلام جديد",
+        "addValidation": "إضافة تحقق جديد",
+        "addIndex": "إضافة فهرس جديد",
+        "addFirstField": "إضافة أول حقل",
+        "addFirstQuery": "إضافة أول استعلام",
+        "addFirstValidation": "إضافة أول تحقق",
+        "addFirstIndex": "إضافة أول فهرس",
+        "edit": "تعديل",
+        "delete": "حذف"
+      },
+      "fieldList": {
+        "title": "تعريفات الحقول",
+        "noFields": "لم يتم تعريف أي حقول بعد",
+        "properties": {
+          "mandatory": "إلزامي",
+          "unique": "فريد",
+          "array": "مصفوفة",
+          "format": "التنسيق: {format}",
+          "relation": "→ {dataset}"
+        }
+      },
+      "queryList": {
+        "title": "الاستعلامات المحددة مسبقاً",
+        "noQueries": "لم يتم تعريف أي استعلامات محددة مسبقاً بعد",
+        "parameters": "المعاملات:",
+        "viewPipeline": "عرض خط الأنابيب ({count} مراحل)"
+      },
+      "validationList": {
+        "title": "تعريفات التحقق",
+        "noValidations": "لم يتم تعريف أي تحققات بعد",
+        "when": "متى: {when}",
+        "order": "الترتيب: {order}",
+        "expression": "التعبير:",
+        "url": "URL:",
+        "method": "الطريقة:",
+        "fields": "الحقول:"
+      },
+      "indexList": {
+        "title": "تعريفات الفهرس",
+        "noIndexes": "لم يتم تعريف أي فهارس بعد",
+        "fields": "الحقول:"
+      }
+    }
+  },
   "header": {
     "profileDD": {
       "myProfile": {

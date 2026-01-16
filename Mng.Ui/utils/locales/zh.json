@@ -894,6 +894,501 @@
       }
     }
   },
+  "domain": {
+    "title": "域管理",
+    "breadcrumbs": {
+      "home": "仪表板",
+      "domain": "域管理"
+    },
+    "warning": {
+      "title": "警告：",
+      "message": "访问此页面需要管理员或管理员权限。请联系管理员执行域管理操作。"
+    },
+    "cards": {
+      "domainInfo": "域信息",
+      "domainSettings": "域设置"
+    },
+    "fields": {
+      "name": "域名",
+      "displayName": "显示名称",
+      "databaseName": "数据库名称",
+      "realmName": "领域名称",
+      "status": "状态",
+      "storageQuota": "存储配额",
+      "storageUsed": "已用存储",
+      "createdAt": "创建时间",
+      "updatedAt": "最后更新",
+      "expiresAt": "过期时间",
+      "relatedPersonPhone": "相关联系人电话",
+      "logo": "徽标",
+      "logoUrl": "徽标 URL",
+      "maxUsers": "最大用户数",
+      "maxAssets": "最大资产数",
+      "enableMqtt": "启用 MQTT"
+    },
+    "status": {
+      "pending": "待处理",
+      "active": "活跃",
+      "suspended": "已暂停",
+      "expired": "已过期",
+      "deleted": "已删除",
+      "failed": "失败"
+    },
+    "buttons": {
+      "edit": "编辑",
+      "save": "保存",
+      "cancel": "取消",
+      "refresh": "刷新",
+      "uploadLogo": "上传徽标",
+      "removeLogo": "删除徽标"
+    },
+    "edit": {
+      "title": "编辑域",
+      "displayName": "显示名称",
+      "displayNamePlaceholder": "输入域显示名称",
+      "relatedPersonPhone": "相关联系人电话",
+      "relatedPersonPhonePlaceholder": "+90XXXXXXXXXX",
+      "logoUrl": "徽标 URL",
+      "logoUrlPlaceholder": "https://...",
+      "maxUsers": "最大用户数",
+      "maxAssets": "最大资产数",
+      "enableMqtt": "启用 MQTT",
+      "validation": {
+        "displayNameRequired": "显示名称是必需的"
+      }
+    },
+    "messages": {
+      "loading": "加载中...",
+      "loadError": "加载域信息时发生错误",
+      "updateSuccess": "域信息更新成功",
+      "updateError": "更新域信息时发生错误",
+      "notFound": "未找到域",
+      "notManager": "访问此页面需要管理员权限"
+    },
+    "storage": {
+      "bytes": "字节",
+      "kb": "KB",
+      "mb": "MB",
+      "gb": "GB",
+      "tb": "TB"
+    },
+    "logo": {
+      "uploaded": "徽标已上传",
+      "noImage": "无徽标",
+      "errors": {
+        "invalidFormat": "无效的文件格式。仅接受 JPEG、PNG、WebP 或 GIF 文件。",
+        "maxSize": "文件太大。最大允许 2MB。",
+        "readError": "读取文件时发生错误"
+      }
+    }
+  },
+  "datasetCategories": {
+    "title": "数据集类别",
+    "breadcrumbs": {
+      "home": "仪表板",
+      "categories": "数据集类别",
+      "create": "新建类别",
+      "edit": "编辑类别"
+    },
+    "warning": {
+      "title": "警告：",
+      "message": "需要管理员或管理员权限才能访问此页面。"
+    },
+    "search": {
+      "placeholder": "搜索类别",
+      "hint": "按类别名称或描述搜索"
+    },
+    "buttons": {
+      "newCategory": "新建类别",
+      "refresh": "刷新",
+      "view": "查看",
+      "edit": "编辑",
+      "delete": "删除",
+      "cancel": "取消",
+      "save": "保存",
+      "update": "更新",
+      "create": "创建",
+      "close": "关闭",
+      "back": "返回"
+    },
+    "table": {
+      "headers": {
+        "categoryName": "类别名称",
+        "description": "描述",
+        "createdAt": "创建时间",
+        "createdBy": "创建者",
+        "updatedAt": "最后更新",
+        "updatedBy": "最后更新者",
+        "historyCount": "历史",
+        "actions": "操作"
+      }
+    },
+    "noData": {
+      "title": "未找到类别",
+      "button": "创建第一个类别"
+    },
+    "pagination": {
+      "total": "总计：",
+      "records": "条记录",
+      "page": "页码",
+      "showing": "显示",
+      "itemsPerPage": "每页记录数："
+    },
+    "delete": {
+      "title": "删除类别",
+      "message": "您确定要删除此类别吗？此操作无法撤销。",
+      "note": "注意：已删除的类别可以恢复。",
+      "cancel": "取消",
+      "confirm": "是的，删除"
+    },
+    "view": {
+      "title": "类别详情",
+      "description": "描述：",
+      "createdAt": "创建时间：",
+      "updatedAt": "最后更新：",
+      "historyCount": "历史记录数：",
+      "noDescription": "无描述",
+      "edit": "编辑"
+    },
+    "form": {
+      "create": {
+        "title": "新建类别",
+        "submit": "创建"
+      },
+      "edit": {
+        "title": "编辑类别",
+        "submit": "更新"
+      },
+      "fields": {
+        "categoryName": "类别名称",
+        "categoryNamePlaceholder": "例如：系统数据集、图书数据集",
+        "categoryNameHint": "2-100 个字符，必须唯一",
+        "description": "描述",
+        "descriptionPlaceholder": "类别描述（可选）",
+        "descriptionHint": "最多 500 个字符"
+      },
+      "validation": {
+        "categoryNameRequired": "类别名称是必需的",
+        "categoryNameMinLength": "类别名称必须至少 2 个字符",
+        "categoryNameMaxLength": "类别名称最多 100 个字符",
+        "descriptionMaxLength": "描述最多 500 个字符",
+        "duplicateName": "此类别名称已被使用。请选择其他名称。"
+      },
+      "messages": {
+        "loading": "正在加载类别...",
+        "notFound": "未找到类别",
+        "loadError": "加载类别时发生错误",
+        "createSuccess": "类别创建成功！",
+        "updateSuccess": "类别更新成功！",
+        "saveError": "保存类别时发生错误"
+      }
+    }
+  },
+  "datasets": {
+    "title": "数据集",
+    "breadcrumbs": {
+      "home": "仪表板",
+      "datasets": "数据集",
+      "create": "新建数据集",
+      "edit": "编辑数据集"
+    },
+    "warning": {
+      "title": "警告：",
+      "message": "需要管理员或管理员权限才能访问此页面。"
+    },
+    "search": {
+      "placeholder": "搜索数据集",
+      "comingSoon": "搜索功能即将推出",
+      "notImplemented": {
+        "title": "注意：",
+        "message": "搜索功能尚未在后端实现。此功能即将推出。"
+      }
+    },
+    "buttons": {
+      "newDataset": "新建数据集",
+      "refresh": "刷新",
+      "view": "查看",
+      "edit": "编辑",
+      "delete": "删除",
+      "cancel": "取消",
+      "save": "保存",
+      "update": "更新",
+      "create": "创建",
+      "close": "关闭",
+      "back": "返回",
+      "export": "导出"
+    },
+    "table": {
+      "headers": {
+        "name": "数据集名称",
+        "category": "类别",
+        "description": "描述",
+        "fieldsCount": "字段数",
+        "createdAt": "创建时间",
+        "createdBy": "创建者",
+        "updatedAt": "最后更新",
+        "actions": "操作"
+      },
+      "fields": "个字段"
+    },
+    "noData": {
+      "title": "未找到数据集",
+      "button": "创建第一个数据集"
+    },
+    "pagination": {
+      "total": "总计：",
+      "records": "条记录",
+      "page": "页码",
+      "showing": "显示",
+      "itemsPerPage": "每页记录数："
+    },
+    "delete": {
+      "title": "删除数据集",
+      "message": "您确定要删除此数据集吗？此操作无法撤销。",
+      "note": "注意：",
+      "noteDetail": "已删除的数据集可以恢复。但是，删除数据集架构时，集合和数据不会被删除。",
+      "cancel": "取消",
+      "confirm": "是的，删除"
+    },
+    "view": {
+      "title": "数据集",
+      "schemaInfo": "架构信息",
+      "fieldsTitle": "字段",
+      "queriesTitle": "预定义查询",
+      "indexesTitle": "索引定义",
+      "queryParameters": "参数",
+      "indexFields": "字段",
+      "viewPipeline": "查看管道",
+      "stages": "个阶段",
+      "noFields": "尚未定义字段",
+      "noQueries": "尚未定义预定义查询",
+      "noIndexes": "尚未定义索引",
+      "buttons": {
+        "backToList": "返回列表",
+        "exportJSON": "导出 JSON"
+      },
+      "fields": {
+        "name": "数据集名称",
+        "category": "类别",
+        "description": "描述",
+        "forceSchema": "强制架构",
+        "loggingMode": "日志模式",
+        "publishMode": "发布模式",
+        "createdAt": "创建时间",
+        "createdBy": "创建者",
+        "updatedAt": "最后更新"
+      },
+      "fieldProperties": {
+        "mandatory": "必需",
+        "unique": "唯一",
+        "array": "数组"
+      },
+      "fieldInfo": {
+        "relation": "关系",
+        "format": "格式",
+        "start": "起始值",
+        "step": "步长"
+      },
+      "delete": {
+        "title": "删除数据集",
+        "confirmMessage": "您确定要删除名为 {name} 的数据集吗？",
+        "warning": "警告",
+        "warningDetail": "此操作无法撤销。数据集及其所有数据将被永久删除。"
+      },
+      "messages": {
+        "loading": "正在加载数据集...",
+        "nameNotFound": "未找到数据集名称",
+        "notFound": "未找到数据集",
+        "loadError": "加载数据集时发生错误",
+        "deleteError": "删除数据集时发生错误"
+      }
+    },
+    "export": {
+      "csv": "下载 CSV",
+      "json": "下载 JSON",
+      "createdAt": "创建日期",
+      "forceSchema": "强制架构",
+      "logging": "日志",
+      "publishMode": "发布模式"
+    },
+    "common": {
+      "yes": "是",
+      "no": "否"
+    },
+    "fieldTypes": {
+      "text": "文本",
+      "number": "数字",
+      "bool": "布尔值",
+      "datetime": "日期时间",
+      "object": "对象",
+      "relation": "关系",
+      "persons": "人员",
+      "personGroups": "人员组",
+      "incremental": "递增"
+    },
+    "form": {
+      "steps": {
+        "basicInfo": "基本信息",
+        "fieldDefinitions": "字段定义",
+        "predefinedQueries": "预定义查询",
+        "validationDefinitions": "验证定义",
+        "indexDefinitions": "索引定义"
+      },
+      "validation": {
+        "nameRequired": "数据集名称是必需的",
+        "nameMinLength": "数据集名称必须至少 2 个字符",
+        "nameMaxLength": "数据集名称最多 100 个字符",
+        "nameInvalidFormat": "数据集名称格式无效（例如：{'@'}books, {'@'}tasks）",
+        "descriptionMaxLength": "描述最多 1000 个字符",
+        "fieldNameRequired": "字段名称是必需的",
+        "fieldNameInvalidFormat": "字段名称格式无效（必须以字母开头，只能包含字母、数字和 _）",
+        "fieldNameDuplicate": "此字段名称已被使用",
+        "fieldTitleMaxLength": "字段标题最多 200 个字符",
+        "formatRequired": "格式模板是必需的",
+        "formatMustContainPlaceholder": "格式模板必须包含 {0} 占位符",
+        "relationDatasetRequired": "关系字段必须选择数据集",
+        "incrementalFormatRequired": "递增字段需要格式模板",
+        "incrementalFormatPlaceholder": "格式模板必须包含 {0} 占位符",
+        "objectSchemaInvalid": "对象架构必须是有效的 JSON 对象",
+        "objectSchemaInvalidJSON": "对象架构无效的 JSON 格式"
+      },
+      "messages": {
+        "notFound": "未找到数据集",
+        "loadError": "加载数据集时发生错误",
+        "updateSuccess": "数据集更新成功！",
+        "createSuccess": "数据集创建成功！",
+        "saveError": "保存数据集时发生错误",
+        "duplicateName": "此数据集名称已被使用。请选择其他名称。"
+      },
+      "fieldTypes": {
+        "text": {
+          "title": "文本",
+          "description": "字符串值"
+        },
+        "number": {
+          "title": "数字",
+          "description": "数值（整数/小数）"
+        },
+        "bool": {
+          "title": "布尔值",
+          "description": "真/假值"
+        },
+        "datetime": {
+          "title": "日期时间",
+          "description": "日期和时间（ISO 8601 UTC）"
+        },
+        "object": {
+          "title": "对象",
+          "description": "JSON 对象"
+        },
+        "relation": {
+          "title": "关系",
+          "description": "数据集引用"
+        },
+        "persons": {
+          "title": "人员",
+          "description": "用户引用（MngKeeper）"
+        },
+        "personGroups": {
+          "title": "人员组",
+          "description": "组引用（MngKeeper）"
+        },
+        "incremental": {
+          "title": "递增",
+          "description": "自动递增的值"
+        }
+      },
+      "fields": {
+        "name": {
+          "label": "数据集名称",
+          "placeholder": "例如：{'@'}books, {'@'}tasks",
+          "hint": "前缀可选（后端自动添加），2-100 个字符，必须唯一",
+          "editNote": "注意：数据集名称无法编辑。"
+        },
+        "category": {
+          "label": "类别",
+          "placeholder": "选择类别（可选）",
+          "hint": "您可以将数据集分配给一个类别"
+        },
+        "description": {
+          "label": "描述",
+          "placeholder": "数据集描述（可选）",
+          "hint": "最多 1000 个字符"
+        },
+        "schemaSettings": {
+          "title": "架构设置",
+          "forceSchema": {
+            "label": "强制架构验证",
+            "hint": "仅接受已定义的字段（严格模式）",
+            "active": "激活（严格）",
+            "passive": "被动（灵活）"
+          },
+          "loggingMode": {
+            "label": "日志模式",
+            "hint": "无：无日志记录，自身：每个记录包含 __history，通用：写入 {'@'}data_logs 集合",
+            "none": "无",
+            "self": "自身",
+            "common": "通用"
+          },
+          "publishMode": {
+            "label": "发布模式",
+            "hint": "RabbitMQ 事件发布模式",
+            "none": "无",
+            "basic": "基础",
+            "full": "完整"
+          }
+        }
+      },
+      "buttons": {
+        "previous": "上一个",
+        "next": "下一个",
+        "cancel": "取消",
+        "save": "保存",
+        "addField": "添加新字段",
+        "addQuery": "添加新查询",
+        "addValidation": "添加新验证",
+        "addIndex": "添加新索引",
+        "addFirstField": "添加第一个字段",
+        "addFirstQuery": "添加第一个查询",
+        "addFirstValidation": "添加第一个验证",
+        "addFirstIndex": "添加第一个索引",
+        "edit": "编辑",
+        "delete": "删除"
+      },
+      "fieldList": {
+        "title": "字段定义",
+        "noFields": "尚未定义字段",
+        "properties": {
+          "mandatory": "必填",
+          "unique": "唯一",
+          "array": "数组",
+          "format": "格式: {format}",
+          "relation": "→ {dataset}"
+        }
+      },
+      "queryList": {
+        "title": "预定义查询",
+        "noQueries": "尚未定义预定义查询",
+        "parameters": "参数:",
+        "viewPipeline": "查看管道 ({count} 个阶段)"
+      },
+      "validationList": {
+        "title": "验证定义",
+        "noValidations": "尚未定义验证",
+        "when": "何时: {when}",
+        "order": "顺序: {order}",
+        "expression": "表达式:",
+        "url": "URL:",
+        "method": "方法:",
+        "fields": "字段:"
+      },
+      "indexList": {
+        "title": "索引定义",
+        "noIndexes": "尚未定义索引",
+        "fields": "字段:"
+      }
+    }
+  },
   "header": {
     "profileDD": {
       "myProfile": {

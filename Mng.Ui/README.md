@@ -178,7 +178,7 @@ Development ortamında self-signed certificate kullanıyorsanız, browser'da cer
 
 ## 📄 License
 
-Copyright © 2025 iSIM Platform
+Copyright © 2025 MonitraNG
 
 ## 👤 Author
 

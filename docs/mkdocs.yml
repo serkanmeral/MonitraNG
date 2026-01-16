@@ -1,6 +1,6 @@
 site_name: MonitraNG Documentation
 site_description: Multi-Tenant IoT Monitoring Platform Documentation
-site_author: iSIM Platform
+site_author: MonitraNG
 site_url: https://docs.monitrang.com
 
 # Version info (can be overridden by CI/CD)
@@ -125,5 +125,5 @@ nav:
       - DevOps Roadmap: devops-roadmap.md
 
 # Copyright
-copyright: Copyright &copy; 2025 iSIM Platform
+copyright: Copyright &copy; 2025 MonitraNG
 

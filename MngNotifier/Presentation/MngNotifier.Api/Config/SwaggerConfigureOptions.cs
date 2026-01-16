@@ -33,7 +33,7 @@ public class SwaggerConfigureOptions : IConfigureOptions<SwaggerGenOptions>
                 Description = "Centralized Notification Service for MonitraNG Platform",
                 Contact = new OpenApiContact
                 {
-                    Name = "iSIM Platform",
+                    Name = "MonitraNG",
                     Email = "serkan.meral@isimplatform.io"
                 }
             });

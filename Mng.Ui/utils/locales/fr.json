@@ -894,6 +894,501 @@
       }
     }
   },
+  "domain": {
+    "title": "Gestion du Domaine",
+    "breadcrumbs": {
+      "home": "Tableau de bord",
+      "domain": "Gestion du Domaine"
+    },
+    "warning": {
+      "title": "Avertissement :",
+      "message": "Des privilèges de gestionnaire ou d'administrateur sont requis pour accéder à cette page. Veuillez contacter un administrateur pour effectuer des opérations de gestion de domaine."
+    },
+    "cards": {
+      "domainInfo": "Informations du Domaine",
+      "domainSettings": "Paramètres du Domaine"
+    },
+    "fields": {
+      "name": "Nom du Domaine",
+      "displayName": "Nom d'Affichage",
+      "databaseName": "Nom de la Base de Données",
+      "realmName": "Nom du Realm",
+      "status": "Statut",
+      "storageQuota": "Quota de Stockage",
+      "storageUsed": "Stockage Utilisé",
+      "createdAt": "Date de Création",
+      "updatedAt": "Dernière Mise à Jour",
+      "expiresAt": "Date d'Expiration",
+      "relatedPersonPhone": "Téléphone de la Personne de Contact",
+      "logo": "Logo",
+      "logoUrl": "URL du Logo",
+      "maxUsers": "Nombre Maximum d'Utilisateurs",
+      "maxAssets": "Nombre Maximum d'Actifs",
+      "enableMqtt": "MQTT Activé"
+    },
+    "status": {
+      "pending": "En Attente",
+      "active": "Actif",
+      "suspended": "Suspendu",
+      "expired": "Expiré",
+      "deleted": "Supprimé",
+      "failed": "Échoué"
+    },
+    "buttons": {
+      "edit": "Modifier",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "refresh": "Actualiser",
+      "uploadLogo": "Télécharger le Logo",
+      "removeLogo": "Supprimer le Logo"
+    },
+    "edit": {
+      "title": "Modifier le Domaine",
+      "displayName": "Nom d'Affichage",
+      "displayNamePlaceholder": "Entrez le nom d'affichage du domaine",
+      "relatedPersonPhone": "Téléphone de la Personne de Contact",
+      "relatedPersonPhonePlaceholder": "+90XXXXXXXXXX",
+      "logoUrl": "URL du Logo",
+      "logoUrlPlaceholder": "https://...",
+      "maxUsers": "Nombre Maximum d'Utilisateurs",
+      "maxAssets": "Nombre Maximum d'Actifs",
+      "enableMqtt": "MQTT Activé",
+      "validation": {
+        "displayNameRequired": "Le nom d'affichage est requis"
+      }
+    },
+    "messages": {
+      "loading": "Chargement...",
+      "loadError": "Une erreur s'est produite lors du chargement des informations du domaine",
+      "updateSuccess": "Informations du domaine mises à jour avec succès",
+      "updateError": "Une erreur s'est produite lors de la mise à jour des informations du domaine",
+      "notFound": "Domaine non trouvé",
+      "notManager": "Des privilèges de gestionnaire sont requis pour accéder à cette page"
+    },
+    "storage": {
+      "bytes": "octets",
+      "kb": "KO",
+      "mb": "MO",
+      "gb": "GO",
+      "tb": "TO"
+    },
+    "logo": {
+      "uploaded": "Logo téléchargé",
+      "noImage": "Aucun logo",
+      "errors": {
+        "invalidFormat": "Format de fichier invalide. Seuls les fichiers JPEG, PNG, WebP ou GIF sont acceptés.",
+        "maxSize": "La taille du fichier est trop grande. Maximum 2 MO autorisé.",
+        "readError": "Une erreur s'est produite lors de la lecture du fichier"
+      }
+    }
+  },
+  "datasetCategories": {
+    "title": "Catégories de jeux de données",
+    "breadcrumbs": {
+      "home": "Tableau de bord",
+      "categories": "Catégories de jeux de données",
+      "create": "Nouvelle catégorie",
+      "edit": "Modifier la catégorie"
+    },
+    "warning": {
+      "title": "Avertissement :",
+      "message": "Des privilèges de gestionnaire ou d'administrateur sont requis pour accéder à cette page."
+    },
+    "search": {
+      "placeholder": "Rechercher des catégories",
+      "hint": "Rechercher par nom ou description de catégorie"
+    },
+    "buttons": {
+      "newCategory": "Nouvelle catégorie",
+      "refresh": "Actualiser",
+      "view": "Voir",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "update": "Mettre à jour",
+      "create": "Créer",
+      "close": "Fermer",
+      "back": "Retour"
+    },
+    "table": {
+      "headers": {
+        "categoryName": "Nom de la catégorie",
+        "description": "Description",
+        "createdAt": "Créé le",
+        "createdBy": "Créé par",
+        "updatedAt": "Dernière mise à jour",
+        "updatedBy": "Dernière mise à jour par",
+        "historyCount": "Historique",
+        "actions": "Actions"
+      }
+    },
+    "noData": {
+      "title": "Aucune catégorie trouvée",
+      "button": "Créer la première catégorie"
+    },
+    "pagination": {
+      "total": "Total :",
+      "records": "enregistrements",
+      "page": "Page",
+      "showing": "affichage",
+      "itemsPerPage": "Enregistrements par page :"
+    },
+    "delete": {
+      "title": "Supprimer la catégorie",
+      "message": "Êtes-vous sûr de vouloir supprimer cette catégorie ? Cette action ne peut pas être annulée.",
+      "note": "Note : Les catégories supprimées peuvent être restaurées.",
+      "cancel": "Annuler",
+      "confirm": "Oui, supprimer"
+    },
+    "view": {
+      "title": "Détails de la catégorie",
+      "description": "Description :",
+      "createdAt": "Créé le :",
+      "updatedAt": "Dernière mise à jour :",
+      "historyCount": "Nombre d'enregistrements d'historique :",
+      "noDescription": "Aucune description",
+      "edit": "Modifier"
+    },
+    "form": {
+      "create": {
+        "title": "Nouvelle catégorie",
+        "submit": "Créer"
+      },
+      "edit": {
+        "title": "Modifier la catégorie",
+        "submit": "Mettre à jour"
+      },
+      "fields": {
+        "categoryName": "Nom de la catégorie",
+        "categoryNamePlaceholder": "Ex : Jeux de données système, Jeux de données de livres",
+        "categoryNameHint": "2-100 caractères, doit être unique",
+        "description": "Description",
+        "descriptionPlaceholder": "Description de la catégorie (optionnel)",
+        "descriptionHint": "Maximum 500 caractères"
+      },
+      "validation": {
+        "categoryNameRequired": "Le nom de la catégorie est requis",
+        "categoryNameMinLength": "Le nom de la catégorie doit contenir au moins 2 caractères",
+        "categoryNameMaxLength": "Le nom de la catégorie peut contenir au maximum 100 caractères",
+        "descriptionMaxLength": "La description peut contenir au maximum 500 caractères",
+        "duplicateName": "Ce nom de catégorie est déjà utilisé. Veuillez choisir un nom différent."
+      },
+      "messages": {
+        "loading": "Chargement de la catégorie...",
+        "notFound": "Catégorie non trouvée",
+        "loadError": "Une erreur s'est produite lors du chargement de la catégorie",
+        "createSuccess": "Catégorie créée avec succès !",
+        "updateSuccess": "Catégorie mise à jour avec succès !",
+        "saveError": "Une erreur s'est produite lors de l'enregistrement de la catégorie"
+      }
+    }
+  },
+  "datasets": {
+    "title": "Jeux de données",
+    "breadcrumbs": {
+      "home": "Tableau de bord",
+      "datasets": "Jeux de données",
+      "create": "Nouveau jeu de données",
+      "edit": "Modifier le jeu de données"
+    },
+    "warning": {
+      "title": "Avertissement :",
+      "message": "Des privilèges de gestionnaire ou d'administrateur sont requis pour accéder à cette page."
+    },
+    "search": {
+      "placeholder": "Rechercher des jeux de données",
+      "comingSoon": "La fonction de recherche sera bientôt disponible",
+      "notImplemented": {
+        "title": "Note :",
+        "message": "La fonction de recherche n'a pas encore été implémentée dans le backend. Cette fonction sera bientôt ajoutée."
+      }
+    },
+    "buttons": {
+      "newDataset": "Nouveau jeu de données",
+      "refresh": "Actualiser",
+      "view": "Voir",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "update": "Mettre à jour",
+      "create": "Créer",
+      "close": "Fermer",
+      "back": "Retour",
+      "export": "Exporter"
+    },
+    "table": {
+      "headers": {
+        "name": "Nom du jeu de données",
+        "category": "Catégorie",
+        "description": "Description",
+        "fieldsCount": "Nombre de champs",
+        "createdAt": "Créé le",
+        "createdBy": "Créé par",
+        "updatedAt": "Dernière mise à jour",
+        "actions": "Actions"
+      },
+      "fields": "champs"
+    },
+    "noData": {
+      "title": "Aucun jeu de données trouvé",
+      "button": "Créer le premier jeu de données"
+    },
+    "pagination": {
+      "total": "Total :",
+      "records": "enregistrements",
+      "page": "Page",
+      "showing": "affichage",
+      "itemsPerPage": "Enregistrements par page :"
+    },
+    "delete": {
+      "title": "Supprimer le jeu de données",
+      "message": "Êtes-vous sûr de vouloir supprimer ce jeu de données ? Cette action ne peut pas être annulée.",
+      "note": "Note :",
+      "noteDetail": "Les jeux de données supprimés peuvent être restaurés. Cependant, lors de la suppression du schéma du jeu de données, la collection et les données ne sont pas supprimées.",
+      "cancel": "Annuler",
+      "confirm": "Oui, supprimer"
+    },
+    "view": {
+      "title": "Jeu de données",
+      "schemaInfo": "Informations sur le schéma",
+      "fieldsTitle": "Champs",
+      "queriesTitle": "Requêtes prédéfinies",
+      "indexesTitle": "Définitions d'index",
+      "queryParameters": "Paramètres",
+      "indexFields": "Champs",
+      "viewPipeline": "Voir le pipeline",
+      "stages": "étapes",
+      "noFields": "Aucun champ défini pour le moment",
+      "noQueries": "Aucune requête prédéfinie définie pour le moment",
+      "noIndexes": "Aucun index défini pour le moment",
+      "buttons": {
+        "backToList": "Retour à la liste",
+        "exportJSON": "Exporter JSON"
+      },
+      "fields": {
+        "name": "Nom du jeu de données",
+        "category": "Catégorie",
+        "description": "Description",
+        "forceSchema": "Forcer le schéma",
+        "loggingMode": "Mode de journalisation",
+        "publishMode": "Mode de publication",
+        "createdAt": "Créé le",
+        "createdBy": "Créé par",
+        "updatedAt": "Dernière mise à jour"
+      },
+      "fieldProperties": {
+        "mandatory": "Obligatoire",
+        "unique": "Unique",
+        "array": "Tableau"
+      },
+      "fieldInfo": {
+        "relation": "Relation",
+        "format": "Format",
+        "start": "Début",
+        "step": "Étape"
+      },
+      "delete": {
+        "title": "Supprimer le jeu de données",
+        "confirmMessage": "Êtes-vous sûr de vouloir supprimer le jeu de données nommé {name} ?",
+        "warning": "Avertissement",
+        "warningDetail": "Cette action ne peut pas être annulée. Le jeu de données et toutes ses données seront définitivement supprimés."
+      },
+      "messages": {
+        "loading": "Chargement du jeu de données...",
+        "nameNotFound": "Nom du jeu de données non trouvé",
+        "notFound": "Jeu de données non trouvé",
+        "loadError": "Une erreur s'est produite lors du chargement du jeu de données",
+        "deleteError": "Une erreur s'est produite lors de la suppression du jeu de données"
+      }
+    },
+    "export": {
+      "csv": "Télécharger en CSV",
+      "json": "Télécharger en JSON",
+      "createdAt": "Date de création",
+      "forceSchema": "Forcer le schéma",
+      "logging": "Journalisation",
+      "publishMode": "Mode de publication"
+    },
+    "common": {
+      "yes": "Oui",
+      "no": "Non"
+    },
+    "fieldTypes": {
+      "text": "Texte",
+      "number": "Nombre",
+      "bool": "Booléen",
+      "datetime": "Date et heure",
+      "object": "Objet",
+      "relation": "Relation",
+      "persons": "Personnes",
+      "personGroups": "Groupes de personnes",
+      "incremental": "Incrémental"
+    },
+    "form": {
+      "steps": {
+        "basicInfo": "Informations de base",
+        "fieldDefinitions": "Définitions de champs",
+        "predefinedQueries": "Requêtes prédéfinies",
+        "validationDefinitions": "Définitions de validation",
+        "indexDefinitions": "Définitions d'index"
+      },
+      "validation": {
+        "nameRequired": "Le nom du jeu de données est requis",
+        "nameMinLength": "Le nom du jeu de données doit contenir au moins 2 caractères",
+        "nameMaxLength": "Le nom du jeu de données peut contenir au maximum 100 caractères",
+        "nameInvalidFormat": "Format de nom de jeu de données invalide (ex : @books, @tasks)",
+        "descriptionMaxLength": "La description peut contenir au maximum 1000 caractères",
+        "fieldNameRequired": "Le nom du champ est requis",
+        "fieldNameInvalidFormat": "Format de nom de champ invalide (doit commencer par une lettre, peut uniquement contenir des lettres, des chiffres et _)",
+        "fieldNameDuplicate": "Ce nom de champ est déjà utilisé",
+        "fieldTitleMaxLength": "Le titre du champ peut contenir au maximum 200 caractères",
+        "formatRequired": "Le modèle de format est requis",
+        "formatMustContainPlaceholder": "Le modèle de format doit contenir le placeholder {0}",
+        "relationDatasetRequired": "Un jeu de données doit être sélectionné pour le champ de relation",
+        "incrementalFormatRequired": "Un modèle de format est requis pour le champ incrémental",
+        "incrementalFormatPlaceholder": "Le modèle de format doit contenir le placeholder {0}",
+        "objectSchemaInvalid": "Le schéma d'objet doit être un objet JSON valide",
+        "objectSchemaInvalidJSON": "Format JSON invalide pour le schéma d'objet"
+      },
+      "messages": {
+        "notFound": "Jeu de données non trouvé",
+        "loadError": "Une erreur s'est produite lors du chargement du jeu de données",
+        "updateSuccess": "Jeu de données mis à jour avec succès !",
+        "createSuccess": "Jeu de données créé avec succès !",
+        "saveError": "Une erreur s'est produite lors de l'enregistrement du jeu de données",
+        "duplicateName": "Ce nom de jeu de données est déjà utilisé. Veuillez choisir un nom différent."
+      },
+      "fieldTypes": {
+        "text": {
+          "title": "Texte",
+          "description": "Valeurs de chaîne"
+        },
+        "number": {
+          "title": "Nombre",
+          "description": "Valeurs numériques (entier/décimal)"
+        },
+        "bool": {
+          "title": "Booléen",
+          "description": "Valeurs Vrai/Faux"
+        },
+        "datetime": {
+          "title": "Date et heure",
+          "description": "Date et heure (ISO 8601 UTC)"
+        },
+        "object": {
+          "title": "Objet",
+          "description": "Objet JSON"
+        },
+        "relation": {
+          "title": "Relation",
+          "description": "Référence de jeu de données"
+        },
+        "persons": {
+          "title": "Personnes",
+          "description": "Référence utilisateur (MngKeeper)"
+        },
+        "personGroups": {
+          "title": "Groupes de personnes",
+          "description": "Référence de groupe (MngKeeper)"
+        },
+        "incremental": {
+          "title": "Incrémental",
+          "description": "Valeur auto-incrémentée"
+        }
+      },
+      "fields": {
+        "name": {
+          "label": "Nom du jeu de données",
+          "placeholder": "Ex : @books, @tasks",
+          "hint": "Préfixe optionnel (ajouté automatiquement par le backend), 2-100 caractères, doit être unique",
+          "editNote": "Note : Le nom du jeu de données ne peut pas être modifié."
+        },
+        "category": {
+          "label": "Catégorie",
+          "placeholder": "Sélectionner une catégorie (optionnel)",
+          "hint": "Vous pouvez assigner le jeu de données à une catégorie"
+        },
+        "description": {
+          "label": "Description",
+          "placeholder": "Description du jeu de données (optionnel)",
+          "hint": "Maximum 1000 caractères"
+        },
+        "schemaSettings": {
+          "title": "Paramètres du schéma",
+          "forceSchema": {
+            "label": "Forcer la validation du schéma",
+            "hint": "Seuls les champs définis sont acceptés (mode strict)",
+            "active": "Actif (Strict)",
+            "passive": "Passif (Flexible)"
+          },
+          "loggingMode": {
+            "label": "Mode de journalisation",
+            "hint": "Aucun : Pas de journalisation, Soi : Chaque enregistrement contient __history, Commun : Écrit dans la collection @data_logs",
+            "none": "Aucun",
+            "self": "Soi",
+            "common": "Commun"
+          },
+          "publishMode": {
+            "label": "Mode de publication",
+            "hint": "Mode de publication d'événements RabbitMQ",
+            "none": "Aucun",
+            "basic": "De base",
+            "full": "Complet"
+          }
+        }
+      },
+      "buttons": {
+        "previous": "Précédent",
+        "next": "Suivant",
+        "cancel": "Annuler",
+        "save": "Enregistrer",
+        "addField": "Ajouter un nouveau champ",
+        "addQuery": "Ajouter une nouvelle requête",
+        "addValidation": "Ajouter une nouvelle validation",
+        "addIndex": "Ajouter un nouvel index",
+        "addFirstField": "Ajouter le premier champ",
+        "addFirstQuery": "Ajouter la première requête",
+        "addFirstValidation": "Ajouter la première validation",
+        "addFirstIndex": "Ajouter le premier index",
+        "edit": "Modifier",
+        "delete": "Supprimer"
+      },
+      "fieldList": {
+        "title": "Définitions de champs",
+        "noFields": "Aucun champ défini pour le moment",
+        "properties": {
+          "mandatory": "Obligatoire",
+          "unique": "Unique",
+          "array": "Tableau",
+          "format": "Format: {format}",
+          "relation": "→ {dataset}"
+        }
+      },
+      "queryList": {
+        "title": "Requêtes prédéfinies",
+        "noQueries": "Aucune requête prédéfinie définie pour le moment",
+        "parameters": "Paramètres:",
+        "viewPipeline": "Voir le pipeline ({count} étapes)"
+      },
+      "validationList": {
+        "title": "Définitions de validation",
+        "noValidations": "Aucune validation définie pour le moment",
+        "when": "Quand: {when}",
+        "order": "Ordre: {order}",
+        "expression": "Expression:",
+        "url": "URL:",
+        "method": "Méthode:",
+        "fields": "Champs:"
+      },
+      "indexList": {
+        "title": "Définitions d'index",
+        "noIndexes": "Aucun index défini pour le moment",
+        "fields": "Champs:"
+      }
+    }
+  },
   "header": {
     "profileDD": {
       "myProfile": {

@@ -33,7 +33,7 @@ public class SwaggerConfigureOptions : IConfigureOptions<SwaggerGenOptions>
                 Description = "Dynamic Data Gateway for MongoDB with schema management",
                 Contact = new OpenApiContact
                 {
-                    Name = "iSIM Platform",
+                    Name = "MonitraNG",
                     Email = "serkan.meral@isimplatform.io"
                 }
             });

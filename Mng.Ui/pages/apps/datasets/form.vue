@@ -7,6 +7,19 @@ import { useAuthStore } from '@/stores/auth';
 import { DatabaseIcon, CheckIcon, XIcon, ArrowLeftIcon, PlusIcon, EditIcon, TrashIcon, FileCodeIcon, KeyIcon, ShieldIcon } from 'vue-tabler-icons';
 import type { FieldDefinition, FieldType, QueryDefinitionDto, IndexDefinition, QueryParameterDefinition, ValidationDefinition } from '@/stores/apps/dataset';
 
+// Get i18n instance for legacy mode
+const nuxtApp = useNuxtApp();
+const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
+const t = (key: string, params?: any) => {
+  if (i18n && i18n.t) {
+    return i18n.t(key, params);
+  }
+  if (i18n?.global?.t) {
+    return i18n.global.t(key, params);
+  }
+  return key;
+};
+
 const route = useRoute();
 const router = useRouter();
 const datasetStore = useDatasetStore();
@@ -37,17 +50,17 @@ const datasetName = computed(() => {
 });
 
 const page = computed(() => ({
-  title: isEditMode.value ? 'Dataset Düzenle' : 'Yeni Dataset',
+  title: isEditMode.value ? t('datasets.breadcrumbs.edit') : t('datasets.breadcrumbs.create'),
 }));
 
 const breadcrumbs = computed(() => [
   {
-    text: 'Dashboard',
+    text: t('datasets.breadcrumbs.home'),
     disabled: false,
     href: '/dashboards/analytical',
   },
   {
-    text: 'Datasets',
+    text: t('datasets.breadcrumbs.datasets'),
     disabled: false,
     href: '/apps/datasets',
   },
@@ -60,13 +73,13 @@ const breadcrumbs = computed(() => [
 
 // Stepper state
 const currentStep = ref(1);
-const steps = [
-  { title: 'Temel Bilgiler', value: 1, required: true },
-  { title: 'Field Tanımları', value: 2, required: false },
-  { title: 'Predefined Queries', value: 3, required: false },
-  { title: 'Validation Definitions', value: 4, required: false },
-  { title: 'Index Definitions', value: 5, required: false },
-];
+const steps = computed(() => [
+  { title: t('datasets.form.steps.basicInfo'), value: 1, required: true },
+  { title: t('datasets.form.steps.fieldDefinitions'), value: 2, required: false },
+  { title: t('datasets.form.steps.predefinedQueries'), value: 3, required: false },
+  { title: t('datasets.form.steps.validationDefinitions'), value: 4, required: false },
+  { title: t('datasets.form.steps.indexDefinitions'), value: 5, required: false },
+]);
 
 // Form data
 const formData = ref<CreateDatasetDto>({
@@ -83,22 +96,22 @@ const formData = ref<CreateDatasetDto>({
 });
 
 // Validation rules
-const datasetNameRules = [
-  (v: string) => !!v || 'Dataset adı gereklidir',
-  (v: string) => (v && v.length >= 2) || 'Dataset adı en az 2 karakter olmalıdır',
-  (v: string) => (v && v.length <= 100) || 'Dataset adı en fazla 100 karakter olabilir',
+const datasetNameRules = computed(() => [
+  (v: string) => !!v || t('datasets.form.validation.nameRequired'),
+  (v: string) => (v && v.length >= 2) || t('datasets.form.validation.nameMinLength'),
+  (v: string) => (v && v.length <= 100) || t('datasets.form.validation.nameMaxLength'),
   (v: string) => {
     if (!v) return true;
     // @ prefix opsiyonel, backend otomatik ekler
     const withoutPrefix = v.startsWith('@') ? v.substring(1) : v;
     const pattern = /^[a-zA-Z][a-zA-Z0-9_-]*$/;
-    return pattern.test(withoutPrefix) || 'Dataset adı geçersiz format (ör: @books, @tasks)';
+    return pattern.test(withoutPrefix) || t('datasets.form.validation.nameInvalidFormat');
   },
-];
+]);
 
-const descriptionRules = [
-  (v: string) => !v || v.length <= 1000 || 'Açıklama en fazla 1000 karakter olabilir',
-];
+const descriptionRules = computed(() => [
+  (v: string) => !v || v.length <= 1000 || t('datasets.form.validation.descriptionMaxLength'),
+]);
 
 // Categories for dropdown
 const categories = computed(() => categoryStore.categories || []);
@@ -139,17 +152,17 @@ const fieldFormRef = ref();
 const fieldFormError = ref('');
 
 // Field type options
-const fieldTypeOptions: { title: string; value: FieldType; description: string }[] = [
-  { title: 'Text', value: 'text', description: 'String değerler' },
-  { title: 'Number', value: 'number', description: 'Sayısal değerler (integer/decimal)' },
-  { title: 'Boolean', value: 'bool', description: 'True/False değerler' },
-  { title: 'DateTime', value: 'datetime', description: 'Tarih ve saat (ISO 8601 UTC)' },
-  { title: 'Object', value: 'object', description: 'JSON object' },
-  { title: 'Relation', value: 'relation', description: 'Dataset referansı' },
-  { title: 'Persons', value: 'persons', description: 'Kullanıcı referansı (MngKeeper)' },
-  { title: 'Person Groups', value: 'personGroups', description: 'Grup referansı (MngKeeper)' },
-  { title: 'Incremental', value: 'incremental', description: 'Otomatik artan değer' },
-];
+const fieldTypeOptions = computed(() => [
+  { title: t('datasets.form.fieldTypes.text.title'), value: 'text' as FieldType, description: t('datasets.form.fieldTypes.text.description') },
+  { title: t('datasets.form.fieldTypes.number.title'), value: 'number' as FieldType, description: t('datasets.form.fieldTypes.number.description') },
+  { title: t('datasets.form.fieldTypes.bool.title'), value: 'bool' as FieldType, description: t('datasets.form.fieldTypes.bool.description') },
+  { title: t('datasets.form.fieldTypes.datetime.title'), value: 'datetime' as FieldType, description: t('datasets.form.fieldTypes.datetime.description') },
+  { title: t('datasets.form.fieldTypes.object.title'), value: 'object' as FieldType, description: t('datasets.form.fieldTypes.object.description') },
+  { title: t('datasets.form.fieldTypes.relation.title'), value: 'relation' as FieldType, description: t('datasets.form.fieldTypes.relation.description') },
+  { title: t('datasets.form.fieldTypes.persons.title'), value: 'persons' as FieldType, description: t('datasets.form.fieldTypes.persons.description') },
+  { title: t('datasets.form.fieldTypes.personGroups.title'), value: 'personGroups' as FieldType, description: t('datasets.form.fieldTypes.personGroups.description') },
+  { title: t('datasets.form.fieldTypes.incremental.title'), value: 'incremental' as FieldType, description: t('datasets.form.fieldTypes.incremental.description') },
+]);
 
 // Available datasets for relation field (will be loaded from datasetStore)
 const availableDatasets = computed(() => datasetStore.datasets || []);
@@ -201,13 +214,13 @@ const loadDataset = async () => {
         indexList: dataset.indexList || [],
       };
     } else {
-      errorMessage.value = 'Dataset bulunamadı';
+      errorMessage.value = t('datasets.form.messages.notFound');
       setTimeout(() => {
         router.push('/apps/datasets');
       }, 2000);
     }
   } catch (error: any) {
-    errorMessage.value = error.message || 'Dataset yüklenirken bir hata oluştu';
+    errorMessage.value = error.message || t('datasets.form.messages.loadError');
     setTimeout(() => {
       router.push('/apps/datasets');
     }, 2000);
@@ -262,7 +275,7 @@ const nextStep = async () => {
     return;
   }
   
-  const nextStepValue = steps.find(s => s.value > currentStep.value)?.value;
+  const nextStepValue = steps.value.find(s => s.value > currentStep.value)?.value;
   if (nextStepValue) {
     currentStep.value = nextStepValue;
   }
@@ -270,7 +283,7 @@ const nextStep = async () => {
 
 // Previous step
 const prevStep = () => {
-  const prevStepValue = steps.slice().reverse().find(s => s.value < currentStep.value)?.value;
+  const prevStepValue = steps.value.slice().reverse().find(s => s.value < currentStep.value)?.value;
   if (prevStepValue) {
     currentStep.value = prevStepValue;
   }
@@ -310,7 +323,7 @@ const handleSubmit = async () => {
       };
       
       await datasetStore.updateDataset(decodeURIComponent(datasetName.value), updateDto);
-      successMessage.value = 'Dataset başarıyla güncellendi!';
+      successMessage.value = t('datasets.form.messages.updateSuccess');
     } else {
       // Create new dataset
       const createDto: CreateDatasetDto = {
@@ -321,7 +334,7 @@ const handleSubmit = async () => {
       };
       
       await datasetStore.createDataset(createDto);
-      successMessage.value = 'Dataset başarıyla oluşturuldu!';
+      successMessage.value = t('datasets.form.messages.createSuccess');
     }
     
     // Redirect to list after success
@@ -329,11 +342,11 @@ const handleSubmit = async () => {
       router.push('/apps/datasets');
     }, 1500);
   } catch (error: any) {
-    errorMessage.value = error.message || 'Dataset kaydedilirken bir hata oluştu';
+    errorMessage.value = error.message || t('datasets.form.messages.saveError');
     
     // Handle duplicate dataset name error
     if (error.message && (error.message.includes('zaten mevcut') || error.message.includes('already exists'))) {
-      errorMessage.value = 'Bu dataset adı zaten kullanılıyor. Lütfen farklı bir ad seçin.';
+      errorMessage.value = t('datasets.form.messages.duplicateName');
     }
   } finally {
     loading.value = false;
@@ -460,17 +473,17 @@ const saveField = async () => {
   
   // Additional validation based on field type
   if (fieldFormData.value.fieldType === 'relation' && !fieldFormData.value.relationDataset) {
-    fieldFormError.value = 'Relation field için dataset seçilmelidir';
+    fieldFormError.value = t('datasets.form.validation.relationDatasetRequired');
     return;
   }
   
   if (fieldFormData.value.fieldType === 'incremental') {
     if (!fieldFormData.value.incrementalOptions || !fieldFormData.value.incrementalOptions.format) {
-      fieldFormError.value = 'Incremental field için format template gereklidir';
+      fieldFormError.value = t('datasets.form.validation.incrementalFormatRequired');
       return;
     }
     if (!fieldFormData.value.incrementalOptions.format.includes('{0}')) {
-      fieldFormError.value = 'Format template {0} placeholder içermelidir';
+      fieldFormError.value = t('datasets.form.validation.incrementalFormatPlaceholder');
       return;
     }
     // Incremental field must be unique and mandatory
@@ -484,11 +497,11 @@ const saveField = async () => {
     try {
       const parsed = JSON.parse(objectSchemaJson.value);
       if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-        fieldFormError.value = 'Object schema geçerli bir JSON object olmalıdır';
+        fieldFormError.value = t('datasets.form.validation.objectSchemaInvalid');
         return;
       }
     } catch (error) {
-      fieldFormError.value = 'Object schema geçersiz JSON formatı';
+      fieldFormError.value = t('datasets.form.validation.objectSchemaInvalidJSON');
       return;
     }
   }
@@ -598,7 +611,7 @@ const deleteField = (index: number) => {
 };
 
 const getFieldTypeLabel = (fieldType: FieldType): string => {
-  const option = fieldTypeOptions.find(opt => opt.value === fieldType);
+  const option = fieldTypeOptions.value.find(opt => opt.value === fieldType);
   return option?.title || fieldType;
 };
 
@@ -1415,7 +1428,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
         @submit.prevent="handleSubmit"
       >
         <!-- Stepper Header -->
-        <v-stepper v-model="currentStep" class="mb-6">
+        <v-stepper v-model="currentStep" class="mb-6" v-if="steps && steps.length > 0">
           <v-stepper-header>
             <template v-for="(step, index) in steps" :key="step.value">
               <v-stepper-item
@@ -1437,13 +1450,13 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                   <v-text-field
                     v-model="formData.name"
                     :rules="datasetNameRules"
-                    label="Dataset Adı *"
-                    placeholder="Örn: @books, @tasks"
+                    :label="t('datasets.form.fields.name.label') + ' *'"
+                    :placeholder="t('datasets.form.fields.name.placeholder')"
                     variant="outlined"
                     required
                     :disabled="loading || isEditMode"
                     :readonly="isEditMode"
-                    hint="@ prefix opsiyonel (backend otomatik ekler), 2-100 karakter, benzersiz olmalıdır"
+                    :hint="t('datasets.form.fields.name.hint')"
                     persistent-hint
                     prepend-inner-icon="mdi-database"
                   ></v-text-field>
@@ -1454,7 +1467,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                     density="compact"
                     class="mt-2"
                   >
-                    <strong>Not:</strong> Dataset adı düzenlenemez.
+                    <strong>{{ t('datasets.form.fields.name.editNote').split(':')[0] }}:</strong> {{ t('datasets.form.fields.name.editNote').split(':')[1] }}
                   </v-alert>
                 </v-col>
                 
@@ -1463,12 +1476,12 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                   <v-select
                     v-model="formData.category"
                     :items="categoryOptions"
-                    label="Kategori"
-                    placeholder="Kategori seçin (opsiyonel)"
+                    :label="t('datasets.form.fields.category.label')"
+                    :placeholder="t('datasets.form.fields.category.placeholder')"
                     variant="outlined"
                     :loading="categoryStore.loading"
                     :disabled="loading"
-                    hint="Dataset'i bir kategoriye atayabilirsiniz"
+                    :hint="t('datasets.form.fields.category.hint')"
                     persistent-hint
                     prepend-inner-icon="mdi-tag"
                     clearable
@@ -1484,12 +1497,12 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                   <v-textarea
                     v-model="formData.description"
                     :rules="descriptionRules"
-                    label="Açıklama"
-                    placeholder="Dataset açıklaması (opsiyonel)"
+                    :label="t('datasets.form.fields.description.label')"
+                    :placeholder="t('datasets.form.fields.description.placeholder')"
                     variant="outlined"
                     rows="4"
                     :disabled="loading"
-                    hint="En fazla 1000 karakter"
+                    :hint="t('datasets.form.fields.description.hint')"
                     persistent-hint
                     prepend-inner-icon="mdi-text"
                     auto-grow
@@ -1499,22 +1512,22 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                 <!-- Schema Settings -->
                 <v-col cols="12">
                   <v-divider class="my-4"></v-divider>
-                  <h6 class="text-subtitle-1 font-weight-semibold mb-4">Schema Ayarları</h6>
+                  <h6 class="text-subtitle-1 font-weight-semibold mb-4">{{ t('datasets.form.fields.schemaSettings.title') }}</h6>
                   
                   <!-- Force Schema -->
                   <v-switch
                     v-model="formData.forceSchema"
-                    label="Force Schema Validation"
+                    :label="t('datasets.form.fields.schemaSettings.forceSchema.label')"
                     color="primary"
                     hide-details
                     class="mb-4"
                     :disabled="loading"
-                    hint="Sadece tanımlı field'lar kabul edilir (strict mode)"
+                    :hint="t('datasets.form.fields.schemaSettings.forceSchema.hint')"
                     persistent-hint
                   >
                     <template v-slot:append>
                       <span class="text-caption text-medium-emphasis">
-                        {{ formData.forceSchema ? 'Aktif (Strict)' : 'Pasif (Flexible)' }}
+                        {{ formData.forceSchema ? t('datasets.form.fields.schemaSettings.forceSchema.active') : t('datasets.form.fields.schemaSettings.forceSchema.passive') }}
                       </span>
                     </template>
                   </v-switch>
@@ -1523,14 +1536,14 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                   <v-select
                     v-model="formData.logging"
                     :items="[
-                      { title: 'None', value: 'none' },
-                      { title: 'Self', value: 'self' },
-                      { title: 'Common', value: 'common' },
+                      { title: t('datasets.form.fields.schemaSettings.loggingMode.none'), value: 'none' },
+                      { title: t('datasets.form.fields.schemaSettings.loggingMode.self'), value: 'self' },
+                      { title: t('datasets.form.fields.schemaSettings.loggingMode.common'), value: 'common' },
                     ]"
-                    label="Logging Mode"
+                    :label="t('datasets.form.fields.schemaSettings.loggingMode.label')"
                     variant="outlined"
                     :disabled="loading"
-                    hint="None: Loglama yok, Self: Her kayıt __history içerir, Common: @data_logs collection'ına yazılır"
+                    :hint="t('datasets.form.fields.schemaSettings.loggingMode.hint')"
                     persistent-hint
                     class="mb-4"
                   ></v-select>
@@ -1539,14 +1552,14 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                   <v-select
                     v-model="formData.publishMode"
                     :items="[
-                      { title: 'None', value: 'none' },
-                      { title: 'Basic', value: 'basic' },
-                      { title: 'Full', value: 'full' },
+                      { title: t('datasets.form.fields.schemaSettings.publishMode.none'), value: 'none' },
+                      { title: t('datasets.form.fields.schemaSettings.publishMode.basic'), value: 'basic' },
+                      { title: t('datasets.form.fields.schemaSettings.publishMode.full'), value: 'full' },
                     ]"
-                    label="Publish Mode"
+                    :label="t('datasets.form.fields.schemaSettings.publishMode.label')"
                     variant="outlined"
                     :disabled="loading"
-                    hint="RabbitMQ event publishing mode"
+                    :hint="t('datasets.form.fields.schemaSettings.publishMode.hint')"
                     persistent-hint
                   ></v-select>
                 </v-col>
@@ -1557,7 +1570,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
             <v-stepper-window-item :value="2">
               <div class="mb-4">
                 <div class="d-flex justify-space-between align-center mb-4">
-                  <h6 class="text-subtitle-1 font-weight-semibold">Field Tanımları</h6>
+                  <h6 class="text-subtitle-1 font-weight-semibold">{{ t('datasets.form.fieldList.title') }}</h6>
                   <v-btn
                     color="primary"
                     variant="flat"
@@ -1566,7 +1579,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                     :disabled="loading"
                   >
                     <PlusIcon class="mr-2" size="18" />
-                    Yeni Field Ekle
+                    {{ t('datasets.form.buttons.addField') }}
                   </v-btn>
                 </div>
                 
@@ -1597,7 +1610,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                             variant="tonal"
                             color="success"
                           >
-                            Mandatory
+                            {{ t('datasets.form.fieldList.properties.mandatory') }}
                           </v-chip>
                           <v-chip
                             v-if="field.unique"
@@ -1605,7 +1618,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                             variant="tonal"
                             color="info"
                           >
-                            Unique
+                            {{ t('datasets.form.fieldList.properties.unique') }}
                           </v-chip>
                           <v-chip
                             v-if="field.isArray"
@@ -1613,7 +1626,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                             variant="tonal"
                             color="warning"
                           >
-                            Array
+                            {{ t('datasets.form.fieldList.properties.array') }}
                           </v-chip>
                           <v-chip
                             v-if="field.fieldType === 'relation' && field.relationDataset"
@@ -1621,7 +1634,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                             variant="tonal"
                             color="secondary"
                           >
-                            → {{ field.relationDataset }}
+                            {{ t('datasets.form.fieldList.properties.relation', { dataset: field.relationDataset }) }}
                           </v-chip>
                           <v-chip
                             v-if="field.fieldType === 'incremental' && field.incrementalOptions"
@@ -1629,7 +1642,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                             variant="tonal"
                             color="purple"
                           >
-                            Format: {{ field.incrementalOptions.format }}
+                            {{ t('datasets.form.fieldList.properties.format', { format: field.incrementalOptions.format }) }}
                           </v-chip>
                         </div>
                       </div>
@@ -1644,7 +1657,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                           :disabled="loading"
                         >
                           <EditIcon size="18" />
-                          <v-tooltip activator="parent" location="top">Düzenle</v-tooltip>
+                          <v-tooltip activator="parent" location="top">{{ t('datasets.form.buttons.edit') }}</v-tooltip>
                         </v-btn>
                         <v-btn
                           icon
@@ -1655,7 +1668,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                           :disabled="loading"
                         >
                           <TrashIcon size="18" />
-                          <v-tooltip activator="parent" location="top">Sil</v-tooltip>
+                          <v-tooltip activator="parent" location="top">{{ t('datasets.form.buttons.delete') }}</v-tooltip>
                         </v-btn>
                       </div>
                     </div>
@@ -1666,7 +1679,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                 <v-card v-else variant="outlined" class="pa-8 text-center">
                   <v-icon size="48" color="grey-lighten-1" class="mb-4">mdi-database-off</v-icon>
                   <p class="text-subtitle-1 text-medium-emphasis mb-4">
-                    Henüz field tanımlanmamış
+                    {{ t('datasets.form.fieldList.noFields') }}
                   </p>
                   <v-btn
                     color="primary"
@@ -1675,7 +1688,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                     :disabled="loading"
                   >
                     <PlusIcon class="mr-2" size="18" />
-                    İlk Field'i Ekle
+                    {{ t('datasets.form.buttons.addFirstField') }}
                   </v-btn>
                 </v-card>
               </div>
@@ -1685,7 +1698,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
             <v-stepper-window-item :value="3">
               <div class="mb-4">
                 <div class="d-flex justify-space-between align-center mb-4">
-                  <h6 class="text-subtitle-1 font-weight-semibold">Predefined Queries</h6>
+                  <h6 class="text-subtitle-1 font-weight-semibold">{{ t('datasets.form.queryList.title') }}</h6>
                   <v-btn
                     color="primary"
                     variant="flat"
@@ -1694,7 +1707,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                     :disabled="loading"
                   >
                     <PlusIcon class="mr-2" size="18" />
-                    Yeni Query Ekle
+                    {{ t('datasets.form.buttons.addQuery') }}
                   </v-btn>
                 </div>
                 
@@ -1718,7 +1731,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                         </div>
                         
                         <div class="mb-2">
-                          <span class="text-caption text-medium-emphasis">Parameters: </span>
+                          <span class="text-caption text-medium-emphasis">{{ t('datasets.form.queryList.parameters') }} </span>
                           <v-chip size="x-small" variant="tonal" color="info">
                             {{ getParametersDisplay(query.parameters) }}
                           </v-chip>
@@ -1728,7 +1741,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                           <v-expansion-panels variant="accordion" density="compact">
                             <v-expansion-panel>
                               <v-expansion-panel-title class="text-caption">
-                                Pipeline'i Görüntüle ({{ query.pipeline.length }} stage)
+                                {{ t('datasets.form.queryList.viewPipeline', { count: query.pipeline.length }) }}
                               </v-expansion-panel-title>
                               <v-expansion-panel-text>
                                 <pre class="text-caption bg-grey-lighten-4 pa-3 rounded">{{ JSON.stringify(query.pipeline, null, 2) }}</pre>
@@ -1748,7 +1761,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                           :disabled="loading"
                         >
                           <EditIcon size="18" />
-                          <v-tooltip activator="parent" location="top">Düzenle</v-tooltip>
+                          <v-tooltip activator="parent" location="top">{{ t('datasets.form.buttons.edit') }}</v-tooltip>
                         </v-btn>
                         <v-btn
                           icon
@@ -1759,7 +1772,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                           :disabled="loading"
                         >
                           <TrashIcon size="18" />
-                          <v-tooltip activator="parent" location="top">Sil</v-tooltip>
+                          <v-tooltip activator="parent" location="top">{{ t('datasets.form.buttons.delete') }}</v-tooltip>
                         </v-btn>
                       </div>
                     </div>
@@ -1770,7 +1783,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                 <v-card v-else variant="outlined" class="pa-8 text-center">
                   <v-icon size="48" color="grey-lighten-1" class="mb-4">mdi-code-braces</v-icon>
                   <p class="text-subtitle-1 text-medium-emphasis mb-4">
-                    Henüz predefined query tanımlanmamış
+                    {{ t('datasets.form.queryList.noQueries') }}
                   </p>
                   <v-btn
                     color="primary"
@@ -1779,7 +1792,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                     :disabled="loading"
                   >
                     <PlusIcon class="mr-2" size="18" />
-                    İlk Query'i Ekle
+                    {{ t('datasets.form.buttons.addFirstQuery') }}
                   </v-btn>
                 </v-card>
               </div>
@@ -1789,7 +1802,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
             <v-stepper-window-item :value="4">
               <div class="mb-4">
                 <div class="d-flex justify-space-between align-center mb-4">
-                  <h6 class="text-subtitle-1 font-weight-semibold">Validation Definitions</h6>
+                  <h6 class="text-subtitle-1 font-weight-semibold">{{ t('datasets.form.validationList.title') }}</h6>
                   <v-btn
                     color="primary"
                     variant="flat"
@@ -1798,7 +1811,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                     :disabled="loading"
                   >
                     <PlusIcon class="mr-2" size="18" />
-                    Yeni Validation Ekle
+                    {{ t('datasets.form.buttons.addValidation') }}
                   </v-btn>
                 </div>
                 
@@ -1827,7 +1840,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                             variant="tonal"
                             color="secondary"
                           >
-                            When: {{ getValidationWhenLabel(validation.when) }}
+                            {{ t('datasets.form.validationList.when', { when: getValidationWhenLabel(validation.when) }) }}
                           </v-chip>
                           <v-chip
                             v-if="validation.order !== undefined"
@@ -1835,7 +1848,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                             variant="tonal"
                             color="grey"
                           >
-                            Order: {{ validation.order }}
+                            {{ t('datasets.form.validationList.order', { order: validation.order }) }}
                           </v-chip>
                         </div>
                         
@@ -1844,21 +1857,21 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                         </div>
                         
                         <div v-if="validation.type === 'expression' && validation.expression" class="mb-2">
-                          <span class="text-caption text-medium-emphasis">Expression: </span>
+                          <span class="text-caption text-medium-emphasis">{{ t('datasets.form.validationList.expression') }} </span>
                           <code class="text-body-2">{{ validation.expression }}</code>
                         </div>
                         
                         <div v-if="validation.type === 'http' && validation.url" class="mb-2">
                           <div>
-                            <span class="text-caption text-medium-emphasis">URL: </span>
+                            <span class="text-caption text-medium-emphasis">{{ t('datasets.form.validationList.url') }} </span>
                             <span class="text-body-2">{{ validation.url }}</span>
                           </div>
                           <div v-if="validation.method">
-                            <span class="text-caption text-medium-emphasis">Method: </span>
+                            <span class="text-caption text-medium-emphasis">{{ t('datasets.form.validationList.method') }} </span>
                             <span class="text-body-2">{{ validation.method }}</span>
                           </div>
                           <div v-if="validation.fields && validation.fields.length > 0">
-                            <span class="text-caption text-medium-emphasis">Fields: </span>
+                            <span class="text-caption text-medium-emphasis">{{ t('datasets.form.validationList.fields') }} </span>
                             <v-chip
                               v-for="field in validation.fields"
                               :key="field"
@@ -1903,7 +1916,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                 <v-card v-else variant="outlined" class="pa-8 text-center">
                   <v-icon size="48" color="grey-lighten-1" class="mb-4">mdi-shield-check-outline</v-icon>
                   <p class="text-subtitle-1 text-medium-emphasis mb-4">
-                    Henüz validation tanımlanmamış
+                    {{ t('datasets.form.validationList.noValidations') }}
                   </p>
                   <v-btn
                     color="primary"
@@ -1912,7 +1925,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                     :disabled="loading"
                   >
                     <PlusIcon class="mr-2" size="18" />
-                    İlk Validation'ı Ekle
+                    {{ t('datasets.form.buttons.addFirstValidation') }}
                   </v-btn>
                 </v-card>
               </div>
@@ -1922,7 +1935,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
             <v-stepper-window-item :value="5">
               <div class="mb-4">
                 <div class="d-flex justify-space-between align-center mb-4">
-                  <h6 class="text-subtitle-1 font-weight-semibold">Index Definitions</h6>
+                  <h6 class="text-subtitle-1 font-weight-semibold">{{ t('datasets.form.indexList.title') }}</h6>
                   <v-btn
                     color="primary"
                     variant="flat"
@@ -1931,7 +1944,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                     :disabled="loading || availableFieldNames.length === 0"
                   >
                     <PlusIcon class="mr-2" size="18" />
-                    Yeni Index Ekle
+                    {{ t('datasets.form.buttons.addIndex') }}
                   </v-btn>
                 </div>
                 
@@ -1965,12 +1978,12 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                             variant="tonal"
                             color="success"
                           >
-                            Unique
+                            {{ t('datasets.form.fieldList.properties.unique') }}
                           </v-chip>
                         </div>
                         
                         <div class="mb-2">
-                          <span class="text-caption text-medium-emphasis">Fields: </span>
+                          <span class="text-caption text-medium-emphasis">{{ t('datasets.form.indexList.fields') }} </span>
                           <span class="text-body-2">{{ getFieldsDisplay(index.fields) }}</span>
                         </div>
                       </div>
@@ -1985,7 +1998,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                           :disabled="loading"
                         >
                           <EditIcon size="18" />
-                          <v-tooltip activator="parent" location="top">Düzenle</v-tooltip>
+                          <v-tooltip activator="parent" location="top">{{ t('datasets.form.buttons.edit') }}</v-tooltip>
                         </v-btn>
                         <v-btn
                           icon
@@ -1996,7 +2009,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                           :disabled="loading"
                         >
                           <TrashIcon size="18" />
-                          <v-tooltip activator="parent" location="top">Sil</v-tooltip>
+                          <v-tooltip activator="parent" location="top">{{ t('datasets.form.buttons.delete') }}</v-tooltip>
                         </v-btn>
                       </div>
                     </div>
@@ -2007,7 +2020,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                 <v-card v-else variant="outlined" class="pa-8 text-center">
                   <v-icon size="48" color="grey-lighten-1" class="mb-4">mdi-key</v-icon>
                   <p class="text-subtitle-1 text-medium-emphasis mb-4">
-                    Henüz index tanımlanmamış
+                    {{ t('datasets.form.indexList.noIndexes') }}
                   </p>
                   <v-btn
                     color="primary"
@@ -2016,7 +2029,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                     :disabled="loading || availableFieldNames.length === 0"
                   >
                     <PlusIcon class="mr-2" size="18" />
-                    İlk Index'i Ekle
+                    {{ t('datasets.form.buttons.addFirstIndex') }}
                   </v-btn>
                 </v-card>
               </div>
@@ -2036,17 +2049,17 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                 :disabled="loading"
               >
                 <ArrowLeftIcon class="mr-2" size="18" />
-                Önceki
+                {{ t('datasets.form.buttons.previous') }}
               </v-btn>
               
               <v-btn
-                v-if="currentStep < steps[steps.length - 1].value"
+                v-if="steps.length > 0 && currentStep < steps[steps.length - 1].value"
                 color="primary"
                 variant="outlined"
                 @click="nextStep"
                 :disabled="loading"
               >
-                Sonraki
+                {{ t('datasets.form.buttons.next') }}
                 <v-icon class="ml-2">mdi-arrow-right</v-icon>
               </v-btn>
             </div>
@@ -2059,7 +2072,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                 :disabled="loading"
               >
                 <XIcon class="mr-2" size="18" />
-                İptal
+                {{ t('datasets.form.buttons.cancel') }}
               </v-btn>
               
               <v-btn
@@ -2070,7 +2083,7 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                 :disabled="!formData.name.trim()"
               >
                 <CheckIcon class="mr-2" size="18" />
-                {{ isEditMode ? 'Güncelle' : 'Oluştur' }}
+                {{ isEditMode ? t('datasets.form.buttons.save') : t('datasets.buttons.create') }}
               </v-btn>
             </div>
           </v-col>

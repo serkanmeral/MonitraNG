@@ -5,6 +5,19 @@ import { useDatasetCategoryStore } from '@/stores/apps/datasetCategory';
 import { useAuthStore } from '@/stores/auth';
 import { TagIcon, CheckIcon, XIcon, ArrowLeftIcon } from 'vue-tabler-icons';
 
+// Get i18n instance for legacy mode
+const nuxtApp = useNuxtApp();
+const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
+const t = (key: string, params?: any) => {
+  if (i18n && i18n.t) {
+    return i18n.t(key, params);
+  }
+  if (i18n?.global?.t) {
+    return i18n.global.t(key, params);
+  }
+  return key;
+};
+
 const route = useRoute();
 const router = useRouter();
 const categoryStore = useDatasetCategoryStore();
@@ -39,17 +52,17 @@ const dataId = computed(() => {
 });
 
 const page = computed(() => ({
-  title: isEditMode.value ? 'Kategori Düzenle' : 'Yeni Kategori',
+  title: isEditMode.value ? t('datasetCategories.form.edit.title') : t('datasetCategories.form.create.title'),
 }));
 
 const breadcrumbs = computed(() => [
   {
-    text: 'Dashboard',
+    text: t('datasetCategories.breadcrumbs.home'),
     disabled: false,
     href: '/dashboards/analytical',
   },
   {
-    text: 'Dataset Kategorileri',
+    text: t('datasetCategories.breadcrumbs.categories'),
     disabled: false,
     href: '/apps/dataset-categories',
   },
@@ -67,15 +80,15 @@ const formData = ref({
 });
 
 // Validation rules
-const categoryNameRules = [
-  (v: string) => !!v || 'Kategori adı gereklidir',
-  (v: string) => (v && v.length >= 2) || 'Kategori adı en az 2 karakter olmalıdır',
-  (v: string) => (v && v.length <= 100) || 'Kategori adı en fazla 100 karakter olabilir',
-];
+const categoryNameRules = computed(() => [
+  (v: string) => !!v || t('datasetCategories.form.validation.categoryNameRequired'),
+  (v: string) => (v && v.length >= 2) || t('datasetCategories.form.validation.categoryNameMinLength'),
+  (v: string) => (v && v.length <= 100) || t('datasetCategories.form.validation.categoryNameMaxLength'),
+]);
 
-const categoryDescriptionRules = [
-  (v: string) => !v || v.length <= 500 || 'Açıklama en fazla 500 karakter olabilir',
-];
+const categoryDescriptionRules = computed(() => [
+  (v: string) => !v || v.length <= 500 || t('datasetCategories.form.validation.descriptionMaxLength'),
+]);
 
 // Form state
 const formRef = ref();
@@ -96,13 +109,13 @@ onMounted(async () => {
           categoryDescription: category.categoryDescription || '',
         };
       } else {
-        errorMessage.value = 'Kategori bulunamadı';
+        errorMessage.value = t('datasetCategories.form.messages.notFound');
         setTimeout(() => {
           router.push('/apps/dataset-categories');
         }, 2000);
       }
     } catch (error: any) {
-      errorMessage.value = error.message || 'Kategori yüklenirken bir hata oluştu';
+      errorMessage.value = error.message || t('datasetCategories.form.messages.loadError');
       setTimeout(() => {
         router.push('/apps/dataset-categories');
       }, 2000);
@@ -134,7 +147,7 @@ const handleSubmit = async () => {
         categoryDescription: formData.value.categoryDescription.trim() || undefined,
       });
       
-      successMessage.value = 'Kategori başarıyla güncellendi!';
+      successMessage.value = t('datasetCategories.form.messages.updateSuccess');
     } else {
       // Create new category
       await categoryStore.createCategory({
@@ -142,7 +155,7 @@ const handleSubmit = async () => {
         categoryDescription: formData.value.categoryDescription.trim() || undefined,
       });
       
-      successMessage.value = 'Kategori başarıyla oluşturuldu!';
+      successMessage.value = t('datasetCategories.form.messages.createSuccess');
     }
     
     // Redirect to list after success
@@ -150,11 +163,11 @@ const handleSubmit = async () => {
       router.push('/apps/dataset-categories');
     }, 1500);
   } catch (error: any) {
-    errorMessage.value = error.message || 'Kategori kaydedilirken bir hata oluştu';
+    errorMessage.value = error.message || t('datasetCategories.form.messages.saveError');
     
     // Handle duplicate category name error
-    if (error.message && error.message.includes('zaten mevcut')) {
-      errorMessage.value = 'Bu kategori adı zaten kullanılıyor. Lütfen farklı bir ad seçin.';
+    if (error.message && (error.message.includes('zaten mevcut') || error.message.includes('already exists'))) {
+      errorMessage.value = t('datasetCategories.form.validation.duplicateName');
     }
   } finally {
     loading.value = false;
@@ -211,7 +224,7 @@ const handleCancel = () => {
         density="compact"
         class="mb-4"
       >
-        <strong>Uyarı:</strong> Bu sayfaya erişim için manager veya admin yetkisi gereklidir.
+        <strong>{{ t('datasetCategories.warning.title') }}</strong> {{ t('datasetCategories.warning.message') }}
       </v-alert>
       
       <!-- Loading State (only for edit mode when fetching data) -->
@@ -221,7 +234,7 @@ const handleCancel = () => {
           color="primary"
           size="64"
         ></v-progress-circular>
-        <p class="text-subtitle-1 mt-4 text-medium-emphasis">Kategori yükleniyor...</p>
+        <p class="text-subtitle-1 mt-4 text-medium-emphasis">{{ t('datasetCategories.form.messages.loading') }}</p>
       </div>
       
       <!-- Form (always visible in create mode, visible in edit mode after data is loaded) -->
@@ -236,12 +249,12 @@ const handleCancel = () => {
             <v-text-field
               v-model="formData.categoryName"
               :rules="categoryNameRules"
-              label="Kategori Adı *"
-              placeholder="Örn: System Datasets, Book Datasets"
+              :label="t('datasetCategories.form.fields.categoryName') + ' *'"
+              :placeholder="t('datasetCategories.form.fields.categoryNamePlaceholder')"
               variant="outlined"
               required
               :disabled="loading"
-              hint="2-100 karakter arasında, benzersiz olmalıdır"
+              :hint="t('datasetCategories.form.fields.categoryNameHint')"
               persistent-hint
               prepend-inner-icon="mdi-tag"
             ></v-text-field>
@@ -252,12 +265,12 @@ const handleCancel = () => {
             <v-textarea
               v-model="formData.categoryDescription"
               :rules="categoryDescriptionRules"
-              label="Açıklama"
-              placeholder="Kategori açıklaması (opsiyonel)"
+              :label="t('datasetCategories.form.fields.description')"
+              :placeholder="t('datasetCategories.form.fields.descriptionPlaceholder')"
               variant="outlined"
               rows="4"
               :disabled="loading"
-              hint="En fazla 500 karakter"
+              :hint="t('datasetCategories.form.fields.descriptionHint')"
               persistent-hint
               prepend-inner-icon="mdi-text"
               auto-grow
@@ -275,7 +288,7 @@ const handleCancel = () => {
               :disabled="loading"
             >
               <XIcon class="mr-2" size="18" />
-              İptal
+              {{ t('datasetCategories.buttons.cancel') }}
             </v-btn>
             
             <v-btn
@@ -286,7 +299,7 @@ const handleCancel = () => {
               :disabled="!formData.categoryName.trim()"
             >
               <CheckIcon class="mr-2" size="18" />
-              {{ isEditMode ? 'Güncelle' : 'Oluştur' }}
+              {{ isEditMode ? t('datasetCategories.form.edit.submit') : t('datasetCategories.form.create.submit') }}
             </v-btn>
           </v-col>
         </v-row>

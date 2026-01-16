@@ -35,7 +35,7 @@ public class VersionController : ControllerBase
             Version = informationalVersion ?? version?.ToString() ?? "1.0.0",
             AssemblyVersion = version?.ToString() ?? "1.0.0.0",
             BuildDate = buildDate,
-            Company = company ?? "iSIM Platform",
+            Company = company ?? "MonitraNG",
             Copyright = copyright ?? "Copyright © 2025",
             Environment = System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production",
             Runtime = new

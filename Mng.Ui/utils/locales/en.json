@@ -868,6 +868,501 @@
       }
     }
   },
+  "domain": {
+    "title": "Domain Management",
+    "breadcrumbs": {
+      "home": "Dashboard",
+      "domain": "Domain Management"
+    },
+    "warning": {
+      "title": "Warning:",
+      "message": "Manager or admin privileges are required to access this page. Please contact an administrator to perform domain management operations."
+    },
+    "cards": {
+      "domainInfo": "Domain Information",
+      "domainSettings": "Domain Settings"
+    },
+    "fields": {
+      "name": "Domain Name",
+      "displayName": "Display Name",
+      "databaseName": "Database Name",
+      "realmName": "Realm Name",
+      "status": "Status",
+      "storageQuota": "Storage Quota",
+      "storageUsed": "Storage Used",
+      "createdAt": "Created At",
+      "updatedAt": "Last Updated",
+      "expiresAt": "Expires At",
+      "relatedPersonPhone": "Related Person Phone",
+      "logo": "Logo",
+      "logoUrl": "Logo URL",
+      "maxUsers": "Maximum Users",
+      "maxAssets": "Maximum Assets",
+      "enableMqtt": "MQTT Enabled"
+    },
+    "status": {
+      "pending": "Pending",
+      "active": "Active",
+      "suspended": "Suspended",
+      "expired": "Expired",
+      "deleted": "Deleted",
+      "failed": "Failed"
+    },
+    "buttons": {
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "refresh": "Refresh",
+      "uploadLogo": "Upload Logo",
+      "removeLogo": "Remove Logo"
+    },
+    "edit": {
+      "title": "Edit Domain",
+      "displayName": "Display Name",
+      "displayNamePlaceholder": "Enter domain display name",
+      "relatedPersonPhone": "Related Person Phone",
+      "relatedPersonPhonePlaceholder": "+90XXXXXXXXXX",
+      "logoUrl": "Logo URL",
+      "logoUrlPlaceholder": "https://...",
+      "maxUsers": "Maximum Users",
+      "maxAssets": "Maximum Assets",
+      "enableMqtt": "MQTT Enabled",
+      "validation": {
+        "displayNameRequired": "Display name is required"
+      }
+    },
+    "messages": {
+      "loading": "Loading...",
+      "loadError": "An error occurred while loading domain information",
+      "updateSuccess": "Domain information updated successfully",
+      "updateError": "An error occurred while updating domain information",
+      "notFound": "Domain not found",
+      "notManager": "Manager privileges are required to access this page"
+    },
+    "storage": {
+      "bytes": "bytes",
+      "kb": "KB",
+      "mb": "MB",
+      "gb": "GB",
+      "tb": "TB"
+    },
+    "logo": {
+      "uploaded": "Logo uploaded",
+      "noImage": "No logo",
+      "errors": {
+        "invalidFormat": "Invalid file format. Only JPEG, PNG, WebP or GIF files are accepted.",
+        "maxSize": "File size is too large. Maximum 2MB allowed.",
+        "readError": "An error occurred while reading the file"
+      }
+    }
+  },
+  "datasetCategories": {
+    "title": "Dataset Categories",
+    "breadcrumbs": {
+      "home": "Dashboard",
+      "categories": "Dataset Categories",
+      "create": "New Category",
+      "edit": "Edit Category"
+    },
+    "warning": {
+      "title": "Warning:",
+      "message": "Manager or admin privileges are required to access this page."
+    },
+    "search": {
+      "placeholder": "Search Categories",
+      "hint": "Search by category name or description"
+    },
+    "buttons": {
+      "newCategory": "New Category",
+      "refresh": "Refresh",
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "save": "Save",
+      "update": "Update",
+      "create": "Create",
+      "close": "Close",
+      "back": "Back"
+    },
+    "table": {
+      "headers": {
+        "categoryName": "Category Name",
+        "description": "Description",
+        "createdAt": "Created At",
+        "createdBy": "Created By",
+        "updatedAt": "Last Updated",
+        "updatedBy": "Last Updated By",
+        "historyCount": "History",
+        "actions": "Actions"
+      }
+    },
+    "noData": {
+      "title": "No categories found",
+      "button": "Create First Category"
+    },
+    "pagination": {
+      "total": "Total:",
+      "records": "records",
+      "page": "Page",
+      "showing": "showing",
+      "itemsPerPage": "Records per page:"
+    },
+    "delete": {
+      "title": "Delete Category",
+      "message": "Are you sure you want to delete this category? This action cannot be undone.",
+      "note": "Note: Deleted categories can be restored.",
+      "cancel": "Cancel",
+      "confirm": "Yes, Delete"
+    },
+    "view": {
+      "title": "Category Details",
+      "description": "Description:",
+      "createdAt": "Created At:",
+      "updatedAt": "Last Updated:",
+      "historyCount": "History Record Count:",
+      "noDescription": "No description",
+      "edit": "Edit"
+    },
+    "form": {
+      "create": {
+        "title": "New Category",
+        "submit": "Create"
+      },
+      "edit": {
+        "title": "Edit Category",
+        "submit": "Update"
+      },
+      "fields": {
+        "categoryName": "Category Name",
+        "categoryNamePlaceholder": "E.g: System Datasets, Book Datasets",
+        "categoryNameHint": "2-100 characters, must be unique",
+        "description": "Description",
+        "descriptionPlaceholder": "Category description (optional)",
+        "descriptionHint": "Maximum 500 characters"
+      },
+      "validation": {
+        "categoryNameRequired": "Category name is required",
+        "categoryNameMinLength": "Category name must be at least 2 characters",
+        "categoryNameMaxLength": "Category name can be at most 100 characters",
+        "descriptionMaxLength": "Description can be at most 500 characters",
+        "duplicateName": "This category name is already in use. Please choose a different name."
+      },
+      "messages": {
+        "loading": "Loading category...",
+        "notFound": "Category not found",
+        "loadError": "An error occurred while loading the category",
+        "createSuccess": "Category created successfully!",
+        "updateSuccess": "Category updated successfully!",
+        "saveError": "An error occurred while saving the category"
+      }
+    }
+  },
+  "datasets": {
+    "title": "Datasets",
+    "breadcrumbs": {
+      "home": "Dashboard",
+      "datasets": "Datasets",
+      "create": "New Dataset",
+      "edit": "Edit Dataset"
+    },
+    "warning": {
+      "title": "Warning:",
+      "message": "Manager or admin privileges are required to access this page."
+    },
+    "search": {
+      "placeholder": "Search Datasets",
+      "comingSoon": "Search feature will be added soon",
+      "notImplemented": {
+        "title": "Note:",
+        "message": "Search feature has not been implemented in the backend yet. This feature will be added soon."
+      }
+    },
+    "buttons": {
+      "newDataset": "New Dataset",
+      "refresh": "Refresh",
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "save": "Save",
+      "update": "Update",
+      "create": "Create",
+      "close": "Close",
+      "back": "Back",
+      "export": "Export"
+    },
+    "table": {
+      "headers": {
+        "name": "Dataset Name",
+        "category": "Category",
+        "description": "Description",
+        "fieldsCount": "Field Count",
+        "createdAt": "Created At",
+        "createdBy": "Created By",
+        "updatedAt": "Last Updated",
+        "actions": "Actions"
+      },
+      "fields": "fields"
+    },
+    "noData": {
+      "title": "No datasets found",
+      "button": "Create First Dataset"
+    },
+    "pagination": {
+      "total": "Total:",
+      "records": "records",
+      "page": "Page",
+      "showing": "showing",
+      "itemsPerPage": "Records per page:"
+    },
+    "delete": {
+      "title": "Delete Dataset",
+      "message": "Are you sure you want to delete this dataset? This action cannot be undone.",
+      "note": "Note:",
+      "noteDetail": "Deleted datasets can be restored. However, when the dataset schema is deleted, the collection and data are not deleted.",
+      "cancel": "Cancel",
+      "confirm": "Yes, Delete"
+    },
+    "view": {
+      "title": "Dataset",
+      "schemaInfo": "Schema Information",
+      "fieldsTitle": "Fields",
+      "queriesTitle": "Predefined Queries",
+      "indexesTitle": "Index Definitions",
+      "queryParameters": "Parameters",
+      "indexFields": "Fields",
+      "viewPipeline": "View Pipeline",
+      "stages": "stages",
+      "noFields": "No fields defined yet",
+      "noQueries": "No predefined queries defined yet",
+      "noIndexes": "No indexes defined yet",
+      "buttons": {
+        "backToList": "Back to List",
+        "exportJSON": "Export JSON"
+      },
+      "fields": {
+        "name": "Dataset Name",
+        "category": "Category",
+        "description": "Description",
+        "forceSchema": "Force Schema",
+        "loggingMode": "Logging Mode",
+        "publishMode": "Publish Mode",
+        "createdAt": "Created At",
+        "createdBy": "Created By",
+        "updatedAt": "Last Updated"
+      },
+      "fieldProperties": {
+        "mandatory": "Mandatory",
+        "unique": "Unique",
+        "array": "Array"
+      },
+      "fieldInfo": {
+        "relation": "Relation",
+        "format": "Format",
+        "start": "Start",
+        "step": "Step"
+      },
+      "delete": {
+        "title": "Delete Dataset",
+        "confirmMessage": "Are you sure you want to delete the dataset named {name}?",
+        "warning": "Warning",
+        "warningDetail": "This action cannot be undone. The dataset and all its data will be permanently deleted."
+      },
+      "messages": {
+        "loading": "Loading dataset...",
+        "nameNotFound": "Dataset name not found",
+        "notFound": "Dataset not found",
+        "loadError": "An error occurred while loading the dataset",
+        "deleteError": "An error occurred while deleting the dataset"
+      }
+    },
+    "export": {
+      "csv": "Download as CSV",
+      "json": "Download as JSON",
+      "createdAt": "Created Date",
+      "forceSchema": "Force Schema",
+      "logging": "Logging",
+      "publishMode": "Publish Mode"
+    },
+    "common": {
+      "yes": "Yes",
+      "no": "No"
+    },
+    "fieldTypes": {
+      "text": "Text",
+      "number": "Number",
+      "bool": "Boolean",
+      "datetime": "DateTime",
+      "object": "Object",
+      "relation": "Relation",
+      "persons": "Persons",
+      "personGroups": "Person Groups",
+      "incremental": "Incremental"
+    },
+    "form": {
+      "steps": {
+        "basicInfo": "Basic Information",
+        "fieldDefinitions": "Field Definitions",
+        "predefinedQueries": "Predefined Queries",
+        "validationDefinitions": "Validation Definitions",
+        "indexDefinitions": "Index Definitions"
+      },
+      "validation": {
+        "nameRequired": "Dataset name is required",
+        "nameMinLength": "Dataset name must be at least 2 characters",
+        "nameMaxLength": "Dataset name can be at most 100 characters",
+        "nameInvalidFormat": "Dataset name invalid format (e.g: @books, @tasks)",
+        "descriptionMaxLength": "Description can be at most 1000 characters",
+        "fieldNameRequired": "Field name is required",
+        "fieldNameInvalidFormat": "Field name invalid format (must start with a letter, can only contain letters, numbers and _)",
+        "fieldNameDuplicate": "This field name is already in use",
+        "fieldTitleMaxLength": "Field title can be at most 200 characters",
+        "formatRequired": "Format template is required",
+        "formatMustContainPlaceholder": "Format template must contain {0} placeholder",
+        "relationDatasetRequired": "Dataset must be selected for relation field",
+        "incrementalFormatRequired": "Format template is required for incremental field",
+        "incrementalFormatPlaceholder": "Format template must contain {0} placeholder",
+        "objectSchemaInvalid": "Object schema must be a valid JSON object",
+        "objectSchemaInvalidJSON": "Object schema invalid JSON format"
+      },
+      "messages": {
+        "notFound": "Dataset not found",
+        "loadError": "An error occurred while loading the dataset",
+        "updateSuccess": "Dataset updated successfully!",
+        "createSuccess": "Dataset created successfully!",
+        "saveError": "An error occurred while saving the dataset",
+        "duplicateName": "This dataset name is already in use. Please choose a different name."
+      },
+      "fieldTypes": {
+        "text": {
+          "title": "Text",
+          "description": "String values"
+        },
+        "number": {
+          "title": "Number",
+          "description": "Numeric values (integer/decimal)"
+        },
+        "bool": {
+          "title": "Boolean",
+          "description": "True/False values"
+        },
+        "datetime": {
+          "title": "DateTime",
+          "description": "Date and time (ISO 8601 UTC)"
+        },
+        "object": {
+          "title": "Object",
+          "description": "JSON object"
+        },
+        "relation": {
+          "title": "Relation",
+          "description": "Dataset reference"
+        },
+        "persons": {
+          "title": "Persons",
+          "description": "User reference (MngKeeper)"
+        },
+        "personGroups": {
+          "title": "Person Groups",
+          "description": "Group reference (MngKeeper)"
+        },
+        "incremental": {
+          "title": "Incremental",
+          "description": "Auto-incrementing value"
+        }
+      },
+      "fields": {
+        "name": {
+          "label": "Dataset Name",
+          "placeholder": "E.g: @books, @tasks",
+          "hint": "prefix optional (backend adds automatically), 2-100 characters, must be unique",
+          "editNote": "Note: Dataset name cannot be edited."
+        },
+        "category": {
+          "label": "Category",
+          "placeholder": "Select category (optional)",
+          "hint": "You can assign the dataset to a category"
+        },
+        "description": {
+          "label": "Description",
+          "placeholder": "Dataset description (optional)",
+          "hint": "Maximum 1000 characters"
+        },
+        "schemaSettings": {
+          "title": "Schema Settings",
+          "forceSchema": {
+            "label": "Force Schema Validation",
+            "hint": "Only defined fields are accepted (strict mode)",
+            "active": "Active (Strict)",
+            "passive": "Passive (Flexible)"
+          },
+          "loggingMode": {
+            "label": "Logging Mode",
+            "hint": "None: No logging, Self: Each record contains __history, Common: Written to @data_logs collection",
+            "none": "None",
+            "self": "Self",
+            "common": "Common"
+          },
+          "publishMode": {
+            "label": "Publish Mode",
+            "hint": "RabbitMQ event publishing mode",
+            "none": "None",
+            "basic": "Basic",
+            "full": "Full"
+          }
+        }
+      },
+      "buttons": {
+        "previous": "Previous",
+        "next": "Next",
+        "cancel": "Cancel",
+        "save": "Save",
+        "addField": "Add New Field",
+        "addQuery": "Add New Query",
+        "addValidation": "Add New Validation",
+        "addIndex": "Add New Index",
+        "addFirstField": "Add First Field",
+        "addFirstQuery": "Add First Query",
+        "addFirstValidation": "Add First Validation",
+        "addFirstIndex": "Add First Index",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "fieldList": {
+        "title": "Field Definitions",
+        "noFields": "No fields defined yet",
+        "properties": {
+          "mandatory": "Mandatory",
+          "unique": "Unique",
+          "array": "Array",
+          "format": "Format: {format}",
+          "relation": "→ {dataset}"
+        }
+      },
+      "queryList": {
+        "title": "Predefined Queries",
+        "noQueries": "No predefined queries defined yet",
+        "parameters": "Parameters:",
+        "viewPipeline": "View Pipeline ({count} stages)"
+      },
+      "validationList": {
+        "title": "Validation Definitions",
+        "noValidations": "No validations defined yet",
+        "when": "When: {when}",
+        "order": "Order: {order}",
+        "expression": "Expression:",
+        "url": "URL:",
+        "method": "Method:",
+        "fields": "Fields:"
+      },
+      "indexList": {
+        "title": "Index Definitions",
+        "noIndexes": "No indexes defined yet",
+        "fields": "Fields:"
+      }
+    }
+  },
   "header": {
     "profileDD": {
       "myProfile": {

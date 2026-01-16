@@ -138,7 +138,7 @@ JWT token-based authentication (to be implemented based on roadmap)
 
 ## 📄 License
 
-Copyright © 2026 iSIM Platform
+Copyright © 2026 MonitraNG
 
 ## 👤 Author
 

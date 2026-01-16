@@ -207,7 +207,7 @@ MngNotifier/
   "version": "1.0.0",
   "assemblyVersion": "1.0.0.0",
   "buildDate": "2026-01-11T10:00:00Z",
-  "company": "iSIM Platform",
+  "company": "MonitraNG",
   "copyright": "Copyright © 2026",
   "environment": "Development",
   "runtime": {

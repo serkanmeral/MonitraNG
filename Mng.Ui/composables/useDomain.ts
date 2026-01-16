@@ -5,9 +5,42 @@ export interface Domain {
   id: string;
   name: string;
   displayName: string;
+  databaseName?: string;
+  realmName?: string;
+  storageBucket?: string;
+  storageQuota?: number;
+  storageUsed?: number;
+  status?: string;
+  settings?: {
+    maxUsers?: number;
+    maxAssets?: number;
+    enableMqtt?: boolean;
+    mqttSettings?: any;
+    customSettings?: Record<string, any>;
+  };
+  createdAt?: string;
+  expiresAt?: string;
+  createdBy?: string;
+  updatedAt?: string;
+  updatedBy?: string;
+  relatedPersonPhone?: string;
   logo?: string;
   logoUrl?: string;
   [key: string]: any;
+}
+
+export interface UpdateDomainRequest {
+  displayName?: string;
+  relatedPersonPhone?: string;
+  logo?: string; // Base64 encoded image
+  logoUrl?: string;
+  settings?: {
+    maxUsers?: number;
+    maxAssets?: number;
+    enableMqtt?: boolean;
+    mqttSettings?: any;
+    customSettings?: Record<string, any>;
+  };
 }
 
 export const useDomain = () => {
@@ -60,9 +93,23 @@ export const useDomain = () => {
     return null;
   };
 
+  /**
+   * Update domain information
+   */
+  const updateDomain = async (id: string, domainData: UpdateDomainRequest): Promise<Domain | null> => {
+    try {
+      const updatedDomain = await fetchFromMngKeeper(`domain/${id}`, 'PUT', domainData);
+      return updatedDomain as Domain;
+    } catch (error) {
+      console.error('Error updating domain:', error);
+      throw error;
+    }
+  };
+
   return {
     getDomainById,
     getDomainByName,
     getCurrentDomain,
+    updateDomain,
   };
 };

@@ -900,6 +900,501 @@
       }
     }
   },
+  "domain": {
+    "title": "Domain Yönetimi",
+    "breadcrumbs": {
+      "home": "Dashboard",
+      "domain": "Domain Yönetimi"
+    },
+    "warning": {
+      "title": "Uyarı:",
+      "message": "Bu sayfaya erişim için manager veya admin yetkisi gereklidir. Domain yönetimi işlemlerini gerçekleştirmek için lütfen bir yönetici ile iletişime geçin."
+    },
+    "cards": {
+      "domainInfo": "Domain Bilgileri",
+      "domainSettings": "Domain Ayarları"
+    },
+    "fields": {
+      "name": "Domain Adı",
+      "displayName": "Görünen Ad",
+      "databaseName": "Veritabanı Adı",
+      "realmName": "Realm Adı",
+      "status": "Durum",
+      "storageQuota": "Depolama Kotası",
+      "storageUsed": "Kullanılan Depolama",
+      "createdAt": "Oluşturulma Tarihi",
+      "updatedAt": "Son Güncelleme",
+      "expiresAt": "Son Kullanma Tarihi",
+      "relatedPersonPhone": "İlgili Kişi Telefonu",
+      "logo": "Logo",
+      "logoUrl": "Logo URL",
+      "maxUsers": "Maksimum Kullanıcı Sayısı",
+      "maxAssets": "Maksimum Asset Sayısı",
+      "enableMqtt": "MQTT Aktif"
+    },
+    "status": {
+      "pending": "Beklemede",
+      "active": "Aktif",
+      "suspended": "Askıya Alınmış",
+      "expired": "Süresi Dolmuş",
+      "deleted": "Silinmiş",
+      "failed": "Başarısız"
+    },
+    "buttons": {
+      "edit": "Düzenle",
+      "save": "Kaydet",
+      "cancel": "İptal",
+      "refresh": "Yenile",
+      "uploadLogo": "Logo Yükle",
+      "removeLogo": "Logoyu Kaldır"
+    },
+    "edit": {
+      "title": "Domain Düzenle",
+      "displayName": "Görünen Ad",
+      "displayNamePlaceholder": "Domain görünen adını giriniz",
+      "relatedPersonPhone": "İlgili Kişi Telefonu",
+      "relatedPersonPhonePlaceholder": "+90XXXXXXXXXX",
+      "logoUrl": "Logo URL",
+      "logoUrlPlaceholder": "https://...",
+      "maxUsers": "Maksimum Kullanıcı Sayısı",
+      "maxAssets": "Maksimum Asset Sayısı",
+      "enableMqtt": "MQTT Aktif",
+      "validation": {
+        "displayNameRequired": "Görünen ad gereklidir"
+      }
+    },
+    "messages": {
+      "loading": "Yükleniyor...",
+      "loadError": "Domain bilgileri yüklenirken bir hata oluştu",
+      "updateSuccess": "Domain bilgileri başarıyla güncellendi",
+      "updateError": "Domain bilgileri güncellenirken bir hata oluştu",
+      "notFound": "Domain bulunamadı",
+      "notManager": "Bu sayfaya erişim için manager yetkisi gereklidir"
+    },
+    "storage": {
+      "bytes": "byte",
+      "kb": "KB",
+      "mb": "MB",
+      "gb": "GB",
+      "tb": "TB"
+    },
+    "logo": {
+      "uploaded": "Logo yüklendi",
+      "noImage": "Logo yok",
+      "errors": {
+        "invalidFormat": "Geçersiz dosya formatı. Sadece JPEG, PNG, WebP veya GIF dosyaları kabul edilir.",
+        "maxSize": "Dosya boyutu çok büyük. Maksimum 2MB olmalıdır.",
+        "readError": "Dosya okunurken bir hata oluştu"
+      }
+    }
+  },
+  "datasetCategories": {
+    "title": "Dataset Kategorileri",
+    "breadcrumbs": {
+      "home": "Dashboard",
+      "categories": "Dataset Kategorileri",
+      "create": "Yeni Kategori",
+      "edit": "Kategori Düzenle"
+    },
+    "warning": {
+      "title": "Uyarı:",
+      "message": "Bu sayfaya erişim için manager veya admin yetkisi gereklidir."
+    },
+    "search": {
+      "placeholder": "Kategori Ara",
+      "hint": "Kategori adı veya açıklamada ara"
+    },
+    "buttons": {
+      "newCategory": "Yeni Kategori",
+      "refresh": "Yenile",
+      "view": "Görüntüle",
+      "edit": "Düzenle",
+      "delete": "Sil",
+      "cancel": "İptal",
+      "save": "Kaydet",
+      "update": "Güncelle",
+      "create": "Oluştur",
+      "close": "Kapat",
+      "back": "Geri"
+    },
+    "table": {
+      "headers": {
+        "categoryName": "Kategori Adı",
+        "description": "Açıklama",
+        "createdAt": "Oluşturulma",
+        "createdBy": "Oluşturan",
+        "updatedAt": "Son Güncelleme",
+        "updatedBy": "Son Güncelleyen",
+        "historyCount": "Tarihçe",
+        "actions": "İşlemler"
+      }
+    },
+    "noData": {
+      "title": "Kategori bulunamadı",
+      "button": "İlk Kategoriyi Oluştur"
+    },
+    "pagination": {
+      "total": "Toplam:",
+      "records": "kayıt",
+      "page": "Sayfa",
+      "showing": "gösteriliyor",
+      "itemsPerPage": "Sayfa başına kayıt:"
+    },
+    "delete": {
+      "title": "Kategoriyi Sil",
+      "message": "Bu kategoriyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+      "note": "Not: Silinen kategoriler restore edilebilir.",
+      "cancel": "İptal",
+      "confirm": "Evet, Sil"
+    },
+    "view": {
+      "title": "Kategori Detayı",
+      "description": "Açıklama:",
+      "createdAt": "Oluşturulma:",
+      "updatedAt": "Son Güncelleme:",
+      "historyCount": "Tarihçe Kayıt Sayısı:",
+      "noDescription": "Açıklama yok",
+      "edit": "Düzenle"
+    },
+    "form": {
+      "create": {
+        "title": "Yeni Kategori",
+        "submit": "Oluştur"
+      },
+      "edit": {
+        "title": "Kategori Düzenle",
+        "submit": "Güncelle"
+      },
+      "fields": {
+        "categoryName": "Kategori Adı",
+        "categoryNamePlaceholder": "Örn: System Datasets, Book Datasets",
+        "categoryNameHint": "2-100 karakter arasında, benzersiz olmalıdır",
+        "description": "Açıklama",
+        "descriptionPlaceholder": "Kategori açıklaması (opsiyonel)",
+        "descriptionHint": "En fazla 500 karakter"
+      },
+      "validation": {
+        "categoryNameRequired": "Kategori adı gereklidir",
+        "categoryNameMinLength": "Kategori adı en az 2 karakter olmalıdır",
+        "categoryNameMaxLength": "Kategori adı en fazla 100 karakter olabilir",
+        "descriptionMaxLength": "Açıklama en fazla 500 karakter olabilir",
+        "duplicateName": "Bu kategori adı zaten kullanılıyor. Lütfen farklı bir ad seçin."
+      },
+      "messages": {
+        "loading": "Kategori yükleniyor...",
+        "notFound": "Kategori bulunamadı",
+        "loadError": "Kategori yüklenirken bir hata oluştu",
+        "createSuccess": "Kategori başarıyla oluşturuldu!",
+        "updateSuccess": "Kategori başarıyla güncellendi!",
+        "saveError": "Kategori kaydedilirken bir hata oluştu"
+      }
+    }
+  },
+  "datasets": {
+    "title": "Datasets",
+    "breadcrumbs": {
+      "home": "Dashboard",
+      "datasets": "Datasets",
+      "create": "Yeni Dataset",
+      "edit": "Dataset Düzenle"
+    },
+    "warning": {
+      "title": "Uyarı:",
+      "message": "Bu sayfaya erişim için manager veya admin yetkisi gereklidir."
+    },
+    "search": {
+      "placeholder": "Dataset Ara",
+      "comingSoon": "Arama özelliği yakında eklenecek",
+      "notImplemented": {
+        "title": "Not:",
+        "message": "Arama özelliği backend'de henüz implement edilmemiştir. Bu özellik yakında eklenecektir."
+      }
+    },
+    "buttons": {
+      "newDataset": "Yeni Dataset",
+      "refresh": "Yenile",
+      "view": "Görüntüle",
+      "edit": "Düzenle",
+      "delete": "Sil",
+      "cancel": "İptal",
+      "save": "Kaydet",
+      "update": "Güncelle",
+      "create": "Oluştur",
+      "close": "Kapat",
+      "back": "Geri",
+      "export": "Export"
+    },
+    "table": {
+      "headers": {
+        "name": "Dataset Adı",
+        "category": "Kategori",
+        "description": "Açıklama",
+        "fieldsCount": "Field Sayısı",
+        "createdAt": "Oluşturulma",
+        "createdBy": "Oluşturan",
+        "updatedAt": "Son Güncelleme",
+        "actions": "İşlemler"
+      },
+      "fields": "field"
+    },
+    "noData": {
+      "title": "Dataset bulunamadı",
+      "button": "İlk Dataset'i Oluştur"
+    },
+    "pagination": {
+      "total": "Toplam:",
+      "records": "kayıt",
+      "page": "Sayfa",
+      "showing": "gösteriliyor",
+      "itemsPerPage": "Sayfa başına kayıt:"
+    },
+    "delete": {
+      "title": "Dataset'i Sil",
+      "message": "Bu dataset'i silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+      "note": "Not:",
+      "noteDetail": "Silinen dataset'ler restore edilebilir. Ancak dataset schema'sı silinirken, collection ve veriler silinmez.",
+      "cancel": "İptal",
+      "confirm": "Evet, Sil"
+    },
+    "view": {
+      "title": "Dataset",
+      "schemaInfo": "Schema Bilgileri",
+      "fieldsTitle": "Fields",
+      "queriesTitle": "Predefined Queries",
+      "indexesTitle": "Index Definitions",
+      "queryParameters": "Parameters",
+      "indexFields": "Fields",
+      "viewPipeline": "Pipeline'i Görüntüle",
+      "stages": "stage",
+      "noFields": "Henüz field tanımlanmamış",
+      "noQueries": "Henüz predefined query tanımlanmamış",
+      "noIndexes": "Henüz index tanımlanmamış",
+      "buttons": {
+        "backToList": "Listeye Dön",
+        "exportJSON": "Export JSON"
+      },
+      "fields": {
+        "name": "Dataset Adı",
+        "category": "Kategori",
+        "description": "Açıklama",
+        "forceSchema": "Force Schema",
+        "loggingMode": "Logging Mode",
+        "publishMode": "Publish Mode",
+        "createdAt": "Oluşturulma",
+        "createdBy": "Oluşturan",
+        "updatedAt": "Son Güncelleme"
+      },
+      "fieldProperties": {
+        "mandatory": "Mandatory",
+        "unique": "Unique",
+        "array": "Array"
+      },
+      "fieldInfo": {
+        "relation": "Relation",
+        "format": "Format",
+        "start": "Start",
+        "step": "Step"
+      },
+      "delete": {
+        "title": "Dataset Sil",
+        "confirmMessage": "{name} adlı dataset'i silmek istediğinizden emin misiniz?",
+        "warning": "Uyarı",
+        "warningDetail": "Bu işlem geri alınamaz. Dataset ve tüm verileri kalıcı olarak silinecektir."
+      },
+      "messages": {
+        "loading": "Dataset yükleniyor...",
+        "nameNotFound": "Dataset adı bulunamadı",
+        "notFound": "Dataset bulunamadı",
+        "loadError": "Dataset yüklenirken bir hata oluştu",
+        "deleteError": "Dataset silinirken bir hata oluştu"
+      }
+    },
+    "export": {
+      "csv": "CSV olarak İndir",
+      "json": "JSON olarak İndir",
+      "createdAt": "Oluşturulma Tarihi",
+      "forceSchema": "Force Schema",
+      "logging": "Logging",
+      "publishMode": "Publish Mode"
+    },
+    "common": {
+      "yes": "Evet",
+      "no": "Hayır"
+    },
+    "fieldTypes": {
+      "text": "Text",
+      "number": "Number",
+      "bool": "Boolean",
+      "datetime": "DateTime",
+      "object": "Object",
+      "relation": "Relation",
+      "persons": "Persons",
+      "personGroups": "Person Groups",
+      "incremental": "Incremental"
+    },
+    "form": {
+      "steps": {
+        "basicInfo": "Temel Bilgiler",
+        "fieldDefinitions": "Field Tanımları",
+        "predefinedQueries": "Predefined Queries",
+        "validationDefinitions": "Validation Definitions",
+        "indexDefinitions": "Index Definitions"
+      },
+      "validation": {
+        "nameRequired": "Dataset adı gereklidir",
+        "nameMinLength": "Dataset adı en az 2 karakter olmalıdır",
+        "nameMaxLength": "Dataset adı en fazla 100 karakter olabilir",
+        "nameInvalidFormat": "Dataset adı geçersiz format (ör: {'@'}books, {'@'}tasks)",
+        "descriptionMaxLength": "Açıklama en fazla 1000 karakter olabilir",
+        "fieldNameRequired": "Field adı gereklidir",
+        "fieldNameInvalidFormat": "Field adı geçersiz format (harf ile başlamalı, sadece harf, rakam ve _ içerebilir)",
+        "fieldNameDuplicate": "Bu field adı zaten kullanılıyor",
+        "fieldTitleMaxLength": "Field başlığı en fazla 200 karakter olabilir",
+        "formatRequired": "Format template gereklidir",
+        "formatMustContainPlaceholder": "Format template {0} placeholder içermelidir",
+        "relationDatasetRequired": "Relation field için dataset seçilmelidir",
+        "incrementalFormatRequired": "Incremental field için format template gereklidir",
+        "incrementalFormatPlaceholder": "Format template {0} placeholder içermelidir",
+        "objectSchemaInvalid": "Object schema geçerli bir JSON object olmalıdır",
+        "objectSchemaInvalidJSON": "Object schema geçersiz JSON formatı"
+      },
+      "messages": {
+        "notFound": "Dataset bulunamadı",
+        "loadError": "Dataset yüklenirken bir hata oluştu",
+        "updateSuccess": "Dataset başarıyla güncellendi!",
+        "createSuccess": "Dataset başarıyla oluşturuldu!",
+        "saveError": "Dataset kaydedilirken bir hata oluştu",
+        "duplicateName": "Bu dataset adı zaten kullanılıyor. Lütfen farklı bir ad seçin."
+      },
+      "fieldTypes": {
+        "text": {
+          "title": "Text",
+          "description": "String değerler"
+        },
+        "number": {
+          "title": "Number",
+          "description": "Sayısal değerler (integer/decimal)"
+        },
+        "bool": {
+          "title": "Boolean",
+          "description": "True/False değerler"
+        },
+        "datetime": {
+          "title": "DateTime",
+          "description": "Tarih ve saat (ISO 8601 UTC)"
+        },
+        "object": {
+          "title": "Object",
+          "description": "JSON object"
+        },
+        "relation": {
+          "title": "Relation",
+          "description": "Dataset referansı"
+        },
+        "persons": {
+          "title": "Persons",
+          "description": "Kullanıcı referansı (MngKeeper)"
+        },
+        "personGroups": {
+          "title": "Person Groups",
+          "description": "Grup referansı (MngKeeper)"
+        },
+        "incremental": {
+          "title": "Incremental",
+          "description": "Otomatik artan değer"
+        }
+      },
+      "fields": {
+        "name": {
+          "label": "Dataset Adı",
+          "placeholder": "Örn: {'@'}books, {'@'}tasks",
+          "hint": "prefix opsiyonel (backend otomatik ekler), 2-100 karakter, benzersiz olmalıdır",
+          "editNote": "Not: Dataset adı düzenlenemez."
+        },
+        "category": {
+          "label": "Kategori",
+          "placeholder": "Kategori seçin (opsiyonel)",
+          "hint": "Dataset'i bir kategoriye atayabilirsiniz"
+        },
+        "description": {
+          "label": "Açıklama",
+          "placeholder": "Dataset açıklaması (opsiyonel)",
+          "hint": "En fazla 1000 karakter"
+        },
+        "schemaSettings": {
+          "title": "Schema Ayarları",
+          "forceSchema": {
+            "label": "Force Schema Validation",
+            "hint": "Sadece tanımlı field'lar kabul edilir (strict mode)",
+            "active": "Aktif (Strict)",
+            "passive": "Pasif (Flexible)"
+          },
+          "loggingMode": {
+            "label": "Logging Mode",
+            "hint": "None: Loglama yok, Self: Her kayıt __history içerir, Common: {'@'}data_logs collection'ına yazılır",
+            "none": "None",
+            "self": "Self",
+            "common": "Common"
+          },
+          "publishMode": {
+            "label": "Publish Mode",
+            "hint": "RabbitMQ event publishing mode",
+            "none": "None",
+            "basic": "Basic",
+            "full": "Full"
+          }
+        }
+      },
+      "buttons": {
+        "previous": "Önceki",
+        "next": "Sonraki",
+        "cancel": "İptal",
+        "save": "Kaydet",
+        "addField": "Yeni Field Ekle",
+        "addQuery": "Yeni Query Ekle",
+        "addValidation": "Yeni Validation Ekle",
+        "addIndex": "Yeni Index Ekle",
+        "addFirstField": "İlk Field'i Ekle",
+        "addFirstQuery": "İlk Query'i Ekle",
+        "addFirstValidation": "İlk Validation'ı Ekle",
+        "addFirstIndex": "İlk Index'i Ekle",
+        "edit": "Düzenle",
+        "delete": "Sil"
+      },
+      "fieldList": {
+        "title": "Field Tanımları",
+        "noFields": "Henüz field tanımlanmamış",
+        "properties": {
+          "mandatory": "Mandatory",
+          "unique": "Unique",
+          "array": "Array",
+          "format": "Format: {format}",
+          "relation": "→ {dataset}"
+        }
+      },
+      "queryList": {
+        "title": "Predefined Queries",
+        "noQueries": "Henüz predefined query tanımlanmamış",
+        "parameters": "Parameters:",
+        "viewPipeline": "Pipeline'i Görüntüle ({count} stage)"
+      },
+      "validationList": {
+        "title": "Validation Definitions",
+        "noValidations": "Henüz validation tanımlanmamış",
+        "when": "When: {when}",
+        "order": "Order: {order}",
+        "expression": "Expression:",
+        "url": "URL:",
+        "method": "Method:",
+        "fields": "Fields:"
+      },
+      "indexList": {
+        "title": "Index Definitions",
+        "noIndexes": "Henüz index tanımlanmamış",
+        "fields": "Fields:"
+      }
+    }
+  },
   "header": {
     "profileDD": {
       "myProfile": {

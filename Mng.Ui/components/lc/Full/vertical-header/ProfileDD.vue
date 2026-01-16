@@ -4,7 +4,8 @@ import { profileDD } from "@/_mockApis/headerData";
 import { useAuthStore } from "@/stores/auth";
 import { useUserStore } from "@/stores/apps/user";
 import AvatarDisplay from "@/components/apps/profile/AvatarDisplay.vue";
-import { computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { fetchFromMngKeeper, fetchFromDataGateway } from "@/services/apiService";
 
 const authStore = useAuthStore();
 const userStore = useUserStore();
@@ -181,6 +182,101 @@ const logOut = async function(){
   return navigateTo('/auth/login');
 }
 
+// Get app version from runtime config
+const appVersion = computed(() => {
+  const config = useRuntimeConfig();
+  return config.public.appVersion || '6.0.0';
+});
+
+// Version modal state
+const showVersionDialog = ref(false);
+const loadingVersions = ref(false);
+const serviceVersions = ref<Record<string, any>>({});
+
+// Interface for service version
+interface ServiceVersion {
+  name: string;
+  version?: string;
+  product?: string;
+  buildDate?: string;
+  error?: string;
+}
+
+// Fetch all service versions
+const fetchServiceVersions = async () => {
+  loadingVersions.value = true;
+  serviceVersions.value = {};
+  
+  const config = useRuntimeConfig();
+  const services: { name: string; url: string; fetchFn: (url: string) => Promise<any> }[] = [];
+  
+  // Add services based on available configs
+  if (config.public.keeperUrl) {
+    services.push({
+      name: 'MngKeeper',
+      url: `${config.public.keeperUrl}/api/version`,
+      fetchFn: async (url: string) => {
+        try {
+          return await fetchFromMngKeeper('version');
+        } catch (error) {
+          throw error;
+        }
+      }
+    });
+  }
+  
+  if (config.public.reactorUrl) {
+    services.push({
+      name: 'MngDataGateway',
+      url: `${config.public.reactorUrl}/api/v1/version`,
+      fetchFn: async (url: string) => {
+        try {
+          return await fetchFromDataGateway('v1/version');
+        } catch (error) {
+          throw error;
+        }
+      }
+    });
+  }
+  
+  // Fetch versions from all services in parallel
+  const versionPromises = services.map(async (service) => {
+    try {
+      const versionData = await service.fetchFn(service.url);
+      serviceVersions.value[service.name] = {
+        name: service.name,
+        version: versionData.Version || versionData.version || 'N/A',
+        product: versionData.Product || versionData.product || service.name,
+        buildDate: versionData.BuildDate || versionData.buildDate,
+        environment: versionData.Environment || versionData.environment,
+        error: null
+      };
+    } catch (error: any) {
+      serviceVersions.value[service.name] = {
+        name: service.name,
+        version: null,
+        error: error.message || 'Bağlantı hatası'
+      };
+    }
+  });
+  
+  await Promise.all(versionPromises);
+  loadingVersions.value = false;
+};
+
+// Open version dialog
+const openVersionDialog = async () => {
+  showVersionDialog.value = true;
+  if (Object.keys(serviceVersions.value).length === 0) {
+    await fetchServiceVersions();
+  }
+};
+
+// Close version dialog
+const closeVersionDialog = () => {
+  showVersionDialog.value = false;
+};
+
 </script>
 
 <template>
@@ -253,11 +349,123 @@ const logOut = async function(){
           </v-list-item>
         </v-list>
       </perfect-scrollbar>
-      <div class="pt-4 pb-6 px-8 text-center">
+      <div class="pt-4 pb-2 px-8 text-center">
         <v-btn color="primary" variant="outlined" block @click="logOut"
           >{{ t('header.profileDD.logout') || 'Çıkış Yap' }}</v-btn
         >
       </div>
+      <div class="pb-4 px-8 text-center">
+        <v-chip 
+          v-if="authStore.isManager || authStore.isAdmin"
+          variant="text" 
+          color="primary" 
+          size="x-small" 
+          class="text-caption cursor-pointer"
+          @click="openVersionDialog"
+          style="cursor: pointer;"
+        >
+          MonitraNG v{{ appVersion }}
+        </v-chip>
+        <v-chip 
+          v-else
+          variant="text" 
+          color="primary" 
+          size="x-small" 
+          class="text-caption"
+        >
+          MonitraNG v{{ appVersion }}
+        </v-chip>
+      </div>
     </v-sheet>
   </v-menu>
+
+  <!-- Version Information Dialog -->
+  <v-dialog v-model="showVersionDialog" max-width="600" @update:model-value="!showVersionDialog && closeVersionDialog()">
+    <v-card>
+      <v-card-title class="pa-4 bg-primary text-white">
+        <span class="text-h6">Versiyon Bilgileri</span>
+      </v-card-title>
+      <v-card-text class="pa-6">
+        <!-- Frontend Version -->
+        <div class="mb-6">
+          <h6 class="text-subtitle-1 font-weight-semibold mb-2">MonitraNG UI</h6>
+          <v-divider class="mb-2"></v-divider>
+          <div class="d-flex justify-space-between align-center">
+            <span class="text-body-2">Versiyon:</span>
+            <v-chip variant="tonal" color="primary" size="small">{{ appVersion }}</v-chip>
+          </div>
+        </div>
+
+        <!-- Loading state -->
+        <div v-if="loadingVersions" class="text-center py-4">
+          <v-progress-circular indeterminate color="primary" size="32"></v-progress-circular>
+          <p class="text-subtitle-2 mt-2">Servis versiyonları yükleniyor...</p>
+        </div>
+
+        <!-- Service versions -->
+        <div v-else>
+          <div v-for="(service, serviceName) in serviceVersions" :key="serviceName" class="mb-6">
+            <h6 class="text-subtitle-1 font-weight-semibold mb-2">{{ service.name }}</h6>
+            <v-divider class="mb-2"></v-divider>
+            
+            <!-- Error state -->
+            <v-alert
+              v-if="service.error"
+              type="error"
+              variant="tonal"
+              density="compact"
+              class="mb-2"
+            >
+              {{ service.error }}
+            </v-alert>
+            
+            <!-- Version info -->
+            <div v-else class="d-flex flex-column gap-2">
+              <div class="d-flex justify-space-between align-center">
+                <span class="text-body-2">Versiyon:</span>
+                <v-chip variant="tonal" color="primary" size="small">{{ service.version || 'N/A' }}</v-chip>
+              </div>
+              <div v-if="service.product" class="d-flex justify-space-between align-center">
+                <span class="text-body-2">Ürün:</span>
+                <span class="text-body-2 text-medium-emphasis">{{ service.product }}</span>
+              </div>
+              <div v-if="service.buildDate" class="d-flex justify-space-between align-center">
+                <span class="text-body-2">Build Tarihi:</span>
+                <span class="text-body-2 text-medium-emphasis">{{ new Date(service.buildDate).toLocaleDateString('tr-TR') }}</span>
+              </div>
+              <div v-if="service.environment" class="d-flex justify-space-between align-center">
+                <span class="text-body-2">Ortam:</span>
+                <v-chip 
+                  :color="service.environment.toLowerCase() === 'production' ? 'success' : 'warning'" 
+                  variant="tonal" 
+                  size="x-small"
+                >
+                  {{ service.environment }}
+                </v-chip>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty state -->
+          <div v-if="Object.keys(serviceVersions).length === 0" class="text-center py-4">
+            <p class="text-subtitle-2 text-medium-emphasis">Servis versiyon bilgisi bulunamadı</p>
+          </div>
+        </div>
+      </v-card-text>
+      <v-card-actions class="pa-4">
+        <v-spacer></v-spacer>
+        <v-btn color="primary" variant="outlined" @click="closeVersionDialog">
+          Kapat
+        </v-btn>
+        <v-btn 
+          color="primary" 
+          variant="flat" 
+          @click="fetchServiceVersions"
+          :loading="loadingVersions"
+        >
+          Yenile
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>

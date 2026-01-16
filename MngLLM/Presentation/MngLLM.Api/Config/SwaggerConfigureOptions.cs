@@ -33,7 +33,7 @@ public class SwaggerConfigureOptions : IConfigureOptions<SwaggerGenOptions>
                 Description = "LLM Service API for MonitraNG - Translation and Natural Language Processing",
                 Contact = new OpenApiContact
                 {
-                    Name = "iSIM Platform",
+                    Name = "MonitraNG",
                     Email = "serkan.meral@isimplatform.io"
                 }
             });

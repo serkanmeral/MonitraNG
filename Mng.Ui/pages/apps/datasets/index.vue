@@ -7,20 +7,33 @@ import { useAuthStore } from '@/stores/auth';
 import { EditIcon, EyeIcon, TrashIcon, DatabaseIcon, PlusIcon, RefreshIcon, TagIcon, DownloadIcon } from 'vue-tabler-icons';
 import { exportToCSV, exportArrayToJSON } from '@/utils/exportUtils';
 
+// Get i18n instance for legacy mode
+const nuxtApp = useNuxtApp();
+const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
+const t = (key: string, params?: any) => {
+  if (i18n && i18n.t) {
+    return i18n.t(key, params);
+  }
+  if (i18n?.global?.t) {
+    return i18n.global.t(key, params);
+  }
+  return key;
+};
+
 const datasetStore = useDatasetStore();
 const categoryStore = useDatasetCategoryStore();
 const authStore = useAuthStore();
 const router = useRouter();
 
-const page = ref({ title: 'Datasets' });
-const breadcrumbs = ref([
+const page = computed(() => ({ title: t('datasets.title') }));
+const breadcrumbs = computed(() => [
   {
-    text: 'Dashboard',
+    text: t('datasets.breadcrumbs.home'),
     disabled: false,
     href: '/dashboards/analytical',
   },
   {
-    text: 'Datasets',
+    text: t('datasets.breadcrumbs.datasets'),
     disabled: true,
     href: '#',
   },
@@ -40,16 +53,16 @@ const tableOptions = ref({
   sortBy: [] as Array<{ key: string; order: 'asc' | 'desc' }>,
 });
 
-const headers = [
-  { title: 'Dataset Adı', key: 'name', sortable: true },
-  { title: 'Kategori', key: 'category', sortable: false },
-  { title: 'Açıklama', key: 'description', sortable: false },
-  { title: 'Field Sayısı', key: 'fieldsCount', sortable: true },
-  { title: 'Oluşturulma', key: 'createInfo.createdAt', sortable: true },
-  { title: 'Oluşturan', key: 'createInfo.userInfo.userName', sortable: false },
-  { title: 'Son Güncelleme', key: 'lastUpdateInfo.updatedAt', sortable: true },
-  { title: 'İşlemler', key: 'actions', sortable: false, align: 'end' },
-];
+const headers = computed(() => [
+  { title: t('datasets.table.headers.name'), key: 'name', sortable: true },
+  { title: t('datasets.table.headers.category'), key: 'category', sortable: false },
+  { title: t('datasets.table.headers.description'), key: 'description', sortable: false },
+  { title: t('datasets.table.headers.fieldsCount'), key: 'fieldsCount', sortable: true },
+  { title: t('datasets.table.headers.createdAt'), key: 'createInfo.createdAt', sortable: true },
+  { title: t('datasets.table.headers.createdBy'), key: 'createInfo.userInfo.userName', sortable: false },
+  { title: t('datasets.table.headers.updatedAt'), key: 'lastUpdateInfo.updatedAt', sortable: true },
+  { title: t('datasets.table.headers.actions'), key: 'actions', sortable: false, align: 'end' },
+]);
 
 // Computed: Server items length (reactive)
 const serverItemsLength = computed(() => {
@@ -177,7 +190,9 @@ const createNewDataset = () => {
 const formatDate = (date: string | Date | null | undefined) => {
   if (!date) return '-';
   try {
-    return new Date(date).toLocaleDateString('tr-TR', {
+    // Use current locale for date formatting
+    const locale = i18n?.locale || i18n?.global?.locale?.value || 'tr';
+    return new Date(date).toLocaleDateString(locale === 'en' ? 'en-US' : locale === 'zh' ? 'zh-CN' : locale === 'fr' ? 'fr-FR' : locale === 'ar' ? 'ar-SA' : 'tr-TR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -247,16 +262,16 @@ const fetchAllDatasetsForExport = async (): Promise<any[]> => {
 // Prepare dataset data for export (flatten nested objects)
 const prepareDatasetForExport = (dataset: any): any => {
   return {
-    'Dataset Adı': dataset.name || '',
-    'Kategori': getCategoryName(dataset.category),
-    'Açıklama': dataset.description || '',
-    'Field Sayısı': dataset.fieldsCount || 0,
-    'Oluşturulma Tarihi': formatDate(dataset.createInfo?.createdAt) || '',
-    'Oluşturan': dataset.createInfo?.userInfo?.userName || '',
-    'Son Güncelleme': formatDate(dataset.lastUpdateInfo?.updatedAt) || '',
-    'Force Schema': dataset.forceSchema ? 'Evet' : 'Hayır',
-    'Logging': dataset.logging || 'none',
-    'Publish Mode': dataset.publishMode || 'none',
+    [t('datasets.table.headers.name')]: dataset.name || '',
+    [t('datasets.table.headers.category')]: getCategoryName(dataset.category),
+    [t('datasets.table.headers.description')]: dataset.description || '',
+    [t('datasets.table.headers.fieldsCount')]: dataset.fieldsCount || 0,
+    [t('datasets.export.createdAt')]: formatDate(dataset.createInfo?.createdAt) || '',
+    [t('datasets.table.headers.createdBy')]: dataset.createInfo?.userInfo?.userName || '',
+    [t('datasets.table.headers.updatedAt')]: formatDate(dataset.lastUpdateInfo?.updatedAt) || '',
+    [t('datasets.export.forceSchema')]: dataset.forceSchema ? t('datasets.common.yes') : t('datasets.common.no'),
+    [t('datasets.export.logging')]: dataset.logging || 'none',
+    [t('datasets.export.publishMode')]: dataset.publishMode || 'none',
   };
 };
 
@@ -310,15 +325,15 @@ const handleExportJSON = async () => {
           <v-text-field
             v-model="search"
             prepend-inner-icon="mdi-magnify"
-            label="Dataset Ara"
-            placeholder="Dataset adı veya açıklama..."
+            :label="t('datasets.search.placeholder')"
+            :placeholder="t('datasets.search.placeholder')"
             variant="outlined"
             density="compact"
             hide-details
             style="max-width: 300px;"
             clearable
             disabled
-            hint="Arama özelliği yakında eklenecek"
+            :hint="t('datasets.search.comingSoon')"
             persistent-hint
           />
           
@@ -331,7 +346,7 @@ const handleExportJSON = async () => {
             :loading="datasetStore.loading"
           >
             <RefreshIcon size="18" />
-            <v-tooltip activator="parent" location="top">Yenile</v-tooltip>
+            <v-tooltip activator="parent" location="top">{{ t('datasets.buttons.refresh') }}</v-tooltip>
           </v-btn>
           
           <!-- Export Buttons -->
@@ -347,7 +362,7 @@ const handleExportJSON = async () => {
                 :disabled="datasetStore.loading || exporting"
               >
                 <DownloadIcon size="18" />
-                <v-tooltip activator="parent" location="top">Export</v-tooltip>
+                <v-tooltip activator="parent" location="top">{{ t('datasets.buttons.export') }}</v-tooltip>
               </v-btn>
             </template>
             <v-list density="compact">
@@ -355,13 +370,13 @@ const handleExportJSON = async () => {
                 <template v-slot:prepend>
                   <v-icon size="small">mdi-file-delimited</v-icon>
                 </template>
-                <v-list-item-title>CSV olarak İndir</v-list-item-title>
+                <v-list-item-title>{{ t('datasets.export.csv') }}</v-list-item-title>
               </v-list-item>
               <v-list-item @click="handleExportJSON" :disabled="exporting">
                 <template v-slot:prepend>
                   <v-icon size="small">mdi-code-json</v-icon>
                 </template>
-                <v-list-item-title>JSON olarak İndir</v-list-item-title>
+                <v-list-item-title>{{ t('datasets.export.json') }}</v-list-item-title>
               </v-list-item>
             </v-list>
           </v-menu>
@@ -373,7 +388,7 @@ const handleExportJSON = async () => {
           @click="createNewDataset"
         >
           <PlusIcon class="mr-2" size="20" />
-          Yeni Dataset
+          {{ t('datasets.buttons.newDataset') }}
         </v-btn>
       </div>
 
@@ -385,7 +400,7 @@ const handleExportJSON = async () => {
         density="compact"
         class="mb-4"
       >
-        <strong>Uyarı:</strong> Bu sayfaya erişim için manager veya admin yetkisi gereklidir.
+        <strong>{{ t('datasets.warning.title') }}</strong> {{ t('datasets.warning.message') }}
       </v-alert>
 
       <!-- Search Not Implemented Warning -->
@@ -396,7 +411,7 @@ const handleExportJSON = async () => {
         class="mb-4"
         closable
       >
-        <strong>Not:</strong> Arama özelliği backend'de henüz implement edilmemiştir. Bu özellik yakında eklenecektir.
+        <strong>{{ t('datasets.search.notImplemented.title') }}</strong> {{ t('datasets.search.notImplemented.message') }}
       </v-alert>
 
       <!-- Error Message -->
@@ -459,7 +474,7 @@ const handleExportJSON = async () => {
         <!-- Fields Count Column -->
         <template v-slot:item.fieldsCount="{ value }">
           <v-chip size="small" variant="tonal" color="info">
-            {{ value || 0 }} field
+            {{ value || 0 }} {{ t('datasets.table.fields') }}
           </v-chip>
         </template>
 
@@ -495,7 +510,7 @@ const handleExportJSON = async () => {
               @click="viewDataset(item)"
             >
               <EyeIcon size="18" />
-              <v-tooltip activator="parent" location="top">Görüntüle</v-tooltip>
+              <v-tooltip activator="parent" location="top">{{ t('datasets.buttons.view') }}</v-tooltip>
             </v-btn>
             <v-btn
               icon
@@ -505,7 +520,7 @@ const handleExportJSON = async () => {
               @click="editDataset(item)"
             >
               <EditIcon size="18" />
-              <v-tooltip activator="parent" location="top">Düzenle</v-tooltip>
+              <v-tooltip activator="parent" location="top">{{ t('datasets.buttons.edit') }}</v-tooltip>
             </v-btn>
             <v-btn
               icon
@@ -515,7 +530,7 @@ const handleExportJSON = async () => {
               @click="deleteDataset(item)"
             >
               <TrashIcon size="18" />
-              <v-tooltip activator="parent" location="top">Sil</v-tooltip>
+              <v-tooltip activator="parent" location="top">{{ t('datasets.buttons.delete') }}</v-tooltip>
             </v-btn>
           </div>
         </template>
@@ -523,7 +538,7 @@ const handleExportJSON = async () => {
         <!-- No Data -->
         <template v-slot:no-data>
           <div class="text-center py-8">
-            <p class="text-subtitle-1 text-medium-emphasis">Dataset bulunamadı</p>
+            <p class="text-subtitle-1 text-medium-emphasis">{{ t('datasets.noData.title') }}</p>
             <v-btn 
               color="primary" 
               variant="flat"
@@ -531,7 +546,7 @@ const handleExportJSON = async () => {
               class="mt-4"
             >
               <PlusIcon class="mr-2" size="20" />
-              İlk Dataset'i Oluştur
+              {{ t('datasets.noData.button') }}
             </v-btn>
           </div>
         </template>
@@ -540,18 +555,18 @@ const handleExportJSON = async () => {
         <template v-slot:bottom>
           <div class="d-flex justify-space-between align-center pa-3 border-top">
             <div class="text-caption text-medium-emphasis">
-              <strong>Toplam:</strong> {{ datasetStore.totalCount }} kayıt
+              <strong>{{ t('datasets.pagination.total') }}</strong> {{ datasetStore.totalCount }} {{ t('datasets.pagination.records') }}
               <span v-if="datasetStore.totalPages > 1" class="ml-2">
-                (Sayfa {{ tableOptions.page }} / {{ datasetStore.totalPages }})
+                ({{ t('datasets.pagination.page') }} {{ tableOptions.page }} / {{ datasetStore.totalPages }})
               </span>
               <span class="ml-2">
                 | {{ ((tableOptions.page - 1) * tableOptions.itemsPerPage) + 1 }} - 
                 {{ Math.min(tableOptions.page * tableOptions.itemsPerPage, datasetStore.totalCount) }} 
-                / {{ datasetStore.totalCount }} gösteriliyor
+                / {{ datasetStore.totalCount }} {{ t('datasets.pagination.showing') }}
               </span>
             </div>
             <div class="d-flex align-center ga-2">
-              <span class="text-caption text-medium-emphasis">Sayfa başına kayıt:</span>
+              <span class="text-caption text-medium-emphasis">{{ t('datasets.pagination.itemsPerPage') }}</span>
               <v-select
                 v-model="tableOptions.itemsPerPage"
                 :items="[20, 50, 100]"
@@ -579,23 +594,23 @@ const handleExportJSON = async () => {
   <v-dialog v-model="showDeleteDialog" max-width="500px">
     <v-card>
       <v-card-title class="pa-4 bg-error text-white">
-        <span class="text-h6">Dataset'i Sil</span>
+        <span class="text-h6">{{ t('datasets.delete.title') }}</span>
       </v-card-title>
       <v-card-text class="pa-6">
         <p class="text-subtitle-1">
-          Bu dataset'i silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+          {{ t('datasets.delete.message') }}
         </p>
         <p class="text-caption text-medium-emphasis mt-2">
-          <strong>Not:</strong> Silinen dataset'ler restore edilebilir. Ancak dataset schema'sı silinirken, collection ve veriler silinmez.
+          <strong>{{ t('datasets.delete.note') }}</strong> {{ t('datasets.delete.noteDetail') }}
         </p>
       </v-card-text>
       <v-card-actions class="pa-4">
         <v-spacer />
         <v-btn color="error" variant="flat" @click="showDeleteDialog = false">
-          İptal
+          {{ t('datasets.delete.cancel') }}
         </v-btn>
         <v-btn color="success" variant="flat" @click="confirmDelete">
-          Evet, Sil
+          {{ t('datasets.delete.confirm') }}
         </v-btn>
       </v-card-actions>
     </v-card>

@@ -29,7 +29,9 @@ export default defineNuxtConfig({
       hubUrl: process.env.HUB_URL || 'http://localhost:5020',
       llmUrl: process.env.LLM_URL || 'https://localhost:5030',
       // Fallback menu control (default: false - disabled)
-      enableFallbackMenu: process.env.ENABLE_FALLBACK_MENU === 'true' || false
+      enableFallbackMenu: process.env.ENABLE_FALLBACK_MENU === 'true' || false,
+      // App version (from package.json)
+      appVersion: process.env.npm_package_version || '6.0.0'
     }
   },
   build: { transpile: ["vuetify"] },

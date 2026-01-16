@@ -33,7 +33,7 @@ public class SwaggerConfigureOptions : IConfigureOptions<SwaggerGenOptions>
                 Description = "Scheduled task management service for MonitraNG platform",
                 Contact = new OpenApiContact
                 {
-                    Name = "iSIM Platform",
+                    Name = "MonitraNG",
                     Email = "serkan.meral@isimplatform.io"
                 }
             });
