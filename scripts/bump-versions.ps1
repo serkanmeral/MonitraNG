@@ -73,7 +73,7 @@ $Services = @{
 # Get git root directory
 $gitRoot = git rev-parse --show-toplevel 2>$null
 if (-not $gitRoot) {
-    Write-Host "❌ Not in a git repository!" -ForegroundColor Red
+    Write-Host "[ERROR] Not in a git repository!" -ForegroundColor Red
     exit 1
 }
 
@@ -192,7 +192,7 @@ function Bump-BackendVersion {
     $newVersion = "$major.$minor.$patch"
     
     if ($DryRun) {
-        Write-Host "  [DRY RUN] Would update: $currentVersion → $newVersion" -ForegroundColor Cyan
+        Write-Host "  [DRY RUN] Would update: $currentVersion -> $newVersion" -ForegroundColor Cyan
         return $newVersion
     }
     
@@ -203,7 +203,7 @@ function Bump-BackendVersion {
     
     $csproj.Save($CsprojPath)
     
-    Write-Host "  ✅ Updated: $currentVersion → $newVersion" -ForegroundColor Green
+    Write-Host "  [OK] Updated: $currentVersion -> $newVersion" -ForegroundColor Green
     
     return $newVersion
 }
@@ -252,7 +252,7 @@ function Bump-WebUIVersion {
     $newVersion = "$major.$minor.$patch"
     
     if ($DryRun) {
-        Write-Host "  [DRY RUN] Would update: $currentVersion → $newVersion" -ForegroundColor Cyan
+        Write-Host "  [DRY RUN] Would update: $currentVersion -> $newVersion" -ForegroundColor Cyan
         return $newVersion
     }
     
@@ -274,7 +274,7 @@ function Bump-WebUIVersion {
     
     Set-Content -Path $PackageJsonPath -Value $newContent -NoNewline
     
-    Write-Host "  ✅ Updated: $currentVersion → $newVersion" -ForegroundColor Green
+    Write-Host "  [OK] Updated: $currentVersion -> $newVersion" -ForegroundColor Green
     
     return $newVersion
 }
