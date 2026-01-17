@@ -1,13 +1,19 @@
 ---
 title: "Dataset Categories (Dataset Kategorileri)"
 category: "ui-guides"
-tags: ["dataset-categories", "categories", "organization", "management"]
+tags: ["dataset-categories", "categories", "organization", "management", "dataset-organization"]
 service: "Mng.Ui"
 route: "/apps/dataset-categories"
 difficulty: "beginner"
 estimated_time: "8 dakika"
 language: "tr"
 priority: 1
+summary: "Dataset Categories, dataset'leri mantıksal olarak gruplamak için kullanılan organizasyon mekanizmasıdır. Field Type'lardan farklıdır: Kategori dataset seviyesinde tüm dataset'i gruplar, Field Type ise field seviyesinde alanların veri tipini belirler. Örnek kategoriler: 'Book Categories', 'System Datasets'. Dataset oluştururken category field'ına kategori ID'si atanır."
+faq:
+  - question: "Dataset kategorisi nedir?"
+    answer: "Dataset kategorisi, dataset'leri mantıksal olarak gruplamak ve organize etmek için kullanılan bir organizasyon mekanizmasıdır. Field Type'lardan tamamen farklıdır: Kategori dataset seviyesinde tüm dataset'i gruplar, Field Type ise field seviyesinde alanların veri tipini belirler."
+  - question: "Dataset kategorisi ile field type arasındaki fark nedir?"
+    answer: "Dataset kategorisi dataset'leri gruplamak için kullanılır (örnek: 'Book Categories'), field type ise dataset içindeki alanların veri tipini belirler (örnek: text, number, bool). Kategori dataset seviyesinde, field type ise field seviyesinde kullanılır."
 steps:
   - order: 1
     title: "Dataset Categories Listesi Sayfasına Git"
@@ -36,6 +42,32 @@ related_guides:
 
 ## Özet
 Dataset Categories ile dataset'leri kategorilere ayırabilir ve organize edebilirsiniz. Kategoriler dataset'lerin daha kolay bulunmasını sağlar.
+
+## Dataset Kategorisi Nedir?
+
+**Dataset Kategorisi**, dataset'leri mantıksal olarak gruplamak ve organize etmek için kullanılan bir organizasyon mekanizmasıdır. **Field Type'lardan tamamen farklıdır:**
+
+### Dataset Kategorisi vs Field Type
+
+| Özellik | Dataset Kategorisi | Field Type |
+|---------|-------------------|------------|
+| **Amaç** | Dataset'leri gruplamak ve organize etmek | Dataset içindeki alanların veri tipini belirlemek |
+| **Kapsam** | Tüm dataset için geçerli (dataset seviyesi) | Tek bir field için geçerli (field seviyesi) |
+| **Örnekler** | "Book Categories", "System Datasets", "User Management" | `text`, `number`, `bool`, `datetime`, `object`, `relation`, `persons`, `personGroups`, `incremental` |
+| **Kullanım** | Dataset oluştururken `category` field'ına kategori ID'si atanır | Dataset field'larında `fieldType` olarak belirtilir |
+| **Koleksiyon** | `@dataset_categories` | - (field definition içinde) |
+
+### Örnek Senaryo
+
+Bir "Books" dataset'i oluştururken:
+- **Dataset Kategorisi:** "Book Categories" (tüm kitap ile ilgili dataset'leri gruplar)
+- **Field Type'lar:** 
+  - `title` → `text` field type
+  - `price` → `number` field type
+  - `publishedDate` → `datetime` field type
+  - `isActive` → `bool` field type
+
+**Önemli:** Dataset kategorisi, dataset'in hangi gruba ait olduğunu belirler. Field type ise dataset içindeki her bir alanın ne tür veri saklayacağını belirler.
 
 ## Önkoşullar
 - Manager veya Admin yetkisi
@@ -102,8 +134,37 @@ Dataset Categories ile dataset'leri kategorilere ayırabilir ve organize edebili
 
 Dataset oluştururken veya düzenlerken kategori seçebilirsiniz. Bu sayede dataset'ler kategorilere göre organize edilir.
 
+## Sık Sorulan Sorular (FAQ)
+
+### Dataset Kategorisi ile Field Type arasındaki fark nedir?
+
+**Dataset Kategorisi:**
+- Dataset'leri mantıksal olarak gruplamak için kullanılır
+- Örnek: "Book Categories", "System Datasets"
+- Dataset oluştururken `category` field'ına kategori ID'si atanır
+- `@dataset_categories` koleksiyonunda saklanır
+
+**Field Type:**
+- Dataset içindeki alanların veri tipini belirler
+- Örnek: `text`, `number`, `bool`, `datetime`
+- Dataset field tanımlarında `fieldType` olarak belirtilir
+- 9 farklı field type vardır: text, number, bool, datetime, object, relation, persons, personGroups, incremental
+
+### Dataset kategorisi zorunlu mu?
+
+Hayır, dataset kategorisi opsiyoneldir. Dataset oluştururken kategori seçmek zorunlu değildir, ancak dataset'leri organize etmek için önerilir.
+
+### Bir dataset birden fazla kategoriye ait olabilir mi?
+
+Hayır, bir dataset sadece bir kategoriye ait olabilir. Dataset'in `category` field'ı tek bir kategori ID'si içerir.
+
+### Kategori silinebilir mi?
+
+Evet, kategori silinebilir. Ancak o kategoriye ait dataset'ler varsa, bu dataset'lerin `category` field'ı boş kalır veya başka bir kategoriye atanması gerekir.
+
 ## İlgili Linkler
 - [Dataset Oluşturma](../datasets/creating-dataset.md)
+- [Dataset Field Types](../datasets/index.md)
 - [Automated Forms](../automated-forms/automated-forms.md)
 
 ---

@@ -14,8 +14,10 @@
 3. [Faz 1: Dil Dosyası Güncelleme (Çeviri)](#faz-1-dil-dosyası-güncelleme-çeviri)
 4. [Faz 2: Dataset Sorgulama (NLQ)](#faz-2-dataset-sorgulama-nlq)
 5. [Faz 3: Dokümantasyon & Yardım](#faz-3-dokümantasyon--yardım)
-6. [Teknik Detaylar](#teknik-detaylar)
-7. [Kaynak Gereksinimleri](#kaynak-gereksinimleri)
+6. [Faz 4: Kullanıcı Rehberi](#faz-4-kullanıcı-rehberi)
+7. [Faz 5: Chatbot Cevaplarının İyileştirilmesi](#faz-5-chatbot-cevaplarının-iyileştirilmesi)
+8. [Teknik Detaylar](#teknik-detaylar)
+9. [Kaynak Gereksinimleri](#kaynak-gereksinimleri)
 
 ---
 
@@ -60,6 +62,7 @@
 | **Faz 2** | Dataset Sorgulama (NLQ) | ⭐⭐⭐ Yüksek | Yüksek | 3-4 hafta |
 | **Faz 3** | Dokümantasyon & Yardım | ⭐⭐ Orta | Düşük | 1-2 hafta |
 | **Faz 4** | Kullanıcı Rehberi | ⭐ Düşük | Düşük | 1 hafta |
+| **Faz 5** | Chatbot Cevaplarının İyileştirilmesi | ⭐⭐ Orta | Orta | 2-3 hafta |
 
 ---
 
@@ -501,6 +504,164 @@ Kullanıcılar "Şifremi nasıl değiştiririm?" gibi sorular sorabilecek. LLM a
 
 ---
 
+## 📋 Faz 5: Chatbot Cevaplarının İyileştirilmesi
+
+**Durum:** 📋 Planlandı  
+**Öncelik:** ⭐⭐ Orta  
+**Tahmini Süre:** 2-3 hafta
+
+### Genel Bakış
+
+Chatbot (Moni) implementasyonu tamamlandı, ancak cevapların kalitesini ve doğruluğunu artırmak için sürekli iyileştirme yapılması gerekiyor. Bu faz, chatbot'un daha doğru, tutarlı ve kullanıcı dostu cevaplar vermesini sağlayacak.
+
+### Mevcut Durum
+
+✅ **Tamamlanan:**
+- Chatbot backend implementasyonu (Phase 2)
+- Chatbot frontend implementasyonu (Phase 3)
+- Intent detection (keyword + LLM hybrid)
+- Documentation provider entegrasyonu
+- Context management
+- Response caching
+- Retry mechanism
+- Multi-language support
+
+⚠️ **Tespit Edilen Sorunlar:**
+- Dataset kategorisi ile field type karıştırılması gibi kavram yanlışlıkları
+- Bazı cevaplarda tutarsızlık
+- Dokümantasyon snippet'lerinin yeterince etkili kullanılmaması
+- Prompt engineering'in daha da optimize edilmesi gerekiyor
+
+### İyileştirme Hedefleri
+
+#### 1. Dokümantasyon Kalitesi Artırma
+
+**Amaç:** Chatbot'un daha doğru bilgi vermesi için dokümantasyonun kalitesini artırmak.
+
+**Görevler:**
+- [ ] Tüm dokümantasyon dosyalarında `summary` ve `faq` front matter'larının eklenmesi
+- [ ] Kavramların net bir şekilde açıklandığı bölümlerin eklenmesi (örnek: Dataset Kategorisi vs Field Type)
+- [ ] Örnek senaryoların ve kullanım durumlarının eklenmesi
+- [ ] Dokümantasyon snippet'lerinin daha etkili seçilmesi (relevance scoring)
+
+**Örnek İyileştirme:**
+- Dataset kategorisi dokümantasyonuna "Dataset Kategorisi Nedir?" bölümü eklendi ✅
+- FAQ bölümü eklendi ✅
+- Front matter'a `summary` ve `faq` eklendi ✅
+
+#### 2. Prompt Engineering Optimizasyonu
+
+**Amaç:** LLM'in daha doğru ve tutarlı cevaplar vermesi için prompt'ları optimize etmek.
+
+**Görevler:**
+- [ ] System prompt'un daha detaylı hale getirilmesi
+- [ ] Intent-specific prompt'ların iyileştirilmesi
+- [ ] Documentation snippet'lerinin prompt'a daha etkili entegre edilmesi
+- [ ] Few-shot examples eklenmesi (örnek soru-cevap çiftleri)
+- [ ] Response format'ının standardize edilmesi
+
+**Örnek İyileştirmeler:**
+- System prompt'a Moni'nin görevleri daha detaylı eklendi ✅
+- Intent-specific instructions eklendi ✅
+- Documentation snippet'leri prompt'a dahil edildi ✅
+
+#### 3. Response Quality Monitoring
+
+**Amaç:** Chatbot cevaplarının kalitesini izlemek ve iyileştirmek.
+
+**Görevler:**
+- [ ] Kullanıcı feedback mekanizması (👍/👎 butonları)
+- [ ] Response quality metrics (doğruluk, tutarlılık, kullanıcı memnuniyeti)
+- [ ] Hatalı cevapların loglanması ve analizi
+- [ ] Düzenli dokümantasyon review'ları
+
+#### 4. Context Management İyileştirmesi
+
+**Amaç:** Chatbot'un konuşma bağlamını daha iyi anlaması.
+
+**Görevler:**
+- [ ] Conversation history'nin daha etkili kullanılması
+- [ ] Context window'un optimize edilmesi
+- [ ] Önceki soruların ve cevapların daha iyi referans edilmesi
+- [ ] Multi-turn conversation desteğinin iyileştirilmesi
+
+#### 5. Dokümantasyon Coverage Artırma
+
+**Amaç:** Chatbot'un daha fazla konuda yardımcı olabilmesi.
+
+**Görevler:**
+- [ ] Eksik dokümantasyon bölümlerinin tamamlanması
+- [ ] Yeni özellikler için dokümantasyon eklenmesi
+- [ ] API dokümantasyonlarının chatbot için optimize edilmesi
+- [ ] UI guide'ların chatbot için yapılandırılması
+
+### Implementation Steps
+
+#### Step 1: Dokümantasyon Review ve İyileştirme
+
+1. Mevcut dokümantasyon dosyalarını gözden geçir
+2. Eksik `summary` ve `faq` bölümlerini ekle
+3. Kavram karışıklıklarını gider (örnek: Dataset Kategorisi vs Field Type)
+4. Örnek senaryolar ekle
+
+#### Step 2: Prompt Engineering İyileştirmesi
+
+1. System prompt'u gözden geçir ve optimize et
+2. Intent-specific prompt'ları iyileştir
+3. Few-shot examples ekle
+4. Response format'ını standardize et
+
+#### Step 3: Response Quality Monitoring
+
+1. Feedback mekanizması ekle (frontend)
+2. Metrics toplama sistemi kur (backend)
+3. Log analizi için dashboard oluştur
+
+#### Step 4: Context Management İyileştirmesi
+
+1. Conversation history yönetimini optimize et
+2. Context window'u ayarla
+3. Multi-turn conversation desteğini test et
+
+### Test Senaryoları
+
+1. **Kavram Doğruluğu Testi**
+   - Soru: "Dataset kategorisi nedir?"
+   - Beklenen: Field type'larla karıştırılmamalı, doğru açıklama verilmeli
+
+2. **Tutarlılık Testi**
+   - Aynı soru farklı zamanlarda sorulduğunda benzer cevaplar alınmalı
+
+3. **Dokümantasyon Referans Testi**
+   - Cevaplarda ilgili dokümantasyon kaynakları belirtilmeli
+
+4. **Multi-turn Conversation Testi**
+   - Önceki sorulara referans verilebilmeli
+
+### Öncelikli İyileştirmeler
+
+1. **Yüksek Öncelik:**
+   - Dokümantasyon kalitesi artırma (summary, faq ekleme)
+   - Prompt engineering optimizasyonu
+   - Kavram karışıklıklarının giderilmesi
+
+2. **Orta Öncelik:**
+   - Response quality monitoring
+   - Context management iyileştirmesi
+
+3. **Düşük Öncelik:**
+   - Dokümantasyon coverage artırma
+   - Advanced features (sentiment analysis, etc.)
+
+### Notlar
+
+- Chatbot cevaplarının iyileştirilmesi sürekli bir süreçtir
+- Kullanıcı feedback'leri önemlidir
+- Dokümantasyon kalitesi chatbot cevaplarının kalitesini doğrudan etkiler
+- Prompt engineering, model değişikliklerinde tekrar gözden geçirilmelidir
+
+---
+
 ## 🛠️ Teknik Detaylar
 
 ### Clean Architecture Pattern
@@ -574,4 +735,4 @@ MngLLM servisi, MngDataGateway pattern'ini takip eder:
 
 ---
 
-**Son Güncelleme:** 11 Ocak 2026
+**Son Güncelleme:** 16 Ocak 2026
