@@ -1192,6 +1192,42 @@ t('common.save'); // TypeScript otomatik tamamlama
 - ✅ Side Menu Manager'da "Dil Dosyalarını Güncelle" butonu eklendi
 - ✅ Butona tıklandığında `pageCode` key'i tüm dil dosyalarına eklenir
 - ✅ Source language (Türkçe) için `title`/`header` değeri kullanılır
+
+#### 6.17 Automated Forms Dil Desteği ✅ (Tamamlandı - 2026-01-16)
+
+**Durum:** ✅ Tamamlandı
+
+**Hedef:**
+- Automated Forms sayfalarına tam i18n desteği eklenmesi
+- Liste, oluştur/düzenle ve görüntüleme sayfalarının tüm metinlerinin çevrilmesi
+- 5 dil desteği (tr, en, fr, ar, zh)
+
+**Tamamlanan İşler:**
+- ✅ Liste sayfası (index.vue) - Tüm metinler i18n'e çevrildi
+  - Tablo başlıkları, butonlar, mesajlar, diyaloglar
+  - Arama, pagination, filtreleme metinleri
+- ✅ Oluştur/Düzenle sayfası (AutomatedFormForm.vue) - Tüm metinler i18n'e çevrildi
+  - Form alanları, validasyon mesajları
+  - Tab başlıkları (Temel Bilgiler, Liste Ayarları, Form Ayarları)
+  - Liste ve form konfigürasyon metinleri
+- ✅ Görüntüleme sayfası (view/[formCode].vue) - Tüm metinler i18n'e çevrildi
+  - Arama, filtreleme, tablo metinleri
+  - Form ve silme dialog'ları
+  - Boş durum mesajları
+- ✅ Locale dosyalarına `automated-forms` namespace'i eklendi
+  - Türkçe (tr.json) - Tam çeviriler
+  - İngilizce (en.json) - Tam çeviriler
+  - Fransızca (fr.json) - Tam çeviriler
+  - Arapça (ar.json) - Tam çeviriler
+  - Çince (zh.json) - Tam çeviriler
+- ✅ Tarih formatları dile göre ayarlanıyor (localeStore entegrasyonu)
+- ✅ Hierarchical key structure kullanıldı (list, form, view alt bölümleri)
+
+**Yapılan Değişiklikler:**
+- `pages/apps/automated-forms/index.vue` - i18n desteği eklendi
+- `components/apps/automated-forms/AutomatedFormForm.vue` - i18n desteği eklendi
+- `pages/apps/automated-forms/view/[formCode].vue` - i18n desteği eklendi
+- `utils/locales/*.json` - automated-forms namespace'i eklendi (5 dil)
 - ✅ **MngLLM Service entegrasyonu tamamlandı**
   - ✅ `MenuItemForm.vue` - `updateLocales` fonksiyonu LLM API çağrısı yapıyor
   - ✅ Otomatik çeviri: Türkçe → İngilizce, Fransızca, Arapça, Çince
@@ -2224,6 +2260,14 @@ Login olan kullanıcının domain bilgisi token'dan alınarak MngKeeper'dan geti
   - Locale güncelleme yetkilendirmesi: ManagerOrAdminAuthorization attribute eklendi
   - MngKeeper SystemLocalesController'da PutLocale endpoint'i manager ve admin kullanıcılar için açıldı
   - Locale cache invalidation mekanizması ($reloadLocales fonksiyonu)
+- **2026-01-16** - Phase 6.17: Automated Forms Dil Desteği ✅
+  - Automated Forms sayfalarına tam dil desteği eklendi
+  - Liste sayfası (index.vue) - tüm metinler i18n'e çevrildi
+  - Oluştur/Düzenle sayfası (AutomatedFormForm.vue) - form alanları, validasyon mesajları, ayarlar i18n'e çevrildi
+  - Görüntüleme sayfası (view/[formCode].vue) - arama, filtreleme, tablo, dialog'lar i18n'e çevrildi
+  - Locale dosyalarına `automated-forms` namespace'i eklendi (5 dil: tr, en, fr, ar, zh)
+  - Tarih formatları dile göre ayarlanıyor (localeStore entegrasyonu)
+  - Hierarchical key structure kullanıldı (list, form, view alt bölümleri)
 - **2026-01-XX** - Phase 9.1: Domain Logo Support ✅
   - Login sonrası domain bilgisi otomatik yükleme
   - Side menu'de domain logosu gösterimi (kullanıcı adı arka planı)
@@ -2233,7 +2277,7 @@ Login olan kullanıcının domain bilgisi token'dan alınarak MngKeeper'dan geti
 
 ---
 
-**Son Güncelleme:** 2026-01-15  
+**Son Güncelleme:** 2026-01-16  
 **Version:** 1.3.0  
-**Status:** 🚧 Development Phase (Side Menu ✅, Real-time Updates ✅, Localization ✅, Diğer Phase'ler 📋 Planning)
+**Status:** 🚧 Development Phase (Side Menu ✅, Real-time Updates ✅, Localization ✅, Automated Forms i18n ✅, Diğer Phase'ler 📋 Planning)
 

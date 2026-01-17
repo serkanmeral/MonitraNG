@@ -68,6 +68,7 @@ plugins:
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
+  - meta
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences:
@@ -95,16 +96,16 @@ nav:
   #   - user-guide/authentication.md
   #   - user-guide/api-usage.md
   - API Documentation:
-      - api/overview.md
+      - Overview: api/overview.md
       - MngKeeper:
-          - api/mngkeeper/index.md
-          - api/mngkeeper/openapi.json
+          - API Docs: api/mngkeeper/index.md
+          # - OpenAPI: api/mngkeeper/openapi.json  # OpenAPI dosyası eklendiğinde aktif edilecek
       - MngDataGateway:
-          - api/mngdatagateway/index.md
-          - api/mngdatagateway/openapi.json
+          - API Docs: api/mngdatagateway/index.md
+          # - OpenAPI: api/mngdatagateway/openapi.json  # OpenAPI dosyası eklendiğinde aktif edilecek
       - MngHub:
-          - api/mnghub/index.md
-          - api/mnghub/openapi.json
+          - API Docs: api/mnghub/index.md
+          # - OpenAPI: api/mnghub/openapi.json  # OpenAPI dosyası eklendiğinde aktif edilecek
   - Services:
       - MngKeeper:
           - Architecture: MngKeeper/architecture/ARCHITECTURE_GUIDE.md
@@ -117,9 +118,78 @@ nav:
       - MngHub:
           - Architecture: MngHub/architecture/ARCHITECTURE_PLAN.md
           - Guides: MngHub/guides/GATEWAY_INTEGRATION.md
+      - MngReactor:
+          - Architecture: MngReactor/architecture/ARCHITECTURE_GUIDE.md
+          - API: MngReactor/api/API_DOCUMENTATION.md
+          - Guides:
+              - Gateway Integration: MngReactor/guides/GATEWAY_INTEGRATION.md
+              - Usage Guide: MngReactor/guides/USAGE_GUIDE.md
+      - MngEngine:
+          - Architecture: MngEngine/architecture/ARCHITECTURE_GUIDE.md
+          - API: MngEngine/api/API_DOCUMENTATION.md
+          - Guides:
+              - Gateway Integration: MngEngine/guides/GATEWAY_INTEGRATION.md
+      - MngNotifier:
+          - Architecture: MngNotifier/architecture/ARCHITECTURE_GUIDE.md
+          - API: MngNotifier/api/API_DOCUMENTATION.md
+          - Guides:
+              - Gateway Integration: MngNotifier/guides/GATEWAY_INTEGRATION.md
+      - MngScheduler:
+          - Architecture: MngScheduler/architecture/ARCHITECTURE_GUIDE.md
+          - API: MngScheduler/api/API_DOCUMENTATION.md
+          - Guides:
+              - Gateway Integration: MngScheduler/guides/GATEWAY_INTEGRATION.md
+      - MngLLM:
+          - Architecture: MngLLM/architecture/ARCHITECTURE_GUIDE.md
+          - API: MngLLM/api/API_DOCUMENTATION.md
+          - Guides:
+              - Gateway Integration: MngLLM/guides/GATEWAY_INTEGRATION.md
+      - MngGateway:
+          - Architecture: MngGateway/architecture/ARCHITECTURE_GUIDE.md
+          - API: MngGateway/api/API_DOCUMENTATION.md
+      - MngAdmin:
+          - Architecture: MngAdmin/architecture/ARCHITECTURE_GUIDE.md
+          - API: MngAdmin/api/API_DOCUMENTATION.md
+          - Guides:
+              - Gateway Integration: MngAdmin/guides/GATEWAY_INTEGRATION.md
       - Mng.Ui:
           - Docker Deployment: Mng.Ui/guides/DOCKER_DEPLOYMENT.md
           - Gateway Integration: Mng.Ui/guides/GATEWAY_INTEGRATION.md
+          - I18N Guide: Mng.Ui/guides/I18N_GUIDE.md
+          - UI Guides:
+              - Overview: Mng.Ui/guides/chatbot/index.md
+              - User Management: Mng.Ui/guides/chatbot/users/user-management.md
+              - Group Management: Mng.Ui/guides/chatbot/groups/group-management.md
+              - Domain Management: Mng.Ui/guides/chatbot/domain/domain-management.md
+              - Automated Forms: Mng.Ui/guides/chatbot/automated-forms/automated-forms.md
+              - Side Menu Manager: Mng.Ui/guides/chatbot/side-menu/side-menu-manager.md
+              - Locale Editor: Mng.Ui/guides/chatbot/i18n/locale-editor.md
+              - Dataset Categories: Mng.Ui/guides/chatbot/dataset-categories/dataset-categories.md
+              - Authentication: Mng.Ui/guides/chatbot/authentication/login.md
+          - Dataset Guides:
+              - Overview: Mng.Ui/guides/chatbot/datasets/index.md
+              - Creating Dataset: Mng.Ui/guides/chatbot/datasets/creating-dataset.md
+              - Field Types:
+                  - Text: Mng.Ui/guides/chatbot/datasets/field-types/text.md
+                  - Number: Mng.Ui/guides/chatbot/datasets/field-types/number.md
+                  - Bool: Mng.Ui/guides/chatbot/datasets/field-types/bool.md
+                  - DateTime: Mng.Ui/guides/chatbot/datasets/field-types/datetime.md
+                  - Object: Mng.Ui/guides/chatbot/datasets/field-types/object.md
+                  - Relation: Mng.Ui/guides/chatbot/datasets/field-types/relation.md
+                  - Persons: Mng.Ui/guides/chatbot/datasets/field-types/persons.md
+                  - PersonGroups: Mng.Ui/guides/chatbot/datasets/field-types/personGroups.md
+                  - Incremental: Mng.Ui/guides/chatbot/datasets/field-types/incremental.md
+              - Validations:
+                  - Field-Level: Mng.Ui/guides/chatbot/datasets/validations/field-level-validation.md
+                  - Expression-Based: Mng.Ui/guides/chatbot/datasets/validations/expression-validation.md
+                  - HTTP-Based: Mng.Ui/guides/chatbot/datasets/validations/http-validation.md
+              - Indexes:
+                  - Index Types: Mng.Ui/guides/chatbot/datasets/indexes/index-types.md
+                  - Unique Index: Mng.Ui/guides/chatbot/datasets/indexes/unique-index.md
+                  - Composite Index: Mng.Ui/guides/chatbot/datasets/indexes/composite-index.md
+                  - Best Practices: Mng.Ui/guides/chatbot/datasets/indexes/index-best-practices.md
+              - Examples:
+                  - Books Dataset: Mng.Ui/guides/chatbot/datasets/examples/books-dataset.md
   - DevOps:
       - CI/CD: cicd/current_status.md
       - DevOps Roadmap: devops-roadmap.md

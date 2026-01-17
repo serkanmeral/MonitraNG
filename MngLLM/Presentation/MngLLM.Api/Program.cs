@@ -96,6 +96,22 @@ builder.Services.AddOpenApi();
 // Authentication
 builder.Services.AddAuthentication(settings);
 
+// Authorization - Development'ta chatbot ve docs için AllowAnonymous
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddAuthorization(options =>
+    {
+        options.AddPolicy("AllowAnonymousInDevelopment", policy =>
+        {
+            policy.RequireAssertion(_ => true); // Always allow in development
+        });
+    });
+}
+else
+{
+    builder.Services.AddAuthorization();
+}
+
 // Application & Infrastructure Services
 builder.Services.AddApplicationServices(settings);
 builder.Services.AddInfrastructureServices();
@@ -150,6 +166,7 @@ app.UseSerilogRequestLogging();
 
 // HTTP redirection disabled (SSL termination at API Gateway)
 
+// Authentication middleware
 app.UseAuthentication();
 app.UseAuthorization();
 

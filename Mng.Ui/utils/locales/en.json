@@ -1375,5 +1375,348 @@
       },
       "logout": "Logout"
     }
+  },
+  "welcome": {
+    "title": "Welcome",
+    "subtitle": "You have successfully logged into MonitraNG",
+    "greeting": {
+      "morning": "Good Morning",
+      "afternoon": "Good Afternoon",
+      "evening": "Good Evening",
+      "night": "Good Night"
+    },
+    "hero": {
+      "welcomeMessage": "Welcome back",
+      "lastLogin": "Last login"
+    },
+    "quickStats": {
+      "title": "Quick Statistics",
+      "totalDataPoints": "Total Data Points",
+      "activeDevices": "Active Devices",
+      "alertsToday": "Alerts Today",
+      "systemHealth": "System Health",
+      "totalUsers": "Total Users",
+      "lastActivity": "Last Activity"
+    },
+    "quickAccess": {
+      "title": "Quick Access",
+      "dashboard": "Dashboard",
+      "dataManagement": "Data Management",
+      "reports": "Reports",
+      "settings": "Settings",
+      "profile": "Profile",
+      "users": "Users",
+      "datasets": "Datasets"
+    },
+    "recentActivity": {
+      "title": "Recent Activity",
+      "noActivity": "No recent activity",
+      "viewAll": "View All"
+    },
+    "actions": {
+      "goToDashboard": "Go to Dashboard",
+      "exploreFeatures": "Explore Features",
+      "backToHome": "Back to Home"
+    }
+  },
+  "automated-forms": {
+    "title": "Automated Forms",
+    "breadcrumbs": {
+      "home": "Dashboard",
+      "automatedForms": "Automated Forms",
+      "create": "New Form",
+      "edit": "Edit Form",
+      "view": "View Form"
+    },
+    "list": {
+      "title": "Automated Forms",
+      "search": {
+        "label": "Search Forms",
+        "placeholder": "Form name or code...",
+        "hint": "Search by form name or code"
+      },
+      "buttons": {
+        "refresh": "Refresh",
+        "newForm": "New Form",
+        "openForm": "Open Form",
+        "view": "View",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "table": {
+        "headers": {
+          "formName": "Form Name",
+          "dataset": "Dataset",
+          "isActive": "Active",
+          "sideMenu": "Side Menu",
+          "createdAt": "Created At",
+          "actions": "Actions"
+        },
+        "status": {
+          "active": "Active",
+          "inactive": "Inactive"
+        },
+        "sideMenu": {
+          "added": "Added",
+          "notAdded": "Not Added"
+        },
+        "noData": {
+          "title": "No forms found",
+          "button": "Create First Form"
+        },
+        "pagination": {
+          "total": "Total:",
+          "records": "records",
+          "page": "Page",
+          "of": "/",
+          "showing": "showing",
+          "itemsPerPage": "Items per page:"
+        }
+      },
+      "viewDialog": {
+        "title": "Form Details",
+        "fields": {
+          "formCode": "Form Code:",
+          "description": "Description:",
+          "dataset": "Dataset:",
+          "status": "Status:",
+          "sideMenu": "Side Menu:",
+          "createdAt": "Created At:",
+          "updatedAt": "Last Updated:"
+        },
+        "noDescription": "No description",
+        "buttons": {
+          "openForm": "Open Form",
+          "close": "Close",
+          "edit": "Edit"
+        }
+      },
+      "deleteDialog": {
+        "title": "Delete Form",
+        "message": "Are you sure you want to delete this form? This action cannot be undone.",
+        "buttons": {
+          "cancel": "Cancel",
+          "confirm": "Yes, Delete"
+        }
+      }
+    },
+    "form": {
+      "title": {
+        "create": "New Form",
+        "edit": "Edit Form"
+      },
+      "tabs": {
+        "basic": "Basic Information",
+        "list": "List Settings",
+        "form": "Form Settings"
+      },
+      "fields": {
+        "formName": {
+          "label": "Form Name *",
+          "placeholder": "E.g: Books Management",
+          "hint": "3-100 characters"
+        },
+        "formCode": {
+          "label": "Form Code *",
+          "placeholder": "E.g: books-form",
+          "hint": "3-50 characters, only letters, numbers, underscore and dash"
+        },
+        "description": {
+          "label": "Description",
+          "placeholder": "Form description (optional)"
+        },
+        "datasetName": {
+          "label": "Dataset Selection *",
+          "placeholder": "Select a dataset",
+          "hint": "Select the dataset to use for this form"
+        },
+        "isActive": {
+          "label": "Active"
+        }
+      },
+      "validation": {
+        "formNameRequired": "Form name is required",
+        "formNameMinLength": "Form name must be at least 3 characters",
+        "formNameMaxLength": "Form name can be at most 100 characters",
+        "formCodeRequired": "Form code is required",
+        "formCodeMinLength": "Form code must be at least 3 characters",
+        "formCodeMaxLength": "Form code can be at most 50 characters",
+        "formCodeInvalid": "Form code can only contain letters, numbers, underscore and dash",
+        "datasetRequired": "Dataset selection is required"
+      },
+      "listConfig": {
+        "title": "List Settings",
+        "description": "You can configure visibility, sorting, filtering and order settings for each field in the list view.",
+        "table": {
+          "headers": {
+            "fieldName": "Field Name",
+            "visible": "Visible",
+            "sortable": "Sortable",
+            "filterable": "Filterable",
+            "order": "Order"
+          }
+        },
+        "defaultSortBy": {
+          "label": "Default Sort (Field)",
+          "placeholder": "Select field"
+        },
+        "defaultSortOrder": {
+          "label": "Sort Direction",
+          "ascending": "Ascending",
+          "descending": "Descending"
+        },
+        "enableSearch": {
+          "label": "Enable Search",
+          "hint": "Enable search feature in list view"
+        },
+        "noDataset": "You must select a dataset first to configure list settings."
+      },
+      "formConfig": {
+        "title": "Form Settings",
+        "visibleFields": {
+          "label": "Visible Fields",
+          "placeholder": "Select fields",
+          "hint": "Fields to show in form (if empty, all fields are shown)"
+        },
+        "readonlyFields": {
+          "label": "Read-only Fields",
+          "placeholder": "Select fields",
+          "hint": "Read-only fields (incremental fields are automatically read-only)"
+        },
+        "relationFields": {
+          "title": "Relation Field Settings",
+          "description": "For relation fields, you can select which field to display in dropdown and which field to use as ID value.",
+          "displayField": {
+            "label": "Display Field (To Show)",
+            "placeholder": "Select field",
+            "hint": "Field to display in dropdown"
+          },
+          "idField": {
+            "label": "ID Field (Value)",
+            "placeholder": "Select field (default: __dataId)",
+            "hint": "Field to use as value (usually __dataId)"
+          },
+          "noRelationFields": "No relation type fields found in this dataset."
+        },
+        "fieldLayout": {
+          "title": "Field Layout Settings",
+          "description": "For each field, you can configure how many columns it occupies in form view and which group it belongs to.",
+          "table": {
+            "headers": {
+              "fieldName": "Field Name",
+              "columnSpan": "Column Width",
+              "group": "Group"
+            }
+          },
+          "groupPlaceholder": "Group name (optional)"
+        },
+        "noDataset": "You must select a dataset first to configure form settings."
+      },
+      "buttons": {
+        "cancel": "Cancel",
+        "create": "Create",
+        "update": "Update"
+      },
+      "messages": {
+        "loading": "Loading form...",
+        "notFound": "Form not found",
+        "loadError": "An error occurred while loading the form",
+        "createSuccess": "Form created successfully!",
+        "updateSuccess": "Form updated successfully!",
+        "saveError": "An error occurred while saving the form",
+        "duplicateCode": "This form code is already in use. Please choose a different code."
+      },
+      "warning": "Warning: Manager or admin permission is required to access this page."
+    },
+    "view": {
+      "title": "View Form",
+      "loading": "Loading form...",
+      "buttons": {
+        "newRecord": "New Record",
+        "refresh": "Refresh",
+        "edit": "Edit",
+        "delete": "Delete",
+        "save": "Save",
+        "update": "Update",
+        "cancel": "Cancel",
+        "close": "Close"
+      },
+      "search": {
+        "label": "Search...",
+        "placeholder": "Enter a term to search..."
+      },
+      "filters": {
+        "title": "Filters",
+        "clear": "Clear Filters",
+        "filterPlaceholder": "filter by..."
+      },
+      "table": {
+        "headers": {
+          "actions": "Actions"
+        },
+        "pagination": {
+          "total": "Total",
+          "records": "records"
+        }
+      },
+      "empty": {
+        "title": "No data yet",
+        "description": "No records found in this dataset yet. You can create the first record by clicking the \"New Record\" button."
+      },
+      "formDialog": {
+        "title": {
+          "create": "New Record",
+          "edit": "Edit Record"
+        }
+      },
+      "deleteDialog": {
+        "title": "Delete Record",
+        "message": "Are you sure you want to delete this record? This action cannot be undone.",
+        "buttons": {
+          "cancel": "Cancel",
+          "confirm": "Yes, Delete"
+        }
+      },
+      "messages": {
+        "loadError": "An error occurred while loading the form",
+        "dataLoadError": "An error occurred while loading data",
+        "createError": "An error occurred while creating the record",
+        "updateError": "An error occurred while updating the record",
+        "deleteError": "An error occurred while deleting the record",
+        "itemLoadError": "An error occurred while loading the record",
+        "itemIdNotFound": "Record ID not found"
+      },
+      "cellFormat": {
+        "yes": "Yes",
+        "no": "No"
+      }
+    }
+  },
+  "chatbot": {
+    "title": "Moni - Assistant Chatbot",
+    "subtitle": "How can I help you?",
+    "placeholder": "Type your message...",
+    "send": "Send",
+    "clear": "Clear",
+    "close": "Close",
+    "open": "Open",
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "typing": "Typing...",
+    "error": "An error occurred. Please try again.",
+    "noMessages": "No messages yet. You can start by saying hello.",
+    "intent": {
+      "nlq": "Data Query",
+      "docs": "Documentation",
+      "guide": "Guide",
+      "general": "General"
+    },
+    "documentation": {
+      "sources": "Related Documentation",
+      "view": "View"
+    },
+    "copy": "Copy",
+    "copied": "Copied!",
+    "sessionCleared": "Conversation history cleared"
   }
 }

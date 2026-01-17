@@ -6,6 +6,19 @@ import { useDatasetStore } from '@/stores/apps/dataset';
 import { useAuthStore } from '@/stores/auth';
 import { FileCodeIcon, CheckIcon, XIcon } from 'vue-tabler-icons';
 
+// Get i18n instance for legacy mode
+const nuxtApp = useNuxtApp();
+const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
+const t = (key: string, params?: any) => {
+  if (i18n && i18n.t) {
+    return i18n.t(key, params);
+  }
+  if (i18n?.global?.t) {
+    return i18n.global.t(key, params);
+  }
+  return key;
+};
+
 const route = useRoute();
 const router = useRouter();
 const formStore = useAutomatedFormsStore();
@@ -23,17 +36,17 @@ const isEditMode = computed(() => {
 });
 
 const page = computed(() => ({
-  title: isEditMode.value ? 'Form Düzenle' : 'Yeni Form',
+  title: isEditMode.value ? t('automated-forms.form.title.edit') : t('automated-forms.form.title.create'),
 }));
 
 const breadcrumbs = computed(() => [
   {
-    text: 'Dashboard',
+    text: t('automated-forms.breadcrumbs.home'),
     disabled: false,
     href: '/dashboards/analytical',
   },
   {
-    text: 'Otomatik Formlar',
+    text: t('automated-forms.breadcrumbs.automatedForms'),
     disabled: false,
     href: '/apps/automated-forms',
   },
@@ -131,20 +144,20 @@ const listColumnConfigs = computed(() => {
 
 // Validation rules
 const formNameRules = [
-  (v: string) => !!v || 'Form adı gereklidir',
-  (v: string) => (v && v.length >= 3) || 'Form adı en az 3 karakter olmalıdır',
-  (v: string) => (v && v.length <= 100) || 'Form adı en fazla 100 karakter olabilir',
+  (v: string) => !!v || t('automated-forms.form.validation.formNameRequired'),
+  (v: string) => (v && v.length >= 3) || t('automated-forms.form.validation.formNameMinLength'),
+  (v: string) => (v && v.length <= 100) || t('automated-forms.form.validation.formNameMaxLength'),
 ];
 
 const formCodeRules = [
-  (v: string) => !!v || 'Form kodu gereklidir',
-  (v: string) => (v && v.length >= 3) || 'Form kodu en az 3 karakter olmalıdır',
-  (v: string) => (v && v.length <= 50) || 'Form kodu en fazla 50 karakter olabilir',
-  (v: string) => /^[a-zA-Z0-9_-]+$/.test(v) || 'Form kodu sadece harf, rakam, alt çizgi ve tire içerebilir',
+  (v: string) => !!v || t('automated-forms.form.validation.formCodeRequired'),
+  (v: string) => (v && v.length >= 3) || t('automated-forms.form.validation.formCodeMinLength'),
+  (v: string) => (v && v.length <= 50) || t('automated-forms.form.validation.formCodeMaxLength'),
+  (v: string) => /^[a-zA-Z0-9_-]+$/.test(v) || t('automated-forms.form.validation.formCodeInvalid'),
 ];
 
 const datasetNameRules = [
-  (v: string) => !!v || 'Dataset seçimi gereklidir',
+  (v: string) => !!v || t('automated-forms.form.validation.datasetRequired'),
 ];
 
 // Form state
@@ -305,13 +318,13 @@ const loadForm = async () => {
         }
       }
     } else {
-      errorMessage.value = 'Form bulunamadı';
+      errorMessage.value = t('automated-forms.form.messages.notFound');
       setTimeout(() => {
         router.push('/apps/automated-forms');
       }, 2000);
     }
   } catch (error: any) {
-    errorMessage.value = error.message || 'Form yüklenirken bir hata oluştu';
+    errorMessage.value = error.message || t('automated-forms.form.messages.loadError');
     setTimeout(() => {
       router.push('/apps/automated-forms');
     }, 2000);
@@ -369,17 +382,17 @@ const handleSubmit = async () => {
       // Get form dataId first
       const existingForm = await formStore.fetchFormByCode(props.formCode);
       if (!existingForm || (!existingForm.__dataId && !existingForm.dataId)) {
-        throw new Error('Form bulunamadı');
+        throw new Error(t('automated-forms.form.messages.notFound'));
       }
       const dataId = existingForm.__dataId || existingForm.dataId;
       
       // Update existing form
       await formStore.updateForm(dataId, formDataToSubmit);
-      successMessage.value = 'Form başarıyla güncellendi!';
+      successMessage.value = t('automated-forms.form.messages.updateSuccess');
     } else {
       // Create new form
       await formStore.createForm(formDataToSubmit);
-      successMessage.value = 'Form başarıyla oluşturuldu!';
+      successMessage.value = t('automated-forms.form.messages.createSuccess');
     }
     
     // Redirect to list after success
@@ -387,11 +400,11 @@ const handleSubmit = async () => {
       router.push('/apps/automated-forms');
     }, 1500);
   } catch (error: any) {
-    errorMessage.value = error.message || 'Form kaydedilirken bir hata oluştu';
+    errorMessage.value = error.message || t('automated-forms.form.messages.saveError');
     
     // Handle duplicate form code error
     if (error.message && (error.message.includes('zaten mevcut') || error.message.includes('duplicate'))) {
-      errorMessage.value = 'Bu form kodu zaten kullanılıyor. Lütfen farklı bir kod seçin.';
+      errorMessage.value = t('automated-forms.form.messages.duplicateCode');
     }
   } finally {
     loading.value = false;
@@ -536,20 +549,20 @@ watch(
 );
 
 // List column config table headers
-const listColumnConfigHeaders = [
-  { title: 'Field Adı', key: 'fieldName', sortable: false, width: '200px' },
-  { title: 'Görünür', key: 'visible', sortable: false, width: '100px', align: 'center' },
-  { title: 'Sıralama', key: 'sortable', sortable: false, width: '120px', align: 'center' },
-  { title: 'Filtreleme', key: 'filterable', sortable: false, width: '120px', align: 'center' },
-  { title: 'Sıra', key: 'order', sortable: false, width: '80px', align: 'center' },
-];
+const listColumnConfigHeaders = computed(() => [
+  { title: t('automated-forms.form.listConfig.table.headers.fieldName'), key: 'fieldName', sortable: false, width: '200px' },
+  { title: t('automated-forms.form.listConfig.table.headers.visible'), key: 'visible', sortable: false, width: '100px', align: 'center' },
+  { title: t('automated-forms.form.listConfig.table.headers.sortable'), key: 'sortable', sortable: false, width: '120px', align: 'center' },
+  { title: t('automated-forms.form.listConfig.table.headers.filterable'), key: 'filterable', sortable: false, width: '120px', align: 'center' },
+  { title: t('automated-forms.form.listConfig.table.headers.order'), key: 'order', sortable: false, width: '80px', align: 'center' },
+]);
 
 // Field layout table headers
-const fieldLayoutHeaders = [
-  { title: 'Field Adı', key: 'fieldName', sortable: false, width: '200px' },
-  { title: 'Sütun Genişliği', key: 'columnSpan', sortable: false, width: '150px' },
-  { title: 'Grup', key: 'group', sortable: false },
-];
+const fieldLayoutHeaders = computed(() => [
+  { title: t('automated-forms.form.formConfig.fieldLayout.table.headers.fieldName'), key: 'fieldName', sortable: false, width: '200px' },
+  { title: t('automated-forms.form.formConfig.fieldLayout.table.headers.columnSpan'), key: 'columnSpan', sortable: false, width: '150px' },
+  { title: t('automated-forms.form.formConfig.fieldLayout.table.headers.group'), key: 'group', sortable: false },
+]);
 </script>
 
 <template>
@@ -596,7 +609,7 @@ const fieldLayoutHeaders = [
         density="compact"
         class="mb-4"
       >
-        <strong>Uyarı:</strong> Bu sayfaya erişim için manager veya admin yetkisi gereklidir.
+        <strong>{{ t('automated-forms.form.warning').split(':')[0] }}:</strong> {{ t('automated-forms.form.warning').split(':').slice(1).join(':').trim() }}
       </v-alert>
       
       <!-- Loading State (only for edit mode when fetching data) -->
@@ -606,7 +619,7 @@ const fieldLayoutHeaders = [
           color="primary"
           size="64"
         ></v-progress-circular>
-        <p class="text-subtitle-1 mt-4 text-medium-emphasis">Form yükleniyor...</p>
+        <p class="text-subtitle-1 mt-4 text-medium-emphasis">{{ t('automated-forms.form.messages.loading') }}</p>
       </div>
       
       <!-- Form (always visible in create mode, visible in edit mode after data is loaded) -->
@@ -617,9 +630,9 @@ const fieldLayoutHeaders = [
       >
         <!-- Tabs -->
         <v-tabs v-model="currentTab" bg-color="primary" class="mb-4">
-          <v-tab value="basic">Temel Bilgiler</v-tab>
-          <v-tab value="list" :disabled="!selectedDataset">Liste Ayarları</v-tab>
-          <v-tab value="form" :disabled="!selectedDataset">Form Ayarları</v-tab>
+          <v-tab value="basic">{{ t('automated-forms.form.tabs.basic') }}</v-tab>
+          <v-tab value="list" :disabled="!selectedDataset">{{ t('automated-forms.form.tabs.list') }}</v-tab>
+          <v-tab value="form" :disabled="!selectedDataset">{{ t('automated-forms.form.tabs.form') }}</v-tab>
         </v-tabs>
         
         <v-divider></v-divider>
@@ -630,7 +643,7 @@ const fieldLayoutHeaders = [
             <v-window-item value="basic">
               <v-row>
                 <v-col cols="12">
-                  <h3 class="text-h6 mb-4">Temel Bilgiler</h3>
+                  <h3 class="text-h6 mb-4">{{ t('automated-forms.form.tabs.basic') }}</h3>
                 </v-col>
                 
                 <!-- Form Name -->
@@ -638,12 +651,12 @@ const fieldLayoutHeaders = [
                   <v-text-field
                     v-model="formData.formName"
                     :rules="formNameRules"
-                    label="Form Adı *"
-                    placeholder="Örn: Books Management"
+                    :label="t('automated-forms.form.fields.formName.label')"
+                    :placeholder="t('automated-forms.form.fields.formName.placeholder')"
                     variant="outlined"
                     required
                     :disabled="loading || isEditMode"
-                    hint="3-100 karakter arasında"
+                    :hint="t('automated-forms.form.fields.formName.hint')"
                     persistent-hint
                     prepend-inner-icon="mdi-text"
                   ></v-text-field>
@@ -654,12 +667,12 @@ const fieldLayoutHeaders = [
                   <v-text-field
                     v-model="formData.formCode"
                     :rules="formCodeRules"
-                    label="Form Kodu *"
-                    placeholder="Örn: books-form"
+                    :label="t('automated-forms.form.fields.formCode.label')"
+                    :placeholder="t('automated-forms.form.fields.formCode.placeholder')"
                     variant="outlined"
                     required
                     :disabled="loading || isEditMode"
-                    hint="3-50 karakter, sadece harf, rakam, alt çizgi ve tire"
+                    :hint="t('automated-forms.form.fields.formCode.hint')"
                     persistent-hint
                     prepend-inner-icon="mdi-code-tags"
                   ></v-text-field>
@@ -669,8 +682,8 @@ const fieldLayoutHeaders = [
                 <v-col cols="12">
                   <v-textarea
                     v-model="formData.description"
-                    label="Açıklama"
-                    placeholder="Form açıklaması (opsiyonel)"
+                    :label="t('automated-forms.form.fields.description.label')"
+                    :placeholder="t('automated-forms.form.fields.description.placeholder')"
                     variant="outlined"
                     rows="3"
                     :disabled="loading"
@@ -685,12 +698,12 @@ const fieldLayoutHeaders = [
                     v-model="formData.datasetName"
                     :items="datasetOptions"
                     :rules="datasetNameRules"
-                    label="Dataset Seçimi *"
-                    placeholder="Bir dataset seçin"
+                    :label="t('automated-forms.form.fields.datasetName.label')"
+                    :placeholder="t('automated-forms.form.fields.datasetName.placeholder')"
                     variant="outlined"
                     required
                     :disabled="loading"
-                    hint="Form için kullanılacak dataset'i seçin"
+                    :hint="t('automated-forms.form.fields.datasetName.hint')"
                     persistent-hint
                     prepend-inner-icon="mdi-database"
                   ></v-select>
@@ -700,7 +713,7 @@ const fieldLayoutHeaders = [
                 <v-col cols="12" md="6" class="d-flex align-center">
                   <v-switch
                     v-model="formData.isActive"
-                    label="Aktif"
+                    :label="t('automated-forms.form.fields.isActive.label')"
                     color="primary"
                     :disabled="loading"
                     hide-details
@@ -713,9 +726,9 @@ const fieldLayoutHeaders = [
             <v-window-item value="list">
               <v-row v-if="selectedDataset">
                 <v-col cols="12">
-                  <h3 class="text-h6 mb-4">Liste Ayarları</h3>
+                  <h3 class="text-h6 mb-4">{{ t('automated-forms.form.listConfig.title') }}</h3>
                   <p class="text-body-2 text-medium-emphasis mb-4">
-                    Her field için liste görünümünde görünürlük, sıralama, filtreleme ve sıra ayarlarını yapabilirsiniz.
+                    {{ t('automated-forms.form.listConfig.description') }}
                   </p>
                 </v-col>
                 
@@ -791,8 +804,8 @@ const fieldLayoutHeaders = [
                   <v-select
                     v-model="formData.listConfig.defaultSortBy"
                     :items="availableFields"
-                    label="Varsayılan Sıralama (Field)"
-                    placeholder="Field seçin"
+                    :label="t('automated-forms.form.listConfig.defaultSortBy.label')"
+                    :placeholder="t('automated-forms.form.listConfig.defaultSortBy.placeholder')"
                     variant="outlined"
                     :disabled="loading"
                     clearable
@@ -805,10 +818,10 @@ const fieldLayoutHeaders = [
                   <v-select
                     v-model="formData.listConfig.defaultSortOrder"
                     :items="[
-                      { title: 'Artan', value: 'asc' },
-                      { title: 'Azalan', value: 'desc' }
+                      { title: t('automated-forms.form.listConfig.defaultSortOrder.ascending'), value: 'asc' },
+                      { title: t('automated-forms.form.listConfig.defaultSortOrder.descending'), value: 'desc' }
                     ]"
-                    label="Sıralama Yönü"
+                    :label="t('automated-forms.form.listConfig.defaultSortOrder.label')"
                     variant="outlined"
                     :disabled="loading"
                     prepend-inner-icon="mdi-sort-variant"
@@ -819,17 +832,17 @@ const fieldLayoutHeaders = [
                 <v-col cols="12" md="6" class="d-flex align-center">
                   <v-switch
                     v-model="formData.listConfig.enableSearch"
-                    label="Arama Kullan"
+                    :label="t('automated-forms.form.listConfig.enableSearch.label')"
                     color="primary"
                     :disabled="loading"
-                    hint="Liste görünümünde arama özelliği aktif olsun"
+                    :hint="t('automated-forms.form.listConfig.enableSearch.hint')"
                     persistent-hint
                   ></v-switch>
                 </v-col>
               </v-row>
               <v-row v-else>
                 <v-col cols="12" class="text-center py-12">
-                  <p class="text-body-1 text-medium-emphasis">Liste ayarlarını yapabilmek için önce bir dataset seçmelisiniz.</p>
+                  <p class="text-body-1 text-medium-emphasis">{{ t('automated-forms.form.listConfig.noDataset') }}</p>
                 </v-col>
               </v-row>
             </v-window-item>
@@ -838,7 +851,7 @@ const fieldLayoutHeaders = [
             <v-window-item value="form">
               <v-row v-if="selectedDataset">
                 <v-col cols="12">
-                  <h3 class="text-h6 mb-4">Form Ayarları</h3>
+                  <h3 class="text-h6 mb-4">{{ t('automated-forms.form.formConfig.title') }}</h3>
                 </v-col>
                 
                 <!-- Visible Fields -->
@@ -846,13 +859,13 @@ const fieldLayoutHeaders = [
                   <v-select
                     v-model="formData.formConfig.visibleFields"
                     :items="availableFields"
-                    label="Gösterilecek Field'lar"
-                    placeholder="Field'ları seçin"
+                    :label="t('automated-forms.form.formConfig.visibleFields.label')"
+                    :placeholder="t('automated-forms.form.formConfig.visibleFields.placeholder')"
                     variant="outlined"
                     multiple
                     chips
                     :disabled="loading"
-                    hint="Form'da gösterilecek field'lar (boş ise tümü gösterilir)"
+                    :hint="t('automated-forms.form.formConfig.visibleFields.hint')"
                     persistent-hint
                     prepend-inner-icon="mdi-eye"
                   ></v-select>
@@ -863,13 +876,13 @@ const fieldLayoutHeaders = [
                   <v-select
                     v-model="formData.formConfig.readonlyFields"
                     :items="availableFields"
-                    label="Read-only Field'lar"
-                    placeholder="Field'ları seçin"
+                    :label="t('automated-forms.form.formConfig.readonlyFields.label')"
+                    :placeholder="t('automated-forms.form.formConfig.readonlyFields.placeholder')"
                     variant="outlined"
                     multiple
                     chips
                     :disabled="loading"
-                    hint="Read-only field'lar (incremental field'lar otomatik read-only)"
+                    :hint="t('automated-forms.form.formConfig.readonlyFields.hint')"
                     persistent-hint
                     prepend-inner-icon="mdi-lock"
                   ></v-select>
@@ -878,9 +891,9 @@ const fieldLayoutHeaders = [
                 <!-- Relation Field Configurations -->
                 <v-col cols="12">
                   <v-divider class="my-4"></v-divider>
-                  <h4 class="text-subtitle-1 mb-4">Relation Field Ayarları</h4>
+                  <h4 class="text-subtitle-1 mb-4">{{ t('automated-forms.form.formConfig.relationFields.title') }}</h4>
                   <p class="text-body-2 text-medium-emphasis mb-4">
-                    Relation field'lar için dropdown'da gösterilecek field'ı ve ID olarak kullanılacak field'ı seçebilirsiniz.
+                    {{ t('automated-forms.form.formConfig.relationFields.description') }}
                   </p>
                   
                   <v-card
@@ -904,12 +917,12 @@ const fieldLayoutHeaders = [
                           <v-select
                             v-model="formData.formConfig.relationFieldConfig[field.name].displayField"
                             :items="relationDatasetFieldsCache[field.relationDataset] || [{ title: '__dataId (ID)', value: '__dataId' }]"
-                            label="Display Field (Gösterilecek)"
-                            placeholder="Field seçin"
+                            :label="t('automated-forms.form.formConfig.relationFields.displayField.label')"
+                            :placeholder="t('automated-forms.form.formConfig.relationFields.displayField.placeholder')"
                             variant="outlined"
                             density="compact"
                             :disabled="loading"
-                            hint="Dropdown'da gösterilecek field"
+                            :hint="t('automated-forms.form.formConfig.relationFields.displayField.hint')"
                             persistent-hint
                             required
                           ></v-select>
@@ -918,12 +931,12 @@ const fieldLayoutHeaders = [
                           <v-select
                             v-model="formData.formConfig.relationFieldConfig[field.name].idField"
                             :items="relationDatasetFieldsCache[field.relationDataset] || [{ title: '__dataId (ID)', value: '__dataId' }]"
-                            label="ID Field (Değer)"
-                            placeholder="Field seçin (varsayılan: __dataId)"
+                            :label="t('automated-forms.form.formConfig.relationFields.idField.label')"
+                            :placeholder="t('automated-forms.form.formConfig.relationFields.idField.placeholder')"
                             variant="outlined"
                             density="compact"
                             :disabled="loading"
-                            hint="Değer olarak kullanılacak field (genellikle __dataId)"
+                            :hint="t('automated-forms.form.formConfig.relationFields.idField.hint')"
                             persistent-hint
                           ></v-select>
                         </v-col>
@@ -937,16 +950,16 @@ const fieldLayoutHeaders = [
                     variant="tonal"
                     density="compact"
                   >
-                    Bu dataset'te relation type field bulunmuyor.
+                    {{ t('automated-forms.form.formConfig.relationFields.noRelationFields') }}
                   </v-alert>
                 </v-col>
                 
                 <!-- Field Layout Settings -->
                 <v-col cols="12">
                   <v-divider class="my-4"></v-divider>
-                  <h4 class="text-subtitle-1 mb-4">Field Layout Ayarları</h4>
+                  <h4 class="text-subtitle-1 mb-4">{{ t('automated-forms.form.formConfig.fieldLayout.title') }}</h4>
                   <p class="text-body-2 text-medium-emphasis mb-4">
-                    Her field için form görünümünde kaç sütun kaplayacağını ve hangi gruba ait olduğunu ayarlayabilirsiniz.
+                    {{ t('automated-forms.form.formConfig.fieldLayout.description') }}
                   </p>
                   
                   <v-data-table
@@ -983,7 +996,7 @@ const fieldLayoutHeaders = [
                         variant="outlined"
                         density="compact"
                         hide-details
-                        placeholder="Grup adı (opsiyonel)"
+                        :placeholder="t('automated-forms.form.formConfig.fieldLayout.groupPlaceholder')"
                         :disabled="loading"
                         clearable
                       ></v-text-field>
@@ -993,7 +1006,7 @@ const fieldLayoutHeaders = [
               </v-row>
               <v-row v-else>
                 <v-col cols="12" class="text-center py-12">
-                  <p class="text-body-1 text-medium-emphasis">Form ayarlarını yapabilmek için önce bir dataset seçmelisiniz.</p>
+                  <p class="text-body-1 text-medium-emphasis">{{ t('automated-forms.form.formConfig.noDataset') }}</p>
                 </v-col>
               </v-row>
             </v-window-item>
@@ -1010,7 +1023,7 @@ const fieldLayoutHeaders = [
               :disabled="loading"
             >
               <XIcon class="mr-2" size="18" />
-              İptal
+              {{ t('automated-forms.form.buttons.cancel') }}
             </v-btn>
             
             <v-btn
@@ -1021,7 +1034,7 @@ const fieldLayoutHeaders = [
               :disabled="!formData.formName.trim() || !formData.formCode.trim() || !formData.datasetName"
             >
               <CheckIcon class="mr-2" size="18" />
-              {{ isEditMode ? 'Güncelle' : 'Oluştur' }}
+              {{ isEditMode ? t('automated-forms.form.buttons.update') : t('automated-forms.form.buttons.create') }}
             </v-btn>
           </v-col>
         </v-row>

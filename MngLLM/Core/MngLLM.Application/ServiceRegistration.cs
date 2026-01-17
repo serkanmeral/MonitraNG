@@ -18,6 +18,7 @@ public static class ServiceRegistration
             _.OpenApiServerPath = mngLLMSettings.OpenApiServerPath;
             _.CertificateSettings = mngLLMSettings.CertificateSettings;
             _.Actors = mngLLMSettings.Actors;
+            _.Documentation = mngLLMSettings.Documentation;
         });
 
         // Add MediatR

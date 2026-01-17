@@ -1401,5 +1401,348 @@
       },
       "logout": "登出"
     }
+  },
+  "welcome": {
+    "title": "欢迎",
+    "subtitle": "您已成功登录 MonitraNG",
+    "greeting": {
+      "morning": "早上好",
+      "afternoon": "下午好",
+      "evening": "晚上好",
+      "night": "晚安"
+    },
+    "hero": {
+      "welcomeMessage": "欢迎回来",
+      "lastLogin": "上次登录"
+    },
+    "quickStats": {
+      "title": "快速统计",
+      "totalDataPoints": "总数据点",
+      "activeDevices": "活动设备",
+      "alertsToday": "今日警报",
+      "systemHealth": "系统健康",
+      "totalUsers": "总用户数",
+      "lastActivity": "最后活动"
+    },
+    "quickAccess": {
+      "title": "快速访问",
+      "dashboard": "仪表板",
+      "dataManagement": "数据管理",
+      "reports": "报告",
+      "settings": "设置",
+      "profile": "个人资料",
+      "users": "用户",
+      "datasets": "数据集"
+    },
+    "recentActivity": {
+      "title": "最近活动",
+      "noActivity": "没有最近活动",
+      "viewAll": "查看全部"
+    },
+    "actions": {
+      "goToDashboard": "前往仪表板",
+      "exploreFeatures": "探索功能",
+      "backToHome": "返回首页"
+    }
+  },
+  "automated-forms": {
+    "title": "自动表单",
+    "breadcrumbs": {
+      "home": "仪表板",
+      "automatedForms": "自动表单",
+      "create": "新建表单",
+      "edit": "编辑表单",
+      "view": "查看表单"
+    },
+    "list": {
+      "title": "自动表单",
+      "search": {
+        "label": "搜索表单",
+        "placeholder": "表单名称或代码...",
+        "hint": "按表单名称或代码搜索"
+      },
+      "buttons": {
+        "refresh": "刷新",
+        "newForm": "新建表单",
+        "openForm": "打开表单",
+        "view": "查看",
+        "edit": "编辑",
+        "delete": "删除"
+      },
+      "table": {
+        "headers": {
+          "formName": "表单名称",
+          "dataset": "数据集",
+          "isActive": "激活",
+          "sideMenu": "侧边菜单",
+          "createdAt": "创建时间",
+          "actions": "操作"
+        },
+        "status": {
+          "active": "激活",
+          "inactive": "未激活"
+        },
+        "sideMenu": {
+          "added": "已添加",
+          "notAdded": "未添加"
+        },
+        "noData": {
+          "title": "未找到表单",
+          "button": "创建第一个表单"
+        },
+        "pagination": {
+          "total": "总计：",
+          "records": "条记录",
+          "page": "页码",
+          "of": "/",
+          "showing": "显示",
+          "itemsPerPage": "每页记录数："
+        }
+      },
+      "viewDialog": {
+        "title": "表单详情",
+        "fields": {
+          "formCode": "表单代码：",
+          "description": "描述：",
+          "dataset": "数据集：",
+          "status": "状态：",
+          "sideMenu": "侧边菜单：",
+          "createdAt": "创建时间：",
+          "updatedAt": "最后更新："
+        },
+        "noDescription": "无描述",
+        "buttons": {
+          "openForm": "打开表单",
+          "close": "关闭",
+          "edit": "编辑"
+        }
+      },
+      "deleteDialog": {
+        "title": "删除表单",
+        "message": "您确定要删除此表单吗？此操作无法撤销。",
+        "buttons": {
+          "cancel": "取消",
+          "confirm": "是的，删除"
+        }
+      }
+    },
+    "form": {
+      "title": {
+        "create": "新建表单",
+        "edit": "编辑表单"
+      },
+      "tabs": {
+        "basic": "基本信息",
+        "list": "列表设置",
+        "form": "表单设置"
+      },
+      "fields": {
+        "formName": {
+          "label": "表单名称 *",
+          "placeholder": "例如：图书管理",
+          "hint": "3-100个字符"
+        },
+        "formCode": {
+          "label": "表单代码 *",
+          "placeholder": "例如：books-form",
+          "hint": "3-50个字符，仅字母、数字、下划线和破折号"
+        },
+        "description": {
+          "label": "描述",
+          "placeholder": "表单描述（可选）"
+        },
+        "datasetName": {
+          "label": "数据集选择 *",
+          "placeholder": "选择数据集",
+          "hint": "选择要用于此表单的数据集"
+        },
+        "isActive": {
+          "label": "激活"
+        }
+      },
+      "validation": {
+        "formNameRequired": "表单名称是必需的",
+        "formNameMinLength": "表单名称必须至少3个字符",
+        "formNameMaxLength": "表单名称最多不能超过100个字符",
+        "formCodeRequired": "表单代码是必需的",
+        "formCodeMinLength": "表单代码必须至少3个字符",
+        "formCodeMaxLength": "表单代码最多不能超过50个字符",
+        "formCodeInvalid": "表单代码只能包含字母、数字、下划线和破折号",
+        "datasetRequired": "数据集选择是必需的"
+      },
+      "listConfig": {
+        "title": "列表设置",
+        "description": "您可以为列表视图中的每个字段配置可见性、排序、筛选和顺序设置。",
+        "table": {
+          "headers": {
+            "fieldName": "字段名称",
+            "visible": "可见",
+            "sortable": "可排序",
+            "filterable": "可筛选",
+            "order": "顺序"
+          }
+        },
+        "defaultSortBy": {
+          "label": "默认排序（字段）",
+          "placeholder": "选择字段"
+        },
+        "defaultSortOrder": {
+          "label": "排序方向",
+          "ascending": "升序",
+          "descending": "降序"
+        },
+        "enableSearch": {
+          "label": "启用搜索",
+          "hint": "在列表视图中启用搜索功能"
+        },
+        "noDataset": "您必须首先选择数据集才能配置列表设置。"
+      },
+      "formConfig": {
+        "title": "表单设置",
+        "visibleFields": {
+          "label": "可见字段",
+          "placeholder": "选择字段",
+          "hint": "要在表单中显示的字段（如果为空，则显示所有字段）"
+        },
+        "readonlyFields": {
+          "label": "只读字段",
+          "placeholder": "选择字段",
+          "hint": "只读字段（增量字段自动为只读）"
+        },
+        "relationFields": {
+          "title": "关系字段设置",
+          "description": "对于关系字段，您可以选择在下拉菜单中显示的字段和用作ID值的字段。",
+          "displayField": {
+            "label": "显示字段（要显示）",
+            "placeholder": "选择字段",
+            "hint": "在下拉菜单中显示的字段"
+          },
+          "idField": {
+            "label": "ID字段（值）",
+            "placeholder": "选择字段（默认：__dataId）",
+            "hint": "用作值的字段（通常是__dataId）"
+          },
+          "noRelationFields": "在此数据集中未找到关系类型的字段。"
+        },
+        "fieldLayout": {
+          "title": "字段布局设置",
+          "description": "对于每个字段，您可以配置它在表单视图中占用的列数以及它所属的组。",
+          "table": {
+            "headers": {
+              "fieldName": "字段名称",
+              "columnSpan": "列宽",
+              "group": "组"
+            }
+          },
+          "groupPlaceholder": "组名（可选）"
+        },
+        "noDataset": "您必须首先选择数据集才能配置表单设置。"
+      },
+      "buttons": {
+        "cancel": "取消",
+        "create": "创建",
+        "update": "更新"
+      },
+      "messages": {
+        "loading": "正在加载表单...",
+        "notFound": "未找到表单",
+        "loadError": "加载表单时发生错误",
+        "createSuccess": "表单创建成功！",
+        "updateSuccess": "表单更新成功！",
+        "saveError": "保存表单时发生错误",
+        "duplicateCode": "此表单代码已被使用。请选择不同的代码。"
+      },
+      "warning": "警告：访问此页面需要管理员或管理员权限。"
+    },
+    "view": {
+      "title": "查看表单",
+      "loading": "正在加载表单...",
+      "buttons": {
+        "newRecord": "新记录",
+        "refresh": "刷新",
+        "edit": "编辑",
+        "delete": "删除",
+        "save": "保存",
+        "update": "更新",
+        "cancel": "取消",
+        "close": "关闭"
+      },
+      "search": {
+        "label": "搜索...",
+        "placeholder": "输入搜索词..."
+      },
+      "filters": {
+        "title": "筛选器",
+        "clear": "清除筛选器",
+        "filterPlaceholder": "按...筛选"
+      },
+      "table": {
+        "headers": {
+          "actions": "操作"
+        },
+        "pagination": {
+          "total": "总计",
+          "records": "条记录"
+        }
+      },
+      "empty": {
+        "title": "暂无数据",
+        "description": "此数据集中尚未找到记录。您可以通过单击\"新记录\"按钮创建第一条记录。"
+      },
+      "formDialog": {
+        "title": {
+          "create": "新记录",
+          "edit": "编辑记录"
+        }
+      },
+      "deleteDialog": {
+        "title": "删除记录",
+        "message": "您确定要删除此记录吗？此操作无法撤销。",
+        "buttons": {
+          "cancel": "取消",
+          "confirm": "是的，删除"
+        }
+      },
+      "messages": {
+        "loadError": "加载表单时发生错误",
+        "dataLoadError": "加载数据时发生错误",
+        "createError": "创建记录时发生错误",
+        "updateError": "更新记录时发生错误",
+        "deleteError": "删除记录时发生错误",
+        "itemLoadError": "加载记录时发生错误",
+        "itemIdNotFound": "未找到记录ID"
+      },
+      "cellFormat": {
+        "yes": "是",
+        "no": "否"
+      }
+    }
+  },
+  "chatbot": {
+    "title": "Moni - 助手聊天机器人",
+    "subtitle": "我能为您做些什么？",
+    "placeholder": "输入您的消息...",
+    "send": "发送",
+    "clear": "清除",
+    "close": "关闭",
+    "open": "打开",
+    "minimize": "最小化",
+    "maximize": "最大化",
+      "typing": "正在输入...",
+      "error": "发生错误。请重试。",
+      "noMessages": "还没有消息。您可以说\"你好\"开始。",
+    "intent": {
+      "nlq": "数据查询",
+      "docs": "文档",
+      "guide": "指南",
+      "general": "一般"
+    },
+    "documentation": {
+      "sources": "相关文档",
+      "view": "查看"
+    },
+    "copy": "复制",
+    "copied": "已复制！",
+    "sessionCleared": "对话历史已清除"
   }
 }

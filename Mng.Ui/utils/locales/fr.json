@@ -1401,5 +1401,348 @@
       },
       "logout": "Déconnexion"
     }
+  },
+  "welcome": {
+    "title": "Bienvenue",
+    "subtitle": "Vous vous êtes connecté avec succès à MonitraNG",
+    "greeting": {
+      "morning": "Bonjour",
+      "afternoon": "Bon après-midi",
+      "evening": "Bonsoir",
+      "night": "Bonne nuit"
+    },
+    "hero": {
+      "welcomeMessage": "Bon retour",
+      "lastLogin": "Dernière connexion"
+    },
+    "quickStats": {
+      "title": "Statistiques rapides",
+      "totalDataPoints": "Points de données totaux",
+      "activeDevices": "Appareils actifs",
+      "alertsToday": "Alertes aujourd'hui",
+      "systemHealth": "Santé du système",
+      "totalUsers": "Utilisateurs totaux",
+      "lastActivity": "Dernière activité"
+    },
+    "quickAccess": {
+      "title": "Accès rapide",
+      "dashboard": "Tableau de bord",
+      "dataManagement": "Gestion des données",
+      "reports": "Rapports",
+      "settings": "Paramètres",
+      "profile": "Profil",
+      "users": "Utilisateurs",
+      "datasets": "Jeux de données"
+    },
+    "recentActivity": {
+      "title": "Activité récente",
+      "noActivity": "Aucune activité récente",
+      "viewAll": "Voir tout"
+    },
+    "actions": {
+      "goToDashboard": "Aller au tableau de bord",
+      "exploreFeatures": "Explorer les fonctionnalités",
+      "backToHome": "Retour à l'accueil"
+    }
+  },
+  "automated-forms": {
+    "title": "Formulaires Automatisés",
+    "breadcrumbs": {
+      "home": "Tableau de bord",
+      "automatedForms": "Formulaires Automatisés",
+      "create": "Nouveau Formulaire",
+      "edit": "Modifier le Formulaire",
+      "view": "Voir le Formulaire"
+    },
+    "list": {
+      "title": "Formulaires Automatisés",
+      "search": {
+        "label": "Rechercher des Formulaires",
+        "placeholder": "Nom ou code du formulaire...",
+        "hint": "Rechercher par nom ou code de formulaire"
+      },
+      "buttons": {
+        "refresh": "Actualiser",
+        "newForm": "Nouveau Formulaire",
+        "openForm": "Ouvrir le Formulaire",
+        "view": "Voir",
+        "edit": "Modifier",
+        "delete": "Supprimer"
+      },
+      "table": {
+        "headers": {
+          "formName": "Nom du Formulaire",
+          "dataset": "Dataset",
+          "isActive": "Actif",
+          "sideMenu": "Menu Latéral",
+          "createdAt": "Créé le",
+          "actions": "Actions"
+        },
+        "status": {
+          "active": "Actif",
+          "inactive": "Inactif"
+        },
+        "sideMenu": {
+          "added": "Ajouté",
+          "notAdded": "Non Ajouté"
+        },
+        "noData": {
+          "title": "Aucun formulaire trouvé",
+          "button": "Créer le Premier Formulaire"
+        },
+        "pagination": {
+          "total": "Total :",
+          "records": "enregistrements",
+          "page": "Page",
+          "of": "/",
+          "showing": "affichage",
+          "itemsPerPage": "Enregistrements par page :"
+        }
+      },
+      "viewDialog": {
+        "title": "Détails du Formulaire",
+        "fields": {
+          "formCode": "Code du Formulaire :",
+          "description": "Description :",
+          "dataset": "Dataset :",
+          "status": "Statut :",
+          "sideMenu": "Menu Latéral :",
+          "createdAt": "Créé le :",
+          "updatedAt": "Dernière Mise à jour :"
+        },
+        "noDescription": "Aucune description",
+        "buttons": {
+          "openForm": "Ouvrir le Formulaire",
+          "close": "Fermer",
+          "edit": "Modifier"
+        }
+      },
+      "deleteDialog": {
+        "title": "Supprimer le Formulaire",
+        "message": "Êtes-vous sûr de vouloir supprimer ce formulaire ? Cette action est irréversible.",
+        "buttons": {
+          "cancel": "Annuler",
+          "confirm": "Oui, Supprimer"
+        }
+      }
+    },
+    "form": {
+      "title": {
+        "create": "Nouveau Formulaire",
+        "edit": "Modifier le Formulaire"
+      },
+      "tabs": {
+        "basic": "Informations de Base",
+        "list": "Paramètres de Liste",
+        "form": "Paramètres du Formulaire"
+      },
+      "fields": {
+        "formName": {
+          "label": "Nom du Formulaire *",
+          "placeholder": "Ex : Gestion des Livres",
+          "hint": "3-100 caractères"
+        },
+        "formCode": {
+          "label": "Code du Formulaire *",
+          "placeholder": "Ex : books-form",
+          "hint": "3-50 caractères, uniquement lettres, chiffres, underscore et tiret"
+        },
+        "description": {
+          "label": "Description",
+          "placeholder": "Description du formulaire (optionnel)"
+        },
+        "datasetName": {
+          "label": "Sélection du Dataset *",
+          "placeholder": "Sélectionner un dataset",
+          "hint": "Sélectionner le dataset à utiliser pour ce formulaire"
+        },
+        "isActive": {
+          "label": "Actif"
+        }
+      },
+      "validation": {
+        "formNameRequired": "Le nom du formulaire est requis",
+        "formNameMinLength": "Le nom du formulaire doit contenir au moins 3 caractères",
+        "formNameMaxLength": "Le nom du formulaire ne peut pas dépasser 100 caractères",
+        "formCodeRequired": "Le code du formulaire est requis",
+        "formCodeMinLength": "Le code du formulaire doit contenir au moins 3 caractères",
+        "formCodeMaxLength": "Le code du formulaire ne peut pas dépasser 50 caractères",
+        "formCodeInvalid": "Le code du formulaire ne peut contenir que des lettres, chiffres, underscore et tiret",
+        "datasetRequired": "La sélection du dataset est requise"
+      },
+      "listConfig": {
+        "title": "Paramètres de Liste",
+        "description": "Vous pouvez configurer les paramètres de visibilité, tri, filtrage et ordre pour chaque champ dans la vue liste.",
+        "table": {
+          "headers": {
+            "fieldName": "Nom du Champ",
+            "visible": "Visible",
+            "sortable": "Triable",
+            "filterable": "Filtrable",
+            "order": "Ordre"
+          }
+        },
+        "defaultSortBy": {
+          "label": "Tri par Défaut (Champ)",
+          "placeholder": "Sélectionner un champ"
+        },
+        "defaultSortOrder": {
+          "label": "Direction du Tri",
+          "ascending": "Croissant",
+          "descending": "Décroissant"
+        },
+        "enableSearch": {
+          "label": "Activer la Recherche",
+          "hint": "Activer la fonctionnalité de recherche dans la vue liste"
+        },
+        "noDataset": "Vous devez d'abord sélectionner un dataset pour configurer les paramètres de liste."
+      },
+      "formConfig": {
+        "title": "Paramètres du Formulaire",
+        "visibleFields": {
+          "label": "Champs Visibles",
+          "placeholder": "Sélectionner les champs",
+          "hint": "Champs à afficher dans le formulaire (si vide, tous les champs sont affichés)"
+        },
+        "readonlyFields": {
+          "label": "Champs en Lecture Seule",
+          "placeholder": "Sélectionner les champs",
+          "hint": "Champs en lecture seule (les champs incrémentiels sont automatiquement en lecture seule)"
+        },
+        "relationFields": {
+          "title": "Paramètres des Champs de Relation",
+          "description": "Pour les champs de relation, vous pouvez sélectionner quel champ afficher dans le menu déroulant et quel champ utiliser comme valeur ID.",
+          "displayField": {
+            "label": "Champ d'Affichage (À Afficher)",
+            "placeholder": "Sélectionner un champ",
+            "hint": "Champ à afficher dans le menu déroulant"
+          },
+          "idField": {
+            "label": "Champ ID (Valeur)",
+            "placeholder": "Sélectionner un champ (par défaut : __dataId)",
+            "hint": "Champ à utiliser comme valeur (généralement __dataId)"
+          },
+          "noRelationFields": "Aucun champ de type relation trouvé dans ce dataset."
+        },
+        "fieldLayout": {
+          "title": "Paramètres de Disposition des Champs",
+          "description": "Pour chaque champ, vous pouvez configurer combien de colonnes il occupe dans la vue formulaire et à quel groupe il appartient.",
+          "table": {
+            "headers": {
+              "fieldName": "Nom du Champ",
+              "columnSpan": "Largeur de Colonne",
+              "group": "Groupe"
+            }
+          },
+          "groupPlaceholder": "Nom du groupe (optionnel)"
+        },
+        "noDataset": "Vous devez d'abord sélectionner un dataset pour configurer les paramètres du formulaire."
+      },
+      "buttons": {
+        "cancel": "Annuler",
+        "create": "Créer",
+        "update": "Mettre à Jour"
+      },
+      "messages": {
+        "loading": "Chargement du formulaire...",
+        "notFound": "Formulaire non trouvé",
+        "loadError": "Une erreur s'est produite lors du chargement du formulaire",
+        "createSuccess": "Formulaire créé avec succès !",
+        "updateSuccess": "Formulaire mis à jour avec succès !",
+        "saveError": "Une erreur s'est produite lors de l'enregistrement du formulaire",
+        "duplicateCode": "Ce code de formulaire est déjà utilisé. Veuillez choisir un code différent."
+      },
+      "warning": "Avertissement : L'autorisation manager ou admin est requise pour accéder à cette page."
+    },
+    "view": {
+      "title": "Voir le Formulaire",
+      "loading": "Chargement du formulaire...",
+      "buttons": {
+        "newRecord": "Nouvel Enregistrement",
+        "refresh": "Actualiser",
+        "edit": "Modifier",
+        "delete": "Supprimer",
+        "save": "Enregistrer",
+        "update": "Mettre à Jour",
+        "cancel": "Annuler",
+        "close": "Fermer"
+      },
+      "search": {
+        "label": "Rechercher...",
+        "placeholder": "Entrez un terme à rechercher..."
+      },
+      "filters": {
+        "title": "Filtres",
+        "clear": "Effacer les Filtres",
+        "filterPlaceholder": "filtrer par..."
+      },
+      "table": {
+        "headers": {
+          "actions": "Actions"
+        },
+        "pagination": {
+          "total": "Total",
+          "records": "enregistrements"
+        }
+      },
+      "empty": {
+        "title": "Aucune donnée pour le moment",
+        "description": "Aucun enregistrement trouvé dans ce dataset pour le moment. Vous pouvez créer le premier enregistrement en cliquant sur le bouton \"Nouvel Enregistrement\"."
+      },
+      "formDialog": {
+        "title": {
+          "create": "Nouvel Enregistrement",
+          "edit": "Modifier l'Enregistrement"
+        }
+      },
+      "deleteDialog": {
+        "title": "Supprimer l'Enregistrement",
+        "message": "Êtes-vous sûr de vouloir supprimer cet enregistrement ? Cette action est irréversible.",
+        "buttons": {
+          "cancel": "Annuler",
+          "confirm": "Oui, Supprimer"
+        }
+      },
+      "messages": {
+        "loadError": "Une erreur s'est produite lors du chargement du formulaire",
+        "dataLoadError": "Une erreur s'est produite lors du chargement des données",
+        "createError": "Une erreur s'est produite lors de la création de l'enregistrement",
+        "updateError": "Une erreur s'est produite lors de la mise à jour de l'enregistrement",
+        "deleteError": "Une erreur s'est produite lors de la suppression de l'enregistrement",
+        "itemLoadError": "Une erreur s'est produite lors du chargement de l'enregistrement",
+        "itemIdNotFound": "ID d'enregistrement non trouvé"
+      },
+      "cellFormat": {
+        "yes": "Oui",
+        "no": "Non"
+      }
+    }
+  },
+  "chatbot": {
+    "title": "Moni - Assistant Chatbot",
+    "subtitle": "Comment puis-je vous aider?",
+    "placeholder": "Tapez votre message...",
+    "send": "Envoyer",
+    "clear": "Effacer",
+    "close": "Fermer",
+    "open": "Ouvrir",
+    "minimize": "Réduire",
+    "maximize": "Agrandir",
+    "typing": "En train d'écrire...",
+    "error": "Une erreur s'est produite. Veuillez réessayer.",
+    "noMessages": "Aucun message pour le moment. Vous pouvez commencer en disant bonjour.",
+    "intent": {
+      "nlq": "Requête de Données",
+      "docs": "Documentation",
+      "guide": "Guide",
+      "general": "Général"
+    },
+    "documentation": {
+      "sources": "Documentation Associée",
+      "view": "Voir"
+    },
+    "copy": "Copier",
+    "copied": "Copié!",
+    "sessionCleared": "Historique de conversation effacé"
   }
 }

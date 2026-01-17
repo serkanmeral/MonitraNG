@@ -258,13 +258,15 @@ services:
       # Server Configuration
       - MngLLMSettings__Server__Host=0.0.0.0
       - MngLLMSettings__Server__Port=5030
-      - MngLLMSettings__Server__Scheme=https
-      - MngLLMSettings__OpenApiServerPath=https://localhost:5030
+      - MngLLMSettings__Server__Scheme=http
+      - MngLLMSettings__OpenApiServerPath=https://api.monitra.local/llm
       
       # Ollama Configuration
       - MngLLMSettings__Ollama__BaseUrl=http://ollama:11434
       - MngLLMSettings__Ollama__DefaultModel=qwen2.5:3b
-      - MngLLMSettings__Ollama__Timeout=30
+      - MngLLMSettings__Ollama__Timeout=120
+      - MngLLMSettings__Ollama__MaxRetries=2
+      - MngLLMSettings__Ollama__EnableStreaming=false
       
       # Translation Configuration
       - MngLLMSettings__Translation__SupportedLanguages__0=tr
@@ -279,8 +281,44 @@ services:
       - MngLLMSettings__Actors__MngKeeper=http://mngkeeper:5001
       - MngLLMSettings__Actors__MngDataGateway=http://mngdatagateway:5010
       
-      # Certificate Settings (auto-generate self-signed)
-      - MngLLMSettings__CertificateSettings__DNS=mngllm
+      # Documentation Configuration
+      - MngLLMSettings__Documentation__MarkdownPath=/app/docs/content
+      - MngLLMSettings__Documentation__SearchLimit=5
+      - MngLLMSettings__Documentation__ReindexIntervalMinutes=60
+      - MngLLMSettings__Documentation__EnableAutoReindex=true
+      
+      # Documentation Service Endpoints
+      - MngLLMSettings__Documentation__ServiceEndpoints__0__ServiceName=MngDataGateway
+      - MngLLMSettings__Documentation__ServiceEndpoints__0__BaseUrl=http://mngdatagateway:5010
+      - MngLLMSettings__Documentation__ServiceEndpoints__0__OpenApiPath=/api-docs/v1/swagger.json
+      - MngLLMSettings__Documentation__ServiceEndpoints__1__ServiceName=MngKeeper
+      - MngLLMSettings__Documentation__ServiceEndpoints__1__BaseUrl=http://mngkeeper:5001
+      - MngLLMSettings__Documentation__ServiceEndpoints__1__OpenApiPath=/api-docs/v1/swagger.json
+      - MngLLMSettings__Documentation__ServiceEndpoints__2__ServiceName=MngHub
+      - MngLLMSettings__Documentation__ServiceEndpoints__2__BaseUrl=http://mnghub:5020
+      - MngLLMSettings__Documentation__ServiceEndpoints__2__OpenApiPath=/api-docs/v1/swagger.json
+      - MngLLMSettings__Documentation__ServiceEndpoints__3__ServiceName=MngLLM
+      - MngLLMSettings__Documentation__ServiceEndpoints__3__BaseUrl=http://mngllm:5030
+      - MngLLMSettings__Documentation__ServiceEndpoints__3__OpenApiPath=/api-docs/v1/swagger.json
+      - MngLLMSettings__Documentation__ServiceEndpoints__4__ServiceName=MngGateway
+      - MngLLMSettings__Documentation__ServiceEndpoints__4__BaseUrl=http://mnggateway:5040
+      - MngLLMSettings__Documentation__ServiceEndpoints__4__OpenApiPath=/api-docs/v1/swagger.json
+      - MngLLMSettings__Documentation__ServiceEndpoints__5__ServiceName=MngNotifier
+      - MngLLMSettings__Documentation__ServiceEndpoints__5__BaseUrl=http://mngnotifier:5070
+      - MngLLMSettings__Documentation__ServiceEndpoints__5__OpenApiPath=/api-docs/v1/swagger.json
+      - MngLLMSettings__Documentation__ServiceEndpoints__6__ServiceName=MngScheduler
+      - MngLLMSettings__Documentation__ServiceEndpoints__6__BaseUrl=http://mngscheduler:5090
+      - MngLLMSettings__Documentation__ServiceEndpoints__6__OpenApiPath=/api-docs/v1/swagger.json
+      - MngLLMSettings__Documentation__ServiceEndpoints__7__ServiceName=MngAdmin
+      - MngLLMSettings__Documentation__ServiceEndpoints__7__BaseUrl=http://mngadmin:5080
+      - MngLLMSettings__Documentation__ServiceEndpoints__7__OpenApiPath=/api-docs/v1/swagger.json
+      
+      # Certificate Settings (not needed - HTTP behind Gateway)
+      - MngLLMSettings__CertificateSettings__DNS=
+    
+    volumes:
+      # Mount documentation content
+      - ../../docs/content:/app/docs/content:ro
     
     networks:
       - mng_common_mng_network
@@ -583,6 +621,24 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+
+  mkdocs:
+    build:
+      context: ../../docs
+      dockerfile: Dockerfile
+    image: localhost:5000/mkdocs:1.0.0
+    container_name: mkdocs
+    ports:
+      - "6010:80"  # Documentation site port
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 volumes:
   ollama_data:

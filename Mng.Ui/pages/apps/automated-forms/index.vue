@@ -3,21 +3,36 @@ import { ref, onMounted, computed, watch } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useAutomatedFormsStore } from '@/stores/apps/automatedForms';
 import { useAuthStore } from '@/stores/auth';
+import { useLocaleStore } from '@/stores/locale';
 import { EditIcon, EyeIcon, TrashIcon, FileCodeIcon, PlusIcon, RefreshIcon, ExternalLinkIcon } from 'vue-tabler-icons';
+
+// Get i18n instance for legacy mode
+const nuxtApp = useNuxtApp();
+const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
+const t = (key: string, params?: any) => {
+  if (i18n && i18n.t) {
+    return i18n.t(key, params);
+  }
+  if (i18n?.global?.t) {
+    return i18n.global.t(key, params);
+  }
+  return key;
+};
 
 const formStore = useAutomatedFormsStore();
 const authStore = useAuthStore();
+const localeStore = useLocaleStore();
 const router = useRouter();
 
-const page = ref({ title: 'Automated Forms' });
-const breadcrumbs = ref([
+const page = computed(() => ({ title: t('automated-forms.title') }));
+const breadcrumbs = computed(() => [
   {
-    text: 'Dashboard',
+    text: t('automated-forms.breadcrumbs.home'),
     disabled: false,
     href: '/dashboards/analytical',
   },
   {
-    text: 'Automated Forms',
+    text: t('automated-forms.breadcrumbs.automatedForms'),
     disabled: true,
     href: '#',
   },
@@ -37,14 +52,14 @@ const tableOptions = ref({
   sortBy: [] as Array<{ key: string; order: 'asc' | 'desc' }>,
 });
 
-const headers = [
-  { title: 'Form Adı', key: 'formName', sortable: true },
-  { title: 'Dataset', key: 'datasetName', sortable: true },
-  { title: 'Aktif', key: 'isActive', sortable: true },
-  { title: 'Side Menu', key: 'sideMenu', sortable: false },
-  { title: 'Oluşturulma', key: 'createInfo.createdAt', sortable: true },
-  { title: 'İşlemler', key: 'actions', sortable: false, align: 'end' },
-];
+const headers = computed(() => [
+  { title: t('automated-forms.list.table.headers.formName'), key: 'formName', sortable: true },
+  { title: t('automated-forms.list.table.headers.dataset'), key: 'datasetName', sortable: true },
+  { title: t('automated-forms.list.table.headers.isActive'), key: 'isActive', sortable: true },
+  { title: t('automated-forms.list.table.headers.sideMenu'), key: 'sideMenu', sortable: false },
+  { title: t('automated-forms.list.table.headers.createdAt'), key: 'createInfo.createdAt', sortable: true },
+  { title: t('automated-forms.list.table.headers.actions'), key: 'actions', sortable: false, align: 'end' },
+]);
 
 // Computed: Server items length (reactive)
 const serverItemsLength = computed(() => {
@@ -159,7 +174,10 @@ const createNewForm = () => {
 const formatDate = (date: string | Date | null | undefined) => {
   if (!date) return '-';
   try {
-    return new Date(date).toLocaleDateString('tr-TR', {
+    const localeStore = useLocaleStore();
+    const locale = localeStore.locale || 'tr';
+    const localeMap: Record<string, string> = { tr: 'tr-TR', en: 'en-US', fr: 'fr-FR', ar: 'ar-SA', zh: 'zh-CN' };
+    return new Date(date).toLocaleDateString(localeMap[locale] || 'tr-TR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -193,14 +211,14 @@ const isSideMenuEnabled = (form: any) => {
           <v-text-field
             v-model="search"
             prepend-inner-icon="mdi-magnify"
-            label="Form Ara"
-            placeholder="Form adı veya kodu..."
+            :label="t('automated-forms.list.search.label')"
+            :placeholder="t('automated-forms.list.search.placeholder')"
             variant="outlined"
             density="compact"
             hide-details
             style="max-width: 300px;"
             clearable
-            hint="Form adı veya kodunda ara"
+            :hint="t('automated-forms.list.search.hint')"
             persistent-hint
           />
           
@@ -213,7 +231,7 @@ const isSideMenuEnabled = (form: any) => {
             :loading="formStore.loading"
           >
             <RefreshIcon size="18" />
-            <v-tooltip activator="parent" location="top">Yenile</v-tooltip>
+            <v-tooltip activator="parent" location="top">{{ t('automated-forms.list.buttons.refresh') }}</v-tooltip>
           </v-btn>
         </div>
         
@@ -223,7 +241,7 @@ const isSideMenuEnabled = (form: any) => {
           @click="createNewForm"
         >
           <PlusIcon class="mr-2" size="20" />
-          Yeni Form
+          {{ t('automated-forms.list.buttons.newForm') }}
         </v-btn>
       </div>
 
@@ -277,7 +295,7 @@ const isSideMenuEnabled = (form: any) => {
         <!-- Active Column -->
         <template v-slot:item.isActive="{ value }">
           <v-chip :color="value ? 'success' : 'error'" size="small" variant="flat">
-            {{ value ? 'Aktif' : 'Pasif' }}
+            {{ value ? t('automated-forms.list.table.status.active') : t('automated-forms.list.table.status.inactive') }}
           </v-chip>
         </template>
 
@@ -288,7 +306,7 @@ const isSideMenuEnabled = (form: any) => {
             size="small" 
             variant="tonal"
           >
-            {{ isSideMenuEnabled(item) ? 'Eklendi' : 'Eklenmedi' }}
+            {{ isSideMenuEnabled(item) ? t('automated-forms.list.table.sideMenu.added') : t('automated-forms.list.table.sideMenu.notAdded') }}
           </v-chip>
         </template>
 
@@ -311,7 +329,7 @@ const isSideMenuEnabled = (form: any) => {
               :disabled="!item.isActive && !item.IsActive"
             >
               <ExternalLinkIcon size="18" />
-              <v-tooltip activator="parent" location="top">Formu Aç</v-tooltip>
+              <v-tooltip activator="parent" location="top">{{ t('automated-forms.list.buttons.openForm') }}</v-tooltip>
             </v-btn>
             <v-btn
               icon
@@ -321,7 +339,7 @@ const isSideMenuEnabled = (form: any) => {
               @click="viewForm(item)"
             >
               <EyeIcon size="18" />
-              <v-tooltip activator="parent" location="top">Görüntüle</v-tooltip>
+              <v-tooltip activator="parent" location="top">{{ t('automated-forms.list.buttons.view') }}</v-tooltip>
             </v-btn>
             <v-btn
               icon
@@ -331,7 +349,7 @@ const isSideMenuEnabled = (form: any) => {
               @click="editForm(item)"
             >
               <EditIcon size="18" />
-              <v-tooltip activator="parent" location="top">Düzenle</v-tooltip>
+              <v-tooltip activator="parent" location="top">{{ t('automated-forms.list.buttons.edit') }}</v-tooltip>
             </v-btn>
             <v-btn
               icon
@@ -341,7 +359,7 @@ const isSideMenuEnabled = (form: any) => {
               @click="deleteForm(item)"
             >
               <TrashIcon size="18" />
-              <v-tooltip activator="parent" location="top">Sil</v-tooltip>
+              <v-tooltip activator="parent" location="top">{{ t('automated-forms.list.buttons.delete') }}</v-tooltip>
             </v-btn>
           </div>
         </template>
@@ -349,7 +367,7 @@ const isSideMenuEnabled = (form: any) => {
         <!-- No Data -->
         <template v-slot:no-data>
           <div class="text-center py-8">
-            <p class="text-subtitle-1 text-medium-emphasis">Form bulunamadı</p>
+            <p class="text-subtitle-1 text-medium-emphasis">{{ t('automated-forms.list.table.noData.title') }}</p>
             <v-btn 
               color="primary" 
               variant="flat"
@@ -357,7 +375,7 @@ const isSideMenuEnabled = (form: any) => {
               class="mt-4"
             >
               <PlusIcon class="mr-2" size="20" />
-              İlk Formu Oluştur
+              {{ t('automated-forms.list.table.noData.button') }}
             </v-btn>
           </div>
         </template>
@@ -366,18 +384,18 @@ const isSideMenuEnabled = (form: any) => {
         <template v-slot:bottom>
           <div class="d-flex justify-space-between align-center pa-3 border-top">
             <div class="text-caption text-medium-emphasis">
-              <strong>Toplam:</strong> {{ formStore.totalCount }} kayıt
+              <strong>{{ t('automated-forms.list.table.pagination.total') }}</strong> {{ formStore.totalCount }} {{ t('automated-forms.list.table.pagination.records') }}
               <span v-if="formStore.totalPages > 1" class="ml-2">
-                (Sayfa {{ tableOptions.page }} / {{ formStore.totalPages }})
+                ({{ t('automated-forms.list.table.pagination.page') }} {{ tableOptions.page }} {{ t('automated-forms.list.table.pagination.of') }} {{ formStore.totalPages }})
               </span>
               <span class="ml-2">
                 | {{ ((tableOptions.page - 1) * tableOptions.itemsPerPage) + 1 }} - 
                 {{ Math.min(tableOptions.page * tableOptions.itemsPerPage, formStore.totalCount) }} 
-                / {{ formStore.totalCount }} gösteriliyor
+                / {{ formStore.totalCount }} {{ t('automated-forms.list.table.pagination.showing') }}
               </span>
             </div>
             <div class="d-flex align-center ga-2">
-              <span class="text-caption text-medium-emphasis">Sayfa başına kayıt:</span>
+              <span class="text-caption text-medium-emphasis">{{ t('automated-forms.list.table.pagination.itemsPerPage') }}</span>
               <v-select
                 v-model="tableOptions.itemsPerPage"
                 :items="[20, 50, 100]"
@@ -409,7 +427,7 @@ const isSideMenuEnabled = (form: any) => {
       </v-card-title>
       <v-card-text class="pa-6">
         <div class="mb-4">
-          <strong class="text-subtitle-2">Form Kodu:</strong>
+          <strong class="text-subtitle-2">{{ t('automated-forms.list.viewDialog.fields.formCode') }}</strong>
           <p class="text-body-1 mt-1">
             <v-chip size="small" variant="tonal" color="info">
               {{ formToView.formCode || formToView.FormCode }}
@@ -418,14 +436,14 @@ const isSideMenuEnabled = (form: any) => {
         </div>
         
         <div class="mb-4">
-          <strong class="text-subtitle-2">Açıklama:</strong>
+          <strong class="text-subtitle-2">{{ t('automated-forms.list.viewDialog.fields.description') }}</strong>
           <p class="text-body-1 mt-1">
-            {{ formToView.description || formToView.Description || 'Açıklama yok' }}
+            {{ formToView.description || formToView.Description || t('automated-forms.list.viewDialog.noDescription') }}
           </p>
         </div>
         
         <div class="mb-4">
-          <strong class="text-subtitle-2">Dataset:</strong>
+          <strong class="text-subtitle-2">{{ t('automated-forms.list.viewDialog.fields.dataset') }}</strong>
           <p class="text-body-1 mt-1">
             <v-chip size="small" variant="tonal" color="info">
               {{ formToView.datasetName || formToView.DatasetName }}
@@ -434,27 +452,27 @@ const isSideMenuEnabled = (form: any) => {
         </div>
         
         <div class="mb-4">
-          <strong class="text-subtitle-2">Durum:</strong>
+          <strong class="text-subtitle-2">{{ t('automated-forms.list.viewDialog.fields.status') }}</strong>
           <p class="text-body-1 mt-1">
             <v-chip 
               :color="(formToView.isActive ?? formToView.IsActive) ? 'success' : 'error'" 
               size="small" 
               variant="flat"
             >
-              {{ (formToView.isActive ?? formToView.IsActive) ? 'Aktif' : 'Pasif' }}
+              {{ (formToView.isActive ?? formToView.IsActive) ? t('automated-forms.list.table.status.active') : t('automated-forms.list.table.status.inactive') }}
             </v-chip>
           </p>
         </div>
         
         <div class="mb-4">
-          <strong class="text-subtitle-2">Side Menu:</strong>
+          <strong class="text-subtitle-2">{{ t('automated-forms.list.viewDialog.fields.sideMenu') }}</strong>
           <p class="text-body-1 mt-1">
             <v-chip 
               :color="isSideMenuEnabled(formToView) ? 'success' : 'default'" 
               size="small" 
               variant="tonal"
             >
-              {{ isSideMenuEnabled(formToView) ? 'Eklendi' : 'Eklenmedi' }}
+              {{ isSideMenuEnabled(formToView) ? t('automated-forms.list.table.sideMenu.added') : t('automated-forms.list.table.sideMenu.notAdded') }}
             </v-chip>
             <span v-if="isSideMenuEnabled(formToView) && (formToView.sideMenuConfig?.routePath || formToView.SideMenuConfig?.routePath)" class="text-caption text-medium-emphasis ml-2">
               ({{ formToView.sideMenuConfig?.routePath || formToView.SideMenuConfig?.routePath }})
@@ -465,7 +483,7 @@ const isSideMenuEnabled = (form: any) => {
         <v-divider class="my-4"></v-divider>
         
         <div class="mb-3">
-          <strong class="text-subtitle-2">Oluşturulma:</strong>
+          <strong class="text-subtitle-2">{{ t('automated-forms.list.viewDialog.fields.createdAt') }}</strong>
           <p class="text-body-2 mt-1">
             {{ formatDate(formToView.createInfo?.createdAt || formToView.CreateInfo?.createdAt) }}
             <span v-if="formToView.createInfo?.userInfo?.userName || formToView.CreateInfo?.userInfo?.userName" class="text-medium-emphasis">
@@ -475,7 +493,7 @@ const isSideMenuEnabled = (form: any) => {
         </div>
         
         <div v-if="formToView.lastUpdateInfo || formToView.LastUpdateInfo" class="mb-3">
-          <strong class="text-subtitle-2">Son Güncelleme:</strong>
+          <strong class="text-subtitle-2">{{ t('automated-forms.list.viewDialog.fields.updatedAt') }}</strong>
           <p class="text-body-2 mt-1">
             {{ formatDate((formToView.lastUpdateInfo || formToView.LastUpdateInfo)?.updatedAt) }}
             <span v-if="(formToView.lastUpdateInfo || formToView.LastUpdateInfo)?.userInfo?.userName" class="text-medium-emphasis">
@@ -493,17 +511,17 @@ const isSideMenuEnabled = (form: any) => {
           :disabled="!(formToView.isActive ?? formToView.IsActive)"
         >
           <ExternalLinkIcon class="mr-2" size="18" />
-          Formu Aç
+          {{ t('automated-forms.list.viewDialog.buttons.openForm') }}
         </v-btn>
         <v-btn color="primary" variant="flat" @click="showViewDialog = false">
-          Kapat
+          {{ t('automated-forms.list.viewDialog.buttons.close') }}
         </v-btn>
         <v-btn
           color="info"
           variant="flat"
           @click="editForm(formToView); showViewDialog = false"
         >
-          Düzenle
+          {{ t('automated-forms.list.viewDialog.buttons.edit') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -513,20 +531,20 @@ const isSideMenuEnabled = (form: any) => {
   <v-dialog v-model="showDeleteDialog" max-width="500px">
     <v-card>
       <v-card-title class="pa-4 bg-error text-white">
-        <span class="text-h6">Formu Sil</span>
+        <span class="text-h6">{{ t('automated-forms.list.deleteDialog.title') }}</span>
       </v-card-title>
       <v-card-text class="pa-6">
         <p class="text-subtitle-1">
-          Bu formu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+          {{ t('automated-forms.list.deleteDialog.message') }}
         </p>
       </v-card-text>
       <v-card-actions class="pa-4">
         <v-spacer />
         <v-btn color="error" variant="flat" @click="showDeleteDialog = false">
-          İptal
+          {{ t('automated-forms.list.deleteDialog.buttons.cancel') }}
         </v-btn>
         <v-btn color="success" variant="flat" @click="confirmDelete">
-          Evet, Sil
+          {{ t('automated-forms.list.deleteDialog.buttons.confirm') }}
         </v-btn>
       </v-card-actions>
     </v-card>

@@ -1,16 +1,16 @@
 # MngLLM - Mevcut Durum Raporu
 
 **Son Güncelleme:** 15 Ocak 2026  
-**Version:** 1.0.0  
-**Durum:** ✅ Faz 1 Tamamlandı - Çoklu Dil Desteği Aktif
+**Version:** 1.0.1  
+**Durum:** 📋 Chatbot Planlama Tamamlandı - Implementasyona Hazır
 
 ---
 
 ## Son Çalışılan Konu
 
-**MngLLM Service - Faz 1: Çoklu Dil Desteği (Translation) Implementasyonu**
+**Chatbot Planlama ve Dokümantasyon Hazırlık Stratejisi**
 
-MngLLM servisi oluşturuldu ve çoklu dil çevirisi özelliği implement edildi. Side Menu Manager'dan menü item'ları için dil dosyalarını otomatik olarak güncelleme özelliği aktif.
+Kapsamlı chatbot planlama ve dokümantasyon hazırlık stratejisi tamamlandı. Chatbot ismi belirlendi: **Moni**. MkDocs dokümantasyon planlaması yarınki oturumda yapılacak.
 
 ---
 
@@ -101,36 +101,99 @@ MngLLM servisi oluşturuldu ve çoklu dil çevirisi özelliği implement edildi.
 
 ## Devam Eden İşler
 
-Şu anda aktif olarak devam eden bir iş yok.
+**Chatbot Planlama - Tamamlandı ✅**
+- Kapsamlı chatbot planlama dokümantasyonu hazırlandı
+- Dokümantasyon hazırlık stratejisi belirlendi
+- Çoklu dil desteği planlandı (5 dil: tr, en, fr, ar, zh)
+- UI rehber desteği stratejisi oluşturuldu
+- Chatbot ismi belirlendi: **Moni**
+
+**MkDocs Dokümantasyon Planlaması - Tamamlandı ✅**
+- MkDocs hibrit format stratejisi hazırlandı (`MKDOCS_PLANNING.md`)
+- Front matter (YAML metadata) standardı belirlendi
+- UI Guide Template oluşturuldu (`docs/Mng.Ui/guides/templates/ui-guide-template.md`)
+- İlk örnek rehber hazırlandı (`docs/Mng.Ui/guides/chatbot/datasets/creating-dataset.md`)
+- Hem chatbot hem insanlar için uygun format planlandı
+
+**Dataset Dokümantasyonları - Oluşturuldu ✅**
+- Dataset dokümantasyon planı hazırlandı (`DATASET_DOCUMENTATION_PLAN.md`)
+- Field Types dokümantasyonları oluşturuldu (9 field type):
+  - ✅ incremental.md (en detaylı)
+  - ✅ relation.md
+  - ✅ text.md
+  - ✅ number.md
+  - ✅ bool.md
+  - ✅ datetime.md
+  - ✅ object.md
+  - ✅ persons.md
+  - ✅ personGroups.md
+- Validations dokümantasyonları oluşturuldu:
+  - ✅ field-level-validation.md
+  - ✅ expression-validation.md
+  - ✅ http-validation.md
+- Indexes dokümantasyonları oluşturuldu:
+  - ✅ index-types.md
+  - ✅ unique-index.md
+  - ✅ composite-index.md
+  - ✅ index-best-practices.md
+- Örnek senaryolar:
+  - ✅ books-dataset.md (tam örnek)
+  - ✅ index.md (genel bakış)
+
+**Sonraki Adımlar:**
+- 📋 Chatbot parser implementasyonu (Front matter + Markdown parse)
+- 📋 Mevcut rehberleri güncelleme (front matter ekleme)
+- 📋 DocumentationProvider geliştirme
 
 ---
 
 ## Sonraki Adımlar
 
-### 🔄 Kısa Vadede (Gelecek Chat'te)
-1. **API Gateway Entegrasyonu (Mng.Ui)**
-   - MngLLM için gatewayUrl kontrolü eklenmesi
-   - Şu anda sadece direkt servis URL'i kullanılıyor
-   - Keeper ve DataGateway pattern'i takip edilmeli
+### 🔄 Yarınki Oturum (16 Ocak 2026) - Öncelik: Yüksek
+1. **MkDocs Dokümantasyon Planlaması**
+   - Hem chatbot hem insanlar için uygun format belirleme
+   - Front matter (YAML metadata) standardı oluşturma
+   - Rehber template'i hazırlama
+   - İlk örnek rehberleri hazırlama
+   - Detaylı planlama için: `NEXT_SESSION_TODO.md` dosyasına bakın
 
-### 📋 Orta Vadede (Roadmap'e göre)
-1. **Faz 2: Dataset Sorgulama (NLQ)**
+### 📋 Kısa Vadede (Planlamadan Sonra)
+1. **Faz 1: Dokümantasyon Provider (Backend)**
+   - Markdown parser
+   - OpenAPI JSON parser
+   - Keyword index
+   - Search algoritması
+   - Öncelik: Yüksek
+   - Tahmini Süre: 1-2 hafta
+
+2. **Faz 2: Chatbot Backend**
+   - ChatCommand/Handler
+   - Intent detection
+   - Context management
+   - API endpoints
+   - Öncelik: Yüksek
+   - Tahmini Süre: 2-3 hafta
+
+3. **Faz 3: Chatbot Frontend**
+   - ChatbotWidget component
+   - ChatMessage component
+   - useChatbot composable
+   - API integration
+   - Öncelik: Yüksek
+   - Tahmini Süre: 2-3 hafta
+
+### 📋 Orta Vadede
+1. **Faz 4: Dataset Sorgulama (NLQ)**
    - Natural Language Query endpoint
    - Dataset schema context provider
-   - Chatbot UI component
    - Öncelik: Yüksek
    - Tahmini Süre: 3-4 hafta
 
-2. **Faz 3: Dokümantasyon & Yardım**
-   - Platform dokümantasyonu analizi
-   - Context management
+2. **Faz 5: Dokümantasyon Arama Geliştirme**
+   - Semantic search (vector search)
+   - Gelişmiş context management
    - Öncelik: Orta
-   - Tahmini Süre: 1-2 hafta
-
-3. **Faz 4: Kullanıcı Rehberi**
-   - Adım adım talimatlar
-   - Öncelik: Düşük
-   - Tahmini Süre: 1 hafta
+   - Tahmini Süre: 2-3 hafta
 
 ---
 
@@ -152,10 +215,28 @@ MngLLM servisi oluşturuldu ve çoklu dil çevirisi özelliği implement edildi.
 
 ### 📊 Kullanım Senaryoları
 - ✅ **Çoklu Dil Çevirisi**: Aktif ve kullanılıyor (Side Menu Manager)
-- 📋 **Dataset Sorgulama (NLQ)**: Planlandı (Faz 2)
-- 📋 **Dokümantasyon Yardımı**: Planlandı (Faz 3)
-- 📋 **Kullanıcı Rehberi**: Planlandı (Faz 4)
-- 📋 **Chatbot Uygulamaları**: İleride planlanacak
+- 📋 **Chatbot Planlama**: Tamamlandı (15 Ocak 2026)
+  - Kapsamlı chatbot planlama dokümantasyonu hazırlandı
+  - Dokümantasyon hazırlık stratejisi belirlendi
+  - Çoklu dil desteği planlandı (5 dil)
+  - UI rehber desteği stratejisi oluşturuldu
+  - Chatbot ismi belirlendi: **Moni**
+- 📋 **MkDocs Dokümantasyon Planlaması**: Planlandı (16 Ocak 2026 - Yarınki Oturum)
+- 📋 **Chatbot Implementasyonu**: Planlandı (MkDocs planlamasından sonra)
+
+### 📚 Oluşturulan Dokümantasyon Dosyaları
+1. ✅ `CHATBOT_PLANNING.md` - Genel chatbot planlaması
+2. ✅ `DOCUMENTATION_PREPARATION_STRATEGY.md` - Dokümantasyon hazırlık stratejisi
+3. ✅ `MULTILINGUAL_SUPPORT.md` - Çoklu dil desteği planı
+4. ✅ `UI_GUIDE_STRATEGY.md` - UI rehber desteği stratejisi
+5. ✅ `IMPLEMENTATION_PLAN.md` - Detaylı implementasyon planı
+6. ✅ `CHATBOT_NAME.md` - Chatbot ismi belirleme
+7. ✅ `NEXT_SESSION_TODO.md` - Yarınki oturum için yapılacaklar
+8. ✅ `MKDOCS_PLANNING.md` - MkDocs dokümantasyon planlaması (hibrit format)
+
+### 📝 Oluşturulan Template ve Örnekler
+1. ✅ `docs/Mng.Ui/guides/templates/ui-guide-template.md` - UI rehber template'i
+2. ✅ `docs/Mng.Ui/guides/chatbot/datasets/creating-dataset.md` - Örnek rehber (Dataset Oluşturma)
 
 ---
 
@@ -181,4 +262,5 @@ MngLLM servisi oluşturuldu ve çoklu dil çevirisi özelliği implement edildi.
 
 ---
 
-**Son Güncelleme:** 15 Ocak 2026
+**Son Güncelleme:** 16 Ocak 2026  
+**Sonraki Adım:** Template ve örnek rehberler hazırlandı - Chatbot parser implementasyonu

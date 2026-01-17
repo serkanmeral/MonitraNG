@@ -22,11 +22,11 @@ export default defineEventHandler(async (event) => {
   
   let fullUrl: string;
   if (gatewayUrl) {
-    // Use Gateway: path='v1/llm/translate' -> Gateway: 'https://localhost:5040/llm/api/v1/llm/translate'
-    // Gateway forwards to MngLLM as: 'http://mngllm:5030/api/v1/llm/translate'
+    // Use Gateway: path='v1/chatbot/chat' -> Gateway: 'https://localhost:5040/llm/api/v1/chatbot/chat'
+    // Gateway forwards to MngLLM as: 'http://mngllm:5030/api/v1/chatbot/chat'
     fullUrl = `${gatewayUrl}/llm/api/${path}`;
   } else {
-    // Direct to MngLLM: path='v1/llm/translate' -> MngLLM: 'https://localhost:5030/api/v1/llm/translate'
+    // Direct to MngLLM: path='v1/chatbot/chat' -> MngLLM: 'http://localhost:5030/api/v1/chatbot/chat'
     fullUrl = `${llmUrl}/api/${path}`;
   }
   

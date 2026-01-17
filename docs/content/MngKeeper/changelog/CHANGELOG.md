@@ -1,0 +1,205 @@
+---
+title: "MngKeeper Changelog"
+category: "changelog"
+tags: ["keeper", "changelog", "version", "releases"]
+service: "MngKeeper"
+difficulty: "beginner"
+estimated_time: "5 dakika"
+language: "tr"
+priority: 1
+---
+
+# MngKeeper Changelog
+
+Tüm önemli değişiklikler bu dosyada dokümante edilir.
+
+Format [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) standardına uygundur.
+Versiyonlama [Semantic Versioning](https://semver.org/spec/v2.0.0.html) kullanır.
+
+## [Unreleased]
+
+### Added
+- **Domain Creation Email Notification**
+  - Automatic email notification when domain is created
+  - Email sent to related person (RelatedPersonEmail field)
+  - HTML formatted email with domain and admin user information
+  - SendDomainCreatedEmailStep added to domain creation pipeline
+  - Non-critical step: Pipeline continues even if email sending fails
+  - INotifierService interface and NotifierService implementation for MngNotifier API integration
+  - RelatedPersonEmail field added to DomainCreationContext and CreateDomainCommand
+  - RelatedPersonEmail input field added to MngDomainUI domain creation form
+  - Email template service infrastructure (IEmailTemplateService, EmailTemplateService)
+  - Email template file (domain-created.html) prepared for future use
+
+### Changed
+- Domain creation pipeline now includes email notification step (Step 12, after ActivateDomainStep)
+- MngKeeperSettings configuration extended with NotifierSettings
+
+## [1.1.0] - 2025-12-16
+
+### Added
+- **Code Optimization & Performance Improvements**
+  - Redis cache integration for query handlers (GetUsers, GetGroups)
+  - MongoDB indexes for users and groups collections (DomainId, Username, Email, Name, compound indexes)
+  - Cache-aside pattern with configurable TTL (5 minutes default)
+  - Cache extension methods for reusable cache operations
+  - Exception handling improvements with `ExceptionHelper` class
+  - Specific exception handling for MongoDB, HTTP, and timeout errors
+  - User-friendly error messages based on exception types
+  - Constants class (`SystemConstants`, `SystemGroups`) for magic string elimination
+  - `IndexManager` service for automatic index creation during domain setup
+  - `CreateIndexesStep` in domain creation pipeline
+  - `IAsyncDisposable` implementation for proper async disposal patterns
+  - Cache key building utilities for consistent cache key format
+
+### Changed
+- **Performance Optimizations**
+  - Query handlers now use Redis cache (94% performance improvement on cache hits)
+  - Database-level filtering and pagination (reduced memory usage by ~90%)
+  - Compound indexes for common query patterns (DomainId + IsActive)
+  - Async disposal patterns improved (removed `.Wait()` anti-patterns)
+  
+- **Code Quality Improvements**
+  - All magic strings replaced with constants (`SystemConstants`, `SystemGroups`)
+  - Code duplication reduced through extension methods (`CacheExtensions`)
+  - Exception handling standardized across all query handlers
+  - Log levels determined by exception type (Warning for client errors, Error for server errors)
+
+### Technical Details
+- **Cache Performance**: 680ms → 40ms (94.1% improvement) on cache hits
+- **Database Indexes**: 5 indexes for users, 4 indexes for groups
+- **Cache TTL**: 5 minutes for lists, 10 minutes for details
+- **Exception Types**: MongoDB, HTTP, Timeout, Argument, InvalidOperation
+
+### Migration Notes
+- No breaking changes
+- Cache is automatically enabled (requires Redis connection)
+- Indexes are automatically created for new domains
+- Existing domains will benefit from cache on next query
+
+## [Unreleased - Previous]
+
+### Added
+- **Server Configuration** - Host and Port now configurable via environment variables
+  - Added `ServerSettings` class with `Host`, `Port`, and `Scheme` properties
+  - Support for multiple host options: `0.0.0.0` (all interfaces), `localhost`, or specific IP
+  - Full environment variable support: `MngKeeperSettings__Server__Host`, `MngKeeperSettings__Server__Port`
+  - Comprehensive documentation in new `ENVIRONMENT_VARIABLES.md` file
+
+### Changed
+- `InitWebAPP` method now reads host/port from configuration instead of hard-coded values
+- Updated README.md with environment variable configuration examples
+- Updated appsettings.json to include Server section
+
+## [1.0.0] - 2025-10-31
+
+### Added
+- **Core Features**
+  - Clean Architecture implementation (CQRS + MediatR)
+  - Domain CRUD operations
+  - User CRUD operations  
+  - Group CRUD operations
+  - Keycloak integration
+  - MongoDB multi-database support
+  
+- **Authentication & Authorization**
+  - JWT token authentication
+  - Refresh token support with rotation
+  - Token revocation (logout)
+  - Domain-based claims (domain_id, domain_name, is_admin)
+  - Role-based access control (RBAC)
+  - `offline_access` scope for refresh tokens
+  
+- **API Documentation**
+  - Swagger UI (http://localhost:5001/api-docs)
+  - Scalar UI (http://localhost:5001/scalar/v1)
+  - GraphQL support (http://localhost:5001/graphql)
+  - 40+ RESTful endpoints documented
+  - JWT Bearer authentication in UI
+  
+- **Logging & Monitoring**
+  - Serilog structured logging
+  - Seq integration (http://localhost:5341)
+  - Console logging with colors
+  - Environment-specific configurations
+  - Health check endpoints
+  - Version endpoint (`/api/version`)
+  
+- **Infrastructure Services**
+  - Keycloak service (realm, user, group management)
+  - MQTT service integration
+  - RabbitMQ event publisher
+  - Redis cache & session service
+  - JWT token service with domain claims
+  
+- **Testing Infrastructure**
+  - PowerShell test scripts
+  - Domain creation tests
+  - Authentication flow tests
+  - Refresh token tests
+  - Test data fixtures
+
+- **Development Tools**
+  - version.ps1 - Version management script
+  - release.ps1 - Automated release script
+  - Versioning in all .csproj files
+  - CHANGELOG.md tracking
+
+### Changed
+- Test controllers removed (7 test controllers cleaned up)
+- Test endpoints updated to production endpoints
+- Documentation reorganized for mono-repo structure
+- GetToken endpoint enhanced with DomainName parameter
+
+### Fixed
+- Swagger schema ID conflicts resolved
+- Token expiration calculation
+- Domain realm name resolution
+- Keycloak token response parsing
+
+### Technical Details
+- **.NET Version:** 9.0
+- **MongoDB:** 7.0
+- **Keycloak:** 23.0.3
+- **Architecture:** Clean Architecture
+- **Pattern:** CQRS + MediatR
+- **Database:** MongoDB (multi-tenant)
+- **Authentication:** Keycloak + JWT
+- **Logging:** Serilog + Seq
+
+### API Endpoints
+- Domain Management: 5 endpoints
+- User Management: 6 endpoints
+- Group Management: 4 endpoints
+- Authentication: 3 endpoints (token, refresh, logout)
+- Health: 3 endpoints
+- Version: 2 endpoints
+- MQTT: 8 endpoints
+- RabbitMQ: 3 endpoints
+- Redis: 8 endpoints
+
+### Breaking Changes
+- None (initial release)
+
+### Deprecated
+- Test controllers (removed)
+
+### Security
+- JWT tokens with domain claims
+- Refresh token rotation
+- Token revocation support
+- Input validation
+- Global exception handling
+- HTTPS enforcement ready
+
+---
+
+## Version Tags
+
+Tags use format: `mngkeeper-vX.Y.Z`
+
+| Tag | Date | Description |
+|-----|------|-------------|
+| mngkeeper-v1.1.0 | 2025-12-16 | Code optimization & performance improvements |
+| mngkeeper-v1.0.0 | 2025-10-31 | Initial production release |
+

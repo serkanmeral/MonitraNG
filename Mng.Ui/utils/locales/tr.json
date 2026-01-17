@@ -1407,5 +1407,32 @@
       },
       "logout": "Çıkış Yap"
     }
+  },
+  "chatbot": {
+    "title": "Moni - Yardımcı Chatbot",
+    "subtitle": "Size nasıl yardımcı olabilirim?",
+    "placeholder": "Mesajınızı yazın...",
+    "send": "Gönder",
+    "clear": "Temizle",
+    "close": "Kapat",
+    "open": "Aç",
+    "minimize": "Küçült",
+    "maximize": "Büyüt",
+    "typing": "Yazıyor...",
+    "error": "Bir hata oluştu. Lütfen tekrar deneyin.",
+    "noMessages": "Henüz mesaj yok. Merhaba yazarak başlayabilirsiniz.",
+    "intent": {
+      "nlq": "Veri Sorgusu",
+      "docs": "Dokümantasyon",
+      "guide": "Rehber",
+      "general": "Genel"
+    },
+    "documentation": {
+      "sources": "İlgili Dokümantasyon",
+      "view": "Görüntüle"
+    },
+    "copy": "Kopyala",
+    "copied": "Kopyalandı!",
+    "sessionCleared": "Konuşma geçmişi temizlendi"
   }
 }

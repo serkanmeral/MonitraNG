@@ -7,8 +7,22 @@ import { useDatasetStore } from '@/stores/apps/dataset';
 import { useUserStore } from '@/stores/apps/user';
 import { useGroupStore } from '@/stores/apps/group';
 import { useAuthStore } from '@/stores/auth';
+import { useLocaleStore } from '@/stores/locale';
 import { fetchFromDataGateway } from '@/services/apiService';
 import { FileCodeIcon, PlusIcon, RefreshIcon, EditIcon, TrashIcon, EyeIcon, XIcon, CheckIcon } from 'vue-tabler-icons';
+
+// Get i18n instance for legacy mode
+const nuxtApp = useNuxtApp();
+const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
+const t = (key: string, params?: any) => {
+  if (i18n && i18n.t) {
+    return i18n.t(key, params);
+  }
+  if (i18n?.global?.t) {
+    return i18n.global.t(key, params);
+  }
+  return key;
+};
 
 const route = useRoute();
 const router = useRouter();
@@ -17,6 +31,7 @@ const datasetStore = useDatasetStore();
 const userStore = useUserStore();
 const groupStore = useGroupStore();
 const authStore = useAuthStore();
+const localeStore = useLocaleStore();
 
 const formCode = computed(() => route.params.formCode as string);
 
@@ -62,17 +77,17 @@ const currentEditingItemId = ref<string | null>(null);
 
 // Page info
 const page = computed(() => ({
-  title: form.value?.formName || 'Form Görüntüle',
+  title: form.value?.formName || t('automated-forms.view.title'),
 }));
 
 const breadcrumbs = computed(() => [
   {
-    text: 'Dashboard',
+    text: t('automated-forms.breadcrumbs.home'),
     disabled: false,
     href: '/dashboards/analytical',
   },
   {
-    text: 'Otomatik Formlar',
+    text: t('automated-forms.breadcrumbs.automatedForms'),
     disabled: false,
     href: '/apps/automated-forms',
   },
@@ -92,7 +107,7 @@ const loadForm = async () => {
     // Load form metadata
     const loadedForm = await formStore.fetchFormByCode(formCode.value);
     if (!loadedForm) {
-      errorMessage.value = 'Form bulunamadı';
+      errorMessage.value = t('automated-forms.form.messages.notFound');
       return;
     }
     form.value = loadedForm;
@@ -103,7 +118,7 @@ const loadForm = async () => {
     const loadedDataset = await datasetStore.fetchDatasetByName(loadedForm.datasetName);
     console.log('[AutomatedFormView] Loaded dataset:', loadedDataset);
     if (!loadedDataset) {
-      errorMessage.value = 'Dataset bulunamadı';
+      errorMessage.value = t('automated-forms.view.messages.loadError');
       return;
     }
     dataset.value = loadedDataset;
@@ -111,7 +126,7 @@ const loadForm = async () => {
     // Load data items
     await fetchDataItems();
   } catch (error: any) {
-    errorMessage.value = error.message || 'Form yüklenirken bir hata oluştu';
+    errorMessage.value = error.message || t('automated-forms.view.messages.loadError');
   } finally {
     loading.value = false;
   }
@@ -255,7 +270,7 @@ const fetchDataItems = async () => {
     totalCount.value = totalCountValue;
   } catch (error: any) {
     console.error('Data items yüklenirken hata:', error);
-    errorMessage.value = error.message || 'Veriler yüklenirken bir hata oluştu';
+    errorMessage.value = error.message || t('automated-forms.view.messages.dataLoadError');
   } finally {
     loading.value = false;
   }
@@ -303,7 +318,7 @@ const tableHeaders = computed(() => {
   
   // Add actions column
   headers.push({
-    title: 'İşlemler',
+    title: t('automated-forms.view.table.headers.actions'),
     key: 'actions',
     sortable: false,
     filterable: false,
@@ -478,7 +493,7 @@ const editItem = async (item: any) => {
     formDialogData.value = data;
     showFormDialog.value = true;
   } catch (error: any) {
-    formDialogError.value = error.message || 'Kayıt yüklenirken bir hata oluştu';
+    formDialogError.value = error.message || t('automated-forms.view.messages.itemLoadError');
     console.error('Error loading item for edit:', error);
   }
 };
@@ -536,7 +551,7 @@ const saveForm = async () => {
     } else {
       // Update existing item
       if (!currentEditingItemId.value) {
-        throw new Error('Kayıt ID bulunamadı');
+        throw new Error(t('automated-forms.view.messages.itemIdNotFound'));
       }
       
       const url = `/api/v1/data/${encodeURIComponent(form.value.datasetName)}/${encodeURIComponent(currentEditingItemId.value)}`;
@@ -582,8 +597,8 @@ const saveForm = async () => {
     // Fallback to default message if still empty
     if (!errorMessage) {
       errorMessage = formDialogMode.value === 'create' 
-        ? 'Kayıt oluşturulurken bir hata oluştu' 
-        : 'Kayıt güncellenirken bir hata oluştu';
+        ? t('automated-forms.view.messages.createError') 
+        : t('automated-forms.view.messages.updateError');
     }
     
     formDialogError.value = errorMessage;
@@ -624,7 +639,7 @@ const confirmDelete = async () => {
     itemToDelete.value = null;
     await fetchDataItems();
   } catch (error: any) {
-    deleteDialogError.value = error.message || 'Kayıt silinirken bir hata oluştu';
+    deleteDialogError.value = error.message || t('automated-forms.view.messages.deleteError');
     console.error('Error deleting item:', error);
   } finally {
     deleteDialogLoading.value = false;
@@ -669,12 +684,14 @@ const formatCellValue = (value: any, fieldType: string) => {
   if (value === null || value === undefined) return '-';
   
   if (fieldType === 'bool') {
-    return value ? 'Evet' : 'Hayır';
+    return value ? t('automated-forms.view.cellFormat.yes') : t('automated-forms.view.cellFormat.no');
   }
   
   if (fieldType === 'datetime') {
     try {
-      return new Date(value).toLocaleString('tr-TR');
+      const locale = localeStore.locale || 'tr';
+      const localeMap: Record<string, string> = { tr: 'tr-TR', en: 'en-US', fr: 'fr-FR', ar: 'ar-SA', zh: 'zh-CN' };
+      return new Date(value).toLocaleString(localeMap[locale] || 'tr-TR');
     } catch {
       return value;
     }
@@ -709,7 +726,7 @@ const formatCellValue = (value: any, fieldType: string) => {
             <template #prepend>
               <PlusIcon size="18" />
             </template>
-            Yeni Kayıt
+            {{ t('automated-forms.view.buttons.newRecord') }}
           </v-btn>
           
           <v-btn
@@ -744,7 +761,7 @@ const formatCellValue = (value: any, fieldType: string) => {
           color="primary"
           size="64"
         ></v-progress-circular>
-        <p class="text-subtitle-1 mt-4 text-medium-emphasis">Form yükleniyor...</p>
+        <p class="text-subtitle-1 mt-4 text-medium-emphasis">{{ t('automated-forms.view.loading') }}</p>
       </div>
       
       <!-- Form Info -->
@@ -769,8 +786,8 @@ const formatCellValue = (value: any, fieldType: string) => {
         <v-text-field
           v-model="searchQuery"
           prepend-inner-icon="mdi-magnify"
-          label="Ara..."
-          placeholder="Arama yapmak için bir terim girin..."
+          :label="t('automated-forms.view.search.label')"
+          :placeholder="t('automated-forms.view.search.placeholder')"
           variant="outlined"
           density="compact"
           clearable
@@ -784,7 +801,7 @@ const formatCellValue = (value: any, fieldType: string) => {
           <v-expansion-panel-title>
             <div class="d-flex align-center ga-2">
               <v-icon>mdi-filter</v-icon>
-              <span>Filtreler</span>
+              <span>{{ t('automated-forms.view.filters.title') }}</span>
               <v-chip
                 v-if="Object.keys(filters).some(key => filters[key] && filters[key].trim())"
                 size="x-small"
@@ -807,7 +824,7 @@ const formatCellValue = (value: any, fieldType: string) => {
                 <v-text-field
                   v-model="filters[field.name]"
                   :label="field.title || field.name"
-                  :placeholder="`${field.title || field.name} ile filtrele...`"
+                  :placeholder="`${field.title || field.name} ${t('automated-forms.view.filters.filterPlaceholder')}`"
                   variant="outlined"
                   density="compact"
                   clearable
@@ -824,7 +841,7 @@ const formatCellValue = (value: any, fieldType: string) => {
                   :disabled="!Object.keys(filters).some(key => filters[key] && filters[key].trim())"
                 >
                   <v-icon size="16" class="mr-2">mdi-filter-off</v-icon>
-                  Filtreleri Temizle
+                  {{ t('automated-forms.view.filters.clear') }}
                 </v-btn>
               </v-col>
             </v-row>
@@ -843,9 +860,9 @@ const formatCellValue = (value: any, fieldType: string) => {
         <div class="d-flex align-center ga-2">
           <v-icon>mdi-information</v-icon>
           <div>
-            <strong>Henüz veri yok</strong>
+            <strong>{{ t('automated-forms.view.empty.title') }}</strong>
             <p class="text-caption mb-0 mt-1">
-              Bu dataset'te henüz kayıt bulunmuyor. "Yeni Kayıt" butonuna tıklayarak ilk kaydı oluşturabilirsiniz.
+              {{ t('automated-forms.view.empty.description') }}
             </p>
           </div>
         </div>
@@ -884,7 +901,7 @@ const formatCellValue = (value: any, fieldType: string) => {
               size="small"
               variant="text"
               @click="editItem(item)"
-              title="Düzenle"
+              :title="t('automated-forms.view.buttons.edit')"
             >
               <EditIcon size="18" />
             </v-btn>
@@ -894,7 +911,7 @@ const formatCellValue = (value: any, fieldType: string) => {
               variant="text"
               color="error"
               @click="deleteItem(item)"
-              title="Sil"
+              :title="t('automated-forms.view.buttons.delete')"
             >
               <TrashIcon size="18" />
             </v-btn>
@@ -905,7 +922,7 @@ const formatCellValue = (value: any, fieldType: string) => {
       <!-- Pagination -->
       <div v-if="form && dataset && totalCount > 0" class="d-flex align-center justify-space-between mt-4">
         <div class="text-caption text-medium-emphasis">
-          Toplam {{ totalCount }} kayıt
+          {{ t('automated-forms.view.table.pagination.total') }} {{ totalCount }} {{ t('automated-forms.view.table.pagination.records') }}
         </div>
         <v-pagination
           v-model="tableOptions.page"
@@ -921,7 +938,7 @@ const formatCellValue = (value: any, fieldType: string) => {
     <v-card>
       <v-card-title class="pa-4 bg-primary text-white d-flex align-center">
         <FileCodeIcon class="mr-2" size="20" />
-        <span>{{ formDialogMode === 'edit' ? 'Kayıt Düzenle' : 'Yeni Kayıt' }}</span>
+        <span>{{ formDialogMode === 'edit' ? t('automated-forms.view.formDialog.title.edit') : t('automated-forms.view.formDialog.title.create') }}</span>
       </v-card-title>
       
       <v-divider></v-divider>
@@ -972,7 +989,7 @@ const formatCellValue = (value: any, fieldType: string) => {
           :disabled="formDialogLoading"
         >
           <XIcon class="mr-2" size="18" />
-          İptal
+          {{ t('automated-forms.view.buttons.cancel') }}
         </v-btn>
         <v-btn
           color="primary"
@@ -981,7 +998,7 @@ const formatCellValue = (value: any, fieldType: string) => {
           :loading="formDialogLoading"
         >
           <CheckIcon class="mr-2" size="18" />
-          {{ formDialogMode === 'edit' ? 'Güncelle' : 'Kaydet' }}
+          {{ formDialogMode === 'edit' ? t('automated-forms.view.buttons.update') : t('automated-forms.view.buttons.save') }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -992,7 +1009,7 @@ const formatCellValue = (value: any, fieldType: string) => {
     <v-card>
       <v-card-title class="pa-4 bg-error text-white">
         <TrashIcon class="mr-2" size="20" />
-        Kayıt Sil
+        {{ t('automated-forms.view.deleteDialog.title') }}
       </v-card-title>
       <v-card-text class="pa-6">
         <!-- Error Message -->
@@ -1009,7 +1026,7 @@ const formatCellValue = (value: any, fieldType: string) => {
         </v-alert>
         
         <p v-if="!deleteDialogError" class="text-subtitle-1">
-          Bu kaydı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+          {{ t('automated-forms.view.deleteDialog.message') }}
         </p>
       </v-card-text>
       <v-card-actions class="pa-4">
@@ -1020,7 +1037,7 @@ const formatCellValue = (value: any, fieldType: string) => {
           @click="closeDeleteDialog"
           :disabled="deleteDialogLoading"
         >
-          {{ deleteDialogError ? 'Kapat' : 'İptal' }}
+          {{ deleteDialogError ? t('automated-forms.view.buttons.close') : t('automated-forms.view.buttons.cancel') }}
         </v-btn>
         <v-btn
           v-if="!deleteDialogError"
@@ -1029,7 +1046,7 @@ const formatCellValue = (value: any, fieldType: string) => {
           @click="confirmDelete"
           :loading="deleteDialogLoading"
         >
-          Evet, Sil
+          {{ t('automated-forms.view.deleteDialog.buttons.confirm') }}
         </v-btn>
       </v-card-actions>
     </v-card>

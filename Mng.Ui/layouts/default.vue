@@ -3,6 +3,7 @@ import { useCustomizerStore } from '@/stores/customizer';
 import { useLocaleStore } from '@/stores/locale';
 import { computed, watch } from 'vue';
 import { pl, zhHans } from 'vuetify/locale'
+import ChatbotWidget from '@/components/apps/chatbot/ChatbotWidget.vue'
 
 const customizer = useCustomizerStore();
 const localeStore = useLocaleStore();
@@ -71,6 +72,9 @@ if (process.client) {
                     </div>
                 </v-container>
             </v-main>
+            
+            <!-- Chatbot Widget -->
+            <ChatbotWidget />
         </v-app>
     </v-locale-provider>
 
@@ -103,6 +107,9 @@ if (process.client) {
                     </div>
                 </v-container>
             </v-main>
+            
+            <!-- Chatbot Widget -->
+            <ChatbotWidget />
         </v-app>
     </v-locale-provider>
 </template>

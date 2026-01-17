@@ -30,4 +30,9 @@ RUN dotnet publish "MngLLM.Api.csproj" -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+# Copy documentation content (if available)
+# Note: In production, docs should be mounted as volume or copied during build
+# For now, we'll use a volume mount in docker-compose.yml
+
 ENTRYPOINT ["dotnet", "MngLLM.Api.dll"]
