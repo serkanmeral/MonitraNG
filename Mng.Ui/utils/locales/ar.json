@@ -906,7 +906,8 @@
     },
     "cards": {
       "domainInfo": "معلومات النطاق",
-      "domainSettings": "إعدادات النطاق"
+      "domainSettings": "إعدادات النطاق",
+      "licenseInfo": "معلومات الترخيص"
     },
     "fields": {
       "name": "اسم النطاق",
@@ -971,6 +972,47 @@
       "mb": "ميجابايت",
       "gb": "جيجابايت",
       "tb": "تيرابايت"
+    },
+    "license": {
+      "status": {
+        "valid": "صالح",
+        "expired": "منتهي الصلاحية"
+      },
+      "type": {
+        "trial": "ترخيص تجريبي",
+        "real": "ترخيص حقيقي"
+      },
+      "expirationBehavior": {
+        "title": "حالة الأذونات بعد انتهاء الصلاحية",
+        "tokenGeneration": "إنشاء الرمز المميز",
+        "getOperations": "عمليات GET",
+        "crudOperations": "عمليات CRUD",
+        "readOnly": "للقراءة فقط",
+        "blocked": "محظور",
+        "allowed": "مسموح",
+        "active": "نشط",
+        "passive": "غير نشط",
+        "defaultTrialMessage": "انتهت صلاحية الترخيص التجريبي الخاص بك."
+      },
+      "userStatus": {
+        "title": "حالة المستخدم",
+        "activeUserCount": "عدد المستخدمين النشطين",
+        "maxUsers": "الحد الأقصى للمستخدمين",
+        "canCreateUser": "يمكن إضافة مستخدم جديد",
+        "userCount": "مستخدم"
+      },
+      "details": {
+        "title": "تفاصيل الترخيص",
+        "issuedAt": "تاريخ الإصدار",
+        "expiresAt": "تاريخ انتهاء الصلاحية",
+        "issuedBy": "صادر عن",
+        "maxUsers": "الحد الأقصى للمستخدمين"
+      },
+      "customerInfo": {
+        "title": "معلومات العميل",
+        "customerName": "اسم العميل",
+        "contactEmail": "البريد الإلكتروني للاتصال"
+      }
     },
     "logo": {
       "uploaded": "تم رفع الشعار",

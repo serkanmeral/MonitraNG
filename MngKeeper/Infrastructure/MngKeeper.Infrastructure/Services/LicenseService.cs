@@ -72,7 +72,7 @@ namespace MngKeeper.Infrastructure.Services
                         BlockCrudOperations = true,
                         BlockGetOperations = false,
                         AllowReadOnly = true,
-                        CustomMessage = "Trial lisans süreniz dolmuştur."
+                        CustomMessage = null // Custom message will be shown only when license is expired
                     },
                     LicenseFeatures = new LicenseFeatures
                     {

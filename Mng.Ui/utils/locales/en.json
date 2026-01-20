@@ -880,7 +880,8 @@
     },
     "cards": {
       "domainInfo": "Domain Information",
-      "domainSettings": "Domain Settings"
+      "domainSettings": "Domain Settings",
+      "licenseInfo": "License Information"
     },
     "fields": {
       "name": "Domain Name",
@@ -945,6 +946,47 @@
       "mb": "MB",
       "gb": "GB",
       "tb": "TB"
+    },
+    "license": {
+      "status": {
+        "valid": "Valid",
+        "expired": "Expired"
+      },
+      "type": {
+        "trial": "Trial License",
+        "real": "Real License"
+      },
+      "expirationBehavior": {
+        "title": "Permission Status After Expiration",
+        "tokenGeneration": "Token Generation",
+        "getOperations": "GET Operations",
+        "crudOperations": "CRUD Operations",
+        "readOnly": "Read Only",
+        "blocked": "Blocked",
+        "allowed": "Allowed",
+        "active": "Active",
+        "passive": "Passive",
+        "defaultTrialMessage": "Your trial license has expired."
+      },
+      "userStatus": {
+        "title": "User Status",
+        "activeUserCount": "Active User Count",
+        "maxUsers": "Maximum Users",
+        "canCreateUser": "Can Add New User",
+        "userCount": "users"
+      },
+      "details": {
+        "title": "License Details",
+        "issuedAt": "Issued Date",
+        "expiresAt": "Expiration Date",
+        "issuedBy": "Issued By",
+        "maxUsers": "Maximum Users"
+      },
+      "customerInfo": {
+        "title": "Customer Information",
+        "customerName": "Customer Name",
+        "contactEmail": "Contact Email"
+      }
     },
     "logo": {
       "uploaded": "Logo uploaded",

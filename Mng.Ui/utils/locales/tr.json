@@ -912,7 +912,8 @@
     },
     "cards": {
       "domainInfo": "Domain Bilgileri",
-      "domainSettings": "Domain Ayarları"
+      "domainSettings": "Domain Ayarları",
+      "licenseInfo": "Lisans Bilgileri"
     },
     "fields": {
       "name": "Domain Adı",
@@ -930,7 +931,57 @@
       "logoUrl": "Logo URL",
       "maxUsers": "Maksimum Kullanıcı Sayısı",
       "maxAssets": "Maksimum Asset Sayısı",
-      "enableMqtt": "MQTT Aktif"
+      "enableMqtt": "MQTT Aktif",
+      "licenseType": "Lisans Tipi",
+      "licenseValid": "Lisans Geçerli",
+      "licenseExpired": "Lisans Süresi Dolmuş",
+      "licenseExpiresAt": "Lisans Bitiş Tarihi",
+      "licenseIssuedAt": "Lisans Yayınlanma Tarihi",
+      "licenseIssuedBy": "Lisans Yayınlayan",
+      "maxUsersLicense": "Lisans Maksimum Kullanıcı",
+      "activeUserCount": "Aktif Kullanıcı Sayısı",
+      "canCreateUser": "Yeni Kullanıcı Oluşturulabilir"
+    },
+    "license": {
+      "status": {
+        "valid": "Geçerli",
+        "expired": "Süresi Dolmuş"
+      },
+      "type": {
+        "trial": "Trial Lisans",
+        "real": "Gerçek Lisans"
+      },
+      "expirationBehavior": {
+        "title": "Süre Dolunca İzin Durumları",
+        "tokenGeneration": "Token Üretimi",
+        "getOperations": "GET İşlemleri",
+        "crudOperations": "CRUD İşlemleri",
+        "readOnly": "Sadece Okuma",
+        "blocked": "Engellendi",
+        "allowed": "İzinli",
+        "active": "Aktif",
+        "passive": "Pasif",
+        "defaultTrialMessage": "Trial lisans süreniz dolmuştur."
+      },
+      "userStatus": {
+        "title": "Kullanıcı Durumu",
+        "activeUserCount": "Aktif Kullanıcı Sayısı",
+        "maxUsers": "Maksimum Kullanıcı",
+        "canCreateUser": "Yeni Kullanıcı Eklenebilir",
+        "userCount": "kullanıcı"
+      },
+      "details": {
+        "title": "Lisans Detayları",
+        "issuedAt": "Yayınlanma Tarihi",
+        "expiresAt": "Bitiş Tarihi",
+        "issuedBy": "Yayınlayan",
+        "maxUsers": "Maksimum Kullanıcı"
+      },
+      "customerInfo": {
+        "title": "Müşteri Bilgileri",
+        "customerName": "Müşteri Adı",
+        "contactEmail": "İletişim E-posta"
+      }
     },
     "status": {
       "pending": "Beklemede",
@@ -946,7 +997,8 @@
       "cancel": "İptal",
       "refresh": "Yenile",
       "uploadLogo": "Logo Yükle",
-      "removeLogo": "Logoyu Kaldır"
+      "removeLogo": "Logoyu Kaldır",
+      "refreshLicense": "Lisans Bilgilerini Yenile"
     },
     "edit": {
       "title": "Domain Düzenle",
@@ -969,7 +1021,9 @@
       "updateSuccess": "Domain bilgileri başarıyla güncellendi",
       "updateError": "Domain bilgileri güncellenirken bir hata oluştu",
       "notFound": "Domain bulunamadı",
-      "notManager": "Bu sayfaya erişim için manager yetkisi gereklidir"
+      "notManager": "Bu sayfaya erişim için manager yetkisi gereklidir",
+      "licenseLoadError": "Lisans bilgileri yüklenirken bir hata oluştu",
+      "licenseNotFound": "Lisans bilgisi bulunamadı"
     },
     "storage": {
       "bytes": "byte",

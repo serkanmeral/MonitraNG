@@ -3,8 +3,9 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useDomain, type Domain, type UpdateDomainRequest } from '@/composables/useDomain';
+import { fetchFromMngKeeper } from '@/services/apiService';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
-import { SettingsIcon, RefreshIcon, EditIcon } from 'vue-tabler-icons';
+import { SettingsIcon, RefreshIcon, EditIcon, ShieldIcon } from 'vue-tabler-icons';
 
 // Get i18n instance for legacy mode
 const nuxtApp = useNuxtApp();
@@ -44,6 +45,50 @@ const isLoading = ref(false);
 const isEditing = ref(false);
 const error = ref<string | null>(null);
 const successMessage = ref<string | null>(null);
+
+// License data
+interface LicenseInfo {
+  domainName: string;
+  licenseType: number; // 0 = Trial, 1 = Real
+  isValid: boolean;
+  isExpired: boolean;
+  expiresAt: string;
+  issuedAt: string;
+  issuedBy: string;
+  expirationBehavior?: {
+    blockTokenGeneration: boolean;
+    blockCrudOperations: boolean;
+    blockGetOperations: boolean;
+    allowReadOnly: boolean;
+    customMessage?: string;
+  };
+  licenseFeatures?: {
+    maxUsers: number;
+    maxDomains: number;
+    maxStorageGB: number;
+    enableAdvancedFeatures: boolean;
+    supportLevel?: string;
+    countActiveUsersOnly: boolean;
+    activeUserDefinition?: {
+      isActive: boolean;
+      lastLoginDays?: number;
+    };
+  };
+  customerInfo?: any;
+  metadata?: any;
+}
+
+interface UserCountInfo {
+  domainName: string;
+  activeUserCount: number;
+  maxUsers?: number;
+  canCreateUser: boolean;
+}
+
+const licenseInfo = ref<LicenseInfo | null>(null);
+const userCountInfo = ref<UserCountInfo | null>(null);
+const isLoadingLicense = ref(false);
+const licenseError = ref<string | null>(null);
 
 // Form data
 const formData = ref<UpdateDomainRequest>({
@@ -124,6 +169,46 @@ const getStatusLabel = (status?: string | number): string => {
   return statusMap[statusKey] || statusStr;
 };
 
+// Get license type label
+const getLicenseTypeLabel = (licenseType: number): string => {
+  return licenseType === 0 ? 'Trial' : 'Real';
+};
+
+// Load license data
+const loadLicense = async () => {
+  if (!domain.value) return;
+
+  isLoadingLicense.value = true;
+  licenseError.value = null;
+
+  try {
+    const domainName = domain.value.name;
+    
+    // Load license info
+    try {
+      const license = await fetchFromMngKeeper(`license/${domainName}`);
+      licenseInfo.value = license as LicenseInfo;
+    } catch (err: any) {
+      console.warn('License info not available:', err);
+      licenseInfo.value = null;
+    }
+
+    // Load user count info
+    try {
+      const userCount = await fetchFromMngKeeper(`license/${domainName}/user-count`);
+      userCountInfo.value = userCount as UserCountInfo;
+    } catch (err: any) {
+      console.warn('User count info not available:', err);
+      userCountInfo.value = null;
+    }
+  } catch (err: any) {
+    console.error('Error loading license:', err);
+    licenseError.value = err.message || t('domain.messages.licenseLoadError');
+  } finally {
+    isLoadingLicense.value = false;
+  }
+};
+
 // Load domain data
 const loadDomain = async () => {
   if (!authStore.isManager) {
@@ -165,6 +250,9 @@ const loadDomain = async () => {
         enableMqtt: domainData.settings?.enableMqtt ?? true,
       },
     };
+
+    // Load license info after domain is loaded
+    await loadLicense();
   } catch (err: any) {
     console.error('Error loading domain:', err);
     error.value = err.message || t('domain.messages.loadError');
@@ -317,6 +405,11 @@ const startEdit = () => {
 // Refresh domain data
 const refreshDomain = async () => {
   await loadDomain();
+};
+
+// Refresh license data
+const refreshLicense = async () => {
+  await loadLicense();
 };
 
 // Check manager permission on mount
@@ -659,6 +752,312 @@ onMounted(async () => {
                 />
               </v-col>
             </v-row>
+          </v-card-text>
+        </v-card>
+
+        <!-- License Info Card -->
+        <v-card elevation="10" class="mb-4">
+          <v-card-title class="d-flex align-center justify-space-between">
+            <div class="d-flex align-center">
+              <ShieldIcon size="20" class="mr-2" />
+              {{ t('domain.cards.licenseInfo') }}
+            </div>
+            <v-btn
+              icon=""
+              size="small"
+              variant="text"
+              :loading="isLoadingLicense"
+              @click="refreshLicense"
+            >
+              <RefreshIcon size="20" />
+            </v-btn>
+          </v-card-title>
+
+          <v-divider />
+
+          <v-card-text>
+            <v-alert
+              v-if="licenseError"
+              type="warning"
+              variant="tonal"
+              density="compact"
+              class="mb-4"
+            >
+              {{ licenseError }}
+            </v-alert>
+
+            <v-alert
+              v-else-if="!licenseInfo && !isLoadingLicense"
+              type="info"
+              variant="tonal"
+              density="compact"
+              class="mb-4"
+            >
+              {{ t('domain.messages.licenseNotFound') }}
+            </v-alert>
+
+            <div v-if="licenseInfo">
+              <!-- License Status Badges -->
+              <div class="d-flex align-center mb-4" style="gap: 12px;">
+                <v-chip
+                  :color="licenseInfo.isValid ? 'success' : 'error'"
+                  variant="tonal"
+                  size="large"
+                >
+                  {{ licenseInfo.isValid ? t('domain.license.status.valid') : t('domain.license.status.expired') }}
+                </v-chip>
+                <v-chip
+                  :color="getLicenseTypeLabel(licenseInfo.licenseType) === 'Real' ? 'primary' : 'warning'"
+                  variant="tonal"
+                >
+                  {{ getLicenseTypeLabel(licenseInfo.licenseType) === 'Real' ? t('domain.license.type.real') : t('domain.license.type.trial') }}
+                </v-chip>
+              </div>
+
+              <!-- Expiration Behavior Status -->
+              <div v-if="licenseInfo.expirationBehavior" class="mb-4">
+                <h4 class="text-subtitle-1 font-weight-bold mb-3">{{ t('domain.license.expirationBehavior.title') }}</h4>
+                <v-row>
+                  <v-col cols="12" md="6">
+                    <v-card
+                      :color="licenseInfo.expirationBehavior.blockTokenGeneration ? 'error' : 'success'"
+                      variant="tonal"
+                      class="mb-2"
+                    >
+                      <v-card-text class="d-flex align-center justify-space-between">
+                        <div class="d-flex align-center">
+                          <v-icon
+                            :color="licenseInfo.expirationBehavior.blockTokenGeneration ? 'error' : 'success'"
+                            class="mr-2"
+                          >
+                            {{ licenseInfo.expirationBehavior.blockTokenGeneration ? 'mdi-close-circle' : 'mdi-check-circle' }}
+                          </v-icon>
+                          <div>
+                            <div class="font-weight-medium">{{ t('domain.license.expirationBehavior.tokenGeneration') }}</div>
+                            <div class="text-caption text-medium-emphasis">
+                              {{ t('domain.license.expirationBehavior.tokenGeneration') }}: {{ licenseInfo.expirationBehavior.blockTokenGeneration }}
+                            </div>
+                          </div>
+                        </div>
+                        <v-chip
+                          :color="licenseInfo.expirationBehavior.blockTokenGeneration ? 'error' : 'success'"
+                          size="small"
+                          variant="flat"
+                        >
+                          {{ licenseInfo.expirationBehavior.blockTokenGeneration ? t('domain.license.expirationBehavior.blocked') : t('domain.license.expirationBehavior.allowed') }}
+                        </v-chip>
+                      </v-card-text>
+                    </v-card>
+                  </v-col>
+
+                  <v-col cols="12" md="6">
+                    <v-card
+                      :color="licenseInfo.expirationBehavior.blockGetOperations ? 'error' : 'success'"
+                      variant="tonal"
+                      class="mb-2"
+                    >
+                      <v-card-text class="d-flex align-center justify-space-between">
+                        <div class="d-flex align-center">
+                          <v-icon
+                            :color="licenseInfo.expirationBehavior.blockGetOperations ? 'error' : 'success'"
+                            class="mr-2"
+                          >
+                            {{ licenseInfo.expirationBehavior.blockGetOperations ? 'mdi-close-circle' : 'mdi-check-circle' }}
+                          </v-icon>
+                          <div>
+                            <div class="font-weight-medium">{{ t('domain.license.expirationBehavior.getOperations') }}</div>
+                            <div class="text-caption text-medium-emphasis">
+                              {{ t('domain.license.expirationBehavior.getOperations') }}: {{ licenseInfo.expirationBehavior.blockGetOperations }}
+                            </div>
+                          </div>
+                        </div>
+                        <v-chip
+                          :color="licenseInfo.expirationBehavior.blockGetOperations ? 'error' : 'success'"
+                          size="small"
+                          variant="flat"
+                        >
+                          {{ licenseInfo.expirationBehavior.blockGetOperations ? t('domain.license.expirationBehavior.blocked') : t('domain.license.expirationBehavior.allowed') }}
+                        </v-chip>
+                      </v-card-text>
+                    </v-card>
+                  </v-col>
+
+                  <v-col cols="12" md="6">
+                    <v-card
+                      :color="licenseInfo.expirationBehavior.blockCrudOperations ? 'error' : 'success'"
+                      variant="tonal"
+                      class="mb-2"
+                    >
+                      <v-card-text class="d-flex align-center justify-space-between">
+                        <div class="d-flex align-center">
+                          <v-icon
+                            :color="licenseInfo.expirationBehavior.blockCrudOperations ? 'error' : 'success'"
+                            class="mr-2"
+                          >
+                            {{ licenseInfo.expirationBehavior.blockCrudOperations ? 'mdi-close-circle' : 'mdi-check-circle' }}
+                          </v-icon>
+                          <div>
+                            <div class="font-weight-medium">{{ t('domain.license.expirationBehavior.crudOperations') }}</div>
+                            <div class="text-caption text-medium-emphasis">
+                              {{ t('domain.license.expirationBehavior.crudOperations') }}: {{ licenseInfo.expirationBehavior.blockCrudOperations }}
+                            </div>
+                          </div>
+                        </div>
+                        <v-chip
+                          :color="licenseInfo.expirationBehavior.blockCrudOperations ? 'error' : 'success'"
+                          size="small"
+                          variant="flat"
+                        >
+                          {{ licenseInfo.expirationBehavior.blockCrudOperations ? t('domain.license.expirationBehavior.blocked') : t('domain.license.expirationBehavior.allowed') }}
+                        </v-chip>
+                      </v-card-text>
+                    </v-card>
+                  </v-col>
+
+                  <v-col cols="12" md="6">
+                    <v-card
+                      :color="licenseInfo.expirationBehavior.allowReadOnly ? 'info' : 'grey'"
+                      variant="tonal"
+                      class="mb-2"
+                    >
+                      <v-card-text class="d-flex align-center justify-space-between">
+                        <div class="d-flex align-center">
+                          <v-icon
+                            :color="licenseInfo.expirationBehavior.allowReadOnly ? 'info' : 'grey'"
+                            class="mr-2"
+                          >
+                            {{ licenseInfo.expirationBehavior.allowReadOnly ? 'mdi-check-circle' : 'mdi-minus-circle' }}
+                          </v-icon>
+                          <div>
+                            <div class="font-weight-medium">{{ t('domain.license.expirationBehavior.readOnly') }}</div>
+                            <div class="text-caption text-medium-emphasis">
+                              {{ t('domain.license.expirationBehavior.readOnly') }}: {{ licenseInfo.expirationBehavior.allowReadOnly }}
+                            </div>
+                          </div>
+                        </div>
+                        <v-chip
+                          :color="licenseInfo.expirationBehavior.allowReadOnly ? 'info' : 'grey'"
+                          size="small"
+                          variant="flat"
+                        >
+                          {{ licenseInfo.expirationBehavior.allowReadOnly ? t('domain.license.expirationBehavior.active') : t('domain.license.expirationBehavior.passive') }}
+                        </v-chip>
+                      </v-card-text>
+                    </v-card>
+                  </v-col>
+                </v-row>
+
+                <v-alert
+                  v-if="licenseInfo.isExpired && licenseInfo.expirationBehavior"
+                  type="warning"
+                  variant="tonal"
+                  density="compact"
+                  class="mt-3"
+                >
+                  {{ licenseInfo.expirationBehavior.customMessage || t('domain.license.expirationBehavior.defaultTrialMessage') }}
+                </v-alert>
+              </div>
+
+              <!-- User Count Info -->
+              <v-divider v-if="userCount" class="my-4" />
+              <div v-if="userCount" class="mb-4">
+                <h4 class="text-subtitle-1 font-weight-bold mb-3">{{ t('domain.license.userStatus.title') }}</h4>
+                <v-row class="align-center">
+                  <v-col cols="12" md="4">
+                    <div class="text-center">
+                      <p class="text-caption text-medium-emphasis mb-1">{{ t('domain.license.userStatus.activeUserCount') }}</p>
+                      <p class="text-h4 font-weight-bold text-primary">{{ userCount.activeUserCount }}</p>
+                    </div>
+                  </v-col>
+                  <v-col cols="12" md="4" v-if="userCount.maxUsers">
+                    <div class="text-center">
+                      <p class="text-caption text-medium-emphasis mb-1">{{ t('domain.license.userStatus.maxUsers') }}</p>
+                      <p class="text-h4 font-weight-bold">{{ userCount.maxUsers }}</p>
+                    </div>
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <div class="text-center">
+                      <p class="text-caption text-medium-emphasis mb-1">{{ t('domain.license.userStatus.canCreateUser') }}</p>
+                      <v-chip
+                        :color="userCount.canCreateUser ? 'success' : 'error'"
+                        size="large"
+                        variant="flat"
+                      >
+                        {{ userCount.canCreateUser ? t('common.yes') : t('common.no') }}
+                      </v-chip>
+                    </div>
+                  </v-col>
+                </v-row>
+                <div v-if="userCount.maxUsers" class="mt-4">
+                  <v-progress-linear
+                    :model-value="Math.min((userCount.activeUserCount / userCount.maxUsers) * 100, 100)"
+                    :color="userCount.canCreateUser ? 'success' : 'error'"
+                    height="8"
+                    rounded
+                  />
+                  <p class="text-caption text-center text-medium-emphasis mt-1">
+                    {{ userCount.activeUserCount }} / {{ userCount.maxUsers }} {{ t('domain.license.userStatus.userCount') }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- License Details -->
+              <v-divider class="my-4" />
+              <div>
+                <h4 class="text-subtitle-1 font-weight-bold mb-3">{{ t('domain.license.details.title') }}</h4>
+                <v-row>
+                  <v-col cols="12" md="6">
+                    <div>
+                      <p class="text-caption text-medium-emphasis">{{ t('domain.license.details.issuedAt') }}</p>
+                      <p class="font-weight-medium">{{ formatDate(licenseInfo.issuedAt) }}</p>
+                    </div>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <div>
+                      <p class="text-caption text-medium-emphasis">{{ t('domain.license.details.expiresAt') }}</p>
+                      <p class="font-weight-medium">{{ formatDate(licenseInfo.expiresAt) }}</p>
+                    </div>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <div>
+                      <p class="text-caption text-medium-emphasis">{{ t('domain.license.details.issuedBy') }}</p>
+                      <p class="font-weight-medium">{{ licenseInfo.issuedBy }}</p>
+                    </div>
+                  </v-col>
+                  <v-col cols="12" md="6" v-if="licenseInfo.licenseFeatures">
+                    <div>
+                      <p class="text-caption text-medium-emphasis">{{ t('domain.license.details.maxUsers') }}</p>
+                      <p class="font-weight-medium">{{ licenseInfo.licenseFeatures.maxUsers }}</p>
+                    </div>
+                  </v-col>
+                </v-row>
+              </div>
+
+              <!-- Customer Info (Real License) -->
+              <v-divider v-if="licenseInfo.customerInfo" class="my-4" />
+              <div v-if="licenseInfo.customerInfo">
+                <h4 class="text-subtitle-1 font-weight-bold mb-2">{{ t('domain.license.customerInfo.title') }}</h4>
+                <v-row>
+                  <v-col cols="12" md="6">
+                    <div>
+                      <p class="text-caption text-medium-emphasis">{{ t('domain.license.customerInfo.customerName') }}</p>
+                      <p class="font-weight-medium">{{ licenseInfo.customerInfo.customerName }}</p>
+                    </div>
+                  </v-col>
+                  <v-col cols="12" md="6">
+                    <div>
+                      <p class="text-caption text-medium-emphasis">{{ t('domain.license.customerInfo.contactEmail') }}</p>
+                      <p class="font-weight-medium">{{ licenseInfo.customerInfo.contactEmail }}</p>
+                    </div>
+                  </v-col>
+                </v-row>
+              </div>
+            </div>
+
+            <div v-if="isLoadingLicense" class="text-center py-8">
+              <v-progress-circular indeterminate color="primary" size="32" />
+              <p class="mt-2">{{ t('domain.messages.loading') }}</p>
+            </div>
           </v-card-text>
         </v-card>
 

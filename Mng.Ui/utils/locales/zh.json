@@ -906,7 +906,8 @@
     },
     "cards": {
       "domainInfo": "域信息",
-      "domainSettings": "域设置"
+      "domainSettings": "域设置",
+      "licenseInfo": "许可证信息"
     },
     "fields": {
       "name": "域名",
@@ -971,6 +972,47 @@
       "mb": "MB",
       "gb": "GB",
       "tb": "TB"
+    },
+    "license": {
+      "status": {
+        "valid": "有效",
+        "expired": "已过期"
+      },
+      "type": {
+        "trial": "试用许可证",
+        "real": "正式许可证"
+      },
+      "expirationBehavior": {
+        "title": "过期后的权限状态",
+        "tokenGeneration": "令牌生成",
+        "getOperations": "GET 操作",
+        "crudOperations": "CRUD 操作",
+        "readOnly": "只读",
+        "blocked": "已阻止",
+        "allowed": "允许",
+        "active": "活动",
+        "passive": "非活动",
+        "defaultTrialMessage": "您的试用许可证已过期。"
+      },
+      "userStatus": {
+        "title": "用户状态",
+        "activeUserCount": "活跃用户数",
+        "maxUsers": "最大用户数",
+        "canCreateUser": "可以添加新用户",
+        "userCount": "用户"
+      },
+      "details": {
+        "title": "许可证详情",
+        "issuedAt": "签发日期",
+        "expiresAt": "到期日期",
+        "issuedBy": "签发者",
+        "maxUsers": "最大用户数"
+      },
+      "customerInfo": {
+        "title": "客户信息",
+        "customerName": "客户名称",
+        "contactEmail": "联系邮箱"
+      }
     },
     "logo": {
       "uploaded": "徽标已上传",

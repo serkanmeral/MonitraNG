@@ -906,7 +906,8 @@
     },
     "cards": {
       "domainInfo": "Informations du Domaine",
-      "domainSettings": "Paramètres du Domaine"
+      "domainSettings": "Paramètres du Domaine",
+      "licenseInfo": "Informations de la Licence"
     },
     "fields": {
       "name": "Nom du Domaine",
@@ -971,6 +972,47 @@
       "mb": "MO",
       "gb": "GO",
       "tb": "TO"
+    },
+    "license": {
+      "status": {
+        "valid": "Valide",
+        "expired": "Expiré"
+      },
+      "type": {
+        "trial": "Licence d'Essai",
+        "real": "Licence Réelle"
+      },
+      "expirationBehavior": {
+        "title": "Statut des Autorisations Après Expiration",
+        "tokenGeneration": "Génération de Token",
+        "getOperations": "Opérations GET",
+        "crudOperations": "Opérations CRUD",
+        "readOnly": "Lecture Seulement",
+        "blocked": "Bloqué",
+        "allowed": "Autorisé",
+        "active": "Actif",
+        "passive": "Passif",
+        "defaultTrialMessage": "Votre licence d'essai a expiré."
+      },
+      "userStatus": {
+        "title": "Statut des Utilisateurs",
+        "activeUserCount": "Nombre d'Utilisateurs Actifs",
+        "maxUsers": "Utilisateurs Maximum",
+        "canCreateUser": "Peut Ajouter un Nouvel Utilisateur",
+        "userCount": "utilisateurs"
+      },
+      "details": {
+        "title": "Détails de la Licence",
+        "issuedAt": "Date d'Émission",
+        "expiresAt": "Date d'Expiration",
+        "issuedBy": "Émis Par",
+        "maxUsers": "Utilisateurs Maximum"
+      },
+      "customerInfo": {
+        "title": "Informations Client",
+        "customerName": "Nom du Client",
+        "contactEmail": "Email de Contact"
+      }
     },
     "logo": {
       "uploaded": "Logo téléchargé",
