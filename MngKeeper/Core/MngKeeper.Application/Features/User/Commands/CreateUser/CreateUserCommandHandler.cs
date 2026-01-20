@@ -16,6 +16,7 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
         private readonly IKeycloakService _keycloakService;
         private readonly IEventPublisher _eventPublisher;
         private readonly IDataGatewaySyncService _dataGatewaySyncService;
+        private readonly ILicenseService _licenseService;
         private readonly ILogger<CreateUserCommandHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -26,6 +27,7 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
             IKeycloakService keycloakService,
             IEventPublisher eventPublisher,
             IDataGatewaySyncService dataGatewaySyncService,
+            ILicenseService licenseService,
             ILogger<CreateUserCommandHandler> logger,
             IHttpContextAccessor httpContextAccessor)
         {
@@ -35,6 +37,7 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
             _keycloakService = keycloakService;
             _eventPublisher = eventPublisher;
             _dataGatewaySyncService = dataGatewaySyncService;
+            _licenseService = licenseService;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -80,6 +83,31 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
 
                 // At this point, domain is guaranteed to be non-null
                 MngKeeper.Domain.Entities.Domain domainValue = domain!;
+
+                // Check license - can we create a new user?
+                // Only check limit if the new user will be active
+                if (request.IsActive)
+                {
+                    var canCreateUser = await _licenseService.CanCreateUserAsync(domainValue.Name, cancellationToken);
+                    if (!canCreateUser)
+                    {
+                        var activeUserCount = await _licenseService.GetActiveUserCountAsync(domainValue.Name, cancellationToken);
+                        var activeLicense = await _licenseService.GetActiveLicenseAsync(domainValue.Name, cancellationToken);
+                        var maxUsers = activeLicense?.LicenseFeatures?.MaxUsers ?? 0;
+                        
+                        _logger.LogWarning(
+                            "User creation blocked due to license limit. Domain: {DomainName}, Current: {CurrentCount}, Max: {MaxUsers}",
+                            domainValue.Name,
+                            activeUserCount,
+                            maxUsers);
+                        
+                        return new CreateUserResponse
+                        {
+                            IsSuccess = false,
+                            ErrorMessage = $"Kullanıcı limiti aşıldı. Maksimum: {maxUsers}, Mevcut: {activeUserCount}"
+                        };
+                    }
+                }
 
                 // Check if user already exists
                 if (await _userRepository.ExistsByEmailAsync(request.Email, claims.DomainId))
@@ -177,6 +205,16 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
                 // Save to domain-specific database (users collection)
                 var savedUser = await _userRepository.AddAsync(user);
                 _logger.LogInformation("User saved to domain database users collection: UserId={UserId}", savedUser.Id);
+
+                // Invalidate user count cache since a new user was created
+                try
+                {
+                    await _licenseService.InvalidateUserCountCacheAsync(domainValue.Name);
+                }
+                catch (Exception cacheEx)
+                {
+                    _logger.LogWarning(cacheEx, "Failed to invalidate user count cache after user creation");
+                }
 
                 // Add user to groups in Keycloak (if not already added during user creation)
                 // Note: Keycloak CreateUserAsync may already add user to groups, but we ensure it here

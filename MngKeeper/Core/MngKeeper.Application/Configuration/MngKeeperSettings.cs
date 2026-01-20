@@ -11,6 +11,7 @@ public class MngKeeperSettings
     public MinIOSettings MinIO { get; set; } = null!;
     public NotifierSettings Notifier { get; set; } = null!;
     public CertificateSettings CertificateSettings { get; set; } = null!;
+    public LicenseSettings License { get; set; } = new();
     public string OpenApiServerPath { get; set; } = null!;
 }
 
@@ -84,5 +85,18 @@ public class CertificateSettings
     public string MNG_KEY_FILE { get; set; } = null!;
     public string MNG_CERT_FILE_CONTENT { get; set; } = null!;
     public string MNG_KEY_FILE_CONTENT { get; set; } = null!;
+}
+
+public class LicenseSettings
+{
+    /// <summary>
+    /// Master key for license encryption (should be stored securely in environment variable)
+    /// </summary>
+    public string MasterKey { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Default trial license duration in days
+    /// </summary>
+    public int DefaultTrialDays { get; set; } = 15;
 }
 

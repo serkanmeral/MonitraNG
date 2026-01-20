@@ -5,6 +5,7 @@ using MngKeeper.Application.Common.Helpers;
 using MngKeeper.Application.Common.Exceptions;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MngKeeper.Application.Features.User.Commands.UpdateUser
 {
@@ -16,6 +17,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
         private readonly IKeycloakService _keycloakService;
         private readonly IDataGatewaySyncService _dataGatewaySyncService;
         private readonly IEventPublisher _eventPublisher;
+        private readonly ILicenseService _licenseService;
         private readonly ILogger<UpdateUserCommandHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -26,6 +28,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
             IKeycloakService keycloakService,
             IDataGatewaySyncService dataGatewaySyncService,
             IEventPublisher eventPublisher,
+            ILicenseService licenseService,
             ILogger<UpdateUserCommandHandler> logger,
             IHttpContextAccessor httpContextAccessor)
         {
@@ -35,6 +38,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
             _keycloakService = keycloakService;
             _dataGatewaySyncService = dataGatewaySyncService;
             _eventPublisher = eventPublisher;
+            _licenseService = licenseService;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -188,12 +192,44 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                 }
                 // If GroupIds is null, keep existing groups unchanged (don't modify existingUser.Groups)
                 
+                var wasActive = existingUser.IsActive;
+                
+                // Check license limit if user is being activated (was inactive, now active)
+                if (!wasActive && request.IsActive)
+                {
+                    var activeLicense = await _licenseService.GetActiveLicenseAsync(domain.Name);
+                    if (activeLicense?.LicenseFeatures != null && activeLicense.LicenseFeatures.MaxUsers > 0)
+                    {
+                        var currentActiveCount = await _licenseService.GetActiveUserCountAsync(domain.Name);
+                        if (currentActiveCount >= activeLicense.LicenseFeatures.MaxUsers)
+                        {
+                            _logger.LogWarning(
+                                "User activation blocked due to license limit. Domain: {DomainName}, Current: {CurrentCount}, Max: {MaxUsers}",
+                                domain.Name,
+                                currentActiveCount,
+                                activeLicense.LicenseFeatures.MaxUsers);
+                            
+                            return new UpdateUserResponse
+                            {
+                                IsSuccess = false,
+                                ErrorMessage = $"Kullanıcı aktif hale getirilemedi. Kullanıcı limiti aşıldı. Maksimum: {activeLicense.LicenseFeatures.MaxUsers}, Mevcut: {currentActiveCount}"
+                            };
+                        }
+                    }
+                }
+                
                 existingUser.IsActive = request.IsActive;
                 existingUser.UpdatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser; // TODO: Get from current user context
                 existingUser.UpdatedAt = DateTime.UtcNow;
 
                 // Save to database
                 var updatedUser = await _userRepository.UpdateAsync(existingUser);
+
+                // Invalidate user count cache if IsActive status changed
+                if (wasActive != request.IsActive)
+                {
+                    await _licenseService.InvalidateUserCountCacheAsync(domain.Name);
+                }
 
                 // Sync to DataGateway MongoDB (mng_{domain} database) with custom data
                 try

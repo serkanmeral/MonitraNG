@@ -11,6 +11,7 @@ namespace MngKeeper.Application.Features.Auth.Commands.RefreshToken
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IDomainRepository _domainRepository;
         private readonly IUserRepository _userRepository;
+        private readonly ILicenseService _licenseService;
         private readonly ILogger<RefreshTokenCommandHandler> _logger;
 
         public RefreshTokenCommandHandler(
@@ -19,6 +20,7 @@ namespace MngKeeper.Application.Features.Auth.Commands.RefreshToken
             IJwtTokenService jwtTokenService,
             IDomainRepository domainRepository,
             IUserRepository userRepository,
+            ILicenseService licenseService,
             ILogger<RefreshTokenCommandHandler> logger)
         {
             _keycloakService = keycloakService;
@@ -26,6 +28,7 @@ namespace MngKeeper.Application.Features.Auth.Commands.RefreshToken
             _jwtTokenService = jwtTokenService;
             _domainRepository = domainRepository;
             _userRepository = userRepository;
+            _licenseService = licenseService;
             _logger = logger;
         }
 
@@ -63,14 +66,62 @@ namespace MngKeeper.Application.Features.Auth.Commands.RefreshToken
                     };
                 }
 
+                // Parse the refresh token to get user information first
+                var tokenClaims = _jwtTokenParserService.ParseToken(request.RefreshToken);
+                
+                // Check if user is admin - admins can always refresh tokens even if license expired
+                bool isAdmin = false;
+                if (tokenClaims != null && !string.IsNullOrEmpty(tokenClaims.Username))
+                {
+                    var user = await _userRepository.GetByUsernameAsync(tokenClaims.Username, domain.Id);
+                    if (user != null && user.Groups != null)
+                    {
+                        isAdmin = user.Groups.Contains("admins", StringComparer.OrdinalIgnoreCase);
+                    }
+                    // Also check token claims for is_admin
+                    if (!isAdmin)
+                    {
+                        isAdmin = tokenClaims.IsAdmin;
+                    }
+                }
+
+                // Check license - block token generation if license expired and blockTokenGeneration is true
+                // Exception: Admin users can always refresh tokens to manage licenses
+                if (!isAdmin)
+                {
+                    var isOperationAllowed = await _licenseService.IsOperationAllowedAsync(
+                        domain.Name, 
+                        MngKeeper.Domain.Entities.LicenseOperation.TokenGeneration);
+                    
+                    if (!isOperationAllowed)
+                    {
+                        var validation = await _licenseService.ValidateLicenseAsync(domain.Name);
+                        var errorMessage = validation.ExpirationBehavior?.CustomMessage 
+                            ?? "Lisans süreniz dolmuştur. Lütfen lisansınızı yenileyin.";
+                        
+                        _logger.LogWarning("Token refresh blocked due to license expiration for domain: {DomainName}, user: {Username}", 
+                            domain.Name, tokenClaims?.Username ?? "unknown");
+                        
+                        return new RefreshTokenResponse
+                        {
+                            IsSuccess = false,
+                            ErrorMessage = errorMessage
+                        };
+                    }
+                }
+                else
+                {
+                    _logger.LogInformation("Admin user {Username} bypassing license check for token refresh in domain: {DomainName}", 
+                        tokenClaims?.Username ?? "unknown", domain.Name);
+                }
+
                 // Refresh token from Keycloak
                 var keycloakTokenResponse = await _keycloakService.RefreshTokenAsync(domain.RealmName, request.RefreshToken);
 
                 // Parse the new access token to get user information
-                var tokenClaims = _jwtTokenParserService.ParseToken(keycloakTokenResponse.AccessToken);
+                var newTokenClaims = _jwtTokenParserService.ParseToken(keycloakTokenResponse.AccessToken);
                 
                 // Get user from MongoDB to retrieve current groups and profile information
-                bool isAdmin = false;
                 bool isManager = false;
                 List<string>? userGroups = null;
                 string? title = null;
@@ -79,9 +130,9 @@ namespace MngKeeper.Application.Features.Auth.Commands.RefreshToken
                 string? phoneNumber = null;
                 string? photoUrl = null;
                 
-                if (tokenClaims != null && !string.IsNullOrEmpty(tokenClaims.Username))
+                if (newTokenClaims != null && !string.IsNullOrEmpty(newTokenClaims.Username))
                 {
-                    var user = await _userRepository.GetByUsernameAsync(tokenClaims.Username, domain.Id);
+                    var user = await _userRepository.GetByUsernameAsync(newTokenClaims.Username, domain.Id);
                     if (user != null)
                     {
                         // Get user groups from MongoDB
@@ -102,11 +153,14 @@ namespace MngKeeper.Application.Features.Auth.Commands.RefreshToken
                     else
                     {
                         _logger.LogWarning("User not found in MongoDB for refresh token - Username: {Username}, DomainId: {DomainId}", 
-                            tokenClaims.Username, domain.Id);
+                            newTokenClaims.Username, domain.Id);
                         // Fallback: try to get from token claims or use empty list
-                        userGroups = tokenClaims.Groups ?? new List<string>();
-                        isAdmin = tokenClaims.IsAdmin;
-                        isManager = tokenClaims.IsManager;
+                        userGroups = newTokenClaims.Groups ?? new List<string>();
+                        if (!isAdmin)
+                        {
+                            isAdmin = newTokenClaims.IsAdmin;
+                        }
+                        isManager = newTokenClaims.IsManager;
                     }
                 }
                 else

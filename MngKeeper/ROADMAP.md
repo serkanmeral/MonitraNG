@@ -20,6 +20,7 @@
 | Code Optimization | ✅ Complete | 100% |
 | RabbitMQ Events | ✅ Complete | 100% |
 | Template Management System | ✅ Complete | 100% |
+| License Management | ✅ Complete | 100% |
 | Password Management | 🔄 Partial | 67% |
 | User Profile Enhancement | 📋 Planned | 0% |
 | Manager Role & Authorization | 📋 Planned | 0% |
@@ -282,7 +283,76 @@
 
 ---
 
-### 10. API Gateway Integration (v1.2.1) - ✅ TAMAMLANDI (11 Ocak 2026)
+### 10. License Management System (v1.2.3) - ✅ TAMAMLANDI (20 Ocak 2026)
+
+**Amaç:** Domain bazlı lisans yönetimi ve aktif kullanıcı sayısı kontrolü
+
+**Özellikler:**
+- ✅ Trial ve Real lisans oluşturma
+- ✅ Lisans yükleme ve doğrulama
+- ✅ Lisans bilgilerini görüntüleme
+- ✅ Aktif kullanıcı sayısı hesaplama
+- ✅ Kullanıcı limiti kontrolü (MaxUsers)
+- ✅ ActiveUserDefinition desteği (IsActive ve LastLoginDays filtreleme)
+- ✅ Cache invalidation mekanizması
+- ✅ Lisans süresi kontrolü ve expiration behavior
+
+**Lisans Tipleri:**
+- ✅ **Trial License**: 15 günlük deneme lisansı (otomatik oluşturuluyor)
+- ✅ **Real License**: Gerçek lisans (manuel oluşturuluyor veya yükleniyor)
+
+**Lisans Özellikleri:**
+- ✅ MaxUsers: Maksimum kullanıcı sayısı
+- ✅ MaxDomains: Maksimum domain sayısı
+- ✅ MaxStorageGB: Maksimum depolama alanı
+- ✅ ActiveUserDefinition: Aktif kullanıcı tanımı
+  - IsActive: Aktif kullanıcı filtresi (true/false)
+  - LastLoginDays: Son giriş günü filtresi (örn: 90 gün)
+
+**API Endpoints:**
+- ✅ `GET /api/license/{domainName}` - Lisans bilgilerini getir
+- ✅ `GET /api/license/{domainName}/user-count` - Aktif kullanıcı sayısını getir
+- ✅ `POST /api/license/{domainName}/create-real` - Real lisans oluştur
+- ✅ `POST /api/license/{domainName}/upload` - Lisans dosyası yükle
+- ✅ `POST /api/license/{domainName}/validate` - Lisans doğrula
+- ✅ `GET /api/license/{domainName}/download?type={trial|real}` - Lisans indir
+
+**Aktif Kullanıcı Sayısı Hesaplama:**
+- ✅ Redis cache desteği (5 dakika TTL)
+- ✅ ActiveUserDefinition yoksa: Tüm aktif kullanıcılar sayılıyor
+- ✅ ActiveUserDefinition varsa:
+  - IsActive filtresi uygulanıyor
+  - LastLoginDays filtresi uygulanıyor (null LastLoginAt olan kullanıcılar da dahil)
+- ✅ Cache invalidation: Kullanıcı oluşturma, güncelleme, silme, lisans değişikliği
+
+**Kullanıcı Limit Kontrolü:**
+- ✅ Yeni kullanıcı oluşturulurken limit kontrolü (sadece aktif kullanıcılar için)
+- ✅ Pasif kullanıcı aktif yapılırken limit kontrolü
+- ✅ Limit aşıldığında hata mesajı döndürülüyor
+
+**Frontend Entegrasyonu:**
+- ✅ MngDomainUI'da Lisans Yönetimi paneli
+- ✅ Lisans bilgilerini görüntüleme
+- ✅ Aktif kullanıcı sayısı gösterimi
+- ✅ Lisans yükleme ve indirme
+- ✅ Real lisans oluşturma
+
+**Test Edildi:**
+- ✅ Trial lisans otomatik oluşturma
+- ✅ Real lisans oluşturma ve yükleme
+- ✅ Aktif kullanıcı sayısı hesaplama (LastLoginAt null olan kullanıcılar dahil)
+- ✅ Kullanıcı limit kontrolü (oluşturma ve aktif yapma)
+- ✅ Cache invalidation mekanizması
+- ✅ Lisans süresi kontrolü
+
+**Düzeltilen Sorunlar:**
+- ✅ Aktif kullanıcı sayısı 0 görünme sorunu (LastLoginAt null olan kullanıcılar da sayılıyor)
+- ✅ Pasif kullanıcı aktif yapılırken limit kontrolü eksikliği
+- ✅ Cache invalidation eksikliği (otomatik temizleme eklendi)
+
+---
+
+### 11. API Gateway Integration (v1.2.1) - ✅ TAMAMLANDI (11 Ocak 2026)
 
 **Yapılan Değişiklikler:**
 - ✅ HTTPS'den HTTP'ye geçiş (SSL/TLS termination artık Gateway'de)
@@ -807,9 +877,18 @@ Normal User (isAdmin = false, isManager = false)
 
 ---
 
-**Son Güncelleme:** 11 Ocak 2026  
-**Status:** Core features complete (99%), Template Management System tamamlandı  
-**Son Tamamlanan (v1.2.2 - 11 Ocak 2026):**
+**Son Güncelleme:** 20 Ocak 2026  
+**Status:** Core features complete (99%), License Management System tamamlandı  
+**Son Tamamlanan (v1.2.3 - 20 Ocak 2026):**
+- License Management System tamamlandı
+  - Trial ve Real lisans oluşturma, yükleme, doğrulama
+  - Aktif kullanıcı sayısı hesaplama (ActiveUserDefinition desteği)
+  - Kullanıcı limit kontrolü (oluşturma ve aktif yapma)
+  - Cache invalidation mekanizması (otomatik temizleme)
+  - MngDomainUI'da Lisans Yönetimi paneli
+  - LastLoginAt null olan kullanıcılar da aktif kullanıcı sayısına dahil ediliyor
+  - Pasif kullanıcı aktif yapılırken limit kontrolü eklendi
+**Önceki Versiyon (v1.2.2 - 11 Ocak 2026):**
 - Template Management System tamamlandı
   - Template CRUD operations (Create, Read, Update, Delete)
   - Template metadata MongoDB'de (`mngkeeper.templates`)

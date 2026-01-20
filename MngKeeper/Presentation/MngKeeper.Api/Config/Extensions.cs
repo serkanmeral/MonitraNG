@@ -148,6 +148,13 @@ public static class Extensions
         services.AddScoped<MngKeeper.Application.Interfaces.IMqttService, MngKeeper.Infrastructure.Services.MqttService>();
         services.AddScoped<MngKeeper.Application.Interfaces.IMinioService, MngKeeper.Infrastructure.Services.MinioService>();
         
+        // License Services
+        services.AddScoped<MngKeeper.Application.Interfaces.ILicenseEncryptionService, MngKeeper.Infrastructure.Services.LicenseEncryptionService>();
+        services.AddScoped<MngKeeper.Application.Interfaces.ILicenseService, MngKeeper.Infrastructure.Services.LicenseService>();
+        
+        // License Background Service (daily validation)
+        services.AddHostedService<MngKeeper.Infrastructure.Services.LicenseValidationBackgroundService>();
+        
         // Template Repository and Service
         services.AddScoped<MngKeeper.Application.Interfaces.ITemplateRepository, MngKeeper.Infrastructure.Persistence.Repositories.TemplateRepository>();
         services.AddScoped<MngKeeper.Application.Interfaces.ITemplateService, MngKeeper.Infrastructure.Services.TemplateService>();
@@ -191,16 +198,20 @@ public static class Extensions
         // 6. Serilog request logging
         app.UseSerilogRequestLogging();
 
-        // 7. JWT Claims extraction
+        // 7. Routing (must be before MapControllers)
+        app.UseRouting();
+
+        // 8. JWT Claims extraction
         app.UseJwtClaims();
 
-        // 8. Authorization
-        app.UseAuthorization();
+        // 9. Authorization
+        // Note: Authorization is handled by JWT middleware, not standard ASP.NET Core authorization
+        // app.UseAuthorization(); // Removed - not needed with custom JWT middleware
 
-        // 9. Map controllers
+        // 10. Map controllers
         app.MapControllers();
 
-        // 10. Map GraphQL endpoint
+        // 11. Map GraphQL endpoint
         app.MapGraphQL();
     }
 }

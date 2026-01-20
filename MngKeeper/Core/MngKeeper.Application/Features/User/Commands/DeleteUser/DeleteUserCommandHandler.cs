@@ -4,6 +4,7 @@ using MngKeeper.Application.Common.Helpers;
 using MngKeeper.Application.Common.Exceptions;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
 
 namespace MngKeeper.Application.Features.User.Commands.DeleteUser
@@ -112,6 +113,20 @@ namespace MngKeeper.Application.Features.User.Commands.DeleteUser
                         IsSuccess = false,
                         ErrorMessage = "Failed to delete user from database."
                     };
+                }
+
+                // Invalidate user count cache since a user was deleted
+                try
+                {
+                    var licenseService = _httpContextAccessor.HttpContext?.RequestServices.GetService<ILicenseService>();
+                    if (licenseService != null)
+                    {
+                        await licenseService.InvalidateUserCountCacheAsync(domain.Name);
+                    }
+                }
+                catch (Exception cacheEx)
+                {
+                    _logger.LogWarning(cacheEx, "Failed to invalidate user count cache after user deletion");
                 }
 
                 // Sync soft delete to DataGateway MongoDB (mng_{domain} database)

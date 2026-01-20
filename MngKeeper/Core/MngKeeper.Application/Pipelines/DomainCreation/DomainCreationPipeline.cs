@@ -26,6 +26,7 @@ public class DomainCreationPipeline
         PublishDomainCreatedEventStep publishDomainCreatedEventStep,
         InitializeDomainCacheStep initializeDomainCacheStep,
         CreateMinIOBucketStep createMinIOBucketStep,
+        CreateLicenseStep createLicenseStep,
         ActivateDomainStep activateDomainStep,
         SendDomainCreatedEmailStep sendDomainCreatedEmailStep,
         ILogger<DomainCreationPipeline> logger,
@@ -49,8 +50,9 @@ public class DomainCreationPipeline
             .AddStep(publishDomainCreatedEventStep)         // Step 8 - RabbitMQ
             .AddStep(initializeDomainCacheStep)             // Step 9 - Redis
             .AddStep(createMinIOBucketStep)                 // Step 10 - MinIO
-            .AddStep(activateDomainStep)                    // Step 11 - Final
-            .AddStep(sendDomainCreatedEmailStep);           // Step 12 - Send email (non-critical)
+            .AddStep(createLicenseStep)                      // Step 11 - Create trial license
+            .AddStep(activateDomainStep)                    // Step 12 - Final
+            .AddStep(sendDomainCreatedEmailStep);           // Step 13 - Send email (non-critical)
     }
     
     /// <summary>

@@ -59,6 +59,9 @@ namespace MngKeeper.Domain.Entities
 
         [BsonElement("logoUrl")]
         public string? LogoUrl { get; set; }
+
+        [BsonElement("licenseInfo")]
+        public LicenseInfo LicenseInfo { get; set; } = new();
     }
 
     public enum DomainStatus

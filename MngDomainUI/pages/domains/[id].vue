@@ -52,7 +52,7 @@
       </div>
 
       <!-- Tabs (shown when not editing) -->
-      <UTabs v-if="!isEditing" :items="tabs" v-model="activeTab" class="w-full">
+      <UTabs v-if="!isEditing" :items="tabs" v-model="activeTab" class="w-full" @update:model-value="handleTabChange">
         <template #default="{ item }">
           <div class="flex items-center gap-2">
             <UIcon :name="item.icon" class="w-4 h-4" />
@@ -92,6 +92,13 @@
               :domain-name="domain.name"
             />
           </div>
+          <div v-else-if="index === 2" class="space-y-6">
+            <!-- License Management -->
+            <DomainLicenseManagement
+              :domain-name="domain.name"
+              :access-token="accessToken"
+            />
+          </div>
         </template>
       </UTabs>
 
@@ -100,7 +107,7 @@
         v-model="showAuthModal"
         :domain-name="domain?.name || ''"
         @authenticated="handleAuthenticated"
-        @cancel="handleAuthCancel"
+        @cancel="handleAuthCancelForLicense"
       />
 
       <DomainCreateUsersModal
@@ -172,6 +179,7 @@ const activeTab = ref(0)
 const tabs = [
   { label: 'Overview', value: 'overview', icon: 'i-heroicons-home' },
   { label: 'Templates', value: 'templates', icon: 'i-heroicons-document-duplicate' },
+  { label: 'License', value: 'license', icon: 'i-heroicons-shield-check' },
 ]
 
 const domainId = route.params.id as string
@@ -250,6 +258,23 @@ const handleAuthenticated = (data: { token: string; username: string }) => {
 
 const handleAuthCancel = () => {
   // Do nothing on cancel
+}
+
+// Handle auth cancel specifically for License tab
+const handleAuthCancelForLicense = () => {
+  // If we're on License tab and auth was cancelled, go back to Overview tab
+  if (activeTab.value === 2) {
+    activeTab.value = 0
+  }
+  handleAuthCancel()
+}
+
+// Handle tab change - check for token when License tab is selected
+const handleTabChange = (index: number) => {
+  // If License tab (index 2) is selected and no token, show auth modal
+  if (index === 2 && !accessToken.value) {
+    showAuthModal.value = true
+  }
 }
 
 // Clear token when leaving the page

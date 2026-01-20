@@ -23,6 +23,7 @@ public static class ServiceRegistration
             _.MinIO = settings.MinIO;
             _.Notifier = settings.Notifier;
             _.CertificateSettings = settings.CertificateSettings;
+            _.License = settings.License;
             _.OpenApiServerPath = settings.OpenApiServerPath;
         });
 
@@ -62,6 +63,7 @@ public static class ServiceRegistration
         services.AddScoped<PublishDomainCreatedEventStep>();
         services.AddScoped<InitializeDomainCacheStep>();
         services.AddScoped<CreateMinIOBucketStep>();
+        services.AddScoped<CreateLicenseStep>();
         services.AddScoped<ActivateDomainStep>();
         services.AddScoped<SendDomainCreatedEmailStep>();
         
