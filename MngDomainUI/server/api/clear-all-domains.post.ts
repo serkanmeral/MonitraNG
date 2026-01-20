@@ -155,9 +155,13 @@ export default defineEventHandler(async (event) => {
     const buckets = await minioClient.listBuckets()
     console.log('[Clear All Domains] Found buckets:', buckets.length)
 
-    // Delete all buckets
+    // Filter buckets to only include mng-* pattern
+    const mngBuckets = buckets.filter(bucket => bucket.name.startsWith('mng-'))
+    console.log('[Clear All Domains] Found mng-* buckets:', mngBuckets.length)
+
+    // Delete only mng-* buckets
     let deletedCount = 0
-    for (const bucket of buckets) {
+    for (const bucket of mngBuckets) {
       try {
         // Remove all objects in bucket first
         const objectsStream = minioClient.listObjects(bucket.name, '', true)
@@ -175,6 +179,7 @@ export default defineEventHandler(async (event) => {
         // Remove bucket
         await minioClient.removeBucket(bucket.name)
         deletedCount++
+        console.log(`[Clear All Domains] Deleted bucket: ${bucket.name}`)
       } catch (error: any) {
         console.error(`Failed to delete bucket ${bucket.name}:`, error.message)
       }
