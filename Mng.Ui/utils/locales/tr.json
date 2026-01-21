@@ -1884,7 +1884,8 @@
         "itemLoadError": "Kayıt yüklenirken bir hata oluştu",
         "itemIdNotFound": "Kayıt ID bulunamadı",
         "notFound": "Form bulunamadı",
-        "exportError": "Veri dışa aktarılırken bir hata oluştu"
+        "exportError": "Veri dışa aktarılırken bir hata oluştu",
+        "validationError": "Validasyon hatası"
       },
       "cellFormat": {
         "yes": "Evet",

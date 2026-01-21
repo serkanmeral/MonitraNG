@@ -1261,9 +1261,9 @@ t('common.save'); // TypeScript otomatik tamamlama
 - Dil tercihi localStorage'da saklanacak
 - Tarayıcı diline göre otomatik seçim yapılacak
 
-#### 6.18 Automated Forms Liste Edit Fonksiyonları İyileştirmeleri 📋 (Roadmap - 2026-01-XX)
+#### 6.18 Automated Forms Liste Edit Fonksiyonları İyileştirmeleri ✅ (Tamamlandı - 2026-01-XX)
 
-**Durum:** 📋 Roadmap'e Eklendi
+**Durum:** ✅ Tamamlandı
 
 **Tamamlanan İşler:**
 - ✅ Liste görünümü için renk formatı desteği (basit renk ve koşullu renklendirme)
@@ -1271,6 +1271,65 @@ t('common.save'); // TypeScript otomatik tamamlama
 - ✅ Format seçenekleri (regex, number, date, currency, text-transform, color, conditional-color)
 - ✅ Array field'lar için farklı görüntüleme stilleri (chip, badge, pill, vb.)
 - ✅ Column Settings Modal ile merkezi yapılandırma
+
+#### 6.19 Dataset Field Validation ve Error Handling İyileştirmeleri ✅ (Tamamlandı - 2026-01-21)
+
+**Durum:** ✅ Tamamlandı
+
+**Hedef:**
+- Dataset field validation'ların UI ve veritabanı arasında senkronizasyon sorunlarının çözülmesi
+- Backend error mesajlarının daha anlaşılır şekilde gösterilmesi
+- Dataset-level validasyon hata mesajlarının iyileştirilmesi
+
+**Tamamlanan İşler:**
+
+##### 6.19.1 Field Validation Mapping Düzeltmeleri ✅
+- ✅ Frontend store'da (`Mng.Ui/stores/apps/dataset.ts`) field validation mapping'e eksik alanlar eklendi:
+  - `message` (custom error message)
+  - `minItems` (array field minimum items)
+  - `maxItems` (array field maximum items)
+- ✅ Veritabanından yüklenen field validation'lar artık UI'da tam olarak görünüyor
+
+##### 6.19.2 Backend Validation Kopyalama Düzeltmesi ✅
+- ✅ Backend'de (`MngDataGateway/Infrastructure/MngDataGateway.Persistence/Services/DatasetService.cs`) `ConvertFieldDefinitions` fonksiyonuna `validation` property'si kopyalama eklendi
+- ✅ UI'da yapılan field validation güncellemeleri artık veritabanına kaydediliyor
+
+##### 6.19.3 Dataset-Level Validasyon Hata Mesajı İyileştirmeleri ✅
+- ✅ Backend'de (`ValidationService.cs`) dataset-level validasyon hatalarında `description` kullanımı eklendi
+- ✅ Mesaj önceliği: `description` > `name` > `expression`
+- ✅ Artık teknik expression yerine anlaşılır açıklama mesajları gösteriliyor
+
+##### 6.19.4 Frontend Error Handling İyileştirmeleri ✅
+- ✅ Frontend'de (`[formCode].vue`) `_expression` field'ı için özel işleme eklendi
+- ✅ Dataset-level validasyonlar field-level hatalardan ayrı gösteriliyor
+- ✅ Summary mesajında dataset-level validasyonlar da listeleniyor
+- ✅ Backend error message parsing iyileştirmeleri:
+  - `innerException` mesajlarının öncelikli parse edilmesi
+  - Nested error structures (`error.data.data.error`) desteği
+  - Generic "internal server error" mesajlarının filtrelenmesi
+- ✅ Field-level error mapping ve gösterimi:
+  - Field name extraction (regex patterns)
+  - Field label kullanımı (getFieldLabel composable)
+  - Inline field error display
+
+##### 6.19.5 API Service Error Handling İyileştirmeleri ✅
+- ✅ `apiService.ts`'de error handling iyileştirmeleri:
+  - `error.data` yapısının korunması (customError.data)
+  - `statusCode` ve `statusMessage` preservation
+  - Nuxt server route error wrapping desteği
+
+**Yapılan Değişiklikler:**
+- `Mng.Ui/stores/apps/dataset.ts` - Field validation mapping düzeltmeleri
+- `MngDataGateway/Infrastructure/MngDataGateway.Persistence/Services/DatasetService.cs` - Validation kopyalama eklendi
+- `MngDataGateway/Infrastructure/MngDataGateway.Persistence/Services/ValidationService.cs` - Description kullanımı eklendi
+- `Mng.Ui/pages/apps/automated-forms/view/[formCode].vue` - Error handling iyileştirmeleri
+- `Mng.Ui/services/apiService.ts` - Error data preservation
+- `Mng.Ui/server/api/data/[...path].ts` - Error structure preservation
+
+**Notlar:**
+- Field validation'lar artık UI ve veritabanı arasında tam senkronize
+- Backend error mesajları daha anlaşılır ve kullanıcı dostu
+- Dataset-level validasyon hataları artık description ile gösteriliyor
 
 **Gelecek Geliştirmeler (Roadmap):**
 - [ ] **Koşullu Renklendirme İyileştirmeleri:**
@@ -2380,6 +2439,14 @@ Login olan kullanıcının domain bilgisi token'dan alınarak MngKeeper'dan geti
     - Koşullu renklendirme koşul belirtme seçeneklerinin iyileştirilmesi
     - Dropdown seçenekleri için filtre ve onInit/onChange event'ları
     - Liste görünümünün genel iyileştirmeleri
+- **2026-01-21** - Phase 6.19: Dataset Field Validation ve Error Handling İyileştirmeleri ✅
+  - Field validation mapping düzeltmeleri (store'da message, minItems, maxItems eklendi)
+  - Backend'de validation kopyalama düzeltmesi (ConvertFieldDefinitions)
+  - Dataset-level validasyon hata mesajı iyileştirmeleri (description kullanımı)
+  - Frontend'de dataset-level validasyon hata gösterimi iyileştirmeleri (_expression field handling)
+  - Backend error message parsing iyileştirmeleri (innerException, nested error structures)
+  - Field-level error mapping ve gösterimi (field label kullanımı)
+  - API service error handling iyileştirmeleri (error.data preservation)
     - Dynamic alanlar desteği
 - **2026-01-XX** - Phase 9.1: Domain Logo Support ✅
   - Login sonrası domain bilgisi otomatik yükleme
@@ -2397,7 +2464,7 @@ Login olan kullanıcının domain bilgisi token'dan alınarak MngKeeper'dan geti
 
 ---
 
-**Son Güncelleme:** 2026-01-XX  
+**Son Güncelleme:** 2026-01-21  
 **Version:** 1.3.0  
 **Status:** 🚧 Development Phase (Side Menu ✅, Real-time Updates ✅, Localization ✅, Automated Forms i18n ✅, Automated Forms Liste Edit Fonksiyonları ✅, Diğer Phase'ler 📋 Planning)
 

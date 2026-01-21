@@ -12,6 +12,8 @@ import { fetchFromDataGateway } from '@/services/apiService';
 import { FileCodeIcon, PlusIcon, RefreshIcon, EditIcon, TrashIcon, EyeIcon, XIcon, CheckIcon, DownloadIcon } from 'vue-tabler-icons';
 import { useFieldLabel } from '@/composables/useFieldLabel';
 
+const { getFieldLabel } = useFieldLabel();
+
 // Get i18n instance for legacy mode
 const nuxtApp = useNuxtApp();
 const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
@@ -33,7 +35,6 @@ const userStore = useUserStore();
 const groupStore = useGroupStore();
 const authStore = useAuthStore();
 const localeStore = useLocaleStore();
-const { getFieldLabel } = useFieldLabel();
 
 const formCode = computed(() => route.params.formCode as string);
 
@@ -68,6 +69,8 @@ const formDialogError = ref('');
 const formDialogSuccess = ref('');
 const formDialogLoading = ref(false);
 const formDialogRef = ref();
+// Field-level error messages (field name -> error message array)
+const fieldErrors = ref<Record<string, string[]>>({});
 
 // Delete dialog state
 const showDeleteDialog = ref(false);
@@ -621,6 +624,7 @@ const createNewItem = () => {
   formDialogData.value = initializeFormDialogData();
   formDialogError.value = '';
   formDialogSuccess.value = '';
+  fieldErrors.value = {}; // Clear field errors
   showFormDialog.value = true;
 };
 
@@ -630,6 +634,8 @@ const editItem = async (item: any) => {
   
   formDialogMode.value = 'edit';
   formDialogError.value = '';
+  formDialogSuccess.value = '';
+  fieldErrors.value = {}; // Clear field errors
   currentEditingItemId.value = item.__dataId;
   
   try {
@@ -735,6 +741,7 @@ const saveForm = async () => {
   
   formDialogLoading.value = true;
   formDialogError.value = '';
+  fieldErrors.value = {}; // Clear field errors
   
   try {
     // Prepare data to send (remove null values for optional fields, keep internal fields structure)
@@ -795,40 +802,322 @@ const saveForm = async () => {
       await fetchDataItems();
     }, 1500);
   } catch (error: any) {
-    console.error('Error saving form:', error);
+    // Error logging removed - error parsing logic handles all cases
+    
+    // Clear previous field errors
+    fieldErrors.value = {};
     
     // Parse error message from API response
     let errorMessage = '';
+    const fieldErrorMap: Record<string, string[]> = {};
+    
+    // Helper function to extract field name from error message
+    const extractFieldName = (message: string): string | null => {
+        // Pattern: "field 'fieldName'" or "Field 'fieldName'" or "'fieldName'"
+        const patterns = [
+          /(?:field|Field)\s+['"]([^'"]+)['"]/i,
+          /['"]([^'"]+)['"]\s+(?:field|Field)/i,
+          /Incremental\s+field\s+['"]([^'"]+)['"]/i,
+        ];
+        
+        for (const pattern of patterns) {
+          const match = message.match(pattern);
+          if (match && match[1]) {
+            return match[1];
+          }
+        }
+        return null;
+      };
     
     // Try to parse validation errors from error.data
-    if (error?.data?.error) {
-      const errorData = error.data.error;
+    // Priority: error.data.error.details.innerException > error.data.error.details.message > error.data.error.message > error.data.message > error.message > error.statusMessage
+    
+    // First, check if error.data itself is the error structure (from server route)
+    // Backend response structure: { success: false, error: { code, message, details: { innerException, ... } } }
+    // Nuxt server route wraps it: { url, statusCode, statusMessage, message, stack, data: { success: false, error: {...} } }
+    let errorData = null;
+    if (error?.data) {
+      // Check if error.data has nested error structure: { success: false, error: {...} }
+      if (error.data.error && typeof error.data.error === 'object') {
+        errorData = error.data.error;
+      } 
+      // Check if error.data.data has the backend error structure (Nuxt server route wraps it)
+      else if (error.data.data && error.data.data.error && typeof error.data.data.error === 'object') {
+        errorData = error.data.data.error;
+      }
+      // Check if error.data itself is the error structure (nested)
+      else if (error.data.success === false && error.data.error) {
+        errorData = error.data.error;
+      }
+      // Check if error.data.data has success: false structure
+      else if (error.data.data && error.data.data.success === false && error.data.data.error) {
+        errorData = error.data.data.error;
+      }
+      // Check if error.data is a string (simple error message)
+      else if (typeof error.data === 'string') {
+        errorMessage = error.data;
+      }
+    }
+    
+    if (errorData) {
       
-      // Check for validation error details
+      // Check for validation error details (array format)
       if (errorData.details && Array.isArray(errorData.details) && errorData.details.length > 0) {
-        // Build detailed error message from validation details
-        const validationErrors = errorData.details.map((detail: any) => {
-          const fieldName = detail.field || 'Alan';
-          const message = detail.message || 'Hata';
-          return `• ${fieldName}: ${message}`;
-        }).join('\n');
+        // Separate dataset-level and field-level errors
+        const datasetLevelErrors: string[] = [];
         
-        errorMessage = `${errorData.message || 'Validasyon hatası'}\n\n${validationErrors}`;
-      } else if (errorData.message) {
+        // Group errors by field
+        errorData.details.forEach((detail: any) => {
+          const fieldName = detail.field || '';
+          const message = detail.message || t('automated-forms.view.messages.validationError');
+          
+          // Handle dataset-level validation errors (_expression field)
+          if (fieldName === '_expression') {
+            // Dataset-level validation - collect for summary
+            datasetLevelErrors.push(message);
+            return; // Skip field mapping for dataset-level validations
+          }
+          
+          // Get field label if field exists
+          let fieldLabel = fieldName;
+          if (fieldName && dataset.value?.fields) {
+            const field = dataset.value.fields.find((f: any) => f.name === fieldName);
+            if (field) {
+              fieldLabel = getFieldLabel(fieldName, field, form.value, form.value?.datasetName);
+            }
+          }
+          
+          // Add to field error map
+          if (fieldName) {
+            if (!fieldErrorMap[fieldName]) {
+              fieldErrorMap[fieldName] = [];
+            }
+            // Use field label in error message
+            fieldErrorMap[fieldName].push(message.replace(`Field '${fieldName}'`, fieldLabel).replace(`'${fieldName}'`, fieldLabel));
+          }
+        });
+        
+        // Set field errors
+        fieldErrors.value = fieldErrorMap;
+        
+        // Build summary message
+        if (!errorMessage) {
+          errorMessage = errorData.message || t('automated-forms.view.messages.validationError');
+        }
+        
+        // Build detailed error message for summary
+        const errorParts: string[] = [];
+        
+        // Add dataset-level validation errors
+        if (datasetLevelErrors.length > 0) {
+          errorParts.push(...datasetLevelErrors.map(msg => `• ${msg}`));
+        }
+        
+        // Add field-level validation errors
+        const fieldErrorsList = Object.entries(fieldErrorMap).map(([fieldName, messages]) => {
+          const field = dataset.value?.fields?.find((f: any) => f.name === fieldName);
+          const fieldLabel = field ? getFieldLabel(fieldName, field, form.value, form.value?.datasetName) : fieldName;
+          return `• ${fieldLabel}: ${messages.join(', ')}`;
+        });
+        
+        if (fieldErrorsList.length > 0) {
+          errorParts.push(...fieldErrorsList);
+        }
+        
+        if (errorParts.length > 0) {
+          errorMessage = `${errorMessage}\n\n${errorParts.join('\n')}`;
+        }
+      } 
+      // Check for error details (object format - e.g., CREATE_FAILED)
+      else if (errorData.details && typeof errorData.details === 'object' && !Array.isArray(errorData.details)) {
+        const detailsObj = errorData.details as any;
+        // Priority: innerException > message > errorData.message
+        const detailMessage = detailsObj.innerException || detailsObj.message || errorData.message || '';
+        
+        // Try to extract field name from error message
+        const extractedFieldName = extractFieldName(detailMessage);
+        
+        if (extractedFieldName) {
+          // Get field label if field exists
+          let fieldLabel = extractedFieldName;
+          if (dataset.value?.fields) {
+            const field = dataset.value.fields.find((f: any) => f.name === extractedFieldName);
+            if (field) {
+              fieldLabel = getFieldLabel(extractedFieldName, field, form.value, form.value?.datasetName);
+            }
+          }
+          
+          // Add to field error map
+          if (!fieldErrorMap[extractedFieldName]) {
+            fieldErrorMap[extractedFieldName] = [];
+          }
+          // Replace field name with field label in message
+          const formattedMessage = detailMessage
+            .replace(`field '${extractedFieldName}'`, fieldLabel)
+            .replace(`Field '${extractedFieldName}'`, fieldLabel)
+            .replace(`'${extractedFieldName}'`, fieldLabel);
+          fieldErrorMap[extractedFieldName].push(formattedMessage);
+          
+          // Set field errors
+          fieldErrors.value = fieldErrorMap;
+          
+          // Build error message
+          errorMessage = errorData.message || t('automated-forms.view.messages.validationError');
+          const validationErrors = Object.entries(fieldErrorMap).map(([fieldName, messages]) => {
+            const field = dataset.value?.fields?.find((f: any) => f.name === fieldName);
+            const fieldLabel = field ? getFieldLabel(fieldName, field, form.value, form.value?.datasetName) : fieldName;
+            return `• ${fieldLabel}: ${messages.join(', ')}`;
+          }).join('\n');
+          
+          if (validationErrors) {
+            errorMessage = `${errorMessage}\n\n${validationErrors}`;
+          }
+        } else {
+          // No field name extracted, show as general error (use innerException if available)
+          errorMessage = detailMessage || errorData.message || t('automated-forms.view.messages.validationError');
+        }
+      } 
+      // Fallback to error message
+      else if (errorData.message) {
         errorMessage = errorData.message;
       } else if (typeof errorData === 'string') {
         errorMessage = errorData;
       }
-    } else if (error?.data?.message) {
+    } 
+    // Check error.data.message (if error.data.error doesn't exist)
+    else if (error?.data?.message) {
       errorMessage = error.data.message;
-    } else if (error?.message) {
+    }
+    
+    // If we still have generic messages or empty, try to extract from error.data structure
+    // This handles cases where error.data.error exists but wasn't caught above
+    if ((!errorMessage || 
+         errorMessage === 'internal server error' || 
+         errorMessage === 'Internal Server Error' ||
+         errorMessage.toLowerCase() === 'internal server error') && 
+        error?.data) {
+      const data = error.data;
+      // Try nested error structure (for CREATE_FAILED, etc.)
+      // First check error.data.error
+      if (data.error && typeof data.error === 'object' && data.error.details?.innerException) {
+        const detailMessage = data.error.details.innerException;
+        errorMessage = detailMessage;
+        
+        // Try to extract field name and map to field
+        const extractedFieldName = extractFieldName(detailMessage);
+        if (extractedFieldName && dataset.value?.fields) {
+          const field = dataset.value.fields.find((f: any) => f.name === extractedFieldName);
+          if (field) {
+            const fieldLabel = getFieldLabel(extractedFieldName, field, form.value, form.value?.datasetName);
+            if (!fieldErrorMap[extractedFieldName]) {
+              fieldErrorMap[extractedFieldName] = [];
+            }
+            const formattedMessage = detailMessage
+              .replace(`field '${extractedFieldName}'`, fieldLabel)
+              .replace(`Field '${extractedFieldName}'`, fieldLabel)
+              .replace(`'${extractedFieldName}'`, fieldLabel);
+            fieldErrorMap[extractedFieldName].push(formattedMessage);
+            fieldErrors.value = fieldErrorMap;
+            
+            // Build error message with field label
+            errorMessage = data.error.message || t('automated-forms.view.messages.validationError');
+            const validationErrors = Object.entries(fieldErrorMap).map(([fieldName, messages]) => {
+              const f = dataset.value?.fields?.find((f: any) => f.name === fieldName);
+              const fl = f ? getFieldLabel(fieldName, f, form.value, form.value?.datasetName) : fieldName;
+              return `• ${fl}: ${messages.join(', ')}`;
+            }).join('\n');
+            if (validationErrors) {
+              errorMessage = `${errorMessage}\n\n${validationErrors}`;
+            }
+          } else {
+            errorMessage = detailMessage;
+          }
+        } else {
+          errorMessage = detailMessage;
+        }
+      } 
+      // Check error.data.data.error (Nuxt wrapped structure)
+      else if (data.data && data.data.error && typeof data.data.error === 'object' && data.data.error.details?.innerException) {
+        const detailMessage = data.data.error.details.innerException;
+        errorMessage = detailMessage;
+        
+        // Try to extract field name and map to field
+        const extractedFieldName = extractFieldName(detailMessage);
+        if (extractedFieldName && dataset.value?.fields) {
+          const field = dataset.value.fields.find((f: any) => f.name === extractedFieldName);
+          if (field) {
+            const fieldLabel = getFieldLabel(extractedFieldName, field, form.value, form.value?.datasetName);
+            if (!fieldErrorMap[extractedFieldName]) {
+              fieldErrorMap[extractedFieldName] = [];
+            }
+            const formattedMessage = detailMessage
+              .replace(`field '${extractedFieldName}'`, fieldLabel)
+              .replace(`Field '${extractedFieldName}'`, fieldLabel)
+              .replace(`'${extractedFieldName}'`, fieldLabel);
+            fieldErrorMap[extractedFieldName].push(formattedMessage);
+            fieldErrors.value = fieldErrorMap;
+            
+            // Build error message with field label
+            errorMessage = data.data.error.message || t('automated-forms.view.messages.validationError');
+            const validationErrors = Object.entries(fieldErrorMap).map(([fieldName, messages]) => {
+              const f = dataset.value?.fields?.find((f: any) => f.name === fieldName);
+              const fl = f ? getFieldLabel(fieldName, f, form.value, form.value?.datasetName) : fieldName;
+              return `• ${fl}: ${messages.join(', ')}`;
+            }).join('\n');
+            if (validationErrors) {
+              errorMessage = `${errorMessage}\n\n${validationErrors}`;
+            }
+          } else {
+            errorMessage = detailMessage;
+          }
+        } else {
+          errorMessage = detailMessage;
+        }
+      }
+      else if (data.error && typeof data.error === 'object' && data.error.details?.message) {
+        errorMessage = data.error.details.message;
+      } else if (data.data && data.data.error && typeof data.data.error === 'object' && data.data.error.details?.message) {
+        errorMessage = data.data.error.details.message;
+      } else if (data.error && typeof data.error === 'object' && data.error.message && 
+                 data.error.message !== 'internal server error' && 
+                 data.error.message !== 'Internal Server Error') {
+        errorMessage = data.error.message;
+      } else if (data.data && data.data.error && typeof data.data.error === 'object' && data.data.error.message && 
+                 data.data.error.message !== 'internal server error' && 
+                 data.data.error.message !== 'Internal Server Error') {
+        errorMessage = data.data.error.message;
+      } else if (typeof data === 'string') {
+        errorMessage = data;
+      }
+    }
+    
+    // Check error.message (generic error message - should be last, and skip generic messages)
+    if ((!errorMessage || 
+         errorMessage === 'internal server error' || 
+         errorMessage === 'Internal Server Error' ||
+         errorMessage.toLowerCase() === 'internal server error') &&
+        error?.message && 
+        error.message !== 'internal server error' && 
+        error.message !== 'Internal Server Error' &&
+        error.message.toLowerCase() !== 'internal server error') {
       errorMessage = error.message;
-    } else if (error?.statusMessage) {
+    } 
+    // Check error.statusMessage (should be last, and skip generic messages)
+    else if ((!errorMessage || 
+              errorMessage === 'internal server error' || 
+              errorMessage === 'Internal Server Error' ||
+              errorMessage.toLowerCase() === 'internal server error') &&
+             error?.statusMessage && 
+             error.statusMessage !== 'Internal Server Error' &&
+             error.statusMessage.toLowerCase() !== 'internal server error') {
       errorMessage = error.statusMessage;
     }
     
-    // Fallback to default message if still empty
-    if (!errorMessage) {
+    // Fallback to default message if still empty or generic
+    if (!errorMessage || 
+        errorMessage === 'internal server error' || 
+        errorMessage === 'Internal Server Error' ||
+        errorMessage.toLowerCase() === 'internal server error') {
       errorMessage = formDialogMode.value === 'create' 
         ? t('automated-forms.view.messages.createError') 
         : t('automated-forms.view.messages.updateError');
@@ -845,6 +1134,8 @@ const closeFormDialog = () => {
   showFormDialog.value = false;
   formDialogData.value = {};
   formDialogError.value = '';
+  formDialogSuccess.value = '';
+  fieldErrors.value = {}; // Clear field errors
   currentEditingItemId.value = null;
 };
 
@@ -2435,7 +2726,7 @@ const getFormDescription = (): string => {
                     v-model="formDialogData[field.name]"
                     :readonly="form.formConfig?.readonlyFields?.includes(field.name)"
                     :disabled="formDialogLoading"
-                    :error-messages="[]"
+                    :error-messages="fieldErrors[field.name] || []"
                     :relation-config="getRelationConfig(field.name)"
                     :form="form"
                     :dataset-name="form?.datasetName"
@@ -2460,7 +2751,7 @@ const getFormDescription = (): string => {
                 v-model="formDialogData[field.name]"
                 :readonly="form.formConfig?.readonlyFields?.includes(field.name)"
                 :disabled="formDialogLoading"
-                :error-messages="[]"
+                :error-messages="fieldErrors[field.name] || []"
                 :relation-config="getRelationConfig(field.name)"
                 :form="form"
                 :dataset-name="form?.datasetName"

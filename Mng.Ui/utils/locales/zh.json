@@ -1869,7 +1869,9 @@
         "updateSuccess": "记录更新成功",
         "deleteError": "删除记录时发生错误",
         "itemLoadError": "加载记录时发生错误",
-        "itemIdNotFound": "未找到记录ID"
+        "itemIdNotFound": "未找到记录ID",
+        "exportError": "导出数据时发生错误",
+        "validationError": "验证错误"
       },
       "cellFormat": {
         "yes": "是",

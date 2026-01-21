@@ -480,8 +480,11 @@ export const useDatasetStore = defineStore('dataset', {
           minLength: field.validation?.minLength ?? field.Validation?.MinLength ?? undefined,
           maxLength: field.validation?.maxLength ?? field.Validation?.MaxLength ?? undefined,
           pattern: field.validation?.pattern ?? field.Validation?.Pattern ?? undefined,
+          minItems: field.validation?.minItems ?? field.Validation?.MinItems ?? undefined,
+          maxItems: field.validation?.maxItems ?? field.Validation?.MaxItems ?? undefined,
           minDate: field.validation?.minDate ?? field.Validation?.MinDate ?? undefined,
           maxDate: field.validation?.maxDate ?? field.Validation?.MaxDate ?? undefined,
+          message: field.validation?.message ?? field.Validation?.Message ?? undefined,
         } : undefined,
       }));
     },

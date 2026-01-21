@@ -393,7 +393,8 @@ public class DatasetService : IDatasetService
                 unique = field.unique,
                 isArray = field.isArray,
                 relationDataset = field.relationDataset,
-                incrementalOptions = field.incrementalOptions
+                incrementalOptions = field.incrementalOptions,
+                validation = field.validation // Copy validation rules
             };
 
             // Convert defaultValue to BsonValue if present

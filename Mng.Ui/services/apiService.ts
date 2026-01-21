@@ -434,22 +434,62 @@ export function fetchFromDataGateway(
         }
         
         // Handle H3 errors (from server API route)
+        // Preserve error structure for proper parsing in components
         if (fetchError.data) {
           const errorData = fetchError.data;
-          if (typeof errorData === 'object') {
-            throw new Error(errorData.errorDescription || errorData.error || errorData.message || 'İstek başarısız');
+          
+          // If errorData is an object with nested error structure, preserve it
+          if (typeof errorData === 'object' && errorData.error && typeof errorData.error === 'object') {
+            // Error structure like { success: false, error: { code, message, details } }
+            // Create a custom error that preserves the structure
+            const customError: any = new Error(errorData.error.message || errorData.error.code || 'İstek başarısız');
+            customError.data = errorData; // Preserve full error structure: { success: false, error: {...} }
+            customError.statusCode = fetchError.statusCode || fetchError.status;
+            customError.statusMessage = fetchError.statusMessage || errorData.error.message;
+            throw customError;
+          } else if (typeof errorData === 'object') {
+            // Simple error structure or other formats
+            // Try to extract message, but preserve full structure
+            let message = 'İstek başarısız';
+            if (errorData.errorDescription) {
+              message = errorData.errorDescription;
+            } else if (typeof errorData.error === 'string') {
+              message = errorData.error;
+            } else if (errorData.message) {
+              message = errorData.message;
+            }
+            
+            const customError: any = new Error(message);
+            customError.data = errorData; // Preserve error structure
+            customError.statusCode = fetchError.statusCode || fetchError.status;
+            customError.statusMessage = fetchError.statusMessage || message;
+            throw customError;
           } else if (typeof errorData === 'string') {
             throw new Error(errorData);
           }
         }
         
-        // Handle status messages
+        // Handle status messages - preserve error structure
         if (fetchError.statusMessage) {
-          throw new Error(fetchError.statusMessage);
+          const customError: any = new Error(fetchError.statusMessage);
+          customError.statusCode = fetchError.statusCode || fetchError.status;
+          customError.statusMessage = fetchError.statusMessage;
+          customError.data = fetchError.data; // Preserve data if exists
+          throw customError;
         }
         
-        // Handle regular errors
-        throw fetchError;
+        // Handle regular errors - preserve structure
+        const customError: any = fetchError instanceof Error ? fetchError : new Error(fetchError.message || 'Unknown error');
+        if (fetchError.data) {
+          customError.data = fetchError.data;
+        }
+        if (fetchError.statusCode || fetchError.status) {
+          customError.statusCode = fetchError.statusCode || fetchError.status;
+        }
+        if (fetchError.statusMessage) {
+          customError.statusMessage = fetchError.statusMessage;
+        }
+        throw customError;
       }
     } catch (error: any) {
       reject(error);

@@ -1869,7 +1869,9 @@
         "updateSuccess": "تم تحديث السجل بنجاح",
         "deleteError": "حدث خطأ أثناء حذف السجل",
         "itemLoadError": "حدث خطأ أثناء تحميل السجل",
-        "itemIdNotFound": "لم يتم العثور على معرف السجل"
+        "itemIdNotFound": "لم يتم العثور على معرف السجل",
+        "exportError": "حدث خطأ أثناء تصدير البيانات",
+        "validationError": "خطأ في التحقق"
       },
       "cellFormat": {
         "yes": "نعم",

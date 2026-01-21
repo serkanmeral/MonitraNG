@@ -1869,7 +1869,9 @@
         "updateSuccess": "Enregistrement mis à jour avec succès",
         "deleteError": "Une erreur s'est produite lors de la suppression de l'enregistrement",
         "itemLoadError": "Une erreur s'est produite lors du chargement de l'enregistrement",
-        "itemIdNotFound": "ID d'enregistrement non trouvé"
+        "itemIdNotFound": "ID d'enregistrement non trouvé",
+        "exportError": "Une erreur s'est produite lors de l'exportation des données",
+        "validationError": "Erreur de validation"
       },
       "cellFormat": {
         "yes": "Oui",

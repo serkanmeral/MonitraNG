@@ -1855,7 +1855,8 @@
         "deleteError": "An error occurred while deleting the record",
         "itemLoadError": "An error occurred while loading the record",
         "itemIdNotFound": "Record ID not found",
-        "exportError": "An error occurred while exporting data"
+        "exportError": "An error occurred while exporting data",
+        "validationError": "Validation error"
       },
       "cellFormat": {
         "yes": "Yes",

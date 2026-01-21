@@ -126,13 +126,15 @@ export default defineEventHandler(async (event) => {
     }
 
     // Handle $fetch errors
+    // Preserve the full error structure from DataGateway
     if (error.data) {
       const errorData = error.data;
       if (typeof errorData === 'object') {
+        // Preserve the full error structure: { success: false, error: { code, message, details } }
         throw createError({
           statusCode: error.statusCode || error.status || 500,
-          statusMessage: errorData.errorDescription || errorData.error || errorData.message || error.message || 'DataGateway request failed',
-          data: errorData,
+          statusMessage: errorData.error?.message || errorData.errorDescription || (typeof errorData.error === 'string' ? errorData.error : '') || errorData.message || error.message || 'DataGateway request failed',
+          data: errorData, // Preserve full structure including error.error.details.innerException
         });
       }
     }

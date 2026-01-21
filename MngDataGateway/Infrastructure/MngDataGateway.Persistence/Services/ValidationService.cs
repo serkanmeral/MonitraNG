@@ -531,10 +531,17 @@ namespace MngDataGateway.Persistence.Services
                     var isValid = EvaluateExpression(validation.expression!, data);
                     if (!isValid)
                     {
+                        // Use description if available, otherwise use name, fallback to expression
+                        var errorMessage = !string.IsNullOrWhiteSpace(validation.description)
+                            ? validation.description
+                            : !string.IsNullOrWhiteSpace(validation.name)
+                                ? $"Validation '{validation.name}' failed"
+                                : $"Validation failed: {validation.expression}";
+                        
                         errors.Add(new ValidationErrorDto
                         {
                             Field = "_expression",
-                            Message = $"Validation '{validation.name}' failed: {validation.expression}",
+                            Message = errorMessage,
                             Value = null
                         });
                     }
@@ -542,10 +549,14 @@ namespace MngDataGateway.Persistence.Services
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "Error evaluating expression '{Expression}' for validation '{ValidationName}'", validation.expression, validation.name);
+                    var errorMessage = !string.IsNullOrWhiteSpace(validation.name)
+                        ? $"Error evaluating validation '{validation.name}': {ex.Message}"
+                        : $"Error evaluating validation: {ex.Message}";
+                    
                     errors.Add(new ValidationErrorDto
                     {
                         Field = "_expression",
-                        Message = $"Error evaluating validation '{validation.name}': {ex.Message}",
+                        Message = errorMessage,
                         Value = null
                     });
                 }
