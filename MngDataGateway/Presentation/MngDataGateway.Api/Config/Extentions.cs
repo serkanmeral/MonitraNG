@@ -1,4 +1,4 @@
-﻿using Asp.Versioning.ApiExplorer;
+using Asp.Versioning.ApiExplorer;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.Options;
 using MngDataGateway.Application.Configuration;
@@ -180,6 +180,9 @@ namespace MngDataGateway.Api.Config
 
             // 7. Authorization (yetkilendirme)
             app.UseAuthorization();
+
+            // 7.5. License Validation Middleware (after auth, before controllers)
+            app.UseMiddleware<MngDataGateway.Api.Middleware.LicenseValidationMiddleware>();
 
             // 8. OpenAPI ve Scalar dökümantasyon endpointleri
             app.MapOpenApi();

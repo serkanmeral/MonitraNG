@@ -878,7 +878,8 @@ const { canView, canCreate, canUpdate, canDelete } = usePagePermissions();
 - [x] Global arama (search) - enableSearch özelliği
 - [ ] Kullanıcı bazlı sütun ayarları (localStorage - gelecek geliştirme)
 - [ ] Sütun sıralaması drag & drop (gelecek geliştirme)
-- [ ] Export işlemleri (CSV, JSON - gelecek geliştirme)
+- [x] Export işlemleri (CSV, JSON - client-side) ✅ TAMAMLANDI
+- [ ] Server-side export işlemleri (büyük veri setleri için streaming export - gelecek geliştirme)
 
 ### Phase 7: Side Menu Entegrasyonu ✅ TAMAMLANDI
 - [x] Side Menu Manager'da "Kayıtlı Formlar" dropdown'u eklendi
@@ -917,9 +918,13 @@ const { canView, canCreate, canUpdate, canDelete } = usePagePermissions();
 3. **Form Actions**: Özel form action'ları (workflow, notification, vb.)
 4. **Form Versions**: Form versiyonlama ve geri dönme
 5. **Bulk Operations**: Toplu işlemler (toplu güncelleme, toplu silme)
-6. **Export Templates**: Özel export template'leri
-7. **Form Analytics**: Form kullanım istatistikleri
-8. **Form Sharing**: Form paylaşımı ve embed desteği
+6. **Server-Side Export**: Büyük veri setleri için server-side streaming export (CSV, JSON)
+   - Backend'de formatlama ve streaming desteği
+   - Client bellek kullanımını azaltma
+   - Limit kısıtlaması olmadan export
+7. **Export Templates**: Özel export template'leri
+8. **Form Analytics**: Form kullanım istatistikleri
+9. **Form Sharing**: Form paylaşımı ve embed desteği
 
 ---
 

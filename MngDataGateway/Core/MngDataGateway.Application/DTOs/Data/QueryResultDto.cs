@@ -13,6 +13,11 @@ namespace MngDataGateway.Application.DTOs.Data
         public List<Dictionary<string, object>> Data { get; set; } = new();
 
         /// <summary>
+        /// Total count of items matching the query (before pagination)
+        /// </summary>
+        public long TotalCount { get; set; }
+
+        /// <summary>
         /// Aggregate pipeline (only when showQuery=true)
         /// </summary>
         public List<object>? Query { get; set; }

@@ -341,16 +341,32 @@ export function fetchFromDataGateway(
         : `/api/data/${serverPath}`;
       
       let response: any;
+      let totalCount: number | null = null;
       
       try {
-        // Use $fetch which automatically handles server-side routing
-        response = await $fetch(fullUrl, {
-        method,
+        // Use $fetch.raw to access response headers
+        const rawResponse = await $fetch.raw(fullUrl, {
+          method,
           ...(body && { body }),
-        headers: {
-          ...headers,
-        },
+          headers: {
+            ...headers,
+          },
         });
+        
+        response = rawResponse._data;
+        
+        // Extract X-Total-Count from response headers
+        const totalCountHeader = rawResponse.headers.get('x-total-count');
+        if (totalCountHeader) {
+          totalCount = parseInt(totalCountHeader, 10);
+        }
+        
+        // If totalCount is available, add it to response
+        if (totalCount !== null && Array.isArray(response)) {
+          // Add totalCount as a property to response (for backward compatibility)
+          // Frontend can access it via response._totalCount
+          (response as any)._totalCount = totalCount;
+        }
         
         resolve(response);
       } catch (fetchError: any) {

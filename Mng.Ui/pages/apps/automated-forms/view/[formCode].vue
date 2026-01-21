@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch, nextTick } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DynamicFormField from '@/components/apps/automated-forms/DynamicFormField.vue';
 import { useAutomatedFormsStore } from '@/stores/apps/automatedForms';
@@ -65,6 +65,7 @@ const showFormDialog = ref(false);
 const formDialogMode = ref<'create' | 'edit'>('create');
 const formDialogData = ref<Record<string, any>>({});
 const formDialogError = ref('');
+const formDialogSuccess = ref('');
 const formDialogLoading = ref(false);
 const formDialogRef = ref();
 
@@ -533,8 +534,50 @@ watch(
   { immediate: false }
 );
 
+// Keyboard shortcuts handler
+const handleKeyboardShortcuts = (event: KeyboardEvent) => {
+  // Only handle if form dialog is open
+  if (!showFormDialog.value) return;
+  
+  // Prevent default for Enter key in form inputs
+  if (event.key === 'Enter' && (event.target as HTMLElement)?.tagName === 'INPUT') {
+    // Don't prevent default for text inputs (allow normal behavior)
+    if ((event.target as HTMLInputElement)?.type === 'text' || 
+        (event.target as HTMLInputElement)?.type === 'number') {
+      return;
+    }
+  }
+  
+  // Enter key: Save form
+  if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.altKey) {
+    const target = event.target as HTMLElement;
+    // Don't trigger if user is typing in an input/textarea
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+      return;
+    }
+    event.preventDefault();
+    if (!formDialogLoading.value) {
+      saveForm();
+    }
+  }
+  
+  // Esc key: Close dialog
+  if (event.key === 'Escape') {
+    if (!formDialogLoading.value) {
+      closeFormDialog();
+    }
+  }
+};
+
 onMounted(async () => {
   await loadForm();
+  // Add keyboard event listener
+  window.addEventListener('keydown', handleKeyboardShortcuts);
+});
+
+onBeforeUnmount(() => {
+  // Remove keyboard event listener
+  window.removeEventListener('keydown', handleKeyboardShortcuts);
 });
 
 // Refresh data
@@ -577,6 +620,7 @@ const createNewItem = () => {
   formDialogMode.value = 'create';
   formDialogData.value = initializeFormDialogData();
   formDialogError.value = '';
+  formDialogSuccess.value = '';
   showFormDialog.value = true;
 };
 
@@ -684,6 +728,8 @@ const saveForm = async () => {
   // Validate form
   const { valid } = await formDialogRef.value.validate();
   if (!valid) {
+    // Show validation summary alert
+    formDialogError.value = t('automated-forms.view.formDialog.validationSummary.message');
     return;
   }
   
@@ -737,9 +783,17 @@ const saveForm = async () => {
       await fetchFromDataGateway(url, 'PUT', dataToSend);
     }
     
-    // Close dialog and refresh data
-    showFormDialog.value = false;
-    await fetchDataItems();
+    // Show success message and close dialog after delay
+    formDialogSuccess.value = formDialogMode.value === 'create' 
+      ? t('automated-forms.view.messages.createSuccess')
+      : t('automated-forms.view.messages.updateSuccess');
+    
+    // Close dialog and refresh data after a short delay
+    setTimeout(async () => {
+      showFormDialog.value = false;
+      formDialogSuccess.value = '';
+      await fetchDataItems();
+    }, 1500);
   } catch (error: any) {
     console.error('Error saving form:', error);
     
@@ -793,6 +847,7 @@ const closeFormDialog = () => {
   formDialogError.value = '';
   currentEditingItemId.value = null;
 };
+
 
 // Open delete confirmation
 const deleteItem = (item: any) => {
@@ -857,6 +912,74 @@ const getFieldColumnSpan = (fieldName: string) => {
   const field = dataset.value?.fields?.find(f => f.name === fieldName);
   return field?.fieldType === 'object' ? 12 : 6;
 };
+
+// Get responsive column span (for better mobile/tablet/desktop layout)
+const getResponsiveColumnSpan = (fieldName: string) => {
+  const span = getFieldColumnSpan(fieldName);
+  // For better responsive behavior:
+  // - On mobile (xs): always 12 (full width)
+  // - On tablet (sm): use span if <= 6, otherwise 12
+  // - On desktop (md+): use configured span
+  return {
+    xs: 12,
+    sm: span <= 6 ? span : 12,
+    md: span,
+    lg: span,
+  };
+};
+
+// Get field group from layout config
+const getFieldGroup = (fieldName: string): string => {
+  if (!form.value || !form.value.formConfig || !form.value.formConfig.fieldLayout) {
+    return '';
+  }
+  
+  const layout = form.value.formConfig.fieldLayout[fieldName];
+  return layout?.group || '';
+};
+
+// Group form fields by their group
+const groupedFormFields = computed(() => {
+  if (!formFields.value || formFields.value.length === 0) {
+    return [];
+  }
+  
+  const groups: { [groupName: string]: any[] } = {};
+  const ungrouped: any[] = [];
+  
+  formFields.value.forEach(field => {
+    const groupName = getFieldGroup(field.name);
+    if (groupName && groupName.trim()) {
+      if (!groups[groupName]) {
+        groups[groupName] = [];
+      }
+      groups[groupName].push(field);
+    } else {
+      ungrouped.push(field);
+    }
+  });
+  
+  // Convert to array format: [{ groupName: string, fields: any[] }]
+  const result: Array<{ groupName: string; fields: any[] }> = [];
+  
+  // Add grouped fields
+  Object.keys(groups).forEach(groupName => {
+    result.push({
+      groupName: groupName,
+      fields: groups[groupName]
+    });
+  });
+  
+  // Add ungrouped fields as a special group (empty string means no group)
+  if (ungrouped.length > 0) {
+    result.push({
+      groupName: '',
+      fields: ungrouped
+    });
+  }
+  
+  return result;
+});
 
 // Format cell value
 const formatCellValue = (value: any, fieldName: string) => {
@@ -2226,16 +2349,38 @@ const getFormDescription = (): string => {
   </v-card>
   
   <!-- Create/Edit Form Dialog -->
-  <v-dialog v-model="showFormDialog" max-width="900px" persistent scrollable>
-    <v-card>
-      <v-card-title class="pa-4 bg-primary text-white d-flex align-center">
-        <FileCodeIcon class="mr-2" size="20" />
-        <span>{{ formDialogMode === 'edit' ? t('automated-forms.view.formDialog.title.edit') : t('automated-forms.view.formDialog.title.create') }}</span>
+  <v-dialog 
+    v-model="showFormDialog" 
+    max-width="1200px" 
+    persistent 
+    scrollable
+  >
+    <v-card class="overflow-hidden d-flex flex-column" elevation="8" style="max-height: 90vh;">
+      <v-card-title class="pa-5 bg-primary text-white d-flex align-center">
+        <FileCodeIcon class="mr-3" size="22" />
+        <span class="text-h6 font-weight-medium">{{ formDialogMode === 'edit' ? t('automated-forms.view.formDialog.title.edit') : t('automated-forms.view.formDialog.title.create') }}</span>
       </v-card-title>
       
       <v-divider></v-divider>
       
-      <v-card-text class="pa-6">
+      <v-card-text class="pa-6 bg-grey-lighten-5 flex-grow-1" style="overflow-y: auto;">
+        <!-- Form Success -->
+        <v-alert
+          v-if="formDialogSuccess"
+          type="success"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+          :icon="false"
+        >
+          <div class="d-flex align-center">
+            <v-icon color="success" size="24" class="mr-3">mdi-check-circle</v-icon>
+            <div>
+              <div class="font-weight-medium">{{ formDialogSuccess }}</div>
+            </div>
+          </div>
+        </v-alert>
+        
         <!-- Form Error -->
         <v-alert
           v-if="formDialogError"
@@ -2249,13 +2394,66 @@ const getFormDescription = (): string => {
           <div style="white-space: pre-wrap;">{{ formDialogError }}</div>
         </v-alert>
         
+        
         <v-form ref="formDialogRef" v-if="form && dataset">
-          <v-row>
+          <!-- Grouped Fields -->
+          <template v-if="groupedFormFields.length > 0">
+            <div
+              v-for="(group, groupIndex) in groupedFormFields"
+              :key="`group-${groupIndex}`"
+              class="mb-8"
+            >
+              <!-- Group Header (if group has a name) -->
+              <div v-if="group.groupName" class="mb-5">
+                <v-card
+                  variant="tonal"
+                  color="primary"
+                  class="mb-4"
+                  elevation="0"
+                >
+                  <v-card-text class="pa-3">
+                    <div class="d-flex align-center ga-3">
+                      <v-icon color="primary" size="24">mdi-folder-outline</v-icon>
+                      <h3 class="text-h6 text-primary font-weight-medium mb-0">{{ group.groupName }}</h3>
+                    </div>
+                  </v-card-text>
+                </v-card>
+              </div>
+              
+              <!-- Group Fields -->
+              <v-row>
+                <v-col
+                  v-for="field in group.fields"
+                  :key="field.name"
+                  cols="12"
+                  :md="getFieldColumnSpan(field.name)"
+                  :lg="getFieldColumnSpan(field.name)"
+                  class="mb-3"
+                >
+                  <DynamicFormField
+                    :field="field"
+                    v-model="formDialogData[field.name]"
+                    :readonly="form.formConfig?.readonlyFields?.includes(field.name)"
+                    :disabled="formDialogLoading"
+                    :error-messages="[]"
+                    :relation-config="getRelationConfig(field.name)"
+                    :form="form"
+                    :dataset-name="form?.datasetName"
+                  />
+                </v-col>
+              </v-row>
+            </div>
+          </template>
+          
+          <!-- Fallback: Ungrouped Fields (if no grouping) -->
+          <v-row v-else>
             <v-col
               v-for="field in formFields"
               :key="field.name"
               cols="12"
               :md="getFieldColumnSpan(field.name)"
+              :lg="getFieldColumnSpan(field.name)"
+              class="mb-3"
             >
               <DynamicFormField
                 :field="field"
@@ -2274,25 +2472,37 @@ const getFormDescription = (): string => {
       
       <v-divider></v-divider>
       
-      <v-card-actions class="pa-4">
+      <v-card-actions class="pa-5 bg-grey-lighten-5 flex-shrink-0" style="position: sticky; bottom: 0; z-index: 10; border-top: 1px solid rgba(var(--v-border-color), 0.12); box-shadow: 0 -2px 8px rgba(0,0,0,0.1);">
+        <div class="text-caption text-medium-emphasis d-flex align-center">
+          <v-icon size="16" class="mr-1">mdi-information-outline</v-icon>
+          <span>{{ t('automated-forms.view.formDialog.keyboardShortcuts') }}</span>
+        </div>
         <v-spacer />
         <v-btn
           color="default"
           variant="outlined"
+          size="large"
           @click="closeFormDialog"
           :disabled="formDialogLoading"
+          class="mr-3"
+          rounded="lg"
         >
           <XIcon class="mr-2" size="18" />
           {{ t('automated-forms.view.buttons.cancel') }}
+          <v-chip size="x-small" variant="flat" color="default" class="ml-2">Esc</v-chip>
         </v-btn>
         <v-btn
           color="primary"
           variant="flat"
+          size="large"
           @click="saveForm"
           :loading="formDialogLoading"
+          rounded="lg"
+          elevation="2"
         >
           <CheckIcon class="mr-2" size="18" />
           {{ formDialogMode === 'edit' ? t('automated-forms.view.buttons.update') : t('automated-forms.view.buttons.save') }}
+          <v-chip size="x-small" variant="flat" color="primary" class="ml-2">Enter</v-chip>
         </v-btn>
       </v-card-actions>
     </v-card>

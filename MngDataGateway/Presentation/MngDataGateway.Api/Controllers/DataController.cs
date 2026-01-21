@@ -256,10 +256,13 @@ namespace MngDataGateway.Api.Controllers
                 if (options.Format == "csv")
                 {
                     var csvContent = _csvConverter.ConvertToCsv(result.Data);
+                    Response.Headers["X-Total-Count"] = result.TotalCount.ToString();
                     return Content(csvContent, "text/csv", System.Text.Encoding.UTF8);
                 }
 
                 // Always return array (even if single item)
+                // Add totalCount to response header for pagination
+                Response.Headers["X-Total-Count"] = result.TotalCount.ToString();
                 return Ok(result.Data);
             }
             catch (DataGatewayException ex) when (ex.ValidationErrors != null)

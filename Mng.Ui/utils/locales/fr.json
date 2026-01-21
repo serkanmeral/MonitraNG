@@ -1845,6 +1845,11 @@
         "title": {
           "create": "Nouvel Enregistrement",
           "edit": "Modifier l'Enregistrement"
+        },
+        "keyboardShortcuts": "Raccourcis Clavier: Entrée (Enregistrer), Échap (Annuler)",
+        "validationSummary": {
+          "title": "Erreur de Validation du Formulaire",
+          "message": "Veuillez corriger les erreurs dans le formulaire et réessayer."
         }
       },
       "deleteDialog": {
@@ -1859,7 +1864,9 @@
         "loadError": "Une erreur s'est produite lors du chargement du formulaire",
         "dataLoadError": "Une erreur s'est produite lors du chargement des données",
         "createError": "Une erreur s'est produite lors de la création de l'enregistrement",
+        "createSuccess": "Enregistrement créé avec succès",
         "updateError": "Une erreur s'est produite lors de la mise à jour de l'enregistrement",
+        "updateSuccess": "Enregistrement mis à jour avec succès",
         "deleteError": "Une erreur s'est produite lors de la suppression de l'enregistrement",
         "itemLoadError": "Une erreur s'est produite lors du chargement de l'enregistrement",
         "itemIdNotFound": "ID d'enregistrement non trouvé"

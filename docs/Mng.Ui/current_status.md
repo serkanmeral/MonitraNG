@@ -82,9 +82,11 @@ Relation field'lar için ID ve display field seçimi, field layout ayarları ve 
    - localStorage'da kullanıcı bazlı saklama
    - Sütun görünürlüğü ve sıralaması
 
-3. **Export İşlemleri**: CSV ve JSON export
-   - Backend'de format query parameter desteği var
-   - Frontend'de export butonları eklenmeli
+3. **Export İşlemleri**: ✅ TAMAMLANDI (Client-side CSV ve JSON export)
+   - Export butonları eklendi (toolbar'da download menu)
+   - JSON ve CSV export fonksiyonları implement edildi
+   - Filtre ve arama parametreleri export'a dahil ediliyor
+   - **Gelecek**: Server-side streaming export (büyük veri setleri için)
 
 ### Orta Vadeli
 4. **ColumnSelector Component**: Sütun seçimi için drag & drop component

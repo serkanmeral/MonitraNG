@@ -84,12 +84,24 @@ export default defineEventHandler(async (event) => {
         throw fetchError;
       }
     } else {
-      // GET, POST, PUT için normal $fetch kullan
-      response = await $fetch(urlWithQuery, {
+      // GET, POST, PUT için $fetch.raw kullanarak response header'larına eriş
+      const rawResponse = await $fetch.raw(urlWithQuery, {
         method: method as any,
         headers: requestOptions.headers as Record<string, string>,
         ...(requestOptions.body && { body: JSON.parse(requestOptions.body as string) }),
       });
+      
+      response = rawResponse._data;
+      
+      // X-Total-Count header'ını response body'ye ekle (pagination için)
+      const totalCountHeader = rawResponse.headers.get('x-total-count');
+      if (totalCountHeader && Array.isArray(response)) {
+        // Response array ise, totalCount'u response objesine ekle
+        // Ancak response array olduğu için, wrapper objesi oluştur
+        // Frontend'de response._totalCount veya response.totalCount olarak erişilebilir
+        // Ama daha iyi: response header'ı event header'ına ekle
+        setHeader(event, 'X-Total-Count', totalCountHeader);
+      }
     }
     
     // Orijinal ayarı geri yükle

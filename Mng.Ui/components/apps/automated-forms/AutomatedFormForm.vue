@@ -597,6 +597,9 @@ const saveColumnSettings = async () => {
         return;
       }
       
+      // CRITICAL: Update field layout from configs before saving
+      updateFieldLayoutFromConfigs();
+      
       loading.value = true;
       errorMessage.value = '';
       successMessage.value = '';
@@ -828,6 +831,9 @@ const handleSubmit = async () => {
   if (!valid) {
     return;
   }
+  
+  // CRITICAL: Update field layout from configs before saving
+  updateFieldLayoutFromConfigs();
   
   loading.value = true;
   
@@ -1300,9 +1306,13 @@ let relationConfigsInitialized = false;
 
 // Field layout configs (computed from dataset fields)
 const fieldLayoutConfigs = computed(() => {
-  if (!selectedDataset.value || !selectedDataset.value.fields) return [];
+  // CRITICAL: Use datasetStore directly instead of selectedDataset computed to avoid reactive loops
+  if (!formData.value.datasetName) return [];
   
-  const fields = selectedDataset.value.fields;
+  const dataset = datasetStore.getDatasetByName(formData.value.datasetName);
+  if (!dataset || !dataset.fields) return [];
+  
+  const fields = dataset.fields;
   const existingLayouts = formData.value.formConfig.fieldLayout || {};
   
   return fields.map(field => {
@@ -1323,21 +1333,31 @@ const fieldLayoutConfigs = computed(() => {
   });
 });
 
-// Watch field layout configs changes and update formData
-watch(
-  () => fieldLayoutConfigs.value,
-  (newConfigs) => {
-    const layout: { [fieldName: string]: { columnSpan?: number; group?: string } } = {};
-    newConfigs.forEach(config => {
+// Update field layout from fieldLayoutConfigs (called before save)
+// CRITICAL: Don't use watch to avoid reactive loops - update manually before save
+const updateFieldLayoutFromConfigs = () => {
+  if (!formData.value.datasetName) return;
+  
+  const dataset = datasetStore.getDatasetByName(formData.value.datasetName);
+  if (!dataset || !dataset.fields) return;
+  
+  const layout: { [fieldName: string]: { columnSpan?: number; group?: string } } = {};
+  
+  fieldLayoutConfigs.value.forEach(config => {
+    const field = dataset.fields?.find(f => f.name === config.fieldName);
+    const defaultColumnSpan = field?.fieldType === 'object' ? 12 : 6;
+    
+    // Only save if different from default or if group is set
+    if (config.columnSpan !== defaultColumnSpan || (config.group && config.group.trim())) {
       layout[config.fieldName] = {
-        columnSpan: config.columnSpan,
-        group: config.group || undefined,
+        columnSpan: config.columnSpan !== defaultColumnSpan ? config.columnSpan : undefined,
+        group: config.group && config.group.trim() ? config.group.trim() : undefined,
       };
-    });
-    formData.value.formConfig.fieldLayout = layout;
-  },
-  { deep: true }
-);
+    }
+  });
+  
+  formData.value.formConfig.fieldLayout = layout;
+};
 
 // Remove the watch on formData.listConfig.columns - it was causing infinite loops
 // The computed property listColumnConfigs already reads from formData.value.listConfig.columns
@@ -1950,6 +1970,7 @@ const getDisplayFieldOptionsForModal = (fieldName: string): Array<{ title: strin
                   </p>
                   
                   <v-data-table
+                    v-if="fieldLayoutConfigs.length > 0"
                     :headers="fieldLayoutHeaders"
                     :items="fieldLayoutConfigs"
                     item-key="fieldName"
@@ -1957,9 +1978,20 @@ const getDisplayFieldOptionsForModal = (fieldName: string): Array<{ title: strin
                     hide-default-footer
                     :items-per-page="-1"
                   >
+                  <template v-slot:no-data>
+                    <div class="text-center py-8">
+                      <v-icon size="48" color="grey-lighten-1">mdi-database-off</v-icon>
+                      <p class="text-body-1 text-medium-emphasis mt-4">
+                        {{ t('automated-forms.form.formConfig.noDataset') }}
+                      </p>
+                      <p class="text-caption text-medium-emphasis mt-2">
+                        Dataset yükleniyor veya field'lar bulunamadı.
+                      </p>
+                    </div>
+                  </template>
                     <template v-slot:item.fieldName="{ item }">
                       <div class="d-flex align-center ga-2">
-                        <span class="font-weight-medium">{{ selectedDataset?.fields?.find(f => f.name === item.fieldName)?.title || item.fieldName }}</span>
+                        <span class="font-weight-medium">{{ (formData.datasetName ? datasetStore.getDatasetByName(formData.datasetName)?.fields?.find(f => f.name === item.fieldName)?.title : null) || item.fieldName }}</span>
                         <v-chip size="x-small" variant="tonal" color="primary">
                           {{ item.fieldName }}
                         </v-chip>
@@ -1990,6 +2022,22 @@ const getDisplayFieldOptionsForModal = (fieldName: string): Array<{ title: strin
                       ></v-text-field>
                     </template>
                   </v-data-table>
+                  
+                  <!-- Loading or Empty State -->
+                  <div v-else class="text-center py-8">
+                    <v-progress-circular
+                      v-if="loading || isFormLoading"
+                      indeterminate
+                      color="primary"
+                      size="48"
+                    ></v-progress-circular>
+                    <div v-else>
+                      <v-icon size="48" color="grey-lighten-1">mdi-database-off</v-icon>
+                      <p class="text-body-1 text-medium-emphasis mt-4">
+                        {{ t('automated-forms.form.formConfig.noDataset') }}
+                      </p>
+                    </div>
+                  </div>
                 </v-col>
               </v-row>
               <v-row v-else>

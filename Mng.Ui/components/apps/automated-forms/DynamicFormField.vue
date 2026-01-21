@@ -31,7 +31,26 @@ const { getFieldLabel } = useFieldLabel();
 
 // Get field label with translation support
 const fieldLabel = computed(() => {
-  return getFieldLabel(props.field.name, props.field, props.form, props.datasetName);
+  const label = getFieldLabel(props.field.name, props.field, props.form, props.datasetName);
+  // Add asterisk for required fields
+  return props.field.mandatory ? `${label} *` : label;
+});
+
+// Get field type icon
+const fieldTypeIcon = computed(() => {
+  const type = props.field.fieldType;
+  const iconMap: Record<string, string> = {
+    text: 'mdi-text',
+    number: 'mdi-numeric',
+    bool: 'mdi-toggle-switch',
+    datetime: 'mdi-calendar-clock',
+    object: 'mdi-code-json',
+    relation: 'mdi-link-variant',
+    persons: 'mdi-account-multiple',
+    personGroups: 'mdi-account-group',
+    incremental: 'mdi-auto-fix',
+  };
+  return iconMap[type] || 'mdi-form-select';
 });
 
 // Helper function to extract ID from expanded relation/person/personGroup object
@@ -375,7 +394,12 @@ const rules = computed(() => {
     :error-messages="errorMessages"
     variant="outlined"
     clearable
-  ></v-text-field>
+    density="comfortable"
+  >
+    <template v-slot:prepend-inner>
+      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
+    </template>
+  </v-text-field>
   
   <!-- Number Field -->
   <v-text-field
@@ -392,20 +416,30 @@ const rules = computed(() => {
     :error-messages="errorMessages"
     variant="outlined"
     clearable
-  ></v-text-field>
+    density="comfortable"
+  >
+    <template v-slot:prepend-inner>
+      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
+    </template>
+  </v-text-field>
   
   <!-- Boolean Field -->
-  <v-switch
-    v-else-if="field.fieldType === 'bool'"
-    v-model="localValue"
-    :label="fieldLabel"
-    :hint="field.description"
-    :persistent-hint="!!field.description"
-    :readonly="readonly"
-    :disabled="disabled"
-    color="primary"
-    :error-messages="errorMessages"
-  ></v-switch>
+  <div v-else-if="field.fieldType === 'bool'" class="mb-2">
+    <div class="d-flex align-center ga-2 mb-1">
+      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis"></v-icon>
+      <v-label class="text-body-1 font-weight-medium">{{ fieldLabel }}</v-label>
+    </div>
+    <v-switch
+      v-model="localValue"
+      :hint="field.description"
+      :persistent-hint="!!field.description"
+      :readonly="readonly"
+      :disabled="disabled"
+      color="primary"
+      :error-messages="errorMessages"
+      class="ml-2"
+    ></v-switch>
+  </div>
   
   <!-- DateTime Field -->
   <v-text-field
@@ -421,23 +455,33 @@ const rules = computed(() => {
     :error-messages="errorMessages"
     variant="outlined"
     clearable
-  ></v-text-field>
+    density="comfortable"
+  >
+    <template v-slot:prepend-inner>
+      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
+    </template>
+  </v-text-field>
   
   <!-- Object Field (JSON Textarea) -->
-  <v-textarea
-    v-else-if="field.fieldType === 'object'"
-    v-model="objectJsonValue"
-    :label="fieldLabel"
-    :hint="field.description || 'JSON formatında object giriniz'"
-    persistent-hint
-    :required="field.mandatory"
-    :readonly="readonly"
-    :disabled="disabled"
-    :error-messages="errorMessages"
-    variant="outlined"
-    rows="4"
-    clearable
-  ></v-textarea>
+  <div v-else-if="field.fieldType === 'object'">
+    <div class="d-flex align-center ga-2 mb-2">
+      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis"></v-icon>
+      <v-label class="text-body-1 font-weight-medium">{{ fieldLabel }}</v-label>
+    </div>
+    <v-textarea
+      v-model="objectJsonValue"
+      :hint="field.description || 'JSON formatında object giriniz'"
+      persistent-hint
+      :required="field.mandatory"
+      :readonly="readonly"
+      :disabled="disabled"
+      :error-messages="errorMessages"
+      variant="outlined"
+      rows="4"
+      clearable
+      density="comfortable"
+    ></v-textarea>
+  </div>
   
   <!-- Relation Field (Autocomplete) -->
   <v-autocomplete
@@ -460,8 +504,12 @@ const rules = computed(() => {
     clearable
     chips
     :closable-chips="field.isArray"
+    density="comfortable"
     @update:search="loadRelationOptions"
   >
+    <template v-slot:prepend-inner>
+      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
+    </template>
     <template #item="{ props: itemProps, item: itemData }">
       <v-list-item v-bind="itemProps" :subtitle="itemData.raw.subtitle"></v-list-item>
     </template>
@@ -487,7 +535,11 @@ const rules = computed(() => {
     clearable
     chips
     closable-chips
+    density="comfortable"
   >
+    <template v-slot:prepend-inner>
+      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
+    </template>
     <template #item="{ props, item }">
       <v-list-item v-bind="props" :subtitle="item.raw.subtitle"></v-list-item>
     </template>
@@ -513,7 +565,11 @@ const rules = computed(() => {
     clearable
     chips
     closable-chips
+    density="comfortable"
   >
+    <template v-slot:prepend-inner>
+      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
+    </template>
     <template #item="{ props, item }">
       <v-list-item v-bind="props" :subtitle="item.raw.subtitle"></v-list-item>
     </template>
@@ -529,7 +585,12 @@ const rules = computed(() => {
     readonly
     disabled
     variant="outlined"
-  ></v-text-field>
+    density="comfortable"
+  >
+    <template v-slot:prepend-inner>
+      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
+    </template>
+  </v-text-field>
   
   <!-- Unknown Field Type -->
   <v-alert

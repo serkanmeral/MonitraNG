@@ -1830,6 +1830,11 @@
         "title": {
           "create": "New Record",
           "edit": "Edit Record"
+        },
+        "keyboardShortcuts": "Keyboard Shortcuts: Enter (Save), Esc (Cancel)",
+        "validationSummary": {
+          "title": "Form Validation Error",
+          "message": "Please fix the errors in the form and try again."
         }
       },
       "deleteDialog": {
@@ -1844,7 +1849,9 @@
         "loadError": "An error occurred while loading the form",
         "dataLoadError": "An error occurred while loading data",
         "createError": "An error occurred while creating the record",
+        "createSuccess": "Record created successfully",
         "updateError": "An error occurred while updating the record",
+        "updateSuccess": "Record updated successfully",
         "deleteError": "An error occurred while deleting the record",
         "itemLoadError": "An error occurred while loading the record",
         "itemIdNotFound": "Record ID not found",

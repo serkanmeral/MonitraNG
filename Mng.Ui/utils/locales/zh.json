@@ -1845,6 +1845,11 @@
         "title": {
           "create": "新记录",
           "edit": "编辑记录"
+        },
+        "keyboardShortcuts": "键盘快捷键: Enter (保存), Esc (取消)",
+        "validationSummary": {
+          "title": "表单验证错误",
+          "message": "请修复表单中的错误并重试。"
         }
       },
       "deleteDialog": {
@@ -1859,7 +1864,9 @@
         "loadError": "加载表单时发生错误",
         "dataLoadError": "加载数据时发生错误",
         "createError": "创建记录时发生错误",
+        "createSuccess": "记录创建成功",
         "updateError": "更新记录时发生错误",
+        "updateSuccess": "记录更新成功",
         "deleteError": "删除记录时发生错误",
         "itemLoadError": "加载记录时发生错误",
         "itemIdNotFound": "未找到记录ID"

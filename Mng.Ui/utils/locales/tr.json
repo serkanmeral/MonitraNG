@@ -1858,6 +1858,11 @@
         "title": {
           "create": "Yeni Kayıt",
           "edit": "Kayıt Düzenle"
+        },
+        "keyboardShortcuts": "Klavye Kısayolları: Enter (Kaydet), Esc (İptal)",
+        "validationSummary": {
+          "title": "Form Doğrulama Hatası",
+          "message": "Lütfen formdaki hataları düzeltin ve tekrar deneyin."
         }
       },
       "deleteDialog": {
@@ -1872,7 +1877,9 @@
         "loadError": "Form yüklenirken bir hata oluştu",
         "dataLoadError": "Veri yüklenirken bir hata oluştu",
         "createError": "Kayıt oluşturulurken bir hata oluştu",
+        "createSuccess": "Kayıt başarıyla oluşturuldu",
         "updateError": "Kayıt güncellenirken bir hata oluştu",
+        "updateSuccess": "Kayıt başarıyla güncellendi",
         "deleteError": "Kayıt silinirken bir hata oluştu",
         "itemLoadError": "Kayıt yüklenirken bir hata oluştu",
         "itemIdNotFound": "Kayıt ID bulunamadı",

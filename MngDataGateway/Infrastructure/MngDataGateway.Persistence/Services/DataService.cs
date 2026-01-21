@@ -849,44 +849,118 @@ namespace MngDataGateway.Persistence.Services
                     schema,
                     databaseName);
 
+                // Build base pipeline (without pagination for count)
                 builder
                     .AddMatch(matchFilter)
                     .AddSearch(options.Search, relationSearchIds)  // Add search before expansion (pre-expansion search)
                     .AddRelationExpansion(options.Expand, maxDepth, 0, null)
                     .AddPersonExpansion(options.Expand)
-                    .AddProject(fields, options.ShowHistory)
-                    .AddSort(sortDefinition)
-                    .AddPagination(skip, limit);
+                    .AddProject(fields, options.ShowHistory);
 
-                var pipeline = builder.Build();
+                var basePipeline = builder.Build();
+
+                // Build data pipeline (with sort and pagination) - inside $facet
+                // $facet içindeki pipeline'lar bağımsız çalışır, bu yüzden basePipeline'ı her branch'te tekrar eklemeliyiz
+                var dataBranch = new List<BsonDocument>();
+                // Base pipeline'ı data branch'e ekle
+                foreach (var stage in basePipeline)
+                {
+                    dataBranch.Add(stage);
+                }
+                // Sonra sort ve pagination ekle
+                if (sortDefinition != null && sortDefinition.ElementCount > 0)
+                {
+                    dataBranch.Add(new BsonDocument("$sort", sortDefinition));
+                }
+                if (skip > 0)
+                {
+                    dataBranch.Add(new BsonDocument("$skip", skip));
+                }
+                if (limit > 0)
+                {
+                    dataBranch.Add(new BsonDocument("$limit", limit));
+                }
+
+                // Build count pipeline - inside $facet
+                // Base pipeline'ı count branch'e ekle
+                var countBranch = new List<BsonDocument>();
+                foreach (var stage in basePipeline)
+                {
+                    countBranch.Add(stage);
+                }
+                // Sonra count ekle
+                countBranch.Add(new BsonDocument("$count", "total"));
+
+                // Build $facet pipeline to get both data and count in one query
+                // Base pipeline'ı $facet'ten önce eklemek yerine, $facet'i direkt kullanıyoruz
+                // Çünkü $facet içindeki her branch bağımsız çalışır
+                var facetPipeline = new List<BsonDocument>();
+
+                // Add $facet stage with data and count branches (both include basePipeline)
+                var facetStage = new BsonDocument("$facet", new BsonDocument
+                {
+                    { "data", new BsonArray(dataBranch) },
+                    { "count", new BsonArray(countBranch) }
+                });
+                facetPipeline.Add(facetStage);
+
+                // Add $unwind to extract count from array
+                facetPipeline.Add(new BsonDocument("$unwind", new BsonDocument
+                {
+                    { "path", "$count" },
+                    { "preserveNullAndEmptyArrays", true }
+                }));
+
+                // Add $project to reshape output
+                facetPipeline.Add(new BsonDocument("$project", new BsonDocument
+                {
+                    { "data", 1 },
+                    { "total", new BsonDocument("$ifNull", new BsonArray { "$count.total", 0 }) }
+                }));
 
                 // Convert pipeline to JSON objects if showQuery is true
                 List<object>? pipelineJson = null;
                 if (options.ShowQuery)
                 {
-                    pipelineJson = pipeline.Select(stage =>
+                    pipelineJson = facetPipeline.Select(stage =>
                     {
                         var json = stage.ToJson();
                         return System.Text.Json.JsonSerializer.Deserialize<object>(json) ?? new object();
                     }).ToList();
                 }
 
-                // Execute aggregate
+                // Execute aggregate with $facet
                 var results = await _dataRepository.AggregateAsync(
                     databaseName,
                     schema.CollectionName,
-                    pipeline);
+                    facetPipeline);
 
-                // Convert to dictionary list
-                var data = results.ToDictionaryList();
+                // Parse $facet result
+                long totalCount = 0;
+                List<Dictionary<string, object>> data = new();
+
+                if (results != null && results.Any())
+                {
+                    var resultDoc = results.First();
+                    if (resultDoc.Contains("total"))
+                    {
+                        totalCount = resultDoc["total"].ToInt64();
+                    }
+                    if (resultDoc.Contains("data") && resultDoc["data"].IsBsonArray)
+                    {
+                        var dataArray = resultDoc["data"].AsBsonArray;
+                        data = dataArray.Select(d => d.AsBsonDocument.ToDictionary()).ToList();
+                    }
+                }
 
                 _logger.LogDebug(
-                    "Query executed on dataset {DatasetName}, returned {Count} documents",
-                    datasetName, data.Count);
+                    "Query executed on dataset {DatasetName}, returned {Count} documents, total: {TotalCount}",
+                    datasetName, data.Count, totalCount);
 
                 return new QueryResultDto
                 {
                     Data = data,
+                    TotalCount = totalCount,
                     Query = pipelineJson
                 };
             }

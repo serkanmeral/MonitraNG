@@ -129,6 +129,10 @@ services:
       - MngKeeperSettings__Notifier__BaseUrl=http://mngnotifier:5070
       - MngKeeperSettings__Notifier__ApiVersion=v1
       
+      # License Configuration
+      - MngKeeperSettings__License__MasterKey=your-secure-master-key-change-in-production-min-32-chars
+      - MngKeeperSettings__License__DefaultTrialDays=15
+      
     networks:
       - mng_common_mng_network
     
