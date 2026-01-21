@@ -1621,8 +1621,117 @@
             "visible": "مرئي",
             "sortable": "قابل للفرز",
             "filterable": "قابل للتصفية",
+            "displayField": "حقل العرض",
             "order": "الترتيب"
+          },
+          "displayFieldPlaceholder": "اختر الحقل للعرض",
+          "displayFieldHint": "يجب تحميل مجموعة البيانات المرتبطة لإظهار خيارات الحقل",
+          "displayFieldObjectHint": "أدخل اسم الحقل (مثال: name, title)",
+          "actions": {
+            "settings": "الإعدادات"
           }
+        },
+        "modal": {
+          "title": "إعدادات العمود",
+          "fieldName": "اسم الحقل",
+          "visible": "مرئي",
+          "sortable": "قابل للفرز",
+          "filterable": "قابل للتصفية",
+          "order": "الترتيب",
+          "displayField": "حقل العرض",
+          "displayFieldPlaceholder": "اختر الحقل للعرض",
+          "displayFieldHint": "يجب تحميل مجموعة البيانات المرتبطة لإظهار خيارات الحقل",
+          "displayFieldObjectHint": "أدخل اسم الحقل (مثال: name, title)",
+          "arrayDisplay": {
+            "title": "نمط عرض المصفوفة",
+            "style": "نمط العرض",
+            "separator": "الفاصل",
+            "separatorPlaceholder": "مثال: |, -, •",
+            "styles": {
+              "chip": "Chip (افتراضي)",
+              "badge": "Badge",
+              "pill": "Pill (مدور)",
+              "outlined": "Outlined (محدد)",
+              "textSeparator": "فاصل نصي",
+              "commaSeparated": "مفصول بفواصل",
+              "list": "قائمة (عمودي)",
+              "tag": "Tag"
+            }
+          },
+          "formatting": {
+            "title": "التنسيق",
+            "type": "نوع التنسيق",
+            "types": {
+              "none": "لا شيء",
+              "regex": "Regex (تعبير منتظم)",
+              "number": "رقم",
+              "date": "تاريخ",
+              "currency": "عملة",
+              "textTransform": "تحويل النص",
+              "color": "لون",
+              "conditionalColor": "لون شرطي"
+            },
+            "regexPattern": "نمط Regex",
+            "regexPatternPlaceholder": "مثال: /pattern/g",
+            "regexReplacement": "نص الاستبدال",
+            "regexReplacementPlaceholder": "النص المراد استبداله",
+            "decimalPlaces": "المنازل العشرية",
+            "thousandSeparator": "فاصل الآلاف",
+            "currencySymbol": "رمز العملة",
+            "currencySymbolPlaceholder": "مثال: ₺, $, €",
+            "dateFormat": "تنسيق التاريخ",
+            "showTime": "إظهار الوقت",
+            "timeFormat": "تنسيق الوقت",
+            "timeFormats": {
+              "hhmm": "ساعة:دقيقة (HH:mm)",
+              "hhmmss": "ساعة:دقيقة:ثانية (HH:mm:ss)"
+            },
+            "textTransform": "تحويل النص",
+            "textTransformTypes": {
+              "uppercase": "أحرف كبيرة",
+              "lowercase": "أحرف صغيرة",
+              "capitalize": "أول حرف كبير"
+            },
+            "textColor": "لون النص",
+            "backgroundColor": "لون الخلفية",
+            "customTextColor": "لون نص مخصص",
+            "customBackgroundColor": "لون خلفية مخصص",
+            "customColorPlaceholder": "#FF0000 أو rgb(255,0,0)",
+            "defaultTextColor": "لون النص الافتراضي",
+            "defaultBackgroundColor": "لون الخلفية الافتراضي",
+            "colors": {
+              "primary": "Primary",
+              "secondary": "Secondary",
+              "success": "Success (أخضر)",
+              "error": "Error (أحمر)",
+              "warning": "Warning (أصفر)",
+              "info": "Info (أزرق)",
+              "custom": "لون مخصص"
+            },
+            "conditions": {
+              "title": "الشروط",
+              "field": "الحقل",
+              "operator": "العامل",
+              "value": "القيمة",
+              "add": "إضافة شرط",
+              "default": "الألوان الافتراضية"
+            },
+            "operators": {
+              "eq": "يساوي (=)",
+              "ne": "لا يساوي (≠)",
+              "gt": "أكبر من (>)",
+              "gte": "أكبر من أو يساوي (≥)",
+              "lt": "أصغر من (<)",
+              "lte": "أصغر من أو يساوي (≤)",
+              "contains": "يحتوي على",
+              "startsWith": "يبدأ بـ",
+              "endsWith": "ينتهي بـ",
+              "in": "في",
+              "notIn": "ليس في"
+            }
+          },
+          "cancel": "إلغاء",
+          "save": "حفظ"
         },
         "defaultSortBy": {
           "label": "الفرز الافتراضي (الحقل)",
@@ -1692,6 +1801,7 @@
         "createSuccess": "تم إنشاء النموذج بنجاح!",
         "updateSuccess": "تم تحديث النموذج بنجاح!",
         "saveError": "حدث خطأ أثناء حفظ النموذج",
+        "validationError": "فشل التحقق من النموذج. يرجى ملء جميع الحقول المطلوبة.",
         "duplicateCode": "كود النموذج هذا مستخدم بالفعل. يرجى اختيار كود مختلف."
       },
       "warning": "تحذير: يلزم إذن المدير أو المسؤول للوصول إلى هذه الصفحة."

@@ -1595,8 +1595,117 @@
             "visible": "Visible",
             "sortable": "Sortable",
             "filterable": "Filterable",
+            "displayField": "Display Field",
             "order": "Order"
+          },
+          "displayFieldPlaceholder": "Select field to display",
+          "displayFieldHint": "Related dataset must be loaded to show field options",
+          "displayFieldObjectHint": "Enter field name (e.g., name, title)",
+          "actions": {
+            "settings": "Settings"
           }
+        },
+        "modal": {
+          "title": "Column Settings",
+          "fieldName": "Field Name",
+          "visible": "Visible",
+          "sortable": "Sortable",
+          "filterable": "Filterable",
+          "order": "Order",
+          "displayField": "Display Field",
+          "displayFieldPlaceholder": "Select field to display",
+          "displayFieldHint": "Related dataset must be loaded to show field options",
+          "displayFieldObjectHint": "Enter field name (e.g., name, title)",
+          "arrayDisplay": {
+            "title": "Array Display Style",
+            "style": "Display Style",
+            "separator": "Separator",
+            "separatorPlaceholder": "E.g: |, -, •",
+            "styles": {
+              "chip": "Chip (Default)",
+              "badge": "Badge",
+              "pill": "Pill (Rounded)",
+              "outlined": "Outlined (Bordered)",
+              "textSeparator": "Text Separator",
+              "commaSeparated": "Comma Separated",
+              "list": "List (Vertical)",
+              "tag": "Tag"
+            }
+          },
+          "formatting": {
+            "title": "Formatting",
+            "type": "Format Type",
+            "types": {
+              "none": "None",
+              "regex": "Regex (Regular Expression)",
+              "number": "Number",
+              "date": "Date",
+              "currency": "Currency",
+              "textTransform": "Text Transform",
+              "color": "Color",
+              "conditionalColor": "Conditional Color"
+            },
+            "regexPattern": "Regex Pattern",
+            "regexPatternPlaceholder": "E.g: /pattern/g",
+            "regexReplacement": "Replacement Text",
+            "regexReplacementPlaceholder": "Text to replace",
+            "decimalPlaces": "Decimal Places",
+            "thousandSeparator": "Thousand Separator",
+            "currencySymbol": "Currency Symbol",
+            "currencySymbolPlaceholder": "E.g: ₺, $, €",
+            "dateFormat": "Date Format",
+            "showTime": "Show Time",
+            "timeFormat": "Time Format",
+            "timeFormats": {
+              "hhmm": "Hour:Minute (HH:mm)",
+              "hhmmss": "Hour:Minute:Second (HH:mm:ss)"
+            },
+            "textTransform": "Text Transform",
+            "textTransformTypes": {
+              "uppercase": "Uppercase",
+              "lowercase": "Lowercase",
+              "capitalize": "Capitalize"
+            },
+            "textColor": "Text Color",
+            "backgroundColor": "Background Color",
+            "customTextColor": "Custom Text Color",
+            "customBackgroundColor": "Custom Background Color",
+            "customColorPlaceholder": "#FF0000 or rgb(255,0,0)",
+            "defaultTextColor": "Default Text Color",
+            "defaultBackgroundColor": "Default Background Color",
+            "colors": {
+              "primary": "Primary",
+              "secondary": "Secondary",
+              "success": "Success (Green)",
+              "error": "Error (Red)",
+              "warning": "Warning (Yellow)",
+              "info": "Info (Blue)",
+              "custom": "Custom Color"
+            },
+            "conditions": {
+              "title": "Conditions",
+              "field": "Field",
+              "operator": "Operator",
+              "value": "Value",
+              "add": "Add Condition",
+              "default": "Default Colors"
+            },
+            "operators": {
+              "eq": "Equals (=)",
+              "ne": "Not Equals (≠)",
+              "gt": "Greater Than (>)",
+              "gte": "Greater Than or Equal (≥)",
+              "lt": "Less Than (<)",
+              "lte": "Less Than or Equal (≤)",
+              "contains": "Contains",
+              "startsWith": "Starts With",
+              "endsWith": "Ends With",
+              "in": "In",
+              "notIn": "Not In"
+            }
+          },
+          "cancel": "Cancel",
+          "save": "Save"
         },
         "defaultSortBy": {
           "label": "Default Sort (Field)",
@@ -1659,6 +1768,13 @@
         "create": "Create",
         "update": "Update"
       },
+      "locale": {
+        "title": "Language Support",
+        "description": "This button translates all field labels for this form ({formCode}) to all supported languages and updates locale files.",
+        "buttons": {
+          "updateLocales": "Update Locale Files"
+        }
+      },
       "messages": {
         "loading": "Loading form...",
         "notFound": "Form not found",
@@ -1666,6 +1782,7 @@
         "createSuccess": "Form created successfully!",
         "updateSuccess": "Form updated successfully!",
         "saveError": "An error occurred while saving the form",
+        "validationError": "Form validation failed. Please fill in all required fields.",
         "duplicateCode": "This form code is already in use. Please choose a different code."
       },
       "warning": "Warning: Manager or admin permission is required to access this page."
@@ -1681,7 +1798,9 @@
         "save": "Save",
         "update": "Update",
         "cancel": "Cancel",
-        "close": "Close"
+        "close": "Close",
+        "exportJSON": "Export as JSON",
+        "exportCSV": "Export as CSV"
       },
       "search": {
         "label": "Search...",
@@ -1698,7 +1817,9 @@
         },
         "pagination": {
           "total": "Total",
-          "records": "records"
+          "records": "records",
+          "page": "Page",
+          "itemsPerPage": "Items per page:"
         }
       },
       "empty": {
@@ -1726,7 +1847,8 @@
         "updateError": "An error occurred while updating the record",
         "deleteError": "An error occurred while deleting the record",
         "itemLoadError": "An error occurred while loading the record",
-        "itemIdNotFound": "Record ID not found"
+        "itemIdNotFound": "Record ID not found",
+        "exportError": "An error occurred while exporting data"
       },
       "cellFormat": {
         "yes": "Yes",

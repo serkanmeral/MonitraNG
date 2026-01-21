@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, nextTick } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DynamicFormField from '@/components/apps/automated-forms/DynamicFormField.vue';
 import { useAutomatedFormsStore } from '@/stores/apps/automatedForms';
@@ -9,7 +9,8 @@ import { useGroupStore } from '@/stores/apps/group';
 import { useAuthStore } from '@/stores/auth';
 import { useLocaleStore } from '@/stores/locale';
 import { fetchFromDataGateway } from '@/services/apiService';
-import { FileCodeIcon, PlusIcon, RefreshIcon, EditIcon, TrashIcon, EyeIcon, XIcon, CheckIcon } from 'vue-tabler-icons';
+import { FileCodeIcon, PlusIcon, RefreshIcon, EditIcon, TrashIcon, EyeIcon, XIcon, CheckIcon, DownloadIcon } from 'vue-tabler-icons';
+import { useFieldLabel } from '@/composables/useFieldLabel';
 
 // Get i18n instance for legacy mode
 const nuxtApp = useNuxtApp();
@@ -32,6 +33,7 @@ const userStore = useUserStore();
 const groupStore = useGroupStore();
 const authStore = useAuthStore();
 const localeStore = useLocaleStore();
+const { getFieldLabel } = useFieldLabel();
 
 const formCode = computed(() => route.params.formCode as string);
 
@@ -47,7 +49,7 @@ const selectedItems = ref<any[]>([]);
 const totalCount = ref(0);
 const tableOptions = ref({
   page: 1,
-  itemsPerPage: 20,
+  itemsPerPage: 10,
   sortBy: [] as Array<{ key: string; order: 'asc' | 'desc' }>,
 });
 
@@ -111,12 +113,9 @@ const loadForm = async () => {
       return;
     }
     form.value = loadedForm;
-    console.log('[AutomatedFormView] Loaded form:', loadedForm);
-    console.log('[AutomatedFormView] Dataset name:', loadedForm.datasetName);
     
     // Load dataset
     const loadedDataset = await datasetStore.fetchDatasetByName(loadedForm.datasetName);
-    console.log('[AutomatedFormView] Loaded dataset:', loadedDataset);
     if (!loadedDataset) {
       errorMessage.value = t('automated-forms.view.messages.loadError');
       return;
@@ -125,8 +124,12 @@ const loadForm = async () => {
     
     // Load data items
     await fetchDataItems();
+    
+    // Mark initial load as complete
+    isInitialLoad.value = false;
   } catch (error: any) {
     errorMessage.value = error.message || t('automated-forms.view.messages.loadError');
+    isInitialLoad.value = false;
   } finally {
     loading.value = false;
   }
@@ -218,7 +221,7 @@ const fetchDataItems = async () => {
   loading.value = true;
   try {
     const pageNumber = tableOptions.value.page || 1;
-    const pageSize = tableOptions.value.itemsPerPage || 20;
+    const pageSize = tableOptions.value.itemsPerPage || 10;
     
     // Backend uses skip and limit, not pageNumber and pageSize
     const skip = (pageNumber - 1) * pageSize;
@@ -251,26 +254,49 @@ const fetchDataItems = async () => {
     const response = await fetchFromDataGateway(url, 'GET');
     console.log('[AutomatedFormView] Response:', response);
     
-    // API response format: PagedResultDto or array
+    // API response format: Always array (QueryResultDto.Data is returned as array by controller)
     let itemsArray: any[] = [];
-    let totalCountValue = 0;
     
     if (Array.isArray(response)) {
-      // Direct array response
       itemsArray = response;
-      totalCountValue = response.length;
+    } else if (response?.data && Array.isArray(response.data)) {
+      // If wrapped in data property
+      itemsArray = response.data;
+    } else if (response?.items && Array.isArray(response.items)) {
+      // If wrapped in items property
+      itemsArray = response.items;
+    } else if (response?.Items && Array.isArray(response.Items)) {
+      // If wrapped in Items property (capital I)
+      itemsArray = response.Items;
     } else {
-      // PagedResultDto format
-      itemsArray = response.items || response.Items || [];
-      totalCountValue = response.totalCount ?? response.TotalCount ?? itemsArray.length;
+      itemsArray = [];
     }
     
-    console.log('[AutomatedFormView] Parsed items:', itemsArray.length, 'Total:', totalCountValue);
+    // Get totalCount from response header (added by server route)
+    // Check if response has _totalCount property (added by apiService)
+    if (response && typeof response === 'object' && '_totalCount' in response) {
+      totalCount.value = (response as any)._totalCount;
+    } else {
+      // Fallback: estimate based on current page data
+      const currentItemCount = itemsArray.length;
+      const isLastPage = currentItemCount < pageSize;
+      
+      if (isLastPage) {
+        // Last page: we can calculate exact totalCount
+        totalCount.value = (pageNumber - 1) * pageSize + currentItemCount;
+      } else {
+        // Not last page: we estimate minimum totalCount
+        totalCount.value = pageNumber * pageSize + 1;
+      }
+    }
+    
+    console.log('[AutomatedFormView] Parsed items:', itemsArray.length, 'Total:', totalCount.value, 'Page:', pageNumber);
     dataItems.value = itemsArray;
-    totalCount.value = totalCountValue;
   } catch (error: any) {
     console.error('Data items yüklenirken hata:', error);
     errorMessage.value = error.message || t('automated-forms.view.messages.dataLoadError');
+    dataItems.value = [];
+    totalCount.value = 0;
   } finally {
     loading.value = false;
   }
@@ -297,7 +323,7 @@ const tableHeaders = computed(() => {
       const field = fields.find(f => f.name === colConfig.fieldName);
       if (field) {
         headers.push({
-          title: field.title || field.name,
+          title: getFieldLabel(field.name, field, form.value, form.value?.datasetName),
           key: field.name,
           sortable: colConfig.sortable ?? true,
           filterable: colConfig.filterable ?? false, // For future use
@@ -308,7 +334,7 @@ const tableHeaders = computed(() => {
     // Fallback: show all fields if no column config
     fields.forEach(field => {
       headers.push({
-        title: field.title || field.name,
+        title: getFieldLabel(field.name, field, form.value, form.value?.datasetName),
         key: field.name,
         sortable: true,
         filterable: false,
@@ -331,12 +357,107 @@ const tableHeaders = computed(() => {
 // Server items length
 const serverItemsLength = computed(() => totalCount.value);
 
-// Watch table options
-watch(
-  () => [tableOptions.value.page, tableOptions.value.itemsPerPage, tableOptions.value.sortBy],
-  () => {
-    fetchDataItems();
+// Computed properties for pagination
+const currentPage = computed({
+  get: () => tableOptions.value.page,
+  set: (value) => {
+    tableOptions.value.page = value;
   }
+});
+
+const itemsPerPage = computed({
+  get: () => tableOptions.value.itemsPerPage,
+  set: (value) => {
+    tableOptions.value.itemsPerPage = value;
+    tableOptions.value.page = 1; // Reset to first page when itemsPerPage changes
+  }
+});
+
+const totalPages = computed(() => {
+  if (totalCount.value === 0) return 1;
+  return Math.ceil(totalCount.value / tableOptions.value.itemsPerPage);
+});
+
+// Flag to prevent handler from triggering on initial load
+const isInitialLoad = ref(true);
+
+// Handle table options update (when user changes page or items per page via v-data-table)
+const handleTableOptionsUpdate = (newOptions: any) => {
+  // Update tableOptions with new values
+  tableOptions.value = {
+    ...tableOptions.value,
+    ...newOptions,
+  };
+  
+  // Skip initial load (handled in onMounted)
+  if (isInitialLoad.value) {
+    return;
+  }
+  
+  // Fetch data items (will use updated tableOptions.value)
+  fetchDataItems();
+};
+
+// Watch tableOptions.itemsPerPage for changes (when user changes items per page via custom select)
+watch(
+  () => tableOptions.value.itemsPerPage,
+  async (newItemsPerPage, oldItemsPerPage) => {
+    // Skip initial load (handled in onMounted)
+    if (isInitialLoad.value) {
+      return;
+    }
+    
+    // Only fetch if itemsPerPage actually changed
+    if (newItemsPerPage !== oldItemsPerPage && oldItemsPerPage !== undefined) {
+      // Wait for next tick to ensure tableOptions.value is fully updated
+      await nextTick();
+      // Reset to first page when items per page changes
+      tableOptions.value.page = 1;
+      // Wait again after page reset
+      await nextTick();
+      fetchDataItems();
+    }
+  }
+);
+
+// Watch tableOptions.page for changes (when user changes page via pagination)
+watch(
+  () => tableOptions.value.page,
+  async (newPage, oldPage) => {
+    // Skip initial load (handled in onMounted)
+    if (isInitialLoad.value) {
+      return;
+    }
+    
+    // Only fetch if page actually changed
+    if (newPage !== oldPage && oldPage !== undefined) {
+      // Wait for next tick to ensure tableOptions.value is fully updated
+      await nextTick();
+      fetchDataItems();
+    }
+  }
+);
+
+// Watch tableOptions.sortBy for changes (when user changes sorting)
+watch(
+  () => tableOptions.value.sortBy,
+  async (newSortBy, oldSortBy) => {
+    // Skip initial load (handled in onMounted)
+    if (isInitialLoad.value) {
+      return;
+    }
+    
+    // Only fetch if sortBy actually changed
+    if (JSON.stringify(newSortBy) !== JSON.stringify(oldSortBy) && oldSortBy !== undefined) {
+      // Reset to first page when sorting changes
+      if (tableOptions.value.page !== 1) {
+        tableOptions.value.page = 1;
+      }
+      await nextTick();
+      fetchDataItems();
+    }
+  },
+  { deep: true }
 );
 
 // Watch filters with debounce
@@ -348,6 +469,9 @@ watch(
     if (tableOptions.value.page !== 1) {
       tableOptions.value.page = 1;
     }
+    
+    // Reset totalCount when filters change
+    totalCount.value = 0;
     
     // Debounce filter input (500ms)
     if (filterTimeout) {
@@ -369,6 +493,9 @@ watch(
     if (tableOptions.value.page !== 1) {
       tableOptions.value.page = 1;
     }
+    
+    // Reset totalCount when search changes
+    totalCount.value = 0;
     
     // Debounce search input (500ms)
     if (searchTimeout) {
@@ -476,7 +603,59 @@ const editItem = async (item: any) => {
     dataset.value.fields.forEach(field => {
       // Check if field exists in itemData
       if (itemData[field.name] !== undefined) {
-        data[field.name] = itemData[field.name];
+        let fieldValue = itemData[field.name];
+        
+        // Handle relation fields: convert expanded objects to __dataId
+        if (field.fieldType === 'relation') {
+          if (field.isArray && Array.isArray(fieldValue)) {
+            // Array relation: convert each object to __dataId
+            fieldValue = fieldValue.map((item: any) => {
+              if (typeof item === 'object' && item !== null) {
+                return item.__dataId || item.id || item._id || item;
+              }
+              return item;
+            });
+          } else if (!field.isArray && typeof fieldValue === 'object' && fieldValue !== null) {
+            // Single relation: convert object to __dataId
+            fieldValue = fieldValue.__dataId || fieldValue.id || fieldValue._id || fieldValue;
+          }
+        }
+        
+        // Handle person fields: convert expanded objects to user ID
+        // Priority: id (matches userStore.users[].id) > userId > __dataId > _id
+        if (field.fieldType === 'persons') {
+          if (field.isArray && Array.isArray(fieldValue)) {
+            // Array person: convert each object to user ID
+            fieldValue = fieldValue.map((item: any) => {
+              if (typeof item === 'object' && item !== null) {
+                return item.id || item.userId || item.__dataId || item._id || item;
+              }
+              return item;
+            });
+          } else if (!field.isArray && typeof fieldValue === 'object' && fieldValue !== null) {
+            // Single person: convert object to user ID
+            fieldValue = fieldValue.id || fieldValue.userId || fieldValue.__dataId || fieldValue._id || fieldValue;
+          }
+        }
+        
+        // Handle personGroup fields: convert expanded objects to group ID
+        // Priority: id (matches groupStore.groups[].id) > groupId > __dataId > _id
+        if (field.fieldType === 'personGroups') {
+          if (field.isArray && Array.isArray(fieldValue)) {
+            // Array personGroup: convert each object to group ID
+            fieldValue = fieldValue.map((item: any) => {
+              if (typeof item === 'object' && item !== null) {
+                return item.id || item.groupId || item.__dataId || item._id || item;
+              }
+              return item;
+            });
+          } else if (!field.isArray && typeof fieldValue === 'object' && fieldValue !== null) {
+            // Single personGroup: convert object to group ID
+            fieldValue = fieldValue.id || fieldValue.groupId || fieldValue.__dataId || fieldValue._id || fieldValue;
+          }
+        }
+        
+        data[field.name] = fieldValue;
       } else if (field.defaultValue !== undefined && field.defaultValue !== null) {
         data[field.name] = field.defaultValue;
       } else if (field.fieldType === 'bool') {
@@ -680,14 +859,122 @@ const getFieldColumnSpan = (fieldName: string) => {
 };
 
 // Format cell value
-const formatCellValue = (value: any, fieldType: string) => {
+const formatCellValue = (value: any, fieldName: string) => {
   if (value === null || value === undefined) return '-';
+  
+  // Get field definition
+  const field = dataset.value?.fields?.find(f => f.name === fieldName);
+  const fieldType = field?.fieldType || 'text';
+  
+  // CRITICAL: Check if value is already a string "[object Object]" - this means it was incorrectly stringified
+  if (typeof value === 'string' && value === '[object Object]') {
+    // This shouldn't happen, but if it does, try to get the actual object
+    // This is a fallback for edge cases
+    return value;
+  }
+  
+  // Check if there's a displayField configured for this column
+  const columnConfig = form.value?.listConfig?.columns?.find(c => c.fieldName === fieldName);
+  const displayField = columnConfig?.displayField;
+  
+  // CRITICAL: Check for arrays FIRST (before type-specific checks)
+  // Arrays are handled separately in template with chips, but we still need to handle them here
+  // for cases where they're not displayed as chips
+  if (Array.isArray(value)) {
+    // For array of objects, handle based on field type
+    if (value.length > 0 && typeof value[0] === 'object') {
+      if (fieldType === 'person' || fieldType === 'persons') {
+        // For person arrays, show DisplayName (firstName + lastName combination)
+        return value.map(v => {
+          if (typeof v === 'object' && v !== null) {
+            // Try DisplayName first
+            if (v.DisplayName !== undefined && v.DisplayName !== null && v.DisplayName !== '') {
+              return String(v.DisplayName);
+            }
+            if (v.displayName !== undefined && v.displayName !== null && v.displayName !== '') {
+              return String(v.displayName);
+            }
+            // Build from firstName + lastName
+            const firstName = v.firstName || v.FirstName || '';
+            const lastName = v.lastName || v.LastName || '';
+            if (firstName || lastName) {
+              return `${firstName} ${lastName}`.trim();
+            }
+            // Fallback to username, email, or __dataId
+            return v.username || v.userName || v.Username || v.email || v.Email || v.__dataId || JSON.stringify(v);
+          }
+          return String(v);
+        }).join(', ');
+      } else if (fieldType === 'personGroup' || fieldType === 'personGroups') {
+        // For personGroup arrays, show group name
+        return value.map(v => v.Name || v.name || v.groupName || v.__dataId || JSON.stringify(v)).join(', ');
+      } else if (displayField) {
+        // For other arrays with displayField
+        return value.map(v => v[displayField] || JSON.stringify(v)).join(', ');
+      }
+    }
+    return value.join(', ');
+  }
+  
+  // Handle object/relation fields with displayField
+  if ((fieldType === 'object' || fieldType === 'relation') && displayField && typeof value === 'object' && value !== null) {
+    // If value is an object and displayField is specified, try to get that field
+    if (value[displayField] !== undefined) {
+      return String(value[displayField]);
+    }
+    // If displayField not found in object, fall back to JSON stringify
+    return JSON.stringify(value);
+  }
   
   if (fieldType === 'bool') {
     return value ? t('automated-forms.view.cellFormat.yes') : t('automated-forms.view.cellFormat.no');
   }
   
   if (fieldType === 'datetime') {
+    // Check if there's custom formatting configured for this column
+    const columnConfig = form.value?.listConfig?.columns?.find(c => c.fieldName === fieldName);
+    if (columnConfig?.format && columnConfig.format.type === 'date') {
+      // Use custom date formatting
+      try {
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return value;
+        
+        // Simple date formatting
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+        const monthNamesShort = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+        
+        let formatted = columnConfig.format.dateFormat
+          .replace('DD', day)
+          .replace('MM', month)
+          .replace('YYYY', String(year))
+          .replace('MMM', monthNamesShort[date.getMonth()])
+          .replace('MMMM', monthNames[date.getMonth()]);
+        
+        // Add time if showTime is enabled
+        if (columnConfig.format.showTime) {
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          const seconds = String(date.getSeconds()).padStart(2, '0');
+          
+          const timeFormat = columnConfig.format.timeFormat || 'HH:mm';
+          let timeString = timeFormat
+            .replace('HH', hours)
+            .replace('mm', minutes)
+            .replace('ss', seconds);
+          
+          formatted = `${formatted} ${timeString}`;
+        }
+        
+        return formatted;
+      } catch (e) {
+        // Fall back to default formatting if custom formatting fails
+      }
+    }
+    
+    // Default datetime formatting (if no custom format configured)
     try {
       const locale = localeStore.locale || 'tr';
       const localeMap: Record<string, string> = { tr: 'tr-TR', en: 'en-US', fr: 'fr-FR', ar: 'ar-SA', zh: 'zh-CN' };
@@ -697,15 +984,819 @@ const formatCellValue = (value: any, fieldType: string) => {
     }
   }
   
+  // CRITICAL: Check person and personGroup types BEFORE object type
+  // Otherwise object type will catch them and return JSON.stringify
+  // Support both singular (person, personGroup) and plural (persons, personGroups) field types
+  if (fieldType === 'person' || fieldType === 'persons') {
+    // For person fields, show DisplayName (firstName + lastName combination)
+    // Check if value is an object (expanded person data)
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      // PRIORITY 1: Try DisplayName first (if it exists as computed property)
+      if (value.DisplayName !== undefined && value.DisplayName !== null && value.DisplayName !== '') {
+        return String(value.DisplayName);
+      }
+      if (value.displayName !== undefined && value.displayName !== null && value.displayName !== '') {
+        return String(value.displayName);
+      }
+      
+      // PRIORITY 2: Build DisplayName from firstName + lastName
+      const firstName = value.firstName || value.FirstName || '';
+      const lastName = value.lastName || value.LastName || '';
+      if (firstName || lastName) {
+        return `${firstName} ${lastName}`.trim();
+      }
+      
+      // PRIORITY 3: Fallback to username if available
+      if (value.username !== undefined && value.username !== null && value.username !== '') {
+        return String(value.username);
+      }
+      if (value.userName !== undefined && value.userName !== null && value.userName !== '') {
+        return String(value.userName);
+      }
+      if (value.Username !== undefined && value.Username !== null && value.Username !== '') {
+        return String(value.Username);
+      }
+      
+      // PRIORITY 4: Fallback to email
+      if (value.email !== undefined && value.email !== null && value.email !== '') {
+        return String(value.email);
+      }
+      if (value.Email !== undefined && value.Email !== null && value.Email !== '') {
+        return String(value.Email);
+      }
+      
+      // Last fallback: __dataId
+      if (value.__dataId) {
+        return String(value.__dataId);
+      }
+      
+      return JSON.stringify(value);
+    }
+    // If not an object or is array, return as string (arrays handled separately)
+    if (Array.isArray(value)) {
+      return value.join(', ');
+    }
+    // If value is a string, return as is (might be ID if expansion not done)
+    if (typeof value === 'string') {
+      return value;
+    }
+    // For other types, convert to string safely
+    return String(value);
+  }
+  
+  if (fieldType === 'personGroup' || fieldType === 'personGroups') {
+    // For personGroup fields, show group name
+    // Check if value is an object (expanded group data)
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      // Try Name first (case-sensitive, then case-insensitive)
+      if (value.Name !== undefined && value.Name !== null) {
+        return String(value.Name);
+      }
+      if (value.name !== undefined && value.name !== null) {
+        return String(value.name);
+      }
+      // Fallback: try common field names
+      const commonFields = ['GroupName', 'groupName', 'title', 'label'];
+      for (const commonField of commonFields) {
+        if (value[commonField] !== undefined && value[commonField] !== null) {
+          return String(value[commonField]);
+        }
+      }
+      // Last fallback: __dataId
+      if (value.__dataId) {
+        return String(value.__dataId);
+      }
+      // If still nothing found, return object keys for debugging
+      const keys = Object.keys(value);
+      if (keys.length > 0) {
+        // Return first available property value
+        return String(value[keys[0]]);
+      }
+      return JSON.stringify(value);
+    }
+    // If not an object or is array, return as string (arrays handled separately)
+    if (Array.isArray(value)) {
+      return value.join(', ');
+    }
+    // If value is a string, return as is (might be ID if expansion not done)
+    if (typeof value === 'string') {
+      return value;
+    }
+    // For other types, convert to string safely
+    return String(value);
+  }
+  
   if (fieldType === 'object') {
+    // If no displayField configured, show JSON
     return JSON.stringify(value);
   }
   
-  if (Array.isArray(value)) {
-    return value.join(', ');
+  if (fieldType === 'relation') {
+    // PRIORITY 1: Use displayField from listConfig.columns (for list display)
+    if (displayField && typeof value === 'object' && value !== null) {
+      if (value[displayField] !== undefined) {
+        return String(value[displayField]);
+      }
+    }
+    
+    // PRIORITY 2: Try to use displayField from formConfig if available
+    const relationConfig = form.value?.formConfig?.relationFieldConfig?.[fieldName];
+    if (relationConfig?.displayField && typeof value === 'object' && value !== null) {
+      if (value[relationConfig.displayField] !== undefined) {
+        return String(value[relationConfig.displayField]);
+      }
+    }
+    
+    // Fallback: try common field names (name, title, label)
+    if (typeof value === 'object' && value !== null) {
+      const commonFields = ['name', 'title', 'label', 'text'];
+      for (const commonField of commonFields) {
+        if (value[commonField] !== undefined) {
+          return String(value[commonField]);
+        }
+      }
+    }
+    
+    // Last fallback: try __dataId or show as object
+    if (value?.__dataId) {
+      return value.__dataId;
+    }
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
   }
   
-  return String(value);
+  // Convert to string first
+  let stringValue = String(value);
+  
+  // Apply formatting if configured (after all type-specific formatting)
+  // Note: columnConfig is already defined above, reuse it
+  if (columnConfig?.format && columnConfig.format.type && columnConfig.format.type !== 'none') {
+    stringValue = applyFormatting(stringValue, columnConfig.format);
+  }
+  
+  return stringValue;
+};
+
+// Apply formatting to a value
+const applyFormatting = (value: string, format: any): string => {
+  if (!format || !format.type || format.type === 'none') {
+    return value;
+  }
+  
+  try {
+    switch (format.type) {
+      case 'regex':
+        if (format.pattern && format.replacement !== undefined) {
+          try {
+            // Try to parse as regex pattern (e.g., "/pattern/flags" or just "pattern")
+            let regex: RegExp;
+            if (format.pattern.startsWith('/') && format.pattern.lastIndexOf('/') > 0) {
+              // Full regex pattern: /pattern/flags
+              const lastSlash = format.pattern.lastIndexOf('/');
+              const pattern = format.pattern.substring(1, lastSlash);
+              const flags = format.pattern.substring(lastSlash + 1);
+              regex = new RegExp(pattern, flags);
+            } else {
+              // Simple pattern
+              regex = new RegExp(format.pattern, 'g');
+            }
+            return value.replace(regex, format.replacement || '');
+          } catch (e) {
+            console.error('Invalid regex pattern:', format.pattern, e);
+            return value;
+          }
+        }
+        return value;
+        
+      case 'number':
+        const numValue = parseFloat(value);
+        if (isNaN(numValue)) return value;
+        
+        let formatted = numValue.toFixed(format.decimalPlaces ?? 2);
+        
+        if (format.thousandSeparator) {
+          const parts = formatted.split('.');
+          parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+          formatted = parts.join('.');
+        }
+        
+        return formatted;
+        
+      case 'currency':
+        const currencyValue = parseFloat(value);
+        if (isNaN(currencyValue)) return value;
+        
+        let currencyFormatted = currencyValue.toFixed(format.decimalPlaces ?? 2);
+        
+        if (format.thousandSeparator) {
+          const parts = currencyFormatted.split('.');
+          parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+          currencyFormatted = parts.join('.');
+        }
+        
+        const symbol = format.currencySymbol || '₺';
+        return `${symbol} ${currencyFormatted}`;
+        
+      case 'date':
+        if (!format.dateFormat) return value;
+        
+        try {
+          const date = new Date(value);
+          if (isNaN(date.getTime())) return value;
+          
+          // Simple date formatting (can be enhanced with a library like date-fns)
+          const day = String(date.getDate()).padStart(2, '0');
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const year = date.getFullYear();
+          const monthNames = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+          const monthNamesShort = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+          
+          let formatted = format.dateFormat
+            .replace('DD', day)
+            .replace('MM', month)
+            .replace('YYYY', String(year))
+            .replace('MMM', monthNamesShort[date.getMonth()])
+            .replace('MMMM', monthNames[date.getMonth()]);
+          
+          // Add time if showTime is enabled
+          if (format.showTime) {
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            
+            const timeFormat = format.timeFormat || 'HH:mm';
+            let timeString = timeFormat
+              .replace('HH', hours)
+              .replace('mm', minutes)
+              .replace('ss', seconds);
+            
+            formatted = `${formatted} ${timeString}`;
+          }
+          
+          return formatted;
+        } catch (e) {
+          return value;
+        }
+        
+      case 'text-transform':
+        if (format.textTransform === 'uppercase') {
+          return value.toUpperCase();
+        } else if (format.textTransform === 'lowercase') {
+          return value.toLowerCase();
+        } else if (format.textTransform === 'capitalize') {
+          return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+        }
+        return value;
+        
+      case 'color':
+        // Simple color formatting - return value as is, color will be applied via style binding
+        return value;
+        
+      case 'conditional-color':
+        // Conditional color formatting - return value as is, color will be applied via style binding
+        return value;
+        
+      default:
+        return value;
+    }
+  } catch (error) {
+    console.error('Error applying formatting:', error);
+    return value;
+  }
+};
+
+// Check if field is an array relation field
+const isArrayRelationField = (fieldName: string): boolean => {
+  const field = dataset.value?.fields?.find(f => f.name === fieldName);
+  return field?.fieldType === 'relation' && field?.isArray === true;
+};
+
+// Check if field is an array person field
+const isArrayPersonField = (fieldName: string): boolean => {
+  const field = dataset.value?.fields?.find(f => f.name === fieldName);
+  return (field?.fieldType === 'person' || field?.fieldType === 'persons') && field?.isArray === true;
+};
+
+// Check if field is an array personGroup field
+const isArrayPersonGroupField = (fieldName: string): boolean => {
+  const field = dataset.value?.fields?.find(f => f.name === fieldName);
+  return (field?.fieldType === 'personGroup' || field?.fieldType === 'personGroups') && field?.isArray === true;
+};
+
+// Get array display style for a field
+const getArrayDisplayStyle = (fieldName: string): string => {
+  if (!form.value || !form.value.listConfig || !form.value.listConfig.columns) {
+    return 'chip'; // Default if form not loaded
+  }
+  const columnConfig = form.value.listConfig.columns.find(c => c.fieldName === fieldName);
+  if (!columnConfig) {
+    return 'chip'; // Default if column config not found
+  }
+  return columnConfig.arrayDisplayStyle || 'chip';
+};
+
+// Get array separator for text-separator style
+const getArraySeparator = (fieldName: string): string => {
+  if (!form.value || !form.value.listConfig || !form.value.listConfig.columns) {
+    return ' | '; // Default if form not loaded
+  }
+  const columnConfig = form.value.listConfig.columns.find(c => c.fieldName === fieldName);
+  if (!columnConfig) {
+    return ' | '; // Default if column config not found
+  }
+  return columnConfig.arraySeparator || ' | ';
+};
+
+// Get cell style based on color formatting
+const getCellStyle = (value: any, fieldName: string, rowData?: any): Record<string, string> => {
+  if (!form.value || !form.value.listConfig || !form.value.listConfig.columns) {
+    return {};
+  }
+  
+  const columnConfig = form.value.listConfig.columns.find(c => c.fieldName === fieldName);
+  if (!columnConfig || !columnConfig.format) {
+    return {};
+  }
+  
+  const format = columnConfig.format;
+  const style: Record<string, string> = {};
+  
+  // Simple color formatting
+  if (format.type === 'color') {
+    if (format.textColor) {
+      if (format.textColor === 'custom' && format.customTextColor) {
+        // Custom color from customTextColor field
+        style.color = format.customTextColor;
+      } else if (format.textColor.startsWith('#') || format.textColor.startsWith('rgb')) {
+        // Direct color value (hex or rgb)
+        style.color = format.textColor;
+      } else {
+        // Vuetify color name - try to use theme color
+        const vuetifyColors: Record<string, string> = {
+          primary: 'rgb(var(--v-theme-primary))',
+          secondary: 'rgb(var(--v-theme-secondary))',
+          success: 'rgb(var(--v-theme-success))',
+          error: 'rgb(var(--v-theme-error))',
+          warning: 'rgb(var(--v-theme-warning))',
+          info: 'rgb(var(--v-theme-info))',
+        };
+        style.color = vuetifyColors[format.textColor] || format.textColor;
+      }
+    }
+    
+    if (format.backgroundColor) {
+      if (format.backgroundColor === 'custom' && format.customBackgroundColor) {
+        // Custom color from customBackgroundColor field
+        style.backgroundColor = format.customBackgroundColor;
+      } else if (format.backgroundColor.startsWith('#') || format.backgroundColor.startsWith('rgb')) {
+        // Direct color value (hex or rgb)
+        style.backgroundColor = format.backgroundColor;
+      } else {
+        // Vuetify color name - try to use theme color
+        const vuetifyColors: Record<string, string> = {
+          primary: 'rgb(var(--v-theme-primary))',
+          secondary: 'rgb(var(--v-theme-secondary))',
+          success: 'rgb(var(--v-theme-success))',
+          error: 'rgb(var(--v-theme-error))',
+          warning: 'rgb(var(--v-theme-warning))',
+          info: 'rgb(var(--v-theme-info))',
+        };
+        style.backgroundColor = vuetifyColors[format.backgroundColor] || format.backgroundColor;
+      }
+    }
+    
+    return style;
+  }
+  
+  // Conditional color formatting
+  if (format.type === 'conditional-color' && format.conditions && format.conditions.length > 0) {
+    // Check each condition
+    for (const condition of format.conditions) {
+      if (evaluateCondition(value, condition, fieldName, rowData)) {
+        // Condition matches - apply colors
+        if (condition.textColor) {
+          if (condition.textColor === 'custom' && condition.customTextColor) {
+            style.color = condition.customTextColor;
+          } else if (condition.textColor.startsWith('#') || condition.textColor.startsWith('rgb')) {
+            style.color = condition.textColor;
+          } else {
+            const vuetifyColors: Record<string, string> = {
+              primary: 'rgb(var(--v-theme-primary))',
+              secondary: 'rgb(var(--v-theme-secondary))',
+              success: 'rgb(var(--v-theme-success))',
+              error: 'rgb(var(--v-theme-error))',
+              warning: 'rgb(var(--v-theme-warning))',
+              info: 'rgb(var(--v-theme-info))',
+            };
+            style.color = vuetifyColors[condition.textColor] || condition.textColor;
+          }
+        }
+        
+        if (condition.backgroundColor) {
+          if (condition.backgroundColor === 'custom' && condition.customBackgroundColor) {
+            style.backgroundColor = condition.customBackgroundColor;
+          } else if (condition.backgroundColor.startsWith('#') || condition.backgroundColor.startsWith('rgb')) {
+            style.backgroundColor = condition.backgroundColor;
+          } else {
+            const vuetifyColors: Record<string, string> = {
+              primary: 'rgb(var(--v-theme-primary))',
+              secondary: 'rgb(var(--v-theme-secondary))',
+              success: 'rgb(var(--v-theme-success))',
+              error: 'rgb(var(--v-theme-error))',
+              warning: 'rgb(var(--v-theme-warning))',
+              info: 'rgb(var(--v-theme-info))',
+            };
+            style.backgroundColor = vuetifyColors[condition.backgroundColor] || condition.backgroundColor;
+          }
+        }
+        
+        return style; // Return first matching condition
+      }
+    }
+    
+    // No condition matched - use default colors
+    if (format.defaultTextColor) {
+      if (format.defaultTextColor === 'custom' && format.customDefaultTextColor) {
+        style.color = format.customDefaultTextColor;
+      } else if (format.defaultTextColor.startsWith('#') || format.defaultTextColor.startsWith('rgb')) {
+        style.color = format.defaultTextColor;
+      } else {
+        const vuetifyColors: Record<string, string> = {
+          primary: 'rgb(var(--v-theme-primary))',
+          secondary: 'rgb(var(--v-theme-secondary))',
+          success: 'rgb(var(--v-theme-success))',
+          error: 'rgb(var(--v-theme-error))',
+          warning: 'rgb(var(--v-theme-warning))',
+          info: 'rgb(var(--v-theme-info))',
+        };
+        style.color = vuetifyColors[format.defaultTextColor] || format.defaultTextColor;
+      }
+    }
+    
+    if (format.defaultBackgroundColor) {
+      if (format.defaultBackgroundColor === 'custom' && format.customDefaultBackgroundColor) {
+        style.backgroundColor = format.customDefaultBackgroundColor;
+      } else if (format.defaultBackgroundColor.startsWith('#') || format.defaultBackgroundColor.startsWith('rgb')) {
+        style.backgroundColor = format.defaultBackgroundColor;
+      } else {
+        const vuetifyColors: Record<string, string> = {
+          primary: 'rgb(var(--v-theme-primary))',
+          secondary: 'rgb(var(--v-theme-secondary))',
+          success: 'rgb(var(--v-theme-success))',
+          error: 'rgb(var(--v-theme-error))',
+          warning: 'rgb(var(--v-theme-warning))',
+          info: 'rgb(var(--v-theme-info))',
+        };
+        style.backgroundColor = vuetifyColors[format.defaultBackgroundColor] || format.defaultBackgroundColor;
+      }
+    }
+    
+    return style;
+  }
+  
+  return {};
+};
+
+// Evaluate condition for conditional color formatting
+const evaluateCondition = (value: any, condition: any, currentFieldName: string, rowData?: any): boolean => {
+  if (!condition || !condition.operator) {
+    return false;
+  }
+  
+  // Get the value to compare (from specified field or current field)
+  let compareValue = value;
+  if (condition.field && condition.field !== currentFieldName && rowData) {
+    // Get value from another field in the same row
+    compareValue = rowData[condition.field];
+  }
+  
+  const conditionValue = condition.value;
+  const operator = condition.operator;
+  
+  try {
+    switch (operator) {
+      case 'eq':
+        return String(compareValue) === String(conditionValue);
+      case 'ne':
+        return String(compareValue) !== String(conditionValue);
+      case 'gt':
+        return Number(compareValue) > Number(conditionValue);
+      case 'gte':
+        return Number(compareValue) >= Number(conditionValue);
+      case 'lt':
+        return Number(compareValue) < Number(conditionValue);
+      case 'lte':
+        return Number(compareValue) <= Number(conditionValue);
+      case 'contains':
+        return String(compareValue).toLowerCase().includes(String(conditionValue).toLowerCase());
+      case 'startsWith':
+        return String(compareValue).toLowerCase().startsWith(String(conditionValue).toLowerCase());
+      case 'endsWith':
+        return String(compareValue).toLowerCase().endsWith(String(conditionValue).toLowerCase());
+      case 'in':
+        if (Array.isArray(conditionValue)) {
+          return conditionValue.includes(compareValue);
+        }
+        return String(conditionValue).split(',').map(v => v.trim()).includes(String(compareValue));
+      case 'notIn':
+        if (Array.isArray(conditionValue)) {
+          return !conditionValue.includes(compareValue);
+        }
+        return !String(conditionValue).split(',').map(v => v.trim()).includes(String(compareValue));
+      default:
+        return false;
+    }
+  } catch (error) {
+    return false;
+  }
+};
+
+// Get display value for array item (relation, person, personGroup field)
+const getArrayItemDisplayValue = (arrayItem: any, fieldName: string): string => {
+  if (!arrayItem || typeof arrayItem !== 'object') {
+    return String(arrayItem || '-');
+  }
+  
+  // Get field definition
+  const field = dataset.value?.fields?.find(f => f.name === fieldName);
+  const fieldType = field?.fieldType;
+  
+  // Handle person fields (support both singular and plural)
+  if (fieldType === 'person' || fieldType === 'persons') {
+    // PRIORITY 1: Try DisplayName first (if it exists as computed property)
+    if (arrayItem.DisplayName !== undefined && arrayItem.DisplayName !== null && arrayItem.DisplayName !== '') {
+      return String(arrayItem.DisplayName);
+    }
+    if (arrayItem.displayName !== undefined && arrayItem.displayName !== null && arrayItem.displayName !== '') {
+      return String(arrayItem.displayName);
+    }
+    
+    // PRIORITY 2: Build DisplayName from firstName + lastName
+    const firstName = arrayItem.firstName || arrayItem.FirstName || '';
+    const lastName = arrayItem.lastName || arrayItem.LastName || '';
+    if (firstName || lastName) {
+      return `${firstName} ${lastName}`.trim();
+    }
+    
+    // PRIORITY 3: Fallback to username
+    if (arrayItem.username !== undefined && arrayItem.username !== null && arrayItem.username !== '') {
+      return String(arrayItem.username);
+    }
+    if (arrayItem.userName !== undefined && arrayItem.userName !== null && arrayItem.userName !== '') {
+      return String(arrayItem.userName);
+    }
+    if (arrayItem.Username !== undefined && arrayItem.Username !== null && arrayItem.Username !== '') {
+      return String(arrayItem.Username);
+    }
+    
+    // PRIORITY 4: Fallback to email
+    if (arrayItem.email !== undefined && arrayItem.email !== null && arrayItem.email !== '') {
+      return String(arrayItem.email);
+    }
+    if (arrayItem.Email !== undefined && arrayItem.Email !== null && arrayItem.Email !== '') {
+      return String(arrayItem.Email);
+    }
+    
+    // Last fallback: __dataId
+    if (arrayItem.__dataId) {
+      return String(arrayItem.__dataId);
+    }
+  }
+  
+  // Handle personGroup fields (support both singular and plural)
+  if (fieldType === 'personGroup' || fieldType === 'personGroups') {
+    if (arrayItem.Name !== undefined) {
+      return String(arrayItem.Name);
+    }
+    // Fallback: try common field names (case-insensitive)
+    const commonFields = ['Name', 'name', 'GroupName', 'groupName', 'title', 'label'];
+    for (const commonField of commonFields) {
+      if (arrayItem[commonField] !== undefined) {
+        return String(arrayItem[commonField]);
+      }
+    }
+    // Last fallback: __dataId
+    if (arrayItem.__dataId) {
+      return String(arrayItem.__dataId);
+    }
+  }
+  
+  // Handle relation fields (existing logic)
+  // Check if there's a displayField configured for this column
+  const columnConfig = form.value?.listConfig?.columns?.find(c => c.fieldName === fieldName);
+  const displayField = columnConfig?.displayField;
+  
+  // Try to use displayField from listConfig
+  if (displayField && arrayItem[displayField] !== undefined) {
+    return String(arrayItem[displayField]);
+  }
+  
+  // Try to use displayField from formConfig relationFieldConfig
+  const relationConfig = form.value?.formConfig?.relationFieldConfig?.[fieldName];
+  if (relationConfig?.displayField && arrayItem[relationConfig.displayField] !== undefined) {
+    return String(arrayItem[relationConfig.displayField]);
+  }
+  
+  // Fallback: try common field names (name, title, label)
+  const commonFields = ['name', 'title', 'label', 'text'];
+  for (const commonField of commonFields) {
+    if (arrayItem[commonField] !== undefined) {
+      return String(arrayItem[commonField]);
+    }
+  }
+  
+  // Last fallback: use __dataId
+  if (arrayItem.__dataId) {
+    return String(arrayItem.__dataId);
+  }
+  
+  // If nothing found, return a truncated JSON
+  const jsonStr = JSON.stringify(arrayItem);
+  return jsonStr.length > 30 ? jsonStr.substring(0, 30) + '...' : jsonStr;
+};
+
+// Export functions
+const exportToJSON = async () => {
+  if (!form.value || !dataset.value) return;
+  
+  try {
+    loading.value = true;
+    
+    // Fetch all data (without pagination)
+    const queryParams = new URLSearchParams();
+    
+    // Add filter if available
+    const filterString = buildFilterString();
+    if (filterString) {
+      queryParams.append('filter', filterString);
+    }
+    
+    // Add search if enabled and provided
+    if (form.value.listConfig?.enableSearch && searchQuery.value && searchQuery.value.trim()) {
+      queryParams.append('search', searchQuery.value.trim());
+    }
+    
+    // Fetch all data (use a large limit or fetch without limit)
+    queryParams.append('limit', '10000'); // Large limit to get all data
+    
+    const url = `/api/v1/data/${encodeURIComponent(form.value.datasetName)}?${queryParams.toString()}`;
+    const response = await fetchFromDataGateway(url, 'GET');
+    
+    let itemsArray: any[] = [];
+    if (Array.isArray(response)) {
+      itemsArray = response;
+    } else {
+      itemsArray = response.items || response.Items || [];
+    }
+    
+    // Get visible columns (excluding actions)
+    const visibleHeaders = tableHeaders.value.filter(h => h.key !== 'actions');
+    
+    // Create export data with field names as keys
+    const exportData = itemsArray.map(item => {
+      const exportItem: any = {};
+      visibleHeaders.forEach(header => {
+        exportItem[header.key] = item[header.key] ?? null;
+      });
+      return exportItem;
+    });
+    
+    // Create JSON blob
+    const jsonString = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url_blob = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url_blob;
+    link.download = `${form.value.formCode || 'export'}_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url_blob);
+  } catch (error: any) {
+    console.error('JSON export error:', error);
+    errorMessage.value = error.message || t('automated-forms.view.messages.exportError');
+  } finally {
+    loading.value = false;
+  }
+};
+
+const exportToCSV = async () => {
+  if (!form.value || !dataset.value) return;
+  
+  try {
+    loading.value = true;
+    
+    // Fetch all data (without pagination)
+    const queryParams = new URLSearchParams();
+    
+    // Add filter if available
+    const filterString = buildFilterString();
+    if (filterString) {
+      queryParams.append('filter', filterString);
+    }
+    
+    // Add search if enabled and provided
+    if (form.value.listConfig?.enableSearch && searchQuery.value && searchQuery.value.trim()) {
+      queryParams.append('search', searchQuery.value.trim());
+    }
+    
+    // Fetch all data (use a large limit or fetch without limit)
+    queryParams.append('limit', '10000'); // Large limit to get all data
+    
+    const url = `/api/v1/data/${encodeURIComponent(form.value.datasetName)}?${queryParams.toString()}`;
+    const response = await fetchFromDataGateway(url, 'GET');
+    
+    let itemsArray: any[] = [];
+    if (Array.isArray(response)) {
+      itemsArray = response;
+    } else {
+      itemsArray = response.items || response.Items || [];
+    }
+    
+    // Get visible columns (excluding actions)
+    const visibleHeaders = tableHeaders.value.filter(h => h.key !== 'actions');
+    
+    // Helper function to escape CSV values
+    const escapeCSV = (value: any): string => {
+      if (value === null || value === undefined) {
+        return '';
+      }
+      const stringValue = String(value);
+      // If value contains comma, quote, or newline, wrap in quotes and escape quotes
+      if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      return stringValue;
+    };
+    
+    // Create CSV header row (escape headers too)
+    const headers = visibleHeaders.map(h => escapeCSV(h.title));
+    const csvRows: string[] = [headers.join(',')];
+    
+    // Create CSV data rows
+    itemsArray.forEach(item => {
+      const row = visibleHeaders.map(header => {
+        const value = item[header.key];
+        return escapeCSV(value);
+      });
+      csvRows.push(row.join(','));
+    });
+    
+    // Create CSV blob with UTF-8 BOM for Excel compatibility (Turkish characters)
+    const csvString = csvRows.join('\n');
+    // Add UTF-8 BOM for proper encoding in Excel
+    const BOM = '\uFEFF';
+    const csvWithBOM = BOM + csvString;
+    const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' });
+    const url_blob = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url_blob;
+    link.download = `${form.value.formCode || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url_blob);
+  } catch (error: any) {
+    console.error('CSV export error:', error);
+    errorMessage.value = error.message || t('automated-forms.view.messages.exportError');
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Get form name with i18n support
+const getFormName = (): string => {
+  if (!form.value) return '';
+  
+  // Try i18n key first: automated-forms.forms.{formCode}.formName
+  if (form.value.formCode) {
+    const formNameKey = `automated-forms.forms.${form.value.formCode}.formName`;
+    const translated = t(formNameKey);
+    if (translated !== formNameKey) {
+      return translated;
+    }
+  }
+  
+  // Fallback to form.formName
+  return form.value.formName || '';
+};
+
+// Get form description with i18n support
+const getFormDescription = (): string => {
+  if (!form.value || !form.value.description) return '';
+  
+  // Try i18n key first: automated-forms.forms.{formCode}.description
+  if (form.value.formCode) {
+    const descriptionKey = `automated-forms.forms.${form.value.formCode}.description`;
+    const translated = t(descriptionKey);
+    if (translated !== descriptionKey) {
+      return translated;
+    }
+  }
+  
+  // Fallback to form.description
+  return form.value.description || '';
 };
 </script>
 
@@ -738,6 +1829,72 @@ const formatCellValue = (value: any, fieldType: string) => {
           >
             <RefreshIcon size="18" />
           </v-btn>
+          
+          <!-- Export Menu -->
+          <v-menu v-if="form && dataset">
+            <template v-slot:activator="{ props }">
+              <v-btn
+                icon
+                variant="outlined"
+                v-bind="props"
+                :disabled="loading || dataItems.length === 0"
+              >
+                <DownloadIcon size="18" />
+              </v-btn>
+            </template>
+            <v-list>
+              <v-list-item @click="exportToJSON">
+                <template v-slot:prepend>
+                  <v-icon>mdi-code-json</v-icon>
+                </template>
+                <v-list-item-title>{{ t('automated-forms.view.buttons.exportJSON') }}</v-list-item-title>
+              </v-list-item>
+              <v-list-item @click="exportToCSV">
+                <template v-slot:prepend>
+                  <v-icon>mdi-file-excel</v-icon>
+                </template>
+                <v-list-item-title>{{ t('automated-forms.view.buttons.exportCSV') }}</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </div>
+        
+        <div class="d-flex ga-3 align-center flex-wrap">
+          <!-- Search (if enabled) -->
+          <v-text-field
+            v-if="form && dataset && form.listConfig?.enableSearch"
+            v-model="searchQuery"
+            prepend-inner-icon="mdi-magnify"
+            :placeholder="t('automated-forms.view.search.placeholder')"
+            variant="outlined"
+            density="compact"
+            clearable
+            hide-details
+            style="max-width: 300px; min-width: 200px;"
+            class="flex-grow-0"
+          ></v-text-field>
+          
+          <!-- Filter Button -->
+          <v-btn
+            v-if="form && dataset && filterableFields.length > 0"
+            variant="outlined"
+            :color="Object.keys(filters).some(key => filters[key] && filters[key].trim()) ? 'primary' : 'default'"
+            @click="showFiltersPanel = showFiltersPanel.length > 0 ? [] : [0]"
+          >
+            <template #prepend>
+              <v-icon>mdi-filter</v-icon>
+            </template>
+            {{ t('automated-forms.view.filters.title') }}
+            <v-chip
+              v-if="Object.keys(filters).some(key => filters[key] && filters[key].trim())"
+              size="x-small"
+              color="primary"
+              variant="flat"
+              class="ml-2"
+            >
+              {{ Object.keys(filters).filter(key => filters[key] && filters[key].trim()).length }}
+            </v-chip>
+          </v-btn>
         </div>
       </div>
       
@@ -769,49 +1926,17 @@ const formatCellValue = (value: any, fieldType: string) => {
         <v-alert type="info" variant="tonal" density="compact" class="mb-4">
           <div class="d-flex align-center ga-2">
             <FileCodeIcon size="18" />
-            <div>
-              <strong>{{ form.formName }}</strong>
-              <span v-if="form.description" class="text-caption ml-2">- {{ form.description }}</span>
+            <div class="flex-grow-1">
+              <strong>{{ getFormName() }}</strong>
+              <span v-if="getFormDescription()" class="text-caption ml-2">- {{ getFormDescription() }}</span>
             </div>
-            <v-spacer></v-spacer>
-            <v-chip size="small" color="info" variant="tonal">
-              {{ form.datasetName }}
-            </v-chip>
           </div>
         </v-alert>
-      </div>
-      
-      <!-- Search (if enabled) -->
-      <div v-if="form && dataset && form.listConfig?.enableSearch" class="mb-4">
-        <v-text-field
-          v-model="searchQuery"
-          prepend-inner-icon="mdi-magnify"
-          :label="t('automated-forms.view.search.label')"
-          :placeholder="t('automated-forms.view.search.placeholder')"
-          variant="outlined"
-          density="compact"
-          clearable
-          hide-details
-        ></v-text-field>
       </div>
       
       <!-- Filters Panel -->
       <v-expansion-panels v-if="form && dataset && filterableFields.length > 0" v-model="showFiltersPanel" variant="accordion" class="mb-4">
         <v-expansion-panel>
-          <v-expansion-panel-title>
-            <div class="d-flex align-center ga-2">
-              <v-icon>mdi-filter</v-icon>
-              <span>{{ t('automated-forms.view.filters.title') }}</span>
-              <v-chip
-                v-if="Object.keys(filters).some(key => filters[key] && filters[key].trim())"
-                size="x-small"
-                color="primary"
-                variant="flat"
-              >
-                {{ Object.keys(filters).filter(key => filters[key] && filters[key].trim()).length }}
-              </v-chip>
-            </div>
-          </v-expansion-panel-title>
           <v-expansion-panel-text>
             <v-row>
               <v-col
@@ -823,8 +1948,8 @@ const formatCellValue = (value: any, fieldType: string) => {
               >
                 <v-text-field
                   v-model="filters[field.name]"
-                  :label="field.title || field.name"
-                  :placeholder="`${field.title || field.name} ${t('automated-forms.view.filters.filterPlaceholder')}`"
+                  :label="getFieldLabel(field.name, field, form, form?.datasetName)"
+                  :placeholder="`${getFieldLabel(field.name, field, form, form?.datasetName)} ${t('automated-forms.view.filters.filterPlaceholder')}`"
                   variant="outlined"
                   density="compact"
                   clearable
@@ -877,19 +2002,169 @@ const formatCellValue = (value: any, fieldType: string) => {
         :items="dataItems"
         :loading="loading"
         :server-items-length="serverItemsLength"
+        :items-per-page="tableOptions.itemsPerPage"
         :items-per-page-options="[10, 20, 50, 100]"
         item-value="__dataId"
         class="border rounded-md"
         hide-default-footer
+        @update:options="handleTableOptionsUpdate"
       >
         <!-- Dynamic Field Columns -->
         <template 
           v-for="header in tableHeaders.filter(h => h.key !== 'actions')" 
           :key="header.key"
-          #[`item.${header.key}`]="{ item, value }"
+          #[`item.${header.key}`]="{ value, item }"
         >
-          <span class="text-body-2">
-            {{ formatCellValue(value, dataset?.fields?.find(f => f.name === header.key)?.fieldType || 'text') }}
+          <!-- Array Relation/Person/PersonGroup Fields with Different Display Styles -->
+          <template v-if="(isArrayRelationField(header.key) || isArrayPersonField(header.key) || isArrayPersonGroupField(header.key)) && Array.isArray(value)">
+            <!-- Empty Array -->
+            <span 
+              v-if="value.length === 0"
+              class="text-body-2 text-medium-emphasis"
+            >
+              -
+            </span>
+            
+            <!-- Chip Style (default) -->
+            <div 
+              v-else-if="getArrayDisplayStyle(header.key) === 'chip'"
+              class="d-flex flex-wrap ga-1"
+            >
+              <v-chip
+                v-for="(arrayItem, index) in value"
+                :key="index"
+                size="small"
+                variant="tonal"
+                color="primary"
+                class="ma-0"
+              >
+                {{ getArrayItemDisplayValue(arrayItem, header.key) }}
+              </v-chip>
+            </div>
+            
+            <!-- Badge Style -->
+            <div 
+              v-else-if="getArrayDisplayStyle(header.key) === 'badge'"
+              class="d-flex flex-wrap ga-1"
+            >
+              <v-chip
+                v-for="(arrayItem, index) in value"
+                :key="index"
+                size="x-small"
+                variant="flat"
+                color="primary"
+                class="ma-0"
+              >
+                {{ getArrayItemDisplayValue(arrayItem, header.key) }}
+              </v-chip>
+            </div>
+            
+            <!-- Pill Style -->
+            <div 
+              v-else-if="getArrayDisplayStyle(header.key) === 'pill'"
+              class="d-flex flex-wrap ga-1"
+            >
+              <v-chip
+                v-for="(arrayItem, index) in value"
+                :key="index"
+                size="small"
+                variant="flat"
+                color="primary"
+                class="ma-0"
+                rounded="pill"
+              >
+                {{ getArrayItemDisplayValue(arrayItem, header.key) }}
+              </v-chip>
+            </div>
+            
+            <!-- Outlined Style -->
+            <div 
+              v-else-if="getArrayDisplayStyle(header.key) === 'outlined'"
+              class="d-flex flex-wrap ga-1"
+            >
+              <v-chip
+                v-for="(arrayItem, index) in value"
+                :key="index"
+                size="small"
+                variant="outlined"
+                color="primary"
+                class="ma-0"
+              >
+                {{ getArrayItemDisplayValue(arrayItem, header.key) }}
+              </v-chip>
+            </div>
+            
+            <!-- Tag Style -->
+            <div 
+              v-else-if="getArrayDisplayStyle(header.key) === 'tag'"
+              class="d-flex flex-wrap ga-1"
+            >
+              <v-chip
+                v-for="(arrayItem, index) in value"
+                :key="index"
+                size="small"
+                variant="flat"
+                color="secondary"
+                class="ma-0"
+              >
+                {{ getArrayItemDisplayValue(arrayItem, header.key) }}
+              </v-chip>
+            </div>
+            
+            <!-- Text Separator Style -->
+            <span 
+              v-else-if="getArrayDisplayStyle(header.key) === 'text-separator'"
+              class="text-body-2"
+            >
+              {{ value.map(item => getArrayItemDisplayValue(item, header.key)).join(getArraySeparator(header.key)) }}
+            </span>
+            
+            <!-- Comma Separated Style -->
+            <span 
+              v-else-if="getArrayDisplayStyle(header.key) === 'comma-separated'"
+              class="text-body-2"
+            >
+              {{ value.map(item => getArrayItemDisplayValue(item, header.key)).join(', ') }}
+            </span>
+            
+            <!-- List Style (vertical) -->
+            <div 
+              v-else-if="getArrayDisplayStyle(header.key) === 'list'"
+              class="d-flex flex-column ga-1"
+            >
+              <div
+                v-for="(arrayItem, index) in value"
+                :key="index"
+                class="text-body-2"
+              >
+                • {{ getArrayItemDisplayValue(arrayItem, header.key) }}
+              </div>
+            </div>
+            
+            <!-- Fallback: Default chip style if style not recognized -->
+            <div 
+              v-else
+              class="d-flex flex-wrap ga-1"
+            >
+              <v-chip
+                v-for="(arrayItem, index) in value"
+                :key="index"
+                size="small"
+                variant="tonal"
+                color="primary"
+                class="ma-0"
+              >
+                {{ getArrayItemDisplayValue(arrayItem, header.key) }}
+              </v-chip>
+            </div>
+          </template>
+          <!-- Regular Fields -->
+          <span 
+            v-else 
+            class="text-body-2"
+            :style="getCellStyle(value, header.key, item)"
+          >
+            {{ formatCellValue(value, header.key) }}
           </span>
         </template>
         
@@ -920,15 +2195,32 @@ const formatCellValue = (value: any, fieldType: string) => {
       </v-data-table>
       
       <!-- Pagination -->
-      <div v-if="form && dataset && totalCount > 0" class="d-flex align-center justify-space-between mt-4">
-        <div class="text-caption text-medium-emphasis">
-          {{ t('automated-forms.view.table.pagination.total') }} {{ totalCount }} {{ t('automated-forms.view.table.pagination.records') }}
+      <div v-if="form && dataset && totalCount > 0" class="d-flex align-center justify-space-between mt-4 flex-wrap ga-3">
+        <div class="d-flex align-center ga-3">
+          <div class="text-caption text-medium-emphasis">
+            {{ t('automated-forms.view.table.pagination.total') }} {{ totalCount }} {{ t('automated-forms.view.table.pagination.records') }}
+            <span v-if="totalPages > 1" class="ml-2">
+              ({{ t('automated-forms.view.table.pagination.page') }} {{ currentPage }} / {{ totalPages }})
+            </span>
+          </div>
         </div>
-        <v-pagination
-          v-model="tableOptions.page"
-          :length="Math.ceil(totalCount / tableOptions.itemsPerPage)"
-          :total-visible="7"
-        ></v-pagination>
+        <div class="d-flex align-center ga-3">
+          <span class="text-caption text-medium-emphasis">{{ t('automated-forms.view.table.pagination.itemsPerPage') }}</span>
+          <v-select
+            v-model="itemsPerPage"
+            :items="[10, 20, 50, 100]"
+            density="compact"
+            variant="outlined"
+            hide-details
+            style="max-width: 80px;"
+          ></v-select>
+          <v-pagination
+            v-model="currentPage"
+            :length="totalPages"
+            :total-visible="7"
+            density="compact"
+          ></v-pagination>
+        </div>
       </div>
     </v-card-item>
   </v-card>
@@ -972,6 +2264,8 @@ const formatCellValue = (value: any, fieldType: string) => {
                 :disabled="formDialogLoading"
                 :error-messages="[]"
                 :relation-config="getRelationConfig(field.name)"
+                :form="form"
+                :dataset-name="form?.datasetName"
               />
             </v-col>
           </v-row>

@@ -25,6 +25,21 @@ export interface AutomatedForm {
       sortable: boolean;
       filterable: boolean;
       width?: number;
+      displayField?: string; // For object/relation fields: which field to display in list
+      arrayDisplayStyle?: 'chip' | 'badge' | 'pill' | 'outlined' | 'text-separator' | 'comma-separated' | 'list' | 'tag';
+      arraySeparator?: string;
+      format?: {
+        type?: 'none' | 'regex' | 'number' | 'date' | 'currency' | 'text-transform';
+        pattern?: string;
+        replacement?: string;
+        decimalPlaces?: number;
+        thousandSeparator?: boolean;
+        currencySymbol?: string;
+        dateFormat?: string;
+        showTime?: boolean;
+        timeFormat?: 'HH:mm' | 'HH:mm:ss';
+        textTransform?: 'uppercase' | 'lowercase' | 'capitalize';
+      };
     }>;
     defaultSortBy?: string;
     defaultSortOrder?: 'asc' | 'desc';
@@ -90,6 +105,21 @@ export interface CreateAutomatedFormDto {
       sortable: boolean;
       filterable: boolean;
       width?: number;
+      displayField?: string; // For object/relation fields: which field to display in list
+      arrayDisplayStyle?: 'chip' | 'badge' | 'pill' | 'outlined' | 'text-separator' | 'comma-separated' | 'list' | 'tag';
+      arraySeparator?: string;
+      format?: {
+        type?: 'none' | 'regex' | 'number' | 'date' | 'currency' | 'text-transform';
+        pattern?: string;
+        replacement?: string;
+        decimalPlaces?: number;
+        thousandSeparator?: boolean;
+        currencySymbol?: string;
+        dateFormat?: string;
+        showTime?: boolean;
+        timeFormat?: 'HH:mm' | 'HH:mm:ss';
+        textTransform?: 'uppercase' | 'lowercase' | 'capitalize';
+      };
     }>;
     defaultSortBy?: string;
     defaultSortOrder?: 'asc' | 'desc';
@@ -138,6 +168,21 @@ export interface UpdateAutomatedFormDto {
       sortable: boolean;
       filterable: boolean;
       width?: number;
+      displayField?: string; // For object/relation fields: which field to display in list
+      arrayDisplayStyle?: 'chip' | 'badge' | 'pill' | 'outlined' | 'text-separator' | 'comma-separated' | 'list' | 'tag';
+      arraySeparator?: string;
+      format?: {
+        type?: 'none' | 'regex' | 'number' | 'date' | 'currency' | 'text-transform';
+        pattern?: string;
+        replacement?: string;
+        decimalPlaces?: number;
+        thousandSeparator?: boolean;
+        currencySymbol?: string;
+        dateFormat?: string;
+        showTime?: boolean;
+        timeFormat?: 'HH:mm' | 'HH:mm:ss';
+        textTransform?: 'uppercase' | 'lowercase' | 'capitalize';
+      };
     }>;
     defaultSortBy?: string;
     defaultSortOrder?: 'asc' | 'desc';
@@ -286,11 +331,8 @@ export const useAutomatedFormsStore = defineStore('automatedForms', {
       this.error = null;
       
       try {
-        console.log('[AutomatedFormsStore] Fetching form by code:', formCode);
         const url = `/api/v1/data/@automated_forms?formCode=${encodeURIComponent(formCode)}`;
         const response = await fetchFromDataGateway(url, 'GET');
-        
-        console.log('[AutomatedFormsStore] Response:', response);
         
         // Response could be array or single object or PagedResultDto
         let formsArray: any[] = [];
@@ -303,34 +345,24 @@ export const useAutomatedFormsStore = defineStore('automatedForms', {
           formsArray = [response];
         }
         
-        console.log('[AutomatedFormsStore] Forms array:', formsArray.length, 'forms found');
-        
         // Filter by formCode to ensure we get the exact match (case-sensitive or case-insensitive)
         // Backend might return multiple results if formCode is not unique, so we need to find exact match
         let formData = formsArray.find((form: any) => {
           const code = form.formCode || form.FormCode || '';
           const matches = code === formCode || code.toLowerCase() === formCode.toLowerCase();
-          console.log('[AutomatedFormsStore] Checking form:', code, 'matches:', matches);
           return matches;
         });
         
         // If exact match not found, try first item (fallback)
         if (!formData && formsArray.length > 0) {
-          console.warn('[AutomatedFormsStore] Exact match not found, using first item as fallback');
           formData = formsArray[0];
         }
         
         if (formData) {
           this.currentForm = this.mapToForm(formData);
-          console.log('[AutomatedFormsStore] Loaded form:', {
-            formCode: this.currentForm.formCode,
-            formName: this.currentForm.formName,
-            datasetName: this.currentForm.datasetName
-          });
           
           // Verify formCode matches (extra safety check)
           if (this.currentForm.formCode !== formCode && this.currentForm.formCode.toLowerCase() !== formCode.toLowerCase()) {
-            console.warn(`[AutomatedFormsStore] FormCode mismatch! Expected: ${formCode}, Got: ${this.currentForm.formCode}`);
             throw new Error(`Form kodu uyuşmazlığı: Beklenen "${formCode}", Bulunan "${this.currentForm.formCode}"`);
           }
           
@@ -345,7 +377,6 @@ export const useAutomatedFormsStore = defineStore('automatedForms', {
         
         throw new Error(`Form bulunamadı: "${formCode}"`);
       } catch (error: any) {
-        console.error('[AutomatedFormsStore] Error fetching form:', error);
         this.error = error.message || 'Form yüklenirken bir hata oluştu';
         throw error;
       } finally {

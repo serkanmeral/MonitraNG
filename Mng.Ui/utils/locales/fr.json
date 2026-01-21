@@ -1621,8 +1621,117 @@
             "visible": "Visible",
             "sortable": "Triable",
             "filterable": "Filtrable",
+            "displayField": "Champ d'Affichage",
             "order": "Ordre"
+          },
+          "displayFieldPlaceholder": "Sélectionner le champ à afficher",
+          "displayFieldHint": "Le dataset associé doit être chargé pour afficher les options de champ",
+          "displayFieldObjectHint": "Entrer le nom du champ (ex: name, title)",
+          "actions": {
+            "settings": "Paramètres"
           }
+        },
+        "modal": {
+          "title": "Paramètres de Colonne",
+          "fieldName": "Nom du Champ",
+          "visible": "Visible",
+          "sortable": "Triable",
+          "filterable": "Filtrable",
+          "order": "Ordre",
+          "displayField": "Champ d'Affichage",
+          "displayFieldPlaceholder": "Sélectionner le champ à afficher",
+          "displayFieldHint": "Le dataset associé doit être chargé pour afficher les options de champ",
+          "displayFieldObjectHint": "Entrer le nom du champ (ex: name, title)",
+          "arrayDisplay": {
+            "title": "Style d'Affichage de Tableau",
+            "style": "Style d'Affichage",
+            "separator": "Séparateur",
+            "separatorPlaceholder": "Ex: |, -, •",
+            "styles": {
+              "chip": "Chip (Par défaut)",
+              "badge": "Badge",
+              "pill": "Pill (Arrondi)",
+              "outlined": "Outlined (Bordé)",
+              "textSeparator": "Séparateur de Texte",
+              "commaSeparated": "Séparé par des Virgules",
+              "list": "Liste (Verticale)",
+              "tag": "Tag"
+            }
+          },
+          "formatting": {
+            "title": "Formatage",
+            "type": "Type de Format",
+            "types": {
+              "none": "Aucun",
+              "regex": "Regex (Expression Régulière)",
+              "number": "Nombre",
+              "date": "Date",
+              "currency": "Devise",
+              "textTransform": "Transformation de Texte",
+              "color": "Couleur",
+              "conditionalColor": "Couleur Conditionnelle"
+            },
+            "regexPattern": "Motif Regex",
+            "regexPatternPlaceholder": "Ex: /pattern/g",
+            "regexReplacement": "Texte de Remplacement",
+            "regexReplacementPlaceholder": "Texte à remplacer",
+            "decimalPlaces": "Décimales",
+            "thousandSeparator": "Séparateur de Milliers",
+            "currencySymbol": "Symbole de Devise",
+            "currencySymbolPlaceholder": "Ex: ₺, $, €",
+            "dateFormat": "Format de Date",
+            "showTime": "Afficher l'Heure",
+            "timeFormat": "Format d'Heure",
+            "timeFormats": {
+              "hhmm": "Heure:Minute (HH:mm)",
+              "hhmmss": "Heure:Minute:Seconde (HH:mm:ss)"
+            },
+            "textTransform": "Transformation de Texte",
+            "textTransformTypes": {
+              "uppercase": "Majuscules",
+              "lowercase": "Minuscules",
+              "capitalize": "Première Lettre en Majuscule"
+            },
+            "textColor": "Couleur du Texte",
+            "backgroundColor": "Couleur de Fond",
+            "customTextColor": "Couleur de Texte Personnalisée",
+            "customBackgroundColor": "Couleur de Fond Personnalisée",
+            "customColorPlaceholder": "#FF0000 ou rgb(255,0,0)",
+            "defaultTextColor": "Couleur de Texte par Défaut",
+            "defaultBackgroundColor": "Couleur de Fond par Défaut",
+            "colors": {
+              "primary": "Primary",
+              "secondary": "Secondary",
+              "success": "Success (Vert)",
+              "error": "Error (Rouge)",
+              "warning": "Warning (Jaune)",
+              "info": "Info (Bleu)",
+              "custom": "Couleur Personnalisée"
+            },
+            "conditions": {
+              "title": "Conditions",
+              "field": "Champ",
+              "operator": "Opérateur",
+              "value": "Valeur",
+              "add": "Ajouter une Condition",
+              "default": "Couleurs par Défaut"
+            },
+            "operators": {
+              "eq": "Égal à (=)",
+              "ne": "Différent de (≠)",
+              "gt": "Supérieur à (>)",
+              "gte": "Supérieur ou Égal à (≥)",
+              "lt": "Inférieur à (<)",
+              "lte": "Inférieur ou Égal à (≤)",
+              "contains": "Contient",
+              "startsWith": "Commence par",
+              "endsWith": "Se termine par",
+              "in": "Dans",
+              "notIn": "Pas dans"
+            }
+          },
+          "cancel": "Annuler",
+          "save": "Enregistrer"
         },
         "defaultSortBy": {
           "label": "Tri par Défaut (Champ)",
@@ -1692,6 +1801,7 @@
         "createSuccess": "Formulaire créé avec succès !",
         "updateSuccess": "Formulaire mis à jour avec succès !",
         "saveError": "Une erreur s'est produite lors de l'enregistrement du formulaire",
+        "validationError": "La validation du formulaire a échoué. Veuillez remplir tous les champs requis.",
         "duplicateCode": "Ce code de formulaire est déjà utilisé. Veuillez choisir un code différent."
       },
       "warning": "Avertissement : L'autorisation manager ou admin est requise pour accéder à cette page."

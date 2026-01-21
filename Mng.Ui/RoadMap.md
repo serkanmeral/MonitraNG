@@ -1261,6 +1261,49 @@ t('common.save'); // TypeScript otomatik tamamlama
 - Dil tercihi localStorage'da saklanacak
 - Tarayıcı diline göre otomatik seçim yapılacak
 
+#### 6.18 Automated Forms Liste Edit Fonksiyonları İyileştirmeleri 📋 (Roadmap - 2026-01-XX)
+
+**Durum:** 📋 Roadmap'e Eklendi
+
+**Tamamlanan İşler:**
+- ✅ Liste görünümü için renk formatı desteği (basit renk ve koşullu renklendirme)
+- ✅ Koşullu renklendirme için temel koşul belirtme seçenekleri
+- ✅ Format seçenekleri (regex, number, date, currency, text-transform, color, conditional-color)
+- ✅ Array field'lar için farklı görüntüleme stilleri (chip, badge, pill, vb.)
+- ✅ Column Settings Modal ile merkezi yapılandırma
+
+**Gelecek Geliştirmeler (Roadmap):**
+- [ ] **Koşullu Renklendirme İyileştirmeleri:**
+  - Koşul belirtme seçeneklerinin iyileştirilmesi
+  - Daha gelişmiş koşul operatörleri
+  - Birden fazla koşulun birleştirilmesi (AND/OR mantığı)
+  - Koşul öncelik sıralaması
+- [ ] **Dropdown Seçenekleri İyileştirmeleri:**
+  - Dropdown seçenekleri için filtre özelliği
+  - onInit event desteği (dropdown açıldığında)
+  - onChange event desteği (seçim değiştiğinde)
+  - Dinamik seçenek yükleme
+- [ ] **Liste Görünümü İyileştirmeleri:**
+  - Liste görünümünün genel UI/UX iyileştirmeleri
+  - Performans optimizasyonları
+  - Responsive tasarım iyileştirmeleri
+  - Kullanıcı deneyimi geliştirmeleri
+- [ ] **Dynamic Alanlar:**
+  - Dinamik alan desteği
+  - Runtime'da alan ekleme/çıkarma
+  - Dinamik validasyon kuralları
+  - Dinamik görünüm yapılandırması
+
+**Öncelik:**
+- Orta öncelik
+- Liste edit fonksiyonları temel seviyede tamamlandı
+- İyileştirmeler kullanıcı geri bildirimlerine göre planlanacak
+
+**Notlar:**
+- Şu aşamada liste edit fonksiyonları yeterli seviyede
+- İyileştirmeler kullanıcı ihtiyaçlarına göre önceliklendirilecek
+- Her iyileştirme ayrı bir task olarak ele alınacak
+
 ---
 
 ### Phase 7: User & Group Management Sayfaları 👥
@@ -2268,6 +2311,18 @@ Login olan kullanıcının domain bilgisi token'dan alınarak MngKeeper'dan geti
   - Locale dosyalarına `automated-forms` namespace'i eklendi (5 dil: tr, en, fr, ar, zh)
   - Tarih formatları dile göre ayarlanıyor (localeStore entegrasyonu)
   - Hierarchical key structure kullanıldı (list, form, view alt bölümleri)
+- **2026-01-XX** - Phase 6.18: Automated Forms Liste Edit Fonksiyonları ✅
+  - Liste görünümü için renk formatı desteği eklendi (basit renk ve koşullu renklendirme)
+  - Format seçenekleri genişletildi (color, conditional-color)
+  - Koşullu renklendirme için temel koşul belirtme seçenekleri eklendi
+  - Column Settings Modal'a renk formatı seçenekleri eklendi
+  - Vuetify renkleri ve özel renk (hex/rgb) desteği
+  - Koşul operatörleri: eq, ne, gt, gte, lt, lte, contains, startsWith, endsWith, in, notIn
+  - Gelecek iyileştirmeler roadmap'e eklendi:
+    - Koşullu renklendirme koşul belirtme seçeneklerinin iyileştirilmesi
+    - Dropdown seçenekleri için filtre ve onInit/onChange event'ları
+    - Liste görünümünün genel iyileştirmeleri
+    - Dynamic alanlar desteği
 - **2026-01-XX** - Phase 9.1: Domain Logo Support ✅
   - Login sonrası domain bilgisi otomatik yükleme
   - Side menu'de domain logosu gösterimi (kullanıcı adı arka planı)
@@ -2277,7 +2332,7 @@ Login olan kullanıcının domain bilgisi token'dan alınarak MngKeeper'dan geti
 
 ---
 
-**Son Güncelleme:** 2026-01-16  
+**Son Güncelleme:** 2026-01-XX  
 **Version:** 1.3.0  
-**Status:** 🚧 Development Phase (Side Menu ✅, Real-time Updates ✅, Localization ✅, Automated Forms i18n ✅, Diğer Phase'ler 📋 Planning)
+**Status:** 🚧 Development Phase (Side Menu ✅, Real-time Updates ✅, Localization ✅, Automated Forms i18n ✅, Automated Forms Liste Edit Fonksiyonları ✅, Diğer Phase'ler 📋 Planning)
 

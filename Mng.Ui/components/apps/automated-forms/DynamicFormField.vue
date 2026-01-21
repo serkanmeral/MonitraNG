@@ -4,6 +4,7 @@ import { useDatasetStore } from '@/stores/apps/dataset';
 import { useUserStore } from '@/stores/apps/user';
 import { useGroupStore } from '@/stores/apps/group';
 import { fetchFromDataGateway } from '@/services/apiService';
+import { useFieldLabel } from '@/composables/useFieldLabel';
 
 const props = defineProps<{
   field: any;
@@ -15,6 +16,8 @@ const props = defineProps<{
     idField?: string; // Which field to use as value (default: '__dataId')
     displayField?: string; // Which field to display in dropdown
   };
+  form?: any; // Form object (for field label translation)
+  datasetName?: string; // Dataset name (for field label translation)
 }>();
 
 const emit = defineEmits<{
@@ -24,14 +27,78 @@ const emit = defineEmits<{
 const datasetStore = useDatasetStore();
 const userStore = useUserStore();
 const groupStore = useGroupStore();
+const { getFieldLabel } = useFieldLabel();
+
+// Get field label with translation support
+const fieldLabel = computed(() => {
+  return getFieldLabel(props.field.name, props.field, props.form, props.datasetName);
+});
+
+// Helper function to extract ID from expanded relation/person/personGroup object
+const extractIdFromObject = (item: any, fieldType: string): any => {
+  if (typeof item !== 'object' || item === null) {
+    return item;
+  }
+  
+  // For person fields, prioritize id (which matches usersOptions value)
+  if (fieldType === 'persons') {
+    // Try id first (matches userStore.users[].id)
+    if (item.id) return item.id;
+    // Then try userId (alternative field name)
+    if (item.userId) return item.userId;
+    // Then try common ID fields
+    if (item.__dataId) return item.__dataId;
+    if (item._id) return item._id;
+  }
+  
+  // For personGroup fields, prioritize id (which matches groupsOptions value)
+  if (fieldType === 'personGroups') {
+    // Try id first (matches groupStore.groups[].id)
+    if (item.id) return item.id;
+    // Then try groupId (alternative field name)
+    if (item.groupId) return item.groupId;
+    // Then try common ID fields
+    if (item.__dataId) return item.__dataId;
+    if (item._id) return item._id;
+  }
+  
+  // For relation fields, try common ID fields
+  if (fieldType === 'relation') {
+    if (item.__dataId) return item.__dataId;
+    if (item.id) return item.id;
+    if (item._id) return item._id;
+  }
+  
+  // If no ID found, return the item as is (might be a string ID already)
+  return item;
+};
 
 // Local value for two-way binding
 // For array fields, ensure value is always an array (or empty array if null/undefined)
+// For relation/person/personGroup fields, convert expanded objects to IDs
 const localValue = computed({
   get: () => {
     const value = props.modelValue;
     
-    // For array fields, ensure we always return an array
+    // Handle relation/person/personGroup fields: convert expanded objects to IDs
+    if (props.field.fieldType === 'relation' || props.field.fieldType === 'persons' || props.field.fieldType === 'personGroups') {
+      if (props.field.isArray) {
+        if (value === null || value === undefined || value === '') {
+          return [];
+        }
+        if (Array.isArray(value)) {
+          // Convert each object to ID
+          return value.map(item => extractIdFromObject(item, props.field.fieldType));
+        }
+        // Single value but field is array - convert to array and extract ID
+        return [extractIdFromObject(value, props.field.fieldType)];
+      } else {
+        // Single value - extract ID from object if needed
+        return extractIdFromObject(value, props.field.fieldType);
+      }
+    }
+    
+    // For other array fields, ensure we always return an array
     if (props.field.isArray) {
       if (value === null || value === undefined || value === '') {
         return [];
@@ -125,7 +192,9 @@ const loadRelationOptions = async () => {
 
 // Load users if field type is persons
 const loadUsers = async () => {
-  if (props.field.fieldType !== 'persons' || userStore.users.length > 0) return;
+  if (props.field.fieldType !== 'persons') return;
+  // Always load users to ensure we have the latest data
+  // The userStore might have cached users, but we want fresh data for the form
   try {
     await userStore.fetchUsers({ page: 1, pageSize: 1000 });
   } catch (error) {
@@ -296,7 +365,7 @@ const rules = computed(() => {
   <v-text-field
     v-if="field.fieldType === 'text'"
     v-model="localValue"
-    :label="field.title || field.name"
+    :label="fieldLabel"
     :hint="field.description"
     :persistent-hint="!!field.description"
     :required="field.mandatory"
@@ -313,7 +382,7 @@ const rules = computed(() => {
     v-else-if="field.fieldType === 'number'"
     v-model.number="localValue"
     type="number"
-    :label="field.title || field.name"
+    :label="fieldLabel"
     :hint="field.description"
     :persistent-hint="!!field.description"
     :required="field.mandatory"
@@ -329,7 +398,7 @@ const rules = computed(() => {
   <v-switch
     v-else-if="field.fieldType === 'bool'"
     v-model="localValue"
-    :label="field.title || field.name"
+    :label="fieldLabel"
     :hint="field.description"
     :persistent-hint="!!field.description"
     :readonly="readonly"
@@ -343,7 +412,7 @@ const rules = computed(() => {
     v-else-if="field.fieldType === 'datetime'"
     v-model="datetimeLocalValue"
     type="datetime-local"
-    :label="field.title || field.name"
+    :label="fieldLabel"
     :hint="field.description"
     :persistent-hint="!!field.description"
     :required="field.mandatory"
@@ -358,7 +427,7 @@ const rules = computed(() => {
   <v-textarea
     v-else-if="field.fieldType === 'object'"
     v-model="objectJsonValue"
-    :label="field.title || field.name"
+    :label="fieldLabel"
     :hint="field.description || 'JSON formatında object giriniz'"
     persistent-hint
     :required="field.mandatory"
@@ -377,7 +446,7 @@ const rules = computed(() => {
     :items="relationOptions"
     item-title="title"
     item-value="value"
-    :label="field.title || field.name"
+    :label="fieldLabel"
     :hint="field.description"
     :persistent-hint="!!field.description"
     :required="field.mandatory"
@@ -405,7 +474,7 @@ const rules = computed(() => {
     :items="usersOptions"
     item-title="title"
     item-value="value"
-    :label="field.title || field.name"
+    :label="fieldLabel"
     :hint="field.description"
     :persistent-hint="!!field.description"
     :required="field.mandatory"
@@ -431,7 +500,7 @@ const rules = computed(() => {
     :items="groupsOptions"
     item-title="title"
     item-value="value"
-    :label="field.title || field.name"
+    :label="fieldLabel"
     :hint="field.description"
     :persistent-hint="!!field.description"
     :required="field.mandatory"
@@ -454,7 +523,7 @@ const rules = computed(() => {
   <v-text-field
     v-else-if="field.fieldType === 'incremental'"
     :model-value="localValue || '(Otomatik)'"
-    :label="field.title || field.name"
+    :label="fieldLabel"
     :hint="field.description || 'Bu alan otomatik olarak oluşturulacaktır'"
     persistent-hint
     readonly

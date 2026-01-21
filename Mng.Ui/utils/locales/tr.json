@@ -1488,5 +1488,402 @@
     "copy": "Kopyala",
     "copied": "Kopyalandı!",
     "sessionCleared": "Konuşma geçmişi temizlendi"
+  },
+  "automated-forms": {
+    "title": "Otomatik Formlar",
+    "breadcrumbs": {
+      "home": "Dashboard",
+      "automatedForms": "Otomatik Formlar",
+      "create": "Yeni Form",
+      "edit": "Form Düzenle",
+      "view": "Form Görüntüle"
+    },
+    "list": {
+      "title": "Otomatik Formlar",
+      "search": {
+        "label": "Form Ara",
+        "placeholder": "Form adı veya kodu...",
+        "hint": "Form adı veya koduna göre ara"
+      },
+      "buttons": {
+        "refresh": "Yenile",
+        "newForm": "Yeni Form",
+        "openForm": "Formu Aç",
+        "view": "Görüntüle",
+        "edit": "Düzenle",
+        "delete": "Sil"
+      },
+      "table": {
+        "headers": {
+          "formName": "Form Adı",
+          "dataset": "Dataset",
+          "isActive": "Aktif",
+          "sideMenu": "Side Menu",
+          "createdAt": "Oluşturulma",
+          "actions": "İşlemler"
+        },
+        "status": {
+          "active": "Aktif",
+          "inactive": "Pasif"
+        },
+        "sideMenu": {
+          "added": "Eklendi",
+          "notAdded": "Eklenmedi"
+        },
+        "noData": {
+          "title": "Form bulunamadı",
+          "button": "İlk Formu Oluştur"
+        },
+        "pagination": {
+          "total": "Toplam:",
+          "records": "kayıt",
+          "page": "Sayfa",
+          "of": "/",
+          "showing": "gösteriliyor",
+          "itemsPerPage": "Sayfa başına kayıt:"
+        }
+      },
+      "viewDialog": {
+        "title": "Form Detayları",
+        "fields": {
+          "formCode": "Form Kodu:",
+          "description": "Açıklama:",
+          "dataset": "Dataset:",
+          "status": "Durum:",
+          "sideMenu": "Side Menu:",
+          "createdAt": "Oluşturulma:",
+          "updatedAt": "Son Güncelleme:"
+        },
+        "noDescription": "Açıklama yok",
+        "buttons": {
+          "openForm": "Formu Aç",
+          "close": "Kapat",
+          "edit": "Düzenle"
+        }
+      },
+      "deleteDialog": {
+        "title": "Formu Sil",
+        "message": "Bu formu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+        "buttons": {
+          "cancel": "İptal",
+          "confirm": "Evet, Sil"
+        }
+      }
+    },
+    "form": {
+      "title": {
+        "create": "Yeni Form",
+        "edit": "Form Düzenle"
+      },
+      "tabs": {
+        "basic": "Temel Bilgiler",
+        "list": "Liste Ayarları",
+        "form": "Form Ayarları"
+      },
+      "fields": {
+        "formName": {
+          "label": "Form Adı *",
+          "placeholder": "Örn: Kitaplar Yönetimi",
+          "hint": "3-100 karakter"
+        },
+        "formCode": {
+          "label": "Form Kodu *",
+          "placeholder": "Örn: books-form",
+          "hint": "3-50 karakter, sadece harf, rakam, alt çizgi ve tire"
+        },
+        "description": {
+          "label": "Açıklama",
+          "placeholder": "Form açıklaması (opsiyonel)"
+        },
+        "datasetName": {
+          "label": "Dataset Seçimi *",
+          "placeholder": "Dataset seçin",
+          "hint": "Bu form için kullanılacak dataset'i seçin"
+        },
+        "isActive": {
+          "label": "Aktif"
+        }
+      },
+      "validation": {
+        "formNameRequired": "Form adı gereklidir",
+        "formNameMinLength": "Form adı en az 3 karakter olmalıdır",
+        "formNameMaxLength": "Form adı en fazla 100 karakter olabilir",
+        "formCodeRequired": "Form kodu gereklidir",
+        "formCodeMinLength": "Form kodu en az 3 karakter olmalıdır",
+        "formCodeMaxLength": "Form kodu en fazla 50 karakter olabilir",
+        "formCodeInvalid": "Form kodu sadece harf, rakam, alt çizgi ve tire içerebilir",
+        "datasetRequired": "Dataset seçimi gereklidir"
+      },
+      "listConfig": {
+        "title": "Liste Ayarları",
+        "description": "Liste görünümünde her field için görünürlük, sıralama, filtreleme ve sıra ayarlarını yapılandırabilirsiniz.",
+        "table": {
+          "headers": {
+            "fieldName": "Field Adı",
+            "visible": "Görünür",
+            "sortable": "Sıralanabilir",
+            "filterable": "Filtrelenebilir",
+            "displayField": "Gösterilecek Alan",
+            "order": "Sıra"
+          },
+          "displayFieldPlaceholder": "Gösterilecek alanı seçin",
+          "displayFieldHint": "Alan seçeneklerini görmek için ilişkili dataset yüklenmiş olmalı",
+          "displayFieldObjectHint": "Alan adını girin (örn: name, title)",
+          "actions": {
+            "settings": "Ayarlar"
+          }
+        },
+        "modal": {
+          "title": "Sütun Ayarları",
+          "fieldName": "Alan Adı",
+          "visible": "Görünür",
+          "sortable": "Sıralanabilir",
+          "filterable": "Filtrelenebilir",
+          "order": "Sıra",
+          "displayField": "Gösterilecek Alan",
+          "displayFieldPlaceholder": "Gösterilecek alanı seçin",
+          "displayFieldHint": "Alan seçeneklerini görmek için ilişkili dataset yüklenmiş olmalı",
+          "displayFieldObjectHint": "Alan adını girin (örn: name, title)",
+          "arrayDisplay": {
+            "title": "Dizi Görüntüleme Stili",
+            "style": "Görüntüleme Stili",
+            "separator": "Ayırıcı",
+            "separatorPlaceholder": "Örn: |, -, •",
+            "styles": {
+              "chip": "Chip (Varsayılan)",
+              "badge": "Badge",
+              "pill": "Pill (Yuvarlak)",
+              "outlined": "Outlined (Çerçeveli)",
+              "textSeparator": "Metin Ayırıcı",
+              "commaSeparated": "Virgülle Ayrılmış",
+              "list": "Liste (Dikey)",
+              "tag": "Tag"
+            }
+          },
+          "formatting": {
+            "title": "Formatlama",
+            "type": "Format Tipi",
+            "types": {
+              "none": "Yok",
+              "regex": "Regex (Düzenli İfade)",
+              "number": "Sayı",
+              "date": "Tarih",
+              "currency": "Para Birimi",
+              "textTransform": "Metin Dönüşümü",
+              "color": "Renk",
+              "conditionalColor": "Koşullu Renk"
+            },
+            "regexPattern": "Regex Deseni",
+            "regexPatternPlaceholder": "Örn: /pattern/g",
+            "regexReplacement": "Değiştirme Metni",
+            "regexReplacementPlaceholder": "Değiştirilecek metin",
+            "decimalPlaces": "Ondalık Basamak",
+            "thousandSeparator": "Binlik Ayırıcı",
+            "currencySymbol": "Para Birimi Sembolü",
+            "currencySymbolPlaceholder": "Örn: ₺, $, €",
+            "dateFormat": "Tarih Formatı",
+            "showTime": "Saat Göster",
+            "timeFormat": "Saat Formatı",
+            "timeFormats": {
+              "hhmm": "Saat:Dakika (HH:mm)",
+              "hhmmss": "Saat:Dakika:Saniye (HH:mm:ss)"
+            },
+            "textTransform": "Metin Dönüşümü",
+            "textTransformTypes": {
+              "uppercase": "Büyük Harf",
+              "lowercase": "Küçük Harf",
+              "capitalize": "Baş Harf Büyük"
+            },
+            "textColor": "Metin Rengi",
+            "backgroundColor": "Arka Plan Rengi",
+            "customTextColor": "Özel Metin Rengi",
+            "customBackgroundColor": "Özel Arka Plan Rengi",
+            "customColorPlaceholder": "#FF0000 veya rgb(255,0,0)",
+            "defaultTextColor": "Varsayılan Metin Rengi",
+            "defaultBackgroundColor": "Varsayılan Arka Plan Rengi",
+            "colors": {
+              "primary": "Primary",
+              "secondary": "Secondary",
+              "success": "Success (Yeşil)",
+              "error": "Error (Kırmızı)",
+              "warning": "Warning (Sarı)",
+              "info": "Info (Mavi)",
+              "custom": "Özel Renk"
+            },
+            "conditions": {
+              "title": "Koşullar",
+              "field": "Alan",
+              "operator": "Operatör",
+              "value": "Değer",
+              "add": "Koşul Ekle",
+              "default": "Varsayılan Renkler"
+            },
+            "operators": {
+              "eq": "Eşittir (=)",
+              "ne": "Eşit Değildir (≠)",
+              "gt": "Büyüktür (>)",
+              "gte": "Büyük Eşittir (≥)",
+              "lt": "Küçüktür (<)",
+              "lte": "Küçük Eşittir (≤)",
+              "contains": "İçerir",
+              "startsWith": "İle Başlar",
+              "endsWith": "İle Biter",
+              "in": "İçinde",
+              "notIn": "İçinde Değil"
+            }
+          },
+          "cancel": "İptal",
+          "save": "Kaydet"
+        },
+        "defaultSortBy": {
+          "label": "Varsayılan Sıralama (Field)",
+          "placeholder": "Field seçin"
+        },
+        "defaultSortOrder": {
+          "label": "Sıralama Yönü",
+          "ascending": "Artan",
+          "descending": "Azalan"
+        },
+        "enableSearch": {
+          "label": "Aramayı Etkinleştir",
+          "hint": "Liste görünümünde arama özelliğini etkinleştir"
+        },
+        "noDataset": "Liste ayarlarını yapılandırmak için önce bir dataset seçmelisiniz."
+      },
+      "formConfig": {
+        "title": "Form Ayarları",
+        "visibleFields": {
+          "label": "Görünür Field'lar",
+          "placeholder": "Field seçin",
+          "hint": "Form'da gösterilecek field'lar (boş ise tümü gösterilir)"
+        },
+        "readonlyFields": {
+          "label": "Salt Okunur Field'lar",
+          "placeholder": "Field seçin",
+          "hint": "Salt okunur field'lar (incremental field'lar otomatik olarak salt okunurdur)"
+        },
+        "relationFields": {
+          "title": "Relation Field Ayarları",
+          "description": "Relation field'lar için dropdown'da gösterilecek field'ı ve ID değeri olarak kullanılacak field'ı seçebilirsiniz.",
+          "displayField": {
+            "label": "Gösterilecek Field (Display)",
+            "placeholder": "Field seçin",
+            "hint": "Dropdown'da gösterilecek field"
+          },
+          "idField": {
+            "label": "ID Field (Değer)",
+            "placeholder": "Field seçin (varsayılan: __dataId)",
+            "hint": "Değer olarak kullanılacak field (genellikle __dataId)"
+          },
+          "noRelationFields": "Bu dataset'te relation tipinde field bulunamadı."
+        },
+        "fieldLayout": {
+          "title": "Field Layout Ayarları",
+          "description": "Her field için form görünümünde kaç sütun kaplayacağını ve hangi gruba ait olduğunu yapılandırabilirsiniz.",
+          "table": {
+            "headers": {
+              "fieldName": "Field Adı",
+              "columnSpan": "Sütun Genişliği",
+              "group": "Grup"
+            }
+          },
+          "groupPlaceholder": "Grup adı (opsiyonel)"
+        },
+        "noDataset": "Form ayarlarını yapılandırmak için önce bir dataset seçmelisiniz."
+      },
+      "buttons": {
+        "cancel": "İptal",
+        "create": "Oluştur",
+        "update": "Güncelle"
+      },
+      "locale": {
+        "title": "Dil Desteği",
+        "description": "Bu buton, bu form ({formCode}) için tüm field label'larını desteklenen tüm dillere çevirir ve dil dosyalarını günceller.",
+        "buttons": {
+          "updateLocales": "Dil Dosyalarını Güncelle"
+        }
+      },
+      "messages": {
+        "loading": "Form yükleniyor...",
+        "notFound": "Form bulunamadı",
+        "loadError": "Form yüklenirken bir hata oluştu",
+        "createSuccess": "Form başarıyla oluşturuldu!",
+        "updateSuccess": "Form başarıyla güncellendi!",
+        "saveError": "Form kaydedilirken bir hata oluştu",
+        "validationError": "Form doğrulaması başarısız. Lütfen tüm gerekli alanları doldurun.",
+        "duplicateCode": "Bu form kodu zaten kullanılıyor. Lütfen farklı bir kod seçin."
+      },
+      "warning": "Uyarı: Bu sayfaya erişim için manager veya admin yetkisi gereklidir."
+    },
+    "view": {
+      "title": "Form Görüntüle",
+      "loading": "Form yükleniyor...",
+      "buttons": {
+        "newRecord": "Yeni Kayıt",
+        "refresh": "Yenile",
+        "edit": "Düzenle",
+        "delete": "Sil",
+        "save": "Kaydet",
+        "update": "Güncelle",
+        "cancel": "İptal",
+        "close": "Kapat",
+        "exportJSON": "JSON Olarak Dışa Aktar",
+        "exportCSV": "CSV Olarak Dışa Aktar"
+      },
+      "search": {
+        "label": "Ara...",
+        "placeholder": "Arama terimi girin..."
+      },
+      "filters": {
+        "title": "Filtreler",
+        "clear": "Filtreleri Temizle",
+        "filterPlaceholder": "filtrele..."
+      },
+      "table": {
+        "headers": {
+          "actions": "İşlemler"
+        },
+        "pagination": {
+          "total": "Toplam",
+          "records": "kayıt",
+          "page": "Sayfa",
+          "itemsPerPage": "Sayfa başına kayıt:"
+        }
+      },
+      "empty": {
+        "title": "Henüz veri yok",
+        "description": "Bu dataset'te henüz kayıt bulunamadı. \"Yeni Kayıt\" butonuna tıklayarak ilk kaydı oluşturabilirsiniz."
+      },
+      "formDialog": {
+        "title": {
+          "create": "Yeni Kayıt",
+          "edit": "Kayıt Düzenle"
+        }
+      },
+      "deleteDialog": {
+        "title": "Kayıt Sil",
+        "message": "Bu kaydı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+        "buttons": {
+          "cancel": "İptal",
+          "confirm": "Evet, Sil"
+        }
+      },
+      "messages": {
+        "loadError": "Form yüklenirken bir hata oluştu",
+        "dataLoadError": "Veri yüklenirken bir hata oluştu",
+        "createError": "Kayıt oluşturulurken bir hata oluştu",
+        "updateError": "Kayıt güncellenirken bir hata oluştu",
+        "deleteError": "Kayıt silinirken bir hata oluştu",
+        "itemLoadError": "Kayıt yüklenirken bir hata oluştu",
+        "itemIdNotFound": "Kayıt ID bulunamadı",
+        "notFound": "Form bulunamadı",
+        "exportError": "Veri dışa aktarılırken bir hata oluştu"
+      },
+      "cellFormat": {
+        "yes": "Evet",
+        "no": "Hayır"
+      }
+    },
+    "fields": {}
   }
 }

@@ -1621,8 +1621,117 @@
             "visible": "可见",
             "sortable": "可排序",
             "filterable": "可筛选",
+            "displayField": "显示字段",
             "order": "顺序"
+          },
+          "displayFieldPlaceholder": "选择要显示的字段",
+          "displayFieldHint": "必须加载相关数据集才能显示字段选项",
+          "displayFieldObjectHint": "输入字段名称（例如：name, title）",
+          "actions": {
+            "settings": "设置"
           }
+        },
+        "modal": {
+          "title": "列设置",
+          "fieldName": "字段名称",
+          "visible": "可见",
+          "sortable": "可排序",
+          "filterable": "可筛选",
+          "order": "顺序",
+          "displayField": "显示字段",
+          "displayFieldPlaceholder": "选择要显示的字段",
+          "displayFieldHint": "必须加载相关数据集才能显示字段选项",
+          "displayFieldObjectHint": "输入字段名称（例如：name, title）",
+          "arrayDisplay": {
+            "title": "数组显示样式",
+            "style": "显示样式",
+            "separator": "分隔符",
+            "separatorPlaceholder": "例如：|, -, •",
+            "styles": {
+              "chip": "Chip (默认)",
+              "badge": "Badge",
+              "pill": "Pill (圆形)",
+              "outlined": "Outlined (边框)",
+              "textSeparator": "文本分隔符",
+              "commaSeparated": "逗号分隔",
+              "list": "列表 (垂直)",
+              "tag": "Tag"
+            }
+          },
+          "formatting": {
+            "title": "格式化",
+            "type": "格式类型",
+            "types": {
+              "none": "无",
+              "regex": "Regex (正则表达式)",
+              "number": "数字",
+              "date": "日期",
+              "currency": "货币",
+              "textTransform": "文本转换",
+              "color": "颜色",
+              "conditionalColor": "条件颜色"
+            },
+            "regexPattern": "Regex 模式",
+            "regexPatternPlaceholder": "例如：/pattern/g",
+            "regexReplacement": "替换文本",
+            "regexReplacementPlaceholder": "要替换的文本",
+            "decimalPlaces": "小数位数",
+            "thousandSeparator": "千位分隔符",
+            "currencySymbol": "货币符号",
+            "currencySymbolPlaceholder": "例如：₺, $, €",
+            "dateFormat": "日期格式",
+            "showTime": "显示时间",
+            "timeFormat": "时间格式",
+            "timeFormats": {
+              "hhmm": "时:分 (HH:mm)",
+              "hhmmss": "时:分:秒 (HH:mm:ss)"
+            },
+            "textTransform": "文本转换",
+            "textTransformTypes": {
+              "uppercase": "大写",
+              "lowercase": "小写",
+              "capitalize": "首字母大写"
+            },
+            "textColor": "文本颜色",
+            "backgroundColor": "背景颜色",
+            "customTextColor": "自定义文本颜色",
+            "customBackgroundColor": "自定义背景颜色",
+            "customColorPlaceholder": "#FF0000 或 rgb(255,0,0)",
+            "defaultTextColor": "默认文本颜色",
+            "defaultBackgroundColor": "默认背景颜色",
+            "colors": {
+              "primary": "Primary",
+              "secondary": "Secondary",
+              "success": "Success (绿色)",
+              "error": "Error (红色)",
+              "warning": "Warning (黄色)",
+              "info": "Info (蓝色)",
+              "custom": "自定义颜色"
+            },
+            "conditions": {
+              "title": "条件",
+              "field": "字段",
+              "operator": "运算符",
+              "value": "值",
+              "add": "添加条件",
+              "default": "默认颜色"
+            },
+            "operators": {
+              "eq": "等于 (=)",
+              "ne": "不等于 (≠)",
+              "gt": "大于 (>)",
+              "gte": "大于或等于 (≥)",
+              "lt": "小于 (<)",
+              "lte": "小于或等于 (≤)",
+              "contains": "包含",
+              "startsWith": "以...开始",
+              "endsWith": "以...结束",
+              "in": "在...中",
+              "notIn": "不在...中"
+            }
+          },
+          "cancel": "取消",
+          "save": "保存"
         },
         "defaultSortBy": {
           "label": "默认排序（字段）",
@@ -1692,6 +1801,7 @@
         "createSuccess": "表单创建成功！",
         "updateSuccess": "表单更新成功！",
         "saveError": "保存表单时发生错误",
+        "validationError": "表单验证失败。请填写所有必填字段。",
         "duplicateCode": "此表单代码已被使用。请选择不同的代码。"
       },
       "warning": "警告：访问此页面需要管理员或管理员权限。"
