@@ -32,6 +32,31 @@ const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
 const menuTitle = computed(() => {
   const currentLocale = localeStore.locale;
   
+  // If item is a header, use header property for translation
+  if (props.item.header) {
+    // Try to translate header using pageCode if available
+    if (props.item.pageCode && i18n) {
+      const headerTranslationKey = `menu.headers.${props.item.pageCode}`;
+      const headerValue = i18n.t(headerTranslationKey);
+      
+      // If translation found, return it
+      if (headerValue !== headerTranslationKey) {
+        return headerValue;
+      }
+    }
+    
+    // Fallback to header property or translate it directly
+    if (i18n) {
+      const translatedHeader = i18n.t(props.item.header);
+      if (translatedHeader !== props.item.header) {
+        return translatedHeader;
+      }
+    }
+    
+    return props.item.header;
+  }
+  
+  // For non-header items, use title
   if (!props.item.pageCode || !i18n) {
     return props.item.title ? i18n?.t?.(props.item.title) || props.item.title : '';
   }

@@ -161,68 +161,11 @@ onMounted(async () => {
                     <template v-for="(item, i) in sidebarMenu" :key="`menu-${i}-${item.title || item.header || i}`">
                         <!---Item Sub Header -->
                         <template v-if="item.header">
-                            <!-- Header'lar horizontal menu'de görünmez, sadece children render edilir -->
-                            <template v-if="item.children && item.children.length > 0">
-                                <template v-for="(child, j) in item.children" :key="`child-${i}-${j}-${child.title || child.header || j}`">
-                                    <!-- Nested Header: Eğer child bir header ise -->
-                                    <template v-if="child.header">
-                                        <!-- Nested header'ın children'larını recursive olarak render et -->
-                                        <template v-if="child.children && child.children.length > 0">
-                                            <template v-for="(grandchild, k) in child.children" :key="`grandchild-${i}-${j}-${k}-${grandchild.title || grandchild.header || k}`">
-                                                <!-- Deep nested: Eğer grandchild da bir header ise -->
-                                                <template v-if="grandchild.header">
-                                                    <template v-if="grandchild.children && grandchild.children.length > 0">
-                                                        <template v-for="(greatGrandchild, l) in grandchild.children" :key="`greatGrandchild-${i}-${j}-${k}-${l}-${greatGrandchild.title || greatGrandchild.header || l}`">
-                                                            <li class="navItem">
-                                                                <LcFullHorizontalSidebarNavCollapse 
-                                                                    v-if="greatGrandchild.children && greatGrandchild.children.length > 0"
-                                                                    :item="greatGrandchild" 
-                                                                    :level="0" 
-                                                                />
-                                                                <LcFullHorizontalSidebarNavItem 
-                                                                    v-else
-                                                                    :item="greatGrandchild" 
-                                                                    :level="0" 
-                                                                />
-                                                            </li>
-                                                        </template>
-                                                    </template>
-                                                </template>
-                                                <!-- Normal Item veya Collapse: Eğer grandchild header değilse -->
-                                                <template v-else>
-                                                    <li class="navItem">
-                                                        <LcFullHorizontalSidebarNavCollapse 
-                                                            v-if="grandchild.children && grandchild.children.length > 0"
-                                                            :item="grandchild" 
-                                                            :level="0" 
-                                                        />
-                                                        <LcFullHorizontalSidebarNavItem 
-                                                            v-else
-                                                            :item="grandchild" 
-                                                            :level="0" 
-                                                        />
-                                                    </li>
-                                                </template>
-                                            </template>
-                                        </template>
-                                    </template>
-                                    <!-- Normal Item veya Collapse: Eğer child header değilse -->
-                                    <template v-else>
-                                        <li class="navItem">
-                                            <LcFullHorizontalSidebarNavCollapse 
-                                                v-if="child.children && child.children.length > 0"
-                                                :item="child" 
-                                                :level="0" 
-                                            />
-                                            <LcFullHorizontalSidebarNavItem 
-                                                v-else
-                                                :item="child" 
-                                                :level="0" 
-                                            />
-                                        </li>
-                                    </template>
-                                </template>
-                            </template>
+                            <!-- Header'lar horizontal menu'de dropdown olarak görünür -->
+                            <li v-if="item.children && item.children.length > 0" class="navItem">
+                                <LcFullHorizontalSidebarNavCollapse :item="item" :level="0" />
+                            </li>
+                            <!-- Header'ın children'ı yoksa sadece header gösterilmez (normalde olmaz ama güvenlik için) -->
                         </template>
                         <!---If Has Child (no header) -->
                         <li v-else-if="item.children && item.children.length > 0" class="navItem">
