@@ -1912,5 +1912,85 @@
     "copy": "Copy",
     "copied": "Copied!",
     "sessionCleared": "Conversation history cleared"
+  },
+  "dashboards": {
+    "title": "Dashboards",
+    "breadcrumbs": {
+      "home": "Dashboard",
+      "dashboards": "Dashboards"
+    },
+    "view": {
+      "loading": "Loading...",
+      "notFound": "Dashboard not found.",
+      "backToList": "Back to list",
+      "noLayout": "No layout defined.",
+      "emptyWidget": "Empty slot"
+    },
+    "list": {
+      "table": {
+        "headers": {
+          "name": "Name",
+          "title": "Title",
+          "slug": "Slug",
+          "isDefault": "Default",
+          "isActive": "Active",
+          "order": "Order",
+          "createdAt": "Created",
+          "actions": "Actions"
+        }
+      }
+    },
+    "builder": {
+      "createTitle": "New Dashboard",
+      "editTitle": "Edit Dashboard",
+      "form": {
+        "sectionTitle": "Basic info",
+        "name": "Name",
+        "title": "Title",
+        "description": "Description",
+        "slug": "Slug",
+        "slugHint": "Leave empty to use name",
+        "isDefault": "Default",
+        "isActive": "Active"
+      },
+      "layout": {
+        "sectionTitle": "Layout",
+        "row": "Row",
+        "col": "Column",
+        "span": "Span",
+        "widgetId": "Widget ID",
+        "widgetPlaceholder": "Widget ID (optional)",
+        "addRow": "Add row",
+        "addCol": "Add column",
+        "removeRow": "Remove row",
+        "spanTotalWarning": "Row span total must not exceed 12.",
+        "nestedRows": "Nested rows",
+        "addNestedRows": "Add nested rows",
+        "removeNestedRows": "Remove nested rows",
+        "selectWidget": "Select widget",
+        "removeWidget": "Remove widget"
+      },
+      "actions": {
+        "save": "Save",
+        "cancel": "Cancel",
+        "preview": "Preview"
+      },
+      "validation": {
+        "nameRequired": "Name is required.",
+        "titleRequired": "Title is required.",
+        "atLeastOneRow": "At least one row is required."
+      },
+      "widgetPicker": {
+        "title": "Select Widget",
+        "search": "Search",
+        "searchPlaceholder": "Widget name or title...",
+        "category": "Category",
+        "allCategories": "All",
+        "select": "Select",
+        "cancel": "Cancel",
+        "noWidgets": "No widgets found",
+        "noWidgetsHint": "Try changing your search criteria."
+      }
+    }
   }
 }

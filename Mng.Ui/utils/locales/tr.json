@@ -1893,5 +1893,85 @@
       }
     },
     "fields": {}
+  },
+  "dashboards": {
+    "title": "Dashboards",
+    "breadcrumbs": {
+      "home": "Dashboard",
+      "dashboards": "Dashboards"
+    },
+    "view": {
+      "loading": "Yükleniyor...",
+      "notFound": "Dashboard bulunamadı.",
+      "backToList": "Listeye dön",
+      "noLayout": "Layout tanımlı değil.",
+      "emptyWidget": "Boş alan"
+    },
+    "list": {
+      "table": {
+        "headers": {
+          "name": "Ad",
+          "title": "Başlık",
+          "slug": "Slug",
+          "isDefault": "Varsayılan",
+          "isActive": "Aktif",
+          "order": "Sıra",
+          "createdAt": "Oluşturulma",
+          "actions": "İşlemler"
+        }
+      }
+    },
+    "builder": {
+      "createTitle": "Yeni Dashboard",
+      "editTitle": "Dashboard Düzenle",
+      "form": {
+        "sectionTitle": "Temel bilgiler",
+        "name": "Ad",
+        "title": "Başlık",
+        "description": "Açıklama",
+        "slug": "Slug",
+        "slugHint": "Boş bırakılırsa ad kullanılır",
+        "isDefault": "Varsayılan",
+        "isActive": "Aktif"
+      },
+      "layout": {
+        "sectionTitle": "Layout",
+        "row": "Satır",
+        "col": "Sütun",
+        "span": "Genişlik",
+        "widgetId": "Widget ID",
+        "widgetPlaceholder": "Widget ID (opsiyonel)",
+        "addRow": "Satır ekle",
+        "addCol": "Sütun ekle",
+        "removeRow": "Satırı sil",
+        "spanTotalWarning": "Satır genişlikleri toplamı 12'yi geçmemeli.",
+        "nestedRows": "İç içe satırlar",
+        "addNestedRows": "İç satır ekle",
+        "removeNestedRows": "İç satırları kaldır",
+        "selectWidget": "Widget seç",
+        "removeWidget": "Widget'ı kaldır"
+      },
+      "actions": {
+        "save": "Kaydet",
+        "cancel": "İptal",
+        "preview": "Önizle"
+      },
+      "validation": {
+        "nameRequired": "Ad zorunludur.",
+        "titleRequired": "Başlık zorunludur.",
+        "atLeastOneRow": "En az bir satır gerekli."
+      },
+      "widgetPicker": {
+        "title": "Widget Seç",
+        "search": "Ara",
+        "searchPlaceholder": "Widget adı veya başlığı...",
+        "category": "Kategori",
+        "allCategories": "Tümü",
+        "select": "Seç",
+        "cancel": "İptal",
+        "noWidgets": "Widget bulunamadı",
+        "noWidgetsHint": "Arama kriterlerinizi değiştirmeyi deneyin."
+      }
+    }
   }
 }
