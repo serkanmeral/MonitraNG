@@ -11,8 +11,10 @@ import { useLocaleStore } from '@/stores/locale';
 import { fetchFromDataGateway } from '@/services/apiService';
 import { FileCodeIcon, PlusIcon, RefreshIcon, EditIcon, TrashIcon, EyeIcon, XIcon, CheckIcon, DownloadIcon } from 'vue-tabler-icons';
 import { useFieldLabel } from '@/composables/useFieldLabel';
+import { usePagePermissions } from '@/composables/usePagePermissions';
 
 const { getFieldLabel } = useFieldLabel();
+const { canCreate, canUpdate, canDelete, canExport } = usePagePermissions();
 
 // Get i18n instance for legacy mode
 const nuxtApp = useNuxtApp();
@@ -346,14 +348,16 @@ const tableHeaders = computed(() => {
     });
   }
   
-  // Add actions column
-  headers.push({
-    title: t('automated-forms.view.table.headers.actions'),
-    key: 'actions',
-    sortable: false,
-    filterable: false,
-    align: 'end',
-  });
+  // Add actions column only when user has update or delete permission
+  if (canUpdate.value || canDelete.value) {
+    headers.push({
+      title: t('automated-forms.view.table.headers.actions'),
+      key: 'actions',
+      sortable: false,
+      filterable: false,
+      align: 'end',
+    });
+  }
   
   return headers;
 });
@@ -2223,6 +2227,7 @@ const getFormDescription = (): string => {
       <div class="d-flex justify-space-between align-center mb-4 flex-wrap ga-3">
         <div class="d-flex ga-3 align-center">
           <v-btn
+            v-if="canCreate"
             color="primary"
             variant="flat"
             @click="createNewItem"
@@ -2244,8 +2249,8 @@ const getFormDescription = (): string => {
             <RefreshIcon size="18" />
           </v-btn>
           
-          <!-- Export Menu -->
-          <v-menu v-if="form && dataset">
+          <!-- Export Menu (hidden when no export permission) -->
+          <v-menu v-if="canExport && form && dataset">
             <template v-slot:activator="{ props }">
               <v-btn
                 icon
@@ -2582,10 +2587,11 @@ const getFormDescription = (): string => {
           </span>
         </template>
         
-        <!-- Actions Column -->
+        <!-- Actions Column (only rendered when canUpdate || canDelete via tableHeaders) -->
         <template v-slot:item.actions="{ item }">
           <div class="d-flex ga-2 justify-end">
             <v-btn
+              v-if="canUpdate"
               icon
               size="small"
               variant="text"
@@ -2595,6 +2601,7 @@ const getFormDescription = (): string => {
               <EditIcon size="18" />
             </v-btn>
             <v-btn
+              v-if="canDelete"
               icon
               size="small"
               variant="text"

@@ -1365,6 +1365,30 @@ t('common.save'); // TypeScript otomatik tamamlama
 
 ---
 
+#### 6.20 Automated Forms Yetkilendirme ✅ (Tamamlandı - 2026-01-XX)
+
+**Durum:** ✅ Tamamlandı
+
+**Hedef:**
+- Automated Forms view sayfasında menü yetkilerine (view, create, update, delete, export) göre buton ve aksiyonların gizlenmesi
+- Side menu ile aynı yetki kaynağının kullanılması (aktif kullanıcının sayfa bazlı yetkileri)
+
+**Yapılan Değişiklikler:**
+- `pages/apps/automated-forms/view/[formCode].vue`:
+  - `usePagePermissions` composable entegrasyonu (`canCreate`, `canUpdate`, `canDelete`, `canExport`)
+  - **Yeni Ekle** butonu: `v-if="canCreate"` — create yetkisi yoksa gizlenir
+  - **Export** menüsü: `v-if="canExport"` — export yetkisi yoksa gizlenir
+  - **Actions** sütunu: Sadece `canUpdate || canDelete` iken tabloya eklenir
+  - **Düzenle** butonu: `v-if="canUpdate"` — update yetkisi yoksa gizlenir
+  - **Sil** butonu: `v-if="canDelete"` — delete yetkisi yoksa gizlenir
+
+**Notlar:**
+- View yetkisi zaten side menu render ve `menu-permission` middleware ile kontrol ediliyor
+- Form "user" tipinde menü item ise, ilgili menü item'ının `permissions.groups` tanımları kullanılıyor
+- Admin/manager bypass kuralları `usePagePermissions` içinde mevcut
+
+---
+
 ### Phase 7: User & Group Management Sayfaları 👥
 
 **Durum:** Kısmen Tamamlandı (User Management CRUD sayfaları oluşturuldu)
@@ -2448,6 +2472,12 @@ Login olan kullanıcının domain bilgisi token'dan alınarak MngKeeper'dan geti
   - Field-level error mapping ve gösterimi (field label kullanımı)
   - API service error handling iyileştirmeleri (error.data preservation)
     - Dynamic alanlar desteği
+- **2026-01-XX** - Phase 6.20: Automated Forms Yetkilendirme ✅
+  - view/[formCode].vue'da usePagePermissions entegrasyonu (canCreate, canUpdate, canDelete, canExport)
+  - Yeni Ekle butonu create yetkisine göre gizleniyor
+  - Export menüsü export yetkisine göre gizleniyor
+  - Actions sütunu ve Düzenle/Sil butonları update/delete yetkilerine göre gizleniyor
+  - Side menu ile aynı yetki kaynağı kullanılıyor
 - **2026-01-XX** - Phase 9.1: Domain Logo Support ✅
   - Login sonrası domain bilgisi otomatik yükleme
   - Side menu'de domain logosu gösterimi (kullanıcı adı arka planı)
@@ -2466,5 +2496,5 @@ Login olan kullanıcının domain bilgisi token'dan alınarak MngKeeper'dan geti
 
 **Son Güncelleme:** 2026-01-21  
 **Version:** 1.3.0  
-**Status:** 🚧 Development Phase (Side Menu ✅, Real-time Updates ✅, Localization ✅, Automated Forms i18n ✅, Automated Forms Liste Edit Fonksiyonları ✅, Diğer Phase'ler 📋 Planning)
+**Status:** 🚧 Development Phase (Side Menu ✅, Real-time Updates ✅, Localization ✅, Automated Forms i18n ✅, Automated Forms Liste Edit Fonksiyonları ✅, Automated Forms Yetkilendirme ✅, Diğer Phase'ler 📋 Planning)
 
