@@ -337,12 +337,23 @@ Side Menu artık MongoDB'de `@side_menu` dataset'i üzerinden dinamik olarak yö
   - Icon list'leri (icon picker için)
 
 ##### 5.0.3 Sidebar Component Entegrasyonu ✅
-- ✅ Sidebar component MongoDB entegrasyonu:
+- ✅ Vertical Sidebar component MongoDB entegrasyonu:
   - API'den menu yükleme (fallback: hard-coded)
   - Dynamic icon rendering (Tabler/MDI)
   - Header children render desteği eklendi
+  - SignalR entegrasyonu (real-time menu updates)
+  - Permission filtreleme
+- ✅ Horizontal Sidebar component MongoDB entegrasyonu ✅ (11 Ocak 2026):
+  - API'den menu yükleme (fallback: hard-coded)
+  - Dynamic icon rendering (Tabler/MDI)
+  - Header children render desteği eklendi
+  - SignalR entegrasyonu (real-time menu updates)
+  - Permission filtreleme
+  - i18n desteği (pageCode ile çoklu dil)
+  - Recursive menu rendering (nested headers desteği)
 - ✅ `Icon.vue` component güncellendi (dynamic icon rendering)
-- ✅ `NavItem`, `NavCollapse`, `NavGroup` component'leri güncellendi
+- ✅ Vertical `NavItem`, `NavCollapse`, `NavGroup` component'leri güncellendi
+- ✅ Horizontal `NavItem`, `NavCollapse` component'leri güncellendi (vertical ile aynı özellikler)
 - ✅ Global middleware eklendi (`menu-permission.global.ts`):
   - Route bazlı permission kontrolü
   - Admin bypass
@@ -449,9 +460,18 @@ SignalR entegrasyonu ile Side Menu Manager'da yapılan CRUD işlemleri tüm aç�
 - `usePagePermissions`: Route bazlı permission kontrolü
 
 **Component Yapısı:**
-- Sidebar: `components/lc/Full/vertical-sidebar/`
+- Vertical Sidebar: `components/lc/Full/vertical-sidebar/`
+- Horizontal Sidebar: `components/lc/Full/horizontal-sidebar/`
 - Side Menu Manager: `components/apps/side-menu-manager/`
 - Middleware: `middleware/menu-permission.global.ts`
+
+**Not:** Hem vertical hem horizontal sidebar'lar aynı özelliklere sahip:
+- MongoDB entegrasyonu
+- SignalR real-time updates
+- Dynamic icon rendering
+- i18n desteği
+- Permission filtreleme
+- Recursive menu rendering
 
 **Sonraki Adımlar:**
 1. ~~MenuItemToolbar.vue hatası düzeltilecek~~ ✅ Tamamlandı
