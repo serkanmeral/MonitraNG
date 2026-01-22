@@ -1248,6 +1248,14 @@
         "fieldDefinitions": "Field Definitions",
         "predefinedQueries": "Predefined Queries",
         "validationDefinitions": "Validation Definitions",
+        "indexDefinitions": "Index Definitions",
+        "permissions": "Permissions"
+      },
+      "permissions": {
+        "basicInfo": "Basic Information",
+        "fieldDefinitions": "Field Definitions",
+        "predefinedQueries": "Predefined Queries",
+        "validationDefinitions": "Validation Definitions",
         "indexDefinitions": "Index Definitions"
       },
       "validation": {
@@ -1402,6 +1410,20 @@
         "title": "Index Definitions",
         "noIndexes": "No indexes defined yet",
         "fields": "Fields:"
+      },
+      "permissions": {
+        "title": "Permissions",
+        "read": "Read Permission",
+        "create": "Create Permission",
+        "update": "Update Permission",
+        "delete": "Delete Permission",
+        "selectGroups": "Select Groups",
+        "noPermissions": "No permissions defined",
+        "noPermissionsHint": "If no permissions are defined, everyone can access this dataset. Define permissions to restrict access to specific groups.",
+        "info": {
+          "title": "Information",
+          "description": "Define which user groups can perform read, create, update, and delete operations on this dataset. If a permission type is not defined, everyone can perform that operation."
+        }
       }
     }
   },

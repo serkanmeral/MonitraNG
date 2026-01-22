@@ -56,5 +56,11 @@ public class UpdateDatasetDto
     /// Index definitions (optional - adds new indexes, keeps old ones)
     /// </summary>
     public List<IndexDefinition>? IndexList { get; set; }
+
+    /// <summary>
+    /// Permissions definitions (optional - replaces entire permissions if provided)
+    /// null = no authorization check (everyone can access)
+    /// </summary>
+    public PermissionsDefinition? Permissions { get; set; }
 }
 

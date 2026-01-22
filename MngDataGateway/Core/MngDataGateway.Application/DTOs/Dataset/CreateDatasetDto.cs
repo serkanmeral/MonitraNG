@@ -63,5 +63,11 @@ public class CreateDatasetDto
     /// Index definitions (optional)
     /// </summary>
     public List<IndexDefinition>? IndexList { get; set; }
+
+    /// <summary>
+    /// Permissions definitions (optional - access control)
+    /// null or undefined = no authorization check (everyone can access)
+    /// </summary>
+    public PermissionsDefinition? Permissions { get; set; }
 }
 

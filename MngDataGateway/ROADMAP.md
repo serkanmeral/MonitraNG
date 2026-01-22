@@ -1,7 +1,7 @@
 # MngDataGateway - Geliştirme Yol Haritası
 
 **Son Güncelleme:** 11 Ocak 2026  
-**Versiyon:** 1.0.1  
+**Versiyon:** 1.0.2  
 **Durum:** 🚀 Aktif Geliştirme
 
 **Not:** Sonraki session için yapılacaklar için `docs/NEXT_SESSION_ROADMAP.md` dosyasına bakın.
@@ -473,47 +473,47 @@ public class DatasetSchema
 
 ---
 
-### Phase 3: Dataset Authorization - ORTA ÖNCELİK
+### Phase 3: Dataset Authorization - ✅ TAMAMLANDI (11 Ocak 2026)
 
 **Amaç:** Dataset bazlı yetkilendirme implementasyonu
 
-**Mevcut Durum:**
+**Durum:** ✅ Tamamlandı
+
+**Tamamlanan İşler:**
 - ✅ `PermissionsDefinition` entity (Domain layer'da mevcut)
 - ✅ `PermissionService` ve `IPermissionService` (implementasyon tamamlandı)
 - ✅ Permission check helper methods
 - ✅ MngKeeper integration (user groups)
-- ✅ DataController'da permission checks
-- ❌ **DTO Layer Eksiklikleri:**
-  - [ ] `CreateDatasetDto` - Permissions field'ı eklenmeli
-  - [ ] `UpdateDatasetDto` - Permissions field'ı eklenmeli
-  - [ ] `DatasetResponseDto` - Permissions field'ı eklenmeli
-- ❌ **Service Layer Eksiklikleri:**
-  - [ ] `DatasetService.CreateAsync` - Permissions mapping'i eklenmeli
-  - [ ] `DatasetService.UpdateAsync` - Permissions mapping'i eklenmeli
-  - [ ] `DatasetService.MapToDto` - Permissions mapping'i eklenmeli
-
-**Gereksinimler:**
-- [ ] DTO'lara Permissions field'ı ekleme
-- [ ] Service layer'da Permissions mapping
-- [ ] Group-based permissions (zaten mevcut, DTO/Service entegrasyonu eksik)
+- ✅ DataController'da permission checks (read, create, update, delete)
+- ✅ **DTO Layer:**
+  - ✅ `CreateDatasetDto` - Permissions field'ı eklendi
+  - ✅ `UpdateDatasetDto` - Permissions field'ı eklendi
+  - ✅ `DatasetResponseDto` - Permissions field'ı eklendi
+- ✅ **Service Layer:**
+  - ✅ `DatasetService.CreateAsync` - Permissions mapping eklendi
+  - ✅ `DatasetService.UpdateAsync` - Permissions mapping eklendi (boş permissions kontrolü ile)
+  - ✅ `DatasetService.MapToDto` - Permissions mapping eklendi
 
 **Permission Types:**
-- `read` - Read access
-- `create` - Create only
-- `update` - Update only
-- `delete` - Delete only
+- `read` - Read access (GET operations)
+- `create` - Create only (POST operations)
+- `update` - Update only (PUT operations)
+- `delete` - Delete only (DELETE operations)
 
-**Not:** Domain entity ve PermissionService mevcut. Sadece DTO ve Service katmanlarında permissions field'ı eksik.
+**Özellikler:**
+- ✅ Group-based permissions (MngKeeper'dan gelen user groups)
+- ✅ Boş permissions kontrolü (tüm permission type'lar boşsa null yapılıyor, MongoDB'ye kaydedilmiyor)
+- ✅ Permission kontrolü DataController'da tüm CRUD operasyonlarında aktif
+- ✅ JWT token'dan user groups okunuyor (JSON array, string array, comma-separated string formatları destekleniyor)
 
 **Test Scenarios:**
-- [ ] Unauthorized access (403 Forbidden)
-- [ ] Authorized access (success)
-- [ ] Group-based permissions
-- [ ] DTO mapping testleri (Create/Update/Response)
+- ✅ Unauthorized access (403 Forbidden) - Çalışıyor
+- ✅ Authorized access (success) - Çalışıyor
+- ✅ Group-based permissions - Çalışıyor
+- ✅ DTO mapping testleri (Create/Update/Response) - Çalışıyor
+- ✅ UI entegrasyonu - Tamamlandı
 
-**Öncelik:** Orta (Books dataset planında Phase 6)
-
-**Referans:** `docs/BOOKS_DATASET_PLAN.md` - Phase 6
+**Tarih:** 11 Ocak 2026
 
 ---
 

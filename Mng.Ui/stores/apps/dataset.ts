@@ -90,6 +90,19 @@ export interface IndexDefinition {
   unique?: boolean;
 }
 
+// Permission Definition
+export interface PermissionDefinition {
+  groups: string[]; // Allowed group names (from MngKeeper)
+}
+
+// Permissions Definition
+export interface PermissionsDefinition {
+  read?: PermissionDefinition;
+  create?: PermissionDefinition;
+  update?: PermissionDefinition;
+  delete?: PermissionDefinition;
+}
+
 // Dataset Response DTO
 export interface Dataset {
   dataId: string;
@@ -107,6 +120,7 @@ export interface Dataset {
   queries?: QueryDefinitionResponseDto[];
   indexListCount: number;
   indexList?: IndexDefinition[];
+  permissions?: PermissionsDefinition;
   createInfo: {
     createdAt: string | Date;
     userInfo: {
@@ -138,6 +152,7 @@ export interface CreateDatasetDto {
   validations?: ValidationDefinition[];
   queries?: QueryDefinitionDto[];
   indexList?: IndexDefinition[];
+  permissions?: PermissionsDefinition;
 }
 
 // Update Dataset DTO
@@ -151,6 +166,7 @@ export interface UpdateDatasetDto {
   validations?: ValidationDefinition[];
   queries?: QueryDefinitionDto[];
   indexList?: IndexDefinition[];
+  permissions?: PermissionsDefinition;
 }
 
 interface DatasetState {
@@ -439,6 +455,7 @@ export const useDatasetStore = defineStore('dataset', {
         queries: item.Queries || item.queries ? this.mapQueries(item.Queries || item.queries) : undefined,
         indexListCount: item.IndexListCount ?? item.indexListCount ?? (item.IndexList?.length ?? item.indexList?.length ?? 0),
         indexList: item.IndexList || item.indexList ? this.mapIndexList(item.IndexList || item.indexList) : undefined,
+        permissions: item.Permissions || item.permissions ? this.mapPermissions(item.Permissions || item.permissions) : undefined,
         createInfo: item.CreateInfo || item.createInfo || {
           createdAt: item.createdAt || new Date(),
           userInfo: {
@@ -533,6 +550,41 @@ export const useDatasetStore = defineStore('dataset', {
         fields: index.fields || index.Fields || {},
         unique: index.unique ?? index.Unique ?? false,
       }));
+    },
+
+    /**
+     * Map permissions object
+     */
+    mapPermissions(permissions: any): PermissionsDefinition {
+      if (!permissions) return {
+        read: undefined,
+        create: undefined,
+        update: undefined,
+        delete: undefined,
+      };
+
+      return {
+        read: permissions.read || permissions.Read ? {
+          groups: Array.isArray(permissions.read?.groups || permissions.Read?.Groups || permissions.read?.Groups || permissions.Read?.groups) 
+            ? (permissions.read?.groups || permissions.Read?.Groups || permissions.read?.Groups || permissions.Read?.groups)
+            : []
+        } : undefined,
+        create: permissions.create || permissions.Create ? {
+          groups: Array.isArray(permissions.create?.groups || permissions.Create?.Groups || permissions.create?.Groups || permissions.Create?.groups)
+            ? (permissions.create?.groups || permissions.Create?.Groups || permissions.create?.Groups || permissions.Create?.groups)
+            : []
+        } : undefined,
+        update: permissions.update || permissions.Update ? {
+          groups: Array.isArray(permissions.update?.groups || permissions.Update?.Groups || permissions.update?.Groups || permissions.Update?.groups)
+            ? (permissions.update?.groups || permissions.Update?.Groups || permissions.update?.Groups || permissions.Update?.groups)
+            : []
+        } : undefined,
+        delete: permissions.delete || permissions.Delete ? {
+          groups: Array.isArray(permissions.delete?.groups || permissions.Delete?.Groups || permissions.delete?.Groups || permissions.Delete?.groups)
+            ? (permissions.delete?.groups || permissions.Delete?.Groups || permissions.delete?.Groups || permissions.Delete?.groups)
+            : []
+        } : undefined,
+      };
     },
 
     /**

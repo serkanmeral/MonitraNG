@@ -5,7 +5,8 @@ import { useDatasetStore, type CreateDatasetDto, type UpdateDatasetDto } from '@
 import { useDatasetCategoryStore } from '@/stores/apps/datasetCategory';
 import { useAuthStore } from '@/stores/auth';
 import { DatabaseIcon, CheckIcon, XIcon, ArrowLeftIcon, PlusIcon, EditIcon, TrashIcon, FileCodeIcon, KeyIcon, ShieldIcon } from 'vue-tabler-icons';
-import type { FieldDefinition, FieldType, QueryDefinitionDto, IndexDefinition, QueryParameterDefinition, ValidationDefinition } from '@/stores/apps/dataset';
+import type { FieldDefinition, FieldType, QueryDefinitionDto, IndexDefinition, QueryParameterDefinition, ValidationDefinition, PermissionsDefinition, PermissionDefinition } from '@/stores/apps/dataset';
+import { fetchFromMngKeeper } from '@/services/apiService';
 
 // Get i18n instance for legacy mode
 const nuxtApp = useNuxtApp();
@@ -79,6 +80,7 @@ const steps = computed(() => [
   { title: t('datasets.form.steps.predefinedQueries'), value: 3, required: false },
   { title: t('datasets.form.steps.validationDefinitions'), value: 4, required: false },
   { title: t('datasets.form.steps.indexDefinitions'), value: 5, required: false },
+  { title: t('datasets.form.steps.permissions'), value: 6, required: false },
 ]);
 
 // Form data
@@ -93,6 +95,7 @@ const formData = ref<CreateDatasetDto>({
   validations: [],
   queries: [],
   indexList: [],
+  permissions: undefined,
 });
 
 // Validation rules
@@ -188,6 +191,108 @@ const loadCategories = async () => {
   }
 };
 
+// Groups for permissions
+const groups = ref<Array<{ id: string; name: string; isActive: boolean }>>([]);
+const loadingGroups = ref(false);
+
+// Load groups from MngKeeper
+const loadGroups = async () => {
+  loadingGroups.value = true;
+  try {
+    const response = await fetchFromMngKeeper('/group?page=1&pageSize=1000', 'GET');
+    
+    let loadedGroups: any[] = [];
+    
+    if (response && Array.isArray(response)) {
+      loadedGroups = response;
+    } else if (response && response.groups && Array.isArray(response.groups)) {
+      loadedGroups = response.groups;
+    } else if (response && response.data && Array.isArray(response.data)) {
+      loadedGroups = response.data;
+    } else if (response && response.data && response.data.groups && Array.isArray(response.data.groups)) {
+      loadedGroups = response.data.groups;
+    } else if (response && response.items && Array.isArray(response.items)) {
+      loadedGroups = response.items;
+    }
+    
+    // Filter active groups
+    groups.value = loadedGroups.filter((g: any) => {
+      const isActive = g.isActive !== undefined ? g.isActive : (g.IsActive !== undefined ? g.IsActive : true);
+      return isActive !== false;
+    });
+  } catch (error) {
+    groups.value = [];
+  } finally {
+    loadingGroups.value = false;
+  }
+};
+
+// Initialize permissions if not exists
+const initPermissions = () => {
+  if (!formData.value.permissions) {
+    formData.value.permissions = {
+      read: undefined,
+      create: undefined,
+      update: undefined,
+      delete: undefined,
+    };
+  }
+};
+
+// Get selected groups for a permission type
+const getSelectedGroups = (permissionType: 'read' | 'create' | 'update' | 'delete'): string[] => {
+  if (!formData.value.permissions) return [];
+  const permission = formData.value.permissions[permissionType];
+  if (!permission || !permission.groups) return [];
+  return Array.isArray(permission.groups) ? permission.groups : [];
+};
+
+// Set selected groups for a permission type
+const setSelectedGroups = (permissionType: 'read' | 'create' | 'update' | 'delete', selectedGroups: string[]) => {
+  initPermissions();
+  if (!formData.value.permissions) return;
+  
+  if (selectedGroups.length === 0) {
+    // Remove permission if no groups selected
+    formData.value.permissions[permissionType] = undefined;
+  } else {
+    // Create or update permission
+    if (!formData.value.permissions[permissionType]) {
+      formData.value.permissions[permissionType] = { groups: [] };
+    }
+    formData.value.permissions[permissionType]!.groups = selectedGroups;
+  }
+};
+
+// Group options for select
+const groupOptions = computed(() => {
+  return groups.value.map(g => ({
+    title: g.name,
+    value: g.name,
+  }));
+});
+
+// Computed properties for v-model binding
+const readGroups = computed({
+  get: () => getSelectedGroups('read'),
+  set: (value: string[]) => setSelectedGroups('read', value),
+});
+
+const createGroups = computed({
+  get: () => getSelectedGroups('create'),
+  set: (value: string[]) => setSelectedGroups('create', value),
+});
+
+const updateGroups = computed({
+  get: () => getSelectedGroups('update'),
+  set: (value: string[]) => setSelectedGroups('update', value),
+});
+
+const deleteGroups = computed({
+  get: () => getSelectedGroups('delete'),
+  set: (value: string[]) => setSelectedGroups('delete', value),
+});
+
 // Load dataset if edit mode
 const loadDataset = async () => {
   if (!isEditMode.value || !datasetName.value) return;
@@ -212,7 +317,19 @@ const loadDataset = async () => {
           parameters: q.parameters,
         })) || [],
         indexList: dataset.indexList || [],
+        permissions: dataset.permissions || undefined,
       };
+      
+      // Ensure permissions object exists (even if all permission types are null)
+      // This ensures computed properties work correctly
+      if (!formData.value.permissions) {
+        formData.value.permissions = {
+          read: undefined,
+          create: undefined,
+          update: undefined,
+          delete: undefined,
+        };
+      }
     } else {
       errorMessage.value = t('datasets.form.messages.notFound');
       setTimeout(() => {
@@ -229,6 +346,12 @@ const loadDataset = async () => {
   }
 };
 
+// Watch for permissions changes to ensure computed properties update
+watch(() => formData.value.permissions, (newPermissions) => {
+  // Force reactivity update when permissions change
+  // This ensures computed properties (readGroups, createGroups, etc.) update when permissions are loaded
+}, { deep: true, immediate: true });
+
 onMounted(async () => {
   // Load categories first
   await loadCategories();
@@ -236,9 +359,17 @@ onMounted(async () => {
   // Load datasets for relation field dropdown
   await loadDatasets();
   
+  // Load groups for permissions
+  await loadGroups();
+  
   // Load dataset if edit mode
   if (isEditMode.value) {
     await loadDataset();
+    // Wait for next tick to ensure reactive updates
+    await nextTick();
+  } else {
+    // Initialize permissions only if not in edit mode (edit mode'da loadDataset zaten permissions'ı yükler)
+    initPermissions();
   }
 });
 
@@ -320,6 +451,7 @@ const handleSubmit = async () => {
         validations: formData.value.validations && formData.value.validations.length > 0 ? formData.value.validations : undefined,
         queries: formData.value.queries && formData.value.queries.length > 0 ? formData.value.queries : undefined,
         indexList: formData.value.indexList && formData.value.indexList.length > 0 ? formData.value.indexList : undefined,
+        permissions: formData.value.permissions,
       };
       
       await datasetStore.updateDataset(decodeURIComponent(datasetName.value), updateDto);
@@ -331,6 +463,7 @@ const handleSubmit = async () => {
         name: datasetNameToSend,
         description: formData.value.description?.trim() || undefined,
         category: formData.value.category || undefined,
+        permissions: formData.value.permissions,
       };
       
       await datasetStore.createDataset(createDto);
@@ -2031,6 +2164,134 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                     <PlusIcon class="mr-2" size="18" />
                     {{ t('datasets.form.buttons.addFirstIndex') }}
                   </v-btn>
+                </v-card>
+              </div>
+            </v-stepper-window-item>
+            
+            <!-- Step 6: Permissions -->
+            <v-stepper-window-item :value="6">
+              <div class="mb-4">
+                <div class="d-flex justify-space-between align-center mb-4">
+                  <h6 class="text-subtitle-1 font-weight-semibold">{{ t('datasets.form.permissions.title') }}</h6>
+                  <ShieldIcon size="20" class="text-primary" />
+                </div>
+                
+                <v-alert
+                  type="info"
+                  variant="tonal"
+                  density="compact"
+                  class="mb-4"
+                >
+                  <strong>{{ t('datasets.form.permissions.info.title') }}:</strong> {{ t('datasets.form.permissions.info.description') }}
+                </v-alert>
+                
+                <v-row>
+                  <!-- Read Permission -->
+                  <v-col cols="12" md="6">
+                    <v-card variant="outlined" class="pa-4">
+                      <div class="d-flex align-center mb-3">
+                        <v-icon color="info" class="mr-2">mdi-eye</v-icon>
+                        <span class="text-subtitle-2 font-weight-semibold">{{ t('datasets.form.permissions.read') }}</span>
+                      </div>
+                      <v-select
+                        v-model="readGroups"
+                        :items="groupOptions"
+                        item-title="title"
+                        item-value="value"
+                        :label="t('datasets.form.permissions.selectGroups')"
+                        multiple
+                        chips
+                        closable-chips
+                        variant="outlined"
+                        density="compact"
+                        :loading="loadingGroups"
+                        :disabled="loading || loadingGroups"
+                      ></v-select>
+                    </v-card>
+                  </v-col>
+                  
+                  <!-- Create Permission -->
+                  <v-col cols="12" md="6">
+                    <v-card variant="outlined" class="pa-4">
+                      <div class="d-flex align-center mb-3">
+                        <v-icon color="success" class="mr-2">mdi-plus</v-icon>
+                        <span class="text-subtitle-2 font-weight-semibold">{{ t('datasets.form.permissions.create') }}</span>
+                      </div>
+                      <v-select
+                        v-model="createGroups"
+                        :items="groupOptions"
+                        item-title="title"
+                        item-value="value"
+                        :label="t('datasets.form.permissions.selectGroups')"
+                        multiple
+                        chips
+                        closable-chips
+                        variant="outlined"
+                        density="compact"
+                        :loading="loadingGroups"
+                        :disabled="loading || loadingGroups"
+                      ></v-select>
+                    </v-card>
+                  </v-col>
+                  
+                  <!-- Update Permission -->
+                  <v-col cols="12" md="6">
+                    <v-card variant="outlined" class="pa-4">
+                      <div class="d-flex align-center mb-3">
+                        <v-icon color="warning" class="mr-2">mdi-pencil</v-icon>
+                        <span class="text-subtitle-2 font-weight-semibold">{{ t('datasets.form.permissions.update') }}</span>
+                      </div>
+                      <v-select
+                        v-model="updateGroups"
+                        :items="groupOptions"
+                        item-title="title"
+                        item-value="value"
+                        :label="t('datasets.form.permissions.selectGroups')"
+                        multiple
+                        chips
+                        closable-chips
+                        variant="outlined"
+                        density="compact"
+                        :loading="loadingGroups"
+                        :disabled="loading || loadingGroups"
+                      ></v-select>
+                    </v-card>
+                  </v-col>
+                  
+                  <!-- Delete Permission -->
+                  <v-col cols="12" md="6">
+                    <v-card variant="outlined" class="pa-4">
+                      <div class="d-flex align-center mb-3">
+                        <v-icon color="error" class="mr-2">mdi-delete</v-icon>
+                        <span class="text-subtitle-2 font-weight-semibold">{{ t('datasets.form.permissions.delete') }}</span>
+                      </div>
+                      <v-select
+                        v-model="deleteGroups"
+                        :items="groupOptions"
+                        item-title="title"
+                        item-value="value"
+                        :label="t('datasets.form.permissions.selectGroups')"
+                        multiple
+                        chips
+                        closable-chips
+                        variant="outlined"
+                        density="compact"
+                        :loading="loadingGroups"
+                        :disabled="loading || loadingGroups"
+                      ></v-select>
+                    </v-card>
+                  </v-col>
+                </v-row>
+                
+                <!-- Empty State -->
+                <v-card v-if="!formData.permissions || (!formData.permissions.read && !formData.permissions.create && !formData.permissions.update && !formData.permissions.delete)" variant="outlined" class="pa-8 text-center mt-4">
+                  <ShieldIcon size="48" color="grey-lighten-1" class="mb-4" />
+                  <p class="text-subtitle-1 text-medium-emphasis mb-4">
+                    {{ t('datasets.form.permissions.noPermissions') }}
+                  </p>
+                  <p class="text-body-2 text-medium-emphasis">
+                    {{ t('datasets.form.permissions.noPermissionsHint') }}
+                  </p>
                 </v-card>
               </div>
             </v-stepper-window-item>

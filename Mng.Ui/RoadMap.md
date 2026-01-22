@@ -188,7 +188,7 @@ Mng.Ui/
   - ✅ Index ekleme/düzenleme modal
   - ✅ Field seçimi ve order (asc/desc)
   - ✅ Unique index desteği
-- ⚠️ **Permissions Management** (Backend DTO/Service katmanında eksik - Phase 3.3 olarak planlanıyor)
+- ✅ **Permissions Management** (Tamamlandı - 11 Ocak 2026)
 
 #### 3.3 Dataset Detay Sayfası ✅ (Tamamlandı - 2026-01-10)
 
@@ -213,30 +213,37 @@ Mng.Ui/
 - `PUT /api/datasets/{name}` - Dataset güncelleme
 - `DELETE /api/datasets/{name}` - Dataset silme
 
-#### 3.3 Dataset Permissions Yönetimi (Future) ⚠️
+#### 3.3 Dataset Permissions Yönetimi ✅ (Tamamlandı - 11 Ocak 2026)
 
-**Durum:** Backend DTO/Service katmanında eksiklikler var
+**Durum:** Tamamlandı
 
-**Backend Eksiklikleri:**
-- [ ] `CreateDatasetDto` - Permissions field'ı eksik
-- [ ] `UpdateDatasetDto` - Permissions field'ı eksik
-- [ ] `DatasetResponseDto` - Permissions field'ı eksik
-- [ ] `DatasetService.CreateAsync` - Permissions mapping eksik
-- [ ] `DatasetService.UpdateAsync` - Permissions mapping eksik
-- [ ] `DatasetService.MapToDto` - Permissions mapping eksik
+**Backend:**
+- ✅ `CreateDatasetDto` - Permissions field'ı eklendi
+- ✅ `UpdateDatasetDto` - Permissions field'ı eklendi
+- ✅ `DatasetResponseDto` - Permissions field'ı eklendi
+- ✅ `DatasetService.CreateAsync` - Permissions mapping eklendi
+- ✅ `DatasetService.UpdateAsync` - Permissions mapping eklendi
+- ✅ `DatasetService.MapToDto` - Permissions mapping eklendi
 
-**Not:** Domain entity (`PermissionsDefinition`) ve `PermissionService` mevcut. Sadece DTO ve Service katmanlarında permissions field'ı eksik.
+**UI Tamamlanan Özellikler:**
+- ✅ Permissions step'i Dataset form'da (Step 6)
+- ✅ Group selection (MngKeeper API entegrasyonu)
+- ✅ Multi-select component (v-select with chips)
+- ✅ Read, Create, Update, Delete permissions için ayrı grup seçimleri
+- ✅ Permissions yükleme (edit mode'da veritabanından)
+- ✅ Permissions kaydetme (create/update işlemlerinde)
+- ✅ Store'da permissions mapping (`mapPermissions` fonksiyonu)
+- ✅ i18n key'leri eklendi
 
-**UI Gereksinimleri (Backend tamamlandıktan sonra):**
-- [ ] Permissions step'i Dataset form'da (Step 5)
-- [ ] `PermissionsEditor.vue` component
-- [ ] Group/User selection (MngKeeper API)
-- [ ] Multi-select component (Groups)
-- [ ] Read, Create, Update, Delete permissions için ayrı grup seçimleri
+**Özellikler:**
+- ✅ Her permission type için ayrı multi-select (Read, Create, Update, Delete)
+- ✅ Groups MngKeeper API'den yükleniyor
+- ✅ Edit mode'da permissions veritabanından yükleniyor
+- ✅ Boş permissions kontrolü (tüm permission type'lar boşsa null gönderiliyor)
 
 **Referans:** 
-- Backend: `MngDataGateway/ROADMAP.md` - Phase 3: Dataset Authorization
-- UI Design: `docs/Mng.Ui/specs/DATASET_UI_DESIGN.md` - Step 5: Permissions
+- Backend: `MngDataGateway/ROADMAP.md` - Phase 3: Dataset Authorization ✅
+- UI Design: `docs/Mng.Ui/specs/DATASET_UI_DESIGN.md` - Step 6: Permissions
 
 ---
 

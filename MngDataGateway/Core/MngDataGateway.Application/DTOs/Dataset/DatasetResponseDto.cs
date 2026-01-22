@@ -97,5 +97,11 @@ public class DatasetResponseDto
     /// History count
     /// </summary>
     public int HistoryCount { get; set; }
+
+    /// <summary>
+    /// Permissions definitions (optional - access control)
+    /// null = no authorization check (everyone can access)
+    /// </summary>
+    public PermissionsDefinition? Permissions { get; set; }
 }
 

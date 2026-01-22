@@ -61,6 +61,23 @@ public class DatasetService : IDatasetService
             throw new InvalidOperationException($"'{dto.Name}' adında bir dataset zaten mevcut");
         }
 
+        // Process permissions: if provided but all permission types are null/empty, set to null
+        PermissionsDefinition? processedPermissions = null;
+        if (dto.Permissions != null)
+        {
+            // Check if any permission type has groups defined
+            var hasAnyPermissions = (dto.Permissions.read?.groups != null && dto.Permissions.read.groups.Count > 0) ||
+                                   (dto.Permissions.create?.groups != null && dto.Permissions.create.groups.Count > 0) ||
+                                   (dto.Permissions.update?.groups != null && dto.Permissions.update.groups.Count > 0) ||
+                                   (dto.Permissions.delete?.groups != null && dto.Permissions.delete.groups.Count > 0);
+            
+            if (hasAnyPermissions)
+            {
+                processedPermissions = dto.Permissions;
+            }
+            // else: processedPermissions remains null (will be ignored by BsonIgnoreIfNull)
+        }
+
         // Create entity
         var entity = new DatasetSchema
         {
@@ -75,6 +92,7 @@ public class DatasetService : IDatasetService
             validations = dto.Validations ?? new(),
             queries = dto.Queries != null ? ConvertQueryDefinitions(dto.Queries) : new(),
             indexList = dto.IndexList ?? new(),
+            permissions = processedPermissions,
 
             __createInfo = new CreateInfo
             {
@@ -234,6 +252,40 @@ public class DatasetService : IDatasetService
                     newValue = $"{entity.indexList.Count + newIndexes.Count} indexes (added {newIndexes.Count})" 
                 };
                 entity.indexList.AddRange(newIndexes);
+            }
+        }
+
+        // Permissions update (replace entire permissions if provided)
+        // Check if permissions object is provided (even if all permission types are null)
+        // We need to check if the property was explicitly set in the DTO
+        // If all permission types are null/empty, set permissions to null (will be ignored by BsonIgnoreIfNull)
+        if (dto.Permissions != null)
+        {
+            var oldPermissionsSummary = entity.permissions != null 
+                ? $"read:{entity.permissions.read?.groups?.Count ?? 0}, create:{entity.permissions.create?.groups?.Count ?? 0}, update:{entity.permissions.update?.groups?.Count ?? 0}, delete:{entity.permissions.delete?.groups?.Count ?? 0}"
+                : "none";
+            
+            // Check if any permission type has groups defined
+            var hasAnyPermissions = (dto.Permissions.read?.groups != null && dto.Permissions.read.groups.Count > 0) ||
+                                   (dto.Permissions.create?.groups != null && dto.Permissions.create.groups.Count > 0) ||
+                                   (dto.Permissions.update?.groups != null && dto.Permissions.update.groups.Count > 0) ||
+                                   (dto.Permissions.delete?.groups != null && dto.Permissions.delete.groups.Count > 0);
+            
+            if (hasAnyPermissions)
+            {
+                // At least one permission type has groups, save the permissions object
+                var newPermissionsSummary = $"read:{dto.Permissions.read?.groups?.Count ?? 0}, create:{dto.Permissions.create?.groups?.Count ?? 0}, update:{dto.Permissions.update?.groups?.Count ?? 0}, delete:{dto.Permissions.delete?.groups?.Count ?? 0}";
+                changes["permissions"] = new ChangeDetail { oldValue = oldPermissionsSummary, newValue = newPermissionsSummary };
+                entity.permissions = dto.Permissions;
+            }
+            else
+            {
+                // All permission types are null or empty, remove permissions (set to null)
+                if (entity.permissions != null)
+                {
+                    changes["permissions"] = new ChangeDetail { oldValue = oldPermissionsSummary, newValue = "none" };
+                    entity.permissions = null;
+                }
             }
         }
 
@@ -953,6 +1005,7 @@ public class DatasetService : IDatasetService
             Queries = includeDetails ? ConvertQueriesForResponse(entity.queries) : null,
             IndexListCount = entity.indexList.Count,
             IndexList = includeDetails ? entity.indexList : null,
+            Permissions = entity.permissions,
             CreateInfo = entity.__createInfo,
             LastUpdateInfo = entity.__lastUpdateInfo,
             HistoryCount = entity.__history.Count
