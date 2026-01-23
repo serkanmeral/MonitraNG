@@ -28,11 +28,14 @@ export default defineNuxtConfig({
       reactorUrl: process.env.SERVER_URL || process.env.DATAGATEWAY_URL || process.env.REACTOR_URL || 'https://localhost:5010',
       hubUrl: process.env.HUB_URL || 'http://localhost:5020',
       llmUrl: process.env.LLM_URL || 'https://localhost:5030',
+      adminUrl: process.env.ADMIN_URL || 'http://localhost:5080',
       // Fallback menu control (default: false - disabled)
       enableFallbackMenu: process.env.ENABLE_FALLBACK_MENU === 'true' || false,
       // App version (from package.json)
       appVersion: process.env.npm_package_version || '6.0.0'
-    }
+    },
+    // Server-side only (private)
+    serverAdminUrl: process.env.SERVER_ADMIN_URL || process.env.ADMIN_URL || 'http://localhost:5080',
   },
   build: { transpile: ["vuetify"] },
   modules: [

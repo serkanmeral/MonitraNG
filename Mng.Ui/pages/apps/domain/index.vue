@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useDomain, type Domain, type UpdateDomainRequest } from '@/composables/useDomain';
 import { fetchFromMngKeeper } from '@/services/apiService';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
+import DomainBackupCard from '@/components/apps/domain/DomainBackupCard.vue';
 import { SettingsIcon, RefreshIcon, EditIcon, ShieldIcon } from 'vue-tabler-icons';
 
 // Get i18n instance for legacy mode
@@ -1062,7 +1063,7 @@ onMounted(async () => {
         </v-card>
 
         <!-- Domain Settings Card -->
-        <v-card elevation="10">
+        <v-card elevation="10" class="mb-4">
           <v-card-title class="d-flex align-center">
             <SettingsIcon size="20" class="mr-2" />
             {{ t('domain.cards.domainSettings') }}
@@ -1133,6 +1134,9 @@ onMounted(async () => {
             </v-row>
           </v-card-text>
         </v-card>
+
+        <!-- Backup Info Card -->
+        <DomainBackupCard v-if="domain" :domain-name="domain.name" />
       </template>
 
       <!-- No domain found -->

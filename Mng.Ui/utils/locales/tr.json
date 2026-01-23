@@ -916,7 +916,8 @@
     "cards": {
       "domainInfo": "Domain Bilgileri",
       "domainSettings": "Domain Ayarları",
-      "licenseInfo": "Lisans Bilgileri"
+      "licenseInfo": "Lisans Bilgileri",
+      "backupInfo": "Yedek Bilgileri"
     },
     "fields": {
       "name": "Domain Adı",
@@ -1027,6 +1028,23 @@
       "notManager": "Bu sayfaya erişim için manager yetkisi gereklidir",
       "licenseLoadError": "Lisans bilgileri yüklenirken bir hata oluştu",
       "licenseNotFound": "Lisans bilgisi bulunamadı"
+    },
+    "backup": {
+      "createBackup": "Yedek Oluştur",
+      "noBackups": "Yedek bulunamadı",
+      "noBackupsDescription": "Henüz hiç yedek oluşturulmamış. İlk yedeğinizi oluşturmak için yukarıdaki butona tıklayın.",
+      "status": "Durum",
+      "database": "Veritabanı",
+      "created": "Oluşturulma",
+      "size": "Boyut",
+      "duration": "Süre",
+      "path": "Yol",
+      "statusCompleted": "Tamamlandı",
+      "statusInProgress": "Devam Ediyor",
+      "statusFailed": "Başarısız",
+      "createSuccess": "Yedek başarıyla oluşturuldu!",
+      "createError": "Yedek oluşturulurken bir hata oluştu",
+      "fetchError": "Yedek listesi yüklenirken bir hata oluştu"
     },
     "storage": {
       "bytes": "byte",

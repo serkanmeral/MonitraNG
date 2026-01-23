@@ -99,6 +99,16 @@
               :access-token="accessToken"
             />
           </div>
+          <div v-else-if="index === 3" class="space-y-6">
+            <!-- Backup Management -->
+            <DomainBackupList
+              :domain-name="domain.name"
+              :backups="backups"
+              :loading="loadingBackups"
+              @refresh="fetchBackups"
+              @backup-created="handleBackupCreated"
+            />
+          </div>
         </template>
       </UTabs>
 
@@ -146,6 +156,7 @@
 
 <script setup lang="ts">
 import type { Domain, DomainStatus } from '~/types/domain'
+import type { BackupResponse } from '~/types/backup'
 import { useDomainStore } from '~/stores/domain'
 
 definePageMeta({
@@ -175,11 +186,14 @@ const showTokenModal = ref(false)
 const accessToken = ref<string | null>(null)
 const authenticatedUsername = ref<string | null>(null)
 const activeTab = ref(0)
+const backups = ref<BackupResponse[]>([])
+const loadingBackups = ref(false)
 
 const tabs = [
   { label: 'Overview', value: 'overview', icon: 'i-heroicons-home' },
   { label: 'Templates', value: 'templates', icon: 'i-heroicons-document-duplicate' },
   { label: 'License', value: 'license', icon: 'i-heroicons-shield-check' },
+  { label: 'Backups', value: 'backups', icon: 'i-heroicons-archive-box' },
 ]
 
 const domainId = route.params.id as string
@@ -187,6 +201,10 @@ const domainId = route.params.id as string
 // Fetch domain on mount
 onMounted(async () => {
   await fetchDomain()
+  // Fetch backups if domain is loaded
+  if (domain.value) {
+    await fetchBackups()
+  }
 })
 
 const fetchDomain = async () => {
@@ -274,6 +292,10 @@ const handleTabChange = (index: number) => {
   // If License tab (index 2) is selected and no token, show auth modal
   if (index === 2 && !accessToken.value) {
     showAuthModal.value = true
+  }
+  // If Backups tab (index 3) is selected, fetch backups
+  if (index === 3 && domain.value) {
+    fetchBackups()
   }
 }
 
@@ -454,6 +476,29 @@ const handleCreateTestGroups = async () => {
   } finally {
     creatingGroups.value = false
   }
+}
+
+// Backup management
+const { getDomainBackups } = useBackup()
+
+const fetchBackups = async () => {
+  if (!domain.value) return
+
+  loadingBackups.value = true
+  try {
+    const result = await getDomainBackups(domain.value.name)
+    backups.value = result.backups || []
+  } catch (err: any) {
+    console.error('Failed to fetch backups:', err)
+    backups.value = []
+  } finally {
+    loadingBackups.value = false
+  }
+}
+
+const handleBackupCreated = (backup: BackupResponse) => {
+  // Refresh backups list
+  fetchBackups()
 }
 </script>
 
