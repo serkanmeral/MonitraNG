@@ -11,128 +11,81 @@
 | # | Sayfa / Özellik | Route | Özet |
 |---|-----------------|-------|------|
 | 4 | **Dashboard listesi** | `/apps/dashboards` | @dashboards listesi, CRUD girişleri |
-| 5 | **Dashboard görüntüleme** | `/dashboards/:slug` | Layout render, widget placeholder |
-| 6 | **Dashboard Builder** | `/apps/dashboards/new`, `/apps/dashboards/:id/edit` | Form + layout editor |
-
----
-
-## 4. Dashboard Listesi (`/apps/dashboards`)
-
-### Yapılacaklar
-
-- [ ] **Sayfa:** `pages/apps/dashboards/index.vue`
-- [ ] **Store:** `stores/apps/dashboard.ts` — `fetchDashboards`, `fetchDashboardById`, `create`, `update`, `delete`
-- [ ] **API:** DG `GET /api/v1/data/@dashboards` (liste), `GET .../{id}` (tek), `POST` (create), `PUT` (update), `DELETE` (delete)
-- [ ] **UI:**
-  - Tablo: name, title, slug, isDefault, isActive, order, oluşturulma
-  - Filtre: arama, isActive
-  - Aksiyonlar: Yeni Dashboard, Düzenle, Önizle, Sil
-- [ ] **Yönlendirmeler:** Yeni → Builder (`/apps/dashboards/new`), Düzenle → Builder (`/apps/dashboards/:id/edit`), Önizle → `/dashboards/:slug`
-- [ ] **Side menu:** Gerekirse “Dashboards” menü öğesi eklenmesi (apps altı)
-
-### Notlar
-
-- Pagination: `skip` / `limit` veya `X-Total-Count` kullanımı.
-- Silmeden önce onay modal’ı.
-
----
-
-## 5. Dashboard Görüntüleme (`/dashboards/:slug`)
-
-### Yapılacaklar
-
-- [ ] **Sayfa:** `pages/dashboards/[slug].vue` (veya `[slug].vue` uygun yapıda)
-- [ ] **Store:** Listede kullanılan `dashboard` store’dan `fetchBySlug` (veya `fetchById`) — slug/name ile DG’den tek dashboard
-- [ ] **API:** `GET /api/v1/data/@dashboards?filter=slug:eq:{slug}` veya slug yerine name kullanılıyorsa `name:eq:{slug}`; tek kayıt dönmeli. Alternatif: tümünü çekip client’ta slug’a göre filtrele (küçük liste için).
-- [ ] **Layout render:**
-  - Dashboard’un `layout` objesini oku (type: `rows`, `rows[]`).
-  - Her `row` → `<v-row>`, her `col` → `<v-col :cols="span" :sm="spanSm" :md="spanMd" :lg="spanLg" :xl="spanXl">`.
-  - Col içinde `widgetId` varsa → **widget placeholder** (örn. “Widget: {widgetId}” veya küçük kart). Henüz gerçek widget yok.
-  - `widgetId` yoksa → boş hücre veya “Widget yok”.
-- [ ] **Breadcrumb:** Örn. Home > Dashboards > {title}
-- [ ] **Hata:** Slug ile dashboard bulunamazsa 404 / uygun mesaj.
-
-### Notlar
-
-- Nested row’lar (col içinde `rows`) varsa aynı mantıkla recursive render.
-- Yetkilendirme (permissions.view) bu aşamada opsiyonel; eklenebilir.
-
----
-
-## 6. Dashboard Builder
-
-### 6.1 Sayfa ve Route
-
-- [ ] **Sayfa:** `pages/apps/dashboards/new.vue` (yeni), `pages/apps/dashboards/[id]/edit.vue` (düzenleme)
-- [ ] **Routing:** Liste “Yeni” → `/apps/dashboards/new`, “Düzenle” → `/apps/dashboards/:id/edit`
-- [ ] **Store:** Create/update için `dashboard` store `create`, `update` kullanımı.
-
-### 6.2 Sol Panel — Temel Bilgiler Formu
-
-- [ ] **Form alanları:** name, title, description, slug, isDefault, isActive (spec’e uygun)
-- [ ] **Validasyon:** name ve title zorunlu; name unique (create’te API hatası ile yakalanabilir)
-- [ ] **Aksiyonlar:** Kaydet, İptal, (opsiyonel) Önizle
-- [ ] **Kaydet:** Create → `POST /api/v1/data/@dashboards`; Edit → `PUT /api/v1/data/@dashboards/:id`; sonrası liste veya önizleme yönlendirmesi
-
-### 6.3 Sağ Panel — Layout Editor
-
-- [ ] **Row/column yapısı:**
-  - `layout.type === 'rows'`, `layout.rows[]` — her row’da `cols[]`.
-  - Row ekleme / silme / sıra değiştirme (↑↓ veya drag).
-  - Her row içinde column ekleme / silme.
-- [ ] **Column ayarları:** span, spanSm, spanMd, spanLg, spanXl (1–12); aynı row’da toplam 12 kuralı (uyarı/validasyon).
-- [ ] **Widget atama:** Her col’da “Widget ekle” / “Widget değiştir” — **Widget Picker** (modal). Henüz @widgets yoksa:
-  - Picker’ı atlayıp sadece **placeholder** (ör. “Widget seçilecek”) veya **manuel widgetId** girişi (test için) yapılabilir.
-- [ ] **Layout state:** Vue `reactive` / Pinia ile `layout` objesi; form ile birlikte kaydedilir.
-
-### 6.4 Bileşenler (önerilen)
-
-- [ ] `DashboardForm.vue` — Sol panel form
-- [ ] `LayoutEditor.vue` — Sağ panel; row/col ağacı
-- [ ] `LayoutRowItem.vue` — Tek satır, col listesi, “+ Sütun”
-- [ ] `LayoutColItem.vue` — Tek sütun, span ayarları, widget placeholder / picker tetikleyici
-- [ ] (Sonra) `WidgetPickerModal.vue` — Widget seçimi; @widgets hazır olunca bağlanır
-
-### 6.5 Kaydetme Akışı
-
-- [ ] Form + layout validasyonu (örn. en az bir row, span toplamları).
-- [ ] Create: `POST` body’de `name`, `title`, `description`, `slug`, `layout`, `isDefault`, `isActive`, `order`.
-- [ ] Edit: `PUT` ile aynı alanların güncellenmesi.
-- [ ] Başarı → liste veya `/dashboards/:slug` önizleme; hata → mesaj gösterimi.
+| 5 | **Dashboard görüntüleme** | `/dashboards/:slug` | Layout render, widget renderer, refresh mekanizması |
+| 6 | **Dashboard Builder** | `/apps/dashboards/new`, `/apps/dashboards/:id/edit` | Form + layout editor, yetkilendirme |
+| 7 | **Dashboard Container** | `/dashboards/container` | Çoklu dashboard rotasyonu, widget refresh |
+| 8 | **Dashboard Yetkilendirme** | - | View/edit izinleri, grup bazlı erişim kontrolü |
+| 9 | **Widget Yetkilendirme** | - | Widget bazlı grup izinleri |
+| 10 | **Widget Refresh** | - | Dashboard ve container içinde otomatik widget yenileme |
+| 11 | **Side Menu Entegrasyonu** | - | Decoupled yapı, "Add to Side Menu" butonu |
 
 ---
 
 ## Özet Checklist (Dashboard Tarafı)
 
 ```
-4. Dashboard listesi
-   □ pages/apps/dashboards/index.vue
-   □ stores/apps/dashboard.ts (CRUD)
-   □ DG API: list, get, create, update, delete @dashboards
-   □ Tablo, filtre, Yeni/Düzenle/Önizle/Sil
+4. Dashboard listesi ✅
+   ✅ pages/apps/dashboards/index.vue
+   ✅ stores/apps/dashboard.ts (CRUD)
+   ✅ DG API: list, get, create, update, delete @dashboards
+   ✅ Tablo, filtre, Yeni/Düzenle/Önizle/Sil
+   ✅ "Add to Side Menu" butonu
 
-5. Dashboard görüntüleme
-   □ pages/dashboards/[slug].vue
-   □ fetch dashboard by slug (veya name)
-   □ layout.rows → v-row / v-col render
-   □ widgetId → placeholder (“Widget: id” veya “Widget yok”)
+5. Dashboard görüntüleme ✅
+   ✅ pages/dashboards/[slug].vue
+   ✅ fetch dashboard by slug (veya name)
+   ✅ layout.rows → v-row / v-col render
+   ✅ Widget renderer entegrasyonu
+   ✅ Widget refresh mekanizması
+   ✅ Yetkilendirme kontrolü
 
-6. Dashboard Builder
-   □ pages/apps/dashboards/new.vue + [id]/edit.vue
-   □ DashboardForm (name, title, description, slug, isDefault, isActive)
-   □ LayoutEditor (rows, cols, span ayarları)
-   □ Row/col ekleme, silme, sıralama
-   □ Widget atama (picker veya placeholder / manuel widgetId)
-   □ Kaydet → POST/PUT @dashboards
+6. Dashboard Builder ✅
+   ✅ pages/apps/dashboards/new.vue + [id]/edit.vue
+   ✅ DashboardForm (name, title, description, slug, isDefault, isActive, permissions)
+   ✅ LayoutEditor (rows, cols, span ayarları)
+   ✅ Row/col ekleme, silme, sıralama
+   ✅ Widget atama (Widget Picker)
+   ✅ Kaydet → POST/PUT @dashboards
+
+7. Dashboard Container ✅
+   ✅ pages/dashboards/container.vue
+   ✅ Çoklu dashboard seçimi (yetkili dashboard'lar)
+   ✅ Rotasyon mekanizması (setInterval)
+   ✅ Widget refresh interval ayarı
+   ✅ Rotasyon kontrolleri (Başlat/Duraklat, Önceki/Sonraki)
+
+8. Dashboard Yetkilendirme ✅
+   ✅ Dashboard.permissions.view.groups[]
+   ✅ Dashboard.permissions.edit.groups[]
+   ✅ useDashboardPermissions composable
+   ✅ Admin bypass (isAdmin)
+   ✅ UI entegrasyonu (DashboardForm)
+
+9. Widget Yetkilendirme ✅
+   ✅ Widget.permissions.groups[]
+   ✅ WidgetRenderer permission kontrolü
+   ✅ Admin bypass (isAdmin)
+   ✅ UI entegrasyonu (WidgetForm)
+
+10. Widget Refresh ✅
+   ✅ Dashboard viewer refresh interval
+   ✅ Container widget refresh interval
+   ✅ Provide/Inject pattern
+   ✅ WidgetRenderer otomatik yenileme
+
+11. Side Menu Entegrasyonu ✅
+   ✅ Dashboard ve Side Menu decoupled
+   ✅ "Add to Side Menu" butonu
+   ✅ Side Menu Manager pre-fill
 ```
 
 ---
 
 ## Bağımlılıklar
 
-- **@dashboards:** Hazır ✅
-- **@widgets / @widget_categories:** Builder’da **Widget Picker** için gerekli. Picker olmadan da ilerlenebilir: sadece layout + placeholder veya manuel `widgetId`.
-- **Yetkilendirme (permissions):** 10. adımda; view/edit kontrolleri istenirse sonra eklenir.
+- **@dashboards:** Hazır ✅ (permissions field eklendi)
+- **@widgets / @widget_categories:** Hazır ✅ (permissions field eklendi)
+- **Yetkilendirme (permissions):** ✅ Tamamlandı - View/edit kontrolleri eklendi
 
 ---
 
@@ -140,11 +93,106 @@
 
 1. ✅ **Dashboard store** + DG `@dashboards` API bağlantısı (list, get by id/slug, create, update, delete).
 2. ✅ **Dashboard listesi** sayfası (tablo, filtre, aksiyonlar, pagination).
-3. ✅ **Dashboard görüntüleme** sayfası (layout render, widget placeholder, nested rows).
-4. ✅ **Dashboard Builder** — form + layout editor (row/col yönetimi, nested rows, span ayarları); widget atama (manuel widgetId + Widget Picker placeholder).
-5. 🔲 İleride: Widget Picker (@widgets hazır olunca bağlanacak), permissions kontrolleri, side menu entegrasyonu (rehber hazır).
+3. ✅ **Dashboard görüntüleme** sayfası (layout render, widget renderer, nested rows).
+4. ✅ **Dashboard Builder** — form + layout editor (row/col yönetimi, nested rows, span ayarları); widget atama (Widget Picker ile).
+5. ✅ **Widget Picker** — Widget seçimi ve atama sistemi.
+6. ✅ **Dashboard Container** — Birden fazla dashboard'u rotasyon ile görüntüleme.
+7. ✅ **Dashboard Yetkilendirme** — View ve edit izinleri, grup bazlı erişim kontrolü.
+8. ✅ **Widget Yetkilendirme** — Widget bazlı grup izinleri, yetkisiz erişim mesajları.
+9. ✅ **Widget Refresh Mekanizması** — Dashboard ve container içinde widget verilerinin otomatik yenilenmesi.
+10. ✅ **Side Menu Entegrasyonu** — Dashboard ve Side Menu decoupled, "Add to Side Menu" butonu ile entegrasyon.
+
+---
+
+## Eklenen Özellikler (Ocak 2026)
+
+### 7. Dashboard Container (`/dashboards/container`)
+
+#### 7.1 Özellikler
+
+- ✅ **Çoklu Dashboard Seçimi:** Dropdown'dan birden fazla dashboard seçilebilir (sadece yetkili dashboard'lar görünür).
+- ✅ **Rotasyon Mekanizması:** Seçilen dashboard'lar belirli aralıklarla otomatik olarak değişir.
+- ✅ **Rotasyon Kontrolleri:** Başlat/Duraklat, Önceki/Sonraki butonları.
+- ✅ **Widget Refresh:** Container içindeki widget'lar için ayrı refresh interval ayarı.
+- ✅ **Yetkilendirme Filtreleme:** Dropdown'da sadece görüntüleme yetkisi olan dashboard'lar gösterilir.
+- ✅ **Bilgilendirme Mesajları:** Tek dashboard seçildiğinde rotasyon uyarısı.
+
+#### 7.2 Teknik Detaylar
+
+- **Sayfa:** `pages/dashboards/container.vue`
+- **Store:** `useDashboardStore` - `fetchDashboards`, `fetchDashboardById`
+- **Composable:** `useDashboardPermissions` - `canViewDashboard`
+- **Provide/Inject:** Widget refresh interval için `dashboardRefreshInterval`
+- **Timer:** `setInterval` ile dashboard rotasyonu
+
+### 8. Dashboard Yetkilendirme Sistemi
+
+#### 8.1 Özellikler
+
+- ✅ **View Permissions:** Dashboard görüntüleme izinleri (grup bazlı).
+- ✅ **Edit Permissions:** Dashboard düzenleme izinleri (grup bazlı).
+- ✅ **Admin Bypass:** `isAdmin` kullanıcıları tüm kontrolleri bypass eder.
+- ✅ **UI Entegrasyonu:** Dashboard Builder formunda grup seçimi.
+- ✅ **Erişim Kontrolü:** Yetkisiz erişimde "Unauthorized" mesajı.
+
+#### 8.2 Teknik Detaylar
+
+- **Data Model:** `Dashboard.permissions.view.groups[]`, `Dashboard.permissions.edit.groups[]`
+- **Composable:** `useDashboardPermissions` - `canViewDashboard`, `canEditDashboard`
+- **UI:** `DashboardForm.vue` - Grup multi-select'leri
+- **Backend:** `@dashboards` dataset'inde `permissions` field'ı
+
+### 9. Widget Yetkilendirme Sistemi
+
+#### 9.1 Özellikler
+
+- ✅ **View Permissions:** Widget görüntüleme izinleri (grup bazlı).
+- ✅ **Admin Bypass:** `isAdmin` kullanıcıları tüm widget'ları görebilir.
+- ✅ **UI Entegrasyonu:** Widget Form'da grup seçimi.
+- ✅ **Erişim Kontrolü:** Yetkisiz widget'larda "Unauthorized" mesajı.
+
+#### 9.2 Teknik Detaylar
+
+- **Data Model:** `Widget.permissions.groups[]`
+- **Component:** `WidgetRenderer.vue` - Permission kontrolü
+- **UI:** `WidgetForm.vue` - Grup multi-select
+- **Backend:** `@widgets` dataset'inde `permissions` field'ı
+
+### 10. Widget Refresh Mekanizması
+
+#### 10.1 Özellikler
+
+- ✅ **Dashboard Viewer Refresh:** Dashboard sayfasında widget'lar için refresh interval ayarı.
+- ✅ **Container Widget Refresh:** Container içinde widget'lar için ayrı refresh interval.
+- ✅ **Provide/Inject Pattern:** Refresh interval'ın component tree'de paylaşılması.
+- ✅ **Otomatik Yenileme:** `setInterval` ile widget verilerinin periyodik güncellenmesi.
+
+#### 10.2 Teknik Detaylar
+
+- **Dashboard Viewer:** `pages/dashboards/[slug].vue` - Refresh interval input'u
+- **Container:** `pages/dashboards/container.vue` - Widget refresh interval ayarı
+- **Widget Renderer:** `components/widgets/WidgetRenderer.vue` - `inject('dashboardRefreshInterval')`
+- **Service:** `services/widgetDataService.ts` - `fetchWidgetData` fonksiyonu
+
+### 11. Side Menu Entegrasyonu (Decoupled)
+
+#### 11.1 Değişiklikler
+
+- ✅ **Decoupling:** Dashboard ve Side Menu birbirinden bağımsız hale getirildi.
+- ✅ **Dashboard Model:** `sideMenuConfig` field'ı kaldırıldı.
+- ✅ **"Add to Side Menu" Butonu:** Dashboard listesi ve viewer sayfalarında buton eklendi.
+- ✅ **Otomatik Doldurma:** Side Menu Manager sayfası dashboard verileri ile otomatik açılır.
+
+#### 11.2 Teknik Detaylar
+
+- **Dashboard List:** `pages/apps/dashboards/index.vue` - "Add to Side Menu" butonu
+- **Side Menu Manager:** `pages/apps/side-menu-manager/index.vue` - Query param ile pre-fill
+- **MenuItemForm:** `components/apps/side-menu-manager/MenuItemForm.vue` - Pre-filled item desteği
 
 ---
 
 **İlgili dokümanlar:**  
 [DYNAMIC_DASHBOARD_SPEC](./DYNAMIC_DASHBOARD_SPEC.md) · [DASHBOARD_BUILDER_MECHANISM](./DASHBOARD_BUILDER_MECHANISM.md) · [DASHBOARD_WIDGET_IMPLEMENTATION_ORDER](./DASHBOARD_WIDGET_IMPLEMENTATION_ORDER.md)
+
+**Son Güncelleme:** Ocak 2026  
+**Güncelleyen:** AI Assistant

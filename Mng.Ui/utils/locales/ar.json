@@ -1905,5 +1905,320 @@
     "copy": "نسخ",
     "copied": "تم النسخ!",
     "sessionCleared": "تم مسح سجل المحادثة"
+  },
+  "dashboards": {
+    "title": "لوحات المعلومات",
+    "breadcrumbs": {
+      "home": "لوحة المعلومات",
+      "dashboards": "لوحات المعلومات"
+    },
+    "view": {
+      "loading": "جاري التحميل...",
+      "notFound": "لم يتم العثور على لوحة المعلومات.",
+      "backToList": "العودة إلى القائمة",
+      "noLayout": "لم يتم تعريف التخطيط.",
+      "emptyWidget": "فارغ",
+      "unauthorized": "وصول غير مصرح به",
+      "unauthorizedMessage": "ليس لديك إذن لعرض لوحة المعلومات هذه.",
+      "edit": "تعديل",
+      "addToSideMenu": "إضافة إلى القائمة الجانبية",
+      "refreshTime": "فترة التحديث",
+      "refreshUnit": {
+        "seconds": "ثواني",
+        "minutes": "دقائق"
+      }
+    },
+    "container": {
+      "title": "حاوية لوحات المعلومات",
+      "settings": "الإعدادات",
+      "selectDashboards": "اختر لوحات المعلومات",
+      "intervalValue": "المدة",
+      "intervalUnit": "الوحدة",
+      "rotationInterval": "فترة دوران لوحة المعلومات",
+      "widgetRefreshInterval": "فترة تحديث الودجت",
+      "play": "تشغيل",
+      "pause": "إيقاف مؤقت",
+      "previous": "السابق",
+      "next": "التالي",
+      "current": "الحالي",
+      "playing": "قيد التشغيل",
+      "noSelection": "يرجى اختيار لوحة معلومات واحدة على الأقل",
+      "noDashboards": "تعذر تحميل لوحة المعلومات",
+      "noDashboardsDesc": "تعذر تحميل لوحات المعلومات المحددة، أو ليس لديك إذن لعرضها، أو حدث خطأ.",
+      "close": "إغلاق",
+      "singleDashboardWarning": "لا يمكن بدء الدوران لأن لوحة معلومات واحدة فقط محددة. ستستمر لوحة المعلومات في العرض. تحتاج إلى اختيار لوحتي معلومات على الأقل للدوران.",
+      "playButtonTooltip": {
+        "needMoreDashboards": "تحتاج إلى اختيار لوحتي معلومات على الأقل",
+        "needRotationInterval": "يجب تحديد فترة الدوران"
+      }
+    },
+    "list": {
+      "search": "بحث لوحات المعلومات",
+      "searchPlaceholder": "الاسم أو العنوان...",
+      "status": "الحالة",
+      "statusAll": "الكل",
+      "statusActive": "نشط",
+      "statusInactive": "غير نشط",
+      "refresh": "تحديث",
+      "createNew": "لوحة معلومات جديدة",
+      "total": "الإجمالي",
+      "records": "سجلات",
+      "page": "الصفحة",
+      "showing": "عرض",
+      "itemsPerPage": "عناصر لكل صفحة",
+      "yes": "نعم",
+      "no": "لا",
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "noData": "لم يتم العثور على لوحات المعلومات",
+      "createFirst": "إنشاء أول لوحة معلومات",
+      "actions": {
+        "addToSideMenu": "إضافة إلى القائمة الجانبية",
+        "preview": "معاينة",
+        "edit": "تعديل",
+        "delete": "حذف"
+      },
+      "deleteDialog": {
+        "title": "حذف لوحة المعلومات",
+        "message": "هل أنت متأكد أنك تريد حذف لوحة المعلومات هذه؟ لا يمكن التراجع عن هذا الإجراء.",
+        "cancel": "إلغاء",
+        "confirm": "نعم، احذف"
+      },
+      "table": {
+        "headers": {
+          "name": "الاسم",
+          "title": "العنوان",
+          "slug": "الرابط",
+          "isDefault": "افتراضي",
+          "isActive": "نشط",
+          "order": "الترتيب",
+          "createdAt": "تاريخ الإنشاء",
+          "actions": "الإجراءات"
+        }
+      }
+    },
+    "builder": {
+      "createTitle": "لوحة معلومات جديدة",
+      "editTitle": "تعديل لوحة المعلومات",
+      "form": {
+        "sectionTitle": "المعلومات الأساسية",
+        "name": "الاسم",
+        "title": "العنوان",
+        "description": "الوصف",
+        "slug": "الرابط",
+        "slugHint": "اتركه فارغاً لاستخدام الاسم",
+        "isDefault": "افتراضي",
+        "isActive": "نشط",
+        "permissions": "الأذونات",
+        "permissionsHint": "اختر المجموعات التي يمكنها عرض وتعديل لوحة المعلومات هذه. إذا لم يتم اختيار أي مجموعات، يمكن لجميع المستخدمين الوصول إليها. يمكن للمستخدمين المسؤولين دائماً عرض وتعديل جميع لوحات المعلومات.",
+        "viewPermissions": "أذونات العرض",
+        "viewGroups": "مجموعات العرض",
+        "editPermissions": "أذونات التعديل",
+        "editGroups": "مجموعات التعديل",
+        "sideMenuSectionTitle": "تكامل القائمة الجانبية",
+        "sideMenuEnabled": "إضافة إلى القائمة الجانبية",
+        "sideMenuParent": "الرأس (القائمة الرئيسية)",
+        "sideMenuParentNone": "الجذر (المستوى الأعلى)",
+        "sideMenuRouteType": "نوع المسار",
+        "sideMenuRouteTypePath": "لوحة معلومات واحدة (مسار)",
+        "sideMenuRouteTypeDashboard": "محدد لوحة المعلومات",
+        "sideMenuRoutePath": "مسار المسار",
+        "sideMenuRoutePathHint": "مثال: /dashboards/analytical",
+        "sideMenuItemId": "معرف عنصر القائمة"
+      },
+      "layout": {
+        "sectionTitle": "التخطيط",
+        "row": "صف",
+        "col": "عمود",
+        "span": "العرض",
+        "widgetId": "معرف الودجت",
+        "widgetPlaceholder": "معرف الودجت (اختياري)",
+        "addRow": "إضافة صف",
+        "addCol": "إضافة عمود",
+        "removeRow": "إزالة صف",
+        "spanTotalWarning": "يجب ألا يتجاوز إجمالي عرض الصف 12.",
+        "nestedRows": "صفوف متداخلة",
+        "addNestedRows": "إضافة صفوف متداخلة",
+        "removeNestedRows": "إزالة صفوف متداخلة",
+        "selectWidget": "اختر الودجت",
+        "removeWidget": "إزالة الودجت"
+      },
+      "actions": {
+        "save": "حفظ",
+        "cancel": "إلغاء",
+        "preview": "معاينة",
+        "back": "رجوع"
+      },
+      "unauthorized": "وصول غير مصرح به",
+      "unauthorizedMessage": "ليس لديك إذن لتعديل لوحة المعلومات هذه.",
+      "validation": {
+        "nameRequired": "الاسم مطلوب.",
+        "titleRequired": "العنوان مطلوب.",
+        "atLeastOneRow": "صف واحد على الأقل مطلوب."
+      },
+      "widgetPicker": {
+        "title": "اختر الودجت",
+        "search": "بحث",
+        "searchPlaceholder": "اسم الودجت أو العنوان...",
+        "category": "الفئة",
+        "allCategories": "الكل",
+        "select": "اختر",
+        "cancel": "إلغاء",
+        "noWidgets": "لم يتم العثور على ودجت",
+        "noWidgetsHint": "حاول تغيير معايير البحث الخاصة بك."
+      }
+    }
+  },
+  "widgets": {
+    "title": "الودجت",
+    "breadcrumbs": {
+      "home": "لوحة المعلومات",
+      "widgets": "الودجت"
+    },
+    "list": {
+      "search": "بحث الودجت",
+      "refresh": "تحديث",
+      "createNew": "ودجت جديد",
+      "total": "الإجمالي",
+      "records": "سجلات",
+      "page": "الصفحة",
+      "showing": "عرض",
+      "itemsPerPage": "عناصر لكل صفحة",
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "edit": "تعديل",
+      "delete": "حذف",
+      "preview": "معاينة",
+      "close": "إغلاق",
+      "noData": "لم يتم العثور على ودجت",
+      "createFirst": "إنشاء أول ودجت",
+      "filters": {
+        "allCategories": "جميع الفئات",
+        "allTypes": "جميع الأنواع",
+        "category": "الفئة",
+        "type": "النوع",
+        "status": "الحالة"
+      },
+      "table": {
+        "headers": {
+          "name": "الاسم",
+          "title": "العنوان",
+          "category": "الفئة",
+          "type": "النوع",
+          "isActive": "نشط",
+          "order": "الترتيب",
+          "createdAt": "تاريخ الإنشاء",
+          "actions": "الإجراءات"
+        }
+      },
+      "deleteDialog": {
+        "title": "حذف الودجت",
+        "message": "هل أنت متأكد أنك تريد حذف هذا الودجت؟ لا يمكن التراجع عن هذا الإجراء.",
+        "cancel": "إلغاء",
+        "confirm": "نعم، احذف"
+      }
+    },
+    "form": {
+      "createTitle": "إنشاء ودجت جديد",
+      "editTitle": "تعديل الودجت",
+      "basicInfo": "المعلومات الأساسية",
+      "name": "اسم الودجت",
+      "title": "عنوان الودجت",
+      "description": "الوصف",
+      "category": "الفئة",
+      "type": "نوع الودجت",
+      "order": "الترتيب",
+      "isActive": "نشط",
+      "dataSource": "مصدر البيانات",
+      "dataset": "مجموعة البيانات",
+      "getMethod": "طريقة جلب البيانات",
+      "skip": "تخطي",
+      "limit": "الحد",
+      "sort": "ترتيب",
+      "filter": "فلتر",
+      "fields": "الحقول",
+      "match": "مطابقة (JSON)",
+      "pipeline": "خط الأنابيب (مصفوفة JSON)",
+      "queryName": "اسم الاستعلام",
+      "parameters": "المعاملات (JSON)",
+      "config": "التكوين",
+      "configJson": "التكوين (JSON)",
+      "queryHint": "كائن مطابقة MongoDB (تنسيق JSON)",
+      "aggregateHint": "خط أنابيب تجميع MongoDB (تنسيق مصفوفة JSON)",
+      "aggregatePipeline": {
+        "templates": "القوالب الشائعة",
+        "empty": "لم تتم إضافة مراحل بعد. أضف مرحلة من الأسفل.",
+        "addStage": "إضافة مرحلة",
+        "preview": "معاينة JSON"
+      },
+      "table": {
+        "items": "عناصر",
+        "noData": "لا توجد بيانات متاحة",
+        "loading": "جاري التحميل..."
+      },
+      "tableConfigHint": "تكوين ودجت الجدول",
+      "banner": {
+        "dismiss": "رفض"
+      },
+      "bannerConfigHint": "تكوين ودجت الشعار",
+      "configHint": "تكوين خاص بنوع الودجت (تنسيق JSON)",
+      "showJson": "عرض JSON",
+      "useBuilder": "استخدام الباني",
+      "configBuilder": {
+        "general": "الإعدادات العامة",
+        "format": "إعدادات التنسيق",
+        "value": "إعدادات القيمة",
+        "trend": "إعدادات الاتجاه",
+        "appearance": "إعدادات المظهر",
+        "action": "زر الإجراء",
+        "icon": "الأيقونة",
+        "iconVariant": "نمط الأيقونة",
+        "color": "اللون",
+        "subtitle": "العنوان الفرعي",
+        "format": "التنسيق",
+        "currency": "العملة",
+        "decimalPlaces": "المنازل العشرية",
+        "valueField": "حقل القيمة",
+        "showSecondaryValue": "عرض القيمة الثانوية",
+        "secondaryValueField": "حقل القيمة الثانوية",
+        "secondaryLabel": "تسمية ثانوية",
+        "trendField": "حقل الاتجاه",
+        "trendUpColor": "لون الاتجاه الصاعد",
+        "trendDownColor": "لون الاتجاه الهابط",
+        "variant": "نمط البطاقة",
+        "elevation": "الارتفاع",
+        "bgColor": "لون الخلفية",
+        "showAction": "عرض زر الإجراء",
+        "actionIcon": "أيقونة الإجراء",
+        "actionColor": "لون الإجراء"
+      },
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "preview": "معاينة",
+      "hidePreview": "إخفاء المعاينة",
+      "permissions": "الأذونات",
+      "permissionsHint": "اختر المجموعات التي يمكنها عرض هذا الودجت. إذا لم يتم اختيار أي مجموعات، يمكن لجميع المستخدمين عرضه. يمكن للمستخدمين المسؤولين دائماً عرض جميع الودجت.",
+      "permissionsGroups": "المجموعات المصرح بها",
+      "validation": {
+        "nameRequired": "اسم الودجت مطلوب",
+        "titleRequired": "عنوان الودجت مطلوب",
+        "categoryRequired": "اختيار الفئة مطلوب",
+        "datasetRequired": "يجب تحديد مجموعة البيانات"
+      }
+    },
+    "view": {
+      "notFound": "لم يتم العثور على الودجت",
+      "backToList": "العودة إلى القائمة"
+    },
+    "renderer": {
+      "noWidgetId": "لم يتم تحديد معرف الودجت",
+      "loadError": "فشل تحميل الودجت",
+      "dataError": "فشل جلب البيانات",
+      "notFound": "لم يتم العثور على الودجت",
+      "serviceUnavailable": "خدمة الودجت غير متاحة حالياً",
+      "typeNotSupported": "نوع الودجت غير مدعوم: {type}",
+      "unauthorized": "غير مصرح به",
+      "unauthorizedMessage": "ليس لديك إذن لعرض هذا الودجت."
+    }
   }
 }

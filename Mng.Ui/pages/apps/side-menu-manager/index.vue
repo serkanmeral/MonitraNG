@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
+import { useRoute } from 'vue-router';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useSideMenuManagerStore } from '@/stores/apps/sideMenuManager';
+import type { SideMenuItem } from '@/stores/apps/sideMenu';
 import MenuTreeView from '@/components/apps/side-menu-manager/MenuTreeView.vue';
 import MenuItemForm from '@/components/apps/side-menu-manager/MenuItemForm.vue';
 import MenuItemToolbar from '@/components/apps/side-menu-manager/MenuItemToolbar.vue';
@@ -29,10 +31,41 @@ const breadcrumbs = ref([
   },
 ]);
 
+const route = useRoute();
+
 // Load menu items on mount
 onMounted(async () => {
   // Always reload to ensure fresh data
   await menuManagerStore.loadMenuItems();
+  
+  // Check if we have query params from dashboard
+  const query = route.query;
+  if (query.source === 'dashboard' && query.dashboardId) {
+    // Wait for next tick to ensure MenuItemForm is mounted
+    await nextTick();
+    
+    // Create a new menu item with dashboard data pre-filled
+    const dashboardTitle = query.title as string || '';
+    const routePath = query.routePath as string || '';
+    
+    const preFilledItem: Partial<SideMenuItem> = {
+      order: menuManagerStore.menuItems.length,
+      itemType: 'item',
+      level: 0,
+      parentId: null,
+      pageType: 'user',
+      disabled: false,
+      title: dashboardTitle,
+      to: routePath,
+      icon: 'mdi-view-dashboard',
+      iconType: 'mdi',
+      type: 'internal',
+      pageCode: `dashboard-${query.dashboardId}`,
+    };
+    
+    // Select the pre-filled item to open the form
+    menuManagerStore.selectItem(preFilledItem as any);
+  }
 });
 
 // Handle item selection from tree

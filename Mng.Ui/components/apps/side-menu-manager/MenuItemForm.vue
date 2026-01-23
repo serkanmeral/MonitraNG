@@ -6,6 +6,7 @@ import IconPicker from './IconPicker.vue';
 import PermissionEditor from './PermissionEditor.vue';
 import { fetchFromMngKeeper, fetchFromMngLLM } from '@/services/apiService';
 import { useAutomatedFormsStore } from '@/stores/apps/automatedForms';
+import { useDashboardStore } from '@/stores/apps/dashboard';
 import { useAuthStore } from '@/stores/auth';
 
 // Note: In Event Messages, $t() is only used in template, not in script setup
@@ -27,11 +28,17 @@ const emit = defineEmits<{
 // Automated Forms Store
 const automatedFormsStore = useAutomatedFormsStore();
 
+// Dashboard Store
+const dashboardStore = useDashboardStore();
+
 // Auth Store
 const authStore = useAuthStore();
 
 // Selected form code (for dropdown)
 const selectedFormCode = ref<string | null>(null);
+
+// Selected dashboard slug (for dropdown)
+const selectedDashboardSlug = ref<string | null>(null);
 
 // Default page type - Her zaman "user" olarak başlar
 const getDefaultPageType = (): 'admin' | 'manager' | 'user' => {
@@ -62,8 +69,15 @@ watch(
       if (newItem.to && newItem.to.startsWith('/apps/automated-forms/view/')) {
         const formCode = newItem.to.replace('/apps/automated-forms/view/', '');
         selectedFormCode.value = formCode;
+        selectedDashboardSlug.value = null;
+      } else if (newItem.to && newItem.to.startsWith('/dashboards/')) {
+        // Check if route path matches a dashboard route
+        const slug = newItem.to.replace('/dashboards/', '');
+        selectedDashboardSlug.value = slug;
+        selectedFormCode.value = null;
       } else {
         selectedFormCode.value = null;
+        selectedDashboardSlug.value = null;
       }
     } else {
       // Reset form for new item - Her zaman pageType: 'user' olarak başlar
@@ -78,6 +92,7 @@ watch(
         iconType: 'tabler',
       };
       selectedFormCode.value = null;
+      selectedDashboardSlug.value = null;
     }
   },
   { immediate: true }
@@ -90,24 +105,54 @@ watch(
     if (newFormCode) {
       // Set route path to form view route
       formData.value.to = `/apps/automated-forms/view/${newFormCode}`;
+      // Clear dashboard selection when form is selected
+      selectedDashboardSlug.value = null;
     }
   }
 );
 
-// Watch route path changes to clear form selection if path doesn't match form route
+// Watch dashboard selection to update route path
+watch(
+  () => selectedDashboardSlug.value,
+  (newDashboardSlug) => {
+    if (newDashboardSlug) {
+      // Set route path to dashboard route
+      formData.value.to = `/dashboards/${newDashboardSlug}`;
+      // Clear form selection when dashboard is selected
+      selectedFormCode.value = null;
+    }
+  }
+);
+
+// Watch route path changes to clear selections if path doesn't match
 watch(
   () => formData.value.to,
   (newRoutePath) => {
-    if (!newRoutePath || !newRoutePath.startsWith('/apps/automated-forms/view/')) {
-      // If route path doesn't match form route pattern, clear form selection
-      if (selectedFormCode.value) {
-        selectedFormCode.value = null;
-      }
+    if (!newRoutePath) {
+      // Clear both selections if route path is empty
+      selectedFormCode.value = null;
+      selectedDashboardSlug.value = null;
     } else if (newRoutePath.startsWith('/apps/automated-forms/view/')) {
       // If route path matches form route pattern, update form selection
       const formCode = newRoutePath.replace('/apps/automated-forms/view/', '');
       if (selectedFormCode.value !== formCode) {
         selectedFormCode.value = formCode;
+        selectedDashboardSlug.value = null;
+      }
+    } else if (newRoutePath.startsWith('/dashboards/')) {
+      // If route path matches dashboard route pattern, update dashboard selection
+      const slug = newRoutePath.replace('/dashboards/', '');
+      if (selectedDashboardSlug.value !== slug) {
+        selectedDashboardSlug.value = slug;
+        selectedFormCode.value = null;
+      }
+    } else {
+      // If route path doesn't match either pattern, clear both selections
+      if (selectedFormCode.value) {
+        selectedFormCode.value = null;
+      }
+      if (selectedDashboardSlug.value) {
+        selectedDashboardSlug.value = null;
       }
     }
   }
@@ -168,6 +213,16 @@ const formOptions = computed(() => {
     title: form.formName || form.formCode,
     value: form.formCode,
     subtitle: form.datasetName,
+  }));
+});
+
+// Available dashboards for dropdown (only active dashboards)
+const dashboardOptions = computed(() => {
+  const activeDashboards = dashboardStore.dashboards.filter(d => d.isActive) || [];
+  return activeDashboards.map(dashboard => ({
+    title: dashboard.title || dashboard.name,
+    value: dashboard.slug || dashboard.name,
+    subtitle: dashboard.description || dashboard.name,
   }));
 });
 
@@ -536,12 +591,22 @@ const updateLocaleFiles = async () => {
 
 // Load forms on mount
 onMounted(async () => {
+  // Load forms
   try {
     if (automatedFormsStore.forms.length === 0) {
       await automatedFormsStore.fetchForms({ pageNumber: 1, pageSize: 1000, isActive: true });
     }
   } catch (error) {
     console.error('Failed to load forms:', error);
+  }
+  
+  // Load dashboards if not already loaded
+  try {
+    if (dashboardStore.dashboards.length === 0) {
+      await dashboardStore.fetchDashboards({ limit: 1000 });
+    }
+  } catch (error) {
+    console.warn('Failed to load dashboards:', error);
   }
 });
 </script>
@@ -684,6 +749,35 @@ onMounted(async () => {
               <v-list-item v-bind="itemProps">
                 <template #prepend>
                   <v-icon>mdi-form-select</v-icon>
+                </template>
+                <v-list-item-title>{{ item.raw.title }}</v-list-item-title>
+                <v-list-item-subtitle v-if="item.raw.subtitle">{{ item.raw.subtitle }}</v-list-item-subtitle>
+              </v-list-item>
+            </template>
+            <template #selection="{ item }">
+              <span>{{ item.raw.title }}</span>
+            </template>
+          </v-select>
+        </v-col>
+
+        <!-- Dashboard Selection (for item type) -->
+        <v-col v-if="formData.itemType === 'item'" cols="12" md="6">
+          <v-select
+            v-model="selectedDashboardSlug"
+            :items="dashboardOptions"
+            :label="$t('side-menu-manager.form.fields.dashboards')"
+            :placeholder="$t('side-menu-manager.form.fields.dashboardsPlaceholder')"
+            variant="outlined"
+            clearable
+            :hint="$t('side-menu-manager.form.fields.dashboardsHint')"
+            persistent-hint
+            prepend-inner-icon="mdi-view-dashboard"
+            :loading="dashboardStore.loading"
+          >
+            <template #item="{ props: itemProps, item }">
+              <v-list-item v-bind="itemProps">
+                <template #prepend>
+                  <v-icon>mdi-view-dashboard</v-icon>
                 </template>
                 <v-list-item-title>{{ item.raw.title }}</v-list-item-title>
                 <v-list-item-subtitle v-if="item.raw.subtitle">{{ item.raw.subtitle }}</v-list-item-subtitle>

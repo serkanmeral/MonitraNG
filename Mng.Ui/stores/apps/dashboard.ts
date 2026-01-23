@@ -35,14 +35,6 @@ export interface DashboardPermissions {
   edit?: { groups: string[]; users?: string[] };
 }
 
-/** Dashboard side menu config */
-export interface DashboardSideMenuConfig {
-  enabled: boolean;
-  menuItemId?: string;
-  routeType?: 'path' | 'dashboard';
-  routePath?: string;
-}
-
 /** Dashboard entity */
 export interface Dashboard {
   __dataId?: string;
@@ -53,7 +45,6 @@ export interface Dashboard {
   slug?: string;
   layout: DashboardLayout;
   permissions?: DashboardPermissions;
-  sideMenuConfig?: DashboardSideMenuConfig;
   isDefault?: boolean;
   isActive: boolean;
   order?: number;
@@ -75,7 +66,6 @@ export interface CreateDashboardDto {
   slug?: string;
   layout: DashboardLayout;
   permissions?: DashboardPermissions;
-  sideMenuConfig?: DashboardSideMenuConfig;
   isDefault?: boolean;
   isActive: boolean;
   order?: number;
@@ -89,7 +79,6 @@ export interface UpdateDashboardDto {
   slug?: string;
   layout?: DashboardLayout;
   permissions?: DashboardPermissions;
-  sideMenuConfig?: DashboardSideMenuConfig;
   isDefault?: boolean;
   isActive?: boolean;
   order?: number;
@@ -124,7 +113,6 @@ function mapToDashboard(item: any): Dashboard {
     slug: item.slug ?? item.Slug,
     layout: item.layout ?? item.Layout ?? { type: 'rows', rows: [] },
     permissions: item.permissions ?? item.Permissions,
-    sideMenuConfig: item.sideMenuConfig ?? item.SideMenuConfig,
     isDefault: item.isDefault ?? item.IsDefault ?? false,
     isActive: item.isActive ?? item.IsActive ?? true,
     order: item.order ?? item.Order ?? 0,
@@ -269,6 +257,7 @@ export const useDashboardStore = defineStore('dashboard', {
         this.dashboards.unshift(dashboard);
         this.totalCount += 1;
         this.currentDashboard = dashboard;
+
         return dashboard;
       } catch (e: any) {
         this.error = e.message ?? 'Dashboard oluşturulurken hata oluştu';
@@ -295,6 +284,7 @@ export const useDashboardStore = defineStore('dashboard', {
         if (this.currentDashboard && (this.currentDashboard.__dataId ?? this.currentDashboard.dataId) === id) {
           this.currentDashboard = dashboard;
         }
+
         return dashboard;
       } catch (e: any) {
         this.error = e.message ?? 'Dashboard güncellenirken hata oluştu';

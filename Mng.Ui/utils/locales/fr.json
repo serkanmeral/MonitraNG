@@ -1905,5 +1905,320 @@
     "copy": "Copier",
     "copied": "Copié!",
     "sessionCleared": "Historique de conversation effacé"
+  },
+  "dashboards": {
+    "title": "Tableaux de bord",
+    "breadcrumbs": {
+      "home": "Tableau de bord",
+      "dashboards": "Tableaux de bord"
+    },
+    "view": {
+      "loading": "Chargement...",
+      "notFound": "Tableau de bord introuvable.",
+      "backToList": "Retour à la liste",
+      "noLayout": "Aucune mise en page définie.",
+      "emptyWidget": "Emplacement vide",
+      "unauthorized": "Accès non autorisé",
+      "unauthorizedMessage": "Vous n'avez pas la permission de voir ce tableau de bord.",
+      "edit": "Modifier",
+      "addToSideMenu": "Ajouter au menu latéral",
+      "refreshTime": "Intervalle de rafraîchissement",
+      "refreshUnit": {
+        "seconds": "Secondes",
+        "minutes": "Minutes"
+      }
+    },
+    "container": {
+      "title": "Conteneur de tableaux de bord",
+      "settings": "Paramètres",
+      "selectDashboards": "Sélectionner les tableaux de bord",
+      "intervalValue": "Durée",
+      "intervalUnit": "Unité",
+      "rotationInterval": "Intervalle de rotation du tableau de bord",
+      "widgetRefreshInterval": "Intervalle de rafraîchissement du widget",
+      "play": "Lire",
+      "pause": "Pause",
+      "previous": "Précédent",
+      "next": "Suivant",
+      "current": "Actuel",
+      "playing": "En cours de lecture",
+      "noSelection": "Veuillez sélectionner au moins un tableau de bord",
+      "noDashboards": "Impossible de charger le tableau de bord",
+      "noDashboardsDesc": "Les tableaux de bord sélectionnés n'ont pas pu être chargés, vous n'avez pas la permission de les voir, ou une erreur s'est produite.",
+      "close": "Fermer",
+      "singleDashboardWarning": "La rotation ne peut pas être démarrée car un seul tableau de bord est sélectionné. Le tableau de bord continuera à être affiché. Vous devez sélectionner au moins 2 tableaux de bord pour la rotation.",
+      "playButtonTooltip": {
+        "needMoreDashboards": "Vous devez sélectionner au moins 2 tableaux de bord",
+        "needRotationInterval": "L'intervalle de rotation doit être spécifié"
+      }
+    },
+    "list": {
+      "search": "Rechercher des tableaux de bord",
+      "searchPlaceholder": "Nom ou titre...",
+      "status": "Statut",
+      "statusAll": "Tous",
+      "statusActive": "Actif",
+      "statusInactive": "Inactif",
+      "refresh": "Actualiser",
+      "createNew": "Nouveau tableau de bord",
+      "total": "Total",
+      "records": "enregistrements",
+      "page": "Page",
+      "showing": "affichage",
+      "itemsPerPage": "Éléments par page",
+      "yes": "Oui",
+      "no": "Non",
+      "active": "Actif",
+      "inactive": "Inactif",
+      "noData": "Aucun tableau de bord trouvé",
+      "createFirst": "Créer le premier tableau de bord",
+      "actions": {
+        "addToSideMenu": "Ajouter au menu latéral",
+        "preview": "Aperçu",
+        "edit": "Modifier",
+        "delete": "Supprimer"
+      },
+      "deleteDialog": {
+        "title": "Supprimer le tableau de bord",
+        "message": "Êtes-vous sûr de vouloir supprimer ce tableau de bord ? Cette action ne peut pas être annulée.",
+        "cancel": "Annuler",
+        "confirm": "Oui, supprimer"
+      },
+      "table": {
+        "headers": {
+          "name": "Nom",
+          "title": "Titre",
+          "slug": "Slug",
+          "isDefault": "Par défaut",
+          "isActive": "Actif",
+          "order": "Ordre",
+          "createdAt": "Créé",
+          "actions": "Actions"
+        }
+      }
+    },
+    "builder": {
+      "createTitle": "Nouveau tableau de bord",
+      "editTitle": "Modifier le tableau de bord",
+      "form": {
+        "sectionTitle": "Informations de base",
+        "name": "Nom",
+        "title": "Titre",
+        "description": "Description",
+        "slug": "Slug",
+        "slugHint": "Laisser vide pour utiliser le nom",
+        "isDefault": "Par défaut",
+        "isActive": "Actif",
+        "permissions": "Permissions",
+        "permissionsHint": "Sélectionnez les groupes qui peuvent voir et modifier ce tableau de bord. Si aucun groupe n'est sélectionné, tous les utilisateurs peuvent y accéder. Les utilisateurs administrateurs peuvent toujours voir et modifier tous les tableaux de bord.",
+        "viewPermissions": "Permission de visualisation",
+        "viewGroups": "Groupes de visualisation",
+        "editPermissions": "Permission de modification",
+        "editGroups": "Groupes de modification",
+        "sideMenuSectionTitle": "Intégration du menu latéral",
+        "sideMenuEnabled": "Ajouter au menu latéral",
+        "sideMenuParent": "En-tête (Menu parent)",
+        "sideMenuParentNone": "Racine (Niveau supérieur)",
+        "sideMenuRouteType": "Type de route",
+        "sideMenuRouteTypePath": "Tableau de bord unique (Chemin)",
+        "sideMenuRouteTypeDashboard": "Sélecteur de tableau de bord",
+        "sideMenuRoutePath": "Chemin de route",
+        "sideMenuRoutePathHint": "Ex: /dashboards/analytical",
+        "sideMenuItemId": "ID d'élément de menu"
+      },
+      "layout": {
+        "sectionTitle": "Mise en page",
+        "row": "Ligne",
+        "col": "Colonne",
+        "span": "Portée",
+        "widgetId": "ID du widget",
+        "widgetPlaceholder": "ID du widget (optionnel)",
+        "addRow": "Ajouter une ligne",
+        "addCol": "Ajouter une colonne",
+        "removeRow": "Supprimer la ligne",
+        "spanTotalWarning": "Le total de la portée de la ligne ne doit pas dépasser 12.",
+        "nestedRows": "Lignes imbriquées",
+        "addNestedRows": "Ajouter des lignes imbriquées",
+        "removeNestedRows": "Supprimer les lignes imbriquées",
+        "selectWidget": "Sélectionner le widget",
+        "removeWidget": "Supprimer le widget"
+      },
+      "actions": {
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "preview": "Aperçu",
+        "back": "Retour"
+      },
+      "unauthorized": "Accès non autorisé",
+      "unauthorizedMessage": "Vous n'avez pas la permission de modifier ce tableau de bord.",
+      "validation": {
+        "nameRequired": "Le nom est requis.",
+        "titleRequired": "Le titre est requis.",
+        "atLeastOneRow": "Au moins une ligne est requise."
+      },
+      "widgetPicker": {
+        "title": "Sélectionner le widget",
+        "search": "Rechercher",
+        "searchPlaceholder": "Nom ou titre du widget...",
+        "category": "Catégorie",
+        "allCategories": "Tous",
+        "select": "Sélectionner",
+        "cancel": "Annuler",
+        "noWidgets": "Aucun widget trouvé",
+        "noWidgetsHint": "Essayez de modifier vos critères de recherche."
+      }
+    }
+  },
+  "widgets": {
+    "title": "Widgets",
+    "breadcrumbs": {
+      "home": "Tableau de bord",
+      "widgets": "Widgets"
+    },
+    "list": {
+      "search": "Rechercher des widgets",
+      "refresh": "Actualiser",
+      "createNew": "Nouveau widget",
+      "total": "Total",
+      "records": "enregistrements",
+      "page": "Page",
+      "showing": "affichage",
+      "itemsPerPage": "Éléments par page",
+      "active": "Actif",
+      "inactive": "Inactif",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "preview": "Aperçu",
+      "close": "Fermer",
+      "noData": "Aucun widget trouvé",
+      "createFirst": "Créer le premier widget",
+      "filters": {
+        "allCategories": "Toutes les catégories",
+        "allTypes": "Tous les types",
+        "category": "Catégorie",
+        "type": "Type",
+        "status": "Statut"
+      },
+      "table": {
+        "headers": {
+          "name": "Nom",
+          "title": "Titre",
+          "category": "Catégorie",
+          "type": "Type",
+          "isActive": "Actif",
+          "order": "Ordre",
+          "createdAt": "Créé",
+          "actions": "Actions"
+        }
+      },
+      "deleteDialog": {
+        "title": "Supprimer le widget",
+        "message": "Êtes-vous sûr de vouloir supprimer ce widget ? Cette action ne peut pas être annulée.",
+        "cancel": "Annuler",
+        "confirm": "Oui, supprimer"
+      }
+    },
+    "form": {
+      "createTitle": "Créer un nouveau widget",
+      "editTitle": "Modifier le widget",
+      "basicInfo": "Informations de base",
+      "name": "Nom du widget",
+      "title": "Titre du widget",
+      "description": "Description",
+      "category": "Catégorie",
+      "type": "Type de widget",
+      "order": "Ordre",
+      "isActive": "Actif",
+      "dataSource": "Source de données",
+      "dataset": "Jeu de données",
+      "getMethod": "Méthode de récupération des données",
+      "skip": "Ignorer",
+      "limit": "Limite",
+      "sort": "Trier",
+      "filter": "Filtre",
+      "fields": "Champs",
+      "match": "Correspondance (JSON)",
+      "pipeline": "Pipeline (Tableau JSON)",
+      "queryName": "Nom de la requête",
+      "parameters": "Paramètres (JSON)",
+      "config": "Configuration",
+      "configJson": "Config (JSON)",
+      "queryHint": "Objet de correspondance MongoDB (format JSON)",
+      "aggregateHint": "Pipeline d'agrégation MongoDB (format tableau JSON)",
+      "aggregatePipeline": {
+        "templates": "Modèles courants",
+        "empty": "Aucune étape ajoutée pour le moment. Ajoutez une étape ci-dessous.",
+        "addStage": "Ajouter une étape",
+        "preview": "Aperçu JSON"
+      },
+      "table": {
+        "items": "éléments",
+        "noData": "Aucune donnée disponible",
+        "loading": "Chargement..."
+      },
+      "tableConfigHint": "Configuration du widget de tableau",
+      "banner": {
+        "dismiss": "Rejeter"
+      },
+      "bannerConfigHint": "Configuration du widget de bannière",
+      "configHint": "Configuration spécifique au type de widget (format JSON)",
+      "showJson": "Afficher JSON",
+      "useBuilder": "Utiliser le constructeur",
+      "configBuilder": {
+        "general": "Paramètres généraux",
+        "format": "Paramètres de format",
+        "value": "Paramètres de valeur",
+        "trend": "Paramètres de tendance",
+        "appearance": "Paramètres d'apparence",
+        "action": "Bouton d'action",
+        "icon": "Icône",
+        "iconVariant": "Style d'icône",
+        "color": "Couleur",
+        "subtitle": "Sous-titre",
+        "format": "Format",
+        "currency": "Devise",
+        "decimalPlaces": "Décimales",
+        "valueField": "Champ de valeur",
+        "showSecondaryValue": "Afficher la valeur secondaire",
+        "secondaryValueField": "Champ de valeur secondaire",
+        "secondaryLabel": "Libellé secondaire",
+        "trendField": "Champ de tendance",
+        "trendUpColor": "Couleur de tendance haussière",
+        "trendDownColor": "Couleur de tendance baissière",
+        "variant": "Style de carte",
+        "elevation": "Élévation",
+        "bgColor": "Couleur de fond",
+        "showAction": "Afficher le bouton d'action",
+        "actionIcon": "Icône d'action",
+        "actionColor": "Couleur d'action"
+      },
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "preview": "Aperçu",
+      "hidePreview": "Masquer l'aperçu",
+      "permissions": "Permissions",
+      "permissionsHint": "Sélectionnez les groupes qui peuvent voir ce widget. Si aucun groupe n'est sélectionné, tous les utilisateurs peuvent le voir. Les utilisateurs administrateurs peuvent toujours voir tous les widgets.",
+      "permissionsGroups": "Groupes autorisés",
+      "validation": {
+        "nameRequired": "Le nom du widget est requis",
+        "titleRequired": "Le titre du widget est requis",
+        "categoryRequired": "La sélection de la catégorie est requise",
+        "datasetRequired": "Le jeu de données doit être spécifié"
+      }
+    },
+    "view": {
+      "notFound": "Widget introuvable",
+      "backToList": "Retour à la liste"
+    },
+    "renderer": {
+      "noWidgetId": "ID du widget non spécifié",
+      "loadError": "Échec du chargement du widget",
+      "dataError": "Échec de la récupération des données",
+      "notFound": "Widget introuvable",
+      "serviceUnavailable": "Le service de widget n'est pas disponible actuellement",
+      "typeNotSupported": "Type de widget non pris en charge : {type}",
+      "unauthorized": "Non autorisé",
+      "unauthorizedMessage": "Vous n'avez pas la permission de voir ce widget."
+    }
   }
 }

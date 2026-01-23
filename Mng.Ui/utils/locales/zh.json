@@ -1905,5 +1905,320 @@
     "copy": "复制",
     "copied": "已复制！",
     "sessionCleared": "对话历史已清除"
+  },
+  "dashboards": {
+    "title": "仪表板",
+    "breadcrumbs": {
+      "home": "仪表板",
+      "dashboards": "仪表板"
+    },
+    "view": {
+      "loading": "加载中...",
+      "notFound": "未找到仪表板。",
+      "backToList": "返回列表",
+      "noLayout": "未定义布局。",
+      "emptyWidget": "空槽",
+      "unauthorized": "未授权访问",
+      "unauthorizedMessage": "您没有权限查看此仪表板。",
+      "edit": "编辑",
+      "addToSideMenu": "添加到侧边菜单",
+      "refreshTime": "刷新间隔",
+      "refreshUnit": {
+        "seconds": "秒",
+        "minutes": "分钟"
+      }
+    },
+    "container": {
+      "title": "仪表板容器",
+      "settings": "设置",
+      "selectDashboards": "选择仪表板",
+      "intervalValue": "持续时间",
+      "intervalUnit": "单位",
+      "rotationInterval": "仪表板轮换间隔",
+      "widgetRefreshInterval": "小部件刷新间隔",
+      "play": "播放",
+      "pause": "暂停",
+      "previous": "上一个",
+      "next": "下一个",
+      "current": "当前",
+      "playing": "正在播放",
+      "noSelection": "请至少选择一个仪表板",
+      "noDashboards": "无法加载仪表板",
+      "noDashboardsDesc": "无法加载选定的仪表板，您没有权限查看它们，或发生错误。",
+      "close": "关闭",
+      "singleDashboardWarning": "由于只选择了1个仪表板，无法启动轮换。仪表板将继续显示。您需要至少选择2个仪表板才能进行轮换。",
+      "playButtonTooltip": {
+        "needMoreDashboards": "您需要至少选择2个仪表板",
+        "needRotationInterval": "必须指定轮换间隔"
+      }
+    },
+    "list": {
+      "search": "搜索仪表板",
+      "searchPlaceholder": "名称或标题...",
+      "status": "状态",
+      "statusAll": "全部",
+      "statusActive": "活动",
+      "statusInactive": "非活动",
+      "refresh": "刷新",
+      "createNew": "新建仪表板",
+      "total": "总计",
+      "records": "条记录",
+      "page": "页",
+      "showing": "显示",
+      "itemsPerPage": "每页项目数",
+      "yes": "是",
+      "no": "否",
+      "active": "活动",
+      "inactive": "非活动",
+      "noData": "未找到仪表板",
+      "createFirst": "创建第一个仪表板",
+      "actions": {
+        "addToSideMenu": "添加到侧边菜单",
+        "preview": "预览",
+        "edit": "编辑",
+        "delete": "删除"
+      },
+      "deleteDialog": {
+        "title": "删除仪表板",
+        "message": "您确定要删除此仪表板吗？此操作无法撤销。",
+        "cancel": "取消",
+        "confirm": "是，删除"
+      },
+      "table": {
+        "headers": {
+          "name": "名称",
+          "title": "标题",
+          "slug": "Slug",
+          "isDefault": "默认",
+          "isActive": "活动",
+          "order": "顺序",
+          "createdAt": "创建时间",
+          "actions": "操作"
+        }
+      }
+    },
+    "builder": {
+      "createTitle": "新建仪表板",
+      "editTitle": "编辑仪表板",
+      "form": {
+        "sectionTitle": "基本信息",
+        "name": "名称",
+        "title": "标题",
+        "description": "描述",
+        "slug": "Slug",
+        "slugHint": "留空以使用名称",
+        "isDefault": "默认",
+        "isActive": "活动",
+        "permissions": "权限",
+        "permissionsHint": "选择可以查看和编辑此仪表板的组。如果未选择任何组，所有用户都可以访问它。管理员用户始终可以查看和编辑所有仪表板。",
+        "viewPermissions": "查看权限",
+        "viewGroups": "查看组",
+        "editPermissions": "编辑权限",
+        "editGroups": "编辑组",
+        "sideMenuSectionTitle": "侧边菜单集成",
+        "sideMenuEnabled": "添加到侧边菜单",
+        "sideMenuParent": "标题（父菜单）",
+        "sideMenuParentNone": "根（顶级）",
+        "sideMenuRouteType": "路由类型",
+        "sideMenuRouteTypePath": "单个仪表板（路径）",
+        "sideMenuRouteTypeDashboard": "仪表板选择器",
+        "sideMenuRoutePath": "路由路径",
+        "sideMenuRoutePathHint": "例如：/dashboards/analytical",
+        "sideMenuItemId": "菜单项ID"
+      },
+      "layout": {
+        "sectionTitle": "布局",
+        "row": "行",
+        "col": "列",
+        "span": "跨度",
+        "widgetId": "小部件ID",
+        "widgetPlaceholder": "小部件ID（可选）",
+        "addRow": "添加行",
+        "addCol": "添加列",
+        "removeRow": "删除行",
+        "spanTotalWarning": "行跨度总计不得超过12。",
+        "nestedRows": "嵌套行",
+        "addNestedRows": "添加嵌套行",
+        "removeNestedRows": "删除嵌套行",
+        "selectWidget": "选择小部件",
+        "removeWidget": "删除小部件"
+      },
+      "actions": {
+        "save": "保存",
+        "cancel": "取消",
+        "preview": "预览",
+        "back": "返回"
+      },
+      "unauthorized": "未授权访问",
+      "unauthorizedMessage": "您没有权限编辑此仪表板。",
+      "validation": {
+        "nameRequired": "名称是必需的。",
+        "titleRequired": "标题是必需的。",
+        "atLeastOneRow": "至少需要一行。"
+      },
+      "widgetPicker": {
+        "title": "选择小部件",
+        "search": "搜索",
+        "searchPlaceholder": "小部件名称或标题...",
+        "category": "类别",
+        "allCategories": "全部",
+        "select": "选择",
+        "cancel": "取消",
+        "noWidgets": "未找到小部件",
+        "noWidgetsHint": "请尝试更改您的搜索条件。"
+      }
+    }
+  },
+  "widgets": {
+    "title": "小部件",
+    "breadcrumbs": {
+      "home": "仪表板",
+      "widgets": "小部件"
+    },
+    "list": {
+      "search": "搜索小部件",
+      "refresh": "刷新",
+      "createNew": "新建小部件",
+      "total": "总计",
+      "records": "条记录",
+      "page": "页",
+      "showing": "显示",
+      "itemsPerPage": "每页项目数",
+      "active": "活动",
+      "inactive": "非活动",
+      "edit": "编辑",
+      "delete": "删除",
+      "preview": "预览",
+      "close": "关闭",
+      "noData": "未找到小部件",
+      "createFirst": "创建第一个小部件",
+      "filters": {
+        "allCategories": "所有类别",
+        "allTypes": "所有类型",
+        "category": "类别",
+        "type": "类型",
+        "status": "状态"
+      },
+      "table": {
+        "headers": {
+          "name": "名称",
+          "title": "标题",
+          "category": "类别",
+          "type": "类型",
+          "isActive": "活动",
+          "order": "顺序",
+          "createdAt": "创建时间",
+          "actions": "操作"
+        }
+      },
+      "deleteDialog": {
+        "title": "删除小部件",
+        "message": "您确定要删除此小部件吗？此操作无法撤销。",
+        "cancel": "取消",
+        "confirm": "是，删除"
+      }
+    },
+    "form": {
+      "createTitle": "创建新小部件",
+      "editTitle": "编辑小部件",
+      "basicInfo": "基本信息",
+      "name": "小部件名称",
+      "title": "小部件标题",
+      "description": "描述",
+      "category": "类别",
+      "type": "小部件类型",
+      "order": "顺序",
+      "isActive": "活动",
+      "dataSource": "数据源",
+      "dataset": "数据集",
+      "getMethod": "数据获取方法",
+      "skip": "跳过",
+      "limit": "限制",
+      "sort": "排序",
+      "filter": "筛选",
+      "fields": "字段",
+      "match": "匹配（JSON）",
+      "pipeline": "管道（JSON数组）",
+      "queryName": "查询名称",
+      "parameters": "参数（JSON）",
+      "config": "配置",
+      "configJson": "配置（JSON）",
+      "queryHint": "MongoDB匹配对象（JSON格式）",
+      "aggregateHint": "MongoDB聚合管道（JSON数组格式）",
+      "aggregatePipeline": {
+        "templates": "常用模板",
+        "empty": "尚未添加阶段。请从下方添加阶段。",
+        "addStage": "添加阶段",
+        "preview": "JSON预览"
+      },
+      "table": {
+        "items": "项目",
+        "noData": "无可用数据",
+        "loading": "加载中..."
+      },
+      "tableConfigHint": "表格小部件配置",
+      "banner": {
+        "dismiss": "关闭"
+      },
+      "bannerConfigHint": "横幅小部件配置",
+      "configHint": "特定于小部件类型的配置（JSON格式）",
+      "showJson": "显示JSON",
+      "useBuilder": "使用构建器",
+      "configBuilder": {
+        "general": "常规设置",
+        "format": "格式设置",
+        "value": "值设置",
+        "trend": "趋势设置",
+        "appearance": "外观设置",
+        "action": "操作按钮",
+        "icon": "图标",
+        "iconVariant": "图标样式",
+        "color": "颜色",
+        "subtitle": "副标题",
+        "format": "格式",
+        "currency": "货币",
+        "decimalPlaces": "小数位数",
+        "valueField": "值字段",
+        "showSecondaryValue": "显示次要值",
+        "secondaryValueField": "次要值字段",
+        "secondaryLabel": "次要标签",
+        "trendField": "趋势字段",
+        "trendUpColor": "上升趋势颜色",
+        "trendDownColor": "下降趋势颜色",
+        "variant": "卡片样式",
+        "elevation": "高度",
+        "bgColor": "背景颜色",
+        "showAction": "显示操作按钮",
+        "actionIcon": "操作图标",
+        "actionColor": "操作颜色"
+      },
+      "save": "保存",
+      "cancel": "取消",
+      "preview": "预览",
+      "hidePreview": "隐藏预览",
+      "permissions": "权限",
+      "permissionsHint": "选择可以查看此小部件的组。如果未选择任何组，所有用户都可以查看它。管理员用户始终可以查看所有小部件。",
+      "permissionsGroups": "授权组",
+      "validation": {
+        "nameRequired": "小部件名称是必需的",
+        "titleRequired": "小部件标题是必需的",
+        "categoryRequired": "类别选择是必需的",
+        "datasetRequired": "必须指定数据集"
+      }
+    },
+    "view": {
+      "notFound": "未找到小部件",
+      "backToList": "返回列表"
+    },
+    "renderer": {
+      "noWidgetId": "未指定小部件ID",
+      "loadError": "加载小部件失败",
+      "dataError": "获取数据失败",
+      "notFound": "未找到小部件",
+      "serviceUnavailable": "小部件服务当前不可用",
+      "typeNotSupported": "不支持的小部件类型：{type}",
+      "unauthorized": "未授权",
+      "unauthorizedMessage": "您没有权限查看此小部件。"
+    }
   }
 }

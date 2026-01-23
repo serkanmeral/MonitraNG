@@ -2,6 +2,8 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useWidgetStore, type Widget, type CreateWidgetDto, type UpdateWidgetDto, type DataSourceConfigData } from '@/stores/apps/widget';
 import { useDatasetStore } from '@/stores/apps/dataset';
+import { useAuthStore } from '@/stores/auth';
+import { fetchFromMngKeeper } from '@/services/apiService';
 import WidgetRenderer from './WidgetRenderer.vue';
 import AggregatePipelineBuilder from './AggregatePipelineBuilder.vue';
 import type { WidgetCategory } from '@/stores/apps/widget';
@@ -18,6 +20,68 @@ const emit = defineEmits<{
 
 const widgetStore = useWidgetStore();
 const datasetStore = useDatasetStore();
+const authStore = useAuthStore();
+
+// Groups for permissions
+const groups = ref<Array<{ id: string; name: string; isActive: boolean }>>([]);
+const loadingGroups = ref(false);
+
+// Filtered groups - Manager kullanıcılar "admins" grubunu göremez
+const filteredGroups = computed(() => {
+  if (authStore.isAdmin) {
+    return groups.value.filter(g => g.isActive);
+  }
+  return groups.value.filter(g => g.isActive && g.name.toLowerCase() !== 'admins');
+});
+
+// Load groups
+const loadGroups = async () => {
+  loadingGroups.value = true;
+  try {
+    const response = await fetchFromMngKeeper('/group?page=1&pageSize=1000', 'GET');
+    let loadedGroups: any[] = [];
+    
+    if (response && Array.isArray(response)) {
+      loadedGroups = response;
+    } else if (response?.groups && Array.isArray(response.groups)) {
+      loadedGroups = response.groups;
+    } else if (response?.data && Array.isArray(response.data)) {
+      loadedGroups = response.data;
+    } else if (response?.Groups && Array.isArray(response.Groups)) {
+      loadedGroups = response.Groups;
+    }
+    
+    groups.value = loadedGroups.filter((g: any) => {
+      const isActive = g.isActive !== undefined ? g.isActive : (g.IsActive !== undefined ? g.IsActive : true);
+      return isActive !== false;
+    });
+  } catch {
+    groups.value = [];
+  } finally {
+    loadingGroups.value = false;
+  }
+};
+
+// Group options for select
+const groupOptions = computed(() => {
+  return filteredGroups.value.map(g => ({
+    title: g.name,
+    value: g.name,
+  }));
+});
+
+// Selected groups for widget permissions
+const selectedGroups = computed({
+  get: () => {
+    return formData.value.permissions?.groups || [];
+  },
+  set: (value: string[]) => {
+    if (!formData.value.permissions) {
+      formData.value.permissions = {};
+    }
+    formData.value.permissions.groups = value.length > 0 ? value : undefined;
+  },
+});
 
 // Form data
 const formData = ref<CreateWidgetDto>({
@@ -37,6 +101,9 @@ const formData = ref<CreateWidgetDto>({
     },
   },
   config: {},
+  permissions: {
+    groups: undefined,
+  },
 });
 
 // Form validation
@@ -97,6 +164,7 @@ function initializeForm() {
       type: w.type ?? 'card',
       isActive: w.isActive ?? true,
       order: w.order ?? 0,
+      permissions: w.permissions ? { groups: w.permissions.groups } : { groups: undefined },
       dataSource: w.dataSource ?? {
         type: 'data',
         dataset: '',
@@ -175,6 +243,7 @@ onMounted(async () => {
     await Promise.all([
       widgetStore.fetchWidgetCategories(),
       datasetStore.fetchDatasets({ pageNumber: 1, pageSize: 1000 }), // Fetch all datasets
+      loadGroups(), // Load groups for permissions
     ]);
     
     // Load dataset schema if dataset is already selected
@@ -553,6 +622,38 @@ const showPreview = ref(false);
                 color="success"
                 :disabled="widgetStore.loading"
               />
+            </v-col>
+          </v-row>
+        </div>
+
+        <!-- Permissions -->
+        <div class="mb-6">
+          <h3 class="text-h6 mb-4">
+            <v-icon class="mr-2">mdi-shield-account</v-icon>
+            {{ lbl('permissions') || 'Yetkilendirme' }}
+          </h3>
+          <v-alert type="info" variant="tonal" density="compact" class="mb-4">
+            {{ lbl('permissionsHint') || 'Widget\'ı görüntüleyebilecek grupları seçin. Hiçbir grup seçilmezse, tüm kullanıcılar görebilir. Admin kullanıcılar her zaman tüm widget\'ları görebilir.' }}
+          </v-alert>
+          <v-row>
+            <v-col cols="12">
+              <v-select
+                v-model="selectedGroups"
+                :items="groupOptions"
+                :label="lbl('permissionsGroups') || 'Yetkilendirilmiş Gruplar'"
+                multiple
+                chips
+                closable-chips
+                variant="outlined"
+                :loading="loadingGroups"
+                :disabled="widgetStore.loading"
+                hint="Birden fazla grup seçebilirsiniz"
+                persistent-hint
+              >
+                <template #prepend-inner>
+                  <v-icon>mdi-account-group</v-icon>
+                </template>
+              </v-select>
             </v-col>
           </v-row>
         </div>

@@ -253,6 +253,9 @@
         "forms": "Kayıtlı Formlar",
         "formsPlaceholder": "Form seçin (opsiyonel)",
         "formsHint": "Kayıtlı formlardan birini seçin veya manuel path girin",
+        "dashboards": "Dashboard'lar",
+        "dashboardsPlaceholder": "Dashboard seçin (opsiyonel)",
+        "dashboardsHint": "Aktif dashboard'lardan birini seçin veya manuel path girin",
         "route": "Route Path",
         "routeHint": "Örn: /dashboards/analytical veya form seçin",
         "linkType": "Link Tipi",
@@ -1905,9 +1908,73 @@
       "notFound": "Dashboard bulunamadı.",
       "backToList": "Listeye dön",
       "noLayout": "Layout tanımlı değil.",
-      "emptyWidget": "Boş alan"
+      "emptyWidget": "Boş alan",
+      "unauthorized": "Yetkisiz Erişim",
+      "unauthorizedMessage": "Bu dashboard'u görüntüleme yetkiniz bulunmamaktadır.",
+      "edit": "Düzenle",
+      "addToSideMenu": "Side Menu'ye Ekle",
+      "refreshTime": "Yenileme Süresi",
+      "refreshUnit": {
+        "seconds": "Saniye",
+        "minutes": "Dakika"
+      }
+    },
+    "container": {
+      "title": "Dashboard Container",
+      "settings": "Ayarlar",
+      "selectDashboards": "Dashboard Seçin",
+      "intervalValue": "Süre",
+      "intervalUnit": "Birim",
+      "rotationInterval": "Dashboard Rotasyon Süresi",
+      "widgetRefreshInterval": "Widget Yenileme Süresi",
+      "play": "Başlat",
+      "pause": "Duraklat",
+      "previous": "Önceki",
+      "next": "Sonraki",
+      "current": "Mevcut",
+      "playing": "Oynatılıyor",
+      "noSelection": "Lütfen en az bir dashboard seçin",
+      "noDashboards": "Dashboard Yüklenemedi",
+      "noDashboardsDesc": "Seçilen dashboard'lar yüklenemedi, görüntüleme yetkiniz yok veya bir hata oluştu.",
+      "close": "Kapat",
+      "singleDashboardWarning": "Sadece 1 dashboard seçildiği için rotasyon başlatılamaz. Dashboard görüntülenmeye devam edecek. Rotasyon için en az 2 dashboard seçmelisiniz.",
+      "playButtonTooltip": {
+        "needMoreDashboards": "En az 2 dashboard seçmelisiniz",
+        "needRotationInterval": "Rotasyon süresi belirtilmelidir"
+      }
     },
     "list": {
+      "search": "Dashboard ara",
+      "searchPlaceholder": "Ad veya başlık...",
+      "status": "Durum",
+      "statusAll": "Tümü",
+      "statusActive": "Aktif",
+      "statusInactive": "Pasif",
+      "refresh": "Yenile",
+      "createNew": "Yeni Dashboard",
+      "total": "Toplam",
+      "records": "kayıt",
+      "page": "Sayfa",
+      "showing": "gösteriliyor",
+      "itemsPerPage": "Sayfa başına",
+      "yes": "Evet",
+      "no": "Hayır",
+      "active": "Aktif",
+      "inactive": "Pasif",
+      "noData": "Dashboard bulunamadı",
+      "createFirst": "İlk Dashboard'u Oluştur",
+      "actions": {
+        "addToSideMenu": "Side Menu'ye Ekle",
+        "preview": "Önizle",
+        "edit": "Düzenle",
+        "delete": "Sil"
+      },
+      "deleteDialog": {
+        "title": "Dashboard'ı sil",
+        "message": "Bu dashboard'ı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+        "cancel": "İptal",
+        "confirm": "Evet, Sil"
+      },
       "table": {
         "headers": {
           "name": "Ad",
@@ -1932,7 +1999,23 @@
         "slug": "Slug",
         "slugHint": "Boş bırakılırsa ad kullanılır",
         "isDefault": "Varsayılan",
-        "isActive": "Aktif"
+        "isActive": "Aktif",
+        "permissions": "Yetkilendirme",
+        "permissionsHint": "Dashboard'ı görüntüleyebilecek ve düzenleyebilecek grupları seçin. Hiçbir grup seçilmezse, tüm kullanıcılar erişebilir. Admin kullanıcılar her zaman tüm dashboard'ları görebilir ve düzenleyebilir.",
+        "viewPermissions": "Görüntüleme Yetkisi",
+        "viewGroups": "Görüntüleme Grupları",
+        "editPermissions": "Düzenleme Yetkisi",
+        "editGroups": "Düzenleme Grupları",
+        "sideMenuSectionTitle": "Side Menu Entegrasyonu",
+        "sideMenuEnabled": "Side Menu'ye ekle",
+        "sideMenuParent": "Header (Üst Menü)",
+        "sideMenuParentNone": "Root (Ana Seviye)",
+        "sideMenuRouteType": "Route Tipi",
+        "sideMenuRouteTypePath": "Tek Dashboard (Path)",
+        "sideMenuRouteTypeDashboard": "Dashboard Seçici",
+        "sideMenuRoutePath": "Route Path",
+        "sideMenuRoutePathHint": "Örn: /dashboards/analytical",
+        "sideMenuItemId": "Menu Item ID"
       },
       "layout": {
         "sectionTitle": "Layout",
@@ -1954,8 +2037,11 @@
       "actions": {
         "save": "Kaydet",
         "cancel": "İptal",
-        "preview": "Önizle"
+        "preview": "Önizle",
+        "back": "Geri Dön"
       },
+      "unauthorized": "Yetkisiz Erişim",
+      "unauthorizedMessage": "Bu dashboard'u düzenleme yetkiniz bulunmamaktadır.",
       "validation": {
         "nameRequired": "Ad zorunludur.",
         "titleRequired": "Başlık zorunludur.",
@@ -2105,6 +2191,9 @@
         "cancel": "İptal",
         "preview": "Önizle",
         "hidePreview": "Önizlemeyi Gizle",
+      "permissions": "Yetkilendirme",
+      "permissionsHint": "Widget'ı görüntüleyebilecek grupları seçin. Hiçbir grup seçilmezse, tüm kullanıcılar görebilir. Admin kullanıcılar her zaman tüm widget'ları görebilir.",
+      "permissionsGroups": "Yetkilendirilmiş Gruplar",
       "validation": {
         "nameRequired": "Widget adı zorunludur",
         "titleRequired": "Widget başlığı zorunludur",
@@ -2121,7 +2210,10 @@
       "loadError": "Widget yüklenemedi",
       "dataError": "Veri çekilemedi",
       "notFound": "Widget bulunamadı",
-      "typeNotSupported": "Widget tipi desteklenmiyor: {type}"
+      "serviceUnavailable": "Widget servisi şu anda kullanılamıyor",
+      "typeNotSupported": "Widget tipi desteklenmiyor: {type}",
+      "unauthorized": "Yetkiniz Yok",
+      "unauthorizedMessage": "Bu widget'ı görüntüleme yetkiniz bulunmamaktadır."
     }
   }
 }

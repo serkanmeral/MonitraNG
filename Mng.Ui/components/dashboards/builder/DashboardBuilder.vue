@@ -2,6 +2,7 @@
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DashboardForm from '@/components/dashboards/builder/DashboardForm.vue';
 import LayoutEditor from '@/components/dashboards/builder/LayoutEditor.vue';
+import { useDashboardPermissions } from '@/composables/useDashboardPermissions';
 import type { DashboardFormData } from '@/components/dashboards/builder/types';
 import {
   useDashboardStore,
@@ -27,8 +28,19 @@ const t = (key: string) => {
 };
 
 const dashboardStore = useDashboardStore();
+const { canEditDashboard } = useDashboardPermissions();
 const isEdit = computed(() => !!props.initial?.__dataId || !!props.initial?.dataId);
 const dashboardId = computed(() => props.initial?.__dataId ?? props.initial?.dataId ?? '');
+
+// Permission kontrolü (edit modunda)
+const hasEditPermission = computed(() => {
+  if (!isEdit.value) return true; // Create modunda permission kontrolü yok
+  return canEditDashboard(props.initial?.permissions);
+});
+
+const unauthorized = computed(() => {
+  return isEdit.value && !hasEditPermission.value;
+});
 
 const page = computed(() => ({
   title: isEdit.value ? t('dashboards.builder.editTitle') : t('dashboards.builder.createTitle'),
@@ -47,13 +59,22 @@ const form = ref<DashboardFormData>({
   slug: '',
   isDefault: false,
   isActive: true,
+  permissions: undefined,
 });
 
 const layout = ref<DashboardLayout>(defaultLayout());
 
 function initFromDashboard(d: Dashboard | null | undefined) {
   if (!d) {
-    form.value = { name: '', title: '', description: '', slug: '', isDefault: false, isActive: true };
+    form.value = {
+      name: '',
+      title: '',
+      description: '',
+      slug: '',
+      isDefault: false,
+      isActive: true,
+      permissions: undefined,
+    };
     layout.value = defaultLayout();
     return;
   }
@@ -64,6 +85,7 @@ function initFromDashboard(d: Dashboard | null | undefined) {
     slug: d.slug ?? '',
     isDefault: d.isDefault ?? false,
     isActive: d.isActive ?? true,
+    permissions: d.permissions,
   };
   layout.value = d.layout ?? defaultLayout();
 }
@@ -105,6 +127,7 @@ async function save() {
   const title = (form.value.title ?? '').trim();
   const slug = (form.value.slug ?? '').trim() || undefined;
   const description = (form.value.description ?? '').trim() || undefined;
+
   const dto: CreateDashboardDto = {
     name,
     title,
@@ -114,6 +137,7 @@ async function save() {
     isDefault: form.value.isDefault,
     isActive: form.value.isActive,
     order: 0,
+    permissions: form.value.permissions,
   };
   try {
     if (isEdit.value && dashboardId.value) {
@@ -125,6 +149,7 @@ async function save() {
         layout: layout.value,
         isDefault: form.value.isDefault,
         isActive: form.value.isActive,
+        permissions: form.value.permissions,
       };
       await dashboardStore.updateDashboard(dashboardId.value, updateDto);
     } else {
@@ -152,19 +177,36 @@ function preview() {
   <div>
     <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs" />
 
-    <v-alert
-      v-if="dashboardStore.error"
-      type="error"
-      variant="tonal"
-      density="compact"
-      class="mb-4"
-      closable
-      @click:close="dashboardStore.clearError"
-    >
-      {{ dashboardStore.error }}
-    </v-alert>
+    <!-- Unauthorized (403) -->
+    <v-card v-if="unauthorized" variant="outlined" class="py-12">
+      <div class="text-center">
+        <v-icon size="64" color="error" class="mb-4">mdi-lock-alert</v-icon>
+        <p class="text-h6 text-medium-emphasis mb-2">
+          {{ t('dashboards.builder.unauthorized') }}
+        </p>
+        <p class="text-body-2 text-medium-emphasis mb-4">
+          {{ t('dashboards.builder.unauthorizedMessage') }}
+        </p>
+        <v-btn color="primary" variant="flat" @click="cancel">
+          {{ t('dashboards.builder.actions.back') }}
+        </v-btn>
+      </div>
+    </v-card>
 
-    <v-row>
+    <template v-else>
+      <v-alert
+        v-if="dashboardStore.error"
+        type="error"
+        variant="tonal"
+        density="compact"
+        class="mb-4"
+        closable
+        @click:close="dashboardStore.clearError"
+      >
+        {{ dashboardStore.error }}
+      </v-alert>
+
+      <v-row>
       <v-col cols="12" md="4" lg="3">
         <DashboardForm v-model="form" :disabled="dashboardStore.loading" :t="t" />
         <v-card variant="outlined">
@@ -195,5 +237,6 @@ function preview() {
         </v-card>
       </v-col>
     </v-row>
+    </template>
   </div>
 </template>

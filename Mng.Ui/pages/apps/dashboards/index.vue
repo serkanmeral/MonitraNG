@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useDashboardStore } from '@/stores/apps/dashboard';
 import { useLocaleStore } from '@/stores/locale';
-import { EditIcon, EyeIcon, TrashIcon, LayoutDashboardIcon, PlusIcon, RefreshIcon, ExternalLinkIcon } from 'vue-tabler-icons';
+import { EditIcon, EyeIcon, TrashIcon, LayoutDashboardIcon, PlusIcon, RefreshIcon, ExternalLinkIcon, MenuIcon } from 'vue-tabler-icons';
 
 const nuxtApp = useNuxtApp();
 const i18n = nuxtApp.vueApp.config.globalProperties.$i18n;
@@ -134,6 +134,25 @@ function createNew() {
   router.push('/apps/dashboards/new');
 }
 
+function addToSideMenu(dashboard: any) {
+  const dashboardId = dashboard.__dataId ?? dashboard.dataId ?? '';
+  const slug = dashboard.slug ?? dashboard.name ?? '';
+  const routePath = slug ? `/dashboards/${slug}` : undefined;
+  
+  // Side Menu Manager create sayfasına yönlendir ve query params ile dashboard bilgilerini geç
+  const query: any = {
+    source: 'dashboard',
+    dashboardId,
+    title: dashboard.title ?? dashboard.name,
+    routePath: routePath,
+  };
+  
+  router.push({
+    path: '/apps/side-menu-manager',
+    query,
+  });
+}
+
 function formatDate(date: string | Date | null | undefined) {
   if (!date) return '-';
   try {
@@ -151,11 +170,11 @@ function formatDate(date: string | Date | null | undefined) {
   }
 }
 
-const isActiveOptions = [
-  { value: 'all' as const, title: 'Tümü' },
-  { value: true as const, title: 'Aktif' },
-  { value: false as const, title: 'Pasif' },
-];
+const isActiveOptions = computed(() => [
+  { value: 'all' as const, title: t('dashboards.list.statusAll') || 'Tümü' },
+  { value: true as const, title: t('dashboards.list.statusActive') || 'Aktif' },
+  { value: false as const, title: t('dashboards.list.statusInactive') || 'Pasif' },
+]);
 </script>
 
 <template>
@@ -169,8 +188,8 @@ const isActiveOptions = [
           <v-text-field
             v-model="search"
             prepend-inner-icon="mdi-magnify"
-            label="Dashboard ara"
-            placeholder="Ad veya başlık..."
+            :label="t('dashboards.list.search') || 'Dashboard ara'"
+            :placeholder="t('dashboards.list.searchPlaceholder') || 'Ad veya başlık...'"
             variant="outlined"
             density="compact"
             hide-details
@@ -182,7 +201,7 @@ const isActiveOptions = [
             :items="isActiveOptions"
             item-title="title"
             item-value="value"
-            label="Durum"
+            :label="t('dashboards.list.status') || 'Durum'"
             variant="outlined"
             density="compact"
             hide-details
@@ -190,12 +209,12 @@ const isActiveOptions = [
           />
           <v-btn icon size="small" variant="outlined" color="default" :loading="dashboardStore.loading" @click="fetchDashboards">
             <RefreshIcon size="18" />
-            <v-tooltip activator="parent" location="top">Yenile</v-tooltip>
+            <v-tooltip activator="parent" location="top">{{ t('dashboards.list.refresh') || 'Yenile' }}</v-tooltip>
           </v-btn>
         </div>
         <v-btn color="primary" variant="flat" @click="createNew">
           <PlusIcon class="mr-2" size="20" />
-          Yeni Dashboard
+          {{ t('dashboards.list.createNew') || 'Yeni Dashboard' }}
         </v-btn>
       </div>
 
@@ -226,16 +245,16 @@ const isActiveOptions = [
         <template v-slot:bottom>
           <div class="d-flex justify-space-between align-center pa-3 border-top">
             <div class="text-caption text-medium-emphasis">
-              <strong>Toplam:</strong> {{ dashboardStore.totalCount }} kayıt
-              <span v-if="totalPages > 1" class="ml-2">(Sayfa {{ tableOptions.page }} / {{ totalPages }})</span>
+              <strong>{{ t('dashboards.list.total') || 'Toplam' }}:</strong> {{ dashboardStore.totalCount }} {{ t('dashboards.list.records') || 'kayıt' }}
+              <span v-if="totalPages > 1" class="ml-2">({{ t('dashboards.list.page') || 'Sayfa' }} {{ tableOptions.page }} / {{ totalPages }})</span>
               <span class="ml-2">
                 | {{ ((tableOptions.page - 1) * tableOptions.itemsPerPage) + 1 }} -
                 {{ Math.min(tableOptions.page * tableOptions.itemsPerPage, dashboardStore.totalCount) }}
-                / {{ dashboardStore.totalCount }} gösteriliyor
+                / {{ dashboardStore.totalCount }} {{ t('dashboards.list.showing') || 'gösteriliyor' }}
               </span>
             </div>
             <div class="d-flex align-center ga-2">
-              <span class="text-caption text-medium-emphasis">Sayfa başına:</span>
+              <span class="text-caption text-medium-emphasis">{{ t('dashboards.list.itemsPerPage') || 'Sayfa başına' }}:</span>
               <v-select
                 v-model="tableOptions.itemsPerPage"
                 :items="[10, 20, 50, 100]"
@@ -274,13 +293,13 @@ const isActiveOptions = [
 
         <template #item.isDefault="{ item }">
           <v-chip :color="item.isDefault ? 'primary' : 'default'" size="small" variant="tonal">
-            {{ item.isDefault ? 'Evet' : 'Hayır' }}
+            {{ item.isDefault ? (t('dashboards.list.yes') || 'Evet') : (t('dashboards.list.no') || 'Hayır') }}
           </v-chip>
         </template>
 
         <template #item.isActive="{ item }">
           <v-chip :color="item.isActive ? 'success' : 'error'" size="small" variant="flat">
-            {{ item.isActive ? 'Aktif' : 'Pasif' }}
+            {{ item.isActive ? (t('dashboards.list.active') || 'Aktif') : (t('dashboards.list.inactive') || 'Pasif') }}
           </v-chip>
         </template>
 
@@ -298,30 +317,40 @@ const isActiveOptions = [
               icon
               size="small"
               variant="text"
+              color="secondary"
+              @click="addToSideMenu(item)"
+            >
+              <MenuIcon size="18" />
+              <v-tooltip activator="parent" location="top">{{ t('dashboards.list.actions.addToSideMenu') || 'Side Menu\'ye Ekle' }}</v-tooltip>
+            </v-btn>
+            <v-btn
+              icon
+              size="small"
+              variant="text"
               color="success"
               :disabled="!(item.isActive ?? true)"
               @click="previewDashboard(item)"
             >
               <ExternalLinkIcon size="18" />
-              <v-tooltip activator="parent" location="top">Önizle</v-tooltip>
+              <v-tooltip activator="parent" location="top">{{ t('dashboards.list.actions.preview') || 'Önizle' }}</v-tooltip>
             </v-btn>
             <v-btn icon size="small" variant="text" color="info" @click="editDashboard(item)">
               <EditIcon size="18" />
-              <v-tooltip activator="parent" location="top">Düzenle</v-tooltip>
+              <v-tooltip activator="parent" location="top">{{ t('dashboards.list.actions.edit') || 'Düzenle' }}</v-tooltip>
             </v-btn>
             <v-btn icon size="small" variant="text" color="error" @click="deleteDashboard(item)">
               <TrashIcon size="18" />
-              <v-tooltip activator="parent" location="top">Sil</v-tooltip>
+              <v-tooltip activator="parent" location="top">{{ t('dashboards.list.actions.delete') || 'Sil' }}</v-tooltip>
             </v-btn>
           </div>
         </template>
 
         <template #no-data>
           <div class="text-center py-8">
-            <p class="text-subtitle-1 text-medium-emphasis">Dashboard bulunamadı</p>
+            <p class="text-subtitle-1 text-medium-emphasis">{{ t('dashboards.list.noData') || 'Dashboard bulunamadı' }}</p>
             <v-btn color="primary" variant="flat" class="mt-4" @click="createNew">
               <PlusIcon class="mr-2" size="20" />
-              İlk Dashboard'u Oluştur
+              {{ t('dashboards.list.createFirst') || 'İlk Dashboard\'u Oluştur' }}
             </v-btn>
           </div>
         </template>
@@ -331,15 +360,15 @@ const isActiveOptions = [
 
     <v-dialog v-model="showDeleteDialog" max-width="420" persistent>
       <v-card>
-        <v-card-title>Dashboard'ı sil</v-card-title>
+        <v-card-title>{{ t('dashboards.list.deleteDialog.title') || 'Dashboard\'ı sil' }}</v-card-title>
         <v-card-text>
-          Bu dashboard'ı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+          {{ t('dashboards.list.deleteDialog.message') || 'Bu dashboard\'ı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.' }}
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="showDeleteDialog = false; dashboardToDelete = null">İptal</v-btn>
+          <v-btn variant="text" @click="showDeleteDialog = false; dashboardToDelete = null">{{ t('dashboards.list.deleteDialog.cancel') || 'İptal' }}</v-btn>
           <v-btn color="error" variant="flat" :loading="dashboardStore.loading" @click="confirmDelete">
-            Evet, Sil
+            {{ t('dashboards.list.deleteDialog.confirm') || 'Evet, Sil' }}
           </v-btn>
         </v-card-actions>
       </v-card>

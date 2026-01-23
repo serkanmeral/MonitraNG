@@ -71,6 +71,11 @@ export interface DataSourceConfigData {
   };
 }
 
+/** Widget Permissions */
+export interface WidgetPermissions {
+  groups?: string[]; // Group names that can view this widget
+}
+
 /** Widget Entity */
 export interface Widget {
   __dataId?: string;
@@ -86,6 +91,7 @@ export interface Widget {
   config?: object;
   isActive: boolean;
   order?: number;
+  permissions?: WidgetPermissions;
   createInfo?: {
     createdAt: string | Date;
     userInfo?: { uid: string; userName: string; domain: string };
@@ -109,6 +115,7 @@ export interface CreateWidgetDto {
   config?: object;
   isActive: boolean;
   order?: number;
+  permissions?: WidgetPermissions;
 }
 
 /** Update Widget DTO */
@@ -124,6 +131,7 @@ export interface UpdateWidgetDto {
   config?: object;
   isActive?: boolean;
   order?: number;
+  permissions?: WidgetPermissions;
 }
 
 /** Fetch Widgets Params */
@@ -190,6 +198,7 @@ function mapToWidget(item: any): Widget {
     config: item.config ?? item.Config,
     isActive: item.isActive ?? item.IsActive ?? true,
     order: item.order ?? item.Order ?? 0,
+    permissions: item.permissions ?? item.Permissions,
     createInfo: item.createInfo ?? item.CreateInfo,
     lastUpdateInfo: item.lastUpdateInfo ?? item.LastUpdateInfo ?? null,
   };
