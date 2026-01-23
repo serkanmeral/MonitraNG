@@ -1973,5 +1973,155 @@
         "noWidgetsHint": "Arama kriterlerinizi değiştirmeyi deneyin."
       }
     }
+  },
+  "widgets": {
+    "title": "Widget'lar",
+    "breadcrumbs": {
+      "home": "Dashboard",
+      "widgets": "Widget'lar"
+    },
+    "list": {
+      "search": "Widget ara",
+      "refresh": "Yenile",
+      "createNew": "Yeni Widget",
+      "total": "Toplam",
+      "records": "kayıt",
+      "page": "Sayfa",
+      "showing": "gösteriliyor",
+      "itemsPerPage": "Sayfa başına",
+      "active": "Aktif",
+      "inactive": "Pasif",
+        "edit": "Düzenle",
+        "delete": "Sil",
+        "preview": "Önizle",
+        "close": "Kapat",
+        "noData": "Widget bulunamadı",
+        "createFirst": "İlk Widget'ı Oluştur",
+      "filters": {
+        "allCategories": "Tüm Kategoriler",
+        "allTypes": "Tüm Tipler",
+        "category": "Kategori",
+        "type": "Tip",
+        "status": "Durum"
+      },
+      "table": {
+        "headers": {
+          "name": "Ad",
+          "title": "Başlık",
+          "category": "Kategori",
+          "type": "Tip",
+          "isActive": "Aktif",
+          "order": "Sıra",
+          "createdAt": "Oluşturulma",
+          "actions": "İşlemler"
+        }
+      },
+      "deleteDialog": {
+        "title": "Widget'ı sil",
+        "message": "Bu widget'ı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+        "cancel": "İptal",
+        "confirm": "Evet, Sil"
+      }
+    },
+    "form": {
+      "createTitle": "Yeni Widget Oluştur",
+      "editTitle": "Widget Düzenle",
+      "basicInfo": "Temel Bilgiler",
+      "name": "Widget Adı",
+      "title": "Widget Başlığı",
+      "description": "Açıklama",
+      "category": "Kategori",
+      "type": "Widget Tipi",
+      "order": "Sıralama",
+      "isActive": "Aktif",
+      "dataSource": "Veri Kaynağı",
+      "dataset": "Dataset",
+      "getMethod": "Veri Çekme Yöntemi",
+      "skip": "Atla",
+      "limit": "Limit",
+      "sort": "Sıralama",
+      "filter": "Filtre",
+      "fields": "Alanlar",
+      "match": "Match (JSON)",
+      "pipeline": "Pipeline (JSON Array)",
+      "queryName": "Query Adı",
+      "parameters": "Parametreler (JSON)",
+      "config": "Yapılandırma",
+      "configJson": "Config (JSON)",
+      "queryHint": "MongoDB match objesi (JSON formatında)",
+      "aggregateHint": "MongoDB aggregation pipeline (JSON array formatında)",
+      "aggregatePipeline": {
+        "templates": "Hazır Şablonlar",
+        "empty": "Henüz stage eklenmemiş. Aşağıdan stage ekleyin.",
+        "addStage": "Stage Ekle",
+        "preview": "JSON Önizleme"
+      },
+      "table": {
+        "items": "kayıt",
+        "noData": "Veri bulunamadı",
+        "loading": "Yükleniyor..."
+      },
+      "tableConfigHint": "Table Widget Yapılandırması",
+      "banner": {
+        "dismiss": "Kapat"
+      },
+      "chart": {
+        "noData": "Grafik için veri bulunamadı"
+      },
+      "bannerConfigHint": "Banner Widget Yapılandırması",
+      "chartConfigHint": "Chart Widget Yapılandırması",
+      "configHint": "Widget tipine özel yapılandırma (JSON formatında)",
+      "showJson": "JSON Göster",
+      "useBuilder": "Builder Kullan",
+      "configBuilder": {
+        "general": "Genel Ayarlar",
+        "format": "Format Ayarları",
+        "value": "Değer Ayarları",
+        "trend": "Trend Ayarları",
+        "appearance": "Görünüm Ayarları",
+        "action": "Aksiyon Butonu",
+        "icon": "İkon",
+        "iconVariant": "İkon Stili",
+        "color": "Renk",
+        "subtitle": "Alt Başlık",
+        "format": "Format",
+        "currency": "Para Birimi",
+        "decimalPlaces": "Ondalık Basamak",
+        "valueField": "Değer Alanı",
+        "showSecondaryValue": "İkinci Değer Göster",
+        "secondaryValueField": "İkinci Değer Alanı",
+        "secondaryLabel": "İkinci Değer Etiketi",
+        "trendField": "Trend Alanı",
+        "trendUpColor": "Artış Rengi",
+        "trendDownColor": "Azalış Rengi",
+        "variant": "Kart Stili",
+        "elevation": "Gölge Seviyesi",
+        "bgColor": "Arka Plan Rengi",
+        "showAction": "Aksiyon Butonu Göster",
+        "actionIcon": "Aksiyon İkonu",
+        "actionColor": "Aksiyon Rengi"
+      },
+        "save": "Kaydet",
+        "cancel": "İptal",
+        "preview": "Önizle",
+        "hidePreview": "Önizlemeyi Gizle",
+      "validation": {
+        "nameRequired": "Widget adı zorunludur",
+        "titleRequired": "Widget başlığı zorunludur",
+        "categoryRequired": "Kategori seçimi zorunludur",
+        "datasetRequired": "Dataset belirtilmelidir"
+      }
+    },
+    "view": {
+      "notFound": "Widget bulunamadı",
+      "backToList": "Listeye Dön"
+    },
+    "renderer": {
+      "noWidgetId": "Widget ID belirtilmemiş",
+      "loadError": "Widget yüklenemedi",
+      "dataError": "Veri çekilemedi",
+      "notFound": "Widget bulunamadı",
+      "typeNotSupported": "Widget tipi desteklenmiyor: {type}"
+    }
   }
 }

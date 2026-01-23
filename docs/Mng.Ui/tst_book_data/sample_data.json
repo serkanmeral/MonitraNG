@@ -1,0 +1,406 @@
+[
+	{
+		"_id": "697143f3d512e0dc7d693654",
+		"publisherCode": "aa",
+		"name": "dsffsddf",
+		"title": "b1234",
+		"subtitle": "",
+		"publisher": "7ea65f04-fc7b-488e-be3f-cd840d73de4d",
+		"genres": [
+			"387b00b4-0cf0-4afe-8a28-728c802cd820",
+			"6d0febcf-1655-419f-aec5-70f0652edb5d",
+			"d91e551c-d9c0-4d8e-ba8e-2d1c974217ce",
+			"4a478b6e-b9d3-4a55-87d7-ba664ab3479a",
+			"95c83d7c-543c-4e8c-85f3-736996dbf77c"
+		],
+		"author": "696fce16cf334ee26894f0f3",
+		"coAuthors": [],
+		"reviewerGroups": [],
+		"editorialTeam": "",
+		"pageCount": 60,
+		"publicationDate": "2026-01-29T21:23:00.000Z",
+		"language": "tr-TT",
+		"price": 23,
+		"coverImage": {},
+		"__dataId": "e454161c-4bbb-41f2-b33b-ecd37f3617b2",
+		"__history": [
+			{
+				"operation": "create",
+				"userId": "44e5dc01-1c09-433c-8def-76dc23583c44",
+				"userEmail": "serkan.meral",
+				"timestamp": "2026-01-21T21:24:03.048Z",
+				"ipAddress": "::ffff:172.18.0.6",
+				"changes": ""
+			}
+		],
+		"isbn": "ISBN-2026-000025",
+		"bookCode": "BK-2601-0025",
+		"internalBookNumber": "aa-2026-00006",
+		"sequenceNumber": "meral-BOOK-001090"
+	},
+	{
+		"_id": "697142ced512e0dc7d693653",
+		"publisherCode": "aa",
+		"name": "qwee",
+		"title": "sdff1",
+		"subtitle": "",
+		"publisher": "7ea65f04-fc7b-488e-be3f-cd840d73de4d",
+		"genres": [
+			"3ae0f13d-bb90-4e09-b850-5bc1f38bd353"
+		],
+		"author": "696fcde3cf334ee26894f0ea",
+		"coAuthors": [],
+		"reviewerGroups": [],
+		"editorialTeam": "",
+		"pageCount": 1,
+		"publicationDate": "2026-01-05T21:18:00.000Z",
+		"language": "",
+		"price": 2,
+		"coverImage": {},
+		"__dataId": "7cf47fc5-cf16-479b-a328-6bb751bf160a",
+		"__history": [
+			{
+				"operation": "create",
+				"userId": "44e5dc01-1c09-433c-8def-76dc23583c44",
+				"userEmail": "serkan.meral",
+				"timestamp": "2026-01-21T21:19:10.164Z",
+				"ipAddress": "::ffff:172.18.0.6",
+				"changes": ""
+			}
+		],
+		"isbn": "ISBN-2026-000024",
+		"bookCode": "BK-2601-0024",
+		"internalBookNumber": "aa-2026-00005",
+		"sequenceNumber": "meral-BOOK-001080"
+	},
+	{
+		"_id": "69713f34aa051c55e4d14c05",
+		"publisherCode": "aa",
+		"name": "lkkj",
+		"title": "f13",
+		"subtitle": "",
+		"publisher": "7ea65f04-fc7b-488e-be3f-cd840d73de4d",
+		"genres": [
+			"3ae0f13d-bb90-4e09-b850-5bc1f38bd353",
+			"387b00b4-0cf0-4afe-8a28-728c802cd820",
+			"6d0febcf-1655-419f-aec5-70f0652edb5d",
+			"7fc7f79d-a4c4-4fee-a16d-f1b95c2d2a12",
+			"d91e551c-d9c0-4d8e-ba8e-2d1c974217ce"
+		],
+		"author": "696fcde3cf334ee26894f0ea",
+		"coAuthors": [],
+		"reviewerGroups": [],
+		"editorialTeam": "",
+		"pageCount": 10,
+		"publicationDate": "2026-01-01T09:30:00.000Z",
+		"language": "",
+		"price": 1,
+		"coverImage": {},
+		"__dataId": "39023517-6d17-443e-88f3-1006ad801159",
+		"__history": [
+			{
+				"operation": "create",
+				"userId": "44e5dc01-1c09-433c-8def-76dc23583c44",
+				"userEmail": "serkan.meral",
+				"timestamp": "2026-01-21T21:03:48.697Z",
+				"ipAddress": "::ffff:172.18.0.6",
+				"changes": ""
+			}
+		],
+		"isbn": "ISBN-2026-000022",
+		"bookCode": "BK-2601-0022",
+		"internalBookNumber": "aa-2026-00004",
+		"sequenceNumber": "meral-BOOK-001070"
+	},
+	{
+		"_id": "69713e03aa051c55e4d14c03",
+		"publisherCode": "a1",
+		"name": "d1",
+		"title": "d12",
+		"subtitle": "",
+		"publisher": "7ea65f04-fc7b-488e-be3f-cd840d73de4d",
+		"genres": [],
+		"author": "696fcde3cf334ee26894f0ea",
+		"coAuthors": [],
+		"reviewerGroups": [],
+		"editorialTeam": "",
+		"pageCount": "",
+		"publicationDate": "",
+		"language": "",
+		"price": "",
+		"coverImage": {},
+		"__dataId": "5e88ad45-7067-44e7-a495-88dcfda755fc",
+		"__history": [
+			{
+				"operation": "create",
+				"userId": "44e5dc01-1c09-433c-8def-76dc23583c44",
+				"userEmail": "serkan.meral",
+				"timestamp": "2026-01-21T20:58:43.569Z",
+				"ipAddress": "::ffff:172.18.0.6",
+				"changes": ""
+			}
+		],
+		"isbn": "ISBN-2026-000020",
+		"bookCode": "BK-2601-0020",
+		"internalBookNumber": "a1-2026-00001",
+		"sequenceNumber": "meral-BOOK-001050"
+	},
+	{
+		"_id": "69713d68aa051c55e4d14c02",
+		"publisherCode": "aa",
+		"name": "c1",
+		"title": "c1",
+		"subtitle": "",
+		"publisher": "7ea65f04-fc7b-488e-be3f-cd840d73de4d",
+		"genres": [],
+		"author": "696fce16cf334ee26894f0f2",
+		"coAuthors": [],
+		"reviewerGroups": [],
+		"editorialTeam": "",
+		"pageCount": "",
+		"publicationDate": "",
+		"language": "",
+		"price": "",
+		"coverImage": {},
+		"__dataId": "43d1160b-d292-49ea-821c-19cf5378b75a",
+		"__history": [
+			{
+				"operation": "create",
+				"userId": "44e5dc01-1c09-433c-8def-76dc23583c44",
+				"userEmail": "serkan.meral",
+				"timestamp": "2026-01-21T20:56:08.155Z",
+				"ipAddress": "::ffff:172.18.0.6",
+				"changes": ""
+			}
+		],
+		"isbn": "ISBN-2026-000018",
+		"bookCode": "BK-2601-0018",
+		"internalBookNumber": "aa-2026-00002",
+		"sequenceNumber": "meral-BOOK-001040"
+	},
+	{
+		"_id": "69713400aa051c55e4d14c01",
+		"publisherCode": "bb",
+		"name": "",
+		"title": "b1",
+		"subtitle": "",
+		"publisher": "7ea65f04-fc7b-488e-be3f-cd840d73de4d",
+		"genres": [],
+		"author": "696fcde3cf334ee26894f0ea",
+		"coAuthors": [],
+		"reviewerGroups": [],
+		"editorialTeam": "",
+		"pageCount": "",
+		"publicationDate": "",
+		"language": "",
+		"price": "",
+		"coverImage": {},
+		"__dataId": "d9e34b48-f5f2-4108-b021-7caeb62f1a82",
+		"__history": [
+			{
+				"operation": "create",
+				"userId": "44e5dc01-1c09-433c-8def-76dc23583c44",
+				"userEmail": "serkan.meral",
+				"timestamp": "2026-01-21T20:16:00.821Z",
+				"ipAddress": "::ffff:172.18.0.6",
+				"changes": ""
+			}
+		],
+		"isbn": "ISBN-2026-000017",
+		"bookCode": "BK-2601-0017",
+		"internalBookNumber": "bb-2026-00001",
+		"sequenceNumber": "meral-BOOK-001030"
+	},
+	{
+		"_id": "697133e3aa051c55e4d14c00",
+		"publisherCode": "aa",
+		"name": "bb",
+		"title": "b1",
+		"subtitle": "cc",
+		"publisher": "7ea65f04-fc7b-488e-be3f-cd840d73de4d",
+		"genres": [],
+		"author": "696fcde3cf334ee26894f0ea",
+		"coAuthors": [],
+		"reviewerGroups": [],
+		"editorialTeam": "",
+		"pageCount": 23,
+		"publicationDate": "",
+		"language": "dd",
+		"price": 45,
+		"coverImage": {},
+		"__dataId": "29c02741-9a66-42a1-95bf-fa6eabe34dfb",
+		"__history": [
+			{
+				"operation": "create",
+				"userId": "44e5dc01-1c09-433c-8def-76dc23583c44",
+				"userEmail": "serkan.meral",
+				"timestamp": "2026-01-21T20:15:31.697Z",
+				"ipAddress": "::ffff:172.18.0.6",
+				"changes": ""
+			}
+		],
+		"isbn": "ISBN-2026-000015",
+		"bookCode": "BK-2601-0015",
+		"internalBookNumber": "aa-2026-00001",
+		"sequenceNumber": "meral-BOOK-001020"
+	},
+	{
+		"_id": "6970c6a9de6272581ea17ead",
+		"publisherCode": "sdde",
+		"name": "gffdt",
+		"title": "dfgdfd",
+		"subtitle": "hgjghgg",
+		"publisher": "7ea65f04-fc7b-488e-be3f-cd840d73de4d",
+		"genres": [
+			"3ae0f13d-bb90-4e09-b850-5bc1f38bd353",
+			"387b00b4-0cf0-4afe-8a28-728c802cd820"
+		],
+		"author": "696fce15cf334ee26894f0ee",
+		"coAuthors": [
+			"696fce15cf334ee26894f0ee",
+			"696fce15cf334ee26894f0ef"
+		],
+		"reviewerGroups": [
+			"696fcde3cf334ee26894f0e6",
+			"696fcde3cf334ee26894f0e7",
+			"696fce0acf334ee26894f0ec"
+		],
+		"editorialTeam": "696fce0acf334ee26894f0ec",
+		"pageCount": 21,
+		"publicationDate": "2026-01-13T12:29:00.000Z",
+		"language": "",
+		"price": 12,
+		"coverImage": {},
+		"__dataId": "d69f848d-6f58-48df-be05-732f575de20b",
+		"__history": [
+			{
+				"operation": "create",
+				"userId": "44e5dc01-1c09-433c-8def-76dc23583c44",
+				"userEmail": "serkan.meral",
+				"timestamp": "2026-01-21T12:29:29.720Z",
+				"ipAddress": "::ffff:172.18.0.6",
+				"changes": ""
+			},
+			{
+				"operation": "update",
+				"userId": "44e5dc01-1c09-433c-8def-76dc23583c44",
+				"userEmail": "serkan.meral",
+				"timestamp": "2026-01-21T14:59:09.289Z",
+				"ipAddress": "::ffff:172.18.0.6",
+				"changes": {
+					"isbn": "ISBN-2026-000004",
+					"bookCode": "BK-2601-0004",
+					"publisherCode": "sdde",
+					"internalBookNumber": "sdde-2026-00001",
+					"sequenceNumber": "meral-BOOK-001010",
+					"name": "gffdt",
+					"title": "dfgdfd",
+					"subtitle": "hgjghgg",
+					"publisher": "7ea65f04-fc7b-488e-be3f-cd840d73de4d",
+					"genres": [
+						"3ae0f13d-bb90-4e09-b850-5bc1f38bd353",
+						"387b00b4-0cf0-4afe-8a28-728c802cd820"
+					],
+					"author": "696fce15cf334ee26894f0ee",
+					"coAuthors": [
+						"696fce15cf334ee26894f0ee"
+					],
+					"reviewerGroups": [
+						"696fcde3cf334ee26894f0e6",
+						"696fcde3cf334ee26894f0e7"
+					],
+					"editorialTeam": "696fcde3cf334ee26894f0e7",
+					"pageCount": 21,
+					"publicationDate": "2026-01-13T12:29:00.000Z",
+					"language": "",
+					"price": 12,
+					"coverImage": {}
+				}
+			},
+			{
+				"operation": "update",
+				"userId": "44e5dc01-1c09-433c-8def-76dc23583c44",
+				"userEmail": "serkan.meral",
+				"timestamp": "2026-01-21T15:07:44.676Z",
+				"ipAddress": "::ffff:172.18.0.6",
+				"changes": {
+					"isbn": "ISBN-2026-000004",
+					"bookCode": "BK-2601-0004",
+					"publisherCode": "sdde",
+					"internalBookNumber": "sdde-2026-00001",
+					"sequenceNumber": "meral-BOOK-001010",
+					"name": "gffdt",
+					"title": "dfgdfd",
+					"subtitle": "hgjghgg",
+					"publisher": "7ea65f04-fc7b-488e-be3f-cd840d73de4d",
+					"genres": [
+						"3ae0f13d-bb90-4e09-b850-5bc1f38bd353",
+						"387b00b4-0cf0-4afe-8a28-728c802cd820"
+					],
+					"author": "696fce15cf334ee26894f0ee",
+					"coAuthors": [
+						"696fce15cf334ee26894f0ee",
+						"696fce15cf334ee26894f0ef"
+					],
+					"reviewerGroups": [
+						"696fcde3cf334ee26894f0e6",
+						"696fcde3cf334ee26894f0e7",
+						"696fce0acf334ee26894f0ec"
+					],
+					"editorialTeam": "696fce0acf334ee26894f0ec",
+					"pageCount": 21,
+					"publicationDate": "2026-01-13T12:29:00.000Z",
+					"language": "",
+					"price": 12,
+					"coverImage": {}
+				}
+			}
+		],
+		"isbn": "ISBN-2026-000004",
+		"bookCode": "BK-2601-0004",
+		"internalBookNumber": "sdde-2026-00001",
+		"sequenceNumber": "meral-BOOK-001010"
+	},
+	{
+		"_id": "69646578214745b442528ff1",
+		"publisherCode": "trettyt",
+		"name": "fdgfd",
+		"title": "fggfhgfh",
+		"subtitle": "ghhjghj",
+		"publisher": "cd138995-4489-497c-9dfa-6b1d6aa3518c",
+		"genres": [
+			"387b00b4-0cf0-4afe-8a28-728c802cd820",
+			"7fc7f79d-a4c4-4fee-a16d-f1b95c2d2a12"
+		],
+		"author": "69605d5f0646bf37dd4cb5a8",
+		"coAuthors": [
+			"69605d5e0646bf37dd4cb5a1",
+			"69605d5f0646bf37dd4cb5a3"
+		],
+		"reviewerGroups": [
+			"69605d3d0646bf37dd4cb59c",
+			"69605d210646bf37dd4cb599"
+		],
+		"editorialTeam": "69605d3e0646bf37dd4cb59d",
+		"pageCount": 213,
+		"publicationDate": "2026-01-21T03:07:00.000Z",
+		"language": "sd",
+		"price": 344,
+		"coverImage": {},
+		"__dataId": "c25323a7-e823-4d10-83be-3a564151d64a",
+		"__history": [
+			{
+				"operation": "create",
+				"userId": "c34abf58-39a0-418c-a2f5-76e8f64434f4",
+				"userEmail": "serkan.meral",
+				"timestamp": "2026-01-12T03:07:36.266Z",
+				"ipAddress": "::ffff:172.18.0.2",
+				"changes": ""
+			}
+		],
+		"isbn": "ISBN-2026-000003",
+		"bookCode": "BK-2601-0003",
+		"internalBookNumber": "trettyt-2026-00001",
+		"sequenceNumber": "meral-BOOK-001000"
+	}
+]
