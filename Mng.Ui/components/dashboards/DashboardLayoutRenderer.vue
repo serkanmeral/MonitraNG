@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { LayoutRow, LayoutCol } from '@/stores/apps/dashboard';
+import WidgetRenderer from '@/components/widgets/WidgetRenderer.vue';
 
 const props = defineProps<{
   rows: LayoutRow[];
@@ -40,7 +41,13 @@ const placeholder = (col: LayoutCol) => {
           :rows="col.rows"
           :t="t"
         />
-        <!-- Widget placeholder -->
+        <!-- Widget renderer -->
+        <widgets-widget-renderer
+          v-else-if="col.widgetId && col.widgetId.trim()"
+          :widget-id="col.widgetId"
+          :t="t"
+        />
+        <!-- Empty placeholder -->
         <v-card
           v-else
           variant="outlined"
@@ -49,9 +56,6 @@ const placeholder = (col: LayoutCol) => {
         >
           <div class="text-body-2 text-medium-emphasis">
             {{ placeholder(col) }}
-          </div>
-          <div v-if="col.widgetId" class="text-caption text-disabled mt-1">
-            widgetId: {{ col.widgetId }}
           </div>
         </v-card>
       </v-col>

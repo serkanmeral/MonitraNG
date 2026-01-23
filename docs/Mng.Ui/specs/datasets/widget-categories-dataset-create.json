@@ -1,0 +1,66 @@
+{
+  "name": "@widget_categories",
+  "description": "Widget kategorileri dataset'i. Card, Chart, Table, Banner gibi kategorileri tanımlar.",
+  "forceSchema": true,
+  "logging": "none",
+  "publishMode": "none",
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "name",
+      "title": "Kategori Adı",
+      "mandatory": true,
+      "unique": true
+    },
+    {
+      "fieldType": "text",
+      "name": "description",
+      "title": "Açıklama",
+      "mandatory": false
+    },
+    {
+      "fieldType": "text",
+      "name": "icon",
+      "title": "Icon",
+      "mandatory": false
+    },
+    {
+      "fieldType": "text",
+      "name": "color",
+      "title": "Renk",
+      "mandatory": false
+    },
+    {
+      "fieldType": "number",
+      "name": "order",
+      "title": "Sıralama",
+      "mandatory": false,
+      "defaultValue": 0
+    },
+    {
+      "fieldType": "bool",
+      "name": "isActive",
+      "title": "Aktif",
+      "mandatory": true,
+      "defaultValue": true
+    },
+    {
+      "fieldType": "bool",
+      "name": "isSystemCategory",
+      "title": "Sistem Kategorisi",
+      "mandatory": false,
+      "defaultValue": false
+    }
+  ],
+  "indexList": [
+    {
+      "name": "idx_name",
+      "fields": { "name": 1 },
+      "unique": true
+    },
+    {
+      "name": "idx_order",
+      "fields": { "order": 1 }
+    }
+  ]
+}

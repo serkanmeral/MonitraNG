@@ -1,0 +1,88 @@
+{
+  "name": "@dashboards",
+  "description": "Dinamik dashboard tanımları. Layout, yetkilendirme ve Side Menu ayarları.",
+  "forceSchema": true,
+  "logging": "none",
+  "publishMode": "none",
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "name",
+      "title": "Dashboard Adı",
+      "mandatory": true,
+      "unique": true
+    },
+    {
+      "fieldType": "text",
+      "name": "title",
+      "title": "Başlık",
+      "mandatory": true
+    },
+    {
+      "fieldType": "text",
+      "name": "description",
+      "title": "Açıklama",
+      "mandatory": false
+    },
+    {
+      "fieldType": "text",
+      "name": "slug",
+      "title": "Route Slug",
+      "mandatory": false
+    },
+    {
+      "fieldType": "object",
+      "name": "layout",
+      "title": "Layout",
+      "mandatory": true
+    },
+    {
+      "fieldType": "object",
+      "name": "permissions",
+      "title": "Yetkilendirme",
+      "mandatory": false
+    },
+    {
+      "fieldType": "object",
+      "name": "sideMenuConfig",
+      "title": "Side Menu Ayarları",
+      "mandatory": false
+    },
+    {
+      "fieldType": "bool",
+      "name": "isDefault",
+      "title": "Varsayılan",
+      "mandatory": false,
+      "defaultValue": false
+    },
+    {
+      "fieldType": "bool",
+      "name": "isActive",
+      "title": "Aktif",
+      "mandatory": true,
+      "defaultValue": true
+    },
+    {
+      "fieldType": "number",
+      "name": "order",
+      "title": "Sıra",
+      "mandatory": false,
+      "defaultValue": 0
+    }
+  ],
+  "indexList": [
+    {
+      "name": "idx_name",
+      "fields": { "name": 1 },
+      "unique": true
+    },
+    {
+      "name": "idx_slug",
+      "fields": { "slug": 1 }
+    },
+    {
+      "name": "idx_order",
+      "fields": { "order": 1 }
+    }
+  ]
+}

@@ -1128,7 +1128,9 @@
         "categoryNameHint": "2-100 karakter arasında, benzersiz olmalıdır",
         "description": "Açıklama",
         "descriptionPlaceholder": "Kategori açıklaması (opsiyonel)",
-        "descriptionHint": "En fazla 500 karakter"
+        "descriptionHint": "En fazla 500 karakter",
+        "isSystemCategory": "Sistem Kategorisi",
+        "isSystemCategoryHint": "Bu kategori sistem datasetlerinin içinde bulunacağı kategori olarak işaretlenir"
       },
       "validation": {
         "categoryNameRequired": "Kategori adı gereklidir",
@@ -1400,6 +1402,10 @@
             "basic": "Basic",
             "full": "Full"
           }
+        },
+        "datetimeOptions": {
+          "showTime": "Saat Göster",
+          "showTimeHint": "Aktif edilirse hem tarih hem saat seçilebilir, pasif edilirse sadece tarih seçilebilir"
         }
       },
       "buttons": {

@@ -1107,7 +1107,9 @@
         "categoryNameHint": "2-100 حرف، يجب أن يكون فريدًا",
         "description": "الوصف",
         "descriptionPlaceholder": "وصف الفئة (اختياري)",
-        "descriptionHint": "بحد أقصى 500 حرف"
+        "descriptionHint": "بحد أقصى 500 حرف",
+        "isSystemCategory": "فئة النظام",
+        "isSystemCategoryHint": "سيتم تمييز هذه الفئة كالفئة التي ستوجد فيها مجموعات بيانات النظام"
       },
       "validation": {
         "categoryNameRequired": "اسم الفئة مطلوب",
@@ -1379,6 +1381,10 @@
             "basic": "أساسي",
             "full": "كامل"
           }
+        },
+        "datetimeOptions": {
+          "showTime": "إظهار الوقت",
+          "showTimeHint": "إذا تم التمكين، يمكن اختيار التاريخ والوقت؛ إذا تم التعطيل، يمكن اختيار التاريخ فقط"
         }
       },
       "buttons": {

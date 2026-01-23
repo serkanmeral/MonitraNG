@@ -66,6 +66,7 @@ public class DatasetCategoryService : IDatasetCategoryService
             __dataId = Guid.NewGuid().ToString(),
             categoryName = dto.CategoryName,
             categoryDescription = dto.CategoryDescription,
+            isSystemCategory = dto.IsSystemCategory,
 
             __createInfo = new CreateInfo
             {
@@ -191,6 +192,16 @@ public class DatasetCategoryService : IDatasetCategoryService
                 newValue = dto.CategoryDescription
             };
             entity.categoryDescription = dto.CategoryDescription;
+        }
+
+        if (dto.IsSystemCategory.HasValue && dto.IsSystemCategory.Value != entity.isSystemCategory)
+        {
+            changes["isSystemCategory"] = new ChangeDetail
+            {
+                oldValue = entity.isSystemCategory.ToString(),
+                newValue = dto.IsSystemCategory.Value.ToString()
+            };
+            entity.isSystemCategory = dto.IsSystemCategory.Value;
         }
 
         // Eğer değişiklik yoksa
@@ -335,6 +346,7 @@ public class DatasetCategoryService : IDatasetCategoryService
             DataId = entity.__dataId,
             CategoryName = entity.categoryName,
             CategoryDescription = entity.categoryDescription,
+            IsSystemCategory = entity.isSystemCategory,
             CreateInfo = entity.__createInfo,
             LastUpdateInfo = entity.__lastUpdateInfo,
             HistoryCount = entity.__history.Count

@@ -22,6 +22,19 @@ const categoryStore = useDatasetCategoryStore();
 const authStore = useAuthStore();
 const router = useRouter();
 
+// Check if user is admin
+const isAdmin = computed(() => authStore.isAdmin);
+
+// Filtered categories: Admin olmayan kullanıcılar için isSystemCategory: true olanları filtrele
+const filteredCategories = computed(() => {
+  if (isAdmin.value) {
+    // Admin kullanıcılar tüm kategorileri görebilir
+    return categoryStore.categories;
+  }
+  // Admin olmayan kullanıcılar için isSystemCategory: true olanları filtrele
+  return categoryStore.categories.filter(cat => !cat.isSystemCategory);
+});
+
 const page = computed(() => ({ title: t('datasetCategories.title') }));
 const breadcrumbs = computed(() => [
   {
@@ -62,8 +75,18 @@ const headers = computed(() => [
 ]);
 
 // Computed: Server items length (reactive)
+// Admin olmayan kullanıcılar için isSystemCategory: true olanları saymadan totalCount hesapla
 const serverItemsLength = computed(() => {
-  return categoryStore.totalCount || 0;
+  if (isAdmin.value) {
+    // Admin kullanıcılar için tüm kategoriler
+    return categoryStore.totalCount || 0;
+  }
+  // Admin olmayan kullanıcılar için filtrelenmiş kategori sayısı
+  // Not: Backend'den gelen totalCount'tan isSystemCategory: true olanları çıkarmak için
+  // client-side filtreleme yapıyoruz, bu yüzden filteredCategories.length kullanıyoruz
+  // Ancak pagination için backend'den gelen totalCount'u kullanmak daha doğru olur
+  // Bu durumda backend'den gelen totalCount'u kullanıyoruz ama client-side filtreleme yapıyoruz
+  return filteredCategories.value.length;
 });
 
 // Fetch categories function
@@ -271,7 +294,7 @@ const truncateText = (text: string | null | undefined, maxLength: number = 50) =
         v-model="selectedCategories"
         v-model:options="tableOptions"
         :headers="headers"
-        :items="categoryStore.categories"
+        :items="filteredCategories"
         :loading="categoryStore.loading"
         :server-items-length="serverItemsLength"
         :items-per-page-options="[20, 50, 100]"
@@ -387,14 +410,14 @@ const truncateText = (text: string | null | undefined, maxLength: number = 50) =
         <template v-slot:bottom>
           <div class="d-flex justify-space-between align-center pa-3 border-top">
             <div class="text-caption text-medium-emphasis">
-              <strong>{{ t('datasetCategories.pagination.total') }}</strong> {{ categoryStore.totalCount }} {{ t('datasetCategories.pagination.records') }}
+              <strong>{{ t('datasetCategories.pagination.total') }}</strong> {{ serverItemsLength }} {{ t('datasetCategories.pagination.records') }}
               <span v-if="categoryStore.totalPages > 1" class="ml-2">
                 ({{ t('datasetCategories.pagination.page') }} {{ tableOptions.page }} / {{ categoryStore.totalPages }})
               </span>
               <span class="ml-2">
                 | {{ ((tableOptions.page - 1) * tableOptions.itemsPerPage) + 1 }} - 
-                {{ Math.min(tableOptions.page * tableOptions.itemsPerPage, categoryStore.totalCount) }} 
-                / {{ categoryStore.totalCount }} {{ t('datasetCategories.pagination.showing') }}
+                {{ Math.min(tableOptions.page * tableOptions.itemsPerPage, serverItemsLength) }} 
+                / {{ serverItemsLength }} {{ t('datasetCategories.pagination.showing') }}
               </span>
             </div>
             <div class="d-flex align-center ga-2">

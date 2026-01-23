@@ -19,5 +19,10 @@ public class CreateDatasetCategoryDto
     /// </summary>
     [StringLength(500, ErrorMessage = "Açıklama maksimum 500 karakter olabilir")]
     public string? CategoryDescription { get; set; }
+
+    /// <summary>
+    /// Sistem kategorisi mi? (Sistem datasetlerinin içinde bulunacağı kategori)
+    /// </summary>
+    public bool IsSystemCategory { get; set; } = false;
 }
 

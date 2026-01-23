@@ -23,6 +23,11 @@ public class DatasetCategoryResponseDto
     public string? CategoryDescription { get; set; }
 
     /// <summary>
+    /// Sistem kategorisi mi? (Sistem datasetlerinin içinde bulunacağı kategori)
+    /// </summary>
+    public bool IsSystemCategory { get; set; }
+
+    /// <summary>
     /// Creation information
     /// </summary>
     public CreateInfo CreateInfo { get; set; } = null!;

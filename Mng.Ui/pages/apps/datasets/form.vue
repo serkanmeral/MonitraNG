@@ -27,6 +27,9 @@ const datasetStore = useDatasetStore();
 const categoryStore = useDatasetCategoryStore();
 const authStore = useAuthStore();
 
+// Check if user is admin
+const isAdmin = computed(() => authStore.isAdmin);
+
 // Props to determine mode (can be used as component or page)
 const props = defineProps<{
   editName?: string;
@@ -119,9 +122,19 @@ const descriptionRules = computed(() => [
 // Categories for dropdown
 const categories = computed(() => categoryStore.categories || []);
 
+// Filtered categories: Admin olmayan kullanıcılar için isSystemCategory: true olanları filtrele
+const filteredCategories = computed(() => {
+  if (isAdmin.value) {
+    // Admin kullanıcılar tüm kategorileri görebilir
+    return categories.value;
+  }
+  // Admin olmayan kullanıcılar için isSystemCategory: true olanları filtrele
+  return categories.value.filter(cat => !cat.isSystemCategory);
+});
+
 // Category options for select
 const categoryOptions = computed(() => {
-  return categories.value.map(cat => ({
+  return filteredCategories.value.map(cat => ({
     title: cat.categoryName,
     value: cat.dataId,
   }));
@@ -148,6 +161,7 @@ const fieldFormData = ref<FieldDefinition>({
   relationDataset: undefined,
   relationField: '__dataId',
   incrementalOptions: undefined,
+  datetimeOptions: undefined,
   objectSchema: undefined,
   validation: undefined,
 });
@@ -551,17 +565,17 @@ const openFieldModal = (mode: 'create' | 'edit', index?: number) => {
       mandatory: existingField.mandatory || false,
       unique: existingField.unique || false,
       isArray: existingField.isArray || false,
+      defaultValue: existingField.defaultValue !== undefined ? existingField.defaultValue : undefined,
       relationDataset: existingField.relationDataset,
       relationField: existingField.relationField || '__dataId',
       incrementalOptions: existingField.incrementalOptions ? {
         format: existingField.incrementalOptions.format || '',
         startValue: existingField.incrementalOptions.startValue || 1,
         incrementStep: existingField.incrementalOptions.incrementStep || 1,
-      } : {
-        format: '',
-        startValue: 1,
-        incrementStep: 1,
-      },
+      } : undefined,
+      datetimeOptions: existingField.datetimeOptions ? {
+        showTime: existingField.datetimeOptions.showTime !== undefined ? existingField.datetimeOptions.showTime : true,
+      } : undefined,
       objectSchema: existingField.objectSchema ? { ...existingField.objectSchema } : undefined,
       validation: existingField.validation ? { ...existingField.validation } : undefined,
     };
@@ -576,11 +590,8 @@ const openFieldModal = (mode: 'create' | 'edit', index?: number) => {
       isArray: false,
       relationDataset: undefined,
       relationField: '__dataId',
-      incrementalOptions: {
-        format: '',
-        startValue: 1,
-        incrementStep: 1,
-      },
+      incrementalOptions: undefined,
+      datetimeOptions: undefined,
       objectSchema: undefined,
       validation: undefined,
     };
@@ -665,6 +676,12 @@ const saveField = async () => {
       format: fieldFormData.value.incrementalOptions.format,
       startValue: fieldFormData.value.incrementalOptions.startValue || 1,
       incrementStep: fieldFormData.value.incrementalOptions.incrementStep || 1,
+    };
+  }
+  
+  if (fieldFormData.value.fieldType === 'datetime' && fieldFormData.value.datetimeOptions) {
+    fieldToSave.datetimeOptions = {
+      showTime: fieldFormData.value.datetimeOptions.showTime !== undefined ? fieldFormData.value.datetimeOptions.showTime : true,
     };
   }
   
@@ -1493,6 +1510,14 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
     fieldFormData.value.unique = true;
     fieldFormData.value.mandatory = true;
     fieldFormData.value.isArray = false;
+  }
+  if (newType === 'datetime') {
+    // Initialize datetimeOptions if not already set
+    if (!fieldFormData.value.datetimeOptions) {
+      fieldFormData.value.datetimeOptions = {
+        showTime: true, // Default: show time
+      };
+    }
   }
 });
 </script>
@@ -2572,6 +2597,32 @@ watch(() => fieldFormData.value.fieldType, (newType) => {
                   hint="Artış miktarı (default: 1)"
                   persistent-hint
                 ></v-text-field>
+              </v-col>
+            </template>
+            
+            <!-- DateTime Field Options -->
+            <template v-if="fieldFormData.fieldType === 'datetime'">
+              <v-col cols="12">
+                <v-switch
+                  :model-value="fieldFormData.datetimeOptions?.showTime !== false"
+                  @update:model-value="(val: boolean) => {
+                    if (!fieldFormData.datetimeOptions) {
+                      fieldFormData.datetimeOptions = { showTime: val };
+                    } else {
+                      fieldFormData.datetimeOptions.showTime = val;
+                    }
+                  }"
+                  :label="t('datasets.form.fields.datetimeOptions.showTime')"
+                  :hint="t('datasets.form.fields.datetimeOptions.showTimeHint')"
+                  persistent-hint
+                  color="primary"
+                  :disabled="loading"
+                  hide-details="auto"
+                >
+                  <template #label>
+                    <span>{{ t('datasets.form.fields.datetimeOptions.showTime') }}</span>
+                  </template>
+                </v-switch>
               </v-col>
             </template>
             

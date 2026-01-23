@@ -21,5 +21,11 @@ public class DatasetCategory : BaseEntity
     /// </summary>
     [BsonElement("description")]
     public string? categoryDescription { get; set; }
+
+    /// <summary>
+    /// Sistem kategorisi mi? (Sistem datasetlerinin içinde bulunacağı kategori)
+    /// </summary>
+    [BsonElement("isSystemCategory")]
+    public bool isSystemCategory { get; set; } = false;
 }
 

@@ -1107,7 +1107,9 @@
         "categoryNameHint": "2-100 个字符，必须唯一",
         "description": "描述",
         "descriptionPlaceholder": "类别描述（可选）",
-        "descriptionHint": "最多 500 个字符"
+        "descriptionHint": "最多 500 个字符",
+        "isSystemCategory": "系统类别",
+        "isSystemCategoryHint": "此类别将被标记为系统数据集所在的类别"
       },
       "validation": {
         "categoryNameRequired": "类别名称是必需的",
@@ -1379,6 +1381,10 @@
             "basic": "基础",
             "full": "完整"
           }
+        },
+        "datetimeOptions": {
+          "showTime": "显示时间",
+          "showTimeHint": "如果启用，可以选择日期和时间；如果禁用，只能选择日期"
         }
       },
       "buttons": {

@@ -1084,7 +1084,9 @@
         "categoryNameHint": "2-100 characters, must be unique",
         "description": "Description",
         "descriptionPlaceholder": "Category description (optional)",
-        "descriptionHint": "Maximum 500 characters"
+        "descriptionHint": "Maximum 500 characters",
+        "isSystemCategory": "System Category",
+        "isSystemCategoryHint": "This category will be marked as the category where system datasets will be located"
       },
       "validation": {
         "categoryNameRequired": "Category name is required",
@@ -1364,6 +1366,10 @@
             "basic": "Basic",
             "full": "Full"
           }
+        },
+        "datetimeOptions": {
+          "showTime": "Show Time",
+          "showTimeHint": "If enabled, both date and time can be selected; if disabled, only date can be selected"
         }
       },
       "buttons": {

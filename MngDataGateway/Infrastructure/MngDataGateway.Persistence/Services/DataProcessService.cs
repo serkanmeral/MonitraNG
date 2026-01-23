@@ -43,10 +43,10 @@ namespace MngDataGateway.Persistence.Services
                 if (field.fieldType == "incremental")
                     continue;
 
-                // Apply default value if defined
-                if (field.defaultValue != null && !field.defaultValue.IsBsonNull)
+                // Apply default value if defined (use defaultValueBson from MongoDB)
+                if (field.defaultValueBson != null && !field.defaultValueBson.IsBsonNull)
                 {
-                    data[field.name] = BsonTypeMapper.MapToDotNetValue(field.defaultValue);
+                    data[field.name] = BsonTypeMapper.MapToDotNetValue(field.defaultValueBson);
                     
                     _logger.LogDebug(
                         "Applied default value for field {FieldName}: {DefaultValue}",

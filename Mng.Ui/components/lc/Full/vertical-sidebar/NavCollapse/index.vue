@@ -56,9 +56,9 @@ const menuTitle = computed(() => {
     menuValue = i18n.t(translationKey);
   }
   
-  // If translation not found, return original title
+  // If translation not found, return original title (don't try to translate it)
   if (!menuValue || menuValue === translationKey || (typeof menuValue === 'string' && menuValue.startsWith('menu.'))) {
-    return props.item.title ? i18n?.t?.(props.item.title) || props.item.title : '';
+    return props.item.title || props.item.header || '';
   }
   
   // If it's an object, get title property, otherwise use the value directly

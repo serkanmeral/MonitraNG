@@ -1,0 +1,744 @@
+{
+	"_id" : "69605ee257a4b70179330722",
+	"__dataId" : "63d1bed0-cf47-461a-9620-2c13f95959f1",
+	"__createInfo" : {
+		"createdAt" : "2026-01-09T01:50:26.526Z",
+		"userInfo" : {
+			"uid" : "c34abf58-39a0-418c-a2f5-76e8f64434f4",
+			"userName" : "serkan.meral",
+			"domain" : "meral"
+		}
+	},
+	"__lastUpdateInfo" : {
+		"updatedAt" : "2026-01-11T00:24:43.837Z",
+		"userInfo" : {
+			"uid" : "c34abf58-39a0-418c-a2f5-76e8f64434f4",
+			"userName" : "serkan.meral",
+			"domain" : "meral"
+		}
+	},
+	"__history" : [
+		{
+			"operation" : "insert",
+			"timestamp" : "2026-01-09T01:50:26.526Z",
+			"userInfo" : {
+				"uid" : "c34abf58-39a0-418c-a2f5-76e8f64434f4",
+				"userName" : "serkan.meral",
+				"domain" : "meral"
+			},
+			"changes" : null
+		},
+		{
+			"operation" : "update",
+			"timestamp" : "2026-01-11T00:24:43.837Z",
+			"userInfo" : {
+				"uid" : "c34abf58-39a0-418c-a2f5-76e8f64434f4",
+				"userName" : "serkan.meral",
+				"domain" : "meral"
+			},
+			"changes" : {
+				"fields" : {
+					"oldValue" : "19 fields",
+					"newValue" : "19 fields"
+				},
+				"validations" : {
+					"oldValue" : "2 validations",
+					"newValue" : "2 validations"
+				},
+				"queries" : {
+					"oldValue" : "10 queries",
+					"newValue" : "10 queries"
+				}
+			}
+		}
+	],
+	"name" : "tst_books",
+	"description" : "Books dataset with relations and person fields (test)",
+	"category" : "cf324e4b-ee8a-48f3-8eb7-828725cb4ad0",
+	"forceSchema" : true,
+	"logging" : "self",
+	"publish_mode" : "full",
+	"fields" : [
+		{
+			"fieldType" : "incremental",
+			"name" : "isbn",
+			"title" : "ISBN",
+			"mandatory" : true,
+			"unique" : true,
+			"isArray" : false,
+			"relationDataset" : null,
+			"incrementalOptions" : {
+				"format" : "ISBN-{year}-{0:D6}",
+				"startValue" : 1,
+				"incrementStep" : 1
+			}
+		},
+		{
+			"fieldType" : "incremental",
+			"name" : "bookCode",
+			"title" : "Book Code",
+			"mandatory" : true,
+			"unique" : true,
+			"isArray" : false,
+			"relationDataset" : null,
+			"incrementalOptions" : {
+				"format" : "BK-{yy}{month}-{0:D4}",
+				"startValue" : 1,
+				"incrementStep" : 1
+			}
+		},
+		{
+			"fieldType" : "text",
+			"name" : "publisherCode",
+			"title" : "Publisher Code",
+			"mandatory" : false,
+			"unique" : false,
+			"isArray" : false,
+			"relationDataset" : null,
+			"incrementalOptions" : null
+		},
+		{
+			"fieldType" : "incremental",
+			"name" : "internalBookNumber",
+			"title" : "Internal Book Number",
+			"mandatory" : true,
+			"unique" : true,
+			"isArray" : false,
+			"relationDataset" : null,
+			"incrementalOptions" : {
+				"format" : "{publisherCode}-{year}-{0:D5}",
+				"startValue" : 1,
+				"incrementStep" : 1
+			}
+		},
+		{
+			"fieldType" : "incremental",
+			"name" : "sequenceNumber",
+			"title" : "Sequence Number",
+			"mandatory" : true,
+			"unique" : true,
+			"isArray" : false,
+			"relationDataset" : null,
+			"incrementalOptions" : {
+				"format" : "{domain}-BOOK-{0:D6}",
+				"startValue" : 1000,
+				"incrementStep" : 10
+			}
+		},
+		{
+			"fieldType" : "text",
+			"name" : "name",
+			"title" : "Book Name",
+			"mandatory" : false,
+			"unique" : false,
+			"isArray" : false,
+			"relationDataset" : null,
+			"incrementalOptions" : null
+		},
+		{
+			"fieldType" : "text",
+			"name" : "title",
+			"title" : "Book Title",
+			"mandatory" : true,
+			"unique" : false,
+			"isArray" : false,
+			"relationDataset" : null,
+			"incrementalOptions" : null,
+			"validation" : {
+				"minLength" : 3,
+				"maxLength" : 200,
+				"message" : "Title must be between 3 and 200 characters"
+			}
+		},
+		{
+			"fieldType" : "text",
+			"name" : "subtitle",
+			"title" : "Subtitle",
+			"mandatory" : false,
+			"unique" : false,
+			"isArray" : false,
+			"relationDataset" : null,
+			"incrementalOptions" : null
+		},
+		{
+			"fieldType" : "relation",
+			"name" : "publisher",
+			"title" : "Publisher",
+			"mandatory" : true,
+			"unique" : false,
+			"isArray" : false,
+			"relationDataset" : "tst_publishers",
+			"incrementalOptions" : null
+		},
+		{
+			"fieldType" : "relation",
+			"name" : "genres",
+			"title" : "Genres",
+			"mandatory" : false,
+			"unique" : false,
+			"isArray" : true,
+			"relationDataset" : "tst_genres",
+			"incrementalOptions" : null,
+			"validation" : {
+				"minItems" : 0,
+				"maxItems" : 5,
+				"message" : "A book can have at most 5 genres"
+			}
+		},
+		{
+			"fieldType" : "persons",
+			"name" : "author",
+			"title" : "Author",
+			"mandatory" : true,
+			"unique" : false,
+			"isArray" : false,
+			"relationDataset" : null,
+			"incrementalOptions" : null
+		},
+		{
+			"fieldType" : "persons",
+			"name" : "coAuthors",
+			"title" : "Co-Authors",
+			"mandatory" : false,
+			"unique" : false,
+			"isArray" : true,
+			"relationDataset" : null,
+			"incrementalOptions" : null
+		},
+		{
+			"fieldType" : "personGroups",
+			"name" : "reviewerGroups",
+			"title" : "Reviewer Groups",
+			"mandatory" : false,
+			"unique" : false,
+			"isArray" : true,
+			"relationDataset" : null,
+			"incrementalOptions" : null
+		},
+		{
+			"fieldType" : "personGroups",
+			"name" : "editorialTeam",
+			"title" : "Editorial Team",
+			"mandatory" : false,
+			"unique" : false,
+			"isArray" : false,
+			"relationDataset" : null,
+			"incrementalOptions" : null
+		},
+		{
+			"fieldType" : "number",
+			"name" : "pageCount",
+			"title" : "Page Count",
+			"mandatory" : false,
+			"unique" : false,
+			"isArray" : false,
+			"relationDataset" : null,
+			"incrementalOptions" : null,
+			"validation" : {
+				"min" : 1,
+				"max" : 10000,
+				"message" : "Page count must be between 1 and 10000"
+			}
+		},
+		{
+			"fieldType" : "datetime",
+			"name" : "publicationDate",
+			"title" : "Publication Date",
+			"mandatory" : false,
+			"unique" : false,
+			"isArray" : false,
+			"relationDataset" : null,
+			"incrementalOptions" : null,
+			"validation" : {
+				"minDate" : "1900-01-01T00:00:00Z",
+				"maxDate" : "2100-12-31T23:59:59Z",
+				"message" : "Publication date must be between 1900 and 2100"
+			}
+		},
+		{
+			"fieldType" : "text",
+			"name" : "language",
+			"title" : "Language",
+			"mandatory" : false,
+			"unique" : false,
+			"isArray" : false,
+			"relationDataset" : null,
+			"incrementalOptions" : null,
+			"validation" : {
+				"pattern" : "^[a-z]{2}(-[A-Z]{2})?$",
+				"message" : "Language must be in ISO 639-1 format (e.g., 'en', 'tr-TR')"
+			}
+		},
+		{
+			"fieldType" : "number",
+			"name" : "price",
+			"title" : "Price",
+			"mandatory" : false,
+			"unique" : false,
+			"isArray" : false,
+			"relationDataset" : null,
+			"incrementalOptions" : null,
+			"validation" : {
+				"min" : 0,
+				"max" : 100000,
+				"message" : "Price must be between 0 and 100000"
+			}
+		},
+		{
+			"fieldType" : "object",
+			"name" : "coverImage",
+			"title" : "Cover Image",
+			"mandatory" : false,
+			"unique" : false,
+			"isArray" : false,
+			"relationDataset" : null,
+			"incrementalOptions" : null
+		}
+	],
+	"validations" : [
+		{
+			"name" : "price_page_ratio",
+			"description" : "Price per page should be reasonable (max 10 per page)",
+			"type" : "expression",
+			"method" : "POST",
+			"expression" : "(price == null || pageCount == null) || (price / pageCount <= 10)",
+			"when" : "both",
+			"order" : 0
+		},
+		{
+			"name" : "price_positive_if_pages",
+			"description" : "If pageCount is provided, price must be positive",
+			"type" : "expression",
+			"method" : "POST",
+			"expression" : "(pageCount == null) || (price != null && price > 0)",
+			"when" : "both",
+			"order" : 1
+		}
+	],
+	"queries" : [
+		{
+			"name" : "books_by_publication_date_range",
+			"description" : "Get books published between two dates",
+			"pipeline" : [
+				{
+					"$match" : {
+						"publicationDate" : {
+							"$gte" : ":startDate",
+							"$lte" : ":endDate"
+						}
+					}
+				},
+				{
+					"$sort" : {
+						"publicationDate" : -1,
+						"title" : 1
+					}
+				}
+			],
+			"parameters" : [
+				{
+					"name" : "startDate",
+					"type" : "datetime",
+					"required" : true
+				},
+				{
+					"name" : "endDate",
+					"type" : "datetime",
+					"required" : true
+				}
+			]
+		},
+		{
+			"name" : "books_by_price_range",
+			"description" : "Get books within a price range",
+			"pipeline" : [
+				{
+					"$match" : {
+						"price" : {
+							"$gte" : ":minPrice",
+							"$lte" : ":maxPrice"
+						}
+					}
+				},
+				{
+					"$sort" : {
+						"price" : 1,
+						"title" : 1
+					}
+				}
+			],
+			"parameters" : [
+				{
+					"name" : "minPrice",
+					"type" : "number",
+					"required" : true,
+					"description" : "Minimum price"
+				},
+				{
+					"name" : "maxPrice",
+					"type" : "number",
+					"required" : true,
+					"description" : "Maximum price"
+				}
+			]
+		},
+		{
+			"name" : "books_by_min_pages",
+			"description" : "Get books with at least N pages",
+			"pipeline" : [
+				{
+					"$match" : {
+						"pageCount" : {
+							"$gte" : ":minPages"
+						}
+					}
+				},
+				{
+					"$sort" : {
+						"pageCount" : -1,
+						"title" : 1
+					}
+				}
+			],
+			"parameters" : [
+				{
+					"name" : "minPages",
+					"type" : "number",
+					"required" : true,
+					"description" : "Minimum number of pages"
+				}
+			]
+		},
+		{
+			"name" : "books_by_availability",
+			"description" : "Get books by availability status",
+			"pipeline" : [
+				{
+					"$match" : {
+						"isAvailable" : ":isAvailable"
+					}
+				},
+				{
+					"$sort" : {
+						"title" : 1
+					}
+				}
+			],
+			"parameters" : [
+				{
+					"name" : "isAvailable",
+					"type" : "bool",
+					"required" : true,
+					"description" : "Whether the book is available"
+				}
+			]
+		},
+		{
+			"name" : "books_by_published_status",
+			"description" : "Get published/unpublished books",
+			"pipeline" : [
+				{
+					"$match" : {
+						"$and" : [
+							{
+								"isPublished" : ":isPublished"
+							},
+							{
+								"publicationDate" : {
+									"$exists" : true
+								}
+							}
+						]
+					}
+				},
+				{
+					"$sort" : {
+						"publicationDate" : -1
+					}
+				}
+			],
+			"parameters" : [
+				{
+					"name" : "isPublished",
+					"type" : "bool",
+					"required" : true,
+					"description" : "Whether the book is published"
+				}
+			]
+		},
+		{
+			"name" : "books_by_author",
+			"description" : "Get books by author name (case-insensitive partial match)",
+			"pipeline" : [
+				{
+					"$match" : {
+						"author" : /:authorName/i
+					}
+				},
+				{
+					"$sort" : {
+						"title" : 1
+					}
+				}
+			],
+			"parameters" : [
+				{
+					"name" : "authorName",
+					"type" : "text",
+					"required" : true,
+					"description" : "Author name (partial match, case-insensitive)"
+				}
+			]
+		},
+		{
+			"name" : "books_by_category_and_title",
+			"description" : "Get books by category and title contains",
+			"pipeline" : [
+				{
+					"$match" : {
+						"$and" : [
+							{
+								"category" : ":category"
+							},
+							{
+								"title" : /:titleKeyword/i
+							}
+						]
+					}
+				},
+				{
+					"$sort" : {
+						"title" : 1
+					}
+				}
+			],
+			"parameters" : [
+				{
+					"name" : "category",
+					"type" : "text",
+					"required" : true,
+					"description" : "Book category"
+				},
+				{
+					"name" : "titleKeyword",
+					"type" : "text",
+					"required" : true,
+					"description" : "Title keyword (partial match, case-insensitive)"
+				}
+			]
+		},
+		{
+			"name" : "books_by_price_date_and_status",
+			"description" : "Get books filtered by price, date range, and availability",
+			"pipeline" : [
+				{
+					"$match" : {
+						"$and" : [
+							{
+								"price" : {
+									"$lte" : ":maxPrice"
+								}
+							},
+							{
+								"publicationDate" : {
+									"$gte" : ":startDate",
+									"$lte" : ":endDate"
+								}
+							},
+							{
+								"isAvailable" : ":isAvailable"
+							}
+						]
+					}
+				},
+				{
+					"$sort" : {
+						"price" : 1,
+						"publicationDate" : -1
+					}
+				}
+			],
+			"parameters" : [
+				{
+					"name" : "maxPrice",
+					"type" : "number",
+					"required" : true,
+					"description" : "Maximum price"
+				},
+				{
+					"name" : "startDate",
+					"type" : "datetime",
+					"required" : true,
+					"description" : "Start date (ISO 8601 format)"
+				},
+				{
+					"name" : "endDate",
+					"type" : "datetime",
+					"required" : true,
+					"description" : "End date (ISO 8601 format)"
+				},
+				{
+					"name" : "isAvailable",
+					"type" : "bool",
+					"required" : true,
+					"description" : "Whether the book is available"
+				}
+			]
+		},
+		{
+			"name" : "books_by_author_pages_and_published",
+			"description" : "Get books by author, minimum pages, and published status",
+			"pipeline" : [
+				{
+					"$match" : {
+						"$and" : [
+							{
+								"author" : /:authorName/i
+							},
+							{
+								"pageCount" : {
+									"$gte" : ":minPages"
+								}
+							},
+							{
+								"isPublished" : ":isPublished"
+							}
+						]
+					}
+				},
+				{
+					"$sort" : {
+						"pageCount" : -1,
+						"title" : 1
+					}
+				}
+			],
+			"parameters" : [
+				{
+					"name" : "authorName",
+					"type" : "text",
+					"required" : true,
+					"description" : "Author name (partial match)"
+				},
+				{
+					"name" : "minPages",
+					"type" : "number",
+					"required" : true,
+					"description" : "Minimum number of pages"
+				},
+				{
+					"name" : "isPublished",
+					"type" : "bool",
+					"required" : true,
+					"description" : "Whether the book is published"
+				}
+			]
+		},
+		{
+			"name" : "books_with_optional_filters",
+			"description" : "Get books with optional filters",
+			"pipeline" : [
+				{
+					"$match" : {
+						"$and" : [
+							{
+								"price" : {
+									"$lte" : ":maxPrice"
+								}
+							},
+							{
+								"isAvailable" : true
+							}
+						]
+					}
+				},
+				{
+					"$sort" : {
+						"title" : 1
+					}
+				}
+			],
+			"parameters" : [
+				{
+					"name" : "maxPrice",
+					"type" : "number",
+					"required" : false,
+					"description" : "Maximum price (optional)"
+				}
+			]
+		}
+	],
+	"indexList" : [
+		{
+			"name" : "idx_isbn",
+			"fields" : {
+				"isbn" : 1
+			},
+			"unique" : true
+		},
+		{
+			"name" : "idx_bookCode",
+			"fields" : {
+				"bookCode" : 1
+			},
+			"unique" : true
+		},
+		{
+			"name" : "idx_internalBookNumber",
+			"fields" : {
+				"internalBookNumber" : 1
+			},
+			"unique" : true
+		},
+		{
+			"name" : "idx_sequenceNumber",
+			"fields" : {
+				"sequenceNumber" : 1
+			},
+			"unique" : true
+		},
+		{
+			"name" : "idx_name",
+			"fields" : {
+				"name" : 1
+			},
+			"unique" : true
+		},
+		{
+			"name" : "idx_title",
+			"fields" : {
+				"title" : 1
+			},
+			"unique" : false
+		},
+		{
+			"name" : "idx_title_bookCode",
+			"fields" : {
+				"bookCode" : 1,
+				"title" : 1
+			},
+			"unique" : false
+		},
+		{
+			"name" : "idx_publisher",
+			"fields" : {
+				"publisher" : 1
+			},
+			"unique" : false
+		},
+		{
+			"name" : "idx_author",
+			"fields" : {
+				"author" : 1
+			},
+			"unique" : false
+		},
+		{
+			"name" : "idx_publicationDate",
+			"fields" : {
+				"publicationDate" : -1
+			},
+			"unique" : false
+		}
+	]
+}

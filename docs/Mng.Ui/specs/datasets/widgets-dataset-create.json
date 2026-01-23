@@ -1,0 +1,98 @@
+{
+  "name": "@widgets",
+  "description": "Widget tanımları dataset'i. Widget'ların kategorileri, data source yapılandırmaları, layout ve stil ayarları.",
+  "forceSchema": true,
+  "logging": "none",
+  "publishMode": "none",
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "name",
+      "title": "Widget Adı",
+      "mandatory": true,
+      "unique": true
+    },
+    {
+      "fieldType": "text",
+      "name": "title",
+      "title": "Widget Başlığı",
+      "mandatory": true
+    },
+    {
+      "fieldType": "text",
+      "name": "description",
+      "title": "Açıklama",
+      "mandatory": false
+    },
+    {
+      "fieldType": "relation",
+      "name": "category",
+      "title": "Kategori",
+      "mandatory": true,
+      "relationDataset": "@widget_categories"
+    },
+    {
+      "fieldType": "text",
+      "name": "type",
+      "title": "Widget Türü",
+      "mandatory": true
+    },
+    {
+      "fieldType": "object",
+      "name": "dataSource",
+      "title": "Data Source Yapılandırması",
+      "mandatory": true
+    },
+    {
+      "fieldType": "object",
+      "name": "layout",
+      "title": "Layout Ayarları",
+      "mandatory": false
+    },
+    {
+      "fieldType": "object",
+      "name": "style",
+      "title": "Stil Ayarları",
+      "mandatory": false
+    },
+    {
+      "fieldType": "object",
+      "name": "config",
+      "title": "Widget Özel Yapılandırması",
+      "mandatory": false
+    },
+    {
+      "fieldType": "bool",
+      "name": "isActive",
+      "title": "Aktif",
+      "mandatory": true,
+      "defaultValue": true
+    },
+    {
+      "fieldType": "number",
+      "name": "order",
+      "title": "Sıralama",
+      "mandatory": false,
+      "defaultValue": 0
+    }
+  ],
+  "indexList": [
+    {
+      "name": "idx_name",
+      "fields": { "name": 1 },
+      "unique": true
+    },
+    {
+      "name": "idx_category",
+      "fields": { "category": 1 }
+    },
+    {
+      "name": "idx_type",
+      "fields": { "type": 1 }
+    },
+    {
+      "name": "idx_order",
+      "fields": { "order": 1 }
+    }
+  ]
+}

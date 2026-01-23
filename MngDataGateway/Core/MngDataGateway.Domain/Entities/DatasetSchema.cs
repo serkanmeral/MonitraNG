@@ -130,10 +130,17 @@ public class FieldDefinition
     public bool isArray { get; set; } = false;
 
     /// <summary>
-    /// Default value (optional) - stored as BsonValue for MongoDB compatibility
+    /// Default value (optional) - for JSON deserialization (object type)
     /// </summary>
+    [BsonIgnore]
+    public object? defaultValue { get; set; }
+
+    /// <summary>
+    /// Default value as BsonValue (for MongoDB storage)
+    /// </summary>
+    [BsonElement("defaultValue")]
     [BsonIgnoreIfNull]
-    public MongoDB.Bson.BsonValue? defaultValue { get; set; }
+    public MongoDB.Bson.BsonValue? defaultValueBson { get; set; }
 
     /// <summary>
     /// For relation type: target dataset name
@@ -146,10 +153,28 @@ public class FieldDefinition
     public IncrementalOptions? incrementalOptions { get; set; }
 
     /// <summary>
+    /// For datetime type: options
+    /// </summary>
+    [BsonIgnoreIfNull]
+    public DateTimeOptions? datetimeOptions { get; set; }
+
+    /// <summary>
     /// Field-level validation rules (optional)
     /// </summary>
     [BsonIgnoreIfNull]
     public FieldValidationRules? validation { get; set; }
+}
+
+/// <summary>
+/// DateTime field options
+/// </summary>
+public class DateTimeOptions
+{
+    /// <summary>
+    /// Show time picker (default: true)
+    /// If false, only date picker will be shown
+    /// </summary>
+    public bool showTime { get; set; } = true;
 }
 
 /// <summary>

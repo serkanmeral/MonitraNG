@@ -25,6 +25,32 @@ const categoryStore = useDatasetCategoryStore();
 const authStore = useAuthStore();
 const router = useRouter();
 
+// Check if user is admin
+const isAdmin = computed(() => authStore.isAdmin);
+
+// Filtered datasets: Admin olmayan kullanıcılar için isSystemCategory: true olan kategorilere ait dataset'leri filtrele
+const filteredDatasets = computed(() => {
+  if (isAdmin.value) {
+    // Admin kullanıcılar tüm dataset'leri görebilir
+    return datasetStore.datasets;
+  }
+  // Admin olmayan kullanıcılar için isSystemCategory: true olan kategorilere ait dataset'leri filtrele
+  return datasetStore.datasets.filter(dataset => {
+    // Eğer dataset'in category'si yoksa göster
+    if (!dataset.category) {
+      return true;
+    }
+    // Kategori bilgisini al
+    const category = categoryStore.getCategoryById(dataset.category);
+    // Eğer kategori bulunamazsa göster (güvenlik için)
+    if (!category) {
+      return true;
+    }
+    // isSystemCategory: true olan kategorilere ait dataset'leri filtrele
+    return !category.isSystemCategory;
+  });
+});
+
 const page = computed(() => ({ title: t('datasets.title') }));
 const breadcrumbs = computed(() => [
   {
@@ -65,8 +91,14 @@ const headers = computed(() => [
 ]);
 
 // Computed: Server items length (reactive)
+// Admin olmayan kullanıcılar için isSystemCategory: true olan kategorilere ait dataset'leri saymadan totalCount hesapla
 const serverItemsLength = computed(() => {
-  return datasetStore.totalCount || 0;
+  if (isAdmin.value) {
+    // Admin kullanıcılar için tüm dataset'ler
+    return datasetStore.totalCount || 0;
+  }
+  // Admin olmayan kullanıcılar için filtrelenmiş dataset sayısı
+  return filteredDatasets.value.length;
 });
 
 // Fetch categories for display
@@ -238,7 +270,21 @@ const fetchAllDatasetsForExport = async (): Promise<any[]> => {
       await datasetStore.fetchDatasets(params);
       
       if (datasetStore.datasets && datasetStore.datasets.length > 0) {
-        allDatasets.push(...datasetStore.datasets);
+        // Admin olmayan kullanıcılar için isSystemCategory: true olan kategorilere ait dataset'leri filtrele
+        const datasetsToAdd = isAdmin.value 
+          ? datasetStore.datasets 
+          : datasetStore.datasets.filter(dataset => {
+              if (!dataset.category) {
+                return true;
+              }
+              const category = categoryStore.getCategoryById(dataset.category);
+              if (!category) {
+                return true;
+              }
+              return !category.isSystemCategory;
+            });
+        
+        allDatasets.push(...datasetsToAdd);
         
         // Check if there are more pages
         const totalPages = datasetStore.totalPages || 1;
@@ -432,7 +478,7 @@ const handleExportJSON = async () => {
         v-model="selectedDatasets"
         v-model:options="tableOptions"
         :headers="headers"
-        :items="datasetStore.datasets"
+        :items="filteredDatasets"
         :loading="datasetStore.loading"
         :server-items-length="serverItemsLength"
         :items-per-page-options="[20, 50, 100]"
@@ -555,14 +601,14 @@ const handleExportJSON = async () => {
         <template v-slot:bottom>
           <div class="d-flex justify-space-between align-center pa-3 border-top">
             <div class="text-caption text-medium-emphasis">
-              <strong>{{ t('datasets.pagination.total') }}</strong> {{ datasetStore.totalCount }} {{ t('datasets.pagination.records') }}
+              <strong>{{ t('datasets.pagination.total') }}</strong> {{ serverItemsLength }} {{ t('datasets.pagination.records') }}
               <span v-if="datasetStore.totalPages > 1" class="ml-2">
                 ({{ t('datasets.pagination.page') }} {{ tableOptions.page }} / {{ datasetStore.totalPages }})
               </span>
               <span class="ml-2">
                 | {{ ((tableOptions.page - 1) * tableOptions.itemsPerPage) + 1 }} - 
-                {{ Math.min(tableOptions.page * tableOptions.itemsPerPage, datasetStore.totalCount) }} 
-                / {{ datasetStore.totalCount }} {{ t('datasets.pagination.showing') }}
+                {{ Math.min(tableOptions.page * tableOptions.itemsPerPage, serverItemsLength) }} 
+                / {{ serverItemsLength }} {{ t('datasets.pagination.showing') }}
               </span>
             </div>
             <div class="d-flex align-center ga-2">

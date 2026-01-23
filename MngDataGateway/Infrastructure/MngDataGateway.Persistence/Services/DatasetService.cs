@@ -446,21 +446,14 @@ public class DatasetService : IDatasetService
                 isArray = field.isArray,
                 relationDataset = field.relationDataset,
                 incrementalOptions = field.incrementalOptions,
+                datetimeOptions = field.datetimeOptions,
                 validation = field.validation // Copy validation rules
             };
 
-            // Convert defaultValue to BsonValue if present
+            // Convert defaultValue (object) to defaultValueBson (BsonValue) if present
             if (field.defaultValue != null)
             {
-                try
-                {
-                    converted.defaultValue = MongoDB.Bson.BsonValue.Create(field.defaultValue);
-                }
-                catch
-                {
-                    // If conversion fails, try as string
-                    converted.defaultValue = MongoDB.Bson.BsonValue.Create(field.defaultValue.ToString());
-                }
+                converted.defaultValueBson = ConvertObjectToBsonValue(field.defaultValue);
             }
 
             result.Add(converted);
@@ -984,6 +977,65 @@ public class DatasetService : IDatasetService
     }
 
     /// <summary>
+    /// <summary>
+    /// Convert BsonValue to object for JSON serialization
+    /// </summary>
+    private static object? ConvertBsonValueToObject(MongoDB.Bson.BsonValue? bsonValue)
+    {
+        if (bsonValue == null || bsonValue.IsBsonNull)
+            return null;
+
+        return bsonValue.BsonType switch
+        {
+            MongoDB.Bson.BsonType.Document => ConvertBsonDocumentToDictionary(bsonValue.AsBsonDocument),
+            MongoDB.Bson.BsonType.Array => bsonValue.AsBsonArray.Select(ConvertBsonValueToObject).ToList(),
+            MongoDB.Bson.BsonType.String => bsonValue.AsString,
+            MongoDB.Bson.BsonType.Int32 => bsonValue.AsInt32,
+            MongoDB.Bson.BsonType.Int64 => bsonValue.AsInt64,
+            MongoDB.Bson.BsonType.Double => bsonValue.AsDouble,
+            MongoDB.Bson.BsonType.Decimal128 => (decimal)bsonValue.AsDecimal128,
+            MongoDB.Bson.BsonType.Boolean => bsonValue.AsBoolean,
+            MongoDB.Bson.BsonType.DateTime => bsonValue.ToUniversalTime(),
+            MongoDB.Bson.BsonType.ObjectId => bsonValue.AsObjectId.ToString(),
+            _ => MongoDB.Bson.BsonTypeMapper.MapToDotNetValue(bsonValue)
+        };
+    }
+
+    /// <summary>
+    /// Convert BsonDocument to Dictionary (recursive)
+    /// </summary>
+    private static Dictionary<string, object> ConvertBsonDocumentToDictionary(MongoDB.Bson.BsonDocument document)
+    {
+        var dictionary = new Dictionary<string, object>();
+        foreach (var element in document.Elements)
+        {
+            var value = ConvertBsonValueToObject(element.Value);
+            dictionary[element.Name] = value ?? (object)null!;
+        }
+        return dictionary;
+    }
+
+    /// <summary>
+    /// Convert FieldDefinitions from Entity (BsonValue) to DTO (object)
+    /// </summary>
+    private static List<FieldDefinition> ConvertFieldsForResponse(List<FieldDefinition> fields)
+    {
+        return fields.Select(field => new FieldDefinition
+        {
+            fieldType = field.fieldType,
+            name = field.name,
+            title = field.title,
+            mandatory = field.mandatory,
+            unique = field.unique,
+            isArray = field.isArray,
+            defaultValue = ConvertBsonValueToObject(field.defaultValueBson), // Convert BsonValue to object
+            relationDataset = field.relationDataset,
+            incrementalOptions = field.incrementalOptions,
+            datetimeOptions = field.datetimeOptions,
+            validation = field.validation
+        }).ToList();
+    }
+
     /// Entity to DTO mapper
     /// </summary>
     private static DatasetResponseDto MapToDto(DatasetSchema entity, bool includeDetails = false)
@@ -998,7 +1050,7 @@ public class DatasetService : IDatasetService
             Logging = entity.logging,
             PublishMode = entity.publish_mode,
             FieldsCount = entity.fields.Count,
-            Fields = includeDetails ? entity.fields : null,
+            Fields = includeDetails ? ConvertFieldsForResponse(entity.fields) : null,
             ValidationsCount = entity.validations.Count,
             Validations = includeDetails ? entity.validations : null,
             QueriesCount = entity.queries.Count,

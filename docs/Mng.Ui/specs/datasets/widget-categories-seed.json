@@ -1,0 +1,34 @@
+[
+  {
+    "name": "card",
+    "description": "Card widget'ları - istatistik kartları, hızlı erişim kartları vb.",
+    "icon": "mdi-card",
+    "color": "primary",
+    "order": 1,
+    "isActive": true
+  },
+  {
+    "name": "chart",
+    "description": "Grafik widget'ları - line, bar, pie, donut grafikleri vb.",
+    "icon": "mdi-chart-line",
+    "color": "info",
+    "order": 2,
+    "isActive": true
+  },
+  {
+    "name": "table",
+    "description": "Tablo widget'ları - veri tabloları, listeler vb.",
+    "icon": "mdi-table",
+    "color": "success",
+    "order": 3,
+    "isActive": true
+  },
+  {
+    "name": "banner",
+    "description": "Banner widget'ları - bilgilendirme banner'ları, duyurular vb.",
+    "icon": "mdi-view-dashboard",
+    "color": "warning",
+    "order": 4,
+    "isActive": true
+  }
+]

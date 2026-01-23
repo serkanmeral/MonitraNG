@@ -170,11 +170,11 @@ export const useSideMenuStore = defineStore('sideMenu', {
         );
 
         // Response format kontrolü (MngDataGateway List endpoint direkt array döndürüyor)
-        let items: SideMenuItem[] = [];
+        let items: any[] = [];
         
         if (Array.isArray(response)) {
           // Direkt array response
-          items = response as SideMenuItem[];
+          items = response;
         } else if (response.data && Array.isArray(response.data)) {
           // Wrapped response: { data: [] }
           items = response.data;
@@ -187,7 +187,32 @@ export const useSideMenuStore = defineStore('sideMenu', {
           throw new Error('Invalid response format: data is not an array');
         }
 
-        this.menuItems = items as SideMenuItem[];
+        // Map items to SideMenuItem format (handle different field name cases)
+        this.menuItems = items.map((item: any) => ({
+          __dataId: item.__dataId ?? item.DataId ?? item.dataId,
+          dataId: item.__dataId ?? item.DataId ?? item.dataId,
+          itemType: item.itemType ?? item.ItemType ?? 'item',
+          pageType: item.pageType ?? item.PageType ?? 'user',
+          header: item.header ?? item.Header,
+          title: item.title ?? item.Title,
+          pageCode: item.pageCode ?? item.PageCode,
+          icon: item.icon ?? item.Icon,
+          iconType: item.iconType ?? item.IconType ?? 'tabler',
+          iconName: item.iconName ?? item.IconName,
+          to: item.to ?? item.To,
+          type: item.type ?? item.Type ?? 'internal',
+          order: item.order ?? item.Order ?? 0,
+          level: item.level ?? item.Level ?? 0,
+          parentId: item.parentId ?? item.ParentId ?? null,
+          disabled: item.disabled ?? item.Disabled ?? false,
+          subCaption: item.subCaption ?? item.SubCaption,
+          chip: item.chip ?? item.Chip,
+          chipBgColor: item.chipBgColor ?? item.ChipBgColor,
+          chipColor: item.chipColor ?? item.ChipColor,
+          chipVariant: item.chipVariant ?? item.ChipVariant,
+          chipIcon: item.chipIcon ?? item.ChipIcon,
+          permissions: item.permissions ?? item.Permissions,
+        })) as SideMenuItem[];
         this.menuItemsTree = this.buildMenuTree(this.menuItems);
         this.lastUpdated = Date.now();
 
@@ -370,13 +395,7 @@ export const useSideMenuStore = defineStore('sideMenu', {
             }
             return item;
           })
-          .filter(item => {
-            // Children'ı olmayan header'ları gizle
-            if (item.itemType === 'header' && (!item.children || item.children.length === 0)) {
-              return false;
-            }
-            return true;
-          })
+          // Not: Header'ların children kontrolü kaldırıldı - boş header'lar da görünmeli
           .sort((a, b) => {
             // Order'a göre sırala (filtreleme sonrası sıralama korunmalı)
             return (a.order || 0) - (b.order || 0);

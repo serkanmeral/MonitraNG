@@ -167,7 +167,7 @@ const setAllGroupsPermission = (permission: string, value: boolean) => {
 
 // Bulk set all permissions for a group
 const setAllPermissionsForGroup = (groupName: string, value: boolean) => {
-  permissionTypes.value.forEach((perm) => {
+  permissionTypes.forEach((perm) => {
     setPermission(groupName, perm.key, value);
   });
 };

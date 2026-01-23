@@ -182,8 +182,19 @@ const parentOptions = computed(() => {
 
   // Filter: Only show headers as parent options
   // Build tree structure from flat array (only headers)
+  // Admin olmayan kullanıcılar için pageType: 'admin' olan header'ları filtrele
   const headerItems = props.allItems
-    .filter(item => item.itemType === 'header' && item.__dataId && !excludeIds.has(item.__dataId))
+    .filter(item => {
+      // Sadece header'ları göster
+      if (item.itemType !== 'header' || !item.__dataId || excludeIds.has(item.__dataId)) {
+        return false;
+      }
+      // Admin olmayan kullanıcılar için pageType: 'admin' olan header'ları filtrele
+      if (!authStore.isAdmin && item.pageType === 'admin') {
+        return false;
+      }
+      return true;
+    })
     .sort((a, b) => (a.order || 0) - (b.order || 0)); // Sort headers by order
 
   // Build flat list for dropdown (only headers)

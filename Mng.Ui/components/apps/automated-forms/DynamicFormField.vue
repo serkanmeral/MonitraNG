@@ -266,18 +266,32 @@ const objectJsonValue = computed({
 });
 
 // DateTime local value (for datetime type)
+// Check if datetime field should show time
+const showTime = computed(() => {
+  if (props.field.fieldType === 'datetime' && props.field.datetimeOptions) {
+    return props.field.datetimeOptions.showTime !== undefined ? props.field.datetimeOptions.showTime : true;
+  }
+  return true; // Default: show time
+});
+
 const datetimeLocalValue = computed({
   get: () => {
     if (props.field.fieldType === 'datetime' && localValue.value) {
       try {
         const date = new Date(localValue.value);
-        // Convert to local datetime-local format (YYYY-MM-DDTHH:mm)
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        return `${year}-${month}-${day}T${hours}:${minutes}`;
+        
+        if (showTime.value) {
+          // Convert to local datetime-local format (YYYY-MM-DDTHH:mm)
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          return `${year}-${month}-${day}T${hours}:${minutes}`;
+        } else {
+          // Convert to date format (YYYY-MM-DD)
+          return `${year}-${month}-${day}`;
+        }
       } catch {
         return '';
       }
@@ -445,7 +459,7 @@ const rules = computed(() => {
   <v-text-field
     v-else-if="field.fieldType === 'datetime'"
     v-model="datetimeLocalValue"
-    type="datetime-local"
+    :type="showTime ? 'datetime-local' : 'date'"
     :label="fieldLabel"
     :hint="field.description"
     :persistent-hint="!!field.description"

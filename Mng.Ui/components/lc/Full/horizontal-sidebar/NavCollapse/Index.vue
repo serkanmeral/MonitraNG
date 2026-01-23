@@ -58,7 +58,7 @@ const menuTitle = computed(() => {
   
   // For non-header items, use title
   if (!props.item.pageCode || !i18n) {
-    return props.item.title ? i18n?.t?.(props.item.title) || props.item.title : '';
+    return props.item.title || props.item.header || '';
   }
   
   const translationKey = `menu.${props.item.pageCode}`;
@@ -79,9 +79,9 @@ const menuTitle = computed(() => {
     menuValue = i18n.t(translationKey);
   }
   
-  // If translation not found, return original title
+  // If translation not found, return original title (don't try to translate it)
   if (!menuValue || menuValue === translationKey || (typeof menuValue === 'string' && menuValue.startsWith('menu.'))) {
-    return props.item.title ? i18n?.t?.(props.item.title) || props.item.title : '';
+    return props.item.title || props.item.header || '';
   }
   
   // If it's an object, get title property, otherwise use the value directly
@@ -132,7 +132,7 @@ const menuSubCaption = computed(() => {
 </script>
 <template>
     <!---Dropdown  -->
-    <a class="navItemLink rounded-md cursor-pointer">
+    <a class="navItemLink rounded-md cursor-pointer" :class="{ 'has-subcaption': item.subCaption }">
         <!---Icon  -->
         <i class="navIcon">
             <Icon 
@@ -142,12 +142,14 @@ const menuSubCaption = computed(() => {
                 :level="level" 
             />
         </i>
-        <!---Title  -->
-        <span class="mr-auto">{{ menuTitle }}</span>
-        <!---If Caption-->
-        <small v-if="item.subCaption" class="text-caption mt-n1 hide-menu">
-            {{ menuSubCaption }}
-        </small>
+        <!---Title and Subcaption wrapper-->
+        <span class="navContent mr-auto">
+            <span class="navTitle">{{ menuTitle }}</span>
+            <!---If Caption-->
+            <small v-if="item.subCaption" class="navSubCaption text-caption hide-menu">
+                {{ menuSubCaption }}
+            </small>
+        </span>
         <i class="ddIcon ml-2 d-flex align-center"><ChevronDownIcon size="15" /></i>
     </a>
     <!---Sub Item-->

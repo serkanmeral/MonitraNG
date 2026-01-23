@@ -1107,7 +1107,9 @@
         "categoryNameHint": "2-100 caractères, doit être unique",
         "description": "Description",
         "descriptionPlaceholder": "Description de la catégorie (optionnel)",
-        "descriptionHint": "Maximum 500 caractères"
+        "descriptionHint": "Maximum 500 caractères",
+        "isSystemCategory": "Catégorie système",
+        "isSystemCategoryHint": "Cette catégorie sera marquée comme la catégorie où se trouveront les jeux de données système"
       },
       "validation": {
         "categoryNameRequired": "Le nom de la catégorie est requis",
@@ -1379,6 +1381,10 @@
             "basic": "De base",
             "full": "Complet"
           }
+        },
+        "datetimeOptions": {
+          "showTime": "Afficher l'heure",
+          "showTimeHint": "Si activé, la date et l'heure peuvent être sélectionnées ; si désactivé, seule la date peut être sélectionnée"
         }
       },
       "buttons": {

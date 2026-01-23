@@ -30,6 +30,11 @@ export interface ObjectSchema {
   [key: string]: string; // fieldName -> fieldType
 }
 
+// DateTime Options
+export interface DateTimeOptions {
+  showTime?: boolean; // Default: true
+}
+
 // Field Definition
 export interface FieldDefinition {
   fieldType: FieldType;
@@ -42,6 +47,7 @@ export interface FieldDefinition {
   relationDataset?: string; // For relation type
   relationField?: string; // For relation type (default: __dataId)
   incrementalOptions?: IncrementalOptions; // For incremental type
+  datetimeOptions?: DateTimeOptions; // For datetime type
   objectSchema?: ObjectSchema; // For object type (not in backend, but used in UI)
   validation?: FieldValidationRules;
 }
@@ -489,6 +495,9 @@ export const useDatasetStore = defineStore('dataset', {
           format: field.incrementalOptions?.format ?? field.IncrementalOptions?.Format ?? undefined,
           startValue: field.incrementalOptions?.startValue ?? field.IncrementalOptions?.StartValue ?? 1,
           incrementStep: field.incrementalOptions?.incrementStep ?? field.IncrementalOptions?.IncrementStep ?? 1,
+        } : undefined,
+        datetimeOptions: field.datetimeOptions || field.DateTimeOptions ? {
+          showTime: field.datetimeOptions?.showTime ?? field.DateTimeOptions?.ShowTime ?? true,
         } : undefined,
         objectSchema: field.objectSchema ?? field.ObjectSchema ?? undefined,
         validation: field.validation || field.Validation ? {

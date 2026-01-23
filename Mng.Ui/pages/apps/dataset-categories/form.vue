@@ -77,6 +77,7 @@ const breadcrumbs = computed(() => [
 const formData = ref({
   categoryName: '',
   categoryDescription: '',
+  isSystemCategory: false,
 });
 
 // Validation rules
@@ -96,6 +97,9 @@ const loading = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
 
+// Check if user is admin
+const isAdmin = computed(() => authStore.isAdmin);
+
 // Load category if edit mode
 onMounted(async () => {
   // Only load category if in edit mode and dataId exists
@@ -107,6 +111,8 @@ onMounted(async () => {
         formData.value = {
           categoryName: category.categoryName,
           categoryDescription: category.categoryDescription || '',
+          // Admin olmayan kullanıcılar için isSystemCategory her zaman false
+          isSystemCategory: isAdmin.value ? (category.isSystemCategory || false) : false,
         };
       } else {
         errorMessage.value = t('datasetCategories.form.messages.notFound');
@@ -124,6 +130,7 @@ onMounted(async () => {
     }
   }
   // If create mode, form will be empty (default state)
+  // isSystemCategory zaten false olarak başlatıldı
 });
 
 // Handle form submit
@@ -140,11 +147,15 @@ const handleSubmit = async () => {
   loading.value = true;
   
   try {
+    // Admin olmayan kullanıcılar için isSystemCategory her zaman false
+    const isSystemCategoryValue = isAdmin.value ? formData.value.isSystemCategory : false;
+    
     if (isEditMode.value && dataId.value) {
       // Update existing category
       await categoryStore.updateCategory(dataId.value, {
         categoryName: formData.value.categoryName.trim(),
         categoryDescription: formData.value.categoryDescription.trim() || undefined,
+        isSystemCategory: isSystemCategoryValue,
       });
       
       successMessage.value = t('datasetCategories.form.messages.updateSuccess');
@@ -153,6 +164,7 @@ const handleSubmit = async () => {
       await categoryStore.createCategory({
         categoryName: formData.value.categoryName.trim(),
         categoryDescription: formData.value.categoryDescription.trim() || undefined,
+        isSystemCategory: isSystemCategoryValue,
       });
       
       successMessage.value = t('datasetCategories.form.messages.createSuccess');
@@ -275,6 +287,23 @@ const handleCancel = () => {
               prepend-inner-icon="mdi-text"
               auto-grow
             ></v-textarea>
+          </v-col>
+          
+          <!-- Is System Category (Only visible for admin users) -->
+          <v-col v-if="isAdmin" cols="12">
+            <v-switch
+              v-model="formData.isSystemCategory"
+              :label="t('datasetCategories.form.fields.isSystemCategory')"
+              :hint="t('datasetCategories.form.fields.isSystemCategoryHint')"
+              persistent-hint
+              color="primary"
+              :disabled="loading"
+              hide-details="auto"
+            >
+              <template #label>
+                <span>{{ t('datasetCategories.form.fields.isSystemCategory') }}</span>
+              </template>
+            </v-switch>
           </v-col>
         </v-row>
         

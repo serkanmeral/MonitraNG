@@ -161,11 +161,10 @@ onMounted(async () => {
                     <template v-for="(item, i) in sidebarMenu" :key="`menu-${i}-${item.title || item.header || i}`">
                         <!---Item Sub Header -->
                         <template v-if="item.header">
-                            <!-- Header'lar horizontal menu'de dropdown olarak görünür -->
-                            <li v-if="item.children && item.children.length > 0" class="navItem">
+                            <!-- Header'lar horizontal menu'de dropdown olarak görünür (boş header'lar da görünmeli) -->
+                            <li class="navItem">
                                 <LcFullHorizontalSidebarNavCollapse :item="item" :level="0" />
                             </li>
-                            <!-- Header'ın children'ı yoksa sadece header gösterilmez (normalde olmaz ama güvenlik için) -->
                         </template>
                         <!---If Has Child (no header) -->
                         <li v-else-if="item.children && item.children.length > 0" class="navItem">

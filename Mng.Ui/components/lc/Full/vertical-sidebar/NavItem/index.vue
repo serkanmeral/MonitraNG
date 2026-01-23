@@ -10,6 +10,7 @@ interface Props {
     iconType?: 'mdi' | 'tabler';
     iconName?: string;
     title?: string;
+    header?: string; // For header items
     pageCode?: string; // i18n key için kullanılacak unique identifier
     to?: string;
     type?: string;
@@ -39,8 +40,9 @@ const menuTitle = computed(() => {
   // Access localeStore.locale to make this computed reactive to locale changes
   const currentLocale = localeStore.locale;
   
+  // If no pageCode, use title directly (don't try to translate it)
   if (!props.item.pageCode || !i18n) {
-    return props.item.title ? i18n?.t?.(props.item.title) || props.item.title : '';
+    return props.item.title || props.item.header || '';
   }
   
   const translationKey = `menu.${props.item.pageCode}`;
@@ -62,9 +64,9 @@ const menuTitle = computed(() => {
     menuValue = i18n.t(translationKey);
   }
   
-  // If translation not found, return original title
+  // If translation not found, return original title (don't try to translate it)
   if (!menuValue || menuValue === translationKey || (typeof menuValue === 'string' && menuValue.startsWith('menu.'))) {
-    return props.item.title ? i18n?.t?.(props.item.title) || props.item.title : '';
+    return props.item.title || props.item.header || '';
   }
   
   // If it's an object, get title property, otherwise use the value directly

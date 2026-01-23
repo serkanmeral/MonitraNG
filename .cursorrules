@@ -155,6 +155,12 @@ Aşağıdaki kısaltmaları kullanırken tam isimlerini kullan:
    - Test scriptleri ile reproduce et
    - Fix sonrası testleri tekrar çalıştır
 
+7. **Servis ve UI Çalıştırma - KRİTİK KURAL**:
+   - **Kendin çalıştırma**: AI, servisleri (MngDataGateway, MngKeeper, MngHub, Mng.Ui, vb.) veya UI dev server'ları (`npm run dev`, `dotnet run`, vb.) **kendiliğinden çalıştırmamalıdır**
+   - **Kullanıcı çalıştırır**: Gerek olduğunda kullanıcı kendisi çalıştırır
+   - **Docker run istisnası**: Kullanıcı açıkça "Docker run yap", "Docker çalıştır" veya benzeri talep verirse, ilgili **Docker Çalıştırma** kurallarına (aşağıda) uygun şekilde Docker build/run yapılır
+   - **Test için**: "Çalıştırıp test et" denmedikçe servis/UI başlatma; test scriptleri (`scripts/tests/` altındaki PowerShell vb.) kullanıcı talebi olmadan çalıştırılmaz
+
 ## Özel Notlar
 
 ### Token Yönetimi
@@ -218,6 +224,22 @@ Aşağıdaki kısaltmaları kullanırken tam isimlerini kullan:
   - Kullanıcı "kaydet" dediğinde sadece dosya kaydet, commit/push yapma (onay gerektirir)
 - **Commit Mesajları**: Conventional Commits formatı kullan (feat:, fix:, docs:, vb.)
 - **Güvenlik**: Her commit ve push işleminden önce kullanıcıya bilgi ver ve onay al
+
+### Dokümantasyon Oluşturma Politikası
+- **KRİTİK KURAL**: Kullanıcı açıkça "döküman hazırla", "dokümantasyon oluştur", "spec yaz", "planlama dokümanı yaz" veya benzeri bir talep vermedikçe **ASLA** .md (markdown) dosyaları oluşturma
+- **Konuşma chat üzerinde**: Özetler, planlar, tartışmalar bu chat ekranı üzerinden yapılır; bunları .md dosyasına yazma
+- **İstisna**: Kullanıcı açıkça döküman hazırlamanı istediğinde .md dosyaları oluşturulabilir
+
+### Dokümantasyon Güncelleme Politikası
+- **KRİTİK KURAL**: Kullanıcı açıkça "dokümantasyon güncelle", "docs güncelle", "roadmap güncelle", "döküman güncelle" veya benzeri bir talep vermedikçe **ASLA** dokümantasyon dosyalarını (README.md, ROADMAP.md, RoadMap.md, vb.) güncelleme veya değiştirme
+- **Dokümantasyon Güncellemesi Yapıldığında**:
+  - Dokümantasyon güncellemesi yapılsa bile, **otomatik olarak commit/push yapılmamalıdır**
+  - Kullanıcıya bilgi ver: "Dokümantasyon güncellendi, commit/push yapmak ister misiniz?"
+  - Kullanıcı açıkça commit/push talep etmedikçe git işlemleri yapılmamalıdır
+- **İstisnalar**: 
+  - Kullanıcı açıkça "dokümantasyon güncelle ve commit yap" dediğinde hem güncelleme hem commit yapılabilir
+  - Kullanıcı sadece "dokümantasyon güncelle" dediğinde sadece güncelleme yapılır, commit/push yapılmaz
+- **Dokümantasyon Dosyaları**: README.md, ROADMAP.md, RoadMap.md, docs/ klasöründeki dosyalar ve benzeri tüm dokümantasyon dosyaları bu kurala tabidir
 
 ### GitHub + GitLab Dual Sync
 - **Strateji**: Remote GitLab (gitlab.monitrang.com) öncelikli kaynak, GitHub yedekleme için

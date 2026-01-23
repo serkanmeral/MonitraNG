@@ -5,6 +5,7 @@ export interface DatasetCategory {
   dataId: string;
   categoryName: string;
   categoryDescription?: string;
+  isSystemCategory?: boolean;
   createInfo: {
     createdAt: string | Date;
     userInfo: {
@@ -27,11 +28,13 @@ export interface DatasetCategory {
 export interface CreateDatasetCategoryDto {
   categoryName: string;
   categoryDescription?: string;
+  isSystemCategory?: boolean;
 }
 
 export interface UpdateDatasetCategoryDto {
   categoryName?: string;
   categoryDescription?: string;
+  isSystemCategory?: boolean;
 }
 
 interface DatasetCategoryState {
@@ -298,6 +301,7 @@ export const useDatasetCategoryStore = defineStore('datasetCategory', {
         dataId: item.DataId || item.dataId || item.__dataId || '',
         categoryName: item.CategoryName || item.categoryName || '',
         categoryDescription: item.CategoryDescription ?? item.categoryDescription ?? undefined,
+        isSystemCategory: item.IsSystemCategory ?? item.isSystemCategory ?? false,
         createInfo: item.CreateInfo || item.createInfo || {
           createdAt: item.createdAt || new Date(),
           userInfo: {
