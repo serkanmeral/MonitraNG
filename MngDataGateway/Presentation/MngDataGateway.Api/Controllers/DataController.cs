@@ -113,6 +113,11 @@ namespace MngDataGateway.Api.Controllers
                 // Convert JsonElement to Dictionary with proper types
                 var data = request.ToDictionary();
 
+                // Validate file field paths (if any)
+                var fileValidationResult = ValidateFileFields(schema, data, datasetName);
+                if (fileValidationResult != null)
+                    return fileValidationResult;
+
                 var result = await _dataService.CreateAsync(
                     datasetName,
                     data,
@@ -432,6 +437,11 @@ namespace MngDataGateway.Api.Controllers
 
                 // Convert JsonElement to Dictionary with proper types
                 var data = request.ToDictionary();
+
+                // Validate file field paths (if any)
+                var fileValidationResult = ValidateFileFields(schema, data, datasetName);
+                if (fileValidationResult != null)
+                    return fileValidationResult;
 
                 var result = await _dataService.UpdateAsync(
                     datasetName,
@@ -791,6 +801,132 @@ namespace MngDataGateway.Api.Controllers
             if (!string.IsNullOrEmpty(action))
                 basePath += $"/{action}";
             return basePath;
+        }
+
+        /// <summary>
+        /// Validates file field paths in data dictionary
+        /// Checks if file fields contain valid MinIO paths
+        /// </summary>
+        private IActionResult? ValidateFileFields(
+            DatasetSchema schema,
+            Dictionary<string, object> data,
+            string datasetName)
+        {
+            if (schema.fields == null || schema.fields.Count == 0)
+                return null;  // No fields to validate
+
+            var domainName = _mongoContextService.GetCurrentDomainName();
+            if (string.IsNullOrEmpty(domainName))
+                return this.ErrorResponse(GetApiPath(datasetName), "FORBIDDEN", "Domain information not found in token", statusCode: 403);
+
+            var fileFields = schema.fields.Where(f => f.fieldType == "file").ToList();
+            if (fileFields.Count == 0)
+                return null;  // No file fields in schema
+
+            foreach (var field in fileFields)
+            {
+                if (!data.ContainsKey(field.name))
+                    continue;  // Field not present in data (optional field)
+
+                var fieldValue = data[field.name];
+
+                // Handle single file field
+                if (!field.isArray)
+                {
+                    if (fieldValue is string filePath)
+                    {
+                        var validationResult = ValidateFilePath(filePath, domainName, datasetName, field.name);
+                        if (validationResult != null)
+                            return validationResult;
+                    }
+                    else if (fieldValue != null)
+                    {
+                        return this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
+                            $"Field '{field.name}' must be a string (file path) or null");
+                    }
+                }
+                // Handle array file field
+                else
+                {
+                    if (fieldValue is List<object> filePaths)
+                    {
+                        foreach (var path in filePaths)
+                        {
+                            if (path is string filePathStr)
+                            {
+                                var validationResult = ValidateFilePath(filePathStr, domainName, datasetName, field.name);
+                                if (validationResult != null)
+                                    return validationResult;
+                            }
+                            else
+                            {
+                                return this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
+                                    $"Array field '{field.name}' must contain string values (file paths)");
+                            }
+                        }
+                    }
+                    else if (fieldValue != null)
+                    {
+                        return this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
+                            $"Array field '{field.name}' must be an array of strings (file paths) or null");
+                    }
+                }
+            }
+
+            return null;  // All validations passed
+        }
+
+        /// <summary>
+        /// Validates a single file path
+        /// </summary>
+        private IActionResult? ValidateFilePath(
+            string filePath,
+            string domainName,
+            string datasetName,
+            string fieldName)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+                return null;  // Empty path is allowed (optional field)
+
+            // Check path format: /mng-{domain}/data/{dataset}/...
+            var pathParts = filePath.TrimStart('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
+            
+            if (pathParts.Length < 4)
+            {
+                return this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_PATH",
+                    $"Invalid file path format for field '{fieldName}': {filePath}");
+            }
+
+            // Check domain match
+            if (!pathParts[0].StartsWith("mng-"))
+            {
+                return this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_PATH",
+                    $"File path must start with '/mng-{{domain}}/': {filePath}");
+            }
+
+            var pathDomain = pathParts[0].Replace("mng-", "");
+            if (pathDomain != domainName)
+            {
+                return this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_PATH",
+                    $"File path domain '{pathDomain}' does not match current domain '{domainName}'");
+            }
+
+            // Check data folder
+            if (pathParts[1] != "data")
+            {
+                return this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_PATH",
+                    $"File path must contain '/data/' folder: {filePath}");
+            }
+
+            // Check dataset match
+            if (pathParts[2] != datasetName)
+            {
+                return this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_PATH",
+                    $"File path dataset '{pathParts[2]}' does not match dataset '{datasetName}'");
+            }
+
+            // Path format is valid
+            return null;
         }
 
         /// <summary>
