@@ -218,12 +218,12 @@ public class FilesController : ControllerBase
             }
 
             // 4. Extract dataset name from path
-            if (pathParts.Length < 4 || pathParts[1] != "data")
+            if (pathParts.Length < 5 || pathParts[1] != "data" || pathParts[2] != "users")
             {
                 return this.ErrorResponse(downloadPath, "INVALID_PATH", "Invalid file path format: missing dataset/record info");
             }
 
-            var datasetName = pathParts[2];
+            var datasetName = pathParts[3];
 
             // 5. Get dataset schema for permission check
             var schema = await _datasetService.GetSchemaEntityByNameAsync(datasetName);
@@ -248,7 +248,13 @@ public class FilesController : ControllerBase
 
             // 8. Get metadata for content type and filename
             var bucketName = $"mng-{domainName}";
-            var metadata = await _minioService.GetFileMetadataAsync(bucketName, filePath, HttpContext.RequestAborted);
+            // Extract MinIO object path (remove bucket name prefix)
+            string objectPath = filePath;
+            if (filePath.StartsWith($"/mng-{domainName}/"))
+            {
+                objectPath = filePath.Substring($"/mng-{domainName}".Length);
+            }
+            var metadata = await _minioService.GetFileMetadataAsync(bucketName, objectPath, HttpContext.RequestAborted);
             
             var contentType = metadata.TryGetValue("x-amz-meta-mime-type", out var mimeType) 
                 ? mimeType 
@@ -283,23 +289,28 @@ public class FilesController : ControllerBase
     /// <summary>
     /// Get file metadata without downloading content
     /// </summary>
-    /// <param name="filePath">File path in MinIO</param>
-    /// <returns>File metadata</returns>
+    /// <param name="filePath">File path in MinIO (e.g., /mng-domain/data/users/dataset/record/file.pdf)</param>
+    /// <returns>File metadata including size, MIME type, compression/encryption flags, timestamps, etc.</returns>
     [HttpGet("metadata")]
-    [ProducesResponseType(typeof(DataResponseDto<Dictionary<string, string>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(DataResponseDto<FileMetadataResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetMetadata([FromQuery] string filePath)
     {
         var metadataPath = "/api/v1/files/metadata";
         
         try
         {
+            // 1. Validate file path
             if (string.IsNullOrWhiteSpace(filePath))
             {
                 return this.ErrorResponse(metadataPath, "INVALID_REQUEST", "File path is required");
             }
 
-            // Extract domain from path
+            // 2. Extract domain from path
             var pathParts = filePath.TrimStart('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
             if (pathParts.Length < 2 || !pathParts[0].StartsWith("mng-"))
             {
@@ -309,16 +320,113 @@ public class FilesController : ControllerBase
             var domainName = pathParts[0].Replace("mng-", "");
             var currentDomain = _mongoContextService.GetCurrentDomainName();
 
-            // Check domain access
+            // 3. Check domain access
             if (domainName != currentDomain)
             {
                 return this.ErrorResponse(metadataPath, "FORBIDDEN", "Access denied: File belongs to different domain", statusCode: 403);
             }
 
-            var bucketName = $"mng-{domainName}";
-            var metadata = await _minioService.GetFileMetadataAsync(bucketName, filePath, HttpContext.RequestAborted);
+            // 4. Extract dataset name from path
+            if (pathParts.Length < 5 || pathParts[1] != "data" || pathParts[2] != "users")
+            {
+                return this.ErrorResponse(metadataPath, "INVALID_PATH", "Invalid file path format: missing dataset/record info");
+            }
 
-            return this.SuccessResponse(metadata, metadataPath);
+            var datasetName = pathParts[3];
+
+            // 5. Get dataset schema for permission check
+            var schema = await _datasetService.GetSchemaEntityByNameAsync(datasetName);
+            if (schema == null)
+            {
+                return this.ErrorResponse(metadataPath, "DATASET_NOT_FOUND", $"Dataset '{datasetName}' not found", statusCode: 404);
+            }
+
+            // 6. Check permission
+            var userGroups = _permissionService.GetUserGroups(HttpContext);
+            var hasPermission = _permissionService.CheckPermission(schema, "read", userGroups, domainName);
+            if (!hasPermission)
+            {
+                return this.ErrorResponse(metadataPath, "FORBIDDEN", $"You don't have 'read' permission for dataset '{datasetName}'", statusCode: 403);
+            }
+
+            // 7. Get metadata from MinIO
+            var bucketName = $"mng-{domainName}";
+            // Extract MinIO object path (remove bucket name prefix)
+            string objectPath = filePath;
+            if (filePath.StartsWith($"/mng-{domainName}/"))
+            {
+                objectPath = filePath.Substring($"/mng-{domainName}".Length);
+            }
+            var metadata = await _minioService.GetFileMetadataAsync(bucketName, objectPath, HttpContext.RequestAborted);
+
+            // 8. Build structured response
+            var response = new FileMetadataResponseDto
+            {
+                FilePath = filePath,
+                OriginalFileName = metadata.TryGetValue("original-filename", out var fileName) 
+                    ? fileName 
+                    : metadata.TryGetValue("x-amz-meta-original-filename", out var fileName2) 
+                        ? fileName2 
+                        : Path.GetFileName(filePath),
+                FileSize = metadata.TryGetValue("file-size", out var sizeStr) && long.TryParse(sizeStr, out var size)
+                    ? size
+                    : metadata.TryGetValue("x-amz-meta-file-size", out var sizeStr2) && long.TryParse(sizeStr2, out var size2)
+                        ? size2
+                        : metadata.TryGetValue("content-length", out var sizeStr3) && long.TryParse(sizeStr3, out var size3)
+                            ? size3
+                            : 0,
+                MimeType = metadata.TryGetValue("mime-type", out var mimeType)
+                    ? mimeType
+                    : metadata.TryGetValue("x-amz-meta-mime-type", out var mimeType2)
+                        ? mimeType2
+                        : metadata.TryGetValue("content-type", out var contentType)
+                            ? contentType
+                            : "application/octet-stream",
+                IsCompressed = metadata.TryGetValue("is-zipped", out var zippedStr) && bool.TryParse(zippedStr, out var zipped)
+                    ? zipped
+                    : metadata.TryGetValue("x-amz-meta-is-zipped", out var zippedStr2) && bool.TryParse(zippedStr2, out var zipped2)
+                        ? zipped2
+                        : false,
+                IsEncrypted = metadata.TryGetValue("is-encrypted", out var encryptedStr) && bool.TryParse(encryptedStr, out var encrypted)
+                    ? encrypted
+                    : metadata.TryGetValue("x-amz-meta-is-encrypted", out var encryptedStr2) && bool.TryParse(encryptedStr2, out var encrypted2)
+                        ? encrypted2
+                        : false,
+                UploadedBy = metadata.TryGetValue("uploaded-by", out var uploadedBy)
+                    ? uploadedBy
+                    : metadata.TryGetValue("x-amz-meta-uploaded-by", out var uploadedBy2)
+                        ? uploadedBy2
+                        : string.Empty,
+                DatasetName = metadata.TryGetValue("dataset-name", out var dataset)
+                    ? dataset
+                    : metadata.TryGetValue("x-amz-meta-dataset-name", out var dataset2)
+                        ? dataset2
+                        : datasetName,
+                RecordId = metadata.TryGetValue("record-id", out var recordId)
+                    ? recordId
+                    : metadata.TryGetValue("x-amz-meta-record-id", out var recordId2)
+                        ? recordId2
+                        : string.Empty,
+                CreatedAt = metadata.TryGetValue("created-at", out var createdAtStr) && DateTime.TryParse(createdAtStr, out var createdAt)
+                    ? createdAt
+                    : metadata.TryGetValue("x-amz-meta-created-at", out var createdAtStr2) && DateTime.TryParse(createdAtStr2, out var createdAt2)
+                        ? createdAt2
+                        : DateTime.MinValue,
+                UploadedAt = metadata.TryGetValue("uploaded-at", out var uploadedAtStr) && DateTime.TryParse(uploadedAtStr, out var uploadedAt)
+                    ? uploadedAt
+                    : metadata.TryGetValue("x-amz-meta-uploaded-at", out var uploadedAtStr2) && DateTime.TryParse(uploadedAtStr2, out var uploadedAt2)
+                        ? uploadedAt2
+                        : metadata.TryGetValue("last-modified", out var lastModifiedStr) && DateTime.TryParse(lastModifiedStr, out var lastModified)
+                            ? lastModified
+                            : DateTime.MinValue,
+                RawMetadata = metadata  // Include raw metadata for advanced use cases
+            };
+
+            _logger.LogInformation(
+                "File metadata retrieved successfully: {FilePath} ({Size} bytes, Compressed: {Compressed}, Encrypted: {Encrypted})",
+                filePath, response.FileSize, response.IsCompressed, response.IsEncrypted);
+
+            return this.SuccessResponse(response, metadataPath);
         }
         catch (FileNotFoundException ex)
         {
@@ -326,7 +434,7 @@ public class FilesController : ControllerBase
         }
         catch (Exception ex)
         {
-            return this.HandleError(ex, metadataPath, "GET_METADATA_FAILED", "Failed to get file metadata", _logger);
+            return this.HandleError(ex, metadataPath, "GET_METADATA_FAILED", "Failed to get file metadata", _logger, includeStackTrace: true);
         }
     }
 

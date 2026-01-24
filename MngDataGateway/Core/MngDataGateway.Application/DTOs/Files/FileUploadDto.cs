@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace MngDataGateway.Application.DTOs.Files;
 
 /// <summary>
@@ -99,7 +101,7 @@ public class FileUploadResponseDto
 /// </summary>
 public class FileProcessingOptionsDto
 {
-    public long MaxFileSize { get; set; } = 104857600;  // 100MB
+    public long MaxFileSize { get; set; } = 5242880;  // 5MB
     public List<string> AllowedExtensions { get; set; } = new();
     public int MaxFolderDepth { get; set; } = 10;
     public int MaxPathLength { get; set; } = 512;
@@ -135,4 +137,72 @@ public class EncryptionConfigDto
 {
     public string Algorithm { get; set; } = "AES-256-GCM";
     public string KeyDerivation { get; set; } = "PBKDF2";
+}
+
+/// <summary>
+/// File metadata response DTO
+/// Used for GET /api/v1/files/metadata endpoint
+/// </summary>
+public class FileMetadataResponseDto
+{
+    /// <summary>
+    /// File path in MinIO
+    /// Example: /mng-meral/data/users/@test_files/record-id/test/images/file.jpg
+    /// </summary>
+    public string FilePath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Original filename
+    /// </summary>
+    public string OriginalFileName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// File size in bytes (original size before compression/encryption)
+    /// </summary>
+    public long FileSize { get; set; }
+
+    /// <summary>
+    /// MIME type
+    /// </summary>
+    public string MimeType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Whether file is compressed
+    /// </summary>
+    public bool IsCompressed { get; set; }
+
+    /// <summary>
+    /// Whether file is encrypted
+    /// </summary>
+    public bool IsEncrypted { get; set; }
+
+    /// <summary>
+    /// User who uploaded the file
+    /// </summary>
+    public string UploadedBy { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Dataset name
+    /// </summary>
+    public string DatasetName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Record ID
+    /// </summary>
+    public string RecordId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// File creation timestamp
+    /// </summary>
+    public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// File upload timestamp
+    /// </summary>
+    public DateTime UploadedAt { get; set; }
+
+    /// <summary>
+    /// Raw metadata dictionary from MinIO (for advanced use cases)
+    /// </summary>
+    public Dictionary<string, string>? RawMetadata { get; set; }
 }

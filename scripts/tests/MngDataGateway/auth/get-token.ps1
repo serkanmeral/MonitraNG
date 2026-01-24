@@ -2,10 +2,10 @@
 # This script retrieves an authentication token from MngKeeper and saves it to a common location
 
 param(
-    [string]$KeeperBaseUrl = "https://localhost:5001",
+    [string]$KeeperBaseUrl = "https://localhost:5040",
     [string]$DomainName = "meral",
-    [string]$Username = "serkan.meral",
-    [string]$Password = "Serkan123!",
+    [string]$Username = "meral_admin",
+    [string]$Password = "Admin123!",
     [string]$TokenFile = "$env:TEMP\serkan_token.txt"
 )
 
@@ -40,7 +40,7 @@ try {
     Write-Host "Token isteniyor..." 
     
     $params = @{
-        Uri = "$KeeperBaseUrl/api/auth/token"
+        Uri = "$KeeperBaseUrl/keeper/api/auth/token"
         Method = "POST"
         ContentType = "application/json"
         Body = $requestBody

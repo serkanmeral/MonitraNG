@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using MngDataGateway.Application.Configuration;
 using MongoDB.Driver;
 using System;
@@ -20,6 +20,7 @@ namespace MngDataGateway.Application
                 _.CertificateSettings = mngDataGatewaySettings.CertificateSettings;
                 _.OpenApiServerPath = mngDataGatewaySettings .OpenApiServerPath;
                 _.Actors = mngDataGatewaySettings.Actors;
+                _.FileStorage = mngDataGatewaySettings.FileStorage;
             });
 
             // Add MongoDB

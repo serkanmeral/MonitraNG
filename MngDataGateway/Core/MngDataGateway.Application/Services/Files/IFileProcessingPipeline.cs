@@ -1,3 +1,5 @@
+using MngDataGateway.Application.DTOs.Files;
+
 namespace MngDataGateway.Application.Services.Files;
 
 /// <summary>

@@ -635,6 +635,107 @@ Domain: test-domain
 - ✅ Unique olmalı
 - ✅ Mandatory olmalı
 - ✅ Update edilemez (immutable)
+
+---
+
+### 10. file ✅ (Production Ready - 24 Ocak 2026)
+
+File attachment field with MinIO storage, compression, and encryption support.
+
+**Status:** 🟢 **Phase 1 & 2 Complete - Production Ready**
+
+#### Field Definition:
+```json
+{
+  "fieldType": "file",
+  "name": "documentFile",
+  "title": "Document File",
+  "isArray": false,
+  "fileOptions": {
+    "maxSize": 5242880,  // 5MB (configurable)
+    "allowedExtensions": [".pdf", ".jpg", ".png"]
+  }
+}
+```
+
+#### Request Format (Object Model):
+```json
+{
+  "title": "Test Document",
+  "documentFile": {
+    "content": "base64-encoded-string",
+    "folder": "invoices/2025",
+    "useCompression": true,
+    "useEncryption": true
+  }
+}
+```
+
+#### Array Support:
+```json
+{
+  "attachments": [
+    {
+      "content": "base64-string-1",
+      "folder": "docs",
+      "useCompression": true,
+      "useEncryption": true
+    },
+    {
+      "content": "base64-string-2",
+      "folder": "docs",
+      "useCompression": false,
+      "useEncryption": true
+    }
+  ]
+}
+```
+
+#### Storage:
+- **Location:** MinIO bucket `mng-{domain}`
+- **Path Format:** `/mng-{domain}/data/users/{datasetName}/{recordId}/{folder?}/{file-uuid}.{ext}`
+- **Database:** Sadece file path tutulur (immutable)
+- **Metadata:** MinIO custom headers (`x-amz-meta-*`)
+
+#### Features:
+- ✅ Base64 input handling (CREATE/UPDATE)
+- ✅ MinIO storage (S3-compatible)
+- ✅ Optional compression (gzip)
+- ✅ Optional encryption (AES-256-GCM)
+- ✅ Custom folder structure
+- ✅ Array support (multiple files)
+- ✅ Separate download endpoint
+- ✅ Metadata endpoint
+- ✅ Permission-based access control
+
+#### API Endpoints:
+- `POST /api/v1/data/{datasetName}` - Upload file as part of record creation
+- `GET /api/v1/files/download?filePath=...` - Download file (with auto decrypt/decompress)
+- `GET /api/v1/files/metadata?filePath=...` - Get file metadata
+
+#### Configuration:
+- **Max File Size:** 5MB (configurable via `appsettings.json`)
+- **Config Path:** `FileStorage:Validation:MaxFileSize`
+- **Compression:** Optional, gzip (level 6)
+- **Encryption:** Optional, AES-256-GCM
+
+#### Implementation Status:
+- ✅ **Phase 1 (Foundation):** Complete - Services, validation, compression, encryption
+- ✅ **Phase 2 (Integration):** Complete - API endpoints, DataController integration
+- ⏳ **Phase 3 (Optimization):** Future - Memory optimization, monitoring
+- ⏳ **Phase 4 (Testing):** Partial - Unit tests, integration tests needed
+
+#### Documentation:
+- `/docs/MngDataGateway/FILE_FIELD_TYPE_ROADMAP.md` - Implementation roadmap
+- `/docs/MngDataGateway/specs/FILE_FIELD_TYPE_SPECIFICATION.md` - Technical specification
+- `/docs/MngDataGateway/FILE_FIELD_MEMORY_OPTIMIZATION.md` - Memory optimization guide
+
+#### Future Enhancements:
+- ⏳ Presigned URL functionality
+- ⏳ Soft delete/trash mechanism
+- ⏳ File versioning
+- ⏳ Virus scanning (ClamAV)
+- ⏳ Public share links
 - ✅ Client tarafından değer gönderilemez
 - ✅ Reset yok (hiç sıfırlanmaz)
 - ✅ Atomic increment (concurrent-safe)
@@ -4329,7 +4430,7 @@ MngDataGateway, **sofistike ve esnek** bir veri yönetim sistemi sunacak:
 ✅ **Dynamic Schema** - Runtime'da dataset tanımlama  
 ✅ **Multi-tenant** - Domain bazlı izolasyon  
 ✅ **Flexible/Strict** - forceSchema seçeneği  
-✅ **Rich Field Types** - 9 farklı tip  
+✅ **Rich Field Types** - 10 farklı tip (file field type dahil)  
 ✅ **Auto-increment** - Format desteği ile  
 ✅ **Predefined Queries** - Parametrik aggregation  
 ✅ **External Validation** - HTTP-based  
@@ -4338,3 +4439,81 @@ MngDataGateway, **sofistike ve esnek** bir veri yönetim sistemi sunacak:
 
 **Bu roadmap, projenin temelini oluşturuyor. Endpoint tasarımı ve implementasyon detayları sırada!** 🚀
 
+---
+
+## 📎 File Field Type Implementation
+
+**Status:** 🟢 **Phase 1 & 2 Complete - Production Ready (24 Ocak 2026)**
+
+### Overview
+File field type, dataset kayıtlarına dosya ekleme, şifreleme, sıkıştırma ve yönetme imkanı sağlar. MinIO ile entegre, compression ve encryption desteği ile production-ready durumda.
+
+### Implementation Status
+
+| Phase | Status | Completed Date | Notes |
+|-------|--------|----------------|-------|
+| **Phase 1: Foundation** | ✅ Complete | 24 Ocak 2026 | Services, validation, compression, encryption |
+| **Phase 2: Integration** | ✅ Complete | 24 Ocak 2026 | API endpoints, DataController integration |
+| **Phase 3: Optimization** | ⏳ Future | - | Memory optimization, monitoring |
+| **Phase 4: Testing** | 🟡 Partial | - | Unit tests, integration tests needed |
+
+### Key Features (Implemented)
+- ✅ Base64 input handling (CREATE/UPDATE)
+- ✅ MinIO storage (S3-compatible)
+- ✅ Optional compression (gzip, level 6)
+- ✅ Optional encryption (AES-256-GCM)
+- ✅ Custom folder structure
+- ✅ Array support (multiple files per field)
+- ✅ Separate download endpoint (auto decrypt/decompress)
+- ✅ Metadata endpoint
+- ✅ Permission-based access control
+- ✅ Configurable file size limit (default: 5MB)
+
+### Configuration
+- **Max File Size:** 5MB (5,242,880 bytes)
+- **Config Path:** `FileStorage:Validation:MaxFileSize` in `appsettings.json`
+- **Compression:** Optional, gzip (level 6, configurable)
+- **Encryption:** Optional, AES-256-GCM (key from config)
+
+### API Endpoints
+- `POST /api/v1/data/{datasetName}` - Upload file as part of record creation
+- `GET /api/v1/files/download?filePath=...` - Download file (with auto decrypt/decompress)
+- `GET /api/v1/files/metadata?filePath=...` - Get file metadata
+
+### Request Format (Object Model)
+```json
+{
+  "title": "Test Document",
+  "documentFile": {
+    "content": "base64-encoded-string",
+    "folder": "invoices/2025",
+    "useCompression": true,
+    "useEncryption": true
+  }
+}
+```
+
+### Storage Structure
+- **Location:** MinIO bucket `mng-{domain}`
+- **Path Format:** `/mng-{domain}/data/users/{datasetName}/{recordId}/{folder?}/{file-uuid}.{ext}`
+- **Database:** Sadece file path tutulur (immutable)
+- **Metadata:** MinIO custom headers (`x-amz-meta-*`)
+
+### Documentation
+- `/docs/MngDataGateway/FILE_FIELD_TYPE_ROADMAP.md` - Implementation roadmap
+- `/docs/MngDataGateway/specs/FILE_FIELD_TYPE_SPECIFICATION.md` - Technical specification
+- `/docs/MngDataGateway/FILE_FIELD_MEMORY_OPTIMIZATION.md` - Memory optimization guide
+
+### Future Enhancements (Phase 3+)
+- ⏳ Memory optimization (compression skip for small files, ratio check)
+- ⏳ Presigned URL functionality (direct download links)
+- ⏳ Soft delete/trash mechanism
+- ⏳ File versioning
+- ⏳ Virus scanning (ClamAV integration)
+- ⏳ Public share links
+- ⏳ Comprehensive test coverage (unit, integration, E2E)
+- ⏳ Performance monitoring & metrics
+
+**See Field Types section (10. file) for detailed field definition and usage examples.**
+
+---

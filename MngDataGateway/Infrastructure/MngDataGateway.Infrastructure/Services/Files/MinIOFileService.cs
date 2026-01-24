@@ -113,13 +113,6 @@ public class MinIOFileService : IMinIOFileService
                     attempt, maxAttempts, ex.Message);
                 continue;
             }
-            catch (ConnectException ex) when (attempt < maxAttempts)
-            {
-                _logger.LogWarning(ex,
-                    "Connection attempt {Attempt}/{MaxAttempts} failed: {Message}. Retrying...",
-                    attempt, maxAttempts, ex.Message);
-                continue;
-            }
             catch (Exception ex) when (attempt < maxAttempts && IsRetryableError(ex))
             {
                 _logger.LogWarning(ex,
@@ -161,10 +154,7 @@ public class MinIOFileService : IMinIOFileService
             var getArgs = new GetObjectArgs()
                 .WithBucket(bucketName)
                 .WithObject(objectPath)
-                .WithCallbackStream(async stream =>
-                {
-                    await stream.CopyToAsync(memoryStream, cancellationToken);
-                });
+                .WithCallbackStream(stream => stream.CopyTo(memoryStream));
 
             await _minioClient.GetObjectAsync(getArgs, cancellationToken);
 
@@ -220,16 +210,21 @@ public class MinIOFileService : IMinIOFileService
             metadata["last-modified"] = stat.LastModified.ToString("O");
 
             // Add custom metadata from headers
+            // Normalize keys to lowercase for consistent lookup
+            // MinIO may return keys in different cases (X-Amz-Meta-* vs x-amz-meta-*)
             if (stat.MetaData != null)
             {
                 foreach (var kvp in stat.MetaData)
                 {
-                    metadata[kvp.Key] = kvp.Value;
+                    var normalizedKey = kvp.Key.ToLowerInvariant();
+                    metadata[normalizedKey] = kvp.Value;
+                    _logger.LogDebug("Metadata entry: OriginalKey={OriginalKey}, NormalizedKey={NormalizedKey}, Value={Value}",
+                        kvp.Key, normalizedKey, kvp.Value);
                 }
             }
 
-            _logger.LogDebug("Retrieved metadata for {ObjectPath} from bucket {Bucket}: {MetadataCount} entries",
-                objectPath, bucketName, metadata.Count);
+            _logger.LogDebug("Retrieved metadata for {ObjectPath} from bucket {Bucket}: {MetadataCount} entries. Keys: {Keys}",
+                objectPath, bucketName, metadata.Count, string.Join(", ", metadata.Keys));
 
             return metadata;
         }

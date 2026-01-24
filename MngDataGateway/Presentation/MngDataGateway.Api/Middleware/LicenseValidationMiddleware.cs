@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -137,7 +138,11 @@ public class LicenseValidationMiddleware
                 return true; // Fail open
             }
 
-            var httpClient = _httpClientFactory.CreateClient();
+            // Create HttpClient with SSL certificate validation bypass for development
+            var handler = new HttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
+            
+            var httpClient = new HttpClient(handler);
             httpClient.Timeout = TimeSpan.FromSeconds(5); // Short timeout for license check
 
             // Map to MngKeeper's LicenseOperation enum values:

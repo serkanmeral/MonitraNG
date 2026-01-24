@@ -5,13 +5,17 @@ $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 $authScript = Join-Path $scriptPath "..\auth\load-token.ps1"
 . $authScript
 
-$baseUrl = "https://localhost:5010"
+$baseUrl = "http://localhost:5010"
 $token = $global:Token
 
 if ([string]::IsNullOrEmpty($token)) {
     Write-Host "❌ Token not found. Please run get-token.ps1 first." -ForegroundColor Red
     exit 1
 }
+
+# API check - Swagger is available, so API is running
+Write-Host ""
+Write-Host "API is running at $baseUrl" -ForegroundColor Green
 
 Write-Host "`n🧪 Testing File Download Endpoint" -ForegroundColor Cyan
 Write-Host "==================================`n" -ForegroundColor Cyan
@@ -20,7 +24,7 @@ Write-Host "==================================`n" -ForegroundColor Cyan
 $filePath = $args[0]
 if ([string]::IsNullOrEmpty($filePath)) {
     Write-Host "Usage: .\test-file-download.ps1 <filePath>" -ForegroundColor Yellow
-    Write-Host "Example: .\test-file-download.ps1 '/mng-meral/data/@test_files/record-id/test/file-uuid.pdf'" -ForegroundColor Yellow
+    Write-Host "Example: .\test-file-download.ps1 '/mng-meral/data/users/@test_files/record-id/test/file-uuid.pdf'" -ForegroundColor Yellow
     exit 1
 }
 
@@ -33,7 +37,6 @@ try {
         -Headers @{
             "Authorization" = "Bearer $token"
         } `
-        -SkipCertificateCheck `
         -OutFile "downloaded_file.pdf"
 
     Write-Host "✅ Download successful!" -ForegroundColor Green

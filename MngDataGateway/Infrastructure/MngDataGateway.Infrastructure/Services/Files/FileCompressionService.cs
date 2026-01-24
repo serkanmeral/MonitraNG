@@ -34,7 +34,18 @@ public class FileCompressionService : IFileCompressionService
         try
         {
             using var memoryStream = new MemoryStream();
-            using var gzipStream = new GZipStream(memoryStream, (CompressionMode)_compressionLevel);
+            // Map compression level (1-9) to CompressionLevel enum
+            var compressionLevel = _compressionLevel switch
+            {
+                1 => CompressionLevel.Fastest,
+                2 or 3 => CompressionLevel.Fastest,
+                4 or 5 => CompressionLevel.Optimal,
+                6 or 7 or 8 => CompressionLevel.Optimal,
+                9 => CompressionLevel.SmallestSize,
+                _ => CompressionLevel.Optimal
+            };
+            
+            using var gzipStream = new GZipStream(memoryStream, compressionLevel);
             
             await gzipStream.WriteAsync(data, 0, data.Length);
             await gzipStream.FlushAsync();

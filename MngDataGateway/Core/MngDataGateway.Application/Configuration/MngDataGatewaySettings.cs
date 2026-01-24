@@ -160,9 +160,9 @@ namespace MngDataGateway.Application.Configuration
     public class ValidationSettings
     {
         /// <summary>
-        /// Maximum file size in bytes (default: 100MB)
+        /// Maximum file size in bytes (default: 5MB)
         /// </summary>
-        public long MaxFileSize { get; set; } = 104857600;
+        public long MaxFileSize { get; set; } = 5242880;
 
         /// <summary>
         /// Maximum folder depth in path (default: 10)

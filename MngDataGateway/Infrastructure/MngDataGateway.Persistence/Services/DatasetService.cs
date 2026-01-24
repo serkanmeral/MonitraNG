@@ -832,7 +832,7 @@ public class DatasetService : IDatasetService
             }
 
             // Validate field type
-            var validTypes = new[] { "text", "number", "bool", "datetime", "object", "relation", "persons", "personGroups", "incremental" };
+            var validTypes = new[] { "text", "number", "bool", "datetime", "object", "relation", "persons", "personGroups", "incremental", "file" };
             if (!validTypes.Contains(field.fieldType))
             {
                 throw new InvalidOperationException($"Invalid field type: '{field.fieldType}' in field '{field.name}'");

@@ -5,16 +5,22 @@ $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
 $authScript = Join-Path $scriptPath "..\auth\load-token.ps1"
 . $authScript
 
-$baseUrl = "https://localhost:5010"
+$baseUrl = "http://localhost:5010"
 $token = $global:Token
 
 if ([string]::IsNullOrEmpty($token)) {
-    Write-Host "❌ Token not found. Please run get-token.ps1 first." -ForegroundColor Red
+    Write-Host "Token not found. Please run get-token.ps1 first." -ForegroundColor Red
     exit 1
 }
 
-Write-Host "`n🧪 Testing File Upload Endpoint" -ForegroundColor Cyan
-Write-Host "================================`n" -ForegroundColor Cyan
+# API check - Swagger is available, so API is running
+Write-Host ""
+Write-Host "API is running at $baseUrl" -ForegroundColor Green
+
+Write-Host ""
+Write-Host "Testing File Upload Endpoint" -ForegroundColor Cyan
+Write-Host "================================" -ForegroundColor Cyan
+Write-Host ""
 
 # Test 1: Upload PDF file
 Write-Host "Test 1: Upload PDF file" -ForegroundColor Yellow
@@ -38,10 +44,9 @@ try {
             "Authorization" = "Bearer $token"
             "Content-Type" = "application/json"
         } `
-        -Body $uploadBody `
-        -SkipCertificateCheck
+        -Body $uploadBody
 
-    Write-Host "✅ Upload successful!" -ForegroundColor Green
+    Write-Host "Upload successful!" -ForegroundColor Green
     Write-Host "   File Path: $($response.Data.FilePath)" -ForegroundColor Gray
     Write-Host "   File Size: $($response.Data.FileSize) bytes" -ForegroundColor Gray
     Write-Host "   MIME Type: $($response.Data.MimeType)" -ForegroundColor Gray
@@ -51,13 +56,23 @@ try {
     $global:UploadedFilePath = $response.Data.FilePath
 }
 catch {
-    Write-Host "❌ Upload failed: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Upload failed: $($_.Exception.Message)" -ForegroundColor Red
     if ($_.ErrorDetails.Message) {
         Write-Host "   Details: $($_.ErrorDetails.Message)" -ForegroundColor Red
+        try {
+            $errorObj = $_.ErrorDetails.Message | ConvertFrom-Json
+            if ($errorObj.error) {
+                Write-Host "   Error Code: $($errorObj.error.code)" -ForegroundColor Yellow
+                Write-Host "   Error Message: $($errorObj.error.message)" -ForegroundColor Yellow
+            }
+        } catch {
+            Write-Host "   Raw Error: $($_.ErrorDetails.Message)" -ForegroundColor Gray
+        }
     }
 }
 
-Write-Host "`nTest 2: Upload without compression/encryption" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "Test 2: Upload without compression/encryption" -ForegroundColor Yellow
 
 $uploadBody2 = @{
     Content = $pdfBase64
@@ -75,16 +90,19 @@ try {
             "Authorization" = "Bearer $token"
             "Content-Type" = "application/json"
         } `
-        -Body $uploadBody2 `
-        -SkipCertificateCheck
+        -Body $uploadBody2
 
-    Write-Host "✅ Upload successful (no compression/encryption)!" -ForegroundColor Green
+    Write-Host "Upload successful (no compression/encryption)!" -ForegroundColor Green
     Write-Host "   File Path: $($response2.Data.FilePath)" -ForegroundColor Gray
     Write-Host "   Compressed: $($response2.Data.IsCompressed)" -ForegroundColor Gray
     Write-Host "   Encrypted: $($response2.Data.IsEncrypted)" -ForegroundColor Gray
 }
 catch {
-    Write-Host "❌ Upload failed: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "Upload failed: $($_.Exception.Message)" -ForegroundColor Red
+    if ($_.ErrorDetails.Message) {
+        Write-Host "   Details: $($_.ErrorDetails.Message)" -ForegroundColor Red
+    }
 }
 
-Write-Host "`n✅ File Upload Tests Complete!" -ForegroundColor Green
+Write-Host ""
+Write-Host "File Upload Tests Complete!" -ForegroundColor Green

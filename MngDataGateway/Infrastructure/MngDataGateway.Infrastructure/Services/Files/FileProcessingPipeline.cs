@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Linq;
 using MngDataGateway.Application.Configuration;
 using MngDataGateway.Application.DTOs.Files;
 using MngDataGateway.Application.Services.Files;
@@ -111,10 +112,13 @@ public class FileProcessingPipeline : IFileProcessingPipeline
             _logger.LogDebug("Step 7: Building MinIO object path");
             string fileId = Guid.NewGuid().ToString();
             string bucketName = $"mng-{domain}";
-            string objectPath = BuildObjectPath(domain, datasetName, recordId, 
+            // MinIO object path (without bucket name)
+            string objectPath = BuildObjectPath(datasetName, recordId, 
                 folderValidation.NormalizedPath, fileId, extension);
+            // Full file path for response (with bucket name)
+            string fullFilePath = $"/mng-{domain}{objectPath}";
 
-            _logger.LogDebug("Object path: {ObjectPath}", objectPath);
+            _logger.LogDebug("MinIO object path: {ObjectPath}, Full file path: {FullPath}", objectPath, fullFilePath);
 
             // Step 8: Build metadata
             _logger.LogDebug("Step 8: Building metadata for MinIO headers");
@@ -141,7 +145,7 @@ public class FileProcessingPipeline : IFileProcessingPipeline
 
             return new FileProcessingResult
             {
-                FilePath = objectPath,
+                FilePath = fullFilePath,  // Return full path with bucket name for data records
                 OriginalFileName = ExtractFileName(request.Content),
                 OriginalFileSize = decodedData.Length,
                 MimeType = mimeType,
@@ -177,35 +181,130 @@ public class FileProcessingPipeline : IFileProcessingPipeline
         {
             // Extract bucket name from path
             string bucketName = $"mng-{domain}";
+            
+            // Extract MinIO object path (remove bucket name prefix from full path)
+            // Full path: /mng-{domain}/data/users/... -> Object path: /data/users/...
+            string objectPath = filePath;
+            if (filePath.StartsWith($"/mng-{domain}/"))
+            {
+                objectPath = filePath.Substring($"/mng-{domain}".Length);
+            }
+            else if (filePath.StartsWith("/mng-"))
+            {
+                // Extract path after /mng-{domain}/
+                var pathParts = filePath.TrimStart('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
+                if (pathParts.Length > 1)
+                {
+                    objectPath = "/" + string.Join("/", pathParts.Skip(1));
+                }
+            }
 
             // Step 1: Download from MinIO
-            _logger.LogDebug("Step 1: Downloading from MinIO");
+            _logger.LogDebug("Step 1: Downloading from MinIO (bucket={Bucket}, object={Object})", bucketName, objectPath);
             byte[] fileData = await _minioService.DownloadFileAsync(
-                bucketName, filePath, cancellationToken);
+                bucketName, objectPath, cancellationToken);
 
             // Step 2: Get metadata
             _logger.LogDebug("Step 2: Retrieving metadata");
             var metadata = await _minioService.GetFileMetadataAsync(
-                bucketName, filePath, cancellationToken);
+                bucketName, objectPath, cancellationToken);
 
-            bool isEncrypted = metadata.TryGetValue("x-amz-meta-is-encrypted", out var encryptedStr) &&
-                bool.TryParse(encryptedStr, out var encrypted) && encrypted;
+            // Log all metadata keys for debugging
+            _logger.LogDebug("Metadata keys: {Keys}", string.Join(", ", metadata.Keys));
 
-            bool isCompressed = metadata.TryGetValue("x-amz-meta-is-zipped", out var zippedStr) &&
-                bool.TryParse(zippedStr, out var zipped) && zipped;
-
-            // Step 3: Decrypt (if needed)
-            if (isEncrypted)
+            // Parse encryption flag
+            // MinIO returns metadata keys without "x-amz-meta-" prefix
+            // Try both formats: "x-amz-meta-is-encrypted" and "is-encrypted"
+            bool isEncrypted = false;
+            string[] encryptedKeyVariants = { "x-amz-meta-is-encrypted", "is-encrypted" };
+            string? encryptedKey = null;
+            string? encryptedStr = null;
+            
+            foreach (var keyVariant in encryptedKeyVariants)
             {
-                _logger.LogDebug("Step 3: Decrypting");
-                fileData = await _encryptionService.DecryptAsync(fileData);
+                var foundKey = metadata.Keys.FirstOrDefault(k => 
+                    k.Equals(keyVariant, StringComparison.OrdinalIgnoreCase));
+                if (foundKey != null && metadata.TryGetValue(foundKey, out encryptedStr))
+                {
+                    encryptedKey = foundKey;
+                    break;
+                }
             }
 
-            // Step 4: Decompress (if needed)
+            if (encryptedKey != null && encryptedStr != null)
+            {
+                _logger.LogDebug("Found encryption metadata: {Key}={Value}", encryptedKey, encryptedStr);
+                if (bool.TryParse(encryptedStr, out var encrypted))
+                {
+                    isEncrypted = encrypted;
+                }
+                else if (encryptedStr.Equals("true", StringComparison.OrdinalIgnoreCase) || 
+                         encryptedStr.Equals("1"))
+                {
+                    isEncrypted = true;
+                }
+            }
+            else
+            {
+                _logger.LogDebug("Encryption metadata not found. Tried keys: {Keys}", 
+                    string.Join(", ", encryptedKeyVariants));
+            }
+
+            // Parse compression flag
+            // MinIO returns metadata keys without "x-amz-meta-" prefix
+            // Try both formats: "x-amz-meta-is-zipped" and "is-zipped"
+            bool isCompressed = false;
+            string[] zippedKeyVariants = { "x-amz-meta-is-zipped", "is-zipped" };
+            string? zippedKey = null;
+            string? zippedStr = null;
+            
+            foreach (var keyVariant in zippedKeyVariants)
+            {
+                var foundKey = metadata.Keys.FirstOrDefault(k => 
+                    k.Equals(keyVariant, StringComparison.OrdinalIgnoreCase));
+                if (foundKey != null && metadata.TryGetValue(foundKey, out zippedStr))
+                {
+                    zippedKey = foundKey;
+                    break;
+                }
+            }
+
+            if (zippedKey != null && zippedStr != null)
+            {
+                _logger.LogDebug("Found compression metadata: {Key}={Value}", zippedKey, zippedStr);
+                if (bool.TryParse(zippedStr, out var zipped))
+                {
+                    isCompressed = zipped;
+                }
+                else if (zippedStr.Equals("true", StringComparison.OrdinalIgnoreCase) || 
+                         zippedStr.Equals("1"))
+                {
+                    isCompressed = true;
+                }
+            }
+            else
+            {
+                _logger.LogDebug("Compression metadata not found. Tried keys: {Keys}", 
+                    string.Join(", ", zippedKeyVariants));
+            }
+
+            _logger.LogDebug("Processing flags: Encrypted={IsEncrypted}, Compressed={IsCompressed}", 
+                isEncrypted, isCompressed);
+
+            // Step 3: Decrypt (if needed) - MUST be done before decompression
+            if (isEncrypted)
+            {
+                _logger.LogDebug("Step 3: Decrypting file data ({Size} bytes)", fileData.Length);
+                fileData = await _encryptionService.DecryptAsync(fileData);
+                _logger.LogDebug("Decryption completed ({Size} bytes)", fileData.Length);
+            }
+
+            // Step 4: Decompress (if needed) - MUST be done after decryption
             if (isCompressed)
             {
-                _logger.LogDebug("Step 4: Decompressing");
+                _logger.LogDebug("Step 4: Decompressing file data ({Size} bytes)", fileData.Length);
                 fileData = await _compressionService.DecompressAsync(fileData);
+                _logger.LogDebug("Decompression completed ({Size} bytes)", fileData.Length);
             }
 
             _logger.LogInformation(
@@ -252,11 +351,11 @@ public class FileProcessingPipeline : IFileProcessingPipeline
     }
 
     /// <summary>
-    /// Builds MinIO object path
-    /// Format: /mng-{domain}/data/{datasetName}/{recordId}/{folder?}/{fileId}.{ext}
+    /// Builds MinIO object path (without bucket name)
+    /// Format: /data/users/{datasetName}/{recordId}/{folder?}/{fileId}.{ext}
+    /// Note: Bucket name (mng-{domain}) is handled separately
     /// </summary>
     private string BuildObjectPath(
-        string domain,
         string datasetName,
         string recordId,
         string? folder,
@@ -265,8 +364,8 @@ public class FileProcessingPipeline : IFileProcessingPipeline
     {
         var pathParts = new List<string>
         {
-            $"mng-{domain}",
             "data",
+            "users",
             datasetName,
             recordId
         };

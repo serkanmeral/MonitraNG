@@ -5,11 +5,15 @@ using System.Text.Json;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using MngDataGateway.Api.Helpers;
+using MngDataGateway.Application.Configuration;
 using MngDataGateway.Application.DTOs.Common;
 using MngDataGateway.Application.DTOs.Data;
+using MngDataGateway.Application.DTOs.Files;
 using MngDataGateway.Application.DTOs.Validation;
 using MngDataGateway.Application.Services;
+using MngDataGateway.Application.Services.Files;
 using MngDataGateway.Domain.Entities;
 using MngDataGateway.Domain.Exceptions;
 using MngDataGateway.Persistence.Services;
@@ -33,6 +37,8 @@ namespace MngDataGateway.Api.Controllers
         private readonly IDatasetService _datasetService;
         private readonly IPermissionService _permissionService;
         private readonly CsvConverter _csvConverter;
+        private readonly IFileProcessingPipeline _fileProcessingPipeline;
+        private readonly MngDataGatewaySettings _settings;
 
         public DataController(
             ILogger<DataController> logger,
@@ -41,7 +47,9 @@ namespace MngDataGateway.Api.Controllers
             IUserInfoService userInfoService,
             IDatasetService datasetService,
             IPermissionService permissionService,
-            CsvConverter csvConverter)
+            CsvConverter csvConverter,
+            IFileProcessingPipeline fileProcessingPipeline,
+            IOptions<MngDataGatewaySettings> options)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _dataService = dataService ?? throw new ArgumentNullException(nameof(dataService));
@@ -50,6 +58,8 @@ namespace MngDataGateway.Api.Controllers
             _datasetService = datasetService ?? throw new ArgumentNullException(nameof(datasetService));
             _permissionService = permissionService ?? throw new ArgumentNullException(nameof(permissionService));
             _csvConverter = csvConverter ?? throw new ArgumentNullException(nameof(csvConverter));
+            _fileProcessingPipeline = fileProcessingPipeline ?? throw new ArgumentNullException(nameof(fileProcessingPipeline));
+            _settings = options?.Value ?? throw new ArgumentNullException(nameof(options));
         }
 
         /// <summary>
@@ -110,8 +120,13 @@ namespace MngDataGateway.Api.Controllers
                 var userInfo = _userInfoService.GetCurrentUserInfo();
                 var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
 
-                // Convert JsonElement to Dictionary with proper types
-                var data = request.ToDictionary();
+                // Process file fields (upload files if object model is used) - BEFORE ToDictionary
+                var fileProcessingResult = await ProcessFileFieldsFromJsonElementAsync(schema, request, datasetName, domainName);
+                if (fileProcessingResult.Error != null)
+                    return fileProcessingResult.Error;
+
+                // Convert JsonElement to Dictionary with proper types (after file processing)
+                var data = fileProcessingResult.Data.ToDictionary();
 
                 // Validate file field paths (if any)
                 var fileValidationResult = ValidateFileFields(schema, data, datasetName);
@@ -804,6 +819,417 @@ namespace MngDataGateway.Api.Controllers
         }
 
         /// <summary>
+        /// Processes file fields from JsonElement - uploads files if object model is used
+        /// Returns updated JsonElement with file paths replaced
+        /// </summary>
+        private async Task<(JsonElement Data, IActionResult? Error)> ProcessFileFieldsFromJsonElementAsync(
+            DatasetSchema schema,
+            JsonElement request,
+            string datasetName,
+            string domainName)
+        {
+            if (schema.fields == null || schema.fields.Count == 0)
+                return (request, null);  // No fields to process
+
+            var fileFields = schema.fields.Where(f => f.fieldType == "file").ToList();
+            if (fileFields.Count == 0)
+                return (request, null);  // No file fields in schema
+
+            if (request.ValueKind != JsonValueKind.Object)
+                return (request, null);  // Not an object
+
+            var userInfo = _userInfoService.GetCurrentUserInfo();
+            var recordId = Guid.NewGuid().ToString();  // Generate record ID for new records
+
+            // Create a new JSON object with processed file fields
+            using var stream = new System.IO.MemoryStream();
+            using var writer = new System.Text.Json.Utf8JsonWriter(stream);
+
+            writer.WriteStartObject();
+
+            foreach (var property in request.EnumerateObject())
+            {
+                var field = fileFields.FirstOrDefault(f => f.name == property.Name);
+                
+                if (field != null)
+                {
+                    // Process file field
+                    if (!field.isArray)
+                    {
+                        // Single file field
+                        if (property.Value.ValueKind == JsonValueKind.String)
+                        {
+                            // Already a path string, keep as is
+                            writer.WritePropertyName(property.Name);
+                            writer.WriteStringValue(property.Value.GetString() ?? string.Empty);
+                        }
+                        else if (property.Value.ValueKind == JsonValueKind.Object)
+                        {
+                            // Object model - upload file
+                            var uploadResult = await ProcessSingleFileFieldAsync(
+                                property.Value, property.Name, datasetName, domainName, recordId, userInfo.userName);
+                            if (uploadResult.Error != null)
+                                return (request, uploadResult.Error);
+                            
+                            writer.WritePropertyName(property.Name);
+                            writer.WriteStringValue(uploadResult.FilePath);
+                        }
+                        else
+                        {
+                            // Copy as is (null or invalid)
+                            writer.WritePropertyName(property.Name);
+                            property.Value.WriteTo(writer);
+                        }
+                    }
+                    else
+                    {
+                        // Array file field
+                        if (property.Value.ValueKind == JsonValueKind.Array)
+                        {
+                            writer.WritePropertyName(property.Name);
+                            writer.WriteStartArray();
+                            
+                            foreach (var itemElement in property.Value.EnumerateArray())
+                            {
+                                if (itemElement.ValueKind == JsonValueKind.String)
+                                {
+                                    // Already a path string, keep as is
+                                    writer.WriteStringValue(itemElement.GetString() ?? string.Empty);
+                                }
+                                else if (itemElement.ValueKind == JsonValueKind.Object)
+                                {
+                                    // Object model - upload file
+                                    var uploadResult = await ProcessSingleFileFieldAsync(
+                                        itemElement, property.Name, datasetName, domainName, recordId, userInfo.userName);
+                                    if (uploadResult.Error != null)
+                                        return (request, uploadResult.Error);
+                                    
+                                    writer.WriteStringValue(uploadResult.FilePath);
+                                }
+                                else
+                                {
+                                    // Copy as is (null or invalid)
+                                    itemElement.WriteTo(writer);
+                                }
+                            }
+                            
+                            writer.WriteEndArray();
+                        }
+                        else
+                        {
+                            // Copy as is (not an array)
+                            writer.WritePropertyName(property.Name);
+                            property.Value.WriteTo(writer);
+                        }
+                    }
+                }
+                else
+                {
+                    // Not a file field, copy as is
+                    writer.WritePropertyName(property.Name);
+                    property.Value.WriteTo(writer);
+                }
+            }
+
+            writer.WriteEndObject();
+            writer.Flush();
+
+            // Parse the new JSON
+            var jsonBytes = stream.ToArray();
+            var updatedRequest = System.Text.Json.JsonSerializer.Deserialize<JsonElement>(jsonBytes);
+
+            return (updatedRequest, null);
+        }
+
+        /// <summary>
+        /// Processes file fields - uploads files if object model is used, otherwise keeps existing paths
+        /// </summary>
+        private async Task<(Dictionary<string, object> Data, IActionResult? Error)> ProcessFileFieldsAsync(
+            DatasetSchema schema,
+            Dictionary<string, object> data,
+            string datasetName,
+            string domainName)
+        {
+            if (schema.fields == null || schema.fields.Count == 0)
+                return (data, null);  // No fields to process
+
+            var fileFields = schema.fields.Where(f => f.fieldType == "file").ToList();
+            if (fileFields.Count == 0)
+                return (data, null);  // No file fields in schema
+
+            var userInfo = _userInfoService.GetCurrentUserInfo();
+            var recordId = Guid.NewGuid().ToString();  // Generate record ID for new records
+
+            foreach (var field in fileFields)
+            {
+                if (!data.ContainsKey(field.name))
+                    continue;  // Field not present in data (optional field)
+
+                var fieldValue = data[field.name];
+
+                // Handle single file field
+                if (!field.isArray)
+                {
+                    if (fieldValue is string filePath)
+                    {
+                        // Already a path string, keep as is
+                        continue;
+                    }
+                    else if (fieldValue is JsonElement jsonElement && jsonElement.ValueKind == JsonValueKind.Object)
+                    {
+                        // Object model - upload file
+                        var uploadResult = await ProcessSingleFileFieldAsync(
+                            jsonElement, field.name, datasetName, domainName, recordId, userInfo.userName);
+                        if (uploadResult.Error != null)
+                            return (data, uploadResult.Error);
+                        
+                        data[field.name] = uploadResult.FilePath;
+                    }
+                    else if (fieldValue is Dictionary<string, object> fileObj)
+                    {
+                        // Dictionary model - upload file
+                        var uploadResult = await ProcessSingleFileFieldFromDictAsync(
+                            fileObj, field.name, datasetName, domainName, recordId, userInfo.userName);
+                        if (uploadResult.Error != null)
+                            return (data, uploadResult.Error);
+                        
+                        data[field.name] = uploadResult.FilePath;
+                    }
+                    else if (fieldValue != null)
+                    {
+                        return (data, this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
+                            $"Field '{field.name}' must be a string (file path) or an object with 'content', 'folder', 'useCompression', 'useEncryption' properties"));
+                    }
+                }
+                // Handle array file field
+                else
+                {
+                    // Handle JsonElement array (from JSON deserialization)
+                    if (fieldValue is JsonElement jsonArrayElement && jsonArrayElement.ValueKind == JsonValueKind.Array)
+                    {
+                        var processedPaths = new List<string>();
+                        foreach (var itemElement in jsonArrayElement.EnumerateArray())
+                        {
+                            if (itemElement.ValueKind == JsonValueKind.String)
+                            {
+                                // Already a path string, keep as is
+                                processedPaths.Add(itemElement.GetString() ?? string.Empty);
+                            }
+                            else if (itemElement.ValueKind == JsonValueKind.Object)
+                            {
+                                // Object model - upload file
+                                var uploadResult = await ProcessSingleFileFieldAsync(
+                                    itemElement, field.name, datasetName, domainName, recordId, userInfo.userName);
+                                if (uploadResult.Error != null)
+                                    return (data, uploadResult.Error);
+                                
+                                processedPaths.Add(uploadResult.FilePath);
+                            }
+                            else
+                            {
+                                return (data, this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
+                                    $"Array field '{field.name}' must contain string values (file paths) or objects with 'content', 'folder', 'useCompression', 'useEncryption' properties"));
+                            }
+                        }
+                        data[field.name] = processedPaths;
+                    }
+                    else if (fieldValue is List<object> fileList)
+                    {
+                        var processedPaths = new List<string>();
+                        foreach (var item in fileList)
+                        {
+                            if (item is string filePathStr)
+                            {
+                                // Already a path string, keep as is
+                                processedPaths.Add(filePathStr);
+                            }
+                            else if (item is JsonElement jsonElement && jsonElement.ValueKind == JsonValueKind.Object)
+                            {
+                                // Object model - upload file
+                                var uploadResult = await ProcessSingleFileFieldAsync(
+                                    jsonElement, field.name, datasetName, domainName, recordId, userInfo.userName);
+                                if (uploadResult.Error != null)
+                                    return (data, uploadResult.Error);
+                                
+                                processedPaths.Add(uploadResult.FilePath);
+                            }
+                            else if (item is Dictionary<string, object> fileObj)
+                            {
+                                // Dictionary model - upload file
+                                var uploadResult = await ProcessSingleFileFieldFromDictAsync(
+                                    fileObj, field.name, datasetName, domainName, recordId, userInfo.userName);
+                                if (uploadResult.Error != null)
+                                    return (data, uploadResult.Error);
+                                
+                                processedPaths.Add(uploadResult.FilePath);
+                            }
+                            else
+                            {
+                                return (data, this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
+                                    $"Array field '{field.name}' must contain string values (file paths) or objects with 'content', 'folder', 'useCompression', 'useEncryption' properties"));
+                            }
+                        }
+                        data[field.name] = processedPaths;
+                    }
+                    else if (fieldValue != null)
+                    {
+                        return (data, this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
+                            $"Array field '{field.name}' must be an array of strings (file paths) or objects"));
+                    }
+                }
+            }
+
+            return (data, null);  // All file fields processed successfully
+        }
+
+        /// <summary>
+        /// Processes a single file field from JsonElement object model
+        /// </summary>
+        private async Task<(string FilePath, IActionResult? Error)> ProcessSingleFileFieldAsync(
+            JsonElement fileObj,
+            string fieldName,
+            string datasetName,
+            string domainName,
+            string recordId,
+            string userName)
+        {
+            try
+            {
+                // Extract file upload properties
+                if (!fileObj.TryGetProperty("content", out var contentElement) || contentElement.ValueKind != JsonValueKind.String)
+                {
+                    return (string.Empty, this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
+                        $"Field '{fieldName}' object must have 'content' property with base64 string"));
+                }
+
+                string content = contentElement.GetString() ?? string.Empty;
+                string? folder = fileObj.TryGetProperty("folder", out var folderElement) && folderElement.ValueKind == JsonValueKind.String
+                    ? folderElement.GetString()
+                    : null;
+                bool? useCompression = fileObj.TryGetProperty("useCompression", out var compressionElement) && (compressionElement.ValueKind == JsonValueKind.True || compressionElement.ValueKind == JsonValueKind.False)
+                    ? compressionElement.GetBoolean()
+                    : null;
+                bool? useEncryption = fileObj.TryGetProperty("useEncryption", out var encryptionElement) && (encryptionElement.ValueKind == JsonValueKind.True || encryptionElement.ValueKind == JsonValueKind.False)
+                    ? encryptionElement.GetBoolean()
+                    : null;
+
+                // Get file options from field definition
+                var schema = await _datasetService.GetSchemaEntityByNameAsync(datasetName);
+                var field = schema?.fields?.FirstOrDefault(f => f.name == fieldName);
+                var fileOptions = GetFileOptionsFromField(field, _settings.FileStorage.Validation);
+
+                // Process file upload
+                var processingResult = await _fileProcessingPipeline.ProcessFileUploadAsync(
+                    new FileUploadRequestDto
+                    {
+                        Content = content,
+                        Folder = folder,
+                        UseCompression = useCompression,
+                        UseEncryption = useEncryption
+                    },
+                    domainName,
+                    datasetName,
+                    recordId,
+                    userName,
+                    fileOptions,
+                    HttpContext.RequestAborted);
+
+                return (processingResult.FilePath, null);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to process file field '{FieldName}'", fieldName);
+                return (string.Empty, this.ErrorResponse(GetApiPath(datasetName), "FILE_UPLOAD_FAILED",
+                    $"Failed to upload file for field '{fieldName}': {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Processes a single file field from Dictionary object model
+        /// </summary>
+        private async Task<(string FilePath, IActionResult? Error)> ProcessSingleFileFieldFromDictAsync(
+            Dictionary<string, object> fileObj,
+            string fieldName,
+            string datasetName,
+            string domainName,
+            string recordId,
+            string userName)
+        {
+            try
+            {
+                // Extract file upload properties
+                if (!fileObj.TryGetValue("content", out var contentObj) || contentObj is not string content)
+                {
+                    return (string.Empty, this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
+                        $"Field '{fieldName}' object must have 'content' property with base64 string"));
+                }
+
+                string? folder = fileObj.TryGetValue("folder", out var folderObj) && folderObj is string folderStr
+                    ? folderStr
+                    : null;
+                bool? useCompression = fileObj.TryGetValue("useCompression", out var compressionObj) && compressionObj is bool compressionBool
+                    ? compressionBool
+                    : null;
+                bool? useEncryption = fileObj.TryGetValue("useEncryption", out var encryptionObj) && encryptionObj is bool encryptionBool
+                    ? encryptionBool
+                    : null;
+
+                // Get file options from field definition
+                var schema = await _datasetService.GetSchemaEntityByNameAsync(datasetName);
+                var field = schema?.fields?.FirstOrDefault(f => f.name == fieldName);
+                var fileOptions = GetFileOptionsFromField(field, _settings.FileStorage.Validation);
+
+                // Process file upload
+                var processingResult = await _fileProcessingPipeline.ProcessFileUploadAsync(
+                    new FileUploadRequestDto
+                    {
+                        Content = content,
+                        Folder = folder,
+                        UseCompression = useCompression,
+                        UseEncryption = useEncryption
+                    },
+                    domainName,
+                    datasetName,
+                    recordId,
+                    userName,
+                    fileOptions,
+                    HttpContext.RequestAborted);
+
+                return (processingResult.FilePath, null);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to process file field '{FieldName}'", fieldName);
+                return (string.Empty, this.ErrorResponse(GetApiPath(datasetName), "FILE_UPLOAD_FAILED",
+                    $"Failed to upload file for field '{fieldName}': {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Gets file processing options from field definition
+        /// </summary>
+        private FileProcessingOptionsDto GetFileOptionsFromField(
+            FieldDefinition? field,
+            ValidationSettings validationSettings)
+        {
+            // For now, use configuration defaults
+            // TODO: Phase 2+ - Parse fileOptions from field definition if available
+            
+            var options = new FileProcessingOptionsDto
+            {
+                MaxFileSize = validationSettings.MaxFileSize,
+                AllowedExtensions = validationSettings.AllowedExtensions ?? new List<string>(),
+                MaxFolderDepth = validationSettings.MaxFolderDepth,
+                MaxPathLength = validationSettings.MaxPathLength,
+                DefaultCompression = _settings.FileStorage.Compression.Enabled,
+                DefaultEncryption = _settings.FileStorage.Encryption.Enabled,
+                CompressionLevel = _settings.FileStorage.Compression.Level
+            };
+
+            return options;
+        }
+
+        /// <summary>
         /// Validates file field paths in data dictionary
         /// Checks if file fields contain valid MinIO paths
         /// </summary>
@@ -888,10 +1314,10 @@ namespace MngDataGateway.Api.Controllers
             if (string.IsNullOrWhiteSpace(filePath))
                 return null;  // Empty path is allowed (optional field)
 
-            // Check path format: /mng-{domain}/data/{dataset}/...
+            // Check path format: /mng-{domain}/data/users/{dataset}/...
             var pathParts = filePath.TrimStart('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
             
-            if (pathParts.Length < 4)
+            if (pathParts.Length < 5)
             {
                 return this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_PATH",
                     $"Invalid file path format for field '{fieldName}': {filePath}");
@@ -918,11 +1344,18 @@ namespace MngDataGateway.Api.Controllers
                     $"File path must contain '/data/' folder: {filePath}");
             }
 
-            // Check dataset match
-            if (pathParts[2] != datasetName)
+            // Check users folder
+            if (pathParts[2] != "users")
             {
                 return this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_PATH",
-                    $"File path dataset '{pathParts[2]}' does not match dataset '{datasetName}'");
+                    $"File path must contain '/data/users/' folder: {filePath}");
+            }
+
+            // Check dataset match
+            if (pathParts[3] != datasetName)
+            {
+                return this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_PATH",
+                    $"File path dataset '{pathParts[3]}' does not match dataset '{datasetName}'");
             }
 
             // Path format is valid
