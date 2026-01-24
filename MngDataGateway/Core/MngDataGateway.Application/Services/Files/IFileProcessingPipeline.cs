@@ -13,6 +13,7 @@ public interface IFileProcessingPipeline
     /// <param name="domain">Domain name for bucket selection</param>
     /// <param name="datasetName">Dataset name for path construction</param>
     /// <param name="recordId">Record ID for path construction</param>
+    /// <param name="userName">Username of the user uploading the file</param>
     /// <param name="options">Processing options (max size, allowed extensions, etc.)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Processing result with file path and metadata</returns>
@@ -21,6 +22,7 @@ public interface IFileProcessingPipeline
         string domain,
         string datasetName,
         string recordId,
+        string userName,
         FileProcessingOptionsDto options,
         CancellationToken cancellationToken = default);
 

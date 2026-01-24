@@ -12,6 +12,25 @@ public class FileUploadRequestDto
     public required string Content { get; set; }
 
     /// <summary>
+    /// Dataset name (REQUIRED for API requests)
+    /// Example: "@invoices"
+    /// </summary>
+    public string? DatasetName { get; set; }
+
+    /// <summary>
+    /// Field name in dataset (REQUIRED for API requests)
+    /// Example: "documentFile"
+    /// </summary>
+    public string? FieldName { get; set; }
+
+    /// <summary>
+    /// Record ID (OPTIONAL)
+    /// If null, generates new GUID (for new records)
+    /// Example: "TASK-000001"
+    /// </summary>
+    public string? RecordId { get; set; }
+
+    /// <summary>
     /// Custom folder path (OPTIONAL)
     /// If null/empty, uses default: /mng-{domain}/data/{dataset}/{record}/
     /// Example: "invoices/2025" → /mng-{domain}/data/{dataset}/{record}/invoices/2025/
@@ -19,16 +38,16 @@ public class FileUploadRequestDto
     public string? Folder { get; set; }
 
     /// <summary>
-    /// Enable gzip compression (OPTIONAL, default: true)
+    /// Enable gzip compression (OPTIONAL, default: true from config)
     /// If compression fails, continues without compression (non-fatal)
     /// </summary>
-    public bool UseCompression { get; set; } = true;
+    public bool? UseCompression { get; set; }
 
     /// <summary>
-    /// Enable AES-256-GCM encryption (OPTIONAL, default: true)
+    /// Enable AES-256-GCM encryption (OPTIONAL, default: true from config)
     /// If encryption fails, throws exception (fatal)
     /// </summary>
-    public bool UseEncryption { get; set; } = true;
+    public bool? UseEncryption { get; set; }
 }
 
 /// <summary>

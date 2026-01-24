@@ -1,4 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using MngDataGateway.Application.Configuration;
 using MngDataGateway.Application.Interfaces;
 using MngDataGateway.Application.Services;
 using MngDataGateway.Application.Services.Files;
@@ -33,9 +35,23 @@ namespace MngDataGateway.Infrastructure
             // MinIO Client (Singleton)
             services.AddSingleton<IMinioClient>(provider =>
             {
-                // Note: Actual configuration will be injected from IOptions<MngDataGatewaySettings>
-                // This is a placeholder; the real configuration happens in Program.cs
-                return new MinioClient();
+                var options = provider.GetRequiredService<IOptions<MngDataGatewaySettings>>();
+                var settings = options.Value.FileStorage.Minio;
+
+                var clientBuilder = new MinioClient()
+                    .WithEndpoint(settings.Endpoint)
+                    .WithCredentials(settings.AccessKey, settings.SecretKey);
+
+                if (settings.UseSSL)
+                {
+                    clientBuilder = clientBuilder.WithSSL();
+                }
+                else
+                {
+                    clientBuilder = clientBuilder.WithSSL(false);
+                }
+
+                return clientBuilder.Build();
             });
 
             // File Validation Service (Scoped)
@@ -45,7 +61,9 @@ namespace MngDataGateway.Infrastructure
             services.AddScoped<IFileCompressionService>(provider =>
             {
                 var logger = provider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<FileCompressionService>>();
-                return new FileCompressionService(logger, 6);  // Compression level 6 (default)
+                var options = provider.GetRequiredService<IOptions<MngDataGatewaySettings>>();
+                var compressionLevel = options.Value.FileStorage.Compression.Level;
+                return new FileCompressionService(logger, compressionLevel);
             });
 
             // Encryption Service (Scoped)

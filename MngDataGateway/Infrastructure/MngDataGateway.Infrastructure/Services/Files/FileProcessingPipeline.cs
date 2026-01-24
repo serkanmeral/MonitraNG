@@ -44,6 +44,7 @@ public class FileProcessingPipeline : IFileProcessingPipeline
         string domain,
         string datasetName,
         string recordId,
+        string userName,
         FileProcessingOptionsDto options,
         CancellationToken cancellationToken = default)
     {
@@ -73,13 +74,14 @@ public class FileProcessingPipeline : IFileProcessingPipeline
                 throw new ArgumentException($"Invalid folder path: {folderValidation.ErrorMessage}");
 
             // Step 5: Compression (optional, non-fatal on failure)
+            bool useCompression = request.UseCompression ?? options.DefaultCompression;
             _logger.LogDebug("Step 5: Processing compression (enabled={UseCompression})", 
-                request.UseCompression);
+                useCompression);
             byte[] processedData = decodedData;
             bool isCompressed = false;
             double compressionRatio = 1.0;
 
-            if (request.UseCompression)
+            if (useCompression)
             {
                 var compressionResult = await _compressionService.CompressAsync(decodedData);
                 processedData = compressionResult.Data;
@@ -94,11 +96,12 @@ public class FileProcessingPipeline : IFileProcessingPipeline
             }
 
             // Step 6: Encryption (optional, fatal on failure)
+            bool useEncryption = request.UseEncryption ?? options.DefaultEncryption;
             _logger.LogDebug("Step 6: Processing encryption (enabled={UseEncryption})",
-                request.UseEncryption);
+                useEncryption);
             bool isEncrypted = false;
 
-            if (request.UseEncryption)
+            if (useEncryption)
             {
                 processedData = await _encryptionService.EncryptAsync(processedData);
                 isEncrypted = true;
@@ -116,7 +119,7 @@ public class FileProcessingPipeline : IFileProcessingPipeline
             // Step 8: Build metadata
             _logger.LogDebug("Step 8: Building metadata for MinIO headers");
             var metadata = BuildMetadata(
-                request, domain, datasetName, recordId,
+                request, domain, datasetName, recordId, userName,
                 mimeType, decodedData.Length, isCompressed, isEncrypted);
 
             // Step 9: Upload to MinIO
@@ -286,6 +289,7 @@ public class FileProcessingPipeline : IFileProcessingPipeline
         string domain,
         string datasetName,
         string recordId,
+        string userName,
         string mimeType,
         long fileSize,
         bool isCompressed,
@@ -302,7 +306,8 @@ public class FileProcessingPipeline : IFileProcessingPipeline
             ["x-amz-meta-created-at"] = DateTime.UtcNow.ToString("O"),
             ["x-amz-meta-uploaded-at"] = DateTime.UtcNow.ToString("O"),
 
-            // Context
+            // User & Context
+            ["x-amz-meta-uploaded-by"] = userName,
             ["x-amz-meta-domain-name"] = domain,
             ["x-amz-meta-dataset-name"] = datasetName,
             ["x-amz-meta-record-id"] = recordId,
