@@ -12,7 +12,7 @@
 - **Purpose:** Define structure and behavior of dynamic data collections
 - **Pattern:** Full metadata (BaseEntity inheritance)
 
-### 2. Supported Field Types (9)
+### 2. Supported Field Types (10)
 
 | Type | Description | Validation |
 |------|-------------|------------|
@@ -25,6 +25,7 @@
 | `persons` | User reference | ✅ |
 | `personGroups` | Group reference | ✅ |
 | `incremental` | Auto-increment | ✅ unique + mandatory + incrementalOptions |
+| `file` | File attachment (MinIO) | ✅ fileOptions optional |
 
 ### 3. Incremental Field - Advanced Features
 
@@ -263,7 +264,90 @@ __deletedDatas         ← Deleted data backup (TTL: 7 days)
 
 ---
 
-## 📚 Design Decisions
+### 10. file (NEW - Phase 2)
+File attachment field with MinIO storage, compression, and encryption support.
+
+```json
+{
+  "fieldType": "file",
+  "name": "invoice",
+  "title": "Invoice Document",
+  "isArray": false,
+  "fileOptions": {
+    "maxSize": 10485760,
+    "allowedExtensions": [".pdf"],
+    "defaultCompression": true,
+    "defaultEncryption": true
+  }
+}
+```
+
+**Upload Request:**
+```json
+{
+  "invoice": {
+    "content": "JVBERi0xLjQK...[base64]...",
+    "folder": "invoices/2025",
+    "useCompression": true,
+    "useEncryption": true
+  }
+}
+```
+
+**Storage:**
+- **Location:** MinIO bucket `mng-{domain}`
+- **Path:** `/mng-{domain}/data/{datasetName}/{recordId}/{folder?}/{file-uuid}.{ext}`
+- **Metadata:** MinIO custom headers (`x-amz-meta-*`)
+- **Database:** Path only (immutable)
+
+**Metadata Stored in MinIO Headers:**
+```
+x-amz-meta-original-filename
+x-amz-meta-file-size
+x-amz-meta-mime-type
+x-amz-meta-created-at
+x-amz-meta-uploaded-at
+x-amz-meta-uploaded-by
+x-amz-meta-is-zipped
+x-amz-meta-is-encrypted
+x-amz-meta-encryption-config
+```
+
+**Features:**
+- ✅ Base64 input (CREATE/UPDATE)
+- ✅ MinIO storage (S3-compatible)
+- ✅ Compression (gzip, optional)
+- ✅ Encryption (AES-256-GCM, optional)
+- ✅ Custom folder structure
+- ✅ Array support (multiple files)
+- ✅ Separate download endpoint
+
+**Array Support:**
+```json
+{
+  "fieldType": "file",
+  "name": "attachments",
+  "isArray": true,
+  "fileOptions": {
+    "maxSize": 5242880,
+    "maxFiles": 10,
+    "allowedExtensions": [".pdf", ".jpg", ".png"]
+  }
+}
+```
+
+**Download Endpoint:**
+```
+GET /api/files/download/{fileId}
+```
+
+**Detailed Documentation:**
+- `/docs/MngDataGateway/FILE_FIELD_TYPE_ROADMAP.md` - Implementation roadmap
+- `/docs/MngDataGateway/specs/FILE_FIELD_TYPE_SPECIFICATION.md` - Technical specification
+
+**Status:** 🟡 Phase 2 (Not yet implemented)
+
+---
 
 ### 1. Incremental Field Design
 
@@ -417,11 +501,16 @@ PUT /api/datasets/@tasks
 4. Schema validation enforcement
 
 ### Phase 2:
-1. Dynamic default values ({{now}}, {{user_id}})
-2. Validation execution (HTTP calls)
-3. Query execution (aggregation pipelines)
-4. Relation lookup/expansion
-5. File field type (Minio integration)
+1. ✅ Dynamic default values ({{now}}, {{user_id}})
+2. ✅ Validation execution (HTTP calls)
+3. ✅ Query execution (aggregation pipelines)
+4. ✅ Relation lookup/expansion
+5. 🟡 **File field type (Minio integration)** ← PLANNING COMPLETE
+   - MinIO storage with compression & encryption
+   - Base64 input handling
+   - Separate download endpoint
+   - Metadata in MinIO headers, path in database
+   - Documentation: See `FILE_FIELD_TYPE_ROADMAP.md` and `FILE_FIELD_TYPE_SPECIFICATION.md`
 
 ---
 
@@ -432,10 +521,23 @@ PUT /api/datasets/@tasks
 | Files Created | 7 |
 | Lines of Code | ~800 |
 | Test Coverage | 8/8 (100%) |
-| Field Types | 9 |
+| Field Types | 10 (1 in Phase 2 planning) |
 | Endpoints | 6 |
 | Build Status | ✅ Success |
-| Production Ready | ✅ Yes |
+| Production Ready | ✅ Yes (Phase 1) |
+| File Field Type Documentation | ✅ Complete |
+
+---
+
+## 📄 File Field Type Documentation
+
+**New Documentation Files (24 January 2026):**
+1. `FILE_FIELD_TYPE_ROADMAP.md` - Implementation roadmap with timeline
+2. `FILE_FIELD_TYPE_SPECIFICATION.md` - Technical specification & API details
+
+**Planning Status:** ✅ COMPLETE  
+**Implementation Status:** 🔴 NOT STARTED (Ready to begin)  
+**Timeline:** 6 weeks estimated (4 phases)
 
 ---
 
