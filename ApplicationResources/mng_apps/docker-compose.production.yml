@@ -233,6 +233,151 @@ services:
           cpus: '0.25'
           memory: 256M
 
+  mngllm:
+    build:
+      context: ../../MngLLM
+      dockerfile: Presentation/MngLLM.Api/Dockerfile
+    image: mngllm:${VERSION:-latest}
+    container_name: mngllm
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - MngLLMSettings__Server__Host=0.0.0.0
+      - MngLLMSettings__Server__Port=5030
+      - MngLLMSettings__Server__Scheme=http
+      - MngLLMSettings__OpenApiServerPath=${OPENAPI_SERVER_PATH:-http://localhost:5030}
+      - MngLLMSettings__Ollama__BaseUrl=${OLLAMA_BASE_URL:-http://ollama:11434}
+      - MngLLMSettings__Actors__MngKeeper=${MNGKEEPER_URL:-http://mngkeeper:5001}
+      - MngLLMSettings__Actors__MngDataGateway=${MNGDATAGATEWAY_URL:-http://mngdatagateway:5010}
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngkeeper
+      - mngdatagateway
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5030/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  mngscheduler:
+    build:
+      context: ../../MngScheduler
+      dockerfile: Presentation/MngScheduler.Api/Dockerfile
+    image: mngscheduler:${VERSION:-latest}
+    container_name: mngscheduler
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - MngSchedulerSettings__Server__Host=0.0.0.0
+      - MngSchedulerSettings__Server__Port=5090
+      - MngSchedulerSettings__Server__Scheme=http
+      - MngSchedulerSettings__OpenApiServerPath=${OPENAPI_SERVER_PATH:-http://localhost:5090}
+      - MngSchedulerSettings__MongoDB__ConnectionString=${MONGO_CONNECTION_STRING}
+      - MngSchedulerSettings__MongoDB__KeeperDatabaseName=${MONGO_DATABASE_NAME:-mngkeeper}
+      - MngSchedulerSettings__Actors__MngKeeper=${MNGKEEPER_URL:-http://mngkeeper:5001}
+      - MngSchedulerSettings__DataGateway__BaseUrl=${MNGDATAGATEWAY_URL:-http://mngdatagateway:5010}
+      - MngSchedulerSettings__RabbitMQ__Host=${RABBITMQ_HOST}
+      - MngSchedulerSettings__RabbitMQ__Port=${RABBITMQ_PORT:-5672}
+      - MngSchedulerSettings__RabbitMQ__Username=${RABBITMQ_USERNAME}
+      - MngSchedulerSettings__RabbitMQ__Password=${RABBITMQ_PASSWORD}
+      - MngSchedulerSettings__RabbitMQ__VirtualHost=${RABBITMQ_VIRTUALHOST:-/}
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngkeeper
+      - mngdatagateway
+      - mnghub
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5090/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  mngadmin:
+    build:
+      context: ../../MngAdmin
+      dockerfile: Presentation/MngAdmin.Api/Dockerfile
+    image: mngadmin:${VERSION:-latest}
+    container_name: mngadmin
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - MngAdminSettings__Server__Host=0.0.0.0
+      - MngAdminSettings__Server__Port=5080
+      - MngAdminSettings__Server__Scheme=http
+      - MngAdminSettings__OpenApiServerPath=${OPENAPI_SERVER_PATH:-http://localhost:5080}
+      - MngAdminSettings__MongoDB__ConnectionString=${MONGO_CONNECTION_STRING}
+      - MngAdminSettings__Actors__MngKeeper=${MNGKEEPER_URL:-http://mngkeeper:5001}
+      - MngAdminSettings__RabbitMQ__Host=${RABBITMQ_HOST}
+      - MngAdminSettings__RabbitMQ__Port=${RABBITMQ_PORT:-5672}
+      - MngAdminSettings__RabbitMQ__Username=${RABBITMQ_USERNAME}
+      - MngAdminSettings__RabbitMQ__Password=${RABBITMQ_PASSWORD}
+      - MngAdminSettings__RabbitMQ__VirtualHost=${RABBITMQ_VIRTUALHOST:-/}
+      - MngAdminSettings__Backup__MinIO__SystemBucket=system
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT:-minio:9000}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngkeeper
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5080/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  mngnotifier:
+    build:
+      context: ../../MngNotifier
+      dockerfile: Presentation/MngNotifier.Api/Dockerfile
+    image: mngnotifier:${VERSION:-latest}
+    container_name: mngnotifier
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - MngNotifierSettings__Server__Host=0.0.0.0
+      - MngNotifierSettings__Server__Port=5070
+      - MngNotifierSettings__Server__Scheme=http
+      - MngNotifierSettings__OpenApiServerPath=${OPENAPI_SERVER_PATH:-http://localhost:5070}
+      - MngNotifierSettings__RabbitMQ__Host=${RABBITMQ_HOST}
+      - MngNotifierSettings__RabbitMQ__Port=${RABBITMQ_PORT:-5672}
+      - MngNotifierSettings__RabbitMQ__Username=${RABBITMQ_USERNAME}
+      - MngNotifierSettings__RabbitMQ__Password=${RABBITMQ_PASSWORD}
+      - MngNotifierSettings__RabbitMQ__VirtualHost=${RABBITMQ_VIRTUALHOST:-/}
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5070/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+
   mngui:
     build:
       context: ../../Mng.Ui

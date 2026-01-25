@@ -333,6 +333,190 @@ build-mnggateway:
     - if: $CI_MERGE_REQUEST_IID
     - if: $CI_COMMIT_BRANCH =~ /^feature\//
 
+# MngLLM Build
+build-mngllm:
+  stage: build
+  image: mcr.microsoft.com/dotnet/sdk:9.0
+  tags:
+    - docker
+  cache:
+    key: nuget-$CI_COMMIT_REF_SLUG
+    paths:
+      - .nuget/
+    policy: pull-push
+  variables:
+    NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
+    DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+    DOTNET_NOLOGO: "true"
+    DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  script:
+    - echo "=== Building MngLLM ==="
+    - echo "Checking solution file:" && ls -la MngLLM/MngLLM.sln
+    - |
+      for i in {1..3}; do
+        echo "Restore attempt $i/3..."
+        if dotnet restore MngLLM/MngLLM.sln --packages ${CI_PROJECT_DIR}/.nuget --verbosity normal; then
+          echo "Restore succeeded on attempt $i"; break
+        else
+          if [ $i -eq 3 ]; then echo "Restore failed after 3 attempts"; exit 1; fi
+          echo "Restore failed, waiting 10 seconds before retry..."; sleep 10
+        fi
+      done
+    - dotnet build MngLLM/MngLLM.sln --no-restore -c Release --verbosity normal
+    - echo "=== MngLLM build completed successfully ==="
+  timeout: 30m
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+      - api_failure
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
+
+# MngScheduler Build
+build-mngscheduler:
+  stage: build
+  image: mcr.microsoft.com/dotnet/sdk:9.0
+  tags:
+    - docker
+  cache:
+    key: nuget-$CI_COMMIT_REF_SLUG
+    paths:
+      - .nuget/
+    policy: pull-push
+  variables:
+    NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
+    DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+    DOTNET_NOLOGO: "true"
+    DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  script:
+    - echo "=== Building MngScheduler ==="
+    - echo "Checking solution file:" && ls -la MngScheduler/MngScheduler.sln
+    - |
+      for i in {1..3}; do
+        echo "Restore attempt $i/3..."
+        if dotnet restore MngScheduler/MngScheduler.sln --packages ${CI_PROJECT_DIR}/.nuget --verbosity normal; then
+          echo "Restore succeeded on attempt $i"; break
+        else
+          if [ $i -eq 3 ]; then echo "Restore failed after 3 attempts"; exit 1; fi
+          echo "Restore failed, waiting 10 seconds before retry..."; sleep 10
+        fi
+      done
+    - dotnet build MngScheduler/MngScheduler.sln --no-restore -c Release --verbosity normal
+    - echo "=== MngScheduler build completed successfully ==="
+  timeout: 30m
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+      - api_failure
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
+
+# MngAdmin Build
+build-mngadmin:
+  stage: build
+  image: mcr.microsoft.com/dotnet/sdk:9.0
+  tags:
+    - docker
+  cache:
+    key: nuget-$CI_COMMIT_REF_SLUG
+    paths:
+      - .nuget/
+    policy: pull-push
+  variables:
+    NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
+    DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+    DOTNET_NOLOGO: "true"
+    DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  script:
+    - echo "=== Building MngAdmin ==="
+    - echo "Checking solution file:" && ls -la MngAdmin/MngAdmin.sln
+    - |
+      for i in {1..3}; do
+        echo "Restore attempt $i/3..."
+        if dotnet restore MngAdmin/MngAdmin.sln --packages ${CI_PROJECT_DIR}/.nuget --verbosity normal; then
+          echo "Restore succeeded on attempt $i"; break
+        else
+          if [ $i -eq 3 ]; then echo "Restore failed after 3 attempts"; exit 1; fi
+          echo "Restore failed, waiting 10 seconds before retry..."; sleep 10
+        fi
+      done
+    - dotnet build MngAdmin/MngAdmin.sln --no-restore -c Release --verbosity normal
+    - echo "=== MngAdmin build completed successfully ==="
+  timeout: 30m
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+      - api_failure
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
+
+# MngNotifier Build
+build-mngnotifier:
+  stage: build
+  image: mcr.microsoft.com/dotnet/sdk:9.0
+  tags:
+    - docker
+  cache:
+    key: nuget-$CI_COMMIT_REF_SLUG
+    paths:
+      - .nuget/
+    policy: pull-push
+  variables:
+    NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
+    DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+    DOTNET_NOLOGO: "true"
+    DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  script:
+    - echo "=== Building MngNotifier ==="
+    - echo "Checking solution file:" && ls -la MngNotifier/MngNotifier.sln
+    - |
+      for i in {1..3}; do
+        echo "Restore attempt $i/3..."
+        if dotnet restore MngNotifier/MngNotifier.sln --packages ${CI_PROJECT_DIR}/.nuget --verbosity normal; then
+          echo "Restore succeeded on attempt $i"; break
+        else
+          if [ $i -eq 3 ]; then echo "Restore failed after 3 attempts"; exit 1; fi
+          echo "Restore failed, waiting 10 seconds before retry..."; sleep 10
+        fi
+      done
+    - dotnet build MngNotifier/MngNotifier.sln --no-restore -c Release --verbosity normal
+    - echo "=== MngNotifier build completed successfully ==="
+  timeout: 30m
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
+      - api_failure
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
+
 # Frontend Build (Mng.Ui)
 build-frontend:
   stage: build
@@ -598,6 +782,150 @@ test-mnggateway:
       done
     - dotnet build MngGateway/MngGateway.sln --no-restore -c Release --verbosity normal
     - dotnet test MngGateway/MngGateway.sln --no-build --verbosity normal
+  allow_failure: true
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
+
+# MngLLM Tests
+test-mngllm:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:9.0
+  tags:
+    - docker
+  cache:
+    key: nuget-$CI_COMMIT_REF_SLUG
+    paths:
+      - .nuget/
+    policy: pull-push
+  variables:
+    NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
+  script:
+    - echo "Building and running MngLLM tests..."
+    - |
+      for i in 1 2 3; do
+        echo "Restore attempt $i/3..."
+        if dotnet restore MngLLM/MngLLM.sln --packages ${CI_PROJECT_DIR}/.nuget --verbosity normal; then
+          echo "Restore succeeded on attempt $i"; break
+        else
+          if [ $i -eq 3 ]; then echo "Restore failed after 3 attempts"; exit 1; fi
+          echo "Restore failed, waiting 10 seconds..."; sleep 10
+        fi
+      done
+    - dotnet build MngLLM/MngLLM.sln --no-restore -c Release --verbosity normal
+    - dotnet test MngLLM/MngLLM.sln --no-build --verbosity normal
+  allow_failure: true
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
+
+# MngScheduler Tests
+test-mngscheduler:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:9.0
+  tags:
+    - docker
+  cache:
+    key: nuget-$CI_COMMIT_REF_SLUG
+    paths:
+      - .nuget/
+    policy: pull-push
+  variables:
+    NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
+  script:
+    - echo "Building and running MngScheduler tests..."
+    - |
+      for i in 1 2 3; do
+        echo "Restore attempt $i/3..."
+        if dotnet restore MngScheduler/MngScheduler.sln --packages ${CI_PROJECT_DIR}/.nuget --verbosity normal; then
+          echo "Restore succeeded on attempt $i"; break
+        else
+          if [ $i -eq 3 ]; then echo "Restore failed after 3 attempts"; exit 1; fi
+          echo "Restore failed, waiting 10 seconds..."; sleep 10
+        fi
+      done
+    - dotnet build MngScheduler/MngScheduler.sln --no-restore -c Release --verbosity normal
+    - dotnet test MngScheduler/MngScheduler.sln --no-build --verbosity normal
+  allow_failure: true
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
+
+# MngAdmin Tests
+test-mngadmin:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:9.0
+  tags:
+    - docker
+  cache:
+    key: nuget-$CI_COMMIT_REF_SLUG
+    paths:
+      - .nuget/
+    policy: pull-push
+  variables:
+    NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
+  script:
+    - echo "Building and running MngAdmin tests..."
+    - |
+      for i in 1 2 3; do
+        echo "Restore attempt $i/3..."
+        if dotnet restore MngAdmin/MngAdmin.sln --packages ${CI_PROJECT_DIR}/.nuget --verbosity normal; then
+          echo "Restore succeeded on attempt $i"; break
+        else
+          if [ $i -eq 3 ]; then echo "Restore failed after 3 attempts"; exit 1; fi
+          echo "Restore failed, waiting 10 seconds..."; sleep 10
+        fi
+      done
+    - dotnet build MngAdmin/MngAdmin.sln --no-restore -c Release --verbosity normal
+    - dotnet test MngAdmin/MngAdmin.sln --no-build --verbosity normal
+  allow_failure: true
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH =~ /^feature\//
+
+# MngNotifier Tests
+test-mngnotifier:
+  stage: test
+  image: mcr.microsoft.com/dotnet/sdk:9.0
+  tags:
+    - docker
+  cache:
+    key: nuget-$CI_COMMIT_REF_SLUG
+    paths:
+      - .nuget/
+    policy: pull-push
+  variables:
+    NUGET_PACKAGES: ${CI_PROJECT_DIR}/.nuget
+  script:
+    - echo "Building and running MngNotifier tests..."
+    - |
+      for i in 1 2 3; do
+        echo "Restore attempt $i/3..."
+        if dotnet restore MngNotifier/MngNotifier.sln --packages ${CI_PROJECT_DIR}/.nuget --verbosity normal; then
+          echo "Restore succeeded on attempt $i"; break
+        else
+          if [ $i -eq 3 ]; then echo "Restore failed after 3 attempts"; exit 1; fi
+          echo "Restore failed, waiting 10 seconds..."; sleep 10
+        fi
+      done
+    - dotnet build MngNotifier/MngNotifier.sln --no-restore -c Release --verbosity normal
+    - dotnet test MngNotifier/MngNotifier.sln --no-build --verbosity normal
   allow_failure: true
   rules:
     - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
@@ -880,6 +1208,110 @@ build-docker-gateway:
     - if: $CI_COMMIT_BRANCH == "develop"
     - if: $CI_MERGE_REQUEST_IID
   # Not: Runner'ın privileged mode'da olması ve Docker socket mount edilmesi gerekiyor
+
+# MngLLM Docker Build
+build-docker-mngllm:
+  stage: build-docker
+  image: docker:latest
+  tags:
+    - docker
+  variables:
+    DOCKER_HOST: "unix:///var/run/docker.sock"
+    DOCKER_BUILDKIT: "1"
+  before_script:
+    - docker info
+  script:
+    - echo "Building MngLLM Docker image (with cache)..."
+    - cd MngLLM
+    - docker build --cache-from mngllm:latest -t mngllm:$CI_COMMIT_SHORT_SHA -t mngllm:latest -f Presentation/MngLLM.Api/Dockerfile .
+    - echo "Docker image built successfully"
+    - docker images | grep mngllm
+  artifacts:
+    expire_in: 1 day
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+
+# MngScheduler Docker Build
+build-docker-mngscheduler:
+  stage: build-docker
+  image: docker:latest
+  tags:
+    - docker
+  variables:
+    DOCKER_HOST: "unix:///var/run/docker.sock"
+    DOCKER_BUILDKIT: "1"
+  before_script:
+    - docker info
+  script:
+    - echo "Building MngScheduler Docker image (with cache)..."
+    - cd MngScheduler
+    - docker build --cache-from mngscheduler:latest -t mngscheduler:$CI_COMMIT_SHORT_SHA -t mngscheduler:latest -f Presentation/MngScheduler.Api/Dockerfile .
+    - echo "Docker image built successfully"
+    - docker images | grep mngscheduler
+  artifacts:
+    expire_in: 1 day
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+
+# MngAdmin Docker Build
+build-docker-mngadmin:
+  stage: build-docker
+  image: docker:latest
+  tags:
+    - docker
+  variables:
+    DOCKER_HOST: "unix:///var/run/docker.sock"
+    DOCKER_BUILDKIT: "1"
+  before_script:
+    - docker info
+  script:
+    - echo "Building MngAdmin Docker image (with cache)..."
+    - cd MngAdmin
+    - docker build --cache-from mngadmin:latest -t mngadmin:$CI_COMMIT_SHORT_SHA -t mngadmin:latest -f Presentation/MngAdmin.Api/Dockerfile .
+    - echo "Docker image built successfully"
+    - docker images | grep mngadmin
+  artifacts:
+    expire_in: 1 day
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
+
+# MngNotifier Docker Build
+build-docker-mngnotifier:
+  stage: build-docker
+  image: docker:latest
+  tags:
+    - docker
+  variables:
+    DOCKER_HOST: "unix:///var/run/docker.sock"
+    DOCKER_BUILDKIT: "1"
+  before_script:
+    - docker info
+  script:
+    - echo "Building MngNotifier Docker image (with cache)..."
+    - cd MngNotifier
+    - docker build --cache-from mngnotifier:latest -t mngnotifier:$CI_COMMIT_SHORT_SHA -t mngnotifier:latest -f Presentation/MngNotifier.Api/Dockerfile .
+    - echo "Docker image built successfully"
+    - docker images | grep mngnotifier
+  artifacts:
+    expire_in: 1 day
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_MERGE_REQUEST_IID
 
 # ============================================
 # DOCUMENTATION VALIDATION STAGE
@@ -1517,11 +1949,17 @@ deploy-docs-to-server:
 # ============================================
 
 # Deployment job - Remote server'a deploy
+# Sadece kritik build job'ları başarıyla tamamlandıktan sonra "Play" butonu aktif olur (needs).
+# Detay: docs/content/cicd/DEPLOYMENT_TRIAL_PLAN.md
 deploy-services:
   stage: deploy
   image: alpine:latest
   tags:
     - docker
+  needs:
+    - build-mngkeeper
+    - build-mnggateway
+    - build-frontend
   before_script:
     - apk add --no-cache openssh-client
     - eval $(ssh-agent -s)
@@ -1800,6 +2238,146 @@ deploy-services:
           echo "Continuing deployment despite health check failure..."
         fi
         
+        # MngLLM
+        echo ""
+        echo "=========================================="
+        echo "Updating service: mngllm"
+        echo "=========================================="
+        echo "Building mngllm..."
+        if ! docker compose -f docker-compose.production.yml build mngllm; then
+          echo "ERROR: Failed to build mngllm"
+          exit 1
+        fi
+        echo "Updating mngllm container (rolling update)..."
+        if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate mngllm; then
+          echo "ERROR: Failed to update mngllm"
+          exit 1
+        fi
+        echo "Waiting for mngllm to start (10 seconds)..."
+        sleep 10
+        echo "Performing health check for mngllm..."
+        HEALTH_CHECK_PASSED=0
+        for i in 1 2 3 4 5 6; do
+          if docker exec mngllm curl -f http://localhost:5030/health 2>/dev/null; then
+            HEALTH_CHECK_PASSED=1
+            echo "✓ mngllm is healthy and running"
+            break
+          fi
+          if [ $i -lt 6 ]; then
+            echo "  Health check attempt $i of 6 failed, retrying in 5 seconds..."
+            sleep 5
+          fi
+        done
+        if [ $HEALTH_CHECK_PASSED -eq 0 ]; then
+          echo "⚠ WARNING: mngllm health check failed after 6 attempts"
+          echo "Continuing deployment despite health check failure..."
+        fi
+        
+        # MngScheduler
+        echo ""
+        echo "=========================================="
+        echo "Updating service: mngscheduler"
+        echo "=========================================="
+        echo "Building mngscheduler..."
+        if ! docker compose -f docker-compose.production.yml build mngscheduler; then
+          echo "ERROR: Failed to build mngscheduler"
+          exit 1
+        fi
+        echo "Updating mngscheduler container (rolling update)..."
+        if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate mngscheduler; then
+          echo "ERROR: Failed to update mngscheduler"
+          exit 1
+        fi
+        echo "Waiting for mngscheduler to start (10 seconds)..."
+        sleep 10
+        echo "Performing health check for mngscheduler..."
+        HEALTH_CHECK_PASSED=0
+        for i in 1 2 3 4 5 6; do
+          if docker exec mngscheduler curl -f http://localhost:5090/api/v1/health 2>/dev/null; then
+            HEALTH_CHECK_PASSED=1
+            echo "✓ mngscheduler is healthy and running"
+            break
+          fi
+          if [ $i -lt 6 ]; then
+            echo "  Health check attempt $i of 6 failed, retrying in 5 seconds..."
+            sleep 5
+          fi
+        done
+        if [ $HEALTH_CHECK_PASSED -eq 0 ]; then
+          echo "⚠ WARNING: mngscheduler health check failed after 6 attempts"
+          echo "Continuing deployment despite health check failure..."
+        fi
+        
+        # MngAdmin
+        echo ""
+        echo "=========================================="
+        echo "Updating service: mngadmin"
+        echo "=========================================="
+        echo "Building mngadmin..."
+        if ! docker compose -f docker-compose.production.yml build mngadmin; then
+          echo "ERROR: Failed to build mngadmin"
+          exit 1
+        fi
+        echo "Updating mngadmin container (rolling update)..."
+        if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate mngadmin; then
+          echo "ERROR: Failed to update mngadmin"
+          exit 1
+        fi
+        echo "Waiting for mngadmin to start (10 seconds)..."
+        sleep 10
+        echo "Performing health check for mngadmin..."
+        HEALTH_CHECK_PASSED=0
+        for i in 1 2 3 4 5 6; do
+          if docker exec mngadmin curl -f http://localhost:5080/api/v1/health 2>/dev/null; then
+            HEALTH_CHECK_PASSED=1
+            echo "✓ mngadmin is healthy and running"
+            break
+          fi
+          if [ $i -lt 6 ]; then
+            echo "  Health check attempt $i of 6 failed, retrying in 5 seconds..."
+            sleep 5
+          fi
+        done
+        if [ $HEALTH_CHECK_PASSED -eq 0 ]; then
+          echo "⚠ WARNING: mngadmin health check failed after 6 attempts"
+          echo "Continuing deployment despite health check failure..."
+        fi
+        
+        # MngNotifier
+        echo ""
+        echo "=========================================="
+        echo "Updating service: mngnotifier"
+        echo "=========================================="
+        echo "Building mngnotifier..."
+        if ! docker compose -f docker-compose.production.yml build mngnotifier; then
+          echo "ERROR: Failed to build mngnotifier"
+          exit 1
+        fi
+        echo "Updating mngnotifier container (rolling update)..."
+        if ! docker compose -f docker-compose.production.yml up -d --no-deps --force-recreate mngnotifier; then
+          echo "ERROR: Failed to update mngnotifier"
+          exit 1
+        fi
+        echo "Waiting for mngnotifier to start (10 seconds)..."
+        sleep 10
+        echo "Performing health check for mngnotifier..."
+        HEALTH_CHECK_PASSED=0
+        for i in 1 2 3 4 5 6; do
+          if docker exec mngnotifier curl -f http://localhost:5070/api/v1/health 2>/dev/null; then
+            HEALTH_CHECK_PASSED=1
+            echo "✓ mngnotifier is healthy and running"
+            break
+          fi
+          if [ $i -lt 6 ]; then
+            echo "  Health check attempt $i of 6 failed, retrying in 5 seconds..."
+            sleep 5
+          fi
+        done
+        if [ $HEALTH_CHECK_PASSED -eq 0 ]; then
+          echo "⚠ WARNING: mngnotifier health check failed after 6 attempts"
+          echo "Continuing deployment despite health check failure..."
+        fi
+        
         # MngGateway
         echo ""
         echo "=========================================="
@@ -2006,6 +2584,38 @@ deploy-services:
           FINAL_HEALTH_CHECK_FAILED=1
         fi
         
+        # Check MngLLM
+        if docker exec mngllm curl -f http://localhost:5030/health 2>/dev/null; then
+          echo "✓ MngLLM is healthy"
+        else
+          echo "✗ MngLLM health check failed"
+          FINAL_HEALTH_CHECK_FAILED=1
+        fi
+        
+        # Check MngScheduler
+        if docker exec mngscheduler curl -f http://localhost:5090/api/v1/health 2>/dev/null; then
+          echo "✓ MngScheduler is healthy"
+        else
+          echo "✗ MngScheduler health check failed"
+          FINAL_HEALTH_CHECK_FAILED=1
+        fi
+        
+        # Check MngAdmin
+        if docker exec mngadmin curl -f http://localhost:5080/api/v1/health 2>/dev/null; then
+          echo "✓ MngAdmin is healthy"
+        else
+          echo "✗ MngAdmin health check failed"
+          FINAL_HEALTH_CHECK_FAILED=1
+        fi
+        
+        # Check MngNotifier
+        if docker exec mngnotifier curl -f http://localhost:5070/api/v1/health 2>/dev/null; then
+          echo "✓ MngNotifier is healthy"
+        else
+          echo "✗ MngNotifier health check failed"
+          FINAL_HEALTH_CHECK_FAILED=1
+        fi
+        
         # Check MngUI
         if curl -f http://localhost:3000 2>/dev/null; then
           echo "✓ MngUI is healthy"
@@ -2076,3 +2686,46 @@ deploy-services:
   when: manual
   allow_failure: true  # Pipeline'ı başarılı saymak için (deploy manuel)
   timeout: 30m
+
+# Deploy sonrası health kontrolü - manuel çalıştırılır, sunucudaki container'ları docker exec ile kontrol eder.
+# Kullanım: deploy-services bittikten sonra bu job'ın Play butonuna basın.
+# Detay: docs/content/cicd/DEPLOYMENT_TRIAL_PLAN.md
+smoke-test-after-deploy:
+  stage: deploy
+  image: alpine:latest
+  tags:
+    - docker
+  needs:
+    - deploy-services
+  when: manual
+  allow_failure: true
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$DEPLOY_SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+    - ssh-keyscan -H $DEPLOY_SERVER_HOST >> ~/.ssh/known_hosts
+  script:
+    - |
+      if [ -z "$DEPLOY_SERVER_HOST" ] || [ -z "$DEPLOY_SERVER_USER" ] || [ -z "$DEPLOY_SERVER_PATH" ]; then
+        echo "ERROR: DEPLOY_* variables not set. Skipping smoke test."
+        exit 0
+      fi
+      echo "=== Post-deploy smoke test (health checks on server) ==="
+      ssh -o StrictHostKeyChecking=no -p ${DEPLOY_SERVER_PORT:-22} $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST "cd ${DEPLOY_SERVER_PATH}/ApplicationResources/mng_apps && \
+        FAILED=0; \
+        docker exec mngkeeper curl -skf https://localhost:5001/api/version/short >/dev/null && echo '✓ mngkeeper' || { echo '✗ mngkeeper'; FAILED=1; }; \
+        docker exec mngdatagateway curl -skf https://localhost:5010/api/v1/health >/dev/null && echo '✓ mngdatagateway' || { echo '✗ mngdatagateway'; FAILED=1; }; \
+        docker exec mnghub curl -sf http://localhost:5020/health >/dev/null && echo '✓ mnghub' || { echo '✗ mnghub'; FAILED=1; }; \
+        docker exec mngllm curl -sf http://localhost:5030/health >/dev/null && echo '✓ mngllm' || { echo '✗ mngllm'; FAILED=1; }; \
+        docker exec mngscheduler curl -sf http://localhost:5090/api/v1/health >/dev/null && echo '✓ mngscheduler' || { echo '✗ mngscheduler'; FAILED=1; }; \
+        docker exec mngadmin curl -sf http://localhost:5080/api/v1/health >/dev/null && echo '✓ mngadmin' || { echo '✗ mngadmin'; FAILED=1; }; \
+        docker exec mngnotifier curl -sf http://localhost:5070/api/v1/health >/dev/null && echo '✓ mngnotifier' || { echo '✗ mngnotifier'; FAILED=1; }; \
+        echo ''; docker compose -f docker-compose.production.yml ps 2>/dev/null || true; \
+        exit \$FAILED"
+    - echo "=== Smoke test finished ==="
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+  timeout: 5m
