@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.IO;
 using System.Linq;
 using MngDataGateway.Application.Configuration;
 using MngDataGateway.Application.DTOs.Files;
@@ -143,10 +144,11 @@ public class FileProcessingPipeline : IFileProcessingPipeline
                 objectPath, decodedData.Length, processedData.Length,
                 isCompressed, isEncrypted);
 
+            var displayName = GetEffectiveOriginalFileName(request);
             return new FileProcessingResult
             {
                 FilePath = fullFilePath,  // Return full path with bucket name for data records
-                OriginalFileName = ExtractFileName(request.Content),
+                OriginalFileName = displayName,
                 OriginalFileSize = decodedData.Length,
                 MimeType = mimeType,
                 Extension = extension,
@@ -381,7 +383,17 @@ public class FileProcessingPipeline : IFileProcessingPipeline
     }
 
     /// <summary>
-    /// Builds metadata dictionary for MinIO headers
+    /// HTTP header değerleri yalnızca ASCII kabul ettiği için, MinIO metadata'ya yazılacak
+    /// metinleri ASCII-safe hale getirir. Veritabanındaki file_name gerçek ad olarak kalır.
+    /// </summary>
+    private static string ToAsciiSafeHeaderValue(string? value)
+    {
+        if (string.IsNullOrEmpty(value)) return string.Empty;
+        return new string(value.Select(c => c > 127 ? '_' : c).ToArray());
+    }
+
+    /// <summary>
+    /// Builds metadata dictionary for MinIO headers (all values ASCII-only for HTTP compatibility)
     /// </summary>
     private Dictionary<string, string> BuildMetadata(
         FileUploadRequestDto request,
@@ -394,10 +406,11 @@ public class FileProcessingPipeline : IFileProcessingPipeline
         bool isCompressed,
         bool isEncrypted)
     {
+        var displayName = GetEffectiveOriginalFileName(request);
         var metadata = new Dictionary<string, string>
         {
-            // File information
-            ["x-amz-meta-original-filename"] = ExtractFileName(request.Content),
+            // File information – header için ASCII-safe; asıl ad DB'de file_name olarak saklanıyor
+            ["x-amz-meta-original-filename"] = ToAsciiSafeHeaderValue(displayName),
             ["x-amz-meta-file-size"] = fileSize.ToString(),
             ["x-amz-meta-mime-type"] = mimeType,
 
@@ -405,11 +418,11 @@ public class FileProcessingPipeline : IFileProcessingPipeline
             ["x-amz-meta-created-at"] = DateTime.UtcNow.ToString("O"),
             ["x-amz-meta-uploaded-at"] = DateTime.UtcNow.ToString("O"),
 
-            // User & Context
-            ["x-amz-meta-uploaded-by"] = userName,
-            ["x-amz-meta-domain-name"] = domain,
-            ["x-amz-meta-dataset-name"] = datasetName,
-            ["x-amz-meta-record-id"] = recordId,
+            // User & Context – kullanıcı adında Unicode olabilir
+            ["x-amz-meta-uploaded-by"] = ToAsciiSafeHeaderValue(userName),
+            ["x-amz-meta-domain-name"] = ToAsciiSafeHeaderValue(domain),
+            ["x-amz-meta-dataset-name"] = ToAsciiSafeHeaderValue(datasetName),
+            ["x-amz-meta-record-id"] = ToAsciiSafeHeaderValue(recordId),
 
             // Processing flags
             ["x-amz-meta-is-zipped"] = isCompressed.ToString().ToLowerInvariant(),
@@ -425,13 +438,26 @@ public class FileProcessingPipeline : IFileProcessingPipeline
     }
 
     /// <summary>
-    /// Extracts original filename from base64 content
-    /// Uses timestamp as fallback if not available
+    /// Returns the display name for the file: request.OriginalFileName if provided (path-safe),
+    /// otherwise a timestamp-based fallback.
     /// </summary>
-    private string ExtractFileName(string base64Content)
+    private string GetEffectiveOriginalFileName(FileUploadRequestDto request)
     {
-        // Try to determine file type from content
-        // Fallback to timestamp-based name
+        var fromClient = request.OriginalFileName?.Trim();
+        if (!string.IsNullOrEmpty(fromClient))
+        {
+            var safe = Path.GetFileName(fromClient);
+            if (!string.IsNullOrEmpty(safe))
+                return safe;
+        }
+        return GetFallbackFileName();
+    }
+
+    /// <summary>
+    /// Timestamp-based fallback when client does not send original file name.
+    /// </summary>
+    private static string GetFallbackFileName()
+    {
         var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
         return $"file_{timestamp}";
     }

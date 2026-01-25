@@ -179,6 +179,7 @@ const fieldTypeOptions = computed(() => [
   { title: t('datasets.form.fieldTypes.persons.title'), value: 'persons' as FieldType, description: t('datasets.form.fieldTypes.persons.description') },
   { title: t('datasets.form.fieldTypes.personGroups.title'), value: 'personGroups' as FieldType, description: t('datasets.form.fieldTypes.personGroups.description') },
   { title: t('datasets.form.fieldTypes.incremental.title'), value: 'incremental' as FieldType, description: t('datasets.form.fieldTypes.incremental.description') },
+  { title: t('datasets.form.fieldTypes.file.title'), value: 'file' as FieldType, description: t('datasets.form.fieldTypes.file.description') },
 ]);
 
 // Available datasets for relation field (will be loaded from datasetStore)

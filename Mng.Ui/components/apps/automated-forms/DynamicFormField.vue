@@ -5,6 +5,7 @@ import { useUserStore } from '@/stores/apps/user';
 import { useGroupStore } from '@/stores/apps/group';
 import { fetchFromDataGateway } from '@/services/apiService';
 import { useFieldLabel } from '@/composables/useFieldLabel';
+import FileUploadField from './FileUploadField.vue';
 
 const props = defineProps<{
   field: any;
@@ -49,6 +50,7 @@ const fieldTypeIcon = computed(() => {
     persons: 'mdi-account-multiple',
     personGroups: 'mdi-account-group',
     incremental: 'mdi-auto-fix',
+    file: 'mdi-file-upload',
   };
   return iconMap[type] || 'mdi-form-select';
 });
@@ -605,6 +607,22 @@ const rules = computed(() => {
       <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
     </template>
   </v-text-field>
+  
+  <!-- File Field -->
+  <div v-else-if="field.fieldType === 'file'">
+    <div class="d-flex align-center ga-2 mb-2">
+      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis"></v-icon>
+      <v-label class="text-body-1 font-weight-medium">{{ fieldLabel }}</v-label>
+    </div>
+    <FileUploadField
+      :field="field"
+      v-model="localValue"
+      :readonly="readonly"
+      :disabled="disabled"
+      :error-messages="errorMessages"
+      :dataset-name="datasetName"
+    />
+  </div>
   
   <!-- Unknown Field Type -->
   <v-alert

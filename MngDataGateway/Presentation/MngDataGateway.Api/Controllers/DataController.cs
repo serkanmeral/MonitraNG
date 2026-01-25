@@ -121,7 +121,7 @@ namespace MngDataGateway.Api.Controllers
                 var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
 
                 // Process file fields (upload files if object model is used) - BEFORE ToDictionary
-                var fileProcessingResult = await ProcessFileFieldsFromJsonElementAsync(schema, request, datasetName, domainName);
+                var fileProcessingResult = await ProcessFileFieldsFromJsonElementAsync(schema, request, datasetName, domainName, recordId: null);
                 if (fileProcessingResult.Error != null)
                     return fileProcessingResult.Error;
 
@@ -450,8 +450,13 @@ namespace MngDataGateway.Api.Controllers
                 var userInfo = _userInfoService.GetCurrentUserInfo();
                 var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
 
-                // Convert JsonElement to Dictionary with proper types
-                var data = request.ToDictionary();
+                // Process file fields (upload new files with content, keep existing path objects) - BEFORE validation
+                var fileProcessingResult = await ProcessFileFieldsFromJsonElementAsync(schema, request, datasetName, domainName, recordId: dataId);
+                if (fileProcessingResult.Error != null)
+                    return fileProcessingResult.Error;
+
+                // Convert JsonElement to Dictionary with proper types (after file processing)
+                var data = fileProcessingResult.Data.ToDictionary();
 
                 // Validate file field paths (if any)
                 var fileValidationResult = ValidateFileFields(schema, data, datasetName);
@@ -820,13 +825,15 @@ namespace MngDataGateway.Api.Controllers
 
         /// <summary>
         /// Processes file fields from JsonElement - uploads files if object model is used
-        /// Returns updated JsonElement with file paths replaced
+        /// Returns updated JsonElement with file paths replaced.
+        /// When recordId is null (Create), a new Guid is used; when set (Update), existing dataId is used for upload paths.
         /// </summary>
         private async Task<(JsonElement Data, IActionResult? Error)> ProcessFileFieldsFromJsonElementAsync(
             DatasetSchema schema,
             JsonElement request,
             string datasetName,
-            string domainName)
+            string domainName,
+            string? recordId = null)
         {
             if (schema.fields == null || schema.fields.Count == 0)
                 return (request, null);  // No fields to process
@@ -839,7 +846,7 @@ namespace MngDataGateway.Api.Controllers
                 return (request, null);  // Not an object
 
             var userInfo = _userInfoService.GetCurrentUserInfo();
-            var recordId = Guid.NewGuid().ToString();  // Generate record ID for new records
+            var effectiveRecordId = !string.IsNullOrEmpty(recordId) ? recordId : Guid.NewGuid().ToString();
 
             // Create a new JSON object with processed file fields
             using var stream = new System.IO.MemoryStream();
@@ -859,24 +866,34 @@ namespace MngDataGateway.Api.Controllers
                         // Single file field
                         if (property.Value.ValueKind == JsonValueKind.String)
                         {
-                            // Already a path string, keep as is
+                            // Legacy path string, keep as is
                             writer.WritePropertyName(property.Name);
                             writer.WriteStringValue(property.Value.GetString() ?? string.Empty);
                         }
                         else if (property.Value.ValueKind == JsonValueKind.Object)
                         {
-                            // Object model - upload file
-                            var uploadResult = await ProcessSingleFileFieldAsync(
-                                property.Value, property.Name, datasetName, domainName, recordId, userInfo.userName);
-                            if (uploadResult.Error != null)
-                                return (request, uploadResult.Error);
-                            
-                            writer.WritePropertyName(property.Name);
-                            writer.WriteStringValue(uploadResult.FilePath);
+                            var obj = property.Value;
+                            var hasContent = obj.TryGetProperty("content", out var c) && c.ValueKind == JsonValueKind.String;
+                            if (hasContent)
+                            {
+                                // Upload request: content present
+                                var uploadResult = await ProcessSingleFileFieldAsync(
+                                    obj, property.Name, datasetName, domainName, effectiveRecordId, userInfo.userName);
+                                if (uploadResult.Error != null)
+                                    return (request, uploadResult.Error);
+                                writer.WritePropertyName(property.Name);
+                                var el = System.Text.Json.JsonSerializer.SerializeToElement(uploadResult.FileStoredValue!);
+                                el.WriteTo(writer);
+                            }
+                            else
+                            {
+                                // Already stored object (path, upload_person, etc.), keep as is
+                                writer.WritePropertyName(property.Name);
+                                property.Value.WriteTo(writer);
+                            }
                         }
                         else
                         {
-                            // Copy as is (null or invalid)
                             writer.WritePropertyName(property.Name);
                             property.Value.WriteTo(writer);
                         }
@@ -888,36 +905,40 @@ namespace MngDataGateway.Api.Controllers
                         {
                             writer.WritePropertyName(property.Name);
                             writer.WriteStartArray();
-                            
+
                             foreach (var itemElement in property.Value.EnumerateArray())
                             {
                                 if (itemElement.ValueKind == JsonValueKind.String)
                                 {
-                                    // Already a path string, keep as is
                                     writer.WriteStringValue(itemElement.GetString() ?? string.Empty);
                                 }
                                 else if (itemElement.ValueKind == JsonValueKind.Object)
                                 {
-                                    // Object model - upload file
-                                    var uploadResult = await ProcessSingleFileFieldAsync(
-                                        itemElement, property.Name, datasetName, domainName, recordId, userInfo.userName);
-                                    if (uploadResult.Error != null)
-                                        return (request, uploadResult.Error);
-                                    
-                                    writer.WriteStringValue(uploadResult.FilePath);
+                                    var hasContent = itemElement.TryGetProperty("content", out var ic) && ic.ValueKind == JsonValueKind.String;
+                                    if (hasContent)
+                                    {
+                                        var uploadResult = await ProcessSingleFileFieldAsync(
+                                            itemElement, property.Name, datasetName, domainName, effectiveRecordId, userInfo.userName);
+                                        if (uploadResult.Error != null)
+                                            return (request, uploadResult.Error);
+                                        var el = System.Text.Json.JsonSerializer.SerializeToElement(uploadResult.FileStoredValue!);
+                                        el.WriteTo(writer);
+                                    }
+                                    else
+                                    {
+                                        itemElement.WriteTo(writer);
+                                    }
                                 }
                                 else
                                 {
-                                    // Copy as is (null or invalid)
                                     itemElement.WriteTo(writer);
                                 }
                             }
-                            
+
                             writer.WriteEndArray();
                         }
                         else
                         {
-                            // Copy as is (not an array)
                             writer.WritePropertyName(property.Name);
                             property.Value.WriteTo(writer);
                         }
@@ -970,122 +991,169 @@ namespace MngDataGateway.Api.Controllers
                 // Handle single file field
                 if (!field.isArray)
                 {
-                    if (fieldValue is string filePath)
+                    if (fieldValue is string)
+                        continue; // Legacy path string, keep as is
+                    if (fieldValue is JsonElement je && je.ValueKind == JsonValueKind.Object && !je.TryGetProperty("content", out _))
+                        continue; // Already stored object (path, upload_person, etc.), keep as is
+                    if (fieldValue is Dictionary<string, object> dict && !dict.ContainsKey("content"))
+                        continue; // Already stored object, keep as is
+                    if (fieldValue is JsonElement jsonElement && jsonElement.ValueKind == JsonValueKind.Object)
                     {
-                        // Already a path string, keep as is
-                        continue;
-                    }
-                    else if (fieldValue is JsonElement jsonElement && jsonElement.ValueKind == JsonValueKind.Object)
-                    {
-                        // Object model - upload file
                         var uploadResult = await ProcessSingleFileFieldAsync(
                             jsonElement, field.name, datasetName, domainName, recordId, userInfo.userName);
                         if (uploadResult.Error != null)
                             return (data, uploadResult.Error);
-                        
-                        data[field.name] = uploadResult.FilePath;
+                        data[field.name] = uploadResult.FileStoredValue!;
                     }
                     else if (fieldValue is Dictionary<string, object> fileObj)
                     {
-                        // Dictionary model - upload file
                         var uploadResult = await ProcessSingleFileFieldFromDictAsync(
                             fileObj, field.name, datasetName, domainName, recordId, userInfo.userName);
                         if (uploadResult.Error != null)
                             return (data, uploadResult.Error);
-                        
-                        data[field.name] = uploadResult.FilePath;
+                        data[field.name] = uploadResult.FileStoredValue!;
                     }
                     else if (fieldValue != null)
                     {
                         return (data, this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
-                            $"Field '{field.name}' must be a string (file path) or an object with 'content', 'folder', 'useCompression', 'useEncryption' properties"));
+                            $"Field '{field.name}' must be a string (file path) or an object with 'content' or 'path'"));
                     }
                 }
-                // Handle array file field
                 else
                 {
-                    // Handle JsonElement array (from JSON deserialization)
                     if (fieldValue is JsonElement jsonArrayElement && jsonArrayElement.ValueKind == JsonValueKind.Array)
                     {
-                        var processedPaths = new List<string>();
+                        var processed = new List<object>();
                         foreach (var itemElement in jsonArrayElement.EnumerateArray())
                         {
                             if (itemElement.ValueKind == JsonValueKind.String)
-                            {
-                                // Already a path string, keep as is
-                                processedPaths.Add(itemElement.GetString() ?? string.Empty);
-                            }
+                                processed.Add(itemElement.GetString() ?? string.Empty);
                             else if (itemElement.ValueKind == JsonValueKind.Object)
                             {
-                                // Object model - upload file
-                                var uploadResult = await ProcessSingleFileFieldAsync(
-                                    itemElement, field.name, datasetName, domainName, recordId, userInfo.userName);
-                                if (uploadResult.Error != null)
-                                    return (data, uploadResult.Error);
-                                
-                                processedPaths.Add(uploadResult.FilePath);
+                                if (!itemElement.TryGetProperty("content", out _))
+                                {
+                                    // Already stored object - convert to dict for consistency
+                                    processed.Add(System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(itemElement.GetRawText()) ?? new Dictionary<string, object>());
+                                }
+                                else
+                                {
+                                    var uploadResult = await ProcessSingleFileFieldAsync(
+                                        itemElement, field.name, datasetName, domainName, recordId, userInfo.userName);
+                                    if (uploadResult.Error != null)
+                                        return (data, uploadResult.Error);
+                                    processed.Add(uploadResult.FileStoredValue!);
+                                }
                             }
                             else
                             {
                                 return (data, this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
-                                    $"Array field '{field.name}' must contain string values (file paths) or objects with 'content', 'folder', 'useCompression', 'useEncryption' properties"));
+                                    $"Array field '{field.name}' must contain strings or objects with 'content' or 'path'"));
                             }
                         }
-                        data[field.name] = processedPaths;
+                        data[field.name] = processed;
                     }
                     else if (fieldValue is List<object> fileList)
                     {
-                        var processedPaths = new List<string>();
+                        var processed = new List<object>();
                         foreach (var item in fileList)
                         {
-                            if (item is string filePathStr)
+                            if (item is string s)
+                                processed.Add(s);
+                            else if (item is JsonElement je && je.ValueKind == JsonValueKind.Object)
                             {
-                                // Already a path string, keep as is
-                                processedPaths.Add(filePathStr);
-                            }
-                            else if (item is JsonElement jsonElement && jsonElement.ValueKind == JsonValueKind.Object)
-                            {
-                                // Object model - upload file
-                                var uploadResult = await ProcessSingleFileFieldAsync(
-                                    jsonElement, field.name, datasetName, domainName, recordId, userInfo.userName);
-                                if (uploadResult.Error != null)
-                                    return (data, uploadResult.Error);
-                                
-                                processedPaths.Add(uploadResult.FilePath);
+                                if (!je.TryGetProperty("content", out _))
+                                    processed.Add(System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(je.GetRawText()) ?? new Dictionary<string, object>());
+                                else
+                                {
+                                    var uploadResult = await ProcessSingleFileFieldAsync(
+                                        je, field.name, datasetName, domainName, recordId, userInfo.userName);
+                                    if (uploadResult.Error != null)
+                                        return (data, uploadResult.Error);
+                                    processed.Add(uploadResult.FileStoredValue!);
+                                }
                             }
                             else if (item is Dictionary<string, object> fileObj)
                             {
-                                // Dictionary model - upload file
-                                var uploadResult = await ProcessSingleFileFieldFromDictAsync(
-                                    fileObj, field.name, datasetName, domainName, recordId, userInfo.userName);
-                                if (uploadResult.Error != null)
-                                    return (data, uploadResult.Error);
-                                
-                                processedPaths.Add(uploadResult.FilePath);
+                                if (!fileObj.ContainsKey("content"))
+                                    processed.Add(item);
+                                else
+                                {
+                                    var uploadResult = await ProcessSingleFileFieldFromDictAsync(
+                                        fileObj, field.name, datasetName, domainName, recordId, userInfo.userName);
+                                    if (uploadResult.Error != null)
+                                        return (data, uploadResult.Error);
+                                    processed.Add(uploadResult.FileStoredValue!);
+                                }
                             }
                             else
                             {
                                 return (data, this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
-                                    $"Array field '{field.name}' must contain string values (file paths) or objects with 'content', 'folder', 'useCompression', 'useEncryption' properties"));
+                                    $"Array field '{field.name}' must contain strings or objects with 'content' or 'path'"));
                             }
                         }
-                        data[field.name] = processedPaths;
+                        data[field.name] = processed;
                     }
                     else if (fieldValue != null)
                     {
                         return (data, this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
-                            $"Array field '{field.name}' must be an array of strings (file paths) or objects"));
+                            $"Array field '{field.name}' must be an array of strings or objects"));
                     }
                 }
             }
 
-            return (data, null);  // All file fields processed successfully
+            return (data, null);
         }
 
         /// <summary>
-        /// Processes a single file field from JsonElement object model
+        /// Builds the file stored value object for database persistence.
+        /// Format: { path, upload_person, upload_time (ISO 8601), file_name, file_ext, file_size (KB) }.
         /// </summary>
-        private async Task<(string FilePath, IActionResult? Error)> ProcessSingleFileFieldAsync(
+        private static Dictionary<string, object> BuildFileStoredValue(
+            FileProcessingResult result,
+            string userName)
+        {
+            var ext = (result.Extension ?? string.Empty).TrimStart('.');
+            var fileSizeKb = result.OriginalFileSize <= 0 ? 0L : (long)Math.Ceiling(result.OriginalFileSize / 1024.0);
+            return new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["path"] = result.FilePath ?? string.Empty,
+                ["upload_person"] = userName ?? string.Empty,
+                ["upload_time"] = result.UploadedAt.Kind == DateTimeKind.Utc
+                    ? result.UploadedAt.ToString("o")
+                    : result.UploadedAt.ToUniversalTime().ToString("o"),
+                ["file_name"] = result.OriginalFileName ?? string.Empty,
+                ["file_ext"] = ext,
+                ["file_size"] = fileSizeKb
+            };
+        }
+
+        /// <summary>
+        /// Extracts the MinIO path from a file field value (legacy string or new object with "path").
+        /// </summary>
+        private static string? GetPathFromFileFieldValue(object? value)
+        {
+            if (value == null) return null;
+            if (value is string s) return string.IsNullOrWhiteSpace(s) ? null : s;
+            if (value is JsonElement je)
+            {
+                if (je.ValueKind != JsonValueKind.Object) return null;
+                if (je.TryGetProperty("path", out var p) && p.ValueKind == JsonValueKind.String)
+                    return string.IsNullOrWhiteSpace(p.GetString()) ? null : p.GetString();
+                return null;
+            }
+            if (value is IDictionary<string, object> d && d.TryGetValue("path", out var pathVal) && pathVal != null)
+            {
+                if (pathVal is string ps) return string.IsNullOrWhiteSpace(ps) ? null : ps;
+                if (pathVal is JsonElement pe && pe.ValueKind == JsonValueKind.String) return pe.GetString();
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Processes a single file field from JsonElement object model.
+        /// Returns the file stored value object (path, upload_person, upload_time, file_name, file_ext, file_size).
+        /// </summary>
+        private async Task<(Dictionary<string, object>? FileStoredValue, IActionResult? Error)> ProcessSingleFileFieldAsync(
             JsonElement fileObj,
             string fieldName,
             string datasetName,
@@ -1098,7 +1166,7 @@ namespace MngDataGateway.Api.Controllers
                 // Extract file upload properties
                 if (!fileObj.TryGetProperty("content", out var contentElement) || contentElement.ValueKind != JsonValueKind.String)
                 {
-                    return (string.Empty, this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
+                    return (null, this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
                         $"Field '{fieldName}' object must have 'content' property with base64 string"));
                 }
 
@@ -1112,20 +1180,22 @@ namespace MngDataGateway.Api.Controllers
                 bool? useEncryption = fileObj.TryGetProperty("useEncryption", out var encryptionElement) && (encryptionElement.ValueKind == JsonValueKind.True || encryptionElement.ValueKind == JsonValueKind.False)
                     ? encryptionElement.GetBoolean()
                     : null;
+                string? originalFileName = fileObj.TryGetProperty("originalFileName", out var ofn) && ofn.ValueKind == JsonValueKind.String
+                    ? ofn.GetString()
+                    : (fileObj.TryGetProperty("file_name", out var fn) && fn.ValueKind == JsonValueKind.String ? fn.GetString() : null);
 
-                // Get file options from field definition
                 var schema = await _datasetService.GetSchemaEntityByNameAsync(datasetName);
                 var field = schema?.fields?.FirstOrDefault(f => f.name == fieldName);
                 var fileOptions = GetFileOptionsFromField(field, _settings.FileStorage.Validation);
 
-                // Process file upload
                 var processingResult = await _fileProcessingPipeline.ProcessFileUploadAsync(
                     new FileUploadRequestDto
                     {
                         Content = content,
                         Folder = folder,
                         UseCompression = useCompression,
-                        UseEncryption = useEncryption
+                        UseEncryption = useEncryption,
+                        OriginalFileName = originalFileName
                     },
                     domainName,
                     datasetName,
@@ -1134,20 +1204,21 @@ namespace MngDataGateway.Api.Controllers
                     fileOptions,
                     HttpContext.RequestAborted);
 
-                return (processingResult.FilePath, null);
+                return (BuildFileStoredValue(processingResult, userName), null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to process file field '{FieldName}'", fieldName);
-                return (string.Empty, this.ErrorResponse(GetApiPath(datasetName), "FILE_UPLOAD_FAILED",
+                return (null, this.ErrorResponse(GetApiPath(datasetName), "FILE_UPLOAD_FAILED",
                     $"Failed to upload file for field '{fieldName}': {ex.Message}"));
             }
         }
 
         /// <summary>
-        /// Processes a single file field from Dictionary object model
+        /// Processes a single file field from Dictionary object model.
+        /// Returns the file stored value object (path, upload_person, upload_time, file_name, file_ext, file_size).
         /// </summary>
-        private async Task<(string FilePath, IActionResult? Error)> ProcessSingleFileFieldFromDictAsync(
+        private async Task<(Dictionary<string, object>? FileStoredValue, IActionResult? Error)> ProcessSingleFileFieldFromDictAsync(
             Dictionary<string, object> fileObj,
             string fieldName,
             string datasetName,
@@ -1157,10 +1228,9 @@ namespace MngDataGateway.Api.Controllers
         {
             try
             {
-                // Extract file upload properties
                 if (!fileObj.TryGetValue("content", out var contentObj) || contentObj is not string content)
                 {
-                    return (string.Empty, this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
+                    return (null, this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
                         $"Field '{fieldName}' object must have 'content' property with base64 string"));
                 }
 
@@ -1173,20 +1243,22 @@ namespace MngDataGateway.Api.Controllers
                 bool? useEncryption = fileObj.TryGetValue("useEncryption", out var encryptionObj) && encryptionObj is bool encryptionBool
                     ? encryptionBool
                     : null;
+                string? originalFileName = (fileObj.TryGetValue("originalFileName", out var ofnObj) && ofnObj is string ofnStr)
+                    ? ofnStr
+                    : (fileObj.TryGetValue("file_name", out var fnObj) && fnObj is string fnStr ? fnStr : null);
 
-                // Get file options from field definition
                 var schema = await _datasetService.GetSchemaEntityByNameAsync(datasetName);
                 var field = schema?.fields?.FirstOrDefault(f => f.name == fieldName);
                 var fileOptions = GetFileOptionsFromField(field, _settings.FileStorage.Validation);
 
-                // Process file upload
                 var processingResult = await _fileProcessingPipeline.ProcessFileUploadAsync(
                     new FileUploadRequestDto
                     {
                         Content = content,
                         Folder = folder,
                         UseCompression = useCompression,
-                        UseEncryption = useEncryption
+                        UseEncryption = useEncryption,
+                        OriginalFileName = originalFileName
                     },
                     domainName,
                     datasetName,
@@ -1195,12 +1267,12 @@ namespace MngDataGateway.Api.Controllers
                     fileOptions,
                     HttpContext.RequestAborted);
 
-                return (processingResult.FilePath, null);
+                return (BuildFileStoredValue(processingResult, userName), null);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to process file field '{FieldName}'", fieldName);
-                return (string.Empty, this.ErrorResponse(GetApiPath(datasetName), "FILE_UPLOAD_FAILED",
+                return (null, this.ErrorResponse(GetApiPath(datasetName), "FILE_UPLOAD_FAILED",
                     $"Failed to upload file for field '{fieldName}': {ex.Message}"));
             }
         }
@@ -1252,49 +1324,43 @@ namespace MngDataGateway.Api.Controllers
             foreach (var field in fileFields)
             {
                 if (!data.ContainsKey(field.name))
-                    continue;  // Field not present in data (optional field)
+                    continue;
 
                 var fieldValue = data[field.name];
 
-                // Handle single file field
                 if (!field.isArray)
                 {
-                    if (fieldValue is string filePath)
-                    {
-                        var validationResult = ValidateFilePath(filePath, domainName, datasetName, field.name);
-                        if (validationResult != null)
-                            return validationResult;
-                    }
-                    else if (fieldValue != null)
+                    if (fieldValue == null) continue;
+                    var path = GetPathFromFileFieldValue(fieldValue);
+                    if (path == null)
                     {
                         return this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
-                            $"Field '{field.name}' must be a string (file path) or null");
+                            $"Field '{field.name}' must be a string (file path) or an object with 'path'");
                     }
+                    var validationResult = ValidateFilePath(path, domainName, datasetName, field.name);
+                    if (validationResult != null)
+                        return validationResult;
                 }
-                // Handle array file field
                 else
                 {
-                    if (fieldValue is List<object> filePaths)
-                    {
-                        foreach (var path in filePaths)
-                        {
-                            if (path is string filePathStr)
-                            {
-                                var validationResult = ValidateFilePath(filePathStr, domainName, datasetName, field.name);
-                                if (validationResult != null)
-                                    return validationResult;
-                            }
-                            else
-                            {
-                                return this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
-                                    $"Array field '{field.name}' must contain string values (file paths)");
-                            }
-                        }
-                    }
-                    else if (fieldValue != null)
+                    if (fieldValue == null) continue;
+                    if (fieldValue is not List<object> list)
                     {
                         return this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
-                            $"Array field '{field.name}' must be an array of strings (file paths) or null");
+                            $"Array field '{field.name}' must be an array of strings (file path) or objects with 'path', or null");
+                    }
+                    foreach (var item in list)
+                    {
+                        if (item == null) continue;
+                        var path = GetPathFromFileFieldValue(item);
+                        if (path == null)
+                        {
+                            return this.ErrorResponse(GetApiPath(datasetName), "INVALID_FILE_FIELD",
+                                $"Array field '{field.name}' items must be strings (file path) or objects with 'path'");
+                        }
+                        var validationResult = ValidateFilePath(path, domainName, datasetName, field.name);
+                        if (validationResult != null)
+                            return validationResult;
                     }
                 }
             }

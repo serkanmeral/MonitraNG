@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
@@ -25,6 +26,68 @@ namespace MngDataGateway.Persistence.Services
             _mongoClient = mongoClient ?? throw new ArgumentNullException(nameof(mongoClient));
         }
 
+        /// <summary>
+        /// Recursively convert .NET object to BsonValue so nested Dictionary (e.g. file stored value) becomes BsonDocument.
+        /// </summary>
+        private static BsonValue ToBsonValue(object? value)
+        {
+            if (value == null)
+                return BsonNull.Value;
+            if (value is Dictionary<string, object> dict)
+            {
+                var doc = new BsonDocument();
+                foreach (var kvp in dict)
+                    doc[kvp.Key] = ToBsonValue(kvp.Value);
+                return doc;
+            }
+            if (value is IDictionary<string, object> idict)
+            {
+                var doc = new BsonDocument();
+                foreach (var kvp in idict)
+                    doc[kvp.Key] = ToBsonValue(kvp.Value);
+                return doc;
+            }
+            if (value is IEnumerable<object> enumerable && !(value is string))
+            {
+                var arr = new BsonArray();
+                foreach (var item in enumerable)
+                    arr.Add(ToBsonValue(item));
+                return arr;
+            }
+            if (value is System.Collections.IEnumerable en && !(value is string))
+            {
+                var arr = new BsonArray();
+                foreach (var item in en)
+                    arr.Add(ToBsonValue(item));
+                return arr;
+            }
+            if (value is JsonElement je)
+            {
+                return je.ValueKind switch
+                {
+                    JsonValueKind.Object => ToBsonValue(JsonElementToDictionary(je)),
+                    JsonValueKind.Array => new BsonArray(je.EnumerateArray().Select(x => ToBsonValue((object)x)).ToList()),
+                    JsonValueKind.String => (BsonValue)(je.GetString() ?? ""),
+                    JsonValueKind.Number => je.TryGetInt64(out var l) ? (BsonValue)l : (BsonValue)je.GetDouble(),
+                    JsonValueKind.True => true,
+                    JsonValueKind.False => false,
+                    JsonValueKind.Null => BsonNull.Value,
+                    _ => BsonValue.Create(value)
+                };
+            }
+            return BsonValue.Create(value);
+        }
+
+        private static Dictionary<string, object> JsonElementToDictionary(JsonElement e)
+        {
+            var d = new Dictionary<string, object>();
+            foreach (var p in e.EnumerateObject())
+                d[p.Name] = p.Value.ValueKind == JsonValueKind.Object ? JsonElementToDictionary(p.Value)
+                    : p.Value.ValueKind == JsonValueKind.Array ? p.Value.EnumerateArray().Select(x => (object)x).ToList()
+                    : (object)(p.Value.GetString() ?? p.Value.ToString());
+            return d;
+        }
+
         public async Task InsertOneAsync(
             string databaseName,
             string collectionName,
@@ -35,7 +98,7 @@ namespace MngDataGateway.Persistence.Services
             var collection = database.GetCollection<BsonDocument>(collectionName);
 
             var document = new BsonDocument(data.Select(kvp => 
-                new BsonElement(kvp.Key, BsonValue.Create(kvp.Value))));
+                new BsonElement(kvp.Key, ToBsonValue(kvp.Value))));
 
             if (session != null)
             {
@@ -68,7 +131,7 @@ namespace MngDataGateway.Persistence.Services
 
             var documents = items.Select(item => 
                 new BsonDocument(item.Select(kvp => 
-                    new BsonElement(kvp.Key, BsonValue.Create(kvp.Value))))).ToList();
+                    new BsonElement(kvp.Key, ToBsonValue(kvp.Value))))).ToList();
 
             if (session != null)
             {

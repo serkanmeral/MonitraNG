@@ -638,11 +638,11 @@ Domain: test-domain
 
 ---
 
-### 10. file ✅ (Production Ready - 24 Ocak 2026)
+### 10. file ✅ (Production Ready - 24 Ocak 2026 | İyileştirmeler 25 Ocak 2026)
 
 File attachment field with MinIO storage, compression, and encryption support.
 
-**Status:** 🟢 **Phase 1 & 2 Complete - Production Ready**
+**Status:** 🟢 **Phase 1 & 2 Complete - Production Ready**. Ocak 2026: stored value objesi (path, file_name, file_ext, …), originalFileName, Update’te file processing, ASCII-safe MinIO headers, UI önizleme/indirme.
 
 #### Field Definition:
 ```json
@@ -666,10 +666,12 @@ File attachment field with MinIO storage, compression, and encryption support.
     "content": "base64-encoded-string",
     "folder": "invoices/2025",
     "useCompression": true,
-    "useEncryption": true
+    "useEncryption": true,
+    "originalFileName": "fatura_ocak.pdf"
   }
 }
 ```
+`originalFileName` (veya `file_name`) verilirse kayıtta bu ad kullanılır; verilmezse `file_YYYYMMDD_HHmmss` üretilir.
 
 #### Array Support:
 ```json
@@ -694,8 +696,8 @@ File attachment field with MinIO storage, compression, and encryption support.
 #### Storage:
 - **Location:** MinIO bucket `mng-{domain}`
 - **Path Format:** `/mng-{domain}/data/users/{datasetName}/{recordId}/{folder?}/{file-uuid}.{ext}`
-- **Database:** Sadece file path tutulur (immutable)
-- **Metadata:** MinIO custom headers (`x-amz-meta-*`)
+- **Database:** Obje `{ path, upload_person, upload_time, file_name, file_ext, file_size (KB) }` tutulur; legacy path string ve `{ path }` desteklenir.
+- **Metadata:** MinIO custom headers (`x-amz-meta-*`); değerler ASCII-safe (Unicode → `_`).
 
 #### Features:
 - ✅ Base64 input handling (CREATE/UPDATE)

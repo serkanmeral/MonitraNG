@@ -497,6 +497,35 @@ export function fetchFromDataGateway(
   });
 }
 
+/** DataGateway proxy URL'ine çevirir. /api/v1/... -> /api/data/v1/... (img/link ile kullanım için) */
+export function getDataGatewayProxyUrl(url: string): string {
+  const [pathPart, queryPart] = url.split('?');
+  const cleanPath = pathPart.startsWith('/') ? pathPart : `/${pathPart}`;
+  let serverPath = cleanPath;
+  if (serverPath.startsWith('/api/v1/data/')) {
+    serverPath = serverPath.replace(/^\/api\/v1\/data\//, 'v1/data/');
+  } else if (serverPath.startsWith('/api/v1/')) {
+    serverPath = serverPath.replace(/^\/api\/v1\//, 'v1/');
+  } else if (serverPath.startsWith('/api/')) {
+    serverPath = serverPath.replace(/^\/api\//, '');
+  } else if (serverPath.startsWith('/')) {
+    serverPath = serverPath.substring(1);
+  }
+  return queryPart ? `/api/data/${serverPath}?${queryPart}` : `/api/data/${serverPath}`;
+}
+
+/** DataGateway üzerinden dosyayı blob olarak indirir (önizleme için). Auth proxy üzerinden gider. */
+export async function fetchBlobFromDataGateway(url: string): Promise<Blob> {
+  const authStore = useAuthStore();
+  try {
+    await authStore.ensureValidToken();
+  } catch {
+    // devam et, sunucu 401 dönebilir
+  }
+  const fullUrl = getDataGatewayProxyUrl(url);
+  return await $fetch<Blob>(fullUrl, { responseType: 'blob' });
+}
+
 // Legacy functions (for backward compatibility)
 export function fetchData(url = "", method = "GET", body = "", headers = {}) {
   return fetchFromDataGateway(url, method, body, headers);

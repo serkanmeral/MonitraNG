@@ -8,7 +8,7 @@ import { useUserStore } from '@/stores/apps/user';
 import { useGroupStore } from '@/stores/apps/group';
 import { useAuthStore } from '@/stores/auth';
 import { useLocaleStore } from '@/stores/locale';
-import { fetchFromDataGateway } from '@/services/apiService';
+import { fetchFromDataGateway, fetchBlobFromDataGateway, getDataGatewayProxyUrl } from '@/services/apiService';
 import { FileCodeIcon, PlusIcon, RefreshIcon, EditIcon, TrashIcon, EyeIcon, XIcon, CheckIcon, DownloadIcon } from 'vue-tabler-icons';
 import { useFieldLabel } from '@/composables/useFieldLabel';
 import { usePagePermissions } from '@/composables/usePagePermissions';
@@ -79,6 +79,15 @@ const showDeleteDialog = ref(false);
 const itemToDelete = ref<any>(null);
 const deleteDialogLoading = ref(false);
 const deleteDialogError = ref('');
+
+// File preview dialog (liste hücresinden tıklanınca)
+const showFilePreviewDialog = ref(false);
+const filePreviewPath = ref<string | null>(null);
+const filePreviewFileName = ref<string>('');
+const filePreviewImageUrl = ref<string | null>(null);
+const filePreviewObjectUrl = ref<string | null>(null);
+const filePreviewLoading = ref(false);
+const filePreviewIsImage = ref(false);
 
 // Track which item is being edited (for update operation)
 const currentEditingItemId = ref<string | null>(null);
@@ -1233,7 +1242,7 @@ const getFieldGroup = (fieldName: string): string => {
   return layout?.group || '';
 };
 
-// Group form fields by their group
+// Group form fields by their group; order groups by formConfig.groupOrder when present
 const groupedFormFields = computed(() => {
   if (!formFields.value || formFields.value.length === 0) {
     return [];
@@ -1254,23 +1263,33 @@ const groupedFormFields = computed(() => {
     }
   });
   
-  // Convert to array format: [{ groupName: string, fields: any[] }]
+  const groupOrder = form.value?.formConfig?.groupOrder;
   const result: Array<{ groupName: string; fields: any[] }> = [];
   
-  // Add grouped fields
-  Object.keys(groups).forEach(groupName => {
-    result.push({
-      groupName: groupName,
-      fields: groups[groupName]
+  if (groupOrder && Array.isArray(groupOrder) && groupOrder.length > 0) {
+    // Explicit order: groups in groupOrder first (in that order), then remaining groups, then ungrouped
+    const seen = new Set<string>();
+    groupOrder.forEach(name => {
+      const n = (name && String(name).trim()) || '';
+      if (n && groups[n]) {
+        result.push({ groupName: n, fields: groups[n] });
+        seen.add(n);
+      }
     });
-  });
+    Object.keys(groups).forEach(groupName => {
+      if (!seen.has(groupName)) {
+        result.push({ groupName, fields: groups[groupName] });
+      }
+    });
+  } else {
+    // Legacy: order = first occurrence in formFields (fieldOrder)
+    Object.keys(groups).forEach(groupName => {
+      result.push({ groupName, fields: groups[groupName] });
+    });
+  }
   
-  // Add ungrouped fields as a special group (empty string means no group)
   if (ungrouped.length > 0) {
-    result.push({
-      groupName: '',
-      fields: ungrouped
-    });
+    result.push({ groupName: '', fields: ungrouped });
   }
   
   return result;
@@ -1346,6 +1365,16 @@ const formatCellValue = (value: any, fieldName: string) => {
   
   if (fieldType === 'bool') {
     return value ? t('automated-forms.view.cellFormat.yes') : t('automated-forms.view.cellFormat.no');
+  }
+  
+  // Handle file field type
+  if (fieldType === 'file') {
+    // For file fields, return a special marker so template can render download link
+    // Return the file path(s) as-is, template will handle rendering
+    if (Array.isArray(value)) {
+      return value; // Array of file paths
+    }
+    return value; // Single file path
   }
   
   if (fieldType === 'datetime') {
@@ -1555,6 +1584,103 @@ const formatCellValue = (value: any, fieldName: string) => {
   
   return stringValue;
 };
+
+// Get field type for a field name
+const getFieldType = (fieldName: string): string => {
+  const field = dataset.value?.fields?.find(f => f.name === fieldName);
+  return field?.fieldType || 'text';
+};
+
+// Path from file value: legacy string or new format { path, file_name, file_ext, ... }
+const getPathFromFileValue = (v: any): string | null => {
+  if (v == null) return null;
+  if (typeof v === 'string') return v.trim() || null;
+  if (typeof v === 'object' && v && typeof v.path === 'string') return v.path.trim() || null;
+  return null;
+};
+
+// Uzantıyı nokta ile ekler; zaten varsa eklemez
+const withFileExtension = (baseName: string, fileExt?: string | null): string => {
+  if (!fileExt || typeof fileExt !== 'string') return baseName;
+  const ext = fileExt.startsWith('.') ? fileExt : `.${fileExt}`;
+  return baseName.toLowerCase().endsWith(ext.toLowerCase()) ? baseName : baseName + ext;
+};
+
+// Display name: file_name + file_ext (veritabanındaki kayıtlı ad + uzantı)
+const getFileName = (v: any): string => {
+  if (!v) return '-';
+  const base = (typeof v === 'object' && v.file_name) ? String(v.file_name) : (getPathFromFileValue(v)?.split('/').pop() || '-');
+  return typeof v === 'object' && v ? withFileExtension(base, v.file_ext) : base;
+};
+
+function revokeFilePreviewObjectUrl() {
+  if (filePreviewObjectUrl.value) {
+    URL.revokeObjectURL(filePreviewObjectUrl.value);
+    filePreviewObjectUrl.value = null;
+  }
+}
+
+async function openFilePreview(fileValue: any) {
+  const path = getPathFromFileValue(fileValue);
+  if (!path) return;
+  revokeFilePreviewObjectUrl();
+  filePreviewPath.value = path;
+  filePreviewFileName.value = getFileName(fileValue);
+  filePreviewImageUrl.value = null;
+  filePreviewLoading.value = true;
+  filePreviewIsImage.value = false;
+  showFilePreviewDialog.value = true;
+  try {
+    const metaRes = await fetchFromDataGateway(`/api/v1/files/metadata?filePath=${encodeURIComponent(path)}`, 'GET');
+    const mime = metaRes?.data?.mimeType || 'application/octet-stream';
+    filePreviewIsImage.value = mime.startsWith('image/');
+    if (filePreviewIsImage.value) {
+      const blob = await fetchBlobFromDataGateway(`/api/v1/files/download?filePath=${encodeURIComponent(path)}`);
+      revokeFilePreviewObjectUrl();
+      const url = URL.createObjectURL(blob);
+      filePreviewObjectUrl.value = url;
+      filePreviewImageUrl.value = url;
+    }
+  } catch (err) {
+    console.error('Dosya önizleme yüklenemedi:', err);
+  } finally {
+    filePreviewLoading.value = false;
+  }
+}
+
+function closeFilePreview() {
+  showFilePreviewDialog.value = false;
+  revokeFilePreviewObjectUrl();
+  filePreviewPath.value = null;
+  filePreviewFileName.value = '';
+  filePreviewImageUrl.value = null;
+  filePreviewIsImage.value = false;
+}
+
+async function downloadPreviewFile() {
+  if (!filePreviewPath.value || !filePreviewFileName.value) return;
+  try {
+    const blob = await fetchBlobFromDataGateway(`/api/v1/files/download?filePath=${encodeURIComponent(filePreviewPath.value)}`);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filePreviewFileName.value;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('İndirme hatası:', err);
+  }
+}
+
+watch(showFilePreviewDialog, (open) => {
+  if (!open) {
+    revokeFilePreviewObjectUrl();
+    filePreviewPath.value = null;
+    filePreviewFileName.value = '';
+    filePreviewImageUrl.value = null;
+    filePreviewIsImage.value = false;
+  }
+});
 
 // Apply formatting to a value
 const applyFormatting = (value: string, format: any): string => {
@@ -2577,6 +2703,46 @@ const getFormDescription = (): string => {
               </v-chip>
             </div>
           </template>
+          <!-- File Fields (value: legacy path string or new { path, file_name, file_ext, file_size, ... }) -->
+          <div 
+            v-else-if="getFieldType(header.key) === 'file'"
+            class="d-flex align-center ga-2"
+          >
+            <!-- Single File -->
+            <template v-if="!Array.isArray(value) && value">
+              <v-icon icon="mdi-file" size="18" color="primary"></v-icon>
+              <span
+                v-if="getPathFromFileValue(value)"
+                role="button"
+                class="text-primary text-decoration-underline text-body-2 cursor-pointer"
+                @click.stop="openFilePreview(value)"
+              >
+                {{ getFileName(value) }}
+              </span>
+              <span v-else class="text-body-2">{{ getFileName(value) }}</span>
+            </template>
+            <!-- Array of Files -->
+            <template v-else-if="Array.isArray(value) && value.length > 0">
+              <div class="d-flex flex-wrap ga-1">
+                <v-chip
+                  v-for="(fileItem, idx) in value"
+                  :key="idx"
+                  size="small"
+                  variant="tonal"
+                  color="primary"
+                  class="ma-0 cursor-pointer"
+                  @click.stop="openFilePreview(fileItem)"
+                >
+                  <v-icon icon="mdi-file" size="14" class="mr-1"></v-icon>
+                  <span v-if="getPathFromFileValue(fileItem)" class="text-primary">{{ getFileName(fileItem) }}</span>
+                  <span v-else>{{ getFileName(fileItem) }}</span>
+                </v-chip>
+              </div>
+            </template>
+            <!-- No File -->
+            <span v-else class="text-body-2 text-medium-emphasis">-</span>
+          </div>
+          
           <!-- Regular Fields -->
           <span 
             v-else 
@@ -2850,6 +3016,48 @@ const getFormDescription = (): string => {
         >
           {{ t('automated-forms.view.deleteDialog.buttons.confirm') }}
         </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <!-- Dosya önizleme modalı (liste dosya hücresine tıklanınca) -->
+  <v-dialog v-model="showFilePreviewDialog" max-width="90vw" max-height="90vh" @click:outside="closeFilePreview">
+    <v-card>
+      <v-card-title class="d-flex justify-space-between align-center">
+        <span>Dosya Önizleme – {{ filePreviewFileName }}</span>
+        <v-btn icon variant="text" @click="closeFilePreview">
+          <XIcon size="18" />
+        </v-btn>
+      </v-card-title>
+      <v-card-text class="text-center pa-4" style="max-height: 80vh; overflow: auto;">
+        <v-progress-circular v-if="filePreviewLoading" indeterminate color="primary" size="48" class="my-8" />
+        <template v-else-if="filePreviewIsImage && filePreviewImageUrl">
+          <img
+            :src="filePreviewImageUrl"
+            alt="Önizleme"
+            style="max-width: 100%; max-height: 70vh; object-fit: contain;"
+          />
+        </template>
+        <template v-else-if="!filePreviewLoading && filePreviewPath">
+          <v-icon icon="mdi-file-outline" size="80" color="grey" class="my-4"></v-icon>
+          <div class="text-body-2 text-medium-emphasis mb-4">{{ filePreviewFileName }}</div>
+          <div class="text-caption text-medium-emphasis">Bu dosya türü tarayıcıda önizlenemiyor. İndir butonunu kullanın.</div>
+        </template>
+        <div v-else-if="!filePreviewLoading" class="text-medium-emphasis py-8">Önizleme yüklenemedi.</div>
+      </v-card-text>
+      <v-divider />
+      <v-card-actions class="pa-4">
+        <v-spacer />
+        <v-btn
+          v-if="filePreviewPath && filePreviewFileName"
+          color="primary"
+          variant="flat"
+          @click="downloadPreviewFile"
+        >
+          <DownloadIcon size="18" class="mr-2" />
+          İndir
+        </v-btn>
+        <v-btn variant="outlined" @click="closeFilePreview">Kapat</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

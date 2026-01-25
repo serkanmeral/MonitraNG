@@ -50,6 +50,13 @@ public class FileUploadRequestDto
     /// If encryption fails, throws exception (fatal)
     /// </summary>
     public bool? UseEncryption { get; set; }
+
+    /// <summary>
+    /// Original file name from client (OPTIONAL)
+    /// When set, used as file_name in stored value; otherwise a timestamp-based name is generated.
+    /// Example: "rapor.pdf"
+    /// </summary>
+    public string? OriginalFileName { get; set; }
 }
 
 /// <summary>

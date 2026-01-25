@@ -1,8 +1,8 @@
 # File Field Type Implementation Roadmap
 
 **Date:** 24 Ocak 2026  
-**Last Updated:** 24 Ocak 2026  
-**Status:** 🟢 Phase 1 & 2 Complete - Production Ready  
+**Last Updated:** 25 Ocak 2026  
+**Status:** 🟢 Phase 1 & 2 Complete - Production Ready | Ocak 2026 iyileştirmeleri tamamlandı  
 **Participants:** Serkan Meral (Product), AI Assistant (Technical)
 
 ---
@@ -73,10 +73,11 @@ Bu roadmap, MngDataGateway'de **file field type** desteği eklenmesinin planın�
 - **Allowed Chars:** alphanumeric + `-` + `_` + `/`
 - **Traversal Protection:** `..` sequence blocked
 
-### Konu 5: Database Storage ✅
-- **Tutulacak Bilgi:** Sadece **path**
-- **Path Format:** `/mng-{domain}/data/{datasetName}/{recordId}/{folder?}/{guid}.{ext}`
-- **Örnek:** `/mng-meral/data/@invoices/550e8400-e29b/docs/550e8400-e29b.pdf`
+### Konu 5: Database Storage ✅ (Güncellendi: 25 Ocak 2026)
+- **Tutulacak Bilgi:** Obje formatı `{ path, upload_person, upload_time, file_name, file_ext, file_size }` (path-only legacy desteklenir)
+- **Path Format:** `/mng-{domain}/data/users/{datasetName}/{recordId}/{folder?}/{guid}.{ext}`
+- **Örnek:** `{ "path": "/mng-meral/data/users/@invoices/rec-id/550e8400-e29b.pdf", "upload_person": "user", "upload_time": "2026-01-25T12:00:00Z", "file_name": "fatura_ocak.pdf", "file_ext": "pdf", "file_size": 128 }`
+- **file_size:** KB cinsinden (number)
 
 ### Konu 6: File Retrieval ✅
 - **Ayrı Endpoint:** `GET /api/files/download/{fileId}`
@@ -269,7 +270,8 @@ Authorization: Bearer {jwt-token}
   "content": "base64-encoded-file-content",
   "folder": "/custom/path/to/folder",
   "useCompression": true,
-  "useEncryption": true
+  "useEncryption": true,
+  "originalFileName": "fatura_ocak.pdf"
 }
 ```
 
@@ -281,6 +283,7 @@ Authorization: Bearer {jwt-token}
 | `folder` | string | ❌ | null | Custom folder path. Null/empty ise default |
 | `useCompression` | boolean | ❌ | true | Dosyayı gzip ile sıkıştır |
 | `useEncryption` | boolean | ❌ | true | Dosyayı AES-256-GCM ile şifrele |
+| `originalFileName` | string | ❌ | - | İstemciden gelen gerçek dosya adı. Yoksa backend `file_YYYYMMDD_HHmmss` üretir. JSON'da `file_name` da kabul edilir. |
 
 **Folder Path Örnekleri:**
 
@@ -526,8 +529,10 @@ If all fail: Return 500 error
 
 ## 📊 Metadata Structure (MinIO Headers)
 
+**Not (25 Ocak 2026):** HTTP header değerleri yalnızca ASCII kabul ettiği için, metin alanları `ToAsciiSafeHeaderValue` ile gönderilir (Unicode → `_`). Veritabanındaki `file_name` ve uygulama tarafındaki gösterim gerçek (Unicode) addır.
+
 ```
-x-amz-meta-original-filename: "invoice.pdf"
+x-amz-meta-original-filename: "invoice.pdf"   (veya ASCII-safe: "Ornek_Dosya.pdf")
 x-amz-meta-file-size: "2048576"
 x-amz-meta-mime-type: "application/pdf"
 x-amz-meta-created-at: "2025-01-24T10:30:00Z"
@@ -540,6 +545,34 @@ x-amz-meta-is-zipped: "false"
 x-amz-meta-is-encrypted: "true"
 x-amz-meta-encryption-config: "{\"algorithm\":\"AES-256-GCM\",\"keyDerivation\":\"PBKDF2\"}"
 ```
+
+---
+
+## 📌 Oturum Güncellemeleri – Dosyalama (25 Ocak 2026)
+
+Bu bölüm, Phase 1–2 tamamlandıktan sonra yapılan dosyalama iyileştirmelerini özetler.
+
+### Backend (MngDataGateway)
+
+| Konu | Açıklama |
+|------|----------|
+| **DB stored value formatı** | Path yerine obje: `path`, `upload_person`, `upload_time`, `file_name`, `file_ext`, `file_size` (KB). Legacy path string ve `{ path }` geçerliliği korundu. |
+| **originalFileName** | İstekte `originalFileName` veya `file_name` gelirse bu ad `file_name` olarak kaydedilir; gelmezse `file_YYYYMMDD_HHmmss` üretilir. `FileUploadRequestDto.OriginalFileName`, pipeline’da `GetEffectiveOriginalFileName` ile kullanılıyor. |
+| **Update’te file processing** | PUT (Update) isteğinde de file alanları işleniyor: `ProcessFileFieldsFromJsonElementAsync(schema, request, ..., recordId: dataId)`. Mevcut kayda eklenen yeni dosyalar (`content` ile) yüklenip path objesine dönüştürülüyor. |
+| **ASCII-safe MinIO headers** | MinIO’ya giden metadata header değerleri `ToAsciiSafeHeaderValue` ile ASCII’ye çevriliyor (Unicode → `_`). "Request headers must contain only ASCII characters" hatası giderildi. DB’deki `file_name` değişmedi. |
+
+### UI / Entegrasyon (Mng.Ui – Otomatik Formlar)
+
+| Konu | Açıklama |
+|------|----------|
+| **Edit önizleme** | Dosya önizlemesi auth’lı blob ile çalışıyor: `fetchBlobFromDataGateway` + `URL.createObjectURL`; dialog kapatılırken revoke. |
+| **İndirme adı** | İndirilen dosya adı veritabanındaki `file_name` + `file_ext` ile oluşturuluyor. |
+| **Liste görünümü** | File sütununda dosya adı + uzantı; tıklanınca önizleme modalı; modalda İndir butonu. |
+
+### İlgili Dosyalar
+
+- **Backend:** `DataController.cs` (ProcessFileFieldsFromJsonElementAsync, recordId; originalFileName okuma), `FileProcessingPipeline.cs` (GetEffectiveOriginalFileName, ToAsciiSafeHeaderValue, GetFallbackFileName), `FileUploadRequestDto` (OriginalFileName), `DataRepository` (ToBsonValue ile nested file objesi).
+- **UI:** `FileUploadField.vue`, `[formCode].vue` (liste sayfası), `apiService.ts` (fetchBlobFromDataGateway, getDataGatewayProxyUrl).
 
 ---
 
@@ -669,7 +702,7 @@ x-amz-meta-encryption-config: "{\"algorithm\":\"AES-256-GCM\",\"keyDerivation\":
 
 ---
 
-**Status:** 🟢 Ready for Implementation  
-**Last Updated:** 24 January 2026  
-**Next Step:** Begin Phase 1 Implementation
+**Status:** 🟢 Phase 1–2 tamamlandı; Ocak 2026 dosyalama iyileştirmeleri uygulandı.  
+**Last Updated:** 25 January 2026  
+**Next Step:** Phase 3 optimizasyonları (opsiyonel) veya yeni özellik talepleri.
 

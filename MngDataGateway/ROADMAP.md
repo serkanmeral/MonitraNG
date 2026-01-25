@@ -1,6 +1,6 @@
 # MngDataGateway - Geliştirme Yol Haritası
 
-**Son Güncelleme:** 11 Ocak 2026  
+**Son Güncelleme:** 25 Ocak 2026  
 **Versiyon:** 1.0.2  
 **Durum:** 🚀 Aktif Geliştirme
 
@@ -267,7 +267,21 @@ GET /api/data/{dataset}?format=csv&filter=price:gte:20
 
 ---
 
-### 10. API Gateway Integration (v1.0.1) - ✅ TAMAMLANDI (11 Ocak 2026)
+### 10. File Field İyileştirmeleri - ✅ TAMAMLANDI (25 Ocak 2026)
+
+**Kapsam:** Dosyalama oturumu – DG + UI tarafı.
+
+- ✅ **DB stored value:** Path yerine obje formatı `{ path, upload_person, upload_time, file_name, file_ext, file_size }` (KB); legacy path/`{ path }` destekleniyor.
+- ✅ **originalFileName:** İstekte gönderilirse `file_name` olarak kaydedilir; yoksa `file_YYYYMMDD_HHmmss` üretilir.
+- ✅ **Update’te file processing:** PUT sırasında da file alanları işleniyor; mevcut kayda yeni dosya eklenebiliyor.
+- ✅ **ASCII-safe MinIO headers:** Unicode içeren dosya/kullanıcı adları için MinIO metadata değerleri ASCII’ye çevriliyor.
+- ✅ **UI:** Edit’te önizleme (auth’lı blob), indirmede kayıtlı dosya adı+uzantı; listede dosya adı+uzantı, tıklanınca önizleme modalı ve İndir.
+
+**Detay:** `docs/MngDataGateway/FILE_FIELD_TYPE_ROADMAP.md` – "Oturum Güncellemeleri – Dosyalama (25 Ocak 2026)".
+
+---
+
+### 11. API Gateway Integration (v1.0.1) - ✅ TAMAMLANDI (11 Ocak 2026)
 
 **Yapılan Değişiklikler:**
 - ✅ HTTPS'den HTTP'ye geçiş (SSL/TLS termination artık Gateway'de)

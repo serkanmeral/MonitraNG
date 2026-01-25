@@ -1513,6 +1513,7 @@
         "refresh": "Actualiser",
         "newForm": "Nouveau Formulaire",
         "openForm": "Ouvrir le Formulaire",
+        "addToSideMenu": "Ajouter au menu latéral",
         "view": "Voir",
         "edit": "Modifier",
         "delete": "Supprimer"
@@ -1782,16 +1783,22 @@
           "noRelationFields": "Aucun champ de type relation trouvé dans ce dataset."
         },
         "fieldLayout": {
-          "title": "Paramètres de Disposition des Champs",
-          "description": "Pour chaque champ, vous pouvez configurer combien de colonnes il occupe dans la vue formulaire et à quel groupe il appartient.",
+          "title": "Ordre et disposition des champs",
+          "description": "Configurez l'ordre, la largeur de colonne et le groupe de chaque champ. L'ordre des groupes définit leur affichage.",
+          "groupOrderTitle": "Ordre des groupes",
+          "groupOrderDescription": "Ordre d'affichage des groupes dans le formulaire. Utilisez Haut/Bas pour modifier.",
           "table": {
             "headers": {
-              "fieldName": "Nom du Champ",
-              "columnSpan": "Largeur de Colonne",
+              "order": "Ordre",
+              "fieldName": "Nom du champ",
+              "columnSpan": "Largeur de colonne",
               "group": "Groupe"
             }
           },
-          "groupPlaceholder": "Nom du groupe (optionnel)"
+          "groupPlaceholder": "Nom du groupe (optionnel)",
+          "moveUp": "Haut",
+          "moveDown": "Bas",
+          "noGroups": "Aucun champ groupé. Attribuez un groupe aux champs."
         },
         "noDataset": "Vous devez d'abord sélectionner un dataset pour configurer les paramètres du formulaire."
       },
@@ -1811,6 +1818,41 @@
         "duplicateCode": "Ce code de formulaire est déjà utilisé. Veuillez choisir un code différent."
       },
       "warning": "Avertissement : L'autorisation manager ou admin est requise pour accéder à cette page."
+    },
+    "fileUpload": {
+      "dropZoneDropHere": "Déposez les fichiers ici",
+      "dropZoneDragFiles": "Glissez-déposez les fichiers ici ou cliquez",
+      "dropZoneDragFile": "Glissez-déposez un fichier ici ou cliquez",
+      "dropZoneMultipleHint": "Vous pouvez sélectionner plusieurs fichiers",
+      "dropZoneSingleHint": "Vous pouvez sélectionner un seul fichier",
+      "uploadFiles": "Télécharger des fichiers",
+      "uploadFile": "Télécharger un fichier",
+      "existingFiles": "Fichiers existants",
+      "newFiles": "Nouveaux fichiers",
+      "newFileChip": "Nouveau",
+      "willUploadOnSave": "Sera téléchargé lors de l'enregistrement",
+      "preview": "Aperçu",
+      "download": "Télécharger",
+      "remove": "Supprimer",
+      "noFilesYet": "Aucun fichier téléchargé",
+      "previewDialogTitle": "Aperçu du fichier",
+      "previewLoadFailed": "Impossible de charger l'aperçu.",
+      "errors": {
+        "fileTooBig": "La taille du fichier est trop grande. Maximum : {max} Mo",
+        "fileTypeNotAllowed": "Type de fichier non pris en charge. Types autorisés : {types}",
+        "processingFile": "Une erreur s'est produite lors du traitement du fichier",
+        "maxFilesExceeded": "Maximum {max} fichiers. Vous en avez actuellement {current}, {extra} nouveau(x) fichier(s) ne peuvent pas être ajouté(s).",
+        "maxFiles": "Maximum {max} fichiers",
+        "fileTooBigNamed": "Le fichier « {name} » est trop volumineux. Maximum : {max} Mo",
+        "fileTypeNotAllowedNamed": "Le fichier « {name} » n'est pas un type pris en charge. Types autorisés : {types}",
+        "processingFiles": "Une erreur s'est produite lors du traitement des fichiers"
+      },
+      "units": {
+        "bytes": "Octets",
+        "kb": "Ko",
+        "mb": "Mo",
+        "gb": "Go"
+      }
     },
     "view": {
       "title": "Voir le Formulaire",

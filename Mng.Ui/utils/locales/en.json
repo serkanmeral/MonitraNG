@@ -1245,7 +1245,8 @@
       "relation": "Relation",
       "persons": "Persons",
       "personGroups": "Person Groups",
-      "incremental": "Incremental"
+      "incremental": "Incremental",
+      "file": "File"
     },
     "form": {
       "steps": {
@@ -1325,6 +1326,10 @@
         "incremental": {
           "title": "Incremental",
           "description": "Auto-incrementing value"
+        },
+        "file": {
+          "title": "File",
+          "description": "File upload (MinIO storage, compression, encryption)"
         }
       },
       "fields": {
@@ -1512,6 +1517,7 @@
         "refresh": "Refresh",
         "newForm": "New Form",
         "openForm": "Open Form",
+        "addToSideMenu": "Add to Side Menu",
         "view": "View",
         "edit": "Edit",
         "delete": "Delete"
@@ -1781,16 +1787,22 @@
           "noRelationFields": "No relation type fields found in this dataset."
         },
         "fieldLayout": {
-          "title": "Field Layout Settings",
-          "description": "For each field, you can configure how many columns it occupies in form view and which group it belongs to.",
+          "title": "Field layout and order",
+          "description": "Configure each field's order, column width and group in the form view. Group order defines the display order of groups.",
+          "groupOrderTitle": "Group order",
+          "groupOrderDescription": "Order in which groups appear in the form. Use up/down to change.",
           "table": {
             "headers": {
-              "fieldName": "Field Name",
-              "columnSpan": "Column Width",
+              "order": "Order",
+              "fieldName": "Field name",
+              "columnSpan": "Column width",
               "group": "Group"
             }
           },
-          "groupPlaceholder": "Group name (optional)"
+          "groupPlaceholder": "Group name (optional)",
+          "moveUp": "Up",
+          "moveDown": "Down",
+          "noGroups": "No grouped fields yet. Assign a Group to fields."
         },
         "noDataset": "You must select a dataset first to configure form settings."
       },
@@ -1817,6 +1829,41 @@
         "duplicateCode": "This form code is already in use. Please choose a different code."
       },
       "warning": "Warning: Manager or admin permission is required to access this page."
+    },
+    "fileUpload": {
+      "dropZoneDropHere": "Drop files here",
+      "dropZoneDragFiles": "Drag and drop files here or click",
+      "dropZoneDragFile": "Drag and drop a file here or click",
+      "dropZoneMultipleHint": "You can select multiple files",
+      "dropZoneSingleHint": "You can select a single file",
+      "uploadFiles": "Upload Files",
+      "uploadFile": "Upload File",
+      "existingFiles": "Existing Files",
+      "newFiles": "New Files",
+      "newFileChip": "New",
+      "willUploadOnSave": "Will be uploaded when saved",
+      "preview": "Preview",
+      "download": "Download",
+      "remove": "Remove",
+      "noFilesYet": "No files uploaded yet",
+      "previewDialogTitle": "File Preview",
+      "previewLoadFailed": "Preview could not be loaded.",
+      "errors": {
+        "fileTooBig": "File size is too large. Maximum: {max}MB",
+        "fileTypeNotAllowed": "File type is not supported. Allowed types: {types}",
+        "processingFile": "An error occurred while processing the file",
+        "maxFilesExceeded": "Maximum {max} files allowed. You currently have {current} file(s), {extra} new file(s) cannot be added.",
+        "maxFiles": "Maximum {max} files allowed",
+        "fileTooBigNamed": "File \"{name}\" is too large. Maximum: {max}MB",
+        "fileTypeNotAllowedNamed": "File \"{name}\" is not a supported type. Allowed types: {types}",
+        "processingFiles": "An error occurred while processing the files"
+      },
+      "units": {
+        "bytes": "Bytes",
+        "kb": "KB",
+        "mb": "MB",
+        "gb": "GB"
+      }
     },
     "view": {
       "title": "View Form",

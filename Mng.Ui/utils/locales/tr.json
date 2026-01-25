@@ -1307,7 +1307,8 @@
       "relation": "Relation",
       "persons": "Persons",
       "personGroups": "Person Groups",
-      "incremental": "Incremental"
+      "incremental": "Incremental",
+      "file": "File"
     },
     "form": {
       "steps": {
@@ -1379,6 +1380,10 @@
         "incremental": {
           "title": "Incremental",
           "description": "Otomatik artan değer"
+        },
+        "file": {
+          "title": "File",
+          "description": "Dosya yükleme (MinIO storage, compression, encryption)"
         }
       },
       "fields": {
@@ -1536,6 +1541,7 @@
         "refresh": "Yenile",
         "newForm": "Yeni Form",
         "openForm": "Formu Aç",
+        "addToSideMenu": "Side Menu'ye Ekle",
         "view": "Görüntüle",
         "edit": "Düzenle",
         "delete": "Sil"
@@ -1805,16 +1811,22 @@
           "noRelationFields": "Bu dataset'te relation tipinde field bulunamadı."
         },
         "fieldLayout": {
-          "title": "Field Layout Ayarları",
-          "description": "Her field için form görünümünde kaç sütun kaplayacağını ve hangi gruba ait olduğunu yapılandırabilirsiniz.",
+          "title": "Alan düzeni ve sıra",
+          "description": "Her alan için form görünümündeki sırası, sütun genişliği ve grubu yapılandırın. Grup sırası, formda grupların görünme sırasını belirler.",
+          "groupOrderTitle": "Grup sırası",
+          "groupOrderDescription": "Grupların formda görünme sırası. Yukarı/aşağı ile değiştirin.",
           "table": {
             "headers": {
-              "fieldName": "Field Adı",
-              "columnSpan": "Sütun Genişliği",
+              "order": "Sıra",
+              "fieldName": "Alan adı",
+              "columnSpan": "Sütun genişliği",
               "group": "Grup"
             }
           },
-          "groupPlaceholder": "Grup adı (opsiyonel)"
+          "groupPlaceholder": "Grup adı (opsiyonel)",
+          "moveUp": "Yukarı",
+          "moveDown": "Aşağı",
+          "noGroups": "Henüz gruplandırılmış alan yok. Alanlara Grup atayın."
         },
         "noDataset": "Form ayarlarını yapılandırmak için önce bir dataset seçmelisiniz."
       },
@@ -1841,6 +1853,41 @@
         "duplicateCode": "Bu form kodu zaten kullanılıyor. Lütfen farklı bir kod seçin."
       },
       "warning": "Uyarı: Bu sayfaya erişim için manager veya admin yetkisi gereklidir."
+    },
+    "fileUpload": {
+      "dropZoneDropHere": "Dosyaları buraya bırakın",
+      "dropZoneDragFiles": "Dosyaları sürükleyip bırakın veya tıklayın",
+      "dropZoneDragFile": "Dosyayı sürükleyip bırakın veya tıklayın",
+      "dropZoneMultipleHint": "Birden fazla dosya seçebilirsiniz",
+      "dropZoneSingleHint": "Tek dosya seçebilirsiniz",
+      "uploadFiles": "Dosyalar Yükle",
+      "uploadFile": "Dosya Yükle",
+      "existingFiles": "Mevcut Dosyalar",
+      "newFiles": "Yeni Dosyalar",
+      "newFileChip": "Yeni",
+      "willUploadOnSave": "Kaydedildiğinde yüklenecek",
+      "preview": "Önizle",
+      "download": "İndir",
+      "remove": "Kaldır",
+      "noFilesYet": "Henüz dosya yüklenmedi",
+      "previewDialogTitle": "Dosya Önizleme",
+      "previewLoadFailed": "Önizleme yüklenemedi.",
+      "errors": {
+        "fileTooBig": "Dosya boyutu çok büyük. Maksimum: {max}MB",
+        "fileTypeNotAllowed": "Dosya tipi desteklenmiyor. İzin verilen tipler: {types}",
+        "processingFile": "Dosya işlenirken bir hata oluştu",
+        "maxFilesExceeded": "Maksimum {max} dosya yükleyebilirsiniz. Şu anda {current} dosya var, {extra} yeni dosya eklenemez.",
+        "maxFiles": "Maksimum {max} dosya yükleyebilirsiniz",
+        "fileTooBigNamed": "Dosya \"{name}\" çok büyük. Maksimum: {max}MB",
+        "fileTypeNotAllowedNamed": "Dosya \"{name}\" desteklenmeyen tipte. İzin verilen tipler: {types}",
+        "processingFiles": "Dosyalar işlenirken bir hata oluştu"
+      },
+      "units": {
+        "bytes": "Bytes",
+        "kb": "KB",
+        "mb": "MB",
+        "gb": "GB"
+      }
     },
     "view": {
       "title": "Form Görüntüle",

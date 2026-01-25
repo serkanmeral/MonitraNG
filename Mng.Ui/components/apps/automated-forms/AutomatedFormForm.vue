@@ -3,6 +3,7 @@ import { ref, onMounted, computed, watch, nextTick, shallowRef } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useAutomatedFormsStore } from '@/stores/apps/automatedForms';
 import { useDatasetStore } from '@/stores/apps/dataset';
+import { useDatasetCategoryStore } from '@/stores/apps/datasetCategory';
 import { useAuthStore } from '@/stores/auth';
 import { FileCodeIcon, CheckIcon, XIcon, LanguageIcon } from 'vue-tabler-icons';
 import { fetchFromMngKeeper, fetchFromMngLLM } from '@/services/apiService';
@@ -24,6 +25,7 @@ const route = useRoute();
 const router = useRouter();
 const formStore = useAutomatedFormsStore();
 const datasetStore = useDatasetStore();
+const categoryStore = useDatasetCategoryStore();
 const authStore = useAuthStore();
 
 // Props to determine mode
@@ -120,12 +122,22 @@ const formData = ref({
     fieldOrder: [] as string[],
     relationFieldConfig: {} as { [fieldName: string]: { idField: string; displayField: string } },
     fieldLayout: {} as { [fieldName: string]: { columnSpan?: number; group?: string } },
+    groupOrder: [] as string[],
   },
   isActive: true,
 });
 
-// Available datasets for dropdown
-const availableDatasets = computed(() => datasetStore.datasets || []);
+// Available datasets for dropdown: admin ise tümü, değilse sistem kategorisindekiler hariç
+const availableDatasets = computed(() => {
+  const list = datasetStore.datasets || [];
+  if (authStore.isAdmin) return list;
+  return list.filter(ds => {
+    if (!ds.category) return true;
+    const category = categoryStore.getCategoryById(ds.category);
+    if (!category) return true;
+    return !category.isSystemCategory;
+  });
+});
 
 // Dataset options for dropdown
 const datasetOptions = computed(() => {
@@ -456,6 +468,74 @@ const initializeColumnConfigs = () => {
   }
 };
 
+// Sync new fields from dataset to form configs
+// This function adds new fields that exist in dataset but not in form configs
+const syncNewFieldsFromDataset = () => {
+  if (!formData.value.datasetName) return;
+  
+  // Use datasetStore directly to avoid reactive loops
+  const dataset = datasetStore.getDatasetByName(formData.value.datasetName);
+  if (!dataset || !dataset.fields) return;
+  
+  const datasetFields = dataset.fields;
+  const existingColumnFieldNames = (formData.value.listConfig.columns || []).map(c => c.fieldName);
+  const existingVisibleFields = formData.value.formConfig.visibleFields || [];
+  const existingFieldOrder = formData.value.formConfig.fieldOrder || [];
+  
+  // Find new fields (exist in dataset but not in form configs)
+  const newFields = datasetFields.filter(field => 
+    !existingColumnFieldNames.includes(field.name)
+  );
+  
+  if (newFields.length === 0) return; // No new fields
+  
+  // Add new fields to listConfig.columns
+  const maxOrder = formData.value.listConfig.columns.length > 0
+    ? Math.max(...formData.value.listConfig.columns.map(c => c.order || 0))
+    : -1;
+  
+  const newColumns = newFields.map((field, index) => ({
+    fieldName: field.name,
+    visible: true, // Default: visible
+    order: maxOrder + index + 1,
+    sortable: true,
+    filterable: true,
+    displayField: undefined,
+    arrayDisplayStyle: 'chip' as const,
+    arraySeparator: ' | ',
+    format: { type: 'none' as const },
+  }));
+  
+  formData.value.listConfig.columns = [
+    ...formData.value.listConfig.columns,
+    ...newColumns,
+  ];
+  
+  // Add new fields to visibleFields if not already there
+  const newVisibleFields = newFields
+    .filter(field => !existingVisibleFields.includes(field.name))
+    .map(field => field.name);
+  
+  if (newVisibleFields.length > 0) {
+    formData.value.formConfig.visibleFields = [
+      ...formData.value.formConfig.visibleFields,
+      ...newVisibleFields,
+    ];
+  }
+  
+  // Add new fields to fieldOrder if not already there
+  const newFieldOrder = newFields
+    .filter(field => !existingFieldOrder.includes(field.name))
+    .map(field => field.name);
+  
+  if (newFieldOrder.length > 0) {
+    formData.value.formConfig.fieldOrder = [
+      ...formData.value.formConfig.fieldOrder,
+      ...newFieldOrder,
+    ];
+  }
+};
+
 // Update column order (not used directly, but kept for future drag-drop functionality)
 const updateColumnOrder = (newOrder: Array<{ fieldName: string; visible: boolean; order: number; sortable: boolean; filterable: boolean; width?: number }>) => {
   formData.value.listConfig.columns = newOrder.map((col, index) => ({
@@ -597,6 +677,10 @@ const saveColumnSettings = async () => {
         return;
       }
       
+      // CRITICAL: Sync new fields from dataset before saving
+      // This ensures that if dataset was updated with new fields, they are included in the save
+      syncNewFieldsFromDataset();
+      
       // CRITICAL: Update field layout from configs before saving
       updateFieldLayoutFromConfigs();
       
@@ -621,6 +705,7 @@ const saveColumnSettings = async () => {
           fieldOrder: formData.value.formConfig.fieldOrder || [],
           relationFieldConfig: formData.value.formConfig.relationFieldConfig || {},
           fieldLayout: formData.value.formConfig.fieldLayout || {},
+          groupOrder: formData.value.formConfig.groupOrder || [],
         },
         isActive: formData.value.isActive,
       };
@@ -687,10 +772,21 @@ const loadDataset = async (datasetName: string) => {
   }
 };
 
+// Load categories (sistem dataset filtresi için gerekli)
+const loadCategories = async () => {
+  try {
+    if (!categoryStore.categories?.length) {
+      await categoryStore.fetchCategories({ pageNumber: 1, pageSize: 1000 });
+    }
+  } catch (error) {
+    // Error handled by store
+  }
+};
+
 // Load datasets list
 const loadDatasets = async () => {
   try {
-    if (availableDatasets.value.length === 0) {
+    if (datasetStore.datasets.length === 0) {
       await datasetStore.fetchDatasets({ pageNumber: 1, pageSize: 1000 });
     }
   } catch (error) {
@@ -739,6 +835,7 @@ const loadForm = async () => {
           fieldOrder: form.formConfig?.fieldOrder || [],
           relationFieldConfig: form.formConfig?.relationFieldConfig || {},
           fieldLayout: form.formConfig?.fieldLayout || {},
+          groupOrder: form.formConfig?.groupOrder || [],
         },
         isActive: form.isActive,
       };
@@ -804,15 +901,23 @@ const loadForm = async () => {
     
     // CRITICAL: Initialize column configs after loading is complete
     // This ensures selectedDataset computed can be accessed safely
-    if (formData.value.datasetName && !isEditMode.value && (!formData.value.listConfig.columns || formData.value.listConfig.columns.length === 0)) {
+    if (formData.value.datasetName) {
       await nextTick();
-      initializeColumnConfigs();
+      
+      if (!isEditMode.value && (!formData.value.listConfig.columns || formData.value.listConfig.columns.length === 0)) {
+        initializeColumnConfigs();
+      } else if (isEditMode.value) {
+        // In edit mode, sync new fields from dataset to form configs
+        // This ensures that if dataset was updated with new fields, they are added to form configs
+        syncNewFieldsFromDataset();
+      }
     }
   }
 };
 
 onMounted(async () => {
-  // Load datasets first
+  // Kategorileri yükle (sistem dataset filtresi için); ardından dataset listesi
+  await loadCategories();
   await loadDatasets();
   
   // Load form if edit mode
@@ -831,6 +936,10 @@ const handleSubmit = async () => {
   if (!valid) {
     return;
   }
+  
+  // CRITICAL: Sync new fields from dataset before saving
+  // This ensures that if dataset was updated with new fields, they are included in the save
+  syncNewFieldsFromDataset();
   
   // CRITICAL: Update field layout from configs before saving
   updateFieldLayoutFromConfigs();
@@ -855,6 +964,7 @@ const handleSubmit = async () => {
         fieldOrder: formData.value.formConfig.fieldOrder || [],
         relationFieldConfig: formData.value.formConfig.relationFieldConfig || {},
         fieldLayout: formData.value.formConfig.fieldLayout || {},
+        groupOrder: formData.value.formConfig.groupOrder || [],
       },
       isActive: formData.value.isActive,
     };
@@ -1304,18 +1414,23 @@ let relationConfigsInitialized = false;
 //   }
 // }, { immediate: false });
 
-// Field layout configs (computed from dataset fields)
+// Field layout configs (computed from dataset fields), sorted by fieldOrder
 const fieldLayoutConfigs = computed(() => {
-  // CRITICAL: Use datasetStore directly instead of selectedDataset computed to avoid reactive loops
   if (!formData.value.datasetName) return [];
-  
   const dataset = datasetStore.getDatasetByName(formData.value.datasetName);
   if (!dataset || !dataset.fields) return [];
-  
   const fields = dataset.fields;
   const existingLayouts = formData.value.formConfig.fieldLayout || {};
-  
-  return fields.map(field => {
+  const order = formData.value.formConfig.fieldOrder || [];
+  const sorted = [...fields].sort((a, b) => {
+    const ia = order.indexOf(a.name);
+    const ib = order.indexOf(b.name);
+    if (ia === -1 && ib === -1) return 0;
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+  return sorted.map(field => {
     const existingLayout = existingLayouts[field.name];
     if (existingLayout) {
       return {
@@ -1324,7 +1439,6 @@ const fieldLayoutConfigs = computed(() => {
         group: existingLayout.group || '',
       };
     }
-    // Default layout
     return {
       fieldName: field.name,
       columnSpan: field.fieldType === 'object' ? 12 : 6,
@@ -1332,6 +1446,42 @@ const fieldLayoutConfigs = computed(() => {
     };
   });
 });
+
+// Unique group names from layout, in groupOrder order (for Grup sırası UI)
+const orderedGroupsForEdit = computed(() => {
+  const names = new Set<string>();
+  fieldLayoutConfigs.value.forEach(c => {
+    const g = (c.group && String(c.group).trim()) || '';
+    if (g) names.add(g);
+  });
+  const order = formData.value.formConfig.groupOrder || [];
+  const result: string[] = [];
+  order.forEach(n => {
+    const s = (n && String(n).trim()) || '';
+    if (s && names.has(s)) {
+      result.push(s);
+      names.delete(s);
+    }
+  });
+  names.forEach(n => result.push(n));
+  return result;
+});
+
+const moveGroupOrder = (index: number, direction: 'up' | 'down') => {
+  const list = [...orderedGroupsForEdit.value];
+  const to = direction === 'up' ? index - 1 : index + 1;
+  if (to < 0 || to >= list.length) return;
+  [list[index], list[to]] = [list[to], list[index]];
+  formData.value.formConfig.groupOrder = list;
+};
+
+const moveFieldOrder = (index: number, direction: 'up' | 'down') => {
+  const names = fieldLayoutConfigs.value.map(c => c.fieldName);
+  const to = direction === 'up' ? index - 1 : index + 1;
+  if (to < 0 || to >= names.length) return;
+  [names[index], names[to]] = [names[to], names[index]];
+  formData.value.formConfig.fieldOrder = [...names];
+};
 
 // Update field layout from fieldLayoutConfigs (called before save)
 // CRITICAL: Don't use watch to avoid reactive loops - update manually before save
@@ -1458,8 +1608,9 @@ const listColumnConfigHeaders = computed(() => [
   { title: '', key: 'actions', sortable: false, width: '100px', align: 'center' },
 ]);
 
-// Field layout table headers
+// Field layout table headers (Sıra first)
 const fieldLayoutHeaders = computed(() => [
+  { title: t('automated-forms.form.formConfig.fieldLayout.table.headers.order'), key: 'order', sortable: false, width: '100px', align: 'center' as const },
   { title: t('automated-forms.form.formConfig.fieldLayout.table.headers.fieldName'), key: 'fieldName', sortable: false, width: '200px' },
   { title: t('automated-forms.form.formConfig.fieldLayout.table.headers.columnSpan'), key: 'columnSpan', sortable: false, width: '150px' },
   { title: t('automated-forms.form.formConfig.fieldLayout.table.headers.group'), key: 'group', sortable: false },
@@ -1969,6 +2120,33 @@ const getDisplayFieldOptionsForModal = (fieldName: string): Array<{ title: strin
                     {{ t('automated-forms.form.formConfig.fieldLayout.description') }}
                   </p>
                   
+                  <!-- Grup sırası (sadece grup varsa) -->
+                  <div v-if="fieldLayoutConfigs.length > 0 && orderedGroupsForEdit.length > 0" class="mb-4">
+                    <h5 class="text-subtitle-2 mb-2">{{ t('automated-forms.form.formConfig.fieldLayout.groupOrderTitle') }}</h5>
+                    <p class="text-caption text-medium-emphasis mb-2">{{ t('automated-forms.form.formConfig.fieldLayout.groupOrderDescription') }}</p>
+                    <div class="d-flex flex-wrap ga-2 align-center">
+                      <v-chip
+                        v-for="(g, gi) in orderedGroupsForEdit"
+                        :key="g"
+                        size="small"
+                        variant="tonal"
+                        color="primary"
+                        class="pr-1"
+                      >
+                          {{ g }}
+                          <v-btn icon size="x-small" variant="text" :disabled="gi === 0" @click="moveGroupOrder(gi, 'up')">
+                            <v-icon size="14">mdi-chevron-up</v-icon>
+                          </v-btn>
+                          <v-btn icon size="x-small" variant="text" :disabled="gi === orderedGroupsForEdit.length - 1" @click="moveGroupOrder(gi, 'down')">
+                            <v-icon size="14">mdi-chevron-down</v-icon>
+                          </v-btn>
+                        </v-chip>
+                    </div>
+                  </div>
+                  <div v-else-if="fieldLayoutConfigs.length > 0" class="text-caption text-medium-emphasis mb-4">
+                    {{ t('automated-forms.form.formConfig.fieldLayout.noGroups') }}
+                  </div>
+                  
                   <v-data-table
                     v-if="fieldLayoutConfigs.length > 0"
                     :headers="fieldLayoutHeaders"
@@ -1989,6 +2167,16 @@ const getDisplayFieldOptionsForModal = (fieldName: string): Array<{ title: strin
                       </p>
                     </div>
                   </template>
+                    <template v-slot:item.order="{ item }">
+                      <div class="d-flex flex-column ga-0">
+                        <v-btn icon size="x-small" variant="text" :disabled="fieldLayoutConfigs.findIndex(c => c.fieldName === item.fieldName) === 0" @click="moveFieldOrder(fieldLayoutConfigs.findIndex(c => c.fieldName === item.fieldName), 'up')">
+                          <v-icon size="18">mdi-chevron-up</v-icon>
+                        </v-btn>
+                        <v-btn icon size="x-small" variant="text" :disabled="fieldLayoutConfigs.findIndex(c => c.fieldName === item.fieldName) === fieldLayoutConfigs.length - 1" @click="moveFieldOrder(fieldLayoutConfigs.findIndex(c => c.fieldName === item.fieldName), 'down')">
+                          <v-icon size="18">mdi-chevron-down</v-icon>
+                        </v-btn>
+                      </div>
+                    </template>
                     <template v-slot:item.fieldName="{ item }">
                       <div class="d-flex align-center ga-2">
                         <span class="font-weight-medium">{{ (formData.datasetName ? datasetStore.getDatasetByName(formData.datasetName)?.fields?.find(f => f.name === item.fieldName)?.title : null) || item.fieldName }}</span>

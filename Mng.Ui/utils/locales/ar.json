@@ -1513,6 +1513,7 @@
         "refresh": "تحديث",
         "newForm": "نموذج جديد",
         "openForm": "فتح النموذج",
+        "addToSideMenu": "إضافة إلى القائمة الجانبية",
         "view": "عرض",
         "edit": "تعديل",
         "delete": "حذف"
@@ -1782,16 +1783,22 @@
           "noRelationFields": "لم يتم العثور على حقول من نوع العلاقة في مجموعة البيانات هذه."
         },
         "fieldLayout": {
-          "title": "إعدادات تخطيط الحقول",
-          "description": "لكل حقل، يمكنك تكوين عدد الأعمدة التي يشغلها في عرض النموذج والمجموعة التي ينتمي إليها.",
+          "title": "ترتيب وتخطيط الحقول",
+          "description": "حدد ترتيب كل حقل وعرض العمود والمجموعة. ترتيب المجموعات يحدد ظهور المجموعات في النموذج.",
+          "groupOrderTitle": "ترتيب المجموعات",
+          "groupOrderDescription": "ترتيب ظهور المجموعات في النموذج. استخدم لأعلى/لأسفل للتعديل.",
           "table": {
             "headers": {
+              "order": "الترتيب",
               "fieldName": "اسم الحقل",
               "columnSpan": "عرض العمود",
               "group": "المجموعة"
             }
           },
-          "groupPlaceholder": "اسم المجموعة (اختياري)"
+          "groupPlaceholder": "اسم المجموعة (اختياري)",
+          "moveUp": "أعلى",
+          "moveDown": "أسفل",
+          "noGroups": "لا توجد حقول مجمعة بعد. عيّن مجموعة للحقول."
         },
         "noDataset": "يجب عليك اختيار مجموعة بيانات أولاً لتكوين إعدادات النموذج."
       },
@@ -1811,6 +1818,41 @@
         "duplicateCode": "كود النموذج هذا مستخدم بالفعل. يرجى اختيار كود مختلف."
       },
       "warning": "تحذير: يلزم إذن المدير أو المسؤول للوصول إلى هذه الصفحة."
+    },
+    "fileUpload": {
+      "dropZoneDropHere": "أسقط الملفات هنا",
+      "dropZoneDragFiles": "اسحب وأفلت الملفات هنا أو انقر",
+      "dropZoneDragFile": "اسحب وأفلت الملف هنا أو انقر",
+      "dropZoneMultipleHint": "يمكنك تحديد عدة ملفات",
+      "dropZoneSingleHint": "يمكنك تحديد ملف واحد",
+      "uploadFiles": "رفع الملفات",
+      "uploadFile": "رفع ملف",
+      "existingFiles": "الملفات الحالية",
+      "newFiles": "ملفات جديدة",
+      "newFileChip": "جديد",
+      "willUploadOnSave": "سيتم الرفع عند الحفظ",
+      "preview": "معاينة",
+      "download": "تحميل",
+      "remove": "إزالة",
+      "noFilesYet": "لم يتم رفع أي ملف بعد",
+      "previewDialogTitle": "معاينة الملف",
+      "previewLoadFailed": "تعذر تحميل المعاينة.",
+      "errors": {
+        "fileTooBig": "حجم الملف كبير جداً. الحد الأقصى: {max} ميجابايت",
+        "fileTypeNotAllowed": "نوع الملف غير مدعوم. الأنواع المسموحة: {types}",
+        "processingFile": "حدث خطأ أثناء معالجة الملف",
+        "maxFilesExceeded": "الحد الأقصى {max} ملفات. لديك حالياً {current} ملف، لا يمكن إضافة {extra} ملف جديد.",
+        "maxFiles": "الحد الأقصى {max} ملفات",
+        "fileTooBigNamed": "الملف \"{name}\" كبير جداً. الحد الأقصى: {max} ميجابايت",
+        "fileTypeNotAllowedNamed": "الملف \"{name}\" من نوع غير مدعوم. الأنواع المسموحة: {types}",
+        "processingFiles": "حدث خطأ أثناء معالجة الملفات"
+      },
+      "units": {
+        "bytes": "بايت",
+        "kb": "ك.ب",
+        "mb": "م.ب",
+        "gb": "ج.ب"
+      }
     },
     "view": {
       "title": "عرض النموذج",

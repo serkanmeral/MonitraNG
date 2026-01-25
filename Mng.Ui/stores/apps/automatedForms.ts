@@ -62,6 +62,7 @@ export interface AutomatedForm {
         group?: string; // Field group name (for grouping fields)
       };
     };
+    groupOrder?: string[]; // Display order of groups. Groups not listed appear after.
   };
   isActive: boolean;
   createInfo?: {
@@ -142,6 +143,7 @@ export interface CreateAutomatedFormDto {
         group?: string; // Field group name (for grouping fields)
       };
     };
+    groupOrder?: string[];
   };
   isActive: boolean;
 }
@@ -205,6 +207,7 @@ export interface UpdateAutomatedFormDto {
         group?: string; // Field group name (for grouping fields)
       };
     };
+    groupOrder?: string[];
   };
   isActive?: boolean;
 }

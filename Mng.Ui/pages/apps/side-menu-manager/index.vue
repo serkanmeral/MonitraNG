@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useSideMenuManagerStore } from '@/stores/apps/sideMenuManager';
@@ -38,16 +38,12 @@ onMounted(async () => {
   // Always reload to ensure fresh data
   await menuManagerStore.loadMenuItems();
   
-  // Check if we have query params from dashboard
+  // Check if we have query params from dashboard or form
   const query = route.query;
   if (query.source === 'dashboard' && query.dashboardId) {
-    // Wait for next tick to ensure MenuItemForm is mounted
     await nextTick();
-    
-    // Create a new menu item with dashboard data pre-filled
     const dashboardTitle = query.title as string || '';
     const routePath = query.routePath as string || '';
-    
     const preFilledItem: Partial<SideMenuItem> = {
       order: menuManagerStore.menuItems.length,
       itemType: 'item',
@@ -62,8 +58,25 @@ onMounted(async () => {
       type: 'internal',
       pageCode: `dashboard-${query.dashboardId}`,
     };
-    
-    // Select the pre-filled item to open the form
+    menuManagerStore.selectItem(preFilledItem as any);
+  } else if (query.source === 'form' && query.formCode) {
+    await nextTick();
+    const formCode = String(query.formCode);
+    const routePath = (query.routePath as string) || `/apps/automated-forms/view/${encodeURIComponent(formCode)}`;
+    const preFilledItem: Partial<SideMenuItem> = {
+      order: menuManagerStore.menuItems.length,
+      itemType: 'item',
+      level: 0,
+      parentId: null,
+      pageType: 'user',
+      disabled: false,
+      title: (query.title as string) || formCode,
+      to: routePath,
+      icon: 'mdi-form-select',
+      iconType: 'mdi',
+      type: 'internal',
+      pageCode: `form-${formCode}`,
+    };
     menuManagerStore.selectItem(preFilledItem as any);
   }
 });

@@ -1513,6 +1513,7 @@
         "refresh": "刷新",
         "newForm": "新建表单",
         "openForm": "打开表单",
+        "addToSideMenu": "添加到侧边菜单",
         "view": "查看",
         "edit": "编辑",
         "delete": "删除"
@@ -1782,16 +1783,22 @@
           "noRelationFields": "在此数据集中未找到关系类型的字段。"
         },
         "fieldLayout": {
-          "title": "字段布局设置",
-          "description": "对于每个字段，您可以配置它在表单视图中占用的列数以及它所属的组。",
+          "title": "字段布局与顺序",
+          "description": "配置每个字段在表单中的顺序、列宽和组。组顺序决定组的显示顺序。",
+          "groupOrderTitle": "组顺序",
+          "groupOrderDescription": "组在表单中的显示顺序。使用上/下调整。",
           "table": {
             "headers": {
+              "order": "顺序",
               "fieldName": "字段名称",
               "columnSpan": "列宽",
               "group": "组"
             }
           },
-          "groupPlaceholder": "组名（可选）"
+          "groupPlaceholder": "组名（可选）",
+          "moveUp": "上",
+          "moveDown": "下",
+          "noGroups": "尚无分组字段。请为字段指定组。"
         },
         "noDataset": "您必须首先选择数据集才能配置表单设置。"
       },
@@ -1811,6 +1818,41 @@
         "duplicateCode": "此表单代码已被使用。请选择不同的代码。"
       },
       "warning": "警告：访问此页面需要管理员或管理员权限。"
+    },
+    "fileUpload": {
+      "dropZoneDropHere": "将文件放到此处",
+      "dropZoneDragFiles": "将文件拖放到此处或点击",
+      "dropZoneDragFile": "将文件拖放到此处或点击",
+      "dropZoneMultipleHint": "您可以选择多个文件",
+      "dropZoneSingleHint": "您只能选择一个文件",
+      "uploadFiles": "上传文件",
+      "uploadFile": "上传文件",
+      "existingFiles": "已有文件",
+      "newFiles": "新文件",
+      "newFileChip": "新",
+      "willUploadOnSave": "保存时将上传",
+      "preview": "预览",
+      "download": "下载",
+      "remove": "移除",
+      "noFilesYet": "尚未上传文件",
+      "previewDialogTitle": "文件预览",
+      "previewLoadFailed": "无法加载预览。",
+      "errors": {
+        "fileTooBig": "文件大小超出限制。最大：{max}MB",
+        "fileTypeNotAllowed": "不支持该文件类型。允许的类型：{types}",
+        "processingFile": "处理文件时发生错误",
+        "maxFilesExceeded": "最多可上传 {max} 个文件。当前已有 {current} 个文件，无法再添加 {extra} 个新文件。",
+        "maxFiles": "最多可上传 {max} 个文件",
+        "fileTooBigNamed": "文件“{name}”过大。最大：{max}MB",
+        "fileTypeNotAllowedNamed": "文件“{name}”类型不支持。允许的类型：{types}",
+        "processingFiles": "处理文件时发生错误"
+      },
+      "units": {
+        "bytes": "字节",
+        "kb": "KB",
+        "mb": "MB",
+        "gb": "GB"
+      }
     },
     "view": {
       "title": "查看表单",

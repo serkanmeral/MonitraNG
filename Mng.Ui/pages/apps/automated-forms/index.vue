@@ -4,7 +4,7 @@ import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useAutomatedFormsStore } from '@/stores/apps/automatedForms';
 import { useAuthStore } from '@/stores/auth';
 import { useLocaleStore } from '@/stores/locale';
-import { EditIcon, EyeIcon, TrashIcon, FileCodeIcon, PlusIcon, RefreshIcon, ExternalLinkIcon } from 'vue-tabler-icons';
+import { EditIcon, EyeIcon, TrashIcon, FileCodeIcon, PlusIcon, RefreshIcon, ExternalLinkIcon, MenuIcon } from 'vue-tabler-icons';
 
 // Get i18n instance for legacy mode
 const nuxtApp = useNuxtApp();
@@ -141,6 +141,20 @@ const viewForm = (form: any) => {
 const openForm = (form: any) => {
   const formCode = form.formCode || form.FormCode;
   router.push(`/apps/automated-forms/view/${encodeURIComponent(formCode)}`);
+};
+
+const addToSideMenu = (form: any) => {
+  const formCode = form.formCode ?? form.FormCode ?? '';
+  const routePath = `/apps/automated-forms/view/${encodeURIComponent(formCode)}`;
+  router.push({
+    path: '/apps/side-menu-manager',
+    query: {
+      source: 'form',
+      formCode,
+      title: form.formName ?? form.FormName ?? formCode,
+      routePath,
+    },
+  });
 };
 
 const deleteForm = (form: any) => {
@@ -320,6 +334,16 @@ const isSideMenuEnabled = (form: any) => {
         <!-- Actions Column -->
         <template v-slot:item.actions="{ item }">
           <div class="d-flex ga-2 justify-end">
+            <v-btn
+              icon
+              size="small"
+              variant="text"
+              color="secondary"
+              @click="addToSideMenu(item)"
+            >
+              <MenuIcon size="18" />
+              <v-tooltip activator="parent" location="top">{{ t('automated-forms.list.buttons.addToSideMenu') }}</v-tooltip>
+            </v-btn>
             <v-btn
               icon
               size="small"
