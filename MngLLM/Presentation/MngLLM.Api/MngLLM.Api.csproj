@@ -1,23 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
-
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591</NoWarn>
-
     <!-- Versioning -->
-    <Version>1.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
+    <Version>1.0.1</Version>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
     <InformationalVersion>1.0.0</InformationalVersion>
     <Product>MngLLM API</Product>
     <Company>MonitraNG</Company>
     <Authors>Serkan MERAL</Authors>
     <Copyright>Copyright © 2025 MonitraNG</Copyright>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.0" />
     <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
@@ -26,10 +23,8 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.0.0" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.5.1" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\Core\MngLLM.Application\MngLLM.Application.csproj" />
     <ProjectReference Include="..\..\Infrastructure\MngLLM.Infrastructure\MngLLM.Infrastructure.csproj" />
   </ItemGroup>
-
 </Project>
