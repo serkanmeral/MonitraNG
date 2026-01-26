@@ -1,6 +1,6 @@
 # Automatic Version Bump Script
 # Detects changed services and increments version numbers
-# Usage: .\bump-versions.ps1 [-BumpType patch|minor|major] [-DryRun]
+# Usage: .\bump-versions.ps1 [-BumpType patch|minor|major] [-DryRun] [-AutoCommit]
 
 param(
     [Parameter(Mandatory=$false)]
@@ -8,7 +8,10 @@ param(
     [string]$BumpType = "patch",
     
     [Parameter(Mandatory=$false)]
-    [switch]$DryRun = $false
+    [switch]$DryRun = $false,
+    
+    [Parameter(Mandatory=$false)]
+    [switch]$AutoCommit = $false
 )
 
 # Service definitions with their csproj/package.json paths
@@ -342,6 +345,7 @@ foreach ($serviceName in $changedServices.Keys) {
 
 if ($updatedServices.Count -eq 0) {
     Write-Host "`n  [INFO] No versions were updated." -ForegroundColor Gray
+    Set-Location $originalLocation
     exit 0
 }
 
@@ -351,16 +355,47 @@ foreach ($updated in $updatedServices) {
     Write-Host "  $($updated.Name): v$($updated.Version) ($($updated.Type))" -ForegroundColor Gray
 }
 
+$pathsToCommit = @()
+foreach ($updated in $updatedServices) {
+    $svc = $changedServices[$updated.Name]
+    if ($svc.Type -eq "Backend" -and $svc.CsprojPath) {
+        $pathsToCommit += $svc.CsprojPath
+    } elseif ($svc.Type -eq "WebUI" -and $svc.PackageJsonPath) {
+        $pathsToCommit += $svc.PackageJsonPath
+    }
+}
+
 if (-not $DryRun) {
-    Write-Host "`nWARNING: Version files have been updated. Don't forget to:" -ForegroundColor Yellow
-    Write-Host "  1. Review the changes (git diff)" -ForegroundColor Gray
-    Write-Host "  2. Stage the version files (git add)" -ForegroundColor Gray
-    Write-Host "  3. Commit the version updates" -ForegroundColor Gray
-    Write-Host "  4. Continue with your git push" -ForegroundColor Gray
-    
-    # Auto-stage version files if not in hook context
-    if (-not $env:GIT_HOOK_RUNNING) {
-        Write-Host "`nTip: Run 'git add' to stage the version changes before committing." -ForegroundColor Cyan
+    if ($AutoCommit -and $pathsToCommit.Count -gt 0) {
+        Write-Host "`n4. Auto-commit version updates..." -ForegroundColor Yellow
+        foreach ($p in $pathsToCommit) {
+            $fullPath = Join-Path $gitRoot $p
+            if (Test-Path $fullPath) {
+                git add $p 2>$null
+                Write-Host "  Staged: $p" -ForegroundColor Gray
+            }
+        }
+        git diff --cached --quiet 2>$null
+        $hasStaged = $LASTEXITCODE -ne 0
+        if ($hasStaged) {
+            git commit -m "chore: bump versions for changed services" --no-verify 2>$null
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "  [OK] Committed version bump." -ForegroundColor Green
+            } else {
+                Write-Host "  [WARN] git commit failed (e.g. no changes to commit)." -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host "  [INFO] Nothing to commit (files unchanged or already staged)." -ForegroundColor Gray
+        }
+    } else {
+        Write-Host "`nWARNING: Version files have been updated. Don't forget to:" -ForegroundColor Yellow
+        Write-Host "  1. Review the changes (git diff)" -ForegroundColor Gray
+        Write-Host "  2. Stage the version files (git add)" -ForegroundColor Gray
+        Write-Host "  3. Commit the version updates" -ForegroundColor Gray
+        Write-Host "  4. Continue with your git push" -ForegroundColor Gray
+        if (-not $env:GIT_HOOK_RUNNING) {
+            Write-Host "`nTip: Run with -AutoCommit in pre-push hook for automatic commit." -ForegroundColor Cyan
+        }
     }
 }
 

@@ -1,0 +1,33 @@
+#!/bin/sh
+# Pre-push hook: bump versions for changed services and auto-commit
+# Install: cp scripts/hooks/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+
+GIT_ROOT=$(git rev-parse --show-toplevel)
+
+if [ "$OSTYPE" = "msys" ] || [ "$OSTYPE" = "win32" ] || [ -n "$WINDIR" ]; then
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$GIT_ROOT/scripts/bump-versions.ps1" -BumpType patch -AutoCommit
+    EXIT_CODE=$?
+else
+    if command -v pwsh >/dev/null 2>&1; then
+        pwsh -NoProfile -ExecutionPolicy Bypass -File "$GIT_ROOT/scripts/bump-versions.ps1" -BumpType patch -AutoCommit
+        EXIT_CODE=$?
+    elif command -v powershell >/dev/null 2>&1; then
+        powershell -NoProfile -ExecutionPolicy Bypass -File "$GIT_ROOT/scripts/bump-versions.ps1" -BumpType patch -AutoCommit
+        EXIT_CODE=$?
+    else
+        echo "Warning: PowerShell not found. Skipping version bump."
+        EXIT_CODE=0
+    fi
+fi
+
+if [ $EXIT_CODE -ne 0 ]; then
+    echo ""
+    echo "Version bump script encountered an error."
+    echo "Continue with push anyway? (y/n)"
+    read -r response
+    if [ "$response" != "y" ] && [ "$response" != "Y" ]; then
+        exit 1
+    fi
+fi
+
+exit 0

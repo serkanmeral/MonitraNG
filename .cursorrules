@@ -225,6 +225,13 @@ Aşağıdaki kısaltmaları kullanırken tam isimlerini kullan:
 - **Commit Mesajları**: Conventional Commits formatı kullan (feat:, fix:, docs:, vb.)
 - **Güvenlik**: Her commit ve push işleminden önce kullanıcıya bilgi ver ve onay al
 
+### Commit ve Push Ortam Engeli ve Yedek Yol
+- **AI ile commit/push**: Kullanıcı "commit yap", "push yap" veya "GitLab'a push et" dediğinde AI, `run_terminal_cmd` ile `git add` / `git commit` / `git push` çalıştırır ve **mutlaka** `required_permissions: ["all","network"]` ister.
+- **Ortam engeli**: Cursor IDE içindeki terminal bazen `.git/index.lock` veya `.git/objects` yazma hataları verir (Source Control veya başka süreç kilidi). Bu durumda:
+  1. Kullanıcıya proje kökünde **harici bir PowerShell** penceresinde `scripts/git-commit-push.ps1` çalıştırması söylenir.
+  2. AI, hangi path'lerin ve hangi commit mesajının kullanılacağını net verir; kullanıcı aynı parametrelerle script'i çalıştırır.
+- **Script kullanımı**: Proje kökünden `.\scripts\git-commit-push.ps1 -Paths "path1","path2" -Message "chore: ..."`. Script gerekirse index.lock temizler, sonra add/commit/push yapar.
+
 ### Dokümantasyon Oluşturma Politikası
 - **KRİTİK KURAL**: Kullanıcı açıkça "döküman hazırla", "dokümantasyon oluştur", "spec yaz", "planlama dokümanı yaz" veya benzeri bir talep vermedikçe **ASLA** .md (markdown) dosyaları oluşturma
 - **Konuşma chat üzerinde**: Özetler, planlar, tartışmalar bu chat ekranı üzerinden yapılır; bunları .md dosyasına yazma
