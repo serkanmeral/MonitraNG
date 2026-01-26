@@ -47,9 +47,15 @@ public class DomainLookupService : IDomainLookupService
             var database = _mongoClient.GetDatabase(databaseName);
             var collection = database.GetCollection<BsonDocument>("domains");
 
+            // Tanılama: toplam domain sayısı ve kaçı Active
+            var totalDomains = await collection.CountDocumentsAsync(new BsonDocument());
+            var activeFilter = Builders<BsonDocument>.Filter.Eq("status", "Active");
+            var activeCount = await collection.CountDocumentsAsync(activeFilter);
+            _logger.LogDebug("Domains DB: {DatabaseName}, collection domains, total: {Total}, status=Active: {ActiveCount}",
+                databaseName, totalDomains, activeCount);
+
             // Filter: status = "Active"
-            var filter = Builders<BsonDocument>.Filter.Eq("status", "Active");
-            var domains = await collection.Find(filter).ToListAsync();
+            var domains = await collection.Find(activeFilter).ToListAsync();
 
             var domainInfos = domains.Select(d => new DomainInfo
             {

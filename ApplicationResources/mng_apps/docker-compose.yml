@@ -234,6 +234,40 @@ services:
       
       # Validation Configuration
       - MngDataGatewaySettings__Validation__HttpValidationTimeout=30
+      
+      # FileStorage Configuration (MinIO)
+      - MngDataGatewaySettings__FileStorage__Minio__Endpoint=minio:9000
+      - MngDataGatewaySettings__FileStorage__Minio__AccessKey=admin
+      - MngDataGatewaySettings__FileStorage__Minio__SecretKey=admin123
+      - MngDataGatewaySettings__FileStorage__Minio__BucketName=datasets
+      - MngDataGatewaySettings__FileStorage__Minio__UseSSL=false
+      
+      # FileStorage Encryption Configuration
+      - MngDataGatewaySettings__FileStorage__Encryption__Enabled=true
+      - MngDataGatewaySettings__FileStorage__Encryption__Algorithm=AES-256-GCM
+      - MngDataGatewaySettings__FileStorage__Encryption__Key=MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=
+      - MngDataGatewaySettings__FileStorage__Encryption__KeyDerivation=PBKDF2
+      - MngDataGatewaySettings__FileStorage__Encryption__Iterations=10000
+      - MngDataGatewaySettings__FileStorage__Encryption__SaltLength=16
+      
+      # FileStorage Compression Configuration
+      - MngDataGatewaySettings__FileStorage__Compression__Algorithm=gzip
+      - MngDataGatewaySettings__FileStorage__Compression__Level=6
+      - MngDataGatewaySettings__FileStorage__Compression__Enabled=true
+      
+      # FileStorage Validation Configuration
+      - MngDataGatewaySettings__FileStorage__Validation__MaxFileSize=5242880
+      - MngDataGatewaySettings__FileStorage__Validation__AllowedMimeTypes=
+      - MngDataGatewaySettings__FileStorage__Validation__AllowedExtensions=
+      - MngDataGatewaySettings__FileStorage__Validation__FolderPathPattern=^[a-zA-Z0-9_\\-/]+$
+      - MngDataGatewaySettings__FileStorage__Validation__MaxFolderDepth=10
+      - MngDataGatewaySettings__FileStorage__Validation__MaxPathLength=512
+      
+      # FileStorage Retry Configuration
+      - MngDataGatewaySettings__FileStorage__Retry__MaxAttempts=3
+      - MngDataGatewaySettings__FileStorage__Retry__InitialDelayMs=1000
+      - MngDataGatewaySettings__FileStorage__Retry__MaxDelayMs=10000
+      - MngDataGatewaySettings__FileStorage__Retry__BackoffMultiplier=2.0
     
     networks:
       - mng_common_mng_network

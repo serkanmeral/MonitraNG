@@ -21,12 +21,16 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      // Gateway URL (if using API Gateway, set this and leave other URLs empty)
-      gatewayUrl: process.env.GATEWAY_URL || 'https://localhost:5040',
+      // Gateway URL (if using API Gateway, set this and leave other URLs empty).
+      // Production'da verilmezse '' → Hub store relative '/hub' kullanır (same-origin). Dev'de localhost:5040.
+      gatewayUrl: (process.env.GATEWAY_URL && process.env.GATEWAY_URL.trim())
+        ? process.env.GATEWAY_URL
+        : (process.env.NODE_ENV === 'production' ? '' : 'https://localhost:5040'),
       // Individual service URLs (used if gatewayUrl is not set)
       keeperUrl: process.env.KEEPER_URL || 'https://localhost:5001',
       reactorUrl: process.env.SERVER_URL || process.env.DATAGATEWAY_URL || process.env.REACTOR_URL || 'https://localhost:5010',
-      hubUrl: process.env.HUB_URL || 'http://localhost:5020',
+      // Boş/verilmediğinde store gatewayUrl + '/hub' kullanır (same-origin). Dev için .env'de HUB_URL=http://localhost:5020
+      hubUrl: (process.env.HUB_URL && process.env.HUB_URL.trim()) ? process.env.HUB_URL : '',
       llmUrl: process.env.LLM_URL || 'https://localhost:5030',
       adminUrl: process.env.ADMIN_URL || 'http://localhost:5080',
       // Fallback menu control (default: false - disabled)

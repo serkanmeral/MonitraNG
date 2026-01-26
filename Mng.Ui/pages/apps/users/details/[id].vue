@@ -3,6 +3,7 @@ import { ref, onMounted, watch, nextTick, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useLocaleStore } from '@/stores/locale';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
+import AvatarDisplay from '@/components/apps/profile/AvatarDisplay.vue';
 import { useUserStore } from '@/stores/apps/user';
 import { EditIcon } from 'vue-tabler-icons';
 
@@ -497,26 +498,19 @@ const handleResetPassword = async () => {
                   <h6 class="text-h6 font-weight-semibold">{{ t('users.details.cards.photo') }}</h6>
                 </div>
                 <div class="d-flex justify-center mb-2">
-                  <div v-if="hasValidPhoto()" style="position: relative; width: 200px; height: 200px; border-radius: 8px; overflow: hidden; border: 2px solid rgba(var(--v-theme-on-surface), 0.12);">
-                    <img 
-                      :src="getPhotoUrl()" 
-                      :alt="`${userStore.viewingUser.firstName} ${userStore.viewingUser.lastName}`"
-                      style="width: 100%; height: 100%; object-fit: cover; display: block;"
-                      @error="handlePhotoError"
-                      @load="handlePhotoLoad"
-                    />
-                  </div>
+                  <AvatarDisplay
+                    v-if="userStore.viewingUser"
+                    :user="userStore.viewingUser"
+                    :size="200"
+                  />
                   <v-avatar v-else size="200" class="mb-2">
                     <v-icon size="100" color="grey-lighten-1">
                       mdi-account-circle
                     </v-icon>
                   </v-avatar>
                 </div>
-                <div v-if="hasValidPhoto()" class="text-caption text-medium-emphasis mt-2 text-truncate" style="max-width: 100%;">
-                  {{ getPhotoUrl() }}
-                </div>
-                <div v-else class="text-caption text-medium-emphasis mt-2">
-                  {{ userStore.viewingUser?.photoUrl ? t('users.details.photo.loadError') : t('users.details.photo.none') }}
+                <div v-if="!userStore.viewingUser?.photoUrl" class="text-caption text-medium-emphasis mt-2">
+                  {{ t('users.details.photo.none') }}
                 </div>
               </div>
             </v-card>

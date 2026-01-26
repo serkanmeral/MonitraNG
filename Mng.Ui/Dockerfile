@@ -12,6 +12,13 @@ RUN npm ci || npm install
 # Copy source files
 COPY . .
 
+# Build-time URL'ler: production'da Hub, Gateway vb. için hangi origin kullanılacak
+# Boş HUB_URL = Gateway üzerinden /hub kullan (GATEWAY_URL/hub/ws). Aynı origin için GATEWAY_URL=https://app.monitrang.com yapın.
+ARG GATEWAY_URL=
+ARG HUB_URL=
+ENV GATEWAY_URL=$GATEWAY_URL
+ENV HUB_URL=$HUB_URL
+
 # Build the application (SPA için generate kullanıyoruz)
 RUN npm run generate
 

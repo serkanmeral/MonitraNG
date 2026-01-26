@@ -9,19 +9,22 @@ public static class AuthConfig
 {
     public static void AddAuthentication(this IServiceCollection services, MngLLMSettings settings)
     {
-        // JWT Authentication (MngDataGateway pattern)
+        // JWT: DG ile aynı model. Token MngKeeper'dan gelir; MngKeeper Keycloak token'ına domain_name vb.
+        // ekler ama imzayı yenilemez (signature invalid olur). Bu yüzden Authority ile metadata çekmek
+        // hem başarısız olur hem de realm sabit olur. Domain değişkendir, domain_name token içinden okunur.
+        // Authority set etmiyoruz → metadata fetch yok; sadece token parse + claim okuma (DG gibi).
         services.AddAuthentication("Bearer")
             .AddJwtBearer("Bearer", options =>
             {
-                options.Authority = settings.Actors.MngKeeper;
-                options.RequireHttpsMetadata = false; // Development için
-                
-                // SSL certificate validation bypass (development)
-                options.BackchannelHttpHandler = new HttpClientHandler
+                if (!string.IsNullOrWhiteSpace(settings.Jwt.Authority))
                 {
-                    ServerCertificateCustomValidationCallback = delegate { return true; }
-                };
-                
+                    options.Authority = settings.Jwt.Authority.TrimEnd('/');
+                    options.RequireHttpsMetadata = false;
+                    options.BackchannelHttpHandler = new HttpClientHandler
+                    {
+                        ServerCertificateCustomValidationCallback = delegate { return true; }
+                    };
+                }
                 options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
                 {
                     ValidateAudience = false,

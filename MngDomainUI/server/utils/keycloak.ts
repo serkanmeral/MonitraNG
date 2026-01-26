@@ -15,28 +15,25 @@ export function buildKeycloakUrl(
   pathPrefix: string | undefined | null,
   endpoint: string
 ): string {
-  // Normalize path prefix
+  const base = baseUrl.replace(/\/$/, '')
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint
+
   let normalizedPrefix = pathPrefix || ''
-  
-  // Ensure prefix starts with / if not empty
   if (normalizedPrefix && !normalizedPrefix.startsWith('/')) {
     normalizedPrefix = '/' + normalizedPrefix
   }
-  
-  // Remove trailing slash from prefix
   if (normalizedPrefix.endsWith('/')) {
     normalizedPrefix = normalizedPrefix.slice(0, -1)
   }
-  
-  // Normalize endpoint (remove leading slash if exists)
-  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint
-  
-  // Build final URL
-  if (normalizedPrefix) {
-    return `${baseUrl}${normalizedPrefix}/${normalizedEndpoint}`
+
+  // Base URL zaten path prefix ile bitiyorsa tekrar ekleme (keycloak/keycloak 404 önlemi)
+  if (normalizedPrefix && base.endsWith(normalizedPrefix)) {
+    return `${base}/${normalizedEndpoint}`
   }
-  
-  return `${baseUrl}/${normalizedEndpoint}`
+  if (normalizedPrefix) {
+    return `${base}${normalizedPrefix}/${normalizedEndpoint}`
+  }
+  return `${base}/${normalizedEndpoint}`
 }
 
 /**

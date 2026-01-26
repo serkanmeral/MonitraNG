@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Reflection;
 using Asp.Versioning;
 using MngHub.Application;
@@ -88,11 +89,15 @@ builder.Services.AddSignalR(options =>
 
 // CORS: Development'ta direkt Hub bağlantısı yapıldığı için CORS gerekli
 // Production'da Gateway üzerinden giderse Gateway'deki CORS kullanılır
+// Boş/whitespace origin'leri filtrele (AllowedOrigins__1="" gibi env'ler hataya yol açar)
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins(settings.Cors.AllowedOrigins.ToArray())
+        var origins = settings.Cors.AllowedOrigins
+            .Where(o => !string.IsNullOrWhiteSpace(o))
+            .ToArray();
+        policy.WithOrigins(origins)
             .AllowAnyMethod()
             .AllowAnyHeader();
         

@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
 import type { User } from '@/stores/apps/user';
 import { Gender } from '@/stores/apps/user';
+import { useAuthStore } from '@/stores/auth';
+import { getAccessToken } from '@/services/apiService';
 
 interface Props {
   user: User | null;
@@ -11,6 +13,10 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   size: 45,
 });
+
+// Photo blob URL (loaded with Authorization header to fix 401 in production)
+// <img src="url"> does not send cookies/headers; mngui nginx proxies /api/keeper with $http_authorization only → 401.
+const photoBlobUrl = ref<string | null>(null);
 
 // Avatar color based on gender
 const avatarColor = computed(() => {
@@ -57,34 +63,75 @@ const userInitials = computed(() => {
   return name[0]?.toUpperCase() || 'U';
 });
 
-// Photo URL - normalize to frontend proxy format
+// Photo URL - her zaman same-origin path (fetch 401 önlemek için)
 const photoUrl = computed(() => {
-  const url = props.user?.photoUrl || null;
-  if (!url) {
+  const raw = props.user?.photoUrl || null;
+  if (!raw || typeof raw !== 'string') {
     return null;
   }
-  
-  // Normalize URL: if it starts with /keeper/api/, convert to /api/keeper/
-  // Backend returns /keeper/api/user/{userId}/photo
-  // Frontend proxy expects /api/keeper/user/{userId}/photo
-  let normalizedUrl = url;
-  if (url.startsWith('/keeper/api/')) {
-    normalizedUrl = url.replace('/keeper/api/', '/api/keeper/');
+  let path = raw;
+  try {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      const u = new URL(path);
+      path = u.pathname; // sadece path, aynı origin'e fetch için
+    }
+  } catch {
+    // URL parse hatası
   }
-  
-  return normalizedUrl;
+  if (path.startsWith('/keeper/api/')) {
+    path = path.replace('/keeper/api/', '/api/keeper/');
+  } else if (!path.startsWith('/api/keeper/') && path.includes('/keeper/api/')) {
+    path = path.replace(/\/keeper\/api\//, '/api/keeper/');
+  }
+  return path.startsWith('/') ? path : `/${path}`;
 });
 
-// Image error handler
-const handleImageError = (event: Event) => {
-  // Silently handle image load errors
-  // Image will fallback to initials display
-};
+async function loadPhoto() {
+  const photoPath = photoUrl.value;
+  if (!photoPath) {
+    photoBlobUrl.value = null;
+    return;
+  }
+  const authStore = useAuthStore();
+  try {
+    await authStore.ensureValidToken();
+  } catch {
+    // Token yenileme başarısız; mevcut token ile dene
+  }
+  const token = authStore.accessToken ?? getAccessToken();
+  if (!token) {
+    photoBlobUrl.value = null;
+    return;
+  }
+  // Query'de de gönder: img/video kaynaklı istekler veya bazı ortamlarda header gitmeyebiliyor;
+  // mngui nginx access_token varsa Authorization header'a taşıyor.
+  const sep = photoPath.includes('?') ? '&' : '?';
+  const urlWithToken = `${photoPath}${sep}access_token=${encodeURIComponent(token)}`;
+  try {
+    const res = await fetch(urlWithToken, {
+      headers: { Authorization: `Bearer ${token}` },
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      photoBlobUrl.value = null;
+      return;
+    }
+    const blob = await res.blob();
+    if (photoBlobUrl.value) URL.revokeObjectURL(photoBlobUrl.value);
+    photoBlobUrl.value = URL.createObjectURL(blob);
+  } catch {
+    photoBlobUrl.value = null;
+  }
+}
 
-// Image load handler
-const handleImageLoad = () => {
-  // Image loaded successfully
-};
+watch(photoUrl, loadPhoto, { immediate: true });
+onMounted(loadPhoto);
+onUnmounted(() => {
+  if (photoBlobUrl.value) {
+    URL.revokeObjectURL(photoBlobUrl.value);
+    photoBlobUrl.value = null;
+  }
+});
 </script>
 
 <template>
@@ -93,14 +140,12 @@ const handleImageLoad = () => {
     :color="avatarColor"
     class="text-white font-weight-bold"
   >
-    <!-- If photoUrl exists, show photo -->
+    <!-- Show photo only when loaded via authenticated fetch (avoids 401 from <img src>) -->
     <img 
-      v-if="photoUrl" 
-      :src="photoUrl" 
+      v-if="photoBlobUrl" 
+      :src="photoBlobUrl" 
       :alt="userInitials"
       style="object-fit: cover; width: 100%; height: 100%;"
-      @error="handleImageError"
-      @load="handleImageLoad"
     />
     <!-- Otherwise show initials -->
     <span v-else :style="{ fontSize: `${size * 0.4}px` }">

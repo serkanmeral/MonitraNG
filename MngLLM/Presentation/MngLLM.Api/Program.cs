@@ -96,21 +96,21 @@ builder.Services.AddOpenApi();
 // Authentication
 builder.Services.AddAuthentication(settings);
 
-// Authorization - Development'ta chatbot ve docs için AllowAnonymous
-if (builder.Environment.IsDevelopment())
+// Authorization - Chatbot ve docs: Development'ta anonim, Production'da JWT gerekli.
+// Politika adı her iki ortamda da aynı olmalı (controller [Authorize(Policy = "AllowAnonymousInDevelopment")] kullanıyor).
+builder.Services.AddAuthorization(options =>
 {
-    builder.Services.AddAuthorization(options =>
+    if (builder.Environment.IsDevelopment())
     {
         options.AddPolicy("AllowAnonymousInDevelopment", policy =>
-        {
-            policy.RequireAssertion(_ => true); // Always allow in development
-        });
-    });
-}
-else
-{
-    builder.Services.AddAuthorization();
-}
+            policy.RequireAssertion(_ => true));
+    }
+    else
+    {
+        options.AddPolicy("AllowAnonymousInDevelopment", policy =>
+            policy.RequireAuthenticatedUser());
+    }
+});
 
 // Application & Infrastructure Services
 builder.Services.AddApplicationServices(settings);

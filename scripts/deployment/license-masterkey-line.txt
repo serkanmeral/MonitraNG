@@ -1,0 +1,1 @@
+      - MngKeeperSettings__License__MasterKey=${MNGKEEPER_LICENSE_MASTER_KEY}

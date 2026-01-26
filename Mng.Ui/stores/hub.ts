@@ -89,7 +89,7 @@ export const useHubStore = defineStore('hub', {
             const subscriptionCount = this.subscriptions.size;
             const subscriptionIds = Array.from(this.subscriptions.keys());
             
-            if (subscriptionCount > 0) {
+            if (subscriptionCount > 0 && import.meta.dev) {
               console.log('[Hub] Message received', {
                 subscriptionCount,
                 subscriptionIds,
@@ -100,7 +100,7 @@ export const useHubStore = defineStore('hub', {
             this.subscriptions.forEach((subscription) => {
               try {
                 if (subscription.filter(data)) {
-                  console.log('[Hub] Calling handler for subscription', subscription.id);
+                  if (import.meta.dev) console.log('[Hub] Calling handler for subscription', subscription.id);
                   subscription.handler(data);
                 }
               } catch (error) {
@@ -119,7 +119,7 @@ export const useHubStore = defineStore('hub', {
             // Handler yoksa hata vermez
           }
           this.hubConnection.on('ReceiveMessage', this.internalHandler);
-          console.log('[Hub Store] Internal handler registered to existing connection');
+          if (import.meta.dev) console.log('[Hub Store] Internal handler registered to existing connection');
         }
         return;
       }
@@ -246,7 +246,7 @@ export const useHubStore = defineStore('hub', {
             const dedupeWindow = 2000; // 2 saniye içinde aynı mesaj tekrar gelirse ignore et
             
             if (now - lastTimestamp < dedupeWindow) {
-              console.log('[Hub] Duplicate message ignored', {
+              if (import.meta.dev) console.log('[Hub] Duplicate message ignored', {
                 messageKey: messageKey.substring(0, 80),
                 routingKey: data.routingKey?.substring(0, 50),
                 timestamp: data.timestamp,
@@ -266,18 +266,18 @@ export const useHubStore = defineStore('hub', {
               toRemove.forEach(([key]) => this.lastMessageCache.delete(key));
             }
             
-            // Debug: Mesaj ID'sini log'la
-            console.log('[Hub] Processing message', {
-              messageKey: messageKey.substring(0, 80),
-              messageId: data.message?.id || 'N/A',
-              routingKey: data.routingKey?.substring(0, 50)
-            });
+            if (import.meta.dev) {
+              console.log('[Hub] Processing message', {
+                messageKey: messageKey.substring(0, 80),
+                messageId: data.message?.id || 'N/A',
+                routingKey: data.routingKey?.substring(0, 50)
+              });
+            }
             
             const subscriptionCount = this.subscriptions.size;
             const subscriptionIds = Array.from(this.subscriptions.keys());
             
-            // Debug: Her mesaj geldiğinde subscription sayısını log'la
-            if (subscriptionCount > 0) {
+            if (subscriptionCount > 0 && import.meta.dev) {
               console.log('[Hub] Message received', {
                 subscriptionCount,
                 subscriptionIds,
@@ -288,9 +288,8 @@ export const useHubStore = defineStore('hub', {
             // Tüm subscription'lara mesajı dağıt
             this.subscriptions.forEach((subscription) => {
               try {
-                // Filter çalıştır
                 if (subscription.filter(data)) {
-                  console.log('[Hub] Calling handler for subscription', subscription.id);
+                  if (import.meta.dev) console.log('[Hub] Calling handler for subscription', subscription.id);
                   // Handler'ı çağır
                   subscription.handler(data);
                 }
@@ -311,7 +310,7 @@ export const useHubStore = defineStore('hub', {
             // Handler yoksa hata vermez, devam et
           }
           hubConnection.on('ReceiveMessage', this.internalHandler);
-          console.log('[Hub Store] Internal handler registered to SignalR');
+          if (import.meta.dev) console.log('[Hub Store] Internal handler registered to SignalR');
 
           await hubConnection.start();
           this.hubConnection = hubConnection;
@@ -340,7 +339,7 @@ export const useHubStore = defineStore('hub', {
           // Internal handler'ı kaldır
           if (this.internalHandler) {
             this.hubConnection.off('ReceiveMessage', this.internalHandler);
-            console.log('[Hub Store] Internal handler removed from SignalR');
+            if (import.meta.dev) console.log('[Hub Store] Internal handler removed from SignalR');
             this.internalHandler = null;
           }
           
@@ -364,20 +363,23 @@ export const useHubStore = defineStore('hub', {
      * @returns true if subscription was added, false if already exists
      */
     subscribe(subscriptionId: string, options: SubscriptionOptions): boolean {
-      // Subscription zaten varsa, uyarı ver ve ekleme
       if (this.subscriptions.has(subscriptionId)) {
-        console.warn('[Hub Store] Subscription already exists, skipping', {
-          subscriptionId,
-          subscriptionCount: this.subscriptions.size,
-          existingSubscriptionIds: Array.from(this.subscriptions.keys())
-        });
+        if (import.meta.dev) {
+          console.warn('[Hub Store] Subscription already exists, skipping', {
+            subscriptionId,
+            subscriptionCount: this.subscriptions.size,
+            existingSubscriptionIds: Array.from(this.subscriptions.keys())
+          });
+        }
         return false;
       }
 
-      console.log('[Hub Store] Adding subscription', {
-        subscriptionId,
-        subscriptionCount: this.subscriptions.size + 1
-      });
+      if (import.meta.dev) {
+        console.log('[Hub Store] Adding subscription', {
+          subscriptionId,
+          subscriptionCount: this.subscriptions.size + 1
+        });
+      }
 
       // Subscription'ı ekle
       this.subscriptions.set(subscriptionId, {
@@ -396,11 +398,13 @@ export const useHubStore = defineStore('hub', {
      */
     unsubscribe(subscriptionId: string): boolean {
       if (!this.subscriptions.has(subscriptionId)) {
-        console.warn('[Hub Store] Subscription not found, cannot remove', {
-          subscriptionId,
-          subscriptionCount: this.subscriptions.size,
-          existingSubscriptionIds: Array.from(this.subscriptions.keys())
-        });
+        if (import.meta.dev) {
+          console.warn('[Hub Store] Subscription not found, cannot remove', {
+            subscriptionId,
+            subscriptionCount: this.subscriptions.size,
+            existingSubscriptionIds: Array.from(this.subscriptions.keys())
+          });
+        }
         return false;
       }
 

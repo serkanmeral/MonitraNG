@@ -22,14 +22,19 @@ namespace MngKeeper.Infrastructure.Services
         {
             _logger = logger;
             _configuration = configuration;
-            
-            // Get master key from configuration (should be in appsettings or environment variable)
-            _masterKey = configuration["MngKeeperSettings:License:MasterKey"] 
-                ?? throw new InvalidOperationException("License MasterKey is not configured. Set MngKeeperSettings:License:MasterKey in appsettings.json or environment variable.");
+            // MasterKey may be null/empty; app can start and login can work. Throw only when encrypt/decrypt/sign is used (e.g. Create Domain, license upload).
+            _masterKey = configuration["MngKeeperSettings:License:MasterKey"] ?? string.Empty;
+        }
+
+        private void EnsureMasterKeyConfigured()
+        {
+            if (string.IsNullOrWhiteSpace(_masterKey))
+                throw new InvalidOperationException("License MasterKey is not configured. Set MngKeeperSettings:License:MasterKey in appsettings.json or environment variable.");
         }
 
         public async Task<byte[]> EncryptLicenseAsync(string domainName, string licenseJson, CancellationToken cancellationToken = default)
         {
+            EnsureMasterKeyConfigured();
             try
             {
                 _logger.LogDebug("Encrypting license for domain: {DomainName}", domainName);
@@ -64,6 +69,7 @@ namespace MngKeeper.Infrastructure.Services
 
         public async Task<string> DecryptLicenseAsync(string domainName, byte[] encryptedData, CancellationToken cancellationToken = default)
         {
+            EnsureMasterKeyConfigured();
             try
             {
                 _logger.LogDebug("Decrypting license for domain: {DomainName}", domainName);
@@ -102,6 +108,7 @@ namespace MngKeeper.Infrastructure.Services
 
         public async Task<string> GenerateSignatureAsync(string domainName, string licenseJson, CancellationToken cancellationToken = default)
         {
+            EnsureMasterKeyConfigured();
             try
             {
                 _logger.LogDebug("Generating signature for license: {DomainName}", domainName);
@@ -124,6 +131,7 @@ namespace MngKeeper.Infrastructure.Services
 
         public async Task<bool> ValidateSignatureAsync(string domainName, string licenseJson, string signature, CancellationToken cancellationToken = default)
         {
+            EnsureMasterKeyConfigured();
             try
             {
                 _logger.LogDebug("Validating signature for license: {DomainName}", domainName);

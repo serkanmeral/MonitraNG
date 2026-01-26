@@ -1,0 +1,1 @@
+      - SERVER_SCHEDULER_URL=${SERVER_SCHEDULER_URL:-http://mngscheduler:5090}

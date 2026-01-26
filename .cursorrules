@@ -68,6 +68,7 @@ Aşağıdaki kısaltmaları kullanırken tam isimlerini kullan:
 - **PowerShell test scriptleri**: `test-*.ps1` formatında
 
 ### Dokümantasyon Dosyaları
+- **Tek referans:** Tüm dokümantasyon kuralları (yapı, changelog formatı, Conventional Commits, MkDocs) `docs/content/DOCUMENTATION_STANDARDS.md` içinde tanımlıdır; belirsizlikte bu dosyaya bakılır.
 - **Dokümantasyon organizasyonu**: 
   - **KURAL**: Tüm dokümantasyon dosyaları `docs/{ServiceName}/` altında amaca uygun klasörler içinde organize edilir
   - Servislerin kendi klasörlerinde **SADECE** `README.md` ve `ROADMAP.md` (veya `RoadMap.md`) dosyaları bulunabilir
@@ -194,6 +195,11 @@ Aşağıdaki kısaltmaları kullanırken tam isimlerini kullan:
 - **Docker Compose Dosyası Konumu**: `ApplicationResources/mng_apps/docker-compose.yml`
 - **Build Context**: Servis klasörü (örn: `../../MngDataGateway`)
 - **Dockerfile Konumu**: `Presentation/{ServiceName}.Api/Dockerfile`
+
+- **Terminal sandbox ve Docker**: Cursor, varsayılan olarak agent terminal komutlarını sandbox içinde çalıştırır (sadece workspace yazılabilir, ağ kapalı). Docker build bu yüzden `%USERPROFILE%\.docker\buildx\.lock` vb. dosyalara yazamadığı için "Access is denied" verebilir. Bu projede docker / docker-compose kullanırken:
+  1. Agent, `docker-compose build`, `docker-compose up`, `docker build` gibi komutları çalıştırırken **her zaman** tam yetki (Shell/run_terminal_cmd için `required_permissions: ["all"]`) talep etmeli.
+  2. Kullanıcı, Cursor’da bu komutlar için çıkan izin/onay isteminde **Allow** / **Tam erişim** benzeri seçeneği vermeli; böylece komut sandbox dışında ve ağ açık çalışır.
+  3. Hâlâ engelleniyorsa: Cursor **Settings → Features → Chat** (veya **Terminal**) bölümünde "Run in sandbox" / "Sandboxed terminal" benzeri seçeneği kapatın veya bu projede `.vscode/settings.json` içinde `cursor.terminal.allowList` ile `docker`, `docker-compose` ekleyin.
 
 ## İletişim Kuralları
 

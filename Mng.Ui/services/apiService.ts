@@ -312,6 +312,12 @@ export function fetchFromDataGateway(
         // Don't throw here, let the request proceed (server will return 401 if needed)
       }
 
+      // Token'ı cookie'den al (production'da Nginx proxy Authorization'ı client'tan iletir; bu yüzden mutlaka gönderilmeli)
+      const token = getAccessToken();
+      if (!token) {
+        throw new Error("Access token bulunamadı. Lütfen tekrar giriş yapın.");
+      }
+
       // URL formatı: '/api/v1/data/@side_menu?skip=0&limit=1000'
       // Query string'i ayrı çıkar
       const [pathPart, queryPart] = url.split('?');
@@ -345,10 +351,12 @@ export function fetchFromDataGateway(
       
       try {
         // Use $fetch.raw to access response headers
+        // Authorization header zorunlu: production'da Nginx -> DataGateway proxy'si $http_authorization ile iletir
         const rawResponse = await $fetch.raw(fullUrl, {
           method,
           ...(body && { body }),
           headers: {
+            Authorization: `Bearer ${token}`,
             ...headers,
           },
         });
@@ -377,21 +385,25 @@ export function fetchFromDataGateway(
             const refreshed = await authStore.refreshAccessToken();
             
             if (refreshed) {
-              // Token refresh başarılı, isteği tekrar dene
-              try {
-                const retryResponse = await $fetch(fullUrl, {
-                  method,
-                  ...(body && { body }),
-                  headers: {
-                    ...headers,
-                  },
-                });
-                resolve(retryResponse);
-                return;
-              } catch (retryError: any) {
-                // Retry de başarısız, normal hata akışına devam et
-                fetchError = retryError;
-                // Retry'de de 401 alırsak aşağıdaki hata handling'e devam et
+              // Token refresh başarılı, isteği tekrar dene (yeni token ile)
+              const newToken = getAccessToken();
+              if (newToken) {
+                try {
+                  const retryResponse = await $fetch(fullUrl, {
+                    method,
+                    ...(body && { body }),
+                    headers: {
+                      Authorization: `Bearer ${newToken}`,
+                      ...headers,
+                    },
+                  });
+                  resolve(retryResponse);
+                  return;
+                } catch (retryError: any) {
+                  // Retry de başarısız, normal hata akışına devam et
+                  fetchError = retryError;
+                  // Retry'de de 401 alırsak aşağıdaki hata handling'e devam et
+                }
               }
             }
           } catch (refreshError: any) {
@@ -514,7 +526,16 @@ export function getDataGatewayProxyUrl(url: string): string {
   return queryPart ? `/api/data/${serverPath}?${queryPart}` : `/api/data/${serverPath}`;
 }
 
-/** DataGateway üzerinden dosyayı blob olarak indirir (önizleme için). Auth proxy üzerinden gider. */
+/** img src / window.open gibi header gönderilemeyen yerler için: URL'e access_token ekler. Nginx bu query'yi Authorization header'a taşır. */
+export function getDataGatewayProxyUrlWithAuth(url: string): string {
+  const base = getDataGatewayProxyUrl(url);
+  const token = getAccessToken();
+  if (!token) return base;
+  const sep = base.includes('?') ? '&' : '?';
+  return `${base}${sep}access_token=${encodeURIComponent(token)}`;
+}
+
+/** DataGateway üzerinden dosyayı blob olarak indirir (önizleme/indirme). fetchFromDataGateway ile aynı URL + Authorization mekanizması. */
 export async function fetchBlobFromDataGateway(url: string): Promise<Blob> {
   const authStore = useAuthStore();
   try {
@@ -522,8 +543,39 @@ export async function fetchBlobFromDataGateway(url: string): Promise<Blob> {
   } catch {
     // devam et, sunucu 401 dönebilir
   }
-  const fullUrl = getDataGatewayProxyUrl(url);
-  return await $fetch<Blob>(fullUrl, { responseType: 'blob' });
+  const token = getAccessToken();
+  if (!token) {
+    throw new Error("Access token bulunamadı. Lütfen tekrar giriş yapın.");
+  }
+  // fetchFromDataGateway ile birebir aynı URL üretimi
+  const [pathPart, queryPart] = url.split('?');
+  const cleanPath = pathPart.startsWith('/') ? pathPart : `/${pathPart}`;
+  let serverPath = cleanPath;
+  if (serverPath.startsWith('/api/v1/data/')) {
+    serverPath = serverPath.replace(/^\/api\/v1\/data\//, 'v1/data/');
+  } else if (serverPath.startsWith('/api/v1/')) {
+    serverPath = serverPath.replace(/^\/api\/v1\//, 'v1/');
+  } else if (serverPath.startsWith('/api/')) {
+    serverPath = serverPath.replace(/^\/api\//, '');
+  } else if (serverPath.startsWith('/')) {
+    serverPath = serverPath.substring(1);
+  }
+  const fullUrl = queryPart ? `/api/data/${serverPath}?${queryPart}` : `/api/data/${serverPath}`;
+
+  // Tarayıcıda native fetch kullan; Authorization header'ı fetchFromDataGateway ile aynı şekilde gönder
+  const res = await fetch(fullUrl, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+    credentials: 'same-origin',
+  });
+  if (!res.ok) {
+    const msg = await res.text().catch(() => res.statusText);
+    const err: any = new Error(msg || `Request failed: ${res.status}`);
+    err.statusCode = res.status;
+    err.status = res.status;
+    throw err;
+  }
+  return await res.blob();
 }
 
 // Legacy functions (for backward compatibility)
@@ -587,12 +639,16 @@ export function fetchFromMngLLM(
         ? `/api/llm/${serverPath}?${queryPart}`
         : `/api/llm/${serverPath}`;
       
+      // Production'da istek nginx'e gider; token header'da gönderilmeli (nginx proxy_set_header Authorization ile iletir)
+      const token = getAccessToken();
+      const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+      
       try {
-        // Use $fetch which automatically handles server-side routing
         const response = await $fetch(fullUrl, {
           method,
           ...(body && { body }),
           headers: {
+            ...authHeaders,
             ...headers,
           },
         });
@@ -602,23 +658,23 @@ export function fetchFromMngLLM(
         // 401 Unauthorized hatası - token expire olmuş olabilir
         if (fetchError.statusCode === 401 || fetchError.status === 401) {
           try {
-            // Token'ı refresh etmeyi dene
             const refreshed = await authStore.refreshAccessToken();
             
             if (refreshed) {
-              // Token refresh başarılı, isteği tekrar dene
+              const retryToken = getAccessToken();
+              const retryAuthHeaders = retryToken ? { Authorization: `Bearer ${retryToken}` } : {};
               try {
                 const retryResponse = await $fetch(fullUrl, {
                   method,
                   ...(body && { body }),
                   headers: {
+                    ...retryAuthHeaders,
                     ...headers,
                   },
                 });
                 resolve(retryResponse);
                 return;
               } catch (retryError: any) {
-                // Retry de başarısız, normal hata akışına devam et
                 fetchError = retryError;
               }
             }

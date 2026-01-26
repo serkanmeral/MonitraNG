@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onUnmounted } from 'vue';
 import { UploadIcon, XIcon, DownloadIcon, FileIcon, ImageIcon, EyeIcon } from 'vue-tabler-icons';
-import { fetchFromDataGateway, getDataGatewayProxyUrl, fetchBlobFromDataGateway } from '@/services/apiService';
+import { fetchFromDataGateway, getDataGatewayProxyUrlWithAuth, fetchBlobFromDataGateway } from '@/services/apiService';
 
 const props = defineProps<{
   field: any;
@@ -99,7 +99,15 @@ const withExtension = (baseName: string, fileExt?: string | null): string => {
   return baseName.toLowerCase().endsWith(ext.toLowerCase()) ? baseName : baseName + ext;
 };
 
+// Thumbnail için oluşturduğumuz blob URL'lerini serbest bırak (img header gönderemediği için hep fetch+blob kullanıyoruz)
+const revokeBlobUrlsInPreviews = () => {
+  previewUrls.value.filter(p => !p.isNew && p.url && p.url.startsWith('blob:')).forEach(p => {
+    try { URL.revokeObjectURL(p.url); } catch (_) {}
+  });
+};
+
 // Load preview for single file. stored: optional new backend format { file_name, file_ext, file_size (KB), ... }
+// Resim thumbnail: Authorization header için fetchBlobFromDataGateway + blob URL kullanılıyor (<img src> header göndermiyor)
 const loadPreview = async (filePath: string, stored?: { file_name?: string; file_ext?: string; file_size?: number }) => {
   if (!filePath || typeof filePath !== 'string') {
     previewUrls.value = [];
@@ -107,6 +115,7 @@ const loadPreview = async (filePath: string, stored?: { file_name?: string; file
   }
   const defaultFileName = stored?.file_name || filePath.split('/').pop() || 'file';
   const fileSizeBytes = stored && typeof stored.file_size === 'number' ? stored.file_size * 1024 : undefined;
+  revokeBlobUrlsInPreviews();
 
   try {
     const metadataResponse = await fetchFromDataGateway(
@@ -122,9 +131,10 @@ const loadPreview = async (filePath: string, stored?: { file_name?: string; file
       const fileName = withExtension(baseName, stored?.file_ext);
       const size = fileSizeBytes ?? metadata.fileSize;
       if (isImage) {
-        const downloadUrl = getDataGatewayProxyUrl(`/api/v1/files/download?filePath=${encodeURIComponent(filePath)}`);
+        const blob = await fetchBlobFromDataGateway(`/api/v1/files/download?filePath=${encodeURIComponent(filePath)}`);
+        const url = URL.createObjectURL(blob);
         previewUrls.value = [{
-          url: downloadUrl,
+          url,
           fileName,
           mimeType,
           filePath,
@@ -157,7 +167,9 @@ const loadPreview = async (filePath: string, stored?: { file_name?: string; file
 };
 
 // Load previews for array of files (items: legacy path string, or new { path, file_name, file_size, ... }, or upload { content, ... })
+// Resim thumbnail: Authorization header için fetchBlobFromDataGateway + blob URL (<img src> header göndermiyor)
 const loadPreviewsForArray = async (items: (string | any)[]) => {
+  revokeBlobUrlsInPreviews();
   const existingPreviews: typeof previewUrls.value = [];
   fileMetadata.value = [];
 
@@ -182,9 +194,10 @@ const loadPreviewsForArray = async (items: (string | any)[]) => {
         const fileName = withExtension(baseName, stored?.file_ext);
         const size = fileSizeBytes ?? metadata.fileSize;
         if (isImage) {
-          const downloadUrl = getDataGatewayProxyUrl(`/api/v1/files/download?filePath=${encodeURIComponent(filePath)}`);
+          const blob = await fetchBlobFromDataGateway(`/api/v1/files/download?filePath=${encodeURIComponent(filePath)}`);
+          const url = URL.createObjectURL(blob);
           existingPreviews.push({
-            url: downloadUrl,
+            url,
             fileName,
             mimeType,
             filePath,
@@ -542,7 +555,7 @@ const downloadFile = async (filePath: string, fileName?: string) => {
     }
     return;
   }
-  const downloadUrl = getDataGatewayProxyUrl(`/api/v1/files/download?filePath=${encodeURIComponent(filePath)}`);
+  const downloadUrl = getDataGatewayProxyUrlWithAuth(`/api/v1/files/download?filePath=${encodeURIComponent(filePath)}`);
   window.open(downloadUrl, '_blank');
 };
 
@@ -661,10 +674,17 @@ const getPreviewIndex = (preview: typeof previewUrls.value[0]): number => {
   );
 };
 
+// Unmount'ta blob URL'leri serbest bırak
+onUnmounted(() => {
+  revokeBlobUrlsInPreviews();
+  revokePreviewObjectUrl();
+});
+
 // Watch for changes in modelValue to load previews
 // IMPORTANT: Must be defined after all helper functions (loadPreview, loadPreviewsForArray, etc.)
 watch(() => props.modelValue, async (newValue) => {
   if (!newValue) {
+    revokeBlobUrlsInPreviews();
     previewUrls.value = [];
     fileMetadata.value = [];
     newFiles.value = [];

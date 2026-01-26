@@ -239,6 +239,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { fetchFromMngKeeper, getAccessToken } from '@/services/apiService'
 
 definePageMeta({
   pageType: 'manager'
@@ -329,20 +330,16 @@ const filteredLicenses = computed(() => {
 const loadLicenses = async () => {
   loading.value = true
   try {
-    // Get all domains first
-    const domains = await $fetch('/api/keeper/domain')
-    
-    // Load license info for each domain
-    const licensePromises = domains.map(async (domain: any) => {
+    const domains = await fetchFromMngKeeper('domain')
+    const licensePromises = (domains as any[]).map(async (domain: any) => {
       try {
-        const license = await $fetch(`/api/keeper/license/${domain.name}`)
-        const userCount = await $fetch(`/api/keeper/license/${domain.name}/user-count`)
+        const license = await fetchFromMngKeeper(`license/${domain.name}`)
+        const userCount = await fetchFromMngKeeper(`license/${domain.name}/user-count`)
         return {
           ...license,
           userCount
         }
-      } catch (err) {
-        // Domain might not have license yet
+      } catch {
         return null
       }
     })
@@ -370,10 +367,7 @@ const handleUpload = async () => {
     formData.append('domainName', uploadDomainName.value)
     formData.append('licenseFile', licenseFile.value[0])
 
-    await $fetch('/api/keeper/license/upload', {
-      method: 'POST',
-      body: formData,
-    })
+    await fetchFromMngKeeper('license/upload', 'POST', formData)
 
     showUpload.value = false
     licenseFile.value = []
@@ -387,15 +381,21 @@ const handleUpload = async () => {
 
 const downloadLicense = async (domainName: string, licenseType: string) => {
   try {
-    const response = await fetch(`/api/keeper/license/${domainName}/download?type=${licenseType.toLowerCase()}`)
+    const token = getAccessToken()
+    const baseUrl = `/api/keeper/license/${domainName}/download?type=${licenseType.toLowerCase()}`
+    const requestUrl = token ? `${baseUrl}&access_token=${encodeURIComponent(token)}` : baseUrl
+    const response = await fetch(requestUrl, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'include',
+    })
     const blob = await response.blob()
-    const url = window.URL.createObjectURL(blob)
+    const blobUrl = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url
+    a.href = blobUrl
     a.download = `license-${licenseType.toLowerCase()}-${domainName}.enc`
     document.body.appendChild(a)
     a.click()
-    window.URL.revokeObjectURL(url)
+    window.URL.revokeObjectURL(blobUrl)
     document.body.removeChild(a)
   } catch (err: any) {
     console.error('Failed to download license:', err)

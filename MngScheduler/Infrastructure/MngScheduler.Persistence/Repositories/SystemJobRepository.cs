@@ -17,6 +17,7 @@ public class SystemJobRepository : ISystemJobRepository
     private readonly ILogger<SystemJobRepository> _logger;
     private readonly MngSchedulerSettings _settings;
     private readonly IMongoCollection<ScheduledJob> _collection;
+    private readonly string _databaseName;
 
     public SystemJobRepository(
         IMongoClient mongoClient,
@@ -27,8 +28,8 @@ public class SystemJobRepository : ISystemJobRepository
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _settings = settings?.Value ?? throw new ArgumentNullException(nameof(settings));
 
-        var databaseName = _settings.MongoDB.KeeperDatabaseName ?? "mngkeeper";
-        var database = _mongoClient.GetDatabase(databaseName);
+        _databaseName = _settings.MongoDB.KeeperDatabaseName ?? "mngkeeper";
+        var database = _mongoClient.GetDatabase(_databaseName);
         _collection = database.GetCollection<ScheduledJob>("@scheduled_jobs");
 
         // Create indexes
@@ -73,54 +74,43 @@ public class SystemJobRepository : ISystemJobRepository
         try
         {
             var now = DateTime.UtcNow;
-            
+
+            // Tanılama: Hangi DB/collection ve toplam kaç döküman var (filtresiz)
+            var totalInCollection = await _collection.CountDocumentsAsync(FilterDefinition<ScheduledJob>.Empty);
+            _logger.LogDebug("System jobs DB: {DatabaseName}, collection @scheduled_jobs, total documents: {Total}",
+                _databaseName, totalInCollection);
+
             // Filter: System jobs that are active
+            // Accept both enum/int (0) and string "System" for jobType; both bool true and int 1 for isActive
+            // in case documents were written by another service or with different serialization.
             // Note: StartDate, ExpireDate, MaxExecutionCount checks are done in ShouldExecute() method
-            // This method only filters by IsActive for performance
-            var filter = Builders<ScheduledJob>.Filter.And(
+            var jobTypeFilter = Builders<ScheduledJob>.Filter.Or(
                 Builders<ScheduledJob>.Filter.Eq(x => x.JobType, JobType.System),
-                Builders<ScheduledJob>.Filter.Eq(x => x.IsActive, true)
-            );
+                Builders<ScheduledJob>.Filter.Eq("jobType", "System"));
+            var isActiveFilter = Builders<ScheduledJob>.Filter.Or(
+                Builders<ScheduledJob>.Filter.Eq(x => x.IsActive, true),
+                Builders<ScheduledJob>.Filter.Eq("isActive", 1));
+            var filter = Builders<ScheduledJob>.Filter.And(jobTypeFilter, isActiveFilter);
 
             var jobs = await _collection.Find(filter).ToListAsync();
             
-            // Additional runtime checks: filter out jobs that shouldn't execute
-            // and auto-deactivate expired jobs or jobs that reached execution limit
-            var jobsToDeactivate = new List<ScheduledJob>();
+            // Runtime checks: only return jobs that should execute (StartDate, ExpireDate, MaxExecutionCount).
+            // We do NOT persist IsActive=false here: if a job is expired or at limit, we skip it this round only.
+            // Thus, when the user sets isActive=true and fixes expireDate/maxExecutionCount, it stays true.
             var validJobs = new List<ScheduledJob>();
-            
             foreach (var job in jobs)
             {
                 if (job.ShouldExecute(now))
                 {
                     validJobs.Add(job);
                 }
-                else if (!job.IsActive)
+                else
                 {
-                    // Job was auto-deactivated by ShouldExecute() (expired or limit reached)
-                    jobsToDeactivate.Add(job);
+                    _logger.LogDebug("Job {JobId} skipped this sync (expired or execution limit reached); isActive not persisted",
+                        job.JobId);
                 }
             }
-            
-            // Auto-deactivate expired jobs or jobs that reached execution limit
-            if (jobsToDeactivate.Any())
-            {
-                var deactivateTasks = jobsToDeactivate.Select(job => 
-                    UpdateJobAsync(job).ContinueWith(t =>
-                    {
-                        if (t.IsFaulted)
-                        {
-                            _logger.LogWarning(t.Exception, "Error auto-deactivating job {JobId}", job.JobId);
-                        }
-                        else
-                        {
-                            _logger.LogInformation("Auto-deactivated job {JobId} (expired or execution limit reached)", job.JobId);
-                        }
-                    })
-                );
-                await Task.WhenAll(deactivateTasks);
-            }
-            
+
             _logger.LogDebug("Retrieved {Count} active system jobs (filtered from {TotalCount})", 
                 validJobs.Count, jobs.Count);
             return validJobs;

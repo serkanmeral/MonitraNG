@@ -87,6 +87,7 @@ markdown_extensions:
 # Navigation
 nav:
   - Home: index.md
+  - Documentation Standards: DOCUMENTATION_STANDARDS.md
   # - Getting Started:
   #   - user-guide/getting-started.md
   #   - user-guide/installation.md
@@ -108,50 +109,124 @@ nav:
           # - OpenAPI: api/mnghub/openapi.json  # OpenAPI dosyası eklendiğinde aktif edilecek
   - Services:
       - MngKeeper:
-          - Architecture: MngKeeper/architecture/ARCHITECTURE_GUIDE.md
-          - Guides: MngKeeper/guides/GATEWAY_INTEGRATION.md
-          - Changelog: MngKeeper/changelog/CHANGELOG.md
+          - Changelog: MngKeeper/main/CHANGELOG.md
+          - Roadmap: MngKeeper/main/ROADMAP.md
+          - Technical Specs: MngKeeper/main/TECHNICAL_SPECS.md
+          - Architecture: MngKeeper/support/architecture/ARCHITECTURE_GUIDE.md
+          - Guides:
+              - API Overview: MngKeeper/support/guides/API_OVERVIEW.md
+              - Gateway Integration: MngKeeper/support/guides/GATEWAY_INTEGRATION.md
+              - Gateway Integration Changes: MngKeeper/support/guides/GATEWAY_INTEGRATION_CHANGES.md
+              - Domain Creation Email: MngKeeper/support/guides/DOMAIN_CREATION_EMAIL_NOTIFICATION.md
+              - Production Migration Plan: MngKeeper/support/guides/PRODUCTION_MIGRATION_PLAN.md
+              - Cleanup Instructions: MngKeeper/support/guides/CLEANUP_INSTRUCTIONS.md
+              - Current Access Status: MngKeeper/support/guides/CURRENT_ACCESS_STATUS.md
+              - Tests: MngKeeper/support/guides/TESTS_README.md
+              - Licensing Roadmap: MngKeeper/support/guides/LICENSING_ROADMAP.md
+              - Licensing Test Plan: MngKeeper/support/guides/LICENSING_TEST_PLAN.md
+          - Setup:
+              - Environment Variables: MngKeeper/support/setup/ENVIRONMENT_VARIABLES.md
+              - Version Management: MngKeeper/support/setup/VERSION_MANAGEMENT.md
+          - Troubleshooting:
+              - Gateway JWT Validation: MngKeeper/support/troubleshooting/GATEWAY_JWT_VALIDATION_ISSUE.md
+              - Gateway Troubleshooting: MngKeeper/support/troubleshooting/GATEWAY_TROUBLESHOOTING.md
+          - Specs:
+              - Code Optimization Plan: MngKeeper/support/specs/CODE_OPTIMIZATION_PLAN.md
       - MngDataGateway:
-          - Architecture: MngDataGateway/architecture/ARCHITECTURE_GUIDE.md
-          - Guides: MngDataGateway/guides/GATEWAY_INTEGRATION.md
-          - API: MngDataGateway/api/API_VERSIONING.md
+          - Changelog: MngDataGateway/main/CHANGELOG.md
+          - Roadmap: MngDataGateway/main/ROADMAP.md
+          - Technical Specs: MngDataGateway/main/TECHNICAL_SPECS.md
+          - Architecture: MngDataGateway/support/architecture/ARCHITECTURE_GUIDE.md
+          - Guides:
+              - Gateway Integration: MngDataGateway/support/guides/GATEWAY_INTEGRATION.md
+              - API Versioning: MngDataGateway/support/guides/API_VERSIONING.md
+              - Roadmap (ek): MngDataGateway/support/guides/ROADMAP_MngDataGateway.md
+              - Current Status: MngDataGateway/support/guides/CURRENT_STATUS.md
+              - Code Optimization: MngDataGateway/support/guides/CODE_OPTIMIZATION.md
+              - Dataset Schema: MngDataGateway/support/guides/DATASET_SCHEMA_SUMMARY.md
+              - HTTP Validation: MngDataGateway/support/guides/HTTP_VALIDATION.md
+              - Query Examples: MngDataGateway/support/guides/query-examples.md
+          - Specs:
+              - Books Dataset Plan: MngDataGateway/support/specs/BOOKS_DATASET_PLAN.md
+              - File Field Type Spec: MngDataGateway/support/specs/FILE_FIELD_TYPE_SPECIFICATION.md
+              - Persons/PersonGroups: MngDataGateway/support/specs/PERSONS_PERSONGROUPS_IMPLEMENTATION.md
       - MngHub:
-          - Architecture: MngHub/architecture/ARCHITECTURE_PLAN.md
-          - Guides: MngHub/guides/GATEWAY_INTEGRATION.md
+          - Changelog: MngHub/main/CHANGELOG.md
+          - Roadmap: MngHub/main/ROADMAP.md
+          - Technical Specs: MngHub/main/TECHNICAL_SPECS.md
+          - Architecture: MngHub/support/architecture/ARCHITECTURE_PLAN.md
+          - Guides:
+              - Gateway Integration: MngHub/support/guides/GATEWAY_INTEGRATION.md
+              - Current Status: MngHub/support/guides/CURRENT_STATUS.md
+              - Test Instructions: MngHub/support/guides/TEST_INSTRUCTIONS.md
       - MngReactor:
-          - Architecture: MngReactor/architecture/ARCHITECTURE_GUIDE.md
-          - API: MngReactor/api/API_DOCUMENTATION.md
+          - Changelog: MngReactor/main/CHANGELOG.md
+          - Roadmap: MngReactor/main/ROADMAP.md
+          - Technical Specs: MngReactor/main/TECHNICAL_SPECS.md
+          - Architecture: MngReactor/support/architecture/ARCHITECTURE_GUIDE.md
           - Guides:
-              - Gateway Integration: MngReactor/guides/GATEWAY_INTEGRATION.md
-              - Usage Guide: MngReactor/guides/USAGE_GUIDE.md
+              - Gateway Integration: MngReactor/support/guides/GATEWAY_INTEGRATION.md
+              - Usage Guide: MngReactor/support/guides/USAGE_GUIDE.md
       - MngEngine:
-          - Architecture: MngEngine/architecture/ARCHITECTURE_GUIDE.md
-          - API: MngEngine/api/API_DOCUMENTATION.md
-          - Guides:
-              - Gateway Integration: MngEngine/guides/GATEWAY_INTEGRATION.md
+          - Changelog: MngEngine/main/CHANGELOG.md
+          - Roadmap: MngEngine/main/ROADMAP.md
+          - Technical Specs: MngEngine/main/TECHNICAL_SPECS.md
+          - Architecture: MngEngine/support/architecture/ARCHITECTURE_GUIDE.md
+          - Gateway Integration: MngEngine/support/guides/GATEWAY_INTEGRATION.md
       - MngNotifier:
-          - Architecture: MngNotifier/architecture/ARCHITECTURE_GUIDE.md
-          - API: MngNotifier/api/API_DOCUMENTATION.md
+          - Changelog: MngNotifier/main/CHANGELOG.md
+          - Roadmap: MngNotifier/main/ROADMAP.md
+          - Technical Specs: MngNotifier/main/TECHNICAL_SPECS.md
+          - Architecture: MngNotifier/support/architecture/ARCHITECTURE_GUIDE.md
           - Guides:
-              - Gateway Integration: MngNotifier/guides/GATEWAY_INTEGRATION.md
+              - Gateway Integration: MngNotifier/support/guides/GATEWAY_INTEGRATION.md
+              - Configuration: MngNotifier/support/guides/CONFIGURATION.md
+              - Development vs Production: MngNotifier/support/guides/DEVELOPMENT_VS_PRODUCTION.md
+              - Mail Notification Design: MngNotifier/support/guides/MAIL_NOTIFICATION_DESIGN.md
       - MngScheduler:
-          - Architecture: MngScheduler/architecture/ARCHITECTURE_GUIDE.md
-          - API: MngScheduler/api/API_DOCUMENTATION.md
+          - Changelog: MngScheduler/main/CHANGELOG.md
+          - Roadmap: MngScheduler/main/ROADMAP.md
+          - Technical Specs: MngScheduler/main/TECHNICAL_SPECS.md
+          - Architecture: MngScheduler/support/architecture/ARCHITECTURE_GUIDE.md
           - Guides:
-              - Gateway Integration: MngScheduler/guides/GATEWAY_INTEGRATION.md
+              - Gateway Integration: MngScheduler/support/guides/GATEWAY_INTEGRATION.md
+              - Roadmap (ek): MngScheduler/support/guides/ROADMAP_LEGACY.md
       - MngLLM:
-          - Architecture: MngLLM/architecture/ARCHITECTURE_GUIDE.md
-          - API: MngLLM/api/API_DOCUMENTATION.md
+          - Changelog: MngLLM/main/CHANGELOG.md
+          - Roadmap: MngLLM/main/ROADMAP.md
+          - Technical Specs: MngLLM/main/TECHNICAL_SPECS.md
+          - Architecture: MngLLM/support/architecture/ARCHITECTURE_GUIDE.md
           - Guides:
-              - Gateway Integration: MngLLM/guides/GATEWAY_INTEGRATION.md
+              - Gateway Integration: MngLLM/support/guides/GATEWAY_INTEGRATION.md
+              - Roadmap (ek): MngLLM/support/guides/ROADMAP.md
+              - Current Status: MngLLM/support/guides/current_status.md
+              - Chatbot Planning: MngLLM/support/guides/CHATBOT_PLANNING.md
+              - Implementation Plan: MngLLM/support/guides/IMPLEMENTATION_PLAN.md
+              - Dataset Documentation Plan: MngLLM/support/guides/DATASET_DOCUMENTATION_PLAN.md
+              - Multilingual Support: MngLLM/support/guides/MULTILINGUAL_SUPPORT.md
+              - UI Guide Strategy: MngLLM/support/guides/UI_GUIDE_STRATEGY.md
       - MngGateway:
-          - Architecture: MngGateway/architecture/ARCHITECTURE_GUIDE.md
-          - API: MngGateway/api/API_DOCUMENTATION.md
+          - Changelog: MngGateway/main/CHANGELOG.md
+          - Roadmap: MngGateway/main/ROADMAP.md
+          - Technical Specs: MngGateway/main/TECHNICAL_SPECS.md
+          - Architecture: MngGateway/support/architecture/ARCHITECTURE_GUIDE.md
+          - Gateway Integration Complete: MngGateway/support/guides/GATEWAY_INTEGRATION_COMPLETE.md
       - MngAdmin:
-          - Architecture: MngAdmin/architecture/ARCHITECTURE_GUIDE.md
-          - API: MngAdmin/api/API_DOCUMENTATION.md
+          - Changelog: MngAdmin/main/CHANGELOG.md
+          - Roadmap: MngAdmin/main/ROADMAP.md
+          - Technical Specs: MngAdmin/main/TECHNICAL_SPECS.md
+          - Architecture: MngAdmin/support/architecture/ARCHITECTURE_GUIDE.md
           - Guides:
-              - Gateway Integration: MngAdmin/guides/GATEWAY_INTEGRATION.md
+              - Gateway Integration: MngAdmin/support/guides/GATEWAY_INTEGRATION.md
+              - Backup Configuration: MngAdmin/support/guides/BACKUP_CONFIGURATION.md
+              - Docker Setup: MngAdmin/support/guides/DOCKER_SETUP.md
+      - MngDomainUI:
+          - Backup Feature Setup: MngDomainUI/guides/BACKUP_FEATURE_SETUP.md
+          - Quick Start Backup: MngDomainUI/guides/QUICK_START_BACKUP.md
+          - Current Status: MngDomainUI/guides/current_status.md
+          - Roadmap: MngDomainUI/guides/ROADMAP.md
+      - MngMobile:
+          - Roadmap: MngMobile/ROADMAP.md
       - Mng.Ui:
           - Docker Deployment: Mng.Ui/guides/DOCKER_DEPLOYMENT.md
           - Gateway Integration: Mng.Ui/guides/GATEWAY_INTEGRATION.md
@@ -190,6 +265,23 @@ nav:
                   - Best Practices: Mng.Ui/guides/chatbot/datasets/indexes/index-best-practices.md
               - Examples:
                   - Books Dataset: Mng.Ui/guides/chatbot/datasets/examples/books-dataset.md
+          - Support:
+              - Current Status: Mng.Ui/support/guides/current_status.md
+              - Hub Test Guide: Mng.Ui/support/guides/HUB_TEST_GUIDE.md
+              - Hub Troubleshooting: Mng.Ui/support/guides/HUB_TROUBLESHOOTING.md
+              - Automated Forms Usage: Mng.Ui/support/guides/AUTOMATED_FORMS_USAGE.md
+              - Domain Menu Item: Mng.Ui/support/guides/domain-menu-item.md
+              - UI Guide Template: Mng.Ui/support/guides/templates/ui-guide-template.md
+              - Architecture:
+                  - Token Storage Strategy: Mng.Ui/support/architecture/TOKEN_STORAGE_STRATEGY.md
+                  - Hub Subscription Pattern: Mng.Ui/support/architecture/hub-subscription-pattern.md
+              - I18n (support):
+                  - Summary: Mng.Ui/support/guides/i18n/SUMMARY.md
+                  - Roadmap: Mng.Ui/support/guides/i18n/ROADMAP.md
+              - Specs:
+                  - Dashboard Builder: Mng.Ui/support/specs/DASHBOARD_BUILDER_MECHANISM.md
+                  - Widget Library: Mng.Ui/support/specs/WIDGET_LIBRARY_SPEC.md
+                  - Dataset UI Design: Mng.Ui/support/specs/DATASET_UI_DESIGN.md
   - DevOps:
       - CI/CD: cicd/current_status.md
       - DevOps Roadmap: devops-roadmap.md

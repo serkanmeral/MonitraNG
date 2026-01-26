@@ -599,7 +599,14 @@ namespace MngKeeper.Infrastructure.Services
             {
                 var validation = await ValidateLicenseAsync(domainName, cancellationToken);
                 
-                // If no license found or no expiration behavior configured, deny all operations
+                // No license found (e.g. MasterKey not set, or no license file yet): allow token generation so login works
+                if (!validation.IsValid && validation.ErrorMessage == "No license found for domain" && operation == LicenseOperation.TokenGeneration)
+                {
+                    _logger.LogInformation("No license found for domain: {DomainName}, allowing TokenGeneration so login can succeed", domainName);
+                    return true;
+                }
+                
+                // If no expiration behavior configured, deny non-token operations
                 if (validation.ExpirationBehavior == null)
                 {
                     _logger.LogWarning("No expiration behavior configured for domain: {DomainName}, denying operation: {Operation}", 

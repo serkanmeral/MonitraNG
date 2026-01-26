@@ -6,6 +6,7 @@ namespace MngLLM.Application.Configuration;
 public class MngLLMSettings
 {
     public ServerSettings Server { get; set; } = new();
+    public JwtSettings Jwt { get; set; } = new();
     public OllamaSettings Ollama { get; set; } = new();
     public TranslationSettings Translation { get; set; } = new();
     public string OpenApiServerPath { get; set; } = string.Empty;
@@ -13,6 +14,17 @@ public class MngLLMSettings
     public ActorsSettings Actors { get; set; } = new();
     public CorsSettings Cors { get; set; } = new();
     public DocumentationSettings Documentation { get; set; } = new();
+}
+
+/// <summary>
+/// JWT validation (Keycloak issuer)
+/// </summary>
+public class JwtSettings
+{
+    /// <summary>
+    /// OIDC Authority URL for JWT validation, e.g. http://keycloak:8080/keycloak/realms/meral
+    /// </summary>
+    public string Authority { get; set; } = string.Empty;
 }
 
 /// <summary>

@@ -72,17 +72,11 @@ const formatTimestamp = (date: Date) => {
 };
 
 const connectToHub = async () => {
-  console.log('[Events Page] connectToHub called', {
-    hasSubscription: hubStore.hasSubscription(subscriptionId),
-    subscriptionCount: hubStore.subscriptionCount
-  });
-  
   // Hub store'dan bağlantıyı başlat (eğer bağlı değilse)
   await hubStore.connectToHub();
 
   // Subscription zaten varsa, önce kaldır
   if (hubStore.hasSubscription(subscriptionId)) {
-    console.log('[Events Page] Removing existing subscription');
     hubStore.unsubscribe(subscriptionId);
   }
   
@@ -93,11 +87,6 @@ const connectToHub = async () => {
 
   // Handler: Mesajları ekle
   const handler = (data: { routingKey: string; message: any; timestamp: string }) => {
-    console.log('[Events Page] Handler called', {
-      routingKey: data.routingKey,
-      currentMessageCount: messages.value.length
-    });
-    
     const eventType = getEventType(data.routingKey);
     messages.value.unshift({
       id: `${Date.now()}-${Math.random()}`,
@@ -114,11 +103,7 @@ const connectToHub = async () => {
   };
 
   // Subscription'ı ekle
-  const subscribed = hubStore.subscribe(subscriptionId, { filter, handler });
-  console.log('[Events Page] Subscription added', {
-    subscribed,
-    subscriptionCount: hubStore.subscriptionCount
-  });
+  hubStore.subscribe(subscriptionId, { filter, handler });
 };
 
 const disconnectFromHub = async () => {

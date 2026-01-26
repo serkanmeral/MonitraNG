@@ -126,13 +126,15 @@ public static class Extensions
         services.AddHttpClient();
         
         // Configure HttpClient for KeycloakService
+        // BaseAddress sonda / ile bitmeli; yoksa relative path (realms/...) son segmenti siler ve 404 olur.
         services.AddHttpClient<MngKeeper.Application.Interfaces.IKeycloakService, MngKeeper.Infrastructure.Services.KeycloakService>((serviceProvider, client) =>
         {
             var configuration = serviceProvider.GetRequiredService<IConfiguration>();
             var baseUrl = configuration["MngKeeperSettings:Keycloak:BaseUrl"];
             if (!string.IsNullOrEmpty(baseUrl))
             {
-                client.BaseAddress = new Uri(baseUrl);
+                var normalized = baseUrl.TrimEnd('/');
+                client.BaseAddress = new Uri(normalized + "/");
             }
             client.Timeout = TimeSpan.FromSeconds(30);
         });

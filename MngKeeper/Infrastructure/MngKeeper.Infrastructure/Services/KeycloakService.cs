@@ -14,6 +14,7 @@ namespace MngKeeper.Infrastructure.Services
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
         private readonly string _pathPrefix;
+        private readonly string _baseUrl;
         private string? _adminToken;
 
         public KeycloakService(ILogger<KeycloakService> logger, HttpClient httpClient, IConfiguration configuration)
@@ -21,43 +22,40 @@ namespace MngKeeper.Infrastructure.Services
             _logger = logger;
             _httpClient = httpClient;
             _configuration = configuration;
-            
+
+            var baseUrlRaw = configuration["MngKeeperSettings:Keycloak:BaseUrl"] ?? "";
+            _baseUrl = baseUrlRaw.TrimEnd('/');
+
             // Get path prefix from configuration (default: empty string for local, /keycloak for server)
-            _pathPrefix = configuration["MngKeeperSettings:Keycloak:PathPrefix"] ?? "";
-            
-            // Ensure prefix starts with / if not empty and doesn't already start with /
-            if (!string.IsNullOrEmpty(_pathPrefix) && !_pathPrefix.StartsWith("/"))
-            {
-                _pathPrefix = "/" + _pathPrefix;
-            }
-            
-            // Remove trailing slash if exists
-            if (_pathPrefix.EndsWith("/"))
-            {
-                _pathPrefix = _pathPrefix.TrimEnd('/');
-            }
-            
+            var pathPrefix = configuration["MngKeeperSettings:Keycloak:PathPrefix"] ?? "";
+            if (!string.IsNullOrEmpty(pathPrefix) && !pathPrefix.StartsWith("/"))
+                pathPrefix = "/" + pathPrefix;
+            if (pathPrefix.EndsWith("/"))
+                pathPrefix = pathPrefix.TrimEnd('/');
+            _pathPrefix = pathPrefix;
+
             _logger.LogInformation("KeycloakService initialized with PathPrefix: '{PathPrefix}'", 
                 string.IsNullOrEmpty(_pathPrefix) ? "(empty - direct access)" : _pathPrefix);
         }
 
         /// <summary>
-        /// Builds a Keycloak API endpoint path with the configured path prefix
+        /// Builds a Keycloak API path for HttpClient. BaseAddress ile birleşince doğru token/realm URL’i oluşmalı.
+        /// - BaseUrl origin ise (http://keycloak:8080): "/keycloak/realms/..." gibi absolute path döner.
+        /// - BaseUrl path ile bitiyorsa (http://keycloak:8080/keycloak): "realms/..." gibi relative path döner; yoksa Uri birleşimi /keycloak’ı siler ve 404 olur.
         /// </summary>
-        /// <param name="path">The endpoint path (e.g., "/realms/{realmName}/protocol/openid-connect/token" or "/admin/realms")</param>
-        /// <returns>The full path with prefix if configured</returns>
         private string BuildEndpointPath(string path)
         {
-            // Remove leading slash from path if it exists (we'll add it after prefix)
             path = path.TrimStart('/');
-            
-            // If prefix is empty, return path with leading slash
+
             if (string.IsNullOrEmpty(_pathPrefix))
-            {
                 return "/" + path;
-            }
-            
-            // Prefix already has leading slash from constructor, so just combine
+
+            // BaseUrl zaten path prefix ile bitiyorsa (örn. http://keycloak:8080/keycloak): relative path döndür ki
+            // HttpClient BaseAddress + relative = http://keycloak:8080/keycloak/realms/... olsun. "/" + path dönersek
+            // Uri birleşimi base’in path’ini silip http://keycloak:8080/realms/... yapar → 404.
+            if (!string.IsNullOrEmpty(_baseUrl) && _baseUrl.EndsWith(_pathPrefix, StringComparison.OrdinalIgnoreCase))
+                return path;
+
             return _pathPrefix + "/" + path;
         }
 
@@ -997,7 +995,15 @@ namespace MngKeeper.Infrastructure.Services
                 
                 var formContent = new FormUrlEncodedContent(formData);
 
-                var response = await _httpClient.PostAsync(BuildEndpointPath("realms/master/protocol/openid-connect/token"), formContent);
+                var tokenPath = BuildEndpointPath("realms/master/protocol/openid-connect/token");
+                var effectiveUrl = _httpClient.BaseAddress != null
+                    ? new Uri(_httpClient.BaseAddress, tokenPath).ToString()
+                    : (string.IsNullOrEmpty(_baseUrl) ? tokenPath : new Uri(new Uri(_baseUrl), tokenPath).ToString());
+                _logger.LogInformation(
+                    "Keycloak admin token request: BaseAddress={BaseAddress}, RequestPath={RequestPath}, EffectiveUrl={EffectiveUrl}",
+                    _httpClient.BaseAddress?.ToString(), tokenPath, effectiveUrl);
+
+                var response = await _httpClient.PostAsync(tokenPath, formContent);
                 
                 if (!response.IsSuccessStatusCode)
                 {

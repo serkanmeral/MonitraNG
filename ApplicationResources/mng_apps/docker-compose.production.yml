@@ -100,8 +100,9 @@ services:
       - MngKeeperSettings__MongoDB__ConnectionString=${MONGO_CONNECTION_STRING}
       - MngKeeperSettings__MongoDB__DatabaseName=${MONGO_DATABASE_NAME:-mngkeeper}
       
-      # Keycloak Configuration
+      # Keycloak Configuration (BaseUrl origin only, e.g. http://keycloak:8080; path prefix e.g. /keycloak)
       - MngKeeperSettings__Keycloak__BaseUrl=${KEYCLOAK_BASE_URL}
+      - MngKeeperSettings__Keycloak__PathPrefix=${KEYCLOAK_PATH_PREFIX:-/keycloak}
       - MngKeeperSettings__Keycloak__AdminUsername=${KEYCLOAK_ADMIN_USERNAME}
       - MngKeeperSettings__Keycloak__AdminPassword=${KEYCLOAK_ADMIN_PASSWORD}
       - MngKeeperSettings__Keycloak__ClientId=${KEYCLOAK_CLIENT_ID}
@@ -134,6 +135,9 @@ services:
       
       # Certificate Settings
       - MngKeeperSettings__CertificateSettings__DNS=${CERTIFICATE_DNS:-mngkeeper}
+      
+      # License encryption (required for Create Domain / trial license)
+      - MngKeeperSettings__License__MasterKey=${MNGKEEPER_LICENSE_MASTER_KEY}
     
     networks:
       - mng_common_mng_network
@@ -141,7 +145,7 @@ services:
     restart: unless-stopped
     
     healthcheck:
-      test: ["CMD-SHELL", "curl -k -f https://localhost:5001/api/version/short || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5001/api/version/short || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -179,6 +183,11 @@ services:
       - MngDataGatewaySettings__RabbitMQ__Password=${RABBITMQ_PASSWORD}
       - MngDataGatewaySettings__RabbitMQ__VirtualHost=${RABBITMQ_VIRTUALHOST:-/}
       - MngDataGatewaySettings__CertificateSettings__DNS=mngdatagateway
+      # FileStorage / MinIO (file field uploads): container içinden MinIO'ya erişim için servis adresi
+      - MngDataGatewaySettings__FileStorage__Minio__Endpoint=${MINIO_ENDPOINT:-minio:9000}
+      - MngDataGatewaySettings__FileStorage__Minio__AccessKey=${MINIO_ACCESS_KEY}
+      - MngDataGatewaySettings__FileStorage__Minio__SecretKey=${MINIO_SECRET_KEY}
+      - MngDataGatewaySettings__FileStorage__Minio__UseSSL=${MINIO_USE_SSL:-false}
     networks:
       - mng_common_mng_network
     restart: unless-stopped
@@ -215,6 +224,10 @@ services:
       - MngHubSettings__RabbitMQ__Password=${RABBITMQ_PASSWORD}
       - MngHubSettings__RabbitMQ__VirtualHost=${RABBITMQ_VIRTUALHOST:-/}
       - MngHubSettings__Actors__MngKeeper=${MNGKEEPER_URL}
+      # CORS: MngGateway ile aynı origin listesi kullanılmalı (MngUI doğrudan Hub'a bağlanıyorsa CORS burada uygulanır)
+      - MngHubSettings__Cors__AllowedOrigins__0=${CORS_ALLOWED_ORIGIN_1:-https://app.monitra.local}
+      - MngHubSettings__Cors__AllowedOrigins__1=${CORS_ALLOWED_ORIGIN_2:-}
+      - MngHubSettings__Cors__AllowCredentials=true
     networks:
       - mng_common_mng_network
     restart: unless-stopped
@@ -245,6 +258,7 @@ services:
       - MngLLMSettings__Server__Port=5030
       - MngLLMSettings__Server__Scheme=http
       - MngLLMSettings__OpenApiServerPath=${OPENAPI_SERVER_PATH:-http://localhost:5030}
+      - MngLLMSettings__Jwt__Authority=${MNGLLM_JWT_AUTHORITY:-}
       - MngLLMSettings__Ollama__BaseUrl=${OLLAMA_BASE_URL:-http://ollama:11434}
       - MngLLMSettings__Actors__MngKeeper=${MNGKEEPER_URL:-http://mngkeeper:5001}
       - MngLLMSettings__Actors__MngDataGateway=${MNGDATAGATEWAY_URL:-http://mngdatagateway:5010}
@@ -253,6 +267,7 @@ services:
     depends_on:
       - mngkeeper
       - mngdatagateway
+      - ollama
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5030/health || exit 1"]
@@ -265,6 +280,31 @@ services:
         limits:
           cpus: '0.5'
           memory: 512M
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '4'
+        reservations:
+          memory: 2G
+          cpus: '1'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
 
   mngscheduler:
     build:
@@ -326,9 +366,11 @@ services:
       - MngAdminSettings__RabbitMQ__Password=${RABBITMQ_PASSWORD}
       - MngAdminSettings__RabbitMQ__VirtualHost=${RABBITMQ_VIRTUALHOST:-/}
       - MngAdminSettings__Backup__MinIO__SystemBucket=system
-      - MINIO_ENDPOINT=${MINIO_ENDPOINT:-minio:9000}
-      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
-      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      # MinIO bağlantısı — MngAdminSettings:MinIO altına bind olması için MngAdminSettings__MinIO__* kullanılmalı
+      - MngAdminSettings__MinIO__Endpoint=${MINIO_ENDPOINT:-minio:9000}
+      - MngAdminSettings__MinIO__AccessKey=${MINIO_ACCESS_KEY}
+      - MngAdminSettings__MinIO__SecretKey=${MINIO_SECRET_KEY}
+      - MngAdminSettings__MinIO__UseSSL=${MINIO_USE_SSL:-false}
     networks:
       - mng_common_mng_network
     depends_on:
@@ -382,6 +424,10 @@ services:
     build:
       context: ../../Mng.Ui
       dockerfile: Dockerfile
+      args:
+        # Build-time: Hub aynı origin üzerinden gitsin (app.monitrang.com/hub) — CORS gerektirmez
+        GATEWAY_URL: ${GATEWAY_URL:-https://app.monitrang.com}
+        HUB_URL: ${HUB_URL:-}
     image: mngui:${VERSION:-latest}
     container_name: mngui
     # Port mapping removed - Access via Nginx reverse proxy only
@@ -426,10 +472,11 @@ services:
     # ports:
     #   - "3001:3000"
     environment:
-      # Backend service URLs (server-side for container-to-container communication)
-      - SERVER_KEEPER_URL=${SERVER_KEEPER_URL:-https://mngkeeper:5001}
-      - SERVER_DATAGATEWAY_URL=${SERVER_DATAGATEWAY_URL:-https://mngdatagateway:5010}
+      # Backend service URLs (server-side, container-to-container: use http — services listen HTTP inside network)
+      - SERVER_KEEPER_URL=${SERVER_KEEPER_URL:-http://mngkeeper:5001}
+      - SERVER_DATAGATEWAY_URL=${SERVER_DATAGATEWAY_URL:-http://mngdatagateway:5010}
       - SERVER_HUB_URL=${SERVER_HUB_URL:-http://mnghub:5020}
+      - SERVER_SCHEDULER_URL=${SERVER_SCHEDULER_URL:-http://mngscheduler:5090}
       # Public service URLs (client-side for browser access)
       - KEEPER_URL=${KEEPER_URL:-https://mngkeeper:5001}
       - DATAGATEWAY_URL=${DATAGATEWAY_URL:-https://mngdatagateway:5010}
@@ -477,6 +524,10 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
+
+volumes:
+  ollama_data:
+    driver: local
 
 networks:
   mng_common_mng_network:
