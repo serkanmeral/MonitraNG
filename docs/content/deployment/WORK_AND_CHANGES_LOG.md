@@ -39,10 +39,38 @@ Uygulama gerçekte farklı protokol/port/path’te yanıt veriyordu; healthcheck
 - Bu dört servis `docker compose up -d --no-deps --force-recreate ...` ile yeniden oluşturuldu (rebuild yok).
 - Sonuç: Tüm 10 servis **Up (healthy)**.
 
-### 3. Repo tarafında yapılmayanlar
+### 3. Repo tarafında healthcheck’lerin güncellenmesi (26 Ocak 2026)
 
-- `ApplicationResources/mng_apps/docker-compose.production.yml` içindeki bu healthcheck değişiklikleri repoda **henüz yok**.
-- İstenirse aynı metinler repodaki compose dosyasına uygulanıp, **onay sonrası** GitLab’a push edilebilir.
+- §2’deki healthcheck düzeltmeleri **repodaki** `ApplicationResources/mng_apps/docker-compose.production.yml` dosyasına uygulandı; böylece bir sonraki deploy/push ile sunucuya aynı hali gelebilir.
+- **Yapılan güncellemeler (repo):**
+  - **mnggateway:** `curl -f http://localhost:5000/health` → `curl -k -f https://localhost:5000/health`
+  - **mngdatagateway:** `curl -k -f https://localhost:5010/api/v1/health` → `curl -f http://localhost:5010/api/v1/health` (MngDataGateway Kestrel’de UseHttps yok, her zaman HTTP dinliyor)
+  - **mngui:** `wget ... http://localhost/` → `wget ... http://127.0.0.1/` (localhost çözümlemesi sorunları için)
+  - **ollama:** `curl -f http://localhost:11434/api/tags` → `curl -f -s --connect-timeout 5 --max-time 15 http://127.0.0.1:11434/api/tags`; `timeout: 10s` → `15s` (geç açılma ve ağ gecikmesi için)
+- **Sunucuda uygulama:** Repo değişiklikleri push/deploy sonrası `docker compose up -d --no-deps --force-recreate mnggateway mngdatagateway mngui ollama` ile ilgili servisler yeniden oluşturulabilir (rebuild gerekmez).
+
+### 3.1 “Starting” kalan servisler için ek dayanıklılık (26 Ocak 2026)
+
+- Portainer’da bazı servisler **starting** durumunda kalıyorsa, healthcheck komutu başarısız demektir. Repodaki healthcheck’lere şu eklemeler yapıldı:
+  - **mnggateway:** Önce HTTPS, olmazsa HTTP dene:  
+    `curl -k -f https://localhost:5000/health 2>/dev/null || curl -sf http://localhost:5000/health || exit 1`  
+    `start_period: 90s`
+  - **mngdatagateway:** Adres `127.0.0.1:5010`, `start_period: 90s`
+  - **mngui:** Nginx’in `/health` endpoint’i kullanılıyor:  
+    `wget -q --spider http://127.0.0.1/health`  
+    `start_period: 30s`, `retries: 5`
+  - **ollama:** Hafif endpoint kullanıldı: root `http://127.0.0.1:11434/` (Ollama “Ollama is running” döner).  
+    `interval: 60s`, `start_period: 180s`
+- **Sunucuda hâlâ starting ise** — container içinde healthcheck’i elle çalıştırıp hatayı görün:
+  - `docker exec mnggateway curl -k -f https://localhost:5000/health || true`
+  - `docker exec mnggateway curl -sf http://localhost:5000/health || true`
+  - `docker exec mngdatagateway curl -sf http://127.0.0.1:5010/api/v1/health || true`
+  - `docker exec mngui wget -q --spider http://127.0.0.1/health || true`
+  - `docker exec ollama curl -sf http://127.0.0.1:11434/ || true`  
+  (Ollama imajında `curl` yoksa bu komut bulunamaz hatası verir; buna göre healthcheck’i devre dışı bırakıp sadece `depends_on` ile kullanılabilir.)
+- Sağlık durumunu görmek için:  
+  `docker inspect --format '{{.State.Health.Status}}' mnggateway`  
+  `docker inspect mnggateway --format '{{json .State.Health}}' | jq`
 
 ### 4. MngDomainUI Keycloak login 404 (keycloak/keycloak tekrarı)
 
