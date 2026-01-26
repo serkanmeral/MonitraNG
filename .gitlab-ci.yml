@@ -2542,6 +2542,15 @@ deploy-services:
         echo "All services updated successfully!"
         echo "=========================================="
         
+        # Nginx reload: container IP'leri değiştiği için upstream çözümlemesini tazele (502 önlemi)
+        echo ""
+        echo "Reloading Nginx to pick up new container IPs..."
+        if docker exec nginx nginx -t 2>/dev/null && docker exec nginx nginx -s reload 2>/dev/null; then
+          echo "✓ Nginx reloaded successfully"
+        else
+          echo "⚠ Nginx reload skipped (container not found or config test failed)"
+        fi
+        
         # Final service status check
         echo ""
         echo "Checking final service status..."
@@ -2683,8 +2692,7 @@ deploy-services:
     - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
       when: never
     - if: $CI_COMMIT_BRANCH == "main"
-  when: manual
-  allow_failure: true  # Pipeline'ı başarılı saymak için (deploy manuel)
+  allow_failure: false  # Deploy otomatik; hata olursa pipeline failed, sonrası manuel devam
   timeout: 30m
 
 # Deploy sonrası health kontrolü - manuel çalıştırılır, sunucudaki container'ları docker exec ile kontrol eder.
