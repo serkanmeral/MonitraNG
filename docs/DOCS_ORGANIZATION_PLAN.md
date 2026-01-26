@@ -79,21 +79,20 @@
 - [x] MngDataGateway: content zaten tam; legacy silindi, README bırakıldı.
 - [x] Mng.Ui: eksikler `content/Mng.Ui/support/` altına (architecture, guides, specs, i18n, tst_book_data) taşındı; legacy temizlendi, README bırakıldı.
 
-### Aşama 4 — cicd / deployment / infrastructure
-- [ ] `docs/cicd/` ↔ `content/cicd/`: İsimleri eşle; content’te olmayanları content/cicd’e kopyala, sonra docs/cicd’i sil.
-- [ ] `docs/deployment/`: `content/deployment/` oluştur, tüm .md’leri taşı; .conf’u da uygun yere (örn. deployment/) koy; docs/deployment’i sil.
-- [ ] `docs/infrastructure/`: `content/infrastructure/` oluştur, tüm dosyaları taşı; mkdocs nav’a “Infrastructure” bölümü ekle; docs/infrastructure’ı sil.
+### Aşama 4 — cicd / deployment / infrastructure — Tamamlandı (26 Ocak 2026)
+- [x] `docs/cicd/` kaldırıldı (içerik zaten content/cicd’teydi).
+- [x] `content/deployment/` oluşturuldu, docs/deployment içeriği taşındı, docs/deployment silindi.
+- [x] `content/infrastructure/` oluşturuldu, docs/infrastructure taşındı, nav’a Infrastructure eklendi, docs/infrastructure silindi.
 
-### Aşama 5 — Kök .md dosyaları
-- [ ] DEVOP/roadmap ve certificate/docker/hosting/infrastructure ile ilgili olanları content altındaki ilgili klasöre taşı.
-- [ ] MkDocs ile ilgili olanları content/MkDocs/ veya mevcut yapıya göre yerleştir.
-- [ ] prd, ROADMAP, TEMPLATE_README için kalıcı yer belirleyip taşı.
-- [ ] NAVIGATION_CHECK, restore_files gibi geçici notları arşivle veya sil.
+### Aşama 5 — Kök .md dosyaları — Tamamlandı
+- [x] CERTIFICATE_MANAGEMENT_PLAN, DOCKER_DEPLOYMENT, HOSTING_*, INFRASTRUCTURE_* → content/infrastructure/ veya content/cicd/.
+- [x] MkDocs ile ilgilileri content/MkDocs/ altına taşındı (MKDOCS_SETUP, MKdocs_KULLANIM, PYTHON_INSTALLATION_GUIDE, TEMPLATE_README).
+- [x] prd.md, ROADMAP.md → content/; DevOps Roadmap → content/devops-roadmap.md (nav zaten buna bakıyor).
+- [x] NAVIGATION_CHECK, restore_files → docs/archive/temp-notes/.
 
-### Aşama 6 — docs/docs/ ve tekrarlar
-- [ ] docs/docs/devops-roadmap.md → content’e taşı.
-- [ ] docs/docs/ içinde başka referans varsa taşı; sonra docs/docs/ klasörünü kaldır.
-- [ ] DEVOPS_ROADMAP / devops-roadmap çoklamasını tek “DevOps Roadmap” dosyasında birleştir.
+### Aşama 6 — docs/docs/ ve tekrarlar — Tamamlandı
+- [x] content/devops-roadmap.md zaten mevcut; docs/docs/ kaldırıldı.
+- [x] DEVOPS_ROADMAP / devops-roadmap: Tek kaynak content/devops-roadmap.md; kök kopyalar silindi.
 
 ### Aşama 7 — Son kontroller
 - [ ] `mkdocs build` ve `mkdocs serve` ile derleme ve nav’ın doğru çalıştığını kontrol et.

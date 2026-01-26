@@ -88,6 +88,8 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Documentation Standards: DOCUMENTATION_STANDARDS.md
+  - Product Roadmap: ROADMAP.md
+  - PRD: prd.md
   # - Getting Started:
   #   - user-guide/getting-started.md
   #   - user-guide/installation.md
@@ -285,6 +287,21 @@ nav:
   - DevOps:
       - CI/CD: cicd/current_status.md
       - DevOps Roadmap: devops-roadmap.md
+      - Deployment:
+          - Current Status: deployment/current_status.md
+          - Deployment Roadmap: deployment/DEPLOYMENT_ROADMAP.md
+          - Push Deploy Checklist: deployment/PUSH_DEPLOY_CHECKLIST.md
+      - Infrastructure:
+          - Overview: infrastructure/INFRASTRUCTURE_OVERVIEW.md
+          - Current Status: infrastructure/current_status.md
+          - Nginx: infrastructure/nginx.md
+          - SSL Certificates: infrastructure/ssl-certificates.md
+          - DNS Setup: infrastructure/DNS_SETUP_INSTRUCTIONS.md
+          - Port Management: infrastructure/ports.md
+  - MkDocs:
+      - Setup: MkDocs/MKDOCS_SETUP.md
+      - Kullanım: MkDocs/MKdocs_KULLANIM.md
+      - Python Kurulumu: MkDocs/PYTHON_INSTALLATION_GUIDE.md
 
 # Copyright
 copyright: Copyright &copy; 2025 MonitraNG
