@@ -109,9 +109,9 @@ function Get-ChangedFiles {
         $baseRef = $mainRef
     }
     
-    # Get changed files
-    $changedFiles = git diff --name-only $baseRef...HEAD 2>$null
-    if (-not $changedFiles) {
+    # Get changed files (use single string so PowerShell does not misinterpret ...)
+    $changedFiles = @(git diff --name-only "$baseRef...HEAD" 2>$null)
+    if (-not $changedFiles -or $changedFiles.Count -eq 0) {
         # Fallback: check staged files
         $changedFiles = git diff --cached --name-only 2>$null
     }
@@ -134,7 +134,8 @@ function Get-ChangedServices {
         
         $isChanged = $false
         foreach ($file in $ChangedFiles) {
-            if ($file -match "^$serviceBasePath\\.*" -or $file -match "^$servicePath\\") {
+            # Git returns / on all platforms; allow both / and \ for paths
+            if ($file -match "^$([regex]::Escape($serviceBasePath))[/\\].*" -or $file -match "^$([regex]::Escape($servicePath))[/\\]") {
                 $isChanged = $true
                 break
             }
@@ -272,8 +273,9 @@ function Bump-WebUIVersion {
     $jsonContent = $packageJson | ConvertTo-Json -Depth 10
     
     # Try to preserve original formatting by replacing only the version line
+    # Use ${1} ${2} so -replace treats them as capture groups (not PowerShell vars)
     $versionRegex = '("version"\s*:\s*")[^"]+(")'
-    $newContent = $originalContent -replace $versionRegex, "`$1$newVersion`$2"
+    $newContent = $originalContent -replace $versionRegex, ('${1}' + $newVersion + '${2}')
     
     Set-Content -Path $PackageJsonPath -Value $newContent -NoNewline
     
