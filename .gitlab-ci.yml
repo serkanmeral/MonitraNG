@@ -2048,19 +2048,29 @@ deploy-docs-to-server:
           echo 'Removing old content...'
           rm -rf \"\$DOCS_DIR\"/*
           echo 'Copying new content from /tmp/docs-site...'
-          # Eğer /tmp/docs-site/site/ varsa, onun içeriğini kopyala; yoksa direkt /tmp/docs-site/* kopyala
+          # Eğer /tmp/docs-site/site/ varsa, onun içeriğini kopyala (site/ klasörü olmadan)
           if [ -d '/tmp/docs-site/site' ]; then
-            echo 'Copying from /tmp/docs-site/site/* to \$DOCS_DIR'
+            echo 'Found site/ subdirectory, copying site/* contents to \$DOCS_DIR'
             cp -r /tmp/docs-site/site/* \"\$DOCS_DIR/\" || {
               echo 'ERROR: Failed to copy files from /tmp/docs-site/site to \$DOCS_DIR'
               exit 1
             }
           else
-            echo 'Copying from /tmp/docs-site/* to \$DOCS_DIR'
+            echo 'No site/ subdirectory, copying all contents from /tmp/docs-site/* to \$DOCS_DIR'
             cp -r /tmp/docs-site/* \"\$DOCS_DIR/\" || {
               echo 'ERROR: Failed to copy files from /tmp/docs-site to \$DOCS_DIR'
               exit 1
             }
+          fi
+          echo 'Verifying copied files...'
+          ls -la \"\$DOCS_DIR\" | head -10
+          if [ ! -d \"\$DOCS_DIR/assets\" ]; then
+            echo 'WARNING: assets/ directory not found in \$DOCS_DIR'
+            echo 'Checking for nested site/ directory...'
+            if [ -d \"\$DOCS_DIR/site\" ]; then
+              echo 'Found nested site/ directory, moving contents up...'
+              mv \"\$DOCS_DIR/site\"/* \"\$DOCS_DIR/\" 2>/dev/null && rmdir \"\$DOCS_DIR/site\" || echo 'Move failed'
+            fi
           fi
           echo 'Setting permissions...'
           chown -R root:root \"\$DOCS_DIR\"
