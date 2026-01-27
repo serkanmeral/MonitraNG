@@ -1955,61 +1955,42 @@ deploy-docs-to-server:
         -o ServerAliveInterval=60 \
         -o ServerAliveCountMax=3"
       
-      # rsync komutunu çalıştırmadan önce kontrol et
-      if ! command -v rsync &> /dev/null; then
-        echo "❌ ERROR: rsync command not found!"
-        echo "Trying to install rsync..."
-        apt-get update && apt-get install -y rsync || {
-          echo "❌ ERROR: Failed to install rsync"
-          exit 1
-        }
-      fi
+      # tar + ssh yöntemi kullan (rsync'e bağımlı değil, daha güvenilir)
+      echo "Copying documentation using tar + ssh method..."
+      cd docs
       
-      echo "Using rsync: $(which rsync)"
-      rsync --version | head -1
+      # Site'i tar ile sıkıştır
+      echo "Creating tar archive..."
+      tar czf /tmp/docs-site.tar.gz site/ || {
+        echo "❌ ERROR: Failed to create tar archive"
+        exit 1
+      }
       
-      # Sunucuda rsync kontrolü
-      echo "Checking rsync on server..."
+      echo "Archive size: $(du -sh /tmp/docs-site.tar.gz | cut -f1)"
+      
+      # Sunucuya kopyala ve extract et
+      echo "Copying to server and extracting..."
       ssh -i ~/.ssh/deploy_key \
           -o StrictHostKeyChecking=no \
           -o UserKnownHostsFile=~/.ssh/known_hosts \
           -o IdentitiesOnly=yes \
           -o BatchMode=yes \
+          -o PasswordAuthentication=no \
+          -o PubkeyAuthentication=yes \
+          -o ConnectTimeout=10 \
+          -o ServerAliveInterval=60 \
+          -o ServerAliveCountMax=3 \
           $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST \
-          "which rsync || (apt-get update && apt-get install -y rsync)" || {
-        echo "⚠️  WARNING: Could not verify/install rsync on server"
+          "mkdir -p /tmp/docs-site && cd /tmp/docs-site && rm -rf * && tar xzf -" < /tmp/docs-site.tar.gz || {
+        echo "❌ ERROR: Failed to copy and extract on server"
+        exit 1
       }
       
-      rsync -avz --delete \
-          --exclude='.cache' \
-          --exclude='__pycache__' \
-          --exclude='*.pyc' \
-          --exclude='*.pyo' \
-          --exclude='*.log' \
-          --exclude='*.tmp' \
-          -e "$RSYNC_SSH_OPTS" \
-          docs/site/ \
-          $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST:/tmp/docs-site/ || {
-        echo "❌ ERROR: Failed to copy artifacts to server"
-        echo "Check SSH connection and rsync permissions."
-        echo "Trying alternative method with tar..."
-        
-        # Alternatif: tar + ssh kullan
-        cd docs
-        tar czf /tmp/docs-site.tar.gz site/
-        ssh -i ~/.ssh/deploy_key \
-            -o StrictHostKeyChecking=no \
-            -o UserKnownHostsFile=~/.ssh/known_hosts \
-            -o IdentitiesOnly=yes \
-            -o BatchMode=yes \
-            $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST \
-            "mkdir -p /tmp/docs-site && cd /tmp/docs-site && tar xzf -" < /tmp/docs-site.tar.gz || {
-          echo "❌ ERROR: tar method also failed"
-          exit 1
-        }
-        cd ..
-        echo "✅ Documentation copied using tar method"
-      }
+      # Temizlik
+      rm -f /tmp/docs-site.tar.gz
+      cd ..
+      
+      echo "✅ Documentation copied to server successfully"
       echo "✅ Documentation copied to server successfully"
       
       # Sunucuda deployment işlemi
