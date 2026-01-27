@@ -1797,7 +1797,9 @@ pages:
 # Detaylar: docs/deployment/DEPLOYMENT_ROADMAP.md - Phase 6: Dokümantasyon ve İyileştirme
 deploy-docs-to-server:
   stage: deploy-docs
-  image: python:3.11
+  image: docker:latest
+  services:
+    - docker:dind
   needs:
     - deploy-docs  # deploy-docs job'ı tamamlandıktan sonra çalış (ama artifacts kullanmıyoruz)
   rules:
@@ -1808,14 +1810,11 @@ deploy-docs-to-server:
   variables:
     DEPLOY_SERVER_HOST: "${DEPLOY_SERVER_HOST:-45.141.151.52}"
     DEPLOY_SERVER_USER: "${DEPLOY_SERVER_USER:-root}"
-    PIP_CACHE_DIR: .pip-cache
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_DRIVER: overlay2
   before_script:
-    - echo "=== Preparing for Documentation Build and Deployment ==="
-    - python --version
-    - pip --version
-    - |
-      # Install SSH and rsync tools
-      apt-get update && apt-get install -y openssh-client rsync || apk add --no-cache openssh-client rsync || true
+    - echo "=== Preparing for Docker Build and Deployment ==="
+    - apk add --no-cache openssh-client rsync
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
     - |
@@ -1858,44 +1857,31 @@ deploy-docs-to-server:
         exit 0
       fi
       
-      echo "=== Building Documentation (No artifacts dependency) ==="
+      echo "=== Building Documentation with Docker (Lokal Docker Desktop yaklaşımı) ==="
       echo "Server: $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST"
       echo "Branch: $CI_COMMIT_REF_NAME"
       echo "Commit: $CI_COMMIT_SHORT_SHA"
       
-      # Build documentation directly (no artifacts dependency)
-      echo "Installing MkDocs dependencies..."
+      # Docker build (lokal Docker Desktop'taki gibi)
+      echo "Building Docker image for MkDocs..."
       cd docs
-      for i in {1..3}; do
-        echo "pip install attempt $i/3..."
-        if pip install --cache-dir ../.pip-cache -r requirements.txt; then
-          echo "pip install succeeded on attempt $i"
-          break
-        else
-          if [ $i -eq 3 ]; then
-            echo "pip install failed after 3 attempts"
-            exit 1
-          fi
-          echo "pip install failed, waiting 10 seconds before retry..."
-          sleep 10
-        fi
-      done
+      docker build -t mkdocs-build:latest -f Dockerfile .
       
-      echo "Building MkDocs site..."
-      mkdocs build --verbose || {
-        echo "❌ ERROR: mkdocs build failed!"
-        exit 1
-      }
+      # Container'dan site'i çıkar
+      echo "Extracting site from Docker container..."
+      CONTAINER_ID=$(docker create mkdocs-build:latest)
+      docker cp $CONTAINER_ID:/usr/share/nginx/html ./site
+      docker rm $CONTAINER_ID
       
       # Verify build output
       if [ ! -d "site" ]; then
-        echo "❌ ERROR: site directory not found after build!"
+        echo "❌ ERROR: site directory not found after Docker build!"
         echo "Available files:"
         ls -la
         exit 1
       fi
       
-      echo "✅ Documentation built successfully"
+      echo "✅ Documentation built successfully with Docker"
       echo "Site size: $(du -sh site | cut -f1)"
       echo "Number of files: $(find site -type f | wc -l)"
       cd ..
