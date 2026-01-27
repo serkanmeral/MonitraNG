@@ -1981,10 +1981,19 @@ deploy-docs-to-server:
           -o ServerAliveInterval=60 \
           -o ServerAliveCountMax=3 \
           $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST \
-          "mkdir -p /tmp/docs-site && cd /tmp/docs-site && rm -rf * && tar xzf -" < /tmp/docs-site.tar.gz || {
+          "mkdir -p /tmp/docs-site && cd /tmp/docs-site && rm -rf * && tar xzf - && ls -la" < /tmp/docs-site.tar.gz || {
         echo "❌ ERROR: Failed to copy and extract on server"
         exit 1
       }
+      
+      echo "Verifying extracted content structure..."
+      ssh -i ~/.ssh/deploy_key \
+          -o StrictHostKeyChecking=no \
+          -o UserKnownHostsFile=~/.ssh/known_hosts \
+          -o IdentitiesOnly=yes \
+          -o BatchMode=yes \
+          $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST \
+          "echo 'Content of /tmp/docs-site:'; ls -la /tmp/docs-site/; echo '---'; if [ -d '/tmp/docs-site/site' ]; then echo 'site/ subdirectory found - will copy site/* contents'; else echo 'No site/ subdirectory - will copy all contents'; fi"
       
       # Temizlik
       rm -f /tmp/docs-site.tar.gz
@@ -2039,10 +2048,20 @@ deploy-docs-to-server:
           echo 'Removing old content...'
           rm -rf \"\$DOCS_DIR\"/*
           echo 'Copying new content from /tmp/docs-site...'
-          cp -r /tmp/docs-site/* \"\$DOCS_DIR/\" || {
-            echo 'ERROR: Failed to copy files from /tmp/docs-site to \$DOCS_DIR'
-            exit 1
-          }
+          # Eğer /tmp/docs-site/site/ varsa, onun içeriğini kopyala; yoksa direkt /tmp/docs-site/* kopyala
+          if [ -d '/tmp/docs-site/site' ]; then
+            echo 'Copying from /tmp/docs-site/site/* to \$DOCS_DIR'
+            cp -r /tmp/docs-site/site/* \"\$DOCS_DIR/\" || {
+              echo 'ERROR: Failed to copy files from /tmp/docs-site/site to \$DOCS_DIR'
+              exit 1
+            }
+          else
+            echo 'Copying from /tmp/docs-site/* to \$DOCS_DIR'
+            cp -r /tmp/docs-site/* \"\$DOCS_DIR/\" || {
+              echo 'ERROR: Failed to copy files from /tmp/docs-site to \$DOCS_DIR'
+              exit 1
+            }
+          fi
           echo 'Setting permissions...'
           chown -R root:root \"\$DOCS_DIR\"
           chmod -R 755 \"\$DOCS_DIR\"
