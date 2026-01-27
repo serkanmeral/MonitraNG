@@ -1419,15 +1419,36 @@ deploy-docs:
     - |
       # Build documentation
       echo "Building MkDocs site..."
+      echo "Current directory: $(pwd)"
       mkdocs build --verbose
     - |
       # Verify build output
       echo "=== Verifying build output ==="
-      ls -la site/
+      echo "Current directory: $(pwd)"
+      echo "Checking site/ directory:"
+      ls -la site/ || echo "WARNING: site/ directory not found in current directory"
+      echo "Checking docs/site/ from root:"
+      ls -la ../docs/site/ 2>/dev/null || echo "WARNING: docs/site/ not found from root"
       echo "Build completed successfully!"
       echo "Site size:"
-      du -sh site/
+      du -sh site/ 2>/dev/null || du -sh ../docs/site/ 2>/dev/null || echo "WARNING: Could not determine site size"
     - cd ..
+    - |
+      # Final verification - artifacts path kontrolü
+      echo "=== Final Artifacts Verification ==="
+      echo "Current directory: $(pwd)"
+      echo "Checking docs/site/ path:"
+      if [ -d "docs/site" ]; then
+        echo "✅ docs/site/ directory found!"
+        ls -la docs/site/ | head -10
+        echo "Total files: $(find docs/site -type f | wc -l)"
+        du -sh docs/site/
+      else
+        echo "❌ ERROR: docs/site/ directory not found!"
+        echo "Available directories:"
+        ls -la docs/ 2>/dev/null || echo "docs/ directory not found"
+        exit 1
+      fi
   after_script:
     - |
       # Build notifications
