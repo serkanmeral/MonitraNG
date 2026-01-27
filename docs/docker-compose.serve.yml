@@ -1,0 +1,23 @@
+# Lokal MkDocs — Python kurmadan tarayıcıda denemek için
+# Kullanım: docs/ klasöründeyken:
+#   docker compose -f docker-compose.serve.yml up --build
+# Tarayıcı: http://localhost:6010
+# 
+# Pip cache volume ile build süresi optimize edildi (30+ dk → ~5 dk)
+
+services:
+  docs:
+    build:
+      context: .
+      dockerfile: Dockerfile.serve
+    ports:
+      - "6010:8000"
+    volumes:
+      - .:/docs
+      # Pip cache volume - pip install süresini önemli ölçüde azaltır
+      - pip-cache:/root/.cache/pip
+    container_name: mkdocs-serve
+
+volumes:
+  pip-cache:
+    driver: local

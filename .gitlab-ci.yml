@@ -1454,8 +1454,8 @@ deploy-docs:
     - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
       when: never
     - if: $CI_COMMIT_BRANCH == "main"
-  # Build timeout
-  timeout: 15m
+  # Build timeout - Increased to 60m due to slow pip install (can take 30+ minutes)
+  timeout: 60m
   retry:
     max: 2
     when:
@@ -1525,6 +1525,8 @@ deploy-docs-preview:
         echo "✅ Preview documentation ready for MR #$CI_MERGE_REQUEST_IID"
         echo "Preview URL: https://$CI_PROJECT_NAMESPACE.gitlab.io/$CI_PROJECT_NAME/-/docs-preview/mr-$CI_MERGE_REQUEST_IID"
       fi
+  # Build timeout - Increased to 60m due to slow pip install (can take 30+ minutes)
+  timeout: 60m
 
 # GitLab Pages Deployment (otomatik)
 # Not: pages job'u özel bir isimdir ve GitLab otomatik olarak Pages'e deploy eder
@@ -1738,10 +1740,12 @@ pages:
     paths:
       - .pip-cache/
   rules:
-    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
-      when: never
-    - if: $CI_COMMIT_BRANCH == "main"
-  # GitLab Pages için özel gereksinimler:
+    - when: never  # GitLab Pages kullanılmıyor; deploy-docs-to-server kullanılıyor
+    # Eski rules (GitLab Pages için):
+    # - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+    #   when: never
+    # - if: $CI_COMMIT_BRANCH == "main"
+  # GitLab Pages için özel gereksinimler (artık kullanılmıyor):
   # 1. Job adı "pages" olmalı (✓)
   # 2. artifacts.paths "public" içermeli (✓)
   # 3. public/ klasöründe index.html olmalı (✓)
@@ -1763,12 +1767,10 @@ deploy-docs-to-server:
   needs:
     - deploy-docs  # deploy-docs job'ı tamamlandıktan sonra çalış
   rules:
-    - when: never  # ⚠️ DEVRE DIŞI - SSH key yapılandırması tamamlandığında kaldırılacak
-    # Aktif etmek için aşağıdaki satırları kullanın:
-    # - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
-    #   when: never
-    # - if: $CI_COMMIT_BRANCH == "main"
-    #   when: manual  # Manuel trigger (güvenlik için)
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
+      when: never
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual  # Manuel trigger (güvenlik için) - otomatik için 'when: on_success' yapılabilir
   variables:
     DEPLOY_SERVER_HOST: "${DEPLOY_SERVER_HOST:-45.141.151.52}"
     DEPLOY_SERVER_USER: "${DEPLOY_SERVER_USER:-root}"
@@ -1941,7 +1943,8 @@ deploy-docs-to-server:
         echo "  4. deploy-docs job failed (no artifacts available)"
       fi
   allow_failure: true  # Pipeline'ı bloklamasın
-  timeout: 15m
+  # Timeout increased to 30m for rsync operations and SSH connection handling
+  timeout: 30m
 
 
 # ============================================

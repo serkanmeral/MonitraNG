@@ -1,0 +1,22 @@
+# MkDocs geliştirme/serve — Python'a ihtiyaç duymadan lokal deneme
+# Volume ile content bağlanır, dosya değişince sayfa otomatik yenilenir.
+# Pip cache kullanarak build süresini optimize eder (30+ dakika → ~5 dakika)
+
+# Not: python:3.11-slim tercih; proxy/network sorununda python:3.11 (lokal cache) kullanın
+FROM python:3.11
+
+WORKDIR /docs
+
+# Pip cache dizini oluştur (volume ile mount edilecek)
+RUN mkdir -p /root/.cache/pip
+
+# Copy requirements first for better layer caching
+COPY requirements.txt .
+
+# Install dependencies with cache (cache directory will be mounted as volume)
+# --cache-dir kullanarak pip cache'i kullanıyoruz
+RUN pip install --cache-dir /root/.cache/pip -r requirements.txt
+
+# mkdocs.yml ve content/ container çalışırken volume ile gelir
+EXPOSE 8000
+CMD ["mkdocs", "serve", "--dev-addr=0.0.0.0:8000"]
