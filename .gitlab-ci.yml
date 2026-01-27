@@ -1906,7 +1906,7 @@ deploy-docs-to-server:
       # Sunucuda deployment işlemi
       echo ""
       echo "=== Deploying on Server ==="
-      # Heredoc yerine tek satırlık komutlar kullan (YAML parser sorunlarını önlemek için)
+      echo "Checking /tmp/docs-site on server..."
       ssh -i ~/.ssh/deploy_key \
           -o StrictHostKeyChecking=no \
           -o UserKnownHostsFile=~/.ssh/known_hosts \
@@ -1918,9 +1918,63 @@ deploy-docs-to-server:
           -o ServerAliveInterval=60 \
           -o ServerAliveCountMax=3 \
           $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST \
-          "set -e && DOCS_DIR=\"/var/www/docs.monitrang.com\" && mkdir -p \"\$DOCS_DIR\" && if [ -d \"\$DOCS_DIR\" ] && [ \"\$(ls -A \$DOCS_DIR 2>/dev/null)\" ]; then BACKUP_DIR=\"/tmp/docs-backup-\$(date +%Y%m%d-%H%M%S)\" && cp -r \"\$DOCS_DIR\" \"\$BACKUP_DIR\" || echo 'Backup failed'; fi && rm -rf \"\$DOCS_DIR\"/* && cp -r /tmp/docs-site/* \"\$DOCS_DIR/\" && chown -R root:root \"\$DOCS_DIR\" && chmod -R 755 \"\$DOCS_DIR\" && if [ ! -f \"\$DOCS_DIR/index.html\" ]; then INDEX_FILE=\$(find \"\$DOCS_DIR\" -name \"index.html\" -type f | head -1) && if [ -n \"\$INDEX_FILE\" ]; then cp \"\$INDEX_FILE\" \"\$DOCS_DIR/index.html\"; else echo '<!DOCTYPE html><html><head><title>MonitraNG Documentation</title></head><body><h1>MonitraNG Documentation</h1></body></html>' > \"\$DOCS_DIR/index.html\"; fi; fi && echo 'Documentation deployed successfully'"
+          "ls -la /tmp/docs-site/ | head -10" || {
+        echo "❌ ERROR: /tmp/docs-site directory not found on server!"
+        echo "rsync may have failed. Check rsync logs above."
+        exit 1
+      }
       
-      if [ $? -eq 0 ]; then
+      echo "Deploying to /var/www/docs.monitrang.com..."
+      DEPLOY_RESULT=$(ssh -i ~/.ssh/deploy_key \
+          -o StrictHostKeyChecking=no \
+          -o UserKnownHostsFile=~/.ssh/known_hosts \
+          -o IdentitiesOnly=yes \
+          -o BatchMode=yes \
+          -o PasswordAuthentication=no \
+          -o PubkeyAuthentication=yes \
+          -o ConnectTimeout=10 \
+          -o ServerAliveInterval=60 \
+          -o ServerAliveCountMax=3 \
+          $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST \
+          "set -e
+          DOCS_DIR=\"/var/www/docs.monitrang.com\"
+          echo 'Creating directory: \$DOCS_DIR'
+          mkdir -p \"\$DOCS_DIR\"
+          echo 'Checking existing content...'
+          if [ -d \"\$DOCS_DIR\" ] && [ \"\$(ls -A \$DOCS_DIR 2>/dev/null)\" ]; then
+            BACKUP_DIR=\"/tmp/docs-backup-\$(date +%Y%m%d-%H%M%S)\"
+            echo 'Creating backup: \$BACKUP_DIR'
+            cp -r \"\$DOCS_DIR\" \"\$BACKUP_DIR\" || echo 'Backup failed (non-critical)'
+          fi
+          echo 'Removing old content...'
+          rm -rf \"\$DOCS_DIR\"/*
+          echo 'Copying new content from /tmp/docs-site...'
+          cp -r /tmp/docs-site/* \"\$DOCS_DIR/\" || {
+            echo 'ERROR: Failed to copy files from /tmp/docs-site to \$DOCS_DIR'
+            exit 1
+          }
+          echo 'Setting permissions...'
+          chown -R root:root \"\$DOCS_DIR\"
+          chmod -R 755 \"\$DOCS_DIR\"
+          echo 'Verifying index.html...'
+          if [ ! -f \"\$DOCS_DIR/index.html\" ]; then
+            INDEX_FILE=\$(find \"\$DOCS_DIR\" -name \"index.html\" -type f | head -1)
+            if [ -n \"\$INDEX_FILE\" ]; then
+              echo 'Found index.html at: \$INDEX_FILE'
+              cp \"\$INDEX_FILE\" \"\$DOCS_DIR/index.html\"
+            else
+              echo 'WARNING: No index.html found, creating default'
+              echo '<!DOCTYPE html><html><head><title>MonitraNG Documentation</title></head><body><h1>MonitraNG Documentation</h1></body></html>' > \"\$DOCS_DIR/index.html\"
+            fi
+          fi
+          echo 'Verifying deployment...'
+          ls -la \"\$DOCS_DIR\" | head -5
+          echo 'Documentation deployed successfully'")
+      
+      DEPLOY_EXIT_CODE=$?
+      if [ $DEPLOY_EXIT_CODE -eq 0 ]; then
+        echo ""
+        echo "$DEPLOY_RESULT"
         echo ""
         echo "✅ === Documentation Deployment Completed Successfully ==="
         echo "URL: https://docs.monitrang.com"
@@ -1928,6 +1982,9 @@ deploy-docs-to-server:
       else
         echo ""
         echo "❌ === Documentation Deployment Failed ==="
+        echo "Exit code: $DEPLOY_EXIT_CODE"
+        echo "Deploy output:"
+        echo "$DEPLOY_RESULT"
         exit 1
       fi
   after_script:
