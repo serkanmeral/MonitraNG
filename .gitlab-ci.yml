@@ -1420,32 +1420,47 @@ deploy-docs:
       # Build documentation
       echo "Building MkDocs site..."
       echo "Current directory: $(pwd)"
-      mkdocs build --verbose
+      echo "Running mkdocs build..."
+      if ! mkdocs build --verbose; then
+        echo "❌ ERROR: mkdocs build failed!"
+        exit 1
+      fi
+      echo "✅ mkdocs build completed"
     - |
       # Verify build output
       echo "=== Verifying build output ==="
       echo "Current directory: $(pwd)"
-      echo "Checking site/ directory:"
-      ls -la site/ || echo "WARNING: site/ directory not found in current directory"
-      echo "Checking docs/site/ from root:"
-      ls -la ../docs/site/ 2>/dev/null || echo "WARNING: docs/site/ not found from root"
-      echo "Build completed successfully!"
-      echo "Site size:"
-      du -sh site/ 2>/dev/null || du -sh ../docs/site/ 2>/dev/null || echo "WARNING: Could not determine site size"
-    - cd ..
+      echo "Checking site/ directory in docs/:"
+      if [ -d "site" ]; then
+        echo "✅ site/ directory found in docs/"
+        ls -la site/ | head -10
+        echo "Site size:"
+        du -sh site/
+        echo "Total files: $(find site -type f | wc -l)"
+      else
+        echo "❌ ERROR: site/ directory not found in docs/"
+        echo "Available files in docs/:"
+        ls -la
+        exit 1
+      fi
     - |
-      # Final verification - artifacts path kontrolü
+      # Return to root and verify artifacts path
+      cd ..
       echo "=== Final Artifacts Verification ==="
       echo "Current directory: $(pwd)"
-      echo "Checking docs/site/ path:"
+      echo "Checking docs/site/ path from root:"
       if [ -d "docs/site" ]; then
-        echo "✅ docs/site/ directory found!"
+        echo "✅ docs/site/ directory found from root!"
+        echo "First 10 files:"
         ls -la docs/site/ | head -10
         echo "Total files: $(find docs/site -type f | wc -l)"
+        echo "Total size:"
         du -sh docs/site/
       else
-        echo "❌ ERROR: docs/site/ directory not found!"
+        echo "❌ ERROR: docs/site/ directory not found from root!"
         echo "Available directories:"
+        ls -la
+        echo "Checking if docs/ exists:"
         ls -la docs/ 2>/dev/null || echo "docs/ directory not found"
         exit 1
       fi
