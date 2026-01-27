@@ -1797,11 +1797,9 @@ pages:
 # Detaylar: docs/deployment/DEPLOYMENT_ROADMAP.md - Phase 6: Dokümantasyon ve İyileştirme
 deploy-docs-to-server:
   stage: deploy-docs
-  image: alpine:latest
-  dependencies:
-    - deploy-docs  # deploy-docs job'ının artifacts'ını kullan (pages yerine)
+  image: python:3.11
   needs:
-    - deploy-docs  # deploy-docs job'ı tamamlandıktan sonra çalış
+    - deploy-docs  # deploy-docs job'ı tamamlandıktan sonra çalış (ama artifacts kullanmıyoruz)
   rules:
     - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]|\[ci skip\]/i
       when: never
@@ -1810,9 +1808,14 @@ deploy-docs-to-server:
   variables:
     DEPLOY_SERVER_HOST: "${DEPLOY_SERVER_HOST:-45.141.151.52}"
     DEPLOY_SERVER_USER: "${DEPLOY_SERVER_USER:-root}"
+    PIP_CACHE_DIR: .pip-cache
   before_script:
-    - echo "=== Preparing SSH for Documentation Deployment ==="
-    - apk add --no-cache openssh-client rsync
+    - echo "=== Preparing for Documentation Build and Deployment ==="
+    - python --version
+    - pip --version
+    - |
+      # Install SSH and rsync tools
+      apt-get update && apt-get install -y openssh-client rsync || apk add --no-cache openssh-client rsync || true
     - mkdir -p ~/.ssh
     - chmod 700 ~/.ssh
     - |
@@ -1855,23 +1858,47 @@ deploy-docs-to-server:
         exit 0
       fi
       
-      echo "=== Deploying Documentation to Server ==="
+      echo "=== Building Documentation (No artifacts dependency) ==="
       echo "Server: $DEPLOY_SERVER_USER@$DEPLOY_SERVER_HOST"
       echo "Branch: $CI_COMMIT_REF_NAME"
       echo "Commit: $CI_COMMIT_SHORT_SHA"
       
-      # Artifacts kontrolü
-      if [ ! -d "docs/site" ]; then
-        echo "❌ ERROR: docs/site directory not found!"
-        echo "deploy-docs job may have failed or artifacts not available."
-        echo "Checking available directories:"
+      # Build documentation directly (no artifacts dependency)
+      echo "Installing MkDocs dependencies..."
+      cd docs
+      for i in {1..3}; do
+        echo "pip install attempt $i/3..."
+        if pip install --cache-dir ../.pip-cache -r requirements.txt; then
+          echo "pip install succeeded on attempt $i"
+          break
+        else
+          if [ $i -eq 3 ]; then
+            echo "pip install failed after 3 attempts"
+            exit 1
+          fi
+          echo "pip install failed, waiting 10 seconds before retry..."
+          sleep 10
+        fi
+      done
+      
+      echo "Building MkDocs site..."
+      mkdocs build --verbose || {
+        echo "❌ ERROR: mkdocs build failed!"
+        exit 1
+      }
+      
+      # Verify build output
+      if [ ! -d "site" ]; then
+        echo "❌ ERROR: site directory not found after build!"
+        echo "Available files:"
         ls -la
         exit 1
       fi
       
-      echo "✅ Documentation artifacts found"
-      echo "Artifacts size: $(du -sh docs/site | cut -f1)"
-      echo "Number of files: $(find docs/site -type f | wc -l)"
+      echo "✅ Documentation built successfully"
+      echo "Site size: $(du -sh site | cut -f1)"
+      echo "Number of files: $(find site -type f | wc -l)"
+      cd ..
       
       # SSH bağlantı testi
       echo ""
