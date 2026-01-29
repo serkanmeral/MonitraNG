@@ -13,6 +13,11 @@ public class MngKeeperSettings
     public CertificateSettings CertificateSettings { get; set; } = null!;
     public LicenseSettings License { get; set; } = new();
     public string OpenApiServerPath { get; set; } = null!;
+    /// <summary>
+    /// UI uygulamasının base URL'i (şifre sıfırlama mailindeki link için).
+    /// Örnek: https://app.monitrang.com (production), http://localhost:3000 (development).
+    /// </summary>
+    public string? UiBaseUrl { get; set; }
 }
 
 public class ServerSettings
