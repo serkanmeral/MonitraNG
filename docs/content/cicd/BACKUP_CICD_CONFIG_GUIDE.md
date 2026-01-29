@@ -34,7 +34,7 @@ Bu rehber, CI/CD ve deployment konfigürasyonlarınızı yedeklemek ve geri yük
 ### 5. Dokümantasyon
 - `CICD_DEPLOYMENT_COMPLETE_GUIDE.md` - Kapsamlı rehber
 - `DEPLOYMENT_GUIDE.md` - Deployment rehberi
-- `SUCCESSFUL_RUNNER_CONFIGURATION.md` - Runner config
+- `RUNNER_AND_PIPELINE_NOTES.md` - Runner ve pipeline yapılandırma/backup/sorun giderme
 - `current_status.md` - Mevcut durum
 
 ### 6. Git State

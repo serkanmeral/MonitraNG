@@ -1,98 +1,141 @@
----
-title: "MngEngine API Documentation"
-category: "api"
-tags: ["engine", "api", "endpoints", "rest"]
-service: "MngEngine"
-difficulty: "beginner"
-estimated_time: "10 dakika"
-language: "tr"
-priority: 1
----
+# MngEngine Technical Specs (API Referansı)
 
-# MngEngine API Documentation
+Test ekibinin kullandığı birincil API referansı. Tüm endpoint'ler, request/response alanları ve parametre açıklamaları DOCUMENTATION_STANDARDS §3.6'ya uygun biçimde bu dokümanda tutulur.
 
-## Özet
-MngEngine servisinin REST API endpoint'leri ve kullanım örnekleri.
-
-## Base URL
-
-```
-http://localhost:5004/api/v1
-```
-
-API Gateway üzerinden:
-```
-https://api.monitra.local/engine/api/v1
-```
-
-## Authentication
-
-Tüm endpoint'ler JWT token authentication gerektirir.
-
-## Endpoints
-
-### Config Endpoints
-
-#### Get Config
-```http
-GET /config
-```
-
-#### Apply Config
-```http
-POST /config
-Content-Type: application/json
-
-{
-  "config": {}
-}
-```
-
-### Job Endpoints
-
-#### Get Jobs
-```http
-GET /job
-```
-
-#### Create Job
-```http
-POST /job
-Content-Type: application/json
-
-{
-  "name": "job-name",
-  "cronExpression": "0 0 * * *",
-  "type": "LinuxHost"
-}
-```
-
-#### Update Job
-```http
-PUT /job/{id}
-Content-Type: application/json
-
-{
-  "cronExpression": "0 0 * * *"
-}
-```
-
-#### Delete Job
-```http
-DELETE /job/{id}
-```
-
-### Data Endpoints
-
-#### Get Data
-```http
-GET /data
-```
-
-## İlgili Linkler
-
-- [Architecture Guide](../support/architecture/ARCHITECTURE_GUIDE.md)
+**Temel bilgiler:**
+- **Base path (Gateway üzerinden):** `/engine/api/v1/` (ör. `https://gateway.example.com/engine/api/v1/config`)
+- **Kimlik doğrulama:** Tüm endpoint’ler JWT token gerektirir.
+- **Content-Type:** `application/json`.
 
 ---
 
-**Son Güncelleme:** 16 Ocak 2026
+## 1. Config — `api/v1/config`
+
+### 1.1 Config getir
+
+| Özellik | Değer |
+|--------|--------|
+| **Method** | `GET` |
+| **Path** | `/api/v1/config` |
+| **Auth** | Evet |
+
+#### Response (200 OK)
+
+Konfigürasyon nesnesi (uygulama tanımlı).
+
+### 1.2 Config uygula
+
+| Özellik | Değer |
+|--------|--------|
+| **Method** | `POST` |
+| **Path** | `/api/v1/config` |
+| **Auth** | Evet |
+
+#### Request body
+
+| Alan adı | Tip | Zorunlu | Açıklama |
+|----------|-----|---------|----------|
+| `config` | object | Hayır | Uygulanacak konfigürasyon. |
+
+#### Response (200 OK)
+
+Uygulama sonucu.
+
+---
+
+## 2. Job — `api/v1/job`
+
+### 2.1 Job listele
+
+| Özellik | Değer |
+|--------|--------|
+| **Method** | `GET` |
+| **Path** | `/api/v1/job` |
+| **Auth** | Evet |
+
+#### Response (200 OK)
+
+Job listesi (uygulama tanımlı yapı).
+
+### 2.2 Job oluştur
+
+| Özellik | Değer |
+|--------|--------|
+| **Method** | `POST` |
+| **Path** | `/api/v1/job` |
+| **Auth** | Evet |
+
+#### Request body
+
+| Alan adı | Tip | Zorunlu | Açıklama | Örnek |
+|----------|-----|---------|----------|--------|
+| `name` | string | Evet | Job adı. | `"job-name"` |
+| `cronExpression` | string | Evet | Cron ifadesi. | `"0 0 * * *"` |
+| `type` | string | Evet | Job tipi (örn. LinuxHost, WindowsHost). | `"LinuxHost"` |
+
+#### Response (200 OK / 201)
+
+Oluşturulan job nesnesi.
+
+### 2.3 Job güncelle
+
+| Özellik | Değer |
+|--------|--------|
+| **Method** | `PUT` |
+| **Path** | `/api/v1/job/{id}` |
+| **Auth** | Evet |
+
+#### Path parametreleri
+
+| Parametre | Tip | Zorunlu | Açıklama |
+|-----------|-----|---------|----------|
+| `id` | string | Evet | Job ID. |
+
+#### Request body
+
+Güncellenecek alanlar (örn. `cronExpression`).
+
+#### Response (200 OK)
+
+Güncellenmiş job. 404: Job bulunamadı.
+
+### 2.4 Job sil
+
+| Özellik | Değer |
+|--------|--------|
+| **Method** | `DELETE` |
+| **Path** | `/api/v1/job/{id}` |
+| **Auth** | Evet |
+
+#### Response (200 OK / 204 / 404)
+
+Başarı veya 404.
+
+---
+
+## 3. Data — `api/v1/data`
+
+### 3.1 Veri getir
+
+| Özellik | Değer |
+|--------|--------|
+| **Method** | `GET` |
+| **Path** | `/api/v1/data` |
+| **Auth** | Evet |
+
+#### Response (200 OK)
+
+Veri listesi veya toplu veri (uygulama tanımlı).
+
+---
+
+## Hata yanıtları
+
+- 400: Bad Request.
+- 401: Unauthorized.
+- 404: Job/Config bulunamadı.
+- 500: Internal server error.
+
+---
+
+İlgili doküman: [Architecture Guide](../support/architecture/ARCHITECTURE_GUIDE.md).

@@ -62,5 +62,5 @@ ssh root@monitrang-server "docker cp gitlab-runner:/etc/gitlab-runner/config.tom
 
 ---
 
-**Detaylı Rehber:** `SUCCESSFUL_RUNNER_CONFIGURATION.md`
+**Detaylı Rehber:** [RUNNER_AND_PIPELINE_NOTES.md](RUNNER_AND_PIPELINE_NOTES.md)
 

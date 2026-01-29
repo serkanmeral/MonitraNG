@@ -389,7 +389,7 @@ GitLab CI/CD pipeline tamamen çalışır durumda ve production deployment başa
 **Pipeline Stages:** ✅ Tüm stage'ler başarılı (test-setup, build, test, build-docker, openapi-extract, validate-docs, deploy-docs, pages)  
 **Pages Artifacts:** ✅ Upload başarılı (optimize edildi, 413 hatası çözüldü)  
 **Retry Config:** ✅ GitLab CE limit'lerine uygun (max: 2, network_failure kaldırıldı)  
-**Backup Dokümantasyon:** ✅ Başarılı yapılandırma dokümante edildi (`SUCCESSFUL_RUNNER_CONFIGURATION.md`)
+**Backup Dokümantasyon:** ✅ Başarılı yapılandırma dokümante edildi (`RUNNER_AND_PIPELINE_NOTES.md`)
 
 ### Son Yapılan İşlemler (15 Ocak 2025 - Güncel Oturum)
 
@@ -427,7 +427,7 @@ GitLab CI/CD pipeline tamamen çalışır durumda ve production deployment başa
    - Tüm job'lar çalışıyor
 
 7. ✅ **Başarılı Yapılandırma Dokümantasyonu**
-   - `SUCCESSFUL_RUNNER_CONFIGURATION.md` oluşturuldu
+   - `RUNNER_AND_PIPELINE_NOTES.md` (eski SUCCESSFUL_RUNNER_CONFIGURATION dahil birleştirildi)
    - Tüm yapılandırmalar kaydedildi
    - Backup ve restore rehberleri hazırlandı
    - Sorun giderme notları eklendi

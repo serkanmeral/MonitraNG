@@ -72,6 +72,15 @@ Uygulama gerçekte farklı protokol/port/path’te yanıt veriyordu; healthcheck
   `docker inspect --format '{{.State.Health.Status}}' mnggateway`  
   `docker inspect mnggateway --format '{{json .State.Health}}' | jq`
 
+### 3.2 Pipeline’a Nginx reload adımı (26 Ocak 2026)
+
+- **Sebep:** Deploy sonrası container IP’leri değişiyor; Nginx başlarken hostname’leri (mngui, mnggateway vb.) çözümleyip önbelleğe alıyor. IP’ler değişince eski IP’lere istek gidiyor → 502 Bad Gateway (app.monitrang.com açılmıyor).
+- **Yapılan:** `.gitlab-ci.yml` içindeki `deploy-services` job’ına, tüm servisler güncellendikten sonra ve “Final service status check”ten hemen önce şu adım eklendi:
+  - `docker exec nginx nginx -t` ile config testi
+  - Başarılıysa `docker exec nginx nginx -s reload` ile reload
+  - Hata/nginx yoksa uyarı verilip deploy devam ediyor (pipeline kırılmıyor).
+- Böylece her deploy’dan sonra Nginx upstream çözümlemesi tazeleniyor ve 502 riski azalıyor.
+
 ### 4. MngDomainUI Keycloak login 404 (keycloak/keycloak tekrarı)
 
 - **Hata:** `[POST] "http://keycloak:8080/keycloak/keycloak/realms/master/protocol/openid-connect/token": 404 Not Found`

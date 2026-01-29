@@ -4,7 +4,36 @@ MkDocs tabanlı dokümantasyon sistemi.
 
 ## 🚀 Hızlı Başlangıç
 
-### 1. Python Kurulumu
+### Docker ile (Python gerekmez)
+
+Bilgisayarda Python kurulumu sorunluysa docs'u tamamen Docker içinde çalıştırabilirsiniz:
+
+```bash
+cd docs
+docker compose -f docker-compose.serve.yml up --build
+```
+
+Tarayıcıda **http://localhost:6010** açın. Dosyalarda değişiklik yaptıkça sayfa otomatik yenilenir (live reload).
+
+Durdurmak için aynı terminalde `Ctrl+C`, container'ı kaldırmak için:
+
+```bash
+docker compose -f docker-compose.serve.yml down
+```
+
+**Sadece build denemek** (statik site, nginx ile):
+
+```bash
+cd docs
+docker build -t mkdocs-docs .
+docker run -p 6010:80 mkdocs-docs
+```
+
+Tarayıcı: http://localhost:6010
+
+---
+
+### 1. Python Kurulumu (opsiyonel)
 
 Python 3.11+ gereklidir. [Python İndir](https://www.python.org/downloads/)
 

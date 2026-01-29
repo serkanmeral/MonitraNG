@@ -639,7 +639,7 @@ docker restart gitlab
 
 ### İlgili Dokümantasyon
 - `docs/content/cicd/DEPLOYMENT_GUIDE.md` - Deployment detayları
-- `docs/content/cicd/SUCCESSFUL_RUNNER_CONFIGURATION.md` - Runner config
+- `docs/content/cicd/RUNNER_AND_PIPELINE_NOTES.md` - Runner ve pipeline notları
 - `docs/content/cicd/RUNNER_CONFIGURATION_BACKUP.md` - Runner backup
 
 ### Script'ler

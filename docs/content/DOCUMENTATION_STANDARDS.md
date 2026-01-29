@@ -148,6 +148,15 @@ MkDocs formatı ve sunum detayları (nav, tabs, vs.) ileride ayrıca tanımlanac
 - **ChatBot ve insan:** Tüm bu dokümanlar **düz Markdown** ile yazılır; anlamlı başlıklar (H1–H4), tablolar ve kod blokları kullanılır. Kritik bilgi yalnızca resimde olmamalı; gerekirse resme ek olarak metin özeti bulunur.
 - **MkDocs:** Tüm içerik `docs/content/` altında ve `docs/mkdocs.yml` ile uyumlu tutulur; MkDocs ile derlenip yayınlanabilir olmalıdır. MkDocs’e özel sözdizimi (nav, meta, tab’lar vb.) ileride belirlenecektir.
 
+### 3.8 Chatbot için front matter ve içerik
+
+Platform chatbot’u (Moni), `docs/content/` altındaki Markdown dosyalarını **YAML front matter** ve metin içeriğine göre indeksleyerek arama yapar. Chatbot’un ilgili sayfayı bulması ve anlamlı snippet üretmesi için:
+
+- **Önerilen front matter alanları:** `title`, `service`, `category`, `tags`. En az `title` kullanılmalı; `service` ve `category` arama kategorilemesi, `tags` ise anahtar kelime eşleşmesi için kullanılır.
+- **İçerik:** Başlıklar (H1–H4) ve kısa özet cümleleri chatbot’un metin tabanlı araması için faydalıdır; “nasıl yapılır?” tarzı sorulara cevap verebilecek ifadeler tercih edilir.
+
+Detaylı akış, iyileştirme önerileri ve yazar rehberi için [MngLLM — Chatbot Dokümantasyon Rehberi](MngLLM/support/guides/CHATBOT_DOCUMENTATION_GUIDE.md) sayfasına bakınız.
+
 ---
 
 ## 4. MkDocs kullanımı

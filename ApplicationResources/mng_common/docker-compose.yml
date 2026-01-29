@@ -347,6 +347,9 @@ services:
     # when using network_mode: host, as hostname 'gitlab' won't resolve
 
   # MkDocs Documentation Server
+  # MkDocs - Production build modu
+  # Not: GitLab CI'dan deploy-docs-to-server job'u /var/www/docs.monitrang.com'a kopyalayacak
+  # Bu container sadece manuel build için kullanılabilir (opsiyonel)
   mkdocs:
     image: python:3.11
     container_name: mkdocs
@@ -354,17 +357,20 @@ services:
     command: >
       sh -c "
         pip install -q -r requirements.txt &&
-        mkdocs serve --dev-addr=0.0.0.0:8000
+        mkdocs build &&
+        cp -r site/* /var/www/docs.monitrang.com/ &&
+        echo 'Build completed and copied to /var/www/docs.monitrang.com'
       "
-    ports:
-      - "8000:8000"
     volumes:
       - ../../docs:/docs
+      - /var/www/docs.monitrang.com:/var/www/docs.monitrang.com
     networks:
       - mng_network
-    restart: unless-stopped
-    # Alternative: Use 'build' command instead of 'serve' for one-time builds
-    # command: sh -c "pip install -q -r requirements.txt && mkdocs build"
+    restart: "no"  # Build sonrası durur; GitLab CI deployment kullanılacak
+    # Eski serve modu (geliştirme için):
+    # command: sh -c "pip install -q -r requirements.txt && mkdocs serve --dev-addr=0.0.0.0:8000"
+    # ports:
+    #   - "8000:8000"
 
   # Nginx Reverse Proxy
   nginx:

@@ -80,7 +80,7 @@ Image’lar Runner’da build edilir; production deploy’da sunucuda `docker co
 
 Health check başarısız olsa bile deployment kesilmez; uyarı verilir ve bir sonraki servise geçilir.
 
-5. **(İsteğe bağlı)** Deploy bittikten sonra **smoke-test-after-deploy** job’ı (aynı stage, `needs: [deploy-services]`, `when: manual`) ile sunucuda `docker exec` ile tüm backend health’leri tekrar kontrol edilebilir. Detay: `DEPLOYMENT_TRIAL_PLAN.md`.
+5. **(İsteğe bağlı)** Deploy bittikten sonra **smoke-test-after-deploy** job’ı (aynı stage, `needs: [deploy-services]`, `when: manual`) ile sunucuda `docker exec` ile tüm backend health’leri tekrar kontrol edilebilir. Detay: [DEPLOYMENT_GUIDE](DEPLOYMENT_GUIDE.md) — “İlk Deploy Denemesi ve Checklist” bölümü.
 
 ---
 

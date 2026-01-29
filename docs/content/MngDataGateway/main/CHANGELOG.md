@@ -1,3 +1,14 @@
+---
+title: "MngDataGateway Changelog"
+category: "changelog"
+tags: ["datagateway", "changelog", "version", "releases"]
+service: "MngDataGateway"
+difficulty: "beginner"
+estimated_time: "5 dakika"
+language: "tr"
+priority: 1
+---
+
 # MngDataGateway Changelog
 
 Tüm önemli değişiklikler bu dosyada dokümante edilir.

@@ -1,200 +1,169 @@
----
-title: "MngReactor API Documentation"
-category: "api"
-tags: ["reactor", "api", "endpoints", "rest"]
-service: "MngReactor"
-difficulty: "beginner"
-estimated_time: "10 dakika"
-language: "tr"
-priority: 1
----
+# MngReactor Technical Specs (API Referansı)
 
-# MngReactor API Documentation
+Test ekibinin kullandığı birincil API referansı. Tüm endpoint'ler, request/response alanları ve parametre açıklamaları DOCUMENTATION_STANDARDS §3.6'ya uygun biçimde bu dokümanda tutulur.
 
-## Özet
-MngReactor servisinin REST API endpoint'leri ve kullanım örnekleri.
-
-## Base URL
-
-```
-http://localhost:5003/api/v1
-```
-
-API Gateway üzerinden:
-```
-https://api.monitra.local/reactor/api/v1
-```
-
-## Authentication
-
-Tüm endpoint'ler JWT token authentication gerektirir:
-
-```http
-Authorization: Bearer {access_token}
-```
-
-## Endpoints
-
-### Asset Endpoints
-
-#### Get Asset Tree
-```http
-GET /asset/tree
-```
-
-**Response:**
-```json
-{
-  "assets": [
-    {
-      "id": "asset-001",
-      "name": "Asset 1",
-      "type": "Server",
-      "children": []
-    }
-  ]
-}
-```
-
-#### Get Engine Assets
-```http
-GET /engine/assets
-```
-
-**Response:**
-```json
-{
-  "assets": [
-    {
-      "id": "engine-asset-001",
-      "name": "Engine Asset 1"
-    }
-  ]
-}
-```
-
-### Data Endpoints
-
-#### Get Data
-```http
-GET /data?filter={filter}
-```
-
-**Query Parameters:**
-- `filter` - MongoDB filter JSON
-
-**Response:**
-```json
-{
-  "data": [],
-  "total": 0
-}
-```
-
-#### Process Data
-```http
-POST /data
-Content-Type: application/json
-
-{
-  "operation": "process",
-  "data": {}
-}
-```
-
-### Engine Endpoints
-
-#### Get Engine Information
-```http
-GET /engine
-```
-
-**Response:**
-```json
-{
-  "engines": []
-}
-```
-
-### Auth Endpoints
-
-#### Generate Token
-```http
-POST /auth/token
-Content-Type: application/json
-
-{
-  "username": "user",
-  "password": "pass"
-}
-```
-
-**Response:**
-```json
-{
-  "token": "jwt_token_here"
-}
-```
-
-### MQTT Endpoints
-
-#### Publish Message
-```http
-POST /mqtt/publish
-Content-Type: application/json
-
-{
-  "topic": "topic/name",
-  "message": "message content"
-}
-```
-
-### Version Endpoints
-
-#### Get Version
-```http
-GET /version
-```
-
-**Response:**
-```json
-{
-  "version": "1.0.0",
-  "buildDate": "2026-01-16T00:00:00Z"
-}
-```
-
-## Error Responses
-
-### 400 Bad Request
-```json
-{
-  "error": "Invalid request",
-  "message": "Error details"
-}
-```
-
-### 401 Unauthorized
-```json
-{
-  "error": "Unauthorized",
-  "message": "Invalid or missing token"
-}
-```
-
-### 500 Internal Server Error
-```json
-{
-  "error": "Internal server error",
-  "message": "Error details"
-}
-```
-
-## İlgili Linkler
-
-- [Architecture Guide](../support/architecture/ARCHITECTURE_GUIDE.md)
-- [Usage Guide](../support/guides/USAGE_GUIDE.md)
+**Temel bilgiler:**
+- **Base path (Gateway üzerinden):** `/reactor/api/v1/` (ör. `https://gateway.example.com/reactor/api/v1/asset/tree`)
+- **Kimlik doğrulama:** Tüm endpoint’ler `Authorization: Bearer <access_token>` gerektirir (auth/token hariç).
+- **Content-Type:** `application/json`.
 
 ---
 
-**Son Güncelleme:** 16 Ocak 2026
+## 1. Asset — `api/v1/asset`
+
+### 1.1 Asset ağacı
+
+| Özellik | Değer |
+|--------|--------|
+| **Method** | `GET` |
+| **Path** | `/api/v1/asset/tree` |
+| **Auth** | Evet |
+
+#### Response (200 OK)
+
+| Alan adı | Tip | Açıklama |
+|----------|-----|----------|
+| `assets` | array | Ağaç yapısında asset listesi (id, name, type, children). |
+
+---
+
+## 2. Engine — `api/v1/engine`
+
+### 2.1 Engine asset’leri
+
+| Özellik | Değer |
+|--------|--------|
+| **Method** | `GET` |
+| **Path** | `/api/v1/engine/assets` |
+| **Auth** | Evet |
+
+#### Response (200 OK)
+
+`{ "assets": [ { "id", "name", ... } ] }`
+
+### 2.2 Engine bilgisi
+
+| Özellik | Değer |
+|--------|--------|
+| **Method** | `GET` |
+| **Path** | `/api/v1/engine` |
+| **Auth** | Evet |
+
+#### Response (200 OK)
+
+`{ "engines": [] }`
+
+---
+
+## 3. Data — `api/v1/data`
+
+### 3.1 Veri getir
+
+| Özellik | Değer |
+|--------|--------|
+| **Method** | `GET` |
+| **Path** | `/api/v1/data` |
+| **Auth** | Evet |
+
+#### Query parametreleri
+
+| Parametre | Tip | Zorunlu | Açıklama |
+|-----------|-----|---------|----------|
+| `filter` | string | Hayır | MongoDB filter JSON. |
+
+#### Response (200 OK)
+
+`{ "data": [], "total": number }`
+
+### 3.2 Veri işle
+
+| Özellik | Değer |
+|--------|--------|
+| **Method** | `POST` |
+| **Path** | `/api/v1/data` |
+| **Auth** | Evet |
+
+#### Request body
+
+| Alan adı | Tip | Zorunlu | Açıklama |
+|----------|-----|---------|----------|
+| `operation` | string | Evet | Örn. `"process"`. |
+| `data` | object | Hayır | İşlenecek veri. |
+
+#### Response (200 OK)
+
+İşlem sonucu (uygulama tanımlı).
+
+---
+
+## 4. Auth — `api/v1/auth`
+
+### 4.1 Token al
+
+| Özellik | Değer |
+|--------|--------|
+| **Method** | `POST` |
+| **Path** | `/api/v1/auth/token` |
+| **Auth** | Yok |
+
+#### Request body
+
+| Alan adı | Tip | Zorunlu | Açıklama |
+|----------|-----|---------|----------|
+| `username` | string | Evet | Kullanıcı adı. |
+| `password` | string | Evet | Şifre. |
+
+#### Response (200 OK)
+
+`{ "token": "jwt_token_here" }`
+
+---
+
+## 5. MQTT — `api/v1/mqtt`
+
+### 5.1 Mesaj yayınla
+
+| Özellik | Değer |
+|--------|--------|
+| **Method** | `POST` |
+| **Path** | `/api/v1/mqtt/publish` |
+| **Auth** | Evet |
+
+#### Request body
+
+| Alan adı | Tip | Zorunlu | Açıklama |
+|----------|-----|---------|----------|
+| `topic` | string | Evet | MQTT konusu. |
+| `message` | string | Evet | Mesaj içeriği. |
+
+#### Response (200 OK)
+
+Yayınlama sonucu (uygulama tanımlı).
+
+---
+
+## 6. Version — `api/v1/version`
+
+### 6.1 Sürüm bilgisi
+
+| Özellik | Değer |
+|--------|--------|
+| **Method** | `GET` |
+| **Path** | `/api/v1/version` |
+| **Auth** | Uygulama ayarına bağlı |
+
+#### Response (200 OK)
+
+`{ "version": "1.0.0", "buildDate": "<ISO 8601>" }`
+
+---
+
+## Hata yanıtları
+
+- 400: `{ "error": "Invalid request", "message": "..." }`
+- 401: `{ "error": "Unauthorized", "message": "Invalid or missing token" }`
+- 500: `{ "error": "Internal server error", "message": "..." }`
+
+---
+
+İlgili dokümanlar: [Architecture Guide](../support/architecture/ARCHITECTURE_GUIDE.md), [Usage Guide](../support/guides/USAGE_GUIDE.md).

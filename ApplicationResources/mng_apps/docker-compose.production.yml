@@ -138,6 +138,10 @@ services:
       
       # License encryption (required for Create Domain / trial license)
       - MngKeeperSettings__License__MasterKey=${MNGKEEPER_LICENSE_MASTER_KEY}
+      
+      # Notifier (şifre sıfırlama / e-posta bildirimleri – container içinden mngnotifier servisi)
+      - MngKeeperSettings__Notifier__BaseUrl=${NOTIFIER_BASE_URL:-http://mngnotifier:5070}
+      - MngKeeperSettings__Notifier__ApiVersion=${NOTIFIER_API_VERSION:-v1}
     
     networks:
       - mng_common_mng_network
@@ -395,6 +399,8 @@ services:
       dockerfile: Presentation/MngNotifier.Api/Dockerfile
     image: mngnotifier:${VERSION:-latest}
     container_name: mngnotifier
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - MngNotifierSettings__Server__Host=0.0.0.0
@@ -406,6 +412,15 @@ services:
       - MngNotifierSettings__RabbitMQ__Username=${RABBITMQ_USERNAME}
       - MngNotifierSettings__RabbitMQ__Password=${RABBITMQ_PASSWORD}
       - MngNotifierSettings__RabbitMQ__VirtualHost=${RABBITMQ_VIRTUALHOST:-/}
+      - MngNotifierSettings__Mail__Provider=SMTP
+      - MngNotifierSettings__Mail__DefaultFrom__Email=${SMTP_FROM_EMAIL:-noreply@monitrang.com}
+      - MngNotifierSettings__Mail__DefaultFrom__Name=${SMTP_FROM_NAME:-MonitraNG}
+      # SMTP: host.docker.internal (extra_hosts) veya .env'de SMTP_HOST=172.17.0.1 (Linux gateway)
+      - MngNotifierSettings__Mail__Smtp__Host=${SMTP_HOST:-host.docker.internal}
+      - MngNotifierSettings__Mail__Smtp__Port=${SMTP_PORT:-25}
+      - MngNotifierSettings__Mail__Smtp__Username=${SMTP_USERNAME:-}
+      - MngNotifierSettings__Mail__Smtp__Password=${SMTP_PASSWORD:-}
+      - MngNotifierSettings__Mail__Smtp__EnableSsl=false
     networks:
       - mng_common_mng_network
     restart: unless-stopped

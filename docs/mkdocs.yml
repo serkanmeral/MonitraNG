@@ -87,7 +87,10 @@ markdown_extensions:
 # Navigation
 nav:
   - Home: index.md
+  - Öne Çıkan Özellikler: PRESENTATION.md
+  - Backend'e genel bakış: backend/INDEX.md
   - Documentation Standards: DOCUMENTATION_STANDARDS.md
+  - Duplicate & Similar Docs (inceleme): DUPLICATE_AND_SIMILAR_DOCS.md
   - Product Roadmap: ROADMAP.md
   - PRD: prd.md
   # - Getting Started:
@@ -109,27 +112,17 @@ nav:
       - MngHub:
           - API Docs: api/mnghub/index.md
           # - OpenAPI: api/mnghub/openapi.json  # OpenAPI dosyası eklendiğinde aktif edilecek
-  - Services:
+  - Backend Servisleri:
       - MngKeeper:
           - Changelog: MngKeeper/main/CHANGELOG.md
           - Roadmap: MngKeeper/main/ROADMAP.md
           - Technical Specs: MngKeeper/main/TECHNICAL_SPECS.md
-          - Architecture: MngKeeper/support/architecture/ARCHITECTURE_GUIDE.md
-          - Guides:
-              - API Overview: MngKeeper/support/guides/API_OVERVIEW.md
-              - Gateway Integration: MngKeeper/support/guides/GATEWAY_INTEGRATION.md
-              - Gateway Integration Changes: MngKeeper/support/guides/GATEWAY_INTEGRATION_CHANGES.md
-              - Domain Creation Email: MngKeeper/support/guides/DOMAIN_CREATION_EMAIL_NOTIFICATION.md
-              - Production Migration Plan: MngKeeper/support/guides/PRODUCTION_MIGRATION_PLAN.md
-              - Cleanup Instructions: MngKeeper/support/guides/CLEANUP_INSTRUCTIONS.md
-              - Current Access Status: MngKeeper/support/guides/CURRENT_ACCESS_STATUS.md
-              - Tests: MngKeeper/support/guides/TESTS_README.md
-              - Licensing Roadmap: MngKeeper/support/guides/LICENSING_ROADMAP.md
-              - Licensing Test Plan: MngKeeper/support/guides/LICENSING_TEST_PLAN.md
-          - Setup:
+          - Mimari: MngKeeper/support/architecture/ARCHITECTURE_GUIDE.md
+          - Rehberler: MngKeeper/support/guides/INDEX.md
+          - Kurulum:
               - Environment Variables: MngKeeper/support/setup/ENVIRONMENT_VARIABLES.md
               - Version Management: MngKeeper/support/setup/VERSION_MANAGEMENT.md
-          - Troubleshooting:
+          - Sorun giderme:
               - Gateway JWT Validation: MngKeeper/support/troubleshooting/GATEWAY_JWT_VALIDATION_ISSUE.md
               - Gateway Troubleshooting: MngKeeper/support/troubleshooting/GATEWAY_TROUBLESHOOTING.md
           - Specs:
@@ -205,6 +198,7 @@ nav:
               - Chatbot Planning: MngLLM/support/guides/CHATBOT_PLANNING.md
               - Implementation Plan: MngLLM/support/guides/IMPLEMENTATION_PLAN.md
               - Dataset Documentation Plan: MngLLM/support/guides/DATASET_DOCUMENTATION_PLAN.md
+              - Chatbot — Dokümantasyondan faydalanma: MngLLM/support/guides/CHATBOT_DOCUMENTATION_GUIDE.md
               - Multilingual Support: MngLLM/support/guides/MULTILINGUAL_SUPPORT.md
               - UI Guide Strategy: MngLLM/support/guides/UI_GUIDE_STRATEGY.md
       - MngGateway:
@@ -285,11 +279,16 @@ nav:
                   - Widget Library: Mng.Ui/support/specs/WIDGET_LIBRARY_SPEC.md
                   - Dataset UI Design: Mng.Ui/support/specs/DATASET_UI_DESIGN.md
   - DevOps:
-      - CI/CD: cicd/current_status.md
+      - CI/CD:
+          - Rehberler (index): cicd/INDEX.md
+          - Deployment rehberi: cicd/DEPLOYMENT_GUIDE.md
+          - Runner ve pipeline notları: cicd/RUNNER_AND_PIPELINE_NOTES.md
+          - Mevcut durum: cicd/current_status.md
       - DevOps Roadmap: devops-roadmap.md
       - Deployment:
           - Current Status: deployment/current_status.md
           - Deployment Roadmap: deployment/DEPLOYMENT_ROADMAP.md
+          - Docs Yayınlama (lokal + sunucu + CI): deployment/DOCS_DEPLOYMENT_GUIDE.md
           - Push Deploy Checklist: deployment/PUSH_DEPLOY_CHECKLIST.md
       - Infrastructure:
           - Overview: infrastructure/INFRASTRUCTURE_OVERVIEW.md

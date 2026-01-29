@@ -7,6 +7,10 @@ Bu belge, [DOCS_ORGANIZATION_PLAN.md](DOCS_ORGANIZATION_PLAN.md) ile uyumlu, ön
 
 ---
 
+**Uygulandı (26 Ocak 2026):** Yüksek ve orta öncelikli maddeler uygulandı: DevOps Roadmap content’e alındı, docs/cicd–deployment–infrastructure kaldırılıp içerik content’e taşındı, kök .md’ler content altına taşındı, docs/docs kaldırıldı, geçici notlar arşive alındı. Ayrıntılar DOCS_ORGANIZATION_PLAN Aşama 4–6’da işlendi.
+
+---
+
 ## 1. Öncelik sırasıyla aksiyonlar
 
 ### 🔴 Yüksek öncelik (hemen yapılabilir)

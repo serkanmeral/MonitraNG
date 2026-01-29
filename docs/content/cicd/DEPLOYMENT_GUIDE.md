@@ -294,14 +294,70 @@ mngui            mngui:latest            Up (health: starting)
 
 ---
 
+## 📋 İlk Deploy Denemesi ve Checklist
+
+*(Bu bölüm eski "Deploy Denemesi Planı" dokümanından birleştirilmiştir.)*
+
+**Amaç:** İlk veya periyodik deployment denemelerinde izlenecek adımlar.
+
+### Genel akış
+
+```
+[main'e push] → [Pipeline çalışır] → [Build/Test/Docker job'ları] → [Deploy öncesi kontrol] → [deploy-services Manuel] → [Deploy sonrası doğrulama]
+```
+
+Deploy **yalnızca manuel** tetiklenir. Önce pipeline’daki build ve (tercihen) test aşamalarının tamamlanması beklenir.
+
+### Ön koşullar
+
+- **Branch:** Deploy edilecek kod **main** branch’te olmalı; `[skip ci]` kullanılmamalı.
+- **GitLab CI/CD Variables:** `DEPLOY_SSH_PRIVATE_KEY`, `DEPLOY_SERVER_HOST`, `DEPLOY_SERVER_USER`, `DEPLOY_SERVER_PORT`, `DEPLOY_SERVER_PATH` tanımlı olmalı (yukarıdaki “Gerekli Variables” tablosuna bakın).
+- **Sunucu:** `DEPLOY_SERVER_PATH` dizini mevcut, repo clone edilmiş, `ApplicationResources/mng_apps/docker-compose.production.yml` ve `.env` hazır; altyapı (MongoDB, RabbitMQ, Keycloak, vb.) aynı ağda çalışıyor olmalı.
+
+### Deploy öncesi – Kontrol edilecek job’lar
+
+| Öncelik   | Job’lar | Açıklama |
+|-----------|---------|----------|
+| **Zorunlu** | `build-mngkeeper`, `build-mngdatagateway`, `build-mnghub`, `build-mnggateway`, `build-frontend` | Çekirdek derlemeler tamamlanmış olmalı. |
+| **Önerilen** | `build-mngllm`, `build-mngscheduler`, `build-mngadmin`, `build-mngnotifier`, `build-docker-gateway`, `build-docker-ui` | Yeni servisler deploy edilecekse yeşil olmalı. |
+| **Bilgi** | `test-*` | `allow_failure: true`; kırmızı olsa bile deploy edilebilir. |
+
+**Pratik kural:** Build ve build-docker stage’lerinde kritik job’lar yeşil değilse deploy’a geçmeyin.
+
+### Deploy sonrası doğrulama
+
+1. **Pipeline’da** **smoke-test-after-deploy** job’ını (deploy-services bittikten sonra manuel) çalıştırın.
+2. **Deploy log’unda** “All services updated successfully!” ve “✓ … is healthy” satırlarını kontrol edin.
+3. **Sunucuda:** `docker compose -f docker-compose.production.yml ps` ile tüm servislerin **Up** / **Up (healthy)** olduğunu doğrulayın.
+4. **Lokal smoke test:** `scripts/tests/smoke-test-backend-gateway.ps1` ile production URL’leri test edin (parametreleri ortamınıza göre değiştirin).
+
+### Sorun çıkarsa
+
+- **“ERROR: Failed to build / update …”** → İlgili servisin Dockerfile/bağımlılıklarını ve sunucuda yerel `docker compose build <servis>` çıktısını inceleyin.
+- **Health check “failed after 6 attempts”** → `docker compose ps`, `docker compose logs <servis>`; health path/port’u [DEPLOYMENT_REFERENCE](DEPLOYMENT_REFERENCE.md) tablosuyla karşılaştırın.
+- **Rollback:** Pre-deploy backup otomatik alınır. Sunucuda `./scripts/restore-backup.sh <backup_klasör_adı>` ile geri dönün (backup adı deploy log’unda “✓ Backup created: …” satırında yazılıdır).
+
+### Özet checklist (deploy öncesi)
+
+- [ ] Kod **main**’de ve pipeline tetiklenmiş.
+- [ ] Build stage’inde kritik job’lar (mngkeeper, mnggateway, frontend) yeşil.
+- [ ] build-docker stage’inde önemli image’lar yeşil.
+- [ ] GitLab CI/CD değişkenleri (özellikle `DEPLOY_*`) doğru.
+- [ ] Sunucuda repo ve `ApplicationResources/mng_apps` hazır; altyapı çalışıyor.
+- [ ] **deploy-services** job’ında Play ikonu görünüyor.
+
+---
+
 ## 🔗 İlgili Dosyalar
 
 - `.gitlab-ci.yml` - CI/CD pipeline yapılandırması
 - `ApplicationResources/mng_apps/docker-compose.production.yml` - Production Docker Compose dosyası
-- `docs/content/cicd/current_status.md` - CI/CD durum dokümantasyonu
+- [DEPLOYMENT_REFERENCE](DEPLOYMENT_REFERENCE.md) - Pipeline yapısı, servis listesi, referans tablolar
+- [CICD_DEPLOYMENT_COMPLETE_GUIDE](CICD_DEPLOYMENT_COMPLETE_GUIDE.md) - Kapsamlı rehber ve troubleshooting
+- [current_status](current_status.md) - CI/CD durum dokümantasyonu
 
 ---
 
-**Son Güncelleme:** 1 Ocak 2026  
+**Son Güncelleme:** Ocak 2026  
 **Durum:** ✅ Production'da Başarıyla Çalışıyor
 
