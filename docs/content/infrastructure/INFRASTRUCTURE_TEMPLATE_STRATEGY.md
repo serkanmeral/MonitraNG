@@ -6,6 +6,35 @@ Infrastructure'ı tamamladıktan sonra, yeni uygulamalar geliştirmek için temp
 
 ---
 
+## 🚀 Başlangıç — Netleştirilmiş Kararlar (Güncel)
+
+**Alınan kararlar:**
+
+| Konu | Karar |
+|------|--------|
+| **İlk yaklaşım** | Branch-based template ile başlanacak (hızlı başlangıç). İleride istenirse ayrı repo + GitHub Template’e geçilebilir. |
+| **Branch adı** | `infrastructure-template` |
+| **Kaynak** | Mevcut `main` (HEAD) — güncel infrastructure durumu template’e yansır. |
+| **Branch içeriği** | Tüm repo aynen; “Dahil / Hariç” listesi yeni proje oluştururken hangi klasörlerin kullanılacağını tanımlar (branch’te dosya silinmez). |
+| **Güncelleme** | Infrastructure geliştikçe `main`’deki değişiklikler periyodik olarak `infrastructure-template`’e merge/rebase edilebilir. |
+
+**Phase 1 — Branch ile başlangıç (yapılacaklar):**
+
+- [x] Strateji dokümanında netleştirme bölümü eklendi
+- [ ] `infrastructure-template` branch’i oluşturuldu
+- [ ] Branch `origin`’e push edildi
+- [ ] (Opsiyonel) Bu dokümandaki Phase 1 yol haritası checkbox’ları güncellenir
+
+**Yeni proje için kullanım (branch hazır olduktan sonra):**
+
+```bash
+git clone -b infrastructure-template <repo-url> MyNewProject
+cd MyNewProject
+# Yeni repo için: git remote set-url origin <yeni-repo-url>
+```
+
+---
+
 ## ✅ Evet, Yapabilirsiniz!
 
 İki ana yaklaşım var:
