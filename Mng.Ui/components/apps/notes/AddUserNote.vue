@@ -33,13 +33,10 @@ async function addNote() {
       title: title.value.trim(),
       color: color.value,
     });
-    
-    // Reset form
-    dialog.value = false;
-    title.value = '';
-    color.value = 'primary';
-  } catch (error) {
-    // Error is handled by store
+    // Başarılı: modalı kapat ve formu sıfırla
+    closeDialog();
+  } catch {
+    // Hata store'da set edildi (notesStore.error); modal açık kalsın
   }
 }
 

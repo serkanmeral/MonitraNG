@@ -1,5 +1,6 @@
 services:
   # Keycloak Identity Management
+  # Not: Published Ports boş (Portainer'da "-") — erişim sadece Nginx üzerinden (admin.monitrang.com/keycloak). Port 8080 host'a açılmıyor.
   keycloak:
     image: quay.io/keycloak/keycloak:23.0.3
     container_name: keycloak
@@ -24,6 +25,7 @@ services:
       - postgres
     networks:
       - mng_network
+      - mng_common_mng_network  # MngKeeper/MngGateway vb. token için Keycloak erişimi — login 502/Name or service not known önlemek için
     restart: unless-stopped
 
   # PostgreSQL for Keycloak
@@ -398,6 +400,7 @@ services:
       - nginx_logs:/var/log/nginx
     networks:
       - mng_network
+      - mng_common_mng_network  # MngUI, MngGateway vb. (mng_apps) erişimi — 502 önlemek için gerekli
       - mailu_default  # Mailu network for mailu-front-1 access
     restart: unless-stopped
     depends_on:
@@ -412,8 +415,9 @@ services:
 networks:
   mng_network:
     driver: bridge
+  # mng_apps (docker-compose.production.yml) bu ağı external kullanır; önce mng_common başlatılırsa ağ burada oluşur
   mng_common_mng_network:
-    external: true  # External network (created by mng_apps docker-compose)
+    driver: bridge
   mailu_default:
     external: true  # Mailu network (created by Mailu docker-compose)
 

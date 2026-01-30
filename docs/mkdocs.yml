@@ -293,6 +293,7 @@ nav:
       - Infrastructure:
           - Overview: infrastructure/INFRASTRUCTURE_OVERVIEW.md
           - Current Status: infrastructure/current_status.md
+          - Monitoring Asset Datasets: infrastructure/MONITORING_ASSET_DATASETS.md
           - Nginx: infrastructure/nginx.md
           - SSL Certificates: infrastructure/ssl-certificates.md
           - DNS Setup: infrastructure/DNS_SETUP_INSTRUCTIONS.md

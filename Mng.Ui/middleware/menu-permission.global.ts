@@ -44,6 +44,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return;
   }
 
+  // Header kullanıcı menüsünden açılan sayfalar: Profil ve Notlar side menu'den değil,
+  // header'daki profil dropdown'dan açıldığı için tüm giriş yapmış kullanıcılara izin ver
+  const headerProfileRoutes = ['/apps/profile', '/apps/notes'];
+  if (headerProfileRoutes.includes(to.path)) {
+    return;
+  }
+
   // Get menu store
   const { useSideMenuStore } = await import('@/stores/apps/sideMenu');
   const menuStore = useSideMenuStore();

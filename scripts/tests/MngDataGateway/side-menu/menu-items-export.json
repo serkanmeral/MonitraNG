@@ -557,13 +557,24 @@
     "itemType": "item",
     "level": 0,
     "parentId": null,
-    "pageType": "admin",
+    "pageType": "user",
     "pageCode": "apps-notes",
     "title": "Notes",
     "icon": "FilesIcon",
     "iconType": "tabler",
     "to": "/apps/notes",
-    "type": "internal"
+    "type": "internal",
+    "permissions": {
+      "groups": {
+        "users": {
+          "view": true,
+          "create": true,
+          "update": true,
+          "delete": true,
+          "export": false
+        }
+      }
+    }
   },
   {
     "order": 44,

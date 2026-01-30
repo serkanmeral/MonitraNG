@@ -142,6 +142,8 @@ services:
       # Notifier (şifre sıfırlama / e-posta bildirimleri – container içinden mngnotifier servisi)
       - MngKeeperSettings__Notifier__BaseUrl=${NOTIFIER_BASE_URL:-http://mngnotifier:5070}
       - MngKeeperSettings__Notifier__ApiVersion=${NOTIFIER_API_VERSION:-v1}
+      # UI base URL (şifre sıfırlama mailindeki link – production'da app.monitrang.com)
+      - MngKeeperSettings__UiBaseUrl=${MNG_KEEPER_UI_BASE_URL:-https://app.monitrang.com}
     
     networks:
       - mng_common_mng_network

@@ -66,9 +66,9 @@ export const useUserNotesStore = defineStore('userNotes', {
           'GET'
         );
 
-        // Response might be QueryResultDto with Data array, or direct array
-        const data = response?.Data || response;
-        
+        // Response might be DataResponseDto { Data: [] }, { data: [] } veya doğrudan dizi
+        const data = response?.Data ?? response?.data ?? response;
+
         if (data && Array.isArray(data)) {
           this.notes = data.map((note: any) => ({
             __dataId: note.__dataId,
@@ -125,21 +125,32 @@ export const useUserNotesStore = defineStore('userNotes', {
           newNote
         );
 
-        // Response should contain the created note with __dataId
+        // API yanıtı: { Data: entity } / { data: entity } (Pascal/camel) veya doğrudan entity
+        const raw =
+          response && typeof response === 'object' && !Array.isArray(response)
+            ? (response.Data ?? response.data ?? response)
+            : response;
+
+        const entity = raw && typeof raw === 'object' ? raw : {};
+        const id =
+          entity.__dataId ??
+          entity.DataId ??
+          entity.dataId ??
+          entity._id ??
+          entity.id;
+
         const createdNote: UserNote = {
-          __dataId: response.__dataId || response._id,
-          userId: response.userId || userId,
-          title: response.title || noteData.title,
-          color: response.color || noteData.color || 'primary',
-          createdAt: response.createdAt ? new Date(response.createdAt) : now,
-          updatedAt: response.updatedAt ? new Date(response.updatedAt) : now,
+          __dataId: id ?? `temp-${Date.now()}`,
+          userId: (entity.userId ?? userId) as string,
+          title: (entity.title ?? noteData.title) as string,
+          color: (entity.color ?? noteData.color ?? 'primary') as string,
+          createdAt: entity.createdAt ? new Date(entity.createdAt) : now,
+          updatedAt: entity.updatedAt ? new Date(entity.updatedAt) : now,
         };
 
-        // Add to local state
+        // Listeye ekle ve seçili yap — POST başarılı, modal kapansın, not hemen görünsün
         this.notes.unshift(createdNote);
-        
-        // Select the newly created note
-        this.selectedNoteId = createdNote.__dataId || null;
+        this.selectedNoteId = createdNote.__dataId;
 
         return createdNote;
       } catch (error: any) {
@@ -174,15 +185,9 @@ export const useUserNotesStore = defineStore('userNotes', {
           updateData
         );
 
-        // Update local state
-        const index = this.notes.findIndex(n => n.__dataId === noteId);
-        if (index !== -1) {
-          this.notes[index] = {
-            ...this.notes[index],
-            ...updates,
-            updatedAt: new Date(),
-          };
-        }
+        // Listeyi sunucudan yenile ki güncel veri görünsün
+        await this.fetchNotes();
+        this.selectedNoteId = noteId;
       } catch (error: any) {
         this.error = error.message || 'Not güncellenirken bir hata oluştu';
         throw error;
@@ -204,14 +209,12 @@ export const useUserNotesStore = defineStore('userNotes', {
           'DELETE'
         );
 
-        // Remove from local state
-        const index = this.notes.findIndex(n => n.__dataId === noteId);
-        if (index !== -1) {
-          this.notes.splice(index, 1);
-        }
+        const wasSelected = this.selectedNoteId === noteId;
 
-        // Clear selection if deleted note was selected
-        if (this.selectedNoteId === noteId) {
+        // Listeyi sunucudan yenile ki güncel veri görünsün
+        await this.fetchNotes();
+
+        if (wasSelected) {
           this.selectedNoteId = null;
         }
       } catch (error: any) {
