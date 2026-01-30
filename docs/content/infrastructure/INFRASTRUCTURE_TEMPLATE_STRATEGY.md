@@ -21,9 +21,9 @@ Infrastructure'ı tamamladıktan sonra, yeni uygulamalar geliştirmek için temp
 **Phase 1 — Branch ile başlangıç (yapılacaklar):**
 
 - [x] Strateji dokümanında netleştirme bölümü eklendi
-- [ ] `infrastructure-template` branch’i oluşturuldu
-- [ ] Branch `origin`’e push edildi
-- [ ] (Opsiyonel) Bu dokümandaki Phase 1 yol haritası checkbox’ları güncellenir
+- [x] `infrastructure-template` branch’i oluşturuldu
+- [x] Branch `origin`’e push edildi
+- [ ] (Opsiyonel) İleride ayrı repo veya GitHub Template’e geçiş yapılabilir
 
 **Yeni proje için kullanım (branch hazır olduktan sonra):**
 
