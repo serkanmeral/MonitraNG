@@ -1,35 +1,30 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
-
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591</NoWarn>
-
     <!-- Versioning -->
-    <Version>1.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
+    <Version>1.0.1</Version>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
     <InformationalVersion>1.0.0</InformationalVersion>
     <Product>MngAdmin API</Product>
     <Company>MonitraNG</Company>
     <Authors>Serkan MERAL</Authors>
-    <Copyright>Copyright © 2025 MonitraNG</Copyright>
+    <Copyright>Copyright Â© 2025 MonitraNG</Copyright>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.1" />
     <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.12" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.3.2" />
-	<PackageReference Include="Scalar.AspNetCore" Version="2.12.33" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.12.33" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\Core\MngAdmin.Application\MngAdmin.Application.csproj" />
     <ProjectReference Include="..\..\Infrastructure\MngAdmin.Infrastructure\MngAdmin.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Infrastructure\MngAdmin.Persistence\MngAdmin.Persistence.csproj" />
   </ItemGroup>
-
 </Project>
