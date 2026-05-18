@@ -356,11 +356,19 @@ Dataset verisi CRUD, liste, filtre, arama, CSV, query, aggregate, predefined que
 | **Path** | `/api/v1/data/{datasetName}` |
 | **Auth** | Evet (create yetkisi) |
 
+**Not (tüm Data yazma endpoint'leri):** Create, Update, Delete, Restore ve Bulk'ta opsiyonel query parametresi `skipEventPublish=true` kullanılabilir; bu durumda RabbitMQ olay yayını (ve MQTT sync) yapılmaz (örn. lastSeen/heartbeat güncellemeleri için).
+
 #### Path parametreleri
 
 | Parametre | Tip | Zorunlu | Açıklama |
 |-----------|-----|---------|----------|
 | `datasetName` | string | Evet | Dataset adı (örn. `@tasks`). |
+
+#### Query parametreleri
+
+| Parametre | Tip | Zorunlu | Açıklama | Varsayılan |
+|-----------|-----|---------|----------|------------|
+| `skipEventPublish` | boolean | Hayır | `true` ise RabbitMQ/olay yayını yapılmaz (monitoring sync vb. tetiklenmez). | `false` |
 
 #### Request body
 
@@ -453,6 +461,12 @@ Tek elemanlı dizi `[ { ... } ]`. 404: DATA_NOT_FOUND veya DATASET_NOT_FOUND.
 | **Path** | `/api/v1/data/{datasetName}/{dataId}` |
 | **Auth** | Evet (update yetkisi) |
 
+#### Query parametreleri
+
+| Parametre | Tip | Zorunlu | Açıklama | Varsayılan |
+|-----------|-----|---------|----------|------------|
+| `skipEventPublish` | boolean | Hayır | `true` ise RabbitMQ/olay yayını yapılmaz (örn. lastSeenAt/heartbeat gibi güncellemelerde sync tetiklenmez). | `false` |
+
 #### Request body
 
 Güncellenecek alanları içeren JSON object. File alanları 5.1 ile aynı kurallarla (content ile yeni yükleme veya mevcut path objesi).
@@ -471,6 +485,12 @@ DataResponseDto ile güncellenmiş kayıt. 404: Dataset veya data bulunamadı. 4
 | **Path** | `/api/v1/data/{datasetName}/{dataId}` |
 | **Auth** | Evet (delete yetkisi) |
 
+#### Query parametreleri
+
+| Parametre | Tip | Zorunlu | Açıklama | Varsayılan |
+|-----------|-----|---------|----------|------------|
+| `skipEventPublish` | boolean | Hayır | `true` ise RabbitMQ/olay yayını yapılmaz. | `false` |
+
 #### Response (200 OK)
 
 `DataResponseDto` veya `{ "message": "Data deleted successfully", "dataId": "..." }`. 404: Kayıt/dataset bulunamadı.
@@ -484,6 +504,12 @@ DataResponseDto ile güncellenmiş kayıt. 404: Dataset veya data bulunamadı. 4
 | **Method** | `POST` |
 | **Path** | `/api/v1/data/{datasetName}/{dataId}/restore` |
 | **Auth** | Evet |
+
+#### Query parametreleri
+
+| Parametre | Tip | Zorunlu | Açıklama | Varsayılan |
+|-----------|-----|---------|----------|------------|
+| `skipEventPublish` | boolean | Hayır | `true` ise RabbitMQ/olay yayını yapılmaz. | `false` |
 
 #### Response (200 OK)
 
@@ -567,6 +593,12 @@ Sorgu sonucu (dizi). 404: QUERY_NOT_FOUND veya dataset bulunamadı. 400: Paramet
 | **Method** | `POST` |
 | **Path** | `/api/v1/data/{datasetName}/bulk` |
 | **Auth** | Evet (create yetkisi) |
+
+#### Query parametreleri
+
+| Parametre | Tip | Zorunlu | Açıklama | Varsayılan |
+|-----------|-----|---------|----------|------------|
+| `skipEventPublish` | boolean | Hayır | `true` ise RabbitMQ/olay yayını yapılmaz. | `false` |
 
 #### Request body
 

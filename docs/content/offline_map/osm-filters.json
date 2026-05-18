@@ -1,0 +1,30 @@
+{
+  "source_pbf": "data/turkey-latest.osm.pbf",
+  "output_dir": "data/exports",
+  "filters": [
+    {
+      "name": "railways",
+      "type": "w",
+      "tag": "railway",
+      "values": ["rail", "tram", "subway", "light_rail", "narrow_gauge", "preserved"],
+      "output": "turkey_railways.osm.pbf",
+      "geojson": "railways.geojson"
+    },
+    {
+      "name": "stations",
+      "type": "n",
+      "tag": "railway",
+      "values": ["station", "halt", "subway_station"],
+      "output": "turkey_stations.osm.pbf",
+      "geojson": "stations.geojson"
+    },
+    {
+      "name": "places",
+      "type": "n",
+      "tag": "place",
+      "values": ["city", "town", "village", "hamlet"],
+      "output": "turkey_places.osm.pbf",
+      "geojson": "places.geojson"
+    }
+  ]
+}

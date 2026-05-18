@@ -18,6 +18,8 @@ export interface UserInfo {
   is_manager?: boolean; // Manager privilege (snake_case for consistency with is_admin)
   domain_id?: string;
   domain_name?: string;
+  /** Keeper @users Mongo id (MngKeeper JWT claim `mng_person_id`). */
+  mng_person_id?: string;
   [key: string]: any;
 }
 

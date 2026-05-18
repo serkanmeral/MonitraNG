@@ -21,26 +21,29 @@ namespace MngDataGateway.Persistence.Services
     /// <summary>
     /// Data validation service implementation
     /// </summary>
-    public class ValidationService : IValidationService
+    public partial class ValidationService : IValidationService
     {
         private readonly ILogger<ValidationService> _logger;
         private readonly IMongoClient _mongoClient;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IMongoContextService _mongoContextService;
 
         public ValidationService(
             ILogger<ValidationService> logger,
             IMongoClient mongoClient,
             IHttpClientFactory httpClientFactory,
             IConfiguration configuration,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IMongoContextService mongoContextService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _mongoClient = mongoClient ?? throw new ArgumentNullException(nameof(mongoClient));
             _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+            _mongoContextService = mongoContextService ?? throw new ArgumentNullException(nameof(mongoContextService));
         }
 
         public async Task<ValidationResult> ValidateDataAsync(
@@ -87,6 +90,13 @@ namespace MngDataGateway.Persistence.Services
             var expressionResult = ValidateExpressions(schema, data, isUpdate);
             if (!expressionResult.IsValid)
                 errors.AddRange(expressionResult.Errors);
+
+            // Chat Room: cht_messages oda / yazar / Keeper grup üyeliği (F1 Adım 1)
+            if (!errors.Any() && string.Equals(schema.name, "cht_messages", StringComparison.OrdinalIgnoreCase))
+            {
+                var chtRoomErrors = await ValidateChtMessagesBusinessRulesAsync(schema, data, databaseName, isUpdate, dataId);
+                errors.AddRange(chtRoomErrors);
+            }
 
             // Aşama 4: HTTP validation (external validation endpoints)
             // 7. HTTP-based validation
@@ -959,13 +969,11 @@ namespace MngDataGateway.Persistence.Services
             if (!httpValidations.Any())
                 return ValidationResult.Success();
 
-            // Get timeout from configuration
-            var timeoutSeconds = _configuration.GetValue<int>("MngDataGatewaySettings:Validation:HttpValidationTimeout", 30);
-            var timeout = TimeSpan.FromSeconds(timeoutSeconds);
+            // Default timeout from configuration (used when validation.timeoutSeconds is not set)
+            var defaultTimeoutSeconds = _configuration.GetValue<int>("MngDataGatewaySettings:Validation:HttpValidationTimeout", 30);
 
             // Create HTTP client
             var httpClient = _httpClientFactory.CreateClient();
-            httpClient.Timeout = timeout;
 
             // Add authorization header if provided
             if (!string.IsNullOrEmpty(authorizationHeader))
@@ -976,10 +984,14 @@ namespace MngDataGateway.Persistence.Services
             // Execute validations sequentially
             foreach (var validation in httpValidations)
             {
+                // Per-validation timeout: validation.timeoutSeconds ?? config default ?? 30 (in scope for catch)
+                var timeoutSeconds = validation.timeoutSeconds ?? defaultTimeoutSeconds;
                 try
                 {
-                    _logger.LogDebug("Executing HTTP validation '{ValidationName}' for dataset '{DatasetName}' at URL: {Url}",
-                        validation.name, schema.name, validation.url);
+                    httpClient.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
+
+                    _logger.LogDebug("Executing HTTP validation '{ValidationName}' for dataset '{DatasetName}' at URL: {Url} (timeout: {Timeout}s)",
+                        validation.name, schema.name, validation.url, timeoutSeconds);
 
                     var method = validation.method?.ToUpperInvariant() ?? "POST";
                     HttpResponseMessage response;

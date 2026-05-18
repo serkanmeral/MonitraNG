@@ -35,6 +35,7 @@ namespace MngDataGateway.Persistence.Services
         private readonly IConfiguration _configuration;
         private readonly FilterParser _filterParser;
         private readonly SortParser _sortParser;
+        private readonly IChatMentionNotifier? _chatMentionNotifier;
 
         public DataService(
             ILogger<DataService> logger,
@@ -47,7 +48,8 @@ namespace MngDataGateway.Persistence.Services
             IConfiguration configuration,
             FilterParser filterParser,
             SortParser sortParser,
-            MngDataGateway.Application.Interfaces.IEventPublisher? eventPublisher = null)
+            MngDataGateway.Application.Interfaces.IEventPublisher? eventPublisher = null,
+            IChatMentionNotifier? chatMentionNotifier = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -60,6 +62,7 @@ namespace MngDataGateway.Persistence.Services
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _filterParser = filterParser ?? throw new ArgumentNullException(nameof(filterParser));
             _sortParser = sortParser ?? throw new ArgumentNullException(nameof(sortParser));
+            _chatMentionNotifier = chatMentionNotifier;
         }
 
         public async Task<Dictionary<string, object>> CreateAsync(
@@ -69,7 +72,8 @@ namespace MngDataGateway.Persistence.Services
             string databaseName,
             string userId,
             string userEmail,
-            string? ipAddress = null)
+            string? ipAddress = null,
+            bool skipEventPublish = false)
         {
             try
             {
@@ -112,8 +116,8 @@ namespace MngDataGateway.Persistence.Services
                     await InsertDirectAsync(schema, data, databaseName);
                 }
 
-                // 7. Publish event (async - fire & forget)
-                if (ShouldPublishEvent(schema))
+                // 7. Publish event (async - fire & forget), unless skipEventPublish (e.g. heartbeat-only)
+                if (ShouldPublishEvent(schema) && !skipEventPublish)
                 {
                     // Legacy NotificationService (domain-based exchange)
                     _ = _notificationService.PublishDataCreatedEventAsync(
@@ -125,6 +129,8 @@ namespace MngDataGateway.Persistence.Services
                         _ = PublishDataCreatedEventAsync(domainName, schema, data, userId, userEmail, ipAddress);
                     }
                 }
+
+                QueueChatMentionNotificationIfNeeded(datasetName, domainName, data, userId);
 
                 _logger.LogInformation(
                     "Created data in dataset {DatasetName} with __dataId: {DataId}",
@@ -180,7 +186,8 @@ namespace MngDataGateway.Persistence.Services
             string databaseName,
             string userId,
             string userEmail,
-            string? ipAddress = null)
+            string? ipAddress = null,
+            bool skipEventPublish = false)
         {
             try
             {
@@ -225,8 +232,8 @@ namespace MngDataGateway.Persistence.Services
                 var updatedDoc = await _dataRepository.FindByIdAsync(databaseName, schema.CollectionName, dataId);
                 var result = updatedDoc?.ToDictionary();
 
-                // 7. Publish event (async)
-                if (ShouldPublishEvent(schema) && result != null)
+                // 7. Publish event (async), unless skipEventPublish (e.g. lastSeenAt/heartbeat only)
+                if (ShouldPublishEvent(schema) && !skipEventPublish && result != null)
                 {
                     // Legacy NotificationService (domain-based exchange)
                     _ = _notificationService.PublishDataUpdatedEventAsync(
@@ -263,7 +270,8 @@ namespace MngDataGateway.Persistence.Services
             string databaseName,
             string userId,
             string userEmail,
-            string? ipAddress = null)
+            string? ipAddress = null,
+            bool skipEventPublish = false)
         {
             var schema = await LoadSchemaAsync(datasetName, databaseName);
             
@@ -278,8 +286,8 @@ namespace MngDataGateway.Persistence.Services
             if (!success)
                 return false;
 
-            // Publish event (async)
-            if (ShouldPublishEvent(schema))
+            // Publish event (async), unless skipEventPublish
+            if (ShouldPublishEvent(schema) && !skipEventPublish)
             {
                 _ = _notificationService.PublishDataDeletedEventAsync(
                     domainName, databaseName, schema, dataId, userId, userEmail, ipAddress);
@@ -299,7 +307,8 @@ namespace MngDataGateway.Persistence.Services
             string databaseName,
             string userId,
             string userEmail,
-            string? ipAddress = null)
+            string? ipAddress = null,
+            bool skipEventPublish = false)
         {
             var schema = await LoadSchemaAsync(datasetName, databaseName);
             
@@ -309,8 +318,8 @@ namespace MngDataGateway.Persistence.Services
             if (!success)
                 return false;
 
-            // Publish event (async)
-            if (ShouldPublishEvent(schema))
+            // Publish event (async), unless skipEventPublish
+            if (ShouldPublishEvent(schema) && !skipEventPublish)
             {
                 // Legacy NotificationService (domain-based exchange)
                 _ = _notificationService.PublishDataRestoredEventAsync(
@@ -337,7 +346,8 @@ namespace MngDataGateway.Persistence.Services
             string databaseName,
             string userId,
             string userEmail,
-            string? ipAddress = null)
+            string? ipAddress = null,
+            bool skipEventPublish = false)
         {
             try
             {
@@ -425,8 +435,8 @@ namespace MngDataGateway.Persistence.Services
                     }).ToList()
                 };
 
-                // 6. Publish events (async - fire & forget)
-                if (ShouldPublishEvent(schema))
+                // 6. Publish events (async - fire & forget), unless skipEventPublish
+                if (ShouldPublishEvent(schema) && !skipEventPublish)
                 {
                     foreach (var item in processedItems)
                     {
@@ -543,6 +553,36 @@ namespace MngDataGateway.Persistence.Services
             // Insert data
             await _dataRepository.InsertOneAsync(
                 databaseName, schema.CollectionName, data, session: null);
+        }
+
+        /// <summary>
+        /// <c>cht_messages</c> oluşturulduğunda mention hedeflerini MngNotifier'a ilet (fire-and-forget; başarısızlık oluşturmayı bozmaz).
+        /// </summary>
+        private void QueueChatMentionNotificationIfNeeded(
+            string datasetName,
+            string domainName,
+            Dictionary<string, object> data,
+            string userId)
+        {
+            if (_chatMentionNotifier == null)
+                return;
+            if (!string.Equals(datasetName, "cht_messages", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            _ = NotifyChatMentionsFireAndForget();
+
+            async Task NotifyChatMentionsFireAndForget()
+            {
+                try
+                {
+                    await _chatMentionNotifier.NotifyChatMentionsAsync(domainName, data, userId, default)
+                        .ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "cht_messages mention bildirimi gönderilemedi (MngNotifier).");
+                }
+            }
         }
 
         private async Task ProcessAndInsertItemsInTransactionAsync(

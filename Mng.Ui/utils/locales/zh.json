@@ -126,7 +126,19 @@
   "Banners Widgets": "横幅小部件",
   "Cards Widgets": "卡片小部件",
   "Charts Widgets": "图表小工具",
+  "breadcrumbs": {
+    "home": "仪表板"
+  },
+  "assetTypeDefinitions": {
+    "pageTitle": "资产类型定义",
+    "breadcrumbs": {
+      "title": "资产类型定义"
+    }
+  },
   "menu": {
+    "apps-task-manager": "任务",
+    "apps-task-manager-assigned": "分配给我",
+    "apps-chat-room": "聊天室",
     "apps-dataset-categories": "数据集类别",
     "datasets": "数据集",
     "two-steps": "两步",
@@ -2268,5 +2280,101 @@
       "unauthorized": "未授权",
       "unauthorizedMessage": "您没有权限查看此小部件。"
     }
+  },
+  "monitoring": {
+    "pageTitle": "监控定义",
+    "control": {
+      "pageTitle": "控制"
+    },
+    "map": {
+      "pageTitle": "地图"
+    },
+    "common": {
+      "searchPlaceholder": "搜索...",
+      "refresh": "刷新",
+      "cancel": "取消",
+      "save": "保存",
+      "delete": "删除",
+      "back": "返回",
+      "next": "下一步"
+    },
+    "widgets": {
+      "pageTitle": "监控小部件",
+      "listTitle": "小部件列表",
+      "newWidget": "新小部件",
+      "formTitle": "新监控小部件",
+      "stepAssets": "资产",
+      "stepCollectible": "可收集",
+      "stepWidget": "小部件",
+      "assetScope": "资产范围",
+      "byType": "按类型（所有资产）",
+      "manualSelect": "手动选择",
+      "assetType": "资产类型",
+      "assetsFound": "个资产",
+      "selectAssets": "选择资产",
+      "assetsSelected": "个资产已选",
+      "collectible": "可收集参数",
+      "noCollectibles": "所选资产未找到可收集项。",
+      "title": "标题",
+      "name": "名称（技术）",
+      "description": "描述",
+      "typeChart": "图表",
+      "typeCard": "卡片",
+      "widgetType": "小部件类型",
+      "chartHint": "图表小部件：时间序列（timestamp = x, value = y）将自动配置。",
+      "chartHintMultiSeries": "已选择多个资产：每个资产将显示为单独的系列（线）。",
+      "chartType": "图表类型",
+      "chartTypeLine": "折线",
+      "chartTypeBar": "柱状",
+      "chartTypeArea": "面积",
+      "chartTypePie": "饼图",
+      "chartTypeDonut": "环形图",
+      "save": "保存",
+      "goToDashboards": "仪表板",
+      "noWidgets": "尚无监控小部件。请创建新小部件。"
+    }
+  },
+  "chatRoom": {
+    "pageTitle": "聊天室",
+    "breadcrumb": "聊天",
+    "sidebarTitle": "聊天列表",
+    "liveFeedTitle": "实时: cht_messages (DG → Hub)",
+    "liveFeedHint": "DataGateway 统一事件：routing key 后缀与 datasetName = cht_messages。",
+    "liveFeedEmpty": "尚无事件。请创建 cht_messages 记录。",
+    "liveFeedConnecting": "连接中",
+    "liveFeedConnected": "已连接",
+    "liveFeedDisconnected": "未连接",
+    "liveEventCreated": "已创建",
+    "liveEventUpdated": "已更新",
+    "liveEventDeleted": "已删除",
+    "waSectionDm": "私聊 (DM)",
+    "waSectionTopics": "主题",
+    "waSectionBranches": "子主题",
+    "waSectionGroups": "群聊",
+    "waSearchPlaceholder": "搜索…",
+    "waPickRoom": "请从左侧选择一个会话。",
+    "waNoMessages": "暂无消息。",
+    "waYou": "我",
+    "waRefreshRooms": "刷新房间",
+    "waReloadMessages": "刷新消息",
+    "waMessagePlaceholder": "输入消息",
+    "waNoDm": "无私聊。",
+    "waNoTopics": "无根主题。",
+    "waNoBranches": "无子主题。",
+    "waNoGroups": "无群聊。",
+    "waNewDmButton": "新会话",
+    "waNewDmTitle": "发起私聊",
+    "waNewDmLabel": "对方用户 ID",
+    "waNewDmHint": "通常为 Keycloak sub；须与 DataGateway 中 persons/authorPersonId 一致。",
+    "waNewDmStart": "打开会话",
+    "waNewDmCancel": "取消",
+    "waNewDmErrNoSession": "会话中无用户标识，请重新登录。",
+    "waNewDmErrEmpty": "请输入对方用户 ID。",
+    "waNewDmErrNoMyPersonId": "会话缺少人员标识（JWT mng_person_id 或资料）。请重新登录。",
+    "waNewDmErrNoPeerPersonId": "无法解析对方人员标识；请从列表选择或输入有效的 Keeper 用户 id。",
+    "waNewDmErrSelf": "不能与自己发起私聊。",
+    "waNewDmComboboxHint": "MngKeeper 用户目录：随输入搜索；若不在列表中可粘贴完整用户 ID。",
+    "waNewDmNoUsers": "无匹配项。请更换关键词或粘贴完整用户 ID。",
+    "waHistoryLiveHint": "历史记录来自 DataGateway；Hub 实时更新。断线或切回此标签页后，侧栏与当前会话会自动同步。"
   }
 }

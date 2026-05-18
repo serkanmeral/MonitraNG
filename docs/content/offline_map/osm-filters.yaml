@@ -1,0 +1,41 @@
+# OSM Filtre Yapılandırması — Railway Platform
+# Bu dosyayı düzenleyerek filtreleri kolayca değiştirebilirsiniz.
+# osmium tags-filter formatı: {n|w|r}/{tag}={value1,value2,...}
+#   n = node, w = way, r = relation
+
+source_pbf: "data/turkey-latest.osm.pbf"
+output_dir: "data/exports"
+
+filters:
+  # Ray hatları (ways)
+  railways:
+    type: w
+    tag: railway
+    values: [rail, tram, subway, light_rail]
+    output: turkey_railways.osm.pbf
+    geojson: railways.geojson
+
+  # İstasyonlar (nodes)
+  stations:
+    type: n
+    tag: railway
+    values: [station, halt]
+    output: turkey_stations.osm.pbf
+    geojson: stations.geojson
+
+  # Yerleşim label'ları (nodes)
+  places:
+    type: n
+    tag: place
+    values: [city, town, village, hamlet]
+    output: turkey_places.osm.pbf
+    geojson: places.geojson
+
+  # İsteğe bağlı: Makas/sinyal vb. (fixed_assets için)
+  # OSM'de switch genelde node; signal da node veya way olabilir
+  # switches:
+  #   type: n
+  #   tag: railway
+  #   values: [switch]
+  #   output: turkey_switches.osm.pbf
+  #   geojson: switches.geojson

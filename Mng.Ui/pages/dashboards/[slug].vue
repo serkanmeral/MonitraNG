@@ -5,7 +5,7 @@ import DashboardLayoutRenderer from '@/components/dashboards/DashboardLayoutRend
 import { useDashboardStore } from '@/stores/apps/dashboard';
 import { useDashboardPermissions } from '@/composables/useDashboardPermissions';
 import { useAuthStore } from '@/stores/auth';
-import type { DashboardLayout } from '@/stores/apps/dashboard';
+import type { DashboardLayout, WidgetConfigOverrides } from '@/stores/apps/dashboard';
 
 const route = useRoute();
 const router = useRouter();
@@ -108,6 +108,28 @@ const refreshIntervalMs = computed(() => {
 
 // Provide refresh interval to child components
 provide('dashboardRefreshInterval', refreshIntervalMs);
+
+// Widget ayarları override (dashboard görünümünde değiştirilebilir)
+async function onWidgetOverridesChange(payload: {
+  rowIdx: number;
+  colIdx: number;
+  overrides: WidgetConfigOverrides;
+}) {
+  const d = dashboardStore.currentDashboard;
+  if (!d?.layout?.rows || !canEdit.value) return;
+  const rows = JSON.parse(JSON.stringify(d.layout.rows));
+  const row = rows[payload.rowIdx];
+  if (!row?.cols?.[payload.colIdx]) return;
+  row.cols[payload.colIdx] = {
+    ...row.cols[payload.colIdx],
+    widgetOverrides: payload.overrides,
+  };
+  try {
+    await dashboardStore.updateDashboard(d.__dataId ?? d.dataId ?? '', { layout: { type: 'rows', rows } });
+  } catch {
+    /* store sets error */
+  }
+}
 </script>
 
 <template>
@@ -209,7 +231,9 @@ provide('dashboardRefreshInterval', refreshIntervalMs);
     <template v-else-if="layout && hasViewPermission">
       <dashboards-dashboard-layout-renderer
         :rows="layout.rows"
+        :can-edit="canEdit"
         :t="t"
+        @update:widget-overrides="onWidgetOverridesChange"
       />
     </template>
 

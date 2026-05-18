@@ -69,7 +69,7 @@ const cardConfig = computed(() => {
     color: config?.color || 'primary',
     trendUpColor: config?.trendUpColor || 'success',
     trendDownColor: config?.trendDownColor || 'error',
-    format: config?.format || 'number', // 'number', 'currency', 'percentage'
+    format: config?.format || 'number', // 'number', 'currency', 'percentage', 'boolean', 'text'
     currency: config?.currency || '₺',
     decimalPlaces: config?.decimalPlaces ?? 0,
     subtitle: config?.subtitle || props.widget.description || '',
@@ -78,10 +78,17 @@ const cardConfig = computed(() => {
     actionColor: config?.actionColor || 'default',
     variant: config?.variant || 'outlined', // 'outlined', 'flat', 'elevated'
     elevation: config?.elevation ?? (config?.variant === 'elevated' ? 10 : undefined),
-    bgColor: config?.bgColor, // Background color class (e.g., 'bg-primary', 'bg-secondary')
+    bgColor: config?.bgColor,
     showSecondaryValue: config?.showSecondaryValue && config?.secondaryValueField,
     secondaryValueField: config?.secondaryValueField,
     secondaryLabel: config?.secondaryLabel || '',
+    /** Kart görünümü: default | badge (kompakt, değer vurgulu) */
+    cardDisplay: config?.cardDisplay === 'badge' ? 'badge' : 'default',
+    /** Boolean format etiketleri (format: 'boolean' iken) */
+    booleanTrueLabel: config?.booleanTrueLabel ?? 'Evet',
+    booleanFalseLabel: config?.booleanFalseLabel ?? 'Hayır',
+    booleanTrueColor: config?.booleanTrueColor ?? 'success',
+    booleanFalseColor: config?.booleanFalseColor ?? 'error',
   };
 });
 
@@ -93,6 +100,12 @@ const formattedValue = computed(() => {
   const cfg = cardConfig.value;
 
   switch (cfg.format) {
+    case 'boolean': {
+      const isTrue = val === true || val === 'true' || String(val).toLowerCase() === 'true' || Number(val) === 1;
+      return isTrue ? cfg.booleanTrueLabel : cfg.booleanFalseLabel;
+    }
+    case 'text':
+      return String(val);
     case 'currency':
       return new Intl.NumberFormat('tr-TR', {
         style: 'currency',
@@ -111,6 +124,18 @@ const formattedValue = computed(() => {
         maximumFractionDigits: cfg.decimalPlaces,
       }).format(Number(val));
   }
+});
+
+// Boolean için renk ve ikon (format === 'boolean' iken)
+const booleanDisplay = computed(() => {
+  if (cardConfig.value.format !== 'boolean') return null;
+  const val = value.value;
+  const isTrue = val === true || val === 'true' || String(val).toLowerCase() === 'true' || Number(val) === 1;
+  const cfg = cardConfig.value;
+  return {
+    color: isTrue ? cfg.booleanTrueColor : cfg.booleanFalseColor,
+    icon: isTrue ? 'mdi-check-circle' : 'mdi-close-circle',
+  };
 });
 
 // Trend display
@@ -139,22 +164,33 @@ const trendDisplay = computed(() => {
     :elevation="cardConfig.elevation"
     :class="[
       'stat-card',
-      `stat-card-${cardConfig.color}`,
+      cardConfig.cardDisplay === 'badge' ? 'stat-card--badge' : '',
+      `stat-card-${cardConfig.format === 'boolean' && booleanDisplay ? booleanDisplay.color : cardConfig.color}`,
       cardConfig.bgColor
     ]"
   >
-    <v-card-text class="pa-4">
+    <v-card-text :class="cardConfig.cardDisplay === 'badge' ? 'pa-3' : 'pa-4'">
       <div class="d-flex align-start justify-space-between">
         <div class="d-flex align-start ga-3" style="flex: 1;">
-          <!-- Icon Variants -->
+          <!-- Boolean: durum ikonu -->
+          <template v-if="cardConfig.format === 'boolean' && booleanDisplay">
+            <v-icon
+              :color="booleanDisplay.color"
+              size="40"
+              class="stat-icon stat-icon--boolean"
+            >
+              {{ booleanDisplay.icon }}
+            </v-icon>
+          </template>
+          <!-- Icon Variants (non-boolean) -->
           <v-avatar
-            v-if="cardConfig.showIcon && cardConfig.iconVariant === 'avatar'"
+            v-else-if="cardConfig.showIcon && cardConfig.iconVariant === 'avatar'"
             :color="cardConfig.color"
-            size="56"
+            :size="cardConfig.cardDisplay === 'badge' ? 44 : 56"
             variant="flat"
             class="stat-icon-avatar"
           >
-            <v-icon :color="cardConfig.color" size="28">
+            <v-icon :color="cardConfig.color" :size="cardConfig.cardDisplay === 'badge' ? 22 : 28">
               {{ cardConfig.icon }}
             </v-icon>
           </v-avatar>
@@ -164,29 +200,30 @@ const trendDisplay = computed(() => {
             icon
             flat
             rounded="pill"
+            :size="cardConfig.cardDisplay === 'badge' ? 'small' : undefined"
             class="stat-icon-button"
           >
-            <v-icon size="24">
+            <v-icon :size="cardConfig.cardDisplay === 'badge' ? 20 : 24">
               {{ cardConfig.icon }}
             </v-icon>
           </v-btn>
           <v-icon
             v-else-if="cardConfig.showIcon"
             :color="cardConfig.color"
-            size="32"
+            :size="cardConfig.cardDisplay === 'badge' ? 28 : 32"
             class="stat-icon"
           >
             {{ cardConfig.icon }}
           </v-icon>
 
-          <div style="flex: 1;">
-            <div class="text-caption text-medium-emphasis mb-1">
+          <div style="flex: 1;" :class="cardConfig.cardDisplay === 'badge' ? 'stat-card-badge-content' : ''">
+            <div class="text-caption text-medium-emphasis mb-1" :class="{ 'text-caption': cardConfig.cardDisplay === 'badge' }">
               {{ widget.title }}
             </div>
-            <div v-if="cardConfig.subtitle" class="text-caption text-medium-emphasis mb-2">
+            <div v-if="cardConfig.subtitle && cardConfig.cardDisplay !== 'badge'" class="text-caption text-medium-emphasis mb-2">
               {{ cardConfig.subtitle }}
             </div>
-            <div class="text-h5 font-weight-bold">
+            <div :class="cardConfig.cardDisplay === 'badge' ? 'text-h4 font-weight-bold' : 'text-h5 font-weight-bold'">
               {{ formattedValue }}
             </div>
             <div v-if="secondaryValue !== null" class="text-body-2 text-medium-emphasis mt-1">
@@ -237,5 +274,13 @@ const trendDisplay = computed(() => {
 
 .stat-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card--badge .stat-card-badge-content {
+  min-width: 0;
+}
+
+.stat-card--badge .stat-icon--boolean {
+  flex-shrink: 0;
 }
 </style>

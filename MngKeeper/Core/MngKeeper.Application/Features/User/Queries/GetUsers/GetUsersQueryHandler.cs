@@ -56,6 +56,7 @@ namespace MngKeeper.Application.Features.User.Queries.GetUsers
                 var userDtos = queryResult.Items.Select(u => new UserDto
                 {
                     UserId = u.Id,
+                    KeycloakUserId = string.IsNullOrWhiteSpace(u.KeycloakUserId) ? null : u.KeycloakUserId,
                     Username = u.Username,
                     Email = u.Email,
                     FirstName = u.FirstName,

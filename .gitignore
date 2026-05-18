@@ -113,6 +113,6 @@ ApplicationResources/Cert/staging/
 ApplicationResources/Office/*.iso
 ApplicationResources/Windows/*.iso
 
-## Large ISO files (exceed GitHub 100MB limit)
-ApplicationResources/Office/*.iso
-ApplicationResources/Windows/*.iso
+## Offline map OSM data (generate locally; exceeds Git 100MB limit)
+docs/content/offline_map/data/**/*.pbf
+docs/content/offline_map/data/exports/*.geojson

@@ -1,0 +1,38 @@
+{
+  "source_pbf": "data/turkey-latest.osm.pbf",
+  "output_dir": "data/exports",
+  "filters": [
+    {
+      "name": "roads",
+      "type": "w",
+      "tag": "highway",
+      "values": ["motorway", "trunk", "primary", "secondary", "tertiary", "unclassified", "residential", "living_street", "service", "motorway_link", "trunk_link", "primary_link", "secondary_link", "tertiary_link"],
+      "output": "turkey_roads.osm.pbf",
+      "geojson": "roads.geojson"
+    },
+    {
+      "name": "waterways",
+      "type": "w",
+      "tag": "waterway",
+      "values": ["river", "stream", "canal", "drain"],
+      "output": "turkey_waterways.osm.pbf",
+      "geojson": "waterways.geojson"
+    },
+    {
+      "name": "water_areas",
+      "type": "w",
+      "tag": "natural",
+      "values": ["water"],
+      "output": "turkey_water_areas.osm.pbf",
+      "geojson": "water_areas.geojson"
+    },
+    {
+      "name": "landuse",
+      "type": "w",
+      "tag": "landuse",
+      "values": ["forest", "grass", "residential", "industrial", "commercial", "retail", "farmland", "meadow"],
+      "output": "turkey_landuse.osm.pbf",
+      "geojson": "landuse.geojson"
+    }
+  ]
+}

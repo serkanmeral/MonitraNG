@@ -1,0 +1,6 @@
+@MngWorkflow.Api_HostAddress = http://localhost:5082
+
+GET {{MngWorkflow.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

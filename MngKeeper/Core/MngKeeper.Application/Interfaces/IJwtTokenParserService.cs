@@ -7,7 +7,12 @@ namespace MngKeeper.Application.Interfaces
 
     public class TokenClaims
     {
+        /// <summary>Keycloak kullanıcı id (JWT <c>sub</c>).</summary>
         public string? UserId { get; set; }
+
+        /// <summary>Keeper domain DB <c>@users</c> kaydı Mongo id (JWT <c>mng_person_id</c>).</summary>
+        public string? MngPersonId { get; set; }
+
         public string? DomainId { get; set; }
         public string? DomainName { get; set; }
         public string? DomainRealm { get; set; }

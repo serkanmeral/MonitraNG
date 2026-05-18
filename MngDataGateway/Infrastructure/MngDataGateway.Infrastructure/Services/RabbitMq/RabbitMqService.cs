@@ -261,6 +261,57 @@ namespace MngDataGateway.Infrastructure.Services.RabbitMq
         }
 
         private const string UnifiedExchangeName = "mngdatagateway.events";
+        private const string MonitoringSyncExchangeName = "monitra.monitoring.sync";
+
+        public async Task PublishMonitoringSyncEventAsync(string domainName, string datasetName, string operation, object eventPayload)
+        {
+            if (string.IsNullOrWhiteSpace(domainName) || string.IsNullOrWhiteSpace(datasetName) || string.IsNullOrWhiteSpace(operation))
+                return;
+            if (eventPayload == null)
+                throw new ArgumentNullException(nameof(eventPayload));
+
+            await EnsureMonitoringSyncExchangeAsync();
+            var routingKey = $"{domainName.ToLowerInvariant()}.{datasetName}.{operation}";
+
+            var jsonPayload = JsonSerializer.Serialize(eventPayload, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = false
+            });
+            var body = Encoding.UTF8.GetBytes(jsonPayload);
+
+            try
+            {
+                await PublishInternalAsync(MonitoringSyncExchangeName, routingKey, body, eventPayload);
+                _logger.LogDebug("Monitoring sync event published: {Exchange} {RoutingKey}", MonitoringSyncExchangeName, routingKey);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to publish monitoring sync event: {RoutingKey}", routingKey);
+            }
+        }
+
+        public async Task EnsureMonitoringSyncExchangeAsync()
+        {
+            if (_declaredExchanges.Contains(MonitoringSyncExchangeName))
+                return;
+            await EnsureConnectedAsync();
+            try
+            {
+                await _channel!.ExchangeDeclareAsync(
+                    exchange: MonitoringSyncExchangeName,
+                    type: ExchangeType.Topic,
+                    durable: true,
+                    autoDelete: false,
+                    arguments: null);
+                _declaredExchanges.Add(MonitoringSyncExchangeName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to declare monitoring sync exchange");
+                throw;
+            }
+        }
 
         public async Task EnsureUnifiedExchangeAsync()
         {

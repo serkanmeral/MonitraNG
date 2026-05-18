@@ -1,12 +1,16 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using MngHub.Application.DTOs.Common;
-using MngHub.Infrastructure.Services.SignalR;
+using MngHub.Infrastructure.Helpers;
 
 namespace MngHub.Infrastructure.Services.SignalR;
 
 /// <summary>
-/// Service to route messages to appropriate SignalR groups based on routing key
+/// Service to route messages to appropriate SignalR groups based on routing key.
+/// Chat Room (F2, MVP 3A): <c>cht_messages</c> create/update unified events use the same path —
+/// domain group + <see cref="NotificationHub"/> <c>ReceiveMessage</c>; client filters by
+/// <c>datasetName</c> and <c>data.roomKind</c> / <c>data.roomRecordId</c>. See
+/// <c>docs/content/chat_room/CHAT_ROOM_ROADMAP.md</c> §3.2b.
 /// </summary>
 public class MessageRouter
 {
@@ -57,6 +61,18 @@ public class MessageRouter
             targetRoom = domainRoomName;
             logLevel = LogLevel.Information;
         }
+        else if (routingKey.StartsWith("monitoring.data.updated."))
+        {
+            // Reactor ingest notify: monitoring.data.updated.{domainName} -> domain room
+            targetRoom = domainRoomName;
+            logLevel = LogLevel.Debug;
+        }
+        else if (routingKey.StartsWith("dataset.", StringComparison.OrdinalIgnoreCase))
+        {
+            // MngDataGateway unified payload: dataset.{datasetName}.{created|updated|deleted|restored} on monitra.data.events.{tenant}
+            targetRoom = domainRoomName;
+            logLevel = LogLevel.Debug;
+        }
         else
         {
             _logger.LogWarning(
@@ -65,7 +81,8 @@ public class MessageRouter
             return;
         }
 
-        var messageDto = MessageDto.Create(routingKey, message);
+        var payload = HubPayloadNormalizer.NormalizeForClient(message);
+        var messageDto = MessageDto.Create(routingKey, payload);
         await _hubContext.Clients.Group(targetRoom).SendAsync("ReceiveMessage", messageDto);
 
         _logger.Log(

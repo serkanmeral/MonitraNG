@@ -25,6 +25,9 @@ public static class ServiceRegistration
         
         // Validation Service - Data validation
         services.AddScoped<IValidationService, ValidationService>();
+
+        // Chat Room: cht_messages mention → MngNotifier HTTP (yapılandırma yoksa no-op)
+        services.AddScoped<IChatMentionNotifier, ChatMentionNotifier>();
         
         // Permission Service - Dataset access control
         services.AddScoped<IPermissionService, PermissionService>();

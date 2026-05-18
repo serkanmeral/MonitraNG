@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Application.Helpers;
+using MngKeeper.Application.Services;
 using MngKeeper.Api.Attributes;
 using MediatR;
 using MngKeeper.Application.Features.Auth.Commands.GetToken;
@@ -17,6 +18,7 @@ public class AuthController : ControllerBase
     private readonly IUserRepository _userRepository;
     private readonly IDomainRepository _domainRepository;
     private readonly IPasswordResetTokenRepository _passwordResetTokenRepository;
+    private readonly ITokenCredentialResolver _tokenCredentialResolver;
     private readonly IMediator _mediator;
     private readonly ILogger<AuthController> _logger;
 
@@ -25,6 +27,7 @@ public class AuthController : ControllerBase
         IUserRepository userRepository,
         IDomainRepository domainRepository,
         IPasswordResetTokenRepository passwordResetTokenRepository,
+        ITokenCredentialResolver tokenCredentialResolver,
         IMediator mediator,
         ILogger<AuthController> logger)
     {
@@ -32,6 +35,7 @@ public class AuthController : ControllerBase
         _userRepository = userRepository;
         _domainRepository = domainRepository;
         _passwordResetTokenRepository = passwordResetTokenRepository;
+        _tokenCredentialResolver = tokenCredentialResolver;
         _mediator = mediator;
         _logger = logger;
     }
@@ -60,53 +64,23 @@ public class AuthController : ControllerBase
                 });
             }
 
-            // Parse domain from username if format is "domain@username"
-            string domainName = request.Domain;
-            string username = request.Username;
+            var resolved = await _tokenCredentialResolver.ResolveAsync(
+                request.Username,
+                request.Domain);
 
-            if (string.IsNullOrWhiteSpace(domainName))
+            if (!resolved.IsSuccess)
             {
-                // Try to parse domain from username format: "domain@username"
-                var parts = username.Split('@', 2);
-                if (parts.Length == 2)
+                return BadRequest(new ErrorResponse
                 {
-                    domainName = parts[0];
-                    username = parts[1];
-                    _logger.LogInformation("Domain parsed from username format: {Domain}@{Username}", 
-                        domainName, username);
-                }
-                else
-                {
-                    // If no @ in username, try to use single domain if only one exists
-                    var allDomains = await _domainRepository.GetAllAsync();
-                    var domainList = allDomains.ToList();
-                    
-                    if (domainList.Count == 1)
-                    {
-                        domainName = domainList[0].Name;
-                        _logger.LogInformation("Using single domain: {Domain} for username: {Username}", 
-                            domainName, username);
-                    }
-                    else if (domainList.Count == 0)
-                    {
-                        return BadRequest(new ErrorResponse
-                        {
-                            Error = "no_domains",
-                            ErrorDescription = "No domains found in the system"
-                        });
-                    }
-                    else
-                    {
-                        return BadRequest(new ErrorResponse
-                        {
-                            Error = "domain_required",
-                            ErrorDescription = $"Multiple domains found ({domainList.Count}). Domain is required. Either provide 'domain' parameter or use 'domain@username' format"
-                        });
-                    }
-                }
+                    Error = resolved.ErrorCode ?? "invalid_request",
+                    ErrorDescription = resolved.ErrorDescription ?? "Could not resolve domain and username"
+                });
             }
 
-            _logger.LogInformation("Token request for user: {Username} in domain: {Domain}", 
+            var domainName = resolved.DomainName;
+            var username = resolved.Username;
+
+            _logger.LogInformation("Token request for user: {Username} in domain: {Domain}",
                 username, domainName);
 
             // Use GetTokenCommandHandler to get token with enhanced claims

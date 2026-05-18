@@ -18,7 +18,7 @@ HTTP Validation, dataset validations array'ine eklenen `type: "http"` validasyon
 - ✅ Authorization header'ı otomatik forward etme
 - ✅ `when` kontrolü (create, update, both)
 - ✅ `order` sıralaması (validation execution order)
-- ✅ Timeout yönetimi (configurable)
+- ✅ Timeout yönetimi (configurable — global config veya per-validation `timeoutSeconds`)
 - ✅ Error handling (network errors, timeouts - safe default)
 - ✅ Response format: `{ "isValid": true/false, "errorMessage": "..." }`
 
@@ -36,7 +36,8 @@ HTTP validation, dataset schema'nın `validations` array'ine aşağıdaki format
   "url": "http://localhost:1880/dg_validasyontest",
   "method": "POST",
   "when": "both",
-  "order": 2
+  "order": 2,
+  "timeoutSeconds": 45
 }
 ```
 
@@ -51,6 +52,7 @@ HTTP validation, dataset schema'nın `validations` array'ine aşağıdaki format
 | `method` | string | ❌ | HTTP method (`POST`, `GET`). Default: `POST` |
 | `when` | string | ❌ | Ne zaman çalışacak: `"create"`, `"update"`, `"both"`. Default: `"both"` |
 | `order` | number | ❌ | Execution order (küçük sayı önce çalışır). Default: `0` |
+| `timeoutSeconds` | number | ❌ | Bu validation için timeout (saniye). Default: config `HttpValidationTimeout` (30) |
 
 ---
 

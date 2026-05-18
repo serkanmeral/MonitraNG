@@ -2,6 +2,7 @@ namespace MngKeeper.Application.Configuration;
 
 public class MngKeeperSettings
 {
+    public TenantSettings Tenant { get; set; } = new();
     public ServerSettings Server { get; set; } = null!;
     public MongoDbSettings MongoDB { get; set; } = null!;
     public RabbitMqSettings RabbitMQ { get; set; } = null!;

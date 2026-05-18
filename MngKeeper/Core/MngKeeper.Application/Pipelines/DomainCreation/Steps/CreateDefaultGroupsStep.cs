@@ -62,6 +62,7 @@ public class CreateDefaultGroupsStep : IPipelineStep<DomainCreationContext>
                     Permissions = new List<string>(),
                     IsActive = true,
                     DomainId = context.Domain.Id,
+                    KeycloakGroupId = keycloakGroup.Id ?? string.Empty,
                     CreatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser,
                     CreatedAt = DateTime.UtcNow
                 };

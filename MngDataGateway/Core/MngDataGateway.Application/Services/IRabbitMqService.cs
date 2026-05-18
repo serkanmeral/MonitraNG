@@ -53,6 +53,14 @@ namespace MngDataGateway.Application.Services
         /// <param name="routingKey">Routing key (e.g., "meral.datacreatedevent")</param>
         /// <param name="eventPayload">Event payload object</param>
         Task PublishToUnifiedExchangeAsync(string domainId, string routingKey, object eventPayload);
+
+        /// <summary>
+        /// Publish monitoring sync event for mon_engines, mon_agents, mon_assets.
+        /// Exchange: monitra.monitoring.sync
+        /// Routing key: {domain}.{dataset}.{operation}
+        /// MngReactor consumes this to trigger MQTT sync to Engine.
+        /// </summary>
+        Task PublishMonitoringSyncEventAsync(string domainName, string datasetName, string operation, object eventPayload);
     }
 }
 

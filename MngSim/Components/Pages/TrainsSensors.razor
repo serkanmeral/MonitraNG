@@ -1,0 +1,286 @@
+@page "/trains/sensors"
+@rendermode InteractiveServer
+@inject HttpClient Http
+@implements IDisposable
+
+<PageTitle>Tren sensörleri — MngSim</PageTitle>
+
+<div class="simulator-page trains-sensors-page">
+    <h1>Tren sensörleri (polling)</h1>
+    <p class="subtitle">Yoldaki trenlerin anlık sensör değerleri. İstediğiniz alanı sabitleyebilir (override) veya override'ları kaldırabilirsiniz.</p>
+    <p>
+        <a href="/trains">← Tren listesi</a>
+    </p>
+
+    @if (!_enabled)
+    {
+        <div class="card" style="border-color: #f0ad4e;">
+            <p class="muted">Tren simülasyonu verisi yüklü değil. Önce <a href="/trains">Trenler</a> sayfasından rota ve tren ekleyip başlatın.</p>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <p class="muted">Son güncelleme: @_lastUpdate?.ToString("HH:mm:ss") — <span>@(_positions.Count) tren</span></p>
+        </div>
+
+        @if (_positions.Count == 0)
+        {
+            <div class="card">
+                <p class="muted">Yolda tren yok. <a href="/trains">Trenler</a> sayfasından tren ekleyip başlatın.</p>
+            </div>
+        }
+        else
+        {
+            <section class="card sensors-table-card">
+                <h2>Anlık değerler</h2>
+                <div class="sensors-scroll">
+                    <table class="sensors-table">
+                        <thead>
+                            <tr>
+                                <th>Tren</th>
+                                <th>Rota</th>
+                                <th>Hız (km/h)</th>
+                                <th>Yön (°)</th>
+                                <th>Motor (°C)</th>
+                                <th>Yağ (bar)</th>
+                                <th>Soğutucu (°C)</th>
+                                <th>Batarya (V)</th>
+                                <th>Fren (bar)</th>
+                                <th>Kabin (°C)</th>
+                                <th>Titreşim</th>
+                                <th>Kapı</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in _positions)
+                            {
+                                var s = p.Sensors;
+                                <tr>
+                                    <td><strong>@p.TrainId</strong></td>
+                                    <td>@p.RouteId</td>
+                                    <td>@(p.Speed?.ToString("F1") ?? "—")</td>
+                                    <td>@(p.Heading?.ToString("F1") ?? "—")</td>
+                                    <td>@(s?.EngineTempC.ToString("F1") ?? "—")</td>
+                                    <td>@(s?.OilPressureBar.ToString("F2") ?? "—")</td>
+                                    <td>@(s?.CoolantTempC.ToString("F1") ?? "—")</td>
+                                    <td>@(s?.BatteryVoltageV.ToString("F2") ?? "—")</td>
+                                    <td>@(s?.BrakePipePressureBar.ToString("F2") ?? "—")</td>
+                                    <td>@(s?.CabTempC.ToString("F1") ?? "—")</td>
+                                    <td>@(s?.VibrationMs2.ToString("F3") ?? "—")</td>
+                                    <td>@(s != null ? (s.DoorClosed ? "Kapalı" : "Açık") : "—")</td>
+                                    <td>
+                                        <button type="button" class="btn-edit" @onclick="@(() => OpenEdit(p.TrainId, s))">Düzenle</button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            @if (_editingTrainId != null)
+            {
+                <div class="card edit-override-card">
+                    <h3>Override: @_editingTrainId</h3>
+                    <p class="muted">Sadece değiştirmek istediğiniz alanları doldurun. Kaydet’te dolu alanlar sabitlenir; boş bırakılanlar simülasyon değerinde kalır.</p>
+                    <EditForm Model="@_overrideForm" OnValidSubmit="SaveOverrides">
+                        <div class="override-grid">
+                            <div>
+                                <label for="ov-engine">Motor sıcaklığı (°C)</label>
+                                <InputNumber id="ov-engine" @bind-Value="_overrideForm.EngineTempC" class="full-width" placeholder="boş bırak = simüle" />
+                            </div>
+                            <div>
+                                <label for="ov-oil">Yağ basıncı (bar)</label>
+                                <InputNumber id="ov-oil" @bind-Value="_overrideForm.OilPressureBar" class="full-width" placeholder="boş" />
+                            </div>
+                            <div>
+                                <label for="ov-coolant">Soğutucu (°C)</label>
+                                <InputNumber id="ov-coolant" @bind-Value="_overrideForm.CoolantTempC" class="full-width" />
+                            </div>
+                            <div>
+                                <label for="ov-battery">Batarya (V)</label>
+                                <InputNumber id="ov-battery" @bind-Value="_overrideForm.BatteryVoltageV" class="full-width" />
+                            </div>
+                            <div>
+                                <label for="ov-brake">Fren borusu (bar)</label>
+                                <InputNumber id="ov-brake" @bind-Value="_overrideForm.BrakePipePressureBar" class="full-width" />
+                            </div>
+                            <div>
+                                <label for="ov-cab">Kabin sıcaklığı (°C)</label>
+                                <InputNumber id="ov-cab" @bind-Value="_overrideForm.CabTempC" class="full-width" />
+                            </div>
+                            <div>
+                                <label for="ov-vib">Titreşim (m/s²)</label>
+                                <InputNumber id="ov-vib" @bind-Value="_overrideForm.VibrationMs2" class="full-width" />
+                            </div>
+                            <div>
+                                <label for="ov-door">Kapı kapalı</label>
+                                <InputCheckbox id="ov-door" @bind-Value="_overrideForm.DoorClosed" />
+                            </div>
+                        </div>
+                        <div class="form-actions" style="margin-top: 1rem;">
+                            <button type="submit">Override’ları kaydet</button>
+                            <button type="button" class="btn-secondary" @onclick="ClearOverrides">Override’ları kaldır</button>
+                            <button type="button" class="btn-secondary" @onclick="CloseEdit">İptal</button>
+                            @if (_saveFeedback)
+                            {
+                                <span class="feedback success">✓ Kaydedildi</span>
+                            }
+                        </div>
+                    </EditForm>
+                </div>
+            }
+        }
+    }
+</div>
+
+@code {
+    private List<TrainPositionDto> _positions = new();
+    private DateTime? _lastUpdate;
+    private bool _enabled = true;
+    private string? _editingTrainId;
+    private TrainSensorsOverrideForm _overrideForm = new();
+    private bool _saveFeedback;
+    private System.Threading.Timer? _refreshTimer;
+
+    private class TrainPositionDto
+    {
+        public string TrainId { get; set; } = "";
+        public string RouteId { get; set; } = "";
+        public double? Speed { get; set; }
+        public double? Heading { get; set; }
+        public TrainSensorsDto? Sensors { get; set; }
+    }
+
+    private class TrainSensorsDto
+    {
+        public double EngineTempC { get; set; }
+        public double OilPressureBar { get; set; }
+        public double CoolantTempC { get; set; }
+        public double BatteryVoltageV { get; set; }
+        public double BrakePipePressureBar { get; set; }
+        public double CabTempC { get; set; }
+        public double VibrationMs2 { get; set; }
+        public bool DoorClosed { get; set; }
+    }
+
+    private class TrainSensorsOverride
+    {
+        public double? EngineTempC { get; set; }
+        public double? OilPressureBar { get; set; }
+        public double? CoolantTempC { get; set; }
+        public double? BatteryVoltageV { get; set; }
+        public double? BrakePipePressureBar { get; set; }
+        public double? CabTempC { get; set; }
+        public double? VibrationMs2 { get; set; }
+        public bool? DoorClosed { get; set; }
+    }
+
+    private class TrainSensorsOverrideForm
+    {
+        public double? EngineTempC { get; set; }
+        public double? OilPressureBar { get; set; }
+        public double? CoolantTempC { get; set; }
+        public double? BatteryVoltageV { get; set; }
+        public double? BrakePipePressureBar { get; set; }
+        public double? CabTempC { get; set; }
+        public double? VibrationMs2 { get; set; }
+        public bool DoorClosed { get; set; } = true;
+    }
+
+    private class PositionsResponse
+    {
+        public List<TrainPositionDto> Positions { get; set; } = new();
+    }
+
+    protected override void OnInitialized()
+    {
+        _ = LoadPositions();
+        _refreshTimer = new System.Threading.Timer(_ => InvokeAsync(LoadPositions).GetAwaiter().GetResult(), null, 3000, 3000);
+    }
+
+    private async Task LoadPositions()
+    {
+        try
+        {
+            var resp = await Http.GetFromJsonAsync<PositionsResponse>("api/trains/positions?includeSensors=true");
+            if (resp?.Positions != null)
+            {
+                _positions = resp.Positions;
+                _lastUpdate = DateTime.Now;
+                _enabled = true;
+            }
+        }
+        catch
+        {
+            _positions = new List<TrainPositionDto>();
+            _enabled = false;
+        }
+        StateHasChanged();
+    }
+
+    private void OpenEdit(string trainId, TrainSensorsDto? current)
+    {
+        _editingTrainId = trainId;
+        _overrideForm = new TrainSensorsOverrideForm();
+        if (current != null)
+        {
+            _overrideForm.EngineTempC = current.EngineTempC;
+            _overrideForm.OilPressureBar = current.OilPressureBar;
+            _overrideForm.CoolantTempC = current.CoolantTempC;
+            _overrideForm.BatteryVoltageV = current.BatteryVoltageV;
+            _overrideForm.BrakePipePressureBar = current.BrakePipePressureBar;
+            _overrideForm.CabTempC = current.CabTempC;
+            _overrideForm.VibrationMs2 = current.VibrationMs2;
+            _overrideForm.DoorClosed = current.DoorClosed;
+        }
+        _saveFeedback = false;
+    }
+
+    private void CloseEdit()
+    {
+        _editingTrainId = null;
+    }
+
+    private async Task SaveOverrides()
+    {
+        if (string.IsNullOrEmpty(_editingTrainId)) return;
+        var body = new TrainSensorsOverride
+        {
+            EngineTempC = _overrideForm.EngineTempC,
+            OilPressureBar = _overrideForm.OilPressureBar,
+            CoolantTempC = _overrideForm.CoolantTempC,
+            BatteryVoltageV = _overrideForm.BatteryVoltageV,
+            BrakePipePressureBar = _overrideForm.BrakePipePressureBar,
+            CabTempC = _overrideForm.CabTempC,
+            VibrationMs2 = _overrideForm.VibrationMs2,
+            DoorClosed = _overrideForm.DoorClosed
+        };
+        var res = await Http.PatchAsJsonAsync($"api/trains/{Uri.EscapeDataString(_editingTrainId)}/sensors", body);
+        if (res.IsSuccessStatusCode)
+        {
+            _saveFeedback = true;
+            _ = Task.Delay(2000).ContinueWith(_ => InvokeAsync(() => { _saveFeedback = false; StateHasChanged(); }));
+            await LoadPositions();
+        }
+        StateHasChanged();
+    }
+
+    private async Task ClearOverrides()
+    {
+        if (string.IsNullOrEmpty(_editingTrainId)) return;
+        var req = new HttpRequestMessage(HttpMethod.Patch, $"api/trains/{Uri.EscapeDataString(_editingTrainId)}/sensors");
+        var res = await Http.SendAsync(req);
+        if (res.IsSuccessStatusCode)
+        {
+            _saveFeedback = true;
+            CloseEdit();
+            await LoadPositions();
+        }
+        StateHasChanged();
+    }
+
+    public void Dispose() => _refreshTimer?.Dispose();
+}

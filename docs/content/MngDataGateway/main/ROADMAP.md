@@ -15,11 +15,13 @@ Yaptıklarımız, yapacaklarımız ve kararlarımız bu dosyada güncellenecekti
 - **Dataset Authorization** — Group-based permissions (read/create/update/delete), MngKeeper user_groups, JWT entegrasyonu.
 - **Index Metadata** — Index tanımları schema içinde saklanıyor (fiziksel oluşturma ayrı serviste).
 - **API Gateway Integration** — SSL termination Gateway’de, CORS merkezi, internal network.
+- **Chat Room (F1 — `cht_messages`)** — `ValidationService` içinde sunucu tarafı oda doğrulaması: `authorPersonId` = JWT kullanıcı; `direct` / `topic` / `group` için sırasıyla `cht_direct_conversations`, `cht_topic_rooms` + `cht_topic_members` (kök + yan dal kuralı), Keeper kiracı DB’sinde `@groups` (`keycloakGroupId`) + `@users` (`groups` adları). Kod: `ValidationService.ChatRoom.cs`.
 
 Detaylı sürüm geçmişi için [Changelog](CHANGELOG.md) dosyasına bakınız.
 
 ## Yapılacaklar
 
+- **Chat Room (F2)** — İsteğe bağlı ek HTTP validation; `publish_mode` / event payload (yüksek frekans için §3.1a). Dataset şema script: `scripts/tests/MngDataGateway/chat-room/setup-chat-room-datasets.ps1`. **Docker:** [Backend & Docker adımları](../../chat_room/BACKEND_DOCKER_STEPS.md).
 - **Dataset Naming Strategy** — environment/datasetType ile collection adı (dev_books, prod_master_books), backward compatibility.
 - **Persons & PersonGroups field types** — MngKeeper user/group lookup, validation, expansion, cache.
 - **Bulk insert / advanced query / expansion testleri** — Books ve diğer dataset’ler için.

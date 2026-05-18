@@ -257,6 +257,13 @@ public class ValidationDefinition
     /// </summary>
     [BsonIgnoreIfNull]
     public int? order { get; set; } = 0;
+
+    /// <summary>
+    /// Timeout in seconds for HTTP validation (for type: "http").
+    /// If not set, uses MngDataGatewaySettings:Validation:HttpValidationTimeout (default: 30).
+    /// </summary>
+    [BsonIgnoreIfNull]
+    public int? timeoutSeconds { get; set; }
 }
 
 /// <summary>

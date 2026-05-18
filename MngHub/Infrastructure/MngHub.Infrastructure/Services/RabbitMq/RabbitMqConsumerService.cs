@@ -73,7 +73,8 @@ public class RabbitMqConsumerService : IRabbitMqConsumer, IDisposable
     public async Task SubscribeAsync(
         string connectionId,
         List<string> routingKeys,
-        Func<string, object, Task> messageHandler)
+        Func<string, object, Task> messageHandler,
+        string? monitraDataEventsDomainName = null)
     {
         await ConnectAsync();
 
@@ -117,6 +118,17 @@ public class RabbitMqConsumerService : IRabbitMqConsumer, IDisposable
                     // Same domainId-based pattern works for DataGateway events
                     BindQueueToExchange(consumerChannel, queueName, _settings.RabbitMQ.DataGatewayExchangeName, routingKey);
                 }
+            }
+
+            // MngDataGateway NotificationService: PublishDataEventAsync → exchange monitra.data.events.{domain}, routingKey dataset.{dataset}.{op}
+            if (!string.IsNullOrWhiteSpace(monitraDataEventsDomainName))
+            {
+                var tenantExchange = $"monitra.data.events.{monitraDataEventsDomainName.Trim().ToLowerInvariant()}";
+                RabbitMqConnectionHelper.EnsureExchangeExists(consumerChannel, tenantExchange, _logger);
+                BindQueueToExchange(consumerChannel, queueName, tenantExchange, "#");
+                _logger.LogInformation(
+                    "Bound queue {QueueName} to per-tenant DataGateway exchange {Exchange} routing #",
+                    queueName, tenantExchange);
             }
 
             // Create consumer

@@ -5,8 +5,15 @@ import { computed, watch } from 'vue';
 import { pl, zhHans } from 'vuetify/locale'
 import ChatbotWidget from '@/components/apps/chatbot/ChatbotWidget.vue'
 
+const route = useRoute();
 const customizer = useCustomizerStore();
 const localeStore = useLocaleStore();
+
+/** Harita ve sohbet odası: içerik alanı viewport yüksekliğinde (tam panel); diğer sayfalarda normal akış */
+const isMapPage = computed(() => route.path.startsWith('/apps/monitoring/map'));
+const isPageWrapperFullHeight = computed(
+  () => isMapPage.value || route.path === '/apps/chat-room'
+);
 
 // RTL support: Use locale store's isRTL instead of customizer.setRTLLayout
 const isRTL = computed(() => localeStore.isRTL);
@@ -65,14 +72,14 @@ if (process.client) {
             <LcFullVerticalSidebar v-if="!customizer.setHorizontalLayout" />
             <LcFullHorizontalHeader v-if="customizer.setHorizontalLayout" />
             <LcFullHorizontalSidebar v-if="customizer.setHorizontalLayout" />
-            <v-main>
-               <v-container fluid class="page-wrapper pb-sm-15 pb-10">
-                    <div :class="customizer.boxed ? 'maxWidth' : ''">
+            <v-main :class="{ 'v-main--viewport-fill': isPageWrapperFullHeight }">
+               <v-container fluid :class="['page-wrapper', 'pb-sm-15', 'pb-10', { 'page-wrapper-full-height': isPageWrapperFullHeight }]">
+                    <div :class="[customizer.boxed ? 'maxWidth' : '', { 'page-wrapper-inner-full-height': isPageWrapperFullHeight }]">
                         <NuxtPage />
                     </div>
                 </v-container>
             </v-main>
-            
+
             <!-- Chatbot Widget -->
             <ChatbotWidget />
         </v-app>
@@ -100,16 +107,48 @@ if (process.client) {
             <LcFullVerticalSidebar v-if="!customizer.setHorizontalLayout" />
             <LcFullHorizontalHeader v-if="customizer.setHorizontalLayout" />
             <LcFullHorizontalSidebar v-if="customizer.setHorizontalLayout" />
-            <v-main>
-               <v-container fluid class="page-wrapper pb-sm-15 pb-10">
-                    <div :class="customizer.boxed ? 'maxWidth' : ''">
+            <v-main :class="{ 'v-main--viewport-fill': isPageWrapperFullHeight }">
+               <v-container fluid :class="['page-wrapper', 'pb-sm-15', 'pb-10', { 'page-wrapper-full-height': isPageWrapperFullHeight }]">
+                    <div :class="[customizer.boxed ? 'maxWidth' : '', { 'page-wrapper-inner-full-height': isPageWrapperFullHeight }]">
                         <NuxtPage />
                     </div>
                 </v-container>
             </v-main>
-            
+
             <!-- Chatbot Widget -->
             <ChatbotWidget />
         </v-app>
     </v-locale-provider>
 </template>
+
+<style>
+/*
+ * Harita ve sohbet odası: viewport yüksekliği + iç içe scroll.
+ * _container.scss .page-wrapper { min-height: calc(100vh - 100px) } flex zincirinde taşmayı tetikleyebilir; burada ezilir.
+ */
+.v-app .v-main.v-main--viewport-fill {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.v-main .page-wrapper.page-wrapper-full-height {
+  flex: 1 1 0;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0 !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.v-main .page-wrapper.page-wrapper-full-height > div.page-wrapper-inner-full-height {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+</style>

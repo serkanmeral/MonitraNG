@@ -1,0 +1,8 @@
+{
+  "trains": [
+    { "trainId": "T1", "name": "T1", "routeId": "ANK-IST", "durationMinutes": 10, "autoStart": true },
+    { "trainId": "T2", "name": "T2", "routeId": "IST-ANK", "durationMinutes": 12, "autoStart": true },
+    { "trainId": "T3", "name": "T3", "routeId": "ANK-KON", "durationMinutes": 14, "autoStart": true },
+    { "trainId": "T4", "name": "T4", "routeId": "KON-ANK", "durationMinutes": 16, "autoStart": true }
+  ]
+}

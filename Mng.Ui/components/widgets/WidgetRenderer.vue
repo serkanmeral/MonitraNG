@@ -7,10 +7,14 @@ import StatCard from './card/StatCard.vue';
 import TableWidget from './table/TableWidget.vue';
 import BannerWidget from './banner/BannerWidget.vue';
 import ChartWidget from './chart/ChartWidget.vue';
+import MapWidget from './map/MapWidget.vue';
+import GaugeWidget from './gauge/GaugeWidget.vue';
 
 const props = defineProps<{
   widgetId?: string;
   widget?: Widget | null;
+  /** Dashboard'daki widget örneği için override (timeRangeMinutes, limit, refreshIntervalSeconds) */
+  configOverrides?: Record<string, any>;
   t?: (key: string) => string;
 }>();
 
@@ -20,6 +24,16 @@ const widget = ref<Widget | null>(null);
 const widgetData = ref<WidgetDataResponse | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
+
+// Config overrides ile birleştirilmiş widget (veri çekme ve refresh için)
+const effectiveWidget = computed(() => {
+  const w = widget.value;
+  if (!w || !props.configOverrides || Object.keys(props.configOverrides).length === 0) return w;
+  return {
+    ...w,
+    config: { ...(w.config || {}), ...props.configOverrides },
+  };
+});
 
 // Check if user has permission to view this widget
 const hasPermission = computed(() => {
@@ -44,17 +58,24 @@ const hasPermission = computed(() => {
 
 // Inject refresh interval from dashboard viewer
 const injectedRefreshInterval = inject<computed<number | null>>('dashboardRefreshInterval', computed(() => null));
-const refreshIntervalMs = computed(() => injectedRefreshInterval.value);
+// Widget kendi refreshIntervalSeconds tanımladıysa onu kullan, yoksa dashboard'unkini
+const refreshIntervalMs = computed(() => {
+  const w = effectiveWidget.value;
+  const widgetSec = w?.config?.refreshIntervalSeconds;
+  if (widgetSec != null && widgetSec > 0) return widgetSec * 1000;
+  return injectedRefreshInterval.value;
+});
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
 
 // Load widget data only (for refresh)
 async function refreshWidgetData() {
-  if (!widget.value) return;
+  const w = effectiveWidget.value ?? widget.value;
+  if (!w) return;
   
   // Only refresh data if dataSource is configured
-  if (widget.value.dataSource && widget.value.dataSource.type === 'data') {
+  if (w.dataSource && w.dataSource.type === 'data') {
     try {
-      const data = await fetchWidgetData(widget.value);
+      const data = await fetchWidgetData(w);
       widgetData.value = data;
       error.value = null;
     } catch (dataError: any) {
@@ -74,10 +95,11 @@ async function loadWidget() {
     error.value = null;
     widget.value = props.widget;
     
-    // Load widget data if dataSource is configured
-    if (props.widget.dataSource && props.widget.dataSource.type === 'data') {
+    // Load widget data if dataSource is configured (map tipi kendi verisini kullanır)
+    if (props.widget.type !== 'map' && props.widget.dataSource && props.widget.dataSource.type === 'data') {
       try {
-        const data = await fetchWidgetData(props.widget);
+        const w = effectiveWidget.value ?? props.widget;
+        const data = await fetchWidgetData(w);
         widgetData.value = data;
       } catch (dataError: any) {
         // Only log in development mode
@@ -105,10 +127,11 @@ async function loadWidget() {
     const loadedWidget = await widgetStore.fetchWidgetById(props.widgetId);
     widget.value = loadedWidget;
 
-    // Load widget data if dataSource is configured
-    if (loadedWidget.dataSource && loadedWidget.dataSource.type === 'data') {
+    // Load widget data if dataSource is configured (map tipi kendi verisini kullanır)
+    if (loadedWidget.type !== 'map' && loadedWidget.dataSource && loadedWidget.dataSource.type === 'data') {
       try {
-        const data = await fetchWidgetData(loadedWidget);
+        const w = effectiveWidget.value ?? loadedWidget;
+        const data = await fetchWidgetData(w);
         widgetData.value = data;
       } catch (dataError: any) {
         // Only log in development mode
@@ -155,8 +178,8 @@ watch(
       refreshTimer = null;
     }
     
-    // Setup new timer if interval is valid and widget is loaded
-    if (intervalMs && intervalMs > 0 && currentWidget) {
+    // Setup new timer if interval is valid and widget is loaded (map kendi yenilemesini yapar)
+    if (intervalMs && intervalMs > 0 && currentWidget && currentWidget.type !== 'map') {
       refreshTimer = setInterval(() => {
         refreshWidgetData();
       }, intervalMs);
@@ -186,6 +209,10 @@ const widgetComponent = computed(() => {
       return TableWidget;
     case 'banner':
       return BannerWidget;
+    case 'map':
+      return MapWidget;
+    case 'gauge':
+      return GaugeWidget;
     default:
       return null;
   }
@@ -238,7 +265,7 @@ const widgetComponent = computed(() => {
     <component
       v-else-if="widgetComponent && hasPermission"
       :is="widgetComponent"
-      :widget="widget"
+      :widget="effectiveWidget ?? widget"
       :data="widgetData"
       :t="t"
     />

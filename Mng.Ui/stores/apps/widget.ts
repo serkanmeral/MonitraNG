@@ -84,7 +84,7 @@ export interface Widget {
   title: string;
   description?: string;
   category: string | WidgetCategory; // Relation to @widget_categories
-  type: 'card' | 'chart' | 'table' | 'banner';
+  type: 'card' | 'chart' | 'table' | 'banner' | 'map' | 'gauge';
   dataSource: DataSourceConfigData;
   layout?: object;
   style?: object;
@@ -108,7 +108,7 @@ export interface CreateWidgetDto {
   title: string;
   description?: string;
   category: string; // Category __dataId
-  type: 'card' | 'chart' | 'table' | 'banner';
+  type: 'card' | 'chart' | 'table' | 'banner' | 'map' | 'gauge';
   dataSource: DataSourceConfigData;
   layout?: object;
   style?: object;
@@ -124,7 +124,7 @@ export interface UpdateWidgetDto {
   title?: string;
   description?: string;
   category?: string;
-  type?: 'card' | 'chart' | 'table' | 'banner';
+  type?: 'card' | 'chart' | 'table' | 'banner' | 'map' | 'gauge';
   dataSource?: DataSourceConfigData;
   layout?: object;
   style?: object;
@@ -142,7 +142,7 @@ export interface FetchWidgetsParams {
   filter?: string;
   search?: string;
   category?: string; // Filter by category __dataId
-  type?: 'card' | 'chart' | 'table' | 'banner'; // Filter by type
+  type?: 'card' | 'chart' | 'table' | 'banner' | 'map' | 'gauge'; // Filter by type
 }
 
 interface WidgetState {
@@ -187,7 +187,7 @@ function mapToWidget(item: any): Widget {
     title: item.title ?? item.Title ?? '',
     description: item.description ?? item.Description,
     category,
-    type: (item.type ?? item.Type ?? 'card') as 'card' | 'chart' | 'table' | 'banner',
+    type: (item.type ?? item.Type ?? 'card') as 'card' | 'chart' | 'table' | 'banner' | 'map' | 'gauge',
     dataSource: item.dataSource ?? item.DataSource ?? {
       type: 'data',
       dataset: '',
@@ -225,7 +225,7 @@ export const useWidgetStore = defineStore('widget', {
         return cat === categoryId;
       }),
 
-    getWidgetsByType: (state) => (type: 'card' | 'chart' | 'table' | 'banner') =>
+    getWidgetsByType: (state) => (type: 'card' | 'chart' | 'table' | 'banner' | 'map' | 'gauge') =>
       state.widgets.filter((w) => w.type === type),
 
     activeWidgets: (state) => state.widgets.filter((w) => w.isActive),
@@ -293,6 +293,54 @@ export const useWidgetStore = defineStore('widget', {
       } finally {
         this.loading = false;
       }
+    },
+
+    async createWidgetCategory(dto: {
+      name: string;
+      description?: string;
+      icon?: string;
+      color?: string;
+      order?: number;
+      isActive?: boolean;
+    }) {
+      this.loading = true;
+      this.error = null;
+
+      try {
+        const url = `/api/v1/data/${CATEGORIES_DATASET}`;
+        const data = await fetchFromDataGateway(url, 'POST', dto);
+
+        const raw = Array.isArray(data) && data.length ? data[0] : data;
+        if (!raw) throw new Error('Widget kategorisi oluşturulamadı');
+
+        const category = mapToWidgetCategory(raw);
+        this.categories.push(category);
+        return category;
+      } catch (e: any) {
+        this.error = e.message ?? 'Widget kategorisi oluşturulurken hata oluştu';
+        throw e;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async ensureMonitoringCategory(): Promise<string> {
+      if (this.categories.length === 0) {
+        await this.fetchWidgetCategories();
+      }
+      const existing = this.categories.find((c) => (c.name ?? '').toLowerCase() === 'monitoring');
+      if (existing) {
+        return existing.__dataId ?? existing.dataId ?? '';
+      }
+      const created = await this.createWidgetCategory({
+        name: 'Monitoring',
+        description: 'Monitoring widget\'ları - asset, collectible ve metrik bazlı izleme',
+        icon: 'mdi-monitor-dashboard',
+        color: 'success',
+        order: 100,
+        isActive: true,
+      });
+      return created.__dataId ?? created.dataId ?? '';
     },
 
     // ========== Widgets ==========
@@ -370,7 +418,7 @@ export const useWidgetStore = defineStore('widget', {
       return this.fetchWidgets({ ...params, category: categoryId });
     },
 
-    async fetchWidgetsByType(type: 'card' | 'chart' | 'table' | 'banner', params?: Omit<FetchWidgetsParams, 'type'>) {
+    async fetchWidgetsByType(type: 'card' | 'chart' | 'table' | 'banner' | 'map' | 'gauge', params?: Omit<FetchWidgetsParams, 'type'>) {
       return this.fetchWidgets({ ...params, type });
     },
 

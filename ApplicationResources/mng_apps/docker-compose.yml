@@ -44,6 +44,7 @@ services:
       - MngGatewaySettings__BackendServices__MngNotifier=http://mngnotifier:5070
       - MngGatewaySettings__BackendServices__MngAdmin=http://mngadmin:5080
       - MngGatewaySettings__BackendServices__MngScheduler=http://mngscheduler:5090
+      - MngGatewaySettings__BackendServices__MngWorkflow=http://mngworkflow:5085
       - MngGatewaySettings__BackendServices__KeyCloak=http://keycloak:8080
       
       # Certificate Settings
@@ -55,13 +56,15 @@ services:
     depends_on:
       - mngkeeper
       - mngdatagateway
+      - mngreactor
       - mnghub
       - mngllm
       - mngadmin
       - mngscheduler
-    
+      - mngworkflow
+
     restart: unless-stopped
-    
+
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
       interval: 30s
@@ -190,6 +193,54 @@ services:
       retries: 5
       start_period: 60s
 
+  mngreactor:
+    build:
+      context: ../../MngReactor
+      dockerfile: Dockerfile
+    image: localhost:5000/mngreactor:1.0.0
+    container_name: mngreactor
+    ports:
+      - "5003:5003"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - MngReactorSettings__Server__Host=0.0.0.0
+      - MngReactorSettings__Server__Port=5003
+      - MngReactorSettings__Server__Scheme=http
+      - MngReactorSettings__OpenApiServerPath=http://localhost:5003
+      - MngReactorSettings__EngineServerUrl=${MNGREACTOR_ENGINE_URL:-}
+      - MngReactorSettings__Actors__MngKeeper=http://mngkeeper:5001
+      # Engine host'ta çalışıyorsa token alamaz; MngKeeperEngineUrl=localhost:5001 verin
+      - MngReactorSettings__Actors__MngKeeperEngineUrl=${MNGKEEPER_ENGINE_URL:-}
+      - MngReactorSettings__DataGateway__BaseUrl=http://mngdatagateway:5010
+      - MngReactorSettings__DataGateway__ApiVersion=v1
+      - MngReactorSettings__MongoDB__Host=mongo
+      - MngReactorSettings__MongoDB__Port=27017
+      - MngReactorSettings__MongoDB__Username=admin
+      - MngReactorSettings__MongoDB__Password=admin123
+      - MngReactorSettings__RabbitMQ__Host=rabbitmq
+      - MngReactorSettings__RabbitMQ__Port=5672
+      - MngReactorSettings__RabbitMQ__Username=admin
+      - MngReactorSettings__RabbitMQ__Password=admin123
+      - MngReactorSettings__RabbitMQ__VirtualHost=/
+      - MngReactorSettings__Mqtt__Host=mosquitto
+      - MngReactorSettings__Mqtt__Port=1883
+      - MngReactorSettings__Mqtt__UserName=monitrang
+      - MngReactorSettings__Mqtt__Password=!2345qawsedrf
+      - MngReactorSettings__Crypt__IngestDecryptKey=0123456789abcdef
+      - MngReactorSettings__Crypt__IngestEncryptKey=abcdef0123456789
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngkeeper
+      - mngdatagateway
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5003/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
   mngdatagateway:
     build:
       context: ../../MngDataGateway
@@ -213,6 +264,8 @@ services:
       
       # Actors Configuration (MngKeeper)
       - MngDataGatewaySettings__Actors__MngKeeper=http://mngkeeper:5001
+      - MngDataGatewaySettings__Actors__MngNotifier=http://mngnotifier:5070
+      - MngDataGatewaySettings__Actors__MngNotifierNotifyApiKey=${INTERNAL_NOTIFY_API_KEY:-}
       
       # RabbitMQ Configuration
       - MngDataGatewaySettings__RabbitMQ__Host=rabbitmq
@@ -410,6 +463,7 @@ services:
       # DataGateway Configuration
       - MngNotifierSettings__DataGateway__BaseUrl=http://mngdatagateway:5010
       - MngNotifierSettings__DataGateway__ApiVersion=v1
+      - MngNotifierSettings__InternalNotifyApiKey=${INTERNAL_NOTIFY_API_KEY:-}
     
     networks:
       - mng_common_mng_network
@@ -635,6 +689,38 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+
+  mngworkflow:
+    build:
+      context: ../../MngWorkflow
+      dockerfile: Presentation/MngWorkflow.Api/Dockerfile
+    image: localhost:5000/mngworkflow:1.0.0
+    container_name: mngworkflow
+    ports:
+      - "5085:5085"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://0.0.0.0:5085
+      - MngWorkflowSettings__DataGatewayBaseUrl=http://mngdatagateway:5010
+      - MngWorkflowSettings__NotifierBaseUrl=http://mngnotifier:5070
+      - MngWorkflowSettings__RabbitMq__Host=rabbitmq
+      - MngWorkflowSettings__RabbitMq__Port=5672
+      - MngWorkflowSettings__RabbitMq__VirtualHost=/
+      - MngWorkflowSettings__RabbitMq__Username=admin
+      - MngWorkflowSettings__RabbitMq__Password=admin123
+      - Jwt__Authority=http://keycloak:8080/realms/monitra
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngdatagateway
+      - mngnotifier
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5085/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
   ollama:
     image: ollama/ollama:latest

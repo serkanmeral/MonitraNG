@@ -94,6 +94,26 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             }
         }
 
+        public async Task<User?> GetByKeycloakUserIdAsync(string keycloakUserId, string domainId)
+        {
+            var kid = (keycloakUserId ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(kid))
+                return null;
+            try
+            {
+                var collection = await GetCollectionAsync(domainId);
+                // Tenant veritabanı zaten domain ile seçilir; __dataId araması gibi yalnızca keycloakUserId.
+                var filter = Builders<BsonDocument>.Filter.Eq("keycloakUserId", kid);
+                var doc = await collection.Find(filter).FirstOrDefaultAsync();
+                return MapBsonDocumentToUser(doc);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user by keycloakUserId: {KeycloakUserId}, domainId: {DomainId}", kid, domainId);
+                return null;
+            }
+        }
+
         public async Task<IEnumerable<User>> GetAllAsync()
         {
             // This method requires domainId - should not be used

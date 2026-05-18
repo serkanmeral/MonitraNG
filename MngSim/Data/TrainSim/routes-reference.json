@@ -1,0 +1,60 @@
+{
+  "description": "Tren simülasyonu rota başlangıç/bitiş noktaları. PostGIS stations tablosundan alındı. Rota geometrisi railways üzerinden çıkarılacak.",
+  "stations": [
+    {
+      "id": "ankara-yht",
+      "name": "Ankara YHT Garı",
+      "postgis_station_id": "4c17d80f-09ab-4373-b7b4-5d1287329cb3",
+      "lon": 32.843351,
+      "lat": 39.934935
+    },
+    {
+      "id": "halkali",
+      "name": "Halkalı",
+      "postgis_station_id": "58a69035-b7f9-4c55-a5e1-d8540cb34731",
+      "lon": 28.766529,
+      "lat": 41.018370
+    },
+    {
+      "id": "konya",
+      "name": "Konya",
+      "postgis_station_id": "c836d640-4e1f-4cd2-95b7-7fdc11da9415",
+      "lon": 32.475896,
+      "lat": 37.865336
+    }
+  ],
+  "routes": [
+    {
+      "id": "ANK-IST",
+      "name": "Ankara – İstanbul (YHT)",
+      "fromStationId": "ankara-yht",
+      "toStationId": "halkali",
+      "durationMinutes": 270,
+      "waitAtEndMinutes": 5
+    },
+    {
+      "id": "IST-ANK",
+      "name": "İstanbul – Ankara (YHT)",
+      "fromStationId": "halkali",
+      "toStationId": "ankara-yht",
+      "durationMinutes": 270,
+      "waitAtEndMinutes": 5
+    },
+    {
+      "id": "ANK-KON",
+      "name": "Ankara – Konya (YHT)",
+      "fromStationId": "ankara-yht",
+      "toStationId": "konya",
+      "durationMinutes": 90,
+      "waitAtEndMinutes": 5
+    },
+    {
+      "id": "KON-ANK",
+      "name": "Konya – Ankara (YHT)",
+      "fromStationId": "konya",
+      "toStationId": "ankara-yht",
+      "durationMinutes": 90,
+      "waitAtEndMinutes": 5
+    }
+  ]
+}

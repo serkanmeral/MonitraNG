@@ -24,7 +24,21 @@
 | HTTPS/WSS Support | 📋 Planned | 0% |
 | API Versioning | 📋 Planned | 0% |
 
-**Overall Progress:** **80%** of Core Features
+**Overall Progress:** **80%** of Core Features  
+**Chat Room (F2):** planlama tamam; kod + Docker doğrulama sürüyor — bkz. `docs/content/chat_room/BACKEND_DOCKER_STEPS.md`
+
+---
+
+## 💬 Chat Room (F2) — backend planı
+
+| Adım | Açıklama |
+|------|-----------|
+| DG → RMQ | `cht_*` için `publish_mode != none` iken `mngdatagateway.events`, routing **`{domainSegment}.{eventType}`** (örn. `meral.datacreatedevent`). `domainSegment` pratikte DG’nin kullandığı **domain adı** ile uyumlu; bkz. `docs/content/chat_room/CHAT_ROOM_ROADMAP.md` **§3.2b**. |
+| Hub (3A) | `RoutingKeyHelper`: `{domainId}.*` + **`{domainName}.*`** + `domain.{domainName}.#`; `MessageRouter` → domain SignalR grubu **`ReceiveMessage` (`MessageDto`)**. Chat ayırt etmek istemcide **`datasetName === 'cht_messages'`** filtresi. |
+| Sonraki (3B) | İsteğe bağlı: oda bazlı SignalR grup (`JoinChatRoom`), mention için hedefli client mesajı; payload / routing daraltma. |
+
+**Docker / yayın sırası:** [BACKEND_DOCKER_STEPS.md](../docs/content/chat_room/BACKEND_DOCKER_STEPS.md)  
+**Ürün / şema:** [CHAT_ROOM_ROADMAP.md](../docs/content/chat_room/CHAT_ROOM_ROADMAP.md)
 
 ---
 

@@ -24,7 +24,8 @@ namespace MngKeeper.Infrastructure.Services
             string? department = null,
             int? gender = null,
             string? phoneNumber = null,
-            string? photoUrl = null)
+            string? photoUrl = null,
+            string? mngPersonId = null)
         {
             try
             {
@@ -99,8 +100,14 @@ namespace MngKeeper.Infrastructure.Services
                     _logger.LogInformation("Added photoUrl to token: {PhotoUrl}", photoUrl);
                 }
 
-                _logger.LogInformation("Adding claims - isManager: {IsManager}, userGroups: {UserGroups}, title: {Title}, department: {Department}, gender: {Gender}, phoneNumber: {PhoneNumber}, photoUrl: {PhotoUrl}", 
-                    isManager, userGroups != null ? string.Join(", ", userGroups) : "null", title ?? "null", department ?? "null", gender?.ToString() ?? "null", phoneNumber ?? "null", photoUrl ?? "null");
+                if (!string.IsNullOrWhiteSpace(mngPersonId))
+                {
+                    newPayload["mng_person_id"] = mngPersonId.Trim();
+                    _logger.LogInformation("Added mng_person_id to token (Keeper @users id)");
+                }
+
+                _logger.LogInformation("Adding claims - isManager: {IsManager}, userGroups: {UserGroups}, title: {Title}, department: {Department}, gender: {Gender}, phoneNumber: {PhoneNumber}, photoUrl: {PhotoUrl}, mngPersonId: {MngPersonId}", 
+                    isManager, userGroups != null ? string.Join(", ", userGroups) : "null", title ?? "null", department ?? "null", gender?.ToString() ?? "null", phoneNumber ?? "null", photoUrl ?? "null", mngPersonId ?? "null");
 
                 // Serialize the new payload
                 var newPayloadJson = JsonSerializer.Serialize(newPayload);

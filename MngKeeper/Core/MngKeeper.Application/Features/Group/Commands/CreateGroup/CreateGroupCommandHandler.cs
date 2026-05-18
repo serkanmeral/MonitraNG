@@ -113,6 +113,7 @@ namespace MngKeeper.Application.Features.Group.Commands.CreateGroup
                     Permissions = request.Permissions,
                     IsActive = request.IsActive,
                     DomainId = claims.DomainId,
+                    KeycloakGroupId = keycloakGroup.Id ?? string.Empty,
                     CreatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser, // TODO: Get from current user context
                     CreatedAt = DateTime.UtcNow
                 };

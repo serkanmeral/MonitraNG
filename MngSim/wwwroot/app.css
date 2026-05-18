@@ -1,0 +1,162 @@
+h1:focus {
+    outline: none;
+}
+
+.valid.modified:not([type=checkbox]) {
+    outline: 1px solid #26b050;
+}
+
+.invalid {
+    outline: 1px solid #e50000;
+}
+
+.validation-message {
+    color: #e50000;
+}
+
+.blazor-error-boundary {
+    background: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNDkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIG92ZXJmbG93PSJoaWRkZW4iPjxkZWZzPjxjbGlwUGF0aCBpZD0iY2xpcDAiPjxyZWN0IHg9IjIzNSIgeT0iNTEiIHdpZHRoPSI1NiIgaGVpZ2h0PSI0OSIvPjwvY2xpcFBhdGg+PC9kZWZzPjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMCkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMzUgLTUxKSI+PHBhdGggZD0iTTI2My41MDYgNTFDMjY0LjcxNyA1MSAyNjUuODEzIDUxLjQ4MzcgMjY2LjYwNiA1Mi4yNjU4TDI2Ny4wNTIgNTIuNzk4NyAyNjcuNTM5IDUzLjYyODMgMjkwLjE4NSA5Mi4xODMxIDI5MC41NDUgOTIuNzk1IDI5MC42NTYgOTIuOTk2QzI5MC44NzcgOTMuNTEzIDI5MSA5NC4wODE1IDI5MSA5NC42NzgyIDI5MSA5Ny4wNjUxIDI4OS4wMzggOTkgMjg2LjYxNyA5OUwyNDAuMzgzIDk5QzIzNy45NjMgOTkgMjM2IDk3LjA2NTEgMjM2IDk0LjY3ODIgMjM2IDk0LjM3OTkgMjM2LjAzMSA5NC4wODg2IDIzNi4wODkgOTMuODA3MkwyMzYuMzM4IDkzLjAxNjIgMjM2Ljg1OCA5Mi4xMzE0IDI1OS40NzMgNTMuNjI5NCAyNTkuOTYxIDUyLjc5ODUgMjYwLjQwNyA1Mi4yNjU4QzI2MS4yIDUxLjQ4MzcgMjYyLjI5NiA1MSAyNjMuNTA2IDUxWk0yNjMuNTg2IDY2LjAxODNDMjYwLjczNyA2Ni4wMTgzIDI1OS4zMTMgNjcuMTI0NSAyNTkuMzEzIDY5LjMzNyAyNTkuMzEzIDY5LjYxMDIgMjU5LjMzMiA2OS44NjA4IDI1OS4zNzEgNzAuMDg4N0wyNjEuNzk1IDg0LjAxNjEgMjY1LjM4IDg0LjAxNjEgMjY3LjgyMSA2OS43NDc1QzI2Ny44NiA2OS43MzA5IDI2Ny44NzkgNjkuNTg3NyAyNjcuODc5IDY5LjMxNzkgMjY3Ljg3OSA2Ny4xMTgyIDI2Ni40NDggNjYuMDE4MyAyNjMuNTg2IDY2LjAxODNaTTI2My41NzYgODYuMDU0N0MyNjEuMDQ5IDg2LjA1NDcgMjU5Ljc4NiA4Ny4zMDA1IDI1OS43ODYgODkuNzkyMSAyNTkuNzg2IDkyLjI4MzcgMjYxLjA0OSA5My41Mjk1IDI2My41NzYgOTMuNTI5NSAyNjYuMTE2IDkzLjUyOTUgMjY3LjM4NyA5Mi4yODM3IDI2Ny4zODcgODkuNzkyMSAyNjcuMzg3IDg3LjMwMDUgMjY2LjExNiA4Ni4wNTQ3IDI2My41NzYgODYuMDU0N1oiIGZpbGw9IiNGRkU1MDAiIGZpbGwtcnVsZT0iZXZlbm9kZCIvPjwvZz48L3N2Zz4=) no-repeat 1rem/1.8rem, #b32121;
+    padding: 1rem 1rem 1rem 3.7rem;
+    color: white;
+}
+
+    .blazor-error-boundary::after {
+        content: "An error has occurred."
+    }
+
+.darker-border-checkbox.form-check-input {
+    border-color: #929292;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+    color: var(--bs-secondary-color);
+    text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+    text-align: start;
+}
+
+/* MngSim simulator page */
+.simulator-page { max-width: 900px; margin: 0 auto; padding: 1rem; }
+.simulator-page h1 { margin-bottom: 0.25rem; }
+.simulator-page .subtitle { color: #666; margin-bottom: 1.5rem; }
+.simulator-page .train-map-link { font-weight: 500; }
+
+/* Tren listesi */
+.train-table { margin-top: 0.5rem; }
+.train-row { display: grid; grid-template-columns: 120px 1fr 80px 100px auto; gap: 0.75rem; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #eee; }
+.train-row.train-header { font-weight: 600; color: #555; border-bottom: 1px solid #ccc; }
+.train-row .col-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.btn-start { padding: 0.35rem 0.6rem; background: #198754; color: white; border: none; border-radius: 4px; cursor: pointer; }
+.btn-start:hover { background: #157347; }
+.btn-secondary { padding: 0.5rem 1rem; margin-right: 0.5rem; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; }
+.btn-secondary:hover { background: #5c636a; }
+.add-form-card { margin-bottom: 1rem; }
+.simulator-page .card { border: 1px solid #ddd; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; }
+.simulator-page .card h2 { margin-top: 0; margin-bottom: 1rem; font-size: 1.25rem; }
+.simulator-page .card h3 { font-size: 1rem; margin: 1rem 0 0.5rem; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem 1.5rem; }
+.form-grid label { display: block; margin-bottom: 0.25rem; font-weight: 500; }
+.form-grid .full-width { width: 100%; padding: 0.35rem 0.5rem; box-sizing: border-box; }
+.target-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; }
+.target-row input { flex: 1; min-width: 100px; padding: 0.35rem 0.5rem; }
+.form-grid .full-row { grid-column: 1 / -1; }
+.endpoint-list { margin: 0.25rem 0 0 1rem; padding-left: 1rem; }
+.endpoint-list code { font-size: 0.9em; }
+.btn-remove { padding: 0.35rem 0.6rem; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; }
+.btn-add { margin: 0.5rem 0; padding: 0.4rem 0.8rem; background: #0d6efd; color: white; border: none; border-radius: 4px; cursor: pointer; }
+.form-actions { margin-top: 1rem; }
+.form-actions button, .run-buttons button { padding: 0.5rem 1rem; margin-right: 0.5rem; background: #0d6efd; color: white; border: none; border-radius: 4px; cursor: pointer; }
+.form-actions button:hover, .run-buttons button:hover:not(:disabled) { background: #0b5ed7; }
+.run-buttons button:disabled { opacity: 0.6; cursor: not-allowed; }
+.status-grid { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; }
+.status-error { color: #dc3545; grid-column: 1 / -1; }
+.btn-profile { padding: 0.35rem; text-decoration: none; font-size: 1.1em; min-width: 2rem; text-align: center; display: inline-block; border-radius: 4px; }
+.btn-profile:hover { opacity: 0.8; }
+.btn-profile.disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+
+.advanced-settings { margin-bottom: 1rem; border: 1px solid #e0e0e0; border-radius: 6px; padding: 0 1rem; }
+.advanced-settings summary { cursor: pointer; padding: 0.5rem 0; font-weight: 500; }
+.advanced-settings .form-grid { padding: 0.5rem 0 1rem; }
+
+.empty-state { text-align: center; padding: 2rem; background: #f8f9fa; border-radius: 8px; margin-bottom: 1rem; }
+.empty-state p { margin-bottom: 1rem; color: #555; }
+
+.device-table { margin-bottom: 1rem; }
+.device-row { display: grid; grid-template-columns: 2.5rem 1fr 1.2fr 1fr 0.9fr 1.2fr 1fr auto; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; padding: 0.35rem 0; }
+.device-row.device-header { font-weight: 600; font-size: 0.85rem; color: #555; padding-bottom: 0.5rem; border-bottom: 1px solid #ddd; }
+.device-row.device-header .col-profile, .device-row.device-header .col-actions { visibility: hidden; }
+.device-row input, .device-row select { width: 100%; padding: 0.35rem 0.5rem; box-sizing: border-box; }
+.device-row.device-disabled { opacity: 0.7; background: #f5f5f5; border-radius: 4px; }
+.col-profile { display: flex; justify-content: center; }
+.col-extra .muted { color: #999; font-size: 0.9em; }
+
+.btn-toggle { padding: 0.25rem 0.5rem; border-radius: 4px; border: 1px solid #ddd; cursor: pointer; font-size: 0.85rem; white-space: nowrap; }
+.btn-toggle.enabled { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+.btn-toggle.paused { background: #fff3cd; color: #856404; border-color: #ffeeba; }
+.btn-toggle:hover { filter: brightness(0.95); }
+
+.badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem; font-weight: 500; }
+.badge-ok { background: #d4edda; color: #155724; }
+.badge-warn { background: #f8d7da; color: #721c24; }
+.badge-neutral { background: #e2e3e5; color: #383d41; }
+
+.status-item { display: flex; align-items: center; gap: 0.5rem; }
+.status-item .badge { margin-left: 0.25rem; }
+.status-grid .full-row { grid-column: 1 / -1; }
+.endpoint-block { margin-top: 0.75rem; }
+.endpoint-list { margin: 0.25rem 0 0 1rem; padding-left: 1rem; list-style: none; }
+.endpoint-list li { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem; }
+.endpoint-list code { font-size: 0.9em; flex: 1; }
+.btn-copy { padding: 0.2rem 0.4rem; border: 1px solid #ddd; border-radius: 4px; background: #fff; cursor: pointer; font-size: 0.9em; }
+.btn-copy:hover { background: #f0f0f0; }
+
+.feedback { margin-left: 0.75rem; font-size: 0.9rem; }
+.feedback.success { color: #155724; }
+
+.muted { color: #888; font-weight: normal; }
+.hint { font-size: 0.9rem; margin-top: 0.5rem; }
+
+.form-actions button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Device profile page */
+.device-profile-page { max-width: 800px; margin: 0 auto; padding: 1.5rem; }
+.device-profile-page .profile-nav { margin-bottom: 1rem; }
+.device-profile-page .profile-nav a { color: #0d6efd; text-decoration: none; }
+.device-profile-page .device-id { color: #666; font-size: 0.95rem; margin-top: 0; }
+.device-profile-page .info-grid { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem 1.5rem; }
+.device-profile-page .info-grid dt { font-weight: 600; }
+.device-profile-page .metrics-refresh { font-size: 0.9rem; color: #666; margin-bottom: 0.75rem; }
+.device-profile-page .metrics-table { width: 100%; border-collapse: collapse; }
+.device-profile-page .metrics-table th, .device-profile-page .metrics-table td { padding: 0.5rem; text-align: left; border-bottom: 1px solid #eee; }
+.device-profile-page .metrics-table th { background: #f8f9fa; font-weight: 600; }
+.device-profile-page .no-metrics { color: #666; font-style: italic; }
+.device-profile-page .alert-paused { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1rem; }
+.device-profile-page .info-grid .badge { margin-left: 0.25rem; }
+
+/* Tren sensörleri sayfası */
+.trains-sensors-page .sensors-table-card { overflow: hidden; }
+.trains-sensors-page .sensors-scroll { overflow-x: auto; margin-top: 0.5rem; }
+.trains-sensors-page .sensors-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.trains-sensors-page .sensors-table th,
+.trains-sensors-page .sensors-table td { padding: 0.5rem 0.6rem; text-align: left; border-bottom: 1px solid #eee; white-space: nowrap; }
+.trains-sensors-page .sensors-table th { background: #f8f9fa; font-weight: 600; color: #555; }
+.trains-sensors-page .sensors-table tbody tr:hover { background: #fafafa; }
+.trains-sensors-page .btn-edit { padding: 0.3rem 0.6rem; background: #0d6efd; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.85rem; }
+.trains-sensors-page .btn-edit:hover { background: #0b5ed7; }
+.trains-sensors-page .edit-override-card { margin-top: 1rem; }
+.trains-sensors-page .override-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem 1.5rem; }
+.trains-sensors-page .override-grid label { display: block; margin-bottom: 0.25rem; font-weight: 500; }
+.trains-sensors-page .override-grid .full-width { width: 100%; padding: 0.35rem 0.5rem; box-sizing: border-box; }
+
+/* Tren event sayfası */
+.trains-events-page .events-form .full-row { grid-column: 1 / -1; }
+.trains-events-page .events-form label { display: block; margin-bottom: 0.25rem; font-weight: 500; }
+.trains-events-page .events-form .full-width { width: 100%; padding: 0.35rem 0.5rem; box-sizing: border-box; }
+.trains-events-page .events-log-wrap { margin-top: 0.5rem; overflow-x: auto; }
+.trains-events-page .events-log-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.trains-events-page .events-log-table th,
+.trains-events-page .events-log-table td { padding: 0.4rem 0.6rem; text-align: left; border-bottom: 1px solid #eee; }
+.trains-events-page .events-log-table th { background: #f8f9fa; font-weight: 600; color: #555; }
+.trains-events-page .events-log-table tbody tr:hover { background: #fafafa; }

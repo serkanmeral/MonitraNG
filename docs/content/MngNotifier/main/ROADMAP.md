@@ -1,6 +1,6 @@
 # MngNotifier - Geliştirme Yol Haritası
 
-**Son Güncelleme:** 12 Ocak 2026  
+**Son Güncelleme:** 29 Nisan 2026  
 **Versiyon:** 1.0.0 (Temel Özellikler Tamamlandı)  
 **Durum:** ✅ Temel Özellikler Tamamlandı
 
@@ -168,6 +168,11 @@ MngNotifier/
 
 ## 🎯 GELECEK PLANLAR
 
+### Chat Room (MVP) — Mention / push bildirimi
+
+- **Hedef:** Sohbet mention’ında anında bildirim (MngHub ile birlikte); e-posta veya ayrı queue ile MngNotifier tetikleme — ürün: [CHAT_ROOM_ROADMAP.md](../../chat_room/CHAT_ROOM_ROADMAP.md) §6 / §8.2.
+- **Docker / sıra:** [BACKEND_DOCKER_STEPS.md](../../chat_room/BACKEND_DOCKER_STEPS.md).
+
 ### Phase 7: Çoklu Kanal Desteği - DÜŞÜK ÖNCELİK
 
 - INotificationChannel, SMS/WhatsApp/Slack provider'lar, channel selection, multi-channel support.
@@ -193,4 +198,4 @@ Detaylı konfigürasyon ve endpoint örnekleri için [Technical Specs](TECHNICAL
 
 ---
 
-**Son Güncelleme:** 12 Ocak 2026
+**Son Güncelleme:** 29 Nisan 2026

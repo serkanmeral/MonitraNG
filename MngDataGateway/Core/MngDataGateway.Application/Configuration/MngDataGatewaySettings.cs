@@ -40,6 +40,16 @@ namespace MngDataGateway.Application.Configuration
     public class Actors
     {
         public string MngKeeper { get; set; }
+
+        /// <summary>
+        /// MngNotifier taban URL (örn. <c>http://mngnotifier:5070</c>). Boşsa <c>cht_messages</c> mention HTTP bildirimi yapılmaz.
+        /// </summary>
+        public string? MngNotifier { get; set; }
+
+        /// <summary>
+        /// Notifier <c>InternalNotifyApiKey</c> ile aynı; doluysa <c>X-Monitra-Notify-Key</c> başlığı gönderilir.
+        /// </summary>
+        public string? MngNotifierNotifyApiKey { get; set; }
     }
     public class Mongodb
     {

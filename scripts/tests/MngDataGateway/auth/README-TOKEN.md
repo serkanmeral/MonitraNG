@@ -13,15 +13,23 @@ Yeni bir token alır ve `$env:TEMP\serkan_token.txt` dosyasına kaydeder.
 ```
 
 **Parametreler:**
-- `-KeeperBaseUrl`: MngKeeper URL'i (varsayılan: `https://localhost:5001`)
+- `-KeeperBaseUrl`: Gateway veya Keeper URL (varsayılan: `https://localhost:5040`)
+- `-KeeperPath`: Token endpoint yolu. Gateway: `/keeper/api/auth/token`, Keeper direkt: `/api/auth/token`
 - `-DomainName`: Domain adı (varsayılan: `meral`)
-- `-Username`: Kullanıcı adı (varsayılan: `serkan.meral`)
-- `-Password`: Şifre (varsayılan: `Serkan123!`)
+- `-Username`: Kullanıcı adı (varsayılan: `meral_admin`)
+- `-Password`: Şifre (varsayılan: `Admin123!`)
 - `-TokenFile`: Token dosyası yolu (varsayılan: `$env:TEMP\serkan_token.txt`)
 
-**Örnek:**
+**Örnekler:**
 ```powershell
-.\get-token.ps1 -DomainName "meral" -Username "serkan.meral" -Password "Serkan123!"
+# Varsayılan (Gateway 5040, domain meral, meral_admin)
+.\get-token.ps1
+
+# Kendi domain/kullanıcı/şifren
+.\get-token.ps1 -DomainName "meral" -Username "meral_admin" -Password "Sifreniz"
+
+# Keeper doğrudan 5001'de çalışıyorsa (Gateway yok)
+.\get-token.ps1 -KeeperBaseUrl "https://localhost:5001" -KeeperPath "/api/auth/token"
 ```
 
 ### `load-token.ps1`
@@ -98,4 +106,23 @@ if (Test-Path $getTokenScript) {
 - Token dosyası `$env:TEMP\serkan_token.txt` konumunda saklanır
 - Token'lar belirli bir süre sonra expire olur, bu durumda yeni token alınmalıdır
 - Tüm test scriptleri bu ortak scriptleri kullanmalıdır
+
+## Token alınamıyorsa (sorun giderme)
+
+1. **Keeper / Gateway çalışıyor mu?**  
+   Tarayıcıdan veya `Invoke-WebRequest` ile `https://localhost:5040` (veya 5001) açılıyor mu kontrol edin.
+
+2. **Doğru URL ve path:**  
+   - Gateway üzerinden Keeper kullanıyorsanız: `https://localhost:5040` + path `/keeper/api/auth/token` (get-token.ps1 varsayılanı).  
+   - Keeper doğrudan çalışıyorsa: `.\get-token.ps1 -KeeperBaseUrl "https://localhost:5001" -KeeperPath "/api/auth/token"`
+
+3. **Domain / kullanıcı / şifre:**  
+   MngKeeper’da tanımlı domain, kullanıcı adı ve şifreyi kullanın. Parametreyle verin:  
+   `.\get-token.ps1 -DomainName "DOMAIN" -Username "USER" -Password "PASS"`
+
+4. **SSL sertifika hatası (self-signed):**  
+   Script sertifika doğrulamasını devre dışı bırakıyor. Hâlâ hata alıyorsanız PowerShell 7+ kullanmayı deneyin: `pwsh .\get-token.ps1` (SkipCertificateCheck kullanılır).
+
+5. **Bağlantı reddedildi / timeout:**  
+   Firewall veya servis dinleme portu (5040/5001) kontrol edin; gerekirse Keeper/Gateway’i başlatın.
 

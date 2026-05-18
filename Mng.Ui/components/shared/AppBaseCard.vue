@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useDisplay } from 'vuetify';
+import { Menu2Icon } from 'vue-tabler-icons';
+
 const { xs, lgAndUp } = useDisplay();
 const sDrawer = ref(false);
 </script>

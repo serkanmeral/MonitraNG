@@ -93,6 +93,14 @@ nav:
   - Duplicate & Similar Docs (inceleme): DUPLICATE_AND_SIMILAR_DOCS.md
   - Product Roadmap: ROADMAP.md
   - PRD: prd.md
+  - Siber Güvenlik:
+      - Genel bakış: security/README.md
+      - Çözüm planlaması: security/CYBERSECURITY_SOLUTION_PLANNING.md
+  - Workflow:
+      - Planlama: workflow/WORKFLOW_PLANNING.md
+      - Faz 1 Implementasyon Planı: workflow/FAZ1_IMPLEMENTATION_PLAN.md
+      - Checkpoint (25.02.2026): workflow/CHECKPOINT_2026_02_25.md
+      - tm_issues ↔ Workflow: workflow/TM_ISSUES_WORKFLOW_WIRING.md
   # - Getting Started:
   #   - user-guide/getting-started.md
   #   - user-guide/installation.md
@@ -162,12 +170,15 @@ nav:
           - Guides:
               - Gateway Integration: MngReactor/support/guides/GATEWAY_INTEGRATION.md
               - Usage Guide: MngReactor/support/guides/USAGE_GUIDE.md
+              - Configuration: MngReactor/support/guides/CONFIGURATION.md
       - MngEngine:
           - Changelog: MngEngine/main/CHANGELOG.md
           - Roadmap: MngEngine/main/ROADMAP.md
           - Technical Specs: MngEngine/main/TECHNICAL_SPECS.md
           - Architecture: MngEngine/support/architecture/ARCHITECTURE_GUIDE.md
           - Gateway Integration: MngEngine/support/guides/GATEWAY_INTEGRATION.md
+          - Specs:
+              - Engine-Reactor Status/Errors/Ingest: MngEngine/support/specs/ENGINE_REACTOR_STATUS_SPEC.md
       - MngNotifier:
           - Changelog: MngNotifier/main/CHANGELOG.md
           - Roadmap: MngNotifier/main/ROADMAP.md
@@ -262,6 +273,7 @@ nav:
               - Examples:
                   - Books Dataset: Mng.Ui/guides/chatbot/datasets/examples/books-dataset.md
           - Support:
+              - UI Tasarım Planlaması: Mng.Ui/support/UI_DESIGN_PLANNING.md
               - Current Status: Mng.Ui/support/guides/current_status.md
               - Hub Test Guide: Mng.Ui/support/guides/HUB_TEST_GUIDE.md
               - Hub Troubleshooting: Mng.Ui/support/guides/HUB_TROUBLESHOOTING.md
@@ -278,6 +290,7 @@ nav:
                   - Dashboard Builder: Mng.Ui/support/specs/DASHBOARD_BUILDER_MECHANISM.md
                   - Widget Library: Mng.Ui/support/specs/WIDGET_LIBRARY_SPEC.md
                   - Dataset UI Design: Mng.Ui/support/specs/DATASET_UI_DESIGN.md
+                  - Organization Page (Tree + Panel): Mng.Ui/support/specs/ORGANIZATION_PAGE_SPEC.md
   - DevOps:
       - CI/CD:
           - Rehberler (index): cicd/INDEX.md
@@ -293,11 +306,22 @@ nav:
       - Infrastructure:
           - Overview: infrastructure/INFRASTRUCTURE_OVERVIEW.md
           - Current Status: infrastructure/current_status.md
-          - Monitoring Asset Datasets: infrastructure/MONITORING_ASSET_DATASETS.md
           - Nginx: infrastructure/nginx.md
           - SSL Certificates: infrastructure/ssl-certificates.md
           - DNS Setup: infrastructure/DNS_SETUP_INSTRUCTIONS.md
           - Port Management: infrastructure/ports.md
+      - Monitoring Planları:
+          - Genel Bakış: monitoring_plans/README.md
+          - Mimari Planlama: monitoring_plans/monitrang_monitoring_planlama.md
+          - Agent Mimarisi: monitoring_plans/MONITORING_AGENT_ARCHITECTURE.md
+          - Engine Mimarisi: monitoring_plans/MONITORING_ENGINE_ARCHITECTURE.md
+          - Reactor Mimarisi: monitoring_plans/MONITORING_REACTOR_ARCHITECTURE.md
+          - Veri Üretme ve Kalıcılık: monitoring_plans/MONITORING_DATA_PRODUCTION.md
+          - Asset Datasets (DG Şemaları): monitoring_plans/MONITORING_ASSET_DATASETS.md
+          - Observability (OpenTelemetry): monitoring_plans/MONITORING_OBSERVABILITY.md
+          - Simulator: monitoring_plans/MONITORING_SIMULATOR.md
+          - Workflow: monitoring_plans/MONITORING_WORKFLOW.md
+          - Implementasyon Planı: monitoring_plans/MONITORING_IMPLEMENTATION_PLAN.md
   - MkDocs:
       - Setup: MkDocs/MKDOCS_SETUP.md
       - Kullanım: MkDocs/MKdocs_KULLANIM.md

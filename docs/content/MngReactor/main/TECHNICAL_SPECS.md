@@ -142,9 +142,49 @@ Yayınlama sonucu (uygulama tanımlı).
 
 ---
 
-## 6. Version — `api/v1/version`
+## 6. Health — `api/v1/health`
 
-### 6.1 Sürüm bilgisi
+### 6.1 Sağlık kontrolü
+
+| Özellik | Değer |
+|--------|--------|
+| **Method** | `GET` |
+| **Path** | `/api/v1/health` |
+| **Auth** | Hayır |
+
+#### Response (200 OK)
+
+`{ "status": "healthy", "timestamp": "<ISO 8601>", "checks": {} }`
+
+### 6.2 Liveness
+
+| Özellik | Değer |
+|--------|--------|
+| **Method** | `GET` |
+| **Path** | `/api/v1/health/live` |
+| **Auth** | Hayır |
+
+#### Response (200 OK)
+
+`{ "status": "alive", "timestamp": "<ISO 8601>" }`
+
+### 6.3 Readiness
+
+| Özellik | Değer |
+|--------|--------|
+| **Method** | `GET` |
+| **Path** | `/api/v1/health/ready` |
+| **Auth** | Hayır |
+
+#### Response (200 OK)
+
+`{ "status": "ready", "timestamp": "<ISO 8601>" }`
+
+---
+
+## 7. Version — `api/v1/version`
+
+### 7.1 Sürüm bilgisi
 
 | Özellik | Değer |
 |--------|--------|
@@ -166,4 +206,4 @@ Yayınlama sonucu (uygulama tanımlı).
 
 ---
 
-İlgili dokümanlar: [Architecture Guide](../support/architecture/ARCHITECTURE_GUIDE.md), [Usage Guide](../support/guides/USAGE_GUIDE.md).
+İlgili dokümanlar: [Architecture Guide](../support/architecture/ARCHITECTURE_GUIDE.md), [Usage Guide](../support/guides/USAGE_GUIDE.md), [Configuration](../support/guides/CONFIGURATION.md).

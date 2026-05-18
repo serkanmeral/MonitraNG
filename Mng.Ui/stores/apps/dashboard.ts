@@ -10,9 +10,18 @@ export interface LayoutRow {
   dense?: boolean;
 }
 
+/** Dashboard'da widget instance için override (sadece bu widget için) */
+export interface WidgetConfigOverrides {
+  timeRangeMinutes?: number | null;
+  limit?: number;
+  refreshIntervalSeconds?: number;
+}
+
 /** Dashboard layout column */
 export interface LayoutCol {
   widgetId?: string;
+  /** Widget ayarları override (dashboard görünümünde değiştirilebilir) */
+  widgetOverrides?: WidgetConfigOverrides;
   rows?: LayoutRow[];
   span?: number;
   spanSm?: number;

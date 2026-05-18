@@ -4,12 +4,12 @@
     <ProjectReference Include="..\MngKeeper.Persistence\MngKeeper.Persistence.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Keycloak.Net" Version="1.0.17" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.4" />
+    <PackageReference Include="Keycloak.Net" Version="1.0.18" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.2" />
     <PackageReference Include="Minio" Version="7.0.0" />
-    <PackageReference Include="MongoDB.Driver" Version="3.4.2" />
-    <PackageReference Include="MQTTnet" Version="4.3.1.873" />
+    <PackageReference Include="MongoDB.Driver" Version="3.6.0" />
+    <PackageReference Include="MQTTnet" Version="4.3.7.1207" />
     <PackageReference Include="RabbitMQ.Client" Version="6.8.1" />
     <PackageReference Include="StackExchange.Redis" Version="2.8.58" />
   </ItemGroup>

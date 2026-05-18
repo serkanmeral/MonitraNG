@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import type { LayoutRow, LayoutCol } from '@/stores/apps/dashboard';
+import type { LayoutRow, LayoutCol, WidgetConfigOverrides } from '@/stores/apps/dashboard';
 import WidgetRenderer from '@/components/widgets/WidgetRenderer.vue';
+import WidgetWithSettings from './WidgetWithSettings.vue';
 
 const props = defineProps<{
   rows: LayoutRow[];
+  canEdit?: boolean;
   t?: (key: string) => string;
+}>();
+
+const emit = defineEmits<{
+  'update:widgetOverrides': [payload: { rowIdx: number; colIdx: number; overrides: WidgetConfigOverrides }];
 }>();
 
 const placeholder = (col: LayoutCol) => {
@@ -12,6 +18,10 @@ const placeholder = (col: LayoutCol) => {
   if (id) return id;
   return props.t?.('dashboards.view.emptyWidget') ?? 'Boş alan';
 };
+
+function onOverridesChange(payload: { rowIdx: number; colIdx: number; overrides: WidgetConfigOverrides }) {
+  emit('update:widgetOverrides', payload);
+}
 </script>
 
 <template>
@@ -39,12 +49,26 @@ const placeholder = (col: LayoutCol) => {
         <dashboards-dashboard-layout-renderer
           v-if="col.rows && col.rows.length"
           :rows="col.rows"
+          :can-edit="canEdit"
           :t="t"
+          @update:widget-overrides="emit('update:widgetOverrides', $event)"
         />
-        <!-- Widget renderer -->
+        <!-- Widget with settings (canEdit = dashboard'da widget ayarları değiştirilebilir) -->
+        <dashboards-widget-with-settings
+          v-else-if="canEdit && col.widgetId && col.widgetId.trim()"
+          :widget-id="col.widgetId"
+          :widget-overrides="col.widgetOverrides"
+          :row-idx="rowIdx"
+          :col-idx="colIdx"
+          :can-edit="canEdit"
+          :t="t"
+          @update:overrides="onOverridesChange"
+        />
+        <!-- Widget renderer (canEdit yoksa veya monitoring değilse) -->
         <widgets-widget-renderer
           v-else-if="col.widgetId && col.widgetId.trim()"
           :widget-id="col.widgetId"
+          :config-overrides="col.widgetOverrides"
           :t="t"
         />
         <!-- Empty placeholder -->

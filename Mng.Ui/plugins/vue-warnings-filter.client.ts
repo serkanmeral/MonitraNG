@@ -54,40 +54,12 @@ export default defineNuxtPlugin((nuxtApp) => {
     }
   };
 
-  // Also filter console.warn as a backup (in case Vue doesn't use warnHandler)
-  const originalConsoleWarn = console.warn;
-  console.warn = (...args: any[]) => {
-    // Check all arguments for slot warning patterns
-    const allArgs = args.map(arg => arg?.toString() || '').join(' ');
-    
-    if (
-      allArgs.includes('Slot "default" invoked outside of the render function') &&
-      (
-        allArgs.includes('VMenu') ||
-        allArgs.includes('VOverlay') ||
-        allArgs.includes('VDefaultsProvider') ||
-        allArgs.includes('BaseTransition') ||
-        allArgs.includes('VDialogTransition') ||
-        allArgs.includes('VListItem') ||
-        allArgs.includes('VAvatar') ||
-        allArgs.includes('VBtn') ||
-        allArgs.includes('ProfileDD')
-      )
-    ) {
-      // Suppress this warning
-      return;
-    }
+  // Not: global console.warn override kaldırıldı — yanlışlıkla uygulama loglarını yutmaması için.
+  // Sadece Vue warnHandler ile filtre uygulanır.
 
-    // For all other warnings, call the original console.warn
-    originalConsoleWarn.apply(console, args);
-  };
-
-  // Cleanup on app unmount (optional, but good practice)
   nuxtApp.hook('app:beforeUnmount', () => {
-    // Restore original handlers
     if (originalWarnHandler) {
       nuxtApp.vueApp.config.warnHandler = originalWarnHandler;
     }
-    console.warn = originalConsoleWarn;
   });
 });

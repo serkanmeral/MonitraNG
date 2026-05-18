@@ -1,0 +1,191 @@
+/* Sohbet odası — /apps/chat-room
+ * Harici CSS: :deep() kullanılmaz.
+ * Renkler Vuetify tema değişkenleriyle verilir (DARK_BLUE_THEME vb. → v-theme--dark değil, bu yüzden .v-theme--dark ile koyu eşleşmezdi). */
+
+.chat-room-wa {
+  flex: 1 1 0;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-room-wa .chat-room-breadcrumb .v-card {
+  box-shadow: none;
+}
+
+.chat-room-card {
+  flex: 1 1 0;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.chat-room-card .mainbox {
+  flex: 1 1 0;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.chat-room-card .left-part {
+  width: 360px;
+  min-height: 0 !important;
+  display: flex;
+  flex-direction: column;
+  background: rgb(var(--v-theme-surface)) !important;
+}
+
+.chat-room-card .right-part {
+  min-height: 0 !important;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  overflow: hidden;
+  height: 100%;
+  max-height: 100%;
+  background: rgb(var(--v-theme-background));
+}
+
+.chat-room-card .right-part .chat-room-thread {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sol üst “Sohbetler” çubuğu — uygulama primary ile uyumlu */
+.chat-room-sidebar-header {
+  flex-shrink: 0;
+  background: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chat-room-sidebar-header .header-title {
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+}
+
+.chat-room-sidebar-header--with-status {
+  flex-wrap: wrap;
+  gap: 8px;
+  row-gap: 6px;
+}
+
+.chat-room-sidebar-header--with-status .header-title {
+  min-width: 0;
+}
+
+.chat-room-wa .chat-listing-sort-menu {
+  display: none;
+}
+
+.chat-room-wa .v-sheet .px-6.pt-3 {
+  background: rgb(var(--v-theme-surface));
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
+
+.chat-room-wa .lgScroll {
+  flex: 1 1 0;
+  min-height: 280px;
+  height: auto !important;
+  max-height: none;
+}
+
+.chat-room-wa .chatItem {
+  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+/* Sağ panel: oda başlığı şeridi */
+.chat-room-wa .customHeight > div > .d-flex.align-center.gap-3.pa-4 {
+  background: rgb(var(--v-theme-surface));
+  color: rgb(var(--v-theme-on-surface));
+  flex-shrink: 0;
+}
+
+.chat-room-wa .customHeight > div > .d-flex.align-center.gap-3.pa-4 .text-h5 {
+  color: rgb(var(--v-theme-on-surface)) !important;
+}
+
+.chat-room-wa .customHeight > div > .d-flex.align-center.gap-3.pa-4 .textPrimary {
+  color: rgb(var(--v-theme-on-surface)) !important;
+  opacity: 0.9;
+}
+
+.chat-room-wa .customHeight > div > .d-flex.align-center.gap-3.pa-4 .text-medium-emphasis {
+  color: rgb(var(--v-theme-on-surface)) !important;
+  opacity: 0.65;
+}
+
+.chat-room-wa .customHeight > div > .d-flex.align-center.gap-3.pa-4 .v-btn {
+  color: rgb(var(--v-theme-on-surface)) !important;
+  opacity: 0.85;
+}
+
+.chat-room-wa .customHeight .v-divider {
+  opacity: 0.5;
+}
+
+/* Balon: arka planı tema grey100’e bırak; yalnızca şekil/gölge (kontrast tema ile gelir) */
+.chat-room-wa .justify-end .v-sheet.bg-grey100 {
+  border-radius: 8px 8px 0 8px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.chat-room-wa .d-flex.align-start.gap-2.mb-1 .v-sheet.bg-grey100 {
+  border-radius: 8px 8px 8px 0 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.chat-room-wa .chat-room-messages-scroll {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-height: 200px;
+  height: calc(100dvh - 260px);
+  max-height: calc(100dvh - 260px);
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  background: rgb(var(--v-theme-background));
+}
+
+.chat-room-wa .chat-room-thread form.d-flex.align-center {
+  background: rgb(var(--v-theme-surface));
+  flex-shrink: 0;
+  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.chat-room-wa .chat-room-thread form .v-field {
+  border-radius: 24px !important;
+  box-shadow: none !important;
+}
+
+.chat-room-wa .customHeight {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-room-wa .right-part .customHeight {
+  height: 100%;
+}

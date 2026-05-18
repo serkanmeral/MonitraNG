@@ -90,6 +90,7 @@ namespace MngDataGateway.Api.Controllers
         /// </summary>
         /// <param name="datasetName">Dataset name (e.g., @tasks)</param>
         /// <param name="request">Data to create</param>
+        /// <param name="skipEventPublish">If true, no RabbitMQ/event publish (e.g. monitoring sync). Dataset publish_mode is ignored for this request.</param>
         /// <returns>Created data with generated fields</returns>
         [HttpPost]
         [ProducesResponseType(typeof(DataResponseDto<Dictionary<string, object>>), StatusCodes.Status200OK)]
@@ -98,7 +99,8 @@ namespace MngDataGateway.Api.Controllers
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> Create(
             [FromRoute] string datasetName,
-            [FromBody] JsonElement request)
+            [FromBody] JsonElement request,
+            [FromQuery] bool skipEventPublish = false)
         {
             try
             {
@@ -140,7 +142,8 @@ namespace MngDataGateway.Api.Controllers
                     database.DatabaseNamespace.DatabaseName,
                     userInfo.uid,
                     userInfo.userName,
-                    ipAddress);
+                    ipAddress,
+                    skipEventPublish);
 
                 var path = $"/api/v1/data/{datasetName}";
                 return this.SuccessResponse(result, path);
@@ -420,6 +423,7 @@ namespace MngDataGateway.Api.Controllers
         /// <param name="datasetName">Dataset name</param>
         /// <param name="dataId">Data ID (__dataId)</param>
         /// <param name="request">Fields to update</param>
+        /// <param name="skipEventPublish">If true, no RabbitMQ/event publish (e.g. lastSeenAt/heartbeat). Use for runtime-only updates that should not trigger sync.</param>
         /// <returns>Updated data</returns>
         [HttpPut("{dataId}")]
         [ProducesResponseType(typeof(DataResponseDto<Dictionary<string, object>>), StatusCodes.Status200OK)]
@@ -428,7 +432,8 @@ namespace MngDataGateway.Api.Controllers
         public async Task<IActionResult> Update(
             [FromRoute] string datasetName,
             [FromRoute] string dataId,
-            [FromBody] JsonElement request)
+            [FromBody] JsonElement request,
+            [FromQuery] bool skipEventPublish = false)
         {
             try
             {
@@ -471,7 +476,8 @@ namespace MngDataGateway.Api.Controllers
                     database.DatabaseNamespace.DatabaseName,
                     userInfo.uid,
                     userInfo.userName,
-                    ipAddress);
+                    ipAddress,
+                    skipEventPublish);
 
                 if (result == null)
                 {
@@ -495,13 +501,15 @@ namespace MngDataGateway.Api.Controllers
         /// </summary>
         /// <param name="datasetName">Dataset name</param>
         /// <param name="dataId">Data ID (__dataId)</param>
+        /// <param name="skipEventPublish">If true, no RabbitMQ/event publish for this request.</param>
         /// <returns>Success status</returns>
         [HttpDelete("{dataId}")]
         [ProducesResponseType(typeof(DataResponseDto<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(
             [FromRoute] string datasetName,
-            [FromRoute] string dataId)
+            [FromRoute] string dataId,
+            [FromQuery] bool skipEventPublish = false)
         {
             try
             {
@@ -530,7 +538,8 @@ namespace MngDataGateway.Api.Controllers
                     database.DatabaseNamespace.DatabaseName,
                     userInfo.uid,
                     userInfo.userName,
-                    ipAddress);
+                    ipAddress,
+                    skipEventPublish);
 
                 if (!success)
                 {
@@ -550,13 +559,15 @@ namespace MngDataGateway.Api.Controllers
         /// </summary>
         /// <param name="datasetName">Dataset name</param>
         /// <param name="dataId">Data ID (__dataId)</param>
+        /// <param name="skipEventPublish">If true, no RabbitMQ/event publish for this request.</param>
         /// <returns>Success status</returns>
         [HttpPost("{dataId}/restore")]
         [ProducesResponseType(typeof(DataResponseDto<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Restore(
             [FromRoute] string datasetName,
-            [FromRoute] string dataId)
+            [FromRoute] string dataId,
+            [FromQuery] bool skipEventPublish = false)
         {
             try
             {
@@ -572,7 +583,8 @@ namespace MngDataGateway.Api.Controllers
                     database.DatabaseNamespace.DatabaseName,
                     userInfo.uid,
                     userInfo.userName,
-                    ipAddress);
+                    ipAddress,
+                    skipEventPublish);
 
                 if (!success)
                 {
@@ -1433,6 +1445,7 @@ namespace MngDataGateway.Api.Controllers
         /// </summary>
         /// <param name="datasetName">Dataset name (e.g., @tasks)</param>
         /// <param name="request">Bulk create request with items array</param>
+        /// <param name="skipEventPublish">If true, no RabbitMQ/event publish for this request.</param>
         /// <returns>Bulk insert result with successful items and errors</returns>
         [HttpPost("bulk")]
         [ProducesResponseType(typeof(DataResponseDto<BulkInsertResultDto>), StatusCodes.Status200OK)]
@@ -1441,7 +1454,8 @@ namespace MngDataGateway.Api.Controllers
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> BulkCreate(
             [FromRoute] string datasetName,
-            [FromBody] JsonElement request)
+            [FromBody] JsonElement request,
+            [FromQuery] bool skipEventPublish = false)
         {
             var bulkPath = GetApiPath(datasetName, action: "bulk");
             try
@@ -1479,7 +1493,8 @@ namespace MngDataGateway.Api.Controllers
                     database.DatabaseNamespace.DatabaseName,
                     userInfo.uid,
                     userInfo.userName,
-                    ipAddress);
+                    ipAddress,
+                    skipEventPublish);
 
                 return this.SuccessResponse(result, bulkPath);
             }

@@ -36,7 +36,7 @@ const items = ref([{ title: 'Sort by time' }, { title: 'Sort by Unread' }, { tit
                 hide-details
                 density="compact"
             ></v-text-field>
-            <v-menu>
+            <v-menu class="chat-listing-sort-menu">
                 <template v-slot:activator="{ props }">
                     <v-btn color="white" variant="flat" class="mt-4 text-medium-emphasis" v-bind="props"
                         >Recent Chats <ChevronDownIcon size="18" class="ml-2" />

@@ -75,12 +75,65 @@ export const useUserStore = defineStore('user', {
     inactiveUsers: (state): User[] => {
       return state.users.filter(user => !user.isActive);
     },
+    /** Liste + son `fetchUserById` / `currentUser` (sohbet için JWT sub ile eşleşen satır). */
     getUserById: (state) => {
-      return (id: string) => state.users.find(user => user.id === id || user.userId === id);
+      return (id: string) => {
+        const t = (id || '').trim();
+        if (!t) return undefined;
+        const tl = t.toLowerCase();
+        const fromList = state.users.find(
+          (user) =>
+            (user.id && user.id.toLowerCase() === tl) ||
+            (user.userId && user.userId.toLowerCase() === tl) ||
+            (user.keycloakUserId != null && user.keycloakUserId.toLowerCase() === tl)
+        );
+        if (fromList) return fromList;
+        const v = state.viewingUser;
+        if (
+          v &&
+          ((v.id && v.id.toLowerCase() === tl) ||
+            (v.userId && v.userId.toLowerCase() === tl) ||
+            (v.keycloakUserId != null && v.keycloakUserId.toLowerCase() === tl))
+        )
+          return v;
+        const c = state.currentUser;
+        if (
+          c &&
+          ((c.id && c.id.toLowerCase() === tl) ||
+            (c.userId && c.userId.toLowerCase() === tl) ||
+            (c.keycloakUserId != null && c.keycloakUserId.toLowerCase() === tl))
+        )
+          return c;
+        return undefined;
+      };
     },
   },
 
   actions: {
+    /**
+     * `fetchUserById` ile gelen profili `users` içine yazar; böylece `getUserById` / sohbet `displayNameForStoredPersonId` çözümü çalışır.
+     * (Önceden yalnızca `viewingUser` set ediliyordu, liste güncellenmiyordu.)
+     */
+    mergeResolvedUserProfile(mapped: User) {
+      const keys = new Set<string>();
+      for (const x of [mapped.id, mapped.userId, mapped.keycloakUserId]) {
+        const t = String(x ?? '').trim().toLowerCase();
+        if (t) keys.add(t);
+      }
+      if (!keys.size) return;
+      const idx = this.users.findIndex((u) => {
+        const ids = [u.id, u.userId, u.keycloakUserId]
+          .filter(Boolean)
+          .map((v) => String(v).toLowerCase());
+        return ids.some((id) => keys.has(id));
+      });
+      if (idx >= 0) {
+        this.users[idx] = { ...this.users[idx], ...mapped };
+      } else {
+        this.users.push(mapped);
+      }
+    },
+
     async fetchUsers(params?: { 
       page?: number; 
       pageSize?: number; 
@@ -230,18 +283,20 @@ export const useUserStore = defineStore('user', {
       
       try {
         // First, try to find user in the current list (if already loaded)
-        const existingUser = this.users.find(u => 
-          (u.id && u.id === userId) || 
-          (u.userId && u.userId === userId) || 
-          (u.keycloakUserId && u.keycloakUserId === userId)
+        const uid = String(userId ?? '').trim();
+        const ul = uid.toLowerCase();
+        const existingUser = this.users.find(
+          (u) =>
+            (u.id && u.id.toLowerCase() === ul) ||
+            (u.userId && u.userId.toLowerCase() === ul) ||
+            (u.keycloakUserId != null && u.keycloakUserId.toLowerCase() === ul)
         );
         
         if (existingUser) {
-          // Create a new object to ensure reactivity - use viewingUser instead of currentUser
           const userCopy = { ...existingUser };
           this.$patch({
             viewingUser: userCopy,
-            loading: false
+            loading: false,
           });
           return this.viewingUser;
         }
@@ -283,9 +338,10 @@ export const useUserStore = defineStore('user', {
             updatedAt: user.UpdatedAt || user.updatedAt || null,
             updatedBy: user.UpdatedBy || user.updatedBy || null,
           };
+          this.mergeResolvedUserProfile(mappedUser as User);
           this.$patch({
             viewingUser: mappedUser,
-            loading: false
+            loading: false,
           });
           return this.viewingUser;
         }

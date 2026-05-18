@@ -1,0 +1,360 @@
+@page "/"
+@rendermode InteractiveServer
+@inject ISimulatorConfigService ConfigService
+@inject ISimulatorHostService HostService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<PageTitle>MngSim - Monitoring Simulator</PageTitle>
+
+<div class="simulator-page">
+    <h1>MngSim</h1>
+    <p class="subtitle">MonitraNG Monitoring Simulator – bağımsız sanal cihazlar (HTTP, SNMP, MQTT). Veriyi Engine çeker.</p>
+    <p>
+        <a href="/trains" class="train-map-link">Trenler</a>
+        <span class="muted"> — tren ekleme, listeleme, başlatma</span>
+        ·
+        <a href="/train-map.html" target="_blank" rel="noopener" class="train-map-link">Tren haritası</a>
+        <span class="muted"> — konumlar 5 saniyede bir güncellenir</span>
+    </p>
+
+    <section class="card config-section">
+        <h2>Konfigürasyon</h2>
+        <EditForm Model="@_config" OnValidSubmit="SaveConfig">
+            <details class="advanced-settings">
+                <summary title="Port ve broker ayarları">⚙️ Gelişmiş ayarlar</summary>
+                <div class="form-grid">
+                    <div>
+                        <label title="Cihaz portları: base+1+index (örn. 19000 → 19001, 19002…)">HTTP base port</label>
+                        <InputNumber @bind-Value="_config.HttpBasePort" class="full-width" min="1024" max="65535" />
+                    </div>
+                    <div>
+                        <label title="Cihaz portları: base+index (örn. 11161 → 11161, 11162…)">SNMP base port</label>
+                        <InputNumber @bind-Value="_config.SnmpBasePort" class="full-width" min="1024" max="65535" />
+                    </div>
+                    <div class="full-row">
+                        <label title="MQTT cihazlar için broker adresi">MQTT broker URL (opsiyonel)</label>
+                        <InputText @bind-Value="_config.MqttBrokerUrl" class="full-width" placeholder="tcp://mosquitto:1883" />
+                    </div>
+                </div>
+            </details>
+
+            <h3>Sanal cihazlar</h3>
+            @if (_config.Devices.Count == 0)
+            {
+                <div class="empty-state">
+                    <p>Henüz cihaz eklenmedi. Aşağıdaki butona tıklayarak ilk cihazınızı ekleyin.</p>
+                    <button type="button" class="btn-add" @onclick="AddDevice">+ İlk cihazı ekle</button>
+                </div>
+            }
+            else
+            {
+                <div class="device-table">
+                    <div class="device-row device-header">
+                        <span class="col-profile"></span>
+                        <span class="col-id">Id</span>
+                        <span class="col-name">Ad</span>
+                        <span class="col-location">Lokasyon</span>
+                        <span class="col-protocol">Protokol</span>
+                        <span class="col-extra">Template / RoomId</span>
+                        <span class="col-status">Durum</span>
+                        <span class="col-actions">İşlem</span>
+                    </div>
+                    @for (var i = 0; i < _config.Devices.Count; i++)
+                    {
+                        var idx = i;
+                        var d = _config.Devices[idx];
+                        <div class="device-row @((d.IsEnabled ?? true) ? "" : "device-disabled")">
+                            <span class="col-profile">
+                                @if (HostService.IsRunning)
+                                {
+                                    <a href="/device/@d.Id" class="btn-profile" target="_blank" title="Profil">📋</a>
+                                }
+                                else
+                                {
+                                    <span class="btn-profile disabled" title="Profil (önce simülatörü başlatın)">📋</span>
+                                }
+                            </span>
+                            <span class="col-id">
+                                <InputText @bind-Value="_config.Devices[idx].Id" placeholder="loc1" title="Benzersiz id" />
+                            </span>
+                            <span class="col-name">
+                                <InputText @bind-Value="_config.Devices[idx].Name" placeholder="Ad" title="Görünen ad" />
+                            </span>
+                            <span class="col-location">
+                                <InputText @bind-Value="_config.Devices[idx].Location" placeholder="—" title="Lokasyon (opsiyonel)" />
+                            </span>
+                            <span class="col-protocol">
+                                <select @bind="_config.Devices[idx].Protocol">
+                                    <option value="Http">HTTP</option>
+                                    <option value="Snmp">SNMP</option>
+                                    <option value="Mqtt">MQTT</option>
+                                </select>
+                            </span>
+                            <span class="col-extra">
+                                @if (d.Protocol == "Snmp")
+                                {
+                                    <select @bind="_config.Devices[idx].SnmpTemplate" title="SNMP cihaz tipi">
+                                        <option value="Pdu">PDU (güç)</option>
+                                        <option value="Router">Router (ağ)</option>
+                                    </select>
+                                }
+                                else if (d.Protocol == "Mqtt")
+                                {
+                                    <InputText @bind-Value="_config.Devices[idx].RoomId" placeholder="RoomId (topic)" title="mngsim/devices/{roomId}/metrics" />
+                                }
+                                else
+                                {
+                                    <span class="muted">—</span>
+                                }
+                            </span>
+                            <span class="col-status">
+                                <button type="button" class="btn-toggle @((d.IsEnabled ?? true) ? "enabled" : "paused")"
+                                        title="@((d.IsEnabled ?? true) ? "Duraklat (erişilemez simülasyonu)" : "Devam ettir")"
+                                        @onclick="@(() => ToggleDeviceEnabled(idx))">
+                                    @((d.IsEnabled ?? true) ? "✓ Aktif" : "⏸ Duraklatıldı")
+                                </button>
+                            </span>
+                            <span class="col-actions">
+                                <button type="button" class="btn-remove" @onclick="@(() => RemoveDevice(idx))" title="Cihazı kaldır">Kaldır</button>
+                            </span>
+                        </div>
+                    }
+                </div>
+                <button type="button" class="btn-add" @onclick="AddDevice">+ Cihaz ekle</button>
+            }
+
+            <div class="form-actions">
+                <button type="submit" disabled="@(_config.Devices.Count == 0)">Kaydet</button>
+                @if (_saveFeedback)
+                {
+                    <span class="feedback success">✓ Kaydedildi</span>
+                }
+            </div>
+        </EditForm>
+    </section>
+
+    <section class="card run-section">
+        <h2>Çalıştır</h2>
+        <div class="run-buttons">
+            <button disabled="@(!_hasConfig || _isStarting)" @onclick="Start">
+                @if (_isStarting) { <span>Başlatılıyor…</span> } else { <span>Başlat</span> }
+            </button>
+            <button disabled="@(!HostService.IsRunning || _isStopping)" @onclick="Stop">
+                @if (_isStopping) { <span>Durduruluyor…</span> } else { <span>Durdur</span> }
+            </button>
+        </div>
+    </section>
+
+    <section class="card status-section">
+        <h2>Durum</h2>
+        <div class="status-grid">
+            <div class="status-item">
+                <strong>Config:</strong>
+                <span class="badge @(_hasConfig ? "badge-ok" : "badge-warn")">@(_hasConfig ? "Var" : "Yok")</span>
+            </div>
+            <div class="status-item">
+                <strong>Çalışıyor:</strong>
+                <span class="badge @(HostService.IsRunning ? "badge-ok" : "badge-neutral")">@(HostService.IsRunning ? "Evet" : "Hayır")</span>
+            </div>
+            @if (!string.IsNullOrEmpty(HostService.LastError))
+            {
+                <div class="status-error full-row"><strong>Hata:</strong> @HostService.LastError</div>
+            }
+            @if (_httpEndpoints?.Count > 0 || _snmpEndpoints?.Count > 0)
+            {
+                @if (_httpEndpoints?.Count > 0)
+                {
+                    <div class="full-row endpoint-block">
+                        <strong>HTTP endpoint'ler <span class="muted">(Engine bu URL'lere istek atar)</span></strong>
+                        <ul class="endpoint-list">
+                            @foreach (var ep in _httpEndpoints!)
+                            {
+                                <li>
+                                    <code>@ep</code>
+                                    <button type="button" class="btn-copy" @onclick="@(() => CopyEndpoint(ep))" title="Panoya kopyala">📋</button>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+                @if (_snmpEndpoints?.Count > 0)
+                {
+                    <div class="full-row endpoint-block">
+                        <strong>SNMP endpoint'ler</strong>
+                        <ul class="endpoint-list">
+                            @foreach (var ep in _snmpEndpoints)
+                            {
+                                <li>
+                                    <code>@ep</code>
+                                    <button type="button" class="btn-copy" @onclick="@(() => CopyEndpoint(ep))" title="Panoya kopyala">📋</button>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+            }
+            @if (HostService.IsRunning && _config.Devices.Any(d => d.IsEnabled == false))
+            {
+                <div class="full-row muted hint">Duraklatılmış cihazlar dinleyici açmaz. Değişiklik için simülatörü yeniden başlatın.</div>
+            }
+        </div>
+    </section>
+</div>
+
+@code {
+    private SimulatorConfig _config = new();
+    private List<string> _httpEndpoints = new();
+    private List<string> _snmpEndpoints = new();
+    private bool _hasConfig => ConfigService.HasValidConfig();
+    private bool _saveFeedback;
+    private bool _isStarting;
+    private bool _isStopping;
+    private Timer? _refreshTimer;
+
+    protected override void OnInitialized()
+    {
+        LoadConfig();
+        _refreshTimer = new Timer(_ => InvokeAsync(UpdateEndpoints).GetAwaiter().GetResult(), null, 2000, 2000);
+    }
+
+    private void UpdateEndpoints()
+    {
+        if (HostService.IsRunning && _config.Devices.Count > 0)
+        {
+            _httpEndpoints = _config.Devices
+                .Select((d, i) => (d, i))
+                .Where(x => (x.d.IsEnabled ?? true) && string.Equals(x.d.Protocol, "Http", StringComparison.OrdinalIgnoreCase))
+                .Select(x => $"http://localhost:{_config.HttpBasePort + 1 + x.i}/metrics")
+                .ToList();
+            _snmpEndpoints = _config.Devices
+                .Select((d, i) => (d, i))
+                .Where(x => (x.d.IsEnabled ?? true) && string.Equals(x.d.Protocol, "Snmp", StringComparison.OrdinalIgnoreCase))
+                .Select(x => $"udp://127.0.0.1:{_config.SnmpBasePort + x.i} (template: {x.d.SnmpTemplate ?? "Pdu"})")
+                .ToList();
+        }
+        else
+        {
+            _httpEndpoints = new List<string>();
+            _snmpEndpoints = new List<string>();
+        }
+        StateHasChanged();
+    }
+
+    private void LoadConfig()
+    {
+        var c = ConfigService.GetConfig();
+        if (c != null)
+        {
+            _config = new SimulatorConfig
+            {
+                HttpBasePort = c.HttpBasePort,
+                SnmpBasePort = c.SnmpBasePort,
+                MqttBrokerUrl = c.MqttBrokerUrl,
+                Devices = c.Devices.Select(d => new VirtualDevice
+                {
+                    Id = d.Id,
+                    Name = d.Name,
+                    Location = d.Location,
+                    Protocol = d.Protocol,
+                    SnmpTemplate = d.SnmpTemplate ?? "Pdu",
+                    RoomId = d.RoomId,
+                    IsEnabled = d.IsEnabled ?? true
+                }).ToList()
+            };
+        }
+        else
+        {
+            _config = new SimulatorConfig();
+        }
+    }
+
+    private void SaveConfig()
+    {
+        var toSave = new SimulatorConfig
+        {
+            HttpBasePort = _config.HttpBasePort,
+            SnmpBasePort = _config.SnmpBasePort,
+            MqttBrokerUrl = _config.MqttBrokerUrl,
+            Devices = _config.Devices.Select(d => new VirtualDevice
+            {
+                Id = d.Id,
+                Name = d.Name,
+                Location = d.Location,
+                Protocol = d.Protocol,
+                SnmpTemplate = d.Protocol == "Snmp" ? (d.SnmpTemplate ?? "Pdu") : null,
+                RoomId = d.RoomId,
+                IsEnabled = d.IsEnabled ?? true
+            }).ToList()
+        };
+        ConfigService.SetConfig(toSave);
+        _saveFeedback = true;
+        _ = Task.Delay(2000).ContinueWith(_ => InvokeAsync(() => { _saveFeedback = false; StateHasChanged(); }));
+        StateHasChanged();
+    }
+
+    private void ToggleDeviceEnabled(int index)
+    {
+        if (index >= 0 && index < _config.Devices.Count)
+            _config.Devices[index].IsEnabled = !(_config.Devices[index].IsEnabled ?? true);
+    }
+
+    private void AddDevice()
+    {
+        _config.Devices.Add(new VirtualDevice { Protocol = "Http", SnmpTemplate = "Pdu", IsEnabled = true });
+    }
+
+    private void RemoveDevice(int index)
+    {
+        if (index >= 0 && index < _config.Devices.Count)
+            _config.Devices.RemoveAt(index);
+    }
+
+    private async Task CopyEndpoint(string text)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("mngsimCopyToClipboard", text);
+            StateHasChanged();
+        }
+        catch { /* tarayıcı kısıtlaması */ }
+    }
+
+    private async Task Start()
+    {
+        _isStarting = true;
+        StateHasChanged();
+        try
+        {
+            var result = await HostService.StartAsync();
+            if (result.Success)
+                UpdateEndpoints();
+            StateHasChanged();
+        }
+        finally
+        {
+            _isStarting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task Stop()
+    {
+        _isStopping = true;
+        StateHasChanged();
+        try
+        {
+            await HostService.StopAsync();
+            _httpEndpoints = new List<string>();
+            _snmpEndpoints = new List<string>();
+            StateHasChanged();
+        }
+        finally
+        {
+            _isStopping = false;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose() => _refreshTimer?.Dispose();
+}

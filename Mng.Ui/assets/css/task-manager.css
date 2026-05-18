@@ -1,0 +1,180 @@
+/* Monitra Flow — Task Manager (Vuetify tema ile uyumlu: açık/koyu) */
+.tm-flow {
+  --tm-accent: rgb(var(--v-theme-primary));
+  --tm-accent-muted: rgba(var(--v-theme-primary), 0.14);
+  --tm-ink: rgb(var(--v-theme-on-surface));
+  --tm-ink-soft: rgba(var(--v-theme-on-surface), 0.65);
+  --tm-surface: rgb(var(--v-theme-surface));
+  --tm-surface-elevated: rgb(var(--v-theme-surface));
+  --tm-border: rgba(var(--v-theme-on-surface), 0.1);
+  --tm-radius: 14px;
+  --tm-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.06);
+  --tm-coral: rgb(var(--v-theme-warning));
+}
+
+/* Koyu temada gölge biraz güçlü; yüzeyler zaten theme.surface ile hizalı */
+.v-theme--dark .tm-flow {
+  --tm-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+.tm-flow .tm-hero {
+  background: linear-gradient(135deg, rgba(var(--v-theme-primary), 0.12) 0%, transparent 58%);
+  border: 1px solid var(--tm-border);
+  border-radius: var(--tm-radius);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.tm-flow .tm-hero-title {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--tm-ink);
+  line-height: 1.2;
+}
+
+.tm-flow .tm-hero-sub {
+  color: var(--tm-ink-soft);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.tm-flow .tm-panel {
+  background: var(--tm-surface-elevated);
+  border: 1px solid var(--tm-border);
+  border-radius: var(--tm-radius);
+  box-shadow: var(--tm-shadow);
+}
+
+.tm-flow .tm-kanban-wrap {
+  background: rgba(var(--v-theme-on-surface), 0.03);
+  border-radius: var(--tm-radius);
+  padding: 0.75rem;
+  border: 1px solid var(--tm-border);
+}
+
+.tm-flow .tm-col {
+  width: 300px;
+  min-height: 220px;
+  flex-shrink: 0;
+  background: rgba(var(--v-theme-primary), 0.08);
+  border-radius: 12px;
+  padding: 10px;
+  border: 1px solid rgba(var(--v-theme-primary), 0.18);
+}
+
+.tm-flow .tm-col-head {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tm-ink-soft);
+  margin-bottom: 10px;
+  padding: 0 4px;
+}
+
+.tm-issue-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: rgb(var(--v-theme-surface));
+  border-radius: 12px;
+  border: 1px solid var(--tm-border);
+  border-left: 4px solid var(--tm-priority, rgba(var(--v-theme-on-surface), 0.35));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  cursor: pointer;
+}
+
+.v-theme--dark .tm-issue-card {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.tm-issue-card:hover {
+  box-shadow: var(--tm-shadow);
+  transform: translateY(-1px);
+}
+
+.tm-issue-card__meta {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--tm-accent);
+  letter-spacing: 0.04em;
+}
+
+.tm-issue-card__title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--tm-ink);
+  line-height: 1.35;
+  margin-top: 2px;
+}
+
+.tm-issue-card__foot {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tm-issue-card__chip {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--tm-accent-muted);
+  color: var(--tm-accent);
+}
+
+.tm-avatar-tiny {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tm-proj-card {
+  border-radius: 12px;
+  border: 1px solid var(--tm-border);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tm-proj-card:hover {
+  border-color: rgba(var(--v-theme-primary), 0.45);
+  box-shadow: var(--tm-shadow);
+}
+
+.tm-toolbar-filters {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Yeni görev modalı — başlık, bölüm başlıkları, footer */
+.tm-new-issue-dialog {
+  border: 1px solid var(--tm-border);
+  overflow: hidden;
+}
+
+.tm-new-issue-dialog-overlay {
+  backdrop-filter: blur(4px);
+}
+
+.tm-new-issue-section__title {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--tm-ink-soft);
+  margin-bottom: 0.25rem;
+  padding-left: 2px;
+}
+
+.tm-new-issue-fields--preview .tm-new-issue-section__title {
+  opacity: 0.9;
+}

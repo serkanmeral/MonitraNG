@@ -1,12 +1,18 @@
 # MngDataGateway - Current Session Status
 
-**Last Updated:** 24 Ocak 2026 - 19:00 UTC  
+**Last Updated:** 8 Mart 2026  
 **Session Duration:** ~9 hours intensive development (2 sessions)  
 **Current Phase:** Phase 2 (API Integration) - ✅ COMPLETE
 
 ---
 
 ## 📋 Son Çalışılan Konu
+
+**Data API — skipEventPublish query parametresi**
+
+Create, Update, Delete, Restore ve Bulk Create endpoint'lerine opsiyonel `skipEventPublish=true` query parametresi eklendi. Bu parametre verildiğinde RabbitMQ olay yayını (ve buna bağlı MQTT senkronizasyonu) yapılmaz. Örn. MngReactor'da lastSeen/heartbeat güncellemeleri bu parametre ile çağrılıyor; böylece her heartbeat’te event publish tetiklenmiyor. Detay: [TECHNICAL_SPECS.md](../../main/TECHNICAL_SPECS.md) §5 Data.
+
+---
 
 **File Field Type Implementation - Phase 2 API Integration**
 
@@ -160,6 +166,14 @@ Total: 3,815 lines, 23 files, dual sync (GitLab + GitHub) ✅
   * Domain access validation
 - Authorization & security
 - Comprehensive error handling
+
+### Data API — skipEventPublish ✅
+- **Create** (`POST /api/v1/data/{datasetName}`): `[FromQuery] bool skipEventPublish = false`
+- **Update** (`PUT /api/v1/data/{datasetName}/{dataId}`): `skipEventPublish`
+- **Delete** (`DELETE /api/v1/data/{datasetName}/{dataId}`): `skipEventPublish`
+- **Restore** (`POST .../restore`): `skipEventPublish`
+- **BulkCreate** (`POST .../bulk`): `skipEventPublish`
+- IDataService / DataService ve DataController entegrasyonu tamamlandı.
 
 ### Phase 2B: DataController Integration ✅
 - **ValidateFileFields** helper method

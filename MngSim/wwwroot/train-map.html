@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MngSim — Tren konumları</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    #map { width: 100vw; height: 100vh; background: #e8e8e8; }
+    #info {
+      position: absolute; top: 10px; left: 10px; z-index: 1000;
+      background: #fff; padding: 10px 14px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      font-size: 13px;
+    }
+    #info strong { display: block; margin-bottom: 6px; }
+    #info .ts { color: #666; font-size: 12px; }
+    #info label { margin-right: 12px; cursor: pointer; }
+    @keyframes train-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.85; transform: scale(1.15); } }
+  </style>
+</head>
+<body>
+  <div id="info">
+    <strong>Tren konumları</strong>
+    <span class="ts" id="ts">—</span>
+    <div style="margin-top: 8px;">
+      <label><input type="checkbox" id="ly-osm" /> OSM arka plan</label>
+      <span style="color:#666;font-size:11px;" title="Açıldığında döşemeler OpenStreetMap sunucularından internet üzerinden yüklenir.">(çevrimiçi)</span>
+      <span id="ly-geoserver-wrap" style="display:none;">
+        <label><input type="checkbox" id="ly-geoserver" /> GeoServer arka plan</label>
+        <span style="color:#666;font-size:11px;" title="Ray ve istasyonlar kendi GeoServer WMTS sunucunuzdan yüklenir (çevrimdışı).">(çevrimdışı)</span>
+      </span>
+    </div>
+  </div>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const API_BASE = ''; // same origin
+    const POLL_INTERVAL_MS = 3000;
+    const EVENT_ALERT_MINUTES = 10; // Bu süre içindeki event'ler haritada uyarı gösterir
+
+    const map = L.map('map').setView([39.2, 32.5], 6);
+    let recentEvents = []; // { trainId, eventType, timestamp }
+
+    const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    });
+
+    document.getElementById('ly-osm').onchange = function() {
+      this.checked ? osmLayer.addTo(map) : map.removeLayer(osmLayer);
+    };
+
+    var geoserverLayers = [];
+    function buildGeoserverLayers(useProxy) {
+      if (useProxy) {
+        var base = API_BASE + '/api/tiles/geoserver';
+        return [
+          L.tileLayer(base + '?layer=landuse&z={z}&x={x}&y={y}', { attribution: '' }),
+          L.tileLayer(base + '?layer=roads&z={z}&x={x}&y={y}', { attribution: '' }),
+          L.tileLayer(base + '?layer=railways&z={z}&x={x}&y={y}', { attribution: 'GeoServer tr_rail' }),
+          L.tileLayer(base + '?layer=stations&z={z}&x={x}&y={y}', { attribution: '' }),
+          L.tileLayer(base + '?layer=places&z={z}&x={x}&y={y}', { attribution: '' })
+        ];
+      }
+      return [];
+    }
+    function toggleGeoserverLayers(checked) {
+      geoserverLayers.forEach(function(layer) {
+        if (checked) map.addLayer(layer); else map.removeLayer(layer);
+      });
+    }
+
+    fetch(API_BASE + '/api/trains/map-config')
+      .then(function(r) { return r.ok ? r.json() : {}; })
+      .then(function(cfg) {
+        if (cfg.geoServerBaseUrl) {
+          document.getElementById('ly-geoserver-wrap').style.display = 'inline';
+          geoserverLayers = buildGeoserverLayers(true);
+          document.getElementById('ly-geoserver').onchange = function() {
+            toggleGeoserverLayers(this.checked);
+          };
+        }
+      });
+
+    const markers = {};
+
+    function getIcon(trainId, hasAlert) {
+      var bg = hasAlert ? '#e85d04' : '#c00';
+      var pulse = hasAlert ? ';animation:train-pulse 1.2s ease-in-out infinite' : '';
+      return L.divIcon({
+        className: 'train-marker',
+        html: '<span style="background:' + bg + ';color:#fff;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.3)' + pulse + '">' + (trainId.replace('T', '') || '?') + '</span>',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+      });
+    }
+
+    function getLastEventForTrain(trainId) {
+      var cutoff = Date.now() - EVENT_ALERT_MINUTES * 60 * 1000;
+      for (var i = 0; i < recentEvents.length; i++) {
+        if (recentEvents[i].trainId === trainId && new Date(recentEvents[i].timestamp).getTime() >= cutoff)
+          return recentEvents[i];
+      }
+      return null;
+    }
+
+    function eventTypeLabel(type) {
+      var labels = { fire_alarm: 'Yangın alarmı', door_opened_while_moving: 'Kapı açık (hareket)', emergency_brake: 'Acil fren', vibration_alert: 'Titreşim', overheat_alert: 'Aşırı ısınma', low_pressure_alert: 'Düşük basınç' };
+      return labels[type] || type;
+    }
+
+    function buildPopupContent(p) {
+      var lastEv = getLastEventForTrain(p.trainId);
+      var html = '<strong>' + p.trainId + '</strong><br/>Rota: ' + (p.routeId || '—') + '<br/>' + p.lat.toFixed(5) + ', ' + p.lon.toFixed(5);
+      if (lastEv) {
+        var evTime = new Date(lastEv.timestamp).toLocaleTimeString('tr-TR');
+        html += '<br/><span style="color:#c00;font-weight:600;">⚠ Son olay: ' + eventTypeLabel(lastEv.eventType) + ' (' + evTime + ')</span>';
+      }
+      if (p.speed != null) html += '<br/>Hız: ' + Number(p.speed).toFixed(1) + ' km/h';
+      if (p.heading != null) html += ' · Yön: ' + Number(p.heading).toFixed(0) + '°';
+      if (p.sensors) {
+        var s = p.sensors;
+        html += '<hr style="margin:6px 0;border:0;border-top:1px solid #eee;"/>';
+        html += '<div style="font-size:11px;line-height:1.4;">';
+        html += 'Motor: ' + (s.engineTempC != null ? s.engineTempC.toFixed(1) : '—') + ' °C';
+        html += ' · Yağ: ' + (s.oilPressureBar != null ? s.oilPressureBar.toFixed(2) : '—') + ' bar<br/>';
+        html += 'Soğutucu: ' + (s.coolantTempC != null ? s.coolantTempC.toFixed(1) : '—') + ' °C';
+        html += ' · Batarya: ' + (s.batteryVoltageV != null ? s.batteryVoltageV.toFixed(2) : '—') + ' V<br/>';
+        html += 'Fren: ' + (s.brakePipePressureBar != null ? s.brakePipePressureBar.toFixed(2) : '—') + ' bar';
+        html += ' · Kabin: ' + (s.cabTempC != null ? s.cabTempC.toFixed(1) : '—') + ' °C<br/>';
+        html += 'Titreşim: ' + (s.vibrationMs2 != null ? s.vibrationMs2.toFixed(3) : '—') + ' m/s²';
+        html += ' · Kapı: ' + (s.doorClosed !== undefined ? (s.doorClosed ? 'Kapalı' : 'Açık') : '—');
+        html += '</div>';
+      }
+      return html;
+    }
+
+    function fetchEvents() {
+      fetch(API_BASE + '/api/trains/events?maxCount=50')
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(data) {
+          if (data && data.events) recentEvents = data.events;
+        })
+        .catch(function() {});
+    }
+
+    function updatePositions() {
+      fetch(API_BASE + '/api/trains/positions?includeSensors=true')
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(data) {
+          if (!data || !data.positions) return;
+          document.getElementById('ts').textContent = 'Son güncelleme: ' + (data.updatedAt ? new Date(data.updatedAt).toLocaleTimeString('tr-TR') : '—');
+          const seen = {};
+          for (const p of data.positions) {
+            seen[p.trainId] = true;
+            var hasAlert = !!getLastEventForTrain(p.trainId);
+            if (!markers[p.trainId]) {
+              markers[p.trainId] = L.marker([p.lat, p.lon], { icon: getIcon(p.trainId, hasAlert) })
+                .bindPopup(buildPopupContent(p), { maxWidth: 320 })
+                .addTo(map);
+            } else {
+              markers[p.trainId].setLatLng([p.lat, p.lon]);
+              markers[p.trainId].setIcon(getIcon(p.trainId, hasAlert));
+              markers[p.trainId].getPopup().setContent(buildPopupContent(p));
+            }
+          }
+          for (const id of Object.keys(markers)) {
+            if (!seen[id]) { map.removeLayer(markers[id]); delete markers[id]; }
+          }
+        })
+        .catch(function() {
+          document.getElementById('ts').textContent = 'API bağlantı hatası';
+        });
+    }
+
+    fetchEvents();
+    updatePositions();
+    setInterval(fetchEvents, POLL_INTERVAL_MS);
+    setInterval(updatePositions, POLL_INTERVAL_MS);
+  </script>
+</body>
+</html>

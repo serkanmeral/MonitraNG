@@ -1,36 +1,45 @@
 <script setup lang="ts">
-import { ChevronRightIcon } from 'vue-tabler-icons';
-const props = defineProps({
-    title: String,
-    breadcrumbs: Array as any,
-    icon: String
+import { computed } from 'vue';
+
+/** Eski tema `text` alanı + Vuetify 3 `title` beklenir */
+const props = defineProps<{
+  title?: string;
+  breadcrumbs?: Array<Record<string, unknown>>;
+  icon?: string;
+}>();
+
+const breadcrumbItems = computed(() => {
+  const raw = props.breadcrumbs;
+  if (!raw || !Array.isArray(raw)) return [];
+  return raw.map((b) => ({
+    title: String(b.title ?? b.text ?? ''),
+    disabled: Boolean(b.disabled),
+    href: typeof b.href === 'string' ? b.href : undefined,
+  }));
 });
 </script>
 
 <template>
-    <div class="mt-3 mb-6">
-        <div class="d-flex justify-space-between">
-            <div class="d-flex py-0 align-center">
-                <div>
-                    <h3 class="text-h3 mb-2">{{ title }}</h3>
-                    <v-breadcrumbs :items="breadcrumbs" class="text-h6 font-weight-regular pa-0 ml-n1">
-                        <template v-slot:divider v-if="breadcrumbs">
-                            <v-icon>mdi-chevron-right</v-icon>
-                        </template>
-                        <template v-slot:title="{ item }">
-                            <h6 class="text-medium-emphasis text-h6">{{ item.text }}</h6>
-                        </template>
-                    </v-breadcrumbs>
-                </div>
-            </div>
+  <div class="mt-3 mb-6">
+    <div class="d-flex justify-space-between">
+      <div class="d-flex py-0 align-center">
+        <div>
+          <h3 class="text-h3 mb-2">{{ title }}</h3>
+          <v-breadcrumbs v-if="breadcrumbItems.length" :items="breadcrumbItems" class="text-h6 font-weight-regular pa-0 ml-n1">
+            <template #divider>
+              <v-icon>mdi-chevron-right</v-icon>
+            </template>
+          </v-breadcrumbs>
         </div>
+      </div>
     </div>
+  </div>
 </template>
 
 <style lang="scss">
 .page-breadcrumb {
-    .v-toolbar {
-        background: transparent;
-    }
+  .v-toolbar {
+    background: transparent;
+  }
 }
 </style>

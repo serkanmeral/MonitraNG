@@ -1,52 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-// common components
-import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
-import AppBaseCard from '@/components/shared/AppBaseCard.vue';
-import ChatListing from '@/components/apps/chats/ChatListing.vue';
-import ChatDetail from '@/components/apps/chats/ChatDetail.vue';
-import ChatProfile from '@/components/apps/chats/ChatProfile.vue';
+import { onMounted } from 'vue';
 
-// theme breadcrumb
-const page = ref({ title: 'Chat app' });
+/** Eski tema yolu `/apps/chats` → DG tabanlı sohbet odası */
+definePageMeta({ layout: 'default' });
 
-const breadcrumbs = ref([
-    {
-        text: 'Messenger',
-        disabled: true,
-        href: '#'
-    }
-]);
+onMounted(() => {
+  void navigateTo('/apps/chat-room', { replace: true });
+});
 </script>
 
 <template>
-    <!-- ---------------------------------------------------- -->
-    <!-- Table Basic -->
-    <!-- ---------------------------------------------------- -->
-    <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs"></BaseBreadcrumb>
-
-    <v-card elevation="10" class="overflow-hidden">
-        <AppBaseCard>
-            <template v-slot:leftpart>
-                <ChatProfile />
-                <ChatListing />
-            </template>
-            <template v-slot:rightpart>
-                <ChatDetail />
-            </template>
-
-            <template v-slot:mobileLeftContent>
-                <ChatProfile />
-                <ChatListing />
-            </template>
-        </AppBaseCard>
-    </v-card>
+  <div class="pa-4 text-caption text-medium-emphasis">{{ $t('chatRoom.pageTitle') }}…</div>
 </template>
-
-<style scoped lang="scss">
-@media (max-width: 1279px) {
-    .v-card {
-        position: unset;
-    }
-}
-</style>

@@ -1,0 +1,212 @@
+@page "/trains/events"
+@rendermode InteractiveServer
+@inject ITrainPositionService TrainService
+@inject ITrainEventService EventService
+@inject HttpClient Http
+@implements IDisposable
+
+<PageTitle>Tren event’leri — MngSim</PageTitle>
+
+<div class="simulator-page trains-events-page">
+    <h1>Tren event’leri (MQTT)</h1>
+    <p class="subtitle">Event tetikleyin; MQTT’ye yayınlanır ve aşağıdaki logda (ve haritada) görünür.</p>
+    <p>
+        <a href="/trains">← Tren listesi</a>
+        ·
+        <a href="/train-map.html" target="_blank" rel="noopener">Tren haritası</a>
+    </p>
+
+    @if (!EventService.IsConnected)
+    {
+        <div class="card" style="border-color: #f0ad4e;">
+            <p class="muted">MQTT broker’a bağlı değil. <code>appsettings.json</code> veya <code>TrainSim:MqttBrokerUrl</code> (örn. <code>tcp://localhost:1883</code>) tanımlayın ve uygulamayı yeniden başlatın. Event’ler yayınlanmaz; log yalnızca bu oturumda tetiklenen event’leri gösterir.</p>
+        </div>
+    }
+    else
+    {
+        <div class="card" style="border-color: #28a745;">
+            <p class="muted">✓ MQTT broker’a bağlı. Event’ler <code>mngsim/trains/events</code> topic’ine yayınlanıyor.</p>
+        </div>
+    }
+
+    <section class="card">
+        <h2>Event tetikle</h2>
+        <EditForm Model="@_form" OnValidSubmit="SendEvent">
+            <div class="form-grid events-form">
+                <div class="full-row">
+                    <label for="ev-train">Tren</label>
+                    <InputSelect id="ev-train" @bind-Value="_form.TrainId" class="full-width">
+                        <option value="">— Seçin —</option>
+                        @foreach (var t in _trains)
+                        {
+                            <option value="@t.TrainId">@t.TrainId (@t.RouteId) @(t.Started ? "— Yolda" : "")</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="full-row">
+                    <label for="ev-type">Event türü</label>
+                    <InputSelect id="ev-type" @bind-Value="_form.EventType" class="full-width">
+                        <option value="">— Seçin —</option>
+                        <option value="fire_alarm">Yangın alarmı</option>
+                        <option value="door_opened_while_moving">Hareket halinde kapı açıldı</option>
+                        <option value="emergency_brake">Acil fren</option>
+                        <option value="vibration_alert">Titreşim uyarısı</option>
+                        <option value="overheat_alert">Aşırı ısınma uyarısı</option>
+                        <option value="low_pressure_alert">Düşük basınç uyarısı</option>
+                    </InputSelect>
+                </div>
+                <div>
+                    <label for="ev-zone">Zone (opsiyonel)</label>
+                    <InputText id="ev-zone" @bind-Value="_form.Zone" class="full-width" placeholder="örn. engine" />
+                </div>
+                <div>
+                    <label for="ev-severity">Severity (opsiyonel)</label>
+                    <InputText id="ev-severity" @bind-Value="_form.Severity" class="full-width" placeholder="örn. high" />
+                </div>
+                <div>
+                    <label for="ev-speed">Hız km/h (opsiyonel)</label>
+                    <InputNumber id="ev-speed" @bind-Value="_form.SpeedKmh" class="full-width" placeholder="—" />
+                </div>
+                <div>
+                    <label for="ev-door">Kapı id (opsiyonel)</label>
+                    <InputText id="ev-door" @bind-Value="_form.DoorId" class="full-width" placeholder="örn. rear-left" />
+                </div>
+            </div>
+            <div class="form-actions" style="margin-top: 1rem;">
+                <button type="submit" disabled="@(!CanSend())">Event gönder</button>
+            </div>
+        </EditForm>
+        @if (_sendFeedback)
+        {
+            <p class="feedback success">✓ Event gönderildi.</p>
+        }
+    </section>
+
+    <section class="card">
+        <h2>Event logu</h2>
+        <p class="muted">Son event’ler (en yeni üstte). Haritada ilgili tren simgesi uyarı ile vurgulanır.</p>
+        <div class="events-log-wrap">
+            @if (_events.Count == 0)
+            {
+                <p class="muted">Henüz event yok. Yukarıdan bir event tetikleyin.</p>
+            }
+            else
+            {
+                <table class="events-log-table">
+                    <thead>
+                        <tr>
+                            <th>Zaman</th>
+                            <th>Tren</th>
+                            <th>Event</th>
+                            <th>Zone</th>
+                            <th>Severity</th>
+                            <th>Ek</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var e in _events)
+                        {
+                            <tr>
+                                <td>@e.Timestamp.ToLocalTime().ToString("HH:mm:ss")</td>
+                                <td><strong>@e.TrainId</strong></td>
+                                <td>@EventTypeLabel(e.EventType)</td>
+                                <td>@(e.Zone ?? "—")</td>
+                                <td>@(e.Severity ?? "—")</td>
+                                <td>@(e.SpeedKmh.HasValue ? e.SpeedKmh.Value.ToString("F0") + " km/h" : e.DoorId ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </section>
+</div>
+
+@code {
+    private List<TrainListItem> _trains = new();
+    private List<TrainEventDto> _events = new();
+    private bool _sendFeedback;
+    private System.Threading.Timer? _timer;
+    private EventForm _form = new();
+
+    private class EventForm
+    {
+        public string TrainId { get; set; } = "";
+        public string EventType { get; set; } = "";
+        public string? Zone { get; set; }
+        public string? Severity { get; set; }
+        public double? SpeedKmh { get; set; }
+        public string? DoorId { get; set; }
+    }
+
+    protected override void OnInitialized()
+    {
+        LoadTrains();
+        LoadEvents();
+        _timer = new System.Threading.Timer(_ => InvokeAsync(LoadEvents).GetAwaiter().GetResult(), null, 2500, 2500);
+    }
+
+    private void LoadTrains()
+    {
+        _trains = TrainService.GetTrains().ToList();
+    }
+
+    private async Task LoadEvents()
+    {
+        try
+        {
+            var resp = await Http.GetFromJsonAsync<EventsResponse>("api/trains/events?maxCount=80");
+            _events = resp?.Events ?? new List<TrainEventDto>();
+        }
+        catch
+        {
+            _events = new List<TrainEventDto>();
+        }
+        StateHasChanged();
+    }
+
+    private bool CanSend() => !string.IsNullOrWhiteSpace(_form.TrainId) && !string.IsNullOrWhiteSpace(_form.EventType);
+
+    private async Task SendEvent()
+    {
+        if (!CanSend()) return;
+        var body = new TrainEventPublishRequest
+        {
+            EventType = _form.EventType.Trim(),
+            Zone = _form.Zone,
+            Severity = _form.Severity,
+            SpeedKmh = _form.SpeedKmh,
+            DoorId = _form.DoorId
+        };
+        var res = await Http.PostAsJsonAsync($"api/trains/{Uri.EscapeDataString(_form.TrainId.Trim())}/events", body);
+        if (res.IsSuccessStatusCode)
+        {
+            _sendFeedback = true;
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(2000);
+                await InvokeAsync(() => { _sendFeedback = false; StateHasChanged(); });
+            });
+            await LoadEvents();
+        }
+        StateHasChanged();
+    }
+
+    private static string EventTypeLabel(string type) => type switch
+    {
+        "fire_alarm" => "Yangın alarmı",
+        "door_opened_while_moving" => "Kapı açık (hareket)",
+        "emergency_brake" => "Acil fren",
+        "vibration_alert" => "Titreşim uyarısı",
+        "overheat_alert" => "Aşırı ısınma",
+        "low_pressure_alert" => "Düşük basınç",
+        _ => type
+    };
+
+    private class EventsResponse
+    {
+        public List<TrainEventDto> Events { get; set; } = new();
+    }
+
+    public void Dispose() => _timer?.Dispose();
+}

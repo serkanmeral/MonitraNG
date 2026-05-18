@@ -39,6 +39,7 @@ public class JwtClaimsMiddleware
                 var email = jwtToken.Claims.FirstOrDefault(c => c.Type == "email")?.Value;
                 var username = jwtToken.Claims.FirstOrDefault(c => c.Type == "preferred_username")?.Value;
                 var userId = jwtToken.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
+                var mngPersonId = jwtToken.Claims.FirstOrDefault(c => c.Type == "mng_person_id")?.Value;
                 var domainName = jwtToken.Claims.FirstOrDefault(c => c.Type == "domain_name")?.Value;
                 var userGroupsClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "user_groups")?.Value;
                 var isAdminClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "isAdmin")?.Value;
@@ -85,6 +86,7 @@ public class JwtClaimsMiddleware
                 var tokenClaims = new TokenClaims
                 {
                     UserId = userId,
+                    MngPersonId = mngPersonId,
                     Email = email,
                     Username = username,
                     DomainId = domainId,

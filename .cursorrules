@@ -69,6 +69,12 @@ Aşağıdaki kısaltmaları kullanırken tam isimlerini kullan:
 
 ### Dokümantasyon Dosyaları
 - **Tek referans:** Tüm dokümantasyon kuralları (yapı, changelog formatı, Conventional Commits, MkDocs) `docs/content/DOCUMENTATION_STANDARDS.md` içinde tanımlıdır; belirsizlikte bu dosyaya bakılır.
+- **Monitoring Planları – KRİTİK KURAL**:
+  - **Kök klasör:** `docs/content/monitoring_plans/`
+  - **Kapsam:** Asset, Organizasyon, Agent, Engine, Veri Üretme, Veri İşleme ve ilgili planlama/mimari dokümanları
+  - **KURAL:** Yeni monitoring dokümanları **ASLA** başka yere değil, **her zaman** `docs/content/monitoring_plans/` içine oluşturulur
+  - **Güncelleme sorumluluğu:** Bu klasördeki dokümanlar güncel tutulmalı; monitoring ile ilgili kararlar, şema değişiklikleri veya yeni planlar burada yansıtılmalı
+  - **Örnek dosyalar:** `monitrang_monitoring_planlama.md`, `MONITORING_AGENT_ARCHITECTURE.md`, `MONITORING_ENGINE_ARCHITECTURE.md`, `MONITORING_REACTOR_ARCHITECTURE.md`, `MONITORING_DATA_PRODUCTION.md`, `MONITORING_ASSET_DATASETS.md`, `MONITORING_OBSERVABILITY.md`, `MONITORING_SIMULATOR.md`, `MONITORING_WORKFLOW.md`, `MONITORING_IMPLEMENTATION_PLAN.md`; yeni eklenenler aynı klasöre
 - **Dokümantasyon organizasyonu**: 
   - **KURAL**: Tüm dokümantasyon dosyaları `docs/{ServiceName}/` altında amaca uygun klasörler içinde organize edilir
   - Servislerin kendi klasörlerinde **SADECE** `README.md` ve `ROADMAP.md` (veya `RoadMap.md`) dosyaları bulunabilir

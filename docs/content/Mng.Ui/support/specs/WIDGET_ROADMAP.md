@@ -64,6 +64,7 @@
   - Grouped/aggregated chart desteği
   - Responsive chart desteği
   - Chart options (legend, dataLabels, grid, toolbar, colors)
+  - **Monitoring chart (Mart 2026):** Pie/donut formda seçilebilir; çoklu seri (multi-series) + form bilgi metni; zaman aralığı widget çark menüsünden; anlamlı widget seçimi rehberi DASHBOARD_WIDGET_PLAN.md §3.4. *Chart iyileştirmelerine sonra devam — mevcut durum: `docs/content/monitoring_plans/ROADMAP_TODAY.md` (§ Chart widget), `CHART_OPTIONS_NEXT.md`.*
 
 ### ✅ Tamamlanan Yardımcı Araçlar
 

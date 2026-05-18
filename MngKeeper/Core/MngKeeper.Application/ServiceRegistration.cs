@@ -1,8 +1,10 @@
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using MngKeeper.Application.Configuration;
+using MngKeeper.Application.Interfaces;
 using MngKeeper.Application.Pipelines.DomainCreation;
 using MngKeeper.Application.Pipelines.DomainCreation.Steps;
+using MngKeeper.Application.Services;
 using MongoDB.Driver;
 using System.Reflection;
 
@@ -15,6 +17,9 @@ public static class ServiceRegistration
         // Configure Settings
         services.Configure<MngKeeperSettings>(_ =>
         {
+            _.Tenant = settings.Tenant;
+            _.Server = settings.Server;
+            _.UiBaseUrl = settings.UiBaseUrl;
             _.MongoDB = settings.MongoDB;
             _.RabbitMQ = settings.RabbitMQ;
             _.Redis = settings.Redis;
@@ -48,7 +53,8 @@ public static class ServiceRegistration
         
         // Add Index Manager
         services.AddScoped<MngKeeper.Application.Services.IndexManager>();
-        
+        services.AddScoped<ITokenCredentialResolver, TokenCredentialResolver>();
+
         // Add Pipeline Steps
         services.AddScoped<ValidateDomainStep>();
         services.AddScoped<CreateDomainEntityStep>();

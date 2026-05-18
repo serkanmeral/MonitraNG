@@ -8,10 +8,16 @@ Versiyonlama [Semantic Versioning](https://semver.org/spec/v2.0.0.html) kullanı
 ## [Unreleased]
 
 ### Added
-- (henüz release edilmemiş eklemeler)
+- **Entegrasyon testleri** — WebApplicationFactory ile uyumlu; Health, Ingest, Engine, MonAgents, MonAssets, MonAssetsEncryption testleri (48 test)
+- **Docker testleri** — Docker container üzerinde çalışan MngReactor'a karşı HTTP tabanlı testler (`Category=Docker`)
+- **Configuration rehberi** — MQTT yapılandırması ve production güvenlik dokümanı
+- **Docker support** — mng_apps docker-compose.yml ve docker-compose.production.yml'e MngReactor servisi eklendi
+- **Smoke test scripti** — `ApplicationResources/mng_apps/test-mngreactor-docker.ps1` ile Docker container doğrulama
 
 ### Changed
-- (henüz release edilmemiş değişiklikler)
+- **MQTT ayarları** — appsettings.json'da `monitrang` / `!2345qawsedrf` ile Mosquitto kimlik doğrulaması
+- **env.example** — ApplicationResources/mng_common ve mng_apps'e MQTT değişkenleri eklendi
+- **AppBootstrapper** — Test ortamında InitAuthentication atlanarak WebApplicationFactory uyumluluğu
 
 ### Fixed
 - (henüz release edilmemiş düzeltmeler)

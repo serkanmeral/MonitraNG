@@ -13,10 +13,7 @@
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
       "RateLimitOptions": {
         "ClientWhitelist": [],
-        "EnableRateLimiting": true,
-        "Period": "1m",
-        "PeriodTimespan": 60,
-        "Limit": 30
+        "EnableRateLimiting": false
       },
       "Priority": 2
     },
@@ -31,13 +28,9 @@
       ],
       "UpstreamPathTemplate": "/keeper/api/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
-      // Authentication handled by MngKeeper, not Gateway
       "RateLimitOptions": {
         "ClientWhitelist": [],
-        "EnableRateLimiting": true,
-        "Period": "1m",
-        "PeriodTimespan": 60,
-        "Limit": 100
+        "EnableRateLimiting": false
       },
       "Priority": 1
     },
@@ -54,9 +47,7 @@
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
       // Authentication handled by MngDataGateway, not Gateway
       "RateLimitOptions": {
-        "EnableRateLimiting": true,
-        "Period": "1m",
-        "Limit": 100
+        "EnableRateLimiting": false
       },
       "Priority": 1
     },
@@ -71,13 +62,74 @@
       ],
       "UpstreamPathTemplate": "/data/api/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
-      // Authentication handled by MngDataGateway, not Gateway
       "RateLimitOptions": {
-        "EnableRateLimiting": true,
-        "Period": "1m",
-        "Limit": 100
+        "EnableRateLimiting": false
       },
       "Priority": 0
+    },
+    {
+      "DownstreamPathTemplate": "/health",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngworkflow",
+          "Port": 5085
+        }
+      ],
+      "UpstreamPathTemplate": "/workflow/health",
+      "UpstreamHttpMethod": [ "GET" ],
+      "RateLimitOptions": {
+        "EnableRateLimiting": false
+      },
+      "Priority": 0
+    },
+    {
+      "DownstreamPathTemplate": "/swagger",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngworkflow",
+          "Port": 5085
+        }
+      ],
+      "UpstreamPathTemplate": "/workflow/swagger",
+      "UpstreamHttpMethod": [ "GET", "HEAD" ],
+      "RateLimitOptions": {
+        "EnableRateLimiting": false
+      },
+      "Priority": 0
+    },
+    {
+      "DownstreamPathTemplate": "/swagger/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngworkflow",
+          "Port": 5085
+        }
+      ],
+      "UpstreamPathTemplate": "/workflow/swagger/{everything}",
+      "UpstreamHttpMethod": [ "GET", "HEAD" ],
+      "RateLimitOptions": {
+        "EnableRateLimiting": false
+      },
+      "Priority": 0
+    },
+    {
+      "DownstreamPathTemplate": "/api/v1/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngworkflow",
+          "Port": 5085
+        }
+      ],
+      "UpstreamPathTemplate": "/workflow/api/v1/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
+      "RateLimitOptions": {
+        "EnableRateLimiting": false
+      },
+      "Priority": 1
     },
     {
       "DownstreamPathTemplate": "/ws/{everything}",
@@ -120,9 +172,7 @@
       "UpstreamPathTemplate": "/auth/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
       "RateLimitOptions": {
-        "EnableRateLimiting": true,
-        "Period": "1m",
-        "Limit": 30
+        "EnableRateLimiting": false
       },
       "Priority": 0
     },
@@ -141,9 +191,7 @@
         "AuthenticationProviderKey": "Bearer"
       },
       "RateLimitOptions": {
-        "EnableRateLimiting": true,
-        "Period": "1m",
-        "Limit": 100
+        "EnableRateLimiting": false
       },
       "Priority": 1
     },
@@ -162,9 +210,7 @@
         "AuthenticationProviderKey": "Bearer"
       },
       "RateLimitOptions": {
-        "EnableRateLimiting": true,
-        "Period": "1m",
-        "Limit": 100
+        "EnableRateLimiting": false
       },
       "Priority": 0
     },
@@ -179,11 +225,8 @@
       ],
       "UpstreamPathTemplate": "/notifier/api/v1/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
-      // Authentication handled by MngNotifier, not Gateway
       "RateLimitOptions": {
-        "EnableRateLimiting": true,
-        "Period": "1m",
-        "Limit": 100
+        "EnableRateLimiting": false
       },
       "Priority": 1
     },
@@ -198,11 +241,8 @@
       ],
       "UpstreamPathTemplate": "/notifier/api/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
-      // Authentication handled by MngNotifier, not Gateway
       "RateLimitOptions": {
-        "EnableRateLimiting": true,
-        "Period": "1m",
-        "Limit": 100
+        "EnableRateLimiting": false
       },
       "Priority": 0
     },
@@ -217,11 +257,8 @@
       ],
       "UpstreamPathTemplate": "/admin/api/v1/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
-      // Authentication disabled in MngAdmin
       "RateLimitOptions": {
-        "EnableRateLimiting": true,
-        "Period": "1m",
-        "Limit": 100
+        "EnableRateLimiting": false
       },
       "Priority": 1
     },
@@ -236,11 +273,8 @@
       ],
       "UpstreamPathTemplate": "/admin/api/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
-      // Authentication disabled in MngAdmin
       "RateLimitOptions": {
-        "EnableRateLimiting": true,
-        "Period": "1m",
-        "Limit": 100
+        "EnableRateLimiting": false
       },
       "Priority": 0
     },
@@ -255,11 +289,8 @@
       ],
       "UpstreamPathTemplate": "/scheduler/api/v1/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
-      // Authentication handled by MngScheduler, not Gateway
       "RateLimitOptions": {
-        "EnableRateLimiting": true,
-        "Period": "1m",
-        "Limit": 100
+        "EnableRateLimiting": false
       },
       "Priority": 1
     },
@@ -274,11 +305,46 @@
       ],
       "UpstreamPathTemplate": "/scheduler/api/{everything}",
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
-      // Authentication handled by MngScheduler, not Gateway
       "RateLimitOptions": {
-        "EnableRateLimiting": true,
-        "Period": "1m",
-        "Limit": 100
+        "EnableRateLimiting": false
+      },
+      "Priority": 0
+    },
+    {
+      "DownstreamPathTemplate": "/api/v1/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngreactor",
+          "Port": 5003
+        }
+      ],
+      "UpstreamPathTemplate": "/reactor/api/v1/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "RateLimitOptions": {
+        "EnableRateLimiting": false
+      },
+      "Priority": 1
+    },
+    {
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngreactor",
+          "Port": 5003
+        }
+      ],
+      "UpstreamPathTemplate": "/reactor/api/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "Bearer"
+      },
+      "RateLimitOptions": {
+        "EnableRateLimiting": false
       },
       "Priority": 0
     }
@@ -288,8 +354,7 @@
     "RateLimitOptions": {
       "DisableRateLimitHeaders": false,
       "QuotaExceededMessage": "API rate limit exceeded. Please try again later.",
-      "HttpStatusCode": 429,
-      "ClientIdHeader": "X-ClientId"
+      "HttpStatusCode": 429
     }
   }
 }

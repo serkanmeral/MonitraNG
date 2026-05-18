@@ -1,3 +1,11 @@
+<!--
+  Chart widget — Mevcut durum (8 Mart 2026):
+  - Tipler: line, bar, area, pie, donut (monitoring formunda seçilebilir).
+  - Multi-series: config.series ile çoklu asset; legend destekli.
+  - Zaman aralığı: Widget çark menüsünden (WidgetWithSettings) seçiliyor.
+  - Roadmap / sonra devam: docs/content/monitoring_plans/ROADMAP_TODAY.md (§ Chart widget),
+    CHART_OPTIONS_NEXT.md, DASHBOARD_WIDGET_PLAN.md §3.4.
+-->
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useTheme } from 'vuetify';
@@ -60,7 +68,7 @@ const chartConfig = computed((): ChartConfig => {
   const config = props.widget.config as any;
   
   return {
-    type: config?.type || 'bar',
+    type: config?.type || 'line',
     height: config?.height || 350,
     xAxis: config?.xAxis || {},
     yAxis: config?.yAxis || {},
@@ -219,7 +227,9 @@ const chartLabels = computed(() => {
     if (cfg.xAxis?.field && data.length > 0) {
       return data.map((item: any) => {
         const value = getNestedValue(item, cfg.xAxis!.field!);
-        return value !== null && value !== undefined ? String(value) : '';
+        if (value === null || value === undefined) return '';
+        if (cfg.xAxis!.field === 'timestamp' || looksLikeIsoDate(value)) return formatChartTimestamp(value);
+        return String(value);
       });
     }
     // Grouped chart labels
@@ -241,7 +251,9 @@ const chartLabels = computed(() => {
   if (cfg.xAxis?.field && data.length > 0) {
     return data.map((item: any) => {
       const value = getNestedValue(item, cfg.xAxis!.field!);
-      return value !== null && value !== undefined ? String(value) : '';
+      if (value === null || value === undefined) return '';
+      if (cfg.xAxis!.field === 'timestamp' || looksLikeIsoDate(value)) return formatChartTimestamp(value);
+      return String(value);
     });
   }
 
@@ -378,6 +390,30 @@ const chartOptions = computed(() => {
   return baseOptions;
 });
 
+/** ISO / Z formatındaki zaman değerlerini grafik etiketi için okunabilir formata çevirir */
+function formatChartTimestamp(value: any): string {
+  if (value === null || value === undefined) return '';
+  const str = String(value).trim();
+  if (!str) return '';
+  const date = new Date(str);
+  if (Number.isNaN(date.getTime())) return str;
+  return new Intl.DateTimeFormat('tr-TR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: undefined,
+  }).format(date);
+}
+
+/** Değerin ISO tarih string'i olup olmadığını kontrol eder */
+function looksLikeIsoDate(value: any): boolean {
+  if (value === null || value === undefined) return false;
+  const str = String(value).trim();
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(str) || /^\d{4}-\d{2}-\d{2}/.test(str);
+}
+
 // Helper: Get nested value
 function getNestedValue(item: any, key: string): any {
   if (!item || !key) return null;
@@ -510,9 +546,10 @@ const lbl = (key: string) => props.t?.(`widgets.chart.${key}`) || key;
           <div class="text-body-1 mt-2">{{ lbl('noData') }}</div>
         </div>
 
-        <!-- Chart -->
+        <!-- Chart: key ensures re-mount when type changes (line/bar/area vs pie/donut use different series shape) -->
         <apexchart
           v-else
+          :key="`${chartConfig.type}-${widget.dataId || widget.__dataId || '0'}`"
           :type="chartConfig.type"
           :height="chartConfig.height || 350"
           :options="chartOptions"

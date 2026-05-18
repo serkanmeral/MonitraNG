@@ -18,6 +18,7 @@ Detaylı sürüm geçmişi için [Changelog](CHANGELOG.md) dosyasına bakınız.
 
 ## Yapılacaklar
 
+- **Chat Room (F2)** — `cht_*` DG unified event’lerinin domain odağına taşınması (mevcut `{domainId}.*` + `MessageRouter`); isteğe bağlı Hub method’ları (`JoinChatRoom` vb.) ve mention anlık mesajı. **Docker deneme sırası:** [Chat Room — Backend & Docker](../../chat_room/BACKEND_DOCKER_STEPS.md).
 - **Monitoring & Metrics** — Connection count, message throughput, RabbitMQ queue depth, `/api/metrics/*` endpoint’leri.
 - **Error Handling** — DLQ, retry (exponential backoff), circuit breaker, hata bildirimi.
 - **Performance** — Message batching, connection pool, bellek ağı.

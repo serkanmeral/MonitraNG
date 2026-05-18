@@ -35,7 +35,11 @@ export async function fetchWidgetData(widget: Widget): Promise<WidgetDataRespons
   try {
     switch (getMethod) {
       case 'default':
-        return await fetchWidgetDataDefault(dataset, dataSource.default || {});
+        return await fetchWidgetDataDefault(
+          dataset,
+          dataSource.default || {},
+          (widget.config || {}) as Record<string, any>
+        );
 
       case 'query':
         return await fetchWidgetDataQuery(dataset, dataSource.query || { match: {} });
@@ -66,14 +70,29 @@ export async function fetchWidgetData(widget: Widget): Promise<WidgetDataRespons
  */
 async function fetchWidgetDataDefault(
   dataset: string,
-  config: DataSourceConfigData['default']
+  config: DataSourceConfigData['default'],
+  widgetConfig?: Record<string, any>
 ): Promise<WidgetDataResponse> {
   const q = new URLSearchParams();
 
+  let filter = config?.filter;
+
+  // Monitoring widget: runtime'da timestamp filtresi ekle
+  if (dataset === 'mon_metrics' && widgetConfig?.monitoring) {
+    const minutes = widgetConfig.timeRangeMinutes;
+    if (minutes != null && minutes > 0) {
+      const since = new Date(Date.now() - minutes * 60 * 1000);
+      const tsFilter = `timestamp:gte:${since.toISOString()}`;
+      filter = filter ? `${filter},${tsFilter}` : tsFilter;
+    }
+  }
+
+  // Limit: widgetConfig override (monitoring) veya dataSource default
+  const effectiveLimit = widgetConfig?.limit ?? config?.limit;
   if (config?.skip !== undefined) q.set('skip', String(config.skip));
-  if (config?.limit !== undefined) q.set('limit', String(config.limit));
+  if (effectiveLimit !== undefined) q.set('limit', String(effectiveLimit));
   if (config?.sort) q.set('sort', config.sort);
-  if (config?.filter) q.set('filter', config.filter);
+  if (filter) q.set('filter', filter);
   if (config?.fields) q.set('fields', config.fields);
   if (config?.search) q.set('search', config.search);
   if (config?.format) q.set('format', config.format);
@@ -85,13 +104,60 @@ async function fetchWidgetDataDefault(
   const data = await fetchFromDataGateway(url, 'GET');
 
   // X-Total-Count header'ı fetchFromDataGateway tarafından response._totalCount'a ekleniyor
-  const items = Array.isArray(data) ? data : [];
+  let items = Array.isArray(data) ? data : [];
   const total = (data as any)?._totalCount ?? items.length;
+
+  // Monitoring multi-series: mon_metrics verisini pivotlayarak her asset için ayrı seri oluştur
+  if (
+    dataset === 'mon_metrics' &&
+    widgetConfig?.monitoring &&
+    widgetConfig?.multiSeries &&
+    widgetConfig?.series?.length > 1 &&
+    items.length > 0
+  ) {
+    items = pivotMonMetricsForMultiSeries(items, widgetConfig.series);
+  }
 
   return {
     data: items,
     total,
   };
+}
+
+/**
+ * mon_metrics verisini multi-series chart için pivotlar.
+ * Girdi: [{ timestamp, value, meta: { assetId } }, ...]
+ * Çıktı: [{ timestamp, [assetId1]: v1, [assetId2]: v2, ... }, ...] - timestamp'e göre sıralı
+ */
+function pivotMonMetricsForMultiSeries(
+  items: any[],
+  series: Array<{ name: string; field: string }>
+): any[] {
+  const assetIds = series.map((s) => s.field);
+  const byTimestamp = new Map<string, Record<string, number>>();
+
+  for (const item of items) {
+    const ts = item.timestamp ?? item.Timestamp;
+    const val = item.value ?? item.Value ?? 0;
+    const assetId = item.meta?.assetId ?? item.meta?.asset_id ?? item.Meta?.assetId ?? item.Meta?.asset_id;
+
+    if (ts == null || !assetId || !assetIds.includes(assetId)) continue;
+
+    const tsKey = typeof ts === 'string' ? ts : new Date(ts).toISOString();
+    if (!byTimestamp.has(tsKey)) {
+      byTimestamp.set(tsKey, { timestamp: ts, ...Object.fromEntries(assetIds.map((id) => [id, null as any])) });
+    }
+    const row = byTimestamp.get(tsKey)!;
+    row[assetId] = typeof val === 'number' ? val : parseFloat(val) || 0;
+  }
+
+  const sorted = Array.from(byTimestamp.values()).sort((a, b) => {
+    const tA = new Date(a.timestamp).getTime();
+    const tB = new Date(b.timestamp).getTime();
+    return tA - tB;
+  });
+
+  return sorted;
 }
 
 /**

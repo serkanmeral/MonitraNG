@@ -13,6 +13,7 @@ namespace MngKeeper.Application.Interfaces
             string? department = null,
             int? gender = null,
             string? phoneNumber = null,
-            string? photoUrl = null);
+            string? photoUrl = null,
+            string? mngPersonId = null);
     }
 }

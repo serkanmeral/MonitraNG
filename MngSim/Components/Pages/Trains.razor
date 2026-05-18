@@ -1,0 +1,182 @@
+@page "/trains"
+@rendermode InteractiveServer
+@inject ITrainPositionService TrainService
+
+<PageTitle>Trenler — MngSim</PageTitle>
+
+<div class="simulator-page trains-page">
+    <h1>Tren simülasyonu</h1>
+    <p class="subtitle">Tren ekleyin, listeden başlatın. Konumlar haritada 5 saniyede bir güncellenir.</p>
+    <p>
+        <a href="/trains/sensors" class="train-map-link">Sensörler</a>
+        <span class="muted"> — anlık değerler ve override</span>
+        ·
+        <a href="/trains/events" class="train-map-link">Event’ler</a>
+        <span class="muted"> — tetikle ve log</span>
+        ·
+        <a href="/train-map.html" target="_blank" rel="noopener" class="train-map-link">Tren haritası</a>
+    </p>
+
+    @if (!TrainService.IsEnabled)
+    {
+        <div class="card" style="border-color: #f0ad4e;">
+            <p class="muted">Tren simülasyonu verisi yüklü değil. <code>Data/TrainSim</code> içinde <code>routes-reference.json</code> ve <code>route-geometries/*.json</code> dosyalarının bulunduğundan emin olun.</p>
+        </div>
+    }
+    else
+    {
+        <section class="card">
+            <h2>Tren ekle</h2>
+            <button type="button" class="btn-add" @onclick="OpenAddForm">+ Tren ekle</button>
+        </section>
+
+        @if (_showAddForm)
+        {
+            <div class="card add-form-card">
+                <h3>Yeni tren</h3>
+                <EditForm Model="@_addModel" OnValidSubmit="SubmitAdd">
+                    <div class="form-grid">
+                        <div class="full-row">
+                            <label for="train-code">Tren kodu</label>
+                            <InputText id="train-code" @bind-Value="_addModel.TrainId" class="full-width" placeholder="örn. T004" />
+                        </div>
+                        <div class="full-row">
+                            <label for="train-route">Rota</label>
+                            <InputSelect id="train-route" @bind-Value="_addModel.RouteId" class="full-width">
+                                <option value="">— Seçin —</option>
+                                @foreach (var r in _routes)
+                                {
+                                    <option value="@r.Id">@r.Name</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="full-row">
+                            <label for="train-duration">Yolculuk süresi (dakika)</label>
+                            <InputNumber id="train-duration" @bind-Value="_addModel.DurationMinutes" class="full-width" min="1" max="600" />
+                        </div>
+                    </div>
+                    <div class="form-actions" style="margin-top: 1rem;">
+                        <button type="submit" disabled="@(!CanSubmitAdd())">Ekle</button>
+                        <button type="button" class="btn-secondary" @onclick="CloseAddForm">İptal</button>
+                    </div>
+                </EditForm>
+            </div>
+        }
+
+        <section class="card">
+            <h2>Tren listesi</h2>
+            @if (_trains.Count == 0)
+            {
+                <p class="muted">Henüz tren yok. "Tren ekle" ile ekleyin.</p>
+            }
+            else
+            {
+                <div class="train-table">
+                    <div class="train-row train-header">
+                        <span class="col-code">Tren kodu</span>
+                        <span class="col-route">Rota</span>
+                        <span class="col-duration">Süre (dk)</span>
+                        <span class="col-status">Durum</span>
+                        <span class="col-actions">İşlem</span>
+                    </div>
+                    @foreach (var t in _trains)
+                    {
+                        <div class="train-row">
+                            <span class="col-code"><strong>@t.TrainId</strong></span>
+                            <span class="col-route">@t.RouteId</span>
+                            <span class="col-duration">@t.DurationMinutes</span>
+                            <span class="col-status">
+                                @if (t.Started)
+                                {
+                                    <span class="badge badge-ok">Yolda</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-neutral">Başlamadı</span>
+                                }
+                            </span>
+                            <span class="col-actions">
+                                @if (!t.Started)
+                                {
+                                    <button type="button" class="btn-start" @onclick="@(() => StartTrain(t.TrainId))">Başlat</button>
+                                }
+                                <button type="button" class="btn-remove" @onclick="@(() => RemoveTrain(t.TrainId))">Kaldır</button>
+                            </span>
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+    }
+</div>
+
+@code {
+    private List<RouteRef> _routes = new();
+    private List<TrainListItem> _trains = new();
+    private bool _showAddForm;
+    private AddTrainModel _addModel = new();
+
+    private class AddTrainModel
+    {
+        public string TrainId { get; set; } = "";
+        public string RouteId { get; set; } = "";
+        public int DurationMinutes { get; set; } = 90;
+    }
+
+    protected override void OnInitialized()
+    {
+        Load();
+    }
+
+    private void Load()
+    {
+        _routes = TrainService.GetAvailableRoutes().ToList();
+        _trains = TrainService.GetTrains().ToList();
+    }
+
+    private void OpenAddForm()
+    {
+        _addModel = new AddTrainModel { DurationMinutes = 90 };
+        if (_routes.Count > 0) _addModel.RouteId = _routes[0].Id;
+        _showAddForm = true;
+    }
+
+    private void CloseAddForm()
+    {
+        _showAddForm = false;
+    }
+
+    private bool CanSubmitAdd()
+    {
+        return !string.IsNullOrWhiteSpace(_addModel.TrainId)
+            && !string.IsNullOrWhiteSpace(_addModel.RouteId)
+            && _addModel.DurationMinutes >= 1;
+    }
+
+    private void SubmitAdd()
+    {
+        if (!CanSubmitAdd()) return;
+        var ok = TrainService.AddTrain(
+            _addModel.TrainId.Trim(),
+            _addModel.TrainId.Trim(),
+            _addModel.RouteId,
+            _addModel.DurationMinutes);
+        if (ok)
+        {
+            CloseAddForm();
+            Load();
+        }
+    }
+
+    private void StartTrain(string trainId)
+    {
+        TrainService.StartTrain(trainId);
+        Load();
+    }
+
+    private void RemoveTrain(string trainId)
+    {
+        TrainService.RemoveTrain(trainId);
+        Load();
+    }
+}

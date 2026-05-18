@@ -128,7 +128,8 @@ public class NotificationHub : Hub
                         _logger.LogError(ex, "Error processing message. RoutingKey: {RoutingKey}, ConnectionId: {ConnectionId}", 
                             routingKey, connectionId);
                     }
-                });
+                },
+                monitraDataEventsDomainName: domainName);
 
             _logger.LogInformation(
                 "Client connected. ConnectionId: {ConnectionId}, UserId: {UserId}, Domain: {Domain}",

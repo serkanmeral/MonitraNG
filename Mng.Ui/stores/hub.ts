@@ -41,6 +41,11 @@ interface Subscription {
  * the entire application. Components subscribe to messages using unique subscription IDs
  * with filters to receive only relevant messages.
  */
+interface ReconnectHandlerEntry {
+  id: string;
+  handler: () => void | Promise<void>;
+}
+
 interface HubState {
   hubConnection: HubConnection | null;
   isConnected: boolean;
@@ -50,6 +55,8 @@ interface HubState {
   subscriptions: Map<string, Subscription>;
   internalHandler: ((data: HubMessage) => void) | null;
   lastMessageCache: Map<string, number>; // routingKey -> timestamp (deduplication için)
+  /** SignalR otomatik yeniden bağlanınca çalıştırılır (sohbet geçmişi DG ile doldurulur). */
+  reconnectHandlers: ReconnectHandlerEntry[];
 }
 
 export const useHubStore = defineStore('hub', {
@@ -197,6 +204,17 @@ export const useHubStore = defineStore('hub', {
             .build();
 
           // Connection state handlers
+          hubConnection.onreconnecting(() => {
+            this.isConnecting = true;
+          });
+
+          hubConnection.onreconnected(async () => {
+            this.isConnecting = false;
+            this.isConnected = true;
+            this.connectionError = null;
+            await this.dispatchReconnectHandlers();
+          });
+
           hubConnection.onclose((error) => {
             this.isConnected = false;
             
@@ -348,6 +366,7 @@ export const useHubStore = defineStore('hub', {
           this.isConnected = false;
           this.connectionError = null;
           this.subscriptions.clear();
+          this.reconnectHandlers = [];
           this.connectionPromise = null;
           this.lastMessageCache.clear();
         } catch (error) {
@@ -418,6 +437,27 @@ export const useHubStore = defineStore('hub', {
      */
     hasSubscription(subscriptionId: string): boolean {
       return this.subscriptions.has(subscriptionId);
+    },
+
+    registerReconnectHandler(id: string, handler: () => void | Promise<void>) {
+      this.unregisterReconnectHandler(id);
+      this.reconnectHandlers.push({ id, handler });
+    },
+
+    unregisterReconnectHandler(id: string) {
+      const idx = this.reconnectHandlers.findIndex((h) => h.id === id);
+      if (idx >= 0) this.reconnectHandlers.splice(idx, 1);
+    },
+
+    async dispatchReconnectHandlers() {
+      const list = [...this.reconnectHandlers];
+      for (const { id, handler } of list) {
+        try {
+          await Promise.resolve(handler());
+        } catch (e) {
+          console.error('[Hub Store] reconnect handler error', id, e);
+        }
+      }
     },
   },
 });

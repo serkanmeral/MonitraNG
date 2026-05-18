@@ -49,6 +49,10 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                 Description = doc.GetValue("description", BsonNull.Value).IsBsonNull ? null : doc.GetValue("description").AsString,
                 Permissions = doc.GetValue("permissions", new BsonArray()).AsBsonArray.Select(x => x.AsString).ToList(),
                 DomainId = doc.GetValue("domainId", "").AsString,
+                KeycloakGroupId =
+                    doc.Contains("keycloakGroupId") && !doc["keycloakGroupId"].IsBsonNull
+                        ? doc["keycloakGroupId"].AsString
+                        : string.Empty,
                 IsActive = doc.GetValue("isActive", true).AsBoolean,
                 CreatedAt = doc.GetValue("createdAt", DateTime.UtcNow).ToUniversalTime(),
                 CreatedBy = doc.GetValue("createdBy", "").AsString,
@@ -88,6 +92,7 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                     ["description"] = string.IsNullOrEmpty(entity.Description) ? BsonNull.Value : entity.Description,
                     ["permissions"] = new BsonArray(entity.Permissions ?? new List<string>()),
                     ["domainId"] = entity.DomainId,
+                    ["keycloakGroupId"] = string.IsNullOrWhiteSpace(entity.KeycloakGroupId) ? string.Empty : entity.KeycloakGroupId,
                     ["isActive"] = entity.IsActive,
                     ["createdAt"] = entity.CreatedAt,
                     ["createdBy"] = entity.CreatedBy,

@@ -5,6 +5,8 @@ namespace MngKeeper.Application.Common.DTOs
     public class UserDto
     {
         public string UserId { get; set; } = string.Empty;
+        /// <summary>Keycloak kullanıcı UUID (JWT <c>sub</c>); sohbet <c>authorPersonId</c> eşlemesi için.</summary>
+        public string? KeycloakUserId { get; set; }
         public string Username { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string FirstName { get; set; } = string.Empty;

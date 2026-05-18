@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Railway Platform — Harita Önizleme (GeoServer WMTS)</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    #map { width: 100vw; height: 100vh; background: #e8e8e8; }
+    #info {
+      position: absolute; top: 10px; left: 50px; z-index: 1000;
+      background: #fff; padding: 8px 12px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      font-size: 13px;
+    }
+    #info label { margin-right: 12px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="info">
+    <strong>Katmanlar:</strong>
+    <label><input type="checkbox" id="ly-railways" checked /> Raylar</label>
+    <label><input type="checkbox" id="ly-stations" checked /> İstasyonlar</label>
+    <label><input type="checkbox" id="ly-places" /> Yerleşimler</label>
+    <label><input type="checkbox" id="ly-osm" /> OSM arka plan</label>
+  </div>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // GeoServer WMTS (localhost:8082) — tr_rail workspace
+    const GEOSERVER = 'http://localhost:8082/geoserver/gwc/service/wmts';
+    const wmtsParams = 'request=GetTile&service=WMTS&version=1.0.0&format=image/png&tilematrixset=EPSG:4326&style=';
+    function wmtsUrl(layer) {
+      return GEOSERVER + '?' + wmtsParams + '&layer=' + layer + '&tilematrix=EPSG:4326:{z}&tilerow={y}&tilecol={x}';
+    }
+
+    const map = L.map('map').setView([39, 35], 6);
+
+    // Arka plan: varsayılan gri (#e8e8e8) veya OSM
+    const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap'
+    });
+
+    const railwaysLayer = L.tileLayer(wmtsUrl('tr_rail:railways'), { attribution: 'GeoServer tr_rail' });
+    const stationsLayer = L.tileLayer(wmtsUrl('tr_rail:stations'), { attribution: '' });
+    const placesLayer = L.tileLayer(wmtsUrl('tr_rail:places'), { attribution: '' });
+
+    railwaysLayer.addTo(map);
+    stationsLayer.addTo(map);
+    placesLayer.addTo(map);
+
+    document.getElementById('ly-railways').onchange = function() { this.checked ? map.addLayer(railwaysLayer) : map.removeLayer(railwaysLayer); };
+    document.getElementById('ly-stations').onchange = function() { this.checked ? map.addLayer(stationsLayer) : map.removeLayer(stationsLayer); };
+    document.getElementById('ly-places').onchange = function() { this.checked ? map.addLayer(placesLayer) : map.removeLayer(placesLayer); };
+    document.getElementById('ly-osm').onchange = function() {
+      this.checked ? osmLayer.addTo(map) : map.removeLayer(osmLayer);
+    };
+  </script>
+</body>
+</html>

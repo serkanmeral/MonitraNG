@@ -177,6 +177,11 @@ namespace MngKeeper.Infrastructure.Services
                 var existingFilter = Builders<BsonDocument>.Filter.Eq("__dataId", group.Id);
                 var existingGroup = await collection.Find(existingFilter).FirstOrDefaultAsync();
 
+                var keycloakGroupId = group.KeycloakGroupId?.Trim() ?? string.Empty;
+                if (string.IsNullOrEmpty(keycloakGroupId) && existingGroup != null && existingGroup.Contains("keycloakGroupId") &&
+                    !existingGroup["keycloakGroupId"].IsBsonNull)
+                    keycloakGroupId = existingGroup["keycloakGroupId"].AsString;
+
                 var groupDocument = new BsonDocument
                 {
                     ["__dataId"] = group.Id, // MngKeeper Group._id
@@ -184,6 +189,7 @@ namespace MngKeeper.Infrastructure.Services
                     ["description"] = string.IsNullOrEmpty(group.Description) ? BsonNull.Value : group.Description,
                     ["permissions"] = new BsonArray(group.Permissions ?? new List<string>()),
                     ["domainId"] = group.DomainId,
+                    ["keycloakGroupId"] = keycloakGroupId,
                     ["__syncInfo"] = new BsonDocument
                     {
                         ["lastSyncedAt"] = DateTime.UtcNow,

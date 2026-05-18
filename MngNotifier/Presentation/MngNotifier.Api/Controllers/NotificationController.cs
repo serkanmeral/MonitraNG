@@ -1,6 +1,8 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using MngNotifier.Application.Configuration;
 using MngNotifier.Application.DTOs;
 using MngNotifier.Application.Services;
 
@@ -15,13 +17,21 @@ namespace MngNotifier.Api.Controllers;
 [AllowAnonymous] // Direct API endpoint - no authentication required
 public class NotificationController : ControllerBase
 {
+    /// <summary>İç servis (DG) chat-mention çağrıları için paylaşılan anahtar başlığı.</summary>
+    public const string NotifyApiKeyHeaderName = "X-Monitra-Notify-Key";
+
     private readonly IMailProvider _mailProvider;
     private readonly ILogger<NotificationController> _logger;
+    private readonly MngNotifierSettings _notifierSettings;
 
-    public NotificationController(IMailProvider mailProvider, ILogger<NotificationController> logger)
+    public NotificationController(
+        IMailProvider mailProvider,
+        ILogger<NotificationController> logger,
+        IOptions<MngNotifierSettings> notifierSettings)
     {
         _mailProvider = mailProvider ?? throw new ArgumentNullException(nameof(mailProvider));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _notifierSettings = notifierSettings?.Value ?? throw new ArgumentNullException(nameof(notifierSettings));
     }
 
     /// <summary>
@@ -84,5 +94,72 @@ public class NotificationController : ControllerBase
             
             return StatusCode(StatusCodes.Status500InternalServerError, new { error = "Failed to send mail notification", message = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Chat Room: <c>cht_messages</c> kaydı oluşturulduğunda mention hedeflerine iç bildirim hattı (MVP: yapılandırılmış log; e-posta yok).
+    /// MngDataGateway iç ağından çağrılır — dışa açık gateway politikası ayrıca sıkılaştırılabilir.
+    /// </summary>
+    [HttpPost("chat-mention")]
+    [ProducesResponseType(typeof(ChatMentionNotifyResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public IActionResult AcceptChatMention([FromBody] ChatMentionNotifyRequest? request)
+    {
+        if (!string.IsNullOrWhiteSpace(_notifierSettings.InternalNotifyApiKey))
+        {
+            if (!Request.Headers.TryGetValue(NotifyApiKeyHeaderName, out var supplied) ||
+                supplied.Count != 1 ||
+                !string.Equals(supplied.ToString(), _notifierSettings.InternalNotifyApiKey, StringComparison.Ordinal))
+            {
+                return Unauthorized(new { error = "Invalid or missing notify API key" });
+            }
+        }
+
+        if (request == null)
+            return BadRequest(new { error = "Request body is required" });
+
+        if (string.IsNullOrWhiteSpace(request.DomainName))
+            return BadRequest(new { error = "DomainName is required" });
+
+        if (string.IsNullOrWhiteSpace(request.DataId))
+            return BadRequest(new { error = "DataId is required" });
+
+        if (string.IsNullOrWhiteSpace(request.ActorPersonId))
+            return BadRequest(new { error = "ActorPersonId is required" });
+
+        if (request.TargetPersonIds == null || request.TargetPersonIds.Count == 0)
+            return BadRequest(new { error = "At least one TargetPersonId is required" });
+
+        var distinct = request.TargetPersonIds
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (distinct.Count == 0)
+            return BadRequest(new { error = "TargetPersonIds contained no valid entries" });
+
+        var notificationId = Guid.NewGuid().ToString();
+
+        foreach (var targetId in distinct)
+        {
+            _logger.LogInformation(
+                "Chat mention (MVP): NotificationId={NotificationId} Domain={Domain} DataId={DataId} Target={Target} Actor={Actor} Source={Source} Preview={Preview}",
+                notificationId,
+                request.DomainName,
+                request.DataId,
+                targetId,
+                request.ActorPersonId,
+                request.Source,
+                request.BodyPreview ?? string.Empty);
+        }
+
+        return Ok(new ChatMentionNotifyResponse
+        {
+            NotificationId = notificationId,
+            TargetCount = distinct.Count,
+            Status = "accepted",
+            AcceptedAt = DateTime.UtcNow
+        });
     }
 }

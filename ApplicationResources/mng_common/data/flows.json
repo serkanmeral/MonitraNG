@@ -38,6 +38,20 @@
         "info": "Mail gönderme flow'u. Function bloğunda parametreleri ayarlayarak mail gönderebilirsiniz.\n\nParametreler:\n- to: Alıcı email adresi\n- subject: Mail konusu\n- text: Mail içeriği (plain text)\n- html: Mail içeriği (HTML formatında, opsiyonel)"
     },
     {
+        "id": "7823899c84207060",
+        "type": "tab",
+        "label": "Monitoring HTTP tests",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "tab-http-test",
+        "type": "tab",
+        "label": "HTTP Collector Test",
+        "disabled": false
+    },
+    {
         "id": "149134e7a8351b0d",
         "type": "tls-config",
         "name": "",
@@ -1743,6 +1757,96 @@
         },
         "x": 800,
         "y": 300,
+        "wires": []
+    },
+    {
+        "id": "http-in-metrics",
+        "type": "http in",
+        "z": "tab-http-test",
+        "name": "GET /api/metrics",
+        "url": "/api/metrics",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 100,
+        "wires": [
+            [
+                "func-mock-response"
+            ]
+        ]
+    },
+    {
+        "id": "func-mock-response",
+        "type": "function",
+        "z": "tab-http-test",
+        "name": "Mock sensör yanıtı",
+        "func": "// HTTP Collector test için örnek JSON response.\n// Collectible şablonundaki JSON path'ler bu yapıya uyumludur.\nconst now = new Date().toISOString();\nmsg.payload = {\n  timestamp: now,\n  sensors: {\n    temperature: 25.5 + (Math.random() * 5),\n    humidity: 60 + (Math.random() * 10),\n    pressure: 1013.25\n  },\n  storage: {\n    disk: {\n      usagePercent: 65 + (Math.random() * 20),\n      freeGB: 100 + (Math.random() * 50)\n    }\n  },\n  status: \"healthy\"\n};\nmsg.statusCode = 200;\nmsg.headers = { \"Content-Type\": \"application/json\" };\nreturn msg;",
+        "outputs": 1,
+        "x": 380,
+        "y": 100,
+        "wires": [
+            [
+                "http-response",
+                "24f5841110235b18"
+            ]
+        ]
+    },
+    {
+        "id": "http-response",
+        "type": "http response",
+        "z": "tab-http-test",
+        "name": "Yanıt gönder",
+        "statusCode": "",
+        "headers": {},
+        "x": 610,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "74cec9ecd3ba3334",
+        "type": "inject",
+        "z": "tab-http-test",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 140,
+        "y": 160,
+        "wires": [
+            [
+                "func-mock-response"
+            ]
+        ]
+    },
+    {
+        "id": "24f5841110235b18",
+        "type": "debug",
+        "z": "tab-http-test",
+        "name": "debug 5",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 580,
+        "y": 160,
         "wires": []
     }
 ]

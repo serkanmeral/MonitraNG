@@ -12,6 +12,7 @@ namespace MngDataGateway.Application.Services
         /// <summary>
         /// Create new data
         /// </summary>
+        /// <param name="skipEventPublish">If true, no RabbitMQ/event publish (e.g. monitoring sync). Useful for heartbeat-only updates.</param>
         Task<Dictionary<string, object>> CreateAsync(
             string datasetName,
             Dictionary<string, object> data,
@@ -19,11 +20,13 @@ namespace MngDataGateway.Application.Services
             string databaseName,
             string userId,
             string userEmail,
-            string? ipAddress = null);
+            string? ipAddress = null,
+            bool skipEventPublish = false);
 
         /// <summary>
         /// Bulk create multiple data records
         /// </summary>
+        /// <param name="skipEventPublish">If true, no RabbitMQ/event publish.</param>
         Task<BulkInsertResultDto> BulkCreateAsync(
             string datasetName,
             List<Dictionary<string, object>> items,
@@ -31,7 +34,8 @@ namespace MngDataGateway.Application.Services
             string databaseName,
             string userId,
             string userEmail,
-            string? ipAddress = null);
+            string? ipAddress = null,
+            bool skipEventPublish = false);
 
         /// <summary>
         /// Get data by ID
@@ -53,6 +57,7 @@ namespace MngDataGateway.Application.Services
         /// <summary>
         /// Update data
         /// </summary>
+        /// <param name="skipEventPublish">If true, no RabbitMQ/event publish (e.g. monitoring sync). Useful for lastSeenAt/heartbeat updates.</param>
         Task<Dictionary<string, object>?> UpdateAsync(
             string datasetName,
             string dataId,
@@ -61,11 +66,13 @@ namespace MngDataGateway.Application.Services
             string databaseName,
             string userId,
             string userEmail,
-            string? ipAddress = null);
+            string? ipAddress = null,
+            bool skipEventPublish = false);
 
         /// <summary>
         /// Delete data (hard delete + archive to __deletedDatas with TTL)
         /// </summary>
+        /// <param name="skipEventPublish">If true, no RabbitMQ/event publish.</param>
         Task<bool> DeleteAsync(
             string datasetName,
             string dataId,
@@ -73,11 +80,13 @@ namespace MngDataGateway.Application.Services
             string databaseName,
             string userId,
             string userEmail,
-            string? ipAddress = null);
+            string? ipAddress = null,
+            bool skipEventPublish = false);
 
         /// <summary>
         /// Restore deleted data
         /// </summary>
+        /// <param name="skipEventPublish">If true, no RabbitMQ/event publish.</param>
         Task<bool> RestoreAsync(
             string datasetName,
             string dataId,
@@ -85,7 +94,8 @@ namespace MngDataGateway.Application.Services
             string databaseName,
             string userId,
             string userEmail,
-            string? ipAddress = null);
+            string? ipAddress = null,
+            bool skipEventPublish = false);
 
         /// <summary>
         /// Query data using aggregate pipeline with all query options

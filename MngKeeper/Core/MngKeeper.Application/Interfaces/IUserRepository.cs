@@ -7,6 +7,8 @@ namespace MngKeeper.Application.Interfaces
     {
         // IRepository methods with domainId
         Task<User?> GetByIdAsync(string id, string domainId);
+        /// <summary><c>cht_messages.authorPersonId</c> veya JWT <c>sub</c> gibi Keycloak kullanıcı id ile arama.</summary>
+        Task<User?> GetByKeycloakUserIdAsync(string keycloakUserId, string domainId);
         Task<User> AddAsync(User entity);
         Task<User> UpdateAsync(User entity);
         Task<bool> DeleteAsync(string id, string domainId);

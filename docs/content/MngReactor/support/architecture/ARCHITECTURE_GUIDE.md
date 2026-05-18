@@ -57,7 +57,7 @@ MngReactor/
 
 **Domain Layer:**
 - Asset entities (AssetType)
-- Login entities (LoginModel, UserInfoModel)
+- Login entities (UserInfoModel)
 - Domain interfaces (IMqttService)
 
 **Application Layer:**
@@ -111,8 +111,9 @@ MngReactor/
 
 ### 5. MQTT İletişimi
 - MQTT mesajlaşma
-- Topic subscription
+- Topic subscription: `MNG/collect/#`
 - Message publishing
+- Detaylı yapılandırma: [Configuration](../guides/CONFIGURATION.md#mqtt-yapilandirmasi)
 
 ### 6. Token Yönetimi
 - Token generation
@@ -182,18 +183,37 @@ MngReactor/
 ### Port
 - **Default:** 5003
 
-### Docker
+### Docker (tek container)
 ```bash
+cd MngReactor
 docker build -t mngreactor -f Dockerfile .
 docker run -p 5003:5003 mngreactor
 ```
 
+### Docker (mng_apps compose)
+MngReactor, `ApplicationResources/mng_apps` compose dosyasında tanımlıdır:
+
+```bash
+cd ApplicationResources/mng_apps
+docker-compose -f docker-compose.yml build mngreactor
+docker-compose -f docker-compose.yml up -d mngreactor
+```
+
+Ön koşul: `mng_common` (MongoDB, RabbitMQ, Mosquitto vb.) çalışıyor olmalı. Detaylı yapılandırma için [Configuration](../guides/CONFIGURATION.md) rehberine bakınız.
+
+## Testler
+
+- **Entegrasyon testleri (in-process):** `dotnet test` — WebApplicationFactory ile 48 test
+- **Docker testleri:** `dotnet test --filter "Category=Docker"` — Container üzerinde HTTP testleri (MngReactor localhost:5003'te çalışıyor olmalı)
+- **Smoke test (PowerShell):** `ApplicationResources/mng_apps/test-mngreactor-docker.ps1`
+
 ## İlgili Dokümantasyon
 
 - [Technical Specs](../../main/TECHNICAL_SPECS.md)
+- [Configuration](../guides/CONFIGURATION.md)
 - [Gateway Integration](../guides/GATEWAY_INTEGRATION.md)
 - [Usage Guide](../guides/USAGE_GUIDE.md)
 
 ---
 
-**Son Güncelleme:** 16 Ocak 2026
+**Son Güncelleme:** Ocak 2026

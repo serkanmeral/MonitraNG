@@ -40,8 +40,10 @@ namespace MngKeeper.Application.Features.User.Queries.GetUser
                     };
                 }
 
-                // Get user by ID
+                // Önce Keeper Mongo __dataId; yoksa Keycloak UUID (JWT sub / cht_messages.authorPersonId)
                 var user = await _userRepository.GetByIdAsync(request.UserId, claims.DomainId);
+                if (user == null)
+                    user = await _userRepository.GetByKeycloakUserIdAsync(request.UserId, claims.DomainId);
                 if (user == null)
                 {
                     return new GetUserResponse
@@ -64,6 +66,7 @@ namespace MngKeeper.Application.Features.User.Queries.GetUser
                 var userDto = new UserDto
                 {
                     UserId = user.Id,
+                    KeycloakUserId = string.IsNullOrWhiteSpace(user.KeycloakUserId) ? null : user.KeycloakUserId,
                     Username = user.Username,
                     Email = user.Email,
                     FirstName = user.FirstName,

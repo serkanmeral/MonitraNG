@@ -1,12 +1,16 @@
 import { createResolver } from "@nuxt/kit";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import vuetify, { transformAssetUrls } from "vite-plugin-vuetify";
 
 const { resolve } = createResolver(import.meta.url);
+const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   ssr: false,
   devtools:{enabled:true},
+  css: ["@/assets/css/task-manager.css"],
   //css: ["@/assets/main.scss"], // vuetify ships precompiled css, no need to import sass
   typescript: {
     shim: false,
@@ -35,6 +39,12 @@ export default defineNuxtConfig({
       adminUrl: process.env.ADMIN_URL || 'http://localhost:5080',
       // Fallback menu control (default: false - disabled)
       enableFallbackMenu: process.env.ENABLE_FALLBACK_MENU === 'true' || false,
+      // GeoServer base URL (harita altlığı, çevrimdışı). Örn. http://localhost:8082
+      geoServerBaseUrl: (process.env.GEOSERVER_BASE_URL && process.env.GEOSERVER_BASE_URL.trim()) ? process.env.GEOSERVER_BASE_URL.trim().replace(/\/$/, '') : '',
+      // WMTS tile matrix set (EPSG:900913 veya EPSG:3857). Grid subset sınırlıysa ofset ile hizalayın.
+      geoServerTileMatrixSet: (process.env.GEOSERVER_TILE_MATRIX_SET && process.env.GEOSERVER_TILE_MATRIX_SET.trim()) ? process.env.GEOSERVER_TILE_MATRIX_SET.trim() : 'EPSG:900913',
+      geoServerTileColOffset: process.env.GEOSERVER_TILE_COL_OFFSET ? parseInt(process.env.GEOSERVER_TILE_COL_OFFSET, 10) : 0,
+      geoServerTileRowOffset: process.env.GEOSERVER_TILE_ROW_OFFSET ? parseInt(process.env.GEOSERVER_TILE_ROW_OFFSET, 10) : 0,
       // App version (from package.json)
       appVersion: process.env.npm_package_version || '6.0.0'
     },
@@ -93,4 +103,35 @@ export default defineNuxtConfig({
   devServerHandlers: [],
 
   compatibilityDate: "2024-09-06",
+
+  hooks: {
+    'pages:extend'(pages) {
+      // Organizasyon sayfaları açıkça eklenir (bazı ortamlarda 404 sorununu önlemek için)
+      if (pages.findIndex(p => p.path === '/apps/monitoring/organization') === -1) {
+        const orgPagePath = path.join(__dirname, 'pages', 'apps', 'monitoring', 'organization', 'index.vue');
+        pages.push({
+          name: 'apps-monitoring-organization',
+          path: '/apps/monitoring/organization',
+          file: orgPagePath.split(path.sep).join('/'),
+        });
+      }
+      if (pages.findIndex(p => p.path === '/apps/organization') === -1) {
+        const redirectPath = path.join(__dirname, 'pages', 'apps', 'organization', 'index.vue');
+        pages.push({
+          name: 'apps-organization',
+          path: '/apps/organization',
+          file: redirectPath.split(path.sep).join('/'),
+        });
+      }
+      // Sohbet odası: tek dosya pages/apps/chat-room.vue (tireli klasör+index bazı ortamlarda 404)
+      if (pages.findIndex((p) => p.path === '/apps/chat-room') === -1) {
+        const chatRoomPagePath = path.join(__dirname, 'pages', 'apps', 'chat-room.vue');
+        pages.push({
+          name: 'apps-chat-room',
+          path: '/apps/chat-room',
+          file: chatRoomPagePath.split(path.sep).join('/'),
+        });
+      }
+    },
+  },
 });

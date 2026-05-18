@@ -43,6 +43,7 @@ services:
       - MngGatewaySettings__BackendServices__MngDataGateway=${MNGDATAGATEWAY_URL:-http://mngdatagateway:5010}
       - MngGatewaySettings__BackendServices__MngHub=${MNGHUB_URL:-http://mnghub:5020}
       - MngGatewaySettings__BackendServices__MngReactor=${MNGREACTOR_URL:-http://mngreactor:5003}
+      - MngGatewaySettings__BackendServices__MngWorkflow=${MNGWORKFLOW_URL:-http://mngworkflow:5085}
       - MngGatewaySettings__BackendServices__KeyCloak=${KEYCLOAK_BASE_URL:-http://keycloak:8080}
       
       # Certificate Settings
@@ -54,10 +55,12 @@ services:
     depends_on:
       - mngkeeper
       - mngdatagateway
+      - mngreactor
       - mnghub
-    
+      - mngworkflow
+
     restart: unless-stopped
-    
+
     healthcheck:
       test: ["CMD-SHELL", "curl -k -f https://localhost:5000/health 2>/dev/null || curl -sf http://localhost:5000/health || exit 1"]
       interval: 30s
@@ -183,6 +186,8 @@ services:
       - MngDataGatewaySettings__OpenApiServerPath=${OPENAPI_SERVER_PATH:-https://localhost:5010}
       - MngDataGatewaySettings__MongoDB__ConnectionString=${MONGO_CONNECTION_STRING}
       - MngDataGatewaySettings__Actors__MngKeeper=${MNGKEEPER_URL}
+      - MngDataGatewaySettings__Actors__MngNotifier=${MNGNOTIFIER_URL:-http://mngnotifier:5070}
+      - MngDataGatewaySettings__Actors__MngNotifierNotifyApiKey=${INTERNAL_NOTIFY_API_KEY:-}
       - MngDataGatewaySettings__RabbitMQ__Host=${RABBITMQ_HOST}
       - MngDataGatewaySettings__RabbitMQ__Port=${RABBITMQ_PORT:-5672}
       - MngDataGatewaySettings__RabbitMQ__Username=${RABBITMQ_USERNAME}
@@ -211,6 +216,60 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
+
+  mngreactor:
+    build:
+      context: ../../MngReactor
+      dockerfile: Dockerfile
+    image: mngreactor:${VERSION:-latest}
+    container_name: mngreactor
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - MngReactorSettings__Server__Host=0.0.0.0
+      - MngReactorSettings__Server__Port=5003
+      - MngReactorSettings__Server__Scheme=http
+      - MngReactorSettings__OpenApiServerPath=${OPENAPI_SERVER_PATH:-https://api.monitra.local/reactor}
+      - MngReactorSettings__EngineServerUrl=${MNGREACTOR_ENGINE_URL:-}
+      - MngReactorSettings__Actors__MngKeeper=${MNGKEEPER_URL:-http://mngkeeper:5001}
+      # Engine host'ta çalışıyorsa Keeper erişilemez; MNGKEEPER_ENGINE_URL=http://localhost:5001
+      - MngReactorSettings__Actors__MngKeeperEngineUrl=${MNGKEEPER_ENGINE_URL:-}
+      - MngReactorSettings__DataGateway__BaseUrl=${MNGDATAGATEWAY_URL:-http://mngdatagateway:5010}
+      - MngReactorSettings__DataGateway__ApiVersion=v1
+      - MngReactorSettings__MongoDB__Host=${MONGO_HOST:-mongo}
+      - MngReactorSettings__MongoDB__Port=${MONGO_PORT:-27017}
+      - MngReactorSettings__MongoDB__Username=${MONGO_USERNAME:-admin}
+      - MngReactorSettings__MongoDB__Password=${MONGO_PASSWORD}
+      - MngReactorSettings__RabbitMQ__Host=${RABBITMQ_HOST}
+      - MngReactorSettings__RabbitMQ__Port=${RABBITMQ_PORT:-5672}
+      - MngReactorSettings__RabbitMQ__Username=${RABBITMQ_USERNAME}
+      - MngReactorSettings__RabbitMQ__Password=${RABBITMQ_PASSWORD}
+      - MngReactorSettings__RabbitMQ__VirtualHost=${RABBITMQ_VIRTUALHOST:-/}
+      - MngReactorSettings__Mqtt__Host=${MQTT_BROKER_HOST:-mosquitto}
+      - MngReactorSettings__Mqtt__Port=${MQTT_BROKER_PORT:-1883}
+      - MngReactorSettings__Mqtt__UserName=${MQTT_USERNAME}
+      - MngReactorSettings__Mqtt__Password=${MQTT_PASSWORD}
+      - MngReactorSettings__Crypt__IngestDecryptKey=${MNGREACTOR_INGEST_DECRYPT_KEY:-0123456789abcdef}
+      - MngReactorSettings__Crypt__IngestEncryptKey=${MNGREACTOR_INGEST_ENCRYPT_KEY:-abcdef0123456789}
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngkeeper
+      - mngdatagateway
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5003/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   mnghub:
     build:
@@ -353,6 +412,42 @@ services:
           cpus: '0.5'
           memory: 512M
 
+  mngworkflow:
+    build:
+      context: ../../MngWorkflow
+      dockerfile: Presentation/MngWorkflow.Api/Dockerfile
+    image: mngworkflow:${VERSION:-latest}
+    container_name: mngworkflow
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://0.0.0.0:5085
+      - MngWorkflowSettings__DataGatewayBaseUrl=${MNGDATAGATEWAY_URL:-http://mngdatagateway:5010}
+      - MngWorkflowSettings__NotifierBaseUrl=${MNGNOTIFIER_URL:-http://mngnotifier:5070}
+      - MngWorkflowSettings__RabbitMq__Host=${RABBITMQ_HOST}
+      - MngWorkflowSettings__RabbitMq__Port=${RABBITMQ_PORT:-5672}
+      - MngWorkflowSettings__RabbitMq__VirtualHost=${RABBITMQ_VIRTUALHOST:-/}
+      - MngWorkflowSettings__RabbitMq__Username=${RABBITMQ_USERNAME}
+      - MngWorkflowSettings__RabbitMq__Password=${RABBITMQ_PASSWORD}
+      - Jwt__Authority=${KEYCLOAK_BASE_URL}/realms/monitra
+      - EnableSwagger=${ENABLE_WORKFLOW_SWAGGER:-false}
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngdatagateway
+      - mngnotifier
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5085/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
   mngadmin:
     build:
       context: ../../MngAdmin
@@ -423,6 +518,7 @@ services:
       - MngNotifierSettings__Mail__Smtp__Username=${SMTP_USERNAME:-}
       - MngNotifierSettings__Mail__Smtp__Password=${SMTP_PASSWORD:-}
       - MngNotifierSettings__Mail__Smtp__EnableSsl=false
+      - MngNotifierSettings__InternalNotifyApiKey=${INTERNAL_NOTIFY_API_KEY:-}
     networks:
       - mng_common_mng_network
     restart: unless-stopped

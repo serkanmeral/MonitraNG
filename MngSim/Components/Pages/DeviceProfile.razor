@@ -1,0 +1,171 @@
+@page "/device/{Id:required}"
+@rendermode InteractiveServer
+@inject ISimulatorConfigService ConfigService
+@inject ISimulatorHostService HostService
+@inject HttpClient Http
+@implements IDisposable
+
+<PageTitle>@(_device?.Name ?? "Cihaz") - MngSim</PageTitle>
+
+<div class="device-profile-page">
+    @if (_device == null)
+    {
+        <p>Cihaz bulunamadı.</p>
+        <a href="/">Ana sayfaya dön</a>
+    }
+    else
+    {
+        <nav class="profile-nav">
+            <a href="/">← Ana sayfa</a>
+        </nav>
+
+        <h1>@_device.Name</h1>
+        <p class="device-id">@_device.Id</p>
+        @if (!(_device.IsEnabled ?? true))
+        {
+            <div class="alert alert-paused">
+                ⏸ Bu cihaz duraklatıldı. Dinleyici çalışmıyor, Engine erişemez.
+            </div>
+        }
+
+        <section class="card info-section">
+            <h2>Bilgiler</h2>
+            <dl class="info-grid">
+                <dt>Protokol</dt>
+                <dd>@_device.Protocol</dd>
+                <dt>Lokasyon</dt>
+                <dd>@(_device.Location ?? "—")</dd>
+                @if (_device.Protocol == "Snmp")
+                {
+                    <dt>SNMP Template</dt>
+                    <dd>@(_device.SnmpTemplate ?? "Pdu")</dd>
+                }
+                <dt>Durum</dt>
+                <dd><span class="badge @((_device.IsEnabled ?? true) ? "badge-ok" : "badge-warn")">@((_device.IsEnabled ?? true) ? "Aktif" : "Duraklatıldı")</span></dd>
+                <dt>Endpoint</dt>
+                <dd><code>@_endpointDisplay</code></dd>
+            </dl>
+        </section>
+
+        <section class="card metrics-section">
+            <h2>Canlı Metrikler</h2>
+            <p class="metrics-refresh">Son güncelleme: @_lastRefresh?.ToString("HH:mm:ss") — @_refreshInterval saniyede bir güncellenir</p>
+            @if (_metrics.Count > 0)
+            {
+                <table class="metrics-table">
+                    <thead>
+                        <tr>
+                            <th>Metrik</th>
+                            <th>Değer</th>
+                            <th>Birim</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in _metrics)
+                        {
+                            <tr>
+                                <td>@m.Name</td>
+                                <td>@m.Value</td>
+                                <td>@(m.Unit ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else if (!(_device?.IsEnabled ?? true))
+            {
+                <p class="no-metrics">Cihaz duraklatıldığı için metrik üretilmiyor.</p>
+            }
+            else
+            {
+                <p class="no-metrics">Metrik yükleniyor veya cihaz metrik üretmiyor.</p>
+            }
+        </section>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = "";
+
+    private DeviceInfo? _device;
+    private string _endpointDisplay = "—";
+    private readonly List<MetricRow> _metrics = new();
+    private DateTime? _lastRefresh;
+    private const int _refreshInterval = 5;
+    private Timer? _refreshTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDeviceAsync();
+        _refreshTimer = new Timer(async _ => await RefreshMetricsAsync(), null, 0, _refreshInterval * 1000);
+    }
+
+    private async Task LoadDeviceAsync()
+    {
+        try
+        {
+            var infoResponse = await Http.GetFromJsonAsync<DeviceInfo>($"api/device/{Id}/info");
+            if (infoResponse != null)
+            {
+                _device = infoResponse;
+                _endpointDisplay = infoResponse.EndpointDisplay ?? "—";
+                await RefreshMetricsAsync();
+            }
+        }
+        catch
+        {
+            _device = null;
+        }
+    }
+
+    private async Task RefreshMetricsAsync()
+    {
+        if (string.IsNullOrEmpty(Id)) return;
+        try
+        {
+            var response = await Http.GetFromJsonAsync<MetricsResponse>($"api/device/{Id}/metrics");
+            if (response?.Metrics != null)
+            {
+                _metrics.Clear();
+                foreach (var m in response.Metrics)
+                    _metrics.Add(new MetricRow { Name = m.Name ?? "?", Value = m.Value ?? "", Unit = m.Unit });
+                _lastRefresh = DateTime.Now;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch { /* ignore */ }
+    }
+
+    public void Dispose() => _refreshTimer?.Dispose();
+
+    private class DeviceInfo
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string? Location { get; set; }
+        public string Protocol { get; set; } = "";
+        public string? SnmpTemplate { get; set; }
+        public string? EndpointDisplay { get; set; }
+        public bool? IsEnabled { get; set; }
+    }
+
+    private class MetricsResponse
+    {
+        public List<MetricItem> Metrics { get; set; } = new();
+    }
+
+    private class MetricItem
+    {
+        public string Name { get; set; } = "";
+        public string Value { get; set; } = "";
+        public string? Unit { get; set; }
+    }
+
+    private class MetricRow
+    {
+        public string Name { get; set; } = "";
+        public string Value { get; set; } = "";
+        public string? Unit { get; set; }
+    }
+}

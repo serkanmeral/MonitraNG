@@ -120,6 +120,9 @@ namespace MngDataGateway.Persistence.Services
             await PublishEventAsync(domainName, schema.DatasetName, "restored", eventPayload);
         }
 
+        private static readonly HashSet<string> MonitoringSyncDatasets = new(StringComparer.OrdinalIgnoreCase)
+            { "mon_engines", "mon_agents", "mon_assets" };
+
         private async Task PublishEventAsync(string domainName, string datasetName, string operation, DataEventDto eventPayload)
         {
             // Fire & Forget - çalıştır ama hata user'ı etkilemesin
@@ -129,6 +132,11 @@ namespace MngDataGateway.Persistence.Services
                 {
                     var routingKey = $"dataset.{datasetName}.{operation}";
                     await _rabbitMqService.PublishDataEventAsync(domainName, routingKey, eventPayload);
+
+                    if (MonitoringSyncDatasets.Contains(datasetName))
+                    {
+                        await _rabbitMqService.PublishMonitoringSyncEventAsync(domainName, datasetName, operation, eventPayload);
+                    }
 
                     _logger.LogInformation(
                         "Event published successfully: {EventType} for dataset {DatasetName}",

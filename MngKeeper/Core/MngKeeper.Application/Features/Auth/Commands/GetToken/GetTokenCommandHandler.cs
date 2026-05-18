@@ -12,6 +12,7 @@ namespace MngKeeper.Application.Features.Auth.Commands.GetToken
         private readonly IJwtTokenService _jwtTokenService;
         private readonly IUserRepository _userRepository;
         private readonly ILicenseService _licenseService;
+        private readonly ITokenCredentialResolver _tokenCredentialResolver;
         private readonly ILogger<GetTokenCommandHandler> _logger;
 
         public GetTokenCommandHandler(
@@ -20,6 +21,7 @@ namespace MngKeeper.Application.Features.Auth.Commands.GetToken
             IJwtTokenService jwtTokenService,
             IUserRepository userRepository,
             ILicenseService licenseService,
+            ITokenCredentialResolver tokenCredentialResolver,
             ILogger<GetTokenCommandHandler> logger)
         {
             _domainRepository = domainRepository;
@@ -27,6 +29,7 @@ namespace MngKeeper.Application.Features.Auth.Commands.GetToken
             _jwtTokenService = jwtTokenService;
             _userRepository = userRepository;
             _licenseService = licenseService;
+            _tokenCredentialResolver = tokenCredentialResolver;
             _logger = logger;
         }
 
@@ -42,15 +45,24 @@ namespace MngKeeper.Application.Features.Auth.Commands.GetToken
                 
                 if (!string.IsNullOrEmpty(request.DomainName))
                 {
-                    // Use provided domain name
                     realmName = request.DomainName.ToLower().Replace(" ", "_");
                     actualUsername = request.Username;
                     _logger.LogInformation("Using provided domain name: {DomainName}, realm: {RealmName}", request.DomainName, realmName);
                 }
                 else
                 {
-                    // Parse username to extract realm and actual username
-                    (realmName, actualUsername) = ParseUsername(request.Username);
+                    var resolved = await _tokenCredentialResolver.ResolveAsync(request.Username, cancellationToken: cancellationToken);
+                    if (!resolved.IsSuccess)
+                    {
+                        return new GetTokenResponse
+                        {
+                            IsSuccess = false,
+                            ErrorMessage = resolved.ErrorDescription ?? "Could not resolve domain and username"
+                        };
+                    }
+
+                    realmName = resolved.DomainName.ToLower().Replace(" ", "_");
+                    actualUsername = resolved.Username;
                 }
                 
                 // Get domain by realm name
@@ -247,6 +259,8 @@ namespace MngKeeper.Application.Features.Auth.Commands.GetToken
                     isManager, isAdmin, userGroups != null ? string.Join(", ", userGroups) : "null", title ?? "null", department ?? "null", gender?.ToString() ?? "null", phoneNumber ?? "null", photoUrl ?? "null");
 
                 // Add domain claims and user profile fields to the token
+                var mngPersonId = user != null && !string.IsNullOrWhiteSpace(user.Id) ? user.Id.Trim() : null;
+
                 var enhancedToken = _jwtTokenService.AddDomainClaimToToken(
                     keycloakTokenResponse.AccessToken, 
                     domain.Id, 
@@ -258,7 +272,8 @@ namespace MngKeeper.Application.Features.Auth.Commands.GetToken
                     department,
                     gender,
                     phoneNumber,
-                    photoUrl);
+                    photoUrl,
+                    mngPersonId);
 
                 // Parse token to get expiration info (optional)
                 var tokenParts = enhancedToken.Split('.');
@@ -328,29 +343,5 @@ namespace MngKeeper.Application.Features.Auth.Commands.GetToken
             }
         }
 
-        private (string realmName, string actualUsername) ParseUsername(string username)
-        {
-            // Check if username contains @ (multitenant format)
-            var parts = username.Split('@');
-            
-            if (parts.Length == 2)
-            {
-                // Multitenant format: realm@username
-                var realmName = parts[0];
-                var actualUsername = parts[1];
-                
-                _logger.LogInformation("Parsed multitenant username: realm='{RealmName}', username='{ActualUsername}'", realmName, actualUsername);
-                return (realmName, actualUsername);
-            }
-            else
-            {
-                // Single tenant format: just username (use default realm)
-                var defaultRealm = "default"; // TODO: Get from configuration
-                var actualUsername = username;
-                
-                _logger.LogInformation("Parsed single tenant username: realm='{DefaultRealm}', username='{ActualUsername}'", defaultRealm, actualUsername);
-                return (defaultRealm, actualUsername);
-            }
-        }
     }
 }

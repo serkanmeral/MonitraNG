@@ -18,6 +18,7 @@ Detaylı sürüm geçmişi için [Changelog](CHANGELOG.md) dosyasına bakınız.
 
 ## Yapılacaklar
 
+- **Chat Room (F2)** — Gerekirse `ocelot.json` içinde DG/Hub/Notifier upstream veya rate limit satırları; çoğu senaryoda değişiklik gerekmez. **Docker:** [Chat Room backend adımları](../../chat_room/BACKEND_DOCKER_STEPS.md).
 - **Request/Response transformation** — Header/body dönüşümleri.
 - **API versioning** — Route/header ile sürüm yönetimi.
 - **Circuit breaker** — Backend hata/gecikme için devre kesici.

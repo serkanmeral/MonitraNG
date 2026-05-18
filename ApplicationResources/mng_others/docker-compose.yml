@@ -1,0 +1,98 @@
+# mng_others — Opsiyonel servisler: MngSim, GIS (PostGIS + GeoServer)
+# Ön koşul: mng_common ayağa kalkmış olmalı (mng_common_mng_network için)
+#
+# Başlatma: cd ApplicationResources/mng_others && docker compose up -d
+# Sadece GIS: docker compose up -d postgis geoserver pgadmin
+# Sadece MngSim: docker compose up -d mngsim
+#
+services:
+  mngsim:
+    build:
+      context: ../../MngSim
+      dockerfile: Dockerfile
+    image: mngsim:1.0.0
+    container_name: mngsim
+    ports:
+      - "6061:6061"
+      # SNMP simülatör UDP portları (host'tan MngEngine erişimi için)
+      - "11161:11161/udp"
+      - "11162:11162/udp"
+      - "11163:11163/udp"
+      - "11164:11164/udp"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://0.0.0.0:6061
+      - Kestrel__Endpoints__Http__Url=http://0.0.0.0:6061
+      - MngSim__ConfigFilePath=/data/mngsim-config.json
+      # Tren simülasyonu: GeoServer (harita tile) ve MQTT (event) — mng_common ağında geoserver/mosquitto
+      - TrainSim__GeoServerBaseUrl=http://geoserver:8080
+      - TrainSim__MqttBrokerUrl=tcp://mosquitto:1883
+      - TrainSim__MqttUserName=monitrang
+      - TrainSim__MqttPassword=!2345qawsedrf
+    volumes:
+      - mngsim_data:/data
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6061/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # GIS — Railway Platform (PostGIS + GeoServer)
+  # MngReactor, Static Editor API bu servislere mng_common_mng_network üzerinden erişir
+  postgis:
+    image: postgis/postgis:15-3.4
+    container_name: postgis
+    environment:
+      POSTGRES_DB: gis
+      POSTGRES_USER: gisuser
+      POSTGRES_PASSWORD: gispass
+    ports:
+      - "5433:5432"   # Host 5433 (yerel PostgreSQL 5432 kullandığında çakışma önlenir)
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+
+  geoserver:
+    image: docker.osgeo.org/geoserver:2.28.0
+    container_name: geoserver
+    ports:
+      - "8082:8080"  # Host 8082 (Keycloak genelde 8080 kullanır)
+    environment:
+      GEOSERVER_ADMIN_PASSWORD: admin
+    volumes:
+      - geoserver_data:/opt/geoserver_data
+    depends_on:
+      - postgis
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+
+  # pgAdmin — Tek kurulum: PostGIS (postgis) + Keycloak DB (postgres) aynı ağda; başka compose'daki pgAdmin kapatılabilir
+  pgadmin:
+    image: dpage/pgadmin4:9
+    container_name: pgadmin_gis
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5051:80"
+    depends_on:
+      - postgis
+    networks:
+      - mng_common_mng_network   # postgis + mng_common'daki postgres (Keycloak) bu ağda
+    restart: unless-stopped
+
+volumes:
+  mngsim_data:
+  postgis_data:
+  geoserver_data:
+
+networks:
+  mng_common_mng_network:
+    external: true

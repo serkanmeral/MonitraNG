@@ -47,6 +47,9 @@ namespace MngKeeper.Infrastructure.Services
                 
                 if (payloadJson.TryGetProperty("domain_realm", out var domainRealmElement))
                     claims.DomainRealm = domainRealmElement.GetString();
+
+                if (payloadJson.TryGetProperty("mng_person_id", out var mngPersonIdElement))
+                    claims.MngPersonId = mngPersonIdElement.GetString();
                 
                 // Check for isAdmin in both camelCase and snake_case
                 if (payloadJson.TryGetProperty("isAdmin", out var isAdminElementCamel))

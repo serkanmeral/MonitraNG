@@ -129,12 +129,16 @@ namespace MngKeeper.Application.Features.Auth.Commands.RefreshToken
                 int? gender = null;
                 string? phoneNumber = null;
                 string? photoUrl = null;
-                
+                string? mngPersonId = null;
+
                 if (newTokenClaims != null && !string.IsNullOrEmpty(newTokenClaims.Username))
                 {
                     var user = await _userRepository.GetByUsernameAsync(newTokenClaims.Username, domain.Id);
                     if (user != null)
                     {
+                        if (!string.IsNullOrWhiteSpace(user.Id))
+                            mngPersonId = user.Id.Trim();
+
                         // Get user groups from MongoDB
                         userGroups = user.Groups ?? new List<string>();
                         _logger.LogInformation("User groups retrieved from MongoDB for refresh: {UserGroups}", string.Join(", ", userGroups));
@@ -181,7 +185,8 @@ namespace MngKeeper.Application.Features.Auth.Commands.RefreshToken
                     department,
                     gender,
                     phoneNumber,
-                    photoUrl
+                    photoUrl,
+                    mngPersonId
                 );
 
                 var expiresAt = DateTime.UtcNow.AddSeconds(keycloakTokenResponse.ExpiresIn);

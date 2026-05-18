@@ -22,7 +22,8 @@ public static class RoutingKeyHelper
             RoutingKeyPatterns.GetDomainPattern(domainName)
         };
 
-        // Add domainId-based pattern if available (for MngKeeper events)
+        // Add domainId-based pattern if available (for MngKeeper + MngDataGateway unified events)
+        // Chat Room (cht_*): EventPublisher uses "{domainId}.{EventType}" on mngdatagateway.events — this pattern receives them.
         if (!string.IsNullOrEmpty(domainId))
         {
             routingKeys.Add(RoutingKeyPatterns.GetDomainPatternById(domainId));
@@ -31,6 +32,9 @@ public static class RoutingKeyHelper
         // Add domainName-based pattern for DataGateway events
         // DataGateway uses domainName as domainId in routing keys (e.g., "meral.datacreatedevent")
         routingKeys.Add($"{domainName}.*");
+
+        // Monitoring ingest notify: Reactor publishes monitoring.data.updated.{domainName} (throttled)
+        routingKeys.Add($"monitoring.data.updated.{domainName}");
 
         return routingKeys;
     }

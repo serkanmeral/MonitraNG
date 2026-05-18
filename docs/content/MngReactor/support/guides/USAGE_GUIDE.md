@@ -17,10 +17,18 @@ MngReactor servisinin kullanım rehberi ve örnek senaryolar.
 ## Önkoşullar
 
 - MngKeeper servisi çalışıyor olmalı
-- MongoDB bağlantısı yapılandırılmış olmalı
-- JWT token alınmış olmalı
+- MngDataGateway servisi çalışıyor olmalı
+- JWT token alınmış olmalı (MngKeeper üzerinden)
 
 ## Temel Kullanım
+
+### Health Kontrolü (Auth gerekmez)
+
+```http
+GET /api/v1/health
+GET /api/v1/health/live
+GET /api/v1/health/ready
+```
 
 ### 1. Asset Tree Alma
 
@@ -56,12 +64,18 @@ Content-Type: application/json
 }
 ```
 
+## Testler
+
+- **Entegrasyon:** `dotnet test` (MngReactor.Tests)
+- **Docker:** `dotnet test --filter "Category=Docker"` (container localhost:5003'te çalışıyor olmalı)
+
 ## İlgili Linkler
 
 - [Architecture Guide](../architecture/ARCHITECTURE_GUIDE.md)
 - [Technical Specs](../../main/TECHNICAL_SPECS.md)
+- [Configuration](./CONFIGURATION.md)
 - [Gateway Integration](./GATEWAY_INTEGRATION.md)
 
 ---
 
-**Son Güncelleme:** 16 Ocak 2026
+**Son Güncelleme:** Ocak 2026

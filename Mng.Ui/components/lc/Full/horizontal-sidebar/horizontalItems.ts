@@ -122,9 +122,9 @@ const horizontalItems: menu[] = [
         to: "/apps/contacts",
       },
       {
-        title: "Chats",
+        title: "Sohbet odası",
         icon: CircleDotIcon,
-        to: "/apps/chats",
+        to: "/apps/chat-room",
       },
       {
         title: "Blog",
@@ -268,6 +268,11 @@ const horizontalItems: menu[] = [
         title: "Kanban",
         icon: CircleDotIcon,
         to: "/apps/kanban",
+      },
+      {
+        title: "Görevler",
+        icon: CircleDotIcon,
+        to: "/apps/task-manager/projects",
       },
     ],
   },

@@ -250,9 +250,10 @@ const sidebarItem: menu[] = [
     ],
   },
   {
-    title: "Chats",
+    title: "Sohbet odası",
+    pageCode: "apps-chat-room",
     icon: Message2Icon,
-    to: "/apps/chats",
+    to: "/apps/chat-room",
   },
   {
     title: "User Profile",
@@ -333,7 +334,12 @@ const sidebarItem: menu[] = [
     icon: LayoutKanbanIcon,
     to: "/apps/kanban",
   },
-
+  {
+    title: "Görevler",
+    pageCode: "taskManager.menuTitle",
+    icon: LayoutKanbanIcon,
+    to: "/apps/task-manager/projects",
+  },
   { header: "Pages" },
   {
     title: 'Pricing',
