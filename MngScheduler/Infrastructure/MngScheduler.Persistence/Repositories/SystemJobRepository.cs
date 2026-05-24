@@ -93,26 +93,42 @@ public class SystemJobRepository : ISystemJobRepository
             var filter = Builders<ScheduledJob>.Filter.And(jobTypeFilter, isActiveFilter);
 
             var jobs = await _collection.Find(filter).ToListAsync();
-            
+
+            var allInCollection = await _collection.Find(FilterDefinition<ScheduledJob>.Empty).ToListAsync();
+            if (allInCollection.Count > jobs.Count)
+            {
+                foreach (var doc in allInCollection)
+                {
+                    if (jobs.Any(j => j.JobId == doc.JobId))
+                        continue;
+                    _logger.LogInformation(
+                        "[Scheduler] System job NOT scheduled: jobId={JobId} isActive={IsActive} expireDate={ExpireDate} startDate={StartDate}",
+                        doc.JobId, doc.IsActive, doc.ExpireDate, doc.StartDate);
+                }
+            }
+
             // Runtime checks: only return jobs that should execute (StartDate, ExpireDate, MaxExecutionCount).
-            // We do NOT persist IsActive=false here: if a job is expired or at limit, we skip it this round only.
-            // Thus, when the user sets isActive=true and fixes expireDate/maxExecutionCount, it stays true.
             var validJobs = new List<ScheduledJob>();
             foreach (var job in jobs)
             {
                 if (job.ShouldExecute(now))
                 {
                     validJobs.Add(job);
+                    _logger.LogInformation(
+                        "[Scheduler] System job scheduled in Quartz: jobId={JobId} cron={Cron}",
+                        job.JobId, job.CronExpression);
                 }
                 else
                 {
-                    _logger.LogDebug("Job {JobId} skipped this sync (expired or execution limit reached); isActive not persisted",
-                        job.JobId);
+                    _logger.LogInformation(
+                        "[Scheduler] System job skipped (isActive true but ShouldExecute=false): jobId={JobId} expireDate={ExpireDate} startDate={StartDate} maxExec={MaxExec} totalExec={TotalExec}",
+                        job.JobId, job.ExpireDate, job.StartDate, job.MaxExecutionCount, job.TotalExecutionCount);
                 }
             }
 
-            _logger.LogDebug("Retrieved {Count} active system jobs (filtered from {TotalCount})", 
-                validJobs.Count, jobs.Count);
+            _logger.LogInformation(
+                "[Scheduler] System jobs: collection={TotalInCollection} isActiveFilter={IsActiveCount} quartzReady={QuartzCount}",
+                allInCollection.Count, jobs.Count, validJobs.Count);
             return validJobs;
         }
         catch (Exception ex)

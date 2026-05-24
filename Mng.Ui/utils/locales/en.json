@@ -364,8 +364,17 @@
       "warning": "Warning",
       "warningMessage": "Manager or admin permission is required to access this page. Please contact an administrator to perform group management operations."
     },
+    "source": {
+      "local": "Local",
+      "directory": "Corporate"
+    },
+    "directory": {
+      "editHint": "This group comes from the corporate directory; name, description, and status cannot be changed here.",
+      "membersManagedExternally": "Group membership is managed via Active Directory / Keycloak sync; you cannot add or remove members here."
+    },
     "table": {
       "name": "Group Name",
+      "source": "Source",
       "memberCount": "Member Count",
       "createdAt": "Created At",
       "actions": "Actions",
@@ -543,6 +552,10 @@
       "departmentMaxLength": "Department can be at most 100 characters",
       "phoneNumberMaxLength": "Phone number can be at most 20 characters"
     },
+    "directory": {
+      "fieldReadOnly": "This field comes from the corporate directory and is read-only.",
+      "profileHint": "Corporate account: identity fields come from the directory. You can update job title, department, and phone in MonitraNG."
+    },
     "messages": {
       "saveSuccess": "Profile updated successfully",
       "saveError": "An error occurred while updating the profile",
@@ -596,6 +609,7 @@
       "saveError": "An error occurred while saving preferences"
     },
     "security": {
+      "directoryPasswordManaged": "Your corporate (Active Directory) account password is managed by the directory. Contact your IT administrator to change your password.",
       "changePassword": {
         "title": "Change Password",
         "description": "It is recommended to change your password regularly for the security of your account.",
@@ -677,8 +691,18 @@
       "home": "Dashboard",
       "users": "User Management"
     },
+    "source": {
+      "local": "Local",
+      "directory": "Corporate"
+    },
+    "directory": {
+      "fieldReadOnly": "This field comes from the corporate directory and cannot be changed here.",
+      "groupsManagedExternally": "Groups are managed via Active Directory / Keycloak sync.",
+      "editHint": "Identity and group data come from the directory. You can update MonitraNG profile fields below."
+    },
     "table": {
       "username": "Username",
+      "source": "Source",
       "email": "Email",
       "fullName": "Full Name",
       "status": "Status",
@@ -799,6 +823,10 @@
     },
     "edit": {
       "title": "Edit User",
+      "sections": {
+        "directoryIdentity": "Corporate identity (read-only)",
+        "appProfile": "MonitraNG profile"
+      },
       "breadcrumbs": {
         "home": "Dashboard",
         "users": "User Management",
@@ -821,7 +849,8 @@
         "photoUrlNote": "Photo URL cannot be changed",
         "isActive": "Active",
         "groups": "Groups",
-        "groupsSelect": "Select Groups"
+        "groupsSelect": "Select Groups",
+        "gender": "Gender"
       },
       "validation": {
         "emailRequired": "Email is required",
@@ -901,6 +930,16 @@
       "domainInfo": "Domain Information",
       "domainSettings": "Domain Settings",
       "licenseInfo": "License Information"
+    },
+    "directorySync": {
+      "title": "LDAP / Directory Sync",
+      "description": "Starts a full Active Directory → Keycloak → MonitraNG sync (users and groups). Returns 409 if another sync is already running.",
+      "run": "Run directory sync",
+      "success": "Directory sync completed.",
+      "failed": "Directory sync failed.",
+      "inProgress": "Another sync is already in progress. Try again in a few minutes.",
+      "resultUsers": "Users",
+      "resultGroups": "Groups"
     },
     "fields": {
       "name": "Domain Name",
@@ -1471,46 +1510,32 @@
     }
   },
   "welcome": {
-    "title": "Welcome",
-    "subtitle": "You have successfully logged into MonitraNG",
+    "title": "Home",
+    "subtitle": "Shortcuts to MonitraNG modules. Cards are added here as each module is completed.",
     "greeting": {
-      "morning": "Good Morning",
-      "afternoon": "Good Afternoon",
-      "evening": "Good Evening",
-      "night": "Good Night"
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening",
+      "night": "Good night"
     },
-    "hero": {
-      "welcomeMessage": "Welcome back",
-      "lastLogin": "Last login"
+    "banner": {
+      "guest": "User",
+      "domain": "Domain",
+      "groups": "Groups",
+      "roleAdmin": "System administrator",
+      "roleManager": "Manager",
+      "roleUser": "User"
     },
-    "quickStats": {
-      "title": "Quick Statistics",
-      "totalDataPoints": "Total Data Points",
-      "activeDevices": "Active Devices",
-      "alertsToday": "Alerts Today",
-      "systemHealth": "System Health",
-      "totalUsers": "Total Users",
-      "lastActivity": "Last Activity"
-    },
-    "quickAccess": {
-      "title": "Quick Access",
-      "dashboard": "Dashboard",
-      "dataManagement": "Data Management",
-      "reports": "Reports",
-      "settings": "Settings",
-      "profile": "Profile",
-      "users": "Users",
-      "datasets": "Datasets"
-    },
-    "recentActivity": {
-      "title": "Recent Activity",
-      "noActivity": "No recent activity",
-      "viewAll": "View All"
-    },
-    "actions": {
-      "goToDashboard": "Go to Dashboard",
-      "exploreFeatures": "Explore Features",
-      "backToHome": "Back to Home"
+    "modules": {
+      "title": "Modules",
+      "hint": "Shortcut cards for ready modules",
+      "comingSoon": "Other modules (monitoring, datasets, reports, etc.) will appear here as cards when they are ready.",
+      "taskManager": {
+        "title": "Task Manager",
+        "description": "Work with projects, boards, and issues; manage statuses, issue types, and priorities from shared pools.",
+        "linkWorkspace": "Workspace",
+        "linkHub": "Task hub"
+      }
     }
   },
   "automated-forms": {

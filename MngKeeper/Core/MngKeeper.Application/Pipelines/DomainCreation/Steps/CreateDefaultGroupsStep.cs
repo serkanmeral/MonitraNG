@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Domain.Entities;
+using MngKeeper.Domain.Enums;
 
 namespace MngKeeper.Application.Pipelines.DomainCreation.Steps;
 
@@ -63,6 +64,7 @@ public class CreateDefaultGroupsStep : IPipelineStep<DomainCreationContext>
                     IsActive = true,
                     DomainId = context.Domain.Id,
                     KeycloakGroupId = keycloakGroup.Id ?? string.Empty,
+                    ProvisioningSource = UserProvisioningSource.Local,
                     CreatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser,
                     CreatedAt = DateTime.UtcNow
                 };

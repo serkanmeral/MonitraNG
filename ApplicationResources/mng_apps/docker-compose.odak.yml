@@ -1,0 +1,92 @@
+# Odak — Nginx yok; host portları açık, Ollama kapalı (RAM)
+# Ön koşul: mng_common (docker-compose.odak.yml) ayakta, mng_common_mng_network mevcut
+#
+#   docker compose -f docker-compose.production.yml -f docker-compose.odak.yml --env-file .env up -d --build
+
+services:
+  mnggateway:
+    ports:
+      - "5040:5000"
+    environment:
+      - MngGatewaySettings__Server__Scheme=http
+      - MngGatewaySettings__OpenApiServerPath=${OPENAPI_SERVER_PATH:-http://192.168.20.20:5040}
+      - MngGatewaySettings__Jwt__Authority=http://keycloak:8080/keycloak/realms/monitra
+      - MngGatewaySettings__Jwt__RequireHttpsMetadata=false
+      - MngGatewaySettings__Cors__AllowedOrigins__0=${CORS_ALLOWED_ORIGIN_1:-http://192.168.20.20:3000}
+
+  mngkeeper:
+    ports:
+      - "5001:5001"
+    environment:
+      # Scalar :5001 üzerinde Try it out → doğrudan Keeper (5040 gateway kökü 404 verir)
+      - MngKeeperSettings__OpenApiServerPath=http://192.168.20.20:5001
+
+  mngdatagateway:
+    ports:
+      - "5010:5010"
+
+  # MngReactor kaynak kodu repoda yok — Gateway depends_on için stub (API çağrıları çalışmaz)
+  mngreactor:
+    build: !reset null
+    image: alpine:3.19
+    container_name: mngreactor
+    command: ["sleep", "infinity"]
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+
+  mnghub:
+    ports:
+      - "5020:5020"
+
+  # Ollama/MngLLM kapalı; mngui nginx "mngllm" upstream + depends_on için stub
+  ollama:
+    build: !reset null
+    image: alpine:3.19
+    container_name: ollama
+    command: ["sleep", "infinity"]
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+
+  mngllm:
+    build: !reset null
+    image: alpine:3.19
+    container_name: mngllm
+    command: ["sleep", "infinity"]
+    depends_on:
+      - ollama
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+
+  mngscheduler:
+    ports:
+      - "5090:5090"
+
+  mngworkflow:
+    ports:
+      - "5085:5085"
+
+  mngadmin:
+    ports:
+      - "5080:5080"
+
+  mngnotifier:
+    ports:
+      - "5070:5070"
+
+  mngui:
+    ports:
+      - "3000:80"
+    build:
+      context: ../../Mng.Ui
+      dockerfile: Dockerfile
+      args:
+        GATEWAY_URL: ${GATEWAY_URL:-http://192.168.20.20:5040}
+        HUB_URL: ${HUB_URL:-http://192.168.20.20:5020}
+
+  mngdomainui:
+    ports:
+      - "3001:3000"
+

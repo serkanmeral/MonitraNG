@@ -5,8 +5,9 @@ import { Form, Field } from 'vee-validate';
 import * as yup from 'yup';
 import { useLocaleStore } from '@/stores/locale';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
-import { useUserStore } from '@/stores/apps/user';
+import { useUserStore, Gender } from '@/stores/apps/user';
 import { fetchFromMngKeeper } from '@/services/apiService';
+import { useUserFieldPolicies } from '@/composables/useUserFieldPolicies';
 
 // Get i18n instance for legacy mode
 const nuxtApp = useNuxtApp();
@@ -65,14 +66,39 @@ const formData = ref({
   department: null as string | null,
   phoneNumber: null as string | null,
   photoUrl: null as string | null,
+  gender: 'NotSpecified' as Gender | 'NotSpecified' | 'Male' | 'Female',
 });
 
-// Validation schema (computed to react to locale changes)
-const schema = computed(() => yup.object({
-  email: yup.string().email(t('users.edit.validation.emailInvalid')).required(t('users.edit.validation.emailRequired')),
-  firstName: yup.string().required(t('users.edit.validation.firstNameRequired')),
-  lastName: yup.string().required(t('users.edit.validation.lastNameRequired')),
-}));
+const viewingUserRef = computed(() => userStore.viewingUser);
+const {
+  isDirectory,
+  canManageGroups,
+  canDeactivate,
+  fieldEditable,
+  sourceLabelKey,
+  sourceChipColor,
+} = useUserFieldPolicies(viewingUserRef);
+
+const genderOptions = computed(() => [
+  { value: 'NotSpecified', title: t('users.details.gender.notSpecified') },
+  { value: 'Male', title: t('users.details.gender.male') },
+  { value: 'Female', title: t('users.details.gender.female') },
+]);
+
+// Validation — yalnızca düzenlenebilir alanlar için zorunluluk
+const schema = computed(() =>
+  yup.object({
+    email: fieldEditable('email')
+      ? yup.string().email(t('users.edit.validation.emailInvalid')).required(t('users.edit.validation.emailRequired'))
+      : yup.string().nullable(),
+    firstName: fieldEditable('firstName')
+      ? yup.string().required(t('users.edit.validation.firstNameRequired'))
+      : yup.string().nullable(),
+    lastName: fieldEditable('lastName')
+      ? yup.string().required(t('users.edit.validation.lastNameRequired'))
+      : yup.string().nullable(),
+  })
+);
 
 // Load user data
 const loadUser = async () => {
@@ -82,6 +108,14 @@ const loadUser = async () => {
     
     if (userStore.viewingUser) {
       const user = userStore.viewingUser;
+      let genderValue: Gender | 'NotSpecified' | 'Male' | 'Female' = 'NotSpecified';
+      if (user.gender != null) {
+        if (typeof user.gender === 'number') {
+          genderValue = user.gender === 1 ? 'Male' : user.gender === 2 ? 'Female' : 'NotSpecified';
+        } else {
+          genderValue = user.gender as Gender;
+        }
+      }
       formData.value = {
         email: user.email || '',
         firstName: user.firstName || '',
@@ -92,6 +126,7 @@ const loadUser = async () => {
         department: user.department || null,
         phoneNumber: user.phoneNumber || null,
         photoUrl: user.photoUrl || null,
+        gender: genderValue,
       };
       // Force form re-render to pick up initial values
       formKey.value++;
@@ -168,33 +203,30 @@ const onSubmit = async (values: any) => {
       !selectedGroups.every((g: string) => originalGroups.includes(g));
     
     const userData: any = {
-      username: username, // Required by backend
-      email: formData.value.email,
-      firstName: formData.value.firstName,
-      lastName: formData.value.lastName,
-      isActive: formData.value.isActive,
+      username,
     };
-    
-    // Only include groups if they were actually changed
-    // If groups weren't changed, don't send them - backend will preserve existing groups
-    if (groupsChanged) {
+
+    if (fieldEditable('email')) userData.email = formData.value.email;
+    else userData.email = currentUser.email || '';
+
+    if (fieldEditable('firstName')) userData.firstName = formData.value.firstName;
+    else userData.firstName = currentUser.firstName || '';
+
+    if (fieldEditable('lastName')) userData.lastName = formData.value.lastName;
+    else userData.lastName = currentUser.lastName || '';
+
+    if (fieldEditable('isActive')) userData.isActive = formData.value.isActive;
+    else userData.isActive = currentUser.isActive;
+
+    if (canManageGroups.value && groupsChanged) {
       userData.groups = selectedGroups;
     }
-    
-    // Include nullable fields from form data
-    // These fields are now in the form, so we always send them (even if null)
-    if (formData.value.title !== undefined) {
-      userData.title = formData.value.title || null;
-    }
-    if (formData.value.department !== undefined) {
-      userData.department = formData.value.department || null;
-    }
-    if (formData.value.phoneNumber !== undefined) {
-      userData.phoneNumber = formData.value.phoneNumber || null;
-    }
-    if (formData.value.photoUrl !== undefined) {
-      userData.photoUrl = formData.value.photoUrl || null;
-    }
+
+    if (fieldEditable('title')) userData.title = formData.value.title || null;
+    if (fieldEditable('department')) userData.department = formData.value.department || null;
+    if (fieldEditable('phoneNumber')) userData.phoneNumber = formData.value.phoneNumber || null;
+    if (fieldEditable('photoUrl')) userData.photoUrl = formData.value.photoUrl || null;
+    if (fieldEditable('gender')) userData.gender = formData.value.gender;
     
     await userStore.updateUser(userId, userData);
     
@@ -214,7 +246,27 @@ const onSubmit = async (values: any) => {
   
   <v-card elevation="10" v-if="!loading || userStore.viewingUser">
     <v-card-item>
-      <h5 class="text-h5 mb-6 font-weight-semibold">{{ t('users.edit.title') }}</h5>
+      <div class="d-flex align-center flex-wrap ga-3 mb-4">
+        <h5 class="text-h5 font-weight-semibold mb-0">{{ t('users.edit.title') }}</h5>
+        <v-chip
+          v-if="userStore.viewingUser"
+          size="small"
+          variant="tonal"
+          :color="sourceChipColor"
+        >
+          {{ t(sourceLabelKey) }}
+        </v-chip>
+      </div>
+
+      <v-alert
+        v-if="isDirectory"
+        type="info"
+        variant="tonal"
+        density="compact"
+        class="mb-4"
+      >
+        {{ t('users.directory.editHint') }}
+      </v-alert>
       
       <div v-if="loading && !userStore.viewingUser" class="text-center py-8">
         <v-progress-circular indeterminate color="primary" />
@@ -241,6 +293,12 @@ const onSubmit = async (values: any) => {
           </v-alert>
 
           <v-row>
+            <v-col v-if="isDirectory" cols="12">
+              <p class="text-subtitle-2 text-medium-emphasis mb-2">
+                {{ t('users.edit.sections.directoryIdentity') }}
+              </p>
+            </v-col>
+
             <!-- Username (Read-only) -->
             <v-col cols="12" md="6">
               <v-text-field
@@ -260,11 +318,13 @@ const onSubmit = async (values: any) => {
                 <v-text-field
                   v-bind="field"
                   v-model="formData.email"
-                  :label="t('users.edit.fields.email') + ' *'"
+                  :label="t('users.edit.fields.email') + (fieldEditable('email') ? ' *' : '')"
                   type="email"
                   variant="outlined"
                   :error-messages="errors"
-                  required
+                  :disabled="!fieldEditable('email')"
+                  :hint="!fieldEditable('email') ? t('users.directory.fieldReadOnly') : undefined"
+                  :required="fieldEditable('email')"
                 />
               </Field>
             </v-col>
@@ -275,10 +335,12 @@ const onSubmit = async (values: any) => {
                 <v-text-field
                   v-bind="field"
                   v-model="formData.firstName"
-                  :label="t('users.edit.fields.firstName') + ' *'"
+                  :label="t('users.edit.fields.firstName') + (fieldEditable('firstName') ? ' *' : '')"
                   variant="outlined"
                   :error-messages="errors"
-                  required
+                  :disabled="!fieldEditable('firstName')"
+                  :hint="!fieldEditable('firstName') ? t('users.directory.fieldReadOnly') : undefined"
+                  :required="fieldEditable('firstName')"
                 />
               </Field>
             </v-col>
@@ -289,12 +351,20 @@ const onSubmit = async (values: any) => {
                 <v-text-field
                   v-bind="field"
                   v-model="formData.lastName"
-                  :label="t('users.edit.fields.lastName') + ' *'"
+                  :label="t('users.edit.fields.lastName') + (fieldEditable('lastName') ? ' *' : '')"
                   variant="outlined"
                   :error-messages="errors"
-                  required
+                  :disabled="!fieldEditable('lastName')"
+                  :hint="!fieldEditable('lastName') ? t('users.directory.fieldReadOnly') : undefined"
+                  :required="fieldEditable('lastName')"
                 />
               </Field>
+            </v-col>
+
+            <v-col v-if="isDirectory" cols="12">
+              <p class="text-subtitle-2 text-medium-emphasis mb-2 mt-2">
+                {{ t('users.edit.sections.appProfile') }}
+              </p>
             </v-col>
 
             <!-- Title -->
@@ -304,6 +374,7 @@ const onSubmit = async (values: any) => {
                 :label="t('users.edit.fields.title')"
                 variant="outlined"
                 :placeholder="t('users.edit.fields.titlePlaceholder')"
+                :disabled="!fieldEditable('title')"
               />
             </v-col>
 
@@ -314,6 +385,7 @@ const onSubmit = async (values: any) => {
                 :label="t('users.edit.fields.department')"
                 variant="outlined"
                 :placeholder="t('users.edit.fields.departmentPlaceholder')"
+                :disabled="!fieldEditable('department')"
               />
             </v-col>
 
@@ -324,25 +396,38 @@ const onSubmit = async (values: any) => {
                 :label="t('users.edit.fields.phoneNumber')"
                 variant="outlined"
                 :placeholder="t('users.edit.fields.phonePlaceholder')"
+                :disabled="!fieldEditable('phoneNumber')"
               />
             </v-col>
 
-            <!-- Photo URL (Read-only) -->
+            <!-- Gender -->
+            <v-col v-if="fieldEditable('gender')" cols="12" md="6">
+              <v-select
+                v-model="formData.gender"
+                :label="t('users.edit.fields.gender')"
+                :items="genderOptions"
+                item-title="title"
+                item-value="value"
+                variant="outlined"
+              />
+            </v-col>
+
+            <!-- Photo URL -->
             <v-col cols="12" md="6">
               <v-text-field
                 v-model="formData.photoUrl"
                 :label="t('users.edit.fields.photoUrl')"
                 variant="outlined"
                 :placeholder="t('users.edit.fields.photoUrlPlaceholder')"
-                disabled
+                :disabled="!fieldEditable('photoUrl')"
               />
-              <div class="text-caption text-medium-emphasis mt-1">
+              <div v-if="!fieldEditable('photoUrl')" class="text-caption text-medium-emphasis mt-1">
                 {{ t('users.edit.fields.photoUrlNote') }}
               </div>
             </v-col>
 
             <!-- Is Active -->
-            <v-col cols="12" md="6">
+            <v-col v-if="canDeactivate" cols="12" md="6">
               <v-switch
                 v-model="formData.isActive"
                 :label="t('users.edit.fields.isActive')"
@@ -354,21 +439,45 @@ const onSubmit = async (values: any) => {
             <!-- Groups -->
             <v-col cols="12">
               <v-label class="mb-2">{{ t('users.edit.fields.groups') }}</v-label>
-              <v-select
-                v-model="formData.selectedGroups"
-                :items="groups"
-                item-title="name"
-                item-value="id"
-                :label="t('users.edit.fields.groupsSelect')"
-                variant="outlined"
-                multiple
-                chips
-                closable-chips
-              >
-                <template v-slot:item="{ props, item }">
-                  <v-list-item v-bind="props" :title="item.raw.name" />
-                </template>
-              </v-select>
+              <template v-if="canManageGroups">
+                <v-select
+                  v-model="formData.selectedGroups"
+                  :items="groups"
+                  item-title="name"
+                  item-value="id"
+                  :label="t('users.edit.fields.groupsSelect')"
+                  variant="outlined"
+                  multiple
+                  chips
+                  closable-chips
+                >
+                  <template v-slot:item="{ props, item }">
+                    <v-list-item v-bind="props" :title="item.raw.name" />
+                  </template>
+                </v-select>
+              </template>
+              <template v-else>
+                <p class="text-caption text-medium-emphasis mb-2">
+                  {{ t('users.directory.groupsManagedExternally') }}
+                </p>
+                <div class="d-flex ga-1 flex-wrap">
+                  <v-chip
+                    v-for="groupName in formData.selectedGroups"
+                    :key="groupName"
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  >
+                    {{ groupName }}
+                  </v-chip>
+                  <span
+                    v-if="!formData.selectedGroups?.length"
+                    class="text-caption text-medium-emphasis"
+                  >
+                    {{ t('users.groups.none') }}
+                  </span>
+                </div>
+              </template>
             </v-col>
           </v-row>
 

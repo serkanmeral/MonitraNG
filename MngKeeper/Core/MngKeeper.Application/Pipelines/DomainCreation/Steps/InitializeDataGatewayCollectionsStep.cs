@@ -73,15 +73,23 @@ public class InitializeDataGatewayCollectionsStep : IPipelineStep<DomainCreation
             );
             _logger.LogInformation("Created unique index on @users.username");
             
-            // email index (unique)
+            // email unique yalnızca dolu değerlerde (LDAP'ta e-postasız kullanıcılar olabilir)
             await usersCollection.Indexes.CreateOneAsync(
                 new CreateIndexModel<BsonDocument>(
                     Builders<BsonDocument>.IndexKeys.Ascending("email"),
-                    new CreateIndexOptions { Unique = true }
-                ),
+                    new CreateIndexOptions<BsonDocument>
+                    {
+                        Unique = true,
+                        Name = "email_1",
+                        PartialFilterExpression = Builders<BsonDocument>.Filter.And(
+                            Builders<BsonDocument>.Filter.Exists("email"),
+                            Builders<BsonDocument>.Filter.Type("email", BsonType.String),
+                            Builders<BsonDocument>.Filter.Ne("email", BsonNull.Value),
+                            Builders<BsonDocument>.Filter.Ne("email", ""))
+                    }),
                 cancellationToken: cancellationToken
             );
-            _logger.LogInformation("Created unique index on @users.email");
+            _logger.LogInformation("Created partial unique index on @users.email (non-empty only)");
             
             // domainId index
             await usersCollection.Indexes.CreateOneAsync(

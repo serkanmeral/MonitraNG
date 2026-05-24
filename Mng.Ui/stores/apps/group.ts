@@ -1,6 +1,10 @@
 import { defineStore } from 'pinia';
 import { fetchFromMngKeeper } from '@/services/apiService';
 import { useAuthStore } from '@/stores/auth';
+import {
+  mapGroupProvisioningFromApi,
+  type GroupCapabilities,
+} from '@/utils/groupFieldPolicy';
 
 function getAccessToken(): string | null {
   const authStore = useAuthStore();
@@ -18,6 +22,33 @@ export interface Group {
   updatedAt?: string | Date | null;
   createdBy?: string;
   updatedBy?: string | null;
+  provisioningSource?: string;
+  directorySyncedAt?: string | Date | null;
+  capabilities?: GroupCapabilities;
+}
+
+function mapApiGroupToGroup(group: Record<string, unknown>): Group {
+  const provisioning = mapGroupProvisioningFromApi(group);
+  const caps = provisioning.capabilities;
+  return {
+    id: String(group.groupId || group.GroupId || group.id || ''),
+    groupId: String(group.groupId || group.GroupId || group.id || ''),
+    name: String(group.name || group.Name || ''),
+    description: (group.description ?? group.Description ?? null) as string | null,
+    memberCount: Number(group.memberCount ?? group.MemberCount ?? 0),
+    isActive:
+      group.isActive !== undefined
+        ? Boolean(group.isActive)
+        : group.IsActive !== undefined
+          ? Boolean(group.IsActive)
+          : true,
+    createdAt: (group.createdAt || group.CreatedAt || new Date()) as string | Date,
+    updatedAt: (group.updatedAt || group.UpdatedAt || null) as string | Date | null,
+    createdBy: (group.createdBy || group.CreatedBy) as string | undefined,
+    updatedBy: (group.updatedBy || group.UpdatedBy || null) as string | null,
+    ...provisioning,
+    capabilities: caps,
+  };
 }
 
 interface GroupState {
@@ -90,18 +121,9 @@ export const useGroupStore = defineStore('group', {
         const totalPagesValue = response.totalPages ?? response.TotalPages ?? 1;
         
         if (groupsArray && Array.isArray(groupsArray)) {
-          this.groups = groupsArray.map((group: any) => ({
-            id: group.groupId || group.GroupId || group.id || '',
-            groupId: group.groupId || group.GroupId || group.id,
-            name: group.name || group.Name || '',
-            description: group.description || group.Description || null,
-            memberCount: group.memberCount ?? group.MemberCount ?? 0,
-            isActive: group.isActive !== undefined ? group.isActive : (group.IsActive !== undefined ? group.IsActive : true),
-            createdAt: group.createdAt || group.CreatedAt || new Date(),
-            updatedAt: group.updatedAt || group.UpdatedAt || null,
-            createdBy: group.createdBy || group.CreatedBy,
-            updatedBy: group.updatedBy || group.UpdatedBy || null,
-          }));
+          this.groups = groupsArray.map((group: Record<string, unknown>) =>
+            mapApiGroupToGroup(group)
+          );
           
           // totalCount'u her zaman güncelle (API'den gelen en güncel değer)
           this.totalCount = totalCountValue;
@@ -136,19 +158,7 @@ export const useGroupStore = defineStore('group', {
         const groupData = response.group || response.Group;
         
         if (groupData) {
-          const group: Group = {
-            id: groupData.groupId || groupData.GroupId || groupData.id || '',
-            groupId: groupData.groupId || groupData.GroupId || groupData.id,
-            name: groupData.name || groupData.Name || '',
-            description: groupData.description || groupData.Description || null,
-            memberCount: groupData.memberCount ?? groupData.MemberCount ?? 0,
-            isActive: groupData.isActive !== undefined ? groupData.isActive : (groupData.IsActive !== undefined ? groupData.IsActive : true),
-            createdAt: groupData.createdAt || groupData.CreatedAt || new Date(),
-            updatedAt: groupData.updatedAt || groupData.UpdatedAt || null,
-            createdBy: groupData.createdBy || groupData.CreatedBy,
-            updatedBy: groupData.updatedBy || groupData.UpdatedBy || null,
-          };
-          
+          const group = mapApiGroupToGroup(groupData as Record<string, unknown>);
           this.currentGroup = group;
           return group;
         } else {

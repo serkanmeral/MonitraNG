@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MngScheduler.Application.Configuration;
+using MngScheduler.Application.Constants;
 using MngScheduler.Application.Interfaces;
 using MngScheduler.Domain.Entities;
 using Quartz;
@@ -150,11 +151,19 @@ public class JobSyncService : BackgroundService, IJobSyncService
 
             // Get active jobs from repositories
             var systemJobs = await systemJobRepository.GetActiveJobsAsync();
-            var userJobs = await userJobRepository.GetAllActiveJobsAsync();
-            
+            IEnumerable<ScheduledJob> userJobs;
+            if (_settings.JobSync.SyncUserJobs)
+            {
+                userJobs = await userJobRepository.GetAllActiveJobsAsync();
+            }
+            else
+            {
+                userJobs = Enumerable.Empty<ScheduledJob>();
+            }
+
             var allJobs = systemJobs.Concat(userJobs).ToList();
-            _logger.LogDebug("Retrieved {SystemCount} system jobs and {UserCount} user jobs",
-                systemJobs.Count(), userJobs.Count());
+            _logger.LogDebug("Retrieved {SystemCount} system jobs and {UserCount} user jobs (SyncUserJobs={SyncUserJobs})",
+                systemJobs.Count(), userJobs.Count(), _settings.JobSync.SyncUserJobs);
 
             // Get currently scheduled jobs from Quartz
             var scheduledJobKeys = await scheduler.GetJobKeys(GroupMatcher<JobKey>.AnyGroup());
@@ -304,12 +313,21 @@ public class JobSyncService : BackgroundService, IJobSyncService
             ["DomainId"] = job.DomainId
         };
 
-        return JobBuilder.Create<Jobs.HttpJob>()
+        var builder = JobBuilder.Create(GetJobTypeForScheduledJob(job))
             .WithIdentity(job.JobId, GetJobGroup(job.JobType))
             .WithDescription(job.Description ?? job.Name)
             .UsingJobData(jobDataMap)
-            .StoreDurably()
-            .Build();
+            .StoreDurably();
+
+        return builder.Build();
+    }
+
+    private static Type GetJobTypeForScheduledJob(ScheduledJob job)
+    {
+        if (job.JobType == JobType.System && SystemJobIds.IsDirectorySyncOrchestration(job.JobId))
+            return typeof(Jobs.DirectorySyncOrchestrationJob);
+
+        return typeof(Jobs.HttpJob);
     }
 
     private ITrigger CreateTrigger(ScheduledJob job)
@@ -330,6 +348,10 @@ public class JobSyncService : BackgroundService, IJobSyncService
 
     private async Task<bool> ShouldUpdateJobAsync(IScheduler scheduler, IJobDetail existingJob, ScheduledJob job)
     {
+        var expectedJobType = GetJobTypeForScheduledJob(job);
+        if (existingJob.JobType != expectedJobType)
+            return true;
+
         // Get triggers for the job to check cron expression
         var triggers = await scheduler.GetTriggersOfJob(existingJob.Key);
         var cronTrigger = triggers.OfType<ICronTrigger>().FirstOrDefault();
@@ -338,6 +360,13 @@ public class JobSyncService : BackgroundService, IJobSyncService
         if (cronTrigger != null && cronTrigger.CronExpressionString != job.CronExpression)
         {
             return true;
+        }
+
+        if (SystemJobIds.IsDirectorySyncOrchestration(job.JobId))
+        {
+            var existingOrchestrationHeaders = existingJob.JobDataMap.GetString("Headers");
+            var currentOrchestrationHeaders = job.Headers != null ? System.Text.Json.JsonSerializer.Serialize(job.Headers) : null;
+            return existingOrchestrationHeaders != currentOrchestrationHeaders;
         }
 
         // Check if endpoint URL changed

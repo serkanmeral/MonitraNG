@@ -1,16 +1,15 @@
 import { defineStore } from 'pinia';
 import { fetchFromMngKeeper } from '@/services/apiService';
 import { useAuthStore } from '@/stores/auth';
+import {
+  mapProvisioningFieldsFromApi,
+  type UserCapabilities,
+  type UserFieldPolicyItem,
+} from '@/utils/userFieldPolicy';
 
 function getAccessToken(): string | null {
   const authStore = useAuthStore();
   return authStore.accessToken;
-}
-
-export enum Gender {
-  NotSpecified = 'NotSpecified',
-  Male = 'Male',
-  Female = 'Female'
 }
 
 export enum Gender {
@@ -41,6 +40,73 @@ export interface User {
   createdBy?: string;
   updatedAt?: string | Date | null;
   updatedBy?: string | null;
+  provisioningSource?: string;
+  directorySyncedAt?: string | Date | null;
+  fieldPolicies?: Record<string, UserFieldPolicyItem>;
+  capabilities?: UserCapabilities;
+}
+
+function preserveNullableField(apiValue: unknown, existingValue: unknown) {
+  if (apiValue !== undefined && apiValue !== null) return apiValue;
+  if (existingValue !== undefined && existingValue !== null) return existingValue;
+  return apiValue ?? null;
+}
+
+function mapApiUserToUser(user: Record<string, unknown>, existingUser?: User): User {
+  const primaryId = String(
+    user.id || user.Id || user.userId || user.UserId || ''
+  );
+  const userIdForLookup = String(
+    user.userId || user.UserId || user.id || user.Id || primaryId
+  );
+  const provisioning = mapProvisioningFieldsFromApi(user);
+
+  const titleFromApi = user.title !== undefined ? user.title : user.Title;
+  const departmentFromApi =
+    user.department !== undefined ? user.department : user.Department;
+  const phoneNumberFromApi =
+    user.phoneNumber !== undefined ? user.phoneNumber : user.PhoneNumber;
+  const photoUrlFromApi =
+    user.photoUrl !== undefined ? user.photoUrl : user.PhotoUrl;
+
+  return {
+    id: primaryId,
+    userId: String(user.userId || user.UserId || user.id || user.Id || primaryId),
+    domainId: String(user.domainId || user.DomainId || ''),
+    keycloakUserId: (user.keycloakUserId || user.KeycloakUserId) as string | undefined,
+    username: String(user.username || user.Username || ''),
+    email: String(user.email || user.Email || ''),
+    firstName: String(user.firstName || user.FirstName || ''),
+    lastName: String(user.lastName || user.LastName || ''),
+    title: preserveNullableField(titleFromApi, existingUser?.title) as string | null,
+    department: preserveNullableField(departmentFromApi, existingUser?.department) as
+      | string
+      | null,
+    phoneNumber: preserveNullableField(phoneNumberFromApi, existingUser?.phoneNumber) as
+      | string
+      | null,
+    photoUrl: preserveNullableField(photoUrlFromApi, existingUser?.photoUrl) as string | null,
+    gender:
+      user.gender !== undefined
+        ? (user.gender as Gender)
+        : user.Gender !== undefined
+          ? (user.Gender as Gender)
+          : existingUser?.gender ?? Gender.NotSpecified,
+    isActive:
+      user.isActive !== undefined
+        ? Boolean(user.isActive)
+        : user.IsActive !== undefined
+          ? Boolean(user.IsActive)
+          : true,
+    groups: (user.groups || user.Groups || existingUser?.groups || []) as string[],
+    roles: (user.roles || user.Roles || []) as string[],
+    createdAt: (user.createdAt || user.CreatedAt || new Date()) as string | Date,
+    lastLoginAt: (user.lastLoginAt || user.LastLoginAt || null) as string | Date | null,
+    createdBy: (user.createdBy || user.CreatedBy) as string | undefined,
+    updatedAt: (user.updatedAt || user.UpdatedAt || null) as string | Date | null,
+    updatedBy: (user.updatedBy || user.UpdatedBy || null) as string | null,
+    ...provisioning,
+  };
 }
 
 interface UserState {
@@ -179,58 +245,16 @@ export const useUserStore = defineStore('user', {
             if (u.userId && u.userId !== u.id) existingUsersMap.set(u.userId, u);
           });
           
-          this.users = usersArray.map((user: any) => {
-            // Try id first, then userId, then UserId (capital)
-            const primaryId = user.id || user.Id || user.userId || user.UserId || '';
-            const userIdForLookup = user.userId || user.UserId || user.id || user.Id || primaryId;
-            
-            // Find existing user in store to preserve nullable fields if API doesn't return them
-            const existingUser = existingUsersMap.get(primaryId) || existingUsersMap.get(userIdForLookup);
-            
-            // Helper to preserve existing value if API returns null/undefined
-            const preserveNullableField = (apiValue: any, existingValue: any) => {
-              // If API explicitly provided a non-null value, use it
-              if (apiValue !== undefined && apiValue !== null) {
-                return apiValue;
-              }
-              // If API returned null/undefined, preserve existing value if it exists
-              if (existingValue !== undefined && existingValue !== null) {
-                return existingValue;
-              }
-              // Otherwise use API value (null or undefined)
-              return apiValue ?? null;
-            };
-            
-            const titleFromApi = user.title !== undefined ? user.title : user.Title;
-            const departmentFromApi = user.department !== undefined ? user.department : user.Department;
-            const phoneNumberFromApi = user.phoneNumber !== undefined ? user.phoneNumber : user.PhoneNumber;
-            const photoUrlFromApi = user.photoUrl !== undefined ? user.photoUrl : user.PhotoUrl;
-            
-            const mapped = {
-              id: primaryId,
-              userId: user.userId || user.UserId || user.id || user.Id || primaryId,
-              domainId: user.domainId || user.DomainId || '',
-              keycloakUserId: user.keycloakUserId || user.KeycloakUserId,
-              username: user.username || user.Username || '',
-              email: user.email || user.Email || '',
-              firstName: user.firstName || user.FirstName || '',
-              lastName: user.lastName || user.LastName || '',
-              // Preserve existing values if API returns null/undefined for nullable fields
-              title: preserveNullableField(titleFromApi, existingUser?.title),
-              department: preserveNullableField(departmentFromApi, existingUser?.department),
-              phoneNumber: preserveNullableField(phoneNumberFromApi, existingUser?.phoneNumber),
-              photoUrl: preserveNullableField(photoUrlFromApi, existingUser?.photoUrl),
-              gender: user.gender !== undefined ? user.gender : (user.Gender !== undefined ? user.Gender : Gender.NotSpecified),
-              isActive: user.isActive !== undefined ? user.isActive : (user.IsActive !== undefined ? user.IsActive : true),
-              groups: user.groups || user.Groups || existingUser?.groups || [],
-              roles: user.roles || user.Roles || [],
-              createdAt: user.createdAt || user.CreatedAt || new Date(),
-              lastLoginAt: user.lastLoginAt || user.LastLoginAt || null,
-              createdBy: user.createdBy || user.CreatedBy,
-              updatedAt: user.updatedAt || user.UpdatedAt || null,
-              updatedBy: user.updatedBy || user.UpdatedBy || null,
-            };
-            return mapped;
+          this.users = usersArray.map((user: Record<string, unknown>) => {
+            const primaryId = String(
+              user.id || user.Id || user.userId || user.UserId || ''
+            );
+            const userIdForLookup = String(
+              user.userId || user.UserId || user.id || user.Id || primaryId
+            );
+            const existingUser =
+              existingUsersMap.get(primaryId) || existingUsersMap.get(userIdForLookup);
+            return mapApiUserToUser(user, existingUser);
           });
           
           this.totalCount = totalCountValue;
@@ -292,10 +316,9 @@ export const useUserStore = defineStore('user', {
             (u.keycloakUserId != null && u.keycloakUserId.toLowerCase() === ul)
         );
         
-        if (existingUser) {
-          const userCopy = { ...existingUser };
+        if (existingUser?.fieldPolicies) {
           this.$patch({
-            viewingUser: userCopy,
+            viewingUser: { ...existingUser },
             loading: false,
           });
           return this.viewingUser;
@@ -313,32 +336,8 @@ export const useUserStore = defineStore('user', {
         const user = response.User || response.user;
         
         if (user) {
-          // Try id first, then Id (capital), then userId, then UserId
-          const primaryId = user.id || user.Id || user.userId || user.UserId || '';
-          const mappedUser = {
-            id: primaryId,
-            userId: user.userId || user.UserId || user.id || user.Id || primaryId,
-            domainId: user.domainId || user.DomainId || '',
-            keycloakUserId: user.keycloakUserId || user.KeycloakUserId,
-            username: user.Username || user.username || '',
-            email: user.Email || user.email || '',
-            firstName: user.FirstName || user.firstName || '',
-            lastName: user.LastName || user.lastName || '',
-            title: user.title || user.Title || null,
-            department: user.department || user.Department || null,
-            gender: user.gender !== undefined ? user.gender : (user.Gender !== undefined ? user.Gender : Gender.NotSpecified),
-            phoneNumber: user.phoneNumber || user.PhoneNumber || null,
-            photoUrl: user.photoUrl || user.PhotoUrl || null,
-            isActive: user.IsActive !== undefined ? user.IsActive : (user.isActive !== undefined ? user.isActive : true),
-            groups: user.Groups || user.groups || [],
-            roles: user.Roles || user.roles || [],
-            createdAt: user.CreatedAt || user.createdAt || new Date(),
-            lastLoginAt: user.LastLoginAt || user.lastLoginAt || null,
-            createdBy: user.CreatedBy || user.createdBy,
-            updatedAt: user.UpdatedAt || user.updatedAt || null,
-            updatedBy: user.UpdatedBy || user.updatedBy || null,
-          };
-          this.mergeResolvedUserProfile(mappedUser as User);
+          const mappedUser = mapApiUserToUser(user as Record<string, unknown>);
+          this.mergeResolvedUserProfile(mappedUser);
           this.$patch({
             viewingUser: mappedUser,
             loading: false,

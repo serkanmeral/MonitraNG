@@ -23,6 +23,15 @@ namespace MngKeeper.Application.Interfaces
         Task<bool> UpdateUserAsync(string realmName, string userId, UpdateUserRequest request);
         Task<bool> ValidateUserPasswordAsync(string realmName, string username, string password);
         Task<Dictionary<string, string>?> GetUserAttributesAsync(string realmName, string username);
+
+        Task<KeycloakRealmUserSnapshot?> GetRealmUserByUsernameAsync(
+            string realmName,
+            string username,
+            CancellationToken cancellationToken = default);
+
+        Task<IReadOnlyList<KeycloakRealmUserSnapshot>> ListRealmUsersAsync(string realmName, CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<KeycloakRealmGroupSnapshot>> ListRealmGroupsAsync(string realmName, CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<string>> GetUserGroupNamesAsync(string realmName, string userId, CancellationToken cancellationToken = default);
     }
 
     public class RealmInfo

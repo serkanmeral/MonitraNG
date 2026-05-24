@@ -1,6 +1,9 @@
 using MediatR;
+using MngKeeper.Application.Common;
+using MngKeeper.Application.Directory;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Domain.Entities;
+using MngKeeper.Domain.Enums;
 using MngKeeper.Application.Common.Helpers;
 using MngKeeper.Application.Common.Exceptions;
 using Microsoft.Extensions.Logging;
@@ -109,13 +112,15 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
                     }
                 }
 
-                // Check if user already exists
-                if (await _userRepository.ExistsByEmailAsync(request.Email, claims.DomainId))
+                var normalizedEmail = UserEmailHelper.NormalizeForStorage(request.Email);
+
+                if (UserEmailHelper.HasValue(normalizedEmail)
+                    && await _userRepository.ExistsByEmailAsync(normalizedEmail, claims.DomainId))
                 {
                     return new CreateUserResponse
                     {
                         IsSuccess = false,
-                        ErrorMessage = $"User with email '{request.Email}' already exists."
+                        ErrorMessage = $"User with email '{normalizedEmail}' already exists."
                     };
                 }
 
@@ -149,6 +154,18 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
                     _logger.LogWarning("Default 'users' group not found in domain: {DomainId}. User will be created without default group.", claims.DomainId);
                 }
 
+                var directoryGroupIds = await DirectoryGroupMembershipValidator.GetDirectoryGroupIdsAsync(
+                    _groupRepository, claims.DomainId, finalGroupIds, cancellationToken);
+                if (directoryGroupIds.Count > 0)
+                {
+                    return new CreateUserResponse
+                    {
+                        IsSuccess = false,
+                        ErrorMessage =
+                            $"Kurumsal gruplara üyelik uygulama üzerinden atanamaz. ({DirectoryGroupGuard.MembershipErrorCode}: {string.Join(", ", directoryGroupIds)})"
+                    };
+                }
+
                 // Convert group IDs to group names for Keycloak CreateUserRequest and User entity
                 // (Keycloak CreateUserAsync uses group names for isAdmin check, not IDs)
                 // User.Groups field stores group names (consistent with AddUserToGroup/RemoveUserFromGroup behavior)
@@ -166,7 +183,7 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
                 var keycloakUserRequest = new CreateUserRequest
                 {
                     Username = request.Username,
-                    Email = request.Email,
+                    Email = normalizedEmail ?? string.Empty,
                     Password = request.Password,
                     FirstName = request.FirstName,
                     LastName = request.LastName,
@@ -187,7 +204,7 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
                     Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(), // Generate new MongoDB ObjectId
                     KeycloakUserId = keycloakUser.Id, // Store Keycloak UUID for later operations
                     Username = request.Username,
-                    Email = request.Email,
+                    Email = normalizedEmail,
                     FirstName = request.FirstName,
                     LastName = request.LastName,
                     Title = request.Title,
@@ -198,6 +215,7 @@ namespace MngKeeper.Application.Features.User.Commands.CreateUser
                     IsActive = request.IsActive,
                     Groups = groupNames, // Store group names (consistent with AddUserToGroup behavior)
                     DomainId = claims.DomainId,
+                    ProvisioningSource = UserProvisioningSource.Local,
                     CreatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser, // TODO: Get from current user context
                     CreatedAt = DateTime.UtcNow
                 };

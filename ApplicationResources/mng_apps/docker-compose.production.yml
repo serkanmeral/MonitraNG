@@ -141,6 +141,9 @@ services:
       
       # License encryption (required for Create Domain / trial license)
       - MngKeeperSettings__License__MasterKey=${MNGKEEPER_LICENSE_MASTER_KEY}
+
+      # LDAP directory sync (K2 full sync, K4 login sync)
+      - MngKeeperSettings__DirectorySync__LoginSyncEnabled=true
       
       # Notifier (şifre sıfırlama / e-posta bildirimleri – container içinden mngnotifier servisi)
       - MngKeeperSettings__Notifier__BaseUrl=${NOTIFIER_BASE_URL:-http://mngnotifier:5070}
@@ -393,6 +396,7 @@ services:
       - MngSchedulerSettings__RabbitMQ__Username=${RABBITMQ_USERNAME}
       - MngSchedulerSettings__RabbitMQ__Password=${RABBITMQ_PASSWORD}
       - MngSchedulerSettings__RabbitMQ__VirtualHost=${RABBITMQ_VIRTUALHOST:-/}
+      - MngSchedulerSettings__JobSync__SyncUserJobs=false
     networks:
       - mng_common_mng_network
     depends_on:

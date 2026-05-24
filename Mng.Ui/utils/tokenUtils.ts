@@ -1,6 +1,18 @@
 import { decodeJwt } from 'jose';
 
 /**
+ * Cookie Secure bayrağı: yalnızca HTTPS'te true.
+ * Production build + HTTP (ör. Odak :3000) iken NODE_ENV=production ile Secure cookie
+ * tarayıcıda kaydedilmez → "Access token bulunamadı" hatası.
+ */
+export function shouldUseSecureCookie(): boolean {
+  if (import.meta.client && typeof window !== 'undefined') {
+    return window.location.protocol === 'https:';
+  }
+  return false;
+}
+
+/**
  * JWT token'ın expire olup olmadığını kontrol eder
  * @param token JWT token string
  * @param bufferSeconds Expire olmadan kaç saniye önce expire sayılacağı (default: 60)

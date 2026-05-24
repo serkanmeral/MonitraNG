@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using MngKeeper.Application.Common;
 using MngKeeper.Application.Configuration;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Domain.Entities;
@@ -21,17 +22,23 @@ namespace MngKeeper.Infrastructure.Services
         private readonly ILogger<DataGatewaySyncService> _logger;
         private readonly IMongoClient _mongoClient;
         private readonly IDomainRepository _domainRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly IGroupRepository _groupRepository;
         private readonly MngKeeperSettings _settings;
 
         public DataGatewaySyncService(
             ILogger<DataGatewaySyncService> logger,
             IMongoClient mongoClient,
             IDomainRepository domainRepository,
+            IUserRepository userRepository,
+            IGroupRepository groupRepository,
             IOptions<MngKeeperSettings> settings)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _mongoClient = mongoClient ?? throw new ArgumentNullException(nameof(mongoClient));
             _domainRepository = domainRepository ?? throw new ArgumentNullException(nameof(domainRepository));
+            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _groupRepository = groupRepository ?? throw new ArgumentNullException(nameof(groupRepository));
             _settings = settings?.Value ?? throw new ArgumentNullException(nameof(settings));
         }
 
@@ -63,7 +70,7 @@ namespace MngKeeper.Infrastructure.Services
                     ["__dataId"] = user.Id, // MngKeeper User._id
                     ["keycloakUserId"] = user.KeycloakUserId,
                     ["username"] = user.Username,
-                    ["email"] = user.Email,
+                    ["email"] = UserEmailHelper.NormalizeForStorage(user.Email) is { } email ? email : BsonNull.Value,
                     ["firstName"] = user.FirstName,
                     ["lastName"] = user.LastName,
                     ["isActive"] = user.IsActive,
@@ -270,11 +277,8 @@ namespace MngKeeper.Infrastructure.Services
                     return result;
                 }
 
-                // Get users from domain database
-                var domainDatabase = _mongoClient.GetDatabase(domain.DatabaseName);
-                var usersCollection = domainDatabase.GetCollection<User>("@users");
-                var usersFilter = Builders<User>.Filter.Eq(x => x.DomainId, domainId);
-                var users = await usersCollection.Find(usersFilter).ToListAsync();
+                // @users koleksiyonu BsonDocument + __dataId kullanır; IUserRepository ile oku
+                var users = (await _userRepository.GetByDomainIdAsync(domainId)).ToList();
                 result.TotalCount = users.Count;
 
                 foreach (var user in users)
@@ -327,11 +331,7 @@ namespace MngKeeper.Infrastructure.Services
                     return result;
                 }
 
-                // Get groups from domain database
-                var domainDatabase = _mongoClient.GetDatabase(domain.DatabaseName);
-                var groupsCollection = domainDatabase.GetCollection<Group>("@groups");
-                var groupsFilter = Builders<Group>.Filter.Eq(x => x.DomainId, domainId);
-                var groups = await groupsCollection.Find(groupsFilter).ToListAsync();
+                var groups = (await _groupRepository.GetByDomainIdAsync(domainId)).ToList();
                 result.TotalCount = groups.Count;
 
                 foreach (var group in groups)

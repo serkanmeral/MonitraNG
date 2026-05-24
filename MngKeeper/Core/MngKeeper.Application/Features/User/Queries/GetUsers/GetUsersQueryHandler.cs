@@ -1,6 +1,7 @@
 using MediatR;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Application.Common.DTOs;
+using MngKeeper.Application.Common.Mappers;
 using MngKeeper.Application.Common.Exceptions;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
@@ -13,15 +14,18 @@ namespace MngKeeper.Application.Features.User.Queries.GetUsers
         private readonly IUserRepository _userRepository;
         private readonly ILogger<GetUsersQueryHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IUserFieldPolicyService _fieldPolicyService;
 
         public GetUsersQueryHandler(
             IUserRepository userRepository,
             ILogger<GetUsersQueryHandler> logger,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IUserFieldPolicyService fieldPolicyService)
         {
             _userRepository = userRepository;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
+            _fieldPolicyService = fieldPolicyService;
         }
 
         public async Task<GetUsersResponse> Handle(GetUsersQuery request, CancellationToken cancellationToken)
@@ -53,24 +57,9 @@ namespace MngKeeper.Application.Features.User.Queries.GetUsers
                     request.SortBy,
                     request.SortOrder);
 
-                var userDtos = queryResult.Items.Select(u => new UserDto
-                {
-                    UserId = u.Id,
-                    KeycloakUserId = string.IsNullOrWhiteSpace(u.KeycloakUserId) ? null : u.KeycloakUserId,
-                    Username = u.Username,
-                    Email = u.Email,
-                    FirstName = u.FirstName,
-                    LastName = u.LastName,
-                    Title = u.Title,
-                    Department = u.Department,
-                    Gender = u.Gender,
-                    PhoneNumber = u.PhoneNumber,
-                    PhotoUrl = u.PhotoUrl,
-                    IsActive = u.IsActive,
-                    Groups = u.Groups,
-                    CreatedAt = u.CreatedAt,
-                    UpdatedAt = u.UpdatedAt
-                }).ToList();
+                var userDtos = queryResult.Items
+                    .Select(u => UserDtoMapper.ToDto(u, _fieldPolicyService))
+                    .ToList();
 
                 return new GetUsersResponse
                 {

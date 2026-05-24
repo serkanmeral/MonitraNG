@@ -54,6 +54,9 @@ public static class ServiceRegistration
         // Add Index Manager
         services.AddScoped<MngKeeper.Application.Services.IndexManager>();
         services.AddScoped<ITokenCredentialResolver, TokenCredentialResolver>();
+        services.AddSingleton<IPrivilegeGroupResolver, PrivilegeGroupResolver>();
+        services.AddSingleton<IUserFieldPolicyService, UserFieldPolicyService>();
+        services.AddSingleton<IGroupFieldPolicyService, GroupFieldPolicyService>();
 
         // Add Pipeline Steps
         services.AddScoped<ValidateDomainStep>();

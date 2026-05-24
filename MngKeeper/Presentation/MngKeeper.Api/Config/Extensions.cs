@@ -100,6 +100,7 @@ public static class Extensions
             o.JsonSerializerOptions.ReferenceHandler
                 = ReferenceHandler.IgnoreCycles;
             o.JsonSerializerOptions.MaxDepth = 64;
+            o.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
         });
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 
@@ -163,6 +164,11 @@ public static class Extensions
         
         // DataGateway Sync Service
         services.AddScoped<MngKeeper.Application.Interfaces.IDataGatewaySyncService, MngKeeper.Infrastructure.Services.DataGatewaySyncService>();
+
+        // Directory sync (K2)
+        services.AddSingleton<MngKeeper.Application.Interfaces.IDirectorySyncCoordinator, MngKeeper.Infrastructure.Services.DirectorySyncCoordinator>();
+        services.AddScoped<MngKeeper.Application.Interfaces.IKeycloakToMongoSyncService, MngKeeper.Infrastructure.Services.KeycloakToMongoSyncService>();
+
         services.AddHttpContextAccessor();
     }
 
@@ -177,18 +183,18 @@ public static class Extensions
         {
             app.UseSwaggerConfiguration(env);
 
-            // Add Scalar API Reference (Modern UI) - Only in Development
-            if (env.IsDevelopment())
+            // Scalar + /swagger yönlendirme (Development veya EnableSwagger=true — Odak POC)
+            app.MapScalarApiReference(options =>
             {
-                app.MapScalarApiReference(options =>
-                {
-                    options
-                        .WithTitle("MngKeeper API")
-                        .WithTheme(ScalarTheme.Purple)
-                        .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
-                        .WithOpenApiRoutePattern("/api-docs/{documentName}/swagger.json");
-                });
-            }
+                options
+                    .WithTitle("MngKeeper API")
+                    .WithTheme(ScalarTheme.Purple)
+                    .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
+                    .WithOpenApiRoutePattern("/api-docs/{documentName}/swagger.json");
+            });
+
+            app.MapGet("/swagger", () => Results.Redirect("/api-docs"));
+            app.MapGet("/swagger/index.html", () => Results.Redirect("/api-docs"));
         }
 
         // 2. Global exception handler
@@ -197,8 +203,25 @@ public static class Extensions
         // 5. Serve static files for Swagger UI customization
         app.UseStaticFiles();
 
-        // 6. Serilog request logging
-        app.UseSerilogRequestLogging();
+        // 6. Serilog request logging (directory sync her zaman Information)
+        app.UseSerilogRequestLogging(options =>
+        {
+            options.GetLevel = (httpContext, elapsed, ex) =>
+            {
+                if (ex != null)
+                    return Serilog.Events.LogEventLevel.Error;
+                if (httpContext.Response.StatusCode >= 500)
+                    return Serilog.Events.LogEventLevel.Error;
+                if (httpContext.Request.Path.StartsWithSegments("/api/directory", StringComparison.OrdinalIgnoreCase))
+                    return Serilog.Events.LogEventLevel.Information;
+                return Serilog.Events.LogEventLevel.Information;
+            };
+            options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+            {
+                if (httpContext.Request.Path.StartsWithSegments("/api/directory", StringComparison.OrdinalIgnoreCase))
+                    diagnosticContext.Set("DirectorySyncEndpoint", true);
+            };
+        });
 
         // 7. Routing (must be before MapControllers)
         app.UseRouting();

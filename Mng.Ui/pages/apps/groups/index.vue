@@ -5,6 +5,12 @@ import { useLocaleStore } from '@/stores/locale';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useGroupStore } from '@/stores/apps/group';
 import { useAuthStore } from '@/stores/auth';
+import {
+  canDeleteGroup,
+  canEditGroup,
+  provisioningSourceChipColor,
+  provisioningSourceLabelKey,
+} from '@/utils/groupFieldPolicy';
 import { EditIcon, EyeIcon, TrashIcon, PlusIcon, UsersIcon, RefreshIcon, DownloadIcon } from 'vue-tabler-icons';
 
 // Get i18n instance for legacy mode
@@ -60,6 +66,7 @@ const tableOptions = ref({
 
 const headers = computed(() => [
   { title: t('groups.table.name'), key: 'name', sortable: true },
+  { title: t('groups.table.source'), key: 'provisioningSource', sortable: false },
   { title: t('groups.table.memberCount'), key: 'memberCount', sortable: true },
   { title: t('groups.table.createdAt'), key: 'createdAt', sortable: true },
   { title: t('groups.table.actions'), key: 'actions', sortable: false, align: 'end' },
@@ -407,6 +414,16 @@ const formatDate = (date: string | Date | null | undefined) => {
           </span>
         </template>
 
+        <template v-slot:item.provisioningSource="{ item }">
+          <v-chip
+            size="small"
+            variant="tonal"
+            :color="provisioningSourceChipColor(item.provisioningSource)"
+          >
+            {{ t(provisioningSourceLabelKey(item.provisioningSource)) }}
+          </v-chip>
+        </template>
+
         <!-- Member Count Column -->
         <template v-slot:item.memberCount="{ value }">
           <div class="d-flex align-center ga-2">
@@ -436,6 +453,7 @@ const formatDate = (date: string | Date | null | undefined) => {
               <v-tooltip activator="parent" location="top">{{ t('groups.table.view') }}</v-tooltip>
             </v-btn>
             <v-btn
+              v-if="canEditGroup(item)"
               icon
               size="small"
               variant="text"
@@ -446,6 +464,7 @@ const formatDate = (date: string | Date | null | undefined) => {
               <v-tooltip activator="parent" location="top">{{ t('groups.table.edit') }}</v-tooltip>
             </v-btn>
             <v-btn
+              v-if="canDeleteGroup(item)"
               icon
               size="small"
               variant="text"

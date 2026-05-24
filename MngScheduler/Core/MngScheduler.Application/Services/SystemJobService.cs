@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using MngScheduler.Application.Constants;
 using MngScheduler.Application.Interfaces;
 using MngScheduler.Domain.Entities;
 
@@ -176,20 +177,28 @@ public class SystemJobService : ISystemJobService
             throw new ArgumentException("CronExpression is required", nameof(job));
         }
 
-        if (string.IsNullOrWhiteSpace(job.EndpointUrl))
-        {
-            throw new ArgumentException("EndpointUrl is required", nameof(job));
-        }
+        var isDirectorySyncOrchestration = SystemJobIds.IsDirectorySyncOrchestration(job.JobId);
 
-        if (string.IsNullOrWhiteSpace(job.HttpMethod))
+        if (!isDirectorySyncOrchestration)
         {
-            throw new ArgumentException("HttpMethod is required", nameof(job));
-        }
+            if (string.IsNullOrWhiteSpace(job.EndpointUrl))
+                throw new ArgumentException("EndpointUrl is required", nameof(job));
 
-        if (!job.HttpMethod.Equals("GET", StringComparison.OrdinalIgnoreCase) &&
-            !job.HttpMethod.Equals("POST", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(job.HttpMethod))
+                throw new ArgumentException("HttpMethod is required", nameof(job));
+
+            if (!job.HttpMethod.Equals("GET", StringComparison.OrdinalIgnoreCase) &&
+                !job.HttpMethod.Equals("POST", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("HttpMethod must be GET or POST", nameof(job));
+            }
+        }
+        else
         {
-            throw new ArgumentException("HttpMethod must be GET or POST", nameof(job));
+            if (string.IsNullOrWhiteSpace(job.HttpMethod))
+                job.HttpMethod = "POST";
+            if (string.IsNullOrWhiteSpace(job.EndpointUrl))
+                job.EndpointUrl = "orchestration://directory-sync";
         }
 
         // Validate cron expression (basic check - Quartz will validate more thoroughly)

@@ -1,5 +1,6 @@
 using MediatR;
 using MngKeeper.Application.Interfaces;
+using MngKeeper.Domain.Enums;
 using MngKeeper.Domain.Entities;
 using MngKeeper.Application.Common.Helpers;
 using MngKeeper.Application.Common.Exceptions;
@@ -114,6 +115,7 @@ namespace MngKeeper.Application.Features.Group.Commands.CreateGroup
                     IsActive = request.IsActive,
                     DomainId = claims.DomainId,
                     KeycloakGroupId = keycloakGroup.Id ?? string.Empty,
+                    ProvisioningSource = UserProvisioningSource.Local,
                     CreatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser, // TODO: Get from current user context
                     CreatedAt = DateTime.UtcNow
                 };

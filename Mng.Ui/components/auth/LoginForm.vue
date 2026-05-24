@@ -24,11 +24,11 @@ const usernameRules = ref([
   (v: string) => !!v || "Kullanıcı adı gereklidir", // Fallback
 ]);
 
-// Development ortamında varsayılan değerleri ayarla
+// Development: Odak sunucu pilot girişi (domain@kullanıcı → auth store domain ayrıştırır)
 onMounted(() => {
   if (process.env.NODE_ENV === 'development') {
-    username.value = 'serkan.meral';
-    password.value = 'Serkan123!';
+    username.value = 'odak@odak_admin';
+    password.value = 'Admin123!';
   }
 });
 
@@ -52,8 +52,7 @@ async function validate() {
 
     await authStore.login(selectedUsername, password.value, selectedDomain);
     
-    // Redirect to welcome page
-    router.push({ path: "/welcome" });
+    router.push({ path: "/" });
   } catch (error) {
     if (error instanceof Error) {
       errorMessage.value = error.message;

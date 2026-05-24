@@ -1,4 +1,5 @@
 using MongoDB.Driver;
+using MngKeeper.Application.Common;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Domain.Entities;
 using MngKeeper.Domain.Enums;
@@ -52,7 +53,9 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                 DomainId = doc.GetValue("domainId", "").AsString,
                 KeycloakUserId = doc.GetValue("keycloakUserId", "").AsString,
                 Username = doc.GetValue("username", "").AsString,
-                Email = doc.GetValue("email", "").AsString,
+                Email = doc.Contains("email") && !doc["email"].IsBsonNull && doc["email"].IsString
+                    ? doc["email"].AsString
+                    : null,
                 FirstName = doc.GetValue("firstName", "").AsString,
                 LastName = doc.GetValue("lastName", "").AsString,
                 Title = doc.Contains("title") && !doc["title"].IsBsonNull ? doc["title"].AsString : null,
@@ -67,7 +70,13 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                 LastLoginAt = doc.GetValue("lastLoginAt", BsonNull.Value).IsBsonNull ? null : doc.GetValue("lastLoginAt").ToUniversalTime(),
                 CreatedBy = doc.GetValue("createdBy", "").AsString,
                 UpdatedAt = doc.GetValue("updatedAt", BsonNull.Value).IsBsonNull ? null : doc.GetValue("updatedAt").ToUniversalTime(),
-                UpdatedBy = doc.GetValue("updatedBy", BsonNull.Value).IsBsonNull ? null : doc.GetValue("updatedBy").AsString
+                UpdatedBy = doc.GetValue("updatedBy", BsonNull.Value).IsBsonNull ? null : doc.GetValue("updatedBy").AsString,
+                ProvisioningSource = doc.Contains("provisioningSource") && !doc["provisioningSource"].IsBsonNull
+                    ? (UserProvisioningSource)doc["provisioningSource"].AsInt32
+                    : UserProvisioningSource.Local,
+                DirectorySyncedAt = doc.Contains("directorySyncedAt") && !doc["directorySyncedAt"].IsBsonNull
+                    ? doc["directorySyncedAt"].ToUniversalTime()
+                    : null
             };
         }
 
@@ -140,7 +149,6 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                     ["domainId"] = entity.DomainId,
                     ["keycloakUserId"] = entity.KeycloakUserId,
                     ["username"] = entity.Username,
-                    ["email"] = entity.Email,
                     ["firstName"] = entity.FirstName,
                     ["lastName"] = entity.LastName,
                     ["title"] = string.IsNullOrEmpty(entity.Title) ? BsonNull.Value : entity.Title,
@@ -155,8 +163,11 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                     ["lastLoginAt"] = entity.LastLoginAt.HasValue ? entity.LastLoginAt.Value : BsonNull.Value,
                     ["createdBy"] = entity.CreatedBy,
                     ["updatedAt"] = entity.UpdatedAt.HasValue ? entity.UpdatedAt.Value : BsonNull.Value,
-                    ["updatedBy"] = string.IsNullOrEmpty(entity.UpdatedBy) ? BsonNull.Value : entity.UpdatedBy
+                    ["updatedBy"] = string.IsNullOrEmpty(entity.UpdatedBy) ? BsonNull.Value : entity.UpdatedBy,
+                    ["provisioningSource"] = (int)entity.ProvisioningSource,
+                    ["directorySyncedAt"] = entity.DirectorySyncedAt.HasValue ? entity.DirectorySyncedAt.Value : BsonNull.Value
                 };
+                WriteEmailField(document, entity.Email);
                 
                 await collection.InsertOneAsync(document);
                 _logger.LogDebug("User added successfully to domain database: {UserId}, DomainId: {DomainId}", entity.Id, entity.DomainId);
@@ -183,7 +194,6 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                     ["domainId"] = entity.DomainId,
                     ["keycloakUserId"] = entity.KeycloakUserId,
                     ["username"] = entity.Username,
-                    ["email"] = entity.Email,
                     ["firstName"] = entity.FirstName,
                     ["lastName"] = entity.LastName,
                     ["title"] = string.IsNullOrEmpty(entity.Title) ? BsonNull.Value : entity.Title,
@@ -198,8 +208,11 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                     ["lastLoginAt"] = entity.LastLoginAt.HasValue ? entity.LastLoginAt.Value : BsonNull.Value,
                     ["createdBy"] = entity.CreatedBy,
                     ["updatedAt"] = entity.UpdatedAt.HasValue ? entity.UpdatedAt.Value : BsonNull.Value,
-                    ["updatedBy"] = string.IsNullOrEmpty(entity.UpdatedBy) ? BsonNull.Value : entity.UpdatedBy
+                    ["updatedBy"] = string.IsNullOrEmpty(entity.UpdatedBy) ? BsonNull.Value : entity.UpdatedBy,
+                    ["provisioningSource"] = (int)entity.ProvisioningSource,
+                    ["directorySyncedAt"] = entity.DirectorySyncedAt.HasValue ? entity.DirectorySyncedAt.Value : BsonNull.Value
                 };
+                WriteEmailField(document, entity.Email);
                 
                 var options = new ReplaceOptions { IsUpsert = true };
                 await collection.ReplaceOneAsync(filter, document, options);
@@ -261,8 +274,12 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
         {
             try
             {
+                var normalized = UserEmailHelper.NormalizeForStorage(email);
+                if (normalized == null)
+                    return null;
+
                 var collection = await GetCollectionAsync(domainId);
-                var filter = Builders<BsonDocument>.Filter.Eq("email", email);
+                var filter = Builders<BsonDocument>.Filter.Eq("email", normalized);
                 var doc = await collection.Find(filter).FirstOrDefaultAsync();
                 return MapBsonDocumentToUser(doc);
             }
@@ -318,8 +335,12 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
         {
             try
             {
+                var normalized = UserEmailHelper.NormalizeForStorage(email);
+                if (normalized == null)
+                    return false;
+
                 var collection = await GetCollectionAsync(domainId);
-                var filter = Builders<BsonDocument>.Filter.Eq("email", email);
+                var filter = Builders<BsonDocument>.Filter.Eq("email", normalized);
                 return await collection.Find(filter).AnyAsync();
             }
             catch (Exception ex)
@@ -509,6 +530,15 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                     PageSize = pageSize
                 };
             }
+        }
+
+        private static void WriteEmailField(BsonDocument document, string? email)
+        {
+            var normalized = UserEmailHelper.NormalizeForStorage(email);
+            if (normalized == null)
+                document.Remove("email");
+            else
+                document["email"] = normalized;
         }
     }
 }

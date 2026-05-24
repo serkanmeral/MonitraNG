@@ -12,17 +12,20 @@ namespace MngKeeper.Application.Features.Group.Queries.GetGroups
     {
         private readonly IGroupRepository _groupRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IGroupFieldPolicyService _groupFieldPolicyService;
         private readonly ILogger<GetGroupsQueryHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         public GetGroupsQueryHandler(
             IGroupRepository groupRepository,
             IUserRepository userRepository,
+            IGroupFieldPolicyService groupFieldPolicyService,
             ILogger<GetGroupsQueryHandler> logger,
             IHttpContextAccessor httpContextAccessor)
         {
             _groupRepository = groupRepository;
             _userRepository = userRepository;
+            _groupFieldPolicyService = groupFieldPolicyService;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -70,7 +73,10 @@ namespace MngKeeper.Application.Features.Group.Queries.GetGroups
                         IsActive = g.IsActive,
                         MemberCount = memberCount,
                         CreatedAt = g.CreatedAt,
-                        UpdatedAt = g.UpdatedAt
+                        UpdatedAt = g.UpdatedAt,
+                        ProvisioningSource = g.ProvisioningSource.ToString(),
+                        DirectorySyncedAt = g.DirectorySyncedAt,
+                        Capabilities = _groupFieldPolicyService.GetCapabilities(g),
                     });
                 }
 

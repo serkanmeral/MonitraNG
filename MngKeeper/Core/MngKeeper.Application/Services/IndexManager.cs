@@ -53,19 +53,22 @@ namespace MngKeeper.Application.Services
                 );
                 _logger.LogDebug("Created index: idx_users_username");
 
-                // Email index (unique per domain)
+                // Email unique only when set (directory users may have no email)
                 await collection.Indexes.CreateOneAsync(
                     new CreateIndexModel<User>(
                         Builders<User>.IndexKeys.Ascending(u => u.Email),
-                        new CreateIndexOptions 
-                        { 
+                        new CreateIndexOptions<User>
+                        {
                             Name = "idx_users_email",
-                            Unique = true 
-                        }
-                    ),
+                            Unique = true,
+                            PartialFilterExpression = Builders<User>.Filter.And(
+                                Builders<User>.Filter.Exists(u => u.Email),
+                                Builders<User>.Filter.Ne(u => u.Email, null),
+                                Builders<User>.Filter.Ne(u => u.Email, ""))
+                        }),
                     cancellationToken: cancellationToken
                 );
-                _logger.LogDebug("Created index: idx_users_email");
+                _logger.LogDebug("Created index: idx_users_email (partial unique)");
 
                 // Compound index: DomainId + IsActive (common query pattern)
                 var compoundIndexDefinition = Builders<User>.IndexKeys

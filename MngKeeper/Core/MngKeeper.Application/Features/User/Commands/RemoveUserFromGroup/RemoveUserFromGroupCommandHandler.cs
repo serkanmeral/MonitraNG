@@ -1,4 +1,5 @@
 using MediatR;
+using MngKeeper.Application.Directory;
 using MngKeeper.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -66,6 +67,16 @@ namespace MngKeeper.Application.Features.User.Commands.RemoveUserFromGroup
                     {
                         IsSuccess = false,
                         ErrorMessage = "Group not found."
+                    };
+                }
+
+                if (!DirectoryGroupGuard.CanManageMembership(group))
+                {
+                    return new RemoveUserFromGroupResponse
+                    {
+                        IsSuccess = false,
+                        ErrorMessage =
+                            $"Kurumsal gruptan kullanıcı çıkarılamaz. ({DirectoryGroupGuard.MembershipErrorCode})"
                     };
                 }
 

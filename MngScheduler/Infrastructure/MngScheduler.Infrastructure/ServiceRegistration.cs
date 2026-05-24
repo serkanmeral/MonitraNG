@@ -26,11 +26,20 @@ public static class ServiceRegistration
             client.Timeout = TimeSpan.FromSeconds(300); // Default timeout
         });
 
+        services.AddHttpClient("MngKeeperDirectorySync", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(settings.HttpClient.TimeoutSeconds);
+        });
+
         // MngDataGateway Client
         services.AddScoped<IMngDataGatewayClient, MngDataGatewayClient>();
 
-        // HttpJob registration (Quartz will use this)
+        // Quartz jobs
         services.AddScoped<HttpJob>();
+        services.AddScoped<DirectorySyncOrchestrationJob>();
+
+        services.AddScoped<IMngKeeperDirectorySyncClient, MngKeeperDirectorySyncClient>();
+        services.AddScoped<IDirectorySyncOrchestrationService, DirectorySyncOrchestrationService>();
 
         // RabbitMQ Event Publisher
         services.AddSingleton<IRabbitMqEventPublisher, RabbitMqEventPublisher>();

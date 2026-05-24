@@ -1255,5 +1255,183 @@ namespace MngKeeper.Infrastructure.Services
             }
         }
 
+        public async Task<KeycloakRealmUserSnapshot?> GetRealmUserByUsernameAsync(
+            string realmName,
+            string username,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+                return null;
+
+            await EnsureAdminTokenAsync();
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
+
+            var encoded = Uri.EscapeDataString(username.Trim());
+            var response = await _httpClient.GetAsync(
+                BuildEndpointPath($"admin/realms/{realmName}/users?username={encoded}&exact=true"),
+                cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning(
+                    "GetRealmUserByUsername failed for {Username} realm {Realm}: {Status}",
+                    username, realmName, response.StatusCode);
+                return null;
+            }
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            var users = JsonSerializer.Deserialize<JsonElement[]>(json) ?? Array.Empty<JsonElement>();
+            foreach (var el in users)
+            {
+                var snapshot = MapUserSnapshot(el);
+                if (string.Equals(snapshot.Username, username.Trim(), StringComparison.OrdinalIgnoreCase))
+                    return snapshot;
+            }
+
+            return null;
+        }
+
+        public async Task<IReadOnlyList<KeycloakRealmUserSnapshot>> ListRealmUsersAsync(
+            string realmName,
+            CancellationToken cancellationToken = default)
+        {
+            await EnsureAdminTokenAsync();
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
+
+            const int pageSize = 100;
+            var all = new List<KeycloakRealmUserSnapshot>();
+            var first = 0;
+
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var path = $"admin/realms/{realmName}/users?first={first}&max={pageSize}";
+                var response = await _httpClient.GetAsync(BuildEndpointPath(path), cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogError("ListRealmUsers failed for {Realm}. Status={Status}, Error={Error}",
+                        realmName, response.StatusCode, error);
+                    throw new InvalidOperationException($"Keycloak list users failed: {response.StatusCode}");
+                }
+
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                var page = JsonSerializer.Deserialize<JsonElement[]>(json) ?? Array.Empty<JsonElement>();
+                if (page.Length == 0)
+                    break;
+
+                foreach (var el in page)
+                {
+                    all.Add(MapUserSnapshot(el));
+                }
+
+                if (page.Length < pageSize)
+                    break;
+                first += pageSize;
+            }
+
+            _logger.LogInformation("Listed {Count} users from Keycloak realm {Realm}", all.Count, realmName);
+            return all;
+        }
+
+        public async Task<IReadOnlyList<KeycloakRealmGroupSnapshot>> ListRealmGroupsAsync(
+            string realmName,
+            CancellationToken cancellationToken = default)
+        {
+            await EnsureAdminTokenAsync();
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
+
+            const int pageSize = 100;
+            var all = new List<KeycloakRealmGroupSnapshot>();
+            var first = 0;
+
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var path = $"admin/realms/{realmName}/groups?first={first}&max={pageSize}";
+                var response = await _httpClient.GetAsync(BuildEndpointPath(path), cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogError("ListRealmGroups failed for {Realm}. Status={Status}, Error={Error}",
+                        realmName, response.StatusCode, error);
+                    throw new InvalidOperationException($"Keycloak list groups failed: {response.StatusCode}");
+                }
+
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                var page = JsonSerializer.Deserialize<JsonElement[]>(json) ?? Array.Empty<JsonElement>();
+                if (page.Length == 0)
+                    break;
+
+                foreach (var el in page)
+                {
+                    all.Add(MapGroupSnapshot(el));
+                }
+
+                if (page.Length < pageSize)
+                    break;
+                first += pageSize;
+            }
+
+            _logger.LogInformation("Listed {Count} groups from Keycloak realm {Realm}", all.Count, realmName);
+            return all;
+        }
+
+        public async Task<IReadOnlyList<string>> GetUserGroupNamesAsync(
+            string realmName,
+            string userId,
+            CancellationToken cancellationToken = default)
+        {
+            await EnsureAdminTokenAsync();
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
+
+            var response = await _httpClient.GetAsync(
+                BuildEndpointPath($"admin/realms/{realmName}/users/{userId}/groups"),
+                cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("GetUserGroupNames failed for user {UserId} realm {Realm}: {Status}",
+                    userId, realmName, response.StatusCode);
+                return Array.Empty<string>();
+            }
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            var groups = JsonSerializer.Deserialize<JsonElement[]>(json) ?? Array.Empty<JsonElement>();
+            return groups
+                .Select(g => g.TryGetProperty("name", out var n) ? n.GetString() : null)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Select(name => name!)
+                .ToList();
+        }
+
+        private static KeycloakRealmUserSnapshot MapUserSnapshot(JsonElement el)
+        {
+            string? federationLink = null;
+            if (el.TryGetProperty("federationLink", out var fl) && fl.ValueKind == JsonValueKind.String)
+                federationLink = fl.GetString();
+
+            return new KeycloakRealmUserSnapshot
+            {
+                Id = el.TryGetProperty("id", out var id) ? id.GetString() ?? string.Empty : string.Empty,
+                Username = el.TryGetProperty("username", out var u) ? u.GetString() ?? string.Empty : string.Empty,
+                Email = el.TryGetProperty("email", out var e) ? e.GetString() : null,
+                FirstName = el.TryGetProperty("firstName", out var fn) ? fn.GetString() : null,
+                LastName = el.TryGetProperty("lastName", out var ln) ? ln.GetString() : null,
+                Enabled = !el.TryGetProperty("enabled", out var en) || en.GetBoolean(),
+                FederationLink = federationLink
+            };
+        }
+
+        private static KeycloakRealmGroupSnapshot MapGroupSnapshot(JsonElement el)
+        {
+            return new KeycloakRealmGroupSnapshot
+            {
+                Id = el.TryGetProperty("id", out var id) ? id.GetString() ?? string.Empty : string.Empty,
+                Name = el.TryGetProperty("name", out var n) ? n.GetString() ?? string.Empty : string.Empty,
+                Path = el.TryGetProperty("path", out var p) ? p.GetString() : null
+            };
+        }
+
     }
 }

@@ -1,4 +1,5 @@
 using MediatR;
+using MngKeeper.Application.Directory;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Domain.Entities;
 using MngKeeper.Application.Common.Helpers;
@@ -87,6 +88,16 @@ namespace MngKeeper.Application.Features.Group.Commands.UpdateGroup
                     {
                         IsSuccess = false,
                         ErrorMessage = "Group does not belong to the current domain."
+                    };
+                }
+
+                if (!DirectoryGroupGuard.CanMutateGroup(existingGroup))
+                {
+                    return new UpdateGroupResponse
+                    {
+                        IsSuccess = false,
+                        ErrorMessage =
+                            $"Kurumsal gruplar uygulama üzerinden güncellenemez. ({DirectoryGroupGuard.ErrorCode})"
                     };
                 }
 

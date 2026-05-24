@@ -103,6 +103,10 @@ scripts/cpu-*.sh
 scripts/memory-*.sh
 scripts/disk-*.sh
 
+## Odak deploy — yerel SSH (commit edilmez)
+scripts/odak/local-credentials.ps1
+.env.odak.local
+
 ## Certificates (exclude production)
 ApplicationResources/Cert/production/
 ApplicationResources/Cert/staging/

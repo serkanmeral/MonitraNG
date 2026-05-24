@@ -12,6 +12,7 @@ public class MngSchedulerSettings
     public JobSyncSettings JobSync { get; set; } = new();
     public QuartzSettings Quartz { get; set; } = new();
     public HttpClientSettings HttpClient { get; set; } = new();
+    public DirectorySyncOrchestrationSettings DirectorySyncOrchestration { get; set; } = new();
 }
 
 public class ServerSettings
@@ -79,6 +80,12 @@ public class JobSyncSettings
     /// Enable job sync service
     /// </summary>
     public bool Enabled { get; set; } = true;
+
+    /// <summary>
+    /// Poll domain user jobs from MngDataGateway (@scheduled_jobs).
+    /// Requires a service JWT; when false, only system jobs (Mongo mngkeeper) are synced.
+    /// </summary>
+    public bool SyncUserJobs { get; set; } = false;
 }
 
 public class QuartzSettings

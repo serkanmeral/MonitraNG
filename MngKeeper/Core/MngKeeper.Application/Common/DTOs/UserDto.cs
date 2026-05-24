@@ -23,5 +23,14 @@ namespace MngKeeper.Application.Common.DTOs
         public string? UpdatedBy { get; set; }
         public List<string> Groups { get; set; } = new();
         public List<string> Permissions { get; set; } = new();
+
+        /// <summary>Local veya Directory — K5 kullanıcı kaynağı.</summary>
+        public string ProvisioningSource { get; set; } = "Local";
+
+        public DateTime? DirectorySyncedAt { get; set; }
+
+        public UserCapabilitiesDto Capabilities { get; set; } = new();
+
+        public Dictionary<string, UserFieldPolicyItemDto> FieldPolicies { get; set; } = new();
     }
 }

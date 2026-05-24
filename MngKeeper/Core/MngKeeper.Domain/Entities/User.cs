@@ -20,7 +20,7 @@ namespace MngKeeper.Domain.Entities
         public string Username { get; set; } = string.Empty;
 
         [BsonElement("email")]
-        public string Email { get; set; } = string.Empty;
+        public string? Email { get; set; }
 
         [BsonElement("firstName")]
         public string FirstName { get; set; } = string.Empty;
@@ -67,5 +67,12 @@ namespace MngKeeper.Domain.Entities
 
         [BsonElement("updatedBy")]
         public string? UpdatedBy { get; set; }
+
+        [BsonElement("provisioningSource")]
+        [BsonRepresentation(BsonType.Int32)]
+        public UserProvisioningSource ProvisioningSource { get; set; } = UserProvisioningSource.Local;
+
+        [BsonElement("directorySyncedAt")]
+        public DateTime? DirectorySyncedAt { get; set; }
     }
 }

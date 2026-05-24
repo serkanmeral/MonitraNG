@@ -49,22 +49,29 @@ public class DomainLookupService : IDomainLookupService
 
             // Tanılama: toplam domain sayısı ve kaçı Active
             var totalDomains = await collection.CountDocumentsAsync(new BsonDocument());
-            var activeFilter = Builders<BsonDocument>.Filter.Eq("status", "Active");
+            // Keeper Mongo: status string "Active" veya enum int 1 (DomainStatus.Active)
+            var activeFilter = BuildActiveDomainFilter();
             var activeCount = await collection.CountDocumentsAsync(activeFilter);
-            _logger.LogDebug("Domains DB: {DatabaseName}, collection domains, total: {Total}, status=Active: {ActiveCount}",
+            _logger.LogInformation(
+                "[DirectorySync] Domain lookup DB={DatabaseName} collection=domains total={Total} active={ActiveCount}",
                 databaseName, totalDomains, activeCount);
 
-            // Filter: status = "Active"
+            if (totalDomains > 0 && activeCount == 0)
+            {
+                var sample = await collection.Find(FilterDefinition<BsonDocument>.Empty).Limit(1)
+                    .FirstOrDefaultAsync();
+                if (sample != null && sample.Contains("status"))
+                {
+                    _logger.LogWarning(
+                        "[DirectorySync] Domain var ama Active filtresine uymuyor. name={Name} statusRaw={StatusRaw} — Mongo'da status=1 veya \"Active\" olmalı",
+                        sample.GetValue("name")?.ToString() ?? sample.GetValue("realmName")?.ToString() ?? "?",
+                        sample["status"]);
+                }
+            }
+
             var domains = await collection.Find(activeFilter).ToListAsync();
 
-            var domainInfos = domains.Select(d => new DomainInfo
-            {
-                Id = d["_id"].AsObjectId.ToString(),
-                Name = d.GetValue("name")?.AsString ?? string.Empty,
-                DatabaseName = d.GetValue("databaseName")?.AsString ?? 
-                               $"mng_{d.GetValue("name")?.AsString?.ToLowerInvariant() ?? ""}",
-                Status = d.GetValue("status")?.AsString ?? "Unknown"
-            }).ToList();
+            var domainInfos = domains.Select(MapDomainDocument).ToList();
 
             // Cache the result
             _cache.Set(cacheKey, domainInfos, CacheExpiration);
@@ -106,14 +113,7 @@ public class DomainLookupService : IDomainLookupService
                 return null;
             }
 
-            var domainInfo = new DomainInfo
-            {
-                Id = domain["_id"].AsObjectId.ToString(),
-                Name = domain.GetValue("name")?.AsString ?? string.Empty,
-                DatabaseName = domain.GetValue("databaseName")?.AsString ?? 
-                               $"mng_{domain.GetValue("name")?.AsString?.ToLowerInvariant() ?? ""}",
-                Status = domain.GetValue("status")?.AsString ?? "Unknown"
-            };
+            var domainInfo = MapDomainDocument(domain);
 
             // Cache the result
             _cache.Set(cacheKey, domainInfo, CacheExpiration);
@@ -132,5 +132,54 @@ public class DomainLookupService : IDomainLookupService
     {
         var domain = await GetDomainByIdAsync(domainId);
         return domain?.DatabaseName;
+    }
+
+    /// <summary>
+    /// MngKeeper <see cref="MngKeeper.Domain.Entities.DomainStatus"/>: Active = 1 (int) veya "Active" (string).
+    /// </summary>
+    private static FilterDefinition<BsonDocument> BuildActiveDomainFilter() =>
+        Builders<BsonDocument>.Filter.Or(
+            Builders<BsonDocument>.Filter.Eq("status", "Active"),
+            Builders<BsonDocument>.Filter.Eq("status", 1));
+
+    private static DomainInfo MapDomainDocument(BsonDocument d)
+    {
+        var name = d.GetValue("name", BsonNull.Value).IsBsonNull
+            ? string.Empty
+            : d["name"].AsString;
+        if (string.IsNullOrWhiteSpace(name) && d.Contains("realmName") && !d["realmName"].IsBsonNull)
+            name = d["realmName"].AsString;
+
+        return new DomainInfo
+        {
+            Id = d["_id"].AsObjectId.ToString(),
+            Name = name,
+            DatabaseName = d.GetValue("databaseName", BsonNull.Value).IsBsonNull
+                ? $"mng_{name.ToLowerInvariant()}"
+                : d["databaseName"].AsString,
+            Status = ReadStatusLabel(d)
+        };
+    }
+
+    private static string ReadStatusLabel(BsonDocument d)
+    {
+        if (!d.Contains("status") || d["status"].IsBsonNull)
+            return "Unknown";
+
+        return d["status"].BsonType switch
+        {
+            BsonType.String => d["status"].AsString,
+            BsonType.Int32 => d["status"].AsInt32 switch
+            {
+                1 => "Active",
+                0 => "Pending",
+                2 => "Suspended",
+                3 => "Expired",
+                4 => "Deleted",
+                5 => "Failed",
+                _ => d["status"].AsInt32.ToString()
+            },
+            _ => d["status"].ToString() ?? "Unknown"
+        };
     }
 }

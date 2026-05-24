@@ -1,6 +1,7 @@
 using MediatR;
 using MngKeeper.Application.Interfaces;
 using Microsoft.Extensions.Logging;
+using MngKeeper.Application.Common;
 
 namespace MngKeeper.Application.Features.Auth.Commands.RefreshToken
 {
@@ -12,6 +13,7 @@ namespace MngKeeper.Application.Features.Auth.Commands.RefreshToken
         private readonly IDomainRepository _domainRepository;
         private readonly IUserRepository _userRepository;
         private readonly ILicenseService _licenseService;
+        private readonly IPrivilegeGroupResolver _privilegeGroupResolver;
         private readonly ILogger<RefreshTokenCommandHandler> _logger;
 
         public RefreshTokenCommandHandler(
@@ -21,6 +23,7 @@ namespace MngKeeper.Application.Features.Auth.Commands.RefreshToken
             IDomainRepository domainRepository,
             IUserRepository userRepository,
             ILicenseService licenseService,
+            IPrivilegeGroupResolver privilegeGroupResolver,
             ILogger<RefreshTokenCommandHandler> logger)
         {
             _keycloakService = keycloakService;
@@ -29,6 +32,7 @@ namespace MngKeeper.Application.Features.Auth.Commands.RefreshToken
             _domainRepository = domainRepository;
             _userRepository = userRepository;
             _licenseService = licenseService;
+            _privilegeGroupResolver = privilegeGroupResolver;
             _logger = logger;
         }
 
@@ -69,21 +73,15 @@ namespace MngKeeper.Application.Features.Auth.Commands.RefreshToken
                 // Parse the refresh token to get user information first
                 var tokenClaims = _jwtTokenParserService.ParseToken(request.RefreshToken);
                 
-                // Check if user is admin - admins can always refresh tokens even if license expired
-                bool isAdmin = false;
-                if (tokenClaims != null && !string.IsNullOrEmpty(tokenClaims.Username))
-                {
-                    var user = await _userRepository.GetByUsernameAsync(tokenClaims.Username, domain.Id);
-                    if (user != null && user.Groups != null)
-                    {
-                        isAdmin = user.Groups.Contains("admins", StringComparer.OrdinalIgnoreCase);
-                    }
-                    // Also check token claims for is_admin
-                    if (!isAdmin)
-                    {
-                        isAdmin = tokenClaims.IsAdmin;
-                    }
-                }
+                var refreshUsername = tokenClaims?.Username ?? string.Empty;
+                var refreshUser = !string.IsNullOrEmpty(refreshUsername)
+                    ? await _userRepository.GetByUsernameAsync(refreshUsername, domain.Id)
+                    : null;
+
+                var isAdmin = !string.IsNullOrEmpty(refreshUsername)
+                    ? await AuthPrivilegeHelper.ResolveIsAdminAsync(
+                        _privilegeGroupResolver, _keycloakService, domain, refreshUsername, refreshUser?.Groups)
+                    : tokenClaims?.IsAdmin ?? false;
 
                 // Check license - block token generation if license expired and blockTokenGeneration is true
                 // Exception: Admin users can always refresh tokens to manage licenses
@@ -143,9 +141,8 @@ namespace MngKeeper.Application.Features.Auth.Commands.RefreshToken
                         userGroups = user.Groups ?? new List<string>();
                         _logger.LogInformation("User groups retrieved from MongoDB for refresh: {UserGroups}", string.Join(", ", userGroups));
                         
-                        // Check if user is admin or manager by checking groups
-                        isAdmin = userGroups.Contains("admins");
-                        isManager = userGroups.Contains("managers");
+                        isAdmin = _privilegeGroupResolver.IsAdmin(domain, userGroups);
+                        isManager = _privilegeGroupResolver.IsManager(domain, userGroups);
                         
                         // Get profile fields
                         title = user.Title;

@@ -397,8 +397,17 @@
       "warning": "Uyarı",
       "warningMessage": "Bu sayfaya erişim için manager veya admin yetkisi gereklidir. Grup yönetimi işlemlerini gerçekleştirmek için lütfen bir yönetici ile iletişime geçin."
     },
+    "source": {
+      "local": "Yerel",
+      "directory": "Kurumsal"
+    },
+    "directory": {
+      "editHint": "Bu grup kurumsal dizinden gelir; ad, açıklama ve durum burada değiştirilemez.",
+      "membersManagedExternally": "Grup üyelikleri Active Directory / Keycloak senkronu ile yönetilir; üye ekleyemez veya çıkaramazsınız."
+    },
     "table": {
       "name": "Grup Adı",
+      "source": "Kaynak",
       "memberCount": "Kişi Sayısı",
       "createdAt": "Oluşturulma",
       "actions": "İşlemler",
@@ -576,6 +585,10 @@
       "departmentMaxLength": "Departman en fazla 100 karakter olabilir",
       "phoneNumberMaxLength": "Telefon numarası en fazla 20 karakter olabilir"
     },
+    "directory": {
+      "fieldReadOnly": "Bu alan kurumsal dizinden gelir; yalnızca görüntülenir.",
+      "profileHint": "Kurumsal hesap: kimlik bilgileri dizinden gelir. Unvan, departman ve telefon gibi alanları MonitraNG üzerinden güncelleyebilirsiniz."
+    },
     "messages": {
       "saveSuccess": "Profil başarıyla güncellendi",
       "saveError": "Profil güncellenirken bir hata oluştu",
@@ -628,6 +641,7 @@
       "saveError": "Tercihler kaydedilirken bir hata oluştu"
     },
     "security": {
+      "directoryPasswordManaged": "Kurumsal (Active Directory) hesabınızın şifresi dizin tarafından yönetilir. Şifre değişikliği için BT / sistem yöneticinize başvurun.",
       "changePassword": {
         "title": "Şifre Değiştir",
         "description": "Hesabınızın güvenliği için düzenli olarak şifrenizi değiştirmeniz önerilir.",
@@ -709,8 +723,18 @@
       "home": "Dashboard",
       "users": "Kullanıcı Yönetimi"
     },
+    "source": {
+      "local": "Yerel",
+      "directory": "Kurumsal"
+    },
+    "directory": {
+      "fieldReadOnly": "Bu alan kurumsal dizinden gelir; burada değiştirilemez.",
+      "groupsManagedExternally": "Gruplar Active Directory / Keycloak senkronu ile yönetilir.",
+      "editHint": "Kimlik ve grup bilgileri dizinden gelir. Aşağıdaki MonitraNG profil alanlarını güncelleyebilirsiniz."
+    },
     "table": {
       "username": "Kullanıcı Adı",
+      "source": "Kaynak",
       "email": "Email",
       "fullName": "Ad Soyad",
       "status": "Durum",
@@ -831,6 +855,10 @@
     },
     "edit": {
       "title": "Kullanıcı Düzenle",
+      "sections": {
+        "directoryIdentity": "Kurumsal kimlik (salt okunur)",
+        "appProfile": "MonitraNG profil bilgileri"
+      },
       "breadcrumbs": {
         "home": "Dashboard",
         "users": "Kullanıcı Yönetimi",
@@ -853,7 +881,8 @@
         "photoUrlNote": "Fotoğraf URL değiştirilemez",
         "isActive": "Aktif",
         "groups": "Gruplar",
-        "groupsSelect": "Gruplar Seçiniz"
+        "groupsSelect": "Gruplar Seçiniz",
+        "gender": "Cinsiyet"
       },
       "validation": {
         "emailRequired": "Email gereklidir",
@@ -934,6 +963,16 @@
       "domainSettings": "Domain Ayarları",
       "licenseInfo": "Lisans Bilgileri",
       "backupInfo": "Yedek Bilgileri"
+    },
+    "directorySync": {
+      "title": "LDAP / Dizin Senkronu",
+      "description": "Active Directory → Keycloak → MonitraNG tam senkronunu manuel başlatır (kullanıcılar ve gruplar). Zaten çalışan bir sync varsa 409 döner.",
+      "run": "Dizin senkronunu çalıştır",
+      "success": "Dizin senkronu tamamlandı.",
+      "failed": "Dizin senkronu başarısız oldu.",
+      "inProgress": "Başka bir senkron zaten çalışıyor. Birkaç dakika sonra tekrar deneyin.",
+      "resultUsers": "Kullanıcılar",
+      "resultGroups": "Gruplar"
     },
     "fields": {
       "name": "Domain Adı",
@@ -3152,6 +3191,35 @@
       "categoryTodoShort": "Yapılacak",
       "categoryInProgressShort": "Devam",
       "categoryDoneShort": "Bitti"
+    }
+  },
+  "welcome": {
+    "title": "Ana sayfa",
+    "subtitle": "MonitraNG modüllerine buradan kısa yollarla ulaşabilirsiniz. Tamamlanan her modül için kartlar zamanla eklenecektir.",
+    "greeting": {
+      "morning": "Günaydın",
+      "afternoon": "İyi günler",
+      "evening": "İyi akşamlar",
+      "night": "İyi geceler"
+    },
+    "banner": {
+      "guest": "Kullanıcı",
+      "domain": "Domain",
+      "groups": "Gruplar",
+      "roleAdmin": "Sistem yöneticisi",
+      "roleManager": "Yönetici",
+      "roleUser": "Kullanıcı"
+    },
+    "modules": {
+      "title": "Modüller",
+      "hint": "Hazır modüller için kısayol kartları",
+      "comingSoon": "Diğer modüller (izleme, veri setleri, raporlar vb.) tamamlandıkça bu sayfaya kart olarak eklenecektir.",
+      "taskManager": {
+        "title": "Görev Yöneticisi",
+        "description": "Projeler, board'lar ve görevler üzerinde çalışın; durum havuzu, görev tipleri ve öncelikleri ortak tanımlardan yönetin.",
+        "linkWorkspace": "Çalışma alanı",
+        "linkHub": "Görevler merkezi"
+      }
     }
   }
 }

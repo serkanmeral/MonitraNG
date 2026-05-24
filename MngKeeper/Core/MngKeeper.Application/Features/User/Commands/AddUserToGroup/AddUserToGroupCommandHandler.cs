@@ -1,4 +1,5 @@
 using MediatR;
+using MngKeeper.Application.Directory;
 using MngKeeper.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 
@@ -66,6 +67,16 @@ namespace MngKeeper.Application.Features.User.Commands.AddUserToGroup
                     {
                         IsSuccess = false,
                         ErrorMessage = "Group not found."
+                    };
+                }
+
+                if (!DirectoryGroupGuard.CanManageMembership(group))
+                {
+                    return new AddUserToGroupResponse
+                    {
+                        IsSuccess = false,
+                        ErrorMessage =
+                            $"Kurumsal gruba kullanıcı eklenemez. ({DirectoryGroupGuard.MembershipErrorCode})"
                     };
                 }
 

@@ -1,6 +1,5 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Polly;
@@ -30,12 +29,10 @@ public class MngDataGatewayClient : IMngDataGatewayClient
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _settings = settings?.Value ?? throw new ArgumentNullException(nameof(settings));
 
-        // Configure HttpClient
         var baseUrl = _settings.DataGateway.BaseUrl ?? "http://localhost:5070";
         var apiVersion = _settings.DataGateway.ApiVersion ?? "v1";
         _httpClient.BaseAddress = new Uri($"{baseUrl}/api/{apiVersion}/");
 
-        // Retry policy with exponential backoff
         _retryPolicy = Policy
             .HandleResult<HttpResponseMessage>(r => !r.IsSuccessStatusCode && (int)r.StatusCode >= 500)
             .Or<HttpRequestException>()
@@ -55,17 +52,8 @@ public class MngDataGatewayClient : IMngDataGatewayClient
         try
         {
             var url = $"data/{datasetName}";
-            var request = new HttpRequestMessage(HttpMethod.Post, url)
-            {
-                Content = JsonContent.Create(data)
-            };
-
-            if (!string.IsNullOrEmpty(token))
-            {
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            }
-
-            var response = await _retryPolicy.ExecuteAsync(async () => await _httpClient.SendAsync(request));
+            using var response = await SendWithRetryAsync(
+                () => CreateRequest(HttpMethod.Post, url, token, JsonContent.Create(data)));
 
             response.EnsureSuccessStatusCode();
 
@@ -95,14 +83,8 @@ public class MngDataGatewayClient : IMngDataGatewayClient
                 url += $"?{query}";
             }
 
-            var request = new HttpRequestMessage(HttpMethod.Get, url);
-
-            if (!string.IsNullOrEmpty(token))
-            {
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            }
-
-            var response = await _retryPolicy.ExecuteAsync(async () => await _httpClient.SendAsync(request));
+            using var response = await SendWithRetryAsync(
+                () => CreateRequest(HttpMethod.Get, url, token));
 
             response.EnsureSuccessStatusCode();
 
@@ -127,14 +109,8 @@ public class MngDataGatewayClient : IMngDataGatewayClient
         try
         {
             var url = $"data/{datasetName}/{id}";
-            var request = new HttpRequestMessage(HttpMethod.Get, url);
-
-            if (!string.IsNullOrEmpty(token))
-            {
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            }
-
-            var response = await _retryPolicy.ExecuteAsync(async () => await _httpClient.SendAsync(request));
+            using var response = await SendWithRetryAsync(
+                () => CreateRequest(HttpMethod.Get, url, token));
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
@@ -159,17 +135,8 @@ public class MngDataGatewayClient : IMngDataGatewayClient
         try
         {
             var url = $"data/{datasetName}/{id}";
-            var request = new HttpRequestMessage(HttpMethod.Put, url)
-            {
-                Content = JsonContent.Create(data)
-            };
-
-            if (!string.IsNullOrEmpty(token))
-            {
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            }
-
-            var response = await _retryPolicy.ExecuteAsync(async () => await _httpClient.SendAsync(request));
+            using var response = await SendWithRetryAsync(
+                () => CreateRequest(HttpMethod.Put, url, token, JsonContent.Create(data)));
 
             response.EnsureSuccessStatusCode();
 
@@ -194,14 +161,8 @@ public class MngDataGatewayClient : IMngDataGatewayClient
         try
         {
             var url = $"data/{datasetName}/{id}";
-            var request = new HttpRequestMessage(HttpMethod.Delete, url);
-
-            if (!string.IsNullOrEmpty(token))
-            {
-                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            }
-
-            var response = await _retryPolicy.ExecuteAsync(async () => await _httpClient.SendAsync(request));
+            using var response = await SendWithRetryAsync(
+                () => CreateRequest(HttpMethod.Delete, url, token));
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
@@ -218,5 +179,31 @@ public class MngDataGatewayClient : IMngDataGatewayClient
             _logger.LogError(ex, "Error deleting data from dataset {DatasetName}, Id: {Id}", datasetName, id);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Polly may retry; each attempt needs a fresh HttpRequestMessage.
+    /// </summary>
+    private Task<HttpResponseMessage> SendWithRetryAsync(Func<HttpRequestMessage> createRequest) =>
+        _retryPolicy.ExecuteAsync(() => _httpClient.SendAsync(createRequest()));
+
+    private static HttpRequestMessage CreateRequest(
+        HttpMethod method,
+        string url,
+        string? token,
+        HttpContent? content = null)
+    {
+        var request = new HttpRequestMessage(method, url);
+        if (content != null)
+        {
+            request.Content = content;
+        }
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        }
+
+        return request;
     }
 }

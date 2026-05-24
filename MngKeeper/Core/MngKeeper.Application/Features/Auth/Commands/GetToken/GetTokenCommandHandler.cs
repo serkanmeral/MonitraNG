@@ -1,4 +1,5 @@
 using MediatR;
+using MngKeeper.Application.Common;
 using MngKeeper.Application.Interfaces;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
@@ -13,6 +14,8 @@ namespace MngKeeper.Application.Features.Auth.Commands.GetToken
         private readonly IUserRepository _userRepository;
         private readonly ILicenseService _licenseService;
         private readonly ITokenCredentialResolver _tokenCredentialResolver;
+        private readonly IPrivilegeGroupResolver _privilegeGroupResolver;
+        private readonly IKeycloakToMongoSyncService _directorySyncService;
         private readonly ILogger<GetTokenCommandHandler> _logger;
 
         public GetTokenCommandHandler(
@@ -22,6 +25,8 @@ namespace MngKeeper.Application.Features.Auth.Commands.GetToken
             IUserRepository userRepository,
             ILicenseService licenseService,
             ITokenCredentialResolver tokenCredentialResolver,
+            IPrivilegeGroupResolver privilegeGroupResolver,
+            IKeycloakToMongoSyncService directorySyncService,
             ILogger<GetTokenCommandHandler> logger)
         {
             _domainRepository = domainRepository;
@@ -30,6 +35,8 @@ namespace MngKeeper.Application.Features.Auth.Commands.GetToken
             _userRepository = userRepository;
             _licenseService = licenseService;
             _tokenCredentialResolver = tokenCredentialResolver;
+            _privilegeGroupResolver = privilegeGroupResolver;
+            _directorySyncService = directorySyncService;
             _logger = logger;
         }
 
@@ -93,49 +100,6 @@ namespace MngKeeper.Application.Features.Auth.Commands.GetToken
                     }
                 }
 
-                // Check if user is admin - admins can always get tokens even if license expired
-                // This allows admins to login and upload new licenses
-                bool isAdmin = false;
-                if (user != null && user.Groups != null)
-                {
-                    isAdmin = user.Groups.Contains("admins", StringComparer.OrdinalIgnoreCase);
-                }
-                else
-                {
-                    // Fallback: Check Keycloak groups if user not found in MongoDB
-                    isAdmin = await _keycloakService.IsUserInGroupAsync(domain.RealmName, actualUsername, "admins");
-                }
-
-                // Check license - block token generation if license expired and blockTokenGeneration is true
-                // Exception: Admin users can always get tokens to manage licenses
-                if (!isAdmin)
-                {
-                    var isOperationAllowed = await _licenseService.IsOperationAllowedAsync(
-                        domain.Name, 
-                        MngKeeper.Domain.Entities.LicenseOperation.TokenGeneration);
-                    
-                    if (!isOperationAllowed)
-                    {
-                        var validation = await _licenseService.ValidateLicenseAsync(domain.Name);
-                        var errorMessage = validation.ExpirationBehavior?.CustomMessage 
-                            ?? "Lisans süreniz dolmuştur. Lütfen lisansınızı yenileyin.";
-                        
-                        _logger.LogWarning("Token generation blocked due to license expiration for domain: {DomainName}, user: {Username}", 
-                            domain.Name, actualUsername);
-                        
-                        return new GetTokenResponse
-                        {
-                            IsSuccess = false,
-                            ErrorMessage = errorMessage
-                        };
-                    }
-                }
-                else
-                {
-                    _logger.LogInformation("Admin user {Username} bypassing license check for token generation in domain: {DomainName}", 
-                        actualUsername, domain.Name);
-                }
-
                 // Get token from Keycloak
                 var keycloakTokenResponse = await _keycloakService.GetTokenAsync(domain.RealmName, actualUsername, request.Password);
 
@@ -171,31 +135,70 @@ namespace MngKeeper.Application.Features.Auth.Commands.GetToken
                     };
                 }
 
-                // Check if user is manager by checking their groups
-                bool isManager = false;
-                if (user != null && user.Groups != null)
+                // K4: Keycloak başarılı → tek kullanıcı KC→Mongo sync → güncel gruplar/claim'ler
+                var loginSync = await _directorySyncService.SyncUserOnLoginAsync(
+                    domain.Id, actualUsername, cancellationToken);
+                if (!loginSync.IsSuccess && loginSync.Code != "sync_in_progress" && loginSync.Code != "login_sync_disabled")
                 {
-                    isManager = user.Groups.Contains("managers", StringComparer.OrdinalIgnoreCase);
+                    _logger.LogWarning(
+                        "Login directory sync did not complete for {Username}: {Code} — {Message}",
+                        actualUsername, loginSync.Code, loginSync.Message);
+                }
+                else if (loginSync.UsersCreated > 0 || loginSync.UsersUpdated > 0)
+                {
+                    _logger.LogInformation(
+                        "Login directory sync applied for {Username}: created={Created} updated={Updated}",
+                        actualUsername, loginSync.UsersCreated, loginSync.UsersUpdated);
+                }
+
+                _logger.LogInformation("Getting user from MongoDB - Username: {Username}, DomainId: {DomainId}", actualUsername, domain.Id);
+                user = await _userRepository.GetByUsernameAsync(actualUsername, domain.Id);
+                if (user == null)
+                {
+                    var kcUser = await _keycloakService.GetRealmUserByUsernameAsync(
+                        domain.RealmName, actualUsername, cancellationToken);
+                    if (kcUser != null)
+                        user = await _userRepository.GetByUsernameAsync(kcUser.Username, domain.Id);
+                }
+
+                var isAdmin = await AuthPrivilegeHelper.ResolveIsAdminAsync(
+                    _privilegeGroupResolver, _keycloakService, domain, actualUsername, user?.Groups);
+                var isManager = await AuthPrivilegeHelper.ResolveIsManagerAsync(
+                    _privilegeGroupResolver, _keycloakService, domain, actualUsername, user?.Groups, isAdmin);
+                if (user?.Groups != null && user.Groups.Count > 0)
+                {
+                    isAdmin = _privilegeGroupResolver.IsAdmin(domain, user.Groups);
+                    isManager = _privilegeGroupResolver.IsManager(domain, user.Groups);
+                }
+
+                if (!isAdmin)
+                {
+                    var isOperationAllowed = await _licenseService.IsOperationAllowedAsync(
+                        domain.Name,
+                        MngKeeper.Domain.Entities.LicenseOperation.TokenGeneration);
+
+                    if (!isOperationAllowed)
+                    {
+                        var validation = await _licenseService.ValidateLicenseAsync(domain.Name);
+                        var errorMessage = validation.ExpirationBehavior?.CustomMessage
+                            ?? "Lisans süreniz dolmuştur. Lütfen lisansınızı yenileyin.";
+
+                        _logger.LogWarning(
+                            "Token generation blocked due to license expiration for domain: {DomainName}, user: {Username}",
+                            domain.Name, actualUsername);
+
+                        return new GetTokenResponse
+                        {
+                            IsSuccess = false,
+                            ErrorMessage = errorMessage
+                        };
+                    }
                 }
                 else
                 {
-                    // Fallback: Check Keycloak groups if user not found in MongoDB
-                    isManager = await _keycloakService.IsUserInGroupAsync(domain.RealmName, actualUsername, "managers");
-                }
-
-                // Get user from MongoDB (more reliable than Keycloak attributes)
-                // Note: We already fetched user above for IsActive check, but we need to fetch again
-                // to get profile fields. In the future, we could optimize this.
-                _logger.LogInformation("Getting user from MongoDB - Username: {Username}, DomainId: {DomainId}", actualUsername, domain.Id);
-                if (user == null)
-                {
-                    user = await _userRepository.GetByUsernameAsync(actualUsername, domain.Id);
-                    // Update isAdmin and isManager if user was found
-                    if (user != null && user.Groups != null)
-                    {
-                        isAdmin = user.Groups.Contains("admins", StringComparer.OrdinalIgnoreCase);
-                        isManager = user.Groups.Contains("managers", StringComparer.OrdinalIgnoreCase);
-                    }
+                    _logger.LogInformation(
+                        "Admin user {Username} bypassing license check for token generation in domain: {DomainName}",
+                        actualUsername, domain.Name);
                 }
                 
                 // Extract user profile fields from MongoDB user entity

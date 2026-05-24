@@ -6,6 +6,7 @@ import * as yup from 'yup';
 import { useLocaleStore } from '@/stores/locale';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useGroupStore } from '@/stores/apps/group';
+import { useGroupFieldPolicies } from '@/composables/useGroupFieldPolicies';
 
 // Get i18n instance for legacy mode
 const nuxtApp = useNuxtApp();
@@ -26,6 +27,10 @@ const router = useRouter();
 const groupStore = useGroupStore();
 
 const groupId = route.params.id as string;
+
+const currentGroupRef = computed(() => groupStore.currentGroup);
+const { isDirectory, canEdit, sourceLabelKey, sourceChipColor } =
+  useGroupFieldPolicies(currentGroupRef);
 
 const page = computed(() => ({ title: t('groups.edit.title') }));
 const breadcrumbs = computed(() => [
@@ -123,7 +128,22 @@ const onSubmit = async (values: any) => {
   
   <v-card elevation="10" v-if="!loading || groupStore.currentGroup">
     <v-card-item>
-      <h5 class="text-h5 mb-6 font-weight-semibold">{{ t('groups.edit.title') }}</h5>
+      <div class="d-flex align-center flex-wrap ga-3 mb-4">
+        <h5 class="text-h5 font-weight-semibold mb-0">{{ t('groups.edit.title') }}</h5>
+        <v-chip v-if="groupStore.currentGroup" size="small" variant="tonal" :color="sourceChipColor">
+          {{ t(sourceLabelKey) }}
+        </v-chip>
+      </div>
+
+      <v-alert
+        v-if="isDirectory"
+        type="info"
+        variant="tonal"
+        density="compact"
+        class="mb-4"
+      >
+        {{ t('groups.directory.editHint') }}
+      </v-alert>
       
       <div v-if="loading && !groupStore.currentGroup" class="text-center py-8">
         <v-progress-circular indeterminate color="primary" />
@@ -159,6 +179,7 @@ const onSubmit = async (values: any) => {
                   :label="t('groups.edit.name')"
                   variant="outlined"
                   :error-messages="errors"
+                  :disabled="!canEdit"
                   required
                 />
               </Field>
@@ -172,6 +193,7 @@ const onSubmit = async (values: any) => {
                 color="success"
                 hide-details
                 class="mt-4"
+                :disabled="!canEdit"
               />
             </v-col>
 
@@ -186,6 +208,7 @@ const onSubmit = async (values: any) => {
                   :error-messages="errors"
                   rows="3"
                   counter="500"
+                  :disabled="!canEdit"
                 />
               </Field>
             </v-col>
@@ -202,6 +225,7 @@ const onSubmit = async (values: any) => {
               {{ t('groups.edit.cancel') }}
             </v-btn>
             <v-btn
+              v-if="canEdit"
               color="primary"
               variant="flat"
               type="submit"

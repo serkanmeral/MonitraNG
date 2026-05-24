@@ -1,6 +1,7 @@
 using MediatR;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Application.Common.DTOs;
+using MngKeeper.Application.Common.Mappers;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 
@@ -11,15 +12,18 @@ namespace MngKeeper.Application.Features.User.Queries.GetUser
         private readonly IUserRepository _userRepository;
         private readonly ILogger<GetUserQueryHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IUserFieldPolicyService _fieldPolicyService;
 
         public GetUserQueryHandler(
             IUserRepository userRepository,
             ILogger<GetUserQueryHandler> logger,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IUserFieldPolicyService fieldPolicyService)
         {
             _userRepository = userRepository;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
+            _fieldPolicyService = fieldPolicyService;
         }
 
         public async Task<GetUserResponse> Handle(GetUserQuery request, CancellationToken cancellationToken)
@@ -63,26 +67,7 @@ namespace MngKeeper.Application.Features.User.Queries.GetUser
                     };
                 }
 
-                var userDto = new UserDto
-                {
-                    UserId = user.Id,
-                    KeycloakUserId = string.IsNullOrWhiteSpace(user.KeycloakUserId) ? null : user.KeycloakUserId,
-                    Username = user.Username,
-                    Email = user.Email,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    Title = user.Title,
-                    Department = user.Department,
-                    Gender = user.Gender,
-                    PhoneNumber = user.PhoneNumber,
-                    PhotoUrl = user.PhotoUrl,
-                    Groups = user.Groups,
-                    IsActive = user.IsActive,
-                    CreatedAt = user.CreatedAt,
-                    UpdatedAt = user.UpdatedAt,
-                    CreatedBy = user.CreatedBy,
-                    UpdatedBy = user.UpdatedBy
-                };
+                var userDto = UserDtoMapper.ToDto(user, _fieldPolicyService);
 
                 return new GetUserResponse
                 {

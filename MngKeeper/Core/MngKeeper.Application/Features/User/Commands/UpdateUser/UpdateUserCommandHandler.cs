@@ -1,8 +1,12 @@
 using MediatR;
+using MngKeeper.Application.Common;
+using MngKeeper.Application.Common.Mappers;
+using MngKeeper.Application.Directory;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Domain.Entities;
 using MngKeeper.Application.Common.Helpers;
 using MngKeeper.Application.Common.Exceptions;
+using MngKeeper.Domain.Enums;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -94,13 +98,34 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                     };
                 }
 
-                // Check if new email conflicts with existing user (excluding current user)
-                if (request.Email != existingUser.Email && await _userRepository.ExistsByEmailAsync(request.Email, claims.DomainId))
+                var rejectedFields = DirectoryUserUpdateValidator.GetRejectedFields(request, existingUser);
+                if (rejectedFields.Count > 0)
                 {
                     return new UpdateUserResponse
                     {
                         IsSuccess = false,
-                        ErrorMessage = $"User with email '{request.Email}' already exists."
+                        ErrorMessage =
+                            $"Kurumsal hesap alanları uygulama üzerinden güncellenemez. ({DirectoryUserUpdateValidator.ErrorCode}: {string.Join(", ", rejectedFields)})"
+                    };
+                }
+
+                var isDirectoryUser = existingUser.ProvisioningSource == UserProvisioningSource.Directory;
+
+                if (isDirectoryUser)
+                {
+                    return await UpdateDirectoryUserAsync(request, existingUser, claims);
+                }
+
+                var normalizedEmail = UserEmailHelper.NormalizeForStorage(request.Email);
+
+                if (normalizedEmail != existingUser.Email
+                    && UserEmailHelper.HasValue(normalizedEmail)
+                    && await _userRepository.ExistsByEmailAsync(normalizedEmail, claims.DomainId))
+                {
+                    return new UpdateUserResponse
+                    {
+                        IsSuccess = false,
+                        ErrorMessage = $"User with email '{normalizedEmail}' already exists."
                     };
                 }
 
@@ -120,7 +145,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                     var keycloakUpdateRequest = new MngKeeper.Application.Interfaces.UpdateUserRequest
                     {
                         Username = request.Username,
-                        Email = request.Email,
+                        Email = normalizedEmail ?? string.Empty,
                         FirstName = request.FirstName,
                         LastName = request.LastName,
                         Title = request.Title,
@@ -156,7 +181,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
 
                 // Update user entity
                 existingUser.Username = request.Username;
-                existingUser.Email = request.Email;
+                existingUser.Email = normalizedEmail;
                 existingUser.FirstName = request.FirstName;
                 existingUser.LastName = request.LastName;
                 existingUser.Title = request.Title;
@@ -173,6 +198,18 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                 {
                     if (request.GroupIds.Any())
                     {
+                        var directoryGroupIds = await DirectoryGroupMembershipValidator.GetDirectoryGroupIdsAsync(
+                            _groupRepository, claims.DomainId, request.GroupIds, cancellationToken);
+                        if (directoryGroupIds.Count > 0)
+                        {
+                            return new UpdateUserResponse
+                            {
+                                IsSuccess = false,
+                                ErrorMessage =
+                                    $"Kurumsal gruplara üyelik uygulama üzerinden atanamaz. ({DirectoryGroupGuard.MembershipErrorCode}: {string.Join(", ", directoryGroupIds)})"
+                            };
+                        }
+
                         var groupNames = new List<string>();
                         foreach (var groupId in request.GroupIds)
                         {
@@ -292,6 +329,68 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                     request.UserId,
                     claims?.DomainId ?? "N/A");
             }
+        }
+
+        /// <summary>Directory kullanıcı — yalnızca uygulama alanları; Keycloak güncellenmez.</summary>
+        private async Task<UpdateUserResponse> UpdateDirectoryUserAsync(
+            UpdateUserCommand request,
+            MngKeeper.Domain.Entities.User existingUser,
+            TokenClaims claims)
+        {
+            existingUser.Title = request.Title;
+            existingUser.Department = request.Department;
+            existingUser.Gender = request.Gender;
+            existingUser.PhoneNumber = request.PhoneNumber;
+            existingUser.PhotoUrl = request.PhotoUrl;
+            existingUser.UpdatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser;
+            existingUser.UpdatedAt = DateTime.UtcNow;
+
+            var updatedUser = await _userRepository.UpdateAsync(existingUser);
+
+            try
+            {
+                await _dataGatewaySyncService.SyncUserToDataGatewayAsync(
+                    updatedUser,
+                    claims.DomainId,
+                    request.CustomData);
+            }
+            catch (Exception syncEx)
+            {
+                _logger.LogError(syncEx, "Failed to sync Directory user to DataGateway: UserId={UserId}", updatedUser.Id);
+            }
+
+            var userUpdatedEvent = new UserUpdatedEvent
+            {
+                UserId = updatedUser.Id,
+                Username = updatedUser.Username,
+                Email = updatedUser.Email,
+                Groups = updatedUser.Groups
+            };
+            await EventPublishingHelper.PublishEventSafelyAsync(
+                _eventPublisher,
+                _logger,
+                userUpdatedEvent,
+                claims.DomainId,
+                "UserUpdatedEvent",
+                updatedUser.Id);
+
+            return new UpdateUserResponse
+            {
+                UserId = updatedUser.Id,
+                Username = updatedUser.Username,
+                Email = updatedUser.Email ?? string.Empty,
+                FirstName = updatedUser.FirstName,
+                LastName = updatedUser.LastName,
+                Title = updatedUser.Title,
+                Department = updatedUser.Department,
+                Gender = updatedUser.Gender,
+                PhoneNumber = updatedUser.PhoneNumber,
+                PhotoUrl = updatedUser.PhotoUrl,
+                GroupIds = updatedUser.Groups,
+                IsActive = updatedUser.IsActive,
+                UpdatedAt = updatedUser.UpdatedAt ?? DateTime.UtcNow,
+                IsSuccess = true
+            };
         }
     }
 }

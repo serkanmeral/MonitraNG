@@ -5,6 +5,11 @@ import { useLocaleStore } from '@/stores/locale';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useUserStore } from '@/stores/apps/user';
 import { useAuthStore } from '@/stores/auth';
+import {
+  canDeleteUser,
+  provisioningSourceChipColor,
+  provisioningSourceLabelKey,
+} from '@/utils/userFieldPolicy';
 import { EditIcon, EyeIcon, TrashIcon, UserPlusIcon, RefreshIcon, DownloadIcon } from 'vue-tabler-icons';
 
 // Get i18n instance for legacy mode
@@ -61,6 +66,7 @@ const tableOptions = ref({
 
 const headers = computed(() => [
   { title: t('users.table.username'), key: 'username', sortable: true },
+  { title: t('users.table.source'), key: 'provisioningSource', sortable: false },
   { title: t('users.table.email'), key: 'email', sortable: true },
   { title: t('users.table.fullName'), key: 'fullName', sortable: true },
   { title: t('users.table.status'), key: 'isActive', sortable: true },
@@ -539,6 +545,17 @@ const formatDate = (date: string | Date | null | undefined) => {
         hide-default-footer
         @update:options="handleTableOptionsUpdate"
       >
+        <!-- Provisioning source -->
+        <template v-slot:item.provisioningSource="{ item }">
+          <v-chip
+            size="small"
+            variant="tonal"
+            :color="provisioningSourceChipColor(item.provisioningSource)"
+          >
+            {{ t(provisioningSourceLabelKey(item.provisioningSource)) }}
+          </v-chip>
+        </template>
+
         <!-- Full Name Column -->
         <template v-slot:item.fullName="{ item }">
           <span class="text-subtitle-1 font-weight-medium">
@@ -602,6 +619,7 @@ const formatDate = (date: string | Date | null | undefined) => {
               <v-tooltip activator="parent" location="top">{{ t('users.actions.edit') }}</v-tooltip>
             </v-btn>
             <v-btn
+              v-if="canDeleteUser(item)"
               icon
               size="small"
               variant="text"

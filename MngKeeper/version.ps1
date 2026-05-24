@@ -62,6 +62,14 @@ function Set-Version {
                 $propertyGroup.AppendChild($fileVersionElement) | Out-Null
             }
             $propertyGroup.FileVersion = "$Version.0"
+
+            if ($projectFile -like "*MngKeeper.Api.csproj*") {
+                if ($propertyGroup.InformationalVersion -eq $null) {
+                    $infoElement = $csproj.CreateElement("InformationalVersion")
+                    $propertyGroup.AppendChild($infoElement) | Out-Null
+                }
+                $propertyGroup.InformationalVersion = $Version
+            }
             
             $csproj.Save($projectFile)
             Write-Host "  ✅ Updated: $projectFile" -ForegroundColor Green

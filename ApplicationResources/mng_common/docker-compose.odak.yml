@@ -1,0 +1,38 @@
+# Odak ortamı — GitLab + Nginx + MkDocs hariç altyapı
+# Kullanım:
+#   cp env.example .env   # parolaları doldurun
+#   docker compose -f docker-compose.yml -f docker-compose.odak.yml up -d
+#
+# Devre dışı servisler "odak-disabled" profilinde; bu profili vermeden başlatılmazlar.
+
+services:
+  keycloak:
+    ports:
+      - "8080:8080"
+    environment:
+      # Nginx yok — hostname + port; KC_HOSTNAME_URL ile KC_HOSTNAME birlikte kullanılamaz
+      KC_HOSTNAME: ${ODAK_KEYCLOAK_HOSTNAME:-192.168.20.20}
+      KC_HOSTNAME_PORT: ${ODAK_KEYCLOAK_PORT:-8080}
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_PROXY: passthrough
+      KC_HTTP_RELATIVE_PATH: /keycloak
+      KC_HOSTNAME_PATH: /keycloak
+
+  gitlab:
+    profiles: ["odak-disabled"]
+
+  gitlab-postgres:
+    profiles: ["odak-disabled"]
+
+  gitlab-redis:
+    profiles: ["odak-disabled"]
+
+  gitlab-runner:
+    profiles: ["odak-disabled"]
+
+  mkdocs:
+    profiles: ["odak-disabled"]
+
+  nginx:
+    profiles: ["odak-disabled"]

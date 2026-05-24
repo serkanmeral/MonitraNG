@@ -6,6 +6,7 @@ import { useDomain, type Domain, type UpdateDomainRequest } from '@/composables/
 import { fetchFromMngKeeper } from '@/services/apiService';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DomainBackupCard from '@/components/apps/domain/DomainBackupCard.vue';
+import DomainDirectorySyncCard from '@/components/apps/domain/DomainDirectorySyncCard.vue';
 import { SettingsIcon, RefreshIcon, EditIcon, ShieldIcon } from 'vue-tabler-icons';
 
 // Get i18n instance for legacy mode
@@ -1136,6 +1137,7 @@ onMounted(async () => {
         </v-card>
 
         <!-- Backup Info Card -->
+        <DomainDirectorySyncCard v-if="domain" class="mb-4" />
         <DomainBackupCard v-if="domain" :domain-name="domain.name" />
       </template>
 

@@ -134,10 +134,23 @@ export async function revokeMngKeeperToken(
   }
 }
 
-// Helper function to get access token from cookie
+// Helper: cookie (kalıcı oturum) veya Pinia (login sonrası, cookie henüz yazılmadan)
 export function getAccessToken(): string | null {
   const tokenCookie = useCookie("access_token");
-  return tokenCookie.value || null;
+  if (tokenCookie.value) {
+    return tokenCookie.value;
+  }
+  if (import.meta.client) {
+    try {
+      const authStore = useAuthStore();
+      if (authStore.accessToken) {
+        return authStore.accessToken;
+      }
+    } catch {
+      // store henüz hazır değil
+    }
+  }
+  return null;
 }
 
 // Flag to prevent multiple simultaneous refresh attempts

@@ -22,6 +22,8 @@ interface Props {
   groupId: string;
   groupName: string;
   isOpen: boolean;
+  /** Kurumsal (Directory) gruplar — üye ekleme/çıkarma kapalı */
+  readOnly?: boolean;
 }
 
 interface Emits {
@@ -29,7 +31,9 @@ interface Emits {
   (e: 'updated'): void;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  readOnly: false,
+});
 const emit = defineEmits<Emits>();
 
 const groupStore = useGroupStore();
@@ -252,6 +256,16 @@ const closeModal = () => {
           {{ successMessage }}
         </v-alert>
 
+        <v-alert
+          v-if="readOnly"
+          type="info"
+          variant="tonal"
+          density="compact"
+          class="ma-4 mb-0"
+        >
+          {{ t('groups.directory.membersManagedExternally') }}
+        </v-alert>
+
         <v-divider />
 
         <!-- Loading State -->
@@ -298,7 +312,7 @@ const closeModal = () => {
                       :title="`${member.firstName} ${member.lastName}`"
                       :subtitle="`${member.username} • ${member.email}`"
                     >
-                      <template v-slot:append>
+                      <template v-if="!readOnly" v-slot:append>
                         <v-btn
                           icon
                           variant="text"
@@ -317,7 +331,7 @@ const closeModal = () => {
             </v-col>
 
             <!-- Available Users to Add -->
-            <v-col cols="12" md="6">
+            <v-col v-if="!readOnly" cols="12" md="6">
               <v-card variant="outlined" class="h-100 d-flex flex-column">
                 <v-card-title class="bg-info text-white pa-3">
                   <div class="d-flex justify-space-between align-center w-100">

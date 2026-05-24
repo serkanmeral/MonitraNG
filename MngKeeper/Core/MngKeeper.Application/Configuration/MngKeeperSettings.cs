@@ -13,6 +13,7 @@ public class MngKeeperSettings
     public NotifierSettings Notifier { get; set; } = null!;
     public CertificateSettings CertificateSettings { get; set; } = null!;
     public LicenseSettings License { get; set; } = new();
+    public DirectorySyncSettings DirectorySync { get; set; } = new();
     public string OpenApiServerPath { get; set; } = null!;
     /// <summary>
     /// UI uygulamasının base URL'i (şifre sıfırlama mailindeki link için).

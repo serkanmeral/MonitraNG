@@ -5,6 +5,7 @@ import { useLocaleStore } from '@/stores/locale';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import GroupUserManagementModal from '@/components/apps/groups/GroupUserManagementModal.vue';
 import { useGroupStore } from '@/stores/apps/group';
+import { useGroupFieldPolicies } from '@/composables/useGroupFieldPolicies';
 import { EditIcon, UserPlusIcon, UsersIcon } from 'vue-tabler-icons';
 
 // Get i18n instance for legacy mode
@@ -26,6 +27,10 @@ const router = useRouter();
 const groupStore = useGroupStore();
 
 const groupId = route.params.id as string;
+
+const currentGroupRef = computed(() => groupStore.currentGroup);
+const { canEdit, canManageMembers, sourceLabelKey, sourceChipColor } =
+  useGroupFieldPolicies(currentGroupRef);
 
 const page = computed(() => ({ title: t('groups.details.title') }));
 const breadcrumbs = computed(() => [
@@ -116,12 +121,15 @@ const onUserManagementUpdated = async () => {
     <v-card-item>
       <div class="d-flex justify-space-between align-center mb-6">
         <h5 class="text-h5 font-weight-semibold">{{ t('groups.details.title') }}</h5>
-        <div class="d-flex ga-2">
-          <v-btn color="info" @click="openUserManagement" flat>
+        <div class="d-flex align-center flex-wrap ga-2">
+          <v-chip v-if="groupStore.currentGroup" size="small" variant="tonal" :color="sourceChipColor">
+            {{ t(sourceLabelKey) }}
+          </v-chip>
+          <v-btn v-if="canManageMembers" color="info" @click="openUserManagement" flat>
             <UserPlusIcon class="mr-2" size="18" />
             {{ t('groups.details.userManagement') }}
           </v-btn>
-          <v-btn color="primary" @click="editGroup" flat>
+          <v-btn v-if="canEdit" color="primary" @click="editGroup" flat>
             <EditIcon class="mr-2" size="18" />
             {{ t('groups.details.edit') }}
           </v-btn>

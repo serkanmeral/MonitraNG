@@ -1,4 +1,5 @@
 using MediatR;
+using MngKeeper.Application.Directory;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Application.Common.Helpers;
 using MngKeeper.Application.Common.Exceptions;
@@ -70,6 +71,16 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
                     {
                         IsSuccess = false,
                         ErrorMessage = "Group does not belong to the current domain."
+                    };
+                }
+
+                if (!DirectoryGroupGuard.CanMutateGroup(existingGroup))
+                {
+                    return new DeleteGroupResponse
+                    {
+                        IsSuccess = false,
+                        ErrorMessage =
+                            $"Kurumsal gruplar silinemez. ({DirectoryGroupGuard.ErrorCode})"
                     };
                 }
 

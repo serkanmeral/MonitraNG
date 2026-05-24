@@ -1,5 +1,6 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using MngKeeper.Domain.Enums;
 
 namespace MngKeeper.Domain.Entities
 {
@@ -38,5 +39,11 @@ namespace MngKeeper.Domain.Entities
 
         [BsonElement("updatedBy")]
         public string? UpdatedBy { get; set; }
+
+        [BsonElement("provisioningSource")]
+        public UserProvisioningSource ProvisioningSource { get; set; } = UserProvisioningSource.Local;
+
+        [BsonElement("directorySyncedAt")]
+        public DateTime? DirectorySyncedAt { get; set; }
     }
 }

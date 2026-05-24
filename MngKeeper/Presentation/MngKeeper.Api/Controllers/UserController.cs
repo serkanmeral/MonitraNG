@@ -185,7 +185,7 @@ namespace MngKeeper.Api.Controllers
         }
 
         [HttpPost("{userId}/photo")]
-        public async Task<ActionResult> UploadUserPhoto(string userId, [FromForm] IFormFile file)
+        public async Task<ActionResult> UploadUserPhoto(string userId, IFormFile file)
         {
             try
             {

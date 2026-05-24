@@ -1,7 +1,9 @@
-using Microsoft.OpenApi.Models;
-using System.Reflection;
-using Swashbuckle.AspNetCore.SwaggerGen;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using System.Reflection;
 
 namespace MngKeeper.Api.Configuration
 {
@@ -59,14 +61,32 @@ namespace MngKeeper.Api.Configuration
                     }
                 });
 
-                // Configure Server URL from settings
+                // Scalar/Swagger "Try it out": önce mevcut host (5001 doğrudan erişim)
+                c.AddServer(new OpenApiServer
+                {
+                    Url = "/",
+                    Description = "Current host (direct — use on :5001 Scalar)"
+                });
+
                 if (!string.IsNullOrEmpty(openApiServerPath))
                 {
+                    var baseUrl = openApiServerPath.TrimEnd('/');
                     c.AddServer(new OpenApiServer
                     {
-                        Url = openApiServerPath,
-                        Description = "API Gateway Server"
+                        Url = baseUrl,
+                        Description = "Configured API base"
                     });
+
+                    // Odak: OPENAPI_SERVER_PATH genelde gateway kökü (:5040); Keeper yolları /keeper altında
+                    if (baseUrl.Contains(":5040", StringComparison.OrdinalIgnoreCase)
+                        && !baseUrl.EndsWith("/keeper", StringComparison.OrdinalIgnoreCase))
+                    {
+                        c.AddServer(new OpenApiServer
+                        {
+                            Url = $"{baseUrl}/keeper",
+                            Description = "API Gateway — MngKeeper (/keeper)"
+                        });
+                    }
                 }
 
                 // Add JWT Authentication
@@ -105,6 +125,7 @@ namespace MngKeeper.Api.Configuration
                 // Add operation filters
                 c.OperationFilter<SwaggerDefaultValues>();
                 c.OperationFilter<SwaggerAuthorizationFilter>();
+                c.OperationFilter<SwaggerFileUploadOperationFilter>();
 
                 // Customize operation IDs
                 c.CustomOperationIds(apiDesc =>
@@ -112,24 +133,20 @@ namespace MngKeeper.Api.Configuration
                     return apiDesc.TryGetMethodInfo(out var methodInfo) ? methodInfo.Name : null;
                 });
 
-                // Add tags
+                // Yalnızca MVC controller endpoint'leri (Scalar/redirect/GraphQL minimal API hariç)
+                c.DocInclusionPredicate((_, api) =>
+                    api.ActionDescriptor is ControllerActionDescriptor);
+
                 c.TagActionsBy(api =>
                 {
                     if (api.GroupName != null)
-                    {
                         return new[] { api.GroupName };
-                    }
 
-                    var controllerActionDescriptor = api.ActionDescriptor as Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor;
-                    if (controllerActionDescriptor != null)
-                    {
-                        return new[] { controllerActionDescriptor.ControllerName };
-                    }
+                    if (api.ActionDescriptor is ControllerActionDescriptor cad)
+                        return new[] { cad.ControllerName.Replace("Controller", "", StringComparison.Ordinal) };
 
-                    throw new InvalidOperationException("Unable to determine tag for endpoint.");
+                    return new[] { "Other" };
                 });
-
-                c.DocInclusionPredicate((name, api) => true);
             });
 
             // services.AddSwaggerGenNewtonsoftSupport(); // Removed as not needed
@@ -187,6 +204,76 @@ namespace MngKeeper.Api.Configuration
                     }
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// multipart/form-data + IFormFile — Swashbuckle doc üretim hatasını önler (Scalar/Swagger UI).
+    /// </summary>
+    public class SwaggerFileUploadOperationFilter : IOperationFilter
+    {
+        public void Apply(OpenApiOperation operation, OperationFilterContext context)
+        {
+            var formParams = context.ApiDescription.ParameterDescriptions
+                .Where(p =>
+                    p.ModelMetadata?.ModelType == typeof(IFormFile)
+                    || p.ModelMetadata?.ModelType == typeof(IFormFile[])
+                    || (p.Source.Id == "Form" && p.ModelMetadata?.ModelType != null
+                        && p.ModelMetadata.ModelType.GetProperties()
+                            .Any(prop => prop.PropertyType == typeof(IFormFile) || prop.PropertyType == typeof(IFormFile[]))))
+                .ToList();
+
+            if (formParams.Count == 0)
+                return;
+
+            var properties = new Dictionary<string, OpenApiSchema>();
+            var required = new HashSet<string>();
+
+            foreach (var param in formParams)
+            {
+                if (param.ModelMetadata?.ModelType == typeof(IFormFile)
+                    || param.ModelMetadata?.ModelType == typeof(IFormFile[]))
+                {
+                    properties[param.Name] = new OpenApiSchema { Type = "string", Format = "binary" };
+                    required.Add(param.Name);
+                    continue;
+                }
+
+                foreach (var prop in param.ModelMetadata!.ModelType.GetProperties())
+                {
+                    if (prop.PropertyType == typeof(IFormFile) || prop.PropertyType == typeof(IFormFile[]))
+                    {
+                        properties[prop.Name] = new OpenApiSchema { Type = "string", Format = "binary" };
+                        required.Add(prop.Name);
+                    }
+                    else
+                    {
+                        properties[prop.Name] = context.SchemaGenerator.GenerateSchema(
+                            prop.PropertyType, context.SchemaRepository);
+                    }
+                }
+            }
+
+            operation.RequestBody = new OpenApiRequestBody
+            {
+                Content = new Dictionary<string, OpenApiMediaType>
+                {
+                    ["multipart/form-data"] = new OpenApiMediaType
+                    {
+                        Schema = new OpenApiSchema
+                        {
+                            Type = "object",
+                            Properties = properties,
+                            Required = required
+                        }
+                    }
+                }
+            };
+
+            var formParamNames = formParams.Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            operation.Parameters = operation.Parameters
+                .Where(p => !formParamNames.Contains(p.Name))
+                .ToList();
         }
     }
 

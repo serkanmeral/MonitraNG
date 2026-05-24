@@ -3,7 +3,7 @@ import { RouterLink } from "vue-router";
 </script>
 <template>
     <div class="logo">
-      <NuxtLink to="/welcome" class="d-flex">
+      <NuxtLink to="/" class="d-flex">
         <img src="/images/logos/logo.svg" alt="logo" />
       </NuxtLink>
     </div>

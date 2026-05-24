@@ -15,8 +15,13 @@ Yaptıklarımız, yapacaklarımız ve kararlarımız bu dosyada güncellenecekti
 
 Detaylı sürüm geçmişi için [Changelog](CHANGELOG.md) dosyasına bakınız.
 
+## Yapılanlar (ek)
+
+- **Directory sync orchestration (K3)** — `system-directory-sync-all-domains` system job; `DirectorySyncOrchestrationJob`; Active domain listesi `DomainLookupService`; domain başına `POST` MngKeeper `/api/directory/sync` (`triggeredBy: Scheduled`); 409 skip.
+
 ## Yapılacaklar
 
+- **K3 deploy / seed** — `scripts/tests/MngScheduler/seed-directory-sync-system-job.ps1`; Odak’ta Scheduler + Keeper smoke.
 - **User Job E2E testi** — Domain dataset üzerinden oluşturma/çalıştırma/silme akışının doğrulanması.
 - **Retry ve monitoring** — Job hatası sonrası retry politikası, execution dashboard/raporlama.
 - **Job UI** — System/User job yönetimi için arayüz (planlanan).

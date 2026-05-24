@@ -2,6 +2,7 @@ using MongoDB.Driver;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Domain.Entities;
 using MngKeeper.Application.Common.DTOs;
+using MngKeeper.Domain.Enums;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 
@@ -57,7 +58,13 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                 CreatedAt = doc.GetValue("createdAt", DateTime.UtcNow).ToUniversalTime(),
                 CreatedBy = doc.GetValue("createdBy", "").AsString,
                 UpdatedAt = doc.GetValue("updatedAt", BsonNull.Value).IsBsonNull ? null : doc.GetValue("updatedAt").ToUniversalTime(),
-                UpdatedBy = doc.GetValue("updatedBy", BsonNull.Value).IsBsonNull ? null : doc.GetValue("updatedBy").AsString
+                UpdatedBy = doc.GetValue("updatedBy", BsonNull.Value).IsBsonNull ? null : doc.GetValue("updatedBy").AsString,
+                ProvisioningSource = doc.Contains("provisioningSource") && !doc["provisioningSource"].IsBsonNull
+                    ? (UserProvisioningSource)doc["provisioningSource"].AsInt32
+                    : UserProvisioningSource.Local,
+                DirectorySyncedAt = doc.Contains("directorySyncedAt") && !doc["directorySyncedAt"].IsBsonNull
+                    ? doc["directorySyncedAt"].ToUniversalTime()
+                    : null,
             };
         }
 
@@ -97,7 +104,9 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                     ["createdAt"] = entity.CreatedAt,
                     ["createdBy"] = entity.CreatedBy,
                     ["updatedAt"] = entity.UpdatedAt.HasValue ? entity.UpdatedAt.Value : BsonNull.Value,
-                    ["updatedBy"] = string.IsNullOrEmpty(entity.UpdatedBy) ? BsonNull.Value : entity.UpdatedBy
+                    ["updatedBy"] = string.IsNullOrEmpty(entity.UpdatedBy) ? BsonNull.Value : entity.UpdatedBy,
+                    ["provisioningSource"] = (int)entity.ProvisioningSource,
+                    ["directorySyncedAt"] = entity.DirectorySyncedAt.HasValue ? entity.DirectorySyncedAt.Value : BsonNull.Value,
                 };
                 
                 await collection.InsertOneAsync(document);
@@ -146,6 +155,10 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                     updateDefinition = updateDefinition.Set("updatedBy", (BsonValue)entity.UpdatedBy);
                 }
                 
+                updateDefinition = updateDefinition
+                    .Set("provisioningSource", (int)entity.ProvisioningSource)
+                    .Set("directorySyncedAt", entity.DirectorySyncedAt.HasValue ? (BsonValue)entity.DirectorySyncedAt.Value : BsonNull.Value);
+
                 // Note: We don't update __dataId, domainId, createdAt, createdBy as these should not change
                 
                 var result = await collection.UpdateOneAsync(filter, updateDefinition);

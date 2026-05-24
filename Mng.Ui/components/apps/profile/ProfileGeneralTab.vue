@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useAuthStore } from '@/stores/auth';
 import { useUserStore } from '@/stores/apps/user';
 import type { User, Gender } from '@/stores/apps/user';
+import { useUserFieldPolicies } from '@/composables/useUserFieldPolicies';
 import PhotoUpload from '@/components/apps/profile/PhotoUpload.vue';
 import AvatarDisplay from '@/components/apps/profile/AvatarDisplay.vue';
 import * as yup from 'yup';
@@ -58,19 +59,25 @@ const genderOptions = [
 // Email regex pattern
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-// Validation schema
+// Validation schema (directory: yalnızca düzenlenebilir alanlar zorunlu)
 const schema = computed(() => yup.object({
-  firstName: yup.string()
-    .required(t('profile.validation.firstNameRequired'))
-    .min(2, t('profile.validation.firstNameMinLength'))
-    .max(50, t('profile.validation.firstNameMaxLength')),
-  lastName: yup.string()
-    .required(t('profile.validation.lastNameRequired'))
-    .min(2, t('profile.validation.lastNameMinLength'))
-    .max(50, t('profile.validation.lastNameMaxLength')),
-  email: yup.string()
-    .required(t('profile.validation.emailRequired'))
-    .matches(emailRegex, t('profile.validation.emailInvalid')),
+  firstName: fieldEditable('firstName')
+    ? yup.string()
+        .required(t('profile.validation.firstNameRequired'))
+        .min(2, t('profile.validation.firstNameMinLength'))
+        .max(50, t('profile.validation.firstNameMaxLength'))
+    : yup.string().nullable(),
+  lastName: fieldEditable('lastName')
+    ? yup.string()
+        .required(t('profile.validation.lastNameRequired'))
+        .min(2, t('profile.validation.lastNameMinLength'))
+        .max(50, t('profile.validation.lastNameMaxLength'))
+    : yup.string().nullable(),
+  email: fieldEditable('email')
+    ? yup.string()
+        .required(t('profile.validation.emailRequired'))
+        .matches(emailRegex, t('profile.validation.emailInvalid'))
+    : yup.string().nullable(),
   title: yup.string()
     .max(100, t('profile.validation.titleMaxLength')),
   department: yup.string()
@@ -78,6 +85,15 @@ const schema = computed(() => yup.object({
   phoneNumber: yup.string()
     .max(20, t('profile.validation.phoneNumberMaxLength')),
 }));
+
+const profileUser = computed(() => userStore.currentUser);
+
+const {
+  isDirectory,
+  fieldEditable,
+  sourceLabelKey,
+  sourceChipColor,
+} = useUserFieldPolicies(profileUser);
 
 // Get current user
 const currentUser = computed(() => {
@@ -331,18 +347,29 @@ const handleSave = async () => {
     
     // Update user - Backend requires username and email, so we include them
     // Don't include groups - backend will preserve existing groups if groupIds is not provided
-    const response = await userStore.updateUser(userId, {
-      username: currentUser.value.username || authStore.userInfo?.username || authStore.userInfo?.preferred_username || '',
-      email: formData.value.email || currentUser.value.email || authStore.userInfo?.email || '', // Use formData email
-      firstName: formData.value.firstName,
-      lastName: formData.value.lastName,
-      title: formData.value.title || undefined,
-      department: formData.value.department || undefined,
-      gender: formData.value.gender,
-      phoneNumber: formData.value.phoneNumber || undefined,
-      photoUrl: formData.value.photoUrl || undefined,
-      // groups is intentionally omitted - backend will preserve existing groups
-    });
+    const payload: Parameters<typeof userStore.updateUser>[1] = {
+      username:
+        currentUser.value.username ||
+        authStore.userInfo?.username ||
+        authStore.userInfo?.preferred_username ||
+        '',
+    };
+    if (fieldEditable('email')) {
+      payload.email = formData.value.email || currentUser.value.email || '';
+    } else {
+      payload.email = currentUser.value.email || authStore.userInfo?.email || '';
+    }
+    if (fieldEditable('firstName')) payload.firstName = formData.value.firstName;
+    else payload.firstName = currentUser.value.firstName || '';
+    if (fieldEditable('lastName')) payload.lastName = formData.value.lastName;
+    else payload.lastName = currentUser.value.lastName || '';
+    if (fieldEditable('title')) payload.title = formData.value.title || undefined;
+    if (fieldEditable('department')) payload.department = formData.value.department || undefined;
+    if (fieldEditable('gender')) payload.gender = formData.value.gender;
+    if (fieldEditable('phoneNumber')) payload.phoneNumber = formData.value.phoneNumber || undefined;
+    if (fieldEditable('photoUrl')) payload.photoUrl = formData.value.photoUrl || undefined;
+
+    await userStore.updateUser(userId, payload);
     
     // Wait for Vue reactivity to update userStore.currentUser
     await nextTick();
@@ -505,6 +532,21 @@ const formatDate = (date: string | Date | null | undefined) => {
 </script>
 
 <template>
+  <v-alert
+    v-if="isDirectory"
+    type="info"
+    variant="tonal"
+    density="compact"
+    class="mb-4"
+  >
+    <div class="d-flex align-center flex-wrap ga-2">
+      <v-chip size="small" variant="tonal" :color="sourceChipColor">
+        {{ t(sourceLabelKey) }}
+      </v-chip>
+      <span>{{ t('profile.directory.profileHint') }}</span>
+    </div>
+  </v-alert>
+
   <v-row>
     <!-- Left Column: Photo and Personal Info -->
     <v-col cols="12" lg="4" md="12">
@@ -552,7 +594,8 @@ const formatDate = (date: string | Date | null | undefined) => {
               :label="t('profile.personalInfo.firstName')"
               variant="outlined"
               density="comfortable"
-              :disabled="!isEditing"
+              :disabled="!isEditing || !fieldEditable('firstName')"
+              :hint="!fieldEditable('firstName') ? t('profile.directory.fieldReadOnly') : undefined"
               required
             />
             <v-text-field
@@ -561,7 +604,8 @@ const formatDate = (date: string | Date | null | undefined) => {
               variant="outlined"
               density="comfortable"
               class="mt-3"
-              :disabled="!isEditing"
+              :disabled="!isEditing || !fieldEditable('lastName')"
+              :hint="!fieldEditable('lastName') ? t('profile.directory.fieldReadOnly') : undefined"
               required
             />
             <v-text-field
@@ -570,7 +614,8 @@ const formatDate = (date: string | Date | null | undefined) => {
               variant="outlined"
               density="comfortable"
               class="mt-3"
-              :disabled="!isEditing"
+              :disabled="!isEditing || !fieldEditable('email')"
+              :hint="!fieldEditable('email') ? t('profile.directory.fieldReadOnly') : undefined"
               type="email"
               required
             />
@@ -580,7 +625,7 @@ const formatDate = (date: string | Date | null | undefined) => {
               variant="outlined"
               density="comfortable"
               class="mt-3"
-              :disabled="!isEditing"
+              :disabled="!isEditing || !fieldEditable('title')"
             />
             <v-text-field
               v-model="formData.department"
@@ -588,9 +633,10 @@ const formatDate = (date: string | Date | null | undefined) => {
               variant="outlined"
               density="comfortable"
               class="mt-3"
-              :disabled="!isEditing"
+              :disabled="!isEditing || !fieldEditable('department')"
             />
             <v-select
+              v-if="fieldEditable('gender')"
               v-model="formData.gender"
               :label="t('profile.personalInfo.gender')"
               :items="genderOptions"
@@ -607,7 +653,7 @@ const formatDate = (date: string | Date | null | undefined) => {
               variant="outlined"
               density="comfortable"
               class="mt-3"
-              :disabled="!isEditing"
+              :disabled="!isEditing || !fieldEditable('phoneNumber')"
             />
             <div class="d-flex gap-2 mt-4">
               <v-btn

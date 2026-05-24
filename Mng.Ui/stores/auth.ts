@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { loginToMngKeeper, refreshMngKeeperToken, revokeMngKeeperToken, type TokenResponse } from "@/services/apiService";
 import { decodeJwt } from "jose";
-import { isTokenExpired } from "@/utils/tokenUtils";
+import { isTokenExpired, shouldUseSecureCookie } from "@/utils/tokenUtils";
 import type { Domain } from "@/composables/useDomain";
 import { useDomain } from "@/composables/useDomain";
 
@@ -91,14 +91,15 @@ export const useAuthStore = defineStore("auth", {
         this.refreshToken = response.refreshToken;
         
         // Store tokens in cookies
+        const cookieSecure = shouldUseSecureCookie();
         const accessTokenCookie = useCookie("access_token", {
           maxAge: response.expiresIn || 300, // Default 5 minutes
-          secure: process.env.NODE_ENV === 'production',
+          secure: cookieSecure,
           sameSite: "strict",
         });
         const refreshTokenCookie = useCookie("refresh_token", {
           maxAge: response.refreshExpiresIn || 1800, // Default 30 minutes
-          secure: process.env.NODE_ENV === 'production',
+          secure: cookieSecure,
           sameSite: "strict",
         });
         
@@ -220,14 +221,15 @@ export const useAuthStore = defineStore("auth", {
         this.refreshToken = response.refreshToken;
         
         // Update cookies
+        const cookieSecure = shouldUseSecureCookie();
         const accessTokenCookie = useCookie("access_token", {
           maxAge: response.expiresIn || 300,
-          secure: process.env.NODE_ENV === 'production',
+          secure: cookieSecure,
           sameSite: "strict",
         });
         const newRefreshTokenCookie = useCookie("refresh_token", {
           maxAge: response.refreshExpiresIn || 1800,
-          secure: process.env.NODE_ENV === 'production',
+          secure: cookieSecure,
           sameSite: "strict",
         });
         

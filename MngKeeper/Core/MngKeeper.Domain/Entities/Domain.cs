@@ -3,6 +3,7 @@ using MongoDB.Bson.Serialization.Attributes;
 
 namespace MngKeeper.Domain.Entities
 {
+    [BsonIgnoreExtraElements]
     public class Domain
     {
         [BsonId]
@@ -74,6 +75,7 @@ namespace MngKeeper.Domain.Entities
         Failed
     }
 
+    [BsonIgnoreExtraElements]
     public class DomainSettings
     {
         [BsonElement("maxUsers")]
@@ -90,6 +92,41 @@ namespace MngKeeper.Domain.Entities
 
         [BsonElement("customSettings")]
         public Dictionary<string, object> CustomSettings { get; set; } = new();
+
+        [BsonElement("directoryPrivileges")]
+        public DirectoryPrivilegeSettings DirectoryPrivileges { get; set; } = new();
+
+        /// <summary>
+        /// Manuel Mongo güncellemelerinde yanlışlıkla settings altına düz yazılmış alanlar.
+        /// </summary>
+        [BsonElement("adminGroupNames")]
+        public List<string>? FlatAdminGroupNames { get; set; }
+
+        [BsonElement("managerGroupNames")]
+        public List<string>? FlatManagerGroupNames { get; set; }
+
+        public DirectoryPrivilegeSettings ResolveDirectoryPrivileges()
+        {
+            var nested = DirectoryPrivileges ?? new DirectoryPrivilegeSettings();
+            var admin = FlatAdminGroupNames is { Count: > 0 }
+                ? FlatAdminGroupNames
+                : nested.AdminGroupNames;
+            var manager = FlatManagerGroupNames is { Count: > 0 }
+                ? FlatManagerGroupNames
+                : nested.ManagerGroupNames;
+
+            if (ReferenceEquals(admin, nested.AdminGroupNames) &&
+                ReferenceEquals(manager, nested.ManagerGroupNames))
+            {
+                return nested;
+            }
+
+            return new DirectoryPrivilegeSettings
+            {
+                AdminGroupNames = admin ?? new List<string>(),
+                ManagerGroupNames = manager ?? new List<string>()
+            };
+        }
     }
 
     public class MqttSettings

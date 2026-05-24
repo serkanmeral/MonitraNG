@@ -64,8 +64,14 @@ onMounted(async () => {
         u.username === authStore.userInfo?.preferred_username
       );
       
-      if (foundUser) {
-        // User found in backend, use it - this has the real userId
+      if (foundUser?.id) {
+        await userStore.fetchUserById(foundUser.id);
+        if (userStore.viewingUser) {
+          userStore.currentUser = { ...userStore.viewingUser };
+        } else {
+          userStore.currentUser = foundUser;
+        }
+      } else if (foundUser) {
         userStore.currentUser = foundUser;
       } else {
         // If not found, try to fetch by Keycloak user ID (might work if it matches)

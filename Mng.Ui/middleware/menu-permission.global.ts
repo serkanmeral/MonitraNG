@@ -7,34 +7,18 @@
  * Auth middleware login kontrolü yapar, bu middleware permission kontrolü yapar
  */
 export default defineNuxtRouteMiddleware(async (to) => {
-  // Public routes - permission kontrolü yok
-  const publicRoutes = ['/auth/login', '/auth/register', '/unauthorized', '/error', '/welcome'];
-  if (publicRoutes.some(route => to.path.startsWith(route))) {
+  // Auth / hata sayfaları ve ana sayfa — menü izni kontrolü yok
+  if (to.path === '/' || to.path === '/welcome') {
+    return;
+  }
+  const publicRoutes = ['/auth/login', '/auth/register', '/unauthorized', '/error'];
+  if (publicRoutes.some((route) => to.path.startsWith(route))) {
     return;
   }
 
-  // Import auth store (once, at the beginning)
   const { useAuthStore } = await import('@/stores/auth');
   const authStore = useAuthStore();
 
-  // Root path (/) - redirect to welcome page for non-admin users
-  if (to.path === '/') {
-    // Not authenticated - auth middleware will handle redirect to login
-    if (!authStore.isAuthenticated || !authStore.userInfo) {
-      return;
-    }
-    
-    // Admin bypass - admins can access root path (will be redirected by app/router)
-    if (authStore.isAdmin) {
-      return;
-    }
-    
-    // For non-admin users, redirect to welcome page
-    // This prevents unauthorized redirect when user has no accessible pages
-    return navigateTo('/welcome');
-  }
-  
-  // Not authenticated - auth middleware will handle redirect to login
   if (!authStore.isAuthenticated || !authStore.userInfo) {
     return;
   }

@@ -2,6 +2,8 @@
 import { ref, computed } from 'vue';
 import { LockIcon, EyeIcon, EyeOffIcon } from 'vue-tabler-icons';
 import { fetchFromMngKeeper } from '@/services/apiService';
+import { useUserStore } from '@/stores/apps/user';
+import { useUserFieldPolicies } from '@/composables/useUserFieldPolicies';
 import * as yup from 'yup';
 
 // Get i18n instance for legacy mode
@@ -16,6 +18,10 @@ const t = (key: string, params?: any) => {
   }
   return key;
 };
+
+const userStore = useUserStore();
+const profileUser = computed(() => userStore.currentUser);
+const { canChangePassword } = useUserFieldPolicies(profileUser);
 
 // Form data
 const formData = ref({
@@ -165,7 +171,19 @@ const handleCancel = () => {
   <v-row>
     <!-- Change Password Card -->
     <v-col cols="12" lg="8" md="12">
-      <v-card elevation="10" class="mb-4">
+      <v-card v-if="!canChangePassword" elevation="10" class="mb-4">
+        <v-card-item>
+          <h5 class="text-h5 mb-4">
+            <LockIcon size="24" class="mr-2" />
+            {{ t('profile.security.changePassword.title') }}
+          </h5>
+          <v-alert type="info" variant="tonal" density="comfortable">
+            {{ t('profile.security.directoryPasswordManaged') }}
+          </v-alert>
+        </v-card-item>
+      </v-card>
+
+      <v-card v-else elevation="10" class="mb-4">
         <v-card-item>
           <h5 class="text-h5 mb-4">
             <LockIcon size="24" class="mr-2" />

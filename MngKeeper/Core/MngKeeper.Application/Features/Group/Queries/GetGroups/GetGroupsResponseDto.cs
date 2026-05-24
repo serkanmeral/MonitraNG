@@ -1,3 +1,5 @@
+using MngKeeper.Application.Common.DTOs;
+
 namespace MngKeeper.Application.Features.Group.Queries.GetGroups
 {
     public class GetGroupsResponseDto
@@ -12,5 +14,8 @@ namespace MngKeeper.Application.Features.Group.Queries.GetGroups
         public DateTime? UpdatedAt { get; set; }
         public string CreatedBy { get; set; } = string.Empty;
         public string? UpdatedBy { get; set; }
+        public string ProvisioningSource { get; set; } = "Local";
+        public DateTime? DirectorySyncedAt { get; set; }
+        public GroupCapabilitiesDto Capabilities { get; set; } = new();
     }
 }
