@@ -43,20 +43,18 @@ export function mapGroupProvisioningFromApi(group: Record<string, unknown>): Gro
   };
 }
 
+import { isDirectoryProvisioningSource } from './provisioningSourceUi';
+
 export function isDirectoryGroup(
   group: { provisioningSource?: string } | null | undefined
 ): boolean {
-  return (group?.provisioningSource || '').toLowerCase() === 'directory';
+  return isDirectoryProvisioningSource(group?.provisioningSource);
 }
 
-export function provisioningSourceLabelKey(source?: string): string {
+export function groupProvisioningSourceLabelKey(source?: string): string {
   return isDirectoryGroup({ provisioningSource: source })
     ? 'groups.source.directory'
     : 'groups.source.local';
-}
-
-export function provisioningSourceChipColor(source?: string): string {
-  return isDirectoryGroup({ provisioningSource: source }) ? 'info' : 'secondary';
 }
 
 export function canDeleteGroup(group: GroupProvisioningFields | null | undefined): boolean {

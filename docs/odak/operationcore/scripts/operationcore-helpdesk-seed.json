@@ -1,0 +1,27 @@
+﻿{
+    "states":  {
+                   "closed":  "91ba05f8-b1c3-471f-b9de-ff1f9227933b",
+                   "resolved":  "21bfae9f-46ad-424e-a5dc-bb2fef8cfc92",
+                   "waiting":  "46dad765-3a2c-404c-967e-2e38d9d384bc",
+                   "new":  "f52a24b0-6031-4817-9430-8411b56f7b59",
+                   "assigned":  "f82125af-e94d-49cb-b380-1303c138173d",
+                   "progress":  "a26ce9dd-d7fb-405b-9bdf-3224875e4d8d"
+               },
+    "types":  {
+                  "access":  "f6370613-7fa1-4e1d-9618-b935429d4f75",
+                  "incident":  "dd6c27ca-0db1-4a6b-8fa8-c219f6bb6805",
+                  "service":  "20b4c330-a2d0-4a7b-a87c-0a25341d8d65",
+                  "problem":  "1a31b113-e846-43ff-bc77-b62ce16964a2"
+              },
+    "workspaceId":  "a225dbf0-a44b-4972-8d84-d40a824807b1",
+    "formId":  "e9314ab4-afde-44f6-b101-0f8fe28ae1cf",
+    "priorities":  {
+                       "p1":  "c1e19578-70bc-4ae8-bb29-4a3043fdb582",
+                       "p4":  "550a1d67-43ed-485a-b719-07852a6daadb",
+                       "p2":  "4c3dfa54-dd78-4bf3-a62f-9e8159b109ec",
+                       "p3":  "3e8869ef-5f4a-441c-962a-1921555fb8d1"
+                   },
+    "flowId":  "978be18e-2790-415f-b19b-c5d292dc5561",
+    "tag":  "IT Destek",
+    "boardId":  "0b679200-62bb-4974-acdc-084921556c97"
+}

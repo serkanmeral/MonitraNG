@@ -68,6 +68,14 @@ services:
     ports:
       - "5085:5085"
 
+  mngoperations:
+    ports:
+      - "5086:5086"
+    environment:
+      - Jwt__Authority=http://keycloak:8080/keycloak/realms/monitra
+      - MngOperationsSettings__OpenApiServerPath=http://192.168.20.20:5040/operations
+      - MngOperationsSettings__Actors__KeycloakBaseUrl=http://keycloak:8080/keycloak
+
   mngadmin:
     ports:
       - "5080:5080"

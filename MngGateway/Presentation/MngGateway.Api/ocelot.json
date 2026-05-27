@@ -311,6 +311,70 @@
       "Priority": 0
     },
     {
+      "DownstreamPathTemplate": "/swagger",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngoperations",
+          "Port": 5086
+        }
+      ],
+      "UpstreamPathTemplate": "/operations/swagger",
+      "UpstreamHttpMethod": [ "GET", "HEAD" ],
+      "RateLimitOptions": {
+        "EnableRateLimiting": false
+      },
+      "Priority": 0
+    },
+    {
+      "DownstreamPathTemplate": "/swagger/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngoperations",
+          "Port": 5086
+        }
+      ],
+      "UpstreamPathTemplate": "/operations/swagger/{everything}",
+      "UpstreamHttpMethod": [ "GET", "HEAD" ],
+      "RateLimitOptions": {
+        "EnableRateLimiting": false
+      },
+      "Priority": 0
+    },
+    {
+      "DownstreamPathTemplate": "/api/v1/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngoperations",
+          "Port": 5086
+        }
+      ],
+      "UpstreamPathTemplate": "/operations/api/v1/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
+      "RateLimitOptions": {
+        "EnableRateLimiting": false
+      },
+      "Priority": 1
+    },
+    {
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngoperations",
+          "Port": 5086
+        }
+      ],
+      "UpstreamPathTemplate": "/operations/api/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
+      "RateLimitOptions": {
+        "EnableRateLimiting": false
+      },
+      "Priority": 0
+    },
+    {
       "DownstreamPathTemplate": "/api/v1/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [

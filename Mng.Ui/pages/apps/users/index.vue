@@ -5,11 +5,8 @@ import { useLocaleStore } from '@/stores/locale';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useUserStore } from '@/stores/apps/user';
 import { useAuthStore } from '@/stores/auth';
-import {
-  canDeleteUser,
-  provisioningSourceChipColor,
-  provisioningSourceLabelKey,
-} from '@/utils/userFieldPolicy';
+import { canDeleteUser, userProvisioningSourceLabelKey } from '@/utils/userFieldPolicy';
+import { provisioningSourceChipColor } from '@/utils/provisioningSourceUi';
 import { EditIcon, EyeIcon, TrashIcon, UserPlusIcon, RefreshIcon, DownloadIcon } from 'vue-tabler-icons';
 
 // Get i18n instance for legacy mode
@@ -552,7 +549,7 @@ const formatDate = (date: string | Date | null | undefined) => {
             variant="tonal"
             :color="provisioningSourceChipColor(item.provisioningSource)"
           >
-            {{ t(provisioningSourceLabelKey(item.provisioningSource)) }}
+            {{ t(userProvisioningSourceLabelKey(item.provisioningSource)) }}
           </v-chip>
         </template>
 

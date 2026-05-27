@@ -2,8 +2,8 @@
 
 **Amaç:** Bu doküman, Odak POC sunucusu (`192.168.20.20`) ve yerel geliştirme ortamının kurulum oturumunda yapılanların **tek başlangıç noktası**dır. Yeni bir chat’te ürün geliştirmesine geçmeden önce burayı okuyun; ayrıntılar alt dokümanlarda.
 
-**Son güncelleme:** 23 Mayıs 2026  
-**Durum:** Sunucu kurulumu tamamlandı · LDAP K1–K4 + **K3** Scheduler deploy · Sıradaki: **UI** (K1.6/K5); HTTPS en son
+**Son güncelleme:** 25 Mayıs 2026  
+**Durum:** Sunucu kurulumu tamamlandı · LDAP K1–K5 + G1 POC tamamlandı (**duraklatıldı**) · **mngui** deploy ✅ · HTTPS opsiyonel
 
 ---
 
@@ -224,12 +224,14 @@ Sunucuda eski `mngui` image varsa `Mng.Ui` sync + `deploy-odak-apps.ps1 -Service
 - [ ] Giriş: domain `odak` kullanıcısı; Domain UI için master admin.
 - [ ] Deploy gerektiğinde: `sync-odak-source.ps1` + `deploy-odak-apps.ps1` (tam build zaman alır).
 - [ ] Domain/şablon işleri: `docs/odak/domain/` alt dokümanlar.
-- [x] LDAP Keeper (K2 + P0 + K4): sunucu **v1.3.0** — [ldap/DEVAM.md](./ldap/DEVAM.md)
+- [x] LDAP Keeper (K2 + P0 + K4 + K5 + G1): sunucu **v1.3.4** — [ldap/DEVAM.md](./ldap/DEVAM.md)
 - [x] LDAP **K3** MngScheduler: periyodik directory sync — [ldap/SCHEDULER_DIRECTORY_SYNC.md](./ldap/SCHEDULER_DIRECTORY_SYNC.md)
-- [ ] LDAP **UI** (K1.6 / K5): [ldap/HANDOFF_UI.md](./ldap/HANDOFF_UI.md) (yeni chat)
-- [ ] HTTPS / Nginx: bilinçli **ertelendi** — [ldap/ODAK_HTTP_AND_GATEWAY.md](./ldap/ODAK_HTTP_AND_GATEWAY.md)
+- [x] LDAP **UI** (K1.6 / K5 / G1): sunucu **mngui** — [ldap/HANDOFF_UI.md](./ldap/HANDOFF_UI.md)
+- [x] GitHub `main`: `72872d9` (LDAP + Odak script/doküman)
+- [ ] HTTPS / Nginx: bilinçli **ertelendi** (opsiyonel) — [ldap/ODAK_HTTP_AND_GATEWAY.md](./ldap/ODAK_HTTP_AND_GATEWAY.md)
+- [ ] LDAP **opsiyonel** test checklist (K5e): [ldap/USER_SOURCES.md](./ldap/USER_SOURCES.md) §8
 
-**Bu kurulum chat’inin kapsamı dışı:** Ürün özelliği geliştirme, iş kuralları, yeni dataset’ler — yeni chat’te odaklanılacak konular.
+**LDAP geliştirme duraklatıldı (25 Mayıs 2026).** Yeni chat: ürün özelliği, iş kuralları, yeni modüller — önce bu dosya + [README.md](./README.md).
 
 ---
 
@@ -247,8 +249,8 @@ Sunucuda eski `mngui` image varsa `Mng.Ui` sync + `deploy-odak-apps.ps1 -Service
 | [setup/MNG_APPS_ODAK_MUSTERI_ERISIM.md](./setup/MNG_APPS_ODAK_MUSTERI_ERISIM.md) | IT — uygulama URL/port |
 | [domain/DOMAIN_OLUSTURMA.md](./domain/DOMAIN_OLUSTURMA.md) | Domain UI rehberi |
 | [domain/DOMAIN_OLUSTURMA_KAYIT.md](./domain/DOMAIN_OLUSTURMA_KAYIT.md) | Oturum + hata çözümleri |
-| [ldap/DEVAM.md](./ldap/DEVAM.md) | LDAP faz durumu |
-| [ldap/HANDOFF_UI.md](./ldap/HANDOFF_UI.md) | Sonraki chat — UI |
+| [ldap/DEVAM.md](./ldap/DEVAM.md) | LDAP durum + duraklatma |
+| [ldap/HANDOFF_UI.md](./ldap/HANDOFF_UI.md) | UI tamamlandı (arşiv) |
 | [ldap/HANDOFF_MNGSCHEDULER.md](./ldap/HANDOFF_MNGSCHEDULER.md) | K3 tamamlandı |
 | [ldap/SCHEDULER_DIRECTORY_SYNC.md](./ldap/SCHEDULER_DIRECTORY_SYNC.md) | Periyodik sync |
 | [ldap/ODAK_HTTP_AND_GATEWAY.md](./ldap/ODAK_HTTP_AND_GATEWAY.md) | HTTP POC, `/keeper` yolu |

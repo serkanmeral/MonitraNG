@@ -44,6 +44,7 @@ services:
       - MngGatewaySettings__BackendServices__MngHub=${MNGHUB_URL:-http://mnghub:5020}
       - MngGatewaySettings__BackendServices__MngReactor=${MNGREACTOR_URL:-http://mngreactor:5003}
       - MngGatewaySettings__BackendServices__MngWorkflow=${MNGWORKFLOW_URL:-http://mngworkflow:5085}
+      - MngGatewaySettings__BackendServices__MngOperations=${MNGOPERATIONS_URL:-http://mngoperations:5086}
       - MngGatewaySettings__BackendServices__KeyCloak=${KEYCLOAK_BASE_URL:-http://keycloak:8080}
       
       # Certificate Settings
@@ -58,6 +59,7 @@ services:
       - mngreactor
       - mnghub
       - mngworkflow
+      - mngoperations
 
     restart: unless-stopped
 
@@ -446,6 +448,52 @@ services:
       timeout: 10s
       retries: 5
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  mngoperations:
+    build:
+      context: ../../MngOperations
+      dockerfile: Presentation/MngOperations.Api/Dockerfile
+    image: mngoperations:${VERSION:-latest}
+    container_name: mngoperations
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - EnableSwagger=${ENABLE_OPERATIONS_SWAGGER:-false}
+      - Jwt__Authority=${KEYCLOAK_BASE_URL}/realms/monitra
+      - Jwt__RequireHttpsMetadata=${JWT_REQUIRE_HTTPS_METADATA:-true}
+      - MngOperationsSettings__Server__Host=0.0.0.0
+      - MngOperationsSettings__Server__Port=5086
+      - MngOperationsSettings__Server__Scheme=http
+      - MngOperationsSettings__OpenApiServerPath=${OPENAPI_SERVER_PATH:-https://api.monitra.local}/operations
+      - MngOperationsSettings__Actors__MngKeeper=${MNGKEEPER_URL:-http://mngkeeper:5001}
+      - MngOperationsSettings__Actors__KeycloakBaseUrl=${KEYCLOAK_BASE_URL:-http://keycloak:8080}
+      - MngOperationsSettings__DataGateway__BaseUrl=${MNGDATAGATEWAY_URL:-http://mngdatagateway:5010}
+      - MngOperationsSettings__DataGateway__ApiVersion=v1
+      - MngOperationsSettings__MngNotifiers__Enabled=true
+      - MngOperationsSettings__MngNotifiers__BaseUrl=${MNGNOTIFIER_URL:-http://mngnotifier:5070}
+      - MngOperationsSettings__MngNotifiers__ApiVersion=v1
+      - MngOperationsSettings__RabbitMq__Host=${RABBITMQ_HOST}
+      - MngOperationsSettings__RabbitMq__Port=${RABBITMQ_PORT:-5672}
+      - MngOperationsSettings__RabbitMq__Username=${RABBITMQ_USERNAME}
+      - MngOperationsSettings__RabbitMq__Password=${RABBITMQ_PASSWORD}
+      - MngOperationsSettings__RabbitMq__VirtualHost=${RABBITMQ_VIRTUALHOST:-/}
+      - MngOperationsSettings__RabbitMq__Exchange=oc.events
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngdatagateway
+      - mngnotifier
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5086/api/v1/health/live || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     deploy:
       resources:
         limits:

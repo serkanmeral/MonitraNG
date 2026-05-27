@@ -4,10 +4,10 @@ import {
   canDeleteGroup,
   canEditGroup,
   canManageGroupMembers,
+  groupProvisioningSourceLabelKey,
   isDirectoryGroup,
-  provisioningSourceChipColor,
-  provisioningSourceLabelKey,
 } from '@/utils/groupFieldPolicy';
+import { provisioningSourceChipColor } from '@/utils/provisioningSourceUi';
 
 export function useGroupFieldPolicies(group: Ref<Group | null | undefined>) {
   const isDirectory = computed(() => isDirectoryGroup(group.value));
@@ -18,7 +18,7 @@ export function useGroupFieldPolicies(group: Ref<Group | null | undefined>) {
   const canManageMembers = computed(() => canManageGroupMembers(group.value));
 
   const sourceLabelKey = computed(() =>
-    provisioningSourceLabelKey(group.value?.provisioningSource)
+    groupProvisioningSourceLabelKey(group.value?.provisioningSource)
   );
   const sourceChipColor = computed(() =>
     provisioningSourceChipColor(group.value?.provisioningSource)

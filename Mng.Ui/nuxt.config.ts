@@ -10,7 +10,7 @@ const __dirname = fileURLToPath(new URL(".", import.meta.url));
 export default defineNuxtConfig({
   ssr: false,
   devtools:{enabled:true},
-  css: ["@/assets/css/task-manager.css"],
+  css: ["@/assets/css/task-manager.css", "@/assets/css/operation-core.css"],
   //css: ["@/assets/main.scss"], // vuetify ships precompiled css, no need to import sass
   typescript: {
     shim: false,

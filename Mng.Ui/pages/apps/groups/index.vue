@@ -8,9 +8,9 @@ import { useAuthStore } from '@/stores/auth';
 import {
   canDeleteGroup,
   canEditGroup,
-  provisioningSourceChipColor,
-  provisioningSourceLabelKey,
+  groupProvisioningSourceLabelKey,
 } from '@/utils/groupFieldPolicy';
+import { provisioningSourceChipColor } from '@/utils/provisioningSourceUi';
 import { EditIcon, EyeIcon, TrashIcon, PlusIcon, UsersIcon, RefreshIcon, DownloadIcon } from 'vue-tabler-icons';
 
 // Get i18n instance for legacy mode
@@ -420,7 +420,7 @@ const formatDate = (date: string | Date | null | undefined) => {
             variant="tonal"
             :color="provisioningSourceChipColor(item.provisioningSource)"
           >
-            {{ t(provisioningSourceLabelKey(item.provisioningSource)) }}
+            {{ t(groupProvisioningSourceLabelKey(item.provisioningSource)) }}
           </v-chip>
         </template>
 

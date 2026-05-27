@@ -43,6 +43,7 @@
 | ~~mngllm~~ | — | **Kapalı** (Ollama bağımlılığı; RAM) |
 | mngscheduler | 5090 | |
 | mngworkflow | 5085 | |
+| **mngoperations** | **5086** | Operation Core orchestration |
 | mngadmin | 5080 | |
 | mngnotifier | 5070 | SMTP sunucuda yoksa mail çalışmaz |
 | mngui | 3000 | Ana UI |

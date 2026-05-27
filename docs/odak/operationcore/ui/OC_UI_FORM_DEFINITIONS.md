@@ -1,0 +1,130 @@
+# Mng.Ui — Operation Core form tanımlama ve dinamik form
+
+**Son güncelleme:** 26 Mayıs 2026  
+**Backend:** [FORM_LAYOUT_AND_EXTRA_FIELDS.md](../mngoperations/FORM_LAYOUT_AND_EXTRA_FIELDS.md)
+
+---
+
+## 1. Kapsam (bu oturumda tamamlanan)
+
+Workspace tanımları → **Forms** sekmesi: `op_forms` CRUD (DataGateway), layout tabanlı create formu, taslak önizleme, «Yeni iş» sayfası (MO create API).
+
+| Alan | Durum |
+|------|--------|
+| Workspace tanımları — Genel / Yerleşim / Davranışlar / Varsayılan değerler sekmeleri | ✅ |
+| Layout: bölüm sıra, alan sıra (sürükle-bırak), `fieldCols`, `sectionCols` | ✅ |
+| `dialogMaxWidth` (modal / sayfa genişliği) | ✅ |
+| `formHeading` / `formIntro` | ✅ |
+| `fieldBehaviors` + `defaultValues` | ✅ |
+| Boards sekmesi (`op_boards`) temel CRUD | ✅ |
+| `OcDynamicForm` — alan tipi widget’ları | ✅ |
+| `OcFormPreviewDialog` — taslak önizleme (MO cache’siz) | ✅ |
+| `work-items/new` — MO `FormRuntimeContext` + create | ✅ |
+| Core + pool alan etiketleri (i18n + `op_fields.label`) | ✅ |
+
+---
+
+## 2. Önemli dosyalar
+
+| Dosya | Rol |
+|-------|-----|
+| `Mng.Ui/components/.../OcWorkspaceDefinitionsFormsTab.vue` | Form listesi + 4 sekmeli editör |
+| `Mng.Ui/components/.../OcWorkspaceFormLayoutEditor.vue` | Layout editörü (vue-draggable-next) |
+| `Mng.Ui/components/.../OcFormPreviewDialog.vue` | Önizleme modal kabuğu |
+| `Mng.Ui/components/.../OcDynamicForm.vue` | Runtime / taslak form render |
+| `Mng.Ui/components/.../OcDynamicFormField.vue` | Tek alan widget seçimi |
+| `Mng.Ui/utils/ocFormLayout.ts` | layout parse/build, grid, `dialogMaxWidth` |
+| `Mng.Ui/utils/ocFormFieldLabels.ts` | Etiket + `enrichFormRuntimeFields` |
+| `Mng.Ui/utils/ocDynamicFormField.ts` | Widget kind çözümleme |
+| `Mng.Ui/composables/useOcDynamicFormLookups.ts` | priority/state/board/relation listeleri |
+| `Mng.Ui/services/operationCoreService.ts` | DG CRUD, MO runtime, `ocCreateWorkItem`, taslak preview builder |
+| `Mng.Ui/pages/.../work-items/new/index.vue` | Yeni iş oluşturma |
+| `Mng.Ui/pages/.../workspace-definitions/index.vue` | Workspace tanım sayfası |
+
+**TM referans (kopyalanmadı, ilham):** `ProjectIssueCreateLayoutEditor.vue`, `TmNewIssueFormFields.vue`
+
+---
+
+## 3. Form editör sekmeleri
+
+| Sekme | İçerik |
+|-------|--------|
+| **Genel** | Ad, açıklama, form üst metni, `dialogMaxWidth`, varsayılan tip/akış/state/öncelik, `isDefault` |
+| **Yerleşim** | Bölümler, alan sırası, bölüm/alan genişliği (12’lik grid) |
+| **Davranışlar** | `fieldBehaviors`: visible, required, readonly, masked |
+| **Varsayılan değerler** | `defaultValues` (create açılış önerileri) |
+
+Kayıt: `operationCoreService` → `ocCreateForm` / `ocUpdateForm` → DG `op_forms`.
+
+---
+
+## 4. Önizleme davranışı
+
+- **Taslak önizleme:** `buildFormPreviewContextFromDraft()` — editördeki kaydedilmemiş state; MO metadata cache **kullanılmaz**.
+- Bilgi kutusu: «Taslak önizleme» chip’i; modal genişliği `layout.dialogMaxWidth`.
+- Kayıtlı formun MO runtime karşılığı: «Yeni iş» sayfası (`ocGetFormCreateContext`) — cache gecikmesi olabilir.
+
+---
+
+## 5. OcDynamicForm widget eşlemesi
+
+| `op_fields.fieldType` / core key | UI |
+|----------------------------------|-----|
+| `typeId` | Select (runtime `types`) |
+| `priorityId`, `boardId`, `stateId` | Select (DG listeleri) |
+| `relation` (+ `relationDatasetName`) | Select (`ocListDataset`) |
+| `number` | `type="number"` |
+| `bool` | Checkbox |
+| `date` / `datetime` | Native date / datetime-local |
+| `text` (pool) | Tek satır metin |
+| `description` | Textarea |
+| `persons` | Select (liste yoksa metin + ipucu) |
+| `file` | Salt okunur placeholder |
+
+Create gönderimi: `buildCreateWorkItemRequest` — core üst seviye + diğerleri `fields` → MO `extraFields` ayrımı.
+
+---
+
+## 6. i18n
+
+`Mng.Ui/utils/locales/tr.json` / `en.json` → `operationCore.fieldLabels.*`, `operationCore.workspaceDefinitions.forms.*`, `operationCore.formUi.*`, `operationCore.create.*`
+
+---
+
+## 7. Odak URL’leri (geliştirme)
+
+| Servis | Örnek |
+|--------|--------|
+| UI | `npm run dev` (Mng.Ui) |
+| Gateway | `http://192.168.20.20:5040` |
+| MO (gateway) | `/operations/api/v1/...` |
+| MO doğrudan | `http://192.168.20.20:5086` |
+
+Proxy: `Mng.Ui` → `/api/operations/...`, `/api/v1/data/...` (DataGateway)
+
+---
+
+## 8. Bilinçli ertelenen (form tanımı)
+
+| Madde | Not |
+|-------|-----|
+| `op_forms`: modal, systemFields, panels, visibilityRules | Spec’te var; admin UI yok |
+| TM tarzı tam ekran form designer | Faz 2 |
+| Kullanıcı select (`assignee`, `reporter`, …) | Sıradaki iş |
+| Zorunlu alan yıldızı / validation özeti | Sıradaki |
+| MO runtime vs taslak karşılaştırma | İsteğe bağlı |
+| Editör içi yan panel canlı önizleme | İsteğe bağlı |
+| Dosya upload widget | Faz 2+ |
+
+---
+
+## 9. Yeni chat için test checklist
+
+1. Workspace tanımları → Forms → düzenle → Yerleşim değiştir → **Önizleme** (kaydetmeden).
+2. Kaydet → **Önizleme** → Board → **Yeni iş** (layout + etiketler).
+3. Pool alan `fieldType: number` → sayı kutusu görünmeli.
+4. `dialogMaxWidth` 720 → önizleme modalı daralmalı.
+
+---
+
+*Güncelleme: form/profile/board runtime ekranları ilerledikçe bu dosyayı genişletin.*

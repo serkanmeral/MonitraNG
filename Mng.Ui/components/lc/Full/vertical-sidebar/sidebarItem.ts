@@ -66,6 +66,7 @@ import {
   MailIcon,
   TicketIcon,
   BellIcon,
+  ClipboardIcon,
 } from "vue-tabler-icons";
 
 export interface menu {
@@ -339,6 +340,33 @@ const sidebarItem: menu[] = [
     pageCode: "taskManager.menuTitle",
     icon: LayoutKanbanIcon,
     to: "/apps/task-manager/projects",
+  },
+  { header: "Operasyon" },
+  {
+    title: "Operasyon Merkezi",
+    pageCode: "operationCore.menuTitle",
+    icon: ClipboardIcon,
+    to: "/apps/operation-core/workspace",
+  },
+  {
+    title: "Tanımlamalar",
+    pageCode: "operationCore.definitions.menuParent",
+    icon: SettingsIcon,
+    to: "#",
+    children: [
+      {
+        title: "Sistem tanımlaması",
+        pageCode: "operationCore.definitions.systemMenuTitle",
+        icon: SettingsIcon,
+        to: "/apps/operation-core/admin/definitions",
+      },
+      {
+        title: "Workspace tanımlaması",
+        pageCode: "operationCore.definitions.workspaceMenuTitle",
+        icon: LayoutIcon,
+        to: "/apps/operation-core/admin/workspace-definitions",
+      },
+    ],
   },
   { header: "Pages" },
   {

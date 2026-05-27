@@ -1,7 +1,7 @@
 # MonitraNG — Odak ortamı
 
 **POC / müşteri test sunucusu:** `192.168.20.20` (`monitrang`)  
-**Durum:** Kurulum + LDAP K1–K4 + **K3** Scheduler ✅ · Sıradaki: **UI** ([ldap/HANDOFF_UI.md](./ldap/HANDOFF_UI.md))
+**Durum:** Kurulum ✅ · LDAP K1–K5 + G1 POC ✅ **(duraklatıldı)** · Yeni geliştirme: bu rehber + ürün chat’i
 
 ---
 
@@ -12,8 +12,9 @@ Tüm kurulum ve günlük çalışma akışı tek dokümanda:
 | Doküman | İçerik |
 |---------|--------|
 | **[ODAK_FULL_SETUP.md](./ODAK_FULL_SETUP.md)** | Tam kurulum özeti: sunucu, mng_common, mng_apps, domain, initial data, yerel dev, deploy, bilinen sorunlar |
+| **[operationcore/README.md](./operationcore/README.md)** | Operation Core (OC) / MngOperations — planlama ve spec |
 
-Yeni bir chat’te geliştirmeye geçerken önce **ODAK_FULL_SETUP** okuyun; ayrıntı için alt bölümlerdeki linklere inin.
+Yeni bir chat’te geliştirmeye geçerken önce **ODAK_FULL_SETUP** okuyun; ayrıntı için alt bölümlerdeki linklere inin. OC geliştirmesi için **operationcore** klasörüne bakın.
 
 ---
 
@@ -35,11 +36,19 @@ docs/odak/
 │   ├── WELCOME_HOME.md         ← ana sayfa (/) ve modül kartları
 │   └── README.md
 ├── ldap/
-│   ├── HANDOFF_UI.md             ← sonraki chat (UI)
+│   ├── DEVAM.md                  ← LDAP durum + duraklatma (25 May 2026)
+│   ├── HANDOFF_UI.md             ← UI tamamlandı (arşiv)
 │   ├── HANDOFF_MNGSCHEDULER.md   ← K3 tamamlandı
-│   ├── DEVAM.md                ← faz durumu
 │   ├── ODAK_HTTP_AND_GATEWAY.md← HTTP POC (HTTPS ertelendi)
 │   └── README.md
+├── operationcore/
+│   ├── README.md
+│   ├── major_plan.md
+│   ├── operationcore_phase1.md
+│   ├── OPERATION_CORE_IMPLEMENTATION_PLAN.md
+│   └── datasets/
+│       ├── README.md
+│       └── operationcore_datasets_phase1_*.json
 └── domain/
     ├── DOMAIN_OLUSTURMA.md
     ├── DOMAIN_OLUSTURMA_API.md

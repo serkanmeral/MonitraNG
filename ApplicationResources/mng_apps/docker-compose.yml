@@ -45,6 +45,7 @@ services:
       - MngGatewaySettings__BackendServices__MngAdmin=http://mngadmin:5080
       - MngGatewaySettings__BackendServices__MngScheduler=http://mngscheduler:5090
       - MngGatewaySettings__BackendServices__MngWorkflow=http://mngworkflow:5085
+      - MngGatewaySettings__BackendServices__MngOperations=http://mngoperations:5086
       - MngGatewaySettings__BackendServices__KeyCloak=http://keycloak:8080
       
       # Certificate Settings
@@ -62,6 +63,7 @@ services:
       - mngadmin
       - mngscheduler
       - mngworkflow
+      - mngoperations
 
     restart: unless-stopped
 
@@ -721,6 +723,50 @@ services:
       timeout: 10s
       retries: 5
       start_period: 40s
+
+  mngoperations:
+    build:
+      context: ../../MngOperations
+      dockerfile: Presentation/MngOperations.Api/Dockerfile
+    image: localhost:5000/mngoperations:1.0.0
+    container_name: mngoperations
+    ports:
+      - "5086:5086"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - EnableSwagger=true
+      - Jwt__Authority=http://keycloak:8080/realms/monitra
+      - Jwt__RequireHttpsMetadata=false
+      - MngOperationsSettings__Server__Host=0.0.0.0
+      - MngOperationsSettings__Server__Port=5086
+      - MngOperationsSettings__Server__Scheme=http
+      - MngOperationsSettings__OpenApiServerPath=https://api.monitra.local/operations
+      - MngOperationsSettings__Actors__MngKeeper=http://mngkeeper:5001
+      - MngOperationsSettings__Actors__KeycloakBaseUrl=http://keycloak:8080
+      - MngOperationsSettings__DataGateway__BaseUrl=http://mngdatagateway:5010
+      - MngOperationsSettings__DataGateway__ApiVersion=v1
+      - MngOperationsSettings__MngNotifiers__Enabled=true
+      - MngOperationsSettings__MngNotifiers__BaseUrl=http://mngnotifier:5070
+      - MngOperationsSettings__MngNotifiers__ApiVersion=v1
+      - MngOperationsSettings__RabbitMq__Host=rabbitmq
+      - MngOperationsSettings__RabbitMq__Port=5672
+      - MngOperationsSettings__RabbitMq__Username=admin
+      - MngOperationsSettings__RabbitMq__Password=admin123
+      - MngOperationsSettings__RabbitMq__VirtualHost=/
+      - MngOperationsSettings__RabbitMq__Exchange=oc.events
+      - Serilog__WriteTo__1__Args__serverUrl=http://seq:80
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngdatagateway
+      - mngnotifier
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5086/api/v1/health/live || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   ollama:
     image: ollama/ollama:latest

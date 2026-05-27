@@ -36,6 +36,19 @@ const moduleCards: WelcomeModuleCard[] = [
       },
     ],
   },
+  {
+    id: 'operation-core',
+    titleKey: 'welcome.modules.operationCore.title',
+    descriptionKey: 'welcome.modules.operationCore.description',
+    icon: 'mdi-cog-play-outline',
+    color: 'deep-purple',
+    links: [
+      {
+        labelKey: 'welcome.modules.operationCore.linkWorkspace',
+        to: '/apps/operation-core/workspace',
+      },
+    ],
+  },
 ];
 
 const authStore = useAuthStore();

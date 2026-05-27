@@ -1,0 +1,4154 @@
+[
+  {
+    "__dataId": null,
+    "name": "op_workspaces",
+    "description": "Operational Core - Workspaces",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "incremental",
+        "name": "key",
+        "title": "Workspace kodu",
+        "mandatory": true,
+        "unique": true,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": {
+          "format": "WS-{0:D4}",
+          "startValue": 1,
+          "incrementStep": 1
+        }
+      },
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Workspace adı",
+        "mandatory": true,
+        "unique": true,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "workspaceType",
+        "title": "Workspace tipi",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "parentWorkspaceId",
+        "title": "Üst workspace",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_workspaces",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "path",
+        "title": "Workspace path",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "level",
+        "title": "Workspace seviye",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "workItemKeyPrefix",
+        "title": "WorkItem prefix",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "workItemKeyFormat",
+        "title": "WorkItem key formatı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "workItemSequenceStart",
+        "title": "WorkItem sıra başlangıcı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "personGroups",
+        "name": "ownerGroups",
+        "title": "Sahip gruplar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "personGroups",
+        "name": "viewGroups",
+        "title": "Görüntüleme grupları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "personGroups",
+        "name": "editGroups",
+        "title": "Düzenleme grupları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "personGroups",
+        "name": "adminGroups",
+        "title": "Yönetici gruplar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "enabledModules",
+        "title": "Aktif modüller",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "defaultStateFlowId",
+        "title": "Varsayılan state flow",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_state_flows",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "permissions",
+        "title": "Workspace yetki modeli",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "settings",
+        "title": "Ayarlar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_key",
+        "fields": {
+          "key": 1
+        },
+        "unique": true
+      },
+      {
+        "name": "idx_name",
+        "fields": {
+          "name": 1
+        },
+        "unique": true
+      },
+      {
+        "name": "idx_workspaceType",
+        "fields": {
+          "workspaceType": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_defaultStateFlowId",
+        "fields": {
+          "defaultStateFlowId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_parentWorkspaceId",
+        "fields": {
+          "parentWorkspaceId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_path",
+        "fields": {
+          "path": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_workItemKeyPrefix",
+        "fields": {
+          "workItemKeyPrefix": 1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_states",
+    "description": "Operational Core - States",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "State adı",
+        "mandatory": true,
+        "unique": true,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "category",
+        "title": "State kategorisi",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "color",
+        "title": "Renk",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "icon",
+        "title": "İkon",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isInitial",
+        "title": "Başlangıç state",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isStart",
+        "title": "İş başlangıç state",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isClosed",
+        "title": "Kapalı state",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isTerminal",
+        "title": "Terminal state",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "allowReopen",
+        "title": "Reopen destekler",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "sortOrder",
+        "title": "Sıra",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_name",
+        "fields": {
+          "name": 1
+        },
+        "unique": true
+      },
+      {
+        "name": "idx_category",
+        "fields": {
+          "category": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_isClosed",
+        "fields": {
+          "isClosed": 1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_state_flows",
+    "description": "Operational Core - State Flow Definitions",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "State flow adı",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "workspaceId",
+        "title": "Workspace",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_workspaces",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "initialStateId",
+        "title": "Başlangıç state",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_states",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isDefault",
+        "title": "Varsayılan flow",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "transitions",
+        "title": "Transition kuralları (fromStateId -> toStateId array)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "settings",
+        "title": "Ayarlar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isActive",
+        "title": "Aktif",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "sortOrder",
+        "title": "Sıra",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_workspaceId",
+        "fields": {
+          "workspaceId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_workspaceId_name",
+        "fields": {
+          "workspaceId": 1,
+          "name": 1
+        },
+        "unique": true
+      },
+      {
+        "name": "idx_initialStateId",
+        "fields": {
+          "initialStateId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_isDefault",
+        "fields": {
+          "workspaceId": 1,
+          "isDefault": 1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_rules",
+    "description": "Operational Core - Rule Definitions (Default / Validation / SLA)",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Kural adı",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "workspaceId",
+        "title": "Workspace",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_workspaces",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "boardId",
+        "title": "Board",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_boards",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "typeId",
+        "title": "WorkItem tipi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_work_item_types",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "stateId",
+        "title": "Geçerli state",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_states",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "fromStateId",
+        "title": "Önceki state",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_states",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "toStateId",
+        "title": "Hedef state",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_states",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "ruleType",
+        "title": "Kural tipi",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "trigger",
+        "title": "Tetikleyici",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "applyMode",
+        "title": "Uygulama modu",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "conditions",
+        "title": "Koşullar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "actions",
+        "title": "Aksiyonlar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "validation",
+        "title": "Validasyon tanımı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "errorMessage",
+        "title": "Hata mesajı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "stopProcessing",
+        "title": "Sonraki kuralları durdur",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "priority",
+        "title": "Çalışma önceliği",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "validFrom",
+        "title": "Geçerlilik başlangıcı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "validTo",
+        "title": "Geçerlilik bitişi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isActive",
+        "title": "Aktif",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "persons",
+        "name": "createdBy",
+        "title": "Oluşturan",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "persons",
+        "name": "updatedBy",
+        "title": "Güncelleyen",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "metadata",
+        "title": "Ek bilgiler",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_workspaceId",
+        "fields": {
+          "workspaceId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_boardId",
+        "fields": {
+          "boardId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_typeId",
+        "fields": {
+          "typeId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_ruleType",
+        "fields": {
+          "ruleType": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_trigger",
+        "fields": {
+          "trigger": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_isActive_priority",
+        "fields": {
+          "isActive": 1,
+          "priority": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_workspace_rule_trigger",
+        "fields": {
+          "workspaceId": 1,
+          "ruleType": 1,
+          "trigger": 1,
+          "isActive": 1,
+          "priority": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_transition",
+        "fields": {
+          "workspaceId": 1,
+          "typeId": 1,
+          "fromStateId": 1,
+          "toStateId": 1,
+          "ruleType": 1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_priorities",
+    "description": "Operational Core - Priorities",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Öncelik adı",
+        "mandatory": true,
+        "unique": true,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "level",
+        "title": "Öncelik seviyesi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "color",
+        "title": "Renk",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "icon",
+        "title": "İkon",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "sortOrder",
+        "title": "Sıra",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_name",
+        "fields": {
+          "name": 1
+        },
+        "unique": true
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_work_item_types",
+    "description": "Operational Core - Work Item Types",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Type adı",
+        "mandatory": true,
+        "unique": true,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "category",
+        "title": "Kategori",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "icon",
+        "title": "İkon",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "color",
+        "title": "Renk",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "persons",
+        "name": "defaultAssignees",
+        "title": "Varsayılan kullanıcı atamaları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "personGroups",
+        "name": "defaultAssignmentGroups",
+        "title": "Varsayılan grup atamaları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "defaultValues",
+        "title": "Varsayılan alan değerleri",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "defaultStateFlowId",
+        "title": "Varsayılan state flow",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_state_flows",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isSystem",
+        "title": "Sistem tipi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "sortOrder",
+        "title": "Sıra",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_name",
+        "fields": {
+          "name": 1
+        },
+        "unique": true
+      },
+      {
+        "name": "idx_category",
+        "fields": {
+          "category": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_defaultStateFlowId",
+        "fields": {
+          "defaultStateFlowId": 1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_fields",
+    "description": "Operational Core - Field Pool",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "key",
+        "title": "Alan anahtarı",
+        "mandatory": true,
+        "unique": true,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "label",
+        "title": "Görünen ad",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "fieldType",
+        "title": "Veri tipi",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "scope",
+        "title": "Kapsam",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "category",
+        "title": "Kategori",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "cardinality",
+        "title": "Kardinalite",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "relationDatasetName",
+        "title": "İlişkili dataset",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "options",
+        "title": "Seçenekler",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "validationRules",
+        "title": "Validasyon kuralları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "personGroups",
+        "name": "viewGroups",
+        "title": "Görüntüleyebilen gruplar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "personGroups",
+        "name": "editGroups",
+        "title": "Düzenleyebilen gruplar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "permissions",
+        "title": "Alan yetki modeli",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isSystem",
+        "title": "Sistem alanı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isSensitive",
+        "title": "Hassas alan",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "sortOrder",
+        "title": "Sıra",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_key",
+        "fields": {
+          "key": 1
+        },
+        "unique": true
+      },
+      {
+        "name": "idx_scope",
+        "fields": {
+          "scope": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_category",
+        "fields": {
+          "category": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_fieldType",
+        "fields": {
+          "fieldType": 1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_forms",
+    "description": "Operational Core - WorkItem Form Templates",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Form adı",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "workspaceId",
+        "title": "Workspace",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_workspaces",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "defaultTypeId",
+        "title": "Varsayılan WorkItem tipi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_work_item_types",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "defaultCategory",
+        "title": "Varsayılan kategori",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "defaultStateFlowId",
+        "title": "Varsayılan state flow",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_state_flows",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "defaultStateId",
+        "title": "Varsayılan state",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_states",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "defaultPriorityId",
+        "title": "Varsayılan öncelik",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_priorities",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "persons",
+        "name": "defaultAssignees",
+        "title": "Varsayılan atanacak kullanıcılar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "personGroups",
+        "name": "defaultAssignmentGroups",
+        "title": "Varsayılan atanacak gruplar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "modal",
+        "title": "Modal ayarları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "layout",
+        "title": "Form yerleşimi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "systemFields",
+        "title": "Sistem alanları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "panels",
+        "title": "Form panel ayarları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "fieldBehaviors",
+        "title": "Alan davranış kuralları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "defaultValues",
+        "title": "Varsayılan değerler",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "visibilityRules",
+        "title": "Görünürlük kuralları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "permissions",
+        "title": "Yetki modeli",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isDefault",
+        "title": "Varsayılan form",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_workspaceId",
+        "fields": {
+          "workspaceId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_workspaceId_name",
+        "fields": {
+          "workspaceId": 1,
+          "name": 1
+        },
+        "unique": true
+      },
+      {
+        "name": "idx_defaultTypeId",
+        "fields": {
+          "defaultTypeId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_defaultStateFlowId",
+        "fields": {
+          "defaultStateFlowId": 1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_profiles",
+    "description": "Operational Core - WorkItem Profile Templates",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Profil adı",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "workspaceId",
+        "title": "Workspace",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_workspaces",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "defaultTypeId",
+        "title": "Varsayılan WorkItem tipi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_work_item_types",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "defaultCategory",
+        "title": "Varsayılan kategori",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "defaultStateFlowId",
+        "title": "Varsayılan state flow",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_state_flows",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "header",
+        "title": "Profil header / breadcrumb ayarları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "sidebar",
+        "title": "Sağ sidebar ayarları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "layout",
+        "title": "Profil yerleşimi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "sections",
+        "title": "Profil bölümleri",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "panels",
+        "title": "Profil panel ayarları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "actions",
+        "title": "Profil action / transition ayarları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "fieldBehaviors",
+        "title": "Alan davranış kuralları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "visibilityRules",
+        "title": "Görünürlük kuralları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "permissions",
+        "title": "Yetki modeli",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isDefault",
+        "title": "Varsayılan profil",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_workspaceId",
+        "fields": {
+          "workspaceId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_workspaceId_name",
+        "fields": {
+          "workspaceId": 1,
+          "name": 1
+        },
+        "unique": true
+      },
+      {
+        "name": "idx_defaultTypeId",
+        "fields": {
+          "defaultTypeId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_defaultStateFlowId",
+        "fields": {
+          "defaultStateFlowId": 1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_boards",
+    "description": "Operational Core - Boards and Operational Contexts",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Board adı",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "workspaceId",
+        "title": "Workspace",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_workspaces",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "viewType",
+        "title": "Görünüm tipi",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "supportedViewTypes",
+        "title": "Desteklenen görünüm tipleri",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "defaultViewType",
+        "title": "Varsayılan görünüm tipi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "defaultFormId",
+        "title": "Varsayılan kayıt formu",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_forms",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "defaultProfileId",
+        "title": "Varsayılan profil ekranı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_profiles",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "defaultStateFlowId",
+        "title": "Varsayılan state flow",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_state_flows",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "defaultCategory",
+        "title": "Varsayılan kategori",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "defaultTypeId",
+        "title": "Varsayılan WorkItem tipi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_work_item_types",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "defaultStateId",
+        "title": "Varsayılan state",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_states",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "defaultPriorityId",
+        "title": "Varsayılan öncelik",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_priorities",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "persons",
+        "name": "defaultAssignees",
+        "title": "Varsayılan atanacak kullanıcılar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "personGroups",
+        "name": "defaultAssignmentGroups",
+        "title": "Varsayılan atanacak gruplar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "config",
+        "title": "Board ayarları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "runtimeSettings",
+        "title": "Runtime ayarları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "filters",
+        "title": "Filtreler",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "defaultFilters",
+        "title": "Varsayılan filtreler",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "defaultGrouping",
+        "title": "Varsayılan gruplama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "defaultSwimlane",
+        "title": "Varsayılan swimlane",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "visibleFields",
+        "title": "Görünür alanlar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "permissions",
+        "title": "Board yetki modeli",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "personGroups",
+        "name": "viewGroups",
+        "title": "Görüntüleme grupları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "personGroups",
+        "name": "editGroups",
+        "title": "Düzenleme grupları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "personGroups",
+        "name": "adminGroups",
+        "title": "Yönetici gruplar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_workspaceId",
+        "fields": {
+          "workspaceId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_workspaceId_name",
+        "fields": {
+          "workspaceId": 1,
+          "name": 1
+        },
+        "unique": true
+      },
+      {
+        "name": "idx_viewType",
+        "fields": {
+          "viewType": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_defaultFormId",
+        "fields": {
+          "defaultFormId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_defaultProfileId",
+        "fields": {
+          "defaultProfileId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_defaultStateFlowId",
+        "fields": {
+          "defaultStateFlowId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_defaultViewType",
+        "fields": {
+          "defaultViewType": 1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_labels",
+    "description": "Operational Core - Labels",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Etiket adı",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "workspaceId",
+        "title": "Workspace",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_workspaces",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "color",
+        "title": "Renk",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_workspaceId_name",
+        "fields": {
+          "workspaceId": 1,
+          "name": 1
+        },
+        "unique": true
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_work_items",
+    "description": "Operational Core - Work Items (attachments DG native file field)",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "incremental",
+        "name": "key",
+        "title": "WorkItem kodu",
+        "mandatory": true,
+        "unique": true,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": {
+          "format": "{workspaceKey}-{0:D5}",
+          "startValue": 1,
+          "incrementStep": 1
+        }
+      },
+      {
+        "fieldType": "text",
+        "name": "workspaceKey",
+        "title": "Workspace kodu",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "workspaceId",
+        "title": "Workspace",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_workspaces",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "boardId",
+        "title": "Board",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_boards",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "typeId",
+        "title": "WorkItem tipi",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_work_item_types",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "category",
+        "title": "Kategori",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "title",
+        "title": "Başlık",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "stateId",
+        "title": "State",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_states",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "stateFlowId",
+        "title": "State flow",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_state_flows",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "priorityId",
+        "title": "Öncelik",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_priorities",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "severity",
+        "title": "Kritiklik",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "impact",
+        "title": "Etki",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "urgency",
+        "title": "Aciliyet",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "persons",
+        "name": "assignee",
+        "title": "Atanan",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "persons",
+        "name": "watchers",
+        "title": "İzleyenler",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "personGroups",
+        "name": "assignmentGroups",
+        "title": "Atanan gruplar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "persons",
+        "name": "reporter",
+        "title": "Bildiren / talep eden",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "persons",
+        "name": "createdBy",
+        "title": "Oluşturan aktör",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "labels",
+        "title": "Etiketler",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": "op_labels",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "parentItemId",
+        "title": "Üst WorkItem",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_work_items",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "sourceModule",
+        "title": "Kaynak modül",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "sourceRecordId",
+        "title": "Kaynak kayıt ID",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "sourceEventId",
+        "title": "Kaynak event ID",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "assetId",
+        "title": "Asset ID",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "origin",
+        "title": "Kaynak / origin bilgisi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "slaPolicyId",
+        "title": "SLA politika ID",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "sla",
+        "title": "SLA snapshot bilgileri",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "dueDate",
+        "title": "Bitiş tarihi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "firstStartedAt",
+        "title": "İlk başlangıç zamanı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "lastStateChangeAt",
+        "title": "Son state değişim zamanı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "firstClosedAt",
+        "title": "İlk kapanış zamanı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "closedAt",
+        "title": "Kapanış zamanı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "currentStateDurationMs",
+        "title": "Mevcut state süresi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "totalDurationMs",
+        "title": "Toplam süre",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "activeDurationMs",
+        "title": "Aktif çalışma süresi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "lastRejectReason",
+        "title": "Son ret nedeni",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "persons",
+        "name": "lastRejectedBy",
+        "title": "Son reddeden",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "lastRejectedAt",
+        "title": "Son ret zamanı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "file",
+        "name": "attachments",
+        "title": "Dosyalar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "order",
+        "title": "Sıra",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "extraFields",
+        "title": "Ek alanlar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "analytics",
+        "title": "Analytics cache bilgileri",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_workspaceId",
+        "fields": {
+          "workspaceId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_boardId",
+        "fields": {
+          "boardId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_stateId",
+        "fields": {
+          "stateId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_typeId",
+        "fields": {
+          "typeId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_priorityId",
+        "fields": {
+          "priorityId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_assignee",
+        "fields": {
+          "assignee": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_category",
+        "fields": {
+          "category": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_parentItemId",
+        "fields": {
+          "parentItemId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_source",
+        "fields": {
+          "sourceModule": 1,
+          "sourceRecordId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_workspaceId_key",
+        "fields": {
+          "workspaceId": 1,
+          "key": 1
+        },
+        "unique": true
+      },
+      {
+        "name": "idx_stateFlowId",
+        "fields": {
+          "stateFlowId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_lastStateChangeAt",
+        "fields": {
+          "lastStateChangeAt": -1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_closedAt",
+        "fields": {
+          "closedAt": -1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_workspace_state",
+        "fields": {
+          "workspaceId": 1,
+          "stateId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_workspace_board_state",
+        "fields": {
+          "workspaceId": 1,
+          "boardId": 1,
+          "stateId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_reporter",
+        "fields": {
+          "reporter": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_createdBy",
+        "fields": {
+          "createdBy": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_origin_sourceType",
+        "fields": {
+          "origin.sourceType": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_sla_responseDueAt",
+        "fields": {
+          "sla.responseDueAt": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_sla_resolveDueAt",
+        "fields": {
+          "sla.resolveDueAt": 1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_comments",
+    "description": "Operational Core - Comments",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "sourceDataset",
+        "title": "Kaynak dataset",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "sourceRecordId",
+        "title": "Kaynak kayıt ID",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "persons",
+        "name": "author",
+        "title": "Yazar",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "body",
+        "title": "Yorum",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "parentCommentId",
+        "title": "Üst yorum",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_comments",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "mentions",
+        "title": "Mention bilgileri",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "file",
+        "name": "attachments",
+        "title": "Yorum dosyaları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "commentDate",
+        "title": "Yorum tarihi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_source",
+        "fields": {
+          "sourceDataset": 1,
+          "sourceRecordId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_author",
+        "fields": {
+          "author": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_parentCommentId",
+        "fields": {
+          "parentCommentId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_commentDate",
+        "fields": {
+          "commentDate": -1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_activities",
+    "description": "Operational Core - Activity Stream",
+    "category": null,
+    "forceSchema": false,
+    "logging": "none",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "sourceDataset",
+        "title": "Kaynak dataset",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "sourceRecordId",
+        "title": "Kaynak kayıt ID",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "activityType",
+        "title": "Aktivite tipi",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "eventType",
+        "title": "Event tipi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "persons",
+        "name": "actor",
+        "title": "Aktör",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "message",
+        "title": "Mesaj",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "payload",
+        "title": "Payload",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isSystemGenerated",
+        "title": "Sistem üretimi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "activityDate",
+        "title": "Aktivite tarihi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_source",
+        "fields": {
+          "sourceDataset": 1,
+          "sourceRecordId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_activityType",
+        "fields": {
+          "activityType": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_activityDate",
+        "fields": {
+          "activityDate": -1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_eventType",
+        "fields": {
+          "eventType": 1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_links",
+    "description": "Operational Core - WorkItem Links",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "relation",
+        "name": "sourceWorkItemId",
+        "title": "Kaynak WorkItem",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_work_items",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "targetWorkItemId",
+        "title": "Hedef WorkItem",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_work_items",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "linkType",
+        "title": "Bağlantı tipi",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "persons",
+        "name": "createdBy",
+        "title": "Bağlantıyı oluşturan",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "createdAt",
+        "title": "Oluşturma tarihi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "metadata",
+        "title": "Ek bilgiler",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_sourceWorkItemId",
+        "fields": {
+          "sourceWorkItemId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_targetWorkItemId",
+        "fields": {
+          "targetWorkItemId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_source_target_type",
+        "fields": {
+          "sourceWorkItemId": 1,
+          "targetWorkItemId": 1,
+          "linkType": 1
+        },
+        "unique": true
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_work_item_timelines",
+    "description": "Operational Core - WorkItem State Timelines",
+    "category": null,
+    "forceSchema": false,
+    "logging": "none",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "relation",
+        "name": "workItemId",
+        "title": "WorkItem",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_work_items",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "fromStateId",
+        "title": "Önceki state",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_states",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "toStateId",
+        "title": "Yeni state",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_states",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "enteredAt",
+        "title": "State giriş zamanı",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "leftAt",
+        "title": "State çıkış zamanı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "durationMs",
+        "title": "Süre ms",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "persons",
+        "name": "changedBy",
+        "title": "Değiştiren",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "persons",
+        "name": "assigneeAtThatTime",
+        "title": "O andaki atanan",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "transitionName",
+        "title": "Transition adı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "reason",
+        "title": "Geçiş nedeni",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "metadata",
+        "title": "Ek bilgiler",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_workItemId",
+        "fields": {
+          "workItemId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_toStateId",
+        "fields": {
+          "toStateId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_enteredAt",
+        "fields": {
+          "enteredAt": -1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_workItemId_enteredAt",
+        "fields": {
+          "workItemId": 1,
+          "enteredAt": 1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_notifications",
+    "description": "Operational Core - User Notifications",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "persons",
+        "name": "userId",
+        "title": "Bildirim kullanıcısı",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "notificationType",
+        "title": "Bildirim tipi",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "title",
+        "title": "Başlık",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "message",
+        "title": "Mesaj",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "sourceDataset",
+        "title": "Kaynak dataset",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "sourceRecordId",
+        "title": "Kaynak kayıt ID",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "workItemId",
+        "title": "WorkItem",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_work_items",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "workItemKey",
+        "title": "WorkItem kodu",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isRead",
+        "title": "Okundu",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "readAt",
+        "title": "Okunma zamanı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "createdAt",
+        "title": "Oluşturma zamanı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "payload",
+        "title": "Payload",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "metadata",
+        "title": "Ek bilgiler",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_user_isRead",
+        "fields": {
+          "userId": 1,
+          "isRead": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_user_createdAt",
+        "fields": {
+          "userId": 1,
+          "createdAt": -1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_source",
+        "fields": {
+          "sourceDataset": 1,
+          "sourceRecordId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_workItemId",
+        "fields": {
+          "workItemId": 1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_notification_policies",
+    "description": "Operational Core - Notification and Mail Policies",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Policy adı",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "workspaceId",
+        "title": "Workspace",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_workspaces",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "boardId",
+        "title": "Board",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_boards",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "typeId",
+        "title": "WorkItem tipi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_work_item_types",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "eventType",
+        "title": "Event tipi",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "channels",
+        "title": "Kanallar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "recipients",
+        "title": "Alıcı rolleri",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "emailTemplateKey",
+        "title": "Email template key",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "notificationTemplateKey",
+        "title": "In-app notification template key",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "excludeActor",
+        "title": "Aktörü hariç tut",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "conditions",
+        "title": "Koşullar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "settings",
+        "title": "Ayarlar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isActive",
+        "title": "Aktif",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "priority",
+        "title": "Öncelik",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_workspace_event",
+        "fields": {
+          "workspaceId": 1,
+          "eventType": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_workspace_type_event",
+        "fields": {
+          "workspaceId": 1,
+          "typeId": 1,
+          "eventType": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_isActive_priority",
+        "fields": {
+          "isActive": 1,
+          "priority": 1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_sla_policies",
+    "description": "Operational Core - SLA Policies",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "SLA adı",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "workspaceId",
+        "title": "Workspace",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_workspaces",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "typeId",
+        "title": "WorkItem tipi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_work_item_types",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "priorityId",
+        "title": "Öncelik",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_priorities",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "responseTargetMinutes",
+        "title": "Yanıt hedefi dakika",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "resolveTargetMinutes",
+        "title": "Çözüm hedefi dakika",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "settings",
+        "title": "Ayarlar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isActive",
+        "title": "Aktif",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "priority",
+        "title": "Policy önceliği",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_workspaceId",
+        "fields": {
+          "workspaceId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_workspace_type_priority",
+        "fields": {
+          "workspaceId": 1,
+          "typeId": 1,
+          "priorityId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_isActive_priority",
+        "fields": {
+          "isActive": 1,
+          "priority": 1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_dashboards",
+    "description": "Operational Core - Runtime Dashboards",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Dashboard adı",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "workspaceId",
+        "title": "Workspace",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_workspaces",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "scope",
+        "title": "Kapsam",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "layout",
+        "title": "Yerleşim",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "widgets",
+        "title": "Widget tanımları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "permissions",
+        "title": "Yetki modeli",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isDefault",
+        "title": "Varsayılan",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isActive",
+        "title": "Aktif",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_workspaceId",
+        "fields": {
+          "workspaceId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_scope",
+        "fields": {
+          "scope": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_isDefault",
+        "fields": {
+          "workspaceId": 1,
+          "isDefault": 1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_saved_filters",
+    "description": "Operational Core - Saved Filters",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Filtre adı",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "workspaceId",
+        "title": "Workspace",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_workspaces",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "boardId",
+        "title": "Board",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_boards",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "scope",
+        "title": "Kapsam",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "persons",
+        "name": "ownerUserId",
+        "title": "Sahip kullanıcı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "personGroups",
+        "name": "ownerGroups",
+        "title": "Sahip gruplar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "queryDataset",
+        "title": "Query dataset",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "queryKey",
+        "title": "Query key",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "parameters",
+        "title": "Parametreler",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "resultView",
+        "title": "Sonuç görünümü",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "permissions",
+        "title": "Yetki modeli",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isDefault",
+        "title": "Varsayılan",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isActive",
+        "title": "Aktif",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_workspaceId",
+        "fields": {
+          "workspaceId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_boardId",
+        "fields": {
+          "boardId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_ownerUserId",
+        "fields": {
+          "ownerUserId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_query",
+        "fields": {
+          "queryDataset": 1,
+          "queryKey": 1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_reports",
+    "description": "Operational Core - Report Definitions",
+    "category": null,
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "basic",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Rapor adı",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "workspaceId",
+        "title": "Workspace",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_workspaces",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "scope",
+        "title": "Kapsam",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "parameters",
+        "title": "Parametre tanımları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "queries",
+        "title": "Query referansları",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "templateKey",
+        "title": "Template key",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "outputTypes",
+        "title": "Çıktı tipleri",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "permissions",
+        "title": "Yetki modeli",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isActive",
+        "title": "Aktif",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_workspaceId",
+        "fields": {
+          "workspaceId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_templateKey",
+        "fields": {
+          "templateKey": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_isActive",
+        "fields": {
+          "isActive": 1
+        },
+        "unique": false
+      }
+    ]
+  }
+]

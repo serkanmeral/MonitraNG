@@ -3,8 +3,8 @@
 **Active Directory:** `LDAP://192.168.20.3:389/DC=odak,DC=local`  
 **Keycloak (Odak):** `http://192.168.20.20:8080/keycloak/`  
 **MonitraNG sunucu:** `192.168.20.20`  
-**Son güncelleme:** 22 Mayıs 2026  
-**Yarın devam:** [DEVAM.md](./DEVAM.md) (oturum özeti + checklist)
+**Son güncelleme:** 25 Mayıs 2026  
+**Durum:** Odak Faz K **uygulandı ve duraklatıldı** — [DEVAM.md](./DEVAM.md) (kapanış özeti + opsiyonel backlog)
 
 Bu doküman, onaylanan çalışma sırasını ve **MngKeeper** tarafında yapılacakları netleştirir. Genel faz planı için [ROADMAP.md](./ROADMAP.md).
 
@@ -57,11 +57,12 @@ Periyodik: MngScheduler → GET domain list → POST Keeper sync / domain
 
 | Sıra | Ne | Nerede | Durum |
 |------|-----|--------|--------|
-| **K1** | LDAP federation + **manuel** “Sync all users / groups” (bir kerelik + ihtiyaçta tekrar) | Keycloak Admin | ⬜ Operasyon |
-| **K2** | MngKeeper: Keycloak → Mongo tam senkron (endpoint) | MngKeeper API | ⬜ Geliştirme |
+| **K1** | LDAP federation + **manuel** “Sync all users / groups” (bir kerelik + ihtiyaçta tekrar) | Keycloak Admin | ✅ Operasyon |
+| **K2** | MngKeeper: Keycloak → Mongo tam senkron (endpoint) | MngKeeper API | ✅ |
 | **K3** | **MngScheduler:** periyodik job → tüm Active domain’ler → Keeper sync (K2) | MngScheduler + Keeper API | ✅ Deploy — [SCHEDULER_DIRECTORY_SYNC.md](./SCHEDULER_DIRECTORY_SYNC.md) |
-| **K4** | MngKeeper: Login sonrası kullanıcı bazlı tutarlılık + gerekirse sync | `GetTokenCommandHandler` | ⬜ Geliştirme |
-| **K5** | Kullanıcı kaynağı (Local / Directory): API + profil/kullanıcı UI kısıtları | MngKeeper + Mng.Ui | ⬜ Geliştirme |
+| **K4** | MngKeeper: Login sonrası kullanıcı bazlı tutarlılık + gerekirse sync | `GetTokenCommandHandler` | ✅ |
+| **K5** | Kullanıcı kaynağı (Local / Directory): API + profil/kullanıcı UI kısıtları | MngKeeper + Mng.Ui | ✅ |
+| **G1** | Grup Local / Directory + domain manuel sync UI | MngKeeper + Mng.Ui | ✅ |
 | **K5 (DG)** | (Opsiyonel) DataGateway senkronu mevcut `IDataGatewaySyncService` ile | Mevcut `/api/sync` | ✅ Var |
 
 > **K5 detay:** [USER_SOURCES.md](./USER_SOURCES.md) — LDAP kullanıcı düzenleme, şifre, fotoğraf.

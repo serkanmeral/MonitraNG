@@ -1,6 +1,7 @@
-# El değişimi — Mng.Ui (LDAP / Odak)
+# El değişimi — Mng.Ui (LDAP / Odak) ✅ tamamlandı
 
-**Son güncelleme:** 24 Mayıs 2026
+**Son güncelleme:** 25 Mayıs 2026  
+**Durum:** LDAP POC UI işleri **bitti** — bu dosya **arşiv / referans**. Yeni geliştirme LDAP dışı: [../ODAK_FULL_SETUP.md](../ODAK_FULL_SETUP.md).
 
 ---
 
@@ -12,8 +13,11 @@
 | **Welcome** | `/` — [../ui/WELCOME_HOME.md](../ui/WELCOME_HOME.md) |
 | **K5d** | Kullanıcı rozeti, `fieldPolicies`, edit/profil guard |
 | **G1** | Grup rozeti, `capabilities`, domain **Dizin senkronu** kartı |
+| **mngui deploy** | Sunucu `http://192.168.20.20:3000` — `deploy-odak-apps.ps1 -Services mngui` |
 
-Keeper sunucu: **v1.3.4** @ `192.168.20.20`. Yerel UI ile doğrulandı.
+Keeper sunucu: **v1.3.4** @ `192.168.20.20`. Yerel UI ve sunucu mngui ile doğrulandı.
+
+**Git:** `main` @ `72872d9` (Keeper + UI + Scheduler + Odak doküman/script).
 
 ---
 
@@ -48,14 +52,13 @@ Keeper sunucu: **v1.3.4** @ `192.168.20.20`. Yerel UI ile doğrulandı.
 
 ---
 
-## Kalan (opsiyonel)
+## Opsiyonel (LDAP dönüşünde)
 
 | İş | Not |
 |----|-----|
-| **mngui sunucu deploy** | `sync-odak-source.ps1 -Paths Mng.Ui` + `deploy-odak-apps.ps1 -Services mngui` |
 | **K5e checklist** | [USER_SOURCES.md](./USER_SOURCES.md) §8 |
 | **users/details** rozeti | Liste/edit yeterli; detay sayfası iyileştirme |
-| HTTPS / Nginx | POC dışı |
+| HTTPS / Nginx | POC dışı — [ODAK_HTTP_AND_GATEWAY.md](./ODAK_HTTP_AND_GATEWAY.md) |
 
 ---
 

@@ -68,10 +68,12 @@ export function mapProvisioningFieldsFromApi(user: Record<string, unknown>): Use
   };
 }
 
+import { isDirectoryProvisioningSource } from './provisioningSourceUi';
+
 export function isDirectoryUser(
   user: { provisioningSource?: string } | null | undefined
 ): boolean {
-  return (user?.provisioningSource || '').toLowerCase() === 'directory';
+  return isDirectoryProvisioningSource(user?.provisioningSource);
 }
 
 export function isFieldEditable(
@@ -88,14 +90,10 @@ export function isFieldEditable(
   return p.editable;
 }
 
-export function provisioningSourceLabelKey(source?: string): string {
+export function userProvisioningSourceLabelKey(source?: string): string {
   return isDirectoryUser({ provisioningSource: source })
     ? 'users.source.directory'
     : 'users.source.local';
-}
-
-export function provisioningSourceChipColor(source?: string): string {
-  return isDirectoryUser({ provisioningSource: source }) ? 'info' : 'secondary';
 }
 
 export function canDeleteUser(user: UserProvisioningFields | null | undefined): boolean {

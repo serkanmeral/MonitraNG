@@ -1,0 +1,54 @@
+/* Operation Core — Mng.Ui (Vuetify tema ile uyumlu) */
+.oc-flow {
+  --oc-accent: rgb(var(--v-theme-primary));
+  --oc-accent-muted: rgba(var(--v-theme-primary), 0.14);
+  --oc-ink: rgb(var(--v-theme-on-surface));
+  --oc-ink-soft: rgba(var(--v-theme-on-surface), 0.65);
+  --oc-surface: rgb(var(--v-theme-surface));
+  --oc-border: rgba(var(--v-theme-on-surface), 0.1);
+  --oc-radius: 14px;
+  --oc-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.v-theme--dark .oc-flow {
+  --oc-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), 0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+.oc-flow .oc-hero {
+  background: linear-gradient(135deg, rgba(var(--v-theme-primary), 0.12) 0%, transparent 58%);
+  border: 1px solid var(--oc-border);
+  border-radius: var(--oc-radius);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.oc-flow .oc-empty-state {
+  color: var(--oc-ink-soft);
+}
+
+.oc-flow .oc-kanban-wrap {
+  background: rgba(var(--v-theme-on-surface), 0.03);
+  border-radius: var(--oc-radius);
+  padding: 0.75rem;
+  border: 1px solid var(--oc-border);
+}
+
+.oc-flow .oc-col {
+  width: 300px;
+  min-height: 220px;
+  flex-shrink: 0;
+  background: rgba(var(--v-theme-primary), 0.08);
+  border-radius: 12px;
+  padding: 10px;
+  border: 1px solid rgba(var(--v-theme-primary), 0.18);
+}
+
+.oc-flow .oc-col-head {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--oc-ink-soft);
+  margin-bottom: 10px;
+  padding: 0 4px;
+}

@@ -1,8 +1,8 @@
 # El değişimi — MngScheduler (K3) ✅ tamamlandı
 
-**Tarih:** 23 Mayıs 2026  
+**Tarih:** 23 Mayıs 2026 (güncelleme: 25 Mayıs 2026)  
 **Durum:** Kod + Odak deploy + sunucuda periyodik sync doğrulandı  
-**Sonraki chat:** [HANDOFF_UI.md](./HANDOFF_UI.md) (K1.6 / K5 — Mng.Ui)
+**LDAP POC:** K3 dahil tüm fazlar tamamlandı — [DEVAM.md](./DEVAM.md) · UI: [HANDOFF_UI.md](./HANDOFF_UI.md)
 
 ---
 
@@ -90,6 +90,6 @@ Teknik plan: [SCHEDULER_DIRECTORY_SYNC.md](./SCHEDULER_DIRECTORY_SYNC.md)
 | Dosya | Ne için |
 |-------|---------|
 | [DEVAM.md](./DEVAM.md) | Güncel faz özeti |
-| [HANDOFF_UI.md](./HANDOFF_UI.md) | **Sonraki chat** — UI |
+| [HANDOFF_UI.md](./HANDOFF_UI.md) | UI tamamlandı (arşiv) |
 | [SCHEDULER_DIRECTORY_SYNC.md](./SCHEDULER_DIRECTORY_SYNC.md) | K3 mimari |
 | [DEPLOY_KEEPER_LDAP.md](./DEPLOY_KEEPER_LDAP.md) | Keeper deploy |

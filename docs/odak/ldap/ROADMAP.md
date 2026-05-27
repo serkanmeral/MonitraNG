@@ -3,9 +3,9 @@
 **Ortam:** Odak POC — `192.168.20.20` (`monitrang`)  
 **Hedef:** Kurumsal LDAP veya Active Directory ile MonitraNG kimlik akışını birleştirmek  
 **Active Directory:** `LDAP://192.168.20.3:389/DC=odak,DC=local`  
-**Son güncelleme:** 22 Mayıs 2026  
-**Durum:** Planlama onaylandı — kod yok  
-**Yarın devam:** [DEVAM.md](./DEVAM.md) · Detay: [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)
+**Son güncelleme:** 25 Mayıs 2026  
+**Durum:** **Odak Faz K (K1–K5 + G1) tamamlandı** — geliştirme **duraklatıldı**  
+**Güncel özet:** [DEVAM.md](./DEVAM.md) · Detay: [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)
 
 ---
 
@@ -104,12 +104,13 @@ Dizin **arama**, toplu import veya operasyonel senaryolar (monitoring / asset il
 
 | Kod | İş | Sahip |
 |-----|-----|--------|
-| **K1** | Keycloak: AD federation + **manuel** LDAP sync (bir kerelik / gerektiğinde) | Ops / Keycloak Admin |
-| **K2** | MngKeeper: `POST` endpoint — KC sync (opsiyonel tetik) + **KC → Mongo** (kullanıcı, grup, üyelik) | Geliştirme |
+| **K1** | Keycloak: AD federation + **manuel** LDAP sync (bir kerelik / gerektiğinde) | ✅ Ops |
+| **K2** | MngKeeper: `POST` endpoint — KC sync (opsiyonel tetik) + **KC → Mongo** (kullanıcı, grup, üyelik) | ✅ |
 | **K3** | **MngScheduler** — domain listesi + Keeper sync POST (Keeper’da Quartz yok) | ✅ Deploy |
-| **K4** | MngKeeper: **Login** sonrası kullanıcı tutarlılık kontrolü + gerekirse tek kullanıcı sync | Geliştirme |
-| **K5** | **Local vs Directory:** `DirectoryUserFieldSets`, `fieldPolicies`, UI + API guard ([USER_SOURCES.md](./USER_SOURCES.md)) | Geliştirme |
-| **K2–K3** | **Tek aktif tam sync:** manuel istek sürerken job atlanır; job sürerken manuel → **409** uyarı | Geliştirme |
+| **K4** | MngKeeper: **Login** sonrası kullanıcı tutarlılık kontrolü + gerekirse tek kullanıcı sync | ✅ |
+| **K5** | **Local vs Directory:** `DirectoryUserFieldSets`, `fieldPolicies`, UI + API guard ([USER_SOURCES.md](./USER_SOURCES.md)) | ✅ |
+| **G1** | Grup Local / Directory + domain manuel sync UI | ✅ |
+| **K2–K3** | **Tek aktif tam sync:** manuel istek sürerken job atlanır; job sürerken manuel → **409** uyarı | ✅ |
 
 > Mevcut `POST /api/sync/users|groups|all` yalnızca Keeper → DataGateway içindir; LDAP işi için **yeni** endpoint gerekir.  
 > Eşzamanlılık detayı: [IMPLEMENTATION_PLAN.md §5.4](./IMPLEMENTATION_PLAN.md#54-eşzamanlılık--tek-aktif-tam-sync-zorunlu).
@@ -283,16 +284,17 @@ Her MonitraNG **domain** = Keycloak **realm**. LDAP entegrasyonu realm düzeyind
 
 | Faz | Ad | Durum |
 |-----|-----|--------|
-| **P0** | `directoryPrivileges` + `IPrivilegeGroupResolver` | ⬜ |
+| **P0** | `directoryPrivileges` + `IPrivilegeGroupResolver` | ✅ |
 | **K1** | Keycloak manuel AD sync (odak realm) | ✅ |
-| **K2** | Keeper endpoint KC→Mongo + coordinator | ⬜ |
+| **K2** | Keeper endpoint KC→Mongo + coordinator | ✅ |
 | **K3** | MngScheduler periyodik orchestration | ✅ |
-| **K4** | Login kullanıcı sync | ⬜ |
-| **K5** | Kullanıcı kaynağı + UI/API kısıtları | ⬜ |
-| 0 | Keşif (bind DN, grup OU) | ⬜ |
+| **K4** | Login kullanıcı sync | ✅ |
+| **K5** | Kullanıcı kaynağı + UI/API kısıtları | ✅ |
+| **G1** | Grup kaynağı + domain sync UI | ✅ |
+| 0 | Keşif (bind DN, grup OU) | ⬜ (genel ürün) |
 | 1–6 | ROADMAP genel fazlar | K sonrası |
 
-**Sonraki adım:** [DEVAM.md](./DEVAM.md) checklist.
+**LDAP Odak POC duraklatıldı.** Özet: [DEVAM.md](./DEVAM.md) · Opsiyonel backlog: §4.
 
 ---
 

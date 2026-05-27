@@ -1,0 +1,276 @@
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using MngOperations.Application.Configuration;
+using MngOperations.Application.Interfaces;
+using Polly;
+using Polly.Retry;
+
+namespace MngOperations.Infrastructure.Clients;
+
+public class MngDataGatewayClient : IMngDataGatewayClient
+{
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
+    private readonly HttpClient _httpClient;
+    private readonly ILogger<MngDataGatewayClient> _logger;
+    private readonly MngOperationsSettings _settings;
+    private readonly AsyncRetryPolicy<HttpResponseMessage> _retryPolicy;
+
+    public MngDataGatewayClient(
+        IHttpClientFactory httpClientFactory,
+        ILogger<MngDataGatewayClient> logger,
+        IOptions<MngOperationsSettings> settings)
+    {
+        _httpClient = httpClientFactory.CreateClient("MngDataGateway");
+        _logger = logger;
+        _settings = settings.Value;
+
+        var baseUrl = (_settings.DataGateway.BaseUrl ?? "http://localhost:5010").TrimEnd('/');
+        var apiVersion = _settings.DataGateway.ApiVersion ?? "v1";
+        _httpClient.BaseAddress = new Uri($"{baseUrl}/api/{apiVersion}/");
+
+        _retryPolicy = Policy
+            .HandleResult<HttpResponseMessage>(r => !r.IsSuccessStatusCode && (int)r.StatusCode >= 500)
+            .Or<HttpRequestException>()
+            .WaitAndRetryAsync(
+                3,
+                attempt => TimeSpan.FromSeconds(Math.Pow(2, attempt)),
+                (outcome, timespan, retryCount, _) =>
+                {
+                    _logger.LogWarning(
+                        "Retrying MngDataGateway request. Attempt {RetryCount} after {Delay}ms",
+                        retryCount,
+                        timespan.TotalMilliseconds);
+                });
+    }
+
+    public Task<T> CreateAsync<T>(string datasetName, T data, string? token = null, CancellationToken cancellationToken = default)
+        where T : class =>
+        SendJsonAsync<T>(HttpMethod.Post, $"data/{datasetName}", data, token, cancellationToken);
+
+    public async Task<IEnumerable<T>> GetAsync<T>(string datasetName, string? query = null, string? token = null, CancellationToken cancellationToken = default)
+        where T : class
+    {
+        var url = $"data/{datasetName}";
+        if (!string.IsNullOrEmpty(query))
+            url += $"?{query}";
+
+        using var response = await SendWithRetryAsync(
+            () => CreateRequest(HttpMethod.Get, url, token),
+            cancellationToken);
+
+        response.EnsureSuccessStatusCode();
+
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions, cancellationToken);
+        if (json.ValueKind != JsonValueKind.Array)
+            return Enumerable.Empty<T>();
+
+        var list = new List<T>();
+        foreach (var item in json.EnumerateArray())
+        {
+            var normalized = CollapseExpandedRelations(item);
+            var record = JsonSerializer.Deserialize<T>(normalized.GetRawText(), JsonOptions);
+            if (record != null)
+                list.Add(record);
+        }
+
+        return list;
+    }
+
+    public async Task<T?> GetByIdAsync<T>(string datasetName, string id, string? token = null, CancellationToken cancellationToken = default)
+        where T : class
+    {
+        using var response = await SendWithRetryAsync(
+            () => CreateRequest(HttpMethod.Get, $"data/{datasetName}/{id}", token),
+            cancellationToken);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return null;
+
+        response.EnsureSuccessStatusCode();
+
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions, cancellationToken);
+        var payload = UnwrapSingleRecord(json);
+        if (payload == null)
+            return null;
+
+        var normalized = CollapseExpandedRelations(payload.Value);
+        return JsonSerializer.Deserialize<T>(normalized.GetRawText(), JsonOptions);
+    }
+
+    private static JsonElement CollapseExpandedRelations(JsonElement element)
+    {
+        if (element.ValueKind != JsonValueKind.Object)
+            return element;
+
+        var dict = new Dictionary<string, JsonElement>(StringComparer.OrdinalIgnoreCase);
+        foreach (var prop in element.EnumerateObject())
+        {
+            dict[prop.Name] = CollapseRelationValue(prop.Name, prop.Value);
+        }
+
+        return JsonSerializer.SerializeToElement(dict, JsonOptions);
+    }
+
+    private static JsonElement CollapseRelationValue(string propertyName, JsonElement value)
+    {
+        if (propertyName.EndsWith("Ids", StringComparison.OrdinalIgnoreCase) && value.ValueKind == JsonValueKind.Array)
+        {
+            var ids = new List<string?>();
+            foreach (var item in value.EnumerateArray())
+            {
+                ids.Add(ExtractRelationId(item));
+            }
+
+            return JsonSerializer.SerializeToElement(ids, JsonOptions);
+        }
+
+        if (propertyName.EndsWith("Id", StringComparison.OrdinalIgnoreCase))
+        {
+            var id = ExtractRelationId(value);
+            if (id != null)
+                return JsonSerializer.SerializeToElement(id, JsonOptions);
+        }
+
+        return value;
+    }
+
+    private static string? ExtractRelationId(JsonElement value) =>
+        value.ValueKind switch
+        {
+            JsonValueKind.String => value.GetString(),
+            JsonValueKind.Object when value.TryGetProperty("__dataId", out var dataId) => dataId.GetString(),
+            JsonValueKind.Object when value.TryGetProperty("dataId", out var altId) => altId.GetString(),
+            _ => null
+        };
+
+    private static JsonElement? UnwrapSingleRecord(JsonElement json)
+    {
+        switch (json.ValueKind)
+        {
+            case JsonValueKind.Array:
+            {
+                using var enumerator = json.EnumerateArray();
+                return enumerator.MoveNext() ? enumerator.Current : null;
+            }
+            case JsonValueKind.Object when json.TryGetProperty("data", out var data):
+                return data.ValueKind switch
+                {
+                    JsonValueKind.Array => UnwrapSingleRecord(data),
+                    JsonValueKind.Object => data,
+                    _ => null
+                };
+            case JsonValueKind.Object:
+                return json;
+            default:
+                return null;
+        }
+    }
+
+    public Task<T> UpdateAsync<T>(string datasetName, string id, T data, string? token = null, CancellationToken cancellationToken = default)
+        where T : class =>
+        SendJsonAsync<T>(HttpMethod.Put, $"data/{datasetName}/{id}", data, token, cancellationToken);
+
+    public async Task<bool> DeleteAsync(string datasetName, string id, string? token = null, CancellationToken cancellationToken = default)
+    {
+        using var response = await SendWithRetryAsync(
+            () => CreateRequest(HttpMethod.Delete, $"data/{datasetName}/{id}", token),
+            cancellationToken);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return false;
+
+        response.EnsureSuccessStatusCode();
+        return true;
+    }
+
+    public async Task<IReadOnlyList<Dictionary<string, object?>>> ExecuteQueryAsync(
+        string datasetName,
+        string queryName,
+        Dictionary<string, object?> parameters,
+        string? token = null,
+        CancellationToken cancellationToken = default)
+    {
+        var url = $"data/{datasetName}/queries/{queryName}";
+        using var response = await SendWithRetryAsync(
+            () => CreateRequest(HttpMethod.Post, url, token, JsonContent.Create(parameters)),
+            cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException(
+                $"MngDataGateway {(int)response.StatusCode} {response.ReasonPhrase}: {body}",
+                null,
+                response.StatusCode);
+        }
+
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions, cancellationToken);
+        if (json.ValueKind != JsonValueKind.Array)
+            return Array.Empty<Dictionary<string, object?>>();
+
+        var list = new List<Dictionary<string, object?>>();
+        foreach (var item in json.EnumerateArray())
+        {
+            var row = JsonSerializer.Deserialize<Dictionary<string, object?>>(item.GetRawText(), JsonOptions);
+            if (row != null)
+                list.Add(row);
+        }
+
+        return list;
+    }
+
+    private async Task<T> SendJsonAsync<T>(
+        HttpMethod method,
+        string url,
+        T data,
+        string? token,
+        CancellationToken cancellationToken) where T : class
+    {
+        using var response = await SendWithRetryAsync(
+            () => CreateRequest(method, url, token, JsonContent.Create(data)),
+            cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException(
+                $"MngDataGateway {(int)response.StatusCode} {response.ReasonPhrase}: {body}",
+                null,
+                response.StatusCode);
+        }
+
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions, cancellationToken);
+        var payload = UnwrapSingleRecord(json) ?? json;
+        var normalized = CollapseExpandedRelations(payload);
+        var result = JsonSerializer.Deserialize<T>(normalized.GetRawText(), JsonOptions);
+        return result ?? throw new InvalidOperationException($"Empty response from {url}");
+    }
+
+    private Task<HttpResponseMessage> SendWithRetryAsync(
+        Func<HttpRequestMessage> createRequest,
+        CancellationToken cancellationToken) =>
+        _retryPolicy.ExecuteAsync(ct => _httpClient.SendAsync(createRequest(), ct), cancellationToken);
+
+    private static HttpRequestMessage CreateRequest(
+        HttpMethod method,
+        string url,
+        string? token,
+        HttpContent? content = null)
+    {
+        var request = new HttpRequestMessage(method, url);
+        if (content != null)
+            request.Content = content;
+
+        if (!string.IsNullOrEmpty(token))
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        return request;
+    }
+}

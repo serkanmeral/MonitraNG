@@ -6,9 +6,11 @@ import {
   ClipboardIcon,
   FileDescriptionIcon,
   HomeIcon,
+  LayoutIcon,
   BrandAirtableIcon,
   PointIcon,
   AppWindowIcon,
+  SettingsIcon,
 } from "vue-tabler-icons";
 
 export interface menu {
@@ -273,6 +275,29 @@ const horizontalItems: menu[] = [
         title: "Görevler",
         icon: CircleDotIcon,
         to: "/apps/task-manager/projects",
+      },
+    ],
+  },
+
+  {
+    title: "Operasyon Merkezi",
+    icon: ClipboardIcon,
+    to: "/apps/operation-core/workspace",
+  },
+  {
+    title: "Tanımlamalar",
+    icon: SettingsIcon,
+    to: "#",
+    children: [
+      {
+        title: "Sistem tanımlaması",
+        icon: SettingsIcon,
+        to: "/apps/operation-core/admin/definitions",
+      },
+      {
+        title: "Workspace tanımlaması",
+        icon: LayoutIcon,
+        to: "/apps/operation-core/admin/workspace-definitions",
       },
     ],
   },

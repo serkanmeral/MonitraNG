@@ -1,0 +1,206 @@
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue';
+import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
+import OcWorkspaceDefinitionsGeneralTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsGeneralTab.vue';
+import OcWorkspaceDefinitionsTypesTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsTypesTab.vue';
+import OcWorkspaceDefinitionsFieldsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsFieldsTab.vue';
+import OcWorkspaceDefinitionsFlowsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsFlowsTab.vue';
+import OcWorkspaceDefinitionsFormsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsFormsTab.vue';
+import OcWorkspaceDefinitionsBoardsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsBoardsTab.vue';
+import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
+import {
+  OC_WORKSPACE_DEFINITION_TAB_KEYS,
+  type OcWorkspaceDefinitionTabKey,
+  useOcWorkspaceDefinitionTabs,
+} from '@/composables/useOcWorkspaceDefinitionTabs';
+import { useAppI18n } from '@/composables/useAppI18n';
+import { useAuthStore } from '@/stores/auth';
+import { ocListWorkspaces } from '@/services/operationCoreService';
+import type { OpWorkspace } from '@/types/apps/operationCore';
+
+definePageMeta({ layout: 'default' });
+
+const { t } = useAppI18n();
+const route = useRoute();
+const router = useRouter();
+const auth = useAuthStore();
+
+const activeTab = ref<OcWorkspaceDefinitionTabKey>('general');
+const { tabIndex } = useOcWorkspaceDefinitionTabs(route, router, activeTab);
+
+const workspaces = ref<OpWorkspace[]>([]);
+const loadingWorkspaces = ref(true);
+const selectedWorkspaceId = ref('');
+
+const { breadcrumbs } = useOperationCoreBreadcrumbs({
+  tail: computed(() => ({
+    text: t('operationCore.definitions.workspaceMenuTitle'),
+    disabled: true,
+  })),
+});
+
+const workspaceItems = computed(() =>
+  workspaces.value.map((w) => ({
+    title: w.name,
+    value: w.__dataId,
+    subtitle: w.workItemKeyPrefix ? `${w.workItemKeyPrefix} · ${w.workspaceType ?? ''}` : w.workspaceType,
+  }))
+);
+
+const tabItems = computed(() =>
+  OC_WORKSPACE_DEFINITION_TAB_KEYS.map((key) => ({
+    key,
+    label: t(`operationCore.workspaceDefinitions.tabs.${key}`),
+    icon:
+      key === 'general'
+        ? 'mdi-cog-outline'
+        : key === 'types'
+          ? 'mdi-shape-outline'
+          : key === 'fields'
+            ? 'mdi-form-textbox'
+            : key === 'flows'
+              ? 'mdi-transit-connection-variant'
+              : key === 'forms'
+                ? 'mdi-form-select'
+                : 'mdi-view-dashboard-outline',
+  }))
+);
+
+function syncWorkspaceFromRoute() {
+  const q = route.query.workspaceId;
+  if (typeof q === 'string' && q) {
+    selectedWorkspaceId.value = q;
+  }
+}
+
+function setWorkspaceId(id: string) {
+  selectedWorkspaceId.value = id;
+  router.replace({
+    path: route.path,
+    query: { ...route.query, workspaceId: id || undefined },
+  });
+}
+
+async function loadWorkspaces() {
+  loadingWorkspaces.value = true;
+  try {
+    workspaces.value = await ocListWorkspaces();
+    syncWorkspaceFromRoute();
+    if (!selectedWorkspaceId.value && workspaces.value.length > 0) {
+      setWorkspaceId(workspaces.value[0]!.__dataId);
+    }
+  } finally {
+    loadingWorkspaces.value = false;
+  }
+}
+
+watch(
+  () => route.query.workspaceId,
+  () => syncWorkspaceFromRoute()
+);
+
+onMounted(() => {
+  if (!auth.isManager) {
+    void navigateTo('/unauthorized');
+    return;
+  }
+  void loadWorkspaces();
+});
+</script>
+
+<template>
+  <div class="oc-flow oc-workspace-definitions-page">
+    <BaseBreadcrumb
+      :title="t('operationCore.definitions.workspaceMenuTitle')"
+      :breadcrumbs="breadcrumbs"
+    />
+
+    <div class="oc-hero mb-4 pa-4 pa-md-5 rounded-lg">
+      <h1 class="text-h5 font-weight-bold mb-2">
+        {{ t('operationCore.definitions.workspaceMenuTitle') }}
+      </h1>
+      <p class="text-body-2 text-medium-emphasis mb-0">
+        {{ t('operationCore.workspaceDefinitions.pageSubtitle') }}
+      </p>
+    </div>
+
+    <v-card variant="outlined" rounded="lg" class="mb-4 pa-4 pa-md-5">
+      <v-select
+        v-model="selectedWorkspaceId"
+        :items="workspaceItems"
+        item-title="title"
+        item-value="value"
+        :label="t('operationCore.workspaceDefinitions.selectWorkspace')"
+        :hint="t('operationCore.workspaceDefinitions.selectWorkspaceHint')"
+        persistent-hint
+        :loading="loadingWorkspaces"
+        density="comfortable"
+        @update:model-value="setWorkspaceId"
+      >
+        <template #item="{ props: itemProps, item }">
+          <v-list-item v-bind="itemProps" :subtitle="item.raw.subtitle" />
+        </template>
+      </v-select>
+    </v-card>
+
+    <v-alert
+      v-if="!loadingWorkspaces && workspaces.length === 0"
+      type="warning"
+      variant="tonal"
+      class="mb-4"
+    >
+      {{ t('operationCore.workspaceDefinitions.noWorkspaces') }}
+    </v-alert>
+
+    <v-card v-else-if="selectedWorkspaceId" variant="outlined" class="rounded-lg">
+      <v-tabs v-model="tabIndex" color="primary" class="px-2 pt-2" show-arrows>
+        <v-tab
+          v-for="tab in tabItems"
+          :key="tab.key"
+          :value="OC_WORKSPACE_DEFINITION_TAB_KEYS.indexOf(tab.key)"
+          class="text-none"
+        >
+          <v-icon :icon="tab.icon" start size="20" />
+          {{ tab.label }}
+        </v-tab>
+      </v-tabs>
+      <v-divider />
+      <v-tabs-window v-model="tabIndex">
+        <v-tabs-window-item
+          v-for="(tab, idx) in tabItems"
+          :key="tab.key"
+          :value="idx"
+        >
+          <OcWorkspaceDefinitionsGeneralTab
+            v-if="tab.key === 'general'"
+            :workspace-id="selectedWorkspaceId"
+          />
+          <OcWorkspaceDefinitionsTypesTab
+            v-else-if="tab.key === 'types'"
+            :workspace-id="selectedWorkspaceId"
+          />
+          <OcWorkspaceDefinitionsFieldsTab
+            v-else-if="tab.key === 'fields'"
+            :workspace-id="selectedWorkspaceId"
+          />
+          <OcWorkspaceDefinitionsFlowsTab
+            v-else-if="tab.key === 'flows'"
+            :workspace-id="selectedWorkspaceId"
+          />
+          <OcWorkspaceDefinitionsFormsTab
+            v-else-if="tab.key === 'forms'"
+            :workspace-id="selectedWorkspaceId"
+          />
+          <OcWorkspaceDefinitionsBoardsTab
+            v-else-if="tab.key === 'boards'"
+            :workspace-id="selectedWorkspaceId"
+          />
+        </v-tabs-window-item>
+      </v-tabs-window>
+    </v-card>
+
+    <v-alert v-else-if="!loadingWorkspaces" type="info" variant="tonal">
+      {{ t('operationCore.workspaceDefinitions.pickWorkspace') }}
+    </v-alert>
+  </div>
+</template>

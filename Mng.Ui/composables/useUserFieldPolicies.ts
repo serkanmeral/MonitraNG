@@ -3,9 +3,9 @@ import type { User } from '@/stores/apps/user';
 import {
   isDirectoryUser,
   isFieldEditable,
-  provisioningSourceChipColor,
-  provisioningSourceLabelKey,
+  userProvisioningSourceLabelKey,
 } from '@/utils/userFieldPolicy';
+import { provisioningSourceChipColor } from '@/utils/provisioningSourceUi';
 
 /** Reactive helpers for a user row / viewingUser driven by API fieldPolicies. */
 export function useUserFieldPolicies(user: Ref<User | null | undefined>) {
@@ -31,7 +31,7 @@ export function useUserFieldPolicies(user: Ref<User | null | undefined>) {
   }
 
   const sourceLabelKey = computed(() =>
-    provisioningSourceLabelKey(user.value?.provisioningSource)
+    userProvisioningSourceLabelKey(user.value?.provisioningSource)
   );
   const sourceChipColor = computed(() =>
     provisioningSourceChipColor(user.value?.provisioningSource)
