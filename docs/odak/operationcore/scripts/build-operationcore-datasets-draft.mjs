@@ -130,6 +130,97 @@ function fieldRelation(name, title, relationDataset, opts = {}) {
   };
 }
 
+function fieldBool(name, title, opts = {}) {
+  return {
+    fieldType: 'bool',
+    name,
+    title,
+    mandatory: opts.mandatory ?? false,
+    unique: false,
+    isArray: false,
+    relationDataset: null,
+    incrementalOptions: null,
+  };
+}
+
+function fieldObject(name, title, opts = {}) {
+  return {
+    fieldType: 'object',
+    name,
+    title,
+    mandatory: opts.mandatory ?? false,
+    unique: false,
+    isArray: opts.isArray ?? false,
+    relationDataset: null,
+    incrementalOptions: null,
+  };
+}
+
+function fieldDatetime(name, title, opts = {}) {
+  return {
+    fieldType: 'datetime',
+    name,
+    title,
+    mandatory: opts.mandatory ?? false,
+    unique: false,
+    isArray: false,
+    relationDataset: null,
+    incrementalOptions: null,
+  };
+}
+
+const OP_WORK_ITEM_SCHEDULES = 'op_work_item_schedules';
+
+function buildOpWorkItemSchedulesDataset() {
+  return {
+    __dataId: null,
+    name: OP_WORK_ITEM_SCHEDULES,
+    description:
+      'Operational Core - Scheduled work item templates (cron + create payload)',
+    category: OPERATION_CORE_CATEGORY_ID,
+    forceSchema: false,
+    logging: 'self',
+    publish_mode: 'none',
+    fields: [
+      fieldText('name', 'Ad', { mandatory: true }),
+      fieldText('description', 'Açıklama (schedule)'),
+      fieldRelation('workspaceId', 'Workspace', 'op_workspaces', { mandatory: true }),
+      fieldBool('isActive', 'Aktif', { mandatory: true }),
+      fieldText('cronExpression', 'Cron ifadesi (Quartz)', { mandatory: true }),
+      fieldText('timezone', 'Saat dilimi (IANA)', { mandatory: true }),
+      fieldRelation('boardId', 'Board', 'op_boards', { mandatory: true }),
+      fieldRelation('typeId', 'İş tipi', 'op_work_item_types', { mandatory: true }),
+      fieldText('assignee', 'Atanan (Keeper user id)', { mandatory: true }),
+      fieldRelation('priorityId', 'Öncelik', 'op_priorities'),
+      fieldText('title', 'WI başlık şablonu', { mandatory: true }),
+      fieldText('templateDescription', 'WI açıklama şablonu'),
+      fieldObject('fields', 'Ek alanlar (create payload)'),
+      fieldText('initialTransitionKey', 'Create sonrası geçiş (transitionKey)'),
+      fieldText('schedulerJobId', 'MngScheduler job id'),
+      fieldDatetime('lastRunAt', 'Son çalışma'),
+      fieldRelation('lastWorkItemId', 'Son oluşan WI', 'op_work_items'),
+    ],
+    indexList: [
+      {
+        name: 'idx_workspaceId',
+        fields: { workspaceId: 1 },
+        unique: false,
+      },
+      {
+        name: 'idx_workspaceId_isActive',
+        fields: { workspaceId: 1, isActive: 1 },
+        unique: false,
+      },
+      {
+        name: 'idx_workspaceId_name',
+        fields: { workspaceId: 1, name: 1 },
+        unique: true,
+      },
+    ],
+    queries: [],
+  };
+}
+
 function patchDataset(ds) {
   ds.category = OPERATION_CORE_CATEGORY_ID;
   ds.__dataId = null;
@@ -140,6 +231,18 @@ function patchDataset(ds) {
       if (!fields.some((f) => f.name === 'enabledTypeIds')) {
         fields.push(
           fieldRelation('enabledTypeIds', 'Aktif WorkItem tipleri', 'op_work_item_types', {
+            isArray: true,
+          })
+        );
+      }
+      if (!fields.some((f) => f.name === 'enabledStateIds')) {
+        fields.push(
+          fieldRelation('enabledStateIds', 'Aktif durumlar (state)', 'op_states', { isArray: true })
+        );
+      }
+      if (!fields.some((f) => f.name === 'enabledPriorityIds')) {
+        fields.push(
+          fieldRelation('enabledPriorityIds', 'Aktif öncelikler', 'op_priorities', {
             isArray: true,
           })
         );
@@ -261,5 +364,8 @@ function patchDataset(ds) {
 const raw = fs.readFileSync(srcPath, 'utf8');
 const datasets = JSON.parse(raw);
 const patched = datasets.map(patchDataset);
+if (!patched.some((d) => d.name === OP_WORK_ITEM_SCHEDULES)) {
+  patched.push(buildOpWorkItemSchedulesDataset());
+}
 fs.writeFileSync(outPath, JSON.stringify(patched, null, 2) + '\n', 'utf8');
 console.log(`Wrote ${patched.length} datasets -> ${outPath}`);

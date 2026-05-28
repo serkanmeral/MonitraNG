@@ -1,7 +1,8 @@
 # Mng.Ui — Operation Core form tanımlama ve dinamik form
 
 **Son güncelleme:** 26 Mayıs 2026  
-**Backend:** [FORM_LAYOUT_AND_EXTRA_FIELDS.md](../mngoperations/FORM_LAYOUT_AND_EXTRA_FIELDS.md)
+**Backend:** [FORM_LAYOUT_AND_EXTRA_FIELDS.md](../mngoperations/FORM_LAYOUT_AND_EXTRA_FIELDS.md)  
+**Alan politikası (tek el):** [OC_UI_FIELD_POLICY.md](./OC_UI_FIELD_POLICY.md) · Handoff: [DEVAM.md](../mngoperations/DEVAM.md)
 
 ---
 
@@ -11,8 +12,9 @@ Workspace tanımları → **Forms** sekmesi: `op_forms` CRUD (DataGateway), layo
 
 | Alan | Durum |
 |------|--------|
-| Workspace tanımları — Genel / Yerleşim / Davranışlar / Varsayılan değerler sekmeleri | ✅ |
+| Workspace tanımları — Genel / Yerleşim / **Alan politikaları** (3 sekme) | ✅ v1 |
 | Layout: bölüm sıra, alan sıra (sürükle-bırak), `fieldCols`, `sectionCols` | ✅ |
+| Layout’a eklenebilir core alanlar | `OC_FORM_LAYOUT_CORE_FIELD_KEYS` (watchers, reporter, dueDate, …; `key`/state hariç) |
 | `dialogMaxWidth` (modal / sayfa genişliği) | ✅ |
 | `formHeading` / `formIntro` | ✅ |
 | `fieldBehaviors` + `defaultValues` | ✅ |
@@ -28,7 +30,8 @@ Workspace tanımları → **Forms** sekmesi: `op_forms` CRUD (DataGateway), layo
 
 | Dosya | Rol |
 |-------|-----|
-| `Mng.Ui/components/.../OcWorkspaceDefinitionsFormsTab.vue` | Form listesi + 4 sekmeli editör |
+| `Mng.Ui/components/.../OcWorkspaceDefinitionsFormsTab.vue` | Form listesi + editör (hedef: 3 sekme) |
+| `Mng.Ui/components/.../OcWorkspaceFormFieldPolicyEditor.vue` | Alan politikaları tablosu |
 | `Mng.Ui/components/.../OcWorkspaceFormLayoutEditor.vue` | Layout editörü (vue-draggable-next) |
 | `Mng.Ui/components/.../OcFormPreviewDialog.vue` | Önizleme modal kabuğu |
 | `Mng.Ui/components/.../OcDynamicForm.vue` | Runtime / taslak form render |
@@ -37,6 +40,8 @@ Workspace tanımları → **Forms** sekmesi: `op_forms` CRUD (DataGateway), layo
 | `Mng.Ui/utils/ocFormFieldLabels.ts` | Etiket + `enrichFormRuntimeFields` |
 | `Mng.Ui/utils/ocDynamicFormField.ts` | Widget kind çözümleme |
 | `Mng.Ui/composables/useOcDynamicFormLookups.ts` | priority/state/board/relation listeleri |
+| `Mng.Ui/composables/useOcPersonPicker.ts` | Keeper kullanıcı arama + sayfalama |
+| `Mng.Ui/utils/ocPersonPicker.ts` | Kullanıcı satır eşlemesi, form model id toplama |
 | `Mng.Ui/services/operationCoreService.ts` | DG CRUD, MO runtime, `ocCreateWorkItem`, taslak preview builder |
 | `Mng.Ui/pages/.../work-items/new/index.vue` | Yeni iş oluşturma |
 | `Mng.Ui/pages/.../workspace-definitions/index.vue` | Workspace tanım sayfası |
@@ -49,10 +54,12 @@ Workspace tanımları → **Forms** sekmesi: `op_forms` CRUD (DataGateway), layo
 
 | Sekme | İçerik |
 |-------|--------|
-| **Genel** | Ad, açıklama, form üst metni, `dialogMaxWidth`, varsayılan tip/akış/state/öncelik, `isDefault` |
-| **Yerleşim** | Bölümler, alan sırası, bölüm/alan genişliği (12’lik grid) |
-| **Davranışlar** | `fieldBehaviors`: visible, required, readonly, masked |
-| **Varsayılan değerler** | `defaultValues` (create açılış önerileri) |
+| **Genel** | Ad, üst metin, `dialogMaxWidth`, varsayılan tip/akış/state/öncelik |
+| **Yerleşim** | Bölümler, alan sırası, grid |
+| **Alan politikaları** | Statik `fieldBehaviors` + `defaultValues`; geçici `op_rules` / geçiş özeti |
+
+Koşullu kurallar (rol, state): **formda değil** → [OC_UI_WORKSPACE_POLICIES.md](./OC_UI_WORKSPACE_POLICIES.md).  
+Backlog: [OC_UI_FIELD_POLICY.md §10](./OC_UI_FIELD_POLICY.md).
 
 Kayıt: `operationCoreService` → `ocCreateForm` / `ocUpdateForm` → DG `op_forms`.
 
@@ -78,7 +85,8 @@ Kayıt: `operationCoreService` → `ocCreateForm` / `ocUpdateForm` → DG `op_fo
 | `date` / `datetime` | Native date / datetime-local |
 | `text` (pool) | Tek satır metin |
 | `description` | Textarea |
-| `persons` | Select (liste yoksa metin + ipucu) |
+| `persons` | `v-autocomplete` — Keeper arama (debounce), alt satır (e-posta/@user), sayfalama («Daha fazla»); `watchers` çoklu |
+| `personGroups` | Metin (grup seçici sonraki faz) |
 | `file` | Salt okunur placeholder |
 
 Create gönderimi: `buildCreateWorkItemRequest` — core üst seviye + diğerleri `fields` → MO `extraFields` ayrımı.
@@ -110,10 +118,12 @@ Proxy: `Mng.Ui` → `/api/operations/...`, `/api/v1/data/...` (DataGateway)
 |-------|-----|
 | `op_forms`: modal, systemFields, panels, visibilityRules | Spec’te var; admin UI yok |
 | TM tarzı tam ekran form designer | Faz 2 |
-| Kullanıcı select (`assignee`, `reporter`, …) | Sıradaki iş |
-| Zorunlu alan yıldızı / validation özeti | Sıradaki |
-| MO runtime vs taslak karşılaştırma | İsteğe bağlı |
-| Editör içi yan panel canlı önizleme | İsteğe bağlı |
+| ~~Kullanıcı select~~ | ✅ `useOcPersonPicker` (arama + sayfa); diğer select’ler `v-autocomplete` (client filtre) |
+| ~~Alan politikaları v1~~ | ✅ — backlog §10 |
+| ~~Zorunlu yıldız~~ | ✅ önizleme + create |
+| `op_rules` | Geçici form altı → [Workspace politikaları](./OC_UI_WORKSPACE_POLICIES.md) W0 |
+| Koşullu kurallar | [Workspace politikaları](./OC_UI_WORKSPACE_POLICIES.md) |
+| MO runtime vs taslak karşılaştırma | Opsiyonel |
 | Dosya upload widget | Faz 2+ |
 
 ---

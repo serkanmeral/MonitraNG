@@ -7,13 +7,13 @@ import { useOperationCoreStore } from '@/stores/apps/operationCore';
 import { useAppI18n } from '@/composables/useAppI18n';
 import {
   buildCreateWorkItemRequest,
+  collectOcFormValidationIssues,
   initialFormModelFromContext,
   ocCreateWorkItem,
   ocExtractDgErrorMessage,
   ocGetFormCreateContext,
   ocListBoardsForWorkspace,
   ocListPoolFieldsForWorkspace,
-  validateCreateFormModel,
 } from '@/services/operationCoreService';
 import type { OcFormRuntimeContext } from '@/types/apps/operationCore';
 import { enrichFormRuntimeFields } from '@/utils/ocFormFieldLabels';
@@ -38,6 +38,7 @@ const errorLocal = ref<string | null>(null);
 const formContext = ref<OcFormRuntimeContext | null>(null);
 const formModel = ref<Record<string, unknown>>({});
 const resolvedFormId = ref<string | undefined>(undefined);
+const validationAttempted = ref(false);
 
 const workspaceSegment = computed(() => {
   const id = workspaceId.value;
@@ -69,10 +70,19 @@ const backTo = computed(() => {
   return '/apps/operation-core/workspace';
 });
 
-const canSubmit = computed(() => {
-  if (!formContext.value) return false;
-  if (formContext.value.permissions?.canEdit === false) return false;
-  return validateCreateFormModel(formContext.value, formModel.value);
+const validationIssues = computed(() => {
+  if (!formContext.value) return [];
+  return collectOcFormValidationIssues(formContext.value, formModel.value);
+});
+
+const fieldErrors = computed(() => {
+  if (!validationAttempted.value) return {} as Record<string, string>;
+  const msg = t('operationCore.formUi.fieldRequired');
+  const errors: Record<string, string> = {};
+  for (const issue of validationIssues.value) {
+    errors[issue.fieldKey] = msg;
+  }
+  return errors;
 });
 
 const pageTitle = computed(() => {
@@ -120,6 +130,7 @@ async function loadForm() {
     }
     formContext.value = enrichFormRuntimeFields(ctx, { poolFields, translate: t });
     formModel.value = initialFormModelFromContext(ctx);
+    validationAttempted.value = false;
   } catch (e: unknown) {
     formContext.value = null;
     errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.create.loadError'));
@@ -129,7 +140,10 @@ async function loadForm() {
 }
 
 async function submit() {
-  if (!formContext.value || !canSubmit.value) {
+  if (!formContext.value) return;
+
+  validationAttempted.value = true;
+  if (validationIssues.value.length) {
     errorLocal.value = t('operationCore.create.validationRequired');
     return;
   }
@@ -164,6 +178,12 @@ onMounted(() => {
 watch([workspaceId, formIdQuery], () => {
   void loadForm();
 });
+
+watch(formModel, () => {
+  if (validationAttempted.value && validationIssues.value.length === 0) {
+    errorLocal.value = null;
+  }
+}, { deep: true });
 </script>
 
 <template>
@@ -192,6 +212,23 @@ watch([workspaceId, formIdQuery], () => {
 
           <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
 
+          <v-alert
+            v-if="validationAttempted && validationIssues.length"
+            type="warning"
+            variant="tonal"
+            class="mb-4 rounded-lg"
+            :title="t('operationCore.create.validationSummaryTitle')"
+          >
+            <p class="text-body-2 mb-2">
+              {{ t('operationCore.create.validationRequired') }}
+            </p>
+            <ul class="oc-create-validation-list mb-0 pl-4">
+              <li v-for="issue in validationIssues" :key="issue.fieldKey">
+                {{ issue.label }}
+              </li>
+            </ul>
+          </v-alert>
+
           <v-alert v-if="errorLocal" type="error" variant="tonal" class="mb-4 rounded-lg" closable @click:close="errorLocal = null">
             {{ errorLocal }}
           </v-alert>
@@ -200,6 +237,7 @@ watch([workspaceId, formIdQuery], () => {
             v-if="formContext && !loading"
             v-model="formModel"
             :context="formContext"
+            :field-errors="fieldErrors"
           />
         </v-card-text>
 
@@ -216,7 +254,7 @@ watch([workspaceId, formIdQuery], () => {
             rounded="lg"
             class="text-none"
             :loading="submitting"
-            :disabled="loading || !canSubmit"
+            :disabled="loading || submitting || formContext?.permissions?.canEdit === false"
             @click="submit"
           >
             {{ t('operationCore.create.submit') }}
@@ -226,3 +264,9 @@ watch([workspaceId, formIdQuery], () => {
     </template>
   </div>
 </template>
+
+<style scoped>
+.oc-create-validation-list {
+  list-style: disc;
+}
+</style>

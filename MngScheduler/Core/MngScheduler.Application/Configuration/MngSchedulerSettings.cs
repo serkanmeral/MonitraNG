@@ -13,6 +13,7 @@ public class MngSchedulerSettings
     public QuartzSettings Quartz { get; set; } = new();
     public HttpClientSettings HttpClient { get; set; } = new();
     public DirectorySyncOrchestrationSettings DirectorySyncOrchestration { get; set; } = new();
+    public WorkItemScheduleOrchestrationSettings WorkItemScheduleOrchestration { get; set; } = new();
 }
 
 public class ServerSettings
@@ -34,6 +35,11 @@ public class CertificateSettings
 public class Actors
 {
     public string MngKeeper { get; set; } = string.Empty;
+
+    /// <summary>
+    /// MngOperations base URL (container: http://mngoperations:5086). Opsiyonel — WorkItemSchedule gateway URL ayrı da tanımlanabilir.
+    /// </summary>
+    public string MngOperations { get; set; } = string.Empty;
 }
 
 public class Mongodb

@@ -31,15 +31,28 @@ public static class ServiceRegistration
             client.Timeout = TimeSpan.FromSeconds(settings.HttpClient.TimeoutSeconds);
         });
 
+        services.AddHttpClient("MngKeeperAuth", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(Math.Min(settings.HttpClient.TimeoutSeconds, 60));
+        });
+
+        services.AddHttpClient("WorkItemScheduleExecute", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(Math.Max(settings.HttpClient.TimeoutSeconds, 120));
+        });
+
         // MngDataGateway Client
         services.AddScoped<IMngDataGatewayClient, MngDataGatewayClient>();
 
         // Quartz jobs
         services.AddScoped<HttpJob>();
         services.AddScoped<DirectorySyncOrchestrationJob>();
+        services.AddScoped<WorkItemScheduleOrchestrationJob>();
 
         services.AddScoped<IMngKeeperDirectorySyncClient, MngKeeperDirectorySyncClient>();
         services.AddScoped<IDirectorySyncOrchestrationService, DirectorySyncOrchestrationService>();
+        services.AddScoped<IMngKeeperAuthClient, MngKeeperAuthClient>();
+        services.AddScoped<IWorkItemScheduleOrchestrationService, WorkItemScheduleOrchestrationService>();
 
         // RabbitMQ Event Publisher
         services.AddSingleton<IRabbitMqEventPublisher, RabbitMqEventPublisher>();

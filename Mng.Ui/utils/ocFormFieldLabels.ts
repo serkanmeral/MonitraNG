@@ -1,5 +1,8 @@
 import type { OcFormRuntimeContext, OpField } from '@/types/apps/operationCore';
-import { OC_CORE_WORK_ITEM_FIELDS } from '@/utils/ocFieldDefinitions';
+import {
+  OC_CORE_WORK_ITEM_FIELDS,
+  resolveOcCoreFieldCardinality,
+} from '@/utils/ocFieldDefinitions';
 
 export type OcFieldLabelTranslate = (key: string) => string;
 
@@ -60,7 +63,7 @@ export function enrichFormRuntimeFields(
         translate: options?.translate,
       }),
       fieldType: pool?.fieldType ?? meta.fieldType ?? resolveOcCoreFieldType(key),
-      cardinality: pool?.cardinality ?? meta.cardinality ?? 'single',
+      cardinality: pool?.cardinality ?? meta.cardinality ?? resolveOcCoreFieldCardinality(key),
       relationDataset: pool?.relationDatasetName ?? meta.relationDataset ?? null,
     };
   }

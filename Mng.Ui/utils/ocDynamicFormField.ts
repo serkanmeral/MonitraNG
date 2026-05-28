@@ -1,6 +1,9 @@
 import type { OcFormFieldRuntimeDto } from '@/types/apps/operationCore';
 import { resolveOcCoreFieldType } from '@/utils/ocFormFieldLabels';
 
+/** Core alanlar — DG `op_work_items` şemasında çoklu `persons`. */
+export const OC_CORE_PERSONS_MULTI_KEYS = new Set(['watchers']);
+
 export type OcDynamicFieldWidget =
   | 'typeSelect'
   | 'prioritySelect'
@@ -29,9 +32,20 @@ export const OC_CORE_RELATION_DATASET: Record<string, string> = {
   parentItemId: 'op_work_items',
 };
 
-export function isMultiCardinality(meta?: OcFormFieldRuntimeDto | null): boolean {
+export function isMultiCardinality(fieldKey: string, meta?: OcFormFieldRuntimeDto | null): boolean {
+  if (OC_CORE_PERSONS_MULTI_KEYS.has(fieldKey)) return true;
   const c = (meta?.cardinality ?? 'single').toLowerCase();
   return c === 'multi' || c === 'multiple';
+}
+
+/** Keeper kullanıcı seçici (personGroups hariç). */
+export function isOcPersonsUserPickerField(
+  fieldKey: string,
+  meta?: OcFormFieldRuntimeDto | null
+): boolean {
+  const ft = (meta?.fieldType ?? resolveOcCoreFieldType(fieldKey)).toLowerCase();
+  if (ft === 'persongroups' || ft === 'persongroup') return false;
+  return ft === 'persons' || ft === 'person' || ft === 'group';
 }
 
 export function resolveRelationDataset(fieldKey: string, meta?: OcFormFieldRuntimeDto | null): string | null {
@@ -62,10 +76,10 @@ export function resolveOcDynamicFieldWidget(
   if (ft === 'datetime') return 'datetime';
   if (ft === 'file') return 'file';
   if (ft === 'persons' || ft === 'persongroups' || ft === 'person' || ft === 'group') {
-    return isMultiCardinality(meta) ? 'personsMulti' : 'persons';
+    return isMultiCardinality(fieldKey, meta) ? 'personsMulti' : 'persons';
   }
   if (ft === 'relation' || ft === 'tags' || ft === 'array') {
-    return isMultiCardinality(meta) ? 'relationSelectMulti' : 'relationSelect';
+    return isMultiCardinality(fieldKey, meta) ? 'relationSelectMulti' : 'relationSelect';
   }
   if (ft === 'text') return 'text';
 
@@ -81,6 +95,19 @@ export function coerceNumberValue(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null;
   const n = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(n) ? n : null;
+}
+
+/** v-select menü — overflow’lu kart/dialog içinde kesilmemesi için body overlay + z-index. */
+export type OcSelectMenuContext = 'default' | 'dialog';
+
+export function buildOcSelectMenuProps(context: OcSelectMenuContext = 'default') {
+  const inDialog = context === 'dialog';
+  return {
+    zIndex: inDialog ? 3100 : 2600,
+    maxHeight: 320,
+    scrollStrategy: 'reposition' as const,
+    ...(inDialog ? { contentClass: 'oc-select-menu-overlay' } : {}),
+  };
 }
 
 export function recordToDatasetItems(

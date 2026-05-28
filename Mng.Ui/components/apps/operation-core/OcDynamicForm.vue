@@ -9,6 +9,8 @@ const props = defineProps<{
   context: OcFormRuntimeContext;
   readonly?: boolean;
   preview?: boolean;
+  /** Alan anahtarı → hata mesajı (submit doğrulaması sonrası). */
+  fieldErrors?: Record<string, string>;
 }>();
 
 const model = defineModel<Record<string, unknown>>({ required: true });
@@ -16,7 +18,11 @@ const model = defineModel<Record<string, unknown>>({ required: true });
 const contextRef = toRef(props, 'context');
 const workspaceId = computed(() => props.context.workspaceId);
 
-const { selectItemsForField, isLoadingField } = useOcDynamicFormLookups(workspaceId, contextRef);
+const { selectItemsForField, isLoadingField, isPersonField, personPicker } = useOcDynamicFormLookups(
+  workspaceId,
+  contextRef,
+  model
+);
 
 const sections = computed<OcFormLayoutSectionRuntime[]>(() => {
   if (props.context.layout?.sections?.length) {
@@ -104,8 +110,10 @@ function setFieldValue(key: string, value: unknown) {
                   :behavior="behaviorFor(fieldKey)"
                   :select-items="selectItemsForField(fieldKey)"
                   :select-loading="isLoadingField(fieldKey)"
+                  :person-picker="isPersonField(fieldKey) ? personPicker : undefined"
                   :readonly="readonly"
                   :preview="preview"
+                  :error-message="fieldErrors?.[fieldKey]"
                   @update:model-value="(v) => setFieldValue(fieldKey, v)"
                 />
               </v-col>
@@ -122,15 +130,27 @@ function setFieldValue(key: string, value: unknown) {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 16px;
-  align-items: stretch;
+  align-items: start;
+  overflow: visible;
 }
 
 .oc-dynamic-form__section {
   min-width: 0;
+  overflow: visible;
 }
 
 .oc-dynamic-form__section-card {
   background: rgb(var(--v-theme-surface));
+  overflow: visible !important;
+}
+
+.oc-dynamic-form__section-card :deep(.v-card-text) {
+  overflow: visible !important;
+}
+
+.oc-dynamic-form :deep(.v-row),
+.oc-dynamic-form :deep(.v-col) {
+  overflow: visible;
 }
 
 .oc-dynamic-form__section-card--preview {

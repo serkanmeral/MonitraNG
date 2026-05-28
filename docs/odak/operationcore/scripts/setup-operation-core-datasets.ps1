@@ -146,7 +146,8 @@ $order = @(
     "op_states", "op_priorities", "op_work_item_types", "op_fields", "op_workspaces",
     "op_state_flows", "op_rules", "op_forms", "op_profiles", "op_boards", "op_labels",
     "op_sla_policies", "op_notification_policies", "op_dashboards", "op_saved_filters", "op_reports",
-    "op_work_items", "op_comments", "op_activities", "op_links", "op_work_item_timelines", "op_notifications"
+    "op_work_items", "op_comments", "op_activities", "op_links", "op_work_item_timelines", "op_notifications",
+    "op_work_item_schedules"
 )
 $byName = @{}
 foreach ($s in $schemas) { $byName[$s.name] = $s }

@@ -2,11 +2,13 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import OcWorkspaceDefinitionsGeneralTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsGeneralTab.vue';
-import OcWorkspaceDefinitionsTypesTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsTypesTab.vue';
-import OcWorkspaceDefinitionsFieldsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsFieldsTab.vue';
+import OcWorkspaceDefinitionsValuesTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsValuesTab.vue';
 import OcWorkspaceDefinitionsFlowsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsFlowsTab.vue';
 import OcWorkspaceDefinitionsFormsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsFormsTab.vue';
 import OcWorkspaceDefinitionsBoardsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsBoardsTab.vue';
+import OcWorkspaceDefinitionsPoliciesTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsPoliciesTab.vue';
+import OcWorkspaceDefinitionsRulesTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsRulesTab.vue';
+import OcWorkspaceDefinitionsScheduledWorkItemsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsScheduledWorkItemsTab.vue';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import {
   OC_WORKSPACE_DEFINITION_TAB_KEYS,
@@ -47,22 +49,22 @@ const workspaceItems = computed(() =>
   }))
 );
 
+const TAB_ICONS: Record<OcWorkspaceDefinitionTabKey, string> = {
+  general: 'mdi-cog-outline',
+  values: 'mdi-tune-variant',
+  flows: 'mdi-transit-connection-variant',
+  forms: 'mdi-form-select',
+  boards: 'mdi-view-dashboard-outline',
+  policies: 'mdi-shield-account-outline',
+  rules: 'mdi-format-list-checks',
+  scheduled: 'mdi-calendar-clock',
+};
+
 const tabItems = computed(() =>
   OC_WORKSPACE_DEFINITION_TAB_KEYS.map((key) => ({
     key,
     label: t(`operationCore.workspaceDefinitions.tabs.${key}`),
-    icon:
-      key === 'general'
-        ? 'mdi-cog-outline'
-        : key === 'types'
-          ? 'mdi-shape-outline'
-          : key === 'fields'
-            ? 'mdi-form-textbox'
-            : key === 'flows'
-              ? 'mdi-transit-connection-variant'
-              : key === 'forms'
-                ? 'mdi-form-select'
-                : 'mdi-view-dashboard-outline',
+    icon: TAB_ICONS[key],
   }))
 );
 
@@ -175,12 +177,8 @@ onMounted(() => {
             v-if="tab.key === 'general'"
             :workspace-id="selectedWorkspaceId"
           />
-          <OcWorkspaceDefinitionsTypesTab
-            v-else-if="tab.key === 'types'"
-            :workspace-id="selectedWorkspaceId"
-          />
-          <OcWorkspaceDefinitionsFieldsTab
-            v-else-if="tab.key === 'fields'"
+          <OcWorkspaceDefinitionsValuesTab
+            v-else-if="tab.key === 'values'"
             :workspace-id="selectedWorkspaceId"
           />
           <OcWorkspaceDefinitionsFlowsTab
@@ -193,6 +191,18 @@ onMounted(() => {
           />
           <OcWorkspaceDefinitionsBoardsTab
             v-else-if="tab.key === 'boards'"
+            :workspace-id="selectedWorkspaceId"
+          />
+          <OcWorkspaceDefinitionsPoliciesTab
+            v-else-if="tab.key === 'policies'"
+            :workspace-id="selectedWorkspaceId"
+          />
+          <OcWorkspaceDefinitionsRulesTab
+            v-else-if="tab.key === 'rules'"
+            :workspace-id="selectedWorkspaceId"
+          />
+          <OcWorkspaceDefinitionsScheduledWorkItemsTab
+            v-else-if="tab.key === 'scheduled'"
             :workspace-id="selectedWorkspaceId"
           />
         </v-tabs-window-item>

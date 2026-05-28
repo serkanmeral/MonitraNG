@@ -3,7 +3,11 @@ import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import OcFormPreviewDialog from '@/components/apps/operation-core/OcFormPreviewDialog.vue';
 import OcWorkspaceFormLayoutEditor from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceFormLayoutEditor.vue';
-import { OC_FORM_LAYOUT_CORE_FIELD_KEYS } from '@/utils/ocFieldDefinitions';
+import OcWorkspaceFormFieldPolicyEditor from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceFormFieldPolicyEditor.vue';
+import {
+  OC_FORM_LAYOUT_CORE_FIELD_KEYS,
+  resolveOcCoreFieldCardinality,
+} from '@/utils/ocFieldDefinitions';
 import {
   DEFAULT_OC_FORM_DIALOG_MAX_WIDTH,
   ocFormDialogWidthSelectItems,
@@ -19,11 +23,12 @@ import {
   ocCreateForm,
   ocDeleteForm,
   ocExtractDgErrorMessage,
+  ocListBoardsForWorkspace,
   ocListFormsForWorkspace,
   ocListPoolFieldsForWorkspace,
-  ocListPriorities,
+  ocListPrioritiesForWorkspace,
   ocListStateFlowsForWorkspace,
-  ocListStates,
+  ocListStatesForWorkspace,
   ocListWorkItemTypesForWorkspace,
   ocUpdateForm,
 } from '@/services/operationCoreService';
@@ -33,6 +38,7 @@ import type {
   OpForm,
   OpFormFieldBehavior,
   OpFormLayoutSection,
+  OpStateFlow,
 } from '@/types/apps/operationCore';
 const props = defineProps<{
   workspaceId: string;
@@ -51,8 +57,10 @@ const forms = ref<OpForm[]>([]);
 const poolFields = ref<OpField[]>([]);
 const typeItems = ref<{ value: string; title: string }[]>([]);
 const flowItems = ref<{ value: string; title: string }[]>([]);
+const stateFlows = ref<OpStateFlow[]>([]);
 const stateItems = ref<{ value: string; title: string }[]>([]);
 const priorityItems = ref<{ value: string; title: string }[]>([]);
+const boardItems = ref<{ value: string; title: string }[]>([]);
 
 const dialog = ref(false);
 const previewDialog = ref(false);
@@ -61,7 +69,7 @@ const previewValues = ref<Record<string, unknown>>({});
 const editId = ref<string | null>(null);
 const deleteDialog = ref(false);
 const deleteTarget = ref<OpForm | null>(null);
-const editorTab = ref<'general' | 'layout' | 'behaviors' | 'defaults'>('general');
+const editorTab = ref<'general' | 'layout' | 'fieldPolicies'>('general');
 
 const defaultBehavior = (): OpFormFieldBehavior => ({
   visible: true,
@@ -123,7 +131,7 @@ const layoutFieldItems = computed(() => {
       title: resolveOcFieldEditorLabel(key, { poolLabel: pool?.label, translate: t }),
       displayLabel,
       fieldType: pool?.fieldType ?? resolveOcCoreFieldType(key),
-      cardinality: pool?.cardinality ?? 'single',
+      cardinality: pool?.cardinality ?? resolveOcCoreFieldCardinality(key),
       relationDataset: pool?.relationDatasetName ?? null,
     };
   });
@@ -142,13 +150,6 @@ const allLayoutFieldKeys = computed(() => {
   }
   return keys;
 });
-
-const behaviorRows = computed(() =>
-  allLayoutFieldKeys.value.map((key) => {
-    const item = layoutFieldItems.value.find((i) => i.value === key);
-    return { key, label: item?.displayLabel ?? item?.title ?? key };
-  })
-);
 
 const tableHeaders = computed(() => [
   { title: t('operationCore.workspaceDefinitions.forms.colName'), key: 'name', sortable: true },
@@ -204,16 +205,6 @@ watch(allLayoutFieldKeys, () => {
   ensureDefaultValuesKeys();
 });
 
-function ensureBehavior(key: string): OpFormFieldBehavior {
-  if (!form.value.fieldBehaviors[key]) {
-    form.value.fieldBehaviors[key] = {
-      ...defaultBehavior(),
-      required: key === 'title' || key === 'typeId',
-    };
-  }
-  return form.value.fieldBehaviors[key];
-}
-
 function buildPayload() {
   const layout = buildOcFormLayoutPayload({
     formHeading: form.value.formHeading,
@@ -262,20 +253,23 @@ async function loadAll() {
   loading.value = true;
   errorLocal.value = null;
   try {
-    const [formRows, types, flows, states, priorities, pool] = await Promise.all([
+    const [formRows, types, flows, states, priorities, pool, boards] = await Promise.all([
       ocListFormsForWorkspace(props.workspaceId),
-      ocListWorkItemTypesForWorkspace(props.workspaceId),
+      ocListWorkItemTypesForWorkspace(props.workspaceId, { fallbackAll: true }),
       ocListStateFlowsForWorkspace(props.workspaceId),
-      ocListStates(),
-      ocListPriorities(),
+      ocListStatesForWorkspace(props.workspaceId, { fallbackAll: true }),
+      ocListPrioritiesForWorkspace(props.workspaceId, { fallbackAll: true }),
       ocListPoolFieldsForWorkspace(props.workspaceId),
+      ocListBoardsForWorkspace(props.workspaceId),
     ]);
     forms.value = formRows;
     poolFields.value = pool;
     typeItems.value = types.map((x) => ({ value: x.__dataId, title: x.name }));
+    stateFlows.value = flows;
     flowItems.value = flows.map((x) => ({ value: x.__dataId, title: x.name }));
     stateItems.value = states.map((x) => ({ value: x.__dataId, title: x.name }));
     priorityItems.value = priorities.map((x) => ({ value: x.__dataId, title: x.name }));
+    boardItems.value = boards.map((x) => ({ value: x.__dataId, title: x.name }));
   } catch (e: unknown) {
     errorLocal.value = ocExtractDgErrorMessage(
       e,
@@ -553,11 +547,8 @@ function openPreview() {
           <v-tab value="layout" class="text-none">
             {{ t('operationCore.workspaceDefinitions.forms.tabLayout') }}
           </v-tab>
-          <v-tab value="behaviors" class="text-none">
-            {{ t('operationCore.workspaceDefinitions.forms.tabBehaviors') }}
-          </v-tab>
-          <v-tab value="defaults" class="text-none">
-            {{ t('operationCore.workspaceDefinitions.forms.tabDefaults') }}
+          <v-tab value="fieldPolicies" class="text-none">
+            {{ t('operationCore.workspaceDefinitions.forms.tabFieldPolicies') }}
           </v-tab>
         </v-tabs>
 
@@ -689,66 +680,21 @@ function openPreview() {
               />
             </v-window-item>
 
-            <v-window-item value="behaviors">
-              <h4 class="text-subtitle-2 font-weight-medium mb-1">
-                {{ t('operationCore.workspaceDefinitions.forms.behaviorsTitle') }}
-              </h4>
-              <p class="text-caption text-medium-emphasis mb-4">
-                {{ t('operationCore.workspaceDefinitions.forms.behaviorsHint') }}
-              </p>
-              <v-table v-if="behaviorRows.length" density="compact" class="oc-form-behaviors-table">
-                <thead>
-                  <tr>
-                    <th>{{ t('operationCore.workspaceDefinitions.forms.behaviorColField') }}</th>
-                    <th>{{ t('operationCore.workspaceDefinitions.forms.behaviorColVisible') }}</th>
-                    <th>{{ t('operationCore.workspaceDefinitions.forms.behaviorColRequired') }}</th>
-                    <th>{{ t('operationCore.workspaceDefinitions.forms.behaviorColReadonly') }}</th>
-                    <th>{{ t('operationCore.workspaceDefinitions.forms.behaviorColMasked') }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="row in behaviorRows" :key="row.key">
-                    <td class="text-body-2">{{ row.label }}</td>
-                    <td>
-                      <v-checkbox v-model="ensureBehavior(row.key).visible" density="compact" hide-details />
-                    </td>
-                    <td>
-                      <v-checkbox v-model="ensureBehavior(row.key).required" density="compact" hide-details />
-                    </td>
-                    <td>
-                      <v-checkbox v-model="ensureBehavior(row.key).readonly" density="compact" hide-details />
-                    </td>
-                    <td>
-                      <v-checkbox v-model="ensureBehavior(row.key).masked" density="compact" hide-details />
-                    </td>
-                  </tr>
-                </tbody>
-              </v-table>
-              <v-alert v-else type="info" variant="tonal">
-                {{ t('operationCore.workspaceDefinitions.forms.behaviorsEmpty') }}
-              </v-alert>
-            </v-window-item>
-
-            <v-window-item value="defaults">
-              <h4 class="text-subtitle-2 font-weight-medium mb-1">
-                {{ t('operationCore.workspaceDefinitions.forms.defaultValuesTitle') }}
-              </h4>
-              <p class="text-caption text-medium-emphasis mb-4">
-                {{ t('operationCore.workspaceDefinitions.forms.defaultValuesHint') }}
-              </p>
-              <v-row v-if="allLayoutFieldKeys.length" dense>
-                <v-col v-for="key in allLayoutFieldKeys" :key="key" cols="12" md="6">
-                  <v-text-field
-                    v-model="form.defaultValues[key]"
-                    :label="layoutFieldItems.find((i) => i.value === key)?.displayLabel ?? key"
-                    density="compact"
-                    variant="outlined"
-                  />
-                </v-col>
-              </v-row>
-              <v-alert v-else type="info" variant="tonal">
-                {{ t('operationCore.workspaceDefinitions.forms.defaultsEmpty') }}
-              </v-alert>
+            <v-window-item value="fieldPolicies">
+              <OcWorkspaceFormFieldPolicyEditor
+                v-model:field-behaviors="form.fieldBehaviors"
+                v-model:default-values="form.defaultValues"
+                :workspace-id="workspaceId"
+                :layout-field-keys="allLayoutFieldKeys"
+                :layout-field-items="layoutFieldItems"
+                :default-state-flow-id="form.defaultStateFlowId"
+                :default-type-id="form.defaultTypeId"
+                :state-flows="stateFlows"
+                :type-items="typeItems"
+                :priority-items="priorityItems"
+                :state-items="stateItems"
+                :board-items="boardItems"
+              />
             </v-window-item>
           </v-window>
         </v-card-text>

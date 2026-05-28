@@ -11,6 +11,7 @@ public class MngOperationsSettings
     public MngNotifiersSettings MngNotifiers { get; set; } = new();
     public RabbitMqSettings RabbitMq { get; set; } = new();
     public MetadataCacheSettings MetadataCache { get; set; } = new();
+    public WorkItemScheduleSettings WorkItemSchedule { get; set; } = new();
 }
 
 public class ServerSettings
@@ -24,6 +25,7 @@ public class ActorsSettings
 {
     public string MngKeeper { get; set; } = string.Empty;
     public string KeycloakBaseUrl { get; set; } = string.Empty;
+    public string MngScheduler { get; set; } = string.Empty;
 }
 
 public class DataGatewaySettings
@@ -54,4 +56,19 @@ public class RabbitMqSettings
 public class MetadataCacheSettings
 {
     public int TtlSeconds { get; set; } = 120;
+}
+
+/// <summary>
+/// Zamanlanmış WI → MngScheduler User Job senkronu (SW-3b).
+/// </summary>
+public class WorkItemScheduleSettings
+{
+    /// <summary>
+    /// HttpJob tetik URL şablonu. {scheduleId} yer tutucusu zorunlu.
+    /// SW-2 gelene kadar endpoint 404/501 dönebilir — cron yine planlanır.
+    /// </summary>
+    public string ExecuteEndpointTemplate { get; set; } =
+        "http://mngoperations:5086/api/v1/work-item-schedules/{scheduleId}/execute";
+
+    public string SchedulerJobIdPrefix { get; set; } = "oc-schedule-";
 }

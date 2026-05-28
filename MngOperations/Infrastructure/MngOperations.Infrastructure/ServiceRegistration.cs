@@ -27,8 +27,14 @@ public static class ServiceRegistration
             client.Timeout = TimeSpan.FromSeconds(30);
         });
 
+        services.AddHttpClient("MngScheduler", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(60);
+        });
+
         services.AddScoped<IMngDataGatewayClient, MngDataGatewayClient>();
         services.AddScoped<IMngNotifiersClient, MngNotifiersClient>();
+        services.AddScoped<IMngSchedulerClient, MngSchedulerClient>();
         services.AddScoped<INotificationOrchestrator, NotificationOrchestratorService>();
         services.AddSingleton<IOcEventPublisher, OcEventPublisher>();
         services.AddScoped<IHealthCheckService, HealthCheckService>();
@@ -41,6 +47,8 @@ public static class ServiceRegistration
         services.AddScoped<IWorkItemTimelineService, WorkItemTimelineService>();
         services.AddScoped<IWorkItemCommandService, WorkItemCommandService>();
         services.AddScoped<IRuntimeContextService, RuntimeContextService>();
+        services.AddScoped<IWorkItemScheduleSyncService, WorkItemScheduleSyncService>();
+        services.AddScoped<IWorkItemScheduleExecuteService, WorkItemScheduleExecuteService>();
 
         return services;
     }

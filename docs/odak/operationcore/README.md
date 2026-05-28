@@ -16,7 +16,12 @@ MonitraNG operasyonel iş yönetim modülü. Backend servisi: **MngOperations**.
 | [OPERATION_CORE_IMPLEMENTATION_PLAN.md](./OPERATION_CORE_IMPLEMENTATION_PLAN.md) | Uygulama planı (üst çerçeve) | §5.2 tamam |
 | [mngoperations/](./mngoperations/README.md) | **MngOperations** backend — Faz 1 MVP + Odak deploy | Güncel |
 | [ui/](./ui/README.md) | **Mng.Ui OC** Faz 1 planı + form tanımı handoff | Güncel |
-| [mngoperations/DEVAM.md](./mngoperations/DEVAM.md) | **Devam noktası** (yeni chat handoff) | Güncel |
+| [ui/OC_UI_FIELD_POLICY.md](./ui/OC_UI_FIELD_POLICY.md) | Form **alan politikaları** + backlog | Güncel |
+| [ui/OC_UI_WORKSPACE_POLICIES.md](./ui/OC_UI_WORKSPACE_POLICIES.md) | **Workspace politikaları + Değerler** · P-UX / R-UX (§0.5) | Güncel |
+| [mngoperations/DEVAM.md](./mngoperations/DEVAM.md) | **Devam noktası** — Admin Faz 1 plan | Güncel |
+| [ui/OC_UI_ADMIN_FAZ1_PLAN.md](./ui/OC_UI_ADMIN_FAZ1_PLAN.md) | **Admin UX Faz 1** — sıra + bugün | Güncel |
+| [ui/OC_UI_RULES_FAZ1.md](./ui/OC_UI_RULES_FAZ1.md) | **Kurallar** R-Core + R-UX (§8) | Güncel |
+| [mngoperations/SLA_FAZ1_PLAN.md](./mngoperations/SLA_FAZ1_PLAN.md) | SLA planlama (geliştirme Faz 1.5+) | Güncel |
 | [reference/IT_HELP_DESK_REFERENCE.md](./reference/IT_HELP_DESK_REFERENCE.md) | IT Help Desk referans workspace + tip kategorileri | Güncel |
 
 ---
@@ -35,7 +40,7 @@ MonitraNG operasyonel iş yönetim modülü. Backend servisi: **MngOperations**.
 
 - `op_rules.transitionKey`, state flow transition kataloğu açıklaması
 - `op_work_items.key` → text (MngOperations üretir); `sourceModule*` kaldırıldı; `slaPolicyId` → relation
-- `op_workspaces.enabledTypeIds` / `enabledFieldIds`
+- `op_workspaces.enabledTypeIds` / `enabledStateIds` / `enabledPriorityIds` / `enabledFieldIds`
 - `op_work_item_types` / `op_fields` → isteğe bağlı `workspaceId`
 - `op_work_item_timelines.transitionKey`
 - `op_work_items` → 5 predefined query

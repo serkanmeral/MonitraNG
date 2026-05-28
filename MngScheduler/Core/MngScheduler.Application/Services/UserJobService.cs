@@ -188,10 +188,15 @@ public class UserJobService : IUserJobService
                 throw new UnauthorizedAccessException("Domain information not found in token");
             }
 
-            // Ensure user can only update their own domain's jobs
-            if (job.DomainId != domainId)
+            // API istemcileri (ör. MngOperations sync) domainId göndermeyebilir — token'dan bağla
+            if (string.IsNullOrWhiteSpace(job.DomainId))
             {
-                throw new UnauthorizedAccessException($"Job belongs to different domain. JobDomainId: {job.DomainId}, UserDomainId: {domainId}");
+                job.DomainId = domainId;
+            }
+            else if (!string.Equals(job.DomainId, domainId, StringComparison.Ordinal))
+            {
+                throw new UnauthorizedAccessException(
+                    $"Job belongs to different domain. JobDomainId: {job.DomainId}, UserDomainId: {domainId}");
             }
 
             // Validation

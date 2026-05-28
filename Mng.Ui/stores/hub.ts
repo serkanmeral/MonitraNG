@@ -69,6 +69,7 @@ export const useHubStore = defineStore('hub', {
     subscriptions: new Map(),
     internalHandler: null,
     lastMessageCache: new Map(), // Deduplication için
+    reconnectHandlers: [],
   }),
 
   getters: {
@@ -440,17 +441,22 @@ export const useHubStore = defineStore('hub', {
     },
 
     registerReconnectHandler(id: string, handler: () => void | Promise<void>) {
+      if (!this.reconnectHandlers) this.reconnectHandlers = [];
       this.unregisterReconnectHandler(id);
       this.reconnectHandlers.push({ id, handler });
     },
 
     unregisterReconnectHandler(id: string) {
+      if (!this.reconnectHandlers?.length) {
+        this.reconnectHandlers = [];
+        return;
+      }
       const idx = this.reconnectHandlers.findIndex((h) => h.id === id);
       if (idx >= 0) this.reconnectHandlers.splice(idx, 1);
     },
 
     async dispatchReconnectHandlers() {
-      const list = [...this.reconnectHandlers];
+      const list = [...(this.reconnectHandlers ?? [])];
       for (const { id, handler } of list) {
         try {
           await Promise.resolve(handler());

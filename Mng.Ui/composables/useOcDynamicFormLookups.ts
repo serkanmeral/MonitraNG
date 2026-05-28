@@ -4,19 +4,36 @@ import {
   ocListBoardsForWorkspace,
   ocListDataset,
   ocListPriorities,
+  ocListPrioritiesForWorkspace,
   ocListStates,
+  ocListStatesForWorkspace,
 } from '@/services/operationCoreService';
-import { recordToDatasetItems, resolveRelationDataset } from '@/utils/ocDynamicFormField';
+import { useOcPersonPicker } from '@/composables/useOcPersonPicker';
+import {
+  collectPersonIdsFromFormModel,
+  type OcPersonPickerItem,
+} from '@/utils/ocPersonPicker';
+import {
+  isOcPersonsUserPickerField,
+  recordToDatasetItems,
+  resolveRelationDataset,
+} from '@/utils/ocDynamicFormField';
 
-export type OcSelectItem = { title: string; value: string };
+export type OcSelectItem = { title: string; value: string; subtitle?: string };
+
+const PERSONS_LOADING_KEY = '__personUsers__';
 
 /**
  * Form alanları için relation / core select listelerini yükler.
+ * `persons` alanları: `useOcPersonPicker` (arama + sayfalama).
  */
 export function useOcDynamicFormLookups(
   workspaceId: Ref<string | undefined>,
-  context: Ref<OcFormRuntimeContext | null>
+  context: Ref<OcFormRuntimeContext | null>,
+  formModel?: Ref<Record<string, unknown>>
 ) {
+  const personPicker = useOcPersonPicker();
+
   const priorityItems = ref<OcSelectItem[]>([]);
   const stateItems = ref<OcSelectItem[]>([]);
   const boardItems = ref<OcSelectItem[]>([]);
@@ -27,6 +44,18 @@ export function useOcDynamicFormLookups(
     const ctx = context.value;
     if (!ctx?.fields) return [];
     return Object.keys(ctx.fields);
+  }
+
+  function personFieldKeys(): string[] {
+    const ctx = context.value;
+    if (!ctx?.fields) return [];
+    return Object.keys(ctx.fields).filter((key) =>
+      isOcPersonsUserPickerField(key, ctx.fields[key])
+    );
+  }
+
+  function needsPersonUsers(keys: string[]): boolean {
+    return keys.some((key) => isOcPersonsUserPickerField(key, context.value?.fields[key]));
   }
 
   function needsPriority(keys: string[]) {
@@ -58,6 +87,24 @@ export function useOcDynamicFormLookups(
     }
   }
 
+  async function initPersonPicker() {
+    loadingKeys.value = new Set(loadingKeys.value).add(PERSONS_LOADING_KEY);
+    try {
+      await personPicker.resetAndFetch('');
+      const ids = collectPersonIdsFromFormModel(formModel?.value, personFieldKeys());
+      await personPicker.ensureSelectedIds(ids);
+    } finally {
+      const next = new Set(loadingKeys.value);
+      next.delete(PERSONS_LOADING_KEY);
+      loadingKeys.value = next;
+    }
+  }
+
+  async function syncPersonPickerSelection() {
+    const ids = collectPersonIdsFromFormModel(formModel?.value, personFieldKeys());
+    await personPicker.ensureSelectedIds(ids);
+  }
+
   async function reload() {
     const ws = workspaceId.value?.trim();
     const ctx = context.value;
@@ -66,9 +113,16 @@ export function useOcDynamicFormLookups(
     const keys = fieldKeysNeedingLookups();
     const tasks: Promise<void>[] = [];
 
+    if (needsPersonUsers(keys)) {
+      tasks.push(initPersonPicker());
+    }
+
     if (needsPriority(keys)) {
       tasks.push(
-        ocListPriorities().then((rows) => {
+        (ws
+          ? ocListPrioritiesForWorkspace(ws, { fallbackAll: true })
+          : ocListPriorities()
+        ).then((rows) => {
           priorityItems.value = rows.map((p) => ({ title: p.name, value: p.__dataId }));
         })
       );
@@ -76,7 +130,7 @@ export function useOcDynamicFormLookups(
 
     if (needsState(keys)) {
       tasks.push(
-        ocListStates().then((rows) => {
+        (ws ? ocListStatesForWorkspace(ws, { fallbackAll: true }) : ocListStates()).then((rows) => {
           stateItems.value = rows.map((s) => ({ title: s.name, value: s.__dataId }));
         })
       );
@@ -106,6 +160,10 @@ export function useOcDynamicFormLookups(
   }
 
   function selectItemsForField(fieldKey: string): OcSelectItem[] {
+    const meta = context.value?.fields[fieldKey];
+    if (isOcPersonsUserPickerField(fieldKey, meta)) {
+      return personPicker.items.value;
+    }
     if (fieldKey === 'priorityId') return priorityItems.value;
     if (fieldKey === 'boardId') return boardItems.value;
     if (fieldKey === 'stateId') return stateItems.value;
@@ -116,24 +174,47 @@ export function useOcDynamicFormLookups(
   }
 
   function isLoadingField(fieldKey: string): boolean {
+    const meta = context.value?.fields[fieldKey];
+    if (isOcPersonsUserPickerField(fieldKey, meta)) {
+      return loadingKeys.value.has(PERSONS_LOADING_KEY) || personPicker.loading.value;
+    }
     return loadingKeys.value.has(fieldKey);
   }
 
+  function isPersonField(fieldKey: string): boolean {
+    return isOcPersonsUserPickerField(fieldKey, context.value?.fields[fieldKey]);
+  }
+
   watch(
-    [workspaceId, context],
+    () => [workspaceId.value, context.value] as const,
     () => {
       void reload();
     },
-    { immediate: true, deep: true }
+    { immediate: true }
   );
+
+  if (formModel) {
+    watch(
+      formModel,
+      () => {
+        if (!personFieldKeys().length) return;
+        void syncPersonPickerSelection();
+      },
+      { deep: true }
+    );
+  }
 
   return {
     priorityItems,
     stateItems,
     boardItems,
     relationItemsByKey,
+    personPicker,
     selectItemsForField,
     isLoadingField,
+    isPersonField,
     reload,
   };
 }
+
+export type { OcPersonPickerItem };

@@ -46,7 +46,7 @@ const innerFrameMaxWidthPx = computed(() => Math.max(400, dialogMaxWidthPx.value
     scrollable
     content-class="oc-form-preview-dialog"
   >
-    <v-card rounded="xl" elevation="8" class="oc-form-preview-dialog__card overflow-hidden">
+    <v-card rounded="xl" elevation="8" class="oc-form-preview-dialog__card">
       <div class="oc-form-preview-dialog__header px-5 py-4">
         <div class="d-flex align-start gap-3">
           <v-avatar color="primary" variant="tonal" size="44" rounded="lg">
@@ -94,7 +94,6 @@ const innerFrameMaxWidthPx = computed(() => Math.max(400, dialogMaxWidthPx.value
               v-if="context"
               v-model="formValuesModel"
               :context="context"
-              readonly
               preview
             />
           </div>
@@ -125,6 +124,7 @@ const innerFrameMaxWidthPx = computed(() => Math.max(400, dialogMaxWidthPx.value
 .oc-form-preview-dialog__body {
   background: rgba(var(--v-theme-on-surface), 0.03);
   max-height: min(72vh, 640px);
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
@@ -137,9 +137,11 @@ const innerFrameMaxWidthPx = computed(() => Math.max(400, dialogMaxWidthPx.value
   max-width: v-bind('`${innerFrameMaxWidthPx}px`');
   margin-left: auto;
   margin-right: auto;
+  overflow: visible;
 }
 
 .min-width-0 {
   min-width: 0;
 }
 </style>
+

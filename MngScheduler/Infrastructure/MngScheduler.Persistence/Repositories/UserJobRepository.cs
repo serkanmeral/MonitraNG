@@ -228,17 +228,22 @@ public class UserJobRepository : IUserJobRepository
             job.CreatedBy = existingJob.CreatedBy;
             job.LastExecution = existingJob.LastExecution;
             job.Id = existingJob.Id; // Preserve MongoDB ObjectId
+            job.DataId = existingJob.DataId ?? existingJob.GetRecordId();
 
             job.UpdatedAt = DateTime.UtcNow;
 
             // Ensure POST requests have default payload if not provided
             job.EnsurePostPayload();
 
-            // Use the _id from existing job (MngDataGateway uses _id for updates)
-            // Note: This assumes ScheduledJob has an Id field that maps to _id
+            var recordId = existingJob.GetRecordId();
+            if (string.IsNullOrWhiteSpace(recordId))
+            {
+                throw new InvalidOperationException($"User job {job.JobId} has no DG record id (__dataId).");
+            }
+
             var updatedJob = await _dataGatewayClient.UpdateAsync<ScheduledJob>(
                 DatasetName, 
-                existingJob.Id, 
+                recordId, 
                 job, 
                 token);
 
@@ -268,7 +273,13 @@ public class UserJobRepository : IUserJobRepository
                 return false;
             }
 
-            var deleted = await _dataGatewayClient.DeleteAsync(DatasetName, existingJob.Id, token);
+            var recordId = existingJob.GetRecordId();
+            if (string.IsNullOrWhiteSpace(recordId))
+            {
+                throw new InvalidOperationException($"User job {jobId} has no DG record id (__dataId).");
+            }
+
+            var deleted = await _dataGatewayClient.DeleteAsync(DatasetName, recordId, token);
             
             if (deleted)
             {

@@ -21,6 +21,8 @@ public static class ServiceRegistration
             _.JobSync = mngSchedulerSettings.JobSync;
             _.Quartz = mngSchedulerSettings.Quartz;
             _.HttpClient = mngSchedulerSettings.HttpClient;
+            _.DirectorySyncOrchestration = mngSchedulerSettings.DirectorySyncOrchestration;
+            _.WorkItemScheduleOrchestration = mngSchedulerSettings.WorkItemScheduleOrchestration;
         });
 
         // Add MongoDB

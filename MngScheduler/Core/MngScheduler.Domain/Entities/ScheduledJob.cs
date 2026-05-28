@@ -1,4 +1,5 @@
 using MongoDB.Bson.Serialization.Attributes;
+using System.Text.Json.Serialization;
 
 namespace MngScheduler.Domain.Entities;
 
@@ -10,6 +11,15 @@ public class ScheduledJob
     [BsonId]
     [BsonRepresentation(MongoDB.Bson.BsonType.ObjectId)]
     public string Id { get; set; } = string.Empty;
+
+    /// <summary>MngDataGateway kayıt kimliği (User Job dataset).</summary>
+    [JsonPropertyName("__dataId")]
+    [BsonIgnore]
+    public string? DataId { get; set; }
+
+    /// <summary>DG güncelleme / Mongo _id — öncelik <see cref="DataId"/>.</summary>
+    public string GetRecordId() =>
+        !string.IsNullOrWhiteSpace(DataId) ? DataId : Id;
 
     /// <summary>
     /// Unique job identifier

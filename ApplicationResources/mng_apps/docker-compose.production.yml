@@ -398,7 +398,18 @@ services:
       - MngSchedulerSettings__RabbitMQ__Username=${RABBITMQ_USERNAME}
       - MngSchedulerSettings__RabbitMQ__Password=${RABBITMQ_PASSWORD}
       - MngSchedulerSettings__RabbitMQ__VirtualHost=${RABBITMQ_VIRTUALHOST:-/}
-      - MngSchedulerSettings__JobSync__SyncUserJobs=false
+      - MngSchedulerSettings__JobSync__SyncUserJobs=${OC_SCHEDULER_SYNC_USER_JOBS:-true}
+      - MngSchedulerSettings__DirectorySyncOrchestration__Enabled=true
+      - MngSchedulerSettings__DirectorySyncOrchestration__MngKeeperBaseUrl=${MNGKEEPER_URL:-http://mngkeeper:5001}
+      - MngSchedulerSettings__WorkItemScheduleOrchestration__Enabled=${OC_SCHEDULER_WI_ENABLED:-true}
+      - MngSchedulerSettings__WorkItemScheduleOrchestration__MngKeeperBaseUrl=${MNGKEEPER_URL:-http://mngkeeper:5001}
+      - MngSchedulerSettings__WorkItemScheduleOrchestration__KeeperTokenPath=/api/auth/token
+      - MngSchedulerSettings__WorkItemScheduleOrchestration__GatewayOperationsFromOrigin=${OC_SCHEDULER_MO_FROM_ORIGIN:-http://mnggateway:5000/operations/api/v1/work-items/from-origin}
+      - MngSchedulerSettings__WorkItemScheduleOrchestration__ServiceAccount__DomainName=${OC_SCHEDULER_DOMAIN:-odak}
+      - MngSchedulerSettings__WorkItemScheduleOrchestration__ServiceAccount__Username=${OC_SCHEDULER_USERNAME:-odak_admin}
+      - MngSchedulerSettings__WorkItemScheduleOrchestration__ServiceAccount__Password=${OC_SCHEDULER_PASSWORD:-Admin123!}
+      - MngSchedulerSettings__WorkItemScheduleOrchestration__ExecuteEndpointTemplate=http://mngoperations:5086/api/v1/work-item-schedules/{scheduleId}/execute
+      - MngSchedulerSettings__Actors__MngOperations=${MNGOPERATIONS_URL:-http://mngoperations:5086}
     networks:
       - mng_common_mng_network
     depends_on:
@@ -471,6 +482,7 @@ services:
       - MngOperationsSettings__OpenApiServerPath=${OPENAPI_SERVER_PATH:-https://api.monitra.local}/operations
       - MngOperationsSettings__Actors__MngKeeper=${MNGKEEPER_URL:-http://mngkeeper:5001}
       - MngOperationsSettings__Actors__KeycloakBaseUrl=${KEYCLOAK_BASE_URL:-http://keycloak:8080}
+      - MngOperationsSettings__Actors__MngScheduler=${MNGSCHEDULER_URL:-http://mngscheduler:5090}
       - MngOperationsSettings__DataGateway__BaseUrl=${MNGDATAGATEWAY_URL:-http://mngdatagateway:5010}
       - MngOperationsSettings__DataGateway__ApiVersion=v1
       - MngOperationsSettings__MngNotifiers__Enabled=true
@@ -482,6 +494,8 @@ services:
       - MngOperationsSettings__RabbitMq__Password=${RABBITMQ_PASSWORD}
       - MngOperationsSettings__RabbitMq__VirtualHost=${RABBITMQ_VIRTUALHOST:-/}
       - MngOperationsSettings__RabbitMq__Exchange=oc.events
+      - MngOperationsSettings__WorkItemSchedule__ExecuteEndpointTemplate=http://mngoperations:5086/api/v1/work-item-schedules/{scheduleId}/execute
+      - MngOperationsSettings__WorkItemSchedule__SchedulerJobIdPrefix=oc-schedule-
     networks:
       - mng_common_mng_network
     depends_on:

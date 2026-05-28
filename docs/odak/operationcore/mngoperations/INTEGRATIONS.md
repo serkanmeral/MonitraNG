@@ -1,6 +1,6 @@
 # MngOperations — Dış entegrasyonlar
 
-**Son güncelleme:** 26 Mayıs 2026
+**Son güncelleme:** 28 Mayıs 2026
 
 ---
 
@@ -13,7 +13,8 @@
 | MO → DG | Doğrulama sonrası **aynı Bearer** forward |
 | Tenant / gruplar | JWT: `domain_id`, `domain_name`, `user_groups`, `preferred_username` |
 | Person id | `mng_person_id` claim → assignee ilişkisi (ileride) |
-| Servis hesabı | Faz 1 **yok** — tüm DG çağrıları çağıran kullanıcı token’ı |
+| Servis hesabı (MO içi) | Faz 1 **yok** — MO pipeline kullanıcı token’ı forward eder |
+| **MngScheduler → MO** | **İstisna:** Scheduler Keeper’dan teknik kullanıcı token’ı alır → MO `from-origin` ([SCHEDULED_WORK_ITEMS §4.1](./SCHEDULED_WORK_ITEMS.md)) |
 
 Detay: [AUTH_AND_CONFIGURATION.md](./AUTH_AND_CONFIGURATION.md).
 
@@ -102,11 +103,30 @@ MO event publish → Hub bridge değerlendirilir.
 
 ---
 
-## 6. MngScheduler / MngWorkflow (Faz 2+)
+## 6. MngScheduler / MngWorkflow
 
-Zamanlanmış SLA kontrolü, escalation job — scheduler HTTP → MO internal endpoint veya DG query.
+| Konu | Durum | Belge |
+|------|--------|--------|
+| **Zamanlanmış work item** (cron → `from-origin`) | SW-0/4 ✅ · SW-2/3 planlandı | [SCHEDULED_WORK_ITEMS.md](./SCHEDULED_WORK_ITEMS.md) |
+| **Scheduler → MO kimlik** | **Kararlandı** | Keeper token → Bearer → MO ([SCHEDULED_WORK_ITEMS §4.1](./SCHEDULED_WORK_ITEMS.md)) |
+| SLA kontrolü, escalation job | Faz 2+ | scheduler HTTP → MO veya DG query |
 
-Faz 1: SLA due alanları transition/create’te hesaplanır; job yok.
+### 6.1 Zamanlanmış WI — token akışı (özet)
+
+MngScheduler’ın MO’da WI oluşturabilmesi için **MngKeeper** oturum token’ı gerekir (UI ile aynı hat):
+
+```text
+Scheduler (tetik)
+  → POST /keeper/api/auth/token  (domainName + username + password — teknik kullanıcı, secret config)
+  → access_token
+  → POST /operations/api/v1/work-items/from-origin  (Authorization: Bearer …)
+```
+
+- MO mevcut JWT doğrulamasını kullanır; Faz 1’de ayrı «servis API key» yok.
+- Kimlik bilgileri **Scheduler konfigünde**; `op_work_item_schedules` veya job `payload` içinde **tutulmaz**.
+- Her tetikte **yeni token** (JWT süresi); job header’ına sabit uzun ömürlü token gömülmez.
+
+Faz 1: SLA due alanları transition/create’te hesaplanır; SLA cron job yok.
 
 ---
 

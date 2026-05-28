@@ -52,3 +52,8 @@
   margin-bottom: 10px;
   padding: 0 4px;
 }
+
+/* OcDynamicForm v-select — dialog / overflow’lu bölüm kartlarının üstünde */
+.oc-select-menu-overlay {
+  z-index: 3100 !important;
+}

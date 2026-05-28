@@ -52,6 +52,41 @@ public static class FormRuntimeBuilder
         return fields;
     }
 
+    public static void ApplyDefaultValues(
+        IDictionary<string, FormFieldRuntimeDto> fields,
+        IReadOnlyDictionary<string, object?> defaultValues,
+        bool overwriteExisting = false)
+    {
+        foreach (var (key, defaultValue) in defaultValues)
+        {
+            if (!fields.TryGetValue(key, out var field))
+                continue;
+
+            if (!overwriteExisting && field.Value != null && !IsEmptyValue(field.Value))
+                continue;
+
+            fields[key] = new FormFieldRuntimeDto
+            {
+                Key = field.Key,
+                Label = field.Label,
+                FieldType = field.FieldType,
+                Value = NormalizeValue(defaultValue)
+            };
+        }
+    }
+
+    private static bool IsEmptyValue(object? value) =>
+        value switch
+        {
+            null => true,
+            string s => string.IsNullOrWhiteSpace(s),
+            JsonElement el when el.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined => true,
+            JsonElement el when el.ValueKind == JsonValueKind.String => string.IsNullOrWhiteSpace(el.GetString()),
+            JsonElement el when el.ValueKind == JsonValueKind.Array => !el.EnumerateArray().Any(),
+            System.Collections.IEnumerable e when value is not string => !e.GetEnumerator().MoveNext(),
+            _ => false
+        };
+
     public static IReadOnlyDictionary<string, FieldBehaviorDto> ParseFieldBehaviors(JsonElement? behaviors, string mode)
     {
         var result = new Dictionary<string, FieldBehaviorDto>(StringComparer.OrdinalIgnoreCase);

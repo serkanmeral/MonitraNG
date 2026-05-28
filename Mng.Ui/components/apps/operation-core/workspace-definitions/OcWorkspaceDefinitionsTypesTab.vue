@@ -9,7 +9,7 @@ import {
   ocGetWorkspace,
   ocListGlobalWorkItemTypes,
   ocListWorkspaceScopedWorkItemTypes,
-  ocUpdateWorkspace,
+  ocSaveWorkspaceEnabledTypeIds,
   ocUpdateWorkItemType,
 } from '@/services/operationCoreService';
 import type { OpWorkItemType } from '@/types/apps/operationCore';
@@ -180,9 +180,7 @@ async function saveSelection() {
   errorLocal.value = null;
   successLocal.value = null;
   try {
-    await ocUpdateWorkspace(props.workspaceId, {
-      enabledTypeIds: selectedTypeIds.value,
-    });
+    await ocSaveWorkspaceEnabledTypeIds(props.workspaceId, selectedTypeIds.value);
     await loadAll();
     successLocal.value = t('operationCore.workspaceDefinitions.saveSuccess');
   } catch (e: unknown) {
@@ -277,6 +275,16 @@ async function confirmDelete() {
         <p class="text-body-2 text-medium-emphasis mb-4">
           {{ t('operationCore.workspaceDefinitions.types.catalogSubtitle') }}
         </p>
+
+        <v-alert
+          v-if="!selectedTypeIds.length"
+          type="info"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          {{ t('operationCore.workspaceDefinitions.types.noneSelectedHint') }}
+        </v-alert>
 
         <v-card
           v-for="[category, types] in globalTypesByCategory"

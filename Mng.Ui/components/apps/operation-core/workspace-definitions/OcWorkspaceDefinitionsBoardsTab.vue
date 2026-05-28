@@ -8,7 +8,7 @@ import {
   ocListBoardsForWorkspace,
   ocListFormsForWorkspace,
   ocListStateFlowsForWorkspace,
-  ocListStates,
+  ocListStatesForWorkspace,
   ocUpdateBoard,
 } from '@/services/operationCoreService';
 import type { OpBoard, OpBoardColumnConfig } from '@/types/apps/operationCore';
@@ -105,7 +105,7 @@ async function loadAll() {
       ocListBoardsForWorkspace(props.workspaceId),
       ocListFormsForWorkspace(props.workspaceId),
       ocListStateFlowsForWorkspace(props.workspaceId),
-      ocListStates(),
+      ocListStatesForWorkspace(props.workspaceId, { fallbackAll: true }),
     ]);
     boards.value = boardRows;
     formItems.value = forms.map((f) => ({ value: f.__dataId, title: f.name }));

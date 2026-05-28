@@ -6,7 +6,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "incremental",
@@ -204,6 +204,26 @@
       },
       {
         "fieldType": "relation",
+        "name": "enabledStateIds",
+        "title": "Aktif durumlar (state)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": "op_states",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "enabledPriorityIds",
+        "title": "Aktif öncelikler",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": "op_priorities",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
         "name": "enabledFieldIds",
         "title": "Aktif alan havuzu",
         "mandatory": false,
@@ -274,7 +294,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "text",
@@ -420,7 +440,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "text",
@@ -556,7 +576,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "text",
@@ -886,7 +906,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "text",
@@ -968,7 +988,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "text",
@@ -1132,7 +1152,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "text",
@@ -1345,7 +1365,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "text",
@@ -1579,7 +1599,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "text",
@@ -1783,7 +1803,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "text",
@@ -2098,7 +2118,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "text",
@@ -2161,7 +2181,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "text",
@@ -2867,7 +2887,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "text",
@@ -2991,7 +3011,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "none",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "text",
@@ -3125,7 +3145,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "relation",
@@ -3233,7 +3253,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "none",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "relation",
@@ -3387,7 +3407,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "persons",
@@ -3563,7 +3583,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "text",
@@ -3753,7 +3773,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "text",
@@ -3892,7 +3912,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "text",
@@ -4019,7 +4039,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "text",
@@ -4203,7 +4223,7 @@
     "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "forceSchema": false,
     "logging": "self",
-    "publish_mode": "none",
+    "publish_mode": "basic",
     "fields": [
       {
         "fieldType": "text",
@@ -4331,5 +4351,212 @@
         "unique": false
       }
     ]
+  },
+  {
+    "__dataId": null,
+    "name": "op_work_item_schedules",
+    "description": "Operational Core - Scheduled work item templates (cron + create payload)",
+    "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Ad",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama (schedule)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "workspaceId",
+        "title": "Workspace",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_workspaces",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isActive",
+        "title": "Aktif",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "cronExpression",
+        "title": "Cron ifadesi (Quartz)",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "timezone",
+        "title": "Saat dilimi (IANA)",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "boardId",
+        "title": "Board",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_boards",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "typeId",
+        "title": "İş tipi",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_work_item_types",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "assignee",
+        "title": "Atanan (Keeper user id)",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "priorityId",
+        "title": "Öncelik",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_priorities",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "title",
+        "title": "WI başlık şablonu",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "templateDescription",
+        "title": "WI açıklama şablonu",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "fields",
+        "title": "Ek alanlar (create payload)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "initialTransitionKey",
+        "title": "Create sonrası geçiş (transitionKey)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "schedulerJobId",
+        "title": "MngScheduler job id",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "lastRunAt",
+        "title": "Son çalışma",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "lastWorkItemId",
+        "title": "Son oluşan WI",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_work_items",
+        "incrementalOptions": null
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_workspaceId",
+        "fields": {
+          "workspaceId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_workspaceId_isActive",
+        "fields": {
+          "workspaceId": 1,
+          "isActive": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_workspaceId_name",
+        "fields": {
+          "workspaceId": 1,
+          "name": 1
+        },
+        "unique": true
+      }
+    ],
+    "queries": []
   }
 ]

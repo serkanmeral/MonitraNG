@@ -66,15 +66,34 @@ export type OcPoolFieldType = (typeof OC_POOL_FIELD_TYPE_VALUES)[number];
 
 export const OC_FIELD_KEY_PATTERN = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 
-/** op_forms layout — create formda seçilebilir core alanlar */
-export const OC_FORM_LAYOUT_CORE_FIELD_KEYS = [
-  'title',
-  'description',
-  'typeId',
-  'assignee',
-  'priorityId',
-  'boardId',
-] as const;
+/** Create form layout’a eklenmez (sistem / akış / bağlam). */
+export const OC_FORM_LAYOUT_EXCLUDED_CORE_KEYS = new Set([
+  'key',
+  'stateId',
+  'stateFlowId',
+  'workspaceId',
+  'origin',
+  'sla',
+]);
+
+/**
+ * op_forms yerleşim editöründe sürüklenebilir core alanlar.
+ * Önceki MVP listesi yalnızca 6 alan içeriyordu; watchers/reporter vb. eksikti.
+ */
+export const OC_FORM_LAYOUT_CORE_FIELD_KEYS: readonly string[] = OC_CORE_WORK_ITEM_FIELDS.map(
+  (f) => f.key
+).filter((key) => !OC_FORM_LAYOUT_EXCLUDED_CORE_KEYS.has(key));
+
+/**
+ * Workspace politika şartlarında her zaman seçilebilir core alanlar.
+ * Form yerleşiminde yoktur (stateId akıştan gelir) ama koşulda sık kullanılır.
+ */
+export const OC_POLICY_CONDITION_ALWAYS_CORE_KEYS: readonly string[] = ['stateId'];
+
+export function resolveOcCoreFieldCardinality(key: string): 'single' | 'multi' {
+  if (key === 'watchers' || key === 'assignmentGroups' || key === 'labels') return 'multi';
+  return 'single';
+}
 
 export function parseOcFieldOptions(raw: unknown): Record<string, unknown> | null {
   if (raw == null) return null;

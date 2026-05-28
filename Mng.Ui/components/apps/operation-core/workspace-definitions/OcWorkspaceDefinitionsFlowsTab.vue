@@ -7,7 +7,7 @@ import {
   ocExtractDgErrorMessage,
   ocGetWorkspace,
   ocListStateFlowsForWorkspace,
-  ocListStates,
+  ocListStatesForWorkspace,
   ocUpdateStateFlow,
   ocUpdateWorkspace,
 } from '@/services/operationCoreService';
@@ -98,7 +98,7 @@ async function loadAll() {
   try {
     const [flowRows, stateRows, ws] = await Promise.all([
       ocListStateFlowsForWorkspace(props.workspaceId),
-      ocListStates(),
+      ocListStatesForWorkspace(props.workspaceId, { fallbackAll: true }),
       ocGetWorkspace(props.workspaceId),
     ]);
     flows.value = flowRows;

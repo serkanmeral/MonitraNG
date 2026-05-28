@@ -1,153 +1,150 @@
 # MngOperations & Operation Core UI — Devam noktası (checkpoint)
 
-**Son güncelleme:** 26 Mayıs 2026 (mola öncesi)  
-**Durum:** Faz 1 backend MVP + Odak deploy; **UI workspace form tanımı + create akışı** büyük ölçüde tamam; profil/board runtime ve kalan form iyileştirmeleri sırada.
+**Son güncelleme:** 28 Mayıs 2026 (gece — SW tam dikey dilim + sihirbaz)  
+**Durum:** Zamanlanmış WI **SW-0…SW-4d + SW-3a/b/c + SW-2** ✅ Odak · **SW-5** cron E2E smoke · **SW-6** admin jobs backlog
 
-Bu dosya **yeni Cursor chat**’te kaldığınız yerden devam için ana handoff’tur.
+Bu dosya **yeni Cursor chat**'te kaldığınız yerden devam için ana handoff'tur.
 
----
-
-## Yeni chat — hızlı özet
-
-1. **Ne yaptık:** `op_forms` admin (4 sekme), layout grid, taslak önizleme, `OcDynamicForm` widget’ları, `work-items/new`, MO `extraFields` + `FormRuntimeBuilder` layout sırası.
-2. **Sıradaki:** (2) kullanıcı/atanan select → (3) zorunlu alan UI → profil/board runtime (S2–S4).
-3. **Dokümanlar:** [FORM_LAYOUT_AND_EXTRA_FIELDS.md](./FORM_LAYOUT_AND_EXTRA_FIELDS.md), [ui/OC_UI_FORM_DEFINITIONS.md](../ui/OC_UI_FORM_DEFINITIONS.md)
-4. **Deploy:** Layout/MO değişikliği sonrası `deploy-odak-apps.ps1 -Services mngoperations`
+**Ana plan:** [OC_UI_ADMIN_FAZ1_PLAN.md](../ui/OC_UI_ADMIN_FAZ1_PLAN.md)
 
 ---
 
-## 1. Backend (MngOperations) — tamamlanan (bu dönem)
+## Bu oturumda tamamlanan (28 May 2026)
 
-| Alan | Durum | Doküman |
-|------|--------|---------|
-| Faz 1 komut + runtime API | ✅ | [API_SURFACE.md](./API_SURFACE.md) |
-| `extraFields` bucket (§8.5) | ✅ | [FORM_LAYOUT_AND_EXTRA_FIELDS.md](./FORM_LAYOUT_AND_EXTRA_FIELDS.md) |
-| `WorkItemFieldWriter`, `FormLayoutHelper`, `FormRuntimeBuilder` | ✅ | aynı |
-| Rule engine, pipeline, notifications | ✅ | [PIPELINES.md](./PIPELINES.md) |
-| Odak deploy + smoke | ✅ (önceki oturum) | [GATEWAY_AND_DEPLOY.md](./GATEWAY_AND_DEPLOY.md) |
+### Backend (MngOperations + MngScheduler)
 
-**Build:** `dotnet build MngOperations/MngOperations.sln`
+| İş | Not |
+|----|-----|
+| **SW-3c** | `WorkItemScheduleOrchestrationJob` — cron → Keeper token → MO `/execute` |
+| **SW-2** | `POST .../work-item-schedules/{id}/execute` + `lastRunAt` / `lastWorkItemId` |
+| **SW-3b** | `sync-scheduler` / `unlink-scheduler` — User Job `@scheduled_jobs` |
+| **Deploy Odak** | `mngoperations`, `mngscheduler` — `OC_SCHEDULER_SYNC_USER_JOBS=true` |
+| **Fix: IOptions** | `MngScheduler` `WorkItemScheduleOrchestration` IOptions'a kopyalanmıyordu → user job DG 401 |
+| **Fix: sync update** | MO `PUT user/jobs` `domainId` göndermiyordu → `@scheduled_jobs` cron güncellenmiyordu; `UserJobService` token'dan bağlar |
+| **Fix: sync hata** | MO update hatasını yutma kaldırıldı — UI'da senkron uyarısı görünür |
 
-**Metadata cache:** Form kayıtları ~30 sn+ TTL — UI’da DG’ye kayıt sonrası «Yeni iş» gecikebilir; taslak önizleme cache kullanmaz.
+### UI (Mng.Ui)
 
----
+| İş | Not |
+|----|-----|
+| **SW-4** | Zamanlanmış işler sekmesi — liste, dialog, «Şimdi çalıştır», «Zamanlayıcı bağlı» |
+| **SW-4d** | **Zamanlama sihirbazı** `OcScheduleTimingWizard.vue` — dakika / saat / her gün / çoklu gün + gelişmiş cron |
+| **Fix: hub.ts** | `reconnectHandlers` init — chat SignalR konsol hatası |
+| **Fix: cron UX** | Doğrulama mesajları, kayıt sonrası scheduler sync |
 
-## 2. UI (Mng.Ui Operation Core) — tamamlanan (bu dönem)
+### Dokümantasyon
 
-| Alan | Durum |
-|------|--------|
-| Workspace tanımları (genel, tipler, alanlar, akış) | ✅ (önceki sprintler) |
-| **Forms** sekmesi — `op_forms` CRUD | ✅ |
-| Form editör: Genel / Yerleşim / Davranışlar / Varsayılan değerler | ✅ |
-| Layout: section/field order, `fieldCols`, `sectionCols`, `dialogMaxWidth` | ✅ |
-| `OcFormPreviewDialog` + `buildFormPreviewContextFromDraft` | ✅ |
-| `OcDynamicForm` + alan tipi widget’ları | ✅ |
-| `work-items/new` + `ocCreateWorkItem` | ✅ |
-| Boards sekmesi temel CRUD | ✅ |
-| Profil / board **runtime** ekranları | ⏳ placeholder (Sprint 2–3) |
+| İş | Not |
+|----|-----|
+| **SW-6** | Admin Scheduled Jobs explorer backlog — [SCHEDULED_WORK_ITEMS §4.5](./SCHEDULED_WORK_ITEMS.md) |
+| **OC_UI §3.2** | Sihirbaz tablosu — [OC_UI_SCHEDULED_WORK_ITEMS.md](../ui/OC_UI_SCHEDULED_WORK_ITEMS.md) |
 
-Detay: [ui/OC_UI_FORM_DEFINITIONS.md](../ui/OC_UI_FORM_DEFINITIONS.md)
-
----
-
-## 3. Nerede kaldık? (görsel ilerleme)
-
-```text
-[✓] MO Faz 1 backend + deploy
-[✓] extraFields + form layout runtime (MO)
-[✓] UI workspace definitions — forms/boards
-[✓] UI form editor + taslak preview + dynamic widgets
-[✓] UI work-items/new (create)
-[ ] UI — assignee/user select (sıradaki #2)
-[ ] UI — required field indicators (#3)
-[ ] UI — board kanban/list runtime (S2)
-[ ] UI — work item profile runtime (S3)
-[ ] op_forms advanced schema (modal, visibilityRules, …)
-```
+**Commit:** Henüz yapılmadı (kullanıcı istemedi). Working tree'de MO + Scheduler + UI + docs değişiklikleri var.
 
 ---
 
-## 4. Sıradaki işler (onaylanmış sıra)
+## Odak doğrulama (referans)
 
-| # | İş | Not |
-|---|-----|-----|
-| **2** | **İlişki / kullanıcı select** | `assignee`, `reporter`, `watchers` — Keeper veya DG kullanıcı listesi |
-| **3** | **Zorunlu alan göstergesi** | `fieldBehaviors.required` → yıldız, submit özeti |
-| 4 | Board runtime | `ocGetBoardContext`, kolon sorguları, kartlar |
-| 5 | Profil runtime | transition actions, timeline embed |
-| 6 | `op_forms` ileri alanlar | modal, visibilityRules, panels (admin UI) |
-| 7 | Editör yan panel canlı önizleme | TM `ProjectIssueCreateLayoutEditor` benzeri (opsiyonel) |
-| 8 | MO vs taslak runtime karşılaştırma | Opsiyonel toggle |
+| Öğe | Değer |
+|-----|--------|
+| Gateway | `http://192.168.20.20:5040` |
+| Demo workspace | `f414462a-cd9e-427e-87e8-3cdff0502325` |
+| Demo schedule `__dataId` | `82760c1b-ba39-4e78-9ade-27d404136d92` |
+| Scheduler jobId | `oc-schedule-82760c1b-ba39-4e78-9ade-27d404136d92` |
+| User job DB | `mng_odak.@scheduled_jobs` (**`mngkeeper` değil**) |
+| UI URL | `/apps/operation-core/admin/workspace-definitions?workspaceId=...&tab=scheduled` |
 
-**Form tanımı** kullanıcı kararı: admin + MO runtime + create yolu yeterli sayılana kadar profil/board’a geçmeyin.
+**Doğrulanan:**
+- `POST .../execute` → 201, WI oluşuyor (ör. `OCD-0007`)
+- `sync-scheduler` → `updated: true`, cron `0 0/2 * * * ?` Mongo'da
+- Scheduler log: `oc-schedule-*` Quartz'a yüklendi (`SyncUserJobs=True`)
 
----
-
-## 5. Önemli kod yolları
-
-### Backend (`MngOperations/`)
-
-| Ne | Dosya |
-|----|--------|
-| extraFields yazma | `Core/.../Utilities/WorkItemFieldWriter.cs` |
-| Layout sırası | `Core/.../Utilities/FormLayoutHelper.cs` |
-| Form runtime fields | `Core/.../Utilities/FormRuntimeBuilder.cs` |
-| Form context | `Infrastructure/.../RuntimeContextService.cs` |
-| Create API | `Presentation/.../Controllers/WorkItemsController.cs` |
-
-### UI (`Mng.Ui/`)
-
-| Ne | Dosya |
-|----|--------|
-| Forms tab | `components/.../OcWorkspaceDefinitionsFormsTab.vue` |
-| Layout editor | `components/.../OcWorkspaceFormLayoutEditor.vue` |
-| Preview | `components/.../OcFormPreviewDialog.vue` |
-| Dynamic form | `components/.../OcDynamicForm.vue`, `OcDynamicFormField.vue` |
-| Create page | `pages/.../work-items/new/index.vue` |
-| OC service | `services/operationCoreService.ts` |
+**SW-5 kalan:** Cron ile otomatik tetik → board'da yeni WI (2 dk sihirbaz ile test; kullanıcı onayı bekleniyor).
 
 ---
 
-## 6. Hızlı komutlar
+## Deploy (Odak)
 
 ```powershell
-# MO build
-dotnet build MngOperations\MngOperations.sln
-
-# UI dev
-cd Mng.Ui
-npm run dev
-
-# Odak deploy (MO)
+# Repo kökünden
 .\scripts\odak\sync-odak-source.ps1
-.\scripts\odak\deploy-odak-apps.ps1 -Services mngoperations
+.\scripts\odak\deploy-odak-apps.ps1 -Services mngoperations,mngscheduler,mngui
+```
 
-# Token + demo seed
-.\docs\odak\operationcore\scripts\get-operationcore-token.ps1
-.\docs\odak\operationcore\scripts\seed-operation-core-demo.ps1 -SmokeTest `
-  -MoBaseUrl "http://192.168.20.20:5040/operations"
+`.env`: `OC_SCHEDULER_SYNC_USER_JOBS=true` (ör. `.env.odak.example`).
+
+---
+
+## Sıradaki işler (güncel sıra)
+
+| # | Epic | Hedef |
+|---|------|--------|
+| **1** | **SW-5** | Cron E2E smoke (sihirbaz «Her 2 dk» → 2–4 dk bekle → board + `lastRun*`) |
+| **2** | **SW-6** | Admin Scheduled Jobs sayfası (tüm job'lar, manuel run) — §4.5 |
+| **3** | **A1** | Kurallar R-Plus | [OC_UI_RULES_FAZ1.md](../ui/OC_UI_RULES_FAZ1.md) |
+| **4** | **C** | SLA plan | [SLA_FAZ1_PLAN.md](./SLA_FAZ1_PLAN.md) |
+| **5** | **D1** | Board tanımları | [OC_UI_ADMIN_FAZ1_PLAN.md §Epic D](../ui/OC_UI_ADMIN_FAZ1_PLAN.md) |
+| **6** | **E1** | Admin kapanış + yetki | aynı §Epic E |
+| **7** | **F** | Operasyonel runtime | admin kapandıktan sonra |
+
+**Stratejik sıra:** SW-5 kapat → SW-6 veya SLA → Board admin → Admin kapanış → operasyonel UI.
+
+---
+
+## Workspace tanımları — sekmeler
+
+| Üst sekme | Faz 1 admin |
+|-----------|-------------|
+| Genel | 🟡 yetki grupları |
+| Değerler | ✅ |
+| Akışlar | 🟡 |
+| Formlar | ✅ |
+| Board'lar | 🟡 |
+| Politikalar | ✅ |
+| Kurallar | ✅ |
+| **Zamanlanmış işler** | ✅ UI + sihirbaz; MO/Scheduler Odak |
+
+---
+
+## Görsel ilerleme
+
+```text
+[✓] Kurallar + Politikalar admin UX
+[✓] SW-0 … SW-4d (dataset, MO execute, Scheduler sync, UI sihirbaz)
+[🟡] SW-5 cron E2E (manuel execute OK)
+[ ] SW-6 admin jobs explorer
+[ ] SLA → Board admin → Admin kapanış
+[⏸] Operasyonel board/profil
 ```
 
 ---
 
-## 7. Doküman indeksi
+## Önemli dosyalar
+
+| Alan | Dosyalar |
+|------|----------|
+| MO sync/execute | `WorkItemScheduleSyncService.cs`, `WorkItemScheduleExecuteService.cs`, `WorkItemSchedulesController.cs` |
+| Scheduler | `WorkItemScheduleOrchestrationJob.cs`, `JobSyncService.cs`, `UserJobService.cs`, `ServiceRegistration.cs` (Application) |
+| UI sihirbaz | `OcScheduleTimingWizard.vue`, `ocScheduleCron.ts`, `OcWorkspaceScheduleDialog.vue` |
+| Docs | [SCHEDULED_WORK_ITEMS.md](./SCHEDULED_WORK_ITEMS.md), [OC_UI_SCHEDULED_WORK_ITEMS.md](../ui/OC_UI_SCHEDULED_WORK_ITEMS.md) |
+
+---
+
+## Doküman indeksi
 
 | Doküman | Rol |
 |---------|-----|
-| **Bu dosya** | Handoff / DEVAM |
-| [FORM_LAYOUT_AND_EXTRA_FIELDS.md](./FORM_LAYOUT_AND_EXTRA_FIELDS.md) | Backend layout + extraFields |
-| [ui/OC_UI_FORM_DEFINITIONS.md](../ui/OC_UI_FORM_DEFINITIONS.md) | UI form editor + preview |
-| [RUNTIME_CONTEXT.md](./RUNTIME_CONTEXT.md) | Runtime DTO |
-| [ui/OC_UI_PHASE1_PLAN.md](../ui/OC_UI_PHASE1_PLAN.md) | Sprint planı |
-| [operationcore_phase1.md](../operationcore_phase1.md) | Spec |
-| [MVP_CHECKLIST.md](./MVP_CHECKLIST.md) | Backend MVP checklist |
+| **DEVAM.md** | **Bu handoff** |
+| [SCHEDULED_WORK_ITEMS.md](./SCHEDULED_WORK_ITEMS.md) | SW backend + §4.5 SW-6 |
+| [OC_UI_SCHEDULED_WORK_ITEMS.md](../ui/OC_UI_SCHEDULED_WORK_ITEMS.md) | SW UI + sihirbaz + test |
+| [OC_UI_ADMIN_FAZ1_PLAN.md](../ui/OC_UI_ADMIN_FAZ1_PLAN.md) | Admin Faz 1 plan |
 
 ---
 
-## 8. Yeni chat’te ilk mesaj önerisi
+## Yeni chat — ilk mesaj (kopyala-yapıştır)
 
-> Operation Core form tanımına devam: `docs/odak/operationcore/mngoperations/DEVAM.md` ve `ui/OC_UI_FORM_DEFINITIONS.md` oku. Sıradaki iş #2: assignee/user select, sonra #3 zorunlu alan göstergesi.
+> `docs/odak/operationcore/mngoperations/DEVAM.md` oku. Zamanlanmış WI: SW-0…SW-4d ve SW-2/3 Odak'ta deploy edildi; sırada **SW-5** cron E2E smoke ve **SW-6** admin jobs sayfası. Demo schedule `82760c1b-ba39-4e78-9ade-27d404136d92`, workspace `f414462a-cd9e-427e-87e8-3cdff0502325`.
 
 ---
 
-*Mola sonrası bu dosyayı ilerleme kaydettikçe güncelleyin.*
+*Son güncelleme: 28 Mayıs 2026.*

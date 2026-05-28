@@ -1,6 +1,6 @@
 # MngOperations — Kimlik, token ve konfigürasyon
 
-**Son güncelleme:** 26 Mayıs 2026  
+**Son güncelleme:** 28 Mayıs 2026  
 **Kararlar:** MO → DG doğrudan + Bearer forward (Q2); **MngKeeper / Keycloak** adresleri appsettings + env (token kaynağı ve doğrulama).
 
 ---
@@ -203,6 +203,16 @@ Parse: `JwtSecurityTokenHandler` veya ASP.NET `User` principal (`AddJwtBearer` s
 - MO endpoint’leri **Bearer zorunlu** (`[Authorize]`; `/health`, `/version` isteğe bağlı anonim).
 - **Öneri:** MO kendi `Jwt:Authority` ile doğrular (gateway’e ek savunma); gateway zaten doğruluyorsa bile downstream MO tek başına expose edildiğinde güvenli kalır.
 - Doğrulama başarılı → `IRequestContext` + DG forward.
+
+### 7.1 İstisna — MngScheduler → MO (zamanlanmış work item)
+
+Faz 1 genel kuralı «MO, çağıran kullanıcının token’ı ile DG’ye gider» ([§1](#1-istek-akışı)). **MngScheduler** tetik anında kullanıcı oturumu taşımaz; bu yüzden:
+
+1. Scheduler (veya MO execute proxy) **MngKeeper** `POST /api/auth/token` ile teknik kullanıcı adı/şifre → `access_token` alır.
+2. Aynı token ile `POST /operations/api/v1/work-items/from-origin` çağrılır.
+3. MO bu isteği normal JWT gibi doğrular; DG’ye **aynı Bearer** forward edilir.
+
+Kimlik bilgileri **MngScheduler secret config**’te; UI schedule kaydında değil. Detay: [SCHEDULED_WORK_ITEMS.md §4.1](./SCHEDULED_WORK_ITEMS.md).
 
 ---
 

@@ -35,9 +35,9 @@ public class HttpRequestContext : IRequestContext
         }
     }
 
-    public bool IsAdmin => string.Equals(User?.FindFirst("isAdmin")?.Value, "true", StringComparison.OrdinalIgnoreCase);
+    public bool IsAdmin => ReadBoolClaim("isAdmin") || ReadBoolClaim("is_admin");
 
-    public bool IsManager => string.Equals(User?.FindFirst("isManager")?.Value, "true", StringComparison.OrdinalIgnoreCase);
+    public bool IsManager => ReadBoolClaim("isManager") || ReadBoolClaim("is_manager");
 
     public string? BearerToken
     {
@@ -49,4 +49,7 @@ public class HttpRequestContext : IRequestContext
             return auth["Bearer ".Length..].Trim();
         }
     }
+
+    private bool ReadBoolClaim(string claimType) =>
+        string.Equals(User?.FindFirst(claimType)?.Value, "true", StringComparison.OrdinalIgnoreCase);
 }

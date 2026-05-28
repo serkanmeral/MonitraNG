@@ -9,6 +9,8 @@ import type {
   OpForm,
   OpFormFieldBehavior,
   OpFormLayoutSection,
+  OpRule,
+  OpWorkItemSchedule,
   OcFormRuntimeContext,
   OcFormFieldRuntimeDto,
   OcFieldBehaviorDto,
@@ -21,6 +23,7 @@ import type {
   OpWorkspace,
 } from '@/types/apps/operationCore';
 import { buildOcFormLayoutPayload, normalizeOcGridCol, parseOpFormLayout } from '@/utils/ocFormLayout';
+import { validateOcFormModel } from '@/utils/ocFormValidation';
 
 export const OC_DATASETS = {
   workspaces: 'op_workspaces',
@@ -31,6 +34,8 @@ export const OC_DATASETS = {
   workItemTypes: 'op_work_item_types',
   fields: 'op_fields',
   stateFlows: 'op_state_flows',
+  rules: 'op_rules',
+  workItemSchedules: 'op_work_item_schedules',
 } as const;
 
 function parseSingleDgRecord(response: unknown): Record<string, unknown> | null {
@@ -143,9 +148,12 @@ function mapWorkspaceDetail(raw: Record<string, unknown>): OpWorkspaceDetail {
     workItemKeyFormat:
       raw.workItemKeyFormat != null ? String(raw.workItemKeyFormat) : undefined,
     workItemSequenceStart,
-    enabledTypeIds: resolveRelationIds(raw.enabledTypeIds ?? raw.EnabledTypeIds),
+    enabledTypeIds: readEnabledTypeIdsFromWorkspaceRaw(raw),
+    enabledStateIds: readEnabledStateIdsFromWorkspaceRaw(raw),
+    enabledPriorityIds: readEnabledPriorityIdsFromWorkspaceRaw(raw),
     enabledFieldIds: resolveRelationIds(raw.enabledFieldIds ?? raw.EnabledFieldIds),
     defaultStateFlowId: resolveRelationId(raw.defaultStateFlowId ?? raw.DefaultStateFlowId),
+    settings: parseJsonRecord(raw.settings ?? raw.Settings),
   };
 }
 
@@ -499,6 +507,7 @@ export function buildCreateWorkItemRequest(
   for (const [key, value] of Object.entries(model)) {
     if (OC_CREATE_TOP_LEVEL_KEYS.has(key)) continue;
     if (value === undefined || value === null || value === '') continue;
+    if (Array.isArray(value) && value.length === 0) continue;
     fields[key] = value;
   }
   if (Object.keys(fields).length) body.fields = fields;
@@ -523,16 +532,10 @@ export function validateCreateFormModel(
   ctx: OcFormRuntimeContext,
   model: Record<string, unknown>
 ): boolean {
-  if (!String(model.title ?? '').trim()) return false;
-  if (!String(model.typeId ?? '').trim()) return false;
-
-  for (const [key, behavior] of Object.entries(ctx.fieldBehaviors)) {
-    if (behavior.required !== true || behavior.visible === false) continue;
-    const value = model[key];
-    if (value === undefined || value === null || String(value).trim() === '') return false;
-  }
-  return true;
+  return validateOcFormModel(ctx, model);
 }
+
+export { collectOcFormValidationIssues } from '@/utils/ocFormValidation';
 
 function mapCreateWorkItemResult(raw: unknown): OcCreateWorkItemResult {
   const root = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
@@ -584,6 +587,25 @@ function mapBoard(raw: Record<string, unknown>): OpBoard {
   };
 }
 
+/** Tek kayıt başlığı (politika özeti — listede olmayan id'ler için). */
+export async function ocGetDatasetRecordTitle(
+  dataset: string,
+  dataId: string,
+  titleField = 'name'
+): Promise<string | null> {
+  const id = dataId?.trim();
+  if (!id) return null;
+  const rows = await ocListDataset(dataset, {
+    filter: `__dataId:eq:${id}`,
+    limit: 1,
+  });
+  const raw = rows[0] as Record<string, unknown> | undefined;
+  if (!raw) return null;
+  const title = raw[titleField] ?? raw.name ?? raw.title;
+  if (title == null || title === '') return null;
+  return String(title).trim() || null;
+}
+
 export async function ocListDataset(
   dataset: string,
   options?: { skip?: number; limit?: number; sort?: string; filter?: string; search?: string }
@@ -633,6 +655,121 @@ export async function ocListStates(): Promise<OpState[]> {
     .filter((s) => s.__dataId && s.name);
 }
 
+/** DG alanı yokken settings yedek (UI seçimi). */
+const OC_SETTINGS_ENABLED_STATE_IDS_KEY = 'enabledStateIds';
+const OC_SETTINGS_ENABLED_TYPE_IDS_KEY = 'enabledTypeIds';
+const OC_SETTINGS_ENABLED_PRIORITY_IDS_KEY = 'enabledPriorityIds';
+
+function readEnabledStateIdsFromWorkspaceRaw(raw: Record<string, unknown>): string[] {
+  const fromField = resolveRelationIds(raw.enabledStateIds ?? raw.EnabledStateIds);
+  if (fromField.length) return fromField;
+  const settings = parseJsonRecord(raw.settings ?? raw.Settings);
+  return resolveRelationIds(settings[OC_SETTINGS_ENABLED_STATE_IDS_KEY]);
+}
+
+function readEnabledTypeIdsFromWorkspaceRaw(raw: Record<string, unknown>): string[] {
+  const fromField = resolveRelationIds(raw.enabledTypeIds ?? raw.EnabledTypeIds);
+  if (fromField.length) return fromField;
+  const settings = parseJsonRecord(raw.settings ?? raw.Settings);
+  return resolveRelationIds(settings[OC_SETTINGS_ENABLED_TYPE_IDS_KEY]);
+}
+
+function readEnabledPriorityIdsFromWorkspaceRaw(raw: Record<string, unknown>): string[] {
+  const fromField = resolveRelationIds(raw.enabledPriorityIds ?? raw.EnabledPriorityIds);
+  if (fromField.length) return fromField;
+  const settings = parseJsonRecord(raw.settings ?? raw.Settings);
+  return resolveRelationIds(settings[OC_SETTINGS_ENABLED_PRIORITY_IDS_KEY]);
+}
+
+export type OcListWorkspaceCatalogOptions = {
+  /** Seçim boşsa tüm global katalog */
+  fallbackAll?: boolean;
+};
+
+async function collectStateIdsFromWorkspaceFlows(workspaceId: string): Promise<string[]> {
+  const flows = await ocListStateFlowsForWorkspace(workspaceId);
+  const ids = new Set<string>();
+  for (const flow of flows) {
+    if (flow.initialStateId) ids.add(flow.initialStateId);
+    for (const tr of flow.transitions ?? []) {
+      if (tr.fromStateId) ids.add(tr.fromStateId);
+      if (tr.toStateId) ids.add(tr.toStateId);
+    }
+  }
+  return [...ids];
+}
+
+export type OcListStatesForWorkspaceOptions = OcListWorkspaceCatalogOptions & {
+  /** enabledStateIds boşsa workspace akışlarındaki state’leri ekle */
+  includeFlowStates?: boolean;
+};
+
+/** Workspace’te kullanılabilir durumlar (seçim → akış → isteğe bağlı tüm katalog). */
+export async function ocListStatesForWorkspace(
+  workspaceId: string,
+  options?: OcListStatesForWorkspaceOptions
+): Promise<OpState[]> {
+  const fallbackAll = options?.fallbackAll ?? false;
+  const includeFlowStates = options?.includeFlowStates ?? true;
+  const all = await ocListStates();
+  if (!workspaceId?.trim()) {
+    return fallbackAll ? all : [];
+  }
+
+  const ws = await ocGetWorkspace(workspaceId);
+  const allowed = new Set(ws?.enabledStateIds ?? []);
+
+  if (!allowed.size && includeFlowStates) {
+    for (const id of await collectStateIdsFromWorkspaceFlows(workspaceId)) {
+      allowed.add(id);
+    }
+  }
+
+  if (!allowed.size) {
+    return fallbackAll ? all : [];
+  }
+
+  return all.filter((s) => allowed.has(s.__dataId));
+}
+
+/** Durum seçimini kaydet (alan + settings yedek). */
+export async function ocSaveWorkspaceEnabledStateIds(workspaceId: string, stateIds: string[]) {
+  await ocSaveWorkspaceEnabledRelationIds(workspaceId, OC_SETTINGS_ENABLED_STATE_IDS_KEY, 'enabledStateIds', stateIds);
+}
+
+/** Tip seçimini kaydet (alan + settings yedek). */
+export async function ocSaveWorkspaceEnabledTypeIds(workspaceId: string, typeIds: string[]) {
+  await ocSaveWorkspaceEnabledRelationIds(workspaceId, OC_SETTINGS_ENABLED_TYPE_IDS_KEY, 'enabledTypeIds', typeIds);
+}
+
+/** Öncelik seçimini kaydet (alan + settings yedek). */
+export async function ocSaveWorkspaceEnabledPriorityIds(workspaceId: string, priorityIds: string[]) {
+  await ocSaveWorkspaceEnabledRelationIds(
+    workspaceId,
+    OC_SETTINGS_ENABLED_PRIORITY_IDS_KEY,
+    'enabledPriorityIds',
+    priorityIds
+  );
+}
+
+async function ocSaveWorkspaceEnabledRelationIds(
+  workspaceId: string,
+  settingsKey: string,
+  payloadKey: string,
+  ids: string[]
+) {
+  const ws = await ocGetWorkspace(workspaceId);
+  const settings =
+    ws?.settings && typeof ws.settings === 'object' && !Array.isArray(ws.settings)
+      ? { ...(ws.settings as Record<string, unknown>) }
+      : {};
+  settings[settingsKey] = ids;
+  await ocUpdateWorkspace(workspaceId, {
+    [payloadKey]: ids,
+    settings,
+  });
+}
+
 export async function ocCreateState(payload: Record<string, unknown>) {
   await ocCreate(OC_DATASETS.states, payload);
 }
@@ -671,6 +808,27 @@ export async function ocListPriorities(): Promise<OpPriority[]> {
   return rows
     .map((r) => mapOpPriority(r as Record<string, unknown>))
     .filter((p) => p.__dataId && p.name);
+}
+
+/** Workspace’te kullanılabilir öncelikler (enabledPriorityIds). */
+export async function ocListPrioritiesForWorkspace(
+  workspaceId: string,
+  options?: OcListWorkspaceCatalogOptions
+): Promise<OpPriority[]> {
+  const fallbackAll = options?.fallbackAll ?? false;
+  const all = await ocListPriorities();
+  if (!workspaceId?.trim()) {
+    return fallbackAll ? all : [];
+  }
+
+  const ws = await ocGetWorkspace(workspaceId);
+  const allowed = new Set(ws?.enabledPriorityIds ?? []);
+
+  if (!allowed.size) {
+    return fallbackAll ? all : [];
+  }
+
+  return all.filter((p) => allowed.has(p.__dataId));
 }
 
 export async function ocCreatePriority(payload: Record<string, unknown>) {
@@ -800,12 +958,18 @@ function mapOpStateFlowTransition(raw: unknown): OpStateFlowTransition | null {
     const n = Number(orderRaw);
     order = Number.isFinite(n) ? n : null;
   }
+  const requiredRaw = o.requiredFields ?? o.RequiredFields;
+  const requiredFields = Array.isArray(requiredRaw)
+    ? requiredRaw.map((x) => String(x).trim()).filter(Boolean)
+    : undefined;
+
   return {
     transitionKey,
     fromStateId,
     toStateId,
     label: o.label != null ? String(o.label) : o.Label != null ? String(o.Label) : null,
     order,
+    requiredFields: requiredFields?.length ? requiredFields : undefined,
   };
 }
 
@@ -897,25 +1061,50 @@ export async function ocUpdateWorkspace(workspaceId: string, payload: Record<str
   await ocUpdate(OC_DATASETS.workspaces, workspaceId, payload);
 }
 
-/** Global + workspace'e özel tipler (seçim ve listeleme) */
-export async function ocListWorkItemTypesForWorkspace(workspaceId: string): Promise<OpWorkItemType[]> {
+/** Workspace’te kullanılabilir tipler (enabledTypeIds + workspace’e özel tipler). */
+export async function ocListWorkItemTypesForWorkspace(
+  workspaceId: string,
+  options?: OcListWorkspaceCatalogOptions
+): Promise<OpWorkItemType[]> {
+  const fallbackAll = options?.fallbackAll ?? false;
+  const wsId = workspaceId?.trim() ?? '';
+
   const [globalRows, scopedRows] = await Promise.all([
     ocListGlobalWorkItemTypes(),
-    ocListDataset(OC_DATASETS.workItemTypes, {
-      filter: `workspaceId:eq:${workspaceId}`,
-      sort: 'category:asc,sortOrder:asc,name:asc',
-      limit: 200,
-    }),
+    wsId
+      ? ocListDataset(OC_DATASETS.workItemTypes, {
+          filter: `workspaceId:eq:${wsId}`,
+          sort: 'category:asc,sortOrder:asc,name:asc',
+          limit: 200,
+        })
+      : Promise.resolve([]),
   ]);
   const scoped = scopedRows
     .map((r) => mapOpWorkItemType(r as Record<string, unknown>))
-    .filter((t) => t.__dataId && t.name && t.workspaceId === workspaceId);
+    .filter((t) => t.__dataId && t.name && t.workspaceId === wsId);
   const seen = new Set<string>();
-  return [...globalRows, ...scoped].filter((t) => {
+  const merged = [...globalRows, ...scoped].filter((t) => {
     if (seen.has(t.__dataId)) return false;
     seen.add(t.__dataId);
     return true;
   });
+
+  if (!wsId) {
+    return fallbackAll ? merged : [];
+  }
+
+  const ws = await ocGetWorkspace(wsId);
+  const allowed = new Set(ws?.enabledTypeIds ?? []);
+
+  for (const t of merged) {
+    if (t.workspaceId === wsId) allowed.add(t.__dataId);
+  }
+
+  if (!allowed.size) {
+    return fallbackAll ? merged : [];
+  }
+
+  return merged.filter((t) => allowed.has(t.__dataId));
 }
 
 /** Workspace'e özel tipler (CRUD tablosu) */
@@ -1010,6 +1199,186 @@ export async function ocUpdateForm(formId: string, payload: Record<string, unkno
 
 export async function ocDeleteForm(formId: string) {
   await ocDelete(OC_DATASETS.forms, formId);
+}
+
+function mapOpRule(raw: Record<string, unknown>): OpRule {
+  const conditions = raw.conditions ?? raw.Conditions;
+  const actions = raw.actions ?? raw.Actions;
+  return {
+    __dataId: String(raw.__dataId ?? raw.dataId ?? ''),
+    name: String(raw.name ?? ''),
+    description:
+      raw.description != null
+        ? String(raw.description)
+        : raw.Description != null
+          ? String(raw.Description)
+          : null,
+    workspaceId: resolveRelationId(raw.workspaceId ?? raw.WorkspaceId) ?? '',
+    ruleType: String(raw.ruleType ?? raw.RuleType ?? '').toLowerCase(),
+    trigger: String(raw.trigger ?? raw.Trigger ?? ''),
+    transitionKey:
+      raw.transitionKey != null
+        ? String(raw.transitionKey)
+        : raw.TransitionKey != null
+          ? String(raw.TransitionKey)
+          : null,
+    typeId: resolveRelationId(raw.typeId ?? raw.TypeId) || null,
+    boardId: resolveRelationId(raw.boardId ?? raw.BoardId) || null,
+    stateId: resolveRelationId(raw.stateId ?? raw.StateId) || null,
+    fromStateId: resolveRelationId(raw.fromStateId ?? raw.FromStateId) || null,
+    toStateId: resolveRelationId(raw.toStateId ?? raw.ToStateId) || null,
+    isActive: raw.isActive !== false && raw.IsActive !== false,
+    priority:
+      raw.priority != null && raw.priority !== ''
+        ? Number(raw.priority)
+        : raw.Priority != null && raw.Priority !== ''
+          ? Number(raw.Priority)
+          : null,
+    conditions,
+    actions: Array.isArray(actions) ? actions : [],
+    errorMessage:
+      raw.errorMessage != null
+        ? String(raw.errorMessage)
+        : raw.ErrorMessage != null
+          ? String(raw.ErrorMessage)
+          : null,
+    applyMode:
+      raw.applyMode != null
+        ? String(raw.applyMode)
+        : raw.ApplyMode != null
+          ? String(raw.ApplyMode)
+          : null,
+  };
+}
+
+export async function ocListRulesForWorkspace(workspaceId: string): Promise<OpRule[]> {
+  const rows = await ocListDataset(OC_DATASETS.rules, {
+    filter: `workspaceId:eq:${workspaceId}`,
+    sort: 'priority:asc,name:asc',
+    limit: 200,
+  });
+  return rows
+    .map((r) => mapOpRule(r as Record<string, unknown>))
+    .filter((rule) => rule.__dataId && rule.name && rule.workspaceId === workspaceId);
+}
+
+export async function ocCreateRule(payload: Record<string, unknown>): Promise<string | null> {
+  return ocCreateRecordId(OC_DATASETS.rules, payload);
+}
+
+export async function ocUpdateRule(ruleId: string, payload: Record<string, unknown>) {
+  await ocUpdate(OC_DATASETS.rules, ruleId, payload);
+}
+
+export async function ocDeleteRule(ruleId: string) {
+  await ocDelete(OC_DATASETS.rules, ruleId);
+}
+
+export function mapOpWorkItemSchedule(raw: Record<string, unknown>): OpWorkItemSchedule {
+  return {
+    __dataId: String(raw.__dataId ?? raw.dataId ?? ''),
+    workspaceId: resolveRelationId(raw.workspaceId ?? raw.WorkspaceId) ?? '',
+    name: String(raw.name ?? ''),
+    description:
+      raw.description != null
+        ? String(raw.description)
+        : raw.Description != null
+          ? String(raw.Description)
+          : null,
+    isActive: raw.isActive !== false && raw.IsActive !== false,
+    cronExpression: String(raw.cronExpression ?? raw.CronExpression ?? ''),
+    timezone: String(raw.timezone ?? raw.Timezone ?? 'Europe/Istanbul'),
+    boardId: resolveRelationId(raw.boardId ?? raw.BoardId) ?? '',
+    typeId: resolveRelationId(raw.typeId ?? raw.TypeId) ?? '',
+    assignee: String(raw.assignee ?? raw.Assignee ?? ''),
+    priorityId: resolveRelationId(raw.priorityId ?? raw.PriorityId) || null,
+    title: String(raw.title ?? raw.Title ?? ''),
+    templateDescription:
+      raw.templateDescription != null
+        ? String(raw.templateDescription)
+        : raw.TemplateDescription != null
+          ? String(raw.TemplateDescription)
+          : null,
+    fields:
+      raw.fields && typeof raw.fields === 'object' && !Array.isArray(raw.fields)
+        ? (raw.fields as Record<string, unknown>)
+        : raw.Fields && typeof raw.Fields === 'object' && !Array.isArray(raw.Fields)
+          ? (raw.Fields as Record<string, unknown>)
+          : null,
+    initialTransitionKey:
+      raw.initialTransitionKey != null
+        ? String(raw.initialTransitionKey)
+        : raw.InitialTransitionKey != null
+          ? String(raw.InitialTransitionKey)
+          : null,
+    schedulerJobId:
+      raw.schedulerJobId != null
+        ? String(raw.schedulerJobId)
+        : raw.SchedulerJobId != null
+          ? String(raw.SchedulerJobId)
+          : null,
+    lastRunAt:
+      raw.lastRunAt != null
+        ? String(raw.lastRunAt)
+        : raw.LastRunAt != null
+          ? String(raw.LastRunAt)
+          : null,
+    lastWorkItemId: resolveRelationId(raw.lastWorkItemId ?? raw.LastWorkItemId) || null,
+  };
+}
+
+export async function ocListSchedulesForWorkspace(
+  workspaceId: string
+): Promise<OpWorkItemSchedule[]> {
+  const rows = await ocListDataset(OC_DATASETS.workItemSchedules, {
+    filter: `workspaceId:eq:${workspaceId}`,
+    sort: 'name:asc',
+    limit: 200,
+  });
+  return rows
+    .map((r) => mapOpWorkItemSchedule(r as Record<string, unknown>))
+    .filter((s) => s.__dataId && s.name && s.workspaceId === workspaceId);
+}
+
+export async function ocCreateWorkItemSchedule(
+  payload: Record<string, unknown>
+): Promise<string | null> {
+  return ocCreateRecordId(OC_DATASETS.workItemSchedules, payload);
+}
+
+export async function ocUpdateWorkItemSchedule(
+  scheduleId: string,
+  payload: Record<string, unknown>
+) {
+  await ocUpdate(OC_DATASETS.workItemSchedules, scheduleId, payload);
+}
+
+export async function ocDeleteWorkItemSchedule(scheduleId: string) {
+  await ocDelete(OC_DATASETS.workItemSchedules, scheduleId);
+}
+
+/** SW-3b: DG kaydı sonrası MngScheduler User Job senkronu. */
+export async function ocSyncWorkItemScheduleScheduler(scheduleId: string) {
+  return fetchFromOperations(
+    `/api/v1/work-item-schedules/${encodeURIComponent(scheduleId)}/sync-scheduler`,
+    'POST'
+  );
+}
+
+/** SW-3b: DG silmeden önce Scheduler job kaldırma. */
+export async function ocUnlinkWorkItemScheduleScheduler(scheduleId: string) {
+  return fetchFromOperations(
+    `/api/v1/work-item-schedules/${encodeURIComponent(scheduleId)}/unlink-scheduler`,
+    'POST'
+  );
+}
+
+/** SW-2: MO execute endpoint — henüz yoksa hata fırlatır. */
+export async function ocRunWorkItemScheduleNow(scheduleId: string) {
+  return fetchFromOperations(
+    `/api/v1/work-item-schedules/${encodeURIComponent(scheduleId)}/execute`,
+    'POST'
+  );
 }
 
 export async function ocCreateBoard(payload: Record<string, unknown>): Promise<string | null> {

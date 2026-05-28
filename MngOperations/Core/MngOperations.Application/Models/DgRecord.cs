@@ -41,8 +41,17 @@ public sealed class WorkspaceRecord : DgRecord
     [JsonPropertyName("enabledTypeIds")]
     public JsonElement? EnabledTypeIds { get; set; }
 
+    [JsonPropertyName("enabledStateIds")]
+    public JsonElement? EnabledStateIds { get; set; }
+
     [JsonPropertyName("enabledFieldIds")]
     public JsonElement? EnabledFieldIds { get; set; }
+
+    [JsonPropertyName("enabledPriorityIds")]
+    public JsonElement? EnabledPriorityIds { get; set; }
+
+    /// <summary>Workspace metadata — <c>fieldPolicies</c>, yedek <c>enabled*Ids</c>, vb.</summary>
+    public JsonElement? Settings { get; set; }
 }
 
 public sealed class FormRecord : DgRecord
@@ -288,4 +297,51 @@ public sealed class ActivityRecord : DgRecord
     public string? Actor { get; set; }
 
     public string? Summary { get; set; }
+}
+
+public sealed class WorkItemScheduleRecord : DgRecord
+{
+    [JsonPropertyName("workspaceId")]
+    public string? WorkspaceId { get; set; }
+
+    public string? Name { get; set; }
+    public string? Description { get; set; }
+
+    [JsonPropertyName("isActive")]
+    public bool IsActive { get; set; } = true;
+
+    [JsonPropertyName("cronExpression")]
+    public string? CronExpression { get; set; }
+
+    public string? Timezone { get; set; }
+
+    [JsonPropertyName("boardId")]
+    public string? BoardId { get; set; }
+
+    [JsonPropertyName("typeId")]
+    public string? TypeId { get; set; }
+
+    public string? Assignee { get; set; }
+
+    [JsonPropertyName("priorityId")]
+    public string? PriorityId { get; set; }
+
+    public string? Title { get; set; }
+
+    [JsonPropertyName("templateDescription")]
+    public string? TemplateDescription { get; set; }
+
+    public JsonElement? Fields { get; set; }
+
+    [JsonPropertyName("initialTransitionKey")]
+    public string? InitialTransitionKey { get; set; }
+
+    [JsonPropertyName("schedulerJobId")]
+    public string? SchedulerJobId { get; set; }
+
+    [JsonPropertyName("lastRunAt")]
+    public DateTime? LastRunAt { get; set; }
+
+    [JsonPropertyName("lastWorkItemId")]
+    public string? LastWorkItemId { get; set; }
 }

@@ -691,6 +691,34 @@ public class RuntimeContextService : IRuntimeContextService
 
         var fieldBehaviors = await _fieldBehaviors.ResolveAllAsync(behaviorContext, cancellationToken);
 
+        var fields = FormRuntimeBuilder.BuildFields(
+            mode,
+            workItem,
+            form?.DefaultValues,
+            form?.Layout,
+            fieldCatalog);
+
+        if (isCreate)
+        {
+            var workspacePolicies = WorkspaceFieldPolicies.Parse(workspace.Settings);
+            var policyHints = new WorkspaceFieldPolicies.PolicyEvaluationHints
+            {
+                StateId = initialStateId,
+                TypeId = form?.DefaultTypeId ?? types.FirstOrDefault()?.Id
+            };
+            var policyDefaults = WorkspaceFieldPolicies.ResolveDefaultValues(
+                workspacePolicies,
+                workItem ?? new Dictionary<string, object?>(),
+                policyHints);
+
+            if (policyDefaults.Count > 0)
+            {
+                var mutableFields = fields.ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
+                FormRuntimeBuilder.ApplyDefaultValues(mutableFields, policyDefaults, overwriteExisting: true);
+                fields = mutableFields;
+            }
+        }
+
         return new FormRuntimeContext
         {
             Mode = mode,
@@ -708,12 +736,7 @@ public class RuntimeContextService : IRuntimeContextService
                 CanComment = canComment
             },
             Types = types,
-            Fields = FormRuntimeBuilder.BuildFields(
-                mode,
-                workItem,
-                form?.DefaultValues,
-                form?.Layout,
-                fieldCatalog),
+            Fields = fields,
             FieldBehaviors = fieldBehaviors
         };
     }

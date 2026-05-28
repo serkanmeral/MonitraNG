@@ -313,6 +313,16 @@ Ana link: **`/`** (welcome), TM’deki analitik dashboard değil.
 
 ## 11. Uygulama sprintleri (önerilen sıra)
 
+**Form tanımı (DEVAM ile hizalı, layout sonrası):**
+
+| Adım | Kapsam | Belge |
+|------|--------|--------|
+| **F1** | Layout + create + person picker | ✅ [OC_UI_FORM_DEFINITIONS.md](./OC_UI_FORM_DEFINITIONS.md) |
+| **F2** | Required UI (#3a) | [DEVAM.md](../mngoperations/DEVAM.md) |
+| **F3** | Form alan politikaları v1 (#3b–3c) | [OC_UI_FIELD_POLICY.md](./OC_UI_FIELD_POLICY.md) |
+| **F4** | Form politika backlog (§10) | aynı |
+| **W** | Workspace politikaları | [OC_UI_WORKSPACE_POLICIES.md](./OC_UI_WORKSPACE_POLICIES.md) |
+
 | Sprint | Kapsam | DoD |
 |--------|--------|-----|
 | **S1 — Navigasyon** | `useOperationCoreBreadcrumbs`, side menu kaydı, i18n, `/workspace` + redirect, `OcWorkspaceTree` iskelet | Menüden explorer açılır; breadcrumb tutarlı |
@@ -328,7 +338,7 @@ Ana link: **`/`** (welcome), TM’deki analitik dashboard değil.
 
 ## 12. Faz 1 dışı (bilinçli)
 
-- Metadata admin (state flow editor, rule editor, form designer UI)
+- Metadata admin — **kısmi Faz 1:** form layout + [alan politikaları tek sekme](./OC_UI_FIELD_POLICY.md); tam state flow / condition builder Faz 2
 - Workspace/board CRUD ekranları (DG script yeterli)
 - Saved filter UI, gelişmiş dashboard editörü
 - In-app notification inbox (`op_notifications` liste) — sprint 6+ / hub badge
@@ -371,5 +381,6 @@ Ana link: **`/`** (welcome), TM’deki analitik dashboard değil.
 ## 15. İlgili güncellemeler
 
 - [OPERATION_CORE_IMPLEMENTATION_PLAN.md §7](../OPERATION_CORE_IMPLEMENTATION_PLAN.md) — bu belgeye yönlendirir
-- [mngoperations/DEVAM.md](../mngoperations/DEVAM.md) — backend checkpoint
+- [mngoperations/DEVAM.md](../mngoperations/DEVAM.md) — UI handoff + sıradaki işler
+- [OC_UI_FIELD_POLICY.md](./OC_UI_FIELD_POLICY.md) — form alan politikaları (tek el)
 - Backend değişince önce [RUNTIME_CONTEXT.md](../mngoperations/RUNTIME_CONTEXT.md) + [API_SURFACE.md](../mngoperations/API_SURFACE.md), sonra TS tipleri

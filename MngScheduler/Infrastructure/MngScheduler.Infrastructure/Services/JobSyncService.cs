@@ -154,7 +154,33 @@ public class JobSyncService : BackgroundService, IJobSyncService
             IEnumerable<ScheduledJob> userJobs;
             if (_settings.JobSync.SyncUserJobs)
             {
-                userJobs = await userJobRepository.GetAllActiveJobsAsync();
+                string? dgToken = null;
+                var oc = _settings.WorkItemScheduleOrchestration;
+                var account = oc.ServiceAccount;
+                if (!string.IsNullOrWhiteSpace(account.DomainName)
+                    && !string.IsNullOrWhiteSpace(account.Username)
+                    && !string.IsNullOrWhiteSpace(account.Password))
+                {
+                    var keeperAuth = scope.ServiceProvider.GetRequiredService<IMngKeeperAuthClient>();
+                    var tokenResult = await keeperAuth.GetAccessTokenAsync(cancellationToken);
+                    if (tokenResult.Success && !string.IsNullOrWhiteSpace(tokenResult.AccessToken))
+                    {
+                        dgToken = tokenResult.AccessToken;
+                    }
+                    else
+                    {
+                        _logger.LogWarning(
+                            "[WorkItemSchedule] JobSync: Keeper token unavailable; user job DG read may fail (HTTP {Status})",
+                            tokenResult.HttpStatusCode);
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "[WorkItemSchedule] JobSync: ServiceAccount not configured; user job DG read will fail");
+                }
+
+                userJobs = await userJobRepository.GetAllActiveJobsAsync(dgToken);
             }
             else
             {
@@ -326,6 +352,9 @@ public class JobSyncService : BackgroundService, IJobSyncService
     {
         if (job.JobType == JobType.System && SystemJobIds.IsDirectorySyncOrchestration(job.JobId))
             return typeof(Jobs.DirectorySyncOrchestrationJob);
+
+        if (job.JobType == JobType.User && UserJobIds.IsWorkItemSchedule(job.JobId))
+            return typeof(Jobs.WorkItemScheduleOrchestrationJob);
 
         return typeof(Jobs.HttpJob);
     }

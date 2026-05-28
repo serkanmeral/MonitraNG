@@ -12,8 +12,14 @@ export interface OpWorkspaceDetail extends OpWorkspace {
   workItemKeyFormat?: string;
   workItemSequenceStart?: number | null;
   enabledTypeIds: string[];
+  /** Global op_states kataloğundan workspace’te kullanılacak durumlar */
+  enabledStateIds: string[];
+  /** Global op_priorities kataloğundan workspace’te kullanılacak öncelikler */
+  enabledPriorityIds: string[];
   enabledFieldIds: string[];
   defaultStateFlowId?: string | null;
+  /** op_workspaces.settings — workspace politikaları `fieldPolicies` altında */
+  settings?: Record<string, unknown>;
 }
 
 export const OC_WORKSPACE_TYPE_VALUES = [
@@ -32,6 +38,51 @@ export interface OpStateFlowTransition {
   toStateId: string;
   label?: string | null;
   order?: number | null;
+  requiredFields?: string[];
+}
+
+/** op_work_item_schedules — zamanlanmış WI şablonu */
+export interface OpWorkItemSchedule {
+  __dataId: string;
+  workspaceId: string;
+  name: string;
+  description?: string | null;
+  isActive: boolean;
+  cronExpression: string;
+  timezone: string;
+  boardId: string;
+  typeId: string;
+  assignee: string;
+  priorityId?: string | null;
+  title: string;
+  templateDescription?: string | null;
+  fields?: Record<string, unknown> | null;
+  initialTransitionKey?: string | null;
+  schedulerJobId?: string | null;
+  lastRunAt?: string | null;
+  lastWorkItemId?: string | null;
+}
+
+/** op_rules — workspace kuralı */
+export interface OpRule {
+  __dataId: string;
+  name: string;
+  description?: string | null;
+  workspaceId: string;
+  ruleType: string;
+  trigger: string;
+  transitionKey?: string | null;
+  typeId?: string | null;
+  boardId?: string | null;
+  stateId?: string | null;
+  fromStateId?: string | null;
+  toStateId?: string | null;
+  isActive?: boolean;
+  priority?: number | null;
+  conditions?: unknown;
+  actions?: unknown[];
+  errorMessage?: string | null;
+  applyMode?: string | null;
 }
 
 /** op_state_flows — workspace durum akışı */

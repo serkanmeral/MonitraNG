@@ -110,6 +110,18 @@ public sealed class FieldBehaviorResolverService : IFieldBehaviorResolver
         if (screenBehaviors.TryGetValue(fieldName, out var screenLayer))
             layers.Add(screenLayer);
 
+        var workspacePolicies = WorkspaceFieldPolicies.Parse(context.Workspace.Settings);
+        var policyHints = new WorkspaceFieldPolicies.PolicyEvaluationHints
+        {
+            StateId = context.StateId ?? WorkItemDataHelper.GetString(context.WorkItem, "stateId"),
+            TypeId = WorkItemDataHelper.GetString(context.WorkItem, "typeId") ?? context.Form?.DefaultTypeId
+        };
+        layers.AddRange(WorkspaceFieldPolicies.ResolveBehaviorLayers(
+            fieldName,
+            workspacePolicies,
+            context.WorkItem,
+            policyHints));
+
         if (context.Board?.VisibleFields is { } visibleFields)
             layers.Add(FromBoardVisibility(fieldName, visibleFields));
 
@@ -148,6 +160,10 @@ public sealed class FieldBehaviorResolverService : IFieldBehaviorResolver
             keys.Add(key);
 
         foreach (var key in FieldBehaviorParser.ParseMap(context.Profile?.FieldBehaviors).Keys)
+            keys.Add(key);
+
+        var workspacePolicies = WorkspaceFieldPolicies.Parse(context.Workspace.Settings);
+        foreach (var key in WorkspaceFieldPolicies.EnumerateFieldKeys(workspacePolicies))
             keys.Add(key);
 
         return keys.ToList();
