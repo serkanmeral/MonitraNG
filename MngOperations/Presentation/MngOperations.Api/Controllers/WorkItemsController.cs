@@ -88,6 +88,17 @@ public class WorkItemsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken)
+    {
+        await _workItemCommandService.DeleteAsync(id, cancellationToken);
+        return NoContent();
+    }
+
     [HttpPost("{id}/comments")]
     [ProducesResponseType(typeof(CommentDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

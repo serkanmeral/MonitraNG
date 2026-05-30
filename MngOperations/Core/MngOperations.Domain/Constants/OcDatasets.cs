@@ -9,6 +9,7 @@ public static class OcDatasets
     public const string Forms = "op_forms";
     public const string Fields = "op_fields";
     public const string States = "op_states";
+    public const string Priorities = "op_priorities";
     public const string Rules = "op_rules";
     public const string Profiles = "op_profiles";
     public const string WorkItems = "op_work_items";

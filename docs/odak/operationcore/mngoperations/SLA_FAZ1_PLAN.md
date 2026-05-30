@@ -1,7 +1,7 @@
 # MngOperations — SLA Faz 1 planı (planlama belgesi)
 
 **Son güncelleme:** 28 Mayıs 2026  
-**Durum:** **Planlama** — bugün geliştirme yok; metadata + sınırlar netleştirilir  
+**Durum:** **SLA-0 ✅** · **SLA-1 ✅** (Odak smoke) · **SLA-2 ✅** (admin sekme UI) · **SLA-3** operasyonel UI backlog  
 **Spec:** [operationcore_phase1.md §20](../operationcore_phase1.md) · **Runtime:** [RUNTIME_CONTEXT.md](./RUNTIME_CONTEXT.md) (`sla` DTO) · **Admin sırası:** [OC_UI_ADMIN_FAZ1_PLAN.md Epic C](../ui/OC_UI_ADMIN_FAZ1_PLAN.md)
 
 ---
@@ -78,9 +78,9 @@
 | Faz | Kod | İş | Bağımlılık |
 |-----|-----|-----|------------|
 | **SLA-P0** | | Bu belge + dataset JSON taslağı | — |
-| **SLA-0** | | `op_sla_policies` dataset + draft script | SW-0 pattern |
-| **SLA-1** | | MO: policy CRUD read + create/transition hesap doğrulama | MO mevcut calculator |
-| **SLA-2** | | Admin UI sekme | Admin Faz 1 kapanış |
+| **SLA-0** | ✅ | `op_sla_policies` dataset + Odak demo policy | SW-0 pattern |
+| **SLA-1** | ✅ | MO create → `profile.sla` + DG snapshot; `smoke-sla-faz1.ps1` | Odak 29 May |
+| **SLA-2** | ✅ | Admin UI sekme — `OcWorkspaceSlaPoliciesExplorer` | Workspace tanımları / SLA |
 | **SLA-3** | | Profil/board SLA gösterimi | Operasyonel UI |
 
 ---
@@ -99,8 +99,9 @@
 ## 8. Bugün (28 Mayıs) çıktı
 
 - [x] Plan belgesi (bu dosya)
-- [ ] Dataset JSON taslağı (`SLA-0`) — SW-0 sonrası veya paralel
-- [ ] §7 kararları — ürün oturumu
+- [x] Dataset (`op_sla_policies` — Odak'ta mevcut, demo: OC Demo Default SLA)
+- [x] Admin SLA sekmesi (Mng.Ui)
+- [ ] §7 kararları — ürün oturumu (opsiyonel)
 
 ---
 

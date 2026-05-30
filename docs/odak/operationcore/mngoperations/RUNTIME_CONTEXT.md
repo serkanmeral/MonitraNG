@@ -1,6 +1,6 @@
 # MngOperations — RuntimeContext
 
-**Son güncelleme:** 26 Mayıs 2026  
+**Son güncelleme:** 29 Mayıs 2026  
 **Spec:** [operationcore_phase1.md §3](../operationcore_phase1.md)
 
 ---
@@ -94,6 +94,33 @@ Create: `GET .../work-items/form?workspaceId=&mode=create&formId=` — `id` yok.
 **Gerekçe:** Kolonlar bağımsız yenilenebilir; büyük board’da tek response şişmez; `wi_board_column` / `wi_by_workspace_and_state` parametreleri MO resolver ile dolar.
 
 **UI akışı:** Board açılır → context → her kolon (veya görünür kolonlar) için paralel execute.
+
+### 5.2 Katalog enrichment — `catalogs` (29 May 2026, "Durum 2 rafine")
+
+Board context, durum/öncelik/tip id'lerini UI'da client-side join yapmadan göstermek için **lookup map'leri** taşır. MO in-memory cache'inden (`MetadataCache.GetCatalogListAsync`, `CatalogTtlSeconds`) beslenir.
+
+```jsonc
+"catalogs": {
+  "states":     { "<id>": { "id", "name", "color", "icon" } },
+  "priorities": { "<id>": { "id", "name", "color", "icon" } },
+  "types":      { "<id>": { "id", "name", "color", "icon" } }
+}
+```
+
+UI: `OcBoardCatalogLabel` ikon (Tabler/MDI) + renk ile gösterir. Katalog CRUD'u MO `POST/PUT/DELETE /api/v1/catalogs/{source}` üzerinden geçer → cache write-through invalidation ([INTEGRATIONS / API_SURFACE](./API_SURFACE.md)).
+
+**Workspace kapsamı (30 May 2026):** `catalogs` artık tüm kataloğu değil **workspace kapsamını** taşır (`BuildBoardCatalogsAsync`): `states` = board akış kapsamı ∪ `workspace.enabledStateIds`; `priorities` = `enabledPriorityIds`; `types` = `enabledTypeIds` → yoksa workspace'e ait tipler → o da yoksa tüm katalog. Enabled ID'ler alandan, yoksa `workspace.settings` yedeğinden okunur. Böylece liste filtre seçenekleri yalnızca workspace'e uygun değerleri gösterir.
+
+### 5.3 Kart verisi enrichment — `execute` yanıtı (29 May 2026)
+
+`POST /runtime/queries/{queryKey}/execute` yanıtı (`wi_board_column` vb.) liste tablosu için zenginleştirilmiştir:
+
+| Alan | İçerik |
+|------|--------|
+| `items[].fields` | Kartın **pool alan değerleri** (`extraFields`) — liste tablosunda özel sütunlar için (board `visibleFields` çekirdek + pool key'leri kabul eder) |
+| `people` | **Person alanları** (`assignee`, `watchers` + `fieldType ∈ persons/person` pool alanları) id → `{ id, name, title?, isActive? }`. MO `IPersonDirectory` (Keeper + in-memory cache, `PersonTtlSeconds`). Detay: [INTEGRATIONS §1.1](./INTEGRATIONS.md) |
+
+UI: kataloglar/people MO'dan geldiği için board listesinde **client-side lookup yok** (assignee dahil); person picker yalnızca düzenleme formlarında.
 
 ---
 

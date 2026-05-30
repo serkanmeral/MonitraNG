@@ -18,7 +18,7 @@ const model = defineModel<Record<string, unknown>>({ required: true });
 const contextRef = toRef(props, 'context');
 const workspaceId = computed(() => props.context.workspaceId);
 
-const { selectItemsForField, isLoadingField, isPersonField, personPicker } = useOcDynamicFormLookups(
+const { selectItemsForField, isLoadingField, isPersonField, pickerForField } = useOcDynamicFormLookups(
   workspaceId,
   contextRef,
   model
@@ -110,7 +110,7 @@ function setFieldValue(key: string, value: unknown) {
                   :behavior="behaviorFor(fieldKey)"
                   :select-items="selectItemsForField(fieldKey)"
                   :select-loading="isLoadingField(fieldKey)"
-                  :person-picker="isPersonField(fieldKey) ? personPicker : undefined"
+                  :person-picker="isPersonField(fieldKey) ? pickerForField(fieldKey) : undefined"
                   :readonly="readonly"
                   :preview="preview"
                   :error-message="fieldErrors?.[fieldKey]"

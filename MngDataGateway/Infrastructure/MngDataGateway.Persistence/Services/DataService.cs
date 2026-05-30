@@ -1168,17 +1168,48 @@ namespace MngDataGateway.Persistence.Services
                     .AddSearch(options.Search, relationSearchIds)  // Add search before expansion (pre-expansion search)
                     .AddRelationExpansion(options.Expand, maxDepth, 0, null)
                     .AddPersonExpansion(options.Expand)
-                    .AddProject(fields, options.ShowHistory)
-                    .AddSort(sortDefinition)
-                    .AddPagination(skip, limit);
+                    .AddProject(fields, options.ShowHistory);
 
-                var pipeline = builder.Build();
+                var basePipeline = builder.Build();
+
+                // $facet ile data + total tek sorguda (QueryAsync ile aynı desen).
+                var dataBranch = new List<BsonDocument>(basePipeline);
+                if (sortDefinition != null && sortDefinition.ElementCount > 0)
+                    dataBranch.Add(new BsonDocument("$sort", sortDefinition));
+                if (skip > 0)
+                    dataBranch.Add(new BsonDocument("$skip", skip));
+                if (limit > 0)
+                    dataBranch.Add(new BsonDocument("$limit", limit));
+
+                var countBranch = new List<BsonDocument>(basePipeline)
+                {
+                    new BsonDocument("$count", "total")
+                };
+
+                var facetPipeline = new List<BsonDocument>
+                {
+                    new BsonDocument("$facet", new BsonDocument
+                    {
+                        { "data", new BsonArray(dataBranch) },
+                        { "count", new BsonArray(countBranch) }
+                    }),
+                    new BsonDocument("$unwind", new BsonDocument
+                    {
+                        { "path", "$count" },
+                        { "preserveNullAndEmptyArrays", true }
+                    }),
+                    new BsonDocument("$project", new BsonDocument
+                    {
+                        { "data", 1 },
+                        { "total", new BsonDocument("$ifNull", new BsonArray { "$count.total", 0 }) }
+                    })
+                };
 
                 // Convert pipeline to JSON objects if showQuery is true
                 List<object>? pipelineJson = null;
                 if (options.ShowQuery)
                 {
-                    pipelineJson = pipeline.Select(stage =>
+                    pipelineJson = facetPipeline.Select(stage =>
                     {
                         var json = stage.ToJson();
                         return System.Text.Json.JsonSerializer.Deserialize<object>(json) ?? new object();
@@ -1189,18 +1220,27 @@ namespace MngDataGateway.Persistence.Services
                 var results = await _dataRepository.AggregateAsync(
                     databaseName,
                     schema.CollectionName,
-                    pipeline);
+                    facetPipeline);
 
-                // Convert to dictionary list
-                var data = results.ToDictionaryList();
+                long totalCount = 0;
+                List<Dictionary<string, object>> data = new();
+                if (results != null && results.Any())
+                {
+                    var resultDoc = results.First();
+                    if (resultDoc.Contains("total"))
+                        totalCount = resultDoc["total"].ToInt64();
+                    if (resultDoc.Contains("data") && resultDoc["data"].IsBsonArray)
+                        data = resultDoc["data"].AsBsonArray.Select(d => d.AsBsonDocument.ToDictionary()).ToList();
+                }
 
                 _logger.LogDebug(
-                    "QueryWithMatch executed on dataset {DatasetName}, returned {Count} documents",
-                    datasetName, data.Count);
+                    "QueryWithMatch executed on dataset {DatasetName}, returned {Count} documents, total: {TotalCount}",
+                    datasetName, data.Count, totalCount);
 
                 return new QueryResultDto
                 {
                     Data = data,
+                    TotalCount = totalCount,
                     Query = pipelineJson
                 };
             }

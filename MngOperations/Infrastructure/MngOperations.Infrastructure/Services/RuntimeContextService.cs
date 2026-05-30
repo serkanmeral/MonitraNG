@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using MngOperations.Application.Contracts.Runtime;
 using MngOperations.Application.Exceptions;
@@ -18,6 +19,7 @@ public class RuntimeContextService : IRuntimeContextService
     private readonly IMetadataCache _metadataCache;
     private readonly IPermissionEvaluator _permissions;
     private readonly IFieldBehaviorResolver _fieldBehaviors;
+    private readonly IPersonDirectory _personDirectory;
     private readonly IRequestContext _requestContext;
     private readonly ILogger<RuntimeContextService> _logger;
 
@@ -26,6 +28,7 @@ public class RuntimeContextService : IRuntimeContextService
         IMetadataCache metadataCache,
         IPermissionEvaluator permissions,
         IFieldBehaviorResolver fieldBehaviors,
+        IPersonDirectory personDirectory,
         IRequestContext requestContext,
         ILogger<RuntimeContextService> logger)
     {
@@ -33,9 +36,13 @@ public class RuntimeContextService : IRuntimeContextService
         _metadataCache = metadataCache;
         _permissions = permissions;
         _fieldBehaviors = fieldBehaviors;
+        _personDirectory = personDirectory;
         _requestContext = requestContext;
         _logger = logger;
     }
+
+    // Çekirdek person alanları — fieldType'a bakılmaksızın daima person.
+    private static readonly string[] CorePersonFieldKeys = { "assignee", "watchers" };
 
     public async Task<ProfileRuntimeContext> GetProfileAsync(
         string workItemId,
@@ -298,10 +305,12 @@ public class RuntimeContextService : IRuntimeContextService
         }
 
         JsonElement? configColumns = null;
-        if (board.Config is { ValueKind: JsonValueKind.Object } config
-            && config.TryGetProperty("columns", out var configCols))
+        JsonElement? configObject = null;
+        if (board.Config is { ValueKind: JsonValueKind.Object } config)
         {
-            configColumns = configCols;
+            configObject = config;
+            if (config.TryGetProperty("columns", out var configCols))
+                configColumns = configCols;
         }
 
         var boardColumns = BoardColumnBuilder.Build(
@@ -310,6 +319,17 @@ public class RuntimeContextService : IRuntimeContextService
             workspaceId,
             boardId,
             configColumns);
+
+        var boardScopeStateIds = boardColumns
+            .Select(c => c.StateId)
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        var listColumns = ParseListColumns(configObject);
+        var cardFieldKeys = listColumns.Count > 0
+            ? listColumns.Select(c => c.Key).ToList()
+            : ParseCardFieldKeys(board.VisibleFields);
 
         return new BoardRuntimeContext
         {
@@ -324,8 +344,163 @@ public class RuntimeContextService : IRuntimeContextService
                 CanComment = _permissions.CanEditWorkItem(workspace, new Dictionary<string, object?>())
             },
             Columns = boardColumns,
-            CardFieldKeys = ParseCardFieldKeys(board.VisibleFields)
+            CardFieldKeys = cardFieldKeys,
+            ListColumns = listColumns,
+            DefaultSort = ParseDefaultSort(configObject),
+            Catalogs = await BuildBoardCatalogsAsync(workspace, workspaceId, boardScopeStateIds, token, cancellationToken)
         };
+    }
+
+    /// <summary>board.config.listColumns[] → liste sütun meta (sıra + sortable/filterable).</summary>
+    private static IReadOnlyList<BoardListColumnDto> ParseListColumns(JsonElement? configObject)
+    {
+        if (configObject is not { ValueKind: JsonValueKind.Object } config
+            || !config.TryGetProperty("listColumns", out var listCols)
+            || listCols.ValueKind != JsonValueKind.Array)
+        {
+            return Array.Empty<BoardListColumnDto>();
+        }
+
+        var result = new List<BoardListColumnDto>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var col in listCols.EnumerateArray())
+        {
+            if (col.ValueKind != JsonValueKind.Object)
+                continue;
+
+            var key = StateFlowCatalog.GetStringProperty(col, "key");
+            if (string.IsNullOrWhiteSpace(key) || !seen.Add(key))
+                continue;
+
+            result.Add(new BoardListColumnDto
+            {
+                Key = key,
+                Sortable = ReadBoolProperty(col, "sortable"),
+                Filterable = ReadBoolProperty(col, "filterable")
+            });
+        }
+
+        return result;
+    }
+
+    /// <summary>board.config.defaultSort → { field, direction }.</summary>
+    private static BoardSortDto? ParseDefaultSort(JsonElement? configObject)
+    {
+        if (configObject is not { ValueKind: JsonValueKind.Object } config
+            || !config.TryGetProperty("defaultSort", out var sort)
+            || sort.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var field = StateFlowCatalog.GetStringProperty(sort, "field");
+        if (string.IsNullOrWhiteSpace(field))
+            return null;
+
+        var direction = StateFlowCatalog.GetStringProperty(sort, "direction")?.Trim().ToLowerInvariant();
+        return new BoardSortDto
+        {
+            Field = field,
+            Direction = direction == "desc" ? "desc" : "asc"
+        };
+    }
+
+    private static bool ReadBoolProperty(JsonElement element, string name) =>
+        element.TryGetProperty(name, out var prop) && prop.ValueKind == JsonValueKind.True;
+
+    /// <summary>
+    /// Board liste/filtre katalogları workspace kapsamına indirgenir:
+    /// state = board akış kapsamı ∪ workspace.enabledStateIds; priority/type = workspace.enabled*Ids.
+    /// İlgili kapsam boşsa (workspace kısıtlamamışsa) tüm kataloğa düşer; type için workspaceId yedeği var.
+    /// </summary>
+    private async Task<BoardCatalogsDto> BuildBoardCatalogsAsync(
+        WorkspaceRecord workspace,
+        string workspaceId,
+        IReadOnlyList<string> scopeStateIds,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var states = await _metadataCache.GetCatalogListAsync(OcDatasets.States, token, cancellationToken);
+        var priorities = await _metadataCache.GetCatalogListAsync(OcDatasets.Priorities, token, cancellationToken);
+        var types = await _metadataCache.GetCatalogListAsync(OcDatasets.WorkItemTypes, token, cancellationToken);
+
+        // States: board akış kapsamı + workspace.enabledStateIds; boşsa tüm katalog.
+        var stateScope = new HashSet<string>(scopeStateIds, StringComparer.Ordinal);
+        foreach (var id in ResolveEnabledIds(workspace.EnabledStateIds, workspace.Settings, "enabledStateIds"))
+            stateScope.Add(id);
+        var scopedStates = stateScope.Count > 0
+            ? states.Where(r => stateScope.Contains(WorkItemDataHelper.GetString(r, "__dataId") ?? string.Empty)).ToList()
+            : (IReadOnlyList<Dictionary<string, object?>>)states;
+
+        // Priorities: workspace.enabledPriorityIds; boşsa tüm katalog.
+        var priorityScope = new HashSet<string>(
+            ResolveEnabledIds(workspace.EnabledPriorityIds, workspace.Settings, "enabledPriorityIds"),
+            StringComparer.Ordinal);
+        var scopedPriorities = priorityScope.Count > 0
+            ? priorities.Where(r => priorityScope.Contains(WorkItemDataHelper.GetString(r, "__dataId") ?? string.Empty)).ToList()
+            : (IReadOnlyList<Dictionary<string, object?>>)priorities;
+
+        // Types: workspace.enabledTypeIds; boşsa workspaceId'ye ait tipler; o da boşsa tüm katalog.
+        var typeScope = new HashSet<string>(
+            ResolveEnabledIds(workspace.EnabledTypeIds, workspace.Settings, "enabledTypeIds"),
+            StringComparer.Ordinal);
+        IReadOnlyList<Dictionary<string, object?>> scopedTypes;
+        if (typeScope.Count > 0)
+        {
+            scopedTypes = types.Where(r => typeScope.Contains(WorkItemDataHelper.GetString(r, "__dataId") ?? string.Empty)).ToList();
+        }
+        else
+        {
+            var wsTypes = types
+                .Where(r => string.Equals(WorkItemDataHelper.GetString(r, "workspaceId"), workspaceId, StringComparison.Ordinal))
+                .ToList();
+            scopedTypes = wsTypes.Count > 0 ? wsTypes : types;
+        }
+
+        return new BoardCatalogsDto
+        {
+            States = ToCatalogDisplayMap(scopedStates),
+            Priorities = ToCatalogDisplayMap(scopedPriorities),
+            Types = ToCatalogDisplayMap(scopedTypes),
+        };
+    }
+
+    /// <summary>enabled*Ids alanı (öncelik) → boşsa workspace.settings yedeği.</summary>
+    private static IReadOnlyList<string> ResolveEnabledIds(JsonElement? field, JsonElement? settings, string settingsKey)
+    {
+        var ids = MetadataRelationHelper.ParseIdList(field);
+        if (ids.Count > 0)
+            return ids;
+
+        if (settings is { ValueKind: JsonValueKind.Object } s
+            && s.TryGetProperty(settingsKey, out var prop))
+        {
+            return MetadataRelationHelper.ParseIdList(prop);
+        }
+
+        return Array.Empty<string>();
+    }
+
+    private static IReadOnlyDictionary<string, CatalogDisplayDto> ToCatalogDisplayMap(
+        IReadOnlyList<Dictionary<string, object?>> rows)
+    {
+        var map = new Dictionary<string, CatalogDisplayDto>(StringComparer.Ordinal);
+        foreach (var row in rows)
+        {
+            var id = WorkItemDataHelper.GetString(row, "__dataId");
+            if (string.IsNullOrWhiteSpace(id) || map.ContainsKey(id))
+                continue;
+
+            map[id] = new CatalogDisplayDto
+            {
+                Id = id,
+                Name = WorkItemDataHelper.GetString(row, "name"),
+                Color = WorkItemDataHelper.GetString(row, "color"),
+                Icon = WorkItemDataHelper.GetString(row, "icon"),
+            };
+        }
+
+        return map;
     }
 
     public async Task<QueryExecuteResponse> ExecuteQueryAsync(
@@ -357,6 +532,185 @@ public class RuntimeContextService : IRuntimeContextService
                 UtcNow = DateTime.UtcNow
             },
             cancellationToken);
+    }
+
+    /// <summary>
+    /// Board liste görünümü — tek sunucu tarafı sorgu (DG POST /query): scope state'leri ($in),
+    /// per-column filtre (yalnızca filterable alanlar), sıralama (sortable doğrulamalı, yoksa defaultSort),
+    /// arama ve sayfalama. Toplam DG'den (X-Total-Count) gelir; person/katalog zenginleştirme MO-side kalır.
+    /// </summary>
+    public async Task<QueryExecuteResponse> GetBoardListAsync(
+        string boardId,
+        BoardListRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var token = RequireToken();
+        var board = await _metadataCache.GetBoardAsync(boardId, token, cancellationToken);
+        var workspaceId = board.WorkspaceId
+            ?? throw new OperationCoreException("BOARD_INVALID", "workspaceId missing on board.", "Board workspaceId yok.", 500);
+
+        var workspace = await _metadataCache.GetWorkspaceAsync(workspaceId, token, cancellationToken);
+        _permissions.EnsureBoardView(workspace, board);
+
+        var stateFlowId = board.DefaultStateFlowId ?? workspace.DefaultStateFlowId;
+        JsonElement? transitions = null;
+        string? initialStateId = null;
+        if (!string.IsNullOrEmpty(stateFlowId))
+        {
+            var stateFlow = await _metadataCache.GetStateFlowAsync(stateFlowId, token, cancellationToken);
+            transitions = stateFlow.Transitions;
+            initialStateId = stateFlow.InitialStateId;
+        }
+
+        JsonElement? configColumns = null;
+        JsonElement? configObject = null;
+        if (board.Config is { ValueKind: JsonValueKind.Object } config)
+        {
+            configObject = config;
+            if (config.TryGetProperty("columns", out var cc))
+                configColumns = cc;
+        }
+
+        var boardColumns = BoardColumnBuilder.Build(transitions, initialStateId, workspaceId, boardId, configColumns);
+        var scopeStateIds = boardColumns
+            .Select(c => c.StateId)
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        var listColumns = ParseListColumns(configObject);
+        var sortableKeys = new HashSet<string>(listColumns.Where(c => c.Sortable).Select(c => c.Key), StringComparer.Ordinal);
+        var filterableKeys = new HashSet<string>(listColumns.Where(c => c.Filterable).Select(c => c.Key), StringComparer.Ordinal);
+        var defaultSort = ParseDefaultSort(configObject);
+
+        var take = Math.Clamp(request.Take, 1, 200);
+        var skip = Math.Max(0, request.Skip);
+
+        // --- native Mongo match ($and: scope + kullanıcı koşulları AND'lenir) ---
+        // $and kullanımı; aynı alana birden çok koşul (gelişmiş arama) ezilmeden birleşir,
+        // kullanıcı stateId filtresi board akış kapsamıyla kesişir (kapsam dışına çıkamaz).
+        var and = new List<object?>
+        {
+            new Dictionary<string, object?> { ["workspaceId"] = workspaceId },
+            new Dictionary<string, object?> { ["boardId"] = boardId }
+        };
+        if (scopeStateIds.Count == 1)
+            and.Add(new Dictionary<string, object?> { ["stateId"] = scopeStateIds[0] });
+        else if (scopeStateIds.Count > 1)
+            and.Add(new Dictionary<string, object?> { ["stateId"] = new Dictionary<string, object?> { ["$in"] = scopeStateIds.Cast<object?>().ToList() } });
+
+        if (request.Filters != null)
+        {
+            foreach (var f in request.Filters)
+            {
+                if (f == null || string.IsNullOrWhiteSpace(f.Field) || string.IsNullOrWhiteSpace(f.Value))
+                    continue;
+                if (!filterableKeys.Contains(f.Field))
+                    continue;
+
+                var path = MapBoardFieldToDgPath(f.Field);
+                // workspaceId/boardId sabit kapsam — kullanıcı filtresi olamaz (stateId $and ile kesişerek güvenli).
+                if (path is "workspaceId" or "boardId")
+                    continue;
+
+                var condition = BuildMatchCondition(f.Operator, f.Value!);
+                if (condition != null)
+                    and.Add(new Dictionary<string, object?> { [path] = condition });
+            }
+        }
+
+        var match = new Dictionary<string, object?>(StringComparer.Ordinal) { ["$and"] = and };
+
+        // --- sort ---
+        var sort = request.Sort;
+        if (sort != null && (string.IsNullOrWhiteSpace(sort.Field) || !sortableKeys.Contains(sort.Field)))
+            sort = null;
+        sort ??= defaultSort;
+
+        string sortExpr;
+        if (sort != null && !string.IsNullOrWhiteSpace(sort.Field))
+        {
+            var path = MapBoardFieldToDgPath(sort.Field);
+            sortExpr = string.Equals(sort.Direction, "desc", StringComparison.OrdinalIgnoreCase) ? $"-{path}" : path;
+        }
+        else
+        {
+            sortExpr = "-lastStateChangeAt";
+        }
+
+        var queryParts = new List<string>
+        {
+            $"sort={Uri.EscapeDataString(sortExpr)}",
+            $"skip={skip}",
+            $"limit={take}",
+            "expand=false"
+        };
+        if (!string.IsNullOrWhiteSpace(request.Search))
+            queryParts.Add($"search={Uri.EscapeDataString(request.Search.Trim())}");
+
+        var page = await _dg.QueryPageAsync(OcDatasets.WorkItems, match, string.Join("&", queryParts), token, cancellationToken);
+
+        var cards = page.Items.Select(MapWorkItemCard).ToList();
+        var people = await ResolvePeopleForCardsAsync(cards, token, cancellationToken);
+
+        return new QueryExecuteResponse
+        {
+            Dataset = OcDatasets.WorkItems,
+            QueryKey = "board_list",
+            Items = cards,
+            Skip = skip,
+            Take = take,
+            Total = (int)Math.Min(page.Total, int.MaxValue),
+            People = people
+        };
+    }
+
+    // Çekirdek (top-level) kart alanları; bunun dışı pool alanı kabul edilir (extraFields.<key>).
+    private static readonly HashSet<string> CoreCardFieldKeys = new(StringComparer.Ordinal)
+    {
+        "key", "title", "stateId", "assignee", "priorityId", "typeId",
+        "createdAt", "updatedAt", "lastStateChangeAt", "description",
+        "boardId", "workspaceId", "stateFlowId", "watchers", "order",
+        "firstClosedAt", "closedAt", "currentStateDurationMs"
+    };
+
+    private static string MapBoardFieldToDgPath(string fieldKey)
+        => CoreCardFieldKeys.Contains(fieldKey) ? fieldKey : $"extraFields.{fieldKey}";
+
+    /// <summary>Liste filtresi → native Mongo koşulu (DG REST DSL operatörleriyle aynı sözlük).</summary>
+    private static object? BuildMatchCondition(string? op, string value)
+    {
+        switch ((op ?? "eq").Trim().ToLowerInvariant())
+        {
+            case "eq": return CoerceScalar(value);
+            case "ne": return new Dictionary<string, object?> { ["$ne"] = CoerceScalar(value) };
+            case "gt": return new Dictionary<string, object?> { ["$gt"] = CoerceScalar(value) };
+            case "gte": return new Dictionary<string, object?> { ["$gte"] = CoerceScalar(value) };
+            case "lt": return new Dictionary<string, object?> { ["$lt"] = CoerceScalar(value) };
+            case "lte": return new Dictionary<string, object?> { ["$lte"] = CoerceScalar(value) };
+            case "in": return new Dictionary<string, object?> { ["$in"] = SplitFilterValues(value) };
+            case "nin": return new Dictionary<string, object?> { ["$nin"] = SplitFilterValues(value) };
+            case "contains":
+                return new Dictionary<string, object?> { ["$regex"] = Regex.Escape(value), ["$options"] = "i" };
+            case "startswith":
+                return new Dictionary<string, object?> { ["$regex"] = "^" + Regex.Escape(value), ["$options"] = "i" };
+            case "endswith":
+                return new Dictionary<string, object?> { ["$regex"] = Regex.Escape(value) + "$", ["$options"] = "i" };
+            default: return null;
+        }
+    }
+
+    private static List<object?> SplitFilterValues(string value) =>
+        value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(v => CoerceScalar(v))
+            .ToList();
+
+    private static object? CoerceScalar(string value)
+    {
+        if (long.TryParse(value, out var l)) return l;
+        if (double.TryParse(value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var d)) return d;
+        if (bool.TryParse(value, out var b)) return b;
+        return value;
     }
 
     public async Task<DashboardRuntimeContext> GetDashboardAsync(
@@ -577,6 +931,8 @@ public class RuntimeContextService : IRuntimeContextService
         var cards = rows.Select(MapWorkItemCard).ToList();
         var page = cards.Skip(skipClamped).Take(takeClamped).ToList();
 
+        var people = await ResolvePeopleForCardsAsync(page, token, cancellationToken);
+
         return new QueryExecuteResponse
         {
             Dataset = dataset,
@@ -584,8 +940,103 @@ public class RuntimeContextService : IRuntimeContextService
             Items = page,
             Skip = skipClamped,
             Take = takeClamped,
-            Total = cards.Count
+            Total = cards.Count,
+            People = people
         };
+    }
+
+    /// <summary>
+    /// Sayfadaki kartların person alanlarından (assignee/watchers + person tipi pool alanlar) id'leri toplar
+    /// ve Keeper cache'inden id → görünen ad map'ini döner.
+    /// </summary>
+    private async Task<IReadOnlyDictionary<string, PersonDisplayDto>> ResolvePeopleForCardsAsync(
+        IReadOnlyList<WorkItemCardDto> cards,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        if (cards.Count == 0)
+            return new Dictionary<string, PersonDisplayDto>();
+
+        var personPoolKeys = await GetPersonPoolFieldKeysAsync(token, cancellationToken);
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var card in cards)
+        {
+            AddPersonId(ids, card.Assignee);
+
+            if (card.Fields is not { ValueKind: JsonValueKind.Object } fields)
+                continue;
+
+            foreach (var key in personPoolKeys)
+            {
+                if (fields.TryGetProperty(key, out var value))
+                    AddPersonIdsFromElement(ids, value);
+            }
+
+            // watchers gibi çekirdek çoklu person alanları extraFields dışında da olabilir.
+            if (fields.TryGetProperty("watchers", out var watchers))
+                AddPersonIdsFromElement(ids, watchers);
+        }
+
+        if (ids.Count == 0)
+            return new Dictionary<string, PersonDisplayDto>();
+
+        return await _personDirectory.GetPeopleAsync(ids, token, cancellationToken);
+    }
+
+    /// <summary>Person tipi pool alan key'leri (op_fields, fieldType ∈ persons/person) — cache'li.</summary>
+    private async Task<IReadOnlyList<string>> GetPersonPoolFieldKeysAsync(
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var keys = new List<string>(CorePersonFieldKeys);
+        try
+        {
+            var fields = await _metadataCache.GetCatalogListAsync(OcDatasets.Fields, token, cancellationToken);
+            foreach (var field in fields)
+            {
+                var fieldType = WorkItemDataHelper.GetString(field, "fieldType")?.Trim().ToLowerInvariant();
+                if (fieldType is not ("persons" or "person"))
+                    continue;
+
+                var key = WorkItemDataHelper.GetString(field, "key");
+                if (!string.IsNullOrWhiteSpace(key) && !keys.Contains(key))
+                    keys.Add(key);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Person pool field keys resolve failed; using core keys only.");
+        }
+
+        return keys;
+    }
+
+    private static void AddPersonId(HashSet<string> ids, string? id)
+    {
+        if (!string.IsNullOrWhiteSpace(id))
+            ids.Add(id.Trim());
+    }
+
+    private static void AddPersonIdsFromElement(HashSet<string> ids, JsonElement value)
+    {
+        switch (value.ValueKind)
+        {
+            case JsonValueKind.String:
+                AddPersonId(ids, value.GetString());
+                break;
+            case JsonValueKind.Array:
+                foreach (var item in value.EnumerateArray())
+                    AddPersonIdsFromElement(ids, item);
+                break;
+            case JsonValueKind.Object:
+                // İlişki nesnesi olarak gelmişse id alanını dene.
+                if (value.TryGetProperty("__dataId", out var dataId) && dataId.ValueKind == JsonValueKind.String)
+                    AddPersonId(ids, dataId.GetString());
+                else if (value.TryGetProperty("id", out var idProp) && idProp.ValueKind == JsonValueKind.String)
+                    AddPersonId(ids, idProp.GetString());
+                break;
+        }
     }
 
     private static Dictionary<string, object?> ParseQueryParameters(Dictionary<string, JsonElement>? parameters)
@@ -831,8 +1282,20 @@ public class RuntimeContextService : IRuntimeContextService
             StateId = WorkItemDataHelper.GetString(row, "stateId"),
             Assignee = WorkItemDataHelper.GetString(row, "assignee"),
             PriorityId = WorkItemDataHelper.GetString(row, "priorityId"),
-            TypeId = WorkItemDataHelper.GetString(row, "typeId")
+            TypeId = WorkItemDataHelper.GetString(row, "typeId"),
+            Fields = GetExtraFieldsElement(row)
         };
+
+    private static JsonElement? GetExtraFieldsElement(IReadOnlyDictionary<string, object?> row)
+    {
+        if (row.TryGetValue("extraFields", out var value)
+            && value is JsonElement { ValueKind: JsonValueKind.Object } el)
+        {
+            return el;
+        }
+
+        return null;
+    }
 
     private static IReadOnlyList<string> ParseCardFieldKeys(JsonElement? visibleFields)
     {

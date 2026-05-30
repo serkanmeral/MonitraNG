@@ -5,6 +5,7 @@ import OcPersonPickerAutocomplete from '@/components/apps/operation-core/OcPerso
 import OcFormPolicyDefaultValueInput from '@/components/apps/operation-core/workspace-definitions/OcFormPolicyDefaultValueInput.vue';
 import type { OcConditionFieldOption } from '@/utils/ocConditionClauses';
 import type {
+  OcWorkspaceAutomationAction,
   OcWorkspaceDefaultAction,
   OcWorkspaceRuleApplyMode,
   OcWorkspaceRuleType,
@@ -18,6 +19,12 @@ const props = defineProps<{
   defaultField: string;
   defaultValue: unknown;
   assignee: string;
+  automationAction: OcWorkspaceAutomationAction;
+  watcher: string;
+  templateKey: string;
+  recipients: string;
+  activitySummary: string;
+  activityType: string;
   conditionFieldItems: OcConditionFieldOption[];
   workspaceId: string;
   typeItems?: { value: string; title: string }[];
@@ -33,6 +40,12 @@ const emit = defineEmits<{
   'update:defaultField': [string];
   'update:defaultValue': [unknown];
   'update:assignee': [string];
+  'update:automationAction': [OcWorkspaceAutomationAction];
+  'update:watcher': [string];
+  'update:templateKey': [string];
+  'update:recipients': [string];
+  'update:activitySummary': [string];
+  'update:activityType': [string];
 }>();
 
 const { t } = useAppI18n();
@@ -47,6 +60,16 @@ const defaultActionItems = computed(() => [
   { value: 'setAssignee', title: t('operationCore.workspaceDefinitions.forms.rulesActionSetAssignee') },
 ]);
 
+const automationActionItems = computed(() => [
+  { value: 'createActivity', title: t('operationCore.workspaceDefinitions.rules.automationCreateActivity') },
+  { value: 'addWatcher', title: t('operationCore.workspaceDefinitions.rules.automationAddWatcher') },
+  { value: 'createNotification', title: t('operationCore.workspaceDefinitions.rules.automationCreateNotification') },
+  {
+    value: 'sendEmailViaMngNotifiers',
+    title: t('operationCore.workspaceDefinitions.rules.automationSendEmail'),
+  },
+]);
+
 const defaultFieldItems = computed(() =>
   props.conditionFieldItems.map((f) => ({ value: f.key, title: f.label }))
 );
@@ -55,11 +78,28 @@ const defaultFieldMeta = computed(() =>
   props.conditionFieldItems.find((f) => f.key === props.defaultField)
 );
 
+const showTemplateFields = computed(
+  () =>
+    props.automationAction === 'createNotification' ||
+    props.automationAction === 'sendEmailViaMngNotifiers'
+);
+
 watch(
   () => props.defaultAction,
   () => {
     emit('update:defaultValue', null);
     emit('update:assignee', '');
+  }
+);
+
+watch(
+  () => props.automationAction,
+  () => {
+    emit('update:watcher', '');
+    emit('update:templateKey', '');
+    emit('update:recipients', '');
+    emit('update:activitySummary', '');
+    emit('update:activityType', 'RuleAction');
   }
 );
 </script>
@@ -86,6 +126,65 @@ watch(
         @update:model-value="emit('update:errorMessage', $event)"
       />
     </template>
+
+    <template v-else-if="ruleType === 'automation'">
+      <v-alert type="info" variant="tonal" density="compact" class="mb-4 rounded-lg">
+        {{ t('operationCore.workspaceDefinitions.rules.automationHint') }}
+      </v-alert>
+      <v-select
+        :model-value="automationAction"
+        :items="automationActionItems"
+        item-title="title"
+        item-value="value"
+        :label="t('operationCore.workspaceDefinitions.rules.automationAction')"
+        density="comfortable"
+        class="mb-3"
+        @update:model-value="emit('update:automationAction', $event)"
+      />
+      <OcPersonPickerAutocomplete
+        v-if="automationAction === 'addWatcher'"
+        :model-value="watcher"
+        density="comfortable"
+        class="mb-3"
+        @update:model-value="emit('update:watcher', $event)"
+      />
+      <template v-if="showTemplateFields">
+        <v-text-field
+          :model-value="templateKey"
+          :label="t('operationCore.workspaceDefinitions.rules.automationTemplateKey')"
+          density="comfortable"
+          class="mb-3"
+          @update:model-value="emit('update:templateKey', $event)"
+        />
+        <v-text-field
+          :model-value="recipients"
+          :label="t('operationCore.workspaceDefinitions.rules.automationRecipients')"
+          :hint="t('operationCore.workspaceDefinitions.rules.automationRecipientsHint')"
+          persistent-hint
+          density="comfortable"
+          class="mb-3"
+          @update:model-value="emit('update:recipients', $event)"
+        />
+      </template>
+      <template v-if="automationAction === 'createActivity'">
+        <v-textarea
+          :model-value="activitySummary"
+          :label="t('operationCore.workspaceDefinitions.rules.automationActivitySummary')"
+          rows="2"
+          auto-grow
+          density="comfortable"
+          class="mb-3"
+          @update:model-value="emit('update:activitySummary', $event)"
+        />
+        <v-text-field
+          :model-value="activityType"
+          :label="t('operationCore.workspaceDefinitions.rules.automationActivityType')"
+          density="comfortable"
+          @update:model-value="emit('update:activityType', $event)"
+        />
+      </template>
+    </template>
+
     <template v-else>
       <v-select
         :model-value="defaultAction"

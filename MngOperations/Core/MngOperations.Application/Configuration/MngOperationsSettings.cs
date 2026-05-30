@@ -56,6 +56,12 @@ public class RabbitMqSettings
 public class MetadataCacheSettings
 {
     public int TtlSeconds { get; set; } = 120;
+
+    /// <summary>Global katalog listeleri (nadir değişir) için ayrı, daha uzun TTL.</summary>
+    public int CatalogTtlSeconds { get; set; } = 300;
+
+    /// <summary>Keeper kişi (person) çözümlemeleri için TTL — id→ad cache'i.</summary>
+    public int PersonTtlSeconds { get; set; } = 300;
 }
 
 /// <summary>

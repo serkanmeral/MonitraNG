@@ -9,6 +9,7 @@ import OcWorkspaceDefinitionsBoardsTab from '@/components/apps/operation-core/wo
 import OcWorkspaceDefinitionsPoliciesTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsPoliciesTab.vue';
 import OcWorkspaceDefinitionsRulesTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsRulesTab.vue';
 import OcWorkspaceDefinitionsScheduledWorkItemsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsScheduledWorkItemsTab.vue';
+import OcWorkspaceDefinitionsSlaTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsSlaTab.vue';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import {
   OC_WORKSPACE_DEFINITION_TAB_KEYS,
@@ -58,6 +59,7 @@ const TAB_ICONS: Record<OcWorkspaceDefinitionTabKey, string> = {
   policies: 'mdi-shield-account-outline',
   rules: 'mdi-format-list-checks',
   scheduled: 'mdi-calendar-clock',
+  sla: 'mdi-clock-check-outline',
 };
 
 const tabItems = computed(() =>
@@ -203,6 +205,10 @@ onMounted(() => {
           />
           <OcWorkspaceDefinitionsScheduledWorkItemsTab
             v-else-if="tab.key === 'scheduled'"
+            :workspace-id="selectedWorkspaceId"
+          />
+          <OcWorkspaceDefinitionsSlaTab
+            v-else-if="tab.key === 'sla'"
             :workspace-id="selectedWorkspaceId"
           />
         </v-tabs-window-item>

@@ -31,6 +31,7 @@ import {
   formatRuleWhenSummary,
   type OcWorkspaceRuleCatalogContext,
   type OcWorkspaceRuleTrigger,
+  type OcWorkspaceRuleType,
 } from '@/utils/ocWorkspaceRules';
 import type { OpField, OpRule, OpStateFlow } from '@/types/apps/operationCore';
 
@@ -63,6 +64,7 @@ const stateTitleById = ref<Map<string, string>>(new Map());
 
 const selectedTrigger = ref<'all' | OcWorkspaceRuleTrigger>('all');
 const filterTypeId = ref('');
+const filterRuleType = ref<'all' | OcWorkspaceRuleType>('all');
 const activeOnly = ref(false);
 
 const ruleDialog = ref(false);
@@ -199,10 +201,18 @@ const filteredRules = computed(() => {
   if (filterTypeId.value) {
     list = list.filter((r) => r.typeId === filterTypeId.value);
   }
+  if (filterRuleType.value !== 'all') {
+    list = list.filter((r) => (r.ruleType?.toLowerCase() ?? 'default') === filterRuleType.value);
+  }
   if (activeOnly.value) {
     list = list.filter((r) => r.isActive !== false);
   }
-  return list;
+  return [...list].sort((a, b) => {
+    const pa = a.priority ?? 100;
+    const pb = b.priority ?? 100;
+    if (pb !== pa) return pb - pa;
+    return (a.name ?? '').localeCompare(b.name ?? '', undefined, { sensitivity: 'base' });
+  });
 });
 
 const activeCount = computed(() => rules.value.filter((r) => r.isActive !== false).length);
@@ -211,7 +221,15 @@ function ruleTypeLabel(ruleType: string): string {
   const key = ruleType?.toLowerCase();
   if (key === 'validation') return t('operationCore.workspaceDefinitions.rules.ruleTypeValidation');
   if (key === 'default') return t('operationCore.workspaceDefinitions.rules.ruleTypeDefault');
+  if (key === 'automation') return t('operationCore.workspaceDefinitions.rules.ruleTypeAutomation');
   return ruleType;
+}
+
+function ruleTypeChipColor(ruleType: string): string {
+  const key = ruleType?.toLowerCase();
+  if (key === 'validation') return 'warning';
+  if (key === 'automation') return 'info';
+  return 'primary';
 }
 
 function triggerLabel(trigger: string): string {
@@ -224,6 +242,7 @@ function triggerLabel(trigger: string): string {
 const tableHeaders = computed(() => [
   { title: t('operationCore.workspaceDefinitions.rules.colName'), key: 'name', sortable: true },
   { title: t('operationCore.workspaceDefinitions.rules.colType'), key: 'ruleType', sortable: true },
+  { title: t('operationCore.workspaceDefinitions.rules.priority'), key: 'priority', sortable: true, width: 88 },
   { title: t('operationCore.workspaceDefinitions.rules.colTrigger'), key: 'trigger', sortable: false },
   { title: t('operationCore.workspaceDefinitions.rules.colScope'), key: 'scope', sortable: false },
   { title: t('operationCore.workspaceDefinitions.rules.colWhen'), key: 'when', sortable: false },
@@ -525,6 +544,22 @@ async function confirmDelete() {
               variant="outlined"
               class="mb-3"
             />
+            <v-select
+              v-model="filterRuleType"
+              :items="[
+                { value: 'all', title: t('operationCore.workspaceDefinitions.rules.filterRuleTypeAll') },
+                { value: 'validation', title: t('operationCore.workspaceDefinitions.rules.ruleTypeValidation') },
+                { value: 'default', title: t('operationCore.workspaceDefinitions.rules.ruleTypeDefault') },
+                { value: 'automation', title: t('operationCore.workspaceDefinitions.rules.ruleTypeAutomation') },
+              ]"
+              item-title="title"
+              item-value="value"
+              :label="t('operationCore.workspaceDefinitions.rules.filterRuleType')"
+              density="compact"
+              hide-details
+              variant="outlined"
+              class="mb-3"
+            />
             <v-switch
               v-model="activeOnly"
               color="primary"
@@ -614,11 +649,14 @@ async function confirmDelete() {
                 <v-chip
                   size="small"
                   variant="tonal"
-                  :color="item.ruleType === 'validation' ? 'warning' : 'primary'"
+                  :color="ruleTypeChipColor(item.ruleType)"
                   class="text-none"
                 >
                   {{ ruleTypeLabel(item.ruleType) }}
                 </v-chip>
+              </template>
+              <template #[`item.priority`]="{ item }">
+                <span class="text-body-2 tabular-nums">{{ item.priority ?? 100 }}</span>
               </template>
               <template #[`item.trigger`]="{ item }">
                 <div class="d-flex align-center gap-1 text-body-2">

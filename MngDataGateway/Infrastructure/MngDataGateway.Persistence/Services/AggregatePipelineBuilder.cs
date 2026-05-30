@@ -676,7 +676,8 @@ namespace MngDataGateway.Persistence.Services
                         {
                             ["$project"] = new BsonDocument
                             {
-                                ["_id"] = 0
+                                ["_id"] = 0,
+                                ["__history"] = 0
                             }
                         }
                     },
@@ -700,7 +701,8 @@ namespace MngDataGateway.Persistence.Services
                         {
                             ["$project"] = new BsonDocument
                             {
-                                ["_id"] = 0
+                                ["_id"] = 0,
+                                ["__history"] = 0
                             }
                         }
                     }

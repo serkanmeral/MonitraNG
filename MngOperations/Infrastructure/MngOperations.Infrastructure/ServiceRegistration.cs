@@ -32,13 +32,21 @@ public static class ServiceRegistration
             client.Timeout = TimeSpan.FromSeconds(60);
         });
 
+        services.AddHttpClient("MngKeeper", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(15);
+        });
+
         services.AddScoped<IMngDataGatewayClient, MngDataGatewayClient>();
+        services.AddScoped<IKeeperDirectoryClient, MngKeeperClient>();
+        services.AddScoped<IPersonDirectory, PersonDirectoryService>();
         services.AddScoped<IMngNotifiersClient, MngNotifiersClient>();
         services.AddScoped<IMngSchedulerClient, MngSchedulerClient>();
         services.AddScoped<INotificationOrchestrator, NotificationOrchestratorService>();
         services.AddSingleton<IOcEventPublisher, OcEventPublisher>();
         services.AddScoped<IHealthCheckService, HealthCheckService>();
         services.AddScoped<IMetadataCache, MetadataCacheService>();
+        services.AddScoped<ICatalogService, CatalogService>();
         services.AddScoped<IWorkItemKeyGenerator, WorkItemKeyGenerator>();
         services.AddScoped<IPermissionEvaluator, PermissionEvaluator>();
         services.AddScoped<IRuleEngine, RuleEngineService>();

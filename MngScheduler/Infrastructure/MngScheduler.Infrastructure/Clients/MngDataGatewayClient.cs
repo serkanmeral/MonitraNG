@@ -86,6 +86,14 @@ public class MngDataGatewayClient : IMngDataGatewayClient
             using var response = await SendWithRetryAsync(
                 () => CreateRequest(HttpMethod.Get, url, token));
 
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                _logger.LogWarning(
+                    "Dataset {DatasetName} not found while listing data — returning empty result",
+                    datasetName);
+                return Enumerable.Empty<T>();
+            }
+
             response.EnsureSuccessStatusCode();
 
             var result = await response.Content.ReadFromJsonAsync<IEnumerable<T>>();

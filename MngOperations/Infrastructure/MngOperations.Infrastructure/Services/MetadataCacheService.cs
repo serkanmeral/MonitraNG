@@ -16,6 +16,7 @@ public class MetadataCacheService : IMetadataCache
     private readonly IRequestContext _requestContext;
     private readonly ILogger<MetadataCacheService> _logger;
     private readonly TimeSpan _ttl;
+    private readonly TimeSpan _catalogTtl;
 
     public MetadataCacheService(
         IMemoryCache cache,
@@ -29,6 +30,7 @@ public class MetadataCacheService : IMetadataCache
         _requestContext = requestContext;
         _logger = logger;
         _ttl = TimeSpan.FromSeconds(Math.Max(30, settings.Value.MetadataCache.TtlSeconds));
+        _catalogTtl = TimeSpan.FromSeconds(Math.Max(30, settings.Value.MetadataCache.CatalogTtlSeconds));
     }
 
     public Task<WorkspaceRecord> GetWorkspaceAsync(string workspaceId, string token, CancellationToken cancellationToken = default) =>
@@ -279,6 +281,35 @@ public class MetadataCacheService : IMetadataCache
         _cache.Set(cacheKey, policies, _ttl);
         return policies;
     }
+
+    public async Task<IReadOnlyList<Dictionary<string, object?>>> GetCatalogListAsync(
+        string dataset,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        var cacheKey = CatalogCacheKey(dataset);
+        if (_cache.TryGetValue(cacheKey, out IReadOnlyList<Dictionary<string, object?>>? cached) && cached != null)
+            return cached;
+
+        var rows = (await _dg.GetAsync<Dictionary<string, object?>>(
+            dataset,
+            "limit=500",
+            token,
+            cancellationToken)).ToList();
+
+        _cache.Set(cacheKey, (IReadOnlyList<Dictionary<string, object?>>)rows, _catalogTtl);
+        _logger.LogDebug("Catalog cache set {CacheKey} ({Count} rows)", cacheKey, rows.Count);
+        return rows;
+    }
+
+    public void InvalidateCatalog(string dataset)
+    {
+        var cacheKey = CatalogCacheKey(dataset);
+        _cache.Remove(cacheKey);
+        _logger.LogDebug("Catalog cache invalidated {CacheKey}", cacheKey);
+    }
+
+    private string CatalogCacheKey(string dataset) => CacheKey($"catalog:{dataset}");
 
     private async Task<T> GetOrLoadAsync<T>(
         string cacheKey,

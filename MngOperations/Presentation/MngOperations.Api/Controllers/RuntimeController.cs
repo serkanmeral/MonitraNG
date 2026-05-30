@@ -63,6 +63,19 @@ public class RuntimeController : ControllerBase
         return Ok(context);
     }
 
+    [HttpPost("boards/{boardId}/list")]
+    [ProducesResponseType(typeof(QueryExecuteResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetBoardList(
+        string boardId,
+        [FromBody] BoardListRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _runtimeContextService.GetBoardListAsync(boardId, request ?? new BoardListRequest(), cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("dashboards/{dashboardId}")]
     [ProducesResponseType(typeof(DashboardRuntimeContext), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

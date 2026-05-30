@@ -1,6 +1,6 @@
 # MngOperations — API yüzeyi
 
-**Son güncelleme:** 26 Mayıs 2026  
+**Son güncelleme:** 29 Mayıs 2026  
 **Gateway prefix:** `/operations/api/v1` → downstream `/api/v1`
 
 ---
@@ -23,6 +23,7 @@
 | `PATCH` | `/work-items/{id}` | Alan güncelleme (rules); `stateId` yok |
 | `POST` | `/work-items/{id}/transitions/{transitionKey}` | Tam transition pipeline |
 | `POST` | `/work-items/{id}/comments` | Yorum + activity |
+| `DELETE` | `/work-items/{id}` | Kalıcı silme (DG delete + activity + `oc.workitem.deleted`); yetki = update/manager → 204 |
 | `POST` | `/work-items/from-origin` | Monitoring/security/scheduler kökenli oluşturma |
 
 ### 2.1 `POST /work-items` (gövde özeti)
@@ -68,6 +69,21 @@ Gövde (opsiyonel): `{ "fields": { "resolution": "…" }, "comment": "…" }`
 
 **Yanıt:** güncel work item + `availableTransitions` + güncellenmiş SLA alanları.
 
+### 2.4 Katalog CRUD (write-through cache) — 29 May 2026
+
+Katalog yazma işlemleri **MO üzerinden** geçer; MO hem DG'ye yazar hem de kendi cache'ini invalide eder (UI doğrudan DG'ye yazmaz → cache tutarlılığı).
+
+| Method | Downstream path | Açıklama |
+|--------|-----------------|----------|
+| `POST` | `/catalogs/{source}` | Katalog kaydı oluştur |
+| `PUT` | `/catalogs/{source}/{id}` | Güncelle |
+| `DELETE` | `/catalogs/{source}/{id}` | Sil (kullanımda guard) |
+
+- `{source}` ∈ `states` · `priorities` · `types` · `fields` (`OcCatalogRegistry`).
+- Yetki: platform admin **veya** manager (`CatalogService.EnsureCatalogAdmin`).
+- Silme: `op_work_items` / `op_workspaces` kullanım kontrolü (`UsageChecks`) — kullanımdaysa 409.
+- Cache: `MetadataCache.InvalidateCatalog(dataset)` (write-through).
+
 ---
 
 ## 3. Runtime context (okuma)
@@ -75,6 +91,7 @@ Gövde (opsiyonel): `{ "fields": { "resolution": "…" }, "comment": "…" }`
 | Method | Path | DTO |
 |--------|------|-----|
 | `GET` | `/runtime/boards/{boardId}` | `BoardRuntimeContext` |
+| `POST` | `/runtime/boards/{boardId}/list` | `QueryExecuteResponse` (server-side liste: sayfalama/sıralama/filtre/arama) |
 | `GET` | `/runtime/work-items/{id}/form?mode=create\|edit` | `FormRuntimeContext` |
 | `GET` | `/runtime/work-items/{id}/profile` | `ProfileRuntimeContext` |
 | `GET` | `/runtime/work-items/{id}/timeline?skip=&take=` | `TimelinePage` |
@@ -97,12 +114,68 @@ Gövde (opsiyonel): `{ "fields": { "resolution": "…" }, "comment": "…" }`
       "alternativeTransitionKeys": []
     }
   ],
-  "cardFieldKeys": ["title", "assignee", "priority"],
+  "cardFieldKeys": ["title", "assignee", "priorityId", "key"],
+  "listColumns": [
+    { "key": "key", "sortable": true, "filterable": false },
+    { "key": "stateId", "sortable": true, "filterable": true }
+  ],
+  "defaultSort": { "field": "lastStateChangeAt", "direction": "desc" },
+  "catalogs": {
+    "states":     { "<id>": { "id": "…", "name": "Açık", "color": "#…", "icon": "…" } },
+    "priorities": { "<id>": { "id": "…", "name": "Yüksek", "color": "#…", "icon": "…" } },
+    "types":      { "<id>": { "id": "…", "name": "Görev", "color": "#…", "icon": "…" } }
+  },
   "permissions": { "canCreate": true }
 }
 ```
 
+- `cardFieldKeys` = board `visibleFields` (çekirdek + **pool alan key'leri**); pool alanlar liste tablosunda sütun olur.
+- `listColumns` = sıralı liste sütunları + per-sütun `sortable`/`filterable` (board `config.listColumns`). Eski board'larda `visibleFields`'tan türetilir.
+- `defaultSort` = liste varsayılan sıralaması (board `config.defaultSort`); kullanıcı sıralaması yoksa uygulanır.
+- `catalogs` = id→ad/renk/ikon lookup (client-side join yok); **workspace kapsamına indirgenir** (state = board akış kapsamı ∪ `enabledStateIds`; priority/type = `enabled*Ids`, yoksa workspace tipleri/tüm katalog). Detay: [RUNTIME_CONTEXT §5.2](./RUNTIME_CONTEXT.md).
+
 Kanban: [OPERATION_CORE §5.2.2](../OPERATION_CORE_IMPLEMENTATION_PLAN.md).
+
+### 3.1.1 `POST /runtime/queries/{queryKey}/execute` yanıtı
+
+```jsonc
+{
+  "dataset": "op_work_items",
+  "queryKey": "wi_board_column",
+  "items": [ { "id", "key", "title", "stateId", "assignee", "priorityId", "typeId",
+              "fields": { "<poolKey>": "…" } } ],
+  "people": { "<userId>": { "id", "name", "title", "isActive" } },
+  "skip": 0, "take": 50, "total": 12
+}
+```
+
+- `items[].fields` = pool alan değerleri (`extraFields`).
+- `people` = person alanları (assignee/watchers + person pool) id→ad; MO Keeper cache. Detay: [RUNTIME_CONTEXT §5.3](./RUNTIME_CONTEXT.md) · [INTEGRATIONS §1.1](./INTEGRATIONS.md).
+
+### 3.1.2 `POST /runtime/boards/{boardId}/list` (server-side liste)
+
+İstek gövdesi (`BoardListRequest`):
+
+```jsonc
+{
+  "skip": 0,
+  "take": 50,
+  "sort": { "field": "priorityId", "direction": "desc" },   // opsiyonel; yoksa board defaultSort
+  "filters": [                                               // hepsi AND
+    { "field": "stateId",   "operator": "in",       "value": "s1,s2" },
+    { "field": "priorityId","operator": "ne",       "value": "p_low" },
+    { "field": "title",     "operator": "contains", "value": "ödeme" }
+  ],
+  "search": "fatura"
+}
+```
+
+Yanıt = §3.1.1 ile aynı `QueryExecuteResponse` (`items` + `people` + `total`).
+
+- **Sunucu tarafı** sayfalama/sıralama/filtre/arama; DG `POST /data/{ds}/query` (native Mongo `match`) üzerinden, `$facet` ile toplam (`X-Total-Count`).
+- **Operatörler:** `eq, ne, gt, gte, lt, lte, in, nin, contains, startsWith, endsWith`. `in/nin` virgülle ayrılır; metin operatörleri `$regex` (case-insensitive, escape'li).
+- **AND birleşimi:** koşullar `$and` ile birleşir → aynı alana birden çok koşul (gelişmiş arama) ezilmez; kullanıcı `stateId` filtresi board akış kapsamıyla **kesişir** (kapsam dışına çıkamaz).
+- **Güvenlik:** yalnızca `listColumns[].filterable=true` / `sortable=true` alanlar kabul edilir; `workspaceId`/`boardId` sabit kapsam (kullanıcı ezemez).
 
 ### 3.2 `ProfileRuntimeContext`
 

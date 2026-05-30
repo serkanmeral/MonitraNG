@@ -366,6 +366,12 @@ const sidebarItem: menu[] = [
         icon: LayoutIcon,
         to: "/apps/operation-core/admin/workspace-definitions",
       },
+      {
+        title: "Zamanlanmış job'lar",
+        pageCode: "operationCore.adminScheduledJobs.menuTitle",
+        icon: CalendarIcon,
+        to: "/apps/operation-core/admin/scheduled-jobs",
+      },
     ],
   },
   { header: "Pages" },

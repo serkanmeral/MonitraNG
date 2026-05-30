@@ -1,6 +1,6 @@
 # MngOperations — Dış entegrasyonlar
 
-**Son güncelleme:** 28 Mayıs 2026
+**Son güncelleme:** 29 Mayıs 2026
 
 ---
 
@@ -17,6 +17,21 @@
 | **MngScheduler → MO** | **İstisna:** Scheduler Keeper’dan teknik kullanıcı token’ı alır → MO `from-origin` ([SCHEDULED_WORK_ITEMS §4.1](./SCHEDULED_WORK_ITEMS.md)) |
 
 Detay: [AUTH_AND_CONFIGURATION.md](./AUTH_AND_CONFIGURATION.md).
+
+### 1.1 Person (kullanıcı) çözümleme — board/liste
+
+Board listesi/kanban kartlarındaki person alanları (`assignee`, `watchers` + `fieldType ∈ persons/person` olan pool alanları), kataloglar gibi **MO tarafında** id → görünen ad olarak çözülür. UI client-side person lookup yapmaz.
+
+| Konu | Davranış |
+|------|----------|
+| Tetik | Kart sorgusu (`ExecuteQuery`) anında — id'ler veri-bağımlı olduğundan context-build'de değil, sorgu yanıtında |
+| Kaynak | `IKeeperDirectoryClient` → **MngKeeper** `GET api/User/{id}` (caller Bearer forward) |
+| Cache | MO in-memory (`IPersonDirectory`), domain-scoped anahtar `oc:{domainId}:person:{id}`, TTL = `MetadataCache.PersonTtlSeconds` (vars. 300sn); negatif sonuç da cache'lenir |
+| Çıktı | `QueryExecuteResponse.People` = `{ id → { id, name, title?, isActive? } }` (UI store'da `boardPeople` map'inde birleştirilir) |
+| Ad | `FirstName LastName` → fallback `username` → `email` → `id` |
+| Kapsam dışı | Person **grup** alanları (`personGroups`/`group`) — grup adı çözümü ileriki faz |
+
+> **İleriki faz — Keeper Redis + toplu endpoint.** Keeper bugün kullanıcı **profilini Redis'te cache'lemiyor**: `GetUsers` doğrudan Mongo'dan okur; Redis yalnızca session, lisans/user-count ve domain-bootstrap için kullanılır (`domain:{d}:users:{id}` yalnızca kuruluş anındaki admin için yazılır, CRUD'da güncellenmez). Bu yüzden MO'nun Keeper'ın iç Redis keyspace'inden doğrudan okuması **uygulanabilir/önerilir değil** (eksik/bayat veri + sıkı bağ). Doğru çözüm Keeper tarafında: (1) Redis destekli kullanıcı profili cache'i (CRUD'da tutarlı invalidation), (2) `POST api/User/by-ids` toplu endpoint'i. MO bu toplu endpoint'i tek istekte çağırır (şu an id başına çağrılıyor); MO'nun kısa-TTL in-memory cache'i ikinci savunma hattı olarak kalır. API sözleşmesi korunur, Redis hızı kazanılır.
 
 ---
 

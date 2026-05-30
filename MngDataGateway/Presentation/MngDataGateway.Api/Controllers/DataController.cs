@@ -611,6 +611,7 @@ namespace MngDataGateway.Api.Controllers
         /// <param name="showDataset">Return dataset schema instead of data (default: false)</param>
         /// <param name="sort">Sort definition (MongoDB style: "field1,-field2")</param>
         /// <param name="fields">Field selection (comma-separated: "field1,field2,field3")</param>
+        /// <param name="search">Search term for text search (pre-expansion, regex on text fields + relations)</param>
         /// <param name="skip">Number of records to skip (default: 0)</param>
         /// <param name="limit">Maximum records to return (default: 50, max: 1000)</param>
         /// <returns>List of data (always array format)</returns>
@@ -629,6 +630,7 @@ namespace MngDataGateway.Api.Controllers
             [FromQuery] bool showDataset = false,
             [FromQuery] string? sort = null,
             [FromQuery] string? fields = null,
+            [FromQuery] string? search = null,
             [FromQuery] int skip = 0,
             [FromQuery] int limit = 50)
         {
@@ -673,7 +675,8 @@ namespace MngDataGateway.Api.Controllers
                     ShowHistory = showHistory,
                     ShowQuery = showQuery,
                     Sort = sort,
-                    Fields = fields
+                    Fields = fields,
+                    Search = search
                 };
 
                 // Convert JsonElement to Dictionary
@@ -694,6 +697,9 @@ namespace MngDataGateway.Api.Controllers
                 {
                     return Ok(new { query = result.Query ?? new List<object>() });
                 }
+
+                // Toplam kayıt (filtre/arama sonrası) — GET list ile aynı sözleşme.
+                Response.Headers["X-Total-Count"] = result.TotalCount.ToString();
 
                 // Always return array (even if single item)
                 return Ok(result.Data);

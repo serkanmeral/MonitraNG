@@ -47,6 +47,7 @@ const draft = ref<OcWorkspaceRuleDraft>(newWorkspaceRuleDraft(''));
 const ruleTypeItems = computed(() => [
   { value: 'validation', title: t('operationCore.workspaceDefinitions.rules.ruleTypeValidation') },
   { value: 'default', title: t('operationCore.workspaceDefinitions.rules.ruleTypeDefault') },
+  { value: 'automation', title: t('operationCore.workspaceDefinitions.rules.ruleTypeAutomation') },
 ]);
 
 const triggerItems = computed(() => [
@@ -380,6 +381,12 @@ function onTriggerChange(v: OcWorkspaceRuleTrigger) {
                 :default-field="draft.defaultField ?? ''"
                 :default-value="draft.defaultValue"
                 :assignee="draft.assignee ?? ''"
+                :automation-action="draft.automationAction"
+                :watcher="draft.watcher ?? ''"
+                :template-key="draft.templateKey ?? ''"
+                :recipients="draft.recipients ?? ''"
+                :activity-summary="draft.activitySummary ?? ''"
+                :activity-type="draft.activityType ?? 'RuleAction'"
                 :condition-field-items="conditionFields"
                 :workspace-id="workspaceId"
                 :type-items="typeItems"
@@ -392,6 +399,12 @@ function onTriggerChange(v: OcWorkspaceRuleTrigger) {
                 @update:default-field="draft.defaultField = $event"
                 @update:default-value="draft.defaultValue = $event"
                 @update:assignee="draft.assignee = $event"
+                @update:automation-action="draft.automationAction = $event"
+                @update:watcher="draft.watcher = $event"
+                @update:template-key="draft.templateKey = $event"
+                @update:recipients="draft.recipients = $event"
+                @update:activity-summary="draft.activitySummary = $event"
+                @update:activity-type="draft.activityType = $event"
               />
             </section>
           </v-col>

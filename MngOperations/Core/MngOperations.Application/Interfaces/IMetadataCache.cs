@@ -46,4 +46,13 @@ public interface IMetadataCache
         string workspaceId,
         string token,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Global katalog listesi (states/priorities/types/fields) — lazy yüklenir, ayrı TTL ile cache'lenir.</summary>
+    Task<IReadOnlyList<Dictionary<string, object?>>> GetCatalogListAsync(
+        string dataset,
+        string token,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Write-through: katalog yazısından sonra ilgili liste cache'ini düşür.</summary>
+    void InvalidateCatalog(string dataset);
 }

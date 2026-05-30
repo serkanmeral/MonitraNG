@@ -14,6 +14,11 @@ public interface IRuntimeContextService
 
     Task<BoardRuntimeContext> GetBoardAsync(string boardId, CancellationToken cancellationToken = default);
 
+    Task<QueryExecuteResponse> GetBoardListAsync(
+        string boardId,
+        BoardListRequest request,
+        CancellationToken cancellationToken = default);
+
     Task<QueryExecuteResponse> ExecuteQueryAsync(
         string queryKey,
         ExecuteQueryRequest request,

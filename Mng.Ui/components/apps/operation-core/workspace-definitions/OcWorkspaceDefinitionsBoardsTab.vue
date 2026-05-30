@@ -1,24 +1,31 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import OcWorkspaceBoardDialog from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceBoardDialog.vue';
 import {
   ocCreateBoard,
   ocDeleteBoard,
   ocExtractDgErrorMessage,
+  ocGetWorkspace,
   ocListBoardsForWorkspace,
   ocListFormsForWorkspace,
+  ocListPoolFieldsForWorkspace,
+  ocListPrioritiesForWorkspace,
+  ocListProfilesForWorkspace,
   ocListStateFlowsForWorkspace,
   ocListStatesForWorkspace,
+  ocListWorkItemTypesForWorkspace,
   ocUpdateBoard,
 } from '@/services/operationCoreService';
-import type { OpBoard, OpBoardColumnConfig } from '@/types/apps/operationCore';
-import { OC_BOARD_VIEW_TYPE_VALUES } from '@/types/apps/operationCore';
+import { useGroupStore } from '@/stores/apps/group';
+import type { OpBoard, OpField, OpPriority, OpState, OpStateFlow, OpWorkItemType } from '@/types/apps/operationCore';
 
 const props = defineProps<{
   workspaceId: string;
 }>();
 
 const { t } = useAppI18n();
+const groupStore = useGroupStore();
 
 const loading = ref(true);
 const saving = ref(false);
@@ -27,47 +34,41 @@ const errorLocal = ref<string | null>(null);
 const successLocal = ref<string | null>(null);
 
 const boards = ref<OpBoard[]>([]);
+const stateFlows = ref<OpStateFlow[]>([]);
 const formItems = ref<{ value: string; title: string }[]>([]);
 const flowItems = ref<{ value: string; title: string }[]>([]);
 const stateItems = ref<{ value: string; title: string }[]>([]);
+const stateCatalog = ref<OpState[]>([]);
+const priorityCatalog = ref<OpPriority[]>([]);
+const typeCatalog = ref<OpWorkItemType[]>([]);
+const fieldCatalog = ref<OpField[]>([]);
+const profileItems = ref<{ value: string; title: string }[]>([]);
+const typeItems = ref<{ value: string; title: string }[]>([]);
+const priorityItems = ref<{ value: string; title: string }[]>([]);
+const enabledStateIds = ref<string[]>([]);
 
-const cardFieldOptions = [
-  { value: 'title', title: 'title' },
-  { value: 'key', title: 'key' },
-  { value: 'assignee', title: 'assignee' },
-  { value: 'priorityId', title: 'priorityId' },
-  { value: 'typeId', title: 'typeId' },
-  { value: 'stateId', title: 'stateId' },
-];
-
-const viewTypeItems = computed(() =>
-  OC_BOARD_VIEW_TYPE_VALUES.map((value) => ({
-    value,
-    title: t(`operationCore.workspaceDefinitions.boards.viewType.${value}`),
+const groupItems = computed(() =>
+  (groupStore.groups || []).map((g) => ({
+    title: g.name,
+    value: g.id || g.groupId,
   }))
 );
 
+const stateTitleById = computed(
+  () => new Map(stateItems.value.map((s) => [s.value, s.title]))
+);
+
 const dialog = ref(false);
+const dialogRef = ref<InstanceType<typeof OcWorkspaceBoardDialog> | null>(null);
 const editId = ref<string | null>(null);
 const deleteDialog = ref(false);
 const deleteTarget = ref<OpBoard | null>(null);
 
-const defaultForm = () => ({
-  name: '',
-  viewType: 'list' as string,
-  defaultFormId: '' as string,
-  defaultStateFlowId: '' as string,
-  visibleFields: ['title', 'assignee', 'priorityId', 'key'] as string[],
-  columns: [] as OpBoardColumnConfig[],
-});
-
-const form = ref(defaultForm());
-
 const tableHeaders = computed(() => [
   { title: t('operationCore.workspaceDefinitions.boards.colName'), key: 'name', sortable: true },
   { title: t('operationCore.workspaceDefinitions.boards.colViewType'), key: 'viewType', sortable: false },
-  { title: t('operationCore.workspaceDefinitions.boards.colForm'), key: 'defaultFormId', sortable: false },
   { title: t('operationCore.workspaceDefinitions.boards.colColumns'), key: 'columns', sortable: false },
+  { title: t('operationCore.workspaceDefinitions.boards.colFlow'), key: 'defaultStateFlowId', sortable: false },
   { title: t('operationCore.workspaceDefinitions.boards.colActions'), key: 'actions', sortable: false, align: 'end' as const },
 ]);
 
@@ -76,24 +77,10 @@ function relName(items: { value: string; title: string }[], id: string | null | 
   return items.find((i) => i.value === id)?.title ?? id;
 }
 
-function buildPayload() {
-  const columns = form.value.columns
+function columnLabels(board: OpBoard): string[] {
+  return board.columns
     .filter((c) => c.stateId)
-    .map((c) => ({
-      stateId: c.stateId,
-      title: c.title?.trim() || null,
-      queryKey: c.queryKey?.trim() || 'wi_board_column',
-    }));
-
-  return {
-    name: form.value.name.trim(),
-    workspaceId: props.workspaceId,
-    viewType: form.value.viewType || 'list',
-    defaultFormId: form.value.defaultFormId || null,
-    defaultStateFlowId: form.value.defaultStateFlowId || null,
-    visibleFields: form.value.visibleFields.length ? form.value.visibleFields : ['title', 'key'],
-    config: { columns },
-  };
+    .map((c) => c.title?.trim() || stateTitleById.value.get(c.stateId) || c.stateId);
 }
 
 async function loadAll() {
@@ -101,16 +88,30 @@ async function loadAll() {
   loading.value = true;
   errorLocal.value = null;
   try {
-    const [boardRows, forms, flows, states] = await Promise.all([
+    const [boardRows, forms, flows, states, profiles, types, priorities, poolFields, ws] = await Promise.all([
       ocListBoardsForWorkspace(props.workspaceId),
       ocListFormsForWorkspace(props.workspaceId),
       ocListStateFlowsForWorkspace(props.workspaceId),
       ocListStatesForWorkspace(props.workspaceId, { fallbackAll: true }),
+      ocListProfilesForWorkspace(props.workspaceId),
+      ocListWorkItemTypesForWorkspace(props.workspaceId, { fallbackAll: true }),
+      ocListPrioritiesForWorkspace(props.workspaceId, { fallbackAll: true }),
+      ocListPoolFieldsForWorkspace(props.workspaceId),
+      ocGetWorkspace(props.workspaceId),
     ]);
     boards.value = boardRows;
+    stateFlows.value = flows;
     formItems.value = forms.map((f) => ({ value: f.__dataId, title: f.name }));
     flowItems.value = flows.map((f) => ({ value: f.__dataId, title: f.name }));
     stateItems.value = states.map((s) => ({ value: s.__dataId, title: s.name }));
+    stateCatalog.value = states;
+    priorityCatalog.value = priorities;
+    typeCatalog.value = types;
+    fieldCatalog.value = poolFields;
+    profileItems.value = profiles.map((p) => ({ value: p.__dataId, title: p.name }));
+    typeItems.value = types.map((ty) => ({ value: ty.__dataId, title: ty.name }));
+    priorityItems.value = priorities.map((p) => ({ value: p.__dataId, title: p.name }));
+    enabledStateIds.value = ws?.enabledStateIds ?? [];
   } catch (e: unknown) {
     errorLocal.value = ocExtractDgErrorMessage(
       e,
@@ -129,41 +130,18 @@ watch(
   { immediate: true }
 );
 
-function openCreate() {
+async function openCreate() {
   editId.value = null;
-  const next = defaultForm();
-  if (formItems.value[0]) next.defaultFormId = formItems.value[0].value;
-  if (flowItems.value[0]) next.defaultStateFlowId = flowItems.value[0].value;
-  if (stateItems.value.length >= 3) {
-    next.columns = stateItems.value.slice(0, 3).map((s, i) => ({
-      stateId: s.value,
-      title: s.title,
-      queryKey: 'wi_board_column',
-    }));
-  } else if (stateItems.value[0]) {
-    next.columns = [
-      {
-        stateId: stateItems.value[0].value,
-        title: stateItems.value[0].title,
-        queryKey: 'wi_board_column',
-      },
-    ];
-  }
-  form.value = next;
   dialog.value = true;
+  await nextTick();
+  dialogRef.value?.setFormFromBoard(null);
 }
 
-function openEdit(row: OpBoard) {
+async function openEdit(row: OpBoard) {
   editId.value = row.__dataId;
-  form.value = {
-    name: row.name,
-    viewType: row.viewType ?? 'list',
-    defaultFormId: row.defaultFormId ?? '',
-    defaultStateFlowId: row.defaultStateFlowId ?? '',
-    visibleFields: row.visibleFields.length ? [...row.visibleFields] : defaultForm().visibleFields,
-    columns: row.columns.length ? row.columns.map((c) => ({ ...c })) : [],
-  };
   dialog.value = true;
+  await nextTick();
+  dialogRef.value?.setFormFromBoard(row);
 }
 
 function openDelete(row: OpBoard) {
@@ -171,31 +149,11 @@ function openDelete(row: OpBoard) {
   deleteDialog.value = true;
 }
 
-function addColumn() {
-  const stateId = stateItems.value[form.value.columns.length % stateItems.value.length]?.value ?? '';
-  form.value.columns.push({
-    stateId,
-    title: '',
-    queryKey: 'wi_board_column',
-  });
-}
-
-function removeColumn(index: number) {
-  form.value.columns.splice(index, 1);
-}
-
-async function submitForm() {
-  if (!form.value.name.trim()) return;
-  if (form.value.columns.length === 0) {
-    errorLocal.value = t('operationCore.workspaceDefinitions.boards.columnsRequired');
-    return;
-  }
-
+async function onDialogSave(body: Record<string, unknown>) {
   saving.value = true;
   errorLocal.value = null;
   successLocal.value = null;
   try {
-    const body = buildPayload();
     if (editId.value) {
       await ocUpdateBoard(editId.value, body);
     } else {
@@ -234,6 +192,12 @@ async function confirmDelete() {
     deleting.value = false;
   }
 }
+
+onMounted(() => {
+  if (!groupStore.groups?.length) {
+    void groupStore.fetchGroups();
+  }
+});
 </script>
 
 <template>
@@ -259,19 +223,39 @@ async function confirmDelete() {
       {{ successLocal }}
     </v-alert>
 
-    <div class="d-flex flex-wrap align-center justify-space-between gap-3 mb-4">
-      <p class="text-body-2 text-medium-emphasis mb-0">
-        {{ t('operationCore.workspaceDefinitions.boards.subtitle') }}
-      </p>
-      <v-btn color="primary" rounded="lg" class="text-none" @click="openCreate">
-        <v-icon icon="mdi-plus" start />
-        {{ t('operationCore.workspaceDefinitions.boards.newBoard') }}
-      </v-btn>
-    </div>
+    <v-card variant="outlined" rounded="lg" class="mb-4 pa-4 pa-md-5 oc-board-tab-hero">
+      <div class="d-flex flex-wrap align-start justify-space-between gap-3">
+        <div class="flex-grow-1 min-width-0">
+          <h3 class="text-subtitle-1 font-weight-bold mb-2">
+            {{ t('operationCore.workspaceDefinitions.boards.pageTitle') }}
+          </h3>
+          <p class="text-body-2 text-medium-emphasis mb-3">
+            {{ t('operationCore.workspaceDefinitions.boards.pageIntro') }}
+          </p>
+          <ol class="text-body-2 text-medium-emphasis ps-4 mb-0 oc-board-tab-steps">
+            <li>{{ t('operationCore.workspaceDefinitions.boards.pageStep1') }}</li>
+            <li>{{ t('operationCore.workspaceDefinitions.boards.pageStep2') }}</li>
+            <li>{{ t('operationCore.workspaceDefinitions.boards.pageStep3') }}</li>
+          </ol>
+        </div>
+        <v-btn color="primary" rounded="lg" class="text-none flex-shrink-0" @click="openCreate">
+          <v-icon icon="mdi-plus" start />
+          {{ t('operationCore.workspaceDefinitions.boards.newBoard') }}
+        </v-btn>
+      </div>
+    </v-card>
 
     <div v-if="loading" class="d-flex justify-center py-8">
       <v-progress-circular indeterminate color="primary" />
     </div>
+
+    <v-card v-else-if="boards.length === 0" variant="outlined" rounded="lg" class="pa-8 text-center">
+      <v-icon icon="mdi-view-dashboard-outline" size="48" color="primary" class="mb-3 opacity-70" />
+      <p class="text-body-1 mb-4">{{ t('operationCore.workspaceDefinitions.boards.emptyList') }}</p>
+      <v-btn color="primary" rounded="lg" class="text-none" @click="openCreate">
+        {{ t('operationCore.workspaceDefinitions.boards.newBoard') }}
+      </v-btn>
+    </v-card>
 
     <v-card v-else variant="outlined" rounded="lg">
       <v-data-table :headers="tableHeaders" :items="boards" class="oc-ws-boards-table">
@@ -280,13 +264,22 @@ async function confirmDelete() {
             {{ t(`operationCore.workspaceDefinitions.boards.viewType.${item.viewType || 'list'}`) }}
           </v-chip>
         </template>
-        <template #[`item.defaultFormId`]="{ item }">
-          {{ relName(formItems, item.defaultFormId) }}
-        </template>
         <template #[`item.columns`]="{ item }">
-          <v-chip size="small" variant="tonal" rounded="lg">
-            {{ item.columns.length }}
-          </v-chip>
+          <div class="d-flex flex-wrap gap-1 py-1">
+            <v-chip
+              v-for="(label, idx) in columnLabels(item)"
+              :key="`${item.__dataId}-${idx}`"
+              size="x-small"
+              variant="outlined"
+              rounded="lg"
+            >
+              {{ label }}
+            </v-chip>
+            <span v-if="columnLabels(item).length === 0" class="text-medium-emphasis">—</span>
+          </div>
+        </template>
+        <template #[`item.defaultStateFlowId`]="{ item }">
+          {{ relName(flowItems, item.defaultStateFlowId) }}
         </template>
         <template #[`item.actions`]="{ item }">
           <v-btn icon variant="text" size="small" @click="openEdit(item)">
@@ -299,151 +292,27 @@ async function confirmDelete() {
       </v-data-table>
     </v-card>
 
-    <v-dialog v-model="dialog" max-width="920" scrollable>
-      <v-card rounded="xl">
-        <v-card-title class="text-h6">
-          {{
-            editId
-              ? t('operationCore.workspaceDefinitions.boards.editBoard')
-              : t('operationCore.workspaceDefinitions.boards.newBoard')
-          }}
-        </v-card-title>
-        <v-card-text>
-          <v-text-field
-            v-model="form.name"
-            :label="t('operationCore.workspaceDefinitions.boards.fieldName')"
-            density="comfortable"
-            required
-          />
-          <v-row dense class="mt-1">
-            <v-col cols="12" md="6">
-              <v-select
-                v-model="form.viewType"
-                :items="viewTypeItems"
-                item-title="title"
-                item-value="value"
-                :label="t('operationCore.workspaceDefinitions.boards.fieldViewType')"
-                density="comfortable"
-              />
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-select
-                v-model="form.defaultFormId"
-                :items="formItems"
-                item-title="title"
-                item-value="value"
-                :label="t('operationCore.workspaceDefinitions.boards.fieldDefaultForm')"
-                density="comfortable"
-                clearable
-              />
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-select
-                v-model="form.defaultStateFlowId"
-                :items="flowItems"
-                item-title="title"
-                item-value="value"
-                :label="t('operationCore.workspaceDefinitions.boards.fieldDefaultFlow')"
-                density="comfortable"
-                clearable
-              />
-            </v-col>
-            <v-col cols="12" md="6">
-              <v-select
-                v-model="form.visibleFields"
-                :items="cardFieldOptions"
-                item-title="title"
-                item-value="value"
-                :label="t('operationCore.workspaceDefinitions.boards.fieldVisibleFields')"
-                density="comfortable"
-                multiple
-                chips
-                closable-chips
-              />
-            </v-col>
-          </v-row>
-
-          <v-divider class="my-5" />
-          <div class="d-flex align-center justify-space-between mb-3">
-            <h4 class="text-subtitle-2 font-weight-medium">
-              {{ t('operationCore.workspaceDefinitions.boards.columnsTitle') }}
-            </h4>
-            <v-btn size="small" variant="tonal" rounded="lg" class="text-none" @click="addColumn">
-              <v-icon icon="mdi-plus" start />
-              {{ t('operationCore.workspaceDefinitions.boards.addColumn') }}
-            </v-btn>
-          </div>
-          <p class="text-caption text-medium-emphasis mb-3">
-            {{ t('operationCore.workspaceDefinitions.boards.columnsHint') }}
-          </p>
-
-          <v-alert v-if="form.columns.length === 0" type="info" variant="tonal" density="compact">
-            {{ t('operationCore.workspaceDefinitions.boards.noColumns') }}
-          </v-alert>
-
-          <v-card
-            v-for="(col, idx) in form.columns"
-            :key="idx"
-            variant="outlined"
-            rounded="lg"
-            class="mb-3 pa-3"
-          >
-            <div class="d-flex align-center justify-space-between mb-2">
-              <span class="text-caption text-medium-emphasis">#{{ idx + 1 }}</span>
-              <v-btn icon variant="text" size="x-small" color="error" @click="removeColumn(idx)">
-                <v-icon icon="mdi-close" />
-              </v-btn>
-            </div>
-            <v-row dense>
-              <v-col cols="12" md="5">
-                <v-select
-                  v-model="col.stateId"
-                  :items="stateItems"
-                  item-title="title"
-                  item-value="value"
-                  :label="t('operationCore.workspaceDefinitions.boards.fieldColumnState')"
-                  density="compact"
-                />
-              </v-col>
-              <v-col cols="12" md="4">
-                <v-text-field
-                  v-model="col.title"
-                  :label="t('operationCore.workspaceDefinitions.boards.fieldColumnTitle')"
-                  density="compact"
-                />
-              </v-col>
-              <v-col cols="12" md="3">
-                <v-text-field
-                  :model-value="col.queryKey ?? 'wi_board_column'"
-                  :label="t('operationCore.workspaceDefinitions.boards.fieldQueryKey')"
-                  density="compact"
-                  hint="wi_board_column"
-                  persistent-hint
-                  @update:model-value="(v) => (col.queryKey = v || 'wi_board_column')"
-                />
-              </v-col>
-            </v-row>
-          </v-card>
-        </v-card-text>
-        <v-card-actions class="px-4 pb-4">
-          <v-spacer />
-          <v-btn variant="text" class="text-none" @click="dialog = false">
-            {{ t('operationCore.definitions.cancel') }}
-          </v-btn>
-          <v-btn
-            color="primary"
-            variant="flat"
-            rounded="lg"
-            class="text-none"
-            :loading="saving"
-            :disabled="!form.name.trim()"
-            @click="submitForm"
-          >
-            {{ t('operationCore.definitions.save') }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <OcWorkspaceBoardDialog
+      ref="dialogRef"
+      v-model="dialog"
+      :edit-id="editId"
+      :workspace-id="workspaceId"
+      :state-flows="stateFlows"
+      :form-items="formItems"
+      :flow-items="flowItems"
+      :state-items="stateItems"
+      :state-catalog="stateCatalog"
+      :priority-catalog="priorityCatalog"
+      :type-catalog="typeCatalog"
+      :field-catalog="fieldCatalog"
+      :profile-items="profileItems"
+      :type-items="typeItems"
+      :priority-items="priorityItems"
+      :group-items="groupItems"
+      :enabled-state-ids="enabledStateIds"
+      :saving="saving"
+      @save="onDialogSave"
+    />
 
     <v-dialog v-model="deleteDialog" max-width="440">
       <v-card rounded="xl">
@@ -469,3 +338,13 @@ async function confirmDelete() {
     </v-dialog>
   </div>
 </template>
+
+<style scoped>
+.oc-board-tab-hero {
+  background: linear-gradient(135deg, rgba(var(--v-theme-primary), 0.06) 0%, transparent 60%);
+}
+
+.oc-board-tab-steps li + li {
+  margin-top: 0.25rem;
+}
+</style>

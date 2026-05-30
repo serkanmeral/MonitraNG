@@ -85,6 +85,21 @@ export interface OpRule {
   applyMode?: string | null;
 }
 
+/** op_sla_policies — workspace SLA politikası */
+export interface OpSlaPolicy {
+  __dataId: string;
+  name: string;
+  description?: string | null;
+  workspaceId: string;
+  typeId?: string | null;
+  priorityId?: string | null;
+  responseTargetMinutes?: number | null;
+  resolveTargetMinutes?: number | null;
+  isActive?: boolean;
+  /** Policy seçim önceliği (MO ResolveSlaPolicyAsync) */
+  priority?: number | null;
+}
+
 /** op_state_flows — workspace durum akışı */
 export interface OpStateFlow {
   __dataId: string;
@@ -98,14 +113,42 @@ export interface OpStateFlow {
   transitions: OpStateFlowTransition[];
 }
 
-export const OC_BOARD_VIEW_TYPE_VALUES = ['kanban', 'list'] as const;
+export const OC_BOARD_VIEW_TYPE_VALUES = ['list', 'kanban'] as const;
 export type OcBoardViewType = (typeof OC_BOARD_VIEW_TYPE_VALUES)[number];
+
+/** MO board runtime cardFieldKeys — op_boards.visibleFields ile hizalı */
+export const OC_BOARD_CARD_FIELD_KEYS = [
+  'title',
+  'key',
+  'assignee',
+  'priorityId',
+  'typeId',
+  'stateId',
+] as const;
+
+export type OcBoardCardFieldKey = (typeof OC_BOARD_CARD_FIELD_KEYS)[number];
 
 /** op_boards.config.columns[] */
 export interface OpBoardColumnConfig {
   stateId: string;
   title?: string | null;
   queryKey?: string;
+  defaultTransitionKey?: string | null;
+}
+
+export type OcSortDirection = 'asc' | 'desc';
+
+/** op_boards.config.listColumns[] — liste tablosu sütun tanımı (sıra + per-column meta). */
+export interface OpBoardListColumnConfig {
+  key: string;
+  sortable?: boolean;
+  filterable?: boolean;
+}
+
+/** op_boards.config.defaultSort — liste varsayılan sıralaması. */
+export interface OpBoardSortConfig {
+  field: string;
+  direction: OcSortDirection;
 }
 
 export interface OpBoard {
@@ -115,8 +158,25 @@ export interface OpBoard {
   viewType?: string;
   defaultFormId?: string | null;
   defaultStateFlowId?: string | null;
+  defaultProfileId?: string | null;
+  defaultTypeId?: string | null;
+  defaultPriorityId?: string | null;
+  defaultStateId?: string | null;
   visibleFields: string[];
+  viewGroups: string[];
+  editGroups: string[];
   columns: OpBoardColumnConfig[];
+  /** Liste tablosu sütunları (sıra + sortable/filterable). Boşsa visibleFields'tan türetilir. */
+  listColumns: OpBoardListColumnConfig[];
+  /** Liste varsayılan sıralaması. */
+  defaultSort?: OpBoardSortConfig | null;
+}
+
+/** op_profiles — board varsayılan profil seçimi */
+export interface OpProfile {
+  __dataId: string;
+  name: string;
+  workspaceId: string;
 }
 
 /** op_forms.layout.sections[] */
@@ -229,6 +289,28 @@ export interface OcBoardColumn {
   suggestedPageSize: number;
 }
 
+/** Katalog lookup girdisi (board context map'leri) — OcCatalogDisplayItem ile yapısal uyumlu. */
+export interface OcCatalogDisplayEntry {
+  id: string;
+  name: string;
+  color?: string | null;
+  icon?: string | null;
+}
+
+/** MO board context — id→{name,color,icon} katalog map'leri (client-side join gerekmez). */
+export interface OcBoardCatalogs {
+  states: Record<string, OcCatalogDisplayEntry>;
+  priorities: Record<string, OcCatalogDisplayEntry>;
+  types: Record<string, OcCatalogDisplayEntry>;
+}
+
+/** Runtime liste sütunu — MO board context'inden (config.listColumns). */
+export interface OcBoardListColumn {
+  key: string;
+  sortable: boolean;
+  filterable: boolean;
+}
+
 export interface OcBoardRuntimeContext {
   boardId: string;
   workspaceId: string;
@@ -237,6 +319,27 @@ export interface OcBoardRuntimeContext {
   permissions: OcRuntimePermissions;
   columns: OcBoardColumn[];
   cardFieldKeys: string[];
+  /** Liste tablosu sütun meta (sıra + sortable/filterable). */
+  listColumns: OcBoardListColumn[];
+  /** Liste varsayılan sıralaması (kullanıcı sıralaması yoksa). */
+  defaultSort?: OpBoardSortConfig | null;
+  catalogs: OcBoardCatalogs;
+}
+
+/** Board liste filtresi (alan + operatör + değer). */
+export interface OcBoardListFilter {
+  field: string;
+  operator: string;
+  value: string;
+}
+
+/** Board liste server-side isteği. */
+export interface OcBoardListRequest {
+  skip: number;
+  take: number;
+  sort?: OpBoardSortConfig | null;
+  filters?: OcBoardListFilter[];
+  search?: string | null;
 }
 
 export interface OcWorkItemCard {
@@ -247,6 +350,16 @@ export interface OcWorkItemCard {
   assignee?: string;
   priorityId?: string;
   typeId?: string;
+  /** Pool alan değerleri (extraFields) — liste tablosu özel sütunları için. */
+  fields?: Record<string, unknown>;
+}
+
+/** Keeper kişi (person) görünen ad map'i — MO cache'inden gelir. */
+export interface OcPersonDisplay {
+  id: string;
+  name?: string;
+  title?: string | null;
+  isActive?: boolean | null;
 }
 
 export interface OcQueryExecuteResponse {
@@ -256,6 +369,8 @@ export interface OcQueryExecuteResponse {
   skip: number;
   take: number;
   total: number;
+  /** Person alanları (assignee/watchers + person tipi pool alanlar) id → görünen ad. */
+  people: Record<string, OcPersonDisplay>;
 }
 
 export interface OcColumnItemsState {

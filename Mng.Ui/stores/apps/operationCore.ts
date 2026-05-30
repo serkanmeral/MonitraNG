@@ -3,14 +3,18 @@ import {
   ocBuildColumnQueryRequest,
   ocExecuteQuery,
   ocGetBoardContext,
+  ocGetBoardListPage,
   ocListBoardsForWorkspace,
   ocListWorkspaces,
   ocOperationsLive,
 } from '@/services/operationCoreService';
 import type {
   OcBoardColumn,
+  OcBoardListRequest,
   OcBoardRuntimeContext,
   OcColumnItemsState,
+  OcPersonDisplay,
+  OcWorkItemCard,
   OpBoard,
   OpWorkspace,
 } from '@/types/apps/operationCore';
@@ -30,8 +34,15 @@ export const useOperationCoreStore = defineStore('operationCore', {
     boardContext: null as OcBoardRuntimeContext | null,
     columnItems: {} as Record<string, OcColumnItemsState>,
     columnLoading: {} as Record<string, boolean>,
+    boardPeople: {} as Record<string, OcPersonDisplay>,
     loadingBoardContext: false,
     boardError: null as string | null,
+
+    // Liste görünümü (server-side sayfalama/sıralama/filtre/arama)
+    listItems: [] as OcWorkItemCard[],
+    listTotal: 0,
+    listLoading: false,
+    listError: null as string | null,
   }),
 
   getters: {
@@ -104,7 +115,11 @@ export const useOperationCoreStore = defineStore('operationCore', {
       this.boardContext = null;
       this.columnItems = {};
       this.columnLoading = {};
+      this.boardPeople = {};
       this.boardError = null;
+      this.listItems = [];
+      this.listTotal = 0;
+      this.listError = null;
     },
 
     async loadBoard(boardId: string, force = false) {
@@ -118,16 +133,45 @@ export const useOperationCoreStore = defineStore('operationCore', {
       this.boardError = null;
       this.columnItems = {};
       this.columnLoading = {};
+      this.boardPeople = {};
+
+      this.listItems = [];
+      this.listTotal = 0;
+      this.listError = null;
 
       try {
         const ctx = await ocGetBoardContext(boardId);
         this.boardContext = ctx;
-        await this.loadAllColumns(ctx.columns);
+        // Liste görünümü server-side sayfalama kullanır (kolonları toplu yüklemez); kanban kolon sorgularıyla çalışır.
+        const isList = (ctx.viewType ?? 'list') !== 'kanban';
+        if (!isList) {
+          await this.loadAllColumns(ctx.columns);
+        }
       } catch (e: unknown) {
         this.boardContext = null;
         this.boardError = e instanceof Error ? e.message : String(e);
       } finally {
         this.loadingBoardContext = false;
+      }
+    },
+
+    async loadBoardListPage(request: OcBoardListRequest) {
+      if (!this.activeBoardId) return;
+      this.listLoading = true;
+      this.listError = null;
+      try {
+        const res = await ocGetBoardListPage(this.activeBoardId, request);
+        this.listItems = res.items;
+        this.listTotal = res.total;
+        if (res.people && Object.keys(res.people).length > 0) {
+          this.boardPeople = { ...this.boardPeople, ...res.people };
+        }
+      } catch (e: unknown) {
+        this.listItems = [];
+        this.listTotal = 0;
+        this.listError = e instanceof Error ? e.message : String(e);
+      } finally {
+        this.listLoading = false;
       }
     },
 
@@ -145,6 +189,9 @@ export const useOperationCoreStore = defineStore('operationCore', {
           ...this.columnItems,
           [stateId]: { items: res.items, total: res.total, error: null },
         };
+        if (res.people && Object.keys(res.people).length > 0) {
+          this.boardPeople = { ...this.boardPeople, ...res.people };
+        }
       } catch (e: unknown) {
         this.columnItems = {
           ...this.columnItems,

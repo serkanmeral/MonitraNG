@@ -25,4 +25,8 @@ public interface IWorkItemCommandService
         string workItemId,
         AddCommentRequest request,
         CancellationToken cancellationToken = default);
+
+    Task DeleteAsync(
+        string workItemId,
+        CancellationToken cancellationToken = default);
 }

@@ -212,13 +212,21 @@ public class SystemJobRepository : ISystemJobRepository
                 throw new Domain.Exceptions.JobNotFoundException(job.JobId);
             }
 
-            // Preserve execution counts and other read-only fields
-            job.TotalExecutionCount = existingJob.TotalExecutionCount;
-            job.SuccessfulExecutionCount = existingJob.SuccessfulExecutionCount;
-            job.FailedExecutionCount = existingJob.FailedExecutionCount;
+            // Preserve execution counts — execution handlers increment before update; keep the higher values.
+            job.TotalExecutionCount = Math.Max(job.TotalExecutionCount, existingJob.TotalExecutionCount);
+            job.SuccessfulExecutionCount = Math.Max(job.SuccessfulExecutionCount, existingJob.SuccessfulExecutionCount);
+            job.FailedExecutionCount = Math.Max(job.FailedExecutionCount, existingJob.FailedExecutionCount);
             job.CreatedAt = existingJob.CreatedAt;
             job.CreatedBy = existingJob.CreatedBy;
-            job.LastExecution = existingJob.LastExecution;
+            if (job.LastExecution == null)
+            {
+                job.LastExecution = existingJob.LastExecution;
+            }
+            else if (existingJob.LastExecution != null &&
+                     existingJob.LastExecution.ExecutedAt > job.LastExecution.ExecutedAt)
+            {
+                job.LastExecution = existingJob.LastExecution;
+            }
             job.Id = existingJob.Id; // Preserve MongoDB ObjectId
 
             job.UpdatedAt = DateTime.UtcNow;

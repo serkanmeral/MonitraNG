@@ -25,4 +25,22 @@ public interface IMngDataGatewayClient
         Dictionary<string, object?> parameters,
         string? token = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// DG POST <c>/query</c> (native Mongo match) — sunucu tarafı filtre/sıralama/arama/sayfalama.
+    /// <paramref name="match"/> JSON gövdede <c>match</c> alanına serileştirilir; query string
+    /// (sort/skip/limit/search/expand) ham olarak iletilir. Toplam kayıt <c>X-Total-Count</c> header'ından okunur.
+    /// REST filter DSL'inin aksine çok değerli <c>$in</c> / <c>$or</c> destekler.
+    /// </summary>
+    Task<DataGatewayPage> QueryPageAsync(
+        string datasetName,
+        object match,
+        string? query = null,
+        string? token = null,
+        CancellationToken cancellationToken = default);
 }
+
+/// <summary>DG GET list sonucu: sayfa satırları + filtre/arama sonrası toplam kayıt sayısı.</summary>
+public sealed record DataGatewayPage(
+    IReadOnlyList<Dictionary<string, object?>> Items,
+    long Total);

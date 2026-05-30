@@ -4,7 +4,7 @@
 #   - Tanımlamalar (manager, parent)
 #       - Sistem tanımlaması (manager) → /apps/operation-core/admin/definitions
 #       - Workspace tanımlaması (manager) → /apps/operation-core/admin/workspace-definitions
-#
+#       - Zamanlanmış job'lar (manager) → /apps/operation-core/admin/scheduled-jobs
 # Usage (repo kokunden):
 #   .\docs\odak\operationcore\scripts\get-operationcore-token.ps1
 #   .\docs\odak\operationcore\scripts\patch-oc-side-menu.ps1
@@ -163,6 +163,7 @@ $workspaceItemOrder = $headerOrder + 1
 $definitionsParentOrder = $headerOrder + 2
 $systemDefinitionsOrder = $headerOrder + 3
 $workspaceDefinitionsOrder = $headerOrder + 4
+$scheduledJobsOrder = $headerOrder + 5
 
 # --- Header ---
 $headerResult = Upsert-MenuItem -AllItems $items -Label "Operasyon header" -FindExisting {
@@ -263,6 +264,25 @@ Upsert-MenuItem -AllItems $items -Label "Workspace tanimlamasi" -FindExisting {
     icon      = "LayoutIcon"
     iconType  = "tabler"
     to        = "/apps/operation-core/admin/workspace-definitions"
+    type      = "internal"
+    disabled  = $false
+} | Out-Null
+
+# --- Zamanlanmış job'lar (SW-6 admin explorer) ---
+Upsert-MenuItem -AllItems $items -Label "Zamanlanmis joblar" -FindExisting {
+    $_.pageCode -eq "operationCore.adminScheduledJobs.menuTitle" -or
+    $_.to -eq "/apps/operation-core/admin/scheduled-jobs"
+} -Body @{
+    order     = $scheduledJobsOrder
+    itemType  = "item"
+    level     = 2
+    parentId  = $definitionsParentId
+    pageType  = "manager"
+    pageCode  = "operationCore.adminScheduledJobs.menuTitle"
+    title     = "Zamanlanmış job'lar"
+    icon      = "CalendarIcon"
+    iconType  = "tabler"
+    to        = "/apps/operation-core/admin/scheduled-jobs"
     type      = "internal"
     disabled  = $false
 } | Out-Null

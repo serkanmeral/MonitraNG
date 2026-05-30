@@ -6,6 +6,43 @@ import vuetify, { transformAssetUrls } from "vite-plugin-vuetify";
 const { resolve } = createResolver(import.meta.url);
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
+const ODAK_HOST = "192.168.20.20";
+
+function resolveGatewayUrl(): string {
+  if (process.env.GATEWAY_URL?.trim()) return process.env.GATEWAY_URL.trim();
+  return process.env.NODE_ENV === "production" ? "" : `http://${ODAK_HOST}:5040`;
+}
+
+/** GATEWAY_URL host'undan türet veya dev'de Odak; açık env her zaman öncelikli. */
+function resolveBackendServiceUrl(
+  envKeys: string[],
+  port: number,
+  localDefault = `http://localhost:${port}`
+): string {
+  for (const key of envKeys) {
+    const val = process.env[key]?.trim();
+    if (val) return val;
+  }
+  const gateway = resolveGatewayUrl();
+  if (gateway) {
+    try {
+      const u = new URL(gateway);
+      u.port = String(port);
+      return u.origin;
+    } catch {
+      // ignore
+    }
+  }
+  if (process.env.NODE_ENV !== "production") {
+    return `http://${ODAK_HOST}:${port}`;
+  }
+  return localDefault;
+}
+
+const gatewayUrl = resolveGatewayUrl();
+const schedulerUrl = resolveBackendServiceUrl(["SERVER_SCHEDULER_URL", "SCHEDULER_URL"], 5090);
+const adminUrl = resolveBackendServiceUrl(["SERVER_ADMIN_URL", "ADMIN_URL"], 5080);
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   ssr: false,
@@ -28,16 +65,15 @@ export default defineNuxtConfig({
       // Gateway URL (if using API Gateway, set this and leave other URLs empty).
       // Production'da verilmezse '' → Hub store relative '/hub' kullanır (same-origin).
       // Dev varsayılan: Odak sunucu gateway (HTTP). Yerel stack için .env → GATEWAY_URL=https://localhost:5040
-      gatewayUrl: (process.env.GATEWAY_URL && process.env.GATEWAY_URL.trim())
-        ? process.env.GATEWAY_URL
-        : (process.env.NODE_ENV === 'production' ? '' : 'http://192.168.20.20:5040'),
+      gatewayUrl,
       // Individual service URLs (used if gatewayUrl is not set)
       keeperUrl: process.env.KEEPER_URL || 'https://localhost:5001',
       reactorUrl: process.env.SERVER_URL || process.env.DATAGATEWAY_URL || process.env.REACTOR_URL || 'https://localhost:5010',
       // Boş/verilmediğinde store gatewayUrl + '/hub' kullanır (same-origin). Dev için .env'de HUB_URL=http://localhost:5020
       hubUrl: (process.env.HUB_URL && process.env.HUB_URL.trim()) ? process.env.HUB_URL : '',
       llmUrl: process.env.LLM_URL || 'https://localhost:5030',
-      adminUrl: process.env.ADMIN_URL || 'http://localhost:5080',
+      adminUrl,
+      schedulerUrl,
       // Fallback menu control (default: false - disabled)
       enableFallbackMenu: process.env.ENABLE_FALLBACK_MENU === 'true' || false,
       // GeoServer base URL (harita altlığı, çevrimdışı). Örn. http://localhost:8082
@@ -50,7 +86,8 @@ export default defineNuxtConfig({
       appVersion: process.env.npm_package_version || '6.0.0'
     },
     // Server-side only (private)
-    serverAdminUrl: process.env.SERVER_ADMIN_URL || process.env.ADMIN_URL || 'http://localhost:5080',
+    serverAdminUrl: adminUrl,
+    serverSchedulerUrl: schedulerUrl,
   },
   build: { transpile: ["vuetify"] },
   modules: [

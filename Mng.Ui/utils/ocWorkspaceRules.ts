@@ -28,6 +28,14 @@ export type OcWorkspaceRuleApplyMode = (typeof OC_WORKSPACE_RULE_APPLY_MODES)[nu
 export const OC_WORKSPACE_DEFAULT_ACTIONS = ['setField', 'setAssignee'] as const;
 export type OcWorkspaceDefaultAction = (typeof OC_WORKSPACE_DEFAULT_ACTIONS)[number];
 
+export const OC_WORKSPACE_AUTOMATION_ACTIONS = [
+  'addWatcher',
+  'createNotification',
+  'sendEmailViaMngNotifiers',
+  'createActivity',
+] as const;
+export type OcWorkspaceAutomationAction = (typeof OC_WORKSPACE_AUTOMATION_ACTIONS)[number];
+
 export interface OcWorkspaceRuleScope {
   typeId?: string;
   boardId?: string;
@@ -54,6 +62,12 @@ export interface OcWorkspaceRuleDraft {
   defaultField?: string;
   defaultValue?: unknown;
   assignee?: string;
+  automationAction: OcWorkspaceAutomationAction;
+  watcher?: string;
+  templateKey?: string;
+  recipients?: string;
+  activitySummary?: string;
+  activityType?: string;
 }
 
 export interface OcWorkspaceRuleCatalogContext {
@@ -83,8 +97,97 @@ export function newWorkspaceRuleDraft(workspaceId: string, seed?: Partial<OcWork
     defaultField: 'priorityId',
     defaultValue: null,
     assignee: '',
+    automationAction: 'createActivity',
+    watcher: '',
+    templateKey: '',
+    recipients: '',
+    activitySummary: '',
+    activityType: 'RuleAction',
     ...seed,
   };
+}
+
+function parseRecipientsList(raw: string | undefined): string[] {
+  if (!raw?.trim()) return [];
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function recipientsToString(value: unknown): string {
+  if (Array.isArray(value)) return value.map(String).join(', ');
+  if (value != null && value !== '') return String(value);
+  return '';
+}
+
+function parseAutomationActionFromRecord(
+  a: Record<string, unknown>
+): Partial<Pick<
+  OcWorkspaceRuleDraft,
+  'automationAction' | 'watcher' | 'templateKey' | 'recipients' | 'activitySummary' | 'activityType'
+>> | null {
+  const type = String(a.type ?? a.Type ?? '').toLowerCase();
+  if (type === 'addwatcher') {
+    return {
+      automationAction: 'addWatcher',
+      watcher: String(a.watcher ?? a.Watcher ?? a.value ?? a.Value ?? ''),
+    };
+  }
+  if (type === 'createnotification') {
+    return {
+      automationAction: 'createNotification',
+      templateKey: String(a.templateKey ?? a.TemplateKey ?? ''),
+      recipients: recipientsToString(a.recipients ?? a.Recipients),
+    };
+  }
+  if (type === 'sendemailviamngnotifiers') {
+    return {
+      automationAction: 'sendEmailViaMngNotifiers',
+      templateKey: String(a.templateKey ?? a.TemplateKey ?? ''),
+      recipients: recipientsToString(a.recipients ?? a.Recipients),
+    };
+  }
+  if (type === 'createactivity') {
+    return {
+      automationAction: 'createActivity',
+      activitySummary: String(a.summary ?? a.Summary ?? a.message ?? a.Message ?? ''),
+      activityType: String(a.activityType ?? a.ActivityType ?? 'RuleAction'),
+    };
+  }
+  return null;
+}
+
+function buildAutomationActionPayload(draft: OcWorkspaceRuleDraft): Record<string, unknown> {
+  switch (draft.automationAction) {
+    case 'addWatcher':
+      return { type: 'addWatcher', watcher: String(draft.watcher ?? '').trim() };
+    case 'createNotification': {
+      const payload: Record<string, unknown> = {
+        type: 'createNotification',
+        templateKey: String(draft.templateKey ?? '').trim(),
+      };
+      const recipients = parseRecipientsList(draft.recipients);
+      if (recipients.length) payload.recipients = recipients;
+      return payload;
+    }
+    case 'sendEmailViaMngNotifiers': {
+      const payload: Record<string, unknown> = {
+        type: 'sendEmailViaMngNotifiers',
+        templateKey: String(draft.templateKey ?? '').trim(),
+      };
+      const recipients = parseRecipientsList(draft.recipients);
+      if (recipients.length) payload.recipients = recipients;
+      return payload;
+    }
+    case 'createActivity':
+    default:
+      return {
+        type: 'createActivity',
+        summary: String(draft.activitySummary ?? '').trim(),
+        activityType: String(draft.activityType ?? '').trim() || 'RuleAction',
+      };
+  }
 }
 
 export function buildRuleConditionFieldOptions(
@@ -102,11 +205,27 @@ export function parseOpRuleToDraft(rule: OpRule): OcWorkspaceRuleDraft {
   let defaultField = 'priorityId';
   let defaultValue: unknown = null;
   let assignee = '';
+  let automationAction: OcWorkspaceAutomationAction = 'createActivity';
+  let watcher = '';
+  let templateKey = '';
+  let recipients = '';
+  let activitySummary = '';
+  let activityType = 'RuleAction';
 
   for (const raw of actions) {
     if (!raw || typeof raw !== 'object') continue;
     const a = raw as Record<string, unknown>;
     const type = String(a.type ?? a.Type ?? '').toLowerCase();
+    const automation = parseAutomationActionFromRecord(a);
+    if (automation) {
+      automationAction = automation.automationAction ?? automationAction;
+      watcher = automation.watcher ?? watcher;
+      templateKey = automation.templateKey ?? templateKey;
+      recipients = automation.recipients ?? recipients;
+      activitySummary = automation.activitySummary ?? activitySummary;
+      activityType = automation.activityType ?? activityType;
+      continue;
+    }
     if (type === 'setassignee') {
       defaultAction = 'setAssignee';
       assignee = String(a.assignee ?? a.Assignee ?? a.value ?? a.Value ?? '');
@@ -117,11 +236,13 @@ export function parseOpRuleToDraft(rule: OpRule): OcWorkspaceRuleDraft {
     }
   }
 
+  const resolvedRuleType = OC_WORKSPACE_RULE_TYPES.includes(ruleType) ? ruleType : 'default';
+
   return {
     id: rule.__dataId,
     name: rule.name,
     description: rule.description ?? '',
-    ruleType: OC_WORKSPACE_RULE_TYPES.includes(ruleType) ? ruleType : 'default',
+    ruleType: resolvedRuleType,
     trigger: (OC_WORKSPACE_RULE_TRIGGERS as readonly string[]).includes(rule.trigger)
       ? (rule.trigger as OcWorkspaceRuleTrigger)
       : 'WorkItemCreated',
@@ -144,6 +265,12 @@ export function parseOpRuleToDraft(rule: OpRule): OcWorkspaceRuleDraft {
     defaultField,
     defaultValue,
     assignee,
+    automationAction,
+    watcher,
+    templateKey,
+    recipients,
+    activitySummary,
+    activityType,
   };
 }
 
@@ -157,12 +284,25 @@ export function validateWorkspaceRuleDraft(draft: OcWorkspaceRuleDraft): string 
     if (draft.whenMode === 'conditional' && !areConditionClausesComplete(draft.whenClauses)) {
       return 'conditions';
     }
-  } else if (draft.ruleType === 'default' || draft.ruleType === 'automation') {
+  } else if (draft.ruleType === 'default') {
     if (draft.defaultAction === 'setAssignee' && !String(draft.assignee ?? '').trim()) {
       return 'assignee';
     }
     if (draft.defaultAction === 'setField' && !draft.defaultField?.trim()) {
       return 'defaultField';
+    }
+  } else if (draft.ruleType === 'automation') {
+    switch (draft.automationAction) {
+      case 'addWatcher':
+        if (!String(draft.watcher ?? '').trim()) return 'watcher';
+        break;
+      case 'createNotification':
+      case 'sendEmailViaMngNotifiers':
+        if (!String(draft.templateKey ?? '').trim()) return 'templateKey';
+        break;
+      case 'createActivity':
+        if (!String(draft.activitySummary ?? '').trim()) return 'activitySummary';
+        break;
     }
   }
   return null;
@@ -199,6 +339,8 @@ export function buildOpRulePayloadFromDraft(
   if (draft.ruleType === 'validation') {
     body.applyMode = draft.applyMode;
     body.errorMessage = draft.errorMessage?.trim() ?? '';
+  } else if (draft.ruleType === 'automation') {
+    body.actions = [buildAutomationActionPayload(draft)];
   } else {
     if (draft.defaultAction === 'setAssignee') {
       body.actions = [{ type: 'setAssignee', assignee: String(draft.assignee ?? '').trim() }];
@@ -303,13 +445,14 @@ function draftToThenRule(draft: OcWorkspaceRuleDraft): OpRule {
   if (draft.ruleType === 'validation') {
     return { ...base, errorMessage: draft.errorMessage ?? null };
   }
+  if (draft.ruleType === 'automation') {
+    return { ...base, actions: [buildAutomationActionPayload(draft)] };
+  }
   const actions: Record<string, unknown>[] = [];
-  if (draft.ruleType === 'default' || draft.ruleType === 'automation') {
-    if (draft.defaultAction === 'setAssignee' && draft.assignee) {
-      actions.push({ type: 'setAssignee', assignee: draft.assignee });
-    } else if (draft.defaultAction === 'setField' && draft.defaultField) {
-      actions.push({ type: 'setField', field: draft.defaultField, value: draft.defaultValue });
-    }
+  if (draft.defaultAction === 'setAssignee' && draft.assignee) {
+    actions.push({ type: 'setAssignee', assignee: draft.assignee });
+  } else if (draft.defaultAction === 'setField' && draft.defaultField) {
+    actions.push({ type: 'setField', field: draft.defaultField, value: draft.defaultValue });
   }
   return { ...base, actions };
 }
@@ -361,6 +504,15 @@ export function formatRuleThenSummary(rule: OpRule, ctx: OcWorkspaceRuleCatalogC
       const id = String(a.assignee ?? a.Assignee ?? a.value ?? a.Value ?? '');
       const name = resolveCatalogTitle(ctx.personTitleById, id) ?? id;
       parts.push(`assignee := ${name}`);
+    } else if (type === 'addwatcher') {
+      const id = String(a.watcher ?? a.Watcher ?? a.value ?? a.Value ?? '');
+      const name = resolveCatalogTitle(ctx.personTitleById, id) ?? id;
+      parts.push(`watcher + ${name}`);
+    } else if (type === 'createnotification' || type === 'sendemailviamngnotifiers') {
+      const key = String(a.templateKey ?? a.TemplateKey ?? '?');
+      parts.push(`${type}: ${key}`);
+    } else if (type === 'createactivity') {
+      parts.push(String(a.summary ?? a.Summary ?? a.message ?? a.Message ?? 'activity'));
     } else if (type) {
       parts.push(type);
     }
@@ -380,5 +532,3 @@ export function seedEmptyRuleClause(fieldKey: string): OcConditionClause {
 export function isRuleDraftComplete(draft: OcWorkspaceRuleDraft): boolean {
   return validateWorkspaceRuleDraft(draft) === null;
 }
-
-export { isConditionClauseComplete, areConditionClausesComplete };

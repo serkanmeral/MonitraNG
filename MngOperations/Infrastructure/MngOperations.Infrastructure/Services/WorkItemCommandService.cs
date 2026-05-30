@@ -472,6 +472,54 @@ public class WorkItemCommandService : IWorkItemCommandService
             cancellationToken);
     }
 
+    public async Task DeleteAsync(
+        string workItemId,
+        CancellationToken cancellationToken = default)
+    {
+        var token = RequireToken();
+        var domainId = RequireDomainId();
+
+        var existing = await LoadWorkItemAsync(workItemId, token, cancellationToken);
+        var workspaceId = GetString(existing, "workspaceId")
+            ?? throw new OperationCoreException("WORK_ITEM_INVALID", "workspaceId missing on work item.", "Kayıtta workspaceId yok.", 500);
+
+        var workspace = await _metadataCache.GetWorkspaceAsync(workspaceId, token, cancellationToken);
+        // Silme en az düzenleme (manager/edit) yetkisi gerektirir — ayrı delete yetkisi Faz 1'de yok.
+        _permissions.EnsureWorkItemUpdate(workspace, existing);
+
+        var workItemKey = GetString(existing, "key") ?? workItemId;
+
+        var deleted = await _dg.DeleteAsync(OcDatasets.WorkItems, workItemId, token, cancellationToken);
+        if (!deleted)
+        {
+            throw new OperationCoreException(
+                "WORK_ITEM_DELETE_FAILED",
+                $"Work item '{workItemId}' could not be deleted.",
+                $"İş kaydı '{workItemId}' silinemedi.",
+                502);
+        }
+
+        // Kalıcı silme sonrası yan etkiler best-effort: kayıt zaten yok, hata ana işlemi geri almaz.
+        await WriteActivityAsync(
+            workItemId,
+            workItemKey,
+            "WorkItemDeleted",
+            $"Work item {workItemKey} deleted",
+            token,
+            cancellationToken);
+
+        try
+        {
+            await PublishEventAsync(domainId, "deleted", workspaceId, workItemId, workItemKey, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Publish deleted event failed for work item {WorkItemId} (non-fatal)", workItemId);
+        }
+
+        _logger.LogInformation("Deleted work item {WorkItemKey} ({WorkItemId}) in workspace {WorkspaceId}", workItemKey, workItemId, workspaceId);
+    }
+
     private async Task<CommentDto> AddCommentInternalAsync(
         string workItemId,
         string workItemKey,

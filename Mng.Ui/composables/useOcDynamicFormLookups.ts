@@ -8,11 +8,8 @@ import {
   ocListStates,
   ocListStatesForWorkspace,
 } from '@/services/operationCoreService';
-import { useOcPersonPicker } from '@/composables/useOcPersonPicker';
-import {
-  collectPersonIdsFromFormModel,
-  type OcPersonPickerItem,
-} from '@/utils/ocPersonPicker';
+import { useOcPersonPicker, type OcPersonPickerApi } from '@/composables/useOcPersonPicker';
+import { collectPersonIdsFromValue } from '@/utils/ocPersonPicker';
 import {
   isOcPersonsUserPickerField,
   recordToDatasetItems,
@@ -32,7 +29,9 @@ export function useOcDynamicFormLookups(
   context: Ref<OcFormRuntimeContext | null>,
   formModel?: Ref<Record<string, unknown>>
 ) {
-  const personPicker = useOcPersonPicker();
+  // Her person alanı kendi picker örneğini kullanır: paylaşılan tek picker'da
+  // bir combobox'taki arama/seçim, diğer alanların listesini daraltıyordu.
+  const personPickers = new Map<string, OcPersonPickerApi>();
 
   const priorityItems = ref<OcSelectItem[]>([]);
   const stateItems = ref<OcSelectItem[]>([]);
@@ -87,12 +86,29 @@ export function useOcDynamicFormLookups(
     }
   }
 
+  function pickerForField(fieldKey: string): OcPersonPickerApi {
+    let picker = personPickers.get(fieldKey);
+    if (!picker) {
+      picker = useOcPersonPicker();
+      personPickers.set(fieldKey, picker);
+    }
+    return picker;
+  }
+
+  function selectedIdsForField(fieldKey: string): string[] {
+    return collectPersonIdsFromValue(formModel?.value?.[fieldKey]);
+  }
+
   async function initPersonPicker() {
     loadingKeys.value = new Set(loadingKeys.value).add(PERSONS_LOADING_KEY);
     try {
-      await personPicker.resetAndFetch('');
-      const ids = collectPersonIdsFromFormModel(formModel?.value, personFieldKeys());
-      await personPicker.ensureSelectedIds(ids);
+      await Promise.all(
+        personFieldKeys().map(async (key) => {
+          const picker = pickerForField(key);
+          await picker.resetAndFetch('');
+          await picker.ensureSelectedIds(selectedIdsForField(key));
+        })
+      );
     } finally {
       const next = new Set(loadingKeys.value);
       next.delete(PERSONS_LOADING_KEY);
@@ -101,8 +117,11 @@ export function useOcDynamicFormLookups(
   }
 
   async function syncPersonPickerSelection() {
-    const ids = collectPersonIdsFromFormModel(formModel?.value, personFieldKeys());
-    await personPicker.ensureSelectedIds(ids);
+    await Promise.all(
+      personFieldKeys().map((key) =>
+        pickerForField(key).ensureSelectedIds(selectedIdsForField(key))
+      )
+    );
   }
 
   async function reload() {
@@ -162,7 +181,7 @@ export function useOcDynamicFormLookups(
   function selectItemsForField(fieldKey: string): OcSelectItem[] {
     const meta = context.value?.fields[fieldKey];
     if (isOcPersonsUserPickerField(fieldKey, meta)) {
-      return personPicker.items.value;
+      return pickerForField(fieldKey).items.value;
     }
     if (fieldKey === 'priorityId') return priorityItems.value;
     if (fieldKey === 'boardId') return boardItems.value;
@@ -176,7 +195,7 @@ export function useOcDynamicFormLookups(
   function isLoadingField(fieldKey: string): boolean {
     const meta = context.value?.fields[fieldKey];
     if (isOcPersonsUserPickerField(fieldKey, meta)) {
-      return loadingKeys.value.has(PERSONS_LOADING_KEY) || personPicker.loading.value;
+      return loadingKeys.value.has(PERSONS_LOADING_KEY) || pickerForField(fieldKey).loading.value;
     }
     return loadingKeys.value.has(fieldKey);
   }
@@ -209,12 +228,10 @@ export function useOcDynamicFormLookups(
     stateItems,
     boardItems,
     relationItemsByKey,
-    personPicker,
+    pickerForField,
     selectItemsForField,
     isLoadingField,
     isPersonField,
     reload,
   };
 }
-
-export type { OcPersonPickerItem };

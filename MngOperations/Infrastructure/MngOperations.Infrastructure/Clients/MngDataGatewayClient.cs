@@ -118,9 +118,24 @@ public class MngDataGatewayClient : IMngDataGatewayClient
         return JsonSerializer.SerializeToElement(dict, JsonOptions);
     }
 
+    // İsmi "Id"/"Ids" ile bitmeyen ama yine de relation olan çekirdek alanlar.
+    // DG tek-kayıt okumada bunları object olarak expand edebilir; id'ye indirgenmezse
+    // patch/transition `merged = existing`'i geri yazarken object persist edilir (alan bozulur).
+    private static readonly HashSet<string> SingleRelationFieldNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "assignee"
+    };
+
+    private static readonly HashSet<string> MultiRelationFieldNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "watchers"
+    };
+
     private static JsonElement CollapseRelationValue(string propertyName, JsonElement value)
     {
-        if (propertyName.EndsWith("Ids", StringComparison.OrdinalIgnoreCase) && value.ValueKind == JsonValueKind.Array)
+        var isIdsArray = propertyName.EndsWith("Ids", StringComparison.OrdinalIgnoreCase);
+        var isMultiRelation = MultiRelationFieldNames.Contains(propertyName);
+        if ((isIdsArray || isMultiRelation) && value.ValueKind == JsonValueKind.Array)
         {
             var ids = new List<string?>();
             foreach (var item in value.EnumerateArray())
@@ -131,7 +146,8 @@ public class MngDataGatewayClient : IMngDataGatewayClient
             return JsonSerializer.SerializeToElement(ids, JsonOptions);
         }
 
-        if (propertyName.EndsWith("Id", StringComparison.OrdinalIgnoreCase))
+        if (propertyName.EndsWith("Id", StringComparison.OrdinalIgnoreCase)
+            || SingleRelationFieldNames.Contains(propertyName))
         {
             var id = ExtractRelationId(value);
             if (id != null)
@@ -224,6 +240,52 @@ public class MngDataGatewayClient : IMngDataGatewayClient
         }
 
         return list;
+    }
+
+    public async Task<DataGatewayPage> QueryPageAsync(
+        string datasetName,
+        object match,
+        string? query = null,
+        string? token = null,
+        CancellationToken cancellationToken = default)
+    {
+        var url = $"data/{datasetName}/query";
+        if (!string.IsNullOrEmpty(query))
+            url += $"?{query}";
+
+        using var response = await SendWithRetryAsync(
+            () => CreateRequest(HttpMethod.Post, url, token, JsonContent.Create(new { match })),
+            cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException(
+                $"MngDataGateway {(int)response.StatusCode} {response.ReasonPhrase}: {error}",
+                null,
+                response.StatusCode);
+        }
+
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions, cancellationToken);
+        var items = new List<Dictionary<string, object?>>();
+        if (json.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in json.EnumerateArray())
+            {
+                var row = JsonSerializer.Deserialize<Dictionary<string, object?>>(item.GetRawText(), JsonOptions);
+                if (row != null)
+                    items.Add(row);
+            }
+        }
+
+        long total = items.Count;
+        if (response.Headers.TryGetValues("X-Total-Count", out var values)
+            && long.TryParse(values.FirstOrDefault(), out var parsed))
+        {
+            total = parsed;
+        }
+
+        return new DataGatewayPage(items, total);
     }
 
     private async Task<T> SendJsonAsync<T>(

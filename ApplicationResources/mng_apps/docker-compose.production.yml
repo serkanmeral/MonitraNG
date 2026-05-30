@@ -534,6 +534,9 @@ services:
       - MngAdminSettings__RabbitMQ__Password=${RABBITMQ_PASSWORD}
       - MngAdminSettings__RabbitMQ__VirtualHost=${RABBITMQ_VIRTUALHOST:-/}
       - MngAdminSettings__Backup__MinIO__SystemBucket=system
+      - MngAdminSettings__Backup__PostgreSQL__Compression=gzip
+      - MngAdminSettings__Backup__PostgreSQL__Databases__0=keycloak
+      - MngAdminSettings__Backup__PostgreSQL__ConnectionString=Host=postgres;Port=5432;Database={database};Username=keycloak;Password=${POSTGRES_PASSWORD}
       # MinIO bağlantısı — MngAdminSettings:MinIO altına bind olması için MngAdminSettings__MinIO__* kullanılmalı
       - MngAdminSettings__MinIO__Endpoint=${MINIO_ENDPOINT:-minio:9000}
       - MngAdminSettings__MinIO__AccessKey=${MINIO_ACCESS_KEY}

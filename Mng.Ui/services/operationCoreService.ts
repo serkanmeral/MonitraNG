@@ -1,15 +1,24 @@
 import { fetchFromDataGateway, fetchFromOperations } from '@/services/apiService';
 import type {
+  OcBoardCatalogs,
   OcBoardColumn,
+  OcBoardListColumn,
+  OcBoardListRequest,
   OcBoardRuntimeContext,
+  OcCatalogDisplayEntry,
+  OcPersonDisplay,
   OcQueryExecuteResponse,
   OcWorkItemCard,
   OpBoard,
   OpBoardColumnConfig,
+  OpBoardListColumnConfig,
+  OpBoardSortConfig,
+  OpProfile,
   OpForm,
   OpFormFieldBehavior,
   OpFormLayoutSection,
   OpRule,
+  OpSlaPolicy,
   OpWorkItemSchedule,
   OcFormRuntimeContext,
   OcFormFieldRuntimeDto,
@@ -35,7 +44,9 @@ export const OC_DATASETS = {
   fields: 'op_fields',
   stateFlows: 'op_state_flows',
   rules: 'op_rules',
+  slaPolicies: 'op_sla_policies',
   workItemSchedules: 'op_work_item_schedules',
+  profiles: 'op_profiles',
 } as const;
 
 function parseSingleDgRecord(response: unknown): Record<string, unknown> | null {
@@ -221,13 +232,53 @@ function parseBoardColumns(configRaw: unknown): OpBoardColumnConfig[] {
     const o = item as Record<string, unknown>;
     const stateId = resolveRelationId(o.stateId ?? o.StateId);
     if (!stateId) continue;
+    const defaultTransitionKey =
+      o.defaultTransitionKey != null
+        ? String(o.defaultTransitionKey)
+        : o.DefaultTransitionKey != null
+          ? String(o.DefaultTransitionKey)
+          : null;
     result.push({
       stateId,
       title: o.title != null ? String(o.title) : o.Title != null ? String(o.Title) : null,
       queryKey: o.queryKey != null ? String(o.queryKey) : o.QueryKey != null ? String(o.QueryKey) : 'wi_board_column',
+      defaultTransitionKey: defaultTransitionKey?.trim() || null,
     });
   }
   return result;
+}
+
+function parseBoardListColumns(configRaw: unknown): OpBoardListColumnConfig[] {
+  const config = parseJsonRecord(configRaw);
+  const cols = config.listColumns ?? config.ListColumns;
+  if (!Array.isArray(cols)) return [];
+
+  const out: OpBoardListColumnConfig[] = [];
+  const seen = new Set<string>();
+  for (const item of cols) {
+    if (!item || typeof item !== 'object') continue;
+    const o = item as Record<string, unknown>;
+    const key = o.key != null ? String(o.key) : o.Key != null ? String(o.Key) : '';
+    if (!key.trim() || seen.has(key)) continue;
+    seen.add(key);
+    out.push({
+      key,
+      sortable: Boolean(o.sortable ?? o.Sortable ?? false),
+      filterable: Boolean(o.filterable ?? o.Filterable ?? false),
+    });
+  }
+  return out;
+}
+
+function parseBoardDefaultSort(configRaw: unknown): OpBoardSortConfig | null {
+  const config = parseJsonRecord(configRaw);
+  const s = config.defaultSort ?? config.DefaultSort;
+  if (!s || typeof s !== 'object') return null;
+  const o = s as Record<string, unknown>;
+  const field = o.field != null ? String(o.field) : o.Field != null ? String(o.Field) : '';
+  if (!field.trim()) return null;
+  const dir = String(o.direction ?? o.Direction ?? 'asc').toLowerCase();
+  return { field, direction: dir === 'desc' ? 'desc' : 'asc' };
 }
 
 export function mapOpForm(raw: Record<string, unknown>): OpForm {
@@ -567,6 +618,112 @@ export async function ocCreateWorkItem(payload: OcCreateWorkItemRequest): Promis
   return mapCreateWorkItemResult(raw);
 }
 
+/** Edit modu form runtime context (mevcut değerlerle). */
+export async function ocGetFormEditContext(workItemId: string): Promise<OcFormRuntimeContext> {
+  const raw = (await fetchFromOperations(
+    `/api/v1/runtime/work-items/${encodeURIComponent(workItemId)}/form?mode=edit`,
+    'GET'
+  )) as Record<string, unknown>;
+  return mapFormRuntimeContext(raw);
+}
+
+export interface OcUpdateWorkItemRequest {
+  title?: string;
+  description?: string | null;
+  assignee?: string | null;
+  priorityId?: string | null;
+  boardId?: string | null;
+  fields?: Record<string, unknown>;
+}
+
+/** PATCH'te değiştirilemeyen / ayrı endpoint'e ait üst-seviye anahtarlar. */
+const OC_PATCH_TOP_LEVEL_KEYS = new Set([
+  'title',
+  'description',
+  'assignee',
+  'priorityId',
+  'boardId',
+  'typeId',
+  'stateId',
+  'key',
+  'workspaceId',
+]);
+
+function normalizeNullableScalar(value: unknown): string | null {
+  if (value == null) return null;
+  const s = String(value).trim();
+  return s ? s : null;
+}
+
+/**
+ * Sadece değişen alanlardan PATCH gövdesi kurar (readonly/değişmemiş alanları göndermez).
+ * `changed` yalnızca düzenlenen anahtarları içermeli (dialog initial↔current diff'i).
+ */
+export function buildUpdateWorkItemRequest(changed: Record<string, unknown>): OcUpdateWorkItemRequest {
+  const body: OcUpdateWorkItemRequest = {};
+
+  if ('title' in changed) {
+    const t = String(changed.title ?? '').trim();
+    if (t) body.title = t;
+  }
+  if ('description' in changed) {
+    body.description = normalizeNullableScalar(changed.description);
+  }
+  if ('assignee' in changed) {
+    body.assignee = normalizeNullableScalar(changed.assignee);
+  }
+  if ('priorityId' in changed) {
+    body.priorityId = normalizeNullableScalar(changed.priorityId);
+  }
+  if ('boardId' in changed) {
+    body.boardId = normalizeNullableScalar(changed.boardId);
+  }
+
+  const fields: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(changed)) {
+    if (OC_PATCH_TOP_LEVEL_KEYS.has(key)) continue;
+    fields[key] = value === '' ? null : value;
+  }
+  if (Object.keys(fields).length) body.fields = fields;
+
+  return body;
+}
+
+export function hasUpdateWorkItemChanges(patch: OcUpdateWorkItemRequest): boolean {
+  return (
+    patch.title !== undefined ||
+    patch.description !== undefined ||
+    patch.assignee !== undefined ||
+    patch.priorityId !== undefined ||
+    patch.boardId !== undefined ||
+    (patch.fields != null && Object.keys(patch.fields).length > 0)
+  );
+}
+
+export async function ocUpdateWorkItem(
+  workItemId: string,
+  patch: OcUpdateWorkItemRequest
+): Promise<OcCreateWorkItemResult> {
+  const body: Record<string, unknown> = {};
+  if (patch.title !== undefined) body.title = patch.title;
+  if (patch.description !== undefined) body.description = patch.description;
+  if (patch.assignee !== undefined) body.assignee = patch.assignee;
+  if (patch.priorityId !== undefined) body.priorityId = patch.priorityId;
+  if (patch.boardId !== undefined) body.boardId = patch.boardId;
+  if (patch.fields && Object.keys(patch.fields).length) body.fields = patch.fields;
+
+  const raw = await fetchFromOperations(
+    `/api/v1/work-items/${encodeURIComponent(workItemId)}`,
+    'PATCH',
+    body
+  );
+  return mapCreateWorkItemResult(raw);
+}
+
+export async function ocDeleteWorkItem(workItemId: string): Promise<void> {
+  await fetchFromOperations(`/api/v1/work-items/${encodeURIComponent(workItemId)}`, 'DELETE');
+}
+
 function mapBoard(raw: Record<string, unknown>): OpBoard {
   const ws = raw.workspaceId;
   const workspaceId =
@@ -582,9 +739,36 @@ function mapBoard(raw: Record<string, unknown>): OpBoard {
     viewType: raw.viewType != null ? String(raw.viewType) : undefined,
     defaultFormId: resolveRelationId(raw.defaultFormId ?? raw.DefaultFormId),
     defaultStateFlowId: resolveRelationId(raw.defaultStateFlowId ?? raw.DefaultStateFlowId),
+    defaultProfileId: resolveRelationId(raw.defaultProfileId ?? raw.DefaultProfileId),
+    defaultTypeId: resolveRelationId(raw.defaultTypeId ?? raw.DefaultTypeId),
+    defaultPriorityId: resolveRelationId(raw.defaultPriorityId ?? raw.DefaultPriorityId),
+    defaultStateId: resolveRelationId(raw.defaultStateId ?? raw.DefaultStateId),
     visibleFields: parseStringArray(raw.visibleFields ?? raw.VisibleFields),
+    viewGroups: parseStringArray(raw.viewGroups ?? raw.ViewGroups),
+    editGroups: parseStringArray(raw.editGroups ?? raw.EditGroups),
     columns: parseBoardColumns(raw.config ?? raw.Config),
+    listColumns: parseBoardListColumns(raw.config ?? raw.Config),
+    defaultSort: parseBoardDefaultSort(raw.config ?? raw.Config),
   };
+}
+
+export function mapOpProfile(raw: Record<string, unknown>): OpProfile {
+  return {
+    __dataId: String(raw.__dataId ?? raw.dataId ?? ''),
+    name: String(raw.name ?? ''),
+    workspaceId: resolveRelationId(raw.workspaceId ?? raw.WorkspaceId) ?? '',
+  };
+}
+
+export async function ocListProfilesForWorkspace(workspaceId: string): Promise<OpProfile[]> {
+  const rows = await ocListDataset(OC_DATASETS.profiles, {
+    filter: `workspaceId:eq:${workspaceId}`,
+    sort: 'name:asc',
+    limit: 100,
+  });
+  return rows
+    .map((r) => mapOpProfile(r as Record<string, unknown>))
+    .filter((p) => p.__dataId && p.name && p.workspaceId === workspaceId);
 }
 
 /** Tek kayıt başlığı (politika özeti — listede olmayan id'ler için). */
@@ -629,6 +813,24 @@ export async function ocUpdate(dataset: string, dataId: string, body: Record<str
 export async function ocDelete(dataset: string, dataId: string) {
   const url = `/api/v1/data/${encodeURIComponent(dataset)}/${encodeURIComponent(dataId)}`;
   return fetchFromDataGateway(url, 'DELETE');
+}
+
+/**
+ * Global katalog kaynakları — CRUD MO üzerinden gider (write-through):
+ * MO DG'ye yazar ve aynı işlemde kendi cache'ini düşürür. Silmede kullanım guard'ı (409) uygular.
+ */
+export type OcCatalogSource = 'states' | 'priorities' | 'types' | 'fields';
+
+async function ocCatalogCreate(source: OcCatalogSource, payload: Record<string, unknown>) {
+  return fetchFromOperations(`/api/v1/catalogs/${source}`, 'POST', payload);
+}
+
+async function ocCatalogUpdate(source: OcCatalogSource, id: string, payload: Record<string, unknown>) {
+  return fetchFromOperations(`/api/v1/catalogs/${source}/${encodeURIComponent(id)}`, 'PUT', payload);
+}
+
+async function ocCatalogDelete(source: OcCatalogSource, id: string) {
+  return fetchFromOperations(`/api/v1/catalogs/${source}/${encodeURIComponent(id)}`, 'DELETE');
 }
 
 export function mapOpState(raw: Record<string, unknown>): OpState {
@@ -771,15 +973,15 @@ async function ocSaveWorkspaceEnabledRelationIds(
 }
 
 export async function ocCreateState(payload: Record<string, unknown>) {
-  await ocCreate(OC_DATASETS.states, payload);
+  await ocCatalogCreate('states', payload);
 }
 
 export async function ocUpdateState(stateId: string, payload: Record<string, unknown>) {
-  await ocUpdate(OC_DATASETS.states, stateId, payload);
+  await ocCatalogUpdate('states', stateId, payload);
 }
 
 export async function ocDeleteState(stateId: string) {
-  await ocDelete(OC_DATASETS.states, stateId);
+  await ocCatalogDelete('states', stateId);
 }
 
 export function mapOpPriority(raw: Record<string, unknown>): OpPriority {
@@ -832,15 +1034,15 @@ export async function ocListPrioritiesForWorkspace(
 }
 
 export async function ocCreatePriority(payload: Record<string, unknown>) {
-  await ocCreate(OC_DATASETS.priorities, payload);
+  await ocCatalogCreate('priorities', payload);
 }
 
 export async function ocUpdatePriority(priorityId: string, payload: Record<string, unknown>) {
-  await ocUpdate(OC_DATASETS.priorities, priorityId, payload);
+  await ocCatalogUpdate('priorities', priorityId, payload);
 }
 
 export async function ocDeletePriority(priorityId: string) {
-  await ocDelete(OC_DATASETS.priorities, priorityId);
+  await ocCatalogDelete('priorities', priorityId);
 }
 
 function resolveRelationId(raw: unknown): string | null {
@@ -880,15 +1082,15 @@ export async function ocListGlobalWorkItemTypes(): Promise<OpWorkItemType[]> {
 }
 
 export async function ocCreateWorkItemType(payload: Record<string, unknown>) {
-  await ocCreate(OC_DATASETS.workItemTypes, payload);
+  await ocCatalogCreate('types', payload);
 }
 
 export async function ocUpdateWorkItemType(typeId: string, payload: Record<string, unknown>) {
-  await ocUpdate(OC_DATASETS.workItemTypes, typeId, payload);
+  await ocCatalogUpdate('types', typeId, payload);
 }
 
 export async function ocDeleteWorkItemType(typeId: string) {
-  await ocDelete(OC_DATASETS.workItemTypes, typeId);
+  await ocCatalogDelete('types', typeId);
 }
 
 export function mapOpField(raw: Record<string, unknown>): OpField {
@@ -934,15 +1136,15 @@ export async function ocListGlobalPoolFields(): Promise<OpField[]> {
 }
 
 export async function ocCreateField(payload: Record<string, unknown>) {
-  await ocCreate(OC_DATASETS.fields, payload);
+  await ocCatalogCreate('fields', payload);
 }
 
 export async function ocUpdateField(fieldId: string, payload: Record<string, unknown>) {
-  await ocUpdate(OC_DATASETS.fields, fieldId, payload);
+  await ocCatalogUpdate('fields', fieldId, payload);
 }
 
 export async function ocDeleteField(fieldId: string) {
-  await ocDelete(OC_DATASETS.fields, fieldId);
+  await ocCatalogDelete('fields', fieldId);
 }
 
 function mapOpStateFlowTransition(raw: unknown): OpStateFlowTransition | null {
@@ -1274,6 +1476,64 @@ export async function ocDeleteRule(ruleId: string) {
   await ocDelete(OC_DATASETS.rules, ruleId);
 }
 
+export function mapOpSlaPolicy(raw: Record<string, unknown>): OpSlaPolicy {
+  return {
+    __dataId: String(raw.__dataId ?? raw.dataId ?? ''),
+    name: String(raw.name ?? ''),
+    description:
+      raw.description != null
+        ? String(raw.description)
+        : raw.Description != null
+          ? String(raw.Description)
+          : null,
+    workspaceId: resolveRelationId(raw.workspaceId ?? raw.WorkspaceId) ?? '',
+    typeId: resolveRelationId(raw.typeId ?? raw.TypeId) || null,
+    priorityId: resolveRelationId(raw.priorityId ?? raw.PriorityId) || null,
+    responseTargetMinutes:
+      raw.responseTargetMinutes != null
+        ? Number(raw.responseTargetMinutes)
+        : raw.ResponseTargetMinutes != null
+          ? Number(raw.ResponseTargetMinutes)
+          : null,
+    resolveTargetMinutes:
+      raw.resolveTargetMinutes != null
+        ? Number(raw.resolveTargetMinutes)
+        : raw.ResolveTargetMinutes != null
+          ? Number(raw.ResolveTargetMinutes)
+          : null,
+    isActive: raw.isActive !== false && raw.IsActive !== false,
+    priority:
+      raw.priority != null
+        ? Number(raw.priority)
+        : raw.Priority != null
+          ? Number(raw.Priority)
+          : 100,
+  };
+}
+
+export async function ocListSlaPoliciesForWorkspace(workspaceId: string): Promise<OpSlaPolicy[]> {
+  const rows = await ocListDataset(OC_DATASETS.slaPolicies, {
+    filter: `workspaceId:eq:${workspaceId}`,
+    sort: 'priority:desc,name:asc',
+    limit: 200,
+  });
+  return rows
+    .map((r) => mapOpSlaPolicy(r as Record<string, unknown>))
+    .filter((p) => p.__dataId && p.name && p.workspaceId === workspaceId);
+}
+
+export async function ocCreateSlaPolicy(payload: Record<string, unknown>): Promise<string | null> {
+  return ocCreateRecordId(OC_DATASETS.slaPolicies, payload);
+}
+
+export async function ocUpdateSlaPolicy(policyId: string, payload: Record<string, unknown>) {
+  await ocUpdate(OC_DATASETS.slaPolicies, policyId, payload);
+}
+
+export async function ocDeleteSlaPolicy(policyId: string) {
+  await ocDelete(OC_DATASETS.slaPolicies, policyId);
+}
+
 export function mapOpWorkItemSchedule(raw: Record<string, unknown>): OpWorkItemSchedule {
   return {
     __dataId: String(raw.__dataId ?? raw.dataId ?? ''),
@@ -1338,6 +1598,17 @@ export async function ocListSchedulesForWorkspace(
   return rows
     .map((r) => mapOpWorkItemSchedule(r as Record<string, unknown>))
     .filter((s) => s.__dataId && s.name && s.workspaceId === workspaceId);
+}
+
+/** Admin job explorer — tüm workspace schedule kayıtları (lastRunAt birleştirmesi). */
+export async function ocListAllWorkItemSchedules(limit = 500): Promise<OpWorkItemSchedule[]> {
+  const rows = await ocListDataset(OC_DATASETS.workItemSchedules, {
+    sort: 'lastRunAt:desc',
+    limit,
+  });
+  return rows
+    .map((r) => mapOpWorkItemSchedule(r as Record<string, unknown>))
+    .filter((s) => s.__dataId && s.name);
 }
 
 export async function ocCreateWorkItemSchedule(
@@ -1410,6 +1681,11 @@ function pickStr(obj: Record<string, unknown>, ...keys: string[]): string | unde
 }
 
 function mapWorkItemCard(raw: Record<string, unknown>): OcWorkItemCard {
+  const fieldsRaw = raw.fields ?? raw.Fields;
+  const fields =
+    fieldsRaw && typeof fieldsRaw === 'object' && !Array.isArray(fieldsRaw)
+      ? (fieldsRaw as Record<string, unknown>)
+      : undefined;
   return {
     id: pickStr(raw, 'id', 'Id') ?? '',
     key: pickStr(raw, 'key', 'Key') ?? '',
@@ -1418,6 +1694,7 @@ function mapWorkItemCard(raw: Record<string, unknown>): OcWorkItemCard {
     assignee: pickStr(raw, 'assignee', 'Assignee'),
     priorityId: pickStr(raw, 'priorityId', 'PriorityId'),
     typeId: pickStr(raw, 'typeId', 'TypeId'),
+    fields,
   };
 }
 
@@ -1442,8 +1719,51 @@ function mapBoardColumn(raw: Record<string, unknown>): OcBoardColumn {
   };
 }
 
+function parseCatalogDisplayMap(raw: unknown): Record<string, OcCatalogDisplayEntry> {
+  const out: Record<string, OcCatalogDisplayEntry> = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const [id, val] of Object.entries(raw as Record<string, unknown>)) {
+    if (!val || typeof val !== 'object') continue;
+    const o = val as Record<string, unknown>;
+    out[id] = {
+      id: String(o.id ?? o.Id ?? id),
+      name: String(o.name ?? o.Name ?? ''),
+      color: o.color != null ? String(o.color) : o.Color != null ? String(o.Color) : null,
+      icon: o.icon != null ? String(o.icon) : o.Icon != null ? String(o.Icon) : null,
+    };
+  }
+  return out;
+}
+
+function parseBoardCatalogs(raw: unknown): OcBoardCatalogs {
+  const o = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  return {
+    states: parseCatalogDisplayMap(o.states ?? o.States),
+    priorities: parseCatalogDisplayMap(o.priorities ?? o.Priorities),
+    types: parseCatalogDisplayMap(o.types ?? o.Types),
+  };
+}
+
+function mapBoardListColumn(raw: Record<string, unknown>): OcBoardListColumn {
+  return {
+    key: pickStr(raw, 'key', 'Key') ?? '',
+    sortable: Boolean(raw.sortable ?? raw.Sortable ?? false),
+    filterable: Boolean(raw.filterable ?? raw.Filterable ?? false),
+  };
+}
+
+function mapRuntimeDefaultSort(raw: unknown): OpBoardSortConfig | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = raw as Record<string, unknown>;
+  const field = pickStr(o, 'field', 'Field');
+  if (!field?.trim()) return null;
+  const dir = String(o.direction ?? o.Direction ?? 'asc').toLowerCase();
+  return { field, direction: dir === 'desc' ? 'desc' : 'asc' };
+}
+
 function mapBoardRuntimeContext(raw: Record<string, unknown>): OcBoardRuntimeContext {
   const cols = raw.columns ?? raw.Columns;
+  const listCols = raw.listColumns ?? raw.ListColumns;
   const cardKeys = raw.cardFieldKeys ?? raw.CardFieldKeys;
   const perms = (raw.permissions ?? raw.Permissions ?? {}) as Record<string, unknown>;
   return {
@@ -1460,7 +1780,27 @@ function mapBoardRuntimeContext(raw: Record<string, unknown>): OcBoardRuntimeCon
       ? cols.map((c) => mapBoardColumn(c as Record<string, unknown>)).filter((c) => c.stateId)
       : [],
     cardFieldKeys: Array.isArray(cardKeys) ? cardKeys.map(String) : ['title', 'assignee', 'priorityId', 'key'],
+    listColumns: Array.isArray(listCols)
+      ? listCols.map((c) => mapBoardListColumn(c as Record<string, unknown>)).filter((c) => c.key)
+      : [],
+    defaultSort: mapRuntimeDefaultSort(raw.defaultSort ?? raw.DefaultSort),
+    catalogs: parseBoardCatalogs(raw.catalogs ?? raw.Catalogs),
   };
+}
+
+function parsePeopleMap(raw: unknown): Record<string, OcPersonDisplay> {
+  const out: Record<string, OcPersonDisplay> = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
+    const v = (value ?? {}) as Record<string, unknown>;
+    out[id] = {
+      id: pickStr(v, 'id', 'Id') ?? id,
+      name: pickStr(v, 'name', 'Name') ?? undefined,
+      title: pickStr(v, 'title', 'Title') ?? null,
+      isActive: (v.isActive ?? v.IsActive ?? null) as boolean | null,
+    };
+  }
+  return out;
 }
 
 function mapQueryExecuteResponse(raw: Record<string, unknown>): OcQueryExecuteResponse {
@@ -1474,6 +1814,7 @@ function mapQueryExecuteResponse(raw: Record<string, unknown>): OcQueryExecuteRe
     skip: Number(raw.skip ?? raw.Skip ?? 0),
     take: Number(raw.take ?? raw.Take ?? 0),
     total: Number(raw.total ?? raw.Total ?? 0),
+    people: parsePeopleMap(raw.people ?? raw.People),
   };
 }
 
@@ -1514,4 +1855,32 @@ export function ocBuildColumnQueryRequest(column: OcBoardColumn) {
     skip: 0,
     take: column.suggestedPageSize || 50,
   };
+}
+
+/** Board liste görünümü — tek sunucu tarafı sorgu (sayfalama + sıralama + filtre + arama). */
+export async function ocGetBoardListPage(
+  boardId: string,
+  request: OcBoardListRequest
+): Promise<OcQueryExecuteResponse> {
+  const body: Record<string, unknown> = {
+    skip: Math.max(0, request.skip ?? 0),
+    take: request.take ?? 50,
+  };
+  if (request.sort?.field) {
+    body.sort = { field: request.sort.field, direction: request.sort.direction === 'desc' ? 'desc' : 'asc' };
+  }
+  const filters = (request.filters ?? []).filter((f) => f.field && f.value != null && String(f.value).trim() !== '');
+  if (filters.length) {
+    body.filters = filters.map((f) => ({ field: f.field, operator: f.operator || 'eq', value: String(f.value) }));
+  }
+  if (request.search?.trim()) {
+    body.search = request.search.trim();
+  }
+
+  const raw = (await fetchFromOperations(
+    `/api/v1/runtime/boards/${encodeURIComponent(boardId)}/list`,
+    'POST',
+    body
+  )) as Record<string, unknown>;
+  return mapQueryExecuteResponse(raw);
 }

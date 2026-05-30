@@ -4,6 +4,7 @@ using MongoDB.Driver;
 using MngScheduler.Application.Configuration;
 using MngScheduler.Application.Interfaces;
 using MngScheduler.Domain.Entities;
+using MngScheduler.Persistence;
 
 namespace MngScheduler.Persistence.Repositories;
 
@@ -159,11 +160,13 @@ public class JobExecutionRepository : IJobExecutionRepository
     {
         try
         {
-            // Query: jobId = {jobId} AND domainId = {domainId}, sorted by executedAt descending
-            var query = $"filter=jobId:{jobId},domainId:{domainId}&sort=executedAt:desc&limit={limit}";
+            var query = DataGatewayQuery.BuildListQuery(
+                new[] { ("jobId", jobId), ("domainId", domainId) },
+                sortFieldDesc: "executedAt",
+                limit: limit);
             var executions = await _dataGatewayClient.GetAsync<JobExecution>(
-                UserExecutionsDataset, 
-                query, 
+                UserExecutionsDataset,
+                query,
                 token);
 
             _logger.LogDebug("Retrieved {Count} executions for user job {JobId} in domain {DomainId}", 

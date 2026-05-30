@@ -37,7 +37,14 @@ $TarPath = Join-Path $env:TEMP "monitrang-odak-sync.tar"
 if (Test-Path $TarPath) { Remove-Item $TarPath -Force }
 
 # Windows tar: paths relative to repo root
+# Build artifaktları / bağımlılıklar sunucuda yeniden üretilir (.dockerignore zaten dışlar) —
+# tar'a almak transferi gereksiz büyütür (ör. Mng.Ui/node_modules ~350MB).
+$tarExcludes = @(
+    "*/node_modules/*", "*/.nuxt/*", "*/.output/*", "*/.nitro/*",
+    "*/bin/*", "*/obj/*", "*/.git/*", "*/.vs/*"
+)
 $tarArgs = @("-cf", $TarPath)
+foreach ($ex in $tarExcludes) { $tarArgs += "--exclude=$ex" }
 foreach ($p in $Paths) {
     if (-not (Test-Path $p)) { throw "Path not found: $p" }
     $tarArgs += $p
