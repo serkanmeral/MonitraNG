@@ -720,6 +720,7 @@ function parseAttachments(raw: unknown): OcAttachment[] {
 }
 
 function mapTimelineEntry(raw: Record<string, unknown>): OcTimelineEntry {
+  const atts = parseAttachments(raw.attachments ?? raw.Attachments);
   return {
     type: pickStr(raw, 'type', 'Type') ?? '',
     id: pickStr(raw, 'id', 'Id') ?? null,
@@ -727,6 +728,7 @@ function mapTimelineEntry(raw: Record<string, unknown>): OcTimelineEntry {
     text: pickStr(raw, 'text', 'Text') ?? null,
     at: pickStr(raw, 'at', 'At') ?? null,
     activityType: pickStr(raw, 'activityType', 'ActivityType') ?? null,
+    attachments: atts.length ? atts : undefined,
   };
 }
 
@@ -770,16 +772,28 @@ export async function ocGetWorkItemTimeline(
   };
 }
 
-/** İş kaydına yorum ekler. `mentions` = etiketlenen kişi id'leri (in-app bildirim tetikler). */
+/**
+ * İş kaydına yorum ekler. `mentions` = etiketlenen kişi id'leri (in-app bildirim tetikler).
+ * `files` = yorum ekleri (tarayıcı File); base64 `content` ile gönderilir, DG MinIO'ya yükler.
+ */
 export async function ocAddWorkItemComment(
   workItemId: string,
   body: string,
   parentCommentId?: string | null,
-  mentions?: string[]
+  mentions?: string[],
+  files?: File[]
 ): Promise<OcComment> {
   const payload: Record<string, unknown> = { body };
   if (parentCommentId) payload.parentCommentId = parentCommentId;
   if (mentions && mentions.length) payload.mentions = [...new Set(mentions)];
+  if (files && files.length) {
+    payload.attachments = await Promise.all(
+      files.map(async (file) => ({
+        content: await fileToBase64(file),
+        originalFileName: file.name,
+      }))
+    );
+  }
   const raw = (await fetchFromOperations(
     `/api/v1/work-items/${encodeURIComponent(workItemId)}/comments`,
     'POST',

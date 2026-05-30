@@ -94,4 +94,7 @@ public sealed class TimelineEntryDto
     public string? Text { get; init; }
     public DateTime? At { get; init; }
     public string? ActivityType { get; init; }
+
+    /// <summary>Yorum ekleri (op_comments.attachments file isArray) ham değeri — { path, file_name, ... }[].</summary>
+    public JsonElement? Attachments { get; init; }
 }

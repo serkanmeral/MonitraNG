@@ -262,13 +262,21 @@ public class RuntimeContextService : IRuntimeContextService
 
         foreach (var comment in commentsTask.Result)
         {
+            JsonElement? commentAttachments = null;
+            if (comment.TryGetValue("attachments", out var attVal)
+                && attVal is JsonElement { ValueKind: JsonValueKind.Array } attEl)
+            {
+                commentAttachments = attEl;
+            }
+
             entries.Add(new TimelineEntryDto
             {
                 Type = "comment",
                 Id = WorkItemDataHelper.GetDataId(comment),
                 Actor = WorkItemDataHelper.GetString(comment, "author"),
                 Text = WorkItemDataHelper.GetString(comment, "body"),
-                At = WorkItemDataHelper.GetDateTime(comment, "commentDate")
+                At = WorkItemDataHelper.GetDateTime(comment, "commentDate"),
+                Attachments = commentAttachments
             });
         }
 

@@ -11,7 +11,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'submit', payload: { body: string; mentions: string[] }): void;
+  (e: 'submit', payload: { body: string; mentions: string[]; files: File[] }): void;
 }>();
 
 const { t } = useAppI18n();
@@ -19,6 +19,8 @@ const picker = useOcPersonPicker();
 const { loading } = picker;
 
 const text = ref('');
+const pendingFiles = ref<File[]>([]);
+const fileInputRef = ref<HTMLInputElement | null>(null);
 // VTextarea bileşen ref'i (inner <textarea> için $el üzerinden erişiriz).
 const textareaRef = ref<{ $el?: HTMLElement } | null>(null);
 const menuOpen = ref(false);
@@ -92,14 +94,30 @@ function resolveMentions(): string[] {
   return [...new Set(ids)];
 }
 
+function triggerFilePick() {
+  fileInputRef.value?.click();
+}
+
+function onFilesPicked(e: Event) {
+  const input = e.target as HTMLInputElement;
+  const picked = Array.from(input.files ?? []);
+  if (picked.length) pendingFiles.value = [...pendingFiles.value, ...picked];
+  input.value = '';
+}
+
+function removeFile(index: number) {
+  pendingFiles.value = pendingFiles.value.filter((_, i) => i !== index);
+}
+
 function doSubmit() {
   const body = text.value.trim();
-  if (!body || props.sending) return;
-  emit('submit', { body, mentions: resolveMentions() });
+  if ((!body && pendingFiles.value.length === 0) || props.sending) return;
+  emit('submit', { body, mentions: resolveMentions(), files: [...pendingFiles.value] });
 }
 
 function reset() {
   text.value = '';
+  pendingFiles.value = [];
   mentionMap.value = new Map();
   menuOpen.value = false;
   mentionStart.value = -1;
@@ -152,23 +170,59 @@ const menuItems = computed<OcPersonPickerItem[]>(() =>
       </v-card>
     </div>
 
+    <input
+      ref="fileInputRef"
+      type="file"
+      multiple
+      class="d-none"
+      @change="onFilesPicked"
+    >
+
+    <div v-if="pendingFiles.length" class="d-flex flex-wrap ga-2 mt-2">
+      <v-chip
+        v-for="(file, idx) in pendingFiles"
+        :key="idx"
+        size="small"
+        variant="tonal"
+        rounded="lg"
+        closable
+        prepend-icon="mdi-paperclip"
+        @click:close="removeFile(idx)"
+      >
+        {{ file.name }}
+      </v-chip>
+    </div>
+
     <div class="d-flex align-center justify-space-between mt-2 ga-2">
       <span class="text-caption text-medium-emphasis">
         {{ t('operationCore.profile.comments.mentionHint') }}
       </span>
-      <v-btn
-        color="primary"
-        size="small"
-        variant="flat"
-        rounded="lg"
-        class="text-none"
-        :loading="sending"
-        :disabled="!text.trim()"
-        prepend-icon="mdi-send"
-        @click="doSubmit"
-      >
-        {{ sendLabel }}
-      </v-btn>
+      <div class="d-flex align-center ga-2">
+        <v-btn
+          variant="text"
+          size="small"
+          rounded="lg"
+          class="text-none"
+          prepend-icon="mdi-paperclip"
+          :disabled="sending"
+          @click="triggerFilePick"
+        >
+          {{ t('operationCore.profile.comments.attach') }}
+        </v-btn>
+        <v-btn
+          color="primary"
+          size="small"
+          variant="flat"
+          rounded="lg"
+          class="text-none"
+          :loading="sending"
+          :disabled="!text.trim() && !pendingFiles.length"
+          prepend-icon="mdi-send"
+          @click="doSubmit"
+        >
+          {{ sendLabel }}
+        </v-btn>
+      </div>
     </div>
   </div>
 </template>

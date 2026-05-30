@@ -498,6 +498,8 @@ export interface OcTimelineEntry {
   text?: string | null;
   at?: string | null;
   activityType?: string | null;
+  /** Yorum ekleri (op_comments.attachments) — yalnızca `type='comment'` girdilerde. */
+  attachments?: OcAttachment[];
 }
 
 export interface OcTimelinePage {

@@ -208,13 +208,14 @@ async function loadTimeline() {
   }
 }
 
-async function submitComment(payload: { body: string; mentions: string[] }) {
+async function submitComment(payload: { body: string; mentions: string[]; files: File[] }) {
   const body = payload.body.trim();
-  if (!body) return;
+  const files = payload.files ?? [];
+  if (!body && files.length === 0) return;
   commentSending.value = true;
   commentError.value = null;
   try {
-    await ocAddWorkItemComment(workItemId.value, body, null, payload.mentions);
+    await ocAddWorkItemComment(workItemId.value, body, null, payload.mentions, files);
     composerRef.value?.reset();
     await loadTimeline();
   } catch (e: unknown) {
@@ -363,6 +364,23 @@ watch(workItemId, () => {
                       <span v-if="entry.at" class="text-caption text-medium-emphasis">{{ fmtDate(entry.at) }}</span>
                     </div>
                     <div class="text-body-2 mt-1" style="white-space: pre-wrap">{{ entry.text }}</div>
+                    <div
+                      v-if="entry.attachments && entry.attachments.length"
+                      class="d-flex flex-wrap ga-2 mt-2"
+                    >
+                      <v-chip
+                        v-for="att in entry.attachments"
+                        :key="att.path"
+                        size="small"
+                        variant="outlined"
+                        rounded="lg"
+                        prepend-icon="mdi-paperclip"
+                        link
+                        @click="downloadAttachment(att)"
+                      >
+                        {{ att.fileName }}
+                      </v-chip>
+                    </div>
                   </v-timeline-item>
                 </v-timeline>
               </v-card-text>

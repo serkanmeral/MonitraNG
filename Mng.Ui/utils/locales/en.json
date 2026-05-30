@@ -3351,6 +3351,7 @@
         "empty": "No activity yet.",
         "error": "Could not add the comment.",
         "mentionHint": "Type @ to mention a person · Ctrl+Enter to send",
+        "attach": "Attach",
         "loadMore": "Load more...",
         "searching": "Searching...",
         "noPeople": "No matching people"

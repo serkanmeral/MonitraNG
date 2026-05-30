@@ -480,7 +480,8 @@ public class WorkItemCommandService : IWorkItemCommandService
             request.ParentCommentId,
             token,
             cancellationToken,
-            request.Mentions);
+            request.Mentions,
+            request.Attachments);
     }
 
     public async Task DeleteAsync(
@@ -538,7 +539,8 @@ public class WorkItemCommandService : IWorkItemCommandService
         string? parentCommentId,
         string token,
         CancellationToken cancellationToken,
-        IReadOnlyList<string>? mentions = null)
+        IReadOnlyList<string>? mentions = null,
+        IReadOnlyList<CommentAttachmentInput>? attachments = null)
     {
         var now = DateTime.UtcNow;
         var mentionIds = mentions?
@@ -561,6 +563,20 @@ public class WorkItemCommandService : IWorkItemCommandService
 
         if (mentionIds.Count > 0)
             payload["mentions"] = new Dictionary<string, object?> { ["personIds"] = mentionIds };
+
+        // Yorum ekleri: yeni dosyalar base64 `content` ile gönderilir; DG MinIO'ya yükleyip
+        // { path, file_name, ... } olarak saklar (op_comments.attachments file isArray).
+        var attachmentPayload = attachments?
+            .Where(a => a is not null && !string.IsNullOrWhiteSpace(a.Content))
+            .Select(a => (object?)new Dictionary<string, object?>
+            {
+                ["content"] = a.Content,
+                ["originalFileName"] = a.OriginalFileName
+            })
+            .ToList();
+
+        if (attachmentPayload is { Count: > 0 })
+            payload["attachments"] = attachmentPayload;
 
         var persisted = await _dg.CreateAsync(OcDatasets.Comments, payload, token, cancellationToken);
         var commentId = GetDataId(persisted);

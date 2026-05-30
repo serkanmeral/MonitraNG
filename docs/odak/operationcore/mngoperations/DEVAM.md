@@ -226,6 +226,19 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 
 ---
 
+## A — Yorum ekleri (op_comments.attachments) (bu oturum, 30 May)
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **A** | ✅ | **Yorumlara dosya eki** — `op_comments.attachments` (file isArray, şemada zaten mevcut). Composer'da dosya seç/kaldır; gönderimde base64 `content` ile MO'ya gider, DG MinIO'ya yükler. Timeline yorum girdilerinde ekler indirilebilir chip (mevcut `ocDownloadAttachment`). İş kaydı ekleri pattern'i birebir. |
+
+**Backend (MO):** `AddCommentRequest.Attachments` (+ `CommentAttachmentInput`); `AddCommentInternalAsync` payload'a `attachments` yazar; `TimelineEntryDto.Attachments` + timeline yorum döngüsü ham `attachments`'ı geçirir. Build 0/0.
+**UI:** `OcCommentComposer.vue` (dosya seçici + bekleyen chip'ler + emit `files`), `operationCoreService.ts` (`ocAddWorkItemComment` files→base64, `mapTimelineEntry` attachments parse), `OcTimelineEntry.attachments`, profil timeline ek chip'leri, locale `en/tr`.
+**Backend şema değişikliği yok** — `op_comments.attachments` (file isArray) phase-1 şemasında zaten tanımlı.
+**Deploy:** MO + mngui deploy gerekir.
+
+---
+
 ## Sıradaki işler
 
 | # | Epic | Hedef |
@@ -233,9 +246,9 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 | ~~1~~ | ~~**E1-P1**~~ | ✅ Genel sekme yetki grupları (view/edit/admin) — Odak'ta canlı |
 | ~~2~~ | ~~**W-CREATE**~~ | ✅ Yeni workspace oluşturma UI — Odak'ta canlı |
 | ~~3~~ | ~~**E1-P2**~~ | ✅ Akışlar: geçiş `requiredFields` + `permissions.groups` — Odak'ta canlı |
-| ~~4~~ | ~~**CC**~~ | ✅ Dinamik (computed) sütunlar (expr-eval, display-only) — bu oturum (MO+mngui deploy bekliyor) |
-| **1** | **A** | `op_comments.attachments` (yorum ekleri) — iş kaydı ekleri pattern'i |
-| **2** | **F** | Operasyonel runtime + **SLA-3** chip |
+| ~~4~~ | ~~**CC**~~ | ✅ Dinamik (computed) sütunlar (expr-eval, display-only) — Odak'ta canlı |
+| ~~5~~ | ~~**A**~~ | ✅ `op_comments.attachments` (yorum ekleri) — bu oturum (MO+mngui deploy bekliyor) |
+| **1** | **F** | Operasyonel runtime + **SLA-3** chip |
 
 ---
 
@@ -256,6 +269,7 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 [✓] Relation alanlarda option/relation etiketi (BLF-9) — Odak'ta canlı
 [✓] Workspace yetki grupları (E1-P1) + Yeni workspace UI (W-CREATE) — Odak'ta canlı
 [✓] Admin kapanış: akış geçiş requiredFields + yetki grupları (E1-P2) — Odak'ta canlı
-[✓] Dinamik (computed) sütunlar (CC, expr-eval display-only) — lokal (MO+mngui deploy bekliyor)
-[ ] Yorum ekleri (op_comments.attachments) → operasyonel runtime/SLA-3
+[✓] Dinamik (computed) sütunlar (CC, expr-eval display-only) — Odak'ta canlı
+[✓] Yorum ekleri (op_comments.attachments) — lokal (MO+mngui deploy bekliyor)
+[ ] Operasyonel runtime + SLA-3 chip (F)
 ```

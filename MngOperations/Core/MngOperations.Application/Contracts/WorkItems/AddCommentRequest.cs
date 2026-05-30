@@ -7,6 +7,16 @@ public sealed class AddCommentRequest
 
     /// <summary>Yorumda etiketlenen kişi id'leri (mention). op_comments.mentions + in-app bildirim.</summary>
     public IReadOnlyList<string>? Mentions { get; init; }
+
+    /// <summary>Yorum ekleri (yeni dosyalar). DG `op_comments.attachments` (file isArray) inline yüklenir.</summary>
+    public IReadOnlyList<CommentAttachmentInput>? Attachments { get; init; }
+}
+
+/// <summary>Yeni yorum eki — base64 içerik + orijinal dosya adı (DG MinIO'ya yükler).</summary>
+public sealed class CommentAttachmentInput
+{
+    public required string Content { get; init; }
+    public required string OriginalFileName { get; init; }
 }
 
 public sealed class CommentDto
