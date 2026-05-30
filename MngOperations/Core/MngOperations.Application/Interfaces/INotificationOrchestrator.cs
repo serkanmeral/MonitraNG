@@ -20,6 +20,20 @@ public interface INotificationOrchestrator
         string? actorUserId,
         string token,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Atanan kişiye in-app "size atandı" bildirimi oluşturur (politikadan bağımsız, her zaman; best-effort).
+    /// Atama değişmediyse (<paramref name="assigneeId"/> == <paramref name="previousAssigneeId"/>),
+    /// boşsa veya kişi atamayı kendisi yaptıysa (== <paramref name="actorUserId"/>) atlanır.
+    /// </summary>
+    Task DispatchAssignmentAsync(
+        string workItemId,
+        string workItemKey,
+        string? assigneeId,
+        string? previousAssigneeId,
+        string? actorUserId,
+        string token,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed class NotificationDispatchRequest

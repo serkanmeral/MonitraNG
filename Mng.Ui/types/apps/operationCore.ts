@@ -20,6 +20,11 @@ export interface OpWorkspaceDetail extends OpWorkspace {
   defaultStateFlowId?: string | null;
   /** op_workspaces.settings — workspace politikaları `fieldPolicies` altında */
   settings?: Record<string, unknown>;
+  /** Workspace yetki grupları (Keeper @users grup id'leri) — MO katman B. */
+  viewGroups?: string[];
+  editGroups?: string[];
+  adminGroups?: string[];
+  ownerGroups?: string[];
 }
 
 export const OC_WORKSPACE_TYPE_VALUES = [
@@ -485,6 +490,28 @@ export interface OcTimelinePage {
   skip: number;
   take: number;
   total: number;
+}
+
+/** In-app bildirim (MO op_notifications — geçerli kullanıcı). */
+export interface OcNotification {
+  id: string;
+  notificationType?: string | null;
+  title?: string | null;
+  message?: string | null;
+  isRead: boolean;
+  workItemId?: string | null;
+  workItemKey?: string | null;
+  sourceDataset?: string | null;
+  sourceRecordId?: string | null;
+  createdAt?: string | null;
+}
+
+export interface OcNotificationListResponse {
+  items: OcNotification[];
+  skip: number;
+  take: number;
+  total: number;
+  unreadCount: number;
 }
 
 /** Yorum (MO AddCommentAsync yanıtı). */

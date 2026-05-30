@@ -1547,6 +1547,18 @@
         "subtitle": "Günlük notlarım"
       },
       "logout": "Çıkış Yap"
+    },
+    "notifications": {
+      "title": "Bildirimler",
+      "unreadCount": "{count} yeni",
+      "empty": "Bildirim yok",
+      "markAllRead": "Tümünü okundu işaretle",
+      "loadError": "Bildirimler yüklenemedi",
+      "types": {
+        "CommentMention": "Etiketlenme",
+        "WorkItemAssigned": "Atama",
+        "default": "Bildirim"
+      }
     }
   },
   "chatbot": {
@@ -3698,7 +3710,14 @@
       "selectWorkspace": "Workspace",
       "selectWorkspaceHint": "Yapılandırmak istediğiniz operasyon domain'ini seçin.",
       "pickWorkspace": "Devam etmek için bir workspace seçin.",
-      "noWorkspaces": "Henüz workspace kaydı yok. Seed script veya DG admin ile oluşturun.",
+      "noWorkspaces": "Henüz workspace kaydı yok. İlk workspace'inizi oluşturun.",
+      "newWorkspace": "Yeni workspace",
+      "create": {
+        "title": "Yeni workspace oluştur",
+        "subtitle": "Workspace kodu otomatik atanır. Diğer ayarları (yetki grupları, katalog, akış) oluşturduktan sonra Genel ve diğer sekmelerden yapılandırabilirsiniz.",
+        "submit": "Oluştur",
+        "saveError": "Workspace oluşturulamadı."
+      },
       "tabs": {
         "general": "Genel",
         "values": "Değerler",
@@ -4162,6 +4181,11 @@
         "fieldSequenceStart": "Sıra başlangıcı",
         "keyPrefixHint": "Örn. HD, SOC, TSK",
         "keyFormatHint": "Örn. {prefix}-{seq:D4}",
+        "accessSection": "Erişim ve yetki grupları",
+        "accessHint": "Boş bırakılırsa workspace yetkili tüm kullanıcılara açık olur. Yönetim grupları tanımlar üzerinde yetki verir.",
+        "fieldViewGroups": "Görüntüleme grupları",
+        "fieldEditGroups": "Düzenleme grupları",
+        "fieldAdminGroups": "Yönetim grupları",
         "workspaceType": {
           "team": "Ekip",
           "service_desk": "Help desk",

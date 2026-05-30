@@ -118,9 +118,9 @@ const getCart = computed(() => {
     </v-btn>
 
     <!-- ------------------------------------------------>
-    <!-- Notification (Admin Only) -->
+    <!-- Notification (in-app: op_notifications, incl. mentions) -->
     <!-- ------------------------------------------------>
-    <LcFullVerticalHeaderNotificationDD v-if="authStore.isAdmin" />
+    <LcFullVerticalHeaderNotificationDD />
 
     <!-- ---------------------------------------------- -->
     <!-- User Profile -->

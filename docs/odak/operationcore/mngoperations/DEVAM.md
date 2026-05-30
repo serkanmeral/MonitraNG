@@ -1,9 +1,34 @@
 # MngOperations & Operation Core UI — Devam noktası (checkpoint)
 
 **Son güncelleme:** 30 Mayıs 2026 (board liste audit/SLA sütunları + sabit actions + form chrome: profil/yorum/SLA/politika/mention/ekler)  
-**Durum:** SW **SW-0…SW-6** ✅ · A1 R-Plus ✅ · **SLA-0/1/2** ✅ · **D1 Board admin** ✅ · **BL (board liste enrichment)** ✅ · **BO (board liste aksiyonlar)** ✅ · **BLF (server-side liste + gelişmiş arama)** ✅ · **BLC (audit/SLA sütunları + sabit actions)** ✅ · **FC (form chrome: profil/yorum/SLA/politika/mention/ekler)** ✅ · **mngui Odak deploy** ✅
+**Durum:** SW **SW-0…SW-6** ✅ · A1 R-Plus ✅ · **SLA-0/1/2** ✅ · **D1 Board admin** ✅ · **BL (board liste enrichment)** ✅ · **BO (board liste aksiyonlar)** ✅ · **BLF (server-side liste + gelişmiş arama)** ✅ · **BLC (audit/SLA sütunları + sabit actions)** ✅ · **FC (form chrome: profil/yorum/SLA/politika/mention/ekler)** ✅ · **NP (in-app bildirim paneli + mention görünür)** ✅ (lokal) · **mngui Odak deploy** ✅
 
 **Ana plan:** [OC_UI_ADMIN_FAZ1_PLAN.md](../ui/OC_UI_ADMIN_FAZ1_PLAN.md)
+
+---
+
+## NP — In-app bildirim paneli + mention görünürlüğü (bu oturum, 30 May)
+
+Header bildirim paneli (`NotificationDD.vue`) **mock veriyi bırakıp** geçerli kullanıcının `op_notifications` kayıtlarını gösterir. FC-4 mention bildirimleri (`CommentMention`) ve tüm event/kural bildirimleri artık kullanıcıya görünür.
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **NP-1** | ✅ | **MO bildirim ucu** — `GET /notifications` (`unreadOnly`, skip/take, en yeni önce) + `POST /notifications/{id}/read` + `POST /notifications/read-all`. `INotificationQueryService`/`NotificationQueryService`: kapsam daima `IRequestContext.UserId`; match user'a sabit, mark işlemleri sahiplik doğrular (404). `NotificationDto`/`NotificationListResponse` (+`unreadCount`). |
+| **NP-2** | ✅ | **createdAt damgası** — `NotificationOrchestratorService` (mention + in-app) artık `createdAt` (ISO) yazar; DG otomatik damgalamadığı için sıralama (`-createdAt`) buna dayanır. Forward-only (eski kayıtlarda yok → en alta düşer). |
+| **NP-3** | ✅ | **Panel UI** — `NotificationDD.vue`: rozet (okunmamış sayısı), tip ikon/renk (`CommentMention`=@), göreli zaman (`Intl.RelativeTimeFormat`), okunmamış vurgusu, tıklayınca okundu+iş kaydı profiline git, "Tümünü okundu işaretle", 60sn poll. Admin kapısı kaldırıldı (mention edilen kullanıcı admin olmayabilir). i18n `header.notifications.*` (en/tr). |
+
+| **NP-4** | ✅ | **Kimlik uzayı düzeltmesi (bug)** — Bildirimler person picker kimliğiyle (`mng_person_id` = Keeper `@users` id) yazılıyor; panel ise `sub` (Keycloak id) ile sorguluyordu → **asla eşleşmiyordu** (mention + atama bildirimleri görünmez). `IRequestContext.MngPersonId` (claim `mng_person_id`, `sub` yedek); `NotificationQueryService` artık `userId $in {mng_person_id, sub}` ile eşler. Ayrıca mention/event **actor** = `MngPersonId` (self-exclude doğru çalışır). |
+| **NP-5** | ✅ | **Yerleşik atama bildirimi** — `INotificationOrchestrator.DispatchAssignmentAsync`: politikadan bağımsız, atama yapılınca her zaman atanan kişiye in-app `WorkItemAssigned` bildirimi (best-effort). Create (assignee varsa) + Patch (assignee **değiştiyse**). Atayan kişi kendine atadıysa veya değişmediyse atlanır. UI: `WorkItemAssigned` ikon/etiket (`mdi-account-arrow-right`, "Atama"). |
+
+**MO yeni:** `Contracts/Notifications/NotificationDto.cs`, `Interfaces/INotificationQueryService.cs`, `Services/NotificationQueryService.cs`, `Controllers/NotificationsController.cs`. **Değişen:** `ServiceRegistration.cs` (DI), `Services/NotificationOrchestratorService.cs` (`createdAt`), `Interfaces/IRequestContext.cs` + `Services/HttpRequestContext.cs` (`MngPersonId`), `Services/WorkItemCommandService.cs` (mention/event actor = `MngPersonId`).
+**UI yeni/değişen:** `components/lc/Full/vertical-header/NotificationDD.vue` (yeniden yazıldı), `services/operationCoreService.ts` (`ocGetNotifications`/`ocMarkNotificationRead`/`ocMarkAllNotificationsRead`), `types/apps/operationCore.ts` (`OcNotification`/`OcNotificationListResponse`), `vertical-header/index.vue` (admin gate kaldırıldı), locale `en/tr`.
+**Deploy:** MO build temiz (0 hata) · UI `npm run generate` temiz (169 route). **`mngoperations` Odak'a deploy edildi (30 May, healthy — NP-1…5).** **`mngui` Odak'a deploy edildi (30 May 11:03, healthy — `ui=200`; NP paneli + BLF-8 canlı).**
+
+**Açık/ileriki:**
+- ✅ **Atama bildirimi** — NP-5 ile yerleşik (politikadan bağımsız) hale getirildi. Diğer event'ler (`WorkItemUpdated`/`Transitioned` vb.) hâlâ `op_notification_policies` gerektirir.
+- ⬜ `createdBy` damgası `sub` (Keycloak id) ile yazılıyor; person çözümü `mng_person_id`/@users id beklediği için ad çözülmeyebilir — gözden geçir.
+- ⬜ Bildirim okundu durumunu farklı sekmeler/cihazlar arası canlı senkron (şu an 60sn poll).
+- ⬜ "Tümünü gör" ayrı bildirim sayfası (şu an son 20 dropdown'da).
 
 ---
 
@@ -39,7 +64,7 @@ Hibrit profil (ana kolonda sekmeler + sağ sidebar özetler) ve sade modal. Plan
 
 **Açık/ileriki:**
 - ⬜ **Dinamik (computed) sütunlar** (`expr-eval`, display-only) — BLC kapsamından ertelendi.
-- ⬜ Mention bildirim panelinin `CommentMention` tipini gösterdiğini doğrula (gerekirse panel filtresine ekle).
+- ✅ Mention bildirim paneli `CommentMention` tipini gösteriyor → **NP** bölümü (in-app bildirim paneli) ile çözüldü.
 - ⬜ `op_comments.attachments` (yorum ekleri) — şu an sadece iş kaydı ekleri.
 
 ---
@@ -57,6 +82,8 @@ Board liste görünümü **tam sunucu tarafı**na taşındı: sütun sırası + 
 | **BLF-5** | ✅ | **Katalog filtre seçenekleri workspace kapsamı** — `BuildBoardCatalogsAsync` artık state = board akış kapsamı ∪ `enabledStateIds`; priority/type = `enabled*Ids` (yoksa workspace tipleri / tüm katalog). Enabled ID alandan, yoksa `settings` yedeğinden. *(Önceki: tüm katalog geliyordu.)* |
 | **BLF-6** | ✅ | **Gelişmiş arama + AND** — MO filtreleri `$and` ile birleşir (aynı alana çoklu koşul ezilmez; kullanıcı `stateId` filtresi kapsamla kesişir). UI: açılır panel, çok satırlı `[Alan][Operatör][Değer]`. Operatörler: `eq/ne/in/nin/contains/startsWith/endsWith` (+ backend `gt/gte/lt/lte`). |
 | **BLF-7** | ✅ | **Search temizleme fix + Clear butonu** — `clearable` `null` → `(searchInput ?? '').trim()` (eski: `null.trim()` patlıyordu, liste yenilenmiyordu); belirgin "Aramayı temizle" butonu + `@click:clear`. |
+| **BLF-8** | ✅ | **Sayısal/tarih operatörleri UI'a açıldı** — gelişmiş aramada `number` ve `date` alan tipleri: `gt/gte/lt/lte` (+`eq/ne`). Alan tipi tespiti: `filterKind()` artık `columnFormat`(`number`/`money`/`date`) + pool `fieldType`(`number`/`date`/`datetime`) ile karar veriyor (core date: createdAt/lastStateChangeAt/closedAt). Değer girişi: number=`type=number`, date=`type=datetime-local` → `toISOString()` UTC ile gönderilir (saklama ISO string ile sözlüksel uyumlu). Bu alanlar hızlı filtreden hariç (operatör gerektirir). **Backend değişikliği yok** (`CoerceScalar` long/double; ISO string lexicographic). |
+| **BLF-9** | ✅ | **Relation alanlarda option/relation etiketi** — pool `relation` alanları (`relationDatasetName`): liste hücresinde ham `__dataId` yerine ilgili kaydın **adı**; filtrede (hızlı + gelişmiş) ham metin yerine **v-select** (option=ad, value=id, `in/nin/eq/ne`). Board sayfası relation dataset'lerini `ocListDataset`+`recordToDatasetItems` ile (dataset bazında tek sefer) yükler → `relationOptionsByKey`/`relationLabelByKey`. Filtre bileşeni `OcBoardFilterKind`'a `relation` eklendi; katalog mantığı "select" (katalog ∪ relation) olarak genelleştirildi. *(Statik `select`/`enum` pool tipi yok; OC tipleri text/number/bool/datetime/relation/persons/personGroups/tags/file.)* **Backend değişikliği yok.** |
 
 **Düzeltmeler (aynı oturum grubu):**
 - ✅ **assignee bozulması** — edit'te `assignee` object olarak persist ediliyordu; `MngDataGatewayClient.CollapseRelationValue` `assignee` (tekil) + `watchers` (çoklu) relation'ı id'ye indirger.
@@ -71,9 +98,10 @@ Board liste görünümü **tam sunucu tarafı**na taşındı: sütun sırası + 
 **Belgeler:** [API_SURFACE §3.1/3.1.2](./API_SURFACE.md) (board context + liste ucu) · [RUNTIME_CONTEXT §5.2](./RUNTIME_CONTEXT.md) (katalog scope).
 
 **Açık/ileriki:**
-- ⬜ Gelişmiş aramada sayısal/tarih alanlar için `gt/gte/lt/lte` operatörlerini UI'a aç (alan tipi tespiti gerek).
-- ⬜ Pool select/relation alanlarda filtre değeri için option/relation etiketi (şu an ham değer).
-- ✅ **`mngui` Odak deploy** (30 May, healthy — BLF+BLC+FC canlı).
+- ✅ Gelişmiş aramada sayısal/tarih `gt/gte/lt/lte` → **BLF-8** (UI-only; Odak'a deploy edildi 30 May 11:03, healthy).
+- ✅ Pool relation alanlarda filtre/hücre option-relation etiketi → **BLF-9** (UI-only, deploy bekliyor).
+- ⬜ `tags` (çoklu serbest etiket) alanları için etiket/option çözümü — şimdilik yalnızca `relation` kapsandı.
+- ✅ **`mngui` Odak deploy** (30 May, healthy — BLF+BLC+FC+NP+BLF-8 canlı). *Not: BLF-9 yeni UI değişikliği, henüz deploy edilmedi.*
 
 ## BO — Board liste operasyonel aksiyonlar (bu oturum, 30 May)
 
@@ -116,7 +144,7 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 **Açık/ileriki:**
 - ✅ **mngui** Odak deploy (30 May 2026, healthy).
 - ⬜ Person **grup** alanları (`personGroups`/`group`) ad çözümü.
-- ⬜ Pool **select/relation** hücrelerinde option etiketi / relation adı (şu an ham değer/key).
+- ✅ Pool **relation** hücrelerinde relation adı (ham id yerine) → **BLF-9** (`tags` hariç).
 - ⬜ **Keeper:** Redis kullanıcı profili cache + `POST api/User/by-ids` toplu endpoint → MO tek istekte çözer ([INTEGRATIONS §1.1](./INTEGRATIONS.md)).
 
 ---
@@ -151,13 +179,33 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 
 ---
 
+## E1-P1 + W-CREATE — Workspace yetki grupları + Yeni workspace UI (bu oturum, 30 May)
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **E1-P1** | ✅ | **Genel sekmede yetki grupları** — `OcWorkspaceDefinitionsGeneralTab.vue`'ye `viewGroups`/`editGroups`/`adminGroups` Keeper grup seçicileri (board dialog pattern: `useGroupStore` + multi-select chips). Load `ocGetWorkspace` → form; save `ocUpdateWorkspace` payload'una eklenir. Tip: `OpWorkspaceDetail`'e `viewGroups/editGroups/adminGroups/ownerGroups`; `mapWorkspaceDetail` `resolveRelationIds` ile parse (string id veya relation obje). |
+| **W-CREATE** | ✅ | **Yeni workspace oluşturma UI** — `OcWorkspaceCreateDialog.vue` (name zorunlu + workspaceType + prefix + açıklama; `key` DG incremental). Servis `ocCreateWorkspace` = `ocCreateRecordId('op_workspaces', …)`. Hub (`admin/workspace-definitions/index.vue`): v-select yanına "Yeni workspace" butonu + boş-durum CTA; create sonrası `loadWorkspaces` + yeni id seçilir + Genel sekme. |
+
+**UI yeni:** `OcWorkspaceCreateDialog.vue`. **Değişen:** `OcWorkspaceDefinitionsGeneralTab.vue`, `admin/workspace-definitions/index.vue`, `services/operationCoreService.ts` (`ocCreateWorkspace` + `mapWorkspaceDetail` grupları), `types/apps/operationCore.ts`, locale `en/tr`.
+**Backend değişikliği yok** — `WorkspaceRecord` zaten `ViewGroups/EditGroups/AdminGroups/OwnerGroups` içeriyor; `op_workspaces` create DG `key` incremental üretir.
+**Deploy:** UI-only, **deploy bekliyor**.
+
+**Açık/ileriki:**
+- ⬜ **E1-P2:** Akış (flow) geçişlerinde `requiredFields` + `permissions.groups` editörü → admin kapanışın kalan parçası.
+- ⬜ Create dialog'da opsiyonel: ilk board/akış seed'i (şimdilik boş; Değerler/Akış sekmelerinden kurulur).
+- ⬜ Workspace silme/devre dışı bırakma (Genel sekme) — guard + ilişki kontrolü.
+
+---
+
 ## Sıradaki işler
 
 | # | Epic | Hedef |
 |---|------|--------|
-| **1** | **E1** | Admin kapanış + yetki grupları (Genel sekme) |
-| **2** | **W-CREATE** | Yeni workspace oluşturma UI |
-| **3** | **F** | Operasyonel runtime + **SLA-3** chip |
+| ~~1~~ | ~~**E1-P1**~~ | ✅ Genel sekme yetki grupları (view/edit/admin) — bu oturum |
+| ~~2~~ | ~~**W-CREATE**~~ | ✅ Yeni workspace oluşturma UI — bu oturum |
+| **1** | **E1-P2** | Akışlar: geçiş `requiredFields` + `permissions.groups` (admin kapanış kalan) |
+| **2** | **F** | Operasyonel runtime + **SLA-3** chip |
+| **3** | **CC** | Dinamik (computed) sütunlar (expr-eval, display-only) |
 
 ---
 
@@ -173,5 +221,9 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 [✓] Board liste server-side (sıralama/filtre/arama + gelişmiş arama + workspace scope)
 [✓] Board liste audit/SLA sütunları + sabit actions sütunu
 [✓] Form chrome: hibrit profil + yorum/timeline + SLA paneli + politika paneli + mention + ekler (DG file)
-[ ] Workspace create → Admin kapanış → dinamik (computed) sütunlar
+[✓] In-app bildirim paneli (op_notifications + mention görünür) — Odak'ta canlı
+[✓] Gelişmiş arama gt/gte/lt/lte UI (BLF-8) — Odak'ta canlı
+[✓] Relation alanlarda option/relation etiketi (BLF-9) — lokal (deploy bekliyor)
+[✓] Workspace yetki grupları (E1-P1) + Yeni workspace UI (W-CREATE) — lokal (deploy bekliyor)
+[ ] Admin kapanış kalan (E1-P2 akış geçiş yetkileri) → dinamik (computed) sütunlar
 ```

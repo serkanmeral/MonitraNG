@@ -4,7 +4,7 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import OcPersonPickerAutocomplete from '@/components/apps/operation-core/OcPersonPickerAutocomplete.vue';
 import type { OcBoardListFilter } from '@/types/apps/operationCore';
 
-export type OcBoardFilterKind = 'state' | 'priority' | 'type' | 'person' | 'text';
+export type OcBoardFilterKind = 'state' | 'priority' | 'type' | 'person' | 'relation' | 'number' | 'date' | 'text';
 
 export interface OcBoardFilterColumn {
   key: string;
@@ -24,6 +24,8 @@ const props = defineProps<{
   stateOptions: { value: string; title: string }[];
   priorityOptions: { value: string; title: string }[];
   typeOptions: { value: string; title: string }[];
+  /** Pool relation alanları için key → option listesi (value=__dataId, title=ad). */
+  relationOptionsByKey?: Record<string, { value: string; title: string }[]>;
 }>();
 
 const emit = defineEmits<{
@@ -45,6 +47,9 @@ const OPERATORS_BY_KIND: Record<OcBoardFilterKind, string[]> = {
   priority: ['in', 'nin', 'eq', 'ne'],
   type: ['in', 'nin', 'eq', 'ne'],
   person: ['eq', 'ne'],
+  relation: ['in', 'nin', 'eq', 'ne'],
+  number: ['eq', 'ne', 'gt', 'gte', 'lt', 'lte'],
+  date: ['gte', 'lte', 'gt', 'lt', 'ne', 'eq'],
   text: ['contains', 'eq', 'ne', 'startsWith', 'endsWith'],
 };
 
@@ -60,6 +65,11 @@ function kindOf(field: string): OcBoardFilterKind | null {
 
 function isCatalogKind(kind: OcBoardFilterKind | null): boolean {
   return kind === 'state' || kind === 'priority' || kind === 'type';
+}
+
+// "Select" = sabit katalog (state/priority/type) ∪ pool relation — ikisi de v-select + in/nin/eq/ne.
+function isSelectKind(kind: OcBoardFilterKind | null): boolean {
+  return isCatalogKind(kind) || kind === 'relation';
 }
 
 function catalogOptions(kind: OcBoardFilterKind): { value: string; title: string }[] {
@@ -96,20 +106,42 @@ function isMultiCatalogOp(op: string): boolean {
 }
 
 function isCatalogField(field: string): boolean {
-  return isCatalogKind(kindOf(field));
+  return isSelectKind(kindOf(field));
 }
 
 function isPersonField(field: string): boolean {
   return kindOf(field) === 'person';
 }
 
+function isNumberField(field: string): boolean {
+  return kindOf(field) === 'number';
+}
+
+function isDateField(field: string): boolean {
+  return kindOf(field) === 'date';
+}
+
+// Hızlı filtre satırı sayısal/tarih alanları göstermez — bunlar operatör gerektirir, gelişmiş aramada.
+const quickColumns = computed(() =>
+  props.columns.filter((c) => c.kind !== 'number' && c.kind !== 'date')
+);
+
+/** datetime-local ("YYYY-MM-DDTHH:mm", yerel) → karşılaştırma için UTC ISO string. */
+function toIsoUtc(raw: string): string | null {
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
 function catalogOptionsForField(field: string): { value: string; title: string }[] {
   const kind = kindOf(field);
-  return kind && isCatalogKind(kind) ? catalogOptions(kind) : [];
+  if (!kind) return [];
+  if (isCatalogKind(kind)) return catalogOptions(kind);
+  if (kind === 'relation') return props.relationOptionsByKey?.[field] ?? [];
+  return [];
 }
 
 function defaultValueFor(kind: OcBoardFilterKind, op: string): unknown {
-  if (isCatalogKind(kind)) return isMultiCatalogOp(op) ? [] : null;
+  if (isSelectKind(kind)) return isMultiCatalogOp(op) ? [] : null;
   if (kind === 'person') return null;
   return '';
 }
@@ -138,7 +170,7 @@ function onRowOperatorChange(row: AdvancedRow) {
   const kind = kindOf(row.field);
   if (!kind) return;
   // Katalog: in/nin (çoklu) ↔ eq/ne (tekli) geçişinde değer tipini uyarla.
-  if (isCatalogKind(kind)) {
+  if (isSelectKind(kind)) {
     row.value = defaultValueFor(kind, row.operator);
   }
 }
@@ -157,8 +189,9 @@ function clearAll() {
 function quickFilters(): OcBoardListFilter[] {
   const out: OcBoardListFilter[] = [];
   for (const col of props.columns) {
+    if (col.kind === 'number' || col.kind === 'date') continue;
     const v = values[col.key];
-    if (isCatalogKind(col.kind)) {
+    if (isSelectKind(col.kind)) {
       const ids = Array.isArray(v) ? (v as string[]).filter(Boolean) : [];
       if (ids.length) out.push({ field: col.key, operator: 'in', value: ids.join(',') });
     } else if (col.kind === 'person') {
@@ -179,10 +212,15 @@ function advancedFilters(): OcBoardListFilter[] {
     if (!kind || !row.operator) continue;
 
     let value = '';
-    if (isCatalogKind(kind) && isMultiCatalogOp(row.operator)) {
+    if (isSelectKind(kind) && isMultiCatalogOp(row.operator)) {
       const ids = Array.isArray(row.value) ? (row.value as string[]).filter(Boolean) : [];
       if (!ids.length) continue;
       value = ids.join(',');
+    } else if (kind === 'date') {
+      const raw = typeof row.value === 'string' ? row.value.trim() : '';
+      const iso = raw ? toIsoUtc(raw) : null;
+      if (!iso) continue;
+      value = iso;
     } else {
       value = typeof row.value === 'string' ? row.value.trim() : '';
       if (!value) continue;
@@ -254,7 +292,7 @@ watch(
 
     <v-row dense>
       <v-col
-        v-for="col in columns"
+        v-for="col in quickColumns"
         :key="col.key"
         cols="12"
         sm="6"
@@ -262,9 +300,9 @@ watch(
         lg="3"
       >
         <v-select
-          v-if="col.kind === 'state' || col.kind === 'priority' || col.kind === 'type'"
+          v-if="isCatalogField(col.key)"
           v-model="values[col.key]"
-          :items="catalogOptions(col.kind)"
+          :items="catalogOptionsForField(col.key)"
           item-title="title"
           item-value="value"
           :label="col.label"
@@ -394,6 +432,26 @@ watch(
               density="compact"
               variant="outlined"
               :hide-details="true"
+            />
+            <v-text-field
+              v-else-if="isNumberField(row.field)"
+              v-model="row.value"
+              type="number"
+              :label="t('operationCore.board.filters.advanced.value')"
+              variant="outlined"
+              density="compact"
+              hide-details
+              :disabled="!row.field"
+            />
+            <v-text-field
+              v-else-if="isDateField(row.field)"
+              v-model="row.value"
+              type="datetime-local"
+              :label="t('operationCore.board.filters.advanced.value')"
+              variant="outlined"
+              density="compact"
+              hide-details
+              :disabled="!row.field"
             />
             <v-text-field
               v-else

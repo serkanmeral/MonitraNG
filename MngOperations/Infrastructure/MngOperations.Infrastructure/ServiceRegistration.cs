@@ -43,6 +43,7 @@ public static class ServiceRegistration
         services.AddScoped<IMngNotifiersClient, MngNotifiersClient>();
         services.AddScoped<IMngSchedulerClient, MngSchedulerClient>();
         services.AddScoped<INotificationOrchestrator, NotificationOrchestratorService>();
+        services.AddScoped<INotificationQueryService, NotificationQueryService>();
         services.AddSingleton<IOcEventPublisher, OcEventPublisher>();
         services.AddScoped<IHealthCheckService, HealthCheckService>();
         services.AddScoped<IMetadataCache, MetadataCacheService>();

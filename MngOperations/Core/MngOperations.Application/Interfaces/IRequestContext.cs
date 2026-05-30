@@ -5,7 +5,16 @@ namespace MngOperations.Application.Interfaces;
 /// </summary>
 public interface IRequestContext
 {
+    /// <summary>JWT <c>sub</c> — Keycloak kullanıcı id'si (kimlik doğrulama subject).</summary>
     string? UserId { get; }
+
+    /// <summary>
+    /// JWT <c>mng_person_id</c> — Keeper domain DB <c>@users</c> kaydı id'si.
+    /// Person picker (assignee/watchers/mention) bu id'yi saklar; bildirim alıcıları bu uzaydadır.
+    /// Claim yoksa <see cref="UserId"/>'ye düşer.
+    /// </summary>
+    string? MngPersonId { get; }
+
     string? Username { get; }
     string? DomainId { get; }
     string? DomainName { get; }

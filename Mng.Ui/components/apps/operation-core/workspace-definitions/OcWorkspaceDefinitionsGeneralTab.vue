@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { ocExtractDgErrorMessage, ocGetWorkspace, ocUpdateWorkspace } from '@/services/operationCoreService';
+import { useGroupStore } from '@/stores/apps/group';
 import type { OpWorkspaceDetail } from '@/types/apps/operationCore';
 import { OC_WORKSPACE_TYPE_VALUES } from '@/types/apps/operationCore';
 
@@ -10,6 +11,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const groupStore = useGroupStore();
 
 const loading = ref(true);
 const saving = ref(false);
@@ -24,6 +26,9 @@ const form = ref({
   workItemKeyPrefix: '',
   workItemKeyFormat: '{prefix}-{seq:D4}',
   workItemSequenceStart: '' as string,
+  viewGroups: [] as string[],
+  editGroups: [] as string[],
+  adminGroups: [] as string[],
 });
 
 const workspaceTypeItems = computed(() =>
@@ -32,6 +37,19 @@ const workspaceTypeItems = computed(() =>
     title: t(`operationCore.workspaceDefinitions.general.workspaceType.${value}`),
   }))
 );
+
+const groupItems = computed(() =>
+  (groupStore.groups || []).map((g) => ({
+    title: g.name,
+    value: g.id || g.groupId,
+  }))
+);
+
+onMounted(() => {
+  if (!groupStore.groups?.length) {
+    void groupStore.fetchGroups();
+  }
+});
 
 async function loadWorkspace() {
   if (!props.workspaceId) return;
@@ -49,6 +67,9 @@ async function loadWorkspace() {
         workItemKeyFormat: ws.workItemKeyFormat ?? '{prefix}-{seq:D4}',
         workItemSequenceStart:
           ws.workItemSequenceStart != null ? String(ws.workItemSequenceStart) : '',
+        viewGroups: [...(ws.viewGroups ?? [])],
+        editGroups: [...(ws.editGroups ?? [])],
+        adminGroups: [...(ws.adminGroups ?? [])],
       };
     }
   } catch (e: unknown) {
@@ -84,6 +105,9 @@ async function saveGeneral() {
       workItemKeyPrefix: form.value.workItemKeyPrefix.trim() || null,
       workItemKeyFormat: form.value.workItemKeyFormat.trim() || null,
       workItemSequenceStart: Number.isFinite(seqNum) ? seqNum : null,
+      viewGroups: form.value.viewGroups,
+      editGroups: form.value.editGroups,
+      adminGroups: form.value.adminGroups,
     });
     await loadWorkspace();
     successLocal.value = t('operationCore.workspaceDefinitions.saveSuccess');
@@ -183,6 +207,62 @@ async function saveGeneral() {
         :label="t('operationCore.workspaceDefinitions.general.fieldSequenceStart')"
         density="comfortable"
       />
+
+      <v-divider class="my-5" />
+
+      <div class="text-subtitle-2 font-weight-medium mb-1">
+        {{ t('operationCore.workspaceDefinitions.general.accessSection') }}
+      </div>
+      <p class="text-caption text-medium-emphasis mb-3">
+        {{ t('operationCore.workspaceDefinitions.general.accessHint') }}
+      </p>
+      <v-row dense>
+        <v-col cols="12" md="4">
+          <v-select
+            v-model="form.viewGroups"
+            :items="groupItems"
+            item-title="title"
+            item-value="value"
+            :label="t('operationCore.workspaceDefinitions.general.fieldViewGroups')"
+            variant="outlined"
+            density="compact"
+            multiple
+            chips
+            closable-chips
+            clearable
+          />
+        </v-col>
+        <v-col cols="12" md="4">
+          <v-select
+            v-model="form.editGroups"
+            :items="groupItems"
+            item-title="title"
+            item-value="value"
+            :label="t('operationCore.workspaceDefinitions.general.fieldEditGroups')"
+            variant="outlined"
+            density="compact"
+            multiple
+            chips
+            closable-chips
+            clearable
+          />
+        </v-col>
+        <v-col cols="12" md="4">
+          <v-select
+            v-model="form.adminGroups"
+            :items="groupItems"
+            item-title="title"
+            item-value="value"
+            :label="t('operationCore.workspaceDefinitions.general.fieldAdminGroups')"
+            variant="outlined"
+            density="compact"
+            multiple
+            chips
+            closable-chips
+            clearable
+          />
+        </v-col>
+      </v-row>
 
       <div class="d-flex justify-end mt-6">
         <v-btn

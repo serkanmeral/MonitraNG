@@ -255,6 +255,16 @@ public class WorkItemCommandService : IWorkItemCommandService
                 cancellationToken),
             snapshot);
 
+        // Yeniden atamada yerleşik bildirim (yeni atanan değiştiyse; best-effort).
+        await _notifications.DispatchAssignmentAsync(
+            workItemId,
+            workItemKey,
+            GetString(updated, "assignee"),
+            GetString(existing, "assignee"),
+            _requestContext.MngPersonId,
+            token,
+            cancellationToken);
+
         return MapToDto(updated, workItemId, workItemKey);
     }
 
@@ -569,7 +579,7 @@ public class WorkItemCommandService : IWorkItemCommandService
                 workItemId,
                 workItemKey,
                 mentionIds,
-                _requestContext.UserId,
+                _requestContext.MngPersonId,
                 token,
                 cancellationToken);
         }
@@ -787,6 +797,16 @@ public class WorkItemCommandService : IWorkItemCommandService
                 cancellationToken),
             snapshot);
 
+        // Yerleşik atama bildirimi (politikadan bağımsız, best-effort).
+        await _notifications.DispatchAssignmentAsync(
+            workItemId,
+            key,
+            GetString(persisted, "assignee"),
+            previousAssigneeId: null,
+            _requestContext.MngPersonId,
+            token,
+            cancellationToken);
+
         _logger.LogInformation(
             "Created work item {WorkItemKey} ({WorkItemId}) in workspace {WorkspaceId}{OriginSuffix}",
             key,
@@ -989,7 +1009,9 @@ public class WorkItemCommandService : IWorkItemCommandService
             TransitionKey = transitionKey,
             FromStateId = fromStateId,
             ToStateId = toStateId,
-            Actor = _requestContext.Username,
+            // Alıcılar work item alanlarından (assignee/watchers = mng_person_id) çözülür;
+            // self-exclude'un çalışması için actor da aynı uzayda olmalı.
+            Actor = _requestContext.MngPersonId,
             Token = token
         };
 

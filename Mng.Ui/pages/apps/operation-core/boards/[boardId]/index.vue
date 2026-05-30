@@ -11,7 +11,8 @@ import { useOcBoardListLookups } from '@/composables/useOcBoardListLookups';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import { useOperationCoreStore } from '@/stores/apps/operationCore';
 import { useAppI18n } from '@/composables/useAppI18n';
-import { ocDeleteWorkItem, ocExtractDgErrorMessage, ocListPoolFieldsForWorkspace } from '@/services/operationCoreService';
+import { ocDeleteWorkItem, ocExtractDgErrorMessage, ocListDataset, ocListPoolFieldsForWorkspace } from '@/services/operationCoreService';
+import { recordToDatasetItems } from '@/utils/ocDynamicFormField';
 import type { OcBoardListFilter, OcBoardListRequest, OcColumnFormat, OcWorkItemCard, OpField } from '@/types/apps/operationCore';
 import {
   defaultFormatForKey,
@@ -123,6 +124,97 @@ const personPoolKeySet = computed(
     )
 );
 
+const numberPoolKeySet = computed(
+  () =>
+    new Set(
+      poolFields.value
+        .filter((f) => f.key && (f.fieldType || '').toLowerCase() === 'number')
+        .map((f) => f.key)
+    )
+);
+
+const datePoolKeySet = computed(
+  () =>
+    new Set(
+      poolFields.value
+        .filter((f) => f.key && ['date', 'datetime'].includes((f.fieldType || '').toLowerCase()))
+        .map((f) => f.key)
+    )
+);
+
+// Pool relation alanları: değer = ilgili kaydın __dataId'si; etiketi dataset'ten çözülür.
+const relationPoolFields = computed(() =>
+  poolFields.value.filter(
+    (f) =>
+      f.key &&
+      (f.fieldType || '').toLowerCase() === 'relation' &&
+      !!f.relationDatasetName?.trim()
+  )
+);
+
+const relationPoolKeySet = computed(() => new Set(relationPoolFields.value.map((f) => f.key)));
+
+// key → option listesi (value=__dataId, title=ad); filtre v-select'leri için.
+const relationOptionsByKey = ref<Record<string, { value: string; title: string }[]>>({});
+
+// key → (id → ad); liste hücresi etiketleri için.
+const relationLabelByKey = computed(() => {
+  const map = new Map<string, Map<string, string>>();
+  for (const [key, items] of Object.entries(relationOptionsByKey.value)) {
+    map.set(key, new Map(items.map((i) => [i.value, i.title])));
+  }
+  return map;
+});
+
+async function loadRelationOptions() {
+  const fields = relationPoolFields.value;
+  if (!fields.length) {
+    relationOptionsByKey.value = {};
+    return;
+  }
+  // Aynı dataset birden çok alanda kullanılabilir; dataset bazında bir kez çek.
+  const cache = new Map<string, { value: string; title: string }[]>();
+  const next: Record<string, { value: string; title: string }[]> = {};
+  await Promise.all(
+    fields.map(async (f) => {
+      const dataset = f.relationDatasetName!.trim();
+      const key = f.key as string;
+      try {
+        let items = cache.get(dataset);
+        if (!items) {
+          const rows = await ocListDataset(dataset, { limit: 500 });
+          items = recordToDatasetItems(rows);
+          cache.set(dataset, items);
+        }
+        next[key] = items;
+      } catch {
+        next[key] = [];
+      }
+    })
+  );
+  relationOptionsByKey.value = next;
+}
+
+/** Relation pool değerini (id / id[] / nesne) okunabilir etikete çevirir. */
+function resolveRelationValue(key: string, value: unknown): string {
+  const labels = relationLabelByKey.value.get(key);
+  const entries = Array.isArray(value) ? value : value == null || value === '' ? [] : [value];
+  if (!entries.length) return '—';
+  const names = entries
+    .map((entry) => {
+      if (entry && typeof entry === 'object') {
+        const o = entry as Record<string, unknown>;
+        const id = String(o.__dataId ?? o.dataId ?? o.id ?? '').trim();
+        const inline = o.name ?? o.title ?? o.label;
+        return (inline != null ? String(inline) : '') || labels?.get(id) || id || '';
+      }
+      const id = String(entry).trim();
+      return labels?.get(id) || id;
+    })
+    .filter((n) => n && n !== '—');
+  return names.length ? names.join(', ') : '—';
+}
+
 const listColumnsMeta = computed(() => store.boardContext?.listColumns ?? []);
 
 const sortableKeySet = computed(
@@ -183,6 +275,12 @@ function filterKind(key: string): OcBoardFilterKind {
   if (key === 'priorityId') return 'priority';
   if (key === 'typeId') return 'type';
   if (key === 'assignee' || key === 'createdBy' || personPoolKeySet.value.has(key)) return 'person';
+  if (relationPoolKeySet.value.has(key)) return 'relation';
+  // Tarih: format ipucu 'date' (createdAt/lastStateChangeAt/closedAt…) veya pool date/datetime alanı.
+  if (columnFormat(key) === 'date' || datePoolKeySet.value.has(key)) return 'date';
+  // Sayısal: format 'number'/'money' veya pool number alanı.
+  const fmt = columnFormat(key);
+  if (fmt === 'number' || fmt === 'money' || numberPoolKeySet.value.has(key)) return 'number';
   return 'text';
 }
 
@@ -231,6 +329,8 @@ const listRows = computed(() =>
         row[key] = listTableCellValue(item, key, { stateLabel: stateLabel ?? undefined });
       } else if (personPoolKeySet.value.has(key)) {
         row[key] = resolvePersonValue(item.fields?.[key]);
+      } else if (relationPoolKeySet.value.has(key)) {
+        row[key] = resolveRelationValue(key, item.fields?.[key]);
       } else {
         row[key] = listTablePoolCellValue(item.fields, key);
       }
@@ -324,6 +424,7 @@ async function loadPoolFields() {
   } catch {
     poolFields.value = [];
   }
+  await loadRelationOptions();
 }
 
 watch(workspaceId, () => {
@@ -568,6 +669,7 @@ onUnmounted(() => {
             :state-options="stateFilterOptions"
             :priority-options="priorityFilterOptions"
             :type-options="typeFilterOptions"
+            :relation-options-by-key="relationOptionsByKey"
             class="mb-2"
             @update:filters="onFiltersUpdate"
           />

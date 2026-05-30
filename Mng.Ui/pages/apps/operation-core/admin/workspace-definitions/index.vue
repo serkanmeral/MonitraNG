@@ -10,6 +10,7 @@ import OcWorkspaceDefinitionsPoliciesTab from '@/components/apps/operation-core/
 import OcWorkspaceDefinitionsRulesTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsRulesTab.vue';
 import OcWorkspaceDefinitionsScheduledWorkItemsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsScheduledWorkItemsTab.vue';
 import OcWorkspaceDefinitionsSlaTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsSlaTab.vue';
+import OcWorkspaceCreateDialog from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceCreateDialog.vue';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import {
   OC_WORKSPACE_DEFINITION_TAB_KEYS,
@@ -34,6 +35,7 @@ const { tabIndex } = useOcWorkspaceDefinitionTabs(route, router, activeTab);
 const workspaces = ref<OpWorkspace[]>([]);
 const loadingWorkspaces = ref(true);
 const selectedWorkspaceId = ref('');
+const createDialogOpen = ref(false);
 
 const { breadcrumbs } = useOperationCoreBreadcrumbs({
   tail: computed(() => ({
@@ -98,6 +100,12 @@ async function loadWorkspaces() {
   }
 }
 
+async function onWorkspaceCreated(id: string) {
+  await loadWorkspaces();
+  setWorkspaceId(id);
+  activeTab.value = 'general';
+}
+
 watch(
   () => route.query.workspaceId,
   () => syncWorkspaceFromRoute()
@@ -129,31 +137,57 @@ onMounted(() => {
     </div>
 
     <v-card variant="outlined" rounded="lg" class="mb-4 pa-4 pa-md-5">
-      <v-select
-        v-model="selectedWorkspaceId"
-        :items="workspaceItems"
-        item-title="title"
-        item-value="value"
-        :label="t('operationCore.workspaceDefinitions.selectWorkspace')"
-        :hint="t('operationCore.workspaceDefinitions.selectWorkspaceHint')"
-        persistent-hint
-        :loading="loadingWorkspaces"
-        density="comfortable"
-        @update:model-value="setWorkspaceId"
-      >
-        <template #item="{ props: itemProps, item }">
-          <v-list-item v-bind="itemProps" :subtitle="item.raw.subtitle" />
-        </template>
-      </v-select>
+      <div class="d-flex align-start ga-3 flex-wrap">
+        <v-select
+          v-model="selectedWorkspaceId"
+          :items="workspaceItems"
+          item-title="title"
+          item-value="value"
+          :label="t('operationCore.workspaceDefinitions.selectWorkspace')"
+          :hint="t('operationCore.workspaceDefinitions.selectWorkspaceHint')"
+          persistent-hint
+          :loading="loadingWorkspaces"
+          density="comfortable"
+          class="flex-grow-1"
+          style="min-width: 240px"
+          @update:model-value="setWorkspaceId"
+        >
+          <template #item="{ props: itemProps, item }">
+            <v-list-item v-bind="itemProps" :subtitle="item.raw.subtitle" />
+          </template>
+        </v-select>
+        <v-btn
+          color="primary"
+          variant="tonal"
+          rounded="lg"
+          class="text-none mt-1"
+          prepend-icon="mdi-folder-plus-outline"
+          @click="createDialogOpen = true"
+        >
+          {{ t('operationCore.workspaceDefinitions.newWorkspace') }}
+        </v-btn>
+      </div>
     </v-card>
 
     <v-alert
       v-if="!loadingWorkspaces && workspaces.length === 0"
       type="warning"
       variant="tonal"
-      class="mb-4"
+      class="mb-4 d-flex align-center"
     >
-      {{ t('operationCore.workspaceDefinitions.noWorkspaces') }}
+      <div class="d-flex align-center justify-space-between ga-3 flex-wrap w-100">
+        <span>{{ t('operationCore.workspaceDefinitions.noWorkspaces') }}</span>
+        <v-btn
+          color="primary"
+          variant="flat"
+          rounded="lg"
+          class="text-none"
+          prepend-icon="mdi-folder-plus-outline"
+          @click="createDialogOpen = true"
+        >
+          {{ t('operationCore.workspaceDefinitions.newWorkspace') }}
+        </v-btn>
+      </div>
     </v-alert>
 
     <v-card v-else-if="selectedWorkspaceId" variant="outlined" class="rounded-lg">
@@ -218,5 +252,7 @@ onMounted(() => {
     <v-alert v-else-if="!loadingWorkspaces" type="info" variant="tonal">
       {{ t('operationCore.workspaceDefinitions.pickWorkspace') }}
     </v-alert>
+
+    <OcWorkspaceCreateDialog v-model="createDialogOpen" @created="onWorkspaceCreated" />
   </div>
 </template>

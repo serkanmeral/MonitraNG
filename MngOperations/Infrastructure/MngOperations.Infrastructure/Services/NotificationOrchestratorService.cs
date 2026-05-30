@@ -195,7 +195,8 @@ public class NotificationOrchestratorService : INotificationOrchestrator
                         ["sourceRecordId"] = workItemId,
                         ["workItemId"] = workItemId,
                         ["workItemKey"] = workItemKey,
-                        ["isRead"] = false
+                        ["isRead"] = false,
+                        ["createdAt"] = DateTime.UtcNow.ToString("o")
                     }, token, cancellationToken);
                 }
                 catch (Exception ex)
@@ -207,6 +208,50 @@ public class NotificationOrchestratorService : INotificationOrchestrator
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Mention dispatch failed for {WorkItemKey} (non-fatal)", workItemKey);
+        }
+    }
+
+    public async Task DispatchAssignmentAsync(
+        string workItemId,
+        string workItemKey,
+        string? assigneeId,
+        string? previousAssigneeId,
+        string? actorUserId,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(assigneeId))
+                return;
+
+            // Atama değişmediyse veya kişi atamayı kendisine yaptıysa bildirim yok.
+            if (string.Equals(assigneeId, previousAssigneeId, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(assigneeId, actorUserId, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            const string title = "Bir iş kaydı size atandı";
+            var message = $"{workItemKey} kaydı size atandı.";
+
+            await _dg.CreateAsync(OcDatasets.Notifications, new Dictionary<string, object?>
+            {
+                ["userId"] = assigneeId.Trim(),
+                ["notificationType"] = "WorkItemAssigned",
+                ["title"] = title,
+                ["message"] = message,
+                ["sourceDataset"] = OcDatasets.WorkItems,
+                ["sourceRecordId"] = workItemId,
+                ["workItemId"] = workItemId,
+                ["workItemKey"] = workItemKey,
+                ["isRead"] = false,
+                ["createdAt"] = DateTime.UtcNow.ToString("o")
+            }, token, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Assignment dispatch failed for {WorkItemKey} (non-fatal)", workItemKey);
         }
     }
 
@@ -232,7 +277,8 @@ public class NotificationOrchestratorService : INotificationOrchestrator
                     ["sourceRecordId"] = request.WorkItemId,
                     ["workItemId"] = request.WorkItemId,
                     ["workItemKey"] = request.WorkItemKey,
-                    ["isRead"] = false
+                    ["isRead"] = false,
+                    ["createdAt"] = DateTime.UtcNow.ToString("o")
                 }, request.Token, cancellationToken);
             }
             catch (Exception ex)

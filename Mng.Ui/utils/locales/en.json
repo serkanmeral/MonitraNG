@@ -1507,6 +1507,18 @@
         "subtitle": "My Daily Notes"
       },
       "logout": "Logout"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "unreadCount": "{count} new",
+      "empty": "No notifications",
+      "markAllRead": "Mark all as read",
+      "loadError": "Could not load notifications",
+      "types": {
+        "CommentMention": "Mention",
+        "WorkItemAssigned": "Assigned",
+        "default": "Notification"
+      }
     }
   },
   "welcome": {
@@ -3685,7 +3697,14 @@
       "selectWorkspace": "Workspace",
       "selectWorkspaceHint": "Select the operational domain to configure.",
       "pickWorkspace": "Select a workspace to continue.",
-      "noWorkspaces": "No workspace records yet. Create via seed script or DG admin.",
+      "noWorkspaces": "No workspace records yet. Create your first workspace.",
+      "newWorkspace": "New workspace",
+      "create": {
+        "title": "Create workspace",
+        "subtitle": "The workspace code is assigned automatically. Configure permissions, catalogs and flows from the General and other tabs after creation.",
+        "submit": "Create",
+        "saveError": "Failed to create workspace."
+      },
       "tabs": {
         "general": "General",
         "values": "Values",
@@ -4149,6 +4168,11 @@
         "fieldSequenceStart": "Sequence start",
         "keyPrefixHint": "E.g. HD, SOC, TSK",
         "keyFormatHint": "E.g. {prefix}-{seq:D4}",
+        "accessSection": "Access & permission groups",
+        "accessHint": "If left empty, the workspace is open to all authorized users. Admin groups grant authority over definitions.",
+        "fieldViewGroups": "View groups",
+        "fieldEditGroups": "Edit groups",
+        "fieldAdminGroups": "Admin groups",
         "workspaceType": {
           "team": "Team",
           "service_desk": "Help desk",

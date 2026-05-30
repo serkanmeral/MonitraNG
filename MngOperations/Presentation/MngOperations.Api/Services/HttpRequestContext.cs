@@ -16,6 +16,8 @@ public class HttpRequestContext : IRequestContext
 
     public string? UserId => User?.FindFirst("sub")?.Value ?? User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
+    public string? MngPersonId => User?.FindFirst("mng_person_id")?.Value ?? UserId;
+
     public string? Username =>
         User?.FindFirst("preferred_username")?.Value ?? User?.FindFirst(ClaimTypes.Name)?.Value;
 
