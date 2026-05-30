@@ -346,8 +346,9 @@ public class RuntimeContextService : IRuntimeContextService
             .ToList();
 
         var listColumns = ParseListColumns(configObject);
+        // Computed sütunların DG karşılığı yoktur; alan seçiminden (cardFieldKeys) hariç tutulur.
         var cardFieldKeys = listColumns.Count > 0
-            ? listColumns.Select(c => c.Key).ToList()
+            ? listColumns.Where(c => !c.Computed).Select(c => c.Key).ToList()
             : ParseCardFieldKeys(board.VisibleFields);
 
         return new BoardRuntimeContext
@@ -393,12 +394,19 @@ public class RuntimeContextService : IRuntimeContextService
                 continue;
 
             var format = StateFlowCatalog.GetStringProperty(col, "format");
+            var computed = ReadBoolProperty(col, "computed");
+            var expr = StateFlowCatalog.GetStringProperty(col, "expr");
+            var label = StateFlowCatalog.GetStringProperty(col, "label");
             result.Add(new BoardListColumnDto
             {
                 Key = key,
-                Sortable = ReadBoolProperty(col, "sortable"),
-                Filterable = ReadBoolProperty(col, "filterable"),
-                Format = string.IsNullOrWhiteSpace(format) ? null : format.Trim()
+                // Computed sütunlar sunucu tarafı sort/filter yapamaz (DG alanı yok) → zorla kapat.
+                Sortable = !computed && ReadBoolProperty(col, "sortable"),
+                Filterable = !computed && ReadBoolProperty(col, "filterable"),
+                Format = string.IsNullOrWhiteSpace(format) ? null : format.Trim(),
+                Computed = computed,
+                Expr = computed && !string.IsNullOrWhiteSpace(expr) ? expr.Trim() : null,
+                Label = string.IsNullOrWhiteSpace(label) ? null : label.Trim()
             });
         }
 

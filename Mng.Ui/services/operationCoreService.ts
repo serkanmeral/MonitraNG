@@ -277,11 +277,17 @@ function parseBoardListColumns(configRaw: unknown): OpBoardListColumnConfig[] {
     if (!key.trim() || seen.has(key)) continue;
     seen.add(key);
     const fmt = o.format ?? o.Format;
+    const computed = Boolean(o.computed ?? o.Computed ?? false);
+    const expr = o.expr ?? o.Expr;
+    const label = o.label ?? o.Label;
     out.push({
       key,
-      sortable: Boolean(o.sortable ?? o.Sortable ?? false),
-      filterable: Boolean(o.filterable ?? o.Filterable ?? false),
+      sortable: !computed && Boolean(o.sortable ?? o.Sortable ?? false),
+      filterable: !computed && Boolean(o.filterable ?? o.Filterable ?? false),
       format: fmt != null && String(fmt).trim() ? (String(fmt) as OcColumnFormat) : null,
+      computed,
+      expr: computed && expr != null && String(expr).trim() ? String(expr).trim() : null,
+      label: label != null && String(label).trim() ? String(label).trim() : null,
     });
   }
   return out;
@@ -2059,11 +2065,17 @@ function parseBoardCatalogs(raw: unknown): OcBoardCatalogs {
 
 function mapBoardListColumn(raw: Record<string, unknown>): OcBoardListColumn {
   const fmt = pickStr(raw, 'format', 'Format');
+  const computed = Boolean(raw.computed ?? raw.Computed ?? false);
+  const expr = pickStr(raw, 'expr', 'Expr');
+  const label = pickStr(raw, 'label', 'Label');
   return {
     key: pickStr(raw, 'key', 'Key') ?? '',
-    sortable: Boolean(raw.sortable ?? raw.Sortable ?? false),
-    filterable: Boolean(raw.filterable ?? raw.Filterable ?? false),
+    sortable: !computed && Boolean(raw.sortable ?? raw.Sortable ?? false),
+    filterable: !computed && Boolean(raw.filterable ?? raw.Filterable ?? false),
     format: (fmt as OcColumnFormat | undefined) ?? null,
+    computed,
+    expr: computed && expr?.trim() ? expr.trim() : null,
+    label: label?.trim() ? label.trim() : null,
   };
 }
 

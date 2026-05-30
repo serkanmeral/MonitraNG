@@ -208,16 +208,34 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 
 ---
 
+## CC — Dinamik (computed) sütunlar, faz-1 (bu oturum, 30 May)
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **CC** | ✅ | **Hesaplanan liste sütunu (display-only, client-eval)** — board liste sütun editöründe "Hesaplanan sütun" girişi (`key`/`label`/`expr`/`format`); `expr-eval` ile güvenli ifade (eval yok). Satır bağlamı = core alanlar + pool `fields`; değer board sayfasında `evaluateComputedExpr` ile hesaplanıp `formatCellValue`'dan geçer. Sunucu sort/filter yok (computed → kapalı). |
+
+**Yaklaşım A (MO passthrough):** `BoardListColumnDto`'ya `Computed`/`Expr`/`Label`; `ParseListColumns` bunları okur, computed sütunları `cardFieldKeys`'ten (DG alan seçimi) ve sortable/filterable'dan hariç tutar. UI runtime context'ten okuyup hesaplar.
+**Yeni:** `utils/ocComputedColumns.ts` (expr-eval değerlendirici, parse cache, güvenli değişken çözümü), bağımlılık `expr-eval`.
+**Değişen (MO):** `BoardRuntimeContext.cs` (`BoardListColumnDto`), `RuntimeContextService.cs` (`ParseListColumns`, cardFieldKeys). **Değişen (UI):** `OcWorkspaceBoardListScopeEditor.vue` (computed sütun ekleme + expr satırı), `OcWorkspaceBoardDialog.vue` (visibleFields'tan computed hariç), `boards/[boardId]/index.vue` (computed render), `ocBoardListColumns.ts` (`deriveBoardListColumns` computed korur), `operationCoreService.ts` (iki mapper), `types/apps/operationCore.ts`, locale `en/tr`.
+**Deploy:** MO build temiz (0/0). MO + mngui deploy gerekir.
+
+**Açık/ileriki (CC faz-2+):**
+- ⬜ `tags`/relation çoklu değerlerini ifade içinde etiketle kullanma (şu an dizi → eleman sayısı).
+- ⬜ Tarih farkı/iş günü fonksiyonları (özel expr fonksiyonları).
+- ⬜ Profil/kart görünümünde de computed alan gösterimi.
+
+---
+
 ## Sıradaki işler
 
 | # | Epic | Hedef |
 |---|------|--------|
 | ~~1~~ | ~~**E1-P1**~~ | ✅ Genel sekme yetki grupları (view/edit/admin) — Odak'ta canlı |
 | ~~2~~ | ~~**W-CREATE**~~ | ✅ Yeni workspace oluşturma UI — Odak'ta canlı |
-| ~~3~~ | ~~**E1-P2**~~ | ✅ Akışlar: geçiş `requiredFields` + `permissions.groups` — bu oturum (deploy bekliyor) |
-| **1** | **CC** | Dinamik (computed) sütunlar (expr-eval, display-only) |
-| **2** | **A** | `op_comments.attachments` (yorum ekleri) — iş kaydı ekleri pattern'i |
-| **3** | **F** | Operasyonel runtime + **SLA-3** chip |
+| ~~3~~ | ~~**E1-P2**~~ | ✅ Akışlar: geçiş `requiredFields` + `permissions.groups` — Odak'ta canlı |
+| ~~4~~ | ~~**CC**~~ | ✅ Dinamik (computed) sütunlar (expr-eval, display-only) — bu oturum (MO+mngui deploy bekliyor) |
+| **1** | **A** | `op_comments.attachments` (yorum ekleri) — iş kaydı ekleri pattern'i |
+| **2** | **F** | Operasyonel runtime + **SLA-3** chip |
 
 ---
 
@@ -237,6 +255,7 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 [✓] Gelişmiş arama gt/gte/lt/lte UI (BLF-8) — Odak'ta canlı
 [✓] Relation alanlarda option/relation etiketi (BLF-9) — Odak'ta canlı
 [✓] Workspace yetki grupları (E1-P1) + Yeni workspace UI (W-CREATE) — Odak'ta canlı
-[✓] Admin kapanış: akış geçiş requiredFields + yetki grupları (E1-P2) — lokal (deploy bekliyor)
-[ ] Dinamik (computed) sütunlar → yorum ekleri → operasyonel runtime/SLA-3
+[✓] Admin kapanış: akış geçiş requiredFields + yetki grupları (E1-P2) — Odak'ta canlı
+[✓] Dinamik (computed) sütunlar (CC, expr-eval display-only) — lokal (MO+mngui deploy bekliyor)
+[ ] Yorum ekleri (op_comments.attachments) → operasyonel runtime/SLA-3
 ```

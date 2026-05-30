@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { isValidComputedExpr } from '@/utils/ocComputedColumns';
 import OcBoardCatalogLabel from '@/components/apps/operation-core/OcBoardCatalogLabel.vue';
 import type {
   OpBoardColumnConfig,
@@ -204,6 +205,57 @@ function updateColumnFormat(index: number, value: OcColumnFormat | null) {
   emit('update:listColumns', next);
 }
 
+function updateColumnExpr(index: number, value: string) {
+  const next = selectedColumns.value.map((c, i) => (i === index ? { ...c, expr: value } : c));
+  emit('update:listColumns', next);
+}
+
+function updateColumnLabel(index: number, value: string) {
+  const next = selectedColumns.value.map((c, i) => (i === index ? { ...c, label: value } : c));
+  emit('update:listColumns', next);
+}
+
+// --- Hesaplanan (computed) sütun ekleme ---
+const newComputed = ref<{ key: string; label: string; expr: string; format: OcColumnFormat | null }>({
+  key: '',
+  label: '',
+  expr: '',
+  format: 'number',
+});
+
+const existingKeySet = computed(() => new Set(selectedColumns.value.map((c) => c.key)));
+
+const computedKeyValid = computed(() => {
+  const k = newComputed.value.key.trim();
+  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(k) && !existingKeySet.value.has(k);
+});
+
+const computedExprValid = computed(() => isValidComputedExpr(newComputed.value.expr));
+
+function isValidExprValue(expr: string | null | undefined): boolean {
+  return isValidComputedExpr(expr ?? '');
+}
+
+const canAddComputed = computed(() => computedKeyValid.value && computedExprValid.value);
+
+function addComputedColumn() {
+  if (!canAddComputed.value) return;
+  const next: OpBoardListColumnConfig[] = [
+    ...selectedColumns.value,
+    {
+      key: newComputed.value.key.trim(),
+      sortable: false,
+      filterable: false,
+      format: newComputed.value.format ?? null,
+      computed: true,
+      expr: newComputed.value.expr.trim(),
+      label: newComputed.value.label.trim() || null,
+    },
+  ];
+  emit('update:listColumns', next);
+  newComputed.value = { key: '', label: '', expr: '', format: 'number' };
+}
+
 const stateCatalogById = computed(() => buildCatalogDisplayMap(props.stateCatalog ?? []));
 const priorityCatalogById = computed(() => buildCatalogDisplayMap(props.priorityCatalog ?? []));
 const typeCatalogById = computed(() => buildCatalogDisplayMap(props.typeCatalog ?? []));
@@ -388,63 +440,154 @@ function clearStates() {
           <span class="oc-list-cols__flag">{{ t('operationCore.workspaceDefinitions.boards.listColumnFilterable') }}</span>
           <span class="oc-list-cols__actions" />
         </div>
-        <div
-          v-for="(col, index) in selectedColumns"
-          :key="col.key"
-          class="oc-list-cols__row"
-        >
-          <div class="oc-list-cols__order d-flex align-center ga-1">
-            <v-btn
-              icon="mdi-chevron-up"
-              size="x-small"
-              variant="text"
-              :disabled="index === 0"
-              @click="moveColumn(index, -1)"
-            />
-            <v-btn
-              icon="mdi-chevron-down"
-              size="x-small"
-              variant="text"
-              :disabled="index === selectedColumns.length - 1"
-              @click="moveColumn(index, 1)"
-            />
+        <template v-for="(col, index) in selectedColumns" :key="col.key">
+          <div class="oc-list-cols__row">
+            <div class="oc-list-cols__order d-flex align-center ga-1">
+              <v-btn
+                icon="mdi-chevron-up"
+                size="x-small"
+                variant="text"
+                :disabled="index === 0"
+                @click="moveColumn(index, -1)"
+              />
+              <v-btn
+                icon="mdi-chevron-down"
+                size="x-small"
+                variant="text"
+                :disabled="index === selectedColumns.length - 1"
+                @click="moveColumn(index, 1)"
+              />
+            </div>
+            <span class="oc-list-cols__name text-body-2">
+              <v-icon
+                v-if="col.computed"
+                icon="mdi-function-variant"
+                size="14"
+                class="mr-1 text-medium-emphasis"
+              />
+              {{ col.computed ? (col.label?.trim() || col.key) : columnLabel(col.key) }}
+            </span>
+            <div class="oc-list-cols__format">
+              <v-select
+                :model-value="col.format ?? null"
+                :items="formatOptions"
+                item-title="title"
+                item-value="value"
+                variant="outlined"
+                density="compact"
+                hide-details
+                @update:model-value="updateColumnFormat(index, $event as OcColumnFormat | null)"
+              />
+            </div>
+            <div class="oc-list-cols__flag">
+              <v-switch
+                v-if="!col.computed"
+                :model-value="col.sortable"
+                color="primary"
+                density="compact"
+                hide-details
+                inset
+                @update:model-value="updateColumnFlag(index, 'sortable', $event === true)"
+              />
+              <span v-else class="text-medium-emphasis text-caption">—</span>
+            </div>
+            <div class="oc-list-cols__flag">
+              <v-switch
+                v-if="!col.computed"
+                :model-value="col.filterable"
+                color="primary"
+                density="compact"
+                hide-details
+                inset
+                @update:model-value="updateColumnFlag(index, 'filterable', $event === true)"
+              />
+              <span v-else class="text-medium-emphasis text-caption">—</span>
+            </div>
+            <div class="oc-list-cols__actions">
+              <v-btn icon="mdi-close" size="x-small" variant="text" @click="removeColumn(index)" />
+            </div>
           </div>
-          <span class="oc-list-cols__name text-body-2">{{ columnLabel(col.key) }}</span>
-          <div class="oc-list-cols__format">
-            <v-select
-              :model-value="col.format ?? null"
-              :items="formatOptions"
-              item-title="title"
-              item-value="value"
+          <div v-if="col.computed" class="oc-list-cols__exprrow">
+            <v-text-field
+              :model-value="col.label ?? ''"
+              :label="t('operationCore.workspaceDefinitions.boards.computedLabel')"
               variant="outlined"
               density="compact"
               hide-details
-              @update:model-value="updateColumnFormat(index, $event as OcColumnFormat | null)"
+              class="oc-list-cols__exprlabel"
+              @update:model-value="updateColumnLabel(index, $event)"
             />
-          </div>
-          <div class="oc-list-cols__flag">
-            <v-switch
-              :model-value="col.sortable"
-              color="primary"
+            <v-text-field
+              :model-value="col.expr ?? ''"
+              :label="t('operationCore.workspaceDefinitions.boards.computedExpr')"
+              :error="!isValidExprValue(col.expr)"
+              variant="outlined"
               density="compact"
               hide-details
-              inset
-              @update:model-value="updateColumnFlag(index, 'sortable', $event === true)"
+              class="oc-list-cols__exprinput"
+              @update:model-value="updateColumnExpr(index, $event)"
             />
           </div>
-          <div class="oc-list-cols__flag">
-            <v-switch
-              :model-value="col.filterable"
-              color="primary"
-              density="compact"
-              hide-details
-              inset
-              @update:model-value="updateColumnFlag(index, 'filterable', $event === true)"
-            />
-          </div>
-          <div class="oc-list-cols__actions">
-            <v-btn icon="mdi-close" size="x-small" variant="text" @click="removeColumn(index)" />
-          </div>
+        </template>
+      </div>
+
+      <div class="mt-4 pt-3 border-t">
+        <div class="text-caption font-weight-medium mb-1">
+          {{ t('operationCore.workspaceDefinitions.boards.computedAddTitle') }}
+        </div>
+        <p class="text-caption text-medium-emphasis mb-2">
+          {{ t('operationCore.workspaceDefinitions.boards.computedAddHint') }}
+        </p>
+        <div class="d-flex flex-wrap align-start ga-2">
+          <v-text-field
+            v-model="newComputed.key"
+            :label="t('operationCore.workspaceDefinitions.boards.computedKey')"
+            :error="newComputed.key.trim() !== '' && !computedKeyValid"
+            variant="outlined"
+            density="compact"
+            hide-details
+            style="max-width: 180px"
+          />
+          <v-text-field
+            v-model="newComputed.label"
+            :label="t('operationCore.workspaceDefinitions.boards.computedLabel')"
+            variant="outlined"
+            density="compact"
+            hide-details
+            style="max-width: 200px"
+          />
+          <v-text-field
+            v-model="newComputed.expr"
+            :label="t('operationCore.workspaceDefinitions.boards.computedExpr')"
+            :error="newComputed.expr.trim() !== '' && !computedExprValid"
+            :placeholder="'(estimate - spent) / estimate * 100'"
+            variant="outlined"
+            density="compact"
+            hide-details
+            style="min-width: 260px; flex: 1 1 260px"
+          />
+          <v-select
+            v-model="newComputed.format"
+            :items="formatOptions"
+            item-title="title"
+            item-value="value"
+            :label="t('operationCore.workspaceDefinitions.boards.listColumnFormat')"
+            variant="outlined"
+            density="compact"
+            hide-details
+            style="max-width: 160px"
+          />
+          <v-btn
+            color="primary"
+            variant="tonal"
+            rounded="lg"
+            class="text-none"
+            :disabled="!canAddComputed"
+            @click="addComputedColumn"
+          >
+            <v-icon icon="mdi-plus" start />
+            {{ t('operationCore.workspaceDefinitions.boards.computedAdd') }}
+          </v-btn>
         </div>
       </div>
 
@@ -552,5 +695,21 @@ function clearStates() {
 .oc-list-cols__actions {
   display: flex;
   justify-content: flex-end;
+}
+
+.oc-list-cols__exprrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.25rem 0.25rem 0.5rem 72px;
+}
+
+.oc-list-cols__exprlabel {
+  max-width: 200px;
+}
+
+.oc-list-cols__exprinput {
+  min-width: 260px;
+  flex: 1 1 260px;
 }
 </style>

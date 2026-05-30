@@ -25,6 +25,7 @@ import {
   systemColumnRawValue,
 } from '@/utils/ocBoardListColumns';
 import { formatCellValue } from '@/utils/ocColumnFormat';
+import { evaluateComputedExpr } from '@/utils/ocComputedColumns';
 
 definePageMeta({ layout: 'default' });
 
@@ -227,11 +228,48 @@ const listColumnKeys = computed(() => {
   return normalizeListTableColumns(store.boardContext?.cardFieldKeys, poolFieldKeys.value);
 });
 
+const computedColumnByKey = computed(() => {
+  const map = new Map<string, { expr: string | null; label: string | null }>();
+  for (const c of listColumnsMeta.value) {
+    if (c.computed) map.set(c.key, { expr: c.expr ?? null, label: c.label ?? null });
+  }
+  return map;
+});
+
 function columnLabel(key: string): string {
+  const computed = computedColumnByKey.value.get(key);
+  if (computed) return computed.label?.trim() || key;
   if (isBuiltInListColumn(key)) {
     return t(`operationCore.workspaceDefinitions.boards.listTableColumns.${key}`);
   }
   return poolFieldLabelByKey.value.get(key) ?? key;
+}
+
+/** Computed sütun için satır bağlamı: core alanlar + pool fields. */
+function buildComputedScope(item: OcWorkItemCard): Record<string, unknown> {
+  return {
+    ...(item.fields ?? {}),
+    key: item.key,
+    title: item.title,
+    stateId: item.stateId,
+    assignee: item.assignee,
+    priorityId: item.priorityId,
+    typeId: item.typeId,
+    createdBy: item.createdBy,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    closedAt: item.closedAt,
+    lastStateChangeAt: item.lastStateChangeAt,
+  };
+}
+
+function computedCellValue(key: string, item: OcWorkItemCard): string {
+  const def = computedColumnByKey.value.get(key);
+  if (!def?.expr) return '—';
+  const result = evaluateComputedExpr(def.expr, buildComputedScope(item));
+  if (!result.ok) return '⚠';
+  if (result.value === null || result.value === undefined || result.value === '') return '—';
+  return formatCellValue(result.value, columnFormat(key), { locale: locale() });
 }
 
 const initialStateId = computed(() => store.boardContext?.initialStateId ?? null);
@@ -320,7 +358,9 @@ const listRows = computed(() =>
     for (const key of listColumnKeys.value) {
       // createdBy (kişi) ve sla (chip) slot ile render edilir — satır metni gerekmez.
       if (key === 'createdBy' || key === 'sla') continue;
-      if (isSystemListColumn(key)) {
+      if (computedColumnByKey.value.has(key)) {
+        row[key] = computedCellValue(key, item);
+      } else if (isSystemListColumn(key)) {
         row[key] = formatCellValue(systemColumnRawValue(item, key), columnFormat(key), {
           locale: locale(),
           anchorEnd: key === 'age' ? item.closedAt : null,

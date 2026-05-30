@@ -40,6 +40,15 @@ public sealed class BoardListColumnDto
 
     /// <summary>Hücre format ipucu: text | number | money | date | relativeTime (null = varsayılan).</summary>
     public string? Format { get; init; }
+
+    /// <summary>Hesaplanan (computed) sütun mu? true ise DG alanı yoktur, değer UI'da `Expr` ile hesaplanır.</summary>
+    public bool Computed { get; init; }
+
+    /// <summary>Computed sütun ifadesi (expr-eval). Yalnızca `Computed=true` için anlamlıdır.</summary>
+    public string? Expr { get; init; }
+
+    /// <summary>Computed sütun başlığı (UI etiketi; null = key).</summary>
+    public string? Label { get; init; }
 }
 
 /// <summary>Sıralama tanımı (alan + yön).</summary>

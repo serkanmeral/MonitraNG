@@ -158,6 +158,12 @@ export interface OpBoardListColumnConfig {
   filterable?: boolean;
   /** Hücre format ipucu (null/undefined = alan tipine göre varsayılan). */
   format?: OcColumnFormat | null;
+  /** Hesaplanan (computed) sütun mu? true ise DG alanı yok, değer `expr` ile UI'da hesaplanır. */
+  computed?: boolean;
+  /** Computed sütun ifadesi (expr-eval). Yalnızca `computed=true` için anlamlı. */
+  expr?: string | null;
+  /** Computed sütun başlığı (UI etiketi; boşsa key). */
+  label?: string | null;
 }
 
 /** op_boards.config.defaultSort — liste varsayılan sıralaması. */
@@ -326,6 +332,12 @@ export interface OcBoardListColumn {
   filterable: boolean;
   /** Hücre format ipucu (null = alan tipine göre varsayılan). */
   format?: OcColumnFormat | null;
+  /** Hesaplanan (computed) sütun mu? */
+  computed?: boolean;
+  /** Computed sütun ifadesi (expr-eval). */
+  expr?: string | null;
+  /** Computed sütun başlığı (UI etiketi; boşsa key). */
+  label?: string | null;
 }
 
 export interface OcBoardRuntimeContext {

@@ -191,7 +191,22 @@ export function deriveBoardListColumns(
   const seen = new Set<string>();
   const out: OpBoardListColumnConfig[] = [];
   for (const c of source) {
-    if (!c?.key || !allowed.has(c.key) || seen.has(c.key)) continue;
+    if (!c?.key || seen.has(c.key)) continue;
+    // Computed sütunlar field değildir; `allowed` kontrolünden muaf, expr/label korunur.
+    if (c.computed) {
+      seen.add(c.key);
+      out.push({
+        key: c.key,
+        sortable: false,
+        filterable: false,
+        format: c.format ?? null,
+        computed: true,
+        expr: c.expr ?? null,
+        label: c.label ?? null,
+      });
+      continue;
+    }
+    if (!allowed.has(c.key)) continue;
     seen.add(c.key);
     out.push({
       key: c.key,

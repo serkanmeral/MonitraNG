@@ -155,7 +155,8 @@ function buildPayload(): Record<string, unknown> {
     }));
 
   const listColumns = deriveBoardListColumns(form.value.listColumns, null, poolFieldKeys.value);
-  const listColumnKeys = boardListColumnKeys(listColumns);
+  // visibleFields = DG'den çekilecek gerçek alanlar; computed sütunlar hariç tutulur.
+  const listColumnKeys = boardListColumnKeys(listColumns.filter((c) => !c.computed));
   const defaultSort =
     form.value.defaultSort?.field && listColumns.some((c) => c.key === form.value.defaultSort?.field && c.sortable)
       ? { field: form.value.defaultSort.field, direction: form.value.defaultSort.direction }
