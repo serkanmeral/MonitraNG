@@ -1,7 +1,11 @@
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using MngOperations.Application.Configuration;
 using MngOperations.Application.Contracts.Runtime;
+using MngOperations.Application.Diagnostics;
 using MngOperations.Application.Exceptions;
 using MngOperations.Application.FieldBehaviors;
 using MngOperations.Application.Interfaces;
@@ -22,6 +26,8 @@ public class RuntimeContextService : IRuntimeContextService
     private readonly IPersonDirectory _personDirectory;
     private readonly IRequestContext _requestContext;
     private readonly ILogger<RuntimeContextService> _logger;
+    private readonly OcCallStats _stats;
+    private readonly bool _perfDiagnostics;
 
     public RuntimeContextService(
         IMngDataGatewayClient dg,
@@ -30,7 +36,9 @@ public class RuntimeContextService : IRuntimeContextService
         IFieldBehaviorResolver fieldBehaviors,
         IPersonDirectory personDirectory,
         IRequestContext requestContext,
-        ILogger<RuntimeContextService> logger)
+        ILogger<RuntimeContextService> logger,
+        OcCallStats stats,
+        IOptions<MngOperationsSettings> settings)
     {
         _dg = dg;
         _metadataCache = metadataCache;
@@ -39,6 +47,17 @@ public class RuntimeContextService : IRuntimeContextService
         _personDirectory = personDirectory;
         _requestContext = requestContext;
         _logger = logger;
+        _stats = stats;
+        _perfDiagnostics = settings.Value.PerfDiagnostics;
+    }
+
+    // GEÇİCİ (perf/oc-optimization): endpoint sonunda DG/Keeper çağrı kırılımı.
+    private void LogPerf(string endpoint, string detail, long totalMs)
+    {
+        if (!_perfDiagnostics) return;
+        _logger.LogInformation(
+            "OC_PERF {Endpoint} {Detail} totalMs={TotalMs} dgCalls={DgCalls} dgMs={DgMs} keeperCalls={KeeperCalls} keeperMs={KeeperMs} ops=[{Ops}]",
+            endpoint, detail, totalMs, _stats.DgCount, _stats.DgMs, _stats.KeeperCount, _stats.KeeperMs, _stats.OpSummary());
     }
 
     // Çekirdek person alanları — fieldType'a bakılmaksızın daima person.
@@ -48,6 +67,7 @@ public class RuntimeContextService : IRuntimeContextService
         string workItemId,
         CancellationToken cancellationToken = default)
     {
+        var perfSw = _perfDiagnostics ? Stopwatch.StartNew() : null;
         var token = RequireToken();
         var workItem = await LoadWorkItemAsync(workItemId, token, cancellationToken);
         var workspaceId = WorkItemDataHelper.GetString(workItem, "workspaceId")
@@ -55,6 +75,31 @@ public class RuntimeContextService : IRuntimeContextService
 
         var workspace = await _metadataCache.GetWorkspaceAsync(workspaceId, token, cancellationToken);
         _permissions.EnsureWorkItemView(workspace, workItem);
+
+        // İş kaydına bağlı (yalnız workItemId gerektiren) bağımsız veri çağrılarını erken başlat;
+        // aşağıdaki metadata + field-behavior çözümlemesiyle örtüşsünler (profil warm darboğazı).
+        var linksFilterOut = $"sourceWorkItemId:eq:{workItemId}";
+        var linksFilterIn = $"targetWorkItemId:eq:{workItemId}";
+        var segmentsFilter = $"workItemId:eq:{workItemId}";
+
+        var outgoingLinksTask = _dg.GetAsync<Dictionary<string, object?>>(
+            OcDatasets.Links,
+            $"filter={Uri.EscapeDataString(linksFilterOut)}&limit=50",
+            token,
+            cancellationToken);
+
+        var incomingLinksTask = _dg.GetAsync<Dictionary<string, object?>>(
+            OcDatasets.Links,
+            $"filter={Uri.EscapeDataString(linksFilterIn)}&limit=50",
+            token,
+            cancellationToken);
+
+        // Profil yalnız son DefaultStateSegmentCount segmenti gösterir; en yeniler için DG-side sort.
+        var segmentsTask = _dg.GetAsync<Dictionary<string, object?>>(
+            OcDatasets.WorkItemTimelines,
+            $"filter={Uri.EscapeDataString(segmentsFilter)}&sort=-enteredAt&limit={ProfileRuntimeMapper.DefaultStateSegmentCount}",
+            token,
+            cancellationToken);
 
         var stateFlowId = WorkItemDataHelper.GetString(workItem, "stateFlowId");
         var currentStateId = WorkItemDataHelper.GetString(workItem, "stateId") ?? string.Empty;
@@ -113,28 +158,6 @@ public class RuntimeContextService : IRuntimeContextService
 
         var fieldBehaviors = await _fieldBehaviors.ResolveAllAsync(behaviorContext, cancellationToken);
 
-        var linksFilterOut = $"sourceWorkItemId:eq:{workItemId}";
-        var linksFilterIn = $"targetWorkItemId:eq:{workItemId}";
-        var segmentsFilter = $"workItemId:eq:{workItemId}";
-
-        var outgoingLinksTask = _dg.GetAsync<Dictionary<string, object?>>(
-            OcDatasets.Links,
-            $"filter={Uri.EscapeDataString(linksFilterOut)}&limit=50",
-            token,
-            cancellationToken);
-
-        var incomingLinksTask = _dg.GetAsync<Dictionary<string, object?>>(
-            OcDatasets.Links,
-            $"filter={Uri.EscapeDataString(linksFilterIn)}&limit=50",
-            token,
-            cancellationToken);
-
-        var segmentsTask = _dg.GetAsync<Dictionary<string, object?>>(
-            OcDatasets.WorkItemTimelines,
-            $"filter={Uri.EscapeDataString(segmentsFilter)}&limit=200",
-            token,
-            cancellationToken);
-
         await Task.WhenAll(outgoingLinksTask, incomingLinksTask, segmentsTask);
 
         var links = outgoingLinksTask.Result
@@ -166,7 +189,7 @@ public class RuntimeContextService : IRuntimeContextService
             attachments = attEl;
         }
 
-        return new ProfileRuntimeContext
+        var result = new ProfileRuntimeContext
         {
             WorkspaceId = workspaceId,
             WorkItem = ProfileRuntimeBuilder.BuildSummary(workItemId, workItem),
@@ -192,6 +215,14 @@ public class RuntimeContextService : IRuntimeContextService
             People = profilePeople,
             Attachments = attachments
         };
+
+        if (perfSw != null)
+        {
+            perfSw.Stop();
+            LogPerf("profile", $"workItem={workItemId} fields={result.Fields.Count}", perfSw.ElapsedMilliseconds);
+        }
+
+        return result;
     }
 
     public async Task<StateSegmentsPage> GetStateSegmentsAsync(
@@ -582,6 +613,7 @@ public class RuntimeContextService : IRuntimeContextService
         BoardListRequest request,
         CancellationToken cancellationToken = default)
     {
+        var perfSw = _perfDiagnostics ? Stopwatch.StartNew() : null;
         var token = RequireToken();
         var board = await _metadataCache.GetBoardAsync(boardId, token, cancellationToken);
         var workspaceId = board.WorkspaceId
@@ -692,6 +724,12 @@ public class RuntimeContextService : IRuntimeContextService
 
         var cards = page.Items.Select(MapWorkItemCard).ToList();
         var people = await ResolvePeopleForCardsAsync(cards, token, cancellationToken);
+
+        if (perfSw != null)
+        {
+            perfSw.Stop();
+            LogPerf("board_list", $"board={boardId} rows={cards.Count} total={page.Total}", perfSw.ElapsedMilliseconds);
+        }
 
         return new QueryExecuteResponse
         {

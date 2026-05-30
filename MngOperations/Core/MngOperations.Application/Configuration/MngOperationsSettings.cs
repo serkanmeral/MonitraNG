@@ -6,6 +6,13 @@ public class MngOperationsSettings
 
     public ServerSettings Server { get; set; } = new();
     public string OpenApiServerPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// GEÇİCİ (perf/oc-optimization): açıkken board-list/profile endpoint'leri sonunda
+    /// OC_PERF log satırı (DG/Keeper çağrı sayısı + süre) yazılır. Default kapalı.
+    /// </summary>
+    public bool PerfDiagnostics { get; set; } = false;
+
     public ActorsSettings Actors { get; set; } = new();
     public DataGatewaySettings DataGateway { get; set; } = new();
     public MngNotifiersSettings MngNotifiers { get; set; } = new();

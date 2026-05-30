@@ -1,8 +1,10 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MngOperations.Application.Configuration;
 using MngOperations.Application.Contracts.Runtime;
+using MngOperations.Application.Diagnostics;
 using MngOperations.Application.Interfaces;
 
 namespace MngOperations.Infrastructure.Services;
@@ -17,6 +19,7 @@ public sealed class PersonDirectoryService : IPersonDirectory
     private readonly IKeeperDirectoryClient _keeper;
     private readonly IRequestContext _requestContext;
     private readonly ILogger<PersonDirectoryService> _logger;
+    private readonly OcCallStats _stats;
     private readonly TimeSpan _ttl;
 
     public PersonDirectoryService(
@@ -24,12 +27,14 @@ public sealed class PersonDirectoryService : IPersonDirectory
         IKeeperDirectoryClient keeper,
         IRequestContext requestContext,
         ILogger<PersonDirectoryService> logger,
-        IOptions<MngOperationsSettings> settings)
+        IOptions<MngOperationsSettings> settings,
+        OcCallStats stats)
     {
         _cache = cache;
         _keeper = keeper;
         _requestContext = requestContext;
         _logger = logger;
+        _stats = stats;
         _ttl = TimeSpan.FromSeconds(Math.Max(30, settings.Value.MetadataCache.PersonTtlSeconds));
     }
 
@@ -59,12 +64,16 @@ public sealed class PersonDirectoryService : IPersonDirectory
 
         if (missing.Count > 0)
         {
+            // GEÇİCİ (perf/oc-optimization): Keeper N+1 ölçümü.
+            var sw = Stopwatch.StartNew();
             var resolved = await Task.WhenAll(missing.Select(async id =>
             {
                 var person = await _keeper.GetUserAsync(id, token, cancellationToken)
                     ?? new PersonDisplayDto { Id = id, Name = id };
                 return person;
             }));
+            sw.Stop();
+            _stats.RecordKeeper(missing.Count, sw.ElapsedMilliseconds);
 
             foreach (var person in resolved)
             {

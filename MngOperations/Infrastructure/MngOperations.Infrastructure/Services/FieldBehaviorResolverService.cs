@@ -31,12 +31,19 @@ public sealed class FieldBehaviorResolverService : IFieldBehaviorResolver
         CancellationToken cancellationToken = default)
     {
         var token = RequireToken();
-        var fieldKeys = await CollectFieldKeysAsync(context, token, cancellationToken);
+
+        // İstek başına tek tarama: enabled field metadata'sını key→record map'ine topla
+        // ve workspace kurallarını bir kez al. Aksi halde her alan için tüm enabledIds yeniden
+        // taranıyordu (O(alan×enabledIds)). Çözülen davranış (alan seçimi/kurallar) birebir aynı.
+        var (fieldKeys, fieldsByKey) = await CollectFieldKeysAsync(context, token, cancellationToken);
+        var rules = await _metadataCache.GetRulesForWorkspaceAsync(
+            context.Workspace.DataId ?? string.Empty, token, cancellationToken);
+
         var result = new Dictionary<string, FieldBehaviorDto>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var fieldKey in fieldKeys)
         {
-            result[fieldKey] = await ResolveInternalAsync(context, fieldKey, token, cancellationToken);
+            result[fieldKey] = await ResolveInternalAsync(context, fieldKey, token, fieldsByKey, rules, cancellationToken);
         }
 
         return result;
@@ -48,7 +55,7 @@ public sealed class FieldBehaviorResolverService : IFieldBehaviorResolver
         CancellationToken cancellationToken = default)
     {
         var token = RequireToken();
-        return await ResolveInternalAsync(context, fieldName, token, cancellationToken);
+        return await ResolveInternalAsync(context, fieldName, token, null, null, cancellationToken);
     }
 
     public void EnsureWritableFields(
@@ -82,6 +89,8 @@ public sealed class FieldBehaviorResolverService : IFieldBehaviorResolver
         FieldBehaviorResolveContext context,
         string fieldName,
         string token,
+        IReadOnlyDictionary<string, FieldRecord>? fieldsByKey,
+        IReadOnlyList<RuleRecord>? rules,
         CancellationToken cancellationToken)
     {
         var layers = new List<FieldBehaviorDto>();
@@ -96,7 +105,7 @@ public sealed class FieldBehaviorResolverService : IFieldBehaviorResolver
             layers.Add(new FieldBehaviorDto { Visible = true });
         }
 
-        var fieldMeta = await TryLoadFieldMetadataAsync(context, fieldName, token, cancellationToken);
+        var fieldMeta = await TryLoadFieldMetadataAsync(context, fieldName, token, fieldsByKey, cancellationToken);
         if (fieldMeta != null)
             layers.Add(FromFieldDefinition(fieldMeta));
 
@@ -126,17 +135,19 @@ public sealed class FieldBehaviorResolverService : IFieldBehaviorResolver
             layers.Add(FromBoardVisibility(fieldName, visibleFields));
 
         layers.Add(FromPermission(context.CanEdit, context.Mode, fieldName));
-        layers.Add(await FromRulesAsync(context, fieldName, token, cancellationToken));
+        layers.Add(await FromRulesAsync(context, fieldName, token, rules, cancellationToken));
 
         return FieldBehaviorMerger.MergeMany(layers);
     }
 
-    private async Task<IReadOnlyList<string>> CollectFieldKeysAsync(
+    private async Task<(IReadOnlyList<string> Keys, IReadOnlyDictionary<string, FieldRecord> FieldsByKey)> CollectFieldKeysAsync(
         FieldBehaviorResolveContext context,
         string token,
         CancellationToken cancellationToken)
     {
         var keys = new HashSet<string>(FieldBehaviorDefaults.SystemFieldKeys, StringComparer.OrdinalIgnoreCase);
+        // key→record (ilk gelen kazanır) — eski TryLoad davranışıyla (enabledIds sırası, ilk eşleşme) aynı.
+        var fieldsByKey = new Dictionary<string, FieldRecord>(StringComparer.OrdinalIgnoreCase);
 
         var enabledIds = MetadataRelationHelper.ParseIdList(context.Workspace.EnabledFieldIds);
         foreach (var fieldId in enabledIds)
@@ -145,7 +156,11 @@ public sealed class FieldBehaviorResolverService : IFieldBehaviorResolver
             {
                 var field = await _metadataCache.GetFieldAsync(fieldId, token, cancellationToken);
                 if (!string.IsNullOrWhiteSpace(field.Key))
+                {
                     keys.Add(field.Key);
+                    if (!fieldsByKey.ContainsKey(field.Key))
+                        fieldsByKey[field.Key] = field;
+                }
             }
             catch (OperationCoreException ex) when (ex.Code == "FIELD_NOT_FOUND")
             {
@@ -166,15 +181,21 @@ public sealed class FieldBehaviorResolverService : IFieldBehaviorResolver
         foreach (var key in WorkspaceFieldPolicies.EnumerateFieldKeys(workspacePolicies))
             keys.Add(key);
 
-        return keys.ToList();
+        return (keys.ToList(), fieldsByKey);
     }
 
     private async Task<FieldRecord?> TryLoadFieldMetadataAsync(
         FieldBehaviorResolveContext context,
         string fieldKey,
         string token,
+        IReadOnlyDictionary<string, FieldRecord>? fieldsByKey,
         CancellationToken cancellationToken)
     {
+        // Toplu yol (ResolveAll): önceden kurulmuş map'ten O(1) çözüm.
+        if (fieldsByKey != null)
+            return fieldsByKey.TryGetValue(fieldKey, out var mapped) ? mapped : null;
+
+        // Tekil yol (ResolveAsync): tek alan için enabledIds taraması (eski davranış).
         var enabledIds = MetadataRelationHelper.ParseIdList(context.Workspace.EnabledFieldIds);
         foreach (var fieldId in enabledIds)
         {
@@ -267,9 +288,11 @@ public sealed class FieldBehaviorResolverService : IFieldBehaviorResolver
         FieldBehaviorResolveContext context,
         string fieldName,
         string token,
+        IReadOnlyList<RuleRecord>? rules,
         CancellationToken cancellationToken)
     {
-        var rules = await _metadataCache.GetRulesForWorkspaceAsync(
+        // Toplu yolda kurallar bir kez çekilip paylaşılır; tekil yolda burada alınır (eski davranış).
+        rules ??= await _metadataCache.GetRulesForWorkspaceAsync(
             context.Workspace.DataId ?? string.Empty,
             token,
             cancellationToken);

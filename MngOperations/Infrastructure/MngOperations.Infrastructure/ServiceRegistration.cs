@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using MngOperations.Application.Configuration;
+using MngOperations.Application.Diagnostics;
 using MngOperations.Application.Interfaces;
 using MngOperations.Infrastructure.Clients;
 using MngOperations.Infrastructure.Services;
@@ -36,6 +37,9 @@ public static class ServiceRegistration
         {
             client.Timeout = TimeSpan.FromSeconds(15);
         });
+
+        // GEÇİCİ (perf/oc-optimization): istek başına downstream çağrı ölçümü.
+        services.AddScoped<OcCallStats>();
 
         services.AddScoped<IMngDataGatewayClient, MngDataGatewayClient>();
         services.AddScoped<IKeeperDirectoryClient, MngKeeperClient>();
