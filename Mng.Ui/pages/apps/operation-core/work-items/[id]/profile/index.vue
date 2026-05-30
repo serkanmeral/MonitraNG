@@ -14,6 +14,7 @@ import {
   initialFormModelFromContext,
   ocAddWorkItemAttachment,
   ocAddWorkItemComment,
+  ocApplyTransition,
   ocDownloadAttachment,
   ocExtractDgErrorMessage,
   ocGetFormEditContext,
@@ -25,6 +26,7 @@ import {
 import type {
   OcAttachment,
   OcFormRuntimeContext,
+  OcProfileAction,
   OcTimelineEntry,
   OcWorkItemProfile,
 } from '@/types/apps/operationCore';
@@ -225,6 +227,49 @@ async function submitComment(payload: { body: string; mentions: string[]; files:
   }
 }
 
+// --- Durum geçişleri (transition aksiyonları) ---
+const transitionActions = computed<OcProfileAction[]>(() =>
+  [...(profile.value?.actions ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+);
+const transitionDialog = ref(false);
+const transitionTarget = ref<OcProfileAction | null>(null);
+const transitionComment = ref('');
+const transitionBusy = ref(false);
+const transitionError = ref<string | null>(null);
+
+function actionLabel(action: OcProfileAction): string {
+  const explicit = action.label?.trim();
+  if (explicit) return explicit;
+  return resolveState(action.toStateId, null)?.name?.trim() || action.toStateId;
+}
+
+function openTransition(action: OcProfileAction) {
+  if (!action.enabled) return;
+  transitionTarget.value = action;
+  transitionComment.value = '';
+  transitionError.value = null;
+  transitionDialog.value = true;
+}
+
+async function confirmTransition() {
+  const action = transitionTarget.value;
+  if (!action) return;
+  transitionBusy.value = true;
+  transitionError.value = null;
+  try {
+    profile.value = await ocApplyTransition(workItemId.value, action.transitionKey, {
+      comment: transitionComment.value,
+    });
+    transitionDialog.value = false;
+    transitionTarget.value = null;
+    void loadTimeline();
+  } catch (e: unknown) {
+    transitionError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.transitions.error'));
+  } finally {
+    transitionBusy.value = false;
+  }
+}
+
 async function loadProfile() {
   const id = workItemId.value;
   if (!id) return;
@@ -286,7 +331,84 @@ watch(workItemId, () => {
           {{ t('operationCore.profile.readonlyChip') }}
         </v-chip>
       </v-card-title>
+      <template v-if="transitionActions.length">
+        <v-divider />
+        <v-card-text class="d-flex align-center flex-wrap ga-2 py-2">
+          <span class="text-caption text-medium-emphasis me-1">
+            {{ t('operationCore.profile.transitions.title') }}
+          </span>
+          <v-btn
+            v-for="action in transitionActions"
+            :key="action.transitionKey"
+            size="small"
+            variant="flat"
+            color="primary"
+            rounded="lg"
+            class="text-none"
+            prepend-icon="mdi-swap-horizontal"
+            :disabled="!action.enabled || transitionBusy"
+            @click="openTransition(action)"
+          >
+            {{ actionLabel(action) }}
+          </v-btn>
+        </v-card-text>
+      </template>
     </v-card>
+
+    <!-- Durum geçişi onay dialog'u -->
+    <v-dialog v-model="transitionDialog" max-width="460" persistent>
+      <v-card rounded="lg">
+        <v-card-title class="text-subtitle-1 font-weight-bold d-flex align-center ga-2">
+          <v-icon icon="mdi-swap-horizontal" color="primary" size="20" />
+          {{ t('operationCore.profile.transitions.confirmTitle') }}
+        </v-card-title>
+        <v-card-text>
+          <p class="text-body-2 mb-3">
+            {{ t('operationCore.profile.transitions.confirmBody') }}
+            <strong v-if="transitionTarget">{{ actionLabel(transitionTarget) }}</strong>
+          </p>
+          <v-textarea
+            v-model="transitionComment"
+            :label="t('operationCore.profile.transitions.commentLabel')"
+            :placeholder="t('operationCore.profile.transitions.commentPlaceholder')"
+            variant="outlined"
+            rows="2"
+            auto-grow
+            hide-details="auto"
+            density="comfortable"
+          />
+          <v-alert
+            v-if="transitionError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mt-3 rounded-lg"
+          >
+            {{ transitionError }}
+          </v-alert>
+        </v-card-text>
+        <v-card-actions class="px-4 pb-4">
+          <v-spacer />
+          <v-btn
+            variant="text"
+            class="text-none"
+            :disabled="transitionBusy"
+            @click="transitionDialog = false"
+          >
+            {{ t('operationCore.definitions.cancel') }}
+          </v-btn>
+          <v-btn
+            color="primary"
+            variant="flat"
+            class="text-none"
+            :loading="transitionBusy"
+            @click="confirmTransition"
+          >
+            {{ t('operationCore.profile.transitions.confirm') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
 

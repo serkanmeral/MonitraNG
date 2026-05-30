@@ -475,11 +475,23 @@ export interface OcAttachment {
   raw: Record<string, unknown>;
 }
 
+/** Uygulanabilir durum geçişi (profil header aksiyonları). MO `ProfileActionDto`. */
+export interface OcProfileAction {
+  transitionKey: string;
+  label?: string | null;
+  fromStateId?: string | null;
+  toStateId: string;
+  enabled: boolean;
+  order: number;
+}
+
 /** Profil runtime context — sidebar (SLA/meta/policy) + izinler. */
 export interface OcWorkItemProfile {
   workspaceId: string;
   workItem: OcWorkItemSummary;
   permissions: OcRuntimePermissions;
+  /** Geçerli durumdan uygulanabilir geçişler (yetki + koşul süzülmüş). */
+  actions: OcProfileAction[];
   sla?: OcSlaSnapshot | null;
   watchers: string[];
   links: OcWorkItemLinkSummary[];

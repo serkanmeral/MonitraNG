@@ -12,6 +12,7 @@ import type {
   OcNotification,
   OcNotificationListResponse,
   OcPersonDisplay,
+  OcProfileAction,
   OcQueryExecuteResponse,
   OcSlaSnapshot,
   OcTimelineEntry,
@@ -672,11 +673,28 @@ function mapWorkItemLink(raw: Record<string, unknown>): OcWorkItemLinkSummary {
   };
 }
 
+function mapProfileAction(raw: Record<string, unknown>): OcProfileAction | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const transitionKey = pickStr(raw, 'transitionKey', 'TransitionKey') ?? '';
+  const toStateId = resolveRelationId(raw.toStateId ?? raw.ToStateId) ?? '';
+  if (!transitionKey || !toStateId) return null;
+  const orderRaw = raw.order ?? raw.Order;
+  return {
+    transitionKey,
+    label: pickStr(raw, 'label', 'Label') ?? null,
+    fromStateId: resolveRelationId(raw.fromStateId ?? raw.FromStateId) ?? null,
+    toStateId,
+    enabled: Boolean(raw.enabled ?? raw.Enabled ?? true),
+    order: typeof orderRaw === 'number' ? orderRaw : Number(orderRaw) || 0,
+  };
+}
+
 function mapWorkItemProfile(raw: Record<string, unknown>): OcWorkItemProfile {
   const wiRaw = (raw.workItem ?? raw.WorkItem ?? {}) as Record<string, unknown>;
   const perms = (raw.permissions ?? raw.Permissions ?? {}) as Record<string, unknown>;
   const watchers = raw.watchers ?? raw.Watchers;
   const links = raw.links ?? raw.Links;
+  const actions = raw.actions ?? raw.Actions;
   const summary = mapWorkItemSummary(wiRaw);
   return {
     workspaceId: pickStr(raw, 'workspaceId', 'WorkspaceId') ?? '',
@@ -686,6 +704,11 @@ function mapWorkItemProfile(raw: Record<string, unknown>): OcWorkItemProfile {
       canEdit: Boolean(perms.canEdit ?? perms.CanEdit ?? false),
       canComment: Boolean(perms.canComment ?? perms.CanComment ?? false),
     },
+    actions: Array.isArray(actions)
+      ? actions
+          .map((a) => mapProfileAction(a as Record<string, unknown>))
+          .filter((a): a is OcProfileAction => !!a)
+      : [],
     sla: mapSlaSnapshot(raw.sla ?? raw.Sla),
     watchers: Array.isArray(watchers) ? watchers.map(String) : [],
     links: Array.isArray(links) ? links.map((l) => mapWorkItemLink(l as Record<string, unknown>)) : [],
@@ -800,6 +823,26 @@ export async function ocAddWorkItemComment(
     payload
   )) as Record<string, unknown>;
   return mapComment(raw);
+}
+
+/**
+ * İş kaydına durum geçişi uygular (MO `POST /work-items/{id}/transitions/{key}`).
+ * MO yetki + koşul + `requiredFields` doğrulamasını yapar; başarı sonrası güncel profil döner.
+ */
+export async function ocApplyTransition(
+  workItemId: string,
+  transitionKey: string,
+  options?: { comment?: string | null }
+): Promise<OcWorkItemProfile> {
+  const payload: Record<string, unknown> = {};
+  const comment = options?.comment?.trim();
+  if (comment) payload.comment = comment;
+  await fetchFromOperations(
+    `/api/v1/work-items/${encodeURIComponent(workItemId)}/transitions/${encodeURIComponent(transitionKey)}`,
+    'POST',
+    payload
+  );
+  return ocGetWorkItemProfile(workItemId);
 }
 
 function mapNotification(raw: Record<string, unknown>): OcNotification {

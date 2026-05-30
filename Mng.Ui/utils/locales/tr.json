@@ -3379,6 +3379,15 @@
         "downloadError": "Dosya indirilemedi.",
         "removeError": "Ek kaldırılamadı."
       },
+      "transitions": {
+        "title": "Geçiş:",
+        "confirmTitle": "Durum geçişi uygula",
+        "confirmBody": "Bu iş kaydını şu duruma taşı:",
+        "commentLabel": "Yorum (opsiyonel)",
+        "commentPlaceholder": "Bu geçiş için not ekleyin...",
+        "confirm": "Uygula",
+        "error": "Durum geçişi uygulanamadı."
+      },
       "sla": {
         "title": "SLA",
         "responseDue": "Yanıt hedefi",

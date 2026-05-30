@@ -3366,6 +3366,15 @@
         "downloadError": "Could not download the file.",
         "removeError": "Could not remove the attachment."
       },
+      "transitions": {
+        "title": "Move to:",
+        "confirmTitle": "Apply transition",
+        "confirmBody": "Move this work item to",
+        "commentLabel": "Comment (optional)",
+        "commentPlaceholder": "Add a note for this transition...",
+        "confirm": "Apply",
+        "error": "Could not apply the transition."
+      },
       "sla": {
         "title": "SLA",
         "responseDue": "Response due",

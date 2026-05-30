@@ -239,6 +239,22 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 
 ---
 
+## F — Operasyonel runtime: durum geçişleri (bu oturum, 30 May)
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **F-T** | ✅ (lokal) | **Profilde durum geçişi (transition) uygulama** — profil header'ında geçerli durumdan uygulanabilir geçiş butonları; tıklayınca opsiyonel yorumlu onay dialog'u; uygulanınca güncel profil + timeline yeniden yüklenir. MO yetki + koşul + `requiredFields` doğrulamasını yapar (UI eklemeli, ham). |
+
+**Backend değişikliği yok** — MO profil context `Actions` (`ProfileActionDto`: key/label/from/to/enabled/order; `GetAvailableTransitions` ile) ve `POST /work-items/{id}/transitions/{key}` (`TransitionWorkItemRequest`: `comment?`/`fields?`) zaten hazırdı; UI bunları hiç okumuyordu.
+**UI:** `types/apps/operationCore.ts` (`OcProfileAction` + `OcWorkItemProfile.actions`), `operationCoreService.ts` (`mapProfileAction`, `mapWorkItemProfile` actions parse, `ocApplyTransition`), profil sayfası `work-items/[id]/profile/index.vue` (header geçiş butonları + onay/yorum dialog + başarı sonrası yenileme), locale `en/tr` (`profile.transitions.*`).
+**Deploy:** Yalnızca mngui (MO değişmedi). Kullanıcı isteği üzerine deploy edilecek.
+
+**Açık/ileriki (F faz-2+):**
+- ⬜ Geçiş dialog'unda `requiredFields` ön-toplama (şu an MO 400 dönerse hata gösterilir).
+- ⬜ Board listede/Kanban'da geçiş uygulama (DnD → defaultTransitionKey).
+
+---
+
 ## Sıradaki işler
 
 | # | Epic | Hedef |
@@ -248,7 +264,7 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 | ~~3~~ | ~~**E1-P2**~~ | ✅ Akışlar: geçiş `requiredFields` + `permissions.groups` — Odak'ta canlı |
 | ~~4~~ | ~~**CC**~~ | ✅ Dinamik (computed) sütunlar (expr-eval, display-only) — Odak'ta canlı |
 | ~~5~~ | ~~**A**~~ | ✅ `op_comments.attachments` (yorum ekleri) — bu oturum (MO+mngui deploy bekliyor) |
-| **1** | **F** | Operasyonel runtime + **SLA-3** chip |
+| ~~6~~ | ~~**F**~~ | ✅ Operasyonel runtime: profilde durum geçişi (transition) uygulama — lokal (mngui deploy bekliyor); SLA-3 chip zaten ✅ (FC/BLC) |
 
 ---
 
@@ -271,5 +287,5 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 [✓] Admin kapanış: akış geçiş requiredFields + yetki grupları (E1-P2) — Odak'ta canlı
 [✓] Dinamik (computed) sütunlar (CC, expr-eval display-only) — Odak'ta canlı
 [✓] Yorum ekleri (op_comments.attachments) — lokal (MO+mngui deploy bekliyor)
-[ ] Operasyonel runtime + SLA-3 chip (F)
+[✓] Operasyonel runtime: profilde durum geçişi uygulama (F) — lokal (mngui deploy bekliyor); SLA-3 chip zaten ✓
 ```
