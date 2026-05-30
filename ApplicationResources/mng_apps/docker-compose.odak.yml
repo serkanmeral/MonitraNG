@@ -75,6 +75,8 @@ services:
       - Jwt__Authority=http://keycloak:8080/keycloak/realms/monitra
       - MngOperationsSettings__OpenApiServerPath=http://192.168.20.20:5040/operations
       - MngOperationsSettings__Actors__KeycloakBaseUrl=http://keycloak:8080/keycloak
+      # perf/oc-optimization ölçüm bayrağı (flag-gated; ölçüm için 'true' yapılır, üretimde kapalı).
+      - MngOperationsSettings__PerfDiagnostics=false
 
   mngadmin:
     ports:

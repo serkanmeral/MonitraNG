@@ -742,6 +742,16 @@ export function fetchFromOperations(
 
       const fullUrl = queryPart ? `/api/operations/${serverPath}?${queryPart}` : `/api/operations/${serverPath}`;
 
+      // GEÇİCİ (perf/oc-optimization): tarayıcıda localStorage.OC_PERF='1' iken çağrı süresi.
+      const __ocPerf =
+        typeof window !== "undefined" && window.localStorage?.getItem("OC_PERF") === "1";
+      const __ocStart = __ocPerf ? performance.now() : 0;
+      const __ocLog = () => {
+        if (__ocPerf)
+          // eslint-disable-next-line no-console
+          console.info(`[OC_PERF] ${method} ${serverPath} ${(performance.now() - __ocStart).toFixed(0)}ms`);
+      };
+
       if (method === "DELETE") {
         try {
           const rawResponse = await $fetch.raw(fullUrl, {
@@ -749,6 +759,7 @@ export function fetchFromOperations(
             headers: { Authorization: `Bearer ${token}`, ...headers },
             ...(body && { body }),
           });
+          __ocLog();
           if (rawResponse.status === 204) {
             resolve({ success: true, statusCode: 204 });
             return;
@@ -769,6 +780,7 @@ export function fetchFromOperations(
         headers: { Authorization: `Bearer ${token}`, ...headers },
         ...(body && { body }),
       });
+      __ocLog();
       resolve(response);
     } catch (error: any) {
       if (error.statusCode === 401 || error.status === 401) {

@@ -1,9 +1,11 @@
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MngOperations.Application.Configuration;
+using MngOperations.Application.Diagnostics;
 using MngOperations.Application.Interfaces;
 using Polly;
 using Polly.Retry;
@@ -20,16 +22,19 @@ public class MngDataGatewayClient : IMngDataGatewayClient
     private readonly HttpClient _httpClient;
     private readonly ILogger<MngDataGatewayClient> _logger;
     private readonly MngOperationsSettings _settings;
+    private readonly OcCallStats _stats;
     private readonly AsyncRetryPolicy<HttpResponseMessage> _retryPolicy;
 
     public MngDataGatewayClient(
         IHttpClientFactory httpClientFactory,
         ILogger<MngDataGatewayClient> logger,
-        IOptions<MngOperationsSettings> settings)
+        IOptions<MngOperationsSettings> settings,
+        OcCallStats stats)
     {
         _httpClient = httpClientFactory.CreateClient("MngDataGateway");
         _logger = logger;
         _settings = settings.Value;
+        _stats = stats;
 
         var baseUrl = (_settings.DataGateway.BaseUrl ?? "http://localhost:5010").TrimEnd('/');
         var apiVersion = _settings.DataGateway.ApiVersion ?? "v1";
@@ -52,7 +57,7 @@ public class MngDataGatewayClient : IMngDataGatewayClient
 
     public Task<T> CreateAsync<T>(string datasetName, T data, string? token = null, CancellationToken cancellationToken = default)
         where T : class =>
-        SendJsonAsync<T>(HttpMethod.Post, $"data/{datasetName}", data, token, cancellationToken);
+        SendJsonAsync<T>(HttpMethod.Post, $"data/{datasetName}", data, $"create:{datasetName}", token, cancellationToken);
 
     public async Task<IEnumerable<T>> GetAsync<T>(string datasetName, string? query = null, string? token = null, CancellationToken cancellationToken = default)
         where T : class
@@ -63,6 +68,7 @@ public class MngDataGatewayClient : IMngDataGatewayClient
 
         using var response = await SendWithRetryAsync(
             () => CreateRequest(HttpMethod.Get, url, token),
+            $"get:{datasetName}",
             cancellationToken);
 
         response.EnsureSuccessStatusCode();
@@ -88,6 +94,7 @@ public class MngDataGatewayClient : IMngDataGatewayClient
     {
         using var response = await SendWithRetryAsync(
             () => CreateRequest(HttpMethod.Get, $"data/{datasetName}/{id}", token),
+            $"getById:{datasetName}",
             cancellationToken);
 
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -191,12 +198,13 @@ public class MngDataGatewayClient : IMngDataGatewayClient
 
     public Task<T> UpdateAsync<T>(string datasetName, string id, T data, string? token = null, CancellationToken cancellationToken = default)
         where T : class =>
-        SendJsonAsync<T>(HttpMethod.Put, $"data/{datasetName}/{id}", data, token, cancellationToken);
+        SendJsonAsync<T>(HttpMethod.Put, $"data/{datasetName}/{id}", data, $"update:{datasetName}", token, cancellationToken);
 
     public async Task<bool> DeleteAsync(string datasetName, string id, string? token = null, CancellationToken cancellationToken = default)
     {
         using var response = await SendWithRetryAsync(
             () => CreateRequest(HttpMethod.Delete, $"data/{datasetName}/{id}", token),
+            $"delete:{datasetName}",
             cancellationToken);
 
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -216,6 +224,7 @@ public class MngDataGatewayClient : IMngDataGatewayClient
         var url = $"data/{datasetName}/queries/{queryName}";
         using var response = await SendWithRetryAsync(
             () => CreateRequest(HttpMethod.Post, url, token, JsonContent.Create(parameters)),
+            $"execQuery:{datasetName}",
             cancellationToken);
 
         if (!response.IsSuccessStatusCode)
@@ -255,6 +264,7 @@ public class MngDataGatewayClient : IMngDataGatewayClient
 
         using var response = await SendWithRetryAsync(
             () => CreateRequest(HttpMethod.Post, url, token, JsonContent.Create(new { match })),
+            $"query:{datasetName}",
             cancellationToken);
 
         if (!response.IsSuccessStatusCode)
@@ -292,11 +302,13 @@ public class MngDataGatewayClient : IMngDataGatewayClient
         HttpMethod method,
         string url,
         T data,
+        string op,
         string? token,
         CancellationToken cancellationToken) where T : class
     {
         using var response = await SendWithRetryAsync(
             () => CreateRequest(method, url, token, JsonContent.Create(data)),
+            op,
             cancellationToken);
 
         if (!response.IsSuccessStatusCode)
@@ -315,10 +327,23 @@ public class MngDataGatewayClient : IMngDataGatewayClient
         return result ?? throw new InvalidOperationException($"Empty response from {url}");
     }
 
-    private Task<HttpResponseMessage> SendWithRetryAsync(
+    private async Task<HttpResponseMessage> SendWithRetryAsync(
         Func<HttpRequestMessage> createRequest,
-        CancellationToken cancellationToken) =>
-        _retryPolicy.ExecuteAsync(ct => _httpClient.SendAsync(createRequest(), ct), cancellationToken);
+        string op,
+        CancellationToken cancellationToken)
+    {
+        // GEÇİCİ (perf/oc-optimization): istek başına DG çağrı sayısı/süresi.
+        var sw = Stopwatch.StartNew();
+        try
+        {
+            return await _retryPolicy.ExecuteAsync(ct => _httpClient.SendAsync(createRequest(), ct), cancellationToken);
+        }
+        finally
+        {
+            sw.Stop();
+            _stats.RecordDg(op, sw.ElapsedMilliseconds);
+        }
+    }
 
     private static HttpRequestMessage CreateRequest(
         HttpMethod method,

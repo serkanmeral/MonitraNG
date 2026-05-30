@@ -13,6 +13,7 @@ public static class ServiceRegistration
         {
             _.Server = settings.Server;
             _.OpenApiServerPath = settings.OpenApiServerPath;
+            _.PerfDiagnostics = settings.PerfDiagnostics;
             _.Actors = settings.Actors;
             _.DataGateway = settings.DataGateway;
             _.MngNotifiers = settings.MngNotifiers;
