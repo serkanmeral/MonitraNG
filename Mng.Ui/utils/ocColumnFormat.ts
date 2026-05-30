@@ -12,6 +12,40 @@ function intlLocale(locale?: string): string {
   return locale?.toLowerCase().startsWith('tr') ? 'tr-TR' : 'en-US';
 }
 
+// Intl formatter'ları kurmak pahalı; liste hücrelerinde (50 satır × sütun) yüzlerce kez
+// çağrılıyor. Locale/currency anahtarlı memoize — çıktı birebir aynı.
+const dateFmtCache = new Map<string, Intl.DateTimeFormat>();
+const numberFmtCache = new Map<string, Intl.NumberFormat>();
+const moneyFmtCache = new Map<string, Intl.NumberFormat>();
+
+function getDateFormatter(loc: string): Intl.DateTimeFormat {
+  let fmt = dateFmtCache.get(loc);
+  if (!fmt) {
+    fmt = new Intl.DateTimeFormat(loc, { dateStyle: 'medium', timeStyle: 'short' });
+    dateFmtCache.set(loc, fmt);
+  }
+  return fmt;
+}
+
+function getNumberFormatter(loc: string): Intl.NumberFormat {
+  let fmt = numberFmtCache.get(loc);
+  if (!fmt) {
+    fmt = new Intl.NumberFormat(loc);
+    numberFmtCache.set(loc, fmt);
+  }
+  return fmt;
+}
+
+function getMoneyFormatter(loc: string, currency: string): Intl.NumberFormat {
+  const key = `${loc}|${currency}`;
+  let fmt = moneyFmtCache.get(key);
+  if (!fmt) {
+    fmt = new Intl.NumberFormat(loc, { style: 'currency', currency, maximumFractionDigits: 2 });
+    moneyFmtCache.set(key, fmt);
+  }
+  return fmt;
+}
+
 function toDate(value: unknown): Date | null {
   if (value === null || value === undefined || value === '') return null;
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
@@ -49,10 +83,7 @@ export function formatCellValue(
     case 'date': {
       const d = toDate(value);
       if (!d) return EMPTY;
-      return new Intl.DateTimeFormat(intlLocale(opts.locale), {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      }).format(d);
+      return getDateFormatter(intlLocale(opts.locale)).format(d);
     }
     case 'relativeTime': {
       const start = toDate(value);
@@ -67,16 +98,12 @@ export function formatCellValue(
     case 'number': {
       const n = toNumber(value);
       if (n === null) return EMPTY;
-      return new Intl.NumberFormat(intlLocale(opts.locale)).format(n);
+      return getNumberFormatter(intlLocale(opts.locale)).format(n);
     }
     case 'money': {
       const n = toNumber(value);
       if (n === null) return EMPTY;
-      return new Intl.NumberFormat(intlLocale(opts.locale), {
-        style: 'currency',
-        currency: opts.currency || 'TRY',
-        maximumFractionDigits: 2,
-      }).format(n);
+      return getMoneyFormatter(intlLocale(opts.locale), opts.currency || 'TRY').format(n);
     }
     case 'text':
     default:

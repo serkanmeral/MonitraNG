@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed } from 'vue';
 import { formatDistanceStrict } from 'date-fns';
 import { enUS, tr } from 'date-fns/locale';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useSharedNow } from '@/composables/useSharedNow';
 import type { OcSlaSnapshot } from '@/types/apps/operationCore';
 
 const props = defineProps<{
@@ -18,17 +19,8 @@ const { t, locale } = useAppI18n();
 
 const dfLocale = computed(() => (locale().toLowerCase().startsWith('tr') ? tr : enUS));
 
-// Canlı kalan/gecikme için "şimdi"yi periyodik güncelle.
-const now = ref(Date.now());
-let timer: ReturnType<typeof setInterval> | null = null;
-onMounted(() => {
-  timer = setInterval(() => {
-    now.value = Date.now();
-  }, 60_000);
-});
-onUnmounted(() => {
-  if (timer) clearInterval(timer);
-});
+// Canlı kalan/gecikme için "şimdi": tüm chip'ler tek global ticker'ı paylaşır (satır başına timer yok).
+const now = useSharedNow(60_000);
 
 function toMs(v: string | null | undefined): number | null {
   if (!v) return null;

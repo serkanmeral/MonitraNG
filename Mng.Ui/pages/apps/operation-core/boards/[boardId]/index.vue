@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { computed, watch, onMounted, onUnmounted, ref } from 'vue';
+import { computed, watch, onMounted, onUnmounted, ref, defineAsyncComponent } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import OcBoardCatalogLabel from '@/components/apps/operation-core/OcBoardCatalogLabel.vue';
-import OcBoardKanban from '@/components/apps/operation-core/OcBoardKanban.vue';
+// Kanban yalnız kanban görünümünde render edilir; list-only board'da bundle'a girmesin.
+const OcBoardKanban = defineAsyncComponent(
+  () => import('@/components/apps/operation-core/OcBoardKanban.vue')
+);
 import OcBoardListFilters from '@/components/apps/operation-core/OcBoardListFilters.vue';
 import type { OcBoardFilterColumn, OcBoardFilterKind } from '@/components/apps/operation-core/OcBoardListFilters.vue';
 import OcWorkItemFormDialog from '@/components/apps/operation-core/OcWorkItemFormDialog.vue';
@@ -341,6 +344,8 @@ const typeFilterOptions = computed(() =>
 const listRows = computed(() =>
   store.listItems.map((item) => {
     const stateLabel = resolveState(item.stateId, null)?.name ?? item.stateId ?? null;
+    // Çözülmüş katalog/kişi değerlerini burada (cache'li computed) önceden hesapla;
+    // şablon slotları her render'da resolveState/Priority/Type'ı yeniden çağırmasın.
     const row: Record<string, unknown> = {
       id: item.id,
       keyText: item.key ?? '',
@@ -352,6 +357,12 @@ const listRows = computed(() =>
       rawPriorityId: item.priorityId ?? null,
       rawTypeId: item.typeId ?? null,
       rawCreatedBy: item.createdBy ?? null,
+      // Şablonun doğrudan bağlanacağı çözülmüş değerler (davranış: eski slot çağrılarıyla birebir).
+      stateItem: resolveState(item.stateId, stateLabel),
+      priorityItem: resolvePriority(item.priorityId),
+      typeItem: resolveType(item.typeId),
+      assigneeName: resolveAssigneeName(item.assignee),
+      createdByName: resolveAssigneeName(item.createdBy),
       // SLA chip + person sütunları slot ile render edilir; ham kartı taşı.
       __card: item as OcWorkItemCard,
     };
@@ -740,21 +751,19 @@ onUnmounted(() => {
             </NuxtLink>
           </template>
           <template v-if="listColumnKeys.includes('stateId')" #item.stateId="{ item }">
-            <OcBoardCatalogLabel
-              :item="resolveState(item.rawStateId, item.stateColumnTitle)"
-            />
+            <OcBoardCatalogLabel :item="item.stateItem" />
           </template>
           <template v-if="listColumnKeys.includes('priorityId')" #item.priorityId="{ item }">
-            <OcBoardCatalogLabel :item="resolvePriority(item.rawPriorityId)" />
+            <OcBoardCatalogLabel :item="item.priorityItem" />
           </template>
           <template v-if="listColumnKeys.includes('typeId')" #item.typeId="{ item }">
-            <OcBoardCatalogLabel :item="resolveType(item.rawTypeId)" />
+            <OcBoardCatalogLabel :item="item.typeItem" />
           </template>
           <template v-if="listColumnKeys.includes('assignee')" #item.assignee="{ item }">
-            <span>{{ resolveAssigneeName(item.rawAssignee) }}</span>
+            <span>{{ item.assigneeName }}</span>
           </template>
           <template v-if="listColumnKeys.includes('createdBy')" #item.createdBy="{ item }">
-            <span>{{ resolveAssigneeName(item.rawCreatedBy) }}</span>
+            <span>{{ item.createdByName }}</span>
           </template>
           <template v-if="listColumnKeys.includes('sla')" #item.sla="{ item }">
             <OcSlaStatusChip

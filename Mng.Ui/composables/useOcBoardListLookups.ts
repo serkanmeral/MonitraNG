@@ -57,13 +57,20 @@ export function useOcBoardListLookups(
     return entriesToDisplayMap(record);
   }
 
+  // Her context map'i yalnız catalogsSource değişince bir kez kur (computed cache'i).
+  // Eskiden hasContextCatalogs + her *ById çağrısı contextMap'i tekrar çalıştırıp Map'i
+  // baştan üretiyordu (kaynak başına ~6 kurulum).
+  const statesContext = computed(() => contextMap('states'));
+  const prioritiesContext = computed(() => contextMap('priorities'));
+  const typesContext = computed(() => contextMap('types'));
+
   const hasContextCatalogs = computed(
-    () => !!(contextMap('states') || contextMap('priorities') || contextMap('types'))
+    () => !!(statesContext.value || prioritiesContext.value || typesContext.value)
   );
 
-  const stateById = computed(() => contextMap('states') ?? buildCatalogDisplayMap(states.value));
-  const priorityById = computed(() => contextMap('priorities') ?? buildCatalogDisplayMap(priorities.value));
-  const typeById = computed(() => contextMap('types') ?? buildCatalogDisplayMap(types.value));
+  const stateById = computed(() => statesContext.value ?? buildCatalogDisplayMap(states.value));
+  const priorityById = computed(() => prioritiesContext.value ?? buildCatalogDisplayMap(priorities.value));
+  const typeById = computed(() => typesContext.value ?? buildCatalogDisplayMap(types.value));
 
   async function loadCatalogs() {
     // Board context map'leri mevcutsa ayrı fetch'e gerek yok (cache'ten geliyor).
