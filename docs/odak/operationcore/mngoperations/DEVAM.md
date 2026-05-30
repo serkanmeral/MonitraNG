@@ -255,6 +255,20 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 
 ---
 
+## PERF — Board liste + profil performans/kod optimizasyonu (bu oturum, 30 May)
+
+Ölçüm-öncelikli, davranış-koruyan tur (`perf/oc-optimization` → `main`). Detay: `PERF_OPTIMIZATION.md`.
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **PERF-BE** | ✅ Odak'ta canlı | Profil DG: `op_links`/`timeline` erken paralel başlat (metadata+field-behavior ile örtüşür) + timeline `limit=200→sort=-enteredAt&limit=5`; FieldBehavior istek-başı tek `key→record` map (O(alan×enabledIds) tarama kalktı). **Ölçülen:** profil warm ~1575-1822ms → **~1218ms (~%30)**. Board liste warm zaten optimal (tek DG sorgusu, değişmedi). |
+| **PERF-UI** | ✅ Odak'ta canlı | `Intl` formatter memoize, tek global "now" ticker (N timer→1), lookup Map dedup, `listRows` önceden çözüm (slot'lar her render'da `resolveX` çağırmıyor), `OcBoardKanban` lazy. Davranış birebir. |
+| **PERF-DIAG** | ✅ (flag kapalı) | `OcCallStats` + `PerfDiagnostics` bayrağı (default kapalı) — istek başına DG/Keeper çağrı sayısı/süresi; UI `localStorage.OC_PERF`. Üretimde kapalı, gelecekte ölçüm için hazır. |
+
+**Açık/ileriki (kapıda, ayrı onay):** ⬜ Tablo sanallaştırma ⬜ büyük dosya bölme refactor (`operationCoreService.ts`, `RuntimeContextService.cs`) — ölçüm gerektirmedi.
+
+---
+
 ## Sıradaki işler
 
 | # | Epic | Hedef |
@@ -288,4 +302,5 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 [✓] Dinamik (computed) sütunlar (CC, expr-eval display-only) — Odak'ta canlı
 [✓] Yorum ekleri (op_comments.attachments) — lokal (MO+mngui deploy bekliyor)
 [✓] Operasyonel runtime: profilde durum geçişi uygulama (F) — lokal (mngui deploy bekliyor); SLA-3 chip zaten ✓
+[✓] Performans optimizasyonu (PERF): profil ~%30 hızlanma + UI yapısal kazanımlar — Odak'ta canlı, main'e merge
 ```
