@@ -1,9 +1,11 @@
 # MngOperations & Operation Core UI — Devam noktası (checkpoint)
 
-**Son güncelleme:** 30 Mayıs 2026 (board liste audit/SLA sütunları + sabit actions + form chrome: profil/yorum/SLA/politika/mention/ekler)  
-**Durum:** SW **SW-0…SW-6** ✅ · A1 R-Plus ✅ · **SLA-0/1/2** ✅ · **D1 Board admin** ✅ · **BL (board liste enrichment)** ✅ · **BO (board liste aksiyonlar)** ✅ · **BLF (server-side liste + gelişmiş arama)** ✅ · **BLC (audit/SLA sütunları + sabit actions)** ✅ · **FC (form chrome: profil/yorum/SLA/politika/mention/ekler)** ✅ · **NP (in-app bildirim paneli + mention görünür)** ✅ (lokal) · **mngui Odak deploy** ✅
+**Son güncelleme:** 30 Mayıs 2026 (PERF turu: board liste + profil performans optimizasyonu — `main`'e merge, commit `eebdbaa`)  
+**Durum:** SW **SW-0…SW-6** ✅ · A1 R-Plus ✅ · **SLA-0/1/2** ✅ · **D1 Board admin** ✅ · **BL** ✅ · **BO** ✅ · **BLF (+BLF-8/9)** ✅ · **BLC** ✅ · **FC** ✅ · **NP** ✅ · **E1-P1/W-CREATE/E1-P2** ✅ · **CC** ✅ · **A** ✅ · **F** ✅ · **PERF (profil ~%30 hızlanma + UI yapısal)** ✅ — hepsi Odak'ta canlı
 
-**Ana plan:** [OC_UI_ADMIN_FAZ1_PLAN.md](../ui/OC_UI_ADMIN_FAZ1_PLAN.md)
+> **Kaldığımız yer (30 May, mola):** Planlı backlog + araya eklenen performans işi **tamamen bitti**, `main`'de ve Odak'ta canlı. Açık olan tek şey: **manuel toplu kontrol** (bkz. `PERF_KONTROL_REHBERI.md`) + isteğe bağlı faz-2/faz-4 kalemleri. Yeni chat buradan başlayabilir.
+
+**Ana plan:** [OC_UI_ADMIN_FAZ1_PLAN.md](../ui/OC_UI_ADMIN_FAZ1_PLAN.md) · **Perf detay:** [PERF_OPTIMIZATION.md](PERF_OPTIMIZATION.md) · **Bu oturum kontrol rehberi:** [PERF_KONTROL_REHBERI.md](PERF_KONTROL_REHBERI.md)
 
 ---
 
