@@ -4255,7 +4255,12 @@
         "fieldTransitionLabel": "Label (UI)",
         "fieldTransitionOrder": "Order",
         "fieldFromState": "From state",
-        "fieldToState": "To state"
+        "fieldToState": "To state",
+        "fieldRequiredFields": "Required fields",
+        "requiredFieldsHint": "These fields must be filled before this transition is allowed.",
+        "fieldPermissionGroups": "Allowed groups",
+        "permissionGroupsHint": "Only these groups can apply the transition. Empty = no restriction.",
+        "noGroups": "No groups found."
       },
       "forms": {
         "subtitle": "op_forms — work item create templates. Boards link via defaultFormId; MngOperations form runtime uses these records.",

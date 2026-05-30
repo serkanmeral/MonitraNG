@@ -1447,6 +1447,13 @@ function mapOpStateFlowTransition(raw: unknown): OpStateFlowTransition | null {
     ? requiredRaw.map((x) => String(x).trim()).filter(Boolean)
     : undefined;
 
+  const permsRaw = (o.permissions ?? o.Permissions) as Record<string, unknown> | undefined;
+  const groupsRaw =
+    permsRaw && typeof permsRaw === 'object' ? permsRaw.groups ?? permsRaw.Groups : undefined;
+  const permissionGroups = Array.isArray(groupsRaw)
+    ? groupsRaw.map((x) => String(x).trim()).filter(Boolean)
+    : undefined;
+
   return {
     transitionKey,
     fromStateId,
@@ -1454,6 +1461,7 @@ function mapOpStateFlowTransition(raw: unknown): OpStateFlowTransition | null {
     label: o.label != null ? String(o.label) : o.Label != null ? String(o.Label) : null,
     order,
     requiredFields: requiredFields?.length ? requiredFields : undefined,
+    permissionGroups: permissionGroups?.length ? permissionGroups : undefined,
   };
 }
 

@@ -43,7 +43,10 @@ export interface OpStateFlowTransition {
   toStateId: string;
   label?: string | null;
   order?: number | null;
+  /** Geçiş öncesi dolu olması zorunlu alan key'leri (MO `EnsureRequiredFields`). */
   requiredFields?: string[];
+  /** Geçişi uygulayabilecek Keeper grup id'leri; boş = kısıtlama yok (MO `permissions.groups`). */
+  permissionGroups?: string[];
 }
 
 /** op_work_item_schedules — zamanlanmış WI şablonu */

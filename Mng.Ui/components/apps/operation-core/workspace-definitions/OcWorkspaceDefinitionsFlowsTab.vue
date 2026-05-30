@@ -6,18 +6,23 @@ import {
   ocDeleteStateFlow,
   ocExtractDgErrorMessage,
   ocGetWorkspace,
+  ocListPoolFieldsForWorkspace,
   ocListStateFlowsForWorkspace,
   ocListStatesForWorkspace,
   ocUpdateStateFlow,
   ocUpdateWorkspace,
 } from '@/services/operationCoreService';
-import type { OpState, OpStateFlow, OpStateFlowTransition } from '@/types/apps/operationCore';
+import { useGroupStore } from '@/stores/apps/group';
+import { OC_FORM_LAYOUT_CORE_FIELD_KEYS } from '@/utils/ocFieldDefinitions';
+import { resolveOcFieldDisplayLabel } from '@/utils/ocFormFieldLabels';
+import type { OpField, OpState, OpStateFlow, OpStateFlowTransition } from '@/types/apps/operationCore';
 
 const props = defineProps<{
   workspaceId: string;
 }>();
 
 const { t } = useAppI18n();
+const groupStore = useGroupStore();
 
 const loading = ref(true);
 const saving = ref(false);
@@ -27,6 +32,7 @@ const successLocal = ref<string | null>(null);
 
 const flows = ref<OpStateFlow[]>([]);
 const states = ref<OpState[]>([]);
+const poolFields = ref<OpField[]>([]);
 const workspaceDefaultFlowId = ref<string | null>(null);
 
 const dialog = ref(false);
@@ -54,6 +60,38 @@ const stateItems = computed(() =>
   }))
 );
 
+const poolLabelByKey = computed(() => {
+  const map = new Map<string, string>();
+  for (const f of poolFields.value) {
+    if (f.key) map.set(f.key, f.label ?? f.key);
+  }
+  return map;
+});
+
+const fieldKeyItems = computed(() => {
+  const keys = [...OC_FORM_LAYOUT_CORE_FIELD_KEYS, ...poolFields.value.map((f) => f.key)];
+  const seen = new Set<string>();
+  const items: { value: string; title: string }[] = [];
+  for (const key of keys) {
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    items.push({
+      value: key,
+      title: resolveOcFieldDisplayLabel(key, {
+        poolLabel: poolLabelByKey.value.get(key) ?? null,
+        translate: t,
+      }),
+    });
+  }
+  return items.sort((a, b) => a.title.localeCompare(b.title));
+});
+
+const groupItems = computed(() =>
+  groupStore.groups
+    .filter((g) => g.isActive)
+    .map((g) => ({ value: g.id, title: g.name }))
+);
+
 const tableHeaders = computed(() => [
   { title: t('operationCore.workspaceDefinitions.flows.colName'), key: 'name', sortable: true },
   { title: t('operationCore.workspaceDefinitions.flows.colInitialState'), key: 'initialStateId', sortable: false },
@@ -77,6 +115,8 @@ function buildPayload(): Record<string, unknown> {
     toStateId: tr.toStateId,
     label: tr.label?.trim() || null,
     order: tr.order != null && Number.isFinite(tr.order) ? tr.order : idx,
+    requiredFields: Array.isArray(tr.requiredFields) ? [...tr.requiredFields] : [],
+    permissions: { groups: Array.isArray(tr.permissionGroups) ? [...tr.permissionGroups] : [] },
   }));
 
   return {
@@ -96,14 +136,19 @@ async function loadAll() {
   loading.value = true;
   errorLocal.value = null;
   try {
-    const [flowRows, stateRows, ws] = await Promise.all([
+    const [flowRows, stateRows, fieldRows, ws] = await Promise.all([
       ocListStateFlowsForWorkspace(props.workspaceId),
       ocListStatesForWorkspace(props.workspaceId, { fallbackAll: true }),
+      ocListPoolFieldsForWorkspace(props.workspaceId),
       ocGetWorkspace(props.workspaceId),
     ]);
     flows.value = flowRows;
     states.value = stateRows;
+    poolFields.value = fieldRows;
     workspaceDefaultFlowId.value = ws?.defaultStateFlowId ?? null;
+    if (!groupStore.groups.length) {
+      await groupStore.fetchGroups({ pageSize: 500 });
+    }
   } catch (e: unknown) {
     errorLocal.value = ocExtractDgErrorMessage(
       e,
@@ -144,7 +189,11 @@ function openEdit(row: OpStateFlow) {
     isDefault: row.isDefault ?? false,
     isActive: row.isActive !== false,
     sortOrder: row.sortOrder != null ? String(row.sortOrder) : '',
-    transitions: row.transitions.map((tr) => ({ ...tr })),
+    transitions: row.transitions.map((tr) => ({
+      ...tr,
+      requiredFields: Array.isArray(tr.requiredFields) ? [...tr.requiredFields] : [],
+      permissionGroups: Array.isArray(tr.permissionGroups) ? [...tr.permissionGroups] : [],
+    })),
   };
   dialog.value = true;
 }
@@ -162,6 +211,8 @@ function addTransition() {
     toStateId: states.value[1]?.__dataId ?? states.value[0]?.__dataId ?? '',
     label: '',
     order,
+    requiredFields: [],
+    permissionGroups: [],
   });
 }
 
@@ -473,6 +524,39 @@ async function confirmDelete() {
                   :label="t('operationCore.workspaceDefinitions.flows.fieldToState')"
                   density="compact"
                   hide-details
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="tr.requiredFields"
+                  :items="fieldKeyItems"
+                  item-title="title"
+                  item-value="value"
+                  :label="t('operationCore.workspaceDefinitions.flows.fieldRequiredFields')"
+                  :hint="t('operationCore.workspaceDefinitions.flows.requiredFieldsHint')"
+                  persistent-hint
+                  multiple
+                  chips
+                  closable-chips
+                  clearable
+                  density="compact"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="tr.permissionGroups"
+                  :items="groupItems"
+                  item-title="title"
+                  item-value="value"
+                  :label="t('operationCore.workspaceDefinitions.flows.fieldPermissionGroups')"
+                  :hint="t('operationCore.workspaceDefinitions.flows.permissionGroupsHint')"
+                  persistent-hint
+                  multiple
+                  chips
+                  closable-chips
+                  clearable
+                  density="compact"
+                  :no-data-text="t('operationCore.workspaceDefinitions.flows.noGroups')"
                 />
               </v-col>
             </v-row>

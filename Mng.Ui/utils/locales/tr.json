@@ -4268,7 +4268,12 @@
         "fieldTransitionLabel": "Etiket (UI)",
         "fieldTransitionOrder": "Sıra",
         "fieldFromState": "Kaynak state",
-        "fieldToState": "Hedef state"
+        "fieldToState": "Hedef state",
+        "fieldRequiredFields": "Zorunlu alanlar",
+        "requiredFieldsHint": "Bu geçişe izin verilmeden önce bu alanların dolu olması gerekir.",
+        "fieldPermissionGroups": "İzinli gruplar",
+        "permissionGroupsHint": "Geçişi yalnızca bu gruplar uygulayabilir. Boş = kısıtlama yok.",
+        "noGroups": "Grup bulunamadı."
       },
       "forms": {
         "subtitle": "op_forms — iş oluşturma formları. Board kayıtları defaultFormId ile forma bağlanır; MO runtime form context bu şablonu kullanır.",

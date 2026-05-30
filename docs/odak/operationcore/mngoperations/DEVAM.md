@@ -188,10 +188,21 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 
 **UI yeni:** `OcWorkspaceCreateDialog.vue`. **Değişen:** `OcWorkspaceDefinitionsGeneralTab.vue`, `admin/workspace-definitions/index.vue`, `services/operationCoreService.ts` (`ocCreateWorkspace` + `mapWorkspaceDetail` grupları), `types/apps/operationCore.ts`, locale `en/tr`.
 **Backend değişikliği yok** — `WorkspaceRecord` zaten `ViewGroups/EditGroups/AdminGroups/OwnerGroups` içeriyor; `op_workspaces` create DG `key` incremental üretir.
+**Deploy:** UI-only, **Odak'ta canlı** (30 May, commit `cd6848a`).
+
+---
+
+## E1-P2 — Akış geçişlerinde requiredFields + yetki grupları (bu oturum, 30 May)
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **E1-P2** | ✅ | **Flows sekmesi geçiş editörü** — her transition kartına `requiredFields` (core form-layout key'leri + pool alanları, etiketli) ve `permissions.groups` (aktif Keeper grupları) çoklu seçimi. `OcWorkspaceDefinitionsFlowsTab.vue`: `ocListPoolFieldsForWorkspace` + `useGroupStore` yüklenir; `fieldKeyItems` `resolveOcFieldDisplayLabel` ile etiket; `buildPayload` her geçişe `requiredFields:[]` + `permissions:{groups:[]}` yazar. Tip `OpStateFlowTransition.permissionGroups`; `mapOpStateFlowTransition` `permissions.groups` parse eder. |
+
+**Backend değişikliği yok** — MO zaten zorunlu kılıyor: `StateFlowCatalog.EnsureRequiredFields` (WI transition akışında) + `PermissionEvaluator.EnsureTransition`/`CanApplyTransition` (`permissions.groups`). Boş grup = kısıtlama yok (`GroupListParser.Intersects` `requiredGroups.Count==0 → true`).
+**Değişen:** `OcWorkspaceDefinitionsFlowsTab.vue`, `services/operationCoreService.ts` (`mapOpStateFlowTransition`), `types/apps/operationCore.ts`, locale `en/tr`.
 **Deploy:** UI-only, **deploy bekliyor**.
 
 **Açık/ileriki:**
-- ⬜ **E1-P2:** Akış (flow) geçişlerinde `requiredFields` + `permissions.groups` editörü → admin kapanışın kalan parçası.
 - ⬜ Create dialog'da opsiyonel: ilk board/akış seed'i (şimdilik boş; Değerler/Akış sekmelerinden kurulur).
 - ⬜ Workspace silme/devre dışı bırakma (Genel sekme) — guard + ilişki kontrolü.
 
@@ -201,11 +212,12 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 
 | # | Epic | Hedef |
 |---|------|--------|
-| ~~1~~ | ~~**E1-P1**~~ | ✅ Genel sekme yetki grupları (view/edit/admin) — bu oturum |
-| ~~2~~ | ~~**W-CREATE**~~ | ✅ Yeni workspace oluşturma UI — bu oturum |
-| **1** | **E1-P2** | Akışlar: geçiş `requiredFields` + `permissions.groups` (admin kapanış kalan) |
-| **2** | **F** | Operasyonel runtime + **SLA-3** chip |
-| **3** | **CC** | Dinamik (computed) sütunlar (expr-eval, display-only) |
+| ~~1~~ | ~~**E1-P1**~~ | ✅ Genel sekme yetki grupları (view/edit/admin) — Odak'ta canlı |
+| ~~2~~ | ~~**W-CREATE**~~ | ✅ Yeni workspace oluşturma UI — Odak'ta canlı |
+| ~~3~~ | ~~**E1-P2**~~ | ✅ Akışlar: geçiş `requiredFields` + `permissions.groups` — bu oturum (deploy bekliyor) |
+| **1** | **CC** | Dinamik (computed) sütunlar (expr-eval, display-only) |
+| **2** | **A** | `op_comments.attachments` (yorum ekleri) — iş kaydı ekleri pattern'i |
+| **3** | **F** | Operasyonel runtime + **SLA-3** chip |
 
 ---
 
@@ -223,7 +235,8 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 [✓] Form chrome: hibrit profil + yorum/timeline + SLA paneli + politika paneli + mention + ekler (DG file)
 [✓] In-app bildirim paneli (op_notifications + mention görünür) — Odak'ta canlı
 [✓] Gelişmiş arama gt/gte/lt/lte UI (BLF-8) — Odak'ta canlı
-[✓] Relation alanlarda option/relation etiketi (BLF-9) — lokal (deploy bekliyor)
-[✓] Workspace yetki grupları (E1-P1) + Yeni workspace UI (W-CREATE) — lokal (deploy bekliyor)
-[ ] Admin kapanış kalan (E1-P2 akış geçiş yetkileri) → dinamik (computed) sütunlar
+[✓] Relation alanlarda option/relation etiketi (BLF-9) — Odak'ta canlı
+[✓] Workspace yetki grupları (E1-P1) + Yeni workspace UI (W-CREATE) — Odak'ta canlı
+[✓] Admin kapanış: akış geçiş requiredFields + yetki grupları (E1-P2) — lokal (deploy bekliyor)
+[ ] Dinamik (computed) sütunlar → yorum ekleri → operasyonel runtime/SLA-3
 ```
