@@ -1,4 +1,5 @@
 import type {
+  OcColumnFormat,
   OpBoardColumnConfig,
   OpBoardListColumnConfig,
   OpStateFlow,
@@ -17,10 +18,65 @@ export const OC_BOARD_LIST_TABLE_COLUMN_KEYS = [
 
 export type OcBoardListTableColumnKey = (typeof OC_BOARD_LIST_TABLE_COLUMN_KEYS)[number];
 
+/** Sistem (audit/SLA) sütunları — form alanı değil, op_work_items üst seviye + sla. */
+export const OC_BOARD_LIST_SYSTEM_COLUMN_KEYS = [
+  'createdBy',
+  'createdAt',
+  'age',
+  'updatedAt',
+  'lastStateChangeAt',
+  'closedAt',
+  'sla',
+] as const;
+
+export type OcBoardListSystemColumnKey = (typeof OC_BOARD_LIST_SYSTEM_COLUMN_KEYS)[number];
+
 const CORE_COLUMN_KEY_SET = new Set<string>(OC_BOARD_LIST_TABLE_COLUMN_KEYS);
+const SYSTEM_COLUMN_KEY_SET = new Set<string>(OC_BOARD_LIST_SYSTEM_COLUMN_KEYS);
 
 export function isCoreListColumn(key: string): boolean {
   return CORE_COLUMN_KEY_SET.has(key);
+}
+
+export function isSystemListColumn(key: string): boolean {
+  return SYSTEM_COLUMN_KEY_SET.has(key);
+}
+
+/** Çekirdek veya sistem sütunu (i18n etiketi olan yerleşik sütun). */
+export function isBuiltInListColumn(key: string): boolean {
+  return CORE_COLUMN_KEY_SET.has(key) || SYSTEM_COLUMN_KEY_SET.has(key);
+}
+
+/** Sistem sütununun varsayılan format ipucu (admin override edebilir). */
+export function defaultFormatForKey(key: string): OcColumnFormat | null {
+  switch (key) {
+    case 'createdAt':
+    case 'updatedAt':
+    case 'lastStateChangeAt':
+    case 'closedAt':
+      return 'date';
+    case 'age':
+      return 'relativeTime';
+    default:
+      return null;
+  }
+}
+
+/** Sistem sütunu için kart ham değeri (date/age sütunlarında formatlanır). */
+export function systemColumnRawValue(item: OcWorkItemCard, key: string): unknown {
+  switch (key) {
+    case 'createdAt':
+    case 'age':
+      return item.createdAt ?? null;
+    case 'updatedAt':
+      return item.updatedAt ?? null;
+    case 'lastStateChangeAt':
+      return item.lastStateChangeAt ?? null;
+    case 'closedAt':
+      return item.closedAt ?? null;
+    default:
+      return null;
+  }
 }
 
 const DEFAULT_LIST_COLUMNS: OcBoardListTableColumnKey[] = [
@@ -39,7 +95,7 @@ export function normalizeListTableColumns(
   visibleFields: string[] | undefined | null,
   allowedFieldKeys?: string[]
 ): string[] {
-  const allowed = new Set<string>(OC_BOARD_LIST_TABLE_COLUMN_KEYS);
+  const allowed = new Set<string>([...OC_BOARD_LIST_TABLE_COLUMN_KEYS, ...OC_BOARD_LIST_SYSTEM_COLUMN_KEYS]);
   for (const key of allowedFieldKeys ?? []) {
     if (key?.trim()) allowed.add(key);
   }
@@ -78,9 +134,26 @@ function formatPoolScalar(value: unknown): string {
 }
 
 /** Yeni sütun eklenince varsayılan olarak sıralanabilir kabul edilen alanlar. */
-const DEFAULT_SORTABLE_KEYS = new Set<string>(['key', 'title', 'priorityId', 'stateId']);
+const DEFAULT_SORTABLE_KEYS = new Set<string>([
+  'key',
+  'title',
+  'priorityId',
+  'stateId',
+  'createdAt',
+  'age',
+  'updatedAt',
+  'lastStateChangeAt',
+  'closedAt',
+  'sla',
+]);
 /** Yeni sütun eklenince varsayılan olarak filtrelenebilir kabul edilen alanlar. */
-const DEFAULT_FILTERABLE_KEYS = new Set<string>(['stateId', 'priorityId', 'typeId', 'assignee']);
+const DEFAULT_FILTERABLE_KEYS = new Set<string>([
+  'stateId',
+  'priorityId',
+  'typeId',
+  'assignee',
+  'createdBy',
+]);
 
 export function defaultSortableForKey(key: string): boolean {
   return DEFAULT_SORTABLE_KEYS.has(key);
@@ -100,7 +173,7 @@ export function deriveBoardListColumns(
   visibleFields: string[] | undefined | null,
   allowedFieldKeys?: string[]
 ): OpBoardListColumnConfig[] {
-  const allowed = new Set<string>(OC_BOARD_LIST_TABLE_COLUMN_KEYS);
+  const allowed = new Set<string>([...OC_BOARD_LIST_TABLE_COLUMN_KEYS, ...OC_BOARD_LIST_SYSTEM_COLUMN_KEYS]);
   for (const k of allowedFieldKeys ?? []) {
     if (k?.trim()) allowed.add(k);
   }
@@ -112,6 +185,7 @@ export function deriveBoardListColumns(
           key,
           sortable: DEFAULT_SORTABLE_KEYS.has(key),
           filterable: DEFAULT_FILTERABLE_KEYS.has(key),
+          format: defaultFormatForKey(key),
         }));
 
   const seen = new Set<string>();
@@ -119,7 +193,12 @@ export function deriveBoardListColumns(
   for (const c of source) {
     if (!c?.key || !allowed.has(c.key) || seen.has(c.key)) continue;
     seen.add(c.key);
-    out.push({ key: c.key, sortable: !!c.sortable, filterable: !!c.filterable });
+    out.push({
+      key: c.key,
+      sortable: !!c.sortable,
+      filterable: !!c.filterable,
+      format: c.format ?? defaultFormatForKey(c.key),
+    });
   }
 
   if (out.length) return out;
@@ -127,6 +206,7 @@ export function deriveBoardListColumns(
     key,
     sortable: DEFAULT_SORTABLE_KEYS.has(key),
     filterable: DEFAULT_FILTERABLE_KEYS.has(key),
+    format: defaultFormatForKey(key),
   }));
 }
 

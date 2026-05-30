@@ -3303,6 +3303,14 @@
         "deleteConfirm": "Are you sure you want to delete this work item?",
         "deleteIrreversible": "This action is irreversible.",
         "deleteError": "Could not delete the work item."
+      },
+      "sla": {
+        "phaseResponse": "Response SLA",
+        "phaseResolve": "Resolution SLA",
+        "remaining": "{time} left",
+        "overdue": "{time} overdue",
+        "closedOnTime": "Closed on time",
+        "closedLate": "Closed late"
       }
     },
     "workItemDialog": {
@@ -3315,11 +3323,67 @@
     "profile": {
       "placeholderTitle": "Work item profile",
       "title": "Work item profile",
-      "readonlyHint": "Read-only view of the selected form (profile design pending).",
+      "readonlyHint": "Read-only view of the selected form.",
       "readonlyChip": "Read-only",
       "loadError": "Could not load the work item.",
       "sprint3Hint": "Profile runtime will open here in Sprint 3.",
-      "workItemId": "Record"
+      "workItemId": "Record",
+      "tabs": {
+        "details": "Details",
+        "activity": "Activity & comments",
+        "attachments": "Attachments"
+      },
+      "comments": {
+        "placeholder": "Write a comment... type @ to mention someone",
+        "send": "Send",
+        "empty": "No activity yet.",
+        "error": "Could not add the comment.",
+        "mentionHint": "Type @ to mention a person · Ctrl+Enter to send",
+        "loadMore": "Load more...",
+        "searching": "Searching...",
+        "noPeople": "No matching people"
+      },
+      "attachments": {
+        "hint": "Files attached to this work item.",
+        "add": "Add file",
+        "empty": "No attachments yet.",
+        "download": "Download",
+        "remove": "Remove",
+        "uploadError": "Could not upload the file.",
+        "downloadError": "Could not download the file.",
+        "removeError": "Could not remove the attachment."
+      },
+      "sla": {
+        "title": "SLA",
+        "responseDue": "Response due",
+        "resolveDue": "Resolution due",
+        "none": "No SLA policy."
+      },
+      "meta": {
+        "title": "Details"
+      },
+      "watchers": {
+        "title": "Watchers"
+      },
+      "links": {
+        "title": "Linked items"
+      }
+    },
+    "policies": {
+      "title": "Policies & SLA",
+      "responseTarget": "Response target",
+      "resolveTarget": "Resolution target",
+      "autoMatched": "auto-matched",
+      "rulesTitle": "Applied rules",
+      "empty": "No policy or rule applies to this item.",
+      "unitHour": "h",
+      "unitMinute": "m",
+      "triggers": {
+        "WorkItemCreated": "On create",
+        "WorkItemUpdated": "On update",
+        "WorkItemTransition": "On transition",
+        "WorkItemTransitioned": "After transition"
+      }
     },
     "create": {
       "title": "New work item",
@@ -4307,6 +4371,15 @@
         "listTableColumnsLabel": "Columns",
         "listColumnOrder": "Order",
         "listColumnField": "Field",
+        "listColumnFormat": "Format",
+        "listColumnFormatAuto": "Default",
+        "listColumnFormats": {
+          "text": "Text",
+          "number": "Number",
+          "money": "Money",
+          "date": "Date/time",
+          "relativeTime": "Relative (elapsed)"
+        },
         "listColumnSortable": "Sortable",
         "listColumnFilterable": "Filterable",
         "listDefaultSortTitle": "Default sort",
@@ -4323,7 +4396,14 @@
           "stateId": "State",
           "assignee": "Assignee",
           "priorityId": "Priority",
-          "typeId": "Type"
+          "typeId": "Type",
+          "createdBy": "Created by",
+          "createdAt": "Created at",
+          "age": "Age",
+          "updatedAt": "Updated at",
+          "lastStateChangeAt": "Last state change",
+          "closedAt": "Closed at",
+          "sla": "SLA status"
         },
         "previewListTable": "Table: {cols}",
         "kanbanConfigNotice": "Kanban runtime (drag-and-drop) is a later sprint. You can save config; we recommend List view for now.",

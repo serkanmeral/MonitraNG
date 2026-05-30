@@ -21,6 +21,9 @@ public sealed class BoardRuntimeContext
     /// <summary>Liste görünümü varsayılan sıralaması (kullanıcı sıralaması yoksa uygulanır).</summary>
     public BoardSortDto? DefaultSort { get; init; }
 
+    /// <summary>Akıştaki başlangıç state id'si — liste SLA chip'inde "akıllı faz" (response/resolve) proxy'si için.</summary>
+    public string? InitialStateId { get; init; }
+
     /// <summary>
     /// Katalog lookup map'leri (states/priorities/types) — UI client-side join yapmadan id'leri
     /// isim/renk/ikon ile gösterir. MO cache'inden beslenir (Durum 2).
@@ -34,6 +37,9 @@ public sealed class BoardListColumnDto
     public required string Key { get; init; }
     public bool Sortable { get; init; }
     public bool Filterable { get; init; }
+
+    /// <summary>Hücre format ipucu: text | number | money | date | relativeTime (null = varsayılan).</summary>
+    public string? Format { get; init; }
 }
 
 /// <summary>Sıralama tanımı (alan + yön).</summary>
@@ -136,6 +142,24 @@ public sealed class WorkItemCardDto
     public string? Assignee { get; init; }
     public string? PriorityId { get; init; }
     public string? TypeId { get; init; }
+
+    /// <summary>Oluşturulma zamanı (sistem alanı).</summary>
+    public DateTime? CreatedAt { get; init; }
+
+    /// <summary>Oluşturan kullanıcı id'si (forward-only; eski kayıtlarda boş olabilir). Ad çözümü <see cref="QueryExecuteResponse.People"/>.</summary>
+    public string? CreatedBy { get; init; }
+
+    /// <summary>Son güncelleme zamanı (varsa).</summary>
+    public DateTime? UpdatedAt { get; init; }
+
+    /// <summary>Son state değişimi zamanı.</summary>
+    public DateTime? LastStateChangeAt { get; init; }
+
+    /// <summary>Kapanış zamanı (kapalı item'larda "geçen süre" anchor'ı).</summary>
+    public DateTime? ClosedAt { get; init; }
+
+    /// <summary>SLA snapshot (op_work_items.sla) — liste SLA durumu chip'i için.</summary>
+    public SlaSnapshotDto? Sla { get; init; }
 
     /// <summary>Pool alan değerleri (extraFields) — liste tablosunda özel sütunlar için.</summary>
     public JsonElement? Fields { get; init; }

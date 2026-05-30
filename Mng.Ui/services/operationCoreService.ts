@@ -1,14 +1,23 @@
-import { fetchFromDataGateway, fetchFromOperations } from '@/services/apiService';
+import { fetchBlobFromDataGateway, fetchFromDataGateway, fetchFromOperations } from '@/services/apiService';
 import type {
+  OcAttachment,
   OcBoardCatalogs,
   OcBoardColumn,
   OcBoardListColumn,
   OcBoardListRequest,
   OcBoardRuntimeContext,
   OcCatalogDisplayEntry,
+  OcColumnFormat,
+  OcComment,
   OcPersonDisplay,
   OcQueryExecuteResponse,
+  OcSlaSnapshot,
+  OcTimelineEntry,
+  OcTimelinePage,
   OcWorkItemCard,
+  OcWorkItemLinkSummary,
+  OcWorkItemProfile,
+  OcWorkItemSummary,
   OpBoard,
   OpBoardColumnConfig,
   OpBoardListColumnConfig,
@@ -261,10 +270,12 @@ function parseBoardListColumns(configRaw: unknown): OpBoardListColumnConfig[] {
     const key = o.key != null ? String(o.key) : o.Key != null ? String(o.Key) : '';
     if (!key.trim() || seen.has(key)) continue;
     seen.add(key);
+    const fmt = o.format ?? o.Format;
     out.push({
       key,
       sortable: Boolean(o.sortable ?? o.Sortable ?? false),
       filterable: Boolean(o.filterable ?? o.Filterable ?? false),
+      format: fmt != null && String(fmt).trim() ? (String(fmt) as OcColumnFormat) : null,
     });
   }
   return out;
@@ -616,6 +627,214 @@ export async function ocCreateWorkItem(payload: OcCreateWorkItemRequest): Promis
 
   const raw = await fetchFromOperations('/api/v1/work-items', 'POST', body);
   return mapCreateWorkItemResult(raw);
+}
+
+function mapWorkItemSummary(raw: Record<string, unknown>): OcWorkItemSummary {
+  return {
+    id: pickStr(raw, 'id', 'Id') ?? '',
+    key: pickStr(raw, 'key', 'Key') ?? '',
+    title: pickStr(raw, 'title', 'Title') ?? '',
+    description: pickStr(raw, 'description', 'Description') ?? null,
+    stateId: pickStr(raw, 'stateId', 'StateId') ?? '',
+    stateFlowId: pickStr(raw, 'stateFlowId', 'StateFlowId') ?? null,
+    category: pickStr(raw, 'category', 'Category') ?? null,
+    workspaceKey: pickStr(raw, 'workspaceKey', 'WorkspaceKey') ?? null,
+    assignee: pickStr(raw, 'assignee', 'Assignee') ?? null,
+    reporter: pickStr(raw, 'reporter', 'Reporter') ?? null,
+    typeId: pickStr(raw, 'typeId', 'TypeId') ?? null,
+    boardId: pickStr(raw, 'boardId', 'BoardId') ?? null,
+    priorityId: pickStr(raw, 'priorityId', 'PriorityId') ?? null,
+    createdAt: pickStr(raw, 'createdAt', 'CreatedAt') ?? null,
+    lastStateChangeAt: pickStr(raw, 'lastStateChangeAt', 'LastStateChangeAt') ?? null,
+    closedAt: pickStr(raw, 'closedAt', 'ClosedAt') ?? null,
+  };
+}
+
+function mapWorkItemLink(raw: Record<string, unknown>): OcWorkItemLinkSummary {
+  return {
+    id: pickStr(raw, 'id', 'Id') ?? '',
+    linkType: pickStr(raw, 'linkType', 'LinkType') ?? '',
+    direction: pickStr(raw, 'direction', 'Direction') ?? '',
+    otherWorkItemId: pickStr(raw, 'otherWorkItemId', 'OtherWorkItemId') ?? '',
+    description: pickStr(raw, 'description', 'Description') ?? null,
+  };
+}
+
+function mapWorkItemProfile(raw: Record<string, unknown>): OcWorkItemProfile {
+  const wiRaw = (raw.workItem ?? raw.WorkItem ?? {}) as Record<string, unknown>;
+  const perms = (raw.permissions ?? raw.Permissions ?? {}) as Record<string, unknown>;
+  const watchers = raw.watchers ?? raw.Watchers;
+  const links = raw.links ?? raw.Links;
+  const summary = mapWorkItemSummary(wiRaw);
+  return {
+    workspaceId: pickStr(raw, 'workspaceId', 'WorkspaceId') ?? '',
+    workItem: summary,
+    permissions: {
+      canView: Boolean(perms.canView ?? perms.CanView ?? true),
+      canEdit: Boolean(perms.canEdit ?? perms.CanEdit ?? false),
+      canComment: Boolean(perms.canComment ?? perms.CanComment ?? false),
+    },
+    sla: mapSlaSnapshot(raw.sla ?? raw.Sla),
+    watchers: Array.isArray(watchers) ? watchers.map(String) : [],
+    links: Array.isArray(links) ? links.map((l) => mapWorkItemLink(l as Record<string, unknown>)) : [],
+    people: parsePeopleMap(raw.people ?? raw.People),
+    createdBy: pickStr(wiRaw, 'createdBy', 'CreatedBy') ?? null,
+    attachments: parseAttachments(raw.attachments ?? raw.Attachments),
+  };
+}
+
+/** DG saklı file nesnesini (path/file_name/...) OcAttachment'a çevirir; ham nesneyi `raw`'da saklar. */
+function mapAttachment(raw: Record<string, unknown>): OcAttachment {
+  const path = pickStr(raw, 'path', 'Path') ?? '';
+  const sizeRaw = raw.file_size ?? raw.fileSize ?? raw.FileSize;
+  const sizeNum = typeof sizeRaw === 'number' ? sizeRaw : Number(sizeRaw);
+  return {
+    path,
+    fileName: pickStr(raw, 'file_name', 'fileName', 'FileName') ?? path.split('/').pop() ?? path,
+    fileExt: pickStr(raw, 'file_ext', 'fileExt', 'FileExt') ?? null,
+    fileSizeKb: Number.isFinite(sizeNum) ? sizeNum : null,
+    uploadPerson: pickStr(raw, 'upload_person', 'uploadPerson', 'UploadPerson') ?? null,
+    uploadTime: pickStr(raw, 'upload_time', 'uploadTime', 'UploadTime') ?? null,
+    raw,
+  };
+}
+
+function parseAttachments(raw: unknown): OcAttachment[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((a): a is Record<string, unknown> => !!a && typeof a === 'object')
+    .map((a) => mapAttachment(a))
+    .filter((a) => !!a.path);
+}
+
+function mapTimelineEntry(raw: Record<string, unknown>): OcTimelineEntry {
+  return {
+    type: pickStr(raw, 'type', 'Type') ?? '',
+    id: pickStr(raw, 'id', 'Id') ?? null,
+    actor: pickStr(raw, 'actor', 'Actor') ?? null,
+    text: pickStr(raw, 'text', 'Text') ?? null,
+    at: pickStr(raw, 'at', 'At') ?? null,
+    activityType: pickStr(raw, 'activityType', 'ActivityType') ?? null,
+  };
+}
+
+function mapComment(raw: Record<string, unknown>): OcComment {
+  return {
+    id: pickStr(raw, 'id', 'Id') ?? '',
+    workItemId: pickStr(raw, 'workItemId', 'WorkItemId') ?? '',
+    body: pickStr(raw, 'body', 'Body') ?? '',
+    author: pickStr(raw, 'author', 'Author') ?? null,
+    parentCommentId: pickStr(raw, 'parentCommentId', 'ParentCommentId') ?? null,
+    commentDate: pickStr(raw, 'commentDate', 'CommentDate') ?? null,
+  };
+}
+
+/** İş kaydı profil context'i (sidebar: SLA/meta/people/links + izinler). */
+export async function ocGetWorkItemProfile(workItemId: string): Promise<OcWorkItemProfile> {
+  const raw = (await fetchFromOperations(
+    `/api/v1/runtime/work-items/${encodeURIComponent(workItemId)}/profile`,
+    'GET'
+  )) as Record<string, unknown>;
+  return mapWorkItemProfile(raw);
+}
+
+/** İş kaydı aktivite/yorum zaman tüneli (sayfalı). */
+export async function ocGetWorkItemTimeline(
+  workItemId: string,
+  skip = 0,
+  take = 50
+): Promise<OcTimelinePage> {
+  const qs = new URLSearchParams({ skip: String(skip), take: String(take) });
+  const raw = (await fetchFromOperations(
+    `/api/v1/runtime/work-items/${encodeURIComponent(workItemId)}/timeline?${qs.toString()}`,
+    'GET'
+  )) as Record<string, unknown>;
+  const items = raw.items ?? raw.Items;
+  return {
+    items: Array.isArray(items) ? items.map((i) => mapTimelineEntry(i as Record<string, unknown>)) : [],
+    skip: Number(raw.skip ?? raw.Skip ?? skip),
+    take: Number(raw.take ?? raw.Take ?? take),
+    total: Number(raw.total ?? raw.Total ?? 0),
+  };
+}
+
+/** İş kaydına yorum ekler. `mentions` = etiketlenen kişi id'leri (in-app bildirim tetikler). */
+export async function ocAddWorkItemComment(
+  workItemId: string,
+  body: string,
+  parentCommentId?: string | null,
+  mentions?: string[]
+): Promise<OcComment> {
+  const payload: Record<string, unknown> = { body };
+  if (parentCommentId) payload.parentCommentId = parentCommentId;
+  if (mentions && mentions.length) payload.mentions = [...new Set(mentions)];
+  const raw = (await fetchFromOperations(
+    `/api/v1/work-items/${encodeURIComponent(workItemId)}/comments`,
+    'POST',
+    payload
+  )) as Record<string, unknown>;
+  return mapComment(raw);
+}
+
+/**
+ * İş kaydına ek ekler. DG file alanı inline işlenir: mevcut ekler ham (path'li) nesneleriyle
+ * geri gönderilir (DG korur), yeni dosya base64 `content` ile gönderilir (DG MinIO'ya yükler).
+ * `file` bir tarayıcı File nesnesidir.
+ */
+export async function ocAddWorkItemAttachment(
+  workItemId: string,
+  existing: OcAttachment[],
+  file: File
+): Promise<OcWorkItemProfile> {
+  const content = await fileToBase64(file);
+  const attachments: unknown[] = [
+    ...existing.map((a) => a.raw),
+    { content, originalFileName: file.name },
+  ];
+  await ocUpdateWorkItem(workItemId, { fields: { attachments } });
+  return ocGetWorkItemProfile(workItemId);
+}
+
+/** İş kaydından bir eki kaldırır (kalan ekler ham haliyle PATCH edilir). */
+export async function ocRemoveWorkItemAttachment(
+  workItemId: string,
+  attachments: OcAttachment[],
+  removePath: string
+): Promise<OcWorkItemProfile> {
+  const remaining = attachments.filter((a) => a.path !== removePath).map((a) => a.raw);
+  await ocUpdateWorkItem(workItemId, { fields: { attachments: remaining } });
+  return ocGetWorkItemProfile(workItemId);
+}
+
+/** Eki DG'den indirir ve tarayıcıda kaydetme akışını tetikler. */
+export async function ocDownloadAttachment(att: OcAttachment): Promise<void> {
+  const url = `/api/v1/files/download?filePath=${encodeURIComponent(att.path)}`;
+  const blob = await fetchBlobFromDataGateway(url);
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = att.fileName || att.path.split('/').pop() || 'download';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+/** Tarayıcı File -> base64 (data URI prefix'i olmadan; DG sadece base64 içerik bekler). */
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result ?? '');
+      const comma = result.indexOf(',');
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error ?? new Error('Dosya okunamadı.'));
+    reader.readAsDataURL(file);
+  });
 }
 
 /** Edit modu form runtime context (mevcut değerlerle). */
@@ -1694,7 +1913,26 @@ function mapWorkItemCard(raw: Record<string, unknown>): OcWorkItemCard {
     assignee: pickStr(raw, 'assignee', 'Assignee'),
     priorityId: pickStr(raw, 'priorityId', 'PriorityId'),
     typeId: pickStr(raw, 'typeId', 'TypeId'),
+    createdAt: pickStr(raw, 'createdAt', 'CreatedAt') ?? null,
+    createdBy: pickStr(raw, 'createdBy', 'CreatedBy') ?? null,
+    updatedAt: pickStr(raw, 'updatedAt', 'UpdatedAt') ?? null,
+    lastStateChangeAt: pickStr(raw, 'lastStateChangeAt', 'LastStateChangeAt') ?? null,
+    closedAt: pickStr(raw, 'closedAt', 'ClosedAt') ?? null,
+    sla: mapSlaSnapshot(raw.sla ?? raw.Sla),
     fields,
+  };
+}
+
+function mapSlaSnapshot(raw: unknown): OcSlaSnapshot | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = raw as Record<string, unknown>;
+  return {
+    slaPolicyId: pickStr(o, 'slaPolicyId', 'SlaPolicyId') ?? null,
+    responseDueAt: pickStr(o, 'responseDueAt', 'ResponseDueAt') ?? null,
+    resolveDueAt: pickStr(o, 'resolveDueAt', 'ResolveDueAt') ?? null,
+    responseBreached: Boolean(o.responseBreached ?? o.ResponseBreached ?? false),
+    resolveBreached: Boolean(o.resolveBreached ?? o.ResolveBreached ?? false),
+    calculatedAt: pickStr(o, 'calculatedAt', 'CalculatedAt') ?? null,
   };
 }
 
@@ -1745,10 +1983,12 @@ function parseBoardCatalogs(raw: unknown): OcBoardCatalogs {
 }
 
 function mapBoardListColumn(raw: Record<string, unknown>): OcBoardListColumn {
+  const fmt = pickStr(raw, 'format', 'Format');
   return {
     key: pickStr(raw, 'key', 'Key') ?? '',
     sortable: Boolean(raw.sortable ?? raw.Sortable ?? false),
     filterable: Boolean(raw.filterable ?? raw.Filterable ?? false),
+    format: (fmt as OcColumnFormat | undefined) ?? null,
   };
 }
 
@@ -1784,6 +2024,7 @@ function mapBoardRuntimeContext(raw: Record<string, unknown>): OcBoardRuntimeCon
       ? listCols.map((c) => mapBoardListColumn(c as Record<string, unknown>)).filter((c) => c.key)
       : [],
     defaultSort: mapRuntimeDefaultSort(raw.defaultSort ?? raw.DefaultSort),
+    initialStateId: pickStr(raw, 'initialStateId', 'InitialStateId') ?? null,
     catalogs: parseBoardCatalogs(raw.catalogs ?? raw.Catalogs),
   };
 }

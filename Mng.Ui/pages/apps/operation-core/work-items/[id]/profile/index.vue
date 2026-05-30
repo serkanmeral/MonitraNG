@@ -2,21 +2,38 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import OcDynamicForm from '@/components/apps/operation-core/OcDynamicForm.vue';
+import OcBoardCatalogLabel from '@/components/apps/operation-core/OcBoardCatalogLabel.vue';
+import OcSlaStatusChip from '@/components/apps/operation-core/OcSlaStatusChip.vue';
+import OcCommentComposer from '@/components/apps/operation-core/OcCommentComposer.vue';
+import OcPolicyPanel from '@/components/apps/operation-core/OcPolicyPanel.vue';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import { useOperationCoreStore } from '@/stores/apps/operationCore';
+import { useOcBoardListLookups } from '@/composables/useOcBoardListLookups';
 import { useAppI18n } from '@/composables/useAppI18n';
 import {
   initialFormModelFromContext,
+  ocAddWorkItemAttachment,
+  ocAddWorkItemComment,
+  ocDownloadAttachment,
   ocExtractDgErrorMessage,
   ocGetFormEditContext,
+  ocGetWorkItemProfile,
+  ocGetWorkItemTimeline,
   ocListPoolFieldsForWorkspace,
+  ocRemoveWorkItemAttachment,
 } from '@/services/operationCoreService';
-import type { OcFormRuntimeContext } from '@/types/apps/operationCore';
+import type {
+  OcAttachment,
+  OcFormRuntimeContext,
+  OcTimelineEntry,
+  OcWorkItemProfile,
+} from '@/types/apps/operationCore';
 import { enrichFormRuntimeFields } from '@/utils/ocFormFieldLabels';
+import { formatCellValue } from '@/utils/ocColumnFormat';
 
 definePageMeta({ layout: 'default' });
 
-const { t } = useAppI18n();
+const { t, locale } = useAppI18n();
 const route = useRoute();
 const store = useOperationCoreStore();
 
@@ -29,11 +46,26 @@ const loading = ref(false);
 const errorLocal = ref<string | null>(null);
 const formContext = ref<OcFormRuntimeContext | null>(null);
 const formModel = ref<Record<string, unknown>>({});
+const profile = ref<OcWorkItemProfile | null>(null);
+
+const activeTab = ref<'details' | 'activity' | 'attachments'>('details');
+
+// --- Aktivite / yorum ---
+const timeline = ref<OcTimelineEntry[]>([]);
+const timelineTotal = ref(0);
+const timelineLoading = ref(false);
+const commentSending = ref(false);
+const commentError = ref<string | null>(null);
+const composerRef = ref<{ reset: () => void } | null>(null);
 
 const workItemTitle = computed(() => {
+  const fromProfile = profile.value?.workItem.title;
+  if (fromProfile?.trim()) return fromProfile;
   const fromModel = formModel.value.title;
   return (typeof fromModel === 'string' && fromModel.trim()) || t('operationCore.profile.placeholderTitle');
 });
+
+const workItemKey = computed(() => profile.value?.workItem.key ?? '');
 
 const pageTitle = computed(() => {
   const name = formContext.value?.formName?.trim();
@@ -52,6 +84,146 @@ const backToBoardTo = computed(() =>
   boardIdQuery.value ? `/apps/operation-core/boards/${encodeURIComponent(boardIdQuery.value)}` : null
 );
 
+// --- Lookups (durum/öncelik/tip + kişi adları) ---
+const workspaceIdRef = computed(() => profile.value?.workspaceId ?? null);
+const peopleRef = computed(() => profile.value?.people ?? null);
+const { resolveState, resolvePriority, resolveType, resolvePersonName } = useOcBoardListLookups(
+  workspaceIdRef,
+  undefined,
+  peopleRef
+);
+
+const summary = computed(() => profile.value?.workItem ?? null);
+const canComment = computed(() => profile.value?.permissions.canComment === true);
+const canEdit = computed(() => profile.value?.permissions.canEdit === true);
+
+// --- Ekler ---
+const attachments = computed<OcAttachment[]>(() => profile.value?.attachments ?? []);
+const fileInput = ref<HTMLInputElement | null>(null);
+const attachUploading = ref(false);
+const attachError = ref<string | null>(null);
+const removingPath = ref<string | null>(null);
+
+function fmtFileSize(kb: number | null | undefined): string {
+  if (kb == null || !Number.isFinite(kb)) return '';
+  if (kb < 1024) return `${Math.max(1, Math.round(kb))} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
+}
+
+function attachmentIcon(att: OcAttachment): string {
+  const ext = (att.fileExt ?? '').toLowerCase();
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return 'mdi-file-image-outline';
+  if (ext === 'pdf') return 'mdi-file-pdf-box';
+  if (['doc', 'docx'].includes(ext)) return 'mdi-file-word-outline';
+  if (['xls', 'xlsx', 'csv'].includes(ext)) return 'mdi-file-excel-outline';
+  if (['zip', 'rar', '7z', 'gz'].includes(ext)) return 'mdi-folder-zip-outline';
+  return 'mdi-file-outline';
+}
+
+function triggerFilePick() {
+  attachError.value = null;
+  fileInput.value?.click();
+}
+
+async function onFileSelected(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = '';
+  if (!file) return;
+  attachUploading.value = true;
+  attachError.value = null;
+  try {
+    profile.value = await ocAddWorkItemAttachment(workItemId.value, attachments.value, file);
+  } catch (e: unknown) {
+    attachError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.attachments.uploadError'));
+  } finally {
+    attachUploading.value = false;
+  }
+}
+
+async function downloadAttachment(att: OcAttachment) {
+  attachError.value = null;
+  try {
+    await ocDownloadAttachment(att);
+  } catch (e: unknown) {
+    attachError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.attachments.downloadError'));
+  }
+}
+
+async function removeAttachment(att: OcAttachment) {
+  removingPath.value = att.path;
+  attachError.value = null;
+  try {
+    profile.value = await ocRemoveWorkItemAttachment(workItemId.value, attachments.value, att.path);
+  } catch (e: unknown) {
+    attachError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.attachments.removeError'));
+  } finally {
+    removingPath.value = null;
+  }
+}
+
+function fmtDate(value: string | null | undefined): string {
+  return formatCellValue(value, 'date', { locale: locale() });
+}
+
+function fmtAge(value: string | null | undefined, anchorEnd?: string | null): string {
+  return formatCellValue(value, 'relativeTime', { locale: locale(), anchorEnd: anchorEnd ?? null });
+}
+
+const watcherNames = computed(() =>
+  (profile.value?.watchers ?? []).map((id) => ({ id, name: resolvePersonName(id) }))
+);
+
+function timelineIcon(entry: OcTimelineEntry): string {
+  switch (entry.type) {
+    case 'comment':
+      return 'mdi-comment-text-outline';
+    case 'state':
+    case 'transition':
+      return 'mdi-swap-horizontal';
+    default:
+      return 'mdi-history';
+  }
+}
+
+function timelineColor(entry: OcTimelineEntry): string {
+  if (entry.type === 'comment') return 'primary';
+  if (entry.type === 'state' || entry.type === 'transition') return 'info';
+  return 'grey';
+}
+
+async function loadTimeline() {
+  const id = workItemId.value;
+  if (!id) return;
+  timelineLoading.value = true;
+  try {
+    const page = await ocGetWorkItemTimeline(id, 0, 100);
+    timeline.value = page.items;
+    timelineTotal.value = page.total || page.items.length;
+  } catch {
+    timeline.value = [];
+    timelineTotal.value = 0;
+  } finally {
+    timelineLoading.value = false;
+  }
+}
+
+async function submitComment(payload: { body: string; mentions: string[] }) {
+  const body = payload.body.trim();
+  if (!body) return;
+  commentSending.value = true;
+  commentError.value = null;
+  try {
+    await ocAddWorkItemComment(workItemId.value, body, null, payload.mentions);
+    composerRef.value?.reset();
+    await loadTimeline();
+  } catch (e: unknown) {
+    commentError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.comments.error'));
+  } finally {
+    commentSending.value = false;
+  }
+}
+
 async function loadProfile() {
   const id = workItemId.value;
   if (!id) return;
@@ -62,10 +234,12 @@ async function loadProfile() {
     if (!store.workspaces.length) {
       await store.loadWorkspaces();
     }
-    const ctx = await ocGetFormEditContext(id);
+    const [ctx, prof] = await Promise.all([ocGetFormEditContext(id), ocGetWorkItemProfile(id)]);
     const poolFields = await ocListPoolFieldsForWorkspace(ctx.workspaceId);
     formContext.value = enrichFormRuntimeFields(ctx, { poolFields, translate: t });
     formModel.value = initialFormModelFromContext(ctx);
+    profile.value = prof;
+    void loadTimeline();
   } catch (e: unknown) {
     formContext.value = null;
     errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.profile.loadError'));
@@ -98,7 +272,10 @@ watch(workItemId, () => {
           :title="t('operationCore.board.backToBoard')"
         />
         <div class="min-width-0">
-          <div class="text-subtitle-1 font-weight-bold text-truncate">{{ workItemTitle }}</div>
+          <div class="d-flex align-center ga-2">
+            <span v-if="workItemKey" class="text-caption text-primary font-weight-bold">{{ workItemKey }}</span>
+            <div class="text-subtitle-1 font-weight-bold text-truncate">{{ workItemTitle }}</div>
+          </div>
           <div class="text-caption text-medium-emphasis">
             {{ t('operationCore.profile.readonlyHint') }}
           </div>
@@ -116,22 +293,307 @@ watch(workItemId, () => {
       {{ errorLocal }}
     </v-alert>
 
-    <v-card v-if="formContext && !loading" variant="outlined" class="rounded-lg">
-      <v-card-text class="pa-4 pa-md-5">
-        <OcDynamicForm v-model="formModel" :context="formContext" readonly />
-      </v-card-text>
-    </v-card>
+    <v-row v-if="!loading && (formContext || profile)">
+      <!-- Ana kolon: tab'lar -->
+      <v-col cols="12" md="8">
+        <v-card variant="outlined" class="rounded-lg">
+          <v-tabs v-model="activeTab" color="primary" density="comfortable" class="px-2">
+            <v-tab value="details" class="text-none">
+              <v-icon icon="mdi-form-select" start size="18" />
+              {{ t('operationCore.profile.tabs.details') }}
+            </v-tab>
+            <v-tab value="activity" class="text-none">
+              <v-icon icon="mdi-timeline-text-outline" start size="18" />
+              {{ t('operationCore.profile.tabs.activity') }}
+              <v-chip v-if="timelineTotal" size="x-small" class="ml-2" color="primary" variant="tonal">
+                {{ timelineTotal }}
+              </v-chip>
+            </v-tab>
+            <v-tab value="attachments" class="text-none">
+              <v-icon icon="mdi-paperclip" start size="18" />
+              {{ t('operationCore.profile.tabs.attachments') }}
+              <v-chip v-if="attachments.length" size="x-small" class="ml-2" color="primary" variant="tonal">
+                {{ attachments.length }}
+              </v-chip>
+            </v-tab>
+          </v-tabs>
+          <v-divider />
+          <v-window v-model="activeTab">
+            <v-window-item value="details">
+              <v-card-text class="pa-4 pa-md-5">
+                <OcDynamicForm v-if="formContext" v-model="formModel" :context="formContext" readonly />
+              </v-card-text>
+            </v-window-item>
 
-    <v-card v-else-if="!loading && !errorLocal" variant="outlined" class="rounded-lg">
-      <v-card-text class="pa-8 text-center text-medium-emphasis">
-        {{ t('operationCore.profile.workItemId') }}: {{ workItemId }}
-      </v-card-text>
-    </v-card>
+            <v-window-item value="activity">
+              <v-card-text class="pa-4">
+                <div v-if="canComment" class="mb-4">
+                  <OcCommentComposer
+                    ref="composerRef"
+                    :placeholder="t('operationCore.profile.comments.placeholder')"
+                    :send-label="t('operationCore.profile.comments.send')"
+                    :sending="commentSending"
+                    @submit="submitComment"
+                  />
+                  <v-alert v-if="commentError" type="error" variant="tonal" density="compact" class="mt-2 rounded-lg">
+                    {{ commentError }}
+                  </v-alert>
+                </div>
+
+                <v-divider v-if="canComment" class="mb-3" />
+
+                <div v-if="timelineLoading" class="d-flex justify-center py-6">
+                  <v-progress-circular indeterminate color="primary" size="28" />
+                </div>
+                <div v-else-if="!timeline.length" class="text-body-2 text-medium-emphasis text-center py-6">
+                  {{ t('operationCore.profile.comments.empty') }}
+                </div>
+                <v-timeline v-else side="end" density="compact" align="start" truncate-line="both">
+                  <v-timeline-item
+                    v-for="(entry, i) in timeline"
+                    :key="entry.id ?? i"
+                    :dot-color="timelineColor(entry)"
+                    size="x-small"
+                  >
+                    <template #icon>
+                      <v-icon :icon="timelineIcon(entry)" size="14" />
+                    </template>
+                    <div class="d-flex align-center flex-wrap ga-2">
+                      <span class="text-body-2 font-weight-medium">{{ entry.actor || '—' }}</span>
+                      <span v-if="entry.at" class="text-caption text-medium-emphasis">{{ fmtDate(entry.at) }}</span>
+                    </div>
+                    <div class="text-body-2 mt-1" style="white-space: pre-wrap">{{ entry.text }}</div>
+                  </v-timeline-item>
+                </v-timeline>
+              </v-card-text>
+            </v-window-item>
+
+            <v-window-item value="attachments">
+              <v-card-text class="pa-4">
+                <input
+                  ref="fileInput"
+                  type="file"
+                  class="d-none"
+                  @change="onFileSelected"
+                />
+                <div class="d-flex align-center justify-space-between mb-3">
+                  <span class="text-body-2 text-medium-emphasis">
+                    {{ t('operationCore.profile.attachments.hint') }}
+                  </span>
+                  <v-btn
+                    v-if="canEdit"
+                    color="primary"
+                    size="small"
+                    variant="flat"
+                    rounded="lg"
+                    class="text-none"
+                    :loading="attachUploading"
+                    prepend-icon="mdi-upload"
+                    @click="triggerFilePick"
+                  >
+                    {{ t('operationCore.profile.attachments.add') }}
+                  </v-btn>
+                </div>
+
+                <v-alert v-if="attachError" type="error" variant="tonal" density="compact" class="mb-3 rounded-lg">
+                  {{ attachError }}
+                </v-alert>
+
+                <div v-if="!attachments.length" class="text-body-2 text-medium-emphasis text-center py-6">
+                  {{ t('operationCore.profile.attachments.empty') }}
+                </div>
+                <v-list v-else class="py-0" density="comfortable">
+                  <v-list-item
+                    v-for="att in attachments"
+                    :key="att.path"
+                    class="px-2 rounded-lg oc-attach-row"
+                  >
+                    <template #prepend>
+                      <v-icon :icon="attachmentIcon(att)" color="primary" />
+                    </template>
+                    <v-list-item-title class="text-body-2 font-weight-medium text-truncate">
+                      {{ att.fileName }}
+                    </v-list-item-title>
+                    <v-list-item-subtitle class="text-caption">
+                      <span v-if="att.fileSizeKb">{{ fmtFileSize(att.fileSizeKb) }}</span>
+                      <span v-if="att.uploadTime"> · {{ fmtDate(att.uploadTime) }}</span>
+                      <span v-if="att.uploadPerson"> · {{ att.uploadPerson }}</span>
+                    </v-list-item-subtitle>
+                    <template #append>
+                      <v-btn
+                        icon="mdi-download"
+                        variant="text"
+                        size="small"
+                        :title="t('operationCore.profile.attachments.download')"
+                        @click="downloadAttachment(att)"
+                      />
+                      <v-btn
+                        v-if="canEdit"
+                        icon="mdi-delete-outline"
+                        variant="text"
+                        size="small"
+                        color="error"
+                        :loading="removingPath === att.path"
+                        :title="t('operationCore.profile.attachments.remove')"
+                        @click="removeAttachment(att)"
+                      />
+                    </template>
+                  </v-list-item>
+                </v-list>
+              </v-card-text>
+            </v-window-item>
+          </v-window>
+        </v-card>
+      </v-col>
+
+      <!-- Sidebar: SLA + meta -->
+      <v-col cols="12" md="4">
+        <!-- SLA panel -->
+        <v-card v-if="summary" variant="outlined" class="rounded-lg mb-4">
+          <v-card-text class="pa-4">
+            <div class="d-flex align-center justify-space-between mb-2">
+              <span class="text-subtitle-2 font-weight-bold">{{ t('operationCore.profile.sla.title') }}</span>
+              <OcSlaStatusChip
+                :sla="profile?.sla"
+                :state-id="summary.stateId"
+                :closed-at="summary.closedAt"
+              />
+            </div>
+            <div v-if="profile?.sla?.responseDueAt || profile?.sla?.resolveDueAt" class="oc-meta-list">
+              <div v-if="profile?.sla?.responseDueAt" class="oc-meta-row">
+                <span class="oc-meta-label">{{ t('operationCore.profile.sla.responseDue') }}</span>
+                <span class="oc-meta-value" :class="{ 'text-error': profile?.sla?.responseBreached }">
+                  {{ fmtDate(profile?.sla?.responseDueAt) }}
+                </span>
+              </div>
+              <div v-if="profile?.sla?.resolveDueAt" class="oc-meta-row">
+                <span class="oc-meta-label">{{ t('operationCore.profile.sla.resolveDue') }}</span>
+                <span class="oc-meta-value" :class="{ 'text-error': profile?.sla?.resolveBreached }">
+                  {{ fmtDate(profile?.sla?.resolveDueAt) }}
+                </span>
+              </div>
+            </div>
+            <div v-else class="text-caption text-medium-emphasis">
+              {{ t('operationCore.profile.sla.none') }}
+            </div>
+          </v-card-text>
+        </v-card>
+
+        <!-- Politikalar (SLA politikası + uygulanan kurallar) -->
+        <v-card v-if="summary" variant="outlined" class="rounded-lg mb-4">
+          <v-card-text class="pa-4">
+            <div class="text-subtitle-2 font-weight-bold mb-3">{{ t('operationCore.policies.title') }}</div>
+            <OcPolicyPanel
+              :workspace-id="profile?.workspaceId"
+              :type-id="summary.typeId"
+              :priority-id="summary.priorityId"
+              :board-id="summary.boardId"
+              :state-id="summary.stateId"
+              :sla-policy-id="profile?.sla?.slaPolicyId"
+            />
+          </v-card-text>
+        </v-card>
+
+        <!-- Meta -->
+        <v-card v-if="summary" variant="outlined" class="rounded-lg mb-4">
+          <v-card-text class="pa-4">
+            <div class="text-subtitle-2 font-weight-bold mb-3">{{ t('operationCore.profile.meta.title') }}</div>
+            <div class="oc-meta-list">
+              <div class="oc-meta-row">
+                <span class="oc-meta-label">{{ t('operationCore.workspaceDefinitions.boards.listTableColumns.stateId') }}</span>
+                <OcBoardCatalogLabel :item="resolveState(summary.stateId, null)" />
+              </div>
+              <div class="oc-meta-row">
+                <span class="oc-meta-label">{{ t('operationCore.workspaceDefinitions.boards.listTableColumns.priorityId') }}</span>
+                <OcBoardCatalogLabel :item="resolvePriority(summary.priorityId)" />
+              </div>
+              <div class="oc-meta-row">
+                <span class="oc-meta-label">{{ t('operationCore.workspaceDefinitions.boards.listTableColumns.typeId') }}</span>
+                <OcBoardCatalogLabel :item="resolveType(summary.typeId)" />
+              </div>
+              <div class="oc-meta-row">
+                <span class="oc-meta-label">{{ t('operationCore.workspaceDefinitions.boards.listTableColumns.assignee') }}</span>
+                <span class="oc-meta-value">{{ resolvePersonName(summary.assignee) }}</span>
+              </div>
+              <div class="oc-meta-row">
+                <span class="oc-meta-label">{{ t('operationCore.workspaceDefinitions.boards.listTableColumns.createdBy') }}</span>
+                <span class="oc-meta-value">{{ resolvePersonName(profile?.createdBy) }}</span>
+              </div>
+              <div class="oc-meta-row">
+                <span class="oc-meta-label">{{ t('operationCore.workspaceDefinitions.boards.listTableColumns.createdAt') }}</span>
+                <span class="oc-meta-value">{{ fmtDate(summary.createdAt) }}</span>
+              </div>
+              <div class="oc-meta-row">
+                <span class="oc-meta-label">{{ t('operationCore.workspaceDefinitions.boards.listTableColumns.age') }}</span>
+                <span class="oc-meta-value">{{ fmtAge(summary.createdAt, summary.closedAt) }}</span>
+              </div>
+              <div v-if="summary.closedAt" class="oc-meta-row">
+                <span class="oc-meta-label">{{ t('operationCore.workspaceDefinitions.boards.listTableColumns.closedAt') }}</span>
+                <span class="oc-meta-value">{{ fmtDate(summary.closedAt) }}</span>
+              </div>
+            </div>
+          </v-card-text>
+        </v-card>
+
+        <!-- Watchers -->
+        <v-card v-if="watcherNames.length" variant="outlined" class="rounded-lg mb-4">
+          <v-card-text class="pa-4">
+            <div class="text-subtitle-2 font-weight-bold mb-2">{{ t('operationCore.profile.watchers.title') }}</div>
+            <div class="d-flex flex-wrap ga-2">
+              <v-chip v-for="w in watcherNames" :key="w.id" size="small" variant="tonal" prepend-icon="mdi-account">
+                {{ w.name }}
+              </v-chip>
+            </div>
+          </v-card-text>
+        </v-card>
+
+        <!-- Links -->
+        <v-card v-if="profile?.links?.length" variant="outlined" class="rounded-lg">
+          <v-card-text class="pa-4">
+            <div class="text-subtitle-2 font-weight-bold mb-2">{{ t('operationCore.profile.links.title') }}</div>
+            <div v-for="link in profile.links" :key="link.id" class="oc-meta-row">
+              <span class="oc-meta-label">{{ link.linkType }}</span>
+              <NuxtLink
+                :to="`/apps/operation-core/work-items/${encodeURIComponent(link.otherWorkItemId)}/profile`"
+                class="text-primary text-decoration-none oc-meta-value"
+              >
+                {{ link.otherWorkItemId }}
+              </NuxtLink>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
   </div>
 </template>
 
 <style scoped>
 .min-width-0 {
+  min-width: 0;
+}
+
+.oc-meta-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.oc-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.oc-meta-label {
+  font-size: 0.8125rem;
+  color: rgba(var(--v-theme-on-surface), 0.6);
+  flex-shrink: 0;
+}
+
+.oc-meta-value {
+  font-size: 0.875rem;
+  text-align: right;
   min-width: 0;
 }
 </style>

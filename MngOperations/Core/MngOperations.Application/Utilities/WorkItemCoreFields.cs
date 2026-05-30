@@ -26,7 +26,8 @@ public static class WorkItemCoreFields
         "dueDate",
         "sla",
         "slaPolicyId",
-        "parentItemId"
+        "parentItemId",
+        "attachments"
     };
 
     /// <summary>Sistem yönetimli veya doğrudan değiştirilemeyen kolonlar.</summary>
@@ -43,6 +44,8 @@ public static class WorkItemCoreFields
         ExtraFieldsKey,
         "analytics",
         "createdAt",
+        "createdBy",
+        "updatedAt",
         "lastStateChangeAt",
         "closedAt",
         "firstClosedAt",

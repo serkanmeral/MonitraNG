@@ -3316,6 +3316,14 @@
         "deleteConfirm": "Bu iş kaydını silmek istediğinize emin misiniz?",
         "deleteIrreversible": "Bu işlem geri alınamaz.",
         "deleteError": "İş kaydı silinemedi."
+      },
+      "sla": {
+        "phaseResponse": "Yanıt SLA",
+        "phaseResolve": "Çözüm SLA",
+        "remaining": "{time} kaldı",
+        "overdue": "{time} gecikme",
+        "closedOnTime": "Zamanında kapandı",
+        "closedLate": "Geç kapandı"
       }
     },
     "workItemDialog": {
@@ -3328,11 +3336,67 @@
     "profile": {
       "placeholderTitle": "İş profili",
       "title": "İş profili",
-      "readonlyHint": "Seçili formun salt-okunur görünümü (profil tasarımı bekleniyor).",
+      "readonlyHint": "Seçili formun salt-okunur görünümü.",
       "readonlyChip": "Salt-okunur",
       "loadError": "İş kaydı yüklenemedi.",
       "sprint3Hint": "Profil runtime Sprint 3'te burada açılacak.",
-      "workItemId": "Kayıt"
+      "workItemId": "Kayıt",
+      "tabs": {
+        "details": "Detaylar",
+        "activity": "Aktivite & yorum",
+        "attachments": "Ekler"
+      },
+      "comments": {
+        "placeholder": "Yorum yaz... birini etiketlemek için @ yazın",
+        "send": "Gönder",
+        "empty": "Henüz aktivite yok.",
+        "error": "Yorum eklenemedi.",
+        "mentionHint": "Kişi etiketlemek için @ yazın · Ctrl+Enter ile gönder",
+        "loadMore": "Daha fazla...",
+        "searching": "Aranıyor...",
+        "noPeople": "Eşleşen kişi yok"
+      },
+      "attachments": {
+        "hint": "Bu iş kaydına eklenen dosyalar.",
+        "add": "Dosya ekle",
+        "empty": "Henüz ek yok.",
+        "download": "İndir",
+        "remove": "Kaldır",
+        "uploadError": "Dosya yüklenemedi.",
+        "downloadError": "Dosya indirilemedi.",
+        "removeError": "Ek kaldırılamadı."
+      },
+      "sla": {
+        "title": "SLA",
+        "responseDue": "Yanıt hedefi",
+        "resolveDue": "Çözüm hedefi",
+        "none": "SLA politikası yok."
+      },
+      "meta": {
+        "title": "Detaylar"
+      },
+      "watchers": {
+        "title": "İzleyenler"
+      },
+      "links": {
+        "title": "Bağlı kayıtlar"
+      }
+    },
+    "policies": {
+      "title": "Politikalar & SLA",
+      "responseTarget": "Yanıt hedefi",
+      "resolveTarget": "Çözüm hedefi",
+      "autoMatched": "otomatik eşleşen",
+      "rulesTitle": "Uygulanan kurallar",
+      "empty": "Bu kayda uygulanan politika veya kural yok.",
+      "unitHour": "sa",
+      "unitMinute": "dk",
+      "triggers": {
+        "WorkItemCreated": "Oluşturmada",
+        "WorkItemUpdated": "Güncellemede",
+        "WorkItemTransition": "Geçişte",
+        "WorkItemTransitioned": "Geçiş sonrası"
+      }
     },
     "create": {
       "title": "Yeni iş",
@@ -4320,6 +4384,15 @@
         "listTableColumnsLabel": "Sütunlar",
         "listColumnOrder": "Sıra",
         "listColumnField": "Alan",
+        "listColumnFormat": "Biçim",
+        "listColumnFormatAuto": "Varsayılan",
+        "listColumnFormats": {
+          "text": "Metin",
+          "number": "Sayı",
+          "money": "Para",
+          "date": "Tarih/saat",
+          "relativeTime": "Göreli (geçen süre)"
+        },
         "listColumnSortable": "Sıralanabilir",
         "listColumnFilterable": "Filtrelenebilir",
         "listDefaultSortTitle": "Varsayılan sıralama",
@@ -4336,7 +4409,14 @@
           "stateId": "Durum",
           "assignee": "Atanan",
           "priorityId": "Öncelik",
-          "typeId": "Tip"
+          "typeId": "Tip",
+          "createdBy": "Oluşturan",
+          "createdAt": "Oluşturma",
+          "age": "Geçen süre",
+          "updatedAt": "Güncelleme",
+          "lastStateChangeAt": "Son durum değişimi",
+          "closedAt": "Kapanış",
+          "sla": "SLA durumu"
         },
         "previewListTable": "Tablo: {cols}",
         "kanbanConfigNotice": "Kanban operasyonel görünüm (sürükle-bırak) sonraki sprintte. Yapılandırmayı kaydedebilirsiniz; şimdilik Liste görünümünü öneriyoruz.",

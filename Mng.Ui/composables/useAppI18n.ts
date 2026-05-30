@@ -6,7 +6,11 @@
 export function useAppI18n() {
   const nuxtApp = useNuxtApp();
   const i18n = nuxtApp.vueApp.config.globalProperties.$i18n as
-    | { t?: (key: string, ...args: unknown[]) => string; global?: { t?: (key: string, ...args: unknown[]) => string } }
+    | {
+        t?: (key: string, ...args: unknown[]) => string;
+        locale?: string | { value?: string };
+        global?: { t?: (key: string, ...args: unknown[]) => string };
+      }
     | undefined;
 
   function t(key: string, ...args: unknown[]): string {
@@ -19,5 +23,13 @@ export function useAppI18n() {
     return key;
   }
 
-  return { t };
+  /** Aktif i18n yerel kodu (örn. 'tr', 'en'); format util'leri için. */
+  function locale(): string {
+    const l = i18n?.locale;
+    if (typeof l === 'string') return l;
+    if (l && typeof l === 'object' && typeof l.value === 'string') return l.value;
+    return 'tr';
+  }
+
+  return { t, locale };
 }

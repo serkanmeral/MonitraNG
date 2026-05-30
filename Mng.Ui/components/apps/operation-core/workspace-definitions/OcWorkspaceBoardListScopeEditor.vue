@@ -6,6 +6,7 @@ import type {
   OpBoardColumnConfig,
   OpBoardListColumnConfig,
   OpBoardSortConfig,
+  OcColumnFormat,
   OcSortDirection,
   OpField,
   OpPriority,
@@ -13,13 +14,16 @@ import type {
   OpStateFlow,
   OpWorkItemType,
 } from '@/types/apps/operationCore';
+import { OC_COLUMN_FORMATS } from '@/types/apps/operationCore';
 import { buildCatalogDisplayMap } from '@/utils/ocCatalogDisplay';
 import {
   boardListColumnKeys,
   buildListScopeColumns,
   defaultFilterableForKey,
+  defaultFormatForKey,
   defaultSortableForKey,
   listScopeStateIdsFromColumns,
+  OC_BOARD_LIST_SYSTEM_COLUMN_KEYS,
   OC_BOARD_LIST_TABLE_COLUMN_KEYS,
   suggestListScopeStateIdsFromFlow,
 } from '@/utils/ocBoardListColumns';
@@ -76,13 +80,28 @@ const poolFieldOptions = computed(() =>
 
 const poolFieldKeys = computed(() => poolFieldOptions.value.map((o) => o.value));
 
+const systemColumnOptions = computed(() =>
+  OC_BOARD_LIST_SYSTEM_COLUMN_KEYS.map((value) => ({
+    value: value as string,
+    title: t(`operationCore.workspaceDefinitions.boards.listTableColumns.${value}`),
+  }))
+);
+
 const tableColumnOptions = computed(() => {
   const core = OC_BOARD_LIST_TABLE_COLUMN_KEYS.map((value) => ({
     value: value as string,
     title: t(`operationCore.workspaceDefinitions.boards.listTableColumns.${value}`),
   }));
-  return [...core, ...poolFieldOptions.value];
+  return [...core, ...systemColumnOptions.value, ...poolFieldOptions.value];
 });
+
+const formatOptions = computed(() => [
+  { value: null as OcColumnFormat | null, title: t('operationCore.workspaceDefinitions.boards.listColumnFormatAuto') },
+  ...OC_COLUMN_FORMATS.map((f) => ({
+    value: f as OcColumnFormat | null,
+    title: t(`operationCore.workspaceDefinitions.boards.listColumnFormats.${f}`),
+  })),
+]);
 
 const columnLabelByKey = computed(() => {
   const map = new Map<string, string>();
@@ -139,7 +158,12 @@ function setSelectedColumns(keys: string[]) {
     next.push(
       prev
         ? { ...prev }
-        : { key, sortable: defaultSortableForKey(key), filterable: defaultFilterableForKey(key) }
+        : {
+            key,
+            sortable: defaultSortableForKey(key),
+            filterable: defaultFilterableForKey(key),
+            format: defaultFormatForKey(key),
+          }
     );
   }
   emitColumns(next);
@@ -173,6 +197,11 @@ function updateColumnFlag(index: number, field: 'sortable' | 'filterable', value
   if (field === 'sortable' && !value && props.defaultSort?.field === next[index]?.key) {
     emit('update:defaultSort', null);
   }
+}
+
+function updateColumnFormat(index: number, value: OcColumnFormat | null) {
+  const next = selectedColumns.value.map((c, i) => (i === index ? { ...c, format: value ?? null } : c));
+  emit('update:listColumns', next);
 }
 
 const stateCatalogById = computed(() => buildCatalogDisplayMap(props.stateCatalog ?? []));
@@ -354,6 +383,7 @@ function clearStates() {
         <div class="oc-list-cols__head text-caption text-medium-emphasis">
           <span class="oc-list-cols__order">{{ t('operationCore.workspaceDefinitions.boards.listColumnOrder') }}</span>
           <span class="oc-list-cols__name">{{ t('operationCore.workspaceDefinitions.boards.listColumnField') }}</span>
+          <span class="oc-list-cols__format">{{ t('operationCore.workspaceDefinitions.boards.listColumnFormat') }}</span>
           <span class="oc-list-cols__flag">{{ t('operationCore.workspaceDefinitions.boards.listColumnSortable') }}</span>
           <span class="oc-list-cols__flag">{{ t('operationCore.workspaceDefinitions.boards.listColumnFilterable') }}</span>
           <span class="oc-list-cols__actions" />
@@ -380,6 +410,18 @@ function clearStates() {
             />
           </div>
           <span class="oc-list-cols__name text-body-2">{{ columnLabel(col.key) }}</span>
+          <div class="oc-list-cols__format">
+            <v-select
+              :model-value="col.format ?? null"
+              :items="formatOptions"
+              item-title="title"
+              item-value="value"
+              variant="outlined"
+              density="compact"
+              hide-details
+              @update:model-value="updateColumnFormat(index, $event as OcColumnFormat | null)"
+            />
+          </div>
           <div class="oc-list-cols__flag">
             <v-switch
               :model-value="col.sortable"
@@ -483,10 +525,15 @@ function clearStates() {
 .oc-list-cols__head,
 .oc-list-cols__row {
   display: grid;
-  grid-template-columns: 72px 1fr 84px 84px 40px;
+  grid-template-columns: 72px 1fr 150px 84px 84px 40px;
   align-items: center;
   gap: 0.5rem;
   padding: 0.25rem 0.25rem;
+}
+
+.oc-list-cols__format {
+  display: flex;
+  align-items: center;
 }
 
 .oc-list-cols__head {

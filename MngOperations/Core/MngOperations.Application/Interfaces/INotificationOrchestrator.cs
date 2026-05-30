@@ -11,6 +11,15 @@ public interface INotificationOrchestrator
         IReadOnlyDictionary<string, object?> payload,
         NotificationDispatchRequest request,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Yorumda etiketlenen kişilere in-app mention bildirimi oluşturur (best-effort).</summary>
+    Task DispatchMentionAsync(
+        string workItemId,
+        string workItemKey,
+        IReadOnlyList<string> mentionedUserIds,
+        string? actorUserId,
+        string token,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed class NotificationDispatchRequest

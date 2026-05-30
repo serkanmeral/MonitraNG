@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import OcDynamicForm from '@/components/apps/operation-core/OcDynamicForm.vue';
+import OcPolicyPanel from '@/components/apps/operation-core/OcPolicyPanel.vue';
 import {
   buildCreateWorkItemRequest,
   buildUpdateWorkItemRequest,
@@ -52,6 +53,12 @@ const initialModel = ref<Record<string, unknown>>({});
 const validationAttempted = ref(false);
 
 const isEdit = computed(() => props.mode === 'edit');
+
+const policyTypeId = computed(() => (typeof formModel.value.typeId === 'string' ? formModel.value.typeId : null));
+const policyPriorityId = computed(() =>
+  typeof formModel.value.priorityId === 'string' ? formModel.value.priorityId : null
+);
+const policyStateId = computed(() => (typeof formModel.value.stateId === 'string' ? formModel.value.stateId : null));
 
 const dialogMaxWidthPx = computed(() =>
   normalizeOcDialogMaxWidthPx(formContext.value?.layout?.dialogMaxWidth)
@@ -260,6 +267,24 @@ watch(
             :context="formContext"
             :field-errors="fieldErrors"
           />
+
+          <v-expansion-panels v-if="formContext && !loading" class="mt-4" variant="accordion">
+            <v-expansion-panel elevation="0" rounded="lg">
+              <v-expansion-panel-title class="text-body-2">
+                <v-icon icon="mdi-shield-check-outline" size="18" start />
+                {{ t('operationCore.policies.title') }}
+              </v-expansion-panel-title>
+              <v-expansion-panel-text>
+                <OcPolicyPanel
+                  :workspace-id="formContext.workspaceId"
+                  :type-id="policyTypeId"
+                  :priority-id="policyPriorityId"
+                  :board-id="boardId"
+                  :state-id="policyStateId"
+                />
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+          </v-expansion-panels>
         </div>
       </v-card-text>
 

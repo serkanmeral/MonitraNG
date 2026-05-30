@@ -139,10 +139,17 @@ export interface OpBoardColumnConfig {
 export type OcSortDirection = 'asc' | 'desc';
 
 /** op_boards.config.listColumns[] — liste tablosu sütun tanımı (sıra + per-column meta). */
+/** Liste hücresi format ipucu. `relativeTime` = "geçen süre"; `date` = tarih/saat. */
+export type OcColumnFormat = 'text' | 'number' | 'money' | 'date' | 'relativeTime';
+
+export const OC_COLUMN_FORMATS: OcColumnFormat[] = ['text', 'number', 'money', 'date', 'relativeTime'];
+
 export interface OpBoardListColumnConfig {
   key: string;
   sortable?: boolean;
   filterable?: boolean;
+  /** Hücre format ipucu (null/undefined = alan tipine göre varsayılan). */
+  format?: OcColumnFormat | null;
 }
 
 /** op_boards.config.defaultSort — liste varsayılan sıralaması. */
@@ -309,6 +316,8 @@ export interface OcBoardListColumn {
   key: string;
   sortable: boolean;
   filterable: boolean;
+  /** Hücre format ipucu (null = alan tipine göre varsayılan). */
+  format?: OcColumnFormat | null;
 }
 
 export interface OcBoardRuntimeContext {
@@ -323,6 +332,8 @@ export interface OcBoardRuntimeContext {
   listColumns: OcBoardListColumn[];
   /** Liste varsayılan sıralaması (kullanıcı sıralaması yoksa). */
   defaultSort?: OpBoardSortConfig | null;
+  /** Akıştaki başlangıç state id'si — liste SLA chip akıllı fazı için. */
+  initialStateId?: string | null;
   catalogs: OcBoardCatalogs;
 }
 
@@ -342,6 +353,16 @@ export interface OcBoardListRequest {
   search?: string | null;
 }
 
+/** İş kaydı SLA snapshot'ı (op_work_items.sla). */
+export interface OcSlaSnapshot {
+  slaPolicyId?: string | null;
+  responseDueAt?: string | null;
+  resolveDueAt?: string | null;
+  responseBreached?: boolean;
+  resolveBreached?: boolean;
+  calculatedAt?: string | null;
+}
+
 export interface OcWorkItemCard {
   id: string;
   key: string;
@@ -350,6 +371,15 @@ export interface OcWorkItemCard {
   assignee?: string;
   priorityId?: string;
   typeId?: string;
+  /** Sistem alanları (audit). */
+  createdAt?: string | null;
+  /** Oluşturan kullanıcı id'si; ad çözümü `people` map'inden. Eski kayıtlarda boş olabilir. */
+  createdBy?: string | null;
+  updatedAt?: string | null;
+  lastStateChangeAt?: string | null;
+  closedAt?: string | null;
+  /** SLA snapshot — liste SLA durumu chip'i için. */
+  sla?: OcSlaSnapshot | null;
   /** Pool alan değerleri (extraFields) — liste tablosu özel sütunları için. */
   fields?: Record<string, unknown>;
 }
@@ -377,6 +407,94 @@ export interface OcColumnItemsState {
   items: OcWorkItemCard[];
   total: number;
   error: string | null;
+}
+
+/** İş kaydı profil özeti (MO GetProfileAsync). */
+export interface OcWorkItemSummary {
+  id: string;
+  key: string;
+  title: string;
+  description?: string | null;
+  stateId: string;
+  stateFlowId?: string | null;
+  category?: string | null;
+  workspaceKey?: string | null;
+  assignee?: string | null;
+  reporter?: string | null;
+  typeId?: string | null;
+  boardId?: string | null;
+  priorityId?: string | null;
+  createdAt?: string | null;
+  lastStateChangeAt?: string | null;
+  closedAt?: string | null;
+}
+
+export interface OcWorkItemLinkSummary {
+  id: string;
+  linkType: string;
+  direction: string;
+  otherWorkItemId: string;
+  description?: string | null;
+}
+
+/**
+ * İş kaydı eki (op_work_items.attachments — DG file isArray).
+ * `raw`, DG'nin sakladığı ham nesnedir; ek listesi güncellenirken (PATCH) mevcut
+ * girdiler bu ham haliyle geri gönderilir (DG `content` içermeyen nesneleri olduğu gibi korur).
+ */
+export interface OcAttachment {
+  /** MinIO yolu (download/metadata anahtarı). */
+  path: string;
+  fileName: string;
+  fileExt?: string | null;
+  /** KB cinsinden (DG file_size). */
+  fileSizeKb?: number | null;
+  uploadPerson?: string | null;
+  uploadTime?: string | null;
+  /** DG'ye geri gönderilecek ham saklı nesne. */
+  raw: Record<string, unknown>;
+}
+
+/** Profil runtime context — sidebar (SLA/meta/policy) + izinler. */
+export interface OcWorkItemProfile {
+  workspaceId: string;
+  workItem: OcWorkItemSummary;
+  permissions: OcRuntimePermissions;
+  sla?: OcSlaSnapshot | null;
+  watchers: string[];
+  links: OcWorkItemLinkSummary[];
+  /** Person id → görünen ad (assignee/reporter/watchers). */
+  people: Record<string, OcPersonDisplay>;
+  createdBy?: string | null;
+  /** İş kaydı ekleri (op_work_items.attachments). */
+  attachments: OcAttachment[];
+}
+
+/** Aktivite/yorum zaman tüneli girdisi (MO GetTimelineAsync). */
+export interface OcTimelineEntry {
+  type: string;
+  id?: string | null;
+  actor?: string | null;
+  text?: string | null;
+  at?: string | null;
+  activityType?: string | null;
+}
+
+export interface OcTimelinePage {
+  items: OcTimelineEntry[];
+  skip: number;
+  take: number;
+  total: number;
+}
+
+/** Yorum (MO AddCommentAsync yanıtı). */
+export interface OcComment {
+  id: string;
+  workItemId: string;
+  body: string;
+  author?: string | null;
+  parentCommentId?: string | null;
+  commentDate?: string | null;
 }
 
 /** op_states — global durum kataloğu */

@@ -1,9 +1,46 @@
 # MngOperations & Operation Core UI — Devam noktası (checkpoint)
 
-**Son güncelleme:** 30 Mayıs 2026 (board liste server-side sıralama/filtre/arama + gelişmiş arama)  
-**Durum:** SW **SW-0…SW-6** ✅ · A1 R-Plus ✅ · **SLA-0/1/2** ✅ · **D1 Board admin** ✅ · **BL (board liste enrichment)** ✅ · **mngui Odak deploy** ✅ · **BO (board liste aksiyonlar)** ✅ · **BLF (server-side liste + gelişmiş arama)** ✅
+**Son güncelleme:** 30 Mayıs 2026 (board liste audit/SLA sütunları + sabit actions + form chrome: profil/yorum/SLA/politika/mention/ekler)  
+**Durum:** SW **SW-0…SW-6** ✅ · A1 R-Plus ✅ · **SLA-0/1/2** ✅ · **D1 Board admin** ✅ · **BL (board liste enrichment)** ✅ · **BO (board liste aksiyonlar)** ✅ · **BLF (server-side liste + gelişmiş arama)** ✅ · **BLC (audit/SLA sütunları + sabit actions)** ✅ · **FC (form chrome: profil/yorum/SLA/politika/mention/ekler)** ✅ · **mngui Odak deploy** ✅
 
 **Ana plan:** [OC_UI_ADMIN_FAZ1_PLAN.md](../ui/OC_UI_ADMIN_FAZ1_PLAN.md)
+
+---
+
+## BLC — Board liste audit/SLA sütunları + sabit actions (bu oturum, 30 May)
+
+Liste tablosuna **sistem sütunları** (oluşturan/oluşturma zamanı/geçen süre/SLA durumu) + paylaşılan format katmanı; actions sütunu yatay scroll'da **sağda sabit**. Plan: [BOARD_LIST_FORM_CHROME_PLAN.md](./BOARD_LIST_FORM_CHROME_PLAN.md).
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **BLC-1** | ✅ | **Audit/SLA alanları** — `WorkItemCardDto` + `createdAt/createdBy/updatedAt/lastStateChangeAt/closedAt/sla`. Create'te **forward-only `createdBy`** damgası (`IRequestContext.UserId`); `createdBy` person çözümüne eklendi. |
+| **BLC-2** | ✅ | **Sistem sütunları admin** — `OcWorkspaceBoardListScopeEditor` sistem sütunlarını (state/priority/type/assignee + createdAt/createdBy/age/sla) seçtirir; per-sütun **Biçim** (`text/number/money/date/relativeTime`). `BoardListColumnDto.Format`. |
+| **BLC-3** | ✅ | **Format katmanı + SLA chip** — `utils/ocColumnFormat.ts` (locale-aware date/number/money/relativeTime), `OcSlaStatusChip.vue` (akıllı faz: initial state'ten çıkış = response karşılandı proxy; canlı sayaç). Server-side sort: `age`→`createdAt` (ters), `sla`→`sla.resolveDueAt`. |
+| **BLC-4** | ✅ | **Sabit actions sütunu** — son `th/td` `position: sticky; right:0` (scoped CSS, `boards/[boardId]/index.vue`). |
+
+---
+
+## FC — Form chrome (profil + create/edit modal; form tasarımından bağımsız) (bu oturum, 30 May)
+
+Hibrit profil (ana kolonda sekmeler + sağ sidebar özetler) ve sade modal. Plan: [BOARD_LIST_FORM_CHROME_PLAN.md](./BOARD_LIST_FORM_CHROME_PLAN.md).
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **FC-profil** | ✅ | Profil sayfası yeniden yazıldı: ana kolon sekmeler `Detay | Aktivite & yorum[N] | Ekler[N]`; sağ sidebar `SLA · Politikalar · Meta · İzleyenler · Bağlılar`. `ProfileRuntimeContext` + `People` map (assignee/reporter/createdBy/watchers ad çözümü) + `WorkItemSummaryDto.CreatedBy`. |
+| **FC-1 (yorum)** | ✅ | Aktivite & yorum sekmesi — `ocGetWorkItemTimeline` + `ocAddWorkItemComment`; timeline (yorum/state/transition). |
+| **FC-2 (SLA)** | ✅ | Sidebar SLA paneli — `OcSlaStatusChip` + response/resolve due tarihleri. |
+| **FC-3 (politika)** | ✅ | `OcPolicyPanel.vue` (client-side) — eşleşen SLA politikası (id veya type/priority türetme) hedef süreleri + uygulanan `op_rules` (board/type/state kapsamı). Profil sidebar **+ create/edit modalı** (form altı açılır panel, form modelinden canlı type/priority/state). |
+| **FC-4 (mention)** | ✅ | `OcCommentComposer.vue` — `@` ile kişi autocomplete (`useOcPersonPicker`), token+id eşleme; `AddCommentRequest.Mentions` → `op_comments.mentions={personIds}` + **in-app bildirim** (`INotificationOrchestrator.DispatchMentionAsync`, `op_notifications` tip `CommentMention`, yazarı dışlar, best-effort). |
+| **FC-5 (ekler)** | ✅ | **DG `file` (isArray) alanı** — yeni MinIO backend yok. `op_work_items.attachments` writable (`WorkItemCoreFields`); `ProfileRuntimeContext.Attachments` ham döner. UI Ekler sekmesi: yükle (base64 inline PATCH; mevcut ekler ham `raw` ile korunur, yeni `content` DG'ye yüklenir), indir (`/files/download`→blob), kaldır. |
+
+**MO yeni/değişen:** `WorkItemCoreFields` (`attachments` writable), `Contracts/Runtime/BoardRuntimeContext.cs` (`WorkItemCardDto` audit/SLA + `BoardListColumnDto.Format` + `InitialStateId`), `Contracts/Runtime/ProfileRuntimeContext.cs` (`People`+`Attachments`), `Contracts/WorkItems/AddCommentRequest.cs` (`Mentions`), `Interfaces/INotificationOrchestrator.cs` (`DispatchMentionAsync`), `Services/NotificationOrchestratorService.cs`, `Services/RuntimeContextService.cs` (audit map + sort + people + attachments), `Services/WorkItemCommandService.cs` (`createdBy` damga + comment mentions), `Utilities/ProfileRuntimeBuilder.cs`/`WorkItemCoreFields.cs`.
+**UI yeni:** `OcSlaStatusChip.vue`, `OcCommentComposer.vue`, `OcPolicyPanel.vue`, `utils/ocColumnFormat.ts`, `utils/ocBoardListColumns.ts`. **Değişen:** `pages/.../boards/[boardId]/index.vue`, `pages/.../work-items/[id]/profile/index.vue`, `OcWorkItemFormDialog.vue`, `OcWorkspaceBoardListScopeEditor.vue`, `services/operationCoreService.ts` (profil/timeline/comment/attachment fn'leri), `types/apps/operationCore.ts`, locale `en/tr`.
+**Deploy:** `mngoperations` Odak'a deploy edildi (healthy, 0 hata) · **`mngui` Odak'a deploy edildi (30 May, healthy — `ui=200`)**. UI build temiz (Nitro built).
+
+**Açık/ileriki:**
+- ⬜ **Dinamik (computed) sütunlar** (`expr-eval`, display-only) — BLC kapsamından ertelendi.
+- ⬜ Mention bildirim panelinin `CommentMention` tipini gösterdiğini doğrula (gerekirse panel filtresine ekle).
+- ⬜ `op_comments.attachments` (yorum ekleri) — şu an sadece iş kaydı ekleri.
 
 ---
 
@@ -36,7 +73,7 @@ Board liste görünümü **tam sunucu tarafı**na taşındı: sütun sırası + 
 **Açık/ileriki:**
 - ⬜ Gelişmiş aramada sayısal/tarih alanlar için `gt/gte/lt/lte` operatörlerini UI'a aç (alan tipi tespiti gerek).
 - ⬜ Pool select/relation alanlarda filtre değeri için option/relation etiketi (şu an ham değer).
-- ⬜ **`mngui` Odak deploy** (kullanıcı talebiyle).
+- ✅ **`mngui` Odak deploy** (30 May, healthy — BLF+BLC+FC canlı).
 
 ## BO — Board liste operasyonel aksiyonlar (bu oturum, 30 May)
 
@@ -106,7 +143,7 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 | **SLA-0** | ✅ | `op_sla_policies` Odak'ta mevcut; demo policy `OC Demo Default SLA` |
 | **SLA-1** | ✅ | MO create → `profile.sla` + `op_work_items.sla` snapshot (Odak smoke) |
 | **SLA-2** | ✅ | Workspace tanımları → **SLA** sekmesi, CRUD dialog |
-| **SLA-3** | ⬜ | Profil/board chip — operasyonel UI (Epic F) |
+| **SLA-3** | ✅ | Profil + board liste SLA chip (`OcSlaStatusChip`, akıllı faz) — FC/BLC ile tamamlandı |
 
 **Scriptler:** `setup-op-sla-policies-dataset.ps1` · **`smoke-sla-faz1.ps1`** (SLA-1 DoD)
 
@@ -134,5 +171,7 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 [✓] mngui Odak deploy (BL UI canlı)
 [✓] Board liste aksiyonlar (yeni-iş modal + profil/düzenle/sil + MO DELETE)
 [✓] Board liste server-side (sıralama/filtre/arama + gelişmiş arama + workspace scope)
-[ ] Workspace create → Admin kapanış → Operasyonel UI (SLA chip / gerçek profil)
+[✓] Board liste audit/SLA sütunları + sabit actions sütunu
+[✓] Form chrome: hibrit profil + yorum/timeline + SLA paneli + politika paneli + mention + ekler (DG file)
+[ ] Workspace create → Admin kapanış → dinamik (computed) sütunlar
 ```

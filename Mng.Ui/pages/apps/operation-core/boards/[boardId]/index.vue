@@ -6,22 +6,28 @@ import OcBoardKanban from '@/components/apps/operation-core/OcBoardKanban.vue';
 import OcBoardListFilters from '@/components/apps/operation-core/OcBoardListFilters.vue';
 import type { OcBoardFilterColumn, OcBoardFilterKind } from '@/components/apps/operation-core/OcBoardListFilters.vue';
 import OcWorkItemFormDialog from '@/components/apps/operation-core/OcWorkItemFormDialog.vue';
+import OcSlaStatusChip from '@/components/apps/operation-core/OcSlaStatusChip.vue';
 import { useOcBoardListLookups } from '@/composables/useOcBoardListLookups';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import { useOperationCoreStore } from '@/stores/apps/operationCore';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { ocDeleteWorkItem, ocExtractDgErrorMessage, ocListPoolFieldsForWorkspace } from '@/services/operationCoreService';
-import type { OcBoardListFilter, OcBoardListRequest, OpField } from '@/types/apps/operationCore';
+import type { OcBoardListFilter, OcBoardListRequest, OcColumnFormat, OcWorkItemCard, OpField } from '@/types/apps/operationCore';
 import {
+  defaultFormatForKey,
+  isBuiltInListColumn,
   isCoreListColumn,
+  isSystemListColumn,
   listTableCellValue,
   listTablePoolCellValue,
   normalizeListTableColumns,
+  systemColumnRawValue,
 } from '@/utils/ocBoardListColumns';
+import { formatCellValue } from '@/utils/ocColumnFormat';
 
 definePageMeta({ layout: 'default' });
 
-const { t } = useAppI18n();
+const { t, locale } = useAppI18n();
 const route = useRoute();
 const router = useRouter();
 const store = useOperationCoreStore();
@@ -130,10 +136,24 @@ const listColumnKeys = computed(() => {
 });
 
 function columnLabel(key: string): string {
-  if (isCoreListColumn(key)) {
+  if (isBuiltInListColumn(key)) {
     return t(`operationCore.workspaceDefinitions.boards.listTableColumns.${key}`);
   }
   return poolFieldLabelByKey.value.get(key) ?? key;
+}
+
+const initialStateId = computed(() => store.boardContext?.initialStateId ?? null);
+
+const columnFormatByKey = computed(() => {
+  const map = new Map<string, OcColumnFormat | null>();
+  for (const c of listColumnsMeta.value) {
+    map.set(c.key, c.format ?? defaultFormatForKey(c.key));
+  }
+  return map;
+});
+
+function columnFormat(key: string): OcColumnFormat | null {
+  return columnFormatByKey.value.get(key) ?? defaultFormatForKey(key);
 }
 
 function isColumnSortable(key: string): boolean {
@@ -162,7 +182,7 @@ function filterKind(key: string): OcBoardFilterKind {
   if (key === 'stateId') return 'state';
   if (key === 'priorityId') return 'priority';
   if (key === 'typeId') return 'type';
-  if (key === 'assignee' || personPoolKeySet.value.has(key)) return 'person';
+  if (key === 'assignee' || key === 'createdBy' || personPoolKeySet.value.has(key)) return 'person';
   return 'text';
 }
 
@@ -185,7 +205,7 @@ const typeFilterOptions = computed(() =>
 const listRows = computed(() =>
   store.listItems.map((item) => {
     const stateLabel = resolveState(item.stateId, null)?.name ?? item.stateId ?? null;
-    const base = {
+    const row: Record<string, unknown> = {
       id: item.id,
       keyText: item.key ?? '',
       titleText: item.title ?? '',
@@ -195,10 +215,19 @@ const listRows = computed(() =>
       rawAssignee: item.assignee ?? null,
       rawPriorityId: item.priorityId ?? null,
       rawTypeId: item.typeId ?? null,
+      rawCreatedBy: item.createdBy ?? null,
+      // SLA chip + person sütunları slot ile render edilir; ham kartı taşı.
+      __card: item as OcWorkItemCard,
     };
-    const row: Record<string, string | null> = { ...base };
     for (const key of listColumnKeys.value) {
-      if (isCoreListColumn(key)) {
+      // createdBy (kişi) ve sla (chip) slot ile render edilir — satır metni gerekmez.
+      if (key === 'createdBy' || key === 'sla') continue;
+      if (isSystemListColumn(key)) {
+        row[key] = formatCellValue(systemColumnRawValue(item, key), columnFormat(key), {
+          locale: locale(),
+          anchorEnd: key === 'age' ? item.closedAt : null,
+        });
+      } else if (isCoreListColumn(key)) {
         row[key] = listTableCellValue(item, key, { stateLabel: stateLabel ?? undefined });
       } else if (personPoolKeySet.value.has(key)) {
         row[key] = resolvePersonValue(item.fields?.[key]);
@@ -582,6 +611,18 @@ onUnmounted(() => {
           <template v-if="listColumnKeys.includes('assignee')" #item.assignee="{ item }">
             <span>{{ resolveAssigneeName(item.rawAssignee) }}</span>
           </template>
+          <template v-if="listColumnKeys.includes('createdBy')" #item.createdBy="{ item }">
+            <span>{{ resolveAssigneeName(item.rawCreatedBy) }}</span>
+          </template>
+          <template v-if="listColumnKeys.includes('sla')" #item.sla="{ item }">
+            <OcSlaStatusChip
+              :sla="item.__card?.sla"
+              :state-id="item.rawStateId"
+              :initial-state-id="initialStateId"
+              :closed-at="item.__card?.closedAt"
+              dense
+            />
+          </template>
           <template #item.actions="{ item }">
             <div class="d-inline-flex align-center justify-end ga-1">
               <v-btn
@@ -698,5 +739,22 @@ onUnmounted(() => {
 <style scoped>
 .min-width-0 {
   min-width: 0;
+}
+
+/* "İşlemler" sütunu (her zaman son sütun) sağa sabitlenir — çok sütunlu/yatay scroll'da hep görünür. */
+.oc-board-list-table :deep(table) > thead > tr > th:last-child,
+.oc-board-list-table :deep(table) > tbody > tr > td:last-child {
+  position: sticky;
+  right: 0;
+  background: rgb(var(--v-theme-surface));
+  box-shadow: -6px 0 6px -6px rgba(0, 0, 0, 0.18);
+}
+
+.oc-board-list-table :deep(table) > tbody > tr > td:last-child {
+  z-index: 1;
+}
+
+.oc-board-list-table :deep(table) > thead > tr > th:last-child {
+  z-index: 2;
 }
 </style>

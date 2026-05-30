@@ -59,6 +59,7 @@ public static class ProfileRuntimeBuilder
             BoardId = boardId,
             PriorityId = WorkItemDataHelper.GetString(workItem, "priorityId"),
             CreatedAt = WorkItemDataHelper.GetDateTime(workItem, "createdAt"),
+            CreatedBy = WorkItemDataHelper.GetString(workItem, "createdBy"),
             LastStateChangeAt = WorkItemDataHelper.GetDateTime(workItem, "lastStateChangeAt"),
             ClosedAt = WorkItemDataHelper.GetDateTime(workItem, "closedAt")
         };

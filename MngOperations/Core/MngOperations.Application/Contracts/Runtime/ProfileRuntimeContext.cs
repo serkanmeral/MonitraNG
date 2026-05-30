@@ -22,6 +22,13 @@ public sealed class ProfileRuntimeContext
     public IReadOnlyList<string> Watchers { get; init; } = Array.Empty<string>();
     public IReadOnlyList<WorkItemLinkSummaryDto> Links { get; init; } = Array.Empty<WorkItemLinkSummaryDto>();
     public IReadOnlyList<StateSegmentDto> StateSegments { get; init; } = Array.Empty<StateSegmentDto>();
+
+    /// <summary>Person id → görünen ad (assignee/reporter/createdBy/watchers) — sidebar isim çözümü.</summary>
+    public IReadOnlyDictionary<string, PersonDisplayDto> People { get; init; }
+        = new Dictionary<string, PersonDisplayDto>();
+
+    /// <summary>op_work_items.attachments (file isArray) ham değeri — { path, file_name, file_ext, file_size, upload_person, upload_time }[].</summary>
+    public JsonElement? Attachments { get; init; }
 }
 
 public sealed class WorkItemSummaryDto
@@ -40,6 +47,7 @@ public sealed class WorkItemSummaryDto
     public string? BoardId { get; init; }
     public string? PriorityId { get; init; }
     public DateTime? CreatedAt { get; init; }
+    public string? CreatedBy { get; init; }
     public DateTime? LastStateChangeAt { get; init; }
     public DateTime? ClosedAt { get; init; }
 }

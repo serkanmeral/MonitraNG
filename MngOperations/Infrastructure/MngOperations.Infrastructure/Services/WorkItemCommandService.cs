@@ -469,7 +469,8 @@ public class WorkItemCommandService : IWorkItemCommandService
             request.Body.Trim(),
             request.ParentCommentId,
             token,
-            cancellationToken);
+            cancellationToken,
+            request.Mentions);
     }
 
     public async Task DeleteAsync(
@@ -526,9 +527,16 @@ public class WorkItemCommandService : IWorkItemCommandService
         string body,
         string? parentCommentId,
         string token,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IReadOnlyList<string>? mentions = null)
     {
         var now = DateTime.UtcNow;
+        var mentionIds = mentions?
+            .Where(m => !string.IsNullOrWhiteSpace(m))
+            .Select(m => m.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList() ?? new List<string>();
+
         var payload = new Dictionary<string, object?>
         {
             ["sourceDataset"] = OcDatasets.WorkItems,
@@ -541,6 +549,9 @@ public class WorkItemCommandService : IWorkItemCommandService
         if (!string.IsNullOrWhiteSpace(parentCommentId))
             payload["parentCommentId"] = parentCommentId;
 
+        if (mentionIds.Count > 0)
+            payload["mentions"] = new Dictionary<string, object?> { ["personIds"] = mentionIds };
+
         var persisted = await _dg.CreateAsync(OcDatasets.Comments, payload, token, cancellationToken);
         var commentId = GetDataId(persisted);
 
@@ -551,6 +562,17 @@ public class WorkItemCommandService : IWorkItemCommandService
             $"Comment added on {workItemKey}",
             token,
             cancellationToken);
+
+        if (mentionIds.Count > 0)
+        {
+            await _notifications.DispatchMentionAsync(
+                workItemId,
+                workItemKey,
+                mentionIds,
+                _requestContext.UserId,
+                token,
+                cancellationToken);
+        }
 
         return new CommentDto
         {
@@ -669,6 +691,8 @@ public class WorkItemCommandService : IWorkItemCommandService
         var now = DateTime.UtcNow;
         payload["lastStateChangeAt"] = now;
         payload.TryAdd("createdAt", now);
+        if (!string.IsNullOrWhiteSpace(_requestContext.UserId))
+            payload.TryAdd("createdBy", _requestContext.UserId);
 
         await _slaCalculator.ApplyOnCreateAsync(
             payload,

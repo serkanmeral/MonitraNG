@@ -159,6 +159,57 @@ public class NotificationOrchestratorService : INotificationOrchestrator
         }
     }
 
+    public async Task DispatchMentionAsync(
+        string workItemId,
+        string workItemKey,
+        IReadOnlyList<string> mentionedUserIds,
+        string? actorUserId,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var recipients = mentionedUserIds
+                .Where(id => !string.IsNullOrWhiteSpace(id)
+                    && !string.Equals(id, actorUserId, StringComparison.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (recipients.Count == 0)
+                return;
+
+            const string title = "Bir yorumda etiketlendiniz";
+            var message = $"{workItemKey} kaydındaki bir yorumda etiketlendiniz.";
+
+            foreach (var userId in recipients)
+            {
+                try
+                {
+                    await _dg.CreateAsync(OcDatasets.Notifications, new Dictionary<string, object?>
+                    {
+                        ["userId"] = userId,
+                        ["notificationType"] = "CommentMention",
+                        ["title"] = title,
+                        ["message"] = message,
+                        ["sourceDataset"] = OcDatasets.WorkItems,
+                        ["sourceRecordId"] = workItemId,
+                        ["workItemId"] = workItemId,
+                        ["workItemKey"] = workItemKey,
+                        ["isRead"] = false
+                    }, token, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Mention notification create failed for user {UserId}", userId);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Mention dispatch failed for {WorkItemKey} (non-fatal)", workItemKey);
+        }
+    }
+
     private async Task CreateInAppNotificationsAsync(
         IReadOnlyList<string> userIds,
         NotificationDispatchRequest request,

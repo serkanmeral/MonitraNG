@@ -149,6 +149,23 @@ public class RuntimeContextService : IRuntimeContextService
             .OrderBy(s => s.EnteredAt)
             .ToList();
 
+        var profilePeopleIds = new HashSet<string>(StringComparer.Ordinal);
+        AddPersonId(profilePeopleIds, WorkItemDataHelper.GetString(workItem, "assignee"));
+        AddPersonId(profilePeopleIds, WorkItemDataHelper.GetString(workItem, "reporter"));
+        AddPersonId(profilePeopleIds, WorkItemDataHelper.GetString(workItem, "createdBy"));
+        foreach (var w in WorkItemDataHelper.GetStringList(workItem, "watchers"))
+            AddPersonId(profilePeopleIds, w);
+        var profilePeople = profilePeopleIds.Count > 0
+            ? await _personDirectory.GetPeopleAsync(profilePeopleIds, token, cancellationToken)
+            : new Dictionary<string, PersonDisplayDto>();
+
+        JsonElement? attachments = null;
+        if (workItem.TryGetValue("attachments", out var attVal)
+            && attVal is JsonElement { ValueKind: JsonValueKind.Array } attEl)
+        {
+            attachments = attEl;
+        }
+
         return new ProfileRuntimeContext
         {
             WorkspaceId = workspaceId,
@@ -171,7 +188,9 @@ public class RuntimeContextService : IRuntimeContextService
             Sla = SlaSnapshotHelper.MapFromWorkItem(workItem),
             Watchers = WorkItemDataHelper.GetStringList(workItem, "watchers"),
             Links = links,
-            StateSegments = stateSegments
+            StateSegments = stateSegments,
+            People = profilePeople,
+            Attachments = attachments
         };
     }
 
@@ -347,6 +366,7 @@ public class RuntimeContextService : IRuntimeContextService
             CardFieldKeys = cardFieldKeys,
             ListColumns = listColumns,
             DefaultSort = ParseDefaultSort(configObject),
+            InitialStateId = initialStateId,
             Catalogs = await BuildBoardCatalogsAsync(workspace, workspaceId, boardScopeStateIds, token, cancellationToken)
         };
     }
@@ -372,11 +392,13 @@ public class RuntimeContextService : IRuntimeContextService
             if (string.IsNullOrWhiteSpace(key) || !seen.Add(key))
                 continue;
 
+            var format = StateFlowCatalog.GetStringProperty(col, "format");
             result.Add(new BoardListColumnDto
             {
                 Key = key,
                 Sortable = ReadBoolProperty(col, "sortable"),
-                Filterable = ReadBoolProperty(col, "filterable")
+                Filterable = ReadBoolProperty(col, "filterable"),
+                Format = string.IsNullOrWhiteSpace(format) ? null : format.Trim()
             });
         }
 
@@ -630,8 +652,10 @@ public class RuntimeContextService : IRuntimeContextService
         string sortExpr;
         if (sort != null && !string.IsNullOrWhiteSpace(sort.Field))
         {
-            var path = MapBoardFieldToDgPath(sort.Field);
-            sortExpr = string.Equals(sort.Direction, "desc", StringComparison.OrdinalIgnoreCase) ? $"-{path}" : path;
+            var (path, invert) = MapSortField(sort.Field);
+            var desc = string.Equals(sort.Direction, "desc", StringComparison.OrdinalIgnoreCase);
+            if (invert) desc = !desc;
+            sortExpr = desc ? $"-{path}" : path;
         }
         else
         {
@@ -669,13 +693,25 @@ public class RuntimeContextService : IRuntimeContextService
     private static readonly HashSet<string> CoreCardFieldKeys = new(StringComparer.Ordinal)
     {
         "key", "title", "stateId", "assignee", "priorityId", "typeId",
-        "createdAt", "updatedAt", "lastStateChangeAt", "description",
+        "createdAt", "createdBy", "updatedAt", "lastStateChangeAt", "description",
         "boardId", "workspaceId", "stateFlowId", "watchers", "order",
         "firstClosedAt", "closedAt", "currentStateDurationMs"
     };
 
     private static string MapBoardFieldToDgPath(string fieldKey)
         => CoreCardFieldKeys.Contains(fieldKey) ? fieldKey : $"extraFields.{fieldKey}";
+
+    /// <summary>
+    /// Sıralama için sanal sistem sütunlarını gerçek alan path'ine çevirir.
+    /// <c>age</c> = createdAt (yön ters: büyük yaş = eski = artan createdAt);
+    /// <c>sla</c> = resolve hedef tarihi.
+    /// </summary>
+    private static (string Path, bool Invert) MapSortField(string fieldKey) => fieldKey switch
+    {
+        "age" => ("createdAt", true),
+        "sla" => ("sla.resolveDueAt", false),
+        _ => (MapBoardFieldToDgPath(fieldKey), false)
+    };
 
     /// <summary>Liste filtresi → native Mongo koşulu (DG REST DSL operatörleriyle aynı sözlük).</summary>
     private static object? BuildMatchCondition(string? op, string value)
@@ -963,6 +999,7 @@ public class RuntimeContextService : IRuntimeContextService
         foreach (var card in cards)
         {
             AddPersonId(ids, card.Assignee);
+            AddPersonId(ids, card.CreatedBy);
 
             if (card.Fields is not { ValueKind: JsonValueKind.Object } fields)
                 continue;
@@ -1283,6 +1320,12 @@ public class RuntimeContextService : IRuntimeContextService
             Assignee = WorkItemDataHelper.GetString(row, "assignee"),
             PriorityId = WorkItemDataHelper.GetString(row, "priorityId"),
             TypeId = WorkItemDataHelper.GetString(row, "typeId"),
+            CreatedAt = WorkItemDataHelper.GetDateTime(row, "createdAt"),
+            CreatedBy = WorkItemDataHelper.GetString(row, "createdBy"),
+            UpdatedAt = WorkItemDataHelper.GetDateTime(row, "updatedAt"),
+            LastStateChangeAt = WorkItemDataHelper.GetDateTime(row, "lastStateChangeAt"),
+            ClosedAt = WorkItemDataHelper.GetDateTime(row, "closedAt"),
+            Sla = SlaSnapshotHelper.MapFromWorkItem(row),
             Fields = GetExtraFieldsElement(row)
         };
 
