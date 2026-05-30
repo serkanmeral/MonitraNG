@@ -174,17 +174,18 @@ public class WorkItemCommandService : IWorkItemCommandService
         if (!string.IsNullOrWhiteSpace(request.Title))
             merged["title"] = request.Title.Trim();
 
-        if (request.Description != null)
-            merged["description"] = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
+        // Nullable core alanlar: alan gövdede VARSA (absent değilse) atanır; explicit null/boş ise temizlenir.
+        if (TryReadPatchScalar(request.Description, out var description))
+            merged["description"] = description;
 
-        if (request.Assignee != null)
-            merged["assignee"] = request.Assignee;
+        if (TryReadPatchScalar(request.Assignee, out var assignee))
+            merged["assignee"] = assignee;
 
-        if (request.PriorityId != null)
-            merged["priorityId"] = request.PriorityId;
+        if (TryReadPatchScalar(request.PriorityId, out var priorityId))
+            merged["priorityId"] = priorityId;
 
-        if (request.BoardId != null)
-            merged["boardId"] = request.BoardId;
+        if (TryReadPatchScalar(request.BoardId, out var boardId))
+            merged["boardId"] = boardId;
 
         await ApplyIncomingFieldsAsync(
             merged,
@@ -486,6 +487,7 @@ public class WorkItemCommandService : IWorkItemCommandService
 
     public async Task DeleteAsync(
         string workItemId,
+        bool force = false,
         CancellationToken cancellationToken = default)
     {
         var token = RequireToken();
@@ -501,6 +503,12 @@ public class WorkItemCommandService : IWorkItemCommandService
 
         var workItemKey = GetString(existing, "key") ?? workItemId;
 
+        // İlişki guard'ı: bağlı link (kaynak/hedef) veya alt kayıt (parentItemId) varsa silmeyi engelle.
+        // `force=true` ile aşılır (UI "yine de sil" onayı). Linkler ayrıca silinmez — askıda kalmaması için
+        // kullanıcı önce ilişkileri çözmeli; force ile silinen kaydın linkleri best-effort temizlenir.
+        if (!force)
+            await EnsureNoBlockingRelationsAsync(workItemId, workItemKey, token, cancellationToken);
+
         var deleted = await _dg.DeleteAsync(OcDatasets.WorkItems, workItemId, token, cancellationToken);
         if (!deleted)
         {
@@ -509,6 +517,19 @@ public class WorkItemCommandService : IWorkItemCommandService
                 $"Work item '{workItemId}' could not be deleted.",
                 $"İş kaydı '{workItemId}' silinemedi.",
                 502);
+        }
+
+        // force ile silindiyse askıda kalmaması için bu kayda ait linkleri best-effort temizle.
+        if (force)
+        {
+            try
+            {
+                await DeleteRelatedLinksAsync(workItemId, token, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Force delete link cleanup failed for work item {WorkItemId} (non-fatal)", workItemId);
+            }
         }
 
         // Kalıcı silme sonrası yan etkiler best-effort: kayıt zaten yok, hata ana işlemi geri almaz.
@@ -530,6 +551,67 @@ public class WorkItemCommandService : IWorkItemCommandService
         }
 
         _logger.LogInformation("Deleted work item {WorkItemKey} ({WorkItemId}) in workspace {WorkspaceId}", workItemKey, workItemId, workspaceId);
+    }
+
+    /// <summary>
+    /// Silmeden önce bloklayan ilişki kontrolü: bağlı link (kaynak/hedef) veya alt kayıt (parentItemId) varsa
+    /// 409 WORK_ITEM_HAS_RELATIONS fırlatır (sayılar details'te). `force` ile bu kontrol atlanır.
+    /// </summary>
+    private async Task EnsureNoBlockingRelationsAsync(
+        string workItemId,
+        string workItemKey,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var outgoing = await _dg.GetAsync<Dictionary<string, object?>>(
+            OcDatasets.Links,
+            $"filter={Uri.EscapeDataString($"sourceWorkItemId:eq:{workItemId}")}&limit=50",
+            token, cancellationToken);
+        var incoming = await _dg.GetAsync<Dictionary<string, object?>>(
+            OcDatasets.Links,
+            $"filter={Uri.EscapeDataString($"targetWorkItemId:eq:{workItemId}")}&limit=50",
+            token, cancellationToken);
+        var children = await _dg.GetAsync<Dictionary<string, object?>>(
+            OcDatasets.WorkItems,
+            $"filter={Uri.EscapeDataString($"parentItemId:eq:{workItemId}")}&limit=50",
+            token, cancellationToken);
+
+        var linkCount = outgoing.Count() + incoming.Count();
+        var childCount = children.Count();
+        if (linkCount == 0 && childCount == 0)
+            return;
+
+        throw new OperationCoreException(
+            "WORK_ITEM_HAS_RELATIONS",
+            $"Work item '{workItemKey}' has {linkCount} link(s) and {childCount} child item(s); resolve relations or force delete.",
+            $"'{workItemKey}' kaydının {linkCount} bağlantısı ve {childCount} alt kaydı var; önce ilişkileri çözün ya da yine de silin.",
+            409,
+            new Dictionary<string, object?> { ["links"] = linkCount, ["children"] = childCount });
+    }
+
+    /// <summary>force ile silinen kaydın askıda kalmaması için ilgili linkleri (kaynak/hedef) best-effort siler.</summary>
+    private async Task DeleteRelatedLinksAsync(
+        string workItemId,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var outgoing = await _dg.GetAsync<Dictionary<string, object?>>(
+            OcDatasets.Links,
+            $"filter={Uri.EscapeDataString($"sourceWorkItemId:eq:{workItemId}")}&limit=200",
+            token, cancellationToken);
+        var incoming = await _dg.GetAsync<Dictionary<string, object?>>(
+            OcDatasets.Links,
+            $"filter={Uri.EscapeDataString($"targetWorkItemId:eq:{workItemId}")}&limit=200",
+            token, cancellationToken);
+
+        var ids = outgoing.Concat(incoming)
+            .Select(GetDataId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        foreach (var id in ids)
+            await _dg.DeleteAsync(OcDatasets.Links, id, token, cancellationToken);
     }
 
     private async Task<CommentDto> AddCommentInternalAsync(
@@ -717,8 +799,11 @@ public class WorkItemCommandService : IWorkItemCommandService
         var now = DateTime.UtcNow;
         payload["lastStateChangeAt"] = now;
         payload.TryAdd("createdAt", now);
-        if (!string.IsNullOrWhiteSpace(_requestContext.UserId))
-            payload.TryAdd("createdBy", _requestContext.UserId);
+        // createdBy = mng_person_id (Keeper @users id) — assignee/watchers ve bildirim aktörüyle aynı
+        // kimlik uzayı; aksi halde 'sub' (Keycloak id) yazılır ve person/ad çözümü eşleşmezdi (NP-4 ile
+        // aynı sorun). MngPersonId, claim yoksa zaten 'sub'a düşer. Forward-only.
+        if (!string.IsNullOrWhiteSpace(_requestContext.MngPersonId))
+            payload.TryAdd("createdBy", _requestContext.MngPersonId);
 
         await _slaCalculator.ApplyOnCreateAsync(
             payload,
@@ -1350,13 +1435,14 @@ public class WorkItemCommandService : IWorkItemCommandService
         var keys = new List<string>();
         if (!string.IsNullOrWhiteSpace(request.Title))
             keys.Add("title");
-        if (request.Description != null)
+        // Gövdede mevcut (absent değil) ise — set veya temizle — yazılabilirlik kontrolüne dahil et.
+        if (request.Description.HasValue)
             keys.Add("description");
-        if (request.Assignee != null)
+        if (request.Assignee.HasValue)
             keys.Add("assignee");
-        if (request.PriorityId != null)
+        if (request.PriorityId.HasValue)
             keys.Add("priorityId");
-        if (request.BoardId != null)
+        if (request.BoardId.HasValue)
             keys.Add("boardId");
 
         if (request.Fields is { ValueKind: JsonValueKind.Object } fields)
@@ -1454,6 +1540,36 @@ public class WorkItemCommandService : IWorkItemCommandService
             JsonElement el when el.ValueKind == JsonValueKind.String => el.GetString(),
             _ => value.ToString()
         };
+    }
+
+    /// <summary>
+    /// PATCH gövdesindeki nullable scalar alanı tri-state okur:
+    /// absent (HasValue==false) → false döner (alan değişmemiş, dokunma);
+    /// explicit null veya boş string → true + value=null (temizle);
+    /// dolu string → true + trimlenmiş değer.
+    /// </summary>
+    private static bool TryReadPatchScalar(JsonElement? element, out string? value)
+    {
+        value = null;
+        if (element is not { } el)
+            return false;
+
+        switch (el.ValueKind)
+        {
+            case JsonValueKind.Null:
+                value = null;
+                return true;
+            case JsonValueKind.String:
+                var s = el.GetString();
+                value = string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+                return true;
+            default:
+                throw new OperationCoreException(
+                    "INVALID_FIELDS",
+                    "Scalar core field must be a string or null.",
+                    "Çekirdek alan bir metin ya da null olmalıdır.",
+                    400);
+        }
     }
 
     private static Dictionary<string, object?> MergeDynamicFields(

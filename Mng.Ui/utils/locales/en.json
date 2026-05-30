@@ -1513,6 +1513,7 @@
       "unreadCount": "{count} new",
       "empty": "No notifications",
       "markAllRead": "Mark all as read",
+      "viewAll": "View all",
       "loadError": "Could not load notifications",
       "types": {
         "CommentMention": "Mention",
@@ -3199,6 +3200,24 @@
     "breadcrumbWorkspace": "Workspace",
     "breadcrumbNewWorkItem": "New work item",
     "breadcrumbDashboard": "Dashboard",
+    "notifications": {
+      "title": "Notifications",
+      "subtitle": "All your notifications — mentions, assignments and rule/event alerts.",
+      "empty": "No notifications",
+      "loadError": "Could not load notifications.",
+      "markAllRead": "Mark all as read",
+      "markRead": "Mark as read",
+      "unreadOnly": "Unread only",
+      "all": "All",
+      "unreadCount": "{count} unread",
+      "openWorkItem": "Open work item",
+      "perPage": "Per page",
+      "types": {
+        "CommentMention": "Mention",
+        "WorkItemAssigned": "Assigned",
+        "default": "Notification"
+      }
+    },
     "fieldLabels": {
       "title": "Title",
       "description": "Description",
@@ -3273,6 +3292,13 @@
       "colAssignee": "Assignee",
       "viewList": "List",
       "viewKanban": "Kanban",
+      "transition": {
+        "success": "Status updated.",
+        "error": "Could not apply the transition.",
+        "invalid": "No direct transition is defined into this column.",
+        "requiredFields": "This transition requires fields; apply it from the profile.",
+        "openProfile": "Open profile"
+      },
       "searchPlaceholder": "Search work items...",
       "searchClear": "Clear search",
       "filters": {
@@ -3314,7 +3340,9 @@
         "deleteTitle": "Delete work item",
         "deleteConfirm": "Are you sure you want to delete this work item?",
         "deleteIrreversible": "This action is irreversible.",
-        "deleteError": "Could not delete the work item."
+        "deleteError": "Could not delete the work item.",
+        "deleteHasRelations": "This item has links or child items. Deleting it anyway will also remove the related links.",
+        "deleteForce": "Delete anyway"
       },
       "sla": {
         "phaseResponse": "Response SLA",
@@ -3372,6 +3400,7 @@
         "confirmBody": "Move this work item to",
         "commentLabel": "Comment (optional)",
         "commentPlaceholder": "Add a note for this transition...",
+        "requiredTitle": "Required fields for this transition",
         "confirm": "Apply",
         "error": "Could not apply the transition."
       },

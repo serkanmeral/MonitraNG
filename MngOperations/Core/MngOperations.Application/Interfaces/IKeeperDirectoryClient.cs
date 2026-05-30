@@ -13,4 +13,10 @@ public interface IKeeperDirectoryClient
         string userId,
         string token,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Grubu id ile çözer (GET Group/{id}); bulunamazsa veya yapılandırılmamışsa null döner.</summary>
+    Task<PersonDisplayDto?> GetGroupAsync(
+        string groupId,
+        string token,
+        CancellationToken cancellationToken = default);
 }

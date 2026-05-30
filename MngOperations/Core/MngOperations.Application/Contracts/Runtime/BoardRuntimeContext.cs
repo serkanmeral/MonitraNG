@@ -103,10 +103,23 @@ public sealed class BoardColumnDto
     public bool DropEligible { get; init; } = true;
     public string? DefaultTransitionKey { get; init; }
     public IReadOnlyList<string> AlternativeTransitionKeys { get; init; } = Array.Empty<string>();
+
+    /// <summary>Bu kolona (state'e) giren geçişler — Kanban DnD'de kaynak state'e göre doğru geçişi seçmek için.</summary>
+    public IReadOnlyList<BoardColumnTransitionDto> IncomingTransitions { get; init; } = Array.Empty<BoardColumnTransitionDto>();
+
     public required string QueryKey { get; init; }
     public IReadOnlyDictionary<string, string> ParametersTemplate { get; init; }
         = new Dictionary<string, string>();
     public int SuggestedPageSize { get; init; } = 50;
+}
+
+public sealed class BoardColumnTransitionDto
+{
+    public required string TransitionKey { get; init; }
+    public required string FromStateId { get; init; }
+
+    /// <summary>Bu geçiş için zorunlu alanlar (varsa UI DnD'yi engelleyip profile yönlendirir).</summary>
+    public IReadOnlyList<string> RequiredFields { get; init; } = Array.Empty<string>();
 }
 
 public sealed class ExecuteQueryRequest
@@ -131,6 +144,13 @@ public sealed class QueryExecuteResponse
     /// Kataloglar gibi MO cache'inden (Keeper) çözülür; UI client-side lookup yapmaz.
     /// </summary>
     public IReadOnlyDictionary<string, PersonDisplayDto> People { get; init; }
+        = new Dictionary<string, PersonDisplayDto>();
+
+    /// <summary>
+    /// Kart person <b>grup</b> alanlarındaki (assignmentGroups + personGroups tipi pool alanlar) id → grup adı map'i.
+    /// People ile aynı desen (Keeper GET Group/{id}, MO cache); UI client-side lookup yapmaz.
+    /// </summary>
+    public IReadOnlyDictionary<string, PersonDisplayDto> Groups { get; init; }
         = new Dictionary<string, PersonDisplayDto>();
 }
 

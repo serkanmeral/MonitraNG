@@ -84,6 +84,51 @@ public sealed class MngKeeperClient : IKeeperDirectoryClient
         }
     }
 
+    public async Task<PersonDisplayDto?> GetGroupAsync(
+        string groupId,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        if (_httpClient.BaseAddress == null || string.IsNullOrWhiteSpace(groupId))
+            return null;
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"Group/{Uri.EscapeDataString(groupId)}");
+            if (!string.IsNullOrWhiteSpace(token))
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            if (response.StatusCode == HttpStatusCode.NotFound)
+                return null;
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning(
+                    "MngKeeper GetGroup failed for {GroupId}: HTTP {Status}",
+                    groupId, (int)response.StatusCode);
+                return null;
+            }
+
+            var envelope = await response.Content.ReadFromJsonAsync<KeeperGroupEnvelope>(JsonOptions, cancellationToken);
+            var group = envelope?.Group;
+            if (group == null)
+                return null;
+
+            return new PersonDisplayDto
+            {
+                Id = groupId,
+                Name = string.IsNullOrWhiteSpace(group.Name) ? groupId : group.Name!,
+                IsActive = group.IsActive
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "MngKeeper GetGroup error for {GroupId}", groupId);
+            return null;
+        }
+    }
+
     private static string BuildName(KeeperUserDto user)
     {
         var full = $"{user.FirstName} {user.LastName}".Trim();
@@ -110,6 +155,27 @@ public sealed class MngKeeperClient : IKeeperDirectoryClient
         public string? Username { get; set; }
         public string? Email { get; set; }
         public string? Title { get; set; }
+        public bool? IsActive { get; set; }
+    }
+
+    private sealed class KeeperGroupEnvelope
+    {
+        [JsonPropertyName("group")]
+        public KeeperGroupDto? Group { get; set; }
+
+        [JsonPropertyName("isSuccess")]
+        public bool IsSuccess { get; set; }
+    }
+
+    private sealed class KeeperGroupDto
+    {
+        [JsonPropertyName("groupId")]
+        public string? GroupId { get; set; }
+
+        [JsonPropertyName("name")]
+        public string? Name { get; set; }
+
+        [JsonPropertyName("isActive")]
         public bool? IsActive { get; set; }
     }
 }

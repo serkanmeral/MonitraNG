@@ -6,6 +6,7 @@ import OcBoardCatalogLabel from '@/components/apps/operation-core/OcBoardCatalog
 import OcSlaStatusChip from '@/components/apps/operation-core/OcSlaStatusChip.vue';
 import OcCommentComposer from '@/components/apps/operation-core/OcCommentComposer.vue';
 import OcPolicyPanel from '@/components/apps/operation-core/OcPolicyPanel.vue';
+import OcTransitionRequiredFields from '@/components/apps/operation-core/OcTransitionRequiredFields.vue';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import { useOperationCoreStore } from '@/stores/apps/operationCore';
 import { useOcBoardListLookups } from '@/composables/useOcBoardListLookups';
@@ -94,6 +95,16 @@ const { resolveState, resolvePriority, resolveType, resolvePersonName } = useOcB
   undefined,
   peopleRef
 );
+
+// Grup id → ad (readonly grup alanlarında OcDynamicForm'a verilir; MO ProfileRuntimeContext.groups).
+const groupNames = computed<Record<string, string>>(() => {
+  const out: Record<string, string> = {};
+  const groups = profile.value?.groups ?? {};
+  for (const [id, display] of Object.entries(groups)) {
+    out[id] = display?.name?.trim() || id;
+  }
+  return out;
+});
 
 const summary = computed(() => profile.value?.workItem ?? null);
 const canComment = computed(() => profile.value?.permissions.canComment === true);
@@ -236,6 +247,27 @@ const transitionTarget = ref<OcProfileAction | null>(null);
 const transitionComment = ref('');
 const transitionBusy = ref(false);
 const transitionError = ref<string | null>(null);
+// Geçiş için zorunlu alanların ön-toplanması (MO 400 dönmeden önce kullanıcıdan al).
+const transitionFieldModel = ref<Record<string, unknown>>({});
+
+const transitionRequiredKeys = computed<string[]>(() => {
+  const action = transitionTarget.value;
+  const ctx = formContext.value;
+  if (!action || !ctx) return [];
+  return action.requiredFields.filter((key) => !!ctx.fields[key]);
+});
+
+// MO StateFlowCatalog.IsEmptyValue ile hizalı: null/boş metin → boş.
+function isTransitionValueEmpty(value: unknown): boolean {
+  if (value == null) return true;
+  if (typeof value === 'string') return value.trim().length === 0;
+  if (Array.isArray(value)) return value.length === 0;
+  return false;
+}
+
+const transitionMissingRequired = computed<string[]>(() =>
+  transitionRequiredKeys.value.filter((key) => isTransitionValueEmpty(transitionFieldModel.value[key]))
+);
 
 function actionLabel(action: OcProfileAction): string {
   const explicit = action.label?.trim();
@@ -248,21 +280,35 @@ function openTransition(action: OcProfileAction) {
   transitionTarget.value = action;
   transitionComment.value = '';
   transitionError.value = null;
+  const ctx = formContext.value;
+  const seed: Record<string, unknown> = {};
+  if (ctx) {
+    for (const key of action.requiredFields) {
+      if (ctx.fields[key]) seed[key] = formModel.value[key];
+    }
+  }
+  transitionFieldModel.value = seed;
   transitionDialog.value = true;
 }
 
 async function confirmTransition() {
   const action = transitionTarget.value;
-  if (!action) return;
+  if (!action || transitionMissingRequired.value.length) return;
   transitionBusy.value = true;
   transitionError.value = null;
   try {
-    profile.value = await ocApplyTransition(workItemId.value, action.transitionKey, {
+    const keys = transitionRequiredKeys.value;
+    const fields = keys.length
+      ? Object.fromEntries(keys.map((key) => [key, transitionFieldModel.value[key]]))
+      : null;
+    await ocApplyTransition(workItemId.value, action.transitionKey, {
       comment: transitionComment.value,
+      fields,
     });
     transitionDialog.value = false;
     transitionTarget.value = null;
-    void loadTimeline();
+    transitionFieldModel.value = {};
+    await loadProfile();
   } catch (e: unknown) {
     transitionError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.transitions.error'));
   } finally {
@@ -356,7 +402,7 @@ watch(workItemId, () => {
     </v-card>
 
     <!-- Durum geçişi onay dialog'u -->
-    <v-dialog v-model="transitionDialog" max-width="460" persistent>
+    <v-dialog v-model="transitionDialog" max-width="520" persistent>
       <v-card rounded="lg">
         <v-card-title class="text-subtitle-1 font-weight-bold d-flex align-center ga-2">
           <v-icon icon="mdi-swap-horizontal" color="primary" size="20" />
@@ -367,6 +413,23 @@ watch(workItemId, () => {
             {{ t('operationCore.profile.transitions.confirmBody') }}
             <strong v-if="transitionTarget">{{ actionLabel(transitionTarget) }}</strong>
           </p>
+
+          <template v-if="formContext && transitionRequiredKeys.length">
+            <div class="d-flex align-center ga-2 mb-2">
+              <v-icon icon="mdi-form-textbox" color="primary" size="16" />
+              <span class="text-caption font-weight-medium">
+                {{ t('operationCore.profile.transitions.requiredTitle') }}
+              </span>
+            </div>
+            <OcTransitionRequiredFields
+              v-model="transitionFieldModel"
+              :context="formContext"
+              :field-keys="transitionRequiredKeys"
+              class="mb-1"
+            />
+            <v-divider class="my-3" />
+          </template>
+
           <v-textarea
             v-model="transitionComment"
             :label="t('operationCore.profile.transitions.commentLabel')"
@@ -402,6 +465,7 @@ watch(workItemId, () => {
             variant="flat"
             class="text-none"
             :loading="transitionBusy"
+            :disabled="transitionMissingRequired.length > 0"
             @click="confirmTransition"
           >
             {{ t('operationCore.profile.transitions.confirm') }}
@@ -444,7 +508,7 @@ watch(workItemId, () => {
           <v-window v-model="activeTab">
             <v-window-item value="details">
               <v-card-text class="pa-4 pa-md-5">
-                <OcDynamicForm v-if="formContext" v-model="formModel" :context="formContext" readonly />
+                <OcDynamicForm v-if="formContext" v-model="formModel" :context="formContext" :group-names="groupNames" readonly />
               </v-card-text>
             </v-window-item>
 

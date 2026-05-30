@@ -1553,6 +1553,7 @@
       "unreadCount": "{count} yeni",
       "empty": "Bildirim yok",
       "markAllRead": "Tümünü okundu işaretle",
+      "viewAll": "Tümünü gör",
       "loadError": "Bildirimler yüklenemedi",
       "types": {
         "CommentMention": "Etiketlenme",
@@ -3212,6 +3213,24 @@
     "breadcrumbWorkspace": "Çalışma alanı",
     "breadcrumbNewWorkItem": "Yeni iş",
     "breadcrumbDashboard": "Pano",
+    "notifications": {
+      "title": "Bildirimler",
+      "subtitle": "Tüm bildirimleriniz — etiketlenme, atama ve kural/event bildirimleri.",
+      "empty": "Bildirim yok",
+      "loadError": "Bildirimler yüklenemedi.",
+      "markAllRead": "Tümünü okundu işaretle",
+      "markRead": "Okundu işaretle",
+      "unreadOnly": "Yalnızca okunmamış",
+      "all": "Tümü",
+      "unreadCount": "{count} okunmamış",
+      "openWorkItem": "İş kaydını aç",
+      "perPage": "Sayfa başına",
+      "types": {
+        "CommentMention": "Etiketlenme",
+        "WorkItemAssigned": "Atama",
+        "default": "Bildirim"
+      }
+    },
     "fieldLabels": {
       "title": "Başlık",
       "description": "Açıklama",
@@ -3286,6 +3305,13 @@
       "colAssignee": "Atanan",
       "viewList": "Liste",
       "viewKanban": "Kanban",
+      "transition": {
+        "success": "Durum güncellendi.",
+        "error": "Durum geçişi uygulanamadı.",
+        "invalid": "Bu kolona doğrudan geçiş tanımlı değil.",
+        "requiredFields": "Bu geçiş zorunlu alan istiyor; profilden uygulayın.",
+        "openProfile": "Profilde aç"
+      },
       "searchPlaceholder": "İş kayıtlarında ara...",
       "searchClear": "Aramayı temizle",
       "filters": {
@@ -3327,7 +3353,9 @@
         "deleteTitle": "İş kaydını sil",
         "deleteConfirm": "Bu iş kaydını silmek istediğinize emin misiniz?",
         "deleteIrreversible": "Bu işlem geri alınamaz.",
-        "deleteError": "İş kaydı silinemedi."
+        "deleteError": "İş kaydı silinemedi.",
+        "deleteHasRelations": "Bu kaydın bağlantıları veya alt kayıtları var. Yine de silerseniz ilişkili bağlantılar da kaldırılır.",
+        "deleteForce": "Yine de sil"
       },
       "sla": {
         "phaseResponse": "Yanıt SLA",
@@ -3385,6 +3413,7 @@
         "confirmBody": "Bu iş kaydını şu duruma taşı:",
         "commentLabel": "Yorum (opsiyonel)",
         "commentPlaceholder": "Bu geçiş için not ekleyin...",
+        "requiredTitle": "Bu geçiş için zorunlu alanlar",
         "confirm": "Uygula",
         "error": "Durum geçişi uygulanamadı."
       },

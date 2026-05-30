@@ -14,7 +14,7 @@ import { useOcBoardListLookups } from '@/composables/useOcBoardListLookups';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import { useOperationCoreStore } from '@/stores/apps/operationCore';
 import { useAppI18n } from '@/composables/useAppI18n';
-import { ocDeleteWorkItem, ocExtractDgErrorMessage, ocListDataset, ocListPoolFieldsForWorkspace } from '@/services/operationCoreService';
+import { ocApplyTransition, ocDeleteWorkItem, ocErrorCode, ocExtractDgErrorMessage, ocExtractOperationsMessage, ocListDataset, ocListPoolFieldsForWorkspace } from '@/services/operationCoreService';
 import { recordToDatasetItems } from '@/utils/ocDynamicFormField';
 import type { OcBoardListFilter, OcBoardListRequest, OcColumnFormat, OcWorkItemCard, OpField } from '@/types/apps/operationCore';
 import {
@@ -99,6 +99,7 @@ const { breadcrumbs } = useOperationCoreBreadcrumbs({
 const workspaceId = computed(() => store.boardContext?.workspaceId ?? null);
 const boardCatalogs = computed(() => store.boardContext?.catalogs ?? null);
 const boardPeople = computed(() => store.boardPeople);
+const boardGroups = computed(() => store.boardGroups);
 
 const {
   resolveState,
@@ -127,6 +128,53 @@ const personPoolKeySet = computed(
         .map((f) => f.key)
     )
 );
+
+// Pool person grup alanları: değer = grup id('leri); ad MO Groups map'inden (store.boardGroups) çözülür.
+const groupPoolKeySet = computed(
+  () =>
+    new Set(
+      poolFields.value
+        .filter((f) => f.key && ['persongroups', 'persongroup', 'group'].includes((f.fieldType || '').toLowerCase()))
+        .map((f) => f.key)
+    )
+);
+
+/** Grup alan değerini (id / id[] / nesne) okunabilir grup adı/adlarına çevirir. */
+function resolveGroupValue(value: unknown): string {
+  const ids = collectGroupIds(value);
+  if (!ids.length) return '—';
+  const map = boardGroups.value;
+  const names = ids.map((id) => map[id]?.name?.trim() || id).filter((n) => n && n !== '—');
+  return names.length ? names.join(', ') : '—';
+}
+
+function collectGroupIds(value: unknown): string[] {
+  if (value === null || value === undefined || value === '') return [];
+  if (Array.isArray(value)) return value.flatMap((v) => collectGroupIds(v));
+  if (typeof value === 'object') {
+    const o = value as Record<string, unknown>;
+    const id = o.__dataId ?? o.id ?? o.groupId;
+    return id != null ? [String(id).trim()].filter(Boolean) : [];
+  }
+  const s = String(value).trim();
+  return s ? [s] : [];
+}
+
+// Grup filtresi opsiyonları: değer=grup id, başlık=grup adı (MO Groups map'i = yüklü satırlardan toplanır).
+// Tüm grup alanları (assignmentGroups + grup pool) aynı havuz adlarını paylaşır; her key'e aynı liste verilir.
+const groupOptions = computed<{ value: string; title: string }[]>(() =>
+  Object.entries(boardGroups.value)
+    .map(([id, display]) => ({ value: id, title: display?.name?.trim() || id }))
+    .sort((a, b) => a.title.localeCompare(b.title, 'tr'))
+);
+
+const groupOptionsByKey = computed<Record<string, { value: string; title: string }[]>>(() => {
+  const keys = ['assignmentGroups', ...groupPoolKeySet.value];
+  const opts = groupOptions.value;
+  const out: Record<string, { value: string; title: string }[]> = {};
+  for (const key of keys) out[key] = opts;
+  return out;
+});
 
 const numberPoolKeySet = computed(
   () =>
@@ -157,6 +205,37 @@ const relationPoolFields = computed(() =>
 );
 
 const relationPoolKeySet = computed(() => new Set(relationPoolFields.value.map((f) => f.key)));
+
+// Pool tags alanları: çoklu serbest etiket. Filtrede combobox (in/nin) + yüklü satırlardan öneri.
+const tagsPoolKeySet = computed(
+  () =>
+    new Set(
+      poolFields.value
+        .filter((f) => f.key && (f.fieldType || '').toLowerCase() === 'tags')
+        .map((f) => f.key)
+    )
+);
+
+// key → mevcut etiket değerleri (yüklü liste satırlarından toplanır; combobox önerisi, serbest giriş açık).
+const tagOptionsByKey = computed<Record<string, string[]>>(() => {
+  const keys = [...tagsPoolKeySet.value];
+  if (!keys.length) return {};
+  const acc: Record<string, Set<string>> = {};
+  for (const k of keys) acc[k] = new Set<string>();
+  for (const item of store.listItems) {
+    for (const k of keys) {
+      const v = item.fields?.[k];
+      const arr = Array.isArray(v) ? v : v == null || v === '' ? [] : [v];
+      for (const tag of arr) {
+        const s = String(tag).trim();
+        if (s) acc[k].add(s);
+      }
+    }
+  }
+  const out: Record<string, string[]> = {};
+  for (const k of keys) out[k] = [...acc[k]].sort((a, b) => a.localeCompare(b));
+  return out;
+});
 
 // key → option listesi (value=__dataId, title=ad); filtre v-select'leri için.
 const relationOptionsByKey = ref<Record<string, { value: string; title: string }[]>>({});
@@ -316,7 +395,9 @@ function filterKind(key: string): OcBoardFilterKind {
   if (key === 'priorityId') return 'priority';
   if (key === 'typeId') return 'type';
   if (key === 'assignee' || key === 'createdBy' || personPoolKeySet.value.has(key)) return 'person';
+  if (key === 'assignmentGroups' || groupPoolKeySet.value.has(key)) return 'group';
   if (relationPoolKeySet.value.has(key)) return 'relation';
+  if (tagsPoolKeySet.value.has(key)) return 'tags';
   // Tarih: format ipucu 'date' (createdAt/lastStateChangeAt/closedAt…) veya pool date/datetime alanı.
   if (columnFormat(key) === 'date' || datePoolKeySet.value.has(key)) return 'date';
   // Sayısal: format 'number'/'money' veya pool number alanı.
@@ -380,6 +461,8 @@ const listRows = computed(() =>
         row[key] = listTableCellValue(item, key, { stateLabel: stateLabel ?? undefined });
       } else if (personPoolKeySet.value.has(key)) {
         row[key] = resolvePersonValue(item.fields?.[key]);
+      } else if (groupPoolKeySet.value.has(key) || key === 'assignmentGroups') {
+        row[key] = resolveGroupValue(item.fields?.[key]);
       } else if (relationPoolKeySet.value.has(key)) {
         row[key] = resolveRelationValue(key, item.fields?.[key]);
       } else {
@@ -520,32 +603,94 @@ function onWorkItemSaved() {
 const deleteDialogOpen = ref(false);
 const deleting = ref(false);
 const deleteError = ref<string | null>(null);
+// İlişki guard'ı (409 WORK_ITEM_HAS_RELATIONS) yakalandığında "yine de sil" (force) moduna geçeriz.
+const deleteHasRelations = ref(false);
 const deleteTarget = ref<{ id: string; key: string; title: string } | null>(null);
 
 function askDelete(row: { id: string; keyText: string; titleText: string }) {
   deleteTarget.value = { id: row.id, key: row.keyText, title: row.titleText };
   deleteError.value = null;
+  deleteHasRelations.value = false;
   deleteDialogOpen.value = true;
 }
 
-async function confirmDelete() {
+async function confirmDelete(force = false) {
   const target = deleteTarget.value;
   if (!target) return;
   deleting.value = true;
   deleteError.value = null;
   try {
-    await ocDeleteWorkItem(target.id);
+    await ocDeleteWorkItem(target.id, force);
     deleteDialogOpen.value = false;
     deleteTarget.value = null;
+    deleteHasRelations.value = false;
     if (showKanban.value) {
       await store.refreshBoard();
     } else {
       await reloadList(true);
     }
   } catch (e: unknown) {
-    deleteError.value = ocExtractDgErrorMessage(e, t('operationCore.board.actions.deleteError'));
+    const status = (e as { statusCode?: number; status?: number })?.statusCode ?? (e as { status?: number })?.status;
+    if (!force && (ocErrorCode(e) === 'WORK_ITEM_HAS_RELATIONS' || status === 409)) {
+      deleteHasRelations.value = true;
+      deleteError.value = ocExtractOperationsMessage(e, t('operationCore.board.actions.deleteHasRelations'));
+    } else {
+      deleteError.value = ocExtractOperationsMessage(e, t('operationCore.board.actions.deleteError'));
+    }
   } finally {
     deleting.value = false;
+  }
+}
+
+// --- Kanban DnD transition ---
+const transitionSnackbar = ref(false);
+const transitionMsg = ref('');
+const transitionMsgColor = ref<'success' | 'error' | 'info'>('info');
+const pendingProfileId = ref<string | null>(null);
+
+function showTransitionMsg(msg: string, color: 'success' | 'error' | 'info', profileId: string | null = null) {
+  transitionMsg.value = msg;
+  transitionMsgColor.value = color;
+  pendingProfileId.value = profileId;
+  transitionSnackbar.value = true;
+}
+
+function openPendingProfile() {
+  const id = pendingProfileId.value;
+  transitionSnackbar.value = false;
+  if (id) {
+    void router.push(
+      `/apps/operation-core/work-items/${encodeURIComponent(id)}/profile?boardId=${encodeURIComponent(boardId.value)}`
+    );
+  }
+}
+
+async function onKanbanTransition(payload: { card: OcWorkItemCard; fromStateId: string; toStateId: string }) {
+  const { card, fromStateId, toStateId } = payload;
+  const targetColumn = store.boardContext?.columns.find((c) => c.stateId === toStateId);
+  const transition = targetColumn?.incomingTransitions.find((tr) => tr.fromStateId === fromStateId) ?? null;
+
+  if (!transition) {
+    // from=A → to=B geçişi tanımlı değil; optimistic taşımayı geri al.
+    showTransitionMsg(t('operationCore.board.transition.invalid'), 'error');
+    await store.refreshBoard();
+    return;
+  }
+
+  if (transition.requiredFields.length > 0) {
+    // Board'da form yok → kartı geri al + profile yönlendir (profil zorunlu alan toplar).
+    showTransitionMsg(t('operationCore.board.transition.requiredFields'), 'info', card.id);
+    await store.refreshBoard();
+    return;
+  }
+
+  try {
+    await ocApplyTransition(card.id, transition.transitionKey);
+    showTransitionMsg(t('operationCore.board.transition.success'), 'success');
+  } catch (e: unknown) {
+    showTransitionMsg(ocExtractDgErrorMessage(e, t('operationCore.board.transition.error')), 'error');
+  } finally {
+    await store.refreshBoard();
   }
 }
 
@@ -721,6 +866,8 @@ onUnmounted(() => {
             :priority-options="priorityFilterOptions"
             :type-options="typeFilterOptions"
             :relation-options-by-key="relationOptionsByKey"
+            :group-options-by-key="groupOptionsByKey"
+            :tag-options-by-key="tagOptionsByKey"
             class="mb-2"
             @update:filters="onFiltersUpdate"
           />
@@ -814,6 +961,8 @@ onUnmounted(() => {
         :column-items="store.columnItems"
         :column-loading="store.columnLoading"
         :board-id="boardId"
+        :editable="canEdit"
+        @transition="onKanbanTransition"
       />
     </template>
 
@@ -827,6 +976,26 @@ onUnmounted(() => {
         </div>
       </v-card-text>
     </v-card>
+
+    <v-snackbar
+      v-model="transitionSnackbar"
+      :color="transitionMsgColor"
+      :timeout="pendingProfileId ? 8000 : 3500"
+      location="bottom right"
+    >
+      {{ transitionMsg }}
+      <template #actions>
+        <v-btn
+          v-if="pendingProfileId"
+          variant="text"
+          class="text-none"
+          @click="openPendingProfile"
+        >
+          {{ t('operationCore.board.transition.openProfile') }}
+        </v-btn>
+        <v-btn icon="mdi-close" variant="text" size="small" @click="transitionSnackbar = false" />
+      </template>
+    </v-snackbar>
 
     <OcWorkItemFormDialog
       v-if="store.boardContext"
@@ -858,7 +1027,7 @@ onUnmounted(() => {
           </p>
           <v-alert
             v-if="deleteError"
-            type="error"
+            :type="deleteHasRelations ? 'warning' : 'error'"
             variant="tonal"
             class="mt-3 rounded-lg"
             density="compact"
@@ -872,12 +1041,24 @@ onUnmounted(() => {
             {{ t('operationCore.create.cancel') }}
           </v-btn>
           <v-btn
+            v-if="deleteHasRelations"
             color="error"
             variant="flat"
             rounded="lg"
             class="text-none"
             :loading="deleting"
-            @click="confirmDelete"
+            @click="confirmDelete(true)"
+          >
+            {{ t('operationCore.board.actions.deleteForce') }}
+          </v-btn>
+          <v-btn
+            v-else
+            color="error"
+            variant="flat"
+            rounded="lg"
+            class="text-none"
+            :loading="deleting"
+            @click="confirmDelete()"
           >
             {{ t('operationCore.board.actions.delete') }}
           </v-btn>

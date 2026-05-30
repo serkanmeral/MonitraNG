@@ -28,5 +28,6 @@ public interface IWorkItemCommandService
 
     Task DeleteAsync(
         string workItemId,
+        bool force = false,
         CancellationToken cancellationToken = default);
 }

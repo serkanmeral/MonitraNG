@@ -841,7 +841,16 @@ export function fetchFromOperations(
       } else if (error.statusMessage) {
         errorMessage = error.statusMessage;
       }
-      reject(new Error(errorMessage));
+      // Hata gövdesini (code/messageTr/details) ve HTTP durumunu koru; çağıranlar guard (409 vb.) ayırt edebilsin.
+      const customError: any = new Error(errorMessage);
+      if (error.data !== undefined) customError.data = error.data;
+      const sc = error.statusCode ?? error.status ?? error.response?.status;
+      if (sc !== undefined) {
+        customError.statusCode = sc;
+        customError.status = sc;
+      }
+      if (error.statusMessage) customError.statusMessage = error.statusMessage;
+      reject(customError);
     }
   });
 }

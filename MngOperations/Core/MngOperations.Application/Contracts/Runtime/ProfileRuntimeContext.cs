@@ -27,6 +27,10 @@ public sealed class ProfileRuntimeContext
     public IReadOnlyDictionary<string, PersonDisplayDto> People { get; init; }
         = new Dictionary<string, PersonDisplayDto>();
 
+    /// <summary>Grup id → grup adı (assignmentGroups + personGroups tipi pool alanlar) — sidebar/alan isim çözümü.</summary>
+    public IReadOnlyDictionary<string, PersonDisplayDto> Groups { get; init; }
+        = new Dictionary<string, PersonDisplayDto>();
+
     /// <summary>op_work_items.attachments (file isArray) ham değeri — { path, file_name, file_ext, file_size, upload_person, upload_time }[].</summary>
     public JsonElement? Attachments { get; init; }
 }
@@ -76,6 +80,9 @@ public sealed class ProfileActionDto
     public required string ToStateId { get; init; }
     public bool Enabled { get; init; }
     public int Order { get; init; }
+
+    /// <summary>Bu geçiş için zorunlu alan anahtarları (akış transition.requiredFields). UI ön-toplama yapar.</summary>
+    public IReadOnlyList<string> RequiredFields { get; init; } = Array.Empty<string>();
 }
 
 public sealed class TimelinePage

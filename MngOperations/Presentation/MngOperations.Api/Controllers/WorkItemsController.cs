@@ -93,9 +93,9 @@ public class WorkItemsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(string id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(string id, [FromQuery] bool force, CancellationToken cancellationToken)
     {
-        await _workItemCommandService.DeleteAsync(id, cancellationToken);
+        await _workItemCommandService.DeleteAsync(id, force, cancellationToken);
         return NoContent();
     }
 

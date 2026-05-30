@@ -1,9 +1,9 @@
 # MngOperations & Operation Core UI — Devam noktası (checkpoint)
 
-**Son güncelleme:** 30 Mayıs 2026 (PERF turu: board liste + profil performans optimizasyonu — `main`'e merge, commit `eebdbaa`)  
-**Durum:** SW **SW-0…SW-6** ✅ · A1 R-Plus ✅ · **SLA-0/1/2** ✅ · **D1 Board admin** ✅ · **BL** ✅ · **BO** ✅ · **BLF (+BLF-8/9)** ✅ · **BLC** ✅ · **FC** ✅ · **NP** ✅ · **E1-P1/W-CREATE/E1-P2** ✅ · **CC** ✅ · **A** ✅ · **F** ✅ · **PERF (profil ~%30 hızlanma + UI yapısal)** ✅ — hepsi Odak'ta canlı
+**Son güncelleme:** 31 Mayıs 2026 (F-T2/F-K + BLF-10 + NP-7 + BL-GRP + BO-5/BO-6 + BL-GRP-2 — `mngoperations`+`mngui` Odak'a deploy edildi, healthy)  
+**Durum:** SW **SW-0…SW-6** ✅ · A1 R-Plus ✅ · **SLA-0/1/2** ✅ · **D1 Board admin** ✅ · **BL** ✅ · **BO (+BO-5/6)** ✅ · **BLF (+BLF-8/9/10)** ✅ · **BLC** ✅ · **FC** ✅ · **NP (+NP-7)** ✅ · **E1-P1/W-CREATE/E1-P2** ✅ · **CC** ✅ · **A** ✅ · **F (+F-T2/F-K)** ✅ · **BL-GRP (+BL-GRP-2)** ✅ · **PERF** ✅ — hepsi Odak'ta canlı
 
-> **Kaldığımız yer (30 May, mola):** Planlı backlog + araya eklenen performans işi **tamamen bitti**, `main`'de ve Odak'ta canlı. Açık olan tek şey: **manuel toplu kontrol** (bkz. `PERF_KONTROL_REHBERI.md`) + isteğe bağlı faz-2/faz-4 kalemleri. Yeni chat buradan başlayabilir.
+> **Kaldığımız yer (31 May):** Biriken backlog (F-T2/F-K, BLF-10, NP-7, BL-GRP, BO-5/6, BL-GRP-2) **`mngoperations`+`mngui` Odak'a deploy edildi** (31 May ~02:28, healthy — `gateway=200 ui=200`, SLA-1 smoke yeşil OCD-0065). Ardından **grup alan filtresi (BL-GRP-3)** de yapıldı ve `mngui` deploy edildi (31 May ~02:41, `ui=200`). Tüm biriken işler Odak'ta canlı; değişiklikler `main`'e **commit + push** edildi. Sıradaki: isteğe bağlı faz-4 (tablo sanallaştırma, büyük dosya bölme) veya Keeper `by-ids`/Redis.
 
 **Ana plan:** [OC_UI_ADMIN_FAZ1_PLAN.md](../ui/OC_UI_ADMIN_FAZ1_PLAN.md) · **Perf detay:** [PERF_OPTIMIZATION.md](PERF_OPTIMIZATION.md) · **Bu oturum kontrol rehberi:** [PERF_KONTROL_REHBERI.md](PERF_KONTROL_REHBERI.md)
 
@@ -28,9 +28,9 @@ Header bildirim paneli (`NotificationDD.vue`) **mock veriyi bırakıp** geçerli
 
 **Açık/ileriki:**
 - ✅ **Atama bildirimi** — NP-5 ile yerleşik (politikadan bağımsız) hale getirildi. Diğer event'ler (`WorkItemUpdated`/`Transitioned` vb.) hâlâ `op_notification_policies` gerektirir.
-- ⬜ `createdBy` damgası `sub` (Keycloak id) ile yazılıyor; person çözümü `mng_person_id`/@users id beklediği için ad çözülmeyebilir — gözden geçir.
+- ✅ **`createdBy` kimlik uzayı düzeltmesi (NP-6)** — `WorkItemCommandService` create damgası artık `_requestContext.MngPersonId` (claim `mng_person_id`, yoksa `sub` yedek) yazıyor; eskiden `sub` yazıyordu ve person/ad çözümü (`mng_person_id`/@users id bekleyen Keeper) eşleşmiyordu (NP-4 ile aynı sorun). assignee/watchers + bildirim aktörüyle aynı kimlik uzayı. **Forward-only** (eski kayıtlar `sub` taşır, ham görünür). **Backend-only; `mngoperations` Odak'a deploy edildi (31 May, healthy).**
 - ⬜ Bildirim okundu durumunu farklı sekmeler/cihazlar arası canlı senkron (şu an 60sn poll).
-- ⬜ "Tümünü gör" ayrı bildirim sayfası (şu an son 20 dropdown'da).
+- ✅ **"Tümünü gör" bildirim sayfası (NP-7)** — yeni route `pages/apps/operation-core/notifications/index.vue`: server-side sayfalama (`skip/take`, `v-pagination` + sayfa boyutu), `Tümü | Yalnızca okunmamış` filtresi, tekil + toplu okundu, kayda tıklayınca profile git, tip ikon/renk + göreli zaman. Dropdown footer'a "Tümünü gör" linki (`header.notifications.viewAll`). i18n `operationCore.notifications.*` (tr/en). **Backend hazır (NP-1 `skip/take/total/unreadCount/unreadOnly`), UI-only.** UI generate temiz (170 route). **`mngui` Odak'a deploy edildi (31 May, healthy).**
 
 ---
 
@@ -86,6 +86,7 @@ Board liste görünümü **tam sunucu tarafı**na taşındı: sütun sırası + 
 | **BLF-7** | ✅ | **Search temizleme fix + Clear butonu** — `clearable` `null` → `(searchInput ?? '').trim()` (eski: `null.trim()` patlıyordu, liste yenilenmiyordu); belirgin "Aramayı temizle" butonu + `@click:clear`. |
 | **BLF-8** | ✅ | **Sayısal/tarih operatörleri UI'a açıldı** — gelişmiş aramada `number` ve `date` alan tipleri: `gt/gte/lt/lte` (+`eq/ne`). Alan tipi tespiti: `filterKind()` artık `columnFormat`(`number`/`money`/`date`) + pool `fieldType`(`number`/`date`/`datetime`) ile karar veriyor (core date: createdAt/lastStateChangeAt/closedAt). Değer girişi: number=`type=number`, date=`type=datetime-local` → `toISOString()` UTC ile gönderilir (saklama ISO string ile sözlüksel uyumlu). Bu alanlar hızlı filtreden hariç (operatör gerektirir). **Backend değişikliği yok** (`CoerceScalar` long/double; ISO string lexicographic). |
 | **BLF-9** | ✅ | **Relation alanlarda option/relation etiketi** — pool `relation` alanları (`relationDatasetName`): liste hücresinde ham `__dataId` yerine ilgili kaydın **adı**; filtrede (hızlı + gelişmiş) ham metin yerine **v-select** (option=ad, value=id, `in/nin/eq/ne`). Board sayfası relation dataset'lerini `ocListDataset`+`recordToDatasetItems` ile (dataset bazında tek sefer) yükler → `relationOptionsByKey`/`relationLabelByKey`. Filtre bileşeni `OcBoardFilterKind`'a `relation` eklendi; katalog mantığı "select" (katalog ∪ relation) olarak genelleştirildi. *(Statik `select`/`enum` pool tipi yok; OC tipleri text/number/bool/datetime/relation/persons/personGroups/tags/file.)* **Backend değişikliği yok.** |
+| **BLF-10** | ✅ | **Tags (çoklu serbest etiket) alanlarda filtre** — pool `tags` alanları: hücre zaten birleşik metin (relation gibi), dokunulmadı. Filtrede yeni `tags` kind: hızlı + gelişmiş aramada **`v-combobox`** (serbest giriş + chip) ile çoklu değer, operatörler `in/nin/eq/ne` (dizi üyeliği; Mongo `$in`/`$nin` etiket dizisinde herhangi bir eşleşme). Öneriler `tagOptionsByKey` ile **yüklü liste satırlarından** toplanır (ek sorgu yok; serbest giriş açık olduğundan kısmi öneri yeterli). Board sayfası: `tagsPoolKeySet` + `filterKind`→`tags`. **Backend değişikliği yok** (BLF-9 gibi UI-only). |
 
 **Düzeltmeler (aynı oturum grubu):**
 - ✅ **assignee bozulması** — edit'te `assignee` object olarak persist ediliyordu; `MngDataGatewayClient.CollapseRelationValue` `assignee` (tekil) + `watchers` (çoklu) relation'ı id'ye indirger.
@@ -95,14 +96,14 @@ Board liste görünümü **tam sunucu tarafı**na taşındı: sütun sırası + 
 **DG değişen:** `Services/DataService.cs` `QueryWithMatchAsync` (`$facet` total + search), `Controllers/DataController.cs` (`search` param + `X-Total-Count`).
 **UI yeni/değişen:** `components/.../OcBoardListFilters.vue` (yeni — hızlı filtre + gelişmiş arama paneli), `OcWorkspaceBoardListScopeEditor.vue`, `OcWorkspaceBoardDialog.vue`, `pages/.../boards/[boardId]/index.vue`, `services/operationCoreService.ts` (`ocGetBoardListPage`), `stores/apps/operationCore.ts`, `types/apps/operationCore.ts`, `utils/ocBoardListColumns.ts`, locale `en/tr`.
 
-**Deploy:** `mngdatagateway` + `mngoperations` Odak'a deploy edildi (30 May, healthy). MO/DG build temiz (0 hata). UI `npm run generate` temiz (169 route) — **`mngui` deploy EDİLMEDİ** (kullanıcı talebi bekleniyor).
+**Deploy:** `mngdatagateway` + `mngoperations` (30 May) + **`mngui` Odak'a deploy edildi (31 May, healthy — BLF-9/BLF-10 dahil tüm board liste UI canlı).** MO/DG build 0 hata; UI generate 170 route.
 
 **Belgeler:** [API_SURFACE §3.1/3.1.2](./API_SURFACE.md) (board context + liste ucu) · [RUNTIME_CONTEXT §5.2](./RUNTIME_CONTEXT.md) (katalog scope).
 
 **Açık/ileriki:**
 - ✅ Gelişmiş aramada sayısal/tarih `gt/gte/lt/lte` → **BLF-8** (UI-only; Odak'a deploy edildi 30 May 11:03, healthy).
-- ✅ Pool relation alanlarda filtre/hücre option-relation etiketi → **BLF-9** (UI-only, deploy bekliyor).
-- ⬜ `tags` (çoklu serbest etiket) alanları için etiket/option çözümü — şimdilik yalnızca `relation` kapsandı.
+- ✅ Pool relation alanlarda filtre/hücre option-relation etiketi → **BLF-9** (UI-only, 31 May deploy edildi).
+- ✅ `tags` (çoklu serbest etiket) alanlarda filtre (combobox + `in/nin/eq/ne`, yüklü satırlardan öneri) → **BLF-10** (UI-only, 31 May deploy edildi).
 - ✅ **`mngui` Odak deploy** (30 May, healthy — BLF+BLC+FC+NP+BLF-8 canlı). *Not: BLF-9 yeni UI değişikliği, henüz deploy edilmedi.*
 
 ## BO — Board liste operasyonel aksiyonlar (bu oturum, 30 May)
@@ -115,14 +116,16 @@ Board liste görünümünde **yeni iş modalı + satır aksiyonları** (profil/d
 | **BO-2** | ✅ | **Actions sütunu** — View Profile (ayrı sayfa), Edit (modal, edit context + diff PATCH), Delete (onay modalı). Edit/Delete `permissions.canEdit` gate'li. |
 | **BO-3** | ✅ | **MO `DELETE /work-items/{id}`** — `IWorkItemCommandService.DeleteAsync` (DG delete + activity `WorkItemDeleted` + `oc.workitem.deleted` event); yetki = `EnsureWorkItemUpdate`; 204. |
 | **BO-4** | ✅ | **Profil sayfası geçici** — seçili formu **salt-okunur** render (`ocGetFormEditContext` + `OcDynamicForm readonly`); gerçek profil tasarımı (Epic F) bekliyor. |
+| **BO-5** | ✅ | **Silmede ilişki guard'ı (31 May)** — `DELETE /work-items/{id}?force=` + `IWorkItemCommandService.DeleteAsync(id, force)`. `!force`: bağlı link (`op_links` source/target) veya alt kayıt (`parentItemId`) varsa **409 `WORK_ITEM_HAS_RELATIONS`** (details: `links`, `children`). `force=true`: siler + ilgili linkleri best-effort temizler (`DeleteRelatedLinksAsync`). UI: board silme dialog'u guard'ı yakalar → uyarı + **"Yine de sil"** (force) butonu; `ocDeleteWorkItem(id, force)`. i18n `board.actions.deleteHasRelations`/`deleteForce` (tr/en). |
+| **BO-6** | ✅ | **Edit'te alan temizleme (31 May)** — `PatchWorkItemRequest` core nullable scalar alanlar (`Description`/`Assignee`/`PriorityId`/`BoardId`) `JsonElement?` oldu → **absent (değişmedi) vs explicit null (temizle)** ayrımı. `TryReadPatchScalar` tri-state okur; eski `if (x != null)` mantığı null'ı "yok" sayıp temizlemeyi engelliyordu. Pool alanları zaten `WorkItemFieldWriter` ile doğru temizleniyordu. UI tarafı (diff PATCH zaten explicit null gönderiyor) değişmedi. |
 
-**UI yeni/değişen:** `components/.../OcWorkItemFormDialog.vue` (yeni), `pages/.../boards/[boardId]/index.vue`, `pages/.../work-items/[id]/profile/index.vue`, `services/operationCoreService.ts` (`ocGetFormEditContext`, `ocUpdateWorkItem`, `ocDeleteWorkItem`, `buildUpdateWorkItemRequest`).
-**MO değişen:** `IWorkItemCommandService` + `WorkItemCommandService.DeleteAsync`, `WorkItemsController` `[HttpDelete]`.
-**Deploy:** `mngoperations` + `mngui` Odak'a deploy edildi (30 May, healthy — `mo_health=200`, `ui=200`). MO build temiz (0 hata); UI `npm run generate` temiz (169 route).
+**UI yeni/değişen:** `components/.../OcWorkItemFormDialog.vue` (yeni), `pages/.../boards/[boardId]/index.vue` (silme guard + force), `pages/.../work-items/[id]/profile/index.vue`, `services/operationCoreService.ts` (`ocGetFormEditContext`, `ocUpdateWorkItem`, `ocDeleteWorkItem(force)`, `buildUpdateWorkItemRequest`, `ocErrorCode`, `ocExtractOperationsMessage`), `services/apiService.ts` (`fetchFromOperations` reject'inde `error.data`/`statusCode` korunur).
+**MO değişen:** `IWorkItemCommandService` + `WorkItemCommandService.DeleteAsync(force)` + guard helper'ları (`EnsureNoBlockingRelationsAsync`/`DeleteRelatedLinksAsync`), `PatchAsync` + `CollectPatchFieldKeys` + `TryReadPatchScalar`, `PatchWorkItemRequest` (JsonElement?), `WorkItemsController` `[HttpDelete]` `?force`.
+**Deploy:** BO-1…4 (30 May) + **BO-5/BO-6 `mngoperations`+`mngui` Odak'a deploy edildi (31 May ~02:28, healthy — `gateway=200 ui=200`, SLA-1 smoke yeşil OCD-0065).** MO build 0/0; UI generate 170 route.
 
 **Açık/ileriki:**
-- ⬜ Edit modunda alan **temizleme** (şu an boş→null gönderiyor ama create filtre mantığı boşları atlıyordu; PATCH diff null gönderir). Profil/operasyonel UI (Epic F) ile birlikte gözden geçir.
-- ⬜ Silmede kullanım/ilişki guard'ı (yorum/activity orphan) — Faz 2.
+- ✅ Edit modunda alan **temizleme** — **BO-6** (tri-state PATCH; core nullable alanlar artık temizlenebilir).
+- ✅ Silmede kullanım/ilişki guard'ı — **BO-5** (link + alt kayıt; 409 + force). *(Açık: yorum/activity orphan temizliği — silinen kaydın yorumları/aktiviteleri DG'de kalır; ayrı temizlik/arşiv işi.)*
 - ⬜ Profil gerçek tasarımı (header/sidebar/timeline) — Epic F.
 
 ---
@@ -145,7 +148,9 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 
 **Açık/ileriki:**
 - ✅ **mngui** Odak deploy (30 May 2026, healthy).
-- ⬜ Person **grup** alanları (`personGroups`/`group`) ad çözümü.
+- ✅ **Person grup alanları ad çözümü (BL-GRP)** — `personGroups`/`group` pool alanları + çekirdek `assignmentGroups`: liste hücresinde ham grup id yerine **grup adı**. MO: `IKeeperDirectoryClient.GetGroupAsync` (`GET Group/{id}`, `[ManagerAuthorization]` — User ucuyla aynı yetki) + `GroupDirectoryService`/`IGroupDirectory` (PersonDirectory deseni, in-memory cache + TTL) + DI. `QueryExecuteResponse.Groups` ve `ProfileRuntimeContext.Groups` (PersonDisplayDto: id→ad). `RuntimeContextService`: `GetGroupPoolFieldKeysAsync` (fieldType ∈ personGroups/personGroup/group) + `ResolveGroupsForCardsAsync` (board liste + kanban kolon) + profil `assignmentGroups`+grup pool çözümü. UI: `OcQueryExecuteResponse.groups`/`OcWorkItemProfile.groups`, store `boardGroups`, board sayfası `groupPoolKeySet` + `resolveGroupValue` (hücre). MO+UI build temiz. **`mngoperations`+`mngui` Odak'a deploy edildi (31 May, healthy).** *(Açık: Keeper `by-ids` toplu uç + Redis — ayrı/daha büyük. Grup alan filtresi → BL-GRP-3, profil grup adı → BL-GRP-2 tamam.)*
+- ✅ **Profil alan render'ında grup adı (BL-GRP-2, 31 May)** — readonly profil formunda grup alanları (`personGroups`/`group` + çekirdek `assignmentGroups`) artık ham id yerine **grup adı** gösteriyor. `OcDynamicFormField`: `isGroupField` + `collectGroupIds` + `groupReadonlyText`; `fieldDisabled && isGroupField` dalı (readonly text-field, ad/adlar). `OcDynamicForm` `groupNames` prop'unu geçirir; profil sayfası `groupNames`'i `profile.groups`'tan (id→ad) kurar. UI-only, generate temiz (170 route). **`mngui` Odak'a deploy edildi (31 May, healthy).**
+- ✅ **Grup alan filtresi (BL-GRP-3, 31 May)** — board liste filtresinde grup alanları (`personGroups`/`group` pool + çekirdek `assignmentGroups`) artık `text` yerine **`group` kind** (select, operatörler `in/nin/eq/ne`; relation deseni gibi). `OcBoardListFilters`: yeni `'group'` kind, `groupOptionsByKey` prop'u, `isSelectKind`'e dahil → quick/advanced v-select otomatik. Board sayfası: `filterKind`→`group`; `groupOptionsByKey` = `boardGroups`'tan (id→ad, yüklü satırlardan; tags gibi) her grup key'ine aynı liste. Backend tags/relation ile aynı `$in`/`$nin` (dizi üyeliği) — MO değişikliği yok, UI-only. Generate temiz (170 route). **`mngui` Odak'a deploy edildi (31 May ~02:41, healthy — `ui=200`).**
 - ✅ Pool **relation** hücrelerinde relation adı (ham id yerine) → **BLF-9** (`tags` hariç).
 - ⬜ **Keeper:** Redis kullanıcı profili cache + `POST api/User/by-ids` toplu endpoint → MO tek istekte çözer ([INTEGRATIONS §1.1](./INTEGRATIONS.md)).
 
@@ -202,7 +207,7 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 
 **Backend değişikliği yok** — MO zaten zorunlu kılıyor: `StateFlowCatalog.EnsureRequiredFields` (WI transition akışında) + `PermissionEvaluator.EnsureTransition`/`CanApplyTransition` (`permissions.groups`). Boş grup = kısıtlama yok (`GroupListParser.Intersects` `requiredGroups.Count==0 → true`).
 **Değişen:** `OcWorkspaceDefinitionsFlowsTab.vue`, `services/operationCoreService.ts` (`mapOpStateFlowTransition`), `types/apps/operationCore.ts`, locale `en/tr`.
-**Deploy:** UI-only, **deploy bekliyor**.
+**Deploy:** UI-only, **`mngui` Odak'a deploy edildi (31 May, healthy).**
 
 **Açık/ileriki:**
 - ⬜ Create dialog'da opsiyonel: ilk board/akış seed'i (şimdilik boş; Değerler/Akış sekmelerinden kurulur).
@@ -222,6 +227,7 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 **Deploy:** MO build temiz (0/0). MO + mngui deploy gerekir.
 
 **Açık/ileriki (CC faz-2+):**
+- 🚫 **Computed sütunlarda sıralama/filtre — YAPILMAYACAK** (31 May kararı). Computed değer DG'de saklanmadığından (ifadeyle türetiliyor) server-side sort/filter mümkün değil; client-side ise projenin **server-side sayfalama/sıralama/filtre** ilkesiyle çelişir. Computed sütunlar display-only kalır.
 - ⬜ `tags`/relation çoklu değerlerini ifade içinde etiketle kullanma (şu an dizi → eleman sayısı).
 - ⬜ Tarih farkı/iş günü fonksiyonları (özel expr fonksiyonları).
 - ⬜ Profil/kart görünümünde de computed alan gösterimi.
@@ -246,14 +252,23 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 | Kod | Durum | Not |
 |-----|--------|-----|
 | **F-T** | ✅ (lokal) | **Profilde durum geçişi (transition) uygulama** — profil header'ında geçerli durumdan uygulanabilir geçiş butonları; tıklayınca opsiyonel yorumlu onay dialog'u; uygulanınca güncel profil + timeline yeniden yüklenir. MO yetki + koşul + `requiredFields` doğrulamasını yapar (UI eklemeli, ham). |
+| **F-T2** | ✅ (lokal, 31 May) | **Geçiş `requiredFields` ön-toplama** — `ProfileActionDto.RequiredFields` (akış `transition.requiredFields`) profil context'e eklendi. Geçiş onay dialog'unda zorunlu alanlar `OcDynamicFormField` ile (lazy alt-bileşen `OcTransitionRequiredFields.vue`, sadece dialog açılınca lookup yükler) toplanır; mevcut değerlerle ön-doldurulur; hepsi dolmadan **Uygula kapalı**. Değerler `ocApplyTransition({ fields })` → `TransitionWorkItemRequest.Fields` ile gider; MO merge edip persist eder, sonra `EnsureRequiredFields` doğrular (artık 400 yerine inline toplama). |
 
-**Backend değişikliği yok** — MO profil context `Actions` (`ProfileActionDto`: key/label/from/to/enabled/order; `GetAvailableTransitions` ile) ve `POST /work-items/{id}/transitions/{key}` (`TransitionWorkItemRequest`: `comment?`/`fields?`) zaten hazırdı; UI bunları hiç okumuyordu.
-**UI:** `types/apps/operationCore.ts` (`OcProfileAction` + `OcWorkItemProfile.actions`), `operationCoreService.ts` (`mapProfileAction`, `mapWorkItemProfile` actions parse, `ocApplyTransition`), profil sayfası `work-items/[id]/profile/index.vue` (header geçiş butonları + onay/yorum dialog + başarı sonrası yenileme), locale `en/tr` (`profile.transitions.*`).
-**Deploy:** Yalnızca mngui (MO değişmedi). Kullanıcı isteği üzerine deploy edilecek.
+**Backend (F-T):** değişiklik yoktu — MO profil context `Actions` (`ProfileActionDto`) ve `POST /work-items/{id}/transitions/{key}` (`TransitionWorkItemRequest`: `comment?`/`fields?`) zaten hazırdı; UI bunları hiç okumuyordu.
+**Backend (F-T2):** `ProfileActionDto.RequiredFields` (yeni alan) — `RuntimeContextService` `StateFlowCatalog.GetRequiredFields(transition)` ile doldurur, `ProfileActionBuilder.Build` korur. Transition ucu zaten `Fields`'i merge+persist edip doğruluyordu (mantık değişmedi). MO build 0/0.
+**UI (F-T):** `types/apps/operationCore.ts` (`OcProfileAction` + `OcWorkItemProfile.actions`), `operationCoreService.ts` (`mapProfileAction`, `ocApplyTransition`), profil sayfası `work-items/[id]/profile/index.vue` (header geçiş butonları + onay/yorum dialog), locale `en/tr` (`profile.transitions.*`).
+**UI (F-T2):** yeni `OcTransitionRequiredFields.vue`; `OcProfileAction.requiredFields` + `mapProfileAction` parse; `ocApplyTransition({ fields })`; profil dialog'unda zorunlu alan toplama + `Uygula` gate + başarı sonrası `loadProfile()` (form + state tazelenir); locale `profile.transitions.requiredTitle`.
+**Deploy:** **`mngoperations`+`mngui` Odak'a deploy edildi (31 May, healthy — F-T2 `RequiredFields`/F-K `IncomingTransitions` + tüm F UI canlı; SLA-1 smoke yeşil).** Remote build 0/0; UI generate 170 route.
+
+| **F-K** | ✅ (lokal, 31 May) | **Kanban'da DnD ile durum geçişi** — kart bir kolondan diğerine sürüklenince ilgili transition uygulanır. Backend `BoardColumnDto.IncomingTransitions` (`{transitionKey, fromStateId, requiredFields}`) eklendi → UI kaynak state'e göre **doğru** geçişi seçer (çok-girişli kolon desteği). `OcBoardKanban` `vue-draggable-next` ile sürükle-bırak (yalnız `canEdit`; `dropEligible=false` kolona bırakma reddedilir; yerel kopya + transition sonrası `refreshBoard` ile optimistic taşıma düzeltilir/geri alınır). Drop akışı: geçersiz from→to → uyarı + geri al; `requiredFields` varsa → kartı geri al + **profile yönlendir** (snackbar "Profilde aç", profil F-T2 ile zorunlu alan toplar); aksi halde `ocApplyTransition` + kolon yenile. **Liste görünümünde transition yok** (kapsam kararı: profil/düzenle yeterli). |
+
+**Backend (F-K):** `BoardColumnDto.IncomingTransitions` + `BoardColumnTransitionDto` (yeni); `BoardColumnBuilder.FindTransitionsToState` artık her giriş geçişi için `{key, from, requiredFields}` döner (`DefaultTransitionKey`/`AlternativeTransitionKeys` geri uyumlu korundu). MO build 0/0.
+**UI (F-K):** `OcBoardColumn.incomingTransitions` (+ `OcBoardColumnTransition` tip) + `mapBoardColumn` parse; `OcBoardKanban.vue` DnD'ye çevrildi (`vue-draggable-next`, global kayıtlı); board sayfası `onKanbanTransition` (çözümleme + snackbar + `refreshBoard`), `:editable="canEdit"`; locale `board.transition.*` (success/error/invalid/requiredFields/openProfile).
 
 **Açık/ileriki (F faz-2+):**
-- ⬜ Geçiş dialog'unda `requiredFields` ön-toplama (şu an MO 400 dönerse hata gösterilir).
-- ⬜ Board listede/Kanban'da geçiş uygulama (DnD → defaultTransitionKey).
+- ✅ Geçiş dialog'unda `requiredFields` ön-toplama → **F-T2** (lokal, mngoperations canlı; mngui bekliyor).
+- ✅ Kanban'da DnD geçiş uygulama → **F-K** (lokal, mngoperations canlı; mngui bekliyor).
+- ⬜ Kanban'da kart **sıralaması** kalıcılığı (şu an DnD yalnız state geçişi; aynı kolon içi sıra sunucuya yazılmıyor).
 
 ---
 
@@ -279,8 +294,8 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 | ~~2~~ | ~~**W-CREATE**~~ | ✅ Yeni workspace oluşturma UI — Odak'ta canlı |
 | ~~3~~ | ~~**E1-P2**~~ | ✅ Akışlar: geçiş `requiredFields` + `permissions.groups` — Odak'ta canlı |
 | ~~4~~ | ~~**CC**~~ | ✅ Dinamik (computed) sütunlar (expr-eval, display-only) — Odak'ta canlı |
-| ~~5~~ | ~~**A**~~ | ✅ `op_comments.attachments` (yorum ekleri) — bu oturum (MO+mngui deploy bekliyor) |
-| ~~6~~ | ~~**F**~~ | ✅ Operasyonel runtime: profilde durum geçişi (transition) uygulama — lokal (mngui deploy bekliyor); SLA-3 chip zaten ✅ (FC/BLC) |
+| ~~5~~ | ~~**A**~~ | ✅ `op_comments.attachments` (yorum ekleri) — Odak'ta canlı (31 May) |
+| ~~6~~ | ~~**F**~~ | ✅ Operasyonel runtime: profilde durum geçişi (transition) uygulama — Odak'ta canlı (31 May); SLA-3 chip zaten ✅ (FC/BLC) |
 
 ---
 
@@ -299,10 +314,18 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 [✓] In-app bildirim paneli (op_notifications + mention görünür) — Odak'ta canlı
 [✓] Gelişmiş arama gt/gte/lt/lte UI (BLF-8) — Odak'ta canlı
 [✓] Relation alanlarda option/relation etiketi (BLF-9) — Odak'ta canlı
+[✓] Tags alanlarda filtre combobox (BLF-10) — Odak'ta canlı (31 May)
+[✓] createdBy kimlik düzeltmesi (NP-6) — Odak'ta canlı (31 May)
+[✓] "Tümünü gör" bildirim sayfası (NP-7) — Odak'ta canlı (31 May)
+[✓] Person grup alanları ad çözümü (BL-GRP + profil grup adı BL-GRP-2) — Odak'ta canlı (31 May)
+[✓] Grup alan filtresi (BL-GRP-3, group kind + in/nin/eq/ne) — Odak'ta canlı (31 May)
 [✓] Workspace yetki grupları (E1-P1) + Yeni workspace UI (W-CREATE) — Odak'ta canlı
 [✓] Admin kapanış: akış geçiş requiredFields + yetki grupları (E1-P2) — Odak'ta canlı
 [✓] Dinamik (computed) sütunlar (CC, expr-eval display-only) — Odak'ta canlı
-[✓] Yorum ekleri (op_comments.attachments) — lokal (MO+mngui deploy bekliyor)
-[✓] Operasyonel runtime: profilde durum geçişi uygulama (F) — lokal (mngui deploy bekliyor); SLA-3 chip zaten ✓
+[✓] Yorum ekleri (op_comments.attachments) — Odak'ta canlı (31 May)
+[✓] Operasyonel runtime: profilde durum geçişi uygulama (F) — Odak'ta canlı (31 May); SLA-3 chip zaten ✓
+[✓] F faz-2: geçiş requiredFields ön-toplama (F-T2) — Odak'ta canlı (31 May)
+[✓] F faz-2: Kanban DnD ile durum geçişi (F-K) — Odak'ta canlı (31 May)
+[✓] Board silme ilişki guard'ı (BO-5) + edit alan temizleme (BO-6) — Odak'ta canlı (31 May)
 [✓] Performans optimizasyonu (PERF): profil ~%30 hızlanma + UI yapısal kazanımlar — Odak'ta canlı, main'e merge
 ```

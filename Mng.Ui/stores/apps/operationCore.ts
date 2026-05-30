@@ -35,6 +35,7 @@ export const useOperationCoreStore = defineStore('operationCore', {
     columnItems: {} as Record<string, OcColumnItemsState>,
     columnLoading: {} as Record<string, boolean>,
     boardPeople: {} as Record<string, OcPersonDisplay>,
+    boardGroups: {} as Record<string, OcPersonDisplay>,
     loadingBoardContext: false,
     boardError: null as string | null,
 
@@ -116,6 +117,7 @@ export const useOperationCoreStore = defineStore('operationCore', {
       this.columnItems = {};
       this.columnLoading = {};
       this.boardPeople = {};
+      this.boardGroups = {};
       this.boardError = null;
       this.listItems = [];
       this.listTotal = 0;
@@ -134,6 +136,7 @@ export const useOperationCoreStore = defineStore('operationCore', {
       this.columnItems = {};
       this.columnLoading = {};
       this.boardPeople = {};
+      this.boardGroups = {};
 
       this.listItems = [];
       this.listTotal = 0;
@@ -166,6 +169,9 @@ export const useOperationCoreStore = defineStore('operationCore', {
         if (res.people && Object.keys(res.people).length > 0) {
           this.boardPeople = { ...this.boardPeople, ...res.people };
         }
+        if (res.groups && Object.keys(res.groups).length > 0) {
+          this.boardGroups = { ...this.boardGroups, ...res.groups };
+        }
       } catch (e: unknown) {
         this.listItems = [];
         this.listTotal = 0;
@@ -191,6 +197,9 @@ export const useOperationCoreStore = defineStore('operationCore', {
         };
         if (res.people && Object.keys(res.people).length > 0) {
           this.boardPeople = { ...this.boardPeople, ...res.people };
+        }
+        if (res.groups && Object.keys(res.groups).length > 0) {
+          this.boardGroups = { ...this.boardGroups, ...res.groups };
         }
       } catch (e: unknown) {
         this.columnItems = {

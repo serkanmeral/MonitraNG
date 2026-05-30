@@ -299,12 +299,21 @@ export interface OcRuntimePermissions {
   canComment: boolean;
 }
 
+/** Bir kolona (state'e) giren geçiş — Kanban DnD'de kaynak state'e göre doğru geçişi seçmek için. */
+export interface OcBoardColumnTransition {
+  transitionKey: string;
+  fromStateId: string;
+  requiredFields: string[];
+}
+
 export interface OcBoardColumn {
   stateId: string;
   title?: string;
   dropEligible: boolean;
   defaultTransitionKey?: string;
   alternativeTransitionKeys: string[];
+  /** Bu state'e giren geçişler (from + requiredFields ile). */
+  incomingTransitions: OcBoardColumnTransition[];
   queryKey: string;
   parametersTemplate: Record<string, string>;
   suggestedPageSize: number;
@@ -421,6 +430,8 @@ export interface OcQueryExecuteResponse {
   total: number;
   /** Person alanları (assignee/watchers + person tipi pool alanlar) id → görünen ad. */
   people: Record<string, OcPersonDisplay>;
+  /** Person grup alanları (assignmentGroups + personGroups tipi pool alanlar) id → grup adı. */
+  groups: Record<string, OcPersonDisplay>;
 }
 
 export interface OcColumnItemsState {
@@ -483,6 +494,8 @@ export interface OcProfileAction {
   toStateId: string;
   enabled: boolean;
   order: number;
+  /** Bu geçiş için zorunlu alan anahtarları (akış transition.requiredFields). UI dialog'da ön-toplar. */
+  requiredFields: string[];
 }
 
 /** Profil runtime context — sidebar (SLA/meta/policy) + izinler. */
@@ -497,6 +510,8 @@ export interface OcWorkItemProfile {
   links: OcWorkItemLinkSummary[];
   /** Person id → görünen ad (assignee/reporter/watchers). */
   people: Record<string, OcPersonDisplay>;
+  /** Grup id → grup adı (assignmentGroups + personGroups tipi pool alanlar). */
+  groups: Record<string, OcPersonDisplay>;
   createdBy?: string | null;
   /** İş kaydı ekleri (op_work_items.attachments). */
   attachments: OcAttachment[];

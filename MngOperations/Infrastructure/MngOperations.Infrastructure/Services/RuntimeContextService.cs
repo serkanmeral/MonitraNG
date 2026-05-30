@@ -24,6 +24,7 @@ public class RuntimeContextService : IRuntimeContextService
     private readonly IPermissionEvaluator _permissions;
     private readonly IFieldBehaviorResolver _fieldBehaviors;
     private readonly IPersonDirectory _personDirectory;
+    private readonly IGroupDirectory _groupDirectory;
     private readonly IRequestContext _requestContext;
     private readonly ILogger<RuntimeContextService> _logger;
     private readonly OcCallStats _stats;
@@ -35,6 +36,7 @@ public class RuntimeContextService : IRuntimeContextService
         IPermissionEvaluator permissions,
         IFieldBehaviorResolver fieldBehaviors,
         IPersonDirectory personDirectory,
+        IGroupDirectory groupDirectory,
         IRequestContext requestContext,
         ILogger<RuntimeContextService> logger,
         OcCallStats stats,
@@ -45,6 +47,7 @@ public class RuntimeContextService : IRuntimeContextService
         _permissions = permissions;
         _fieldBehaviors = fieldBehaviors;
         _personDirectory = personDirectory;
+        _groupDirectory = groupDirectory;
         _requestContext = requestContext;
         _logger = logger;
         _stats = stats;
@@ -62,6 +65,9 @@ public class RuntimeContextService : IRuntimeContextService
 
     // Çekirdek person alanları — fieldType'a bakılmaksızın daima person.
     private static readonly string[] CorePersonFieldKeys = { "assignee", "watchers" };
+
+    // Çekirdek person grup alanları — fieldType'a bakılmaksızın daima grup.
+    private static readonly string[] CoreGroupFieldKeys = { "assignmentGroups" };
 
     public async Task<ProfileRuntimeContext> GetProfileAsync(
         string workItemId,
@@ -121,7 +127,8 @@ public class RuntimeContextService : IRuntimeContextService
                     FromStateId = StateFlowCatalog.GetStringProperty(transition, "fromStateId"),
                     ToStateId = StateFlowCatalog.GetStringProperty(transition, "toStateId") ?? string.Empty,
                     Enabled = _permissions.CanApplyTransition(workspace, transition),
-                    Order = order++
+                    Order = order++,
+                    RequiredFields = StateFlowCatalog.GetRequiredFields(transition)
                 });
             }
         }
@@ -182,6 +189,27 @@ public class RuntimeContextService : IRuntimeContextService
             ? await _personDirectory.GetPeopleAsync(profilePeopleIds, token, cancellationToken)
             : new Dictionary<string, PersonDisplayDto>();
 
+        // Grup alanları (assignmentGroups + personGroups tipi pool alanlar) — id → grup adı.
+        var profileGroupIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var g in WorkItemDataHelper.GetStringList(workItem, "assignmentGroups"))
+            AddPersonId(profileGroupIds, g);
+        try
+        {
+            var groupPoolKeys = await GetGroupPoolFieldKeysAsync(token, cancellationToken);
+            foreach (var key in groupPoolKeys)
+            {
+                foreach (var g in WorkItemDataHelper.GetStringList(workItem, key))
+                    AddPersonId(profileGroupIds, g);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Profile group pool field collect failed.");
+        }
+        var profileGroups = profileGroupIds.Count > 0
+            ? await _groupDirectory.GetGroupsAsync(profileGroupIds, token, cancellationToken)
+            : new Dictionary<string, PersonDisplayDto>();
+
         JsonElement? attachments = null;
         if (workItem.TryGetValue("attachments", out var attVal)
             && attVal is JsonElement { ValueKind: JsonValueKind.Array } attEl)
@@ -213,6 +241,7 @@ public class RuntimeContextService : IRuntimeContextService
             Links = links,
             StateSegments = stateSegments,
             People = profilePeople,
+            Groups = profileGroups,
             Attachments = attachments
         };
 
@@ -724,6 +753,7 @@ public class RuntimeContextService : IRuntimeContextService
 
         var cards = page.Items.Select(MapWorkItemCard).ToList();
         var people = await ResolvePeopleForCardsAsync(cards, token, cancellationToken);
+        var groups = await ResolveGroupsForCardsAsync(cards, token, cancellationToken);
 
         if (perfSw != null)
         {
@@ -739,7 +769,8 @@ public class RuntimeContextService : IRuntimeContextService
             Skip = skip,
             Take = take,
             Total = (int)Math.Min(page.Total, int.MaxValue),
-            People = people
+            People = people,
+            Groups = groups
         };
     }
 
@@ -1022,6 +1053,7 @@ public class RuntimeContextService : IRuntimeContextService
         var page = cards.Skip(skipClamped).Take(takeClamped).ToList();
 
         var people = await ResolvePeopleForCardsAsync(page, token, cancellationToken);
+        var groups = await ResolveGroupsForCardsAsync(page, token, cancellationToken);
 
         return new QueryExecuteResponse
         {
@@ -1031,7 +1063,8 @@ public class RuntimeContextService : IRuntimeContextService
             Skip = skipClamped,
             Take = takeClamped,
             Total = cards.Count,
-            People = people
+            People = people,
+            Groups = groups
         };
     }
 
@@ -1101,6 +1134,67 @@ public class RuntimeContextService : IRuntimeContextService
         }
 
         return keys;
+    }
+
+    /// <summary>Person grup tipi pool alan key'leri (op_fields, fieldType ∈ personGroups/personGroup/group) — cache'li.</summary>
+    private async Task<IReadOnlyList<string>> GetGroupPoolFieldKeysAsync(
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var keys = new List<string>(CoreGroupFieldKeys);
+        try
+        {
+            var fields = await _metadataCache.GetCatalogListAsync(OcDatasets.Fields, token, cancellationToken);
+            foreach (var field in fields)
+            {
+                var fieldType = WorkItemDataHelper.GetString(field, "fieldType")?.Trim().ToLowerInvariant();
+                if (fieldType is not ("persongroups" or "persongroup" or "group"))
+                    continue;
+
+                var key = WorkItemDataHelper.GetString(field, "key");
+                if (!string.IsNullOrWhiteSpace(key) && !keys.Contains(key))
+                    keys.Add(key);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Group pool field keys resolve failed; using core keys only.");
+        }
+
+        return keys;
+    }
+
+    /// <summary>
+    /// Sayfadaki kartların grup alanlarından (assignmentGroups + personGroups tipi pool alanlar) id'leri toplar
+    /// ve Keeper cache'inden id → grup adı map'ini döner. <see cref="ResolvePeopleForCardsAsync"/> ile aynı desen.
+    /// </summary>
+    private async Task<IReadOnlyDictionary<string, PersonDisplayDto>> ResolveGroupsForCardsAsync(
+        IReadOnlyList<WorkItemCardDto> cards,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        if (cards.Count == 0)
+            return new Dictionary<string, PersonDisplayDto>();
+
+        var groupPoolKeys = await GetGroupPoolFieldKeysAsync(token, cancellationToken);
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var card in cards)
+        {
+            if (card.Fields is not { ValueKind: JsonValueKind.Object } fields)
+                continue;
+
+            foreach (var key in groupPoolKeys)
+            {
+                if (fields.TryGetProperty(key, out var value))
+                    AddPersonIdsFromElement(ids, value);
+            }
+        }
+
+        if (ids.Count == 0)
+            return new Dictionary<string, PersonDisplayDto>();
+
+        return await _groupDirectory.GetGroupsAsync(ids, token, cancellationToken);
     }
 
     private static void AddPersonId(HashSet<string> ids, string? id)

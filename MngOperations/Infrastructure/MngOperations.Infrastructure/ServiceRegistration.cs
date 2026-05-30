@@ -44,6 +44,7 @@ public static class ServiceRegistration
         services.AddScoped<IMngDataGatewayClient, MngDataGatewayClient>();
         services.AddScoped<IKeeperDirectoryClient, MngKeeperClient>();
         services.AddScoped<IPersonDirectory, PersonDirectoryService>();
+        services.AddScoped<IGroupDirectory, GroupDirectoryService>();
         services.AddScoped<IMngNotifiersClient, MngNotifiersClient>();
         services.AddScoped<IMngSchedulerClient, MngSchedulerClient>();
         services.AddScoped<INotificationOrchestrator, NotificationOrchestratorService>();

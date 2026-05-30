@@ -11,6 +11,8 @@ const props = defineProps<{
   preview?: boolean;
   /** Alan anahtarı → hata mesajı (submit doğrulaması sonrası). */
   fieldErrors?: Record<string, string>;
+  /** Grup id → ad (readonly grup alanlarında ad göstermek için). */
+  groupNames?: Record<string, string>;
 }>();
 
 const model = defineModel<Record<string, unknown>>({ required: true });
@@ -111,6 +113,7 @@ function setFieldValue(key: string, value: unknown) {
                   :select-items="selectItemsForField(fieldKey)"
                   :select-loading="isLoadingField(fieldKey)"
                   :person-picker="isPersonField(fieldKey) ? pickerForField(fieldKey) : undefined"
+                  :group-names="groupNames"
                   :readonly="readonly"
                   :preview="preview"
                   :error-message="fieldErrors?.[fieldKey]"

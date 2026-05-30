@@ -4,7 +4,7 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import OcPersonPickerAutocomplete from '@/components/apps/operation-core/OcPersonPickerAutocomplete.vue';
 import type { OcBoardListFilter } from '@/types/apps/operationCore';
 
-export type OcBoardFilterKind = 'state' | 'priority' | 'type' | 'person' | 'relation' | 'number' | 'date' | 'text';
+export type OcBoardFilterKind = 'state' | 'priority' | 'type' | 'person' | 'relation' | 'group' | 'tags' | 'number' | 'date' | 'text';
 
 export interface OcBoardFilterColumn {
   key: string;
@@ -26,6 +26,10 @@ const props = defineProps<{
   typeOptions: { value: string; title: string }[];
   /** Pool relation alanları için key → option listesi (value=__dataId, title=ad). */
   relationOptionsByKey?: Record<string, { value: string; title: string }[]>;
+  /** Grup alanları (personGroups/group + assignmentGroups) için key → option listesi (value=grup id, title=grup adı). */
+  groupOptionsByKey?: Record<string, { value: string; title: string }[]>;
+  /** Pool tags alanları için key → mevcut etiket değerleri (combobox önerileri; serbest giriş açık). */
+  tagOptionsByKey?: Record<string, string[]>;
 }>();
 
 const emit = defineEmits<{
@@ -48,6 +52,8 @@ const OPERATORS_BY_KIND: Record<OcBoardFilterKind, string[]> = {
   type: ['in', 'nin', 'eq', 'ne'],
   person: ['eq', 'ne'],
   relation: ['in', 'nin', 'eq', 'ne'],
+  group: ['in', 'nin', 'eq', 'ne'],
+  tags: ['in', 'nin', 'eq', 'ne'],
   number: ['eq', 'ne', 'gt', 'gte', 'lt', 'lte'],
   date: ['gte', 'lte', 'gt', 'lt', 'ne', 'eq'],
   text: ['contains', 'eq', 'ne', 'startsWith', 'endsWith'],
@@ -67,9 +73,9 @@ function isCatalogKind(kind: OcBoardFilterKind | null): boolean {
   return kind === 'state' || kind === 'priority' || kind === 'type';
 }
 
-// "Select" = sabit katalog (state/priority/type) ∪ pool relation — ikisi de v-select + in/nin/eq/ne.
+// "Select" = sabit katalog (state/priority/type) ∪ pool relation ∪ grup — hepsi v-select + in/nin/eq/ne.
 function isSelectKind(kind: OcBoardFilterKind | null): boolean {
-  return isCatalogKind(kind) || kind === 'relation';
+  return isCatalogKind(kind) || kind === 'relation' || kind === 'group';
 }
 
 function catalogOptions(kind: OcBoardFilterKind): { value: string; title: string }[] {
@@ -113,6 +119,20 @@ function isPersonField(field: string): boolean {
   return kindOf(field) === 'person';
 }
 
+function isTagsField(field: string): boolean {
+  return kindOf(field) === 'tags';
+}
+
+/** Tags alanı için combobox önerileri (serbest giriş açık; öneriler yüklü satırlardan). */
+function tagComboItems(field: string): string[] {
+  return props.tagOptionsByKey?.[field] ?? [];
+}
+
+function tagValueList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((v) => String(v).trim()).filter((s) => s.length > 0);
+}
+
 function isNumberField(field: string): boolean {
   return kindOf(field) === 'number';
 }
@@ -137,11 +157,13 @@ function catalogOptionsForField(field: string): { value: string; title: string }
   if (!kind) return [];
   if (isCatalogKind(kind)) return catalogOptions(kind);
   if (kind === 'relation') return props.relationOptionsByKey?.[field] ?? [];
+  if (kind === 'group') return props.groupOptionsByKey?.[field] ?? [];
   return [];
 }
 
 function defaultValueFor(kind: OcBoardFilterKind, op: string): unknown {
   if (isSelectKind(kind)) return isMultiCatalogOp(op) ? [] : null;
+  if (kind === 'tags') return isMultiCatalogOp(op) ? [] : '';
   if (kind === 'person') return null;
   return '';
 }
@@ -169,8 +191,8 @@ function onRowFieldChange(row: AdvancedRow) {
 function onRowOperatorChange(row: AdvancedRow) {
   const kind = kindOf(row.field);
   if (!kind) return;
-  // Katalog: in/nin (çoklu) ↔ eq/ne (tekli) geçişinde değer tipini uyarla.
-  if (isSelectKind(kind)) {
+  // Katalog/tags: in/nin (çoklu) ↔ eq/ne (tekli) geçişinde değer tipini uyarla.
+  if (isSelectKind(kind) || kind === 'tags') {
     row.value = defaultValueFor(kind, row.operator);
   }
 }
@@ -194,6 +216,9 @@ function quickFilters(): OcBoardListFilter[] {
     if (isSelectKind(col.kind)) {
       const ids = Array.isArray(v) ? (v as string[]).filter(Boolean) : [];
       if (ids.length) out.push({ field: col.key, operator: 'in', value: ids.join(',') });
+    } else if (col.kind === 'tags') {
+      const tags = tagValueList(v);
+      if (tags.length) out.push({ field: col.key, operator: 'in', value: tags.join(',') });
     } else if (col.kind === 'person') {
       const id = typeof v === 'string' ? v.trim() : '';
       if (id) out.push({ field: col.key, operator: 'eq', value: id });
@@ -216,6 +241,10 @@ function advancedFilters(): OcBoardListFilter[] {
       const ids = Array.isArray(row.value) ? (row.value as string[]).filter(Boolean) : [];
       if (!ids.length) continue;
       value = ids.join(',');
+    } else if (kind === 'tags' && isMultiCatalogOp(row.operator)) {
+      const tags = tagValueList(row.value);
+      if (!tags.length) continue;
+      value = tags.join(',');
     } else if (kind === 'date') {
       const raw = typeof row.value === 'string' ? row.value.trim() : '';
       const iso = raw ? toIsoUtc(raw) : null;
@@ -305,6 +334,19 @@ watch(
           :items="catalogOptionsForField(col.key)"
           item-title="title"
           item-value="value"
+          :label="col.label"
+          variant="outlined"
+          density="compact"
+          hide-details
+          multiple
+          chips
+          closable-chips
+          clearable
+        />
+        <v-combobox
+          v-else-if="col.kind === 'tags'"
+          v-model="values[col.key]"
+          :items="tagComboItems(col.key)"
           :label="col.label"
           variant="outlined"
           density="compact"
@@ -419,6 +461,29 @@ watch(
               :items="catalogOptionsForField(row.field)"
               item-title="title"
               item-value="value"
+              :label="t('operationCore.board.filters.advanced.value')"
+              variant="outlined"
+              density="compact"
+              hide-details
+              clearable
+            />
+            <v-combobox
+              v-else-if="isTagsField(row.field) && (row.operator === 'in' || row.operator === 'nin')"
+              v-model="row.value"
+              :items="tagComboItems(row.field)"
+              :label="t('operationCore.board.filters.advanced.value')"
+              variant="outlined"
+              density="compact"
+              hide-details
+              multiple
+              chips
+              closable-chips
+              clearable
+            />
+            <v-combobox
+              v-else-if="isTagsField(row.field)"
+              v-model="row.value"
+              :items="tagComboItems(row.field)"
               :label="t('operationCore.board.filters.advanced.value')"
               variant="outlined"
               density="compact"

@@ -62,6 +62,10 @@ async function onItemClick(item: OcNotification) {
   }
 }
 
+function goToAll() {
+  navigateTo('/apps/operation-core/notifications');
+}
+
 async function markAllRead() {
   try {
     await ocMarkAllNotificationsRead();
@@ -213,15 +217,24 @@ onBeforeUnmount(() => {
         </v-list>
       </perfect-scrollbar>
       <v-divider />
-      <div class="py-3 px-4">
+      <div class="py-3 px-4 d-flex align-center ga-2">
         <v-btn
           color="primary"
           variant="text"
-          block
+          class="flex-grow-1 text-none"
           :disabled="!hasUnread"
           @click="markAllRead"
         >
           {{ t('header.notifications.markAllRead') }}
+        </v-btn>
+        <v-btn
+          color="primary"
+          variant="tonal"
+          class="text-none"
+          append-icon="mdi-arrow-right"
+          @click="goToAll"
+        >
+          {{ t('header.notifications.viewAll') }}
         </v-btn>
       </div>
     </v-sheet>

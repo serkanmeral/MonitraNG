@@ -11,6 +11,7 @@ import {
   isMultiCardinality,
   resolveOcDynamicFieldWidget,
 } from '@/utils/ocDynamicFormField';
+import { resolveOcCoreFieldType } from '@/utils/ocFormFieldLabels';
 import OcPersonPickerAutocomplete from '@/components/apps/operation-core/OcPersonPickerAutocomplete.vue';
 
 const props = defineProps<{
@@ -20,6 +21,8 @@ const props = defineProps<{
   selectItems?: OcSelectItem[];
   selectLoading?: boolean;
   personPicker?: OcPersonPickerApi;
+  /** Grup id → ad (readonly grup alanlarında ham id yerine ad göstermek için; profil sağlar). */
+  groupNames?: Record<string, string>;
   readonly?: boolean;
   preview?: boolean;
   errorMessage?: string | null;
@@ -37,6 +40,34 @@ const fieldDisabled = computed(() => props.readonly || props.behavior.readonly);
 const isMulti = computed(() => isMultiCardinality(props.fieldKey, props.meta));
 
 const isPersonsWidget = computed(() => widget.value === 'persons' || widget.value === 'personsMulti');
+
+// Grup alanları (personGroups/group): readonly görünümde ham id yerine grup adını göster.
+const fieldType = computed(() =>
+  (props.meta?.fieldType ?? resolveOcCoreFieldType(props.fieldKey)).toLowerCase()
+);
+const isGroupField = computed(() =>
+  ['persongroups', 'persongroup', 'group'].includes(fieldType.value)
+);
+
+function collectGroupIds(value: unknown): string[] {
+  if (value === null || value === undefined || value === '') return [];
+  if (Array.isArray(value)) return value.flatMap((v) => collectGroupIds(v));
+  if (typeof value === 'object') {
+    const o = value as Record<string, unknown>;
+    const id = o.__dataId ?? o.id ?? o.groupId;
+    return id ? [String(id).trim()] : [];
+  }
+  const s = String(value).trim();
+  return s ? [s] : [];
+}
+
+const groupReadonlyText = computed(() => {
+  const ids = collectGroupIds(model.value);
+  if (!ids.length) return '—';
+  const map = props.groupNames ?? {};
+  const names = ids.map((id) => map[id]?.trim() || id).filter(Boolean);
+  return names.length ? names.join(', ') : '—';
+});
 
 const isSelectWidget = computed(() =>
   [
@@ -94,8 +125,23 @@ function onAutocompleteUpdate(value: unknown) {
 </script>
 
 <template>
+  <v-text-field
+    v-if="fieldDisabled && isGroupField"
+    :model-value="groupReadonlyText"
+    readonly
+    density="comfortable"
+    variant="outlined"
+    hide-details="auto"
+    :class="fieldClass"
+  >
+    <template #label>
+      <span>{{ label }}</span>
+      <span v-if="behavior.required" class="oc-field-required" aria-hidden="true"> *</span>
+    </template>
+  </v-text-field>
+
   <OcPersonPickerAutocomplete
-    v-if="isPersonsWidget && personPicker"
+    v-else-if="isPersonsWidget && personPicker"
     v-model="model"
     :multiple="selectMultiple"
     :disabled="fieldDisabled"

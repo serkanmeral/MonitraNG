@@ -84,8 +84,8 @@ public static class BoardColumnBuilder
         string? defaultTransitionKeyOverride)
     {
         var intoColumn = FindTransitionsToState(transitions, stateId);
-        var defaultKey = defaultTransitionKeyOverride ?? intoColumn.FirstOrDefault().Key;
-        var alternatives = intoColumn.Skip(1).Select(x => x.Key).Where(k => !string.IsNullOrEmpty(k)).ToList();
+        var defaultKey = defaultTransitionKeyOverride ?? intoColumn.FirstOrDefault()?.TransitionKey;
+        var alternatives = intoColumn.Skip(1).Select(x => x.TransitionKey).Where(k => !string.IsNullOrEmpty(k)).ToList();
 
         return new BoardColumnDto
         {
@@ -94,6 +94,7 @@ public static class BoardColumnBuilder
             DropEligible = intoColumn.Count > 0,
             DefaultTransitionKey = defaultKey,
             AlternativeTransitionKeys = alternatives,
+            IncomingTransitions = intoColumn,
             QueryKey = queryKey,
             ParametersTemplate = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
@@ -105,9 +106,9 @@ public static class BoardColumnBuilder
         };
     }
 
-    private static List<(string Key, string From)> FindTransitionsToState(JsonElement? transitions, string stateId)
+    private static List<BoardColumnTransitionDto> FindTransitionsToState(JsonElement? transitions, string stateId)
     {
-        var list = new List<(string, string)>();
+        var list = new List<BoardColumnTransitionDto>();
         if (transitions is not { ValueKind: JsonValueKind.Array })
             return list;
 
@@ -118,9 +119,15 @@ public static class BoardColumnBuilder
                 continue;
 
             var key = StateFlowCatalog.GetStringProperty(t, "transitionKey");
-            var from = StateFlowCatalog.GetStringProperty(t, "fromStateId") ?? string.Empty;
-            if (!string.IsNullOrEmpty(key))
-                list.Add((key, from));
+            if (string.IsNullOrEmpty(key))
+                continue;
+
+            list.Add(new BoardColumnTransitionDto
+            {
+                TransitionKey = key,
+                FromStateId = StateFlowCatalog.GetStringProperty(t, "fromStateId") ?? string.Empty,
+                RequiredFields = StateFlowCatalog.GetRequiredFields(t)
+            });
         }
 
         return list;

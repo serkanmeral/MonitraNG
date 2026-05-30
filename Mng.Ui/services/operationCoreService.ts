@@ -3,6 +3,7 @@ import type {
   OcAttachment,
   OcBoardCatalogs,
   OcBoardColumn,
+  OcBoardColumnTransition,
   OcBoardListColumn,
   OcBoardListRequest,
   OcBoardRuntimeContext,
@@ -679,6 +680,7 @@ function mapProfileAction(raw: Record<string, unknown>): OcProfileAction | null 
   const toStateId = resolveRelationId(raw.toStateId ?? raw.ToStateId) ?? '';
   if (!transitionKey || !toStateId) return null;
   const orderRaw = raw.order ?? raw.Order;
+  const requiredFieldsRaw = raw.requiredFields ?? raw.RequiredFields;
   return {
     transitionKey,
     label: pickStr(raw, 'label', 'Label') ?? null,
@@ -686,6 +688,9 @@ function mapProfileAction(raw: Record<string, unknown>): OcProfileAction | null 
     toStateId,
     enabled: Boolean(raw.enabled ?? raw.Enabled ?? true),
     order: typeof orderRaw === 'number' ? orderRaw : Number(orderRaw) || 0,
+    requiredFields: Array.isArray(requiredFieldsRaw)
+      ? requiredFieldsRaw.map((f) => String(f).trim()).filter((f) => f.length > 0)
+      : [],
   };
 }
 
@@ -713,6 +718,7 @@ function mapWorkItemProfile(raw: Record<string, unknown>): OcWorkItemProfile {
     watchers: Array.isArray(watchers) ? watchers.map(String) : [],
     links: Array.isArray(links) ? links.map((l) => mapWorkItemLink(l as Record<string, unknown>)) : [],
     people: parsePeopleMap(raw.people ?? raw.People),
+    groups: parsePeopleMap(raw.groups ?? raw.Groups),
     createdBy: pickStr(wiRaw, 'createdBy', 'CreatedBy') ?? null,
     attachments: parseAttachments(raw.attachments ?? raw.Attachments),
   };
@@ -832,11 +838,13 @@ export async function ocAddWorkItemComment(
 export async function ocApplyTransition(
   workItemId: string,
   transitionKey: string,
-  options?: { comment?: string | null }
+  options?: { comment?: string | null; fields?: Record<string, unknown> | null }
 ): Promise<OcWorkItemProfile> {
   const payload: Record<string, unknown> = {};
   const comment = options?.comment?.trim();
   if (comment) payload.comment = comment;
+  const fields = options?.fields;
+  if (fields && Object.keys(fields).length > 0) payload.fields = fields;
   await fetchFromOperations(
     `/api/v1/work-items/${encodeURIComponent(workItemId)}/transitions/${encodeURIComponent(transitionKey)}`,
     'POST',
@@ -1065,8 +1073,33 @@ export async function ocUpdateWorkItem(
   return mapCreateWorkItemResult(raw);
 }
 
-export async function ocDeleteWorkItem(workItemId: string): Promise<void> {
-  await fetchFromOperations(`/api/v1/work-items/${encodeURIComponent(workItemId)}`, 'DELETE');
+export async function ocDeleteWorkItem(workItemId: string, force = false): Promise<void> {
+  const qs = force ? '?force=true' : '';
+  await fetchFromOperations(`/api/v1/work-items/${encodeURIComponent(workItemId)}${qs}`, 'DELETE');
+}
+
+/** MngOperations hata gövdesinden `code` döndürür (guard ayrımı için, örn. WORK_ITEM_HAS_RELATIONS). */
+export function ocErrorCode(error: unknown): string | null {
+  if (!(error instanceof Error)) return null;
+  const data = (error as { data?: unknown }).data;
+  if (data && typeof data === 'object') {
+    const code = (data as Record<string, unknown>).code;
+    if (typeof code === 'string') return code;
+  }
+  return null;
+}
+
+/** MngOperations hata gövdesinden Türkçe mesajı (messageTr) tercih ederek okunabilir mesaj döndürür. */
+export function ocExtractOperationsMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error) {
+    const data = (error as { data?: unknown }).data;
+    if (data && typeof data === 'object') {
+      const d = data as Record<string, unknown>;
+      if (typeof d.messageTr === 'string' && d.messageTr) return d.messageTr;
+      if (typeof d.message === 'string' && d.message) return d.message;
+    }
+  }
+  return ocExtractDgErrorMessage(error, fallback);
 }
 
 function mapBoard(raw: Record<string, unknown>): OpBoard {
@@ -2074,8 +2107,22 @@ function mapSlaSnapshot(raw: unknown): OcSlaSnapshot | null {
   };
 }
 
+function mapBoardColumnTransition(raw: Record<string, unknown>): OcBoardColumnTransition | null {
+  const transitionKey = pickStr(raw, 'transitionKey', 'TransitionKey') ?? '';
+  if (!transitionKey) return null;
+  const reqRaw = raw.requiredFields ?? raw.RequiredFields;
+  return {
+    transitionKey,
+    fromStateId: resolveRelationId(raw.fromStateId ?? raw.FromStateId) ?? '',
+    requiredFields: Array.isArray(reqRaw)
+      ? reqRaw.map((f) => String(f).trim()).filter((f) => f.length > 0)
+      : [],
+  };
+}
+
 function mapBoardColumn(raw: Record<string, unknown>): OcBoardColumn {
   const alt = raw.alternativeTransitionKeys ?? raw.AlternativeTransitionKeys;
+  const incoming = raw.incomingTransitions ?? raw.IncomingTransitions;
   const params = raw.parametersTemplate ?? raw.ParametersTemplate;
   const template: Record<string, string> = {};
   if (params && typeof params === 'object' && !Array.isArray(params)) {
@@ -2089,6 +2136,11 @@ function mapBoardColumn(raw: Record<string, unknown>): OcBoardColumn {
     dropEligible: Boolean(raw.dropEligible ?? raw.DropEligible ?? true),
     defaultTransitionKey: pickStr(raw, 'defaultTransitionKey', 'DefaultTransitionKey'),
     alternativeTransitionKeys: Array.isArray(alt) ? alt.map(String) : [],
+    incomingTransitions: Array.isArray(incoming)
+      ? incoming
+          .map((tr) => mapBoardColumnTransition(tr as Record<string, unknown>))
+          .filter((tr): tr is OcBoardColumnTransition => !!tr)
+      : [],
     queryKey: pickStr(raw, 'queryKey', 'QueryKey') ?? 'wi_board_column',
     parametersTemplate: template,
     suggestedPageSize: Number(raw.suggestedPageSize ?? raw.SuggestedPageSize ?? 50),
@@ -2200,6 +2252,7 @@ function mapQueryExecuteResponse(raw: Record<string, unknown>): OcQueryExecuteRe
     take: Number(raw.take ?? raw.Take ?? 0),
     total: Number(raw.total ?? raw.Total ?? 0),
     people: parsePeopleMap(raw.people ?? raw.People),
+    groups: parsePeopleMap(raw.groups ?? raw.Groups),
   };
 }
 
