@@ -3384,19 +3384,40 @@
       "workItemId": "Kayıt",
       "tabs": {
         "details": "Detaylar",
-        "activity": "Aktivite & yorum",
+        "comments": "Yorumlar",
+        "activity": "Aktivite",
         "attachments": "Ekler"
+      },
+      "activity": {
+        "empty": "Henüz aktivite kaydı yok."
       },
       "comments": {
         "placeholder": "Yorum yaz... birini etiketlemek için @ yazın",
         "send": "Gönder",
-        "empty": "Henüz aktivite yok.",
+        "empty": "Henüz yorum yok.",
         "error": "Yorum eklenemedi.",
         "mentionHint": "Kişi etiketlemek için @ yazın · Ctrl+Enter ile gönder",
         "attach": "Dosya ekle",
+        "reply": "Yanıtla",
+        "edit": "Düzenle",
+        "delete": "Sil",
+        "save": "Kaydet",
+        "edited": "(düzenlendi)",
+        "deleteTitle": "Yorumu sil",
+        "deleteConfirm": "Bu yorumu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
+        "replyingTo": "{name} kişisine yanıt veriliyor",
+        "inReplyTo": "{name} kişisine yanıt",
         "loadMore": "Daha fazla...",
         "searching": "Aranıyor...",
-        "noPeople": "Eşleşen kişi yok"
+        "noPeople": "Eşleşen kişi yok",
+        "format": {
+          "bold": "Kalın",
+          "italic": "İtalik",
+          "strike": "Üstü çizili",
+          "bulletList": "Madde listesi",
+          "orderedList": "Numaralı liste",
+          "emoji": "Emoji ekle"
+        }
       },
       "attachments": {
         "hint": "Bu iş kaydına eklenen dosyalar.",

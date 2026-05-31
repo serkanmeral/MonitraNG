@@ -98,9 +98,19 @@ public sealed class TimelineEntryDto
     public required string Type { get; init; }
     public string? Id { get; init; }
     public string? Actor { get; init; }
+
+    /// <summary>Aktör/yazar person id'si (UI'da "kendi yorumum mu?" kontrolü için; ad değil id).</summary>
+    public string? ActorId { get; init; }
+
     public string? Text { get; init; }
     public DateTime? At { get; init; }
     public string? ActivityType { get; init; }
+
+    /// <summary>Yorum düzenlendiyse son düzenleme zamanı (yalnızca `type='comment'`).</summary>
+    public DateTime? EditedAt { get; init; }
+
+    /// <summary>Yanıt verilen üst yorumun id'si (yalnızca `type='comment'` girdilerde; tek seviye thread).</summary>
+    public string? ParentId { get; init; }
 
     /// <summary>Yorum ekleri (op_comments.attachments file isArray) ham değeri — { path, file_name, ... }[].</summary>
     public JsonElement? Attachments { get; init; }

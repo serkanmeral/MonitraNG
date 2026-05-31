@@ -323,9 +323,45 @@ public partial class RuntimeContextService : IRuntimeContextService
 
         await Task.WhenAll(commentsTask, activitiesTask);
 
+        var commentList = commentsTask.Result.ToList();
+        var activityList = activitiesTask.Result.ToList();
+
+        // Yazar/actor person id'lerini topla ve People diziniyle ada çöz (BL-KB toplu uç + Redis cache).
+        // author/actor alanı DG okumada düz id veya tam @users nesnesine genişlemiş gelebilir → her ikisini
+        // de GetPersonRefId ile id'ye indirgeriz. Eski kayıtlar username taşır → dizinde bulunmaz, ham döner.
+        var actorIds = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var c in commentList)
+        {
+            var id = WorkItemDataHelper.GetPersonRefId(c, "author");
+            if (!string.IsNullOrWhiteSpace(id)) actorIds.Add(id!);
+        }
+        foreach (var a in activityList)
+        {
+            var id = WorkItemDataHelper.GetPersonRefId(a, "actor");
+            if (!string.IsNullOrWhiteSpace(id)) actorIds.Add(id!);
+        }
+        var actorPeople = actorIds.Count > 0
+            ? await _personDirectory.GetPeopleAsync(actorIds, token, cancellationToken)
+            : new Dictionary<string, PersonDisplayDto>();
+
+        // Önce id ile People dizininden (title/cache) çöz; olmazsa genişletilmiş nesnedeki ad/soyad'a,
+        // en son ham id'ye düş.
+        string? ResolveActor(IReadOnlyDictionary<string, object?> data, string key)
+        {
+            var id = WorkItemDataHelper.GetPersonRefId(data, key);
+            if (!string.IsNullOrWhiteSpace(id)
+                && actorPeople.TryGetValue(id!, out var person)
+                && !string.IsNullOrWhiteSpace(person.Name))
+            {
+                return person.Name;
+            }
+
+            return WorkItemDataHelper.GetPersonRefName(data, key) ?? id;
+        }
+
         var entries = new List<TimelineEntryDto>();
 
-        foreach (var comment in commentsTask.Result)
+        foreach (var comment in commentList)
         {
             JsonElement? commentAttachments = null;
             if (comment.TryGetValue("attachments", out var attVal)
@@ -338,20 +374,24 @@ public partial class RuntimeContextService : IRuntimeContextService
             {
                 Type = "comment",
                 Id = WorkItemDataHelper.GetDataId(comment),
-                Actor = WorkItemDataHelper.GetString(comment, "author"),
+                Actor = ResolveActor(comment, "author"),
+                ActorId = WorkItemDataHelper.GetPersonRefId(comment, "author"),
                 Text = WorkItemDataHelper.GetString(comment, "body"),
                 At = WorkItemDataHelper.GetDateTime(comment, "commentDate"),
+                EditedAt = WorkItemDataHelper.GetDateTime(comment, "editedDate"),
+                ParentId = WorkItemDataHelper.GetString(comment, "parentCommentId"),
                 Attachments = commentAttachments
             });
         }
 
-        foreach (var activity in activitiesTask.Result)
+        foreach (var activity in activityList)
         {
             entries.Add(new TimelineEntryDto
             {
                 Type = "activity",
                 Id = WorkItemDataHelper.GetDataId(activity),
-                Actor = WorkItemDataHelper.GetString(activity, "actor"),
+                Actor = ResolveActor(activity, "actor"),
+                ActorId = WorkItemDataHelper.GetPersonRefId(activity, "actor"),
                 Text = WorkItemDataHelper.GetString(activity, "message"),
                 At = WorkItemDataHelper.GetDateTime(activity, "activityDate"),
                 ActivityType = WorkItemDataHelper.GetString(activity, "activityType")

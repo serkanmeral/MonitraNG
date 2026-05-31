@@ -3371,19 +3371,40 @@
       "workItemId": "Record",
       "tabs": {
         "details": "Details",
-        "activity": "Activity & comments",
+        "comments": "Comments",
+        "activity": "Activity",
         "attachments": "Attachments"
+      },
+      "activity": {
+        "empty": "No activity recorded yet."
       },
       "comments": {
         "placeholder": "Write a comment... type @ to mention someone",
         "send": "Send",
-        "empty": "No activity yet.",
+        "empty": "No comments yet.",
         "error": "Could not add the comment.",
         "mentionHint": "Type @ to mention a person · Ctrl+Enter to send",
         "attach": "Attach",
+        "reply": "Reply",
+        "edit": "Edit",
+        "delete": "Delete",
+        "save": "Save",
+        "edited": "(edited)",
+        "deleteTitle": "Delete comment",
+        "deleteConfirm": "Are you sure you want to delete this comment? This action cannot be undone.",
+        "replyingTo": "Replying to {name}",
+        "inReplyTo": "In reply to {name}",
         "loadMore": "Load more...",
         "searching": "Searching...",
-        "noPeople": "No matching people"
+        "noPeople": "No matching people",
+        "format": {
+          "bold": "Bold",
+          "italic": "Italic",
+          "strike": "Strikethrough",
+          "bulletList": "Bullet list",
+          "orderedList": "Numbered list",
+          "emoji": "Insert emoji"
+        }
       },
       "attachments": {
         "hint": "Files attached to this work item.",

@@ -485,6 +485,108 @@ public class WorkItemCommandService : IWorkItemCommandService
             request.Attachments);
     }
 
+    public async Task<CommentDto> UpdateCommentAsync(
+        string workItemId,
+        string commentId,
+        UpdateCommentRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Body))
+            throw new OperationCoreException("VALIDATION_ERROR", "body is required.", "body zorunludur.", 400);
+
+        var token = RequireToken();
+        RequireDomainId();
+
+        var comment = await LoadOwnCommentAsync(workItemId, commentId, token, cancellationToken);
+        var body = request.Body.Trim();
+
+        // DG PUT tam değiştirir → mevcut alanları koru, yalnızca gövde + editedDate güncelle.
+        // author okuma sırasında tam @users nesnesine genişlemiş olabilir → düz id'ye normalize et.
+        var merged = new Dictionary<string, object?>(comment, StringComparer.OrdinalIgnoreCase)
+        {
+            ["author"] = WorkItemDataHelper.GetPersonRefId(comment, "author"),
+            ["body"] = body,
+            ["editedDate"] = DateTime.UtcNow
+        };
+        merged.Remove("__dataId");
+
+        await _dg.UpdateAsync(OcDatasets.Comments, commentId, merged, token, cancellationToken);
+
+        return new CommentDto
+        {
+            Id = commentId,
+            WorkItemId = workItemId,
+            Body = body,
+            Author = _requestContext.Username,
+            ParentCommentId = GetString(comment, "parentCommentId"),
+            CommentDate = WorkItemDataHelper.GetDateTime(comment, "commentDate")
+        };
+    }
+
+    public async Task DeleteCommentAsync(
+        string workItemId,
+        string commentId,
+        CancellationToken cancellationToken = default)
+    {
+        var token = RequireToken();
+        RequireDomainId();
+
+        await LoadOwnCommentAsync(workItemId, commentId, token, cancellationToken);
+
+        var deleted = await _dg.DeleteAsync(OcDatasets.Comments, commentId, token, cancellationToken);
+        if (!deleted)
+        {
+            throw new OperationCoreException(
+                "COMMENT_DELETE_FAILED",
+                $"Comment '{commentId}' could not be deleted.",
+                $"Yorum '{commentId}' silinemedi.",
+                502);
+        }
+    }
+
+    // Yorumu yükler; iş kaydına ait olduğunu ve geçerli kullanıcının yazarı olduğunu doğrular (aksi 404/403).
+    private async Task<Dictionary<string, object?>> LoadOwnCommentAsync(
+        string workItemId,
+        string commentId,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var comment = await _dg.GetByIdAsync<Dictionary<string, object?>>(OcDatasets.Comments, commentId, token, cancellationToken);
+        if (comment == null)
+        {
+            throw new OperationCoreException(
+                "COMMENT_NOT_FOUND",
+                $"Comment '{commentId}' not found.",
+                $"Yorum '{commentId}' bulunamadı.",
+                404);
+        }
+
+        // path manipülasyonuna karşı: yorum gerçekten bu iş kaydına mı ait?
+        if (!string.Equals(GetString(comment, "sourceRecordId"), workItemId, StringComparison.Ordinal))
+        {
+            throw new OperationCoreException(
+                "COMMENT_NOT_FOUND",
+                $"Comment '{commentId}' does not belong to work item '{workItemId}'.",
+                $"Yorum '{commentId}' bu iş kaydına ait değil.",
+                404);
+        }
+
+        var authorId = WorkItemDataHelper.GetPersonRefId(comment, "author");
+        var me = _requestContext.MngPersonId;
+        if (string.IsNullOrWhiteSpace(authorId)
+            || string.IsNullOrWhiteSpace(me)
+            || !string.Equals(authorId, me, StringComparison.Ordinal))
+        {
+            throw new OperationCoreException(
+                "COMMENT_FORBIDDEN",
+                "You can only modify your own comments.",
+                "Yalnızca kendi yorumlarınızı düzenleyebilir veya silebilirsiniz.",
+                403);
+        }
+
+        return comment;
+    }
+
     public async Task DeleteAsync(
         string workItemId,
         bool force = false,
@@ -635,7 +737,9 @@ public class WorkItemCommandService : IWorkItemCommandService
         {
             ["sourceDataset"] = OcDatasets.WorkItems,
             ["sourceRecordId"] = workItemId,
-            ["author"] = _requestContext.Username,
+            // Yazar = MngPersonId (Keeper @users id) — createdBy/assignee ile aynı kimlik uzayı;
+            // timeline okunurken People diziniyle ada çözülür. (NP-6 ile tutarlı; forward-only.)
+            ["author"] = _requestContext.MngPersonId,
             ["body"] = body,
             ["commentDate"] = now
         };
@@ -970,7 +1074,8 @@ public class WorkItemCommandService : IWorkItemCommandService
             ["sourceRecordId"] = workItemId,
             ["activityType"] = activityType,
             ["eventType"] = activityType,
-            ["actor"] = _requestContext.Username,
+            // Actor = MngPersonId (Keeper @users id) — timeline okunurken People diziniyle ada çözülür.
+            ["actor"] = _requestContext.MngPersonId,
             ["message"] = summary,
             ["activityDate"] = DateTime.UtcNow
         };

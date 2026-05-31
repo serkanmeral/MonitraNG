@@ -112,4 +112,32 @@ public class WorkItemsController : ControllerBase
         var result = await _workItemCommandService.AddCommentAsync(id, request, cancellationToken);
         return CreatedAtAction(nameof(AddComment), new { id, commentId = result.Id }, result);
     }
+
+    [HttpPut("{id}/comments/{commentId}")]
+    [ProducesResponseType(typeof(CommentDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateComment(
+        string id,
+        string commentId,
+        [FromBody] UpdateCommentRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _workItemCommandService.UpdateCommentAsync(id, commentId, request, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpDelete("{id}/comments/{commentId}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteComment(
+        string id,
+        string commentId,
+        CancellationToken cancellationToken)
+    {
+        await _workItemCommandService.DeleteCommentAsync(id, commentId, cancellationToken);
+        return NoContent();
+    }
 }

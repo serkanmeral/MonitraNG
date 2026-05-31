@@ -1,11 +1,37 @@
 # MngOperations & Operation Core UI — Devam noktası (checkpoint)
 
-**Son güncelleme:** 31 Mayıs 2026 (F-T2/F-K + BLF-10 + NP-7 + BL-GRP + BO-5/BO-6 + BL-GRP-2 — `mngoperations`+`mngui` Odak'a deploy edildi, healthy)  
+**Son güncelleme:** 1 Haziran 2026 gece (**OC-CMT** — Yorumlar/Aktivite tab ayrımı + zengin editör + yazar adı çözümü + düzenle/sil — `mngoperations` Odak'ta canlı; `mngui` deploy ediliyor)  
 **Durum:** SW **SW-0…SW-6** ✅ · A1 R-Plus ✅ · **SLA-0/1/2** ✅ · **D1 Board admin** ✅ · **BL** ✅ · **BO (+BO-5/6)** ✅ · **BLF (+BLF-8/9/10)** ✅ · **BLC** ✅ · **FC** ✅ · **NP (+NP-7)** ✅ · **E1-P1/W-CREATE/E1-P2** ✅ · **CC** ✅ · **A** ✅ · **F (+F-T2/F-K)** ✅ · **BL-GRP (+BL-GRP-2)** ✅ · **PERF** ✅ — hepsi Odak'ta canlı
 
-> **Kaldığımız yer (31 May):** Biriken backlog (F-T2/F-K, BLF-10, NP-7, BL-GRP, BO-5/6, BL-GRP-2) **`mngoperations`+`mngui` Odak'a deploy edildi** (31 May ~02:28, healthy — `gateway=200 ui=200`, SLA-1 smoke yeşil OCD-0065). Ardından **grup alan filtresi (BL-GRP-3)** de yapıldı ve `mngui` deploy edildi (31 May ~02:41, `ui=200`). Tüm biriken işler Odak'ta canlı; değişiklikler `main`'e **commit + push** edildi. Ardından **Keeper `by-ids` toplu uç + Redis profil cache (BL-KB)** yapıldı (User/Group `POST by-ids`; MO dizin servisleri tek istekte çözer, N+1 giderildi; Keeper'da `IDirectoryCache` Redis cache + CRUD invalidation) ve **`mngkeeper`+`mngoperations` Odak'a deploy edildi** (31 May ~03:04, healthy). Ardından **Faz-4 / dosya bölme (B)** kısmen yapıldı (davranış birebir aynı): `RuntimeContextService.cs` 1549→1015 satır + 3 `partial` dosya (MO build 0/0); `operationCoreService.ts` 2324→2025 satır, leaf domain'ler (notifications/rules/sla/schedules) `services/operationCore/` altına barrel ile taşındı (`nuxt build` temiz). Henüz commit/deploy **yapılmadı**. Sıradaki: kalan TS domain'leri (opsiyonel) ve/veya tablo sanallaştırma (ihtiyaç doğunca).
+> **⭐ KALDIĞIMIZ YER (1 Haz ~01:20) — yeni chat buradan devam edecek:** Bu chat'te **OC-CMT** tamamlandı (aşağıdaki bölüm): profil ekranında **Detaylar | Yorumlar | Aktivite | Ekler** tab ayrımı, yorumlar için **TipTap zengin editör + emoji + tek seviyeli yanıt thread'i**, **yazar adı çözümü** (iki ayrı bug düzeltildi → aşağı bak), ve **kendi yorumunu düzenle/sil** (yalnız yazar, backend-enforced). `mngoperations` Odak'a **`--no-cache`** ile deploy edildi (healthy). **mngui deploy + commit/push bu adımda yapılıyor.** ⚠️ **Deploy dersi:** `deploy-odak-apps.ps1` normal `docker compose build` katman cache'i bazen değişen kaynağı almıyor (build ~36sn = sahte) → kaynak fix'i Odak'a gitse de eski binary çalışıyor. Çözüm: kritik backend fix sonrası **`docker compose build --no-cache mngoperations`**. **Sıradaki iş:** kullanıcı **Dosyalar (Ekler) sekmesinde önizleme** istiyor (görsel/PDF/düz metin). *(Aşağıdaki 31 May notu tarihsel.)*
+>
+> **KALDIĞIMIZ YER (31 May ~23:20):** Bu chat'te yapılanlar Odak'ta canlı: **BL-KB** (Keeper by-ids + Redis), **Faz-4/B** (RuntimeContextService partial + operationCoreService barrel — davranış birebir), **Faz-4/A** (Kanban kolonlarına "daha fazla yükle"). Tüm değişiklikler `main`'e push edildi (`f0f64cc`, `5c1d7fb`, `f98889b`, `90374ce`). **Birleşik manuel kontrol rehberi** oluşturuldu: [KONTROL_REHBERI_2026-05-31.md](KONTROL_REHBERI_2026-05-31.md). Kullanıcı sunucudaki (Odak) web UI üzerinden kontrole başladı ve **kritik bir config bug** buldu+düzeltti: **UI nginx'te `/api/operations/` proxy bloğu hiç yokmuş** → tüm OC runtime çağrıları (board liste POST, profil, workspace genel, form katalog enrichment) `try_files index.html`'e düşüyordu (405 / boş tab / ham id). `Mng.Ui/nginx.conf`'a `/api/operations/` → `mngoperations:5086/api/` bloğu eklendi, `mngui` deploy edildi (~23:10), doğrulandı (`/api/operations/v1/health/live` → 200 JSON). **nginx.conf fix'i commit+push edildi (`000e624`).** **Sıradaki:** (1) ✅ `nginx.conf` fix'i commit+push edildi; (2) kontrol rehberindeki maddeleri (board liste B/C/D, profil, NP-7, gruplar, Faz-4) sunucu UI'sinde tek tek doğrula; kullanıcı yeni gözlemler/bug'lar yazacak → birlikte fix. *(Aşağıdaki uzun "Kaldığımız yer" paragrafı önceki ara durumdur, tarihsel.)*
+>
+> **Kaldığımız yer (31 May, önceki):** Biriken backlog (F-T2/F-K, BLF-10, NP-7, BL-GRP, BO-5/6, BL-GRP-2) **`mngoperations`+`mngui` Odak'a deploy edildi** (31 May ~02:28, healthy — `gateway=200 ui=200`, SLA-1 smoke yeşil OCD-0065). Ardından **grup alan filtresi (BL-GRP-3)** de yapıldı ve `mngui` deploy edildi (31 May ~02:41, `ui=200`). Tüm biriken işler Odak'ta canlı; değişiklikler `main`'e **commit + push** edildi. Ardından **Keeper `by-ids` toplu uç + Redis profil cache (BL-KB)** yapıldı (User/Group `POST by-ids`; MO dizin servisleri tek istekte çözer, N+1 giderildi; Keeper'da `IDirectoryCache` Redis cache + CRUD invalidation) ve **`mngkeeper`+`mngoperations` Odak'a deploy edildi** (31 May ~03:04, healthy). Ardından **Faz-4 / dosya bölme (B)** kısmen yapıldı (davranış birebir aynı): `RuntimeContextService.cs` 1549→1015 satır + 3 `partial` dosya (MO build 0/0); `operationCoreService.ts` 2324→2025 satır, leaf domain'ler (notifications/rules/sla/schedules) `services/operationCore/` altına barrel ile taşındı (`nuxt build` temiz). Henüz commit/deploy **yapılmadı**. Sıradaki: kalan TS domain'leri (opsiyonel) ve/veya tablo sanallaştırma (ihtiyaç doğunca).
 
 **Ana plan:** [OC_UI_ADMIN_FAZ1_PLAN.md](../ui/OC_UI_ADMIN_FAZ1_PLAN.md) · **Perf detay:** [PERF_OPTIMIZATION.md](PERF_OPTIMIZATION.md) · **Bu oturum kontrol rehberi:** [PERF_KONTROL_REHBERI.md](PERF_KONTROL_REHBERI.md)
+
+---
+
+## OC-CMT — Yorumlar/Aktivite tab ayrımı + zengin editör + yazar adı çözümü + düzenle/sil (1 Haz)
+
+Profil ekranındaki tek "Aktivite & yorum" sekmesi **Detaylar | Yorumlar | Aktivite | Ekler** olarak ayrıldı. Yorumlar zengin (TipTap) editöre, emoji paletine, tek seviyeli yanıt thread'ine ve **yazarın kendi yorumunu düzenleme/silme** yetkisine kavuştu. Yazar/aktör adları timeline'da doğru çözülür.
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **OC-CMT-1** | ✅ | **Tab ayrımı** — `profile/index.vue` sekmeleri `Detaylar \| Yorumlar[N] \| Aktivite[N] \| Ekler`. `commentThreads` (kök + tek seviye yanıt) ve `activityEntries` (yorum dışı) computed'ları. i18n `operationCore.profile.tabs.*` + `comments.*` + `activity.empty`. |
+| **OC-CMT-2** | ✅ | **Zengin editör + emoji + yanıt** — `OcCommentComposer` `v-textarea`→**TipTap** (StarterKit: kalın/italik/üstü-çizili/liste); hafif özel **emoji paleti**; `@`-mention TipTap'e uyarlandı. Yorum gövdesi **HTML** saklanır, render'da **DOMPurify** ile sanitize (client-only). Tek seviye thread (`parentCommentId`), "↳ {ad} kişisine yanıt" etiketi. `dompurify` + `@types/dompurify` eklendi. |
+| **OC-CMT-3** | ✅ | **Yazar adı çözümü (2 ayrı bug)** — (a) yorum/aktivite `author`/`actor` artık `MngPersonId` yazılıyor (NP-4/6 ile aynı uzay); (b) **DG, person referans alanını okuma sırasında tam `@users` nesnesine genişletiyor** (`{__dataId, firstName, ...}`) → `GetString` tüm JSON'u string sanıyordu. **`WorkItemDataHelper.GetPersonRefId/GetPersonRefName`** eklendi: düz id veya genişletilmiş nesneden gerçek id'yi çıkarır; `GetTimelineAsync` önce dizinden (BL-KB) ada, olmazsa nesnedeki ad/soyada, en son ham id'ye düşer. Ayrıca `HttpRequestContext.MngPersonId` claim JSON gelirse `__dataId`'yi çıkaracak şekilde savunmacı yapıldı. |
+| **OC-CMT-4** | ✅ | **Kendi yorumunu düzenle/sil** — `PUT/DELETE /work-items/{id}/comments/{commentId}`. Yetki **backend-enforced**: `LoadOwnCommentAsync` yorumun iş kaydına ait olduğunu + yazarın (`GetPersonRefId(author)`) geçerli `MngPersonId` ile eşleştiğini doğrular (aksi 404/403). Güncellemede DG PUT tam-değiştirme → mevcut alanlar korunur, `author` düz id'ye normalize edilir, `editedDate` yazılır. UI: kendi yorumunda **Düzenle** (inline TipTap, ek butonu kapalı) / **Sil** (onay dialogu); "(düzenlendi)" etiketi. Timeline'a `ActorId` + `EditedAt`, `OcTimelineEntry`'ye `actorId`/`editedAt`. |
+
+**MO değişen:** `Utilities/WorkItemDataHelper.cs` (`GetPersonRefId`/`GetPersonRefName`), `Services/RuntimeContextService.cs` (`ResolveActor` nesne-farkında + `ActorId`/`EditedAt`), `Services/WorkItemCommandService.cs` (author=MngPersonId + `UpdateCommentAsync`/`DeleteCommentAsync`/`LoadOwnCommentAsync`), `Controllers/WorkItemsController.cs` (PUT/DELETE comment), `Contracts/WorkItems/AddCommentRequest.cs` (`UpdateCommentRequest`), `Interfaces/IWorkItemCommandService.cs`, `Contracts/Runtime/ProfileRuntimeContext.cs` (`ActorId`/`EditedAt`), `Presentation/.../Services/HttpRequestContext.cs` (`MngPersonId` JSON-savunma).
+**UI değişen:** `OcCommentComposer.vue` (TipTap + emoji + `initialHtml`/`showCancel`/`allowAttachments`), `profile/index.vue` (tab ayrımı + thread + edit/delete + DOMPurify), `services/operationCoreService.ts` (`ocUpdateWorkItemComment`/`ocDeleteWorkItemComment` + `mapTimelineEntry` actorId/editedAt), `types/apps/operationCore.ts` (`OcTimelineEntry.actorId/editedAt`), locale `tr/en` (`comments.edit/delete/save/edited/deleteTitle/deleteConfirm`), `package.json` (`dompurify`).
+**Deploy:** MO build temiz · Nuxt build temiz · **`mngoperations` Odak'a `--no-cache` deploy (healthy, `oc_live=200`)** · `mngui` deploy + commit/push bu adımda.
+
+**Açık/ileriki:**
+- ⬜ **Ekler (Dosyalar) sekmesi — önizleme** (görsel/PDF/düz metin) — **sıradaki iş**.
+- ⬜ Aktivite sekmesinde alan değişiklik satırları (`Öncelik: Düşük → Yüksek`, kim/ne zaman) — `op_activities`'e `changes[]` yazımı.
+- ⬜ Düzenlemede mention/ek değişikliği (şimdilik yalnız gövde güncelleniyor).
 
 ---
 
@@ -289,7 +315,41 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 
 **Faz-4/A (sanallaştırma) — yapılmadı, yerine "daha fazla yükle" eklendi (31 May):** İnceleme: Kanban kolonları tek sayfa (`take=suggestedPageSize`) yüklüyor, kartlar `vue-draggable-next` içinde (içeride sanallaştırma DnD'yi bozar); liste görünümü `v-data-table-server`, admin tabloları `v-data-table` (zaten sayfalı). Yani sanallaştırma için güvenli/faydalı hedef yok. Bunun yerine **Kanban kolonlarına "daha fazla yükle"** eklendi: `store.loadMoreColumn` (skip=yüklü kart sayısı, append + dedupe, people/groups merge, fail-soft) + `OcBoardKanban` kolon altı buton (`n/total`, `columnLoadingMore` spinner). Büyük backlog'lar artık erişilebilir. `nuxt build` temiz.
 
-**Deploy:** Faz-4/B refactor (RuntimeContextService partial + operationCore barrel) `mngoperations`+`mngui` Odak'a **deploy edildi** (31 May ~22:12, healthy — `gateway=200 ui=200`, SLA smoke OCD-0066 yeşil). "Daha fazla yükle" henüz deploy edilmedi.
+**Deploy:** Faz-4/B refactor (RuntimeContextService partial + operationCore barrel) `mngoperations`+`mngui` Odak'a **deploy edildi** (31 May ~22:12, healthy — `gateway=200 ui=200`, SLA smoke OCD-0066 yeşil). Kanban **"daha fazla yükle"** (commit `90374ce`) de `mngui` ile Odak'a **deploy edildi** (31 May ~22:35, `ui=200`). Tüm bu chat çıktıları artık canlı.
+
+> **Manuel kontrol:** Bu chat'te yapılan ve kullanıcı tarafından henüz doğrulanmamış tüm işler için birleşik kontrol rehberi: [KONTROL_REHBERI_2026-05-31.md](KONTROL_REHBERI_2026-05-31.md).
+
+---
+
+## UI-NGINX — `/api/operations/` proxy fix (31 May gece, KRİTİK config bug)
+
+**Belirti (sunucu UI'sinde 3 ayrı görünüm, tek kök neden):** (1) Board liste görünümü `405 Not Allowed` (nginx/1.31.1) verdi; (2) Workspace → **Genel** tab boş geldi; (3) Form düzenlemede varsayılan öncelik **adı yerine id** gösterdi.
+
+**Kök neden:** Üretim UI'si statik SPA (`npm run generate` → `.output/public`) + **nginx** ile servis ediliyor (`Mng.Ui/Dockerfile` → `Mng.Ui/nginx.conf`). UI, OC çağrılarını same-origin `/api/operations/v1/...` yoluna yapıyor (`services/apiService.ts` `fetchFromOperations`). nginx.conf'ta `/api/auth`, `/api/keeper`, `/api/admin`, `/api/llm`, `/api/data`, `/api/v1` proxy blokları vardı ama **`/api/operations/` bloğu hiç yoktu** (`git log -S "api/operations" -- Mng.Ui/nginx.conf` boş). Dolayısıyla tüm OC runtime çağrıları `location /` → `try_files $uri $uri/ /index.html`'e düşüyordu: GET → index.html (HTML, JSON değil → boş/ham); POST → statik dosyaya POST olamaz → **405**. Dataset çağrıları `/api/data/` (DataGateway) proxy'li olduğundan çalışıyordu; sadece mngoperations'a giden runtime/profil/board-list/bildirim çağrıları kırıktı. *(Bu yüzden önceki deploylar health/smoke (gateway) ile yeşil görünüyordu ama tarayıcıdan OC runtime hiç çalışmamıştı.)*
+
+**Fix:** `Mng.Ui/nginx.conf`'a eklendi (diğer bloklarla simetrik):
+```nginx
+location /api/operations/ {
+    set $oc_auth $http_authorization;
+    if ($arg_access_token != "") { set $oc_auth "Bearer $arg_access_token"; }
+    client_max_body_size 50m;
+    proxy_pass http://mngoperations:5086/api/;   # /api/operations/v1/... -> mngoperations /api/v1/...
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Authorization $oc_auth;
+    proxy_pass_header Access-Control-Allow-Origin;
+    proxy_pass_header Access-Control-Allow-Methods;
+    proxy_pass_header Access-Control-Allow-Headers;
+}
+```
+(`mngui` + `mngoperations` aynı ağda `mng_common_mng_network`; mngoperations route'ları `/api/v1/...`.)
+
+**Deploy/doğrulama:** `mngui` sync+build+up (31 May ~23:10, healthy). `http://192.168.20.20:3000/api/operations/v1/health/live` → **200 `application/json` `{"status":"alive"}`** (eskiden index.html/405). 3 belirtiyi de çözmesi beklenir; kullanıcı tarayıcıda (hard refresh sonrası) teyit edecek.
+
+**✅ Commit edildi:** `Mng.Ui/nginx.conf` fix'i `main`'e commit+push edildi (`000e624` — `fix(ui-nginx): add /api/operations proxy to mngui`).
 
 ---
 

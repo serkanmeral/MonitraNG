@@ -19,6 +19,12 @@ public sealed class CommentAttachmentInput
     public required string OriginalFileName { get; init; }
 }
 
+/// <summary>Yorum düzenleme — yalnızca gövde güncellenir (mention/ek değişmez). Yetki: yalnızca yazar.</summary>
+public sealed class UpdateCommentRequest
+{
+    public required string Body { get; init; }
+}
+
 public sealed class CommentDto
 {
     public required string Id { get; init; }

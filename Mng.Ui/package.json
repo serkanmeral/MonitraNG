@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "@types/chance": "^1.1.6",
+    "@types/dompurify": "^3.0.5",
     "@types/lodash": "^4.17.9",
     "nuxt": "^3.13.2"
   },
@@ -37,6 +38,7 @@
     "axios-mock-adapter": "2.0.0",
     "chance": "1.1.12",
     "date-fns": "3.6.0",
+    "dompurify": "^3.4.7",
     "expr-eval": "^2.0.2",
     "jose": "^5.9.6",
     "leaflet": "^1.9.4",

@@ -26,6 +26,19 @@ public interface IWorkItemCommandService
         AddCommentRequest request,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Yorum gövdesini günceller. Yetki: yalnızca yorumun yazarı (aksi 403).</summary>
+    Task<CommentDto> UpdateCommentAsync(
+        string workItemId,
+        string commentId,
+        UpdateCommentRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Yorumu siler. Yetki: yalnızca yorumun yazarı (aksi 403).</summary>
+    Task DeleteCommentAsync(
+        string workItemId,
+        string commentId,
+        CancellationToken cancellationToken = default);
+
     Task DeleteAsync(
         string workItemId,
         bool force = false,

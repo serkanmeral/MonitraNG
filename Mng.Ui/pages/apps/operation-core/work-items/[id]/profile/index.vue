@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import DOMPurify from 'dompurify';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import OcDynamicForm from '@/components/apps/operation-core/OcDynamicForm.vue';
 import OcBoardCatalogLabel from '@/components/apps/operation-core/OcBoardCatalogLabel.vue';
@@ -16,6 +17,7 @@ import {
   ocAddWorkItemAttachment,
   ocAddWorkItemComment,
   ocApplyTransition,
+  ocDeleteWorkItemComment,
   ocDownloadAttachment,
   ocExtractDgErrorMessage,
   ocGetFormEditContext,
@@ -23,7 +25,9 @@ import {
   ocGetWorkItemTimeline,
   ocListPoolFieldsForWorkspace,
   ocRemoveWorkItemAttachment,
+  ocUpdateWorkItemComment,
 } from '@/services/operationCoreService';
+import { useAuthStore } from '@/stores/auth';
 import type {
   OcAttachment,
   OcFormRuntimeContext,
@@ -51,7 +55,7 @@ const formContext = ref<OcFormRuntimeContext | null>(null);
 const formModel = ref<Record<string, unknown>>({});
 const profile = ref<OcWorkItemProfile | null>(null);
 
-const activeTab = ref<'details' | 'activity' | 'attachments'>('details');
+const activeTab = ref<'details' | 'comments' | 'activity' | 'attachments'>('details');
 
 // --- Aktivite / yorum ---
 const timeline = ref<OcTimelineEntry[]>([]);
@@ -60,6 +64,117 @@ const timelineLoading = ref(false);
 const commentSending = ref(false);
 const commentError = ref<string | null>(null);
 const composerRef = ref<{ reset: () => void } | null>(null);
+
+// --- Yorum yanıtı (tek seviye thread) ---
+const replyingToId = ref<string | null>(null);
+const replyingToActor = ref<string | null>(null);
+
+// --- Yorum düzenleme/silme (yalnızca kendi yorumları) ---
+const authStore = useAuthStore();
+const currentPersonId = computed(() => authStore.userInfo?.mng_person_id ?? null);
+const editingId = ref<string | null>(null);
+const editSending = ref(false);
+const deleteTargetId = ref<string | null>(null);
+const deleteBusy = ref(false);
+
+function canModifyComment(entry: OcTimelineEntry): boolean {
+  const me = currentPersonId.value;
+  return !!me && !!entry.actorId && entry.actorId === me;
+}
+
+function startEdit(entry: OcTimelineEntry) {
+  cancelReply();
+  editingId.value = entry.id ?? null;
+  commentError.value = null;
+}
+
+function cancelEdit() {
+  editingId.value = null;
+}
+
+async function submitEdit(commentId: string, payload: { html: string }) {
+  const body = (payload.html ?? '').trim();
+  if (!body) return;
+  editSending.value = true;
+  commentError.value = null;
+  try {
+    await ocUpdateWorkItemComment(workItemId.value, commentId, body);
+    editingId.value = null;
+    await loadTimeline();
+  } catch (e: unknown) {
+    commentError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.comments.error'));
+  } finally {
+    editSending.value = false;
+  }
+}
+
+async function confirmDeleteComment() {
+  const commentId = deleteTargetId.value;
+  if (!commentId) return;
+  deleteBusy.value = true;
+  commentError.value = null;
+  try {
+    await ocDeleteWorkItemComment(workItemId.value, commentId);
+    deleteTargetId.value = null;
+    await loadTimeline();
+  } catch (e: unknown) {
+    commentError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.comments.error'));
+  } finally {
+    deleteBusy.value = false;
+  }
+}
+
+// Yalnızca yorum girdileri (root + tek seviye yanıtlar gruplanır).
+const commentThreads = computed(() => {
+  const all = timeline.value.filter((e) => e.type === 'comment');
+  const ids = new Set(all.map((c) => c.id ?? ''));
+  const byParent = new Map<string, OcTimelineEntry[]>();
+  const roots: OcTimelineEntry[] = [];
+  for (const c of all) {
+    const pid = c.parentId ?? '';
+    if (pid && ids.has(pid)) {
+      const arr = byParent.get(pid) ?? [];
+      arr.push(c);
+      byParent.set(pid, arr);
+    } else {
+      roots.push(c);
+    }
+  }
+  // Timeline en yeni önce gelir; yanıtları kronolojik (eski→yeni) göster.
+  return roots.map((r) => ({
+    root: r,
+    replies: (byParent.get(r.id ?? '') ?? []).slice().reverse(),
+  }));
+});
+
+const commentCount = computed(() => timeline.value.filter((e) => e.type === 'comment').length);
+
+// Yorum dışı (durum/geçiş/sistem) girdiler — Aktivite sekmesi.
+const activityEntries = computed(() => timeline.value.filter((e) => e.type !== 'comment'));
+
+// Yorum gövdesi HTML olarak saklanır; render'da XSS'e karşı sanitize edilir (client-only).
+function renderCommentHtml(html: string | null | undefined): string {
+  if (!html) return '';
+  if (!import.meta.client) return '';
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: [
+      'p', 'br', 'strong', 'b', 'em', 'i', 's', 'strike', 'del',
+      'ul', 'ol', 'li', 'a', 'code', 'pre', 'blockquote', 'span',
+    ],
+    ALLOWED_ATTR: ['href', 'target', 'rel'],
+  });
+}
+
+function startReply(entry: OcTimelineEntry) {
+  replyingToId.value = entry.id ?? null;
+  replyingToActor.value = entry.actor ?? null;
+  activeTab.value = 'comments';
+}
+
+function cancelReply() {
+  replyingToId.value = null;
+  replyingToActor.value = null;
+}
 
 const workItemTitle = computed(() => {
   const fromProfile = profile.value?.workItem.title;
@@ -221,15 +336,16 @@ async function loadTimeline() {
   }
 }
 
-async function submitComment(payload: { body: string; mentions: string[]; files: File[] }) {
-  const body = payload.body.trim();
+async function submitComment(payload: { html: string; mentions: string[]; files: File[] }) {
+  const body = (payload.html ?? '').trim();
   const files = payload.files ?? [];
   if (!body && files.length === 0) return;
   commentSending.value = true;
   commentError.value = null;
   try {
-    await ocAddWorkItemComment(workItemId.value, body, null, payload.mentions, files);
+    await ocAddWorkItemComment(workItemId.value, body, replyingToId.value, payload.mentions, files);
     composerRef.value?.reset();
+    cancelReply();
     await loadTimeline();
   } catch (e: unknown) {
     commentError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.comments.error'));
@@ -474,6 +590,22 @@ watch(workItemId, () => {
       </v-card>
     </v-dialog>
 
+    <v-dialog :model-value="!!deleteTargetId" max-width="420" persistent>
+      <v-card rounded="lg">
+        <v-card-title class="text-h6">{{ t('operationCore.profile.comments.deleteTitle') }}</v-card-title>
+        <v-card-text class="text-body-2">{{ t('operationCore.profile.comments.deleteConfirm') }}</v-card-text>
+        <v-card-actions class="px-4 pb-4">
+          <v-spacer />
+          <v-btn variant="text" class="text-none" :disabled="deleteBusy" @click="deleteTargetId = null">
+            {{ t('operationCore.definitions.cancel') }}
+          </v-btn>
+          <v-btn color="error" variant="flat" class="text-none" :loading="deleteBusy" @click="confirmDeleteComment">
+            {{ t('operationCore.profile.comments.delete') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
 
     <v-alert v-if="errorLocal" type="error" variant="tonal" class="mb-4 rounded-lg" closable @click:close="errorLocal = null">
@@ -489,11 +621,18 @@ watch(workItemId, () => {
               <v-icon icon="mdi-form-select" start size="18" />
               {{ t('operationCore.profile.tabs.details') }}
             </v-tab>
+            <v-tab value="comments" class="text-none">
+              <v-icon icon="mdi-comment-multiple-outline" start size="18" />
+              {{ t('operationCore.profile.tabs.comments') }}
+              <v-chip v-if="commentCount" size="x-small" class="ml-2" color="primary" variant="tonal">
+                {{ commentCount }}
+              </v-chip>
+            </v-tab>
             <v-tab value="activity" class="text-none">
-              <v-icon icon="mdi-timeline-text-outline" start size="18" />
+              <v-icon icon="mdi-history" start size="18" />
               {{ t('operationCore.profile.tabs.activity') }}
-              <v-chip v-if="timelineTotal" size="x-small" class="ml-2" color="primary" variant="tonal">
-                {{ timelineTotal }}
+              <v-chip v-if="activityEntries.length" size="x-small" class="ml-2" color="primary" variant="tonal">
+                {{ activityEntries.length }}
               </v-chip>
             </v-tab>
             <v-tab value="attachments" class="text-none">
@@ -512,16 +651,26 @@ watch(workItemId, () => {
               </v-card-text>
             </v-window-item>
 
-            <v-window-item value="activity">
+            <v-window-item value="comments">
               <v-card-text class="pa-4">
                 <div v-if="canComment" class="mb-4">
-                  <OcCommentComposer
-                    ref="composerRef"
-                    :placeholder="t('operationCore.profile.comments.placeholder')"
-                    :send-label="t('operationCore.profile.comments.send')"
-                    :sending="commentSending"
-                    @submit="submitComment"
-                  />
+                  <div v-if="replyingToId" class="d-flex align-center ga-2 mb-2">
+                    <v-chip size="small" color="primary" variant="tonal" prepend-icon="mdi-reply">
+                      {{ t('operationCore.profile.comments.replyingTo', { name: replyingToActor || '—' }) }}
+                    </v-chip>
+                    <v-btn size="x-small" variant="text" class="text-none" @click="cancelReply">
+                      {{ t('operationCore.definitions.cancel') }}
+                    </v-btn>
+                  </div>
+                  <client-only>
+                    <OcCommentComposer
+                      ref="composerRef"
+                      :placeholder="t('operationCore.profile.comments.placeholder')"
+                      :send-label="t('operationCore.profile.comments.send')"
+                      :sending="commentSending"
+                      @submit="submitComment"
+                    />
+                  </client-only>
                   <v-alert v-if="commentError" type="error" variant="tonal" density="compact" class="mt-2 rounded-lg">
                     {{ commentError }}
                   </v-alert>
@@ -532,12 +681,178 @@ watch(workItemId, () => {
                 <div v-if="timelineLoading" class="d-flex justify-center py-6">
                   <v-progress-circular indeterminate color="primary" size="28" />
                 </div>
-                <div v-else-if="!timeline.length" class="text-body-2 text-medium-emphasis text-center py-6">
+                <div v-else-if="!commentThreads.length" class="text-body-2 text-medium-emphasis text-center py-6">
                   {{ t('operationCore.profile.comments.empty') }}
+                </div>
+                <div v-else class="d-flex flex-column ga-3">
+                  <div v-for="thread in commentThreads" :key="thread.root.id ?? ''" class="oc-comment-thread">
+                    <!-- Kök yorum -->
+                    <div class="oc-comment-card">
+                      <div class="d-flex align-center flex-wrap ga-2">
+                        <v-avatar size="26" color="primary" variant="tonal">
+                          <span class="text-caption font-weight-bold">{{ (thread.root.actor || '?').slice(0, 1).toUpperCase() }}</span>
+                        </v-avatar>
+                        <span class="text-body-2 font-weight-medium">{{ thread.root.actor || '—' }}</span>
+                        <span v-if="thread.root.at" class="text-caption text-medium-emphasis">{{ fmtDate(thread.root.at) }}</span>
+                        <span v-if="thread.root.editedAt" class="text-caption text-medium-emphasis font-italic">{{ t('operationCore.profile.comments.edited') }}</span>
+                      </div>
+
+                      <template v-if="editingId === thread.root.id">
+                        <client-only>
+                          <OcCommentComposer
+                            class="mt-2"
+                            :placeholder="t('operationCore.profile.comments.placeholder')"
+                            :send-label="t('operationCore.profile.comments.save')"
+                            :sending="editSending"
+                            :initial-html="thread.root.text ?? ''"
+                            :allow-attachments="false"
+                            show-cancel
+                            @submit="(p) => submitEdit(thread.root.id ?? '', p)"
+                            @cancel="cancelEdit"
+                          />
+                        </client-only>
+                      </template>
+                      <template v-else>
+                        <div class="oc-comment-body text-body-2 mt-1" v-html="renderCommentHtml(thread.root.text)" />
+                        <div v-if="thread.root.attachments && thread.root.attachments.length" class="d-flex flex-wrap ga-2 mt-2">
+                          <v-chip
+                            v-for="att in thread.root.attachments"
+                            :key="att.path"
+                            size="small"
+                            variant="outlined"
+                            rounded="lg"
+                            prepend-icon="mdi-paperclip"
+                            link
+                            @click="downloadAttachment(att)"
+                          >
+                            {{ att.fileName }}
+                          </v-chip>
+                        </div>
+                        <div class="mt-1 d-flex align-center flex-wrap ga-1">
+                          <v-btn
+                            v-if="canComment"
+                            size="x-small"
+                            variant="text"
+                            class="text-none"
+                            prepend-icon="mdi-reply"
+                            @click="startReply(thread.root)"
+                          >
+                            {{ t('operationCore.profile.comments.reply') }}
+                          </v-btn>
+                          <template v-if="canModifyComment(thread.root)">
+                            <v-btn
+                              size="x-small"
+                              variant="text"
+                              class="text-none"
+                              prepend-icon="mdi-pencil"
+                              @click="startEdit(thread.root)"
+                            >
+                              {{ t('operationCore.profile.comments.edit') }}
+                            </v-btn>
+                            <v-btn
+                              size="x-small"
+                              variant="text"
+                              color="error"
+                              class="text-none"
+                              prepend-icon="mdi-delete-outline"
+                              @click="deleteTargetId = thread.root.id ?? null"
+                            >
+                              {{ t('operationCore.profile.comments.delete') }}
+                            </v-btn>
+                          </template>
+                        </div>
+                      </template>
+                    </div>
+
+                    <!-- Yanıtlar (tek seviye, girintili) -->
+                    <div
+                      v-for="reply in thread.replies"
+                      :key="reply.id ?? ''"
+                      class="oc-comment-card oc-comment-reply"
+                    >
+                      <div class="text-caption text-medium-emphasis d-flex align-center ga-1 mb-1">
+                        <v-icon icon="mdi-reply" size="13" />
+                        {{ t('operationCore.profile.comments.inReplyTo', { name: thread.root.actor || '—' }) }}
+                      </div>
+                      <div class="d-flex align-center flex-wrap ga-2">
+                        <v-avatar size="22" color="secondary" variant="tonal">
+                          <span class="text-caption font-weight-bold">{{ (reply.actor || '?').slice(0, 1).toUpperCase() }}</span>
+                        </v-avatar>
+                        <span class="text-body-2 font-weight-medium">{{ reply.actor || '—' }}</span>
+                        <span v-if="reply.at" class="text-caption text-medium-emphasis">{{ fmtDate(reply.at) }}</span>
+                        <span v-if="reply.editedAt" class="text-caption text-medium-emphasis font-italic">{{ t('operationCore.profile.comments.edited') }}</span>
+                      </div>
+
+                      <template v-if="editingId === reply.id">
+                        <client-only>
+                          <OcCommentComposer
+                            class="mt-2"
+                            :placeholder="t('operationCore.profile.comments.placeholder')"
+                            :send-label="t('operationCore.profile.comments.save')"
+                            :sending="editSending"
+                            :initial-html="reply.text ?? ''"
+                            :allow-attachments="false"
+                            show-cancel
+                            @submit="(p) => submitEdit(reply.id ?? '', p)"
+                            @cancel="cancelEdit"
+                          />
+                        </client-only>
+                      </template>
+                      <template v-else>
+                        <div class="oc-comment-body text-body-2 mt-1" v-html="renderCommentHtml(reply.text)" />
+                        <div v-if="reply.attachments && reply.attachments.length" class="d-flex flex-wrap ga-2 mt-2">
+                          <v-chip
+                            v-for="att in reply.attachments"
+                            :key="att.path"
+                            size="small"
+                            variant="outlined"
+                            rounded="lg"
+                            prepend-icon="mdi-paperclip"
+                            link
+                            @click="downloadAttachment(att)"
+                          >
+                            {{ att.fileName }}
+                          </v-chip>
+                        </div>
+                        <div v-if="canModifyComment(reply)" class="mt-1 d-flex align-center flex-wrap ga-1">
+                          <v-btn
+                            size="x-small"
+                            variant="text"
+                            class="text-none"
+                            prepend-icon="mdi-pencil"
+                            @click="startEdit(reply)"
+                          >
+                            {{ t('operationCore.profile.comments.edit') }}
+                          </v-btn>
+                          <v-btn
+                            size="x-small"
+                            variant="text"
+                            color="error"
+                            class="text-none"
+                            prepend-icon="mdi-delete-outline"
+                            @click="deleteTargetId = reply.id ?? null"
+                          >
+                            {{ t('operationCore.profile.comments.delete') }}
+                          </v-btn>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+              </v-card-text>
+            </v-window-item>
+
+            <v-window-item value="activity">
+              <v-card-text class="pa-4">
+                <div v-if="timelineLoading" class="d-flex justify-center py-6">
+                  <v-progress-circular indeterminate color="primary" size="28" />
+                </div>
+                <div v-else-if="!activityEntries.length" class="text-body-2 text-medium-emphasis text-center py-6">
+                  {{ t('operationCore.profile.activity.empty') }}
                 </div>
                 <v-timeline v-else side="end" density="compact" align="start" truncate-line="both">
                   <v-timeline-item
-                    v-for="(entry, i) in timeline"
+                    v-for="(entry, i) in activityEntries"
                     :key="entry.id ?? i"
                     :dot-color="timelineColor(entry)"
                     size="x-small"
@@ -550,23 +865,6 @@ watch(workItemId, () => {
                       <span v-if="entry.at" class="text-caption text-medium-emphasis">{{ fmtDate(entry.at) }}</span>
                     </div>
                     <div class="text-body-2 mt-1" style="white-space: pre-wrap">{{ entry.text }}</div>
-                    <div
-                      v-if="entry.attachments && entry.attachments.length"
-                      class="d-flex flex-wrap ga-2 mt-2"
-                    >
-                      <v-chip
-                        v-for="att in entry.attachments"
-                        :key="att.path"
-                        size="small"
-                        variant="outlined"
-                        rounded="lg"
-                        prepend-icon="mdi-paperclip"
-                        link
-                        @click="downloadAttachment(att)"
-                      >
-                        {{ att.fileName }}
-                      </v-chip>
-                    </div>
                   </v-timeline-item>
                 </v-timeline>
               </v-card-text>
@@ -799,5 +1097,45 @@ watch(workItemId, () => {
   font-size: 0.875rem;
   text-align: right;
   min-width: 0;
+}
+
+.oc-comment-card {
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.oc-comment-reply {
+  margin-left: 2rem;
+  margin-top: 0.5rem;
+  background: rgba(var(--v-theme-on-surface), 0.03);
+}
+
+.oc-comment-body :deep(p) {
+  margin: 0 0 0.4em;
+}
+
+.oc-comment-body :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.oc-comment-body :deep(ul),
+.oc-comment-body :deep(ol) {
+  padding-left: 1.25rem;
+  margin: 0.25em 0;
+}
+
+.oc-comment-body :deep(blockquote) {
+  border-left: 3px solid rgba(var(--v-theme-primary), 0.4);
+  padding-left: 0.75rem;
+  margin: 0.4em 0;
+  color: rgba(var(--v-theme-on-surface), 0.75);
+}
+
+.oc-comment-body :deep(code) {
+  background: rgba(var(--v-theme-on-surface), 0.08);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  font-size: 0.85em;
 }
 </style>

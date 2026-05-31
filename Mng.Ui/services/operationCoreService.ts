@@ -748,9 +748,12 @@ function mapTimelineEntry(raw: Record<string, unknown>): OcTimelineEntry {
     type: pickStr(raw, 'type', 'Type') ?? '',
     id: pickStr(raw, 'id', 'Id') ?? null,
     actor: pickStr(raw, 'actor', 'Actor') ?? null,
+    actorId: pickStr(raw, 'actorId', 'ActorId') ?? null,
     text: pickStr(raw, 'text', 'Text') ?? null,
     at: pickStr(raw, 'at', 'At') ?? null,
     activityType: pickStr(raw, 'activityType', 'ActivityType') ?? null,
+    editedAt: pickStr(raw, 'editedAt', 'EditedAt') ?? null,
+    parentId: pickStr(raw, 'parentId', 'ParentId') ?? null,
     attachments: atts.length ? atts : undefined,
   };
 }
@@ -823,6 +826,34 @@ export async function ocAddWorkItemComment(
     payload
   )) as Record<string, unknown>;
   return mapComment(raw);
+}
+
+/**
+ * Kendi yorumunun gövdesini günceller (MO yalnızca yazara izin verir; aksi 403).
+ * Yalnızca gövde güncellenir; mention/ek değişmez.
+ */
+export async function ocUpdateWorkItemComment(
+  workItemId: string,
+  commentId: string,
+  body: string
+): Promise<OcComment> {
+  const raw = (await fetchFromOperations(
+    `/api/v1/work-items/${encodeURIComponent(workItemId)}/comments/${encodeURIComponent(commentId)}`,
+    'PUT',
+    { body }
+  )) as Record<string, unknown>;
+  return mapComment(raw);
+}
+
+/** Kendi yorumunu siler (MO yalnızca yazara izin verir; aksi 403). */
+export async function ocDeleteWorkItemComment(
+  workItemId: string,
+  commentId: string
+): Promise<void> {
+  await fetchFromOperations(
+    `/api/v1/work-items/${encodeURIComponent(workItemId)}/comments/${encodeURIComponent(commentId)}`,
+    'DELETE'
+  );
 }
 
 /**

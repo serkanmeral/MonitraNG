@@ -17,6 +17,64 @@ public static class WorkItemDataHelper
         };
     }
 
+    private static readonly string[] PersonIdProps = { "__dataId", "_id", "id", "userId" };
+
+    /// <summary>
+    /// Person referans alanı (author/actor/createdBy ...) DG okuma sırasında tam @users nesnesine
+    /// genişleyebilir. Düz id (string) ise aynen, genişletilmiş nesne ise içindeki id'yi (__dataId/id)
+    /// döndürür; aksi halde null.
+    /// </summary>
+    public static string? GetPersonRefId(IReadOnlyDictionary<string, object?> data, string key)
+    {
+        if (!data.TryGetValue(key, out var value) || value == null)
+            return null;
+
+        if (value is JsonElement el)
+        {
+            if (el.ValueKind == JsonValueKind.String)
+                return el.GetString();
+            if (el.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var n in PersonIdProps)
+                {
+                    if (el.TryGetProperty(n, out var idEl)
+                        && idEl.ValueKind == JsonValueKind.String
+                        && !string.IsNullOrWhiteSpace(idEl.GetString()))
+                    {
+                        return idEl.GetString();
+                    }
+                }
+                return null;
+            }
+            return null;
+        }
+
+        return value.ToString();
+    }
+
+    /// <summary>
+    /// Genişletilmiş person nesnesinden görünen ad (firstName + lastName, yoksa username) üretir;
+    /// alan düz id (string) ise veya nesne değilse null döner (dizin çözümü için).
+    /// </summary>
+    public static string? GetPersonRefName(IReadOnlyDictionary<string, object?> data, string key)
+    {
+        if (!data.TryGetValue(key, out var value)
+            || value is not JsonElement { ValueKind: JsonValueKind.Object } el)
+        {
+            return null;
+        }
+
+        string? Prop(string n) =>
+            el.TryGetProperty(n, out var p) && p.ValueKind == JsonValueKind.String ? p.GetString() : null;
+
+        var full = $"{Prop("firstName")} {Prop("lastName")}".Trim();
+        if (!string.IsNullOrWhiteSpace(full))
+            return full;
+
+        var username = Prop("username");
+        return string.IsNullOrWhiteSpace(username) ? null : username;
+    }
+
     public static bool? GetBool(IReadOnlyDictionary<string, object?> data, string key)
     {
         if (!data.TryGetValue(key, out var value) || value == null)

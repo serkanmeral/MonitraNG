@@ -522,9 +522,15 @@ export interface OcTimelineEntry {
   type: string;
   id?: string | null;
   actor?: string | null;
+  /** Aktör/yazar person id'si — "kendi yorumum mu?" kontrolü için (ad değil id). */
+  actorId?: string | null;
   text?: string | null;
   at?: string | null;
   activityType?: string | null;
+  /** Yorum düzenlendiyse son düzenleme zamanı — yalnızca `type='comment'`. */
+  editedAt?: string | null;
+  /** Yanıt verilen üst yorum id'si — yalnızca `type='comment'` girdilerde (tek seviye thread). */
+  parentId?: string | null;
   /** Yorum ekleri (op_comments.attachments) — yalnızca `type='comment'` girdilerde. */
   attachments?: OcAttachment[];
 }
