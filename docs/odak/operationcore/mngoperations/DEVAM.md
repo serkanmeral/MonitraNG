@@ -284,8 +284,8 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 
 **Faz-4 / büyük dosya bölme refactor (B) — kısmen yapıldı (31 May, davranış birebir aynı):**
 - ✅ **`RuntimeContextService.cs`** (MO) `partial class`'a bölündü: 1549 → 1015 satır + `.Dashboard.cs` / `.Directory.cs` / `.Form.cs`. MO build temiz (0/0).
-- ✅ **`operationCoreService.ts`** (UI) barrel'a dönüştürüldü: 2324 → 2025 satır. En bağımsız leaf domain'ler `services/operationCore/` altına taşındı — `notifications.ts`, `rules.ts`, `sla.ts`, `schedules.ts` (ana dosya `export *` ile re-export ediyor; paylaşılan yardımcılar `resolveRelationId`/`pickStr`/`ocCreateRecordId` export'landı). `nuxt build` temiz; mevcut import yolları (`@/services/operationCoreService`) değişmedi.
-- ⬜ Kalan TS domain'leri (catalogs/flows/workspaces/forms/work-items/runtime-board) ihtiyaç oldukça aynı desende ayrılabilir.
+- ✅ **`operationCoreService.ts`** (UI) barrel'a dönüştürüldü: 2324 → 1936 satır. Leaf domain'ler `services/operationCore/` altına taşındı — `notifications.ts`, `rules.ts`, `sla.ts`, `schedules.ts`, `flows.ts` (ana dosya `export *` ile re-export ediyor; paylaşılan yardımcılar `resolveRelationId`/`pickStr`/`ocCreateRecordId`/`parseSingleDgRecord` export'landı). `nuxt build` temiz; mevcut import yolları (`@/services/operationCoreService`) değişmedi.
+- ⬜ Kalan TS domain'leri (catalogs/workspaces/forms/work-items/runtime-board) — bunlar paylaşılan parse yardımcıları ve çapraz çağrılarla **sıkı bağlı** (örn. `readEnabled*` hem catalog hem workspace'te); ayırmanın getirisi/risk oranı düşük, ihtiyaç doğunca yapılır.
 - ⬜ **Tablo sanallaştırma** — ölçüm gerektirmedi; somut büyük veri ihtiyacı doğunca.
 
 ---
