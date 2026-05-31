@@ -12,8 +12,9 @@ using MngOperations.Application.Interfaces;
 namespace MngOperations.Infrastructure.Clients;
 
 /// <summary>
-/// MngKeeper kullanıcı dizini istemcisi (GET api/User/{id}). Keeper'da toplu endpoint yok;
-/// tekil çözüm yapılır, cache <see cref="MngOperations.Application.Interfaces.IPersonDirectory"/>'de.
+/// MngKeeper kullanıcı/grup dizini istemcisi. Toplu çözüm POST api/User/by-ids & api/Group/by-ids ile
+/// tek istekte yapılır (N+1'i önler); tekil GET api/User/{id} & GET api/Group/{id} yedek olarak kalır.
+/// Cache <see cref="MngOperations.Application.Interfaces.IPersonDirectory"/>/<see cref="MngOperations.Application.Interfaces.IGroupDirectory"/>'de.
 /// </summary>
 public sealed class MngKeeperClient : IKeeperDirectoryClient
 {
@@ -129,6 +130,137 @@ public sealed class MngKeeperClient : IKeeperDirectoryClient
         }
     }
 
+    public async Task<IReadOnlyDictionary<string, PersonDisplayDto>> GetUsersAsync(
+        IEnumerable<string> ids,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        var result = new Dictionary<string, PersonDisplayDto>(StringComparer.Ordinal);
+        var list = (ids ?? Enumerable.Empty<string>())
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        if (_httpClient.BaseAddress == null || list.Count == 0)
+            return result;
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, "User/by-ids")
+            {
+                Content = JsonContent.Create(new { ids = list })
+            };
+            if (!string.IsNullOrWhiteSpace(token))
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("MngKeeper GetUsersByIds failed ({Count} id): HTTP {Status}", list.Count, (int)response.StatusCode);
+                return result;
+            }
+
+            var envelope = await response.Content.ReadFromJsonAsync<KeeperUsersByIdsEnvelope>(JsonOptions, cancellationToken);
+            var users = envelope?.Users;
+            if (users == null || users.Count == 0)
+                return result;
+
+            // İstenen id (girişteki) → kullanıcı; bir kullanıcı hem __dataId hem keycloak sub ile eşleşebilir.
+            var requested = new HashSet<string>(list, StringComparer.Ordinal);
+            foreach (var u in users)
+            {
+                var display = new PersonDisplayDto
+                {
+                    Id = string.Empty, // her istenen id için aşağıda kendi id'siyle yeniden kurulur
+                    Name = BuildName(u),
+                    Title = string.IsNullOrWhiteSpace(u.Title) ? null : u.Title,
+                    IsActive = u.IsActive
+                };
+
+                foreach (var matchId in new[] { u.UserId, u.KeycloakUserId })
+                {
+                    if (!string.IsNullOrWhiteSpace(matchId) && requested.Contains(matchId!) && !result.ContainsKey(matchId!))
+                    {
+                        result[matchId!] = new PersonDisplayDto
+                        {
+                            Id = matchId!,
+                            Name = display.Name,
+                            Title = display.Title,
+                            IsActive = display.IsActive
+                        };
+                    }
+                }
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "MngKeeper GetUsersByIds error ({Count} id)", list.Count);
+            return result;
+        }
+    }
+
+    public async Task<IReadOnlyDictionary<string, PersonDisplayDto>> GetGroupsAsync(
+        IEnumerable<string> ids,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        var result = new Dictionary<string, PersonDisplayDto>(StringComparer.Ordinal);
+        var list = (ids ?? Enumerable.Empty<string>())
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id.Trim())
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        if (_httpClient.BaseAddress == null || list.Count == 0)
+            return result;
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, "Group/by-ids")
+            {
+                Content = JsonContent.Create(new { ids = list })
+            };
+            if (!string.IsNullOrWhiteSpace(token))
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("MngKeeper GetGroupsByIds failed ({Count} id): HTTP {Status}", list.Count, (int)response.StatusCode);
+                return result;
+            }
+
+            var envelope = await response.Content.ReadFromJsonAsync<KeeperGroupsByIdsEnvelope>(JsonOptions, cancellationToken);
+            var groups = envelope?.Groups;
+            if (groups == null || groups.Count == 0)
+                return result;
+
+            var requested = new HashSet<string>(list, StringComparer.Ordinal);
+            foreach (var g in groups)
+            {
+                if (string.IsNullOrWhiteSpace(g.GroupId) || !requested.Contains(g.GroupId!) || result.ContainsKey(g.GroupId!))
+                    continue;
+
+                result[g.GroupId!] = new PersonDisplayDto
+                {
+                    Id = g.GroupId!,
+                    Name = string.IsNullOrWhiteSpace(g.Name) ? g.GroupId! : g.Name!,
+                    IsActive = g.IsActive
+                };
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "MngKeeper GetGroupsByIds error ({Count} id)", list.Count);
+            return result;
+        }
+    }
+
     private static string BuildName(KeeperUserDto user)
     {
         var full = $"{user.FirstName} {user.LastName}".Trim();
@@ -150,12 +282,33 @@ public sealed class MngKeeperClient : IKeeperDirectoryClient
 
     private sealed class KeeperUserDto
     {
+        // by-ids cevabında dolu gelir (tekil GET User/{id} cevabında yoktur, null kalır).
+        public string? UserId { get; set; }
+        public string? KeycloakUserId { get; set; }
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
         public string? Username { get; set; }
         public string? Email { get; set; }
         public string? Title { get; set; }
         public bool? IsActive { get; set; }
+    }
+
+    private sealed class KeeperUsersByIdsEnvelope
+    {
+        [JsonPropertyName("users")]
+        public List<KeeperUserDto>? Users { get; set; }
+
+        [JsonPropertyName("isSuccess")]
+        public bool IsSuccess { get; set; }
+    }
+
+    private sealed class KeeperGroupsByIdsEnvelope
+    {
+        [JsonPropertyName("groups")]
+        public List<KeeperGroupDto>? Groups { get; set; }
+
+        [JsonPropertyName("isSuccess")]
+        public bool IsSuccess { get; set; }
     }
 
     private sealed class KeeperGroupEnvelope

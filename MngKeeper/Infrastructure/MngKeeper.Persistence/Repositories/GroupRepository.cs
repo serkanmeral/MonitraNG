@@ -84,6 +84,30 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             }
         }
 
+        public async Task<IEnumerable<Group>> GetByIdsAsync(IEnumerable<string> ids, string domainId)
+        {
+            try
+            {
+                var list = (ids ?? Enumerable.Empty<string>())
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Select(x => x.Trim())
+                    .Distinct(StringComparer.Ordinal)
+                    .ToList();
+                if (list.Count == 0)
+                    return Enumerable.Empty<Group>();
+
+                var collection = await GetCollectionAsync(domainId);
+                var filter = Builders<BsonDocument>.Filter.In("__dataId", list);
+                var docs = await collection.Find(filter).ToListAsync();
+                return docs.Select(doc => MapBsonDocumentToGroup(doc)).Where(g => g != null).Cast<Group>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting groups by ids, domainId: {DomainId}", domainId);
+                return Enumerable.Empty<Group>();
+            }
+        }
+
         public async Task<Group> AddAsync(Group entity)
         {
             try

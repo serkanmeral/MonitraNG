@@ -7,6 +7,8 @@ namespace MngKeeper.Application.Interfaces
     {
         // IRepository methods with domainId
         Task<Group?> GetByIdAsync(string id, string domainId);
+        /// <summary>Toplu grup çözümü (MO dizin/by-ids): tek Mongo <c>$in</c> sorgusuyla <c>__dataId</c> eşleşmeleri.</summary>
+        Task<IEnumerable<Group>> GetByIdsAsync(IEnumerable<string> ids, string domainId);
         Task<Group> AddAsync(Group entity);
         Task<Group> UpdateAsync(Group entity);
         Task<bool> DeleteAsync(string id, string domainId);

@@ -8,6 +8,7 @@ using MngKeeper.Application.Features.User.Commands.AddUserToGroup;
 using MngKeeper.Application.Features.User.Commands.RemoveUserFromGroup;
 using MngKeeper.Application.Features.User.Queries.GetUser;
 using MngKeeper.Application.Features.User.Queries.GetUsers;
+using MngKeeper.Application.Features.User.Queries.GetUsersByIds;
 using MngKeeper.Application.Features.User.Queries.ExportUsers;
 using MngKeeper.Api.Attributes;
 using MngKeeper.Application.Interfaces;
@@ -93,6 +94,21 @@ namespace MngKeeper.Api.Controllers
             };
             var response = await _mediator.Send(query);
             
+            if (!response.IsSuccess)
+                return BadRequest(response);
+
+            return Ok(response);
+        }
+
+        /// <summary>
+        /// Toplu kullanıcı çözümü (MO dizin/by-ids): id'ler __dataId veya Keycloak sub olabilir.
+        /// N+1 yerine tek istek; cevap ad/başlık/aktif + her iki kimlikle döner.
+        /// </summary>
+        [HttpPost("by-ids")]
+        public async Task<ActionResult<GetUsersByIdsResponse>> GetUsersByIds([FromBody] GetUsersByIdsQuery query)
+        {
+            var response = await _mediator.Send(query);
+
             if (!response.IsSuccess)
                 return BadRequest(response);
 

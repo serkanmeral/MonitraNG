@@ -123,6 +123,32 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             }
         }
 
+        public async Task<IEnumerable<User>> GetByIdsAsync(IEnumerable<string> ids, string domainId)
+        {
+            try
+            {
+                var list = (ids ?? Enumerable.Empty<string>())
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Select(x => x.Trim())
+                    .Distinct(StringComparer.Ordinal)
+                    .ToList();
+                if (list.Count == 0)
+                    return Enumerable.Empty<User>();
+
+                var collection = await GetCollectionAsync(domainId);
+                var f = Builders<BsonDocument>.Filter;
+                // MO'dan gelen id'ler ya Keeper __dataId ya da Keycloak sub olabilir; ikisini tek sorguda kapsa.
+                var filter = f.Or(f.In("__dataId", list), f.In("keycloakUserId", list));
+                var docs = await collection.Find(filter).ToListAsync();
+                return docs.Select(doc => MapBsonDocumentToUser(doc)).Where(u => u != null).Cast<User>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting users by ids, domainId: {DomainId}", domainId);
+                return Enumerable.Empty<User>();
+            }
+        }
+
         public async Task<IEnumerable<User>> GetAllAsync()
         {
             // This method requires domainId - should not be used

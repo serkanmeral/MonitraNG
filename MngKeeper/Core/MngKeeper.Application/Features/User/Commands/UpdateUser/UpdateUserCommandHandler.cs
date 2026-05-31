@@ -22,6 +22,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
         private readonly IDataGatewaySyncService _dataGatewaySyncService;
         private readonly IEventPublisher _eventPublisher;
         private readonly ILicenseService _licenseService;
+        private readonly IDirectoryCache _directoryCache;
         private readonly ILogger<UpdateUserCommandHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -33,6 +34,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
             IDataGatewaySyncService dataGatewaySyncService,
             IEventPublisher eventPublisher,
             ILicenseService licenseService,
+            IDirectoryCache directoryCache,
             ILogger<UpdateUserCommandHandler> logger,
             IHttpContextAccessor httpContextAccessor)
         {
@@ -43,6 +45,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
             _dataGatewaySyncService = dataGatewaySyncService;
             _eventPublisher = eventPublisher;
             _licenseService = licenseService;
+            _directoryCache = directoryCache;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -262,6 +265,9 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                 // Save to database
                 var updatedUser = await _userRepository.UpdateAsync(existingUser);
 
+                // MO dizin profil cache'ini geçersiz kıl (ad/başlık/aktif değişmiş olabilir; best-effort).
+                await _directoryCache.InvalidateUserAsync(claims.DomainId, updatedUser.Id, updatedUser.KeycloakUserId);
+
                 // Invalidate user count cache if IsActive status changed
                 if (wasActive != request.IsActive)
                 {
@@ -346,6 +352,9 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
             existingUser.UpdatedAt = DateTime.UtcNow;
 
             var updatedUser = await _userRepository.UpdateAsync(existingUser);
+
+            // MO dizin profil cache'ini geçersiz kıl (best-effort/fail-open).
+            await _directoryCache.InvalidateUserAsync(claims.DomainId, updatedUser.Id, updatedUser.KeycloakUserId);
 
             try
             {

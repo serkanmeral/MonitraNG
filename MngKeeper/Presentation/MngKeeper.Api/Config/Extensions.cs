@@ -147,6 +147,7 @@ public static class Extensions
         services.AddScoped<MngKeeper.Application.Interfaces.IRabbitMqService, MngKeeper.Infrastructure.Services.RabbitMqService>();
         services.AddScoped<MngKeeper.Application.Interfaces.IEventPublisher, MngKeeper.Infrastructure.Services.EventPublisher>();
         services.AddScoped<MngKeeper.Application.Interfaces.IRedisService, MngKeeper.Infrastructure.Services.RedisService>();
+        services.AddScoped<MngKeeper.Application.Interfaces.IDirectoryCache, MngKeeper.Infrastructure.Services.DirectoryCacheService>();
         services.AddScoped<MngKeeper.Application.Interfaces.ISessionService, MngKeeper.Infrastructure.Services.SessionService>();
         services.AddScoped<MngKeeper.Application.Interfaces.IMqttService, MngKeeper.Infrastructure.Services.MqttService>();
         services.AddScoped<MngKeeper.Application.Interfaces.IMinioService, MngKeeper.Infrastructure.Services.MinioService>();

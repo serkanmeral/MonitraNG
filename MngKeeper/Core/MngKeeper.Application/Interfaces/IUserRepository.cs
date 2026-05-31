@@ -9,6 +9,11 @@ namespace MngKeeper.Application.Interfaces
         Task<User?> GetByIdAsync(string id, string domainId);
         /// <summary><c>cht_messages.authorPersonId</c> veya JWT <c>sub</c> gibi Keycloak kullanıcı id ile arama.</summary>
         Task<User?> GetByKeycloakUserIdAsync(string keycloakUserId, string domainId);
+        /// <summary>
+        /// Toplu kullanıcı çözümü (MO dizin/by-ids): id'ler <c>__dataId</c> VEYA <c>keycloakUserId</c> (JWT sub)
+        /// olabilir; tek Mongo <c>$or/$in</c> sorgusuyla eşleşenleri döner.
+        /// </summary>
+        Task<IEnumerable<User>> GetByIdsAsync(IEnumerable<string> ids, string domainId);
         Task<User> AddAsync(User entity);
         Task<User> UpdateAsync(User entity);
         Task<bool> DeleteAsync(string id, string domainId);

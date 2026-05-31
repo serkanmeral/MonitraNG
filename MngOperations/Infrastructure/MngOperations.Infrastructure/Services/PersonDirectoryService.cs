@@ -64,24 +64,23 @@ public sealed class PersonDirectoryService : IPersonDirectory
 
         if (missing.Count > 0)
         {
-            // GEÇİCİ (perf/oc-optimization): Keeper N+1 ölçümü.
+            // Toplu by-ids: id başına çağrı yerine tek Keeper isteği (N+1 giderildi). Ölçüm: 1 çağrı / N id.
             var sw = Stopwatch.StartNew();
-            var resolved = await Task.WhenAll(missing.Select(async id =>
-            {
-                var person = await _keeper.GetUserAsync(id, token, cancellationToken)
-                    ?? new PersonDisplayDto { Id = id, Name = id };
-                return person;
-            }));
+            var resolved = await _keeper.GetUsersAsync(missing, token, cancellationToken);
             sw.Stop();
-            _stats.RecordKeeper(missing.Count, sw.ElapsedMilliseconds);
+            _stats.RecordKeeper(1, sw.ElapsedMilliseconds);
 
-            foreach (var person in resolved)
+            foreach (var id in missing)
             {
-                _cache.Set(CacheKey(person.Id), person, _ttl);
-                result[person.Id] = person;
+                // Çözülemeyenler için negatif sonuç da cache'lenir (id=ad fallback) — tekrarlı istek olmasın.
+                var person = resolved.TryGetValue(id, out var p) && p != null
+                    ? p
+                    : new PersonDisplayDto { Id = id, Name = id };
+                _cache.Set(CacheKey(id), person, _ttl);
+                result[id] = person;
             }
 
-            _logger.LogDebug("Person directory resolved {Count} new id(s)", missing.Count);
+            _logger.LogDebug("Person directory resolved {Count} new id(s) via by-ids", missing.Count);
         }
 
         return result;

@@ -59,20 +59,20 @@ public sealed class GroupDirectoryService : IGroupDirectory
 
         if (missing.Count > 0)
         {
-            var resolved = await Task.WhenAll(missing.Select(async id =>
-            {
-                var group = await _keeper.GetGroupAsync(id, token, cancellationToken)
-                    ?? new PersonDisplayDto { Id = id, Name = id };
-                return group;
-            }));
+            // Toplu by-ids: id başına çağrı yerine tek Keeper isteği (N+1 giderildi).
+            var resolved = await _keeper.GetGroupsAsync(missing, token, cancellationToken);
 
-            foreach (var group in resolved)
+            foreach (var id in missing)
             {
-                _cache.Set(CacheKey(group.Id), group, _ttl);
-                result[group.Id] = group;
+                // Çözülemeyenler için negatif sonuç da cache'lenir (id=ad fallback) — tekrarlı istek olmasın.
+                var group = resolved.TryGetValue(id, out var g) && g != null
+                    ? g
+                    : new PersonDisplayDto { Id = id, Name = id };
+                _cache.Set(CacheKey(id), group, _ttl);
+                result[id] = group;
             }
 
-            _logger.LogDebug("Group directory resolved {Count} new id(s)", missing.Count);
+            _logger.LogDebug("Group directory resolved {Count} new id(s) via by-ids", missing.Count);
         }
 
         return result;

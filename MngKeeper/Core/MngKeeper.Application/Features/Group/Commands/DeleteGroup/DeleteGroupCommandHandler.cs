@@ -16,6 +16,7 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
         private readonly IKeycloakService _keycloakService;
         private readonly IMongoClient _mongoClient;
         private readonly IEventPublisher _eventPublisher;
+        private readonly IDirectoryCache _directoryCache;
         private readonly ILogger<DeleteGroupCommandHandler> _logger;
 
         public DeleteGroupCommandHandler(
@@ -25,6 +26,7 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
             IKeycloakService keycloakService,
             IMongoClient mongoClient,
             IEventPublisher eventPublisher,
+            IDirectoryCache directoryCache,
             ILogger<DeleteGroupCommandHandler> logger)
         {
             _groupRepository = groupRepository;
@@ -33,6 +35,7 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
             _keycloakService = keycloakService;
             _mongoClient = mongoClient;
             _eventPublisher = eventPublisher;
+            _directoryCache = directoryCache;
             _logger = logger;
         }
 
@@ -138,6 +141,9 @@ namespace MngKeeper.Application.Features.Group.Commands.DeleteGroup
                         ErrorMessage = "Failed to delete group from database."
                     };
                 }
+
+                // MO dizin profil cache'ini geçersiz kıl (best-effort/fail-open).
+                await _directoryCache.InvalidateGroupAsync(request.DomainId, existingGroup.Id);
 
                 // Hard delete from DataGateway MongoDB (mng_{domain} database)
                 try

@@ -17,6 +17,7 @@ namespace MngKeeper.Application.Features.User.Commands.DeleteUser
         private readonly IDataGatewaySyncService _dataGatewaySyncService;
         private readonly IMongoClient _mongoClient;
         private readonly IEventPublisher _eventPublisher;
+        private readonly IDirectoryCache _directoryCache;
         private readonly ILogger<DeleteUserCommandHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -27,6 +28,7 @@ namespace MngKeeper.Application.Features.User.Commands.DeleteUser
             IDataGatewaySyncService dataGatewaySyncService,
             IMongoClient mongoClient,
             IEventPublisher eventPublisher,
+            IDirectoryCache directoryCache,
             ILogger<DeleteUserCommandHandler> logger,
             IHttpContextAccessor httpContextAccessor)
         {
@@ -36,6 +38,7 @@ namespace MngKeeper.Application.Features.User.Commands.DeleteUser
             _dataGatewaySyncService = dataGatewaySyncService;
             _mongoClient = mongoClient;
             _eventPublisher = eventPublisher;
+            _directoryCache = directoryCache;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -114,6 +117,9 @@ namespace MngKeeper.Application.Features.User.Commands.DeleteUser
                         ErrorMessage = "Failed to delete user from database."
                     };
                 }
+
+                // MO dizin profil cache'ini geçersiz kıl (her iki kimlik anahtarı; best-effort/fail-open).
+                await _directoryCache.InvalidateUserAsync(claims.DomainId, existingUser.Id, existingUser.KeycloakUserId);
 
                 // Invalidate user count cache since a user was deleted
                 try

@@ -6,6 +6,7 @@ using MngKeeper.Application.Features.Group.Commands.UpdateGroup;
 using MngKeeper.Application.Features.Group.Commands.DeleteGroup;
 using MngKeeper.Application.Features.Group.Queries.GetGroups;
 using MngKeeper.Application.Features.Group.Queries.GetGroup;
+using MngKeeper.Application.Features.Group.Queries.GetGroupsByIds;
 using MngKeeper.Application.Features.Group.Queries.ExportGroups;
 using MngKeeper.Application.Interfaces;
 
@@ -67,6 +68,18 @@ namespace MngKeeper.Api.Controllers
             if (!response.IsSuccess)
                 return NotFound(response);
         
+            return Ok(response);
+        }
+
+        /// <summary>Toplu grup çözümü (MO dizin/by-ids): N+1 yerine tek istek; id + ad + aktif döner.</summary>
+        [HttpPost("by-ids")]
+        public async Task<ActionResult<GetGroupsByIdsResponse>> GetGroupsByIds([FromBody] GetGroupsByIdsQuery query)
+        {
+            var response = await _mediator.Send(query);
+
+            if (!response.IsSuccess)
+                return BadRequest(response);
+
             return Ok(response);
         }
 

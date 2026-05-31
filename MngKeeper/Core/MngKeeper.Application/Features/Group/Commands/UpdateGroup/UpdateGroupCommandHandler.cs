@@ -17,6 +17,7 @@ namespace MngKeeper.Application.Features.Group.Commands.UpdateGroup
         private readonly IKeycloakService _keycloakService;
         private readonly IDataGatewaySyncService _dataGatewaySyncService;
         private readonly IEventPublisher _eventPublisher;
+        private readonly IDirectoryCache _directoryCache;
         private readonly ILogger<UpdateGroupCommandHandler> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
@@ -27,6 +28,7 @@ namespace MngKeeper.Application.Features.Group.Commands.UpdateGroup
             IKeycloakService keycloakService,
             IDataGatewaySyncService dataGatewaySyncService,
             IEventPublisher eventPublisher,
+            IDirectoryCache directoryCache,
             ILogger<UpdateGroupCommandHandler> logger,
             IHttpContextAccessor httpContextAccessor)
         {
@@ -36,6 +38,7 @@ namespace MngKeeper.Application.Features.Group.Commands.UpdateGroup
             _keycloakService = keycloakService;
             _dataGatewaySyncService = dataGatewaySyncService;
             _eventPublisher = eventPublisher;
+            _directoryCache = directoryCache;
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -175,6 +178,9 @@ namespace MngKeeper.Application.Features.Group.Commands.UpdateGroup
 
                 // Save to database
                 var updatedGroup = await _groupRepository.UpdateAsync(existingGroup);
+
+                // MO dizin profil cache'ini geçersiz kıl (ad/aktif değişmiş olabilir; best-effort/fail-open).
+                await _directoryCache.InvalidateGroupAsync(claims.DomainId, updatedGroup.Id);
 
                 // If group name changed, update all users' Groups list to reflect the new name
                 if (groupNameChanged && usersToUpdate.Any())
