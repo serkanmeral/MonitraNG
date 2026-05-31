@@ -10,8 +10,6 @@ import type {
   OcCatalogDisplayEntry,
   OcColumnFormat,
   OcComment,
-  OcNotification,
-  OcNotificationListResponse,
   OcPersonDisplay,
   OcProfileAction,
   OcQueryExecuteResponse,
@@ -30,9 +28,6 @@ import type {
   OpForm,
   OpFormFieldBehavior,
   OpFormLayoutSection,
-  OpRule,
-  OpSlaPolicy,
-  OpWorkItemSchedule,
   OcFormRuntimeContext,
   OcFormFieldRuntimeDto,
   OcFieldBehaviorDto,
@@ -853,62 +848,8 @@ export async function ocApplyTransition(
   return ocGetWorkItemProfile(workItemId);
 }
 
-function mapNotification(raw: Record<string, unknown>): OcNotification {
-  return {
-    id: pickStr(raw, 'id', 'Id') ?? '',
-    notificationType: pickStr(raw, 'notificationType', 'NotificationType') ?? null,
-    title: pickStr(raw, 'title', 'Title') ?? null,
-    message: pickStr(raw, 'message', 'Message') ?? null,
-    isRead: Boolean(raw.isRead ?? raw.IsRead ?? false),
-    workItemId: pickStr(raw, 'workItemId', 'WorkItemId') ?? null,
-    workItemKey: pickStr(raw, 'workItemKey', 'WorkItemKey') ?? null,
-    sourceDataset: pickStr(raw, 'sourceDataset', 'SourceDataset') ?? null,
-    sourceRecordId: pickStr(raw, 'sourceRecordId', 'SourceRecordId') ?? null,
-    createdAt: pickStr(raw, 'createdAt', 'CreatedAt') ?? null,
-  };
-}
-
-/** Geçerli kullanıcının in-app bildirimleri (op_notifications, en yeni önce). */
-export async function ocGetNotifications(options?: {
-  skip?: number;
-  take?: number;
-  unreadOnly?: boolean;
-}): Promise<OcNotificationListResponse> {
-  const qs = new URLSearchParams({
-    skip: String(options?.skip ?? 0),
-    take: String(options?.take ?? 20),
-    unreadOnly: String(options?.unreadOnly ?? false),
-  });
-  const raw = (await fetchFromOperations(
-    `/api/v1/notifications?${qs.toString()}`,
-    'GET'
-  )) as Record<string, unknown>;
-  const items = raw.items ?? raw.Items;
-  return {
-    items: Array.isArray(items) ? items.map((i) => mapNotification(i as Record<string, unknown>)) : [],
-    skip: Number(raw.skip ?? raw.Skip ?? 0),
-    take: Number(raw.take ?? raw.Take ?? 0),
-    total: Number(raw.total ?? raw.Total ?? 0),
-    unreadCount: Number(raw.unreadCount ?? raw.UnreadCount ?? 0),
-  };
-}
-
-/** Tek bildirimi okundu işaretler. */
-export async function ocMarkNotificationRead(notificationId: string): Promise<void> {
-  await fetchFromOperations(
-    `/api/v1/notifications/${encodeURIComponent(notificationId)}/read`,
-    'POST'
-  );
-}
-
-/** Tüm okunmamış bildirimleri okundu işaretler; işaretlenen sayısını döner. */
-export async function ocMarkAllNotificationsRead(): Promise<number> {
-  const raw = (await fetchFromOperations(
-    '/api/v1/notifications/read-all',
-    'POST'
-  )) as Record<string, unknown>;
-  return Number(raw?.marked ?? 0);
-}
+// Bildirimler (op_notifications) → services/operationCore/notifications.ts
+export * from '@/services/operationCore/notifications';
 
 /**
  * İş kaydına ek ekler. DG file alanı inline işlenir: mevcut ekler ham (path'li) nesneleriyle
@@ -1423,7 +1364,7 @@ export async function ocDeletePriority(priorityId: string) {
   await ocCatalogDelete('priorities', priorityId);
 }
 
-function resolveRelationId(raw: unknown): string | null {
+export function resolveRelationId(raw: unknown): string | null {
   if (raw == null || raw === '') return null;
   if (typeof raw === 'string') return raw;
   if (typeof raw === 'object') {
@@ -1768,7 +1709,7 @@ export async function ocListFormsForWorkspace(workspaceId: string): Promise<OpFo
     .filter((f) => f.__dataId && f.name && f.workspaceId === workspaceId);
 }
 
-async function ocCreateRecordId(
+export async function ocCreateRecordId(
   dataset: string,
   payload: Record<string, unknown>
 ): Promise<string | null> {
@@ -1793,254 +1734,14 @@ export async function ocDeleteForm(formId: string) {
   await ocDelete(OC_DATASETS.forms, formId);
 }
 
-function mapOpRule(raw: Record<string, unknown>): OpRule {
-  const conditions = raw.conditions ?? raw.Conditions;
-  const actions = raw.actions ?? raw.Actions;
-  return {
-    __dataId: String(raw.__dataId ?? raw.dataId ?? ''),
-    name: String(raw.name ?? ''),
-    description:
-      raw.description != null
-        ? String(raw.description)
-        : raw.Description != null
-          ? String(raw.Description)
-          : null,
-    workspaceId: resolveRelationId(raw.workspaceId ?? raw.WorkspaceId) ?? '',
-    ruleType: String(raw.ruleType ?? raw.RuleType ?? '').toLowerCase(),
-    trigger: String(raw.trigger ?? raw.Trigger ?? ''),
-    transitionKey:
-      raw.transitionKey != null
-        ? String(raw.transitionKey)
-        : raw.TransitionKey != null
-          ? String(raw.TransitionKey)
-          : null,
-    typeId: resolveRelationId(raw.typeId ?? raw.TypeId) || null,
-    boardId: resolveRelationId(raw.boardId ?? raw.BoardId) || null,
-    stateId: resolveRelationId(raw.stateId ?? raw.StateId) || null,
-    fromStateId: resolveRelationId(raw.fromStateId ?? raw.FromStateId) || null,
-    toStateId: resolveRelationId(raw.toStateId ?? raw.ToStateId) || null,
-    isActive: raw.isActive !== false && raw.IsActive !== false,
-    priority:
-      raw.priority != null && raw.priority !== ''
-        ? Number(raw.priority)
-        : raw.Priority != null && raw.Priority !== ''
-          ? Number(raw.Priority)
-          : null,
-    conditions,
-    actions: Array.isArray(actions) ? actions : [],
-    errorMessage:
-      raw.errorMessage != null
-        ? String(raw.errorMessage)
-        : raw.ErrorMessage != null
-          ? String(raw.ErrorMessage)
-          : null,
-    applyMode:
-      raw.applyMode != null
-        ? String(raw.applyMode)
-        : raw.ApplyMode != null
-          ? String(raw.ApplyMode)
-          : null,
-  };
-}
+// Kurallar (op_rules) → services/operationCore/rules.ts
+export * from '@/services/operationCore/rules';
 
-export async function ocListRulesForWorkspace(workspaceId: string): Promise<OpRule[]> {
-  const rows = await ocListDataset(OC_DATASETS.rules, {
-    filter: `workspaceId:eq:${workspaceId}`,
-    sort: 'priority:asc,name:asc',
-    limit: 200,
-  });
-  return rows
-    .map((r) => mapOpRule(r as Record<string, unknown>))
-    .filter((rule) => rule.__dataId && rule.name && rule.workspaceId === workspaceId);
-}
+// SLA politikaları (op_sla_policies) → services/operationCore/sla.ts
+export * from '@/services/operationCore/sla';
 
-export async function ocCreateRule(payload: Record<string, unknown>): Promise<string | null> {
-  return ocCreateRecordId(OC_DATASETS.rules, payload);
-}
-
-export async function ocUpdateRule(ruleId: string, payload: Record<string, unknown>) {
-  await ocUpdate(OC_DATASETS.rules, ruleId, payload);
-}
-
-export async function ocDeleteRule(ruleId: string) {
-  await ocDelete(OC_DATASETS.rules, ruleId);
-}
-
-export function mapOpSlaPolicy(raw: Record<string, unknown>): OpSlaPolicy {
-  return {
-    __dataId: String(raw.__dataId ?? raw.dataId ?? ''),
-    name: String(raw.name ?? ''),
-    description:
-      raw.description != null
-        ? String(raw.description)
-        : raw.Description != null
-          ? String(raw.Description)
-          : null,
-    workspaceId: resolveRelationId(raw.workspaceId ?? raw.WorkspaceId) ?? '',
-    typeId: resolveRelationId(raw.typeId ?? raw.TypeId) || null,
-    priorityId: resolveRelationId(raw.priorityId ?? raw.PriorityId) || null,
-    responseTargetMinutes:
-      raw.responseTargetMinutes != null
-        ? Number(raw.responseTargetMinutes)
-        : raw.ResponseTargetMinutes != null
-          ? Number(raw.ResponseTargetMinutes)
-          : null,
-    resolveTargetMinutes:
-      raw.resolveTargetMinutes != null
-        ? Number(raw.resolveTargetMinutes)
-        : raw.ResolveTargetMinutes != null
-          ? Number(raw.ResolveTargetMinutes)
-          : null,
-    isActive: raw.isActive !== false && raw.IsActive !== false,
-    priority:
-      raw.priority != null
-        ? Number(raw.priority)
-        : raw.Priority != null
-          ? Number(raw.Priority)
-          : 100,
-  };
-}
-
-export async function ocListSlaPoliciesForWorkspace(workspaceId: string): Promise<OpSlaPolicy[]> {
-  const rows = await ocListDataset(OC_DATASETS.slaPolicies, {
-    filter: `workspaceId:eq:${workspaceId}`,
-    sort: 'priority:desc,name:asc',
-    limit: 200,
-  });
-  return rows
-    .map((r) => mapOpSlaPolicy(r as Record<string, unknown>))
-    .filter((p) => p.__dataId && p.name && p.workspaceId === workspaceId);
-}
-
-export async function ocCreateSlaPolicy(payload: Record<string, unknown>): Promise<string | null> {
-  return ocCreateRecordId(OC_DATASETS.slaPolicies, payload);
-}
-
-export async function ocUpdateSlaPolicy(policyId: string, payload: Record<string, unknown>) {
-  await ocUpdate(OC_DATASETS.slaPolicies, policyId, payload);
-}
-
-export async function ocDeleteSlaPolicy(policyId: string) {
-  await ocDelete(OC_DATASETS.slaPolicies, policyId);
-}
-
-export function mapOpWorkItemSchedule(raw: Record<string, unknown>): OpWorkItemSchedule {
-  return {
-    __dataId: String(raw.__dataId ?? raw.dataId ?? ''),
-    workspaceId: resolveRelationId(raw.workspaceId ?? raw.WorkspaceId) ?? '',
-    name: String(raw.name ?? ''),
-    description:
-      raw.description != null
-        ? String(raw.description)
-        : raw.Description != null
-          ? String(raw.Description)
-          : null,
-    isActive: raw.isActive !== false && raw.IsActive !== false,
-    cronExpression: String(raw.cronExpression ?? raw.CronExpression ?? ''),
-    timezone: String(raw.timezone ?? raw.Timezone ?? 'Europe/Istanbul'),
-    boardId: resolveRelationId(raw.boardId ?? raw.BoardId) ?? '',
-    typeId: resolveRelationId(raw.typeId ?? raw.TypeId) ?? '',
-    assignee: String(raw.assignee ?? raw.Assignee ?? ''),
-    priorityId: resolveRelationId(raw.priorityId ?? raw.PriorityId) || null,
-    title: String(raw.title ?? raw.Title ?? ''),
-    templateDescription:
-      raw.templateDescription != null
-        ? String(raw.templateDescription)
-        : raw.TemplateDescription != null
-          ? String(raw.TemplateDescription)
-          : null,
-    fields:
-      raw.fields && typeof raw.fields === 'object' && !Array.isArray(raw.fields)
-        ? (raw.fields as Record<string, unknown>)
-        : raw.Fields && typeof raw.Fields === 'object' && !Array.isArray(raw.Fields)
-          ? (raw.Fields as Record<string, unknown>)
-          : null,
-    initialTransitionKey:
-      raw.initialTransitionKey != null
-        ? String(raw.initialTransitionKey)
-        : raw.InitialTransitionKey != null
-          ? String(raw.InitialTransitionKey)
-          : null,
-    schedulerJobId:
-      raw.schedulerJobId != null
-        ? String(raw.schedulerJobId)
-        : raw.SchedulerJobId != null
-          ? String(raw.SchedulerJobId)
-          : null,
-    lastRunAt:
-      raw.lastRunAt != null
-        ? String(raw.lastRunAt)
-        : raw.LastRunAt != null
-          ? String(raw.LastRunAt)
-          : null,
-    lastWorkItemId: resolveRelationId(raw.lastWorkItemId ?? raw.LastWorkItemId) || null,
-  };
-}
-
-export async function ocListSchedulesForWorkspace(
-  workspaceId: string
-): Promise<OpWorkItemSchedule[]> {
-  const rows = await ocListDataset(OC_DATASETS.workItemSchedules, {
-    filter: `workspaceId:eq:${workspaceId}`,
-    sort: 'name:asc',
-    limit: 200,
-  });
-  return rows
-    .map((r) => mapOpWorkItemSchedule(r as Record<string, unknown>))
-    .filter((s) => s.__dataId && s.name && s.workspaceId === workspaceId);
-}
-
-/** Admin job explorer — tüm workspace schedule kayıtları (lastRunAt birleştirmesi). */
-export async function ocListAllWorkItemSchedules(limit = 500): Promise<OpWorkItemSchedule[]> {
-  const rows = await ocListDataset(OC_DATASETS.workItemSchedules, {
-    sort: 'lastRunAt:desc',
-    limit,
-  });
-  return rows
-    .map((r) => mapOpWorkItemSchedule(r as Record<string, unknown>))
-    .filter((s) => s.__dataId && s.name);
-}
-
-export async function ocCreateWorkItemSchedule(
-  payload: Record<string, unknown>
-): Promise<string | null> {
-  return ocCreateRecordId(OC_DATASETS.workItemSchedules, payload);
-}
-
-export async function ocUpdateWorkItemSchedule(
-  scheduleId: string,
-  payload: Record<string, unknown>
-) {
-  await ocUpdate(OC_DATASETS.workItemSchedules, scheduleId, payload);
-}
-
-export async function ocDeleteWorkItemSchedule(scheduleId: string) {
-  await ocDelete(OC_DATASETS.workItemSchedules, scheduleId);
-}
-
-/** SW-3b: DG kaydı sonrası MngScheduler User Job senkronu. */
-export async function ocSyncWorkItemScheduleScheduler(scheduleId: string) {
-  return fetchFromOperations(
-    `/api/v1/work-item-schedules/${encodeURIComponent(scheduleId)}/sync-scheduler`,
-    'POST'
-  );
-}
-
-/** SW-3b: DG silmeden önce Scheduler job kaldırma. */
-export async function ocUnlinkWorkItemScheduleScheduler(scheduleId: string) {
-  return fetchFromOperations(
-    `/api/v1/work-item-schedules/${encodeURIComponent(scheduleId)}/unlink-scheduler`,
-    'POST'
-  );
-}
-
-/** SW-2: MO execute endpoint — henüz yoksa hata fırlatır. */
-export async function ocRunWorkItemScheduleNow(scheduleId: string) {
-  return fetchFromOperations(
-    `/api/v1/work-item-schedules/${encodeURIComponent(scheduleId)}/execute`,
-    'POST'
-  );
-}
+// İş kaydı zamanlamaları (op_work_item_schedules) → services/operationCore/schedules.ts
+export * from '@/services/operationCore/schedules';
 
 export async function ocCreateBoard(payload: Record<string, unknown>): Promise<string | null> {
   return ocCreateRecordId(OC_DATASETS.boards, payload);
@@ -2062,7 +1763,7 @@ export async function ocOperationsHealth() {
   return fetchFromOperations('/api/v1/health', 'GET');
 }
 
-function pickStr(obj: Record<string, unknown>, ...keys: string[]): string | undefined {
+export function pickStr(obj: Record<string, unknown>, ...keys: string[]): string | undefined {
   for (const k of keys) {
     const v = obj[k];
     if (v != null && v !== '') return String(v);
