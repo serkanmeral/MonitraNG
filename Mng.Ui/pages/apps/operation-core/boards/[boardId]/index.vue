@@ -960,9 +960,11 @@ onUnmounted(() => {
         :columns="store.boardContext.columns"
         :column-items="store.columnItems"
         :column-loading="store.columnLoading"
+        :column-loading-more="store.columnLoadingMore"
         :board-id="boardId"
         :editable="canEdit"
         @transition="onKanbanTransition"
+        @load-more="store.loadMoreColumn($event)"
       />
     </template>
 

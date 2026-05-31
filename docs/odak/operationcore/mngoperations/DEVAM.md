@@ -286,7 +286,10 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 - ✅ **`RuntimeContextService.cs`** (MO) `partial class`'a bölündü: 1549 → 1015 satır + `.Dashboard.cs` / `.Directory.cs` / `.Form.cs`. MO build temiz (0/0).
 - ✅ **`operationCoreService.ts`** (UI) barrel'a dönüştürüldü: 2324 → 1936 satır. Leaf domain'ler `services/operationCore/` altına taşındı — `notifications.ts`, `rules.ts`, `sla.ts`, `schedules.ts`, `flows.ts` (ana dosya `export *` ile re-export ediyor; paylaşılan yardımcılar `resolveRelationId`/`pickStr`/`ocCreateRecordId`/`parseSingleDgRecord` export'landı). `nuxt build` temiz; mevcut import yolları (`@/services/operationCoreService`) değişmedi.
 - ⬜ Kalan TS domain'leri (catalogs/workspaces/forms/work-items/runtime-board) — bunlar paylaşılan parse yardımcıları ve çapraz çağrılarla **sıkı bağlı** (örn. `readEnabled*` hem catalog hem workspace'te); ayırmanın getirisi/risk oranı düşük, ihtiyaç doğunca yapılır.
-- ⬜ **Tablo sanallaştırma** — ölçüm gerektirmedi; somut büyük veri ihtiyacı doğunca.
+
+**Faz-4/A (sanallaştırma) — yapılmadı, yerine "daha fazla yükle" eklendi (31 May):** İnceleme: Kanban kolonları tek sayfa (`take=suggestedPageSize`) yüklüyor, kartlar `vue-draggable-next` içinde (içeride sanallaştırma DnD'yi bozar); liste görünümü `v-data-table-server`, admin tabloları `v-data-table` (zaten sayfalı). Yani sanallaştırma için güvenli/faydalı hedef yok. Bunun yerine **Kanban kolonlarına "daha fazla yükle"** eklendi: `store.loadMoreColumn` (skip=yüklü kart sayısı, append + dedupe, people/groups merge, fail-soft) + `OcBoardKanban` kolon altı buton (`n/total`, `columnLoadingMore` spinner). Büyük backlog'lar artık erişilebilir. `nuxt build` temiz.
+
+**Deploy:** Faz-4/B refactor (RuntimeContextService partial + operationCore barrel) `mngoperations`+`mngui` Odak'a **deploy edildi** (31 May ~22:12, healthy — `gateway=200 ui=200`, SLA smoke OCD-0066 yeşil). "Daha fazla yükle" henüz deploy edilmedi.
 
 ---
 

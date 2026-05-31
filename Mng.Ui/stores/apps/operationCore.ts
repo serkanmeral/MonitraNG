@@ -34,6 +34,7 @@ export const useOperationCoreStore = defineStore('operationCore', {
     boardContext: null as OcBoardRuntimeContext | null,
     columnItems: {} as Record<string, OcColumnItemsState>,
     columnLoading: {} as Record<string, boolean>,
+    columnLoadingMore: {} as Record<string, boolean>,
     boardPeople: {} as Record<string, OcPersonDisplay>,
     boardGroups: {} as Record<string, OcPersonDisplay>,
     loadingBoardContext: false,
@@ -116,6 +117,7 @@ export const useOperationCoreStore = defineStore('operationCore', {
       this.boardContext = null;
       this.columnItems = {};
       this.columnLoading = {};
+      this.columnLoadingMore = {};
       this.boardPeople = {};
       this.boardGroups = {};
       this.boardError = null;
@@ -135,6 +137,7 @@ export const useOperationCoreStore = defineStore('operationCore', {
       this.boardError = null;
       this.columnItems = {};
       this.columnLoading = {};
+      this.columnLoadingMore = {};
       this.boardPeople = {};
       this.boardGroups = {};
 
@@ -212,6 +215,37 @@ export const useOperationCoreStore = defineStore('operationCore', {
         };
       } finally {
         this.columnLoading = { ...this.columnLoading, [stateId]: false };
+      }
+    },
+
+    /** Kanban kolonunda sonraki sayfayı yükleyip mevcut kartlara ekler (skip = yüklenmiş kart sayısı). */
+    async loadMoreColumn(column: OcBoardColumn) {
+      const stateId = column.stateId;
+      const bucket = this.columnItems[stateId];
+      if (!bucket || this.columnLoadingMore[stateId]) return;
+      if (bucket.items.length >= bucket.total) return;
+
+      this.columnLoadingMore = { ...this.columnLoadingMore, [stateId]: true };
+      try {
+        const base = ocBuildColumnQueryRequest(column);
+        const res = await ocExecuteQuery(column.queryKey, { ...base, skip: bucket.items.length });
+
+        const existing = new Set(bucket.items.map((i) => i.id));
+        const appended = res.items.filter((i) => !existing.has(i.id));
+        this.columnItems = {
+          ...this.columnItems,
+          [stateId]: { items: [...bucket.items, ...appended], total: res.total, error: null },
+        };
+        if (res.people && Object.keys(res.people).length > 0) {
+          this.boardPeople = { ...this.boardPeople, ...res.people };
+        }
+        if (res.groups && Object.keys(res.groups).length > 0) {
+          this.boardGroups = { ...this.boardGroups, ...res.groups };
+        }
+      } catch {
+        // Sonraki sayfa hatası mevcut kartları silmez; kullanıcı yeniden deneyebilir.
+      } finally {
+        this.columnLoadingMore = { ...this.columnLoadingMore, [stateId]: false };
       }
     },
 

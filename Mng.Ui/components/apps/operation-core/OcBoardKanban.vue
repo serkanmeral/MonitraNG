@@ -8,6 +8,8 @@ const props = defineProps<{
   columns: OcBoardColumn[];
   columnItems: Record<string, OcColumnItemsState>;
   columnLoading: Record<string, boolean>;
+  /** Kolon başına "daha fazla yükle" devam ediyor mu. */
+  columnLoadingMore?: Record<string, boolean>;
   boardId: string;
   /** Sürükle-bırak (transition) etkin mi — board permissions.canEdit. */
   editable?: boolean;
@@ -15,6 +17,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'transition', payload: { card: OcWorkItemCardType; fromStateId: string; toStateId: string }): void;
+  (e: 'load-more', column: OcBoardColumn): void;
 }>();
 
 const { t } = useAppI18n();
@@ -40,6 +43,13 @@ const dragSourceState = ref<string | null>(null);
 
 function columnTitle(col: OcBoardColumn): string {
   return col.title?.trim() || col.stateId;
+}
+
+/** Kolonda yüklenmiş kart sayısı toplamdan azsa daha fazlası vardır. */
+function hasMore(col: OcBoardColumn): boolean {
+  const bucket = props.columnItems[col.stateId];
+  if (!bucket) return false;
+  return (localItems.value[col.stateId]?.length ?? bucket.items.length) < (bucket.total ?? 0);
 }
 
 function groupFor(col: OcBoardColumn) {
@@ -108,6 +118,25 @@ function onColumnChange(targetStateId: string, evt: DraggableChangeEvent) {
             <OcWorkItemCard :card="card" :board-id="boardId" />
           </div>
         </draggable>
+
+        <div
+          v-if="!columnLoading[col.stateId] && !columnItems[col.stateId]?.error && hasMore(col)"
+          class="px-2 pt-1 pb-2"
+        >
+          <v-btn
+            block
+            size="small"
+            variant="tonal"
+            density="comfortable"
+            :loading="columnLoadingMore?.[col.stateId] === true"
+            @click="emit('load-more', col)"
+          >
+            {{ t('operationCore.board.loadMore') }}
+            <span class="text-caption ms-1 text-medium-emphasis">
+              ({{ localItems[col.stateId]?.length ?? 0 }}/{{ columnItems[col.stateId]?.total ?? 0 }})
+            </span>
+          </v-btn>
+        </div>
 
         <div
           v-if="!columnLoading[col.stateId] && !columnItems[col.stateId]?.error && !(localItems[col.stateId]?.length)"
