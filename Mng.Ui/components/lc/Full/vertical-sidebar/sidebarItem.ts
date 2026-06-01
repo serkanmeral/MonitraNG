@@ -335,12 +335,6 @@ const sidebarItem: menu[] = [
     icon: LayoutKanbanIcon,
     to: "/apps/kanban",
   },
-  {
-    title: "Görevler",
-    pageCode: "taskManager.menuTitle",
-    icon: LayoutKanbanIcon,
-    to: "/apps/task-manager/projects",
-  },
   { header: "Operasyon" },
   {
     title: "Operasyon Merkezi",

@@ -20,23 +20,6 @@ export interface WelcomeModuleCard {
 /** Tamamlanan modüller — yeni modül eklendikçe buraya kart ekleyin. */
 const moduleCards: WelcomeModuleCard[] = [
   {
-    id: 'task-manager',
-    titleKey: 'welcome.modules.taskManager.title',
-    descriptionKey: 'welcome.modules.taskManager.description',
-    icon: 'mdi-clipboard-list-outline',
-    color: 'primary',
-    links: [
-      {
-        labelKey: 'welcome.modules.taskManager.linkWorkspace',
-        to: '/apps/task-manager/workspace',
-      },
-      {
-        labelKey: 'welcome.modules.taskManager.linkHub',
-        to: '/apps/task-manager',
-      },
-    ],
-  },
-  {
     id: 'operation-core',
     titleKey: 'welcome.modules.operationCore.title',
     descriptionKey: 'welcome.modules.operationCore.description',

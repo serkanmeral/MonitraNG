@@ -272,11 +272,6 @@ const horizontalItems: menu[] = [
         icon: CircleDotIcon,
         to: "/apps/kanban",
       },
-      {
-        title: "Görevler",
-        icon: CircleDotIcon,
-        to: "/apps/task-manager/projects",
-      },
     ],
   },
 
