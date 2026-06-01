@@ -40,10 +40,19 @@ public partial class RuntimeContextService
     {
         var token = RequireToken();
         var workItem = await LoadWorkItemAsync(workItemId, token, cancellationToken);
+        return await GetFormEditAsync(workItemId, workItem, cancellationToken);
+    }
+
+    /// <summary>Önceden yüklenmiş work item ile (profile-view içinde tekrar DG GetById yapmamak için).</summary>
+    private Task<FormRuntimeContext> GetFormEditAsync(
+        string workItemId,
+        Dictionary<string, object?> workItem,
+        CancellationToken cancellationToken = default)
+    {
         var workspaceId = WorkItemDataHelper.GetString(workItem, "workspaceId")
             ?? throw new OperationCoreException("WORK_ITEM_INVALID", "workspaceId missing.", "workspaceId yok.", 500);
 
-        return await BuildFormContextAsync("edit", workspaceId, workItemId, workItem, formId: null, cancellationToken);
+        return BuildFormContextAsync("edit", workspaceId, workItemId, workItem, formId: null, cancellationToken);
     }
 
     private async Task<FormRuntimeContext> BuildFormContextAsync(

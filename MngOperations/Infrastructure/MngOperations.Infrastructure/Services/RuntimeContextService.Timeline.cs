@@ -53,6 +53,7 @@ public partial class RuntimeContextService
     /// </summary>
     private async Task<IReadOnlyDictionary<string, List<TimelineChangeDto>>> ResolveActivityChangesAsync(
         string workItemId,
+        Dictionary<string, object?> workItem,
         string workspaceId,
         IReadOnlyList<Dictionary<string, object?>> activityList,
         string token,
@@ -79,7 +80,7 @@ public partial class RuntimeContextService
         IReadOnlyList<Dictionary<string, object?>> poolFields = Array.Empty<Dictionary<string, object?>>();
         try
         {
-            var formTask = GetFormEditAsync(workItemId, cancellationToken);
+            var formTask = GetFormEditAsync(workItemId, workItem, cancellationToken);
             var poolTask = LoadProfilePoolFieldsAsync(workspaceId, token, cancellationToken);
             await Task.WhenAll(formTask, poolTask);
             formFields = formTask.Result.Fields ?? formFields;

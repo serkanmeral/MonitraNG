@@ -78,9 +78,19 @@ public partial class RuntimeContextService : IRuntimeContextService
         string workItemId,
         CancellationToken cancellationToken = default)
     {
-        var perfSw = _perfDiagnostics ? Stopwatch.StartNew() : null;
         var token = RequireToken();
         var workItem = await LoadWorkItemAsync(workItemId, token, cancellationToken);
+        return await GetProfileAsync(workItemId, workItem, cancellationToken);
+    }
+
+    /// <summary>Önceden yüklenmiş work item ile (profile-view içinde tekrar DG GetById yapmamak için).</summary>
+    private async Task<ProfileRuntimeContext> GetProfileAsync(
+        string workItemId,
+        Dictionary<string, object?> workItem,
+        CancellationToken cancellationToken = default)
+    {
+        var perfSw = _perfDiagnostics ? Stopwatch.StartNew() : null;
+        var token = RequireToken();
         var workspaceId = WorkItemDataHelper.GetString(workItem, "workspaceId")
             ?? throw new OperationCoreException("WORK_ITEM_INVALID", "workspaceId missing.", "workspaceId yok.", 500);
 
@@ -297,10 +307,22 @@ public partial class RuntimeContextService : IRuntimeContextService
         CancellationToken cancellationToken = default)
     {
         var token = RequireToken();
+        var workItem = await LoadWorkItemAsync(workItemId, token, cancellationToken);
+        return await GetTimelineAsync(workItemId, workItem, skip, take, cancellationToken);
+    }
+
+    /// <summary>Önceden yüklenmiş work item ile (profile-view içinde tekrar DG GetById yapmamak için).</summary>
+    private async Task<TimelinePage> GetTimelineAsync(
+        string workItemId,
+        Dictionary<string, object?> workItem,
+        int skip,
+        int take,
+        CancellationToken cancellationToken)
+    {
+        var token = RequireToken();
         take = Math.Clamp(take, 1, 200);
         skip = Math.Max(0, skip);
 
-        var workItem = await LoadWorkItemAsync(workItemId, token, cancellationToken);
         var workspaceId = WorkItemDataHelper.GetString(workItem, "workspaceId")
             ?? throw new OperationCoreException("WORK_ITEM_INVALID", "workspaceId missing.", "workspaceId yok.", 500);
 
@@ -327,7 +349,7 @@ public partial class RuntimeContextService : IRuntimeContextService
         var activityList = activitiesTask.Result.ToList();
 
         // Aktivite alan değişiklik satırlarını (changes[]) read-time çöz (changes yoksa metadata yüklenmez).
-        var changesTask = ResolveActivityChangesAsync(workItemId, workspaceId, activityList, token, cancellationToken);
+        var changesTask = ResolveActivityChangesAsync(workItemId, workItem, workspaceId, activityList, token, cancellationToken);
 
         // Yazar/actor person id'lerini topla ve People diziniyle ada çöz (BL-KB toplu uç + Redis cache).
         // author/actor alanı DG okumada düz id veya tam @users nesnesine genişlemiş gelebilir → her ikisini

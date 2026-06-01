@@ -15,7 +15,7 @@ public static class ServiceRegistration
     {
         services.AddHttpClient("MngDataGateway", client =>
         {
-            client.Timeout = TimeSpan.FromSeconds(120);
+            client.Timeout = TimeSpan.FromSeconds(Math.Max(5, settings.DataGateway.TimeoutSeconds));
         });
 
         services.AddHttpClient("HealthCheck", client =>

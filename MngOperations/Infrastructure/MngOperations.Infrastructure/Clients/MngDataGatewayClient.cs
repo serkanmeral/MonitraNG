@@ -40,17 +40,21 @@ public class MngDataGatewayClient : IMngDataGatewayClient
         var apiVersion = _settings.DataGateway.ApiVersion ?? "v1";
         _httpClient.BaseAddress = new Uri($"{baseUrl}/api/{apiVersion}/");
 
+        // İç ağda backoff ms seviyesinde tutulur: delay = Base * 2^(attempt-1) (200/400/800ms, toplam ~1.4sn).
+        // Eski sn-seviyesi (2^attempt sn = 2+4+8 = 14sn) tek başarısız çağrıda profil-view'i 14sn bloke ediyordu.
+        var retryCount = Math.Max(0, _settings.DataGateway.RetryCount);
+        var retryBaseDelayMs = Math.Max(1, _settings.DataGateway.RetryBaseDelayMs);
         _retryPolicy = Policy
             .HandleResult<HttpResponseMessage>(r => !r.IsSuccessStatusCode && (int)r.StatusCode >= 500)
             .Or<HttpRequestException>()
             .WaitAndRetryAsync(
-                3,
-                attempt => TimeSpan.FromSeconds(Math.Pow(2, attempt)),
-                (outcome, timespan, retryCount, _) =>
+                retryCount,
+                attempt => TimeSpan.FromMilliseconds(retryBaseDelayMs * Math.Pow(2, attempt - 1)),
+                (outcome, timespan, attempt, _) =>
                 {
                     _logger.LogWarning(
                         "Retrying MngDataGateway request. Attempt {RetryCount} after {Delay}ms",
-                        retryCount,
+                        attempt,
                         timespan.TotalMilliseconds);
                 });
     }

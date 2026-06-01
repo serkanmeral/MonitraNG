@@ -191,6 +191,25 @@ public class MetadataCacheService : IMetadataCache
             $"State '{stateId}' bulunamadı.",
             cancellationToken);
 
+    public async Task<IReadOnlyList<SlaPolicyRecord>> GetSlaPoliciesForWorkspaceAsync(
+        string workspaceId,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        var cacheKey = CacheKey($"sla:policies:{workspaceId}");
+        if (_cache.TryGetValue(cacheKey, out IReadOnlyList<SlaPolicyRecord>? cached) && cached != null)
+            return cached;
+
+        var filter = $"workspaceId:eq:{workspaceId}";
+        var policies = (await _dg.GetAsync<SlaPolicyRecord>(
+            OcDatasets.SlaPolicies,
+            $"filter={Uri.EscapeDataString(filter)}&limit=100",
+            token,
+            cancellationToken)).ToList();
+        _cache.Set(cacheKey, (IReadOnlyList<SlaPolicyRecord>)policies, _ttl);
+        return policies;
+    }
+
     public async Task<SlaPolicyRecord?> ResolveSlaPolicyAsync(
         string workspaceId,
         string typeId,
@@ -198,17 +217,7 @@ public class MetadataCacheService : IMetadataCache
         string token,
         CancellationToken cancellationToken = default)
     {
-        var cacheKey = CacheKey($"sla:policies:{workspaceId}");
-        if (!_cache.TryGetValue(cacheKey, out IReadOnlyList<SlaPolicyRecord>? cached) || cached == null)
-        {
-            var filter = $"workspaceId:eq:{workspaceId}";
-            cached = (await _dg.GetAsync<SlaPolicyRecord>(
-                OcDatasets.SlaPolicies,
-                $"filter={Uri.EscapeDataString(filter)}&limit=100",
-                token,
-                cancellationToken)).ToList();
-            _cache.Set(cacheKey, cached, _ttl);
-        }
+        var cached = await GetSlaPoliciesForWorkspaceAsync(workspaceId, token, cancellationToken);
 
         SlaPolicyRecord? best = null;
         var bestScore = -1;

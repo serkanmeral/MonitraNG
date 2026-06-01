@@ -39,6 +39,18 @@ public class DataGatewaySettings
 {
     public string BaseUrl { get; set; } = "http://mngdatagateway:5010";
     public string ApiVersion { get; set; } = "v1";
+
+    /// <summary>Tek bir DG HTTP çağrısı için üst sınır. İç ağda metadata/query çağrıları
+    /// saniyeler sürer; asılı kalan bağlantı 120sn yerine burada patlar.</summary>
+    public int TimeoutSeconds { get; set; } = 30;
+
+    /// <summary>5xx/ağ hatasında yeniden deneme sayısı (Polly).</summary>
+    public int RetryCount { get; set; } = 3;
+
+    /// <summary>Yeniden denemede üstel backoff taban gecikmesi (ms): delay = Base * 2^(attempt-1).
+    /// İç ağ için ms seviyesi yeterli (200 → 200/400/800ms, toplam ~1.4sn). Eski sn-seviyesi backoff
+    /// (2^attempt sn = 2+4+8 = 14sn) tek başarısız çağrıda profili 14sn bloke ediyordu.</summary>
+    public int RetryBaseDelayMs { get; set; } = 200;
 }
 
 public class MngNotifiersSettings

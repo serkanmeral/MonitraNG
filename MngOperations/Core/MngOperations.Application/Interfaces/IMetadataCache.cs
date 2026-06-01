@@ -40,6 +40,12 @@ public interface IMetadataCache
         string token,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Workspace SLA politikaları (cache'li liste; profil politika çözümü için).</summary>
+    Task<IReadOnlyList<SlaPolicyRecord>> GetSlaPoliciesForWorkspaceAsync(
+        string workspaceId,
+        string token,
+        CancellationToken cancellationToken = default);
+
     Task<DashboardRecord> GetDashboardAsync(string dashboardId, string token, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<NotificationPolicyRecord>> GetNotificationPoliciesForWorkspaceAsync(

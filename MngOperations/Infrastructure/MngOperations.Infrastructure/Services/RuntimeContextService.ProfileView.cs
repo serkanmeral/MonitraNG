@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MngOperations.Application.Contracts.Runtime;
 using MngOperations.Application.Exceptions;
+using MngOperations.Application.Models;
 using MngOperations.Application.Utilities;
 using MngOperations.Domain.Constants;
 
@@ -48,9 +49,10 @@ public partial class RuntimeContextService
             : new[] { currentStateId };
 
         // Bağımsız ağır işler paralel (hepsi iç ağda; DG/Keeper ms seviyesinde).
-        var profileTask = GetProfileAsync(workItemId, cancellationToken);
-        var formTask = GetFormEditAsync(workItemId, cancellationToken);
-        var timelineTask = GetTimelineAsync(workItemId, 0, 100, cancellationToken);
+        // workItem zaten yüklendi → alt çağrılara geçir (op_work_items GetById 5×→1×).
+        var profileTask = GetProfileAsync(workItemId, workItem, cancellationToken);
+        var formTask = GetFormEditAsync(workItemId, workItem, cancellationToken);
+        var timelineTask = GetTimelineAsync(workItemId, workItem, 0, 100, cancellationToken);
         var catalogsTask = BuildBoardCatalogsAsync(workspace, workspaceId, scopeStateIds, token, cancellationToken);
         var policyTask = ResolveProfilePolicyAsync(workItem, workspaceId, token, cancellationToken);
         var poolFieldsTask = LoadProfilePoolFieldsAsync(workspaceId, token, cancellationToken);
@@ -140,7 +142,8 @@ public partial class RuntimeContextService
         }
     }
 
-    /// <summary>OcPolicyPanel scopeMatches/matchedPolicy mantığını MO'ya taşır: op_rules/op_sla_policies MO'da filtrelenir.</summary>
+    /// <summary>OcPolicyPanel scopeMatches/matchedPolicy mantığını MO'ya taşır: op_rules/op_sla_policies
+    /// cache'li (workspace bazlı) listelerden okunur — warm'da ek DG çağrısı yapılmaz.</summary>
     private async Task<ResolvedPolicyDto> ResolveProfilePolicyAsync(
         IReadOnlyDictionary<string, object?> workItem,
         string workspaceId,
@@ -153,18 +156,15 @@ public partial class RuntimeContextService
         var stateId = WorkItemDataHelper.GetPersonRefId(workItem, "stateId");
         var slaPolicyId = SlaSnapshotHelper.MapFromWorkItem(workItem)?.SlaPolicyId;
 
-        List<Dictionary<string, object?>> ruleRows;
-        List<Dictionary<string, object?>> policyRows;
+        IReadOnlyList<RuleRecord> ruleRows;
+        IReadOnlyList<SlaPolicyRecord> policyRows;
         try
         {
-            var wsFilter = Uri.EscapeDataString($"workspaceId:eq:{workspaceId}");
-            var rulesTask = _dg.GetAsync<Dictionary<string, object?>>(
-                OcDatasets.Rules, $"filter={wsFilter}&limit=200", token, cancellationToken);
-            var policiesTask = _dg.GetAsync<Dictionary<string, object?>>(
-                OcDatasets.SlaPolicies, $"filter={wsFilter}&limit=200", token, cancellationToken);
+            var rulesTask = _metadataCache.GetRulesForWorkspaceAsync(workspaceId, token, cancellationToken);
+            var policiesTask = _metadataCache.GetSlaPoliciesForWorkspaceAsync(workspaceId, token, cancellationToken);
             await Task.WhenAll(rulesTask, policiesTask);
-            ruleRows = rulesTask.Result.ToList();
-            policyRows = policiesTask.Result.ToList();
+            ruleRows = rulesTask.Result;
+            policyRows = policiesTask.Result;
         }
         catch (Exception ex)
         {
@@ -175,32 +175,28 @@ public partial class RuntimeContextService
         static bool ScopeMatches(string? value, string? target) =>
             string.IsNullOrEmpty(value) || string.Equals(value, target, StringComparison.Ordinal);
 
-        // Kurallar: aktif + workspace + name; scope (board/type/state) eşleşmesi; priority asc, name asc.
+        // Kurallar: aktif + name; scope (board/type/state) eşleşmesi; priority asc, name asc.
         var applicableRules = ruleRows
-            .Where(r => WorkItemDataHelper.GetBool(r, "isActive") != false)
-            .Where(r => string.Equals(WorkItemDataHelper.GetPersonRefId(r, "workspaceId"), workspaceId, StringComparison.Ordinal)
-                && !string.IsNullOrWhiteSpace(WorkItemDataHelper.GetString(r, "__dataId"))
-                && !string.IsNullOrWhiteSpace(WorkItemDataHelper.GetString(r, "name")))
-            .Where(r => ScopeMatches(WorkItemDataHelper.GetPersonRefId(r, "boardId"), boardId)
-                && ScopeMatches(WorkItemDataHelper.GetPersonRefId(r, "typeId"), typeId)
-                && ScopeMatches(WorkItemDataHelper.GetPersonRefId(r, "stateId"), stateId))
-            .OrderBy(r => ReadDouble(r, "priority") ?? double.MaxValue)
-            .ThenBy(r => WorkItemDataHelper.GetString(r, "name"), StringComparer.OrdinalIgnoreCase)
+            .Where(r => r.IsActive != false)
+            .Where(r => !string.IsNullOrWhiteSpace(r.DataId) && !string.IsNullOrWhiteSpace(r.Name))
+            .Where(r => ScopeMatches(r.BoardId, boardId)
+                && ScopeMatches(r.TypeId, typeId)
+                && ScopeMatches(r.StateId, stateId))
+            .OrderBy(r => r.Priority ?? int.MaxValue)
+            .ThenBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
             .Select(r => new ResolvedRuleDto
             {
-                Id = WorkItemDataHelper.GetString(r, "__dataId")!,
-                Name = WorkItemDataHelper.GetString(r, "name"),
-                Trigger = WorkItemDataHelper.GetString(r, "trigger"),
-                RuleType = WorkItemDataHelper.GetString(r, "ruleType")?.Trim().ToLowerInvariant(),
-                Description = WorkItemDataHelper.GetString(r, "description"),
+                Id = r.DataId!,
+                Name = r.Name,
+                Trigger = r.Trigger,
+                RuleType = r.RuleType?.Trim().ToLowerInvariant(),
+                Description = r.Description,
             })
             .ToList();
 
-        // Politikalar: workspace + name geçerli olanlar.
+        // Politikalar: name geçerli olanlar.
         var validPolicies = policyRows
-            .Where(p => string.Equals(WorkItemDataHelper.GetPersonRefId(p, "workspaceId"), workspaceId, StringComparison.Ordinal)
-                && !string.IsNullOrWhiteSpace(WorkItemDataHelper.GetString(p, "__dataId"))
-                && !string.IsNullOrWhiteSpace(WorkItemDataHelper.GetString(p, "name")))
+            .Where(p => !string.IsNullOrWhiteSpace(p.DataId) && !string.IsNullOrWhiteSpace(p.Name))
             .ToList();
 
         ResolvedSlaPolicyDto? matched = null;
@@ -209,7 +205,7 @@ public partial class RuntimeContextService
         if (!string.IsNullOrEmpty(slaPolicyId))
         {
             var direct = validPolicies.FirstOrDefault(p =>
-                string.Equals(WorkItemDataHelper.GetString(p, "__dataId"), slaPolicyId, StringComparison.Ordinal));
+                string.Equals(p.DataId, slaPolicyId, StringComparison.Ordinal));
             if (direct != null)
                 matched = MapSlaPolicy(direct, derived: false);
         }
@@ -218,10 +214,9 @@ public partial class RuntimeContextService
         if (matched == null)
         {
             var candidate = validPolicies
-                .Where(p => WorkItemDataHelper.GetBool(p, "isActive") != false)
-                .Where(p => ScopeMatches(WorkItemDataHelper.GetPersonRefId(p, "typeId"), typeId)
-                    && ScopeMatches(WorkItemDataHelper.GetPersonRefId(p, "priorityId"), priorityId))
-                .OrderByDescending(p => ReadDouble(p, "priority") ?? 0)
+                .Where(p => p.IsActive != false)
+                .Where(p => ScopeMatches(p.TypeId, typeId) && ScopeMatches(p.PriorityId, priorityId))
+                .OrderByDescending(p => p.Priority ?? 0)
                 .FirstOrDefault();
             if (candidate != null)
                 matched = MapSlaPolicy(candidate, derived: true);
@@ -234,13 +229,13 @@ public partial class RuntimeContextService
         };
     }
 
-    private static ResolvedSlaPolicyDto MapSlaPolicy(IReadOnlyDictionary<string, object?> p, bool derived) =>
+    private static ResolvedSlaPolicyDto MapSlaPolicy(SlaPolicyRecord p, bool derived) =>
         new()
         {
-            Id = WorkItemDataHelper.GetString(p, "__dataId") ?? string.Empty,
-            Name = WorkItemDataHelper.GetString(p, "name"),
-            ResponseTargetMinutes = ReadDouble(p, "responseTargetMinutes"),
-            ResolveTargetMinutes = ReadDouble(p, "resolveTargetMinutes"),
+            Id = p.DataId ?? string.Empty,
+            Name = p.Name,
+            ResponseTargetMinutes = p.ResponseTargetMinutes,
+            ResolveTargetMinutes = p.ResolveTargetMinutes,
             Derived = derived,
         };
 
@@ -531,13 +526,5 @@ public partial class RuntimeContextService
             if (!string.IsNullOrWhiteSpace(v))
                 return v;
         return null;
-    }
-
-    private static double? ReadDouble(IReadOnlyDictionary<string, object?> data, string key)
-    {
-        var raw = WorkItemDataHelper.GetString(data, key);
-        if (string.IsNullOrWhiteSpace(raw))
-            return null;
-        return double.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out var d) ? d : null;
     }
 }
