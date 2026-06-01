@@ -178,6 +178,8 @@ export interface OpBoard {
   workspaceId: string;
   viewType?: string;
   defaultFormId?: string | null;
+  /** Board'a bağlı varsayılan pano (op_dashboards.__dataId). Form seçimine analojik. */
+  defaultDashboardId?: string | null;
   defaultStateFlowId?: string | null;
   defaultProfileId?: string | null;
   defaultTypeId?: string | null;
@@ -521,6 +523,38 @@ export interface OcDashboardListItem {
   workspaceId?: string | null;
   isActive: boolean;
   isDefault: boolean;
+}
+
+/**
+ * Düzenlenebilir widget tanımı (op_dashboards.widgets[] ham hali — runtime execution DEĞİL).
+ * Admin editörü bu modeli okur/yazar; viewer ise MO'nun çözdüğü OcDashboardWidget'i kullanır.
+ */
+export interface OcDashboardWidgetDef {
+  key: string;
+  /** 'summaryCard' | 'list' | 'chart' */
+  type: string;
+  title?: string | null;
+  dataset?: string | null;
+  queryKey?: string | null;
+  parameters?: Record<string, unknown> | null;
+  take?: number | null;
+  /** Chart: 'bar' | 'pie' | 'donut' | 'line'. */
+  chartType?: string | null;
+  /** Chart agregasyon alanı: 'stateId' | 'priorityId' | 'typeId' | 'assignee'. */
+  groupBy?: string | null;
+}
+
+/** op_dashboards ham kaydı (admin editörü için — DG'den okunur, DG'ye yazılır). */
+export interface OcDashboardRecord {
+  id: string;
+  name: string;
+  description?: string | null;
+  workspaceId?: string | null;
+  scope?: string | null;
+  isDefault: boolean;
+  isActive: boolean;
+  layout?: OcDashboardLayout | null;
+  widgets: OcDashboardWidgetDef[];
 }
 
 /** İş kaydı profil özeti (MO GetProfileAsync). */

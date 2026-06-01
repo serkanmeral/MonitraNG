@@ -6,7 +6,7 @@ import { useResizableTreePanel } from '@/composables/useResizableTreePanel';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import { useOperationCoreStore } from '@/stores/apps/operationCore';
 import { useAppI18n } from '@/composables/useAppI18n';
-import { ocListDashboardsForWorkspace } from '@/services/operationCoreService';
+import { ocListAllDashboards } from '@/services/operationCoreService';
 import type { OcDashboardListItem, OcWorkspaceTreeNode } from '@/types/apps/operationCore';
 import {
   LayoutSidebarLeftCollapseIcon,
@@ -39,29 +39,35 @@ const selectedWorkspaceId = ref<string | null>(null);
 const selectedBoardId = ref<string | null>(null);
 const treeLoading = ref(false);
 
-const dashboards = ref<OcDashboardListItem[]>([]);
-const dashboardsLoading = ref(false);
+const allDashboards = ref<OcDashboardListItem[]>([]);
 
-async function loadDashboards(workspaceId: string | null) {
-  if (!workspaceId) {
-    dashboards.value = [];
-    return;
-  }
-  dashboardsLoading.value = true;
+const dashboardNameById = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {};
+  allDashboards.value.forEach((d) => {
+    if (d.id) map[d.id] = d.name || d.id;
+  });
+  return map;
+});
+
+async function loadAllDashboards() {
   try {
-    dashboards.value = await ocListDashboardsForWorkspace(workspaceId);
+    allDashboards.value = await ocListAllDashboards();
   } catch {
-    dashboards.value = [];
-  } finally {
-    dashboardsLoading.value = false;
+    allDashboards.value = [];
   }
 }
 
-function openDashboard(dashboardId: string) {
+function openDashboard(dashboardId: string, workspaceId?: string | null) {
+  if (!dashboardId) return;
+  const wsId = workspaceId ?? selectedWorkspaceId.value;
   router.push({
     path: `/apps/operation-core/dashboards/${encodeURIComponent(dashboardId)}`,
-    query: selectedWorkspaceId.value ? { workspaceId: selectedWorkspaceId.value } : undefined,
+    query: wsId ? { workspaceId: wsId } : undefined,
   });
+}
+
+function onOpenDashboard(dashboardId: string, workspaceId: string, _boardId: string) {
+  openDashboard(dashboardId, workspaceId);
 }
 
 const selectedWorkspace = computed(() =>
@@ -74,6 +80,11 @@ const selectedBoard = computed(() => {
   if (!selectedBoardId.value || !selectedWorkspaceId.value) return null;
   return store.boardsForWorkspace(selectedWorkspaceId.value).find((b) => b.__dataId === selectedBoardId.value) ?? null;
 });
+
+const selectedBoardDashboardId = computed(() => selectedBoard.value?.defaultDashboardId ?? null);
+const selectedBoardDashboardName = computed(() =>
+  selectedBoardDashboardId.value ? dashboardNameById.value[selectedBoardDashboardId.value] ?? null : null
+);
 
 const { breadcrumbs } = useOperationCoreBreadcrumbs({
   workspace: computed(() =>
@@ -161,15 +172,13 @@ watch(
   { deep: true }
 );
 
-watch(selectedWorkspaceId, (id) => loadDashboards(id), { immediate: false });
-
 onMounted(async () => {
   syncFromRoute();
   await loadTreeData();
   await store.pingOperations();
+  await loadAllDashboards();
   if (selectedWorkspaceId.value) {
     await store.loadBoardsForWorkspace(selectedWorkspaceId.value);
-    await loadDashboards(selectedWorkspaceId.value);
   }
 });
 </script>
@@ -247,10 +256,12 @@ onMounted(async () => {
                 :workspace-nodes="treeNodes"
                 :selected-workspace-id="selectedWorkspaceId"
                 :selected-board-id="selectedBoardId"
+                :dashboard-name-by-id="dashboardNameById"
                 :empty-label="t('operationCore.workspace.noWorkspaces')"
                 :label-workspaces-root="t('operationCore.workspace.workspacesRoot')"
                 @select-workspace="onSelectWorkspace"
                 @select-board="onSelectBoard"
+                @open-dashboard="onOpenDashboard"
               />
             </v-card-text>
           </v-card>
@@ -287,6 +298,30 @@ onMounted(async () => {
                 {{ t('operationCore.workspace.mainTitle') }}
               </template>
             </span>
+            <template v-if="selectedBoard">
+              <v-spacer />
+              <v-btn
+                v-if="selectedBoardDashboardId"
+                size="small"
+                variant="tonal"
+                color="primary"
+                class="text-none"
+                prepend-icon="mdi-view-dashboard-outline"
+                @click="openDashboard(selectedBoardDashboardId, selectedWorkspaceId)"
+              >
+                {{ t('operationCore.workspace.openDashboard') }}
+              </v-btn>
+              <v-btn
+                size="small"
+                variant="flat"
+                color="primary"
+                class="text-none"
+                prepend-icon="mdi-view-column-outline"
+                @click="openSelectedBoard"
+              >
+                {{ t('operationCore.workspace.openBoard') }}
+              </v-btn>
+            </template>
           </v-card-title>
           <v-divider />
           <v-card-text class="flex-grow-1 overflow-auto pa-4 pa-md-6">
@@ -370,55 +405,6 @@ onMounted(async () => {
                   </v-card>
                 </v-col>
               </v-row>
-
-              <!-- Panolar -->
-              <p class="text-subtitle-2 font-weight-bold mb-3 mt-6">
-                {{ t('operationCore.dashboards.listTitle') }}
-              </p>
-              <div v-if="dashboardsLoading" class="d-flex py-2">
-                <v-progress-circular indeterminate color="primary" size="22" />
-              </div>
-              <div
-                v-else-if="!dashboards.length"
-                class="text-body-2 text-medium-emphasis"
-              >
-                {{ t('operationCore.dashboards.noneInWorkspace') }}
-              </div>
-              <v-row v-else dense>
-                <v-col
-                  v-for="dash in dashboards"
-                  :key="dash.id"
-                  cols="12"
-                  sm="6"
-                  md="4"
-                >
-                  <v-card
-                    variant="outlined"
-                    class="rounded-lg h-100 oc-board-pick-card"
-                    hover
-                    @click="openDashboard(dash.id)"
-                  >
-                    <v-card-text class="pa-4">
-                      <div class="d-flex align-center gap-2 mb-2">
-                        <v-icon icon="mdi-view-dashboard-outline" size="22" color="primary" />
-                        <span class="text-subtitle-1 font-weight-medium text-truncate">
-                          {{ dash.name }}
-                        </span>
-                        <v-spacer />
-                        <v-chip v-if="dash.isDefault" size="x-small" variant="tonal" color="primary">
-                          {{ t('operationCore.dashboards.defaultChip') }}
-                        </v-chip>
-                      </div>
-                      <p
-                        v-if="dash.description"
-                        class="text-caption text-medium-emphasis mb-0 text-truncate"
-                      >
-                        {{ dash.description }}
-                      </p>
-                    </v-card-text>
-                  </v-card>
-                </v-col>
-              </v-row>
             </div>
 
             <!-- Board seçili -->
@@ -434,23 +420,23 @@ onMounted(async () => {
                 <p class="text-body-2 text-medium-emphasis mb-1">
                   {{ selectedWorkspace.name }}
                 </p>
-                <v-chip size="small" variant="tonal" class="text-capitalize mb-4">
-                  {{ boardViewTypeLabel(selectedBoard.viewType) }}
-                </v-chip>
-                <p class="text-body-2 text-medium-emphasis mb-4 mx-auto" style="max-width: 420px">
+                <div class="d-flex align-center justify-center flex-wrap gap-2 mb-4">
+                  <v-chip size="small" variant="tonal" class="text-capitalize">
+                    {{ boardViewTypeLabel(selectedBoard.viewType) }}
+                  </v-chip>
+                  <v-chip
+                    v-if="selectedBoardDashboardName"
+                    size="small"
+                    variant="tonal"
+                    color="primary"
+                    prepend-icon="mdi-view-dashboard-outline"
+                  >
+                    {{ selectedBoardDashboardName }}
+                  </v-chip>
+                </div>
+                <p class="text-body-2 text-medium-emphasis mb-0 mx-auto" style="max-width: 420px">
                   {{ t('operationCore.workspace.selectedBoardHint') }}
                 </p>
-                <v-btn
-                  color="primary"
-                  variant="flat"
-                  rounded="lg"
-                  class="text-none"
-                  size="large"
-                  @click="openSelectedBoard"
-                >
-                  {{ t('operationCore.workspace.openBoard') }}
-                  <v-icon icon="mdi-chevron-right" end />
-                </v-btn>
               </div>
             </div>
           </v-card-text>

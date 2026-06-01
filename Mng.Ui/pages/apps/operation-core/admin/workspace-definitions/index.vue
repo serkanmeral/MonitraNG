@@ -7,6 +7,7 @@ import OcWorkspaceDefinitionsTagsTab from '@/components/apps/operation-core/work
 import OcWorkspaceDefinitionsFlowsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsFlowsTab.vue';
 import OcWorkspaceDefinitionsFormsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsFormsTab.vue';
 import OcWorkspaceDefinitionsBoardsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsBoardsTab.vue';
+import OcWorkspaceDefinitionsDashboardsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsDashboardsTab.vue';
 import OcWorkspaceDefinitionsPoliciesTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsPoliciesTab.vue';
 import OcWorkspaceDefinitionsRulesTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsRulesTab.vue';
 import OcWorkspaceDefinitionsScheduledWorkItemsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsScheduledWorkItemsTab.vue';
@@ -18,6 +19,7 @@ import {
   type OcWorkspaceDefinitionTabKey,
   useOcWorkspaceDefinitionTabs,
 } from '@/composables/useOcWorkspaceDefinitionTabs';
+import { useDisplay } from 'vuetify';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useAuthStore } from '@/stores/auth';
 import { ocListWorkspaces } from '@/services/operationCoreService';
@@ -26,6 +28,7 @@ import type { OpWorkspace } from '@/types/apps/operationCore';
 definePageMeta({ layout: 'default' });
 
 const { t } = useAppI18n();
+const { mdAndUp } = useDisplay();
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
@@ -59,7 +62,8 @@ const TAB_ICONS: Record<OcWorkspaceDefinitionTabKey, string> = {
   tags: 'mdi-tag-multiple-outline',
   flows: 'mdi-transit-connection-variant',
   forms: 'mdi-form-select',
-  boards: 'mdi-view-dashboard-outline',
+  boards: 'mdi-view-column-outline',
+  dashboards: 'mdi-view-dashboard-outline',
   policies: 'mdi-shield-account-outline',
   rules: 'mdi-format-list-checks',
   scheduled: 'mdi-calendar-clock',
@@ -193,19 +197,26 @@ onMounted(() => {
     </v-alert>
 
     <v-card v-else-if="selectedWorkspaceId" variant="outlined" class="rounded-lg">
-      <v-tabs v-model="tabIndex" color="primary" class="px-2 pt-2" show-arrows>
-        <v-tab
-          v-for="tab in tabItems"
-          :key="tab.key"
-          :value="OC_WORKSPACE_DEFINITION_TAB_KEYS.indexOf(tab.key)"
-          class="text-none"
+      <div class="d-flex flex-column flex-md-row">
+        <v-tabs
+          v-model="tabIndex"
+          :direction="mdAndUp ? 'vertical' : 'horizontal'"
+          color="primary"
+          class="oc-def-side-tabs flex-shrink-0 py-2"
+          show-arrows
         >
-          <v-icon :icon="tab.icon" start size="20" />
-          {{ tab.label }}
-        </v-tab>
-      </v-tabs>
-      <v-divider />
-      <v-tabs-window v-model="tabIndex">
+          <v-tab
+            v-for="tab in tabItems"
+            :key="tab.key"
+            :value="OC_WORKSPACE_DEFINITION_TAB_KEYS.indexOf(tab.key)"
+            class="text-none justify-start"
+          >
+            <v-icon :icon="tab.icon" start size="20" />
+            {{ tab.label }}
+          </v-tab>
+        </v-tabs>
+        <v-divider :vertical="mdAndUp" />
+        <v-tabs-window v-model="tabIndex" class="flex-grow-1" style="min-width: 0">
         <v-tabs-window-item
           v-for="(tab, idx) in tabItems"
           :key="tab.key"
@@ -235,6 +246,10 @@ onMounted(() => {
             v-else-if="tab.key === 'boards'"
             :workspace-id="selectedWorkspaceId"
           />
+          <OcWorkspaceDefinitionsDashboardsTab
+            v-else-if="tab.key === 'dashboards'"
+            :workspace-id="selectedWorkspaceId"
+          />
           <OcWorkspaceDefinitionsPoliciesTab
             v-else-if="tab.key === 'policies'"
             :workspace-id="selectedWorkspaceId"
@@ -252,7 +267,8 @@ onMounted(() => {
             :workspace-id="selectedWorkspaceId"
           />
         </v-tabs-window-item>
-      </v-tabs-window>
+        </v-tabs-window>
+      </div>
     </v-card>
 
     <v-alert v-else-if="!loadingWorkspaces" type="info" variant="tonal">
@@ -262,3 +278,24 @@ onMounted(() => {
     <OcWorkspaceCreateDialog v-model="createDialogOpen" @created="onWorkspaceCreated" />
   </div>
 </template>
+
+<style scoped>
+/* Dikey (sol) sekme yerleşimi — md ve üstü. Dar ekranda v-tabs yataya döner. */
+.oc-def-side-tabs {
+  min-width: 232px;
+  max-width: 260px;
+}
+
+@media (max-width: 959px) {
+  .oc-def-side-tabs {
+    min-width: 0;
+    max-width: none;
+  }
+}
+
+/* Dikey modda sekmeleri sola hizala, tam genişlik kullansın. */
+.oc-def-side-tabs :deep(.v-tab) {
+  justify-content: flex-start;
+  text-align: left;
+}
+</style>

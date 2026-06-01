@@ -13,6 +13,8 @@ import type {
   OcDashboard,
   OcDashboardLayout,
   OcDashboardListItem,
+  OcDashboardRecord,
+  OcDashboardWidgetDef,
   OcDashboardWidget,
   OcDashboardWidgetExecution,
   OcPersonDisplay,
@@ -1207,6 +1209,7 @@ function mapBoard(raw: Record<string, unknown>): OpBoard {
     workspaceId,
     viewType: raw.viewType != null ? String(raw.viewType) : undefined,
     defaultFormId: resolveRelationId(raw.defaultFormId ?? raw.DefaultFormId),
+    defaultDashboardId: resolveRelationId(raw.defaultDashboardId ?? raw.DefaultDashboardId),
     defaultStateFlowId: resolveRelationId(raw.defaultStateFlowId ?? raw.DefaultStateFlowId),
     defaultProfileId: resolveRelationId(raw.defaultProfileId ?? raw.DefaultProfileId),
     defaultTypeId: resolveRelationId(raw.defaultTypeId ?? raw.DefaultTypeId),
@@ -2175,6 +2178,17 @@ export async function ocGetDashboard(dashboardId: string): Promise<OcDashboard> 
 }
 
 /** Bir workspace'e ait dashboard'ları (ada göre) listeler — hub. */
+function mapDashboardListItem(raw: Record<string, unknown>): OcDashboardListItem {
+  return {
+    id: String(raw.__dataId ?? raw.dataId ?? ''),
+    name: String(raw.name ?? raw.Name ?? ''),
+    description: (raw.description ?? raw.Description ?? null) as string | null,
+    workspaceId: resolveRelationId(raw.workspaceId ?? raw.WorkspaceId) ?? null,
+    isActive: raw.isActive == null && raw.IsActive == null ? true : Boolean(raw.isActive ?? raw.IsActive),
+    isDefault: Boolean(raw.isDefault ?? raw.IsDefault ?? false),
+  };
+}
+
 export async function ocListDashboardsForWorkspace(workspaceId: string): Promise<OcDashboardListItem[]> {
   if (!workspaceId) return [];
   const rows = await ocListDataset(OC_DATASETS.dashboards, {
@@ -2183,16 +2197,77 @@ export async function ocListDashboardsForWorkspace(workspaceId: string): Promise
     limit: 200,
   });
   return rows
-    .map((r) => {
-      const raw = r as Record<string, unknown>;
-      return {
-        id: String(raw.__dataId ?? raw.dataId ?? ''),
-        name: String(raw.name ?? raw.Name ?? ''),
-        description: (raw.description ?? raw.Description ?? null) as string | null,
-        workspaceId: resolveRelationId(raw.workspaceId ?? raw.WorkspaceId) ?? null,
-        isActive: raw.isActive == null && raw.IsActive == null ? true : Boolean(raw.isActive ?? raw.IsActive),
-        isDefault: Boolean(raw.isDefault ?? raw.IsDefault ?? false),
-      } as OcDashboardListItem;
-    })
+    .map((r) => mapDashboardListItem(r as Record<string, unknown>))
     .filter((d) => d.id && d.workspaceId === workspaceId);
+}
+
+/** Tüm panolar (workspace filtresi olmadan) — gezinme tree'sinde board→pano adını çözmek için. */
+export async function ocListAllDashboards(): Promise<OcDashboardListItem[]> {
+  const rows = await ocListDataset(OC_DATASETS.dashboards, {
+    sort: 'name:asc',
+    limit: 1000,
+  });
+  return rows
+    .map((r) => mapDashboardListItem(r as Record<string, unknown>))
+    .filter((d) => d.id);
+}
+
+function mapDashboardWidgetDef(raw: Record<string, unknown>): OcDashboardWidgetDef {
+  const params = raw.parameters ?? raw.Parameters;
+  const take = raw.take ?? raw.Take;
+  return {
+    key: String(raw.key ?? raw.Key ?? ''),
+    type: String(raw.type ?? raw.Type ?? raw.widgetType ?? raw.WidgetType ?? 'list'),
+    title: (raw.title ?? raw.Title ?? null) as string | null,
+    dataset: (raw.dataset ?? raw.Dataset ?? null) as string | null,
+    queryKey: (raw.queryKey ?? raw.QueryKey ?? null) as string | null,
+    parameters:
+      params && typeof params === 'object' ? (params as Record<string, unknown>) : null,
+    take: take == null ? null : Number(take),
+    chartType: (raw.chartType ?? raw.ChartType ?? null) as string | null,
+    groupBy: (raw.groupBy ?? raw.GroupBy ?? null) as string | null,
+  };
+}
+
+/** op_dashboards ham kaydını DG'den okur (admin editörü için — runtime context DEĞİL). */
+export async function ocGetDashboardRecord(dashboardId: string): Promise<OcDashboardRecord | null> {
+  const id = dashboardId?.trim();
+  if (!id) return null;
+  const rows = await ocListDataset(OC_DATASETS.dashboards, {
+    filter: `__dataId:eq:${id}`,
+    limit: 1,
+  });
+  const raw = rows[0] as Record<string, unknown> | undefined;
+  if (!raw) return null;
+  const widgets = raw.widgets ?? raw.Widgets;
+  return {
+    id: String(raw.__dataId ?? raw.dataId ?? id),
+    name: String(raw.name ?? raw.Name ?? ''),
+    description: (raw.description ?? raw.Description ?? null) as string | null,
+    workspaceId: resolveRelationId(raw.workspaceId ?? raw.WorkspaceId) ?? null,
+    scope: (raw.scope ?? raw.Scope ?? null) as string | null,
+    isDefault: Boolean(raw.isDefault ?? raw.IsDefault ?? false),
+    isActive: raw.isActive == null && raw.IsActive == null ? true : Boolean(raw.isActive ?? raw.IsActive),
+    layout: mapDashboardLayout(raw.layout ?? raw.Layout),
+    widgets: Array.isArray(widgets)
+      ? widgets.map((w) => mapDashboardWidgetDef(w as Record<string, unknown>)).filter((w) => w.key)
+      : [],
+  };
+}
+
+/** Yeni pano oluşturur (op_dashboards — UI→DG direkt; MO read-only runtime). __dataId döner. */
+export async function ocCreateDashboard(body: Record<string, unknown>): Promise<string | null> {
+  const res = (await ocCreate(OC_DATASETS.dashboards, body)) as Record<string, unknown> | undefined;
+  const data = (res?.data ?? res?.Data ?? res) as Record<string, unknown> | undefined;
+  return (data?.__dataId ?? data?.dataId ?? data?.DataId ?? null) as string | null;
+}
+
+/** Mevcut panoyu günceller (op_dashboards). */
+export async function ocUpdateDashboard(dashboardId: string, body: Record<string, unknown>) {
+  return ocUpdate(OC_DATASETS.dashboards, dashboardId, body);
+}
+
+/** Panoyu siler (op_dashboards). */
+export async function ocDeleteDashboard(dashboardId: string) {
+  return ocDelete(OC_DATASETS.dashboards, dashboardId);
 }

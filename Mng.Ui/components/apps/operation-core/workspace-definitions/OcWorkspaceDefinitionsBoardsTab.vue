@@ -8,6 +8,7 @@ import {
   ocExtractDgErrorMessage,
   ocGetWorkspace,
   ocListBoardsForWorkspace,
+  ocListDashboardsForWorkspace,
   ocListFormsForWorkspace,
   ocListPoolFieldsForWorkspace,
   ocListPrioritiesForWorkspace,
@@ -36,6 +37,7 @@ const successLocal = ref<string | null>(null);
 const boards = ref<OpBoard[]>([]);
 const stateFlows = ref<OpStateFlow[]>([]);
 const formItems = ref<{ value: string; title: string }[]>([]);
+const dashboardItems = ref<{ value: string; title: string }[]>([]);
 const flowItems = ref<{ value: string; title: string }[]>([]);
 const stateItems = ref<{ value: string; title: string }[]>([]);
 const stateCatalog = ref<OpState[]>([]);
@@ -88,9 +90,10 @@ async function loadAll() {
   loading.value = true;
   errorLocal.value = null;
   try {
-    const [boardRows, forms, flows, states, profiles, types, priorities, poolFields, ws] = await Promise.all([
+    const [boardRows, forms, dashboardRows, flows, states, profiles, types, priorities, poolFields, ws] = await Promise.all([
       ocListBoardsForWorkspace(props.workspaceId),
       ocListFormsForWorkspace(props.workspaceId),
+      ocListDashboardsForWorkspace(props.workspaceId),
       ocListStateFlowsForWorkspace(props.workspaceId),
       ocListStatesForWorkspace(props.workspaceId, { fallbackAll: true }),
       ocListProfilesForWorkspace(props.workspaceId),
@@ -102,6 +105,7 @@ async function loadAll() {
     boards.value = boardRows;
     stateFlows.value = flows;
     formItems.value = forms.map((f) => ({ value: f.__dataId, title: f.name }));
+    dashboardItems.value = dashboardRows.map((d) => ({ value: d.id, title: d.name }));
     flowItems.value = flows.map((f) => ({ value: f.__dataId, title: f.name }));
     stateItems.value = states.map((s) => ({ value: s.__dataId, title: s.name }));
     stateCatalog.value = states;
@@ -299,6 +303,7 @@ onMounted(() => {
       :workspace-id="workspaceId"
       :state-flows="stateFlows"
       :form-items="formItems"
+      :dashboard-items="dashboardItems"
       :flow-items="flowItems"
       :state-items="stateItems"
       :state-catalog="stateCatalog"

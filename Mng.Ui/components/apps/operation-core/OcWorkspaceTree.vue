@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { ChevronDownIcon, ChevronRightIcon, FoldersIcon, FolderIcon, LayoutKanbanIcon } from 'vue-tabler-icons';
+import { ChevronDownIcon, ChevronRightIcon, FoldersIcon, FolderIcon, LayoutKanbanIcon, LayoutDashboardIcon } from 'vue-tabler-icons';
 import type { OcWorkspaceTreeNode } from '@/types/apps/operationCore';
 import { OC_ROOT_WORKSPACES } from '@/types/apps/operationCore';
 
@@ -8,6 +8,8 @@ const props = defineProps<{
   workspaceNodes: OcWorkspaceTreeNode[];
   selectedWorkspaceId: string | null;
   selectedBoardId: string | null;
+  /** Pano __dataId → görünen ad (board altında seçili panoyu göstermek için). */
+  dashboardNameById?: Record<string, string>;
   emptyLabel?: string;
   labelWorkspacesRoot: string;
 }>();
@@ -15,6 +17,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'select-workspace': [workspaceId: string];
   'select-board': [workspaceId: string, boardId: string];
+  'open-dashboard': [dashboardId: string, workspaceId: string, boardId: string];
 }>();
 
 const expandedIds = ref<Set<string>>(new Set());
@@ -63,6 +66,16 @@ function onWorkspaceClick(node: OcWorkspaceTreeNode, e: MouseEvent) {
 function onBoardClick(workspaceId: string, boardId: string, e: Event) {
   e.stopPropagation();
   emit('select-board', workspaceId, boardId);
+}
+
+function onDashboardClick(workspaceId: string, boardId: string, dashboardId: string, e: Event) {
+  e.stopPropagation();
+  emit('open-dashboard', dashboardId, workspaceId, boardId);
+}
+
+function dashboardLabel(dashboardId: string | null | undefined): string {
+  if (!dashboardId) return '';
+  return props.dashboardNameById?.[dashboardId] ?? dashboardId;
 }
 
 function workspaceSelected(wid: string) {
@@ -125,11 +138,24 @@ defineExpose({ expandAll, collapseAll });
             <div
               v-for="ch in node.children"
               :key="ch.data.__dataId"
-              :class="['oc-wst-row oc-wst-board', { 'oc-wst-row-selected': boardSelected(ch.data.__dataId) }]"
-              @click="onBoardClick(node.data.__dataId, ch.data.__dataId, $event)"
+              class="oc-wst-board-group"
             >
-              <LayoutKanbanIcon size="18" class="mr-2 oc-wst-icon-board flex-shrink-0" />
-              <span class="text-body-2 text-truncate">{{ ch.data.name }}</span>
+              <div
+                :class="['oc-wst-row oc-wst-board', { 'oc-wst-row-selected': boardSelected(ch.data.__dataId) }]"
+                @click="onBoardClick(node.data.__dataId, ch.data.__dataId, $event)"
+              >
+                <LayoutKanbanIcon size="18" class="mr-2 oc-wst-icon-board flex-shrink-0" />
+                <span class="text-body-2 text-truncate">{{ ch.data.name }}</span>
+              </div>
+              <div
+                v-if="ch.data.defaultDashboardId"
+                class="oc-wst-row oc-wst-dashboard"
+                :title="dashboardLabel(ch.data.defaultDashboardId)"
+                @click="onDashboardClick(node.data.__dataId, ch.data.__dataId, ch.data.defaultDashboardId, $event)"
+              >
+                <LayoutDashboardIcon size="16" class="mr-2 oc-wst-icon-dashboard flex-shrink-0" />
+                <span class="text-caption text-truncate">{{ dashboardLabel(ch.data.defaultDashboardId) }}</span>
+              </div>
             </div>
             <div v-if="!node.children.length" class="oc-wst-empty py-1 text-caption text-medium-emphasis">—</div>
           </div>
@@ -186,6 +212,17 @@ defineExpose({ expandAll, collapseAll });
 
 .oc-wst-board {
   padding-left: 6px;
+}
+
+/* Board altında seçili pano satırı: ek girinti + daha sönük */
+.oc-wst-dashboard {
+  min-height: 32px;
+  margin-left: 18px;
+  padding-left: 6px;
+}
+.oc-wst-icon-dashboard {
+  color: rgb(var(--v-theme-primary));
+  opacity: 0.6;
 }
 
 .oc-wst-empty {

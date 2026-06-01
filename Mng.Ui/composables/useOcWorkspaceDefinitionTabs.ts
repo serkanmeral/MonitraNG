@@ -12,6 +12,7 @@ export const OC_WORKSPACE_DEFINITION_TAB_KEYS = [
   'flows',
   'forms',
   'boards',
+  'dashboards',
   'policies',
   'rules',
   'scheduled',

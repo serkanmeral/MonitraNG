@@ -27,6 +27,7 @@ export type OcBoardFormModel = {
   name: string;
   viewType: string;
   defaultFormId: string;
+  defaultDashboardId: string;
   defaultStateFlowId: string;
   defaultProfileId: string;
   defaultTypeId: string;
@@ -45,6 +46,7 @@ const props = defineProps<{
   workspaceId: string;
   stateFlows: OpStateFlow[];
   formItems: { value: string; title: string }[];
+  dashboardItems: { value: string; title: string }[];
   flowItems: { value: string; title: string }[];
   stateItems: { value: string; title: string }[];
   stateCatalog?: OpState[];
@@ -131,6 +133,7 @@ function emptyForm(): OcBoardFormModel {
     name: '',
     viewType: 'list',
     defaultFormId: '',
+    defaultDashboardId: '',
     defaultStateFlowId: '',
     defaultProfileId: '',
     defaultTypeId: '',
@@ -167,6 +170,7 @@ function buildPayload(): Record<string, unknown> {
     workspaceId: props.workspaceId,
     viewType: form.value.viewType || 'list',
     defaultFormId: form.value.defaultFormId || null,
+    defaultDashboardId: form.value.defaultDashboardId || null,
     defaultStateFlowId: form.value.defaultStateFlowId || null,
     defaultProfileId: form.value.defaultProfileId || null,
     defaultTypeId: form.value.defaultTypeId || null,
@@ -185,6 +189,7 @@ function setFormFromBoard(row: OpBoard | null, defaults?: Partial<OcBoardFormMod
       name: row.name,
       viewType: row.viewType ?? 'list',
       defaultFormId: row.defaultFormId ?? '',
+      defaultDashboardId: row.defaultDashboardId ?? '',
       defaultStateFlowId: row.defaultStateFlowId ?? '',
       defaultProfileId: row.defaultProfileId ?? '',
       defaultTypeId: row.defaultTypeId ?? '',
@@ -449,6 +454,20 @@ defineExpose({ setFormFromBoard, emptyForm });
                         item-title="title"
                         item-value="value"
                         :label="t('operationCore.workspaceDefinitions.boards.fieldDefaultForm')"
+                        variant="outlined"
+                        density="compact"
+                        clearable
+                      />
+                    </v-col>
+                    <v-col cols="12" md="6">
+                      <v-select
+                        v-model="form.defaultDashboardId"
+                        :items="dashboardItems"
+                        item-title="title"
+                        item-value="value"
+                        :label="t('operationCore.workspaceDefinitions.boards.fieldDefaultDashboard')"
+                        :no-data-text="t('operationCore.workspaceDefinitions.boards.dashboardNoData')"
+                        prepend-inner-icon="mdi-view-dashboard-outline"
                         variant="outlined"
                         density="compact"
                         clearable
