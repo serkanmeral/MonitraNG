@@ -1,18 +1,23 @@
 import { fetchFromDocuments, fetchBlobFromDataGateway } from '@/services/apiService';
-import type {
-  DiBreadcrumb,
-  DiCreateFileResourceRequest,
-  DiCreateFolderRequest,
-  DiCreateMarkdownRequest,
-  DiMarkdownContent,
-  DiMarkdownVersion,
-  DiMarkdownVersionContent,
-  DiMoveRequest,
-  DiRenameRequest,
-  DiResource,
-  DiResourceListResult,
-  DiTreeNode,
-  DiUpdateMarkdownRequest,
+import {
+  diFullPermission,
+  type DiBreadcrumb,
+  type DiCreateFileResourceRequest,
+  type DiCreateFolderRequest,
+  type DiCreateMarkdownRequest,
+  type DiEffectivePermission,
+  type DiFolderPermissions,
+  type DiGroupPermission,
+  type DiMarkdownContent,
+  type DiMarkdownVersion,
+  type DiMarkdownVersionContent,
+  type DiMoveRequest,
+  type DiRenameRequest,
+  type DiResource,
+  type DiResourceListResult,
+  type DiSetFolderPermissionsRequest,
+  type DiTreeNode,
+  type DiUpdateMarkdownRequest,
 } from '@/types/apps/documentIntelligence';
 
 const BASE = '/api/v1/resources';
@@ -38,6 +43,22 @@ function num(obj: Record<string, unknown>, key: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function mapEffective(raw: unknown): DiEffectivePermission {
+  const o = asRecord(raw);
+  // Backend her zaman doldurur; alan yoksa güvenli varsayılan açık (eski yanıtlarla uyum).
+  if (!raw || typeof raw !== 'object') return diFullPermission();
+  return {
+    canView: Boolean(o.canView),
+    canCreate: Boolean(o.canCreate),
+    canEdit: Boolean(o.canEdit),
+    canDelete: Boolean(o.canDelete),
+    canUpload: Boolean(o.canUpload),
+    canDownload: Boolean(o.canDownload),
+    canMove: Boolean(o.canMove),
+    canShare: Boolean(o.canShare),
+  };
+}
+
 function mapResource(raw: unknown): DiResource {
   const o = asRecord(raw);
   return {
@@ -55,12 +76,35 @@ function mapResource(raw: unknown): DiResource {
     size: num(o, 'size'),
     currentVersionNumber: num(o, 'currentVersionNumber') ?? 0,
     hasContent: Boolean(o.hasContent),
+    status: str(o, 'status') ?? 'published',
     filePath: str(o, 'filePath'),
     fileName: str(o, 'fileName'),
     createdAt: str(o, 'createdAt'),
     createdBy: str(o, 'createdBy'),
     updatedAt: str(o, 'updatedAt'),
     updatedBy: str(o, 'updatedBy'),
+    permissions: mapEffective(o.permissions),
+  };
+}
+
+function mapGroupPermission(raw: unknown): DiGroupPermission {
+  const o = asRecord(raw);
+  return {
+    groupId: str(o, 'groupId'),
+    groupName: str(o, 'groupName') ?? '',
+    permissions: strArray(o.permissions),
+  };
+}
+
+function mapFolderPermissions(raw: unknown): DiFolderPermissions {
+  const o = asRecord(raw);
+  const groupsRaw = o.groups;
+  return {
+    resourceId: str(o, 'resourceId') ?? '',
+    inheritanceBroken: Boolean(o.inheritanceBroken),
+    effectiveAnchorId: str(o, 'effectiveAnchorId'),
+    groups: Array.isArray(groupsRaw) ? groupsRaw.map(mapGroupPermission) : [],
+    effective: mapEffective(o.effective),
   };
 }
 
@@ -203,6 +247,32 @@ export async function diCreateFileResource(request: DiCreateFileResourceRequest)
 /** Yüklenen dosyayı DG üzerinden blob olarak indirir (binary MngDocument'ten geçmez). */
 export async function diFetchFileBlob(filePath: string): Promise<Blob> {
   return fetchBlobFromDataGateway(`/api/v1/files/download?filePath=${encodeURIComponent(filePath)}`);
+}
+
+// --- Grup bazlı klasör yetkilendirmesi + miras ---
+
+/** Klasörün yetki yönetim görünümü (miras durumu + grup matrisi + etkin yetki). */
+export async function diGetPermissions(folderId: string): Promise<DiFolderPermissions> {
+  const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(folderId)}/permissions`, 'GET');
+  return mapFolderPermissions(raw);
+}
+
+/** Anchor (mirası kırık) klasörde grup yetki matrisini değiştirir (tam değişim). */
+export async function diSetPermissions(folderId: string, request: DiSetFolderPermissionsRequest): Promise<DiFolderPermissions> {
+  const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(folderId)}/permissions`, 'PUT', request);
+  return mapFolderPermissions(raw);
+}
+
+/** Klasörün yetki mirasını kırar (üst anchor'ın ACL'ini kopyalar). */
+export async function diBreakInheritance(folderId: string): Promise<DiFolderPermissions> {
+  const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(folderId)}/permissions/break-inheritance`, 'POST');
+  return mapFolderPermissions(raw);
+}
+
+/** Klasörün kendi ACL'ini silip yetki mirasını geri yükler. */
+export async function diRestoreInheritance(folderId: string): Promise<DiFolderPermissions> {
+  const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(folderId)}/permissions/restore-inheritance`, 'POST');
+  return mapFolderPermissions(raw);
 }
 
 /** MngDocument/HTTP hata gövdesinden `code` döndürür (guard ayrımı için, örn. RESOURCE_HAS_CHILDREN). */

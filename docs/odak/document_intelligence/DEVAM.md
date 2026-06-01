@@ -1,9 +1,45 @@
 # Document Intelligence (MngDocument) — Devam noktası (checkpoint)
 
-**Son güncelleme:** 1 Haziran 2026 gece (**DI-VH + DI-AUDIT** — sürüm geçmişi + oluşturan/güncelleyen audit; `mngdocument` Odak'ta canlı, `mngui` UI değişiklikleri **yerelde**, test sunucusuna **deploy edilmedi**)
-**Durum:** **Faz 1** fonksiyonel çekirdek ✅ — tek anlamlı boşluk **yetkilendirme** (grup bazlı + miras), plan gereği Faz 1'de minimum bırakıldı.
+> ## 🚀 Yeni chat başlangıç prompt'u (kopyala-yapıştır)
+>
+> ```
+> MonitraNG / Document Intelligence (MngDocument) modülünde çalışıyoruz.
+> Repo: c:\Users\monitra\Dev\MonitraNG\MonitraNG
+>
+> Başlamadan önce şu checkpoint dosyasını oku ve bana kısa bir "kaldığımız yer" özeti ver:
+> docs/odak/document_intelligence/DEVAM.md
+> (Detaylı plan: docs/odak/document_intelligence/MonitraNG_Document_Intelligence_Planning.md)
+>
+> DURUM: Faz 1 TAMAMLANDI ve test sunucusuna (Odak) deploy edildi. Tüm özellikler canlı:
+> resources/tree, klasör CRUD, markdown editör/preview/sürüm geçmişi, dosya yükle/indir/inline
+> önizleme, arama, audit, grup bazlı yetkilendirme + miras, taslak/yayınla (draft/published).
+> Hem mngdocument hem mngui Odak'ta healthy.
+>
+> ÇALIŞMA KURALLARI:
+> - Yanıtlar Türkçe.
+> - Backend (MngDocument vb.) değişiklikleri sormadan otomatik deploy edilebilir.
+> - UI (mngui) deploy'u YALNIZCA ben açıkça isteyince yapılır.
+> - npm run dev'i ben yerelde (port 3000) çalıştırıyorum; sen yeni bir dev süreci başlatma.
+>
+> ORTAM / DEPLOY:
+> - Test sunucusu (Odak): 192.168.20.20, gateway :5040.
+>   DG route: /data/api/v1/...  ·  MngDocument: /documents/api/v1/...
+> - Deploy: scripts/odak/sync-odak-source.ps1 -Paths <X> + scripts/odak/deploy-odak-apps.ps1 -Services <svc>
+>   Token: docs/odak/operationcore/scripts/load-operationcore-token.ps1 (süresi dolarsa yenile).
+>
+> SIRADAKİ İŞ (bana seçtir):
+> 1. Faz 2 — OperationCore entegrasyonu: WorkItem ↔ doküman ilişkisi (çift yönlü, yetki kontrollü).
+> 2. Non-admin canlı doğrulama: gerçek (admin olmayan) kullanıcıyla tree/children filtreleme + 403
+>    testi (Faz 1'de admin bypass nedeniyle yapılmadı).
+> 3. (Ops.) dm_resource_versions dataset'inde DG logging'i açıp tam audit (IP/değişiklik izi).
+>
+> DEVAM.md'yi okuyup özetle ve hangi seçenekle devam edeceğimi sor.
+> ```
 
-> **⭐ KALDIĞIMIZ YER (1 Haz ~03:18) — yeni chat buradan devam edecek:** Bu oturumda **dosya yükleme/indirme**, **sürüm geçmişi** (listele/önizle/geri yükle) ve **audit** (doküman oluşturan/güncelleyen + sürüm bazında yazar/tarih) tamamlandı. `mngdocument` Odak'ta **canlı**. **UI (`mngui`) değişiklikleri yalnızca yerelde** (`npm run dev`, port 3000) — kullanıcı UI deploy'unu kendisi tetikleyecek. **Sıradaki seçenekler:** (1) UI'ı test sunucusuna deploy edip Faz 1'i kapatmak, (2) yetkilendirme (grup bazlı klasör yetkisi + miras), (3) dosya inline preview (PDF/görsel/metin).
+**Son güncelleme:** 1 Haziran 2026 gece (**FAZ 1 KAPANDI** — "taslak olarak kaydet" eklendi; `mngdocument` + `mngui` Odak'ta **canlı + doğrulandı**)
+**Durum:** **🎉 Faz 1 TAMAMLANDI ✅** — tüm özellikler (resources/tree/markdown/dosya/arama/audit/sürüm geçmişi + yetkilendirme + miras + inline preview + taslak) uçtan uca **canlıda** (`mngdocument` + `mngui` deploy edildi). Sıradaki: Faz 2 (OperationCore entegrasyonu).
+
+> **⭐ KALDIĞIMIZ YER (1 Haz ~21:00) — yeni chat buradan devam edecek:** **Faz 1 kapatıldı.** Bu turda **"taslak olarak kaydet"** eklendi: `dm_resources.status` (draft/published), `CreateMarkdownRequest.IsDraft` + `UpdateMarkdownRequest.IsDraft?` (null=koru), `ResourceDto.Status`; UI'da oluşturma + editörde **taslak/yayınla** butonları ve **taslak rozeti**. **Hem `mngdocument` hem `mngui` Odak'a deploy edildi ve canlı** (gateway 200, ui :3000 200; backend draft yaşam döngüsü doğrulandı). Faz 1'in tüm özellikleri (resources/tree/markdown/dosya/arama/audit/VH + PERM + miras + PREVIEW + DRAFT) artık test sunucusunda. **Sıradaki: Faz 2 — OperationCore WorkItem ↔ doküman ilişkisi.** (Ops.: non-admin canlı filtreleme/403 doğrulaması yapılmadı — admin bypass.)
 
 **Ana plan:** [MonitraNG_Document_Intelligence_Planning.md](MonitraNG_Document_Intelligence_Planning.md) · **Faz 1 dataset'leri:** [datasets/documentintelligence_datasets_phase1.json](datasets/documentintelligence_datasets_phase1.json)
 
@@ -31,11 +67,11 @@
 | Dosya yükleme/metadata/indirme | ✅ | base64 → DG → MinIO; tip ikonları + boyut |
 | Temel arama | ✅ | Ad/başlık/açıklama + markdown içeriği full-text |
 | **Temel audit** (oluşturan/güncelleyen + sürüm yazar/tarih) | ✅ | Bu oturumda tamamlandı (aşağıya bak) |
-| i18n (tr/en) | ✅ | `documentIntelligence.*` |
-| Grup bazlı klasör yetkileri | ⬜ | Faz 1 minimum ("domain içi açık") — ertelendi |
-| Yetki mirası | ⬜ | Yetki sistemiyle birlikte |
-| Dosya inline preview (PDF/görsel/metin) | ⬜ | Şu an indirme var; plan "temel preview hazırlığı" diyordu |
-| "Taslak olarak kaydet" | ⬜ | Doğrudan kaydetme var |
+| i18n (tr/en) | ✅ | `documentIntelligence.*` (+ `permissions.*`) |
+| **Grup bazlı klasör yetkileri** | ✅ | `dm_resource_permissions`; grup adı eşleştirme; açık varsayılan; UI izin editörü (bu oturum) |
+| **Yetki mirası** (kır/geri yükle) | ✅ | ACL anchor (`permissionsBroken`); en yakın anchor zinciri; backend zorlama + tree filtreleme (bu oturum) |
+| **Dosya inline preview** (PDF/görsel/metin) | ✅ | `DiFilePreviewDialog` (img/iframe/text); `diFilePreview` util; satır tıkla/önizle butonu |
+| **"Taslak olarak kaydet"** | ✅ | `dm_resources.status` (draft/published); oluşturma + editörde taslak/yayınla butonları; taslak rozeti (bu oturum) |
 | Ayrı rotalar (create/upload/detail/[id]) | ↔ | Tek sayfa master-detail ile karşılandı (ayrı route yok) |
 
 ---
@@ -68,18 +104,77 @@
 
 ---
 
+## DI-PERM — Grup bazlı klasör yetkilendirmesi + miras (bu oturum)
+
+**Model (SharePoint benzeri ACL anchor):**
+- `dm_resources`'a `permissionsBroken` (bool). false/yok = üstten miras; true = kendi ACL'i olan **anchor**.
+- Yeni `dm_resource_permissions` dataset'i (`logging: self` → izin audit'i `__history`): `resourceId` (anchor klasör), `groupId` (görsel), `groupName` (**eşleştirme anahtarı**, JWT `user_groups` ↔), `permissions[]` (verilen aksiyonlar). DG'de **oluşturuldu**.
+- Aksiyonlar (8): `view, create, edit, delete, upload, download, move, share` (`share` modelde/UI'da var, henüz gate etmiyor — Faz 2 link paylaşımı için).
+- **Etkin yetki:** kaynak R'nin kendisi + `ancestorIds` tabandan yukarı en yakın anchor bulunur; izin kayıtları kullanıcının gruplarıyla eşleştirilir. Zincirde anchor yoksa → **açık varsayılan** (tüm aksiyonlar serbest). **Admin** (`IRequestContext.IsAdmin`) → bypass. Dosya/markdown kendi ACL'i tutmaz, klasörden miras alır.
+
+**Backend (MngDocument):**
+- `IPermissionService` + `PermissionService` + `PermissionSnapshot` (tüm klasör + izin kayıtları tek seferde yüklenip bellekte çözüm).
+- `ResourceService` tüm okuma/yazma yollarında `EnsureCan`/filtreleme: tree/children/search **view filtreleme**; create→`create`/upload→`upload` (parent), edit/rename/restore→`edit`, move→`move`+hedefte `create`, delete→`delete` (+ klasör silinince izin kayıtları temizlenir). `ResourceDto.Permissions` (etkin yetki) → UI gating tek çağrıda.
+- Uçlar: `GET /resources/{id}/permissions`, `PUT /resources/{id}/permissions`, `POST /resources/{id}/permissions/break-inheritance`, `POST .../restore-inheritance`. İzin yönetimi: admin ya da etkin `share`.
+- **Kilitlenme koruması:** açık klasörde mirası kıran admin-olmayan kullanıcının kendi gruplarına tam yetki tohumlanır.
+
+**UI (`mngui`, yerel):** `DiPermissionsDialog.vue` (grup × aksiyon matrisi, miras durumu, kır/geri yükle, kaydet) + `index.vue` üst bar/menülerde **"İzinler"** butonu ve etkin yetkiye göre **buton gating** (yeni klasör/doküman/yükle/düzenle/sil/indir/taşı). Servis: `diGetPermissions/diSetPermissions/diBreakInheritance/diRestoreInheritance`. Locale: `documentIntelligence.permissions.*` (tr/en).
+
+**Canlı doğrulama (Odak, admin):** izin yaşam döngüsü — open default → break (anchor=self) → PUT (admins grubu view/edit/create/download) → GET (kalıcı) → restore (kayıtlar temizlendi). Admin etkin yetki Full (bypass). ✅
+
+**Düzeltme (gösterim hatası):** İzin editöründe **"tanımlanan izinler listede görünmüyor"** raporlandı. Kök neden UI: matris satırları yalnızca `filteredGroups` (MngKeeper) üzerinden render ediliyordu; `authStore.isAdmin` JWT `is_admin` claim'inden türediğinden (grup üyeliği değil), token'da `is_admin` yoksa **`admins` grubu listeden çıkıyor** → o gruba verilen izin DG'de olsa bile görünmüyor. Backend PUT→GET round-trip'i canlı doğrulandı, **doğru** çalışıyordu. Çözüm (`DiPermissionsDialog.vue`, salt UI): (1) yeni `displayGroups` = **keeper grupları ∪ izin kaydı olan gruplar** → her kayıtlı grup her zaman görünür; (2) keeper grup id eşlemesi `groupId`'yi okuyacak şekilde düzeltildi (eskiden boş gidiyordu); (3) checkbox değişiminde `matrix` nesnesi yeniden atanarak reaktivite garanti edildi. Not: artık admin-olmayan kullanıcı da kayıtlı `admins` iznini **görebilir** (gerekirse o satırlar salt-okunur yapılabilir).
+
+**Açık iş:** non-admin kullanıcıyla tree/children **filtreleme** + 403 canlı doğrulaması yapılmadı (admin bypass nedeniyle).
+
+---
+
+## DI-PREVIEW — Dosya inline önizleme (bu oturum)
+
+**Amaç:** Faz 1 "dosya görüntüleme için temel preview hazırlığı" maddesi. Yüklenen dosyalar için indirmeden satır içi önizleme.
+
+**UI (`mngui`, yerel):**
+- `utils/diFilePreview.ts`: uzantı→tür (`image`/`pdf`/`text`/`none`) + MIME eşlemesi + boyut tavanı (görsel/PDF 25 MB, metin 2 MB). `isDiPreviewable`, `diPreviewKind`, `diPreviewMime`.
+- `DiFilePreviewDialog.vue`: görsel `<img>`, PDF `<iframe>`, metin `<pre>` (blob.text); OperationCore `OcAttachmentPreviewDialog` deseninden uyarlandı. DG octet-stream dönerse blob doğru MIME ile yeniden sarılır. Mevcut `diFetchFileBlob` kullanılır (binary MngDocument'ten geçmez, DG'den).
+- `index.vue`: önizlenebilir dosya satırına tıklayınca (veya **göz** ikonu/menü "Önizle") diyalog açılır; değilse indirir. Önizleme `canDownload` ile gate'li. Diyalogdaki "İndir" mevcut `downloadFile`'a bağlanır.
+- Locale: `documentIntelligence.preview` / `previewUnavailable` / `errors.preview` (tr/en).
+
+**Not:** Salt UI; backend değişmedi. Office (docx/xlsx/pptx) ve zip için inline önizleme yok (indir) — tarayıcı yerel render etmediğinden bilinçli kapsam dışı.
+
+---
+
+## DI-DRAFT — Taslak olarak kaydet (bu oturum)
+
+**Amaç:** Faz 1 "taslak olarak kaydet" maddesi. Markdown dokümanları taslak/yayınlanmış durumuyla işaretlenir.
+
+**Model:** `dm_resources.status` (text; `draft`/`published`). Yok/eski kayıt = `published` (geriye dönük). `ResourceStatus.Normalize`. Yalnızca markdown için anlamlı. Dataset şemasına `status` alanı eklendi (`forceSchema:false` → re-provision zorunlu değil).
+
+**Backend (MngDocument, canlı):**
+- `CreateMarkdownRequest.IsDraft` (bool) → create payload `status`. `UpdateMarkdownRequest.IsDraft` (bool?) → **null ise mevcut durum korunur**, true=draft, false=publish.
+- `ResourceDto.Status` (default `published`); `ToDto` → `ResourceStatus.Normalize`.
+
+**UI (`mngui`, yerel):**
+- Oluşturma diyaloğu: **"Taslak olarak kaydet"** + **Oluştur** butonları (`submitDoc(asDraft)`).
+- Editör (düzenleme): **"Taslak olarak kaydet"** + **Kaydet/Yayınla** (taslaksa "Yayınla") butonları (`saveEdit(asDraft)`).
+- **Taslak rozeti** (warning chip): doküman listesinde ve açık doküman başlığında.
+- Tip/servis: `DiResource.status`, `DiCreate/UpdateMarkdownRequest.isDraft`, `mapResource` status.
+- Locale: `documentIntelligence.saveAsDraft/draft/publish/published/draftSaved` (tr/en).
+
+**Canlı doğrulama (Odak, admin):** create=draft → publish=published → back-to-draft=draft → bayraksız update **durumu korur**. ✅
+
+---
+
 ## Deploy & ortam
 
 - **Test sunucusu (Odak):** `192.168.20.20`, gateway `:5040`. DG route: `/data/api/v1/...`; MngDocument route: `/documents/api/v1/...`.
-- **`mngdocument`:** tüm Faz 1 + VH + AUDIT → **canlı (healthy)**.
-- **`mngui`:** VH + audit UI değişiklikleri **deploy edilmedi** (yalnızca yerel `npm run dev`).
+- **`mngdocument`:** tüm Faz 1 + VH + AUDIT + **PERM** + **DRAFT** → **canlı (healthy)** (1 Haz ~20:52 yeniden deploy).
+- **`mngui`:** VH + audit + **PERM** (+ gösterim düzeltmesi) + **PREVIEW** + **DRAFT** → **canlı (healthy)** (1 Haz ~20:57 deploy; ui :3000 = 200).
+- **DG dataset:** `dm_resource_permissions` Odak DG'de oluşturuldu (`setup-document-intelligence-datasets.ps1`).
 - Deploy: `scripts/odak/sync-odak-source.ps1 -Paths <X>` + `scripts/odak/deploy-odak-apps.ps1 -Services <svc>`. Token: `docs/odak/operationcore/scripts/load-operationcore-token.ps1`.
 
 ---
 
 ## Sıradaki iş (öncelik kullanıcı seçimine bağlı)
 
-1. **UI deploy** (`mngui`) → Faz 1'i test sunucusunda kapatmak.
-2. **Yetkilendirme** — grup bazlı klasör yetkisi + miras (Faz 1'in tek büyük boşluğu).
-3. **Dosya inline preview** — PDF/görsel/düz metin.
-4. (Ops.) `dm_resource_versions` dataset'inde DG logging'i açıp tam audit (IP/değişiklik izi).
+1. **Faz 2 — OperationCore entegrasyonu**: WorkItem ↔ doküman ilişkisi (çift yönlü, yetki kontrollü).
+2. **Non-admin canlı doğrulama** — gerçek (admin olmayan) kullanıcıyla tree/children filtreleme + 403.
+3. (Ops.) `dm_resource_versions` dataset'inde DG logging'i açıp tam audit (IP/değişiklik izi).

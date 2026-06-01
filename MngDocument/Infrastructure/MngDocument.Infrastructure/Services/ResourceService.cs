@@ -25,17 +25,20 @@ public class ResourceService : IResourceService
 
     private readonly IMngDataGatewayClient _dg;
     private readonly IRequestContext _ctx;
+    private readonly IPermissionService _perms;
     private readonly MngDocumentSettings _settings;
     private readonly ILogger<ResourceService> _logger;
 
     public ResourceService(
         IMngDataGatewayClient dg,
         IRequestContext ctx,
+        IPermissionService perms,
         IOptions<MngDocumentSettings> settings,
         ILogger<ResourceService> logger)
     {
         _dg = dg;
         _ctx = ctx;
+        _perms = perms;
         _settings = settings.Value;
         _logger = logger;
     }
@@ -44,14 +47,11 @@ public class ResourceService : IResourceService
 
     public async Task<IReadOnlyList<TreeNodeDto>> GetTreeAsync(CancellationToken ct = default)
     {
-        var page = await _dg.QueryPageAsync(
-            DmDatasets.Resources,
-            new Dictionary<string, object?> { ["type"] = ResourceType.Folder },
-            ListQuery,
-            Token,
-            ct);
-
-        var folders = page.Items.Select(MapRow).ToList();
+        // Snapshot zaten tüm klasörleri yükler; view yetkisi olanları ağaca alırız.
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        var folders = snapshot.AllFolders
+            .Where(f => snapshot.Resolve(f).CanView)
+            .ToList();
         return BuildTree(folders);
     }
 
@@ -63,26 +63,32 @@ public class ResourceService : IResourceService
         };
 
         var page = await _dg.QueryPageAsync(DmDatasets.Resources, match, ListQuery, Token, ct);
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
 
         var items = page.Items
             .Select(MapRow)
+            .Where(r => snapshot.Resolve(r).CanView)
             .OrderByDescending(r => r.type == ResourceType.Folder)
             .ThenBy(r => r.name, StringComparer.OrdinalIgnoreCase)
-            .Select(ToDto)
+            .Select(r => ToDto(r, snapshot.Resolve(r)))
             .ToList();
 
-        return new ResourceListResult { Items = items, Total = page.Total };
+        return new ResourceListResult { Items = items, Total = items.Count };
     }
 
     public async Task<ResourceDto> GetByIdAsync(string id, CancellationToken ct = default)
     {
         var resource = await LoadOrThrowAsync(id, ct);
-        return ToDto(resource);
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(resource, ResourceAction.View);
+        return ToDto(resource, snapshot.Resolve(resource));
     }
 
     public async Task<IReadOnlyList<BreadcrumbDto>> GetBreadcrumbAsync(string id, CancellationToken ct = default)
     {
         var resource = await LoadOrThrowAsync(id, ct);
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(resource, ResourceAction.View);
         var ancestorIds = resource.ancestorIds ?? new List<string>();
 
         var crumbs = new List<BreadcrumbDto>();
@@ -109,6 +115,7 @@ public class ResourceService : IResourceService
     public async Task<ResourceDto> CreateFolderAsync(CreateFolderRequest request, CancellationToken ct = default)
     {
         ValidateName(request.Name);
+        await EnsureCanOnParentAsync(request.ParentId, ResourceAction.Create, ct);
         var ancestorIds = await ResolveAncestorsForChildAsync(request.ParentId, ct);
 
         var payload = new Dictionary<string, object?>
@@ -124,13 +131,15 @@ public class ResourceService : IResourceService
         };
 
         var created = await _dg.CreateAsync<DmResource>(DmDatasets.Resources, payload, Token, ct);
-        return ToDto(created);
+        return await ToDtoWithEffectiveAsync(created, ct);
     }
 
     public async Task<ResourceDto> RenameAsync(string id, RenameResourceRequest request, CancellationToken ct = default)
     {
         ValidateName(request.Name);
-        await LoadOrThrowAsync(id, ct);
+        var resource = await LoadOrThrowAsync(id, ct);
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(resource, ResourceAction.Edit);
 
         var payload = new Dictionary<string, object?>
         {
@@ -139,7 +148,7 @@ public class ResourceService : IResourceService
         };
 
         var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
-        return ToDto(updated);
+        return ToDto(updated, snapshot.Resolve(updated));
     }
 
     public async Task<ResourceDto> MoveAsync(string id, MoveResourceRequest request, CancellationToken ct = default)
@@ -149,6 +158,9 @@ public class ResourceService : IResourceService
 
         if (newParentId == id)
             throw DocumentException.Validation("INVALID_MOVE", "Cannot move a resource into itself.", "Bir kaynak kendi içine taşınamaz.");
+
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(node, ResourceAction.Move);
 
         List<string> newAncestors;
         if (newParentId is null)
@@ -164,6 +176,8 @@ public class ResourceService : IResourceService
             if ((newParent.ancestorIds ?? new List<string>()).Contains(id))
                 throw DocumentException.Validation("INVALID_MOVE", "Cannot move a folder into its own descendant.", "Bir klasör kendi alt klasörüne taşınamaz.");
 
+            snapshot.EnsureCan(newParent, ResourceAction.Create);
+
             newAncestors = new List<string>(newParent.ancestorIds ?? new List<string>()) { newParentId };
         }
 
@@ -176,12 +190,14 @@ public class ResourceService : IResourceService
 
         await ReindexDescendantsAsync(id, newAncestors, ct);
 
-        return ToDto(updated);
+        return ToDto(updated, snapshot.Resolve(updated));
     }
 
     public async Task DeleteAsync(string id, bool force, CancellationToken ct = default)
     {
         var node = await LoadOrThrowAsync(id, ct);
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(node, ResourceAction.Delete);
 
         if (node.type == ResourceType.Folder)
         {
@@ -197,17 +213,18 @@ public class ResourceService : IResourceService
             foreach (var descendant in descendants)
             {
                 if (descendant.__dataId is not null)
-                    await DeleteResourceAndVersionsAsync(descendant.__dataId, ct);
+                    await DeleteResourceAndVersionsAsync(descendant.__dataId, descendant.type, ct);
             }
         }
 
-        await DeleteResourceAndVersionsAsync(id, ct);
+        await DeleteResourceAndVersionsAsync(id, node.type, ct);
     }
 
     public async Task<ResourceDto> CreateMarkdownAsync(CreateMarkdownRequest request, CancellationToken ct = default)
     {
         ValidateName(request.Title);
         ValidateContentLength(request.Content);
+        await EnsureCanOnParentAsync(request.ParentId, ResourceAction.Create, ct);
         var ancestorIds = await ResolveAncestorsForChildAsync(request.ParentId, ct);
 
         var payload = new Dictionary<string, object?>
@@ -224,12 +241,13 @@ public class ResourceService : IResourceService
             ["extension"] = "md",
             ["mimeType"] = "text/markdown",
             ["size"] = (long)(request.Content?.Length ?? 0),
-            ["currentVersionNumber"] = 1
+            ["currentVersionNumber"] = 1,
+            ["status"] = request.IsDraft ? ResourceStatus.Draft : ResourceStatus.Published
         };
 
         var created = await _dg.CreateAsync<DmResource>(DmDatasets.Resources, payload, Token, ct);
         await WriteVersionAsync(created.__dataId!, 1, request.Content ?? string.Empty, "initial", ct);
-        return ToDto(created);
+        return await ToDtoWithEffectiveAsync(created, ct);
     }
 
     public async Task<ResourceDto> UpdateMarkdownAsync(string id, UpdateMarkdownRequest request, CancellationToken ct = default)
@@ -239,6 +257,9 @@ public class ResourceService : IResourceService
 
         if (existing.type != ResourceType.Markdown)
             throw DocumentException.Validation("NOT_MARKDOWN", "Resource is not a markdown document.", "Kaynak bir markdown doküman değil.");
+
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(existing, ResourceAction.Edit);
 
         var currentVersion = existing.currentVersionNumber ?? 1;
         if (request.ExpectedVersionNumber != currentVersion)
@@ -265,10 +286,12 @@ public class ResourceService : IResourceService
             payload["description"] = request.Description;
         if (request.Tags != null)
             payload["tags"] = request.Tags;
+        if (request.IsDraft.HasValue)
+            payload["status"] = request.IsDraft.Value ? ResourceStatus.Draft : ResourceStatus.Published;
 
         var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
         await WriteVersionAsync(id, newVersion, request.Content ?? string.Empty, "update", ct);
-        return ToDto(updated);
+        return ToDto(updated, snapshot.Resolve(updated));
     }
 
     public async Task<MarkdownContentDto> GetMarkdownContentAsync(string id, CancellationToken ct = default)
@@ -276,6 +299,9 @@ public class ResourceService : IResourceService
         var resource = await LoadOrThrowAsync(id, ct);
         if (resource.type != ResourceType.Markdown)
             throw DocumentException.Validation("NOT_MARKDOWN", "Resource is not a markdown document.", "Kaynak bir markdown doküman değil.");
+
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(resource, ResourceAction.View);
 
         return new MarkdownContentDto
         {
@@ -291,6 +317,9 @@ public class ResourceService : IResourceService
         var resource = await LoadOrThrowAsync(id, ct);
         if (resource.type != ResourceType.Markdown)
             throw DocumentException.Validation("NOT_MARKDOWN", "Resource is not a markdown document.", "Kaynak bir markdown doküman değil.");
+
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(resource, ResourceAction.View);
 
         var currentVersion = resource.currentVersionNumber ?? 1;
         var auditMap = BuildVersionAuditMap(resource.__history);
@@ -348,12 +377,15 @@ public class ResourceService : IResourceService
 
     public async Task<MarkdownVersionContentDto> GetMarkdownVersionContentAsync(string id, int versionNumber, CancellationToken ct = default)
     {
+        var resource = await LoadOrThrowAsync(id, ct);
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(resource, ResourceAction.View);
+
         var version = await LoadVersionOrThrowAsync(id, versionNumber, ct);
         DmHistoryEntry? audit = null;
         if (version.createdAt is null && version.createdBy is null)
         {
-            var resource = await _dg.GetByIdAsync<DmResource>(DmDatasets.Resources, id, Token, ct);
-            BuildVersionAuditMap(resource?.__history).TryGetValue(versionNumber, out audit);
+            BuildVersionAuditMap(resource.__history).TryGetValue(versionNumber, out audit);
         }
 
         return new MarkdownVersionContentDto
@@ -372,20 +404,23 @@ public class ResourceService : IResourceService
         if (existing.type != ResourceType.Markdown)
             throw DocumentException.Validation("NOT_MARKDOWN", "Resource is not a markdown document.", "Kaynak bir markdown doküman değil.");
 
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(existing, ResourceAction.Edit);
+
         var version = await LoadVersionOrThrowAsync(id, versionNumber, ct);
-        var snapshot = version.contentSnapshot ?? string.Empty;
+        var content = version.contentSnapshot ?? string.Empty;
 
         var newVersion = (existing.currentVersionNumber ?? 1) + 1;
         var payload = new Dictionary<string, object?>
         {
-            ["content"] = snapshot,
+            ["content"] = content,
             ["currentVersionNumber"] = newVersion,
-            ["size"] = (long)snapshot.Length
+            ["size"] = (long)content.Length
         };
 
         var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
-        await WriteVersionAsync(id, newVersion, snapshot, $"restore from v{versionNumber}", ct);
-        return ToDto(updated);
+        await WriteVersionAsync(id, newVersion, content, $"restore from v{versionNumber}", ct);
+        return ToDto(updated, snapshot.Resolve(updated));
     }
 
     public async Task<ResourceDto> CreateFileResourceAsync(CreateFileResourceRequest request, CancellationToken ct = default)
@@ -394,6 +429,7 @@ public class ResourceService : IResourceService
         if (string.IsNullOrWhiteSpace(request.Content))
             throw DocumentException.Validation("CONTENT_REQUIRED", "File content is required.", "Dosya içeriği zorunludur.");
 
+        await EnsureCanOnParentAsync(request.ParentId, ResourceAction.Upload, ct);
         var ancestorIds = await ResolveAncestorsForChildAsync(request.ParentId, ct);
 
         // DG dm_resources.file (fieldType=file) alanı: { content (base64), originalFileName } verildiğinde
@@ -422,7 +458,7 @@ public class ResourceService : IResourceService
         };
 
         var created = await _dg.CreateAsync<DmResource>(DmDatasets.Resources, payload, Token, ct);
-        return ToDto(created);
+        return await ToDtoWithEffectiveAsync(created, ct);
     }
 
     public async Task<ResourceListResult> SearchAsync(string query, int skip, int limit, CancellationToken ct = default)
@@ -435,8 +471,13 @@ public class ResourceService : IResourceService
         var queryString = $"skip={safeSkip}&limit={safeLimit}&expand=false&showHistory=true&search={Uri.EscapeDataString(query.Trim())}";
 
         var page = await _dg.QueryPageAsync(DmDatasets.Resources, new Dictionary<string, object?>(), queryString, Token, ct);
-        var items = page.Items.Select(MapRow).Select(ToDto).ToList();
-        return new ResourceListResult { Items = items, Total = page.Total };
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        var items = page.Items
+            .Select(MapRow)
+            .Where(r => snapshot.Resolve(r).CanView)
+            .Select(r => ToDto(r, snapshot.Resolve(r)))
+            .ToList();
+        return new ResourceListResult { Items = items, Total = items.Count };
     }
 
     // ----- helpers -----
@@ -451,6 +492,24 @@ public class ResourceService : IResourceService
             throw DocumentException.NotFound();
 
         return resource;
+    }
+
+    /// <summary>Hedef klasörde (oluşturma/yükleme için) yetki zorlar. Kök (parentId boş) açık varsayılandır.</summary>
+    private async Task EnsureCanOnParentAsync(string? parentId, string action, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(parentId))
+            return;
+
+        var parent = await LoadOrThrowAsync(parentId, ct);
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(parent, action);
+    }
+
+    /// <summary>Oluşturma/güncelleme sonrası dönen kaynak için geçerli kullanıcının etkin yetkisini çözer.</summary>
+    private async Task<ResourceDto> ToDtoWithEffectiveAsync(DmResource r, CancellationToken ct)
+    {
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        return ToDto(r, snapshot.Resolve(r));
     }
 
     private async Task<List<string>> ResolveAncestorsForChildAsync(string? parentId, CancellationToken ct)
@@ -495,7 +554,7 @@ public class ResourceService : IResourceService
         }
     }
 
-    private async Task DeleteResourceAndVersionsAsync(string id, CancellationToken ct)
+    private async Task DeleteResourceAndVersionsAsync(string id, string? type, CancellationToken ct)
     {
         var match = new Dictionary<string, object?> { ["resourceId"] = id };
         var versions = await _dg.QueryPageAsync(DmDatasets.ResourceVersions, match, ListQuery, Token, ct);
@@ -508,6 +567,10 @@ public class ResourceService : IResourceService
                     await _dg.DeleteAsync(DmDatasets.ResourceVersions, vid, Token, ct);
             }
         }
+
+        // Klasörlerde bağlı grup izin kayıtlarını da temizle (yalnızca anchor'larda olur).
+        if (type == ResourceType.Folder)
+            await _perms.DeleteFolderPermissionsAsync(id, ct);
 
         await _dg.DeleteAsync(DmDatasets.Resources, id, Token, ct);
     }
@@ -613,11 +676,12 @@ public class ResourceService : IResourceService
         return version;
     }
 
-    private static ResourceDto ToDto(DmResource r)
+    private static ResourceDto ToDto(DmResource r, EffectivePermissionDto? effective = null)
     {
         var (filePath, fileName) = ReadFileField(r.file);
         return new ResourceDto
         {
+            Permissions = effective ?? EffectivePermissionDto.Full,
             Id = r.__dataId ?? string.Empty,
             Type = r.type ?? string.Empty,
             ParentId = r.parentId,
@@ -633,6 +697,7 @@ public class ResourceService : IResourceService
             CurrentVersionNumber = r.currentVersionNumber ?? 1,
             HasContent = (r.type == ResourceType.Markdown && !string.IsNullOrEmpty(r.content))
                 || (r.type == ResourceType.File && !string.IsNullOrEmpty(filePath)),
+            Status = ResourceStatus.Normalize(r.status),
             FilePath = filePath,
             FileName = fileName,
             CreatedAt = CreatedFrom(r.__history)?.timestamp,

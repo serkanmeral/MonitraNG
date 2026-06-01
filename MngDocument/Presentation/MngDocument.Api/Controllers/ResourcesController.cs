@@ -18,10 +18,12 @@ namespace MngDocument.Api.Controllers;
 public class ResourcesController : ControllerBase
 {
     private readonly IResourceService _resources;
+    private readonly IPermissionService _permissions;
 
-    public ResourcesController(IResourceService resources)
+    public ResourcesController(IResourceService resources, IPermissionService permissions)
     {
         _resources = resources;
+        _permissions = permissions;
     }
 
     /// <summary>Klasör ağacı (yalnızca klasörler, iç içe).</summary>
@@ -150,4 +152,39 @@ public class ResourcesController : ControllerBase
         var created = await _resources.CreateFileResourceAsync(request, ct);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
+
+    // ----- Grup bazlı klasör yetkilendirmesi + miras -----
+
+    /// <summary>Klasörün yetki yönetim görünümü: miras durumu + grup matrisi + etkin yetki.</summary>
+    [HttpGet("{id}/permissions")]
+    [ProducesResponseType(typeof(FolderPermissionsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetPermissions(string id, CancellationToken ct) =>
+        Ok(await _permissions.GetFolderPermissionsAsync(id, ct));
+
+    /// <summary>Anchor (mirası kırık) klasörde grup yetki matrisini değiştirir (tam değişim).</summary>
+    [HttpPut("{id}/permissions")]
+    [ProducesResponseType(typeof(FolderPermissionsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetPermissions(string id, [FromBody] SetFolderPermissionsRequest request, CancellationToken ct) =>
+        Ok(await _permissions.SetFolderPermissionsAsync(id, request, ct));
+
+    /// <summary>Klasörün yetki mirasını kırar (üst anchor'ın ACL'ini kopyalar).</summary>
+    [HttpPost("{id}/permissions/break-inheritance")]
+    [ProducesResponseType(typeof(FolderPermissionsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> BreakInheritance(string id, CancellationToken ct) =>
+        Ok(await _permissions.BreakInheritanceAsync(id, ct));
+
+    /// <summary>Klasörün kendi ACL'ini silip yetki mirasını geri yükler.</summary>
+    [HttpPost("{id}/permissions/restore-inheritance")]
+    [ProducesResponseType(typeof(FolderPermissionsDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RestoreInheritance(string id, CancellationToken ct) =>
+        Ok(await _permissions.RestoreInheritanceAsync(id, ct));
 }

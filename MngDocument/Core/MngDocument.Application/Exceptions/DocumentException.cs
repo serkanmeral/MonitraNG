@@ -26,4 +26,9 @@ public class DocumentException : Exception
 
     public static DocumentException Conflict(string code, string message, string messageTr) =>
         new(code, message, messageTr, 409);
+
+    public static DocumentException Forbidden(
+        string messageTr = "Bu işlem için yetkiniz yok.",
+        string message = "You do not have permission for this action.") =>
+        new("FORBIDDEN", message, messageTr, 403);
 }

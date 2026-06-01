@@ -33,7 +33,41 @@ public class DmResource
 
     public int? currentVersionNumber { get; set; }
 
+    /// <summary>Doküman durumu (<c>draft</c>/<c>published</c>; yalnızca markdown). Yok = published.</summary>
+    public string? status { get; set; }
+
+    /// <summary>
+    /// Yetki mirası kırık mı? <c>true</c> ise bu klasör kendi ACL'ine sahip "anchor"dır;
+    /// yok/false ise üst klasörden (en yakın anchor) yetki miras alır. Yalnızca klasörlerde anlamlı.
+    /// </summary>
+    public bool? permissionsBroken { get; set; }
+
     /// <summary>DG audit izi. <c>showHistory=true</c> ile döner; ilk <c>create</c> ve son <c>update</c> kaydından oluşturan/güncelleyen türetilir.</summary>
+    [JsonPropertyName("__history")]
+    public List<DmHistoryEntry>? __history { get; set; }
+}
+
+/// <summary>
+/// <c>dm_resource_permissions</c> DG kaydının tip karşılığı (okuma). Kayıtlar yalnızca yetki
+/// mirası kırık (anchor) klasörlere bağlıdır; eşleştirme grup adı (<c>groupName</c> ↔ JWT
+/// <c>user_groups</c>) ile yapılır. Verilen aksiyonlar <see cref="permissions"/> dizisindedir.
+/// </summary>
+public class DmResourcePermission
+{
+    [JsonPropertyName("__dataId")]
+    public string? __dataId { get; set; }
+
+    /// <summary>ACL anchor klasörün id'si.</summary>
+    public string? resourceId { get; set; }
+
+    /// <summary>Grup id (görsel/izleme; eşleştirme <see cref="groupName"/> ile yapılır).</summary>
+    public string? groupId { get; set; }
+
+    public string? groupName { get; set; }
+
+    /// <summary>Bu gruba verilen aksiyonlar (<c>view/create/edit/delete/upload/download/move/share</c>).</summary>
+    public List<string>? permissions { get; set; }
+
     [JsonPropertyName("__history")]
     public List<DmHistoryEntry>? __history { get; set; }
 }

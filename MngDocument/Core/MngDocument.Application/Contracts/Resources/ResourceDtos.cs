@@ -18,6 +18,9 @@ public sealed record ResourceDto
     public int CurrentVersionNumber { get; init; }
     public bool HasContent { get; init; }
 
+    /// <summary>Doküman durumu (<c>draft</c>/<c>published</c>; yalnızca markdown). Varsayılan <c>published</c>.</summary>
+    public string Status { get; init; } = "published";
+
     /// <summary>Yüklenen dosyanın MinIO path'i (yalnızca <c>type=file</c>). İndirme için kullanılır.</summary>
     public string? FilePath { get; init; }
 
@@ -27,6 +30,67 @@ public sealed record ResourceDto
     public string? CreatedBy { get; init; }
     public DateTime? UpdatedAt { get; init; }
     public string? UpdatedBy { get; init; }
+
+    /// <summary>Geçerli kullanıcının bu kaynak üzerindeki etkin yetkileri (UI buton gating için).</summary>
+    public EffectivePermissionDto Permissions { get; init; } = EffectivePermissionDto.Full;
+}
+
+/// <summary>
+/// Geçerli kullanıcının bir kaynak üzerindeki çözülmüş (miras dahil) etkin yetkileri.
+/// Admin için tüm alanlar <c>true</c>; açık varsayılan (hiç ACL yok) durumunda da tümü <c>true</c>.
+/// </summary>
+public sealed record EffectivePermissionDto
+{
+    public bool CanView { get; init; }
+    public bool CanCreate { get; init; }
+    public bool CanEdit { get; init; }
+    public bool CanDelete { get; init; }
+    public bool CanUpload { get; init; }
+    public bool CanDownload { get; init; }
+    public bool CanMove { get; init; }
+    public bool CanShare { get; init; }
+
+    /// <summary>Tüm aksiyonlar açık (admin / açık varsayılan).</summary>
+    public static readonly EffectivePermissionDto Full = new()
+    {
+        CanView = true,
+        CanCreate = true,
+        CanEdit = true,
+        CanDelete = true,
+        CanUpload = true,
+        CanDownload = true,
+        CanMove = true,
+        CanShare = true
+    };
+}
+
+/// <summary>Bir grup için verilen yetki aksiyonları.</summary>
+public sealed record GroupPermissionDto
+{
+    public string? GroupId { get; init; }
+    public string GroupName { get; init; } = string.Empty;
+    public IReadOnlyList<string> Permissions { get; init; } = Array.Empty<string>();
+}
+
+/// <summary>
+/// Bir klasörün yetki yönetim görünümü: miras durumu + kendi grup matrisi
+/// (miras alıyorsa en yakın anchor'dan miras alınan etkin matris).
+/// </summary>
+public sealed record FolderPermissionsDto
+{
+    public string ResourceId { get; init; } = string.Empty;
+
+    /// <summary>Bu klasörün kendi ACL'i var mı (miras kırık mı).</summary>
+    public bool InheritanceBroken { get; init; }
+
+    /// <summary>Etkin yetkilerin geldiği anchor klasör id'si (miras kaynağı). Kendisi anchor ise kendi id'si.</summary>
+    public string? EffectiveAnchorId { get; init; }
+
+    /// <summary>Grup → verilen aksiyonlar matrisi (anchor değilse miras alınan etkin matris gösterilir).</summary>
+    public IReadOnlyList<GroupPermissionDto> Groups { get; init; } = Array.Empty<GroupPermissionDto>();
+
+    /// <summary>Geçerli kullanıcının bu klasör üzerindeki etkin yetkileri.</summary>
+    public EffectivePermissionDto Effective { get; init; } = EffectivePermissionDto.Full;
 }
 
 /// <summary>Sol panel ağaç düğümü (yalnızca klasörler).</summary>

@@ -147,6 +147,26 @@
         "isArray": false,
         "relationDataset": null,
         "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "permissionsBroken",
+        "title": "Yetki mirasi kirik mi (ACL anchor)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "status",
+        "title": "Dokuman durumu (draft/published)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
       }
     ],
     "validations": [],
@@ -262,6 +282,75 @@
         "name": "idx_resourceId",
         "fields": {
           "resourceId": 1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "dm_resource_permissions",
+    "description": "Document Intelligence - Grup bazli klasor yetkileri. Kayitlar yalnizca yetki mirasi kirik (permissionsBroken=true) 'anchor' klasorlere baglidir. Eslestirme grup adi (groupName <-> JWT user_groups) ile yapilir.",
+    "category": "b2f1c0a4-9d3e-4a87-bf21-7c5e9a0d1e34",
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "resourceId",
+        "title": "Anchor klasor id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "groupId",
+        "title": "Grup id (gorsel)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "groupName",
+        "title": "Grup adi (eslestirme anahtari)",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "permissions",
+        "title": "Verilen aksiyonlar (view/create/edit/delete/upload/download/move/share)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_perm_resourceId",
+        "fields": {
+          "resourceId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_perm_groupName",
+        "fields": {
+          "groupName": 1
         },
         "unique": false
       }

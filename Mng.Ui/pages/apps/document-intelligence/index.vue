@@ -4,8 +4,12 @@ import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DiResourceTree from '@/components/apps/document-intelligence/DiResourceTree.vue';
 import DiMarkdownViewer from '@/components/apps/document-intelligence/DiMarkdownViewer.vue';
 import DiMarkdownEditor from '@/components/apps/document-intelligence/DiMarkdownEditor.vue';
+import DiPermissionsDialog from '@/components/apps/document-intelligence/DiPermissionsDialog.vue';
+import DiFilePreviewDialog from '@/components/apps/document-intelligence/DiFilePreviewDialog.vue';
+import { isDiPreviewable } from '@/utils/diFilePreview';
 import { useResizableTreePanel } from '@/composables/useResizableTreePanel';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useAuthStore } from '@/stores/auth';
 import {
   LayoutSidebarLeftCollapseIcon,
   LayoutSidebarLeftExpandIcon,
@@ -27,19 +31,23 @@ import {
   diGetMarkdownVersions,
   diGetMarkdownVersionContent,
   diRestoreMarkdownVersion,
+  diGetById,
   diErrorStatus,
   diExtractMessage,
 } from '@/services/documentIntelligenceService';
-import type {
-  DiTreeNode,
-  DiResource,
-  DiBreadcrumb,
-  DiMarkdownVersion,
+import {
+  diFullPermission,
+  type DiTreeNode,
+  type DiResource,
+  type DiBreadcrumb,
+  type DiMarkdownVersion,
+  type DiEffectivePermission,
 } from '@/types/apps/documentIntelligence';
 
 definePageMeta({ layout: 'default' });
 
 const { t } = useAppI18n();
+const authStore = useAuthStore();
 
 const {
   treeWidth,
@@ -57,6 +65,7 @@ const {
 const tree = ref<DiTreeNode[]>([]);
 const treeLoading = ref(false);
 const selectedFolderId = ref<string | null>(null);
+const selectedFolder = ref<DiResource | null>(null);
 const children = ref<DiResource[]>([]);
 const childrenLoading = ref(false);
 const folderPath = ref<DiBreadcrumb[]>([]);
@@ -115,6 +124,11 @@ const versionContent = ref('');
 const versionContentLoading = ref(false);
 const restoringVersion = ref<number | null>(null);
 
+// Yetkiler (izin diyaloğu)
+const permissionsDialog = ref(false);
+const permTargetId = ref<string | null>(null);
+const permTargetName = ref('');
+
 // Dosya yükleme
 const MAX_FILE_MB = 20;
 const fileDialog = ref(false);
@@ -122,6 +136,10 @@ const fileInputEl = ref<HTMLInputElement | null>(null);
 const pickedFile = ref<File | null>(null);
 const fileDisplayName = ref('');
 const downloadingId = ref<string | null>(null);
+
+// Dosya inline önizleme
+const filePreviewOpen = ref(false);
+const filePreviewResource = ref<DiResource | null>(null);
 
 const breadcrumbs = computed(() => {
   const base = [{ title: t('documentIntelligence.menuTitle'), disabled: folderPath.value.length === 0 }];
@@ -145,6 +163,18 @@ const flatFolders = computed(() => {
 
 const folderChildren = computed(() => children.value.filter((c) => c.type === 'folder'));
 const docChildren = computed(() => children.value.filter((c) => c.type !== 'folder'));
+
+// --- Yetki gating ---
+// Seçili klasörün (kök ise açık varsayılan) etkin yetkisi — üst bar buton kontrolü.
+const currentPerm = computed<DiEffectivePermission>(() =>
+  selectedFolderId.value ? (selectedFolder.value?.permissions ?? diFullPermission()) : diFullPermission(),
+);
+
+/** İzin yönetimi: admin ya da kaynak üzerinde share yetkisi. */
+function canManage(resource: DiResource | null): boolean {
+  if (!resource) return false;
+  return authStore.isAdmin || resource.permissions.canShare;
+}
 
 async function loadTree() {
   treeLoading.value = true;
@@ -182,12 +212,24 @@ async function loadFolderPath(folderId: string | null) {
   }
 }
 
+async function loadSelectedFolder(folderId: string | null) {
+  if (!folderId) {
+    selectedFolder.value = null;
+    return;
+  }
+  try {
+    selectedFolder.value = await diGetById(folderId);
+  } catch {
+    selectedFolder.value = null;
+  }
+}
+
 async function selectFolder(folderId: string | null) {
   searchActive.value = false;
   mainMode.value = 'browse';
   selectedFolderId.value = folderId;
   openDoc.value = null;
-  await Promise.all([loadChildren(folderId), loadFolderPath(folderId)]);
+  await Promise.all([loadChildren(folderId), loadFolderPath(folderId), loadSelectedFolder(folderId)]);
 }
 
 async function openResource(resource: DiResource) {
@@ -199,7 +241,17 @@ async function openResource(resource: DiResource) {
     await openMarkdown(resource);
     return;
   }
+  // Önizlenebilir dosyalarda satır tıklaması önizlemeyi açar; aksi halde indirir.
+  if (isDiPreviewable(resource)) {
+    openFilePreview(resource);
+    return;
+  }
   await downloadFile(resource);
+}
+
+function openFilePreview(resource: DiResource) {
+  filePreviewResource.value = resource;
+  filePreviewOpen.value = true;
 }
 
 async function openMarkdown(resource: DiResource) {
@@ -291,19 +343,20 @@ function cancelEdit() {
   docMode.value = 'view';
 }
 
-async function saveEdit() {
+async function saveEdit(asDraft = false) {
   if (!openDoc.value) return;
   saving.value = true;
   try {
     const updated = await diUpdateMarkdown(openDoc.value.id, {
       content: editContent.value,
       expectedVersionNumber: docVersion.value,
+      isDraft: asDraft,
     });
     docContent.value = editContent.value;
     docVersion.value = updated.currentVersionNumber || docVersion.value + 1;
     openDoc.value = updated;
     docMode.value = 'view';
-    notify(t('documentIntelligence.saved'), 'success');
+    notify(asDraft ? t('documentIntelligence.draftSaved') : t('documentIntelligence.published'), 'success');
   } catch (e) {
     if (diErrorStatus(e) === 409) {
       notify(t('documentIntelligence.errors.conflict'), 'error');
@@ -344,12 +397,12 @@ function openDocDialog() {
   docDialog.value = true;
 }
 
-async function submitDoc() {
+async function submitDoc(asDraft = false) {
   const title = docTitle.value.trim();
   if (!title) return;
   busy.value = true;
   try {
-    const created = await diCreateMarkdown({ title, content: '', parentId: selectedFolderId.value });
+    const created = await diCreateMarkdown({ title, content: '', parentId: selectedFolderId.value, isDraft: asDraft });
     docDialog.value = false;
     notify(t('documentIntelligence.docCreated'), 'success');
     await loadChildren(selectedFolderId.value);
@@ -443,6 +496,19 @@ async function submitDelete() {
   } finally {
     busy.value = false;
   }
+}
+
+// --- Yetkiler ---
+function openPermissions(resource: DiResource) {
+  if (resource.type !== 'folder') return;
+  permTargetId.value = resource.id;
+  permTargetName.value = resource.name;
+  permissionsDialog.value = true;
+}
+
+async function onPermissionsChanged() {
+  // Yetki değişince görünürlük değişebilir: ağaç + içerik + seçili klasör tazelenir.
+  await Promise.all([loadTree(), loadChildren(selectedFolderId.value), loadSelectedFolder(selectedFolderId.value)]);
 }
 
 // --- Dosya yükleme ---
@@ -672,6 +738,19 @@ onMounted(async () => {
             <v-spacer />
 
             <v-btn
+              v-if="selectedFolder && canManage(selectedFolder)"
+              color="primary"
+              variant="text"
+              size="small"
+              class="text-none"
+              prepend-icon="mdi-shield-account-outline"
+              :title="t('documentIntelligence.permissions.title')"
+              @click="openPermissions(selectedFolder)"
+            >
+              {{ t('documentIntelligence.permissions.menuTitle') }}
+            </v-btn>
+            <v-btn
+              v-if="currentPerm.canCreate"
               color="primary"
               variant="tonal"
               size="small"
@@ -682,6 +761,7 @@ onMounted(async () => {
               {{ t('documentIntelligence.newFolder') }}
             </v-btn>
             <v-btn
+              v-if="currentPerm.canCreate"
               color="primary"
               variant="flat"
               size="small"
@@ -692,6 +772,7 @@ onMounted(async () => {
               {{ t('documentIntelligence.newDocument') }}
             </v-btn>
             <v-btn
+              v-if="currentPerm.canUpload"
               color="primary"
               variant="tonal"
               size="small"
@@ -754,24 +835,30 @@ onMounted(async () => {
                 <v-icon icon="mdi-language-markdown-outline" color="primary" class="mr-1" />
                 <h3 class="text-h5 font-weight-bold mr-2">{{ resourceLabel(openDoc) }}</h3>
                 <v-chip size="x-small" variant="tonal">v{{ docVersion }}</v-chip>
+                <v-chip v-if="openDoc.status === 'draft'" size="x-small" variant="flat" color="warning" class="ml-1" prepend-icon="mdi-file-document-edit-outline">
+                  {{ t('documentIntelligence.draft') }}
+                </v-chip>
                 <v-spacer />
                 <template v-if="docMode === 'view'">
-                  <v-btn size="small" variant="tonal" class="text-none" prepend-icon="mdi-pencil" @click="startEdit">
+                  <v-btn v-if="openDoc.permissions.canEdit" size="small" variant="tonal" class="text-none" prepend-icon="mdi-pencil" @click="startEdit">
                     {{ t('documentIntelligence.edit') }}
                   </v-btn>
                   <v-btn size="small" variant="text" class="text-none" prepend-icon="mdi-history" @click="openHistory">
                     {{ t('documentIntelligence.history') }}
                   </v-btn>
-                  <v-btn size="small" variant="text" class="text-none" icon="mdi-pencil-box-outline" :title="t('documentIntelligence.rename')" @click="openRename(openDoc)" />
-                  <v-btn size="small" variant="text" class="text-none" icon="mdi-folder-move-outline" :title="t('documentIntelligence.move')" @click="openMove(openDoc)" />
-                  <v-btn size="small" variant="text" color="error" class="text-none" icon="mdi-delete-outline" :title="t('documentIntelligence.delete')" @click="openDelete(openDoc)" />
+                  <v-btn v-if="openDoc.permissions.canEdit" size="small" variant="text" class="text-none" icon="mdi-pencil-box-outline" :title="t('documentIntelligence.rename')" @click="openRename(openDoc)" />
+                  <v-btn v-if="openDoc.permissions.canMove" size="small" variant="text" class="text-none" icon="mdi-folder-move-outline" :title="t('documentIntelligence.move')" @click="openMove(openDoc)" />
+                  <v-btn v-if="openDoc.permissions.canDelete" size="small" variant="text" color="error" class="text-none" icon="mdi-delete-outline" :title="t('documentIntelligence.delete')" @click="openDelete(openDoc)" />
                 </template>
                 <template v-else>
                   <v-btn size="small" variant="text" class="text-none" :disabled="saving" @click="cancelEdit">
                     {{ t('documentIntelligence.cancel') }}
                   </v-btn>
-                  <v-btn size="small" color="primary" variant="flat" class="text-none" :loading="saving" prepend-icon="mdi-content-save" @click="saveEdit">
-                    {{ t('documentIntelligence.save') }}
+                  <v-btn size="small" variant="text" class="text-none" :loading="saving" prepend-icon="mdi-file-document-edit-outline" @click="saveEdit(true)">
+                    {{ t('documentIntelligence.saveAsDraft') }}
+                  </v-btn>
+                  <v-btn size="small" color="primary" variant="flat" class="text-none" :loading="saving" prepend-icon="mdi-content-save" @click="saveEdit(false)">
+                    {{ openDoc.status === 'draft' ? t('documentIntelligence.publish') : t('documentIntelligence.save') }}
                   </v-btn>
                 </template>
               </div>
@@ -822,9 +909,10 @@ onMounted(async () => {
                             </v-btn>
                           </template>
                           <v-list density="compact">
-                            <v-list-item prepend-icon="mdi-pencil-box-outline" :title="t('documentIntelligence.rename')" @click="openRename(f)" />
-                            <v-list-item prepend-icon="mdi-folder-move-outline" :title="t('documentIntelligence.move')" @click="openMove(f)" />
-                            <v-list-item prepend-icon="mdi-delete-outline" :title="t('documentIntelligence.delete')" base-color="error" @click="openDelete(f)" />
+                            <v-list-item v-if="canManage(f)" prepend-icon="mdi-shield-account-outline" :title="t('documentIntelligence.permissions.menuTitle')" @click="openPermissions(f)" />
+                            <v-list-item v-if="f.permissions.canEdit" prepend-icon="mdi-pencil-box-outline" :title="t('documentIntelligence.rename')" @click="openRename(f)" />
+                            <v-list-item v-if="f.permissions.canMove" prepend-icon="mdi-folder-move-outline" :title="t('documentIntelligence.move')" @click="openMove(f)" />
+                            <v-list-item v-if="f.permissions.canDelete" prepend-icon="mdi-delete-outline" :title="t('documentIntelligence.delete')" base-color="error" @click="openDelete(f)" />
                           </v-list>
                         </v-menu>
                       </v-card>
@@ -846,7 +934,12 @@ onMounted(async () => {
                       <template #prepend>
                         <v-icon :icon="resourceIcon(d)" color="primary" />
                       </template>
-                      <v-list-item-title>{{ resourceLabel(d) }}</v-list-item-title>
+                      <v-list-item-title>
+                        {{ resourceLabel(d) }}
+                        <v-chip v-if="d.type === 'markdown' && d.status === 'draft'" size="x-small" variant="flat" color="warning" class="ml-1">
+                          {{ t('documentIntelligence.draft') }}
+                        </v-chip>
+                      </v-list-item-title>
                       <v-list-item-subtitle v-if="d.description || (d.type === 'file' && d.size)">
                         <span v-if="d.description">{{ d.description }}</span>
                         <span v-if="d.type === 'file' && d.size" class="text-medium-emphasis">
@@ -855,7 +948,17 @@ onMounted(async () => {
                       </v-list-item-subtitle>
                       <template #append>
                         <v-btn
-                          v-if="d.type === 'file'"
+                          v-if="d.type === 'file' && d.permissions.canDownload && isDiPreviewable(d)"
+                          icon
+                          size="x-small"
+                          variant="text"
+                          :title="t('documentIntelligence.preview')"
+                          @click.stop="openFilePreview(d)"
+                        >
+                          <v-icon size="18">mdi-file-eye-outline</v-icon>
+                        </v-btn>
+                        <v-btn
+                          v-if="d.type === 'file' && d.permissions.canDownload"
                           icon
                           size="x-small"
                           variant="text"
@@ -872,10 +975,11 @@ onMounted(async () => {
                             </v-btn>
                           </template>
                           <v-list density="compact">
-                            <v-list-item v-if="d.type === 'file'" prepend-icon="mdi-download" :title="t('documentIntelligence.download')" @click="downloadFile(d)" />
-                            <v-list-item prepend-icon="mdi-pencil-box-outline" :title="t('documentIntelligence.rename')" @click="openRename(d)" />
-                            <v-list-item prepend-icon="mdi-folder-move-outline" :title="t('documentIntelligence.move')" @click="openMove(d)" />
-                            <v-list-item prepend-icon="mdi-delete-outline" :title="t('documentIntelligence.delete')" base-color="error" @click="openDelete(d)" />
+                            <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiPreviewable(d)" prepend-icon="mdi-file-eye-outline" :title="t('documentIntelligence.preview')" @click="openFilePreview(d)" />
+                            <v-list-item v-if="d.type === 'file' && d.permissions.canDownload" prepend-icon="mdi-download" :title="t('documentIntelligence.download')" @click="downloadFile(d)" />
+                            <v-list-item v-if="d.permissions.canEdit" prepend-icon="mdi-pencil-box-outline" :title="t('documentIntelligence.rename')" @click="openRename(d)" />
+                            <v-list-item v-if="d.permissions.canMove" prepend-icon="mdi-folder-move-outline" :title="t('documentIntelligence.move')" @click="openMove(d)" />
+                            <v-list-item v-if="d.permissions.canDelete" prepend-icon="mdi-delete-outline" :title="t('documentIntelligence.delete')" base-color="error" @click="openDelete(d)" />
                           </v-list>
                         </v-menu>
                       </template>
@@ -926,13 +1030,16 @@ onMounted(async () => {
             density="comfortable"
             autofocus
             hide-details
-            @keydown.enter="submitDoc"
+            @keydown.enter="submitDoc(false)"
           />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
           <v-btn variant="text" class="text-none" @click="docDialog = false">{{ t('documentIntelligence.cancel') }}</v-btn>
-          <v-btn color="primary" variant="flat" class="text-none" :loading="busy" :disabled="!docTitle.trim()" @click="submitDoc">
+          <v-btn variant="text" class="text-none" :loading="busy" :disabled="!docTitle.trim()" prepend-icon="mdi-file-document-edit-outline" @click="submitDoc(true)">
+            {{ t('documentIntelligence.saveAsDraft') }}
+          </v-btn>
+          <v-btn color="primary" variant="flat" class="text-none" :loading="busy" :disabled="!docTitle.trim()" @click="submitDoc(false)">
             {{ t('documentIntelligence.create') }}
           </v-btn>
         </v-card-actions>
@@ -1131,6 +1238,21 @@ onMounted(async () => {
         </v-card-text>
       </v-card>
     </v-dialog>
+
+    <!-- Klasör yetkileri -->
+    <DiPermissionsDialog
+      v-model="permissionsDialog"
+      :folder-id="permTargetId"
+      :folder-name="permTargetName"
+      @changed="onPermissionsChanged"
+      @notify="notify"
+    />
+
+    <DiFilePreviewDialog
+      v-model="filePreviewOpen"
+      :resource="filePreviewResource"
+      @download="downloadFile"
+    />
 
     <v-snackbar v-model="snackbar" :color="snackbarColor" location="top right" :timeout="3500">
       {{ snackbarText }}

@@ -18,6 +18,7 @@ public static class ServiceRegistration
         });
 
         services.AddScoped<IMngDataGatewayClient, MngDataGatewayClient>();
+        services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<IResourceService, ResourceService>();
 
         return services;

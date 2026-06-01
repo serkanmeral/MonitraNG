@@ -26,6 +26,9 @@ public sealed class CreateMarkdownRequest
     public string Content { get; set; } = string.Empty;
     public string? Description { get; set; }
     public List<string>? Tags { get; set; }
+
+    /// <summary><c>true</c> ise doküman taslak olarak oluşturulur (<c>status=draft</c>); aksi halde yayınlanmış.</summary>
+    public bool IsDraft { get; set; }
 }
 
 public sealed class UpdateMarkdownRequest
@@ -40,6 +43,11 @@ public sealed class UpdateMarkdownRequest
     /// farklıysa 409 döner (başka biri kaydetmiş demektir).
     /// </summary>
     public int ExpectedVersionNumber { get; set; }
+
+    /// <summary>
+    /// Doküman durumu: <c>true</c> = taslak, <c>false</c> = yayınla. <c>null</c> ise mevcut durum korunur.
+    /// </summary>
+    public bool? IsDraft { get; set; }
 }
 
 /// <summary>
@@ -61,4 +69,21 @@ public sealed class CreateFileResourceRequest
 
     /// <summary>Orijinal dosya adı (MinIO metadata'sı; indirmede dosya adı olarak kullanılır).</summary>
     public string? OriginalFileName { get; set; }
+}
+
+/// <summary>
+/// Bir klasörün grup bazlı yetki matrisini değiştirir. Yalnızca yetki mirası kırık (anchor)
+/// klasörlerde uygulanır. Listede yer almayan gruplar kaldırılır; boş <see cref="GroupPermissionInput.Permissions"/>
+/// olan gruplar da kaldırılır.
+/// </summary>
+public sealed class SetFolderPermissionsRequest
+{
+    public List<GroupPermissionInput> Groups { get; set; } = new();
+}
+
+public sealed class GroupPermissionInput
+{
+    public string? GroupId { get; set; }
+    public string GroupName { get; set; } = string.Empty;
+    public List<string> Permissions { get; set; } = new();
 }

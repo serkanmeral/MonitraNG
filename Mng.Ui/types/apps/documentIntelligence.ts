@@ -9,6 +9,46 @@ export const DI_RESOURCE_TYPE = {
 
 export type DiResourceType = (typeof DI_RESOURCE_TYPE)[keyof typeof DI_RESOURCE_TYPE];
 
+/** Yetki aksiyonları (dm_resource_permissions.permissions). */
+export const DI_PERMISSION_ACTIONS = [
+  'view',
+  'create',
+  'edit',
+  'delete',
+  'upload',
+  'download',
+  'move',
+  'share',
+] as const;
+
+export type DiPermissionAction = (typeof DI_PERMISSION_ACTIONS)[number];
+
+/** Geçerli kullanıcının bir kaynak üzerindeki etkin (miras dahil) yetkileri. */
+export interface DiEffectivePermission {
+  canView: boolean;
+  canCreate: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+  canUpload: boolean;
+  canDownload: boolean;
+  canMove: boolean;
+  canShare: boolean;
+}
+
+/** Tüm aksiyonlar açık (varsayılan / admin). */
+export function diFullPermission(): DiEffectivePermission {
+  return {
+    canView: true,
+    canCreate: true,
+    canEdit: true,
+    canDelete: true,
+    canUpload: true,
+    canDownload: true,
+    canMove: true,
+    canShare: true,
+  };
+}
+
 /** Tek kaynak (klasör / markdown / dosya) metadata'sı. */
 export interface DiResource {
   id: string;
@@ -25,6 +65,8 @@ export interface DiResource {
   size: number | null;
   currentVersionNumber: number;
   hasContent: boolean;
+  /** Doküman durumu (yalnızca markdown): 'draft' | 'published'. Varsayılan 'published'. */
+  status: string;
   /** Yüklenen dosyanın MinIO path'i (yalnızca type=file). İndirme için. */
   filePath: string | null;
   /** Yüklenen dosyanın orijinal adı (yalnızca type=file). */
@@ -33,6 +75,8 @@ export interface DiResource {
   createdBy: string | null;
   updatedAt: string | null;
   updatedBy: string | null;
+  /** Geçerli kullanıcının bu kaynak üzerindeki etkin yetkileri (buton gating). */
+  permissions: DiEffectivePermission;
 }
 
 /** Sol panel ağaç düğümü (yalnızca klasörler, iç içe). */
@@ -103,6 +147,8 @@ export interface DiCreateMarkdownRequest {
   content: string;
   description?: string | null;
   tags?: string[];
+  /** true ise taslak olarak oluşturur (status=draft). */
+  isDraft?: boolean;
 }
 
 export interface DiUpdateMarkdownRequest {
@@ -111,6 +157,31 @@ export interface DiUpdateMarkdownRequest {
   description?: string | null;
   tags?: string[];
   expectedVersionNumber: number;
+  /** true=taslak, false=yayınla, undefined=mevcut durumu koru. */
+  isDraft?: boolean | null;
+}
+
+/** Bir grup için verilen yetki aksiyonları. */
+export interface DiGroupPermission {
+  groupId: string | null;
+  groupName: string;
+  permissions: string[];
+}
+
+/** Klasörün yetki yönetim görünümü. */
+export interface DiFolderPermissions {
+  resourceId: string;
+  /** Bu klasörün kendi ACL'i var mı (miras kırık mı). */
+  inheritanceBroken: boolean;
+  /** Etkin yetkilerin geldiği anchor klasör id'si (miras kaynağı). */
+  effectiveAnchorId: string | null;
+  groups: DiGroupPermission[];
+  /** Geçerli kullanıcının bu klasör üzerindeki etkin yetkileri. */
+  effective: DiEffectivePermission;
+}
+
+export interface DiSetFolderPermissionsRequest {
+  groups: DiGroupPermission[];
 }
 
 export interface DiCreateFileResourceRequest {
