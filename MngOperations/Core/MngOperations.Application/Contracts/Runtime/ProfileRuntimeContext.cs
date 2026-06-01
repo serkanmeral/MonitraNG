@@ -93,6 +93,63 @@ public sealed class TimelinePage
     public int Total { get; init; }
 }
 
+/// <summary>
+/// Profil ekranı için tek toplu paket: profile + edit form + katalog + pool alanlar +
+/// çözülmüş alan görünen değerleri + çözülmüş politika + ilk sayfa timeline.
+/// UI bu uçla tek çağrı yapar; readonly form artık seçim listesi yüklemez.
+/// </summary>
+public sealed class ProfileViewContext
+{
+    public required ProfileRuntimeContext Profile { get; init; }
+    public required FormRuntimeContext Form { get; init; }
+
+    /// <summary>states/priorities/types görünen değerleri (sidebar + readonly form).</summary>
+    public BoardCatalogsDto Catalogs { get; init; } = new();
+
+    /// <summary>board id → ad (boardId alanı görünen değeri için).</summary>
+    public IReadOnlyDictionary<string, string> Boards { get; init; } = new Dictionary<string, string>();
+
+    /// <summary>op_fields ham kayıtları (global pool + workspace) — UI enrichFormRuntimeFields için.</summary>
+    public IReadOnlyList<Dictionary<string, object?>> PoolFields { get; init; }
+        = Array.Empty<Dictionary<string, object?>>();
+
+    /// <summary>Form alanı key → çözülmüş görünen değer (relation/person/grup/katalog) — readonly metin.</summary>
+    public IReadOnlyDictionary<string, string> FieldDisplays { get; init; }
+        = new Dictionary<string, string>();
+
+    /// <summary>Çözülmüş SLA politikası + uygulanabilir kurallar (OcPolicyPanel fetch'siz render).</summary>
+    public ResolvedPolicyDto Policy { get; init; } = new();
+
+    /// <summary>İlk sayfa timeline (yorum + aktivite) inline.</summary>
+    public TimelinePage Timeline { get; init; } = new();
+}
+
+public sealed class ResolvedPolicyDto
+{
+    public ResolvedSlaPolicyDto? MatchedSlaPolicy { get; init; }
+    public IReadOnlyList<ResolvedRuleDto> ApplicableRules { get; init; } = Array.Empty<ResolvedRuleDto>();
+}
+
+public sealed class ResolvedSlaPolicyDto
+{
+    public required string Id { get; init; }
+    public string? Name { get; init; }
+    public double? ResponseTargetMinutes { get; init; }
+    public double? ResolveTargetMinutes { get; init; }
+
+    /// <summary>Snapshot id'si yoksa type/priority kapsamından türetildiyse true.</summary>
+    public bool Derived { get; init; }
+}
+
+public sealed class ResolvedRuleDto
+{
+    public required string Id { get; init; }
+    public string? Name { get; init; }
+    public string? Trigger { get; init; }
+    public string? RuleType { get; init; }
+    public string? Description { get; init; }
+}
+
 public sealed class TimelineEntryDto
 {
     public required string Type { get; init; }
@@ -114,4 +171,26 @@ public sealed class TimelineEntryDto
 
     /// <summary>Yorum ekleri (op_comments.attachments file isArray) ham değeri — { path, file_name, ... }[].</summary>
     public JsonElement? Attachments { get; init; }
+
+    /// <summary>Aktivite alan değişiklik satırları (yalnızca `type='activity'`); id→ad MO'da çözülür.</summary>
+    public IReadOnlyList<TimelineChangeDto>? Changes { get; init; }
+}
+
+/// <summary>Tek bir alan değişikliği — eski/yeni görünen değer MO'da çözülmüş (UI ham veri işlemez).</summary>
+public sealed class TimelineChangeDto
+{
+    /// <summary>Alan anahtarı (ör. priorityId, assignee, stateId, pool alan key).</summary>
+    public required string Field { get; init; }
+
+    /// <summary>Form alanı etiketi (yoksa key'e düşer).</summary>
+    public string? Label { get; init; }
+
+    /// <summary>Alan türü (relation/person/group/catalog/scalar ipucu; UI ikon/biçim için).</summary>
+    public string? FieldType { get; init; }
+
+    /// <summary>Eski değerin görünen metni (relation/person/grup/katalog çözülmüş; boşsa null → UI "—").</summary>
+    public string? FromDisplay { get; init; }
+
+    /// <summary>Yeni değerin görünen metni (boşsa null → UI "—").</summary>
+    public string? ToDisplay { get; init; }
 }

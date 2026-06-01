@@ -215,10 +215,13 @@ public class WorkItemCommandService : IWorkItemCommandService
         pipeline.CompletedSteps.Add(PipelineSteps.PersistWorkItem);
         var snapshot = ToWorkItemSnapshot(MapToDto(updated, workItemId, workItemKey));
 
+        // Aktivite için alan bazlı ham diff (kullanıcının dokunduğu alanlar). id→ad çözümü read-time'da (GetTimelineAsync).
+        var changeExtra = BuildChangeActivityExtra(existing, updated, patchKeys);
+
         await RunPipelineSideEffectAsync(
             pipeline,
             PipelineSteps.PersistActivity,
-            () => WriteActivityAsync(workItemId, workItemKey, "WorkItemUpdated", $"Work item {workItemKey} updated", token, cancellationToken, throwOnFailure: true),
+            () => WriteActivityAsync(workItemId, workItemKey, "WorkItemUpdated", $"Work item {workItemKey} updated", token, cancellationToken, extra: changeExtra, throwOnFailure: true),
             snapshot);
 
         await RunPipelineSideEffectAsync(
@@ -351,6 +354,25 @@ public class WorkItemCommandService : IWorkItemCommandService
         pipeline.CompletedSteps.Add(PipelineSteps.PersistWorkItem);
         var snapshot = ToWorkItemSnapshot(MapToDto(updated, workItemId, wiKey));
 
+        // Aktivite changes[]: önce durum geçişi (stateId), ardından geçişte düzenlenen dinamik alanlar.
+        var transitionChanges = new List<Dictionary<string, object?>>
+        {
+            new(StringComparer.Ordinal)
+            {
+                ["field"] = "stateId",
+                ["from"] = currentStateId,
+                ["to"] = toStateId
+            }
+        };
+        AppendFieldChanges(transitionChanges, existing, updated, CollectDynamicFieldKeys(request.Fields));
+        var transitionExtra = new Dictionary<string, object?>
+        {
+            ["transitionKey"] = transitionKey,
+            ["fromStateId"] = currentStateId,
+            ["toStateId"] = toStateId,
+            ["changes"] = transitionChanges
+        };
+
         await RunPipelineSideEffectAsync(
             pipeline,
             PipelineSteps.PersistActivity,
@@ -361,12 +383,7 @@ public class WorkItemCommandService : IWorkItemCommandService
                 $"Transition {transitionKey}: {currentStateId} → {toStateId}",
                 token,
                 cancellationToken,
-                new Dictionary<string, object?>
-                {
-                    ["transitionKey"] = transitionKey,
-                    ["fromStateId"] = currentStateId,
-                    ["toStateId"] = toStateId
-                },
+                transitionExtra,
                 throwOnFailure: true),
             snapshot);
 
@@ -1045,7 +1062,9 @@ public class WorkItemCommandService : IWorkItemCommandService
         string token,
         CancellationToken cancellationToken)
     {
-        var item = await _dg.GetByIdAsync<Dictionary<string, object?>>(OcDatasets.WorkItems, workItemId, token, cancellationToken);
+        // expand=false: relation alanları ham id kalır. Patch/transition write-back (merged=existing)
+        // expand edilmiş labels'ı (op_labels'a expand → düşürülmüş) geri yazıp silmesin (veri kaybı önlenir).
+        var item = await _dg.GetByIdAsync<Dictionary<string, object?>>(OcDatasets.WorkItems, workItemId, token, cancellationToken, expand: false);
         if (item == null)
         {
             throw new OperationCoreException(
@@ -1096,6 +1115,166 @@ public class WorkItemCommandService : IWorkItemCommandService
             if (throwOnFailure)
                 throw;
         }
+    }
+
+    /// <summary>
+    /// Aktivite extra'sı için alan bazlı ham diff. Değişiklik varsa <c>{ ["changes"] = [...] }</c>, yoksa null döner
+    /// (null → WriteActivityAsync ek alan yazmaz, mevcut davranış korunur).
+    /// </summary>
+    private static Dictionary<string, object?>? BuildChangeActivityExtra(
+        IReadOnlyDictionary<string, object?> existing,
+        IReadOnlyDictionary<string, object?> updated,
+        IReadOnlyCollection<string> keys)
+    {
+        var changes = new List<Dictionary<string, object?>>();
+        AppendFieldChanges(changes, existing, updated, keys);
+        if (changes.Count == 0)
+            return null;
+        return new Dictionary<string, object?> { ["changes"] = changes };
+    }
+
+    /// <summary>Belirtilen alanlarda eski/yeni değer farklıysa <c>{ field, from, to }</c> satırı ekler (ham id/scalar).</summary>
+    private static void AppendFieldChanges(
+        List<Dictionary<string, object?>> changes,
+        IReadOnlyDictionary<string, object?> existing,
+        IReadOnlyDictionary<string, object?> updated,
+        IReadOnlyCollection<string> keys)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var key in keys)
+        {
+            if (string.IsNullOrWhiteSpace(key) || !seen.Add(key))
+                continue;
+            // stateId transition'da ayrıca işleniyor; çift satır olmasın.
+            if (string.Equals(key, "stateId", StringComparison.OrdinalIgnoreCase) && changes.Count > 0
+                && changes.Any(c => string.Equals(c.TryGetValue("field", out var f) ? f as string : null, "stateId", StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            var oldVal = NormalizeChangeValue(WorkItemDataHelper.GetFieldValue(existing, key));
+            var newVal = NormalizeChangeValue(WorkItemDataHelper.GetFieldValue(updated, key));
+            if (ChangeValuesEqual(oldVal, newVal))
+                continue;
+
+            changes.Add(new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["field"] = key,
+                ["from"] = oldVal,
+                ["to"] = newVal
+            });
+        }
+    }
+
+    /// <summary>request.Fields (JSON nesnesi) içindeki alan anahtarları.</summary>
+    private static List<string> CollectDynamicFieldKeys(JsonElement? fields)
+    {
+        var keys = new List<string>();
+        if (fields is { ValueKind: JsonValueKind.Object } obj)
+        {
+            foreach (var prop in obj.EnumerateObject())
+                keys.Add(prop.Name);
+        }
+        return keys;
+    }
+
+    /// <summary>
+    /// Değeri karşılaştırılabilir/saklanabilir tokena indirger: tek değer → string, çoklu → List&lt;string&gt;, boş → null.
+    /// Ref alanlar için id(ler), scalarlar için metin döndürür; ad çözümü read-time'da yapılır.
+    /// </summary>
+    private static object? NormalizeChangeValue(object? value)
+    {
+        var tokens = new List<string>();
+        CollectChangeTokens(value, tokens);
+        return tokens.Count switch
+        {
+            0 => null,
+            1 => tokens[0],
+            _ => tokens
+        };
+    }
+
+    private static void CollectChangeTokens(object? value, List<string> tokens)
+    {
+        switch (value)
+        {
+            case null:
+                return;
+            case JsonElement el:
+                CollectChangeTokensFromElement(el, tokens);
+                return;
+            case string s:
+                AddChangeToken(tokens, s);
+                return;
+            case bool b:
+                AddChangeToken(tokens, b ? "true" : "false");
+                return;
+            case System.Collections.IEnumerable enumerable:
+                foreach (var item in enumerable)
+                    CollectChangeTokens(item, tokens);
+                return;
+            default:
+                AddChangeToken(tokens, value.ToString());
+                return;
+        }
+    }
+
+    private static readonly string[] ChangeRefIdProps = { "__dataId", "_id", "id" };
+
+    private static void CollectChangeTokensFromElement(JsonElement el, List<string> tokens)
+    {
+        switch (el.ValueKind)
+        {
+            case JsonValueKind.String:
+                AddChangeToken(tokens, el.GetString());
+                break;
+            case JsonValueKind.Number:
+                AddChangeToken(tokens, el.ToString());
+                break;
+            case JsonValueKind.True:
+                AddChangeToken(tokens, "true");
+                break;
+            case JsonValueKind.False:
+                AddChangeToken(tokens, "false");
+                break;
+            case JsonValueKind.Array:
+                foreach (var item in el.EnumerateArray())
+                    CollectChangeTokensFromElement(item, tokens);
+                break;
+            case JsonValueKind.Object:
+                foreach (var n in ChangeRefIdProps)
+                {
+                    if (el.TryGetProperty(n, out var idEl)
+                        && idEl.ValueKind == JsonValueKind.String
+                        && !string.IsNullOrWhiteSpace(idEl.GetString()))
+                    {
+                        AddChangeToken(tokens, idEl.GetString());
+                        return;
+                    }
+                }
+                break;
+        }
+    }
+
+    private static void AddChangeToken(List<string> tokens, string? token)
+    {
+        if (token == null)
+            return;
+        var trimmed = token.Trim();
+        if (trimmed.Length == 0)
+            return;
+        tokens.Add(trimmed);
+    }
+
+    private static bool ChangeValuesEqual(object? a, object? b)
+    {
+        if (a is null && b is null)
+            return true;
+        if (a is null || b is null)
+            return false;
+        if (a is List<string> la && b is List<string> lb)
+            return la.SequenceEqual(lb, StringComparer.Ordinal);
+        if (a is string sa && b is string sb)
+            return string.Equals(sa, sb, StringComparison.Ordinal);
+        return false;
     }
 
     private async Task RunPipelineSideEffectAsync(

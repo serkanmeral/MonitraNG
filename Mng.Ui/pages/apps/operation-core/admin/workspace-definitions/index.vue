@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import OcWorkspaceDefinitionsGeneralTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsGeneralTab.vue';
 import OcWorkspaceDefinitionsValuesTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsValuesTab.vue';
+import OcWorkspaceDefinitionsTagsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsTagsTab.vue';
 import OcWorkspaceDefinitionsFlowsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsFlowsTab.vue';
 import OcWorkspaceDefinitionsFormsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsFormsTab.vue';
 import OcWorkspaceDefinitionsBoardsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsBoardsTab.vue';
@@ -55,6 +56,7 @@ const workspaceItems = computed(() =>
 const TAB_ICONS: Record<OcWorkspaceDefinitionTabKey, string> = {
   general: 'mdi-cog-outline',
   values: 'mdi-tune-variant',
+  tags: 'mdi-tag-multiple-outline',
   flows: 'mdi-transit-connection-variant',
   forms: 'mdi-form-select',
   boards: 'mdi-view-dashboard-outline',
@@ -215,6 +217,10 @@ onMounted(() => {
           />
           <OcWorkspaceDefinitionsValuesTab
             v-else-if="tab.key === 'values'"
+            :workspace-id="selectedWorkspaceId"
+          />
+          <OcWorkspaceDefinitionsTagsTab
+            v-else-if="tab.key === 'tags'"
             :workspace-id="selectedWorkspaceId"
           />
           <OcWorkspaceDefinitionsFlowsTab

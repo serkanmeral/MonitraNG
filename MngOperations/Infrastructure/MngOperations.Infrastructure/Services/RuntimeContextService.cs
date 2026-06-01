@@ -326,6 +326,9 @@ public partial class RuntimeContextService : IRuntimeContextService
         var commentList = commentsTask.Result.ToList();
         var activityList = activitiesTask.Result.ToList();
 
+        // Aktivite alan değişiklik satırlarını (changes[]) read-time çöz (changes yoksa metadata yüklenmez).
+        var changesTask = ResolveActivityChangesAsync(workItemId, workspaceId, activityList, token, cancellationToken);
+
         // Yazar/actor person id'lerini topla ve People diziniyle ada çöz (BL-KB toplu uç + Redis cache).
         // author/actor alanı DG okumada düz id veya tam @users nesnesine genişlemiş gelebilir → her ikisini
         // de GetPersonRefId ile id'ye indirgeriz. Eski kayıtlar username taşır → dizinde bulunmaz, ham döner.
@@ -384,17 +387,21 @@ public partial class RuntimeContextService : IRuntimeContextService
             });
         }
 
+        var changesMap = await changesTask;
+
         foreach (var activity in activityList)
         {
+            var activityId = WorkItemDataHelper.GetDataId(activity);
             entries.Add(new TimelineEntryDto
             {
                 Type = "activity",
-                Id = WorkItemDataHelper.GetDataId(activity),
+                Id = activityId,
                 Actor = ResolveActor(activity, "actor"),
                 ActorId = WorkItemDataHelper.GetPersonRefId(activity, "actor"),
                 Text = WorkItemDataHelper.GetString(activity, "message"),
                 At = WorkItemDataHelper.GetDateTime(activity, "activityDate"),
-                ActivityType = WorkItemDataHelper.GetString(activity, "activityType")
+                ActivityType = WorkItemDataHelper.GetString(activity, "activityType"),
+                Changes = activityId != null && changesMap.TryGetValue(activityId, out var ch) && ch.Count > 0 ? ch : null
             });
         }
 
@@ -1026,7 +1033,9 @@ public partial class RuntimeContextService : IRuntimeContextService
         string token,
         CancellationToken cancellationToken)
     {
-        var item = await _dg.GetByIdAsync<Dictionary<string, object?>>(OcDatasets.WorkItems, workItemId, token, cancellationToken);
+        // expand=false: çekirdek relation alanları (labels→op_tags vb.) MO'da çözülür; DG'nin
+        // eski op_labels hedefine expand edip op_tags id'lerini düşürmesini engeller (readonly profilde "—").
+        var item = await _dg.GetByIdAsync<Dictionary<string, object?>>(OcDatasets.WorkItems, workItemId, token, cancellationToken, expand: false);
         if (item == null)
         {
             throw new OperationCoreException(

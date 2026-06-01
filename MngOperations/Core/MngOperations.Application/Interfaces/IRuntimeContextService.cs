@@ -6,6 +6,12 @@ public interface IRuntimeContextService
 {
     Task<ProfileRuntimeContext> GetProfileAsync(string workItemId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Profil ekranının tüm verisini tek pakette döner (profile + form + katalog + pool alanlar +
+    /// alan görünen değerleri + politika + ilk sayfa timeline). UI'nın ~18 çağrısını 1'e indirir.
+    /// </summary>
+    Task<ProfileViewContext> GetProfileViewAsync(string workItemId, CancellationToken cancellationToken = default);
+
     Task<TimelinePage> GetTimelineAsync(
         string workItemId,
         int skip = 0,

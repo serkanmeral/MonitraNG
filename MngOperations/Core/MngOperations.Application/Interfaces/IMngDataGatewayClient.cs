@@ -11,7 +11,12 @@ public interface IMngDataGatewayClient
     Task<IEnumerable<T>> GetAsync<T>(string datasetName, string? query = null, string? token = null, CancellationToken cancellationToken = default)
         where T : class;
 
-    Task<T?> GetByIdAsync<T>(string datasetName, string id, string? token = null, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Tek kayıt okur. <paramref name="expand"/>=false ise DG relation alanlarını expand etmez (ham id döner).
+    /// İş kaydı okumalarında false kullanılır: çekirdek relation'lar (örn. <c>labels</c> → op_tags) MO'da
+    /// kendi çözülür ve DG'nin yanlış/eski hedefe (op_labels) expand edip değeri düşürmesi önlenir.
+    /// </summary>
+    Task<T?> GetByIdAsync<T>(string datasetName, string id, string? token = null, CancellationToken cancellationToken = default, bool expand = true)
         where T : class;
 
     Task<T> UpdateAsync<T>(string datasetName, string id, T data, string? token = null, CancellationToken cancellationToken = default)

@@ -89,11 +89,14 @@ public class MngDataGatewayClient : IMngDataGatewayClient
         return list;
     }
 
-    public async Task<T?> GetByIdAsync<T>(string datasetName, string id, string? token = null, CancellationToken cancellationToken = default)
+    public async Task<T?> GetByIdAsync<T>(string datasetName, string id, string? token = null, CancellationToken cancellationToken = default, bool expand = true)
         where T : class
     {
+        // DG GetById varsayılanı expand=true; expand=false ile relation'lar ham id kalır
+        // (örn. labels op_labels'a expand edilip düşürülmesin — MO kendi op_tags'tan çözer).
+        var path = expand ? $"data/{datasetName}/{id}" : $"data/{datasetName}/{id}?expand=false";
         using var response = await SendWithRetryAsync(
-            () => CreateRequest(HttpMethod.Get, $"data/{datasetName}/{id}", token),
+            () => CreateRequest(HttpMethod.Get, path, token),
             $"getById:{datasetName}",
             cancellationToken);
 

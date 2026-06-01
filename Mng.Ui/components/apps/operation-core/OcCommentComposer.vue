@@ -6,17 +6,23 @@ import { useOcPersonPicker } from '@/composables/useOcPersonPicker';
 import { useAppI18n } from '@/composables/useAppI18n';
 import type { OcPersonPickerItem } from '@/utils/ocPersonPicker';
 
-const props = defineProps<{
-  placeholder: string;
-  sendLabel: string;
-  sending?: boolean;
-  /** Düzenleme modu için başlangıç gövdesi (HTML). */
-  initialHtml?: string;
-  /** İptal butonunu göster (düzenleme modu). */
-  showCancel?: boolean;
-  /** Ek (dosya) butonunu göster — düzenlemede kapatılır. Varsayılan: true. */
-  allowAttachments?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    placeholder: string;
+    sendLabel: string;
+    sending?: boolean;
+    /** Düzenleme modu için başlangıç gövdesi (HTML). */
+    initialHtml?: string;
+    /** İptal butonunu göster (düzenleme modu). */
+    showCancel?: boolean;
+    /** Ek (dosya) butonunu göster — düzenlemede kapatılır. Varsayılan: true. */
+    allowAttachments?: boolean;
+  }>(),
+  {
+    // Vue boolean prop'ları yokken false'a düşer; ana composer'da ek butonu açık kalsın.
+    allowAttachments: true,
+  }
+);
 
 const emit = defineEmits<{
   (e: 'submit', payload: { html: string; mentions: string[]; files: File[] }): void;

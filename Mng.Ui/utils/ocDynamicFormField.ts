@@ -11,6 +11,7 @@ export type OcDynamicFieldWidget =
   | 'stateSelect'
   | 'relationSelect'
   | 'relationSelectMulti'
+  | 'tags'
   | 'text'
   | 'textarea'
   | 'number'
@@ -28,7 +29,7 @@ export const OC_CORE_RELATION_DATASET: Record<string, string> = {
   boardId: 'op_boards',
   stateId: 'op_states',
   stateFlowId: 'op_state_flows',
-  labels: 'op_labels',
+  labels: 'op_tags',
   parentItemId: 'op_work_items',
 };
 
@@ -65,6 +66,8 @@ export function resolveOcDynamicFieldWidget(
   if (fieldKey === 'priorityId') return 'prioritySelect';
   if (fieldKey === 'boardId') return 'boardSelect';
   if (fieldKey === 'stateId') return 'stateSelect';
+  // Çekirdek "Etiketler" alanı workspace tag kataloğunu (op_tags) kullanır → tags widget.
+  if (fieldKey === 'labels') return 'tags';
 
   const ft = (meta?.fieldType ?? resolveOcCoreFieldType(fieldKey)).toLowerCase();
 
@@ -78,7 +81,9 @@ export function resolveOcDynamicFieldWidget(
   if (ft === 'persons' || ft === 'persongroups' || ft === 'person' || ft === 'group') {
     return isMultiCardinality(fieldKey, meta) ? 'personsMulti' : 'persons';
   }
-  if (ft === 'relation' || ft === 'tags' || ft === 'array') {
+  // 'tags' → workspace etiket kataloğu (op_tags) destekli, inline oluşturmalı seçici.
+  if (ft === 'tags') return 'tags';
+  if (ft === 'relation' || ft === 'array') {
     return isMultiCardinality(fieldKey, meta) ? 'relationSelectMulti' : 'relationSelect';
   }
   if (ft === 'text') return 'text';

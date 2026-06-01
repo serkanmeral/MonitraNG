@@ -13,17 +13,21 @@ const props = defineProps<{
   fieldErrors?: Record<string, string>;
   /** Grup id → ad (readonly grup alanlarında ad göstermek için). */
   groupNames?: Record<string, string>;
+  /** Alan key → çözülmüş görünen metin (MO profile-view); readonly'de lookup yerine kullanılır. */
+  fieldDisplays?: Record<string, string>;
 }>();
 
 const model = defineModel<Record<string, unknown>>({ required: true });
 
 const contextRef = toRef(props, 'context');
 const workspaceId = computed(() => props.context.workspaceId);
+const readonlyRef = computed(() => props.readonly === true);
 
 const { selectItemsForField, isLoadingField, isPersonField, pickerForField } = useOcDynamicFormLookups(
   workspaceId,
   contextRef,
-  model
+  model,
+  { readonly: readonlyRef }
 );
 
 const sections = computed<OcFormLayoutSectionRuntime[]>(() => {
@@ -110,10 +114,12 @@ function setFieldValue(key: string, value: unknown) {
                   :field-key="fieldKey"
                   :meta="fieldMeta(fieldKey)"
                   :behavior="behaviorFor(fieldKey)"
+                  :workspace-id="workspaceId"
                   :select-items="selectItemsForField(fieldKey)"
                   :select-loading="isLoadingField(fieldKey)"
                   :person-picker="isPersonField(fieldKey) ? pickerForField(fieldKey) : undefined"
                   :group-names="groupNames"
+                  :field-display="fieldDisplays?.[fieldKey]"
                   :readonly="readonly"
                   :preview="preview"
                   :error-message="fieldErrors?.[fieldKey]"

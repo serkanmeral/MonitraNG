@@ -3470,6 +3470,15 @@
       "title": "İş profili",
       "readonlyHint": "Seçili formun salt-okunur görünümü.",
       "readonlyChip": "Salt-okunur",
+      "loadingHint": "Profil yükleniyor…",
+      "edit": {
+        "edit": "Düzenle",
+        "save": "Kaydet",
+        "cancel": "İptal",
+        "hint": "Alanları düzenleyip Kaydet'e basın.",
+        "editingChip": "Düzenleniyor",
+        "saveError": "Değişiklikler kaydedilemedi."
+      },
       "loadError": "İş kaydı yüklenemedi.",
       "sprint3Hint": "Profil runtime Sprint 3'te burada açılacak.",
       "workItemId": "Kayıt",
@@ -3516,6 +3525,9 @@
         "empty": "Henüz ek yok.",
         "download": "İndir",
         "remove": "Kaldır",
+        "preview": "Önizle",
+        "previewUnavailable": "Bu dosya türü için önizleme yok. İndirerek açabilirsiniz.",
+        "previewError": "Dosya önizlenemedi.",
         "uploadError": "Dosya yüklenemedi.",
         "downloadError": "Dosya indirilemedi.",
         "removeError": "Ek kaldırılamadı."
@@ -3856,6 +3868,28 @@
         "placeholder": "Alan havuzu (op_fields) sekmesi — sonraki adımda tablo ve CRUD eklenecek."
       }
     },
+    "tags": {
+      "catalogTitle": "Workspace etiketleri",
+      "catalogSubtitle": "Bu workspace'e ait etiket kataloğu (op_tags). Etiketler iş kaydı formlarındaki «tags» alanlarında seçilir.",
+      "empty": "Bu workspace için henüz etiket yok. İlk etiketinizi ekleyin.",
+      "add": "Etiket ekle",
+      "addTitle": "Yeni etiket",
+      "editTitle": "Etiketi düzenle",
+      "name": "Etiket adı",
+      "color": "Renk",
+      "noColor": "Renk yok",
+      "description": "Açıklama",
+      "save": "Kaydet",
+      "cancel": "Vazgeç",
+      "edit": "Düzenle",
+      "delete": "Sil",
+      "deleteTitle": "Etiketi sil",
+      "deleteConfirm": "«{name}» etiketi silinsin mi? Bu etiketi kullanan iş kayıtlarında referans ham id olarak görünebilir.",
+      "loadError": "Etiketler yüklenemedi.",
+      "saveError": "Etiket kaydedilemedi (aynı isimde etiket olabilir).",
+      "deleteError": "Etiket silinemedi.",
+      "fieldHint": "Mevcut etiketlerden seçin veya yazıp Enter'a basarak yeni etiket oluşturun."
+    },
     "workspaceDefinitions": {
       "pageSubtitle": "Seçili workspace için genel ayarlar, tip/alan kataloğu, durum akışı, form ve board tanımları. Kayıtlar DataGateway üzerinden güncellenir.",
       "saveSuccess": "Kayıt başarıyla güncellendi.",
@@ -3873,6 +3907,7 @@
       "tabs": {
         "general": "Genel",
         "values": "Değerler",
+        "tags": "Etiketler",
         "flows": "Durum akışı",
         "forms": "Formlar",
         "boards": "Board'lar",

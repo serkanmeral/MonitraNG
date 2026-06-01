@@ -13,12 +13,15 @@ import type {
   OcPersonDisplay,
   OcProfileAction,
   OcQueryExecuteResponse,
+  OcResolvedPolicy,
   OcSlaSnapshot,
+  OcTimelineChange,
   OcTimelineEntry,
   OcTimelinePage,
   OcWorkItemCard,
   OcWorkItemLinkSummary,
   OcWorkItemProfile,
+  OcWorkItemProfileView,
   OcWorkItemSummary,
   OpBoard,
   OpBoardColumnConfig,
@@ -54,6 +57,7 @@ export const OC_DATASETS = {
   slaPolicies: 'op_sla_policies',
   workItemSchedules: 'op_work_item_schedules',
   profiles: 'op_profiles',
+  tags: 'op_tags',
 } as const;
 
 export function parseSingleDgRecord(response: unknown): Record<string, unknown> | null {
@@ -742,8 +746,25 @@ function parseAttachments(raw: unknown): OcAttachment[] {
     .filter((a) => !!a.path);
 }
 
+function mapTimelineChanges(raw: unknown): OcTimelineChange[] | undefined {
+  const arr = Array.isArray(raw) ? raw : null;
+  if (!arr) return undefined;
+  const mapped = arr
+    .filter((c): c is Record<string, unknown> => !!c && typeof c === 'object')
+    .map((c) => ({
+      field: pickStr(c, 'field', 'Field') ?? '',
+      label: pickStr(c, 'label', 'Label') ?? null,
+      fieldType: pickStr(c, 'fieldType', 'FieldType') ?? null,
+      fromDisplay: pickStr(c, 'fromDisplay', 'FromDisplay') ?? null,
+      toDisplay: pickStr(c, 'toDisplay', 'ToDisplay') ?? null,
+    }))
+    .filter((c) => !!c.field);
+  return mapped.length ? mapped : undefined;
+}
+
 function mapTimelineEntry(raw: Record<string, unknown>): OcTimelineEntry {
   const atts = parseAttachments(raw.attachments ?? raw.Attachments);
+  const changes = mapTimelineChanges(raw.changes ?? raw.Changes);
   return {
     type: pickStr(raw, 'type', 'Type') ?? '',
     id: pickStr(raw, 'id', 'Id') ?? null,
@@ -755,6 +776,7 @@ function mapTimelineEntry(raw: Record<string, unknown>): OcTimelineEntry {
     editedAt: pickStr(raw, 'editedAt', 'EditedAt') ?? null,
     parentId: pickStr(raw, 'parentId', 'ParentId') ?? null,
     attachments: atts.length ? atts : undefined,
+    changes,
   };
 }
 
@@ -795,6 +817,93 @@ export async function ocGetWorkItemTimeline(
     skip: Number(raw.skip ?? raw.Skip ?? skip),
     take: Number(raw.take ?? raw.Take ?? take),
     total: Number(raw.total ?? raw.Total ?? 0),
+  };
+}
+
+function mapTimelinePage(raw: unknown, skip = 0, take = 50): OcTimelinePage {
+  const o = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const items = o.items ?? o.Items;
+  return {
+    items: Array.isArray(items) ? items.map((i) => mapTimelineEntry(i as Record<string, unknown>)) : [],
+    skip: Number(o.skip ?? o.Skip ?? skip),
+    take: Number(o.take ?? o.Take ?? take),
+    total: Number(o.total ?? o.Total ?? 0),
+  };
+}
+
+function mapResolvedPolicy(raw: unknown): OcResolvedPolicy {
+  const o = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const matchedRaw = o.matchedSlaPolicy ?? o.MatchedSlaPolicy;
+  const rulesRaw = o.applicableRules ?? o.ApplicableRules;
+  const matched =
+    matchedRaw && typeof matchedRaw === 'object'
+      ? (() => {
+          const m = matchedRaw as Record<string, unknown>;
+          const id = pickStr(m, 'id', 'Id') ?? '';
+          if (!id) return null;
+          const resp = m.responseTargetMinutes ?? m.ResponseTargetMinutes;
+          const resv = m.resolveTargetMinutes ?? m.ResolveTargetMinutes;
+          return {
+            id,
+            name: pickStr(m, 'name', 'Name') ?? null,
+            responseTargetMinutes: resp != null && resp !== '' ? Number(resp) : null,
+            resolveTargetMinutes: resv != null && resv !== '' ? Number(resv) : null,
+            derived: Boolean(m.derived ?? m.Derived ?? false),
+          };
+        })()
+      : null;
+  return {
+    matchedSlaPolicy: matched,
+    applicableRules: Array.isArray(rulesRaw)
+      ? rulesRaw
+          .filter((r): r is Record<string, unknown> => !!r && typeof r === 'object')
+          .map((r) => ({
+            id: pickStr(r, 'id', 'Id') ?? '',
+            name: pickStr(r, 'name', 'Name') ?? null,
+            trigger: pickStr(r, 'trigger', 'Trigger') ?? null,
+            ruleType: pickStr(r, 'ruleType', 'RuleType') ?? null,
+            description: pickStr(r, 'description', 'Description') ?? null,
+          }))
+          .filter((r) => !!r.id)
+      : [],
+  };
+}
+
+function parseStringMap(raw: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (v != null) out[k] = String(v);
+  }
+  return out;
+}
+
+/**
+ * Profil ekranının TEK toplu paketi (MO profile-view ucu): profile + edit form + katalog +
+ * pool alanlar + alan görünen değerleri + politika + ilk sayfa timeline. UI'nın ~18 çağrısını 1'e indirir.
+ */
+export async function ocGetWorkItemProfileView(workItemId: string): Promise<OcWorkItemProfileView> {
+  const raw = (await fetchFromOperations(
+    `/api/v1/runtime/work-items/${encodeURIComponent(workItemId)}/profile-view`,
+    'GET'
+  )) as Record<string, unknown>;
+
+  const poolRaw = raw.poolFields ?? raw.PoolFields;
+
+  return {
+    profile: mapWorkItemProfile((raw.profile ?? raw.Profile ?? {}) as Record<string, unknown>),
+    form: mapFormRuntimeContext((raw.form ?? raw.Form ?? {}) as Record<string, unknown>),
+    catalogs: parseBoardCatalogs(raw.catalogs ?? raw.Catalogs),
+    boards: parseStringMap(raw.boards ?? raw.Boards),
+    poolFields: Array.isArray(poolRaw)
+      ? poolRaw
+          .filter((f): f is Record<string, unknown> => !!f && typeof f === 'object')
+          .map((f) => mapOpField(f))
+          .filter((f) => f.__dataId && f.key)
+      : [],
+    fieldDisplays: parseStringMap(raw.fieldDisplays ?? raw.FieldDisplays),
+    policy: mapResolvedPolicy(raw.policy ?? raw.Policy),
+    timeline: mapTimelinePage(raw.timeline ?? raw.Timeline, 0, 100),
   };
 }
 
@@ -911,10 +1020,15 @@ export async function ocRemoveWorkItemAttachment(
   return ocGetWorkItemProfile(workItemId);
 }
 
+/** Eki DG'den blob olarak çeker (önizleme için; indirme akışını tetiklemez). */
+export async function ocFetchAttachmentBlob(att: OcAttachment): Promise<Blob> {
+  const url = `/api/v1/files/download?filePath=${encodeURIComponent(att.path)}`;
+  return fetchBlobFromDataGateway(url);
+}
+
 /** Eki DG'den indirir ve tarayıcıda kaydetme akışını tetikler. */
 export async function ocDownloadAttachment(att: OcAttachment): Promise<void> {
-  const url = `/api/v1/files/download?filePath=${encodeURIComponent(att.path)}`;
-  const blob = await fetchBlobFromDataGateway(url);
+  const blob = await ocFetchAttachmentBlob(att);
   const objectUrl = URL.createObjectURL(blob);
   try {
     const a = document.createElement('a');
@@ -1684,6 +1798,9 @@ export * from '@/services/operationCore/sla';
 
 // İş kaydı zamanlamaları (op_work_item_schedules) → services/operationCore/schedules.ts
 export * from '@/services/operationCore/schedules';
+
+// Etiketler (op_tags, workspace-kapsamlı) → services/operationCore/tags.ts
+export * from '@/services/operationCore/tags';
 
 export async function ocCreateBoard(payload: Record<string, unknown>): Promise<string | null> {
   return ocCreateRecordId(OC_DATASETS.boards, payload);

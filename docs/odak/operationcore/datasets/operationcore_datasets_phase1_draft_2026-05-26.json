@@ -4558,5 +4558,74 @@
       }
     ],
     "queries": []
+  },
+  {
+    "__dataId": null,
+    "name": "op_tags",
+    "description": "Operational Core - Workspace tags (etiket kataloğu; her kayıt workspaceId taşır)",
+    "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Etiket adı",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "workspaceId",
+        "title": "Workspace",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_workspaces",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "color",
+        "title": "Renk (tema anahtarı)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_workspaceId",
+        "fields": {
+          "workspaceId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_workspaceId_name",
+        "fields": {
+          "workspaceId": 1,
+          "name": 1
+        },
+        "unique": true
+      }
+    ],
+    "queries": []
   }
 ]

@@ -29,6 +29,16 @@ public class RuntimeController : ControllerBase
         return Ok(context);
     }
 
+    [HttpGet("work-items/{id}/profile-view")]
+    [ProducesResponseType(typeof(ProfileViewContext), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetProfileView(string id, CancellationToken cancellationToken)
+    {
+        var context = await _runtimeContextService.GetProfileViewAsync(id, cancellationToken);
+        return Ok(context);
+    }
+
     [HttpGet("work-items/{id}/timeline")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

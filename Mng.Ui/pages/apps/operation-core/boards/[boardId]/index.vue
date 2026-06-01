@@ -578,11 +578,7 @@ function openCreateDialog() {
   formDialogOpen.value = true;
 }
 
-function openEditDialog(id: string) {
-  formDialogMode.value = 'edit';
-  editWorkItemId.value = id;
-  formDialogOpen.value = true;
-}
+// Düzenleme artık iş kaydı profil ekranından (in-place) yapılır; listede edit butonu yoktur.
 
 function onRefresh() {
   if (showKanban.value) {
@@ -930,15 +926,6 @@ onUnmounted(() => {
                 density="comfortable"
                 :to="item.profileTo"
                 :title="t('operationCore.board.actions.viewProfile')"
-              />
-              <v-btn
-                v-if="canEdit"
-                icon="mdi-pencil-outline"
-                variant="text"
-                size="small"
-                density="comfortable"
-                :title="t('operationCore.board.actions.edit')"
-                @click="openEditDialog(item.id)"
               />
               <v-btn
                 v-if="canEdit"

@@ -8,11 +8,16 @@ import OcSlaStatusChip from '@/components/apps/operation-core/OcSlaStatusChip.vu
 import OcCommentComposer from '@/components/apps/operation-core/OcCommentComposer.vue';
 import OcPolicyPanel from '@/components/apps/operation-core/OcPolicyPanel.vue';
 import OcTransitionRequiredFields from '@/components/apps/operation-core/OcTransitionRequiredFields.vue';
+import OcAttachmentPreviewDialog from '@/components/apps/operation-core/OcAttachmentPreviewDialog.vue';
+import { isPreviewable } from '@/utils/ocAttachmentPreview';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import { useOperationCoreStore } from '@/stores/apps/operationCore';
 import { useOcBoardListLookups } from '@/composables/useOcBoardListLookups';
 import { useAppI18n } from '@/composables/useAppI18n';
 import {
+  buildUpdateWorkItemRequest,
+  collectOcFormValidationIssues,
+  hasUpdateWorkItemChanges,
   initialFormModelFromContext,
   ocAddWorkItemAttachment,
   ocAddWorkItemComment,
@@ -20,18 +25,19 @@ import {
   ocDeleteWorkItemComment,
   ocDownloadAttachment,
   ocExtractDgErrorMessage,
-  ocGetFormEditContext,
-  ocGetWorkItemProfile,
+  ocGetWorkItemProfileView,
   ocGetWorkItemTimeline,
-  ocListPoolFieldsForWorkspace,
   ocRemoveWorkItemAttachment,
+  ocUpdateWorkItem,
   ocUpdateWorkItemComment,
 } from '@/services/operationCoreService';
 import { useAuthStore } from '@/stores/auth';
 import type {
   OcAttachment,
+  OcBoardCatalogs,
   OcFormRuntimeContext,
   OcProfileAction,
+  OcResolvedPolicy,
   OcTimelineEntry,
   OcWorkItemProfile,
 } from '@/types/apps/operationCore';
@@ -54,6 +60,18 @@ const errorLocal = ref<string | null>(null);
 const formContext = ref<OcFormRuntimeContext | null>(null);
 const formModel = ref<Record<string, unknown>>({});
 const profile = ref<OcWorkItemProfile | null>(null);
+
+// --- Detaylar sekmesi in-place düzenleme ---
+const editMode = ref(false);
+const initialModel = ref<Record<string, unknown>>({});
+const savingEdit = ref(false);
+const editError = ref<string | null>(null);
+const editValidationAttempted = ref(false);
+
+// Tek toplu profile-view payload'ından gelen çözülmüş veriler (ek fetch yapılmaz).
+const catalogs = ref<OcBoardCatalogs | null>(null);
+const fieldDisplays = ref<Record<string, string>>({});
+const resolvedPolicy = ref<OcResolvedPolicy | null>(null);
 
 const activeTab = ref<'details' | 'comments' | 'activity' | 'attachments'>('details');
 
@@ -205,9 +223,10 @@ const backToBoardTo = computed(() =>
 // --- Lookups (durum/öncelik/tip + kişi adları) ---
 const workspaceIdRef = computed(() => profile.value?.workspaceId ?? null);
 const peopleRef = computed(() => profile.value?.people ?? null);
+const catalogsRef = computed(() => catalogs.value);
 const { resolveState, resolvePriority, resolveType, resolvePersonName } = useOcBoardListLookups(
   workspaceIdRef,
-  undefined,
+  catalogsRef,
   peopleRef
 );
 
@@ -224,6 +243,74 @@ const groupNames = computed<Record<string, string>>(() => {
 const summary = computed(() => profile.value?.workItem ?? null);
 const canComment = computed(() => profile.value?.permissions.canComment === true);
 const canEdit = computed(() => profile.value?.permissions.canEdit === true);
+
+// --- Detaylar sekmesi düzenleme (in-place) ---
+const editValidationIssues = computed(() => {
+  if (!editMode.value || !formContext.value) return [];
+  return collectOcFormValidationIssues(formContext.value, formModel.value);
+});
+
+const editFieldErrors = computed(() => {
+  if (!editValidationAttempted.value) return {} as Record<string, string>;
+  const msg = t('operationCore.formUi.fieldRequired');
+  const errors: Record<string, string> = {};
+  for (const issue of editValidationIssues.value) errors[issue.fieldKey] = msg;
+  return errors;
+});
+
+function startFormEdit() {
+  if (!canEdit.value) return;
+  activeTab.value = 'details';
+  editError.value = null;
+  editValidationAttempted.value = false;
+  editMode.value = true;
+}
+
+function cancelFormEdit() {
+  formModel.value = JSON.parse(JSON.stringify(initialModel.value));
+  editError.value = null;
+  editValidationAttempted.value = false;
+  editMode.value = false;
+}
+
+function collectFormChanges(): Record<string, unknown> {
+  const changed: Record<string, unknown> = {};
+  const keys = new Set([...Object.keys(formModel.value), ...Object.keys(initialModel.value)]);
+  for (const key of keys) {
+    const current = formModel.value[key];
+    const before = initialModel.value[key];
+    if (JSON.stringify(current ?? null) !== JSON.stringify(before ?? null)) {
+      changed[key] = current;
+    }
+  }
+  return changed;
+}
+
+async function saveFormEdit() {
+  const id = workItemId.value;
+  if (!formContext.value || !id) return;
+  editValidationAttempted.value = true;
+  if (editValidationIssues.value.length) {
+    editError.value = t('operationCore.create.validationRequired');
+    return;
+  }
+  const patch = buildUpdateWorkItemRequest(collectFormChanges());
+  if (!hasUpdateWorkItemChanges(patch)) {
+    editMode.value = false;
+    return;
+  }
+  savingEdit.value = true;
+  editError.value = null;
+  try {
+    await ocUpdateWorkItem(id, patch);
+    editMode.value = false;
+    await loadProfile();
+  } catch (e: unknown) {
+    editError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.edit.saveError'));
+  } finally {
+    savingEdit.value = false;
+  }
+}
 
 // --- Ekler ---
 const attachments = computed<OcAttachment[]>(() => profile.value?.attachments ?? []);
@@ -276,6 +363,25 @@ async function downloadAttachment(att: OcAttachment) {
   } catch (e: unknown) {
     attachError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.attachments.downloadError'));
   }
+}
+
+// --- Ek önizleme (görsel/PDF/düz metin; modal) ---
+const previewOpen = ref(false);
+const previewAtt = ref<OcAttachment | null>(null);
+
+function canPreview(att: OcAttachment): boolean {
+  return isPreviewable(att);
+}
+
+function openPreview(att: OcAttachment) {
+  previewAtt.value = att;
+  previewOpen.value = true;
+}
+
+// Chip/satır tıklaması: önizlenebilirse aç, değilse doğrudan indir.
+function previewOrDownload(att: OcAttachment) {
+  if (canPreview(att)) openPreview(att);
+  else void downloadAttachment(att);
 }
 
 async function removeAttachment(att: OcAttachment) {
@@ -442,12 +548,22 @@ async function loadProfile() {
     if (!store.workspaces.length) {
       await store.loadWorkspaces();
     }
-    const [ctx, prof] = await Promise.all([ocGetFormEditContext(id), ocGetWorkItemProfile(id)]);
-    const poolFields = await ocListPoolFieldsForWorkspace(ctx.workspaceId);
-    formContext.value = enrichFormRuntimeFields(ctx, { poolFields, translate: t });
-    formModel.value = initialFormModelFromContext(ctx);
-    profile.value = prof;
-    void loadTimeline();
+    // Tek toplu çağrı: form + katalog + pool alan + alan görünen değerleri + politika + ilk sayfa timeline.
+    const view = await ocGetWorkItemProfileView(id);
+    formContext.value = enrichFormRuntimeFields(view.form, { poolFields: view.poolFields, translate: t });
+    const model = initialFormModelFromContext(view.form);
+    formModel.value = model;
+    initialModel.value = JSON.parse(JSON.stringify(model));
+    editMode.value = false;
+    editValidationAttempted.value = false;
+    editError.value = null;
+    profile.value = view.profile;
+    catalogs.value = view.catalogs;
+    fieldDisplays.value = view.fieldDisplays;
+    resolvedPolicy.value = view.policy;
+    // Timeline payload'la birlikte geldi; ayrı çağrı yok (loadTimeline yorum CRUD sonrası yenilemede kalır).
+    timeline.value = view.timeline.items;
+    timelineTotal.value = view.timeline.total || view.timeline.items.length;
   } catch (e: unknown) {
     formContext.value = null;
     errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.profile.loadError'));
@@ -485,15 +601,55 @@ watch(workItemId, () => {
             <div class="text-subtitle-1 font-weight-bold text-truncate">{{ workItemTitle }}</div>
           </div>
           <div class="text-caption text-medium-emphasis">
-            {{ t('operationCore.profile.readonlyHint') }}
+            {{ editMode ? t('operationCore.profile.edit.hint') : t('operationCore.profile.readonlyHint') }}
           </div>
         </div>
         <v-spacer />
-        <v-chip size="small" variant="tonal" color="primary" prepend-icon="mdi-lock-outline">
-          {{ t('operationCore.profile.readonlyChip') }}
-        </v-chip>
+        <template v-if="editMode">
+          <v-chip size="small" variant="tonal" color="warning" prepend-icon="mdi-pencil" class="me-1">
+            {{ t('operationCore.profile.edit.editingChip') }}
+          </v-chip>
+          <v-btn
+            variant="text"
+            size="small"
+            class="text-none"
+            :disabled="savingEdit"
+            @click="cancelFormEdit"
+          >
+            {{ t('operationCore.profile.edit.cancel') }}
+          </v-btn>
+          <v-btn
+            color="primary"
+            variant="flat"
+            size="small"
+            rounded="lg"
+            class="text-none"
+            prepend-icon="mdi-content-save"
+            :loading="savingEdit"
+            @click="saveFormEdit"
+          >
+            {{ t('operationCore.profile.edit.save') }}
+          </v-btn>
+        </template>
+        <template v-else>
+          <v-btn
+            v-if="canEdit"
+            color="primary"
+            variant="tonal"
+            size="small"
+            rounded="lg"
+            class="text-none"
+            prepend-icon="mdi-pencil"
+            @click="startFormEdit"
+          >
+            {{ t('operationCore.profile.edit.edit') }}
+          </v-btn>
+          <v-chip v-else size="small" variant="tonal" color="primary" prepend-icon="mdi-lock-outline">
+            {{ t('operationCore.profile.readonlyChip') }}
+          </v-chip>
+        </template>
       </v-card-title>
-      <template v-if="transitionActions.length">
+      <template v-if="transitionActions.length && !editMode">
         <v-divider />
         <v-card-text class="d-flex align-center flex-wrap ga-2 py-2">
           <span class="text-caption text-medium-emphasis me-1">
@@ -606,11 +762,50 @@ watch(workItemId, () => {
       </v-card>
     </v-dialog>
 
+    <OcAttachmentPreviewDialog
+      v-model="previewOpen"
+      :attachment="previewAtt"
+      @download="downloadAttachment"
+    />
+
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
 
     <v-alert v-if="errorLocal" type="error" variant="tonal" class="mb-4 rounded-lg" closable @click:close="errorLocal = null">
       {{ errorLocal }}
     </v-alert>
+
+    <!-- Yüklenirken iskelet panel: boş ekran yerine form/yan panel yerleşimini taklit eder. -->
+    <v-row v-if="loading" class="oc-profile-skeleton">
+      <v-col cols="12" md="8">
+        <v-card variant="outlined" class="rounded-lg pa-4">
+          <div class="d-flex align-center ga-2 mb-2 text-medium-emphasis">
+            <v-progress-circular indeterminate color="primary" size="18" width="2" />
+            <span class="text-caption">{{ t('operationCore.profile.loadingHint') }}</span>
+          </div>
+          <div class="d-flex align-center ga-2 mb-4">
+            <v-skeleton-loader type="chip" />
+            <v-skeleton-loader type="chip" />
+            <v-skeleton-loader type="chip" />
+            <v-skeleton-loader type="chip" />
+          </div>
+          <v-row dense>
+            <v-col v-for="n in 8" :key="n" cols="12" sm="6">
+              <v-skeleton-loader type="list-item-two-line" class="rounded-lg" />
+            </v-col>
+          </v-row>
+        </v-card>
+      </v-col>
+      <v-col cols="12" md="4">
+        <v-card variant="outlined" class="rounded-lg pa-4 mb-4">
+          <v-skeleton-loader type="heading" class="mb-3" />
+          <v-skeleton-loader type="list-item-two-line, list-item-two-line" />
+        </v-card>
+        <v-card variant="outlined" class="rounded-lg pa-4">
+          <v-skeleton-loader type="heading" class="mb-3" />
+          <v-skeleton-loader type="list-item-two-line, list-item-two-line, list-item-two-line" />
+        </v-card>
+      </v-col>
+    </v-row>
 
     <v-row v-if="!loading && (formContext || profile)">
       <!-- Ana kolon: tab'lar -->
@@ -647,7 +842,56 @@ watch(workItemId, () => {
           <v-window v-model="activeTab">
             <v-window-item value="details">
               <v-card-text class="pa-4 pa-md-5">
-                <OcDynamicForm v-if="formContext" v-model="formModel" :context="formContext" :group-names="groupNames" readonly />
+                <v-alert
+                  v-if="editMode && editValidationAttempted && editValidationIssues.length"
+                  type="warning"
+                  variant="tonal"
+                  class="mb-4 rounded-lg"
+                  :title="t('operationCore.create.validationSummaryTitle')"
+                >
+                  <p class="text-body-2 mb-2">{{ t('operationCore.create.validationRequired') }}</p>
+                  <ul class="pl-4 mb-0" style="list-style: disc">
+                    <li v-for="issue in editValidationIssues" :key="issue.fieldKey">{{ issue.label }}</li>
+                  </ul>
+                </v-alert>
+
+                <v-alert
+                  v-if="editMode && editError"
+                  type="error"
+                  variant="tonal"
+                  class="mb-4 rounded-lg"
+                  closable
+                  @click:close="editError = null"
+                >
+                  {{ editError }}
+                </v-alert>
+
+                <OcDynamicForm
+                  v-if="formContext"
+                  v-model="formModel"
+                  :context="formContext"
+                  :group-names="groupNames"
+                  :field-displays="fieldDisplays"
+                  :field-errors="editMode ? editFieldErrors : undefined"
+                  :readonly="!editMode"
+                />
+
+                <div v-if="editMode" class="d-flex justify-end ga-2 mt-4">
+                  <v-btn variant="text" class="text-none" :disabled="savingEdit" @click="cancelFormEdit">
+                    {{ t('operationCore.profile.edit.cancel') }}
+                  </v-btn>
+                  <v-btn
+                    color="primary"
+                    variant="flat"
+                    rounded="lg"
+                    class="text-none px-6"
+                    prepend-icon="mdi-content-save"
+                    :loading="savingEdit"
+                    @click="saveFormEdit"
+                  >
+                    {{ t('operationCore.profile.edit.save') }}
+                  </v-btn>
+                </div>
               </v-card-text>
             </v-window-item>
 
@@ -721,9 +965,9 @@ watch(workItemId, () => {
                             size="small"
                             variant="outlined"
                             rounded="lg"
-                            prepend-icon="mdi-paperclip"
+                            :prepend-icon="canPreview(att) ? 'mdi-file-eye-outline' : 'mdi-paperclip'"
                             link
-                            @click="downloadAttachment(att)"
+                            @click="previewOrDownload(att)"
                           >
                             {{ att.fileName }}
                           </v-chip>
@@ -807,9 +1051,9 @@ watch(workItemId, () => {
                             size="small"
                             variant="outlined"
                             rounded="lg"
-                            prepend-icon="mdi-paperclip"
+                            :prepend-icon="canPreview(att) ? 'mdi-file-eye-outline' : 'mdi-paperclip'"
                             link
-                            @click="downloadAttachment(att)"
+                            @click="previewOrDownload(att)"
                           >
                             {{ att.fileName }}
                           </v-chip>
@@ -864,7 +1108,19 @@ watch(workItemId, () => {
                       <span class="text-body-2 font-weight-medium">{{ entry.actor || '—' }}</span>
                       <span v-if="entry.at" class="text-caption text-medium-emphasis">{{ fmtDate(entry.at) }}</span>
                     </div>
-                    <div class="text-body-2 mt-1" style="white-space: pre-wrap">{{ entry.text }}</div>
+                    <div v-if="entry.changes?.length" class="mt-1 d-flex flex-column ga-1">
+                      <div
+                        v-for="(chg, ci) in entry.changes"
+                        :key="ci"
+                        class="text-body-2 d-flex align-center flex-wrap ga-1"
+                      >
+                        <span class="font-weight-medium">{{ chg.label || chg.field }}:</span>
+                        <span class="text-medium-emphasis text-decoration-line-through">{{ chg.fromDisplay || '—' }}</span>
+                        <v-icon icon="mdi-arrow-right-thin" size="14" class="text-medium-emphasis" />
+                        <span>{{ chg.toDisplay || '—' }}</span>
+                      </div>
+                    </div>
+                    <div v-else class="text-body-2 mt-1" style="white-space: pre-wrap">{{ entry.text }}</div>
                   </v-timeline-item>
                 </v-timeline>
               </v-card-text>
@@ -913,7 +1169,11 @@ watch(workItemId, () => {
                     <template #prepend>
                       <v-icon :icon="attachmentIcon(att)" color="primary" />
                     </template>
-                    <v-list-item-title class="text-body-2 font-weight-medium text-truncate">
+                    <v-list-item-title
+                      class="text-body-2 font-weight-medium text-truncate"
+                      :class="{ 'oc-attach-name-link': canPreview(att) }"
+                      @click="canPreview(att) && openPreview(att)"
+                    >
                       {{ att.fileName }}
                     </v-list-item-title>
                     <v-list-item-subtitle class="text-caption">
@@ -922,6 +1182,14 @@ watch(workItemId, () => {
                       <span v-if="att.uploadPerson"> · {{ att.uploadPerson }}</span>
                     </v-list-item-subtitle>
                     <template #append>
+                      <v-btn
+                        v-if="canPreview(att)"
+                        icon="mdi-eye-outline"
+                        variant="text"
+                        size="small"
+                        :title="t('operationCore.profile.attachments.preview')"
+                        @click="openPreview(att)"
+                      />
                       <v-btn
                         icon="mdi-download"
                         variant="text"
@@ -992,6 +1260,7 @@ watch(workItemId, () => {
               :board-id="summary.boardId"
               :state-id="summary.stateId"
               :sla-policy-id="profile?.sla?.slaPolicyId"
+              :resolved-policy="resolvedPolicy"
             />
           </v-card-text>
         </v-card>
@@ -1074,6 +1343,13 @@ watch(workItemId, () => {
   min-width: 0;
 }
 
+.oc-profile-skeleton :deep(.v-skeleton-loader) {
+  background: transparent;
+}
+.oc-profile-skeleton :deep(.v-skeleton-loader__chip) {
+  width: 96px;
+}
+
 .oc-meta-list {
   display: flex;
   flex-direction: column;
@@ -1097,6 +1373,15 @@ watch(workItemId, () => {
   font-size: 0.875rem;
   text-align: right;
   min-width: 0;
+}
+
+.oc-attach-name-link {
+  cursor: pointer;
+}
+
+.oc-attach-name-link:hover {
+  color: rgb(var(--v-theme-primary));
+  text-decoration: underline;
 }
 
 .oc-comment-card {

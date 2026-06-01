@@ -13,16 +13,21 @@ import {
 } from '@/utils/ocDynamicFormField';
 import { resolveOcCoreFieldType } from '@/utils/ocFormFieldLabels';
 import OcPersonPickerAutocomplete from '@/components/apps/operation-core/OcPersonPickerAutocomplete.vue';
+import OcTagSelector from '@/components/apps/operation-core/OcTagSelector.vue';
 
 const props = defineProps<{
   fieldKey: string;
   meta?: OcFormFieldRuntimeDto | null;
   behavior: OcFieldBehaviorDto;
+  /** Aktif workspace (tags alanı etiket kataloğunu bu workspace'ten okur/yaratır). */
+  workspaceId?: string | null;
   selectItems?: OcSelectItem[];
   selectLoading?: boolean;
   personPicker?: OcPersonPickerApi;
   /** Grup id → ad (readonly grup alanlarında ham id yerine ad göstermek için; profil sağlar). */
   groupNames?: Record<string, string>;
+  /** MO'da çözülmüş görünen metin (relation/person/katalog) — readonly'de lookup yerine gösterilir. */
+  fieldDisplay?: string | null;
   readonly?: boolean;
   preview?: boolean;
   errorMessage?: string | null;
@@ -40,6 +45,7 @@ const fieldDisabled = computed(() => props.readonly || props.behavior.readonly);
 const isMulti = computed(() => isMultiCardinality(props.fieldKey, props.meta));
 
 const isPersonsWidget = computed(() => widget.value === 'persons' || widget.value === 'personsMulti');
+const isTagsWidget = computed(() => widget.value === 'tags');
 
 // Grup alanları (personGroups/group): readonly görünümde ham id yerine grup adını göster.
 const fieldType = computed(() =>
@@ -78,6 +84,22 @@ const isSelectWidget = computed(() =>
     'relationSelect',
     'relationSelectMulti',
   ].includes(widget.value)
+);
+
+// Readonly (profil) görünümde lookup yapılmadığından select/person/grup alanları
+// MO'dan gelen çözülmüş metinle (fieldDisplay) ya da grup adıyla gösterilir.
+const hasFieldDisplay = computed(
+  () => props.fieldDisplay != null && String(props.fieldDisplay).trim() !== ''
+);
+const useReadonlyDisplay = computed(
+  () =>
+    fieldDisabled.value &&
+    // tags HARİÇ: tags readonly'de de OcTagSelector ile renkli chip gösterir (düz metin değil).
+    (isGroupField.value ||
+      ((isSelectWidget.value || isPersonsWidget.value) && hasFieldDisplay.value))
+);
+const readonlyDisplayText = computed(() =>
+  isGroupField.value ? groupReadonlyText.value : String(props.fieldDisplay ?? '').trim() || '—'
 );
 
 const selectMultiple = computed(
@@ -126,8 +148,8 @@ function onAutocompleteUpdate(value: unknown) {
 
 <template>
   <v-text-field
-    v-if="fieldDisabled && isGroupField"
-    :model-value="groupReadonlyText"
+    v-if="useReadonlyDisplay"
+    :model-value="readonlyDisplayText"
     readonly
     density="comfortable"
     variant="outlined"
@@ -152,6 +174,19 @@ function onAutocompleteUpdate(value: unknown) {
     :error="showFieldError"
     :error-messages="fieldErrorMessages"
     :field-class="fieldClass"
+  />
+
+  <OcTagSelector
+    v-else-if="isTagsWidget"
+    v-model="model"
+    :workspace-id="workspaceId"
+    :multiple="true"
+    :disabled="fieldDisabled"
+    :label="label"
+    :required="behavior.required"
+    :error="showFieldError"
+    :error-messages="fieldErrorMessages"
+    :preview="preview"
   />
 
   <v-autocomplete

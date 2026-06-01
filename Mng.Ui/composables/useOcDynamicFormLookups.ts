@@ -13,6 +13,7 @@ import { collectPersonIdsFromValue } from '@/utils/ocPersonPicker';
 import {
   isOcPersonsUserPickerField,
   recordToDatasetItems,
+  resolveOcDynamicFieldWidget,
   resolveRelationDataset,
 } from '@/utils/ocDynamicFormField';
 
@@ -27,8 +28,12 @@ const PERSONS_LOADING_KEY = '__personUsers__';
 export function useOcDynamicFormLookups(
   workspaceId: Ref<string | undefined>,
   context: Ref<OcFormRuntimeContext | null>,
-  formModel?: Ref<Record<string, unknown>>
+  formModel?: Ref<Record<string, unknown>>,
+  options?: { readonly?: Ref<boolean> }
 ) {
+  // Readonly (profil) modda hiçbir seçim listesi yüklenmez; alan değerleri
+  // fieldDisplays metniyle gösterilir → state/priority/board/relation/person fetch'leri elenir.
+  const isReadonly = () => options?.readonly?.value === true;
   // Her person alanı kendi picker örneğini kullanır: paylaşılan tek picker'da
   // bir combobox'taki arama/seçim, diğer alanların listesini daraltıyordu.
   const personPickers = new Map<string, OcPersonPickerApi>();
@@ -125,6 +130,7 @@ export function useOcDynamicFormLookups(
   }
 
   async function reload() {
+    if (isReadonly()) return;
     const ws = workspaceId.value?.trim();
     const ctx = context.value;
     if (!ctx) return;
@@ -166,6 +172,8 @@ export function useOcDynamicFormLookups(
     const loadedDatasets = new Set<string>();
     for (const fieldKey of keys) {
       const meta = ctx.fields[fieldKey];
+      // tags widget (labels + pool tags) kendi seçicisinde (OcTagSelector) workspace-filtreli yükler.
+      if (resolveOcDynamicFieldWidget(fieldKey, meta) === 'tags') continue;
       const widgetDataset = resolveRelationDataset(fieldKey, meta);
       if (!widgetDataset) continue;
       if (fieldKey === 'priorityId' || fieldKey === 'boardId' || fieldKey === 'stateId') continue;
@@ -205,7 +213,9 @@ export function useOcDynamicFormLookups(
   }
 
   watch(
-    () => [workspaceId.value, context.value] as const,
+    // readonly de\u011fi\u015fimini de izle: readonly form (profil) edit moduna ge\u00e7ti\u011finde
+    // select/person/relation listeleri o anda y\u00fcklensin (reload() readonly iken erken d\u00f6ner).
+    () => [workspaceId.value, context.value, options?.readonly?.value] as const,
     () => {
       void reload();
     },
@@ -216,6 +226,7 @@ export function useOcDynamicFormLookups(
     watch(
       formModel,
       () => {
+        if (isReadonly()) return;
         if (!personFieldKeys().length) return;
         void syncPersonPickerSelection();
       },

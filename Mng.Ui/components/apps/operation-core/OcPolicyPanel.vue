@@ -5,7 +5,7 @@ import {
   ocListRulesForWorkspace,
   ocListSlaPoliciesForWorkspace,
 } from '@/services/operationCoreService';
-import type { OpRule, OpSlaPolicy } from '@/types/apps/operationCore';
+import type { OcResolvedPolicy, OpRule, OpSlaPolicy } from '@/types/apps/operationCore';
 
 const props = defineProps<{
   workspaceId?: string | null;
@@ -15,6 +15,8 @@ const props = defineProps<{
   stateId?: string | null;
   /** SLA snapshot'tan eşleşen politika id'si (varsa doğrudan onu gösterir). */
   slaPolicyId?: string | null;
+  /** MO profile-view'da çözülmüş politika — verilince hiç fetch yapılmaz (profil tek çağrı). */
+  resolvedPolicy?: OcResolvedPolicy | null;
 }>();
 
 const { t } = useAppI18n();
@@ -27,7 +29,11 @@ const rules = ref<OpRule[]>([]);
 const policies = ref<OpSlaPolicy[]>([]);
 const loading = ref(false);
 
+// MO çözülmüş politika verildiyse hiç fetch yapma (profil tek çağrı yolu).
+const usingResolved = computed(() => props.resolvedPolicy != null);
+
 async function load(workspaceId: string) {
+  if (usingResolved.value) return;
   loading.value = true;
   try {
     if (!rulesCache.has(workspaceId)) rulesCache.set(workspaceId, ocListRulesForWorkspace(workspaceId));
@@ -46,6 +52,7 @@ async function load(workspaceId: string) {
 watch(
   () => props.workspaceId,
   (ws) => {
+    if (usingResolved.value) return;
     if (ws?.trim()) void load(ws.trim());
     else {
       rules.value = [];
@@ -60,8 +67,32 @@ function scopeMatches(value: string | null | undefined, target: string | null | 
   return value === target;
 }
 
-const applicableRules = computed(() =>
-  rules.value
+/** Şablonun okuduğu birleşik tip — fetch yolu ve resolvedPolicy aynı yapıyı üretir. */
+interface PolicyView {
+  name?: string | null;
+  responseTargetMinutes?: number | null;
+  resolveTargetMinutes?: number | null;
+  derived: boolean;
+}
+interface RuleView {
+  id: string;
+  name?: string | null;
+  trigger?: string | null;
+  ruleType?: string | null;
+  description?: string | null;
+}
+
+const applicableRules = computed<RuleView[]>(() => {
+  if (usingResolved.value) {
+    return (props.resolvedPolicy?.applicableRules ?? []).map((r) => ({
+      id: r.id,
+      name: r.name,
+      trigger: r.trigger,
+      ruleType: r.ruleType,
+      description: r.description,
+    }));
+  }
+  return rules.value
     .filter((r) => r.isActive !== false)
     .filter(
       (r) =>
@@ -69,19 +100,48 @@ const applicableRules = computed(() =>
         scopeMatches(r.typeId, props.typeId) &&
         scopeMatches(r.stateId, props.stateId)
     )
-);
+    .map((r) => ({
+      id: r.__dataId,
+      name: r.name,
+      trigger: r.trigger,
+      ruleType: r.ruleType,
+      description: r.description,
+    }));
+});
 
 /** Eşleşen SLA politikası: snapshot id'si varsa o; yoksa type/priority filtresiyle en yüksek öncelikli. */
-const matchedPolicy = computed<{ policy: OpSlaPolicy; derived: boolean } | null>(() => {
+const matchedPolicy = computed<PolicyView | null>(() => {
+  if (usingResolved.value) {
+    const m = props.resolvedPolicy?.matchedSlaPolicy;
+    return m
+      ? {
+          name: m.name,
+          responseTargetMinutes: m.responseTargetMinutes,
+          resolveTargetMinutes: m.resolveTargetMinutes,
+          derived: m.derived,
+        }
+      : null;
+  }
+  let chosen: { policy: OpSlaPolicy; derived: boolean } | null = null;
   if (props.slaPolicyId) {
     const direct = policies.value.find((p) => p.__dataId === props.slaPolicyId);
-    if (direct) return { policy: direct, derived: false };
+    if (direct) chosen = { policy: direct, derived: false };
   }
-  const candidates = policies.value
-    .filter((p) => p.isActive !== false)
-    .filter((p) => scopeMatches(p.typeId, props.typeId) && scopeMatches(p.priorityId, props.priorityId))
-    .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
-  return candidates.length ? { policy: candidates[0], derived: true } : null;
+  if (!chosen) {
+    const candidates = policies.value
+      .filter((p) => p.isActive !== false)
+      .filter((p) => scopeMatches(p.typeId, props.typeId) && scopeMatches(p.priorityId, props.priorityId))
+      .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+    if (candidates.length) chosen = { policy: candidates[0], derived: true };
+  }
+  return chosen
+    ? {
+        name: chosen.policy.name,
+        responseTargetMinutes: chosen.policy.responseTargetMinutes,
+        resolveTargetMinutes: chosen.policy.resolveTargetMinutes,
+        derived: chosen.derived,
+      }
+    : null;
 });
 
 function fmtDuration(min: number | null | undefined): string {
@@ -115,7 +175,7 @@ const hasContent = computed(() => !!matchedPolicy.value || applicableRules.value
       <div v-if="matchedPolicy" class="mb-3">
         <div class="d-flex align-center ga-2 mb-1">
           <v-icon icon="mdi-timer-outline" size="18" color="primary" />
-          <span class="text-body-2 font-weight-medium">{{ matchedPolicy.policy.name }}</span>
+          <span class="text-body-2 font-weight-medium">{{ matchedPolicy.name }}</span>
           <v-chip v-if="matchedPolicy.derived" size="x-small" variant="tonal" color="grey">
             {{ t('operationCore.policies.autoMatched') }}
           </v-chip>
@@ -123,11 +183,11 @@ const hasContent = computed(() => !!matchedPolicy.value || applicableRules.value
         <div class="oc-policy-rows">
           <div class="oc-policy-row">
             <span class="oc-policy-label">{{ t('operationCore.policies.responseTarget') }}</span>
-            <span class="oc-policy-value">{{ fmtDuration(matchedPolicy.policy.responseTargetMinutes) }}</span>
+            <span class="oc-policy-value">{{ fmtDuration(matchedPolicy.responseTargetMinutes) }}</span>
           </div>
           <div class="oc-policy-row">
             <span class="oc-policy-label">{{ t('operationCore.policies.resolveTarget') }}</span>
-            <span class="oc-policy-value">{{ fmtDuration(matchedPolicy.policy.resolveTargetMinutes) }}</span>
+            <span class="oc-policy-value">{{ fmtDuration(matchedPolicy.resolveTargetMinutes) }}</span>
           </div>
         </div>
       </div>
@@ -142,7 +202,7 @@ const hasContent = computed(() => !!matchedPolicy.value || applicableRules.value
           <v-chip size="x-small" variant="tonal" color="primary">{{ applicableRules.length }}</v-chip>
         </div>
         <div class="d-flex flex-column ga-2">
-          <div v-for="rule in applicableRules" :key="rule.__dataId" class="oc-policy-rule">
+          <div v-for="rule in applicableRules" :key="rule.id" class="oc-policy-rule">
             <div class="d-flex align-center ga-2 flex-wrap">
               <span class="text-body-2 font-weight-medium">{{ rule.name }}</span>
               <v-chip size="x-small" variant="outlined" color="info">{{ triggerLabel(rule.trigger) }}</v-chip>

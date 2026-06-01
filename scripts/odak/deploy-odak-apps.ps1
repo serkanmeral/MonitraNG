@@ -2,6 +2,7 @@
 # Kullanım:
 #   .\scripts\odak\deploy-odak-apps.ps1
 #   .\scripts\odak\deploy-odak-apps.ps1 -Services mngkeeper,mngui
+#   .\scripts\odak\deploy-odak-apps.ps1 -Services mngoperations -NoCache   # kritik backend fix
 #   .\scripts\odak\deploy-odak-apps.ps1 -NoBuild
 #   $env:ODAK_SSH_PASSWORD = '...'
 
@@ -11,7 +12,10 @@ param(
     [string]$RemoteAppsDir = "/home/odak/MonitraNG/ApplicationResources/mng_apps",
     [string]$Services = "",
     [switch]$NoBuild,
-    [switch]$FullBuild
+    [switch]$FullBuild,
+    # Kritik backend fix sonrası: build cache'i atla (normal build bazen değişen kaynağı
+    # cache'ten alıp eski binary'yi paketliyor — build ~36sn = sahte).
+    [switch]$NoCache
 )
 
 $ErrorActionPreference = "Stop"
@@ -22,14 +26,14 @@ $cred = Get-OdakSshCredential -User $User -Server $Server
 
 $compose = "docker compose -f docker-compose.production.yml -f docker-compose.odak.yml --env-file .env"
 
+$noCacheFlag = if ($NoCache) { " --no-cache" } else { "" }
+
 if (-not $NoBuild) {
     if ($Services) {
         $svc = $Services -replace ',', ' '
-        $buildCmd = "cd '$RemoteAppsDir' && $compose build $svc"
-    } elseif ($FullBuild) {
-        $buildCmd = "cd '$RemoteAppsDir' && $compose build"
+        $buildCmd = "cd '$RemoteAppsDir' && $compose build$noCacheFlag $svc"
     } else {
-        $buildCmd = "cd '$RemoteAppsDir' && $compose build"
+        $buildCmd = "cd '$RemoteAppsDir' && $compose build$noCacheFlag"
     }
 } else {
     $buildCmd = "echo 'Skip build'"
@@ -51,7 +55,8 @@ $buildCmd
 $upCmd
 $compose ps
 curl -s -o /dev/null -w 'gateway=%{http_code} ' http://127.0.0.1:5040/health || true
-curl -s -o /dev/null -w 'ui=%{http_code}\n' http://127.0.0.1:3000/ || true
+curl -s -o /dev/null -w 'ui=%{http_code} ' http://127.0.0.1:3000/ || true
+curl -s -o /dev/null -w 'oc_live=%{http_code}\n' http://127.0.0.1:3000/api/operations/v1/health/live || true
 "@
 
 $session = New-SSHSession -ComputerName $Server -Credential $cred -AcceptKey

@@ -8,6 +8,7 @@ import {
 export const OC_WORKSPACE_DEFINITION_TAB_KEYS = [
   'general',
   'values',
+  'tags',
   'flows',
   'forms',
   'boards',

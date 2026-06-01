@@ -517,6 +517,19 @@ export interface OcWorkItemProfile {
   attachments: OcAttachment[];
 }
 
+/** Aktivite alan değişikliği — eski/yeni görünen değer MO'da çözülmüş (UI ham veri işlemez). */
+export interface OcTimelineChange {
+  field: string;
+  /** Form alanı etiketi (yoksa key). */
+  label?: string | null;
+  /** Alan türü ipucu (relation/person/group/scalar). */
+  fieldType?: string | null;
+  /** Eski değerin görünen metni (boşsa null → UI "—"). */
+  fromDisplay?: string | null;
+  /** Yeni değerin görünen metni (boşsa null → UI "—"). */
+  toDisplay?: string | null;
+}
+
 /** Aktivite/yorum zaman tüneli girdisi (MO GetTimelineAsync). */
 export interface OcTimelineEntry {
   type: string;
@@ -533,6 +546,8 @@ export interface OcTimelineEntry {
   parentId?: string | null;
   /** Yorum ekleri (op_comments.attachments) — yalnızca `type='comment'` girdilerde. */
   attachments?: OcAttachment[];
+  /** Alan değişiklik satırları — yalnızca `type='activity'` girdilerde (MO'da çözülmüş). */
+  changes?: OcTimelineChange[];
 }
 
 export interface OcTimelinePage {
@@ -540,6 +555,48 @@ export interface OcTimelinePage {
   skip: number;
   take: number;
   total: number;
+}
+
+/** MO'da çözülmüş SLA politikası (OcPolicyPanel resolvedPolicy prop'u). */
+export interface OcResolvedSlaPolicy {
+  id: string;
+  name?: string | null;
+  responseTargetMinutes?: number | null;
+  resolveTargetMinutes?: number | null;
+  /** Snapshot id'si yoksa type/priority kapsamından türetildiyse true. */
+  derived: boolean;
+}
+
+/** MO'da çözülmüş uygulanabilir kural (OcPolicyPanel resolvedPolicy prop'u). */
+export interface OcResolvedRule {
+  id: string;
+  name?: string | null;
+  trigger?: string | null;
+  ruleType?: string | null;
+  description?: string | null;
+}
+
+export interface OcResolvedPolicy {
+  matchedSlaPolicy?: OcResolvedSlaPolicy | null;
+  applicableRules: OcResolvedRule[];
+}
+
+/**
+ * Profil ekranının tek toplu paketi (MO profile-view ucu). UI'nın ~18 çağrısını 1'e indirir;
+ * form/katalog/pool-alan/alan-görünen-değerleri/politika/timeline tek seferde gelir.
+ */
+export interface OcWorkItemProfileView {
+  profile: OcWorkItemProfile;
+  form: OcFormRuntimeContext;
+  catalogs: OcBoardCatalogs;
+  /** board id → ad (boardId alanı görünen değeri). */
+  boards: Record<string, string>;
+  /** Form alanı enrichment'ı için pool alanlar (global + workspace). */
+  poolFields: OpField[];
+  /** Form alanı key → çözülmüş görünen metin (relation/person/grup/katalog). */
+  fieldDisplays: Record<string, string>;
+  policy: OcResolvedPolicy;
+  timeline: OcTimelinePage;
 }
 
 /** In-app bildirim (MO op_notifications — geçerli kullanıcı). */
@@ -624,6 +681,15 @@ export interface OpPriority {
   color?: string | null;
   icon?: string | null;
   sortOrder?: number | null;
+}
+
+/** op_tags — workspace'e ait etiket kataloğu (her kayıt workspaceId taşır). */
+export interface OpTag {
+  __dataId: string;
+  name: string;
+  color?: string | null;
+  description?: string | null;
+  workspaceId: string;
 }
 
 /** op_work_item_types.category — Faz 1 enum (operationcore_phase1 §8.4) */

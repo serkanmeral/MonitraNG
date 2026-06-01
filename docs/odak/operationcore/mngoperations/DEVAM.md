@@ -1,15 +1,84 @@
 # MngOperations & Operation Core UI — Devam noktası (checkpoint)
 
-**Son güncelleme:** 1 Haziran 2026 gece (**OC-CMT** — Yorumlar/Aktivite tab ayrımı + zengin editör + yazar adı çözümü + düzenle/sil — `mngoperations` Odak'ta canlı; `mngui` deploy ediliyor)  
-**Durum:** SW **SW-0…SW-6** ✅ · A1 R-Plus ✅ · **SLA-0/1/2** ✅ · **D1 Board admin** ✅ · **BL** ✅ · **BO (+BO-5/6)** ✅ · **BLF (+BLF-8/9/10)** ✅ · **BLC** ✅ · **FC** ✅ · **NP (+NP-7)** ✅ · **E1-P1/W-CREATE/E1-P2** ✅ · **CC** ✅ · **A** ✅ · **F (+F-T2/F-K)** ✅ · **BL-GRP (+BL-GRP-2)** ✅ · **PERF** ✅ — hepsi Odak'ta canlı
+**Son güncelleme:** 1 Haziran 2026 (**OC-EDIT** — profil ekranında **yerinde düzenleme** (Düzenle/Kaydet/İptal, diff'li patch), liste actions edit butonu kaldırıldı; **readonly etiketler artık renkli chip**; **profil açılış skeleton paneli**; **labels→op_tags expand bug fix** (DG `GetById` expand=false). **Tümü `main`'e commit+push edildi.** Backend (expand fix dahil) Odak'ta canlı; **UI deploy hâlâ bekliyor** — PROF-VIEW + OC-PREV + OC-ACT + OC-TAGS + OC-EDIT birlikte.)  
+**Durum:** SW **SW-0…SW-6** ✅ · A1 R-Plus ✅ · **SLA-0/1/2** ✅ · **D1 Board admin** ✅ · **BL** ✅ · **BO (+BO-5/6)** ✅ · **BLF (+BLF-8/9/10)** ✅ · **BLC** ✅ · **FC** ✅ · **NP (+NP-7)** ✅ · **E1-P1/W-CREATE/E1-P2** ✅ · **CC** ✅ · **A** ✅ · **F (+F-T2/F-K)** ✅ · **BL-GRP (+BL-GRP-2)** ✅ · **PERF** ✅ · **PROF-VIEW** ✅ · **OC-ACT** ✅ · **OC-TAGS** ✅ · **OC-EDIT** ✅ (backend canlı, UI bekliyor) — diğerleri Odak'ta canlı
 
-> **⭐ KALDIĞIMIZ YER (1 Haz ~01:20) — yeni chat buradan devam edecek:** Bu chat'te **OC-CMT** tamamlandı (aşağıdaki bölüm): profil ekranında **Detaylar | Yorumlar | Aktivite | Ekler** tab ayrımı, yorumlar için **TipTap zengin editör + emoji + tek seviyeli yanıt thread'i**, **yazar adı çözümü** (iki ayrı bug düzeltildi → aşağı bak), ve **kendi yorumunu düzenle/sil** (yalnız yazar, backend-enforced). `mngoperations` Odak'a **`--no-cache`** ile deploy edildi (healthy). **mngui deploy + commit/push bu adımda yapılıyor.** ⚠️ **Deploy dersi:** `deploy-odak-apps.ps1` normal `docker compose build` katman cache'i bazen değişen kaynağı almıyor (build ~36sn = sahte) → kaynak fix'i Odak'a gitse de eski binary çalışıyor. Çözüm: kritik backend fix sonrası **`docker compose build --no-cache mngoperations`**. **Sıradaki iş:** kullanıcı **Dosyalar (Ekler) sekmesinde önizleme** istiyor (görsel/PDF/düz metin). *(Aşağıdaki 31 May notu tarihsel.)*
+> **⭐ KALDIĞIMIZ YER (1 Haz ~10:15) — yeni chat buradan devam edecek:** Bu chat'te **OC-EDIT** tamamlandı (aşağıdaki bölüm): **(1)** Profil ekranı artık **yerinde düzenlenebilir** — header'da **Düzenle** butonu (canEdit ise), tıklayınca form `readonly`→edit moduna geçer; **Kaydet** yalnızca değişen alanları diff'leyip (`collectFormChanges`) `ocUpdateWorkItem` ile patch'ler, **İptal** snapshot'a döner; düzenleme modunda transition butonları gizlenir. `useOcDynamicFormLookups` artık `readonly` değişimini izleyip select/person/relation listelerini edit'e geçince yükler. **(2)** Liste (board) actions sütunundaki **edit butonu kaldırıldı** (`openEditDialog` temizlendi). **(3)** **Readonly profilde etiketler renkli chip** — `OcDynamicFormField` tags'i readonly metinden çıkardı; `OcTagSelector` `disabled` iken combobox yerine renkli `v-chip` listesi basıyor (boşsa "—"). **(4)** **Profil açılış skeleton paneli** — `loading` sırasında boş ekran yerine form+yan panel yerleşimini taklit eden `v-skeleton-loader` + "Profil yükleniyor…". **(5)** **labels→op_tags expand bug fix** — DG `GetById` varsayılan `expand=true` olduğundan çekirdek `labels` alanını eski `op_labels`'a expand edip `op_tags` id'lerini düşürüyordu (readonly'de "—" + patch'te veri kaybı riski). `IMngDataGatewayClient.GetByIdAsync`'e `expand` param eklendi; iş kaydı okumaları (`RuntimeContextService.LoadWorkItemAsync` + `WorkItemCommandService.LoadWorkItemAsync`) **`expand:false`** ile çağrılıyor → ham id'ler MO'da `op_tags` ile çözülür. Backend `--no-cache` deploy edildi (`oc_live=200`), kullanıcı local dev (Odak backend'e proxy) ile renkli chip + skeleton'ı doğruladı. **Tüm birikmiş OC işi (OC-PREV+PROF-VIEW+OC-ACT+OC-TAGS+OC-EDIT) tek commit ile `main`'e push edildi.** ⚠️ **Sıradaki iş:** **UI deploy (5'i birlikte)** Odak'a (`deploy-odak-apps.ps1 -Services mngui -NoCache`) → tarayıcıda son kontrol; ardından **Widgets & Dashboards** planlama.
+>
+> **KALDIĞIMIZ YER (1 Haz ~08:35):** Bu chat'te **OC-TAGS** tamamlandı (aşağıdaki bölüm): **workspace'e ait** etiket kataloğu `op_tags` (her kayıt `workspaceId`, unique `(workspaceId,name)`). **Yönetim 2 yoldan:** (1) Workspace Tanımları → yeni **"Etiketler"** sekmesi (CRUD: ad+renk+açıklama); (2) iş kaydı formunda **`tags` alanına yazıp Enter → inline yeni etiket** o workspace'e kaydedilir. Backend profil+aktivite çözümünde `fieldType:'tags'` → `op_tags` id→ad çözer. **`op_tags` Odak DG'ye provizyonlandı** (`setup-operation-core-datasets.ps1` + generator/`$order`), **backend `--no-cache` deploy edildi** (`oc_live=200`), **OC Demo Workspace'e (`f414462a…`) 5 başlangıç etiketi eklendi** (Acil/Donanım/Yazılım/Ağ/Tekrarlayan). ⚠️ **UI deploy + commit/push HENÜZ YAPILMADI** — **PROF-VIEW + OC-PREV + OC-ACT + OC-TAGS UI değişiklikleri birlikte** deploy bekliyor. Lokal `dotnet build` + `nuxt build` temiz. **Sıradaki iş:** UI deploy (4'ü birlikte) + tarayıcıda kontrol (Etiketler sekmesi, form inline tag, profil/aktivitede etiket adı); ardından Widgets & Dashboards planlama.
+>
+> **KALDIĞIMIZ YER (1 Haz ~08:05):** Bu chat'te **OC-ACT** tamamlandı (aşağıdaki bölüm) + **OC-ACT-4 bug fix** (katalog alanları — state/priority/type/board — `$in` query yerine cache'li `GetCatalogListAsync` ile çözülür; transition `Durum: guid → guid` sorunu giderildi). Aktivite sekmesi artık alan bazlı değişiklikleri (`Etiket: eski → yeni`, kim/ne zaman) gösteriyor: `WorkItemCommandService` güncelleme/geçişte `op_activities.changes[]`'e **ham id/scalar diff** yazar; `RuntimeContextService.Timeline.cs` bunları **read-time** katalog(cache)/dizin/relation ile görünen metne çözer (changes yoksa metadata yüklenmez). **Backend Odak'a 2 kez `--no-cache` deploy edildi (1 Haz ~08:01, healthy — `oc_live=200`).** ⚠️ **UI deploy + commit/push HENÜZ YAPILMADI** — kullanıcı UI'yi sonra deploy edecek; **PROF-VIEW + OC-PREV + OC-ACT UI değişiklikleri birlikte** deploy bekliyor. Lokal `dotnet build` + `nuxt build` temiz. ⚠️ **Deploy dersi:** kritik backend fix sonrası **`docker compose build --no-cache <servis>`** (`deploy-odak-apps.ps1 -NoCache`). **Sıradaki iş (konuşulacak):** UI deploy (PROF-VIEW + OC-PREV + OC-ACT birlikte) + tarayıcıda kontrol; ardından Widgets & Dashboards planlama. *(PROF-VIEW/OC-PREV/OC-CMT bölümleri tarihsel.)*
+>
+> **KALDIĞIMIZ YER (1 Haz ~07:30):** **PROF-VIEW** tamamlandı: profil ekranının ~13sn / ~18 isteklik yükü **tek toplu `GET /runtime/work-items/{id}/profile-view`** ucuna indirgendi (≈4sn). MO; profile + edit form + katalog + pool alan + **alan görünen değerleri** + **çözülmüş politika** + ilk sayfa timeline'ı **paralel** üretip tek pakette döner. Readonly form seçim listesi yüklemez, `OcPolicyPanel` `resolvedPolicy` ile fetch yapmaz, `useOcBoardListLookups` `catalogsSource`'tan beslenir. **Backend `--no-cache` deploy edildi (healthy — `gateway=200 ui=200 oc_live=200`).** Mevcut `profile`/`form`/`timeline` uçları korundu. *(tarihsel)*
 >
 > **KALDIĞIMIZ YER (31 May ~23:20):** Bu chat'te yapılanlar Odak'ta canlı: **BL-KB** (Keeper by-ids + Redis), **Faz-4/B** (RuntimeContextService partial + operationCoreService barrel — davranış birebir), **Faz-4/A** (Kanban kolonlarına "daha fazla yükle"). Tüm değişiklikler `main`'e push edildi (`f0f64cc`, `5c1d7fb`, `f98889b`, `90374ce`). **Birleşik manuel kontrol rehberi** oluşturuldu: [KONTROL_REHBERI_2026-05-31.md](KONTROL_REHBERI_2026-05-31.md). Kullanıcı sunucudaki (Odak) web UI üzerinden kontrole başladı ve **kritik bir config bug** buldu+düzeltti: **UI nginx'te `/api/operations/` proxy bloğu hiç yokmuş** → tüm OC runtime çağrıları (board liste POST, profil, workspace genel, form katalog enrichment) `try_files index.html`'e düşüyordu (405 / boş tab / ham id). `Mng.Ui/nginx.conf`'a `/api/operations/` → `mngoperations:5086/api/` bloğu eklendi, `mngui` deploy edildi (~23:10), doğrulandı (`/api/operations/v1/health/live` → 200 JSON). **nginx.conf fix'i commit+push edildi (`000e624`).** **Sıradaki:** (1) ✅ `nginx.conf` fix'i commit+push edildi; (2) kontrol rehberindeki maddeleri (board liste B/C/D, profil, NP-7, gruplar, Faz-4) sunucu UI'sinde tek tek doğrula; kullanıcı yeni gözlemler/bug'lar yazacak → birlikte fix. *(Aşağıdaki uzun "Kaldığımız yer" paragrafı önceki ara durumdur, tarihsel.)*
 >
 > **Kaldığımız yer (31 May, önceki):** Biriken backlog (F-T2/F-K, BLF-10, NP-7, BL-GRP, BO-5/6, BL-GRP-2) **`mngoperations`+`mngui` Odak'a deploy edildi** (31 May ~02:28, healthy — `gateway=200 ui=200`, SLA-1 smoke yeşil OCD-0065). Ardından **grup alan filtresi (BL-GRP-3)** de yapıldı ve `mngui` deploy edildi (31 May ~02:41, `ui=200`). Tüm biriken işler Odak'ta canlı; değişiklikler `main`'e **commit + push** edildi. Ardından **Keeper `by-ids` toplu uç + Redis profil cache (BL-KB)** yapıldı (User/Group `POST by-ids`; MO dizin servisleri tek istekte çözer, N+1 giderildi; Keeper'da `IDirectoryCache` Redis cache + CRUD invalidation) ve **`mngkeeper`+`mngoperations` Odak'a deploy edildi** (31 May ~03:04, healthy). Ardından **Faz-4 / dosya bölme (B)** kısmen yapıldı (davranış birebir aynı): `RuntimeContextService.cs` 1549→1015 satır + 3 `partial` dosya (MO build 0/0); `operationCoreService.ts` 2324→2025 satır, leaf domain'ler (notifications/rules/sla/schedules) `services/operationCore/` altına barrel ile taşındı (`nuxt build` temiz). Henüz commit/deploy **yapılmadı**. Sıradaki: kalan TS domain'leri (opsiyonel) ve/veya tablo sanallaştırma (ihtiyaç doğunca).
 
 **Ana plan:** [OC_UI_ADMIN_FAZ1_PLAN.md](../ui/OC_UI_ADMIN_FAZ1_PLAN.md) · **Perf detay:** [PERF_OPTIMIZATION.md](PERF_OPTIMIZATION.md) · **Bu oturum kontrol rehberi:** [PERF_KONTROL_REHBERI.md](PERF_KONTROL_REHBERI.md)
+
+---
+
+## OC-EDIT — Profil yerinde düzenleme + readonly etiket chip + skeleton + labels expand fix (1 Haz)
+
+Profil ekranı salt-okunur olmaktan çıkıp **yerinde düzenlenebilir** hale geldi; readonly etiketler renkli chip'e, açılış da skeleton panele kavuştu; `labels→op_tags` görünürlük bug'ı kökten çözüldü.
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **OC-EDIT-1** | ✅ | **Yerinde düzenleme** — `profile/index.vue`: header'da **Düzenle** (canEdit), `editMode` ile `OcDynamicForm` `readonly` toggle. `startFormEdit`/`cancelFormEdit` (snapshot `initialModel`), `collectFormChanges` diff → `buildUpdateWorkItemRequest`+`ocUpdateWorkItem` ile **yalnızca değişen alanlar** patch'lenir; `collectOcFormValidationIssues` ile validasyon (özet + alan hataları). Edit modunda transition butonları gizli; Kaydet/İptal header + form altında. |
+| **OC-EDIT-2** | ✅ | **Lookup reload** — `useOcDynamicFormLookups` `watch` bağımlılığına `options.readonly` eklendi: readonly profil edit'e geçince select/person/relation listeleri o anda yüklenir (readonly iken `reload()` erken dönüyordu). |
+| **OC-EDIT-3** | ✅ | **Liste edit butonu kaldırıldı** — `boards/[boardId]/index.vue` actions sütunundaki `mdi-pencil-outline` butonu + `openEditDialog` temizlendi (düzenleme artık profilden). |
+| **OC-EDIT-4** | ✅ | **Readonly etiket = renkli chip** — `OcDynamicFormField` `useReadonlyDisplay`'den tags çıkarıldı (artık düz metne düşmez); `OcTagSelector` `disabled` (profil readonly) iken combobox yerine **renkli `v-chip` listesi** render eder (`displayChips`=id→ad+renk; boşsa "—"). |
+| **OC-EDIT-5** | ✅ | **Açılış skeleton** — `profile/index.vue` `loading` sırasında boş ekran yerine sol(form alanları+tab chip)+sağ(SLA/policy) yerleşimini taklit eden `v-skeleton-loader` paneli + "Profil yükleniyor…"; i18n `operationCore.profile.loadingHint`. |
+| **OC-EDIT-6 (bug)** | ✅ | **labels→op_tags expand fix** — DG `GetById` varsayılanı `expand=true`; çekirdek `labels` (artık `op_tags` id tutuyor) eski `op_labels`'a expand edilince id'ler düşüyordu → readonly'de "—" + sonraki patch'te boş labels geri yazılıp **veri kaybı riski**. `IMngDataGatewayClient.GetByIdAsync` + `MngDataGatewayClient`'e `bool expand=true` param (`?expand=false` URL); `RuntimeContextService.LoadWorkItemAsync` + `WorkItemCommandService.LoadWorkItemAsync` **`expand:false`** ile çağrılır → ham id MO'da `op_tags` ile çözülür. Backend `--no-cache` deploy (`oc_live=200`); local dev (Odak backend proxy) ile doğrulandı. |
+
+**MO değişen:** `Interfaces/IMngDataGatewayClient.cs` (+`expand`), `Clients/MngDataGatewayClient.cs` (`?expand=false`), `Services/RuntimeContextService.cs` + `Services/WorkItemCommandService.cs` (`LoadWorkItemAsync` → `expand:false`).
+**UI değişen:** `pages/.../work-items/[id]/profile/index.vue` (editMode + skeleton), `composables/useOcDynamicFormLookups.ts` (readonly watch), `pages/.../boards/[boardId]/index.vue` (edit butonu kaldırıldı), `components/.../OcDynamicFormField.vue` (tags readonly çıkışı), `components/.../OcTagSelector.vue` (readonly chip), `utils/locales/{tr,en}.json` (`profile.edit.*` + `profile.loadingHint`).
+**Deploy:** MO build temiz · Nuxt build temiz · backend `--no-cache` deploy (expand fix) canlı · **UI deploy bekliyor** (PROF-VIEW+OC-PREV+OC-ACT+OC-TAGS+OC-EDIT birlikte).
+
+---
+
+## OC-TAGS — Workspace-kapsamlı etiket kataloğu (op_tags) (1 Haz)
+
+Pool `tags` alan tipi artık **workspace'e ait `op_tags` kataloğundan** beslenir. Kararlar: yeni `op_tags` dataset'i (op_labels değil) — pool `tags`'a adanmış, her kayıt **`workspaceId` zorunlu**; iş kaydı formunda **inline oluşturma** (yazıp Enter → o workspace'e kaydedilir); admin tarafında ayrı **"Etiketler"** sekmesi.
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **OC-TAGS-1** | ✅ | **DG dataset** — `op_tags` (`name` zorunlu, `workspaceId` zorunlu relation, `color`, `description`; index `idx_workspaceId` + unique `idx_workspaceId_name`). Generator `build-operationcore-datasets-draft.mjs`'e `buildOpTagsDataset()` + append; `setup-operation-core-datasets.ps1` `$order`'a `op_tags`. **Odak DG'ye provizyonlandı** (`op_tags OK`). |
+| **OC-TAGS-2** | ✅ | **Backend çözüm** — `OcDatasets.Tags="op_tags"`; `RuntimeContextService.ProfileView.cs` + `.Timeline.cs` `fieldType=='tags'` → `op_tags` (relation gibi `$in` ile id→ad). UI ham id görmez; PROF-VIEW/OC-ACT ile aynı kanal. |
+| **OC-TAGS-3** | ✅ | **UI servis/tip** — `services/operationCore/tags.ts` (`ocListTagsForWorkspace`/`ocCreateTag`/`ocUpdateTag`/`ocDeleteTag`), `OpTag` tipi, `OC_DATASETS.tags`, barrel export. |
+| **OC-TAGS-4** | ✅ | **Form widget** — `ocDynamicFormField.ts` `tags` ayrı widget; `OcTagSelector.vue` (`v-combobox`, çoklu chip, ad↔id eşleme, **inline create** → `ocCreateTag`). `OcDynamicFormField.vue` tags dalı + readonly'de fieldDisplay metni (lookup yok), `OcDynamicForm.vue` `workspaceId` geçer. |
+| **OC-TAGS-5** | ✅ | **Admin sekmesi** — `OcWorkspaceDefinitionsTagsTab.vue` (CRUD: ad+renk+açıklama), `useOcWorkspaceDefinitionTabs` keys + `workspace-definitions/index.vue` (ikon+render), tr/en i18n (`operationCore.tags.*`, `tabs.tags`). |
+| **OC-TAGS-6** | ✅ | **Seed** — OC Demo Workspace (`f414462a…`): Acil(error)/Donanım(warning)/Yazılım(info)/Ağ(primary)/Tekrarlayan(secondary). |
+| **OC-TAGS-7** | ✅ | **labels→op_tags birleştirme (bug fix)** — formdaki yerleşik "Etiketler" (çekirdek `labels`) alanı `op_labels`'ı okuyordu (boş) → kullanıcının `op_tags`'a tanımladığı etiketler görünmüyordu (i18n'de hem `labels` hem pool `tags` "Etiketler"). Çözüm: çekirdek `labels` artık **workspace `op_tags`** kullanır. Backend `CoreRelationDatasets["labels"]=op_tags` (ProfileView+Timeline). UI: `OC_CORE_RELATION_DATASET.labels='op_tags'`, `resolveOcDynamicFieldWidget` `labels`→`tags` widget (OcTagSelector, inline create), `useOcDynamicFormLookups` tags widget'larını relation yüklemesinden atlar. `op_labels` zaten boştu → veri kaybı yok. Backend `--no-cache` deploy (`oc_live=200`). **UI deploy bu fix için şart.** |
+
+**MO değişen:** `Domain/Constants/OcDatasets.cs`, `Services/RuntimeContextService.ProfileView.cs`, `Services/RuntimeContextService.Timeline.cs`.
+**UI değişen:** `services/operationCore/tags.ts` (yeni), `services/operationCoreService.ts` (`OC_DATASETS.tags`+export), `types/apps/operationCore.ts` (`OpTag`), `utils/ocDynamicFormField.ts`, `components/.../OcTagSelector.vue` (yeni), `components/.../OcDynamicFormField.vue`, `components/.../OcDynamicForm.vue`, `components/.../workspace-definitions/OcWorkspaceDefinitionsTagsTab.vue` (yeni), `composables/useOcWorkspaceDefinitionTabs.ts`, `pages/.../admin/workspace-definitions/index.vue`, `utils/locales/{tr,en}.json`.
+**Provizyon/script:** `docs/odak/operationcore/scripts/build-operationcore-datasets-draft.mjs` + `…/setup-operation-core-datasets.ps1` + regenerated `operationcore_datasets_phase1_draft_2026-05-26.json`.
+
+⚠️ **UI deploy bekliyor** (PROF-VIEW + OC-PREV + OC-ACT + OC-TAGS birlikte). Lokal build'ler temiz.
+
+---
+
+## OC-ACT — Aktivite alan değişiklik satırları (op_activities changes[]) (1 Haz)
+
+Aktivite sekmesi artık her güncelleme/durum geçişinde **alan bazlı değişiklikleri** (ör. `Öncelik: Düşük → Yüksek`, `Atanan: Ali → Veli`) kim/ne zaman bilgisiyle gösteriyor. **Ham id/scalar yazılır; id→ad çözümü MO'da (read-time) yapılır** (UI ham veri işlemez — PROF-VIEW felsefesiyle aynı). Kararlar: tüm alanlar (çekirdek + pool) izlenir; çözüm read-time; durum geçişi de `Durum: X → Y` satırı.
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **OC-ACT-1** | ✅ | **Yazım — ham diff** — `WorkItemCommandService.PatchAsync` `existing` vs `updated` farkını `CollectPatchFieldKeys(request)` alanlarında hesaplar; değişen her alan için `changes:[{field,from,to}]` (ham id/scalar) aktiviteye yazılır (`BuildChangeActivityExtra`/`AppendFieldChanges`/`NormalizeChangeValue`; değişiklik yoksa eklenmez, davranış korunur). `ApplyTransitionAsync` aktivitesine `{field:"stateId",from,to}` + geçişte düzenlenen dinamik alanlar eklenir. |
+| **OC-ACT-2** | ✅ | **Okuma — read-time çözüm** — `RuntimeContextService.Timeline.cs` `ResolveActivityChangesAsync`: changes içeren aktivite varsa form (etiket/tür) + pool (relationDatasetName) yüklenir; her alan kind'ine göre person/grup dizini ya da dataset (`ResolveRelationNamesAsync`, çekirdek katalog/relation + `typeId`→`op_work_item_types`) ile çözülür. `TimelineEntryDto.Changes` = `[{field,label,fieldType,fromDisplay,toDisplay}]`. **Perf:** changes yoksa metadata hiç yüklenmez (yorum yenilemede ek maliyet yok). |
+| **OC-ACT-3** | ✅ | **UI** — `OcTimelineChange` tipi + `OcTimelineEntry.changes`; `operationCoreService.mapTimelineEntry` `changes`/`Changes` map'ler. `profile/index.vue` Aktivite satırı: `entry.changes?.length` ise her satır **`Etiket: eski → yeni`** (üstü çizili eski + `mdi-arrow-right-thin` + yeni; boş → "—"); yoksa eski `text`'e düşer. |
+| **OC-ACT-4 (bug)** | ✅ | **Katalog alanları id gösteriyordu** — state/priority/type/board (`op_states`/`op_priorities`/`op_work_item_types`/`op_boards`) çözümü relation'larla aynı `ResolveRelationNamesAsync` (`$in` query ucu) üzerinden yapılıyordu; bu kanal **katalog dataset'leri için kayıt döndürmüyor** → ham id'ye düşüyordu (transition `Durum: guid → guid`). Düzeltme: katalog dataset'leri profil-view ile aynı **cache'li `GetCatalogListAsync`** yolundan çözülür (`ResolveChangeDatasetNamesAsync`/`ResolveCatalogNamesAsync`); relation alanlar eskisi gibi `$in`. Backend `--no-cache` redeploy (healthy, `oc_live=200`). |
+
+**MO değişen:** `Contracts/Runtime/ProfileRuntimeContext.cs` (`TimelineChangeDto` + `TimelineEntryDto.Changes`), `Services/WorkItemCommandService.cs` (diff yazımı + helper'lar), `Services/RuntimeContextService.cs` (`GetTimelineAsync` changes entegrasyonu), **yeni** `Services/RuntimeContextService.Timeline.cs` (read-time çözüm).
+**UI değişen:** `types/apps/operationCore.ts` (`OcTimelineChange`/`OcTimelineEntry.changes`), `services/operationCoreService.ts` (`mapTimelineChanges`), `pages/.../work-items/[id]/profile/index.vue` (aktivite satırı değişiklik render'ı).
+**Deploy:** MO build temiz (0/0) · Nuxt build temiz · backend `--no-cache` deploy (bu adım) · **UI deploy + commit/push kullanıcı isteyince** (PROF-VIEW + OC-PREV ile birlikte bekliyor).
+
+**Açık/ileriki:**
+- ⬜ Rule motorunun dolaylı değiştirdiği (patch'te olmayan) alanlar şu an izlenmiyor; gerekiyorsa eklenecek.
+- ⬜ Eski (changes'sız) aktiviteler eski `text` satırıyla görünür (geriye dönük dolum yok).
+- ⬜ Uzun metin (title/description) eski→yeni değerleri kırpılabilir; tarih alanları biçimlenebilir.
 
 ---
 
@@ -29,9 +98,56 @@ Profil ekranındaki tek "Aktivite & yorum" sekmesi **Detaylar | Yorumlar | Aktiv
 **Deploy:** MO build temiz · Nuxt build temiz · **`mngoperations` Odak'a `--no-cache` deploy (healthy, `oc_live=200`)** · `mngui` deploy + commit/push bu adımda.
 
 **Açık/ileriki:**
-- ⬜ **Ekler (Dosyalar) sekmesi — önizleme** (görsel/PDF/düz metin) — **sıradaki iş**.
-- ⬜ Aktivite sekmesinde alan değişiklik satırları (`Öncelik: Düşük → Yüksek`, kim/ne zaman) — `op_activities`'e `changes[]` yazımı.
+- ✅ **Ekler (Dosyalar) sekmesi — önizleme** (görsel/PDF/düz metin) → **OC-PREV** (aşağıda).
+- ✅ **Aktivite sekmesinde alan değişiklik satırları** (`Öncelik: Düşük → Yüksek`, kim/ne zaman) — `op_activities`'e `changes[]` yazımı → **OC-ACT** (aşağıda).
 - ⬜ Düzenlemede mention/ek değişikliği (şimdilik yalnız gövde güncelleniyor).
+
+---
+
+## OC-PREV — Ekler & yorum eklerinde inline önizleme + 2 bug fix (1 Haz)
+
+İş kaydı **Ekler** sekmesindeki ve **yorum eklerindeki** dosyalar artık ortak bir modalda inline önizlenebiliyor (görsel / PDF / düz metin). Önizlenemeyen tipler eskisi gibi yalnız indirilir. **UI-only; backend değişmedi** — mevcut auth'lu `/files/download` blob akışı yeniden kullanıldı.
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **OC-PREV-1** | ✅ | **Önizleme altyapısı** — `utils/ocAttachmentPreview.ts`: `previewKind(att)` (image/pdf/text/none, uzantı `fileExt`→ad sonu), boyut tavanları (görsel/PDF **25MB**, metin **2MB** üstü → indir), `previewMime(att)` (uzantı→MIME), `isPreviewable`. `operationCoreService.ocFetchAttachmentBlob(att)` (blob çekme; `ocDownloadAttachment` bunu yeniden kullanır). |
+| **OC-PREV-2** | ✅ | **Önizleme modalı** — `OcAttachmentPreviewDialog.vue` (`max-width 980`, scrollable, lazy blob). Görsel `<img>`, PDF `<iframe>`, metin `blob.text()`→`<pre>`. Üstte dosya adı + **İndir** + kapat. Object URL'ler kapanışta/yeni ekte `revokeObjectURL`. Profil: Ekler satırında **göz ikonu** + tıklanabilir ad; yorum eki chip'leri `previewOrDownload` (önizlenebilirse modal, değilse indir, ikon `mdi-file-eye-outline`). i18n `attachments.preview/previewUnavailable/previewError`. |
+| **OC-PREV-3 (bug)** | ✅ | **Yorum composer ek butonu görünmüyordu** — OC-CMT'te eklenen `allowAttachments?: boolean` prop'u, ana composer'a hiç geçilmediğinden Vue **boolean-cast** ile `false` oluyordu (`undefined` değil) → `attachmentsEnabled=false` → buton gizli. Düzeltme: `withDefaults(defineProps<…>(), { allowAttachments: true })`. Düzenleme composer'ları (`:allow-attachments="false"`) kapalı kalır. |
+| **OC-PREV-4 (bug)** | ✅ | **PDF/görsel önizleme boş + indiriyordu** — DG `/files/download` MinIO mime metadata yoksa `application/octet-stream` döndürüyor; iframe/img octet-stream blob URL'ini render etmeyip tarayıcı **indirme** olarak ele alıyor. Düzeltme: önizlemede blob, uzantı MIME'i ile yanlışsa `new Blob([blob], { type: mime })` ile yeniden sarılır (`application/pdf`, `image/*`). |
+
+**UI yeni:** `utils/ocAttachmentPreview.ts`, `components/apps/operation-core/OcAttachmentPreviewDialog.vue`.
+**UI değişen:** `services/operationCoreService.ts` (`ocFetchAttachmentBlob`), `pages/.../work-items/[id]/profile/index.vue` (Ekler göz ikonu + dialog + yorum chip `previewOrDownload`), `components/apps/operation-core/OcCommentComposer.vue` (`withDefaults` ek butonu fix), locale `tr/en` (`operationCore.profile.attachments.preview/previewUnavailable/previewError`).
+**Deploy:** Lokal `nuxt build` temiz (Server + Nitro built). **`mngui` deploy + commit/push bekliyor** (kullanıcı yerelde görsel+PDF önizlemeyi doğruladı).
+
+**Açık/ileriki:**
+- ⬜ Office (docx/xlsx) inline render, video/audio oynatıcı, sayfalı PDF kontrolü — ayrı tur (kapsam dışı bırakıldı).
+- ⬜ Çok büyük metin dosyalarında sanal kaydırma / kısmi yükleme (şimdilik 2MB tavanı → indir).
+
+---
+
+## PROF-VIEW — Profil tek toplu "profile-view" endpoint (performans) (1 Haz)
+
+Profil ekranı tek yüklemede ~13sn / **~18 istek** üretiyordu: MO'ya `form?mode=edit` + `profile` + `timeline` (3), DG'ye doğrudan `op_fields`×2, `op_states`, `op_priorities`, `op_work_item_types`×2, `op_boards`, `op_rules`, `op_sla_policies`, relation kayıtları×4, Keeper `user?page`×2. Kök neden: readonly form yine de tüm seçim listelerini yüklüyor; katalog/politika ayrı fetch; relation/person/grup adları UI'da çözülüyordu. **Çözüm:** tek toplu uç — tüm veri MO'da (iç ağda, paralel, cache'li) çözülüp tek seferde döner; readonly form lookup yapmaz; "önce id sonra isim" titremesi kalkar. **Plan:** `.cursor/plans/profil_tek_endpoint_performans_*.plan.md`.
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **PROF-VIEW-1** | ✅ | **DTO** — `Contracts/Runtime/ProfileRuntimeContext.cs`: `ProfileViewContext { Profile, Form, Catalogs(BoardCatalogsDto), Boards(id→ad), PoolFields(ham op_fields), FieldDisplays(key→metin), Policy(ResolvedPolicyDto), Timeline }` + `ResolvedPolicyDto`/`ResolvedSlaPolicyDto`/`ResolvedRuleDto`. |
+| **PROF-VIEW-2** | ✅ | **Servis** — `Services/RuntimeContextService.ProfileView.cs` (yeni partial): `GetProfileViewAsync` mevcut `GetProfileAsync` + `GetFormEditAsync` + `GetTimelineAsync(0,100)` + `BuildBoardCatalogsAsync` + politika + pool-alan çözümünü **`Task.WhenAll`** ile paralel çağırır. `boardId` adı metadata cache'ten. Davranış birebir; mevcut uçlar korundu. |
+| **PROF-VIEW-3** | ✅ | **FieldDisplays** — `BuildProfileFieldDisplaysAsync`: her form alanının çözülmüş görünen metni — state/priority/type→katalog adı, boardId→ad, person (çekirdek + **pool**, eksik id'ler `_personDirectory`'den), grup, **relation pool→ilgili kaydın adı** (dataset bazında `QueryPageAsync` `__dataId $in` ile batched). Scalarlar (text/number/date/bool) UI'da ham gösterilir (display üretilmez). |
+| **PROF-VIEW-4** | ✅ | **Politika çözümü MO'da** — `ResolveProfilePolicyAsync`: `op_rules`/`op_sla_policies` workspace filtresiyle MO'da çekilip filtrelenir (UI'ya tümü gitmez). `OcPolicyPanel`'daki `scopeMatches`/`matchedPolicy`/`applicableRules` ile **birebir** (snapshot id→direct/derived; type/priority kapsamı; rules board/type/state kapsamı + priority asc sıralama). |
+| **PROF-VIEW-5** | ✅ | **Controller** — `Controllers/RuntimeController.cs`: `GET work-items/{id}/profile-view` → `GetProfileViewAsync`. |
+| **PROF-VIEW-6** | ✅ | **UI servis** — `services/operationCoreService.ts`: `ocGetWorkItemProfileView(id)` → `OcWorkItemProfileView` (yeni tip + `OcResolvedPolicy`/`OcResolvedSlaPolicy`/`OcResolvedRule`); mevcut `mapWorkItemProfile`/`mapFormRuntimeContext`/`parseBoardCatalogs`/`mapOpField`/`mapTimelineEntry` yeniden kullanıldı. |
+| **PROF-VIEW-7** | ✅ | **Profil sayfası tek çağrı** — `profile/index.vue` `loadProfile` artık **tek** `ocGetWorkItemProfileView(id)`. Ayrı form/profile/poolFields/timeline fetch'leri kaldırıldı (timeline payload'dan; `loadTimeline` yalnız yorum CRUD sonrası yenileme). `catalogsRef` → `useOcBoardListLookups` (katalog fetch yok), `fieldDisplays` → `OcDynamicForm`, `resolvedPolicy` → `OcPolicyPanel`. |
+| **PROF-VIEW-8** | ✅ | **Readonly form lookup yapmaz** — `useOcDynamicFormLookups`'a `{ readonly: Ref }`; readonly'de `reload()` + person-picker senkronu kısa devre. `OcDynamicForm`/`OcDynamicFormField`: readonly select/person/grup alanları `fieldDisplays[key]` metniyle gösterilir (`fieldDisplay` prop'u); scalar alanlar değişmez. Yazılabilir (create/edit) mod aynı. |
+| **PROF-VIEW-9** | ✅ | **OcPolicyPanel fetch'siz** — yeni `resolvedPolicy` prop'u verilince hiç fetch yapmaz; şablon birleşik `PolicyView`/`RuleView` üzerinden render eder (workspace fetch yolu create modal/diğer kullanımlar için geride kalır). |
+
+**MO yeni:** `Infrastructure/.../Services/RuntimeContextService.ProfileView.cs`. **Değişen:** `Contracts/Runtime/ProfileRuntimeContext.cs` (ProfileViewContext + policy DTO'ları), `Interfaces/IRuntimeContextService.cs` (`GetProfileViewAsync`), `Presentation/.../Controllers/RuntimeController.cs` (uç).
+**UI değişen:** `services/operationCoreService.ts` (`ocGetWorkItemProfileView` + mapping), `types/apps/operationCore.ts` (`OcWorkItemProfileView`/`OcResolvedPolicy`/…), `pages/.../work-items/[id]/profile/index.vue` (tek çağrı + prop geçişleri), `composables/useOcDynamicFormLookups.ts` (readonly switch), `components/.../OcDynamicForm.vue` + `OcDynamicFormField.vue` (`fieldDisplays`/`fieldDisplay` + readonly metin dalı), `components/.../OcPolicyPanel.vue` (`resolvedPolicy`). **Script:** `scripts/odak/deploy-odak-apps.ps1` (`-NoCache` switch + `oc_live` sağlık curl'ü).
+**Deploy:** Lokal `dotnet build` (MO) + `nuxt build` (UI) temiz. **`mngoperations` Odak'a `--no-cache` deploy edildi (1 Haz ~07:28, healthy — `gateway=200 ui=200 oc_live=200`).** ⚠️ **`mngui` deploy + commit/push BEKLİYOR** (kullanıcı UI'yi sonra deploy edecek; OC-PREV ile birlikte alınacak).
+
+**Açık/ileriki:**
+- ⬜ UI deploy sonrası tarayıcıda profil davranış-koruyan kontrol + **network istek sayısı ölçümü** (öncesi/sonrası; `localStorage.OC_PERF`).
+- ⬜ `fieldDisplays` ilk sürümde düz metin; gerekiyorsa katalog renk/ikon (sidebar zaten `catalogs` ile alıyor).
 
 ---
 
@@ -396,4 +512,6 @@ location /api/operations/ {
 [✓] Board silme ilişki guard'ı (BO-5) + edit alan temizleme (BO-6) — Odak'ta canlı (31 May)
 [✓] Performans optimizasyonu (PERF): profil ~%30 hızlanma + UI yapısal kazanımlar — Odak'ta canlı, main'e merge
 [✓] Keeper by-ids toplu uç + Redis profil cache (BL-KB): person/grup dizin çözümü tek istekte (N+1 giderildi) + Keeper Redis cache (CRUD invalidation) — Odak'ta canlı (31 May, mngkeeper+mngoperations healthy)
+[✓] OC-CMT: Yorumlar/Aktivite tab ayrımı + TipTap zengin editör + yazar adı çözümü + düzenle/sil — Odak'ta canlı (1 Haz)
+[~] OC-PREV: Ekler & yorum eklerinde inline önizleme (görsel/PDF/metin) + composer ek butonu fix + PDF MIME fix — lokal build temiz, DEPLOY BEKLİYOR (1 Haz)
 ```

@@ -3457,6 +3457,15 @@
       "title": "Work item profile",
       "readonlyHint": "Read-only view of the selected form.",
       "readonlyChip": "Read-only",
+      "loadingHint": "Loading profile…",
+      "edit": {
+        "edit": "Edit",
+        "save": "Save",
+        "cancel": "Cancel",
+        "hint": "Edit the fields and click Save.",
+        "editingChip": "Editing",
+        "saveError": "Could not save changes."
+      },
       "loadError": "Could not load the work item.",
       "sprint3Hint": "Profile runtime will open here in Sprint 3.",
       "workItemId": "Record",
@@ -3503,6 +3512,9 @@
         "empty": "No attachments yet.",
         "download": "Download",
         "remove": "Remove",
+        "preview": "Preview",
+        "previewUnavailable": "No preview available for this file type. Download it to open.",
+        "previewError": "Could not preview the file.",
         "uploadError": "Could not upload the file.",
         "downloadError": "Could not download the file.",
         "removeError": "Could not remove the attachment."
@@ -3843,6 +3855,28 @@
         "placeholder": "Field pool tab — table and CRUD coming next."
       }
     },
+    "tags": {
+      "catalogTitle": "Workspace tags",
+      "catalogSubtitle": "Tag catalog for this workspace (op_tags). Tags are selected in the «tags» fields of work item forms.",
+      "empty": "No tags for this workspace yet. Add your first tag.",
+      "add": "Add tag",
+      "addTitle": "New tag",
+      "editTitle": "Edit tag",
+      "name": "Tag name",
+      "color": "Color",
+      "noColor": "No color",
+      "description": "Description",
+      "save": "Save",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteTitle": "Delete tag",
+      "deleteConfirm": "Delete tag «{name}»? Work items using this tag may show its reference as a raw id.",
+      "loadError": "Failed to load tags.",
+      "saveError": "Failed to save tag (a tag with the same name may exist).",
+      "deleteError": "Failed to delete tag.",
+      "fieldHint": "Pick from existing tags, or type and press Enter to create a new one."
+    },
     "workspaceDefinitions": {
       "pageSubtitle": "General settings, type/field catalog, state flows, forms, and boards for the selected workspace. Records are updated via DataGateway.",
       "saveSuccess": "Saved successfully.",
@@ -3860,6 +3894,7 @@
       "tabs": {
         "general": "General",
         "values": "Values",
+        "tags": "Tags",
         "flows": "State flows",
         "forms": "Forms",
         "boards": "Boards",

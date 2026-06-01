@@ -169,6 +169,39 @@ function fieldDatetime(name, title, opts = {}) {
   };
 }
 
+const OP_TAGS = 'op_tags';
+
+function buildOpTagsDataset() {
+  return {
+    __dataId: null,
+    name: OP_TAGS,
+    description: 'Operational Core - Workspace tags (etiket kataloğu; her kayıt workspaceId taşır)',
+    category: OPERATION_CORE_CATEGORY_ID,
+    forceSchema: false,
+    logging: 'self',
+    publish_mode: 'none',
+    fields: [
+      fieldText('name', 'Etiket adı', { mandatory: true }),
+      fieldRelation('workspaceId', 'Workspace', 'op_workspaces', { mandatory: true }),
+      fieldText('color', 'Renk (tema anahtarı)'),
+      fieldText('description', 'Açıklama'),
+    ],
+    indexList: [
+      {
+        name: 'idx_workspaceId',
+        fields: { workspaceId: 1 },
+        unique: false,
+      },
+      {
+        name: 'idx_workspaceId_name',
+        fields: { workspaceId: 1, name: 1 },
+        unique: true,
+      },
+    ],
+    queries: [],
+  };
+}
+
 const OP_WORK_ITEM_SCHEDULES = 'op_work_item_schedules';
 
 function buildOpWorkItemSchedulesDataset() {
@@ -366,6 +399,9 @@ const datasets = JSON.parse(raw);
 const patched = datasets.map(patchDataset);
 if (!patched.some((d) => d.name === OP_WORK_ITEM_SCHEDULES)) {
   patched.push(buildOpWorkItemSchedulesDataset());
+}
+if (!patched.some((d) => d.name === OP_TAGS)) {
+  patched.push(buildOpTagsDataset());
 }
 fs.writeFileSync(outPath, JSON.stringify(patched, null, 2) + '\n', 'utf8');
 console.log(`Wrote ${patched.length} datasets -> ${outPath}`);
