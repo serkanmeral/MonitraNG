@@ -350,27 +350,21 @@ $slaPolicyId = Find-OrCreate -Collection "op_sla_policies" -Filter "name:eq:$sla
 # --- 11. Dashboard ---
 Write-Host "[11] op_dashboards..." -ForegroundColor Yellow
 $dashboardName = "$demoTag Workspace Dashboard"
-$dashboardId = Find-OrCreate -Collection "op_dashboards" -Filter "name:eq:$dashboardName" -Label "Dashboard" -Body @{
-    name        = $dashboardName
-    description = "Operation Core Faz 1 demo landing dashboard"
-    workspaceId = $workspaceId
-    scope       = "workspace"
-    isDefault   = $true
-    isActive    = $true
-    layout      = @{
-        type = "rows"
-        rows = @(
-            @{ cols = @(
-                @{ widgetId = "open_count"; span = 12; spanMd = 4; spanLg = 3 },
-                @{ widgetId = "in_progress_count"; span = 12; spanMd = 4; spanLg = 3 },
-                @{ widgetId = "sla_response_breach"; span = 12; spanMd = 4; spanLg = 3 }
-            ) },
-            @{ cols = @(
-                @{ widgetId = "my_assigned"; span = 12 }
-            ) }
-        )
-    }
-    widgets     = @(
+$dashboardLayout = @{
+    type = "rows"
+    rows = @(
+        @{ cols = @(
+            @{ widgetId = "open_count"; span = 12; spanMd = 4; spanLg = 3 },
+            @{ widgetId = "in_progress_count"; span = 12; spanMd = 4; spanLg = 3 },
+            @{ widgetId = "sla_response_breach"; span = 12; spanMd = 4; spanLg = 3 }
+        ) },
+        @{ cols = @(
+            @{ widgetId = "by_priority"; span = 12; spanMd = 6 },
+            @{ widgetId = "my_assigned"; span = 12; spanMd = 6 }
+        ) }
+    )
+}
+$dashboardWidgets = @(
         @{
             key       = "open_count"
             type      = "summaryCard"
@@ -417,8 +411,42 @@ $dashboardId = Find-OrCreate -Collection "op_dashboards" -Filter "name:eq:$dashb
                 asOf        = "{{asOf}}"
             }
             take = 100
+        },
+        @{
+            key       = "by_priority"
+            type      = "chart"
+            title     = "Acik islerin oncelige gore dagilimi"
+            chartType = "donut"
+            groupBy   = "priorityId"
+            dataset   = "op_work_items"
+            queryKey  = "wi_by_workspace_and_state"
+            parameters = @{
+                workspaceId = $workspaceId
+                stateId     = $stateOpenId
+            }
         }
-    )
+)
+
+$dashboardBody = @{
+    name        = $dashboardName
+    description = "Operation Core Faz 1 demo landing dashboard"
+    workspaceId = $workspaceId
+    scope       = "workspace"
+    isDefault   = $true
+    isActive    = $true
+    layout      = $dashboardLayout
+    widgets     = $dashboardWidgets
+}
+
+$dashboardId = Find-OrCreate -Collection "op_dashboards" -Filter "name:eq:$dashboardName" -Label "Dashboard" -Body $dashboardBody
+
+# Find-OrCreate mevcut kaydi SKIP eder; yeni layout/widget setini (chart widget dahil) PUT ile senkronla.
+try {
+    Invoke-DgPut -Collection "op_dashboards" -Id $dashboardId -Body $dashboardBody | Out-Null
+    Write-Host "  SYNC: dashboard layout+widgets guncellendi ($dashboardId)" -ForegroundColor Green
+}
+catch {
+    Write-Host "  WARN: dashboard PUT sync atlandi: $($_.Exception.Message)" -ForegroundColor DarkYellow
 }
 
 # --- 12. Notification policies ---

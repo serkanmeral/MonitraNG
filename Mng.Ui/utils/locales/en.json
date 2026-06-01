@@ -3416,6 +3416,7 @@
       "emptyWidget": "No records found.",
       "widgetError": "Failed to load widget data.",
       "chartSoon": "Chart coming soon",
+      "unassigned": "Unassigned",
       "unknownWidget": "Unknown widget type: {type}"
     },
     "board": {

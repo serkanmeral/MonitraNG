@@ -442,6 +442,12 @@ export interface OcColumnItemsState {
 
 // ----- Dashboards (D-A) -----
 
+/** Chart agregasyon kovası — key = ham id/değer (catalog/person ile çözülür), count = kayıt sayısı. */
+export interface OcDashboardBucket {
+  key?: string | null;
+  count: number;
+}
+
 /** Tek widget'ın çalıştırma sonucu (MO server-side). */
 export interface OcDashboardWidgetExecution {
   success: boolean;
@@ -451,6 +457,8 @@ export interface OcDashboardWidgetExecution {
   skip: number;
   take: number;
   items: OcWorkItemCard[];
+  /** Chart widget'ları için server-side agregasyon (tam sonuç kümesi). Diğer tiplerde boş. */
+  aggregation: OcDashboardBucket[];
   executedAt?: string | null;
 }
 
@@ -462,6 +470,10 @@ export interface OcDashboardWidget {
   title?: string | null;
   dataset?: string | null;
   queryKey?: string | null;
+  /** Chart: 'bar' | 'pie' | 'donut' | 'line'. */
+  chartType?: string | null;
+  /** Chart agregasyon alanı: 'stateId' | 'priorityId' | 'typeId' | 'assignee'. */
+  groupBy?: string | null;
   resolvedParameters?: Record<string, unknown> | null;
   execution?: OcDashboardWidgetExecution | null;
 }

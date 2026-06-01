@@ -32,6 +32,13 @@ public sealed class DashboardWidgetRuntimeDto
     public string? Title { get; init; }
     public string? Dataset { get; init; }
     public string? QueryKey { get; init; }
+
+    /// <summary>Chart widget'ları için: 'bar' | 'pie' | 'donut' | 'line'. Diğer tiplerde null.</summary>
+    public string? ChartType { get; init; }
+
+    /// <summary>Chart agregasyon alanı: 'stateId' | 'priorityId' | 'typeId' | 'assignee'. Diğer tiplerde null.</summary>
+    public string? GroupBy { get; init; }
+
     public IReadOnlyDictionary<string, object?>? ResolvedParameters { get; init; }
     public DashboardWidgetExecutionDto? Execution { get; init; }
 }
@@ -45,5 +52,17 @@ public sealed class DashboardWidgetExecutionDto
     public int Skip { get; init; }
     public int Take { get; init; }
     public IReadOnlyList<WorkItemCardDto> Items { get; init; } = Array.Empty<WorkItemCardDto>();
+
+    /// <summary>Chart widget'ları için server-side agregasyon (tam sonuç kümesi groupBy'a göre gruplanır). Diğer tiplerde boş.</summary>
+    public IReadOnlyList<DashboardAggregationBucketDto> Aggregation { get; init; }
+        = Array.Empty<DashboardAggregationBucketDto>();
+
     public DateTime ExecutedAt { get; init; }
+}
+
+/// <summary>Chart agregasyon kovası — Key = ham id/değer (catalog/person ile UI'da çözülür), Count = kayıt sayısı.</summary>
+public sealed class DashboardAggregationBucketDto
+{
+    public string? Key { get; init; }
+    public int Count { get; init; }
 }

@@ -918,6 +918,41 @@ public partial class RuntimeContextService : IRuntimeContextService
         QueryResolveContext resolveContext,
         CancellationToken cancellationToken)
     {
+        var takeClamped = Math.Clamp(take, 1, 200);
+        var skipClamped = Math.Max(0, skip);
+
+        var cards = await ExecuteQueryCardsAsync(queryKey, dataset, rawParams, token, resolveContext, cancellationToken);
+        var page = cards.Skip(skipClamped).Take(takeClamped).ToList();
+
+        var people = await ResolvePeopleForCardsAsync(page, token, cancellationToken);
+        var groups = await ResolveGroupsForCardsAsync(page, token, cancellationToken);
+
+        return new QueryExecuteResponse
+        {
+            Dataset = dataset,
+            QueryKey = queryKey,
+            Items = page,
+            Skip = skipClamped,
+            Take = takeClamped,
+            Total = cards.Count,
+            People = people,
+            Groups = groups
+        };
+    }
+
+    /// <summary>
+    /// Named query'yi çalıştırıp <b>tam</b> kart kümesini döner (sayfalama/zenginleştirme yapmaz).
+    /// İzin doğrulaması + DG sorgusu + kart eşlemesi paylaşılır; <see cref="ExecuteQueryCoreAsync"/> (sayfalı)
+    /// ve dashboard chart agregasyonu (tam küme) aynı çekirdeği kullanır.
+    /// </summary>
+    private async Task<IReadOnlyList<WorkItemCardDto>> ExecuteQueryCardsAsync(
+        string queryKey,
+        string dataset,
+        IReadOnlyDictionary<string, object?> rawParams,
+        string token,
+        QueryResolveContext resolveContext,
+        CancellationToken cancellationToken)
+    {
         if (!OcQueries.IsAllowed(dataset, queryKey))
         {
             throw new OperationCoreException(
@@ -927,10 +962,7 @@ public partial class RuntimeContextService : IRuntimeContextService
                 400);
         }
 
-        var takeClamped = Math.Clamp(take, 1, 200);
-        var skipClamped = Math.Max(0, skip);
         var mergedParams = new Dictionary<string, object?>(rawParams, StringComparer.OrdinalIgnoreCase);
-
         var resolved = QueryParameterResolver.Resolve(mergedParams, resolveContext);
         var workspaceId = resolved.TryGetValue("workspaceId", out var ws) ? ws?.ToString() : resolveContext.WorkspaceId;
         var boardId = resolved.TryGetValue("boardId", out var b) ? b?.ToString() : resolveContext.BoardId;
@@ -948,23 +980,7 @@ public partial class RuntimeContextService : IRuntimeContextService
         }
 
         var rows = await _dg.ExecuteQueryAsync(dataset, queryKey, resolved, token, cancellationToken);
-        var cards = rows.Select(MapWorkItemCard).ToList();
-        var page = cards.Skip(skipClamped).Take(takeClamped).ToList();
-
-        var people = await ResolvePeopleForCardsAsync(page, token, cancellationToken);
-        var groups = await ResolveGroupsForCardsAsync(page, token, cancellationToken);
-
-        return new QueryExecuteResponse
-        {
-            Dataset = dataset,
-            QueryKey = queryKey,
-            Items = page,
-            Skip = skipClamped,
-            Take = takeClamped,
-            Total = cards.Count,
-            People = people,
-            Groups = groups
-        };
+        return rows.Select(MapWorkItemCard).ToList();
     }
 
     /// <summary>

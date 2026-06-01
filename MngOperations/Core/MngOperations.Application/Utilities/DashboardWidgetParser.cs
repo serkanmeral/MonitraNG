@@ -14,6 +14,12 @@ public sealed class DashboardWidgetDefinition
     public int Take { get; init; } = 50;
     public int Skip { get; init; }
     public bool ExecuteOnLoad { get; init; } = true;
+
+    /// <summary>Chart widget'ları için: 'bar' | 'pie' | 'donut' | 'line'.</summary>
+    public string? ChartType { get; init; }
+
+    /// <summary>Chart agregasyon alanı: 'stateId' | 'priorityId' | 'typeId' | 'assignee'.</summary>
+    public string? GroupBy { get; init; }
 }
 
 public static class DashboardWidgetParser
@@ -52,6 +58,17 @@ public static class DashboardWidgetParser
 
         var title = ReadString(item, "title") ?? ReadString(item, "name");
 
+        // Chart meta: önce top-level, sonra "config" objesi.
+        var chartType = ReadString(item, "chartType");
+        var groupBy = ReadString(item, "groupBy");
+        if ((chartType == null || groupBy == null)
+            && item.TryGetProperty("config", out var config)
+            && config.ValueKind == JsonValueKind.Object)
+        {
+            chartType ??= ReadString(config, "chartType");
+            groupBy ??= ReadString(config, "groupBy");
+        }
+
         string? dataset = null;
         string? queryKey = null;
         IReadOnlyDictionary<string, object?> parameters = new Dictionary<string, object?>();
@@ -85,7 +102,9 @@ public static class DashboardWidgetParser
             Parameters = parameters,
             Take = take,
             Skip = skip,
-            ExecuteOnLoad = executeOnLoad
+            ExecuteOnLoad = executeOnLoad,
+            ChartType = chartType,
+            GroupBy = groupBy
         };
     }
 

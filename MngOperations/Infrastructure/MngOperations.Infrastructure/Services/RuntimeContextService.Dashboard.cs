@@ -91,6 +91,8 @@ public partial class RuntimeContextService
         string token,
         CancellationToken cancellationToken)
     {
+        var isChart = definition.WidgetType.Equals("chart", StringComparison.OrdinalIgnoreCase);
+
         if (!definition.ExecuteOnLoad
             || string.IsNullOrWhiteSpace(definition.QueryKey)
             || !IsQueryWidgetType(definition.WidgetType))
@@ -101,7 +103,9 @@ public partial class RuntimeContextService
                 WidgetType = definition.WidgetType,
                 Title = definition.Title,
                 Dataset = definition.Dataset,
-                QueryKey = definition.QueryKey
+                QueryKey = definition.QueryKey,
+                ChartType = isChart ? definition.ChartType : null,
+                GroupBy = isChart ? definition.GroupBy : null
             };
         }
 
@@ -114,6 +118,39 @@ public partial class RuntimeContextService
 
         try
         {
+            // Chart: tam sonuç kümesini groupBy'a göre server-side gruplar (doğru sayım); item listesi döndürmez.
+            if (isChart)
+            {
+                var cards = await ExecuteQueryCardsAsync(
+                    definition.QueryKey!,
+                    definition.Dataset,
+                    rawParams,
+                    token,
+                    resolveContext,
+                    cancellationToken);
+
+                var buckets = AggregateCards(cards, definition.GroupBy);
+
+                return new DashboardWidgetRuntimeDto
+                {
+                    Key = definition.Key,
+                    WidgetType = definition.WidgetType,
+                    Title = definition.Title,
+                    Dataset = definition.Dataset,
+                    QueryKey = definition.QueryKey,
+                    ChartType = definition.ChartType,
+                    GroupBy = definition.GroupBy,
+                    ResolvedParameters = resolved,
+                    Execution = new DashboardWidgetExecutionDto
+                    {
+                        Success = true,
+                        Total = cards.Count,
+                        Aggregation = buckets,
+                        ExecutedAt = executedAt
+                    }
+                };
+            }
+
             var take = definition.WidgetType.Equals("summaryCard", StringComparison.OrdinalIgnoreCase)
                 ? Math.Clamp(definition.Take, 1, 200)
                 : Math.Clamp(definition.Take, 1, 50);
@@ -163,6 +200,8 @@ public partial class RuntimeContextService
                 Title = definition.Title,
                 Dataset = definition.Dataset,
                 QueryKey = definition.QueryKey,
+                ChartType = isChart ? definition.ChartType : null,
+                GroupBy = isChart ? definition.GroupBy : null,
                 ResolvedParameters = resolved,
                 Execution = new DashboardWidgetExecutionDto
                 {
@@ -184,6 +223,8 @@ public partial class RuntimeContextService
                 Title = definition.Title,
                 Dataset = definition.Dataset,
                 QueryKey = definition.QueryKey,
+                ChartType = isChart ? definition.ChartType : null,
+                GroupBy = isChart ? definition.GroupBy : null,
                 ResolvedParameters = resolved,
                 Execution = new DashboardWidgetExecutionDto
                 {
@@ -200,4 +241,45 @@ public partial class RuntimeContextService
         widgetType.Equals("summaryCard", StringComparison.OrdinalIgnoreCase)
         || widgetType.Equals("list", StringComparison.OrdinalIgnoreCase)
         || widgetType.Equals("chart", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Chart agregasyonu — tam kart kümesini <paramref name="groupBy"/> alanına göre gruplar (sayım).
+    /// Desteklenen alanlar: stateId/priorityId/typeId/assignee (varsayılan stateId). Karşılaşma sırası korunur;
+    /// boş değerler tek "null" kovasında toplanır. Etiket/renk çözümü UI'da catalog/person ile yapılır.
+    /// </summary>
+    private static IReadOnlyList<DashboardAggregationBucketDto> AggregateCards(
+        IReadOnlyList<WorkItemCardDto> cards,
+        string? groupBy)
+    {
+        var field = string.IsNullOrWhiteSpace(groupBy) ? "stateid" : groupBy.Trim().ToLowerInvariant();
+        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        var order = new List<string>();
+        const string noneKey = "\u0000none";
+
+        foreach (var c in cards)
+        {
+            var raw = field switch
+            {
+                "priorityid" => c.PriorityId,
+                "typeid" => c.TypeId,
+                "assignee" => c.Assignee,
+                _ => c.StateId
+            };
+            var key = string.IsNullOrWhiteSpace(raw) ? noneKey : raw;
+            if (!counts.ContainsKey(key))
+            {
+                counts[key] = 0;
+                order.Add(key);
+            }
+            counts[key]++;
+        }
+
+        return order
+            .Select(k => new DashboardAggregationBucketDto
+            {
+                Key = k == noneKey ? null : k,
+                Count = counts[k]
+            })
+            .ToList();
+    }
 }

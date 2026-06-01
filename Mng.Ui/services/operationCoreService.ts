@@ -2095,6 +2095,7 @@ function mapDashboardWidgetExecution(raw: unknown): OcDashboardWidgetExecution |
   if (!raw || typeof raw !== 'object') return null;
   const r = raw as Record<string, unknown>;
   const items = r.items ?? r.Items;
+  const agg = r.aggregation ?? r.Aggregation;
   return {
     success: Boolean(r.success ?? r.Success ?? false),
     errorCode: pickStr(r, 'errorCode', 'ErrorCode') ?? null,
@@ -2104,6 +2105,15 @@ function mapDashboardWidgetExecution(raw: unknown): OcDashboardWidgetExecution |
     take: Number(r.take ?? r.Take ?? 0),
     items: Array.isArray(items)
       ? items.map((i) => mapWorkItemCard(i as Record<string, unknown>)).filter((c) => c.id)
+      : [],
+    aggregation: Array.isArray(agg)
+      ? agg.map((b) => {
+          const o = b as Record<string, unknown>;
+          return {
+            key: (o.key ?? o.Key ?? null) as string | null,
+            count: Number(o.count ?? o.Count ?? 0),
+          };
+        })
       : [],
     executedAt: pickStr(r, 'executedAt', 'ExecutedAt') ?? null,
   };
@@ -2116,6 +2126,8 @@ function mapDashboardWidget(raw: Record<string, unknown>): OcDashboardWidget {
     title: pickStr(raw, 'title', 'Title') ?? null,
     dataset: pickStr(raw, 'dataset', 'Dataset') ?? null,
     queryKey: pickStr(raw, 'queryKey', 'QueryKey') ?? null,
+    chartType: pickStr(raw, 'chartType', 'ChartType') ?? null,
+    groupBy: pickStr(raw, 'groupBy', 'GroupBy') ?? null,
     resolvedParameters: (raw.resolvedParameters ?? raw.ResolvedParameters ?? null) as
       | Record<string, unknown>
       | null,

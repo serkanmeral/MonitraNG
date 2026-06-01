@@ -3429,6 +3429,7 @@
       "emptyWidget": "Kayıt bulunamadı.",
       "widgetError": "Widget verisi alınamadı.",
       "chartSoon": "Grafik yakında",
+      "unassigned": "Atanmamış",
       "unknownWidget": "Bilinmeyen widget tipi: {type}"
     },
     "board": {
