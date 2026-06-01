@@ -78,6 +78,13 @@ services:
       # perf/oc-optimization ölçüm bayrağı (flag-gated; ölçüm için 'true' yapılır, üretimde kapalı).
       - MngOperationsSettings__PerfDiagnostics=false
 
+  mngdocument:
+    ports:
+      - "5095:5095"
+    environment:
+      - Jwt__Authority=http://keycloak:8080/keycloak/realms/monitra
+      - MngDocumentSettings__OpenApiServerPath=http://192.168.20.20:5040/documents
+
   mngadmin:
     ports:
       - "5080:5080"

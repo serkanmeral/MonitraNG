@@ -1,0 +1,7 @@
+{
+  "__dataId": "b2f1c0a4-9d3e-4a87-bf21-7c5e9a0d1e34",
+  "_comment": "__dataId dokumantasyon icin; setup script DG'den gercek category dataId cozer",
+  "categoryName": "DocumentIntelligenceDatasets",
+  "categoryDescription": "Document Intelligence (DM) — MngDocument kaynak agaci, markdown, dosya metadata ve versiyon dataset'leri (dm_*)",
+  "isSystemCategory": false
+}

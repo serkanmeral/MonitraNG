@@ -1,0 +1,270 @@
+[
+  {
+    "__dataId": null,
+    "name": "dm_resources",
+    "description": "Document Intelligence - Kaynak agaci (folder | markdown | file). Markdown icerik content alaninda (Mongo); yuklenen dosya binary'si DG file alani -> MinIO.",
+    "category": "b2f1c0a4-9d3e-4a87-bf21-7c5e9a0d1e34",
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "type",
+        "title": "Kaynak tipi",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "parentId",
+        "title": "Ust klasor id",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "ancestorIds",
+        "title": "Ata klasor id zinciri",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Ad",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "title",
+        "title": "Baslik",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Aciklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "tags",
+        "title": "Etiketler",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "content",
+        "title": "Markdown icerik",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "contentType",
+        "title": "Icerik tipi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "mimeType",
+        "title": "MIME tipi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "extension",
+        "title": "Uzanti",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "size",
+        "title": "Boyut (byte)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "file",
+        "name": "file",
+        "title": "Yuklenen dosya",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "currentVersionNumber",
+        "title": "Guncel surum",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_parentId",
+        "fields": {
+          "parentId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_ancestorIds",
+        "fields": {
+          "ancestorIds": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_type",
+        "fields": {
+          "type": 1
+        },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "dm_resource_versions",
+    "description": "Document Intelligence - Kaynak surum kayitlari. Faz 1'de yazma odakli (her kayit v1); UI/geri yukleme sonraki faz.",
+    "category": "b2f1c0a4-9d3e-4a87-bf21-7c5e9a0d1e34",
+    "forceSchema": false,
+    "logging": "none",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "resourceId",
+        "title": "Kaynak id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "versionNumber",
+        "title": "Surum no",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "changeNote",
+        "title": "Degisiklik notu",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "contentSnapshot",
+        "title": "Markdown icerik anlik kopyasi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "filePathSnapshot",
+        "title": "Dosya path anlik kopyasi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "size",
+        "title": "Boyut",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "mimeType",
+        "title": "MIME tipi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_resourceId",
+        "fields": {
+          "resourceId": 1
+        },
+        "unique": false
+      }
+    ]
+  }
+]

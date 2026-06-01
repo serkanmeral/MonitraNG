@@ -855,6 +855,142 @@ export function fetchFromOperations(
   });
 }
 
+// MngDocument API (gateway: /documents/api/v1)
+export function fetchFromDocuments(
+  url: string,
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE" = "GET",
+  body?: unknown,
+  headers: Record<string, string> = {}
+): Promise<unknown> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const authStore = useAuthStore();
+      try {
+        await authStore.ensureValidToken();
+      } catch {
+        // Sunucu 401 dönebilir
+      }
+
+      const token = getAccessToken();
+      if (!token) {
+        throw new Error("Access token bulunamadı. Lütfen tekrar giriş yapın.");
+      }
+
+      const [pathPart, queryPart] = url.split("?");
+      const cleanPath = pathPart.startsWith("/") ? pathPart : `/${pathPart}`;
+
+      let serverPath = cleanPath;
+      if (serverPath.startsWith("/api/v1/")) {
+        serverPath = serverPath.replace(/^\/api\/v1\//, "v1/");
+      } else if (serverPath.startsWith("/api/")) {
+        serverPath = serverPath.replace(/^\/api\//, "");
+      } else if (serverPath.startsWith("/")) {
+        serverPath = serverPath.substring(1);
+      }
+
+      const fullUrl = queryPart ? `/api/documents/${serverPath}?${queryPart}` : `/api/documents/${serverPath}`;
+
+      if (method === "DELETE") {
+        try {
+          const rawResponse = await $fetch.raw(fullUrl, {
+            method,
+            headers: { Authorization: `Bearer ${token}`, ...headers },
+            ...(body && { body }),
+          });
+          if (rawResponse.status === 204) {
+            resolve({ success: true, statusCode: 204 });
+            return;
+          }
+          resolve(rawResponse._data);
+          return;
+        } catch (fetchError: any) {
+          if (fetchError.statusCode === 204 || fetchError.response?.status === 204) {
+            resolve({ success: true, statusCode: 204 });
+            return;
+          }
+          throw fetchError;
+        }
+      }
+
+      const response = await $fetch(fullUrl, {
+        method,
+        headers: { Authorization: `Bearer ${token}`, ...headers },
+        ...(body && { body }),
+      });
+      resolve(response);
+    } catch (error: any) {
+      if (error.statusCode === 401 || error.status === 401) {
+        const authStore = useAuthStore();
+        try {
+          const refreshed = await authStore.refreshAccessToken();
+          if (refreshed) {
+            const token = getAccessToken();
+            if (token) {
+              const [pathPart, queryPart] = url.split("?");
+              const cleanPath = pathPart.startsWith("/") ? pathPart : `/${pathPart}`;
+              let serverPath = cleanPath;
+              if (serverPath.startsWith("/api/v1/")) {
+                serverPath = serverPath.replace(/^\/api\/v1\//, "v1/");
+              } else if (serverPath.startsWith("/api/")) {
+                serverPath = serverPath.replace(/^\/api\//, "");
+              } else if (serverPath.startsWith("/")) {
+                serverPath = serverPath.substring(1);
+              }
+              const retryFullUrl = queryPart
+                ? `/api/documents/${serverPath}?${queryPart}`
+                : `/api/documents/${serverPath}`;
+              try {
+                const retryResponse = await $fetch(retryFullUrl, {
+                  method,
+                  headers: { Authorization: `Bearer ${token}`, ...headers },
+                  ...(body && { body }),
+                });
+                resolve(retryResponse);
+                return;
+              } catch (retryError: any) {
+                error = retryError;
+              }
+            }
+          }
+        } catch {
+          await authStore.logout();
+          if (process.client) {
+            navigateTo("/auth/login");
+          }
+          reject(new Error("Oturum süresi dolmuş. Lütfen tekrar giriş yapın."));
+          return;
+        }
+      }
+
+      let errorMessage = "İstek başarısız";
+      if (error.data) {
+        const errorData = error.data;
+        if (typeof errorData === "object" && errorData.error && typeof errorData.error === "object") {
+          errorMessage = errorData.error.message || errorData.error.code || errorMessage;
+        } else if (typeof errorData === "object") {
+          errorMessage = errorData.errorDescription || errorData.error || errorData.message || errorMessage;
+        } else if (typeof errorData === "string") {
+          errorMessage = errorData;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else if (error.statusMessage) {
+        errorMessage = error.statusMessage;
+      }
+      // Hata gövdesini (code/message/details) ve HTTP durumunu koru; çağıranlar guard (409 vb.) ayırt edebilsin.
+      const customError: any = new Error(errorMessage);
+      if (error.data !== undefined) customError.data = error.data;
+      const sc = error.statusCode ?? error.status ?? error.response?.status;
+      if (sc !== undefined) {
+        customError.statusCode = sc;
+        customError.status = sc;
+      }
+      if (error.statusMessage) customError.statusMessage = error.statusMessage;
+      reject(customError);
+    }
+  });
+}
+
 export function fetchDataWithoutToken<T>(
   url = "",
   method = "GET",

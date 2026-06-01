@@ -45,6 +45,7 @@ services:
       - MngGatewaySettings__BackendServices__MngReactor=${MNGREACTOR_URL:-http://mngreactor:5003}
       - MngGatewaySettings__BackendServices__MngWorkflow=${MNGWORKFLOW_URL:-http://mngworkflow:5085}
       - MngGatewaySettings__BackendServices__MngOperations=${MNGOPERATIONS_URL:-http://mngoperations:5086}
+      - MngGatewaySettings__BackendServices__MngDocument=${MNGDOCUMENT_URL:-http://mngdocument:5095}
       - MngGatewaySettings__BackendServices__KeyCloak=${KEYCLOAK_BASE_URL:-http://keycloak:8080}
       
       # Certificate Settings
@@ -60,6 +61,7 @@ services:
       - mnghub
       - mngworkflow
       - mngoperations
+      - mngdocument
 
     restart: unless-stopped
 
@@ -504,6 +506,40 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5086/api/v1/health/live || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  mngdocument:
+    build:
+      context: ../../MngDocument
+      dockerfile: Presentation/MngDocument.Api/Dockerfile
+    image: mngdocument:${VERSION:-latest}
+    container_name: mngdocument
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - EnableSwagger=${ENABLE_DOCUMENT_SWAGGER:-false}
+      - Jwt__Authority=${KEYCLOAK_BASE_URL}/realms/monitra
+      - Jwt__RequireHttpsMetadata=${JWT_REQUIRE_HTTPS_METADATA:-true}
+      - MngDocumentSettings__Server__Host=0.0.0.0
+      - MngDocumentSettings__Server__Port=5095
+      - MngDocumentSettings__Server__Scheme=http
+      - MngDocumentSettings__OpenApiServerPath=${OPENAPI_SERVER_PATH:-https://api.monitra.local}/documents
+      - MngDocumentSettings__DataGateway__BaseUrl=${MNGDATAGATEWAY_URL:-http://mngdatagateway:5010}
+      - MngDocumentSettings__DataGateway__ApiVersion=v1
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngdatagateway
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5095/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

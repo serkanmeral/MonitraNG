@@ -375,6 +375,70 @@
       "Priority": 0
     },
     {
+      "DownstreamPathTemplate": "/swagger",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngdocument",
+          "Port": 5095
+        }
+      ],
+      "UpstreamPathTemplate": "/documents/swagger",
+      "UpstreamHttpMethod": [ "GET", "HEAD" ],
+      "RateLimitOptions": {
+        "EnableRateLimiting": false
+      },
+      "Priority": 0
+    },
+    {
+      "DownstreamPathTemplate": "/swagger/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngdocument",
+          "Port": 5095
+        }
+      ],
+      "UpstreamPathTemplate": "/documents/swagger/{everything}",
+      "UpstreamHttpMethod": [ "GET", "HEAD" ],
+      "RateLimitOptions": {
+        "EnableRateLimiting": false
+      },
+      "Priority": 0
+    },
+    {
+      "DownstreamPathTemplate": "/api/v1/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngdocument",
+          "Port": 5095
+        }
+      ],
+      "UpstreamPathTemplate": "/documents/api/v1/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
+      "RateLimitOptions": {
+        "EnableRateLimiting": false
+      },
+      "Priority": 1
+    },
+    {
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "mngdocument",
+          "Port": 5095
+        }
+      ],
+      "UpstreamPathTemplate": "/documents/api/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "PATCH" ],
+      "RateLimitOptions": {
+        "EnableRateLimiting": false
+      },
+      "Priority": 0
+    },
+    {
       "DownstreamPathTemplate": "/api/v1/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [

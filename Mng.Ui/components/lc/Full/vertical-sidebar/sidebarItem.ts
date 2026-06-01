@@ -374,6 +374,12 @@ const sidebarItem: menu[] = [
       },
     ],
   },
+  {
+    title: "Dokümanlar",
+    pageCode: "documentIntelligence.menuTitle",
+    icon: FileTextIcon,
+    to: "/apps/document-intelligence",
+  },
   { header: "Pages" },
   {
     title: 'Pricing',

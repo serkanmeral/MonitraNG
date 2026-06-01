@@ -307,6 +307,11 @@ const horizontalItems: menu[] = [
       },
     ],
   },
+  {
+    title: "Dokümanlar",
+    icon: FileDescriptionIcon,
+    to: "/apps/document-intelligence",
+  },
 
   {
     title: "Pages",

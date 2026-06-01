@@ -46,6 +46,7 @@ services:
       - MngGatewaySettings__BackendServices__MngScheduler=http://mngscheduler:5090
       - MngGatewaySettings__BackendServices__MngWorkflow=http://mngworkflow:5085
       - MngGatewaySettings__BackendServices__MngOperations=http://mngoperations:5086
+      - MngGatewaySettings__BackendServices__MngDocument=http://mngdocument:5095
       - MngGatewaySettings__BackendServices__KeyCloak=http://keycloak:8080
       
       # Certificate Settings
@@ -64,6 +65,7 @@ services:
       - mngscheduler
       - mngworkflow
       - mngoperations
+      - mngdocument
 
     restart: unless-stopped
 
@@ -763,6 +765,38 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5086/api/v1/health/live || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  mngdocument:
+    build:
+      context: ../../MngDocument
+      dockerfile: Presentation/MngDocument.Api/Dockerfile
+    image: localhost:5000/mngdocument:1.0.0
+    container_name: mngdocument
+    ports:
+      - "5095:5095"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - EnableSwagger=true
+      - Jwt__Authority=http://keycloak:8080/realms/monitra
+      - Jwt__RequireHttpsMetadata=false
+      - MngDocumentSettings__Server__Host=0.0.0.0
+      - MngDocumentSettings__Server__Port=5095
+      - MngDocumentSettings__Server__Scheme=http
+      - MngDocumentSettings__OpenApiServerPath=https://api.monitra.local/documents
+      - MngDocumentSettings__DataGateway__BaseUrl=http://mngdatagateway:5010
+      - MngDocumentSettings__DataGateway__ApiVersion=v1
+      - Serilog__WriteTo__1__Args__serverUrl=http://seq:80
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngdatagateway
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5095/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
