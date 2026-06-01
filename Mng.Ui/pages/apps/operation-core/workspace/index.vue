@@ -6,7 +6,8 @@ import { useResizableTreePanel } from '@/composables/useResizableTreePanel';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import { useOperationCoreStore } from '@/stores/apps/operationCore';
 import { useAppI18n } from '@/composables/useAppI18n';
-import type { OcWorkspaceTreeNode } from '@/types/apps/operationCore';
+import { ocListDashboardsForWorkspace } from '@/services/operationCoreService';
+import type { OcDashboardListItem, OcWorkspaceTreeNode } from '@/types/apps/operationCore';
 import {
   LayoutSidebarLeftCollapseIcon,
   LayoutSidebarLeftExpandIcon,
@@ -37,6 +38,31 @@ const treeRef = ref<InstanceType<typeof OcWorkspaceTree> | null>(null);
 const selectedWorkspaceId = ref<string | null>(null);
 const selectedBoardId = ref<string | null>(null);
 const treeLoading = ref(false);
+
+const dashboards = ref<OcDashboardListItem[]>([]);
+const dashboardsLoading = ref(false);
+
+async function loadDashboards(workspaceId: string | null) {
+  if (!workspaceId) {
+    dashboards.value = [];
+    return;
+  }
+  dashboardsLoading.value = true;
+  try {
+    dashboards.value = await ocListDashboardsForWorkspace(workspaceId);
+  } catch {
+    dashboards.value = [];
+  } finally {
+    dashboardsLoading.value = false;
+  }
+}
+
+function openDashboard(dashboardId: string) {
+  router.push({
+    path: `/apps/operation-core/dashboards/${encodeURIComponent(dashboardId)}`,
+    query: selectedWorkspaceId.value ? { workspaceId: selectedWorkspaceId.value } : undefined,
+  });
+}
 
 const selectedWorkspace = computed(() =>
   selectedWorkspaceId.value
@@ -135,12 +161,15 @@ watch(
   { deep: true }
 );
 
+watch(selectedWorkspaceId, (id) => loadDashboards(id), { immediate: false });
+
 onMounted(async () => {
   syncFromRoute();
   await loadTreeData();
   await store.pingOperations();
   if (selectedWorkspaceId.value) {
     await store.loadBoardsForWorkspace(selectedWorkspaceId.value);
+    await loadDashboards(selectedWorkspaceId.value);
   }
 });
 </script>
@@ -337,6 +366,55 @@ onMounted(async () => {
                       <v-chip size="x-small" variant="tonal" class="text-capitalize">
                         {{ boardViewTypeLabel(board.viewType) }}
                       </v-chip>
+                    </v-card-text>
+                  </v-card>
+                </v-col>
+              </v-row>
+
+              <!-- Panolar -->
+              <p class="text-subtitle-2 font-weight-bold mb-3 mt-6">
+                {{ t('operationCore.dashboards.listTitle') }}
+              </p>
+              <div v-if="dashboardsLoading" class="d-flex py-2">
+                <v-progress-circular indeterminate color="primary" size="22" />
+              </div>
+              <div
+                v-else-if="!dashboards.length"
+                class="text-body-2 text-medium-emphasis"
+              >
+                {{ t('operationCore.dashboards.noneInWorkspace') }}
+              </div>
+              <v-row v-else dense>
+                <v-col
+                  v-for="dash in dashboards"
+                  :key="dash.id"
+                  cols="12"
+                  sm="6"
+                  md="4"
+                >
+                  <v-card
+                    variant="outlined"
+                    class="rounded-lg h-100 oc-board-pick-card"
+                    hover
+                    @click="openDashboard(dash.id)"
+                  >
+                    <v-card-text class="pa-4">
+                      <div class="d-flex align-center gap-2 mb-2">
+                        <v-icon icon="mdi-view-dashboard-outline" size="22" color="primary" />
+                        <span class="text-subtitle-1 font-weight-medium text-truncate">
+                          {{ dash.name }}
+                        </span>
+                        <v-spacer />
+                        <v-chip v-if="dash.isDefault" size="x-small" variant="tonal" color="primary">
+                          {{ t('operationCore.dashboards.defaultChip') }}
+                        </v-chip>
+                      </div>
+                      <p
+                        v-if="dash.description"
+                        class="text-caption text-medium-emphasis mb-0 text-truncate"
+                      >
+                        {{ dash.description }}
+                      </p>
                     </v-card-text>
                   </v-card>
                 </v-col>

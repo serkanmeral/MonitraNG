@@ -10,6 +10,11 @@ import type {
   OcCatalogDisplayEntry,
   OcColumnFormat,
   OcComment,
+  OcDashboard,
+  OcDashboardLayout,
+  OcDashboardListItem,
+  OcDashboardWidget,
+  OcDashboardWidgetExecution,
   OcPersonDisplay,
   OcProfileAction,
   OcQueryExecuteResponse,
@@ -58,6 +63,7 @@ export const OC_DATASETS = {
   workItemSchedules: 'op_work_item_schedules',
   profiles: 'op_profiles',
   tags: 'op_tags',
+  dashboards: 'op_dashboards',
 } as const;
 
 export function parseSingleDgRecord(response: unknown): Record<string, unknown> | null {
@@ -2081,4 +2087,100 @@ export async function ocGetBoardListPage(
     body
   )) as Record<string, unknown>;
   return mapQueryExecuteResponse(raw);
+}
+
+// ===== Dashboards (D-A) =====
+
+function mapDashboardWidgetExecution(raw: unknown): OcDashboardWidgetExecution | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const items = r.items ?? r.Items;
+  return {
+    success: Boolean(r.success ?? r.Success ?? false),
+    errorCode: pickStr(r, 'errorCode', 'ErrorCode') ?? null,
+    errorMessage: pickStr(r, 'errorMessage', 'ErrorMessage') ?? null,
+    total: Number(r.total ?? r.Total ?? 0),
+    skip: Number(r.skip ?? r.Skip ?? 0),
+    take: Number(r.take ?? r.Take ?? 0),
+    items: Array.isArray(items)
+      ? items.map((i) => mapWorkItemCard(i as Record<string, unknown>)).filter((c) => c.id)
+      : [],
+    executedAt: pickStr(r, 'executedAt', 'ExecutedAt') ?? null,
+  };
+}
+
+function mapDashboardWidget(raw: Record<string, unknown>): OcDashboardWidget {
+  return {
+    key: pickStr(raw, 'key', 'Key') ?? '',
+    widgetType: pickStr(raw, 'widgetType', 'WidgetType') ?? 'list',
+    title: pickStr(raw, 'title', 'Title') ?? null,
+    dataset: pickStr(raw, 'dataset', 'Dataset') ?? null,
+    queryKey: pickStr(raw, 'queryKey', 'QueryKey') ?? null,
+    resolvedParameters: (raw.resolvedParameters ?? raw.ResolvedParameters ?? null) as
+      | Record<string, unknown>
+      | null,
+    execution: mapDashboardWidgetExecution(raw.execution ?? raw.Execution),
+  };
+}
+
+function mapDashboardLayout(raw: unknown): OcDashboard['layout'] {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const rows = r.rows ?? r.Rows;
+  return {
+    type: pickStr(r, 'type', 'Type') ?? 'rows',
+    rows: Array.isArray(rows) ? (rows as OcDashboardLayout['rows']) : [],
+  };
+}
+
+/** MO tek toplu dashboard context (widget'lar server-side çalıştırılmış + katalog/person çözülmüş). */
+export async function ocGetDashboard(dashboardId: string): Promise<OcDashboard> {
+  const raw = (await fetchFromOperations(
+    `/api/v1/runtime/dashboards/${encodeURIComponent(dashboardId)}`,
+    'GET'
+  )) as Record<string, unknown>;
+  const widgets = raw.widgets ?? raw.Widgets;
+  const perm = (raw.permissions ?? raw.Permissions ?? {}) as Record<string, unknown>;
+  return {
+    dashboardId: pickStr(raw, 'dashboardId', 'DashboardId') ?? dashboardId,
+    workspaceId: pickStr(raw, 'workspaceId', 'WorkspaceId') ?? null,
+    name: pickStr(raw, 'name', 'Name') ?? null,
+    description: pickStr(raw, 'description', 'Description') ?? null,
+    scope: pickStr(raw, 'scope', 'Scope') ?? null,
+    layout: mapDashboardLayout(raw.layout ?? raw.Layout),
+    permissions: {
+      canView: Boolean(perm.canView ?? perm.CanView ?? true),
+      canEdit: Boolean(perm.canEdit ?? perm.CanEdit ?? false),
+      canComment: Boolean(perm.canComment ?? perm.CanComment ?? false),
+    },
+    widgets: Array.isArray(widgets)
+      ? widgets.map((w) => mapDashboardWidget(w as Record<string, unknown>)).filter((w) => w.key)
+      : [],
+    catalogs: parseBoardCatalogs(raw.catalogs ?? raw.Catalogs),
+    people: parsePeopleMap(raw.people ?? raw.People),
+    groups: parsePeopleMap(raw.groups ?? raw.Groups),
+  };
+}
+
+/** Bir workspace'e ait dashboard'ları (ada göre) listeler — hub. */
+export async function ocListDashboardsForWorkspace(workspaceId: string): Promise<OcDashboardListItem[]> {
+  if (!workspaceId) return [];
+  const rows = await ocListDataset(OC_DATASETS.dashboards, {
+    filter: `workspaceId:eq:${workspaceId}`,
+    sort: 'name:asc',
+    limit: 200,
+  });
+  return rows
+    .map((r) => {
+      const raw = r as Record<string, unknown>;
+      return {
+        id: String(raw.__dataId ?? raw.dataId ?? ''),
+        name: String(raw.name ?? raw.Name ?? ''),
+        description: (raw.description ?? raw.Description ?? null) as string | null,
+        workspaceId: resolveRelationId(raw.workspaceId ?? raw.WorkspaceId) ?? null,
+        isActive: raw.isActive == null && raw.IsActive == null ? true : Boolean(raw.isActive ?? raw.IsActive),
+        isDefault: Boolean(raw.isDefault ?? raw.IsDefault ?? false),
+      } as OcDashboardListItem;
+    })
+    .filter((d) => d.id && d.workspaceId === workspaceId);
 }

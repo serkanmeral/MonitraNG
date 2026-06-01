@@ -3247,6 +3247,13 @@
     "uploadFile": "Dosya yükle",
     "upload": "Yükle",
     "download": "İndir",
+    "preview": "Önizle",
+    "previewUnavailable": "Bu dosya türü için satır içi önizleme yok. İndirebilirsiniz.",
+    "saveAsDraft": "Taslak olarak kaydet",
+    "draft": "Taslak",
+    "publish": "Yayınla",
+    "published": "Yayınlandı.",
+    "draftSaved": "Taslak kaydedildi.",
     "selectFileHint": "Yüklemek için tıklayın (en fazla {max} MB)",
     "fileNameLabel": "Görünen ad",
     "fileUploaded": "Dosya yüklendi.",
@@ -3291,10 +3298,44 @@
       "notEmpty": "Bu klasör boş değil. İçeriğiyle birlikte silmek için tekrar onaylayın.",
       "upload": "Dosya yüklenemedi.",
       "download": "Dosya indirilemedi.",
+      "preview": "Önizleme yüklenemedi.",
       "fileTooLarge": "Dosya çok büyük (en fazla {max} MB).",
       "versionsLoad": "Sürüm geçmişi yüklenemedi.",
       "versionLoad": "Sürüm içeriği yüklenemedi.",
       "versionRestore": "Sürüm geri yüklenemedi."
+    },
+    "permissions": {
+      "menuTitle": "İzinler",
+      "title": "Klasör İzinleri",
+      "group": "Grup",
+      "all": "Tümü",
+      "grantAll": "Tümünü ver",
+      "clear": "Temizle",
+      "noGroups": "Eşleştirilecek grup bulunamadı.",
+      "inheritedInfo": "Bu klasör yetkilerini üst klasörden miras alıyor. Özel izinler tanımlamak için mirası kırın.",
+      "brokenInfo": "Bu klasörün kendi izinleri var (miras kırık). Grup × aksiyon matrisini düzenleyip kaydedin.",
+      "breakInheritance": "Mirası kır",
+      "restoreInheritance": "Mirası geri yükle",
+      "inheritanceBrokenMsg": "Yetki mirası kırıldı; artık bu klasörün kendi izinleri var.",
+      "inheritanceRestoredMsg": "Yetki mirası geri yüklendi; bu klasör üstten miras alıyor.",
+      "saved": "İzinler kaydedildi.",
+      "editHint": "İzinleri düzenlemek için önce mirası kırın. İzin kaydı olmayan klasörler domain içindeki herkese açıktır.",
+      "actions": {
+        "view": "Görüntüle",
+        "create": "Oluştur",
+        "edit": "Düzenle",
+        "delete": "Sil",
+        "upload": "Yükle",
+        "download": "İndir",
+        "move": "Taşı",
+        "share": "Paylaş"
+      },
+      "errors": {
+        "load": "İzinler yüklenemedi.",
+        "save": "İzinler kaydedilemedi.",
+        "break": "Yetki mirası kırılamadı.",
+        "restore": "Yetki mirası geri yüklenemedi."
+      }
     }
   },
   "operationCore": {
@@ -3377,6 +3418,18 @@
       "openBoard": "Board'u aç",
       "viewTypeKanban": "Kanban",
       "viewTypeList": "Liste"
+    },
+    "dashboards": {
+      "title": "Pano",
+      "listTitle": "Panolar",
+      "noneInWorkspace": "Bu workspace'te henüz pano yok.",
+      "defaultChip": "Varsayılan",
+      "noWidgets": "Bu panoda gösterilecek widget yok.",
+      "totalRecords": "kayıt",
+      "emptyWidget": "Kayıt bulunamadı.",
+      "widgetError": "Widget verisi alınamadı.",
+      "chartSoon": "Grafik yakında",
+      "unknownWidget": "Bilinmeyen widget tipi: {type}"
     },
     "board": {
       "placeholderTitle": "Board",

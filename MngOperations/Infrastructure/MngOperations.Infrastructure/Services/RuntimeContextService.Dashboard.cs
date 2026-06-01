@@ -48,6 +48,19 @@ public partial class RuntimeContextService
             widgetResults.Add(await BuildDashboardWidgetAsync(definition, resolveContext, token, cancellationToken));
         }
 
+        // Tüm widget item'larındaki id'leri tek seferde ada çöz (board context deseni); list/summary widget'ları
+        // ham id yerine ad/renk gösterir. Katalog = workspace kapsamı (board scope yok → boş scope).
+        var allItems = widgetResults
+            .Where(w => w.Execution?.Items != null)
+            .SelectMany(w => w.Execution!.Items)
+            .ToList();
+
+        var people = await ResolvePeopleForCardsAsync(allItems, token, cancellationToken);
+        var groups = await ResolveGroupsForCardsAsync(allItems, token, cancellationToken);
+        var catalogs = workspace != null
+            ? await BuildBoardCatalogsAsync(workspace, workspaceId!, Array.Empty<string>(), token, cancellationToken)
+            : new BoardCatalogsDto();
+
         var canEdit = workspace != null
             && _permissions.CanEditWorkItem(workspace, new Dictionary<string, object?>());
 
@@ -65,7 +78,10 @@ public partial class RuntimeContextService
                 CanEdit = canEdit,
                 CanComment = canEdit
             },
-            Widgets = widgetResults
+            Widgets = widgetResults,
+            Catalogs = catalogs,
+            People = people,
+            Groups = groups
         };
     }
 

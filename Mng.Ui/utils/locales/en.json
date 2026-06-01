@@ -3234,6 +3234,13 @@
     "uploadFile": "Upload file",
     "upload": "Upload",
     "download": "Download",
+    "preview": "Preview",
+    "previewUnavailable": "Inline preview is not available for this file type. You can download it.",
+    "saveAsDraft": "Save as draft",
+    "draft": "Draft",
+    "publish": "Publish",
+    "published": "Published.",
+    "draftSaved": "Draft saved.",
     "selectFileHint": "Click to upload (max {max} MB)",
     "fileNameLabel": "Display name",
     "fileUploaded": "File uploaded.",
@@ -3278,10 +3285,44 @@
       "notEmpty": "This folder is not empty. Confirm again to delete it with all contents.",
       "upload": "Could not upload the file.",
       "download": "Could not download the file.",
+      "preview": "Could not load the preview.",
       "fileTooLarge": "File is too large (max {max} MB).",
       "versionsLoad": "Could not load version history.",
       "versionLoad": "Could not load version content.",
       "versionRestore": "Could not restore the version."
+    },
+    "permissions": {
+      "menuTitle": "Permissions",
+      "title": "Folder Permissions",
+      "group": "Group",
+      "all": "All",
+      "grantAll": "Grant all",
+      "clear": "Clear",
+      "noGroups": "No groups available to map.",
+      "inheritedInfo": "This folder inherits permissions from its parent. Break inheritance to define custom permissions.",
+      "brokenInfo": "This folder has its own permissions (inheritance broken). Edit the group × action matrix and save.",
+      "breakInheritance": "Break inheritance",
+      "restoreInheritance": "Restore inheritance",
+      "inheritanceBrokenMsg": "Inheritance broken; this folder now has its own permissions.",
+      "inheritanceRestoredMsg": "Inheritance restored; this folder inherits from its parent.",
+      "saved": "Permissions saved.",
+      "editHint": "Break inheritance first to edit permissions. Folders without permission records are open to everyone in the domain.",
+      "actions": {
+        "view": "View",
+        "create": "Create",
+        "edit": "Edit",
+        "delete": "Delete",
+        "upload": "Upload",
+        "download": "Download",
+        "move": "Move",
+        "share": "Share"
+      },
+      "errors": {
+        "load": "Could not load permissions.",
+        "save": "Could not save permissions.",
+        "break": "Could not break inheritance.",
+        "restore": "Could not restore inheritance."
+      }
     }
   },
   "operationCore": {
@@ -3364,6 +3405,18 @@
       "openBoard": "Open board",
       "viewTypeKanban": "Kanban",
       "viewTypeList": "List"
+    },
+    "dashboards": {
+      "title": "Dashboard",
+      "listTitle": "Dashboards",
+      "noneInWorkspace": "No dashboards in this workspace yet.",
+      "defaultChip": "Default",
+      "noWidgets": "This dashboard has no widgets to display.",
+      "totalRecords": "records",
+      "emptyWidget": "No records found.",
+      "widgetError": "Failed to load widget data.",
+      "chartSoon": "Chart coming soon",
+      "unknownWidget": "Unknown widget type: {type}"
     },
     "board": {
       "placeholderTitle": "Board",

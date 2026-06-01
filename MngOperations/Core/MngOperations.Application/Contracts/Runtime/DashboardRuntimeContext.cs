@@ -12,6 +12,17 @@ public sealed class DashboardRuntimeContext
     public JsonElement? Layout { get; init; }
     public RuntimePermissionsDto Permissions { get; init; } = new();
     public IReadOnlyList<DashboardWidgetRuntimeDto> Widgets { get; init; } = Array.Empty<DashboardWidgetRuntimeDto>();
+
+    /// <summary>Workspace state/priority/type kataloğu (id → ad/renk/ikon). List/summary widget'ları ham id yerine ad gösterir.</summary>
+    public BoardCatalogsDto Catalogs { get; init; } = new();
+
+    /// <summary>Tüm widget item'larındaki person alanları (assignee + person pool) id → görünen ad. Board context ile aynı desen.</summary>
+    public IReadOnlyDictionary<string, PersonDisplayDto> People { get; init; }
+        = new Dictionary<string, PersonDisplayDto>();
+
+    /// <summary>Tüm widget item'larındaki person <b>grup</b> alanları id → grup adı.</summary>
+    public IReadOnlyDictionary<string, PersonDisplayDto> Groups { get; init; }
+        = new Dictionary<string, PersonDisplayDto>();
 }
 
 public sealed class DashboardWidgetRuntimeDto

@@ -440,6 +440,77 @@ export interface OcColumnItemsState {
   error: string | null;
 }
 
+// ----- Dashboards (D-A) -----
+
+/** Tek widget'ın çalıştırma sonucu (MO server-side). */
+export interface OcDashboardWidgetExecution {
+  success: boolean;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+  total: number;
+  skip: number;
+  take: number;
+  items: OcWorkItemCard[];
+  executedAt?: string | null;
+}
+
+/** Çözülmüş dashboard widget'ı (tanım + çalıştırma sonucu). */
+export interface OcDashboardWidget {
+  key: string;
+  /** 'summaryCard' | 'list' | 'chart' */
+  widgetType: string;
+  title?: string | null;
+  dataset?: string | null;
+  queryKey?: string | null;
+  resolvedParameters?: Record<string, unknown> | null;
+  execution?: OcDashboardWidgetExecution | null;
+}
+
+/** Layout kolonu — widgetId widget key'ine referans verir; responsive span'ler (12'lik grid). */
+export interface OcDashboardLayoutCol {
+  widgetId?: string;
+  span?: number;
+  spanSm?: number;
+  spanMd?: number;
+  spanLg?: number;
+  spanXl?: number;
+  rows?: OcDashboardLayoutRow[];
+}
+
+export interface OcDashboardLayoutRow {
+  cols: OcDashboardLayoutCol[];
+}
+
+export interface OcDashboardLayout {
+  type?: string;
+  rows: OcDashboardLayoutRow[];
+}
+
+/** MO GetDashboardAsync — tek toplu dashboard context (widget'lar çalıştırılmış + katalog/person çözülmüş). */
+export interface OcDashboard {
+  dashboardId: string;
+  workspaceId?: string | null;
+  name?: string | null;
+  description?: string | null;
+  scope?: string | null;
+  layout?: OcDashboardLayout | null;
+  permissions: OcRuntimePermissions;
+  widgets: OcDashboardWidget[];
+  catalogs: OcBoardCatalogs;
+  people: Record<string, OcPersonDisplay>;
+  groups: Record<string, OcPersonDisplay>;
+}
+
+/** Dashboard hub liste satırı (op_dashboards ham kaydından). */
+export interface OcDashboardListItem {
+  id: string;
+  name: string;
+  description?: string | null;
+  workspaceId?: string | null;
+  isActive: boolean;
+  isDefault: boolean;
+}
+
 /** İş kaydı profil özeti (MO GetProfileAsync). */
 export interface OcWorkItemSummary {
   id: string;

@@ -357,7 +357,19 @@ $dashboardId = Find-OrCreate -Collection "op_dashboards" -Filter "name:eq:$dashb
     scope       = "workspace"
     isDefault   = $true
     isActive    = $true
-    layout      = @{ columns = 2 }
+    layout      = @{
+        type = "rows"
+        rows = @(
+            @{ cols = @(
+                @{ widgetId = "open_count"; span = 12; spanMd = 4; spanLg = 3 },
+                @{ widgetId = "in_progress_count"; span = 12; spanMd = 4; spanLg = 3 },
+                @{ widgetId = "sla_response_breach"; span = 12; spanMd = 4; spanLg = 3 }
+            ) },
+            @{ cols = @(
+                @{ widgetId = "my_assigned"; span = 12 }
+            ) }
+        )
+    }
     widgets     = @(
         @{
             key       = "open_count"
