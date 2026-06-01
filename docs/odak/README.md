@@ -13,6 +13,7 @@ Tüm kurulum ve günlük çalışma akışı tek dokümanda:
 |---------|--------|
 | **[ODAK_FULL_SETUP.md](./ODAK_FULL_SETUP.md)** | Tam kurulum özeti: sunucu, mng_common, mng_apps, domain, initial data, yerel dev, deploy, bilinen sorunlar |
 | **[operationcore/README.md](./operationcore/README.md)** | Operation Core (OC) / MngOperations — planlama ve spec |
+| **[compliance/README.md](./compliance/README.md)** | Standart uyumluluğu — ISO/IEC 27001 + AS9100 planı |
 
 Yeni bir chat’te geliştirmeye geçerken önce **ODAK_FULL_SETUP** okuyun; ayrıntı için alt bölümlerdeki linklere inin. OC geliştirmesi için **operationcore** klasörüne bakın.
 
@@ -49,6 +50,11 @@ docs/odak/
 │   └── datasets/
 │       ├── README.md
 │       └── operationcore_datasets_phase1_*.json
+├── compliance/
+│   ├── README.md               ← ISO 27001 + AS9100 uyum planı (index)
+│   ├── ISO27001_PLAN.md        ← ISO/IEC 27001:2022 kontrol eşleme + boşluk
+│   ├── AS9100_PLAN.md          ← AS9100D gereksinim eşleme + boşluk
+│   └── COMPLIANCE_ROADMAP.md   ← birleşik fazlı yol haritası + izlenebilirlik matrisi
 └── domain/
     ├── DOMAIN_OLUSTURMA.md
     ├── DOMAIN_OLUSTURMA_API.md
