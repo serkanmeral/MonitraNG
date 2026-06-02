@@ -147,6 +147,8 @@ cd ~/mng_common && docker compose -f docker-compose.yml -f docker-compose.odak.y
 | [sync-odak-source.ps1](../../../scripts/odak/sync-odak-source.ps1) | Kaynak paketle + SCP + sunucuda aç |
 | [deploy-odak-apps.ps1](../../../scripts/odak/deploy-odak-apps.ps1) | Uzaktan `compose build` / `up` |
 
+**Günlük komutlar (pwsh, UI/backend tarifleri, sorun giderme):** [../deploy/README.md](../deploy/README.md)
+
 Parametreler ve örnekler script başlığında.
 
 ---

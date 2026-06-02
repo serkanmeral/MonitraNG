@@ -122,25 +122,26 @@ export function useOcPersonPicker() {
     if (!missing.length) return;
 
     const resolved: OcPersonPickerItem[] = [];
-    for (const id of missing) {
-      const cached = userStore.getUserById(id);
-      let user = cached;
-      if (!user) {
-        try {
-          await userStore.fetchUserById(id);
-          user = userStore.getUserById(id);
-        } catch {
-          user = undefined;
+    await Promise.all(
+      missing.map(async (id) => {
+        const cached = userStore.getUserById(id);
+        let user = cached;
+        if (!user) {
+          try {
+            await userStore.fetchUserById(id);
+            user = userStore.getUserById(id);
+          } catch {
+            user = undefined;
+          }
         }
-      }
-      const mapped = user ? mapUserToOcPersonPickerItem(user) : null;
-      if (mapped) {
-        // Modeldeki id ile eşleşme (id ≠ userId olan sistem hesapları)
-        resolved.push({ ...mapped, value: id });
-      } else {
-        resolved.push({ value: id, title: id, subtitle: '' });
-      }
-    }
+        const mapped = user ? mapUserToOcPersonPickerItem(user) : null;
+        if (mapped) {
+          resolved.push({ ...mapped, value: id });
+        } else {
+          resolved.push({ value: id, title: id, subtitle: '' });
+        }
+      })
+    );
 
     if (resolved.length) {
       items.value = mergePersonItems(items.value, resolved);

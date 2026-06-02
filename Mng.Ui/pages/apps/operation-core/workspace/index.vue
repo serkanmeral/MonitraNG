@@ -7,8 +7,8 @@ import { useResizableTreePanel } from '@/composables/useResizableTreePanel';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import { useOperationCoreStore } from '@/stores/apps/operationCore';
 import { useAppI18n } from '@/composables/useAppI18n';
-import { ocListAllDashboards } from '@/services/operationCoreService';
-import type { OcDashboardListItem, OcWorkspaceTreeNode } from '@/types/apps/operationCore';
+import { ocGetDashboardRecord } from '@/services/operationCoreService';
+import type { OcWorkspaceTreeNode, OpBoard } from '@/types/apps/operationCore';
 import {
   LayoutSidebarLeftCollapseIcon,
   LayoutSidebarLeftExpandIcon,
@@ -40,22 +40,28 @@ const selectedWorkspaceId = ref<string | null>(null);
 const selectedBoardId = ref<string | null>(null);
 const treeLoading = ref(false);
 
-const allDashboards = ref<OcDashboardListItem[]>([]);
+const dashboardNameById = ref<Record<string, string>>({});
+const dashboardNameInflight = new Set<string>();
 
-const dashboardNameById = computed<Record<string, string>>(() => {
-  const map: Record<string, string> = {};
-  allDashboards.value.forEach((d) => {
-    if (d.id) map[d.id] = d.name || d.id;
-  });
-  return map;
-});
-
-async function loadAllDashboards() {
+async function ensureDashboardName(dashboardId: string) {
+  const id = dashboardId?.trim();
+  if (!id || dashboardNameById.value[id] || dashboardNameInflight.has(id)) return;
+  dashboardNameInflight.add(id);
   try {
-    allDashboards.value = await ocListAllDashboards();
+    const rec = await ocGetDashboardRecord(id);
+    if (rec?.name) {
+      dashboardNameById.value = { ...dashboardNameById.value, [id]: rec.name };
+    }
   } catch {
-    allDashboards.value = [];
+    // pano adı opsiyonel — tree'de id gösterilir
+  } finally {
+    dashboardNameInflight.delete(id);
   }
+}
+
+async function ensureDashboardNamesForBoards(boards: OpBoard[]) {
+  const ids = [...new Set(boards.map((b) => b.defaultDashboardId).filter(Boolean) as string[])];
+  await Promise.all(ids.map(ensureDashboardName));
 }
 
 // Tree'de pano düğümüne tıklayınca: ilgili board'ı seç ve merkez panelde inline pano göster.
@@ -87,6 +93,7 @@ watch(
   selectedBoardDashboardId,
   (dashId) => {
     centerView.value = dashId ? 'dashboard' : 'summary';
+    if (dashId) void ensureDashboardName(dashId);
   },
   { immediate: true }
 );
@@ -125,9 +132,20 @@ async function loadTreeData() {
   treeLoading.value = true;
   try {
     await store.loadWorkspaces();
-    await store.loadAllBoards();
   } finally {
     treeLoading.value = false;
+  }
+}
+
+async function onExpandWorkspace(workspaceId: string) {
+  await store.loadBoardsForWorkspace(workspaceId);
+  await ensureDashboardNamesForBoards(store.boardsForWorkspace(workspaceId));
+}
+
+async function onExpandAllWorkspaces() {
+  await store.loadAllBoards();
+  for (const w of store.workspaces) {
+    await ensureDashboardNamesForBoards(store.boardsForWorkspace(w.__dataId));
   }
 }
 
@@ -138,6 +156,9 @@ function onSelectWorkspace(workspaceId: string) {
     path: '/apps/operation-core/workspace',
     query: { workspaceId },
   });
+  void store.loadBoardsForWorkspace(workspaceId).then(() =>
+    ensureDashboardNamesForBoards(store.boardsForWorkspace(workspaceId))
+  );
 }
 
 function onSelectBoard(workspaceId: string, boardId: string) {
@@ -181,9 +202,9 @@ onMounted(async () => {
   syncFromRoute();
   await loadTreeData();
   await store.pingOperations();
-  await loadAllDashboards();
   if (selectedWorkspaceId.value) {
     await store.loadBoardsForWorkspace(selectedWorkspaceId.value);
+    await ensureDashboardNamesForBoards(store.boardsForWorkspace(selectedWorkspaceId.value));
   }
 });
 </script>
@@ -267,6 +288,8 @@ onMounted(async () => {
                 @select-workspace="onSelectWorkspace"
                 @select-board="onSelectBoard"
                 @open-dashboard="onOpenDashboard"
+                @expand-workspace="onExpandWorkspace"
+                @expand-all-workspaces="onExpandAllWorkspaces"
               />
             </v-card-text>
           </v-card>

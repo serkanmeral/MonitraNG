@@ -55,13 +55,12 @@ export function useOcWorkspaceDefinitionValuesTabs(
     { immediate: true }
   );
 
-  const valuesTabIndex = computed({
-    get: () => OC_WORKSPACE_DEFINITION_VALUES_TAB_KEYS.indexOf(activeValuesTab.value),
-    set: (idx: number) => {
-      const key = OC_WORKSPACE_DEFINITION_VALUES_TAB_KEYS[idx];
-      if (key) setValuesTab(key);
+  const valuesTabModel = computed({
+    get: () => activeValuesTab.value,
+    set: (value: unknown) => {
+      if (isOcWorkspaceDefinitionValuesTabKey(value)) setValuesTab(value);
     },
   });
 
-  return { syncFromRoute, setValuesTab, valuesTabIndex };
+  return { syncFromRoute, setValuesTab, valuesTabModel };
 }

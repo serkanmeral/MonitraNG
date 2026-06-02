@@ -34,6 +34,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:filters': [OcBoardListFilter[]];
+  'advanced-open': [];
 }>();
 
 const { t } = useAppI18n();
@@ -45,6 +46,10 @@ const values = reactive<Record<string, unknown>>({});
 const advancedOpen = ref(false);
 const advancedRows = ref<AdvancedRow[]>([]);
 let rowSeq = 0;
+
+watch(advancedOpen, (open, wasOpen) => {
+  if (open && !wasOpen) emit('advanced-open');
+});
 
 const OPERATORS_BY_KIND: Record<OcBoardFilterKind, string[]> = {
   state: ['in', 'nin', 'eq', 'ne'],

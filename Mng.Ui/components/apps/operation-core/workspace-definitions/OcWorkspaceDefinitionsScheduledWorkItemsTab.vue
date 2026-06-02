@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useOcPersonPicker } from '@/composables/useOcPersonPicker';
+import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import { useUserStore } from '@/stores/apps/user';
 import OcWorkspaceScheduleDialog, {
   type OcScheduleFormModel,
@@ -10,10 +11,7 @@ import {
   ocCreateWorkItemSchedule,
   ocDeleteWorkItemSchedule,
   ocExtractDgErrorMessage,
-  ocListBoardsForWorkspace,
-  ocListPrioritiesForWorkspace,
   ocListSchedulesForWorkspace,
-  ocListWorkItemTypesForWorkspace,
   ocRunWorkItemScheduleNow,
   ocSyncWorkItemScheduleScheduler,
   ocUnlinkWorkItemScheduleScheduler,
@@ -35,6 +33,7 @@ const props = defineProps<{
 
 const { t } = useAppI18n();
 const personPicker = useOcPersonPicker();
+const catalog = useOcWorkspaceCatalogInject();
 const userStore = useUserStore();
 
 const loading = ref(true);
@@ -146,16 +145,14 @@ async function loadAll() {
   loading.value = true;
   errorLocal.value = null;
   try {
-    const [scheduleRows, boardRows, typeRows, priorityRows] = await Promise.all([
+    const [scheduleRows] = await Promise.all([
       ocListSchedulesForWorkspace(props.workspaceId),
-      ocListBoardsForWorkspace(props.workspaceId),
-      ocListWorkItemTypesForWorkspace(props.workspaceId, { fallbackAll: true }),
-      ocListPrioritiesForWorkspace(props.workspaceId, { fallbackAll: true }),
+      catalog.whenReady(),
     ]);
     schedules.value = scheduleRows;
-    boards.value = boardRows;
-    types.value = typeRows;
-    priorities.value = priorityRows;
+    boards.value = catalog.boards.value;
+    types.value = catalog.types.value;
+    priorities.value = catalog.priorities.value;
 
     const assigneeIds = [...new Set(scheduleRows.map((s) => s.assignee).filter(Boolean))];
     if (assigneeIds.length) await personPicker.ensureSelectedIds(assigneeIds);

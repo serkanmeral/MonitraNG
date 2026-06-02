@@ -1,5 +1,11 @@
 # MngWorkflow Planı
 
+> ⚠️ **SUPERSEDED (1 Haziran 2026).** Bu IFTTT (koşul→aksiyon) planı iki yeni katmana bölünmüştür:
+> - **Koşul/tespit** (threshold, AND/OR, cooldown) → platform geneli **Alarm & Rule Engine**: `docs/odak/alarm/ALARM_RULE_ENGINE_PLAN.md`
+> - **Aksiyon** (notification/http/email/ui) → **Workflow Engine** (Node-RED tarzı): `docs/odak/workflow/Workflow Backend Implementation Plan v1.md`
+>
+> §12'de "ileride" hedeflenen görsel workflow, yeni Workflow Engine ile karşılanmaktadır. Bu doküman tarihsel referans olarak korunur.
+
 Bu doküman, **MngWorkflow** uygulamasının planını tanımlar. Workflow, belirli koşullara göre aksiyon tetikleyen bir sistemdir. İlk sürümde **monitoring** senaryoları hedeflenir; ileride diğer alanlara genişletilebilir.
 
 Planlama özeti için [MonitraNG Monitoring planlama](monitrang_monitoring_planlama.md) dokümanına bakınız.

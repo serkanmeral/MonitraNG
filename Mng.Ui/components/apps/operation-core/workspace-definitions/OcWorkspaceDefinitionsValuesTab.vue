@@ -20,7 +20,7 @@ const route = useRoute();
 const router = useRouter();
 
 const activeValuesTab = ref<OcWorkspaceDefinitionValuesTabKey>('types');
-const { valuesTabIndex } = useOcWorkspaceDefinitionValuesTabs(route, router, activeValuesTab);
+const { valuesTabModel } = useOcWorkspaceDefinitionValuesTabs(route, router, activeValuesTab);
 
 const subTabItems = computed(() =>
   OC_WORKSPACE_DEFINITION_VALUES_TAB_KEYS.map((key) => ({
@@ -50,7 +50,7 @@ const subTabItems = computed(() =>
     </div>
 
     <v-tabs
-      v-model="valuesTabIndex"
+      v-model="valuesTabModel"
       color="primary"
       density="comfortable"
       class="oc-ws-values-tab__subtabs px-2"
@@ -59,7 +59,7 @@ const subTabItems = computed(() =>
       <v-tab
         v-for="sub in subTabItems"
         :key="sub.key"
-        :value="OC_WORKSPACE_DEFINITION_VALUES_TAB_KEYS.indexOf(sub.key)"
+        :value="sub.key"
         class="text-none"
       >
         <v-icon :icon="sub.icon" start size="18" />
@@ -68,11 +68,11 @@ const subTabItems = computed(() =>
     </v-tabs>
     <v-divider />
 
-    <v-tabs-window v-model="valuesTabIndex">
+    <v-tabs-window v-model="valuesTabModel">
       <v-tabs-window-item
-        v-for="(sub, idx) in subTabItems"
+        v-for="sub in subTabItems"
         :key="sub.key"
-        :value="idx"
+        :value="sub.key"
         class="oc-ws-values-tab__panel"
       >
         <OcWorkspaceDefinitionsTypesTab

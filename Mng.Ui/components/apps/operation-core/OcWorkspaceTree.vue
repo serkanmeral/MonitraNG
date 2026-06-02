@@ -18,33 +18,58 @@ const emit = defineEmits<{
   'select-workspace': [workspaceId: string];
   'select-board': [workspaceId: string, boardId: string];
   'open-dashboard': [dashboardId: string, workspaceId: string, boardId: string];
+  'expand-workspace': [workspaceId: string];
+  'expand-all-workspaces': [];
 }>();
 
 const expandedIds = ref<Set<string>>(new Set());
 
 function defaultExpanded(): Set<string> {
-  const s = new Set<string>([OC_ROOT_WORKSPACES]);
-  props.workspaceNodes.forEach((n) => s.add(n.data.__dataId));
-  return s;
+  return new Set<string>([OC_ROOT_WORKSPACES]);
 }
 
 watch(
   () => props.workspaceNodes,
   () => {
-    expandedIds.value = defaultExpanded();
+    const next = defaultExpanded();
+    if (props.selectedWorkspaceId) next.add(props.selectedWorkspaceId);
+    expandedIds.value = next;
   },
   { immediate: true }
 );
 
+watch(
+  () => props.selectedWorkspaceId,
+  (id) => {
+    if (!id) return;
+    const next = new Set(expandedIds.value);
+    next.add(OC_ROOT_WORKSPACES);
+    next.add(id);
+    expandedIds.value = next;
+  },
+  { immediate: true }
+);
+
+function isWorkspaceId(id: string): boolean {
+  return id !== OC_ROOT_WORKSPACES && props.workspaceNodes.some((n) => n.data.__dataId === id);
+}
+
 function toggleExpand(id: string) {
   const next = new Set(expandedIds.value);
-  if (next.has(id)) next.delete(id);
-  else next.add(id);
+  const willExpand = !next.has(id);
+  if (willExpand) next.add(id);
+  else next.delete(id);
   expandedIds.value = next;
+  if (willExpand && isWorkspaceId(id)) {
+    emit('expand-workspace', id);
+  }
 }
 
 function expandAll() {
-  expandedIds.value = defaultExpanded();
+  const next = defaultExpanded();
+  props.workspaceNodes.forEach((n) => next.add(n.data.__dataId));
+  expandedIds.value = next;
+  emit('expand-all-workspaces');
 }
 
 function collapseAll() {

@@ -2,20 +2,16 @@
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useOcPersonPicker } from '@/composables/useOcPersonPicker';
+import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import { useUserStore } from '@/stores/apps/user';
 import OcWorkspacePolicyDialog from '@/components/apps/operation-core/workspace-definitions/OcWorkspacePolicyDialog.vue';
 import {
   OC_DATASETS,
   ocExtractDgErrorMessage,
   ocGetDatasetRecordTitle,
-  ocGetWorkspace,
-  ocListBoardsForWorkspace,
   ocListGlobalWorkItemTypes,
   ocListPriorities,
   ocListStates,
-  ocListPrioritiesForWorkspace,
-  ocListStatesForWorkspace,
-  ocListWorkItemTypesForWorkspace,
   ocListWorkspaceScopedWorkItemTypes,
   ocUpdateWorkspace,
 } from '@/services/operationCoreService';
@@ -50,6 +46,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const catalog = useOcWorkspaceCatalogInject();
 const userStore = useUserStore();
 const personPicker = useOcPersonPicker();
 const personTitleById = ref<Map<string, string>>(new Map());
@@ -223,7 +220,7 @@ async function loadFullCatalogTitleMaps() {
     ocListPriorities(),
     ocListGlobalWorkItemTypes(),
     props.workspaceId ? ocListWorkspaceScopedWorkItemTypes(props.workspaceId) : Promise.resolve([]),
-    props.workspaceId ? ocListBoardsForWorkspace(props.workspaceId) : Promise.resolve([]),
+    props.workspaceId ? Promise.resolve(catalog.boards.value) : Promise.resolve([]),
   ]);
 
   const typeSeen = new Set<string>();
@@ -476,18 +473,13 @@ async function loadData() {
   loading.value = true;
   errorLocal.value = null;
   try {
-    const [ws, stateRows, priorities, types, boards, _catalogTitles] = await Promise.all([
-      ocGetWorkspace(props.workspaceId),
-      ocListStatesForWorkspace(props.workspaceId, {
-        fallbackAll: true,
-        includeFlowStates: true,
-      }),
-      ocListPrioritiesForWorkspace(props.workspaceId, { fallbackAll: true }),
-      ocListWorkItemTypesForWorkspace(props.workspaceId, { fallbackAll: true }),
-      ocListBoardsForWorkspace(props.workspaceId),
-      loadFullCatalogTitleMaps(),
-    ]);
-    void _catalogTitles;
+    await catalog.whenReady();
+    await loadFullCatalogTitleMaps();
+    const ws = catalog.workspace.value;
+    const stateRows = catalog.states.value;
+    const priorities = catalog.priorities.value;
+    const types = catalog.types.value;
+    const boards = catalog.boards.value;
     states.value = stateRows;
     priorityItems.value = priorities.map((p) => ({
       value: p.__dataId,

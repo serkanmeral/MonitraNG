@@ -1,21 +1,18 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import OcWorkspaceBoardDialog from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceBoardDialog.vue';
 import {
   ocCreateBoard,
   ocDeleteBoard,
   ocExtractDgErrorMessage,
-  ocGetWorkspace,
   ocListBoardsForWorkspace,
   ocListDashboardsForWorkspace,
   ocListFormsForWorkspace,
   ocListPoolFieldsForWorkspace,
-  ocListPrioritiesForWorkspace,
   ocListProfilesForWorkspace,
   ocListStateFlowsForWorkspace,
-  ocListStatesForWorkspace,
-  ocListWorkItemTypesForWorkspace,
   ocUpdateBoard,
 } from '@/services/operationCoreService';
 import { useGroupStore } from '@/stores/apps/group';
@@ -27,6 +24,7 @@ const props = defineProps<{
 
 const { t } = useAppI18n();
 const groupStore = useGroupStore();
+const catalog = useOcWorkspaceCatalogInject();
 
 const loading = ref(true);
 const saving = ref(false);
@@ -90,18 +88,19 @@ async function loadAll() {
   loading.value = true;
   errorLocal.value = null;
   try {
-    const [boardRows, forms, dashboardRows, flows, states, profiles, types, priorities, poolFields, ws] = await Promise.all([
+    const [boardRows, forms, dashboardRows, flows, profiles, poolFields] = await Promise.all([
       ocListBoardsForWorkspace(props.workspaceId),
       ocListFormsForWorkspace(props.workspaceId),
       ocListDashboardsForWorkspace(props.workspaceId),
       ocListStateFlowsForWorkspace(props.workspaceId),
-      ocListStatesForWorkspace(props.workspaceId, { fallbackAll: true }),
       ocListProfilesForWorkspace(props.workspaceId),
-      ocListWorkItemTypesForWorkspace(props.workspaceId, { fallbackAll: true }),
-      ocListPrioritiesForWorkspace(props.workspaceId, { fallbackAll: true }),
       ocListPoolFieldsForWorkspace(props.workspaceId),
-      ocGetWorkspace(props.workspaceId),
+      catalog.whenReady(),
     ]);
+    const states = catalog.states.value;
+    const types = catalog.types.value;
+    const priorities = catalog.priorities.value;
+    const ws = catalog.workspace.value;
     boards.value = boardRows;
     stateFlows.value = flows;
     formItems.value = forms.map((f) => ({ value: f.__dataId, title: f.name }));
@@ -164,6 +163,7 @@ async function onDialogSave(body: Record<string, unknown>) {
       await ocCreateBoard(body);
     }
     dialog.value = false;
+    await catalog.refresh();
     await loadAll();
     successLocal.value = t('operationCore.workspaceDefinitions.saveSuccess');
   } catch (e: unknown) {
@@ -184,6 +184,7 @@ async function confirmDelete() {
     await ocDeleteBoard(deleteTarget.value.__dataId);
     deleteDialog.value = false;
     deleteTarget.value = null;
+    await catalog.refresh();
     await loadAll();
     successLocal.value = t('operationCore.workspaceDefinitions.boards.deleteSuccess');
   } catch (e: unknown) {

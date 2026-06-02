@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import OcWorkspaceSlaPolicyDialog from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceSlaPolicyDialog.vue';
 import {
   ocCreateSlaPolicy,
   ocDeleteSlaPolicy,
   ocExtractDgErrorMessage,
-  ocListPrioritiesForWorkspace,
   ocListSlaPoliciesForWorkspace,
-  ocListWorkItemTypesForWorkspace,
   ocUpdateSlaPolicy,
 } from '@/services/operationCoreService';
 import type { OpPriority, OpSlaPolicy, OpWorkItemType } from '@/types/apps/operationCore';
@@ -23,6 +22,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const catalog = useOcWorkspaceCatalogInject();
 
 const loading = ref(true);
 const saving = ref(false);
@@ -116,14 +116,13 @@ async function loadAll() {
   loading.value = true;
   errorLocal.value = null;
   try {
-    const [policyRows, typeRows, priorityRows] = await Promise.all([
+    const [policyRows] = await Promise.all([
       ocListSlaPoliciesForWorkspace(props.workspaceId),
-      ocListWorkItemTypesForWorkspace(props.workspaceId),
-      ocListPrioritiesForWorkspace(props.workspaceId),
+      catalog.whenReady(),
     ]);
     policies.value = policyRows;
-    types.value = typeRows;
-    priorities.value = priorityRows;
+    types.value = catalog.types.value;
+    priorities.value = catalog.priorities.value;
   } catch (e) {
     errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.workspaceDefinitions.sla.loadError'));
   } finally {

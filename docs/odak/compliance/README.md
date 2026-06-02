@@ -75,7 +75,7 @@ Uyum eşlemesinde kullanılan MonitraNG bileşenleri:
 | **Messaging** | RabbitMQ | Olay yayını (`oc.workitem.*`), bildirim pipeline |
 | **Bildirim** | MngNotifiers | E-posta/uyarı kanalları |
 | **UI** | Mng.Ui (Nuxt 3) | Doküman yönetimi, dashboard, raporlama yüzeyi |
-| **Monitoring/SIEM** | major_plan §4.1/4.4 (Faz 1+) | Log toplama, güvenlik olayları, denetim kaynağı |
+| **Monitoring/SIEM** | major_plan §4.1/4.4 (Faz 1+); planlama: [../monitoring/SIEM_PLANNING.md](../monitoring/SIEM_PLANNING.md) | Log toplama, güvenlik olayları, denetim kaynağı |
 
 ---
 

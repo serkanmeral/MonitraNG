@@ -4474,7 +4474,7 @@
         "fieldKeyFormat": "Work item key format",
         "fieldSequenceStart": "Sequence start",
         "keyPrefixHint": "E.g. HD, SOC, TSK",
-        "keyFormatHint": "E.g. {prefix}-{seq:D4}",
+        "keyFormatHint": "E.g. HD-0001 — prefix plus 4-digit sequence number",
         "accessSection": "Access & permission groups",
         "accessHint": "If left empty, the workspace is open to all authorized users. Admin groups grant authority over definitions.",
         "fieldViewGroups": "View groups",

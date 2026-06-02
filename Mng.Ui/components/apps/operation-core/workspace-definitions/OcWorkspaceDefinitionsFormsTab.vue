@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import OcFormPreviewDialog from '@/components/apps/operation-core/OcFormPreviewDialog.vue';
 import OcWorkspaceFormLayoutEditor from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceFormLayoutEditor.vue';
 import OcWorkspaceFormFieldPolicyEditor from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceFormFieldPolicyEditor.vue';
@@ -23,13 +24,9 @@ import {
   ocCreateForm,
   ocDeleteForm,
   ocExtractDgErrorMessage,
-  ocListBoardsForWorkspace,
   ocListFormsForWorkspace,
   ocListPoolFieldsForWorkspace,
-  ocListPrioritiesForWorkspace,
   ocListStateFlowsForWorkspace,
-  ocListStatesForWorkspace,
-  ocListWorkItemTypesForWorkspace,
   ocUpdateForm,
 } from '@/services/operationCoreService';
 import type {
@@ -45,6 +42,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const catalog = useOcWorkspaceCatalogInject();
 
 const loading = ref(true);
 const saving = ref(false);
@@ -253,15 +251,16 @@ async function loadAll() {
   loading.value = true;
   errorLocal.value = null;
   try {
-    const [formRows, types, flows, states, priorities, pool, boards] = await Promise.all([
+    const [formRows, flows, pool] = await Promise.all([
       ocListFormsForWorkspace(props.workspaceId),
-      ocListWorkItemTypesForWorkspace(props.workspaceId, { fallbackAll: true }),
       ocListStateFlowsForWorkspace(props.workspaceId),
-      ocListStatesForWorkspace(props.workspaceId, { fallbackAll: true }),
-      ocListPrioritiesForWorkspace(props.workspaceId, { fallbackAll: true }),
       ocListPoolFieldsForWorkspace(props.workspaceId),
-      ocListBoardsForWorkspace(props.workspaceId),
+      catalog.whenReady(),
     ]);
+    const types = catalog.types.value;
+    const states = catalog.states.value;
+    const priorities = catalog.priorities.value;
+    const boards = catalog.boards.value;
     forms.value = formRows;
     poolFields.value = pool;
     typeItems.value = types.map((x) => ({ value: x.__dataId, title: x.name }));

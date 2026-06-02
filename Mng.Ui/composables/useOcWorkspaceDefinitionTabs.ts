@@ -74,13 +74,13 @@ export function useOcWorkspaceDefinitionTabs(
     { immediate: true }
   );
 
-  const tabIndex = computed({
-    get: () => OC_WORKSPACE_DEFINITION_TAB_KEYS.indexOf(activeTab.value),
-    set: (idx: number) => {
-      const key = OC_WORKSPACE_DEFINITION_TAB_KEYS[idx];
-      if (key) setTab(key);
+  /** String tab keys — numeric index 0 breaks Vuetify v-tabs-window selection in production builds. */
+  const tabModel = computed({
+    get: () => activeTab.value,
+    set: (value: unknown) => {
+      if (isOcWorkspaceDefinitionTabKey(value)) setTab(value);
     },
   });
 
-  return { syncFromRoute, setTab, tabIndex };
+  return { syncFromRoute, setTab, tabModel };
 }

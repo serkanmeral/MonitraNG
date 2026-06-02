@@ -4487,7 +4487,7 @@
         "fieldKeyFormat": "İş anahtarı formatı",
         "fieldSequenceStart": "Sıra başlangıcı",
         "keyPrefixHint": "Örn. HD, SOC, TSK",
-        "keyFormatHint": "Örn. {prefix}-{seq:D4}",
+        "keyFormatHint": "Örn. HD-0001 — prefix artı 4 haneli sıra numarası",
         "accessSection": "Erişim ve yetki grupları",
         "accessHint": "Boş bırakılırsa workspace yetkili tüm kullanıcılara açık olur. Yönetim grupları tanımlar üzerinde yetki verir.",
         "fieldViewGroups": "Görüntüleme grupları",

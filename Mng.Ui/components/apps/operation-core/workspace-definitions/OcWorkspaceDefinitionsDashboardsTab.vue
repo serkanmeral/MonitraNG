@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import OcDashboardWidgetForm from '@/components/apps/operation-core/dashboards/OcDashboardWidgetForm.vue';
 import OcDashboardLayoutEditor from '@/components/apps/operation-core/dashboards/OcDashboardLayoutEditor.vue';
 import {
@@ -9,8 +10,6 @@ import {
   ocExtractDgErrorMessage,
   ocGetDashboardRecord,
   ocListDashboardsForWorkspace,
-  ocListPrioritiesForWorkspace,
-  ocListStatesForWorkspace,
   ocUpdateDashboard,
 } from '@/services/operationCoreService';
 import type {
@@ -24,6 +23,7 @@ import type {
 const props = defineProps<{ workspaceId: string }>();
 
 const { t } = useAppI18n();
+const catalog = useOcWorkspaceCatalogInject();
 
 const loading = ref(true);
 const saving = ref(false);
@@ -62,14 +62,13 @@ async function loadAll() {
   loading.value = true;
   errorLocal.value = null;
   try {
-    const [dash, st, pr] = await Promise.all([
+    const [dash] = await Promise.all([
       ocListDashboardsForWorkspace(props.workspaceId),
-      ocListStatesForWorkspace(props.workspaceId),
-      ocListPrioritiesForWorkspace(props.workspaceId),
+      catalog.whenReady(),
     ]);
     dashboards.value = dash;
-    states.value = st;
-    priorities.value = pr;
+    states.value = catalog.states.value;
+    priorities.value = catalog.priorities.value;
   } catch (e: unknown) {
     errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.dashboards.editor.loadError'));
   } finally {

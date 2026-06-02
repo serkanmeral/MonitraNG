@@ -13,6 +13,9 @@ Tüm kurulum ve günlük çalışma akışı tek dokümanda:
 |---------|--------|
 | **[ODAK_FULL_SETUP.md](./ODAK_FULL_SETUP.md)** | Tam kurulum özeti: sunucu, mng_common, mng_apps, domain, initial data, yerel dev, deploy, bilinen sorunlar |
 | **[operationcore/README.md](./operationcore/README.md)** | Operation Core (OC) / MngOperations — planlama ve spec |
+| **[diagnostic/README.md](./diagnostic/README.md)** | Performans ölçümü — Faz 1+1B UI deploy tamam; Faz 2 backend bekliyor |
+| **[deploy/README.md](./deploy/README.md)** | **Odak deploy (Windows)** — pwsh, UI/backend komutları, sorun giderme |
+| **[monitoring/README.md](./monitoring/README.md)** | Güvenlik odaklı izleme / SIEM-hafif — planlama |
 | **[compliance/README.md](./compliance/README.md)** | Standart uyumluluğu — ISO/IEC 27001 + AS9100 planı |
 
 Yeni bir chat’te geliştirmeye geçerken önce **ODAK_FULL_SETUP** okuyun; ayrıntı için alt bölümlerdeki linklere inin. OC geliştirmesi için **operationcore** klasörüne bakın.
@@ -25,6 +28,8 @@ Yeni bir chat’te geliştirmeye geçerken önce **ODAK_FULL_SETUP** okuyun; ayr
 docs/odak/
 ├── ODAK_FULL_SETUP.md          ← ana rehber (bu oturumun özeti)
 ├── README.md                   ← bu dosya
+├── deploy/
+│   └── README.md               ← Windows deploy (pwsh, UI/backend)
 ├── setup/
 │   ├── KURULUM.md              ← sunucu, Docker, SSH
 │   ├── MNG_COMMON_ODAK.md
@@ -50,6 +55,10 @@ docs/odak/
 │   └── datasets/
 │       ├── README.md
 │       └── operationcore_datasets_phase1_*.json
+├── monitoring/
+│   ├── README.md               ← Güvenlik odaklı izleme / SIEM-hafif (index)
+│   ├── SIEM_PLANNING.md        ← SIEM-hafif planlama: gap, event modeli, senaryolar, müdahale
+│   └── DEVAM.md                ← kaldığımız yer (workflow planı bekleniyor ⏸️)
 ├── compliance/
 │   ├── README.md               ← ISO 27001 + AS9100 uyum planı (index)
 │   ├── ISO27001_PLAN.md        ← ISO/IEC 27001:2022 kontrol eşleme + boşluk

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, provide } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import OcWorkspaceDefinitionsGeneralTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsGeneralTab.vue';
 import OcWorkspaceDefinitionsValuesTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsValuesTab.vue';
@@ -23,6 +23,10 @@ import { useDisplay } from 'vuetify';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useAuthStore } from '@/stores/auth';
 import { ocListWorkspaces } from '@/services/operationCoreService';
+import {
+  OC_WORKSPACE_CATALOG_KEY,
+  useOcWorkspaceCatalog,
+} from '@/composables/useOcWorkspaceCatalog';
 import type { OpWorkspace } from '@/types/apps/operationCore';
 
 definePageMeta({ layout: 'default' });
@@ -34,12 +38,15 @@ const router = useRouter();
 const auth = useAuthStore();
 
 const activeTab = ref<OcWorkspaceDefinitionTabKey>('general');
-const { tabIndex } = useOcWorkspaceDefinitionTabs(route, router, activeTab);
+const { tabModel } = useOcWorkspaceDefinitionTabs(route, router, activeTab);
 
 const workspaces = ref<OpWorkspace[]>([]);
 const loadingWorkspaces = ref(true);
 const selectedWorkspaceId = ref('');
 const createDialogOpen = ref(false);
+
+const workspaceCatalog = useOcWorkspaceCatalog(selectedWorkspaceId);
+provide(OC_WORKSPACE_CATALOG_KEY, workspaceCatalog);
 
 const { breadcrumbs } = useOperationCoreBreadcrumbs({
   tail: computed(() => ({
@@ -199,7 +206,7 @@ onMounted(() => {
     <v-card v-else-if="selectedWorkspaceId" variant="outlined" class="rounded-lg">
       <div class="d-flex flex-column flex-md-row">
         <v-tabs
-          v-model="tabIndex"
+          v-model="tabModel"
           :direction="mdAndUp ? 'vertical' : 'horizontal'"
           color="primary"
           class="oc-def-side-tabs flex-shrink-0 py-2"
@@ -208,7 +215,7 @@ onMounted(() => {
           <v-tab
             v-for="tab in tabItems"
             :key="tab.key"
-            :value="OC_WORKSPACE_DEFINITION_TAB_KEYS.indexOf(tab.key)"
+            :value="tab.key"
             class="text-none justify-start"
           >
             <v-icon :icon="tab.icon" start size="20" />
@@ -216,12 +223,12 @@ onMounted(() => {
           </v-tab>
         </v-tabs>
         <v-divider :vertical="mdAndUp" />
-        <v-tabs-window v-model="tabIndex" class="flex-grow-1" style="min-width: 0">
-        <v-tabs-window-item
-          v-for="(tab, idx) in tabItems"
-          :key="tab.key"
-          :value="idx"
-        >
+        <v-tabs-window v-model="tabModel" class="flex-grow-1" style="min-width: 0">
+          <v-tabs-window-item
+            v-for="tab in tabItems"
+            :key="tab.key"
+            :value="tab.key"
+          >
           <OcWorkspaceDefinitionsGeneralTab
             v-if="tab.key === 'general'"
             :workspace-id="selectedWorkspaceId"
@@ -266,7 +273,7 @@ onMounted(() => {
             v-else-if="tab.key === 'sla'"
             :workspace-id="selectedWorkspaceId"
           />
-        </v-tabs-window-item>
+          </v-tabs-window-item>
         </v-tabs-window>
       </div>
     </v-card>
@@ -293,7 +300,6 @@ onMounted(() => {
   }
 }
 
-/* Dikey modda sekmeleri sola hizala, tam genişlik kullansın. */
 .oc-def-side-tabs :deep(.v-tab) {
   justify-content: flex-start;
   text-align: left;

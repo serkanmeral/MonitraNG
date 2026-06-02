@@ -1,9 +1,11 @@
 # MngOperations & Operation Core UI — Devam noktası (checkpoint)
 
-**Son güncelleme:** 2 Haziran 2026 (**DASH-INLINE + DASH-CARDS** — pano artık board ekranı **içeriğinde inline** açılıyor (ayrı sayfa yok), özet/liste kart görünümleri zenginleştirildi, **"Bana atanan açık işler"** widget'ı `{{currentUser}}` kimlik düzeltmesi + yeni `wi_assigned_open` query ile **dolu**. DG query PUT + dashboard reseed + MO `--no-cache` deploy edildi — **canlı** (`oc_live=200`). UI kısmı henüz commit/deploy bekliyor (saf UI).)  
-**Durum:** SW **SW-0…SW-6** ✅ · A1 R-Plus ✅ · **SLA-0/1/2** ✅ · **D1 Board admin** ✅ · **BL** ✅ · **BO (+BO-5/6)** ✅ · **BLF (+BLF-8/9/10)** ✅ · **BLC** ✅ · **FC** ✅ · **NP (+NP-7)** ✅ · **E1-P1/W-CREATE/E1-P2** ✅ · **CC** ✅ · **A** ✅ · **F (+F-T2/F-K)** ✅ · **BL-GRP (+BL-GRP-2)** ✅ · **PERF** ✅ · **PROF-VIEW** ✅ · **OC-ACT** ✅ · **OC-TAGS** ✅ · **OC-EDIT** ✅ · **PV-PERF** ✅ · **DASH-A/C/B** ✅ · **DASH-BOARD** ✅ · **DASH-INLINE** ✅ (pano board içinde inline) · **DASH-CARDS** ✅ (kart UI + bana atanan açık işler + currentUser fix) — tümü Odak'ta canlı
+**Son güncelleme:** 2 Haziran 2026 (**WS-DEF-GENEL** + **UI-NGINX-SCHEDULER** ✅ Odak canlı · dikey workspace sekmeleri geri)  
+**Durum:** SW **SW-0…SW-6** ✅ · … · **DASH-INLINE** ✅ · **DASH-CARDS** ✅ · **WS-DEF-GENEL** ✅ · **UI-NGINX-SCHEDULER** ✅ — Odak `ui=200`/`oc_live=200`/`scheduler=200`; **⚠️ bu oturum UI değişiklikleri henüz commit edilmedi**
 
-> **⭐ KALDIĞIMIZ YER (2 Haz ~08:05) — yeni chat buradan devam edecek:** Bu chat'te **(1) DASH-INLINE** — pano artık board'ın workspace hub merkez panelinde **ayrı sayfa açmadan inline** render ediliyor. Yeni paylaşılan **`OcDashboardView.vue`** (yükleme+grid; `dashboards/[id]/index.vue` de bunu kullanıyor → tek kaynak). Hub `workspace/index.vue`: board seçiliyken **Özet/Pano toggle** (pano varsa varsayılan **Pano**); tree'deki pano düğümü tıklaması da ayrı sayfa yerine board'ı seçip inline pano açıyor. i18n `workspace.viewSummary`. **(2) DASH-CARDS** — özet kartları (renk aksanı + tonlu ikon rozeti + akıllı ikon + büyük renkli sayı + hover) ve liste widget'ı (öncelik renk şeridi + atanan baş-harf avatarı + hover + boş-durum) zenginleştirildi. **(3) "Bana atanan açık işler" düzeltmesi (backend, CANLI):** `my_assigned` widget'ı boştu çünkü `{{currentUser}}` → `preferred_username` çözülüyordu ama `assignee` `MngPersonId` (@users id) ile saklanıyor (NP-4/6 uzayı). **Düzeltme:** `QueryResolveContext.Username` → **`CurrentUserId`** (anlamca netleştirildi), her iki kuruluş yeri (`RuntimeContextService.cs` generic query + `.Dashboard.cs`) artık **`_requestContext.MngPersonId`** besliyor. Ayrıca yeni named query **`wi_assigned_open`** (`{ assignee: :assignee, closedAt: null }` — SLA query'leriyle aynı "açık" semantiği) eklendi: generator + DG json + MO `OcQueries` whitelist + seed widget (queryKey `wi_assigned_open`, başlık "Bana atanan acik isler"). **PROVİZYON+DEPLOY TAMAM:** DG `op_work_items` query'leri PUT'landı (`/data/api/v1/datasets/op_work_items`, sadece `Queries`); dashboard reseed (PUT SYNC); MO `--no-cache` deploy (build 0/0, `oc_live=200`). **Doğrulandı:** `GET runtime/dashboards/{id}` → `my_assigned success=True total=1 items=1` (odak_admin'in 1 açık atanmış işi). **COMMIT + PUSH + UI DEPLOY TAMAM:** commit `e5c28bd` (`main`'e push, 15 dosya +389/−140 — UI + MO + scriptler/json + DEVAM.md; `appsettings.Development.json` + üretilen seed json + alakasız docs hariç), `Mng.Ui` sync → `mngui` Odak'a `--no-cache` deploy (2 Haz ~08:14, **`ui=200` + `oc_live=200`** canlı). **DASH-INLINE + DASH-CARDS TAMAMEN CANLI. Sıradaki (konuşulacak):** (a) UI commit+push + `mngui` Odak deploy; (b) pano-board bağı iyileştirmeleri (board'dan hızlı "pano ata", pano editöründe board'a bağlama); (c) opsiyonel: özet kart renk/ikon admin'den seçilebilir, liste avatar kişiye özel renk; (d) açık perf kalemleri (PV-PERF soğuk cache / DG eşzamanlılık) ya da yeni OC backlog. *(Aşağıdaki DASH-BOARD notu önceki durumdur.)*
+> **⭐ KALDIĞIMIZ YER (2 Haz ~10:45) — yeni chat buradan devam edecek:** Bu chat'te **WS-DEF-GENEL** (Workspace Tanımları Genel sekmesi boş) ve **admin Zamanlanmış görevler** listesi boş sorunları çözüldü, Odak'ta doğrulandı. **(1) WS-DEF-GENEL — kök neden vue-i18n:** `keyFormatHint` içindeki `{prefix}-{seq:D4}` message compiler'da `SyntaxError: Unterminated closing brace` → Genel sekmesi render kırılıyordu (nginx/DG değil). **Fix:** `OcWorkspaceDefinitionsGeneralTab.vue` → hint **`t()` dışında** düz metin (`keyFormatHintText`); `tr.json`/`en.json` süslü parantezsiz metin; sekmeler **`tabModel` string key** (`'general'`, …) + `eager` (sayısal `0` riski giderildi); **dikey sol sekme düzeni** (`505ea7b` deseni) geri alındı — lokal + Odak OK. **(2) UI-NGINX-SCHEDULER — kök neden:** `Mng.Ui/nginx.conf`'ta **`/api/scheduler/` proxy yoktu** → admin `/apps/operation-core/admin/scheduled-jobs` (`schedulerService` → `/api/scheduler/v1/...`) **index.html** alıyordu (31 May `/api/operations/` bug'ı ile aynı sınıf). **Fix:** `location /api/scheduler/` → `mngscheduler:5090/api/`. Doğrulama: `GET :3000/api/scheduler/v1/system/jobs` → **200 JSON** (2 system + 1 user job). Workspace Tanımları → Zamanlanmış işler sekmesi **DG `op_work_item_schedules`** (1 demo kayıt `Zamanlama1`); admin sayfa scheduler birleşik listeyi gösterir. **MngScheduler servisi:** healthy, Quartz 2 system job aktif; demo user job `oc-schedule-82760c1b-…` scheduler tarafında **pasif** (auto-deactivate expired/limit) — DG'de hâlâ `isActive:true` (opsiyonel re-sync). **Deploy:** `mngui` `--no-cache` birkaç kez (son ~10:45, `ui=200`). **⚠️ Henüz commit edilmedi:** `Mng.Ui/nginx.conf`, `workspace-definitions/index.vue`, `useOcWorkspaceDefinitionTabs.ts`, `useOcWorkspaceDefinitionValuesTabs.ts`, `OcWorkspaceDefinitionsValuesTab.vue`, `OcWorkspaceDefinitionsGeneralTab.vue`, `tr.json`/`en.json`, `DEVAM.md`. **Sıradaki (yeni chat):** (a) **commit+push** bu UI/nginx fix paketi; (b) pano-board iyileştirmeleri (board'dan hızlı pano ata, editörde board bağlama); (c) opsiyonel: özet kart renk/ikon admin'den seçilebilir; (d) **PV-PERF** commit backlog (MO, henüz commit edilmedi); (e) demo schedule scheduler re-sync / pasif job UX. **Deploy:** `sync-odak-source.ps1 -Paths Mng.Ui` · `deploy-odak-apps.ps1 -Services mngui -NoCache` · token: `load-operationcore-token.ps1`. **Odak:** http://192.168.20.20:3000 · demo ws `f414462a-cd9e-427e-87e8-3cdff0502325`.
+>
+> **KALDIĞIMIZ YER (2 Haz ~08:05):** — pano artık board'ın workspace hub merkez panelinde **ayrı sayfa açmadan inline** render ediliyor. Yeni paylaşılan **`OcDashboardView.vue`** (yükleme+grid; `dashboards/[id]/index.vue` de bunu kullanıyor → tek kaynak). Hub `workspace/index.vue`: board seçiliyken **Özet/Pano toggle** (pano varsa varsayılan **Pano**); tree'deki pano düğümü tıklaması da ayrı sayfa yerine board'ı seçip inline pano açıyor. i18n `workspace.viewSummary`. **(2) DASH-CARDS** — özet kartları (renk aksanı + tonlu ikon rozeti + akıllı ikon + büyük renkli sayı + hover) ve liste widget'ı (öncelik renk şeridi + atanan baş-harf avatarı + hover + boş-durum) zenginleştirildi. **(3) "Bana atanan açık işler" düzeltmesi (backend, CANLI):** `my_assigned` widget'ı boştu çünkü `{{currentUser}}` → `preferred_username` çözülüyordu ama `assignee` `MngPersonId` (@users id) ile saklanıyor (NP-4/6 uzayı). **Düzeltme:** `QueryResolveContext.Username` → **`CurrentUserId`** (anlamca netleştirildi), her iki kuruluş yeri (`RuntimeContextService.cs` generic query + `.Dashboard.cs`) artık **`_requestContext.MngPersonId`** besliyor. Ayrıca yeni named query **`wi_assigned_open`** (`{ assignee: :assignee, closedAt: null }` — SLA query'leriyle aynı "açık" semantiği) eklendi: generator + DG json + MO `OcQueries` whitelist + seed widget (queryKey `wi_assigned_open`, başlık "Bana atanan acik isler"). **PROVİZYON+DEPLOY TAMAM:** DG `op_work_items` query'leri PUT'landı (`/data/api/v1/datasets/op_work_items`, sadece `Queries`); dashboard reseed (PUT SYNC); MO `--no-cache` deploy (build 0/0, `oc_live=200`). **Doğrulandı:** `GET runtime/dashboards/{id}` → `my_assigned success=True total=1 items=1` (odak_admin'in 1 açık atanmış işi). **COMMIT + PUSH + UI DEPLOY TAMAM:** commit `e5c28bd` (`main`'e push, 15 dosya +389/−140 — UI + MO + scriptler/json + DEVAM.md; `appsettings.Development.json` + üretilen seed json + alakasız docs hariç), `Mng.Ui` sync → `mngui` Odak'a `--no-cache` deploy (2 Haz ~08:14, **`ui=200` + `oc_live=200`** canlı). **DASH-INLINE + DASH-CARDS TAMAMEN CANLI. Sıradaki (konuşulacak):** (a) UI commit+push + `mngui` Odak deploy; (b) pano-board bağı iyileştirmeleri (board'dan hızlı "pano ata", pano editöründe board'a bağlama); (c) opsiyonel: özet kart renk/ikon admin'den seçilebilir, liste avatar kişiye özel renk; (d) açık perf kalemleri (PV-PERF soğuk cache / DG eşzamanlılık) ya da yeni OC backlog. *(Aşağıdaki DASH-BOARD notu önceki durumdur.)*
 >
 > **KALDIĞIMIZ YER (2 Haz ~00:10):** Bu chat'te **panolar board kapsamına taşındı (DASH-BOARD)** + önceki **D-B (admin pano editörü)** birlikte **commit + UI deploy** edildi. **Karar (kullanıcı):** pano **TANIMLARI workspace seviyesinde kalır** (admin "Panolar" sekmesi); board, formdaki gibi mevcut bir panoyu **SEÇER** (`op_boards.defaultDashboardId` — ek DG alanı, şema değişikliği yok). "Board Aç" butonu → **panel başlığına** taşındı. **Değişiklikler (saf UI):** (1) `OpBoard.defaultDashboardId` + `mapBoard`; (2) servis `ocListAllDashboards` (+`mapDashboardListItem` refactor); (3) `OcWorkspaceBoardDialog` → "Varsayılan pano" select + payload, `OcWorkspaceDefinitionsBoardsTab` workspace panolarını yükleyip geçirir; (4) `OcWorkspaceTree` → board satırı altında **seçili pano düğümü** (tıkla → viewer, `open-dashboard` event), hub `dashboardNameById` haritası besler; (5) hub `workspace/index.vue` → workspace "Panolar" bölümü **kaldırıldı**, **"Board Aç" + (pano varsa) "Pano"** butonu panel başlığında, board-seçili merkez panel görünüm tipi + pano adı chip'i gösterir; i18n tr/en (`boards.fieldDefaultDashboard`/`dashboardNoData`, `workspace.openDashboard`). **D-B editör bileşenleri** (`OcDashboardWidgetForm`, `OcDashboardLayoutEditor`, `OcWorkspaceDefinitionsDashboardsTab` + `useOcWorkspaceDefinitionTabs` 'dashboards' + Tanımlar sayfası dikey sekme düzeni) de bu commit'te. Vue `<template v-for>` key derleme hatası → her iterasyon `div` ile sarılarak çözüldü. **Dev HMR temiz; kalan lint'ler Vetur `@/` alias sahte-pozitifi.** **Backend dokunulmadı** (saf UI→DG). **COMMIT + PUSH + UI DEPLOY TAMAM:** commit `505ea7b` (`main`'e push, 14 dosya +1601/−116), `Mng.Ui` sync → `mngui` Odak'a `--no-cache` deploy edildi (2 Haz ~00:16, **`ui=200`** canlı; backend zaten healthy). *(appsettings.Development.json + üretilen seed json + alakasız monitoring/compliance docs commit edilmedi.)* **DASH-BOARD + D-B TAMAMEN CANLI.** **Sıradaki (yarın — konuşulacak):** (a) **Odak'ta tarayıcı doğrulaması** — board tanımında pano seç → tree'de pano düğümü → "Board Aç"/"Pano" başlık butonları → pano viewer; (b) opsiyonel iyileştirmeler: board panosu yoksa tree'de gizli (şu an öyle) / "pano ata" kısayolu, pano editöründe board'a bağlama kolaylığı; (c) **açık perf kalemleri** (PV-PERF soğuk cache ~10sn / DG eşzamanlılık tavanı) ya da yeni OC backlog. *(Aşağıdaki D-B/D-C notları önceki durumdur.)*
 >
@@ -54,6 +56,26 @@ Pano artık board'ın kendi ekranı (workspace hub merkez paneli) **içinde inli
 **Açık/ileriki:**
 - ⬜ Özet kart renk/ikon admin (board/pano editörü) seçilebilir; liste avatar kişiye özel renk.
 - ⬜ Pano-board bağı iyileştirmeleri: board'dan hızlı "pano ata", pano editöründe board'a bağlama kolaylığı.
+
+---
+
+## WS-DEF-GENEL — Workspace Tanımları "Genel" sekmesi Odak'ta boş (2 Haz, ✅ çözüldü)
+
+Odak **deploy edilmiş** UI'da (`http://192.168.20.20:3000/apps/operation-core/admin/workspace-definitions`) **Genel sekmesi içerik göstermiyordu** (boş). **Lokal `npm run dev` sorunsuzdu.** Kök neden nginx/DG değil — **vue-i18n message compiler crash**.
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **WS-DEF-GENEL-1** | ✅ | **Semptom:** Genel sekmesi boş; Değerler/Panolar vb. diğer sekmeler çalışıyordu. |
+| **WS-DEF-GENEL-2** | ✅ teşhis | nginx: Odak `mngui` container'da **`/api/data/` + `/api/operations/`** blokları mevcut. `GET …/api/data/v1/data/op_workspaces/{id}` → **200** (curl + odak_admin token). Genel sekmesi **`ocGetWorkspace`** (saf DG, MO değil) kullanır → `OcWorkspaceDefinitionsGeneralTab.vue`. |
+| **WS-DEF-GENEL-3** | ✅ (yan yol) | D-B **dikey sekme** (`505ea7b`) şüphelendi → geçici yatay revert denendi (~08:30) — **çözmedi**; asıl kök neden i18n idi. Son durum: **dikey sol sekme düzeni geri alındı** (`oc-def-side-tabs`, `useDisplay`). |
+| **WS-DEF-GENEL-4** | ✅ | **Vuetify `v-tabs` sayısal `value: 0`** riski — sekme modeli **string key** (`tabModel`: `'general'`, `'values'`, …) + `eager` window item. Alt Değerler sekmeleri de string key. |
+| **WS-DEF-GENEL-5** | ✅ kök neden + fix | **vue-i18n `keyFormatHint`:** `Örn. {prefix}-{seq:D4}` → message compiler `SyntaxError: Unterminated closing brace` (`{seq:D4}` geçersiz placeholder); Genel sekmesi render kırılıyordu. **Fix:** hint **`t()` dışında** `keyFormatHintText` computed (düz metin); `tr.json`/`en.json` süslü parantezsiz metin. **Lokal + Odak doğrulandı** (~10:45). |
+
+**İlgili dosyalar:** `Mng.Ui/pages/apps/operation-core/admin/workspace-definitions/index.vue`, `composables/useOcWorkspaceDefinitionTabs.ts`, `composables/useOcWorkspaceDefinitionValuesTabs.ts`, `components/.../OcWorkspaceDefinitionsValuesTab.vue`, `components/.../OcWorkspaceDefinitionsGeneralTab.vue`, `utils/locales/tr.json`, `utils/locales/en.json`.
+
+**⚠️ Henüz commit edilmedi** — commit+push sıradaki chat'te.
+
+**Tarihsel:** commit `000e624` (31 May) benzer semptomu nginx `/api/operations/` eksikliğine bağlamıştı; bu sefer curl ile DG proxy çalışıyordu → **farklı kök neden** (vue-i18n). Locale cache (`localStorage` `locale_cache_*`) eski metin tutabilir → hard refresh + cache silme gerekebilir.
 
 ---
 
@@ -547,6 +569,37 @@ location /api/operations/ {
 
 ---
 
+## UI-NGINX-SCHEDULER — `/api/scheduler/` proxy fix (2 Haz, KRİTİK config bug)
+
+**Belirti:** Admin **Zamanlanmış görevler** sayfası (`/apps/operation-core/admin/scheduled-jobs`) **hiç job göstermiyordu** (boş liste, hata sessiz veya parse fail).
+
+**Kök neden:** `Mng.Ui/nginx.conf`'ta **`/api/scheduler/` proxy bloğu yoktu** — `schedulerService` same-origin `/api/scheduler/v1/...` çağırıyor; nginx `location /` → `try_files … /index.html` ile **text/html** dönüyordu (31 May **`/api/operations/`** bug'ı ile aynı sınıf). Workspace Tanımları → **Zamanlanmış işler** sekmesi **DG `op_work_item_schedules`** okuduğu için etkilenmedi; sadece admin scheduler birleşik listesi kırıktı.
+
+**Fix:** `Mng.Ui/nginx.conf`'a eklendi:
+```nginx
+# Client: /api/scheduler/v1/system/jobs -> mngscheduler:5090/api/v1/system/jobs
+location /api/scheduler/ {
+    set $sched_auth $http_authorization;
+    if ($arg_access_token != "") { set $sched_auth "Bearer $arg_access_token"; }
+    proxy_pass http://mngscheduler:5090/api/;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Authorization $sched_auth;
+    proxy_pass_header Access-Control-Allow-Origin;
+    proxy_pass_header Access-Control-Allow-Methods;
+    proxy_pass_header Access-Control-Allow-Headers;
+}
+```
+
+**Deploy/doğrulama:** `mngui --no-cache` (~10:45, `ui=200`). `GET http://192.168.20.20:3000/api/scheduler/v1/system/jobs` → **200 JSON** (2 system job: directory-sync, backup-daily). User jobs: 1 demo (`oc-schedule-82760c1b-…`, scheduler tarafında **pasif** — auto-deactivate expired/limit; DG'de `isActive:true` — opsiyonel re-sync). **MngScheduler:** healthy, Quartz OK.
+
+**⚠️ Henüz commit edilmedi** — `000e624` ile birlikte commit paketinde.
+
+---
+
 ## Sıradaki işler
 
 | # | Epic | Hedef |
@@ -595,4 +648,6 @@ location /api/operations/ {
 [✓] DASH-A/C/B + DASH-BOARD: pano viewer + chart + admin editör + panolar board kapsamında — Odak'ta canlı (1-2 Haz)
 [✓] DASH-INLINE: pano board ekranında inline (ayrı sayfa yok) + Özet/Pano toggle — Odak'ta canlı (2 Haz, e5c28bd, ui=200)
 [✓] DASH-CARDS: özet/liste kart UI zenginleştirme + "bana atanan açık işler" (currentUser→MngPersonId + wi_assigned_open) — Odak'ta canlı (2 Haz, e5c28bd, ui=200/oc_live=200)
+[✓] WS-DEF-GENEL: Workspace Tanımları Genel sekmesi (vue-i18n keyFormatHint crash + tabModel string keys + dikey sekmeler) — Odak'ta canlı (2 Haz, commit bekliyor)
+[✓] UI-NGINX-SCHEDULER: admin Zamanlanmış görevler (/api/scheduler/ proxy → mngscheduler) — Odak'ta canlı (2 Haz, commit bekliyor)
 ```

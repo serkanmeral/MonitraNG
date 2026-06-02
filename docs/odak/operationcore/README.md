@@ -22,6 +22,7 @@ MonitraNG operasyonel iş yönetim modülü. Backend servisi: **MngOperations**.
 | [ui/OC_UI_ADMIN_FAZ1_PLAN.md](./ui/OC_UI_ADMIN_FAZ1_PLAN.md) | **Admin UX Faz 1** — sıra + bugün | Güncel |
 | [ui/OC_UI_RULES_FAZ1.md](./ui/OC_UI_RULES_FAZ1.md) | **Kurallar** R-Core + R-UX (§8) | Güncel |
 | [mngoperations/SLA_FAZ1_PLAN.md](./mngoperations/SLA_FAZ1_PLAN.md) | SLA planlama (geliştirme Faz 1.5+) | Güncel |
+| [../diagnostic/PERFORMANCE_ROADMAP.md](../diagnostic/PERFORMANCE_ROADMAP.md) | **Performans yol haritası** — Faz 1+1B UI ✅; Faz 2 backend bekliyor | Güncel |
 | [reference/IT_HELP_DESK_REFERENCE.md](./reference/IT_HELP_DESK_REFERENCE.md) | IT Help Desk referans workspace + tip kategorileri | Güncel |
 
 ---

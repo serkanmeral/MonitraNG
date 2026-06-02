@@ -2,19 +2,16 @@
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useOcPersonPicker } from '@/composables/useOcPersonPicker';
+import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import { useUserStore } from '@/stores/apps/user';
 import OcWorkspaceRuleDialog from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceRuleDialog.vue';
 import {
   ocCreateRule,
   ocDeleteRule,
   ocExtractDgErrorMessage,
-  ocListBoardsForWorkspace,
   ocListPoolFieldsForWorkspace,
-  ocListPrioritiesForWorkspace,
   ocListRulesForWorkspace,
   ocListStateFlowsForWorkspace,
-  ocListStatesForWorkspace,
-  ocListWorkItemTypesForWorkspace,
   ocUpdateRule,
 } from '@/services/operationCoreService';
 import {
@@ -43,6 +40,7 @@ const props = defineProps<{
 
 const { t } = useAppI18n();
 const personPicker = useOcPersonPicker();
+const catalog = useOcWorkspaceCatalogInject();
 const userStore = useUserStore();
 
 const loading = ref(false);
@@ -258,25 +256,27 @@ async function resolvePersonTitles(ids: string[]) {
   }
   await personPicker.ensureSelectedIds(ids);
   const map = new Map<string, string>();
-  for (const id of ids) {
-    const fromPicker = personPicker.items.value.find((i) => i.value === id);
-    if (fromPicker?.title && fromPicker.title !== id) {
-      map.set(id, fromPicker.title);
-      continue;
-    }
-    const user = userStore.getUserById(id);
-    if (user) {
-      map.set(id, buildOcPersonPickerTitle(user));
-      continue;
-    }
-    try {
-      await userStore.fetchUserById(id);
-      const fetched = userStore.getUserById(id);
-      map.set(id, fetched ? buildOcPersonPickerTitle(fetched) : id);
-    } catch {
-      map.set(id, id);
-    }
-  }
+  await Promise.all(
+    ids.map(async (id) => {
+      const fromPicker = personPicker.items.value.find((i) => i.value === id);
+      if (fromPicker?.title && fromPicker.title !== id) {
+        map.set(id, fromPicker.title);
+        return;
+      }
+      const user = userStore.getUserById(id);
+      if (user) {
+        map.set(id, buildOcPersonPickerTitle(user));
+        return;
+      }
+      try {
+        await userStore.fetchUserById(id);
+        const fetched = userStore.getUserById(id);
+        map.set(id, fetched ? buildOcPersonPickerTitle(fetched) : id);
+      } catch {
+        map.set(id, id);
+      }
+    })
+  );
   personTitleById.value = map;
 }
 
@@ -317,14 +317,15 @@ async function loadAll() {
   loading.value = true;
   errorLocal.value = null;
   try {
-    const [ruleRows, flows, types, boards, states, priorities] = await Promise.all([
+    const [ruleRows, flows] = await Promise.all([
       ocListRulesForWorkspace(props.workspaceId),
       ocListStateFlowsForWorkspace(props.workspaceId),
-      ocListWorkItemTypesForWorkspace(props.workspaceId, { fallbackAll: true }),
-      ocListBoardsForWorkspace(props.workspaceId),
-      ocListStatesForWorkspace(props.workspaceId, { fallbackAll: true }),
-      ocListPrioritiesForWorkspace(props.workspaceId, { fallbackAll: true }),
+      catalog.whenReady(),
     ]);
+    const types = catalog.types.value;
+    const boards = catalog.boards.value;
+    const states = catalog.states.value;
+    const priorities = catalog.priorities.value;
     rules.value = ruleRows;
     stateFlows.value = flows;
     typeItems.value = types.map((x) => ({ value: x.__dataId, title: x.name }));

@@ -249,6 +249,14 @@ const relationLabelByKey = computed(() => {
   return map;
 });
 
+let relationOptionsLoaded = false;
+
+async function ensureRelationOptions() {
+  if (relationOptionsLoaded) return;
+  relationOptionsLoaded = true;
+  await loadRelationOptions();
+}
+
 async function loadRelationOptions() {
   const fields = relationPoolFields.value;
   if (!fields.length) {
@@ -558,12 +566,26 @@ async function loadPoolFields() {
   } catch {
     poolFields.value = [];
   }
-  await loadRelationOptions();
 }
 
 watch(workspaceId, () => {
+  relationOptionsLoaded = false;
   void loadPoolFields();
 }, { immediate: true });
+
+watch(
+  filterableColumns,
+  (cols) => {
+    if (cols.some((c) => c.kind === 'relation')) {
+      void ensureRelationOptions();
+    }
+  },
+  { immediate: true }
+);
+
+function onFiltersAdvancedOpen() {
+  void ensureRelationOptions();
+}
 
 const canEdit = computed(() => store.boardContext?.permissions.canEdit === true);
 
@@ -866,6 +888,7 @@ onUnmounted(() => {
             :tag-options-by-key="tagOptionsByKey"
             class="mb-2"
             @update:filters="onFiltersUpdate"
+            @advanced-open="onFiltersAdvancedOpen"
           />
         </div>
         <v-divider />

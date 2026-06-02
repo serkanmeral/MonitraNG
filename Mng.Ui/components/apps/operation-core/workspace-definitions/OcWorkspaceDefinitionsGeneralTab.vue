@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import { ocExtractDgErrorMessage, ocGetWorkspace, ocUpdateWorkspace } from '@/services/operationCoreService';
 import { useGroupStore } from '@/stores/apps/group';
 import type { OpWorkspaceDetail } from '@/types/apps/operationCore';
@@ -10,8 +11,16 @@ const props = defineProps<{
   workspaceId: string;
 }>();
 
-const { t } = useAppI18n();
+const { t, locale } = useAppI18n();
 const groupStore = useGroupStore();
+const catalog = useOcWorkspaceCatalogInject();
+
+/** i18n message compiler `{seq:D4}` gibi süslü parantezleri parse edemez; hint doğrudan metin. */
+const keyFormatHintText = computed(() =>
+  locale() === 'en'
+    ? 'E.g. HD-0001 — prefix plus 4-digit sequence number'
+    : 'Örn. HD-0001 — prefix artı 4 haneli sıra numarası'
+);
 
 const loading = ref(true);
 const saving = ref(false);
@@ -109,6 +118,7 @@ async function saveGeneral() {
       editGroups: form.value.editGroups,
       adminGroups: form.value.adminGroups,
     });
+    await catalog.refresh();
     await loadWorkspace();
     successLocal.value = t('operationCore.workspaceDefinitions.saveSuccess');
   } catch (e: unknown) {
@@ -196,7 +206,7 @@ async function saveGeneral() {
         v-model="form.workItemKeyFormat"
         class="mt-3"
         :label="t('operationCore.workspaceDefinitions.general.fieldKeyFormat')"
-        :hint="t('operationCore.workspaceDefinitions.general.keyFormatHint')"
+        :hint="keyFormatHintText"
         persistent-hint
         density="comfortable"
       />

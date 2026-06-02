@@ -19,6 +19,7 @@ Yeni chat’te geliştirmeye başlamadan önce orayı okuyun.
 | 2b | IT — altyapı erişim | [MNG_COMMON_ODAK_MUSTERI_ERISIM.md](./MNG_COMMON_ODAK_MUSTERI_ERISIM.md) | Teslim |
 | 3 | Uygulamalar (mng_apps) | [MNG_APPS_ODAK.md](./MNG_APPS_ODAK.md) | Tamamlandı |
 | 3a | Deploy (git push’suz) | [MNG_APPS_ODAK_DEPLOY.md](./MNG_APPS_ODAK_DEPLOY.md) | Hazır |
+| 3a+ | **Günlük deploy komutları (Windows / pwsh)** | [../deploy/README.md](../deploy/README.md) | **Doğrulanmış** |
 | 3b | IT — uygulama erişim | [MNG_APPS_ODAK_MUSTERI_ERISIM.md](./MNG_APPS_ODAK_MUSTERI_ERISIM.md) | Teslim |
 | 4 | Domain + initial data | [../domain/README.md](../domain/README.md) | Tamamlandı |
 

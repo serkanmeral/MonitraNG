@@ -105,6 +105,8 @@ docker compose -f docker-compose.production.yml -f docker-compose.odak.yml --env
 
 **Git push sunucu deploy’una bağlı değildir.**
 
+> **Windows:** Scriptleri **`pwsh`** (PowerShell 7) ile çalıştırın; günlük komutlar ve sorun giderme → [deploy/README.md](./deploy/README.md).
+
 | Script | Ne yapar |
 |--------|----------|
 | `scripts/odak/sync-odak-source.ps1` | Workspace → `/home/odak/MonitraNG` (tar/scp) |
@@ -114,19 +116,19 @@ docker compose -f docker-compose.production.yml -f docker-compose.odak.yml --env
 **İlk tam kurulum (PC, repo kökü):**
 
 ```powershell
-.\scripts\odak\sync-odak-source.ps1 -Full
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\sync-odak-source.ps1 -Full
 # Sunucuda bir kez: cp .env.odak.example .env && secret'ları doldur
-.\scripts\odak\deploy-odak-apps.ps1 -FullBuild
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\deploy-odak-apps.ps1
 ```
 
-**Tek servis güncelleme:**
+**Tek servis güncelleme (ör. UI):**
 
 ```powershell
-.\scripts\odak\sync-odak-source.ps1 -Paths Mng.Ui,MngKeeper
-.\scripts\odak\deploy-odak-apps.ps1 -Services mngui,mngkeeper
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\sync-odak-source.ps1 -Paths Mng.Ui
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\deploy-odak-apps.ps1 -Services mngui
 ```
 
-Ayrıntı: [setup/MNG_APPS_ODAK_DEPLOY.md](./setup/MNG_APPS_ODAK_DEPLOY.md).
+Ayrıntı: [deploy/README.md](./deploy/README.md) · [setup/MNG_APPS_ODAK_DEPLOY.md](./setup/MNG_APPS_ODAK_DEPLOY.md).
 
 ---
 

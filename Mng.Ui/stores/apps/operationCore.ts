@@ -29,6 +29,7 @@ export const useOperationCoreStore = defineStore('operationCore', {
     loadingBoards: {} as Record<string, boolean>,
     error: null as string | null,
     operationsLive: null as boolean | null,
+    workspacesLoadedAt: 0 as number,
 
     activeBoardId: null as string | null,
     boardContext: null as OcBoardRuntimeContext | null,
@@ -69,14 +70,26 @@ export const useOperationCoreStore = defineStore('operationCore', {
   },
 
   actions: {
-    async loadWorkspaces() {
+    async loadWorkspaces(force = false) {
+      const ttlMs = 60_000;
+      if (
+        !force &&
+        this.workspaces.length > 0 &&
+        this.workspacesLoadedAt > 0 &&
+        Date.now() - this.workspacesLoadedAt < ttlMs
+      ) {
+        return;
+      }
+
       this.loadingWorkspaces = true;
       this.error = null;
       try {
         this.workspaces = await ocListWorkspaces();
+        this.workspacesLoadedAt = Date.now();
       } catch (e: unknown) {
         this.error = e instanceof Error ? e.message : String(e);
         this.workspaces = [];
+        this.workspacesLoadedAt = 0;
       } finally {
         this.loadingWorkspaces = false;
       }
@@ -99,6 +112,7 @@ export const useOperationCoreStore = defineStore('operationCore', {
       }
     },
 
+    /** Yalnızca açıkça genişletme/tümünü-aç gibi kullanıcı aksiyonlarında — sayfa açılışında çağırma. */
     async loadAllBoards() {
       await Promise.all(this.workspaces.map((w) => this.loadBoardsForWorkspace(w.__dataId, true)));
     },
@@ -250,7 +264,11 @@ export const useOperationCoreStore = defineStore('operationCore', {
     },
 
     async loadAllColumns(columns: OcBoardColumn[]) {
-      await Promise.all(columns.map((col) => this.loadColumn(col)));
+      const concurrency = 4;
+      for (let i = 0; i < columns.length; i += concurrency) {
+        const batch = columns.slice(i, i + concurrency);
+        await Promise.all(batch.map((col) => this.loadColumn(col)));
+      }
     },
 
     async refreshBoard() {
