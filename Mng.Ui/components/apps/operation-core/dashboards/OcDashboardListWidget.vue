@@ -34,9 +34,22 @@ function stateItem(stateId?: string): OcCatalogDisplayItem | null {
   return { id: stateId, name: e.name, color: e.color ?? null, icon: e.icon ?? null };
 }
 
+function priorityColor(priorityId?: string): string | null {
+  if (!priorityId) return null;
+  return props.catalogs?.priorities?.[priorityId]?.color ?? null;
+}
+
 function assigneeName(card: OcWorkItemCard): string | null {
   if (!card.assignee) return null;
   return props.people?.[card.assignee]?.name?.trim() || null;
+}
+
+function initials(name: string | null): string {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 function openItem(card: OcWorkItemCard) {
@@ -61,32 +74,49 @@ function openItem(card: OcWorkItemCard) {
         </span>
       </div>
 
-      <div v-else-if="!items.length" class="pa-4 text-body-2 text-medium-emphasis">
-        {{ t('operationCore.dashboards.emptyWidget') }}
+      <div v-else-if="!items.length" class="pa-8 text-center text-medium-emphasis">
+        <v-icon icon="mdi-inbox-outline" size="40" class="mb-2 opacity-50" />
+        <p class="text-body-2 mb-0">{{ t('operationCore.dashboards.emptyWidget') }}</p>
       </div>
 
-      <v-list v-else density="compact" class="py-0">
+      <v-list v-else density="comfortable" class="py-0">
         <v-list-item
           v-for="card in items"
           :key="card.id"
           class="oc-dash-list-row"
+          :style="{ '--oc-prio': priorityColor(card.priorityId) || 'transparent' }"
           @click="openItem(card)"
         >
-          <div class="d-flex align-center ga-2 w-100" style="min-width: 0">
-            <span class="text-caption text-medium-emphasis flex-shrink-0">{{ card.key }}</span>
-            <span class="text-body-2 text-truncate flex-grow-1">{{ card.title }}</span>
-            <OcBoardCatalogLabel
-              v-if="card.stateId"
-              :item="stateItem(card.stateId)"
-              class="flex-shrink-0 text-caption"
-            />
-            <span
+          <div class="d-flex align-center ga-3 w-100" style="min-width: 0">
+            <div class="oc-dash-list-main flex-grow-1" style="min-width: 0">
+              <div class="d-flex align-center ga-2" style="min-width: 0">
+                <span class="text-caption text-medium-emphasis flex-shrink-0 font-weight-medium">{{ card.key }}</span>
+                <span class="text-body-2 text-truncate">{{ card.title }}</span>
+              </div>
+              <div class="d-flex align-center ga-2 mt-1">
+                <OcBoardCatalogLabel
+                  v-if="card.stateId"
+                  :item="stateItem(card.stateId)"
+                  class="flex-shrink-0 text-caption"
+                />
+                <span
+                  v-if="assigneeName(card)"
+                  class="text-caption text-medium-emphasis text-truncate"
+                  style="max-width: 140px"
+                >
+                  {{ assigneeName(card) }}
+                </span>
+              </div>
+            </div>
+            <v-avatar
               v-if="assigneeName(card)"
-              class="text-caption text-medium-emphasis flex-shrink-0 text-truncate"
-              style="max-width: 120px"
+              size="30"
+              color="primary"
+              variant="tonal"
+              class="flex-shrink-0 text-caption font-weight-bold"
             >
-              {{ assigneeName(card) }}
-            </span>
+              {{ initials(assigneeName(card)) }}
+            </v-avatar>
           </div>
         </v-list-item>
       </v-list>
@@ -100,6 +130,11 @@ function openItem(card: OcWorkItemCard) {
 }
 .oc-dash-list-row {
   cursor: pointer;
+  border-left: 3px solid var(--oc-prio, transparent);
+  transition: background-color 0.15s ease;
+}
+.oc-dash-list-row:hover {
+  background-color: rgba(var(--v-theme-primary), 0.06);
 }
 .oc-dash-list-row:not(:last-child) {
   border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));

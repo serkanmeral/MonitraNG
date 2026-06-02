@@ -700,7 +700,7 @@ public partial class RuntimeContextService : IRuntimeContextService
             {
                 WorkspaceId = workspaceHint,
                 BoardId = boardHint,
-                Username = _requestContext.Username,
+                CurrentUserId = _requestContext.MngPersonId,
                 UtcNow = DateTime.UtcNow
             },
             cancellationToken);

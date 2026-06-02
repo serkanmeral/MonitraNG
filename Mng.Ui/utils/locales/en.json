@@ -3404,6 +3404,7 @@
       "selectedBoardHint": "The list view opens by default; switch to Kanban if needed.",
       "openBoard": "Open board",
       "openDashboard": "Dashboard",
+      "viewSummary": "Summary",
       "viewTypeKanban": "Kanban",
       "viewTypeList": "List"
     },

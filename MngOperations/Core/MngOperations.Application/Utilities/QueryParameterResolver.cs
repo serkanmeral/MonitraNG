@@ -4,7 +4,13 @@ public sealed class QueryResolveContext
 {
     public string? WorkspaceId { get; init; }
     public string? BoardId { get; init; }
-    public string? Username { get; init; }
+
+    /// <summary>
+    /// <c>{{currentUser}}</c> token'ının çözüleceği kimlik. İş kaydı person alanları
+    /// (assignee/watchers vb.) <c>MngPersonId</c> (@users id) uzayında saklandığından bu da
+    /// <c>IRequestContext.MngPersonId</c> ile beslenmelidir (preferred_username değil).
+    /// </summary>
+    public string? CurrentUserId { get; init; }
     public DateTime UtcNow { get; init; } = DateTime.UtcNow;
 }
 
@@ -27,7 +33,7 @@ public static class QueryParameterResolver
 
         return s switch
         {
-            "{{currentUser}}" => context.Username,
+            "{{currentUser}}" => context.CurrentUserId,
             "{{currentWorkspace}}" => context.WorkspaceId,
             "{{currentBoard}}" => context.BoardId,
             "{{today}}" => context.UtcNow.Date,
@@ -42,7 +48,7 @@ public static class QueryParameterResolver
     private static object? ResolveToken(string token, QueryResolveContext context) =>
         token.ToLowerInvariant() switch
         {
-            "currentuser" => context.Username,
+            "currentuser" => context.CurrentUserId,
             "currentworkspace" => context.WorkspaceId,
             "currentboard" => context.BoardId,
             "today" => context.UtcNow.Date,

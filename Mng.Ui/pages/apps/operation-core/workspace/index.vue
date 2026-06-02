@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import OcWorkspaceTree from '@/components/apps/operation-core/OcWorkspaceTree.vue';
+import OcDashboardView from '@/components/apps/operation-core/dashboards/OcDashboardView.vue';
 import { useResizableTreePanel } from '@/composables/useResizableTreePanel';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import { useOperationCoreStore } from '@/stores/apps/operationCore';
@@ -57,17 +58,10 @@ async function loadAllDashboards() {
   }
 }
 
-function openDashboard(dashboardId: string, workspaceId?: string | null) {
-  if (!dashboardId) return;
-  const wsId = workspaceId ?? selectedWorkspaceId.value;
-  router.push({
-    path: `/apps/operation-core/dashboards/${encodeURIComponent(dashboardId)}`,
-    query: wsId ? { workspaceId: wsId } : undefined,
-  });
-}
-
-function onOpenDashboard(dashboardId: string, workspaceId: string, _boardId: string) {
-  openDashboard(dashboardId, workspaceId);
+// Tree'de pano düğümüne tıklayınca: ilgili board'ı seç ve merkez panelde inline pano göster.
+function onOpenDashboard(_dashboardId: string, workspaceId: string, boardId: string) {
+  onSelectBoard(workspaceId, boardId);
+  centerView.value = 'dashboard';
 }
 
 const selectedWorkspace = computed(() =>
@@ -84,6 +78,17 @@ const selectedBoard = computed(() => {
 const selectedBoardDashboardId = computed(() => selectedBoard.value?.defaultDashboardId ?? null);
 const selectedBoardDashboardName = computed(() =>
   selectedBoardDashboardId.value ? dashboardNameById.value[selectedBoardDashboardId.value] ?? null : null
+);
+
+// Board seçiliyken merkez panel görünümü: pano varsa inline pano, yoksa özet bilgi.
+const centerView = ref<'summary' | 'dashboard'>('summary');
+
+watch(
+  selectedBoardDashboardId,
+  (dashId) => {
+    centerView.value = dashId ? 'dashboard' : 'summary';
+  },
+  { immediate: true }
 );
 
 const { breadcrumbs } = useOperationCoreBreadcrumbs({
@@ -300,17 +305,23 @@ onMounted(async () => {
             </span>
             <template v-if="selectedBoard">
               <v-spacer />
-              <v-btn
+              <v-btn-toggle
                 v-if="selectedBoardDashboardId"
-                size="small"
-                variant="tonal"
+                v-model="centerView"
+                mandatory
+                density="comfortable"
                 color="primary"
-                class="text-none"
-                prepend-icon="mdi-view-dashboard-outline"
-                @click="openDashboard(selectedBoardDashboardId, selectedWorkspaceId)"
+                variant="outlined"
+                divided
+                class="mr-1"
               >
-                {{ t('operationCore.workspace.openDashboard') }}
-              </v-btn>
+                <v-btn value="summary" size="small" class="text-none" prepend-icon="mdi-information-outline">
+                  {{ t('operationCore.workspace.viewSummary') }}
+                </v-btn>
+                <v-btn value="dashboard" size="small" class="text-none" prepend-icon="mdi-view-dashboard-outline">
+                  {{ t('operationCore.workspace.openDashboard') }}
+                </v-btn>
+              </v-btn-toggle>
               <v-btn
                 size="small"
                 variant="flat"
@@ -407,7 +418,18 @@ onMounted(async () => {
               </v-row>
             </div>
 
-            <!-- Board seçili -->
+            <!-- Board seçili + pano görünümü: inline pano -->
+            <div
+              v-else-if="selectedWorkspace && selectedBoard && centerView === 'dashboard' && selectedBoardDashboardId"
+            >
+              <OcDashboardView
+                :key="selectedBoardDashboardId"
+                :dashboard-id="selectedBoardDashboardId"
+                :show-description="true"
+              />
+            </div>
+
+            <!-- Board seçili + özet bilgi -->
             <div
               v-else-if="selectedWorkspace && selectedBoard"
               class="d-flex align-center justify-center h-100"

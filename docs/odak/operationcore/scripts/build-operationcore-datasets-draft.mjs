@@ -67,6 +67,15 @@ const WORK_ITEM_QUERIES = [
     parameters: [{ name: 'assignee', type: 'text', required: true }],
   },
   {
+    name: 'wi_assigned_open',
+    description: 'Open (not closed) WorkItems assigned to a user',
+    pipeline: [
+      { $match: { assignee: ':assignee', closedAt: null } },
+      { $sort: { lastStateChangeAt: -1 } },
+    ],
+    parameters: [{ name: 'assignee', type: 'text', required: true }],
+  },
+  {
     name: 'wi_sla_response_breach',
     description: 'Open WorkItems past SLA response due',
     pipeline: [

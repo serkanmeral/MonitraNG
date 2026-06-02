@@ -3417,6 +3417,7 @@
       "selectedBoardHint": "Varsayılan liste görünümü açılır; isteğe bağlı Kanban'a geçebilirsiniz.",
       "openBoard": "Board'u aç",
       "openDashboard": "Pano",
+      "viewSummary": "Özet",
       "viewTypeKanban": "Kanban",
       "viewTypeList": "Liste"
     },

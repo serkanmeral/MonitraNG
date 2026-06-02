@@ -7,6 +7,7 @@ public static class OcQueries
         "wi_by_workspace_and_state",
         "wi_board_column",
         "wi_assigned_to_user",
+        "wi_assigned_open",
         "wi_sla_response_breach",
         "wi_sla_resolve_breach"
     };

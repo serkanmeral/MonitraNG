@@ -392,9 +392,9 @@ $dashboardWidgets = @(
         @{
             key       = "my_assigned"
             type      = "list"
-            title     = "Bana atanan"
+            title     = "Bana atanan acik isler"
             dataset   = "op_work_items"
-            queryKey  = "wi_assigned_to_user"
+            queryKey  = "wi_assigned_open"
             parameters = @{
                 assignee = "{{currentUser}}"
             }

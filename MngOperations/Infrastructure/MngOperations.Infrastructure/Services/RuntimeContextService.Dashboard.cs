@@ -39,7 +39,7 @@ public partial class RuntimeContextService
         var resolveContext = new QueryResolveContext
         {
             WorkspaceId = workspaceId,
-            Username = _requestContext.Username,
+            CurrentUserId = _requestContext.MngPersonId,
             UtcNow = DateTime.UtcNow
         };
 
