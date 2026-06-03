@@ -1,9 +1,11 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MngReactor.Application.Abstractions.Data;
 using MngReactor.Application.Abstractions.Ingest;
+using MngReactor.Application.Abstractions.Observations;
 using MngReactor.Application.Configuration;
 using MngReactor.Application.Features.Commands.Ingest;
 
@@ -17,6 +19,7 @@ public class IngestProcessing : IIngestProcessing
     private readonly ILogger<IngestProcessing> _logger;
     private readonly IOptions<MngReactorSettings> _options;
     private readonly IMetricPublisher _metricPublisher;
+    private readonly IObservationPublisher _observationPublisher;
     private readonly IIngestNotifyPublisher _ingestNotifyPublisher;
     private readonly IMonMetricsRepository _metricsRepo;
     private readonly IDataGatewayClient _dg;
@@ -25,6 +28,7 @@ public class IngestProcessing : IIngestProcessing
         ILogger<IngestProcessing> logger,
         IOptions<MngReactorSettings> options,
         IMetricPublisher metricPublisher,
+        IObservationPublisher observationPublisher,
         IIngestNotifyPublisher ingestNotifyPublisher,
         IMonMetricsRepository metricsRepo,
         IDataGatewayClient dg)
@@ -32,6 +36,7 @@ public class IngestProcessing : IIngestProcessing
         _logger = logger;
         _options = options;
         _metricPublisher = metricPublisher;
+        _observationPublisher = observationPublisher;
         _ingestNotifyPublisher = ingestNotifyPublisher;
         _metricsRepo = metricsRepo;
         _dg = dg;
@@ -51,6 +56,7 @@ public class IngestProcessing : IIngestProcessing
         var errorList = new List<IngestError>();
         var engineIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var bulkItems = new JsonArray();
+        var observationContexts = new List<ObservationPublishContext>();
 
         for (var batchIndex = 0; batchIndex < request.Batches.Count; batchIndex++)
         {
@@ -69,6 +75,7 @@ public class IngestProcessing : IIngestProcessing
 
                 bulkItems.Add(doc);
                 engineIds.Add(batch.EngineId);
+                observationContexts.Add(new ObservationPublishContext(batch, metric, domainFromToken));
 
                 _ = _metricPublisher.PublishAsync(ToPublishDocument(batch, metric, domainFromToken), domainFromToken, cancellationToken);
             }
@@ -94,6 +101,16 @@ public class IngestProcessing : IIngestProcessing
                     savedCount += inserted;
                     if (inserted < chunk.Count)
                         failedCount += chunk.Count - inserted;
+
+                    if (inserted > 0)
+                    {
+                        var publishCount = Math.Min(inserted, chunk.Count);
+                        for (var i = 0; i < publishCount; i++)
+                        {
+                            var ctx = observationContexts[offset + i];
+                            await PublishObservationAsync(ctx, cancellationToken);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -123,6 +140,73 @@ public class IngestProcessing : IIngestProcessing
 
         return new IngestMetricsResponse { SavedCount = savedCount, FailedCount = failedCount, ErrorList = errorList };
     }
+
+    private async Task PublishObservationAsync(ObservationPublishContext ctx, CancellationToken cancellationToken)
+    {
+        if (!TryReadDouble(ctx.Metric.Value, out var numericValue))
+            return;
+
+        var domainName = ctx.Domain.Trim();
+        var dimensions = new Dictionary<string, string?>(StringComparer.Ordinal)
+        {
+            ["assetId"] = ctx.Batch.AssetId,
+            ["agentId"] = ctx.Batch.AgentId,
+            ["engineId"] = ctx.Batch.EngineId
+        };
+        if (!string.IsNullOrEmpty(ctx.Batch.ItemId))
+            dimensions["itemId"] = ctx.Batch.ItemId;
+        if (!string.IsNullOrEmpty(ctx.Metric.Unit))
+            dimensions["unit"] = ctx.Metric.Unit;
+
+        await _observationPublisher.PublishAsync(
+            domainName,
+            domainName,
+            ctx.Metric.CollectibleCode,
+            numericValue,
+            dimensions,
+            ctx.Batch.CollectedAt,
+            cancellationToken);
+    }
+
+    private static bool TryReadDouble(object? value, out double result)
+    {
+        result = default;
+        if (value == null)
+            return false;
+
+        switch (value)
+        {
+            case double d:
+                result = d;
+                return true;
+            case float f:
+                result = f;
+                return true;
+            case int i:
+                result = i;
+                return true;
+            case long l:
+                result = l;
+                return true;
+            case decimal dec:
+                result = (double)dec;
+                return true;
+            case string s when double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed):
+                result = parsed;
+                return true;
+            case JsonElement je when je.ValueKind == JsonValueKind.Number && je.TryGetDouble(out var jsonNum):
+                result = jsonNum;
+                return true;
+            case JsonElement je when je.ValueKind == JsonValueKind.String &&
+                                     double.TryParse(je.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var jsonParsed):
+                result = jsonParsed;
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private sealed record ObservationPublishContext(IngestBatch Batch, IngestMetric Metric, string Domain);
 
     private static bool? GetBool(JsonNode? node, string key)
     {

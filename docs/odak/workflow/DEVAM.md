@@ -9,7 +9,7 @@
 
 ## 1. Tek cümlede durum
 
-**Faz 0–6+ kodlandı.** Faz 6: OC WorkItem create/transition. **Faz 6.1:** `workitem.update` (PATCH). **MO entegrasyon:** `op_rules` action `startWorkflow`. **Alarm seam:** Reactor metric bridge + lifecycle triggers + native observation consumer. **SLA Faz 2:** breach scan → workflow. **parallel.fork MVP** Odak E2E ✅. **Sıradaki:** MngReactor native publish, P3 SIEM spike (external repo), `parallel.join`.
+**Faz 0–6+ kodlandı.** **Alarm lifecycle + C6 native observation** Odak E2E ✅. **MngReactor** Odak'ta ayakta; workflow `mqtt/publish` endpoint Reactor'da eksik (`DevLogOnly=true`). **Sıradaki:** mqtt/publish PR, SIEM Faz 1 (PR-1…6). Detay: [monitoring/HANDOFF.md](../monitoring/HANDOFF.md) · [PLATFORM_CHECKPOINT.md](../PLATFORM_CHECKPOINT.md) SIEM-ready ✅.
 
 ---
 

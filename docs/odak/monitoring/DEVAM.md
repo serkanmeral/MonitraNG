@@ -1,81 +1,178 @@
 # DEVAM — SIEM-Hafif Planlama (Kaldığımız Yer)
 
-**Son güncelleme:** 3 Haziran 2026
-**Durum:** ▶️ Planlama devam — **Faz 1 spike MngEngine/MngReactor'da başlatılabilir** (workflow seam ✅)
+
+
+**Son güncelleme:** 3 Haziran 2026  
+
+**Durum:** ▶️ **SIEM-ready checkpoint ✅** · SIEM Faz 1 implementasyon sırada  
+
+**Handoff (yeni chat):** [HANDOFF.md](./HANDOFF.md)
+
+
 
 ---
+
+
 
 ## 1. Tek cümlede durum
 
-Faz 0 planlama bitti. **Workflow SIEM seam hazır** (P4-A/B Odak E2E). **Implementasyon:** harici repolarda Faz 1 spike; MonitraNG tarafında fixture + kural taslağı + seam dokümanı tamamlandı. Yoğun veri: [SIEM_THROUGHPUT_AND_QUEUES.md](./SIEM_THROUGHPUT_AND_QUEUES.md). **AI:** implementasyon ⏸️ — [AI_PLANNING_DECISION.md](../AI_PLANNING_DECISION.md).
+
+
+Faz 0 planlama ✅. **C6 tamam:** MngReactor Odak deploy + native observation publish + bridge kapalı. **SIEM `sec_events`** kodu henüz yok. Workflow `mqtt/publish` endpoint Reactor'da eksik (`DevLogOnly=true`).
+
+
 
 ---
+
+
 
 ## 2. Dosya haritası
 
+
+
 | Dosya | Rol |
+
 |-------|-----|
+
+| [HANDOFF.md](./HANDOFF.md) | **Yeni chat prompt + oturum özeti** |
+
 | [SIEM_PLANNING.md](./SIEM_PLANNING.md) | Ana plan (§1–23) |
+
 | [SIEM_PARSER_PLAN.md](./SIEM_PARSER_PLAN.md) | Parser/normalizer |
+
 | [SIEM_FAZ1_SPIKE.md](./SIEM_FAZ1_SPIKE.md) | Faz 1 implementasyon |
-| [SIEM_FAZ1_HANDOFF.md](./SIEM_FAZ1_HANDOFF.md) | MngEngine/MngReactor handoff |
-| [SIEM_WORKFLOW_SEAM.md](./SIEM_WORKFLOW_SEAM.md) | Workflow × SIEM seam değerlendirmesi ✅ |
+
+| [SIEM_FAZ1_HANDOFF.md](./SIEM_FAZ1_HANDOFF.md) | MngEngine + MngReactor kabul kriterleri |
+
+| [MNGREACTOR_SIEM_FAZ1_IMPLEMENTATION.md](./MNGREACTOR_SIEM_FAZ1_IMPLEMENTATION.md) | Dosya ağacı + PR-1…PR-6 |
+
+| [MNGREACTOR_ODAK_DEPLOY_CHECKLIST.md](./MNGREACTOR_ODAK_DEPLOY_CHECKLIST.md) | Odak stub → gerçek deploy |
+
+| [SIEM_WORKFLOW_SEAM.md](./SIEM_WORKFLOW_SEAM.md) | Workflow × SIEM ✅ |
+
 | [SEC_EVENT_OBSERVATION_MAP.md](./SEC_EVENT_OBSERVATION_MAP.md) | Faz 2 observation eşlemesi |
-| [SIEM_THROUGHPUT_AND_QUEUES.md](./SIEM_THROUGHPUT_AND_QUEUES.md) | Kuyruk, paralellik, yoğun veri |
-| [SIEM_PERFORMANCE_PLAN.md](./SIEM_PERFORMANCE_PLAN.md) | Performans — **§2 öneriler**, SLO, benchmark |
-| [SIEM_VERTICAL_FINANCE.md](./SIEM_VERTICAL_FINANCE.md) | Dijital banka kapsam (sonra gözden geçirilecek) |
-| [benchmarks/README.md](./benchmarks/README.md) | Benchmark çıktı klasörü (boş) |
+
+| [SIEM_THROUGHPUT_AND_QUEUES.md](./SIEM_THROUGHPUT_AND_QUEUES.md) | Kuyruk, yoğun veri |
+
+| [SIEM_PERFORMANCE_PLAN.md](./SIEM_PERFORMANCE_PLAN.md) | SLO, benchmark |
+
+| [benchmarks/README.md](./benchmarks/README.md) | Benchmark klasörü (boş) |
+
 | [README.md](./README.md) | İndeks |
 
----
 
-## 3. Faz 1 spike — ▶️ başlatılabilir
-
-Detay: [SIEM_FAZ1_SPIKE.md](./SIEM_FAZ1_SPIKE.md) · Handoff: [SIEM_FAZ1_HANDOFF.md](./SIEM_FAZ1_HANDOFF.md)
-
-**Workflow kapısı:** ✅ [SIEM_WORKFLOW_SEAM.md](./SIEM_WORKFLOW_SEAM.md)
 
 ---
 
-## 4. Paralel (planlama / veri)
+
+
+## 3. MngReactor durumu (3 Haz 2026)
+
+
+
+| Konu | Durum |
+
+|------|--------|
+
+| Kaynak | ✅ `MngReactor/` monorepo (submodule değil) |
+
+| Monitoring metrik ingest | ✅ kodda var |
+
+| SIEM `sec_events` | ⬜ PR planı hazır, kod yok |
+
+| Odak deploy | ✅ `mngreactor:latest` — [checklist](./MNGREACTOR_ODAK_DEPLOY_CHECKLIST.md) |
+
+| Workflow `mqtt/publish` | ⬜ endpoint eksik; Odak `DevLogOnly=true` |
+
+| Observation native publish | ✅ C6 — [REACTOR_NATIVE_PUBLISH_HANDOFF](../alarm/REACTOR_NATIVE_PUBLISH_HANDOFF.md) |
+
+| Yeniden inşa? | ❌ Gerek yok |
+
+
+
+---
+
+
+
+## 4. Paralel planlama
+
+
 
 | İş | Durum |
+
 |----|-------|
-| Örnek log fixture (4625, 4740, deny, unparseable) | ✅ `tests/fixtures/siem/` |
-| U1/U2/U4 → `mon_alarm_rules` JSON taslağı | ✅ `tests/fixtures/siem/alarm_rules/` |
-| `sec_events` → observation map | ✅ [SEC_EVENT_OBSERVATION_MAP.md](./SEC_EVENT_OBSERVATION_MAP.md) |
-| Workflow SIEM seam değerlendirmesi | ✅ [SIEM_WORKFLOW_SEAM.md](./SIEM_WORKFLOW_SEAM.md) |
-| Performans baseline (P0/P1) | ⬜ spike sonrası → `benchmarks/` |
-| Finans dikeyi gözden geçirme | ⬜ isteğe bağlı |
+
+| Fixture (4625, 4624, deny, unparseable) | ✅ `tests/fixtures/siem/` |
+
+| U1/U2/U4 alarm kural taslağı | ✅ `tests/fixtures/siem/alarm_rules/` |
+
+| Workflow SIEM seam | ✅ |
+
+| Observation map | ✅ |
+
+| Performans baseline | ⬜ spike sonrası |
+
+| Finans dikeyi | ⬜ isteğe bağlı |
+
+
 
 ---
 
-## 5. Spike kararları (onaylı — handoff ile uyumlu)
 
-| # | Karar | Değer |
-|---|-------|-------|
-| D1 | Ingest discriminator | `kind=sec_event` ✅ |
-| D2 | Windows yolu | Fixture first (B); WEC Odak paralel |
-| D3 | Syslog | UDP MVP |
-| D4 | DB | Mongo `mng_{domain}` |
-| D5 | Retention spike | TTL yok veya 30 gün test |
+
+## 5. Spike kararları (D1–D5)
+
+
+
+| # | Karar |
+
+|---|--------|
+
+| D1 | `kind=sec_event` (Faz 1.1 birleşik batch; Faz 1 route: `/ingest/sec-events`) |
+
+| D2 | Windows fixture first |
+
+| D3 | Syslog UDP MVP |
+
+| D4 | Mongo `sec_events` |
+
+| D5 | Retention test: TTL yok veya 30 gün |
+
+
 
 ---
 
-## 6. Sıradaki adımlar (öncelik)
 
-1. **MngReactor/MngEngine:** [SIEM_FAZ1_HANDOFF.md](./SIEM_FAZ1_HANDOFF.md) S1–S4 implementasyonu
-2. Spike bitince: `SEC_EVENT_OBSERVATION_MAP` publish + U1 kural Odak E2E
-3. `test-siem-faz1-e2e.ps1` + `benchmarks/` doldurma
-4. U2 `sequence` kural tipi — Alarm Faz 2+ backlog
-5. Finans dikeyi gözden geçirme — istenirse
+
+## 6. Sıradaki adımlar
+
+
+
+1. ~~Odak MngReactor deploy~~ ✅ — [MNGREACTOR_ODAK_DEPLOY_CHECKLIST.md](./MNGREACTOR_ODAK_DEPLOY_CHECKLIST.md)
+
+2. Reactor `POST /api/v1/mqtt/publish` (workflow gerçek block_ip)
+
+3. ~~PR-O1…O3 observation publish (Alarm C6)~~ ✅
+
+4. SIEM PR-1…PR-6 — [MNGREACTOR_SIEM_FAZ1_IMPLEMENTATION.md](./MNGREACTOR_SIEM_FAZ1_IMPLEMENTATION.md)
+
+5. MngEngine syslog S3 — [SIEM_FAZ1_HANDOFF.md](./SIEM_FAZ1_HANDOFF.md)
+
+6. Spike sonrası: `test-siem-faz1-e2e.ps1`, benchmarks, U1 E2E
+
+
 
 ---
 
-## 7. İlgili dokümanlar
 
-- [SIEM_FAZ1_SPIKE.md](./SIEM_FAZ1_SPIKE.md)
-- [SIEM_PARSER_PLAN.md](./SIEM_PARSER_PLAN.md)
-- [workflow/DEVAM.md §P4](../workflow/DEVAM.md)
-- [alarm/DEVAM.md](../alarm/DEVAM.md)
-- `docs/odak/alarm/ALARM_RULE_ENGINE_PLAN.md`
+
+## 7. İlgili DEVAM dosyaları
+
+
+
+- [workflow/DEVAM.md](../workflow/DEVAM.md) — P4 engine.command, parallel.fork
+
+- [alarm/DEVAM.md](../alarm/DEVAM.md) — Faz 2 correlation, C6 native observation
+
+- [../deploy/README.md](../deploy/README.md)
+

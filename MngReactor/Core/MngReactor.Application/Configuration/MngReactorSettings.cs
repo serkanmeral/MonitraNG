@@ -18,7 +18,16 @@ public class MngReactorSettings
     public DataGatewaySettings DataGateway { get; set; } = new();
     public MqttSettings Mqtt { get; set; } = new();
     public MonitoringSettings Monitoring { get; set; } = new();
+    public ObservationPublishSettings ObservationPublish { get; set; } = new();
     public CryptSettings Crypt { get; set; } = new();
+}
+
+public class ObservationPublishSettings
+{
+    /// <summary>
+    /// Native <c>monitra.observations</c> publish. Default false until Odak C6 cutover.
+    /// </summary>
+    public bool Enabled { get; set; }
 }
 
 public class ServerSettings

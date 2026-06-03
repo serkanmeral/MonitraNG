@@ -1,7 +1,8 @@
 # SIEM Faz 1 Spike — Handoff (MngEngine + MngReactor)
 
-**Hedef repolar:** MngEngine, MngReactor (MonitraNG dışı)  
+**Hedef:** `MngReactor/`, `MngEngine/` (MonitraNG monorepo)  
 **MonitraNG hazırlığı:** fixture + plan dokümanları ✅  
+**Implementasyon rehberi:** [MNGREACTOR_SIEM_FAZ1_IMPLEMENTATION.md](./MNGREACTOR_SIEM_FAZ1_IMPLEMENTATION.md) · **Odak deploy:** [MNGREACTOR_ODAK_DEPLOY_CHECKLIST.md](./MNGREACTOR_ODAK_DEPLOY_CHECKLIST.md)  
 **Ana plan:** [SIEM_FAZ1_SPIKE.md](./SIEM_FAZ1_SPIKE.md) · [SIEM_PARSER_PLAN.md](./SIEM_PARSER_PLAN.md)
 
 Spike **alarm engine ve workflow dışında** kalır; çıktı: `sec_events` Mongo + minimal `sec_events.created` MQ.

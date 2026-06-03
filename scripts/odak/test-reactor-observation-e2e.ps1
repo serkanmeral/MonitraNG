@@ -92,14 +92,27 @@ Write-Host "   savedCount=$($ingest.savedCount)"
 
 Write-Host "6) Wait for alarm consumer..." -ForegroundColor Yellow
 Start-Sleep -Seconds 12
+
+Write-Host "6a) GET open alarms (reactor native path)..." -ForegroundColor Cyan
+$list = Invoke-RestMethod -Uri "$alarm/alarms?openOnly=true&limit=20" -Headers $hdr
+$alarmItems = @($list.items)
+$cpuAlarm = $alarmItems | Where-Object {
+    $_.context.key -eq "cpu_usage" -or ($_.dedupKey -like "*:cpu_usage")
+} | Select-Object -First 1
+if ($cpuAlarm) {
+    Write-Host "   status=$($cpuAlarm.status) severity=$($cpuAlarm.severity) count=$($cpuAlarm.count)" -ForegroundColor Green
+    Write-Host "OK reactor ingest -> alarm lifecycle" -ForegroundColor Green
+    exit 0
+}
+
+Write-Host "6b) Fallback dev ingest verify..." -ForegroundColor DarkGray
 $verify = Invoke-RestMethod -Uri "$alarm/dev/observations/ingest" -Method POST -Headers $hdr -Body (@{
     domainName = $Domain; key = "cpu_usage"; value = 98; kind = "metric"
 } | ConvertTo-Json)
 Write-Host "   raised=$($verify.alarmsRaised) updated=$($verify.alarmsUpdated) resolved=$($verify.alarmsResolved)"
 
 if ($verify.alarmsRaised -ge 1 -or $verify.alarmsUpdated -ge 1) {
-    Write-Host "OK reactor ingest -> alarm lifecycle" -ForegroundColor Green
-    exit 0
+    throw "FAIL: dev ingest path fired but reactor native path did not (GET open alarms empty; bridge kapali olmali)"
 }
 
-throw "FAIL: expected alarm raised/updated after reactor ingest (bridge kapali + native publish acik olmali)"
+throw "FAIL: expected open cpu_usage alarm after reactor ingest (bridge kapali + native publish acik olmali)"

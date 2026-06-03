@@ -2,7 +2,7 @@
 
 **Amaç:** Geçici `MetricObservationBridgeConsumer` (MngAlarm Worker) kapatılabilsin; metrik ingest doğrudan alarm motorunun dinlediği exchange'e publish edilsin.
 
-**Durum:** Bridge ayakta (`ReactorBridge__Enabled=true`). **MonitraNG hazırlığı (3 Haz 2026):** `ObservationConsumer` flat Reactor DTO + `ObservationEnvelope` destekler; `test-observation-native-e2e.ps1` Odak PASS. **Implementasyon handoff:** [REACTOR_NATIVE_PUBLISH_HANDOFF.md](./REACTOR_NATIVE_PUBLISH_HANDOFF.md)
+**Durum:** ✅ **C6 tamam (3 Haz 2026).** Odak: bridge kapalı (`ReactorBridge__Enabled=false`); MngReactor native publish açık. E2E: `test-reactor-observation-e2e.ps1`, `test-observation-native-e2e.ps1` PASS.
 
 ---
 

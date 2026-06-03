@@ -196,6 +196,12 @@ Uzun sürer (tüm servisler build). İlk kurulum checklist: [MNG_APPS_ODAK_DEPLO
 
 **Agent / Cursor otomasyonu:** Komutları her zaman `pwsh -NoProfile -ExecutionPolicy Bypass -File ...` formunda verin; repo kökünde `.env.odak.local` bulundurun.
 
+**`-Paths` dizisi:** `-File` ile virgüllü liste tek string olur. Dizi geçmek için:
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -Command "& '...\sync-odak-source.ps1' -Paths @('MngReactor','ApplicationResources/mng_apps')"
+```
+
 ---
 
 ## 8. İlgili dokümanlar

@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Core\MngReactor.Application\MngReactor.Application.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\MngReactor.Infrastructure\MngReactor.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Infrastructure\MngReactor.Persistence\MngReactor.Persistence.csproj" />
     <ProjectReference Include="..\..\Presentation\MngReactor.Api\MngReactor.Api.csproj" />
   </ItemGroup>

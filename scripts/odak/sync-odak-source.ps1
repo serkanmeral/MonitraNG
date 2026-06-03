@@ -61,6 +61,8 @@ Set-SCPItem -ComputerName $Server -Credential $cred -Path $TarPath -Destination 
 $remoteExtract = @"
 set -e
 mkdir -p '$RemoteMonitraRoot'
+# Bos gitlink/stub klasorleri tar'in uzerine yazmasini engelleyebilir (MngReactor C6).
+find '$RemoteMonitraRoot' -mindepth 1 -maxdepth 2 -type d -empty -delete 2>/dev/null || true
 tar -xf /home/odak/monitrang-odak-sync.tar -C '$RemoteMonitraRoot'
 echo "Extracted to $RemoteMonitraRoot"
 ls -la '$RemoteMonitraRoot/ApplicationResources/mng_apps/docker-compose.production.yml' 2>/dev/null || true

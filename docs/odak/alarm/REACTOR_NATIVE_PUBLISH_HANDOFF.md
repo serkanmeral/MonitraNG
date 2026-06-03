@@ -168,12 +168,12 @@ Reactor deploy ayrı pipeline (MngReactor repo).
 
 ## Definition of Done
 
-- [ ] R1–R3 MngReactor PR merge
-- [ ] Odak: `ReactorBridge__Enabled=false`, native `Enabled=true`
-- [ ] `test-observation-native-e2e.ps1` PASS
-- [ ] Reactor ingest → alarm lifecycle (raised veya updated) PASS
-- [ ] `mngalarm-worker` log: bridge disabled, observation consumer active
-- [ ] MonitraNG `docs/odak/alarm/DEVAM.md` güncelle (bridge kapatıldı notu)
+- [x] R1–R3 MngReactor PR merge
+- [x] Odak: `ReactorBridge__Enabled=false`, native `Enabled=true`
+- [x] `test-observation-native-e2e.ps1` PASS
+- [x] Reactor ingest → alarm lifecycle (raised veya updated) PASS — `test-reactor-observation-e2e.ps1`
+- [x] `mngalarm-worker` log: bridge disabled, observation consumer active
+- [x] MonitraNG `docs/odak/alarm/DEVAM.md` güncelle (bridge kapatıldı notu)
 
 ---
 

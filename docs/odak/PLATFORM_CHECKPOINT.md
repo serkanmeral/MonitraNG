@@ -15,33 +15,36 @@
 | C3 | UI proxy: `/api/alarm/`, `/api/workflow/` | Mng.Ui nginx + Nuxt server | ✅ |
 | C4 | Onay bekleyenler ekranı | Mng.Ui | ✅ |
 | C5 | Açık alarmlar listesi | Mng.Ui | ✅ |
-| C6 | MngReactor native `monitra.observations` + bridge kapat | MngReactor + deploy | ⬜ Odak stub (`alpine`); `diagnose-c6-reactor.ps1` |
-| C7 | Odak E2E regresyon (alarm + workflow + native obs) | scripts/odak | ✅ `run-checkpoint-e2e.ps1` (7 script) |
+| C6 | MngReactor native `monitra.observations` + bridge kapat | MngReactor + deploy | ✅ Odak `mngreactor:latest`; bridge kapalı; `test-reactor-observation-e2e.ps1` PASS |
+| C7 | Odak E2E regresyon (alarm + workflow + native obs) | scripts/odak | ✅ `run-checkpoint-e2e.ps1` (10 script) |
 
 ---
 
 ## SIEM-ready onay kriterleri (hepsi gerekli)
 
 - [x] C1–C5 Odak'ta deploy + smoke (`test-operator-smoke.ps1` + tarayıcı)
-- [ ] C6 native publish + `ReactorBridge__Enabled=false`
+- [x] C6 native publish + `ReactorBridge__Enabled=false`
 - [x] C7 E2E scriptleri PASS (`.\scripts\odak\run-checkpoint-e2e.ps1`)
 - [x] Operatör akışı: alarm listesi + onay + kurallar UI tarayıcıda doğrulandı
-- [ ] Bu dosyada durum **SIEM-ready ✅** işaretlendi
+- [x] Bu dosyada durum **SIEM-ready ✅** işaretlendi
 
-**SIEM-ready olduktan sonra:** [SIEM_FAZ1_HANDOFF.md](./monitoring/SIEM_FAZ1_HANDOFF.md)
+**SIEM-ready ✅ (3 Haz 2026)** — Sonraki kapsam: [SIEM_FAZ1_HANDOFF.md](./monitoring/SIEM_FAZ1_HANDOFF.md)
 
 ---
 
 ## Deploy (Odak)
 
 ```powershell
-# Backend + UI (checkpoint)
+# C6 Reactor + worker (native observation, bridge kapalı)
 pwsh -NoProfile -ExecutionPolicy Bypass -Command @"
 Set-Location 'C:\Users\monitra\Dev\MonitraNG\MonitraNG'
-& .\scripts\odak\sync-odak-source.ps1 -Paths @('MngAlarm','Mng.Ui','ApplicationResources/mng_apps')
-& .\scripts\odak\deploy-odak-apps.ps1 -Services mngalarm,mngui -NoCache
+& .\scripts\odak\sync-odak-source.ps1 -Paths @('MngReactor','ApplicationResources/mng_apps','scripts/odak')
+& .\scripts\odak\deploy-odak-apps.ps1 -Services mngreactor,mngalarm-worker -NoCache
+& .\scripts\odak\test-reactor-observation-e2e.ps1 -FailIfSkipped
 "@
 ```
+
+Detay: [deploy/README.md](./deploy/README.md) · [MNGREACTOR_ODAK_DEPLOY_CHECKLIST.md](./monitoring/MNGREACTOR_ODAK_DEPLOY_CHECKLIST.md)
 
 **Smoke:**
 - `http://192.168.20.20:3000/api/operations/v1/health/live` → 200

@@ -25,17 +25,18 @@ services:
     ports:
       - "5010:5010"
 
-  # MngReactor kaynak kodu repoda yok — Gateway depends_on için stub (API çağrıları çalışmaz)
-  # C6 gecis: gercek image deploy + asagidaki env (handoff R4)
-  #   MngReactorSettings__ObservationPublish__Enabled=true
+  # C6: gercek MngReactor (production.yml build/image inherit) + native observation publish
   mngreactor:
-    build: !reset null
-    image: alpine:3.19
-    container_name: mngreactor
-    command: ["sleep", "infinity"]
-    networks:
-      - mng_common_mng_network
-    restart: unless-stopped
+    ports:
+      - "5003:5003"
+    environment:
+      - MngReactorSettings__OpenApiServerPath=http://192.168.20.20:5040/reactor
+      - MngReactorSettings__MongoDB__Host=mongo
+      - MngReactorSettings__MongoDB__Password=${MONGO_PASSWORD:-admin123}
+      - MngReactorSettings__RabbitMQ__Host=rabbitmq
+      - MngReactorSettings__RabbitMQ__Password=${RABBITMQ_PASSWORD:-admin123}
+      - MngReactorSettings__Mqtt__Host=mosquitto
+      - MngReactorSettings__ObservationPublish__Enabled=true
 
   mnghub:
     ports:
@@ -91,6 +92,7 @@ services:
   mngalarm-worker:
     environment:
       - MngAlarmSettings__MongoDb__ConnectionString=mongodb://admin:admin123@mongo:27017
+      - MngAlarmSettings__Engine__ReactorBridge__Enabled=false
 
   mngoperations:
     ports:

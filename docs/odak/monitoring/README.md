@@ -30,6 +30,9 @@ Müşteri ortamında **güvenlik odaklı izleme / SIEM-hafif** çözümünün pl
 | [SIEM_FAZ1_HANDOFF.md](./SIEM_FAZ1_HANDOFF.md) | Harici repo handoff | ✅ |
 | [SIEM_WORKFLOW_SEAM.md](./SIEM_WORKFLOW_SEAM.md) | Workflow × SIEM seam | ✅ |
 | [SEC_EVENT_OBSERVATION_MAP.md](./SEC_EVENT_OBSERVATION_MAP.md) | Faz 2 observation eşlemesi | ✅ tasarım |
+| [MNGREACTOR_SIEM_FAZ1_IMPLEMENTATION.md](./MNGREACTOR_SIEM_FAZ1_IMPLEMENTATION.md) | MngReactor dosya/PR planı | ▶️ |
+| [MNGREACTOR_ODAK_DEPLOY_CHECKLIST.md](./MNGREACTOR_ODAK_DEPLOY_CHECKLIST.md) | Odak deploy (stub→gerçek) | ✅ C6 |
+| [HANDOFF.md](./HANDOFF.md) | **Yeni chat handoff + prompt** | ✅ |
 | [SIEM_THROUGHPUT_AND_QUEUES.md](./SIEM_THROUGHPUT_AND_QUEUES.md) | Kuyruk, paralellik, yoğun veri | ✅ plan |
 | [SIEM_PERFORMANCE_PLAN.md](./SIEM_PERFORMANCE_PLAN.md) | **§2 mimari öneriler**, SLO, profiller, benchmark, quality gates | ✅ plan |
 | [SIEM_VERTICAL_FINANCE.md](./SIEM_VERTICAL_FINANCE.md) | Dijital banka / finans dikey kapsam | Taslak |

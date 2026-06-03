@@ -14,6 +14,7 @@ $scripts = @(
     "test-alarm-approval-e2e.ps1",
     "test-alarm-rules-crud-e2e.ps1",
     "test-observation-native-e2e.ps1",
+    "test-reactor-observation-e2e.ps1",
     "test-p4-engine-command-e2e.ps1",
     "test-parallel-fork-e2e.ps1",
     "test-parallel-join-e2e.ps1"
@@ -23,7 +24,11 @@ $failed = @()
 foreach ($s in $scripts) {
     $path = Join-Path $odak $s
     Write-Host "`n========== $s ==========" -ForegroundColor Magenta
-    & $path -Gateway $Gateway
+    if ($s -eq "test-reactor-observation-e2e.ps1") {
+        & $path -Gateway $Gateway -FailIfSkipped
+    } else {
+        & $path -Gateway $Gateway
+    }
     if ($LASTEXITCODE -ne 0) {
         $failed += $s
     }

@@ -1,7 +1,7 @@
 # DEVAM — Alarm & Rule Engine (Kaldığımız Yer)
 
 **Son güncelleme:** 3 Haziran 2026  
-**Durum:** ✅ **Faz 0/1 tamam** · ✅ **Faz 2** · ✅ **P4-A** · ✅ **Native observation consumer + Odak E2E** (Reactor repo publish bekliyor)
+**Durum:** ✅ **Faz 0/1 tamam** · ✅ **Faz 2** · ✅ **P4-A** · ✅ **C6 native observation** (Odak; bridge kapalı)
 
 > Workflow entegrasyonu: [docs/odak/workflow/DEVAM.md](../workflow/DEVAM.md) · Seam: `mng.alarms` → Workflow Event Trigger (Faz 4 tamamlayıcı)
 
@@ -60,7 +60,7 @@
 
 **E2E script:** `scripts/odak/test-alarm-lifecycle-e2e.ps1`
 
-**Bridge:** `MetricObservationBridgeConsumer` — MngReactor repoda olmadığı için geçici köprü. Native publish gelince `ReactorBridge__Enabled=false`.
+**Bridge:** ~~`MetricObservationBridgeConsumer`~~ Odak'ta **kapalı** (`ReactorBridge__Enabled=false`, 3 Haz 2026). Metrik yolu: MngReactor → `monitra.observations` native publish.
 
 **Faz 1 dışı (erteleme):** correlation window, AI scorer, suppression/dependency, DG mirror. **AI zamanlama:** [AI_PLANNING_DECISION.md](../AI_PLANNING_DECISION.md) — scorer Alarm Faz 4 / önkoşul P1–P5 sonrası.
 
@@ -82,7 +82,7 @@ Event şeması: [ALARM_RULE_ENGINE_PLAN §8](./ALARM_RULE_ENGINE_PLAN.md)
 
 1. ~~Reactor observation stream bind~~ → **Faz 1.1 bridge** ✅
 2. ~~`alarm.updated` / `alarm.resolved` workflow triggers~~ ✅
-3. MngReactor repo: native `monitra.observations` publish — sözleşme: [REACTOR_OBSERVATION_PUBLISH_SPEC.md](./REACTOR_OBSERVATION_PUBLISH_SPEC.md) · handoff: [REACTOR_NATIVE_PUBLISH_HANDOFF.md](./REACTOR_NATIVE_PUBLISH_HANDOFF.md) · MonitraNG consumer ✅
+3. ~~MngReactor native `monitra.observations` publish~~ ✅ 3 Haz 2026 — [REACTOR_NATIVE_PUBLISH_HANDOFF.md](./REACTOR_NATIVE_PUBLISH_HANDOFF.md) · E2E: `test-reactor-observation-e2e.ps1`
 4. ~~Faz 2 — correlation window, scheduled validation (MngScheduler)~~ ✅ 3 Haz 2026
 5. Faz 2+ — suppression/dependency, DG mirror, Mongo checkpoint, sequence rules
 

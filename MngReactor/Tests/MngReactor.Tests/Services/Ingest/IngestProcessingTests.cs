@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MngReactor.Application.Abstractions.Data;
 using MngReactor.Application.Abstractions.Ingest;
+using MngReactor.Application.Abstractions.Observations;
 using MngReactor.Application.Configuration;
 using MngReactor.Application.Features.Commands.Ingest;
 using MngReactor.Persistence.Services.Ingest;
@@ -54,6 +55,17 @@ public class IngestProcessingTests
         mockPublisher.Setup(p => p.PublishAsync(It.IsAny<object>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
+        var mockObservationPublisher = new Mock<IObservationPublisher>();
+        mockObservationPublisher.Setup(p => p.PublishAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<double>(),
+                It.IsAny<IReadOnlyDictionary<string, string?>>(),
+                It.IsAny<DateTime?>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         var options = Options.Create(new MngReactorSettings
         {
             DataGateway = new DataGatewaySettings { DomainTokens = new Dictionary<string, string> { ["testdomain"] = "token123" } }
@@ -61,12 +73,20 @@ public class IngestProcessingTests
         var mockIngestNotify = new Mock<IIngestNotifyPublisher>();
         mockIngestNotify.Setup(x => x.TryPublishDataUpdatedAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         var logger = new Mock<ILogger<IngestProcessing>>().Object;
-        var sut = new IngestProcessing(logger, options, mockPublisher.Object, mockIngestNotify.Object, mockMetricsRepo.Object, mockDg.Object);
+        var sut = new IngestProcessing(logger, options, mockPublisher.Object, mockObservationPublisher.Object, mockIngestNotify.Object, mockMetricsRepo.Object, mockDg.Object);
 
         var result = await sut.ProcessAsync(CreateValidRequest(), "testdomain", "token123");
 
         Assert.True(result.SavedCount > 0);
         Assert.Equal(0, result.FailedCount);
+        mockObservationPublisher.Verify(p => p.PublishAsync(
+            "testdomain",
+            "testdomain",
+            "cpu",
+            42.5,
+            It.IsAny<IReadOnlyDictionary<string, string?>>(),
+            It.IsAny<DateTime?>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -75,6 +95,7 @@ public class IngestProcessingTests
         var mockMetricsRepo = new Mock<IMonMetricsRepository>();
         var mockDg = new Mock<IDataGatewayClient>();
         var mockPublisher = new Mock<IMetricPublisher>();
+        var mockObservationPublisher = new Mock<IObservationPublisher>();
         var mockIngestNotify = new Mock<IIngestNotifyPublisher>();
         mockIngestNotify.Setup(x => x.TryPublishDataUpdatedAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         var options = Options.Create(new MngReactorSettings
@@ -82,7 +103,7 @@ public class IngestProcessingTests
             DataGateway = new DataGatewaySettings { DomainTokens = new Dictionary<string, string> { ["testdomain"] = "token123" } }
         });
         var logger = new Mock<ILogger<IngestProcessing>>().Object;
-        var sut = new IngestProcessing(logger, options, mockPublisher.Object, mockIngestNotify.Object, mockMetricsRepo.Object, mockDg.Object);
+        var sut = new IngestProcessing(logger, options, mockPublisher.Object, mockObservationPublisher.Object, mockIngestNotify.Object, mockMetricsRepo.Object, mockDg.Object);
 
         var request = new IngestMetricsRequest { Batches = [] };
         var result = await sut.ProcessAsync(request, "testdomain", "token123");
@@ -97,10 +118,11 @@ public class IngestProcessingTests
         var mockMetricsRepo = new Mock<IMonMetricsRepository>();
         var mockDg = new Mock<IDataGatewayClient>();
         var mockPublisher = new Mock<IMetricPublisher>();
+        var mockObservationPublisher = new Mock<IObservationPublisher>();
         var mockIngestNotify = new Mock<IIngestNotifyPublisher>();
         var options = Options.Create(new MngReactorSettings { DataGateway = new DataGatewaySettings() });
         var logger = new Mock<ILogger<IngestProcessing>>().Object;
-        var sut = new IngestProcessing(logger, options, mockPublisher.Object, mockIngestNotify.Object, mockMetricsRepo.Object, mockDg.Object);
+        var sut = new IngestProcessing(logger, options, mockPublisher.Object, mockObservationPublisher.Object, mockIngestNotify.Object, mockMetricsRepo.Object, mockDg.Object);
 
         var result = await sut.ProcessAsync(CreateValidRequest(), "testdomain", accessToken: null);
 
