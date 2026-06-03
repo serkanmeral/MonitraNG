@@ -1,0 +1,26 @@
+version: '3.4'
+
+services:
+  mngreactor.api:
+    image: ${DOCKER_REGISTRY-}mngreactorapi
+    ports:
+      - "11000:11000"
+    environment:
+      - MngReactorSettings__ApplicationPort= 11000
+      - MngReactorSettings__MongoPath__host=45.141.151.52
+      - MngReactorSettings__MongoPath__port=27017
+      - MngReactorSettings__MongoPath__username=admin
+      - MngReactorSettings__MongoPath__password=!2345qawsedrf
+      - MngReactorSettings__SeqPath=http://45.141.151.52:5341
+      - MngReactorSettings__ClientName=isim
+      - MngReactorSettings__Password=ppT1b8siNqyoPHDCsYf3/tE93Vg5gZ1+JUf1DUtDlv0=
+      - MngReactorSettings__TokenService=http://localhost:11000
+      - MngReactorSettings__CompressPrk=0123456789abcdef
+      - MngReactorSettings__CompressPbk=abcdef0123456789
+      - MngReactorSettings__MqttSettings__Host=45.141.151.52
+      - MngReactorSettings__MqttSettings__Port=1883
+      - MngReactorSettings__MqttSettings__UserName=monitrang
+      - MngReactorSettings__MqttSettings__Password=!2345qawsedrf	
+    build:
+      context: .
+      dockerfile: ./Dockerfile
