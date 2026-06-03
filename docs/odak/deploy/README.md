@@ -105,12 +105,27 @@ Servis adları (`-Services` parametresi, virgülle ayrılabilir):
 | Klasör | Compose servis adı | Host portu |
 |--------|-------------------|------------|
 | MngOperations | `mngoperations` | 5086 |
+| MngWorkflow API | `mngworkflow` | 5085 |
+| MngWorkflow Worker | `mngworkflow-worker` | (internal) |
 | MngKeeper | `mngkeeper` | 5001 |
 | MngDataGateway | `mngdatagateway` | 5010 |
 | MngGateway | `mnggateway` | 5040 |
 | Mng.Ui | `mngui` | 3000 |
 | MngDomainUI | `mngdomainui` | 3001 |
 | … | (tam liste: [MNG_APPS_ODAK.md](../setup/MNG_APPS_ODAK.md)) | |
+
+**Örnek — MngWorkflow (API + Worker):**
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\sync-odak-source.ps1 -Paths MngWorkflow,ApplicationResources/mng_apps
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\deploy-odak-apps.ps1 -Services mngworkflow,mngworkflow-worker
+```
+
+Smoke test (dev endpoint):
+
+```powershell
+Invoke-RestMethod -Method Post -Uri "http://192.168.20.20:5040/workflow/api/v1/dev/runs/smoke" -ContentType "application/json" -Body '{"domainName":"odak","eventValue":10}'
+```
 
 **Örnek — MngOperations:**
 

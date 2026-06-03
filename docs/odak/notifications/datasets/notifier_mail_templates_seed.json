@@ -1,0 +1,180 @@
+{
+  "_comment": "POST /api/v1/data/@mail_templates — ornek system sablonlari. MO/Keeper hangi templateKey'i ne zaman gonderecegini kendi config'inde tanimlar.",
+  "dataset": "@mail_templates",
+  "records": [
+    {
+      "templateKey": "domain-created",
+      "name": "Domain olusturuldu",
+      "description": "Yeni domain ve yonetici hesap bilgileri (MngKeeper bootstrap).",
+      "subject": "Domain olusturuldu: {{domain.displayName}}",
+      "bodyHtml": "<h1 style=\"font-size:22px;margin:0 0 16px;\">Domain basariyla olusturuldu</h1><p>Merhaba <strong>{{recipient.displayName}}</strong>,</p><p><strong>{{domain.displayName}}</strong> domain'i MonitraNG uzerinde hazir.</p><div class=\"info-box\"><h2 class=\"info-box-title\">Domain bilgileri</h2><p><strong>Domain adi:</strong> {{domain.name}}</p><p><strong>Gorunen ad:</strong> {{domain.displayName}}</p><p><strong>Olusturulma:</strong> {{domain.createdAt}}</p></div><div class=\"credentials-box\"><h3 style=\"margin:0 0 12px;color:#856404;\">Yonetici hesap bilgileri</h3><p><strong>Kullanici adi:</strong> {{admin.username}}</p><p><strong>E-posta:</strong> {{admin.email}}</p><p><strong>Sifre:</strong> <code>{{admin.password}}</code></p><p style=\"font-size:13px;color:#856404;margin-top:12px;\">Guvenlik: Ilk giriste sifrenizi degistirin.</p></div>",
+      "variables": [
+        "recipient.displayName",
+        "domain.name",
+        "domain.displayName",
+        "domain.createdAt",
+        "admin.username",
+        "admin.email",
+        "admin.password"
+      ],
+      "layoutKey": "default",
+      "locale": "tr",
+      "category": "system",
+      "tags": ["keeper", "bootstrap"],
+      "sampleContext": {
+        "recipient": { "displayName": "Ornek Kisi" },
+        "domain": {
+          "name": "odak",
+          "displayName": "Odak Kompozit Teknolojileri A.Ş.",
+          "logoUrl": "https://img-kariyer.mncdn.com/mnresize/150/150/UploadFiles/Clients/SquareLogo/983/ai_kk_274983_6022024014542.png",
+          "createdAt": "03.06.2026 14:30"
+        },
+        "admin": {
+          "username": "ornek_admin",
+          "email": "admin@ornek.com",
+          "password": "TempPass123!"
+        }
+      },
+      "isActive": true
+    },
+    {
+      "templateKey": "work-item-created",
+      "name": "Is ogesi olusturuldu",
+      "description": "Yeni work item bildirimi (Operation Core ve benzeri cagiranlar).",
+      "subject": "[{{workItem.key}}] Yeni is: {{workItem.title}}",
+      "bodyHtml": "<h1 style=\"font-size:20px;margin:0 0 12px;\">Yeni is ogesi</h1><p>Merhaba <strong>{{recipient.displayName}}</strong>,</p><p><strong>{{actor.displayName}}</strong> tarafindan yeni bir is ogesi olusturuldu.</p><div class=\"info-box\"><h2 class=\"info-box-title\">{{workItem.key}}</h2><p><strong>Baslik:</strong> {{workItem.title}}</p><p><strong>Workspace:</strong> {{workspace.name}}</p><p><strong>Board:</strong> {{board.name}}</p></div><p style=\"color:#666;font-size:14px;\">Olay: {{event.type}} — {{event.timestamp}}</p>",
+      "variables": [
+        "recipient.displayName",
+        "actor.displayName",
+        "workItem.key",
+        "workItem.title",
+        "workspace.name",
+        "board.name",
+        "event.type",
+        "event.timestamp"
+      ],
+      "layoutKey": "default",
+      "locale": "tr",
+      "category": "system",
+      "tags": ["operation-core", "work-item"],
+      "sampleContext": {
+        "recipient": { "displayName": "Atanan Kisi" },
+        "actor": { "displayName": "Ayse Yilmaz", "email": "ayse@firma.com" },
+        "workItem": { "key": "WI-42", "title": "Sunucu erisim sorunu" },
+        "workspace": { "name": "IT Destek" },
+        "board": { "name": "Incident Board" },
+        "domain": { "displayName": "Odak Kompozit Teknolojileri A.Ş.", "logoUrl": "https://img-kariyer.mncdn.com/mnresize/150/150/UploadFiles/Clients/SquareLogo/983/ai_kk_274983_6022024014542.png" },
+        "event": { "type": "WorkItemCreated", "timestamp": "2026-06-03T10:00:00Z" }
+      },
+      "isActive": true
+    },
+    {
+      "templateKey": "work-item-transitioned",
+      "name": "Is ogesi durum degisikligi",
+      "description": "Work item gecis / state change bildirimi.",
+      "subject": "[{{workItem.key}}] Durum degisti: {{transition.toState}}",
+      "bodyHtml": "<h1 style=\"font-size:20px;margin:0 0 12px;\">Durum guncellendi</h1><p><strong>{{workItem.key}}</strong> — <em>{{workItem.title}}</em></p><p><strong>{{actor.displayName}}</strong> gecisi uyguladi: <code>{{transition.key}}</code></p><div class=\"info-box\"><p><strong>Onceki:</strong> {{transition.fromState}}</p><p><strong>Yeni:</strong> {{transition.toState}}</p></div>",
+      "variables": [
+        "workItem.key",
+        "workItem.title",
+        "actor.displayName",
+        "transition.key",
+        "transition.fromState",
+        "transition.toState"
+      ],
+      "layoutKey": "default",
+      "locale": "tr",
+      "category": "system",
+      "tags": ["operation-core", "work-item"],
+      "sampleContext": {
+        "actor": { "displayName": "Mehmet Demir" },
+        "workItem": { "key": "WI-42", "title": "Sunucu erisim sorunu" },
+        "transition": {
+          "key": "resolve",
+          "fromState": "In Progress",
+          "toState": "Resolved"
+        },
+        "domain": { "displayName": "Odak Kompozit Teknolojileri A.Ş.", "logoUrl": "https://img-kariyer.mncdn.com/mnresize/150/150/UploadFiles/Clients/SquareLogo/983/ai_kk_274983_6022024014542.png" }
+      },
+      "isActive": true
+    },
+    {
+      "templateKey": "work-item-updated",
+      "name": "Is ogesi guncellendi",
+      "description": "Work item alan guncellemesi (genel).",
+      "subject": "[{{workItem.key}}] Guncellendi: {{workItem.title}}",
+      "bodyHtml": "<h1 style=\"font-size:20px;margin:0 0 12px;\">Is ogesi guncellendi</h1><p><strong>{{workItem.key}}</strong> guncellendi.</p><p><strong>Baslik:</strong> {{workItem.title}}</p><p><strong>Guncelleyen:</strong> {{actor.displayName}}</p>",
+      "variables": [
+        "workItem.key",
+        "workItem.title",
+        "actor.displayName"
+      ],
+      "layoutKey": "default",
+      "locale": "tr",
+      "category": "system",
+      "tags": ["operation-core", "work-item"],
+      "sampleContext": {
+        "actor": { "displayName": "Ayse Yilmaz" },
+        "workItem": { "key": "WI-7", "title": "VPN yapilandirmasi" },
+        "domain": { "displayName": "Odak Kompozit Teknolojileri A.Ş.", "logoUrl": "https://img-kariyer.mncdn.com/mnresize/150/150/UploadFiles/Clients/SquareLogo/983/ai_kk_274983_6022024014542.png" }
+      },
+      "isActive": true
+    },
+    {
+      "templateKey": "field-changed",
+      "name": "Alan degeri degisti",
+      "description": "Belirli bir alan degisikligi (or. oncelik, atanan).",
+      "subject": "[{{workItem.key}}] {{field.label}} degisti",
+      "bodyHtml": "<h1 style=\"font-size:20px;margin:0 0 12px;\">Alan guncellendi</h1><p><strong>{{workItem.key}}</strong> — {{workItem.title}}</p><div class=\"info-box\"><p><strong>{{field.label}}:</strong></p><p>{{field.oldValue}} &rarr; <strong>{{field.newValue}}</strong></p></div><p><strong>Guncelleyen:</strong> {{actor.displayName}}</p>",
+      "variables": [
+        "workItem.key",
+        "workItem.title",
+        "field.label",
+        "field.oldValue",
+        "field.newValue",
+        "actor.displayName"
+      ],
+      "layoutKey": "default",
+      "locale": "tr",
+      "category": "system",
+      "tags": ["operation-core", "work-item", "field"],
+      "sampleContext": {
+        "actor": { "displayName": "Ayse Yilmaz" },
+        "workItem": { "key": "WI-42", "title": "Sunucu erisim sorunu" },
+        "field": {
+          "name": "priority",
+          "label": "Oncelik",
+          "oldValue": "Normal",
+          "newValue": "Yuksek"
+        },
+        "domain": { "displayName": "Odak Kompozit Teknolojileri A.Ş.", "logoUrl": "https://img-kariyer.mncdn.com/mnresize/150/150/UploadFiles/Clients/SquareLogo/983/ai_kk_274983_6022024014542.png" }
+      },
+      "isActive": true
+    },
+    {
+      "templateKey": "generic-notification",
+      "name": "Genel bildirim",
+      "description": "Ozel mesaj metni; cagiran title ve body one-liner gonderebilir.",
+      "subject": "{{notification.subject}}",
+      "bodyHtml": "<h1 style=\"font-size:20px;margin:0 0 12px;\">{{notification.title}}</h1><div>{{notification.bodyHtml}}</div>",
+      "variables": [
+        "notification.subject",
+        "notification.title",
+        "notification.bodyHtml"
+      ],
+      "layoutKey": "default",
+      "locale": "tr",
+      "category": "system",
+      "tags": ["generic"],
+      "sampleContext": {
+        "notification": {
+          "subject": "Bilgilendirme",
+          "title": "Onemli duyuru",
+          "bodyHtml": "<p>Sistem bakimi 03.06.2026 22:00'de yapilacaktir.</p>"
+        },
+        "domain": { "displayName": "Odak Kompozit Teknolojileri A.Ş.", "logoUrl": "https://img-kariyer.mncdn.com/mnresize/150/150/UploadFiles/Clients/SquareLogo/983/ai_kk_274983_6022024014542.png" }
+      },
+      "isActive": true
+    }
+  ]
+}

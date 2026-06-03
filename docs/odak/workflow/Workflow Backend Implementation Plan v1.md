@@ -4,12 +4,13 @@
 
 * Durum: Planlama
 * Versiyon: 1.0
-* Kapsam: Workflow Backend Implementation (Servis yapısı, Mongo koleksiyonları, RabbitMQ topolojisi, Worker, geliştirme sırası)
+* Kapsam: Workflow Backend Implementation (Servis yapısı, Mongo koleksiyonları, RabbitMQ topolojisi, Worker, geliştirme sırası, OC/SIEM entegrasyon seam'leri)
 * Bağımlılık:
 
   * Workflow Engine Planı v1.1 (`planing.md`)
   * Workflow Runtime Internal Design v1.0 (`InternalDesign.md`)
   * Workflow Runtime Internal Design v1.1 (`MonitraNG Workflow Runtime Internal Design v1_1.md`)
+  * Operation Core: `docs/odak/operationcore/mngoperations/API_SURFACE.md`, `INTEGRATIONS.md`, `PIPELINES.md`
 
 > Bu doküman mimariyi değil, doğrudan .NET Core proje yapısını, servisleri, MongoDB koleksiyonlarını, RabbitMQ topology'sini, worker sınıflarını ve geliştirme sıralamasını tanımlar. Önceki üç dokümanı tek tutarlı plana indirger ve mevcut MonitraNG altyapısına oturtur.
 
@@ -281,7 +282,7 @@ outputs.ai.score > 90
 | **3** | Retry / Timeout / DeadLetter + idempotency + optimistic concurrency + Expression engine (Jint) | Dayanıklı çalıştırma |
 | **4** | Trigger sistemi: Event (mevcut exchange'lere bind) + Schedule/Delay (MngScheduler) | AlarmRaised → workflow tetikleme |
 | **5** | Approval + Waiting/Resume + Secret resolver | Long-running onay senaryosu |
-| **6** | MonitraNG entegrasyon node'ları (Alarm / WorkItem / Notification / Block IP) + Debug / Replay | Modüller arası orkestrasyon |
+| **6** | MonitraNG entegrasyon node'ları (Alarm / WorkItem / Notification / Block IP) + Debug / Replay | Modüller arası orkestrasyon — WorkItem: [§13](./Workflow%20Backend%20Implementation%20Plan%20v1.md) |
 | **7+** | Parallel / Join, ForEach, SubWorkflow, Compensation | Gelişmiş runtime |
 
 ---
@@ -428,3 +429,156 @@ Auth = MngKeeper (Keycloak/JWT). Modül bazında `IPermissionEvaluator` deseni (
 * **Paylaşılan expression engine:** SIEM `sec_rules.match` ve workflow `filterExpression` aynı Jint motorunu kullanabilir → tek ifade dili.
 
 > Sonuç: Monitoring'in **orkestrasyon** ihtiyacı bu planla fazlasıyla karşılanır; **tespit/korelasyon** ayrı kalır. Bu, SIEM_PLANNING.md §12.1 açık kararını kapatır (→ ayrı motor).
+
+---
+
+# 13. Operation Core (MngOperations) Entegrasyonu
+
+İlgili: `docs/odak/operationcore/OPERATION_CORE_IMPLEMENTATION_PLAN.md` §5.2.6, `mngoperations/API_SURFACE.md`, `INTEGRATIONS.md`, `PIPELINES.md`, `RULE_ENGINE.md`.
+
+## 13.1 Sınır Kararı
+
+| İhtiyaç | Sorumlu | Gerekçe |
+|---|---|---|
+| WI create/transition **içinde** senkron side-effect (watcher, bildirim, alan set) | **MngOperations `op_rules`** (inline automation) | Aynı HTTP isteği; düşük gecikme; OC Faz 1'de mevcut |
+| Çok adımlı, async, modüller arası orkestrasyon (alarm→onay→blok→incident) | **MngWorkflow** | Per-instance motor; Delay/Approval/Event Trigger |
+| WI komutları (create, transition) | **MngOperations API** | Workflow MO'nun iç kural motorunu bypass etmez — REST komutları çağırır |
+
+**Karıştırılmamalı:** Basit WI otomasyonunu workflow'a taşımak (`addWatcher`, `createNotification` vb.) gereksiz karmaşıklık. `op_rules` yeterli kalır ([RULE_ENGINE.md](../operationcore/mngoperations/RULE_ENGINE.md) §5).
+
+**Zamanlanmış WI:** MngScheduler → `from-origin` **doğrudan** ([SCHEDULED_WORK_ITEMS.md](../operationcore/mngoperations/SCHEDULED_WORK_ITEMS.md)). Workflow Schedule Trigger ile ikileme yapılmaz.
+
+## 13.2 OC Hazır Entegrasyon Noktaları (Faz 1 — mevcut)
+
+MngOperations MVP'de workflow'un ileride kullanacağı yüzeyler hazır:
+
+| Nokta | Açıklama |
+|---|---|
+| `POST /operations/api/v1/work-items/from-origin` | Dış kökenli WI oluşturma (monitoring, scheduler, workflow) |
+| `origin.correlationId` idempotency | Aynı correlation → mevcut WI (`200` + `ALREADY_EXISTS`); workflow retry/DLQ güvenli ([PIPELINES §6.1](../operationcore/mngoperations/PIPELINES.md)) |
+| RabbitMQ `oc.events` | `{domainId}.oc.workitem.created` / `.updated` / `.transitioned` ([INTEGRATIONS §3](../operationcore/mngoperations/INTEGRATIONS.md)) |
+| Service identity | `IMngKeeperAuthClient` → Bearer → MO (Scheduler deseni — [INTEGRATIONS §6.1](../operationcore/mngoperations/INTEGRATIONS.md)) |
+
+**Faz 0–3 workflow implementasyonu OC değişikliği gerektirmez.**
+
+## 13.3 Event Trigger — `oc.events` Binding (Faz 4)
+
+EventListener mevcut exchange listesine `oc.events` zaten dahil (§4). OC olay eşlemesi:
+
+| MO routing key | Trigger `eventType` (öneri) | Tipik kullanım |
+|---|---|---|
+| `{domainId}.oc.workitem.created` | `oc.workitem.created` | Yeni WI → escalation workflow |
+| `{domainId}.oc.workitem.updated` | `oc.workitem.updated` | Alan değişimi → dış sync |
+| `{domainId}.oc.workitem.transitioned` | `oc.workitem.transitioned` | State geçişi → onay zinciri |
+
+MO payload zarfı (minimum):
+
+```json
+{
+  "eventId": "uuid",
+  "occurredAt": "2026-06-03T12:00:00Z",
+  "domainId": "…",
+  "domainName": "odak",
+  "workspaceId": "…",
+  "workItemId": "…",
+  "workItemKey": "SOC-00022",
+  "transitionKey": "triage_open",
+  "origin": { "sourceType": "monitoring", "correlationId": "…" },
+  "actor": "odak_admin"
+}
+```
+
+`filterExpression` örneği: `event.transitionKey == 'escalate' && event.workspaceId == '…'`
+
+## 13.4 WorkItem Node Kontratları (Faz 6)
+
+### 13.4.1 `workitem.create` — Create WorkItem Node
+
+| Konu | Karar |
+|---|---|
+| HTTP | `POST {gateway}/operations/api/v1/work-items/from-origin` |
+| Auth | `IMngKeeperAuthClient` service token (domain-scoped teknik kullanıcı) |
+| `origin.sourceType` | `"workflow"` |
+| `origin.sourceId` | Workflow `instanceId` |
+| `origin.correlationId` | Workflow `instance.correlationId` (idempotency) |
+| Node config | `workspaceId`, `typeId`, `title`, opsiyonel `description`, `fields`, `initialTransitionKey`, `assignee` |
+| Node output (context) | `outputs.workItemId`, `outputs.workItemKey`; opsiyonel `outputs.alreadyExists` (idempotent retry) |
+| Hata | MO 4xx → node Fail; 5xx → retry bucket |
+
+Örnek gövde:
+
+```json
+{
+  "workspaceId": "…",
+  "typeId": "…",
+  "title": "SIEM Alert — {{event.srcIp}}",
+  "origin": {
+    "sourceType": "workflow",
+    "sourceId": "{{instance.id}}",
+    "correlationId": "{{instance.correlationId}}",
+    "payload": { "workflowVersionId": "…", "triggerNodeId": "…" }
+  },
+  "initialTransitionKey": "triage_open"
+}
+```
+
+SIEM §12.2 «Alert → incident» adımının somut karşılığı.
+
+### 13.4.2 `workitem.transition` — ApplyTransition Node
+
+| Konu | Karar |
+|---|---|
+| HTTP | `POST {gateway}/operations/api/v1/work-items/{workItemId}/transitions/{transitionKey}` |
+| Auth | Service token |
+| Gövde | Opsiyonel `{ "fields": { … }, "comment": "…" }` |
+| `workItemId` kaynağı | Node config sabit id **veya** önceki node output (`{{outputs.workItemId}}`) |
+| Node output | `outputs.availableTransitions[]` (opsiyonel), güncel SLA alanları snapshot |
+
+**Faz 6 kapsamı:** yalnızca `ApplyTransition`. Genel WI PATCH (`workitem.update`) Faz 6+ backlog.
+
+### 13.4.3 `origin.sourceType` envanteri
+
+| Değer | Kaynak |
+|---|---|
+| `monitoring` | Alarm Engine / SIEM |
+| `scheduler` | MngScheduler zamanlanmış WI |
+| `workflow` | MngWorkflow CreateWorkItem node |
+| `alarm` | (opsiyonel) Alarm Engine doğrudan incident — §12.2 ile hizalı |
+
+## 13.5 Service Identity (MO çağrıları)
+
+Workflow Worker long-running instance'larda kullanıcı JWT'si expire olur (§8). MO komut node'ları:
+
+1. Domain-scoped teknik kullanıcı (Keeper) — Scheduler ile aynı config deseni
+2. Her node execution'da (veya token cache TTL içinde) `IMngKeeperAuthClient` ile token al
+3. Approval kararı **kullanıcı** adına loglanır; MO transition **service identity** ile yapılır (onay node'undan sonra)
+
+Gateway: `/operations/api/v1/…` ([GATEWAY_AND_DEPLOY.md](../operationcore/mngoperations/GATEWAY_AND_DEPLOY.md) — port 5086 downstream, gateway 5040).
+
+## 13.6 Faz 6 Kabul Senaryosu (OC + Workflow)
+
+```text
+Manual Trigger  (veya Event: oc.workitem.created + filter)
+  ↓
+If  (event.fields.severity == 'critical')
+  ↓
+Create WorkItem  (from-origin, sourceType=workflow)
+  ↓
+ApplyTransition  (transitionKey=triage_open)
+  ↓
+Write Log
+```
+
+Alternatif giriş: Alarm Engine → `mng.alarms` → Event Trigger → aynı zincir (§12.2).
+
+## 13.7 OC Tarafı Backlog (workflow motoru hazır olunca)
+
+Bunlar **MngOperations** değişiklikleri; workflow Faz 0–1'i bloke etmez:
+
+| Madde | OC faz | Açıklama |
+|---|---|---|
+| `op_rules` action `startWorkflow` | Faz 2+ ([phase1 §28.3](../operationcore/operationcore_phase1.md)) | WI olayı → workflow başlat |
+| SLA breach → workflow tetik | Faz 2+ ([SLA_FAZ1_PLAN §7 S3](../operationcore/mngoperations/SLA_FAZ1_PLAN.md)) | `op_rules` automation veya `oc.events` consumer |
+| Async automation worker | Faz 2+ ([SERVICE_SCOPE §3](../operationcore/mngoperations/SERVICE_SCOPE.md)) | MO kuyruk consumer — workflow tüketici değil |
+
+> Sonuç: Operation Core entegrasyon seam'leri tanımlı; MO Faz 1 API'si workflow Faz 6'ya kadar yeterli. Faz 0–1 implementasyonu OC'den bağımsız ilerler.

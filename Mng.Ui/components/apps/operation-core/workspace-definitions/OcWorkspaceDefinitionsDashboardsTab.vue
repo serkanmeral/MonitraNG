@@ -8,10 +8,14 @@ import {
   ocCreateDashboard,
   ocDeleteDashboard,
   ocExtractDgErrorMessage,
+  ocGetBoard,
   ocGetDashboardRecord,
+  ocListBoardsForWorkspace,
   ocListDashboardsForWorkspace,
+  ocSetBoardDefaultDashboard,
   ocUpdateDashboard,
 } from '@/services/operationCoreService';
+import type { OpBoard } from '@/types/apps/operationCore';
 import type {
   OcDashboardLayout,
   OcDashboardListItem,
@@ -19,6 +23,7 @@ import type {
   OpPriority,
   OpState,
 } from '@/types/apps/operationCore';
+import { buildSummaryCardConfig } from '@/utils/ocDashboardWidgetStyle';
 
 const props = defineProps<{ workspaceId: string }>();
 
@@ -32,8 +37,12 @@ const errorLocal = ref<string | null>(null);
 const successLocal = ref<string | null>(null);
 
 const dashboards = ref<OcDashboardListItem[]>([]);
+const workspaceBoards = ref<OpBoard[]>([]);
 const states = ref<OpState[]>([]);
 const priorities = ref<OpPriority[]>([]);
+
+const linkBoardId = ref('');
+const linkingBoard = ref(false);
 
 // Editor state
 const editorOpen = ref(false);
@@ -57,16 +66,66 @@ const deleteTarget = ref<OcDashboardListItem | null>(null);
 
 const widgetKeys = computed(() => editorWidgets.value.map((w) => w.key));
 
+const linkedBoards = computed(() => {
+  if (!editingId.value) return [];
+  return workspaceBoards.value.filter((b) => b.defaultDashboardId === editingId.value);
+});
+
+const linkableBoardItems = computed(() =>
+  workspaceBoards.value
+    .filter((b) => b.defaultDashboardId !== editingId.value)
+    .map((b) => ({ value: b.__dataId, title: b.name }))
+);
+
+async function linkBoardToDashboard() {
+  const boardId = linkBoardId.value?.trim();
+  const dashId = editingId.value;
+  if (!boardId || !dashId) return;
+  linkingBoard.value = true;
+  errorLocal.value = null;
+  try {
+    const board = (await ocGetBoard(boardId)) ?? workspaceBoards.value.find((b) => b.__dataId === boardId);
+    if (!board) {
+      errorLocal.value = t('operationCore.dashboards.editor.linkBoardError');
+      return;
+    }
+    await ocSetBoardDefaultDashboard(board, dashId);
+    linkBoardId.value = '';
+    workspaceBoards.value = await ocListBoardsForWorkspace(props.workspaceId);
+    successLocal.value = t('operationCore.dashboards.editor.linkBoardSuccess');
+  } catch (e: unknown) {
+    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.dashboards.editor.linkBoardError'));
+  } finally {
+    linkingBoard.value = false;
+  }
+}
+
+async function unlinkBoardFromDashboard(board: OpBoard) {
+  linkingBoard.value = true;
+  errorLocal.value = null;
+  try {
+    await ocSetBoardDefaultDashboard(board, null);
+    workspaceBoards.value = await ocListBoardsForWorkspace(props.workspaceId);
+    successLocal.value = t('operationCore.dashboards.editor.unlinkBoardSuccess');
+  } catch (e: unknown) {
+    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.dashboards.editor.linkBoardError'));
+  } finally {
+    linkingBoard.value = false;
+  }
+}
+
 async function loadAll() {
   if (!props.workspaceId) return;
   loading.value = true;
   errorLocal.value = null;
   try {
-    const [dash] = await Promise.all([
+    const [dash, boards] = await Promise.all([
       ocListDashboardsForWorkspace(props.workspaceId),
+      ocListBoardsForWorkspace(props.workspaceId),
       catalog.whenReady(),
     ]);
     dashboards.value = dash;
+    workspaceBoards.value = boards;
     states.value = catalog.states.value;
     priorities.value = catalog.priorities.value;
   } catch (e: unknown) {
@@ -177,6 +236,10 @@ function widgetToRaw(w: OcDashboardWidgetDef): Record<string, unknown> {
   if (w.type === 'chart') {
     if (w.chartType) raw.chartType = w.chartType;
     if (w.groupBy) raw.groupBy = w.groupBy;
+  }
+  if (w.type === 'summaryCard') {
+    const cfg = buildSummaryCardConfig(w.accentColor ?? null, w.icon ?? null);
+    if (cfg) raw.config = cfg;
   }
   return raw;
 }
@@ -387,6 +450,58 @@ function widgetTypeColor(type: string): string {
             class="mb-4"
             hide-details
           />
+
+          <v-card v-if="editingId" variant="tonal" class="mb-4 pa-3">
+            <div class="text-subtitle-2 font-weight-medium mb-1">
+              {{ t('operationCore.dashboards.editor.linkedBoardsTitle') }}
+            </div>
+            <p class="text-caption text-medium-emphasis mb-3">
+              {{ t('operationCore.dashboards.editor.linkedBoardsHint') }}
+            </p>
+            <div v-if="linkedBoards.length" class="d-flex flex-wrap ga-2 mb-3">
+              <v-chip
+                v-for="b in linkedBoards"
+                :key="b.__dataId"
+                size="small"
+                variant="tonal"
+                color="primary"
+                closable
+                :disabled="linkingBoard"
+                @click:close="unlinkBoardFromDashboard(b)"
+              >
+                {{ b.name }}
+              </v-chip>
+            </div>
+            <p v-else class="text-caption text-medium-emphasis mb-3">
+              {{ t('operationCore.dashboards.editor.noLinkedBoards') }}
+            </p>
+            <div class="d-flex flex-wrap ga-2 align-end">
+              <v-select
+                v-model="linkBoardId"
+                :items="linkableBoardItems"
+                item-title="title"
+                item-value="value"
+                :label="t('operationCore.dashboards.editor.selectBoard')"
+                variant="outlined"
+                density="compact"
+                hide-details
+                clearable
+                style="min-width: 220px; flex: 1"
+                :disabled="!linkableBoardItems.length || linkingBoard"
+              />
+              <v-btn
+                color="primary"
+                variant="flat"
+                size="small"
+                class="text-none"
+                :loading="linkingBoard"
+                :disabled="!linkBoardId"
+                @click="linkBoardToDashboard"
+              >
+                {{ t('operationCore.dashboards.editor.linkBoard') }}
+              </v-btn>
+            </div>
+          </v-card>
 
           <!-- Widgets -->
           <div class="d-flex align-center justify-space-between mb-2">

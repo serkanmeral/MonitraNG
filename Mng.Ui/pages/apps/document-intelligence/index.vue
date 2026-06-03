@@ -15,8 +15,8 @@ import {
   LayoutSidebarLeftExpandIcon,
 } from 'vue-tabler-icons';
 import {
-  diGetTree,
-  diGetChildren,
+  diGetBootstrap,
+  diGetBrowseContext,
   diGetBreadcrumb,
   diGetMarkdownContent,
   diCreateFolder,
@@ -31,7 +31,6 @@ import {
   diGetMarkdownVersions,
   diGetMarkdownVersionContent,
   diRestoreMarkdownVersion,
-  diGetById,
   diErrorStatus,
   diExtractMessage,
 } from '@/services/documentIntelligenceService';
@@ -40,6 +39,8 @@ import {
   type DiTreeNode,
   type DiResource,
   type DiBreadcrumb,
+  type DiResourceBrowseContext,
+  type DiResourceBootstrap,
   type DiMarkdownVersion,
   type DiEffectivePermission,
 } from '@/types/apps/documentIntelligence';
@@ -176,22 +177,36 @@ function canManage(resource: DiResource | null): boolean {
   return authStore.isAdmin || resource.permissions.canShare;
 }
 
-async function loadTree() {
+function applyBrowseContext(ctx: DiResourceBrowseContext) {
+  children.value = ctx.children.items;
+  folderPath.value = ctx.breadcrumb;
+  selectedFolder.value = ctx.selectedFolder;
+}
+
+function applyBootstrap(boot: DiResourceBootstrap) {
+  tree.value = boot.tree;
+  applyBrowseContext(boot);
+}
+
+/** Ağaç + geçerli klasör içeriği (mutasyon / yetki değişimi sonrası). */
+async function refreshWorkspace() {
   treeLoading.value = true;
+  childrenLoading.value = true;
   try {
-    tree.value = await diGetTree();
+    applyBootstrap(await diGetBootstrap(selectedFolderId.value));
   } catch (e) {
     notify(diExtractMessage(e, t('documentIntelligence.errors.treeLoad')), 'error');
   } finally {
     treeLoading.value = false;
+    childrenLoading.value = false;
   }
 }
 
-async function loadChildren(folderId: string | null) {
+/** Yalnızca liste/breadcrumb (ağaç değişmediyse). */
+async function refreshListing() {
   childrenLoading.value = true;
   try {
-    const res = await diGetChildren(folderId);
-    children.value = res.items;
+    applyBrowseContext(await diGetBrowseContext(selectedFolderId.value));
   } catch (e) {
     notify(diExtractMessage(e, t('documentIntelligence.errors.childrenLoad')), 'error');
     children.value = [];
@@ -212,24 +227,22 @@ async function loadFolderPath(folderId: string | null) {
   }
 }
 
-async function loadSelectedFolder(folderId: string | null) {
-  if (!folderId) {
-    selectedFolder.value = null;
-    return;
-  }
-  try {
-    selectedFolder.value = await diGetById(folderId);
-  } catch {
-    selectedFolder.value = null;
-  }
-}
-
 async function selectFolder(folderId: string | null) {
   searchActive.value = false;
   mainMode.value = 'browse';
   selectedFolderId.value = folderId;
   openDoc.value = null;
-  await Promise.all([loadChildren(folderId), loadFolderPath(folderId), loadSelectedFolder(folderId)]);
+  childrenLoading.value = true;
+  try {
+    applyBrowseContext(await diGetBrowseContext(folderId));
+  } catch (e) {
+    notify(diExtractMessage(e, t('documentIntelligence.errors.childrenLoad')), 'error');
+    children.value = [];
+    folderPath.value = [];
+    selectedFolder.value = null;
+  } finally {
+    childrenLoading.value = false;
+  }
 }
 
 async function openResource(resource: DiResource) {
@@ -384,7 +397,7 @@ async function submitFolder() {
     await diCreateFolder({ name, parentId: selectedFolderId.value });
     folderDialog.value = false;
     notify(t('documentIntelligence.folderCreated'), 'success');
-    await Promise.all([loadTree(), loadChildren(selectedFolderId.value)]);
+    await refreshWorkspace();
   } catch (e) {
     notify(diExtractMessage(e, t('documentIntelligence.errors.create')), 'error');
   } finally {
@@ -405,7 +418,7 @@ async function submitDoc(asDraft = false) {
     const created = await diCreateMarkdown({ title, content: '', parentId: selectedFolderId.value, isDraft: asDraft });
     docDialog.value = false;
     notify(t('documentIntelligence.docCreated'), 'success');
-    await loadChildren(selectedFolderId.value);
+    await refreshListing();
     await openMarkdown(created);
     startEdit();
   } catch (e) {
@@ -431,7 +444,7 @@ async function submitRename() {
     await diRename(target.id, { name });
     renameDialog.value = false;
     notify(t('documentIntelligence.renamed'), 'success');
-    await Promise.all([loadTree(), loadChildren(selectedFolderId.value)]);
+    await refreshWorkspace();
     if (openDoc.value?.id === target.id) {
       openDoc.value = { ...openDoc.value, name, title: name };
     }
@@ -457,7 +470,7 @@ async function submitMove() {
     await diMove(target.id, { newParentId: moveDestId.value });
     moveDialog.value = false;
     notify(t('documentIntelligence.moved'), 'success');
-    await Promise.all([loadTree(), loadChildren(selectedFolderId.value)]);
+    await refreshWorkspace();
   } catch (e) {
     notify(diExtractMessage(e, t('documentIntelligence.errors.move')), 'error');
   } finally {
@@ -484,7 +497,7 @@ async function submitDelete() {
       openDoc.value = null;
       mainMode.value = 'browse';
     }
-    await Promise.all([loadTree(), loadChildren(selectedFolderId.value)]);
+    await refreshWorkspace();
   } catch (e) {
     if (diErrorStatus(e) === 409 && !deleteForce.value) {
       // Dolu klasör guard'ı: force seçeneği sun
@@ -508,7 +521,7 @@ function openPermissions(resource: DiResource) {
 
 async function onPermissionsChanged() {
   // Yetki değişince görünürlük değişebilir: ağaç + içerik + seçili klasör tazelenir.
-  await Promise.all([loadTree(), loadChildren(selectedFolderId.value), loadSelectedFolder(selectedFolderId.value)]);
+  await refreshWorkspace();
 }
 
 // --- Dosya yükleme ---
@@ -571,7 +584,7 @@ async function submitFile() {
     });
     fileDialog.value = false;
     notify(t('documentIntelligence.fileUploaded'), 'success');
-    await loadChildren(selectedFolderId.value);
+    await refreshListing();
   } catch (e) {
     notify(diExtractMessage(e, t('documentIntelligence.errors.upload')), 'error');
   } finally {
@@ -663,7 +676,17 @@ function formatSize(bytes: number | null): string {
 }
 
 onMounted(async () => {
-  await Promise.all([loadTree(), selectFolder(null)]);
+  treeLoading.value = true;
+  childrenLoading.value = true;
+  try {
+    applyBootstrap(await diGetBootstrap(null));
+    selectedFolderId.value = null;
+  } catch (e) {
+    notify(diExtractMessage(e, t('documentIntelligence.errors.treeLoad')), 'error');
+  } finally {
+    treeLoading.value = false;
+    childrenLoading.value = false;
+  }
 });
 </script>
 
@@ -886,14 +909,49 @@ onMounted(async () => {
 
             <!-- Klasör tarayıcı -->
             <template v-else>
-              <v-progress-linear v-if="childrenLoading" indeterminate color="primary" class="mb-2" />
+              <div class="di-browse-panel">
+                <nav
+                  class="di-content-breadcrumb d-flex align-center flex-wrap ga-1 py-2 mb-3"
+                  :aria-label="t('documentIntelligence.explorer')"
+                >
+                  <template v-if="folderPath.length">
+                    <a class="di-crumb" @click="selectFolder(null)">{{ t('documentIntelligence.allDocuments') }}</a>
+                    <template v-for="(b, idx) in folderPath" :key="b.id">
+                      <v-icon size="14" class="text-medium-emphasis flex-shrink-0">mdi-chevron-right</v-icon>
+                      <a
+                        v-if="idx < folderPath.length - 1"
+                        class="di-crumb"
+                        @click="selectFolder(b.id)"
+                      >{{ b.name }}</a>
+                      <span v-else class="di-crumb di-crumb--current">{{ b.name }}</span>
+                    </template>
+                  </template>
+                  <span v-else class="di-crumb di-crumb--current">{{ t('documentIntelligence.allDocuments') }}</span>
+                </nav>
 
-              <div v-if="!children.length && !childrenLoading" class="text-center py-12">
-                <v-icon icon="mdi-folder-open-outline" size="56" class="text-medium-emphasis mb-2" />
-                <div class="text-body-1 text-medium-emphasis">{{ t('documentIntelligence.emptyFolder') }}</div>
-              </div>
+                <div
+                  class="di-browse-body position-relative"
+                  :class="{ 'di-browse-body--loading': childrenLoading }"
+                >
+                  <v-overlay
+                    :model-value="childrenLoading"
+                    contained
+                    persistent
+                    scrim="rgba(var(--v-theme-surface), 0.78)"
+                    class="align-center justify-center"
+                  >
+                    <div class="d-flex flex-column align-center text-center px-4">
+                      <v-progress-circular indeterminate color="primary" size="48" width="4" />
+                      <span class="text-body-2 text-medium-emphasis mt-3">{{ t('documentIntelligence.loadingContents') }}</span>
+                    </div>
+                  </v-overlay>
 
-              <template v-else>
+                  <div v-if="!children.length && !childrenLoading" class="text-center py-12">
+                    <v-icon icon="mdi-folder-open-outline" size="56" class="text-medium-emphasis mb-2" />
+                    <div class="text-body-1 text-medium-emphasis">{{ t('documentIntelligence.emptyFolder') }}</div>
+                  </div>
+
+                  <template v-else-if="children.length">
                 <!-- Klasörler -->
                 <div v-if="folderChildren.length" class="mb-4">
                   <div class="text-caption text-medium-emphasis mb-2">{{ t('documentIntelligence.folders') }}</div>
@@ -986,7 +1044,9 @@ onMounted(async () => {
                     </v-list-item>
                   </v-list>
                 </div>
-              </template>
+                  </template>
+                </div>
+              </div>
             </template>
           </div>
         </div>
@@ -1324,6 +1384,20 @@ onMounted(async () => {
 }
 .di-crumb:hover {
   text-decoration: underline;
+}
+.di-crumb--current {
+  color: rgba(var(--v-theme-on-surface), 0.87);
+  font-weight: 600;
+  cursor: default;
+}
+.di-content-breadcrumb {
+  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+}
+.di-browse-body {
+  min-height: 200px;
+}
+.di-browse-body--loading {
+  min-height: 320px;
 }
 .di-move-list {
   max-height: 320px;

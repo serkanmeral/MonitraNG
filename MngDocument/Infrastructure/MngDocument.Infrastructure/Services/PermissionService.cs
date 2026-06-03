@@ -21,9 +21,13 @@ public sealed class PermissionService : IPermissionService
 
     private const string ListQuery = "limit=1000&expand=false&showHistory=true";
 
+    /// <summary>Yetki snapshot'ı için history gerekmez (payload küçültme).</summary>
+    private const string SnapshotListQuery = "limit=1000&expand=false&showHistory=false";
+
     private readonly IMngDataGatewayClient _dg;
     private readonly IRequestContext _ctx;
     private readonly ILogger<PermissionService> _logger;
+    private PermissionSnapshot? _requestSnapshot;
 
     public PermissionService(IMngDataGatewayClient dg, IRequestContext ctx, ILogger<PermissionService> logger)
     {
@@ -34,26 +38,32 @@ public sealed class PermissionService : IPermissionService
 
     private string? Token => _ctx.BearerToken;
 
+    public void InvalidateSnapshotCache() => _requestSnapshot = null;
+
     public async Task<PermissionSnapshot> LoadSnapshotAsync(CancellationToken ct = default)
     {
+        if (_requestSnapshot is not null)
+            return _requestSnapshot;
+
         var folderPage = await _dg.QueryPageAsync(
             DmDatasets.Resources,
             new Dictionary<string, object?> { ["type"] = ResourceType.Folder },
-            ListQuery,
+            SnapshotListQuery,
             Token,
             ct);
 
         var permPage = await _dg.QueryPageAsync(
             DmDatasets.ResourcePermissions,
             new Dictionary<string, object?>(),
-            ListQuery,
+            SnapshotListQuery,
             Token,
             ct);
 
         var folders = folderPage.Items.Select(MapResource).ToList();
         var perms = permPage.Items.Select(MapPermission).ToList();
 
-        return new PermissionSnapshot(folders, perms, _ctx.UserGroups, _ctx.IsAdmin);
+        _requestSnapshot = new PermissionSnapshot(folders, perms, _ctx.UserGroups, _ctx.IsAdmin);
+        return _requestSnapshot;
     }
 
     public async Task<FolderPermissionsDto> GetFolderPermissionsAsync(string folderId, CancellationToken ct = default)
@@ -82,6 +92,7 @@ public sealed class PermissionService : IPermissionService
         var normalized = NormalizeGroups(request.Groups);
         await ReplaceFolderPermissionsAsync(folderId, normalized, ct);
 
+        InvalidateSnapshotCache();
         var refreshed = await LoadSnapshotAsync(ct);
         return BuildFolderPermissionsDto(folder, refreshed);
     }
@@ -139,6 +150,7 @@ public sealed class PermissionService : IPermissionService
         await ReplaceFolderPermissionsAsync(folderId, NormalizeGroups(toCreate.Values.ToList()), ct);
 
         folder.permissionsBroken = true;
+        InvalidateSnapshotCache();
         var refreshed = await LoadSnapshotAsync(ct);
         return BuildFolderPermissionsDto(folder, refreshed);
     }
@@ -156,6 +168,7 @@ public sealed class PermissionService : IPermissionService
         await SetBrokenFlagAsync(folderId, false, ct);
 
         folder.permissionsBroken = false;
+        InvalidateSnapshotCache();
         var refreshed = await LoadSnapshotAsync(ct);
         return BuildFolderPermissionsDto(folder, refreshed);
     }
@@ -164,7 +177,8 @@ public sealed class PermissionService : IPermissionService
     public async Task DeleteFolderPermissionsAsync(string folderId, CancellationToken ct = default)
     {
         var match = new Dictionary<string, object?> { ["resourceId"] = folderId };
-        var page = await _dg.QueryPageAsync(DmDatasets.ResourcePermissions, match, ListQuery, Token, ct);
+        var page = await _dg.QueryPageAsync(DmDatasets.ResourcePermissions, match, SnapshotListQuery, Token, ct);
+        InvalidateSnapshotCache();
         foreach (var row in page.Items)
         {
             if (row.TryGetValue("__dataId", out var idVal) && idVal is not null)

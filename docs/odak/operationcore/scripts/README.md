@@ -13,13 +13,14 @@
 
 | [seed-operation-core-demo.ps1](./seed-operation-core-demo.ps1) | Demo metadata: states, workspace, flow, type, form, board |
 | [seed-operation-core-helpdesk-reference.ps1](./seed-operation-core-helpdesk-reference.ps1) | IT Help Desk referans workspace ([reference](../reference/IT_HELP_DESK_REFERENCE.md)) |
-| [patch-oc-side-menu.ps1](./patch-oc-side-menu.ps1) | `@side_menu`: Operasyon Merkezi menu maddesi |
+| [patch-oc-side-menu.ps1](./patch-oc-side-menu.ps1) | `@side_menu`: Operasyon Merkezi + Tanımlamalar (scheduled jobs, onaylar, alarmlar) |
 
 ```powershell
 # Repo kokunden
 .\docs\odak\operationcore\scripts\get-operationcore-token.ps1
 .\docs\odak\operationcore\scripts\setup-operation-core-datasets.ps1
 .\docs\odak\operationcore\scripts\seed-operation-core-demo.ps1
+.\docs\odak\operationcore\scripts\patch-oc-side-menu.ps1   # @side_menu (onay + alarm dahil)
 # Opsiyonel: MngOperations calisiyorsa tam smoke
 .\docs\odak\operationcore\scripts\seed-operation-core-demo.ps1 -SmokeTest
 ```

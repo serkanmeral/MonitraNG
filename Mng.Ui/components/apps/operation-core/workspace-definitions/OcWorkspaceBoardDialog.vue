@@ -16,8 +16,8 @@ import type {
 } from '@/types/apps/operationCore';
 import { OC_BOARD_VIEW_TYPE_VALUES } from '@/types/apps/operationCore';
 import { suggestBoardColumnsFromFlow } from '@/utils/ocBoardColumns';
+import { buildBoardDgPayload } from '@/utils/ocBoardDgPayload';
 import {
-  boardListColumnKeys,
   buildListScopeColumns,
   deriveBoardListColumns,
   suggestListScopeStateIdsFromFlow,
@@ -148,27 +148,12 @@ function emptyForm(): OcBoardFormModel {
 }
 
 function buildPayload(): Record<string, unknown> {
-  const columns = form.value.columns
-    .filter((c) => c.stateId)
-    .map((c) => ({
-      stateId: c.stateId,
-      title: c.title?.trim() || null,
-      queryKey: c.queryKey?.trim() || 'wi_board_column',
-      defaultTransitionKey: c.defaultTransitionKey?.trim() || null,
-    }));
-
   const listColumns = deriveBoardListColumns(form.value.listColumns, null, poolFieldKeys.value);
-  // visibleFields = DG'den çekilecek gerçek alanlar; computed sütunlar hariç tutulur.
-  const listColumnKeys = boardListColumnKeys(listColumns.filter((c) => !c.computed));
-  const defaultSort =
-    form.value.defaultSort?.field && listColumns.some((c) => c.key === form.value.defaultSort?.field && c.sortable)
-      ? { field: form.value.defaultSort.field, direction: form.value.defaultSort.direction }
-      : null;
-
-  return {
-    name: form.value.name.trim(),
+  const board: OpBoard = {
+    __dataId: props.editId ?? '',
+    name: form.value.name,
     workspaceId: props.workspaceId,
-    viewType: form.value.viewType || 'list',
+    viewType: form.value.viewType,
     defaultFormId: form.value.defaultFormId || null,
     defaultDashboardId: form.value.defaultDashboardId || null,
     defaultStateFlowId: form.value.defaultStateFlowId || null,
@@ -176,11 +161,14 @@ function buildPayload(): Record<string, unknown> {
     defaultTypeId: form.value.defaultTypeId || null,
     defaultPriorityId: form.value.defaultPriorityId || null,
     defaultStateId: form.value.defaultStateId || null,
-    visibleFields: listColumnKeys,
-    viewGroups: form.value.viewGroups.length ? form.value.viewGroups : null,
-    editGroups: form.value.editGroups.length ? form.value.editGroups : null,
-    config: { columns, listColumns, defaultSort },
+    visibleFields: [],
+    viewGroups: [...form.value.viewGroups],
+    editGroups: [...form.value.editGroups],
+    columns: form.value.columns,
+    listColumns,
+    defaultSort: form.value.defaultSort ? { ...form.value.defaultSort } : null,
   };
+  return buildBoardDgPayload(board, poolFieldKeys.value);
 }
 
 function setFormFromBoard(row: OpBoard | null, defaults?: Partial<OcBoardFormModel>) {

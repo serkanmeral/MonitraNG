@@ -18,6 +18,7 @@ public static class ServiceCollectionExtensions
         });
 
         services.AddScoped<IValidationPipelineService, ValidationPipelineService>();
+        services.AddWorkflowEngineCore(configuration);
 
         return services;
     }

@@ -191,6 +191,13 @@ public class UserJobRepository : IUserJobRepository
             job.EnsurePostPayload();
 
             var createdJob = await _dataGatewayClient.CreateAsync<ScheduledJob>(DatasetName, job, token);
+
+            if (string.IsNullOrWhiteSpace(createdJob.GetRecordId()))
+            {
+                var reloaded = await GetJobByIdAsync(domainId, job.JobId, token);
+                if (reloaded != null)
+                    createdJob = reloaded;
+            }
             
             _logger.LogInformation("Created user job {JobId} in domain {DomainId}", job.JobId, domainId);
             return createdJob;
@@ -246,7 +253,10 @@ public class UserJobRepository : IUserJobRepository
             var recordId = existingJob.GetRecordId();
             if (string.IsNullOrWhiteSpace(recordId))
             {
-                throw new InvalidOperationException($"User job {job.JobId} has no DG record id (__dataId).");
+                _logger.LogWarning(
+                    "User job {JobId} has no DG record id (__dataId); skipping DG update (execution counters not persisted)",
+                    job.JobId);
+                return job;
             }
 
             var updatedJob = await _dataGatewayClient.UpdateAsync<ScheduledJob>(
@@ -284,7 +294,10 @@ public class UserJobRepository : IUserJobRepository
             var recordId = existingJob.GetRecordId();
             if (string.IsNullOrWhiteSpace(recordId))
             {
-                throw new InvalidOperationException($"User job {jobId} has no DG record id (__dataId).");
+                _logger.LogWarning(
+                    "User job {JobId} has no DG record id (__dataId); skipping DG delete",
+                    jobId);
+                return false;
             }
 
             var deleted = await _dataGatewayClient.DeleteAsync(DatasetName, recordId, token);

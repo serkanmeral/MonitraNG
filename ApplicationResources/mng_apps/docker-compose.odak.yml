@@ -26,6 +26,8 @@ services:
       - "5010:5010"
 
   # MngReactor kaynak kodu repoda yok — Gateway depends_on için stub (API çağrıları çalışmaz)
+  # C6 gecis: gercek image deploy + asagidaki env (handoff R4)
+  #   MngReactorSettings__ObservationPublish__Enabled=true
   mngreactor:
     build: !reset null
     image: alpine:3.19
@@ -67,6 +69,28 @@ services:
   mngworkflow:
     ports:
       - "5085:5085"
+    environment:
+      - EnableDevWorkflowEndpoints=true
+      - MngWorkflowSettings__MongoDb__ConnectionString=mongodb://admin:admin123@mongo:27017
+      - MngWorkflowSettings__Secrets__EncryptionKeyBase64=MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXY=
+
+  mngworkflow-worker:
+    environment:
+      - MngWorkflowSettings__MongoDb__ConnectionString=mongodb://admin:admin123@mongo:27017
+      - MngWorkflowSettings__Secrets__EncryptionKeyBase64=MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXY=
+      - MngWorkflowSettings__EngineCommand__DevLogOnly=true
+
+  mngalarm:
+    ports:
+      - "5087:5087"
+    environment:
+      - EnableDevAlarmEndpoints=true
+      - MngAlarmSettings__MongoDb__ConnectionString=mongodb://admin:admin123@mongo:27017
+      - MngAlarmSettings__Engine__ConsumeObservations=false
+
+  mngalarm-worker:
+    environment:
+      - MngAlarmSettings__MongoDb__ConnectionString=mongodb://admin:admin123@mongo:27017
 
   mngoperations:
     ports:

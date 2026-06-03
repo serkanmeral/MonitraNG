@@ -286,14 +286,18 @@ Mevcut IFTTT planı (tek-metrik threshold → aksiyon) iki parçaya bölünür:
 
 ---
 
-# 15. Açık Kararlar
+# 15. Açık Kararlar — ✅ Kapatıldı (3 Haziran 2026)
 
-1. **Servis adı:** `MngAlarm` mı `MngCorrelator` mı? (öneri: `MngAlarm` — kapsam SIEM'den geniş)
-2. **State store:** Bellek + Mongo checkpoint yeterli mi, yoksa yüksek hacim için stream/arama-optimize store (OpenSearch)? (SIEM §12.4 ile birleşik karar)
-3. **`mon_alarms` erişimi:** DG dataset mi, doğrudan Mongo mu? (UI okuması DG; yazma frekansı düşük → DG olabilir)
-4. **Reactor publish kapsamı:** Sadece metrik mi, yoksa sec_events ve signal'lar da aynı publish deseniyle mi? (birleşik observation için tutarlılık gerekir)
-5. **Scheduled validation:** MngScheduler'a mı yaslanacak (workflow ile aynı desen)?
-6. **Partitioning mekanizması:** RabbitMQ consistent-hash exchange mi, uygulama seviyesinde mi?
+Detay ve gerekçe: [DEVAM.md §2](./DEVAM.md)
+
+| # | Karar |
+|---|-------|
+| 1 | Servis adı: **`MngAlarm`** |
+| 2 | State store: **Bellek + Mongo checkpoint** (OpenSearch Faz 2+ opsiyon) |
+| 3 | `mon_alarms`: **Faz 1 doğrudan Mongo**; DG read mirror Faz 2 |
+| 4 | Reactor publish: **Faz 1 metrik**; sec_events/signal aynı zarf Faz 1.1 |
+| 5 | Scheduled validation: **MngScheduler** |
+| 6 | Partitioning: **Uygulama seviyesi Faz 1**; consistent-hash Faz 2 |
 
 ---
 

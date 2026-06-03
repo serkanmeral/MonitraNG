@@ -19,6 +19,8 @@ public class MngOperationsSettings
     public RabbitMqSettings RabbitMq { get; set; } = new();
     public MetadataCacheSettings MetadataCache { get; set; } = new();
     public WorkItemScheduleSettings WorkItemSchedule { get; set; } = new();
+    public SlaBreachScanSettings SlaBreachScan { get; set; } = new();
+    public WorkflowIntegrationSettings Workflow { get; set; } = new();
 }
 
 public class ServerSettings
@@ -96,4 +98,26 @@ public class WorkItemScheduleSettings
         "http://mngoperations:5086/api/v1/work-item-schedules/{scheduleId}/execute";
 
     public string SchedulerJobIdPrefix { get; set; } = "oc-schedule-";
+}
+
+/// <summary>
+/// SLA breach scan → MngScheduler User Job senkronu.
+/// </summary>
+public class SlaBreachScanSettings
+{
+    /// <summary>
+    /// HttpJob / orchestration referans URL şablonu. {workspaceId} zorunlu.
+    /// </summary>
+    public string ScanEndpointTemplate { get; set; } =
+        "http://mngoperations:5086/api/v1/sla/scan-breaches?workspaceId={workspaceId}";
+
+    public string SchedulerJobIdPrefix { get; set; } = "oc-sla-scan-";
+
+    /// <summary>Varsayılan cron — her 5 dakika (Quartz: saniye dakika saat ...).</summary>
+    public string DefaultCronExpression { get; set; } = "0 */5 * * * ?";
+}
+
+public class WorkflowIntegrationSettings
+{
+    public string BaseUrl { get; set; } = "http://mngworkflow:5085";
 }

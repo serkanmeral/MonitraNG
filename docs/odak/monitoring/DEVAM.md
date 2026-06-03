@@ -1,88 +1,81 @@
 # DEVAM — SIEM-Hafif Planlama (Kaldığımız Yer)
 
-**Son güncelleme:** 1 Haziran 2026, ~21:40
-**Durum:** ▶️ Workflow taslağı netleşti — **devam edilebilir** (bağımlılık çözüldü)
+**Son güncelleme:** 3 Haziran 2026
+**Durum:** ▶️ Planlama devam — **Faz 1 spike MngEngine/MngReactor'da başlatılabilir** (workflow seam ✅)
 
 ---
 
 ## 1. Tek cümlede durum
 
-SIEM-hafif planının Faz 0 (çerçeve) çıktısı hazır ([SIEM_PLANNING.md](./SIEM_PLANNING.md)); workflow taslağı tamamlandı ([Workflow Backend Implementation Plan v1](../workflow/Workflow%20Backend%20Implementation%20Plan%20v1.md)) ve **Faz 2–3'ü bloke eden iki karar (§12.1 korelasyon motoru, §8 onaylı müdahale) çözüldü.**
+Faz 0 planlama bitti. **Workflow SIEM seam hazır** (P4-A/B Odak E2E). **Implementasyon:** harici repolarda Faz 1 spike; MonitraNG tarafında fixture + kural taslağı + seam dokümanı tamamlandı. Yoğun veri: [SIEM_THROUGHPUT_AND_QUEUES.md](./SIEM_THROUGHPUT_AND_QUEUES.md). **AI:** implementasyon ⏸️ — [AI_PLANNING_DECISION.md](../AI_PLANNING_DECISION.md).
 
 ---
 
-## 2. Bağımlılık çözümü (workflow taslağı tamamlandı)
+## 2. Dosya haritası
 
-Workflow taslağı netleşti ve SIEM'i bloke eden iki konu kapatıldı:
-
-- **SIEM_PLANNING.md §12.1 — Korelasyon motoru:** ✅ **KARAR → ayrı CEP/tespit bileşeni (`MngCorrelator`).** Workflow per-instance orkestrasyon motorudur; stateful kayan-pencere korelasyonu onun işi değildir. Korelatör `sec_events` akışından alert üretir, workflow Event Trigger ile tüketir.
-- **SIEM_PLANNING.md §8 — Onaylı müdahale:** ✅ **Tamamen MngWorkflow ile karşılanıyor** (Event Trigger → Approval → Block IP/Engine komutu → Delay-TTL/Unblock → audit → WorkItem). Eşleme: Workflow Plan §12.2.
-
-**Temiz seam:** İki sistem RabbitMQ alert event'i üzerinden bağlanır (SIEM §5 `Corr -->|alert| WF`). Detay: Workflow Plan §12.
-
----
-
-## 3. Kilitli kararlar (değişmedi)
-
-| Konu | Karar |
-|------|-------|
-| Ürün kapsamı | SIEM-hafif (hedefli senaryolar, kademeli derinleştir) |
-| İlk faz kaynakları | Firewall (syslog) · AD/login · Sunucu/endpoint · Bastion/VPN |
-| Dağıtım | On-prem |
-| Tespit sonrası | Onaylı müdahale (operatör onayı; otomatik kalıcı blok yok) |
-| Uyum hedefi | ISO/IEC 27001 |
+| Dosya | Rol |
+|-------|-----|
+| [SIEM_PLANNING.md](./SIEM_PLANNING.md) | Ana plan (§1–23) |
+| [SIEM_PARSER_PLAN.md](./SIEM_PARSER_PLAN.md) | Parser/normalizer |
+| [SIEM_FAZ1_SPIKE.md](./SIEM_FAZ1_SPIKE.md) | Faz 1 implementasyon |
+| [SIEM_FAZ1_HANDOFF.md](./SIEM_FAZ1_HANDOFF.md) | MngEngine/MngReactor handoff |
+| [SIEM_WORKFLOW_SEAM.md](./SIEM_WORKFLOW_SEAM.md) | Workflow × SIEM seam değerlendirmesi ✅ |
+| [SEC_EVENT_OBSERVATION_MAP.md](./SEC_EVENT_OBSERVATION_MAP.md) | Faz 2 observation eşlemesi |
+| [SIEM_THROUGHPUT_AND_QUEUES.md](./SIEM_THROUGHPUT_AND_QUEUES.md) | Kuyruk, paralellik, yoğun veri |
+| [SIEM_PERFORMANCE_PLAN.md](./SIEM_PERFORMANCE_PLAN.md) | Performans — **§2 öneriler**, SLO, benchmark |
+| [SIEM_VERTICAL_FINANCE.md](./SIEM_VERTICAL_FINANCE.md) | Dijital banka kapsam (sonra gözden geçirilecek) |
+| [benchmarks/README.md](./benchmarks/README.md) | Benchmark çıktı klasörü (boş) |
+| [README.md](./README.md) | İndeks |
 
 ---
 
-## 4. Üretilen dosyalar
+## 3. Faz 1 spike — ▶️ başlatılabilir
 
-| Dosya | İçerik |
-|-------|--------|
-| [README.md](./README.md) | Klasör index + kapsam kararları |
-| [SIEM_PLANNING.md](./SIEM_PLANNING.md) | Ana plan: yetenek eşlemesi, gap analizi, `sec_events` modeli, mimari akış, U1–U7 senaryolar, korelasyon kural modeli, onaylı müdahale, retention, ISO katkısı, 4 fazlık yol haritası, açık kararlar |
-| DEVAM.md | Bu dosya |
+Detay: [SIEM_FAZ1_SPIKE.md](./SIEM_FAZ1_SPIKE.md) · Handoff: [SIEM_FAZ1_HANDOFF.md](./SIEM_FAZ1_HANDOFF.md)
 
-**Çapraz bağlar eklendi:** `docs/odak/README.md` (ağaç + tablo), `docs/odak/compliance/README.md` (modül haritası).
+**Workflow kapısı:** ✅ [SIEM_WORKFLOW_SEAM.md](./SIEM_WORKFLOW_SEAM.md)
 
 ---
 
-## 5. Workflow planlaması bitti — sıradaki adımlar
+## 4. Paralel (planlama / veri)
 
-1. ✅ **§12.1 kapatıldı:** Korelasyon motoru = ayrı CEP bileşeni (`MngCorrelator`). SIEM_PLANNING.md güncellendi.
-2. ✅ **§8 netleşti:** Onaylı müdahale akışı MngWorkflow ile karşılanıyor (eşleme Workflow Plan §12.2); SIEM_PLANNING.md §8'e not düşüldü.
-3. ✅ **Tespit motoru taslağı çıkarıldı:** SIEM-özel `MngCorrelator` yerine platform geneli **Alarm & Rule Engine** olarak genelleştirildi → `docs/odak/alarm/ALARM_RULE_ENGINE_PLAN.md`. SIEM korelasyonu (U1/U2/U4) bu motorun bir kural ailesi.
-4. ⏭️ **Faz 2 senaryolarını** (U1/U2/U4) Alarm Engine kural modeliyle (`mon_alarm_rules`) somutlaştır.
-5. ⏭️ Gerekirse `MONITORING_WORKFLOW.md` (IFTTT planı) ile yeni workflow engine arasındaki ilişkiyi netleştir (yerine geçiş / üstüne biniş / ayrı).
-
----
-
-## 6. Workflow'dan bağımsız ilerletilebilecekler (istenirse)
-
-Bunlar workflow kararını **beklemez** (SIEM_PLANNING.md Faz 0–1):
-
-- `sec_events` veri modelinin kesinleştirilmesi (§4)
-- Engine syslog/Windows Event listener teknik spike (§5)
-- Reactor normalizer / parser tasarımı (§5)
-- Müşteri kaynak envanteri + örnek log toplama (§13)
-
-> Not: Kullanıcı tercihi **"önce workflow"** olduğu için yukarıdakiler de şimdilik beklemede; bu liste, istenirse paralel ilerleme için referanstır.
+| İş | Durum |
+|----|-------|
+| Örnek log fixture (4625, 4740, deny, unparseable) | ✅ `tests/fixtures/siem/` |
+| U1/U2/U4 → `mon_alarm_rules` JSON taslağı | ✅ `tests/fixtures/siem/alarm_rules/` |
+| `sec_events` → observation map | ✅ [SEC_EVENT_OBSERVATION_MAP.md](./SEC_EVENT_OBSERVATION_MAP.md) |
+| Workflow SIEM seam değerlendirmesi | ✅ [SIEM_WORKFLOW_SEAM.md](./SIEM_WORKFLOW_SEAM.md) |
+| Performans baseline (P0/P1) | ⬜ spike sonrası → `benchmarks/` |
+| Finans dikeyi gözden geçirme | ⬜ isteğe bağlı |
 
 ---
 
-## 7. Açık kararlar (SIEM_PLANNING.md §12 — özet)
+## 5. Spike kararları (onaylı — handoff ile uyumlu)
 
-1. Korelasyon motoru: Workflow genişletme vs `MngCorrelator` → **workflow taslağına bağlı**
-2. Syslog toplama yeri: Engine içi vs ayrı collector
-3. Firewall pilot marka (API + kimlik bilgisi) — müşteri envanteri gerekli
-4. `sec_events` store: MongoDB yeterli mi, OpenSearch değerlendirilecek mi
-5. Retention süreleri + WORM gereksinimi
-6. Baseline (U7) süresi + yanlış-pozitif politikası
+| # | Karar | Değer |
+|---|-------|-------|
+| D1 | Ingest discriminator | `kind=sec_event` ✅ |
+| D2 | Windows yolu | Fixture first (B); WEC Odak paralel |
+| D3 | Syslog | UDP MVP |
+| D4 | DB | Mongo `mng_{domain}` |
+| D5 | Retention spike | TTL yok veya 30 gün test |
 
 ---
 
-## 8. İlgili dokümanlar
+## 6. Sıradaki adımlar (öncelik)
 
-- Ana plan: [SIEM_PLANNING.md](./SIEM_PLANNING.md)
-- Mevcut IFTTT workflow planı: `docs/content/monitoring_plans/MONITORING_WORKFLOW.md`
-- Ürün geneli güvenlik vizyonu: `docs/content/security/CYBERSECURITY_SOLUTION_PLANNING.md`
-- ISO 27001: `docs/odak/compliance/ISO27001_PLAN.md`
+1. **MngReactor/MngEngine:** [SIEM_FAZ1_HANDOFF.md](./SIEM_FAZ1_HANDOFF.md) S1–S4 implementasyonu
+2. Spike bitince: `SEC_EVENT_OBSERVATION_MAP` publish + U1 kural Odak E2E
+3. `test-siem-faz1-e2e.ps1` + `benchmarks/` doldurma
+4. U2 `sequence` kural tipi — Alarm Faz 2+ backlog
+5. Finans dikeyi gözden geçirme — istenirse
+
+---
+
+## 7. İlgili dokümanlar
+
+- [SIEM_FAZ1_SPIKE.md](./SIEM_FAZ1_SPIKE.md)
+- [SIEM_PARSER_PLAN.md](./SIEM_PARSER_PLAN.md)
+- [workflow/DEVAM.md §P4](../workflow/DEVAM.md)
+- [alarm/DEVAM.md](../alarm/DEVAM.md)
+- `docs/odak/alarm/ALARM_RULE_ENGINE_PLAN.md`

@@ -48,11 +48,15 @@ public static class ServiceRegistration
         services.AddScoped<HttpJob>();
         services.AddScoped<DirectorySyncOrchestrationJob>();
         services.AddScoped<WorkItemScheduleOrchestrationJob>();
+        services.AddScoped<SlaBreachScanOrchestrationJob>();
+        services.AddScoped<AlarmValidationOrchestrationJob>();
 
         services.AddScoped<IMngKeeperDirectorySyncClient, MngKeeperDirectorySyncClient>();
         services.AddScoped<IDirectorySyncOrchestrationService, DirectorySyncOrchestrationService>();
         services.AddScoped<IMngKeeperAuthClient, MngKeeperAuthClient>();
         services.AddScoped<IWorkItemScheduleOrchestrationService, WorkItemScheduleOrchestrationService>();
+        services.AddScoped<ISlaBreachScanOrchestrationService, SlaBreachScanOrchestrationService>();
+        services.AddScoped<IAlarmValidationOrchestrationService, AlarmValidationOrchestrationService>();
 
         // RabbitMQ Event Publisher
         services.AddSingleton<IRabbitMqEventPublisher, RabbitMqEventPublisher>();

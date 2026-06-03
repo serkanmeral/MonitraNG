@@ -112,6 +112,27 @@ export async function schedulerListUserJobs(): Promise<SchedulerJob[]> {
   return normalizeSchedulerJobs(raw);
 }
 
+export async function schedulerGetUserJob(jobId: string): Promise<SchedulerJob> {
+  const raw = await schedulerFetch<unknown>(`v1/user/jobs/${encodeURIComponent(jobId)}`, 'GET');
+  return normalizeSchedulerJob(raw);
+}
+
+export async function schedulerUpdateUserJob(job: SchedulerJob): Promise<SchedulerJob> {
+  const raw = await schedulerFetch<unknown>(
+    `v1/user/jobs/${encodeURIComponent(job.jobId)}`,
+    'PUT',
+    job
+  );
+  return normalizeSchedulerJob(raw);
+}
+
+/** DG zamanlama aktifken scheduler job pasif kaldıysa job'ı yeniden etkinleştirir. */
+export async function schedulerAlignUserJobWithDgActive(jobId: string): Promise<SchedulerJob> {
+  const job = await schedulerGetUserJob(jobId);
+  if (job.isActive) return job;
+  return schedulerUpdateUserJob({ ...job, isActive: true });
+}
+
 export async function schedulerGetSystemJobExecutions(
   jobId: string,
   limit = SCHEDULER_EXECUTION_HISTORY_LIMIT

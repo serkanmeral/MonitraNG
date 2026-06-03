@@ -44,6 +44,7 @@ services:
       - MngGatewaySettings__BackendServices__MngHub=${MNGHUB_URL:-http://mnghub:5020}
       - MngGatewaySettings__BackendServices__MngReactor=${MNGREACTOR_URL:-http://mngreactor:5003}
       - MngGatewaySettings__BackendServices__MngWorkflow=${MNGWORKFLOW_URL:-http://mngworkflow:5085}
+      - MngGatewaySettings__BackendServices__MngAlarm=${MNGALARM_URL:-http://mngalarm:5087}
       - MngGatewaySettings__BackendServices__MngOperations=${MNGOPERATIONS_URL:-http://mngoperations:5086}
       - MngGatewaySettings__BackendServices__MngDocument=${MNGDOCUMENT_URL:-http://mngdocument:5095}
       - MngGatewaySettings__BackendServices__KeyCloak=${KEYCLOAK_BASE_URL:-http://keycloak:8080}
@@ -60,6 +61,7 @@ services:
       - mngreactor
       - mnghub
       - mngworkflow
+      - mngalarm
       - mngoperations
       - mngdocument
 
@@ -411,6 +413,10 @@ services:
       - MngSchedulerSettings__WorkItemScheduleOrchestration__ServiceAccount__Username=${OC_SCHEDULER_USERNAME:-odak_admin}
       - MngSchedulerSettings__WorkItemScheduleOrchestration__ServiceAccount__Password=${OC_SCHEDULER_PASSWORD:-Admin123!}
       - MngSchedulerSettings__WorkItemScheduleOrchestration__ExecuteEndpointTemplate=http://mngoperations:5086/api/v1/work-item-schedules/{scheduleId}/execute
+      - MngSchedulerSettings__SlaBreachScanOrchestration__Enabled=${OC_SCHEDULER_SLA_SCAN_ENABLED:-true}
+      - MngSchedulerSettings__SlaBreachScanOrchestration__ScanEndpointTemplate=http://mngoperations:5086/api/v1/sla/scan-breaches?workspaceId={workspaceId}
+      - MngSchedulerSettings__AlarmValidationOrchestration__Enabled=${ALARM_VALIDATION_SCHEDULER_ENABLED:-true}
+      - MngSchedulerSettings__AlarmValidationOrchestration__ValidationEndpointTemplate=http://mngalarm:5087/api/v1/validation/run
       - MngSchedulerSettings__Actors__MngOperations=${MNGOPERATIONS_URL:-http://mngoperations:5086}
     networks:
       - mng_common_mng_network
@@ -440,13 +446,24 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://0.0.0.0:5085
+      - EnableDevWorkflowEndpoints=${ENABLE_DEV_WORKFLOW_ENDPOINTS:-true}
       - MngWorkflowSettings__DataGatewayBaseUrl=${MNGDATAGATEWAY_URL:-http://mngdatagateway:5010}
       - MngWorkflowSettings__NotifierBaseUrl=${MNGNOTIFIER_URL:-http://mngnotifier:5070}
+      - MngWorkflowSettings__MongoDb__ConnectionString=${MONGODB_CONNECTION_STRING:-mongodb://admin:admin123@mongo:27017}
       - MngWorkflowSettings__RabbitMq__Host=${RABBITMQ_HOST}
       - MngWorkflowSettings__RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - MngWorkflowSettings__RabbitMq__VirtualHost=${RABBITMQ_VIRTUALHOST:-/}
       - MngWorkflowSettings__RabbitMq__Username=${RABBITMQ_USERNAME}
       - MngWorkflowSettings__RabbitMq__Password=${RABBITMQ_PASSWORD}
+      - MngWorkflowSettings__Engine__PrefetchCount=16
+      - MngWorkflowSettings__Secrets__EncryptionKeyBase64=${WORKFLOW_SECRET_KEY_B64:-MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXY=}
+      - MngWorkflowSettings__Scheduler__BaseUrl=${MNGSCHEDULER_URL:-http://mngscheduler:5090}
+      - MngWorkflowSettings__Scheduler__HookBaseUrl=${MNGWORKFLOW_URL:-http://mngworkflow:5085}
+      - MngWorkflowSettings__Scheduler__MngKeeperBaseUrl=${MNGKEEPER_URL:-http://mngkeeper:5001}
+      - MngWorkflowSettings__Scheduler__ServiceAccount__DomainName=${WF_SCHEDULER_DOMAIN:-odak}
+      - MngWorkflowSettings__Scheduler__ServiceAccount__Username=${WF_SCHEDULER_USERNAME:-odak_admin}
+      - MngWorkflowSettings__Scheduler__ServiceAccount__Password=${WF_SCHEDULER_PASSWORD:-Admin123!}
+      - MngWorkflowSettings__Operations__BaseUrl=${MNGOPERATIONS_URL:-http://mngoperations:5086}
       - Jwt__Authority=${KEYCLOAK_BASE_URL}/realms/monitra
       - EnableSwagger=${ENABLE_WORKFLOW_SWAGGER:-false}
     networks:
@@ -461,6 +478,101 @@ services:
       timeout: 10s
       retries: 5
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  mngworkflow-worker:
+    build:
+      context: ../../MngWorkflow
+      dockerfile: Presentation/MngWorkflow.Worker/Dockerfile
+    image: mngworkflow-worker:${VERSION:-latest}
+    container_name: mngworkflow-worker
+    environment:
+      - DOTNET_ENVIRONMENT=Production
+      - MngWorkflowSettings__MongoDb__ConnectionString=${MONGODB_CONNECTION_STRING:-mongodb://admin:admin123@mongo:27017}
+      - MngWorkflowSettings__RabbitMq__Host=${RABBITMQ_HOST}
+      - MngWorkflowSettings__RabbitMq__Port=${RABBITMQ_PORT:-5672}
+      - MngWorkflowSettings__RabbitMq__VirtualHost=${RABBITMQ_VIRTUALHOST:-/}
+      - MngWorkflowSettings__RabbitMq__Username=${RABBITMQ_USERNAME}
+      - MngWorkflowSettings__RabbitMq__Password=${RABBITMQ_PASSWORD}
+      - MngWorkflowSettings__Engine__PrefetchCount=16
+      - MngWorkflowSettings__Secrets__EncryptionKeyBase64=${WORKFLOW_SECRET_KEY_B64:-MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXY=}
+      - MngWorkflowSettings__Scheduler__BaseUrl=${MNGSCHEDULER_URL:-http://mngscheduler:5090}
+      - MngWorkflowSettings__Scheduler__HookBaseUrl=${MNGWORKFLOW_URL:-http://mngworkflow:5085}
+      - MngWorkflowSettings__Scheduler__MngKeeperBaseUrl=${MNGKEEPER_URL:-http://mngkeeper:5001}
+      - MngWorkflowSettings__Scheduler__ServiceAccount__DomainName=${WF_SCHEDULER_DOMAIN:-odak}
+      - MngWorkflowSettings__Scheduler__ServiceAccount__Username=${WF_SCHEDULER_USERNAME:-odak_admin}
+      - MngWorkflowSettings__Scheduler__ServiceAccount__Password=${WF_SCHEDULER_PASSWORD:-Admin123!}
+      - MngWorkflowSettings__Operations__BaseUrl=${MNGOPERATIONS_URL:-http://mngoperations:5086}
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngworkflow
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  mngalarm:
+    build:
+      context: ../../MngAlarm
+      dockerfile: Presentation/MngAlarm.Api/Dockerfile
+    image: mngalarm:${VERSION:-latest}
+    container_name: mngalarm
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://0.0.0.0:5087
+      - EnableDevAlarmEndpoints=${ENABLE_DEV_ALARM_ENDPOINTS:-true}
+      - MngAlarmSettings__MongoDb__ConnectionString=${MONGODB_CONNECTION_STRING:-mongodb://admin:admin123@mongo:27017}
+      - MngAlarmSettings__RabbitMq__Host=${RABBITMQ_HOST}
+      - MngAlarmSettings__RabbitMq__Port=${RABBITMQ_PORT:-5672}
+      - MngAlarmSettings__RabbitMq__VirtualHost=${RABBITMQ_VIRTUALHOST:-/}
+      - MngAlarmSettings__RabbitMq__Username=${RABBITMQ_USERNAME}
+      - MngAlarmSettings__RabbitMq__Password=${RABBITMQ_PASSWORD}
+      - MngAlarmSettings__Engine__ConsumeObservations=false
+      - Jwt__Authority=${KEYCLOAK_BASE_URL}/realms/monitra
+      - EnableSwagger=${ENABLE_ALARM_SWAGGER:-false}
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5087/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  mngalarm-worker:
+    build:
+      context: ../../MngAlarm
+      dockerfile: Presentation/MngAlarm.Worker/Dockerfile
+    image: mngalarm-worker:${VERSION:-latest}
+    container_name: mngalarm-worker
+    environment:
+      - DOTNET_ENVIRONMENT=Production
+      - MngAlarmSettings__MongoDb__ConnectionString=${MONGODB_CONNECTION_STRING:-mongodb://admin:admin123@mongo:27017}
+      - MngAlarmSettings__RabbitMq__Host=${RABBITMQ_HOST}
+      - MngAlarmSettings__RabbitMq__Port=${RABBITMQ_PORT:-5672}
+      - MngAlarmSettings__RabbitMq__VirtualHost=${RABBITMQ_VIRTUALHOST:-/}
+      - MngAlarmSettings__RabbitMq__Username=${RABBITMQ_USERNAME}
+      - MngAlarmSettings__RabbitMq__Password=${RABBITMQ_PASSWORD}
+      - MngAlarmSettings__Engine__ConsumeObservations=true
+      - MngAlarmSettings__Engine__ReactorBridge__Enabled=true
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngalarm
+    restart: unless-stopped
     deploy:
       resources:
         limits:
@@ -498,6 +610,10 @@ services:
       - MngOperationsSettings__RabbitMq__Exchange=oc.events
       - MngOperationsSettings__WorkItemSchedule__ExecuteEndpointTemplate=http://mngoperations:5086/api/v1/work-item-schedules/{scheduleId}/execute
       - MngOperationsSettings__WorkItemSchedule__SchedulerJobIdPrefix=oc-schedule-
+      - MngOperationsSettings__SlaBreachScan__ScanEndpointTemplate=http://mngoperations:5086/api/v1/sla/scan-breaches?workspaceId={workspaceId}
+      - MngOperationsSettings__SlaBreachScan__SchedulerJobIdPrefix=oc-sla-scan-
+      - MngOperationsSettings__SlaBreachScan__DefaultCronExpression=0 */5 * * * ?
+      - MngOperationsSettings__Workflow__BaseUrl=${MNGWORKFLOW_URL:-http://mngworkflow:5085}
     networks:
       - mng_common_mng_network
     depends_on:

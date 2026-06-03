@@ -3,7 +3,7 @@
 **Sürüm:** 1.0  
 **Tarih:** 2 Haziran 2026  
 **Ortam:** Odak / müşteri on-prem  
-**Durum:** Faz 1 + 1B tamam (Odak UI deploy, 2 Haziran 2026) — **Faz 2 backend** bekliyor  
+**Durum:** Faz 1 + 1B ✅ · **Faz 2 MO kısmi** ✅ (2 Haz 2026, ölçüm: [DIAGNOSTIC_REPORT_2026-06-02-faz2.md](./DIAGNOSTIC_REPORT_2026-06-02-faz2.md))  
 **Teknik referans:** [DIAGNOSTIC_REPORT_2026-06-02.md](./DIAGNOSTIC_REPORT_2026-06-02.md)
 
 ---
@@ -134,18 +134,19 @@ gantt
 
 ---
 
-### Faz 2 — Backend runtime optimizasyonu (≈ 7 iş günü)
+### Faz 2 — Backend runtime optimizasyonu (≈ 7 iş günü) — **kısmi tamam (2 Haz)**
 
 **Amaç:** Günlük operasyon ekranları — profil cold path, dashboard.
 
-| # | İyileştirme | Beklenen etki |
-|---|-------------|---------------|
-| 2.1 | MO **metadata cache** (workspace, flow, field katalog — istek/işlem içi + kısa TTL) | Profil cold ~4 sn → ~2 sn |
-| 2.2 | Profil **paralel downstream** genişletme (mevcut perf çalışmasının devamı) | Warm profil ≤ 1,2 sn korunur / iyileşir |
-| 2.3 | Dashboard widget aggregation profiling + daraltma | Dashboard ~1,6 sn → ≤ 1 sn |
-| 2.4 | `OC_PERF` / istek timing — regresyon kapısı (CI veya deploy checklist) | Gelecekteki yavaşlama erken yakalanır |
+| # | İyileştirme | Durum | Odak ölçüm (2 Haz) |
+|---|-------------|--------|---------------------|
+| 2.1 | MO **metadata cache** (TTL) | ✅ (önceden) | — |
+| 2.2 | Profil metadata **paralel** + profile-view timeline 35 | ✅ | profile warm P95 **~1,3 sn**; profile-view **~2,3 sn** |
+| 2.3 | Dashboard widget **paralel (4)** + summaryCard take=1 | ✅ | dashboard warm P95 **~1,7 sn** (hedef 1 sn için ek tur) |
+| 2.4 | Sayfa diagnostic script | ✅ | `diagnostic-operation-pages.ps1` |
+| 2.5 | `OC_PERF` regresyon kapısı | ⬜ | Deploy checklist |
 
-**Doğrulama:** `diagnostic-benchmark.ps1` — profil cold ≤ 2 sn, warm P95 ≤ 1,5 sn.
+**Doğrulama:** `diagnostic-benchmark.ps1` + `diagnostic-operation-pages.ps1` — rapor: `DIAGNOSTIC_REPORT_2026-06-02-faz2.md`.
 
 **Müşteriye söylenecek:** *“İş detay ekranında veri birleştirme sürecini optimize ettik; ilk açılış belirgin hızlandı.”*
 

@@ -1,0 +1,7 @@
+{
+  "__dataId": "c8e4f1a2-6b3d-4e90-a1f5-9d2c7b8e4f01",
+  "_comment": "__dataId dokumantasyon icin; kurulum scripti DG'den gercek category dataId cozer",
+  "categoryName": "NotifierDatasets",
+  "categoryDescription": "MngNotifier — e-posta sablonlari (@mail_templates) ve layout (@mail_layouts); tenant domain DB",
+  "isSystemCategory": false
+}

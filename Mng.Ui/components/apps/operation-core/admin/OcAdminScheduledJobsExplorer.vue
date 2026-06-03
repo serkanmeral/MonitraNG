@@ -4,6 +4,7 @@ import OcAdminScheduledJobExecutionsDialog from '@/components/apps/operation-cor
 import { useAppI18n } from '@/composables/useAppI18n';
 import type { OcAdminScheduledJobRow } from '@/types/apps/scheduler';
 import {
+  schedulerAlignUserJobWithDgActive,
   schedulerLoadAdminJobExplorerRows,
   schedulerRunHttpPostJob,
   schedulerRunOcSchedule,
@@ -14,6 +15,7 @@ const { t, locale } = useAppI18n();
 
 const loading = ref(true);
 const runningKey = ref<string | null>(null);
+const syncingKey = ref<string | null>(null);
 const errorLocal = ref<string | null>(null);
 const infoLocal = ref<string | null>(null);
 const rows = ref<OcAdminScheduledJobRow[]>([]);
@@ -125,6 +127,29 @@ function openExecutions(row: OcAdminScheduledJobRow) {
   executionsDialog.value = true;
 }
 
+function canAlignSchedulerWithDg(row: OcAdminScheduledJobRow): boolean {
+  return Boolean(
+    row.schedulerDgMismatch && row.dgIsActive === true && !row.isActive && row.scope === 'domain'
+  );
+}
+
+async function alignSchedulerWithDg(row: OcAdminScheduledJobRow) {
+  if (!canAlignSchedulerWithDg(row)) return;
+  syncingKey.value = row.key;
+  errorLocal.value = null;
+  infoLocal.value = null;
+  try {
+    await schedulerAlignUserJobWithDgActive(row.jobId);
+    infoLocal.value = t('operationCore.adminScheduledJobs.syncSchedulerSuccess');
+    await loadRows();
+  } catch (e) {
+    errorLocal.value =
+      e instanceof Error ? e.message : t('operationCore.adminScheduledJobs.syncSchedulerError');
+  } finally {
+    syncingKey.value = null;
+  }
+}
+
 function onExecutionsError(message: string) {
   errorLocal.value = message;
 }
@@ -201,13 +226,51 @@ onMounted(() => {
       </template>
 
       <template #item.isActive="{ item }">
-        <v-chip size="small" :color="item.isActive ? 'success' : 'default'" variant="tonal">
-          {{
-            item.isActive
-              ? t('operationCore.adminScheduledJobs.activeYes')
-              : t('operationCore.adminScheduledJobs.activeNo')
-          }}
-        </v-chip>
+        <div class="d-flex flex-column ga-1 py-1">
+          <v-chip size="small" :color="item.isActive ? 'success' : 'default'" variant="tonal">
+            {{
+              t('operationCore.adminScheduledJobs.schedulerActive', {
+                state: item.isActive
+                  ? t('operationCore.adminScheduledJobs.activeYes')
+                  : t('operationCore.adminScheduledJobs.activeNo'),
+              })
+            }}
+          </v-chip>
+          <v-chip
+            v-if="item.dgIsActive != null"
+            size="small"
+            :color="item.dgIsActive ? 'success' : 'default'"
+            variant="outlined"
+          >
+            {{
+              t('operationCore.adminScheduledJobs.dgActive', {
+                state: item.dgIsActive
+                  ? t('operationCore.adminScheduledJobs.activeYes')
+                  : t('operationCore.adminScheduledJobs.activeNo'),
+              })
+            }}
+          </v-chip>
+          <v-chip
+            v-if="item.schedulerDgMismatch"
+            size="small"
+            color="warning"
+            variant="tonal"
+            prepend-icon="mdi-alert-outline"
+          >
+            {{ t('operationCore.adminScheduledJobs.syncMismatch') }}
+          </v-chip>
+          <v-btn
+            v-if="canAlignSchedulerWithDg(item)"
+            size="x-small"
+            variant="tonal"
+            color="warning"
+            class="align-self-start"
+            :loading="syncingKey === item.key"
+            @click="alignSchedulerWithDg(item)"
+          >
+            {{ t('operationCore.adminScheduledJobs.syncSchedulerBtn') }}
+          </v-btn>
+        </div>
       </template>
 
       <template #item.lastRunAt="{ item }">

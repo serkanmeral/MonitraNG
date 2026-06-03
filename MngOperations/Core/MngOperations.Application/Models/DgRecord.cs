@@ -52,6 +52,15 @@ public sealed class WorkspaceRecord : DgRecord
 
     /// <summary>Workspace metadata — <c>fieldPolicies</c>, yedek <c>enabled*Ids</c>, vb.</summary>
     public JsonElement? Settings { get; set; }
+
+    [JsonPropertyName("slaBreachScanSchedulerJobId")]
+    public string? SlaBreachScanSchedulerJobId { get; set; }
+
+    [JsonPropertyName("slaBreachScanCronExpression")]
+    public string? SlaBreachScanCronExpression { get; set; }
+
+    [JsonPropertyName("slaBreachScanEnabled")]
+    public bool? SlaBreachScanEnabled { get; set; }
 }
 
 public sealed class FormRecord : DgRecord

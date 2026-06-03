@@ -2,8 +2,7 @@
 
 MonitraNG'nin platform geneli **tespit / alarm üretim katmanı**. Major Roadmap §4.2'nin somutlaştırılması. Metrik / olay / AI sinyali akışlarını tüketir, kuralları değerlendirir, **alarm üretir**. Aksiyon almaz — o Workflow Engine'in işidir.
 
-**Durum:** Planlama (Faz 0 — çerçeve)
-**Son güncelleme:** 1 Haziran 2026
+**Durum:** Planlama — **§15 kararlar kapatıldı** (3 Haziran 2026); Faz 0/1 sırada
 
 ---
 
@@ -22,7 +21,8 @@ MonitraNG'nin platform geneli **tespit / alarm üretim katmanı**. Major Roadmap
 
 | Dosya | İçerik | Durum |
 |-------|--------|--------|
-| [ALARM_RULE_ENGINE_PLAN.md](./ALARM_RULE_ENGINE_PLAN.md) | Ana plan: katmanlı mimari, birleşik observation, alarm tipleri, kural/alarm modeli, stateful runtime, alarm event seam, AI scorer, fazlar, açık kararlar | Taslak |
+| [DEVAM.md](./DEVAM.md) | Kaldığımız yer, kilitli §15 kararlar, Faz 0/1 checklist | Güncel |
+| [ALARM_RULE_ENGINE_PLAN.md](./ALARM_RULE_ENGINE_PLAN.md) | Ana plan: mimari, kural/alarm modeli, fazlar | Güncel (§15 kapalı) |
 
 ---
 

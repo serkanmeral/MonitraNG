@@ -1,0 +1,71 @@
+{
+  "generatedAtUtc": "2026-06-02T08:47:26.4509412Z",
+  "workspaceId": "f414462a-cd9e-427e-87e8-3cdff0502325",
+  "gatewayBaseUrl": "http://192.168.20.20:5040",
+  "scheduledTab": {
+    "parallelWallMs": 1955,
+    "sequentialSumMs": 1913.0,
+    "sequentialWallMs": 1937,
+    "calls": [
+      {
+        "label": "schedules",
+        "ms": 312,
+        "success": true
+      },
+      {
+        "label": "boards",
+        "ms": 317,
+        "success": true
+      },
+      {
+        "label": "types_global",
+        "ms": 327,
+        "success": true
+      },
+      {
+        "label": "types_scoped",
+        "ms": 305,
+        "success": true
+      },
+      {
+        "label": "workspace",
+        "ms": 344,
+        "success": true
+      },
+      {
+        "label": "priorities_global",
+        "ms": 308,
+        "success": true
+      }
+    ]
+  },
+  "eagerPageStorm": {
+    "failed": 0,
+    "parallelWallMs": 11048,
+    "requestCount": 35,
+    "maxSingleMs": 5023.0,
+    "p95SingleMs": 5022
+  },
+  "duplicateCatalogPatterns": [
+    {
+      "ApproxTabs": 6,
+      "Pattern": "op_states?sort",
+      "Note": "forms, rules, values, policies, boards(states), flows"
+    },
+    {
+      "ApproxTabs": 8,
+      "Pattern": "op_priorities?sort",
+      "Note": "forms, rules, boards, scheduled, dashboards, sla, values, policies"
+    },
+    {
+      "ApproxTabs": 9,
+      "Pattern": "op_work_item_types?sort",
+      "Note": "forms, rules, boards, scheduled, sla, values, policies + scoped"
+    },
+    {
+      "ApproxTabs": 10,
+      "Pattern": "op_workspaces/f414462a-cd9e-427e-87e8-3cdff0502325",
+      "Note": "her catalog filtre tab'i ocGetWorkspace cagiriyor"
+    }
+  ]
+}

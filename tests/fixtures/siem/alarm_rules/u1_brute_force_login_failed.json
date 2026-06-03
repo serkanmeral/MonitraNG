@@ -1,0 +1,11 @@
+{
+  "name": "U1 — Brute force (başarısız login)",
+  "type": "correlation",
+  "matchKey": "login_failed",
+  "groupByFields": ["userId", "srcIp"],
+  "windowMinutes": 5,
+  "threshold": 10,
+  "severity": 7,
+  "cooldownMinutes": 15,
+  "dedupKeyTemplate": "{ruleId}:{groupKey}"
+}

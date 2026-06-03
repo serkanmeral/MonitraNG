@@ -1,6 +1,7 @@
-# Operation Core — Performans Optimizasyonu (perf/oc-optimization)
+# Operation Core — Performans Optimizasyonu
 
-**Durum:** Devam ediyor · **Branch:** `perf/oc-optimization` · **Başlangıç:** 30 May 2026
+**Mayıs 2026 (`perf/oc-optimization`):** Board liste + profil warm (~%30) — bu dosya §1–4.  
+**Haziran 2026 (diagnostic program):** UI Faz 1 + 1B — [../../diagnostic/PERFORMANCE_ROADMAP.md](../../diagnostic/PERFORMANCE_ROADMAP.md), özet [DEVAM.md § UI-PERF-F1](./DEVAM.md#ui-perf-f1--diagnostic-program-ui-performans-faz-1--1b-2-haz--commit-84b296c--odak-deploy).
 
 Ölçüm-öncelikli, davranış-koruyan optimizasyon. Plan: `.cursor/plans/oc_perf_optimization_*.plan.md`.
 
@@ -100,8 +101,34 @@ Bulgular:
 - **Faz 4 (tablo sanallaştırma + büyük dosya bölme)**: plan gereği ayrı onay kapısında; ölçüm
   gerektirmiyor (board warm zaten ~330ms). Ayrı onayla ele alınacak.
 
-## 4. Durum
+## 4. Durum (Mayıs turu)
 - Backend + UI Odak'a deploy edildi; `mngoperations` + `mngui` healthy. API davranışı korunmuş
   (board 50 satır, profil 10 alan — birebir).
 - Ölçüm bayrağı (`PerfDiagnostics`) Odak'ta **kapatıldı** (kod flag-gated, üretimde log yok).
-- Branch `perf/oc-optimization` push edildi; `main`'e merge **kullanıcı onayı** sonrası (toplu kontrol).
+- `main`'e merge edildi.
+
+---
+
+## 5. Haziran 2026 — UI performans Faz 1 + 1B (diagnostic program)
+
+**Tetikleyici:** Workspace tanımlama 20–30 sn şikayeti; Odak backend ölçümü (`diagnostic-benchmark.ps1`, `diagnostic-workspace-definitions.ps1`).
+
+| Faz | Odak | Uygulama | Commit |
+|-----|------|----------|--------|
+| **Faz 1** | Admin workspace tanımları | Lazy sekmeler, `useOcWorkspaceCatalog`, paralel person | `84b296c` |
+| **Faz 1B** | Operasyon alanı | Lazy boards/dashboard/relation, kanban batch 4, ws cache 60s | `84b296c` |
+| **Faz 2** | MO runtime | Profil cold, dashboard aggregation, metadata cache | ⬜ Bekliyor |
+
+**Kök neden (özet):** Yönetim ekranı yavaşlığı çoğunlukla **UI-ARCH** (eager tab storm + tekrarlı katalog); scheduled tab saf backend ~2 sn. Explorer **UI-OVERFETCH** (`loadAllBoards` × N workspace). Profil/dashboard süreleri **backend** (Faz 2).
+
+**Dokümantasyon:**
+
+| Belge | İçerik |
+|-------|--------|
+| [../../diagnostic/DIAGNOSTIC_REPORT_2026-06-02.md](../../diagnostic/DIAGNOSTIC_REPORT_2026-06-02.md) | İlk Odak ölçümü, eager storm analizi |
+| [../../diagnostic/PERFORMANCE_ROADMAP.md](../../diagnostic/PERFORMANCE_ROADMAP.md) | Müşteri yol haritası, SLA hedefleri |
+| [../../diagnostic/OPERATIONAL_WORKSPACE_PERF.md](../../diagnostic/OPERATIONAL_WORKSPACE_PERF.md) | Sayfa bazlı API profili + Faz 1B |
+| [../../diagnostic/README.md](../../diagnostic/README.md) | Scriptler, `OC_PERF` kullanımı |
+| [DEVAM.md § UI-PERF-F1](./DEVAM.md#ui-perf-f1--diagnostic-program-ui-performans-faz-1--1b-2-haz--commit-84b296c--odak-deploy) | Checkpoint tabloları (Faz 1 / 1B kodları) |
+
+**Doğrulama (açık):** Deploy sonrası aynı scriptler + tarayıcı Network — hedefler PERFORMANCE_ROADMAP §1 SLA tablosu.

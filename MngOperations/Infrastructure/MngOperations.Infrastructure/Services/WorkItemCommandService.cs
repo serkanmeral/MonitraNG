@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MngOperations.Application.Contracts.WorkItems;
+using MngOperations.Application.Contracts.Workflow;
 using MngOperations.Application.Events;
 using MngOperations.Application.Exceptions;
 using MngOperations.Application.Interfaces;
@@ -32,6 +33,7 @@ public class WorkItemCommandService : IWorkItemCommandService
     private readonly ISlaCalculator _slaCalculator;
     private readonly IWorkItemTimelineService _timelineService;
     private readonly INotificationOrchestrator _notifications;
+    private readonly IMngWorkflowClient _workflowClient;
     private readonly ILogger<WorkItemCommandService> _logger;
 
     private static readonly HashSet<string> PatchForbiddenKeys = new(StringComparer.OrdinalIgnoreCase)
@@ -52,6 +54,7 @@ public class WorkItemCommandService : IWorkItemCommandService
         ISlaCalculator slaCalculator,
         IWorkItemTimelineService timelineService,
         INotificationOrchestrator notifications,
+        IMngWorkflowClient workflowClient,
         ILogger<WorkItemCommandService> logger)
     {
         _requestContext = requestContext;
@@ -65,6 +68,7 @@ public class WorkItemCommandService : IWorkItemCommandService
         _slaCalculator = slaCalculator;
         _timelineService = timelineService;
         _notifications = notifications;
+        _workflowClient = workflowClient;
         _logger = logger;
     }
 
@@ -670,6 +674,37 @@ public class WorkItemCommandService : IWorkItemCommandService
         }
 
         _logger.LogInformation("Deleted work item {WorkItemKey} ({WorkItemId}) in workspace {WorkspaceId}", workItemKey, workItemId, workspaceId);
+    }
+
+    public async Task RunAutomationRulesAsync(
+        string workItemId,
+        string trigger,
+        CancellationToken cancellationToken = default)
+    {
+        var token = RequireToken();
+        var existing = await LoadWorkItemAsync(workItemId, token, cancellationToken);
+        var workspaceId = GetString(existing, "workspaceId")
+            ?? throw new OperationCoreException("WORK_ITEM_INVALID", "workspaceId missing on work item.", "Kayıtta workspaceId yok.", 500);
+
+        var workspace = await _metadataCache.GetWorkspaceAsync(workspaceId, token, cancellationToken);
+        _permissions.EnsureWorkItemView(workspace, existing);
+
+        var typeId = GetString(existing, "typeId");
+        var boardId = GetString(existing, "boardId");
+        var stateId = GetString(existing, "stateId");
+        var workItemKey = GetString(existing, "key") ?? workItemId;
+
+        await ExecuteAutomationSideEffectsAsync(
+            existing,
+            workspaceId,
+            typeId,
+            boardId,
+            stateId,
+            trigger,
+            workItemId,
+            workItemKey,
+            token,
+            cancellationToken);
     }
 
     /// <summary>
@@ -1632,6 +1667,18 @@ public class WorkItemCommandService : IWorkItemCommandService
                         "Rule side-effect addWatcher for work item {WorkItemKey} (patch deferred)",
                         workItemKey);
                     break;
+                case "startworkflow":
+                    await ExecuteStartWorkflowSideEffectAsync(
+                        effect.Payload,
+                        workItem,
+                        workspaceId,
+                        typeId,
+                        trigger,
+                        workItemId,
+                        workItemKey,
+                        token,
+                        cancellationToken);
+                    break;
             }
         }
 
@@ -1649,6 +1696,75 @@ public class WorkItemCommandService : IWorkItemCommandService
             {
                 _logger.LogWarning(ex, "Automation field mutation failed for work item {WorkItemId}", workItemId);
             }
+        }
+    }
+
+    private async Task ExecuteStartWorkflowSideEffectAsync(
+        IReadOnlyDictionary<string, object?> payload,
+        IReadOnlyDictionary<string, object?> workItem,
+        string workspaceId,
+        string? typeId,
+        string trigger,
+        string workItemId,
+        string workItemKey,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var workflowId = payload.TryGetValue("workflowId", out var wf) ? wf?.ToString() : null;
+        if (string.IsNullOrWhiteSpace(workflowId))
+        {
+            _logger.LogWarning("startWorkflow side-effect skipped: workflowId missing for work item {WorkItemKey}", workItemKey);
+            return;
+        }
+
+        var domainName = _requestContext.DomainName;
+        if (string.IsNullOrWhiteSpace(domainName))
+        {
+            _logger.LogWarning("startWorkflow side-effect skipped: domain context missing for work item {WorkItemKey}", workItemKey);
+            return;
+        }
+
+        var triggerData = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["workItemId"] = workItemId,
+            ["workItemKey"] = workItemKey,
+            ["workspaceId"] = workspaceId,
+            ["typeId"] = typeId,
+            ["trigger"] = trigger
+        };
+
+        if (payload.TryGetValue("triggerData", out var custom) && custom is Dictionary<string, object?> customDict)
+        {
+            foreach (var (key, value) in customDict)
+                triggerData[key] = value;
+        }
+
+        var request = new StartWorkflowRunRequest
+        {
+            WorkflowId = workflowId.Trim(),
+            WorkflowVersionId = payload.TryGetValue("workflowVersionId", out var wv) ? wv?.ToString() : null,
+            TriggerType = payload.TryGetValue("triggerType", out var tt) && tt != null
+                ? tt.ToString() ?? "op_rules"
+                : "op_rules",
+            TriggerData = triggerData
+        };
+
+        try
+        {
+            var response = await _workflowClient.StartRunAsync(domainName, token, request, cancellationToken);
+            _logger.LogInformation(
+                "startWorkflow side-effect queued instance={InstanceId} workflow={WorkflowId} workItem={WorkItemKey}",
+                response.InstanceId,
+                workflowId,
+                workItemKey);
+        }
+        catch (OperationCoreException ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "startWorkflow side-effect failed for work item {WorkItemKey} workflow={WorkflowId}",
+                workItemKey,
+                workflowId);
         }
     }
 

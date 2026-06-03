@@ -705,13 +705,16 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://0.0.0.0:5085
+      - EnableDevWorkflowEndpoints=true
       - MngWorkflowSettings__DataGatewayBaseUrl=http://mngdatagateway:5010
       - MngWorkflowSettings__NotifierBaseUrl=http://mngnotifier:5070
+      - MngWorkflowSettings__MongoDb__ConnectionString=mongodb://admin:admin123@mongo:27017
       - MngWorkflowSettings__RabbitMq__Host=rabbitmq
       - MngWorkflowSettings__RabbitMq__Port=5672
       - MngWorkflowSettings__RabbitMq__VirtualHost=/
       - MngWorkflowSettings__RabbitMq__Username=admin
       - MngWorkflowSettings__RabbitMq__Password=admin123
+      - MngWorkflowSettings__Engine__PrefetchCount=16
       - Jwt__Authority=http://keycloak:8080/realms/monitra
     networks:
       - mng_common_mng_network
@@ -726,7 +729,72 @@ services:
       retries: 5
       start_period: 40s
 
-  mngoperations:
+  mngworkflow-worker:
+    build:
+      context: ../../MngWorkflow
+      dockerfile: Presentation/MngWorkflow.Worker/Dockerfile
+    image: localhost:5000/mngworkflow-worker:1.0.0
+    container_name: mngworkflow-worker
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+      - MngWorkflowSettings__MongoDb__ConnectionString=mongodb://admin:admin123@mongo:27017
+      - MngWorkflowSettings__RabbitMq__Host=rabbitmq
+      - MngWorkflowSettings__RabbitMq__Port=5672
+      - MngWorkflowSettings__RabbitMq__VirtualHost=/
+      - MngWorkflowSettings__RabbitMq__Username=admin
+      - MngWorkflowSettings__RabbitMq__Password=admin123
+      - MngWorkflowSettings__Engine__PrefetchCount=16
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngworkflow
+    restart: unless-stopped
+
+  mngalarm:
+    build:
+      context: ../../MngAlarm
+      dockerfile: Presentation/MngAlarm.Api/Dockerfile
+    image: localhost:5000/mngalarm:1.0.0
+    container_name: mngalarm
+    ports:
+      - "5087:5087"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://0.0.0.0:5087
+      - EnableDevAlarmEndpoints=true
+      - MngAlarmSettings__MongoDb__ConnectionString=mongodb://admin:admin123@mongo:27017
+      - MngAlarmSettings__RabbitMq__Host=rabbitmq
+      - MngAlarmSettings__RabbitMq__Port=5672
+      - MngAlarmSettings__RabbitMq__VirtualHost=/
+      - MngAlarmSettings__RabbitMq__Username=admin
+      - MngAlarmSettings__RabbitMq__Password=admin123
+      - MngAlarmSettings__Engine__ConsumeObservations=false
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5087/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  mngalarm-worker:
+    build:
+      context: ../../MngAlarm
+      dockerfile: Presentation/MngAlarm.Worker/Dockerfile
+    image: localhost:5000/mngalarm-worker:1.0.0
+    container_name: mngalarm-worker
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+      - MngAlarmSettings__MongoDb__ConnectionString=mongodb://admin:admin123@mongo:27017
+      - MngAlarmSettings__RabbitMq__Host=rabbitmq
+      - MngAlarmSettings__RabbitMq__Port=5672
+      - MngAlarmSettings__RabbitMq__VirtualHost=/
+      - MngAlarmSettings__RabbitMq__Username=admin
+      - MngAlarmSettings__RabbitMq__Password=admin123
+      - MngAlarmSettings__Engine__ConsumeObservations=true
+      - MngAlarmSettings__Engine__ReactorBridge__Enabled=true
     build:
       context: ../../MngOperations
       dockerfile: Presentation/MngOperations.Api/Dockerfile
@@ -756,6 +824,7 @@ services:
       - MngOperationsSettings__RabbitMq__Password=admin123
       - MngOperationsSettings__RabbitMq__VirtualHost=/
       - MngOperationsSettings__RabbitMq__Exchange=oc.events
+      - MngOperationsSettings__Workflow__BaseUrl=http://mngworkflow:5085
       - Serilog__WriteTo__1__Args__serverUrl=http://seq:80
     networks:
       - mng_common_mng_network

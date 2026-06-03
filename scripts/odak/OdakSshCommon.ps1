@@ -14,7 +14,51 @@ if ([string]::IsNullOrWhiteSpace($env:ODAK_SSH_PASSWORD) -and (Test-Path $envOda
         if ($line -match '^\s*ODAK_SSH_PASSWORD\s*=\s*(.+)\s*$') {
             $env:ODAK_SSH_PASSWORD = $matches[1].Trim().Trim('"').Trim("'")
         }
+        if ($line -match '^\s*ODAK_RABBITMQ_PASSWORD\s*=\s*(.+)\s*$') {
+            $env:ODAK_RABBITMQ_PASSWORD = $matches[1].Trim().Trim('"').Trim("'")
+        }
     }
+}
+
+function Get-OdakRabbitMqCredentials {
+    param(
+        [Parameter(Mandatory = $true)]
+        $SshSession,
+        [string]$RemoteAppsDir = "/home/odak/MonitraNG/ApplicationResources/mng_apps"
+    )
+
+    $username = $env:ODAK_RABBITMQ_USERNAME
+    if ([string]::IsNullOrWhiteSpace($username)) { $username = "admin" }
+
+    $password = $env:ODAK_RABBITMQ_PASSWORD
+    if ([string]::IsNullOrWhiteSpace($password)) {
+        $grepCmd = "grep '^RABBITMQ_PASSWORD=' '$RemoteAppsDir/.env' 2>/dev/null | head -1 | cut -d= -f2- | tr -d '\r'"
+        $r = Invoke-SSHCommand -SessionId $SshSession.SessionId -Command $grepCmd -TimeOut 15
+        $password = ($r.Output -join "").Trim().Trim('"').Trim("'")
+    }
+
+    if ([string]::IsNullOrWhiteSpace($password)) { $password = "admin123" }
+
+    return @{ Username = $username; Password = $password }
+}
+
+function Invoke-OdakRabbitMqPublish {
+    param(
+        [Parameter(Mandatory = $true)]
+        $SshSession,
+        [Parameter(Mandatory = $true)]
+        [string]$Exchange,
+        [Parameter(Mandatory = $true)]
+        [string]$RoutingKey,
+        [Parameter(Mandatory = $true)]
+        [string]$Payload,
+        [string]$RemoteAppsDir = "/home/odak/MonitraNG/ApplicationResources/mng_apps"
+    )
+
+    $creds = Get-OdakRabbitMqCredentials -SshSession $SshSession -RemoteAppsDir $RemoteAppsDir
+    $escapedPassword = $creds.Password.Replace("'", "'\''")
+    $cmd = "docker exec rabbitmq rabbitmqadmin -u $($creds.Username) -p '$escapedPassword' publish exchange=$Exchange routing_key=$RoutingKey payload='$Payload'"
+    return Invoke-SSHCommand -SessionId $SshSession.SessionId -Command $cmd -TimeOut 30
 }
 
 function Get-OdakSshCredential {

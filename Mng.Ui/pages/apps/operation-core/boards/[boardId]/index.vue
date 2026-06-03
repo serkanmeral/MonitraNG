@@ -6,6 +6,7 @@ import OcBoardCatalogLabel from '@/components/apps/operation-core/OcBoardCatalog
 const OcBoardKanban = defineAsyncComponent(
   () => import('@/components/apps/operation-core/OcBoardKanban.vue')
 );
+import OcBoardDashboardLink from '@/components/apps/operation-core/OcBoardDashboardLink.vue';
 import OcBoardListFilters from '@/components/apps/operation-core/OcBoardListFilters.vue';
 import type { OcBoardFilterColumn, OcBoardFilterKind } from '@/components/apps/operation-core/OcBoardListFilters.vue';
 import OcWorkItemFormDialog from '@/components/apps/operation-core/OcWorkItemFormDialog.vue';
@@ -14,9 +15,25 @@ import { useOcBoardListLookups } from '@/composables/useOcBoardListLookups';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import { useOperationCoreStore } from '@/stores/apps/operationCore';
 import { useAppI18n } from '@/composables/useAppI18n';
-import { ocApplyTransition, ocDeleteWorkItem, ocErrorCode, ocExtractDgErrorMessage, ocExtractOperationsMessage, ocListDataset, ocListPoolFieldsForWorkspace } from '@/services/operationCoreService';
+import {
+  ocApplyTransition,
+  ocDeleteWorkItem,
+  ocErrorCode,
+  ocExtractDgErrorMessage,
+  ocExtractOperationsMessage,
+  ocGetDashboardRecord,
+  ocListDataset,
+  ocListPoolFieldsForWorkspace,
+} from '@/services/operationCoreService';
 import { recordToDatasetItems } from '@/utils/ocDynamicFormField';
-import type { OcBoardListFilter, OcBoardListRequest, OcColumnFormat, OcWorkItemCard, OpField } from '@/types/apps/operationCore';
+import type {
+  OcBoardListFilter,
+  OcBoardListRequest,
+  OcColumnFormat,
+  OcWorkItemCard,
+  OpBoard,
+  OpField,
+} from '@/types/apps/operationCore';
 import {
   defaultFormatForKey,
   isBuiltInListColumn,
@@ -97,6 +114,45 @@ const { breadcrumbs } = useOperationCoreBreadcrumbs({
 });
 
 const workspaceId = computed(() => store.boardContext?.workspaceId ?? null);
+
+const hubBoard = computed((): OpBoard | null => {
+  const wsId = workspaceId.value;
+  const id = boardId.value;
+  if (!wsId || !id) return null;
+  return store.boardsForWorkspace(wsId).find((b) => b.__dataId === id) ?? null;
+});
+
+const hubBoardDashboardName = ref<string | null>(null);
+
+async function onHubBoardDashboardAssigned(dashboardId: string | null) {
+  const wsId = workspaceId.value;
+  if (!wsId) return;
+  await store.loadBoardsForWorkspace(wsId, true);
+  hubBoardDashboardName.value = null;
+  if (dashboardId && hubBoard.value?.defaultDashboardId === dashboardId) {
+    const rec = await ocGetDashboardRecord(dashboardId);
+    hubBoardDashboardName.value = rec?.name ?? null;
+  }
+}
+
+watch(
+  () => hubBoard.value?.defaultDashboardId,
+  async (dashId) => {
+    hubBoardDashboardName.value = null;
+    if (!dashId) return;
+    const rec = await ocGetDashboardRecord(dashId);
+    hubBoardDashboardName.value = rec?.name ?? null;
+  },
+  { immediate: true }
+);
+
+watch(
+  workspaceId,
+  (wsId) => {
+    if (wsId) void store.loadBoardsForWorkspace(wsId, true);
+  },
+  { immediate: true }
+);
 const boardCatalogs = computed(() => store.boardContext?.catalogs ?? null);
 const boardPeople = computed(() => store.boardPeople);
 const boardGroups = computed(() => store.boardGroups);
@@ -790,6 +846,15 @@ onUnmounted(() => {
           </div>
         </div>
         <v-spacer />
+        <OcBoardDashboardLink
+          v-if="hubBoard && workspaceId"
+          :workspace-id="workspaceId"
+          :board="hubBoard"
+          :dashboard-name="hubBoardDashboardName"
+          density="compact"
+          class="mr-1"
+          @assigned="onHubBoardDashboardAssigned"
+        />
         <v-btn-toggle
           v-if="store.boardContext && showKanbanToggle"
           :model-value="displayMode"

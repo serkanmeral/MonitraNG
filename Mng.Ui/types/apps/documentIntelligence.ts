@@ -98,6 +98,21 @@ export interface DiResourceListResult {
   total: number;
 }
 
+/** İlk yükleme / tam yenileme (tek API çağrısı). */
+export interface DiResourceBootstrap {
+  tree: DiTreeNode[];
+  children: DiResourceListResult;
+  breadcrumb: DiBreadcrumb[];
+  selectedFolder: DiResource | null;
+}
+
+/** Klasör gezinme (ağaç hariç, tek API çağrısı). */
+export interface DiResourceBrowseContext {
+  children: DiResourceListResult;
+  breadcrumb: DiBreadcrumb[];
+  selectedFolder: DiResource | null;
+}
+
 export interface DiMarkdownContent {
   id: string;
   title: string | null;

@@ -1,0 +1,1 @@
+THIS IS NOT A VALID SYSLOG OR JSON LINE — parser fallback test (S4)

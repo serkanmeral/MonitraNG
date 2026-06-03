@@ -1,0 +1,31 @@
+[
+  {
+    "comment": "Operasyon > Tanımlamalar altı — checkpoint UI (C4/C5). pageCode i18n anahtarıdır.",
+    "order": "headerOrder+6",
+    "itemType": "item",
+    "level": 2,
+    "parentPageCode": "operationCore.definitions.menuParent",
+    "pageType": "manager",
+    "pageCode": "operationCore.adminApprovals.menuTitle",
+    "title": "Bekleyen onaylar",
+    "icon": "FileCheckIcon",
+    "iconType": "tabler",
+    "to": "/apps/operation-core/admin/approvals",
+    "type": "internal",
+    "disabled": false
+  },
+  {
+    "order": "headerOrder+7",
+    "itemType": "item",
+    "level": 2,
+    "parentPageCode": "operationCore.definitions.menuParent",
+    "pageType": "manager",
+    "pageCode": "operationCore.adminAlarms.menuTitle",
+    "title": "Açık alarmlar",
+    "icon": "AlertCircleIcon",
+    "iconType": "tabler",
+    "to": "/apps/operation-core/admin/alarms",
+    "type": "internal",
+    "disabled": false
+  }
+]

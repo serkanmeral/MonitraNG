@@ -10,6 +10,7 @@ import type {
   OcPersonDisplay,
   OcWorkItemCard,
 } from '@/types/apps/operationCore';
+import { assigneeAvatarAccent } from '@/utils/ocDashboardWidgetStyle';
 
 const props = defineProps<{
   widget: OcDashboardWidget;
@@ -109,9 +110,9 @@ function openItem(card: OcWorkItemCard) {
               </div>
             </div>
             <v-avatar
-              v-if="assigneeName(card)"
+              v-if="card.assignee && assigneeName(card)"
               size="30"
-              color="primary"
+              :color="assigneeAvatarAccent(card.assignee)"
               variant="tonal"
               class="flex-shrink-0 text-caption font-weight-bold"
             >

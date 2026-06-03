@@ -23,6 +23,8 @@ public static class ServiceRegistration
             _.HttpClient = mngSchedulerSettings.HttpClient;
             _.DirectorySyncOrchestration = mngSchedulerSettings.DirectorySyncOrchestration;
             _.WorkItemScheduleOrchestration = mngSchedulerSettings.WorkItemScheduleOrchestration;
+            _.SlaBreachScanOrchestration = mngSchedulerSettings.SlaBreachScanOrchestration;
+            _.AlarmValidationOrchestration = mngSchedulerSettings.AlarmValidationOrchestration;
         });
 
         // Add MongoDB

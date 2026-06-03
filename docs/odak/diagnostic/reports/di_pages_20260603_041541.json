@@ -1,0 +1,200 @@
+{
+  "dgReference": [
+    {
+      "success": true,
+      "label": "dg_dm_resources",
+      "ms": 377
+    },
+    {
+      "success": true,
+      "label": "dg_dm_resource_permissions",
+      "ms": 305
+    },
+    {
+      "success": true,
+      "label": "dg_dm_resource_versions",
+      "ms": 302
+    }
+  ],
+  "generatedAtUtc": "2026-06-03T01:15:41.2896913Z",
+  "pages": [
+    {
+      "targetWallMs": 2000,
+      "ok": false,
+      "lastRunDetails": [
+        {
+          "success": true,
+          "label": "tree",
+          "error": null,
+          "ms": 1252
+        },
+        {
+          "success": true,
+          "label": "children_root",
+          "error": null,
+          "ms": 1573
+        }
+      ],
+      "pageId": "di_initial_open",
+      "sessionColdWallMs": 1729,
+      "warmMedianWallMs": 1626,
+      "title": "Resources — ilk acilis (tree + kok children, paralel)",
+      "lastRunSuccess": true,
+      "warmP95WallMs": 2238
+    },
+    {
+      "targetWallMs": 2500,
+      "ok": false,
+      "lastRunDetails": [
+        {
+          "success": true,
+          "label": "children",
+          "error": null,
+          "ms": 2952
+        },
+        {
+          "success": true,
+          "label": "breadcrumb",
+          "error": null,
+          "ms": 2353
+        },
+        {
+          "success": true,
+          "label": "getById",
+          "error": null,
+          "ms": 2941
+        }
+      ],
+      "pageId": "di_select_folder",
+      "sessionColdWallMs": 2855,
+      "warmMedianWallMs": 2886,
+      "title": "Klasor secimi (children + breadcrumb + getById, paralel)",
+      "lastRunSuccess": true,
+      "warmP95WallMs": 2969
+    },
+    {
+      "targetWallMs": 2000,
+      "ok": true,
+      "lastRunDetails": [
+        {
+          "success": true,
+          "label": "permissions",
+          "error": null,
+          "ms": 926
+        }
+      ],
+      "pageId": "di_permissions_dialog",
+      "sessionColdWallMs": 964,
+      "warmMedianWallMs": 917,
+      "title": "Izinler diyalogu (GET permissions — snapshot + folder)",
+      "lastRunSuccess": true,
+      "warmP95WallMs": 927
+    },
+    {
+      "targetWallMs": 2000,
+      "ok": true,
+      "lastRunDetails": [
+        {
+          "success": true,
+          "label": "markdown_content",
+          "error": null,
+          "ms": 1568
+        }
+      ],
+      "pageId": "di_open_markdown",
+      "sessionColdWallMs": 941,
+      "warmMedianWallMs": 1337,
+      "title": "Markdown ac (content + breadcrumb parent, sirali)",
+      "lastRunSuccess": true,
+      "warmP95WallMs": 1568
+    },
+    {
+      "targetWallMs": 2500,
+      "ok": true,
+      "lastRunDetails": [
+        {
+          "success": true,
+          "label": "search",
+          "error": null,
+          "ms": 937
+        }
+      ],
+      "pageId": "di_search",
+      "sessionColdWallMs": 922,
+      "warmMedianWallMs": 940,
+      "title": "Arama (q=test, limit=50)",
+      "lastRunSuccess": true,
+      "warmP95WallMs": 960
+    }
+  ],
+  "endpointBreakdownWarm1": [
+    {
+      "success": true,
+      "label": "ep_tree",
+      "uri": "http://192.168.20.20:5040/documents/api/v1/resources/tree",
+      "ms": 698
+    },
+    {
+      "success": true,
+      "label": "ep_children",
+      "uri": "http://192.168.20.20:5040/documents/api/v1/resources/children",
+      "ms": 1195
+    },
+    {
+      "success": true,
+      "label": "ep_children_folder",
+      "uri": "http://192.168.20.20:5040/documents/api/v1/resources/children?parentId=e7a5233d-0bc8-4f7f-8b30-2e9703841f17",
+      "ms": 1658
+    },
+    {
+      "success": true,
+      "label": "ep_breadcrumb",
+      "uri": "http://192.168.20.20:5040/documents/api/v1/resources/e7a5233d-0bc8-4f7f-8b30-2e9703841f17/breadcrumb",
+      "ms": 944
+    },
+    {
+      "success": true,
+      "label": "ep_getById",
+      "uri": "http://192.168.20.20:5040/documents/api/v1/resources/e7a5233d-0bc8-4f7f-8b30-2e9703841f17",
+      "ms": 1051
+    },
+    {
+      "success": true,
+      "label": "ep_permissions",
+      "uri": "http://192.168.20.20:5040/documents/api/v1/resources/e7a5233d-0bc8-4f7f-8b30-2e9703841f17/permissions",
+      "ms": 952
+    },
+    {
+      "success": true,
+      "label": "ep_markdown_content",
+      "uri": "http://192.168.20.20:5040/documents/api/v1/resources/markdown/e6f45115-776a-4a1e-93a7-3241efaab102/content",
+      "ms": 906
+    },
+    {
+      "success": true,
+      "label": "ep_search",
+      "uri": "http://192.168.20.20:5040/documents/api/v1/resources/search?q=a&skip=0&limit=50",
+      "ms": 968
+    }
+  ],
+  "analysisNotes": [
+    "Each MngDocument read typically calls PermissionService.LoadSnapshotAsync (all folders + all permissions, limit=1000, showHistory=true).",
+    "Initial UI mount runs tree and selectFolder(null) in parallel — duplicate snapshot loads.",
+    "Folder select runs children + breadcrumb + getById in parallel — triple snapshot."
+  ],
+  "environment": {
+    "documentApiBase": "http://192.168.20.20:5040/documents/api/v1/resources",
+    "sampleFolderId": "e7a5233d-0bc8-4f7f-8b30-2e9703841f17",
+    "warmIterations": 3,
+    "gatewayBaseUrl": "http://192.168.20.20:5040",
+    "sampleMarkdownId": "e6f45115-776a-4a1e-93a7-3241efaab102"
+  },
+  "module": "document_intelligence",
+  "pageTargets": {
+    "di_select_folder": 2500,
+    "di_initial_open": 2000,
+    "di_open_markdown": 2000,
+    "di_search": 2500,
+    "di_permissions_dialog": 2000
+  }
+}

@@ -1,23 +1,22 @@
 # Monitoring → SIEM (Odak)
 
-Müşteri ortamında **güvenlik odaklı izleme / SIEM-hafif** çözümünün planlama ve teslim dokümanları. Mevcut MonitraNG Monitoring altyapısı (MngEngine, MngReactor, MngWorkflow) üzerine kurulur.
+Müşteri ortamında **güvenlik odaklı izleme / SIEM-hafif** çözümünün planlama ve teslim dokümanları.
 
-**Durum:** Planlama (Faz 0 — çerçeve)
-**Son güncelleme:** 1 Haziran 2026
+**Durum:** Faz 0 ✅ · **Faz 1 spike başlatılabilir** (workflow seam ✅) ▶️
+**Son güncelleme:** 3 Haziran 2026
 
 ---
 
 ## Kapsam kararı (kilitli)
 
-Müşteri ile alınan başlangıç kararları:
-
 | Konu | Karar |
 |------|-------|
-| **Ürün kapsamı** | SIEM-hafif: hedefli senaryolarla başla, kademeli derinleştir |
-| **İlk faz kaynakları** | Firewall (syslog) · Active Directory / login olayları · Sunucu/endpoint logları · Jump host / bastion / VPN |
-| **Dağıtım** | On-prem — veri müşteri ağında kalır |
-| **Tespit sonrası** | Onaylı müdahale (operatör onayıyla, ör. firewall blok) |
-| **Uyum hedefi** | ISO/IEC 27001 |
+| **Ürün kapsamı** | SIEM-hafif: hedefli senaryolar |
+| **AI** | Implementasyon ⏸️ — [AI_PLANNING_DECISION.md](../AI_PLANNING_DECISION.md) |
+| **Toplama** | Hibrit: syslog · WEF→WEC · agent ([§5](./SIEM_PLANNING.md#5-mimari-akış)) |
+| **Engine syslog** | Collector/listener — tam syslog sunucusu değil |
+| **Tespit** | Alarm & Rule Engine (Faz 2) |
+| **Dağıtım** | On-prem |
 
 ---
 
@@ -25,8 +24,25 @@ Müşteri ile alınan başlangıç kararları:
 
 | Dosya | İçerik | Durum |
 |-------|--------|--------|
-| [SIEM_PLANNING.md](./SIEM_PLANNING.md) | Ana planlama: gap analizi, event veri modeli, mimari akış, kullanım senaryoları, korelasyon, onaylı müdahale, retention, fazlar | Taslak |
-| [DEVAM.md](./DEVAM.md) | **Kaldığımız yer** — durum, kilitli kararlar, workflow planı sonrası yapılacaklar | ⏸️ Duraklatıldı |
+| [SIEM_PLANNING.md](./SIEM_PLANNING.md) | Ana plan (gap, şema, toplama, U1–U7, fazlar) | ✅ Faz 0 |
+| [SIEM_PARSER_PLAN.md](./SIEM_PARSER_PLAN.md) | Parser/normalizer pipeline | ✅ |
+| [SIEM_FAZ1_SPIKE.md](./SIEM_FAZ1_SPIKE.md) | **Faz 1 implementasyon planı** | ▶️ MngEngine/MngReactor |
+| [SIEM_FAZ1_HANDOFF.md](./SIEM_FAZ1_HANDOFF.md) | Harici repo handoff | ✅ |
+| [SIEM_WORKFLOW_SEAM.md](./SIEM_WORKFLOW_SEAM.md) | Workflow × SIEM seam | ✅ |
+| [SEC_EVENT_OBSERVATION_MAP.md](./SEC_EVENT_OBSERVATION_MAP.md) | Faz 2 observation eşlemesi | ✅ tasarım |
+| [SIEM_THROUGHPUT_AND_QUEUES.md](./SIEM_THROUGHPUT_AND_QUEUES.md) | Kuyruk, paralellik, yoğun veri | ✅ plan |
+| [SIEM_PERFORMANCE_PLAN.md](./SIEM_PERFORMANCE_PLAN.md) | **§2 mimari öneriler**, SLO, profiller, benchmark, quality gates | ✅ plan |
+| [SIEM_VERTICAL_FINANCE.md](./SIEM_VERTICAL_FINANCE.md) | Dijital banka / finans dikey kapsam | Taslak |
+| [DEVAM.md](./DEVAM.md) | Kaldığımız yer | ▶️ |
+
+---
+
+## Dikey notlar
+
+| Dikey | Doküman |
+|-------|---------|
+| Savunma / OT–IT sınır | SIEM §6 + CYBERSECURITY §9 |
+| Finans / dijital banka | [SIEM_VERTICAL_FINANCE.md](./SIEM_VERTICAL_FINANCE.md) |
 
 ---
 
@@ -34,14 +50,12 @@ Müşteri ile alınan başlangıç kararları:
 
 | Konu | Konum |
 |------|-------|
-| Genel siber güvenlik vizyonu (ürün geneli) | `docs/content/security/CYBERSECURITY_SOLUTION_PLANNING.md` |
-| Monitoring mimarisi (Reactor/Engine/Workflow) | `docs/content/monitoring_plans/` |
-| ISO 27001 kontrol eşlemesi | `docs/odak/compliance/ISO27001_PLAN.md` |
-| Uyum yol haritası | `docs/odak/compliance/COMPLIANCE_ROADMAP.md` |
+| Siber güvenlik vizyonu | `docs/content/security/CYBERSECURITY_SOLUTION_PLANNING.md` |
+| Alarm engine | `docs/odak/alarm/ALARM_RULE_ENGINE_PLAN.md` |
+| Monitoring mimarisi | `docs/content/monitoring_plans/` |
 
 ---
 
 ## Hızlı bağlantılar
 
-- Üst odak indeksi: [../README.md](../README.md)
-- Uyum (compliance) indeksi: [../compliance/README.md](../compliance/README.md)
+- [../README.md](../README.md) · [../compliance/README.md](../compliance/README.md)

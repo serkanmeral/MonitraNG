@@ -10,6 +10,12 @@ public interface IResourceService
 {
     Task<IReadOnlyList<TreeNodeDto>> GetTreeAsync(CancellationToken ct = default);
 
+    /// <summary>Ağaç + kök veya <paramref name="folderId"/> altı içerik (tek permission snapshot).</summary>
+    Task<ResourceBootstrapDto> GetBootstrapAsync(string? folderId = null, CancellationToken ct = default);
+
+    /// <summary>Klasör gezinme paketi: children + breadcrumb + seçili klasör (tek snapshot).</summary>
+    Task<ResourceBrowseContextDto> GetBrowseContextAsync(string? folderId, CancellationToken ct = default);
+
     Task<ResourceListResult> GetChildrenAsync(string? parentId, CancellationToken ct = default);
 
     Task<ResourceDto> GetByIdAsync(string id, CancellationToken ct = default);

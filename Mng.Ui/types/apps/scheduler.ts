@@ -71,6 +71,10 @@ export interface OcAdminScheduledJobRow {
   lastRunAt?: string | null;
   lastError?: string | null;
   ocScheduleId?: string | null;
+  /** op_work_item_schedules.isActive — yalnızca OC schedule job'larında */
+  dgIsActive?: boolean | null;
+  /** DG aktif, scheduler job pasif (veya tersi) */
+  schedulerDgMismatch?: boolean;
   canRunManually: boolean;
   runKind: OcAdminScheduledJobRunKind;
 }

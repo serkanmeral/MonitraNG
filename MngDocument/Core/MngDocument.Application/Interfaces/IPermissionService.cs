@@ -13,8 +13,12 @@ public interface IPermissionService
     /// <summary>
     /// Geçerli kullanıcı için tüm klasör + izin kayıtlarını tek seferde yükleyip bellekte
     /// çözüm yapan anlık görüntü kurar (tree/children/search filtreleme + tek kaynak kontrolü).
+    /// Aynı HTTP isteği içinde önbelleğe alınır.
     /// </summary>
     Task<PermissionSnapshot> LoadSnapshotAsync(CancellationToken ct = default);
+
+    /// <summary>İstek önbelleğindeki snapshot'ı sıfırlar (izin/klasör yapısı değişiminden sonra).</summary>
+    void InvalidateSnapshotCache();
 
     /// <summary>Bir klasörün yetki yönetim görünümü (miras durumu + grup matrisi + etkin yetki).</summary>
     Task<FolderPermissionsDto> GetFolderPermissionsAsync(string folderId, CancellationToken ct = default);

@@ -14,6 +14,8 @@ import {
   type DiMoveRequest,
   type DiRenameRequest,
   type DiResource,
+  type DiResourceBootstrap,
+  type DiResourceBrowseContext,
   type DiResourceListResult,
   type DiSetFolderPermissionsRequest,
   type DiTreeNode,
@@ -129,6 +131,54 @@ function mapListResult(raw: unknown): DiResourceListResult {
 export async function diGetTree(): Promise<DiTreeNode[]> {
   const raw = await fetchFromDocuments(`${BASE}/tree`, 'GET');
   return Array.isArray(raw) ? raw.map(mapTreeNode) : [];
+}
+
+function mapBootstrap(raw: unknown): DiResourceBootstrap {
+  const o = asRecord(raw);
+  const childrenRaw = o.children;
+  const breadcrumbRaw = o.breadcrumb;
+  const selectedRaw = o.selectedFolder;
+  return {
+    tree: Array.isArray(o.tree) ? o.tree.map(mapTreeNode) : [],
+    children: mapListResult(childrenRaw),
+    breadcrumb: Array.isArray(breadcrumbRaw)
+      ? breadcrumbRaw.map((r) => {
+          const b = asRecord(r);
+          return { id: str(b, 'id') ?? '', name: str(b, 'name') ?? '' };
+        })
+      : [],
+    selectedFolder: selectedRaw ? mapResource(selectedRaw) : null,
+  };
+}
+
+function mapBrowseContext(raw: unknown): DiResourceBrowseContext {
+  const o = asRecord(raw);
+  const selectedRaw = o.selectedFolder;
+  const breadcrumbRaw = o.breadcrumb;
+  return {
+    children: mapListResult(o.children),
+    breadcrumb: Array.isArray(breadcrumbRaw)
+      ? breadcrumbRaw.map((r) => {
+          const b = asRecord(r);
+          return { id: str(b, 'id') ?? '', name: str(b, 'name') ?? '' };
+        })
+      : [],
+    selectedFolder: selectedRaw ? mapResource(selectedRaw) : null,
+  };
+}
+
+/** Ana ekran ilk yükleme / tam yenileme (ağaç + içerik, tek snapshot). */
+export async function diGetBootstrap(folderId?: string | null): Promise<DiResourceBootstrap> {
+  const qs = folderId ? `?folderId=${encodeURIComponent(folderId)}` : '';
+  const raw = await fetchFromDocuments(`${BASE}/bootstrap${qs}`, 'GET');
+  return mapBootstrap(raw);
+}
+
+/** Klasör gezinme (içerik + breadcrumb + seçili klasör, tek snapshot). */
+export async function diGetBrowseContext(folderId?: string | null): Promise<DiResourceBrowseContext> {
+  const qs = folderId ? `?folderId=${encodeURIComponent(folderId)}` : '';
+  const raw = await fetchFromDocuments(`${BASE}/browse${qs}`, 'GET');
+  return mapBrowseContext(raw);
 }
 
 /** Bir klasörün içeriği (klasör + markdown + dosya). parentId boşsa kök. */

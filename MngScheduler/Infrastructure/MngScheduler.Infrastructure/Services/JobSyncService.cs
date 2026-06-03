@@ -356,6 +356,12 @@ public class JobSyncService : BackgroundService, IJobSyncService
         if (job.JobType == JobType.User && UserJobIds.IsWorkItemSchedule(job.JobId))
             return typeof(Jobs.WorkItemScheduleOrchestrationJob);
 
+        if (job.JobType == JobType.User && UserJobIds.IsSlaBreachScan(job.JobId))
+            return typeof(Jobs.SlaBreachScanOrchestrationJob);
+
+        if (job.JobType == JobType.User && UserJobIds.IsAlarmValidation(job.JobId))
+            return typeof(Jobs.AlarmValidationOrchestrationJob);
+
         return typeof(Jobs.HttpJob);
     }
 

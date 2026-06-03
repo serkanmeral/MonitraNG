@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Polly;
@@ -15,6 +16,11 @@ namespace MngScheduler.Infrastructure.Clients;
 /// </summary>
 public class MngDataGatewayClient : IMngDataGatewayClient
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     private readonly HttpClient _httpClient;
     private readonly ILogger<MngDataGatewayClient> _logger;
     private readonly MngSchedulerSettings _settings;
@@ -56,13 +62,7 @@ public class MngDataGatewayClient : IMngDataGatewayClient
                 () => CreateRequest(HttpMethod.Post, url, token, JsonContent.Create(data)));
 
             response.EnsureSuccessStatusCode();
-
-            var result = await response.Content.ReadFromJsonAsync<T>();
-            if (result == null)
-            {
-                throw new InvalidOperationException($"Failed to deserialize response from {url}");
-            }
-
+            var result = await DeserializeAsync<T>(response);
             _logger.LogDebug("Created data in dataset {DatasetName}", datasetName);
             return result;
         }
@@ -79,9 +79,7 @@ public class MngDataGatewayClient : IMngDataGatewayClient
         {
             var url = $"data/{datasetName}";
             if (!string.IsNullOrEmpty(query))
-            {
                 url += $"?{query}";
-            }
 
             using var response = await SendWithRetryAsync(
                 () => CreateRequest(HttpMethod.Get, url, token));
@@ -95,15 +93,9 @@ public class MngDataGatewayClient : IMngDataGatewayClient
             }
 
             response.EnsureSuccessStatusCode();
-
-            var result = await response.Content.ReadFromJsonAsync<IEnumerable<T>>();
-            if (result == null)
-            {
-                return Enumerable.Empty<T>();
-            }
-
-            _logger.LogDebug("Retrieved data from dataset {DatasetName}, Count: {Count}", datasetName, result.Count());
-            return result;
+            var list = await DeserializeListAsync<T>(response);
+            _logger.LogDebug("Retrieved data from dataset {DatasetName}, Count: {Count}", datasetName, list.Count);
+            return list;
         }
         catch (Exception ex)
         {
@@ -121,13 +113,10 @@ public class MngDataGatewayClient : IMngDataGatewayClient
                 () => CreateRequest(HttpMethod.Get, url, token));
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
                 return null;
-            }
 
             response.EnsureSuccessStatusCode();
-
-            var result = await response.Content.ReadFromJsonAsync<T>();
+            var result = await DeserializeAsync<T>(response);
             _logger.LogDebug("Retrieved data by ID from dataset {DatasetName}, Id: {Id}", datasetName, id);
             return result;
         }
@@ -147,13 +136,7 @@ public class MngDataGatewayClient : IMngDataGatewayClient
                 () => CreateRequest(HttpMethod.Put, url, token, JsonContent.Create(data)));
 
             response.EnsureSuccessStatusCode();
-
-            var result = await response.Content.ReadFromJsonAsync<T>();
-            if (result == null)
-            {
-                throw new InvalidOperationException($"Failed to deserialize response from {url}");
-            }
-
+            var result = await DeserializeAsync<T>(response);
             _logger.LogDebug("Updated data in dataset {DatasetName}, Id: {Id}", datasetName, id);
             return result;
         }
@@ -173,12 +156,9 @@ public class MngDataGatewayClient : IMngDataGatewayClient
                 () => CreateRequest(HttpMethod.Delete, url, token));
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
                 return false;
-            }
 
             response.EnsureSuccessStatusCode();
-
             _logger.LogDebug("Deleted data from dataset {DatasetName}, Id: {Id}", datasetName, id);
             return true;
         }
@@ -189,9 +169,70 @@ public class MngDataGatewayClient : IMngDataGatewayClient
         }
     }
 
-    /// <summary>
-    /// Polly may retry; each attempt needs a fresh HttpRequestMessage.
-    /// </summary>
+    private static async Task<T> DeserializeAsync<T>(HttpResponseMessage response) where T : class
+    {
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+        var payload = UnwrapSingleRecord(json) ?? json;
+        var result = JsonSerializer.Deserialize<T>(payload.GetRawText(), JsonOptions);
+        return result ?? throw new InvalidOperationException("Failed to deserialize MngDataGateway response.");
+    }
+
+    private static async Task<List<T>> DeserializeListAsync<T>(HttpResponseMessage response) where T : class
+    {
+        var json = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions);
+        var items = UnwrapList(json);
+        var list = new List<T>();
+        foreach (var item in items)
+        {
+            var record = JsonSerializer.Deserialize<T>(item.GetRawText(), JsonOptions);
+            if (record != null)
+                list.Add(record);
+        }
+
+        return list;
+    }
+
+    private static IEnumerable<JsonElement> UnwrapList(JsonElement json)
+    {
+        switch (json.ValueKind)
+        {
+            case JsonValueKind.Array:
+                return json.EnumerateArray().ToList();
+            case JsonValueKind.Object when json.TryGetProperty("data", out var data):
+                return data.ValueKind switch
+                {
+                    JsonValueKind.Array => data.EnumerateArray().ToList(),
+                    JsonValueKind.Object => new[] { data },
+                    _ => Array.Empty<JsonElement>()
+                };
+            default:
+                return Array.Empty<JsonElement>();
+        }
+    }
+
+    private static JsonElement? UnwrapSingleRecord(JsonElement json)
+    {
+        switch (json.ValueKind)
+        {
+            case JsonValueKind.Array:
+            {
+                using var enumerator = json.EnumerateArray();
+                return enumerator.MoveNext() ? enumerator.Current : null;
+            }
+            case JsonValueKind.Object when json.TryGetProperty("data", out var data):
+                return data.ValueKind switch
+                {
+                    JsonValueKind.Array => UnwrapSingleRecord(data),
+                    JsonValueKind.Object => data,
+                    _ => null
+                };
+            case JsonValueKind.Object:
+                return json;
+            default:
+                return null;
+        }
+    }
+
     private Task<HttpResponseMessage> SendWithRetryAsync(Func<HttpRequestMessage> createRequest) =>
         _retryPolicy.ExecuteAsync(() => _httpClient.SendAsync(createRequest()));
 
@@ -203,14 +244,10 @@ public class MngDataGatewayClient : IMngDataGatewayClient
     {
         var request = new HttpRequestMessage(method, url);
         if (content != null)
-        {
             request.Content = content;
-        }
 
         if (!string.IsNullOrEmpty(token))
-        {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        }
 
         return request;
     }

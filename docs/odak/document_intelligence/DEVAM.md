@@ -36,7 +36,7 @@
 > DEVAM.md'yi okuyup özetle ve hangi seçenekle devam edeceğimi sor.
 > ```
 
-**Son güncelleme:** 1 Haziran 2026 gece (**FAZ 1 KAPANDI** — "taslak olarak kaydet" eklendi; `mngdocument` + `mngui` Odak'ta **canlı + doğrulandı**)
+**Son güncelleme:** 3 Haziran 2026 (**PERF** — request-scoped permission snapshot, `GET bootstrap` / `GET browse`, UI tek çağrı; backend deploy gerekir, UI yerel)
 **Durum:** **🎉 Faz 1 TAMAMLANDI ✅** — tüm özellikler (resources/tree/markdown/dosya/arama/audit/sürüm geçmişi + yetkilendirme + miras + inline preview + taslak) uçtan uca **canlıda** (`mngdocument` + `mngui` deploy edildi). Sıradaki: Faz 2 (OperationCore entegrasyonu).
 
 > **⭐ KALDIĞIMIZ YER (1 Haz ~21:00) — yeni chat buradan devam edecek:** **Faz 1 kapatıldı.** Bu turda **"taslak olarak kaydet"** eklendi: `dm_resources.status` (draft/published), `CreateMarkdownRequest.IsDraft` + `UpdateMarkdownRequest.IsDraft?` (null=koru), `ResourceDto.Status`; UI'da oluşturma + editörde **taslak/yayınla** butonları ve **taslak rozeti**. **Hem `mngdocument` hem `mngui` Odak'a deploy edildi ve canlı** (gateway 200, ui :3000 200; backend draft yaşam döngüsü doğrulandı). Faz 1'in tüm özellikleri (resources/tree/markdown/dosya/arama/audit/VH + PERM + miras + PREVIEW + DRAFT) artık test sunucusunda. **Sıradaki: Faz 2 — OperationCore WorkItem ↔ doküman ilişkisi.** (Ops.: non-admin canlı filtreleme/403 doğrulaması yapılmadı — admin bypass.)
@@ -160,6 +160,20 @@
 - Locale: `documentIntelligence.saveAsDraft/draft/publish/published/draftSaved` (tr/en).
 
 **Canlı doğrulama (Odak, admin):** create=draft → publish=published → back-to-draft=draft → bayraksız update **durumu korur**. ✅
+
+---
+
+## DI-PERF — İlk açılış / gezinme hızlandırma (3 Haziran 2026)
+
+**Sorun:** Az kayıtta bile sayfa yavaş; her API çağrısı `PermissionSnapshot` için tüm klasörler + izinler DG'den (`showHistory=true`) çekiliyordu; UI ilk açılışta `tree` + `children` paralel → çift snapshot.
+
+**Çözüm (MngDocument + mngui):**
+- `PermissionService`: HTTP isteği başına snapshot önbelleği; snapshot sorgularında `showHistory=false`; mutasyonlarda `InvalidateSnapshotCache()`.
+- `GET /resources/bootstrap?folderId=` → ağaç + içerik (+ isteğe bağlı breadcrumb/seçili klasör), tek snapshot.
+- `GET /resources/browse?folderId=` → gezinme paketi (ağaç hariç), tek snapshot.
+- UI: `onMounted` → `diGetBootstrap`; `selectFolder` → `diGetBrowseContext`; yenileme → `refreshWorkspace` / `refreshListing`.
+
+**Diagnostic:** `docs/odak/diagnostic/scripts/diagnostic-document-intelligence-pages.ps1` (bootstrap vs eski paralel karşılaştırma).
 
 ---
 

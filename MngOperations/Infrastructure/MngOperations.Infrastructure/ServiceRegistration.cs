@@ -38,6 +38,11 @@ public static class ServiceRegistration
             client.Timeout = TimeSpan.FromSeconds(15);
         });
 
+        services.AddHttpClient("MngWorkflow", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+
         // GEÇİCİ (perf/oc-optimization): istek başına downstream çağrı ölçümü.
         services.AddScoped<OcCallStats>();
 
@@ -47,6 +52,7 @@ public static class ServiceRegistration
         services.AddScoped<IGroupDirectory, GroupDirectoryService>();
         services.AddScoped<IMngNotifiersClient, MngNotifiersClient>();
         services.AddScoped<IMngSchedulerClient, MngSchedulerClient>();
+        services.AddScoped<IMngWorkflowClient, MngWorkflowClient>();
         services.AddScoped<INotificationOrchestrator, NotificationOrchestratorService>();
         services.AddScoped<INotificationQueryService, NotificationQueryService>();
         services.AddSingleton<IOcEventPublisher, OcEventPublisher>();
@@ -63,6 +69,8 @@ public static class ServiceRegistration
         services.AddScoped<IRuntimeContextService, RuntimeContextService>();
         services.AddScoped<IWorkItemScheduleSyncService, WorkItemScheduleSyncService>();
         services.AddScoped<IWorkItemScheduleExecuteService, WorkItemScheduleExecuteService>();
+        services.AddScoped<ISlaBreachScanService, SlaBreachScanService>();
+        services.AddScoped<ISlaBreachScanSyncService, SlaBreachScanSyncService>();
 
         return services;
     }

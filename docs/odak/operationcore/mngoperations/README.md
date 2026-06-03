@@ -30,6 +30,8 @@ MonitraNG **Operation Core (OC)** backend servisi — operasyonel karar ve iş y
 | 10 | [GATEWAY_AND_DEPLOY.md](./GATEWAY_AND_DEPLOY.md) | Ocelot, Odak port, compose |
 | 11 | [MVP_CHECKLIST.md](./MVP_CHECKLIST.md) | Faz 1 backend kilometre taşları |
 | — | [DEVAM.md](./DEVAM.md) | **Checkpoint** — nerede kaldık, moladan sonra sıra |
+| — | [PERF_OPTIMIZATION.md](./PERF_OPTIMIZATION.md) | Mayıs board/profil perf + Haziran UI Faz 1/1B özeti |
+| — | [../../diagnostic/README.md](../../diagnostic/README.md) | Odak ölçüm scriptleri, raporlar, yol haritası |
 | — | [OPEN_QUESTIONS.md](./OPEN_QUESTIONS.md) | Karar logu (tamamlandı) |
 
 **UI:** [ui/OC_UI_FORM_DEFINITIONS.md](../ui/OC_UI_FORM_DEFINITIONS.md) — form editör handoff; genel plan [ui/README.md](../ui/README.md).

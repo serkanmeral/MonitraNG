@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import OcWorkspaceTree from '@/components/apps/operation-core/OcWorkspaceTree.vue';
+import OcBoardDashboardLink from '@/components/apps/operation-core/OcBoardDashboardLink.vue';
 import OcDashboardView from '@/components/apps/operation-core/dashboards/OcDashboardView.vue';
 import { useResizableTreePanel } from '@/composables/useResizableTreePanel';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
@@ -178,6 +179,17 @@ function openSelectedBoard() {
   });
 }
 
+async function onBoardDashboardAssigned(dashboardId: string | null) {
+  if (!selectedWorkspaceId.value) return;
+  await store.loadBoardsForWorkspace(selectedWorkspaceId.value, true);
+  if (dashboardId) {
+    await ensureDashboardName(dashboardId);
+    centerView.value = 'dashboard';
+  } else {
+    centerView.value = 'summary';
+  }
+}
+
 function selectBoardFromList(workspaceId: string, boardId: string) {
   onSelectBoard(workspaceId, boardId);
 }
@@ -345,6 +357,15 @@ onMounted(async () => {
                   {{ t('operationCore.workspace.openDashboard') }}
                 </v-btn>
               </v-btn-toggle>
+              <OcBoardDashboardLink
+                v-if="selectedBoard && selectedWorkspace"
+                :workspace-id="selectedWorkspace.__dataId"
+                :board="selectedBoard"
+                :dashboard-name="selectedBoardDashboardName"
+                density="compact"
+                class="mr-1"
+                @assigned="onBoardDashboardAssigned"
+              />
               <v-btn
                 size="small"
                 variant="flat"
@@ -469,16 +490,15 @@ onMounted(async () => {
                   <v-chip size="small" variant="tonal" class="text-capitalize">
                     {{ boardViewTypeLabel(selectedBoard.viewType) }}
                   </v-chip>
-                  <v-chip
-                    v-if="selectedBoardDashboardName"
-                    size="small"
-                    variant="tonal"
-                    color="primary"
-                    prepend-icon="mdi-view-dashboard-outline"
-                  >
-                    {{ selectedBoardDashboardName }}
-                  </v-chip>
                 </div>
+                <OcBoardDashboardLink
+                  v-if="selectedWorkspace"
+                  :workspace-id="selectedWorkspace.__dataId"
+                  :board="selectedBoard"
+                  :dashboard-name="selectedBoardDashboardName"
+                  class="mb-4 justify-center"
+                  @assigned="onBoardDashboardAssigned"
+                />
                 <p class="text-body-2 text-medium-emphasis mb-0 mx-auto" style="max-width: 420px">
                   {{ t('operationCore.workspace.selectedBoardHint') }}
                 </p>

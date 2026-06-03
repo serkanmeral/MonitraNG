@@ -1,6 +1,6 @@
 # MngOperations — Dış entegrasyonlar
 
-**Son güncelleme:** 29 Mayıs 2026
+**Son güncelleme:** 3 Haziran 2026
 
 ---
 
@@ -115,6 +115,7 @@ MO event publish → Hub bridge değerlendirilir.
 | Entegrasyon | Faz |
 |-------------|-----|
 | `POST /work-items/from-origin` | **Faz 1** |
+| `origin.sourceType: workflow` (MngWorkflow) | **Workflow Faz 6** — plan: [../workflow/Workflow Backend Implementation Plan v1.md](../workflow/Workflow%20Backend%20Implementation%20Plan%20v1.md) §13 |
 | Alarm otomatik subscribe | Faz 2 |
 | SIEM ticket sync | Faz 2+ |
 
@@ -126,6 +127,7 @@ MO event publish → Hub bridge değerlendirilir.
 |------|--------|--------|
 | **Zamanlanmış work item** (cron → `from-origin`) | SW-0/4 ✅ · SW-2/3 planlandı | [SCHEDULED_WORK_ITEMS.md](./SCHEDULED_WORK_ITEMS.md) |
 | **Scheduler → MO kimlik** | **Kararlandı** | Keeper token → Bearer → MO ([SCHEDULED_WORK_ITEMS §4.1](./SCHEDULED_WORK_ITEMS.md)) |
+| **Workflow → MO** (Create WorkItem / ApplyTransition) | **Planlandı** — Workflow Faz 6 | `docs/odak/workflow/Workflow Backend Implementation Plan v1.md` §13 |
 | SLA kontrolü, escalation job | Faz 2+ | scheduler HTTP → MO veya DG query |
 
 ### 6.1 Zamanlanmış WI — token akışı (özet)
@@ -143,7 +145,24 @@ Scheduler (tetik)
 - Kimlik bilgileri **Scheduler konfigünde**; `op_work_item_schedules` veya job `payload` içinde **tutulmaz**.
 - Her tetikte **yeni token** (JWT süresi); job header’ına sabit uzun ömürlü token gömülmez.
 
-Faz 1: SLA due alanları transition/create’te hesaplanır; SLA cron job yok.
+Faz 1: SLA due alanları transition/create'te hesaplanır; SLA cron job yok.
+
+### 6.2 MngWorkflow — token akışı (plan — Faz 6)
+
+Workflow Worker, MO komut node'larında Scheduler ile **aynı** Keeper token desenini kullanır:
+
+```text
+Workflow Worker (CreateWorkItem / ApplyTransition node)
+  → IMngKeeperAuthClient (domain teknik kullanıcı)
+  → access_token
+  → POST {gateway}/operations/api/v1/work-items/from-origin  (veya /transitions/{key})
+```
+
+- `origin.sourceType`: **`workflow`**
+- `origin.correlationId`: workflow instance correlation (idempotency — [PIPELINES §6.1](./PIPELINES.md))
+- Zamanlanmış WI **Scheduler doğrudan** `from-origin` kullanır; workflow Schedule Trigger ile ikileme yok.
+
+Detay: `docs/odak/workflow/Workflow Backend Implementation Plan v1.md` §13.
 
 ---
 

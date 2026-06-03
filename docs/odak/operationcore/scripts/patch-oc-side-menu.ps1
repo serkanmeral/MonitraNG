@@ -5,6 +5,9 @@
 #       - Sistem tanımlaması (manager) → /apps/operation-core/admin/definitions
 #       - Workspace tanımlaması (manager) → /apps/operation-core/admin/workspace-definitions
 #       - Zamanlanmış job'lar (manager) → /apps/operation-core/admin/scheduled-jobs
+#       - Bekleyen onaylar (manager) → /apps/operation-core/admin/approvals
+#       - Açık alarmlar (manager) → /apps/operation-core/admin/alarms
+#       - Alarm kuralları (manager) → /apps/operation-core/admin/alarm-rules
 # Usage (repo kokunden):
 #   .\docs\odak\operationcore\scripts\get-operationcore-token.ps1
 #   .\docs\odak\operationcore\scripts\patch-oc-side-menu.ps1
@@ -164,6 +167,9 @@ $definitionsParentOrder = $headerOrder + 2
 $systemDefinitionsOrder = $headerOrder + 3
 $workspaceDefinitionsOrder = $headerOrder + 4
 $scheduledJobsOrder = $headerOrder + 5
+$approvalsOrder = $headerOrder + 6
+$alarmsOrder = $headerOrder + 7
+$alarmRulesOrder = $headerOrder + 8
 
 # --- Header ---
 $headerResult = Upsert-MenuItem -AllItems $items -Label "Operasyon header" -FindExisting {
@@ -283,6 +289,63 @@ Upsert-MenuItem -AllItems $items -Label "Zamanlanmis joblar" -FindExisting {
     icon      = "CalendarIcon"
     iconType  = "tabler"
     to        = "/apps/operation-core/admin/scheduled-jobs"
+    type      = "internal"
+    disabled  = $false
+} | Out-Null
+
+# --- Bekleyen onaylar (workflow approval.wait) ---
+Upsert-MenuItem -AllItems $items -Label "Bekleyen onaylar" -FindExisting {
+    $_.pageCode -eq "operationCore.adminApprovals.menuTitle" -or
+    $_.to -eq "/apps/operation-core/admin/approvals"
+} -Body @{
+    order     = $approvalsOrder
+    itemType  = "item"
+    level     = 2
+    parentId  = $definitionsParentId
+    pageType  = "manager"
+    pageCode  = "operationCore.adminApprovals.menuTitle"
+    title     = "Bekleyen onaylar"
+    icon      = "FileCheckIcon"
+    iconType  = "tabler"
+    to        = "/apps/operation-core/admin/approvals"
+    type      = "internal"
+    disabled  = $false
+} | Out-Null
+
+# --- Açık alarmlar (MngAlarm list) ---
+Upsert-MenuItem -AllItems $items -Label "Acik alarmlar" -FindExisting {
+    $_.pageCode -eq "operationCore.adminAlarms.menuTitle" -or
+    $_.to -eq "/apps/operation-core/admin/alarms"
+} -Body @{
+    order     = $alarmsOrder
+    itemType  = "item"
+    level     = 2
+    parentId  = $definitionsParentId
+    pageType  = "manager"
+    pageCode  = "operationCore.adminAlarms.menuTitle"
+    title     = "Açık alarmlar"
+    icon      = "AlertCircleIcon"
+    iconType  = "tabler"
+    to        = "/apps/operation-core/admin/alarms"
+    type      = "internal"
+    disabled  = $false
+} | Out-Null
+
+# --- Alarm kuralları (MngAlarm rules CRUD) ---
+Upsert-MenuItem -AllItems $items -Label "Alarm kurallari" -FindExisting {
+    $_.pageCode -eq "operationCore.adminAlarmRules.menuTitle" -or
+    $_.to -eq "/apps/operation-core/admin/alarm-rules"
+} -Body @{
+    order     = $alarmRulesOrder
+    itemType  = "item"
+    level     = 2
+    parentId  = $definitionsParentId
+    pageType  = "manager"
+    pageCode  = "operationCore.adminAlarmRules.menuTitle"
+    title     = "Alarm kuralları"
+    icon      = "AdjustmentsIcon"
+    iconType  = "tabler"
+    to        = "/apps/operation-core/admin/alarm-rules"
     type      = "internal"
     disabled  = $false
 } | Out-Null

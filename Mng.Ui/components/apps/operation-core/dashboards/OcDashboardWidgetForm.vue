@@ -2,6 +2,10 @@
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import type { OcDashboardWidgetDef, OpState, OpPriority } from '@/types/apps/operationCore';
+import {
+  OC_SUMMARY_CARD_ACCENTS,
+  OC_SUMMARY_CARD_ICONS,
+} from '@/utils/ocDashboardWidgetStyle';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -48,6 +52,8 @@ const form = ref<{
   take: string;
   chartType: string;
   groupBy: string;
+  accentColor: string;
+  icon: string;
 }>({
   key: '',
   type: 'summaryCard',
@@ -56,11 +62,25 @@ const form = ref<{
   take: '',
   chartType: 'donut',
   groupBy: 'stateId',
+  accentColor: '',
+  icon: '',
 });
 const paramEntries = ref<ParamEntry[]>([]);
 const errorLocal = ref<string | null>(null);
 
 const isChart = computed(() => form.value.type === 'chart');
+const isSummary = computed(() => form.value.type === 'summaryCard');
+
+const accentItems = computed(() =>
+  OC_SUMMARY_CARD_ACCENTS.map((v) => ({
+    title: t(`operationCore.definitions.themeColor.${v}`),
+    value: v,
+  }))
+);
+
+const iconItems = computed(() =>
+  OC_SUMMARY_CARD_ICONS.map((v) => ({ title: v.replace('mdi-', ''), value: v }))
+);
 
 const stateItems = computed(() =>
   props.states.map((s) => ({ title: s.name, value: s.__dataId }))
@@ -118,6 +138,8 @@ watch(
       take: w?.take != null ? String(w.take) : '',
       chartType: w?.chartType ?? 'donut',
       groupBy: w?.groupBy ?? 'stateId',
+      accentColor: w?.accentColor ?? '',
+      icon: w?.icon ?? '',
     };
     paramEntries.value = paramsToEntries(w?.parameters);
     if (!paramEntries.value.length && form.value.queryKey) seedSuggestedParams();
@@ -197,6 +219,8 @@ function save() {
     take: takeNum != null && !Number.isNaN(takeNum) ? takeNum : null,
     chartType: isChart.value ? form.value.chartType : null,
     groupBy: isChart.value ? form.value.groupBy : null,
+    accentColor: isSummary.value ? form.value.accentColor.trim() || null : null,
+    icon: isSummary.value ? form.value.icon.trim() || null : null,
   };
 
   emit('save', widget);
@@ -276,6 +300,42 @@ function save() {
             style="flex: 0 0 110px"
             hide-details
           />
+        </div>
+
+        <!-- Summary card görünüm -->
+        <div v-if="isSummary" class="d-flex ga-3 flex-wrap mb-3 mt-2">
+          <v-select
+            v-model="form.accentColor"
+            :items="accentItems"
+            item-title="title"
+            item-value="value"
+            :label="t('operationCore.dashboards.editor.widget.accentColor')"
+            variant="outlined"
+            density="comfortable"
+            clearable
+            style="flex: 1; min-width: 160px"
+            hide-details
+          />
+          <v-select
+            v-model="form.icon"
+            :items="iconItems"
+            item-title="title"
+            item-value="value"
+            :label="t('operationCore.dashboards.editor.widget.icon')"
+            variant="outlined"
+            density="comfortable"
+            clearable
+            style="flex: 1; min-width: 200px"
+            hide-details
+          >
+            <template #item="{ props: itemProps, item }">
+              <v-list-item v-bind="itemProps" :prepend-icon="item.raw.value" />
+            </template>
+            <template #selection="{ item }">
+              <v-icon v-if="item.raw.value" :icon="item.raw.value" size="18" class="me-2" />
+              {{ item.title }}
+            </template>
+          </v-select>
         </div>
 
         <!-- Chart config -->

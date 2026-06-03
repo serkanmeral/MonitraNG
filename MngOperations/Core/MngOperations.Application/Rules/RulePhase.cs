@@ -21,4 +21,6 @@ public static class RuleTriggers
     public const string WorkItemUpdated = "WorkItemUpdated";
     public const string WorkItemTransition = "WorkItemTransition";
     public const string WorkItemTransitioned = "WorkItemTransitioned";
+    public const string WorkItemSlaResponseBreached = "WorkItemSlaResponseBreached";
+    public const string WorkItemSlaResolveBreached = "WorkItemSlaResolveBreached";
 }

@@ -14,6 +14,8 @@ public class MngSchedulerSettings
     public HttpClientSettings HttpClient { get; set; } = new();
     public DirectorySyncOrchestrationSettings DirectorySyncOrchestration { get; set; } = new();
     public WorkItemScheduleOrchestrationSettings WorkItemScheduleOrchestration { get; set; } = new();
+    public SlaBreachScanOrchestrationSettings SlaBreachScanOrchestration { get; set; } = new();
+    public AlarmValidationOrchestrationSettings AlarmValidationOrchestration { get; set; } = new();
 }
 
 public class ServerSettings

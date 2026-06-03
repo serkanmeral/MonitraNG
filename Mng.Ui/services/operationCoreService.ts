@@ -48,6 +48,7 @@ import type {
   OpWorkItemType,
   OpWorkspace,
 } from '@/types/apps/operationCore';
+import { buildBoardDgPayload } from '@/utils/ocBoardDgPayload';
 import { buildOcFormLayoutPayload, normalizeOcGridCol, parseOpFormLayout } from '@/utils/ocFormLayout';
 import { validateOcFormModel } from '@/utils/ocFormValidation';
 
@@ -1819,6 +1820,39 @@ export async function ocUpdateBoard(boardId: string, payload: Record<string, unk
   await ocUpdate(OC_DATASETS.boards, boardId, payload);
 }
 
+export async function ocGetBoard(boardId: string): Promise<OpBoard | null> {
+  const id = boardId?.trim();
+  if (!id) return null;
+  const url = `/api/v1/data/${encodeURIComponent(OC_DATASETS.boards)}/${encodeURIComponent(id)}`;
+  try {
+    const raw = await fetchFromDataGateway(url, 'GET');
+    const record = parseSingleDgRecord(raw);
+    if (record) {
+      const board = mapBoard(record);
+      if (board.__dataId) return board;
+    }
+  } catch {
+    // fallback: workspace listesi
+  }
+  const rows = await ocListDataset(OC_DATASETS.boards, { limit: 500 });
+  const match = rows.find((r) => {
+    const rid = String((r as Record<string, unknown>).__dataId ?? (r as Record<string, unknown>).dataId ?? '');
+    return rid === id;
+  });
+  if (!match) return null;
+  return mapBoard(match as Record<string, unknown>);
+}
+
+/** Board varsayılan panosunu günceller (tam board gövdesi — DG PUT). */
+export async function ocSetBoardDefaultDashboard(
+  board: OpBoard,
+  defaultDashboardId: string | null,
+  poolFieldKeys: string[] = []
+) {
+  const next: OpBoard = { ...board, defaultDashboardId: defaultDashboardId?.trim() || null };
+  await ocUpdateBoard(board.__dataId, buildBoardDgPayload(next, poolFieldKeys));
+}
+
 export async function ocDeleteBoard(boardId: string) {
   await ocDelete(OC_DATASETS.boards, boardId);
 }
@@ -2131,6 +2165,8 @@ function mapDashboardWidget(raw: Record<string, unknown>): OcDashboardWidget {
     queryKey: pickStr(raw, 'queryKey', 'QueryKey') ?? null,
     chartType: pickStr(raw, 'chartType', 'ChartType') ?? null,
     groupBy: pickStr(raw, 'groupBy', 'GroupBy') ?? null,
+    accentColor: pickStr(raw, 'accentColor', 'AccentColor') ?? null,
+    icon: pickStr(raw, 'icon', 'Icon') ?? null,
     resolvedParameters: (raw.resolvedParameters ?? raw.ResolvedParameters ?? null) as
       | Record<string, unknown>
       | null,
@@ -2215,6 +2251,7 @@ export async function ocListAllDashboards(): Promise<OcDashboardListItem[]> {
 function mapDashboardWidgetDef(raw: Record<string, unknown>): OcDashboardWidgetDef {
   const params = raw.parameters ?? raw.Parameters;
   const take = raw.take ?? raw.Take;
+  const style = readDashboardWidgetStyleFromRaw(raw);
   return {
     key: String(raw.key ?? raw.Key ?? ''),
     type: String(raw.type ?? raw.Type ?? raw.widgetType ?? raw.WidgetType ?? 'list'),
@@ -2226,7 +2263,24 @@ function mapDashboardWidgetDef(raw: Record<string, unknown>): OcDashboardWidgetD
     take: take == null ? null : Number(take),
     chartType: (raw.chartType ?? raw.ChartType ?? null) as string | null,
     groupBy: (raw.groupBy ?? raw.GroupBy ?? null) as string | null,
+    accentColor: style.accentColor,
+    icon: style.icon,
   };
+}
+
+function readDashboardWidgetStyleFromRaw(raw: Record<string, unknown>): {
+  accentColor: string | null;
+  icon: string | null;
+} {
+  let accentColor = pickStr(raw, 'accentColor', 'AccentColor');
+  let icon = pickStr(raw, 'icon', 'Icon');
+  const cfg = raw.config ?? raw.Config;
+  if (cfg && typeof cfg === 'object') {
+    const c = cfg as Record<string, unknown>;
+    accentColor = accentColor ?? pickStr(c, 'accentColor', 'AccentColor');
+    icon = icon ?? pickStr(c, 'icon', 'Icon');
+  }
+  return { accentColor, icon };
 }
 
 /** op_dashboards ham kaydını DG'den okur (admin editörü için — runtime context DEĞİL). */

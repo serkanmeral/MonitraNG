@@ -4,7 +4,7 @@
 **Kapsam:** Günlük kullanım ekranları (workspace explorer, board, profil, dashboard, yeni iş)  
 **Referans ölçüm:** [DIAGNOSTIC_REPORT_2026-06-02.md](./DIAGNOSTIC_REPORT_2026-06-02.md)  
 **Admin ekranları (Faz 1):** [PERFORMANCE_ROADMAP.md](./PERFORMANCE_ROADMAP.md) — ✅ Odak deploy (2 Haz 2026)  
-**Durum:** Faz 1B uygulandı + Odak deploy — deploy sonrası ölçüm **ertelendi**
+**Durum:** Faz 1B ✅ · Faz 2 MO kısmi (2 Haz) · sayfa ölçümü: `diagnostic-operation-pages.ps1`
 
 ---
 
@@ -173,7 +173,28 @@ flowchart LR
 
 ---
 
-## 7. Doğrulama checklist (konuya dönüldüğünde)
+## 7. Sayfa diagnostic script (2 Haz 2026)
+
+`scripts/diagnostic-operation-pages.ps1` — UI route’larına karşılık gelen **API paketlerini** ölçer (paralel/sequential, Faz 1B davranışı):
+
+| `pageId` | Simüle edilen ekran |
+|----------|---------------------|
+| `explorer_open` | `/workspace` — workspaces + MO live |
+| `explorer_select_board` | Workspace seç + boards + dashboard kaydı |
+| `board_list_open` | Board list — context + list + pool fields |
+| `board_kanban_open` | Kanban — context + kolon query (batch 4) |
+| `profile_open` | Profil — `profile-view` tek MO |
+| `dashboard_view` | Pano — `runtime/dashboards/{id}` |
+| `work_item_new` | Yeni iş — form create + boards + fields |
+| `notifications_inbox` | Bildirimler |
+| `admin_scheduled_jobs` | Zamanlanmış job'lar (scheduler + DG) |
+| `admin_ws_defs_shell` | Workspace tanımları kabuk listesi |
+
+Çıktı: `reports/oc_pages_YYYYMMDD_HHmmss.json` — `diagnostic-benchmark.ps1` ile birlikte çalıştırın.
+
+---
+
+## 8. Doğrulama checklist
 
 - [ ] Workspace explorer: 1 workspace — ağda yalnızca `op_workspaces` + **1×** `op_boards` (tüm ws değil)
 - [ ] Board list: ilk paint ≤ 1 sn (warm)
@@ -183,7 +204,7 @@ flowchart LR
 
 ---
 
-## 8. Sonuç
+## 9. Sonuç
 
 Operasyon alanı **admin ekranı kadar kötü değil** — board list ve profil-view mimarisi sağlam. Faz 1B ile **workspace explorer over-fetch** giderildi (Odak deploy). Profil ve dashboard süreleri için **backend Faz 2** sırada.
 

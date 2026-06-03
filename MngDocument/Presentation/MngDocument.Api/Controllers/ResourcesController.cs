@@ -32,6 +32,18 @@ public class ResourcesController : ControllerBase
     public async Task<IActionResult> GetTree(CancellationToken ct) =>
         Ok(await _resources.GetTreeAsync(ct));
 
+    /// <summary>İlk yükleme / yenileme: ağaç + içerik listesi (tek permission snapshot). folderId verilirse breadcrumb + seçili klasör dahil.</summary>
+    [HttpGet("bootstrap")]
+    [ProducesResponseType(typeof(ResourceBootstrapDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetBootstrap([FromQuery] string? folderId, CancellationToken ct) =>
+        Ok(await _resources.GetBootstrapAsync(folderId, ct));
+
+    /// <summary>Klasör gezinme: içerik + breadcrumb + seçili klasör (ağaç hariç, tek snapshot).</summary>
+    [HttpGet("browse")]
+    [ProducesResponseType(typeof(ResourceBrowseContextDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetBrowse([FromQuery] string? folderId, CancellationToken ct) =>
+        Ok(await _resources.GetBrowseContextAsync(folderId, ct));
+
     /// <summary>Bir klasörün içeriği (klasör + markdown + dosya). parentId boşsa kök.</summary>
     [HttpGet("children")]
     [ProducesResponseType(typeof(ResourceListResult), StatusCodes.Status200OK)]

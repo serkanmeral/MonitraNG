@@ -1,3 +1,4 @@
+using System.Threading;
 using MngOperations.Application.Contracts.Runtime;
 using MngOperations.Application.Exceptions;
 using MngOperations.Application.Models;
@@ -43,10 +44,22 @@ public partial class RuntimeContextService
             UtcNow = DateTime.UtcNow
         };
 
-        foreach (var definition in definitions)
+        // Widget sorguları birbirinden bağımsız — kanban kolonları gibi sınırlı paralellik (DG spike önleme).
+        const int maxParallelWidgets = 4;
+        using var widgetGate = new SemaphoreSlim(maxParallelWidgets);
+        var widgetTasks = definitions.Select(async definition =>
         {
-            widgetResults.Add(await BuildDashboardWidgetAsync(definition, resolveContext, token, cancellationToken));
-        }
+            await widgetGate.WaitAsync(cancellationToken);
+            try
+            {
+                return await BuildDashboardWidgetAsync(definition, resolveContext, token, cancellationToken);
+            }
+            finally
+            {
+                widgetGate.Release();
+            }
+        });
+        widgetResults.AddRange(await Task.WhenAll(widgetTasks));
 
         // Tüm widget item'larındaki id'leri tek seferde ada çöz (board context deseni); list/summary widget'ları
         // ham id yerine ad/renk gösterir. Katalog = workspace kapsamı (board scope yok → boş scope).
@@ -97,16 +110,7 @@ public partial class RuntimeContextService
             || string.IsNullOrWhiteSpace(definition.QueryKey)
             || !IsQueryWidgetType(definition.WidgetType))
         {
-            return new DashboardWidgetRuntimeDto
-            {
-                Key = definition.Key,
-                WidgetType = definition.WidgetType,
-                Title = definition.Title,
-                Dataset = definition.Dataset,
-                QueryKey = definition.QueryKey,
-                ChartType = isChart ? definition.ChartType : null,
-                GroupBy = isChart ? definition.GroupBy : null
-            };
+            return ToDashboardWidgetDto(definition, isChart, resolved: null, execution: null);
         }
 
         var rawParams = new Dictionary<string, object?>(definition.Parameters, StringComparer.OrdinalIgnoreCase);
@@ -131,29 +135,24 @@ public partial class RuntimeContextService
 
                 var buckets = AggregateCards(cards, definition.GroupBy);
 
-                return new DashboardWidgetRuntimeDto
-                {
-                    Key = definition.Key,
-                    WidgetType = definition.WidgetType,
-                    Title = definition.Title,
-                    Dataset = definition.Dataset,
-                    QueryKey = definition.QueryKey,
-                    ChartType = definition.ChartType,
-                    GroupBy = definition.GroupBy,
-                    ResolvedParameters = resolved,
-                    Execution = new DashboardWidgetExecutionDto
+                return ToDashboardWidgetDto(
+                    definition,
+                    isChart,
+                    resolved,
+                    new DashboardWidgetExecutionDto
                     {
                         Success = true,
                         Total = cards.Count,
                         Aggregation = buckets,
                         ExecutedAt = executedAt
-                    }
-                };
+                    });
             }
 
-            var take = definition.WidgetType.Equals("summaryCard", StringComparison.OrdinalIgnoreCase)
-                ? Math.Clamp(definition.Take, 1, 200)
-                : Math.Clamp(definition.Take, 1, 50);
+            // summaryCard yalnızca total sayar — gereksiz kart payload'ı taşımayın.
+            var isSummary = definition.WidgetType.Equals("summaryCard", StringComparison.OrdinalIgnoreCase);
+            var take = isSummary
+                ? 1
+                : Math.Clamp(definition.Take <= 0 ? 50 : definition.Take, 1, 50);
 
             var result = await ExecuteQueryCoreAsync(
                 definition.QueryKey!,
@@ -165,15 +164,11 @@ public partial class RuntimeContextService
                 resolveContext,
                 cancellationToken);
 
-            return new DashboardWidgetRuntimeDto
-            {
-                Key = definition.Key,
-                WidgetType = definition.WidgetType,
-                Title = definition.Title,
-                Dataset = result.Dataset,
-                QueryKey = result.QueryKey,
-                ResolvedParameters = resolved,
-                Execution = new DashboardWidgetExecutionDto
+            return ToDashboardWidgetDto(
+                definition,
+                isChart,
+                resolved,
+                new DashboardWidgetExecutionDto
                 {
                     Success = true,
                     Total = result.Total,
@@ -181,8 +176,9 @@ public partial class RuntimeContextService
                     Take = result.Take,
                     Items = result.Items,
                     ExecutedAt = executedAt
-                }
-            };
+                },
+                dataset: result.Dataset,
+                queryKey: result.QueryKey);
         }
         catch (OperationCoreException ex)
         {
@@ -193,48 +189,59 @@ public partial class RuntimeContextService
                 definition.QueryKey,
                 ex.Code);
 
-            return new DashboardWidgetRuntimeDto
-            {
-                Key = definition.Key,
-                WidgetType = definition.WidgetType,
-                Title = definition.Title,
-                Dataset = definition.Dataset,
-                QueryKey = definition.QueryKey,
-                ChartType = isChart ? definition.ChartType : null,
-                GroupBy = isChart ? definition.GroupBy : null,
-                ResolvedParameters = resolved,
-                Execution = new DashboardWidgetExecutionDto
+            return ToDashboardWidgetDto(
+                definition,
+                isChart,
+                resolved,
+                new DashboardWidgetExecutionDto
                 {
                     Success = false,
                     ErrorCode = ex.Code,
                     ErrorMessage = ex.MessageTr ?? ex.Message,
                     ExecutedAt = executedAt
-                }
-            };
+                });
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Dashboard widget {WidgetKey} query {QueryKey} failed", definition.Key, definition.QueryKey);
 
-            return new DashboardWidgetRuntimeDto
-            {
-                Key = definition.Key,
-                WidgetType = definition.WidgetType,
-                Title = definition.Title,
-                Dataset = definition.Dataset,
-                QueryKey = definition.QueryKey,
-                ChartType = isChart ? definition.ChartType : null,
-                GroupBy = isChart ? definition.GroupBy : null,
-                ResolvedParameters = resolved,
-                Execution = new DashboardWidgetExecutionDto
+            return ToDashboardWidgetDto(
+                definition,
+                isChart,
+                resolved,
+                new DashboardWidgetExecutionDto
                 {
                     Success = false,
                     ErrorCode = "WIDGET_QUERY_FAILED",
                     ErrorMessage = ex.Message,
                     ExecutedAt = executedAt
-                }
-            };
+                });
         }
+    }
+
+    private static DashboardWidgetRuntimeDto ToDashboardWidgetDto(
+        DashboardWidgetDefinition definition,
+        bool isChart,
+        IReadOnlyDictionary<string, object?>? resolved,
+        DashboardWidgetExecutionDto? execution,
+        string? dataset = null,
+        string? queryKey = null)
+    {
+        var isSummary = definition.WidgetType.Equals("summaryCard", StringComparison.OrdinalIgnoreCase);
+        return new DashboardWidgetRuntimeDto
+        {
+            Key = definition.Key,
+            WidgetType = definition.WidgetType,
+            Title = definition.Title,
+            Dataset = dataset ?? definition.Dataset,
+            QueryKey = queryKey ?? definition.QueryKey,
+            ChartType = isChart ? definition.ChartType : null,
+            GroupBy = isChart ? definition.GroupBy : null,
+            AccentColor = isSummary ? definition.AccentColor : null,
+            Icon = isSummary ? definition.Icon : null,
+            ResolvedParameters = resolved,
+            Execution = execution
+        };
     }
 
     private static bool IsQueryWidgetType(string widgetType) =>

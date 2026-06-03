@@ -2,8 +2,9 @@
 
 Backend servislerinin **response time** ölçümü ve raporlama. UI performans paketi (Faz 1 + 1B) Odak’ta deploy edildi; deploy sonrası ölçüm ve Faz 2 backend **ertelendi**.
 
-**Durum:** Faz 1 + 1B ✅ (UI deploy Odak, 2 Haz 2026) · Faz 2 backend bekliyor  
+**Durum:** Faz 1 + 1B ✅ · Faz 2 MO kısmi (2 Haz 2026) · sayfa diagnostic script eklendi  
 **Devam noktası:** [DEVAM.md](./DEVAM.md)  
+**OC checkpoint (kod tabloları):** [../operationcore/mngoperations/DEVAM.md](../operationcore/mngoperations/DEVAM.md) § UI-PERF-F1  
 **Plan:** [DIAGNOSTIC_PLAN.md](./DIAGNOSTIC_PLAN.md)  
 **Yol haritası (müşteri):** [PERFORMANCE_ROADMAP.md](./PERFORMANCE_ROADMAP.md)
 
@@ -26,7 +27,10 @@ Backend servislerinin **response time** ölçümü ve raporlama. UI performans p
 |--------|----------|
 | [scripts/diagnostic-benchmark.ps1](./scripts/diagnostic-benchmark.ps1) | MO P0 endpoint + DG/Keeper referans ölçümü |
 | [scripts/diagnostic-workspace-definitions.ps1](./scripts/diagnostic-workspace-definitions.ps1) | Workspace definitions / scheduled tab DG yükü + eager storm simülasyonu |
+| [scripts/diagnostic-operation-pages.ps1](./scripts/diagnostic-operation-pages.ps1) | **Operasyon Core sayfaları** — explorer, board, profil, pano, bildirim, admin (API wall-clock) |
+| [scripts/diagnostic-document-intelligence-pages.ps1](./scripts/diagnostic-document-intelligence-pages.ps1) | **Document Intelligence** — resources tree/children/klasör/markdown/arama (MngDocument API) |
 | [DIAGNOSTIC_REPORT_2026-06-02.md](./DIAGNOSTIC_REPORT_2026-06-02.md) | İlk ölçüm raporu |
+| [DIAGNOSTIC_REPORT_2026-06-02-faz2.md](./DIAGNOSTIC_REPORT_2026-06-02-faz2.md) | Faz 2 MO sonrası endpoint + sayfa paketleri |
 | [OPERATIONAL_WORKSPACE_PERF.md](./OPERATIONAL_WORKSPACE_PERF.md) | Operasyon alanı analizi + Faz 1B |
 | [../operationcore/scripts/load-operationcore-token.ps1](../operationcore/scripts/load-operationcore-token.ps1) | Token (paylaşımlı) |
 | [../operationcore/scripts/operationcore-demo-seed.json](../operationcore/scripts/operationcore-demo-seed.json) | workspace/board/dashboard id'leri |
@@ -43,6 +47,10 @@ Backend servislerinin **response time** ölçümü ve raporlama. UI performans p
 
 # JSON çıktı yolu
 .\docs\odak\diagnostic\scripts\diagnostic-benchmark.ps1 -OutputJson .\docs\odak\diagnostic\reports\run1.json
+
+# Operasyon sayfaları (UI route bazlı API paketleri)
+.\docs\odak\diagnostic\scripts\diagnostic-operation-pages.ps1
+.\docs\odak\diagnostic\scripts\diagnostic-workspace-definitions.ps1
 ```
 
 ### OC_PERF (DG/Keeper kırılımı)

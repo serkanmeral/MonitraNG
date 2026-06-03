@@ -1,0 +1,11 @@
+{
+  "name": "U4 — Firewall deny artışı (hedef IP)",
+  "type": "correlation",
+  "matchKey": "denied_flow",
+  "groupByFields": ["dstIp"],
+  "windowMinutes": 5,
+  "threshold": 50,
+  "severity": 6,
+  "cooldownMinutes": 30,
+  "dedupKeyTemplate": "{ruleId}:{groupKey}"
+}

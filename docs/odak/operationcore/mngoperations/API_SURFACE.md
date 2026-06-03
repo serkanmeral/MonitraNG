@@ -60,6 +60,7 @@
 ```
 
 - `origin.correlationId` **zorunlu** (Q6).
+- `origin.sourceType` örnekleri: `monitoring`, `scheduler`, `workflow` (MngWorkflow — [Workflow Plan §13](../../workflow/Workflow%20Backend%20Implementation%20Plan%20v1.md)).
 - Aynı `correlationId` ile tekrar istek → **200** + mevcut kayıt (`ALREADY_EXISTS`), yeni WI açılmaz ([PIPELINES §6.1](./PIPELINES.md)).
 - İlk istek: normal create pipeline; `origin` validate.
 

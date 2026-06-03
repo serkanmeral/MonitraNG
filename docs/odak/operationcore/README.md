@@ -22,8 +22,12 @@ MonitraNG operasyonel iş yönetim modülü. Backend servisi: **MngOperations**.
 | [ui/OC_UI_ADMIN_FAZ1_PLAN.md](./ui/OC_UI_ADMIN_FAZ1_PLAN.md) | **Admin UX Faz 1** — sıra + bugün | Güncel |
 | [ui/OC_UI_RULES_FAZ1.md](./ui/OC_UI_RULES_FAZ1.md) | **Kurallar** R-Core + R-UX (§8) | Güncel |
 | [mngoperations/SLA_FAZ1_PLAN.md](./mngoperations/SLA_FAZ1_PLAN.md) | SLA planlama (geliştirme Faz 1.5+) | Güncel |
+| [../diagnostic/README.md](../diagnostic/README.md) | **Odak diagnostic** — ölçüm scriptleri, raporlar, `OC_PERF` | Güncel |
 | [../diagnostic/PERFORMANCE_ROADMAP.md](../diagnostic/PERFORMANCE_ROADMAP.md) | **Performans yol haritası** — Faz 1+1B UI ✅; Faz 2 backend bekliyor | Güncel |
+| [mngoperations/DEVAM.md](./mngoperations/DEVAM.md) § UI-PERF-F1 | UI Faz 1/1B kod özeti (checkpoint tabloları) | Güncel |
 | [reference/IT_HELP_DESK_REFERENCE.md](./reference/IT_HELP_DESK_REFERENCE.md) | IT Help Desk referans workspace + tip kategorileri | Güncel |
+| [../workflow/DEVAM.md](../workflow/DEVAM.md) | **MngWorkflow** planlama — OC entegrasyon checklist, Faz 0/1 | Güncel |
+| [../workflow/Workflow Backend Implementation Plan v1.md](../workflow/Workflow%20Backend%20Implementation%20Plan%20v1.md) | Workflow backend planı — §13 Operation Core | Güncel |
 
 ---
 

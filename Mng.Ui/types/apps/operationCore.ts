@@ -476,6 +476,10 @@ export interface OcDashboardWidget {
   chartType?: string | null;
   /** Chart agregasyon alanı: 'stateId' | 'priorityId' | 'typeId' | 'assignee'. */
   groupBy?: string | null;
+  /** summaryCard: Vuetify tema rengi. */
+  accentColor?: string | null;
+  /** summaryCard: mdi-* ikon adı. */
+  icon?: string | null;
   resolvedParameters?: Record<string, unknown> | null;
   execution?: OcDashboardWidgetExecution | null;
 }
@@ -542,6 +546,8 @@ export interface OcDashboardWidgetDef {
   chartType?: string | null;
   /** Chart agregasyon alanı: 'stateId' | 'priorityId' | 'typeId' | 'assignee'. */
   groupBy?: string | null;
+  accentColor?: string | null;
+  icon?: string | null;
 }
 
 /** op_dashboards ham kaydı (admin editörü için — DG'den okunur, DG'ye yazılır). */

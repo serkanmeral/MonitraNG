@@ -115,6 +115,26 @@ public sealed record ResourceListResult
     public long Total { get; init; }
 }
 
+/// <summary>
+/// Ana ekran ilk yükleme / yenileme: ağaç + geçerli klasör içeriği (tek snapshot).
+/// <paramref name="FolderId"/> verilirse breadcrumb + seçili klasör metadata'sı da döner.
+/// </summary>
+public sealed record ResourceBootstrapDto
+{
+    public IReadOnlyList<TreeNodeDto> Tree { get; init; } = Array.Empty<TreeNodeDto>();
+    public ResourceListResult Children { get; init; } = new();
+    public IReadOnlyList<BreadcrumbDto> Breadcrumb { get; init; } = Array.Empty<BreadcrumbDto>();
+    public ResourceDto? SelectedFolder { get; init; }
+}
+
+/// <summary>Klasör gezinme: içerik listesi + breadcrumb + seçili klasör (ağaç hariç, tek snapshot).</summary>
+public sealed record ResourceBrowseContextDto
+{
+    public ResourceListResult Children { get; init; } = new();
+    public IReadOnlyList<BreadcrumbDto> Breadcrumb { get; init; } = Array.Empty<BreadcrumbDto>();
+    public ResourceDto? SelectedFolder { get; init; }
+}
+
 public sealed record MarkdownContentDto
 {
     public string Id { get; init; } = string.Empty;

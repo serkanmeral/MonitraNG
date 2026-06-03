@@ -24,6 +24,7 @@ public class HttpJob : IJob
     private readonly IUserJobRepository _userJobRepository;
     private readonly IDomainLookupService _domainLookupService;
     private readonly IRabbitMqEventPublisher _eventPublisher;
+    private readonly IMngKeeperAuthClient _keeperAuth;
     private readonly ILogger<HttpJob> _logger;
     private readonly MngSchedulerSettings _settings;
 
@@ -34,6 +35,7 @@ public class HttpJob : IJob
         IUserJobRepository userJobRepository,
         IDomainLookupService domainLookupService,
         IRabbitMqEventPublisher eventPublisher,
+        IMngKeeperAuthClient keeperAuth,
         ILogger<HttpJob> logger,
         IOptions<MngSchedulerSettings> settings)
     {
@@ -43,6 +45,7 @@ public class HttpJob : IJob
         _userJobRepository = userJobRepository ?? throw new ArgumentNullException(nameof(userJobRepository));
         _domainLookupService = domainLookupService ?? throw new ArgumentNullException(nameof(domainLookupService));
         _eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
+        _keeperAuth = keeperAuth ?? throw new ArgumentNullException(nameof(keeperAuth));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _settings = settings?.Value ?? throw new ArgumentNullException(nameof(settings));
     }
@@ -60,6 +63,9 @@ public class HttpJob : IJob
 
         JobExecution? execution = null;
         ScheduledJob? job = null;
+        string? dgToken = jobType == JobType.User
+            ? await GetServiceTokenAsync(context.CancellationToken)
+            : null;
 
         try
         {
@@ -82,7 +88,7 @@ public class HttpJob : IJob
             }
 
             // Load job entity to check ShouldExecute and update execution counts
-            job = await LoadJobAsync(jobId, jobType, domainId);
+            job = await LoadJobAsync(jobId, jobType, domainId, dgToken);
             if (job == null)
             {
                 throw new InvalidOperationException($"Job {jobId} not found");
@@ -245,7 +251,7 @@ public class HttpJob : IJob
                 {
                     throw new InvalidOperationException($"DomainId is required for User job {jobId}");
                 }
-                await _executionRepository.SaveUserJobExecutionAsync(domainId, execution);
+                await _executionRepository.SaveUserJobExecutionAsync(domainId, execution, dgToken);
             }
 
             // Update job execution counts
@@ -283,7 +289,7 @@ public class HttpJob : IJob
                     {
                         throw new InvalidOperationException($"DomainId is required for User job {jobId}");
                     }
-                    await _userJobRepository.UpdateJobAsync(domainId, job);
+                    await _userJobRepository.UpdateJobAsync(domainId, job, dgToken);
                 }
             }
             catch (Domain.Exceptions.JobNotFoundException)
@@ -334,7 +340,7 @@ public class HttpJob : IJob
                     }
                     else if (!string.IsNullOrEmpty(domainId))
                     {
-                        await _executionRepository.SaveUserJobExecutionAsync(domainId, execution);
+                        await _executionRepository.SaveUserJobExecutionAsync(domainId, execution, dgToken);
                     }
                 }
                 catch (Exception saveEx)
@@ -359,7 +365,7 @@ public class HttpJob : IJob
                     }
                     else if (!string.IsNullOrEmpty(domainId))
                     {
-                        await _userJobRepository.UpdateJobAsync(domainId, job);
+                        await _userJobRepository.UpdateJobAsync(domainId, job, dgToken);
                     }
                 }
                 catch (Domain.Exceptions.JobNotFoundException)
@@ -392,7 +398,7 @@ public class HttpJob : IJob
         return context.JobDetail.JobDataMap.GetString("DomainId");
     }
 
-    private async Task<ScheduledJob?> LoadJobAsync(string jobId, JobType jobType, string? domainId)
+    private async Task<ScheduledJob?> LoadJobAsync(string jobId, JobType jobType, string? domainId, string? dgToken = null)
     {
         try
         {
@@ -400,20 +406,25 @@ public class HttpJob : IJob
             {
                 return await _systemJobRepository.GetJobByIdAsync(jobId);
             }
-            else
+
+            if (string.IsNullOrEmpty(domainId))
             {
-                if (string.IsNullOrEmpty(domainId))
-                {
-                    _logger.LogWarning("DomainId is missing for User job {JobId}", jobId);
-                    return null;
-                }
-                return await _userJobRepository.GetJobByIdAsync(domainId, jobId);
+                _logger.LogWarning("DomainId is missing for User job {JobId}", jobId);
+                return null;
             }
+
+            return await _userJobRepository.GetJobByIdAsync(domainId, jobId, dgToken);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load job {JobId} from repository", jobId);
             return null;
         }
+    }
+
+    private async Task<string?> GetServiceTokenAsync(CancellationToken cancellationToken)
+    {
+        var tokenResult = await _keeperAuth.GetAccessTokenAsync(cancellationToken);
+        return tokenResult.Success ? tokenResult.AccessToken : null;
     }
 }

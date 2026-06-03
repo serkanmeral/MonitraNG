@@ -18,6 +18,8 @@ const title = computed(() => props.widget.title?.trim() || props.widget.key);
 const PALETTE = ['primary', 'success', 'info', 'warning', 'secondary', 'error'] as const;
 
 const accent = computed(() => {
+  const configured = props.widget.accentColor?.trim();
+  if (configured && (PALETTE as readonly string[]).includes(configured)) return configured;
   const key = props.widget.key || props.widget.title || '';
   let hash = 0;
   for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
@@ -25,6 +27,8 @@ const accent = computed(() => {
 });
 
 const icon = computed(() => {
+  const configured = props.widget.icon?.trim();
+  if (configured?.startsWith('mdi-')) return configured;
   const k = `${props.widget.key} ${props.widget.title}`.toLowerCase();
   if (k.includes('sla') || k.includes('breach') || k.includes('ihlal')) return 'mdi-alarm-light-outline';
   if (k.includes('progress') || k.includes('devam')) return 'mdi-progress-clock';

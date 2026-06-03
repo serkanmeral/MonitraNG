@@ -1,9 +1,9 @@
 # MngOperations & Operation Core UI — Devam noktası (checkpoint)
 
 **Son güncelleme:** 2 Haziran 2026 (**WS-DEF-GENEL** + **UI-NGINX-SCHEDULER** ✅ commit `84b296c` · Odak canlı)  
-**Durum:** SW **SW-0…SW-6** ✅ · … · **DASH-INLINE** ✅ · **DASH-CARDS** ✅ · **WS-DEF-GENEL** ✅ · **UI-NGINX-SCHEDULER** ✅ — Odak `ui=200`/`oc_live=200`/`scheduler=200`; UI fix'leri `main`'de (`84b296c`, perf Faz 1+1B ile birlikte)
+**Durum:** SW **SW-0…SW-6** ✅ · … · **DASH-INLINE** ✅ · **DASH-CARDS** ✅ · **WS-DEF-GENEL** ✅ · **UI-NGINX-SCHEDULER** ✅ · **UI-PERF-F1+1B** ✅ — Odak `ui=200`/`oc_live=200`/`scheduler=200`; `84b296c` + diagnostic dokümantasyonu `main`'de
 
-> **⭐ KALDIĞIMIZ YER (2 Haz ~11:30) — yeni chat buradan devam edecek:** **WS-DEF-GENEL** + **UI-NGINX-SCHEDULER** Odak'ta doğrulandı ve **`main`'e push edildi** (`84b296c` — `feat(operation-core): UI perf Faz 1+1B…`; nginx scheduler + Genel sekmesi fix'leri bu commit'te: `nginx.conf` `/api/scheduler/`, `keyFormatHintText`, `tabModel` string keys, dikey sekmeler). Önceki chat "ayrı commit" bekliyordu; ara oturumda perf paketiyle birleşti. **Sıradaki (konuşulacak backlog):** (a) pano-board iyileştirmeleri (board'dan hızlı pano ata, editörde board bağlama); (b) opsiyonel: özet kart renk/ikon admin'den seçilebilir; (c) **PV-PERF** MO commit backlog (henüz commit edilmedi); (d) demo schedule `oc-schedule-82760c1b-…` scheduler pasif / DG `isActive:true` re-sync veya UX; (e) **OC-PREV** inline önizleme (lokal OK, deploy bekliyor). **Deploy:** `sync-odak-source.ps1 -Paths Mng.Ui` · `deploy-odak-apps.ps1 -Services mngui -NoCache` · token: `load-operationcore-token.ps1`. **Odak:** http://192.168.20.20:3000 · demo ws `f414462a-cd9e-427e-87e8-3cdff0502325`.
+> **⭐ KALDIĞIMIZ YER (2 Haz ~12:45) — Diagnostic tamamlandı:** **Faz 2 MO** deploy + ölçüm — `benchmark_faz2_20260602.json` (profile warm P95 **~1,3 sn**, profile-view **~2,3 sn**, dashboard **~1,7 sn** ✅). Yeni **`diagnostic-operation-pages.ps1`** — 10 OC sayfası; `oc_pages_faz2_20260602.json` (explorer/board ✅, profil/pano ~2 sn ⚠️ hedefe yakın). `ws_definitions_faz2` scheduled tab paralel **~2 sn** ✅. Rapor: [diagnostic/DIAGNOSTIC_REPORT_2026-06-02-faz2.md](../../diagnostic/DIAGNOSTIC_REPORT_2026-06-02-faz2.md). **Sıradaki:** pano ≤1 sn için MO query dedup/cache · gerçek cold (`docker restart mngoperations`) · tarayıcı waterfall. **Odak:** http://192.168.20.20:3000
 >
 > **KALDIĞIMIZ YER (2 Haz ~08:05):** — pano artık board'ın workspace hub merkez panelinde **ayrı sayfa açmadan inline** render ediliyor. Yeni paylaşılan **`OcDashboardView.vue`** (yükleme+grid; `dashboards/[id]/index.vue` de bunu kullanıyor → tek kaynak). Hub `workspace/index.vue`: board seçiliyken **Özet/Pano toggle** (pano varsa varsayılan **Pano**); tree'deki pano düğümü tıklaması da ayrı sayfa yerine board'ı seçip inline pano açıyor. i18n `workspace.viewSummary`. **(2) DASH-CARDS** — özet kartları (renk aksanı + tonlu ikon rozeti + akıllı ikon + büyük renkli sayı + hover) ve liste widget'ı (öncelik renk şeridi + atanan baş-harf avatarı + hover + boş-durum) zenginleştirildi. **(3) "Bana atanan açık işler" düzeltmesi (backend, CANLI):** `my_assigned` widget'ı boştu çünkü `{{currentUser}}` → `preferred_username` çözülüyordu ama `assignee` `MngPersonId` (@users id) ile saklanıyor (NP-4/6 uzayı). **Düzeltme:** `QueryResolveContext.Username` → **`CurrentUserId`** (anlamca netleştirildi), her iki kuruluş yeri (`RuntimeContextService.cs` generic query + `.Dashboard.cs`) artık **`_requestContext.MngPersonId`** besliyor. Ayrıca yeni named query **`wi_assigned_open`** (`{ assignee: :assignee, closedAt: null }` — SLA query'leriyle aynı "açık" semantiği) eklendi: generator + DG json + MO `OcQueries` whitelist + seed widget (queryKey `wi_assigned_open`, başlık "Bana atanan acik isler"). **PROVİZYON+DEPLOY TAMAM:** DG `op_work_items` query'leri PUT'landı (`/data/api/v1/datasets/op_work_items`, sadece `Queries`); dashboard reseed (PUT SYNC); MO `--no-cache` deploy (build 0/0, `oc_live=200`). **Doğrulandı:** `GET runtime/dashboards/{id}` → `my_assigned success=True total=1 items=1` (odak_admin'in 1 açık atanmış işi). **COMMIT + PUSH + UI DEPLOY TAMAM:** commit `e5c28bd` (`main`'e push, 15 dosya +389/−140 — UI + MO + scriptler/json + DEVAM.md; `appsettings.Development.json` + üretilen seed json + alakasız docs hariç), `Mng.Ui` sync → `mngui` Odak'a `--no-cache` deploy (2 Haz ~08:14, **`ui=200` + `oc_live=200`** canlı). **DASH-INLINE + DASH-CARDS TAMAMEN CANLI. Sıradaki (konuşulacak):** (a) UI commit+push + `mngui` Odak deploy; (b) pano-board bağı iyileştirmeleri (board'dan hızlı "pano ata", pano editöründe board'a bağlama); (c) opsiyonel: özet kart renk/ikon admin'den seçilebilir, liste avatar kişiye özel renk; (d) açık perf kalemleri (PV-PERF soğuk cache / DG eşzamanlılık) ya da yeni OC backlog. *(Aşağıdaki DASH-BOARD notu önceki durumdur.)*
 >
@@ -29,7 +29,63 @@
 >
 > **Kaldığımız yer (31 May, önceki):** Biriken backlog (F-T2/F-K, BLF-10, NP-7, BL-GRP, BO-5/6, BL-GRP-2) **`mngoperations`+`mngui` Odak'a deploy edildi** (31 May ~02:28, healthy — `gateway=200 ui=200`, SLA-1 smoke yeşil OCD-0065). Ardından **grup alan filtresi (BL-GRP-3)** de yapıldı ve `mngui` deploy edildi (31 May ~02:41, `ui=200`). Tüm biriken işler Odak'ta canlı; değişiklikler `main`'e **commit + push** edildi. Ardından **Keeper `by-ids` toplu uç + Redis profil cache (BL-KB)** yapıldı (User/Group `POST by-ids`; MO dizin servisleri tek istekte çözer, N+1 giderildi; Keeper'da `IDirectoryCache` Redis cache + CRUD invalidation) ve **`mngkeeper`+`mngoperations` Odak'a deploy edildi** (31 May ~03:04, healthy). Ardından **Faz-4 / dosya bölme (B)** kısmen yapıldı (davranış birebir aynı): `RuntimeContextService.cs` 1549→1015 satır + 3 `partial` dosya (MO build 0/0); `operationCoreService.ts` 2324→2025 satır, leaf domain'ler (notifications/rules/sla/schedules) `services/operationCore/` altına barrel ile taşındı (`nuxt build` temiz). Henüz commit/deploy **yapılmadı**. Sıradaki: kalan TS domain'leri (opsiyonel) ve/veya tablo sanallaştırma (ihtiyaç doğunca).
 
-**Ana plan:** [OC_UI_ADMIN_FAZ1_PLAN.md](../ui/OC_UI_ADMIN_FAZ1_PLAN.md) · **Perf detay:** [PERF_OPTIMIZATION.md](PERF_OPTIMIZATION.md) · **Bu oturum kontrol rehberi:** [PERF_KONTROL_REHBERI.md](PERF_KONTROL_REHBERI.md)
+**Ana plan:** [OC_UI_ADMIN_FAZ1_PLAN.md](../ui/OC_UI_ADMIN_FAZ1_PLAN.md) · **Odak deploy:** [../../deploy/README.md](../../deploy/README.md) · **Perf (Mayıs):** [PERF_OPTIMIZATION.md](PERF_OPTIMIZATION.md) · **Perf (Haziran UI Faz 1+1B):** [../../diagnostic/PERFORMANCE_ROADMAP.md](../../diagnostic/PERFORMANCE_ROADMAP.md) · **Kontrol rehberi:** [PERF_KONTROL_REHBERI.md](PERF_KONTROL_REHBERI.md)
+
+---
+
+## Yeni chat handoff (2 Haz 2026)
+
+Yeni sohbette aşağıdaki metni yapıştırarak kaldığınız yerden devam edebilirsiniz.
+
+---
+
+**Odak checkpoint’ten devam et — Operation Core**
+
+Bu sohbette şunları yaptık:
+
+**Kullanıcı istekleri (kronoloji)**
+
+1. Önceki chat özetinden **önerilen sırayla devam** (P0 → P1 → Faz 2).
+2. **Performansı göz ardı etme** — her değişiklikte diagnostic/ölçüm mantığı.
+3. Kaldığımız yeri kaydet + yeni chat için devam prompt’u.
+
+**Tamamlananlar**
+
+- **P0** (önceki turdan): deploy sonrası benchmark, OC-PREV, PV-PERF.
+- **P1 pano-board:** `OcBoardDashboardLink` (hub + board), pano editöründe bağlı board’lar, `ocBoardDgPayload`, `ocSetBoardDefaultDashboard` — `mngui` Odak deploy. Build fix: `OcWorkspaceBoardDialog` çift `OpBoard` import.
+- **P1 schedule:** Admin Zamanlanmış job’lar — DG/Scheduler aktif chip’leri, uyarı, **Scheduler'da etkinleştir** (`schedulerAlignUserJobWithDgActive`).
+- **P1-3 DASH-CARDS-5:** Özet kart renk/ikon admin (`config.accentColor`/`icon`), MO runtime passthrough, liste avatarı kişi-id hash rengi.
+- **Faz 2 MO (performans):** `GetProfileAsync` metadata paralel; `GetProfileViewAsync` timeline 100→35, board adı paralel; `GetDashboardAsync` widget max 4 paralel + summaryCard `take=1`. `mngoperations` + `mngui` Odak deploy.
+- **Diagnostic genişletme:** Yeni `docs/odak/diagnostic/scripts/diagnostic-operation-pages.ps1` (10 OC sayfa API paketi). Ölçüm: `benchmark_faz2_20260602.json`, `oc_pages_faz2_20260602.json`, `ws_definitions_faz2_20260602.json`, özet [DIAGNOSTIC_REPORT_2026-06-02-faz2.md](../../diagnostic/DIAGNOSTIC_REPORT_2026-06-02-faz2.md). DEVAM.md ⭐ güncellendi.
+
+**Faz 2 ölçüm (Odak, warm P95)**
+
+- board_list ~331 ms ✅
+- profile ~1,3 sn, profile_view ~2,3 sn ✅
+- dashboard ~1,7 sn ✅ (sıkı hedef 1 sn için ek tur gerekir)
+- Explorer/board list sayfa paketleri ✅; scheduled tab paralel ~2 sn ✅
+
+**Henüz / dikkat**
+
+- Bu sohbetteki P1 + Faz 2 + diagnostic dosyaları **commit edilmedi** (kullanıcı istemedi) — yeni chat’te önce `git status`.
+- Tarayıcı doğrulaması (pano-board, schedule hizala, özet kart renk/ikon) kullanıcıya bırakıldı.
+
+**Sıradaki (önerilen sıra)**
+
+1. **Faz 2b MO — pano ≤1 sn:** Aynı `queryKey`+parametreli widget’lar için query dedup / paylaşımlı sonuç cache (`RuntimeContextService.Dashboard.cs`); isteğe bağlı `OC_PERF`.
+2. **Gerçek profil cold:** `docker restart mngoperations` → hemen `diagnostic-benchmark.ps1`.
+3. Tarayıcı Ctrl+F5 doğrulama.
+4. İstenirse: diagnostic script’leri deploy checklist; bu paket için commit.
+
+**Önemli bağlam**
+
+- Checkpoint: bu dosya (`DEVAM.md`) ⭐ satır 6.
+- Deploy: [../../deploy/README.md](../../deploy/README.md) — **`pwsh`**, `sync-odak-source.ps1 -Paths Mng.Ui` / `MngOperations` **ayrı** (virgüllü path çalışmıyor), `deploy-odak-apps.ps1`.
+- Odak: http://192.168.20.20:3000 · demo ws `f414462a-cd9e-427e-87e8-3cdff0502325` · seed `docs/odak/operationcore/scripts/operationcore-demo-seed.json`.
+- Perf: [../../diagnostic/PERFORMANCE_ROADMAP.md](../../diagnostic/PERFORMANCE_ROADMAP.md), [../../diagnostic/OPERATIONAL_WORKSPACE_PERF.md](../../diagnostic/OPERATIONAL_WORKSPACE_PERF.md).
+- `appsettings.Development.json` commit etme.
+
+**İlk mesaj önerisi (kısa):** «DEVAM.md ⭐ ve `DIAGNOSTIC_REPORT_2026-06-02-faz2.md` okuyarak devam et. Sıradaki iş: pano query dedup (Faz 2b MO); performansı koru; commit ancak istersem.»
 
 ---
 
@@ -54,8 +110,8 @@ Pano artık board'ın kendi ekranı (workspace hub merkez paneli) **içinde inli
 **Commit + UI deploy:** commit `e5c28bd` (`main`'e push), `mngui` Odak'a `--no-cache` deploy (2 Haz ~08:14, **`ui=200`**). Tamamen canlı.
 
 **Açık/ileriki:**
-- ⬜ Özet kart renk/ikon admin (board/pano editörü) seçilebilir; liste avatar kişiye özel renk.
-- ⬜ Pano-board bağı iyileştirmeleri: board'dan hızlı "pano ata", pano editöründe board'a bağlama kolaylığı.
+- ✅ Özet kart renk/ikon admin (pano widget editörü `config`); liste avatar kişiye özel renk (UI hash).
+- ✅ Pano-board bağı (hub/board link + editör bağlı board'lar) — 2 Haz P1.
 
 ---
 
@@ -76,6 +132,64 @@ Odak **deploy edilmiş** UI'da (`http://192.168.20.20:3000/apps/operation-core/a
 **✅ Commit edildi:** `84b296c` (`main`'e push; `Mng.Ui/nginx.conf`, workspace-definitions sekmeleri, `OcWorkspaceDefinitionsGeneralTab.vue`, locale `tr`/`en` dahil).
 
 **Tarihsel:** commit `000e624` (31 May) benzer semptomu nginx `/api/operations/` eksikliğine bağlamıştı; bu sefer curl ile DG proxy çalışıyordu → **farklı kök neden** (vue-i18n). Locale cache (`localStorage` `locale_cache_*`) eski metin tutabilir → hard refresh + cache silme gerekebilir.
+
+---
+
+## UI-PERF-F1 — Diagnostic program: UI performans Faz 1 + 1B (2 Haz, ✅ commit `84b296c` · Odak deploy)
+
+Ayrı chat + `docs/odak/diagnostic/` altında ölçüm, kök neden analizi ve UI iyileştirmeleri dokümante edildi. **Commit:** `84b296c` (`main`, perf paketi ile birlikte). **Odak:** `mngui` deploy (2 Haz 2026, `ui=200`).
+
+### Ölçüm özeti (deploy öncesi — Odak)
+
+| Belirti | Kök neden (sınıf) | Saf backend | UI sonrası hedef |
+|---------|-------------------|-------------|------------------|
+| Workspace tanımlama 20–30 sn | `UI-ARCH`: tüm sekmeler **eager** + aynı kataloglar ~6–9× tekrar + tarayıcı ~6 bağlantı kuyruğu | Scheduled tab tek başına ~**2 sn** ✅ | Sayfa ≤ **5 sn**, scheduled tab ≤ **3 sn** |
+| Operasyon explorer yavaş | `UI-OVERFETCH`: `loadAllBoards` (N workspace) + `ocListAllDashboards` açılışta | Board list warm ~**320 ms** ✅ | Explorer ≤ **1 sn** |
+| Profil / dashboard | `COLD-CACHE` / MO aggregation (backend) | profile-view warm ~1,3–2,9 sn; cold ~4 sn | **Faz 2** MO |
+
+**Ham ölçüm:** `docs/odak/diagnostic/reports/benchmark_20260602_100537.json`, `ws_definitions_20260602_100857.json`  
+**Raporlar:** [DIAGNOSTIC_REPORT_2026-06-02.md](../../diagnostic/DIAGNOSTIC_REPORT_2026-06-02.md) · [OPERATIONAL_WORKSPACE_PERF.md](../../diagnostic/OPERATIONAL_WORKSPACE_PERF.md) · [PERFORMANCE_ROADMAP.md](../../diagnostic/PERFORMANCE_ROADMAP.md) · [diagnostic/README.md](../../diagnostic/README.md)
+
+### Faz 1 — Admin workspace tanımları
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **UI-PERF-1.1** | ✅ | Ana sekmeler **`eager` → lazy** — yalnızca seçilen sekme yüklenir (`workspace-definitions/index.vue`). |
+| **UI-PERF-1.2** | ✅ | Değerler alt sekmeleri lazy (`OcWorkspaceDefinitionsValuesTab.vue`). |
+| **UI-PERF-1.3** | ✅ | **`useOcWorkspaceCatalog`** — workspace/boards/types/priorities/states/workspace kaydı tek composable'da paylaşılır; sekme başına tekrarlı `limit=500` DG fırtınası kalkar. |
+| **UI-PERF-1.4** | ✅ | Person lookup **paralel** — `useOcPersonPicker.ensureSelectedIds`, rules `resolvePersonTitles` (`OcWorkspaceRulesExplorer.vue` vb.). |
+
+**Dosyalar:** `Mng.Ui/composables/useOcWorkspaceCatalog.ts` (yeni), `useOcWorkspaceDefinitionTabs.ts`, `useOcWorkspaceDefinitionValuesTabs.ts`, `OcWorkspaceDefinitions{General,Values,Forms,Boards,Dashboards,ScheduledWorkItems}Tab.vue`, `OcWorkspace{Rules,FieldPolicy,SlaPolicies}Explorer.vue`, `useOcPersonPicker.ts`.
+
+### Faz 1B — Operasyon çalışma alanı (günlük kullanım)
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **UI-PERF-1B.1** | ✅ P0 | **`loadAllBoards()` kaldırıldı** — board listesi yalnızca seçili/genişletilen workspace için lazy (`operationCore.ts`, `OcWorkspaceTree.vue`). |
+| **UI-PERF-1B.2** | ✅ P1 | Tüm panoları önceden çekme → **`ocGetDashboardRecord`** ihtiyaç anında (`workspace/index.vue`). |
+| **UI-PERF-1B.3** | ✅ P1 | Board **`loadRelationOptions`** — relation dataset'leri yalnızca hızlı filtre / gelişmiş arama açılınca (`boards/[boardId]/index.vue`, `OcBoardListFilters.vue`). |
+| **UI-PERF-1B.4** | ✅ P1 | Kanban **`loadAllColumns`** — en fazla **4 paralel** kolon batch (spike azaltma). |
+| **UI-PERF-1B.5** | ✅ P2 | **`loadWorkspaces()`** — store'da **60 sn TTL** cache. |
+
+**Zaten sağlam (değişmedi):** board list tek MO `POST …/list` (~320 ms warm); profil tek `profile-view`; dashboard tek MO response (N+1 widget yok). Mayıs **PERF-BE/PERF-UI** (board render, profil warm ~%30) ayrı — bkz. [PERF_OPTIMIZATION.md](PERF_OPTIMIZATION.md).
+
+### Doğrulama araçları (konuya dönüldüğünde)
+
+```powershell
+.\docs\odak\operationcore\scripts\get-operationcore-token.ps1
+.\docs\odak\diagnostic\scripts\diagnostic-workspace-definitions.ps1
+.\docs\odak\diagnostic\scripts\diagnostic-benchmark.ps1
+```
+
+**Deploy sonrası ölçüm (2 Haz ~11:00):** scheduled tab paralel ~2130ms ✅; benchmark warm profile_view P95 ~2023ms ✅; `ws_definitions` §3 eager storm yalnızca simülasyon (gerçek UI lazy). Raporlar: `diagnostic/reports/ws_definitions_post_deploy_20260602.json`, `benchmark_post_mo_deploy_20260602.json`. Tarayıcı Network waterfall hâlâ önerilir.
+
+### Sıradaki (diagnostic yol haritası)
+
+| Faz | Konu | Durum |
+|-----|------|--------|
+| **Faz 2** | MO profil cold (~4 sn), dashboard (~1,6 sn), metadata cache | 🟡 Kısmi (2 Haz: profil metadata paralel, dashboard widget paralel+summary take=1, profile-view timeline 35) |
+| **Faz 3** | DG global katalog read cache | ⬜ Bekliyor |
+| **PV-PERF** | MO work-item dedup + policy cache | ✅ commit `e1f1880` · Odak `mngoperations --no-cache` (2 Haz ~11:04) |
 
 ---
 
@@ -110,7 +224,7 @@ Kalan 8 warm çağrı: `op_tags` ×2, `op_links` ×2, `op_work_items` getById ×
 **MO değişen:** `Services/RuntimeContextService.cs` (`GetProfileAsync`/`GetTimelineAsync` load↔core ayrımı + private overload), `Services/RuntimeContextService.Form.cs` (`GetFormEditAsync` private overload), `Services/RuntimeContextService.Timeline.cs` (`ResolveActivityChangesAsync` `workItem` parametresi), `Services/RuntimeContextService.ProfileView.cs` (overload'lara `workItem` geçişi + `ResolveProfilePolicyAsync` cache'li tipli kayıtlar + `MapSlaPolicy(SlaPolicyRecord)`; kullanılmayan `ReadDouble` kaldırıldı), `Services/MetadataCacheService.cs` (+`GetSlaPoliciesForWorkspaceAsync`, `ResolveSlaPolicyAsync` onu kullanır), `Interfaces/IMetadataCache.cs` (+imza). *(Retry fix: `Configuration/MngOperationsSettings.cs`, `ServiceRegistration.cs`, `Clients/MngDataGatewayClient.cs`, `appsettings.json`.)*
 **Deploy:** MO build temiz (0/0) · backend `--no-cache` deploy'lu ve canlı · `PerfDiagnostics` ölçüm sonrası geri **false** · geçici CPU override'ları (`docker-compose.odak.yml`) geri alındı.
 
-⚠️ **Bu PV-PERF değişiklikleri henüz commit/push EDİLMEDİ.**
+**✅ Commit + deploy:** `e1f1880` (`perf(operation-core): profile-view DG cagri azaltma…`); Odak `mngoperations --no-cache` (2 Haz 2026, `oc_live=200`).
 
 ### Açık kalanlar (kullanıcı kararı)
 - **(a) Soğuk cache** ilk çağrı ~10 sn (26-28 DG çağrısı tüm metadata'yı yükler). Metadata cache TTL'i (`MetadataCache.TtlSeconds=120`) artırmak (örn. 600-900sn) soğuk vuruşları seyrekleştirir → admin metadata bayatlık tradeoff'u. **UI'da gerçek kullanım kabul edilebilir olduğu için düşük öncelik.**
@@ -217,7 +331,7 @@ Profil ekranındaki tek "Aktivite & yorum" sekmesi **Detaylar | Yorumlar | Aktiv
 
 **UI yeni:** `utils/ocAttachmentPreview.ts`, `components/apps/operation-core/OcAttachmentPreviewDialog.vue`.
 **UI değişen:** `services/operationCoreService.ts` (`ocFetchAttachmentBlob`), `pages/.../work-items/[id]/profile/index.vue` (Ekler göz ikonu + dialog + yorum chip `previewOrDownload`), `components/apps/operation-core/OcCommentComposer.vue` (`withDefaults` ek butonu fix), locale `tr/en` (`operationCore.profile.attachments.preview/previewUnavailable/previewError`).
-**Deploy:** Lokal `nuxt build` temiz (Server + Nitro built). **`mngui` deploy + commit/push bekliyor** (kullanıcı yerelde görsel+PDF önizlemeyi doğruladı).
+**Deploy:** Lokal `nuxt build` temiz. **`mngui` Odak deploy** (2 Haz 2026, [deploy/README](../../deploy/README.md), `ui=200`) — tarayıcıda Ekler göz ikonu + PDF/görsel önizleme doğrulanacak.
 
 **Açık/ileriki:**
 - ⬜ Office (docx/xlsx) inline render, video/audio oynatıcı, sayfalı PDF kontrolü — ayrı tur (kapsam dışı bırakıldı).
@@ -422,7 +536,20 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 | **SLA-2** | ✅ | Workspace tanımları → **SLA** sekmesi, CRUD dialog |
 | **SLA-3** | ✅ | Profil + board liste SLA chip (`OcSlaStatusChip`, akıllı faz) — FC/BLC ile tamamlandı |
 
-**Scriptler:** `setup-op-sla-policies-dataset.ps1` · **`smoke-sla-faz1.ps1`** (SLA-1 DoD)
+## SLA Faz 2 — breach otomasyonu (3 Haz 2026)
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **SLA-4** | ✅ | `POST /operations/api/v1/sla/scan-breaches?workspaceId=` — açık WI'larda response/resolve ihlali tarar |
+| **SLA-5** | ✅ | `RuleTriggers.WorkItemSlaResponseBreached` / `WorkItemSlaResolveBreached` → `op_rules` automation |
+| **SLA-6** | ✅ | Idempotency: `sla.responseBreachNotifiedAt` / `resolveBreachNotifiedAt` |
+| **SLA-7** | ✅ | Odak E2E: `scripts/odak/test-sla-breach-workflow-e2e.ps1` (startWorkflow) |
+| **SLA-8** | ✅ | `POST /sla/sync-scheduler` + MngScheduler `oc-sla-scan-*` orchestration job |
+| **SLA-9** | ✅ | Odak E2E: `scripts/odak/test-sla-breach-scheduler-e2e.ps1` (cron → scan HTTP 200) |
+
+**Scheduler hook:** `POST …/sla/sync-scheduler?workspaceId=` → MngScheduler User Job (`oc-sla-scan-{workspaceId}`) → cron → Keeper token → `scan-breaches`.
+
+**Scriptler:** `setup-op-sla-policies-dataset.ps1` · **`smoke-sla-faz1.ps1`** (SLA-1 DoD) · **`test-sla-breach-workflow-e2e.ps1`**
 
 **UI URL:** `/apps/operation-core/admin/workspace-definitions?workspaceId=...&tab=sla`
 
@@ -514,9 +641,11 @@ Board liste/kanban kartlarında id yerine **isim + ikon + renk**; UI client-side
 
 ---
 
-## PERF — Board liste + profil performans/kod optimizasyonu (bu oturum, 30 May)
+## PERF — Board liste + profil performans/kod optimizasyonu (30 May)
 
-Ölçüm-öncelikli, davranış-koruyan tur (`perf/oc-optimization` → `main`). Detay: `PERF_OPTIMIZATION.md`.
+> **Haziran UI perf (Faz 1+1B):** ayrı bölüm [UI-PERF-F1](#ui-perf-f1--diagnostic-program-ui-performans-faz-1--1b-2-haz--commit-84b296c--odak-deploy) ve `docs/odak/diagnostic/`.
+
+Ölçüm-öncelikli, davranış-koruyan tur (`perf/oc-optimization` → `main`). Detay: [PERF_OPTIMIZATION.md](PERF_OPTIMIZATION.md) §1–4.
 
 | Kod | Durum | Not |
 |-----|--------|-----|
@@ -644,10 +773,14 @@ location /api/scheduler/ {
 [✓] Performans optimizasyonu (PERF): profil ~%30 hızlanma + UI yapısal kazanımlar — Odak'ta canlı, main'e merge
 [✓] Keeper by-ids toplu uç + Redis profil cache (BL-KB): person/grup dizin çözümü tek istekte (N+1 giderildi) + Keeper Redis cache (CRUD invalidation) — Odak'ta canlı (31 May, mngkeeper+mngoperations healthy)
 [✓] OC-CMT: Yorumlar/Aktivite tab ayrımı + TipTap zengin editör + yazar adı çözümü + düzenle/sil — Odak'ta canlı (1 Haz)
-[~] OC-PREV: Ekler & yorum eklerinde inline önizleme (görsel/PDF/metin) + composer ek butonu fix + PDF MIME fix — lokal build temiz, DEPLOY BEKLİYOR (1 Haz)
+[✓] OC-PREV: Ekler & yorum eklerinde inline önizleme — Odak'ta canlı (2 Haz, mngui deploy)
 [✓] DASH-A/C/B + DASH-BOARD: pano viewer + chart + admin editör + panolar board kapsamında — Odak'ta canlı (1-2 Haz)
 [✓] DASH-INLINE: pano board ekranında inline (ayrı sayfa yok) + Özet/Pano toggle — Odak'ta canlı (2 Haz, e5c28bd, ui=200)
 [✓] DASH-CARDS: özet/liste kart UI zenginleştirme + "bana atanan açık işler" (currentUser→MngPersonId + wi_assigned_open) — Odak'ta canlı (2 Haz, e5c28bd, ui=200/oc_live=200)
 [✓] WS-DEF-GENEL: Workspace Tanımları Genel sekmesi (vue-i18n keyFormatHint crash + tabModel string keys + dikey sekmeler) — Odak'ta canlı (2 Haz, 84b296c)
 [✓] UI-NGINX-SCHEDULER: admin Zamanlanmış görevler (/api/scheduler/ proxy → mngscheduler) — Odak'ta canlı (2 Haz, 84b296c)
+[✓] UI-PERF-F1: workspace tanımları lazy tab + useOcWorkspaceCatalog + paralel person — Odak'ta canlı (2 Haz, 84b296c; diagnostic Faz 1)
+[✓] UI-PERF-1B: operasyon explorer lazy boards + deferred dashboard/relation + kanban batch + ws cache — Odak'ta canlı (2 Haz, 84b296c; diagnostic Faz 1B)
+[✓] UI-PERF doğrulama: deploy sonrası script ölçümü (2 Haz) — tarayıcı Network opsiyonel
+[ ] UI-PERF Faz 2: MO profil cold + dashboard aggregation — bekliyor
 ```

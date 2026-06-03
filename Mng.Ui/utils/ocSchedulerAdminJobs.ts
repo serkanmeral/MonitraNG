@@ -91,13 +91,18 @@ export function mapUserJobToAdminRow(
   let lastError = ex?.errorMessage ?? extractBackupFailureMessages(ex?.responseBody) ?? null;
 
   // OC schedule: MO `lastRunAt` on op_work_item_schedules is authoritative when scheduler job doc is stale.
+  let dgIsActive: boolean | null | undefined;
   if (ocScheduleId && scheduleById?.has(ocScheduleId)) {
     const schedule = scheduleById.get(ocScheduleId)!;
+    dgIsActive = schedule.isActive;
     if (schedule.lastRunAt) {
       lastRunAt = schedule.lastRunAt;
       if (!lastStatus) lastStatus = 'success';
     }
   }
+
+  const schedulerDgMismatch =
+    dgIsActive != null && dgIsActive !== job.isActive;
 
   return {
     key: `domain:${job.jobId}`,
@@ -114,6 +119,8 @@ export function mapUserJobToAdminRow(
     lastRunAt,
     lastError,
     ocScheduleId,
+    dgIsActive,
+    schedulerDgMismatch,
     canRunManually,
     runKind,
   };

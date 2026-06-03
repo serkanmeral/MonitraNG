@@ -47,33 +47,44 @@ public class ResourceService : IResourceService
 
     public async Task<IReadOnlyList<TreeNodeDto>> GetTreeAsync(CancellationToken ct = default)
     {
-        // Snapshot zaten tüm klasörleri yükler; view yetkisi olanları ağaca alırız.
         var snapshot = await _perms.LoadSnapshotAsync(ct);
-        var folders = snapshot.AllFolders
-            .Where(f => snapshot.Resolve(f).CanView)
-            .ToList();
-        return BuildTree(folders);
+        return BuildTreeFromSnapshot(snapshot);
+    }
+
+    public async Task<ResourceBootstrapDto> GetBootstrapAsync(string? folderId = null, CancellationToken ct = default)
+    {
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        var tree = BuildTreeFromSnapshot(snapshot);
+        var children = await QueryChildrenAsync(NormalizeParentId(folderId), snapshot, ct);
+        var (breadcrumb, selectedFolder) = await ResolveFolderContextAsync(folderId, snapshot, ct);
+
+        return new ResourceBootstrapDto
+        {
+            Tree = tree,
+            Children = children,
+            Breadcrumb = breadcrumb,
+            SelectedFolder = selectedFolder
+        };
+    }
+
+    public async Task<ResourceBrowseContextDto> GetBrowseContextAsync(string? folderId, CancellationToken ct = default)
+    {
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        var children = await QueryChildrenAsync(NormalizeParentId(folderId), snapshot, ct);
+        var (breadcrumb, selectedFolder) = await ResolveFolderContextAsync(folderId, snapshot, ct);
+
+        return new ResourceBrowseContextDto
+        {
+            Children = children,
+            Breadcrumb = breadcrumb,
+            SelectedFolder = selectedFolder
+        };
     }
 
     public async Task<ResourceListResult> GetChildrenAsync(string? parentId, CancellationToken ct = default)
     {
-        var match = new Dictionary<string, object?>
-        {
-            ["parentId"] = string.IsNullOrWhiteSpace(parentId) ? null : parentId
-        };
-
-        var page = await _dg.QueryPageAsync(DmDatasets.Resources, match, ListQuery, Token, ct);
         var snapshot = await _perms.LoadSnapshotAsync(ct);
-
-        var items = page.Items
-            .Select(MapRow)
-            .Where(r => snapshot.Resolve(r).CanView)
-            .OrderByDescending(r => r.type == ResourceType.Folder)
-            .ThenBy(r => r.name, StringComparer.OrdinalIgnoreCase)
-            .Select(r => ToDto(r, snapshot.Resolve(r)))
-            .ToList();
-
-        return new ResourceListResult { Items = items, Total = items.Count };
+        return await QueryChildrenAsync(NormalizeParentId(parentId), snapshot, ct);
     }
 
     public async Task<ResourceDto> GetByIdAsync(string id, CancellationToken ct = default)
@@ -89,27 +100,7 @@ public class ResourceService : IResourceService
         var resource = await LoadOrThrowAsync(id, ct);
         var snapshot = await _perms.LoadSnapshotAsync(ct);
         snapshot.EnsureCan(resource, ResourceAction.View);
-        var ancestorIds = resource.ancestorIds ?? new List<string>();
-
-        var crumbs = new List<BreadcrumbDto>();
-        if (ancestorIds.Count > 0)
-        {
-            var match = new Dictionary<string, object?>
-            {
-                ["__dataId"] = new Dictionary<string, object?> { ["$in"] = ancestorIds }
-            };
-            var page = await _dg.QueryPageAsync(DmDatasets.Resources, match, ListQuery, Token, ct);
-            var byId = page.Items.Select(MapRow).Where(r => r.__dataId != null).ToDictionary(r => r.__dataId!, r => r);
-
-            foreach (var ancestorId in ancestorIds)
-            {
-                if (byId.TryGetValue(ancestorId, out var ancestor))
-                    crumbs.Add(new BreadcrumbDto { Id = ancestorId, Name = ancestor.name ?? string.Empty });
-            }
-        }
-
-        crumbs.Add(new BreadcrumbDto { Id = resource.__dataId!, Name = resource.name ?? string.Empty });
-        return crumbs;
+        return await BuildBreadcrumbAsync(resource, ct);
     }
 
     public async Task<ResourceDto> CreateFolderAsync(CreateFolderRequest request, CancellationToken ct = default)
@@ -131,6 +122,7 @@ public class ResourceService : IResourceService
         };
 
         var created = await _dg.CreateAsync<DmResource>(DmDatasets.Resources, payload, Token, ct);
+        _perms.InvalidateSnapshotCache();
         return await ToDtoWithEffectiveAsync(created, ct);
     }
 
@@ -148,6 +140,8 @@ public class ResourceService : IResourceService
         };
 
         var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
+        if (resource.type == ResourceType.Folder)
+            _perms.InvalidateSnapshotCache();
         return ToDto(updated, snapshot.Resolve(updated));
     }
 
@@ -190,7 +184,9 @@ public class ResourceService : IResourceService
 
         await ReindexDescendantsAsync(id, newAncestors, ct);
 
-        return ToDto(updated, snapshot.Resolve(updated));
+        _perms.InvalidateSnapshotCache();
+        var refreshed = await _perms.LoadSnapshotAsync(ct);
+        return ToDto(updated, refreshed.Resolve(updated));
     }
 
     public async Task DeleteAsync(string id, bool force, CancellationToken ct = default)
@@ -218,6 +214,7 @@ public class ResourceService : IResourceService
         }
 
         await DeleteResourceAndVersionsAsync(id, node.type, ct);
+        _perms.InvalidateSnapshotCache();
     }
 
     public async Task<ResourceDto> CreateMarkdownAsync(CreateMarkdownRequest request, CancellationToken ct = default)
@@ -481,6 +478,74 @@ public class ResourceService : IResourceService
     }
 
     // ----- helpers -----
+
+    private static string? NormalizeParentId(string? parentId) =>
+        string.IsNullOrWhiteSpace(parentId) ? null : parentId;
+
+    private static IReadOnlyList<TreeNodeDto> BuildTreeFromSnapshot(PermissionSnapshot snapshot)
+    {
+        var folders = snapshot.AllFolders
+            .Where(f => snapshot.Resolve(f).CanView)
+            .ToList();
+        return BuildTree(folders);
+    }
+
+    private async Task<ResourceListResult> QueryChildrenAsync(
+        string? parentId,
+        PermissionSnapshot snapshot,
+        CancellationToken ct)
+    {
+        var match = new Dictionary<string, object?> { ["parentId"] = parentId };
+        var page = await _dg.QueryPageAsync(DmDatasets.Resources, match, ListQuery, Token, ct);
+
+        var items = page.Items
+            .Select(MapRow)
+            .Where(r => snapshot.Resolve(r).CanView)
+            .OrderByDescending(r => r.type == ResourceType.Folder)
+            .ThenBy(r => r.name, StringComparer.OrdinalIgnoreCase)
+            .Select(r => ToDto(r, snapshot.Resolve(r)))
+            .ToList();
+
+        return new ResourceListResult { Items = items, Total = items.Count };
+    }
+
+    private async Task<(IReadOnlyList<BreadcrumbDto> Breadcrumb, ResourceDto? SelectedFolder)> ResolveFolderContextAsync(
+        string? folderId,
+        PermissionSnapshot snapshot,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(folderId))
+            return (Array.Empty<BreadcrumbDto>(), null);
+
+        var resource = await LoadOrThrowAsync(folderId, ct);
+        snapshot.EnsureCan(resource, ResourceAction.View);
+        var breadcrumb = await BuildBreadcrumbAsync(resource, ct);
+        return (breadcrumb, ToDto(resource, snapshot.Resolve(resource)));
+    }
+
+    private async Task<IReadOnlyList<BreadcrumbDto>> BuildBreadcrumbAsync(DmResource resource, CancellationToken ct)
+    {
+        var ancestorIds = resource.ancestorIds ?? new List<string>();
+        var crumbs = new List<BreadcrumbDto>();
+        if (ancestorIds.Count > 0)
+        {
+            var match = new Dictionary<string, object?>
+            {
+                ["__dataId"] = new Dictionary<string, object?> { ["$in"] = ancestorIds }
+            };
+            var page = await _dg.QueryPageAsync(DmDatasets.Resources, match, ListQuery, Token, ct);
+            var byId = page.Items.Select(MapRow).Where(r => r.__dataId != null).ToDictionary(r => r.__dataId!, r => r);
+
+            foreach (var ancestorId in ancestorIds)
+            {
+                if (byId.TryGetValue(ancestorId, out var ancestor))
+                    crumbs.Add(new BreadcrumbDto { Id = ancestorId, Name = ancestor.name ?? string.Empty });
+            }
+        }
+
+        crumbs.Add(new BreadcrumbDto { Id = resource.__dataId!, Name = resource.name ?? string.Empty });
+        return crumbs;
+    }
 
     private async Task<DmResource> LoadOrThrowAsync(string id, CancellationToken ct)
     {

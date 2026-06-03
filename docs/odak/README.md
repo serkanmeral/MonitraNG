@@ -13,12 +13,16 @@ Tüm kurulum ve günlük çalışma akışı tek dokümanda:
 |---------|--------|
 | **[ODAK_FULL_SETUP.md](./ODAK_FULL_SETUP.md)** | Tam kurulum özeti: sunucu, mng_common, mng_apps, domain, initial data, yerel dev, deploy, bilinen sorunlar |
 | **[operationcore/README.md](./operationcore/README.md)** | Operation Core (OC) / MngOperations — planlama ve spec |
+| **[workflow/DEVAM.md](./workflow/DEVAM.md)** | MngWorkflow — planlama, Faz 0/1, OC entegrasyon |
 | **[diagnostic/README.md](./diagnostic/README.md)** | Performans ölçümü — Faz 1+1B UI deploy tamam; Faz 2 backend bekliyor |
 | **[deploy/README.md](./deploy/README.md)** | **Odak deploy (Windows)** — pwsh, UI/backend komutları, sorun giderme |
+| **[PLATFORM_CHECKPOINT.md](./PLATFORM_CHECKPOINT.md)** | **SIEM öncesi checkpoint** — tamamlanmadan SIEM'e geçilmez |
 | **[monitoring/README.md](./monitoring/README.md)** | Güvenlik odaklı izleme / SIEM-hafif — planlama |
+| **[AI_PLANNING_DECISION.md](./AI_PLANNING_DECISION.md)** | **Yapay zeka zamanlama kararı** — çerçeve şimdi, implementasyon çekirdek hat sonrası |
 | **[compliance/README.md](./compliance/README.md)** | Standart uyumluluğu — ISO/IEC 27001 + AS9100 planı |
+| **[notifications/DEVAM.md](./notifications/DEVAM.md)** | MngNotifier e-posta — ⏸️ planlama duraklatildi; `send-template` sirada |
 
-Yeni bir chat’te geliştirmeye geçerken önce **ODAK_FULL_SETUP** okuyun; ayrıntı için alt bölümlerdeki linklere inin. OC geliştirmesi için **operationcore** klasörüne bakın.
+Yeni bir chat’te geliştirmeye geçerken önce **ODAK_FULL_SETUP** okuyun; ayrıntı için alt bölümlerdeki linklere inin. OC geliştirmesi için **operationcore** klasörüne; bildirim planlaması için **notifications** klasörüne bakın.
 
 ---
 
@@ -28,6 +32,7 @@ Yeni bir chat’te geliştirmeye geçerken önce **ODAK_FULL_SETUP** okuyun; ayr
 docs/odak/
 ├── ODAK_FULL_SETUP.md          ← ana rehber (bu oturumun özeti)
 ├── README.md                   ← bu dosya
+├── AI_PLANNING_DECISION.md     ← AI zamanlama kararı (✅ kilitli)
 ├── deploy/
 │   └── README.md               ← Windows deploy (pwsh, UI/backend)
 ├── setup/
@@ -55,15 +60,31 @@ docs/odak/
 │   └── datasets/
 │       ├── README.md
 │       └── operationcore_datasets_phase1_*.json
+├── workflow/
+│   ├── DEVAM.md                ← kaldığımız yer (Faz 0/1 + OC entegrasyon planı)
+│   ├── Workflow Backend Implementation Plan v1.md  ← §13 Operation Core
+│   └── … (InternalDesign, planing.md, …)
 ├── monitoring/
 │   ├── README.md               ← Güvenlik odaklı izleme / SIEM-hafif (index)
-│   ├── SIEM_PLANNING.md        ← SIEM-hafif planlama: gap, event modeli, senaryolar, müdahale
-│   └── DEVAM.md                ← kaldığımız yer (workflow planı bekleniyor ⏸️)
+│   ├── SIEM_PLANNING.md        ← Ana plan: gap, şema, toplama, U1–U7, fazlar (Faz 0 ✅)
+│   ├── SIEM_PARSER_PLAN.md     ← Parser/normalizer (Faz 1)
+│   ├── SIEM_FAZ1_SPIKE.md      ← Faz 1 teknik spike (workflow sonrası)
+│   ├── SIEM_THROUGHPUT_AND_QUEUES.md ← Kuyruk / yoğun veri
+│   ├── SIEM_PERFORMANCE_PLAN.md    ← Performans / SLO / benchmark
+│   ├── SIEM_VERTICAL_FINANCE.md ← Finans/dijital banka dikey kapsam
+│   └── DEVAM.md                ← kaldığımız yer
 ├── compliance/
 │   ├── README.md               ← ISO 27001 + AS9100 uyum planı (index)
 │   ├── ISO27001_PLAN.md        ← ISO/IEC 27001:2022 kontrol eşleme + boşluk
 │   ├── AS9100_PLAN.md          ← AS9100D gereksinim eşleme + boşluk
 │   └── COMPLIANCE_ROADMAP.md   ← birleşik fazlı yol haritası + izlenebilirlik matrisi
+├── notifications/
+│   ├── README.md               ← bildirim planlama index + doküman haritası
+│   ├── MAIL_ARCHITECTURE.md    ← push-only HTTP; Notifier event dinlemez
+│   ├── MAIL_TEMPLATES.md       ← Notifier template ozeti
+│   ├── datasets/               ← @mail_templates, @mail_layouts sema + seed
+│   ├── MEVCUT_DURUM.md         ← kod gerçeği (MngNotifier, MO, Keeper, chat)
+│   ├── DEVAM.md                ← ⏸️ kaldigimiz yer (send-template sirada)
 └── domain/
     ├── DOMAIN_OLUSTURMA.md
     ├── DOMAIN_OLUSTURMA_API.md

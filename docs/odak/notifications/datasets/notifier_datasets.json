@@ -1,0 +1,267 @@
+[
+  {
+    "__dataId": null,
+    "name": "@mail_layouts",
+    "description": "MngNotifier - E-posta layout (header, footer, CSS). Content sablonu @mail_templates.bodyHtml ile birlestirilir.",
+    "category": "c8e4f1a2-6b3d-4e90-a1f5-9d2c7b8e4f01",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "layoutKey",
+        "title": "Layout anahtari",
+        "mandatory": true,
+        "unique": true,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Ad",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Aciklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "stylesCss",
+        "title": "CSS (style blogu)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "headerHtml",
+        "title": "Header HTML fragment",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "footerHtml",
+        "title": "Footer HTML fragment",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isDefault",
+        "title": "Varsayilan layout",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isActive",
+        "title": "Aktif",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "category",
+        "title": "Kategori (system|custom)",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_layoutKey_unique",
+        "fields": { "layoutKey": 1 },
+        "unique": true
+      },
+      {
+        "name": "idx_isDefault",
+        "fields": { "isDefault": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "@mail_templates",
+    "description": "MngNotifier - E-posta icerik sablonlari (subject + body fragment). Render Notifier'da; cagiran servis templateKey gonderir.",
+    "category": "c8e4f1a2-6b3d-4e90-a1f5-9d2c7b8e4f01",
+    "forceSchema": true,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "templateKey",
+        "title": "Sablon anahtari",
+        "mandatory": true,
+        "unique": true,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Ad",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Aciklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "subject",
+        "title": "E-posta konusu",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "bodyHtml",
+        "title": "Govde HTML (fragment)",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "variables",
+        "title": "Zorunlu context yollari",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "layoutKey",
+        "title": "Layout anahtari",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "locale",
+        "title": "Dil kodu",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "category",
+        "title": "Kategori (system|custom)",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "tags",
+        "title": "Etiketler",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "sampleContext",
+        "title": "Onizleme ornek context",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isActive",
+        "title": "Aktif",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_templateKey_unique",
+        "fields": { "templateKey": 1 },
+        "unique": true
+      },
+      {
+        "name": "idx_isActive_templateKey",
+        "fields": { "isActive": 1, "templateKey": 1 },
+        "unique": false
+      },
+      {
+        "name": "idx_category",
+        "fields": { "category": 1 },
+        "unique": false
+      }
+    ]
+  }
+]

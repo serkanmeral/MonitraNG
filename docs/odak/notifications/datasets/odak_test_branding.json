@@ -1,0 +1,11 @@
+{
+  "_comment": "Odak POC domain — mail template test ve sampleContext icin sabit marka bilgileri (3 Haziran 2026)",
+  "domainName": "odak",
+  "displayName": "Odak Kompozit Teknolojileri A.Ş.",
+  "logoUrl": "https://img-kariyer.mncdn.com/mnresize/150/150/UploadFiles/Clients/SquareLogo/983/ai_kk_274983_6022024014542.png",
+  "sampleContextDomain": {
+    "name": "odak",
+    "displayName": "Odak Kompozit Teknolojileri A.Ş.",
+    "logoUrl": "https://img-kariyer.mncdn.com/mnresize/150/150/UploadFiles/Clients/SquareLogo/983/ai_kk_274983_6022024014542.png"
+  }
+}

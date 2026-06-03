@@ -20,6 +20,12 @@ public sealed class DashboardWidgetDefinition
 
     /// <summary>Chart agregasyon alanı: 'stateId' | 'priorityId' | 'typeId' | 'assignee'.</summary>
     public string? GroupBy { get; init; }
+
+    /// <summary>summaryCard: Vuetify tema rengi (primary, success, …).</summary>
+    public string? AccentColor { get; init; }
+
+    /// <summary>summaryCard: mdi ikon adı (örn. mdi-counter).</summary>
+    public string? Icon { get; init; }
 }
 
 public static class DashboardWidgetParser
@@ -61,12 +67,16 @@ public static class DashboardWidgetParser
         // Chart meta: önce top-level, sonra "config" objesi.
         var chartType = ReadString(item, "chartType");
         var groupBy = ReadString(item, "groupBy");
-        if ((chartType == null || groupBy == null)
+        var accentColor = ReadString(item, "accentColor");
+        var icon = ReadString(item, "icon");
+        if ((chartType == null || groupBy == null || accentColor == null || icon == null)
             && item.TryGetProperty("config", out var config)
             && config.ValueKind == JsonValueKind.Object)
         {
             chartType ??= ReadString(config, "chartType");
             groupBy ??= ReadString(config, "groupBy");
+            accentColor ??= ReadString(config, "accentColor");
+            icon ??= ReadString(config, "icon");
         }
 
         string? dataset = null;
@@ -104,7 +114,9 @@ public static class DashboardWidgetParser
             Skip = skip,
             ExecuteOnLoad = executeOnLoad,
             ChartType = chartType,
-            GroupBy = groupBy
+            GroupBy = groupBy,
+            AccentColor = accentColor,
+            Icon = icon
         };
     }
 

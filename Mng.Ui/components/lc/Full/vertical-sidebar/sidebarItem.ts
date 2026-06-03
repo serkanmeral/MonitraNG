@@ -366,6 +366,18 @@ const sidebarItem: menu[] = [
         icon: CalendarIcon,
         to: "/apps/operation-core/admin/scheduled-jobs",
       },
+      {
+        title: "Bekleyen onaylar",
+        pageCode: "operationCore.adminApprovals.menuTitle",
+        icon: FileCheckIcon,
+        to: "/apps/operation-core/admin/approvals",
+      },
+      {
+        title: "Açık alarmlar",
+        pageCode: "operationCore.adminAlarms.menuTitle",
+        icon: AlertCircleIcon,
+        to: "/apps/operation-core/admin/alarms",
+      },
     ],
   },
   {

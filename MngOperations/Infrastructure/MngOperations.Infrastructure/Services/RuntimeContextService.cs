@@ -124,12 +124,27 @@ public partial class RuntimeContextService : IRuntimeContextService
 
         var stateFlowId = WorkItemDataHelper.GetString(workItem, "stateFlowId");
         var currentStateId = WorkItemDataHelper.GetString(workItem, "stateId") ?? string.Empty;
-        var profile = await _metadataCache.ResolveDefaultProfileAsync(workspaceId, token, cancellationToken);
+        var boardId = WorkItemDataHelper.GetString(workItem, "boardId");
+
+        var profileTask = _metadataCache.ResolveDefaultProfileAsync(workspaceId, token, cancellationToken);
+        Task<StateFlowRecord>? stateFlowTask = null;
+        if (!string.IsNullOrEmpty(stateFlowId))
+            stateFlowTask = _metadataCache.GetStateFlowAsync(stateFlowId, token, cancellationToken);
+        Task<BoardRecord?>? boardTask = null;
+        if (!string.IsNullOrEmpty(boardId))
+            boardTask = TryGetBoardForProfileAsync(boardId, token, cancellationToken);
+
+        var metadataWaits = new List<Task> { profileTask };
+        if (stateFlowTask != null) metadataWaits.Add(stateFlowTask);
+        if (boardTask != null) metadataWaits.Add(boardTask);
+        await Task.WhenAll(metadataWaits);
+
+        var profile = profileTask.Result;
 
         var availableActions = new List<ProfileActionDto>();
-        if (!string.IsNullOrEmpty(stateFlowId))
+        if (stateFlowTask != null)
         {
-            var stateFlow = await _metadataCache.GetStateFlowAsync(stateFlowId, token, cancellationToken);
+            var stateFlow = stateFlowTask.Result;
             var order = 0;
             foreach (var transition in _permissions.GetAvailableTransitions(workspace, stateFlow, currentStateId))
             {
@@ -151,19 +166,7 @@ public partial class RuntimeContextService : IRuntimeContextService
         var actions = ProfileActionBuilder.Build(availableActions, profile?.Actions);
 
         var canEdit = _permissions.CanEditWorkItem(workspace, workItem);
-        BoardRecord? board = null;
-        var boardId = WorkItemDataHelper.GetString(workItem, "boardId");
-        if (!string.IsNullOrEmpty(boardId))
-        {
-            try
-            {
-                board = await _metadataCache.GetBoardAsync(boardId, token, cancellationToken);
-            }
-            catch (OperationCoreException ex) when (ex.Code == "BOARD_NOT_FOUND")
-            {
-                _logger.LogDebug("Board {BoardId} not found for profile field behaviors", boardId);
-            }
-        }
+        BoardRecord? board = boardTask?.Result;
 
         var behaviorContext = new FieldBehaviorResolveContext
         {
@@ -267,6 +270,22 @@ public partial class RuntimeContextService : IRuntimeContextService
         }
 
         return result;
+    }
+
+    private async Task<BoardRecord?> TryGetBoardForProfileAsync(
+        string boardId,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _metadataCache.GetBoardAsync(boardId, token, cancellationToken);
+        }
+        catch (OperationCoreException ex) when (ex.Code == "BOARD_NOT_FOUND")
+        {
+            _logger.LogDebug("Board {BoardId} not found for profile field behaviors", boardId);
+            return null;
+        }
     }
 
     public async Task<StateSegmentsPage> GetStateSegmentsAsync(

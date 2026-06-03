@@ -43,4 +43,9 @@ public interface IWorkItemCommandService
         string workItemId,
         bool force = false,
         CancellationToken cancellationToken = default);
+
+    Task RunAutomationRulesAsync(
+        string workItemId,
+        string trigger,
+        CancellationToken cancellationToken = default);
 }

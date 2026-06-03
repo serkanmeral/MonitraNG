@@ -52,34 +52,28 @@ public partial class RuntimeContextService
         // workItem zaten yüklendi → alt çağrılara geçir (op_work_items GetById 5×→1×).
         var profileTask = GetProfileAsync(workItemId, workItem, cancellationToken);
         var formTask = GetFormEditAsync(workItemId, workItem, cancellationToken);
-        var timelineTask = GetTimelineAsync(workItemId, workItem, 0, 100, cancellationToken);
+        const int profileViewTimelineTake = 35;
+        var timelineTask = GetTimelineAsync(workItemId, workItem, 0, profileViewTimelineTake, cancellationToken);
         var catalogsTask = BuildBoardCatalogsAsync(workspace, workspaceId, scopeStateIds, token, cancellationToken);
         var policyTask = ResolveProfilePolicyAsync(workItem, workspaceId, token, cancellationToken);
         var poolFieldsTask = LoadProfilePoolFieldsAsync(workspaceId, token, cancellationToken);
+        var boardId = WorkItemDataHelper.GetPersonRefId(workItem, "boardId");
+        var boardNamesTask = ResolveProfileViewBoardNamesAsync(boardId, token, cancellationToken);
 
-        await Task.WhenAll(profileTask, formTask, timelineTask, catalogsTask, policyTask, poolFieldsTask);
+        await Task.WhenAll(
+            profileTask,
+            formTask,
+            timelineTask,
+            catalogsTask,
+            policyTask,
+            poolFieldsTask,
+            boardNamesTask);
 
         var profile = profileTask.Result;
         var form = formTask.Result;
         var catalogs = catalogsTask.Result;
         var poolFields = poolFieldsTask.Result;
-
-        // boardId görünen değeri için board adı (metadata cache'ten; ek round-trip yok sayılır).
-        var boards = new Dictionary<string, string>(StringComparer.Ordinal);
-        var boardId = WorkItemDataHelper.GetPersonRefId(workItem, "boardId");
-        if (!string.IsNullOrEmpty(boardId))
-        {
-            try
-            {
-                var board = await _metadataCache.GetBoardAsync(boardId, token, cancellationToken);
-                if (!string.IsNullOrEmpty(board.DataId) && !string.IsNullOrWhiteSpace(board.Name))
-                    boards[board.DataId!] = board.Name!;
-            }
-            catch (OperationCoreException ex) when (ex.Code == "BOARD_NOT_FOUND")
-            {
-                _logger.LogDebug("Board {BoardId} not found for profile-view field displays", boardId);
-            }
-        }
+        var boards = boardNamesTask.Result;
 
         var fieldDisplays = await BuildProfileFieldDisplaysAsync(
             workItem, form.Fields, catalogs, boards, profile.People, profile.Groups, poolFields, token, cancellationToken);
@@ -103,6 +97,29 @@ public partial class RuntimeContextService
         }
 
         return result;
+    }
+
+    private async Task<Dictionary<string, string>> ResolveProfileViewBoardNamesAsync(
+        string? boardId,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var boards = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (string.IsNullOrEmpty(boardId))
+            return boards;
+
+        try
+        {
+            var board = await _metadataCache.GetBoardAsync(boardId, token, cancellationToken);
+            if (!string.IsNullOrEmpty(board.DataId) && !string.IsNullOrWhiteSpace(board.Name))
+                boards[board.DataId!] = board.Name!;
+        }
+        catch (OperationCoreException ex) when (ex.Code == "BOARD_NOT_FOUND")
+        {
+            _logger.LogDebug("Board {BoardId} not found for profile-view field displays", boardId);
+        }
+
+        return boards;
     }
 
     /// <summary>op_fields → global pool (workspaceId boş) + bu workspace'e ait pool alanlar (UI ocListPoolFieldsForWorkspace ile birebir).</summary>

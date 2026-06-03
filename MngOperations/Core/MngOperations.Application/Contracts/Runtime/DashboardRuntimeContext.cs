@@ -39,6 +39,11 @@ public sealed class DashboardWidgetRuntimeDto
     /// <summary>Chart agregasyon alanı: 'stateId' | 'priorityId' | 'typeId' | 'assignee'. Diğer tiplerde null.</summary>
     public string? GroupBy { get; init; }
 
+    /// <summary>summaryCard görünüm — DG widget config.</summary>
+    public string? AccentColor { get; init; }
+
+    public string? Icon { get; init; }
+
     public IReadOnlyDictionary<string, object?>? ResolvedParameters { get; init; }
     public DashboardWidgetExecutionDto? Execution { get; init; }
 }

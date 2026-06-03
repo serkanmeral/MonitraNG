@@ -186,6 +186,21 @@ public sealed class RuleEngineService : IRuleEngine
                     });
                     break;
                 }
+                case "startworkflow":
+                {
+                    sideEffects.Add(new RuleSideEffect
+                    {
+                        Type = "startWorkflow",
+                        Payload = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["workflowId"] = RuleActionParser.GetString(action, "workflowId"),
+                            ["workflowVersionId"] = RuleActionParser.GetString(action, "workflowVersionId"),
+                            ["triggerType"] = RuleActionParser.GetString(action, "triggerType") ?? "op_rules",
+                            ["triggerData"] = RuleActionParser.GetValue(action, "triggerData")
+                        }
+                    });
+                    break;
+                }
                 default:
                     break;
             }
