@@ -7,8 +7,11 @@
 node_modules/
 dist/
 
-# Impetus
+# Build / IDE
 .vs/
+bin/
+obj/
+TestResults/
 
 # Compiled Java class files
 *.class
