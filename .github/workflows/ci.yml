@@ -117,3 +117,7 @@ jobs:
 
       - name: SIEM parser unit tests
         run: dotnet test MngReactor/MngReactor.sln --no-build -c Release --verbosity normal --filter "FullyQualifiedName~Tests.Services.SecEvents"
+
+      - name: Verify SIEM benchmark baselines
+        shell: pwsh
+        run: ./scripts/ci/verify-siem-benchmark-baselines.ps1

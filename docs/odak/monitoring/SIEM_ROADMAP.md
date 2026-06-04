@@ -1,7 +1,7 @@
 # MonitraNG SIEM — Aktif yol haritası
 
 **Son güncelleme:** 4 Haziran 2026  
-**Durum:** MVP (U1–U7) tamam · post-MVP genişleme devam  
+**Durum:** MVP (U1–U7) + post-MVP ✅ · Faz 1–4 kapalı · Faz 5 ertelendi  
 **Handoff:** [DEVAM.md](./DEVAM.md) · [HANDOFF.md](./HANDOFF.md)
 
 ---
@@ -12,10 +12,10 @@ LogAlarm / tam SIEM paritesi (5651, WORM, sertifikasyon) **en sona** bırakıld�
 
 | Sıra | Alan | Durum |
 |------|------|--------|
-| **1** | B1 parser + senaryo (U8/U9…) | 🟡 devam |
-| **2** | Toplama olgunluğu (WEF/agent) | 🟡 |
-| **3** | Perf / operasyon / E2E | ⬜ |
-| **4** | UX (dashboard, arama) | 🟡 |
+| **1** | B1 parser + senaryo (U8–U10…) | ✅ |
+| **2** | Toplama olgunluğu (WEF/NxLog/rsyslog) | ✅ |
+| **3** | Perf / operasyon / E2E | ✅ |
+| **4** | UX (dashboard, arama U1–U10) | ✅ |
 | **5** | Uyum arşivi + pazar kıyaslaması | ⬜ ertelendi |
 
 Referans (kod yok): [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md) · [SIEM_WORM_5651_SPIKE.md](./SIEM_WORM_5651_SPIKE.md)
@@ -55,6 +55,7 @@ Referans (kod yok): [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md)
 | 3.2 | MQ backlog diagnostic + purge scriptleri | ✅ |
 | 3.3 | E2E suite `-Quick` CI kapısı | ✅ unit gate · `run-siem-quick-regression.ps1` |
 | 3.4 | P2 soak profili (5 dk @ 150 evt/s hedef) | ✅ ~93 evt/s · `benchmark-P2-2026-06-04.json` |
+| 3.5 | Benchmark baseline CI doğrulama | ✅ `verify-siem-benchmark-baselines.ps1` |
 
 ---
 

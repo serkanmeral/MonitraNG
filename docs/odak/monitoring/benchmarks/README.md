@@ -19,6 +19,12 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\benchmark-siem-p0-b
 
 # SIEM parser unit gate (CI ile aynı filtre)
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\ci\test-siem-unit-gate.ps1
+
+# Yerel CI kapisi (unit + benchmark JSON — Odak yok)
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\ci\run-siem-local-gate.ps1
+
+# Benchmark baseline JSON dogrulama (CI adimi)
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\ci\verify-siem-benchmark-baselines.ps1
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\benchmark-siem-engine-syslog.ps1
 
 # Engine sec_event.queue_depth under load (SLO: max < 80% MaxItems)

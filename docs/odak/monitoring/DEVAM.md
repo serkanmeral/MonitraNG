@@ -148,6 +148,8 @@ Kısa vadeli teknik devam (MVP sonrası bakım):
 | 42 | ~~**Quick regression wrapper**~~ | ✅ `run-siem-quick-regression.ps1` |
 | 43 | ~~**NxLog prod şablonu doğrulama**~~ | ✅ lab smoke · müşteri ops checklist §6.1 |
 | 44 | ~~**Linux rsyslog hardening (Faz 2.5)**~~ | ✅ şablon + Engine classify + lab smoke |
+| 45 | ~~**Faz 4 UX kapanış (U1–U10 doc)**~~ | ✅ events UI + dashboard doc |
+| 46 | ~~**Benchmark baseline CI gate (Faz 3.5)**~~ | ✅ `verify-siem-benchmark-baselines.ps1` |
 
 LogAlarm / 5651 / WORM → **Faz 5 (ertelendi)** — [SIEM_ROADMAP.md §6](./SIEM_ROADMAP.md#6-faz-5--ertelenen-logalarm--uyum)
 

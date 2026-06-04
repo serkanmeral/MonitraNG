@@ -100,6 +100,8 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | **26** | ~~**NxLog prod doğrulama**~~ | ✅ lab smoke · `test-nxlog-wec-template-e2e.ps1` |
 | **27** | ~~**Quick regression (-Quick) post-deploy**~~ | ✅ ~6 dk PASS |
 | **28** | ~~**Linux rsyslog hardening (Faz 2.5)**~~ | ✅ şablon · Engine classify · lab smoke |
+| **29** | ~~**Faz 4 UX kapanış**~~ | ✅ U1–U10 doc · dashboard/events UI |
+| **30** | ~~**Benchmark baseline CI (Faz 3.5)**~~ | ✅ `run-siem-local-gate.ps1` |
 | — | LogAlarm parite (genel) | [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md) — **Faz 5 ertelendi** |
 
 ---

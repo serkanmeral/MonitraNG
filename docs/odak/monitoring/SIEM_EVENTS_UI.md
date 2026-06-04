@@ -20,11 +20,11 @@
 ## Filtreler (MVP)
 
 - Zaman aralığı: 1s / 24s / 7g (varsayılan 24s)
-- `sourceType`: firewall, ad
-- `eventAction`: login_failed, login_success, denied_flow, allowed_flow, rule_change, privileged_login_outside_window, new_flow (U7: `baseline.newFlowPair`)
+- `sourceType`: firewall, ad, **endpoint**, **bastion**
+- `eventAction`: login_failed, login_success, denied_flow, allowed_flow, rule_change, privileged_login_outside_window, new_flow (U7), group_member_added (U8), account_created (U9), directory_object_modified (U10)
 - `search`: rawPreview, IP, kullanıcı, host (regex, case-insensitive)
 - **URL senkronu:** `?eventAction=denied_flow&timeRange=24h` — panel deep link
-- **U1–U7 kısayol çipleri** · **U7 rozeti** (`baselineNewFlowPair`)
+- **U1–U10 kısayol çipleri** · **U7 rozeti** (`baselineNewFlowPair`)
 
 ## Sınırlar
 
