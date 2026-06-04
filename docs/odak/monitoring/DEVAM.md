@@ -115,6 +115,10 @@ Kısa vadeli teknik devam (MVP sonrası bakım):
 | 25 | ~~**workflow.deadletter triage**~~ | ✅ `diagnostic-workflow-deadletter.ps1` (eski E2E artefakt) |
 | 26 | ~~**E2E suite B1 ingest**~~ | ✅ firewall vendor + windows extended |
 | 27 | ~~**B1 `windows.security.extended.v1`**~~ | ✅ 4720/4728/5136 · unit + ingest smoke |
+| 28 | ~~**Odak mngreactor deploy**~~ | ✅ extended parser smoke PASS |
+| 29 | ~~**DLQ purge**~~ | ✅ 7 eski mesaj · `-IncludeDeadletter` |
+| 30 | ~~**Faz C spike (5651/WORM)**~~ | ✅ [SIEM_WORM_5651_SPIKE.md](./SIEM_WORM_5651_SPIKE.md) |
+| 31 | ~~**U8 AD group_member_added alarm**~~ | ✅ `test-siem-u8-alarm-e2e.ps1` |
 
 LogAlarm parite → [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md)
 

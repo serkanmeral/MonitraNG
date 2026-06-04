@@ -26,10 +26,10 @@ MonitraNG SIEM-hafif MVP (U1–U7) tamamlandı. LogAlarm seviyesi parite ayrı b
 
 ## Faz C — Uyum & arşiv (Türkiye pazarı)
 
-| # | Alan | Öncelik |
-|---|------|---------|
-| C1 | 5651 imza / WORM arşiv | P0 |
-| C2 | Denetim raporları | P1 |
+| # | Alan | Öncelik | Not |
+|---|------|---------|-----|
+| C1 | 5651 imza / WORM arşiv | P0 | Spike ✅ [SIEM_WORM_5651_SPIKE.md](./SIEM_WORM_5651_SPIKE.md) · C1.1 kod sırada |
+| C2 | Denetim raporları | P1 | C1 sonrası |
 
 ## Faz D — İleri analitik
 

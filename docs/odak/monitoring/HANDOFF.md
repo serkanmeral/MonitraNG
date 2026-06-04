@@ -102,8 +102,9 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | Alan | Değer |
 |------|--------|
 | Branch | `main` (origin ile senkron) |
-| Son SIEM commit | `8eeda15` — windows.security.extended.v1 + E2E suite B1 |
-| Önceki | `5f4b62b` · `ff0505a` PAN-OS · Dashboard P2 · DLQ |
+| Son SIEM commit | (bu commit) — U8 alarm · DLQ purge · WORM spike |
+| Önceki | `8eeda15` · `8c27bc4` extended parser + E2E B1 |
+| Odak deploy | `mngreactor` ✅ 4 Haz — extended + U8 smoke PASS |
 
 ---
 

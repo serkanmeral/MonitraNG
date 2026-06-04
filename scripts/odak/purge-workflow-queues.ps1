@@ -1,5 +1,6 @@
 # Odak lab — workflow/alarm RabbitMQ kuyruklarini bosalt (E2E / birikim temizligi)
 # Varsayilan dry-run; -Apply ile purge eder. workflow.deadletter korunur (inceleme icin).
+# -IncludeDeadletter: triage sonrasi DLQ temizligi (eski E2E artefaktlari).
 param(
     [string]$Server = "192.168.20.20",
     [string]$User = "odak",
@@ -8,12 +9,17 @@ param(
         "workflow.event.inbound",
         "alarm.observation.inbound"
     ),
+    [switch]$IncludeDeadletter,
     [switch]$Apply
 )
 
 $ErrorActionPreference = "Stop"
 Import-Module Posh-SSH -Force -ErrorAction Stop
 . (Join-Path $PSScriptRoot "OdakSshCommon.ps1")
+
+if ($IncludeDeadletter) {
+    $Queues = @($Queues) + @("workflow.deadletter")
+}
 
 Initialize-OdakSshEnvironment -Server $Server
 $cred = Get-OdakSshCredential -User $User -Server $Server
