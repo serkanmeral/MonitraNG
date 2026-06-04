@@ -97,7 +97,8 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | **23** | ~~**U10 directory_object_modified**~~ | ✅ 5136 · E2E + UX preset |
 | **24** | ~~**Extended Windows 4722/4726**~~ | ✅ fixture + unit |
 | **25** | ~~**Quick regression wrapper**~~ | ✅ `run-siem-quick-regression.ps1` |
-| **26** | NxLog prod doğrulama | ⬜ [SIEM_WEF_WEC_FORWARDER.md §6.1](./SIEM_WEF_WEC_FORWARDER.md) |
+| **26** | ~~**NxLog prod doğrulama**~~ | ✅ lab smoke · `test-nxlog-wec-template-e2e.ps1` |
+| **27** | ~~**Quick regression (-Quick) post-deploy**~~ | ✅ ~6 dk PASS |
 | — | LogAlarm parite (genel) | [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md) — **Faz 5 ertelendi** |
 
 ---

@@ -145,7 +145,7 @@ Kısa vadeli teknik devam (MVP sonrası bakım):
 | 40 | ~~**U10 directory_object_modified alarm**~~ | ✅ + UX preset |
 | 41 | ~~**Extended Windows 4722/4726**~~ | ✅ fixture + unit |
 | 42 | ~~**Quick regression wrapper**~~ | ✅ `run-siem-quick-regression.ps1` |
-| 43 | NxLog prod şablonu doğrulama | ⬜ müşteri ops |
+| 43 | ~~**NxLog prod şablonu doğrulama**~~ | ✅ lab smoke · müşteri ops checklist §6.1 |
 
 LogAlarm / 5651 / WORM → **Faz 5 (ertelendi)** — [SIEM_ROADMAP.md §6](./SIEM_ROADMAP.md#6-faz-5--ertelenen-logalarm--uyum)
 

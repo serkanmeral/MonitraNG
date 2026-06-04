@@ -8,11 +8,11 @@ param(
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
 
-function Invoke-Step([string]$Name, [string]$Script, [string[]]$ExtraArgs = @()) {
+function Invoke-Step([string]$Name, [string]$Script, [hashtable]$Params = @{}) {
     $path = Join-Path $root $Script
     if (-not (Test-Path $path)) { throw "Script eksik: $path" }
     Write-Host "`n========== $Name ==========" -ForegroundColor Cyan
-    & $path @ExtraArgs
+    & $path @Params
     if ($LASTEXITCODE -ne 0) {
         Write-Host "FAIL: $Name ($Script)" -ForegroundColor Red
         exit 1
@@ -44,9 +44,10 @@ if (-not $SkipFaz1) {
     Write-Host "OK: Engine WEC batch S5" -ForegroundColor Green
 }
 
-Invoke-Step "B1 firewall vendor ingest" "test-siem-firewall-vendor-ingest.ps1" @("-Vendor", "all")
+Invoke-Step "B1 firewall vendor ingest" "test-siem-firewall-vendor-ingest.ps1" @{ Vendor = "all" }
 Invoke-Step "B1 windows extended ingest" "test-siem-windows-extended-ingest.ps1"
 Invoke-Step "B1 bastion ingest" "test-siem-bastion-ingest.ps1"
+Invoke-Step "NxLog WEC template format" "test-nxlog-wec-template-e2e.ps1"
 
 Invoke-Step "Purge alarm observation queue" "purge-alarm-observation-queue.ps1"
 Invoke-Step "U1 alarm" "test-siem-u1-alarm-e2e.ps1"
@@ -67,7 +68,7 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "OK: U7 new flow baseline" -ForegroundColor Green
 Invoke-Step "U2 sequence alarm" "test-siem-u2-alarm-e2e.ps1"
 
-Invoke-Step "Purge workflow/alarm MQ queues" "purge-workflow-queues.ps1" @("-Apply")
+Invoke-Step "Purge workflow/alarm MQ queues" "purge-workflow-queues.ps1" @{ Apply = $true }
 
 Invoke-Step "U1 workflow" "test-siem-u1-workflow-e2e.ps1"
 Invoke-Step "U1 linux auth workflow" "test-siem-linux-auth-u1-workflow-e2e.ps1"

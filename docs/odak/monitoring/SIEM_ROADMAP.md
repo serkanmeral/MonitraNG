@@ -42,7 +42,7 @@ Referans (kod yok): [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md)
 | 2.1 | WEF→WEC→Engine batch | ✅ S5 E2E |
 | 2.2 | Forwarder şablonu + extended fixture | ✅ |
 | 2.3 | WEC XPath — extended Event ID’ler | ✅ forwarder doc |
-| 2.4 | NxLog prod şablonu doğrulama | ⬜ müşteri ops |
+| 2.4 | NxLog prod şablonu doğrulama | ✅ lab smoke · `test-nxlog-wec-template-e2e.ps1` |
 | 2.5 | Linux agent / rsyslog hardening | ⬜ |
 
 ---

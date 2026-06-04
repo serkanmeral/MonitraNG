@@ -167,7 +167,7 @@ Müşteri ortamında şablon ([templates/nxlog-wec-to-engine.conf](./templates/n
 | 2 | NxLog `Output` hedefi Engine `http://HOST:5037/api/SecEvents/wec-batch` |
 | 3 | JSON `EventID` + `TimeCreated` + `TargetUserName` alanları dolu |
 | 4 | Engine `WecIngestEnabled=true` · Reactor token geçerli |
-| 5 | Odak smoke: `test-engine-wec-ingest-e2e.ps1 -VerifyOdakMongo` |
+| 5 | Odak lab smoke: `test-nxlog-wec-template-e2e.ps1` (Engine wec-batch format) |
 
 ---
 
