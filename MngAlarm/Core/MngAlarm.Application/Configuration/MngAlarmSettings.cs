@@ -27,6 +27,13 @@ public class RabbitMqSettings
 public class EngineSettings
 {
     public ushort ObservationPrefetch { get; set; } = 16;
+
+    /// <summary>
+    /// Ayni alarm icin ard arda alarm.updated MQ publish minimum araligi (saniye).
+    /// 0 = her guncelleme publish edilir. Workflow fan-out korumasi icin varsayilan 5.
+    /// </summary>
+    public int UpdatedPublishMinIntervalSeconds { get; set; } = 5;
+
     public bool ConsumeObservations { get; set; } = true;
     public ReactorBridgeSettings ReactorBridge { get; set; } = new();
 }

@@ -60,13 +60,13 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "OK: U7 new flow baseline" -ForegroundColor Green
 Invoke-Step "U2 sequence alarm" "test-siem-u2-alarm-e2e.ps1"
 
-Invoke-Step "Purge workflow event queue" "purge-workflow-event-inbound-queue.ps1"
-Invoke-Step "Purge workflow queue" "purge-workflow-execution-queue.ps1"
+Invoke-Step "Purge workflow/alarm MQ queues" "purge-workflow-queues.ps1" @("-Apply")
 
 Invoke-Step "U1 workflow" "test-siem-u1-workflow-e2e.ps1"
 Invoke-Step "U1 linux auth workflow" "test-siem-linux-auth-u1-workflow-e2e.ps1"
 Invoke-Step "U4 workflow" "test-siem-u4-workflow-e2e.ps1"
 Invoke-Step "U1 approval block" "test-siem-u1-approval-block-e2e.ps1"
+Invoke-Step "U1 linux auth approval block" "test-siem-linux-auth-u1-approval-block-e2e.ps1"
 
 if (-not $SkipBenchmarks) {
     Write-Host "`n========== P0 baseline ==========" -ForegroundColor Cyan

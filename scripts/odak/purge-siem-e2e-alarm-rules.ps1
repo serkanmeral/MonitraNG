@@ -12,7 +12,7 @@ $hdr = @{ Authorization = "Bearer $token"; "X-Domain-Name" = $Domain; "Content-T
 $rulesApi = "$Gateway/alarm/api/v1/rules"
 
 $e2eNamePatterns = @(
-    '^(U[1-7]|U1 Linux) (SIEM|WF) E2E\b',
+    '^(U[1-7]|U1 Linux) (SIEM|WF|Block) E2E\b',
     '^crud-e2e-'
 )
 

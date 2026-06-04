@@ -1,7 +1,7 @@
 # DEVAM — SIEM-Hafif Planlama (Kaldığımız Yer)
 
 **Son güncelleme:** 4 Haziran 2026  
-**Durum:** ✅ **SIEM MVP + post-MVP tamam** · B1/B2/B3 ✅ Odak doğrulandı
+**Durum:** ✅ **SIEM MVP + post-MVP tamam** · Linux U1 tam zincir (alarm/workflow/block.ip) ✅
 
 **Handoff (yeni chat):** [HANDOFF.md](./HANDOFF.md)
 
@@ -106,13 +106,15 @@ Kısa vadeli teknik devam (MVP sonrası bakım):
 | 17 | ~~**B3 hazır kural paketi**~~ | ✅ MITRE/ISO · `siem-mvp-v1` |
 | 18 | ~~**A4 özelleştirilebilir dashboard**~~ | ✅ localStorage widget düzeni |
 | 19 | ~~**Linux auth → U1 alarm E2E**~~ | ✅ `test-siem-linux-auth-u1-alarm-e2e.ps1` |
+| 20 | ~~**Linux auth → U1 workflow E2E**~~ | ✅ `test-siem-linux-auth-u1-workflow-e2e.ps1` |
+| 21 | ~~**Backend perf check + hub/MQ fix**~~ | ✅ `cb95426` · `diagnostic-mq-backlog.ps1` |
+| 22 | ~~**Linux auth → U1 approval → block.ip**~~ | ✅ `test-siem-linux-auth-u1-approval-block-e2e.ps1` |
 
 LogAlarm parite → [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md)
 
 **Operasyon notu:** Benchmark veya yoğun ingest sonrası E2E/workflow testleri önce kuyruk temizliği gerektirebilir:
-- `purge-alarm-observation-queue.ps1` — `alarm.observation.inbound`
-- `purge-workflow-event-inbound-queue.ps1` — `workflow.event.inbound` (alarm.updated birikimi)
-- `purge-workflow-execution-queue.ps1` — `workflow.execution`
+- `purge-workflow-queues.ps1 -Apply` — `workflow.execution`, `workflow.event.inbound`, `alarm.observation.inbound` (birleşik)
+- `purge-alarm-observation-queue.ps1` — yalnızca observation (worker restart ile)
 
 `test-siem-e2e-suite.ps1` alarm + workflow purge adımlarını otomatik çalıştırır.
 

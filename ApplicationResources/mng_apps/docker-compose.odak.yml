@@ -109,6 +109,7 @@ services:
       - MngAlarmSettings__MongoDb__ConnectionString=mongodb://admin:admin123@mongo:27017
       - MngAlarmSettings__Engine__ReactorBridge__Enabled=false
       - MngAlarmSettings__Engine__ObservationPrefetch=32
+      - MngAlarmSettings__Engine__UpdatedPublishMinIntervalSeconds=5
 
   mngoperations:
     ports:

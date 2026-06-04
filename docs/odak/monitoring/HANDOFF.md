@@ -8,7 +8,7 @@
 
 ## 1. Tek cümlede durum (4 Haz 2026)
 
-**SIEM-hafif MVP + post-MVP ✅** · Linux auth U1 E2E tamamlandı.
+**SIEM-hafif MVP + post-MVP ✅** · Linux auth U1 tam zincir (alarm → workflow → block.ip) ✅
 
 ---
 
@@ -28,7 +28,7 @@
 | Engine queue_depth under load | ✅ max=107 / gate=4000 |
 | WEF→WEC Engine batch | ✅ `POST /api/SecEvents/wec-batch` · S5 E2E |
 | WEF forwarder şablonu (B2) | ✅ [SIEM_WEF_WEC_FORWARDER.md](./SIEM_WEF_WEC_FORWARDER.md) · Engine batch/retry · Odak deploy |
-| B1 `linux.auth.v1` | ✅ U1 alarm + workflow E2E · `test-siem-linux-auth-u1-*-e2e.ps1` |
+| B1 `linux.auth.v1` | ✅ U1 alarm + workflow + block.ip E2E |
 | B3 hazır kural paketi | ✅ `siem-mvp-v1` · MITRE/ISO · `seed-siem-alarm-rule-pack.ps1` |
 | B1 `firewall.vendor.v1` | ✅ FortiGate pilot · `test-siem-firewall-vendor-ingest.ps1` |
 | Odak sync upload | ✅ `Send-OdakRemoteFile` (SCP → SFTP fallback) · `2091029` |
@@ -41,7 +41,7 @@
 
 ```
 U1: sec_events → observation → correlation → alarm.raised → Workflow → (approval) → block.ip
-U1 (Linux): linux.auth.v1 sshd → login_failed → alarm.raised → Workflow
+U1 (Linux): linux.auth.v1 sshd → login_failed → alarm.raised → Workflow → approval → block.ip
 U4: firewall syslog → sec_events → observation → correlation → alarm.raised → Workflow
 U2: login_failed×N → login_success → sequence alarm
 U5: allowed_flow×N (dstIp/dstPort) → traffic spike alarm
@@ -55,9 +55,8 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 **Benchmark:** `scripts/odak/benchmark-siem-p0-baseline.ps1` · `-Soak` · `-P1` · `benchmark-siem-engine-syslog.ps1`
 
 **Operasyon:** Benchmark/E2E öncesi gerekirse:
-- `purge-alarm-observation-queue.ps1`
-- `purge-workflow-event-inbound-queue.ps1`
-- `purge-workflow-execution-queue.ps1`
+- `purge-workflow-queues.ps1 -Apply` (birleşik workflow + observation)
+- `purge-alarm-observation-queue.ps1` (observation + worker restart)
 
 ---
 
@@ -90,8 +89,10 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | 14 | ~~**Odak sync SFTP fallback**~~ ✅ | `Send-OdakRemoteFile` · `2091029` |
 | **15** | ~~**B1 devamı — `firewall.vendor.v1`**~~ | ✅ FortiGate pilot · U4/U6 alanları · [SIEM_PARSER_PLAN.md](./SIEM_PARSER_PLAN.md) |
 | **16** | ~~**B3 — hazır kural paketi**~~ | ✅ `siem-mvp-v1` · [SIEM_ALARM_RULE_PACK.md](./SIEM_ALARM_RULE_PACK.md) |
-| **17** | ~~**A4 — özelleştirilebilir dashboard**~~ | ✅ Widget düzeni · localStorage |
-| — | Linux auth → U1 E2E | sshd brute-force tam zincir |
+| **18** | ~~**A4 — özelleştirilebilir dashboard**~~ | ✅ Widget düzeni · localStorage |
+| **19** | ~~**Linux auth → U1 alarm/workflow/block.ip**~~ | ✅ tam zincir |
+| **20** | ~~**Perf: hub health + MQ tuning**~~ | ✅ `cb95426` |
+| **21** | ~~**alarm.updated publish throttle**~~ | ✅ `UpdatedPublishMinIntervalSeconds` |
 | — | LogAlarm parite (genel) | [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md) |
 
 ---
@@ -101,8 +102,8 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | Alan | Değer |
 |------|--------|
 | Branch | `main` (origin ile senkron) |
-| Son SIEM commit | `2091029` — Odak sync SCP→SFTP fallback |
-| Önceki SIEM | `d694116` — B2 WEF forwarder · Engine batch/retry · `6c78696` HANDOFF ref |
+| Son SIEM commit | (bu commit) — Linux block.ip E2E · alarm.updated throttle · suite purge |
+| Önceki | `cb95426` — hub health + MQ worker tuning |
 
 ---
 

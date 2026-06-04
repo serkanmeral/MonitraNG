@@ -1,5 +1,7 @@
 using System.Globalization;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using MngAlarm.Application.Configuration;
 using MngAlarm.Application.Contracts;
 using MngAlarm.Application.Observations;
 using MngAlarm.Application.Services;
@@ -19,6 +21,7 @@ public sealed class ObservationProcessor : IObservationProcessor
     private readonly ICorrelationWindowStore _windows;
     private readonly ISequenceStateStore _sequences;
     private readonly IObservationActivityStore _activity;
+    private readonly EngineSettings _engine;
     private readonly ILogger<ObservationProcessor> _logger;
 
     public ObservationProcessor(
@@ -28,6 +31,7 @@ public sealed class ObservationProcessor : IObservationProcessor
         ICorrelationWindowStore windows,
         ISequenceStateStore sequences,
         IObservationActivityStore activity,
+        IOptions<MngAlarmSettings> settings,
         ILogger<ObservationProcessor> logger)
     {
         _rules = rules;
@@ -36,6 +40,7 @@ public sealed class ObservationProcessor : IObservationProcessor
         _windows = windows;
         _sequences = sequences;
         _activity = activity;
+        _engine = settings.Value.Engine;
         _logger = logger;
     }
 
@@ -296,13 +301,26 @@ public sealed class ObservationProcessor : IObservationProcessor
         existing.LastSeenAt = now;
         existing.Count++;
         existing.Context = context;
-        existing.LastPublishedAt = now;
-        await _alarms.UpdateAsync(existing, cancellationToken);
-        await PublishEventAsync(existing, AlarmEventTypes.Updated, context, cancellationToken);
 
-        _logger.LogInformation(
-            "Alarm updated rule={RuleId} type={Type} alarm={AlarmId} key={Key}",
-            rule.Id, rule.Type, existing.Id, logKey);
+        var publishUpdated = ShouldPublishUpdated(existing, now);
+        if (publishUpdated)
+            existing.LastPublishedAt = now;
+
+        await _alarms.UpdateAsync(existing, cancellationToken);
+
+        if (publishUpdated)
+        {
+            await PublishEventAsync(existing, AlarmEventTypes.Updated, context, cancellationToken);
+            _logger.LogInformation(
+                "Alarm updated rule={RuleId} type={Type} alarm={AlarmId} key={Key}",
+                rule.Id, rule.Type, existing.Id, logKey);
+        }
+        else
+        {
+            _logger.LogDebug(
+                "Alarm updated (publish suppressed) rule={RuleId} alarm={AlarmId} intervalSec={Interval}",
+                rule.Id, existing.Id, _engine.UpdatedPublishMinIntervalSeconds);
+        }
 
         return new RuleOutcome(0, 1, 0, [existing.Id]);
     }
@@ -326,6 +344,16 @@ public sealed class ObservationProcessor : IObservationProcessor
             rule.Id, rule.Type, existing.Id, logKey);
 
         return new RuleOutcome(0, 0, 1, [existing.Id]);
+    }
+
+    private bool ShouldPublishUpdated(AlarmDocument existing, DateTime now)
+    {
+        var interval = _engine.UpdatedPublishMinIntervalSeconds;
+        if (interval <= 0)
+            return true;
+        if (!existing.LastPublishedAt.HasValue)
+            return true;
+        return now - existing.LastPublishedAt.Value >= TimeSpan.FromSeconds(interval);
     }
 
     private static bool IsInCooldown(AlarmRuleDocument rule, AlarmDocument existing, DateTime now) =>
