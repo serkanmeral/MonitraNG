@@ -59,6 +59,10 @@ public class AlarmRuleDocument
     [BsonElement("sequenceSteps")]
     public List<AlarmSequenceStep> SequenceSteps { get; set; } = [];
 
+    /// <summary>SIEM paket / MITRE / ISO metadata (B3).</summary>
+    [BsonElement("metadata")]
+    public AlarmRuleMetadata? Metadata { get; set; }
+
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

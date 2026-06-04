@@ -30,6 +30,7 @@ public sealed class AlarmRuleService(IAlarmDomainAccessor domain, IAlarmRuleRepo
                 ? DefaultDedupTemplate(request.Type)
                 : request.DedupKeyTemplate.Trim(),
             SequenceSteps = MapSequenceSteps(request.SequenceSteps),
+            Metadata = MapMetadata(request.Metadata),
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -44,6 +45,29 @@ public sealed class AlarmRuleService(IAlarmDomainAccessor domain, IAlarmRuleRepo
         || string.Equals(type, AlarmRuleTypes.Sequence, StringComparison.Ordinal)
             ? "{ruleId}:{groupKey}"
             : "{ruleId}:{key}";
+
+    private static AlarmRuleMetadata? MapMetadata(AlarmRuleMetadataDto? metadata)
+    {
+        if (metadata == null || string.IsNullOrWhiteSpace(metadata.PackageId))
+            return null;
+
+        return new AlarmRuleMetadata
+        {
+            PackageId = metadata.PackageId.Trim(),
+            PackageVersion = metadata.PackageVersion?.Trim() ?? string.Empty,
+            ScenarioId = metadata.ScenarioId?.Trim() ?? string.Empty,
+            Description = metadata.Description?.Trim() ?? string.Empty,
+            ThreatTacticId = metadata.ThreatTacticId?.Trim() ?? string.Empty,
+            ThreatTacticName = metadata.ThreatTacticName?.Trim() ?? string.Empty,
+            ThreatTechniqueId = metadata.ThreatTechniqueId?.Trim() ?? string.Empty,
+            ThreatTechniqueName = metadata.ThreatTechniqueName?.Trim() ?? string.Empty,
+            ComplianceTags = metadata.ComplianceTags?
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Select(t => t.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList() ?? []
+        };
+    }
 
     private static List<AlarmSequenceStep> MapSequenceSteps(List<AlarmSequenceStepDto>? steps)
     {

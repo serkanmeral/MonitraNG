@@ -260,6 +260,7 @@ public sealed class ObservationProcessor : IObservationProcessor
         string logKey,
         CancellationToken cancellationToken)
     {
+        EnrichContextWithRuleMetadata(context, rule);
         var now = DateTime.UtcNow;
         var alarm = new AlarmDocument
         {
@@ -331,6 +332,26 @@ public sealed class ObservationProcessor : IObservationProcessor
         rule.CooldownMinutes > 0
         && existing.LastPublishedAt.HasValue
         && now - existing.LastPublishedAt.Value < TimeSpan.FromMinutes(rule.CooldownMinutes);
+
+    private static void EnrichContextWithRuleMetadata(Dictionary<string, object?> context, AlarmRuleDocument rule)
+    {
+        var metadata = rule.Metadata;
+        if (metadata == null)
+            return;
+
+        if (!string.IsNullOrWhiteSpace(metadata.ScenarioId))
+            context["scenarioId"] = metadata.ScenarioId;
+        if (!string.IsNullOrWhiteSpace(metadata.PackageId))
+            context["packageId"] = metadata.PackageId;
+        if (!string.IsNullOrWhiteSpace(metadata.ThreatTechniqueId))
+            context["threatTechniqueId"] = metadata.ThreatTechniqueId;
+        if (!string.IsNullOrWhiteSpace(metadata.ThreatTechniqueName))
+            context["threatTechniqueName"] = metadata.ThreatTechniqueName;
+        if (!string.IsNullOrWhiteSpace(metadata.ThreatTacticId))
+            context["threatTacticId"] = metadata.ThreatTacticId;
+        if (metadata.ComplianceTags.Count > 0)
+            context["complianceTags"] = metadata.ComplianceTags;
+    }
 
     private static Dictionary<string, object?> BuildThresholdContext(ObservationEnvelope observation)
     {

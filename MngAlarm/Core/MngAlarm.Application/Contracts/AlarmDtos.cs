@@ -17,6 +17,20 @@ public sealed class CreateAlarmRuleRequest
     public int StalenessMinutes { get; set; }
     public string? DedupKeyTemplate { get; set; }
     public List<AlarmSequenceStepDto>? SequenceSteps { get; set; }
+    public AlarmRuleMetadataDto? Metadata { get; set; }
+}
+
+public sealed class AlarmRuleMetadataDto
+{
+    public string PackageId { get; set; } = string.Empty;
+    public string PackageVersion { get; set; } = string.Empty;
+    public string ScenarioId { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string ThreatTacticId { get; set; } = string.Empty;
+    public string ThreatTacticName { get; set; } = string.Empty;
+    public string ThreatTechniqueId { get; set; } = string.Empty;
+    public string ThreatTechniqueName { get; set; } = string.Empty;
+    public List<string>? ComplianceTags { get; set; }
 }
 
 public sealed class AlarmSequenceStepDto

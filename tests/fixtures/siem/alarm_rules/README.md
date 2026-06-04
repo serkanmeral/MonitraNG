@@ -11,6 +11,12 @@
 | `u1_brute_force_login_failed.json` | U1 — brute force | `correlation` | ✅ Faz 2'de canlı (motor hazır) |
 | `u4_firewall_deny_spike.json` | U4 — deny artışı | `correlation` | ✅ Faz 2'de canlı |
 | `u2_fail_then_success_login.json` | U2 — fail→success | `sequence` | ✅ Faz 2+ (MngAlarm `sequence` tipi) |
+| `u3_privileged_outside_window.json` | U3 — bakım dışı privileged | `correlation` | ✅ |
+| `u5_firewall_traffic_spike.json` | U5 — trafik sıçraması | `correlation` | ✅ |
+| `u6_firewall_rule_change.json` | U6 — kural değişikliği | `correlation` | ✅ |
+| `u7_new_flow.json` | U7 — yeni akış | `correlation` | ✅ |
+
+**B3 hazır paket:** [packages/siem-mvp-v1/manifest.json](./packages/siem-mvp-v1/manifest.json) · `seed-siem-alarm-rule-pack.ps1` · [SIEM_ALARM_RULE_PACK.md](../../../docs/odak/monitoring/SIEM_ALARM_RULE_PACK.md)
 
 ## Önkoşul: `sec_events` → observation
 

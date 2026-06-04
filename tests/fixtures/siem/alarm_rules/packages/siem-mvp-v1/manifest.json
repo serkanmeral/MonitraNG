@@ -1,0 +1,92 @@
+{
+  "packageId": "siem-mvp-v1",
+  "packageVersion": "1.0.0",
+  "name": "SIEM MVP — MITRE / ISO 27001",
+  "description": "U1–U7 SIEM korrelasyon ve sequence kuralları; pilot müşteri için varsayılan eşikler.",
+  "rules": [
+    {
+      "scenarioId": "U1",
+      "sourceFile": "u1_brute_force_login_failed.json",
+      "metadata": {
+        "description": "Aynı kullanıcı/kaynak IP üzerinde kısa sürede çok sayıda başarısız oturum açma.",
+        "threatTacticId": "TA0006",
+        "threatTacticName": "Credential Access",
+        "threatTechniqueId": "T1110.001",
+        "threatTechniqueName": "Password Guessing",
+        "complianceTags": ["ISO27001:A.8.5", "ISO27001:A.12.4"]
+      }
+    },
+    {
+      "scenarioId": "U2",
+      "sourceFile": "u2_fail_then_success_login.json",
+      "metadata": {
+        "description": "Brute-force denemelerinden sonra başarılı oturum — olası hesap ele geçirme.",
+        "threatTacticId": "TA0001",
+        "threatTacticName": "Initial Access",
+        "threatTechniqueId": "T1078",
+        "threatTechniqueName": "Valid Accounts",
+        "complianceTags": ["ISO27001:A.8.5", "ISO27001:A.5.15"]
+      }
+    },
+    {
+      "scenarioId": "U3",
+      "sourceFile": "u3_privileged_outside_window.json",
+      "metadata": {
+        "description": "Bakım penceresi dışında ayrıcalıklı (RDP vb.) oturum açma.",
+        "threatTacticId": "TA0004",
+        "threatTacticName": "Privilege Escalation",
+        "threatTechniqueId": "T1078.002",
+        "threatTechniqueName": "Domain Accounts",
+        "complianceTags": ["ISO27001:A.8.2", "ISO27001:A.8.5", "ISO27001:A.12.4"]
+      }
+    },
+    {
+      "scenarioId": "U4",
+      "sourceFile": "u4_firewall_deny_spike.json",
+      "metadata": {
+        "description": "Hedef IP'ye yönelik firewall deny olaylarında ani artış.",
+        "threatTacticId": "TA0007",
+        "threatTacticName": "Discovery",
+        "threatTechniqueId": "T1046",
+        "threatTechniqueName": "Network Service Discovery",
+        "complianceTags": ["ISO27001:A.8.20", "ISO27001:A.12.4"]
+      }
+    },
+    {
+      "scenarioId": "U5",
+      "sourceFile": "u5_firewall_traffic_spike.json",
+      "metadata": {
+        "description": "Belirli hedef IP/port'a izin verilen trafikte ani sıçrama.",
+        "threatTacticId": "TA0010",
+        "threatTacticName": "Exfiltration",
+        "threatTechniqueId": "T1048",
+        "threatTechniqueName": "Exfiltration Over Alternative Protocol",
+        "complianceTags": ["ISO27001:A.8.20", "ISO27001:A.12.4"]
+      }
+    },
+    {
+      "scenarioId": "U6",
+      "sourceFile": "u6_firewall_rule_change.json",
+      "metadata": {
+        "description": "Firewall kural veya politika değişikliği (config audit).",
+        "threatTacticId": "TA0005",
+        "threatTacticName": "Defense Evasion",
+        "threatTechniqueId": "T1562.004",
+        "threatTechniqueName": "Disable or Modify System Firewall",
+        "complianceTags": ["ISO27001:A.8.20", "ISO27001:A.8.32", "ISO27001:A.12.4"]
+      }
+    },
+    {
+      "scenarioId": "U7",
+      "sourceFile": "u7_new_flow.json",
+      "metadata": {
+        "description": "Baseline öğrenildikten sonra görülen yeni kaynak→hedef ağ akışı.",
+        "threatTacticId": "TA0008",
+        "threatTacticName": "Lateral Movement",
+        "threatTechniqueId": "T1021",
+        "threatTechniqueName": "Remote Services",
+        "complianceTags": ["ISO27001:A.8.20", "ISO27001:A.12.4"]
+      }
+    }
+  ]
+}

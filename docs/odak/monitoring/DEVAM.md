@@ -1,7 +1,7 @@
 # DEVAM — SIEM-Hafif Planlama (Kaldığımız Yer)
 
 **Son güncelleme:** 4 Haziran 2026  
-**Durum:** ✅ **SIEM MVP + post-MVP tamam** · B1 `firewall.vendor.v1` (FortiGate) ✅ Odak doğrulandı
+**Durum:** ✅ **SIEM MVP + post-MVP tamam** · B1/B2/B3 ✅ Odak doğrulandı
 
 **Handoff (yeni chat):** [HANDOFF.md](./HANDOFF.md)
 
@@ -9,7 +9,7 @@
 
 ## 1. Tek cümlede durum
 
-**SIEM MVP (U1–U7) + dashboard + A3 + B1/B2 ✅.** `firewall.vendor.v1` (FortiGate) Odak'ta doğrulandı. **Sıradaki:** B3 veya A4.
+**SIEM MVP (U1–U7) + B1/B2/B3 ✅.** **Sıradaki:** A4 özelleştirilebilir dashboard veya Linux auth U1 E2E.
 
 ---
 
@@ -44,7 +44,8 @@
 | **SIEM dashboard MVP** | ✅ `/apps/siem-center` · [SIEM_DASHBOARD.md](./SIEM_DASHBOARD.md) |
 | **U3 bakım penceresi (appsettings)** | ✅ `SecEventMaintenanceWindow:*` |
 | **B1 `linux.auth.v1`** | ✅ `test-siem-linux-auth-ingest.ps1` |
-| **B1 `firewall.vendor.v1` (FortiGate)** | ✅ `test-siem-firewall-vendor-ingest.ps1` · Odak deploy 4 Haz |
+| **B1 `firewall.vendor.v1` (FortiGate)** | ✅ `test-siem-firewall-vendor-ingest.ps1` |
+| **B3 hazır kural paketi (`siem-mvp-v1`)** | ✅ `seed-siem-alarm-rule-pack.ps1` · [SIEM_ALARM_RULE_PACK.md](./SIEM_ALARM_RULE_PACK.md) |
 | **Odak sync SFTP fallback** | ✅ `Send-OdakRemoteFile` · commit `2091029` |
 
 ---
@@ -102,7 +103,7 @@ Kısa vadeli teknik devam (MVP sonrası bakım):
 | # | İş | Not |
 |---|-----|-----|
 | 16 | ~~**`firewall.vendor.v1` parser**~~ | ✅ FortiGate pilot · `test-siem-firewall-vendor-ingest.ps1` |
-| 17 | **B3 hazır kural paketi** | MITRE / ISO |
+| 17 | ~~**B3 hazır kural paketi**~~ | ✅ MITRE/ISO · `siem-mvp-v1` |
 | 18 | **A4 özelleştirilebilir dashboard** | Widget düzeni |
 | 19 | **Linux auth → U1 alarm E2E** | sshd brute-force tam zincir |
 

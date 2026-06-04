@@ -8,7 +8,7 @@
 
 ## 1. Tek cümlede durum (4 Haz 2026)
 
-**SIEM-hafif MVP + post-MVP ✅** · **B1 `firewall.vendor.v1` (FortiGate)** Odak deploy + E2E doğrulandı. **Sıradaki:** B3 hazır kural paketi veya A4 dashboard.
+**SIEM-hafif MVP + post-MVP ✅** · **B3 `siem-mvp-v1`** (MITRE/ISO kural paketi) Odak'ta doğrulandı. **Sıradaki:** A4 özelleştirilebilir dashboard.
 
 ---
 
@@ -29,6 +29,7 @@
 | WEF→WEC Engine batch | ✅ `POST /api/SecEvents/wec-batch` · S5 E2E |
 | WEF forwarder şablonu (B2) | ✅ [SIEM_WEF_WEC_FORWARDER.md](./SIEM_WEF_WEC_FORWARDER.md) · Engine batch/retry · Odak deploy |
 | B1 `linux.auth.v1` | ✅ sshd/sudo · `test-siem-linux-auth-ingest.ps1` |
+| B3 hazır kural paketi | ✅ `siem-mvp-v1` · MITRE/ISO · `seed-siem-alarm-rule-pack.ps1` |
 | B1 `firewall.vendor.v1` | ✅ FortiGate pilot · `test-siem-firewall-vendor-ingest.ps1` |
 | Odak sync upload | ✅ `Send-OdakRemoteFile` (SCP → SFTP fallback) · `2091029` |
 | Güvenlik olay arama UI | ✅ `/apps/siem-center/events` · menü: **Güvenlik Merkezi** |
@@ -87,7 +88,7 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | 13 | ~~**B2 WEF forwarder şablonu**~~ ✅ | GPO/WEC ops · NxLog · PS forwarder · Engine batch/retry |
 | 14 | ~~**Odak sync SFTP fallback**~~ ✅ | `Send-OdakRemoteFile` · `2091029` |
 | **15** | ~~**B1 devamı — `firewall.vendor.v1`**~~ | ✅ FortiGate pilot · U4/U6 alanları · [SIEM_PARSER_PLAN.md](./SIEM_PARSER_PLAN.md) |
-| **16** | **B3 — hazır kural paketi** | MITRE / ISO · P2 |
+| **16** | ~~**B3 — hazır kural paketi**~~ | ✅ `siem-mvp-v1` · [SIEM_ALARM_RULE_PACK.md](./SIEM_ALARM_RULE_PACK.md) |
 | **17** | **A4 — özelleştirilebilir dashboard** | Widget düzeni · [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md) |
 | — | LogAlarm parite (genel) | [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md) |
 
