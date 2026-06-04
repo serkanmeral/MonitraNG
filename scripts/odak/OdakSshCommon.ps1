@@ -205,3 +205,87 @@ function Get-OdakSshCredential {
     $pass = Read-Host "SSH password for ${User}@${Server}" -AsSecureString
     return New-Object System.Management.Automation.PSCredential($User, $pass)
 }
+
+function Send-OdakRemoteFile {
+    <#
+    .SYNOPSIS
+    Odak sunucusuna dosya yukler. SCP basarisiz olursa SFTP fallback kullanir.
+    .DESCRIPTION
+    Bazi Windows ortamlarinda Set-SCPItem "No such host is known" verir; SSH/SFTP calisir.
+    Mevcut uzak dosya varsa once silinir (SFTP "File already exists" onlemi).
+    #>
+    param(
+        [Parameter(Mandatory)]
+        [string]$ComputerName,
+        [Parameter(Mandatory)]
+        [System.Management.Automation.PSCredential]$Credential,
+        [Parameter(Mandatory)]
+        [string]$LocalPath,
+        [Parameter(Mandatory)]
+        [string]$RemoteDestination,
+        [switch]$AcceptKey
+    )
+
+    if (-not (Test-Path -LiteralPath $LocalPath)) {
+        throw "Local file not found: $LocalPath"
+    }
+
+    $localName = [IO.Path]::GetFileName($LocalPath)
+    $destNorm = ($RemoteDestination -replace '\\', '/').Trim()
+
+    if ($destNorm.EndsWith('/')) {
+        $remoteFullPath = "$destNorm$localName"
+        $sftpDestDir = $destNorm.TrimEnd('/')
+    } else {
+        $remoteFullPath = $destNorm
+        $lastSlash = $destNorm.LastIndexOf('/')
+        if ($lastSlash -lt 0) {
+            $sftpDestDir = "."
+        } else {
+            $sftpDestDir = $destNorm.Substring(0, $lastSlash)
+            if ([string]::IsNullOrEmpty($sftpDestDir)) { $sftpDestDir = "/" }
+        }
+    }
+
+    $escapedRemote = $remoteFullPath.Replace("'", "'\\''")
+    try {
+        $sshArgs = @{
+            ComputerName = $ComputerName
+            Credential   = $Credential
+        }
+        if ($AcceptKey) { $sshArgs.AcceptKey = $true }
+        $session = New-SSHSession @sshArgs
+        Invoke-SSHCommand -SessionId $session.SessionId -Command "rm -f '$escapedRemote'" -TimeOut 30 | Out-Null
+        Remove-SSHSession -SessionId $session.SessionId | Out-Null
+    } catch {
+        Write-Host "Remote rm uyarisi (devam): $($_.Exception.Message)" -ForegroundColor DarkGray
+    }
+
+    try {
+        $scpArgs = @{
+            ComputerName = $ComputerName
+            Credential   = $Credential
+            Path         = $LocalPath
+            Destination  = $RemoteDestination
+        }
+        if ($AcceptKey) { $scpArgs.AcceptKey = $true }
+        Set-SCPItem @scpArgs
+        Write-Host "Upload OK (SCP): $localName -> $remoteFullPath" -ForegroundColor DarkGray
+        return
+    } catch {
+        Write-Host "SCP basarisiz ($($_.Exception.Message)); SFTP deneniyor..." -ForegroundColor Yellow
+    }
+
+    $sftpArgs = @{
+        ComputerName = $ComputerName
+        Credential   = $Credential
+    }
+    if ($AcceptKey) { $sftpArgs.AcceptKey = $true }
+    $sftp = New-SFTPSession @sftpArgs
+    try {
+        Set-SFTPItem -SessionId $sftp.SessionId -Path $LocalPath -Destination $sftpDestDir
+        Write-Host "Upload OK (SFTP): $localName -> $sftpDestDir/" -ForegroundColor Green
+    } finally {
+        Remove-SFTPSession -SessionId $sftp.SessionId | Out-Null
+    }
+}

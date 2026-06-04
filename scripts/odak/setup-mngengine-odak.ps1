@@ -36,8 +36,8 @@ function Ensure-OdakReactorRsaKeys {
     $rsa.Dispose()
 
     Import-Module Posh-SSH -Force
-    Set-SCPItem -ComputerName $Server -Credential $Credential -Path $pubLocal -Destination "/home/odak/" -AcceptKey
-    Set-SCPItem -ComputerName $Server -Credential $Credential -Path $privLocal -Destination "/home/odak/" -AcceptKey
+    Send-OdakRemoteFile -ComputerName $Server -Credential $Credential -LocalPath $pubLocal -RemoteDestination "/home/odak/" -AcceptKey
+    Send-OdakRemoteFile -ComputerName $Server -Credential $Credential -LocalPath $privLocal -RemoteDestination "/home/odak/" -AcceptKey
     $remotePub = "/home/odak/$(Split-Path $pubLocal -Leaf)"
     $remotePriv = "/home/odak/$(Split-Path $privLocal -Leaf)"
 

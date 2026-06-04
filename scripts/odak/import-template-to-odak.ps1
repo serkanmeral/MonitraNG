@@ -25,6 +25,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 Import-Module Posh-SSH -Force -ErrorAction Stop
+. (Join-Path $PSScriptRoot "OdakSshCommon.ps1")
 
 if (-not (Test-Path $TemplateJsonPath)) {
     throw "JSON dosyası bulunamadı: $TemplateJsonPath"
@@ -56,7 +57,7 @@ $session = New-SSHSession -ComputerName $Server -Credential $cred -AcceptKey
 try {
     Invoke-SSHCommand -SessionId $session.SessionId -Command "mkdir -p '$RemoteDir'" | Out-Null
 
-    Set-SCPItem -ComputerName $Server -Credential $cred -Path $TemplateJsonPath -Destination "$RemoteDir/$fileName" -AcceptKey
+    Send-OdakRemoteFile -ComputerName $Server -Credential $cred -LocalPath $TemplateJsonPath -RemoteDestination "$RemoteDir/$fileName" -AcceptKey
 
     $remoteJson = "$RemoteDir/$fileName"
     $escapedDesc = $Description -replace "'", "''"

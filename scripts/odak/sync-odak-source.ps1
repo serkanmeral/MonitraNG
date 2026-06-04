@@ -1,4 +1,5 @@
 # MonitraNG -> Odak sunucu kaynak senkronu (git push/pull gerektirmez)
+# Upload: Send-OdakRemoteFile (SCP; basarisiz olursa SFTP fallback — bkz. OdakSshCommon.ps1)
 # Kullanım (repo kökünden):
 #   .\scripts\odak\sync-odak-source.ps1
 #   .\scripts\odak\sync-odak-source.ps1 -Paths MngKeeper,Mng.Ui,ApplicationResources/mng_apps
@@ -61,7 +62,7 @@ if (-not $MngCommonOnly) {
     if ($LASTEXITCODE -ne 0) { throw "tar failed" }
 
     Write-Host "Paket: $TarPath ($((Get-Item $TarPath).Length / 1MB) MB)"
-    Set-SCPItem -ComputerName $Server -Credential $cred -Path $TarPath -Destination "/home/odak/" -AcceptKey
+    Send-OdakRemoteFile -ComputerName $Server -Credential $cred -LocalPath $TarPath -RemoteDestination "/home/odak/" -AcceptKey
 
     $remoteExtract = ConvertTo-UnixShell @"
 set -e
@@ -88,7 +89,7 @@ if ($IncludeMngCommon) {
     $commonComposeOdak = if (Test-OdakProductionServer -Server $Server) { "docker-compose.odak.prod.yml" } else { "docker-compose.odak.yml" }
     & tar -cf $CommonTar --exclude=data/.npm --exclude=data/*.db docker-compose.yml $commonComposeOdak .env.odak.prod.example .env.odak.example env.example mongo-init mongo-express mosquitto nginx scalar-config 2>$null
     Pop-Location
-    Set-SCPItem -ComputerName $Server -Credential $cred -Path $CommonTar -Destination "/home/odak/" -AcceptKey
+    Send-OdakRemoteFile -ComputerName $Server -Credential $cred -LocalPath $CommonTar -RemoteDestination "/home/odak/" -AcceptKey
     $session = New-SSHSession -ComputerName $Server -Credential $cred -AcceptKey
     $commonExtract = ConvertTo-UnixShell "mkdir -p '$RemoteMngCommon' && tar -xf /home/odak/mng_common_odak_sync.tar -C '$RemoteMngCommon' && ls -la '$RemoteMngCommon/docker-compose.odak.prod.yml' 2>/dev/null || ls -la '$RemoteMngCommon/docker-compose.odak.yml' 2>/dev/null || true"
     $cr = Invoke-SSHCommand -SessionId $session.SessionId -Command $commonExtract -TimeOut 120
