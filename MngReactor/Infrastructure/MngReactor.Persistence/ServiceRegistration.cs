@@ -43,7 +43,7 @@ namespace MngReactor.Persistence
             services.AddScoped<IDataGatewayClient, DataGatewayClient>();
             services.AddScoped<IMonMetricsRepository, MonMetricsRepository>();
             services.AddScoped<IIngestProcessing, IngestProcessing>();
-            services.AddScoped<ISecEventIngestProcessing, SecEventIngestProcessingPlaceholder>();
+            services.AddScoped<ISecEventIngestProcessing, SecEventIngestProcessing>();
             services.AddScoped<ISecEventsRepository, SecEventsRepository>();
             services.AddSingleton<WindowsSecurityParser>();
             services.AddSingleton<FirewallGenericSyslogParser>();

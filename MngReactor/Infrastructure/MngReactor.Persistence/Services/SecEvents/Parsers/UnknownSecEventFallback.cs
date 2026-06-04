@@ -3,7 +3,7 @@ using MngReactor.Application.Models.SecEvents;
 
 namespace MngReactor.Persistence.Services.SecEvents.Parsers;
 
-/// <summary>Parse başarısız / eşleşmeyen ham olay — belge yazımı PR-4'te korunur.</summary>
+/// <summary>Parse başarısız / eşleşmeyen ham olay — orchestrator catch ile de kullanılır.</summary>
 public sealed class UnknownSecEventFallback : ISecEventParser
 {
     public const string ParserIdValue = "unknown.fallback.v1";
