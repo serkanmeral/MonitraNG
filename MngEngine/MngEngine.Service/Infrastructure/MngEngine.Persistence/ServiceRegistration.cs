@@ -28,6 +28,7 @@ namespace MngEngine.Persistence
             services.Configure<QueueOptions>(configuration.GetSection(QueueOptions.SectionName));
             services.Configure<EngineStatusJobOptions>(configuration.GetSection(EngineStatusJobOptions.SectionName));
             services.Configure<SecEventFixtureOptions>(configuration.GetSection(SecEventFixtureOptions.SectionName));
+            services.Configure<SecEventQueueOptions>(configuration.GetSection(SecEventQueueOptions.SectionName));
             services.AddSingleton<IConfigService, ConfigService>();
             services.AddSingleton<IEngineConfigProvider, EngineConfigProvider>();
             services.AddSingleton<IJobRescheduleService, JobRescheduleService>();
@@ -36,6 +37,11 @@ namespace MngEngine.Persistence
             services.AddSingleton<IAssetService, AssetService>();
             services.AddSingleton<IMetricBatchQueue, MetricBatchQueue>();
             services.AddSingleton<ISecEventFixtureReplay, SecEventFixtureReplayService>();
+            services.AddSingleton<ISecEventBatchQueue, SecEventBatchQueue>();
+            services.AddSingleton<ISecEventSendProcessing, SecEventSendProcessing>();
+            services.AddSingleton<SecEventSyslogItemBuilder>();
+            services.AddSingleton<SecEventSendCoordinator>();
+            services.AddHostedService<SyslogUdpListenerService>();
             services.AddSingleton<MqttSyncTriggerService>();
 
             #region Quartz
@@ -47,17 +53,21 @@ namespace MngEngine.Persistence
             services.AddSingleton<SendJob>();
             services.AddSingleton<ConfigSyncJob>();
             services.AddSingleton<EngineStatusJob>();
+            services.AddSingleton<SecEventSendJob>();
 
             services.AddSingleton<IEnumerable<JobSchedule>>(sp =>
             {
                 var config = sp.GetRequiredService<IConfiguration>();
                 var statusCron = config.GetValue<string>("MngEngine:EngineStatusJob:CronExpression") ?? "0 */2 * * * ?";
+                var secEventSecs = config.GetValue("MngEngine:SecEventQueue:SendIntervalSeconds", 30);
+                if (secEventSecs < 5) secEventSecs = 5;
                 return new[]
                 {
                     new JobSchedule(typeof(CollectorJob), "0/10 * * * * ?"),
-                    new JobSchedule(typeof(SendJob), "0 */2 * * * ?"), // Her 2 dakikada
-                    new JobSchedule(typeof(ConfigSyncJob), "0 */10 * * * ?"), // Her 10 dakikada
-                    new JobSchedule(typeof(EngineStatusJob), statusCron) // Status heartbeat – appsettings / env ile
+                    new JobSchedule(typeof(SendJob), "0 */2 * * * ?"),
+                    new JobSchedule(typeof(ConfigSyncJob), "0 */10 * * * ?"),
+                    new JobSchedule(typeof(EngineStatusJob), statusCron),
+                    new JobSchedule(typeof(SecEventSendJob), $"0/{secEventSecs} * * * * ?")
                 };
             });
 

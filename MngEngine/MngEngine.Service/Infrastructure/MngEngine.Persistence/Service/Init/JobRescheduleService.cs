@@ -1,6 +1,9 @@
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using MngEngine.Application.Features.EngineConfig;
 using MngEngine.Application.Interfaces;
+using MngEngine.Persistence.Options;
 using MngEngine.Persistence.Service.HostedService;
 
 namespace MngEngine.Persistence.Service.Init;
@@ -13,15 +16,18 @@ public class JobRescheduleService : IJobRescheduleService
     private readonly QuartzHostedService _quartzHostedService;
     private readonly IEngineConfigProvider _configProvider;
     private readonly IMemoryCache _cache;
+    private readonly SecEventQueueOptions _secEventQueueOptions;
 
     public JobRescheduleService(
         QuartzHostedService quartzHostedService,
         IEngineConfigProvider configProvider,
-        IMemoryCache cache)
+        IMemoryCache cache,
+        IOptions<SecEventQueueOptions> secEventQueueOptions)
     {
         _quartzHostedService = quartzHostedService;
         _configProvider = configProvider;
         _cache = cache;
+        _secEventQueueOptions = secEventQueueOptions.Value;
     }
 
     public async Task RescheduleJobsAsync(CancellationToken cancellationToken = default)
@@ -45,6 +51,13 @@ public class JobRescheduleService : IJobRescheduleService
         await _quartzHostedService.RescheduleJobAsync(
             "MngEngine.Persistence.Jobs.ConfigSyncJob",
             $"0 */{syncMins} * * * ?",
+            cancellationToken);
+
+        var secEventSecs = _secEventQueueOptions.SendIntervalSeconds;
+        if (secEventSecs < 5) secEventSecs = 5;
+        await _quartzHostedService.RescheduleJobAsync(
+            "MngEngine.Persistence.Jobs.SecEventSendJob",
+            $"0/{secEventSecs} * * * * ?",
             cancellationToken);
     }
 

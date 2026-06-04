@@ -8,10 +8,47 @@ namespace MngEngine.Api.Controllers;
 public sealed class SecEventsController : ControllerBase
 {
     private readonly ISecEventFixtureReplay _fixtureReplay;
+    private readonly ISecEventBatchQueue _queue;
+    private readonly ISecEventSendProcessing _sendProcessing;
 
-    public SecEventsController(ISecEventFixtureReplay fixtureReplay)
+    public SecEventsController(
+        ISecEventFixtureReplay fixtureReplay,
+        ISecEventBatchQueue queue,
+        ISecEventSendProcessing sendProcessing)
     {
         _fixtureReplay = fixtureReplay;
+        _queue = queue;
+        _sendProcessing = sendProcessing;
+    }
+
+    /// <summary>Syslog kuyruk özeti (tüketmeden).</summary>
+    [HttpGet("queue")]
+    public IActionResult GetQueue() =>
+        Ok(new { count = _queue.Count });
+
+    /// <summary>Kuyruktaki öğeleri hemen Reactor'a gönderir.</summary>
+    [HttpPost("flush")]
+    public async Task<IActionResult> FlushQueue(CancellationToken cancellationToken)
+    {
+        var result = await _sendProcessing.FlushAsync(cancellationToken);
+        if (!result.Success)
+        {
+            return BadRequest(new
+            {
+                error = "sec_event_flush_failed",
+                message = result.ErrorMessage,
+                result.Accepted,
+                result.Rejected,
+                result.Published
+            });
+        }
+
+        return Ok(new
+        {
+            accepted = result.Accepted,
+            rejected = result.Rejected,
+            published = result.Published
+        });
     }
 
     /// <summary>
