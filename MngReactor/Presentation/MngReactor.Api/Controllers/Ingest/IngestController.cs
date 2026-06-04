@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MngReactor.Application.Features.Commands.Ingest;
+using MngReactor.Application.Models.SecEvents;
 
 namespace MngReactor.Api.Controllers.Ingest;
 
@@ -37,6 +38,37 @@ public class IngestController : ControllerBase
             return BadRequest(new { error = "batches_required", message = "At least one batch is required" });
 
         var response = await _mediator.Send(new IngestMetricsCommand(request, domain, accessToken), cancellationToken);
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Engine'den güvenlik olayı batch'lerini alır. MongoDB sec_events'e yazar, RabbitMQ sec_events.created publish eder.
+    /// </summary>
+    [HttpPost("sec-events")]
+    [ProducesResponseType(typeof(SecEventIngestResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<SecEventIngestResponse>> IngestSecEvents(
+        [FromBody] SecEventIngestRequest request,
+        CancellationToken cancellationToken)
+    {
+        var (domain, accessToken) = await GetDomainAndTokenAsync();
+        if (string.IsNullOrEmpty(domain))
+            return Unauthorized();
+
+        if (request?.Items == null || request.Items.Count == 0)
+            return BadRequest(new { error = "items_required", message = "At least one item is required" });
+
+        if (request.Items.Count > SecEventIngestLimits.MaxItemsPerRequest)
+        {
+            return BadRequest(new
+            {
+                error = "batch_too_large",
+                message = $"Batch exceeds max items ({SecEventIngestLimits.MaxItemsPerRequest})."
+            });
+        }
+
+        var response = await _mediator.Send(new SecEventIngestCommand(request, domain, accessToken), cancellationToken);
         return Ok(response);
     }
 

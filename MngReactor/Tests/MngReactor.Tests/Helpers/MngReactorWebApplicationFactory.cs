@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MngReactor.Application.Abstractions.Data;
 using MngReactor.Application.Abstractions.Ingest;
+using MngReactor.Application.Abstractions.SecEvents;
 using MngReactor.Domain.Interfaces;
 
 namespace MngReactor.Tests.Helpers;
@@ -53,6 +54,11 @@ public class MngReactorWebApplicationFactory : WebApplicationFactory<Program>
             foreach (var d in metricsRepoDescriptors)
                 services.Remove(d);
             services.AddScoped<IMonMetricsRepository, MockMonMetricsRepository>();
+
+            var secEventsRepoDescriptors = services.Where(d => d.ServiceType == typeof(ISecEventsRepository)).ToList();
+            foreach (var d in secEventsRepoDescriptors)
+                services.Remove(d);
+            services.AddScoped<ISecEventsRepository, MockSecEventsRepository>();
 
             var mqttDescriptors = services.Where(d => d.ServiceType == typeof(IMqttService)).ToList();
             foreach (var d in mqttDescriptors)

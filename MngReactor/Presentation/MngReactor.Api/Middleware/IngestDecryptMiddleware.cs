@@ -22,7 +22,7 @@ public class IngestDecryptMiddleware
 
     public async Task InvokeAsync(HttpContext context, ICryptProcessing cryptProcessing)
     {
-        if (!IsIngestMetricsPost(context))
+        if (!IsIngestDecryptPost(context))
         {
             await _next(context);
             return;
@@ -70,11 +70,16 @@ public class IngestDecryptMiddleware
         }
     }
 
-    private static bool IsIngestMetricsPost(HttpContext context)
+    private static bool IsIngestDecryptPost(HttpContext context)
     {
         var path = context.Request.Path.Value ?? "";
-        return context.Request.Method == HttpMethods.Post
-            && path.Contains("ingest", StringComparison.OrdinalIgnoreCase)
-            && path.EndsWith("/metrics", StringComparison.OrdinalIgnoreCase);
+        if (context.Request.Method != HttpMethods.Post
+            || !path.Contains("ingest", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return path.EndsWith("/metrics", StringComparison.OrdinalIgnoreCase)
+            || path.EndsWith("/sec-events", StringComparison.OrdinalIgnoreCase);
     }
 }

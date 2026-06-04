@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MngReactor.Application.Abstractions.Crypt;
 using MngReactor.Application.Abstractions.Data;
+using MngReactor.Application.Abstractions.SecEvents;
 using MngReactor.Domain.Interfaces;
 
 namespace MngReactor.Tests.Helpers;
@@ -55,6 +56,11 @@ public class MngReactorEncryptionTestFactory : WebApplicationFactory<Program>
             foreach (var d in cryptDescriptors)
                 services.Remove(d);
             services.AddScoped<ICryptProcessing, MockCryptProcessing>();
+
+            var secEventsRepoDescriptors = services.Where(d => d.ServiceType == typeof(ISecEventsRepository)).ToList();
+            foreach (var d in secEventsRepoDescriptors)
+                services.Remove(d);
+            services.AddScoped<ISecEventsRepository, MockSecEventsRepository>();
 
             var mqttDescriptors = services.Where(d => d.ServiceType == typeof(IMqttService)).ToList();
             foreach (var d in mqttDescriptors)
