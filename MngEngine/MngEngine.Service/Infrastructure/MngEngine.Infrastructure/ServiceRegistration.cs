@@ -15,6 +15,7 @@ namespace MngEngine.Infrastructure
             services.AddSingleton<IRestContext, RestContext>();
             services.AddSingleton<IAccessTokenProvider, AccessTokenProvider>();
             services.AddSingleton<IIngestClient, IngestClient>();
+            services.AddSingleton<ISecEventIngestClient, SecEventIngestClient>();
             services.AddSingleton<IConfigSyncClient, ConfigSyncClient>();
             services.AddSingleton<IEngineStatusClient, EngineStatusClient>();
             services.AddSingleton<IMqttEngineSubscriber, MqttEngineSubscriber>();

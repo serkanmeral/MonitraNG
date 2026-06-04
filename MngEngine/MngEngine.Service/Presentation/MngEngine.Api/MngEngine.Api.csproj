@@ -23,6 +23,7 @@
     <None Update="privateKey.pem" Condition="Exists('privateKey.pem')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <Content Include="..\..\..\..\tests\fixtures\siem\**\*" Link="fixtures\siem\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

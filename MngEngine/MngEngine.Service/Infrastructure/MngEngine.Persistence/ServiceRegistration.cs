@@ -14,6 +14,7 @@ using MngEngine.Persistence.Service.Config;
 using MngEngine.Persistence.Service.Crypt;
 using MngEngine.Persistence.Service.HostedService;
 using MngEngine.Persistence.Service.Init;
+using MngEngine.Persistence.Service.SecEvents;
 using Quartz;
 using Quartz.Impl;
 using Quartz.Spi;
@@ -26,6 +27,7 @@ namespace MngEngine.Persistence
         {
             services.Configure<QueueOptions>(configuration.GetSection(QueueOptions.SectionName));
             services.Configure<EngineStatusJobOptions>(configuration.GetSection(EngineStatusJobOptions.SectionName));
+            services.Configure<SecEventFixtureOptions>(configuration.GetSection(SecEventFixtureOptions.SectionName));
             services.AddSingleton<IConfigService, ConfigService>();
             services.AddSingleton<IEngineConfigProvider, EngineConfigProvider>();
             services.AddSingleton<IJobRescheduleService, JobRescheduleService>();
@@ -33,6 +35,7 @@ namespace MngEngine.Persistence
             services.AddSingleton<ICryptProcessing, CryptProcessing>();
             services.AddSingleton<IAssetService, AssetService>();
             services.AddSingleton<IMetricBatchQueue, MetricBatchQueue>();
+            services.AddSingleton<ISecEventFixtureReplay, SecEventFixtureReplayService>();
             services.AddSingleton<MqttSyncTriggerService>();
 
             #region Quartz
