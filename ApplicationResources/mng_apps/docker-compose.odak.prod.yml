@@ -1,0 +1,131 @@
+# Odak PRODUCTION (192.168.20.8) — yalnizca production sunucuda kullanilir
+# Test sunucu (20.20) icin docker-compose.odak.yml kullanilir; bu dosya oraya deploy edilmez.
+# On kosul: ayni host'ta mng_common (docker-compose.odak.prod.yml) ayakta
+#   docker compose -f docker-compose.production.yml -f docker-compose.odak.prod.yml --env-file .env up -d --build
+# .env: cp .env.odak.prod.example .env (test .env KOPYALANMAZ)
+
+services:
+  mnggateway:
+    ports:
+      - "5040:5000"
+    environment:
+      - MngGatewaySettings__Server__Scheme=http
+      - MngGatewaySettings__OpenApiServerPath=${OPENAPI_SERVER_PATH:-http://192.168.20.8:5040}
+      - MngGatewaySettings__Jwt__Authority=http://keycloak:8080/keycloak/realms/monitra
+      - MngGatewaySettings__Jwt__RequireHttpsMetadata=false
+      - MngGatewaySettings__Cors__AllowedOrigins__0=${CORS_ALLOWED_ORIGIN_1:-http://192.168.20.8:3000}
+
+  mngkeeper:
+    ports:
+      - "5001:5001"
+    environment:
+      - MngKeeperSettings__OpenApiServerPath=http://192.168.20.8:5001
+
+  mngdatagateway:
+    ports:
+      - "5010:5010"
+
+  mngreactor:
+    ports:
+      - "5003:5003"
+    environment:
+      - MngReactorSettings__OpenApiServerPath=http://192.168.20.8:5040/reactor
+      - MngReactorSettings__MongoDB__Host=mongo
+      - MngReactorSettings__MongoDB__Password=${MONGO_PASSWORD:-admin123}
+      - MngReactorSettings__RabbitMQ__Host=rabbitmq
+      - MngReactorSettings__RabbitMQ__Password=${RABBITMQ_PASSWORD:-admin123}
+      - MngReactorSettings__Mqtt__Host=mosquitto
+      - MngReactorSettings__ObservationPublish__Enabled=true
+
+  mnghub:
+    ports:
+      - "5020:5020"
+
+  ollama:
+    build: !reset null
+    image: alpine:3.19
+    container_name: ollama
+    command: ["sleep", "infinity"]
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+
+  mngllm:
+    build: !reset null
+    image: alpine:3.19
+    container_name: mngllm
+    command: ["sleep", "infinity"]
+    depends_on:
+      - ollama
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+
+  mngscheduler:
+    ports:
+      - "5090:5090"
+
+  mngworkflow:
+    ports:
+      - "5085:5085"
+    environment:
+      - EnableDevWorkflowEndpoints=true
+      - MngWorkflowSettings__MongoDb__ConnectionString=mongodb://admin:admin123@mongo:27017
+      - MngWorkflowSettings__Secrets__EncryptionKeyBase64=MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXY=
+
+  mngworkflow-worker:
+    environment:
+      - MngWorkflowSettings__MongoDb__ConnectionString=mongodb://admin:admin123@mongo:27017
+      - MngWorkflowSettings__Secrets__EncryptionKeyBase64=MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXY=
+      - MngWorkflowSettings__EngineCommand__DevLogOnly=true
+
+  mngalarm:
+    ports:
+      - "5087:5087"
+    environment:
+      - EnableDevAlarmEndpoints=true
+      - MngAlarmSettings__MongoDb__ConnectionString=mongodb://admin:admin123@mongo:27017
+      - MngAlarmSettings__Engine__ConsumeObservations=false
+
+  mngalarm-worker:
+    environment:
+      - MngAlarmSettings__MongoDb__ConnectionString=mongodb://admin:admin123@mongo:27017
+      - MngAlarmSettings__Engine__ReactorBridge__Enabled=false
+
+  mngoperations:
+    ports:
+      - "5086:5086"
+    environment:
+      - Jwt__Authority=http://keycloak:8080/keycloak/realms/monitra
+      - MngOperationsSettings__OpenApiServerPath=http://192.168.20.8:5040/operations
+      - MngOperationsSettings__Actors__KeycloakBaseUrl=http://keycloak:8080/keycloak
+      - MngOperationsSettings__PerfDiagnostics=false
+
+  mngdocument:
+    ports:
+      - "5095:5095"
+    environment:
+      - Jwt__Authority=http://keycloak:8080/keycloak/realms/monitra
+      - MngDocumentSettings__OpenApiServerPath=http://192.168.20.8:5040/documents
+
+  mngadmin:
+    ports:
+      - "5080:5080"
+
+  mngnotifier:
+    ports:
+      - "5070:5070"
+
+  mngui:
+    ports:
+      - "3000:80"
+    build:
+      context: ../../Mng.Ui
+      dockerfile: Dockerfile
+      args:
+        GATEWAY_URL: ${GATEWAY_URL:-http://192.168.20.8:5040}
+        HUB_URL: ${HUB_URL:-http://192.168.20.8:5020}
+
+  mngdomainui:
+    ports:
+      - "3001:3000"

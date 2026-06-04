@@ -1,0 +1,34 @@
+# Odak PRODUCTION altyapı (192.168.20.8) — Mongo, Keycloak, Redis, RabbitMQ, MinIO bu host'ta
+# Test (20.20) ile volume/veri paylasimi YOK. Yalnizca production VM'de calistirin.
+#   docker compose -f docker-compose.yml -f docker-compose.odak.prod.yml --env-file .env up -d
+
+services:
+  keycloak:
+    ports:
+      - "8080:8080"
+    environment:
+      KC_HOSTNAME: ${ODAK_KEYCLOAK_HOSTNAME:-192.168.20.8}
+      KC_HOSTNAME_PORT: ${ODAK_KEYCLOAK_PORT:-8080}
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_PROXY: passthrough
+      KC_HTTP_RELATIVE_PATH: /keycloak
+      KC_HOSTNAME_PATH: /keycloak
+
+  gitlab:
+    profiles: ["odak-disabled"]
+
+  gitlab-postgres:
+    profiles: ["odak-disabled"]
+
+  gitlab-redis:
+    profiles: ["odak-disabled"]
+
+  gitlab-runner:
+    profiles: ["odak-disabled"]
+
+  mkdocs:
+    profiles: ["odak-disabled"]
+
+  nginx:
+    profiles: ["odak-disabled"]

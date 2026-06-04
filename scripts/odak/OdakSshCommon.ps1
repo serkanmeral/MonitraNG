@@ -4,20 +4,59 @@ if (Test-Path $script:OdakLocalCredFile) {
     . $script:OdakLocalCredFile
 }
 
-# Agent / otomasyon: repo kökünde .env.odak.local (ODAK_SSH_PASSWORD=...)
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
-$envOdakLocal = Join-Path $repoRoot ".env.odak.local"
-if ([string]::IsNullOrWhiteSpace($env:ODAK_SSH_PASSWORD) -and (Test-Path $envOdakLocal)) {
-    Get-Content $envOdakLocal | ForEach-Object {
+$script:OdakProdServer = "192.168.20.8"
+$script:OdakTestServer = "192.168.20.20"
+
+function Import-OdakEnvFile {
+    param([string]$Path)
+    if (-not (Test-Path $Path)) { return }
+    Get-Content $Path | ForEach-Object {
         $line = $_.Trim()
         if ($line -match '^\s*#' -or [string]::IsNullOrWhiteSpace($line)) { return }
-        if ($line -match '^\s*ODAK_SSH_PASSWORD\s*=\s*(.+)\s*$') {
-            $env:ODAK_SSH_PASSWORD = $matches[1].Trim().Trim('"').Trim("'")
-        }
-        if ($line -match '^\s*ODAK_RABBITMQ_PASSWORD\s*=\s*(.+)\s*$') {
-            $env:ODAK_RABBITMQ_PASSWORD = $matches[1].Trim().Trim('"').Trim("'")
+        if ($line -match '^\s*(\w+)\s*=\s*(.+)\s*$') {
+            $name = $matches[1]
+            $value = $matches[2].Trim().Trim('"').Trim("'")
+            Set-Item -Path "env:$name" -Value $value -Force
         }
     }
+}
+
+function Initialize-OdakSshEnvironment {
+    param([string]$Server = $script:OdakTestServer)
+
+    $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
+    $isProd = ($Server -eq $script:OdakProdServer)
+
+    if ($isProd) {
+        Import-OdakEnvFile (Join-Path $repoRoot ".env.odak.prod.local")
+        if (-not [string]::IsNullOrWhiteSpace($env:ODAK_PROD_SSH_PASSWORD)) {
+            $env:ODAK_SSH_PASSWORD = $env:ODAK_PROD_SSH_PASSWORD
+        }
+    } else {
+        Import-OdakEnvFile (Join-Path $repoRoot ".env.odak.local")
+    }
+}
+
+# Varsayılan: test kimlik bilgisi (script -Server ile prod seçilince Initialize-OdakSshEnvironment çağrılır)
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
+if ([string]::IsNullOrWhiteSpace($env:ODAK_SSH_PASSWORD)) {
+    Import-OdakEnvFile (Join-Path $repoRoot ".env.odak.local")
+}
+
+function Get-OdakComposeOdakFile {
+    param([string]$Server = $script:OdakTestServer)
+    if ($Server -eq $script:OdakProdServer) { return "docker-compose.odak.prod.yml" }
+    return "docker-compose.odak.yml"
+}
+
+function Test-OdakProductionServer {
+    param([string]$Server)
+    return ($Server -eq $script:OdakProdServer)
+}
+
+function ConvertTo-UnixShell {
+    param([string]$Script)
+    return ($Script -replace "`r`n", "`n" -replace "`r", "`n")
 }
 
 function Get-OdakRabbitMqCredentials {
@@ -68,6 +107,8 @@ function Get-OdakSshCredential {
         [SecureString]$Password
     )
 
+    Initialize-OdakSshEnvironment -Server $Server
+
     if ($Password) {
         return New-Object System.Management.Automation.PSCredential($User, $Password)
     }
@@ -79,8 +120,8 @@ function Get-OdakSshCredential {
     }
 
     Write-Host "SSH: $User@${Server} (parola gerekli)" -ForegroundColor Cyan
-    Write-Host "  B: `$env:ODAK_SSH_PASSWORD veya scripts/odak/local-credentials.ps1 (gitignore)" -ForegroundColor Gray
-    Write-Host "  Ornek: Copy-Item local-credentials.ps1.example local-credentials.ps1" -ForegroundColor Gray
+    $hint = if ($Server -eq $script:OdakProdServer) { ".env.odak.prod.local" } else { ".env.odak.local veya local-credentials.ps1" }
+    Write-Host "  B: `$env:ODAK_SSH_PASSWORD veya $hint (gitignore)" -ForegroundColor Gray
     $pass = Read-Host "SSH password for ${User}@${Server}" -AsSecureString
     return New-Object System.Management.Automation.PSCredential($User, $pass)
 }

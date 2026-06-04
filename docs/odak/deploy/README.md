@@ -1,6 +1,6 @@
 # Odak deploy — Windows geliştirme PC
 
-**Sunucu:** `192.168.20.20` (`odak` kullanıcısı)  
+**Sunucu:** `192.168.20.20` (`odak` kullanıcısı) — **yalnızca test**; production (`192.168.20.8`) ayrı yığın → [../proddeploy/INDEPENDENCE.md](../proddeploy/INDEPENDENCE.md)  
 **Strateji:** Lokal repo → tar/scp senkron → sunucuda `docker compose build` + `up` (git push **gerekmez**)
 
 Bu klasör, günlük deploy için **doğrulanmış komutları** içerir. Genel mimari ve ilk kurulum: [../setup/MNG_APPS_ODAK_DEPLOY.md](../setup/MNG_APPS_ODAK_DEPLOY.md).

@@ -1,9 +1,9 @@
 # MonitraNG -> Odak sunucu kaynak senkronu (git push/pull gerektirmez)
-# Kullan─▒m (repo k├╢k├╝nden):
+# Kullanım (repo kökünden):
 #   .\scripts\odak\sync-odak-source.ps1
 #   .\scripts\odak\sync-odak-source.ps1 -Paths MngKeeper,Mng.Ui,ApplicationResources/mng_apps
 #   .\scripts\odak\sync-odak-source.ps1 -IncludeMngCommon
-#   $env:ODAK_SSH_PASSWORD = '...'   # parolas─▒z otomasyon (Read-Host atlan─▒r)
+#   $env:ODAK_SSH_PASSWORD = '...'   # parolasız otomasyon (Read-Host atlanır)
 
 param(
     [string]$Server = "192.168.20.20",
@@ -12,7 +12,8 @@ param(
     [string]$RemoteMngCommon = "/home/odak/mng_common",
     [string[]]$Paths = @(),
     [switch]$Full,
-    [switch]$IncludeMngCommon
+    [switch]$IncludeMngCommon,
+    [switch]$MngCommonOnly
 )
 
 $ErrorActionPreference = "Stop"
@@ -29,60 +30,69 @@ $DefaultFullPaths = @(
     "Mng.Ui", "MngDomainUI"
 )
 
-if ($Full -or $Paths.Count -eq 0) {
+if ($MngCommonOnly) {
+    $IncludeMngCommon = $true
+} elseif ($Full -or $Paths.Count -eq 0) {
     $Paths = $DefaultFullPaths
 }
 
-$TarPath = Join-Path $env:TEMP "monitrang-odak-sync.tar"
-if (Test-Path $TarPath) { Remove-Item $TarPath -Force }
-
-# Windows tar: paths relative to repo root
-# Build artifaktlar─▒ / ba─ƒ─▒ml─▒l─▒klar sunucuda yeniden ├╝retilir (.dockerignore zaten d─▒┼ƒlar) ΓÇö
-# tar'a almak transferi gereksiz b├╝y├╝t├╝r (├╢r. Mng.Ui/node_modules ~350MB).
-$tarExcludes = @(
-    "*/node_modules/*", "*/.nuxt/*", "*/.output/*", "*/.nitro/*",
-    "*/bin/*", "*/obj/*", "*/.git/*", "*/.vs/*"
-)
-$tarArgs = @("-cf", $TarPath)
-foreach ($ex in $tarExcludes) { $tarArgs += "--exclude=$ex" }
-foreach ($p in $Paths) {
-    if (-not (Test-Path $p)) { throw "Path not found: $p" }
-    $tarArgs += $p
-}
-& tar @tarArgs
-if ($LASTEXITCODE -ne 0) { throw "tar failed" }
-
-Write-Host "Paket: $TarPath ($((Get-Item $TarPath).Length / 1MB) MB)"
-
+Initialize-OdakSshEnvironment -Server $Server
 $cred = Get-OdakSshCredential -User $User -Server $Server
+if (Test-OdakProductionServer -Server $Server) {
+    Write-Host "Production sync -> $Server" -ForegroundColor Magenta
+}
 
-Set-SCPItem -ComputerName $Server -Credential $cred -Path $TarPath -Destination "/home/odak/" -AcceptKey
+if (-not $MngCommonOnly) {
+    $TarPath = Join-Path $env:TEMP "monitrang-odak-sync.tar"
+    if (Test-Path $TarPath) { Remove-Item $TarPath -Force }
 
-$remoteExtract = @"
+    $tarExcludes = @(
+        "*/node_modules/*", "*/.nuxt/*", "*/.output/*", "*/.nitro/*",
+        "*/bin/*", "*/obj/*", "*/.git/*", "*/.vs/*"
+    )
+    $tarArgs = @("-cf", $TarPath)
+    foreach ($ex in $tarExcludes) { $tarArgs += "--exclude=$ex" }
+    foreach ($p in $Paths) {
+        if (-not (Test-Path $p)) { throw "Path not found: $p" }
+        $tarArgs += $p
+    }
+    & tar @tarArgs
+    if ($LASTEXITCODE -ne 0) { throw "tar failed" }
+
+    Write-Host "Paket: $TarPath ($((Get-Item $TarPath).Length / 1MB) MB)"
+    Set-SCPItem -ComputerName $Server -Credential $cred -Path $TarPath -Destination "/home/odak/" -AcceptKey
+
+    $remoteExtract = ConvertTo-UnixShell @"
 set -e
 mkdir -p '$RemoteMonitraRoot'
-# Bos gitlink/stub klasorleri tar'in uzerine yazmasini engelleyebilir (MngReactor C6).
-find '$RemoteMonitraRoot' -mindepth 1 -maxdepth 2 -type d -empty -delete 2>/dev/null || true
+rmdir '$RemoteMonitraRoot'/MngReactor 2>/dev/null || true
+rmdir '$RemoteMonitraRoot'/MngHub 2>/dev/null || true
+rmdir '$RemoteMonitraRoot'/MngLLM 2>/dev/null || true
 rm -rf '$RemoteMonitraRoot'/MngEngine/MngEngine.Service 2>/dev/null || true
 tar -xf /home/odak/monitrang-odak-sync.tar -C '$RemoteMonitraRoot'
-echo "Extracted to $RemoteMonitraRoot"
+echo Extracted to $RemoteMonitraRoot
 ls -la '$RemoteMonitraRoot/ApplicationResources/mng_apps/docker-compose.production.yml' 2>/dev/null || true
 "@
 
-$session = New-SSHSession -ComputerName $Server -Credential $cred -AcceptKey
-$r = Invoke-SSHCommand -SessionId $session.SessionId -Command $remoteExtract -TimeOut 120
-$r.Output | ForEach-Object { Write-Host $_ }
-if ($r.ExitStatus -ne 0) { throw "Remote extract failed: $($r.Error)" }
-Remove-SSHSession -SessionId $session.SessionId | Out-Null
+    $session = New-SSHSession -ComputerName $Server -Credential $cred -AcceptKey
+    $r = Invoke-SSHCommand -SessionId $session.SessionId -Command $remoteExtract -TimeOut 120
+    $r.Output | ForEach-Object { Write-Host $_ }
+    if ($r.ExitStatus -ne 0) { throw "Remote extract failed: $($r.Error)" }
+    Remove-SSHSession -SessionId $session.SessionId | Out-Null
+}
 
 if ($IncludeMngCommon) {
     $CommonTar = Join-Path $env:TEMP "mng_common_odak_sync.tar"
     Push-Location (Join-Path $RepoRoot "ApplicationResources/mng_common")
-    & tar -cf $CommonTar --exclude=data/.npm --exclude=data/*.db docker-compose.yml docker-compose.odak.yml env.example mongo-init mongo-express mosquitto nginx scalar-config 2>$null
+    $commonComposeOdak = if (Test-OdakProductionServer -Server $Server) { "docker-compose.odak.prod.yml" } else { "docker-compose.odak.yml" }
+    & tar -cf $CommonTar --exclude=data/.npm --exclude=data/*.db docker-compose.yml $commonComposeOdak .env.odak.prod.example .env.odak.example env.example mongo-init mongo-express mosquitto nginx scalar-config 2>$null
     Pop-Location
     Set-SCPItem -ComputerName $Server -Credential $cred -Path $CommonTar -Destination "/home/odak/" -AcceptKey
     $session = New-SSHSession -ComputerName $Server -Credential $cred -AcceptKey
-    Invoke-SSHCommand -SessionId $session.SessionId -Command "mkdir -p '$RemoteMngCommon' && tar -xf /home/odak/mng_common_odak_sync.tar -C '$RemoteMngCommon'" | Out-Null
+    $commonExtract = ConvertTo-UnixShell "mkdir -p '$RemoteMngCommon' && tar -xf /home/odak/mng_common_odak_sync.tar -C '$RemoteMngCommon' && ls -la '$RemoteMngCommon/docker-compose.odak.prod.yml' 2>/dev/null || ls -la '$RemoteMngCommon/docker-compose.odak.yml' 2>/dev/null || true"
+    $cr = Invoke-SSHCommand -SessionId $session.SessionId -Command $commonExtract -TimeOut 120
+    $cr.Output | ForEach-Object { Write-Host $_ }
+    if ($cr.ExitStatus -ne 0) { throw "mng_common extract failed: $($cr.Error)" }
     Remove-SSHSession -SessionId $session.SessionId | Out-Null
     Write-Host "mng_common synced to $RemoteMngCommon"
 }

@@ -22,9 +22,14 @@ $ErrorActionPreference = "Stop"
 Import-Module Posh-SSH -Force -ErrorAction Stop
 . (Join-Path $PSScriptRoot "OdakSshCommon.ps1")
 
+Initialize-OdakSshEnvironment -Server $Server
 $cred = Get-OdakSshCredential -User $User -Server $Server
 
-$compose = "docker compose -f docker-compose.production.yml -f docker-compose.odak.yml --env-file .env"
+$odakComposeFile = Get-OdakComposeOdakFile -Server $Server
+$compose = "docker compose -f docker-compose.production.yml -f $odakComposeFile --env-file .env"
+if (Test-OdakProductionServer -Server $Server) {
+    Write-Host "Production deploy -> $Server ($odakComposeFile)" -ForegroundColor Magenta
+}
 
 $noCacheFlag = if ($NoCache) { " --no-cache" } else { "" }
 
