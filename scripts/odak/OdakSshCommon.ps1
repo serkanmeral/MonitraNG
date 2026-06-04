@@ -100,6 +100,86 @@ function Invoke-OdakRabbitMqPublish {
     return Invoke-SSHCommand -SessionId $SshSession.SessionId -Command $cmd -TimeOut 30
 }
 
+function Get-OdakMongoCredentials {
+    param(
+        [Parameter(Mandatory = $true)]
+        $SshSession,
+        [string]$RemoteAppsDir = "/home/odak/MonitraNG/ApplicationResources/mng_apps"
+    )
+
+    $username = $env:ODAK_MONGO_USERNAME
+    if ([string]::IsNullOrWhiteSpace($username)) { $username = "admin" }
+
+    $password = $env:ODAK_MONGO_PASSWORD
+    if ([string]::IsNullOrWhiteSpace($password)) {
+        $grepCmd = "grep '^MONGO_PASSWORD=' '$RemoteAppsDir/.env' 2>/dev/null | head -1 | cut -d= -f2- | tr -d '\r'"
+        $r = Invoke-SSHCommand -SessionId $SshSession.SessionId -Command $grepCmd -TimeOut 15
+        $password = ($r.Output -join "").Trim().Trim('"').Trim("'")
+    }
+
+    if ([string]::IsNullOrWhiteSpace($password)) { $password = "admin123" }
+
+    return @{ Username = $username; Password = $password }
+}
+
+function Invoke-OdakMongoJsonEval {
+    param(
+        [Parameter(Mandatory = $true)]
+        $SshSession,
+        [Parameter(Mandatory = $true)]
+        [string]$JavaScript,
+        [string]$RemoteAppsDir = "/home/odak/MonitraNG/ApplicationResources/mng_apps"
+    )
+
+    $mongo = Get-OdakMongoCredentials -SshSession $SshSession -RemoteAppsDir $RemoteAppsDir
+    $escapedPassword = $mongo.Password.Replace("'", "'\''")
+    $b64 = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($JavaScript))
+    $cmd = "echo '$b64' | base64 -d | docker exec -i mongo mongosh -u $($mongo.Username) -p '$escapedPassword' --authenticationDatabase admin --quiet"
+    return Invoke-SSHCommand -SessionId $SshSession.SessionId -Command $cmd -TimeOut 90
+}
+
+function Initialize-OdakSecEventsMqCapture {
+    param(
+        [Parameter(Mandatory = $true)]
+        $SshSession,
+        [Parameter(Mandatory = $true)]
+        [string]$Domain,
+        [string]$RemoteAppsDir = "/home/odak/MonitraNG/ApplicationResources/mng_apps"
+    )
+
+    $creds = Get-OdakRabbitMqCredentials -SshSession $SshSession -RemoteAppsDir $RemoteAppsDir
+    $escapedPassword = $creds.Password.Replace("'", "'\''")
+    $queueName = "siem-e2e-$Domain-$(Get-Random -Maximum 999999)"
+    $routingKey = "sec_events.created.$Domain"
+
+    $cmd = @"
+docker exec rabbitmq rabbitmqadmin -u $($creds.Username) -p '$escapedPassword' declare queue name=$queueName durable=false auto_delete=true
+docker exec rabbitmq rabbitmqadmin -u $($creds.Username) -p '$escapedPassword' declare binding source=mng.topics destination=$queueName routing_key=$routingKey
+echo QUEUE=$queueName
+"@
+
+    $r = Invoke-SSHCommand -SessionId $SshSession.SessionId -Command $cmd -TimeOut 45
+    $line = @($r.Output) | Where-Object { $_ -match '^QUEUE=' } | Select-Object -First 1
+    if (-not $line) { throw "MQ capture queue olusturulamadi" }
+    return ($line -replace '^QUEUE=', '').Trim()
+}
+
+function Get-OdakSecEventsMqMessages {
+    param(
+        [Parameter(Mandatory = $true)]
+        $SshSession,
+        [Parameter(Mandatory = $true)]
+        [string]$QueueName,
+        [int]$Count = 10,
+        [string]$RemoteAppsDir = "/home/odak/MonitraNG/ApplicationResources/mng_apps"
+    )
+
+    $creds = Get-OdakRabbitMqCredentials -SshSession $SshSession -RemoteAppsDir $RemoteAppsDir
+    $escapedPassword = $creds.Password.Replace("'", "'\''")
+    $cmd = "docker exec rabbitmq rabbitmqadmin -u $($creds.Username) -p '$escapedPassword' get queue=$QueueName count=$Count ackmode=ack_requeue_false"
+    return Invoke-SSHCommand -SessionId $SshSession.SessionId -Command $cmd -TimeOut 45
+}
+
 function Get-OdakSshCredential {
     param(
         [string]$User = "odak",

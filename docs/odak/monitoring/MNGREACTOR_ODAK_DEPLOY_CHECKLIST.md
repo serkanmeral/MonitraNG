@@ -126,7 +126,7 @@ Bridge kapatma (MngAlarm Worker env):
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\test-siem-faz1-e2e.ps1
 ```
 
-*(Script PR-6'da eklenecek.)*
+*(Script: `scripts/odak/test-siem-faz1-e2e.ps1` — S4.2–S4.6.)*
 
 ---
 
