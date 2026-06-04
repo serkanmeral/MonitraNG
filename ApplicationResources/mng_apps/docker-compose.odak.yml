@@ -31,6 +31,8 @@ services:
       - "5003:5003"
     environment:
       - MngReactorSettings__OpenApiServerPath=http://192.168.20.20:5040/reactor
+      - MngReactorSettings__EngineServerUrl=http://mngreactor:5003
+      - MngReactorSettings__Actors__MngKeeperEngineUrl=http://mngkeeper:5001
       - MngReactorSettings__MongoDB__Host=mongo
       - MngReactorSettings__MongoDB__Password=${MONGO_PASSWORD:-admin123}
       - MngReactorSettings__RabbitMQ__Host=rabbitmq

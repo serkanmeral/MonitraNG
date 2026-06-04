@@ -76,16 +76,27 @@ if (-not $blockExec -or -not $logExec) {
 }
 
 $mode = $null
-if ($blockExec.outputJson) {
+if ($blockExec.PSObject.Properties['output']) {
+    $mode = $blockExec.output.mode
+}
+
+if (-not $mode) {
+    Write-Host "4) Reactor log dogrulama (mqtt publish)..." -ForegroundColor Cyan
+    Import-Module Posh-SSH -Force -ErrorAction Stop
+    . (Join-Path $PSScriptRoot "OdakSshCommon.ps1")
+    $cred = Get-OdakSshCredential -User "odak" -Server ([uri]$Gateway).Host
+    $session = New-SSHSession -ComputerName ([uri]$Gateway).Host -Credential $cred -AcceptKey
     try {
-        $out = $blockExec.outputJson | ConvertFrom-Json
-        $mode = $out.mode
-    } catch { }
+        $logCmd = "docker logs mngworkflow-worker 2>&1 | grep -F 'Engine command published' | grep -F '$instanceId' | tail -1"
+        $log = Invoke-SSHCommand -SessionId $session.SessionId -Command $logCmd -TimeOut 30
+        if (@($log.Output) -match 'Engine command published') { $mode = "reactor_mqtt" }
+    } finally {
+        Remove-SSHSession -SessionId $session.SessionId | Out-Null
+    }
 }
 
 if ($mode -ne "reactor_mqtt") {
     Write-Host "FAIL: block.ip mode=$mode (beklenen reactor_mqtt)" -ForegroundColor Red
-    Write-Host "  outputJson: $($blockExec.outputJson)" -ForegroundColor DarkGray
     exit 1
 }
 
