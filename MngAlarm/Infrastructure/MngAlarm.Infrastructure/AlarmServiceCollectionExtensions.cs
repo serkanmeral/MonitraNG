@@ -23,6 +23,7 @@ public static class AlarmServiceCollectionExtensions
         services.AddSingleton<IObservationIngressPublisher, ObservationIngressPublisher>();
         services.AddSingleton<ICorrelationWindowStore, MongoCorrelationWindowStore>();
         services.AddSingleton<IObservationActivityStore, MongoObservationActivityStore>();
+        services.AddSingleton<ISequenceStateStore, InMemorySequenceStateStore>();
 
         services.AddScoped<IAlarmRuleRepository, AlarmRuleRepository>();
         services.AddScoped<IAlarmRepository, AlarmRepository>();

@@ -1,7 +1,6 @@
 {
-  "_draftNote": "U2 sequence kural tipi MngAlarm Faz 2+ backlog. Şimdilik iki aşamalı manuel korelasyon veya tek correlation + operatör triage önerilir.",
   "name": "U2 — Fail→success login (hedef)",
-  "type": "correlation",
+  "type": "sequence",
   "matchKey": "login_success_after_failures",
   "groupByFields": ["userId", "srcIp"],
   "windowMinutes": 15,
@@ -9,11 +8,8 @@
   "severity": 8,
   "cooldownMinutes": 60,
   "dedupKeyTemplate": "{ruleId}:{groupKey}",
-  "_sequenceTarget": {
-    "steps": [
-      { "matchKey": "login_failed", "minCount": 5, "withinMinutes": 10 },
-      { "matchKey": "login_success", "withinMinutesAfterFirst": 15 }
-    ],
-    "groupByFields": ["userId", "srcIp"]
-  }
+  "sequenceSteps": [
+    { "matchKey": "login_failed", "minCount": 5, "withinMinutes": 10 },
+    { "matchKey": "login_success", "withinMinutesAfterFirst": 15 }
+  ]
 }

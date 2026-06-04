@@ -46,7 +46,7 @@
 | `dimensions.sourceType` | `source.type` | `ad`, `firewall`, `bastion` |
 | `dimensions.secEventId` | Mongo `_id` | Drill-down / audit |
 
-**4624 başarılı login:** `key: login_success` (U2 hedef; sequence kural tipi henüz yok).
+**4624 başarılı login:** `key: login_success` (U2 sequence kuralının 2. adımı).
 
 ---
 
@@ -71,7 +71,7 @@ Bridge deseni metrik ile aynı; routing key örneği: `6a0f8fc43d6ba5d774ee37c1.
 |---------|------------|-----------------|-------------|
 | U1 | `login_failed` | `userId`, `srcIp` | `tests/fixtures/siem/alarm_rules/u1_*.json` |
 | U4 | `denied_flow` | `dstIp` | `tests/fixtures/siem/alarm_rules/u4_*.json` |
-| U2 | `login_success_after_failures` | — | Sequence Faz 2+ backlog |
+| U2 | `login_success_after_failures` | `userId`, `srcIp` | `sequence` — `tests/fixtures/siem/alarm_rules/u2_*.json` |
 
 ---
 

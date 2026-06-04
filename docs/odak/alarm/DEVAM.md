@@ -84,7 +84,7 @@ Event şeması: [ALARM_RULE_ENGINE_PLAN §8](./ALARM_RULE_ENGINE_PLAN.md)
 2. ~~`alarm.updated` / `alarm.resolved` workflow triggers~~ ✅
 3. ~~MngReactor native `monitra.observations` publish~~ ✅ 3 Haz 2026 — [REACTOR_NATIVE_PUBLISH_HANDOFF.md](./REACTOR_NATIVE_PUBLISH_HANDOFF.md) · E2E: `test-reactor-observation-e2e.ps1`
 4. ~~Faz 2 — correlation window, scheduled validation (MngScheduler)~~ ✅ 3 Haz 2026
-5. Faz 2+ — suppression/dependency, DG mirror, Mongo checkpoint, sequence rules
+5. Faz 2+ — suppression/dependency, DG mirror, Mongo checkpoint, ~~sequence rules~~ ✅ U2 MVP
 
 ---
 

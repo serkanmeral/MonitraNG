@@ -55,6 +55,10 @@ public class AlarmRuleDocument
     [BsonElement("stalenessMinutes")]
     public int StalenessMinutes { get; set; }
 
+    /// <summary>Sequence: ordered steps (U2 fail→success).</summary>
+    [BsonElement("sequenceSteps")]
+    public List<AlarmSequenceStep> SequenceSteps { get; set; } = [];
+
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

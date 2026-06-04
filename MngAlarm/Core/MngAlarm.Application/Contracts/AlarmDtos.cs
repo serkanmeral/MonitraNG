@@ -16,6 +16,15 @@ public sealed class CreateAlarmRuleRequest
     public int WindowMinutes { get; set; } = 5;
     public int StalenessMinutes { get; set; }
     public string? DedupKeyTemplate { get; set; }
+    public List<AlarmSequenceStepDto>? SequenceSteps { get; set; }
+}
+
+public sealed class AlarmSequenceStepDto
+{
+    public string MatchKey { get; set; } = string.Empty;
+    public int MinCount { get; set; } = 1;
+    public int WithinMinutes { get; set; }
+    public int WithinMinutesAfterFirst { get; set; }
 }
 
 public sealed class UpdateAlarmRuleRequest

@@ -27,6 +27,7 @@ public static class AlarmRuleTypes
     public const string Threshold = "threshold";
     public const string Correlation = "correlation";
     public const string Scheduled = "scheduled";
+    public const string Sequence = "sequence";
 }
 
 public static class AlarmEventTypes

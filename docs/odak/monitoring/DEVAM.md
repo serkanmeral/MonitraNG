@@ -9,7 +9,7 @@
 
 ## 1. Tek cümlede durum
 
-Faz 0 planlama ✅. **SIEM PR-1…PR-6 ✅.** Engine Odak + syslog E2E ✅. **U1 tam müdahale hattı ✅** (`test-siem-u1-approval-block-e2e.ps1`). **U4 deny spike correlation ✅** (`test-siem-u4-alarm-e2e.ps1`).
+Faz 0 planlama ✅. **SIEM PR-1…PR-6 ✅.** **U1 tam müdahale hattı ✅.** **U4 deny spike ✅.** **U2 fail→success sequence ✅** (`test-siem-u2-alarm-e2e.ps1`).
 
 ---
 
@@ -26,6 +26,7 @@ Faz 0 planlama ✅. **SIEM PR-1…PR-6 ✅.** Engine Odak + syslog E2E ✅. **U1
 | **U1 → alarm.raised → Workflow** | ✅ `test-siem-u1-workflow-e2e.ps1` |
 | **U1 → approval → block.ip** | ✅ `test-siem-u1-approval-block-e2e.ps1` |
 | **U4 firewall deny spike** | ✅ `test-siem-u4-alarm-e2e.ps1` |
+| **U2 fail→success sequence** | ✅ `test-siem-u2-alarm-e2e.ps1` |
 | Observation native publish (metrik) | ✅ C6 |
 
 ---
@@ -39,7 +40,8 @@ Faz 0 planlama ✅. **SIEM PR-1…PR-6 ✅.** Engine Odak + syslog E2E ✅. **U1
 5. ~~U1 → `alarm.raised` → Workflow~~ ✅
 6. ~~U1 → approval → `block.ip`~~ ✅
 7. ~~U4 firewall deny spike~~ ✅
-8. U2 sequence · benchmark baseline · U4 → workflow (opsiyonel)
+8. ~~U2 sequence~~ ✅
+9. Benchmark baseline · U4 → workflow (opsiyonel)
 
 ---
 

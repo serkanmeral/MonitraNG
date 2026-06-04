@@ -29,6 +29,7 @@ public sealed class AlarmRuleService(IAlarmDomainAccessor domain, IAlarmRuleRepo
             DedupKeyTemplate = string.IsNullOrWhiteSpace(request.DedupKeyTemplate)
                 ? DefaultDedupTemplate(request.Type)
                 : request.DedupKeyTemplate.Trim(),
+            SequenceSteps = MapSequenceSteps(request.SequenceSteps),
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -40,8 +41,26 @@ public sealed class AlarmRuleService(IAlarmDomainAccessor domain, IAlarmRuleRepo
     private static string DefaultDedupTemplate(string? type) =>
         string.Equals(type, AlarmRuleTypes.Correlation, StringComparison.Ordinal)
         || string.Equals(type, AlarmRuleTypes.Scheduled, StringComparison.Ordinal)
+        || string.Equals(type, AlarmRuleTypes.Sequence, StringComparison.Ordinal)
             ? "{ruleId}:{groupKey}"
             : "{ruleId}:{key}";
+
+    private static List<AlarmSequenceStep> MapSequenceSteps(List<AlarmSequenceStepDto>? steps)
+    {
+        if (steps == null || steps.Count == 0)
+            return [];
+
+        return steps
+            .Where(s => !string.IsNullOrWhiteSpace(s.MatchKey))
+            .Select(s => new AlarmSequenceStep
+            {
+                MatchKey = s.MatchKey.Trim(),
+                MinCount = Math.Max(1, s.MinCount),
+                WithinMinutes = s.WithinMinutes,
+                WithinMinutesAfterFirst = s.WithinMinutesAfterFirst
+            })
+            .ToList();
+    }
 
     public Task<IReadOnlyList<AlarmRuleDocument>> ListAsync(CancellationToken cancellationToken = default)
     {

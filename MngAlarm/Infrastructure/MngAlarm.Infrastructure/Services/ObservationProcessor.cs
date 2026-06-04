@@ -17,6 +17,7 @@ public sealed class ObservationProcessor : IObservationProcessor
     private readonly IAlarmRepository _alarms;
     private readonly IAlarmEventPublisher _publisher;
     private readonly ICorrelationWindowStore _windows;
+    private readonly ISequenceStateStore _sequences;
     private readonly IObservationActivityStore _activity;
     private readonly ILogger<ObservationProcessor> _logger;
 
@@ -25,6 +26,7 @@ public sealed class ObservationProcessor : IObservationProcessor
         IAlarmRepository alarms,
         IAlarmEventPublisher publisher,
         ICorrelationWindowStore windows,
+        ISequenceStateStore sequences,
         IObservationActivityStore activity,
         ILogger<ObservationProcessor> logger)
     {
@@ -32,6 +34,7 @@ public sealed class ObservationProcessor : IObservationProcessor
         _alarms = alarms;
         _publisher = publisher;
         _windows = windows;
+        _sequences = sequences;
         _activity = activity;
         _logger = logger;
     }
@@ -39,10 +42,15 @@ public sealed class ObservationProcessor : IObservationProcessor
     public async Task<AlarmProcessResult> ProcessAsync(ObservationEnvelope observation, CancellationToken cancellationToken = default)
     {
         var rules = await _rules.ListEnabledByKeyAsync(observation.DomainName, observation.Key, cancellationToken);
+        var sequenceRules = await _rules.ListEnabledByTypeAsync(
+            observation.DomainName,
+            AlarmRuleTypes.Sequence,
+            cancellationToken);
         var raised = 0;
         var updated = 0;
         var resolved = 0;
         var alarmIds = new List<string>();
+        var rulesEvaluated = rules.Count;
 
         foreach (var rule in rules)
         {
@@ -70,9 +78,22 @@ public sealed class ObservationProcessor : IObservationProcessor
             RecordScheduledActivity(rule, observation);
         }
 
+        foreach (var rule in sequenceRules)
+        {
+            if (!rule.Enabled || !SequenceEvaluator.IsValidRule(rule))
+                continue;
+
+            rulesEvaluated++;
+            var outcome = await ProcessSequenceAsync(rule, observation, cancellationToken);
+            raised += outcome.Raised;
+            updated += outcome.Updated;
+            resolved += outcome.Resolved;
+            alarmIds.AddRange(outcome.AlarmIds);
+        }
+
         return new AlarmProcessResult
         {
-            RulesEvaluated = rules.Count,
+            RulesEvaluated = rulesEvaluated,
             AlarmsRaised = raised,
             AlarmsUpdated = updated,
             AlarmsResolved = resolved,
@@ -153,6 +174,82 @@ public sealed class ObservationProcessor : IObservationProcessor
         }
 
         return await RaiseAsync(rule, observation, dedupKey, context, observation.Key, cancellationToken);
+    }
+
+    private async Task<RuleOutcome> ProcessSequenceAsync(
+        AlarmRuleDocument rule,
+        ObservationEnvelope observation,
+        CancellationToken cancellationToken)
+    {
+        var step0 = rule.SequenceSteps[0];
+        var step1 = rule.SequenceSteps[1];
+        var groupKey = CorrelationEvaluator.BuildGroupKey(rule, observation.Dimensions);
+        var storeKey = SequenceEvaluator.BuildStoreKey(observation.DomainName, rule.Id, groupKey);
+        var state = _sequences.GetOrCreate(storeKey);
+        var now = DateTime.UtcNow;
+
+        if (string.Equals(observation.Key, step0.MatchKey, StringComparison.Ordinal))
+        {
+            var windowMinutes = step0.WithinMinutes > 0 ? step0.WithinMinutes : rule.WindowMinutes;
+            var window = TimeSpan.FromMinutes(Math.Max(1, windowMinutes));
+            var windowKey = SequenceEvaluator.BuildStepWindowKey(storeKey, 0);
+            var count = _windows.RecordAndCount(windowKey, observation.Timestamp, window);
+
+            if (count == 1 || !state.AnchorTime.HasValue)
+                state.AnchorTime = observation.Timestamp;
+
+            if (!state.Armed && count >= Math.Max(1, step0.MinCount))
+                state.Armed = true;
+
+            _sequences.Save(storeKey, state);
+            return RuleOutcome.Empty;
+        }
+
+        if (!string.Equals(observation.Key, step1.MatchKey, StringComparison.Ordinal)
+            || !state.Armed
+            || !state.AnchorTime.HasValue)
+        {
+            return RuleOutcome.Empty;
+        }
+
+        var deadlineMinutes = step1.WithinMinutesAfterFirst > 0
+            ? step1.WithinMinutesAfterFirst
+            : Math.Max(1, rule.WindowMinutes);
+        if (observation.Timestamp > state.AnchorTime.Value.AddMinutes(deadlineMinutes))
+        {
+            _sequences.Reset(storeKey);
+            return RuleOutcome.Empty;
+        }
+
+        var dedupKey = CorrelationEvaluator.BuildDedupKey(rule, groupKey);
+        var existing = await _alarms.GetActiveByDedupKeyAsync(observation.DomainName, dedupKey, cancellationToken);
+        if (existing != null)
+        {
+            if (IsInCooldown(rule, existing, now))
+            {
+                _sequences.Reset(storeKey);
+                return RuleOutcome.Empty;
+            }
+
+            var updateContext = SequenceEvaluator.BuildContext(
+                rule,
+                observation,
+                groupKey,
+                state,
+                step0.MinCount);
+            var updated = await UpdateAsync(existing, updateContext, rule, rule.MatchKey, cancellationToken);
+            _sequences.Reset(storeKey);
+            return updated;
+        }
+
+        var priorCount = _windows.GetCount(
+            SequenceEvaluator.BuildStepWindowKey(storeKey, 0),
+            observation.Timestamp,
+            TimeSpan.FromMinutes(Math.Max(1, step0.WithinMinutes > 0 ? step0.WithinMinutes : rule.WindowMinutes)));
+        var context = SequenceEvaluator.BuildContext(rule, observation, groupKey, state, priorCount);
+        var raised = await RaiseAsync(rule, observation, dedupKey, context, rule.MatchKey, cancellationToken);
+        _sequences.Reset(storeKey);
+        return raised;
     }
 
     private async Task<RuleOutcome> RaiseAsync(

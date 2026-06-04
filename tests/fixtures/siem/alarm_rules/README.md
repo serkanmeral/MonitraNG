@@ -10,7 +10,7 @@
 |-------|---------|--------|-------|
 | `u1_brute_force_login_failed.json` | U1 — brute force | `correlation` | ✅ Faz 2'de canlı (motor hazır) |
 | `u4_firewall_deny_spike.json` | U4 — deny artışı | `correlation` | ✅ Faz 2'de canlı |
-| `u2_fail_then_success_login.json` | U2 — fail→success | `correlation` + `_sequenceTarget` | ⏸️ `sequence` tipi yok — Faz 2+ |
+| `u2_fail_then_success_login.json` | U2 — fail→success | `sequence` | ✅ Faz 2+ (MngAlarm `sequence` tipi) |
 
 ## Önkoşul: `sec_events` → observation
 
