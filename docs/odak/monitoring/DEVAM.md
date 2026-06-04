@@ -47,7 +47,7 @@ Faz 0 planlama ✅. **SIEM MVP (U1/U2/U4) + müdahale/workflow ✅.** **P0 soak 
 9. ~~Benchmark baseline (P0)~~ ✅
 10. ~~P0 5 dk soak (50 evt/s kapı)~~ ✅
 11. ~~U4 → workflow~~ ✅
-12. P1 profil benchmark · Engine syslog UDP benchmark
+12. P1 profil benchmark · Engine syslog UDP benchmark · SIEM E2E suite dokumantasyonu
 
 ---
 
