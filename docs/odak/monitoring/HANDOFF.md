@@ -102,7 +102,7 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | Alan | Değer |
 |------|--------|
 | Branch | `main` (origin ile senkron) |
-| Son SIEM commit | (bu commit) — windows.security.extended.v1 + E2E suite B1 |
+| Son SIEM commit | `8eeda15` — windows.security.extended.v1 + E2E suite B1 |
 | Önceki | `5f4b62b` · `ff0505a` PAN-OS · Dashboard P2 · DLQ |
 
 ---
