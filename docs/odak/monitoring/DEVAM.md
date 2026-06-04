@@ -9,7 +9,7 @@
 
 ## 1. Tek cümlede durum
 
-Faz 0 planlama ✅. **SIEM PR-1…PR-6 ✅.** Engine Odak deploy + syslog/fixture E2E ✅. Reactor `mqtt/publish` + Workflow P4 E2E ✅. **sec_events → monitra.observations → U1 correlation alarm ✅** (`test-siem-u1-alarm-e2e.ps1`).
+Faz 0 planlama ✅. **SIEM PR-1…PR-6 ✅.** Engine Odak + syslog E2E ✅. **U1 tam müdahale hattı ✅** (`test-siem-u1-approval-block-e2e.ps1`). **U4 deny spike correlation ✅** (`test-siem-u4-alarm-e2e.ps1`).
 
 ---
 
@@ -23,6 +23,9 @@ Faz 0 planlama ✅. **SIEM PR-1…PR-6 ✅.** Engine Odak deploy + syslog/fixtur
 | Workflow `mqtt/publish` | ✅ P4 E2E `reactor_mqtt` |
 | **sec_events → observation** | ✅ `SecEventObservationMapper` + `PublishSecEventAsync` |
 | **Alarm U1 correlation** | ✅ Odak E2E |
+| **U1 → alarm.raised → Workflow** | ✅ `test-siem-u1-workflow-e2e.ps1` |
+| **U1 → approval → block.ip** | ✅ `test-siem-u1-approval-block-e2e.ps1` |
+| **U4 firewall deny spike** | ✅ `test-siem-u4-alarm-e2e.ps1` |
 | Observation native publish (metrik) | ✅ C6 |
 
 ---
@@ -33,8 +36,10 @@ Faz 0 planlama ✅. **SIEM PR-1…PR-6 ✅.** Engine Odak deploy + syslog/fixtur
 2. ~~Engine Odak + syslog S3~~ ✅
 3. ~~Reactor mqtt/publish + P4 E2E~~ ✅
 4. ~~Faz 2: sec_events observation map + U1 alarm~~ ✅
-5. **U1 → `alarm.raised` → Workflow** (mevcut Event Trigger; `test-siem-u1-workflow-e2e.ps1` — sıradaki)
-6. U4 firewall deny spike · U2 sequence · benchmark baseline
+5. ~~U1 → `alarm.raised` → Workflow~~ ✅
+6. ~~U1 → approval → `block.ip`~~ ✅
+7. ~~U4 firewall deny spike~~ ✅
+8. U2 sequence · benchmark baseline · U4 → workflow (opsiyonel)
 
 ---
 

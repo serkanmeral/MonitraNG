@@ -16,7 +16,7 @@
 | Geçici IP blok | ✅ MVP | `engine.command` + `block_ip` / `unblock_ip` (Reactor MQTT publish) |
 | SOC WorkItem | ✅ | `workitem.create` / `transition` / `update` |
 | Alarm context → workflow | ✅ | `filterExpression`, `{{event.*}}`, `{{outputs.*}}` |
-| `sec_events` → alarm | ⏸️ | Faz 1 spike + [SEC_EVENT_OBSERVATION_MAP](./SEC_EVENT_OBSERVATION_MAP.md) |
+| `sec_events` → alarm | ✅ | U1 Odak E2E |
 | Güvenlik paneli UI | ⏸️ | Onay kartı — Mng.Ui backlog |
 | Gerçek firewall API | ⏸️ | Engine handler + vendor API — SIEM Faz 3 |
 
@@ -39,7 +39,7 @@ sec_events (login_failed × N)
 
 Odak P4-A şablonu: `scripts/odak/test-alarm-approval-e2e.ps1` · `matchKey: auth_failure_p4_e2e`
 
-SIEM U1 için yalnızca `matchKey` → `login_failed` ve `filterExpression` güncellenir.
+**SIEM U1 tam hattı:** `scripts/odak/test-siem-u1-approval-block-e2e.ps1` · `matchKey: login_failed` · `filterExpression` + `block.ip` (`{{event.context.srcIp}}`)
 
 ---
 
@@ -93,8 +93,8 @@ Alarm payload alanları (`AlarmEventMessage`): `severity`, `ruleId`, `dedupKey`,
 | # | Madde | Sahip |
 |---|-------|-------|
 | S1 | `sec_events` ingest + observation publish | MngReactor |
-| S2 | U1/U4 kural yükleme + replay E2E | MonitraNG + Odak script |
-| S3 | `test-siem-u1-workflow-e2e.ps1` | MonitraNG (spike sonrası) |
+| S2 | U1/U4 kural yükleme + replay E2E | ✅ Odak script |
+| S3 | `test-siem-u1-workflow-e2e.ps1` | ✅ Odak E2E |
 | S4 | Onay kartı UI | Mng.Ui |
 | S5 | Engine gerçek firewall handler | MngEngine |
 
