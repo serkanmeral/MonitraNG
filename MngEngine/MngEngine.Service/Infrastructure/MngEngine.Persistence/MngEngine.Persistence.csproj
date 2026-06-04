@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Lextm.SharpSnmpLib" Version="12.5.7" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.0" />
+    <ProjectReference Include="..\..\Core\MngEngine.Application\MngEngine.Application.csproj" />
+    <ProjectReference Include="..\MngEngine.Infrastructure\MngEngine.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

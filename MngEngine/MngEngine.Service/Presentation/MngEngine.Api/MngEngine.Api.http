@@ -1,0 +1,6 @@
+@MngEngine.Api_HostAddress = http://localhost:5037
+
+GET {{MngEngine.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
