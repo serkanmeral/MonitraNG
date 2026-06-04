@@ -1,6 +1,16 @@
 # SIEM performans benchmark sonuçları
 
-**Durum:** ✅ **P0 Odak baseline** (4 Haz 2026) — `benchmark-P0-2026-06-04.json`
+**Durum:** ✅ **P0 Odak baseline + soak** (4 Haz 2026)
+
+## Script
+
+```powershell
+# Kısa baseline + detection lag
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\benchmark-siem-p0-baseline.ps1 -IncludeDetectionLag
+
+# P0 soak kapısı (5 dk, 50 evt/s hedef, batch=5)
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\benchmark-siem-p0-baseline.ps1 -Soak
+```
 
 ## Profiller
 
@@ -8,12 +18,6 @@
 |--------|----------|--------|
 | P0 | Deny-only firewall + dar AD (4625/4740) | [SIEM_PERFORMANCE_PLAN §3](./SIEM_PERFORMANCE_PLAN.md) |
 | P1 | Tam MVP hacim tahmini | Aynı |
-
-## Script
-
-```powershell
-pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\benchmark-siem-p0-baseline.ps1 -IncludeDetectionLag
-```
 
 ## Dosya adlandırma
 
