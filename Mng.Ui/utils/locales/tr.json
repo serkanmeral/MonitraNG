@@ -4995,7 +4995,28 @@
       "noAlarms": "Açık alarm yok.",
       "quickLinksTitle": "Hızlı bağlantılar",
       "breakdownTitle": "Olay dağılımı (24s)",
-      "breakdownEmpty": "Veri yok"
+      "breakdownEmpty": "Veri yok",
+      "customize": "Düzeni özelleştir",
+      "customizeTitle": "Panel düzeni",
+      "customizeHint": "Bölümleri göster/gizle ve sırala. Tercihler tarayıcıda saklanır.",
+      "customizeSections": "Ana bölümler",
+      "customizeStatCards": "Özet kartları",
+      "customizeReset": "Varsayılana dön",
+      "customizeSave": "Kaydet",
+      "customizeCancel": "İptal",
+      "widgets": {
+        "stats": "Özet kartları",
+        "breakdown": "Olay dağılımı",
+        "recentAlarms": "Son alarmlar",
+        "quickLinks": "Hızlı bağlantılar"
+      },
+      "statCards": {
+        "eventsTotal": "Toplam olay",
+        "openAlarms": "Açık alarm",
+        "loginFailed": "Başarısız giriş",
+        "deniedFlow": "Engellenen akış",
+        "newFlow": "Yeni akış"
+      }
     },
     "events": {
       "menuTitle": "Güvenlik olayları",

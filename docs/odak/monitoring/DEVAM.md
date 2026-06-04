@@ -9,7 +9,7 @@
 
 ## 1. Tek cümlede durum
 
-**SIEM MVP (U1–U7) + B1/B2/B3 ✅.** **Sıradaki:** A4 özelleştirilebilir dashboard veya Linux auth U1 E2E.
+**SIEM MVP (U1–U7) + B1/B2/B3 + A4 ✅.** **Sıradaki:** Linux auth → U1 alarm E2E (sshd tam zincir).
 
 ---
 
@@ -104,7 +104,8 @@ Kısa vadeli teknik devam (MVP sonrası bakım):
 |---|-----|-----|
 | 16 | ~~**`firewall.vendor.v1` parser**~~ | ✅ FortiGate pilot · `test-siem-firewall-vendor-ingest.ps1` |
 | 17 | ~~**B3 hazır kural paketi**~~ | ✅ MITRE/ISO · `siem-mvp-v1` |
-| 18 | **A4 özelleştirilebilir dashboard** | Widget düzeni |
+| 18 | ~~**A4 özelleştirilebilir dashboard**~~ | ✅ localStorage widget düzeni |
+| 19 | **Linux auth → U1 alarm E2E** | sshd brute-force tam zincir |
 | 19 | **Linux auth → U1 alarm E2E** | sshd brute-force tam zincir |
 
 LogAlarm parite → [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md)

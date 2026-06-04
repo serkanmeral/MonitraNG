@@ -8,7 +8,7 @@
 
 ## 1. Tek cümlede durum (4 Haz 2026)
 
-**SIEM-hafif MVP + post-MVP ✅** · **B3 `siem-mvp-v1`** (MITRE/ISO kural paketi) Odak'ta doğrulandı. **Sıradaki:** A4 özelleştirilebilir dashboard.
+**SIEM-hafif MVP + post-MVP ✅** · **B3 + A4** tamamlandı. **Sıradaki:** Linux auth → U1 alarm E2E.
 
 ---
 
@@ -89,7 +89,8 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | 14 | ~~**Odak sync SFTP fallback**~~ ✅ | `Send-OdakRemoteFile` · `2091029` |
 | **15** | ~~**B1 devamı — `firewall.vendor.v1`**~~ | ✅ FortiGate pilot · U4/U6 alanları · [SIEM_PARSER_PLAN.md](./SIEM_PARSER_PLAN.md) |
 | **16** | ~~**B3 — hazır kural paketi**~~ | ✅ `siem-mvp-v1` · [SIEM_ALARM_RULE_PACK.md](./SIEM_ALARM_RULE_PACK.md) |
-| **17** | **A4 — özelleştirilebilir dashboard** | Widget düzeni · [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md) |
+| **17** | ~~**A4 — özelleştirilebilir dashboard**~~ | ✅ Widget düzeni · localStorage |
+| — | Linux auth → U1 E2E | sshd brute-force tam zincir |
 | — | LogAlarm parite (genel) | [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md) |
 
 ---

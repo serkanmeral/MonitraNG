@@ -4,11 +4,22 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import type { AlarmSummary } from '@/types/apps/alarm';
 import { alarmListOpen } from '@/services/alarmService';
 import { secEventQuery } from '@/services/secEventService';
+import {
+  loadSiemDashboardLayout,
+  saveSiemDashboardLayout,
+  resetSiemDashboardLayout,
+  type SiemDashboardLayout,
+  type SiemDashboardWidgetId,
+  type SiemStatCardId,
+} from '@/composables/useSiemDashboardLayout';
 
 const { t, locale } = useAppI18n();
 
 const loading = ref(true);
 const errorLocal = ref<string | null>(null);
+const customizeOpen = ref(false);
+const layoutDraft = ref<SiemDashboardLayout>(loadSiemDashboardLayout());
+const layout = ref<SiemDashboardLayout>(loadSiemDashboardLayout());
 
 const stats = ref({
   eventsTotal: 0,
@@ -21,6 +32,34 @@ const stats = ref({
 const recentAlarms = ref<AlarmSummary[]>([]);
 
 const timeRangeLabel = computed(() => t('siemCenter.dashboard.range24h'));
+
+const visibleWidgets = computed(() =>
+  layout.value.widgetOrder.filter((id) => !layout.value.hiddenWidgets.includes(id)),
+);
+
+const mainWidgets = computed(() =>
+  visibleWidgets.value.filter((id) => id !== 'recentAlarms' && id !== 'quickLinks'),
+);
+
+const showRecentAlarms = computed(
+  () =>
+    visibleWidgets.value.includes('recentAlarms') &&
+    !layout.value.hiddenWidgets.includes('recentAlarms'),
+);
+
+const showQuickLinks = computed(
+  () =>
+    visibleWidgets.value.includes('quickLinks') &&
+    !layout.value.hiddenWidgets.includes('quickLinks'),
+);
+
+const showBottomRow = computed(() => showRecentAlarms.value || showQuickLinks.value);
+
+const bottomRowOrder = computed(() =>
+  layout.value.widgetOrder.filter(
+    (id) => (id === 'recentAlarms' || id === 'quickLinks') && visibleWidgets.value.includes(id),
+  ),
+);
 
 function isoRange24h(): { from: string; to: string } {
   const to = new Date();
@@ -46,48 +85,54 @@ function severityColor(severity: number): string {
   return 'info';
 }
 
-const statCards = computed(() => [
-  {
-    key: 'eventsTotal',
+const statCardDefs = computed(() => ({
+  eventsTotal: {
+    key: 'eventsTotal' as const,
     label: t('siemCenter.dashboard.statEvents'),
     value: stats.value.eventsTotal,
     color: 'primary',
     icon: 'mdi-shield-search',
     to: '/apps/siem-center/events',
   },
-  {
-    key: 'openAlarms',
+  openAlarms: {
+    key: 'openAlarms' as const,
     label: t('siemCenter.dashboard.statOpenAlarms'),
     value: stats.value.openAlarms,
     color: 'error',
     icon: 'mdi-bell-alert',
     to: '/apps/alarm-center/alarms',
   },
-  {
-    key: 'loginFailed',
+  loginFailed: {
+    key: 'loginFailed' as const,
     label: t('siemCenter.dashboard.statLoginFailed'),
     value: stats.value.loginFailed,
     color: 'warning',
     icon: 'mdi-account-lock',
     to: '/apps/siem-center/events?eventAction=login_failed',
   },
-  {
-    key: 'deniedFlow',
+  deniedFlow: {
+    key: 'deniedFlow' as const,
     label: t('siemCenter.dashboard.statDeniedFlow'),
     value: stats.value.deniedFlow,
     color: 'deep-orange',
     icon: 'mdi-firewall',
     to: '/apps/siem-center/events?eventAction=denied_flow',
   },
-  {
-    key: 'newFlow',
+  newFlow: {
+    key: 'newFlow' as const,
     label: t('siemCenter.dashboard.statNewFlow'),
     value: stats.value.newFlow,
     color: 'info',
     icon: 'mdi-transit-connection-variant',
     to: '/apps/siem-center/events?eventAction=new_flow',
   },
-]);
+}));
+
+const statCards = computed(() =>
+  layout.value.statCardOrder
+    .filter((id) => !layout.value.hiddenStatCards.includes(id))
+    .map((id) => statCardDefs.value[id]),
+);
 
 const actionBreakdown = computed(() => {
   const s = stats.value;
@@ -99,6 +144,69 @@ const actionBreakdown = computed(() => {
   const max = Math.max(...items.map((i) => i.count), 1);
   return items.map((i) => ({ ...i, pct: Math.round((i.count / max) * 100) }));
 });
+
+function widgetLabel(id: SiemDashboardWidgetId): string {
+  return t(`siemCenter.dashboard.widgets.${id}`);
+}
+
+function statCardLabel(id: SiemStatCardId): string {
+  return t(`siemCenter.dashboard.statCards.${id}`);
+}
+
+function openCustomize() {
+  layoutDraft.value = JSON.parse(JSON.stringify(layout.value)) as SiemDashboardLayout;
+  customizeOpen.value = true;
+}
+
+function isWidgetVisible(id: SiemDashboardWidgetId): boolean {
+  return !layoutDraft.value.hiddenWidgets.includes(id);
+}
+
+function isStatVisible(id: SiemStatCardId): boolean {
+  return !layoutDraft.value.hiddenStatCards.includes(id);
+}
+
+function toggleWidget(id: SiemDashboardWidgetId, visible: boolean | null) {
+  const hidden = layoutDraft.value.hiddenWidgets.filter((x) => x !== id);
+  if (!visible) hidden.push(id);
+  layoutDraft.value.hiddenWidgets = hidden;
+}
+
+function toggleStat(id: SiemStatCardId, visible: boolean | null) {
+  const hidden = layoutDraft.value.hiddenStatCards.filter((x) => x !== id);
+  if (!visible) hidden.push(id);
+  layoutDraft.value.hiddenStatCards = hidden;
+}
+
+function moveInList<T extends string>(list: T[], id: T, delta: number): T[] {
+  const idx = list.indexOf(id);
+  if (idx < 0) return list;
+  const next = idx + delta;
+  if (next < 0 || next >= list.length) return list;
+  const copy = [...list];
+  [copy[idx], copy[next]] = [copy[next], copy[idx]];
+  return copy;
+}
+
+function moveWidget(id: SiemDashboardWidgetId, delta: number) {
+  layoutDraft.value.widgetOrder = moveInList(layoutDraft.value.widgetOrder, id, delta);
+}
+
+function moveStat(id: SiemStatCardId, delta: number) {
+  layoutDraft.value.statCardOrder = moveInList(layoutDraft.value.statCardOrder, id, delta);
+}
+
+function saveLayout() {
+  layout.value = JSON.parse(JSON.stringify(layoutDraft.value)) as SiemDashboardLayout;
+  saveSiemDashboardLayout(layout.value);
+  customizeOpen.value = false;
+}
+
+function restoreDefaultLayout() {
+  layoutDraft.value = resetSiemDashboardLayout();
+  layout.value = JSON.parse(JSON.stringify(layoutDraft.value)) as SiemDashboardLayout;
+  customizeOpen.value = false;
+}
 
 async function loadDashboard() {
   loading.value = true;
@@ -154,133 +262,203 @@ onMounted(() => {
         {{ timeRangeLabel }}
       </v-chip>
       <v-spacer />
+      <v-btn variant="tonal" prepend-icon="mdi-view-dashboard-edit" @click="openCustomize">
+        {{ t('siemCenter.dashboard.customize') }}
+      </v-btn>
       <v-btn variant="tonal" prepend-icon="mdi-refresh" :loading="loading" @click="loadDashboard">
         {{ t('siemCenter.dashboard.refresh') }}
       </v-btn>
     </div>
 
-    <v-row dense class="mb-4">
-      <v-col v-for="card in statCards" :key="card.key" cols="12" sm="6" md="4" lg="2">
-        <v-skeleton-loader v-if="loading" type="card" />
-        <v-card
-          v-else
-          variant="outlined"
-          class="pa-3 stat-card h-100"
-          :to="card.to"
-          link
-        >
-          <div class="d-flex align-center gap-3">
-            <v-avatar :color="card.color" variant="tonal" size="48" rounded>
-              <v-icon :icon="card.icon" />
-            </v-avatar>
-            <div>
-              <div class="text-caption text-medium-emphasis">{{ card.label }}</div>
-              <div class="text-h5 font-weight-bold">{{ card.value.toLocaleString() }}</div>
+    <template v-for="widgetId in mainWidgets" :key="widgetId">
+      <v-row v-if="widgetId === 'stats'" dense class="mb-4">
+        <v-col v-for="card in statCards" :key="card.key" cols="12" sm="6" md="4" lg="2">
+          <v-skeleton-loader v-if="loading" type="card" />
+          <v-card
+            v-else
+            variant="outlined"
+            class="pa-3 stat-card h-100"
+            :to="card.to"
+            link
+          >
+            <div class="d-flex align-center gap-3">
+              <v-avatar :color="card.color" variant="tonal" size="48" rounded>
+                <v-icon :icon="card.icon" />
+              </v-avatar>
+              <div>
+                <div class="text-caption text-medium-emphasis">{{ card.label }}</div>
+                <div class="text-h5 font-weight-bold">{{ card.value.toLocaleString() }}</div>
+              </div>
             </div>
-          </div>
-        </v-card>
-      </v-col>
-    </v-row>
+          </v-card>
+        </v-col>
+      </v-row>
 
-    <v-card variant="outlined" class="rounded-lg pa-4 mb-4">
-      <h2 class="text-h6 font-weight-bold mb-3">
-        {{ t('siemCenter.dashboard.breakdownTitle') }}
-      </h2>
-      <v-skeleton-loader v-if="loading" type="list-item@3" />
-      <div v-else-if="stats.eventsTotal === 0" class="text-medium-emphasis text-body-2 py-2">
-        {{ t('siemCenter.dashboard.breakdownEmpty') }}
-      </div>
-      <div v-else class="d-flex flex-column gap-3">
-        <div v-for="row in actionBreakdown" :key="row.key">
-          <div class="d-flex justify-space-between text-body-2 mb-1">
-            <router-link
-              :to="`/apps/siem-center/events?eventAction=${row.key}`"
-              class="text-decoration-none"
-            >
-              {{ row.label }}
-            </router-link>
-            <span class="font-weight-medium">{{ row.count.toLocaleString() }}</span>
-          </div>
-          <v-progress-linear
-            :model-value="row.pct"
-            :color="row.color"
-            height="8"
-            rounded
-          />
+      <v-card v-else-if="widgetId === 'breakdown'" variant="outlined" class="rounded-lg pa-4 mb-4">
+        <h2 class="text-h6 font-weight-bold mb-3">
+          {{ t('siemCenter.dashboard.breakdownTitle') }}
+        </h2>
+        <v-skeleton-loader v-if="loading" type="list-item@3" />
+        <div v-else-if="stats.eventsTotal === 0" class="text-medium-emphasis text-body-2 py-2">
+          {{ t('siemCenter.dashboard.breakdownEmpty') }}
         </div>
-      </div>
-    </v-card>
-
-    <v-row>
-      <v-col cols="12" lg="8">
-        <v-card variant="outlined" class="rounded-lg pa-4">
-          <div class="d-flex align-center mb-3">
-            <h2 class="text-h6 font-weight-bold">
-              {{ t('siemCenter.dashboard.recentAlarmsTitle') }}
-            </h2>
-            <v-spacer />
-            <v-btn
-              variant="text"
-              size="small"
-              to="/apps/alarm-center/alarms"
-            >
-              {{ t('siemCenter.dashboard.viewAllAlarms') }}
-            </v-btn>
+        <div v-else class="d-flex flex-column gap-3">
+          <div v-for="row in actionBreakdown" :key="row.key">
+            <div class="d-flex justify-space-between text-body-2 mb-1">
+              <router-link
+                :to="`/apps/siem-center/events?eventAction=${row.key}`"
+                class="text-decoration-none"
+              >
+                {{ row.label }}
+              </router-link>
+              <span class="font-weight-medium">{{ row.count.toLocaleString() }}</span>
+            </div>
+            <v-progress-linear
+              :model-value="row.pct"
+              :color="row.color"
+              height="8"
+              rounded
+            />
           </div>
+        </div>
+      </v-card>
+    </template>
 
-          <v-skeleton-loader v-if="loading" type="table-row@5" />
-          <v-table v-else density="comfortable">
-            <thead>
-              <tr>
-                <th>{{ t('alarmCenter.alarms.colSeverity') }}</th>
-                <th>{{ t('alarmCenter.alarms.colDedupKey') }}</th>
-                <th>{{ t('alarmCenter.alarms.colLastSeen') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="alarm in recentAlarms" :key="alarm.id">
-                <td>
-                  <v-chip size="small" :color="severityColor(alarm.severity)" variant="flat">
-                    {{ alarm.severity }}
-                  </v-chip>
-                </td>
-                <td class="text-body-2">{{ alarm.dedupKey }}</td>
-                <td>{{ formatDate(alarm.lastSeenAt) }}</td>
-              </tr>
-              <tr v-if="recentAlarms.length === 0">
-                <td colspan="3" class="text-center text-medium-emphasis py-6">
-                  {{ t('siemCenter.dashboard.noAlarms') }}
-                </td>
-              </tr>
-            </tbody>
-          </v-table>
-        </v-card>
-      </v-col>
+    <v-row v-if="showBottomRow">
+      <template v-for="widgetId in bottomRowOrder" :key="widgetId">
+        <v-col v-if="widgetId === 'recentAlarms'" cols="12" :lg="showQuickLinks ? 8 : 12">
+          <v-card variant="outlined" class="rounded-lg pa-4">
+            <div class="d-flex align-center mb-3">
+              <h2 class="text-h6 font-weight-bold">
+                {{ t('siemCenter.dashboard.recentAlarmsTitle') }}
+              </h2>
+              <v-spacer />
+              <v-btn variant="text" size="small" to="/apps/alarm-center/alarms">
+                {{ t('siemCenter.dashboard.viewAllAlarms') }}
+              </v-btn>
+            </div>
 
-      <v-col cols="12" lg="4">
-        <v-card variant="outlined" class="rounded-lg pa-4 h-100">
-          <h2 class="text-h6 font-weight-bold mb-3">
-            {{ t('siemCenter.dashboard.quickLinksTitle') }}
-          </h2>
-          <v-list density="comfortable" nav>
-            <v-list-item
-              prepend-icon="mdi-format-list-bulleted"
-              :title="t('siemCenter.events.menuTitle')"
-              to="/apps/siem-center/events"
-            />
-            <v-list-item
-              prepend-icon="mdi-bell-alert"
-              :title="t('alarmCenter.alarms.menuTitle')"
-              to="/apps/alarm-center/alarms"
-            />
-            <v-list-item
-              prepend-icon="mdi-tune"
-              :title="t('alarmCenter.rules.menuTitle')"
-              to="/apps/alarm-center/rules"
-            />
-          </v-list>
-        </v-card>
-      </v-col>
+            <v-skeleton-loader v-if="loading" type="table-row@5" />
+            <v-table v-else density="comfortable">
+              <thead>
+                <tr>
+                  <th>{{ t('alarmCenter.alarms.colSeverity') }}</th>
+                  <th>{{ t('alarmCenter.alarms.colDedupKey') }}</th>
+                  <th>{{ t('alarmCenter.alarms.colLastSeen') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="alarm in recentAlarms" :key="alarm.id">
+                  <td>
+                    <v-chip size="small" :color="severityColor(alarm.severity)" variant="flat">
+                      {{ alarm.severity }}
+                    </v-chip>
+                  </td>
+                  <td class="text-body-2">{{ alarm.dedupKey }}</td>
+                  <td>{{ formatDate(alarm.lastSeenAt) }}</td>
+                </tr>
+                <tr v-if="recentAlarms.length === 0">
+                  <td colspan="3" class="text-center text-medium-emphasis py-6">
+                    {{ t('siemCenter.dashboard.noAlarms') }}
+                  </td>
+                </tr>
+              </tbody>
+            </v-table>
+          </v-card>
+        </v-col>
+
+        <v-col v-else-if="widgetId === 'quickLinks'" cols="12" :lg="showRecentAlarms ? 4 : 12">
+          <v-card variant="outlined" class="rounded-lg pa-4 h-100">
+            <h2 class="text-h6 font-weight-bold mb-3">
+              {{ t('siemCenter.dashboard.quickLinksTitle') }}
+            </h2>
+            <v-list density="comfortable" nav>
+              <v-list-item
+                prepend-icon="mdi-format-list-bulleted"
+                :title="t('siemCenter.events.menuTitle')"
+                to="/apps/siem-center/events"
+              />
+              <v-list-item
+                prepend-icon="mdi-bell-alert"
+                :title="t('alarmCenter.alarms.menuTitle')"
+                to="/apps/alarm-center/alarms"
+              />
+              <v-list-item
+                prepend-icon="mdi-tune"
+                :title="t('alarmCenter.rules.menuTitle')"
+                to="/apps/alarm-center/rules"
+              />
+            </v-list>
+          </v-card>
+        </v-col>
+      </template>
     </v-row>
+
+    <v-dialog v-model="customizeOpen" max-width="560">
+      <v-card>
+        <v-card-title>{{ t('siemCenter.dashboard.customizeTitle') }}</v-card-title>
+        <v-card-text>
+          <p class="text-body-2 text-medium-emphasis mb-4">
+            {{ t('siemCenter.dashboard.customizeHint') }}
+          </p>
+
+          <div class="text-subtitle-2 mb-2">{{ t('siemCenter.dashboard.customizeSections') }}</div>
+          <v-list density="compact" class="mb-4">
+            <v-list-item
+              v-for="id in layoutDraft.widgetOrder"
+              :key="id"
+              :title="widgetLabel(id)"
+            >
+              <template #prepend>
+                <v-checkbox
+                  :model-value="isWidgetVisible(id)"
+                  hide-details
+                  density="compact"
+                  @update:model-value="toggleWidget(id, $event)"
+                />
+              </template>
+              <template #append>
+                <v-btn icon="mdi-chevron-up" variant="text" size="x-small" @click="moveWidget(id, -1)" />
+                <v-btn icon="mdi-chevron-down" variant="text" size="x-small" @click="moveWidget(id, 1)" />
+              </template>
+            </v-list-item>
+          </v-list>
+
+          <div class="text-subtitle-2 mb-2">{{ t('siemCenter.dashboard.customizeStatCards') }}</div>
+          <v-list density="compact">
+            <v-list-item
+              v-for="id in layoutDraft.statCardOrder"
+              :key="id"
+              :title="statCardLabel(id)"
+            >
+              <template #prepend>
+                <v-checkbox
+                  :model-value="isStatVisible(id)"
+                  hide-details
+                  density="compact"
+                  @update:model-value="toggleStat(id, $event)"
+                />
+              </template>
+              <template #append>
+                <v-btn icon="mdi-chevron-up" variant="text" size="x-small" @click="moveStat(id, -1)" />
+                <v-btn icon="mdi-chevron-down" variant="text" size="x-small" @click="moveStat(id, 1)" />
+              </template>
+            </v-list-item>
+          </v-list>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn variant="text" @click="restoreDefaultLayout">
+            {{ t('siemCenter.dashboard.customizeReset') }}
+          </v-btn>
+          <v-spacer />
+          <v-btn variant="text" @click="customizeOpen = false">
+            {{ t('siemCenter.dashboard.customizeCancel') }}
+          </v-btn>
+          <v-btn color="primary" variant="flat" @click="saveLayout">
+            {{ t('siemCenter.dashboard.customizeSave') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>

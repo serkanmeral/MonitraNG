@@ -14,7 +14,7 @@ MonitraNG SIEM-hafif MVP (U1–U7) tamamlandı. LogAlarm seviyesi parite ayrı b
 | A1 | Olay arama UI | ✅ | `/apps/siem-center/events` |
 | A2 | Güvenlik paneli MVP | ✅ | `/apps/siem-center` · [SIEM_DASHBOARD.md](./SIEM_DASHBOARD.md) |
 | A3 | Timeline / gelişmiş filtre | ✅ | URL sync, U1–U7 presets, new_flow badge |
-| A4 | Özelleştirilebilir dashboard | ⬜ | Widget düzeni |
+| A4 | Özelleştirilebilir dashboard | ✅ | localStorage widget düzeni · `/apps/siem-center` |
 
 ## Faz B — Kapsam & parser
 

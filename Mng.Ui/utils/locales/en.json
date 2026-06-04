@@ -4982,7 +4982,28 @@
       "noAlarms": "No open alarms.",
       "quickLinksTitle": "Quick links",
       "breakdownTitle": "Event breakdown (24h)",
-      "breakdownEmpty": "No data"
+      "breakdownEmpty": "No data",
+      "customize": "Customize layout",
+      "customizeTitle": "Dashboard layout",
+      "customizeHint": "Show, hide, and reorder sections. Preferences are stored in your browser.",
+      "customizeSections": "Main sections",
+      "customizeStatCards": "Summary cards",
+      "customizeReset": "Reset to default",
+      "customizeSave": "Save",
+      "customizeCancel": "Cancel",
+      "widgets": {
+        "stats": "Summary cards",
+        "breakdown": "Event breakdown",
+        "recentAlarms": "Recent alarms",
+        "quickLinks": "Quick links"
+      },
+      "statCards": {
+        "eventsTotal": "Total events",
+        "openAlarms": "Open alarms",
+        "loginFailed": "Failed logins",
+        "deniedFlow": "Denied flows",
+        "newFlow": "New flows"
+      }
     },
     "events": {
       "menuTitle": "Security events",
