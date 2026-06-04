@@ -47,6 +47,7 @@ namespace MngReactor.Persistence
             services.AddScoped<ISecEventsRepository, SecEventsRepository>();
             services.AddScoped<ISecEventFlowBaselineStore, SecEventFlowBaselineStore>();
             services.AddSingleton<ISecEventMaintenanceWindowEvaluator, SecEventMaintenanceWindowEvaluator>();
+            services.AddSingleton<WindowsSecurityExtendedParser>();
             services.AddSingleton<WindowsSecurityParser>();
             services.AddSingleton<LinuxAuthSyslogParser>();
             services.AddSingleton<FirewallVendorParser>();

@@ -55,6 +55,7 @@ public sealed class SecEventIngestProcessingTests
         return new SecEventIngestProcessing(
             NullLogger<SecEventIngestProcessing>.Instance,
             new SecEventParserRegistry(
+                new WindowsSecurityExtendedParser(),
                 SecEventParserTestFactory.CreateWindowsParser(),
                 new LinuxAuthSyslogParser(),
                 new FirewallVendorParser(),

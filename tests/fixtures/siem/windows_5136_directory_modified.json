@@ -1,0 +1,7 @@
+{
+  "EventID": 5136,
+  "TimeCreated": "2026-06-04T10:25:00Z",
+  "SubjectUserName": "administrator",
+  "ObjectDN": "CN=Policy,CN=System,DC=odak,DC=local",
+  "AttributeLDAPDisplayName": "nTSecurityDescriptor"
+}

@@ -57,6 +57,7 @@ public sealed class LinuxAuthSyslogParserTests
     public void Registry_ResolvesLinuxBeforeFirewall()
     {
         var registry = new SecEventParserRegistry(
+            new WindowsSecurityExtendedParser(),
             SecEventParserTestFactory.CreateWindowsParser(),
             new LinuxAuthSyslogParser(),
             new FirewallVendorParser(),

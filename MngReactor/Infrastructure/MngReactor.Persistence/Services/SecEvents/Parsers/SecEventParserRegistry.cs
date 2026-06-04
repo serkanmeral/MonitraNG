@@ -9,13 +9,14 @@ public sealed class SecEventParserRegistry : ISecEventParserRegistry
     private readonly UnknownSecEventFallback _fallback;
 
     public SecEventParserRegistry(
+        WindowsSecurityExtendedParser windowsExtended,
         WindowsSecurityParser windows,
         LinuxAuthSyslogParser linuxAuth,
         FirewallVendorParser firewallVendor,
         FirewallGenericSyslogParser firewall,
         UnknownSecEventFallback fallback)
     {
-        _parsers = [windows, linuxAuth, firewallVendor, firewall];
+        _parsers = [windowsExtended, windows, linuxAuth, firewallVendor, firewall];
         _fallback = fallback;
     }
 

@@ -8,11 +8,27 @@ namespace MngReactor.Tests.Services.SecEvents;
 public sealed class SecEventParserRegistryTests
 {
     private readonly SecEventParserRegistry _registry = new(
+        new WindowsSecurityExtendedParser(),
         SecEventParserTestFactory.CreateWindowsParser(),
         new LinuxAuthSyslogParser(),
         new FirewallVendorParser(),
         new FirewallGenericSyslogParser(),
         new UnknownSecEventFallback());
+
+    [Fact]
+    public void S2_4_RoutesExtendedWindowsEventToExtendedParser()
+    {
+        using var doc = JsonDocument.Parse(SiemFixtureHelper.ReadFixture("windows_4720_account_created.json"));
+        var ctx = new SecEventRawContext
+        {
+            ReceivedAt = DateTime.UtcNow,
+            Source = new SecEventSourceInfo { Type = "ad", Product = "windows" },
+            Raw = doc.RootElement.Clone()
+        };
+
+        var parser = _registry.Resolve(ctx);
+        Assert.Equal(WindowsSecurityExtendedParser.ParserIdValue, parser.ParserId);
+    }
 
     [Fact]
     public void S2_4_RoutesWindowsProductToWindowsParser()

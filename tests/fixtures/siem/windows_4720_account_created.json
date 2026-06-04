@@ -1,0 +1,7 @@
+{
+  "EventID": 4720,
+  "TimeCreated": "2026-06-04T10:15:00Z",
+  "SubjectUserName": "administrator",
+  "TargetUserName": "svc_backup",
+  "SamAccountName": "svc_backup"
+}

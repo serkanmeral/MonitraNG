@@ -1,6 +1,6 @@
 # SIEM — Parser / Normalizer Planı (Odak)
 
-**Durum:** P0/P1 parser'lar Odak'ta — `linux.auth.v1` ✅ · `firewall.vendor.v1` (FortiGate + **Palo Alto PAN-OS CEF**) ✅
+**Durum:** P0/P1 parser'lar Odak'ta — `linux.auth.v1` ✅ · `firewall.vendor.v1` (FortiGate + Palo Alto) ✅ · `windows.security.extended.v1` (4720/4728/5136 pilot) ✅
 **Son güncelleme:** 4 Haziran 2026
 **Ana plan:** [SIEM_PLANNING.md](./SIEM_PLANNING.md) §13 (parser özeti), §4 (`sec_events`)
 
@@ -46,7 +46,7 @@ flowchart LR
 | **P0** | `firewall.generic_syslog.v1` | Syslog — CEF / key=value / regex tabanlı deny | U4 |
 | **P1** | `linux.auth.v1` | rsyslog — sshd, sudo | U1 (Linux) | ✅ |
 | **P1** | `firewall.vendor.v1` | FortiGate key=value + Palo Alto PAN-OS CEF/CSV | U4, U6 doğruluğu | ✅ |
-| **P2** | `windows.security.extended.v1` | 4720, 4728, 5136… | Yetki / dizin değişikliği |
+| **P2** | `windows.security.extended.v1` | 4720, 4728, 5136… | Yetki / dizin değişikliği | ✅ pilot |
 | **P2** | `bastion.generic.v1` | Jump host syslog formatı | U2, U3 |
 
 **Pilot firewall markası** netleşince `firewall.vendor.v1` P0'a yükseltilebilir (SIEM_PLANNING §12.6).

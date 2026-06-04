@@ -44,7 +44,8 @@
 | **SIEM dashboard MVP** | ✅ `/apps/siem-center` · [SIEM_DASHBOARD.md](./SIEM_DASHBOARD.md) |
 | **U3 bakım penceresi (appsettings)** | ✅ `SecEventMaintenanceWindow:*` |
 | **B1 `linux.auth.v1`** | ✅ U1 alarm + workflow E2E |
-| **B1 `firewall.vendor.v1` (FortiGate)** | ✅ `test-siem-firewall-vendor-ingest.ps1` |
+| **B1 `firewall.vendor.v1` (FortiGate + PAN-OS)** | ✅ `test-siem-firewall-vendor-ingest.ps1` |
+| **B1 `windows.security.extended.v1` (4720/4728/5136)** | ✅ `test-siem-windows-extended-ingest.ps1` |
 | **B3 hazır kural paketi (`siem-mvp-v1`)** | ✅ `seed-siem-alarm-rule-pack.ps1` · [SIEM_ALARM_RULE_PACK.md](./SIEM_ALARM_RULE_PACK.md) |
 | **Odak sync SFTP fallback** | ✅ `Send-OdakRemoteFile` · commit `2091029` |
 
@@ -112,6 +113,8 @@ Kısa vadeli teknik devam (MVP sonrası bakım):
 | 23 | ~~**B1 Palo Alto PAN-OS**~~ | ✅ CEF/CSV · `panw_*` fixtures |
 | 24 | ~~**Dashboard P2**~~ | ✅ saatlik timeline + U1–U7 senaryo kartları |
 | 25 | ~~**workflow.deadletter triage**~~ | ✅ `diagnostic-workflow-deadletter.ps1` (eski E2E artefakt) |
+| 26 | ~~**E2E suite B1 ingest**~~ | ✅ firewall vendor + windows extended |
+| 27 | ~~**B1 `windows.security.extended.v1`**~~ | ✅ 4720/4728/5136 · unit + ingest smoke |
 
 LogAlarm parite → [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md)
 

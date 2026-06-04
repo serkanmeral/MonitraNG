@@ -44,6 +44,9 @@ if (-not $SkipFaz1) {
     Write-Host "OK: Engine WEC batch S5" -ForegroundColor Green
 }
 
+Invoke-Step "B1 firewall vendor ingest" "test-siem-firewall-vendor-ingest.ps1" @("-Vendor", "all")
+Invoke-Step "B1 windows extended ingest" "test-siem-windows-extended-ingest.ps1"
+
 Invoke-Step "Purge alarm observation queue" "purge-alarm-observation-queue.ps1"
 Invoke-Step "U1 alarm" "test-siem-u1-alarm-e2e.ps1"
 Invoke-Step "U1 linux auth alarm" "test-siem-linux-auth-u1-alarm-e2e.ps1"
