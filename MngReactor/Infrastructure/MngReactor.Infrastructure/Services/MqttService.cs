@@ -71,6 +71,9 @@ namespace MngReactor.Infrastructure.Services
 
         public async Task PublishAsync(string topic, string payload)
         {
+            if (!_mqttClient.IsConnected)
+                await ConnectAsync();
+
             var message = new MqttApplicationMessageBuilder()
                 .WithTopic(topic)
                 .WithPayload(payload)

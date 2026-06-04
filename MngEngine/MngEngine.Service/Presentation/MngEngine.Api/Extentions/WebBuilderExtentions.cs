@@ -58,14 +58,12 @@ namespace MngEngine.Api.Extentions
 
         public static void InitWebAPP(this WebApplicationBuilder builder)
         {
+            var httpPort = builder.Configuration.GetValue("MngEngine:Server:Port", 5037);
+
             builder.WebHost.ConfigureKestrel(options =>
             {
                 options.AddServerHeader = false;
-
-                options.ListenAnyIP(11100, _opt =>
-                {
-                    //_opt.UseHttps(certificate);
-                });
+                options.ListenAnyIP(httpPort);
             });
 
             builder.Services.AddControllers().AddJsonOptions(o =>

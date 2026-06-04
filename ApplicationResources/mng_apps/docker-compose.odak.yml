@@ -38,6 +38,16 @@ services:
       - MngReactorSettings__Mqtt__Host=mosquitto
       - MngReactorSettings__ObservationPublish__Enabled=true
 
+  mngengine:
+    ports:
+      - "5037:5037"
+      - "5514:5514/udp"
+    environment:
+      - MngEngine__Mqtt__Host=mosquitto
+      - MngEngine__Mqtt__UserName=${MQTT_USERNAME:-monitrang}
+      - MngEngine__Mqtt__Password=${MQTT_PASSWORD:-!2345qawsedrf}
+      - MngEngine__SecEventQueue__UdpPort=5514
+
   mnghub:
     ports:
       - "5020:5020"
@@ -79,7 +89,8 @@ services:
     environment:
       - MngWorkflowSettings__MongoDb__ConnectionString=mongodb://admin:admin123@mongo:27017
       - MngWorkflowSettings__Secrets__EncryptionKeyBase64=MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXY=
-      - MngWorkflowSettings__EngineCommand__DevLogOnly=true
+      - MngWorkflowSettings__EngineCommand__DevLogOnly=false
+      - MngWorkflowSettings__EngineCommand__ReactorBaseUrl=http://mngreactor:5003
 
   mngalarm:
     ports:

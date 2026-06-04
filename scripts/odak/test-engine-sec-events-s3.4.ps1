@@ -1,7 +1,7 @@
 # MngEngine S3.4 — fixture batch → Reactor sec-events ingest
 # Engine config (config.txt) ayarli olmali: ServerUrl=Reactor, TokenUrl, credentials
 param(
-    [string]$EngineUrl = "http://localhost:5037",
+    [string]$EngineUrl = "http://192.168.20.20:5037",
     [string]$Server = "192.168.20.20",
     [string]$User = "odak",
     [string]$Domain = "odak",

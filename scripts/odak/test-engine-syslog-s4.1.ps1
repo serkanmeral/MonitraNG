@@ -1,8 +1,8 @@
 # SIEM Faz 1 S4.1 — UDP syslog → Engine → Reactor sec_events
 param(
-    [string]$EngineUrl = "http://localhost:5037",
-    [int]$UdpPort = 5514,
+    [string]$EngineUrl = "http://192.168.20.20:5037",
     [string]$Server = "192.168.20.20",
+    [int]$UdpPort = 5514,
     [string]$User = "odak",
     [string]$Domain = "odak",
     [switch]$VerifyOdakMongo,
@@ -37,7 +37,7 @@ Write-Host "`n2) UDP syslog gönder (port $UdpPort)..." -ForegroundColor Yellow
 $udp = New-Object System.Net.Sockets.UdpClient
 try {
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($syslogLine)
-    [void]$udp.Send($bytes, $bytes.Length, "127.0.0.1", $UdpPort)
+    [void]$udp.Send($bytes, $bytes.Length, $Server, $UdpPort)
     Write-Host "   Gönderildi: $($syslogLine.Substring(0, [Math]::Min(72, $syslogLine.Length)))..." -ForegroundColor DarkGray
 } finally {
     $udp.Close()

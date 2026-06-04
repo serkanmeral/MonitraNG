@@ -280,6 +280,36 @@ services:
           cpus: '0.25'
           memory: 256M
 
+  mngengine:
+    build:
+      context: ../../MngEngine/MngEngine.Service
+      dockerfile: Dockerfile
+    image: mngengine:${VERSION:-latest}
+    container_name: mngengine
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - MngEngine__Server__Port=5037
+      - MngEngine__Mqtt__Host=${MQTT_BROKER_HOST:-mosquitto}
+      - MngEngine__Mqtt__Port=${MQTT_BROKER_PORT:-1883}
+      - MngEngine__Mqtt__UserName=${MQTT_USERNAME:-monitrang}
+      - MngEngine__Mqtt__Password=${MQTT_PASSWORD:-!2345qawsedrf}
+      - MngEngine__SecEventQueue__Enabled=true
+      - MngEngine__SecEventQueue__UdpPort=5514
+      - MngEngine__SecEventQueue__SendIntervalSeconds=30
+    volumes:
+      - mngengine_data:/app
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngreactor
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5037/swagger/index.html || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
   mnghub:
     build:
       context: ../../MngHub
@@ -862,6 +892,8 @@ services:
 
 volumes:
   ollama_data:
+    driver: local
+  mngengine_data:
     driver: local
 
 networks:
