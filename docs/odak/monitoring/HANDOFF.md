@@ -109,9 +109,9 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | Alan | Değer |
 |------|--------|
 | Branch | `main` (origin ile senkron) |
-| Son SIEM commit | `a809593` — bastion · U10 · quick regression |
-| Önceki | `b7ea29b` — Cisco ASA · CI gate · P2 soak |
-| Odak deploy | ✅ `mngreactor` + `mngui` · bastion + U10 smoke PASS |
+| Son SIEM commit | `6d53346` — Linux rsyslog Faz 2.5 |
+| Önceki | `5aa8ad0` — NxLog smoke · suite splat fix |
+| Odak deploy | ✅ `mngengine` · Linux rsyslog smoke PASS |
 
 ---
 
