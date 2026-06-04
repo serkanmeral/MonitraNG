@@ -102,7 +102,7 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | Alan | Değer |
 |------|--------|
 | Branch | `main` (origin ile senkron) |
-| Son SIEM commit | (bu commit) — Linux block.ip E2E · alarm.updated throttle · suite purge |
+| Son SIEM commit | `a72cc0d` — Linux block.ip E2E · alarm.updated throttle · suite purge |
 | Önceki | `cb95426` — hub health + MQ worker tuning |
 
 ---
