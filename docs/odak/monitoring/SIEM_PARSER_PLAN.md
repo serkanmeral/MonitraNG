@@ -1,6 +1,6 @@
 # SIEM — Parser / Normalizer Planı (Odak)
 
-**Durum:** P0/P1 parser'lar Odak'ta — `linux.auth.v1` ✅ · `firewall.vendor.v1` (FortiGate pilot) ✅
+**Durum:** P0/P1 parser'lar Odak'ta — `linux.auth.v1` ✅ · `firewall.vendor.v1` (FortiGate + **Palo Alto PAN-OS CEF**) ✅
 **Son güncelleme:** 4 Haziran 2026
 **Ana plan:** [SIEM_PLANNING.md](./SIEM_PLANNING.md) §13 (parser özeti), §4 (`sec_events`)
 
@@ -45,7 +45,7 @@ flowchart LR
 | **P0** | `windows.security.v1` | WEC/Engine — Event ID 4624, 4625, 4740 | U1, U2 |
 | **P0** | `firewall.generic_syslog.v1` | Syslog — CEF / key=value / regex tabanlı deny | U4 |
 | **P1** | `linux.auth.v1` | rsyslog — sshd, sudo | U1 (Linux) | ✅ |
-| **P1** | `firewall.vendor.v1` | Üretici-spesifik (pilot: **FortiGate**) | U4, U6 doğruluğu | ✅ |
+| **P1** | `firewall.vendor.v1` | FortiGate key=value + Palo Alto PAN-OS CEF/CSV | U4, U6 doğruluğu | ✅ |
 | **P2** | `windows.security.extended.v1` | 4720, 4728, 5136… | Yetki / dizin değişikliği |
 | **P2** | `bastion.generic.v1` | Jump host syslog formatı | U2, U3 |
 
@@ -103,7 +103,7 @@ ISecEventParser
 | `event.outcome` | deny → failure, allow → success |
 | `actor.user` | Admin / policy change loglarında (varsa) |
 
-**Üretici-spesifik:** Pilot **FortiGate** (`source.product=fortigate`) — traffic `action=deny|accept`, event `cfgpath=firewall.policy` → `rule_change`. Palo Alto vb. aynı parser ID altında genişletilebilir.
+**Üretici-spesifik:** **FortiGate** (`source.product=fortigate`) — traffic `action=deny|accept`, event `cfgpath=firewall.policy` → `rule_change`. **Palo Alto PAN-OS** (`pan-os`, `paloalto`) — CEF `|TRAFFIC|` / `|CONFIG|` + CSV `,TRAFFIC,` fallback.
 
 ---
 

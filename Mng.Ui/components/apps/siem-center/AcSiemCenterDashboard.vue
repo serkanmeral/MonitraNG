@@ -12,6 +12,11 @@ import {
   type SiemDashboardWidgetId,
   type SiemStatCardId,
 } from '@/composables/useSiemDashboardLayout';
+import {
+  SIEM_SCENARIO_CATALOG,
+  scenarioEventsLink,
+  type SiemScenarioDef,
+} from '@/composables/useSiemScenarioCatalog';
 
 const { t, locale } = useAppI18n();
 
@@ -30,6 +35,22 @@ const stats = ref({
 });
 
 const recentAlarms = ref<AlarmSummary[]>([]);
+
+interface HourlyBucket {
+  label: string;
+  count: number;
+  pct: number;
+}
+
+interface ScenarioCard {
+  def: SiemScenarioDef;
+  lastSeenAt: string | null;
+  severity: number | null;
+  open: boolean;
+}
+
+const hourlyBuckets = ref<HourlyBucket[]>([]);
+const scenarioCards = ref<ScenarioCard[]>([]);
 
 const timeRangeLabel = computed(() => t('siemCenter.dashboard.range24h'));
 
@@ -145,6 +166,44 @@ const actionBreakdown = computed(() => {
   return items.map((i) => ({ ...i, pct: Math.round((i.count / max) * 100) }));
 });
 
+function buildHourlyBuckets(totals: number[]): HourlyBucket[] {
+  const max = Math.max(...totals, 1);
+  const now = Date.now();
+  const hourMs = 60 * 60 * 1000;
+  return totals.map((count, idx) => {
+    const hourStart = new Date(now - (23 - idx) * hourMs);
+    const label = new Intl.DateTimeFormat(locale.value === 'tr' ? 'tr-TR' : 'en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(hourStart);
+    return { label, count, pct: Math.round((count / max) * 100) };
+  });
+}
+
+function contextKey(alarm: AlarmSummary): string | null {
+  const key = alarm.context?.key;
+  return typeof key === 'string' ? key : null;
+}
+
+function isOpenAlarm(status: AlarmSummary['status']): boolean {
+  return status === 'Active' || status === 'Acknowledged' || status === 0 || status === 1;
+}
+
+function buildScenarioCards(alarms: AlarmSummary[]): ScenarioCard[] {
+  return SIEM_SCENARIO_CATALOG.map((def) => {
+    const matches = alarms.filter((a) => contextKey(a) === def.matchKey);
+    const latest = matches.sort(
+      (a, b) => new Date(b.lastSeenAt).getTime() - new Date(a.lastSeenAt).getTime(),
+    )[0];
+    return {
+      def,
+      lastSeenAt: latest?.lastSeenAt ?? null,
+      severity: latest?.severity ?? null,
+      open: latest ? isOpenAlarm(latest.status) : false,
+    };
+  });
+}
+
 function widgetLabel(id: SiemDashboardWidgetId): string {
   return t(`siemCenter.dashboard.widgets.${id}`);
 }
@@ -212,15 +271,29 @@ async function loadDashboard() {
   loading.value = true;
   errorLocal.value = null;
   const range = isoRange24h();
+  const now = Date.now();
+  const hourMs = 60 * 60 * 1000;
+  const hourQueries = Array.from({ length: 24 }, (_, idx) => {
+    const bucketEnd = new Date(now - (23 - idx) * hourMs);
+    const bucketStart = new Date(bucketEnd.getTime() - hourMs);
+    return secEventQuery({
+      from: bucketStart.toISOString(),
+      to: bucketEnd.toISOString(),
+      limit: 1,
+    });
+  });
 
   try {
-    const [allEvents, loginFailed, deniedFlow, newFlow, alarms] = await Promise.all([
-      secEventQuery({ ...range, limit: 1 }),
-      secEventQuery({ ...range, eventAction: 'login_failed', limit: 1 }),
-      secEventQuery({ ...range, eventAction: 'denied_flow', limit: 1 }),
-      secEventQuery({ ...range, eventAction: 'new_flow', limit: 1 }),
-      alarmListOpen({ openOnly: true, minSeverity: 6, limit: 8 }),
-    ]);
+    const [allEvents, loginFailed, deniedFlow, newFlow, alarms, recentAll, ...hourResults] =
+      await Promise.all([
+        secEventQuery({ ...range, limit: 1 }),
+        secEventQuery({ ...range, eventAction: 'login_failed', limit: 1 }),
+        secEventQuery({ ...range, eventAction: 'denied_flow', limit: 1 }),
+        secEventQuery({ ...range, eventAction: 'new_flow', limit: 1 }),
+        alarmListOpen({ openOnly: true, minSeverity: 6, limit: 8 }),
+        alarmListOpen({ openOnly: false, limit: 150 }),
+        ...hourQueries,
+      ]);
 
     stats.value = {
       eventsTotal: allEvents.total,
@@ -230,10 +303,14 @@ async function loadDashboard() {
       openAlarms: alarms.total,
     };
     recentAlarms.value = alarms.items.slice(0, 8);
+    hourlyBuckets.value = buildHourlyBuckets(hourResults.map((r) => r.total));
+    scenarioCards.value = buildScenarioCards(recentAll.items);
   } catch (e: unknown) {
     errorLocal.value = e instanceof Error ? e.message : t('siemCenter.dashboard.loadError');
     stats.value = { eventsTotal: 0, loginFailed: 0, deniedFlow: 0, newFlow: 0, openAlarms: 0 };
     recentAlarms.value = [];
+    hourlyBuckets.value = [];
+    scenarioCards.value = buildScenarioCards([]);
   } finally {
     loading.value = false;
   }
@@ -293,6 +370,61 @@ onMounted(() => {
           </v-card>
         </v-col>
       </v-row>
+
+      <v-card v-else-if="widgetId === 'eventTimeline'" variant="outlined" class="rounded-lg pa-4 mb-4">
+        <h2 class="text-h6 font-weight-bold mb-3">
+          {{ t('siemCenter.dashboard.timelineTitle') }}
+        </h2>
+        <v-skeleton-loader v-if="loading" type="list-item@6" />
+        <div v-else-if="hourlyBuckets.every((b) => b.count === 0)" class="text-medium-emphasis text-body-2 py-2">
+          {{ t('siemCenter.dashboard.timelineEmpty') }}
+        </div>
+        <div v-else class="d-flex flex-column gap-1">
+          <div v-for="row in hourlyBuckets" :key="row.label" class="d-flex align-center gap-2">
+            <span class="text-caption text-medium-emphasis timeline-hour">{{ row.label }}</span>
+            <v-progress-linear
+              :model-value="row.pct"
+              color="primary"
+              height="10"
+              rounded
+              class="flex-grow-1"
+            />
+            <span class="text-caption font-weight-medium timeline-count">{{ row.count }}</span>
+          </div>
+        </div>
+      </v-card>
+
+      <v-card v-else-if="widgetId === 'scenarios'" variant="outlined" class="rounded-lg pa-4 mb-4">
+        <h2 class="text-h6 font-weight-bold mb-3">
+          {{ t('siemCenter.dashboard.scenariosTitle') }}
+        </h2>
+        <v-skeleton-loader v-if="loading" type="table-row@4" />
+        <v-row v-else dense>
+          <v-col v-for="card in scenarioCards" :key="card.def.id" cols="12" sm="6" md="4" lg="3">
+            <v-card variant="tonal" :to="scenarioEventsLink(card.def)" link class="pa-3 h-100">
+              <div class="d-flex align-center justify-space-between mb-1">
+                <span class="text-subtitle-2 font-weight-bold">{{ card.def.id }}</span>
+                <v-chip v-if="card.open" size="x-small" color="error" variant="flat">
+                  {{ t('siemCenter.dashboard.scenarioOpen') }}
+                </v-chip>
+              </div>
+              <div class="text-caption text-medium-emphasis text-truncate">{{ card.def.matchKey }}</div>
+              <div class="text-body-2 mt-2">
+                {{
+                  card.lastSeenAt
+                    ? formatDate(card.lastSeenAt)
+                    : t('siemCenter.dashboard.scenarioNever')
+                }}
+              </div>
+              <div v-if="card.severity != null" class="mt-1">
+                <v-chip size="x-small" :color="severityColor(card.severity)" variant="tonal">
+                  {{ t('siemCenter.dashboard.scenarioSeverity', { n: card.severity }) }}
+                </v-chip>
+              </div>
+            </v-card>
+          </v-col>
+        </v-row>
+      </v-card>
 
       <v-card v-else-if="widgetId === 'breakdown'" variant="outlined" class="rounded-lg pa-4 mb-4">
         <h2 class="text-h6 font-weight-bold mb-3">
@@ -462,3 +594,15 @@ onMounted(() => {
     </v-dialog>
   </div>
 </template>
+
+<style scoped>
+.timeline-hour {
+  width: 3.5rem;
+  flex-shrink: 0;
+}
+.timeline-count {
+  width: 2.5rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+</style>

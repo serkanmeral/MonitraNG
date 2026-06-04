@@ -109,6 +109,9 @@ Kısa vadeli teknik devam (MVP sonrası bakım):
 | 20 | ~~**Linux auth → U1 workflow E2E**~~ | ✅ `test-siem-linux-auth-u1-workflow-e2e.ps1` |
 | 21 | ~~**Backend perf check + hub/MQ fix**~~ | ✅ `cb95426` · `diagnostic-mq-backlog.ps1` |
 | 22 | ~~**Linux auth → U1 approval → block.ip**~~ | ✅ `test-siem-linux-auth-u1-approval-block-e2e.ps1` |
+| 23 | ~~**B1 Palo Alto PAN-OS**~~ | ✅ CEF/CSV · `panw_*` fixtures |
+| 24 | ~~**Dashboard P2**~~ | ✅ saatlik timeline + U1–U7 senaryo kartları |
+| 25 | ~~**workflow.deadletter triage**~~ | ✅ `diagnostic-workflow-deadletter.ps1` (eski E2E artefakt) |
 
 LogAlarm parite → [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md)
 

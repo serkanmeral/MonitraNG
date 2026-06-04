@@ -4983,6 +4983,12 @@
       "quickLinksTitle": "Quick links",
       "breakdownTitle": "Event breakdown (24h)",
       "breakdownEmpty": "No data",
+      "timelineTitle": "Event volume (hourly, 24h)",
+      "timelineEmpty": "No events in the last 24 hours",
+      "scenariosTitle": "U1–U7 scenario status",
+      "scenarioNever": "No alarm yet",
+      "scenarioOpen": "Open",
+      "scenarioSeverity": "Severity {n}",
       "customize": "Customize layout",
       "customizeTitle": "Dashboard layout",
       "customizeHint": "Show, hide, and reorder sections. Preferences are stored in your browser.",
@@ -4993,7 +4999,9 @@
       "customizeCancel": "Cancel",
       "widgets": {
         "stats": "Summary cards",
+        "eventTimeline": "Hourly event chart",
         "breakdown": "Event breakdown",
+        "scenarios": "U1–U7 scenarios",
         "recentAlarms": "Recent alarms",
         "quickLinks": "Quick links"
       },

@@ -1,7 +1,9 @@
-# SIEM B1 — firewall.vendor.v1 parser ingest smoke (FortiGate pilot, Reactor HTTP ingest)
+# SIEM B1 — firewall.vendor.v1 parser ingest smoke (FortiGate + Palo Alto PAN-OS)
 param(
     [string]$Gateway = "http://192.168.20.20:5040",
-    [string]$Domain = "odak"
+    [string]$Domain = "odak",
+    [ValidateSet("fortigate", "pan-os", "all")]
+    [string]$Vendor = "all"
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,31 +18,49 @@ function Read-Fixture([string]$Name) {
     return (Get-Content -Path (Join-Path $fixtureDir $Name) -Raw).TrimEnd()
 }
 
-Write-Host "=== SIEM B1 firewall.vendor.v1 (FortiGate) ingest smoke ===" -ForegroundColor Cyan
+function Test-VendorIngest([string]$Name, [hashtable]$Source, [string]$Fixture, [string]$EventAction, [string]$SrcIp) {
+    Write-Host "`n--- $Name ---" -ForegroundColor Cyan
+    $receivedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+    $body = @{
+        items = @(
+            @{
+                receivedAt = $receivedAt
+                source     = $Source
+                raw        = Read-Fixture $Fixture
+            }
+        )
+    } | ConvertTo-Json -Depth 8
 
-$receivedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-$body = @{
-    items = @(
-        @{
-            receivedAt = $receivedAt
-            source     = @{ type = "firewall"; product = "fortigate"; host = "FGT-ODAK" }
-            raw        = Read-Fixture "fortigate_traffic_deny.syslog.txt"
-        }
-    )
-} | ConvertTo-Json -Depth 8
+    $ingest = Invoke-RestMethod -Uri $reactor -Method POST -Headers $hdr -Body $body -TimeoutSec 60
+    if ($ingest.accepted -lt 1) { throw "Ingest basarisiz: $($ingest | ConvertTo-Json -Compress)" }
+    Write-Host "   Ingest OK accepted=$($ingest.accepted)" -ForegroundColor Green
 
-$ingest = Invoke-RestMethod -Uri $reactor -Method POST -Headers $hdr -Body $body -TimeoutSec 60
-if ($ingest.accepted -lt 1) { throw "Ingest basarisiz: $($ingest | ConvertTo-Json -Compress)" }
-Write-Host "   Ingest OK accepted=$($ingest.accepted)" -ForegroundColor Green
-
-Start-Sleep -Seconds 2
-$q = Invoke-RestMethod -Uri "$Gateway/reactor/api/v1/sec-events?limit=5&eventAction=denied_flow&sourceProduct=fortigate" -Headers $hdr
-$match = @($q.items) | Where-Object { $_.parserId -eq "firewall.vendor.v1" -and $_.networkSrcIp -eq "203.0.113.5" } | Select-Object -First 1
-if (-not $match) {
-    Write-Host "FAIL: firewall.vendor.v1 kaydi sorguda bulunamadi (deploy mngreactor gerekebilir)" -ForegroundColor Red
-    exit 1
+    Start-Sleep -Seconds 2
+    $product = $Source.product
+    $q = Invoke-RestMethod -Uri "$Gateway/reactor/api/v1/sec-events?limit=5&eventAction=$EventAction&sourceProduct=$product" -Headers $hdr
+    $match = @($q.items) | Where-Object {
+        $_.parserId -eq "firewall.vendor.v1" -and $_.networkSrcIp -eq $SrcIp
+    } | Select-Object -First 1
+    if (-not $match) {
+        Write-Host "FAIL: firewall.vendor.v1 kaydi bulunamadi (product=$product srcIp=$SrcIp)" -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "   Query OK parserId=$($match.parserId) action=$($match.eventAction) srcIp=$($match.networkSrcIp)" -ForegroundColor Green
 }
 
-Write-Host "   Query OK parserId=$($match.parserId) action=$($match.eventAction) srcIp=$($match.networkSrcIp) dstPort=$($match.networkDstPort)" -ForegroundColor Green
+Write-Host "=== SIEM B1 firewall.vendor.v1 ingest smoke ===" -ForegroundColor Cyan
+
+if ($Vendor -eq "fortigate" -or $Vendor -eq "all") {
+    Test-VendorIngest "FortiGate deny" @{
+        type = "firewall"; product = "fortigate"; host = "FGT-ODAK"
+    } "fortigate_traffic_deny.syslog.txt" "denied_flow" "203.0.113.5"
+}
+
+if ($Vendor -eq "pan-os" -or $Vendor -eq "all") {
+    Test-VendorIngest "PAN-OS CEF deny" @{
+        type = "firewall"; product = "pan-os"; host = "PA-ODAK"
+    } "panw_traffic_deny.syslog.txt" "denied_flow" "203.0.113.15"
+}
+
 Write-Host "`nOK SIEM B1 firewall.vendor.v1 ingest PASS" -ForegroundColor Green
 exit 0

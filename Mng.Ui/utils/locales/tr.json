@@ -4996,6 +4996,12 @@
       "quickLinksTitle": "Hızlı bağlantılar",
       "breakdownTitle": "Olay dağılımı (24s)",
       "breakdownEmpty": "Veri yok",
+      "timelineTitle": "Olay hacmi (saatlik, 24s)",
+      "timelineEmpty": "Son 24 saatte olay yok",
+      "scenariosTitle": "U1–U7 senaryo durumu",
+      "scenarioNever": "Henüz alarm yok",
+      "scenarioOpen": "Açık",
+      "scenarioSeverity": "Şiddet {n}",
       "customize": "Düzeni özelleştir",
       "customizeTitle": "Panel düzeni",
       "customizeHint": "Bölümleri göster/gizle ve sırala. Tercihler tarayıcıda saklanır.",
@@ -5006,7 +5012,9 @@
       "customizeCancel": "İptal",
       "widgets": {
         "stats": "Özet kartları",
+        "eventTimeline": "Saatlik olay grafiği",
         "breakdown": "Olay dağılımı",
+        "scenarios": "U1–U7 senaryolar",
         "recentAlarms": "Son alarmlar",
         "quickLinks": "Hızlı bağlantılar"
       },

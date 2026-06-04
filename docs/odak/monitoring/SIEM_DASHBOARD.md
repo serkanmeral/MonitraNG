@@ -35,8 +35,8 @@ LogAlarm parite hedefindeki “dashboard” gap’inin ilk adımı: son 24 saat 
 ## Sonraki adımlar (P2)
 
 - ~~Olay dağılımı çubukları (24s)~~ ✅ panelde
-- Zaman serisi grafikleri (olay/s)
-- U1–U7 senaryo kartları (son alarm zamanı)
-- ~~Özelleştirilebilir widget düzeni~~ ✅ (A4 — localStorage, `AcSiemCenterDashboard`)
+- ~~Saatlik olay hacmi (24s)~~ ✅ `eventTimeline` widget
+- ~~U1–U7 senaryo kartları (son alarm zamanı)~~ ✅ `scenarios` widget
+- ~~Özelleştirilebilir widget düzeni~~ ✅ (A4 — localStorage v2, `AcSiemCenterDashboard`)
 
 Bkz. [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md)

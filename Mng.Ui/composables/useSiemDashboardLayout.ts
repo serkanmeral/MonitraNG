@@ -1,4 +1,10 @@
-export type SiemDashboardWidgetId = 'stats' | 'breakdown' | 'recentAlarms' | 'quickLinks';
+export type SiemDashboardWidgetId =
+  | 'stats'
+  | 'eventTimeline'
+  | 'breakdown'
+  | 'scenarios'
+  | 'recentAlarms'
+  | 'quickLinks';
 
 export type SiemStatCardId =
   | 'eventsTotal'
@@ -14,11 +20,13 @@ export interface SiemDashboardLayout {
   hiddenStatCards: SiemStatCardId[];
 }
 
-const STORAGE_KEY = 'siem-dashboard-layout-v1';
+const STORAGE_KEY = 'siem-dashboard-layout-v2';
 
 export const SIEM_DASHBOARD_WIDGET_IDS: SiemDashboardWidgetId[] = [
   'stats',
+  'eventTimeline',
   'breakdown',
+  'scenarios',
   'recentAlarms',
   'quickLinks',
 ];

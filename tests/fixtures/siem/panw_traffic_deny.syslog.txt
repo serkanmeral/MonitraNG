@@ -1,0 +1,1 @@
+Jun  4 12:00:00 PA-ODAK CEF:0|Palo Alto Networks|PAN-OS|10.2.0.1|TRAFFIC|drop|3|rt=Jun 04 2026 12:00:00 GMT src=203.0.113.15 dst=10.0.0.55 spt=54321 dpt=445 act=deny proto=tcp cs2=smb
