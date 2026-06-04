@@ -41,16 +41,17 @@ Assert-Status "GET rules" "$Gateway/alarm/api/v1/rules" $hdr
 Write-Host "3) Workflow API..." -ForegroundColor Cyan
 Assert-Status "GET approvals" "$Gateway/workflow/api/v1/approvals?status=Pending" $hdr
 
-Write-Host "4) OC admin routes (SPA shell)..." -ForegroundColor Cyan
+Write-Host "4) Operator UI routes (SPA shell)..." -ForegroundColor Cyan
 $routes = @(
-    "/apps/operation-core/admin/approvals",
-    "/apps/operation-core/admin/alarms",
-    "/apps/operation-core/admin/alarm-rules"
+    "/apps/operation-core/approvals",
+    "/apps/alarm-center/alarms",
+    "/apps/alarm-center/rules",
+    "/apps/automation-center/workflows"
 )
 foreach ($route in $routes) {
     Assert-Status "UI $route" "$UiBase$route"
 }
 
-Write-Host "`nOK operator smoke (API + oc_live + admin routes)" -ForegroundColor Green
-Write-Host "Manuel: odak_admin ile menuden onay/alarmlar/kurallar ekranlarini acin." -ForegroundColor DarkGray
+Write-Host "`nOK operator smoke (API + oc_live + operator routes)" -ForegroundColor Green
+Write-Host "Manuel: odak_admin ile Operasyon onaylari, Alarm Merkezi ve Otomasyon menulerini acin." -ForegroundColor DarkGray
 exit 0

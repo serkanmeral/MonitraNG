@@ -12,12 +12,12 @@ const rows = ref<AlarmSummary[]>([]);
 const total = ref(0);
 
 const headers = computed(() => [
-  { title: t('operationCore.adminAlarms.colSeverity'), key: 'severity', sortable: true },
-  { title: t('operationCore.adminAlarms.colStatus'), key: 'status', sortable: true },
-  { title: t('operationCore.adminAlarms.colDedupKey'), key: 'dedupKey', sortable: false },
-  { title: t('operationCore.adminAlarms.colCount'), key: 'count', sortable: true },
-  { title: t('operationCore.adminAlarms.colFirstSeen'), key: 'firstSeenAt', sortable: true },
-  { title: t('operationCore.adminAlarms.colLastSeen'), key: 'lastSeenAt', sortable: true },
+  { title: t('alarmCenter.alarms.colSeverity'), key: 'severity', sortable: true },
+  { title: t('alarmCenter.alarms.colStatus'), key: 'status', sortable: true },
+  { title: t('alarmCenter.alarms.colDedupKey'), key: 'dedupKey', sortable: false },
+  { title: t('alarmCenter.alarms.colCount'), key: 'count', sortable: true },
+  { title: t('alarmCenter.alarms.colFirstSeen'), key: 'firstSeenAt', sortable: true },
+  { title: t('alarmCenter.alarms.colLastSeen'), key: 'lastSeenAt', sortable: true },
 ]);
 
 function formatDate(value?: string | null): string {
@@ -53,7 +53,7 @@ async function loadRows() {
     rows.value = res.items;
     total.value = res.total;
   } catch (e: unknown) {
-    errorLocal.value = e instanceof Error ? e.message : t('operationCore.adminAlarms.loadError');
+    errorLocal.value = e instanceof Error ? e.message : t('alarmCenter.alarms.loadError');
     rows.value = [];
     total.value = 0;
   } finally {
@@ -74,11 +74,11 @@ onMounted(() => {
 
     <div class="d-flex flex-wrap align-center gap-3 mb-4">
       <v-chip variant="tonal" color="primary">
-        {{ t('operationCore.adminAlarms.statTotal', { count: total }) }}
+        {{ t('alarmCenter.alarms.statTotal', { count: total }) }}
       </v-chip>
       <v-spacer />
       <v-btn variant="tonal" prepend-icon="mdi-refresh" :loading="loading" @click="loadRows">
-        {{ t('operationCore.adminAlarms.refresh') }}
+        {{ t('alarmCenter.alarms.refresh') }}
       </v-btn>
     </div>
 
@@ -111,7 +111,7 @@ onMounted(() => {
       </template>
       <template #no-data>
         <div class="text-center py-8 text-medium-emphasis">
-          {{ t('operationCore.adminAlarms.empty') }}
+          {{ t('alarmCenter.alarms.empty') }}
         </div>
       </template>
     </v-data-table>

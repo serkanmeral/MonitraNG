@@ -1,6 +1,10 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'blank' });
-await navigateTo('/apps/operation-core/approvals', { replace: true });
+
+const route = useRoute();
+const workflowId = String(route.params.workflowId ?? '');
+
+await navigateTo(`/apps/automation-center/workflows/${encodeURIComponent(workflowId)}`, { replace: true });
 </script>
 
 <template>

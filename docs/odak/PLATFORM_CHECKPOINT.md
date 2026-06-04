@@ -48,15 +48,15 @@ Detay: [deploy/README.md](./deploy/README.md) · [MNGREACTOR_ODAK_DEPLOY_CHECKLI
 
 **Smoke:**
 - `http://192.168.20.20:3000/api/operations/v1/health/live` → 200
-- `.\scripts\odak\test-operator-smoke.ps1` → API + admin route shell
-- `@side_menu` patch: `.\docs\odak\operationcore\scripts\patch-oc-side-menu.ps1`
-- Operasyon → Tanımlamalar → Bekleyen onaylar / Açık alarmlar / Alarm kuralları
+- `.\scripts\odak\test-operator-smoke.ps1` → API + operator route shell
+- Menü patch: `patch-oc-side-menu.ps1`, `patch-alarm-center-side-menu.ps1`, `patch-automation-side-menu.ps1`
+- Operasyon → Bekleyen onaylar · Alarm Merkezi → Açık alarmlar / Alarm kuralları · Otomasyon Merkezi → İş Akış Yönetimi
 
 ---
 
 ## Should-have (checkpoint sonrası, SIEM ile paralel olabilir)
 
-- ~~Kural update/delete API + admin form~~ ✅ API + `admin/alarm-rules` UI
+- ~~Kural update/delete API + admin form~~ ✅ API + Alarm Merkezi kurallar UI
 - ~~`parallel.join` node~~ ✅
 - ~~P4 engine.command MVP~~ ✅ (`block.ip` alias; Reactor MQTT publish)
 - P4 tam: onay → block → scheduler unblock (Reactor + Engine handler)

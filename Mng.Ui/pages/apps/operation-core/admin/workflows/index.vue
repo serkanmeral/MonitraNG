@@ -1,6 +1,6 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'blank' });
-await navigateTo('/apps/operation-core/approvals', { replace: true });
+await navigateTo('/apps/automation-center/workflows', { replace: true });
 </script>
 
 <template>

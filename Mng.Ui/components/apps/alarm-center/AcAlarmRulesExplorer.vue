@@ -40,9 +40,9 @@ const form = ref({
 });
 
 const typeItems = computed(() => [
-  { title: t('operationCore.adminAlarmRules.typeThreshold'), value: 'threshold' },
-  { title: t('operationCore.adminAlarmRules.typeCorrelation'), value: 'correlation' },
-  { title: t('operationCore.adminAlarmRules.typeScheduled'), value: 'scheduled' },
+  { title: t('alarmCenter.rules.typeThreshold'), value: 'threshold' },
+  { title: t('alarmCenter.rules.typeCorrelation'), value: 'correlation' },
+  { title: t('alarmCenter.rules.typeScheduled'), value: 'scheduled' },
 ]);
 
 const operatorItems = computed(() => [
@@ -54,13 +54,13 @@ const operatorItems = computed(() => [
 ]);
 
 const headers = computed(() => [
-  { title: t('operationCore.adminAlarmRules.colName'), key: 'name', sortable: true },
-  { title: t('operationCore.adminAlarmRules.colType'), key: 'type', sortable: true },
-  { title: t('operationCore.adminAlarmRules.colMatchKey'), key: 'matchKey', sortable: true },
-  { title: t('operationCore.adminAlarmRules.colSeverity'), key: 'severity', sortable: true },
-  { title: t('operationCore.adminAlarmRules.colEnabled'), key: 'enabled', sortable: true },
-  { title: t('operationCore.adminAlarmRules.colThreshold'), key: 'threshold', sortable: false },
-  { title: t('operationCore.adminAlarmRules.colActions'), key: 'actions', sortable: false, align: 'end' as const },
+  { title: t('alarmCenter.rules.colName'), key: 'name', sortable: true },
+  { title: t('alarmCenter.rules.colType'), key: 'type', sortable: true },
+  { title: t('alarmCenter.rules.colMatchKey'), key: 'matchKey', sortable: true },
+  { title: t('alarmCenter.rules.colSeverity'), key: 'severity', sortable: true },
+  { title: t('alarmCenter.rules.colEnabled'), key: 'enabled', sortable: true },
+  { title: t('alarmCenter.rules.colThreshold'), key: 'threshold', sortable: false },
+  { title: t('alarmCenter.rules.colActions'), key: 'actions', sortable: false, align: 'end' as const },
 ]);
 
 const filteredRows = computed(() => {
@@ -139,7 +139,7 @@ async function loadRows() {
   try {
     rows.value = await alarmRuleList();
   } catch (e: unknown) {
-    errorLocal.value = e instanceof Error ? e.message : t('operationCore.adminAlarmRules.loadError');
+    errorLocal.value = e instanceof Error ? e.message : t('alarmCenter.rules.loadError');
     rows.value = [];
   } finally {
     loading.value = false;
@@ -183,10 +183,10 @@ async function saveRule() {
       await alarmRuleCreate(body);
     }
     dialogOpen.value = false;
-    infoLocal.value = t('operationCore.adminAlarmRules.saveSuccess');
+    infoLocal.value = t('alarmCenter.rules.saveSuccess');
     await loadRows();
   } catch (e: unknown) {
-    errorLocal.value = e instanceof Error ? e.message : t('operationCore.adminAlarmRules.saveError');
+    errorLocal.value = e instanceof Error ? e.message : t('alarmCenter.rules.saveError');
   } finally {
     saving.value = false;
   }
@@ -200,10 +200,10 @@ async function confirmDelete() {
   try {
     await alarmRuleDelete(deleteTarget.value.id);
     deleteDialogOpen.value = false;
-    infoLocal.value = t('operationCore.adminAlarmRules.deleteSuccess');
+    infoLocal.value = t('alarmCenter.rules.deleteSuccess');
     await loadRows();
   } catch (e: unknown) {
-    errorLocal.value = e instanceof Error ? e.message : t('operationCore.adminAlarmRules.deleteError');
+    errorLocal.value = e instanceof Error ? e.message : t('alarmCenter.rules.deleteError');
   } finally {
     deletingId.value = null;
     deleteTarget.value = null;
@@ -226,21 +226,21 @@ onMounted(() => {
 
     <div class="d-flex flex-wrap align-center gap-3 mb-4">
       <v-chip variant="tonal" color="primary">
-        {{ t('operationCore.adminAlarmRules.statTotal', { count: rows.length }) }}
+        {{ t('alarmCenter.rules.statTotal', { count: rows.length }) }}
       </v-chip>
       <v-switch
         v-model="filterEnabledOnly"
         density="compact"
         hide-details
         color="primary"
-        :label="t('operationCore.adminAlarmRules.filterEnabledOnly')"
+        :label="t('alarmCenter.rules.filterEnabledOnly')"
       />
       <v-spacer />
       <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">
-        {{ t('operationCore.adminAlarmRules.create') }}
+        {{ t('alarmCenter.rules.create') }}
       </v-btn>
       <v-btn variant="tonal" prepend-icon="mdi-refresh" :loading="loading" @click="loadRows">
-        {{ t('operationCore.adminAlarmRules.refresh') }}
+        {{ t('alarmCenter.rules.refresh') }}
       </v-btn>
     </div>
 
@@ -251,7 +251,7 @@ onMounted(() => {
       item-value="id"
       density="comfortable"
       class="rounded-lg"
-      :no-data-text="t('operationCore.adminAlarmRules.empty')"
+      :no-data-text="t('alarmCenter.rules.empty')"
     >
       <template #item.type="{ item }">
         <v-chip size="small" variant="tonal">{{ item.type }}</v-chip>
@@ -263,7 +263,7 @@ onMounted(() => {
       </template>
       <template #item.enabled="{ item }">
         <v-chip size="small" :color="item.enabled ? 'success' : 'default'" variant="tonal">
-          {{ item.enabled ? t('operationCore.adminAlarmRules.enabledYes') : t('operationCore.adminAlarmRules.enabledNo') }}
+          {{ item.enabled ? t('alarmCenter.rules.enabledYes') : t('alarmCenter.rules.enabledNo') }}
         </v-chip>
       </template>
       <template #item.threshold="{ item }">
@@ -287,15 +287,15 @@ onMounted(() => {
     <v-dialog v-model="dialogOpen" max-width="640" persistent>
       <v-card class="rounded-lg">
         <v-card-title class="text-h6">
-          {{ isEdit ? t('operationCore.adminAlarmRules.editTitle') : t('operationCore.adminAlarmRules.createTitle') }}
+          {{ isEdit ? t('alarmCenter.rules.editTitle') : t('alarmCenter.rules.createTitle') }}
         </v-card-title>
         <v-card-text>
           <v-row dense>
             <v-col cols="12" md="8">
-              <v-text-field v-model="form.name" :label="t('operationCore.adminAlarmRules.fieldName')" required />
+              <v-text-field v-model="form.name" :label="t('alarmCenter.rules.fieldName')" required />
             </v-col>
             <v-col cols="12" md="4">
-              <v-switch v-model="form.enabled" :label="t('operationCore.adminAlarmRules.fieldEnabled')" hide-details />
+              <v-switch v-model="form.enabled" :label="t('alarmCenter.rules.fieldEnabled')" hide-details />
             </v-col>
             <v-col cols="12" md="6">
               <v-select
@@ -303,57 +303,57 @@ onMounted(() => {
                 :items="typeItems"
                 item-title="title"
                 item-value="value"
-                :label="t('operationCore.adminAlarmRules.fieldType')"
+                :label="t('alarmCenter.rules.fieldType')"
                 :disabled="isEdit"
               />
             </v-col>
             <v-col cols="12" md="6">
               <v-text-field
                 v-model="form.matchKey"
-                :label="t('operationCore.adminAlarmRules.fieldMatchKey')"
+                :label="t('alarmCenter.rules.fieldMatchKey')"
                 :disabled="isEdit"
                 required
               />
             </v-col>
             <v-col cols="12" md="4">
-              <v-text-field v-model.number="form.severity" type="number" min="1" max="10" :label="t('operationCore.adminAlarmRules.fieldSeverity')" />
+              <v-text-field v-model.number="form.severity" type="number" min="1" max="10" :label="t('alarmCenter.rules.fieldSeverity')" />
             </v-col>
             <v-col cols="12" md="4">
-              <v-text-field v-model.number="form.cooldownMinutes" type="number" min="0" :label="t('operationCore.adminAlarmRules.fieldCooldown')" />
+              <v-text-field v-model.number="form.cooldownMinutes" type="number" min="0" :label="t('alarmCenter.rules.fieldCooldown')" />
             </v-col>
             <v-col cols="12" md="4">
-              <v-text-field v-model.number="form.windowMinutes" type="number" min="1" :label="t('operationCore.adminAlarmRules.fieldWindow')" />
+              <v-text-field v-model.number="form.windowMinutes" type="number" min="1" :label="t('alarmCenter.rules.fieldWindow')" />
             </v-col>
             <template v-if="showThresholdFields">
               <v-col cols="12" md="4">
-                <v-select v-model="form.operator" :items="operatorItems" item-title="title" item-value="value" :label="t('operationCore.adminAlarmRules.fieldOperator')" />
+                <v-select v-model="form.operator" :items="operatorItems" item-title="title" item-value="value" :label="t('alarmCenter.rules.fieldOperator')" />
               </v-col>
               <v-col cols="12" md="4">
-                <v-text-field v-model.number="form.threshold" type="number" :label="t('operationCore.adminAlarmRules.fieldThreshold')" />
+                <v-text-field v-model.number="form.threshold" type="number" :label="t('alarmCenter.rules.fieldThreshold')" />
               </v-col>
             </template>
             <template v-if="showCorrelationFields">
               <v-col cols="12" md="4">
-                <v-text-field v-model.number="form.threshold" type="number" min="1" :label="t('operationCore.adminAlarmRules.fieldEventCount')" />
+                <v-text-field v-model.number="form.threshold" type="number" min="1" :label="t('alarmCenter.rules.fieldEventCount')" />
               </v-col>
               <v-col cols="12">
                 <v-text-field
                   v-model="form.groupByFieldsText"
-                  :label="t('operationCore.adminAlarmRules.fieldGroupBy')"
-                  :hint="t('operationCore.adminAlarmRules.fieldGroupByHint')"
+                  :label="t('alarmCenter.rules.fieldGroupBy')"
+                  :hint="t('alarmCenter.rules.fieldGroupByHint')"
                   persistent-hint
                 />
               </v-col>
             </template>
             <template v-if="showScheduledFields">
               <v-col cols="12" md="6">
-                <v-text-field v-model.number="form.stalenessMinutes" type="number" min="1" :label="t('operationCore.adminAlarmRules.fieldStaleness')" />
+                <v-text-field v-model.number="form.stalenessMinutes" type="number" min="1" :label="t('alarmCenter.rules.fieldStaleness')" />
               </v-col>
             </template>
             <v-col cols="12">
               <v-text-field
                 v-model="form.dedupKeyTemplate"
-                :label="t('operationCore.adminAlarmRules.fieldDedupTemplate')"
+                :label="t('alarmCenter.rules.fieldDedupTemplate')"
                 :placeholder="'{ruleId}:{key}'"
               />
             </v-col>
@@ -361,22 +361,22 @@ onMounted(() => {
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="dialogOpen = false">{{ t('operationCore.adminAlarmRules.cancel') }}</v-btn>
-          <v-btn color="primary" :loading="saving" @click="saveRule">{{ t('operationCore.adminAlarmRules.save') }}</v-btn>
+          <v-btn variant="text" @click="dialogOpen = false">{{ t('alarmCenter.rules.cancel') }}</v-btn>
+          <v-btn color="primary" :loading="saving" @click="saveRule">{{ t('alarmCenter.rules.save') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
     <v-dialog v-model="deleteDialogOpen" max-width="440">
       <v-card class="rounded-lg">
-        <v-card-title>{{ t('operationCore.adminAlarmRules.deleteTitle') }}</v-card-title>
+        <v-card-title>{{ t('alarmCenter.rules.deleteTitle') }}</v-card-title>
         <v-card-text>
-          {{ t('operationCore.adminAlarmRules.deleteConfirm', { name: deleteTarget?.name ?? '' }) }}
+          {{ t('alarmCenter.rules.deleteConfirm', { name: deleteTarget?.name ?? '' }) }}
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="deleteDialogOpen = false">{{ t('operationCore.adminAlarmRules.cancel') }}</v-btn>
-          <v-btn color="error" :loading="deletingId != null" @click="confirmDelete">{{ t('operationCore.adminAlarmRules.delete') }}</v-btn>
+          <v-btn variant="text" @click="deleteDialogOpen = false">{{ t('alarmCenter.rules.cancel') }}</v-btn>
+          <v-btn color="error" :loading="deletingId != null" @click="confirmDelete">{{ t('alarmCenter.rules.delete') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
