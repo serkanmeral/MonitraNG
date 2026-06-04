@@ -26,6 +26,8 @@ MonitraNG SIEM-hafif MVP (U1–U7) tamamlandı. LogAlarm seviyesi parite ayrı b
 
 ## Faz C — Uyum & arşiv (Türkiye pazarı)
 
+> **Ertelendi:** Kendi SIEM yol haritası (Faz 1–4) tamamlanana kadar kod yok. Bkz. [SIEM_ROADMAP.md §6](./SIEM_ROADMAP.md#6-faz-5--ertelenen-logalarm--uyum).
+
 | # | Alan | Öncelik | Not |
 |---|------|---------|-----|
 | C1 | 5651 imza / WORM arşiv | P0 | Spike ✅ [SIEM_WORM_5651_SPIKE.md](./SIEM_WORM_5651_SPIKE.md) · C1.1 kod sırada |

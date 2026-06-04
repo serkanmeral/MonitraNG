@@ -15,6 +15,7 @@
 | `u5_firewall_traffic_spike.json` | U5 — trafik sıçraması | `correlation` | ✅ |
 | `u6_firewall_rule_change.json` | U6 — kural değişikliği | `correlation` | ✅ |
 | `u8_ad_group_member_added.json` | U8 — AD grubuna üye ekleme | `correlation` | ✅ |
+| `u9_ad_account_created.json` | U9 — AD hesap oluşturma | `correlation` | ✅ |
 | `u7_new_flow.json` | U7 — yeni akış | `correlation` | ✅ |
 
 **B3 hazır paket:** [packages/siem-mvp-v1/manifest.json](./packages/siem-mvp-v1/manifest.json) · `seed-siem-alarm-rule-pack.ps1` · [SIEM_ALARM_RULE_PACK.md](../../../docs/odak/monitoring/SIEM_ALARM_RULE_PACK.md)

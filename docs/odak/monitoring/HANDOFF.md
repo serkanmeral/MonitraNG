@@ -102,8 +102,8 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | Alan | Değer |
 |------|--------|
 | Branch | `main` (origin ile senkron) |
-| Son SIEM commit | `41e3d97` — U8 alarm · DLQ purge · WORM spike |
-| Önceki | `8eeda15` · `8c27bc4` extended parser + E2E B1 |
+| Son SIEM commit | (bu commit) — U9 alarm · SIEM_ROADMAP · LogAlarm ertelendi |
+| Önceki | `41e3d97` · `ae8f6b4` U8 · WORM spike |
 | Odak deploy | `mngreactor` ✅ 4 Haz — extended + U8 smoke PASS |
 
 ---

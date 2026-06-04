@@ -46,8 +46,10 @@
 | **B1 `linux.auth.v1`** | ✅ U1 alarm + workflow E2E |
 | **B1 `firewall.vendor.v1` (FortiGate + PAN-OS)** | ✅ `test-siem-firewall-vendor-ingest.ps1` |
 | **B1 `windows.security.extended.v1` (4720/4728/5136)** | ✅ `test-siem-windows-extended-ingest.ps1` |
-| **B3 hazır kural paketi (`siem-mvp-v1`)** | ✅ `seed-siem-alarm-rule-pack.ps1` · [SIEM_ALARM_RULE_PACK.md](./SIEM_ALARM_RULE_PACK.md) |
-| **Odak sync SFTP fallback** | ✅ `Send-OdakRemoteFile` · commit `2091029` |
+| **U8 AD group_member_added alarm** | ✅ `test-siem-u8-alarm-e2e.ps1` |
+| **U9 AD account_created alarm** | ✅ `test-siem-u9-alarm-e2e.ps1` |
+| **B3 hazır kural paketi (`siem-mvp-v1`)** | ✅ `seed-siem-alarm-rule-pack.ps1` |
+| **Aktif yol haritası** | [SIEM_ROADMAP.md](./SIEM_ROADMAP.md) · LogAlarm ertelendi |
 
 ---
 
@@ -68,9 +70,10 @@
 
 ### SIEM-hafif sonrası (ayrı hedefler)
 
-MVP tamamlandı. **LogAlarm seviyesi feature-parite** mevcut sprint'in parçası değil — ayrı uzun vadeli hedef:
+MVP tamamlandı. **LogAlarm / tam SIEM paritesi** (5651, WORM, sertifikasyon) **en sona ertelendi** — önce [SIEM_ROADMAP.md](./SIEM_ROADMAP.md).
 
-- [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md) — referans kıyaslama + gap matrisi
+- [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md) — referans kıyaslama (kod yok)
+- [SIEM_WORM_5651_SPIKE.md](./SIEM_WORM_5651_SPIKE.md) — planlama notu (implementasyon yok)
 
 Kısa vadeli teknik devam (MVP sonrası bakım):
 
@@ -120,7 +123,19 @@ Kısa vadeli teknik devam (MVP sonrası bakım):
 | 30 | ~~**Faz C spike (5651/WORM)**~~ | ✅ [SIEM_WORM_5651_SPIKE.md](./SIEM_WORM_5651_SPIKE.md) |
 | 31 | ~~**U8 AD group_member_added alarm**~~ | ✅ `test-siem-u8-alarm-e2e.ps1` |
 
-LogAlarm parite → [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md)
+### Aktif yol haritası (LogAlarm hariç)
+
+→ [SIEM_ROADMAP.md](./SIEM_ROADMAP.md)
+
+| # | İş | Not |
+|---|-----|-----|
+| 32 | ~~**U9 `account_created` alarm**~~ | ✅ `test-siem-u9-alarm-e2e.ps1` |
+| 33 | ~~**Dashboard/arama U8–U9**~~ | ✅ senaryo kataloğu + presets |
+| 34 | ~~**WEF forwarder extended fixture**~~ | ✅ `Forward-WecEventsToEngine.ps1` |
+| 35 | Perf / E2E CI kapısı | ⬜ |
+| 36 | Üçüncü FW vendor | ⬜ |
+
+LogAlarm / 5651 / WORM → **Faz 5 (ertelendi)** — [SIEM_ROADMAP.md §6](./SIEM_ROADMAP.md#6-faz-5--ertelenen-logalarm--uyum)
 
 **Operasyon notu:** Benchmark veya yoğun ingest sonrası E2E/workflow testleri önce kuyruk temizliği gerektirebilir:
 - `purge-workflow-queues.ps1 -Apply` — `workflow.execution`, `workflow.event.inbound`, `alarm.observation.inbound` (birleşik)

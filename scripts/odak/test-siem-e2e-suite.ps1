@@ -53,6 +53,7 @@ Invoke-Step "U1 linux auth alarm" "test-siem-linux-auth-u1-alarm-e2e.ps1"
 Invoke-Step "U4 alarm" "test-siem-u4-alarm-e2e.ps1"
 Invoke-Step "U6 rule change alarm" "test-siem-u6-alarm-e2e.ps1"
 Invoke-Step "U8 AD group member alarm" "test-siem-u8-alarm-e2e.ps1"
+Invoke-Step "U9 AD account created alarm" "test-siem-u9-alarm-e2e.ps1"
 Invoke-Step "U5 traffic spike alarm" "test-siem-u5-alarm-e2e.ps1"
 Invoke-Step "U3 privileged outside window" "test-siem-u3-alarm-e2e.ps1"
 Write-Host "`n========== U7 new flow baseline ==========" -ForegroundColor Cyan

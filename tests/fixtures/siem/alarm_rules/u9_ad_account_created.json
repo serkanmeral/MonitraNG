@@ -1,0 +1,11 @@
+{
+  "name": "U9 — AD kullanıcı hesabı oluşturma",
+  "type": "correlation",
+  "matchKey": "account_created",
+  "groupByFields": ["userId", "sourceHost"],
+  "windowMinutes": 5,
+  "threshold": 1,
+  "severity": 8,
+  "cooldownMinutes": 30,
+  "dedupKeyTemplate": "{ruleId}:{groupKey}"
+}

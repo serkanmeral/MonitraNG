@@ -4985,7 +4985,7 @@
       "breakdownEmpty": "No data",
       "timelineTitle": "Event volume (hourly, 24h)",
       "timelineEmpty": "No events in the last 24 hours",
-      "scenariosTitle": "U1–U7 scenario status",
+      "scenariosTitle": "U1–U9 scenario status",
       "scenarioNever": "No alarm yet",
       "scenarioOpen": "Open",
       "scenarioSeverity": "Severity {n}",
@@ -5001,7 +5001,7 @@
         "stats": "Summary cards",
         "eventTimeline": "Hourly event chart",
         "breakdown": "Event breakdown",
-        "scenarios": "U1–U7 scenarios",
+        "scenarios": "U1–U9 scenarios",
         "recentAlarms": "Recent alarms",
         "quickLinks": "Quick links"
       },
@@ -5044,7 +5044,7 @@
       "colDstIp": "Dest IP",
       "colCode": "Code",
       "colParser": "Parser",
-      "presets": "Scenario shortcuts (U1–U7)",
+      "presets": "Scenario shortcuts (U1–U9)",
       "newFlowFlag": "New flow (U7)"
     }
   },

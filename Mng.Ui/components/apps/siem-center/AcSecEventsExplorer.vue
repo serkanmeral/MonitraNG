@@ -41,6 +41,9 @@ const eventActionItems = computed(() => [
   { title: 'privileged_login_outside_window', value: 'privileged_login_outside_window' },
   { title: 'privilege_denied', value: 'privilege_denied' },
   { title: 'new_flow', value: 'new_flow' },
+  { title: 'group_member_added', value: 'group_member_added' },
+  { title: 'account_created', value: 'account_created' },
+  { title: 'directory_object_modified', value: 'directory_object_modified' },
 ]);
 
 const filterPresets = computed(() => [
@@ -50,6 +53,8 @@ const filterPresets = computed(() => [
   { key: 'u3', label: 'U3', eventAction: 'privileged_login_outside_window' as const },
   { key: 'u6', label: 'U6', eventAction: 'rule_change' as const },
   { key: 'u7', label: 'U7', eventAction: 'new_flow' as const },
+  { key: 'u8', label: 'U8', eventAction: 'group_member_added' as const },
+  { key: 'u9', label: 'U9', eventAction: 'account_created' as const },
 ]);
 
 const timeRangeItems = computed(() => [

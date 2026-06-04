@@ -8,7 +8,7 @@ param(
     [int]$BatchSize = 10,
     [int]$PollIntervalSeconds = 30,
     [switch]$Continuous,
-    [int[]]$EventIds = @(4624, 4625, 4740, 4720, 4728, 4732, 4771),
+    [int[]]$EventIds = @(4624, 4625, 4740, 4720, 4728, 4732, 4771, 5136),
     [switch]$DryRun
 )
 
@@ -70,7 +70,10 @@ function Get-FixtureEvents([int]$Limit) {
     $files = @(
         "windows_4625_failed_logon.json",
         "windows_4624_success_logon.json",
-        "windows_4624_privileged_rdp_outside_window.json"
+        "windows_4624_privileged_rdp_outside_window.json",
+        "windows_4720_account_created.json",
+        "windows_4728_group_member_added.json",
+        "windows_5136_directory_modified.json"
     )
     $events = @()
     foreach ($f in $files) {
