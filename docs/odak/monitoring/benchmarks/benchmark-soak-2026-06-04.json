@@ -1,0 +1,45 @@
+{
+  "profile": "P0",
+  "mode": "soak",
+  "runId": "bench-P0-20260604081125",
+  "generatedAt": "2026-06-04T05:16:31.6082137Z",
+  "environment": {
+    "server": "192.168.20.20",
+    "gateway": "http://192.168.20.20:5040",
+    "domain": "odak"
+  },
+  "durationSec": 300,
+  "targetEps": 50,
+  "batchSize": 5,
+  "achievedEps": 41.25,
+  "gate": {
+    "maxDropRate": 0.05,
+    "ingestP95TargetMs": 1000,
+    "ingestPass": true,
+    "minAchievedEps": 40.0,
+    "throughputPass": true,
+    "pass": true
+  },
+  "ingest": {
+    "accepted": 12420,
+    "p95Ms": 7.0,
+    "errorRate": 0.0,
+    "dropRate": 0.0,
+    "maxMs": 1091.0,
+    "eventsAttempted": 12420,
+    "p50Ms": 4.0,
+    "rejected": 0,
+    "requests": 2484,
+    "pass": true,
+    "p95TargetMs": 1000
+  },
+  "mongo": {
+    "verifyMethod": "total_count_delta",
+    "beforeCount": 1249,
+    "savedDelta": 12420,
+    "afterCount": 13669
+  },
+  "detectionLag": null,
+  "pass": true,
+  "notes": "P0 soak kapisi: 5dk, hedef 50 evt/s (%80), drop<5%, ingest P95<1s."
+}

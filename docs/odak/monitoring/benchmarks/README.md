@@ -23,18 +23,29 @@ benchmark-{profile}-{date}.json
 
 ## P0 Odak özeti (2026-06-04)
 
+### Kısa baseline (`benchmark-P0-2026-06-04.json`)
+
+| Metrik | Değer | Hedef |
+|--------|-------|-------|
+| achievedEps | ~15 | — |
+| ingest P95 | ~6 ms | < 1000 ms ✅ |
+| U1 detection lag | ~1.7 s | < 60 s ✅ |
+
+### Soak kapısı (`benchmark-soak-2026-06-04.json`)
+
 | Metrik | Değer | Hedef (P0 kapı) |
 |--------|-------|-----------------|
-| achievedEps | ~15 | 50 (5 dk soak — henüz ölçülmedi) |
-| ingest P95 | ~6 ms | < 1000 ms ✅ |
-| errorRate | 0 | < 5% ✅ |
-| U1 detection lag | ~1.7 s | < 60 s ✅ |
-| mongo savedDelta | = accepted | — |
+| süre | 300 s | 5 dk ✅ |
+| achievedEps | **41.25** | ≥ 40 (%80×50) ✅ |
+| ingest P95 | **7 ms** | < 1000 ms ✅ |
+| dropRate | **0** | < 5% ✅ |
+| events | 12 420 | — |
+| mongo savedDelta | 12 420 | = accepted ✅ |
 
 ## İlk ölçüm checklist
 
 - [x] Reactor `sec_events` insert throughput (HTTP ingest)
 - [x] U1 correlation lag (Faz 2)
+- [x] P0 5 dk / 50 evt/s soak kapısı
 - [ ] Engine syslog UDP :514 → batch size
 - [ ] `sec_event.queue_depth` under load
-- [ ] P0 5 dk / 50 evt/s soak kapısı

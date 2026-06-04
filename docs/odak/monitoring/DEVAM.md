@@ -9,7 +9,7 @@
 
 ## 1. Tek cümlede durum
 
-Faz 0 planlama ✅. **SIEM MVP senaryoları (U1/U2/U4) ✅.** **P0 performans baseline ✅** (`benchmark-siem-p0-baseline.ps1`).
+Faz 0 planlama ✅. **SIEM MVP (U1/U2/U4) ✅.** **P0 soak kapısı ✅** (41 evt/s, 5 dk, drop 0%).
 
 ---
 
@@ -28,6 +28,7 @@ Faz 0 planlama ✅. **SIEM MVP senaryoları (U1/U2/U4) ✅.** **P0 performans ba
 | **U4 firewall deny spike** | ✅ `test-siem-u4-alarm-e2e.ps1` |
 | **U2 fail→success sequence** | ✅ `test-siem-u2-alarm-e2e.ps1` |
 | **P0 benchmark baseline** | ✅ `benchmark-P0-2026-06-04.json` |
+| **P0 soak (5dk @ 50 evt/s)** | ✅ `benchmark-soak-2026-06-04.json` |
 | Observation native publish (metrik) | ✅ C6 |
 
 ---
@@ -43,7 +44,8 @@ Faz 0 planlama ✅. **SIEM MVP senaryoları (U1/U2/U4) ✅.** **P0 performans ba
 7. ~~U4 firewall deny spike~~ ✅
 8. ~~U2 sequence~~ ✅
 9. ~~Benchmark baseline (P0)~~ ✅
-10. P0 5 dk soak (50 evt/s kapı) · U4 → workflow (opsiyonel)
+10. ~~P0 5 dk soak (50 evt/s kapı)~~ ✅
+11. U4 → workflow (opsiyonel) · P1 profil benchmark
 
 ---
 
