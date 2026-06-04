@@ -91,7 +91,7 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | Alan | Değer |
 |------|--------|
 | Branch | `main` |
-| Son SIEM commit | `2e64371` — A3 events UX, linux.auth.v1, E2E S4.1/S5 fix |
+| Son SIEM commit | `d694116` — B2 WEF forwarder şablonu, Engine batch/retry |
 
 ---
 
