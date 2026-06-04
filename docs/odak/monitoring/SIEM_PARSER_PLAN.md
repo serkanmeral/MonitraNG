@@ -1,7 +1,7 @@
 # SIEM — Parser / Normalizer Planı (Odak)
 
-**Durum:** Taslak — Faz 1 spike öncesi
-**Son güncelleme:** 3 Haziran 2026
+**Durum:** P0/P1 parser'lar Odak'ta — `linux.auth.v1` eklendi (B1)
+**Son güncelleme:** 4 Haziran 2026
 **Ana plan:** [SIEM_PLANNING.md](./SIEM_PLANNING.md) §13 (parser özeti), §4 (`sec_events`)
 
 ---
@@ -44,7 +44,7 @@ flowchart LR
 |---------|-----------|-------|-------------|
 | **P0** | `windows.security.v1` | WEC/Engine — Event ID 4624, 4625, 4740 | U1, U2 |
 | **P0** | `firewall.generic_syslog.v1` | Syslog — CEF / key=value / regex tabanlı deny | U4 |
-| **P1** | `linux.auth.v1` | rsyslog — sshd, sudo | U1 (Linux) |
+| **P1** | `linux.auth.v1` | rsyslog — sshd, sudo | U1 (Linux) | ✅ |
 | **P1** | `firewall.vendor.v1` | Üretici-spesifik (pilot marka) | U4, U6 doğruluğu |
 | **P2** | `windows.security.extended.v1` | 4720, 4728, 5136… | Yetki / dizin değişikliği |
 | **P2** | `bastion.generic.v1` | Jump host syslog formatı | U2, U3 |

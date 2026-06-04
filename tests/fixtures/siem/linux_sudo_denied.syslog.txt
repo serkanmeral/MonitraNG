@@ -1,0 +1,1 @@
+Apr 10 12:10:00 app01 sudo: deploy : command not allowed ; TTY=pts/0 ; PWD=/home/deploy ; USER=root ; COMMAND=/usr/bin/passwd

@@ -21,8 +21,10 @@
 
 - Zaman aralığı: 1s / 24s / 7g (varsayılan 24s)
 - `sourceType`: firewall, ad
-- `allowed_flow`, `privileged_login_outside_window`, `new_flow` (U7: `baseline.newFlowPair` filtresi)
+- `eventAction`: login_failed, login_success, denied_flow, allowed_flow, rule_change, privileged_login_outside_window, new_flow (U7: `baseline.newFlowPair`)
 - `search`: rawPreview, IP, kullanıcı, host (regex, case-insensitive)
+- **URL senkronu:** `?eventAction=denied_flow&timeRange=24h` — panel deep link
+- **U1–U7 kısayol çipleri** · **U7 rozeti** (`baselineNewFlowPair`)
 
 ## Sınırlar
 

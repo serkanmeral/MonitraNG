@@ -4993,7 +4993,9 @@
       "recentAlarmsTitle": "Son açık alarmlar",
       "viewAllAlarms": "Tüm alarmlar",
       "noAlarms": "Açık alarm yok.",
-      "quickLinksTitle": "Hızlı bağlantılar"
+      "quickLinksTitle": "Hızlı bağlantılar",
+      "breakdownTitle": "Olay dağılımı (24s)",
+      "breakdownEmpty": "Veri yok"
     },
     "events": {
       "menuTitle": "Güvenlik olayları",
@@ -5010,6 +5012,7 @@
       "filterAll": "Tümü",
       "sourceFirewall": "Firewall",
       "sourceAd": "Active Directory",
+      "sourceEndpoint": "Linux / endpoint",
       "empty": "Filtreye uyan olay yok.",
       "statTotal": "{shown} / {total} olay",
       "detailTitle": "Olay detayı",
@@ -5024,7 +5027,9 @@
       "colSrcIp": "Kaynak IP",
       "colDstIp": "Hedef IP",
       "colCode": "Kod",
-      "colParser": "Parser"
+      "colParser": "Parser",
+      "presets": "Senaryo kısayolları (U1–U7)",
+      "newFlowFlag": "Yeni akış (U7)"
     }
   },
   "automationCenter": {

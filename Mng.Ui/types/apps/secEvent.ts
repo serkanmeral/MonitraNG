@@ -15,6 +15,8 @@ export interface SecEventListItem {
   rawPreview?: string | null;
   /** Tam ham mesaj — yalnızca GET /sec-events/{id} yanıtında */
   raw?: string | null;
+  /** U7: baseline sonrası ilk kez görülen src→dst çifti */
+  baselineNewFlowPair?: boolean;
 }
 
 export interface SecEventQueryResponse {

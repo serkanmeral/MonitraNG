@@ -89,6 +89,17 @@ const statCards = computed(() => [
   },
 ]);
 
+const actionBreakdown = computed(() => {
+  const s = stats.value;
+  const items = [
+    { key: 'login_failed', label: 'login_failed', count: s.loginFailed, color: 'warning' },
+    { key: 'denied_flow', label: 'denied_flow', count: s.deniedFlow, color: 'deep-orange' },
+    { key: 'new_flow', label: 'new_flow', count: s.newFlow, color: 'info' },
+  ];
+  const max = Math.max(...items.map((i) => i.count), 1);
+  return items.map((i) => ({ ...i, pct: Math.round((i.count / max) * 100) }));
+});
+
 async function loadDashboard() {
   loading.value = true;
   errorLocal.value = null;
@@ -170,6 +181,35 @@ onMounted(() => {
         </v-card>
       </v-col>
     </v-row>
+
+    <v-card variant="outlined" class="rounded-lg pa-4 mb-4">
+      <h2 class="text-h6 font-weight-bold mb-3">
+        {{ t('siemCenter.dashboard.breakdownTitle') }}
+      </h2>
+      <v-skeleton-loader v-if="loading" type="list-item@3" />
+      <div v-else-if="stats.eventsTotal === 0" class="text-medium-emphasis text-body-2 py-2">
+        {{ t('siemCenter.dashboard.breakdownEmpty') }}
+      </div>
+      <div v-else class="d-flex flex-column gap-3">
+        <div v-for="row in actionBreakdown" :key="row.key">
+          <div class="d-flex justify-space-between text-body-2 mb-1">
+            <router-link
+              :to="`/apps/siem-center/events?eventAction=${row.key}`"
+              class="text-decoration-none"
+            >
+              {{ row.label }}
+            </router-link>
+            <span class="font-weight-medium">{{ row.count.toLocaleString() }}</span>
+          </div>
+          <v-progress-linear
+            :model-value="row.pct"
+            :color="row.color"
+            height="8"
+            rounded
+          />
+        </div>
+      </div>
+    </v-card>
 
     <v-row>
       <v-col cols="12" lg="8">

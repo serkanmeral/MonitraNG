@@ -77,6 +77,9 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | 7 | ~~**Tam E2E regression (-Quick)**~~ ✅ | U1–U7 + workflow suite |
 | 8 | ~~**SIEM dashboard MVP**~~ ✅ | `/apps/siem-center` |
 | 9 | ~~**U3 bakım penceresi yapılandırılabilir**~~ ✅ | `SecEventMaintenanceWindow` appsettings |
+| 10 | ~~**A3 olay arama UX**~~ ✅ | URL sync · U1–U7 presets · new_flow badge |
+| 11 | ~~**E2E S4.1/S5 switch fix**~~ ✅ | suite `-VerifyOdakMongo` doğru geçiriliyor |
+| 12 | ~~**B1 `linux.auth.v1`**~~ ✅ | sshd/sudo parser + ingest smoke |
 | — | LogAlarm parite | [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md) |
 
 ---
@@ -86,7 +89,7 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | Alan | Değer |
 |------|--------|
 | Branch | `main` |
-| Son SIEM commit | `a685688` — sec-events UI, WEC ingest, U6, raw detail |
+| Son SIEM commit | `42030d6` — U3/U5/U7, dashboard, post-MVP E2E |
 
 ---
 

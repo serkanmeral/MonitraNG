@@ -28,8 +28,20 @@ if ($Quick) {
 
 if (-not $SkipFaz1) {
     Invoke-Step "Faz1 sec_events" "test-siem-faz1-e2e.ps1"
-    Invoke-Step "Engine syslog S4.1" "test-engine-syslog-s4.1.ps1" @("-VerifyOdakMongo")
-    Invoke-Step "Engine WEC batch S5" "test-engine-wec-ingest-e2e.ps1" @("-VerifyOdakMongo")
+    Write-Host "`n========== Engine syslog S4.1 ==========" -ForegroundColor Cyan
+    & (Join-Path $root "test-engine-syslog-s4.1.ps1") -VerifyOdakMongo
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "FAIL: Engine syslog S4.1" -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "OK: Engine syslog S4.1" -ForegroundColor Green
+    Write-Host "`n========== Engine WEC batch S5 ==========" -ForegroundColor Cyan
+    & (Join-Path $root "test-engine-wec-ingest-e2e.ps1") -VerifyOdakMongo
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "FAIL: Engine WEC batch S5" -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "OK: Engine WEC batch S5" -ForegroundColor Green
 }
 
 Invoke-Step "Purge alarm observation queue" "purge-alarm-observation-queue.ps1"

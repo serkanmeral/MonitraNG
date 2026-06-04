@@ -34,6 +34,7 @@ LogAlarm parite hedefindeki “dashboard” gap’inin ilk adımı: son 24 saat 
 
 ## Sonraki adımlar (P2)
 
+- ~~Olay dağılımı çubukları (24s)~~ ✅ panelde
 - Zaman serisi grafikleri (olay/s)
 - U1–U7 senaryo kartları (son alarm zamanı)
 - Özelleştirilebilir widget düzeni

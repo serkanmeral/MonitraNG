@@ -86,6 +86,10 @@ Kısa vadeli teknik devam (MVP sonrası bakım):
 7. ~~**Tam E2E suite (-Quick)**~~ ✅
 8. ~~**SIEM dashboard MVP**~~ ✅ — [SIEM_DASHBOARD.md](./SIEM_DASHBOARD.md)
 9. ~~**U3 bakım penceresi yapılandırılabilir**~~ ✅ — `SecEventMaintenanceWindow` appsettings
+10. ~~**A3** — olay arama URL sync + U1–U7 presets~~ ✅
+11. ~~**Dashboard P2** — 24s olay dağılımı~~ ✅
+12. ~~**E2E suite S4.1/S5** argüman düzeltmesi~~ ✅
+13. ~~**B1 `linux.auth.v1`**~~ ✅ — sshd/sudo · `test-siem-linux-auth-ingest.ps1`
 
 LogAlarm parite → [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md)
 

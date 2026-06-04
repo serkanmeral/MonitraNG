@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useAppI18n } from '@/composables/useAppI18n';
 import type { SecEventListItem, SecEventTimeRange } from '@/types/apps/secEvent';
 import { secEventQuery, secEventGet } from '@/services/secEventService';
 
 const { t, locale } = useAppI18n();
+const route = useRoute();
+const router = useRouter();
 
 const loading = ref(true);
 const errorLocal = ref<string | null>(null);
@@ -19,10 +22,13 @@ const sourceType = ref<string | null>(null);
 const eventAction = ref<string | null>(null);
 const timeRange = ref<SecEventTimeRange>('24h');
 
+const VALID_TIME_RANGES: SecEventTimeRange[] = ['1h', '24h', '7d'];
+
 const sourceTypeItems = computed(() => [
   { title: t('siemCenter.events.filterAll'), value: null },
   { title: t('siemCenter.events.sourceFirewall'), value: 'firewall' },
   { title: t('siemCenter.events.sourceAd'), value: 'ad' },
+  { title: t('siemCenter.events.sourceEndpoint'), value: 'endpoint' },
 ]);
 
 const eventActionItems = computed(() => [
@@ -33,7 +39,17 @@ const eventActionItems = computed(() => [
   { title: 'rule_change', value: 'rule_change' },
   { title: 'allowed_flow', value: 'allowed_flow' },
   { title: 'privileged_login_outside_window', value: 'privileged_login_outside_window' },
+  { title: 'privilege_denied', value: 'privilege_denied' },
   { title: 'new_flow', value: 'new_flow' },
+]);
+
+const filterPresets = computed(() => [
+  { key: 'u1', label: 'U1', eventAction: 'login_failed' as const },
+  { key: 'u4', label: 'U4', eventAction: 'denied_flow' as const },
+  { key: 'u5', label: 'U5', eventAction: 'allowed_flow' as const },
+  { key: 'u3', label: 'U3', eventAction: 'privileged_login_outside_window' as const },
+  { key: 'u6', label: 'U6', eventAction: 'rule_change' as const },
+  { key: 'u7', label: 'U7', eventAction: 'new_flow' as const },
 ]);
 
 const timeRangeItems = computed(() => [
@@ -67,7 +83,15 @@ function formatDate(value?: string | null): string {
 function actionColor(action: string): string {
   if (action.includes('fail') || action.includes('denied')) return 'error';
   if (action.includes('success')) return 'success';
+  if (action.includes('new_flow') || action.includes('privileged')) return 'warning';
   return 'info';
+}
+
+function displayAction(item: SecEventListItem): string {
+  if (item.baselineNewFlowPair) {
+    return `${item.eventAction} + new_flow`;
+  }
+  return item.eventAction;
 }
 
 function computeFrom(): string {
@@ -76,9 +100,35 @@ function computeFrom(): string {
   return new Date(now - hours * 3600_000).toISOString();
 }
 
-async function loadRows() {
+function syncQueryToUrl() {
+  const query: Record<string, string> = {};
+  if (search.value.trim()) query.search = search.value.trim();
+  if (sourceType.value) query.sourceType = sourceType.value;
+  if (eventAction.value) query.eventAction = eventAction.value;
+  if (timeRange.value !== '24h') query.timeRange = timeRange.value;
+  void router.replace({ query });
+}
+
+function applyFromRoute() {
+  const q = route.query;
+  search.value = typeof q.search === 'string' ? q.search : '';
+  sourceType.value = typeof q.sourceType === 'string' ? q.sourceType : null;
+  eventAction.value = typeof q.eventAction === 'string' ? q.eventAction : null;
+  const tr = typeof q.timeRange === 'string' ? q.timeRange : '24h';
+  timeRange.value = VALID_TIME_RANGES.includes(tr as SecEventTimeRange)
+    ? (tr as SecEventTimeRange)
+    : '24h';
+}
+
+function applyPreset(preset: { eventAction: string }) {
+  eventAction.value = preset.eventAction;
+  void loadRows(true);
+}
+
+async function loadRows(syncUrl = false) {
   loading.value = true;
   errorLocal.value = null;
+  if (syncUrl) syncQueryToUrl();
   try {
     const res = await secEventQuery({
       from: computeFrom(),
@@ -119,7 +169,8 @@ function openDetail(item: SecEventListItem) {
 const displayRaw = computed(() => selected.value?.raw ?? selected.value?.rawPreview ?? '');
 
 onMounted(() => {
-  void loadRows();
+  applyFromRoute();
+  void loadRows(false);
 });
 </script>
 
@@ -128,6 +179,20 @@ onMounted(() => {
     <v-alert v-if="errorLocal" type="error" variant="tonal" class="mb-4" closable @click:close="errorLocal = null">
       {{ errorLocal }}
     </v-alert>
+
+    <div class="d-flex flex-wrap align-center gap-2 mb-3">
+      <span class="text-caption text-medium-emphasis">{{ t('siemCenter.events.presets') }}</span>
+      <v-chip
+        v-for="preset in filterPresets"
+        :key="preset.key"
+        size="small"
+        variant="tonal"
+        :color="eventAction === preset.eventAction ? 'primary' : undefined"
+        @click="applyPreset(preset)"
+      >
+        {{ preset.label }}
+      </v-chip>
+    </div>
 
     <v-row class="mb-4" dense>
       <v-col cols="12" md="3">
@@ -138,7 +203,7 @@ onMounted(() => {
           density="comfortable"
           hide-details
           clearable
-          @keyup.enter="loadRows"
+          @keyup.enter="loadRows(true)"
         />
       </v-col>
       <v-col cols="12" sm="6" md="2">
@@ -177,10 +242,10 @@ onMounted(() => {
         />
       </v-col>
       <v-col cols="12" sm="6" md="3" class="d-flex align-center gap-2">
-        <v-btn color="primary" prepend-icon="mdi-filter" :loading="loading" @click="loadRows">
+        <v-btn color="primary" prepend-icon="mdi-filter" :loading="loading" @click="loadRows(true)">
           {{ t('siemCenter.events.apply') }}
         </v-btn>
-        <v-btn variant="tonal" prepend-icon="mdi-refresh" :loading="loading" @click="loadRows">
+        <v-btn variant="tonal" prepend-icon="mdi-refresh" :loading="loading" @click="loadRows(false)">
           {{ t('siemCenter.events.refresh') }}
         </v-btn>
       </v-col>
@@ -206,9 +271,19 @@ onMounted(() => {
         {{ formatDate(item.timestamp) }}
       </template>
       <template #item.eventAction="{ item }">
-        <v-chip size="small" :color="actionColor(item.eventAction)" variant="tonal">
-          {{ item.eventAction }}
-        </v-chip>
+        <div class="d-flex flex-wrap align-center gap-1">
+          <v-chip size="small" :color="actionColor(item.eventAction)" variant="tonal">
+            {{ item.eventAction }}
+          </v-chip>
+          <v-chip
+            v-if="item.baselineNewFlowPair"
+            size="x-small"
+            color="info"
+            variant="flat"
+          >
+            new_flow
+          </v-chip>
+        </div>
       </template>
       <template #item.sourceType="{ item }">
         <span class="text-body-2">{{ item.sourceType || '—' }}</span>
@@ -243,7 +318,12 @@ onMounted(() => {
         <v-card-text>
           <v-list density="compact">
             <v-list-item :title="t('siemCenter.events.colTime')" :subtitle="formatDate(selected.timestamp)" />
-            <v-list-item :title="t('siemCenter.events.colAction')" :subtitle="selected.eventAction" />
+            <v-list-item :title="t('siemCenter.events.colAction')" :subtitle="displayAction(selected)" />
+            <v-list-item
+              v-if="selected.baselineNewFlowPair"
+              :title="t('siemCenter.events.newFlowFlag')"
+              subtitle="baseline.newFlowPair"
+            />
             <v-list-item :title="t('siemCenter.events.colSource')" :subtitle="`${selected.sourceType || '—'} / ${selected.sourceProduct || '—'}`" />
             <v-list-item :title="t('siemCenter.events.colHost')" :subtitle="selected.sourceHost || '—'" />
             <v-list-item :title="t('siemCenter.events.colUser')" :subtitle="selected.actorUser || '—'" />

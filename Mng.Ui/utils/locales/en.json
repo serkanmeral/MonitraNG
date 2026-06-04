@@ -4980,7 +4980,9 @@
       "recentAlarmsTitle": "Recent open alarms",
       "viewAllAlarms": "All alarms",
       "noAlarms": "No open alarms.",
-      "quickLinksTitle": "Quick links"
+      "quickLinksTitle": "Quick links",
+      "breakdownTitle": "Event breakdown (24h)",
+      "breakdownEmpty": "No data"
     },
     "events": {
       "menuTitle": "Security events",
@@ -4997,6 +4999,7 @@
       "filterAll": "All",
       "sourceFirewall": "Firewall",
       "sourceAd": "Active Directory",
+      "sourceEndpoint": "Linux / endpoint",
       "empty": "No events match the filter.",
       "statTotal": "{shown} / {total} events",
       "detailTitle": "Event detail",
@@ -5011,7 +5014,9 @@
       "colSrcIp": "Source IP",
       "colDstIp": "Dest IP",
       "colCode": "Code",
-      "colParser": "Parser"
+      "colParser": "Parser",
+      "presets": "Scenario shortcuts (U1–U7)",
+      "newFlowFlag": "New flow (U7)"
     }
   },
   "automationCenter": {

@@ -56,6 +56,7 @@ public sealed class SecEventIngestProcessingTests
             NullLogger<SecEventIngestProcessing>.Instance,
             new SecEventParserRegistry(
                 SecEventParserTestFactory.CreateWindowsParser(),
+                new LinuxAuthSyslogParser(),
                 new FirewallGenericSyslogParser(),
                 new UnknownSecEventFallback()),
             new UnknownSecEventFallback(),

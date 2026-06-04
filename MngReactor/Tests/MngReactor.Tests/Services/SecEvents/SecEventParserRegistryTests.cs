@@ -9,6 +9,7 @@ public sealed class SecEventParserRegistryTests
 {
     private readonly SecEventParserRegistry _registry = new(
         SecEventParserTestFactory.CreateWindowsParser(),
+        new LinuxAuthSyslogParser(),
         new FirewallGenericSyslogParser(),
         new UnknownSecEventFallback());
 
@@ -39,6 +40,20 @@ public sealed class SecEventParserRegistryTests
 
         var parser = _registry.Resolve(ctx);
         Assert.Equal(FirewallGenericSyslogParser.ParserIdValue, parser.ParserId);
+    }
+
+    [Fact]
+    public void S2_4_RoutesLinuxSyslogToLinuxAuthParser()
+    {
+        var ctx = new SecEventRawContext
+        {
+            ReceivedAt = DateTime.UtcNow,
+            Source = new SecEventSourceInfo { Type = "endpoint", Product = "linux-syslog", Host = "bastion01" },
+            Raw = JsonSerializer.SerializeToElement(SiemFixtureHelper.ReadFixture("linux_sshd_failed_password.syslog.txt"))
+        };
+
+        var parser = _registry.Resolve(ctx);
+        Assert.Equal(LinuxAuthSyslogParser.ParserIdValue, parser.ParserId);
     }
 
     [Fact]
