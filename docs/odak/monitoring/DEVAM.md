@@ -66,7 +66,7 @@ Faz 0 planlama ✅. **C6/C7 ✅.** UI modül ayrımı (`6c4ecbf`). **SIEM `sec_e
 
 
 
-## 3. MngReactor durumu (3 Haz 2026)
+## 3. MngReactor / MngEngine durumu (4 Haz 2026)
 
 
 
@@ -74,17 +74,21 @@ Faz 0 planlama ✅. **C6/C7 ✅.** UI modül ayrımı (`6c4ecbf`). **SIEM `sec_e
 
 |------|--------|
 
-| Kaynak | ✅ `MngReactor/` monorepo (submodule değil) |
+| **MngReactor** kaynak | ✅ `MngReactor/` monorepo |
 
-| Monitoring metrik ingest | ✅ kodda var |
+| **MngEngine** kaynak | ✅ `MngEngine/MngEngine.Service/` monorepo (`b0d3d62` — submodule kaldırıldı) |
+
+| Monitoring metrik ingest | ✅ Reactor + Engine `IngestClient` |
 
 | SIEM `sec_events` | ⬜ PR planı hazır, kod yok |
 
-| Odak deploy | ✅ `mngreactor:latest` — [checklist](./MNGREACTOR_ODAK_DEPLOY_CHECKLIST.md) |
+| Odak deploy Reactor | ✅ `mngreactor:latest` |
+
+| Odak deploy Engine | ⬜ compose yok; sync script'e eklendi |
 
 | Workflow `mqtt/publish` | ⬜ endpoint eksik; Odak `DevLogOnly=true` |
 
-| Observation native publish | ✅ C6 — [REACTOR_NATIVE_PUBLISH_HANDOFF](../alarm/REACTOR_NATIVE_PUBLISH_HANDOFF.md) |
+| Observation native publish | ✅ C6 |
 
 | Yeniden inşa? | ❌ Gerek yok |
 

@@ -106,6 +106,12 @@ scripts/disk-*.sh
 ## Odak deploy — yerel SSH (commit edilmez)
 scripts/odak/local-credentials.ps1
 .env.odak.local
+.env.odak.prod.local
+
+## MngEngine — yerel config / anahtar (commit edilmez)
+MngEngine/MngEngine.Service/Presentation/MngEngine.Api/config.txt
+MngEngine/MngEngine.Service/Presentation/MngEngine.Api/config_2.txt
+MngEngine/MngEngine.Service/Presentation/MngEngine.Api/privateKey.pem
 
 ## Certificates (exclude production)
 ApplicationResources/Cert/production/

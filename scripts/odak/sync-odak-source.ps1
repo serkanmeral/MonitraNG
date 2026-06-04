@@ -1,9 +1,9 @@
 # MonitraNG -> Odak sunucu kaynak senkronu (git push/pull gerektirmez)
-# Kullanım (repo kökünden):
+# Kullan─▒m (repo k├╢k├╝nden):
 #   .\scripts\odak\sync-odak-source.ps1
 #   .\scripts\odak\sync-odak-source.ps1 -Paths MngKeeper,Mng.Ui,ApplicationResources/mng_apps
 #   .\scripts\odak\sync-odak-source.ps1 -IncludeMngCommon
-#   $env:ODAK_SSH_PASSWORD = '...'   # parolasız otomasyon (Read-Host atlanır)
+#   $env:ODAK_SSH_PASSWORD = '...'   # parolas─▒z otomasyon (Read-Host atlan─▒r)
 
 param(
     [string]$Server = "192.168.20.20",
@@ -24,7 +24,7 @@ Set-Location $RepoRoot
 
 $DefaultFullPaths = @(
     "ApplicationResources/mng_apps",
-    "MngGateway", "MngKeeper", "MngDataGateway", "MngReactor", "MngHub",
+    "MngGateway", "MngKeeper", "MngDataGateway", "MngReactor", "MngEngine", "MngHub",
     "MngScheduler", "MngWorkflow", "MngAlarm", "MngOperations", "MngDocument", "MngAdmin", "MngNotifier",
     "Mng.Ui", "MngDomainUI"
 )
@@ -37,8 +37,8 @@ $TarPath = Join-Path $env:TEMP "monitrang-odak-sync.tar"
 if (Test-Path $TarPath) { Remove-Item $TarPath -Force }
 
 # Windows tar: paths relative to repo root
-# Build artifaktları / bağımlılıklar sunucuda yeniden üretilir (.dockerignore zaten dışlar) —
-# tar'a almak transferi gereksiz büyütür (ör. Mng.Ui/node_modules ~350MB).
+# Build artifaktlar─▒ / ba─ƒ─▒ml─▒l─▒klar sunucuda yeniden ├╝retilir (.dockerignore zaten d─▒┼ƒlar) ΓÇö
+# tar'a almak transferi gereksiz b├╝y├╝t├╝r (├╢r. Mng.Ui/node_modules ~350MB).
 $tarExcludes = @(
     "*/node_modules/*", "*/.nuxt/*", "*/.output/*", "*/.nitro/*",
     "*/bin/*", "*/obj/*", "*/.git/*", "*/.vs/*"
@@ -63,6 +63,7 @@ set -e
 mkdir -p '$RemoteMonitraRoot'
 # Bos gitlink/stub klasorleri tar'in uzerine yazmasini engelleyebilir (MngReactor C6).
 find '$RemoteMonitraRoot' -mindepth 1 -maxdepth 2 -type d -empty -delete 2>/dev/null || true
+rm -rf '$RemoteMonitraRoot'/MngEngine/MngEngine.Service 2>/dev/null || true
 tar -xf /home/odak/monitrang-odak-sync.tar -C '$RemoteMonitraRoot'
 echo "Extracted to $RemoteMonitraRoot"
 ls -la '$RemoteMonitraRoot/ApplicationResources/mng_apps/docker-compose.production.yml' 2>/dev/null || true

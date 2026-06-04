@@ -19,11 +19,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="config_2.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="privateKey.pem">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    <!-- config.txt / privateKey.pem: yerel dosya; gitignore — bkz. config.example.txt -->
+    <None Update="privateKey.pem" Condition="Exists('privateKey.pem')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

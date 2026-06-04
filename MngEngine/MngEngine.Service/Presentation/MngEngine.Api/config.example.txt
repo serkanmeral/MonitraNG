@@ -1,0 +1,8 @@
+# MngEngine yerel config string
+#
+# 1. Reactor UI veya mon_engines kaydından şifreli config string alın.
+# 2. Bu dosyayı config.txt olarak kopyalayın ve string'i yapıştırın.
+# 3. config.txt git'e commit EDİLMEZ (.gitignore).
+#
+# Örnek (gerçek değer değil):
+# eyJDb21wcmVzc1BiayI6Ii4uLiIsIkNvbXByZXNNUHJrIjoiLi4uIiwiRW5naW5lSW5mbyI6Ii4uLiJ9

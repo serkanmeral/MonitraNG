@@ -361,3 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Yerel Engine config string ve RSA private key (Reactor publicKey.pem ile eşleşir)
+Presentation/MngEngine.Api/config.txt
+Presentation/MngEngine.Api/config_2.txt
+Presentation/MngEngine.Api/privateKey.pem
