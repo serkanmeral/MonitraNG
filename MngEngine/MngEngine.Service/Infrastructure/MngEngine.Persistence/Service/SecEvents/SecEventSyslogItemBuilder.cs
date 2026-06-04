@@ -26,20 +26,34 @@ public sealed partial class SecEventSyslogItemBuilder
                    ?? remoteEndpoint?.Address.ToString()
                    ?? "unknown";
 
+        var (sourceType, sourceProduct) = ClassifySource(raw, _options);
+
         return new SecEventIngestItem
         {
             ReceivedAt = receivedAt,
             Source = new SecEventIngestSource
             {
-                Type = _options.DefaultSourceType,
-                Product = _options.DefaultSourceProduct,
+                Type = sourceType,
+                Product = sourceProduct,
                 Host = host
             },
             Raw = raw
         };
     }
 
-    private static string? ExtractHost(string raw)
+    internal static (string Type, string Product) ClassifySource(string raw, SecEventQueueOptions options)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return (options.DefaultSourceType, options.DefaultSourceProduct);
+
+        if (raw.Contains("sshd[", StringComparison.Ordinal)
+            || raw.Contains("sudo:", StringComparison.Ordinal))
+            return ("endpoint", "linux-syslog");
+
+        return (options.DefaultSourceType, options.DefaultSourceProduct);
+    }
+
+    internal static string? ExtractHost(string raw)
     {
         if (string.IsNullOrWhiteSpace(raw))
             return null;
@@ -51,6 +65,10 @@ public sealed partial class SecEventSyslogItemBuilder
         var parts = raw.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length >= 2 && parts[0].Contains('-', StringComparison.Ordinal))
             return parts[1];
+
+        // BSD syslog: MMM dd HH:MM:SS hostname message...
+        if (parts.Length >= 4 && parts[2].Contains(':', StringComparison.Ordinal))
+            return parts[3];
 
         return null;
     }

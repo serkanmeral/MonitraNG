@@ -48,6 +48,7 @@ Invoke-Step "B1 firewall vendor ingest" "test-siem-firewall-vendor-ingest.ps1" @
 Invoke-Step "B1 windows extended ingest" "test-siem-windows-extended-ingest.ps1"
 Invoke-Step "B1 bastion ingest" "test-siem-bastion-ingest.ps1"
 Invoke-Step "NxLog WEC template format" "test-nxlog-wec-template-e2e.ps1"
+Invoke-Step "Linux rsyslog auth E2E" "test-linux-rsyslog-auth-e2e.ps1"
 
 Invoke-Step "Purge alarm observation queue" "purge-alarm-observation-queue.ps1"
 Invoke-Step "U1 alarm" "test-siem-u1-alarm-e2e.ps1"

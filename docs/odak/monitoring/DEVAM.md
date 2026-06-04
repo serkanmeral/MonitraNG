@@ -53,6 +53,7 @@
 | **B1 `bastion.generic.v1`** | ✅ `test-siem-bastion-ingest.ps1` |
 | **U10 AD directory_object_modified alarm** | ✅ `test-siem-u10-alarm-e2e.ps1` |
 | **Quick regression wrapper** | ✅ `run-siem-quick-regression.ps1` |
+| **Linux rsyslog auth (Faz 2.5)** | ✅ `test-linux-rsyslog-auth-e2e.ps1` |
 | **B3 hazır kural paketi (`siem-mvp-v1`)** | ✅ `seed-siem-alarm-rule-pack.ps1` |
 | **Aktif yol haritası** | [SIEM_ROADMAP.md](./SIEM_ROADMAP.md) · LogAlarm ertelendi |
 
@@ -146,6 +147,7 @@ Kısa vadeli teknik devam (MVP sonrası bakım):
 | 41 | ~~**Extended Windows 4722/4726**~~ | ✅ fixture + unit |
 | 42 | ~~**Quick regression wrapper**~~ | ✅ `run-siem-quick-regression.ps1` |
 | 43 | ~~**NxLog prod şablonu doğrulama**~~ | ✅ lab smoke · müşteri ops checklist §6.1 |
+| 44 | ~~**Linux rsyslog hardening (Faz 2.5)**~~ | ✅ şablon + Engine classify + lab smoke |
 
 LogAlarm / 5651 / WORM → **Faz 5 (ertelendi)** — [SIEM_ROADMAP.md §6](./SIEM_ROADMAP.md#6-faz-5--ertelenen-logalarm--uyum)
 
