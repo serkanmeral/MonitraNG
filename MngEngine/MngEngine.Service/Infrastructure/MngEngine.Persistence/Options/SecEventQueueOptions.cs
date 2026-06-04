@@ -33,4 +33,16 @@ public sealed class SecEventQueueOptions
 
     /// <summary>WEC batch source.host varsayılanı (forwarder host adı).</summary>
     public string? DefaultWecHost { get; set; }
+
+    /// <summary>POST /api/SecEvents/wec-batch tek istekte kabul edilen maksimum olay sayısı.</summary>
+    public int MaxWecBatchItems { get; set; } = 500;
+
+    /// <summary>Reactor sec-events ingest'e tek HTTP isteğinde gönderilen maksimum olay.</summary>
+    public int MaxReactorBatchItems { get; set; } = 200;
+
+    /// <summary>Reactor gönderimi başarısız olursa yeniden deneme sayısı (0 = tek deneme).</summary>
+    public int ReactorSendRetryCount { get; set; } = 3;
+
+    /// <summary>Reactor yeniden denemeleri arası bekleme (ms).</summary>
+    public int ReactorSendRetryDelayMs { get; set; } = 500;
 }

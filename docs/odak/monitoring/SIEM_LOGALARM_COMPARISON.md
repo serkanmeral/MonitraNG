@@ -42,7 +42,7 @@ LogAlarm “her şeyi yapan SIEM kutusu” modelidir. MonitraNG bilinçli olarak
 
 | LogAlarm | MonitraNG |
 |----------|-----------|
-| Güçlü **ajan** (Windows / Linux / Mac) | **MngEngine**: syslog UDP, WEF→WEC (planlı), agent batch (planlı) |
+| Güçlü **ajan** (Windows / Linux / Mac) | **MngEngine**: syslog UDP, WEF→WEC forwarder ✅, agent batch (planlı) |
 | Firewall, AD, DB, web, e-posta, bulut vb. geniş kaynak | Şu an Odak: firewall syslog + HTTP ingest + Windows fixture parser |
 | Web konsoldan dakikalar içinde kaynak ekleme | Hibrit model tasarlandı; entegrasyon sayısı ve “tak-çalıştır” deneyimi henüz sınırlı |
 

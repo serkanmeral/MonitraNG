@@ -27,6 +27,7 @@
 | SIEM E2E suite (`-Quick`) | ✅ |
 | Engine queue_depth under load | ✅ max=107 / gate=4000 |
 | WEF→WEC Engine batch | ✅ `POST /api/SecEvents/wec-batch` · S5 E2E |
+| WEF forwarder şablonu (B2) | ✅ [SIEM_WEF_WEC_FORWARDER.md](./SIEM_WEF_WEC_FORWARDER.md) · `scripts/wef/Forward-WecEventsToEngine.ps1` |
 | Güvenlik olay arama UI | ✅ `/apps/siem-center/events` · menü: **Güvenlik Merkezi** |
 | LogAlarm feature-parite | ⬜ Ayrı hedef — [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md) |
 
@@ -80,6 +81,7 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | 10 | ~~**A3 olay arama UX**~~ ✅ | URL sync · U1–U7 presets · new_flow badge |
 | 11 | ~~**E2E S4.1/S5 switch fix**~~ ✅ | suite `-VerifyOdakMongo` doğru geçiriliyor |
 | 12 | ~~**B1 `linux.auth.v1`**~~ ✅ | sshd/sudo parser + ingest smoke |
+| 13 | ~~**B2 WEF forwarder şablonu**~~ ✅ | GPO/WEC ops · NxLog · PS forwarder · Engine batch/retry |
 | — | LogAlarm parite | [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md) |
 
 ---
@@ -89,7 +91,7 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | Alan | Değer |
 |------|--------|
 | Branch | `main` |
-| Son SIEM commit | `42030d6` — U3/U5/U7, dashboard, post-MVP E2E |
+| Son SIEM commit | `2e64371` — A3 events UX, linux.auth.v1, E2E S4.1/S5 fix |
 
 ---
 

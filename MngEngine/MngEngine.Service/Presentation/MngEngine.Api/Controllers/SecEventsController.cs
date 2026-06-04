@@ -57,6 +57,17 @@ public sealed class SecEventsController : ControllerBase
         if (request?.Items == null || request.Items.Count == 0)
             return BadRequest(new { error = "empty_batch", message = "items bos olamaz" });
 
+        var maxBatch = _queueOptions.MaxWecBatchItems > 0 ? _queueOptions.MaxWecBatchItems : 500;
+        if (request.Items.Count > maxBatch)
+        {
+            return BadRequest(new
+            {
+                error = "batch_too_large",
+                message = $"items.Count ({request.Items.Count}) MaxWecBatchItems ({maxBatch}) ustunde",
+                maxItems = maxBatch
+            });
+        }
+
         var response = await _queueIngest.IngestWecBatchAsync(request, cancellationToken);
         return Ok(response);
     }

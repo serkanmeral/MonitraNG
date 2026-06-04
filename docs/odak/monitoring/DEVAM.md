@@ -35,6 +35,7 @@ Faz 0 planlama ✅. **SIEM MVP (U1/U2/U4) + müdahale/workflow ✅.** **P0 soak 
 | **SIEM E2E suite (`-Quick`)** | ✅ `test-siem-e2e-suite.ps1` |
 | **Engine queue_depth under load** | ✅ `benchmark-engine-queue-depth-2026-06-04.json` (max=107, gate=4000) |
 | **WEF→WEC Engine batch ingest** | ✅ `test-engine-wec-ingest-e2e.ps1` · [SIEM_WEF_WEC_INGEST.md](./SIEM_WEF_WEC_INGEST.md) |
+| **WEF forwarder şablonu (B2)** | ✅ [SIEM_WEF_WEC_FORWARDER.md](./SIEM_WEF_WEC_FORWARDER.md) |
 | **Güvenlik olay arama UI** | ✅ `/apps/siem-center/events` · [SIEM_EVENTS_UI.md](./SIEM_EVENTS_UI.md) |
 | **U6 firewall rule_change** | ✅ `test-siem-u6-alarm-e2e.ps1` |
 | **U5 firewall traffic spike** | ✅ `test-siem-u5-alarm-e2e.ps1` |
@@ -90,6 +91,7 @@ Kısa vadeli teknik devam (MVP sonrası bakım):
 11. ~~**Dashboard P2** — 24s olay dağılımı~~ ✅
 12. ~~**E2E suite S4.1/S5** argüman düzeltmesi~~ ✅
 13. ~~**B1 `linux.auth.v1`**~~ ✅ — sshd/sudo · `test-siem-linux-auth-ingest.ps1`
+14. ~~**B2 WEF forwarder şablonu**~~ ✅ — [SIEM_WEF_WEC_FORWARDER.md](./SIEM_WEF_WEC_FORWARDER.md) · Engine `MaxWecBatchItems`/retry
 
 LogAlarm parite → [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md)
 

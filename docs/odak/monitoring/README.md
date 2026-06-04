@@ -39,6 +39,7 @@ Müşteri ortamında **güvenlik odaklı izleme / SIEM-hafif** çözümünün pl
 | [SIEM_DASHBOARD.md](./SIEM_DASHBOARD.md) | Güvenlik paneli (dashboard MVP) | ✅ |
 | [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md) | LogAlarm parite yol haritası | ✅ plan |
 | [SIEM_WEF_WEC_INGEST.md](./SIEM_WEF_WEC_INGEST.md) | WEF→WEC → Engine HTTP batch | ✅ S5 |
+| [SIEM_WEF_WEC_FORWARDER.md](./SIEM_WEF_WEC_FORWARDER.md) | WEC GPO + forwarder şablonu (NxLog / PS) | ✅ B2 |
 | [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md) | **LogAlarm vs MonitraNG** kıyaslama; parite ayrı hedef | ✅ referans |
 | [SIEM_VERTICAL_FINANCE.md](./SIEM_VERTICAL_FINANCE.md) | Dijital banka / finans dikey kapsam | Taslak |
 | [DEVAM.md](./DEVAM.md) | Kaldığımız yer | ▶️ |

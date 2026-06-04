@@ -21,7 +21,7 @@ flowchart LR
 | Katman | Bileşen | Durum |
 |--------|---------|--------|
 | Müşteri | WEF GPO + WEC kurulumu | Müşteri IT |
-| WEC tarafı | Forwarder (NxLog / Winlogbeat / özel agent) | Planlı — WEC'den Engine'e POST |
+| WEC tarafı | Forwarder (NxLog / PowerShell lab) | ✅ [SIEM_WEF_WEC_FORWARDER.md](./SIEM_WEF_WEC_FORWARDER.md) |
 | Engine | `POST /api/SecEvents/wec-batch` | ✅ |
 | Reactor | `windows.security.v1` parser | ✅ |
 
@@ -82,6 +82,10 @@ flowchart LR
 |------|------------|----------|
 | `WecIngestEnabled` | `true` | Endpoint açık/kapalı |
 | `DefaultWecHost` | `wec` | `source` yoksa host adı |
+| `MaxWecBatchItems` | `500` | Tek `wec-batch` isteği üst sınırı |
+| `MaxReactorBatchItems` | `200` | Reactor'a parçalı gönderim |
+| `ReactorSendRetryCount` | `3` | Geçici Reactor hatası yeniden deneme |
+| `ReactorSendRetryDelayMs` | `500` | Denemeler arası bekleme (ms) |
 
 ---
 
@@ -101,7 +105,7 @@ Fixture: `tests/fixtures/siem/windows_4625_failed_logon.json` (Event ID 4625 →
 
 ---
 
-## 4. WEC forwarder (müşteri tarafı — şablon)
+## 4. WEC forwarder (müşteri tarafı)
 
 Production'da WEC sunucusunda forwarder şu hedefe POST eder:
 
@@ -109,7 +113,13 @@ Production'da WEC sunucusunda forwarder şu hedefe POST eder:
 http://<engine-host>:5037/api/SecEvents/wec-batch
 ```
 
-Forwarder, `Forwarded Events` kanalından 4624/4625/4740 vb. filtrelenmiş olayları yukarıdaki JSON formatına dönüştürür. Detaylı GPO/WEC kurulum şablonu ayrı ops dokümanında (TODO).
+Forwarder, `Forwarded Events` kanalından 4624/4625/4740 vb. filtrelenmiş olayları yukarıdaki JSON formatına dönüştürür.
+
+**Tam kurulum şablonu:** [SIEM_WEF_WEC_FORWARDER.md](./SIEM_WEF_WEC_FORWARDER.md) — GPO/WEC checklist, NxLog conf, lab PowerShell:
+
+```powershell
+pwsh scripts/wef/Forward-WecEventsToEngine.ps1 -EngineUrl http://192.168.20.20:5037 -Source Fixture
+```
 
 ---
 
@@ -119,4 +129,5 @@ Forwarder, `Forwarded Events` kanalından 4624/4625/4740 vb. filtrelenmiş olayl
 |--------|------|
 | `test-engine-syslog-s4.1.ps1` | Firewall syslog → Engine |
 | `test-engine-wec-ingest-e2e.ps1` | WEC batch → Engine |
+| `scripts/wef/Forward-WecEventsToEngine.ps1` | WEC forwarder (fixture / Event Log) |
 | `test-siem-u1-alarm-e2e.ps1` | login_failed → alarm (Reactor HTTP) |
