@@ -25,6 +25,7 @@ Set-Location $RepoRoot
 
 $DefaultFullPaths = @(
     "ApplicationResources/mng_apps",
+    "tests/fixtures/siem",
     "MngGateway", "MngKeeper", "MngDataGateway", "MngReactor", "MngEngine", "MngHub",
     "MngScheduler", "MngWorkflow", "MngAlarm", "MngOperations", "MngDocument", "MngAdmin", "MngNotifier",
     "Mng.Ui", "MngDomainUI"

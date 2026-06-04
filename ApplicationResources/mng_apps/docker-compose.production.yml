@@ -282,8 +282,8 @@ services:
 
   mngengine:
     build:
-      context: ../../MngEngine/MngEngine.Service
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: MngEngine/MngEngine.Service/Dockerfile
     image: mngengine:${VERSION:-latest}
     container_name: mngengine
     environment:
@@ -296,8 +296,9 @@ services:
       - MngEngine__SecEventQueue__Enabled=true
       - MngEngine__SecEventQueue__UdpPort=5514
       - MngEngine__SecEventQueue__SendIntervalSeconds=30
+      - MngEngine__Config__FilePath=persist/config.txt
     volumes:
-      - mngengine_data:/app
+      - mngengine_data:/app/persist
     networks:
       - mng_common_mng_network
     depends_on:

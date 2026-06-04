@@ -1,4 +1,4 @@
-# P4-B — engine.command / block.ip node (dev-log-only on Odak stub Reactor)
+# P4-B — engine.command / block.ip node (Reactor mqtt/publish on Odak)
 param(
     [string]$Gateway = "http://192.168.20.20:5040",
     [string]$Domain = "odak"
@@ -75,5 +75,19 @@ if (-not $blockExec -or -not $logExec) {
     exit 1
 }
 
-Write-Host "OK P4 engine.command E2E (run $instanceId, mode=dev_log_only expected on Odak)" -ForegroundColor Green
+$mode = $null
+if ($blockExec.outputJson) {
+    try {
+        $out = $blockExec.outputJson | ConvertFrom-Json
+        $mode = $out.mode
+    } catch { }
+}
+
+if ($mode -ne "reactor_mqtt") {
+    Write-Host "FAIL: block.ip mode=$mode (beklenen reactor_mqtt)" -ForegroundColor Red
+    Write-Host "  outputJson: $($blockExec.outputJson)" -ForegroundColor DarkGray
+    exit 1
+}
+
+Write-Host "OK P4 engine.command E2E (run $instanceId, mode=reactor_mqtt)" -ForegroundColor Green
 exit 0

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using MngEngine.Application.Features.EngineConfig;
 using MngEngine.Application.Interfaces;
 using System;
@@ -19,11 +20,20 @@ namespace MngEngine.Persistence.Service.Config
 
         private readonly ICryptProcessing _cryptProcessing;
         private readonly IMemoryCache _memoryCache;
+        private readonly string _configFilePath;
 
-        public ConfigService(ICryptProcessing cryptProcessing, IMemoryCache memoryCache)
+        public ConfigService(ICryptProcessing cryptProcessing, IMemoryCache memoryCache, IConfiguration configuration)
         {
             _cryptProcessing = cryptProcessing;
             _memoryCache = memoryCache;
+            _configFilePath = configuration["MngEngine:Config:FilePath"]?.Trim() ?? "config.txt";
+        }
+
+        private void EnsureConfigDirectory()
+        {
+            var dir = Path.GetDirectoryName(_configFilePath);
+            if (!string.IsNullOrEmpty(dir))
+                Directory.CreateDirectory(dir);
         }
 
         private static string? GetString(JsonObject obj, string pascalKey, string camelKey)
@@ -210,15 +220,15 @@ namespace MngEngine.Persistence.Service.Config
             _memoryCache.Remove("lastSyncAt");
             _memoryCache.Remove("engineConfigSignature");
 
-            if (File.Exists("config.txt"))
+            if (File.Exists(_configFilePath))
             {
                 try
                 {
-                    File.Delete("config.txt");
+                    File.Delete(_configFilePath);
                 }
                 catch (Exception ex)
                 {
-                    Log.Warning(ex, "config.txt silinemedi");
+                    Log.Warning(ex, "{ConfigFile} silinemedi", _configFilePath);
                 }
             }
 
@@ -228,20 +238,20 @@ namespace MngEngine.Persistence.Service.Config
 
         public async Task InitConfig()
         {
-            if (!File.Exists("config.txt")) return;
+            if (!File.Exists(_configFilePath)) return;
 
-            var fileContent = await File.ReadAllTextAsync("config.txt");
+            var fileContent = await File.ReadAllTextAsync(_configFilePath);
             if (string.IsNullOrWhiteSpace(fileContent)) return;
 
             try
             {
                 var (success, _) = await ApplyConfig(fileContent);
                 if (!success)
-                    Log.Warning("Başlangıçta config.txt yüklendi ama uygulanamadı.");
+                    Log.Warning("Başlangıçta {ConfigFile} yüklendi ama uygulanamadı.", _configFilePath);
             }
             catch (Exception ex)
             {
-                Log.Warning(ex, "Başlangıçta config.txt yüklenemedi.");
+                Log.Warning(ex, "Başlangıçta {ConfigFile} yüklenemedi.", _configFilePath);
             }
         }
 
@@ -259,7 +269,8 @@ namespace MngEngine.Persistence.Service.Config
                 if (payload != null)
                     _memoryCache.Set(EngineConfigPayloadCacheKey, payload);
 
-                await File.WriteAllTextAsync("config.txt", configText);
+                EnsureConfigDirectory();
+                await File.WriteAllTextAsync(_configFilePath, configText);
                 Log.Information("Config uygulandı. EngineId={EngineId}", payload?.EngineId ?? "(yok)");
                 return (true, null);
             }
