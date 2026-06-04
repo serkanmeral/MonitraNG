@@ -1,14 +1,14 @@
 # SIEM / Monitoring — Oturum Handoff
 
-**Son güncelleme:** 4 Haziran 2026  
+**Son güncelleme:** 4 Haziran 2026 (mola checkpoint)  
 **Ana DEVAM:** [DEVAM.md](./DEVAM.md)  
 **Platform UI (ayrı chat):** [../PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md)
 
 ---
 
-## 1. Tek cümlede durum (4 Haz 2026)
+## 1. Tek cümlede durum (mola — 4 Haz 2026)
 
-**SIEM-hafif MVP + post-MVP ✅** · Linux auth U1 tam zincir (alarm → workflow → block.ip) ✅
+**Kendi SIEM yol haritası Faz 1–4 ✅ kapalı** · U1–U10 + bastion · WEF/NxLog/Linux rsyslog toplama şablonları · Odak quick regression PASS · Faz 5 (LogAlarm/5651) **ertelendi**
 
 ---
 
@@ -32,8 +32,14 @@
 | B3 hazır kural paketi | ✅ `siem-mvp-v1` · MITRE/ISO · `seed-siem-alarm-rule-pack.ps1` |
 | B1 `firewall.vendor.v1` | ✅ FortiGate pilot · `test-siem-firewall-vendor-ingest.ps1` |
 | Odak sync upload | ✅ `Send-OdakRemoteFile` (SCP → SFTP fallback) · `2091029` |
-| Güvenlik olay arama UI | ✅ `/apps/siem-center/events` · menü: **Güvenlik Merkezi** |
-| LogAlarm feature-parite | ⬜ Ayrı hedef — [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md) |
+| B1 `bastion.generic.v1` | ✅ ingest smoke |
+| B1 extended Windows (4722/4726) | ✅ fixture + unit |
+| U8–U10 AD alarm + UX presets | ✅ E2E + dashboard |
+| NxLog WEC şablon lab smoke | ✅ `test-nxlog-wec-template-e2e.ps1` |
+| Linux rsyslog şablon + Engine classify | ✅ [SIEM_LINUX_RSYSLOG_FORWARDER.md](./SIEM_LINUX_RSYSLOG_FORWARDER.md) |
+| SIEM CI yerel kapı | ✅ `run-siem-local-gate.ps1` · benchmark JSON verify |
+| Quick regression (`-Quick`) | ✅ ~6 dk PASS |
+| LogAlarm / 5651 (Faz 5) | ⬜ **ertelendi** — [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md) |
 
 ---
 
@@ -48,9 +54,13 @@ U5: allowed_flow×N (dstIp/dstPort) → traffic spike alarm
 U6: rule_change → correlation alarm
 U3: privileged_login_outside_window (LogonType 10, bakım dışı) → correlation alarm
 U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
+U8: group_member_added (4728) → correlation alarm
+U9: account_created (4720) → correlation alarm
+U10: directory_object_modified (5136) → correlation alarm
+B1 bastion: source.type=bastion → linux.auth benzeri sshd auth
 ```
 
-**Scriptler:** `scripts/odak/test-siem-e2e-suite.ps1 -Quick` (kuyruk purge dahil)
+**Regresyon:** `run-siem-quick-regression.ps1` · yerel: `run-siem-local-gate.ps1`
 
 **Benchmark:** `scripts/odak/benchmark-siem-p0-baseline.ps1` · `-Soak` · `-P1` · `benchmark-siem-engine-syslog.ps1`
 
@@ -111,9 +121,10 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | Alan | Değer |
 |------|--------|
 | Branch | `main` (origin ile senkron) |
-| Son SIEM commit | `6d53346` — Linux rsyslog Faz 2.5 |
-| Önceki | `5aa8ad0` — NxLog smoke · suite splat fix |
-| Odak deploy | ✅ `mngengine` · Linux rsyslog smoke PASS |
+| **Mola checkpoint** | `62567c3` |
+| Son commitler | `62567c3` Faz 3.5 CI · `6d53346` Linux rsyslog · `a809593` bastion/U10 · `b7ea29b` Cisco ASA |
+| Odak deploy (4 Haz) | ✅ `mngreactor` + `mngui` + `mngengine` · son smoke PASS |
+| Deploy gerekli mi? | **Hayır** — son commit yalnızca CI script + doküman |
 
 ---
 
@@ -136,19 +147,22 @@ pwsh scripts/odak/setup-mngengine-odak.ps1 -ApplyConfig -WaitHealthy
 
 **Upload:** `sync-odak-source.ps1` → `Send-OdakRemoteFile` (SCP başarısız olursa SFTP).
 
-**Hızlı doğrulama:**
+**Upload / sync:** Aynı PowerShell oturumunda `. .\scripts\odak\OdakSshCommon.ps1; Initialize-OdakSshEnvironment` sonrası script çalıştırın (nested `pwsh -File` SCP DNS hatası verebilir).
+
+**Hızlı doğrulama (mola öncesi):**
 
 ```powershell
-pwsh scripts/odak/test-siem-e2e-suite.ps1 -Quick
-pwsh scripts/odak/test-engine-wec-ingest-e2e.ps1 -EngineUrl http://192.168.20.20:5037
-pwsh scripts/wef/Forward-WecEventsToEngine.ps1 -EngineUrl http://192.168.20.20:5037 -Source Fixture
+pwsh scripts/ci/run-siem-local-gate.ps1
+pwsh scripts/odak/run-siem-quick-regression.ps1 -SkipUnitGate   # Odak ~6 dk
+pwsh scripts/odak/test-linux-rsyslog-auth-e2e.ps1
+pwsh scripts/odak/test-nxlog-wec-template-e2e.ps1
 ```
 
 **Not:** Yoğun benchmark/E2E sonrası P0 kapısı geçici düşebilir; kuyruk purge scriptleri `test-siem-e2e-suite.ps1 -Quick` içinde otomatik.
 
 ---
 
-## 7. SIEM chat prompt'u (yeni oturum — kopyala-yapıştır)
+## 7. SIEM chat prompt'u (mola sonrası — kopyala-yapıştır)
 
 ```markdown
 # MonitraNG — SIEM handoff (mola sonrası devam)
@@ -158,38 +172,56 @@ Yanıtlar **Türkçe**. Commit/push yalnızca açıkça istediğimde.
 ## Bağlam
 - **HANDOFF:** docs/odak/monitoring/HANDOFF.md
 - **DEVAM:** docs/odak/monitoring/DEVAM.md
-- **Parite yol haritası:** docs/odak/monitoring/SIEM_LOGALARM_PARITY_ROADMAP.md
-- **Parser planı:** docs/odak/monitoring/SIEM_PARSER_PLAN.md
-- **WEF/B2:** docs/odak/monitoring/SIEM_WEF_WEC_FORWARDER.md
+- **Yol haritası:** docs/odak/monitoring/SIEM_ROADMAP.md
+- **Toplama:** SIEM_WEF_WEC_FORWARDER.md · SIEM_LINUX_RSYSLOG_FORWARDER.md
+- **Parser:** SIEM_PARSER_PLAN.md
 
-## Mevcut durum (4 Haz 2026)
-- SIEM-hafif MVP + post-MVP ✅: U1–U7 korelasyon, workflow müdahale, dashboard, A3 events UX
-- B1 ✅ `linux.auth.v1` (sshd/sudo) · B2 ✅ WEF forwarder şablonu + Engine wec-batch batch/retry
-- Odak E2E: `test-siem-e2e-suite.ps1 -Quick` PASS
-- Git main @ `2091029` (sync SFTP fallback)
+## Mola checkpoint (4 Haz 2026)
+- Git `main` @ **62567c3** (origin senkron)
+- **Faz 1–4 ✅** · Faz 5 LogAlarm/5651 **ertelendi**
+- Odak: mngreactor + mngui + mngengine deploy ✅ · quick regression PASS
+- U1–U10 alarm E2E · bastion · NxLog · Linux rsyslog lab smoke ✅
+- CI: `run-siem-local-gate.ps1` (unit + benchmark JSON)
 
 ## Odak
-- Gateway http://192.168.20.20:5040 · Engine :5037 · syslog :5514
-- Engine recreate sonrası: `setup-mngengine-odak.ps1 -ApplyConfig`
+- Gateway http://192.168.20.20:5040 · Engine :5037 · syslog UDP :5514
+- Engine recreate sonrası: `setup-mngengine-odak.ps1 -ApplyConfig -WaitHealthy`
+- Sync/deploy: `. .\scripts\odak\OdakSshCommon.ps1; Initialize-OdakSshEnvironment` sonra script
 
 ## Kilitli kararlar
-Hibrit toplama (syslog + WEF→WEC + agent) · Alarm engine tespit · Workflow onaylı müdahale · AI ⏸️
+Hibrit toplama · Alarm engine korelasyon · Workflow onaylı müdahale · LogAlarm en sona · AI ⏸️
 
-## Önerilen sıradaki iş (sen seç veya onayla)
-1. **B1 devamı:** `firewall.vendor.v1` parser (pilot FW markası)
-2. **B3:** Hazır kural paketi (MITRE/ISO)
-3. **A4:** Özelleştirilebilir SIEM dashboard widget düzeni
-4. Linux auth → U1 alarm E2E (linux sshd brute-force zinciri)
+## Sıradaki adaylar (öncelik sen belirle)
+1. **Müşteri prod ops** — NxLog / rsyslog şablon saha kurulumu
+2. **Perf tuning** — P2 ~93→150 evt/s lab
+3. **Gerçek firewall API** — block.ip mock → vendor API (SIEM_WORKFLOW_SEAM.md)
+4. **Extended Windows** — 5137 vb. parser genişletme
+5. **Faz 5** — LogAlarm/5651 (bilinçli ertelendi; kod yok)
 
 ## Bu oturumda ne yapmak istiyorum?
-Önerdiğin sırayla devam et: B1 `firewall.vendor.v1` ile başla (commit/push deploy sonunda).
+Önerdiğin sırayla devam et.
 ```
 
 ---
 
-## 8. Referanslar
+## 8. Mola sonrası ilk komutlar (opsiyonel)
+
+```powershell
+# Yerel
+pwsh scripts/ci/run-siem-local-gate.ps1
+
+# Odak sağlık (aynı oturumda SSH env yükle)
+. .\scripts\odak\OdakSshCommon.ps1; Initialize-OdakSshEnvironment
+Invoke-WebRequest http://192.168.20.20:5040/health -UseBasicParsing
+pwsh scripts/odak/run-siem-quick-regression.ps1 -SkipUnitGate
+```
+
+---
+
+## 9. Referanslar
 
 - [SIEM_PLANNING.md](./SIEM_PLANNING.md)
+- [SIEM_ROADMAP.md](./SIEM_ROADMAP.md)
 - [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md)
 - [benchmarks/README.md](./benchmarks/README.md)
 - [workflow/DEVAM.md](../workflow/DEVAM.md)

@@ -88,6 +88,8 @@ sec_events → observation → correlation/sequence → alarm.raised → Workflo
 
 Odak: `test-siem-e2e-suite.ps1` · `-Quick` regression
 
+**Mola checkpoint:** 4 Haz 2026 · git `62567c3` · [HANDOFF.md](./HANDOFF.md)
+
 ---
 
 ## 8. Referanslar

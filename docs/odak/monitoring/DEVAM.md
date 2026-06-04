@@ -1,7 +1,7 @@
 # DEVAM — SIEM-Hafif Planlama (Kaldığımız Yer)
 
-**Son güncelleme:** 4 Haziran 2026  
-**Durum:** ✅ **SIEM MVP + post-MVP tamam** · Linux U1 tam zincir (alarm/workflow/block.ip) ✅
+**Son güncelleme:** 4 Haziran 2026 (mola checkpoint)  
+**Durum:** ✅ **SIEM Faz 1–4 tamam** · Faz 5 (LogAlarm/5651) ertelendi · Git `62567c3`
 
 **Handoff (yeni chat):** [HANDOFF.md](./HANDOFF.md)
 
@@ -152,6 +152,18 @@ Kısa vadeli teknik devam (MVP sonrası bakım):
 | 46 | ~~**Benchmark baseline CI gate (Faz 3.5)**~~ | ✅ `verify-siem-benchmark-baselines.ps1` |
 
 LogAlarm / 5651 / WORM → **Faz 5 (ertelendi)** — [SIEM_ROADMAP.md §6](./SIEM_ROADMAP.md#6-faz-5--ertelenen-logalarm--uyum)
+
+### Mola checkpoint (4 Haz 2026)
+
+| Alan | Değer |
+|------|--------|
+| Git | `main` @ `62567c3` |
+| Odak | mngreactor + mngui + mngengine ✅ |
+| Regresyon | `run-siem-quick-regression.ps1` PASS |
+| Yerel CI | `run-siem-local-gate.ps1` PASS |
+| Handoff | [HANDOFF.md §7](./HANDOFF.md#7-siem-chat-promptu-mola-sonrası--kopyala-yapıştır) |
+
+**Sıradaki (mola sonrası):** müşteri prod ops · P2 perf · gerçek FW API · Faz 5 (ertelendi)
 
 **Operasyon notu:** Benchmark veya yoğun ingest sonrası E2E/workflow testleri önce kuyruk temizliği gerektirebilir:
 - `purge-workflow-queues.ps1 -Apply` — `workflow.execution`, `workflow.event.inbound`, `alarm.observation.inbound` (birleşik)
