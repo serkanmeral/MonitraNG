@@ -9,7 +9,7 @@
 
 ## 1. Tek cümlede durum
 
-Faz 0 planlama ✅. **SIEM PR-1…PR-6 ✅.** **U1 tam müdahale hattı ✅.** **U4 deny spike ✅.** **U2 fail→success sequence ✅** (`test-siem-u2-alarm-e2e.ps1`).
+Faz 0 planlama ✅. **SIEM MVP senaryoları (U1/U2/U4) ✅.** **P0 performans baseline ✅** (`benchmark-siem-p0-baseline.ps1`).
 
 ---
 
@@ -27,6 +27,7 @@ Faz 0 planlama ✅. **SIEM PR-1…PR-6 ✅.** **U1 tam müdahale hattı ✅.** *
 | **U1 → approval → block.ip** | ✅ `test-siem-u1-approval-block-e2e.ps1` |
 | **U4 firewall deny spike** | ✅ `test-siem-u4-alarm-e2e.ps1` |
 | **U2 fail→success sequence** | ✅ `test-siem-u2-alarm-e2e.ps1` |
+| **P0 benchmark baseline** | ✅ `benchmark-P0-2026-06-04.json` |
 | Observation native publish (metrik) | ✅ C6 |
 
 ---
@@ -41,7 +42,8 @@ Faz 0 planlama ✅. **SIEM PR-1…PR-6 ✅.** **U1 tam müdahale hattı ✅.** *
 6. ~~U1 → approval → `block.ip`~~ ✅
 7. ~~U4 firewall deny spike~~ ✅
 8. ~~U2 sequence~~ ✅
-9. Benchmark baseline · U4 → workflow (opsiyonel)
+9. ~~Benchmark baseline (P0)~~ ✅
+10. P0 5 dk soak (50 evt/s kapı) · U4 → workflow (opsiyonel)
 
 ---
 

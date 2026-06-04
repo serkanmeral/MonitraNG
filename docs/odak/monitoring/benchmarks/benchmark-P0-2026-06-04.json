@@ -1,0 +1,38 @@
+{
+  "profile": "P0",
+  "runId": "bench-P0-20260604080922",
+  "generatedAt": "2026-06-04T05:09:48.4528827Z",
+  "environment": {
+    "domain": "odak",
+    "server": "192.168.20.20",
+    "gateway": "http://192.168.20.20:5040"
+  },
+  "durationSec": 15,
+  "targetEps": 20,
+  "achievedEps": 14.72,
+  "ingest": {
+    "p95TargetMs": 1000,
+    "rejected": 0,
+    "pass": true,
+    "requests": 239,
+    "p50Ms": 4.0,
+    "accepted": 239,
+    "maxMs": 37.0,
+    "p95Ms": 6.0,
+    "errorRate": 0.0
+  },
+  "mongo": {
+    "beforeCount": 1007,
+    "afterCount": 1246,
+    "savedDelta": 239,
+    "verifyMethod": "total_count_delta"
+  },
+  "detectionLag": {
+    "targetLagP95Ms": 60000,
+    "ruleId": "b05f53367840452eb636f23802adfa2e",
+    "lagMs": 1727,
+    "pass": true
+  },
+  "pass": true,
+  "notes": "P0 lab baseline; full 5dk soak ve 50 evt/s kapisi ayri kosuda olculmeli."
+}
