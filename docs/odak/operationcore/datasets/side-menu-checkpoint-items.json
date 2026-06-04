@@ -43,5 +43,20 @@
     "to": "/apps/alarm-center/rules",
     "type": "internal",
     "disabled": false
+  },
+  {
+    "comment": "Güvenlik Merkezi header alti — güvenlik olaylari (level 1).",
+    "order": "siemHeaderOrder+1",
+    "itemType": "item",
+    "level": 1,
+    "parentPageCode": "siemCenter.menuHeader",
+    "pageType": "manager",
+    "pageCode": "siemCenter.events.menuTitle",
+    "title": "Güvenlik olayları",
+    "icon": "ShieldIcon",
+    "iconType": "tabler",
+    "to": "/apps/siem-center/events",
+    "type": "internal",
+    "disabled": false
   }
 ]

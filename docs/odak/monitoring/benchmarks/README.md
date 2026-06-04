@@ -1,6 +1,6 @@
 # SIEM performans benchmark sonuçları
 
-**Durum:** ✅ **P0 + P1 Odak baseline, soak, syslog** (4 Haz 2026)
+**Durum:** ✅ **P0 + P1 Odak baseline, soak, syslog, queue depth** (4 Haz 2026)
 
 ## Scriptler
 
@@ -16,6 +16,9 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\benchmark-siem-p0-b
 
 # Engine UDP syslog → flush → Mongo
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\benchmark-siem-engine-syslog.ps1
+
+# Engine sec_event.queue_depth under load (SLO: max < 80% MaxItems)
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\benchmark-siem-engine-queue-depth.ps1
 ```
 
 ## Profiller
@@ -25,12 +28,14 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\benchmark-siem-engi
 | P0 | Deny-only firewall + dar AD (4625/4740) | [SIEM_PERFORMANCE_PLAN §3](./SIEM_PERFORMANCE_PLAN.md) |
 | P1 | Tam MVP hacim tahmini | Aynı |
 | engine-syslog | UDP :5514 → Engine queue → flush → Reactor | Engine S3/S4 |
+| engine-queue-depth | UDP yük altında kuyruk derinliği (manual flush yok) | [SIEM_PERFORMANCE_PLAN §3.1](./SIEM_PERFORMANCE_PLAN.md) |
 
 ## Dosya adlandırma
 
 ```text
 benchmark-{profile}-{date}.json
 benchmark-engine-syslog-{date}.json
+benchmark-engine-queue-depth-{date}.json
 ```
 
 ## P0 Odak özeti (2026-06-04)
@@ -81,6 +86,20 @@ benchmark-engine-syslog-{date}.json
 | flush P95 | 377 ms | — |
 | mongo savedDelta | 1 150 | ~ sent ✅ |
 
+## Engine queue depth özeti (2026-06-04)
+
+`benchmark-engine-queue-depth-2026-06-04.json`
+
+| Metrik | Değer | Hedef |
+|--------|-------|-------|
+| süre | 45 s | — |
+| targetEps | 80 | — |
+| achievedEps | **57.63** | — |
+| queue max | **107** | < 4000 (%80×5000) ✅ |
+| queue P95 | **94** | — |
+| aboveGatePct | **0%** | — |
+| mongo savedDelta | 2 874 | = sent ✅ |
+
 ## E2E suite
 
 ```powershell
@@ -100,4 +119,4 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\test-siem-e2e-suite
 - [x] P0 5 dk / 50 evt/s soak kapısı
 - [x] P1 2 dk / 100 evt/s lab profil
 - [x] Engine syslog UDP :5514 → batch flush
-- [ ] `sec_event.queue_depth` under load
+- [x] `sec_event.queue_depth` under load

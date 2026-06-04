@@ -24,6 +24,7 @@ public sealed class SecEventObservationMapperTests
             Actor = new SecEventActorBlock { User = "admin" },
             Network = new SecEventNetworkBlock { SrcIp = "192.168.1.50" },
             Parser = new SecEventParserBlock { Id = "windows.security.v1" },
+            Raw = "preview",
             RawPreview = "preview"
         };
 

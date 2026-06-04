@@ -35,6 +35,9 @@ Müşteri ortamında **güvenlik odaklı izleme / SIEM-hafif** çözümünün pl
 | [HANDOFF.md](./HANDOFF.md) | **Yeni chat handoff + prompt** | ✅ |
 | [SIEM_THROUGHPUT_AND_QUEUES.md](./SIEM_THROUGHPUT_AND_QUEUES.md) | Kuyruk, paralellik, yoğun veri | ✅ plan |
 | [SIEM_PERFORMANCE_PLAN.md](./SIEM_PERFORMANCE_PLAN.md) | **§2 mimari öneriler**, SLO, profiller, benchmark, quality gates | ✅ plan |
+| [SIEM_EVENTS_UI.md](./SIEM_EVENTS_UI.md) | Güvenlik olay arama UI (MVP) | ✅ |
+| [SIEM_WEF_WEC_INGEST.md](./SIEM_WEF_WEC_INGEST.md) | WEF→WEC → Engine HTTP batch | ✅ S5 |
+| [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md) | **LogAlarm vs MonitraNG** kıyaslama; parite ayrı hedef | ✅ referans |
 | [SIEM_VERTICAL_FINANCE.md](./SIEM_VERTICAL_FINANCE.md) | Dijital banka / finans dikey kapsam | Taslak |
 | [DEVAM.md](./DEVAM.md) | Kaldığımız yer | ▶️ |
 

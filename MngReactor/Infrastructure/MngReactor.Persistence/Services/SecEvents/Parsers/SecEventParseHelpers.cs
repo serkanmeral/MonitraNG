@@ -25,6 +25,18 @@ internal static class SecEventParseHelpers
         return raw[..max];
     }
 
+    public static string ToStoredRaw(string raw)
+    {
+        if (string.IsNullOrEmpty(raw))
+            return string.Empty;
+
+        var max = SecEventIngestLimits.MaxRawBytes;
+        if (raw.Length <= max)
+            return raw;
+
+        return raw[..max];
+    }
+
     public static string NormalizeProduct(string? product) =>
         string.IsNullOrWhiteSpace(product) ? string.Empty : product.Trim();
 

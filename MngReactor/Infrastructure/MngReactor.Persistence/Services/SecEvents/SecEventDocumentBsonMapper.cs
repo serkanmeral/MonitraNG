@@ -28,6 +28,7 @@ internal static class SecEventDocumentBsonMapper
                 ["code"] = ToBsonNullableString(doc.Event.Code)
             },
             ["parser"] = new BsonDocument { ["id"] = doc.Parser.Id },
+            ["raw"] = doc.Raw,
             ["rawPreview"] = doc.RawPreview
         };
 

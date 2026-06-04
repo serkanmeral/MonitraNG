@@ -11,8 +11,11 @@ public static class SecEventIngestLimits
     /// <summary>Mongo bulkWrite parça boyutu (metrik ingest ile aynı).</summary>
     public const int MongoBulkChunkSize = 1000;
 
-    /// <summary>Ham mesaj önizleme üst sınırı (byte); tam raw Faz 2+.</summary>
+    /// <summary>Ham mesaj önizleme üst sınırı (byte); liste ve arama için.</summary>
     public const int MaxRawPreviewBytes = 512;
+
+    /// <summary>Mongo'da saklanan tam ham mesaj üst sınırı (byte).</summary>
+    public const int MaxRawBytes = 8192;
 
     /// <summary>Engine batch eşiği — olay sayısı (Engine S3).</summary>
     public const int EngineBatchEventThreshold = 100;

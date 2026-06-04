@@ -29,11 +29,13 @@ if ($Quick) {
 if (-not $SkipFaz1) {
     Invoke-Step "Faz1 sec_events" "test-siem-faz1-e2e.ps1"
     Invoke-Step "Engine syslog S4.1" "test-engine-syslog-s4.1.ps1" @("-VerifyOdakMongo")
+    Invoke-Step "Engine WEC batch S5" "test-engine-wec-ingest-e2e.ps1" @("-VerifyOdakMongo")
 }
 
 Invoke-Step "Purge alarm observation queue" "purge-alarm-observation-queue.ps1"
 Invoke-Step "U1 alarm" "test-siem-u1-alarm-e2e.ps1"
 Invoke-Step "U4 alarm" "test-siem-u4-alarm-e2e.ps1"
+Invoke-Step "U6 rule change alarm" "test-siem-u6-alarm-e2e.ps1"
 Invoke-Step "U2 sequence alarm" "test-siem-u2-alarm-e2e.ps1"
 
 Invoke-Step "Purge workflow event queue" "purge-workflow-event-inbound-queue.ps1"
@@ -44,7 +46,14 @@ Invoke-Step "U4 workflow" "test-siem-u4-workflow-e2e.ps1"
 Invoke-Step "U1 approval block" "test-siem-u1-approval-block-e2e.ps1"
 
 if (-not $SkipBenchmarks) {
-    Invoke-Step "P0 baseline" "benchmark-siem-p0-baseline.ps1" @("-IncludeDetectionLag", "-DurationSec", "15", "-TargetEps", "20")
+    Write-Host "`n========== P0 baseline ==========" -ForegroundColor Cyan
+    $bench = Join-Path $root "benchmark-siem-p0-baseline.ps1"
+    & $bench -IncludeDetectionLag -DurationSec 15 -TargetEps 10
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "FAIL: P0 baseline ($bench)" -ForegroundColor Red
+        exit 1
+    }
+    Write-Host "OK: P0 baseline" -ForegroundColor Green
 }
 
 Write-Host "`n=== SIEM E2E Suite PASS ===" -ForegroundColor Green

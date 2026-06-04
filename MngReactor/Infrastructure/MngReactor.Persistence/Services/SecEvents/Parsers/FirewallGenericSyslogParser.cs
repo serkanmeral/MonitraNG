@@ -10,6 +10,8 @@ public sealed partial class FirewallGenericSyslogParser : ISecEventParser
     public const string ParserIdValue = "firewall.generic_syslog.v1";
 
     private static readonly Regex DenyActionRegex = DenyPattern();
+    private static readonly Regex RuleChangeRegex = RuleChangePattern();
+    private static readonly Regex ActorUserRegex = ActorUserPattern();
     private static readonly Regex SrcIpRegex = SrcIpPattern();
     private static readonly Regex DstIpRegex = DstIpPattern();
     private static readonly Regex DstPortRegex = DstPortPattern();
@@ -35,12 +37,14 @@ public sealed partial class FirewallGenericSyslogParser : ISecEventParser
         var rawText = SecEventParseHelpers.GetRawText(raw.Raw);
         var (action, outcome) = ClassifyAction(rawText);
         var protocol = MatchGroup(ProtocolRegex, rawText);
+        var actorUser = MatchGroup(ActorUserRegex, rawText);
 
         return new ParsedSecEvent
         {
             Timestamp = raw.ReceivedAt,
             EventAction = action,
             EventOutcome = outcome,
+            ActorUser = actorUser,
             NetworkSrcIp = MatchGroup(SrcIpRegex, rawText),
             NetworkDstIp = MatchGroup(DstIpRegex, rawText),
             NetworkDstPort = ParsePort(MatchGroup(DstPortRegex, rawText)),
@@ -49,12 +53,16 @@ public sealed partial class FirewallGenericSyslogParser : ISecEventParser
             SourceProduct = SecEventParseHelpers.ResolveSourceProduct(raw.Source, "generic-syslog"),
             SourceHost = raw.Source.Host,
             ParserId = ParserId,
+            Raw = SecEventParseHelpers.ToStoredRaw(rawText),
             RawPreview = SecEventParseHelpers.ToRawPreview(rawText)
         };
     }
 
     private static (string Action, string Outcome) ClassifyAction(string rawText)
     {
+        if (RuleChangeRegex.IsMatch(rawText))
+            return ("rule_change", "unknown");
+
         if (DenyActionRegex.IsMatch(rawText))
             return ("denied_flow", "failure");
 
@@ -79,6 +87,12 @@ public sealed partial class FirewallGenericSyslogParser : ISecEventParser
 
     [GeneratedRegex(@"\bDENY\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex DenyPattern();
+
+    [GeneratedRegex(@"\b(CONFIG\s+CHANGE|RULE_?(ADD|DEL|DELETE|UPDATE|CHANGE)|POLICY\s+CHANGE|rule\s+(added|deleted|modified|removed))\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex RuleChangePattern();
+
+    [GeneratedRegex(@"\bUSER=([^\s]+)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex ActorUserPattern();
 
     [GeneratedRegex(@"SRC=([\d.]+)", RegexOptions.CultureInvariant)]
     private static partial Regex SrcIpPattern();

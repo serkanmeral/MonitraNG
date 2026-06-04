@@ -1,0 +1,1 @@
+2026-06-03T14:00:01 fw01 kernel: CONFIG CHANGE policy=wan-lan RULE_ID=42 ACTION=add USER=netadmin SRC=192.168.1.1

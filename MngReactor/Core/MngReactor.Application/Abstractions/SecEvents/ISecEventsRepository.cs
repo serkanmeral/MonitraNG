@@ -8,4 +8,14 @@ public interface ISecEventsRepository
         string domain,
         IReadOnlyList<SecEventDocument> docs,
         CancellationToken cancellationToken = default);
+
+    Task<SecEventQueryResult> QueryAsync(
+        string domain,
+        SecEventQueryFilter filter,
+        CancellationToken cancellationToken = default);
+
+    Task<SecEventListItem?> GetByIdAsync(
+        string domain,
+        string id,
+        CancellationToken cancellationToken = default);
 }

@@ -8,7 +8,7 @@
 
 ## 1. Tek cümlede durum (4 Haz 2026)
 
-**Checkpoint C6/C7 ✅** — MngReactor Odak'ta gerçek image; native `monitra.observations`; bridge kapalı. **SIEM `sec_events` implementasyonu henüz başlamadı** — Faz 1 ayrı chat'te. Workflow `mqtt/publish` Reactor'da hâlâ eksik (`DevLogOnly=true`).
+**SIEM-hafif MVP tamam ✅** — `sec_events` ingest, U1/U2/U4 korelasyon, onaylı workflow müdahale, P0/P1 benchmark ve E2E suite Odak'ta doğrulandı. LogAlarm paritesi **ayrı uzun vadeli hedef** — bkz. [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md).
 
 ---
 
@@ -16,60 +16,92 @@
 
 | Konu | Durum |
 |------|--------|
-| MngReactor Odak | ✅ `mngreactor:latest` (Alpine stub kaldırıldı) |
-| Native observation C6 | ✅ `test-reactor-observation-e2e.ps1` PASS |
-| Alarm + Workflow E2E | ✅ `run-checkpoint-e2e.ps1` (10 script) PASS |
-| UI modülleri | ✅ Alarm Merkezi + Otomasyon Merkezi — `6c4ecbf` |
-| SIEM Faz 1 kod | ⬜ S1…S3 — [SIEM_FAZ1_HANDOFF.md](./SIEM_FAZ1_HANDOFF.md) |
-| `POST /api/v1/mqtt/publish` | ❌ Workflow bekliyor |
+| MngReactor Odak | ✅ `mngreactor:latest` |
+| MngEngine syslog | ✅ UDP :5514, `SecEvents/queue` + flush |
+| SIEM `sec_events` ingest | ✅ PR-1…PR-6 |
+| sec_events → observation → alarm | ✅ U1/U2/U4 E2E |
+| alarm.raised → Workflow | ✅ U1/U4 workflow E2E |
+| U1 approval → block.ip | ✅ `reactor_mqtt` |
+| P0 soak (~41 evt/s) | ✅ |
+| P1 benchmark (~78 evt/s) | ✅ |
+| SIEM E2E suite (`-Quick`) | ✅ |
+| Engine queue_depth under load | ✅ max=107 / gate=4000 |
+| WEF→WEC Engine batch | ✅ `POST /api/SecEvents/wec-batch` · S5 E2E |
+| Güvenlik olay arama UI | ✅ `/apps/siem-center/events` · menü: **Güvenlik Merkezi** |
+| LogAlarm feature-parite | ⬜ Ayrı hedef — [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md) |
 
 ---
 
-## 3. Sıradaki adımlar (SIEM chat)
+## 3. Kanıtlanmış zincirler (Odak)
 
-1. **SIEM Faz 1 S1** — Reactor: `sec_events`, parser registry, `sec_events.created` MQ — [MNGREACTOR_SIEM_FAZ1_IMPLEMENTATION.md](./MNGREACTOR_SIEM_FAZ1_IMPLEMENTATION.md)
-2. **S2** — Parser unit test (fixture'lar `tests/fixtures/siem/`)
-3. **S3** — MngEngine syslog + fixture batch push
-4. Paralel backlog: Reactor `mqtt/publish`, observation map genişlemesi
+```
+U1: sec_events → observation → correlation → alarm.raised → Workflow → (approval) → block.ip
+U4: firewall syslog → sec_events → observation → correlation → alarm.raised → Workflow
+U2: login_failed×N → login_success → sequence alarm
+```
+
+**Scriptler:** `scripts/odak/test-siem-e2e-suite.ps1 -Quick` (kuyruk purge dahil)
+
+**Benchmark:** `scripts/odak/benchmark-siem-p0-baseline.ps1` · `-Soak` · `-P1` · `benchmark-siem-engine-syslog.ps1`
+
+**Operasyon:** Benchmark/E2E öncesi gerekirse:
+- `purge-alarm-observation-queue.ps1`
+- `purge-workflow-event-inbound-queue.ps1`
+- `purge-workflow-execution-queue.ps1`
 
 ---
 
-## 4. Git
+## 4. Sıradaki adımlar (SIEM chat)
+
+### Kısa vadeli (MVP sonrası bakım)
+
+1. ~~P1 · syslog · E2E suite~~ ✅
+2. ~~`sec_event.queue_depth` under load~~ ✅
+3. ~~WEF→WEC Engine batch ingest~~ ✅ — [SIEM_WEF_WEC_INGEST.md](./SIEM_WEF_WEC_INGEST.md)
+4. ~~Güvenlik olay arama UI (MVP)~~ ✅ — [SIEM_EVENTS_UI.md](./SIEM_EVENTS_UI.md)
+
+### Post-MVP (önerilen sıra)
+
+| # | İş | Not |
+|---|-----|-----|
+| 1 | ~~**UI Faz 2** — olay detayında tam `raw` metni~~ ✅ | Ingest `raw` (8 KB) + GET by id + drawer |
+| 2 | ~~**U6** — firewall kural/config değişikliği~~ ✅ | Parser `rule_change` + E2E |
+| 3 | **U3 / U5** — bakım penceresi dışı erişim · trafik sıçraması | [SIEM_PLANNING §8](./SIEM_PLANNING.md) |
+| 4 | **Tam E2E regression** | `test-siem-e2e-suite.ps1` (Faz1 + benchmark dahil) |
+| 5 | **Yerel commit** | WEF/WEC · UI/API · menü patch · dokümanlar |
+| — | LogAlarm parite | Ayrı hedef — [SIEM_LOGALARM_COMPARISON §6](./SIEM_LOGALARM_COMPARISON.md) |
+
+---
+
+## 5. Git
 
 | Alan | Değer |
 |------|--------|
 | Branch | `main` |
-| Son platform UI commit | `6c4ecbf` (4 Haz 2026) |
-| Önceki checkpoint | `613a80a` — C6 SIEM-ready |
+| Son SIEM commit | `7471a46` — P1/syslog benchmarks, E2E suite, queue purge helpers |
+| Yerel (commit bekliyor) | LogAlarm kıyaslama · queue_depth · WEF/WEC · sec-events UI/API · HANDOFF |
 
 ---
 
-## 5. SIEM chat prompt'u
+## 6. SIEM chat prompt'u
 
 ```markdown
-# MonitraNG — SIEM Faz 1 handoff
+# MonitraNG — SIEM handoff (MVP sonrası)
 
 Yanıtlar **Türkçe**. Commit/push yalnızca açıkça istediğimde.
 
 ## Bağlam
-- **Handoff:** `docs/odak/monitoring/SIEM_FAZ1_HANDOFF.md`
-- **Implementasyon planı:** `docs/odak/monitoring/MNGREACTOR_SIEM_FAZ1_IMPLEMENTATION.md`
-- **Checkpoint:** C1–C7 SIEM-ready ✅ (`docs/odak/PLATFORM_CHECKPOINT.md`)
-- Platform UI ayrıldı — bkz. `docs/odak/PLATFORM_HANDOFF.md` (bu chat'te UI işi yok)
+- **DEVAM:** docs/odak/monitoring/DEVAM.md
+- **LogAlarm kıyaslama:** docs/odak/monitoring/SIEM_LOGALARM_COMPARISON.md
+- **Ana plan:** docs/odak/monitoring/SIEM_PLANNING.md
 
 ## Mevcut durum
-- MngReactor Odak'ta ayakta; native observation ✅
-- SIEM `sec_events` kodu henüz yok
-- Fixture: `tests/fixtures/siem/`
+- SIEM-hafif MVP ✅ (U1/U2/U4 + workflow müdahale)
+- Odak E2E suite PASS
+- LogAlarm parite ayrı hedef
 
 ## Kilitli kararlar
-Hibrit toplama · Alarm engine tespit · Workflow onaylı müdahale ·
-Mongo `sec_events` spike · AI implementasyon ⏸️
-
-## Sıradaki
-1. S1.1–S1.6 Reactor sec_events iskeleti
-2. S2 parser unit test
-3. S3 Engine syslog (Spike B: fixture push)
+Hibrit toplama · Alarm engine tespit · Workflow onaylı müdahale · AI ⏸️
 
 ## Bu oturumda ne yapmak istiyorum?
 [Kendi cümleni buraya yaz]
@@ -77,8 +109,10 @@ Mongo `sec_events` spike · AI implementasyon ⏸️
 
 ---
 
-## 6. Referanslar
+## 7. Referanslar
 
+- [SIEM_PLANNING.md](./SIEM_PLANNING.md)
+- [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md)
+- [benchmarks/README.md](./benchmarks/README.md)
 - [workflow/DEVAM.md](../workflow/DEVAM.md)
 - [alarm/DEVAM.md](../alarm/DEVAM.md)
-- [../deploy/README.md](../deploy/README.md)

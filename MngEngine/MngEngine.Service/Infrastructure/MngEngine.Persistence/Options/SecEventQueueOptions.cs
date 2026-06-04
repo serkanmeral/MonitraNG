@@ -27,4 +27,10 @@ public sealed class SecEventQueueOptions
 
     /// <summary>Tek syslog datagram üst sınırı (byte).</summary>
     public int MaxMessageBytes { get; set; } = 8192;
+
+    /// <summary>WEC HTTP batch ingest (POST /api/SecEvents/wec-batch).</summary>
+    public bool WecIngestEnabled { get; set; } = true;
+
+    /// <summary>WEC batch source.host varsayılanı (forwarder host adı).</summary>
+    public string? DefaultWecHost { get; set; }
 }

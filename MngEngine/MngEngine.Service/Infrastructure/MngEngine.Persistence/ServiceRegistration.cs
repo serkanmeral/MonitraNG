@@ -39,6 +39,7 @@ namespace MngEngine.Persistence
             services.AddSingleton<ISecEventFixtureReplay, SecEventFixtureReplayService>();
             services.AddSingleton<ISecEventBatchQueue, SecEventBatchQueue>();
             services.AddSingleton<ISecEventSendProcessing, SecEventSendProcessing>();
+            services.AddSingleton<ISecEventQueueIngestService, SecEventQueueIngestService>();
             services.AddSingleton<SecEventSyslogItemBuilder>();
             services.AddSingleton<SecEventSendCoordinator>();
             services.AddHostedService<SyslogUdpListenerService>();

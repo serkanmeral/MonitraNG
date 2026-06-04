@@ -10,6 +10,7 @@ import {
   FileDescriptionIcon,
   GitBranchIcon,
   AdjustmentsIcon,
+  ShieldIcon,
   HomeIcon,
   LayoutIcon,
   BrandAirtableIcon,
@@ -330,6 +331,20 @@ const horizontalItems: menu[] = [
         pageCode: "alarmCenter.rules.menuTitle",
         icon: AdjustmentsIcon,
         to: "/apps/alarm-center/rules",
+      },
+    ],
+  },
+  {
+    title: "Güvenlik Merkezi",
+    pageCode: "siemCenter.menuHeader",
+    icon: ShieldIcon,
+    to: "#",
+    children: [
+      {
+        title: "Güvenlik olayları",
+        pageCode: "siemCenter.events.menuTitle",
+        icon: ShieldIcon,
+        to: "/apps/siem-center/events",
       },
     ],
   },

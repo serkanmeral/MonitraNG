@@ -39,4 +39,28 @@ public sealed class FirewallGenericSyslogParserTests
         Assert.Equal("generic-syslog", parsed.SourceProduct);
         Assert.Contains("DENY", parsed.RawPreview, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void ParseFirewallRuleChange_MapsRuleChangeActionAndActor()
+    {
+        var rawLine = SiemFixtureHelper.ReadFixture("firewall_rule_change.syslog.txt");
+        var ctx = new SecEventRawContext
+        {
+            ReceivedAt = DateTime.Parse("2026-06-03T14:00:01Z").ToUniversalTime(),
+            Source = new SecEventSourceInfo
+            {
+                Type = "firewall",
+                Product = "generic-syslog",
+                Host = "fw01"
+            },
+            Raw = JsonSerializer.SerializeToElement(rawLine)
+        };
+
+        var parsed = _parser.Parse(ctx);
+
+        Assert.Equal("rule_change", parsed.EventAction);
+        Assert.Equal("netadmin", parsed.ActorUser);
+        Assert.Equal("192.168.1.1", parsed.NetworkSrcIp);
+        Assert.Contains("CONFIG CHANGE", parsed.Raw, StringComparison.OrdinalIgnoreCase);
+    }
 }

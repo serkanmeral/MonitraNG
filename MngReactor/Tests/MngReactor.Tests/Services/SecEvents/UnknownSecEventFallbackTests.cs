@@ -25,6 +25,7 @@ public sealed class UnknownSecEventFallbackTests
 
         Assert.Equal(UnknownSecEventFallback.ParserIdValue, parsed.ParserId);
         Assert.Equal("unknown", parsed.EventAction);
+        Assert.Equal(rawLine, parsed.Raw);
         Assert.Equal(rawLine, parsed.RawPreview);
     }
 }

@@ -10,7 +10,9 @@
 
 ## 1. Amaç ve konumlandırma
 
-**Hedef:** Tam ticari SIEM (Splunk/QRadar/Sentinel) yerine, **hedefli kullanım senaryoları** ile başlayan, müşteriye hızlı değer veren güvenlik odaklı izleme katmanı. Zamanla derinleştirilir.
+**Hedef:** Tam ticari SIEM (Splunk/QRadar/Sentinel/LogAlarm) yerine, **hedefli kullanım senaryoları** ile başlayan, müşteriye hızlı değer veren güvenlik odaklı izleme katmanı. Zamanla derinleştirilir.
+
+> LogAlarm ile karşılaştırma ve **parite hedefi** (ayrı yol haritası): [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md)
 
 **İlk faz veri kaynakları (karar):**
 

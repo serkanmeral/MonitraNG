@@ -65,6 +65,7 @@ import {
   FileCheckIcon,
   GitBranchIcon,
   AdjustmentsIcon,
+  ShieldIcon,
   MailIcon,
   TicketIcon,
   BellIcon,
@@ -388,6 +389,13 @@ const sidebarItem: menu[] = [
     pageCode: "alarmCenter.rules.menuTitle",
     icon: AdjustmentsIcon,
     to: "/apps/alarm-center/rules",
+  },
+  { header: "Güvenlik Merkezi", pageCode: "siemCenter.menuHeader" },
+  {
+    title: "Güvenlik olayları",
+    pageCode: "siemCenter.events.menuTitle",
+    icon: ShieldIcon,
+    to: "/apps/siem-center/events",
   },
   { header: "Otomasyon Merkezi" },
   {

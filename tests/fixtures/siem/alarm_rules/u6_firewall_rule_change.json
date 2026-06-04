@@ -1,0 +1,11 @@
+{
+  "name": "U6 — Firewall kural/config değişikliği",
+  "type": "correlation",
+  "matchKey": "rule_change",
+  "groupByFields": ["userId", "sourceHost"],
+  "windowMinutes": 5,
+  "threshold": 1,
+  "severity": 8,
+  "cooldownMinutes": 30,
+  "dedupKeyTemplate": "{ruleId}:{groupKey}"
+}

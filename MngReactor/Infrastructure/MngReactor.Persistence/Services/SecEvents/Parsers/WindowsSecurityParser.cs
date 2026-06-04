@@ -45,6 +45,7 @@ public sealed class WindowsSecurityParser : ISecEventParser
             SourceProduct = SecEventParseHelpers.ResolveSourceProduct(raw.Source, "windows"),
             SourceHost = raw.Source.Host,
             ParserId = ParserId,
+            Raw = SecEventParseHelpers.ToStoredRaw(rawText),
             RawPreview = SecEventParseHelpers.ToRawPreview(rawText)
         };
     }

@@ -13,4 +13,16 @@ public sealed class MockSecEventsRepository : ISecEventsRepository
         IReadOnlyList<SecEventDocument> docs,
         CancellationToken cancellationToken = default) =>
         Task.FromResult(docs?.Count ?? 0);
+
+    public Task<SecEventQueryResult> QueryAsync(
+        string domain,
+        SecEventQueryFilter filter,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(new SecEventQueryResult { Items = Array.Empty<SecEventListItem>(), Total = 0 });
+
+    public Task<SecEventListItem?> GetByIdAsync(
+        string domain,
+        string id,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<SecEventListItem?>(null);
 }

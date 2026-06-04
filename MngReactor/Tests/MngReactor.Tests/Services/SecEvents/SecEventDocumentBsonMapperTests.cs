@@ -27,12 +27,15 @@ public sealed class SecEventDocumentBsonMapperTests
                 Protocol = "tcp"
             },
             Parser = new SecEventParserBlock { Id = WindowsSecurityParser.ParserIdValue },
+            Raw = "full raw payload",
             RawPreview = "preview"
         };
 
         var bson = SecEventDocumentBsonMapper.ToBsonDocument(doc);
 
         Assert.Equal(BsonType.DateTime, bson["@timestamp"].BsonType);
+        Assert.Equal("full raw payload", bson["raw"].AsString);
+        Assert.Equal("preview", bson["rawPreview"].AsString);
         Assert.Equal("login_failed", bson["event"]["action"].AsString);
         Assert.Equal("admin", bson["actor"]["user"].AsString);
         Assert.Equal("192.168.1.50", bson["network"]["srcIp"].AsString);

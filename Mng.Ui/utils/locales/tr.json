@@ -4975,6 +4975,41 @@
       "fieldDedupTemplate": "Dedup şablonu (isteğe bağlı)"
     }
   },
+  "siemCenter": {
+    "menuHeader": "Güvenlik Merkezi",
+    "breadcrumbRoot": "Güvenlik Merkezi",
+    "events": {
+      "menuTitle": "Güvenlik olayları",
+      "pageTitle": "Güvenlik olayları",
+      "pageSubtitle": "Normalize edilmiş sec_events kayıtlarında filtreleme ve timeline.",
+      "loadError": "Olaylar yüklenemedi.",
+      "refresh": "Yenile",
+      "apply": "Uygula",
+      "search": "Ara (IP, kullanıcı, mesaj…)",
+      "timeRange": "Zaman aralığı",
+      "range1h": "Son 1 saat",
+      "range24h": "Son 24 saat",
+      "range7d": "Son 7 gün",
+      "filterAll": "Tümü",
+      "sourceFirewall": "Firewall",
+      "sourceAd": "Active Directory",
+      "empty": "Filtreye uyan olay yok.",
+      "statTotal": "{shown} / {total} olay",
+      "detailTitle": "Olay detayı",
+      "rawPreview": "Ham önizleme",
+      "rawFull": "Ham log",
+      "rawUnavailable": "Ham log metni mevcut değil.",
+      "colTime": "Zaman",
+      "colAction": "Aksiyon",
+      "colSource": "Kaynak",
+      "colHost": "Host",
+      "colUser": "Kullanıcı",
+      "colSrcIp": "Kaynak IP",
+      "colDstIp": "Hedef IP",
+      "colCode": "Kod",
+      "colParser": "Parser"
+    }
+  },
   "automationCenter": {
     "menuHeader": "Otomasyon Merkezi",
     "breadcrumbRoot": "Otomasyon Merkezi",

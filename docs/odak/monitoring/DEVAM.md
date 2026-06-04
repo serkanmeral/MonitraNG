@@ -33,6 +33,9 @@ Faz 0 planlama ✅. **SIEM MVP (U1/U2/U4) + müdahale/workflow ✅.** **P0 soak 
 | **P1 benchmark (120s @ 100 evt/s)** | ✅ `benchmark-P1-2026-06-04.json` (~78 evt/s) |
 | **Engine syslog UDP benchmark** | ✅ `benchmark-engine-syslog-2026-06-04.json` |
 | **SIEM E2E suite (`-Quick`)** | ✅ `test-siem-e2e-suite.ps1` |
+| **Engine queue_depth under load** | ✅ `benchmark-engine-queue-depth-2026-06-04.json` (max=107, gate=4000) |
+| **WEF→WEC Engine batch ingest** | ✅ `test-engine-wec-ingest-e2e.ps1` · [SIEM_WEF_WEC_INGEST.md](./SIEM_WEF_WEC_INGEST.md) |
+| **Güvenlik olay arama UI** | ✅ `/apps/siem-center/events` · [SIEM_EVENTS_UI.md](./SIEM_EVENTS_UI.md) |
 | Observation native publish (metrik) | ✅ C6 |
 
 ---
@@ -51,6 +54,31 @@ Faz 0 planlama ✅. **SIEM MVP (U1/U2/U4) + müdahale/workflow ✅.** **P0 soak 
 10. ~~P0 5 dk soak (50 evt/s kapı)~~ ✅
 11. ~~U4 → workflow~~ ✅
 12. ~~P1 profil benchmark · Engine syslog UDP benchmark · SIEM E2E suite~~ ✅
+
+### SIEM-hafif sonrası (ayrı hedefler)
+
+MVP tamamlandı. **LogAlarm seviyesi feature-parite** mevcut sprint'in parçası değil — ayrı uzun vadeli hedef:
+
+- [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md) — referans kıyaslama + gap matrisi
+
+Kısa vadeli teknik devam (MVP sonrası bakım):
+
+1. ~~`sec_event.queue_depth` under load ölçümü~~ ✅
+2. ~~`HANDOFF.md` güncelleme (SIEM MVP durumu)~~ ✅
+3. ~~WEF→WEC ingest (Engine `wec-batch` + S5 E2E)~~ ✅
+4. ~~WEF→WEC Engine batch ingest~~ ✅
+5. ~~Güvenlik olay arama UI (MVP)~~ ✅ — [SIEM_EVENTS_UI.md](./SIEM_EVENTS_UI.md)
+6. ~~Side menü: Güvenlik Merkezi header~~ ✅ — `patch-siem-center-side-menu.ps1`
+
+### Post-MVP (önerilen)
+
+1. ~~UI Faz 2 — tam `raw` metin (detay paneli)~~ ✅
+2. ~~U6 firewall `rule_change` senaryosu~~ ✅ — parser + `test-siem-u6-alarm-e2e.ps1`
+3. U3 / U5 korelasyon senaryoları
+4. Tam E2E suite regression (`test-siem-e2e-suite.ps1`)
+5. Yerel değişiklikler commit (isteğe bağlı)
+
+LogAlarm parite → ayrı hedef — [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md)
 
 **Operasyon notu:** Benchmark veya yoğun ingest sonrası E2E/workflow testleri önce kuyruk temizliği gerektirebilir:
 - `purge-alarm-observation-queue.ps1` — `alarm.observation.inbound`

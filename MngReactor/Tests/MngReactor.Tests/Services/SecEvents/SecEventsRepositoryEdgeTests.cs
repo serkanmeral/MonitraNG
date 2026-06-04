@@ -43,6 +43,7 @@ public sealed class SecEventsRepositoryEdgeTests
                 SourceType = "unknown",
                 SourceProduct = "unknown",
                 ParserId = UnknownSecEventFallback.ParserIdValue,
+                Raw = "preview",
                 RawPreview = "preview"
             },
             "odak",

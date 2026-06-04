@@ -24,6 +24,7 @@ public sealed class UnknownSecEventFallback : ISecEventParser
             SourceProduct = SecEventParseHelpers.ResolveSourceProduct(raw.Source, "unknown"),
             SourceHost = raw.Source.Host,
             ParserId = ParserId,
+            Raw = SecEventParseHelpers.ToStoredRaw(rawText),
             RawPreview = SecEventParseHelpers.ToRawPreview(rawText)
         };
     }

@@ -69,6 +69,56 @@ public sealed class SecEventsRepository : ISecEventsRepository
         return inserted;
     }
 
+    public async Task<SecEventQueryResult> QueryAsync(
+        string domain,
+        SecEventQueryFilter filter,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(domain))
+            return new SecEventQueryResult { Items = Array.Empty<SecEventListItem>(), Total = 0 };
+
+        var databaseName = $"mng_{domain.Trim().ToLowerInvariant()}";
+        var database = _mongoClient.GetDatabase(databaseName);
+        await EnsureIndexesOnceAsync(database, databaseName, cancellationToken);
+
+        var collection = database.GetCollection<BsonDocument>(CollectionName);
+        var mongoFilter = SecEventQueryFilterBuilder.Build(filter);
+        var skip = SecEventQueryFilterBuilder.NormalizeSkip(filter.Skip);
+        var limit = SecEventQueryFilterBuilder.NormalizeLimit(filter.Limit);
+
+        var total = await collection.CountDocumentsAsync(mongoFilter, cancellationToken: cancellationToken);
+        var docs = await collection
+            .Find(mongoFilter)
+            .Project(Builders<BsonDocument>.Projection.Exclude("raw"))
+            .Sort(Builders<BsonDocument>.Sort.Descending("@timestamp"))
+            .Skip(skip)
+            .Limit(limit)
+            .ToListAsync(cancellationToken);
+
+        var items = docs.Select(d => SecEventBsonReader.ToListItem(d)).ToList();
+        return new SecEventQueryResult { Items = items, Total = total };
+    }
+
+    public async Task<SecEventListItem?> GetByIdAsync(
+        string domain,
+        string id,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(domain) || string.IsNullOrWhiteSpace(id))
+            return null;
+
+        if (!ObjectId.TryParse(id, out var objectId))
+            return null;
+
+        var databaseName = $"mng_{domain.Trim().ToLowerInvariant()}";
+        var collection = _mongoClient.GetDatabase(databaseName).GetCollection<BsonDocument>(CollectionName);
+        var doc = await collection
+            .Find(Builders<BsonDocument>.Filter.Eq("_id", objectId))
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return doc is null ? null : SecEventBsonReader.ToListItem(doc, includeRaw: true);
+    }
+
     private async Task EnsureIndexesOnceAsync(
         IMongoDatabase database,
         string databaseName,

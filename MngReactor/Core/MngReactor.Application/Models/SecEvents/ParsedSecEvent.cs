@@ -16,5 +16,6 @@ public sealed class ParsedSecEvent
     public required string SourceProduct { get; init; }
     public string? SourceHost { get; init; }
     public required string ParserId { get; init; }
+    public required string Raw { get; init; }
     public required string RawPreview { get; init; }
 }

@@ -4962,6 +4962,41 @@
       "fieldDedupTemplate": "Dedup template (optional)"
     }
   },
+  "siemCenter": {
+    "menuHeader": "Security Center",
+    "breadcrumbRoot": "Security Center",
+    "events": {
+      "menuTitle": "Security events",
+      "pageTitle": "Security events",
+      "pageSubtitle": "Filter and browse normalized sec_events records.",
+      "loadError": "Failed to load events.",
+      "refresh": "Refresh",
+      "apply": "Apply",
+      "search": "Search (IP, user, message…)",
+      "timeRange": "Time range",
+      "range1h": "Last 1 hour",
+      "range24h": "Last 24 hours",
+      "range7d": "Last 7 days",
+      "filterAll": "All",
+      "sourceFirewall": "Firewall",
+      "sourceAd": "Active Directory",
+      "empty": "No events match the filter.",
+      "statTotal": "{shown} / {total} events",
+      "detailTitle": "Event detail",
+      "rawPreview": "Raw preview",
+      "rawFull": "Raw log",
+      "rawUnavailable": "Raw log text is not available.",
+      "colTime": "Time",
+      "colAction": "Action",
+      "colSource": "Source",
+      "colHost": "Host",
+      "colUser": "User",
+      "colSrcIp": "Source IP",
+      "colDstIp": "Dest IP",
+      "colCode": "Code",
+      "colParser": "Parser"
+    }
+  },
   "automationCenter": {
     "menuHeader": "Automation Center",
     "breadcrumbRoot": "Automation Center",

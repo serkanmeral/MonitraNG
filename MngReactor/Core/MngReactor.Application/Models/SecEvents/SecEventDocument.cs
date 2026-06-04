@@ -11,6 +11,7 @@ public sealed class SecEventDocument
     public SecEventActorBlock? Actor { get; init; }
     public SecEventNetworkBlock? Network { get; init; }
     public required SecEventParserBlock Parser { get; init; }
+    public required string Raw { get; init; }
     public required string RawPreview { get; init; }
 
     public static SecEventDocument FromParsed(ParsedSecEvent parsed, string domain, DateTime ingestedAt) =>
@@ -47,6 +48,7 @@ public sealed class SecEventDocument
                     Protocol = parsed.NetworkProtocol
                 },
             Parser = new SecEventParserBlock { Id = parsed.ParserId },
+            Raw = parsed.Raw,
             RawPreview = parsed.RawPreview
         };
 }
