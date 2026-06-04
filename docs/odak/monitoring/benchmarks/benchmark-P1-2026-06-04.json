@@ -1,0 +1,45 @@
+{
+  "profile": "P1",
+  "mode": "baseline",
+  "runId": "bench-P1-20260604083238",
+  "generatedAt": "2026-06-04T05:34:45.4298733Z",
+  "environment": {
+    "gateway": "http://192.168.20.20:5040",
+    "domain": "odak",
+    "server": "192.168.20.20"
+  },
+  "durationSec": 120,
+  "targetEps": 100,
+  "batchSize": 10,
+  "achievedEps": 77.75,
+  "gate": {
+    "ingestPass": true,
+    "minAchievedEps": 50.0,
+    "ingestP95TargetMs": 1000,
+    "maxDropRate": 0.05,
+    "pass": true,
+    "throughputPass": true
+  },
+  "ingest": {
+    "dropRate": 0.0,
+    "eventsAttempted": 9430,
+    "rejected": 0,
+    "errorRate": 0.0,
+    "pass": true,
+    "p95TargetMs": 1000,
+    "requests": 943,
+    "accepted": 9430,
+    "p50Ms": 5.0,
+    "maxMs": 534.0,
+    "p95Ms": 7.0
+  },
+  "mongo": {
+    "afterCount": 23117,
+    "beforeCount": 13687,
+    "verifyMethod": "total_count_delta",
+    "savedDelta": 9430
+  },
+  "detectionLag": null,
+  "pass": true,
+  "notes": "P1 lab profil: 2dk, hedef 100 evt/s, batch=10. Prod kapisi %80 musteri EPS (1s soak ayri)."
+}

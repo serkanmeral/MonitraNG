@@ -13,6 +13,7 @@ param(
     [double]$MaxErrorRate = 0.05,
     [double]$MaxDropRate = 0.05,
     [switch]$Soak,
+    [switch]$P1,
     [switch]$IncludeDetectionLag,
     [string]$OutputJson = ""
 )
@@ -22,6 +23,14 @@ if ($Soak) {
     $TargetEps = 50
     $BatchSize = 5
     $MinAchievedEpsRatio = 0.8
+    $IncludeDetectionLag = $false
+}
+elseif ($P1) {
+    $Profile = "P1"
+    $DurationSec = 120
+    $TargetEps = 100
+    $BatchSize = 10
+    $MinAchievedEpsRatio = 0.5
     $IncludeDetectionLag = $false
 }
 
@@ -278,8 +287,10 @@ $report = [ordered]@{
     pass         = $overallPass
     notes        = if ($Soak) {
         "P0 soak kapisi: 5dk, hedef 50 evt/s (%80), drop<5%, ingest P95<1s."
+    } elseif ($Profile -eq "P1") {
+        "P1 lab profil: 2dk, hedef 100 evt/s, batch=10. Prod kapisi %80 musteri EPS (1s soak ayri)."
     } else {
-        "P0 lab baseline; tam soak icin -Soak kullanin."
+        "P0 lab baseline; tam soak icin -Soak, P1 icin -P1 kullanin."
     }
 }
 

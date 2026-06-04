@@ -30,6 +30,9 @@ Faz 0 planlama ✅. **SIEM MVP (U1/U2/U4) + müdahale/workflow ✅.** **P0 soak 
 | **P0 benchmark baseline** | ✅ `benchmark-P0-2026-06-04.json` |
 | **P0 soak (5dk @ 50 evt/s)** | ✅ `benchmark-soak-2026-06-04.json` |
 | **U4 → alarm.raised → Workflow** | ✅ `test-siem-u4-workflow-e2e.ps1` |
+| **P1 benchmark (120s @ 100 evt/s)** | ✅ `benchmark-P1-2026-06-04.json` (~78 evt/s) |
+| **Engine syslog UDP benchmark** | ✅ `benchmark-engine-syslog-2026-06-04.json` |
+| **SIEM E2E suite (`-Quick`)** | ✅ `test-siem-e2e-suite.ps1` |
 | Observation native publish (metrik) | ✅ C6 |
 
 ---
@@ -47,7 +50,14 @@ Faz 0 planlama ✅. **SIEM MVP (U1/U2/U4) + müdahale/workflow ✅.** **P0 soak 
 9. ~~Benchmark baseline (P0)~~ ✅
 10. ~~P0 5 dk soak (50 evt/s kapı)~~ ✅
 11. ~~U4 → workflow~~ ✅
-12. P1 profil benchmark · Engine syslog UDP benchmark · SIEM E2E suite dokumantasyonu
+12. ~~P1 profil benchmark · Engine syslog UDP benchmark · SIEM E2E suite~~ ✅
+
+**Operasyon notu:** Benchmark veya yoğun ingest sonrası E2E/workflow testleri önce kuyruk temizliği gerektirebilir:
+- `purge-alarm-observation-queue.ps1` — `alarm.observation.inbound`
+- `purge-workflow-event-inbound-queue.ps1` — `workflow.event.inbound` (alarm.updated birikimi)
+- `purge-workflow-execution-queue.ps1` — `workflow.execution`
+
+`test-siem-e2e-suite.ps1` alarm + workflow purge adımlarını otomatik çalıştırır.
 
 ---
 

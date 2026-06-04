@@ -1,8 +1,8 @@
 # SIEM performans benchmark sonuçları
 
-**Durum:** ✅ **P0 Odak baseline + soak** (4 Haz 2026)
+**Durum:** ✅ **P0 + P1 Odak baseline, soak, syslog** (4 Haz 2026)
 
-## Script
+## Scriptler
 
 ```powershell
 # Kısa baseline + detection lag
@@ -10,6 +10,12 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\benchmark-siem-p0-b
 
 # P0 soak kapısı (5 dk, 50 evt/s hedef, batch=5)
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\benchmark-siem-p0-baseline.ps1 -Soak
+
+# P1 lab profil (2 dk, 100 evt/s hedef, batch=10)
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\benchmark-siem-p0-baseline.ps1 -P1
+
+# Engine UDP syslog → flush → Mongo
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\benchmark-siem-engine-syslog.ps1
 ```
 
 ## Profiller
@@ -18,11 +24,13 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\benchmark-siem-p0-b
 |--------|----------|--------|
 | P0 | Deny-only firewall + dar AD (4625/4740) | [SIEM_PERFORMANCE_PLAN §3](./SIEM_PERFORMANCE_PLAN.md) |
 | P1 | Tam MVP hacim tahmini | Aynı |
+| engine-syslog | UDP :5514 → Engine queue → flush → Reactor | Engine S3/S4 |
 
 ## Dosya adlandırma
 
 ```text
 benchmark-{profile}-{date}.json
+benchmark-engine-syslog-{date}.json
 ```
 
 ## P0 Odak özeti (2026-06-04)
@@ -46,10 +54,50 @@ benchmark-{profile}-{date}.json
 | events | 12 420 | — |
 | mongo savedDelta | 12 420 | = accepted ✅ |
 
-## İlk ölçüm checklist
+## P1 Odak özeti (2026-06-04)
+
+`benchmark-P1-2026-06-04.json`
+
+| Metrik | Değer | Hedef |
+|--------|-------|-------|
+| süre | 120 s | 2 dk ✅ |
+| achievedEps | **77.75** | ≥ 50 (%50×100) ✅ |
+| ingest P95 | **7 ms** | < 1000 ms ✅ |
+| dropRate | **0** | < 5% ✅ |
+| events | 9 430 | — |
+| mongo savedDelta | 9 430 | = accepted ✅ |
+
+## Engine syslog özeti (2026-06-04)
+
+`benchmark-engine-syslog-2026-06-04.json`
+
+| Metrik | Değer | Hedef |
+|--------|-------|-------|
+| süre | 60 s | — |
+| targetEps | 30 | — |
+| achievedEps | **17.79** | ≥ 15 (%50×30) ✅ |
+| syslog sent | 1 150 | — |
+| flush accepted | 1 146 | — |
+| flush P95 | 377 ms | — |
+| mongo savedDelta | 1 150 | ~ sent ✅ |
+
+## E2E suite
+
+```powershell
+# Hızlı (Faz1 + benchmark atlanır; kuyruk purge dahil)
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\test-siem-e2e-suite.ps1 -Quick
+
+# Tam (Faz1 + kısa P0 baseline dahil)
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\test-siem-e2e-suite.ps1
+```
+
+**Not:** Benchmark sonrası E2E koşmadan önce kuyruk purge gerekebilir; suite bunu otomatik yapar.
+
+## Ölçüm checklist
 
 - [x] Reactor `sec_events` insert throughput (HTTP ingest)
 - [x] U1 correlation lag (Faz 2)
 - [x] P0 5 dk / 50 evt/s soak kapısı
-- [ ] Engine syslog UDP :514 → batch size
+- [x] P1 2 dk / 100 evt/s lab profil
+- [x] Engine syslog UDP :5514 → batch flush
 - [ ] `sec_event.queue_depth` under load

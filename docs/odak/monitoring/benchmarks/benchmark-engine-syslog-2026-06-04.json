@@ -1,0 +1,27 @@
+{
+  "profile": "engine-syslog",
+  "runId": "syslog-bench-20260604083450",
+  "generatedAt": "2026-06-04T05:35:56.4892822Z",
+  "environment": {
+    "udpPort": 5514,
+    "engineUrl": "http://192.168.20.20:5037",
+    "domain": "odak",
+    "server": "192.168.20.20"
+  },
+  "durationSec": 60,
+  "targetEps": 30,
+  "achievedEps": 17.79,
+  "syslog": {
+    "flushP95Ms": 377.0,
+    "errors": 0,
+    "flushAccepted": 1146,
+    "sent": 1150
+  },
+  "mongo": {
+    "savedDelta": 1150,
+    "beforeCount": 23117,
+    "afterCount": 24267
+  },
+  "pass": true,
+  "notes": "UDP syslog -> Engine queue -> flush -> Reactor. Lab hedef: >= %50 target EPS, mongo ~sent."
+}
