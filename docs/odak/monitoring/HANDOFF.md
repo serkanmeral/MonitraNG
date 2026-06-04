@@ -107,10 +107,9 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | Alan | Değer |
 |------|--------|
 | Branch | `main` (origin ile senkron) |
-| Son SIEM commit | *(bekleyen)* — bastion · U10 · quick regression |
+| Son SIEM commit | `a809593` — bastion · U10 · quick regression |
 | Önceki | `b7ea29b` — Cisco ASA · CI gate · P2 soak |
-| Unit test | ✅ 61× `Tests.Services.SecEvents` (local) |
-| Odak deploy | ⬜ ağ erişimi yok — sync/deploy smoke bekliyor |
+| Odak deploy | ✅ `mngreactor` + `mngui` · bastion + U10 smoke PASS |
 
 ---
 
