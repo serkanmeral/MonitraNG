@@ -4978,6 +4978,23 @@
   "siemCenter": {
     "menuHeader": "Güvenlik Merkezi",
     "breadcrumbRoot": "Güvenlik Merkezi",
+    "dashboard": {
+      "menuTitle": "Güvenlik paneli",
+      "pageTitle": "Güvenlik paneli",
+      "pageSubtitle": "Son 24 saat özeti: olay hacmi, açık alarmlar ve hızlı erişim.",
+      "loadError": "Panel verileri yüklenemedi.",
+      "refresh": "Yenile",
+      "range24h": "Son 24 saat",
+      "statEvents": "Toplam olay",
+      "statOpenAlarms": "Açık alarm (≥6)",
+      "statLoginFailed": "Başarısız giriş",
+      "statDeniedFlow": "Engellenen akış",
+      "statNewFlow": "Yeni akış (U7)",
+      "recentAlarmsTitle": "Son açık alarmlar",
+      "viewAllAlarms": "Tüm alarmlar",
+      "noAlarms": "Açık alarm yok.",
+      "quickLinksTitle": "Hızlı bağlantılar"
+    },
     "events": {
       "menuTitle": "Güvenlik olayları",
       "pageTitle": "Güvenlik olayları",

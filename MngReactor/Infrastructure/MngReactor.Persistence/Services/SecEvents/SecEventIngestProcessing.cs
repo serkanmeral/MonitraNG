@@ -16,6 +16,7 @@ public sealed class SecEventIngestProcessing : ISecEventIngestProcessing
     private readonly ISecEventsRepository _repository;
     private readonly ISecEventPublisher _publisher;
     private readonly IObservationPublisher _observationPublisher;
+    private readonly ISecEventFlowBaselineStore _flowBaselineStore;
 
     public SecEventIngestProcessing(
         ILogger<SecEventIngestProcessing> logger,
@@ -23,7 +24,8 @@ public sealed class SecEventIngestProcessing : ISecEventIngestProcessing
         UnknownSecEventFallback fallback,
         ISecEventsRepository repository,
         ISecEventPublisher publisher,
-        IObservationPublisher observationPublisher)
+        IObservationPublisher observationPublisher,
+        ISecEventFlowBaselineStore flowBaselineStore)
     {
         _logger = logger;
         _registry = registry;
@@ -31,6 +33,7 @@ public sealed class SecEventIngestProcessing : ISecEventIngestProcessing
         _repository = repository;
         _publisher = publisher;
         _observationPublisher = observationPublisher;
+        _flowBaselineStore = flowBaselineStore;
     }
 
     public async Task<SecEventIngestResponse> ProcessAsync(
@@ -81,7 +84,10 @@ public sealed class SecEventIngestProcessing : ISecEventIngestProcessing
         {
             var ctx = SecEventRawContext.From(item);
             var parsed = ParseSafe(ctx);
-            docs.Add(SecEventDocument.FromParsed(parsed, domain, ingestedAt));
+            var enrichment = await SecEventFlowBaselineEnricher.EnrichAsync(
+                parsed, domain, _flowBaselineStore, cancellationToken);
+            parsed = enrichment.Parsed;
+            docs.Add(SecEventDocument.FromParsed(parsed, domain, ingestedAt, enrichment.EmitNewFlowObservation));
             messages.Add(ToCreatedMessage(domain, parsed));
         }
 
@@ -93,6 +99,12 @@ public sealed class SecEventIngestProcessing : ISecEventIngestProcessing
         {
             var observation = SecEventObservationMapper.ToPayload(doc, domain, domain);
             _ = _observationPublisher.PublishSecEventAsync(observation, cancellationToken);
+
+            if (doc.BaselineNewFlowPair)
+            {
+                var newFlowObservation = SecEventObservationMapper.ToNewFlowPayload(observation);
+                _ = _observationPublisher.PublishSecEventAsync(newFlowObservation, cancellationToken);
+            }
         }
 
         return new SecEventIngestResponse

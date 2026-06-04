@@ -1,0 +1,11 @@
+{
+  "name": "U5 — Firewall trafik sıçraması (hedef IP/port)",
+  "type": "correlation",
+  "matchKey": "allowed_flow",
+  "groupByFields": ["dstIp", "dstPort"],
+  "windowMinutes": 5,
+  "threshold": 100,
+  "severity": 7,
+  "cooldownMinutes": 15,
+  "dedupKeyTemplate": "{ruleId}:{groupKey}"
+}

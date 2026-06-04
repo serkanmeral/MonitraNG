@@ -57,4 +57,25 @@ public sealed class SecEventObservationMapperTests
         Assert.Contains("\"key\":\"login_failed\"", json);
         Assert.Equal("abc123.event.login_failed", ObservationPublishMessage.BuildEventRoutingKey("abc123", "login_failed"));
     }
+
+    [Fact]
+    public void ToNewFlowPayload_CopiesDimensionsWithNewFlowKey()
+    {
+        var primary = new SecEventObservationPayload
+        {
+            DomainId = "abc123",
+            DomainName = "odak",
+            Kind = "event",
+            Key = "denied_flow",
+            Value = 1,
+            Timestamp = DateTime.UtcNow,
+            Dimensions = new Dictionary<string, object?> { ["srcIp"] = "10.0.0.1", ["dstIp"] = "10.0.0.2" }
+        };
+
+        var newFlow = SecEventObservationMapper.ToNewFlowPayload(primary);
+
+        Assert.Equal("new_flow", newFlow.Key);
+        Assert.Equal("denied_flow", primary.Key);
+        Assert.Equal("10.0.0.1", newFlow.Dimensions["srcIp"]);
+    }
 }

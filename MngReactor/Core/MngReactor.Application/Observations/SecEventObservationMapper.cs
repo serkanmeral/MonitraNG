@@ -51,6 +51,18 @@ public static class SecEventObservationMapper
             Dimensions = dimensions
         };
     }
+
+    public static SecEventObservationPayload ToNewFlowPayload(SecEventObservationPayload primary) =>
+        new()
+        {
+            DomainId = primary.DomainId,
+            DomainName = primary.DomainName,
+            Kind = primary.Kind,
+            Key = SecEventFlowBaselineRules.NewFlowAction,
+            Value = primary.Value,
+            Timestamp = primary.Timestamp,
+            Dimensions = primary.Dimensions
+        };
 }
 
 public sealed class SecEventObservationPayload

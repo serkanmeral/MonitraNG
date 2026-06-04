@@ -36,7 +36,12 @@ Faz 0 planlama ✅. **SIEM MVP (U1/U2/U4) + müdahale/workflow ✅.** **P0 soak 
 | **Engine queue_depth under load** | ✅ `benchmark-engine-queue-depth-2026-06-04.json` (max=107, gate=4000) |
 | **WEF→WEC Engine batch ingest** | ✅ `test-engine-wec-ingest-e2e.ps1` · [SIEM_WEF_WEC_INGEST.md](./SIEM_WEF_WEC_INGEST.md) |
 | **Güvenlik olay arama UI** | ✅ `/apps/siem-center/events` · [SIEM_EVENTS_UI.md](./SIEM_EVENTS_UI.md) |
-| Observation native publish (metrik) | ✅ C6 |
+| **U6 firewall rule_change** | ✅ `test-siem-u6-alarm-e2e.ps1` |
+| **U5 firewall traffic spike** | ✅ `test-siem-u5-alarm-e2e.ps1` |
+| **U3 privileged outside maintenance window** | ✅ `test-siem-u3-alarm-e2e.ps1` |
+| **U7 new src→dst (baseline / new_flow)** | ✅ `test-siem-u7-alarm-e2e.ps1` |
+| **SIEM dashboard MVP** | ✅ `/apps/siem-center` · [SIEM_DASHBOARD.md](./SIEM_DASHBOARD.md) |
+| **U3 bakım penceresi (appsettings)** | ✅ `SecEventMaintenanceWindow:*` |
 
 ---
 
@@ -74,11 +79,15 @@ Kısa vadeli teknik devam (MVP sonrası bakım):
 
 1. ~~UI Faz 2 — tam `raw` metin (detay paneli)~~ ✅
 2. ~~U6 firewall `rule_change` senaryosu~~ ✅ — parser + `test-siem-u6-alarm-e2e.ps1`
-3. U3 / U5 korelasyon senaryoları
-4. Tam E2E suite regression (`test-siem-e2e-suite.ps1`)
-5. Yerel değişiklikler commit (isteğe bağlı)
+3. ~~U3 / U5 korelasyon senaryoları~~ ✅ — `test-siem-u3-alarm-e2e.ps1` · `test-siem-u5-alarm-e2e.ps1`
+4. ~~Tam E2E suite regression~~ ✅
+5. ~~Yerel commit + push~~ ✅ — `a685688`
+6. ~~**U7 baseline → `new_flow`**~~ ✅ — çift observation · `test-siem-u7-alarm-e2e.ps1`
+7. ~~**Tam E2E suite (-Quick)**~~ ✅
+8. ~~**SIEM dashboard MVP**~~ ✅ — [SIEM_DASHBOARD.md](./SIEM_DASHBOARD.md)
+9. ~~**U3 bakım penceresi yapılandırılabilir**~~ ✅ — `SecEventMaintenanceWindow` appsettings
 
-LogAlarm parite → ayrı hedef — [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md)
+LogAlarm parite → [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md)
 
 **Operasyon notu:** Benchmark veya yoğun ingest sonrası E2E/workflow testleri önce kuyruk temizliği gerektirebilir:
 - `purge-alarm-observation-queue.ps1` — `alarm.observation.inbound`

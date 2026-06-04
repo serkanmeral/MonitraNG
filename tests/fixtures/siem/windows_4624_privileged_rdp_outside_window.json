@@ -1,0 +1,8 @@
+{
+  "EventID": 4624,
+  "TimeCreated": "2026-06-03T22:15:00Z",
+  "TargetUserName": "admin",
+  "IpAddress": "192.168.1.88",
+  "LogonType": 10,
+  "AuthenticationPackageName": "Negotiate"
+}

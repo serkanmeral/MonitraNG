@@ -32,6 +32,9 @@ internal static class SecEventDocumentBsonMapper
             ["rawPreview"] = doc.RawPreview
         };
 
+        if (doc.BaselineNewFlowPair)
+            bson["baseline"] = new BsonDocument { ["newFlowPair"] = true };
+
         if (doc.Actor?.User is not null)
             bson["actor"] = new BsonDocument { ["user"] = doc.Actor.User };
 

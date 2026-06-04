@@ -37,4 +37,5 @@ public sealed class SecEventListItem
     public string? RawPreview { get; init; }
     /// <summary>Tam ham mesaj — yalnızca GET by id yanıtında dolu.</summary>
     public string? Raw { get; init; }
+    public bool BaselineNewFlowPair { get; init; }
 }

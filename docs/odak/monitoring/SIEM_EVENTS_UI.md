@@ -21,7 +21,7 @@
 
 - Zaman aralığı: 1s / 24s / 7g (varsayılan 24s)
 - `sourceType`: firewall, ad
-- `eventAction`: login_failed, login_success, denied_flow
+- `allowed_flow`, `privileged_login_outside_window`, `new_flow` (U7: `baseline.newFlowPair` filtresi)
 - `search`: rawPreview, IP, kullanıcı, host (regex, case-insensitive)
 
 ## Sınırlar

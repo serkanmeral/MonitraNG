@@ -71,6 +71,13 @@ Bridge deseni metrik ile aynı; routing key örneği: `6a0f8fc43d6ba5d774ee37c1.
 |---------|------------|-----------------|-------------|
 | U1 | `login_failed` | `userId`, `srcIp` | `tests/fixtures/siem/alarm_rules/u1_*.json` |
 | U4 | `denied_flow` | `dstIp` | `tests/fixtures/siem/alarm_rules/u4_*.json` |
+| U5 | `allowed_flow` | `dstIp`, `dstPort` | `tests/fixtures/siem/alarm_rules/u5_*.json` |
+| U3 | `privileged_login_outside_window` | `userId`, `srcIp` | `tests/fixtures/siem/alarm_rules/u3_*.json` |
+| U6 | `rule_change` | `userId`, `sourceHost` | `tests/fixtures/siem/alarm_rules/u6_*.json` |
+| U7 | `new_flow` | `srcIp`, `dstIp` | `tests/fixtures/siem/alarm_rules/u7_*.json` |
+
+**U7 çift observation:** Baseline sonrası yeni src→dst çiftinde birincil `key` korunur (`denied_flow` / `allowed_flow`); ek olarak `key=new_flow` observation yayınlanır (U4/U5 spike kuralları etkilenmez).
+
 | U2 | `login_success_after_failures` | `userId`, `srcIp` | `sequence` — `tests/fixtures/siem/alarm_rules/u2_*.json` |
 
 ---

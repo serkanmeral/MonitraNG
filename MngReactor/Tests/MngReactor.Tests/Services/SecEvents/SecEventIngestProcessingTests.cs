@@ -21,6 +21,16 @@ public sealed class SecEventIngestProcessingTests
         repoMock ??= new Mock<ISecEventsRepository>();
         publisherMock ??= new Mock<ISecEventPublisher>();
         observationPublisherMock ??= new Mock<IObservationPublisher>();
+        var baselineStoreMock = new Mock<ISecEventFlowBaselineStore>();
+        baselineStoreMock
+            .Setup(b => b.ApplyFlowPairAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string _, string _, string _, string _, CancellationToken _) =>
+                new SecEventFlowBaselineApplyResult(false));
 
         repoMock
             .Setup(r => r.InsertManyAsync(
@@ -45,13 +55,14 @@ public sealed class SecEventIngestProcessingTests
         return new SecEventIngestProcessing(
             NullLogger<SecEventIngestProcessing>.Instance,
             new SecEventParserRegistry(
-                new WindowsSecurityParser(),
+                SecEventParserTestFactory.CreateWindowsParser(),
                 new FirewallGenericSyslogParser(),
                 new UnknownSecEventFallback()),
             new UnknownSecEventFallback(),
             repoMock.Object,
             publisherMock.Object,
-            observationPublisherMock.Object);
+            observationPublisherMock.Object,
+            baselineStoreMock.Object);
     }
 
     private static SecEventIngestItem FirewallItem =>

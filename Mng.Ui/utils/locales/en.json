@@ -4965,6 +4965,23 @@
   "siemCenter": {
     "menuHeader": "Security Center",
     "breadcrumbRoot": "Security Center",
+    "dashboard": {
+      "menuTitle": "Security dashboard",
+      "pageTitle": "Security dashboard",
+      "pageSubtitle": "Last 24 hours: event volume, open alarms, and quick links.",
+      "loadError": "Could not load dashboard data.",
+      "refresh": "Refresh",
+      "range24h": "Last 24 hours",
+      "statEvents": "Total events",
+      "statOpenAlarms": "Open alarms (≥6)",
+      "statLoginFailed": "Failed logins",
+      "statDeniedFlow": "Denied flows",
+      "statNewFlow": "New flows (U7)",
+      "recentAlarmsTitle": "Recent open alarms",
+      "viewAllAlarms": "All alarms",
+      "noAlarms": "No open alarms.",
+      "quickLinksTitle": "Quick links"
+    },
     "events": {
       "menuTitle": "Security events",
       "pageTitle": "Security events",

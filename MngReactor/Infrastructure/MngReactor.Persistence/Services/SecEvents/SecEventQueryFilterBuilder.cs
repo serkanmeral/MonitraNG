@@ -34,7 +34,13 @@ internal static class SecEventQueryFilterBuilder
             clauses.Add(builder.Eq("source.type", filter.SourceType.Trim()));
 
         if (!string.IsNullOrWhiteSpace(filter.EventAction))
-            clauses.Add(builder.Eq("event.action", filter.EventAction.Trim()));
+        {
+            var action = filter.EventAction.Trim();
+            if (string.Equals(action, SecEventFlowBaselineRules.NewFlowAction, StringComparison.OrdinalIgnoreCase))
+                clauses.Add(builder.Eq("baseline.newFlowPair", true));
+            else
+                clauses.Add(builder.Eq("event.action", action));
+        }
 
         if (!string.IsNullOrWhiteSpace(filter.SrcIp))
             clauses.Add(builder.Eq("network.srcIp", filter.SrcIp.Trim()));

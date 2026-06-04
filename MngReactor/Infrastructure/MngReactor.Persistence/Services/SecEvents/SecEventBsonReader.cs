@@ -25,7 +25,8 @@ internal static class SecEventBsonReader
             NetworkDstIp = ReadNestedString(doc, "network", "dstIp"),
             ParserId = ReadNestedString(doc, "parser", "id"),
             RawPreview = rawPreview,
-            Raw = includeRaw ? ReadString(doc, "raw") ?? rawPreview : null
+            Raw = includeRaw ? ReadString(doc, "raw") ?? rawPreview : null,
+            BaselineNewFlowPair = ReadNestedBool(doc, "baseline", "newFlowPair")
         };
     }
 
@@ -54,5 +55,17 @@ internal static class SecEventBsonReader
             return null;
 
         return childVal.IsString ? childVal.AsString : childVal.ToString();
+    }
+
+    private static bool ReadNestedBool(BsonDocument doc, string parent, string child)
+    {
+        if (!doc.TryGetValue(parent, out var parentVal) || !parentVal.IsBsonDocument)
+            return false;
+
+        var nested = parentVal.AsBsonDocument;
+        if (!nested.TryGetValue(child, out var childVal) || childVal.IsBsonNull)
+            return false;
+
+        return childVal.IsBoolean && childVal.AsBoolean;
     }
 }

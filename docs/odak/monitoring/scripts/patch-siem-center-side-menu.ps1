@@ -174,7 +174,8 @@ if ($alarmHeader -and $automationHeader) {
 if ($null -eq $headerOrder) {
     $headerOrder = [Math]::Max($maxOrder + 1, 224)
 }
-$eventsItemOrder = $headerOrder + 1
+$dashboardItemOrder = $headerOrder + 1
+$eventsItemOrder = $headerOrder + 2
 
 # --- Header: Güvenlik Merkezi ---
 $headerResult = Upsert-MenuItem -AllItems $items -Label "Güvenlik Merkezi header" -FindExisting {
@@ -198,6 +199,25 @@ if ([string]::IsNullOrEmpty($headerId)) {
     Write-Host "Header id alinamadi; cikiliyor." -ForegroundColor Red
     exit 1
 }
+
+# --- Güvenlik paneli ---
+Upsert-MenuItem -AllItems $items -Label "Güvenlik paneli" -FindExisting {
+    $_.pageCode -eq "siemCenter.dashboard.menuTitle" -or
+    $_.to -eq "/apps/siem-center"
+} -Body @{
+    order     = $dashboardItemOrder
+    itemType  = "item"
+    level     = 1
+    parentId  = $headerId
+    pageType  = "manager"
+    pageCode  = "siemCenter.dashboard.menuTitle"
+    title     = "Güvenlik paneli"
+    icon      = "ShieldIcon"
+    iconType  = "tabler"
+    to        = "/apps/siem-center"
+    type      = "internal"
+    disabled  = $false
+} | Out-Null
 
 # --- Güvenlik olayları ---
 Upsert-MenuItem -AllItems $items -Label "Güvenlik olaylari" -FindExisting {

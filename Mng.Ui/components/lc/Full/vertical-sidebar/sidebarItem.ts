@@ -392,6 +392,12 @@ const sidebarItem: menu[] = [
   },
   { header: "Güvenlik Merkezi", pageCode: "siemCenter.menuHeader" },
   {
+    title: "Güvenlik paneli",
+    pageCode: "siemCenter.dashboard.menuTitle",
+    icon: ShieldIcon,
+    to: "/apps/siem-center",
+  },
+  {
     title: "Güvenlik olayları",
     pageCode: "siemCenter.events.menuTitle",
     icon: ShieldIcon,

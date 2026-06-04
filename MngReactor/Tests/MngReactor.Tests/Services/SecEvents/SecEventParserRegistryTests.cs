@@ -8,7 +8,7 @@ namespace MngReactor.Tests.Services.SecEvents;
 public sealed class SecEventParserRegistryTests
 {
     private readonly SecEventParserRegistry _registry = new(
-        new WindowsSecurityParser(),
+        SecEventParserTestFactory.CreateWindowsParser(),
         new FirewallGenericSyslogParser(),
         new UnknownSecEventFallback());
 

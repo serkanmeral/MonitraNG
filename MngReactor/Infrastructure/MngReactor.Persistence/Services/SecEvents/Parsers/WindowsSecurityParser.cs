@@ -9,6 +9,13 @@ public sealed class WindowsSecurityParser : ISecEventParser
 {
     public const string ParserIdValue = "windows.security.v1";
 
+    private readonly ISecEventMaintenanceWindowEvaluator _maintenanceWindow;
+
+    public WindowsSecurityParser(ISecEventMaintenanceWindowEvaluator maintenanceWindow)
+    {
+        _maintenanceWindow = maintenanceWindow;
+    }
+
     public string ParserId => ParserIdValue;
 
     public bool CanParse(SecEventRawContext raw)
@@ -31,7 +38,8 @@ public sealed class WindowsSecurityParser : ISecEventParser
 
         var eventId = ReadInt(raw.Raw, "EventID");
         var timestamp = ReadTimestamp(raw.Raw, raw.ReceivedAt);
-        var (action, outcome) = MapEventId(eventId);
+        var logonType = ReadInt(raw.Raw, "LogonType");
+        var (action, outcome) = MapEventId(eventId, logonType, timestamp);
 
         return new ParsedSecEvent
         {
@@ -50,14 +58,31 @@ public sealed class WindowsSecurityParser : ISecEventParser
         };
     }
 
-    private static (string Action, string Outcome) MapEventId(int? eventId) => eventId switch
+    private (string Action, string Outcome) MapEventId(int? eventId, int? logonType, DateTime timestamp) => eventId switch
     {
-        4624 => ("login_success", "success"),
+        4624 => MapSuccessfulLogon(logonType, timestamp),
         4625 => ("login_failed", "failure"),
+        4672 => MapPrivilegedAssignment(timestamp),
         4740 => ("account_locked", "failure"),
         4771 => ("kerberos_preauth_failed", "failure"),
         _ => ("unknown", "unknown")
     };
+
+    private (string Action, string Outcome) MapSuccessfulLogon(int? logonType, DateTime timestamp)
+    {
+        if (IsPrivilegedLogonType(logonType) && _maintenanceWindow.IsOutsideAllowedWindow(timestamp))
+            return ("privileged_login_outside_window", "failure");
+
+        return ("login_success", "success");
+    }
+
+    private (string Action, string Outcome) MapPrivilegedAssignment(DateTime timestamp) =>
+        _maintenanceWindow.IsOutsideAllowedWindow(timestamp)
+            ? ("privileged_login_outside_window", "failure")
+            : ("privileged_assigned", "success");
+
+    private static bool IsPrivilegedLogonType(int? logonType) =>
+        logonType is 2 or 10;
 
     private static int? ReadInt(JsonElement root, string name)
     {

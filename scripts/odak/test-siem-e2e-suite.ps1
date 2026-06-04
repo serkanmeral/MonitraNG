@@ -36,6 +36,15 @@ Invoke-Step "Purge alarm observation queue" "purge-alarm-observation-queue.ps1"
 Invoke-Step "U1 alarm" "test-siem-u1-alarm-e2e.ps1"
 Invoke-Step "U4 alarm" "test-siem-u4-alarm-e2e.ps1"
 Invoke-Step "U6 rule change alarm" "test-siem-u6-alarm-e2e.ps1"
+Invoke-Step "U5 traffic spike alarm" "test-siem-u5-alarm-e2e.ps1"
+Invoke-Step "U3 privileged outside window" "test-siem-u3-alarm-e2e.ps1"
+Write-Host "`n========== U7 new flow baseline ==========" -ForegroundColor Cyan
+& (Join-Path $root "test-siem-u7-alarm-e2e.ps1") -ResetBaseline
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "FAIL: U7 new flow baseline (test-siem-u7-alarm-e2e.ps1)" -ForegroundColor Red
+    exit 1
+}
+Write-Host "OK: U7 new flow baseline" -ForegroundColor Green
 Invoke-Step "U2 sequence alarm" "test-siem-u2-alarm-e2e.ps1"
 
 Invoke-Step "Purge workflow event queue" "purge-workflow-event-inbound-queue.ps1"

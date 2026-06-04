@@ -31,6 +31,9 @@ const eventActionItems = computed(() => [
   { title: 'login_success', value: 'login_success' },
   { title: 'denied_flow', value: 'denied_flow' },
   { title: 'rule_change', value: 'rule_change' },
+  { title: 'allowed_flow', value: 'allowed_flow' },
+  { title: 'privileged_login_outside_window', value: 'privileged_login_outside_window' },
+  { title: 'new_flow', value: 'new_flow' },
 ]);
 
 const timeRangeItems = computed(() => [

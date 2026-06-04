@@ -63,4 +63,23 @@ public sealed class FirewallGenericSyslogParserTests
         Assert.Equal("192.168.1.1", parsed.NetworkSrcIp);
         Assert.Contains("CONFIG CHANGE", parsed.Raw, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void ParseFirewallAllow_MapsAllowedFlow()
+    {
+        var rawLine = SiemFixtureHelper.ReadFixture("firewall_allow.syslog.txt");
+        var ctx = new SecEventRawContext
+        {
+            ReceivedAt = DateTime.Parse("2026-06-03T14:00:01Z").ToUniversalTime(),
+            Source = new SecEventSourceInfo { Type = "firewall", Product = "generic-syslog", Host = "fw01" },
+            Raw = JsonSerializer.SerializeToElement(rawLine)
+        };
+
+        var parsed = _parser.Parse(ctx);
+
+        Assert.Equal("allowed_flow", parsed.EventAction);
+        Assert.Equal("success", parsed.EventOutcome);
+        Assert.Equal("10.0.0.10", parsed.NetworkDstIp);
+        Assert.Equal(443, parsed.NetworkDstPort);
+    }
 }

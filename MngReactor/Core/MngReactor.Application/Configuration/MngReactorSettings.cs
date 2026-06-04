@@ -20,6 +20,7 @@ public class MngReactorSettings
     public MonitoringSettings Monitoring { get; set; } = new();
     public ObservationPublishSettings ObservationPublish { get; set; } = new();
     public CryptSettings Crypt { get; set; } = new();
+    public SecEventMaintenanceWindowSettings SecEventMaintenanceWindow { get; set; } = new();
 }
 
 public class ObservationPublishSettings

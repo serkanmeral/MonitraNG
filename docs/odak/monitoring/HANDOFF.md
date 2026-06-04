@@ -38,6 +38,10 @@
 U1: sec_events → observation → correlation → alarm.raised → Workflow → (approval) → block.ip
 U4: firewall syslog → sec_events → observation → correlation → alarm.raised → Workflow
 U2: login_failed×N → login_success → sequence alarm
+U5: allowed_flow×N (dstIp/dstPort) → traffic spike alarm
+U6: rule_change → correlation alarm
+U3: privileged_login_outside_window (LogonType 10, bakım dışı) → correlation alarm
+U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 ```
 
 **Scriptler:** `scripts/odak/test-siem-e2e-suite.ps1 -Quick` (kuyruk purge dahil)
@@ -66,10 +70,14 @@ U2: login_failed×N → login_success → sequence alarm
 |---|-----|-----|
 | 1 | ~~**UI Faz 2** — olay detayında tam `raw` metni~~ ✅ | Ingest `raw` (8 KB) + GET by id + drawer |
 | 2 | ~~**U6** — firewall kural/config değişikliği~~ ✅ | Parser `rule_change` + E2E |
-| 3 | **U3 / U5** — bakım penceresi dışı erişim · trafik sıçraması | [SIEM_PLANNING §8](./SIEM_PLANNING.md) |
-| 4 | **Tam E2E regression** | `test-siem-e2e-suite.ps1` (Faz1 + benchmark dahil) |
-| 5 | **Yerel commit** | WEF/WEC · UI/API · menü patch · dokümanlar |
-| — | LogAlarm parite | Ayrı hedef — [SIEM_LOGALARM_COMPARISON §6](./SIEM_LOGALARM_COMPARISON.md) |
+| 3 | ~~**U3 / U5** — bakım penceresi dışı erişim · trafik sıçraması~~ ✅ | U3 parser + U5 `allowed_flow` spike · E2E |
+| 4 | ~~**Tam E2E regression**~~ ✅ | `test-siem-e2e-suite.ps1` |
+| 5 | ~~**Yerel commit**~~ ✅ | `a685688` pushed |
+| 6 | ~~**U7** — yeni/bilinmeyen src→dst (baseline)~~ ✅ | `sec_flow_baseline` + çift observation · E2E |
+| 7 | ~~**Tam E2E regression (-Quick)**~~ ✅ | U1–U7 + workflow suite |
+| 8 | ~~**SIEM dashboard MVP**~~ ✅ | `/apps/siem-center` |
+| 9 | ~~**U3 bakım penceresi yapılandırılabilir**~~ ✅ | `SecEventMaintenanceWindow` appsettings |
+| — | LogAlarm parite | [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md) |
 
 ---
 
@@ -78,8 +86,7 @@ U2: login_failed×N → login_success → sequence alarm
 | Alan | Değer |
 |------|--------|
 | Branch | `main` |
-| Son SIEM commit | `7471a46` — P1/syslog benchmarks, E2E suite, queue purge helpers |
-| Yerel (commit bekliyor) | LogAlarm kıyaslama · queue_depth · WEF/WEC · sec-events UI/API · HANDOFF |
+| Son SIEM commit | `a685688` — sec-events UI, WEC ingest, U6, raw detail |
 
 ---
 

@@ -13,13 +13,20 @@ public sealed class SecEventDocument
     public required SecEventParserBlock Parser { get; init; }
     public required string Raw { get; init; }
     public required string RawPreview { get; init; }
+    /// <summary>U7: baseline sonrası ilk kez görülen src→dst çifti.</summary>
+    public bool BaselineNewFlowPair { get; init; }
 
-    public static SecEventDocument FromParsed(ParsedSecEvent parsed, string domain, DateTime ingestedAt) =>
+    public static SecEventDocument FromParsed(
+        ParsedSecEvent parsed,
+        string domain,
+        DateTime ingestedAt,
+        bool baselineNewFlowPair = false) =>
         new()
         {
             Timestamp = parsed.Timestamp,
             IngestedAt = ingestedAt,
             Domain = domain,
+            BaselineNewFlowPair = baselineNewFlowPair,
             Source = new SecEventSourceInfo
             {
                 Type = parsed.SourceType,

@@ -1,0 +1,11 @@
+{
+  "name": "U3 — Bakım penceresi dışı ayrıcalıklı oturum",
+  "type": "correlation",
+  "matchKey": "privileged_login_outside_window",
+  "groupByFields": ["userId", "srcIp"],
+  "windowMinutes": 5,
+  "threshold": 1,
+  "severity": 8,
+  "cooldownMinutes": 30,
+  "dedupKeyTemplate": "{ruleId}:{groupKey}"
+}

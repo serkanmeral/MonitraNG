@@ -18,4 +18,24 @@ public sealed class ParsedSecEvent
     public required string ParserId { get; init; }
     public required string Raw { get; init; }
     public required string RawPreview { get; init; }
+
+    public ParsedSecEvent WithEventAction(string eventAction) =>
+        new()
+        {
+            Timestamp = Timestamp,
+            EventAction = eventAction,
+            EventOutcome = EventOutcome,
+            EventCode = EventCode,
+            ActorUser = ActorUser,
+            NetworkSrcIp = NetworkSrcIp,
+            NetworkDstIp = NetworkDstIp,
+            NetworkDstPort = NetworkDstPort,
+            NetworkProtocol = NetworkProtocol,
+            SourceType = SourceType,
+            SourceProduct = SourceProduct,
+            SourceHost = SourceHost,
+            ParserId = ParserId,
+            Raw = Raw,
+            RawPreview = RawPreview
+        };
 }

@@ -34,7 +34,7 @@ export function useSiemCenterBreadcrumbs(ctx: UseSiemCenterBreadcrumbsContext = 
       },
       {
         text: t('siemCenter.breadcrumbRoot'),
-        href: '/apps/siem-center/events',
+        href: '/apps/siem-center',
         disabled: false,
       },
     ];
