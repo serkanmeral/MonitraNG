@@ -102,7 +102,7 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | Alan | Değer |
 |------|--------|
 | Branch | `main` (origin ile senkron) |
-| Son SIEM commit | (bu commit) — B1 PAN-OS · Dashboard P2 · DLQ diagnostic |
+| Son SIEM commit | `5f4b62b` — B1 PAN-OS · Dashboard P2 · DLQ diagnostic |
 | Önceki | `1b4bdf3` · `a72cc0d` Linux block.ip + alarm throttle |
 
 ---
