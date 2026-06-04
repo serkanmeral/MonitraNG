@@ -93,6 +93,8 @@ services:
       - MngWorkflowSettings__Secrets__EncryptionKeyBase64=MDEyMzQ1Njc4OWFiY2RlZmdoaWprbG1ub3BxcnN0dXY=
       - MngWorkflowSettings__EngineCommand__DevLogOnly=false
       - MngWorkflowSettings__EngineCommand__ReactorBaseUrl=http://mngreactor:5003
+      - MngWorkflowSettings__Engine__PrefetchCount=32
+      - MngWorkflowSettings__Engine__EventTrigger__PrefetchCount=32
 
   mngalarm:
     ports:
@@ -106,6 +108,7 @@ services:
     environment:
       - MngAlarmSettings__MongoDb__ConnectionString=mongodb://admin:admin123@mongo:27017
       - MngAlarmSettings__Engine__ReactorBridge__Enabled=false
+      - MngAlarmSettings__Engine__ObservationPrefetch=32
 
   mngoperations:
     ports:

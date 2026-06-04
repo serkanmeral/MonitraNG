@@ -105,7 +105,7 @@ public sealed class WorkflowEventTriggerConsumer : BackgroundService
         var connection = await _connectionManager.GetConnectionAsync(stoppingToken);
         var channel = await connection.CreateChannelAsync(cancellationToken: stoppingToken);
 
-        await channel.BasicQosAsync(0, prefetchCount: 8, global: false, stoppingToken);
+        await channel.BasicQosAsync(0, _settings.PrefetchCount, false, stoppingToken);
 
         var consumer = new AsyncEventingBasicConsumer(channel);
         consumer.ReceivedAsync += async (_, args) =>
@@ -135,8 +135,9 @@ public sealed class WorkflowEventTriggerConsumer : BackgroundService
             cancellationToken: stoppingToken);
 
         _logger.LogInformation(
-            "Workflow event trigger consumer started queue={Queue} ocPattern={OcPattern} alarmPattern={AlarmPattern}",
+            "Workflow event trigger consumer started queue={Queue} prefetch={Prefetch} ocPattern={OcPattern} alarmPattern={AlarmPattern}",
             WorkflowEventExchanges.InboundQueue,
+            _settings.PrefetchCount,
             _settings.OcEventsRoutingPattern,
             _settings.AlarmsRoutingPattern);
 

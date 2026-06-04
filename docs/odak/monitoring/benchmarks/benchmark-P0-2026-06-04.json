@@ -1,50 +1,45 @@
 {
   "profile": "P0",
   "mode": "baseline",
-  "runId": "bench-P0-20260604104658",
-  "generatedAt": "2026-06-04T07:47:29.6602403Z",
+  "runId": "bench-P0-20260604114804",
+  "generatedAt": "2026-06-04T08:48:31.8022800Z",
   "environment": {
-    "gateway": "http://192.168.20.20:5040",
+    "domain": "odak",
     "server": "192.168.20.20",
-    "domain": "odak"
+    "gateway": "http://192.168.20.20:5040"
   },
   "durationSec": 15,
-  "targetEps": 10,
-  "batchSize": 1,
-  "achievedEps": 5.6,
+  "targetEps": 20,
+  "batchSize": 5,
+  "achievedEps": 12.68,
   "gate": {
-    "ingestP95TargetMs": 1000,
-    "pass": false,
-    "ingestPass": true,
     "throughputPass": false,
     "maxDropRate": 0.05,
-    "minAchievedEps": 8.0
+    "minAchievedEps": 16.0,
+    "ingestP95TargetMs": 1000,
+    "ingestPass": true,
+    "pass": false
   },
   "ingest": {
-    "pass": true,
-    "eventsAttempted": 91,
-    "requests": 91,
-    "rejected": 0,
-    "maxMs": 3634.0,
-    "p95Ms": 63.0,
-    "errorRate": 0.0,
-    "p95TargetMs": 1000,
-    "p50Ms": 6.0,
+    "requests": 51,
+    "p95Ms": 83.0,
     "dropRate": 0.0,
-    "accepted": 91
+    "accepted": 255,
+    "p50Ms": 13.0,
+    "eventsAttempted": 255,
+    "pass": true,
+    "p95TargetMs": 1000,
+    "errorRate": 0.0,
+    "rejected": 0,
+    "maxMs": 493.0
   },
   "mongo": {
-    "beforeCount": 27652,
-    "savedDelta": 91,
-    "afterCount": 27743,
-    "verifyMethod": "total_count_delta"
+    "verifyMethod": "total_count_delta",
+    "savedDelta": 255,
+    "beforeCount": 27789,
+    "afterCount": 28044
   },
-  "detectionLag": {
-    "pass": true,
-    "ruleId": "d0afb2d7141f45d799cc1602824fbd5e",
-    "lagMs": 10822,
-    "targetLagP95Ms": 60000
-  },
+  "detectionLag": null,
   "pass": false,
   "notes": "P0 lab baseline; tam soak icin -Soak, P1 icin -P1 kullanin."
 }

@@ -78,6 +78,9 @@ public class EventTriggerSettings
 
     /// <summary>mng.alarms routing pattern (topic).</summary>
     public string AlarmsRoutingPattern { get; set; } = WorkflowEventExchanges.AlarmsRoutingPattern;
+
+    /// <summary>event.inbound consumer BasicQos prefetch.</summary>
+    public ushort PrefetchCount { get; set; } = 16;
 }
 
 public class ExpressionSettings

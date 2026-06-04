@@ -62,7 +62,7 @@ Parolayı dokümana yazmayın.
 ## 2. Standart akış (tüm servisler için)
 
 ```
-① sync-odak-source.ps1   →  kaynak paketle + SCP + sunucuda aç
+① sync-odak-source.ps1   →  kaynak paketle + upload (SCP; gerekirse SFTP fallback) + sunucuda aç
 ② deploy-odak-apps.ps1   →  uzaktan docker compose build + up -d
 ```
 
@@ -166,9 +166,11 @@ Uzun sürer (tüm servisler build). İlk kurulum checklist: [MNG_APPS_ODAK_DEPLO
 
 | Parametre | Açıklama |
 |-----------|----------|
-| `-Paths Mng.Ui,MngKeeper,...` | Yalnızca belirtilen klasörler (önerilen günlük döngü) |
+| `-Paths Mng.Ui,MngKeeper,...` | Yalnızca belirtilen klasörler (önerilen günlük döngü). **PowerShell:** `-Paths @('Mng.Ui','MngKeeper')` |
 | `-Full` | Varsayılan tam liste (tüm servisler + mng_apps) |
 | `-IncludeMngCommon` | Altyapı compose dosyalarını da senkron et |
+
+Upload: `Send-OdakRemoteFile` (`OdakSshCommon.ps1`) — SCP başarısız olursa SFTP.
 
 `node_modules`, `.nuxt`, `bin/obj` tar’a **alınmaz** (sunucuda build sırasında üretilir).
 

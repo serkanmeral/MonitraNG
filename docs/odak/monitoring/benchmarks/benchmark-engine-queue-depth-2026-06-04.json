@@ -1,46 +1,46 @@
 {
   "profile": "engine-queue-depth",
-  "runId": "queue-depth-20260604085743",
-  "generatedAt": "2026-06-04T05:58:35.4056951Z",
+  "runId": "queue-depth-20260604114851",
+  "generatedAt": "2026-06-04T08:49:43.3293075Z",
   "environment": {
-    "udpPort": 5514,
-    "domain": "odak",
     "engineUrl": "http://192.168.20.20:5037",
     "server": "192.168.20.20",
-    "maxItems": 5000
+    "domain": "odak",
+    "maxItems": 5000,
+    "udpPort": 5514
   },
   "durationSec": 45,
   "targetEps": 80,
-  "achievedEps": 57.63,
+  "achievedEps": 56.56,
   "queueDepth": {
-    "p95": 94.0,
-    "max": 107.0,
-    "avg": 48.8,
-    "beforeFlush": 71,
-    "pass": true,
-    "gateRatio": 0.8,
     "afterFlush": 0,
+    "p95": 96.0,
     "gateMax": 4000.0,
+    "max": 99.0,
+    "pass": true,
     "aboveGatePct": 0.0,
+    "avg": 49.8,
+    "gateRatio": 0.8,
+    "beforeFlush": 11,
     "samples": 184
   },
   "syslog": {
-    "flushMs": 139,
-    "flushAccepted": 71,
-    "sent": 2874,
-    "errors": 0
+    "sent": 2818,
+    "errors": 0,
+    "flushAccepted": 11,
+    "flushMs": 210
   },
   "mongo": {
-    "savedDelta": 2874,
     "dropEstimate": 0,
     "pass": true,
-    "afterCount": 27179,
-    "beforeCount": 24305
+    "afterCount": 30862,
+    "beforeCount": 28044,
+    "savedDelta": 2818
   },
   "gate": {
     "maxDepthUnder80Pct": true,
-    "mongoSaved95Pct": true,
-    "pass": true
+    "pass": true,
+    "mongoSaved95Pct": true
   },
   "pass": true,
   "notes": "UDP syslog load without manual flush; auto BatchThreshold flush only. SLO: max depth < 80% MaxItems."
