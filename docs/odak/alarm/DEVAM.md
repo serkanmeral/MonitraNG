@@ -1,9 +1,9 @@
 # DEVAM — Alarm & Rule Engine (Kaldığımız Yer)
 
 **Son güncelleme:** 3 Haziran 2026  
-**Durum:** ✅ **Faz 0/1 tamam** · ✅ **Faz 2** · ✅ **P4-A** · ✅ **C6 native observation** (Odak; bridge kapalı)
+**Durum:** ✅ Faz 0–2 motor · ✅ C6 · ✅ **Alarm Merkezi UI** (`/apps/alarm-center/*`) commit `6c4ecbf`
 
-> Workflow entegrasyonu: [docs/odak/workflow/DEVAM.md](../workflow/DEVAM.md) · Seam: `mng.alarms` → Workflow Event Trigger (Faz 4 tamamlayıcı)
+> Workflow entegrasyonu: [docs/odak/workflow/DEVAM.md](../workflow/DEVAM.md) · UI handoff: [../PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md)
 
 ---
 

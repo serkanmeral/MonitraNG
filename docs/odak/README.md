@@ -1,6 +1,7 @@
 # MonitraNG — Odak ortamı
 
-**POC / müşteri test sunucusu:** `192.168.20.20` (`monitrang`)  
+**Test sunucu (günlük deploy / POC):** `192.168.20.20` (`monitrang`)  
+**Production sunucu:** `192.168.20.8` — test’ten **tamamen bağımsız** kendi mng_common + uygulama yığını: [proddeploy/INDEPENDENCE.md](./proddeploy/INDEPENDENCE.md), [proddeploy/README.md](./proddeploy/README.md)  
 **Durum:** Kurulum ✅ · LDAP K1–K5 + G1 POC ✅ **(duraklatıldı)** · Yeni geliştirme: bu rehber + ürün chat’i
 
 ---
@@ -15,8 +16,12 @@ Tüm kurulum ve günlük çalışma akışı tek dokümanda:
 | **[operationcore/README.md](./operationcore/README.md)** | Operation Core (OC) / MngOperations — planlama ve spec |
 | **[workflow/DEVAM.md](./workflow/DEVAM.md)** | MngWorkflow — planlama, Faz 0/1, OC entegrasyon |
 | **[diagnostic/README.md](./diagnostic/README.md)** | Performans ölçümü — Faz 1+1B UI deploy tamam; Faz 2 backend bekliyor |
-| **[deploy/README.md](./deploy/README.md)** | **Odak deploy (Windows)** — pwsh, UI/backend komutları, sorun giderme |
-| **[PLATFORM_CHECKPOINT.md](./PLATFORM_CHECKPOINT.md)** | **SIEM öncesi checkpoint** — tamamlanmadan SIEM'e geçilmez |
+| **[deploy/README.md](./deploy/README.md)** | **Test deploy (Windows)** — `192.168.20.20`, pwsh, UI/backend |
+| **[proddeploy/DEVAM.md](./proddeploy/DEVAM.md)** | **Production deploy — kaldığımız yer** (IT / Docker bekliyor) |
+| **[proddeploy/README.md](./proddeploy/README.md)** | Production deploy indeks — `192.168.20.8` |
+| **[PLATFORM_CHECKPOINT.md](./PLATFORM_CHECKPOINT.md)** | **SIEM öncesi checkpoint** — C1–C7 ✅ |
+| **[PLATFORM_HANDOFF.md](./PLATFORM_HANDOFF.md)** | **Platform UI kaldığımız yer** — Operasyon / Alarm / Otomasyon modülleri |
+| **[monitoring/SIEM_FAZ1_HANDOFF.md](./monitoring/SIEM_FAZ1_HANDOFF.md)** | **SIEM Faz 1 implementasyon** (ayrı chat) |
 | **[monitoring/README.md](./monitoring/README.md)** | Güvenlik odaklı izleme / SIEM-hafif — planlama |
 | **[AI_PLANNING_DECISION.md](./AI_PLANNING_DECISION.md)** | **Yapay zeka zamanlama kararı** — çerçeve şimdi, implementasyon çekirdek hat sonrası |
 | **[compliance/README.md](./compliance/README.md)** | Standart uyumluluğu — ISO/IEC 27001 + AS9100 planı |
@@ -33,8 +38,22 @@ docs/odak/
 ├── ODAK_FULL_SETUP.md          ← ana rehber (bu oturumun özeti)
 ├── README.md                   ← bu dosya
 ├── AI_PLANNING_DECISION.md     ← AI zamanlama kararı (✅ kilitli)
+├── PLATFORM_CHECKPOINT.md      ← C1–C7 SIEM-ready
+├── PLATFORM_HANDOFF.md         ← Platform UI handoff (Operasyon / Alarm / Otomasyon)
 ├── deploy/
-│   └── README.md               ← Windows deploy (pwsh, UI/backend)
+│   └── README.md               ← Test deploy (192.168.20.20)
+├── alarm/
+│   ├── README.md
+│   ├── DEVAM.md
+│   └── scripts/                ← patch-alarm-center-side-menu.ps1
+├── automation/
+│   ├── README.md
+│   └── scripts/                ← patch-automation-side-menu.ps1
+├── proddeploy/
+│   ├── DEVAM.md                ← Production checkpoint (IT sonrası devam)
+│   ├── README.md               ← Production deploy (192.168.20.8)
+│   ├── DEPLOY_PRODUCTION.md
+│   └── AGENT_PRODUCTION_DEPLOY.md
 ├── setup/
 │   ├── KURULUM.md              ← sunucu, Docker, SSH
 │   ├── MNG_COMMON_ODAK.md

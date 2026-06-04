@@ -18,7 +18,7 @@
 
 
 
-Faz 0 planlama ✅. **C6 tamam:** MngReactor Odak deploy + native observation publish + bridge kapalı. **SIEM `sec_events`** kodu henüz yok. Workflow `mqtt/publish` endpoint Reactor'da eksik (`DevLogOnly=true`).
+Faz 0 planlama ✅. **C6/C7 ✅.** UI modül ayrımı (`6c4ecbf`). **SIEM `sec_events` implementasyonu ayrı chat'te** — bu dosya plan + handoff. Workflow `mqtt/publish` Reactor'da eksik.
 
 
 

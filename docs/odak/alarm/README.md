@@ -2,7 +2,18 @@
 
 MonitraNG'nin platform geneli **tespit / alarm üretim katmanı**. Major Roadmap §4.2'nin somutlaştırılması. Metrik / olay / AI sinyali akışlarını tüketir, kuralları değerlendirir, **alarm üretir**. Aksiyon almaz — o Workflow Engine'in işidir.
 
-**Durum:** Planlama — **§15 kararlar kapatıldı** (3 Haziran 2026); Faz 0/1 sırada
+**Durum:** Planlama + Faz 0–2 motor ✅ · **Alarm Merkezi UI** ✅ — §15 kararlar kapalı
+
+---
+
+## UI (Alarm Merkezi)
+
+| Sayfa | Route | Patch |
+|-------|--------|--------|
+| Açık alarmlar | `/apps/alarm-center/alarms` | [scripts/patch-alarm-center-side-menu.ps1](./scripts/patch-alarm-center-side-menu.ps1) |
+| Alarm kuralları | `/apps/alarm-center/rules` | aynı |
+
+Handoff: [../PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md)
 
 ---
 

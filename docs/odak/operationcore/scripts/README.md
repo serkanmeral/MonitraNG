@@ -13,7 +13,14 @@
 
 | [seed-operation-core-demo.ps1](./seed-operation-core-demo.ps1) | Demo metadata: states, workspace, flow, type, form, board |
 | [seed-operation-core-helpdesk-reference.ps1](./seed-operation-core-helpdesk-reference.ps1) | IT Help Desk referans workspace ([reference](../reference/IT_HELP_DESK_REFERENCE.md)) |
-| [patch-oc-side-menu.ps1](./patch-oc-side-menu.ps1) | `@side_menu`: Operasyon Merkezi + Tanımlamalar (scheduled jobs, onaylar, alarmlar) |
+| [patch-oc-side-menu.ps1](./patch-oc-side-menu.ps1) | `@side_menu`: Operasyon Merkezi, Bekleyen onaylar (üst seviye), Tanımlamalar (OC admin) |
+
+Alarm Merkezi ve Otomasyon Merkezi ayrı script'ler:
+
+| Script | Konum |
+|--------|--------|
+| `patch-alarm-center-side-menu.ps1` | [../../alarm/scripts/](../../alarm/scripts/patch-alarm-center-side-menu.ps1) |
+| `patch-automation-side-menu.ps1` | [../../automation/scripts/](../../automation/scripts/patch-automation-side-menu.ps1) |
 
 ```powershell
 # Repo kokunden

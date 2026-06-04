@@ -1,15 +1,15 @@
 # DEVAM — Workflow + Alarm Engine Planlama (Kaldığımız Yer)
 
-**Son güncelleme:** 3 Haziran 2026
-**Durum:** ✅ **Alarm lifecycle workflow trigger'ları** — `alarm.raised` / `alarm.updated` / `alarm.resolved` Odak E2E geçti (3 Haz 2026)
+**Son güncelleme:** 4 Haziran 2026
+**Durum:** ✅ Backend Faz 0–6+ · ✅ **UI-W1** (Otomasyon Merkezi form editör) · ✅ Menü ayrımı `6c4ecbf`
 
-> **Agent / geliştirme kuralları:** [§12 Geliştirme, test ve deploy kuralları](#12-geliştirme-test-ve-deploy-kuralları-agent)
+> **Platform UI handoff:** [../PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md) · **Agent kuralları:** [§12](#12-geliştirme-test-ve-deploy-kuralları-agent)
 
 ---
 
 ## 1. Tek cümlede durum
 
-**Faz 0–6+ kodlandı.** **Alarm lifecycle + C6 native observation** Odak E2E ✅. **MngReactor** Odak'ta ayakta; workflow `mqtt/publish` endpoint Reactor'da eksik (`DevLogOnly=true`). **Sıradaki:** mqtt/publish PR, SIEM Faz 1 (PR-1…6). Detay: [monitoring/HANDOFF.md](../monitoring/HANDOFF.md) · [PLATFORM_CHECKPOINT.md](../PLATFORM_CHECKPOINT.md) SIEM-ready ✅.
+**Faz 0–6+ kodlandı.** Alarm lifecycle + C6 native observation Odak E2E ✅. **UI:** workflow admin **Otomasyon Merkezi** (`/apps/automation-center/workflows`, W1 form editör). **Sıradaki (UI chat):** W2 canvas · **P4** mqtt/publish · **SIEM:** ayrı chat — [monitoring/SIEM_FAZ1_HANDOFF.md](../monitoring/SIEM_FAZ1_HANDOFF.md).
 
 ---
 

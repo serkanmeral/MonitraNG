@@ -1,129 +1,83 @@
 # SIEM / Monitoring — Oturum Handoff
 
-**Son güncelleme:** 3 Haziran 2026  
-**Ana DEVAM:** [DEVAM.md](./DEVAM.md)
-
-Bu dosya, yeni chat oturumlarında kaldığımız yeri hızlı aktarmak içindir.
-
----
-
-## 1. Tek cümlede durum (3 Haz 2026)
-
-Faz 0 SIEM planlama ✅ · Workflow SIEM seam ✅ · **MngReactor monorepo'da** (`main` @ `dc9bd91`) · **Implementasyon başlamadı** · Odak'ta `mngreactor` hâlâ **Alpine stub**.
+**Son güncelleme:** 4 Haziran 2026  
+**Ana DEVAM:** [DEVAM.md](./DEVAM.md)  
+**Platform UI (ayrı chat):** [../PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md)
 
 ---
 
-## 2. Bu oturumda yapılanlar
+## 1. Tek cümlede durum (4 Haz 2026)
 
-| Konu | Sonuç |
+**Checkpoint C6/C7 ✅** — MngReactor Odak'ta gerçek image; native `monitra.observations`; bridge kapalı. **SIEM `sec_events` implementasyonu henüz başlamadı** — Faz 1 ayrı chat'te. Workflow `mqtt/publish` Reactor'da hâlâ eksik (`DevLogOnly=true`).
+
+---
+
+## 2. Platform durumu (güncel)
+
+| Konu | Durum |
 |------|--------|
-| MngReactor git | Submodule → monorepo klasör; `git pull` + full commit `dc9bd91` push ✅ |
-| MngReactor analizi | **Yeniden inşa gerekmez** — evrim (ingest/Mongo/MQ desenini genişlet) |
-| SIEM planlama | Fixture, U1/U2/U4 kural taslağı, workflow seam, observation map ✅ |
-| Implementasyon planı | [MNGREACTOR_SIEM_FAZ1_IMPLEMENTATION.md](./MNGREACTOR_SIEM_FAZ1_IMPLEMENTATION.md) PR-1…PR-6 |
-| Odak deploy rehberi | [MNGREACTOR_ODAK_DEPLOY_CHECKLIST.md](./MNGREACTOR_ODAK_DEPLOY_CHECKLIST.md) |
-| Workflow × Reactor | Workflow çekirdeği Reactor'sız ilerler; gerçek `block_ip` için Reactor deploy + **`/api/v1/mqtt/publish` eksik** |
+| MngReactor Odak | ✅ `mngreactor:latest` (Alpine stub kaldırıldı) |
+| Native observation C6 | ✅ `test-reactor-observation-e2e.ps1` PASS |
+| Alarm + Workflow E2E | ✅ `run-checkpoint-e2e.ps1` (10 script) PASS |
+| UI modülleri | ✅ Alarm Merkezi + Otomasyon Merkezi — `6c4ecbf` |
+| SIEM Faz 1 kod | ⬜ S1…S3 — [SIEM_FAZ1_HANDOFF.md](./SIEM_FAZ1_HANDOFF.md) |
+| `POST /api/v1/mqtt/publish` | ❌ Workflow bekliyor |
 
 ---
 
-## 3. MngReactor — hazırlık matrisi
+## 3. Sıradaki adımlar (SIEM chat)
 
-| Soru | Cevap |
-|------|--------|
-| Monitoring backend olarak geliştirilebilir mi? | ✅ Evet (metrik ingest, CRUD, MQTT sync mevcut) |
-| SIEM Faz 1 (`sec_events`) kodu var mı? | ❌ Henüz yok — PR planı hazır |
-| Repoda kaynak var mı? | ✅ `MngReactor/` monorepo içinde |
-| Odak'ta ayakta mı? | ❌ Stub (`docker-compose.odak.yml` → alpine sleep) |
-| Workflow için “hazır” mı? | 🟡 Çekirdek workflow: evet (`DevLogOnly=true`). Gerçek engine komutu: deploy + mqtt/publish endpoint gerekir |
-| `POST /api/v1/mqtt/publish` | ❌ Workflow bekliyor, Reactor'da **henüz yok** (`IMqttService` var) |
-| `monitra.observations` native publish | ❌ PR-O1…O3 backlog — bridge MngAlarm'da |
+1. **SIEM Faz 1 S1** — Reactor: `sec_events`, parser registry, `sec_events.created` MQ — [MNGREACTOR_SIEM_FAZ1_IMPLEMENTATION.md](./MNGREACTOR_SIEM_FAZ1_IMPLEMENTATION.md)
+2. **S2** — Parser unit test (fixture'lar `tests/fixtures/siem/`)
+3. **S3** — MngEngine syslog + fixture batch push
+4. Paralel backlog: Reactor `mqtt/publish`, observation map genişlemesi
 
 ---
 
-## 4. Kilitli kararlar (değiştirme)
-
-Planlama handoff ile aynı — bkz. [DEVAM.md §5](./DEVAM.md), [SIEM_PLANNING.md](./SIEM_PLANNING.md), [AI_PLANNING_DECISION.md](../AI_PLANNING_DECISION.md).
-
-Özet: hibrit toplama · Alarm engine tespit · Workflow onaylı müdahale · Engine syslog collector · Mongo `sec_events` spike (D4) · AI implementasyon ⏸️.
-
----
-
-## 5. Sıradaki adımlar (öncelik)
-
-1. **Odak:** stub kaldır → gerçek `mngreactor` image — [MNGREACTOR_ODAK_DEPLOY_CHECKLIST.md](./MNGREACTOR_ODAK_DEPLOY_CHECKLIST.md)
-2. **Workflow unblock (küçük PR):** `POST /api/v1/mqtt/publish` → `IMqttService.PublishAsync`; Odak `DevLogOnly=false`
-3. **Alarm C6 (paralel):** PR-O1…O3 observation publish — [REACTOR_NATIVE_PUBLISH_HANDOFF.md](../alarm/REACTOR_NATIVE_PUBLISH_HANDOFF.md)
-4. **SIEM Faz 1:** PR-1…PR-6 — [MNGREACTOR_SIEM_FAZ1_IMPLEMENTATION.md](./MNGREACTOR_SIEM_FAZ1_IMPLEMENTATION.md)
-5. **MngEngine:** syslog + fixture push — [SIEM_FAZ1_HANDOFF.md](./SIEM_FAZ1_HANDOFF.md) S3
-6. Spike sonrası: benchmark, U1 Odak E2E, finans dikeyi (isteğe bağlı)
-
----
-
-## 6. Git / repo
+## 4. Git
 
 | Alan | Değer |
 |------|--------|
-| Branch | `main` (origin ile senkron — 3 Haz 2026 push) |
-| Son commit (MonitraNG WIP) | `dc9bd91` — MngAlarm, Workflow, SIEM docs, MngReactor monorepo |
-| MngReactor konumu | `MngReactor/` (artık submodule değil) |
-| Fixture | `tests/fixtures/siem/` |
-| Alarm kural taslağı | `tests/fixtures/siem/alarm_rules/` |
+| Branch | `main` |
+| Son platform UI commit | `6c4ecbf` (4 Haz 2026) |
+| Önceki checkpoint | `613a80a` — C6 SIEM-ready |
 
 ---
 
-## 7. Çapraz chat notları
-
-| Chat | Durum |
-|------|--------|
-| **Workflow** | Faz 0–6+ ✅ · P4 dev-log-only · Reactor gerçek deploy bekliyor |
-| **Alarm** | Faz 0–2 ✅ · bridge açık · native Reactor publish bekliyor |
-| **SIEM implementasyon** | Plan ✅ · kod ⬜ |
-
----
-
-## 8. Yeni chat prompt'u
-
-Aşağıdaki bloğu yeni oturumda yapıştırın (ihtiyaca göre “Odak deploy” veya “PR-1 kod” satırını seçin):
+## 5. SIEM chat prompt'u
 
 ```markdown
-# MonitraNG — SIEM / Monitoring handoff (kaldığımız yer)
+# MonitraNG — SIEM Faz 1 handoff
 
-Yanıtlar **Türkçe**. Commit/PR yalnızca açıkça istediğimde.
+Yanıtlar **Türkçe**. Commit/push yalnızca açıkça istediğimde.
 
 ## Bağlam
-- Ürün: SIEM-hafif — Engine → Reactor → sec_events → MngAlarm → MngWorkflow
-- Major plan: `docs/odak/operationcore/major_plan.md`
-- **Handoff:** `docs/odak/monitoring/HANDOFF.md` · **DEVAM:** `docs/odak/monitoring/DEVAM.md`
+- **Handoff:** `docs/odak/monitoring/SIEM_FAZ1_HANDOFF.md`
+- **Implementasyon planı:** `docs/odak/monitoring/MNGREACTOR_SIEM_FAZ1_IMPLEMENTATION.md`
+- **Checkpoint:** C1–C7 SIEM-ready ✅ (`docs/odak/PLATFORM_CHECKPOINT.md`)
+- Platform UI ayrıldı — bkz. `docs/odak/PLATFORM_HANDOFF.md` (bu chat'te UI işi yok)
 
-## Oturum özeti (3 Haz 2026)
-- Faz 0 SIEM planlama ✅
-- MngReactor monorepo'da; analiz: **yeniden inşa gerekmez**, evrim
-- Git: `main` @ `dc9bd91` (MngAlarm + Workflow + SIEM docs push edildi)
-- Odak: `mngreactor` **Alpine stub** — gerçek deploy yapılmadı
-- Workflow SIEM seam ✅ (P4-A/B); gerçek block_ip için Reactor'da `/api/v1/mqtt/publish` **eksik**
-
-## Kilitli kararlar
-Hibrit toplama · AD 4625 Event Log · Alarm engine tespit · Workflow onaylı müdahale ·
-deny-only performans · AI implementasyon ⏸️ (`AI_PLANNING_DECISION.md`)
-
-## Hazır dokümanlar
-- `MNGREACTOR_SIEM_FAZ1_IMPLEMENTATION.md` — PR-1…PR-6
-- `MNGREACTOR_ODAK_DEPLOY_CHECKLIST.md` — stub → gerçek image
-- `SIEM_WORKFLOW_SEAM.md`, `SEC_EVENT_OBSERVATION_MAP.md`
+## Mevcut durum
+- MngReactor Odak'ta ayakta; native observation ✅
+- SIEM `sec_events` kodu henüz yok
 - Fixture: `tests/fixtures/siem/`
 
-## Sıradaki (öncelik)
-1. Odak MngReactor deploy (checklist)
-2. Reactor: `POST /api/v1/mqtt/publish` (workflow unblock)
-3. SIEM PR-1…PR-6 veya Observation publish PR-O1…O3
+## Kilitli kararlar
+Hibrit toplama · Alarm engine tespit · Workflow onaylı müdahale ·
+Mongo `sec_events` spike · AI implementasyon ⏸️
+
+## Sıradaki
+1. S1.1–S1.6 Reactor sec_events iskeleti
+2. S2 parser unit test
+3. S3 Engine syslog (Spike B: fixture push)
 
 ## Bu oturumda ne yapmak istiyorum?
-[Kendi cümleni buraya yaz — örn. "Odak deploy uygula" / "PR-1 sec_events iskeleti" / "mqtt/publish endpoint"]
+[Kendi cümleni buraya yaz]
 ```
 
 ---
 
-## 9. Referanslar
+## 6. Referanslar
 
 - [workflow/DEVAM.md](../workflow/DEVAM.md)
 - [alarm/DEVAM.md](../alarm/DEVAM.md)

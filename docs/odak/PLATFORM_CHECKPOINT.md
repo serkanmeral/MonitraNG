@@ -2,7 +2,9 @@
 
 **Kural:** Bu dokümandaki **Definition of Done** yeşil olmadan SIEM çalışmasına geçilmez.
 
-**Son güncelleme:** 3 Haziran 2026
+**Son güncelleme:** 4 Haziran 2026
+
+**SIEM-ready ✅ (3–4 Haz 2026)** — UI modül ayrımı commit `6c4ecbf`. Sonraki kapsam: [SIEM_FAZ1_HANDOFF.md](./monitoring/SIEM_FAZ1_HANDOFF.md) · Platform UI: [PLATFORM_HANDOFF.md](./PLATFORM_HANDOFF.md)
 
 ---
 
