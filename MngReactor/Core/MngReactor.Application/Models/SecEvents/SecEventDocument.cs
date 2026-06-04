@@ -12,6 +12,43 @@ public sealed class SecEventDocument
     public SecEventNetworkBlock? Network { get; init; }
     public required SecEventParserBlock Parser { get; init; }
     public required string RawPreview { get; init; }
+
+    public static SecEventDocument FromParsed(ParsedSecEvent parsed, string domain, DateTime ingestedAt) =>
+        new()
+        {
+            Timestamp = parsed.Timestamp,
+            IngestedAt = ingestedAt,
+            Domain = domain,
+            Source = new SecEventSourceInfo
+            {
+                Type = parsed.SourceType,
+                Product = parsed.SourceProduct,
+                Host = parsed.SourceHost
+            },
+            Event = new SecEventEventBlock
+            {
+                Action = parsed.EventAction,
+                Outcome = parsed.EventOutcome,
+                Code = parsed.EventCode
+            },
+            Actor = string.IsNullOrWhiteSpace(parsed.ActorUser)
+                ? null
+                : new SecEventActorBlock { User = parsed.ActorUser },
+            Network = parsed.NetworkSrcIp is null
+                       && parsed.NetworkDstIp is null
+                       && parsed.NetworkDstPort is null
+                       && parsed.NetworkProtocol is null
+                ? null
+                : new SecEventNetworkBlock
+                {
+                    SrcIp = parsed.NetworkSrcIp,
+                    DstIp = parsed.NetworkDstIp,
+                    DstPort = parsed.NetworkDstPort,
+                    Protocol = parsed.NetworkProtocol
+                },
+            Parser = new SecEventParserBlock { Id = parsed.ParserId },
+            RawPreview = parsed.RawPreview
+        };
 }
 
 public sealed class SecEventEventBlock

@@ -44,7 +44,7 @@ namespace MngReactor.Persistence
             services.AddScoped<IMonMetricsRepository, MonMetricsRepository>();
             services.AddScoped<IIngestProcessing, IngestProcessing>();
             services.AddScoped<ISecEventIngestProcessing, SecEventIngestProcessingPlaceholder>();
-            services.AddScoped<ISecEventsRepository, SecEventsRepositoryPlaceholder>();
+            services.AddScoped<ISecEventsRepository, SecEventsRepository>();
             services.AddSingleton<WindowsSecurityParser>();
             services.AddSingleton<FirewallGenericSyslogParser>();
             services.AddSingleton<UnknownSecEventFallback>();
