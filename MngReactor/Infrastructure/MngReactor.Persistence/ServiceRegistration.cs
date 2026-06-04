@@ -6,6 +6,7 @@ using MngReactor.Application.Abstractions.Data;
 using MngReactor.Application.Abstractions.Domain;
 using MngReactor.Application.Abstractions.Engine;
 using MngReactor.Application.Abstractions.Ingest;
+using MngReactor.Application.Abstractions.SecEvents;
 using MngReactor.Application.Configuration;
 using MngReactor.Application.Repositories.Data;
 using MngReactor.Persistence.Repositories.Data;
@@ -14,6 +15,8 @@ using MngReactor.Persistence.Services.Data;
 using MngReactor.Persistence.Services.Domain;
 using MngReactor.Persistence.Services.Engine;
 using MngReactor.Persistence.Services.Ingest;
+using MngReactor.Persistence.Services.SecEvents;
+using MngReactor.Persistence.Services.SecEvents.Parsers;
 
 namespace MngReactor.Persistence
 {
@@ -40,6 +43,12 @@ namespace MngReactor.Persistence
             services.AddScoped<IDataGatewayClient, DataGatewayClient>();
             services.AddScoped<IMonMetricsRepository, MonMetricsRepository>();
             services.AddScoped<IIngestProcessing, IngestProcessing>();
+            services.AddScoped<ISecEventIngestProcessing, SecEventIngestProcessingPlaceholder>();
+            services.AddScoped<ISecEventsRepository, SecEventsRepositoryPlaceholder>();
+            services.AddSingleton<WindowsSecurityParser>();
+            services.AddSingleton<FirewallGenericSyslogParser>();
+            services.AddSingleton<UnknownSecEventFallback>();
+            services.AddSingleton<ISecEventParserRegistry, SecEventParserRegistry>();
             services.AddScoped<IDataProcessing, DataProcessing>();
             services.AddScoped<IDataRepository, DataGatewayDataRepository>();
             services.AddScoped<IDomainProcessing, DomainProcessing>();

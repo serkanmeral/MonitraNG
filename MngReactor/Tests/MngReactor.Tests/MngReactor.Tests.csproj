@@ -34,6 +34,7 @@
   <ItemGroup>
     <Content Include="..\..\Presentation\MngReactor.Api\appsettings.json" Link="appsettings.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" />
     <Content Include="..\..\Presentation\MngReactor.Api\appsettings.Test.json" Link="appsettings.Test.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" />
+    <Content Include="..\..\..\tests\fixtures\siem\**\*" Link="fixtures\siem\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

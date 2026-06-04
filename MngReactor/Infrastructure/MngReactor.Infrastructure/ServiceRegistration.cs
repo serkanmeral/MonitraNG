@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using MngReactor.Application.Abstractions.Ingest;
 using MngReactor.Application.Abstractions.Observations;
+using MngReactor.Application.Abstractions.SecEvents;
 using MngReactor.Application.Services;
 using MngReactor.Domain.Interfaces;
 using MngReactor.Infrastructure.Services;
@@ -21,6 +22,7 @@ public static class ServiceRegistration
         services.AddSingleton<IMetricPublisher, MetricPublisher>();
         services.AddSingleton<IObservationPublisher, ObservationPublisher>();
         services.AddSingleton<IIngestNotifyPublisher, IngestNotifyPublisher>();
+        services.AddSingleton<ISecEventPublisher, SecEventPublisherPlaceholder>();
         services.AddScoped<MngReactor.Application.Abstractions.Engine.IMqttSyncPublisher, MqttSyncPublisher>();
         services.AddHostedService<DomainCreatedEventConsumer>();
         services.AddHostedService<MonitoringSyncEventConsumer>();
