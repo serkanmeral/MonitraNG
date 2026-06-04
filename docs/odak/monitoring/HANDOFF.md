@@ -28,7 +28,7 @@
 | Engine queue_depth under load | ✅ max=107 / gate=4000 |
 | WEF→WEC Engine batch | ✅ `POST /api/SecEvents/wec-batch` · S5 E2E |
 | WEF forwarder şablonu (B2) | ✅ [SIEM_WEF_WEC_FORWARDER.md](./SIEM_WEF_WEC_FORWARDER.md) · Engine batch/retry · Odak deploy |
-| B1 `linux.auth.v1` | ✅ ingest + U1 alarm E2E · `test-siem-linux-auth-u1-alarm-e2e.ps1` |
+| B1 `linux.auth.v1` | ✅ U1 alarm + workflow E2E · `test-siem-linux-auth-u1-*-e2e.ps1` |
 | B3 hazır kural paketi | ✅ `siem-mvp-v1` · MITRE/ISO · `seed-siem-alarm-rule-pack.ps1` |
 | B1 `firewall.vendor.v1` | ✅ FortiGate pilot · `test-siem-firewall-vendor-ingest.ps1` |
 | Odak sync upload | ✅ `Send-OdakRemoteFile` (SCP → SFTP fallback) · `2091029` |
@@ -41,6 +41,7 @@
 
 ```
 U1: sec_events → observation → correlation → alarm.raised → Workflow → (approval) → block.ip
+U1 (Linux): linux.auth.v1 sshd → login_failed → alarm.raised → Workflow
 U4: firewall syslog → sec_events → observation → correlation → alarm.raised → Workflow
 U2: login_failed×N → login_success → sequence alarm
 U5: allowed_flow×N (dstIp/dstPort) → traffic spike alarm

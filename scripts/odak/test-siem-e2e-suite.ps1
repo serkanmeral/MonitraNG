@@ -64,6 +64,7 @@ Invoke-Step "Purge workflow event queue" "purge-workflow-event-inbound-queue.ps1
 Invoke-Step "Purge workflow queue" "purge-workflow-execution-queue.ps1"
 
 Invoke-Step "U1 workflow" "test-siem-u1-workflow-e2e.ps1"
+Invoke-Step "U1 linux auth workflow" "test-siem-linux-auth-u1-workflow-e2e.ps1"
 Invoke-Step "U4 workflow" "test-siem-u4-workflow-e2e.ps1"
 Invoke-Step "U1 approval block" "test-siem-u1-approval-block-e2e.ps1"
 

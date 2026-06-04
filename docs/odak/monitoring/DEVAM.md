@@ -43,7 +43,7 @@
 | **U7 new src→dst (baseline / new_flow)** | ✅ `test-siem-u7-alarm-e2e.ps1` |
 | **SIEM dashboard MVP** | ✅ `/apps/siem-center` · [SIEM_DASHBOARD.md](./SIEM_DASHBOARD.md) |
 | **U3 bakım penceresi (appsettings)** | ✅ `SecEventMaintenanceWindow:*` |
-| **B1 `linux.auth.v1`** | ✅ ingest · **U1 alarm E2E** · `test-siem-linux-auth-u1-alarm-e2e.ps1` |
+| **B1 `linux.auth.v1`** | ✅ U1 alarm + workflow E2E |
 | **B1 `firewall.vendor.v1` (FortiGate)** | ✅ `test-siem-firewall-vendor-ingest.ps1` |
 | **B3 hazır kural paketi (`siem-mvp-v1`)** | ✅ `seed-siem-alarm-rule-pack.ps1` · [SIEM_ALARM_RULE_PACK.md](./SIEM_ALARM_RULE_PACK.md) |
 | **Odak sync SFTP fallback** | ✅ `Send-OdakRemoteFile` · commit `2091029` |
@@ -115,6 +115,8 @@ LogAlarm parite → [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROA
 - `purge-workflow-execution-queue.ps1` — `workflow.execution`
 
 `test-siem-e2e-suite.ps1` alarm + workflow purge adımlarını otomatik çalıştırır.
+
+E2E geçici alarm kuralları birikimini temizlemek: `purge-siem-e2e-alarm-rules.ps1 -Apply` (`siem-mvp-v1` paket kuralları korunur).
 
 ---
 
