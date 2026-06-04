@@ -13,6 +13,10 @@ public static class ObservationIngressParser
         if (mapped != null)
             return mapped;
 
+        var eventMapped = EventObservationMapper.TryMap(body);
+        if (eventMapped != null)
+            return eventMapped;
+
         return JsonSerializer.Deserialize<ObservationEnvelope>(body, new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true

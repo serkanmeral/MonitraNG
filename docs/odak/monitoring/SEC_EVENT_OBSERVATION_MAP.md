@@ -1,6 +1,6 @@
 # `sec_events` → Observation Zarfı (Faz 2 entegrasyon)
 
-**Durum:** Tasarım — implementasyon Faz 1 spike (`sec_events` ingest) + Alarm Faz 2 birleşiminde  
+**Durum:** ✅ **Implementasyon tamam** (4 Haz 2026) — Reactor publish + MngAlarm `*.event.*` queue bind  
 **Bağımlılık:** [SIEM_FAZ1_SPIKE.md](./SIEM_FAZ1_SPIKE.md) · [alarm/DEVAM.md](../alarm/DEVAM.md)
 
 ---

@@ -98,6 +98,12 @@ public sealed class AlarmTopologyBootstrapper
             AlarmMessagingConstants.ObservationExchange,
             routingKey: AlarmMessagingConstants.ObservationRoutingPattern,
             cancellationToken: cancellationToken);
+
+        await channel.QueueBindAsync(
+            AlarmMessagingConstants.ObservationQueue,
+            AlarmMessagingConstants.ObservationExchange,
+            routingKey: AlarmMessagingConstants.ObservationEventRoutingPattern,
+            cancellationToken: cancellationToken);
     }
 
     public async Task EnsureReactorBridgeAsync(ReactorBridgeSettings settings, CancellationToken cancellationToken = default)

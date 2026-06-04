@@ -14,6 +14,7 @@ public static class AlarmMessagingConstants
     public const string ObservationQueue = "alarm.observation.inbound";
     public const string ObservationExchange = "monitra.observations";
     public const string ObservationRoutingPattern = "*.metric.*";
+    public const string ObservationEventRoutingPattern = "*.event.*";
 
     /// <summary>MngReactor metric publish exchange (legacy path until Reactor emits monitra.observations directly).</summary>
     public const string ReactorMetricsExchange = "mng.topics";

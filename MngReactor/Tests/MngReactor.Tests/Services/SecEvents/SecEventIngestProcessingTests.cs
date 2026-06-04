@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
+using MngReactor.Application.Abstractions.Observations;
 using MngReactor.Application.Abstractions.SecEvents;
 using MngReactor.Application.Features.Commands.Ingest;
 using MngReactor.Application.Models.SecEvents;
@@ -14,10 +15,12 @@ public sealed class SecEventIngestProcessingTests
 {
     private static SecEventIngestProcessing CreateSut(
         Mock<ISecEventsRepository>? repoMock = null,
-        Mock<ISecEventPublisher>? publisherMock = null)
+        Mock<ISecEventPublisher>? publisherMock = null,
+        Mock<IObservationPublisher>? observationPublisherMock = null)
     {
         repoMock ??= new Mock<ISecEventsRepository>();
         publisherMock ??= new Mock<ISecEventPublisher>();
+        observationPublisherMock ??= new Mock<IObservationPublisher>();
 
         repoMock
             .Setup(r => r.InsertManyAsync(
@@ -33,6 +36,12 @@ public sealed class SecEventIngestProcessingTests
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
+        observationPublisherMock
+            .Setup(p => p.PublishSecEventAsync(
+                It.IsAny<MngReactor.Application.Observations.SecEventObservationPayload>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         return new SecEventIngestProcessing(
             NullLogger<SecEventIngestProcessing>.Instance,
             new SecEventParserRegistry(
@@ -41,7 +50,8 @@ public sealed class SecEventIngestProcessingTests
                 new UnknownSecEventFallback()),
             new UnknownSecEventFallback(),
             repoMock.Object,
-            publisherMock.Object);
+            publisherMock.Object,
+            observationPublisherMock.Object);
     }
 
     private static SecEventIngestItem FirewallItem =>
@@ -85,6 +95,24 @@ public sealed class SecEventIngestProcessingTests
                 msgs.Count == 1
                 && msgs[0].EventAction == "denied_flow"
                 && msgs[0].NetworkSrcIp == "203.0.113.5"),
+            It.IsAny<CancellationToken>()));
+    }
+
+    [Fact]
+    public async Task ProcessAsync_FirewallFixture_PublishesSecEventObservation()
+    {
+        var observationPublisher = new Mock<IObservationPublisher>();
+        var sut = CreateSut(observationPublisherMock: observationPublisher);
+
+        await sut.ProcessAsync(
+            new SecEventIngestRequest { Items = [FirewallItem] },
+            "odak");
+
+        observationPublisher.Verify(o => o.PublishSecEventAsync(
+            It.Is<MngReactor.Application.Observations.SecEventObservationPayload>(p =>
+                p.Key == "denied_flow"
+                && p.Kind == "event"
+                && p.Dimensions.ContainsKey("srcIp")),
             It.IsAny<CancellationToken>()));
     }
 

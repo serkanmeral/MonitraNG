@@ -81,6 +81,48 @@ public class ObservationPublisher : IObservationPublisher, IDisposable
         return Task.CompletedTask;
     }
 
+    public Task PublishSecEventAsync(
+        SecEventObservationPayload payload,
+        CancellationToken cancellationToken = default)
+    {
+        if (!_publishSettings.Enabled)
+        {
+            _logger.LogDebug(
+                "ObservationPublish disabled, skipping sec_event {Key} for domain {Domain}",
+                payload.Key,
+                payload.DomainName);
+            return Task.CompletedTask;
+        }
+
+        if (string.IsNullOrWhiteSpace(payload.DomainName) || string.IsNullOrWhiteSpace(payload.Key))
+            return Task.CompletedTask;
+
+        try
+        {
+            EnsureConnection();
+            var routingKey = ObservationPublishMessage.BuildEventRoutingKey(payload.DomainId, payload.Key);
+            var json = ObservationPublishMessage.SerializeEventPayload(payload);
+            var body = Encoding.UTF8.GetBytes(json);
+
+            var props = _channel!.CreateBasicProperties();
+            props.Persistent = true;
+            props.ContentType = "application/json";
+
+            _channel.BasicPublish(ObservationPublishMessage.ExchangeName, routingKey, props, body);
+            _logger.LogDebug("Published sec_event observation to {RoutingKey}", routingKey);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Failed to publish sec_event observation for domain {Domain} key {Key}",
+                payload.DomainName,
+                payload.Key);
+        }
+
+        return Task.CompletedTask;
+    }
+
     private void EnsureConnection()
     {
         if (_connection?.IsOpen == true && _channel?.IsOpen == true)

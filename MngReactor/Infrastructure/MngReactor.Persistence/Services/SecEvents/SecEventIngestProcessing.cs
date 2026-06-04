@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Logging;
+using MngReactor.Application.Abstractions.Observations;
 using MngReactor.Application.Abstractions.SecEvents;
 using MngReactor.Application.Features.Commands.Ingest;
 using MngReactor.Application.Models.SecEvents;
+using MngReactor.Application.Observations;
 using MngReactor.Persistence.Services.SecEvents.Parsers;
 
 namespace MngReactor.Persistence.Services.SecEvents;
@@ -13,19 +15,22 @@ public sealed class SecEventIngestProcessing : ISecEventIngestProcessing
     private readonly UnknownSecEventFallback _fallback;
     private readonly ISecEventsRepository _repository;
     private readonly ISecEventPublisher _publisher;
+    private readonly IObservationPublisher _observationPublisher;
 
     public SecEventIngestProcessing(
         ILogger<SecEventIngestProcessing> logger,
         ISecEventParserRegistry registry,
         UnknownSecEventFallback fallback,
         ISecEventsRepository repository,
-        ISecEventPublisher publisher)
+        ISecEventPublisher publisher,
+        IObservationPublisher observationPublisher)
     {
         _logger = logger;
         _registry = registry;
         _fallback = fallback;
         _repository = repository;
         _publisher = publisher;
+        _observationPublisher = observationPublisher;
     }
 
     public async Task<SecEventIngestResponse> ProcessAsync(
@@ -83,6 +88,12 @@ public sealed class SecEventIngestProcessing : ISecEventIngestProcessing
         var inserted = await _repository.InsertManyAsync(domain, docs, cancellationToken);
 
         _ = _publisher.PublishCreatedAsync(domain, messages, cancellationToken);
+
+        foreach (var doc in docs)
+        {
+            var observation = SecEventObservationMapper.ToPayload(doc, domain, domain);
+            _ = _observationPublisher.PublishSecEventAsync(observation, cancellationToken);
+        }
 
         return new SecEventIngestResponse
         {
