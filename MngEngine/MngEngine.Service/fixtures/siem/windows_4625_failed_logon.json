@@ -1,0 +1,9 @@
+{
+  "EventID": 4625,
+  "TimeCreated": "2026-06-03T14:00:02Z",
+  "TargetUserName": "admin",
+  "IpAddress": "192.168.1.50",
+  "Status": "0xC000006D",
+  "SubStatus": "0xC000006A",
+  "LogonType": 3
+}

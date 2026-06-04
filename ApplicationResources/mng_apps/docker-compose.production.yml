@@ -282,8 +282,8 @@ services:
 
   mngengine:
     build:
-      context: ../..
-      dockerfile: MngEngine/MngEngine.Service/Dockerfile
+      context: ../../MngEngine/MngEngine.Service
+      dockerfile: Dockerfile
     image: mngengine:${VERSION:-latest}
     container_name: mngengine
     environment:
