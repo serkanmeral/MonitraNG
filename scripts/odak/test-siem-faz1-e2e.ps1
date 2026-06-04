@@ -73,7 +73,8 @@ Write-Host "   Queue: $mqQueue" -ForegroundColor DarkGray
 
 $receivedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
 $firewallRaw = Read-Fixture "firewall_deny.syslog.txt"
-$windowsRaw = Read-Fixture "windows_4625_failed_logon.json" | ConvertFrom-Json
+$windowsObj = Read-Fixture "windows_4625_failed_logon.json" | ConvertFrom-Json
+$windowsObj.TimeCreated = $receivedAt
 $unknownRaw = Read-Fixture "unparseable_01.txt"
 
 Write-Host "`n4) POST sec-events batch (firewall + windows + unknown)..." -ForegroundColor Yellow
@@ -87,7 +88,7 @@ $body = @{
         @{
             receivedAt = $receivedAt
             source     = @{ type = "ad"; product = "windows"; host = "dc01" }
-            raw        = $windowsRaw
+            raw        = $windowsObj
         },
         @{
             receivedAt = $receivedAt
@@ -144,14 +145,17 @@ const unknown = coll.countDocuments({
 
 const adRecent = coll.countDocuments({
   'source.type': 'ad',
-  '@timestamp': { `$gte: cutoff }
+  ingestedAt: { `$gte: cutoff }
 });
 
-print(JSON.stringify({ denied, loginFailed, unknown, adRecent }));
+print('SIEM_E2E_RESULT=' + JSON.stringify({ denied, loginFailed, unknown, adRecent }));
 "@
 
 $mongoResult = Invoke-OdakMongoJsonEval -SshSession $session -JavaScript $mongoJs
-$mongoLine = @($mongoResult.Output) | Where-Object { $_ -match '^\{' } | Select-Object -Last 1
+$mongoLine = @($mongoResult.Output) | ForEach-Object {
+    if ($_ -match 'SIEM_E2E_RESULT=(\{.+?\})') { return $matches[1] }
+    if ($_ -match '(\{"denied".+\})') { return $matches[1] }
+} | Select-Object -First 1
 if (-not $mongoLine) {
     $mongoResult.Output | ForEach-Object { Write-Host $_ }
     Remove-SSHSession -SessionId $session.SessionId | Out-Null
