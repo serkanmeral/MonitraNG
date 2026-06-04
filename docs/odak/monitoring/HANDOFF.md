@@ -102,7 +102,7 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | Alan | Değer |
 |------|--------|
 | Branch | `main` (origin ile senkron) |
-| Son SIEM commit | (bu commit) — Cisco ASA · CI gate · P2 soak |
+| Son SIEM commit | `b7ea29b` — Cisco ASA · CI gate · P2 soak |
 | Önceki | `41e3d97` · `ae8f6b4` U8 · WORM spike |
 | Odak deploy | `mngreactor` ✅ 4 Haz — extended + U8 smoke PASS |
 
