@@ -47,7 +47,7 @@ flowchart LR
 | **P1** | `linux.auth.v1` | rsyslog — sshd, sudo | U1 (Linux) | ✅ |
 | **P1** | `firewall.vendor.v1` | FortiGate key=value + Palo Alto PAN-OS CEF/CSV | U4, U6 doğruluğu | ✅ |
 | **P2** | `windows.security.extended.v1` | 4720, 4728, 5136… | Yetki / dizin değişikliği | ✅ pilot |
-| **P2** | `bastion.generic.v1` | Jump host syslog formatı | U2, U3 |
+| **P2** | `bastion.generic.v1` | Jump host syslog formatı | U2, U3 | ✅ |
 
 **Pilot firewall markası** netleşince `firewall.vendor.v1` P0'a yükseltilebilir (SIEM_PLANNING §12.6).
 

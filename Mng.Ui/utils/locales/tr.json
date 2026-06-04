@@ -4998,7 +4998,7 @@
       "breakdownEmpty": "Veri yok",
       "timelineTitle": "Olay hacmi (saatlik, 24s)",
       "timelineEmpty": "Son 24 saatte olay yok",
-      "scenariosTitle": "U1–U9 senaryo durumu",
+      "scenariosTitle": "U1–U10 senaryo durumu",
       "scenarioNever": "Henüz alarm yok",
       "scenarioOpen": "Açık",
       "scenarioSeverity": "Şiddet {n}",
@@ -5014,7 +5014,7 @@
         "stats": "Özet kartları",
         "eventTimeline": "Saatlik olay grafiği",
         "breakdown": "Olay dağılımı",
-        "scenarios": "U1–U9 senaryolar",
+        "scenarios": "U1–U10 senaryolar",
         "recentAlarms": "Son alarmlar",
         "quickLinks": "Hızlı bağlantılar"
       },
@@ -5057,7 +5057,7 @@
       "colDstIp": "Hedef IP",
       "colCode": "Kod",
       "colParser": "Parser",
-      "presets": "Senaryo kısayolları (U1–U9)",
+      "presets": "Senaryo kısayolları (U1–U10)",
       "newFlowFlag": "Yeni akış (U7)"
     }
   },

@@ -50,6 +50,9 @@
 | **B1 `windows.security.extended.v1` (4720/4728/5136)** | ✅ `test-siem-windows-extended-ingest.ps1` |
 | **U8 AD group_member_added alarm** | ✅ `test-siem-u8-alarm-e2e.ps1` |
 | **U9 AD account_created alarm** | ✅ `test-siem-u9-alarm-e2e.ps1` |
+| **B1 `bastion.generic.v1`** | ✅ `test-siem-bastion-ingest.ps1` |
+| **U10 AD directory_object_modified alarm** | ✅ `test-siem-u10-alarm-e2e.ps1` |
+| **Quick regression wrapper** | ✅ `run-siem-quick-regression.ps1` |
 | **B3 hazır kural paketi (`siem-mvp-v1`)** | ✅ `seed-siem-alarm-rule-pack.ps1` |
 | **Aktif yol haritası** | [SIEM_ROADMAP.md](./SIEM_ROADMAP.md) · LogAlarm ertelendi |
 
@@ -138,6 +141,11 @@ Kısa vadeli teknik devam (MVP sonrası bakım):
 | 36 | ~~**Cisco ASA FW vendor**~~ | ✅ parser + ingest smoke |
 | 37 | ~~**P2 soak benchmark**~~ | ✅ ~93 evt/s · `benchmark-P2-2026-06-04.json` |
 | 38 | ~~**mngui deploy (U8/U9 UX)**~~ | ✅ Odak |
+| 39 | ~~**bastion.generic.v1 parser**~~ | ✅ sshd auth · ingest smoke |
+| 40 | ~~**U10 directory_object_modified alarm**~~ | ✅ + UX preset |
+| 41 | ~~**Extended Windows 4722/4726**~~ | ✅ fixture + unit |
+| 42 | ~~**Quick regression wrapper**~~ | ✅ `run-siem-quick-regression.ps1` |
+| 43 | NxLog prod şablonu doğrulama | ⬜ müşteri ops |
 
 LogAlarm / 5651 / WORM → **Faz 5 (ertelendi)** — [SIEM_ROADMAP.md §6](./SIEM_ROADMAP.md#6-faz-5--ertelenen-logalarm--uyum)
 

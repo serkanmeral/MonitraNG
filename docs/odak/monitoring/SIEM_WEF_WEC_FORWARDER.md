@@ -157,6 +157,20 @@ pwsh scripts/odak/test-engine-wec-ingest-e2e.ps1 -VerifyOdakMongo
 
 ---
 
+## 6.1 NxLog prod doğrulama (checklist)
+
+Müşteri ortamında şablon ([templates/nxlog-wec-to-engine.conf](./templates/nxlog-wec-to-engine.conf)) devreye alınırken:
+
+| # | Kontrol |
+|---|---------|
+| 1 | WEC `Forwarded Events` kanalında 4624/4625/4720/4728 olayları görünüyor |
+| 2 | NxLog `Output` hedefi Engine `http://HOST:5037/api/SecEvents/wec-batch` |
+| 3 | JSON `EventID` + `TimeCreated` + `TargetUserName` alanları dolu |
+| 4 | Engine `WecIngestEnabled=true` · Reactor token geçerli |
+| 5 | Odak smoke: `test-engine-wec-ingest-e2e.ps1 -VerifyOdakMongo` |
+
+---
+
 ## 7. Sorun giderme
 
 | Belirti | Olası neden | Çözüm |

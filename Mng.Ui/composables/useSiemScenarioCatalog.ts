@@ -4,7 +4,7 @@ export interface SiemScenarioDef {
   eventAction?: string;
 }
 
-/** U1–U9 SIEM senaryoları (MVP + post-MVP AD genişletme). */
+/** U1–U10 SIEM senaryoları (MVP + post-MVP AD/bastion genişletme). */
 export const SIEM_SCENARIO_CATALOG: SiemScenarioDef[] = [
   { id: 'U1', matchKey: 'login_failed', eventAction: 'login_failed' },
   { id: 'U2', matchKey: 'login_success_after_failures', eventAction: 'login_success' },
@@ -15,6 +15,7 @@ export const SIEM_SCENARIO_CATALOG: SiemScenarioDef[] = [
   { id: 'U7', matchKey: 'new_flow', eventAction: 'new_flow' },
   { id: 'U8', matchKey: 'group_member_added', eventAction: 'group_member_added' },
   { id: 'U9', matchKey: 'account_created', eventAction: 'account_created' },
+  { id: 'U10', matchKey: 'directory_object_modified', eventAction: 'directory_object_modified' },
 ];
 
 export function scenarioEventsLink(def: SiemScenarioDef): string {

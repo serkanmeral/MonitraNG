@@ -57,6 +57,7 @@ public sealed class SecEventIngestProcessingTests
             new SecEventParserRegistry(
                 new WindowsSecurityExtendedParser(),
                 SecEventParserTestFactory.CreateWindowsParser(),
+                new BastionGenericSyslogParser(),
                 new LinuxAuthSyslogParser(),
                 new FirewallVendorParser(),
                 new FirewallGenericSyslogParser(),

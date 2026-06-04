@@ -59,6 +59,7 @@ public sealed class LinuxAuthSyslogParserTests
         var registry = new SecEventParserRegistry(
             new WindowsSecurityExtendedParser(),
             SecEventParserTestFactory.CreateWindowsParser(),
+            new BastionGenericSyslogParser(),
             new LinuxAuthSyslogParser(),
             new FirewallVendorParser(),
             new FirewallGenericSyslogParser(),
@@ -72,7 +73,7 @@ public sealed class LinuxAuthSyslogParserTests
         string fixture,
         string product = "linux-syslog",
         string type = "endpoint",
-        string host = "bastion01") =>
+        string host = "app01") =>
         new()
         {
             ReceivedAt = DateTime.Parse("2026-06-04T12:00:00Z").ToUniversalTime(),

@@ -30,8 +30,8 @@ Referans (kod yok): [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md)
 | 1.2 | `firewall.vendor.v1` FortiGate + PAN-OS + **Cisco ASA** | ✅ |
 | 1.3 | **U8** `group_member_added` alarm | ✅ |
 | 1.4 | **U9** `account_created` alarm | ✅ |
-| 1.5 | Üçüncü FW vendor veya bastion parser | ✅ Cisco ASA |
-| 1.6 | Extended event genişletme (4722/4726/5137…) | ⬜ |
+| 1.5 | Üçüncü FW vendor veya bastion parser | ✅ Cisco ASA · **bastion.generic.v1** |
+| 1.6 | Extended event genişletme (4722/4726/5137…) | ✅ 4722/4726 fixture |
 
 ---
 
@@ -53,7 +53,7 @@ Referans (kod yok): [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md)
 |---|-----|-----|
 | 3.1 | P0/P1 benchmark regression | ✅ baseline |
 | 3.2 | MQ backlog diagnostic + purge scriptleri | ✅ |
-| 3.3 | E2E suite `-Quick` CI kapısı | ✅ unit gate · `scripts/ci/test-siem-unit-gate.ps1` |
+| 3.3 | E2E suite `-Quick` CI kapısı | ✅ unit gate · `run-siem-quick-regression.ps1` |
 | 3.4 | P2 soak profili (5 dk @ 150 evt/s hedef) | ✅ ~93 evt/s · `benchmark-P2-2026-06-04.json` |
 
 ---
@@ -65,7 +65,7 @@ Referans (kod yok): [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md)
 | 4.1 | Dashboard MVP + P2 timeline | ✅ |
 | 4.2 | U8/U9 senaryo kartları | ✅ |
 | 4.3 | Olay arama presets U8/U9 | ✅ |
-| 4.4 | `directory_object_modified` preset | ⬜ |
+| 4.4 | `directory_object_modified` preset (U10) | ✅ |
 
 ---
 

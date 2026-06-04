@@ -10,6 +10,7 @@ public sealed class SecEventParserRegistryTests
     private readonly SecEventParserRegistry _registry = new(
         new WindowsSecurityExtendedParser(),
         SecEventParserTestFactory.CreateWindowsParser(),
+        new BastionGenericSyslogParser(),
         new LinuxAuthSyslogParser(),
         new FirewallVendorParser(),
         new FirewallGenericSyslogParser(),
@@ -65,7 +66,7 @@ public sealed class SecEventParserRegistryTests
         var ctx = new SecEventRawContext
         {
             ReceivedAt = DateTime.UtcNow,
-            Source = new SecEventSourceInfo { Type = "endpoint", Product = "linux-syslog", Host = "bastion01" },
+            Source = new SecEventSourceInfo { Type = "endpoint", Product = "linux-syslog", Host = "app01" },
             Raw = JsonSerializer.SerializeToElement(SiemFixtureHelper.ReadFixture("linux_sshd_failed_password.syslog.txt"))
         };
 

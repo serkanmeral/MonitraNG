@@ -1,0 +1,11 @@
+{
+  "name": "U10 — AD dizin nesnesi değişikliği",
+  "type": "correlation",
+  "matchKey": "directory_object_modified",
+  "groupByFields": ["userId", "sourceHost"],
+  "windowMinutes": 5,
+  "threshold": 1,
+  "severity": 8,
+  "cooldownMinutes": 30,
+  "dedupKeyTemplate": "{ruleId}:{groupKey}"
+}

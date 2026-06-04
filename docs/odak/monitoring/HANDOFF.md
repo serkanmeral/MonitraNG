@@ -93,7 +93,12 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | **19** | ~~**Linux auth → U1 alarm/workflow/block.ip**~~ | ✅ tam zincir |
 | **20** | ~~**Perf: hub health + MQ tuning**~~ | ✅ `cb95426` |
 | **21** | ~~**alarm.updated publish throttle**~~ | ✅ `UpdatedPublishMinIntervalSeconds` |
-| — | LogAlarm parite (genel) | [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md) |
+| **22** | ~~**bastion.generic.v1**~~ | ✅ source.type=bastion · ingest smoke script |
+| **23** | ~~**U10 directory_object_modified**~~ | ✅ 5136 · E2E + UX preset |
+| **24** | ~~**Extended Windows 4722/4726**~~ | ✅ fixture + unit |
+| **25** | ~~**Quick regression wrapper**~~ | ✅ `run-siem-quick-regression.ps1` |
+| **26** | NxLog prod doğrulama | ⬜ [SIEM_WEF_WEC_FORWARDER.md §6.1](./SIEM_WEF_WEC_FORWARDER.md) |
+| — | LogAlarm parite (genel) | [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md) — **Faz 5 ertelendi** |
 
 ---
 
@@ -102,9 +107,10 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | Alan | Değer |
 |------|--------|
 | Branch | `main` (origin ile senkron) |
-| Son SIEM commit | `b7ea29b` — Cisco ASA · CI gate · P2 soak |
-| Önceki | `41e3d97` · `ae8f6b4` U8 · WORM spike |
-| Odak deploy | `mngreactor` ✅ 4 Haz — extended + U8 smoke PASS |
+| Son SIEM commit | *(bekleyen)* — bastion · U10 · quick regression |
+| Önceki | `b7ea29b` — Cisco ASA · CI gate · P2 soak |
+| Unit test | ✅ 61× `Tests.Services.SecEvents` (local) |
+| Odak deploy | ⬜ ağ erişimi yok — sync/deploy smoke bekliyor |
 
 ---
 

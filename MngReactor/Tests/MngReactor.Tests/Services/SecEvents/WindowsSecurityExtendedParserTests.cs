@@ -14,6 +14,8 @@ public sealed class WindowsSecurityExtendedParserTests
     [InlineData("windows_4720_account_created.json", "account_created", "4720", "administrator")]
     [InlineData("windows_4728_group_member_added.json", "group_member_added", "4728", "administrator")]
     [InlineData("windows_5136_directory_modified.json", "directory_object_modified", "5136", "administrator")]
+    [InlineData("windows_4722_account_enabled.json", "account_enabled", "4722", "administrator")]
+    [InlineData("windows_4726_account_deleted.json", "account_deleted", "4726", "administrator")]
     public void ParseExtendedEvent_MapsExpectedFields(
         string fixture,
         string expectedAction,

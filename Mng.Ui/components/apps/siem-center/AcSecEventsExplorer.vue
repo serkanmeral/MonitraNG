@@ -55,6 +55,7 @@ const filterPresets = computed(() => [
   { key: 'u7', label: 'U7', eventAction: 'new_flow' as const },
   { key: 'u8', label: 'U8', eventAction: 'group_member_added' as const },
   { key: 'u9', label: 'U9', eventAction: 'account_created' as const },
+  { key: 'u10', label: 'U10', eventAction: 'directory_object_modified' as const },
 ]);
 
 const timeRangeItems = computed(() => [
