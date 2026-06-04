@@ -9,7 +9,7 @@
 
 ## 1. Tek cümlede durum
 
-Faz 0 planlama ✅. **SIEM MVP (U1/U2/U4) ✅.** **P0 soak kapısı ✅** (41 evt/s, 5 dk, drop 0%).
+Faz 0 planlama ✅. **SIEM MVP (U1/U2/U4) + müdahale/workflow ✅.** **P0 soak ✅.** U4 deny → workflow triage ✅.
 
 ---
 
@@ -29,6 +29,7 @@ Faz 0 planlama ✅. **SIEM MVP (U1/U2/U4) ✅.** **P0 soak kapısı ✅** (41 ev
 | **U2 fail→success sequence** | ✅ `test-siem-u2-alarm-e2e.ps1` |
 | **P0 benchmark baseline** | ✅ `benchmark-P0-2026-06-04.json` |
 | **P0 soak (5dk @ 50 evt/s)** | ✅ `benchmark-soak-2026-06-04.json` |
+| **U4 → alarm.raised → Workflow** | ✅ `test-siem-u4-workflow-e2e.ps1` |
 | Observation native publish (metrik) | ✅ C6 |
 
 ---
@@ -45,7 +46,8 @@ Faz 0 planlama ✅. **SIEM MVP (U1/U2/U4) ✅.** **P0 soak kapısı ✅** (41 ev
 8. ~~U2 sequence~~ ✅
 9. ~~Benchmark baseline (P0)~~ ✅
 10. ~~P0 5 dk soak (50 evt/s kapı)~~ ✅
-11. U4 → workflow (opsiyonel) · P1 profil benchmark
+11. ~~U4 → workflow~~ ✅
+12. P1 profil benchmark · Engine syslog UDP benchmark
 
 ---
 

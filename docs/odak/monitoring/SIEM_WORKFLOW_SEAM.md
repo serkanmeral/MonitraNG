@@ -39,7 +39,9 @@ sec_events (login_failed × N)
 
 Odak P4-A şablonu: `scripts/odak/test-alarm-approval-e2e.ps1` · `matchKey: auth_failure_p4_e2e`
 
-**SIEM U1 tam hattı:** `scripts/odak/test-siem-u1-approval-block-e2e.ps1` · `matchKey: login_failed` · `filterExpression` + `block.ip` (`{{event.context.srcIp}}`)
+**SIEM U1 tam hattı:** `scripts/odak/test-siem-u1-approval-block-e2e.ps1` · `matchKey: login_failed`
+
+**SIEM U4 triage:** `scripts/odak/test-siem-u4-workflow-e2e.ps1` · `matchKey: denied_flow` · `filterExpression: event.severity >= 6 && event.context.key == 'denied_flow'`
 
 ---
 
