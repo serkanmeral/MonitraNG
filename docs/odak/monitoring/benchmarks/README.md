@@ -14,7 +14,11 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\benchmark-siem-p0-b
 # P1 lab profil (2 dk, 100 evt/s hedef, batch=10)
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\benchmark-siem-p0-baseline.ps1 -P1
 
-# Engine UDP syslog → flush → Mongo
+# P2 soak (5 dk, 150 evt/s hedef, batch=10) — lab kapısı
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\benchmark-siem-p0-baseline.ps1 -P2
+
+# SIEM parser unit gate (CI ile aynı filtre)
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\ci\test-siem-unit-gate.ps1
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\odak\benchmark-siem-engine-syslog.ps1
 
 # Engine sec_event.queue_depth under load (SLO: max < 80% MaxItems)

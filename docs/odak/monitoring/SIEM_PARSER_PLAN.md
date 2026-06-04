@@ -1,6 +1,6 @@
 # SIEM — Parser / Normalizer Planı (Odak)
 
-**Durum:** P0/P1 parser'lar Odak'ta — `linux.auth.v1` ✅ · `firewall.vendor.v1` (FortiGate + Palo Alto) ✅ · `windows.security.extended.v1` (4720/4728/5136 pilot) ✅
+**Durum:** P0/P1 parser'lar Odak'ta — `linux.auth.v1` ✅ · `firewall.vendor.v1` (FortiGate + PAN-OS + **Cisco ASA**) ✅ · `windows.security.extended.v1` ✅
 **Son güncelleme:** 4 Haziran 2026
 **Ana plan:** [SIEM_PLANNING.md](./SIEM_PLANNING.md) §13 (parser özeti), §4 (`sec_events`)
 

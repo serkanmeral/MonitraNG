@@ -14,6 +14,7 @@ param(
     [double]$MaxDropRate = 0.05,
     [switch]$Soak,
     [switch]$P1,
+    [switch]$P2,
     [switch]$IncludeDetectionLag,
     [string]$OutputJson = ""
 )
@@ -31,6 +32,14 @@ elseif ($P1) {
     $TargetEps = 100
     $BatchSize = 10
     $MinAchievedEpsRatio = 0.5
+    $IncludeDetectionLag = $false
+}
+elseif ($P2) {
+    $Profile = "P2"
+    $DurationSec = 300
+    $TargetEps = 150
+    $BatchSize = 10
+    $MinAchievedEpsRatio = 0.35
     $IncludeDetectionLag = $false
 }
 

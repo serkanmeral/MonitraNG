@@ -97,3 +97,23 @@ jobs:
           cd Mng.Ui
           npm run build
 
+  build-mngreactor:
+    name: Build MngReactor (SIEM parsers)
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore MngReactor/MngReactor.sln
+
+      - name: Build
+        run: dotnet build MngReactor/MngReactor.sln --no-restore -c Release
+
+      - name: SIEM parser unit tests
+        run: dotnet test MngReactor/MngReactor.sln --no-build -c Release --verbosity normal --filter "FullyQualifiedName~Tests.Services.SecEvents"

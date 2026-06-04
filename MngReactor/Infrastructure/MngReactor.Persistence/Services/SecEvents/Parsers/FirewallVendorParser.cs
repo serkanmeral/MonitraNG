@@ -4,12 +4,13 @@ using MngReactor.Application.Models.SecEvents;
 
 namespace MngReactor.Persistence.Services.SecEvents.Parsers;
 
-/// <summary>Vendor-specific firewall syslog — FortiGate + Palo Alto PAN-OS CEF/CSV (B1).</summary>
+/// <summary>Vendor-specific firewall syslog — FortiGate + Palo Alto PAN-OS + Cisco ASA (B1).</summary>
 public sealed partial class FirewallVendorParser : ISecEventParser
 {
     public const string ParserIdValue = "firewall.vendor.v1";
     public const string FortigateProductValue = "fortigate";
     public const string PanOsProductValue = "pan-os";
+    public const string CiscoAsaProductValue = "cisco-asa";
 
     private static readonly HashSet<string> FortigateProducts = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -27,9 +28,22 @@ public sealed partial class FirewallVendorParser : ISecEventParser
         "palo_alto"
     };
 
+    private static readonly HashSet<string> CiscoAsaProducts = new(StringComparer.OrdinalIgnoreCase)
+    {
+        CiscoAsaProductValue,
+        "cisco-asa",
+        "asa",
+        "cisco-ftd",
+        "ftd"
+    };
+
     private static readonly Regex FortigateSniffRegex = FortigateSniffPattern();
     private static readonly Regex PanOsCefSniffRegex = PanOsCefSniffPattern();
     private static readonly Regex PanOsCsvSniffRegex = PanOsCsvSniffPattern();
+    private static readonly Regex AsaSniffRegex = AsaSniffPattern();
+    private static readonly Regex AsaDenyRegex = AsaDenyPattern();
+    private static readonly Regex AsaBuiltRegex = AsaBuiltPattern();
+    private static readonly Regex AsaConfigUserRegex = AsaConfigUserPattern();
 
     private static readonly Regex FortigateSrcIpRegex = FortigateSrcIpPattern();
     private static readonly Regex FortigateDstIpRegex = FortigateDstIpPattern();
@@ -49,7 +63,7 @@ public sealed partial class FirewallVendorParser : ISecEventParser
     public bool CanParse(SecEventRawContext raw)
     {
         var product = SecEventParseHelpers.NormalizeProduct(raw.Source.Product);
-        if (FortigateProducts.Contains(product) || PanOsProducts.Contains(product))
+        if (FortigateProducts.Contains(product) || PanOsProducts.Contains(product) || CiscoAsaProducts.Contains(product))
             return true;
 
         var text = SecEventParseHelpers.GetRawText(raw.Raw);
@@ -58,7 +72,8 @@ public sealed partial class FirewallVendorParser : ISecEventParser
 
         return FortigateSniffRegex.IsMatch(text)
             || PanOsCefSniffRegex.IsMatch(text)
-            || PanOsCsvSniffRegex.IsMatch(text);
+            || PanOsCsvSniffRegex.IsMatch(text)
+            || AsaSniffRegex.IsMatch(text);
     }
 
     public ParsedSecEvent Parse(SecEventRawContext raw)
@@ -68,6 +83,9 @@ public sealed partial class FirewallVendorParser : ISecEventParser
 
         if (PanOsProducts.Contains(product) || IsPanOsFormat(rawText))
             return ParsePanOs(raw, rawText, product);
+
+        if (CiscoAsaProducts.Contains(product) || IsAsaFormat(rawText))
+            return ParseAsa(raw, rawText, product);
 
         return ParseFortigate(raw, rawText);
     }
@@ -82,6 +100,58 @@ public sealed partial class FirewallVendorParser : ISecEventParser
             MatchGroup(FortigateDstIpRegex, rawText),
             ParsePort(MatchGroup(FortigateDstPortRegex, rawText)),
             NormalizeProtocol(MatchGroup(FortigateProtoRegex, rawText)));
+    }
+
+    private static ParsedSecEvent ParseAsa(SecEventRawContext raw, string rawText, string productHint)
+    {
+        var (action, outcome, actorUser, srcIp, dstIp, dstPort, protocol) = ClassifyAsa(rawText);
+
+        return BuildParsed(raw, rawText, action, outcome, actorUser,
+            ResolveAsaProduct(productHint),
+            srcIp, dstIp, dstPort, protocol);
+    }
+
+    private static bool IsAsaFormat(string rawText) => AsaSniffRegex.IsMatch(rawText);
+
+    private static string ResolveAsaProduct(string productHint) =>
+        CiscoAsaProducts.Contains(productHint) ? productHint : CiscoAsaProductValue;
+
+    private static (string Action, string Outcome, string? ActorUser, string? SrcIp, string? DstIp, int? DstPort, string? Protocol)
+        ClassifyAsa(string rawText)
+    {
+        if (AsaConfigUserRegex.IsMatch(rawText))
+        {
+            var user = MatchGroup(AsaConfigUserRegex, rawText);
+            return ("rule_change", "unknown", user, null, null, null, null);
+        }
+
+        var deny = AsaDenyRegex.Match(rawText);
+        if (deny.Success)
+        {
+            return (
+                "denied_flow",
+                "failure",
+                null,
+                deny.Groups["srcIp"].Value,
+                deny.Groups["dstIp"].Value,
+                ParsePort(deny.Groups["dstPort"].Value),
+                NormalizeProtocol(deny.Groups["proto"].Value));
+        }
+
+        var built = AsaBuiltRegex.Match(rawText);
+        if (built.Success)
+        {
+            return (
+                "allowed_flow",
+                "success",
+                null,
+                built.Groups["srcIp"].Value,
+                built.Groups["dstIp"].Value,
+                ParsePort(built.Groups["dstPort"].Value),
+                NormalizeProtocol(built.Groups["proto"].Value));
+        }
+
+        return ("unknown", "unknown", null, null, null, null, null);
     }
 
     private static ParsedSecEvent ParsePanOs(SecEventRawContext raw, string rawText, string productHint)
@@ -299,6 +369,22 @@ public sealed partial class FirewallVendorParser : ISecEventParser
             _ => protocol.ToLowerInvariant()
         };
     }
+
+    [GeneratedRegex(@"%ASA-\d-", RegexOptions.CultureInvariant)]
+    private static partial Regex AsaSniffPattern();
+
+    [GeneratedRegex(
+        @"Deny\s+(?<proto>\w+)\s+src\s+\w+:(?<srcIp>[\d.]+)/(?<srcPort>\d+)\s+dst\s+\w+:(?<dstIp>[\d.]+)/(?<dstPort>\d+)",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex AsaDenyPattern();
+
+    [GeneratedRegex(
+        @"Built\s+(?:outbound|inbound)\s+(?<proto>\w+)\s+connection\s+\d+\s+for\s+\w+:(?<srcIp>[\d.]+)/(?<srcPort>\d+).*?\s+to\s+\w+:(?<dstIp>[\d.]+)/(?<dstPort>\d+)",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex AsaBuiltPattern();
+
+    [GeneratedRegex(@"User\s+'(?<user>[^']+)'\s+executed", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
+    private static partial Regex AsaConfigUserPattern();
 
     [GeneratedRegex(@"\bdevname=\S+.*\btype=""(traffic|event)""", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
     private static partial Regex FortigateSniffPattern();

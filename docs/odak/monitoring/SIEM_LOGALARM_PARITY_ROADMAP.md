@@ -20,7 +20,7 @@ MonitraNG SIEM-hafif MVP (U1–U7) tamamlandı. LogAlarm seviyesi parite ayrı b
 
 | # | Alan | Durum | Not |
 |---|------|--------|-----|
-| B1 | Parser kütüphanesi genişletme | 🟡 | `linux.auth.v1` ✅ · FortiGate + PAN-OS ✅ · `windows.security.extended.v1` pilot ✅ |
+| B1 | Parser kütüphanesi genişletme | 🟡 | FortiGate + PAN-OS + Cisco ASA ✅ · extended Windows ✅ |
 | B2 | WEF tam entegrasyon | ✅ | [SIEM_WEF_WEC_FORWARDER.md](./SIEM_WEF_WEC_FORWARDER.md) |
 | **B3 hazır kural paketi (MITRE / ISO)** | ✅ | `siem-mvp-v1` · [SIEM_ALARM_RULE_PACK.md](./SIEM_ALARM_RULE_PACK.md) |
 

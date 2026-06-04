@@ -44,7 +44,9 @@
 | **SIEM dashboard MVP** | ✅ `/apps/siem-center` · [SIEM_DASHBOARD.md](./SIEM_DASHBOARD.md) |
 | **U3 bakım penceresi (appsettings)** | ✅ `SecEventMaintenanceWindow:*` |
 | **B1 `linux.auth.v1`** | ✅ U1 alarm + workflow E2E |
-| **B1 `firewall.vendor.v1` (FortiGate + PAN-OS)** | ✅ `test-siem-firewall-vendor-ingest.ps1` |
+| **B1 `firewall.vendor.v1` (FortiGate + PAN-OS + Cisco ASA)** | ✅ `test-siem-firewall-vendor-ingest.ps1` |
+| **SIEM unit CI gate** | ✅ `scripts/ci/test-siem-unit-gate.ps1` · `ci.yml` |
+| **P2 soak benchmark** | ✅ ~93 evt/s · `benchmark-P2-2026-06-04.json` |
 | **B1 `windows.security.extended.v1` (4720/4728/5136)** | ✅ `test-siem-windows-extended-ingest.ps1` |
 | **U8 AD group_member_added alarm** | ✅ `test-siem-u8-alarm-e2e.ps1` |
 | **U9 AD account_created alarm** | ✅ `test-siem-u9-alarm-e2e.ps1` |
@@ -132,8 +134,10 @@ Kısa vadeli teknik devam (MVP sonrası bakım):
 | 32 | ~~**U9 `account_created` alarm**~~ | ✅ `test-siem-u9-alarm-e2e.ps1` |
 | 33 | ~~**Dashboard/arama U8–U9**~~ | ✅ senaryo kataloğu + presets |
 | 34 | ~~**WEF forwarder extended fixture**~~ | ✅ `Forward-WecEventsToEngine.ps1` |
-| 35 | Perf / E2E CI kapısı | ⬜ |
-| 36 | Üçüncü FW vendor | ⬜ |
+| 35 | ~~**SIEM unit CI gate**~~ | ✅ `ci.yml` · `test-siem-unit-gate.ps1` |
+| 36 | ~~**Cisco ASA FW vendor**~~ | ✅ parser + ingest smoke |
+| 37 | ~~**P2 soak benchmark**~~ | ✅ ~93 evt/s · `benchmark-P2-2026-06-04.json` |
+| 38 | ~~**mngui deploy (U8/U9 UX)**~~ | ✅ Odak |
 
 LogAlarm / 5651 / WORM → **Faz 5 (ertelendi)** — [SIEM_ROADMAP.md §6](./SIEM_ROADMAP.md#6-faz-5--ertelenen-logalarm--uyum)
 

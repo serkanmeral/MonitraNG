@@ -1,8 +1,8 @@
-# SIEM B1 — firewall.vendor.v1 parser ingest smoke (FortiGate + Palo Alto PAN-OS)
+# SIEM B1 — firewall.vendor.v1 parser ingest smoke (FortiGate + PAN-OS + Cisco ASA)
 param(
     [string]$Gateway = "http://192.168.20.20:5040",
     [string]$Domain = "odak",
-    [ValidateSet("fortigate", "pan-os", "all")]
+    [ValidateSet("fortigate", "pan-os", "cisco-asa", "all")]
     [string]$Vendor = "all"
 )
 
@@ -60,6 +60,12 @@ if ($Vendor -eq "pan-os" -or $Vendor -eq "all") {
     Test-VendorIngest "PAN-OS CEF deny" @{
         type = "firewall"; product = "pan-os"; host = "PA-ODAK"
     } "panw_traffic_deny.syslog.txt" "denied_flow" "203.0.113.15"
+}
+
+if ($Vendor -eq "cisco-asa" -or $Vendor -eq "all") {
+    Test-VendorIngest "Cisco ASA deny" @{
+        type = "firewall"; product = "cisco-asa"; host = "ASA-ODAK"
+    } "cisco_asa_traffic_deny.syslog.txt" "denied_flow" "203.0.113.25"
 }
 
 Write-Host "`nOK SIEM B1 firewall.vendor.v1 ingest PASS" -ForegroundColor Green

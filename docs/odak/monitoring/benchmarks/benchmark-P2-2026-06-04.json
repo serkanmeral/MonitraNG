@@ -1,0 +1,45 @@
+{
+  "profile": "P2",
+  "mode": "baseline",
+  "runId": "bench-P2-20260604123606",
+  "generatedAt": "2026-06-04T09:41:17.5485967Z",
+  "environment": {
+    "gateway": "http://192.168.20.20:5040",
+    "server": "192.168.20.20",
+    "domain": "odak"
+  },
+  "durationSec": 300,
+  "targetEps": 150,
+  "batchSize": 10,
+  "achievedEps": 92.97,
+  "gate": {
+    "pass": true,
+    "ingestPass": true,
+    "throughputPass": true,
+    "ingestP95TargetMs": 1000,
+    "maxDropRate": 0.05,
+    "minAchievedEps": 52.5
+  },
+  "ingest": {
+    "maxMs": 1578.0,
+    "pass": true,
+    "dropRate": 0.0,
+    "eventsAttempted": 28420,
+    "rejected": 0,
+    "p95Ms": 18.0,
+    "p95TargetMs": 1000,
+    "requests": 2842,
+    "accepted": 28420,
+    "errorRate": 0.0,
+    "p50Ms": 11.0
+  },
+  "mongo": {
+    "verifyMethod": "total_count_delta",
+    "beforeCount": 30913,
+    "afterCount": 59333,
+    "savedDelta": 28420
+  },
+  "detectionLag": null,
+  "pass": true,
+  "notes": "P0 lab baseline; tam soak icin -Soak, P1 icin -P1 kullanin."
+}
