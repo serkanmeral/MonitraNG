@@ -46,6 +46,7 @@ if (-not $SkipFaz1) {
 
 Invoke-Step "Purge alarm observation queue" "purge-alarm-observation-queue.ps1"
 Invoke-Step "U1 alarm" "test-siem-u1-alarm-e2e.ps1"
+Invoke-Step "U1 linux auth alarm" "test-siem-linux-auth-u1-alarm-e2e.ps1"
 Invoke-Step "U4 alarm" "test-siem-u4-alarm-e2e.ps1"
 Invoke-Step "U6 rule change alarm" "test-siem-u6-alarm-e2e.ps1"
 Invoke-Step "U5 traffic spike alarm" "test-siem-u5-alarm-e2e.ps1"

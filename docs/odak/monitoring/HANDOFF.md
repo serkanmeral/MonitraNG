@@ -8,7 +8,7 @@
 
 ## 1. Tek cümlede durum (4 Haz 2026)
 
-**SIEM-hafif MVP + post-MVP ✅** · **B3 + A4** tamamlandı. **Sıradaki:** Linux auth → U1 alarm E2E.
+**SIEM-hafif MVP + post-MVP ✅** · Linux auth U1 E2E tamamlandı.
 
 ---
 
@@ -28,7 +28,7 @@
 | Engine queue_depth under load | ✅ max=107 / gate=4000 |
 | WEF→WEC Engine batch | ✅ `POST /api/SecEvents/wec-batch` · S5 E2E |
 | WEF forwarder şablonu (B2) | ✅ [SIEM_WEF_WEC_FORWARDER.md](./SIEM_WEF_WEC_FORWARDER.md) · Engine batch/retry · Odak deploy |
-| B1 `linux.auth.v1` | ✅ sshd/sudo · `test-siem-linux-auth-ingest.ps1` |
+| B1 `linux.auth.v1` | ✅ ingest + U1 alarm E2E · `test-siem-linux-auth-u1-alarm-e2e.ps1` |
 | B3 hazır kural paketi | ✅ `siem-mvp-v1` · MITRE/ISO · `seed-siem-alarm-rule-pack.ps1` |
 | B1 `firewall.vendor.v1` | ✅ FortiGate pilot · `test-siem-firewall-vendor-ingest.ps1` |
 | Odak sync upload | ✅ `Send-OdakRemoteFile` (SCP → SFTP fallback) · `2091029` |

@@ -9,7 +9,7 @@
 
 ## 1. Tek cümlede durum
 
-**SIEM MVP (U1–U7) + B1/B2/B3 + A4 ✅.** **Sıradaki:** Linux auth → U1 alarm E2E (sshd tam zincir).
+**SIEM MVP (U1–U7) + B1/B2/B3 + A4 ✅.** Linux auth U1 E2E tamamlandı.
 
 ---
 
@@ -43,7 +43,7 @@
 | **U7 new src→dst (baseline / new_flow)** | ✅ `test-siem-u7-alarm-e2e.ps1` |
 | **SIEM dashboard MVP** | ✅ `/apps/siem-center` · [SIEM_DASHBOARD.md](./SIEM_DASHBOARD.md) |
 | **U3 bakım penceresi (appsettings)** | ✅ `SecEventMaintenanceWindow:*` |
-| **B1 `linux.auth.v1`** | ✅ `test-siem-linux-auth-ingest.ps1` |
+| **B1 `linux.auth.v1`** | ✅ ingest · **U1 alarm E2E** · `test-siem-linux-auth-u1-alarm-e2e.ps1` |
 | **B1 `firewall.vendor.v1` (FortiGate)** | ✅ `test-siem-firewall-vendor-ingest.ps1` |
 | **B3 hazır kural paketi (`siem-mvp-v1`)** | ✅ `seed-siem-alarm-rule-pack.ps1` · [SIEM_ALARM_RULE_PACK.md](./SIEM_ALARM_RULE_PACK.md) |
 | **Odak sync SFTP fallback** | ✅ `Send-OdakRemoteFile` · commit `2091029` |
@@ -105,8 +105,7 @@ Kısa vadeli teknik devam (MVP sonrası bakım):
 | 16 | ~~**`firewall.vendor.v1` parser**~~ | ✅ FortiGate pilot · `test-siem-firewall-vendor-ingest.ps1` |
 | 17 | ~~**B3 hazır kural paketi**~~ | ✅ MITRE/ISO · `siem-mvp-v1` |
 | 18 | ~~**A4 özelleştirilebilir dashboard**~~ | ✅ localStorage widget düzeni |
-| 19 | **Linux auth → U1 alarm E2E** | sshd brute-force tam zincir |
-| 19 | **Linux auth → U1 alarm E2E** | sshd brute-force tam zincir |
+| 19 | ~~**Linux auth → U1 alarm E2E**~~ | ✅ `test-siem-linux-auth-u1-alarm-e2e.ps1` |
 
 LogAlarm parite → [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md)
 
