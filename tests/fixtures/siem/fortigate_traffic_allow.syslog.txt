@@ -1,0 +1,1 @@
+date=2026-06-03 time=14:00:01 devname="FGT-ODAK" devid="FGT60FXXXXXXXX" logid="0000000014" type="traffic" subtype="forward" level="notice" vd="root" srcip=203.0.113.9 srcport=49152 dstip=10.0.0.10 dstport=443 proto=6 action="accept" policyid=2 service="HTTPS" sessionid=9876543210

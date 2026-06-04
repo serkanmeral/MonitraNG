@@ -1,0 +1,1 @@
+date=2026-06-03 time=14:00:01 devname="FGT-ODAK" devid="FGT60FXXXXXXXX" logid="0100040704" type="event" subtype="system" level="information" vd="root" action="edit" user="netadmin" cfgpath="firewall.policy" cfgobj="policy42" msg="Added policy policy42"

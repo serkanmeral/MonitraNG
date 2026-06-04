@@ -59,6 +59,7 @@ public sealed class LinuxAuthSyslogParserTests
         var registry = new SecEventParserRegistry(
             SecEventParserTestFactory.CreateWindowsParser(),
             new LinuxAuthSyslogParser(),
+            new FirewallVendorParser(),
             new FirewallGenericSyslogParser(),
             new UnknownSecEventFallback());
 

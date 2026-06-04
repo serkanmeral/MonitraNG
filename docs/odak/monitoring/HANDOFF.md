@@ -8,7 +8,7 @@
 
 ## 1. Tek cümlede durum (4 Haz 2026)
 
-**SIEM-hafif MVP tamam ✅** — `sec_events` ingest, U1/U2/U4 korelasyon, onaylı workflow müdahale, P0/P1 benchmark ve E2E suite Odak'ta doğrulandı. LogAlarm paritesi **ayrı uzun vadeli hedef** — bkz. [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md).
+**SIEM-hafif MVP + post-MVP ✅** · **B1 `firewall.vendor.v1` (FortiGate)** Odak deploy + E2E doğrulandı. **Sıradaki:** B3 hazır kural paketi veya A4 dashboard.
 
 ---
 
@@ -27,7 +27,10 @@
 | SIEM E2E suite (`-Quick`) | ✅ |
 | Engine queue_depth under load | ✅ max=107 / gate=4000 |
 | WEF→WEC Engine batch | ✅ `POST /api/SecEvents/wec-batch` · S5 E2E |
-| WEF forwarder şablonu (B2) | ✅ [SIEM_WEF_WEC_FORWARDER.md](./SIEM_WEF_WEC_FORWARDER.md) · `scripts/wef/Forward-WecEventsToEngine.ps1` |
+| WEF forwarder şablonu (B2) | ✅ [SIEM_WEF_WEC_FORWARDER.md](./SIEM_WEF_WEC_FORWARDER.md) · Engine batch/retry · Odak deploy |
+| B1 `linux.auth.v1` | ✅ sshd/sudo · `test-siem-linux-auth-ingest.ps1` |
+| B1 `firewall.vendor.v1` | ✅ FortiGate pilot · `test-siem-firewall-vendor-ingest.ps1` |
+| Odak sync upload | ✅ `Send-OdakRemoteFile` (SCP → SFTP fallback) · `2091029` |
 | Güvenlik olay arama UI | ✅ `/apps/siem-center/events` · menü: **Güvenlik Merkezi** |
 | LogAlarm feature-parite | ⬜ Ayrı hedef — [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md) |
 
@@ -82,7 +85,11 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 | 11 | ~~**E2E S4.1/S5 switch fix**~~ ✅ | suite `-VerifyOdakMongo` doğru geçiriliyor |
 | 12 | ~~**B1 `linux.auth.v1`**~~ ✅ | sshd/sudo parser + ingest smoke |
 | 13 | ~~**B2 WEF forwarder şablonu**~~ ✅ | GPO/WEC ops · NxLog · PS forwarder · Engine batch/retry |
-| — | LogAlarm parite | [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md) |
+| 14 | ~~**Odak sync SFTP fallback**~~ ✅ | `Send-OdakRemoteFile` · `2091029` |
+| **15** | ~~**B1 devamı — `firewall.vendor.v1`**~~ | ✅ FortiGate pilot · U4/U6 alanları · [SIEM_PARSER_PLAN.md](./SIEM_PARSER_PLAN.md) |
+| **16** | **B3 — hazır kural paketi** | MITRE / ISO · P2 |
+| **17** | **A4 — özelleştirilebilir dashboard** | Widget düzeni · [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md) |
+| — | LogAlarm parite (genel) | [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md) |
 
 ---
 
@@ -90,38 +97,83 @@ U7: baseline sonrası yeni src→dst → new_flow → correlation alarm
 
 | Alan | Değer |
 |------|--------|
-| Branch | `main` |
-| Son SIEM commit | `d694116` — B2 WEF forwarder şablonu, Engine batch/retry |
+| Branch | `main` (origin ile senkron) |
+| Son SIEM commit | `2091029` — Odak sync SCP→SFTP fallback |
+| Önceki SIEM | `d694116` — B2 WEF forwarder · Engine batch/retry · `6c78696` HANDOFF ref |
 
 ---
 
-## 6. SIEM chat prompt'u
+## 6. Odak operasyon (hatırlatma)
+
+| Konu | Değer |
+|------|--------|
+| Gateway | `http://192.168.20.20:5040` |
+| Engine | `http://192.168.20.20:5037` · syslog UDP `:5514` |
+| Domain / kullanıcı | `odak` · `odak_admin` / `Admin123!` |
+
+**Sync + deploy (Engine örneği):**
+
+```powershell
+pwsh scripts/odak/sync-odak-source.ps1 -Paths @('MngEngine','ApplicationResources/mng_apps')
+pwsh scripts/odak/deploy-odak-apps.ps1 -Services mngengine
+# Container recreate sonrası Reactor config gerekebilir:
+pwsh scripts/odak/setup-mngengine-odak.ps1 -ApplyConfig -WaitHealthy
+```
+
+**Upload:** `sync-odak-source.ps1` → `Send-OdakRemoteFile` (SCP başarısız olursa SFTP).
+
+**Hızlı doğrulama:**
+
+```powershell
+pwsh scripts/odak/test-siem-e2e-suite.ps1 -Quick
+pwsh scripts/odak/test-engine-wec-ingest-e2e.ps1 -EngineUrl http://192.168.20.20:5037
+pwsh scripts/wef/Forward-WecEventsToEngine.ps1 -EngineUrl http://192.168.20.20:5037 -Source Fixture
+```
+
+**Not:** Yoğun benchmark/E2E sonrası P0 kapısı geçici düşebilir; kuyruk purge scriptleri `test-siem-e2e-suite.ps1 -Quick` içinde otomatik.
+
+---
+
+## 7. SIEM chat prompt'u (yeni oturum — kopyala-yapıştır)
 
 ```markdown
-# MonitraNG — SIEM handoff (MVP sonrası)
+# MonitraNG — SIEM handoff (mola sonrası devam)
 
 Yanıtlar **Türkçe**. Commit/push yalnızca açıkça istediğimde.
 
 ## Bağlam
+- **HANDOFF:** docs/odak/monitoring/HANDOFF.md
 - **DEVAM:** docs/odak/monitoring/DEVAM.md
-- **LogAlarm kıyaslama:** docs/odak/monitoring/SIEM_LOGALARM_COMPARISON.md
-- **Ana plan:** docs/odak/monitoring/SIEM_PLANNING.md
+- **Parite yol haritası:** docs/odak/monitoring/SIEM_LOGALARM_PARITY_ROADMAP.md
+- **Parser planı:** docs/odak/monitoring/SIEM_PARSER_PLAN.md
+- **WEF/B2:** docs/odak/monitoring/SIEM_WEF_WEC_FORWARDER.md
 
-## Mevcut durum
-- SIEM-hafif MVP ✅ (U1/U2/U4 + workflow müdahale)
-- Odak E2E suite PASS
-- LogAlarm parite ayrı hedef
+## Mevcut durum (4 Haz 2026)
+- SIEM-hafif MVP + post-MVP ✅: U1–U7 korelasyon, workflow müdahale, dashboard, A3 events UX
+- B1 ✅ `linux.auth.v1` (sshd/sudo) · B2 ✅ WEF forwarder şablonu + Engine wec-batch batch/retry
+- Odak E2E: `test-siem-e2e-suite.ps1 -Quick` PASS
+- Git main @ `2091029` (sync SFTP fallback)
+
+## Odak
+- Gateway http://192.168.20.20:5040 · Engine :5037 · syslog :5514
+- Engine recreate sonrası: `setup-mngengine-odak.ps1 -ApplyConfig`
 
 ## Kilitli kararlar
-Hibrit toplama · Alarm engine tespit · Workflow onaylı müdahale · AI ⏸️
+Hibrit toplama (syslog + WEF→WEC + agent) · Alarm engine tespit · Workflow onaylı müdahale · AI ⏸️
+
+## Önerilen sıradaki iş (sen seç veya onayla)
+1. **B1 devamı:** `firewall.vendor.v1` parser (pilot FW markası)
+2. **B3:** Hazır kural paketi (MITRE/ISO)
+3. **A4:** Özelleştirilebilir SIEM dashboard widget düzeni
+4. Linux auth → U1 alarm E2E (linux sshd brute-force zinciri)
 
 ## Bu oturumda ne yapmak istiyorum?
-[Kendi cümleni buraya yaz]
+Önerdiğin sırayla devam et: B1 `firewall.vendor.v1` ile başla (commit/push deploy sonunda).
 ```
 
 ---
 
-## 7. Referanslar
+## 8. Referanslar
 
 - [SIEM_PLANNING.md](./SIEM_PLANNING.md)
 - [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md)

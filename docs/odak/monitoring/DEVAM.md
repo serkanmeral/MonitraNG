@@ -1,7 +1,7 @@
 # DEVAM — SIEM-Hafif Planlama (Kaldığımız Yer)
 
 **Son güncelleme:** 4 Haziran 2026  
-**Durum:** ✅ **SIEM Faz 1 tamam** · ✅ **Faz 2 observation köprüsü (U1)** · Workflow Event Trigger mevcut
+**Durum:** ✅ **SIEM MVP + post-MVP tamam** · B1 `firewall.vendor.v1` (FortiGate) ✅ Odak doğrulandı
 
 **Handoff (yeni chat):** [HANDOFF.md](./HANDOFF.md)
 
@@ -9,7 +9,7 @@
 
 ## 1. Tek cümlede durum
 
-Faz 0 planlama ✅. **SIEM MVP (U1/U2/U4) + müdahale/workflow ✅.** **P0 soak ✅.** U4 deny → workflow triage ✅.
+**SIEM MVP (U1–U7) + dashboard + A3 + B1/B2 ✅.** `firewall.vendor.v1` (FortiGate) Odak'ta doğrulandı. **Sıradaki:** B3 veya A4.
 
 ---
 
@@ -43,6 +43,9 @@ Faz 0 planlama ✅. **SIEM MVP (U1/U2/U4) + müdahale/workflow ✅.** **P0 soak 
 | **U7 new src→dst (baseline / new_flow)** | ✅ `test-siem-u7-alarm-e2e.ps1` |
 | **SIEM dashboard MVP** | ✅ `/apps/siem-center` · [SIEM_DASHBOARD.md](./SIEM_DASHBOARD.md) |
 | **U3 bakım penceresi (appsettings)** | ✅ `SecEventMaintenanceWindow:*` |
+| **B1 `linux.auth.v1`** | ✅ `test-siem-linux-auth-ingest.ps1` |
+| **B1 `firewall.vendor.v1` (FortiGate)** | ✅ `test-siem-firewall-vendor-ingest.ps1` · Odak deploy 4 Haz |
+| **Odak sync SFTP fallback** | ✅ `Send-OdakRemoteFile` · commit `2091029` |
 
 ---
 
@@ -92,6 +95,16 @@ Kısa vadeli teknik devam (MVP sonrası bakım):
 12. ~~**E2E suite S4.1/S5** argüman düzeltmesi~~ ✅
 13. ~~**B1 `linux.auth.v1`**~~ ✅ — sshd/sudo · `test-siem-linux-auth-ingest.ps1`
 14. ~~**B2 WEF forwarder şablonu**~~ ✅ — [SIEM_WEF_WEC_FORWARDER.md](./SIEM_WEF_WEC_FORWARDER.md) · Engine `MaxWecBatchItems`/retry
+15. ~~**Odak sync SFTP fallback**~~ ✅ — `Send-OdakRemoteFile` · `2091029`
+
+### Mola sonrası (önerilen)
+
+| # | İş | Not |
+|---|-----|-----|
+| 16 | ~~**`firewall.vendor.v1` parser**~~ | ✅ FortiGate pilot · `test-siem-firewall-vendor-ingest.ps1` |
+| 17 | **B3 hazır kural paketi** | MITRE / ISO |
+| 18 | **A4 özelleştirilebilir dashboard** | Widget düzeni |
+| 19 | **Linux auth → U1 alarm E2E** | sshd brute-force tam zincir |
 
 LogAlarm parite → [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md)
 

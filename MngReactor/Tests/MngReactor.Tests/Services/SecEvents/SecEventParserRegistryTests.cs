@@ -10,6 +10,7 @@ public sealed class SecEventParserRegistryTests
     private readonly SecEventParserRegistry _registry = new(
         SecEventParserTestFactory.CreateWindowsParser(),
         new LinuxAuthSyslogParser(),
+        new FirewallVendorParser(),
         new FirewallGenericSyslogParser(),
         new UnknownSecEventFallback());
 
@@ -54,6 +55,20 @@ public sealed class SecEventParserRegistryTests
 
         var parser = _registry.Resolve(ctx);
         Assert.Equal(LinuxAuthSyslogParser.ParserIdValue, parser.ParserId);
+    }
+
+    [Fact]
+    public void S2_4_RoutesFortigateProductToVendorParser()
+    {
+        var ctx = new SecEventRawContext
+        {
+            ReceivedAt = DateTime.UtcNow,
+            Source = new SecEventSourceInfo { Type = "firewall", Product = "fortigate", Host = "FGT-ODAK" },
+            Raw = JsonSerializer.SerializeToElement(SiemFixtureHelper.ReadFixture("fortigate_traffic_deny.syslog.txt"))
+        };
+
+        var parser = _registry.Resolve(ctx);
+        Assert.Equal(FirewallVendorParser.ParserIdValue, parser.ParserId);
     }
 
     [Fact]

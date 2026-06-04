@@ -2,7 +2,7 @@
 
 Müşteri ortamında **güvenlik odaklı izleme / SIEM-hafif** çözümünün planlama ve teslim dokümanları.
 
-**Durum:** MVP + post-MVP (U1–U7) ✅ · Odak E2E suite doğrulandı  
+**Durum:** MVP + post-MVP (U1–U7) ✅ · B1 `firewall.vendor.v1` (FortiGate) ✅  
 **Son güncelleme:** 4 Haziran 2026
 
 ---
