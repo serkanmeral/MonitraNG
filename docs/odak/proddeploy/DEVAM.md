@@ -1,7 +1,7 @@
 # DEVAM — Production deploy (Kaldığımız yer)
 
 **Son güncelleme:** 4 Haziran 2026  
-**Durum:** ⏸️ **mng_common compose up bekliyor** — sunucu dosyaları hazır; **Docker + sudo** IT’de
+**Durum:** ✅ **P1 + P3 (mng_apps deploy)** tamam — Keycloak realm/secret kullanıcıda (5 Haziran 2026)
 
 > **İlke:** Test (`192.168.20.20`) ile production (`192.168.20.8`) tamamen bağımsız → [INDEPENDENCE.md](./INDEPENDENCE.md)  
 > **Yeni chat / IT sonrası:** Bu dosyadan devam edin.
@@ -23,9 +23,10 @@ Production VM’de **`mng_common` dosyaları ve `.env` hazır**; altyapı kontey
 | P0 | Scriptler (`sync-mng-common-prod`, `deploy-odak-prod`, `bootstrap-odak-prod`, …) | ✅ |
 | **P1** | **Production `mng_common` dosya senkronu** | ✅ |
 | **P1** | **Production `mng_common/.env` (prod şablon)** | ✅ |
-| **P1** | **`mng_common compose up` (Mongo, Keycloak, …)** | ⏸️ Docker engeli |
-| P2 | Keycloak realm / `mng-keeper-admin` client + production secret’lar | ⏳ P1 sonrası |
-| P3 | `mng_apps` tam senkron + ilk build/deploy | ⏳ P1 sonrası |
+| **P1** | **`mng_common compose up` (Mongo, Keycloak, …)** | ✅ 5 Haziran 2026 |
+| **P2** | Keycloak `mng-keeper-admin` (master) + `.env` secret + mngkeeper recreate | ✅ (script: `setup-keycloak-keeper-client-prod.ps1`) |
+| P2b | Domain realm (UI ile oluşturma) | ▶️ Kullanıcı tekrar deneyebilir |
+| **P3** | `mng_apps` tam senkron + ilk build/deploy | ✅ 5 Haziran 2026 (~10 dk build) |
 | P4 | Domain oluşturma + initial data (bilinçli karar) | ⏳ P3 sonrası |
 
 ---
@@ -37,10 +38,13 @@ Production VM’de **`mng_common` dosyaları ve `.env` hazır**; altyapı kontey
 | Hostname | `monitrang-prod` |
 | OS | Debian 13 (trixie) |
 | SSH `odak@192.168.20.8` | ✅ |
-| Docker | ❌ `command not found` |
-| `odak` → sudo | ❌ `not in sudoers file` |
+| Docker | ✅ `26.1.5` (docker.io, Debian trixie) |
+| `odak` → sudo | ✅ |
+| `odak` → docker grubu | ✅ |
 | `/home/odak/mng_common` | ✅ `docker-compose.yml`, `docker-compose.odak.prod.yml`, `.env`, `mongo-init`, `mosquitto`, … |
-| `mng_common_mng_network` | ❌ (compose up yapılmadı) |
+| `mng_common_mng_network` | ✅ |
+| Keycloak `http://192.168.20.8:8080/keycloak/` | ✅ HTTP 200 |
+| Node-RED | ⚠️ Restart döngüsü (mng_apps için zorunlu değil) |
 | `/home/odak/MonitraNG` | ⚠️ Kısmi (önceki sync; tam liste için `sync-odak-prod.ps1 -Full` P3’te) |
 | `mng_apps/.env` | ✅ (prod şablonundan; secret’lar `CHANGE_ME` olabilir) |
 

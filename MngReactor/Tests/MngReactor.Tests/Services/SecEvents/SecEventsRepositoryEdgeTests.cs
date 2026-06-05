@@ -1,4 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
+using MngReactor.Application.Configuration;
 using MngReactor.Application.Models.SecEvents;
 using MngReactor.Persistence.Services.SecEvents;
 using MngReactor.Persistence.Services.SecEvents.Parsers;
@@ -14,7 +16,10 @@ public sealed class SecEventsRepositoryEdgeTests
     public async Task InsertMany_EmptyDomain_ReturnsZeroWithoutMongoCall()
     {
         var client = new Mock<IMongoClient>(MockBehavior.Strict);
-        var sut = new SecEventsRepository(client.Object, NullLogger<SecEventsRepository>.Instance);
+        var sut = new SecEventsRepository(
+            client.Object,
+            Options.Create(new MngReactorSettings()),
+            NullLogger<SecEventsRepository>.Instance);
 
         var inserted = await sut.InsertManyAsync("  ", [SampleDoc()]);
 
@@ -26,7 +31,10 @@ public sealed class SecEventsRepositoryEdgeTests
     public async Task InsertMany_EmptyDocs_ReturnsZeroWithoutMongoCall()
     {
         var client = new Mock<IMongoClient>(MockBehavior.Strict);
-        var sut = new SecEventsRepository(client.Object, NullLogger<SecEventsRepository>.Instance);
+        var sut = new SecEventsRepository(
+            client.Object,
+            Options.Create(new MngReactorSettings()),
+            NullLogger<SecEventsRepository>.Instance);
 
         var inserted = await sut.InsertManyAsync("odak", []);
 

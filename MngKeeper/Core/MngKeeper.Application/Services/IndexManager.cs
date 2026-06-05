@@ -63,8 +63,7 @@ namespace MngKeeper.Application.Services
                             Unique = true,
                             PartialFilterExpression = Builders<User>.Filter.And(
                                 Builders<User>.Filter.Exists(u => u.Email),
-                                Builders<User>.Filter.Ne(u => u.Email, null),
-                                Builders<User>.Filter.Ne(u => u.Email, ""))
+                                Builders<User>.Filter.Gt(u => u.Email, ""))
                         }),
                     cancellationToken: cancellationToken
                 );

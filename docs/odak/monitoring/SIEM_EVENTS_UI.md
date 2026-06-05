@@ -1,6 +1,6 @@
 # SIEM güvenlik olay arama UI
 
-**Durum:** ✅ MVP (4 Haz 2026)  
+**Durum:** ✅ MVP + veri yönetimi UX (5 Haz 2026)  
 **Route:** `/apps/siem-center/events`  
 **Menü:** Side bar → **Güvenlik Merkezi** → Güvenlik olayları
 
@@ -17,32 +17,53 @@
 | UI sayfa | `pages/apps/siem-center/events/index.vue` |
 | UI explorer | `components/apps/siem-center/AcSecEventsExplorer.vue` |
 
-## Filtreler (MVP)
+## Sütun sözlüğü
+
+| UI sütunu | Alan | Anlam |
+|-----------|------|--------|
+| Kaynak | `source.type` | Mantıksal kaynak sınıfı: `endpoint`, `ad`, `firewall` (**IP değil**) |
+| Host | `source.host` | Logu üreten / forward eden cihaz adı |
+| Kaynak IP | `network.srcIp` | Olaydaki istemci IP (SSH: `from` adresi) |
+| Hedef | `network.dstIp` | Ağ akışı hedef IP — **auth loglarında genelde boş** (normal) |
+| Kullanıcı | `actor.user` | İlgili hesap |
+
+## Filtreler
 
 - Zaman aralığı: 1s / 24s / 7g (varsayılan 24s)
 - `sourceType`: firewall, ad, **endpoint**, **bastion**
-- `eventAction`: login_failed, login_success, denied_flow, allowed_flow, rule_change, privileged_login_outside_window, new_flow (U7), group_member_added (U8), account_created (U9), directory_object_modified (U10)
+- `eventAction`: login_failed, login_success, denied_flow, … (U1–U10)
 - `search`: rawPreview, IP, kullanıcı, host (regex, case-insensitive)
-- **URL senkronu:** `?eventAction=denied_flow&timeRange=24h` — panel deep link
+- **`excludeUnknown`** (varsayılan `true`): `event.action=unknown` gizlenir
+- UI checkbox: **Bilinmeyen olayları göster** → `excludeUnknown=false`
+- **URL senkronu:** `?eventAction=denied_flow&timeRange=24h&showUnknown=1`
 - **U1–U10 kısayol çipleri** · **U7 rozeti** (`baselineNewFlowPair`)
+
+## Saklama (backend — `SecEventsSettings`)
+
+| Ayar | Varsayılan | Etki |
+|------|------------|------|
+| `DropUnknownEvents` | `true` | Ingest: unknown persist/observation yok · yanıt `skipped` |
+| `HotTtlDays` | `60` | Mongo TTL `idx_timestamp_ttl` on `@timestamp` |
+| `PersistFullRaw` | `false` | BSON'da yalnızca `rawPreview` (512 B) |
+
+Odak docker-compose: `MngReactorSettings__SecEvents__*`
 
 ## Sınırlar
 
 - `limit` max 200, varsayılan 50 (UI 100 kullanır)
-- Liste yanıtında yalnızca `rawPreview` (512 byte); tam `raw` yalnızca `GET .../{id}` (max 8192 byte, yeni ingest)
-- Eski kayıtlarda `raw` alanı yok — detayda `rawPreview` fallback
-
-## Faz 2 (4 Haz 2026)
-
-- Ingest: Mongo `raw` alanı (`MaxRawBytes=8192`)
-- API: `GET /sec-events/{id}` → `raw` + legacy fallback
-- UI: detay drawer'da tam ham log (`secEventGet`)
+- Liste yanıtında yalnızca `rawPreview`; tam `raw` yalnızca `PersistFullRaw=true` ingest + `GET .../{id}`
+- Detay drawer: `raw` yoksa `rawPreview` gösterilir (etiket: "Ham önizleme")
 
 ## Doğrulama
 
-Tarayıcı: `http://<gateway-ui>/apps/siem-center/events` (manager rolü) — menü: **Güvenlik Merkezi → Güvenlik olayları**
+Tarayıcı: `http://<gateway-ui>/apps/siem-center/events` (manager rolü)
 
-Odak menü patch: `docs/odak/monitoring/scripts/patch-siem-center-side-menu.ps1`
+Lab pilot:
+
+```powershell
+pwsh scripts/odak/reset-siem-lab-data.ps1 -Apply
+pwsh scripts/odak/run-siem-linux-two-host-pilot.ps1
+```
 
 API (token ile):
 
@@ -50,7 +71,5 @@ API (token ile):
 pwsh scripts/tests/MngDataGateway/auth/get-token.ps1 -KeeperBaseUrl http://192.168.20.20:5040 -DomainName odak -Username odak_admin -Password 'Admin123!'
 $token = (Get-Content $env:TEMP\serkan_token.txt -Raw).Trim()
 Invoke-RestMethod -Uri "http://192.168.20.20:5040/reactor/api/v1/sec-events?limit=5&eventAction=login_failed" `
-  -Headers @{ Authorization = "Bearer $token" }
+  -Headers @{ Authorization = "Bearer $token"; "X-Domain-Name" = "odak" }
 ```
-
-**Odak (4 Haz 2026):** `GET /reactor/api/v1/sec-events?limit=3&eventAction=login_failed` → `total=6973`, 3 kayıt döndü. `GET .../6a21151f497a21a08a2f87b1` → tek kayıt OK.

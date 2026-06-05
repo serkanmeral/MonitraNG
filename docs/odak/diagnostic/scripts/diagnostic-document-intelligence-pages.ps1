@@ -181,13 +181,15 @@ function Measure-PageScenario {
 
 # --- Main ---
 
+$isProdGateway = $GatewayBaseUrl -match "192\.168\.20\.8"
+
 Write-Host ""
-Write-Host "Document Intelligence — Sayfa API yuku (Odak)" -ForegroundColor Cyan
+Write-Host "Document Intelligence — Sayfa API yuku ($(if ($isProdGateway) { 'Prod' } else { 'Odak' }))" -ForegroundColor Cyan
 Write-Host "  Gateway: $GatewayBaseUrl" -ForegroundColor Gray
 Write-Host "  MngDocument: $docGw" -ForegroundColor Gray
 Write-Host ""
 
-$loadToken = Join-Path $ocScriptDir "load-operationcore-token.ps1"
+$loadToken = Join-Path $ocScriptDir $(if ($isProdGateway) { "load-operationcore-token-prod.ps1" } else { "load-operationcore-token.ps1" })
 $token = & $loadToken
 if ([string]::IsNullOrEmpty($token)) { throw "Token alinamadi." }
 

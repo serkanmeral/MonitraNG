@@ -47,6 +47,7 @@ public sealed partial class SecEventSyslogItemBuilder
             return (options.DefaultSourceType, options.DefaultSourceProduct);
 
         if (raw.Contains("sshd[", StringComparison.Ordinal)
+            || raw.Contains("sshd-session[", StringComparison.OrdinalIgnoreCase)
             || raw.Contains("sudo:", StringComparison.Ordinal))
             return ("endpoint", "linux-syslog");
 

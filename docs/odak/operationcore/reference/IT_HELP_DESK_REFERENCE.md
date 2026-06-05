@@ -3,7 +3,8 @@
 **Amaç:** Operation Core'un **help desk / IT destek** senaryosunu, operasyonel süreçlerden (SOC, bakım) bağımsız ama **aynı platform** üzerinde göstermek.  
 **Kaynak:** [operationcore_phase1.md](../operationcore_phase1.md), [OPERATION_CORE_IMPLEMENTATION_PLAN.md](../OPERATION_CORE_IMPLEMENTATION_PLAN.md) — TM/eski UI sayfaları **referans değil**.
 
-**Seed:** [../scripts/seed-operation-core-helpdesk-reference.ps1](../scripts/seed-operation-core-helpdesk-reference.ps1)
+**Seed (test referans):** [../scripts/seed-operation-core-helpdesk-reference.ps1](../scripts/seed-operation-core-helpdesk-reference.ps1)  
+**Prod workspace taslağı:** [IT_HELP_DESK_WORKSPACE.md](./IT_HELP_DESK_WORKSPACE.md) · [seed-operation-core-helpdesk-prod.ps1](../scripts/seed-operation-core-helpdesk-prod.ps1)
 
 ---
 

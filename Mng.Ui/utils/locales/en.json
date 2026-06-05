@@ -3026,7 +3026,7 @@
     "deleteIssueBody": "This cannot be undone.",
     "issueCommentsTitle": "Comments",
     "issueCommentsEmpty": "No comments yet.",
-    "issueCommentsPlaceholder": "Write a comment… Use @ to mention someone; emoji are allowed.",
+    "issueCommentsPlaceholder": "Write a comment… Use {'@'} to mention someone; emoji are allowed.",
     "issueCommentsLoginHint": "Sign in to post comments.",
     "issueCommentsSubmit": "Send",
     "issueCommentsReply": "Reply",
@@ -3619,11 +3619,11 @@
         "empty": "No activity recorded yet."
       },
       "comments": {
-        "placeholder": "Write a comment... type @ to mention someone",
+        "placeholder": "Write a comment... type {'@'} to mention someone",
         "send": "Send",
         "empty": "No comments yet.",
         "error": "Could not add the comment.",
-        "mentionHint": "Type @ to mention a person · Ctrl+Enter to send",
+        "mentionHint": "Type {'@'} to mention a person · Ctrl+Enter to send",
         "attach": "Attach",
         "reply": "Reply",
         "edit": "Edit",
@@ -5045,7 +5045,173 @@
       "colCode": "Code",
       "colParser": "Parser",
       "presets": "Scenario shortcuts (U1–U10)",
-      "newFlowFlag": "New flow (U7)"
+      "newFlowFlag": "New flow (U7)",
+      "showUnknown": "Show unknown events"
+    },
+    "reference": {
+      "menuTitle": "Log scope guide",
+      "pageTitle": "Log scope guide",
+      "openGuide": "Log scope guide",
+      "pageSubtitle": "Which logs we collect, what they mean in the system, and default alarm scenarios.",
+      "intro": "This page summarizes how MonitraNG interprets security logs. Collection (NxLog, rsyslog, firewall syslog) is configured in your network; the tables below show supported product scope.",
+      "readOnlyTitle": "Why can't this page be edited?",
+      "readOnlyLead": "Log interpretation (parsers) ships with product updates — similar to an antivirus signature pack. Because a wrong mapping can break alarms for everyone, it is not editable from the customer UI.",
+      "readOnlyReason1": "The same log line must be interpreted reliably and tested in every environment.",
+      "readOnlyReason2": "Ad-hoc regex or free-form rules risk false alarms or missed detections.",
+      "readOnlyReason3": "New devices or log formats are added via MonitraNG releases or your support channel.",
+      "readOnlyContact": "Contact your support team for a new log type or firewall model; this guide is updated when scope changes.",
+      "youCanEditTitle": "What you can configure",
+      "youCanEditAlarms": "Alarm thresholds, enable/disable, and additional rules",
+      "openAlarmRules": "Alarm rules",
+      "youCanEditCollectors": "Log collection (NxLog, rsyslog, firewall target)",
+      "youCanEditCollectorsHint": "Which servers send logs is configured in your infrastructure.",
+      "youCanEditSearch": "Search and inspect incoming events",
+      "youCanEditSearchHint": "Filters and detail on the Security events screen.",
+      "weProvideTitle": "What MonitraNG provides",
+      "weProvideBody": "Reading supported log types, normalizing them into common event fields, and default threat scenarios (U1–U7 package). Monitoring (CPU, disk, asset polling) is a separate module; this guide covers security logs only.",
+      "collectionSectionTitle": "How do you send logs?",
+      "collectionSectionHint": "Servers and devices push logs to MonitraNG Engine; no asset registry or stored passwords required.",
+      "exampleTargets": "Example sources",
+      "collectionMethod": "Collection method",
+      "parsersSectionTitle": "What does each log mean?",
+      "parsersSectionHint": "Left column is the source signal; middle column is the short name in the system. Unknown lines are kept raw; default alarms may not fire.",
+      "parserTechnicalId": "Technical parser id: {id}",
+      "scenariosSectionTitle": "Threat scenarios (U1–U10)",
+      "scenariosSectionHint": "Default alarm rules can be loaded for U1–U7. U8–U10 events are collected; default package rules are not available yet.",
+      "scenariosFootnote": "Default alarm package: {id} version {version}. You can change thresholds in Alarm Center.",
+      "outOfScopeSectionTitle": "Not included in this release",
+      "outOfScopeHint": "The following are intentionally out of scope or require a separate module.",
+      "technicalFootnote": "Guide version {version}. Content is updated with product releases.",
+      "colLogSignal": "Log / event",
+      "colMeaning": "Meaning in system",
+      "colScenarios": "Scenario",
+      "colDefaultAlarm": "Default alarm",
+      "colScenario": "Code",
+      "colDescription": "What is monitored?",
+      "colDefaultRule": "Default alarm condition",
+      "colPackStatus": "Default rule",
+      "colEventsLink": "Events",
+      "inPackYes": "Yes",
+      "inPackNo": "Not yet",
+      "meaningUnknown": "Unknown (raw log)",
+      "defaultAlarmYes": "In default alarm package",
+      "viewEvents": "Search events",
+      "parserStatus": {
+        "supported": "Full support",
+        "partial": "Partial support",
+        "raw_only": "Raw log only"
+      },
+      "collection": {
+        "nxlog": {
+          "title": "Windows (NxLog)",
+          "description": "Windows Security log on DC, servers, or jump hosts is read and forwarded to MonitraNG.",
+          "targets": "DC, Windows servers, RDP terminal"
+        },
+        "rsyslog": {
+          "title": "Linux (rsyslog)",
+          "description": "SSH and sudo records are forwarded to Engine via syslog.",
+          "targets": "Linux servers"
+        },
+        "syslogNetwork": {
+          "title": "Network devices (syslog)",
+          "description": "Firewalls, switches, and routers can push syslog to the same listener. Vendor support is listed in the table.",
+          "targets": "FortiGate, Palo Alto, Cisco ASA; others partial or raw-only"
+        }
+      },
+      "parsers": {
+        "windowsSecurity": {
+          "title": "Windows logon events",
+          "description": "Successful/failed logon, account lockout, Kerberos errors, and privileged logon outside maintenance window."
+        },
+        "windowsExtended": {
+          "title": "Active Directory changes",
+          "description": "Account creation, group membership, directory object changes — mostly DC logs."
+        },
+        "linuxAuth": {
+          "title": "Linux logon events",
+          "description": "Failed/successful SSH and sudo attempts."
+        },
+        "firewallVendor": {
+          "title": "Firewall (FortiGate, Palo Alto, Cisco ASA)",
+          "description": "Denied/allowed traffic, rule changes, and new flow detection."
+        },
+        "firewallGeneric": {
+          "title": "Other firewall syslog",
+          "description": "Limited mapping without a vendor parser; contact support for full coverage."
+        },
+        "bastion": {
+          "title": "Jump / bastion server",
+          "description": "Session logs on jump hosts (SSH-like)."
+        },
+        "generic": {
+          "title": "Unknown syslog",
+          "description": "Stored raw when format does not match; no default alarm."
+        }
+      },
+      "scenarios": {
+        "U1": {
+          "description": "Many failed logons in a short time (brute force).",
+          "defaultRule": "10+ failed logons from same user and IP within 5 minutes"
+        },
+        "U2": {
+          "description": "Many failures followed by a successful logon.",
+          "defaultRule": "5+ failures in 10 minutes, then success within 15 minutes"
+        },
+        "U3": {
+          "description": "Privileged logon outside allowed hours (e.g. night RDP).",
+          "defaultRule": "1 privileged logon outside window (default UTC 08–20)"
+        },
+        "U4": {
+          "description": "Many firewall blocks toward one destination IP.",
+          "defaultRule": "50+ denies to same destination IP within 5 minutes"
+        },
+        "U5": {
+          "description": "Sudden increase in allowed traffic to a target.",
+          "defaultRule": "100+ allow events for same IP and port within 5 minutes"
+        },
+        "U6": {
+          "description": "Firewall rule or policy change.",
+          "defaultRule": "1 rule change event"
+        },
+        "U7": {
+          "description": "New source→destination flow after baseline learning.",
+          "defaultRule": "1 new flow pair after normal traffic baseline"
+        },
+        "U8": {
+          "description": "New member added to an AD group.",
+          "defaultRule": "Events collected; not in default alarm package yet"
+        },
+        "U9": {
+          "description": "New user account created.",
+          "defaultRule": "Events collected; not in default alarm package yet"
+        },
+        "U10": {
+          "description": "Directory object modified.",
+          "defaultRule": "Events collected; not in default alarm package yet"
+        }
+      },
+      "outOfScope": {
+        "monitoring": {
+          "title": "Server metrics (CPU, disk, ping)",
+          "description": "Monitoring module; not a security event."
+        },
+        "windowsChannels": {
+          "title": "Windows application logs (IIS, SQL, etc.)",
+          "description": "Application / System channels are not read in this release."
+        },
+        "sysmon": {
+          "title": "Sysmon, process, and file events",
+          "description": "Advanced endpoint telemetry; not planned."
+        },
+        "ot": {
+          "title": "CNC / PLC and industrial protocols",
+          "description": "OT devices without syslog; custom integration required."
+        },
+        "assetPoll": {
+          "title": "Remote log pull with asset credentials",
+          "description": "SIEM uses push model; no WMI/LDAP log collection."
+        }
+      }
     }
   },
   "automationCenter": {

@@ -27,20 +27,41 @@ public sealed class SecEventDocumentBsonMapperTests
                 Protocol = "tcp"
             },
             Parser = new SecEventParserBlock { Id = WindowsSecurityParser.ParserIdValue },
-            Raw = "full raw payload",
+            Raw = string.Empty,
             RawPreview = "preview"
         };
 
         var bson = SecEventDocumentBsonMapper.ToBsonDocument(doc);
 
         Assert.Equal(BsonType.DateTime, bson["@timestamp"].BsonType);
-        Assert.Equal("full raw payload", bson["raw"].AsString);
         Assert.Equal("preview", bson["rawPreview"].AsString);
+        Assert.False(bson.Contains("raw"));
         Assert.Equal("login_failed", bson["event"]["action"].AsString);
         Assert.Equal("admin", bson["actor"]["user"].AsString);
         Assert.Equal("192.168.1.50", bson["network"]["srcIp"].AsString);
         Assert.Equal(445, bson["network"]["dstPort"].AsInt32);
         Assert.Equal(WindowsSecurityParser.ParserIdValue, bson["parser"]["id"].AsString);
+    }
+
+    [Fact]
+    public void ToBsonDocument_WithRaw_IncludesRawField()
+    {
+        var doc = new SecEventDocument
+        {
+            Timestamp = DateTime.UtcNow,
+            IngestedAt = DateTime.UtcNow,
+            Domain = "odak",
+            Source = new SecEventSourceInfo { Type = "ad", Product = "windows" },
+            Event = new SecEventEventBlock { Action = "login_failed" },
+            Parser = new SecEventParserBlock { Id = WindowsSecurityParser.ParserIdValue },
+            Raw = "stored",
+            RawPreview = "prev"
+        };
+
+        var bson = SecEventDocumentBsonMapper.ToBsonDocument(doc);
+
+        Assert.True(bson.Contains("raw"));
+        Assert.Equal("stored", bson["raw"].AsString);
     }
 
     [Fact]

@@ -26,6 +26,8 @@ MonitraNG operasyonel iş yönetim modülü. Backend servisi: **MngOperations**.
 | [../diagnostic/PERFORMANCE_ROADMAP.md](../diagnostic/PERFORMANCE_ROADMAP.md) | **Performans yol haritası** — Faz 1+1B UI ✅; Faz 2 backend bekliyor | Güncel |
 | [mngoperations/DEVAM.md](./mngoperations/DEVAM.md) § UI-PERF-F1 | UI Faz 1/1B kod özeti (checkpoint tabloları) | Güncel |
 | [reference/IT_HELP_DESK_REFERENCE.md](./reference/IT_HELP_DESK_REFERENCE.md) | IT Help Desk referans workspace + tip kategorileri | Güncel |
+| [reference/MONITRANG_FEEDBACK_WORKSPACE.md](./reference/MONITRANG_FEEDBACK_WORKSPACE.md) | **MonitraNG Geri Bildirim** WS (hata + öneri) | Prod seed |
+| [reference/IT_HELP_DESK_WORKSPACE.md](./reference/IT_HELP_DESK_WORKSPACE.md) | **IT Destek** WS (`users` + agent kuyruğu) | Prod seed |
 | [../workflow/DEVAM.md](../workflow/DEVAM.md) | **MngWorkflow** planlama — OC entegrasyon checklist, Faz 0/1 | Güncel |
 | [../workflow/Workflow Backend Implementation Plan v1.md](../workflow/Workflow%20Backend%20Implementation%20Plan%20v1.md) | Workflow backend planı — §13 Operation Core | Güncel |
 

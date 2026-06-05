@@ -1,7 +1,7 @@
 # SIEM B3 — Hazır alarm kural paketi (`siem-mvp-v1`)
 
 **Durum:** ✅ MVP paket + seed script  
-**Son güncelleme:** 4 Haziran 2026
+**Son güncelleme:** 5 Haziran 2026
 
 ---
 
@@ -76,6 +76,22 @@ pwsh scripts/odak/test-siem-alarm-rule-pack-seed.ps1
 **Idempotent:** Aynı `packageId` + `scenarioId` varsa atlanır (`-Replace` olmadan).
 
 **Deploy:** `MngAlarm` değişikliği sonrası `mngalarm` + `mngalarm-worker` rebuild gerekir.
+
+### E2E / test artığı temizliği
+
+E2E suite her koşuda `U1 SIEM E2E HHmmss` gibi **geçici kurallar** bırakır; UI listesi şişer. Paket kuralları (`metadata.packageId=siem-mvp-v1`) korunur.
+
+```powershell
+# 1) E2E + P4 workflow test kurallarini sil
+pwsh scripts/odak/purge-siem-e2e-alarm-rules.ps1 -Apply
+
+# 2) Operasyonel paketi yukle / guncelle
+pwsh scripts/odak/seed-siem-alarm-rule-pack.ps1 -Replace
+```
+
+**Not:** `Bench lag bench-P0-*` kurallari benchmark scriptinden gelir; purge kapsaminda degil. Istenecekse manuel silinir.
+
+**UI:** Alarm Merkezi → `/apps/alarm-center/rules` — SIEM senaryolari ayri CRUD degil; U1–U7 bu paket kurallaridir.
 
 ---
 

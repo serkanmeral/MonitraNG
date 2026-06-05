@@ -1,9 +1,10 @@
 # Linux rsyslog / auth forwarder — müşteri ops şablonu
 
-**Durum:** ✅ Lab şablonu + smoke (4 Haz 2026)  
+**Durum:** ✅ Pilot (Debian 13 / imjournal) · 5 Haz 2026 güncellendi  
+**Müşteri wiki (Document Intelligence):** [../document_intelligence/tutorials/guvenlik-merkezi-linux-rsyslog-kurulumu.md](../document_intelligence/tutorials/guvenlik-merkezi-linux-rsyslog-kurulumu.md)  
 **İlişkili:** [SIEM_PLANNING.md §5.2](./SIEM_PLANNING.md#52-kaynak--toplama-karar-matrisi) · [SIEM_PARSER_PLAN.md §7](./SIEM_PARSER_PLAN.md#7-linux-auth-parser-linuxauthv1)
 
-Linux sunucular **sshd** ve **sudo** olaylarını yerel `auth`/`authpriv` kanallarına yazar. MonitraNG **MngEngine** bu satırları **syslog UDP/TCP** ile alır, `linux.auth.v1` parser ile normalize eder.
+Linux sunucularda **OpenSSH (sshd)** olayları **systemd journal** (`ssh.service`) üzerinden gelir. **Debian 13+** da klasik `auth,authpriv.*` forward **gürültü üretir**; pilot yapılandırma **imjournal** + dar filtre kullanır.
 
 Windows WEF/NxLog akışının Linux karşılığıdır (Faz 2.5).
 
@@ -23,10 +24,12 @@ flowchart LR
 | Rol | Sorumlu | Not |
 |-----|---------|-----|
 | sshd / sudo log üretimi | Linux OS | `/var/log/auth.log` veya journal |
-| rsyslog forwarder | Müşteri IT | Şablon: [templates/rsyslog-linux-auth-to-engine.conf](./templates/rsyslog-linux-auth-to-engine.conf) |
+| rsyslog forwarder | Müşteri IT | Şablon: [templates/rsyslog-linux-auth-to-engine.conf](./templates/rsyslog-linux-auth-to-engine.conf) (`51-monitrang-siem-journal-sshd.conf`) |
 | Engine syslog listener | MonitraNG | ✅ UDP (Odak `:5514`) |
-| Parser `linux.auth.v1` | MonitraNG | ✅ sshd/sudo |
+| Parser `linux.auth.v1` | MonitraNG | ✅ sshd / sshd-session |
 | U1 korelasyon | MonitraNG | ✅ lab E2E |
+
+**Pilot filtre:** yalnızca `Failed password` ve `Accepted password` (SIEM gürültüsünü keser).
 
 **“Agent” notu:** Ayrı MonitraNG Linux agent binary’si yok. Birincil yol **rsyslog/syslog-ng forward**; alternatif NXLog/Filebeat push (müşteri tercihi).
 
@@ -51,13 +54,24 @@ flowchart LR
 ### 3.1 Şablonu kopyala
 
 ```bash
-sudo cp rsyslog-linux-auth-to-engine.conf /etc/rsyslog.d/50-monitrang-siem.conf
-# ENGINE_HOST / port değerlerini düzenle
-sudo rsyslogd -N1   # config syntax kontrol
+# 50: genis auth forward YOK (placeholder)
+sudo tee /etc/rsyslog.d/50-monitrang-siem.conf <<'EOF'
+# MonitraNG SIEM — genis auth forward yok. SSH: 51-monitrang-siem-journal-sshd.conf
+EOF
+
+# 51: imjournal — ENGINE_HOST / port duzenleyin
+sudo cp rsyslog-linux-auth-to-engine.conf /etc/rsyslog.d/51-monitrang-siem-journal-sshd.conf
+sudo sed -i 's/MONITRA_ENGINE_HOST/192.168.20.20/g' /etc/rsyslog.d/51-monitrang-siem-journal-sshd.conf
+
+sudo sed -i 's/^#\?ForwardToSyslog=.*/ForwardToSyslog=no/' /etc/systemd/journald.conf
+sudo systemctl restart systemd-journald
+sudo rsyslogd -N1
 sudo systemctl restart rsyslog
 ```
 
-Şablon yalnızca `auth,authpriv.*` iletir — sistem/mail gürültüsünü keser.
+Otomasyon (Odak): `scripts/odak/install-rsyslog-siem-odak.ps1 -Apply`
+
+**İletilen satırlar:** `Failed password`, `Accepted password` only.
 
 ### 3.2 Doğrulama (sunucu tarafı)
 

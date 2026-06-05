@@ -15,6 +15,8 @@ MonitraNG'nin platform geneli **tespit / alarm üretim katmanı**. Major Roadmap
 
 Handoff: [../PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md)
 
+**SIEM operasyonel kurallar:** [../monitoring/SIEM_ALARM_RULE_PACK.md](../monitoring/SIEM_ALARM_RULE_PACK.md) · purge: `scripts/odak/purge-siem-e2e-alarm-rules.ps1`
+
 ---
 
 ## Kapsam kararı (kilitli)

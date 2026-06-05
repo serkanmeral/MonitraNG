@@ -1,0 +1,60 @@
+{
+  "viewGroupIds": [
+    "6a0f8fd13d6ba5d774ee37c5"
+  ],
+  "gatewayUrl": "http://192.168.20.8:5040",
+  "itGroupIds": [
+    "6a1072ac69221f812f97b29b"
+  ],
+  "types": {
+    "access": "4e230d46-808a-48b2-bf6e-95f35b5d6013",
+    "incident": "8d88a06d-790e-423a-b142-a532fc98cab3",
+    "problem": "a91b6baa-b7bb-467f-9981-d0942e00e3b9",
+    "service": "348fecf3-b9a8-41de-83b1-bea5f7d74f21"
+  },
+  "itGroups": [
+    "MonitraNG Users"
+  ],
+  "workspaceName": "IT Destek",
+  "flowId": "6dd89610-5bef-410a-905d-2e1f8d7ea890",
+  "workspaceId": "383e85b7-d835-4843-a7ab-8862996ec1ee",
+  "priorities": {
+    "p3": "22af4e5a-d05e-43a9-b77a-58f4d3df32f7",
+    "p1": "186fed72-20ff-40ec-b1ed-3035a5b47b74"
+  },
+  "dashboardId": "360bfbbc-8a32-4d30-bd0f-cca0c7dd3144",
+  "seededAt": "2026-06-05T08:59:18.8820921+03:00",
+  "rules": {
+    "assigneeUsername": "serkan.meral",
+    "assigneePersonId": "6a2262026723c2bd54eec3c9",
+    "defaultAssignee": "cdeebcff-75fb-41a7-abe5-da0db7ec68fd"
+  },
+  "tags": {
+    "Donanim": "20333ca1-4693-4dff-8346-f6d361d7075f",
+    "Mobil / Telefon": "d00a6a45-4b9a-408b-a5ef-03b2c68d1331",
+    "Guvenlik": "45ced538-06e7-4cb7-a516-7e0d0c31cb66",
+    "Genel": "399e98f6-8fa6-4c0b-bdc6-5985b7fb35ff",
+    "Sifre degisimi": "dfcb5256-3e2f-46f2-a35f-09272898ab43",
+    "Hesap / Erisim": "62573dbc-1b63-4081-9533-4db30e5ce692",
+    "Yazilim": "6a125d61-ce12-4464-911b-b7f636a660da",
+    "Ag / VPN": "575b9fc3-741f-4eba-8ffb-7ac269d0fcd1",
+    "Yazici": "10018c57-534c-4a64-80af-5d219cf58948",
+    "E-posta": "e9eefe21-bdba-43f9-97df-97f786e36fb7"
+  },
+  "viewGroups": [
+    "users"
+  ],
+  "boards": {
+    "submit": "c24f1f5a-6918-47aa-832b-7a466c9af1f0",
+    "agent": "60eb6bef-ab79-420b-bca5-5e4a9c3bd204"
+  },
+  "formId": "4516906b-1a2f-45b0-b8ab-bc94dd979dd6",
+  "states": {
+    "new": "f16e21bb-a4c5-458d-99bf-e9f67a124f6a",
+    "closed": "a9f4bd30-1889-432d-9fde-eb2b059c8adb",
+    "progress": "cd2ff921-6ff7-4436-9bb3-a879f13963be",
+    "resolved": "3c8d2e60-bb7b-4568-b7c7-1dc8dadfe98d",
+    "assigned": "1218a3a8-4756-4c27-8d70-ce5c11aa53ca",
+    "waiting": "85081fe8-21fb-4522-8a9b-99c784c32514"
+  }
+}

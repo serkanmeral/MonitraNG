@@ -12,6 +12,8 @@ namespace MngDocument.Application.Models;
 /// Model (SharePoint benzeri): bir kaynağın etkin yetkisi, kendisi + <c>ancestorIds</c> zincirinde
 /// tabandan yukarı en yakın <c>permissionsBroken=true</c> klasörün (anchor) ACL'idir. Zincirde hiç
 /// anchor yoksa açık varsayılan (tüm aksiyonlar serbest) uygulanır. Admin daima tam yetkilidir.
+/// Manager (<c>isManager</c> JWT): mirası kırık bir anchor altında <c>view</c> yetkisi olan kaynaklarda tam yetki
+/// (Manager klasörü gibi kısıtlı alanlarda menü/CRUD — admin bypass ile aynı mantık, kapsam dar).
 /// </summary>
 public sealed class PermissionSnapshot
 {
@@ -19,12 +21,14 @@ public sealed class PermissionSnapshot
     private readonly Dictionary<string, List<DmResourcePermission>> _permsByAnchor;
     private readonly HashSet<string> _userGroups;
     private readonly bool _isAdmin;
+    private readonly bool _isManager;
 
     public PermissionSnapshot(
         IReadOnlyList<DmResource> allFolders,
         IReadOnlyList<DmResourcePermission> allPermissions,
         IEnumerable<string> userGroups,
-        bool isAdmin)
+        bool isAdmin,
+        bool isManager = false)
     {
         AllFolders = allFolders;
         _foldersById = allFolders
@@ -41,6 +45,7 @@ public sealed class PermissionSnapshot
             userGroups.Where(g => !string.IsNullOrWhiteSpace(g)),
             StringComparer.OrdinalIgnoreCase);
         _isAdmin = isAdmin;
+        _isManager = isManager;
     }
 
     /// <summary>Tüm klasörler (tree kurulumunda yeniden yüklemeden kullanmak için).</summary>
@@ -90,6 +95,17 @@ public sealed class PermissionSnapshot
         if (anchorId is null)
             return EffectivePermissionDto.Full; // açık varsayılan
 
+        var fromAnchor = ResolveFromAnchor(anchorId);
+
+        // Kısıtlı (mirası kırık) alan: manager kullanıcı görüntüleyebiliyorsa tam yetki (UI menü + CRUD).
+        if (_isManager && fromAnchor.CanView)
+            return EffectivePermissionDto.Full;
+
+        return fromAnchor;
+    }
+
+    private EffectivePermissionDto ResolveFromAnchor(string anchorId)
+    {
         var granted = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (_permsByAnchor.TryGetValue(anchorId, out var records))
         {

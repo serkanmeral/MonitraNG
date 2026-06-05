@@ -28,9 +28,11 @@ internal static class SecEventDocumentBsonMapper
                 ["code"] = ToBsonNullableString(doc.Event.Code)
             },
             ["parser"] = new BsonDocument { ["id"] = doc.Parser.Id },
-            ["raw"] = doc.Raw,
             ["rawPreview"] = doc.RawPreview
         };
+
+        if (!string.IsNullOrEmpty(doc.Raw))
+            bson["raw"] = doc.Raw;
 
         if (doc.BaselineNewFlowPair)
             bson["baseline"] = new BsonDocument { ["newFlowPair"] = true };

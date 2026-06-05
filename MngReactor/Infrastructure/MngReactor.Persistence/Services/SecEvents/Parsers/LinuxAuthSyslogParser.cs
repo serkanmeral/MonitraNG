@@ -28,6 +28,7 @@ public sealed partial class LinuxAuthSyslogParser : ISecEventParser
         var text = SecEventParseHelpers.GetRawText(raw.Raw);
         return !string.IsNullOrWhiteSpace(text)
                && (text.Contains("sshd[", StringComparison.Ordinal)
+                   || text.Contains("sshd-session[", StringComparison.OrdinalIgnoreCase)
                    || text.Contains("sudo:", StringComparison.Ordinal));
     }
 

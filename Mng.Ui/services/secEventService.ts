@@ -29,6 +29,7 @@ export async function secEventQuery(query: SecEventQuery = {}): Promise<SecEvent
     srcIp: query.srcIp,
     actorUser: query.actorUser,
     search: query.search,
+    excludeUnknown: query.excludeUnknown,
     skip: query.skip ?? 0,
     limit: query.limit ?? 50,
   });

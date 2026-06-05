@@ -20,8 +20,10 @@ if ([string]::IsNullOrWhiteSpace($sudoPass)) { $sudoPass = $env:ODAK_SSH_PASSWOR
 
 $escapedSudo = $sudoPass.Replace("'", "'\''")
 
-$remote = @"
+$remote = ConvertTo-UnixShell @"
 set -e
+SP='$escapedSudo'
+run_sudo() { echo "`$SP" | sudo -S "`$@"; }
 if command -v docker >/dev/null 2>&1; then
   echo 'Docker zaten kurulu:'
   docker --version
@@ -29,19 +31,28 @@ if command -v docker >/dev/null 2>&1; then
   exit 0
 fi
 export DEBIAN_FRONTEND=noninteractive
-SUDO='echo '$escapedSudo' | sudo -S'
-eval "`$SUDO apt-get update -qq"
-eval "`$SUDO apt-get install -y -qq ca-certificates curl gnupg lsb-release"
-eval "`$SUDO install -m 0755 -d /etc/apt/keyrings"
-curl -fsSL https://download.docker.com/linux/debian/gpg | eval "`$SUDO gpg --dearmor -o /etc/apt/keyrings/docker.gpg"
-eval "`$SUDO chmod a+r /etc/apt/keyrings/docker.gpg"
-echo "deb [arch=`$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian `$(. /etc/os-release && echo `$VERSION_CODENAME) stable" | eval "`$SUDO tee /etc/apt/sources.list.d/docker.list > /dev/null"
-eval "`$SUDO apt-get update -qq"
-eval "`$SUDO apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin"
-eval "`$SUDO systemctl enable --now docker"
-eval "`$SUDO usermod -aG docker odak"
-docker --version
-docker compose version
+run_sudo apt-get update -qq
+run_sudo apt-get install -y -qq ca-certificates curl gnupg lsb-release
+run_sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/debian/gpg -o /tmp/docker.gpg.asc
+run_sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/docker.gpg /tmp/docker.gpg.asc
+run_sudo chmod a+r /etc/apt/keyrings/docker.gpg
+CODENAME=`$(. /etc/os-release && echo `$VERSION_CODENAME)
+echo "deb [arch=`$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian `${CODENAME} stable" | run_sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+run_sudo apt-get update -qq
+if run_sudo apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin 2>/tmp/docker-apt.err; then
+  echo 'Docker CE (resmi repo) kuruldu.'
+else
+  echo "docker-ce yok (`${CODENAME}); Debian docker.io fallback..."
+  run_sudo rm -f /etc/apt/sources.list.d/docker.list
+  run_sudo apt-get update -qq
+  run_sudo apt-get install -y -qq docker.io docker-compose
+fi
+run_sudo systemctl enable --now docker
+run_sudo usermod -aG docker odak
+run_sudo docker --version
+run_sudo docker compose version 2>/dev/null || docker-compose --version 2>/dev/null || true
+echo 'Docker kuruldu; odak docker grubunda (yeni oturumda docker sudo gerektirmez).'
 "@
 
 Write-Host "Docker kurulumu basliyor ($Server) — uzun surebilir..." -ForegroundColor Cyan

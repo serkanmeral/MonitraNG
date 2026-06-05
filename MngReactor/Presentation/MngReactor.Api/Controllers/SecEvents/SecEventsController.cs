@@ -32,6 +32,7 @@ public sealed class SecEventsController : ControllerBase
         [FromQuery] string? srcIp,
         [FromQuery] string? actorUser,
         [FromQuery] string? search,
+        [FromQuery] bool excludeUnknown = true,
         [FromQuery] int skip = 0,
         [FromQuery] int limit = 50,
         CancellationToken cancellationToken = default)
@@ -55,6 +56,7 @@ public sealed class SecEventsController : ControllerBase
                 SrcIp = srcIp,
                 ActorUser = actorUser,
                 Search = search,
+                ExcludeUnknown = excludeUnknown,
                 Skip = skip,
                 Limit = limit
             },

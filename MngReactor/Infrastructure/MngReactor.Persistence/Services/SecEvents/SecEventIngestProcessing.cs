@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MngReactor.Application.Abstractions.Observations;
 using MngReactor.Application.Abstractions.SecEvents;
+using MngReactor.Application.Configuration;
 using MngReactor.Application.Features.Commands.Ingest;
 using MngReactor.Application.Models.SecEvents;
 using MngReactor.Application.Observations;
@@ -17,6 +19,7 @@ public sealed class SecEventIngestProcessing : ISecEventIngestProcessing
     private readonly ISecEventPublisher _publisher;
     private readonly IObservationPublisher _observationPublisher;
     private readonly ISecEventFlowBaselineStore _flowBaselineStore;
+    private readonly SecEventsSettings _settings;
 
     public SecEventIngestProcessing(
         ILogger<SecEventIngestProcessing> logger,
@@ -25,7 +28,8 @@ public sealed class SecEventIngestProcessing : ISecEventIngestProcessing
         ISecEventsRepository repository,
         ISecEventPublisher publisher,
         IObservationPublisher observationPublisher,
-        ISecEventFlowBaselineStore flowBaselineStore)
+        ISecEventFlowBaselineStore flowBaselineStore,
+        IOptions<MngReactorSettings> options)
     {
         _logger = logger;
         _registry = registry;
@@ -34,6 +38,7 @@ public sealed class SecEventIngestProcessing : ISecEventIngestProcessing
         _publisher = publisher;
         _observationPublisher = observationPublisher;
         _flowBaselineStore = flowBaselineStore;
+        _settings = options?.Value?.SecEvents ?? new SecEventsSettings();
     }
 
     public async Task<SecEventIngestResponse> ProcessAsync(
@@ -79,21 +84,41 @@ public sealed class SecEventIngestProcessing : ISecEventIngestProcessing
         var ingestedAt = DateTime.UtcNow;
         var docs = new List<SecEventDocument>(items.Count);
         var messages = new List<SecEventCreatedMessage>(items.Count);
+        var skipped = 0;
 
         foreach (var item in items)
         {
             var ctx = SecEventRawContext.From(item);
             var parsed = ParseSafe(ctx);
+            if (_settings.DropUnknownEvents && SecEventUnknownFilter.IsUnknown(parsed))
+            {
+                skipped++;
+                _logger.LogDebug(
+                    "sec_events unknown dropped domain={Domain} parser={ParserId} host={Host}",
+                    domain,
+                    parsed.ParserId,
+                    parsed.SourceHost);
+                continue;
+            }
+
             var enrichment = await SecEventFlowBaselineEnricher.EnrichAsync(
                 parsed, domain, _flowBaselineStore, cancellationToken);
             parsed = enrichment.Parsed;
-            docs.Add(SecEventDocument.FromParsed(parsed, domain, ingestedAt, enrichment.EmitNewFlowObservation));
+            docs.Add(SecEventDocument.FromParsed(
+                parsed,
+                domain,
+                ingestedAt,
+                enrichment.EmitNewFlowObservation,
+                _settings.PersistFullRaw));
             messages.Add(ToCreatedMessage(domain, parsed));
         }
 
-        var inserted = await _repository.InsertManyAsync(domain, docs, cancellationToken);
+        var inserted = docs.Count == 0
+            ? 0
+            : await _repository.InsertManyAsync(domain, docs, cancellationToken);
 
-        _ = _publisher.PublishCreatedAsync(domain, messages, cancellationToken);
+        if (messages.Count > 0)
+            _ = _publisher.PublishCreatedAsync(domain, messages, cancellationToken);
 
         foreach (var doc in docs)
         {
@@ -110,7 +135,8 @@ public sealed class SecEventIngestProcessing : ISecEventIngestProcessing
         return new SecEventIngestResponse
         {
             Accepted = inserted,
-            Rejected = items.Count - inserted,
+            Rejected = items.Count - inserted - skipped,
+            Skipped = skipped,
             Published = messages.Count
         };
     }

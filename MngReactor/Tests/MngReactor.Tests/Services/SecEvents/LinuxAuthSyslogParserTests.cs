@@ -54,6 +54,23 @@ public sealed class LinuxAuthSyslogParserTests
     }
 
     [Fact]
+    public void CanParse_SshdSession_GenericSyslogProduct_ReturnsTrue()
+    {
+        var raw = "<38>Jun  5 16:08:18 monitrang sshd-session[141463]: Failed password for invalid user probe from 192.168.20.13 port 22 ssh2";
+        var ctx = new SecEventRawContext
+        {
+            ReceivedAt = DateTime.Parse("2026-06-05T13:08:18Z").ToUniversalTime(),
+            Source = new SecEventSourceInfo { Type = "firewall", Product = "generic-syslog", Host = "monitrang" },
+            Raw = System.Text.Json.JsonSerializer.SerializeToElement(raw)
+        };
+        Assert.True(_parser.CanParse(ctx));
+        var parsed = _parser.Parse(ctx);
+        Assert.Equal("login_failed", parsed.EventAction);
+        Assert.Equal("probe", parsed.ActorUser);
+        Assert.Equal("192.168.20.13", parsed.NetworkSrcIp);
+    }
+
+    [Fact]
     public void Registry_ResolvesLinuxBeforeFirewall()
     {
         var registry = new SecEventParserRegistry(

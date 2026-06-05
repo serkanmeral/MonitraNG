@@ -1,10 +1,17 @@
 # Operasyon Merkezi — Kullanıcı Rehberi
 
-Operasyon Merkezi; iş kayıtlarını (work item) oluşturduğunuz, takip ettiğiniz ve sonuçlandırdığınız çalışma alanıdır. Help desk talepleri, görevler, olaylar veya operasyonel istekler bu modül üzerinden tek bir akışta yönetilir.
+Operasyon Merkezi; iş kayıtlarını (work item) oluşturduğunuz, takip ettiğiniz ve sonuçlandırdığınız çalışma alanıdır. Help desk talepleri, geri bildirim kayıtları, görevler veya operasyonel istekler bu modül üzerinden tek bir akışta yönetilir.
 
 Bu rehber **son kullanıcıya** yöneliktir: bir işi nasıl açarsınız, listede/panoda nasıl takip edersiniz, profilinde neler yaparsınız ve nasıl filtreleyip ararsınız.
 
-> **İpucu:** Gördüğünüz alanlar ve sütunlar çalışma alanınıza (workspace) göre değişebilir; çünkü formlar ve panolar yöneticiniz tarafından özelleştirilir. Adımlar her yapılandırmada aynıdır.
+> **İpucu:** Gördüğünüz alanlar ve sütunlar çalışma alanınıza (workspace) göre değişebilir; formlar ve panolar yöneticiniz tarafından özelleştirilir. Adımlar her yapılandırmada aynıdır.
+
+**Örnek çalışma alanları (Odak prod):**
+
+| Çalışma alanı | Anahtar öneki | Örnek |
+| --- | --- | --- |
+| MonitraNG Geri Bildirim | `MNG` | `MNG-0001` |
+| IT Destek | `HD` (yapılandırmaya göre) | `HD-0042` |
 
 ---
 
@@ -20,8 +27,9 @@ Bu rehber **son kullanıcıya** yöneliktir: bir işi nasıl açarsınız, liste
 Çalışma alanı ekranında:
 
 - **Tümünü aç / Tümünü kapat** ile ağacı genişletip daraltabilirsiniz.
-- Her çalışma alanının bir **anahtar öneki** (ör. `HD`, `SOC`) ve bağlı **panoları** vardır.
+- Her çalışma alanının bir **anahtar öneki** (ör. `MNG`, `HD`) ve bağlı **panoları** vardır.
 - Pano kartlarında görünüm tipini gösteren bir etiket bulunur: **Kanban** veya **Liste**.
+- Pano seçildiğinde orta alanda **Özet** görünümü açılır. Panoya bir **özet pano (dashboard)** bağlandıysa **Özet | Pano** anahtarıyla pano widget'larını da görebilirsiniz.
 
 ---
 
@@ -41,12 +49,12 @@ Bu rehber **son kullanıcıya** yöneliktir: bir işi nasıl açarsınız, liste
 | --- | --- |
 | **Başlık** | İşin kısa adı (zorunlu) |
 | **Açıklama** | Ayrıntılı metin |
-| **İş tipi** | Olay, hizmet talebi, görev vb. |
+| **İş tipi** | Olay, hizmet talebi, geri bildirim vb. |
 | **Öncelik** | Düşük → kritik |
 | **Atanan** | İşi üstlenen kişi (ad/kullanıcı adı/e-posta ile aranır) |
 | **İzleyenler** | Bilgilendirilecek kişiler |
-| **Bitiş tarihi** | Hedeflenen tamamlanma tarihi |
-| **Etiketler** | Sınıflandırma etiketleri |
+| **Etiketler** | Sınıflandırma etiketleri (çalışma alanı kataloğundan) |
+| **Bitiş tarihi** | Hedeflenen tamamlanma tarihi (tanımlıysa) |
 
 > **Zorunlu alanlar** yıldız (`*`) ile işaretlenir. Eksik bırakırsanız **Eksik zorunlu alanlar** uyarısı çıkar ve ilgili alanın altında **Bu alan zorunludur** yazar.
 
@@ -60,7 +68,7 @@ Liste, çok sayıda işi bir tablo üzerinde takip etmenin en hızlı yoludur. S
 
 | Sütun | İçerik |
 | --- | --- |
-| **Anahtar** | İş numarası (ör. `HD-42`) |
+| **Anahtar** | İş numarası (ör. `MNG-12`) |
 | **Başlık** | İşin adı |
 | **Durum** | Renkli durum etiketi |
 | **Atanan** | Sorumlu kişi |
@@ -68,7 +76,7 @@ Liste, çok sayıda işi bir tablo üzerinde takip etmenin en hızlı yoludur. S
 | **Tip** | İş tipi |
 | **Oluşturan / Oluşturma** | Kaydı açan kişi ve tarih |
 | **Geçen süre** | Açılışından bu yana geçen süre |
-| **SLA durumu** | Hedeflere göre durum |
+| **SLA durumu** | Hedeflere göre durum (SLA tanımlı çalışma alanlarında) |
 
 **Kullanım:**
 
@@ -76,7 +84,7 @@ Liste, çok sayıda işi bir tablo üzerinde takip etmenin en hızlı yoludur. S
 - Alt çubuktan sayfa boyutunu seçin: **10 / 25 / 50 / 100**.
 - Her satırın sonunda **İşlemler** sütunu vardır:
   - **Profili gör** (göz simgesi)
-  - **Düzenle** (kalem — düzenleme yetkisi gerektirir)
+  - **Düzenle** (kalem — düzenleme yetkisi gerektirir; pano üzerinden hızlı düzenleme)
   - **Sil** (çöp kutusu — onay ister)
 - Üst çubukta **Yenile** ve **Yeni iş** düğmeleri bulunur.
 
@@ -90,7 +98,7 @@ Panonuz Kanban olarak yapılandırıldıysa, üstteki **Liste | Kanban** anahtar
 - **Kart** üzerinde işin **anahtarı**, **başlığı** ve atanan kişinin **baş harfleri** yer alır. Karta tıklayınca **profil** açılır.
 - Bir kartı başka bir sütuna **sürükleyip bırakarak** durumunu değiştirebilirsiniz (düzenleme yetkisi gerekir):
   - Geçiş tanımlıysa durum güncellenir ve **Durum güncellendi** bildirimi çıkar.
-  - Geçiş **zorunlu alan** istiyorsa, sistem sizi **profilden uygulamaya** yönlendirir.
+  - Geçiş **zorunlu alan** istiyorsa, sistem sizi **profilden uygulamaya** yönlendirir veya geçiş penceresinde alanları doldurmanızı ister.
 
 > **Not:** Bazı sütunlara doğrudan geçiş tanımlı olmayabilir; bu durumda kart geri döner ve bir uyarı gösterilir.
 
@@ -100,29 +108,38 @@ Panonuz Kanban olarak yapılandırıldıysa, üstteki **Liste | Kanban** anahtar
 
 Bir işin tüm detayını profil sayfasında görürsünüz. Üst kısımda işin **anahtarı** ve **başlığı**, durum geçişi düğmeleri ve sekmeler bulunur.
 
+### Profilde düzenleme
+
+Düzenleme yetkiniz varsa profil üst çubuğundaki **Düzenle** düğmesiyle **Detaylar** sekmesinde alanları doğrudan güncelleyebilirsiniz:
+
+1. **Düzenle**'ye tıklayın (üst çubuk).
+2. **Detaylar** sekmesinde form alanlarını değiştirin.
+3. **Kaydet** ile onaylayın veya **İptal** ile vazgeçin.
+
+Yetkiniz yoksa profil **salt okunur** görünür (**Salt okunur** rozeti).
+
 ### Durum geçişi uygulama
 
 1. Üstteki **geçiş** düğmesine tıklayın (etiket, geçiş ya da hedef durum adıdır).
 2. Açılan **Durum geçişi uygula** penceresinde isterseniz **Yorum (opsiyonel)** ekleyin.
-3. Geçiş zorunlu alan istiyorsa bunları doldurun ve **Uygula**'ya tıklayın.
+3. Geçiş **zorunlu alan** istiyorsa (ör. kapanışta **çözüm özeti**) bu alanlar pencerede gösterilir — doldurup **Uygula**'ya tıklayın.
 
 ### Sekmeler
 
 | Sekme | İçerik |
 | --- | --- |
-| **Detaylar** | İşin alanları (salt okunur görünüm) |
-| **Yorumlar** | Ekiple yazışma, etiketleme, yanıtlar |
+| **Detaylar** | İşin alanları (görüntüleme; düzenleme yetkisiyle yerinde düzenleme) |
+| **Yorumlar** | Zengin metin editörü ile yorum, `@` ile kişi etiketleme, dosya eki, yanıt |
 | **Aktivite** | Durum/geçiş/sistem olaylarının zaman çizelgesi |
-| **Ekler** | İşe eklenen dosyalar |
+| **Ekler** | İşe eklenen dosyalar (önizleme ve indirme) |
 
 ### Sağ panel (özet)
 
-- **SLA** — yanıt ve çözüm hedefleri.
+- **SLA** — yanıt ve çözüm hedefleri (tanımlıysa).
 - **Detaylar** — durum, öncelik, tip, atanan, oluşturan, tarihler.
 - **İzleyenler** — bildirilen kişiler.
 - **Bağlı kayıtlar** — ilişkili diğer işler.
-
-> Profil **salt okunurdur**. Bir alanı değiştirmek için panodaki **Düzenle** penceresini veya bir **durum geçişini** kullanın.
+- **Politika / kurallar** — bu kayda uygulanan SLA ve kural özeti (salt okunur).
 
 ---
 
@@ -179,11 +196,12 @@ Yorumlar sekmesi ekip içi iletişim içindir.
 
 ## 9. Hızlı ipuçları
 
-- İşe en hızlı erişim: **anahtar** (ör. `HD-42`) üzerinden listede arama yapın.
+- İşe en hızlı erişim: **anahtar** (ör. `MNG-12`) üzerinden listede arama yapın.
 - Panoda sürükle-bırak çalışmıyorsa, hedef durum için geçiş tanımlı olmayabilir; **profilden** durum geçişi deneyin.
+- **Tamamla** veya **Kapat** gibi geçişlerde ek alan (çözüm özeti vb.) isteniyorsa geçiş penceresinde doldurun.
 - Bir alanı göremiyorsanız, çalışma alanınızın formunda tanımlı olmayabilir — yöneticinize danışın.
 - Yorumda yanlış kişiyi etiketlediyseniz yorumu **düzenleyebilirsiniz**.
 
 ---
 
-*Bu doküman Operasyon Merkezi son kullanıcı deneyimini temel alır. Çalışma alanınıza özel alan ve pano yapılandırmaları için yöneticinizle iletişime geçin.*
+*Bu doküman Operasyon Merkezi son kullanıcı deneyimini (Haziran 2026) temel alır. Çalışma alanınıza özel alan ve pano yapılandırmaları için yöneticinizle iletişime geçin.*

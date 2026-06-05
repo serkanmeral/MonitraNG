@@ -1,7 +1,9 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using MngReactor.Application.Abstractions.Observations;
 using MngReactor.Application.Abstractions.SecEvents;
+using MngReactor.Application.Configuration;
 using MngReactor.Application.Features.Commands.Ingest;
 using MngReactor.Application.Models.SecEvents;
 using MngReactor.Persistence.Services.SecEvents;
@@ -16,7 +18,8 @@ public sealed class SecEventIngestProcessingTests
     private static SecEventIngestProcessing CreateSut(
         Mock<ISecEventsRepository>? repoMock = null,
         Mock<ISecEventPublisher>? publisherMock = null,
-        Mock<IObservationPublisher>? observationPublisherMock = null)
+        Mock<IObservationPublisher>? observationPublisherMock = null,
+        SecEventsSettings? secEventsSettings = null)
     {
         repoMock ??= new Mock<ISecEventsRepository>();
         publisherMock ??= new Mock<ISecEventPublisher>();
@@ -66,7 +69,11 @@ public sealed class SecEventIngestProcessingTests
             repoMock.Object,
             publisherMock.Object,
             observationPublisherMock.Object,
-            baselineStoreMock.Object);
+            baselineStoreMock.Object,
+            Options.Create(new MngReactorSettings
+            {
+                SecEvents = secEventsSettings ?? new SecEventsSettings { DropUnknownEvents = false }
+            }));
     }
 
     private static SecEventIngestItem FirewallItem =>
@@ -136,7 +143,7 @@ public sealed class SecEventIngestProcessingTests
     {
         var repo = new Mock<ISecEventsRepository>();
         var publisher = new Mock<ISecEventPublisher>();
-        var sut = CreateSut(repo, publisher);
+        var sut = CreateSut(repo, publisher, secEventsSettings: new SecEventsSettings { DropUnknownEvents = false });
 
         var item = new SecEventIngestItem
         {
@@ -150,6 +157,7 @@ public sealed class SecEventIngestProcessingTests
             "odak");
 
         Assert.Equal(1, response.Accepted);
+        Assert.Equal(0, response.Skipped);
         Assert.Equal(1, response.Published);
 
         repo.Verify(r => r.InsertManyAsync(
@@ -157,6 +165,73 @@ public sealed class SecEventIngestProcessingTests
             It.Is<IReadOnlyList<SecEventDocument>>(docs =>
                 docs[0].Event.Action == "unknown"
                 && docs[0].Parser.Id == UnknownSecEventFallback.ParserIdValue),
+            It.IsAny<CancellationToken>()));
+    }
+
+    [Fact]
+    public async Task ProcessAsync_UnknownDroppedWhenConfigured_SkipsPersistAndObservation()
+    {
+        var repo = new Mock<ISecEventsRepository>();
+        var observationPublisher = new Mock<IObservationPublisher>();
+        var sut = CreateSut(
+            repo,
+            observationPublisherMock: observationPublisher,
+            secEventsSettings: new SecEventsSettings { DropUnknownEvents = true });
+
+        var item = new SecEventIngestItem
+        {
+            ReceivedAt = DateTime.UtcNow,
+            Source = new SecEventIngestSource { Type = "unknown" },
+            Raw = JsonSerializer.SerializeToElement(SiemFixtureHelper.ReadFixture("unparseable_01.txt"))
+        };
+
+        var response = await sut.ProcessAsync(
+            new SecEventIngestRequest { Items = [item] },
+            "odak");
+
+        Assert.Equal(0, response.Accepted);
+        Assert.Equal(1, response.Skipped);
+        Assert.Equal(0, response.Published);
+
+        repo.Verify(
+            r => r.InsertManyAsync(
+                It.IsAny<string>(),
+                It.IsAny<IReadOnlyList<SecEventDocument>>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+
+        observationPublisher.Verify(
+            o => o.PublishSecEventAsync(
+                It.IsAny<MngReactor.Application.Observations.SecEventObservationPayload>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_PersistFullRawFalse_DoesNotStoreRawOnDocument()
+    {
+        var repo = new Mock<ISecEventsRepository>();
+        repo
+            .Setup(r => r.InsertManyAsync(
+                It.IsAny<string>(),
+                It.IsAny<IReadOnlyList<SecEventDocument>>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string _, IReadOnlyList<SecEventDocument> docs, CancellationToken _) => docs.Count);
+
+        var sut = CreateSut(
+            repo,
+            secEventsSettings: new SecEventsSettings { DropUnknownEvents = false, PersistFullRaw = false });
+
+        await sut.ProcessAsync(
+            new SecEventIngestRequest { Items = [FirewallItem] },
+            "odak");
+
+        repo.Verify(r => r.InsertManyAsync(
+            "odak",
+            It.Is<IReadOnlyList<SecEventDocument>>(docs =>
+                docs.Count == 1
+                && docs[0].Raw == string.Empty
+                && !string.IsNullOrEmpty(docs[0].RawPreview)),
             It.IsAny<CancellationToken>()));
     }
 

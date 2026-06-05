@@ -11,5 +11,7 @@ public interface IRequestContext
     string? DomainName { get; }
     IReadOnlyList<string> UserGroups { get; }
     bool IsAdmin { get; }
+    /// <summary>JWT <c>isManager</c> / <c>is_manager</c> — Keeper manager grubu üyeliği.</summary>
+    bool IsManager { get; }
     string? BearerToken { get; }
 }

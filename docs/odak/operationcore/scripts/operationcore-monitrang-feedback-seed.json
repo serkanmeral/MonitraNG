@@ -1,0 +1,42 @@
+{
+  "viewGroupIds": [
+    "6a1072ac69221f812f97b29b"
+  ],
+  "seededAt": "2026-06-05T09:59:52.1546565+03:00",
+  "priorities": {
+    "p3": "22af4e5a-d05e-43a9-b77a-58f4d3df32f7"
+  },
+  "workspaceName": "MonitraNG Geri Bildirim",
+  "dashboardId": "a03429d5-3b71-4057-b346-703303708784",
+  "gatewayUrl": "http://192.168.20.8:5040",
+  "states": {
+    "rejected": "6426fdba-511a-4d38-bcc8-cfe404900d41",
+    "new": "ff69deb7-d399-4ac5-9aeb-a202878ea4b1",
+    "done": "998559ba-3bc4-4ff9-8b5c-e00eeffec990",
+    "waiting": "c5819384-8d33-4723-ae6d-44de4d161da1",
+    "review": "43ccbb66-4eba-4cf9-b8bc-15ab3685c08f",
+    "planned": "ee3d1638-3d3c-4ba1-bfe6-bbe12015e944"
+  },
+  "workspaceId": "d2526f5d-1c83-4c17-a184-466edb6c690a",
+  "formId": "b0587a07-534e-4d7f-91bc-e179096b7b3e",
+  "flowId": "6a41d410-0325-4dce-831e-0483d57c7119",
+  "boards": {
+    "queue": "a78b5d33-3b62-403a-a160-7f551b7b4509",
+    "submit": "2971e225-e724-4068-8f45-f6aff913a886"
+  },
+  "tags": {
+    "Performans": "15fc6081-eb7c-4552-ac1b-3548c34d05dc",
+    "API / Veri": "3e56b764-de0e-4e70-9526-62ad248651ea",
+    "Yetki": "d2650333-de67-4b02-8208-4c0f951fbf46",
+    "UI / Arayuz": "36301080-a87c-4fe3-aac9-325f6ba7d830",
+    "Prod": "7171f5cb-46b5-4153-8175-c50186f2dc6d",
+    "MonitraNG": "c7888acc-d1da-46e5-9718-0db196dbc038"
+  },
+  "viewGroups": [
+    "MonitraNG Users"
+  ],
+  "types": {
+    "suggestion": "5682fc2e-f300-4a87-9dce-e37d955ad1c0",
+    "bug": "e5e2d657-b9d9-4514-92e1-d922834eda38"
+  }
+}

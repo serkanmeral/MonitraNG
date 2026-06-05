@@ -1,9 +1,9 @@
 # DEVAM — SIEM-Hafif Planlama (Kaldığımız Yer)
 
-**Son güncelleme:** 4 Haziran 2026 (mola checkpoint)  
-**Durum:** ✅ **SIEM Faz 1–4 tamam** · Faz 5 (LogAlarm/5651) ertelendi · Git `62567c3`
+**Son güncelleme:** 5 Haziran 2026 (mola checkpoint — veri yaşam döngüsü + Linux pilot)  
+**Durum:** ✅ **SIEM Faz 1–4 tamam** · **Veri yönetimi MVP (§9)** ✅ · Faz 5 (LogAlarm/5651) ertelendi · Git `@HEAD` (mola commit) · Odak iki-host U1 pilot ✅
 
-**Handoff (yeni chat):** [HANDOFF.md](./HANDOFF.md)
+**Handoff (yeni chat):** [HANDOFF.md](./HANDOFF.md) §8
 
 ---
 
@@ -53,7 +53,10 @@
 | **B1 `bastion.generic.v1`** | ✅ `test-siem-bastion-ingest.ps1` |
 | **U10 AD directory_object_modified alarm** | ✅ `test-siem-u10-alarm-e2e.ps1` |
 | **Quick regression wrapper** | ✅ `run-siem-quick-regression.ps1` |
-| **Linux rsyslog auth (Faz 2.5)** | ✅ `test-linux-rsyslog-auth-e2e.ps1` |
+| **Linux rsyslog auth (Faz 2.5)** | ✅ `test-linux-rsyslog-auth-e2e.ps1` · imjournal sıkı filtre |
+| **sec_events veri yönetimi (§9 MVP)** | ✅ `SecEventsSettings` · unknown drop · hot TTL 60g · rawPreview-only |
+| **Linux iki-host pilot (U1×2)** | ✅ `run-siem-linux-two-host-pilot.ps1` · monitrang + monitrang-prod |
+| **Lab reset script** | ✅ `reset-siem-lab-data.ps1 -Apply` |
 | **B3 hazır kural paketi (`siem-mvp-v1`)** | ✅ `seed-siem-alarm-rule-pack.ps1` |
 | **Aktif yol haritası** | [SIEM_ROADMAP.md](./SIEM_ROADMAP.md) · LogAlarm ertelendi |
 
@@ -153,6 +156,16 @@ Kısa vadeli teknik devam (MVP sonrası bakım):
 
 LogAlarm / 5651 / WORM → **Faz 5 (ertelendi)** — [SIEM_ROADMAP.md §6](./SIEM_ROADMAP.md#6-faz-5--ertelenen-logalarm--uyum)
 
+### Mola checkpoint (5 Haz 2026)
+
+| Alan | Değer |
+|------|--------|
+| Git | `main` @ mola commit (bkz. HANDOFF §5) |
+| Odak | mngreactor + mngui + mngengine — **SecEvents deploy gerekli** |
+| Lab veri | 2× U1 alarm · 20 login_failed · pilot kullanıcıları (yukarıda) |
+| Regresyon | `run-siem-quick-regression.ps1` (deploy sonrası) |
+| Handoff | [HANDOFF.md §8](./HANDOFF.md#8-siem-chat-promptu-yeni-chat--kopyala-yapıştır) |
+
 ### Mola checkpoint (4 Haz 2026)
 
 | Alan | Değer |
@@ -163,7 +176,37 @@ LogAlarm / 5651 / WORM → **Faz 5 (ertelendi)** — [SIEM_ROADMAP.md §6](./SIE
 | Yerel CI | `run-siem-local-gate.ps1` PASS |
 | Handoff | [HANDOFF.md §7](./HANDOFF.md#7-siem-chat-promptu-mola-sonrası--kopyala-yapıştır) |
 
-**Sıradaki (mola sonrası):** müşteri prod ops · P2 perf · gerçek FW API · Faz 5 (ertelendi)
+### Planlama oturumu (5 Haz 2026)
+
+| Konu | Durum |
+|------|--------|
+| Ürün/SIEM/Alarm/Workflow anlatımı | ✅ HANDOFF §7 |
+| Syslog: Engine = listener (push) | ✅ SIEM_PLANNING §5.1 |
+| UI: Güvenlik Merkezi + Alarm Merkezi | ✅ SIEM_DASHBOARD · SIEM_EVENTS_UI · `/apps/alarm-center/rules` |
+| U1–U10 = iç senaryo kodu (standart değil) | ✅ |
+| Odak E2E alarm purge (137 kural) | ✅ `purge-siem-e2e-alarm-rules.ps1 -Apply` |
+| Odak P4 workflow test purge (3 kural) | ✅ |
+| Odak `siem-mvp-v1` seed U1–U7 | ✅ `seed-siem-alarm-rule-pack.ps1 -Replace` |
+| Purge/seed script token düzeltmesi | ✅ commitlendi |
+| Kalan benchmark artığı | ⬜ `Bench lag bench-P0-*` · `U1 probe` (isteğe bağlı sil) |
+
+### Veri yönetimi + Linux pilot (5 Haz 2026 — mola)
+
+| Konu | Durum |
+|------|--------|
+| **Unknown ingest drop** | ✅ `SecEvents:DropUnknownEvents=true` · yanıt `skipped` |
+| **Hot TTL** | ✅ Mongo `idx_timestamp_ttl` · `@timestamp` · 60 gün |
+| **rawPreview disiplini** | ✅ `PersistFullRaw=false` · BSON'da `raw` yok |
+| **UI unknown filtresi** | ✅ `excludeUnknown=true` varsayılan · checkbox |
+| **sshd-session parser** | ✅ Debian 13 journal · Engine classify |
+| **rsyslog imjournal şablonu** | ✅ yalnızca Failed/Accepted password |
+| **DI IT wiki (Linux rsyslog)** | ✅ `guvenlik-merkezi-linux-rsyslog-kurulumu.md` · test+prod seed |
+| **Lab temizlik** | ✅ `reset-siem-lab-data.ps1 -Apply` |
+| **İki-host pilot** | ✅ test 20.20 + prod 20.8 → Engine · 20 fail + 4 ok · **2× U1 alarm** |
+
+**Pilot kullanıcıları (Odak lab):** `pilot_fail_test20` / `pilot_ok_test20` (monitrang) · `pilot_fail_prod08` / `pilot_ok_prod08` (monitrang-prod)
+
+**Sıradaki (öncelik pilot bağlı):** FortiGate deny syslog (U4) · Windows NxLog/WEC dar filtre · gerçek FW API · deploy `mngreactor`+`mngui` (SecEvents ayarları) · Faz 5 en sonda
 
 **Operasyon notu:** Benchmark veya yoğun ingest sonrası E2E/workflow testleri önce kuyruk temizliği gerektirebilir:
 - `purge-workflow-queues.ps1 -Apply` — `workflow.execution`, `workflow.event.inbound`, `alarm.observation.inbound` (birleşik)
@@ -171,7 +214,7 @@ LogAlarm / 5651 / WORM → **Faz 5 (ertelendi)** — [SIEM_ROADMAP.md §6](./SIE
 
 `test-siem-e2e-suite.ps1` alarm + workflow purge adımlarını otomatik çalıştırır.
 
-E2E geçici alarm kuralları birikimini temizlemek: `purge-siem-e2e-alarm-rules.ps1 -Apply` (`siem-mvp-v1` paket kuralları korunur).
+E2E geçici alarm kuralları birikimini temizlemek: `purge-siem-e2e-alarm-rules.ps1 -Apply` (`siem-mvp-v1` paket kuralları korunur). Ardından operasyonel eşikler: `seed-siem-alarm-rule-pack.ps1 -Replace`. Bkz. [SIEM_ALARM_RULE_PACK.md](./SIEM_ALARM_RULE_PACK.md).
 
 ---
 

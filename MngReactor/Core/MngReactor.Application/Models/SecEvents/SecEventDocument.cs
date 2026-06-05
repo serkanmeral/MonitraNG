@@ -20,7 +20,8 @@ public sealed class SecEventDocument
         ParsedSecEvent parsed,
         string domain,
         DateTime ingestedAt,
-        bool baselineNewFlowPair = false) =>
+        bool baselineNewFlowPair = false,
+        bool persistFullRaw = false) =>
         new()
         {
             Timestamp = parsed.Timestamp,
@@ -55,7 +56,7 @@ public sealed class SecEventDocument
                     Protocol = parsed.NetworkProtocol
                 },
             Parser = new SecEventParserBlock { Id = parsed.ParserId },
-            Raw = parsed.Raw,
+            Raw = persistFullRaw ? parsed.Raw : string.Empty,
             RawPreview = parsed.RawPreview
         };
 }

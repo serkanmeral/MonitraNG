@@ -21,6 +21,7 @@ const search = ref('');
 const sourceType = ref<string | null>(null);
 const eventAction = ref<string | null>(null);
 const timeRange = ref<SecEventTimeRange>('24h');
+const showUnknown = ref(false);
 
 const VALID_TIME_RANGES: SecEventTimeRange[] = ['1h', '24h', '7d'];
 
@@ -112,6 +113,7 @@ function syncQueryToUrl() {
   if (sourceType.value) query.sourceType = sourceType.value;
   if (eventAction.value) query.eventAction = eventAction.value;
   if (timeRange.value !== '24h') query.timeRange = timeRange.value;
+  if (showUnknown.value) query.showUnknown = '1';
   void router.replace({ query });
 }
 
@@ -124,6 +126,7 @@ function applyFromRoute() {
   timeRange.value = VALID_TIME_RANGES.includes(tr as SecEventTimeRange)
     ? (tr as SecEventTimeRange)
     : '24h';
+  showUnknown.value = q.showUnknown === '1' || q.showUnknown === 'true';
 }
 
 function applyPreset(preset: { eventAction: string }) {
@@ -141,6 +144,7 @@ async function loadRows(syncUrl = false) {
       sourceType: sourceType.value ?? undefined,
       eventAction: eventAction.value ?? undefined,
       search: search.value.trim() || undefined,
+      excludeUnknown: !showUnknown.value,
       limit: 100,
     });
     rows.value = res.items;
@@ -247,7 +251,15 @@ onMounted(() => {
           clearable
         />
       </v-col>
-      <v-col cols="12" sm="6" md="3" class="d-flex align-center gap-2">
+      <v-col cols="12" sm="6" md="2" class="d-flex align-center">
+        <v-checkbox
+          v-model="showUnknown"
+          :label="t('siemCenter.events.showUnknown')"
+          density="compact"
+          hide-details
+        />
+      </v-col>
+      <v-col cols="12" sm="6" md="2" class="d-flex align-center gap-2">
         <v-btn color="primary" prepend-icon="mdi-filter" :loading="loading" @click="loadRows(true)">
           {{ t('siemCenter.events.apply') }}
         </v-btn>
@@ -342,7 +354,9 @@ onMounted(() => {
             <v-progress-circular indeterminate color="primary" size="28" />
           </div>
           <div v-else-if="displayRaw" class="mt-4">
-            <div class="text-caption text-medium-emphasis mb-1">{{ t('siemCenter.events.rawFull') }}</div>
+            <div class="text-caption text-medium-emphasis mb-1">
+              {{ selected.raw ? t('siemCenter.events.rawFull') : t('siemCenter.events.rawPreview') }}
+            </div>
             <pre class="text-body-2 pa-3 rounded bg-grey-lighten-4 overflow-auto" style="max-height: 360px; white-space: pre-wrap;">{{ displayRaw }}</pre>
           </div>
           <div v-else class="mt-4 text-medium-emphasis text-body-2">

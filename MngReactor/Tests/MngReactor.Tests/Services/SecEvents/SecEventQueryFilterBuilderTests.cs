@@ -34,4 +34,16 @@ public sealed class SecEventQueryFilterBuilderTests
 
         Assert.NotNull(filter);
     }
+
+    [Fact]
+    public void Build_ExcludeUnknown_DoesNotThrow()
+    {
+        var filter = SecEventQueryFilterBuilder.Build(new SecEventQueryFilter
+        {
+            ExcludeUnknown = true,
+            EventAction = "login_failed"
+        });
+
+        Assert.NotNull(filter);
+    }
 }

@@ -41,8 +41,9 @@ public static class RuleConditionEvaluator
             return true;
 
         var actual = ResolveFieldValue(workItem, field);
-        node.TryGetProperty("value", out var expectedProp);
-        var expected = JsonElementToObject(expectedProp);
+        var hasExpected = node.TryGetProperty("value", out var expectedProp)
+            && expectedProp.ValueKind is not (JsonValueKind.Undefined or JsonValueKind.Null);
+        var expected = hasExpected ? JsonElementToObject(expectedProp) : null;
 
         return cmp switch
         {
@@ -50,7 +51,7 @@ public static class RuleConditionEvaluator
             "ne" => !ValuesEqual(actual, expected),
             "empty" => IsEmpty(actual),
             "notempty" => !IsEmpty(actual),
-            "in" => IsIn(actual, expectedProp),
+            "in" => hasExpected && IsIn(actual, expectedProp),
             "gt" => CompareNumeric(actual, expected) > 0,
             "lt" => CompareNumeric(actual, expected) < 0,
             _ => ValuesEqual(actual, expected)
@@ -153,14 +154,18 @@ public static class RuleConditionEvaluator
         return value;
     }
 
-    private static object? JsonElementToObject(JsonElement element) =>
-        element.ValueKind switch
+    private static object? JsonElementToObject(JsonElement element)
+    {
+        if (element.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
+            return null;
+
+        return element.ValueKind switch
         {
             JsonValueKind.String => element.GetString(),
             JsonValueKind.Number => element.TryGetInt64(out var l) ? l : element.GetDouble(),
             JsonValueKind.True => true,
             JsonValueKind.False => false,
-            JsonValueKind.Null => null,
             _ => JsonSerializer.Deserialize<object?>(element.GetRawText())
         };
+    }
 }

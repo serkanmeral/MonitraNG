@@ -63,6 +63,7 @@ namespace MngKeeper.Api.Controllers
         }
 
         [HttpGet("{userId}")]
+        [AuthenticatedAuthorization]
         public async Task<ActionResult<GetUserResponse>> GetUser(string userId)
         {
             var query = new GetUserQuery { UserId = userId };
@@ -75,6 +76,7 @@ namespace MngKeeper.Api.Controllers
         }
 
         [HttpGet]
+        [AuthenticatedAuthorization]
         public async Task<ActionResult<GetUsersResponse>> GetUsers(
             [FromQuery] int page = 1, 
             [FromQuery] int pageSize = 10,
@@ -105,6 +107,7 @@ namespace MngKeeper.Api.Controllers
         /// N+1 yerine tek istek; cevap ad/başlık/aktif + her iki kimlikle döner.
         /// </summary>
         [HttpPost("by-ids")]
+        [AuthenticatedAuthorization]
         public async Task<ActionResult<GetUsersByIdsResponse>> GetUsersByIds([FromBody] GetUsersByIdsQuery query)
         {
             var response = await _mediator.Send(query);

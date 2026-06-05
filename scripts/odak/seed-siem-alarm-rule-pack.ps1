@@ -9,7 +9,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 $tokenScript = Join-Path $PSScriptRoot "..\tests\MngDataGateway\auth\get-token.ps1"
-$token = & $tokenScript -KeeperBaseUrl $Gateway -DomainName $Domain -Username "odak_admin" -Password "Admin123!"
+$null = & $tokenScript -KeeperBaseUrl $Gateway -DomainName $Domain -Username "odak_admin" -Password "Admin123!"
+$tokenFile = Join-Path $env:TEMP "serkan_token.txt"
+if (-not (Test-Path $tokenFile)) { throw "Token dosyasi yok: $tokenFile" }
+$token = (Get-Content -Path $tokenFile -Raw).Trim()
 $hdr = @{ Authorization = "Bearer $token"; "X-Domain-Name" = $Domain; "Content-Type" = "application/json" }
 $rulesApi = "$Gateway/alarm/api/v1/rules"
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
@@ -25,7 +28,15 @@ if ($manifest.packageId -ne $PackageId) {
     throw "Manifest packageId=$($manifest.packageId) beklenen=$PackageId"
 }
 
-$existing = @(Invoke-RestMethod -Uri $rulesApi -Headers $hdr)
+function Get-RuleList {
+    param([string]$Uri, [hashtable]$Headers)
+    $raw = Invoke-RestMethod -Uri $Uri -Headers $Headers
+    if ($null -eq $raw) { return @() }
+    if ($raw -is [System.Array]) { return @($raw) }
+    return @($raw)
+}
+
+$existing = Get-RuleList -Uri $rulesApi -Headers $hdr
 $created = 0
 $skipped = 0
 $replaced = 0
@@ -75,7 +86,7 @@ foreach ($entry in @($manifest.rules)) {
     $createdRule = Invoke-RestMethod -Uri $rulesApi -Method POST -Headers $hdr -Body $payload
     Write-Host "   OK $scenarioId ruleId=$($createdRule.id) technique=$($meta.threatTechniqueId)" -ForegroundColor Green
     $created++
-    $existing = @(Invoke-RestMethod -Uri $rulesApi -Headers $hdr)
+    $existing = Get-RuleList -Uri $rulesApi -Headers $hdr
 }
 
 Write-Host "`nPaket: $($manifest.name) v$($manifest.packageVersion)" -ForegroundColor Cyan

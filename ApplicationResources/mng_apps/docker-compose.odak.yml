@@ -39,6 +39,9 @@ services:
       - MngReactorSettings__RabbitMQ__Password=${RABBITMQ_PASSWORD:-admin123}
       - MngReactorSettings__Mqtt__Host=mosquitto
       - MngReactorSettings__ObservationPublish__Enabled=true
+      - MngReactorSettings__SecEvents__HotTtlDays=60
+      - MngReactorSettings__SecEvents__DropUnknownEvents=true
+      - MngReactorSettings__SecEvents__PersistFullRaw=false
 
   mngengine:
     ports:

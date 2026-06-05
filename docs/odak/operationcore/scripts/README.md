@@ -13,6 +13,12 @@
 
 | [seed-operation-core-demo.ps1](./seed-operation-core-demo.ps1) | Demo metadata: states, workspace, flow, type, form, board |
 | [seed-operation-core-helpdesk-reference.ps1](./seed-operation-core-helpdesk-reference.ps1) | IT Help Desk referans workspace ([reference](../reference/IT_HELP_DESK_REFERENCE.md)) |
+| [get-operationcore-token-prod.ps1](./get-operationcore-token-prod.ps1) | Token — **prod** (`192.168.20.8`) |
+| [load-operationcore-token-prod.ps1](./load-operationcore-token-prod.ps1) | Prod token yükle |
+| [setup-operation-core-datasets-prod.ps1](./setup-operation-core-datasets-prod.ps1) | Kategori + `op_*` dataset — **prod** |
+| [resolve-odak-group-ids-prod.ps1](./resolve-odak-group-ids-prod.ps1) | `mng_odak.@groups` → `__dataId` (personGroups) |
+| [seed-operation-core-monitrang-feedback.ps1](./seed-operation-core-monitrang-feedback.ps1) | **MonitraNG Geri Bildirim** workspace — yalnızca prod ([reference](../reference/MONITRANG_FEEDBACK_WORKSPACE.md)) |
+| [seed-operation-core-helpdesk-prod.ps1](./seed-operation-core-helpdesk-prod.ps1) | **IT Destek** workspace — yalnızca prod ([reference](../reference/IT_HELP_DESK_WORKSPACE.md)) |
 | [patch-oc-side-menu.ps1](./patch-oc-side-menu.ps1) | `@side_menu`: Operasyon Merkezi, Bekleyen onaylar (üst seviye), Tanımlamalar (OC admin) |
 
 Alarm Merkezi ve Otomasyon Merkezi ayrı script'ler:

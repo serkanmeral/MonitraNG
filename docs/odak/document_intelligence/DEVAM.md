@@ -36,7 +36,7 @@
 > DEVAM.md'yi okuyup özetle ve hangi seçenekle devam edeceğimi sor.
 > ```
 
-**Son güncelleme:** 3 Haziran 2026 (**PERF** — request-scoped permission snapshot, `GET bootstrap` / `GET browse`, UI tek çağrı; backend deploy gerekir, UI yerel)
+**Son güncelleme:** 5 Haziran 2026 (**System dokümanları** — Öğreticiler, Sürüm Notları, Diagnostic Raporu; manager bypass; prod seed)
 **Durum:** **🎉 Faz 1 TAMAMLANDI ✅** — tüm özellikler (resources/tree/markdown/dosya/arama/audit/sürüm geçmişi + yetkilendirme + miras + inline preview + taslak) uçtan uca **canlıda** (`mngdocument` + `mngui` deploy edildi). Sıradaki: Faz 2 (OperationCore entegrasyonu).
 
 > **⭐ KALDIĞIMIZ YER (1 Haz ~21:00) — yeni chat buradan devam edecek:** **Faz 1 kapatıldı.** Bu turda **"taslak olarak kaydet"** eklendi: `dm_resources.status` (draft/published), `CreateMarkdownRequest.IsDraft` + `UpdateMarkdownRequest.IsDraft?` (null=koru), `ResourceDto.Status`; UI'da oluşturma + editörde **taslak/yayınla** butonları ve **taslak rozeti**. **Hem `mngdocument` hem `mngui` Odak'a deploy edildi ve canlı** (gateway 200, ui :3000 200; backend draft yaşam döngüsü doğrulandı). Faz 1'in tüm özellikleri (resources/tree/markdown/dosya/arama/audit/VH + PERM + miras + PREVIEW + DRAFT) artık test sunucusunda. **Sıradaki: Faz 2 — OperationCore WorkItem ↔ doküman ilişkisi.** (Ops.: non-admin canlı filtreleme/403 doğrulaması yapılmadı — admin bypass.)
@@ -110,7 +110,7 @@
 - `dm_resources`'a `permissionsBroken` (bool). false/yok = üstten miras; true = kendi ACL'i olan **anchor**.
 - Yeni `dm_resource_permissions` dataset'i (`logging: self` → izin audit'i `__history`): `resourceId` (anchor klasör), `groupId` (görsel), `groupName` (**eşleştirme anahtarı**, JWT `user_groups` ↔), `permissions[]` (verilen aksiyonlar). DG'de **oluşturuldu**.
 - Aksiyonlar (8): `view, create, edit, delete, upload, download, move, share` (`share` modelde/UI'da var, henüz gate etmiyor — Faz 2 link paylaşımı için).
-- **Etkin yetki:** kaynak R'nin kendisi + `ancestorIds` tabandan yukarı en yakın anchor bulunur; izin kayıtları kullanıcının gruplarıyla eşleştirilir. Zincirde anchor yoksa → **açık varsayılan** (tüm aksiyonlar serbest). **Admin** (`IRequestContext.IsAdmin`) → bypass. Dosya/markdown kendi ACL'i tutmaz, klasörden miras alır.
+- **Etkin yetki:** kaynak R'nin kendisi + `ancestorIds` tabandan yukarı en yakın anchor bulunur; izin kayıtları kullanıcının gruplarıyla eşleştirilir. Zincirde anchor yoksa → **açık varsayılan** (tüm aksiyonlar serbest). **Admin** (`IRequestContext.IsAdmin`) → bypass. **Manager** (`IsManager`, JWT): mirası kırık anchor altında `view` yetkisi varsa → tam yetki (Manager klasörü menü/CRUD).
 
 **Backend (MngDocument):**
 - `IPermissionService` + `PermissionService` + `PermissionSnapshot` (tüm klasör + izin kayıtları tek seferde yüklenip bellekte çözüm).
@@ -177,8 +177,45 @@
 
 ---
 
+## DI-SYSTEM — System klasörü + öğreticiler + manager bypass (5 Haziran 2026)
+
+**Document Intelligence içerik ağacı (prod + test seed):**
+
+```
+(kök)
+├── MonitraNG/
+│   └── Öğreticiler/
+│       ├── Operasyon Merkezi — Kullanıcı Rehberi
+│       ├── IT ve Güvenlik/
+│       │   └── Güvenlik Merkezi — Linux rsyslog kurulumu
+│       └── Manager/                    (MonitraNG Users — view+download)
+│           └── Operasyon Merkezi — Yönetici Rehberi
+└── System/                             (MonitraNG Users — view+download)
+    ├── Sürüm Notları
+    └── Diagnostic Raporu
+```
+
+**İçerik (repo):**
+- `docs/odak/document_intelligence/tutorials/` — OC kullanıcı/yönetici rehberleri (Haziran 2026 güncel)
+- `docs/odak/document_intelligence/tutorials/guvenlik-merkezi-linux-rsyslog-kurulumu.md` — SIEM Linux rsyslog (IT wiki)
+- `docs/odak/document_intelligence/system/surum-notlari.md` — modül changelog + platform baseline (TR)
+- `docs/odak/document_intelligence/system/diagnostic-raporu.md` — prod API diagnostic + metodoloji (IT)
+
+**Seed script'leri:**
+- `scripts/seed-monitrang-tutorials.ps1` — MonitraNG/Öğreticiler/Manager
+- `scripts/seed-siem-it-guides.ps1` — IT ve Güvenlik / Linux rsyslog (test + prod)
+- `scripts/seed-system-release-notes.ps1` — System/Sürüm Notları
+- `scripts/seed-system-diagnostic-report.ps1` — System/Diagnostic Raporu
+
+**Manager menü sorunu (DI):** Kısıtlı klasörlerde yalnızca `view`+`download` → satır menüsü boş görünüyordu. **Çözüm (MngDocument):** `IRequestContext.IsManager` + `PermissionSnapshot`: mirası kırık anchor altında `view` yetkisi olan manager → tam yetki (admin bypass ile aynı mantık, kapsam dar). **Deploy:** `mngdocument` prod + test (5 Haz).
+
+**Müşteri raporlama:** Diagnostic sonuçları periyodik olarak prod'da script koşulur → `diagnostic-raporu.md` güncellenir → `seed-system-diagnostic-report.ps1`. Detay: `docs/odak/diagnostic/DEVAM.md`.
+
+---
+
 ## Deploy & ortam
 
+- **Üretim:** `192.168.20.8`, gateway `:5040`.
 - **Test sunucusu (Odak):** `192.168.20.20`, gateway `:5040`. DG route: `/data/api/v1/...`; MngDocument route: `/documents/api/v1/...`.
 - **`mngdocument`:** tüm Faz 1 + VH + AUDIT + **PERM** + **DRAFT** → **canlı (healthy)** (1 Haz ~20:52 yeniden deploy).
 - **`mngui`:** VH + audit + **PERM** (+ gösterim düzeltmesi) + **PREVIEW** + **DRAFT** → **canlı (healthy)** (1 Haz ~20:57 deploy; ui :3000 = 200).
@@ -192,3 +229,4 @@
 1. **Faz 2 — OperationCore entegrasyonu**: WorkItem ↔ doküman ilişkisi (çift yönlü, yetki kontrollü).
 2. **Non-admin canlı doğrulama** — gerçek (admin olmayan) kullanıcıyla tree/children filtreleme + 403.
 3. (Ops.) `dm_resource_versions` dataset'inde DG logging'i açıp tam audit (IP/değişiklik izi).
+4. (Ops.) Diagnostic: JSON → markdown otomasyon script'i; müşteri rapor periyodu tanımı.

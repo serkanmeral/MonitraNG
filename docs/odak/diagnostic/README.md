@@ -2,7 +2,7 @@
 
 Backend servislerinin **response time** ölçümü ve raporlama. UI performans paketi (Faz 1 + 1B) Odak’ta deploy edildi; deploy sonrası ölçüm ve Faz 2 backend **ertelendi**.
 
-**Durum:** Faz 1 + 1B ✅ · Faz 2 MO kısmi (2 Haz 2026) · sayfa diagnostic script eklendi  
+**Durum:** Faz 1 + 1B ✅ · Faz 2 MO kısmi (2 Haz) · **prod System Diagnostic Raporu** (5 Haz 2026)  
 **Devam noktası:** [DEVAM.md](./DEVAM.md)  
 **OC checkpoint (kod tabloları):** [../operationcore/mngoperations/DEVAM.md](../operationcore/mngoperations/DEVAM.md) § UI-PERF-F1  
 **Plan:** [DIAGNOSTIC_PLAN.md](./DIAGNOSTIC_PLAN.md)  
@@ -14,7 +14,8 @@ Backend servislerinin **response time** ölçümü ve raporlama. UI performans p
 
 | Konu | Karar |
 |------|-------|
-| Ortam | **Odak sunucusu** (`192.168.20.20`) — lokal backend yok |
+| Ortam | **Test:** `192.168.20.20` · **Müşteri raporu (prod):** `192.168.20.8` — gateway `192.168.20.8` → script otomatik prod token |
+| Müşteri çıktısı | **Dokümanlar → System → Diagnostic Raporu** (`MonitraNG Users`); kaynak: `docs/odak/document_intelligence/system/diagnostic-raporu.md` |
 | Kapsam | **Backend only** — UI E2E sonraki faz |
 | Metrik | **Warm P95** (ana SLA) + **session cold** (ilk istek) + medyan/min/max |
 | Hedef | Warm P95 ≤ **3000 ms**, session cold ≤ **4000 ms** (runtime); reference ≤ 100 ms |
@@ -51,6 +52,11 @@ Backend servislerinin **response time** ölçümü ve raporlama. UI performans p
 # Operasyon sayfaları (UI route bazlı API paketleri)
 .\docs\odak\diagnostic\scripts\diagnostic-operation-pages.ps1
 .\docs\odak\diagnostic\scripts\diagnostic-workspace-definitions.ps1
+
+# Üretim — müşteri raporu (prod token otomatik)
+.\docs\odak\diagnostic\scripts\diagnostic-operation-pages.ps1 -GatewayBaseUrl "http://192.168.20.8:5040" -OutputJson .\docs\odak\diagnostic\reports\oc_pages_prod.json
+.\docs\odak\diagnostic\scripts\diagnostic-document-intelligence-pages.ps1 -GatewayBaseUrl "http://192.168.20.8:5040" -OutputJson .\docs\odak\diagnostic\reports\di_pages_prod.json
+.\docs\odak\document_intelligence\scripts\seed-system-diagnostic-report.ps1
 ```
 
 ### OC_PERF (DG/Keeper kırılımı)

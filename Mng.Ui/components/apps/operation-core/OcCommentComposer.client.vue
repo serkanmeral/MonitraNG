@@ -53,6 +53,8 @@ const EMOJIS = [
 ];
 
 const editor = useEditor({
+  // Statik deploy / client-only sarmalayıcıda TipTap'ın sessizce çökmesini önler.
+  immediatelyRender: false,
   extensions: [StarterKit],
   content: props.initialHtml && props.initialHtml.trim() ? props.initialHtml : '<p></p>',
   editable: true,

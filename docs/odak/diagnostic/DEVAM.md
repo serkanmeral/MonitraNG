@@ -1,6 +1,6 @@
 # Diagnostic — devam noktası
 
-**Son güncelleme:** 2 Haziran 2026
+**Son güncelleme:** 5 Haziran 2026
 
 ## Tamamlanan
 
@@ -8,8 +8,31 @@
 - **Faz 1** — Admin workspace tanımları UI (lazy tabs, `useOcWorkspaceCatalog`, paralel person)
 - **Faz 1B** — Operasyon workspace explorer + board UI optimizasyonları
 - **Odak deploy** — `mngui` (2 Haziran 2026, `http://192.168.20.20:3000`)
+- **Faz 2 MO** — profil/pano endpoint + sayfa paketleri (`DIAGNOSTIC_REPORT_2026-06-02-faz2.md`)
+- **5 Haz 2026 — Prod müşteri raporu + System dokümanı**
+  - `diagnostic-operation-pages.ps1` / `diagnostic-document-intelligence-pages.ps1` → gateway `192.168.20.8` (prod token otomatik)
+  - OC: prod helpdesk/feedback seed; board listesi boşsa DG work-item fallback
+  - Sonuçlar: `docs/odak/document_intelligence/system/diagnostic-raporu.md` → **Dokümanlar → System → Diagnostic Raporu** (`MonitraNG Users`)
+  - Ham JSON: `reports/oc_pages_prod_20260605_final.json`, `reports/di_pages_prod_20260605_final.json`
 
-## Deploy sonrası ölçüm (2 Haz 2026)
+## Prod koşu özeti (5 Haziran 2026)
+
+| Modül | Senaryo | OK | WARN |
+|-------|--------:|---:|-----:|
+| Operasyon Merkezi | 10 | 8 | 2 (profil, pano) |
+| Dokümanlar | 8 | 5 | 3 (browse/klasör seçimi) |
+
+Workspace: MonitraNG Geri Bildirim · örnek iş `MNG-0001`. DI: `MonitraNG` klasörü + Kullanıcı Rehberi markdown.
+
+## Müşteri / IT rapor akışı
+
+1. Prod gateway ile script'leri çalıştır (`-GatewayBaseUrl http://192.168.20.8:5040`).
+2. `diagnostic-raporu.md` içinde **Son koşu** bölümünü güncelle; önceki koşuyu **Önceki koşular** altına taşı.
+3. `seed-system-diagnostic-report.ps1` (prod varsayılan).
+
+Metodoloji (sayfa API paketi, cold/warm P95, sınırlamalar) dokümanın üst bölümünde — IT ekibi için.
+
+## Deploy sonrası ölçüm (2 Haz 2026 — test)
 
 | Senaryo | Önce (sabah) | Sonra (UI+MO deploy) |
 |---------|--------------|----------------------|
@@ -23,9 +46,12 @@ Not: `ws_definitions` §3 eager storm = **eski eager UI simülasyonu**; canlı k
 
 ## Konuya dönüldüğünde
 
-1. Tarayıcı Network — workspace tanımları ilk açılış (lazy tab gerçek davranış)
-2. **Faz 2** — MO profil cold (~4 sn), dashboard (~2 sn), metadata cache
-3. İsteğe bağlı: Faz 0 müşteri baseline, Faz 4 sign-off
+1. Tarayıcı Network — workspace tanımları / profil / pano waterfall (prod)
+2. **Faz 2b MO** — profil warm ~2 sn, pano ~2,6 sn (prod WARN); agregasyon/cache
+3. DI — `browse`/`bootstrap` yaygınlaştırma; eski 3-API klasör seçimi kaldırma (UI)
+4. (Ops.) JSON → markdown `generate-system-diagnostic-report.ps1`
+5. İsteğe bağlı: Faz 0 müşteri baseline sign-off, load test
 
-**Ana referans:** [PERFORMANCE_ROADMAP.md](./PERFORMANCE_ROADMAP.md)  
-**Operation Core checkpoint (kod + deploy):** [../operationcore/mngoperations/DEVAM.md](../operationcore/mngoperations/DEVAM.md) § UI-PERF-F1
+**Ana referans:** [PERFORMANCE_ROADMAP.md](./PERFORMANCE_ROADMAP.md) · [README.md](./README.md)  
+**DI System dokümanları:** [../document_intelligence/DEVAM.md](../document_intelligence/DEVAM.md) § DI-SYSTEM  
+**Operation Core checkpoint:** [../operationcore/mngoperations/DEVAM.md](../operationcore/mngoperations/DEVAM.md) § UI-PERF-F1

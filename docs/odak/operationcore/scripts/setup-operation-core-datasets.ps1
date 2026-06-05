@@ -7,7 +7,8 @@
 
 param(
     [string]$BaseUrl = "http://192.168.20.20:5040",
-    [switch]$UseGateway = $true
+    [switch]$UseGateway = $true,
+    [string]$LoadTokenScript = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,7 +19,10 @@ $datasetsFile = Join-Path $repoRoot "docs/odak/operationcore/datasets/operationc
 $datasetsPath = if ($UseGateway) { "/data/api/v1/datasets" } else { "/api/v1/datasets" }
 $categoriesPath = if ($UseGateway) { "/data/api/v1/dataset-categories" } else { "/api/v1/dataset-categories" }
 
-$loadTokenScript = Join-Path $PSScriptRoot "load-operationcore-token.ps1"
+if ([string]::IsNullOrEmpty($LoadTokenScript)) {
+    $LoadTokenScript = Join-Path $PSScriptRoot "load-operationcore-token.ps1"
+}
+$loadTokenScript = $LoadTokenScript
 if (-not (Test-Path $loadTokenScript)) {
     Write-Host "load-operationcore-token.ps1 bulunamadi: $loadTokenScript" -ForegroundColor Red
     exit 1

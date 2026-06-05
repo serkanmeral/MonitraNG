@@ -186,22 +186,35 @@ function Measure-PageScenario {
 
 # --- Main ---
 
+$isProdGateway = $GatewayBaseUrl -match "192\.168\.20\.8"
+if ($isProdGateway) {
+    $prodSeed = Join-Path $ocScriptDir "operationcore-helpdesk-prod-seed.json"
+    if (([string]::IsNullOrEmpty($WorkspaceId) -or [string]::IsNullOrEmpty($BoardId)) -and (Test-Path $prodSeed)) {
+        $seedFile = $prodSeed
+    }
+}
+
 Write-Host ""
-Write-Host "Operation Core — Sayfa API yuku (Odak)" -ForegroundColor Cyan
+Write-Host "Operation Core — Sayfa API yuku ($(if ($isProdGateway) { 'Prod' } else { 'Odak' }))" -ForegroundColor Cyan
 Write-Host "  Gateway: $GatewayBaseUrl" -ForegroundColor Gray
 Write-Host ""
 
-$loadToken = Join-Path $ocScriptDir "load-operationcore-token.ps1"
+$loadToken = Join-Path $ocScriptDir $(if ($isProdGateway) { "load-operationcore-token-prod.ps1" } else { "load-operationcore-token.ps1" })
 $token = & $loadToken
 if ([string]::IsNullOrEmpty($token)) { throw "Token alinamadi." }
 
 $auth = @{ Authorization = "Bearer $token" }
 $json = @{ Authorization = "Bearer $token"; "Content-Type" = "application/json" }
 
+$seed = $null
 if (Test-Path $seedFile) {
     $seed = Get-Content $seedFile -Raw | ConvertFrom-Json
     if ([string]::IsNullOrEmpty($WorkspaceId)) { $WorkspaceId = $seed.workspaceId }
-    if ([string]::IsNullOrEmpty($BoardId)) { $BoardId = $seed.boardId }
+    if ([string]::IsNullOrEmpty($BoardId)) {
+        if ($seed.boardId) { $BoardId = $seed.boardId }
+        elseif ($seed.boards -and $seed.boards.agent) { $BoardId = $seed.boards.agent }
+        elseif ($seed.boards -and $seed.boards.queue) { $BoardId = $seed.boards.queue }
+    }
     if ([string]::IsNullOrEmpty($DashboardId)) { $DashboardId = $seed.dashboardId }
 }
 
@@ -216,7 +229,23 @@ if ([string]::IsNullOrEmpty($WorkItemId)) {
         }
     }
 }
-if ([string]::IsNullOrEmpty($WorkItemId)) { throw "WorkItemId gerekli (board listesi bos)." }
+# Board listesi bos olabilir (ornegin yeni prod WS); workspace'ten DG ile ornek is al.
+if ([string]::IsNullOrEmpty($WorkItemId) -and -not [string]::IsNullOrEmpty($WorkspaceId)) {
+    try {
+        $dgWi = Invoke-RestMethod -Uri "$dgBase/op_work_items?filter=workspaceId:eq:$WorkspaceId&limit=1" -Headers $auth
+        $first = $null
+        if ($dgWi -is [System.Array] -and $dgWi.Count -ge 1) { $first = $dgWi[0] }
+        elseif ($dgWi.items -and $dgWi.items.Count -ge 1) { $first = $dgWi.items[0] }
+        if ($first -and $first.__dataId) {
+            $WorkItemId = [string]$first.__dataId
+            Write-Host "WorkItemId DG'den alindi: $WorkItemId" -ForegroundColor Yellow
+        }
+    }
+    catch {
+        Write-Host "DG work item fallback basarisiz: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
+if ([string]::IsNullOrEmpty($WorkItemId)) { throw "WorkItemId gerekli (board listesi ve DG bos)." }
 
 Write-Host "Seed: ws=$WorkspaceId board=$BoardId dashboard=$DashboardId wi=$WorkItemId" -ForegroundColor Gray
 Write-Host ""

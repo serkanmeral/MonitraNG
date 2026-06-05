@@ -61,6 +61,9 @@ internal static class SecEventQueryFilterBuilder
                 builder.Regex("source.host", regex)));
         }
 
+        if (filter.ExcludeUnknown)
+            clauses.Add(builder.Ne("event.action", SecEventUnknownFilter.UnknownAction));
+
         return clauses.Count == 0 ? builder.Empty : builder.And(clauses);
     }
 

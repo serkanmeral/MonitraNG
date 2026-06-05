@@ -32,6 +32,7 @@ export interface SecEventQuery {
   srcIp?: string;
   actorUser?: string;
   search?: string;
+  excludeUnknown?: boolean;
   skip?: number;
   limit?: number;
 }

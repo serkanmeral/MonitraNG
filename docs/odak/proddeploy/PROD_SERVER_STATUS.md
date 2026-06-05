@@ -12,7 +12,9 @@
 | Aşama | Durum |
 |-------|--------|
 | P1a mng_common dosyaları | ✅ |
-| P1b mng_common `compose up` | ⏸️ Docker yok |
+| P1b mng_common `compose up` | ✅ 5 Haziran 2026 |
+| P2 Keycloak realm/secret | 👤 Kullanıcı |
+| P3 mng_apps deploy | ✅ |
 | P2+ mng_apps / domain | ⏳ Bekliyor |
 
 ---
@@ -23,11 +25,12 @@
 |---------|--------|
 | SSH (`odak@192.168.20.8`) | ✅ Çalışıyor |
 | OS | Debian 13 (trixie) |
-| `odak` sudo | ❌ `odak is not in the sudoers file` |
-| `odak` docker grubu | ❌ |
-| Docker | ❌ Kurulu değil |
+| `odak` sudo | ✅ |
+| `odak` docker grubu | ✅ |
+| Docker | ✅ 26.1.5 (`docker.io` + Compose 2.26) |
 | `/home/odak/mng_common` | ✅ Senkron + `docker-compose.odak.prod.yml` + `.env` |
-| `mng_common compose up` | ⏸️ Docker yok |
+| `mng_common_mng_network` | ✅ |
+| Keycloak | ✅ http://192.168.20.8:8080/keycloak/ → 200 |
 | `/home/odak/MonitraNG` | ⚠️ Kısmi kaynak (P3’te `-Full` sync) |
 | `mng_apps/.env` | ✅ Prod şablonu (secret’lar P2’de) |
 | mng_apps deploy | ⏸️ Docker + mng_common sonrası |

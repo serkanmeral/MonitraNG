@@ -33,12 +33,24 @@ onMounted(() => {
     />
 
     <div class="siem-hero mb-4 pa-4 pa-md-5 rounded-lg">
-      <h1 class="text-h5 font-weight-bold mb-2">
-        {{ t('siemCenter.events.pageTitle') }}
-      </h1>
-      <p class="text-body-2 text-medium-emphasis mb-0">
-        {{ t('siemCenter.events.pageSubtitle') }}
-      </p>
+      <div class="d-flex flex-wrap align-start justify-space-between gap-3">
+        <div>
+          <h1 class="text-h5 font-weight-bold mb-2">
+            {{ t('siemCenter.events.pageTitle') }}
+          </h1>
+          <p class="text-body-2 text-medium-emphasis mb-0">
+            {{ t('siemCenter.events.pageSubtitle') }}
+          </p>
+        </div>
+        <v-btn
+          variant="outlined"
+          color="primary"
+          prepend-icon="mdi-book-open-page-variant"
+          to="/apps/siem-center/reference"
+        >
+          {{ t('siemCenter.reference.openGuide') }}
+        </v-btn>
+      </div>
     </div>
 
     <v-card variant="outlined" class="rounded-lg pa-4 pa-md-5">

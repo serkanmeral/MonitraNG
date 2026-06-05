@@ -40,6 +40,9 @@ public class HttpRequestContext : IRequestContext
 
     public bool IsAdmin => ReadBoolClaim("isAdmin") || ReadBoolClaim("is_admin");
 
+    public bool IsManager =>
+        IsAdmin || ReadBoolClaim("isManager") || ReadBoolClaim("is_manager");
+
     public string? BearerToken
     {
         get

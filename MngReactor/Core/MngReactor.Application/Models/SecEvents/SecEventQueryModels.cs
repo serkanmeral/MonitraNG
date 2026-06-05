@@ -9,6 +9,8 @@ public sealed class SecEventQueryFilter
     public string? SrcIp { get; init; }
     public string? ActorUser { get; init; }
     public string? Search { get; init; }
+    /// <summary>Varsayılan true — bilinmeyen (event.action=unknown) olayları listeden çıkar.</summary>
+    public bool ExcludeUnknown { get; init; } = true;
     public int Skip { get; init; }
     public int Limit { get; init; } = 50;
 }

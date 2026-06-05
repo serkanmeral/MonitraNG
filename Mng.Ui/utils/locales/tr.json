@@ -3039,7 +3039,7 @@
     "deleteIssueBody": "Bu işlem geri alınamaz.",
     "issueCommentsTitle": "Yorumlar",
     "issueCommentsEmpty": "Henüz yorum yok.",
-    "issueCommentsPlaceholder": "Yorum yazın… @ ile kişi ekleyebilir, emoji kullanabilirsiniz.",
+    "issueCommentsPlaceholder": "Yorum yazın… {'@'} ile kişi ekleyebilir, emoji kullanabilirsiniz.",
     "issueCommentsLoginHint": "Yorum yazmak için oturum açın.",
     "issueCommentsSubmit": "Gönder",
     "issueCommentsReply": "Yanıtla",
@@ -3632,11 +3632,11 @@
         "empty": "Henüz aktivite kaydı yok."
       },
       "comments": {
-        "placeholder": "Yorum yaz... birini etiketlemek için @ yazın",
+        "placeholder": "Yorum yaz... birini etiketlemek için {'@'} yazın",
         "send": "Gönder",
         "empty": "Henüz yorum yok.",
         "error": "Yorum eklenemedi.",
-        "mentionHint": "Kişi etiketlemek için @ yazın · Ctrl+Enter ile gönder",
+        "mentionHint": "Kişi etiketlemek için {'@'} yazın · Ctrl+Enter ile gönder",
         "attach": "Dosya ekle",
         "reply": "Yanıtla",
         "edit": "Düzenle",
@@ -5058,7 +5058,173 @@
       "colCode": "Kod",
       "colParser": "Parser",
       "presets": "Senaryo kısayolları (U1–U10)",
-      "newFlowFlag": "Yeni akış (U7)"
+      "newFlowFlag": "Yeni akış (U7)",
+      "showUnknown": "Bilinmeyen olayları göster"
+    },
+    "reference": {
+      "menuTitle": "Log kapsamı rehberi",
+      "pageTitle": "Log kapsamı rehberi",
+      "openGuide": "Log kapsamı rehberi",
+      "pageSubtitle": "Hangi logları topladığımız, sistemde ne anlama geldikleri ve hazır alarm senaryoları.",
+      "intro": "Bu sayfa, güvenlik loglarının MonitraNG'de nasıl okunduğunu özetler. Kurulum (NxLog, rsyslog, firewall syslog) sizin ağınızda yapılır; aşağıdaki tablolar ürünün desteklediği kapsamı gösterir.",
+      "readOnlyTitle": "Bu sayfa neden düzenlenemiyor?",
+      "readOnlyLead": "Log anlamlandırma (parser) yazılım güncellemesiyle birlikte gelir — tıpkı antivirüs imza paketi gibi. Yanlış veya eksik tanım tüm alarmları etkileyebileceği için müşteri arayüzünden değiştirilmez.",
+      "readOnlyReason1": "Aynı log satırı her ortamda güvenilir ve test edilmiş şekilde yorumlanmalıdır.",
+      "readOnlyReason2": "Özel regex veya serbest tanım, hatalı alarm veya hiç alarm üretmeme riski taşır.",
+      "readOnlyReason3": "Yeni cihaz veya log formatı MonitraNG sürümü veya destek süreciyle eklenir.",
+      "readOnlyContact": "Yeni log türü veya farklı firewall modeli gerekiyorsa destek ekibinizle iletişime geçin; kapsam güncellendiğinde bu rehber de güncellenir.",
+      "youCanEditTitle": "Sizin yapabilecekleriniz",
+      "youCanEditAlarms": "Alarm eşikleri, açma/kapama ve ek kurallar",
+      "openAlarmRules": "Alarm kuralları",
+      "youCanEditCollectors": "Log toplama (NxLog, rsyslog, firewall hedefi)",
+      "youCanEditCollectorsHint": "Hangi sunucuların log göndereceği sizin altyapınızda yapılandırılır.",
+      "youCanEditSearch": "Gelen olayları arama ve inceleme",
+      "youCanEditSearchHint": "Güvenlik olayları ekranından filtre ve detay.",
+      "weProvideTitle": "MonitraNG'nin sağladığı",
+      "weProvideBody": "Desteklenen log türlerinin okunması, ortak olay alanlarına dönüştürülmesi ve hazır tehdit senaryoları (U1–U7 paketi). Monitoring (CPU, disk, asset izleme) ayrı bir modüldür; bu rehber yalnızca güvenlik loglarını kapsar.",
+      "collectionSectionTitle": "Logları nasıl gönderirsiniz?",
+      "collectionSectionHint": "Sunucu ve cihazlar logu MonitraNG Engine'e iletir; önceden asset tanımı veya şifre saklama gerekmez.",
+      "exampleTargets": "Örnek kaynaklar",
+      "collectionMethod": "Toplama yöntemi",
+      "parsersSectionTitle": "Hangi log ne anlama geliyor?",
+      "parsersSectionHint": "Sol sütun kaynak logu, orta sütun sistemdeki kısa adıdır. Tanınmayan satırlar ham olarak saklanır; hazır alarm oluşmayabilir.",
+      "parserTechnicalId": "Teknik parser adı: {id}",
+      "scenariosSectionTitle": "Tehdit senaryoları (U1–U10)",
+      "scenariosSectionHint": "U1–U7 için varsayılan alarm kuralları yüklenebilir. U8–U10 olayları toplanır; hazır paket kuralı henüz yoktur.",
+      "scenariosFootnote": "Varsayılan alarm paketi: {id} sürüm {version}. Eşikleri Alarm Merkezi'nden değiştirebilirsiniz.",
+      "outOfScopeSectionTitle": "Bu sürümde yer almayanlar",
+      "outOfScopeHint": "Aşağıdaki log türleri bilinçli olarak kapsam dışıdır veya ayrı modül gerektirir.",
+      "technicalFootnote": "Rehber sürümü {version}. İçerik ürün sürümüyle güncellenir.",
+      "colLogSignal": "Log / olay",
+      "colMeaning": "Sistemdeki anlam",
+      "colScenarios": "Senaryo",
+      "colDefaultAlarm": "Hazır alarm",
+      "colScenario": "Kod",
+      "colDescription": "Ne izlenir?",
+      "colDefaultRule": "Varsayılan alarm koşulu",
+      "colPackStatus": "Hazır kural",
+      "colEventsLink": "Olaylar",
+      "inPackYes": "Var",
+      "inPackNo": "Henüz yok",
+      "meaningUnknown": "Tanımsız (ham log)",
+      "defaultAlarmYes": "Hazır alarm paketinde",
+      "viewEvents": "Olay ara",
+      "parserStatus": {
+        "supported": "Tam destek",
+        "partial": "Kısmi destek",
+        "raw_only": "Yalnızca ham log"
+      },
+      "collection": {
+        "nxlog": {
+          "title": "Windows (NxLog)",
+          "description": "Domain Controller, sunucu veya terminalde Windows Güvenlik logu okunur ve MonitraNG'ye iletilir.",
+          "targets": "DC, Windows sunucular, RDP terminal"
+        },
+        "rsyslog": {
+          "title": "Linux (rsyslog)",
+          "description": "SSH ve sudo kayıtları syslog ile Engine'e yönlendirilir.",
+          "targets": "Linux sunucular"
+        },
+        "syslogNetwork": {
+          "title": "Ağ cihazları (syslog)",
+          "description": "Firewall, switch, router syslog destekliyorsa aynı dinleyiciye gönderebilir. Marka desteği tabloda belirtilir.",
+          "targets": "FortiGate, Palo Alto, Cisco ASA; diğerleri kısmi veya ham"
+        }
+      },
+      "parsers": {
+        "windowsSecurity": {
+          "title": "Windows oturum olayları",
+          "description": "Başarılı/başarısız giriş, hesap kilidi, Kerberos hataları ve bakım saati dışı ayrıcalıklı oturum."
+        },
+        "windowsExtended": {
+          "title": "Active Directory değişiklikleri",
+          "description": "Hesap açma, gruba üye ekleme, dizin nesnesi değişikliği — çoğunlukla DC logları."
+        },
+        "linuxAuth": {
+          "title": "Linux oturum olayları",
+          "description": "SSH başarısız/başarılı giriş ve sudo denemeleri."
+        },
+        "firewallVendor": {
+          "title": "Firewall (FortiGate, Palo Alto, Cisco ASA)",
+          "description": "Engellenen/izin verilen trafik, kural değişikliği ve yeni akış tespiti."
+        },
+        "firewallGeneric": {
+          "title": "Diğer firewall syslog",
+          "description": "Bilinen format yoksa sınırlı eşleme; tam destek için marka parser gerekir."
+        },
+        "bastion": {
+          "title": "Jump / bastion sunucu",
+          "description": "Jump sunucuya gelen oturum logları (SSH benzeri)."
+        },
+        "generic": {
+          "title": "Tanınmayan syslog",
+          "description": "Format eşleşmezse ham saklanır; hazır alarm üretilmez."
+        }
+      },
+      "scenarios": {
+        "U1": {
+          "description": "Kısa sürede çok sayıda başarısız giriş (brute force).",
+          "defaultRule": "5 dakikada aynı kullanıcı ve IP'den 10+ başarısız giriş"
+        },
+        "U2": {
+          "description": "Önce birçok hatalı giriş, ardından başarılı oturum.",
+          "defaultRule": "10 dakikada 5+ hata, ardından 15 dakika içinde başarılı giriş"
+        },
+        "U3": {
+          "description": "İzin verilen saat dışında ayrıcalıklı oturum (ör. gece RDP).",
+          "defaultRule": "Bakım penceresi dışında 1 ayrıcalıklı oturum (varsayılan pencere UTC 08–20)"
+        },
+        "U4": {
+          "description": "Bir hedef IP'ye yönelik çok sayıda firewall engeli.",
+          "defaultRule": "5 dakikada aynı hedef IP için 50+ engelleme"
+        },
+        "U5": {
+          "description": "Belirli hedefe izin verilen trafikte ani artış.",
+          "defaultRule": "5 dakikada aynı hedef IP ve port için 100+ izin kaydı"
+        },
+        "U6": {
+          "description": "Firewall kuralı veya politika değişikliği.",
+          "defaultRule": "1 kural değişikliği olayı"
+        },
+        "U7": {
+          "description": "Daha önce görülmeyen yeni kaynak→hedef ağ akışı.",
+          "defaultRule": "Normal trafik öğrenildikten sonra 1 yeni akış çifti"
+        },
+        "U8": {
+          "description": "Active Directory'de gruba yeni üye.",
+          "defaultRule": "Olay toplanır; varsayılan alarm paketinde henüz yok"
+        },
+        "U9": {
+          "description": "Yeni kullanıcı hesabı oluşturuldu.",
+          "defaultRule": "Olay toplanır; varsayılan alarm paketinde henüz yok"
+        },
+        "U10": {
+          "description": "Dizin nesnesinde değişiklik.",
+          "defaultRule": "Olay toplanır; varsayılan alarm paketinde henüz yok"
+        }
+      },
+      "outOfScope": {
+        "monitoring": {
+          "title": "Sunucu metrikleri (CPU, disk, ping)",
+          "description": "Monitoring modülü; güvenlik olayı değildir."
+        },
+        "windowsChannels": {
+          "title": "Windows uygulama logları (IIS, SQL vb.)",
+          "description": "Application / System kanalları bu sürümde okunmaz."
+        },
+        "sysmon": {
+          "title": "Sysmon, process ve dosya olayları",
+          "description": "İleri endpoint izleme; planlanmadı."
+        },
+        "ot": {
+          "title": "CNC / PLC ve endüstriyel protokoller",
+          "description": "Syslog sunmayan OT cihazları; özel entegrasyon gerekir."
+        },
+        "assetPoll": {
+          "title": "Asset şifresi ile uzaktan log çekme",
+          "description": "SIEM push model kullanır; WMI/LDAP ile log toplanmaz."
+        }
+      }
     }
   },
   "automationCenter": {

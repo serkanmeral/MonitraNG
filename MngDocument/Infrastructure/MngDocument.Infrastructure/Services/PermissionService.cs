@@ -62,7 +62,7 @@ public sealed class PermissionService : IPermissionService
         var folders = folderPage.Items.Select(MapResource).ToList();
         var perms = permPage.Items.Select(MapPermission).ToList();
 
-        _requestSnapshot = new PermissionSnapshot(folders, perms, _ctx.UserGroups, _ctx.IsAdmin);
+        _requestSnapshot = new PermissionSnapshot(folders, perms, _ctx.UserGroups, _ctx.IsAdmin, _ctx.IsManager);
         return _requestSnapshot;
     }
 

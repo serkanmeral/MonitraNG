@@ -5,7 +5,7 @@ import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import OcDynamicForm from '@/components/apps/operation-core/OcDynamicForm.vue';
 import OcBoardCatalogLabel from '@/components/apps/operation-core/OcBoardCatalogLabel.vue';
 import OcSlaStatusChip from '@/components/apps/operation-core/OcSlaStatusChip.vue';
-import OcCommentComposer from '@/components/apps/operation-core/OcCommentComposer.vue';
+import OcCommentComposer from '@/components/apps/operation-core/OcCommentComposer.client.vue';
 import OcPolicyPanel from '@/components/apps/operation-core/OcPolicyPanel.vue';
 import OcTransitionRequiredFields from '@/components/apps/operation-core/OcTransitionRequiredFields.vue';
 import OcAttachmentPreviewDialog from '@/components/apps/operation-core/OcAttachmentPreviewDialog.vue';
@@ -241,8 +241,16 @@ const groupNames = computed<Record<string, string>>(() => {
 });
 
 const summary = computed(() => profile.value?.workItem ?? null);
-const canComment = computed(() => profile.value?.permissions.canComment === true);
-const canEdit = computed(() => profile.value?.permissions.canEdit === true);
+const canComment = computed(
+  () =>
+    profile.value?.permissions?.canComment === true ||
+    formContext.value?.permissions?.canComment === true
+);
+const canEdit = computed(
+  () =>
+    profile.value?.permissions?.canEdit === true ||
+    formContext.value?.permissions?.canEdit === true
+);
 
 // --- Detaylar sekmesi düzenleme (in-place) ---
 const editValidationIssues = computed(() => {
