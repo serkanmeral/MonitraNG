@@ -129,6 +129,42 @@ public sealed class SecEventsRepository : ISecEventsRepository
         return doc is null ? null : SecEventBsonReader.ToListItem(doc, includeRaw: true);
     }
 
+    public async Task<SecEventDashboardSummary> GetDashboardSummaryAsync(
+        string domain,
+        SecEventDashboardSummaryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var rangeHours = Math.Clamp(request?.RangeHours ?? 24, 1, 168);
+        var excludeUnknown = request?.ExcludeUnknown ?? true;
+        var (from, to, hourStarts) = SecEventDashboardAggregator.BuildWindow(rangeHours);
+
+        if (string.IsNullOrWhiteSpace(domain))
+        {
+            return new SecEventDashboardSummary
+            {
+                Range = $"{rangeHours}h",
+                From = from,
+                To = to,
+                EventsTotal = 0,
+                ByAction = new Dictionary<string, long>(),
+                Hourly = hourStarts.Select(h => new SecEventHourlyBucket { HourStart = h, Count = 0 }).ToList(),
+            };
+        }
+
+        var databaseName = $"mng_{domain.Trim().ToLowerInvariant()}";
+        var database = _mongoClient.GetDatabase(databaseName);
+        await EnsureIndexesOnceAsync(database, databaseName, cancellationToken);
+        await EnsureTtlIndexOnceAsync(database, databaseName, cancellationToken);
+
+        var collection = database.GetCollection<BsonDocument>(CollectionName);
+        var pipeline = SecEventDashboardAggregator.BuildPipeline(from, to, excludeUnknown);
+        var cursor = await collection.AggregateAsync<BsonDocument>(pipeline, cancellationToken: cancellationToken);
+        var docs = await cursor.ToListAsync(cancellationToken);
+        var facetRoot = docs.FirstOrDefault() ?? new BsonDocument();
+
+        return SecEventDashboardAggregator.ParseResult(facetRoot, rangeHours, from, to, hourStarts);
+    }
+
     private async Task EnsureIndexesOnceAsync(
         IMongoDatabase database,
         string databaseName,

@@ -1,6 +1,8 @@
-# Güvenlik Merkezi — @side_menu kaydi (Odak DG uzerinden)
-# Header: Güvenlik Merkezi
-#   - Güvenlik olayları (manager) → /apps/siem-center/events
+# Güvenlik Yönetimi — @side_menu kaydi (Odak DG uzerinden)
+# Header: Güvenlik Yönetimi
+#   - Alarm Merkezi → /apps/alarm-center/alarms
+#   - SIEM Güvenlik Paneli → /apps/siem-center
+# Not: Alarm kurallari ve güvenlik olaylari menude degil; sayfa icinden erisilir.
 # Usage (repo kokunden):
 #   .\docs\odak\operationcore\scripts\get-operationcore-token.ps1
 #   .\docs\odak\monitoring\scripts\patch-siem-center-side-menu.ps1
@@ -133,26 +135,12 @@ function Upsert-MenuItem {
     return @{ id = $id; row = $existing }
 }
 
-# Eski "SIEM" basligi veya ust seviye orphan kayitlari temizle
-$legacySiemHeaders = $items | Where-Object {
-    $_.itemType -eq "header" -and (
-        ($_.header -eq "SIEM") -or
-        ($_.pageCode -eq "siemCenter.menuHeader" -and $_.header -ne "Güvenlik Merkezi" -and $_.header -ne "Security Center")
-    )
-}
-foreach ($legacyRow in $legacySiemHeaders) {
-    $legacyId = Get-ItemId $legacyRow
-    if (-not [string]::IsNullOrEmpty($legacyId)) {
-        Write-Host "Eski SIEM header yeniden adlandirilacak (id=$legacyId)..." -ForegroundColor Yellow
-    }
-}
-
-$alarmHeader = $items | Where-Object {
-    $_.itemType -eq "header" -and $_.pageCode -eq "alarmCenter.menuHeader"
-} | Select-Object -First 1
-
 $automationHeader = $items | Where-Object {
     $_.itemType -eq "header" -and $_.pageCode -eq "automationCenter.menuHeader"
+} | Select-Object -First 1
+
+$legacyAlarmHeader = $items | Where-Object {
+    $_.itemType -eq "header" -and $_.pageCode -eq "alarmCenter.menuHeader"
 } | Select-Object -First 1
 
 $maxOrder = 0
@@ -164,24 +152,32 @@ foreach ($row in $items) {
 }
 
 $headerOrder = $null
-if ($alarmHeader -and $automationHeader) {
-    $alarmOrder = [int]$alarmHeader.order
-    $autoOrder = [int]$automationHeader.order
-    if ($autoOrder -gt $alarmOrder + 1) {
-        $headerOrder = $alarmOrder + 1
-    }
+if ($legacyAlarmHeader -and $automationHeader) {
+    $headerOrder = [int]$legacyAlarmHeader.order
+}
+elseif ($legacyAlarmHeader) {
+    $headerOrder = [int]$legacyAlarmHeader.order
 }
 if ($null -eq $headerOrder) {
     $headerOrder = [Math]::Max($maxOrder + 1, 224)
 }
-$dashboardItemOrder = $headerOrder + 1
-$eventsItemOrder = $headerOrder + 2
+$alarmItemOrder = $headerOrder + 1
+$siemItemOrder = $headerOrder + 2
 
-# --- Header: Güvenlik Merkezi ---
-$headerResult = Upsert-MenuItem -AllItems $items -Label "Güvenlik Merkezi header" -FindExisting {
+# --- Header: Güvenlik Yönetimi ---
+$headerResult = Upsert-MenuItem -AllItems $items -Label "Güvenlik Yönetimi header" -FindExisting {
     $_.itemType -eq "header" -and (
+        $_.pageCode -eq "securityManagement.menuHeader" -or
         $_.pageCode -eq "siemCenter.menuHeader" -or
-        ($_.header -and ($_.header -eq "Güvenlik Merkezi" -or $_.header -eq "Security Center" -or $_.header -eq "SIEM"))
+        $_.pageCode -eq "alarmCenter.menuHeader" -or
+        ($_.header -and (
+            $_.header -eq "Güvenlik Yönetimi" -or
+            $_.header -eq "Güvenlik Merkezi" -or
+            $_.header -eq "Alarm Merkezi" -or
+            $_.header -eq "Security Management" -or
+            $_.header -eq "Security Center" -or
+            $_.header -eq "SIEM"
+        ))
     )
 } -Body @{
     order     = $headerOrder
@@ -189,8 +185,8 @@ $headerResult = Upsert-MenuItem -AllItems $items -Label "Güvenlik Merkezi heade
     level     = 0
     parentId  = $null
     pageType  = "manager"
-    pageCode  = "siemCenter.menuHeader"
-    header    = "Güvenlik Merkezi"
+    pageCode  = "securityManagement.menuHeader"
+    header    = "Güvenlik Yönetimi"
     disabled  = $false
 }
 
@@ -200,18 +196,38 @@ if ([string]::IsNullOrEmpty($headerId)) {
     exit 1
 }
 
-# --- Güvenlik paneli ---
-Upsert-MenuItem -AllItems $items -Label "Güvenlik paneli" -FindExisting {
+# --- Alarm Merkezi ---
+Upsert-MenuItem -AllItems $items -Label "Alarm Merkezi" -FindExisting {
+    $_.pageCode -eq "alarmCenter.menuTitle" -or
+    $_.pageCode -eq "alarmCenter.alarms.menuTitle" -or
+    $_.to -eq "/apps/alarm-center/alarms"
+} -Body @{
+    order     = $alarmItemOrder
+    itemType  = "item"
+    level     = 1
+    parentId  = $headerId
+    pageType  = "manager"
+    pageCode  = "alarmCenter.menuTitle"
+    title     = "Alarm Merkezi"
+    icon      = "AlertCircleIcon"
+    iconType  = "tabler"
+    to        = "/apps/alarm-center/alarms"
+    type      = "internal"
+    disabled  = $false
+} | Out-Null
+
+# --- SIEM Güvenlik Paneli ---
+Upsert-MenuItem -AllItems $items -Label "SIEM Güvenlik Paneli" -FindExisting {
     $_.pageCode -eq "siemCenter.dashboard.menuTitle" -or
     $_.to -eq "/apps/siem-center"
 } -Body @{
-    order     = $dashboardItemOrder
+    order     = $siemItemOrder
     itemType  = "item"
     level     = 1
     parentId  = $headerId
     pageType  = "manager"
     pageCode  = "siemCenter.dashboard.menuTitle"
-    title     = "Güvenlik paneli"
+    title     = "SIEM Güvenlik Paneli"
     icon      = "ShieldIcon"
     iconType  = "tabler"
     to        = "/apps/siem-center"
@@ -219,23 +235,22 @@ Upsert-MenuItem -AllItems $items -Label "Güvenlik paneli" -FindExisting {
     disabled  = $false
 } | Out-Null
 
-# --- Güvenlik olayları ---
-Upsert-MenuItem -AllItems $items -Label "Güvenlik olaylari" -FindExisting {
+# --- Kaldir: eski alarm header, kurallar, olaylar menu ---
+$removeRows = $items | Where-Object {
+    ($_.itemType -eq "header" -and $_.pageCode -eq "alarmCenter.menuHeader" -and (Get-ItemId $_) -ne $headerId) -or
+    $_.pageCode -eq "alarmCenter.rules.menuTitle" -or
+    $_.to -eq "/apps/alarm-center/rules" -or
     $_.pageCode -eq "siemCenter.events.menuTitle" -or
     $_.to -eq "/apps/siem-center/events"
-} -Body @{
-    order     = $eventsItemOrder
-    itemType  = "item"
-    level     = 1
-    parentId  = $headerId
-    pageType  = "manager"
-    pageCode  = "siemCenter.events.menuTitle"
-    title     = "Güvenlik olayları"
-    icon      = "ShieldIcon"
-    iconType  = "tabler"
-    to        = "/apps/siem-center/events"
-    type      = "internal"
-    disabled  = $false
-} | Out-Null
+}
+foreach ($row in $removeRows) {
+    $rowId = Get-ItemId $row
+    if ([string]::IsNullOrEmpty($rowId)) { continue }
+    if ($rowId -eq $headerId) { continue }
+    $label = if ($row.title) { $row.title } elseif ($row.header) { $row.header } else { $row.pageCode }
+    Write-Host "DELETE eski menu: $label (id=$rowId)..." -ForegroundColor Yellow
+    Invoke-MenuDelete -Id $rowId
+    Write-Host "  OK kaldirildi" -ForegroundColor Green
+}
 
 Write-Host "`nTamamlandi. UI'da menu gormek icin sayfayi yenileyin veya cikis/giris yapin." -ForegroundColor Cyan

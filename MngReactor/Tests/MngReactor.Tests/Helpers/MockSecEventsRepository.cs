@@ -25,4 +25,28 @@ public sealed class MockSecEventsRepository : ISecEventsRepository
         string id,
         CancellationToken cancellationToken = default) =>
         Task.FromResult<SecEventListItem?>(null);
+
+    public Task<SecEventDashboardSummary> GetDashboardSummaryAsync(
+        string domain,
+        SecEventDashboardSummaryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var hours = Math.Clamp(request?.RangeHours ?? 24, 1, 168);
+        var to = DateTime.UtcNow;
+        var from = to.AddHours(-hours);
+        var hourStarts = Enumerable.Range(0, hours)
+            .Select(idx => to.AddHours(-(hours - 1 - idx)).AddHours(-1))
+            .Select(d => DateTime.SpecifyKind(d, DateTimeKind.Utc))
+            .ToList();
+
+        return Task.FromResult(new SecEventDashboardSummary
+        {
+            Range = $"{hours}h",
+            From = from,
+            To = to,
+            EventsTotal = 0,
+            ByAction = new Dictionary<string, long>(),
+            Hourly = hourStarts.Select(h => new SecEventHourlyBucket { HourStart = h, Count = 0 }).ToList(),
+        });
+    }
 }

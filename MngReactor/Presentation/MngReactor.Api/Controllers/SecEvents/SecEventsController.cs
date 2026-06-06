@@ -65,6 +65,31 @@ public sealed class SecEventsController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>SIEM güvenlik paneli — tek aggregation ile 24s özet (saatlik + aksiyon dağılımı).</summary>
+    [HttpGet("dashboard-summary")]
+    [ProducesResponseType(typeof(SecEventDashboardSummary), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<SecEventDashboardSummary>> DashboardSummary(
+        [FromQuery] int rangeHours = 24,
+        [FromQuery] bool excludeUnknown = true,
+        CancellationToken cancellationToken = default)
+    {
+        var domain = await GetDomainAsync();
+        if (string.IsNullOrEmpty(domain))
+            return Unauthorized();
+
+        var summary = await _repository.GetDashboardSummaryAsync(
+            domain,
+            new SecEventDashboardSummaryRequest
+            {
+                RangeHours = rangeHours,
+                ExcludeUnknown = excludeUnknown,
+            },
+            cancellationToken);
+
+        return Ok(summary);
+    }
+
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(SecEventListItem), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

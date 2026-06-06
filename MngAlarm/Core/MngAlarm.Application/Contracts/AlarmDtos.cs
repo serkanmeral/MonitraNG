@@ -106,4 +106,22 @@ public sealed class AlarmListResponse
     public int Limit { get; init; }
 }
 
+public sealed class AlarmScenarioRollupDto
+{
+    public required string MatchKey { get; init; }
+    public int OpenCount { get; init; }
+    public int TotalInRange { get; init; }
+    public int? MaxSeverity { get; init; }
+    public DateTime? LastSeenAt { get; init; }
+}
+
+public sealed class AlarmDashboardSnapshot
+{
+    public required DateTime From { get; init; }
+    public required DateTime To { get; init; }
+    public long OpenTotal { get; init; }
+    public required IReadOnlyList<AlarmSummaryDto> OpenAlarms { get; init; }
+    public required IReadOnlyList<AlarmScenarioRollupDto> ScenarioRollup { get; init; }
+}
+
 public sealed record AlarmDomainContext(string DomainId, string DomainName);

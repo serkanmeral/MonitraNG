@@ -266,6 +266,7 @@ public sealed class ObservationProcessor : IObservationProcessor
         CancellationToken cancellationToken)
     {
         EnrichContextWithRuleMetadata(context, rule);
+        AlarmLifecycleHistoryHelper.AppendSystemEntry(context, AlarmStatus.Active, AlarmStatus.Active, "alarm_raised");
         var now = DateTime.UtcNow;
         var alarm = new AlarmDocument
         {
@@ -300,6 +301,7 @@ public sealed class ObservationProcessor : IObservationProcessor
         var now = DateTime.UtcNow;
         existing.LastSeenAt = now;
         existing.Count++;
+        AlarmLifecycleContextMerger.PreserveFromExisting(context, existing.Context);
         existing.Context = context;
 
         var publishUpdated = ShouldPublishUpdated(existing, now);
@@ -333,9 +335,12 @@ public sealed class ObservationProcessor : IObservationProcessor
         CancellationToken cancellationToken)
     {
         var now = DateTime.UtcNow;
+        var previousStatus = existing.Status;
         existing.Status = AlarmStatus.Resolved;
         existing.LastSeenAt = now;
+        AlarmLifecycleContextMerger.PreserveFromExisting(context, existing.Context);
         existing.Context = context;
+        AlarmLifecycleHistoryHelper.AppendSystemEntry(existing.Context, previousStatus, AlarmStatus.Resolved, "condition_cleared");
         await _alarms.UpdateAsync(existing, cancellationToken);
         await PublishEventAsync(existing, AlarmEventTypes.Resolved, context, cancellationToken);
 

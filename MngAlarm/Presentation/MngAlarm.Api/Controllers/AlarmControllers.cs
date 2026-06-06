@@ -45,22 +45,55 @@ public sealed class AlarmRulesController(IAlarmRuleService rules) : ControllerBa
 
 [ApiController]
 [Route("api/v1/alarms")]
-public sealed class AlarmsController(IAlarmQueryService alarms) : ControllerBase
+public sealed class AlarmsController(IAlarmQueryService alarms, IAlarmLifecycleService lifecycle) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> List(
         [FromQuery] AlarmStatus? status,
         [FromQuery] int? minSeverity,
         [FromQuery] bool openOnly = true,
+        [FromQuery] string? ruleId = null,
+        [FromQuery] string? search = null,
+        [FromQuery] DateTime? from = null,
+        [FromQuery] DateTime? to = null,
         [FromQuery] int skip = 0,
         [FromQuery] int limit = 50,
         CancellationToken cancellationToken = default) =>
-        Ok(await alarms.ListAsync(status, minSeverity, openOnly, skip, limit, cancellationToken));
+        Ok(await alarms.ListAsync(status, minSeverity, openOnly, skip, limit, ruleId, search, from, to, cancellationToken));
+
+    [HttpGet("dashboard-snapshot")]
+    public async Task<IActionResult> DashboardSnapshot(
+        [FromQuery] int rangeHours = 24,
+        [FromQuery] int minSeverity = 6,
+        [FromQuery] int openLimit = 15,
+        CancellationToken cancellationToken = default) =>
+        Ok(await alarms.GetDashboardSnapshotAsync(rangeHours, minSeverity, openLimit, cancellationToken));
 
     [HttpGet("{alarmId}")]
     public async Task<IActionResult> Get(string alarmId, CancellationToken cancellationToken)
     {
         var item = await alarms.GetAsync(alarmId, cancellationToken);
+        return item == null ? NotFound() : Ok(item);
+    }
+
+    [HttpPost("{alarmId}/acknowledge")]
+    public async Task<IActionResult> Acknowledge(string alarmId, CancellationToken cancellationToken)
+    {
+        var item = await lifecycle.AcknowledgeAsync(alarmId, cancellationToken);
+        return item == null ? NotFound() : Ok(item);
+    }
+
+    [HttpPost("{alarmId}/suppress")]
+    public async Task<IActionResult> Suppress(string alarmId, CancellationToken cancellationToken)
+    {
+        var item = await lifecycle.SuppressAsync(alarmId, cancellationToken);
+        return item == null ? NotFound() : Ok(item);
+    }
+
+    [HttpPost("{alarmId}/resolve")]
+    public async Task<IActionResult> Resolve(string alarmId, CancellationToken cancellationToken)
+    {
+        var item = await lifecycle.ResolveAsync(alarmId, cancellationToken);
         return item == null ? NotFound() : Ok(item);
     }
 }

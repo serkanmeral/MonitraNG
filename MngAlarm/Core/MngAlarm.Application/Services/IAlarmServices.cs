@@ -33,9 +33,19 @@ public interface IAlarmRepository
         bool openOnly,
         int skip,
         int limit,
+        string? ruleId = null,
+        string? search = null,
+        DateTime? from = null,
+        DateTime? to = null,
         CancellationToken cancellationToken = default);
     Task InsertAsync(AlarmDocument alarm, CancellationToken cancellationToken = default);
     Task UpdateAsync(AlarmDocument alarm, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<AlarmScenarioRollupDto>> GetScenarioRollupAsync(
+        string domainName,
+        DateTime from,
+        DateTime to,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IAlarmEventPublisher
@@ -60,9 +70,19 @@ public interface IAlarmQueryService
         bool openOnly,
         int skip,
         int limit,
+        string? ruleId = null,
+        string? search = null,
+        DateTime? from = null,
+        DateTime? to = null,
         CancellationToken cancellationToken = default);
 
     Task<AlarmSummaryDto?> GetAsync(string alarmId, CancellationToken cancellationToken = default);
+
+    Task<AlarmDashboardSnapshot> GetDashboardSnapshotAsync(
+        int rangeHours = 24,
+        int minSeverity = 6,
+        int openLimit = 15,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IObservationProcessor

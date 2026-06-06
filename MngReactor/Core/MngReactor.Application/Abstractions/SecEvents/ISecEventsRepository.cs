@@ -18,4 +18,9 @@ public interface ISecEventsRepository
         string domain,
         string id,
         CancellationToken cancellationToken = default);
+
+    Task<SecEventDashboardSummary> GetDashboardSummaryAsync(
+        string domain,
+        SecEventDashboardSummaryRequest request,
+        CancellationToken cancellationToken = default);
 }

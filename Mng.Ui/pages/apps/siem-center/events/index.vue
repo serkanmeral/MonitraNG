@@ -12,6 +12,7 @@ const { t } = useAppI18n();
 const auth = useAuthStore();
 
 const { breadcrumbs } = useSiemCenterBreadcrumbs({
+  subPage: true,
   tail: computed(() => ({
     text: t('siemCenter.events.pageTitle'),
     disabled: true,

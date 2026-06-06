@@ -26,11 +26,49 @@ export interface AlarmListQuery {
   status?: AlarmStatus;
   minSeverity?: number;
   openOnly?: boolean;
+  ruleId?: string;
+  search?: string;
+  from?: string;
+  to?: string;
   skip?: number;
   limit?: number;
 }
 
+export interface AlarmScenarioRollup {
+  matchKey: string;
+  openCount: number;
+  totalInRange: number;
+  maxSeverity: number | null;
+  lastSeenAt: string | null;
+}
+
+export interface AlarmDashboardSnapshot {
+  from: string;
+  to: string;
+  openTotal: number;
+  openAlarms: AlarmSummary[];
+  scenarioRollup: AlarmScenarioRollup[];
+}
+
+export interface AlarmDashboardSnapshotQuery {
+  rangeHours?: number;
+  minSeverity?: number;
+  openLimit?: number;
+}
+
 export type AlarmRuleType = 'threshold' | 'correlation' | 'scheduled';
+
+export interface AlarmRuleMetadata {
+  packageId?: string;
+  packageVersion?: string;
+  scenarioId?: string;
+  description?: string;
+  threatTacticId?: string;
+  threatTacticName?: string;
+  threatTechniqueId?: string;
+  threatTechniqueName?: string;
+  complianceTags?: string[];
+}
 
 export interface AlarmRule {
   id: string;
@@ -48,6 +86,7 @@ export interface AlarmRule {
   groupByFields: string[];
   windowMinutes: number;
   stalenessMinutes: number;
+  metadata?: AlarmRuleMetadata;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -77,4 +116,10 @@ export interface UpdateAlarmRuleRequest {
   windowMinutes?: number;
   stalenessMinutes?: number;
   dedupKeyTemplate?: string;
+}
+
+export interface AlarmRuleSavePayload {
+  isEdit: boolean;
+  id?: string;
+  body: CreateAlarmRuleRequest | UpdateAlarmRuleRequest;
 }

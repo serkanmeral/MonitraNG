@@ -28,7 +28,7 @@ onMounted(() => {
 <template>
   <div class="siem-dashboard-page">
     <BaseBreadcrumb
-      :title="t('siemCenter.dashboard.pageTitle')"
+      :title="t('siemCenter.dashboard.menuTitle')"
       :breadcrumbs="breadcrumbs"
     />
 
@@ -36,25 +36,52 @@ onMounted(() => {
       <div class="d-flex flex-wrap align-start justify-space-between gap-3">
         <div>
           <h1 class="text-h5 font-weight-bold mb-2">
-            {{ t('siemCenter.dashboard.pageTitle') }}
+            {{ t('siemCenter.dashboard.menuTitle') }}
           </h1>
           <p class="text-body-2 text-medium-emphasis mb-0">
             {{ t('siemCenter.dashboard.pageSubtitle') }}
           </p>
         </div>
-        <v-btn
-          variant="outlined"
-          color="primary"
-          prepend-icon="mdi-book-open-page-variant"
-          to="/apps/siem-center/reference"
-        >
-          {{ t('siemCenter.reference.openGuide') }}
-        </v-btn>
+        <div class="d-flex flex-wrap gap-2">
+          <v-btn
+            color="primary"
+            variant="flat"
+            prepend-icon="mdi-shield-search"
+            to="/apps/siem-center/events"
+          >
+            {{ t('siemCenter.dashboard.openEvents') }}
+          </v-btn>
+          <v-btn
+            variant="outlined"
+            color="primary"
+            prepend-icon="mdi-bell-alert"
+            to="/apps/alarm-center/alarms"
+          >
+            {{ t('alarmCenter.menuTitle') }}
+          </v-btn>
+          <v-btn
+            variant="outlined"
+            color="primary"
+            prepend-icon="mdi-book-open-page-variant"
+            to="/apps/siem-center/reference"
+          >
+            {{ t('siemCenter.reference.openGuide') }}
+          </v-btn>
+        </div>
       </div>
     </div>
 
-    <v-card variant="outlined" class="rounded-lg pa-4 pa-md-5">
-      <AcSiemCenterDashboard />
-    </v-card>
+    <AcSiemCenterDashboard />
   </div>
 </template>
+
+<style scoped>
+.siem-hero {
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  background: linear-gradient(
+    135deg,
+    rgba(var(--v-theme-primary), 0.08) 0%,
+    rgba(var(--v-theme-surface), 1) 55%
+  );
+}
+</style>

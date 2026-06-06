@@ -1,3 +1,4 @@
+using MngAlarm.Application.Contracts;
 using MngAlarm.Application.Observations;
 using MngAlarm.Application.Services;
 using MngAlarm.Domain.Constants;
@@ -189,8 +190,19 @@ public sealed class SequenceProcessorTests
             bool openOnly,
             int skip,
             int limit,
+            string? ruleId = null,
+            string? search = null,
+            DateTime? from = null,
+            DateTime? to = null,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<(IReadOnlyList<AlarmDocument>, long)>(([], 0));
+
+        public Task<IReadOnlyList<AlarmScenarioRollupDto>> GetScenarioRollupAsync(
+            string domainName,
+            DateTime from,
+            DateTime to,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<AlarmScenarioRollupDto>>([]);
     }
 
     private sealed class FakePublisher : IAlarmEventPublisher

@@ -38,3 +38,19 @@ export interface SecEventQuery {
 }
 
 export type SecEventTimeRange = '1h' | '24h' | '7d';
+
+export type SecEventRangeMode = 'preset' | 'custom';
+
+export interface SecEventHourlyBucket {
+  hourStart: string;
+  count: number;
+}
+
+export interface SecEventDashboardSummary {
+  range: string;
+  from: string;
+  to: string;
+  eventsTotal: number;
+  byAction: Record<string, number>;
+  hourly: SecEventHourlyBucket[];
+}

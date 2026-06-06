@@ -13,6 +13,10 @@ public sealed class AlarmQueryService(IAlarmDomainAccessor domain, IAlarmReposit
         bool openOnly,
         int skip,
         int limit,
+        string? ruleId = null,
+        string? search = null,
+        DateTime? from = null,
+        DateTime? to = null,
         CancellationToken cancellationToken = default)
     {
         var ctx = domain.GetRequiredDomain();
@@ -26,6 +30,10 @@ public sealed class AlarmQueryService(IAlarmDomainAccessor domain, IAlarmReposit
             openOnly,
             safeSkip,
             safeLimit,
+            string.IsNullOrWhiteSpace(ruleId) ? null : ruleId.Trim(),
+            string.IsNullOrWhiteSpace(search) ? null : search.Trim(),
+            from,
+            to,
             cancellationToken);
 
         return new AlarmListResponse
@@ -47,6 +55,50 @@ public sealed class AlarmQueryService(IAlarmDomainAccessor domain, IAlarmReposit
         return alarm == null ? null : Map(alarm);
     }
 
+    public async Task<AlarmDashboardSnapshot> GetDashboardSnapshotAsync(
+        int rangeHours = 24,
+        int minSeverity = 6,
+        int openLimit = 15,
+        CancellationToken cancellationToken = default)
+    {
+        var ctx = domain.GetRequiredDomain();
+        var hours = Math.Clamp(rangeHours, 1, 168);
+        var to = DateTime.UtcNow;
+        var from = to.AddHours(-hours);
+        var safeLimit = Math.Clamp(openLimit <= 0 ? 15 : openLimit, 1, 200);
+
+        var (openItems, openTotal) = await alarms.ListAsync(
+            ctx.DomainName,
+            status: null,
+            minSeverity: minSeverity,
+            openOnly: true,
+            skip: 0,
+            limit: safeLimit,
+            ruleId: null,
+            search: null,
+            from: null,
+            to: null,
+            cancellationToken);
+
+        var rollup = await alarms.GetScenarioRollupAsync(ctx.DomainName, from, to, cancellationToken);
+
+        return new AlarmDashboardSnapshot
+        {
+            From = from,
+            To = to,
+            OpenTotal = openTotal,
+            OpenAlarms = openItems.Select(Map).ToList(),
+            ScenarioRollup = rollup.Select(r => new AlarmScenarioRollupDto
+            {
+                MatchKey = r.MatchKey,
+                OpenCount = r.OpenCount,
+                TotalInRange = r.TotalInRange,
+                MaxSeverity = r.MaxSeverity,
+                LastSeenAt = r.LastSeenAt,
+            }).ToList(),
+        };
+    }
+
     private static AlarmSummaryDto Map(AlarmDocument alarm) => new()
     {
         Id = alarm.Id,
@@ -60,6 +112,6 @@ public sealed class AlarmQueryService(IAlarmDomainAccessor domain, IAlarmReposit
         LastSeenAt = alarm.LastSeenAt,
         Count = alarm.Count,
         CorrelationId = alarm.CorrelationId,
-        Context = alarm.Context
+        Context = AlarmContextApiNormalizer.ForApi(alarm.Context)
     };
 }

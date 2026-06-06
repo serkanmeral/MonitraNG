@@ -6,17 +6,24 @@
 
 ---
 
-## Özet
+## API (panel yükleme)
 
-LogAlarm parite hedefindeki “dashboard” gap’inin ilk adımı: son 24 saat olay/ alarm özeti ve hızlı bağlantılar.
+| Veri | Endpoint |
+|------|----------|
+| Olay özeti (24s) | `GET /reactor/api/v1/sec-events/dashboard-summary` |
+| Alarm özeti | `GET /alarm/api/v1/alarms/dashboard-snapshot` |
+
+Panel tek turda **2 istek** atar (aggregation). Olay arama sayfası mevcut `GET /sec-events` listesini kullanmaya devam eder.
+
+## Özet (legacy not)
 
 | Kart | Kaynak |
 |------|--------|
-| Toplam olay | `GET /reactor/api/v1/sec-events` (24s) |
-| Açık alarm (≥6) | `GET /alarm/api/v1/alarms?openOnly=true&minSeverity=6` |
-| Başarısız giriş | `eventAction=login_failed` |
-| Engellenen akış | `eventAction=denied_flow` |
-| Yeni akış (U7) | `eventAction=new_flow` (`baseline.newFlowPair`) |
+| Toplam olay | dashboard-summary → `eventsTotal` |
+| Açık alarm (≥6) | dashboard-snapshot → `openTotal` |
+| Başarısız giriş | dashboard-summary → `byAction.login_failed` |
+| Engellenen akış | `byAction.denied_flow` |
+| Yeni akış (U7) | `byAction.new_flow` |
 
 ## Bileşenler
 

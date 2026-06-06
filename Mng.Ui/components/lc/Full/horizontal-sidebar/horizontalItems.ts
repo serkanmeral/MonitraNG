@@ -315,36 +315,22 @@ const horizontalItems: menu[] = [
     ],
   },
   {
-    title: "Alarm Merkezi",
-    pageCode: "alarmCenter.menuHeader",
-    icon: AlertCircleIcon,
-    to: "#",
-    children: [
-      {
-        title: "Açık alarmlar",
-        pageCode: "alarmCenter.alarms.menuTitle",
-        icon: AlertCircleIcon,
-        to: "/apps/alarm-center/alarms",
-      },
-      {
-        title: "Alarm kuralları",
-        pageCode: "alarmCenter.rules.menuTitle",
-        icon: AdjustmentsIcon,
-        to: "/apps/alarm-center/rules",
-      },
-    ],
-  },
-  {
-    title: "Güvenlik Merkezi",
-    pageCode: "siemCenter.menuHeader",
+    title: "Güvenlik Yönetimi",
+    pageCode: "securityManagement.menuHeader",
     icon: ShieldIcon,
     to: "#",
     children: [
       {
-        title: "Güvenlik olayları",
-        pageCode: "siemCenter.events.menuTitle",
+        title: "Alarm Merkezi",
+        pageCode: "alarmCenter.menuTitle",
+        icon: AlertCircleIcon,
+        to: "/apps/alarm-center/alarms",
+      },
+      {
+        title: "SIEM Güvenlik Paneli",
+        pageCode: "siemCenter.dashboard.menuTitle",
         icon: ShieldIcon,
-        to: "/apps/siem-center/events",
+        to: "/apps/siem-center",
       },
     ],
   },

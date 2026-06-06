@@ -1,4 +1,7 @@
+using System.Text.RegularExpressions;
+using MongoDB.Bson;
 using MongoDB.Driver;
+using MngAlarm.Application.Contracts;
 using MngAlarm.Application.Services;
 using MngAlarm.Domain.Constants;
 using MngAlarm.Domain.Entities;
@@ -100,6 +103,10 @@ public sealed class AlarmRepository(IAlarmMongoContext context, AlarmIndexInitia
         bool openOnly,
         int skip,
         int limit,
+        string? ruleId = null,
+        string? search = null,
+        DateTime? from = null,
+        DateTime? to = null,
         CancellationToken cancellationToken = default)
     {
         await indexInitializer.EnsureAsync(domainName, cancellationToken);
@@ -114,6 +121,34 @@ public sealed class AlarmRepository(IAlarmMongoContext context, AlarmIndexInitia
         if (minSeverity.HasValue)
             filter &= Builders<AlarmDocument>.Filter.Gte(x => x.Severity, minSeverity.Value);
 
+        if (!string.IsNullOrWhiteSpace(ruleId))
+            filter &= Builders<AlarmDocument>.Filter.Eq(x => x.RuleId, ruleId.Trim());
+
+        if (from.HasValue)
+        {
+            var utcFrom = from.Value.Kind == DateTimeKind.Utc ? from.Value : from.Value.ToUniversalTime();
+            filter &= Builders<AlarmDocument>.Filter.Gte(x => x.LastSeenAt, utcFrom);
+        }
+
+        if (to.HasValue)
+        {
+            var utcTo = to.Value.Kind == DateTimeKind.Utc ? to.Value : to.Value.ToUniversalTime();
+            filter &= Builders<AlarmDocument>.Filter.Lte(x => x.LastSeenAt, utcTo);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var escaped = Regex.Escape(search.Trim());
+            var regex = new BsonRegularExpression(escaped, "i");
+            filter &= Builders<AlarmDocument>.Filter.Or(
+                Builders<AlarmDocument>.Filter.Regex(x => x.DedupKey, regex),
+                Builders<AlarmDocument>.Filter.Regex(x => x.CorrelationId, regex),
+                Builders<AlarmDocument>.Filter.Regex("context.key", regex),
+                Builders<AlarmDocument>.Filter.Regex("context.userId", regex),
+                Builders<AlarmDocument>.Filter.Regex("context.srcIp", regex),
+                Builders<AlarmDocument>.Filter.Regex("context.dstIp", regex));
+        }
+
         var total = await col.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
         var items = await col
             .Find(filter)
@@ -123,6 +158,51 @@ public sealed class AlarmRepository(IAlarmMongoContext context, AlarmIndexInitia
             .ToListAsync(cancellationToken);
 
         return (items, total);
+    }
+
+    public async Task<IReadOnlyList<AlarmScenarioRollupDto>> GetScenarioRollupAsync(
+        string domainName,
+        DateTime from,
+        DateTime to,
+        CancellationToken cancellationToken = default)
+    {
+        await indexInitializer.EnsureAsync(domainName, cancellationToken);
+        var col = Collection(domainName);
+
+        var pipeline = new[]
+        {
+            new BsonDocument("$match", new BsonDocument("lastSeenAt", new BsonDocument
+            {
+                { "$gte", from },
+                { "$lte", to },
+            })),
+            new BsonDocument("$match", new BsonDocument("context.key", new BsonDocument("$type", "string"))),
+            new BsonDocument("$group", new BsonDocument
+            {
+                { "_id", "$context.key" },
+                { "totalInRange", new BsonDocument("$sum", 1) },
+                {
+                    "openCount", new BsonDocument("$sum", new BsonDocument("$cond", new BsonArray
+                    {
+                        new BsonDocument("$in", new BsonArray { "$status", new BsonArray { "Active", "Acknowledged" } }),
+                        1,
+                        0,
+                    }))
+                },
+                { "maxSeverity", new BsonDocument("$max", "$severity") },
+                { "lastSeenAt", new BsonDocument("$max", "$lastSeenAt") },
+            }),
+        };
+
+        var docs = await col.Aggregate<BsonDocument>(pipeline).ToListAsync(cancellationToken);
+        return docs.Select(doc => new AlarmScenarioRollupDto
+        {
+            MatchKey = doc.GetValue("_id", "").AsString,
+            TotalInRange = doc.GetValue("totalInRange", 0).ToInt32(),
+            OpenCount = doc.GetValue("openCount", 0).ToInt32(),
+            MaxSeverity = doc.GetValue("maxSeverity", 0).ToInt32(),
+            LastSeenAt = doc.GetValue("lastSeenAt", DateTime.UtcNow).ToUniversalTime(),
+        }).ToList();
     }
 
     public async Task InsertAsync(AlarmDocument alarm, CancellationToken cancellationToken = default)

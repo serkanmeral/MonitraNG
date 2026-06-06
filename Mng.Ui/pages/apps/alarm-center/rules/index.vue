@@ -2,6 +2,7 @@
 import { computed, onMounted } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import AcAlarmRulesExplorer from '@/components/apps/alarm-center/AcAlarmRulesExplorer.vue';
+import AcAlarmCenterSectionNav from '@/components/apps/alarm-center/AcAlarmCenterSectionNav.vue';
 import { useAlarmCenterBreadcrumbs } from '@/composables/useAlarmCenterBreadcrumbs';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useAuthStore } from '@/stores/auth';
@@ -13,7 +14,7 @@ const auth = useAuthStore();
 
 const { breadcrumbs } = useAlarmCenterBreadcrumbs({
   tail: computed(() => ({
-    text: t('alarmCenter.rules.pageTitle'),
+    text: t('alarmCenter.navRules'),
     disabled: true,
   })),
 });
@@ -40,6 +41,8 @@ onMounted(() => {
         {{ t('alarmCenter.rules.pageSubtitle') }}
       </p>
     </div>
+
+    <AcAlarmCenterSectionNav />
 
     <v-card variant="outlined" class="rounded-lg pa-4 pa-md-5">
       <AcAlarmRulesExplorer />

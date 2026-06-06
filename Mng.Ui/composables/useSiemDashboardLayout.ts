@@ -20,7 +20,7 @@ export interface SiemDashboardLayout {
   hiddenStatCards: SiemStatCardId[];
 }
 
-const STORAGE_KEY = 'siem-dashboard-layout-v2';
+const STORAGE_KEY = 'siem-dashboard-layout-v3';
 
 export const SIEM_DASHBOARD_WIDGET_IDS: SiemDashboardWidgetId[] = [
   'stats',
@@ -42,7 +42,7 @@ export const SIEM_STAT_CARD_IDS: SiemStatCardId[] = [
 export function defaultSiemDashboardLayout(): SiemDashboardLayout {
   return {
     widgetOrder: [...SIEM_DASHBOARD_WIDGET_IDS],
-    hiddenWidgets: [],
+    hiddenWidgets: ['quickLinks'],
     statCardOrder: [...SIEM_STAT_CARD_IDS],
     hiddenStatCards: [],
   };

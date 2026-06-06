@@ -29,10 +29,12 @@ public static class AlarmServiceCollectionExtensions
         services.AddScoped<IAlarmRepository, AlarmRepository>();
         services.AddScoped<IAlarmRuleService, AlarmRuleService>();
         services.AddScoped<IAlarmQueryService, AlarmQueryService>();
+        services.AddScoped<IAlarmLifecycleService, AlarmLifecycleService>();
         services.AddScoped<IObservationProcessor, ObservationProcessor>();
         services.AddScoped<IAlarmValidationService, AlarmValidationService>();
         services.AddHttpContextAccessor();
         services.AddScoped<IAlarmDomainAccessor, AlarmDomainAccessor>();
+        services.AddScoped<IAlarmActorAccessor, AlarmActorAccessor>();
 
         return services;
     }
