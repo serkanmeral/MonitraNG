@@ -78,6 +78,15 @@ export function buildRuleConditionSummary(
     });
   }
   if (rule.type === 'sequence') {
+    const steps = rule.sequenceSteps ?? [];
+    if (steps.length >= 2) {
+      return t('alarmCenter.rules.listConditionSequenceDetail', {
+        matchKey: rule.matchKey,
+        step0Key: steps[0].matchKey,
+        step0Count: String(steps[0].minCount ?? 1),
+        step1Key: steps[1].matchKey,
+      });
+    }
     return t('alarmCenter.rules.listConditionSequence', { matchKey: rule.matchKey });
   }
   return t('alarmCenter.rules.listConditionUnknown');

@@ -7,6 +7,7 @@ import type {
   AlarmRuleSavePayload,
   CreateAlarmRuleRequest,
   UpdateAlarmRuleRequest,
+  AlarmSequenceStep,
 } from '@/types/apps/alarm';
 import {
   ALARM_RULE_GROUP_BY_OPTIONS,
@@ -31,9 +32,22 @@ const emit = defineEmits<{
 
 const { t } = useAppI18n();
 
+const U2_SEQUENCE_OUTPUT_KEY = 'login_success_after_failures';
+const U2_SEQUENCE_GROUP_BY = ['userId', 'srcIp'];
+
+function defaultSequenceStep0(): AlarmSequenceStep {
+  return { matchKey: 'login_failed', minCount: 3, withinMinutes: 10 };
+}
+
+function defaultSequenceStep1(): AlarmSequenceStep {
+  return { matchKey: 'login_success', withinMinutesAfterFirst: 15 };
+}
+
 const formError = ref<string | null>(null);
 const useDefaultDedup = ref(true);
 const groupByFields = ref<string[]>([]);
+const sequenceStep0 = ref<AlarmSequenceStep>(defaultSequenceStep0());
+const sequenceStep1 = ref<AlarmSequenceStep>(defaultSequenceStep1());
 
 const form = ref({
   name: '',
@@ -92,15 +106,23 @@ const severityColor = computed(() => {
 const showThresholdFields = computed(() => form.value.type === 'threshold');
 const showCorrelationFields = computed(() => form.value.type === 'correlation');
 const showScheduledFields = computed(() => form.value.type === 'scheduled');
+const showSequenceFields = computed(() => form.value.type === 'sequence');
 const showWindowField = computed(() => form.value.type === 'correlation');
-const isAdvancedRuleType = computed(
-  () => form.value.type !== 'threshold' && form.value.type !== 'correlation' && form.value.type !== 'scheduled',
+const isUnknownRuleType = computed(
+  () => !['threshold', 'correlation', 'scheduled', 'sequence'].includes(form.value.type),
 );
+const isSequenceEditMode = computed(() => isEdit.value && form.value.type === 'sequence');
 
 const defaultDedupTemplateForType = computed(() => defaultDedupTemplate(form.value.type));
 
 const dedupExampleGroupKey = computed(() => {
-  if (form.value.type !== 'correlation' || groupByFields.value.length === 0) {
+  if (
+    (form.value.type === 'correlation' || form.value.type === 'sequence') &&
+    groupByFields.value.length === 0
+  ) {
+    return t('alarmCenter.rules.dedupExampleAll');
+  }
+  if (form.value.type !== 'correlation' && form.value.type !== 'sequence') {
     return t('alarmCenter.rules.dedupExampleAll');
   }
   const samples: Record<string, string> = {
@@ -146,8 +168,21 @@ const rulePreview = computed(() => {
   const severity = String(f.severity);
   const cooldown = String(f.cooldownMinutes);
 
-  if (isAdvancedRuleType.value) {
+  if (isUnknownRuleType.value) {
     return t('alarmCenter.rules.previewSequence', { matchKey: key, severity, cooldown });
+  }
+  if (f.type === 'sequence') {
+    return t('alarmCenter.rules.previewSequenceDetail', {
+      matchKey: key,
+      step0Key: sequenceStep0.value.matchKey.trim() || '…',
+      step0Count: String(sequenceStep0.value.minCount ?? 1),
+      step0Window: String(sequenceStep0.value.withinMinutes ?? 0),
+      step1Key: sequenceStep1.value.matchKey.trim() || '…',
+      step1After: String(sequenceStep1.value.withinMinutesAfterFirst ?? 0),
+      groupBy: groupByDisplay.value,
+      severity,
+      cooldown,
+    });
   }
   if (f.type === 'threshold') {
     return t('alarmCenter.rules.previewThreshold', {
@@ -191,6 +226,8 @@ function resetForm() {
     dedupKeyTemplate: '',
   };
   groupByFields.value = [];
+  sequenceStep0.value = defaultSequenceStep0();
+  sequenceStep1.value = defaultSequenceStep1();
   useDefaultDedup.value = true;
   formError.value = null;
 }
@@ -210,6 +247,14 @@ function loadFromRule(row: AlarmRule) {
     dedupKeyTemplate: row.dedupKeyTemplate || '',
   };
   groupByFields.value = [...(row.groupByFields || [])];
+  const steps = row.sequenceSteps ?? [];
+  if (steps.length >= 2) {
+    sequenceStep0.value = { ...steps[0] };
+    sequenceStep1.value = { ...steps[1] };
+  } else {
+    sequenceStep0.value = defaultSequenceStep0();
+    sequenceStep1.value = defaultSequenceStep1();
+  }
   const def = defaultDedupTemplate((row.type as AlarmRuleType) || 'threshold');
   useDefaultDedup.value = !row.dedupKeyTemplate || row.dedupKeyTemplate === def;
   formError.value = null;
@@ -224,12 +269,35 @@ function selectType(type: AlarmRuleType) {
   if (type === 'scheduled' && form.value.stalenessMinutes < 1) {
     form.value.stalenessMinutes = 30;
   }
+  if (type === 'sequence') {
+    if (!form.value.matchKey.trim()) form.value.matchKey = U2_SEQUENCE_OUTPUT_KEY;
+    if (groupByFields.value.length === 0) groupByFields.value = [...U2_SEQUENCE_GROUP_BY];
+    if (form.value.severity < 8) form.value.severity = 8;
+  }
+}
+
+function applyU2SequencePreset() {
+  form.value.matchKey = U2_SEQUENCE_OUTPUT_KEY;
+  form.value.severity = 8;
+  groupByFields.value = [...U2_SEQUENCE_GROUP_BY];
+  sequenceStep0.value = defaultSequenceStep0();
+  sequenceStep1.value = defaultSequenceStep1();
 }
 
 function validate(): string | null {
   if (!form.value.name.trim()) return t('alarmCenter.rules.validationName');
   if (!isEdit.value && !form.value.matchKey.trim()) return t('alarmCenter.rules.validationMatchKey');
   if (form.value.severity < 1 || form.value.severity > 10) return t('alarmCenter.rules.validationSeverity');
+  if (form.value.type === 'sequence' && !isEdit.value) {
+    if (!sequenceStep0.value.matchKey.trim() || !sequenceStep1.value.matchKey.trim()) {
+      return t('alarmCenter.rules.validationSequenceStepKeys');
+    }
+    if ((sequenceStep0.value.minCount ?? 0) < 1) return t('alarmCenter.rules.validationSequenceStep0');
+    if ((sequenceStep0.value.withinMinutes ?? 0) < 1) return t('alarmCenter.rules.validationSequenceStep0');
+    if ((sequenceStep1.value.withinMinutesAfterFirst ?? 0) < 1) {
+      return t('alarmCenter.rules.validationSequenceStep1');
+    }
+  }
   if (form.value.type === 'correlation') {
     if (form.value.threshold < 1) return t('alarmCenter.rules.validationEventCount');
     if (form.value.windowMinutes < 1) return t('alarmCenter.rules.validationWindow');
@@ -252,14 +320,16 @@ function onSave() {
       name: form.value.name.trim(),
       enabled: form.value.enabled,
       severity: form.value.severity,
-      operator: form.value.operator,
-      threshold: form.value.threshold,
       cooldownMinutes: form.value.cooldownMinutes,
-      windowMinutes: form.value.windowMinutes,
-      stalenessMinutes: form.value.stalenessMinutes,
-      groupByFields: groupByFields.value,
       dedupKeyTemplate: dedup,
     };
+    if (form.value.type !== 'sequence') {
+      body.operator = form.value.operator;
+      body.threshold = form.value.threshold;
+      body.windowMinutes = form.value.windowMinutes;
+      body.stalenessMinutes = form.value.stalenessMinutes;
+      body.groupByFields = groupByFields.value;
+    }
     emit('save', { isEdit: true, id: props.editingRule.id, body });
     return;
   }
@@ -277,6 +347,20 @@ function onSave() {
     groupByFields: groupByFields.value.length ? groupByFields.value : undefined,
     dedupKeyTemplate: dedup,
   };
+  if (form.value.type === 'sequence') {
+    body.sequenceSteps = [
+      {
+        matchKey: sequenceStep0.value.matchKey.trim(),
+        minCount: sequenceStep0.value.minCount ?? 1,
+        withinMinutes: sequenceStep0.value.withinMinutes ?? 10,
+      },
+      {
+        matchKey: sequenceStep1.value.matchKey.trim(),
+        withinMinutesAfterFirst: sequenceStep1.value.withinMinutesAfterFirst ?? 15,
+      },
+    ];
+    body.threshold = 0;
+  }
   emit('save', { isEdit: false, body });
 }
 
@@ -396,7 +480,7 @@ watch(
             {{ t('alarmCenter.rules.typeLockedHint') }}
           </v-alert>
           <v-alert
-            v-if="isAdvancedRuleType"
+            v-if="isSequenceEditMode"
             type="info"
             variant="tonal"
             density="compact"
@@ -404,8 +488,17 @@ watch(
           >
             {{ t('alarmCenter.rules.sequenceEditHint') }}
           </v-alert>
-          <v-row v-if="!isAdvancedRuleType" dense class="mt-3">
-            <v-col v-for="card in ALARM_RULE_TYPE_CARDS" :key="card.type" cols="12" md="4">
+          <v-alert
+            v-if="isUnknownRuleType"
+            type="warning"
+            variant="tonal"
+            density="compact"
+            class="mt-3 mb-0"
+          >
+            {{ t('alarmCenter.rules.typeUnknown') }}
+          </v-alert>
+          <v-row v-if="!isUnknownRuleType" dense class="mt-3">
+            <v-col v-for="card in ALARM_RULE_TYPE_CARDS" :key="card.type" cols="12" sm="6" md="3">
               <v-card
                 variant="outlined"
                 class="ac-type-card h-100"
@@ -424,15 +517,23 @@ watch(
               </v-card>
             </v-col>
           </v-row>
-          <v-row dense :class="isAdvancedRuleType ? 'mt-3' : 'mt-2'">
+          <v-row dense :class="isUnknownRuleType ? 'mt-3' : 'mt-2'">
             <v-col cols="12">
               <v-combobox
                 v-model="form.matchKey"
                 :items="matchKeyItems"
                 item-title="title"
                 item-value="value"
-                :label="t('alarmCenter.rules.fieldMatchKey')"
-                :hint="t('alarmCenter.rules.fieldMatchKeyHint')"
+                :label="
+                  showSequenceFields
+                    ? t('alarmCenter.rules.fieldSequenceOutputKey')
+                    : t('alarmCenter.rules.fieldMatchKey')
+                "
+                :hint="
+                  showSequenceFields
+                    ? t('alarmCenter.rules.fieldSequenceOutputKeyHint')
+                    : t('alarmCenter.rules.fieldMatchKeyHint')
+                "
                 :placeholder="t('alarmCenter.rules.fieldMatchKeyPlaceholder')"
                 :disabled="isEdit"
                 variant="outlined"
@@ -451,10 +552,140 @@ watch(
         </div>
 
         <!-- Section: Condition -->
-        <div v-if="!isAdvancedRuleType" class="ac-form-section mb-5">
+        <div v-if="!isUnknownRuleType" class="ac-form-section mb-5">
           <div class="ac-form-section__title">{{ t('alarmCenter.rules.sectionCondition') }}</div>
-          <div class="ac-form-section__desc">{{ t('alarmCenter.rules.sectionConditionDesc') }}</div>
+          <div class="ac-form-section__desc">
+            {{
+              showSequenceFields
+                ? t('alarmCenter.rules.sectionSequenceDesc')
+                : t('alarmCenter.rules.sectionConditionDesc')
+            }}
+          </div>
           <v-row dense class="mt-3">
+            <template v-if="showSequenceFields">
+              <v-col v-if="!isEdit" cols="12">
+                <v-btn
+                  variant="tonal"
+                  color="primary"
+                  prepend-icon="mdi-lightning-bolt-outline"
+                  size="small"
+                  @click="applyU2SequencePreset"
+                >
+                  {{ t('alarmCenter.rules.sequenceU2Preset') }}
+                </v-btn>
+                <div class="text-caption text-medium-emphasis mt-1">
+                  {{ t('alarmCenter.rules.sequenceU2PresetHint') }}
+                </div>
+              </v-col>
+              <v-col cols="12">
+                <v-card variant="outlined" class="rounded-lg">
+                  <v-card-text class="pa-4">
+                    <div class="text-subtitle-2 font-weight-bold mb-3">
+                      {{ t('alarmCenter.rules.sequenceStep1Title') }}
+                    </div>
+                    <v-row dense>
+                      <v-col cols="12" md="6">
+                        <v-combobox
+                          v-model="sequenceStep0.matchKey"
+                          :items="matchKeyItems"
+                          item-title="title"
+                          item-value="value"
+                          :label="t('alarmCenter.rules.fieldStepMatchKey')"
+                          :disabled="isEdit"
+                          variant="outlined"
+                          density="comfortable"
+                          hide-details="auto"
+                        />
+                      </v-col>
+                      <v-col cols="6" md="3">
+                        <v-text-field
+                          v-model.number="sequenceStep0.minCount"
+                          type="number"
+                          min="1"
+                          :label="t('alarmCenter.rules.fieldStepMinCount')"
+                          :disabled="isEdit"
+                          variant="outlined"
+                          density="comfortable"
+                          hide-details="auto"
+                        />
+                      </v-col>
+                      <v-col cols="6" md="3">
+                        <v-text-field
+                          v-model.number="sequenceStep0.withinMinutes"
+                          type="number"
+                          min="1"
+                          :label="t('alarmCenter.rules.fieldStepWithinMinutes')"
+                          :disabled="isEdit"
+                          variant="outlined"
+                          density="comfortable"
+                          hide-details="auto"
+                        />
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+              <v-col cols="12">
+                <v-card variant="outlined" class="rounded-lg">
+                  <v-card-text class="pa-4">
+                    <div class="text-subtitle-2 font-weight-bold mb-3">
+                      {{ t('alarmCenter.rules.sequenceStep2Title') }}
+                    </div>
+                    <v-row dense>
+                      <v-col cols="12" md="6">
+                        <v-combobox
+                          v-model="sequenceStep1.matchKey"
+                          :items="matchKeyItems"
+                          item-title="title"
+                          item-value="value"
+                          :label="t('alarmCenter.rules.fieldStepMatchKey')"
+                          :disabled="isEdit"
+                          variant="outlined"
+                          density="comfortable"
+                          hide-details="auto"
+                        />
+                      </v-col>
+                      <v-col cols="12" md="6">
+                        <v-text-field
+                          v-model.number="sequenceStep1.withinMinutesAfterFirst"
+                          type="number"
+                          min="1"
+                          :label="t('alarmCenter.rules.fieldStepWithinAfterFirst')"
+                          :disabled="isEdit"
+                          variant="outlined"
+                          density="comfortable"
+                          hide-details="auto"
+                        />
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+              <v-col cols="12">
+                <v-combobox
+                  v-model="groupByFields"
+                  :items="groupByItems"
+                  item-title="title"
+                  item-value="value"
+                  :label="t('alarmCenter.rules.fieldGroupBy')"
+                  :hint="t('alarmCenter.rules.fieldSequenceGroupByHint')"
+                  :placeholder="t('alarmCenter.rules.fieldGroupByPlaceholder')"
+                  :disabled="isEdit"
+                  variant="outlined"
+                  density="comfortable"
+                  persistent-hint
+                  hide-details="auto"
+                  multiple
+                  chips
+                  closable-chips
+                  clearable
+                >
+                  <template #item="{ props: itemProps, item }">
+                    <v-list-item v-bind="itemProps" :subtitle="item.raw.subtitle" />
+                  </template>
+                </v-combobox>
+              </v-col>
+            </template>
             <template v-if="showThresholdFields">
               <v-col cols="12" md="4">
                 <v-select

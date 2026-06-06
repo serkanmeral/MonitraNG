@@ -56,7 +56,14 @@ export interface AlarmDashboardSnapshotQuery {
   openLimit?: number;
 }
 
-export type AlarmRuleType = 'threshold' | 'correlation' | 'scheduled';
+export type AlarmRuleType = 'threshold' | 'correlation' | 'scheduled' | 'sequence';
+
+export interface AlarmSequenceStep {
+  matchKey: string;
+  minCount?: number;
+  withinMinutes?: number;
+  withinMinutesAfterFirst?: number;
+}
 
 export interface AlarmRuleMetadata {
   packageId?: string;
@@ -86,6 +93,7 @@ export interface AlarmRule {
   groupByFields: string[];
   windowMinutes: number;
   stalenessMinutes: number;
+  sequenceSteps?: AlarmSequenceStep[];
   metadata?: AlarmRuleMetadata;
   createdAt?: string;
   updatedAt?: string;
@@ -103,6 +111,7 @@ export interface CreateAlarmRuleRequest {
   windowMinutes?: number;
   stalenessMinutes?: number;
   dedupKeyTemplate?: string;
+  sequenceSteps?: AlarmSequenceStep[];
 }
 
 export interface UpdateAlarmRuleRequest {

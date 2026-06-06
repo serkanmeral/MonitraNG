@@ -37,6 +37,12 @@ export const ALARM_RULE_TYPE_CARDS: AlarmRuleTypeCardDef[] = [
     titleKey: 'alarmCenter.rules.typeScheduled',
     subtitleKey: 'alarmCenter.rules.typeScheduledDesc',
   },
+  {
+    type: 'sequence',
+    icon: 'mdi-format-list-numbered',
+    titleKey: 'alarmCenter.rules.typeSequence',
+    subtitleKey: 'alarmCenter.rules.typeSequenceDesc',
+  },
 ];
 
 /** SIEM / observation keys (SEC_EVENT_OBSERVATION_MAP + metric examples). */
@@ -77,8 +83,8 @@ export const ALARM_RULE_GROUP_BY_OPTIONS: AlarmRuleGroupByOption[] = [
   { value: 'sourceType', descriptionKey: 'alarmCenter.rules.groupByFields.sourceType' },
 ];
 
-export function defaultDedupTemplate(type: AlarmRuleType): string {
-  if (type === 'correlation') return '{ruleId}:{groupKey}';
+export function defaultDedupTemplate(type: AlarmRuleType | string): string {
+  if (type === 'correlation' || type === 'sequence') return '{ruleId}:{groupKey}';
   return '{ruleId}:{key}';
 }
 
