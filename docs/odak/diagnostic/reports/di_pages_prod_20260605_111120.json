@@ -1,0 +1,244 @@
+{
+  "pages": [
+    {
+      "lastRunDetails": [
+        {
+          "success": true,
+          "ms": 946,
+          "error": null,
+          "label": "bootstrap"
+        }
+      ],
+      "title": "Resources — bootstrap (tree + kok children, tek istek)",
+      "targetWallMs": 1200,
+      "pageId": "di_bootstrap_open",
+      "warmMedianWallMs": 954,
+      "ok": true,
+      "sessionColdWallMs": 930,
+      "warmP95WallMs": 963,
+      "lastRunSuccess": true
+    },
+    {
+      "lastRunDetails": [
+        {
+          "success": true,
+          "ms": 1552,
+          "error": null,
+          "label": "tree"
+        },
+        {
+          "success": true,
+          "ms": 1576,
+          "error": null,
+          "label": "children_root"
+        }
+      ],
+      "title": "Resources — eski ilk acilis (tree + children paralel, karsilastirma)",
+      "targetWallMs": 2000,
+      "pageId": "di_initial_open",
+      "warmMedianWallMs": 1610,
+      "ok": true,
+      "sessionColdWallMs": 1980,
+      "warmP95WallMs": 1615,
+      "lastRunSuccess": true
+    },
+    {
+      "lastRunDetails": [
+        {
+          "success": true,
+          "ms": 947,
+          "error": null,
+          "label": "browse"
+        }
+      ],
+      "title": "Kok klasor — browse (tek istek)",
+      "targetWallMs": 800,
+      "pageId": "di_browse_root",
+      "warmMedianWallMs": 930,
+      "ok": false,
+      "sessionColdWallMs": 958,
+      "warmP95WallMs": 947,
+      "lastRunSuccess": true
+    },
+    {
+      "lastRunDetails": [
+        {
+          "success": true,
+          "ms": 1265,
+          "error": null,
+          "label": "browse"
+        }
+      ],
+      "title": "Klasor secimi — browse (tek istek)",
+      "targetWallMs": 1200,
+      "pageId": "di_browse_folder",
+      "warmMedianWallMs": 1266,
+      "ok": false,
+      "sessionColdWallMs": 1259,
+      "warmP95WallMs": 1289,
+      "lastRunSuccess": true
+    },
+    {
+      "lastRunDetails": [
+        {
+          "success": true,
+          "ms": 2497,
+          "error": null,
+          "label": "children"
+        },
+        {
+          "success": true,
+          "ms": 2847,
+          "error": null,
+          "label": "breadcrumb"
+        },
+        {
+          "success": true,
+          "ms": 2498,
+          "error": null,
+          "label": "getById"
+        }
+      ],
+      "title": "Klasor secimi — eski (3 API paralel, karsilastirma)",
+      "targetWallMs": 2500,
+      "pageId": "di_select_folder",
+      "warmMedianWallMs": 2920,
+      "ok": false,
+      "sessionColdWallMs": 2875,
+      "warmP95WallMs": 3020,
+      "lastRunSuccess": true
+    },
+    {
+      "lastRunDetails": [
+        {
+          "success": true,
+          "ms": 993,
+          "error": null,
+          "label": "permissions"
+        }
+      ],
+      "title": "Izinler diyalogu (GET permissions — snapshot + folder)",
+      "targetWallMs": 2000,
+      "pageId": "di_permissions_dialog",
+      "warmMedianWallMs": 983,
+      "ok": true,
+      "sessionColdWallMs": 993,
+      "warmP95WallMs": 993,
+      "lastRunSuccess": true
+    },
+    {
+      "lastRunDetails": [
+        {
+          "success": true,
+          "ms": 980,
+          "error": null,
+          "label": "search"
+        }
+      ],
+      "title": "Arama (q=test, limit=50)",
+      "targetWallMs": 2500,
+      "pageId": "di_search",
+      "warmMedianWallMs": 980,
+      "ok": true,
+      "sessionColdWallMs": 942,
+      "warmP95WallMs": 1330,
+      "lastRunSuccess": true
+    }
+  ],
+  "analysisNotes": [
+    "Optimized: bootstrap/browse use one snapshot per HTTP request (showHistory=false on snapshot queries).",
+    "Legacy: parallel tree+children or triple folder APIs multiply snapshot/DG load."
+  ],
+  "module": "document_intelligence",
+  "pageTargets": {
+    "di_permissions_dialog": 2000,
+    "di_search": 2500,
+    "di_initial_open": 2000,
+    "di_browse_folder": 1200,
+    "di_open_markdown": 2000,
+    "di_bootstrap_open": 1200,
+    "di_browse_root": 800,
+    "di_select_folder": 2500
+  },
+  "environment": {
+    "documentApiBase": "http://192.168.20.8:5040/documents/api/v1/resources",
+    "sampleFolderId": "aaf3ab2b-137f-42c4-a5bb-3771cc5f0c44",
+    "sampleMarkdownId": "",
+    "gatewayBaseUrl": "http://192.168.20.8:5040",
+    "warmIterations": 3
+  },
+  "endpointBreakdownWarm1": [
+    {
+      "uri": "http://192.168.20.8:5040/documents/api/v1/resources/bootstrap",
+      "success": true,
+      "ms": 942,
+      "label": "ep_bootstrap"
+    },
+    {
+      "uri": "http://192.168.20.8:5040/documents/api/v1/resources/browse",
+      "success": true,
+      "ms": 962,
+      "label": "ep_browse_root"
+    },
+    {
+      "uri": "http://192.168.20.8:5040/documents/api/v1/resources/tree",
+      "success": true,
+      "ms": 666,
+      "label": "ep_tree"
+    },
+    {
+      "uri": "http://192.168.20.8:5040/documents/api/v1/resources/children",
+      "success": true,
+      "ms": 1604,
+      "label": "ep_children"
+    },
+    {
+      "uri": "http://192.168.20.8:5040/documents/api/v1/resources/children?parentId=aaf3ab2b-137f-42c4-a5bb-3771cc5f0c44",
+      "success": true,
+      "ms": 1202,
+      "label": "ep_children_folder"
+    },
+    {
+      "uri": "http://192.168.20.8:5040/documents/api/v1/resources/aaf3ab2b-137f-42c4-a5bb-3771cc5f0c44/breadcrumb",
+      "success": true,
+      "ms": 1019,
+      "label": "ep_breadcrumb"
+    },
+    {
+      "uri": "http://192.168.20.8:5040/documents/api/v1/resources/aaf3ab2b-137f-42c4-a5bb-3771cc5f0c44",
+      "success": true,
+      "ms": 955,
+      "label": "ep_getById"
+    },
+    {
+      "uri": "http://192.168.20.8:5040/documents/api/v1/resources/aaf3ab2b-137f-42c4-a5bb-3771cc5f0c44/permissions",
+      "success": true,
+      "ms": 932,
+      "label": "ep_permissions"
+    },
+    {
+      "uri": "http://192.168.20.8:5040/documents/api/v1/resources/search?q=a&skip=0&limit=50",
+      "success": true,
+      "ms": 949,
+      "label": "ep_search"
+    }
+  ],
+  "dgReference": [
+    {
+      "success": true,
+      "ms": 364,
+      "label": "dg_dm_resources"
+    },
+    {
+      "success": true,
+      "ms": 332,
+      "label": "dg_dm_resource_permissions"
+    },
+    {
+      "success": true,
+      "ms": 317,
+      "label": "dg_dm_resource_versions"
+    }
+  ],
+  "generatedAtUtc": "2026-06-05T08:12:15.5926410Z"
+}

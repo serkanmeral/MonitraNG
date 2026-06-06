@@ -1,0 +1,244 @@
+{
+  "pageTargets": {
+    "di_browse_root": 800,
+    "di_bootstrap_open": 1200,
+    "di_search": 2500,
+    "di_select_folder": 2500,
+    "di_open_markdown": 2000,
+    "di_permissions_dialog": 2000,
+    "di_initial_open": 2000,
+    "di_browse_folder": 1200
+  },
+  "endpointBreakdownWarm1": [
+    {
+      "success": true,
+      "ms": 944,
+      "label": "ep_bootstrap",
+      "uri": "http://192.168.20.8:5040/documents/api/v1/resources/bootstrap"
+    },
+    {
+      "success": true,
+      "ms": 926,
+      "label": "ep_browse_root",
+      "uri": "http://192.168.20.8:5040/documents/api/v1/resources/browse"
+    },
+    {
+      "success": true,
+      "ms": 693,
+      "label": "ep_tree",
+      "uri": "http://192.168.20.8:5040/documents/api/v1/resources/tree"
+    },
+    {
+      "success": true,
+      "ms": 970,
+      "label": "ep_children",
+      "uri": "http://192.168.20.8:5040/documents/api/v1/resources/children"
+    },
+    {
+      "success": true,
+      "ms": 923,
+      "label": "ep_children_folder",
+      "uri": "http://192.168.20.8:5040/documents/api/v1/resources/children?parentId=aaf3ab2b-137f-42c4-a5bb-3771cc5f0c44"
+    },
+    {
+      "success": true,
+      "ms": 930,
+      "label": "ep_breadcrumb",
+      "uri": "http://192.168.20.8:5040/documents/api/v1/resources/aaf3ab2b-137f-42c4-a5bb-3771cc5f0c44/breadcrumb"
+    },
+    {
+      "success": true,
+      "ms": 1043,
+      "label": "ep_getById",
+      "uri": "http://192.168.20.8:5040/documents/api/v1/resources/aaf3ab2b-137f-42c4-a5bb-3771cc5f0c44"
+    },
+    {
+      "success": true,
+      "ms": 954,
+      "label": "ep_permissions",
+      "uri": "http://192.168.20.8:5040/documents/api/v1/resources/aaf3ab2b-137f-42c4-a5bb-3771cc5f0c44/permissions"
+    },
+    {
+      "success": true,
+      "ms": 952,
+      "label": "ep_search",
+      "uri": "http://192.168.20.8:5040/documents/api/v1/resources/search?q=a&skip=0&limit=50"
+    }
+  ],
+  "generatedAtUtc": "2026-06-05T08:10:48.1168343Z",
+  "pages": [
+    {
+      "pageId": "di_bootstrap_open",
+      "title": "Resources — bootstrap (tree + kok children, tek istek)",
+      "targetWallMs": 1200,
+      "warmMedianWallMs": 935,
+      "warmP95WallMs": 1034,
+      "sessionColdWallMs": 1309,
+      "lastRunDetails": [
+        {
+          "success": true,
+          "ms": 1034,
+          "label": "bootstrap",
+          "error": null
+        }
+      ],
+      "ok": true,
+      "lastRunSuccess": true
+    },
+    {
+      "pageId": "di_initial_open",
+      "title": "Resources — eski ilk acilis (tree + children paralel, karsilastirma)",
+      "targetWallMs": 2000,
+      "warmMedianWallMs": 1618,
+      "warmP95WallMs": 1725,
+      "sessionColdWallMs": 1787,
+      "lastRunDetails": [
+        {
+          "success": true,
+          "ms": 1288,
+          "label": "tree",
+          "error": null
+        },
+        {
+          "success": true,
+          "ms": 1597,
+          "label": "children_root",
+          "error": null
+        }
+      ],
+      "ok": true,
+      "lastRunSuccess": true
+    },
+    {
+      "pageId": "di_browse_root",
+      "title": "Kok klasor — browse (tek istek)",
+      "targetWallMs": 800,
+      "warmMedianWallMs": 974,
+      "warmP95WallMs": 1024,
+      "sessionColdWallMs": 1019,
+      "lastRunDetails": [
+        {
+          "success": true,
+          "ms": 964,
+          "label": "browse",
+          "error": null
+        }
+      ],
+      "ok": false,
+      "lastRunSuccess": true
+    },
+    {
+      "pageId": "di_browse_folder",
+      "title": "Klasor secimi — browse (tek istek)",
+      "targetWallMs": 1200,
+      "warmMedianWallMs": 1368,
+      "warmP95WallMs": 1394,
+      "sessionColdWallMs": 1299,
+      "lastRunDetails": [
+        {
+          "success": true,
+          "ms": 1393,
+          "label": "browse",
+          "error": null
+        }
+      ],
+      "ok": false,
+      "lastRunSuccess": true
+    },
+    {
+      "pageId": "di_select_folder",
+      "title": "Klasor secimi — eski (3 API paralel, karsilastirma)",
+      "targetWallMs": 2500,
+      "warmMedianWallMs": 3009,
+      "warmP95WallMs": 3724,
+      "sessionColdWallMs": 2831,
+      "lastRunDetails": [
+        {
+          "success": true,
+          "ms": 2922,
+          "label": "children",
+          "error": null
+        },
+        {
+          "success": true,
+          "ms": 2310,
+          "label": "breadcrumb",
+          "error": null
+        },
+        {
+          "success": true,
+          "ms": 2923,
+          "label": "getById",
+          "error": null
+        }
+      ],
+      "ok": false,
+      "lastRunSuccess": true
+    },
+    {
+      "pageId": "di_permissions_dialog",
+      "title": "Izinler diyalogu (GET permissions — snapshot + folder)",
+      "targetWallMs": 2000,
+      "warmMedianWallMs": 1029,
+      "warmP95WallMs": 1068,
+      "sessionColdWallMs": 1520,
+      "lastRunDetails": [
+        {
+          "success": true,
+          "ms": 1029,
+          "label": "permissions",
+          "error": null
+        }
+      ],
+      "ok": true,
+      "lastRunSuccess": true
+    },
+    {
+      "pageId": "di_search",
+      "title": "Arama (q=test, limit=50)",
+      "targetWallMs": 2500,
+      "warmMedianWallMs": 1056,
+      "warmP95WallMs": 1107,
+      "sessionColdWallMs": 1121,
+      "lastRunDetails": [
+        {
+          "success": true,
+          "ms": 923,
+          "label": "search",
+          "error": null
+        }
+      ],
+      "ok": true,
+      "lastRunSuccess": true
+    }
+  ],
+  "dgReference": [
+    {
+      "success": true,
+      "ms": 334,
+      "label": "dg_dm_resources"
+    },
+    {
+      "success": true,
+      "ms": 354,
+      "label": "dg_dm_resource_permissions"
+    },
+    {
+      "success": true,
+      "ms": 330,
+      "label": "dg_dm_resource_versions"
+    }
+  ],
+  "analysisNotes": [
+    "Optimized: bootstrap/browse use one snapshot per HTTP request (showHistory=false on snapshot queries).",
+    "Legacy: parallel tree+children or triple folder APIs multiply snapshot/DG load."
+  ],
+  "module": "document_intelligence",
+  "environment": {
+    "sampleFolderId": "aaf3ab2b-137f-42c4-a5bb-3771cc5f0c44",
+    "documentApiBase": "http://192.168.20.8:5040/documents/api/v1/resources",
+    "gatewayBaseUrl": "http://192.168.20.8:5040",
+    "sampleMarkdownId": "",
+    "warmIterations": 3
+  }
+}

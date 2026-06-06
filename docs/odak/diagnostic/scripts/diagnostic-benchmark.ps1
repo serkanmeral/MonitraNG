@@ -214,8 +214,16 @@ if ($CompareDirect) {
 Write-Host "  Warm N  : $WarmIterations | Hedef warm P95 <= ${TargetWarmP95Ms}ms, session cold <= ${TargetColdMs}ms" -ForegroundColor Gray
 Write-Host ""
 
-$loadTokenScript = Join-Path $ocScriptDir "load-operationcore-token.ps1"
+$isProdGateway = $GatewayBaseUrl -match "192\.168\.20\.8"
+$loadTokenScript = Join-Path $ocScriptDir $(if ($isProdGateway) { "load-operationcore-token-prod.ps1" } else { "load-operationcore-token.ps1" })
 if (-not (Test-Path $loadTokenScript)) { throw "Token script bulunamadi: $loadTokenScript" }
+
+if ($isProdGateway) {
+    $prodSeed = Join-Path $ocScriptDir "operationcore-helpdesk-prod-seed.json"
+    if (([string]::IsNullOrEmpty($WorkspaceId) -or [string]::IsNullOrEmpty($BoardId)) -and (Test-Path $prodSeed)) {
+        $seedFile = $prodSeed
+    }
+}
 
 $token = & $loadTokenScript
 if ([string]::IsNullOrEmpty($token)) { throw "Token alinamadi." }

@@ -1,10 +1,10 @@
 # MonitraNG Operasyon Merkezi — Performans İyileştirme Yol Haritası
 
-**Sürüm:** 1.0  
-**Tarih:** 2 Haziran 2026  
-**Ortam:** Odak / müşteri on-prem  
-**Durum:** Faz 1 + 1B ✅ · **Faz 2 MO kısmi** ✅ (2 Haz 2026, ölçüm: [DIAGNOSTIC_REPORT_2026-06-02-faz2.md](./DIAGNOSTIC_REPORT_2026-06-02-faz2.md))  
-**Teknik referans:** [DIAGNOSTIC_REPORT_2026-06-02.md](./DIAGNOSTIC_REPORT_2026-06-02.md)
+**Sürüm:** 1.1  
+**Tarih:** 6 Haziran 2026  
+**Ortam:** Odak test `20.20` / müşteri prod `20.8`  
+**Durum:** Faz 1 + 1B ✅ · Faz 2 MO ✅ · **Faz 2b + PV-PERF-4 + UI cache** ✅ (6 Haz — [DIAGNOSTIC_REPORT_2026-06-06-perf.md](./DIAGNOSTIC_REPORT_2026-06-06-perf.md))  
+**Teknik referans:** [DIAGNOSTIC_REPORT_2026-06-02.md](./DIAGNOSTIC_REPORT_2026-06-02.md) · [OPERATIONAL_WORKSPACE_PERF.md](./OPERATIONAL_WORKSPACE_PERF.md)
 
 ---
 
@@ -22,13 +22,14 @@ Bu yol haritası, **ölçülebilir hedefler**, **fazlı teslimat** ve **doğrula
 
 ### Hedef kullanıcı deneyimi (SLA)
 
-| Senaryo | Bugün (Odak ölçümü) | Hedef (Faz 2 sonu) |
-|---------|---------------------|---------------------|
-| Board listesi (50 satır) | ~0,3 sn | ≤ 0,5 sn |
-| İş profili — tekrar açılış (warm) | ~1,3 sn | ≤ 1,5 sn |
-| İş profili — ilk açılış (cold) | ~4 sn | ≤ 2 sn |
-| Workspace tanımlama — zamanlanmış görevler sekmesi | ~20–30 sn (UI) | ≤ 3 sn |
-| Workspace tanımlama — sayfa ilk açılış | ~20–30 sn (UI) | ≤ 5 sn |
+| Senaryo | Prod (6 Haz) | Test (6 Haz) | Hedef |
+|---------|--------------|--------------|-------|
+| Board listesi (warm) | ~0,7 sn | ~0,7 sn | ≤ 1,2 sn ✅ |
+| İş profili — warm | **1,7 sn** ✅ | ~3 sn ⚠️ | ≤ 1,8 sn |
+| İş profili — cold | ~8–9 sn | ~8–9 sn | ≤ 4 sn |
+| Dashboard — warm | ~2 sn ⚠️ | ~1,4 sn ⚠️ | ≤ 1,2 sn |
+| Workspace tanımlama — scheduled tab | ~2 sn ✅ | — | ≤ 3 sn |
+| Workspace tanımlama — ilk açılış | ≤ 5 sn ✅ | — | ≤ 5 sn |
 
 > Hedefler P95 (95. istek daha hızlı) ve Odak referans ortamı içindir; müşteri ortamında Faz 0'da baseline alınır.
 
@@ -134,19 +135,35 @@ gantt
 
 ---
 
-### Faz 2 — Backend runtime optimizasyonu (≈ 7 iş günü) — **kısmi tamam (2 Haz)**
+### Faz 2 — Backend runtime optimizasyonu — **✅ tamam (2 Haz + 6 Haz)**
 
-**Amaç:** Günlük operasyon ekranları — profil cold path, dashboard.
+**Amaç:** Günlük operasyon ekranları — profil warm path, dashboard.
 
-| # | İyileştirme | Durum | Odak ölçüm (2 Haz) |
-|---|-------------|--------|---------------------|
-| 2.1 | MO **metadata cache** (TTL) | ✅ (önceden) | — |
-| 2.2 | Profil metadata **paralel** + profile-view timeline 35 | ✅ | profile warm P95 **~1,3 sn**; profile-view **~2,3 sn** |
-| 2.3 | Dashboard widget **paralel (4)** + summaryCard take=1 | ✅ | dashboard warm P95 **~1,7 sn** (hedef 1 sn için ek tur) |
+| # | İyileştirme | Durum | Ölçüm |
+|---|-------------|--------|-------|
+| 2.1 | MO **metadata cache** (TTL) | ✅ | TTL 120→**600** sn (6 Haz) |
+| 2.2 | Profil metadata **paralel** + profile-view timeline 35 | ✅ | — |
+| 2.3 | Dashboard widget **paralel (4)** + summaryCard take=1 | ✅ | — |
 | 2.4 | Sayfa diagnostic script | ✅ | `diagnostic-operation-pages.ps1` |
 | 2.5 | `OC_PERF` regresyon kapısı | ⬜ | Deploy checklist |
 
-**Doğrulama:** `diagnostic-benchmark.ps1` + `diagnostic-operation-pages.ps1` — rapor: `DIAGNOSTIC_REPORT_2026-06-02-faz2.md`.
+**Doğrulama (2 Haz):** [DIAGNOSTIC_REPORT_2026-06-02-faz2.md](./DIAGNOSTIC_REPORT_2026-06-02-faz2.md).
+
+---
+
+### Faz 2b — Profil + pano ek optimizasyon (6 Haz 2026) — **✅ tamam**
+
+**Amaç:** Prod profil warm SLA; pano query tekrarını azaltma; UI gezinme hızı.
+
+| # | İyileştirme | Durum | Etki |
+|---|-------------|--------|------|
+| 2b.1 | **PV-PERF-4** — `op_links` giden+gelen tek `$or` DG | ✅ | −1 DG |
+| 2b.2 | **PV-PERF-4** — `op_tags` katalog cache | ✅ | −1 DG (warm) |
+| 2b.3 | Timeline `changes` — paylaşımlı form/pool task | ✅ | Gereksiz yük yok |
+| 2b.4 | Dashboard **query dedup** (`queryResultCache`) | ✅ | Tekrarlayan widget'larda ~%30–50 |
+| 2b.5 | **UI-PERF-2** — profil client cache 45 sn + `force` | ✅ | Board↔profil anında |
+
+**Prod ölçüm (6 Haz):** profile warm P95 **1694 ms** ✅ (önce 2377 ms). Rapor: [DIAGNOSTIC_REPORT_2026-06-06-perf.md](./DIAGNOSTIC_REPORT_2026-06-06-perf.md).
 
 **Müşteriye söylenecek:** *“İş detay ekranında veri birleştirme sürecini optimize ettik; ilk açılış belirgin hızlandı.”*
 
@@ -234,9 +251,11 @@ Faz kapanışında raporlanacak:
 
 ## 8. Sonraki adım (konuya dönüldüğünde)
 
-1. **Deploy sonrası doğrulama** — `diagnostic-workspace-definitions.ps1` + tarayıcı Network (workspace tanımları, explorer)
-2. **Faz 2 kickoff** — MO metadata cache, profil cold path, dashboard aggregation
-3. **Faz 0 / 4** — müşteri baseline + resmi sign-off (isteğe bağlı)
+1. **Pano warm ≤ 1,2 sn** — prod ~2 sn; ek agregasyon veya widget sayısı
+2. **Profil cold ≤ 4 sn** — MO warm-up veya Faz 3 DG read-through cache
+3. **Faz 3 DG** — global katalog cache (`op_states`, `op_priorities`, …)
+4. **Test profil warm** — demo workspace farkı araştırması
+5. **Ops** — tarayıcı waterfall · `OC_PERF` regresyon kapısı · Faz 4 sign-off
 
 ---
 

@@ -312,7 +312,7 @@ async function saveFormEdit() {
   try {
     await ocUpdateWorkItem(id, patch);
     editMode.value = false;
-    await loadProfile();
+    await loadProfile(true);
   } catch (e: unknown) {
     editError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.edit.saveError'));
   } finally {
@@ -538,7 +538,7 @@ async function confirmTransition() {
     transitionDialog.value = false;
     transitionTarget.value = null;
     transitionFieldModel.value = {};
-    await loadProfile();
+    await loadProfile(true);
   } catch (e: unknown) {
     transitionError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.transitions.error'));
   } finally {
@@ -546,7 +546,7 @@ async function confirmTransition() {
   }
 }
 
-async function loadProfile() {
+async function loadProfile(force = false) {
   const id = workItemId.value;
   if (!id) return;
 
@@ -557,7 +557,7 @@ async function loadProfile() {
       await store.loadWorkspaces();
     }
     // Tek toplu çağrı: form + katalog + pool alan + alan görünen değerleri + politika + ilk sayfa timeline.
-    const view = await ocGetWorkItemProfileView(id);
+    const view = await ocGetWorkItemProfileView(id, { force });
     formContext.value = enrichFormRuntimeFields(view.form, { poolFields: view.poolFields, translate: t });
     const model = initialFormModelFromContext(view.form);
     formModel.value = model;

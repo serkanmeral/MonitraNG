@@ -1,9 +1,11 @@
 # MngOperations & Operation Core UI — Devam noktası (checkpoint)
 
-**Son güncelleme:** 2 Haziran 2026 (**WS-DEF-GENEL** + **UI-NGINX-SCHEDULER** ✅ commit `84b296c` · Odak canlı)  
-**Durum:** SW **SW-0…SW-6** ✅ · … · **DASH-INLINE** ✅ · **DASH-CARDS** ✅ · **WS-DEF-GENEL** ✅ · **UI-NGINX-SCHEDULER** ✅ · **UI-PERF-F1+1B** ✅ — Odak `ui=200`/`oc_live=200`/`scheduler=200`; `84b296c` + diagnostic dokümantasyonu `main`'de
+**Son güncelleme:** 6 Haziran 2026 (**OC-PERF-F2b** ✅ · test `20.20` + prod `20.8` deploy)  
+**Durum:** SW **SW-0…SW-6** ✅ · … · **UI-PERF-F1+1B** ✅ · **OC-PERF-F2b** ✅ — prod profil warm P95 **1694 ms**; `mngoperations`+`mngui` test+prod `--no-cache`
 
-> **⭐ KALDIĞIMIZ YER (2 Haz ~12:45) — Diagnostic tamamlandı:** **Faz 2 MO** deploy + ölçüm — `benchmark_faz2_20260602.json` (profile warm P95 **~1,3 sn**, profile-view **~2,3 sn**, dashboard **~1,7 sn** ✅). Yeni **`diagnostic-operation-pages.ps1`** — 10 OC sayfası; `oc_pages_faz2_20260602.json` (explorer/board ✅, profil/pano ~2 sn ⚠️ hedefe yakın). `ws_definitions_faz2` scheduled tab paralel **~2 sn** ✅. Rapor: [diagnostic/DIAGNOSTIC_REPORT_2026-06-02-faz2.md](../../diagnostic/DIAGNOSTIC_REPORT_2026-06-02-faz2.md). **Sıradaki:** pano ≤1 sn için MO query dedup/cache · gerçek cold (`docker restart mngoperations`) · tarayıcı waterfall. **Odak:** http://192.168.20.20:3000
+> **⭐ KALDIĞIMIZ YER (6 Haz 2026) — OC performans paketi deploy + ölçüm:** **PV-PERF-4** (`op_links` $or, `op_tags` katalog cache, timeline dedup) + **Faz 2b** (dashboard query dedup) + metadata TTL **600 sn** + **UI-PERF-2** (45 sn profil cache, mutation `force`). Test `192.168.20.20` + Prod `192.168.20.8` — `mngoperations`+`mngui` `--no-cache`, smoke `gateway=200 ui=200 oc_live=200`. **Prod profil warm P95 1694 ms** ✅ (önce 2377 ms, hedef ≤1800). Test profil warm ~2963 ms ⚠️. Rapor: [diagnostic/DIAGNOSTIC_REPORT_2026-06-06-perf.md](../../diagnostic/DIAGNOSTIC_REPORT_2026-06-06-perf.md). JSON: `oc_pages_prod_post_perf_20260606.json`, `oc_pages_test_post_perf_20260606.json`. **Sıradaki:** ayrı planlama — pano ≤1,2 sn · profil cold · Faz 3 DG cache.
+>
+> **KALDIĞIMIZ YER (2 Haz ~12:45) — Diagnostic tamamlandı:** **Faz 2 MO** deploy + ölçüm — `benchmark_faz2_20260602.json` (profile warm P95 **~1,3 sn**, profile-view **~2,3 sn**, dashboard **~1,7 sn** ✅). Yeni **`diagnostic-operation-pages.ps1`** — 10 OC sayfası; `oc_pages_faz2_20260602.json` (explorer/board ✅, profil/pano ~2 sn ⚠️ hedefe yakın). `ws_definitions_faz2` scheduled tab paralel **~2 sn** ✅. Rapor: [diagnostic/DIAGNOSTIC_REPORT_2026-06-02-faz2.md](../../diagnostic/DIAGNOSTIC_REPORT_2026-06-02-faz2.md). **Sıradaki:** pano ≤1 sn için MO query dedup/cache · gerçek cold (`docker restart mngoperations`) · tarayıcı waterfall. **Odak:** http://192.168.20.20:3000
 >
 > **KALDIĞIMIZ YER (2 Haz ~08:05):** — pano artık board'ın workspace hub merkez panelinde **ayrı sayfa açmadan inline** render ediliyor. Yeni paylaşılan **`OcDashboardView.vue`** (yükleme+grid; `dashboards/[id]/index.vue` de bunu kullanıyor → tek kaynak). Hub `workspace/index.vue`: board seçiliyken **Özet/Pano toggle** (pano varsa varsayılan **Pano**); tree'deki pano düğümü tıklaması da ayrı sayfa yerine board'ı seçip inline pano açıyor. i18n `workspace.viewSummary`. **(2) DASH-CARDS** — özet kartları (renk aksanı + tonlu ikon rozeti + akıllı ikon + büyük renkli sayı + hover) ve liste widget'ı (öncelik renk şeridi + atanan baş-harf avatarı + hover + boş-durum) zenginleştirildi. **(3) "Bana atanan açık işler" düzeltmesi (backend, CANLI):** `my_assigned` widget'ı boştu çünkü `{{currentUser}}` → `preferred_username` çözülüyordu ama `assignee` `MngPersonId` (@users id) ile saklanıyor (NP-4/6 uzayı). **Düzeltme:** `QueryResolveContext.Username` → **`CurrentUserId`** (anlamca netleştirildi), her iki kuruluş yeri (`RuntimeContextService.cs` generic query + `.Dashboard.cs`) artık **`_requestContext.MngPersonId`** besliyor. Ayrıca yeni named query **`wi_assigned_open`** (`{ assignee: :assignee, closedAt: null }` — SLA query'leriyle aynı "açık" semantiği) eklendi: generator + DG json + MO `OcQueries` whitelist + seed widget (queryKey `wi_assigned_open`, başlık "Bana atanan acik isler"). **PROVİZYON+DEPLOY TAMAM:** DG `op_work_items` query'leri PUT'landı (`/data/api/v1/datasets/op_work_items`, sadece `Queries`); dashboard reseed (PUT SYNC); MO `--no-cache` deploy (build 0/0, `oc_live=200`). **Doğrulandı:** `GET runtime/dashboards/{id}` → `my_assigned success=True total=1 items=1` (odak_admin'in 1 açık atanmış işi). **COMMIT + PUSH + UI DEPLOY TAMAM:** commit `e5c28bd` (`main`'e push, 15 dosya +389/−140 — UI + MO + scriptler/json + DEVAM.md; `appsettings.Development.json` + üretilen seed json + alakasız docs hariç), `Mng.Ui` sync → `mngui` Odak'a `--no-cache` deploy (2 Haz ~08:14, **`ui=200` + `oc_live=200`** canlı). **DASH-INLINE + DASH-CARDS TAMAMEN CANLI. Sıradaki (konuşulacak):** (a) UI commit+push + `mngui` Odak deploy; (b) pano-board bağı iyileştirmeleri (board'dan hızlı "pano ata", pano editöründe board'a bağlama); (c) opsiyonel: özet kart renk/ikon admin'den seçilebilir, liste avatar kişiye özel renk; (d) açık perf kalemleri (PV-PERF soğuk cache / DG eşzamanlılık) ya da yeni OC backlog. *(Aşağıdaki DASH-BOARD notu önceki durumdur.)*
 >
@@ -226,10 +228,34 @@ Kalan 8 warm çağrı: `op_tags` ×2, `op_links` ×2, `op_work_items` getById ×
 
 **✅ Commit + deploy:** `e1f1880` (`perf(operation-core): profile-view DG cagri azaltma…`); Odak `mngoperations --no-cache` (2 Haz 2026, `oc_live=200`).
 
-### Açık kalanlar (kullanıcı kararı)
-- **(a) Soğuk cache** ilk çağrı ~10 sn (26-28 DG çağrısı tüm metadata'yı yükler). Metadata cache TTL'i (`MetadataCache.TtlSeconds=120`) artırmak (örn. 600-900sn) soğuk vuruşları seyrekleştirir → admin metadata bayatlık tradeoff'u. **UI'da gerçek kullanım kabul edilebilir olduğu için düşük öncelik.**
-- **(b) DG per-request ~300ms + eşzamanlı serileştirme** asıl tavan — DG-tarafı (Mongo pool/concurrency), geniş kapsamlı/riskli ayrı iş.
-- **(c) Opsiyonel ek MO küçültme:** `op_links` 2→1 ($or) + `op_tags` 2→1 → ~8'den ~6 çağrıya (~1.9sn). Relation-collapse davranışıyla etkileşim riski not edildi.
+### Açık kalanlar (6 Haz güncellemesi)
+- **(a) Soğuk cache** — TTL **600 sn** uygulandı (6 Haz); ilk çağrı restart sonrası hâlâ ~8–9 sn. Ayrı warm-up veya Faz 3 DG cache değerlendirilecek.
+- **(b) DG per-request ~300ms + eşzamanlı serileştirme** — asıl tavan; Faz 3 kapsamı.
+- **(c) ~~`op_links`/`op_tags` küçültme~~** — ✅ **PV-PERF-4** (6 Haz) uygulandı; bkz. [OC-PERF-F2b](#oc-perf-f2b--profil--pano-performans-paketi-6-haz-2026).
+
+---
+
+## OC-PERF-F2b — Profil + pano performans paketi (6 Haz 2026)
+
+**Deploy:** Test `192.168.20.20` + Prod `192.168.20.8` — `mngoperations` + `mngui` (`--no-cache`)  
+**Rapor:** [DIAGNOSTIC_REPORT_2026-06-06-perf.md](../../diagnostic/DIAGNOSTIC_REPORT_2026-06-06-perf.md)
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **PV-PERF-4** | ✅ | `LoadProfileLinksAsync` — giden+gelen `op_links` tek `$or` DG sorgusu |
+| **PV-PERF-4** | ✅ | `op_tags` + katalog dataset'leri → `GetCatalogListAsync` (ProfileView + Timeline) |
+| **PV-PERF-4** | ✅ | `ResolveActivityChangesAsync` — paylaşımlı `formTask`/`poolFieldsTask` (timeline dedup) |
+| **Faz 2b** | ✅ | Dashboard `queryResultCache` — aynı `queryKey`+parametre tek `ExecuteQueryCardsAsync` |
+| **TTL** | ✅ | `MetadataCache.TtlSeconds` 120→**600**, `CatalogTtlSeconds` **600** (`appsettings.json`) |
+| **UI-PERF-2** | ✅ | `profileViewCache` 45 sn; `ocInvalidateWorkItemProfileView`; `loadProfile(force)` mutation sonrası |
+
+**MO değişen:** `RuntimeContextService.cs`, `RuntimeContextService.ProfileView.cs`, `RuntimeContextService.Timeline.cs`, `RuntimeContextService.Dashboard.cs`, `MngOperations.Api/appsettings.json`  
+**UI değişen:** `services/operationCoreService.ts`, `pages/.../work-items/[id]/profile/index.vue`  
+**Diagnostic:** `diagnostic-benchmark.ps1` — prod gateway otomatik prod token
+
+**Prod ölçüm (warm P95):** profile **1694 ms** ✅ (5 Haz 2377 ms) · dashboard 2047 ms ⚠️ · board 697 ms ✅
+
+**Açık:** pano ≤1,2 sn · profil cold · test profil warm · Faz 3 DG katalog cache
 
 ---
 
@@ -782,5 +808,6 @@ location /api/scheduler/ {
 [✓] UI-PERF-F1: workspace tanımları lazy tab + useOcWorkspaceCatalog + paralel person — Odak'ta canlı (2 Haz, 84b296c; diagnostic Faz 1)
 [✓] UI-PERF-1B: operasyon explorer lazy boards + deferred dashboard/relation + kanban batch + ws cache — Odak'ta canlı (2 Haz, 84b296c; diagnostic Faz 1B)
 [✓] UI-PERF doğrulama: deploy sonrası script ölçümü (2 Haz) — tarayıcı Network opsiyonel
-[ ] UI-PERF Faz 2: MO profil cold + dashboard aggregation — bekliyor
+[✓] OC-PERF-F2b: PV-PERF-4 + dashboard query dedup + TTL 600 + UI profil cache — test+prod deploy (6 Haz)
+[ ] OC-PERF sonraki: pano ≤1,2 sn · profil cold · Faz 3 DG cache
 ```

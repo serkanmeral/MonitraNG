@@ -27,6 +27,7 @@ public partial class RuntimeContextService
         OcDatasets.Priorities,
         OcDatasets.WorkItemTypes,
         OcDatasets.Boards,
+        OcDatasets.Tags,
     };
 
     private enum ChangeFieldKind { Scalar, Person, Group, Dataset }
@@ -57,7 +58,9 @@ public partial class RuntimeContextService
         string workspaceId,
         IReadOnlyList<Dictionary<string, object?>> activityList,
         string token,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Task<FormRuntimeContext>? sharedFormTask = null,
+        Task<IReadOnlyList<Dictionary<string, object?>>>? sharedPoolFieldsTask = null)
     {
         // 1) Ham changes parse: activityId → satırlar.
         var parsed = new Dictionary<string, List<ParsedChange>>(StringComparer.Ordinal);
@@ -80,11 +83,20 @@ public partial class RuntimeContextService
         IReadOnlyList<Dictionary<string, object?>> poolFields = Array.Empty<Dictionary<string, object?>>();
         try
         {
-            var formTask = GetFormEditAsync(workItemId, workItem, cancellationToken);
-            var poolTask = LoadProfilePoolFieldsAsync(workspaceId, token, cancellationToken);
-            await Task.WhenAll(formTask, poolTask);
-            formFields = formTask.Result.Fields ?? formFields;
-            poolFields = poolTask.Result;
+            if (sharedFormTask != null && sharedPoolFieldsTask != null)
+            {
+                await Task.WhenAll(sharedFormTask, sharedPoolFieldsTask);
+                formFields = sharedFormTask.Result.Fields ?? formFields;
+                poolFields = sharedPoolFieldsTask.Result;
+            }
+            else
+            {
+                var formTask = GetFormEditAsync(workItemId, workItem, cancellationToken);
+                var poolTask = LoadProfilePoolFieldsAsync(workspaceId, token, cancellationToken);
+                await Task.WhenAll(formTask, poolTask);
+                formFields = formTask.Result.Fields ?? formFields;
+                poolFields = poolTask.Result;
+            }
         }
         catch (Exception ex)
         {

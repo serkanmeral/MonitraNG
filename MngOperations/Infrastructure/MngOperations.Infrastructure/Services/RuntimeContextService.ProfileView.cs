@@ -52,11 +52,13 @@ public partial class RuntimeContextService
         // workItem zaten yüklendi → alt çağrılara geçir (op_work_items GetById 5×→1×).
         var profileTask = GetProfileAsync(workItemId, workItem, cancellationToken);
         var formTask = GetFormEditAsync(workItemId, workItem, cancellationToken);
+        var poolFieldsTask = LoadProfilePoolFieldsAsync(workspaceId, token, cancellationToken);
         const int profileViewTimelineTake = 35;
-        var timelineTask = GetTimelineAsync(workItemId, workItem, 0, profileViewTimelineTake, cancellationToken);
+        // form/pool zaten paralel yükleniyor → timeline aktivite changes çözümünde tekrar DG çağrısı yapmasın.
+        var timelineTask = GetTimelineAsync(
+            workItemId, workItem, 0, profileViewTimelineTake, cancellationToken, formTask, poolFieldsTask);
         var catalogsTask = BuildBoardCatalogsAsync(workspace, workspaceId, scopeStateIds, token, cancellationToken);
         var policyTask = ResolveProfilePolicyAsync(workItem, workspaceId, token, cancellationToken);
-        var poolFieldsTask = LoadProfilePoolFieldsAsync(workspaceId, token, cancellationToken);
         var boardId = WorkItemDataHelper.GetPersonRefId(workItem, "boardId");
         var boardNamesTask = ResolveProfileViewBoardNamesAsync(boardId, token, cancellationToken);
 
@@ -426,7 +428,17 @@ public partial class RuntimeContextService
         return names;
     }
 
-    private async Task<Dictionary<string, string>> ResolveRelationNamesAsync(
+    private Task<Dictionary<string, string>> ResolveRelationNamesAsync(
+        string dataset,
+        IReadOnlyCollection<string> ids,
+        string token,
+        CancellationToken cancellationToken) =>
+        ChangeCatalogDatasets.Contains(dataset)
+            ? ResolveCatalogNamesAsync(dataset, ids, token, cancellationToken)
+            : ResolveRelationNamesViaQueryAsync(dataset, ids, token, cancellationToken);
+
+    /// <summary>Katalog olmayan relation dataset'leri için $in DG sorgusu.</summary>
+    private async Task<Dictionary<string, string>> ResolveRelationNamesViaQueryAsync(
         string dataset,
         IReadOnlyCollection<string> ids,
         string token,

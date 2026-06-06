@@ -91,42 +91,43 @@ Ham JSON çıktılar `docs/odak/diagnostic/reports/` altında saklanır. Bu dok�
 
 ---
 
-## Son koşu — 5 Haziran 2026 (üretim)
+## Son koşu — 6 Haziran 2026 (üretim, OC performans paketi sonrası)
 
 | Alan | Değer |
 | --- | --- |
 | **Ortam** | Üretim — `http://192.168.20.8:5040` |
-| **Ölçüm zamanı (UTC)** | 2026-06-05 ~08:13 |
-| **OC workspace** | MonitraNG Geri Bildirim (`d2526f5d-…`) |
-| **OC board** | Geri bildirim gönder (`2971e225-…`) |
-| **Örnek iş** | `MNG-0001` (`6efb63c3-…`) |
-| **DI örnek klasör** | `MonitraNG` (`aaf3ab2b-…`) |
+| **Ölçüm zamanı (UTC)** | 2026-06-06 ~10:34 |
+| **Paket** | OC-PERF-F2b (PV-PERF-4 + dashboard query dedup + UI profil cache) |
+| **OC workspace** | (`383e85b7-…`) |
+| **OC board** | (`60eb6bef-…`) |
+| **Örnek iş** | (`3ace0262-…`) |
+| **DI örnek klasör** | `MonitraNG` (`aaf3ab2b-…`) — *DI bu koşuda yeniden ölçülmedi (5 Haz)* |
 | **DI örnek doküman** | Kullanıcı Rehberi (`b1566eb7-…`) |
-| **Ham JSON** | `oc_pages_prod_20260605_final.json`, `di_pages_prod_20260605_final.json` |
+| **Ham JSON** | `oc_pages_prod_post_perf_20260606.json` · DI: `di_pages_prod_20260605_final.json` |
 
 ### Özet
 
 | Modül | Senaryo | OK | WARN |
 | --- | ---: | ---: | ---: |
-| Operasyon Merkezi | 10 | 8 | 2 |
-| Dokümanlar | 8 | 5 | 3 |
+| Operasyon Merkezi | 10 | **8** | **2** |
+| Dokümanlar | 8 | 5 | 3 *(5 Haz — değişmedi)* |
 
 ### Operasyon Merkezi
 
 | Sayfa | Cold (ms) | Warm P95 (ms) | Hedef (ms) | Durum |
 | --- | ---: | ---: | ---: | --- |
-| Workspace explorer — ilk açılış | 456 | 359 | 1200 | ✅ OK |
-| Explorer — workspace + board | 638 | 668 | 900 | ✅ OK |
-| Board — liste görünümü | 1024 | 674 | 1200 | ✅ OK |
-| Board — kanban | 672 | 687 | 3500 | ✅ OK |
-| **İş profili** | 12001 | **2083** | 1800 | ⚠️ WARN |
-| **Özet pano** | 3312 | **2625** | 1200 | ⚠️ WARN |
-| Yeni iş formu | 682 | 636 | 2000 | ✅ OK |
-| Bildirimler | 620 | 990 | 1500 | ✅ OK |
-| Admin — zamanlanmış işler | 983 | 682 | 2500 | ✅ OK |
-| Admin — workspace tanımları | 323 | 334 | 800 | ✅ OK |
+| Workspace explorer — ilk açılış | 442 | 375 | 1200 | ✅ OK |
+| Explorer — workspace + board | 670 | 709 | 900 | ✅ OK |
+| Board — liste görünümü | 602 | 697 | 1200 | ✅ OK |
+| Board — kanban | 2035 | 2057 | 3500 | ✅ OK |
+| **İş profili** | 8841 | **1694** | 1800 | ✅ OK |
+| **Özet pano** | 2416 | **2047** | 1200 | ⚠️ WARN |
+| Yeni iş formu | 615 | 696 | 2000 | ✅ OK |
+| Bildirimler | 1224 | 1660 | 1500 | ⚠️ WARN |
+| Admin — zamanlanmış işler | 1297 | 1294 | 2500 | ✅ OK |
+| Admin — workspace tanımları | 317 | 310 | 800 | ✅ OK |
 
-**Yorum:** Explorer ve board akışları hedef altında. İş profili warm ~2,1 sn (hedef 1,8 sn — sınırda aşım). Pano warm ~2,6 sn — widget sorguları ağırlıklı; MO tarafında agregasyon/cache iyileştirmesi değerlendirilebilir. Profil **session cold** 12 sn — ilk açılışta JIT/önbellek ısınması; warm ölçüm müşteri deneyimine daha yakındır.
+**Yorum:** **İş profili warm hedefin altına indi** (5 Haz 2083 ms → 6 Haz **1694 ms**). Günlük board↔profil geçişinde UI önbelleği ek hız sağlar. Pano warm ~2 sn — widget sorguları ağırlıklı; sonraki planlama kapsamı. Profil **session cold** ~8,8 sn — servis restart sonrası ilk istek; günlük warm kullanımda sorun değil.
 
 ### Dokümanlar
 
@@ -158,7 +159,16 @@ Ham JSON çıktılar `docs/odak/diagnostic/reports/` altında saklanır. Bu dok�
 
 ## Önceki koşular
 
-*(İlk yayın — önceki kayıt yok.)*
+### 5 Haziran 2026 (üretim — performans paketi öncesi)
+
+Ham JSON: `oc_pages_prod_20260605_final.json`, `di_pages_prod_20260605_final.json`
+
+| Modül | OK | WARN |
+| --- | ---: | ---: |
+| Operasyon Merkezi | 8 | 2 (profil, pano) |
+| Dokümanlar | 5 | 3 |
+
+Öne çıkan: profil warm **2083 ms** ⚠️ · pano warm **2625 ms** ⚠️
 
 ---
 

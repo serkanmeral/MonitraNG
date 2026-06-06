@@ -1,10 +1,10 @@
 # Diagnostic (Odak)
 
-Backend servislerinin **response time** ölçümü ve raporlama. UI performans paketi (Faz 1 + 1B) Odak’ta deploy edildi; deploy sonrası ölçüm ve Faz 2 backend **ertelendi**.
+Backend servislerinin **response time** ölçümü ve raporlama. OC performans paketi (Faz 1 + 1B + 2 + 2b) test + prod ortamında canlı; prod profil warm P95 **1694 ms** ✅.
 
-**Durum:** Faz 1 + 1B ✅ · Faz 2 MO kısmi (2 Haz) · **prod System Diagnostic Raporu** (5 Haz 2026)  
+**Durum:** Faz 1 + 1B ✅ · Faz 2 MO ✅ · **Faz 2b + PV-PERF-4 + UI cache** ✅ (6 Haz 2026)  
 **Devam noktası:** [DEVAM.md](./DEVAM.md)  
-**OC checkpoint (kod tabloları):** [../operationcore/mngoperations/DEVAM.md](../operationcore/mngoperations/DEVAM.md) § UI-PERF-F1  
+**OC checkpoint (kod tabloları):** [../operationcore/mngoperations/DEVAM.md](../operationcore/mngoperations/DEVAM.md) § OC-PERF-F2b  
 **Plan:** [DIAGNOSTIC_PLAN.md](./DIAGNOSTIC_PLAN.md)  
 **Yol haritası (müşteri):** [PERFORMANCE_ROADMAP.md](./PERFORMANCE_ROADMAP.md)
 
@@ -32,6 +32,7 @@ Backend servislerinin **response time** ölçümü ve raporlama. UI performans p
 | [scripts/diagnostic-document-intelligence-pages.ps1](./scripts/diagnostic-document-intelligence-pages.ps1) | **Document Intelligence** — resources tree/children/klasör/markdown/arama (MngDocument API) |
 | [DIAGNOSTIC_REPORT_2026-06-02.md](./DIAGNOSTIC_REPORT_2026-06-02.md) | İlk ölçüm raporu |
 | [DIAGNOSTIC_REPORT_2026-06-02-faz2.md](./DIAGNOSTIC_REPORT_2026-06-02-faz2.md) | Faz 2 MO sonrası endpoint + sayfa paketleri |
+| [DIAGNOSTIC_REPORT_2026-06-06-perf.md](./DIAGNOSTIC_REPORT_2026-06-06-perf.md) | **Faz 2b paketi** — prod profil SLA, deploy + ölçüm |
 | [OPERATIONAL_WORKSPACE_PERF.md](./OPERATIONAL_WORKSPACE_PERF.md) | Operasyon alanı analizi + Faz 1B |
 | [../operationcore/scripts/load-operationcore-token.ps1](../operationcore/scripts/load-operationcore-token.ps1) | Token (paylaşımlı) |
 | [../operationcore/scripts/operationcore-demo-seed.json](../operationcore/scripts/operationcore-demo-seed.json) | workspace/board/dashboard id'leri |

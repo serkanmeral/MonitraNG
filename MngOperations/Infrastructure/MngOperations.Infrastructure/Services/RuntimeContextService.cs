@@ -99,21 +99,10 @@ public partial class RuntimeContextService : IRuntimeContextService
 
         // İş kaydına bağlı (yalnız workItemId gerektiren) bağımsız veri çağrılarını erken başlat;
         // aşağıdaki metadata + field-behavior çözümlemesiyle örtüşsünler (profil warm darboğazı).
-        var linksFilterOut = $"sourceWorkItemId:eq:{workItemId}";
-        var linksFilterIn = $"targetWorkItemId:eq:{workItemId}";
         var segmentsFilter = $"workItemId:eq:{workItemId}";
 
-        var outgoingLinksTask = _dg.GetAsync<Dictionary<string, object?>>(
-            OcDatasets.Links,
-            $"filter={Uri.EscapeDataString(linksFilterOut)}&limit=50",
-            token,
-            cancellationToken);
-
-        var incomingLinksTask = _dg.GetAsync<Dictionary<string, object?>>(
-            OcDatasets.Links,
-            $"filter={Uri.EscapeDataString(linksFilterIn)}&limit=50",
-            token,
-            cancellationToken);
+        // Giden+gelen linkler tek $or sorgusu (2 DG çağrısı → 1).
+        var linksTask = LoadProfileLinksAsync(workItemId, token, cancellationToken);
 
         // Profil yalnız son DefaultStateSegmentCount segmenti gösterir; en yeniler için DG-side sort.
         var segmentsTask = _dg.GetAsync<Dictionary<string, object?>>(
@@ -183,12 +172,9 @@ public partial class RuntimeContextService : IRuntimeContextService
 
         var fieldBehaviors = await _fieldBehaviors.ResolveAllAsync(behaviorContext, cancellationToken);
 
-        await Task.WhenAll(outgoingLinksTask, incomingLinksTask, segmentsTask);
+        await Task.WhenAll(linksTask, segmentsTask);
 
-        var links = outgoingLinksTask.Result
-            .Select(ProfileRuntimeMapper.MapOutgoingLink)
-            .Concat(incomingLinksTask.Result.Select(ProfileRuntimeMapper.MapIncomingLink))
-            .ToList();
+        var links = linksTask.Result;
 
         var stateSegments = segmentsTask.Result
             .Select(ProfileRuntimeMapper.MapStateSegment)
@@ -272,6 +258,43 @@ public partial class RuntimeContextService : IRuntimeContextService
         return result;
     }
 
+    /// <summary>Giden+gelen iş bağlantılarını tek DG $or sorgusuyla yükler (PV-PERF-4).</summary>
+    private async Task<List<WorkItemLinkSummaryDto>> LoadProfileLinksAsync(
+        string workItemId,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var match = new Dictionary<string, object?>
+        {
+            ["$or"] = new object[]
+            {
+                new Dictionary<string, object?> { ["sourceWorkItemId"] = workItemId },
+                new Dictionary<string, object?> { ["targetWorkItemId"] = workItemId }
+            }
+        };
+
+        try
+        {
+            var page = await _dg.QueryPageAsync(
+                OcDatasets.Links, match, "limit=100&expand=false", token, cancellationToken);
+            var links = new List<WorkItemLinkSummaryDto>(page.Items.Count);
+            foreach (var row in page.Items)
+            {
+                var sourceId = WorkItemDataHelper.GetString(row, "sourceWorkItemId");
+                links.Add(string.Equals(sourceId, workItemId, StringComparison.Ordinal)
+                    ? ProfileRuntimeMapper.MapOutgoingLink(row)
+                    : ProfileRuntimeMapper.MapIncomingLink(row));
+            }
+
+            return links;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Profile links load failed for work item {WorkItemId}.", workItemId);
+            return new List<WorkItemLinkSummaryDto>();
+        }
+    }
+
     private async Task<BoardRecord?> TryGetBoardForProfileAsync(
         string boardId,
         string token,
@@ -331,12 +354,24 @@ public partial class RuntimeContextService : IRuntimeContextService
     }
 
     /// <summary>Önceden yüklenmiş work item ile (profile-view içinde tekrar DG GetById yapmamak için).</summary>
-    private async Task<TimelinePage> GetTimelineAsync(
+    private Task<TimelinePage> GetTimelineAsync(
         string workItemId,
         Dictionary<string, object?> workItem,
         int skip,
         int take,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Task<FormRuntimeContext>? sharedFormTask = null,
+        Task<IReadOnlyList<Dictionary<string, object?>>>? sharedPoolFieldsTask = null) =>
+        GetTimelineAsyncCore(workItemId, workItem, skip, take, cancellationToken, sharedFormTask, sharedPoolFieldsTask);
+
+    private async Task<TimelinePage> GetTimelineAsyncCore(
+        string workItemId,
+        Dictionary<string, object?> workItem,
+        int skip,
+        int take,
+        CancellationToken cancellationToken,
+        Task<FormRuntimeContext>? sharedFormTask = null,
+        Task<IReadOnlyList<Dictionary<string, object?>>>? sharedPoolFieldsTask = null)
     {
         var token = RequireToken();
         take = Math.Clamp(take, 1, 200);
@@ -368,7 +403,9 @@ public partial class RuntimeContextService : IRuntimeContextService
         var activityList = activitiesTask.Result.ToList();
 
         // Aktivite alan değişiklik satırlarını (changes[]) read-time çöz (changes yoksa metadata yüklenmez).
-        var changesTask = ResolveActivityChangesAsync(workItemId, workItem, workspaceId, activityList, token, cancellationToken);
+        var changesTask = ResolveActivityChangesAsync(
+            workItemId, workItem, workspaceId, activityList, token, cancellationToken,
+            sharedFormTask, sharedPoolFieldsTask);
 
         // Yazar/actor person id'lerini topla ve People diziniyle ada çöz (BL-KB toplu uç + Redis cache).
         // author/actor alanı DG okumada düz id veya tam @users nesnesine genişlemiş gelebilir → her ikisini
@@ -935,12 +972,14 @@ public partial class RuntimeContextService : IRuntimeContextService
         int take,
         string token,
         QueryResolveContext resolveContext,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Dictionary<string, Task<IReadOnlyList<WorkItemCardDto>>>? queryResultCache = null)
     {
         var takeClamped = Math.Clamp(take, 1, 200);
         var skipClamped = Math.Max(0, skip);
 
-        var cards = await ExecuteQueryCardsAsync(queryKey, dataset, rawParams, token, resolveContext, cancellationToken);
+        var cards = await ExecuteQueryCardsAsync(
+            queryKey, dataset, rawParams, token, resolveContext, cancellationToken, queryResultCache);
         var page = cards.Skip(skipClamped).Take(takeClamped).ToList();
 
         var people = await ResolvePeopleForCardsAsync(page, token, cancellationToken);
@@ -964,7 +1003,42 @@ public partial class RuntimeContextService : IRuntimeContextService
     /// İzin doğrulaması + DG sorgusu + kart eşlemesi paylaşılır; <see cref="ExecuteQueryCoreAsync"/> (sayfalı)
     /// ve dashboard chart agregasyonu (tam küme) aynı çekirdeği kullanır.
     /// </summary>
-    private async Task<IReadOnlyList<WorkItemCardDto>> ExecuteQueryCardsAsync(
+    private Task<IReadOnlyList<WorkItemCardDto>> ExecuteQueryCardsAsync(
+        string queryKey,
+        string dataset,
+        IReadOnlyDictionary<string, object?> rawParams,
+        string token,
+        QueryResolveContext resolveContext,
+        CancellationToken cancellationToken,
+        Dictionary<string, Task<IReadOnlyList<WorkItemCardDto>>>? queryResultCache = null)
+    {
+        if (queryResultCache == null)
+            return ExecuteQueryCardsCoreAsync(queryKey, dataset, rawParams, token, resolveContext, cancellationToken);
+
+        var mergedParams = new Dictionary<string, object?>(rawParams, StringComparer.OrdinalIgnoreCase);
+        var resolved = QueryParameterResolver.Resolve(mergedParams, resolveContext);
+        var cacheKey = BuildQueryCacheKey(dataset, queryKey, resolved);
+        if (!queryResultCache.TryGetValue(cacheKey, out var cachedTask))
+        {
+            cachedTask = ExecuteQueryCardsCoreAsync(queryKey, dataset, rawParams, token, resolveContext, cancellationToken);
+            queryResultCache[cacheKey] = cachedTask;
+        }
+
+        return cachedTask;
+    }
+
+    private static string BuildQueryCacheKey(
+        string dataset,
+        string queryKey,
+        IReadOnlyDictionary<string, object?> resolved)
+    {
+        var parts = resolved
+            .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(kv => $"{kv.Key}={kv.Value}");
+        return $"{dataset}:{queryKey}:{string.Join("|", parts)}";
+    }
+
+    private async Task<IReadOnlyList<WorkItemCardDto>> ExecuteQueryCardsCoreAsync(
         string queryKey,
         string dataset,
         IReadOnlyDictionary<string, object?> rawParams,

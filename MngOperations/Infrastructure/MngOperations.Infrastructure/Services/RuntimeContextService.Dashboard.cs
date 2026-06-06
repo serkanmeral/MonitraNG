@@ -44,6 +44,9 @@ public partial class RuntimeContextService
             UtcNow = DateTime.UtcNow
         };
 
+        // Aynı queryKey+parametreli widget'lar tek DG çalıştırması paylaşır (Faz 2b dedup).
+        var queryResultCache = new Dictionary<string, Task<IReadOnlyList<WorkItemCardDto>>>(StringComparer.Ordinal);
+
         // Widget sorguları birbirinden bağımsız — kanban kolonları gibi sınırlı paralellik (DG spike önleme).
         const int maxParallelWidgets = 4;
         using var widgetGate = new SemaphoreSlim(maxParallelWidgets);
@@ -52,7 +55,7 @@ public partial class RuntimeContextService
             await widgetGate.WaitAsync(cancellationToken);
             try
             {
-                return await BuildDashboardWidgetAsync(definition, resolveContext, token, cancellationToken);
+                return await BuildDashboardWidgetAsync(definition, resolveContext, token, cancellationToken, queryResultCache);
             }
             finally
             {
@@ -102,7 +105,8 @@ public partial class RuntimeContextService
         DashboardWidgetDefinition definition,
         QueryResolveContext resolveContext,
         string token,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Dictionary<string, Task<IReadOnlyList<WorkItemCardDto>>>? queryResultCache = null)
     {
         var isChart = definition.WidgetType.Equals("chart", StringComparison.OrdinalIgnoreCase);
 
@@ -131,7 +135,8 @@ public partial class RuntimeContextService
                     rawParams,
                     token,
                     resolveContext,
-                    cancellationToken);
+                    cancellationToken,
+                    queryResultCache);
 
                 var buckets = AggregateCards(cards, definition.GroupBy);
 
@@ -162,7 +167,8 @@ public partial class RuntimeContextService
                 take,
                 token,
                 resolveContext,
-                cancellationToken);
+                cancellationToken,
+                queryResultCache);
 
             return ToDashboardWidgetDto(
                 definition,

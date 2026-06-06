@@ -1,10 +1,10 @@
 # Operasyon Merkezi — Çalışma Alanı Performans Analizi
 
-**Tarih:** 2 Haziran 2026  
+**Tarih:** 6 Haziran 2026 (güncelleme)  
 **Kapsam:** Günlük kullanım ekranları (workspace explorer, board, profil, dashboard, yeni iş)  
-**Referans ölçüm:** [DIAGNOSTIC_REPORT_2026-06-02.md](./DIAGNOSTIC_REPORT_2026-06-02.md)  
+**Referans ölçüm:** [DIAGNOSTIC_REPORT_2026-06-06-perf.md](./DIAGNOSTIC_REPORT_2026-06-06-perf.md)  
 **Admin ekranları (Faz 1):** [PERFORMANCE_ROADMAP.md](./PERFORMANCE_ROADMAP.md) — ✅ Odak deploy (2 Haz 2026)  
-**Durum:** Faz 1B ✅ · Faz 2 MO kısmi (2 Haz) · sayfa ölçümü: `diagnostic-operation-pages.ps1`
+**Durum:** Faz 1B ✅ · Faz 2 MO ✅ · **Faz 2b + PV-PERF-4 + UI cache** ✅ (6 Haz) · prod profil warm P95 **1694 ms**
 
 ---
 
@@ -17,9 +17,9 @@ Operasyon alanı, workspace tanımlama ekranından **farklı bir profil** taşı
 | **Ana sorun** | Eager tab + tekrarlı katalog (UI) | Workspace ağacında **tüm workspace’lerin panolarını** önceden yükleme |
 | **Backend** | DG ağırlıklı | **MngOperations runtime** ağırlıklı |
 | **İyi haber** | ✅ Faz 1 deploy | Board list, profil-view mimarisi **zaten iyi tasarlanmış**; ✅ Faz 1B deploy |
-| **Kötü haber** | ~~20–30 sn~~ → UI fix deploy | Explorer iyileşti (lazy); profil **ilk açılış ~4 sn** hâlâ backend (Faz 2) |
+| **Kötü haber** | ~~20–30 sn~~ → UI fix deploy | Profil **warm prod ~1,7 sn** ✅; cold ~8–9 sn ve pano ~2 sn hâlâ iyileştirilebilir |
 
-**Mesaj müşteriye:** Operasyon ekranlarında mimari felaket yok; birkaç **hedefli UI optimizasyonu** + **backend profil cold path** (Faz 2) ile günlük akış hızlanır.
+**Mesaj müşteriye:** Operasyon ekranlarında mimari felaket yok. **6 Haziran paketi** ile prod iş profili warm hedefin altına indi; günlük board↔profil geçişi UI cache ile anlık hissedilir.
 
 ---
 
@@ -79,13 +79,16 @@ Operasyon alanı, workspace tanımlama ekranından **farklı bir profil** taşı
 
 | Adım | API | Odak ölçümü | Durum |
 |------|-----|-------------|-------|
-| **`ocGetWorkItemProfileView`** | MO `GET runtime/.../profile-view` | warm ~1,3–2,9 sn | ⚠️ Backend (Faz 2) |
+| **`ocGetWorkItemProfileView`** | MO `GET runtime/.../profile-view` | prod warm **~1,7 sn**; test warm ~3 sn | ✅ Prod SLA |
+| **UI profil cache** | `ocGetWorkItemProfileView({ force })` — 45 sn TTL | board↔profil anında (hit) | ✅ UI-PERF-2 |
 | Sekmeler (details/comments/activity/attachments) | `v-window` **eager yok** | — | ✅ Lazy |
 | `loadTimeline` | Ayrı API | Yalnızca yorum CRUD sonrası | ✅ |
 
 **Olumlu:** Tek toplu `profile-view` çağrısı — form + katalog + timeline ilk sayfa bir arada. Eski çoklu istek anti-pattern’i giderilmiş.
 
-**Kalan:** MO cold path ~4 sn (benchmark) — **Faz 2 backend**, UI tarafında yapılacak az şey var.
+**PV-PERF-4 (6 Haz):** `op_links` $or, `op_tags` katalog cache, timeline dedup. Mutation sonrası `loadProfile(true)`.
+
+**Kalan:** MO cold path ~8–9 sn (restart sonrası ilk istek); test warm hâlâ hedef üstü.
 
 ---
 
@@ -93,7 +96,7 @@ Operasyon alanı, workspace tanımlama ekranından **farklı bir profil** taşı
 
 | Adım | API | Odak ölçümü | Durum |
 |------|-----|-------------|-------|
-| `ocGetDashboard` | MO `GET runtime/dashboards/{id}` | warm **~1,6 sn** | ⚠️ Faz 2 backend |
+| `ocGetDashboard` | MO `GET runtime/dashboards/{id}` | prod warm **~2 sn**; test ~1,4 sn | ⚠️ Faz 2b dedup uygulandı, hedef 1,2 sn |
 
 Widget’lar sunucu tarafında tek response’ta execute ediliyor — **N+1 widget isteği yok** ✅
 
@@ -135,26 +138,29 @@ Tekrarlı limit=500 katalog   →     Board: katalog MO context’ten ✅
 
 **Dosyalar:** `workspace/index.vue`, `OcWorkspaceTree.vue`, `boards/[boardId]/index.vue`, `OcBoardListFilters.vue`, `stores/apps/operationCore.ts`
 
-### Backend (Faz 2 — bekliyor)
+### Backend (Faz 2 + 2b — ✅ 6 Haz 2026)
 
 | | |
 |---|---|
-| **Profil cold/warm** | MO metadata cache, paralel DG |
-| **Dashboard** | Widget aggregation profiling |
-| **Hedef** | profile-view warm ≤ 1,5 sn; cold ≤ 2 sn |
+| **Profil warm** | PV-PERF-4: `op_links` $or, `op_tags` katalog cache, timeline dedup |
+| **Dashboard** | Faz 2b: widget query dedup (`queryResultCache`) |
+| **Metadata TTL** | `TtlSeconds` 120→600, `CatalogTtlSeconds` 600 |
+| **UI** | 45 sn profil client cache + mutation `force` |
+| **Prod ölçüm** | profile warm P95 **1694 ms** ✅ |
+| **Açık** | cold ≤ 4 sn · pano ≤ 1,2 sn · Faz 3 DG katalog cache |
 
 ---
 
 ## 5. Hedef SLA — operasyon alanı
 
-| Senaryo | Bugün (Odak) | Hedef |
-|---------|--------------|-------|
-| Workspace explorer açılış (5 ws) | ~2–3 sn (önce) | ≤ **1 sn** (deploy sonrası ölçüm bekliyor) |
-| Board listesi (50 satır, warm) | ~0,3 sn | ≤ **0,5 sn** ✅ |
-| İş profili (warm) | ~1,3 sn | ≤ **1,5 sn** |
-| İş profili (cold) | ~4 sn | ≤ **2 sn** (Faz 2) |
-| Dashboard görüntüleme | ~1,6 sn | ≤ **1 sn** (Faz 2) |
-| Kanban ilk yükleme (8 kolon) | ölçülmedi | ≤ **3 sn** (deploy sonrası benchmark) |
+| Senaryo | Prod (6 Haz) | Test (6 Haz) | Hedef |
+|---------|--------------|--------------|-------|
+| Workspace explorer açılış | ~375 ms | — | ≤ **1 sn** ✅ |
+| Board listesi (warm) | ~697 ms | ~738 ms | ≤ **1,2 sn** ✅ |
+| İş profili (warm) | **1694 ms** ✅ | 2963 ms ⚠️ | ≤ **1,8 sn** |
+| İş profili (cold) | ~8–9 sn | ~8–9 sn | ≤ **4 sn** |
+| Dashboard görüntüleme | 2047 ms ⚠️ | 1424 ms ⚠️ | ≤ **1,2 sn** |
+| Kanban ilk yükleme | ~687 ms | — | ≤ **3,5 sn** ✅ |
 
 ---
 
@@ -163,13 +169,14 @@ Tekrarlı limit=500 katalog   →     Board: katalog MO context’ten ✅
 ```mermaid
 flowchart LR
   A[Faz 1 Admin UI ✅] --> B[Faz 1B Operasyon UI ✅]
-  B --> C[Odak mngui deploy ✅]
-  C --> D[Deploy sonrası ölçüm ⏳]
-  D --> E[Faz 2 Backend runtime]
-  E --> F[Müşteri UAT / sign-off]
+  B --> C[Faz 2 MO ✅]
+  C --> D[Faz 2b + PV-PERF-4 + UI cache ✅]
+  D --> E[Prod profil SLA ✅]
+  E --> F[Pano + cold + Faz 3]
+  F --> G[Müşteri UAT / sign-off]
 ```
 
-**Konuya dönüldüğünde:** deploy sonrası benchmark + Faz 2 backend kickoff.
+**Konuya dönüldüğünde:** pano ≤ 1,2 sn · profil cold · Faz 3 DG cache (ayrı planlama).
 
 ---
 
@@ -206,6 +213,6 @@ flowchart LR
 
 ## 9. Sonuç
 
-Operasyon alanı **admin ekranı kadar kötü değil** — board list ve profil-view mimarisi sağlam. Faz 1B ile **workspace explorer over-fetch** giderildi (Odak deploy). Profil ve dashboard süreleri için **backend Faz 2** sırada.
+Operasyon alanı **admin ekranı kadar kötü değil** — board list ve profil-view mimarisi sağlam. **6 Haziran paketi** ile prod profil warm hedefin altına indi; UI profil cache günlük gezinmeyi hızlandırır. Sırada: pano, cold path, Faz 3 DG.
 
-**Deploy:** Admin Faz 1 + Operasyon Faz 1B — **tek `mngui` deploy, 2 Haziran 2026** (`http://192.168.20.20:3000`).
+**Deploy:** Test `192.168.20.20` + Prod `192.168.20.8` — `mngoperations` + `mngui` (`--no-cache`), 6 Haziran 2026. Rapor: [DIAGNOSTIC_REPORT_2026-06-06-perf.md](./DIAGNOSTIC_REPORT_2026-06-06-perf.md).

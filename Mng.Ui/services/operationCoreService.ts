@@ -887,11 +887,29 @@ function parseStringMap(raw: unknown): Record<string, string> {
   return out;
 }
 
+/** Kısa süreli profil-view önbelleği — board↔profil geçişlerinde tekrar MO çağrısını önler. */
+const profileViewCache = new Map<string, { at: number; value: OcWorkItemProfileView }>();
+const PROFILE_VIEW_CACHE_TTL_MS = 45_000;
+
+export function ocInvalidateWorkItemProfileView(workItemId?: string): void {
+  if (workItemId) profileViewCache.delete(workItemId);
+  else profileViewCache.clear();
+}
+
 /**
  * Profil ekranının TEK toplu paketi (MO profile-view ucu): profile + edit form + katalog +
  * pool alanlar + alan görünen değerleri + politika + ilk sayfa timeline. UI'nın ~18 çağrısını 1'e indirir.
  */
-export async function ocGetWorkItemProfileView(workItemId: string): Promise<OcWorkItemProfileView> {
+export async function ocGetWorkItemProfileView(
+  workItemId: string,
+  options?: { force?: boolean }
+): Promise<OcWorkItemProfileView> {
+  const force = options?.force ?? false;
+  const cached = profileViewCache.get(workItemId);
+  if (!force && cached && Date.now() - cached.at < PROFILE_VIEW_CACHE_TTL_MS) {
+    return cached.value;
+  }
+
   const raw = (await fetchFromOperations(
     `/api/v1/runtime/work-items/${encodeURIComponent(workItemId)}/profile-view`,
     'GET'
@@ -899,7 +917,7 @@ export async function ocGetWorkItemProfileView(workItemId: string): Promise<OcWo
 
   const poolRaw = raw.poolFields ?? raw.PoolFields;
 
-  return {
+  const mapped: OcWorkItemProfileView = {
     profile: mapWorkItemProfile((raw.profile ?? raw.Profile ?? {}) as Record<string, unknown>),
     form: mapFormRuntimeContext((raw.form ?? raw.Form ?? {}) as Record<string, unknown>),
     catalogs: parseBoardCatalogs(raw.catalogs ?? raw.Catalogs),
@@ -914,6 +932,9 @@ export async function ocGetWorkItemProfileView(workItemId: string): Promise<OcWo
     policy: mapResolvedPolicy(raw.policy ?? raw.Policy),
     timeline: mapTimelinePage(raw.timeline ?? raw.Timeline, 0, 100),
   };
+
+  profileViewCache.set(workItemId, { at: Date.now(), value: mapped });
+  return mapped;
 }
 
 /**
@@ -1164,6 +1185,7 @@ export async function ocUpdateWorkItem(
     'PATCH',
     body
   );
+  ocInvalidateWorkItemProfileView(workItemId);
   return mapCreateWorkItemResult(raw);
 }
 
