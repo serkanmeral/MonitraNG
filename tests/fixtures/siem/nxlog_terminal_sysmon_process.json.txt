@@ -1,0 +1,1 @@
+{"EventTime":"2026-06-06 10:27:28","Hostname":"TERMINAL.odak.local","EventType":"INFO","EventID":1,"SourceName":"Microsoft-Windows-Sysmon","Channel":"Microsoft-Windows-Sysmon/Operational","Message":"Process Create:\r\nImage: C:\\Windows\\System32\\notepad.exe","SourceModuleType":"im_msvistalog"}

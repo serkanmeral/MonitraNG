@@ -10,6 +10,7 @@ public sealed class SecEventParserRegistry : ISecEventParserRegistry
 
     public SecEventParserRegistry(
         WindowsSecurityExtendedParser windowsExtended,
+        WindowsNxlogJsonParser windowsNxlog,
         WindowsSecurityParser windows,
         BastionGenericSyslogParser bastion,
         LinuxAuthSyslogParser linuxAuth,
@@ -17,7 +18,7 @@ public sealed class SecEventParserRegistry : ISecEventParserRegistry
         FirewallGenericSyslogParser firewall,
         UnknownSecEventFallback fallback)
     {
-        _parsers = [windowsExtended, windows, bastion, linuxAuth, firewallVendor, firewall];
+        _parsers = [windowsExtended, windowsNxlog, windows, bastion, linuxAuth, firewallVendor, firewall];
         _fallback = fallback;
     }
 

@@ -12,4 +12,23 @@ internal static class SecEventParserTestFactory
         {
             SecEventMaintenanceWindow = maintenanceWindow ?? new SecEventMaintenanceWindowSettings()
         })));
+
+    public static WindowsNxlogJsonParser CreateNxlogParser(
+        SecEventMaintenanceWindowSettings? maintenanceWindow = null) =>
+        new(new SecEventMaintenanceWindowEvaluator(Options.Create(new MngReactorSettings
+        {
+            SecEventMaintenanceWindow = maintenanceWindow ?? new SecEventMaintenanceWindowSettings()
+        })));
+
+    public static SecEventParserRegistry CreateRegistry(
+        SecEventMaintenanceWindowSettings? maintenanceWindow = null) =>
+        new(
+            new WindowsSecurityExtendedParser(),
+            CreateNxlogParser(maintenanceWindow),
+            CreateWindowsParser(maintenanceWindow),
+            new BastionGenericSyslogParser(),
+            new LinuxAuthSyslogParser(),
+            new FirewallVendorParser(),
+            new FirewallGenericSyslogParser(),
+            new UnknownSecEventFallback());
 }

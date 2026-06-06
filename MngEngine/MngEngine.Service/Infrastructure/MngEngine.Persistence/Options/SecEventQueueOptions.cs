@@ -10,6 +10,25 @@ public sealed class SecEventQueueOptions
     /// <summary>UDP syslog dinleme portu. Prod: 514; geliştirme: 5514 (admin gerekmez).</summary>
     public int UdpPort { get; set; } = 5514;
 
+    /// <summary>Çoklu UDP dinleyici (IT sabit portları). Boşsa <see cref="UdpPort"/> kullanılır.</summary>
+    public List<SecEventSyslogListenerOptions>? UdpListeners { get; set; }
+
+    public IReadOnlyList<SecEventSyslogListenerOptions> GetEffectiveListeners()
+    {
+        if (UdpListeners is { Count: > 0 })
+            return UdpListeners;
+
+        return
+        [
+            new SecEventSyslogListenerOptions
+            {
+                UdpPort = UdpPort,
+                SourceType = DefaultSourceType,
+                SourceProduct = DefaultSourceProduct
+            }
+        ];
+    }
+
     /// <summary>Kuyruk üst sınırı; aşıldığında en eski öğeler atılır.</summary>
     public int MaxItems { get; set; } = 5000;
 

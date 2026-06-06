@@ -1,15 +1,15 @@
 # DEVAM — SIEM-Hafif Planlama (Kaldığımız Yer)
 
-**Son güncelleme:** 5 Haziran 2026 (mola checkpoint — veri yaşam döngüsü + Linux pilot)  
-**Durum:** ✅ **SIEM Faz 1–4 tamam** · **Veri yönetimi MVP (§9)** ✅ · Faz 5 (LogAlarm/5651) ertelendi · Git `@HEAD` (mola commit) · Odak iki-host U1 pilot ✅
+**Son güncelleme:** 6 Haziran 2026 (IT merkezi port · Engine çoklu UDP · NxLog/FortiGate E2E tamam)  
+**Durum:** ✅ **SIEM Faz 1–4 + IT pilot E2E tamam** · Odak deploy ✅ · Git `@3a8a2ac` + commitlenmemiş multi-port/parser/E2E
 
-**Handoff (yeni chat):** [HANDOFF.md](./HANDOFF.md) §8
+**Handoff (yeni chat):** [HANDOFF.md](./HANDOFF.md) §9
 
 ---
 
 ## 1. Tek cümlede durum
 
-**SIEM MVP (U1–U7) + B1/B2/B3 + A4 ✅.** Linux auth U1 E2E tamamlandı.
+**SIEM MVP (U1–U7) + B1/B2/B3 + A4 ✅.** Linux auth U1 E2E tamamlandı. **IT merkezi syslog pilot (NxLog + FortiGate) E2E tamam.**
 
 ---
 
@@ -18,18 +18,18 @@
 | Konu | Durum |
 |------|--------|
 | SIEM `sec_events` ingest | ✅ PR-1…PR-6 |
-| Odak deploy Engine | ✅ `mngengine:latest` :5037, syslog :5514 |
+| Odak deploy Engine | ✅ `mngengine:latest` :5037 · çoklu UDP `:5514` `:1514/1541/1542` `:541/542` |
 | Odak deploy Reactor | ✅ `mngreactor:latest` |
 | Workflow `mqtt/publish` | ✅ P4 E2E `reactor_mqtt` |
 | **sec_events → observation** | ✅ `SecEventObservationMapper` + `PublishSecEventAsync` |
 | **Alarm U1 correlation** | ✅ Odak E2E |
 | **U1 → alarm.raised → Workflow** | ✅ `test-siem-u1-workflow-e2e.ps1` |
-| **U1 → approval → block.ip** | ✅ `test-siem-u1-approval-block-e2e.ps1` |
+| **U1 → approval → block.ip** | ✅ `test-siem-u1-approval-block-e2e.ps1` · NxLog: `test-siem-nxlog-json-u1-approval-block-e2e.ps1` |
 | **U4 firewall deny spike** | ✅ `test-siem-u4-alarm-e2e.ps1` |
 | **U2 fail→success sequence** | ✅ `test-siem-u2-alarm-e2e.ps1` |
 | **P0 benchmark baseline** | ✅ `benchmark-P0-2026-06-04.json` |
 | **P0 soak (5dk @ 50 evt/s)** | ✅ `benchmark-soak-2026-06-04.json` |
-| **U4 → alarm.raised → Workflow** | ✅ `test-siem-u4-workflow-e2e.ps1` |
+| **U4 → alarm.raised → Workflow** | ✅ `test-siem-u4-workflow-e2e.ps1` · FortiGate: `test-siem-fortigate-u4-workflow-e2e.ps1` |
 | **P1 benchmark (120s @ 100 evt/s)** | ✅ `benchmark-P1-2026-06-04.json` (~78 evt/s) |
 | **Engine syslog UDP benchmark** | ✅ `benchmark-engine-syslog-2026-06-04.json` |
 | **SIEM E2E suite (`-Quick`)** | ✅ `test-siem-e2e-suite.ps1` |
@@ -58,7 +58,9 @@
 | **Linux iki-host pilot (U1×2)** | ✅ `run-siem-linux-two-host-pilot.ps1` · monitrang + monitrang-prod |
 | **Lab reset script** | ✅ `reset-siem-lab-data.ps1 -Apply` |
 | **B3 hazır kural paketi (`siem-mvp-v1`)** | ✅ `seed-siem-alarm-rule-pack.ps1` |
-| **Aktif yol haritası** | [SIEM_ROADMAP.md](./SIEM_ROADMAP.md) · LogAlarm ertelendi |
+| **B1 `windows.nxlog-json.v1` (IT UDP)** | ✅ Security kanalı · `test-nxlog-json-syslog-ingest.ps1` · U1 alarm/workflow/block E2E |
+| **FortiGate UDP ingest (IT :541)** | ✅ `test-siem-fortigate-syslog-udp-ingest.ps1` · U4 alarm E2E |
+| **IT geçici relay** | ✅ `rsyslog-it-relay-to-engine.conf` · multi-port sonrası kapatıldı |
 
 ---
 
@@ -206,7 +208,33 @@ LogAlarm / 5651 / WORM → **Faz 5 (ertelendi)** — [SIEM_ROADMAP.md §6](./SIE
 
 **Pilot kullanıcıları (Odak lab):** `pilot_fail_test20` / `pilot_ok_test20` (monitrang) · `pilot_fail_prod08` / `pilot_ok_prod08` (monitrang-prod)
 
-**Sıradaki (öncelik pilot bağlı):** FortiGate deny syslog (U4) · Windows NxLog/WEC dar filtre · gerçek FW API · deploy `mngreactor`+`mngui` (SecEvents ayarları) · Faz 5 en sonda
+**Sıradaki:** commit (kullanıcı talebi) · opsiyonel FortiGate hostname / Sysmon filtresi · Faz 5 en sonda
+
+### Oturum checkpoint (6 Haz 2026 — IT merkezi port + E2E)
+
+| Konu | Durum |
+|------|--------|
+| IT topolojisi | TERMINAL `192.168.20.13` → `:1514` JSON · FortiGate → `:541/542` |
+| Engine multi-port | ✅ 6 listener · relay kapatıldı |
+| Parser `windows.nxlog-json.v1` | ✅ Security · Sysmon drop |
+| Canlı TERMINAL | ✅ 4624/4625/4672 |
+| NxLog E2E | ✅ ingest · U1 alarm · workflow · approval→block.ip |
+| FortiGate E2E | ✅ ingest · U4 alarm · U4 workflow |
+| Commit | ⬜ kullanıcı talebi bekleniyor |
+
+### Oturum checkpoint (6 Haz 2026 — Odak deploy + bootstrap hatası, arşiv)
+
+| Konu | Durum |
+|------|--------|
+| Odak deploy | ✅ sync + `mngreactor,mngengine,mngui` `-NoCache` |
+| Engine config | ⚠️ `LICENSE_EXPIRED` (DataGateway); Reactor `config-string` workaround |
+| `test-nxlog-wec-template-e2e.ps1` | ✅ PASS |
+| Pilot PC | `TERMINAL.odak.local` · admin yok · IT NxLog CE 3.2.2329 kurdu |
+| NxLog config | ❌ IT tüm `nxlog.conf` değiştirdi → bootstrap/Moduledir yok → `to_json()` hatası |
+| SIEM TERMINAL olayları | ❌ 0 kayıt |
+| Yeni şablon/script (uncommitted) | `nxlog.conf.bootstrap` · `nxlog-endpoint-monitrang-siem.conf` · `apply-nxlog-endpoint-config.ps1` |
+
+**IT düzeltme:** HANDOFF §8 — bootstrap + `nxlog.d\monitrang-siem.conf`
 
 **Operasyon notu:** Benchmark veya yoğun ingest sonrası E2E/workflow testleri önce kuyruk temizliği gerektirebilir:
 - `purge-workflow-queues.ps1 -Apply` — `workflow.execution`, `workflow.event.inbound`, `alarm.observation.inbound` (birleşik)

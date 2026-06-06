@@ -1,6 +1,6 @@
 # SIEM / Monitoring — Oturum Handoff
 
-**Son güncelleme:** 5 Haziran 2026 (mola — veri yaşam döngüsü + Linux iki-host pilot)  
+**Son güncelleme:** 6 Haziran 2026 (IT merkezi port modeli · Engine çoklu UDP · NxLog/FortiGate E2E tamam)  
 **Ana DEVAM:** [DEVAM.md](./DEVAM.md)  
 **Platform UI (ayrı chat):** [../PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md)
 
@@ -8,7 +8,7 @@
 
 ## 1. Tek cümlede durum
 
-**SIEM Faz 1–4 ✅** · **sec_events veri yönetimi MVP ✅** (unknown drop, hot TTL, rawPreview) · Odak **2× Linux U1 pilot** (`monitrang` + `monitrang-prod`) · Faz 5 ertelendi · **Sıradaki:** FortiGate/Windows pilot + Odak `mngreactor`/`mngui` deploy
+**SIEM Faz 1–4 ✅** · Odak **deploy ✅** (mngreactor/engine/ui) · **IT merkezi syslog ✅** (NxLog UDP :1514 · FortiGate :541/542 · Engine çoklu port) · **Windows TERMINAL canlı olay ✅** · Linux 2× U1 pilot ✅ · Faz 5 ertelendi · **Sıradaki:** commit (kullanıcı talebi) · opsiyonel Sysmon filtresi / FortiGate `source.host` iyileştirmesi
 
 ---
 
@@ -17,7 +17,7 @@
 | Konu | Durum |
 |------|--------|
 | MngReactor Odak | ✅ `mngreactor:latest` |
-| MngEngine syslog | ✅ UDP :5514, `SecEvents/queue` + flush |
+| MngEngine syslog | ✅ Çoklu UDP: `:5514` linux · `:1514/1541/1542` windows-nxlog · `:541/542` fortigate |
 | SIEM `sec_events` ingest | ✅ PR-1…PR-6 |
 | sec_events → observation → alarm | ✅ U1/U2/U4 E2E |
 | alarm.raised → Workflow | ✅ U1/U4 workflow E2E |
@@ -47,6 +47,13 @@
 | Odak alarm paketi (`siem-mvp-v1`) | ✅ U1–U7 seed · [SIEM_ALARM_RULE_PACK.md](./SIEM_ALARM_RULE_PACK.md) |
 | Alarm kural UI | ✅ `/apps/alarm-center/rules` — SIEM = korelasyon kuralları (ayrı U CRUD yok) |
 | SIEM UI | ✅ `/apps/siem-center` · `/apps/siem-center/events` — [SIEM_DASHBOARD.md](./SIEM_DASHBOARD.md) · [SIEM_EVENTS_UI.md](./SIEM_EVENTS_UI.md) |
+| Odak deploy (6 Haz) | ✅ `mngreactor` + `mngengine` + `mngui` — `-NoCache` |
+| Engine config (6 Haz) | ⚠️ `setup-mngengine-odak.ps1 -ApplyConfig` → **LICENSE_EXPIRED** (DataGateway PUT); Reactor `config-string` → Engine `/api/Config` ile düzeltildi |
+| **Windows NxLog (IT merkezi)** | ✅ `windows.nxlog-json.v1` · TERMINAL → `:1514` · canlı 4624/4625/4672 |
+| **FortiGate syslog (IT merkezi)** | ✅ `firewall.vendor.v1` · `:541` · U4 alarm + workflow E2E |
+| NxLog şablon / script (commitlenmedi) | `templates/nxlog*.conf` · relay şablonu · `install/apply-nxlog-endpoint-config.ps1` · `install-it-syslog-relay-odak.ps1` (relay artık kapalı) |
+| **Engine çoklu port (kod, commitlenmedi)** | `SyslogUdpListenerService` · `SecEventQueueOptions.UdpListeners[]` · `docker-compose.odak.yml` port map |
+| **NxLog parser (kod, commitlenmedi)** | `WindowsNxlogJsonParser` · `windows.nxlog-json.v1` · Security kanalı; Sysmon → drop |
 
 ---
 
@@ -55,7 +62,9 @@
 ```
 U1: sec_events → observation → correlation → alarm.raised → Workflow → (approval) → block.ip
 U1 (Linux): linux.auth.v1 sshd → login_failed → alarm.raised → Workflow → approval → block.ip
+U1 (NxLog): windows.nxlog-json.v1 → UDP :1514 → login_failed → alarm.raised → Workflow → approval → block.ip
 U4: firewall syslog → sec_events → observation → correlation → alarm.raised → Workflow
+U4 (FortiGate): firewall.vendor.v1 → UDP :541 → denied_flow → alarm.raised → Workflow
 U2: login_failed×N → login_success → sequence alarm
 U5: allowed_flow×N (dstIp/dstPort) → traffic spike alarm
 U6: rule_change → correlation alarm
@@ -132,17 +141,19 @@ B1 bastion: source.type=bastion → linux.auth benzeri sshd auth
 | Alan | Değer |
 |------|--------|
 | Branch | `main` |
-| **Mola checkpoint** | Bu commit (5 Haz 2026) — bkz. `git log -1` |
-| Önceki checkpoint | `ed4c7bd` / `62567c3` |
-| Odak deploy | ⬜ **`mngreactor` + `mngui` + `mngengine`** (SecEvents + sshd-session + UI) |
+| **Son commit** | `3a8a2ac` (5 Haz — sec_events veri yönetimi + Linux pilot) |
+| **Commitlenmemiş (6 Haz oturum)** | NxLog şablonları · IT relay şablonu · Engine multi-port · `windows.nxlog-json.v1` parser · E2E scriptleri (`test-siem-fortigate-*`, `test-siem-nxlog-json-*`, `test-nxlog-json-*`) |
+| Odak deploy | ✅ **`mngreactor` + `mngui` + `mngengine`** (6 Haz 2026) |
 | Odak lab veri | 2× U1 alarm · pilot kullanıcıları — reset ile temizlenebilir |
 
-**Deploy (mola sonrası ilk iş):**
+**Engine config (deploy sonrası — bilinen sorun):**
+
+`setup-mngengine-odak.ps1 -ApplyConfig` DataGateway’de `LICENSE_EXPIRED` verir. Geçici çözüm:
 
 ```powershell
-pwsh scripts/odak/sync-odak-source.ps1 -Paths @('MngReactor','MngEngine','Mng.Ui','ApplicationResources/mng_apps')
-pwsh scripts/odak/deploy-odak-apps.ps1 -Services mngreactor,mngengine,mngui -NoCache
-pwsh scripts/odak/setup-mngengine-odak.ps1 -ApplyConfig -WaitHealthy
+# Reactor config-string al → Engine'e uygula (token + engineId)
+# Bkz. setup-mngengine-odak.ps1 veya manuel POST http://192.168.20.20:5037/api/Config
+pwsh scripts/odak/test-nxlog-wec-template-e2e.ps1   # ingest smoke
 ```
 
 ---
@@ -152,10 +163,14 @@ pwsh scripts/odak/setup-mngengine-odak.ps1 -ApplyConfig -WaitHealthy
 | Konu | Değer |
 |------|--------|
 | Gateway | `http://192.168.20.20:5040` |
-| Engine | `http://192.168.20.20:5037` · syslog UDP `:5514` |
+| Engine | `http://192.168.20.20:5037` · syslog UDP çoklu port (aşağı) |
+| Engine UDP dinleyiciler | `:5514` linux-syslog · `:1514/1541/1542` windows-nxlog · `:541/542` fortigate |
 | Domain / kullanıcı | `odak` · `odak_admin` / `Admin123!` |
 | Linux test host | `192.168.20.20` (`monitrang`) · rsyslog → `127.0.0.1:5514` |
 | Linux prod host | `192.168.20.8` (`monitrang-prod`) · rsyslog → `192.168.20.20:5514` |
+| Windows (IT) | `192.168.20.13` TERMINAL (+ DC) · NxLog ham JSON UDP → `192.168.20.20:1514` |
+| FortiGate (IT) | syslog → `192.168.20.20:541` (542 yedek) |
+| Windows pilot (eski plan) | `TERMINAL.odak.local` · wec-batch yolu lab smoke için hâlâ geçerli |
 
 **Sync + deploy (Engine örneği):**
 
@@ -202,69 +217,156 @@ Konuşulanlar (kod yok, referans):
 
 ---
 
-## 8. SIEM chat prompt'u (yeni chat — kopyala-yapıştır)
+## 8. Oturum notu (6 Haz 2026 — IT merkezi port + Engine çoklu UDP)
+
+### IT topolojisi (doğrulandı)
+
+| Kaynak | Kaynak IP | Hedef | Port | Format |
+|--------|-----------|-------|------|--------|
+| TERMINAL (+ DC) | `192.168.20.13` | `192.168.20.20` | **1514** (1541/1542) | NxLog **ham JSON UDP** (Sysmon + Security) |
+| FortiGate | — | `192.168.20.20` | **541/542** | FortiGate key=value syslog |
+| Linux pilot | — | `:5514` | rsyslog sshd (mevcut) |
+
+**Karar:** IT port değiştiremiyor → Engine **çoklu UDP dinleyici** (kalıcı). Geçici **rsyslog relay** (`1514/541` → `5514`) kuruldu, multi-port deploy sonrası **kapatıldı** (port çakışması).
+
+### Yapılanlar
+
+| Konu | Sonuç |
+|------|--------|
+| Parser `windows.nxlog-json.v1` | ✅ Security 4624/4625/4672/4720… · Sysmon → `DropUnknownEvents` |
+| Engine `ClassifySource` + multi-port | ✅ 6 listener · docker-compose.odak.yml port map |
+| Relay (geçici) | ✅ kuruldu → multi-port sonrası silindi |
+| NxLog ingest smoke | ✅ `test-nxlog-json-syslog-ingest.ps1` |
+| Canlı TERMINAL | ✅ IT → :1514 · 4624/4625/4672 SIEM'de |
+| U1 alarm (NxLog) | ✅ `test-siem-nxlog-json-u1-alarm-e2e.ps1` |
+| U1 → Workflow (NxLog) | ✅ `test-siem-nxlog-json-u1-workflow-e2e.ps1` |
+| U1 → approval → block.ip (NxLog) | ✅ `test-siem-nxlog-json-u1-approval-block-e2e.ps1` |
+| FortiGate ingest | ✅ `test-siem-fortigate-syslog-udp-ingest.ps1` |
+| U4 alarm (FortiGate) | ✅ `test-siem-fortigate-u4-alarm-e2e.ps1` |
+| U4 → Workflow (FortiGate) | ✅ `test-siem-fortigate-u4-workflow-e2e.ps1` |
+| Engine config | ⚠️ deploy sonrası Reactor `config-string` → `/api/Config` (LICENSE_EXPIRED workaround) |
+
+### Bilinen operasyon notları
+
+- Relay + Engine multi-port **aynı anda 1514'te çakışır** — relay kapalı kalmalı
+- FortiGate `source.host` bazen syslog hostname yerine `time=…` (parse/alarm çalışıyor; iyileştirme opsiyonel)
+- E2E geçici alarm kuralları: `purge-siem-e2e-alarm-rules.ps1 -Apply`
+
+### Eski oturum (6 Haz sabah — bootstrap hatası)
+
+IT ilk kurulumda tüm `nxlog.conf` yerine yazmıştı → bootstrap/Moduledir yok → `to_json()` hatası. IT merkezi syslog modeline geçildi; endpoint bootstrap şablonları referans olarak duruyor:
+
+- [templates/nxlog.conf.bootstrap](./templates/nxlog.conf.bootstrap)
+- [templates/nxlog-endpoint-monitrang-siem.conf](./templates/nxlog-endpoint-monitrang-siem.conf)
+- `scripts/odak/apply-nxlog-endpoint-config.ps1`
+
+### Commitlenmemiş dosyalar
+
+**Kod:** `WindowsNxlogJsonParser` · Engine multi-port · `docker-compose.odak.yml`  
+**Şablon/script:** `nxlog*.conf` · `rsyslog-it-relay-to-engine.conf` · `install-it-syslog-relay-odak.ps1`  
+**E2E:** `test-nxlog-json-syslog-ingest.ps1` · `test-siem-nxlog-json-*.ps1` · `test-siem-fortigate-*.ps1`  
+**Fixture:** `tests/fixtures/siem/nxlog_terminal_4625.json.txt` · `nxlog_terminal_sysmon_process.json.txt`
+
+---
+
+## 8b. Oturum notu (6 Haz sabah — Odak deploy + bootstrap hatası, arşiv)
+
+### Yapılanlar
+
+| Konu | Sonuç |
+|------|--------|
+| Odak sync + deploy | ✅ `mngreactor`, `mngengine`, `mngui` (`-NoCache`) |
+| Engine config | ⚠️ `setup-mngengine-odak.ps1 -ApplyConfig` → `LICENSE_EXPIRED` (mon_engines PUT); Reactor `config-string` + `/api/Config` ile düzeltildi |
+| Ingest smoke | ✅ `test-nxlog-wec-template-e2e.ps1` PASS |
+| Windows pilot makine | `TERMINAL.odak.local` · kullanıcı `odak\monitra` · **yerel admin yok** |
+| IT NxLog kurulumu | ✅ NXLog-CE 3.2.2329 · servis Running |
+| IT config | ❌ MonitraNG bloğu **tüm `nxlog.conf` yerine** yazılmış → `Moduledir`/bootstrap yok → `to_json()` parse hatası |
+| SIEM olay akışı | ❌ `sourceHost=TERMINAL.odak.local` → **0 olay** |
+
+### IT düzeltme (doğru yapı)
+
+1. **`C:\Program Files\nxlog\conf\nxlog.conf`** ← [templates/nxlog.conf.bootstrap](./templates/nxlog.conf.bootstrap) (Moduledir + `include nxlog.d\*.conf`)
+2. **`C:\Program Files\nxlog\conf\nxlog.d\monitrang-siem.conf`** ← [templates/nxlog-endpoint-monitrang-siem.conf](./templates/nxlog-endpoint-monitrang-siem.conf)
+3. `Restart-Service nxlog`
+4. Doğrula: `& "C:\Program Files\nxlog\nxlog.exe" -v -f "C:\Program Files\nxlog\conf\nxlog.conf"` (ERROR yok)
+5. Test: başarısız oturum → SIEM'de `login_failed` / `TERMINAL.odak.local`
+
+**Script (yönetici):** `scripts/odak/apply-nxlog-endpoint-config.ps1 -Apply`
+
+**WEC notu:** Bu makinede Forwarded Events yok; endpoint = yerel **Security** log. WEC senaryosu ayrı sunucu + [nxlog-wec-to-engine.conf](./templates/nxlog-wec-to-engine.conf).
+
+### Commitlenmemiş dosyalar
+
+- `docs/odak/monitoring/templates/nxlog-endpoint-to-engine.conf`
+- `docs/odak/monitoring/templates/nxlog-endpoint-monitrang-siem.conf`
+- `docs/odak/monitoring/templates/nxlog.conf.bootstrap`
+- `scripts/odak/install-nxlog-endpoint.ps1`
+- `scripts/odak/apply-nxlog-endpoint-config.ps1`
+
+---
+
+## 9. SIEM chat prompt'u (yeni chat — kopyala-yapıştır)
 
 ```markdown
-# MonitraNG — SIEM handoff (mola sonrası devam)
+# MonitraNG — SIEM handoff (Windows NxLog pilot devam)
 
 Yanıtlar **Türkçe**. Commit/push yalnızca açıkça istediğimde.
 
 ## Bağlam
-- **HANDOFF:** docs/odak/monitoring/HANDOFF.md
+- **HANDOFF:** docs/odak/monitoring/HANDOFF.md (§8 oturum notu)
 - **DEVAM:** docs/odak/monitoring/DEVAM.md
-- **Yol haritası:** docs/odak/monitoring/SIEM_ROADMAP.md
-- **Performans / saklama:** SIEM_PERFORMANCE_PLAN.md §2.4 · SIEM_PLANNING.md §9
-- **Linux toplama:** SIEM_LINUX_RSYSLOG_FORWARDER.md · DI wiki: document_intelligence/tutorials/guvenlik-merkezi-linux-rsyslog-kurulumu.md
+- **Windows toplama:** SIEM_WEF_WEC_FORWARDER.md · templates/nxlog*.conf
+- **Linux toplama:** SIEM_LINUX_RSYSLOG_FORWARDER.md
 
-## Durum (5 Haz 2026 mola)
-- Git `main` — mola commit pushlandı (SecEvents veri yönetimi + Linux pilot scriptleri)
-- **Faz 1–4 ✅** · Faz 5 LogAlarm/5651 **ertelendi**
-- **Veri yönetimi MVP ✅:** `SecEventsSettings` — DropUnknownEvents, HotTtlDays=60, PersistFullRaw=false
-- **UI:** olay listesinde unknown varsayılan gizli · "Bilinmeyen olayları göster" checkbox
-- **Odak lab:** `reset-siem-lab-data.ps1 -Apply` + `run-siem-linux-two-host-pilot.ps1` → 20 fail + 4 ok · **2× U1 alarm**
-- Pilot kullanıcılar: `pilot_fail_test20` / `pilot_ok_test20` (monitrang) · `pilot_fail_prod08` / `pilot_ok_prod08` (monitrang-prod)
+## Durum (6 Haz 2026 — IT merkezi port)
+- Git `main` @ `3a8a2ac` · multi-port + parser + E2E scriptleri **commitlenmedi** (kullanıcı talebi bekleniyor)
+- **Odak deploy ✅** mngreactor + mngengine + mngui · 6 UDP listener aktif
+- **Engine config ⚠️** deploy sonrası Reactor config-string → `/api/Config`
+- **Windows NxLog ✅** IT → UDP :1514 · `windows.nxlog-json.v1` · canlı TERMINAL olayları
+- **FortiGate ✅** UDP :541 · U4 alarm + workflow E2E
+- **Linux pilot ✅** 2× U1 (monitrang + monitrang-prod)
 
 ## Odak
-- Gateway http://192.168.20.20:5040 · Engine :5037 · syslog UDP :5514
-- Test Linux 192.168.20.20 · Prod Linux 192.168.20.8 (syslog → test Engine)
-- **Deploy gerekli:** mngreactor + mngengine + mngui (kod commitlendi; Odak güncellenmemiş olabilir)
-- Lab sıfır: `reset-siem-lab-data.ps1 -Apply`
-- Pilot tekrar: `run-siem-linux-two-host-pilot.ps1`
+- Gateway http://192.168.20.20:5040 · Engine :5037
+- UDP: `:5514` linux · `:1514/1541/1542` windows-nxlog · `:541/542` fortigate
+- SIEM UI: http://192.168.20.20:3000/apps/siem-center/events
 
-## Sütun sözlüğü (olay listesi)
-- **Kaynak** = `source.type` (endpoint/ad/firewall), IP değil
-- **Host** = log üreten cihaz (`source.host`)
-- **Kaynak IP** = istemci IP (`network.srcIp`)
-- **Hedef** = akış hedefi (`network.dstIp`) — auth loglarında genelde boş (normal)
-
-## Sıradaki adaylar
-1. **Odak deploy** — SecEvents ayarları + sshd-session parser + UI
-2. **FortiGate pilot** — deny-only syslog · U4 smoke
-3. **Windows NxLog/WEC** — dar Event ID · U1/U2
-4. **Gerçek FW API** — onaylı block.ip
-5. **Faz 5** — 5651/WORM (ertelendi)
+## Sıradaki
+1. Commit (kullanıcı talebi)
+2. Opsiyonel: FortiGate hostname parse · Sysmon whitelist
+3. Faz 5 ertelendi
 
 ## Bu oturumda ne yapmak istiyorum?
-[Buraya yaz]
+[Buraya yaz — örn. "IT config sonrası kontrol + U1 E2E"]
 ```
 
 ---
 
-## 9. İlk komutlar (opsiyonel)
+## 10. İlk komutlar (opsiyonel)
+
+---
 
 ```powershell
-# Yerel
-pwsh scripts/ci/run-siem-local-gate.ps1
+# Engine config (deploy sonrası)
+# Reactor config-string → POST http://192.168.20.20:5037/api/Config
 
-# Odak sağlık (aynı oturumda SSH env yükle)
+# NxLog / FortiGate E2E (Odak)
+pwsh scripts/odak/test-nxlog-json-syslog-ingest.ps1
+pwsh scripts/odak/test-siem-nxlog-json-u1-alarm-e2e.ps1
+pwsh scripts/odak/test-siem-nxlog-json-u1-workflow-e2e.ps1
+pwsh scripts/odak/test-siem-nxlog-json-u1-approval-block-e2e.ps1
+pwsh scripts/odak/test-siem-fortigate-syslog-udp-ingest.ps1
+pwsh scripts/odak/test-siem-fortigate-u4-alarm-e2e.ps1
+pwsh scripts/odak/test-siem-fortigate-u4-workflow-e2e.ps1
+
+# Odak sağlık
 . .\scripts\odak\OdakSshCommon.ps1; Initialize-OdakSshEnvironment
 Invoke-WebRequest http://192.168.20.20:5040/health -UseBasicParsing
-pwsh scripts/odak/run-siem-quick-regression.ps1 -SkipUnitGate
 ```
 
 ---
 
-## 10. Referanslar
+## 11. Referanslar
 
 - [SIEM_PLANNING.md](./SIEM_PLANNING.md)
 - [SIEM_ROADMAP.md](./SIEM_ROADMAP.md)

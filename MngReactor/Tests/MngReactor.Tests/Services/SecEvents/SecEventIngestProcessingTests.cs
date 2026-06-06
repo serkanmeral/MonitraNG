@@ -57,14 +57,7 @@ public sealed class SecEventIngestProcessingTests
 
         return new SecEventIngestProcessing(
             NullLogger<SecEventIngestProcessing>.Instance,
-            new SecEventParserRegistry(
-                new WindowsSecurityExtendedParser(),
-                SecEventParserTestFactory.CreateWindowsParser(),
-                new BastionGenericSyslogParser(),
-                new LinuxAuthSyslogParser(),
-                new FirewallVendorParser(),
-                new FirewallGenericSyslogParser(),
-                new UnknownSecEventFallback()),
+            SecEventParserTestFactory.CreateRegistry(),
             new UnknownSecEventFallback(),
             repoMock.Object,
             publisherMock.Object,

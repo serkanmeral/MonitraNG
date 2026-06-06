@@ -73,14 +73,7 @@ public sealed class LinuxAuthSyslogParserTests
     [Fact]
     public void Registry_ResolvesLinuxBeforeFirewall()
     {
-        var registry = new SecEventParserRegistry(
-            new WindowsSecurityExtendedParser(),
-            SecEventParserTestFactory.CreateWindowsParser(),
-            new BastionGenericSyslogParser(),
-            new LinuxAuthSyslogParser(),
-            new FirewallVendorParser(),
-            new FirewallGenericSyslogParser(),
-            new UnknownSecEventFallback());
+        var registry = SecEventParserTestFactory.CreateRegistry();
 
         var ctx = Context("linux_sshd_failed_password.syslog.txt", product: "linux-syslog");
         Assert.Equal(LinuxAuthSyslogParser.ParserIdValue, registry.Resolve(ctx).ParserId);

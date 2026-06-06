@@ -35,14 +35,7 @@ public sealed class BastionGenericSyslogParserTests
     [Fact]
     public void Registry_ResolvesBastionBeforeLinuxWhenTypeIsBastion()
     {
-        var registry = new SecEventParserRegistry(
-            new WindowsSecurityExtendedParser(),
-            SecEventParserTestFactory.CreateWindowsParser(),
-            new BastionGenericSyslogParser(),
-            new LinuxAuthSyslogParser(),
-            new FirewallVendorParser(),
-            new FirewallGenericSyslogParser(),
-            new UnknownSecEventFallback());
+        var registry = SecEventParserTestFactory.CreateRegistry();
 
         var rawLine = SiemFixtureHelper.ReadFixture("bastion_sshd_failed_password.syslog.txt");
         var ctx = new SecEventRawContext

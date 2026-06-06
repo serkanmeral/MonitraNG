@@ -9,7 +9,7 @@ using Serilog;
 
 namespace MngEngine.Persistence.Service.SecEvents;
 
-/// <summary>SIEM Faz 1 S3.1 — syslog UDP listener.</summary>
+/// <summary>SIEM Faz 1 S3.1 — syslog UDP listener (çoklu port).</summary>
 public sealed class SyslogUdpListenerService : BackgroundService
 {
     private readonly ILogger _logger;
@@ -40,11 +40,36 @@ public sealed class SyslogUdpListenerService : BackgroundService
             return;
         }
 
+        var listeners = _options.GetEffectiveListeners();
+        var tasks = listeners
+            .Select(listener => ListenPortAsync(listener, stoppingToken))
+            .ToArray();
+
+        try
+        {
+            await Task.WhenAll(tasks);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            // graceful shutdown
+        }
+        finally
+        {
+            _logger.Information("SecEvent syslog UDP listener durdu");
+        }
+    }
+
+    private async Task ListenPortAsync(SecEventSyslogListenerOptions listener, CancellationToken stoppingToken)
+    {
         UdpClient? udp = null;
         try
         {
-            udp = new UdpClient(_options.UdpPort);
-            _logger.Information("SecEvent syslog UDP listener başladı port={Port}", _options.UdpPort);
+            udp = new UdpClient(listener.UdpPort);
+            _logger.Information(
+                "SecEvent syslog UDP listener başladı port={Port} type={Type} product={Product}",
+                listener.UdpPort,
+                listener.SourceType,
+                listener.SourceProduct);
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -59,23 +84,22 @@ public sealed class SyslogUdpListenerService : BackgroundService
                 }
 
                 var raw = Encoding.UTF8.GetString(packet.Buffer);
-                var item = _itemBuilder.FromSyslog(raw, packet.RemoteEndPoint, DateTime.UtcNow);
+                var item = _itemBuilder.FromSyslog(raw, packet.RemoteEndPoint, DateTime.UtcNow, listener);
                 _queue.Enqueue(item);
                 _sendCoordinator.RequestFlushIfThresholdReached();
             }
         }
         catch (SocketException ex)
         {
-            _logger.Error(ex, "SecEvent syslog UDP bind/dinleme hatası port={Port}", _options.UdpPort);
+            _logger.Error(ex, "SecEvent syslog UDP bind/dinleme hatası port={Port}", listener.UdpPort);
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "SecEvent syslog listener beklenmeyen hata");
+            _logger.Error(ex, "SecEvent syslog listener beklenmeyen hata port={Port}", listener.UdpPort);
         }
         finally
         {
             udp?.Dispose();
-            _logger.Information("SecEvent syslog UDP listener durdu");
         }
     }
 }
