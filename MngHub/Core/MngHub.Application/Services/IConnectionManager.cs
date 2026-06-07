@@ -7,7 +7,11 @@ namespace MngHub.Application.Services;
 /// </summary>
 public interface IConnectionManager
 {
-    Task<ConnectionInfoDto> AddConnectionAsync(string connectionId, string userId, string domainName);
+    Task<ConnectionInfoDto> AddConnectionAsync(
+        string connectionId,
+        string userId,
+        string domainName,
+        string? notificationUserId = null);
     Task RemoveConnectionAsync(string connectionId);
     Task<ConnectionInfoDto?> GetConnectionAsync(string connectionId);
     Task<List<ConnectionInfoDto>> GetConnectionsByDomainAsync(string domainName);
@@ -15,5 +19,6 @@ public interface IConnectionManager
     Task<bool> IsConnectedAsync(string connectionId);
     string GetDomainRoomName(string domainName);
     string GetGlobalRoomName();
+    string GetUserRoomName(string userId);
 }
 

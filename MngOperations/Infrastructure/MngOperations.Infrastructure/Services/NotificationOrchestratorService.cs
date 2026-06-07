@@ -12,21 +12,27 @@ public class NotificationOrchestratorService : INotificationOrchestrator
 {
     private readonly IMngDataGatewayClient _dg;
     private readonly IMngNotifiersClient _notifiers;
+    private readonly IMngHubNotificationClient _hub;
     private readonly IKeeperDirectoryClient _keeper;
     private readonly IMetadataCache _metadataCache;
+    private readonly IInAppNotificationComposer _inAppComposer;
     private readonly ILogger<NotificationOrchestratorService> _logger;
 
     public NotificationOrchestratorService(
         IMngDataGatewayClient dg,
         IMngNotifiersClient notifiers,
+        IMngHubNotificationClient hub,
         IKeeperDirectoryClient keeper,
         IMetadataCache metadataCache,
+        IInAppNotificationComposer inAppComposer,
         ILogger<NotificationOrchestratorService> logger)
     {
         _dg = dg;
         _notifiers = notifiers;
+        _hub = hub;
         _keeper = keeper;
         _metadataCache = metadataCache;
+        _inAppComposer = inAppComposer;
         _logger = logger;
     }
 
@@ -50,7 +56,7 @@ public class NotificationOrchestratorService : INotificationOrchestrator
             if (matching.Count == 0)
                 return;
 
-            var (title, message, subject, htmlBody) = NotificationMessageBuilder.Build(
+            var (_, _, subject, htmlBody) = NotificationMessageBuilder.Build(
                 request.EventType,
                 request.WorkItemKey,
                 WorkItemDataHelper.GetString(request.WorkItem, "title"),
@@ -78,12 +84,17 @@ public class NotificationOrchestratorService : INotificationOrchestrator
                 {
                     if (channel.Equals("inApp", StringComparison.OrdinalIgnoreCase))
                     {
+                        var content = await _inAppComposer.ComposeAsync(
+                            request,
+                            policy,
+                            policy.NotificationTemplateKey,
+                            cancellationToken);
+
                         await CreateInAppNotificationsAsync(
                             userIds,
                             request,
-                            policy.NotificationTemplateKey ?? request.EventType,
-                            title,
-                            message,
+                            content,
+                            pushToast: ShouldPushToast(policy),
                             cancellationToken);
                     }
                     else if (channel.Equals("email", StringComparison.OrdinalIgnoreCase))
@@ -140,12 +151,17 @@ public class NotificationOrchestratorService : INotificationOrchestrator
 
             if (effectType.Equals("createNotification", StringComparison.OrdinalIgnoreCase))
             {
+                var content = await _inAppComposer.ComposeAsync(
+                    request,
+                    policy: null,
+                    templateKeyOverride: templateKey,
+                    cancellationToken);
+
                 await CreateInAppNotificationsAsync(
                     userIds,
                     request,
-                    templateKey ?? request.EventType,
-                    title,
-                    message,
+                    content,
+                    pushToast: false,
                     cancellationToken);
             }
             else if (effectType.Equals("sendEmailViaMngNotifiers", StringComparison.OrdinalIgnoreCase))
@@ -189,6 +205,9 @@ public class NotificationOrchestratorService : INotificationOrchestrator
             const string title = "Bir yorumda etiketlendiniz";
             var message = $"{workItemKey} kaydındaki bir yorumda etiketlendiniz.";
 
+            var createdAt = DateTime.UtcNow;
+            var deepLink = BuildWorkItemDeepLink(workItemId);
+
             foreach (var userId in recipients)
             {
                 try
@@ -203,9 +222,20 @@ public class NotificationOrchestratorService : INotificationOrchestrator
                         ["sourceRecordId"] = workItemId,
                         ["workItemId"] = workItemId,
                         ["workItemKey"] = workItemKey,
+                        ["deepLink"] = deepLink,
                         ["isRead"] = false,
-                        ["createdAt"] = DateTime.UtcNow.ToString("o")
+                        ["createdAt"] = createdAt.ToString("o")
                     }, token, cancellationToken);
+
+                    await PushHubToastAsync(
+                        userId,
+                        title,
+                        message,
+                        "CommentMention",
+                        deepLink,
+                        createdAt,
+                        toastSeverity: "info",
+                        cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -242,6 +272,8 @@ public class NotificationOrchestratorService : INotificationOrchestrator
 
             const string title = "Bir iş kaydı size atandı";
             var message = $"{workItemKey} kaydı size atandı.";
+            var createdAt = DateTime.UtcNow;
+            var deepLink = BuildWorkItemDeepLink(workItemId);
 
             await _dg.CreateAsync(OcDatasets.Notifications, new Dictionary<string, object?>
             {
@@ -253,9 +285,20 @@ public class NotificationOrchestratorService : INotificationOrchestrator
                 ["sourceRecordId"] = workItemId,
                 ["workItemId"] = workItemId,
                 ["workItemKey"] = workItemKey,
+                ["deepLink"] = deepLink,
                 ["isRead"] = false,
-                ["createdAt"] = DateTime.UtcNow.ToString("o")
+                ["createdAt"] = createdAt.ToString("o")
             }, token, cancellationToken);
+
+            await PushHubToastAsync(
+                assigneeId.Trim(),
+                title,
+                message,
+                "WorkItemAssigned",
+                deepLink,
+                createdAt,
+                toastSeverity: "success",
+                cancellationToken);
         }
         catch (Exception ex)
         {
@@ -266,11 +309,13 @@ public class NotificationOrchestratorService : INotificationOrchestrator
     private async Task CreateInAppNotificationsAsync(
         IReadOnlyList<string> userIds,
         NotificationDispatchRequest request,
-        string notificationType,
-        string title,
-        string message,
+        InAppNotificationContent content,
+        bool pushToast,
         CancellationToken cancellationToken)
     {
+        var createdAt = DateTime.UtcNow;
+        var deepLink = BuildWorkItemDeepLink(request.WorkItemId);
+
         foreach (var userId in userIds)
         {
             try
@@ -278,22 +323,74 @@ public class NotificationOrchestratorService : INotificationOrchestrator
                 await _dg.CreateAsync(OcDatasets.Notifications, new Dictionary<string, object?>
                 {
                     ["userId"] = userId,
-                    ["notificationType"] = notificationType,
-                    ["title"] = title,
-                    ["message"] = message,
+                    ["notificationType"] = content.NotificationType,
+                    ["title"] = content.Title,
+                    ["message"] = content.Message,
                     ["sourceDataset"] = OcDatasets.WorkItems,
                     ["sourceRecordId"] = request.WorkItemId,
                     ["workItemId"] = request.WorkItemId,
                     ["workItemKey"] = request.WorkItemKey,
+                    ["deepLink"] = deepLink,
                     ["isRead"] = false,
-                    ["createdAt"] = DateTime.UtcNow.ToString("o")
+                    ["createdAt"] = createdAt.ToString("o")
                 }, request.Token, cancellationToken);
+
+                if (pushToast)
+                {
+                    await PushHubToastAsync(
+                        userId,
+                        content.Title,
+                        content.Message,
+                        content.NotificationType,
+                        deepLink,
+                        createdAt,
+                        content.ToastSeverity,
+                        cancellationToken);
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "In-app notification create failed for user {UserId}", userId);
             }
         }
+    }
+
+    private async Task PushHubToastAsync(
+        string userId,
+        string title,
+        string message,
+        string notificationType,
+        string? deepLink,
+        DateTime createdAt,
+        string? toastSeverity,
+        CancellationToken cancellationToken)
+    {
+        await _hub.PushUserNotificationAsync(new UserNotificationPushRequest
+        {
+            UserId = userId,
+            Title = title,
+            Message = message,
+            NotificationType = notificationType,
+            DeepLink = deepLink,
+            Severity = toastSeverity,
+            CreatedAt = createdAt
+        }, cancellationToken);
+    }
+
+    private static string? BuildWorkItemDeepLink(string? workItemId)
+    {
+        if (string.IsNullOrWhiteSpace(workItemId))
+            return null;
+
+        return $"/apps/operation-core/work-items/{Uri.EscapeDataString(workItemId.Trim())}/profile";
+    }
+
+    private static bool ShouldPushToast(NotificationPolicyRecord policy)
+    {
+        if (policy.Settings is not { ValueKind: JsonValueKind.Object } settings)
+            return false;
+
+        return settings.TryGetProperty("pushToast", out var el) && el.ValueKind == JsonValueKind.True;
     }
 
     private async Task SendEmailAsync(

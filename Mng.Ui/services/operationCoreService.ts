@@ -63,6 +63,7 @@ export const OC_DATASETS = {
   stateFlows: 'op_state_flows',
   rules: 'op_rules',
   slaPolicies: 'op_sla_policies',
+  notificationPolicies: 'op_notification_policies',
   workItemSchedules: 'op_work_item_schedules',
   profiles: 'op_profiles',
   tags: 'op_tags',
@@ -1827,6 +1828,9 @@ export * from '@/services/operationCore/rules';
 
 // SLA politikaları (op_sla_policies) → services/operationCore/sla.ts
 export * from '@/services/operationCore/sla';
+
+// Bildirim politikaları (op_notification_policies) → services/operationCore/notificationPolicies.ts
+export * from '@/services/operationCore/notificationPolicies';
 
 // İş kaydı zamanlamaları (op_work_item_schedules) → services/operationCore/schedules.ts
 export * from '@/services/operationCore/schedules';

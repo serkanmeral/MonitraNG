@@ -17,7 +17,11 @@ public class ConnectionManager : IConnectionManager
         _logger = logger;
     }
 
-    public Task<ConnectionInfoDto> AddConnectionAsync(string connectionId, string userId, string domainName)
+    public Task<ConnectionInfoDto> AddConnectionAsync(
+        string connectionId,
+        string userId,
+        string domainName,
+        string? notificationUserId = null)
     {
         lock (_lockObject)
         {
@@ -30,6 +34,9 @@ public class ConnectionManager : IConnectionManager
 
             var domainRoomName = GetDomainRoomName(domainName);
             var globalRoomName = GetGlobalRoomName();
+            var roomNames = new List<string> { domainRoomName, globalRoomName };
+            if (!string.IsNullOrWhiteSpace(notificationUserId))
+                roomNames.Add(GetUserRoomName(notificationUserId));
 
             var connection = new ConnectionEntity
             {
@@ -38,7 +45,7 @@ public class ConnectionManager : IConnectionManager
                 DomainName = domainName,
                 ConnectedAt = DateTime.UtcNow,
                 LastActivityAt = DateTime.UtcNow,
-                RoomNames = new List<string> { domainRoomName, globalRoomName },
+                RoomNames = roomNames,
                 SubscribedRoutingKeys = new List<string>
                 {
                     RoutingKeyPatterns.Global,
@@ -123,6 +130,11 @@ public class ConnectionManager : IConnectionManager
     public string GetGlobalRoomName()
     {
         return RoomNames.Global;
+    }
+
+    public string GetUserRoomName(string userId)
+    {
+        return RoomNames.GetUserRoom(userId);
     }
 
     private static ConnectionInfoDto MapToDto(ConnectionEntity connection)

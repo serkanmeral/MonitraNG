@@ -13,6 +13,7 @@ import {
   ShieldIcon,
   HomeIcon,
   LayoutIcon,
+  MailIcon,
   BrandAirtableIcon,
   PointIcon,
   AppWindowIcon,
@@ -311,6 +312,24 @@ const horizontalItems: menu[] = [
         pageCode: "operationCore.adminScheduledJobs.menuTitle",
         icon: CalendarIcon,
         to: "/apps/operation-core/admin/scheduled-jobs",
+      },
+    ],
+  },
+  {
+    header: "MANAGEMENT",
+    pageCode: "management.menuHeader",
+    children: [
+      {
+        header: "Şablonlar",
+        pageCode: "notifier.templates.menuHeader",
+        children: [
+          {
+            title: "E-posta şablonları",
+            pageCode: "notifier.mailTemplates.menuTitle",
+            icon: MailIcon,
+            to: "/apps/operation-core/admin/mail-templates",
+          },
+        ],
       },
     ],
   },

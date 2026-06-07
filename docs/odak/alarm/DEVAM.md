@@ -157,8 +157,27 @@ Event şeması: [ALARM_RULE_ENGINE_PLAN §8](./ALARM_RULE_ENGINE_PLAN.md)
 
 ---
 
-## 6. İlgili dokümanlar
+## 6. Sıradaki — Alarm bildirim politikaları (AN)
+
+**Ön koşul toast:** ✅ MO in-app toaster canlı ([IN_APP_TOAST_PLAN.md](../notifications/IN_APP_TOAST_PLAN.md) T1–T3, T5).
+
+| Faz | İçerik | Durum |
+|-----|--------|-------|
+| **AN-1** | `@mon_alarm_notification_policies` Mongo + CRUD API | 🔄 sırada |
+| AN-2 | `AlarmNotificationDispatchService` (policy match + inApp + email) | bekliyor |
+| AN-3 | Alarm Center UI (explorer + dialog + person multi-select) | bekliyor |
+| AN-4 | `alarm-raised` / `alarm-resolved` mail seed + E2E | bekliyor |
+| AN-5 | Hub toaster (MO altyapısı hazır; dispatch AN-2 ile) | bekliyor |
+
+Spec: [ALARM_NOTIFICATION_POLICIES.md](./ALARM_NOTIFICATION_POLICIES.md)
+
+**Araya planlanan (platform):** RabbitMQ diagnostics ve değerlendirme — `mng.alarms`, `mng.workflow`, Reactor publish, prefetch/DLQ. Bkz. [PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md) §4.
+
+---
+
+## 7. İlgili dokümanlar
 
 - [ALARM_RULE_ENGINE_PLAN.md](./ALARM_RULE_ENGINE_PLAN.md)
+- [ALARM_NOTIFICATION_POLICIES.md](./ALARM_NOTIFICATION_POLICIES.md)
 - [Workflow DEVAM](../workflow/DEVAM.md)
 - [SIEM_PLANNING.md](../monitoring/SIEM_PLANNING.md)

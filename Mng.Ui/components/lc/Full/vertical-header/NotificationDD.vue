@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useLocaleStore } from '@/stores/locale';
+import { useNotificationBell } from '@/composables/useNotificationBell';
 import {
   ocGetNotifications,
   ocMarkAllNotificationsRead,
@@ -9,6 +10,7 @@ import {
 import type { OcNotification } from '@/types/apps/operationCore';
 
 const localeStore = useLocaleStore();
+const { refreshTick } = useNotificationBell();
 
 // i18n (legacy global instance — global header bileşenleriyle aynı desen).
 const nuxtApp = useNuxtApp();
@@ -57,7 +59,9 @@ async function onItemClick(item: OcNotification) {
       // best-effort
     }
   }
-  if (item.workItemId) {
+  if (item.deepLink) {
+    navigateTo(item.deepLink);
+  } else if (item.workItemId) {
     navigateTo(`/apps/operation-core/work-items/${encodeURIComponent(item.workItemId)}/profile`);
   }
 }
@@ -134,6 +138,10 @@ function relativeTime(iso?: string | null): string {
   }
   return rtf.value.format(Math.round(diffMs / 1000), 'second');
 }
+
+watch(refreshTick, () => {
+  void load();
+});
 
 onMounted(() => {
   load();

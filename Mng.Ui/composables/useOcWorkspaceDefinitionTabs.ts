@@ -17,6 +17,7 @@ export const OC_WORKSPACE_DEFINITION_TAB_KEYS = [
   'rules',
   'scheduled',
   'sla',
+  'mail',
 ] as const;
 export type OcWorkspaceDefinitionTabKey = (typeof OC_WORKSPACE_DEFINITION_TAB_KEYS)[number];
 

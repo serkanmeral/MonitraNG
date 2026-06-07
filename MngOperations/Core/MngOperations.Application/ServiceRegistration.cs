@@ -17,6 +17,7 @@ public static class ServiceRegistration
             _.Actors = settings.Actors;
             _.DataGateway = settings.DataGateway;
             _.MngNotifiers = settings.MngNotifiers;
+            _.MngHub = settings.MngHub;
             _.RabbitMq = settings.RabbitMq;
             _.MetadataCache = settings.MetadataCache;
         });

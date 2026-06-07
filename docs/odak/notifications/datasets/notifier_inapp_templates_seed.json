@@ -1,0 +1,59 @@
+{
+  "_comment": "POST /api/v1/data/@notification_templates — Operation Core in-app / toaster sablonlari.",
+  "dataset": "@notification_templates",
+  "records": [
+    {
+      "templateKey": "work-item-created-inapp",
+      "name": "Is ogesi olusturuldu (in-app)",
+      "description": "Yeni work item — inbox + toaster metni.",
+      "title": "Yeni is: {{workItem.key}}",
+      "message": "{{workItem.key}} olusturuldu — {{workItem.title}} ({{actor.displayName}})",
+      "defaultToastSeverity": "info",
+      "locale": "tr",
+      "category": "system",
+      "sampleContext": {
+        "actor": { "displayName": "Ayse Yilmaz" },
+        "workItem": { "key": "OCD-0042", "title": "Sunucu erisim sorunu" },
+        "event": { "type": "WorkItemCreated", "timestamp": "2026-06-07T09:00:00Z" }
+      },
+      "isActive": true
+    },
+    {
+      "templateKey": "work-item-transitioned-inapp",
+      "name": "Is ogesi durum degisikligi (in-app)",
+      "description": "Work item gecis — inbox + toaster metni.",
+      "title": "Durum degisti: {{workItem.key}}",
+      "message": "{{workItem.key}}: {{transition.fromState}} → {{transition.toState}} ({{actor.displayName}})",
+      "defaultToastSeverity": "info",
+      "locale": "tr",
+      "category": "system",
+      "sampleContext": {
+        "actor": { "displayName": "Mehmet Demir" },
+        "workItem": { "key": "OCD-0042", "title": "Sunucu erisim sorunu" },
+        "transition": {
+          "key": "resolve",
+          "fromState": "In Progress",
+          "toState": "Resolved"
+        },
+        "event": { "type": "WorkItemTransitioned", "timestamp": "2026-06-07T09:15:00Z" }
+      },
+      "isActive": true
+    },
+    {
+      "templateKey": "work-item-updated-inapp",
+      "name": "Is ogesi guncellendi (in-app)",
+      "description": "Work item guncelleme — inbox + toaster metni.",
+      "title": "Guncellendi: {{workItem.key}}",
+      "message": "{{workItem.key}} guncellendi — {{workItem.title}} ({{actor.displayName}})",
+      "defaultToastSeverity": "info",
+      "locale": "tr",
+      "category": "system",
+      "sampleContext": {
+        "actor": { "displayName": "Ayse Yilmaz" },
+        "workItem": { "key": "OCD-0042", "title": "Sunucu erisim sorunu" },
+        "event": { "type": "WorkItemUpdated", "timestamp": "2026-06-07T10:00:00Z" }
+      },
+      "isActive": true
+    }
+  ]
+}

@@ -16,6 +16,7 @@ public class MngOperationsSettings
     public ActorsSettings Actors { get; set; } = new();
     public DataGatewaySettings DataGateway { get; set; } = new();
     public MngNotifiersSettings MngNotifiers { get; set; } = new();
+    public MngHubNotificationSettings MngHub { get; set; } = new();
     public RabbitMqSettings RabbitMq { get; set; } = new();
     public MetadataCacheSettings MetadataCache { get; set; } = new();
     public WorkItemScheduleSettings WorkItemSchedule { get; set; } = new();
@@ -62,6 +63,16 @@ public class MngNotifiersSettings
     public string ApiVersion { get; set; } = "v1";
     /// <summary>Username → email dönüşümü için opsiyonel suffix (ör. company.com).</summary>
     public string? EmailDomainSuffix { get; set; }
+}
+
+public class MngHubNotificationSettings
+{
+    public bool Enabled { get; set; } = true;
+    public string BaseUrl { get; set; } = "http://mnghub:5020";
+    public string ApiVersion { get; set; } = "v1";
+
+    /// <summary>MngHub InternalNotifyApiKey ile aynı; doluysa X-Monitra-Notify-Key gönderilir.</summary>
+    public string? InternalNotifyApiKey { get; set; }
 }
 
 public class RabbitMqSettings

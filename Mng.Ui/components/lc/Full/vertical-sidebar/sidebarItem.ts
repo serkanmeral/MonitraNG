@@ -377,6 +377,24 @@ const sidebarItem: menu[] = [
       },
     ],
   },
+  {
+    header: "MANAGEMENT",
+    pageCode: "management.menuHeader",
+    children: [
+      {
+        header: "Şablonlar",
+        pageCode: "notifier.templates.menuHeader",
+        children: [
+          {
+            title: "E-posta şablonları",
+            pageCode: "notifier.mailTemplates.menuTitle",
+            icon: MailIcon,
+            to: "/apps/operation-core/admin/mail-templates",
+          },
+        ],
+      },
+    ],
+  },
   { header: "Güvenlik Yönetimi", pageCode: "securityManagement.menuHeader" },
   {
     title: "Alarm Merkezi",

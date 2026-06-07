@@ -12,6 +12,7 @@ import OcWorkspaceDefinitionsPoliciesTab from '@/components/apps/operation-core/
 import OcWorkspaceDefinitionsRulesTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsRulesTab.vue';
 import OcWorkspaceDefinitionsScheduledWorkItemsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsScheduledWorkItemsTab.vue';
 import OcWorkspaceDefinitionsSlaTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsSlaTab.vue';
+import OcWorkspaceDefinitionsMailTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsMailTab.vue';
 import OcWorkspaceCreateDialog from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceCreateDialog.vue';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import {
@@ -75,6 +76,7 @@ const TAB_ICONS: Record<OcWorkspaceDefinitionTabKey, string> = {
   rules: 'mdi-format-list-checks',
   scheduled: 'mdi-calendar-clock',
   sla: 'mdi-clock-check-outline',
+  mail: 'mdi-bell-outline',
 };
 
 const tabItems = computed(() =>
@@ -271,6 +273,10 @@ onMounted(() => {
           />
           <OcWorkspaceDefinitionsSlaTab
             v-else-if="tab.key === 'sla'"
+            :workspace-id="selectedWorkspaceId"
+          />
+          <OcWorkspaceDefinitionsMailTab
+            v-else-if="tab.key === 'mail'"
             :workspace-id="selectedWorkspaceId"
           />
           </v-tabs-window-item>

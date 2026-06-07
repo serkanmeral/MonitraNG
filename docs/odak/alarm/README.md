@@ -36,6 +36,7 @@ Handoff: [../PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md)
 |-------|--------|--------|
 | [DEVAM.md](./DEVAM.md) | Kaldığımız yer, kilitli §15 kararlar, Faz 0/1 checklist | Güncel |
 | [ALARM_RULE_ENGINE_PLAN.md](./ALARM_RULE_ENGINE_PLAN.md) | Ana plan: mimari, kural/alarm modeli, fazlar | Güncel (§15 kapalı) |
+| [ALARM_NOTIFICATION_POLICIES.md](./ALARM_NOTIFICATION_POLICIES.md) | Bildirim politikaları (çoklu kullanıcı, kanallar, dispatch) | Kararlandı |
 
 ---
 

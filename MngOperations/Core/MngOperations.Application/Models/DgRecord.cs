@@ -299,6 +299,9 @@ public sealed class NotificationPolicyRecord : DgRecord
     public bool? IsActive { get; set; }
 
     public double? Priority { get; set; }
+
+    /// <summary>inApp alt ayarları — örn. <c>pushToast: true</c>.</summary>
+    public JsonElement? Settings { get; set; }
 }
 
 public sealed class ActivityRecord : DgRecord

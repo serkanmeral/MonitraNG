@@ -1,13 +1,13 @@
 # DEVAM — Mail Notifications (Kaldığımız yer)
 
 **Son güncelleme:** 7 Haziran 2026  
-**Durum:** ✅ **Faz 1 Odak doğrulandı** — MO + Notifier deploy; geçiş smoke `OCD-0090`
+**Durum:** ✅ **Mail Faz 0–2 + in-app toaster (T1–T3, T5) Odak canlı** — smoke `OCD-0102`, toaster doğrulandı
 
 ---
 
 ## 1. Tek cümlede durum
 
-**Uçtan uca template mail yolu Odak'ta canlı:** MO geçiş → policy → `send-template` → Notifier SMTP. Faz 0–1 backend tamam; Faz 2 policy matris UI sırada.
+**MO bildirimleri uçtan uca:** e-posta (`send-template` → SMTP) + in-app inbox + Hub toaster (`pushToast`, `@notification_templates`, `toastSeverity`). Sırada: alarm dispatch (T4 / AN-1→AN-2), kalan toaster smoke maddeleri, **RabbitMQ diagnostics** (ayrı oturum — [PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md) §4).
 
 ---
 
@@ -84,14 +84,22 @@ Local Notifier env: `MngNotifierSettings__DataGateway__BaseUrl=http://192.168.20
 
 **Scriptler:** `docs/odak/notifications/scripts/` (`patch-*`, `seed-op-mail-*`, `smoke-mail-transition.ps1`)
 
-### Faz 2 — Policy matris UI
+### Faz 2 — Policy matris UI (devam)
 
-- [ ] Workspace Mail Policies sekmesi
-- [ ] Geçiş + alıcı + template + subject override
+- [x] Workspace tanımları → **Bildirim politikaları** sekmesi (`tab=mail`)
+- [x] `op_notification_policies` CRUD (DG) — geçiş, alıcı, kanal, template, subject
+- [x] Odak `mngui` deploy (7 Haz) + `smoke-mail-policies-ui.ps1`
+- [ ] Tarayıcı doğrulama (odak_admin — liste + modal)
+- [x] Template anahtarı dropdown (`@mail_templates` listesi)
 
-### Faz 3 — Template UI
+### Faz 3 — Template UI (devam)
 
-- [ ] `@mail_templates` CRUD + HTML editör + önizleme
+- [x] `@mail_templates` CRUD sayfası (`/apps/operation-core/admin/mail-templates`)
+- [x] HTML fragment editör + Notifier `preview-template` (kayıtlı şablon)
+- [x] Bildirim politikası modalında şablon combobox
+- [x] `mngui` nginx → `/api/notifier/` proxy
+- [ ] UI deploy (kullanıcı onayı ile)
+- [ ] Tarayıcı doğrulama
 
 ---
 
@@ -105,6 +113,7 @@ Local Notifier env: `MngNotifierSettings__DataGateway__BaseUrl=http://192.168.20
 | 7 Haz 2026 | SMTP + policy fix → `OCD-FIX` + `OCD-0091` mail gönderildi | ✅ |
 | 7 Haz 2026 | LDAP assignee notu + smoke `OCD-0092` → `serkan.meral@outlook.com` | ✅ |
 | 7 Haz 2026 | Inbox doğrulama: `[OCD-0092] Durum degisti: OC Demo In Progress` | ✅ |
+| 7 Haz 2026 | Faz 2 `mngui` deploy + `smoke-mail-policies-ui.ps1` | ✅ |
 
 ---
 
@@ -126,6 +135,7 @@ Local Notifier env: `MngNotifierSettings__DataGateway__BaseUrl=http://192.168.20
 | 3 Haz 2026 | Push-only HTTP; Notifier event dinlemez |
 | 3 Haz 2026 | Render Notifier'da; içerik DG'de |
 | 7 Haz 2026 | Policy matrisi `op_notification_policies` genişletmesi |
+| 7 Haz 2026 | UI sekme adı: **Bildirim politikaları** (e-posta + in-app + gelecek kanallar) |
 | 7 Haz 2026 | Person = Keeper user; email yoksa atla |
 | 7 Haz 2026 | Subject override policy'de |
 | 7 Haz 2026 | Body fragment + layout |
@@ -134,4 +144,12 @@ Local Notifier env: `MngNotifierSettings__DataGateway__BaseUrl=http://192.168.20
 
 ---
 
-**Devam:** Faz 2 — Workspace Mail Policies matris UI. Faz 0–1 uçtan uca doğrulandı (7 Haz, `OCD-0092` inbox ✅).
+### In-app toaster (T1–T5) ✅
+
+- [x] MngHub `user:{personId}` + `POST /internal/user-notify`
+- [x] Mng.Ui `useAppToast` + hub plugin + `pushToast` policy UI
+- [x] MO orchestrator + `InAppNotificationComposer` + `@notification_templates` seed
+- [x] Odak deploy (`mnghub`, `mngoperations`, `mngui`) + `smoke-inapp-toast.ps1`
+- [ ] Kalan smoke: iki kullanıcı izolasyonu, `pushToast: false`, hub kapalı poll
+
+**Devam:** Commit → **AN-1** alarm notification policies (MngAlarm). Toast planı: [IN_APP_TOAST_PLAN.md](./IN_APP_TOAST_PLAN.md).

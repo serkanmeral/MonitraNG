@@ -34,6 +34,21 @@ interface Subscription {
   handler: (data: HubMessage) => void;
 }
 
+export interface UserNotificationPayload {
+  notificationId?: string | null;
+  title?: string | null;
+  message?: string | null;
+  notificationType?: string | null;
+  deepLink?: string | null;
+  severity?: string | number | null;
+  createdAt?: string | null;
+}
+
+interface UserNotificationSubscription {
+  id: string;
+  handler: (data: UserNotificationPayload) => void;
+}
+
 /**
  * Shared SignalR Hub Connection Store with Subscription Pattern
  * 
@@ -53,7 +68,9 @@ interface HubState {
   connectionError: string | null;
   connectionPromise: Promise<void> | null;
   subscriptions: Map<string, Subscription>;
+  userNotificationSubscriptions: Map<string, UserNotificationSubscription>;
   internalHandler: ((data: HubMessage) => void) | null;
+  internalUserNotificationHandler: ((data: UserNotificationPayload) => void) | null;
   lastMessageCache: Map<string, number>; // routingKey -> timestamp (deduplication için)
   /** SignalR otomatik yeniden bağlanınca çalıştırılır (sohbet geçmişi DG ile doldurulur). */
   reconnectHandlers: ReconnectHandlerEntry[];
@@ -67,7 +84,9 @@ export const useHubStore = defineStore('hub', {
     connectionError: null,
     connectionPromise: null,
     subscriptions: new Map(),
+    userNotificationSubscriptions: new Map(),
     internalHandler: null,
+    internalUserNotificationHandler: null,
     lastMessageCache: new Map(), // Deduplication için
     reconnectHandlers: [],
   }),
@@ -81,6 +100,30 @@ export const useHubStore = defineStore('hub', {
   },
 
   actions: {
+    registerUserNotificationHandlerOnConnection(hubConnection: HubConnection) {
+      if (!this.internalUserNotificationHandler) {
+        this.internalUserNotificationHandler = (data: UserNotificationPayload) => {
+          this.userNotificationSubscriptions.forEach((subscription) => {
+            try {
+              subscription.handler(data);
+            } catch (error) {
+              console.error('[Hub Store] Error in user notification handler', {
+                subscriptionId: subscription.id,
+                error,
+              });
+            }
+          });
+        };
+      }
+
+      try {
+        hubConnection.off('ReceiveUserNotification', this.internalUserNotificationHandler);
+      } catch {
+        // ignore
+      }
+      hubConnection.on('ReceiveUserNotification', this.internalUserNotificationHandler);
+    },
+
     /**
      * Connect to SignalR Hub (shared connection)
      */
@@ -127,6 +170,7 @@ export const useHubStore = defineStore('hub', {
             // Handler yoksa hata vermez
           }
           this.hubConnection.on('ReceiveMessage', this.internalHandler);
+          this.registerUserNotificationHandlerOnConnection(this.hubConnection);
           if (import.meta.dev) console.log('[Hub Store] Internal handler registered to existing connection');
         }
         return;
@@ -329,6 +373,7 @@ export const useHubStore = defineStore('hub', {
             // Handler yoksa hata vermez, devam et
           }
           hubConnection.on('ReceiveMessage', this.internalHandler);
+          this.registerUserNotificationHandlerOnConnection(hubConnection);
           if (import.meta.dev) console.log('[Hub Store] Internal handler registered to SignalR');
 
           await hubConnection.start();
@@ -339,6 +384,7 @@ export const useHubStore = defineStore('hub', {
           this.connectionError = error.message || 'Bağlantı hatası oluştu.';
           this.isConnected = false;
           this.internalHandler = null;
+          this.internalUserNotificationHandler = null;
           throw error;
         } finally {
           this.isConnecting = false;
@@ -361,12 +407,17 @@ export const useHubStore = defineStore('hub', {
             if (import.meta.dev) console.log('[Hub Store] Internal handler removed from SignalR');
             this.internalHandler = null;
           }
+          if (this.internalUserNotificationHandler) {
+            this.hubConnection.off('ReceiveUserNotification', this.internalUserNotificationHandler);
+            this.internalUserNotificationHandler = null;
+          }
           
           await this.hubConnection.stop();
           this.hubConnection = null;
           this.isConnected = false;
           this.connectionError = null;
           this.subscriptions.clear();
+          this.userNotificationSubscriptions.clear();
           this.reconnectHandlers = [];
           this.connectionPromise = null;
           this.lastMessageCache.clear();
@@ -438,6 +489,26 @@ export const useHubStore = defineStore('hub', {
      */
     hasSubscription(subscriptionId: string): boolean {
       return this.subscriptions.has(subscriptionId);
+    },
+
+    subscribeUserNotification(
+      subscriptionId: string,
+      handler: (data: UserNotificationPayload) => void
+    ): boolean {
+      if (this.userNotificationSubscriptions.has(subscriptionId))
+        return false;
+
+      this.userNotificationSubscriptions.set(subscriptionId, { id: subscriptionId, handler });
+
+      if (this.hubConnection?.state === 'Connected') {
+        this.registerUserNotificationHandlerOnConnection(this.hubConnection);
+      }
+
+      return true;
+    },
+
+    unsubscribeUserNotification(subscriptionId: string): boolean {
+      return this.userNotificationSubscriptions.delete(subscriptionId);
     },
 
     registerReconnectHandler(id: string, handler: () => void | Promise<void>) {

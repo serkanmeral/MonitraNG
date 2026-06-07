@@ -1,6 +1,6 @@
 # Platform Handoff — UI modülleri ve SIEM öncesi durum
 
-**Son güncelleme:** 4 Haziran 2026  
+**Son güncelleme:** 7 Haziran 2026  
 **Git:** `main` @ **`6c4ecbf`** — `feat(ui): Alarm Center, Automation Center, and workflow admin`  
 **Push:** commit lokal; `origin/main`'e push edilmediyse önce `git push` yapın.
 
@@ -57,11 +57,15 @@ Checkpoint **C1–C7 SIEM-ready ✅**. Operatör UI üç modüle ayrıldı: **Op
 
 | Öncelik | İş | Not |
 |---------|-----|-----|
+| **AN-1→AN-2** | Alarm bildirim politikaları + dispatch | [alarm/ALARM_NOTIFICATION_POLICIES.md](./alarm/ALARM_NOTIFICATION_POLICIES.md); toast ön koşulu ✅ |
+| **RMQ-DIAG** | **RabbitMQ diagnostics ve değerlendirme** (ayrı oturum) | Exchange/kuyruk sağlığı, binding, prefetch, DLQ; `mng.alarms`, `mng.workflow`, Reactor → observation yolu; kapasite ve kayıp mesaj riski |
 | **UI-W2** | Vue Flow canvas tasarımcı | Otomasyon Merkezi editör; API aynı |
 | **P4 tam** | Reactor `POST /api/v1/mqtt/publish` + gerçek `block_ip` | `DevLogOnly=true` kaldır |
 | **Alarm UI** | Açık alarmlarda kaynak filtresi (metrik/SIEM/AI) | SIEM verisi geldikten sonra anlamlı |
 | **OC perf** | Pano query dedup / cold start | [operationcore/mngoperations/DEVAM.md](./operationcore/mngoperations/DEVAM.md) |
 | **Prod deploy** | Ayrı commit bekliyor | `docs/odak/proddeploy/` (working tree'de, commit edilmedi) |
+
+**Tamamlandı (7 Haz):** MO in-app toaster T1–T3 + T5 — [notifications/IN_APP_TOAST_PLAN.md](./notifications/IN_APP_TOAST_PLAN.md), Odak smoke `OCD-0102`.
 
 **SIEM Faz 1** → ayrı chat; [monitoring/SIEM_FAZ1_HANDOFF.md](./monitoring/SIEM_FAZ1_HANDOFF.md), [monitoring/HANDOFF.md](./monitoring/HANDOFF.md).
 

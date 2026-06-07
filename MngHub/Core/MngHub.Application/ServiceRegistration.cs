@@ -21,6 +21,8 @@ public static class ServiceRegistration
             _.Actors = settings.Actors;
             _.SignalR = settings.SignalR;
             _.Connection = settings.Connection;
+            _.Cors = settings.Cors;
+            _.InternalNotifyApiKey = settings.InternalNotifyApiKey;
         });
 
         // Add Memory Cache for JWT validation results

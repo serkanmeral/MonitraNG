@@ -73,14 +73,15 @@
       "name": "Is ogesi durum degisikligi",
       "description": "Work item gecis / state change bildirimi.",
       "subject": "[{{workItem.key}}] Durum degisti: {{transition.toState}}",
-      "bodyHtml": "<h1 style=\"font-size:20px;margin:0 0 12px;\">Durum guncellendi</h1><p><strong>{{workItem.key}}</strong> — <em>{{workItem.title}}</em></p><p><strong>{{actor.displayName}}</strong> gecisi uyguladi: <code>{{transition.key}}</code></p><div class=\"info-box\"><p><strong>Onceki:</strong> {{transition.fromState}}</p><p><strong>Yeni:</strong> {{transition.toState}}</p></div>",
+      "bodyHtml": "<h1 style=\"font-size:20px;margin:0 0 12px;\">Durum guncellendi</h1><p><strong>{{workItem.key}}</strong> — <em>{{workItem.title}}</em></p><p><strong>{{actor.displayName}}</strong> gecisi uyguladi: <code>{{transition.key}}</code></p><div class=\"info-box\"><p><strong>Onceki:</strong> {{transition.fromState}}</p><p><strong>Yeni:</strong> {{transition.toState}}</p></div><p style=\"color:#666;font-size:14px;\">{{event.timestamp}}</p>",
       "variables": [
         "workItem.key",
         "workItem.title",
         "actor.displayName",
         "transition.key",
         "transition.fromState",
-        "transition.toState"
+        "transition.toState",
+        "event.timestamp"
       ],
       "layoutKey": "default",
       "locale": "tr",
@@ -94,7 +95,8 @@
           "fromState": "In Progress",
           "toState": "Resolved"
         },
-        "domain": { "displayName": "Odak Kompozit Teknolojileri A.Ş.", "logoUrl": "https://img-kariyer.mncdn.com/mnresize/150/150/UploadFiles/Clients/SquareLogo/983/ai_kk_274983_6022024014542.png" }
+        "domain": { "displayName": "Odak Kompozit Teknolojileri A.Ş.", "logoUrl": "https://img-kariyer.mncdn.com/mnresize/150/150/UploadFiles/Clients/SquareLogo/983/ai_kk_274983_6022024014542.png" },
+        "event": { "type": "WorkItemTransitioned", "timestamp": "2026-06-07T09:15:00Z" }
       },
       "isActive": true
     },

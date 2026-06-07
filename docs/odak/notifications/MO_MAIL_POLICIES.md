@@ -75,7 +75,7 @@ En spesifik policy kazanır:
 
 ## 5. Matris UI (hedef)
 
-Workspace tanımları → **Mail Policies** sekmesi:
+Workspace tanımları → **Bildirim politikaları** sekmesi (`tab=mail`):
 
 | Geçiş | Alıcılar | Template | Subject override | Kanal |
 |-------|----------|----------|------------------|-------|

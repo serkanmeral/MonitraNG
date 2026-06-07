@@ -24,6 +24,17 @@ public static class RoomNames
 
         return $"domain.{domainName}";
     }
+
+    /// <summary>
+    /// User-targeted room for in-app / toast notifications (Keeper person id / mng_person_id).
+    /// </summary>
+    public static string GetUserRoom(string userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new ArgumentException("User id cannot be empty", nameof(userId));
+
+        return $"user:{userId.Trim()}";
+    }
 }
 
 /// <summary>

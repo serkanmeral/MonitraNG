@@ -23,6 +23,8 @@ MonitraNG **MngNotifier e-posta sablonlari** icin Odak planlama cercevesi (DG da
 | **[MESSAGING_CHANNELS.md](./MESSAGING_CHANNELS.md)** | **Kararlandı:** WhatsApp / Slack / Telegram — push-only; e-posta sonrasi faz |
 | **[MAIL_TEMPLATES.md](./MAIL_TEMPLATES.md)** | Template render Notifier'da; DG dataset ozeti |
 | **[MO_MAIL_POLICIES.md](./MO_MAIL_POLICIES.md)** | Workspace mail matrisi; `op_notification_policies` genişletmesi |
+| **[IN_APP_TOAST_PLAN.md](./IN_APP_TOAST_PLAN.md)** | Inbox + Hub user push + global toaster (MO + Alarm) |
+| **[../alarm/ALARM_NOTIFICATION_POLICIES.md](../alarm/ALARM_NOTIFICATION_POLICIES.md)** | Alarm bildirim politikaları (çoklu kullanıcı seçimi) |
 | **[datasets/](./datasets/)** | `@mail_templates` + `@mail_layouts` sema ve seed ornekleri |
 | **[scripts/setup-notifier-datasets.ps1](./scripts/setup-notifier-datasets.ps1)** | DG kategori + dataset + seed kurulumu |
 

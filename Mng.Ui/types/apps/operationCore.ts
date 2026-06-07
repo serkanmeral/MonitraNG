@@ -93,6 +93,28 @@ export interface OpRule {
   applyMode?: string | null;
 }
 
+/** op_notification_policies — workspace bildirim / e-posta politikası */
+export interface OpNotificationPolicy {
+  __dataId: string;
+  name: string;
+  workspaceId: string;
+  boardId?: string | null;
+  typeId?: string | null;
+  eventType: string;
+  channels: string[];
+  recipients: string[];
+  emailTemplateKey?: string | null;
+  emailSubject?: string | null;
+  notificationTemplateKey?: string | null;
+  transitionKey?: string | null;
+  fromStateId?: string | null;
+  toStateId?: string | null;
+  excludeActor?: boolean;
+  isActive?: boolean;
+  priority?: number | null;
+  settings?: { pushToast?: boolean; toastSeverity?: string } | null;
+}
+
 /** op_sla_policies — workspace SLA politikası */
 export interface OpSlaPolicy {
   __dataId: string;
@@ -733,6 +755,7 @@ export interface OcNotification {
   workItemKey?: string | null;
   sourceDataset?: string | null;
   sourceRecordId?: string | null;
+  deepLink?: string | null;
   createdAt?: string | null;
 }
 

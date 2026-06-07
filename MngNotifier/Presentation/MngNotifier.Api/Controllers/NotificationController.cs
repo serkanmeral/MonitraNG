@@ -174,7 +174,10 @@ public class NotificationController : ControllerBase
             {
                 TemplateKey = request.TemplateKey.Trim(),
                 Context = request.Context,
-                SubjectOverride = request.Subject
+                SubjectOverride = request.Subject,
+                BodyHtmlOverride = string.IsNullOrWhiteSpace(request.BodyHtmlOverride) ? null : request.BodyHtmlOverride.Trim(),
+                LayoutKeyOverride = string.IsNullOrWhiteSpace(request.LayoutKeyOverride) ? null : request.LayoutKeyOverride.Trim(),
+                LocaleOverride = string.IsNullOrWhiteSpace(request.LocaleOverride) ? null : request.LocaleOverride.Trim()
             }, token, cancellationToken);
 
             return Ok(new PreviewTemplateResponse

@@ -6,6 +6,7 @@ using MngHub.Domain.Constants;
 using MngHub.Domain.Exceptions;
 using MngHub.Infrastructure.Extensions;
 using MngHub.Infrastructure.Helpers;
+using System.Linq;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -64,6 +65,7 @@ public class NotificationHub : Hub
                 return;
             }
 
+            var notificationUserId = ClaimsHelper.GetNotificationUserId(claims);
             var domainId = ClaimsHelper.GetDomainId(claims); // MongoDB ObjectId
             var username = ClaimsHelper.GetUsername(claims);
 
@@ -72,13 +74,24 @@ public class NotificationHub : Hub
             var connectionInfo = await _connectionManager.AddConnectionAsync(
                 connectionId, 
                 userId, 
-                domainName);
+                domainName,
+                notificationUserId);
 
             var domainRoomName = _connectionManager.GetDomainRoomName(domainName);
             await Groups.AddToGroupAsync(connectionId, domainRoomName);
             
             var globalRoomName = _connectionManager.GetGlobalRoomName();
             await Groups.AddToGroupAsync(connectionId, globalRoomName);
+
+            if (!string.IsNullOrWhiteSpace(notificationUserId))
+            {
+                var userRoomName = _connectionManager.GetUserRoomName(notificationUserId);
+                await Groups.AddToGroupAsync(connectionId, userRoomName);
+                _logger.LogDebug(
+                    "User joined notification room {Room} (personId={PersonId})",
+                    userRoomName,
+                    notificationUserId);
+            }
 
             // Subscribe to RabbitMQ topics using helper
             var routingKeys = RoutingKeyHelper.BuildRoutingKeysForConnection(domainName, domainId);
@@ -161,9 +174,10 @@ public class NotificationHub : Hub
             
             if (connectionInfo != null)
             {
-                var domainRoomName = _connectionManager.GetDomainRoomName(connectionInfo.DomainName);
-                await Groups.RemoveFromGroupAsync(Context.ConnectionId, domainRoomName);
-                await Groups.RemoveFromGroupAsync(Context.ConnectionId, _connectionManager.GetGlobalRoomName());
+                foreach (var roomName in connectionInfo.RoomNames.Distinct())
+                {
+                    await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomName);
+                }
             }
             
             await _connectionManager.RemoveConnectionAsync(Context.ConnectionId);

@@ -10,6 +10,11 @@ public class MngHubSettings
     public SignalRSettings SignalR { get; set; } = new();
     public ConnectionSettings Connection { get; set; } = new();
     public CorsSettings Cors { get; set; } = new();
+
+    /// <summary>
+    /// Doluysa <c>POST /api/v1/internal/user-notify</c> için <c>X-Monitra-Notify-Key</c> zorunludur.
+    /// </summary>
+    public string InternalNotifyApiKey { get; set; } = string.Empty;
 }
 
 public class ServerSettings

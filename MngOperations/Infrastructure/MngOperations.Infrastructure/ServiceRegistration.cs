@@ -43,6 +43,11 @@ public static class ServiceRegistration
             client.Timeout = TimeSpan.FromSeconds(30);
         });
 
+        services.AddHttpClient("MngHub", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
+
         // GEÇİCİ (perf/oc-optimization): istek başına downstream çağrı ölçümü.
         services.AddScoped<OcCallStats>();
 
@@ -51,8 +56,10 @@ public static class ServiceRegistration
         services.AddScoped<IPersonDirectory, PersonDirectoryService>();
         services.AddScoped<IGroupDirectory, GroupDirectoryService>();
         services.AddScoped<IMngNotifiersClient, MngNotifiersClient>();
+        services.AddScoped<IMngHubNotificationClient, MngHubNotificationClient>();
         services.AddScoped<IMngSchedulerClient, MngSchedulerClient>();
         services.AddScoped<IMngWorkflowClient, MngWorkflowClient>();
+        services.AddScoped<IInAppNotificationComposer, InAppNotificationComposer>();
         services.AddScoped<INotificationOrchestrator, NotificationOrchestratorService>();
         services.AddScoped<INotificationQueryService, NotificationQueryService>();
         services.AddSingleton<IOcEventPublisher, OcEventPublisher>();

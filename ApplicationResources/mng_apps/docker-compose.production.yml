@@ -333,6 +333,7 @@ services:
       - MngHubSettings__Cors__AllowedOrigins__0=${CORS_ALLOWED_ORIGIN_1:-https://app.monitra.local}
       - MngHubSettings__Cors__AllowedOrigins__1=${CORS_ALLOWED_ORIGIN_2:-}
       - MngHubSettings__Cors__AllowCredentials=true
+      - MngHubSettings__InternalNotifyApiKey=${INTERNAL_NOTIFY_API_KEY:-}
     networks:
       - mng_common_mng_network
     restart: unless-stopped
@@ -633,6 +634,10 @@ services:
       - MngOperationsSettings__MngNotifiers__Enabled=true
       - MngOperationsSettings__MngNotifiers__BaseUrl=${MNGNOTIFIER_URL:-http://mngnotifier:5070}
       - MngOperationsSettings__MngNotifiers__ApiVersion=v1
+      - MngOperationsSettings__MngHub__Enabled=true
+      - MngOperationsSettings__MngHub__BaseUrl=${MNGHUB_URL:-http://mnghub:5020}
+      - MngOperationsSettings__MngHub__ApiVersion=v1
+      - MngOperationsSettings__MngHub__InternalNotifyApiKey=${INTERNAL_NOTIFY_API_KEY:-}
       - MngOperationsSettings__RabbitMq__Host=${RABBITMQ_HOST}
       - MngOperationsSettings__RabbitMq__Port=${RABBITMQ_PORT:-5672}
       - MngOperationsSettings__RabbitMq__Username=${RABBITMQ_USERNAME}

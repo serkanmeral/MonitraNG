@@ -31,6 +31,7 @@ $categoryFile = Join-Path $repoRoot "docs/odak/notifications/datasets/notifier_d
 $datasetsFile = Join-Path $repoRoot "docs/odak/notifications/datasets/notifier_datasets.json"
 $layoutsSeedFile = Join-Path $repoRoot "docs/odak/notifications/datasets/notifier_mail_layouts_seed.json"
 $templatesSeedFile = Join-Path $repoRoot "docs/odak/notifications/datasets/notifier_mail_templates_seed.json"
+$inAppTemplatesSeedFile = Join-Path $repoRoot "docs/odak/notifications/datasets/notifier_inapp_templates_seed.json"
 
 $datasetsPath = if ($UseGateway) { "/data/api/v1/datasets" } else { "/api/v1/datasets" }
 $categoriesPath = if ($UseGateway) { "/data/api/v1/dataset-categories" } else { "/api/v1/dataset-categories" }
@@ -62,7 +63,7 @@ function Invoke-DgPost {
             $httpCode = if ($lines.Count -ge 1) { ($lines[-1] -replace '[^\d]', '').Trim() } else { "" }
             $responseBody = if ($lines.Count -gt 1) { ($lines[0..($lines.Count - 2)] -join "`n").Trim() } else { "" }
             if ($httpCode -in @("200", "201")) { return @{ Ok = $true; Body = $responseBody } }
-            if ($httpCode -eq "409" -or ($httpCode -eq "400" -and $responseBody -match "mevcut|already|zaten|duplicate|unique")) {
+            if ($httpCode -eq "409" -or ($httpCode -eq "400" -and $responseBody -match "mevcut|already|zaten|duplicate|unique|exists|EXIST")) {
                 return @{ Ok = $true; Skipped = $true; Body = $responseBody }
             }
             return @{ Ok = $false; Code = $httpCode; Body = $responseBody }
@@ -79,9 +80,20 @@ function Invoke-DgPost {
     }
     catch {
         $statusCode = $null
-        try { $statusCode = [int]$_.Exception.Response.StatusCode } catch { }
-        $errMsg = if ($_.ErrorDetails.Message) { $_.ErrorDetails.Message } else { $_.Exception.Message }
-        if ($statusCode -eq 409 -or ($statusCode -eq 400 -and $errMsg -match "mevcut|already|zaten|duplicate|unique")) {
+        $errMsg = $_.Exception.Message
+        try {
+            $statusCode = [int]$_.Exception.Response.StatusCode
+            if ($_.ErrorDetails.Message) {
+                $errMsg = $_.ErrorDetails.Message
+            }
+            elseif ($_.Exception.Response) {
+                $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+                $errMsg = $reader.ReadToEnd()
+                $reader.Close()
+            }
+        }
+        catch { }
+        if ($statusCode -eq 409 -or ($statusCode -eq 400 -and $errMsg -match "mevcut|already|zaten|duplicate|unique|exists|EXIST")) {
             return @{ Ok = $true; Skipped = $true; Body = $errMsg }
         }
         return @{ Ok = $false; Code = $statusCode; Body = $errMsg }
@@ -123,13 +135,12 @@ if ($r.Ok) {
     Write-Host "  NotifierDatasets OK$(if ($r.Skipped) { ' (zaten var)' })" -ForegroundColor Green
 }
 else {
-    Write-Host "  HATA category HTTP $($r.Code)" -ForegroundColor Red
+    Write-Host "  Uyari: category HTTP $($r.Code) - mevcut kategori aranacak" -ForegroundColor Yellow
     if ($r.Body) { Write-Host "  $($r.Body)" -ForegroundColor Gray }
-    exit 1
 }
 
 $categoryId = $null
-$listUri = "$BaseUrl$categoriesPath`?pageSize=100&search=Notifier"
+$listUri = "${BaseUrl}${categoriesPath}?pageSize=100&search=Notifier"
 try {
     $irmGet = @{ Uri = $listUri; Method = "GET"; Headers = $headers }
     if ($listUri.StartsWith("https://")) { $irmGet.SkipCertificateCheck = $true }
@@ -154,7 +165,7 @@ else {
 
 # 2) Datasets
 $schemas = Get-Content $datasetsFile -Raw -Encoding UTF8 | ConvertFrom-Json
-$order = @("@mail_layouts", "@mail_templates")
+$order = @("@mail_layouts", "@mail_templates", "@notification_templates")
 $byName = @{}
 foreach ($s in $schemas) { $byName[$s.name] = $s }
 
@@ -203,6 +214,7 @@ function Seed-DatasetRecords {
 
 Seed-DatasetRecords -SeedFile $layoutsSeedFile -StepLabel '3) Seed @mail_layouts'
 Seed-DatasetRecords -SeedFile $templatesSeedFile -StepLabel '4) Seed @mail_templates'
+Seed-DatasetRecords -SeedFile $inAppTemplatesSeedFile -StepLabel '5) Seed @notification_templates'
 
 Write-Host ''
 Write-Host "Tamamlandi. Category ID: $categoryId" -ForegroundColor Cyan

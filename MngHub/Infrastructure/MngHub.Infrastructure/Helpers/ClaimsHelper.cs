@@ -34,6 +34,43 @@ public static class ClaimsHelper
     }
 
     /// <summary>
+    /// Keeper @users id (mng_person_id) — preferred for user-targeted SignalR groups and op_notifications.
+    /// </summary>
+    public static string? GetMngPersonId(Dictionary<string, string> claims)
+    {
+        var raw = claims.GetValueOrDefault("mng_person_id");
+        if (string.IsNullOrWhiteSpace(raw))
+            return null;
+
+        raw = raw.Trim();
+        if (raw.StartsWith('{'))
+        {
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(raw);
+                if (doc.RootElement.TryGetProperty("__dataId", out var id))
+                    return id.GetString();
+                if (doc.RootElement.TryGetProperty("dataId", out var id2))
+                    return id2.GetString();
+            }
+            catch
+            {
+                // fall through
+            }
+        }
+
+        return raw;
+    }
+
+    /// <summary>
+    /// Person id for notification routing; falls back to JWT sub.
+    /// </summary>
+    public static string? GetNotificationUserId(Dictionary<string, string> claims)
+    {
+        return GetMngPersonId(claims) ?? GetUserId(claims);
+    }
+
+    /// <summary>
     /// Extract username from claims dictionary
     /// Tries "preferred_username" claim first, then falls back to "username"
     /// </summary>

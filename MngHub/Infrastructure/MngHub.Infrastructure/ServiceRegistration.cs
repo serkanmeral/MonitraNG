@@ -26,6 +26,9 @@ public static class ServiceRegistration
         // Message Router for SignalR
         services.AddScoped<MessageRouter>();
 
+        // User-targeted notification push (internal API → SignalR group)
+        services.AddSingleton<IUserNotificationPublisher, UserNotificationPublisher>();
+
         // HTTP Client for JWT validation (if needed)
         services.AddHttpClient();
 
