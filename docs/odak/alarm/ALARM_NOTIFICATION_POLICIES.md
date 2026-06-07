@@ -1,7 +1,7 @@
 # Alarm Merkezi — Bildirim politikaları
 
 **Son güncelleme:** 7 Haziran 2026  
-**Durum:** 🔄 **AN-1 sırada** — toast ön koşulu ✅ (MO T1–T3, T5 canlı)
+**Durum:** 🔄 **AN-3 sırada** — AN-1 CRUD ✅ · AN-2 dispatch ✅ (deploy + UI bekliyor)
 
 **İlişkili:** [IN_APP_TOAST_PLAN.md](../notifications/IN_APP_TOAST_PLAN.md) · MO paraleli: [MO_MAIL_POLICIES.md](../notifications/MO_MAIL_POLICIES.md)
 

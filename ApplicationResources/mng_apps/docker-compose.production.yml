@@ -567,6 +567,15 @@ services:
       - MngAlarmSettings__RabbitMq__Username=${RABBITMQ_USERNAME}
       - MngAlarmSettings__RabbitMq__Password=${RABBITMQ_PASSWORD}
       - MngAlarmSettings__Engine__ConsumeObservations=false
+      - MngAlarmSettings__NotificationDispatch__Enabled=${ALARM_NOTIFICATION_DISPATCH_ENABLED:-true}
+      - MngAlarmSettings__NotificationDispatch__ServiceAccount__DomainName=${ALARM_DISPATCH_DOMAIN:-odak}
+      - MngAlarmSettings__NotificationDispatch__ServiceAccount__Username=${ALARM_DISPATCH_USERNAME:-odak_admin}
+      - MngAlarmSettings__NotificationDispatch__ServiceAccount__Password=${ALARM_DISPATCH_PASSWORD:-Admin123!}
+      - MngAlarmSettings__NotificationDispatch__MngKeeperBaseUrl=${MNGKEEPER_URL:-http://mngkeeper:5001}
+      - MngAlarmSettings__NotificationDispatch__DataGateway__BaseUrl=${MNGDATAGATEWAY_URL:-http://mngdatagateway:5010}
+      - MngAlarmSettings__NotificationDispatch__MngHub__BaseUrl=${MNGHUB_URL:-http://mnghub:5020}
+      - MngAlarmSettings__NotificationDispatch__MngHub__InternalNotifyApiKey=${INTERNAL_NOTIFY_API_KEY:-}
+      - MngAlarmSettings__NotificationDispatch__MngNotifiers__BaseUrl=${MNGNOTIFIER_URL:-http://mngnotifier:5070}
       - Jwt__Authority=${KEYCLOAK_BASE_URL}/realms/monitra
       - EnableSwagger=${ENABLE_ALARM_SWAGGER:-false}
     networks:
@@ -600,6 +609,15 @@ services:
       - MngAlarmSettings__RabbitMq__Password=${RABBITMQ_PASSWORD}
       - MngAlarmSettings__Engine__ConsumeObservations=true
       - MngAlarmSettings__Engine__ReactorBridge__Enabled=true
+      - MngAlarmSettings__NotificationDispatch__Enabled=${ALARM_NOTIFICATION_DISPATCH_ENABLED:-true}
+      - MngAlarmSettings__NotificationDispatch__ServiceAccount__DomainName=${ALARM_DISPATCH_DOMAIN:-odak}
+      - MngAlarmSettings__NotificationDispatch__ServiceAccount__Username=${ALARM_DISPATCH_USERNAME:-odak_admin}
+      - MngAlarmSettings__NotificationDispatch__ServiceAccount__Password=${ALARM_DISPATCH_PASSWORD:-Admin123!}
+      - MngAlarmSettings__NotificationDispatch__MngKeeperBaseUrl=${MNGKEEPER_URL:-http://mngkeeper:5001}
+      - MngAlarmSettings__NotificationDispatch__DataGateway__BaseUrl=${MNGDATAGATEWAY_URL:-http://mngdatagateway:5010}
+      - MngAlarmSettings__NotificationDispatch__MngHub__BaseUrl=${MNGHUB_URL:-http://mnghub:5020}
+      - MngAlarmSettings__NotificationDispatch__MngHub__InternalNotifyApiKey=${INTERNAL_NOTIFY_API_KEY:-}
+      - MngAlarmSettings__NotificationDispatch__MngNotifiers__BaseUrl=${MNGNOTIFIER_URL:-http://mngnotifier:5070}
     networks:
       - mng_common_mng_network
     depends_on:

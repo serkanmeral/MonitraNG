@@ -16,6 +16,7 @@ public sealed class AlarmValidationService : IAlarmValidationService
     private readonly IAlarmRuleRepository _rules;
     private readonly IAlarmRepository _alarms;
     private readonly IAlarmEventPublisher _publisher;
+    private readonly IAlarmNotificationDispatchService _notificationDispatch;
     private readonly ICorrelationWindowStore _windows;
     private readonly IObservationActivityStore _activity;
     private readonly ILogger<AlarmValidationService> _logger;
@@ -24,6 +25,7 @@ public sealed class AlarmValidationService : IAlarmValidationService
         IAlarmRuleRepository rules,
         IAlarmRepository alarms,
         IAlarmEventPublisher publisher,
+        IAlarmNotificationDispatchService notificationDispatch,
         ICorrelationWindowStore windows,
         IObservationActivityStore activity,
         ILogger<AlarmValidationService> logger)
@@ -31,6 +33,7 @@ public sealed class AlarmValidationService : IAlarmValidationService
         _rules = rules;
         _alarms = alarms;
         _publisher = publisher;
+        _notificationDispatch = notificationDispatch;
         _windows = windows;
         _activity = activity;
         _logger = logger;
@@ -183,13 +186,13 @@ public sealed class AlarmValidationService : IAlarmValidationService
         return (raised, resolved);
     }
 
-    private Task PublishEventAsync(
+    private async Task PublishEventAsync(
         AlarmDocument alarm,
         string lifecycle,
         Dictionary<string, object?> context,
         CancellationToken cancellationToken)
     {
-        return _publisher.PublishAsync(new AlarmEventMessage
+        var message = new AlarmEventMessage
         {
             DomainId = alarm.DomainId,
             DomainName = alarm.DomainName,
@@ -201,6 +204,9 @@ public sealed class AlarmValidationService : IAlarmValidationService
             Context = context,
             CorrelationId = alarm.CorrelationId,
             EventId = $"{alarm.Id}:{lifecycle}:{DateTime.UtcNow.Ticks}"
-        }, lifecycle, cancellationToken);
+        };
+
+        await _publisher.PublishAsync(message, lifecycle, cancellationToken);
+        await _notificationDispatch.DispatchAsync(message, cancellationToken);
     }
 }

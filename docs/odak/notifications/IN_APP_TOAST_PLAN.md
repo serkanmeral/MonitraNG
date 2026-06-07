@@ -1,7 +1,7 @@
 # Uygulama içi bildirim + anlık toaster
 
 **Son güncelleme:** 7 Haziran 2026  
-**Durum:** ✅ **T1–T3 + T5 canlı (Odak)** — MO toaster doğrulandı (OCD-0102). Sırada: T4 (alarm dispatch), kalan smoke maddeleri.
+**Durum:** ✅ **T1–T3 + T5 canlı (Odak)** — MO toaster doğrulandı. **T4 (AN-2 dispatch) kod hazır** — deploy + alarm policy seed bekliyor.
 
 **Kapsam:** MO work item olayları + Alarm policy dispatch (ortak altyapı).  
 **İlişkili:** [ALARM_NOTIFICATION_POLICIES.md](../alarm/ALARM_NOTIFICATION_POLICIES.md) · MO: `op_notification_policies`

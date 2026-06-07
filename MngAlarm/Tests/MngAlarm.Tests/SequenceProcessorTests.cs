@@ -7,6 +7,8 @@ using MngAlarm.Domain.Enums;
 using MngAlarm.Infrastructure.Services;
 using MngAlarm.Infrastructure.State;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
+using MngAlarm.Application.Configuration;
 
 namespace MngAlarm.Tests.Evaluation;
 
@@ -43,9 +45,11 @@ public sealed class SequenceProcessorTests
             rules,
             alarms,
             publisher,
+            new NoOpNotificationDispatch(),
             windows,
             sequences,
             new InMemoryObservationActivityStore(),
+            Options.Create(new MngAlarmSettings()),
             NullLogger<ObservationProcessor>.Instance);
 
         var baseTime = DateTime.UtcNow;
@@ -105,9 +109,11 @@ public sealed class SequenceProcessorTests
             rules,
             new FakeAlarmRepository(),
             new FakePublisher(),
+            new NoOpNotificationDispatch(),
             new InMemoryCorrelationWindowStore(),
             new InMemorySequenceStateStore(),
             new InMemoryObservationActivityStore(),
+            Options.Create(new MngAlarmSettings()),
             NullLogger<ObservationProcessor>.Instance);
 
         var result = await processor.ProcessAsync(new ObservationEnvelope
@@ -214,5 +220,11 @@ public sealed class SequenceProcessorTests
             Messages.Add(message);
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class NoOpNotificationDispatch : IAlarmNotificationDispatchService
+    {
+        public Task DispatchAsync(AlarmEventMessage message, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 }

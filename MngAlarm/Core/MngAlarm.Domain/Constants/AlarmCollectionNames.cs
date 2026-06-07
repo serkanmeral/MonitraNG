@@ -7,6 +7,7 @@ public static class AlarmCollectionNames
     public const string CorrelationWindows = "@mon_alarm_correlation_windows";
     public const string ObservationActivity = "@mon_alarm_observation_activity";
     public const string NotificationPolicies = "@mon_alarm_notification_policies";
+    public const string NotificationCooldowns = "@mon_alarm_notification_cooldowns";
 }
 
 public static class AlarmNotificationEventTypes

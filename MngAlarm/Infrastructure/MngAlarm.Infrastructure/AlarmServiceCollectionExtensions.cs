@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MngAlarm.Application.Services;
+using MngAlarm.Infrastructure.Clients;
 using MngAlarm.Infrastructure.Http;
 using MngAlarm.Infrastructure.Messaging;
 using MngAlarm.Infrastructure.Persistence;
@@ -15,6 +16,11 @@ public static class AlarmServiceCollectionExtensions
 {
     public static IServiceCollection AddAlarmCore(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddHttpClient("MngKeeper");
+        services.AddHttpClient("MngDataGateway");
+        services.AddHttpClient("MngHub");
+        services.AddHttpClient("MngNotifiers");
+
         services.AddSingleton<IAlarmMongoContext, AlarmMongoContext>();
         services.AddSingleton<AlarmIndexInitializer>();
         services.AddSingleton<AlarmRabbitMqConnectionManager>();
@@ -30,6 +36,13 @@ public static class AlarmServiceCollectionExtensions
         services.AddScoped<IAlarmRepository, AlarmRepository>();
         services.AddScoped<IAlarmRuleService, AlarmRuleService>();
         services.AddScoped<IAlarmNotificationPolicyService, AlarmNotificationPolicyService>();
+        services.AddSingleton<IAlarmNotificationCooldownStore, AlarmNotificationCooldownStore>();
+        services.AddScoped<IAlarmDispatchTokenProvider, AlarmDispatchTokenProvider>();
+        services.AddScoped<IAlarmOpNotificationsClient, AlarmOpNotificationsClient>();
+        services.AddScoped<IAlarmHubNotificationClient, AlarmHubNotificationClient>();
+        services.AddScoped<IAlarmNotifiersDispatchClient, AlarmNotifiersDispatchClient>();
+        services.AddScoped<IAlarmKeeperUsersClient, AlarmKeeperUsersClient>();
+        services.AddScoped<IAlarmNotificationDispatchService, AlarmNotificationDispatchService>();
         services.AddScoped<IAlarmQueryService, AlarmQueryService>();
         services.AddScoped<IAlarmLifecycleService, AlarmLifecycleService>();
         services.AddScoped<IObservationProcessor, ObservationProcessor>();

@@ -74,6 +74,11 @@ public interface IAlarmNotificationPolicyRepository
         CancellationToken cancellationToken = default);
 }
 
+public interface IAlarmNotificationDispatchService
+{
+    Task DispatchAsync(AlarmEventMessage message, CancellationToken cancellationToken = default);
+}
+
 public interface IAlarmNotificationPolicyService
 {
     Task<AlarmNotificationPolicyDocument> CreateAsync(

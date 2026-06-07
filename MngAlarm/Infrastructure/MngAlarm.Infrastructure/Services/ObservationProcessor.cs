@@ -18,6 +18,7 @@ public sealed class ObservationProcessor : IObservationProcessor
     private readonly IAlarmRuleRepository _rules;
     private readonly IAlarmRepository _alarms;
     private readonly IAlarmEventPublisher _publisher;
+    private readonly IAlarmNotificationDispatchService _notificationDispatch;
     private readonly ICorrelationWindowStore _windows;
     private readonly ISequenceStateStore _sequences;
     private readonly IObservationActivityStore _activity;
@@ -28,6 +29,7 @@ public sealed class ObservationProcessor : IObservationProcessor
         IAlarmRuleRepository rules,
         IAlarmRepository alarms,
         IAlarmEventPublisher publisher,
+        IAlarmNotificationDispatchService notificationDispatch,
         ICorrelationWindowStore windows,
         ISequenceStateStore sequences,
         IObservationActivityStore activity,
@@ -37,6 +39,7 @@ public sealed class ObservationProcessor : IObservationProcessor
         _rules = rules;
         _alarms = alarms;
         _publisher = publisher;
+        _notificationDispatch = notificationDispatch;
         _windows = windows;
         _sequences = sequences;
         _activity = activity;
@@ -402,13 +405,13 @@ public sealed class ObservationProcessor : IObservationProcessor
         return ctx;
     }
 
-    private Task PublishEventAsync(
+    private async Task PublishEventAsync(
         AlarmDocument alarm,
         string lifecycle,
         Dictionary<string, object?> context,
         CancellationToken cancellationToken)
     {
-        return _publisher.PublishAsync(new AlarmEventMessage
+        var message = new AlarmEventMessage
         {
             DomainId = alarm.DomainId,
             DomainName = alarm.DomainName,
@@ -420,7 +423,10 @@ public sealed class ObservationProcessor : IObservationProcessor
             Context = context,
             CorrelationId = alarm.CorrelationId,
             EventId = $"{alarm.Id}:{lifecycle}:{DateTime.UtcNow.Ticks}"
-        }, lifecycle, cancellationToken);
+        };
+
+        await _publisher.PublishAsync(message, lifecycle, cancellationToken);
+        await _notificationDispatch.DispatchAsync(message, cancellationToken);
     }
 
     private readonly record struct RuleOutcome(int Raised, int Updated, int Resolved, IReadOnlyList<string> AlarmIds)

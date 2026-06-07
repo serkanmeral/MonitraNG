@@ -11,7 +11,8 @@ public sealed class AlarmLifecycleService(
     IAlarmDomainAccessor domain,
     IAlarmActorAccessor actorAccessor,
     IAlarmRepository alarms,
-    IAlarmEventPublisher publisher) : IAlarmLifecycleService
+    IAlarmEventPublisher publisher,
+    IAlarmNotificationDispatchService notificationDispatch) : IAlarmLifecycleService
 {
     public Task<AlarmSummaryDto?> AcknowledgeAsync(string alarmId, CancellationToken cancellationToken = default) =>
         TransitionAsync(
@@ -65,8 +66,9 @@ public sealed class AlarmLifecycleService(
         return Map(alarm);
     }
 
-    private Task PublishEventAsync(AlarmDocument alarm, string lifecycle, CancellationToken cancellationToken) =>
-        publisher.PublishAsync(new AlarmEventMessage
+    private async Task PublishEventAsync(AlarmDocument alarm, string lifecycle, CancellationToken cancellationToken)
+    {
+        var message = new AlarmEventMessage
         {
             DomainId = alarm.DomainId,
             DomainName = alarm.DomainName,
@@ -78,7 +80,11 @@ public sealed class AlarmLifecycleService(
             Context = alarm.Context,
             CorrelationId = alarm.CorrelationId,
             EventId = $"{alarm.Id}:{lifecycle}:manual:{DateTime.UtcNow.Ticks}",
-        }, lifecycle, cancellationToken);
+        };
+
+        await publisher.PublishAsync(message, lifecycle, cancellationToken);
+        await notificationDispatch.DispatchAsync(message, cancellationToken);
+    }
 
     private static AlarmSummaryDto Map(AlarmDocument alarm) => new()
     {
