@@ -49,6 +49,11 @@ public class SmtpSettings
     public string Username { get; set; } = "";
     public string Password { get; set; } = "";
     public bool EnableSsl { get; set; } = false;
+
+    /// <summary>
+    /// Auto (port 465 → SslOnConnect, aksi StartTls/none), SslOnConnect, StartTls, None.
+    /// </summary>
+    public string SecureSocketMode { get; set; } = "Auto";
 }
 
 public class DataGatewaySettings

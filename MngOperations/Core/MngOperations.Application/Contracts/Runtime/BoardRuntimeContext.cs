@@ -158,8 +158,16 @@ public sealed class PersonDisplayDto
 {
     public required string Id { get; init; }
     public string? Name { get; init; }
+    public string? Email { get; init; }
     public string? Title { get; init; }
     public bool? IsActive { get; init; }
+}
+
+public sealed class DomainBrandingDto
+{
+    public string? Name { get; init; }
+    public string? DisplayName { get; init; }
+    public string? LogoUrl { get; init; }
 }
 
 public sealed class WorkItemCardDto

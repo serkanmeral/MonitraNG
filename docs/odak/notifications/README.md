@@ -1,7 +1,7 @@
 # Bildirimler (Notifications) — Odak planlama
 
-**Son güncelleme:** 3 Haziran 2026  
-**Durum:** ⏸️ E-posta planlama duraklatildi — mimari + dataset tasarimi tamam; [DEVAM.md](./DEVAM.md) kaldigimiz yer. Mesajlaşma kanallari kararlari: [MESSAGING_CHANNELS.md](./MESSAGING_CHANNELS.md)
+**Son güncelleme:** 7 Haziran 2026  
+**Durum:** 🔄 Faz 0 implementasyon — [DEVAM.md](./DEVAM.md). MO policy: [MO_MAIL_POLICIES.md](./MO_MAIL_POLICIES.md)
 
 ---
 
@@ -22,7 +22,9 @@ MonitraNG **MngNotifier e-posta sablonlari** icin Odak planlama cercevesi (DG da
 | **[MAIL_ARCHITECTURE.md](./MAIL_ARCHITECTURE.md)** | **Kararlandı:** push-only HTTP; Notifier event dinlemez; sadece mail |
 | **[MESSAGING_CHANNELS.md](./MESSAGING_CHANNELS.md)** | **Kararlandı:** WhatsApp / Slack / Telegram — push-only; e-posta sonrasi faz |
 | **[MAIL_TEMPLATES.md](./MAIL_TEMPLATES.md)** | Template render Notifier'da; DG dataset ozeti |
+| **[MO_MAIL_POLICIES.md](./MO_MAIL_POLICIES.md)** | Workspace mail matrisi; `op_notification_policies` genişletmesi |
 | **[datasets/](./datasets/)** | `@mail_templates` + `@mail_layouts` sema ve seed ornekleri |
+| **[scripts/setup-notifier-datasets.ps1](./scripts/setup-notifier-datasets.ps1)** | DG kategori + dataset + seed kurulumu |
 
 ---
 
@@ -81,4 +83,4 @@ Detay: [NOTIFICATIONS_AND_EVENTS.md](../operationcore/mngoperations/NOTIFICATION
 
 ## Sonraki adim
 
-Planlama **duraklatildi**. Devam icin **[DEVAM.md](./DEVAM.md)** — siradaki: `send-template` + dataset kurulum scripti.
+**Faz 0** devam ediyor: Notifier `send-template` + dataset script. Sonra MO entegrasyonu (Faz 1). Bkz. **[DEVAM.md](./DEVAM.md)**.

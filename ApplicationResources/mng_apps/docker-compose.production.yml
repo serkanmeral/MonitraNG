@@ -765,11 +765,14 @@ services:
       - MngNotifierSettings__Mail__DefaultFrom__Email=${SMTP_FROM_EMAIL:-noreply@monitrang.com}
       - MngNotifierSettings__Mail__DefaultFrom__Name=${SMTP_FROM_NAME:-MonitraNG}
       # SMTP: host.docker.internal (extra_hosts) veya .env'de SMTP_HOST=172.17.0.1 (Linux gateway)
+      - MngNotifierSettings__DataGateway__BaseUrl=${MNGDATAGATEWAY_URL:-http://mngdatagateway:5010}
+      - MngNotifierSettings__DataGateway__ApiVersion=v1
       - MngNotifierSettings__Mail__Smtp__Host=${SMTP_HOST:-host.docker.internal}
       - MngNotifierSettings__Mail__Smtp__Port=${SMTP_PORT:-25}
       - MngNotifierSettings__Mail__Smtp__Username=${SMTP_USERNAME:-}
       - MngNotifierSettings__Mail__Smtp__Password=${SMTP_PASSWORD:-}
-      - MngNotifierSettings__Mail__Smtp__EnableSsl=false
+      - MngNotifierSettings__Mail__Smtp__EnableSsl=${SMTP_ENABLE_SSL:-false}
+      - MngNotifierSettings__Mail__Smtp__SecureSocketMode=${SMTP_SECURE_SOCKET_MODE:-Auto}
       - MngNotifierSettings__InternalNotifyApiKey=${INTERNAL_NOTIFY_API_KEY:-}
     networks:
       - mng_common_mng_network

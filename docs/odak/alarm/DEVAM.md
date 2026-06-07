@@ -1,15 +1,18 @@
 # DEVAM — Alarm & Rule Engine (Kaldığımız Yer)
 
-**Son güncelleme:** 3 Haziran 2026  
-**Durum:** ✅ Faz 0–2 motor · ✅ C6 · ✅ **Alarm Merkezi UI** (`/apps/alarm-center/*`) commit `6c4ecbf`
+**Son güncelleme:** 6 Haziran 2026  
+**Durum:** ✅ Faz 0–2 motor · ✅ **Alarm Merkezi operatör UI** · Git `969b57b` · **mola** (SIEM chat birleşik handoff)
 
-> Workflow entegrasyonu: [docs/odak/workflow/DEVAM.md](../workflow/DEVAM.md) · UI handoff: [../PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md)
+> **SIEM + Alarm birlikte devam:** [../monitoring/DEVAM.md](../monitoring/DEVAM.md) ⭐ mola checkpoint  
+> Workflow: [../workflow/DEVAM.md](../workflow/DEVAM.md) · Platform UI: [../PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md)
 
 ---
 
 ## 1. Tek cümlede durum
 
-`MngAlarm` solution (Api `:5087` + Worker) Odak'ta ayakta: threshold kural, dedup/cooldown, `@mon_alarm_rules` / `@mon_alarms`, `mng.alarms` publish. Workflow worker `mng.alarms` bind (`*.alarm.#`) + routing normalize. **E2E:** `cpu_usage > 90` → alarm → workflow `alarm.raised` → 3 node Success.
+`MngAlarm` Odak'ta ayakta (threshold, correlation, scheduled, **sequence**). Operatör tarafı **Alarm Merkezi** (`/apps/alarm-center/*`): açık alarm/geçmiş, lifecycle (ack/suppress/resolve), kural CRUD, **sequence create (U2 preset)**. SIEM olay arama ayrı: `/apps/siem-center/*`.
+
+**Son commitler:** `c68669c` (Alarm Merkezi + lifecycle) · `969b57b` (sequence form + smoke)
 
 ---
 
@@ -84,7 +87,19 @@ Event şeması: [ALARM_RULE_ENGINE_PLAN §8](./ALARM_RULE_ENGINE_PLAN.md)
 2. ~~`alarm.updated` / `alarm.resolved` workflow triggers~~ ✅
 3. ~~MngReactor native `monitra.observations` publish~~ ✅ 3 Haz 2026 — [REACTOR_NATIVE_PUBLISH_HANDOFF.md](./REACTOR_NATIVE_PUBLISH_HANDOFF.md) · E2E: `test-reactor-observation-e2e.ps1`
 4. ~~Faz 2 — correlation window, scheduled validation (MngScheduler)~~ ✅ 3 Haz 2026
-5. Faz 2+ — suppression/dependency, DG mirror, Mongo checkpoint, ~~sequence rules~~ ✅ U2 MVP
+5. Faz 2+ — suppression/dependency, DG mirror, Mongo checkpoint, ~~sequence rules~~ ✅ U2 MVP · **sequence UI create** ✅ `969b57b`
+
+### Alarm Merkezi UI (6 Haz 2026) ✅
+
+| Özellik | Not |
+|---------|-----|
+| `/apps/alarm-center/alarms` | Pagination, filtreler, lifecycle, detay, ilgili olaylar |
+| `/apps/alarm-center/rules` | Tablo + SIEM görünümü; sequence/correlation/threshold/scheduled |
+| Lifecycle API | `POST .../alarms/{id}/acknowledge|suppress|resolve` |
+| Sequence form | Create + U2 preset; update yalnızca ad/severity/cooldown/enabled |
+| Smoke | `scripts/odak/test-siem-alarm-ui-smoke.ps1` |
+
+**Sıradaki (alarm/SIEM):** [monitoring/DEVAM.md § Mola checkpoint](../monitoring/DEVAM.md#mola-checkpoint-6-haz-2026--siem--alarm-merkezi-ui-kapandi)
 
 ---
 

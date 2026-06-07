@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using MngNotifier.Application.Configuration;
 using MngNotifier.Application.DTOs;
+using MngNotifier.Application.Exceptions;
+using MngNotifier.Application.Models;
 using MngNotifier.Application.Services;
 
 namespace MngNotifier.Api.Controllers;
@@ -14,22 +16,25 @@ namespace MngNotifier.Api.Controllers;
 [ApiController]
 [ApiVersion(1.0)]
 [Route("api/v{version:apiVersion}/notifications")]
-[AllowAnonymous] // Direct API endpoint - no authentication required
+[AllowAnonymous]
 public class NotificationController : ControllerBase
 {
     /// <summary>İç servis (DG) chat-mention çağrıları için paylaşılan anahtar başlığı.</summary>
     public const string NotifyApiKeyHeaderName = "X-Monitra-Notify-Key";
 
     private readonly IMailProvider _mailProvider;
+    private readonly ITemplateRenderService _templateRenderService;
     private readonly ILogger<NotificationController> _logger;
     private readonly MngNotifierSettings _notifierSettings;
 
     public NotificationController(
         IMailProvider mailProvider,
+        ITemplateRenderService templateRenderService,
         ILogger<NotificationController> logger,
         IOptions<MngNotifierSettings> notifierSettings)
     {
         _mailProvider = mailProvider ?? throw new ArgumentNullException(nameof(mailProvider));
+        _templateRenderService = templateRenderService ?? throw new ArgumentNullException(nameof(templateRenderService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _notifierSettings = notifierSettings?.Value ?? throw new ArgumentNullException(nameof(notifierSettings));
     }
@@ -37,9 +42,6 @@ public class NotificationController : ControllerBase
     /// <summary>
     /// Sends a mail notification (Direct API - No authentication required)
     /// </summary>
-    /// <param name="request">Mail notification request</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Notification response with ID and status</returns>
     [HttpPost("mail")]
     [ProducesResponseType(typeof(SendMailResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -48,57 +50,154 @@ public class NotificationController : ControllerBase
     {
         try
         {
-            // Basic validation
             if (request == null)
-            {
                 return BadRequest(new { error = "Request body is required" });
-            }
 
             if (request.To == null || request.To.Count == 0)
-            {
                 return BadRequest(new { error = "At least one 'to' recipient is required" });
-            }
 
             if (string.IsNullOrWhiteSpace(request.Subject))
-            {
                 return BadRequest(new { error = "Subject is required" });
-            }
 
             if (string.IsNullOrWhiteSpace(request.Body))
-            {
                 return BadRequest(new { error = "Body is required" });
-            }
 
-            // Generate notification ID (temporary - will use MongoDB ObjectId in future)
             var notificationId = Guid.NewGuid().ToString();
-
-            // Send mail directly (synchronous for now - will be async with RabbitMQ in future)
             await _mailProvider.SendMailAsync(request, cancellationToken);
 
-            _logger.LogInformation("Mail notification sent successfully. NotificationId: {NotificationId}, To: {To}, Subject: {Subject}", 
+            _logger.LogInformation("Mail notification sent successfully. NotificationId: {NotificationId}, To: {To}, Subject: {Subject}",
                 notificationId, string.Join(", ", request.To), request.Subject);
 
-            var response = new SendMailResponse
+            return Ok(new SendMailResponse
             {
                 NotificationId = notificationId,
-                Status = "sent", // For direct API, mail is sent immediately
+                Status = "sent",
                 QueuedAt = DateTime.UtcNow
-            };
-
-            return Ok(response);
+            });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send mail notification. To: {To}, Subject: {Subject}", 
+            _logger.LogError(ex, "Failed to send mail notification. To: {To}, Subject: {Subject}",
                 request?.To != null ? string.Join(", ", request.To) : "unknown", request?.Subject ?? "unknown");
-            
+
             return StatusCode(StatusCodes.Status500InternalServerError, new { error = "Failed to send mail notification", message = ex.Message });
         }
     }
 
     /// <summary>
-    /// Chat Room: <c>cht_messages</c> kaydı oluşturulduğunda mention hedeflerine iç bildirim hattı (MVP: yapılandırılmış log; e-posta yok).
-    /// MngDataGateway iç ağından çağrılır — dışa açık gateway politikası ayrıca sıkılaştırılabilir.
+    /// Renders a DG template and sends mail (requires Bearer token for DG template read).
+    /// </summary>
+    [HttpPost("send-template")]
+    [ProducesResponseType(typeof(SendTemplateResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SendTemplate([FromBody] SendTemplateRequest? request, CancellationToken cancellationToken)
+    {
+        if (request == null)
+            return BadRequest(new { error = "Request body is required" });
+
+        if (request.To == null || request.To.Count == 0)
+            return BadRequest(new { error = "At least one 'to' recipient is required" });
+
+        if (string.IsNullOrWhiteSpace(request.TemplateKey))
+            return BadRequest(new { error = "TemplateKey is required" });
+
+        if (!TryGetBearerToken(out var token))
+            return Unauthorized(new { error = "Authorization Bearer token is required for template rendering" });
+
+        try
+        {
+            var rendered = await _templateRenderService.RenderAsync(new TemplateRenderRequest
+            {
+                TemplateKey = request.TemplateKey.Trim(),
+                Context = request.Context,
+                SubjectOverride = request.Subject
+            }, token, cancellationToken);
+
+            await _mailProvider.SendMailAsync(new SendMailRequest
+            {
+                To = request.To,
+                Cc = request.Cc,
+                From = request.From,
+                Subject = rendered.Subject,
+                Body = rendered.HtmlBody,
+                IsHtml = true
+            }, cancellationToken);
+
+            var notificationId = Guid.NewGuid().ToString();
+            _logger.LogInformation(
+                "Template mail sent. NotificationId={NotificationId} TemplateKey={TemplateKey} To={To}",
+                notificationId, rendered.TemplateKey, string.Join(", ", request.To));
+
+            return Ok(new SendTemplateResponse
+            {
+                NotificationId = notificationId,
+                Status = "sent",
+                TemplateKey = rendered.TemplateKey,
+                QueuedAt = DateTime.UtcNow
+            });
+        }
+        catch (TemplateRenderException ex)
+        {
+            return StatusCode(ex.StatusCode, new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send template mail. TemplateKey={TemplateKey}", request.TemplateKey);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = "Failed to send template mail", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Renders template without sending (preview). Requires Bearer token for DG.
+    /// </summary>
+    [HttpPost("preview-template")]
+    [ProducesResponseType(typeof(PreviewTemplateResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> PreviewTemplate([FromBody] PreviewTemplateRequest? request, CancellationToken cancellationToken)
+    {
+        if (request == null)
+            return BadRequest(new { error = "Request body is required" });
+
+        if (string.IsNullOrWhiteSpace(request.TemplateKey))
+            return BadRequest(new { error = "TemplateKey is required" });
+
+        if (!TryGetBearerToken(out var token))
+            return Unauthorized(new { error = "Authorization Bearer token is required for template rendering" });
+
+        try
+        {
+            var rendered = await _templateRenderService.RenderAsync(new TemplateRenderRequest
+            {
+                TemplateKey = request.TemplateKey.Trim(),
+                Context = request.Context,
+                SubjectOverride = request.Subject
+            }, token, cancellationToken);
+
+            return Ok(new PreviewTemplateResponse
+            {
+                TemplateKey = rendered.TemplateKey,
+                LayoutKey = rendered.LayoutKey,
+                Subject = rendered.Subject,
+                HtmlBody = rendered.HtmlBody
+            });
+        }
+        catch (TemplateRenderException ex)
+        {
+            return StatusCode(ex.StatusCode, new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to preview template. TemplateKey={TemplateKey}", request.TemplateKey);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { error = "Failed to preview template", message = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Chat Room: mention bildirimi (MVP: yapılandırılmış log).
     /// </summary>
     [HttpPost("chat-mention")]
     [ProducesResponseType(typeof(ChatMentionNotifyResponse), StatusCodes.Status200OK)]
@@ -161,5 +260,19 @@ public class NotificationController : ControllerBase
             Status = "accepted",
             AcceptedAt = DateTime.UtcNow
         });
+    }
+
+    private bool TryGetBearerToken(out string token)
+    {
+        token = string.Empty;
+        if (!Request.Headers.TryGetValue("Authorization", out var auth) || auth.Count == 0)
+            return false;
+
+        var value = auth.ToString();
+        if (!value.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        token = value["Bearer ".Length..].Trim();
+        return !string.IsNullOrWhiteSpace(token);
     }
 }

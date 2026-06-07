@@ -49,5 +49,6 @@ public sealed class NotificationDispatchRequest
     public string? FromStateId { get; init; }
     public string? ToStateId { get; init; }
     public string? Actor { get; init; }
+    public string? DomainName { get; init; }
     public required string Token { get; init; }
 }

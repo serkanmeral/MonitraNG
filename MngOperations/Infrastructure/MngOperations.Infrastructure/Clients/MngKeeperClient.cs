@@ -74,6 +74,7 @@ public sealed class MngKeeperClient : IKeeperDirectoryClient
             {
                 Id = userId,
                 Name = BuildName(user),
+                Email = string.IsNullOrWhiteSpace(user.Email) ? null : user.Email.Trim(),
                 Title = string.IsNullOrWhiteSpace(user.Title) ? null : user.Title,
                 IsActive = user.IsActive
             };
@@ -172,8 +173,9 @@ public sealed class MngKeeperClient : IKeeperDirectoryClient
             {
                 var display = new PersonDisplayDto
                 {
-                    Id = string.Empty, // her istenen id için aşağıda kendi id'siyle yeniden kurulur
+                    Id = string.Empty,
                     Name = BuildName(u),
+                    Email = string.IsNullOrWhiteSpace(u.Email) ? null : u.Email.Trim(),
                     Title = string.IsNullOrWhiteSpace(u.Title) ? null : u.Title,
                     IsActive = u.IsActive
                 };
@@ -186,6 +188,7 @@ public sealed class MngKeeperClient : IKeeperDirectoryClient
                         {
                             Id = matchId!,
                             Name = display.Name,
+                            Email = display.Email,
                             Title = display.Title,
                             IsActive = display.IsActive
                         };
@@ -261,6 +264,48 @@ public sealed class MngKeeperClient : IKeeperDirectoryClient
         }
     }
 
+    public async Task<DomainBrandingDto?> GetDomainByNameAsync(
+        string domainName,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        if (_httpClient.BaseAddress == null || string.IsNullOrWhiteSpace(domainName))
+            return null;
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, "Domain");
+            if (!string.IsNullOrWhiteSpace(token))
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("MngKeeper GetDomains failed: HTTP {Status}", (int)response.StatusCode);
+                return null;
+            }
+
+            var domains = await response.Content.ReadFromJsonAsync<List<KeeperDomainDto>>(JsonOptions, cancellationToken);
+            var match = domains?.FirstOrDefault(d =>
+                string.Equals(d.Name, domainName.Trim(), StringComparison.OrdinalIgnoreCase));
+
+            if (match == null)
+                return null;
+
+            return new DomainBrandingDto
+            {
+                Name = match.Name,
+                DisplayName = match.DisplayName,
+                LogoUrl = string.IsNullOrWhiteSpace(match.LogoUrl) ? null : match.LogoUrl.Trim()
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "MngKeeper GetDomainByName error for {DomainName}", domainName);
+            return null;
+        }
+    }
+
     private static string BuildName(KeeperUserDto user)
     {
         var full = $"{user.FirstName} {user.LastName}".Trim();
@@ -330,5 +375,17 @@ public sealed class MngKeeperClient : IKeeperDirectoryClient
 
         [JsonPropertyName("isActive")]
         public bool? IsActive { get; set; }
+    }
+
+    private sealed class KeeperDomainDto
+    {
+        [JsonPropertyName("name")]
+        public string? Name { get; set; }
+
+        [JsonPropertyName("displayName")]
+        public string? DisplayName { get; set; }
+
+        [JsonPropertyName("logoUrl")]
+        public string? LogoUrl { get; set; }
     }
 }

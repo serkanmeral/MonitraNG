@@ -52,6 +52,62 @@ public static class WorkItemDataHelper
         return value.ToString();
     }
 
+    public static IReadOnlyList<string> GetPersonRefIdList(IReadOnlyDictionary<string, object?> data, string key)
+    {
+        if (!data.TryGetValue(key, out var value) || value == null)
+            return Array.Empty<string>();
+
+        if (value is JsonElement el)
+        {
+            if (el.ValueKind == JsonValueKind.Array)
+            {
+                return el.EnumerateArray()
+                    .Select(ExtractPersonIdFromJsonElement)
+                    .Where(id => !string.IsNullOrWhiteSpace(id))
+                    .Select(id => id!)
+                    .ToList();
+            }
+
+            var single = ExtractPersonIdFromJsonElement(el);
+            return string.IsNullOrWhiteSpace(single) ? Array.Empty<string>() : new[] { single };
+        }
+
+        if (value is IEnumerable<object?> list && value is not string)
+        {
+            return list
+                .Select(v => v?.ToString())
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s!)
+                .ToList();
+        }
+
+        if (value is string s && !string.IsNullOrWhiteSpace(s))
+            return new[] { s };
+
+        return Array.Empty<string>();
+    }
+
+    private static string? ExtractPersonIdFromJsonElement(JsonElement el)
+    {
+        if (el.ValueKind == JsonValueKind.String)
+            return el.GetString();
+
+        if (el.ValueKind != JsonValueKind.Object)
+            return null;
+
+        foreach (var n in PersonIdProps)
+        {
+            if (el.TryGetProperty(n, out var idEl)
+                && idEl.ValueKind == JsonValueKind.String
+                && !string.IsNullOrWhiteSpace(idEl.GetString()))
+            {
+                return idEl.GetString();
+            }
+        }
+
+        return null;
+    }
+
     /// <summary>
     /// Genişletilmiş person nesnesinden görünen ad (firstName + lastName, yoksa username) üretir;
     /// alan düz id (string) ise veya nesne değilse null döner (dizin çözümü için).

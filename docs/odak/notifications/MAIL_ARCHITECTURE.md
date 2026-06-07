@@ -1,7 +1,7 @@
 # E-posta bildirimi — Mimari ilkeler
 
-**Son güncelleme:** 3 Haziran 2026  
-**Durum:** Kararlandi (Odak planlama) — ⏸️ implementasyon sonraki oturum
+**Son güncelleme:** 7 Haziran 2026  
+**Durum:** Kararlandı — Faz 0 Notifier implementasyon devam ediyor ([DEVAM.md](./DEVAM.md))
 
 ---
 
@@ -66,17 +66,22 @@ Detaylı template modeli: [MAIL_TEMPLATES.md](./MAIL_TEMPLATES.md)
 
 ```http
 POST /api/v1/notifications/send-template
+Authorization: Bearer <token>
 
 {
   "to": ["user@example.com"],
-  "templateKey": "work-item-created",
+  "templateKey": "work-item-transitioned",
+  "subject": null,
   "context": {
     "workItem": { "key": "WI-1", "title": "..." },
+    "transition": { "key": "resolve", "fromState": "Open", "toState": "Done" },
     "actor": { "displayName": "..." },
     "domain": { "displayName": "...", "logoUrl": "https://..." }
   }
 }
 ```
+
+**Subject önceliği:** policy `emailSubject` veya request `subject` → yoksa template `subject` (hepsi Notifier'da placeholder render).
 
 MO/Keeper **templateKey + context** gönderir; HTML üretmez.
 

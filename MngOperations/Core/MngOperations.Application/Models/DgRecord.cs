@@ -277,6 +277,18 @@ public sealed class NotificationPolicyRecord : DgRecord
     [JsonPropertyName("emailTemplateKey")]
     public string? EmailTemplateKey { get; set; }
 
+    [JsonPropertyName("emailSubject")]
+    public string? EmailSubject { get; set; }
+
+    [JsonPropertyName("transitionKey")]
+    public string? TransitionKey { get; set; }
+
+    [JsonPropertyName("fromStateId")]
+    public string? FromStateId { get; set; }
+
+    [JsonPropertyName("toStateId")]
+    public string? ToStateId { get; set; }
+
     [JsonPropertyName("notificationTemplateKey")]
     public string? NotificationTemplateKey { get; set; }
 

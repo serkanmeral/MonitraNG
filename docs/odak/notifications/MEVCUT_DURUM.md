@@ -1,9 +1,7 @@
 # Bildirimler — Mevcut durum (kod gerçeği)
 
-**Son güncelleme:** 3 Haziran 2026  
-**Doğrulama:** MngNotifier local test (Gmail SMTP → Outlook) ✅ (2 kez, 3 Haziran 2026)
-
-**Planlama:** `@mail_templates` / `@mail_layouts` sema + seed → [datasets/](./datasets/) · Duraklatma → [DEVAM.md](./DEVAM.md)
+**Son güncelleme:** 7 Haziran 2026  
+**Planlama:** [DEVAM.md](./DEVAM.md) · Policy: [MO_MAIL_POLICIES.md](./MO_MAIL_POLICIES.md)
 
 ---
 
@@ -14,108 +12,80 @@
 | Özellik | Durum | Not |
 |---------|-------|-----|
 | `POST /api/v1/notifications/mail` | ✅ | Senkron SMTP; `AllowAnonymous` |
-| `SmtpMailProvider` | ✅ | `to`, `cc`, `from` override, HTML |
-| Health / Version | ✅ | RabbitMQ check placeholder |
+| `SmtpMailProvider` | ✅ | `to`, `cc`, `from`, HTML |
+| Health / Version | ✅ | |
 | Gateway route | ✅ | `/notifier/api/v1/*` → `:5070` |
-| `EmailTemplateService` | ⚠️ Kod var | Yerel `Templates/Email/*.html`; **controller’a bağlı değil** |
-| `domain-created.html` | ⚠️ Dosya var | MngKeeper step inline HTML kullanıyor |
+| `POST /notifications/chat-mention` | ⚠️ MVP | Log-only |
 
-### Henüz yok / plan
+### Faz 0 (tamamlandı — 7 Haziran 2026)
 
-| Özellik | Durum | Referans |
-|---------|-------|----------|
-| RabbitMQ consumer (`mngnotifier.mail.send`) | ❌ | ROADMAP Phase 5, MAIL_NOTIFICATION_DESIGN |
-| MongoDB notification kaydı | ❌ | GUID geçici ID |
-| `POST /notifications/send-template` | ❌ | DG `@mail_templates` planı |
-| Rate limiting / auth (mail endpoint) | ❌ | Tasarımda önerilmiş |
-| SMS / WhatsApp / Slack / Telegram | ❌ | ROADMAP Phase 7; kararlar → [MESSAGING_CHANNELS.md](./MESSAGING_CHANNELS.md) |
-
-### Config özeti
-
-| Ortam | SMTP | From |
-|-------|------|------|
-| Production (`appsettings.json`) | `127.0.0.1:25`, auth yok | `noreply@monitrang.com` |
-| Development | `smtp.gmail.com:587`, SSL | `sermeral@gmail.com` (test) |
-| Docker compose | Gmail env override | Aynı |
-
----
-
-## 2. MngOperations (Operation Core bildirim orchestration)
-
-### Çalışan
-
-| Bileşen | Durum |
+| Özellik | Durum |
 |---------|-------|
-| `IMngNotifiersClient` → `POST notifications/mail` | ✅ |
-| `INotificationOrchestratorService` | ✅ |
-| Rule: `createNotification` → `op_notifications` | ✅ |
-| Rule: `sendEmailViaMngNotifiers` | ✅ |
-| `MngNotifiers.Enabled` / health probe | ✅ |
-| OC UI: header badge, `/apps/operation-core/notifications` | ✅ (NP-7) |
+| MailKit SMTP (port 465 SslOnConnect) | ✅ Odak SMTP ile doğrulandı |
+| `POST /notifications/send-template` | ✅ |
+| `POST /notifications/preview-template` | ✅ |
+| DG `@mail_templates` / `@mail_layouts` | ✅ Odak DG'de kurulu |
+| `setup-notifier-datasets.ps1` | ✅ OC token ile çalışıyor |
+| Uçtan uca | ✅ `work-item-transitioned` → Outlook |
 
-### Veri modeli (DG dataset’leri)
+### Henüz yok
 
-| Dataset | Rol |
+| Özellik | Not |
 |---------|-----|
-| `op_notifications` | Kullanıcı bazlı in-app bildirim |
-| `op_notification_policies` | Kanal / template / alıcı politikası |
-| `op_rules` | Geçiş ve side-effect kuralları |
+| RabbitMQ consumer | Kapsam dışı (push-only) |
+| MongoDB delivery audit | Ertelendi |
+| Endpoint auth (mail) | Ertelendi |
 
-**Karar:** `op_*` dataset’lerinde `publish_mode: none` — operasyonel yol MO + `oc.events` ([NOTIFICATIONS_AND_EVENTS.md](../operationcore/mngoperations/NOTIFICATIONS_AND_EVENTS.md)).
+### SMTP doğrulama
 
----
-
-## 3. MngKeeper
-
-| Senaryo | Durum |
-|---------|-------|
-| Domain oluşturma → `SendDomainCreatedEmailStep` | ✅ |
-| `INotifierService` → MngNotifier HTTP | ✅ |
-| Template (`domain-created.html`) | ❌ Kullanılmıyor |
+| Ortam | Sunucu | Durum |
+|-------|--------|-------|
+| Development | Gmail `:587` | ✅ (3 Haz) |
+| Odak müşteri | `mail.kurumsaleposta.com:465` | ✅ (7 Haz) |
+| Production config | Henüz Notifier'a bağlanmadı | Env ile yapılacak |
 
 ---
 
-## 4. MngDataGateway → MngNotifier (chat)
+## 2. MngOperations
 
-| Endpoint | Durum |
-|----------|-------|
-| `POST /api/v1/notifications/chat-mention` | ⚠️ MVP |
-| Davranış | Yapılandırılmış **log**; e-posta / push yok |
-| Auth | `X-Monitra-Notify-Key` (opsiyonel, `InternalNotifyApiKey`) |
-
----
-
-## 5. MngHub / gerçek zamanlı (e-posta değil)
-
-| Akış | Kanal | Bildirim türü |
-|------|-------|---------------|
-| Chat mesajı | DG publish → Hub → SignalR | In-app canlı |
-| Monitoring ingest | Reactor → `monitoring.data.updated.{domain}` → Hub | UI yenileme throttle |
-| OC operasyonel | MO → `oc.events` | Entegrasyon tüketicileri |
-
-Bunlar MngNotifier ile **karıştırılmamalı**; ayrı kanal.
+| Bileşen | Durum | Not |
+|---------|-------|-----|
+| `IMngNotifiersClient` → `/mail` | ✅ | `emailTemplateKey` yoksa legacy fallback |
+| `IMngNotifiersClient` → `send-template` | ✅ | Bearer forward; policy `emailTemplateKey` doluysa |
+| `MailNotificationContextBuilder` | ✅ | actor, workItem, transition, domain, event |
+| `op_notification_policies` model | ✅ | `transitionKey`, `fromStateId`, `toStateId`, `emailSubject` |
+| Geçiş filtresi policy'de | ✅ | `PolicyMatches` / `PolicyScore` |
+| `field:` alıcı çözümü | ✅ | `GetPersonRefId` / `GetPersonRefIdList` |
+| `PersonDisplayDto.Email` | ✅ | Keeper `GetUsersAsync` → email yoksa atla |
+| DG şema patch (Odak) | ⏳ | Policy kayıtları + UI henüz yok |
 
 ---
 
-## 6. Bilinen tutarsızlıklar (doküman vs kod)
+## 3. DG mail dataset'leri
 
-| Konu | Eski doküman | Gerçek kod |
-|------|--------------|------------|
-| Mail endpoint adı | `/notifications/send` (MAIL_NOTIFICATION_DESIGN) | `/notifications/mail` |
-| Architecture guide endpoint | `/notification/email` | `/notifications/mail` |
-| Response status | `"queued"` (tasarım) | `"sent"` (senkron gönderim) |
-| ROADMAP “Temel tamamlandı” | RabbitMQ/MongoDB bekliyor olarak da yazıyor | Tutarlı — sadece direct mail canlı |
-
-Bu klasördeki yeni planlama bu tutarsızlıkları gidererek **tek referans** olmayı hedefler.
+| Dataset | Şema | Seed | Kurulum |
+|---------|------|------|---------|
+| `@mail_templates` | ✅ | ✅ | Script 🔄 |
+| `@mail_layouts` | ✅ | ✅ | Script 🔄 |
 
 ---
 
-## 7. Test kanıtı (3 Haziran 2026)
+## 4. Diğer tüketiciler
 
-```http
-POST http://localhost:5070/api/v1/notifications/mail
-```
+| Servis | Durum |
+|--------|-------|
+| MngKeeper domain mail | ✅ inline HTML → `/mail` |
+| MngDataGateway chat-mention | ⚠️ log-only |
+| MngHub / SignalR | Ayrı kanal (e-posta değil) |
 
-- Gönderen: `sermeral@gmail.com` (Development SMTP)
-- Alıcı: `serkan.meral@outlook.com`
-- Sonuç: HTTP 200, `status: "sent"` — **iki ayri testte mail alındı** (ilk ve tekrar test ayni gun)
+---
+
+## 5. Bilinen tutarsızlıklar
+
+| Konu | Eski doküman | Gerçek |
+|------|--------------|--------|
+| Endpoint | `/notifications/send` | `/notifications/mail` |
+| Response | `"queued"` | `"sent"` |
+| RabbitMQ consumer | ROADMAP'te | Kapsam dışı |
+
+Odak klasörü (`docs/odak/notifications/`) güncel referanstır.

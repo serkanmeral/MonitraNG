@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -91,6 +92,77 @@ public class MngNotifiersClient : IMngNotifiersClient
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "MngNotifiers mail request failed");
+            return new SendMailResult { Success = false, ErrorMessage = ex.Message };
+        }
+    }
+
+    public async Task<SendMailResult> SendTemplateAsync(
+        SendTemplateRequest request,
+        string bearerToken,
+        CancellationToken cancellationToken = default)
+    {
+        if (!_settings.Enabled)
+        {
+            _logger.LogDebug("MngNotifiers disabled; skipping template mail to {Recipients}", string.Join(", ", request.To));
+            return new SendMailResult { Success = false, ErrorMessage = "MngNotifiers disabled" };
+        }
+
+        if (_httpClient.BaseAddress == null)
+        {
+            _logger.LogWarning("MngNotifiers BaseUrl not configured");
+            return new SendMailResult { Success = false, ErrorMessage = "MngNotifiers not configured" };
+        }
+
+        if (request.To.Count == 0)
+            return new SendMailResult { Success = false, ErrorMessage = "No recipients" };
+
+        if (string.IsNullOrWhiteSpace(bearerToken))
+            return new SendMailResult { Success = false, ErrorMessage = "Bearer token required for send-template" };
+
+        try
+        {
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "notifications/send-template")
+            {
+                Content = JsonContent.Create(request, options: JsonOptions)
+            };
+            httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", bearerToken);
+
+            using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var body = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogWarning(
+                    "MngNotifiers send-template failed HTTP {Status}: {Body}",
+                    (int)response.StatusCode,
+                    body);
+
+                return new SendMailResult
+                {
+                    Success = false,
+                    ErrorMessage = $"HTTP {(int)response.StatusCode}"
+                };
+            }
+
+            var payload = await response.Content.ReadFromJsonAsync<JsonElement>(JsonOptions, cancellationToken);
+            string? notificationId = null;
+            if (payload.ValueKind == JsonValueKind.Object
+                && payload.TryGetProperty("notificationId", out var idProp)
+                && idProp.ValueKind == JsonValueKind.String)
+            {
+                notificationId = idProp.GetString();
+            }
+
+            _logger.LogInformation(
+                "MngNotifiers template mail sent to {Recipients} templateKey={TemplateKey}",
+                string.Join(", ", request.To),
+                request.TemplateKey);
+
+            return new SendMailResult { Success = true, NotificationId = notificationId };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "MngNotifiers send-template request failed");
             return new SendMailResult { Success = false, ErrorMessage = ex.Message };
         }
     }

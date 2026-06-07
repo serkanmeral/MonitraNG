@@ -17,26 +17,38 @@ public static class NotificationRecipientResolver
             if (string.IsNullOrWhiteSpace(role))
                 continue;
 
-            switch (role.Trim().ToLowerInvariant())
+            var normalized = role.Trim();
+            switch (normalized.ToLowerInvariant())
             {
                 case "assignee":
-                    AddIfPresent(recipients, WorkItemDataHelper.GetString(workItem, "assignee"));
+                    AddIfPresent(recipients, WorkItemDataHelper.GetPersonRefId(workItem, "assignee"));
                     break;
                 case "reporter":
-                    AddIfPresent(recipients, WorkItemDataHelper.GetString(workItem, "reporter"));
+                    AddIfPresent(recipients, WorkItemDataHelper.GetPersonRefId(workItem, "reporter"));
                     break;
                 case "watchers":
-                    foreach (var watcher in WorkItemDataHelper.GetStringList(workItem, "watchers"))
+                    foreach (var watcher in WorkItemDataHelper.GetPersonRefIdList(workItem, "watchers"))
                         AddIfPresent(recipients, watcher);
                     break;
                 case "actor":
                     AddIfPresent(recipients, actor);
                     break;
                 default:
-                    if (role.Contains('@', StringComparison.Ordinal))
-                        AddIfPresent(recipients, role.Trim());
+                    if (normalized.StartsWith("field:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var fieldKey = normalized[6..].Trim();
+                        if (!string.IsNullOrWhiteSpace(fieldKey))
+                        {
+                            AddIfPresent(recipients, WorkItemDataHelper.GetPersonRefId(workItem, fieldKey));
+                            foreach (var personId in WorkItemDataHelper.GetPersonRefIdList(workItem, fieldKey))
+                                AddIfPresent(recipients, personId);
+                        }
+                    }
                     else
-                        AddIfPresent(recipients, role.Trim());
+                    {
+                        AddIfPresent(recipients, normalized);
+                    }
+
                     break;
             }
         }

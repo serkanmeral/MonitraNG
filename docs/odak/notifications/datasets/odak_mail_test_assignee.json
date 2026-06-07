@@ -1,0 +1,8 @@
+{
+  "_comment": "Odak test — mail smoke / gecis bildirimi icin bilinen assignee (Keeper User.Id = mng_person_id)",
+  "displayName": "Serkan Meral (test)",
+  "preferredUsername": "odak_admin",
+  "personId": "6a0f8fd13d6ba5d774ee37c7",
+  "email": "serkan.meral@outlook.com",
+  "note": "LDAP'ta cogu kullanicinin email'i yok. serkan.meral@outlook.com Odak test ortaminda odak_admin kaydinda. LDAP 'serkan meral' (bosluklu) ve 'serkan.meral' (gmail) ayri kayitlardir — mail testi icin bu personId kullanin."
+}

@@ -34,4 +34,10 @@ public interface IKeeperDirectoryClient
         IEnumerable<string> ids,
         string token,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Domain marka bilgisi (displayName, logoUrl) — mail template context için.</summary>
+    Task<DomainBrandingDto?> GetDomainByNameAsync(
+        string domainName,
+        string token,
+        CancellationToken cancellationToken = default);
 }

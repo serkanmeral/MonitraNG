@@ -1424,14 +1424,17 @@ public class WorkItemCommandService : IWorkItemCommandService
             WorkItemId = workItemId,
             WorkItemKey = workItemKey,
             WorkItem = workItem,
-            TypeId = WorkItemDataHelper.GetString(workItem, "typeId"),
-            BoardId = WorkItemDataHelper.GetString(workItem, "boardId"),
+            TypeId = WorkItemDataHelper.GetPersonRefId(workItem, "typeId")
+                ?? WorkItemDataHelper.GetString(workItem, "typeId"),
+            BoardId = WorkItemDataHelper.GetPersonRefId(workItem, "boardId")
+                ?? WorkItemDataHelper.GetString(workItem, "boardId"),
             TransitionKey = transitionKey,
             FromStateId = fromStateId,
             ToStateId = toStateId,
             // Alıcılar work item alanlarından (assignee/watchers = mng_person_id) çözülür;
             // self-exclude'un çalışması için actor da aynı uzayda olmalı.
             Actor = _requestContext.MngPersonId,
+            DomainName = _requestContext.DomainName,
             Token = token
         };
 

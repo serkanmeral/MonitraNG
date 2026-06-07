@@ -1,93 +1,111 @@
-# E-posta sablonlari — MngNotifier
+# E-posta şablonları — MngNotifier
 
-**Son guncelleme:** 3 Haziran 2026  
-**Durum:** ⏸️ Planlama tamamlandi — implementasyon sonraki oturum ([DEVAM.md](./DEVAM.md))
+**Son güncelleme:** 7 Haziran 2026  
+**Durum:** Faz 0 implementasyon — [DEVAM.md](./DEVAM.md)
 
 ---
 
-## 1. Ozet
+## 1. Özet
 
 | Konu | Nerede |
 |------|--------|
-| Sablon icerigi (subject, bodyHtml) | DG `@mail_templates` |
-| Layout (header logo, footer) | DG `@mail_layouts` |
+| Şablon içeriği (`subject`, `bodyHtml`) | DG `@mail_templates` |
+| Layout (header logo, footer, CSS) | DG `@mail_layouts` |
 | Render + SMTP | **MngNotifier** |
-| Hangi event → hangi templateKey | Cagiran servis (Notifier bakmaz) |
+| Hangi geçiş → hangi template | **MO** `op_notification_policies` |
+| Template UI | DG CRUD ekranı (Faz 3) |
 
-Cagiran servis gonderir: `{ templateKey, context, to }` → `POST /api/v1/notifications/send-template`
-
----
-
-## 2. Dataset tasarimi
-
-Tam sema, alanlar, indeksler, placeholder kurallari:
-
-**[datasets/DATASETS.md](./datasets/DATASETS.md)**
-
-Dosyalar:
-
-- [notifier_datasets.json](./datasets/notifier_datasets.json) — 2 dataset semasi
-- [notifier_mail_layouts_seed.json](./datasets/notifier_mail_layouts_seed.json)
-- [notifier_mail_templates_seed.json](./datasets/notifier_mail_templates_seed.json)
+Çağıran gönderir: `{ templateKey, subject?, context, to }` → `POST /api/v1/notifications/send-template`
 
 ---
 
-## 3. Render akisi (Notifier)
+## 2. Body modeli
 
-```text
-send-template { templateKey, context, to }
-    → @mail_templates (templateKey)
-    → @mail_layouts (layoutKey veya "default")
-    → subject + bodyHtml placeholder replace
-    → layout sarimi (styles + header + content + footer)
-    → SMTP
-```
-
-**Logo:** Header'da `{{domain.logoUrl}}` + `{{domain.displayName}}`. `context.domain` veya Notifier domain branding cozumlemesi.
+- `bodyHtml` = **içerik fragment** (`<h1>`, `<p>`, `<div class="info-box">` …)
+- Layout = tam e-posta çerçevesi (`<html>`, header, footer, CSS)
+- UI editörü fragment düzenler; layout system seed ile başlar
 
 ---
 
-## 4. API (hedef)
+## 3. Placeholder
+
+- Format: `{{path.to.field}}` — `context` JSON nokta notasyonu
+- Değerler HTML-encode edilir (body/subject)
+- `variables[]` eksik context → **400**
+- Subject override (policy `emailSubject`) aynı motorla render edilir
+
+---
+
+## 4. API
+
+### send-template
 
 ```http
 POST /api/v1/notifications/send-template
-Content-Type: application/json
+Authorization: Bearer <token>   # DG okuma için zorunlu
+```
 
+```json
 {
   "to": ["user@example.com"],
-  "templateKey": "work-item-created",
+  "templateKey": "work-item-transitioned",
+  "subject": null,
   "context": {
-    "workItem": { "key": "WI-1", "title": "..." },
+    "workItem": { "key": "WI-42", "title": "..." },
+    "transition": { "key": "resolve", "fromState": "Open", "toState": "Done" },
     "actor": { "displayName": "..." },
     "domain": { "displayName": "...", "logoUrl": "https://..." }
   }
 }
 ```
 
-Ham mail (`POST /mail`) bootstrap / gecis icin kalir.
+**Subject önceliği:** request `subject` → template `subject` (her ikisi de placeholder render).
 
-Onizleme (plan): `POST /notifications/preview-template` — SMTP yok, rendered subject/html doner.
+### preview-template
+
+SMTP yok; rendered `subject` + `htmlBody` döner.
+
+### mail (legacy)
+
+`POST /notifications/mail` — bootstrap; yeni entegrasyonlar `send-template` kullanmalı.
 
 ---
 
-## 5. Notifier uygulama backlog
+## 5. Render akışı
 
-- [ ] DG client: `@mail_templates`, `@mail_layouts` okuma
-- [ ] `TemplateRenderService` — placeholder + HTML encode + layout birlestirme
-- [ ] Bos `domain.logoUrl` → `<img>` satirini atlama
-- [ ] `SendTemplate` endpoint + DTO
-- [ ] `variables[]` eksik context → 400
+```text
+templateKey → @mail_templates
+layoutKey (veya default) → @mail_layouts
+subject + bodyHtml placeholder replace
+layout wrap (styles + header + content + footer)
+boş domain.logoUrl → <img> satırı atlanır
+SMTP
+```
+
+---
+
+## 6. Backlog
+
+### Faz 0 (Notifier)
+
+- [ ] DG client
+- [ ] TemplateRenderService
+- [ ] send-template + preview-template
 - [ ] Dataset kurulum scripti
-- [ ] Preview endpoint (opsiyonel)
+
+### Faz 1+ (MO / UI)
+
+- [ ] MO orchestrator entegrasyonu — [MO_MAIL_POLICIES.md](./MO_MAIL_POLICIES.md)
+- [ ] Template admin UI
 
 ---
 
-## 6. Kararlar
+## 7. Kararlar
 
 | Tarih | Karar |
 |-------|--------|
-| 3 Haz 2026 | Render Notifier'da; cagiran `templateKey` + `context` |
-| 3 Haz 2026 | Icerik DG'de; `@mail_templates` + `@mail_layouts` |
-| 3 Haz 2026 | MO entegrasyonu bu planin disinda |
+| 3 Haz 2026 | Render Notifier'da; içerik DG'de |
+| 7 Haz 2026 | Body fragment + layout |
+| 7 Haz 2026 | Subject override (policy + request) |
 
-Ilgili: [MAIL_ARCHITECTURE.md](./MAIL_ARCHITECTURE.md) · [DEVAM.md](./DEVAM.md)
+İlgili: [MAIL_ARCHITECTURE.md](./MAIL_ARCHITECTURE.md) · [datasets/DATASETS.md](./datasets/DATASETS.md)

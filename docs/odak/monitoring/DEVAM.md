@@ -1,15 +1,107 @@
-# DEVAM — SIEM-Hafif Planlama (Kaldığımız Yer)
+# DEVAM — SIEM-Hafif + Alarm Merkezi (Kaldığımız Yer)
 
-**Son güncelleme:** 6 Haziran 2026 (IT merkezi port · Engine çoklu UDP · NxLog/FortiGate E2E tamam)  
-**Durum:** ✅ **SIEM Faz 1–4 + IT pilot E2E tamam** · Odak deploy ✅ · Git `@3a8a2ac` + commitlenmemiş multi-port/parser/E2E
+**Son güncelleme:** 6 Haziran 2026 (oturum sonu — **mola**, diğer modüllere geçiş)  
+**Durum:** ✅ **SIEM Faz 1–4 + Alarm Merkezi operatör UI** · Odak deploy ✅ · Git `main` @ **`969b57b`**
 
-**Handoff (yeni chat):** [HANDOFF.md](./HANDOFF.md) §9
+**Handoff (yeni chat):** aşağıdaki [§ Mola checkpoint](#mola-checkpoint-6-haz-2026--siem--alarm-merkezi-ui-kapandi) · [HANDOFF.md](./HANDOFF.md)
+
+> **⭐ KALDIĞIMIZ YER:** Temel SIEM-hafif MVP **yeterli** kabul edildi; kullanıcı **diğer modüllere** (OC, workflow vb.) geçiyor. Bu chat’ten devam: aşağıdaki checkpoint + “Yeni chat promptu”. Alarm motor detayı: [../alarm/DEVAM.md](../alarm/DEVAM.md)
 
 ---
 
 ## 1. Tek cümlede durum
 
-**SIEM MVP (U1–U7) + B1/B2/B3 + A4 ✅.** Linux auth U1 E2E tamamlandı. **IT merkezi syslog pilot (NxLog + FortiGate) E2E tamam.**
+**SIEM ingest → sec_events → kural (threshold/correlation/scheduled/sequence) → alarm → operatör UI** hattı Odak’ta çalışır durumda. **Güvenlik Yönetimi** menüsü altında **Alarm Merkezi** (alarmlar + kurallar) ve **SIEM Güvenlik Paneli** (dashboard + olay arama) canlı.
+
+---
+
+## Mola checkpoint (6 Haz 2026 — SIEM + Alarm Merkezi UI kapandı)
+
+### Ne tamamlandı (bu oturum serisi)
+
+| Alan | Durum | Not |
+|------|--------|-----|
+| Açık alarmlar UI | ✅ | Server pagination, filtreler, auto-refresh, detay paneli |
+| Alarm lifecycle API + UI | ✅ | acknowledge / suppress / resolve · context timeline |
+| Alarm geçmişi | ✅ | `from`/`to`, durum filtresi “Hepsi” |
+| SIEM olay arama | ✅ | Pagination, tarih aralığı, auto-refresh, detay |
+| Menü | ✅ | **Güvenlik Yönetimi** → Alarm Merkezi · SIEM Güvenlik Paneli |
+| Kurallar UI | ✅ | Alarmlar \| Kurallar sekmeleri; kurallar menüden ayrıldı |
+| Sequence kural formu | ✅ | U2 preset · create `sequenceSteps` · düzenlemede adımlar salt okunur |
+| Smoke | ✅ | `test-siem-alarm-ui-smoke.ps1` · `test-operator-smoke.ps1` |
+| Odak deploy | ✅ | `mngui` (+ önceki oturumda `mngalarm`, `mngreactor`) |
+
+### Git
+
+| Commit | Konu |
+|--------|------|
+| `c68669c` | Alarm Merkezi UI, lifecycle API, Güvenlik Yönetimi menüsü |
+| `969b57b` | Sequence kural formu, `test-siem-alarm-ui-smoke.ps1` |
+
+Branch: `main` · push edildi.
+
+### Odak (doğrulama)
+
+| Konu | Değer |
+|------|--------|
+| Gateway | http://192.168.20.20:5040 |
+| UI | http://192.168.20.20:3000 |
+| Domain / kullanıcı | `odak` · `odak_admin` / `Admin123!` |
+| Alarm Merkezi | `/apps/alarm-center/alarms` · `/apps/alarm-center/rules` |
+| SIEM paneli | `/apps/siem-center` · `/apps/siem-center/events` |
+| Menü patch | `docs/odak/monitoring/scripts/patch-siem-center-side-menu.ps1` |
+
+Deploy sonrası smoke:
+
+```powershell
+.\scripts\odak\test-siem-alarm-ui-smoke.ps1
+.\scripts\odak\test-siem-u2-alarm-e2e.ps1      # sequence alarm
+.\scripts\odak\test-operator-smoke.ps1
+.\scripts\odak\run-siem-quick-regression.ps1   # geniş regresyon (~6 dk)
+```
+
+### Önemli dosyalar (UI)
+
+| Alan | Dosyalar |
+|------|----------|
+| Alarmlar | `Mng.Ui/components/apps/alarm-center/AcAlarmsExplorer.vue`, `AcAlarmDetailPanel.vue`, `useAlarmList.ts` |
+| Kurallar | `AcAlarmRulesExplorer.vue`, `AcAlarmRuleFormDialog.vue`, `useAlarmRuleList.ts` |
+| SIEM | `AcSecEventsExplorer.vue`, `AcSiemCenterDashboard.vue` |
+| Menü / breadcrumb | `sidebarItem.ts`, `useSecurityManagementBreadcrumbs.ts` |
+| Alarm API | `MngAlarm/.../AlarmControllers.cs`, `AlarmLifecycleService.cs` |
+
+### Bilinen sınırlar (ertelenmiş — devam ederken)
+
+| Konu | Not |
+|------|-----|
+| Sequence adım **düzenleme** | Backend `UpdateAlarmRuleRequest` adım içermiyor; UI salt okunur |
+| Eski alarmlar lifecycle timeline | Backfill yok; yeni lifecycle kayıtları tam |
+| Alarm → **OC ticket** | Workflow Faz 6; ayrı oturum |
+| Hub / push bildirim | Yok |
+| 5651 / WORM / LogAlarm paritesi | Faz 5 — en sonda |
+| Endpoint ölçek (çok PC) | Pilot; NxLog şablonları hazır |
+
+### Sıradaki adımlar (SIEM chat’e dönünce — önerilen sıra)
+
+1. **Alarm → OC iş kaydı** — `alarm.raised` → Workflow `CreateWorkItem` (en yüksek operasyon değeri)
+2. **Operatör olgunlaştırma** — hub bildirim, alarm detaydan runbook/deep link, lifecycle backfill
+3. **Sequence update API** — backend + formda adım düzenleme
+4. **SIEM ops** — FortiGate `source.host`, Sysmon whitelist (HANDOFF’taki opsiyonel maddeler)
+5. **Faz 5** — 5651/WORM (regülasyon ihtiyacı doğunca)
+
+### Yeni chat promptu (kopyala-yapıştır)
+
+```
+docs/odak/monitoring/DEVAM.md ⭐ mola checkpoint (6 Haz) oku.
+SIEM-hafif MVP yeterli kabul edildi; Alarm Merkezi + sequence form deploy edildi (@969b57b).
+Odak: gateway :5040, UI :3000, odak_admin.
+Devam hedefi: [buraya yaz — örn. "alarm → OC ticket" veya "hub bildirim"]
+Commit ancak istersem.
+```
+
+### Konumlandırma (müşteri / IT)
+
+MonitraNG **SIEM-hafif**: hedefli senaryolar (U1–U10), olay arama, kural/alarm operasyonu, onaylı workflow aksiyonları. **Tam SIEM / 5651 / binlerce endpoint** değil — bkz. [SIEM_LOGALARM_COMPARISON.md](./SIEM_LOGALARM_COMPARISON.md).
 
 ---
 
@@ -208,7 +300,7 @@ LogAlarm / 5651 / WORM → **Faz 5 (ertelendi)** — [SIEM_ROADMAP.md §6](./SIE
 
 **Pilot kullanıcıları (Odak lab):** `pilot_fail_test20` / `pilot_ok_test20` (monitrang) · `pilot_fail_prod08` / `pilot_ok_prod08` (monitrang-prod)
 
-**Sıradaki:** commit (kullanıcı talebi) · opsiyonel FortiGate hostname / Sysmon filtresi · Faz 5 en sonda
+**Sıradaki (SIEM chat):** mola — bkz. üst [Mola checkpoint](#mola-checkpoint-6-haz-2026--siem--alarm-merkezi-ui-kapandi). Opsiyonel ingest: FortiGate hostname · Sysmon filtresi · Faz 5 en sonda.
 
 ### Oturum checkpoint (6 Haz 2026 — IT merkezi port + E2E)
 
@@ -220,7 +312,17 @@ LogAlarm / 5651 / WORM → **Faz 5 (ertelendi)** — [SIEM_ROADMAP.md §6](./SIE
 | Canlı TERMINAL | ✅ 4624/4625/4672 |
 | NxLog E2E | ✅ ingest · U1 alarm · workflow · approval→block.ip |
 | FortiGate E2E | ✅ ingest · U4 alarm · U4 workflow |
-| Commit | ⬜ kullanıcı talebi bekleniyor |
+| Commit (IT port oturumu) | ✅ sonraki commitlerde |
+
+### Oturum checkpoint (6 Haz 2026 — Alarm Merkezi UI + sequence form)
+
+| Konu | Durum |
+|------|--------|
+| Alarm Merkezi UI (alarmlar, kurallar, lifecycle) | ✅ commit `c68669c` |
+| Sequence kural formu + U2 preset | ✅ commit `969b57b` |
+| Smoke `test-siem-alarm-ui-smoke.ps1` | ✅ |
+| Odak deploy | ✅ `mngui` `-NoCache` |
+| Karar | Temel SIEM-hafif **yeterli** → diğer modüllere mola |
 
 ### Oturum checkpoint (6 Haz 2026 — Odak deploy + bootstrap hatası, arşiv)
 
@@ -248,6 +350,6 @@ E2E geçici alarm kuralları birikimini temizlemek: `purge-siem-e2e-alarm-rules.
 
 ## 7. İlgili DEVAM dosyaları
 
-- [workflow/DEVAM.md](../workflow/DEVAM.md) — P4 engine.command
-- [alarm/DEVAM.md](../alarm/DEVAM.md) — correlation + observation consumer
+- [alarm/DEVAM.md](../alarm/DEVAM.md) — MngAlarm motor · Alarm Merkezi UI özeti
+- [workflow/DEVAM.md](../workflow/DEVAM.md) — P4 engine.command · alarm→OC backlog
 - [SEC_EVENT_OBSERVATION_MAP.md](./SEC_EVENT_OBSERVATION_MAP.md) — ✅ implementasyon

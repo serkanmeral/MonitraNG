@@ -1,7 +1,5 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using MngOperations.Application.Configuration;
 using MngOperations.Application.Contracts.Notifications;
 using MngOperations.Application.Interfaces;
 using MngOperations.Application.Models;
@@ -14,21 +12,21 @@ public class NotificationOrchestratorService : INotificationOrchestrator
 {
     private readonly IMngDataGatewayClient _dg;
     private readonly IMngNotifiersClient _notifiers;
+    private readonly IKeeperDirectoryClient _keeper;
     private readonly IMetadataCache _metadataCache;
-    private readonly MngNotifiersSettings _notifierSettings;
     private readonly ILogger<NotificationOrchestratorService> _logger;
 
     public NotificationOrchestratorService(
         IMngDataGatewayClient dg,
         IMngNotifiersClient notifiers,
+        IKeeperDirectoryClient keeper,
         IMetadataCache metadataCache,
-        IOptions<MngOperationsSettings> settings,
         ILogger<NotificationOrchestratorService> logger)
     {
         _dg = dg;
         _notifiers = notifiers;
+        _keeper = keeper;
         _metadataCache = metadataCache;
-        _notifierSettings = settings.Value.MngNotifiers;
         _logger = logger;
     }
 
@@ -92,9 +90,11 @@ public class NotificationOrchestratorService : INotificationOrchestrator
                     {
                         await SendEmailAsync(
                             userIds,
+                            request,
                             subject,
                             htmlBody,
                             policy.EmailTemplateKey,
+                            policy.EmailSubject,
                             cancellationToken);
                     }
                 }
@@ -150,7 +150,15 @@ public class NotificationOrchestratorService : INotificationOrchestrator
             }
             else if (effectType.Equals("sendEmailViaMngNotifiers", StringComparison.OrdinalIgnoreCase))
             {
-                await SendEmailAsync(userIds, subject, htmlBody, templateKey, cancellationToken);
+                var subjectOverride = payload.TryGetValue("emailSubject", out var es) ? es?.ToString() : null;
+                await SendEmailAsync(
+                    userIds,
+                    request,
+                    subject,
+                    htmlBody,
+                    templateKey,
+                    subjectOverride,
+                    cancellationToken);
             }
         }
         catch (Exception ex)
@@ -289,28 +297,54 @@ public class NotificationOrchestratorService : INotificationOrchestrator
     }
 
     private async Task SendEmailAsync(
-        IReadOnlyList<string> recipients,
+        IReadOnlyList<string> personIds,
+        NotificationDispatchRequest request,
         string subject,
         string htmlBody,
         string? templateKey,
+        string? subjectOverride,
         CancellationToken cancellationToken)
     {
-        var emails = NotificationRecipientResolver.ToEmailAddresses(recipients, _notifierSettings.EmailDomainSuffix);
+        var emails = await ResolveRecipientEmailsAsync(personIds, request.Token, cancellationToken);
         if (emails.Count == 0)
         {
-            _logger.LogDebug(
-                "No email addresses resolved for notification (templateKey={TemplateKey})",
-                templateKey);
+            _logger.LogWarning(
+                "No email addresses resolved for notification (templateKey={TemplateKey}, personIds={PersonIds})",
+                templateKey,
+                string.Join(", ", personIds));
             return;
         }
 
-        var result = await _notifiers.SendMailAsync(new SendMailRequest
+        SendMailResult result;
+        if (!string.IsNullOrWhiteSpace(templateKey))
         {
-            To = emails.ToList(),
-            Subject = subject,
-            Body = htmlBody,
-            IsHtml = true
-        }, cancellationToken);
+            var context = await MailNotificationContextBuilder.BuildAsync(
+                request,
+                _metadataCache,
+                _keeper,
+                cancellationToken);
+
+            result = await _notifiers.SendTemplateAsync(
+                new SendTemplateRequest
+                {
+                    To = emails.ToList(),
+                    TemplateKey = templateKey.Trim(),
+                    Subject = string.IsNullOrWhiteSpace(subjectOverride) ? null : subjectOverride.Trim(),
+                    Context = context
+                },
+                request.Token,
+                cancellationToken);
+        }
+        else
+        {
+            result = await _notifiers.SendMailAsync(new SendMailRequest
+            {
+                To = emails.ToList(),
+                Subject = subject,
+                Body = htmlBody,
+                IsHtml = true
+            }, cancellationToken);
+        }
 
         if (!result.Success)
         {
@@ -321,6 +355,23 @@ public class NotificationOrchestratorService : INotificationOrchestrator
         }
     }
 
+    private async Task<IReadOnlyList<string>> ResolveRecipientEmailsAsync(
+        IReadOnlyList<string> personIds,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        if (personIds.Count == 0)
+            return Array.Empty<string>();
+
+        var users = await _keeper.GetUsersAsync(personIds, token, cancellationToken);
+        return personIds
+            .Select(id => users.TryGetValue(id, out var person) ? person.Email : null)
+            .Where(email => !string.IsNullOrWhiteSpace(email))
+            .Select(email => email!.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
     private static bool PolicyMatches(NotificationPolicyRecord policy, NotificationDispatchRequest request)
     {
         if (policy.IsActive == false)
@@ -329,14 +380,39 @@ public class NotificationOrchestratorService : INotificationOrchestrator
         if (!string.Equals(policy.EventType, request.EventType, StringComparison.OrdinalIgnoreCase))
             return false;
 
+        var workItemTypeId = request.TypeId
+            ?? WorkItemDataHelper.GetPersonRefId(request.WorkItem, "typeId")
+            ?? WorkItemDataHelper.GetString(request.WorkItem, "typeId");
+        var workItemBoardId = request.BoardId
+            ?? WorkItemDataHelper.GetPersonRefId(request.WorkItem, "boardId")
+            ?? WorkItemDataHelper.GetString(request.WorkItem, "boardId");
+
         if (!string.IsNullOrEmpty(policy.TypeId)
-            && !string.Equals(policy.TypeId, request.TypeId ?? WorkItemDataHelper.GetString(request.WorkItem, "typeId"), StringComparison.OrdinalIgnoreCase))
+            && !string.Equals(policy.TypeId, workItemTypeId, StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
 
         if (!string.IsNullOrEmpty(policy.BoardId)
-            && !string.Equals(policy.BoardId, request.BoardId ?? WorkItemDataHelper.GetString(request.WorkItem, "boardId"), StringComparison.OrdinalIgnoreCase))
+            && !string.Equals(policy.BoardId, workItemBoardId, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrEmpty(policy.TransitionKey)
+            && !string.Equals(policy.TransitionKey, request.TransitionKey, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrEmpty(policy.FromStateId)
+            && !string.Equals(policy.FromStateId, request.FromStateId, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrEmpty(policy.ToStateId)
+            && !string.Equals(policy.ToStateId, request.ToStateId, StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
@@ -347,6 +423,10 @@ public class NotificationOrchestratorService : INotificationOrchestrator
     private static int PolicyScore(NotificationPolicyRecord policy)
     {
         var score = 0;
+        if (!string.IsNullOrEmpty(policy.TransitionKey))
+            score += 4;
+        if (!string.IsNullOrEmpty(policy.FromStateId) && !string.IsNullOrEmpty(policy.ToStateId))
+            score += 3;
         if (!string.IsNullOrEmpty(policy.TypeId))
             score += 2;
         if (!string.IsNullOrEmpty(policy.BoardId))

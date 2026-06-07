@@ -114,7 +114,7 @@ Slot: layout `headerHtml` / `footerHtml` icinde de `{{domain.*}}` replace edilir
 | [notifier_mail_layouts_seed.json](./notifier_mail_layouts_seed.json) | Ornek layout kayitlari |
 | [notifier_mail_templates_seed.json](./notifier_mail_templates_seed.json) | Ornek sablon kayitlari |
 
-Kurulum scripti: *(sonraki adim — `docs/odak/notifications/scripts/`)*
+Kurulum scripti: [../scripts/setup-notifier-datasets.ps1](../scripts/setup-notifier-datasets.ps1)
 
 ---
 
