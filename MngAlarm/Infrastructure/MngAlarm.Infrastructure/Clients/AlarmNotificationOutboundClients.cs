@@ -247,9 +247,16 @@ public sealed class AlarmNotifiersDispatchClient(
     };
 }
 
+public sealed record AlarmKeeperRecipient(string PersonId, string Email, string DisplayName);
+
 public interface IAlarmKeeperUsersClient
 {
     Task<IReadOnlyDictionary<string, string>> ResolveEmailsAsync(
+        IReadOnlyList<string> personIds,
+        string bearerToken,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<AlarmKeeperRecipient>> ResolveRecipientsAsync(
         IReadOnlyList<string> personIds,
         string bearerToken,
         CancellationToken cancellationToken = default);
@@ -265,7 +272,18 @@ public sealed class AlarmKeeperUsersClient(
         string bearerToken,
         CancellationToken cancellationToken = default)
     {
-        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var recipients = await ResolveRecipientsAsync(personIds, bearerToken, cancellationToken);
+        return recipients
+            .Where(r => !string.IsNullOrWhiteSpace(r.Email))
+            .ToDictionary(r => r.PersonId, r => r.Email, StringComparer.OrdinalIgnoreCase);
+    }
+
+    public async Task<IReadOnlyList<AlarmKeeperRecipient>> ResolveRecipientsAsync(
+        IReadOnlyList<string> personIds,
+        string bearerToken,
+        CancellationToken cancellationToken = default)
+    {
+        var result = new List<AlarmKeeperRecipient>();
         if (personIds.Count == 0 || string.IsNullOrWhiteSpace(bearerToken))
             return result;
 
@@ -290,9 +308,13 @@ public sealed class AlarmKeeperUsersClient(
 
         foreach (var user in envelope.Users)
         {
-            if (string.IsNullOrWhiteSpace(user.Id) || string.IsNullOrWhiteSpace(user.Email))
+            var personId = user.ResolvedPersonId;
+            if (string.IsNullOrWhiteSpace(personId) || string.IsNullOrWhiteSpace(user.Email))
                 continue;
-            result[user.Id.Trim()] = user.Email.Trim();
+            result.Add(new AlarmKeeperRecipient(
+                personId,
+                user.Email.Trim(),
+                user.ResolvedDisplayName));
         }
 
         return result;
@@ -308,6 +330,28 @@ public sealed class AlarmKeeperUsersClient(
     private sealed class KeeperUserRow
     {
         public string? Id { get; set; }
+        public string? UserId { get; set; }
         public string? Email { get; set; }
+        public string? Username { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+
+        public string? ResolvedPersonId =>
+            !string.IsNullOrWhiteSpace(UserId) ? UserId.Trim()
+            : !string.IsNullOrWhiteSpace(Id) ? Id.Trim()
+            : null;
+
+        public string ResolvedDisplayName
+        {
+            get
+            {
+                var name = $"{FirstName} {LastName}".Trim();
+                if (!string.IsNullOrWhiteSpace(name))
+                    return name;
+                if (!string.IsNullOrWhiteSpace(Username))
+                    return Username.Trim();
+                return ResolvedPersonId ?? "Kullanici";
+            }
+        }
     }
 }

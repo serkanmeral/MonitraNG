@@ -13,6 +13,7 @@ function mapNotification(raw: Record<string, unknown>): OcNotification {
     workItemKey: pickStr(raw, 'workItemKey', 'WorkItemKey') ?? null,
     sourceDataset: pickStr(raw, 'sourceDataset', 'SourceDataset') ?? null,
     sourceRecordId: pickStr(raw, 'sourceRecordId', 'SourceRecordId') ?? null,
+    deepLink: pickStr(raw, 'deepLink', 'DeepLink') ?? null,
     createdAt: pickStr(raw, 'createdAt', 'CreatedAt') ?? null,
   };
 }

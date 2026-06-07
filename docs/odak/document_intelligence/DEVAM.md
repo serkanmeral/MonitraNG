@@ -41,7 +41,7 @@
 
 > **⭐ KALDIĞIMIZ YER (1 Haz ~21:00) — yeni chat buradan devam edecek:** **Faz 1 kapatıldı.** Bu turda **"taslak olarak kaydet"** eklendi: `dm_resources.status` (draft/published), `CreateMarkdownRequest.IsDraft` + `UpdateMarkdownRequest.IsDraft?` (null=koru), `ResourceDto.Status`; UI'da oluşturma + editörde **taslak/yayınla** butonları ve **taslak rozeti**. **Hem `mngdocument` hem `mngui` Odak'a deploy edildi ve canlı** (gateway 200, ui :3000 200; backend draft yaşam döngüsü doğrulandı). Faz 1'in tüm özellikleri (resources/tree/markdown/dosya/arama/audit/VH + PERM + miras + PREVIEW + DRAFT) artık test sunucusunda. **Sıradaki: Faz 2 — OperationCore WorkItem ↔ doküman ilişkisi.** (Ops.: non-admin canlı filtreleme/403 doğrulaması yapılmadı — admin bypass.)
 
-**Ana plan:** [MonitraNG_Document_Intelligence_Planning.md](MonitraNG_Document_Intelligence_Planning.md) · **Faz 1 dataset'leri:** [datasets/documentintelligence_datasets_phase1.json](datasets/documentintelligence_datasets_phase1.json)
+**Ana plan:** [MonitraNG_Document_Intelligence_Planning.md](MonitraNG_Document_Intelligence_Planning.md) · **Faz 1 dataset'leri:** [datasets/documentintelligence_datasets_phase1.json](datasets/documentintelligence_datasets_phase1.json) · **Widget kütüphanesi kapsamı (planlama):** [../widgets/DOMAIN_DOCUMENT_INTELLIGENCE.md](../widgets/DOMAIN_DOCUMENT_INTELLIGENCE.md)
 
 ---
 

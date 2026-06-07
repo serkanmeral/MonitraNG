@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://monitrang.local/schemas/widget-manifest-v1.json",
+  "title": "MonitraNG Widget Manifest v1",
+  "description": "Template ve Definition manifest sözleşmesi. Planlama: docs/odak/widgets/MANIFEST_SCHEMA.md",
+  "type": "object",
+  "required": ["manifestVersion"],
+  "oneOf": [
+    { "$ref": "#/$defs/WidgetTemplateManifest" },
+    { "$ref": "#/$defs/WidgetDefinitionManifest" }
+  ],
+  "$defs": {
+    "manifestVersion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "alarm",
+        "siem",
+        "operation-core",
+        "document-intelligence",
+        "generic",
+        "monitoring",
+        "compliance"
+      ]
+    },
+    "presentationKind": {
+      "type": "string",
+      "enum": ["stat", "chart", "table", "list", "banner", "gauge", "map", "embed"]
+    },
+    "LocalizedString": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "properties": {
+            "tr": { "type": "string" },
+            "en": { "type": "string" }
+          },
+          "additionalProperties": { "type": "string" }
+        }
+      ]
+    },
+    "ParameterValue": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "type": "boolean" },
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["$ref"],
+          "properties": {
+            "$ref": { "type": "string", "pattern": "^\\$" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "DataBindingConfig": {
+      "type": "object",
+      "properties": {
+        "queryRef": {
+          "type": "string",
+          "pattern": "^@[^/]+/queries/[^/]+$"
+        },
+        "serviceRef": {
+          "type": "string",
+          "pattern": "^(mngalarm|mngreactor|mngdocument|mngoperations):"
+        },
+        "defaultParameters": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/ParameterValue" }
+        },
+        "fieldMap": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "advanced": { "type": "object" }
+      },
+      "oneOf": [
+        { "required": ["queryRef"] },
+        { "required": ["serviceRef"] }
+      ]
+    },
+    "PresentationConfig": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": { "$ref": "#/$defs/presentationKind" },
+        "preset": { "type": "string" },
+        "defaultPreset": { "type": "string" },
+        "allowedPresets": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "config": { "type": "object" }
+      }
+    },
+    "ParameterSchemaField": {
+      "type": "object",
+      "required": ["name", "type", "label"],
+      "properties": {
+        "name": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["string", "number", "boolean", "enum", "duration", "workspace", "asset"]
+        },
+        "label": { "$ref": "#/$defs/LocalizedString" },
+        "required": { "type": "boolean" },
+        "default": { "$ref": "#/$defs/ParameterValue" },
+        "hidden": { "type": "boolean" },
+        "advanced": { "type": "boolean" },
+        "bindToContext": { "type": "string" }
+      }
+    },
+    "WidgetTemplateManifest": {
+      "type": "object",
+      "required": [
+        "manifestVersion",
+        "templateId",
+        "templateVersion",
+        "domain",
+        "title",
+        "presentation",
+        "dataBinding"
+      ],
+      "properties": {
+        "manifestVersion": { "$ref": "#/$defs/manifestVersion" },
+        "templateId": { "type": "string", "pattern": "^[a-z0-9.-]+$" },
+        "templateVersion": { "type": "string" },
+        "domain": { "$ref": "#/$defs/domain" },
+        "category": { "type": "string" },
+        "title": { "$ref": "#/$defs/LocalizedString" },
+        "description": { "$ref": "#/$defs/LocalizedString" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "presentation": { "$ref": "#/$defs/PresentationConfig" },
+        "dataBinding": { "$ref": "#/$defs/DataBindingConfig" },
+        "parametersSchema": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/ParameterSchemaField" }
+        },
+        "interactions": { "type": "object" },
+        "export": { "type": "object" },
+        "permissions": { "type": "object" }
+      }
+    },
+    "WidgetDefinitionManifest": {
+      "allOf": [
+        { "$ref": "#/$defs/WidgetTemplateManifest" },
+        {
+          "type": "object",
+          "required": ["name", "parameters", "isActive"],
+          "properties": {
+            "name": { "type": "string" },
+            "parameters": {
+              "type": "object",
+              "additionalProperties": { "$ref": "#/$defs/ParameterValue" }
+            },
+            "isActive": { "type": "boolean" }
+          }
+        }
+      ]
+    }
+  }
+}

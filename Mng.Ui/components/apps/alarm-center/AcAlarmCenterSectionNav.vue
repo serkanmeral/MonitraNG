@@ -6,9 +6,11 @@ import { useAppI18n } from '@/composables/useAppI18n';
 const { t } = useAppI18n();
 const route = useRoute();
 
-const activeTab = computed(() =>
-  route.path.startsWith('/apps/alarm-center/rules') ? 'rules' : 'alarms',
-);
+const activeTab = computed(() => {
+  if (route.path.startsWith('/apps/alarm-center/notification-policies')) return 'policies';
+  if (route.path.startsWith('/apps/alarm-center/rules')) return 'rules';
+  return 'alarms';
+});
 </script>
 
 <template>
@@ -25,6 +27,13 @@ const activeTab = computed(() =>
     </v-btn>
     <v-btn value="rules" prepend-icon="mdi-shield-crown-outline" to="/apps/alarm-center/rules">
       {{ t('alarmCenter.navRules') }}
+    </v-btn>
+    <v-btn
+      value="policies"
+      prepend-icon="mdi-bell-ring-outline"
+      to="/apps/alarm-center/notification-policies"
+    >
+      {{ t('alarmCenter.navNotificationPolicies') }}
     </v-btn>
   </v-btn-toggle>
 </template>

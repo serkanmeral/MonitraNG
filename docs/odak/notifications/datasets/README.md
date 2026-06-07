@@ -6,7 +6,7 @@
 | [notifier_dataset_category.json](./notifier_dataset_category.json) | DG kategori **NotifierDatasets** |
 | [notifier_datasets.json](./notifier_datasets.json) | `@mail_layouts` + `@mail_templates` semalari |
 | [notifier_mail_layouts_seed.json](./notifier_mail_layouts_seed.json) | Ornek layout kayitlari (`default`, `minimal`) |
-| [notifier_mail_templates_seed.json](./notifier_mail_templates_seed.json) | Ornek system sablonlari (6 adet) |
+| [notifier_mail_templates_seed.json](./notifier_mail_templates_seed.json) | Ornek system sablonlari (8 adet) |
 | [odak_test_branding.json](./odak_test_branding.json) | Odak domain test logo URL + displayName |
 
 ## Seed sablon ozeti
@@ -19,6 +19,8 @@
 | `work-item-updated` | Genel guncelleme |
 | `field-changed` | Tek alan degisimi |
 | `generic-notification` | Serbest baslik/govde |
+| `alarm-raised` | Alarm olustu / guncellendi |
+| `alarm-resolved` | Alarm cozuldu |
 
 ## Odak test markasi
 

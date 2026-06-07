@@ -99,15 +99,26 @@ public sealed class AlarmNotificationDispatchService(
                 if (policy.Channels.Any(c => c.Equals(AlarmNotificationChannels.Email, StringComparison.OrdinalIgnoreCase))
                     && !string.IsNullOrWhiteSpace(policy.EmailTemplateKey))
                 {
-                    var emails = await ResolveEmailsAsync(policy.RecipientPersonIds, token, cancellationToken);
-                    if (emails.Count > 0)
+                    var recipients = await keeperUsers.ResolveRecipientsAsync(
+                        policy.RecipientPersonIds,
+                        token,
+                        cancellationToken);
+                    foreach (var recipient in recipients)
                     {
+                        var perRecipientContext = new Dictionary<string, object?>(mailContext, StringComparer.Ordinal)
+                        {
+                            ["recipient"] = new Dictionary<string, object?>
+                            {
+                                ["displayName"] = recipient.DisplayName,
+                                ["email"] = recipient.Email,
+                            },
+                        };
                         await notifiers.SendTemplateAsync(
                             token,
-                            emails,
+                            [recipient.Email],
                             policy.EmailTemplateKey!.Trim(),
                             policy.EmailSubject,
-                            mailContext,
+                            perRecipientContext,
                             cancellationToken);
                         dispatched = true;
                     }
@@ -171,20 +182,6 @@ public sealed class AlarmNotificationDispatchService(
                 toastSeverity,
                 cancellationToken);
         }
-    }
-
-    private async Task<IReadOnlyList<string>> ResolveEmailsAsync(
-        IReadOnlyList<string> personIds,
-        string token,
-        CancellationToken cancellationToken)
-    {
-        var map = await keeperUsers.ResolveEmailsAsync(personIds, token, cancellationToken);
-        return personIds
-            .Select(id => map.TryGetValue(id, out var email) ? email : null)
-            .Where(email => !string.IsNullOrWhiteSpace(email))
-            .Select(email => email!)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
     }
 
     private static (string Title, string Message, string ToastSeverity) BuildInAppContent(

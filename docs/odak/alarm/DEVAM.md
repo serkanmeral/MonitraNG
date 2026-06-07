@@ -1,7 +1,7 @@
 # DEVAM — Alarm & Rule Engine (Kaldığımız Yer)
 
-**Son güncelleme:** 6 Haziran 2026  
-**Durum:** ✅ Faz 0–2 motor · ✅ **Alarm Merkezi operatör UI** · Git `969b57b` · **mola** (SIEM chat birleşik handoff)
+**Son güncelleme:** 7 Haziran 2026  
+**Durum:** ✅ Faz 0–2 motor · ✅ **Alarm Merkezi operatör UI** · ✅ **Alarm bildirim politikaları (AN-1→AN-5) Odak canlı** · **mola**
 
 > **SIEM + Alarm birlikte devam:** [../monitoring/DEVAM.md](../monitoring/DEVAM.md) ⭐ mola checkpoint  
 > Workflow: [../workflow/DEVAM.md](../workflow/DEVAM.md) · Platform UI: [../PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md)
@@ -10,9 +10,9 @@
 
 ## 1. Tek cümlede durum
 
-`MngAlarm` Odak'ta ayakta (threshold, correlation, scheduled, **sequence**). Operatör tarafı **Alarm Merkezi** (`/apps/alarm-center/*`): açık alarm/geçmiş, lifecycle (ack/suppress/resolve), kural CRUD, **sequence create (U2 preset)**. SIEM olay arama ayrı: `/apps/siem-center/*`.
+`MngAlarm` Odak'ta ayakta (threshold, correlation, scheduled, **sequence**). Operatör tarafı **Alarm Merkezi** (`/apps/alarm-center/*`): açık alarm/geçmiş, lifecycle, kural CRUD, **bildirim politikaları** (`/notification-policies`). SIEM olay arama ayrı: `/apps/siem-center/*`.
 
-**Son commitler:** `c68669c` (Alarm Merkezi + lifecycle) · `969b57b` (sequence form + smoke)
+**Son geliştirme:** AN-1→AN-5 (CRUD API, dispatch inApp+email+Hub, UI, mail seed, E2E script). Manuel doğrulama: [CONTROL_CHECKLIST.md](../CONTROL_CHECKLIST.md) B+C.
 
 ---
 
@@ -157,25 +157,45 @@ Event şeması: [ALARM_RULE_ENGINE_PLAN §8](./ALARM_RULE_ENGINE_PLAN.md)
 
 ---
 
-## 6. Sıradaki — Alarm bildirim politikaları (AN)
+## 6. Alarm bildirim politikaları (AN) — ✅ tamamlandı
 
 **Ön koşul toast:** ✅ MO in-app toaster canlı ([IN_APP_TOAST_PLAN.md](../notifications/IN_APP_TOAST_PLAN.md) T1–T3, T5).
 
 | Faz | İçerik | Durum |
 |-----|--------|-------|
-| **AN-1** | `@mon_alarm_notification_policies` Mongo + CRUD API | ✅ kod (deploy + smoke bekliyor) |
-| **AN-2** | `AlarmNotificationDispatchService` (policy match + inApp + email + Hub) | ✅ kod (deploy + policy seed bekliyor) |
-| AN-3 | Alarm Center UI (explorer + dialog + person multi-select) | bekliyor |
-| AN-4 | `alarm-raised` / `alarm-resolved` mail seed + E2E | bekliyor |
-| AN-5 | Hub toaster (MO altyapısı hazır; dispatch AN-2 ile) | bekliyor |
+| **AN-1** | `@mon_alarm_notification_policies` Mongo + CRUD API | ✅ deploy |
+| **AN-2** | `AlarmNotificationDispatchService` (policy match + inApp + email + Hub) | ✅ deploy |
+| **AN-3** | Alarm Center UI (`/apps/alarm-center/notification-policies`) | ✅ deploy |
+| **AN-4** | `alarm-raised` / `alarm-resolved` mail seed + smoke | ✅ seed + script |
+| **AN-5** | Hub toaster (dispatch ile) | ✅ E2E doğrulandı |
 
 Spec: [ALARM_NOTIFICATION_POLICIES.md](./ALARM_NOTIFICATION_POLICIES.md)
 
-**Araya planlanan (platform):** RabbitMQ diagnostics ve değerlendirme — `mng.alarms`, `mng.workflow`, Reactor publish, prefetch/DLQ. Bkz. [PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md) §4.
+**Seed / smoke:**
+```powershell
+.\docs\odak\alarm\scripts\seed-alarm-notification-policies.ps1
+.\docs\odak\alarm\scripts\smoke-alarm-notification-policy.ps1
+```
+
+**E2E (script ile doğrulandı):** U1 `login_failed` ×10 → alarm raise → inbox (2× AlarmRaised) + Hub toaster + `alarm-raised` mail → resolve → AlarmResolved + `alarm-resolved` mail. Test kullanıcısı: `odak_admin` · personId `6a0f8fd13d6ba5d774ee37c7`.
 
 ---
 
-## 7. İlgili dokümanlar
+## 7. Sıradaki (yeni oturum)
+
+1. **Manuel kontrol listesi** — [CONTROL_CHECKLIST.md](../CONTROL_CHECKLIST.md) A6–A8, B, D (UI gözle doğrulama).
+2. **RMQ-DIAG** (platform, ayrı oturum) — `mng.alarms`, `mng.workflow`, Reactor publish, prefetch/DLQ. Bkz. [PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md) §4.
+3. **İleri faz (ertelenen):** `excludeAcknowledgedBy`, rol tabanlı alıcılar, Block IP / Engine komut (P4 tam kapsam).
+
+**Deploy hatırlatma (UI):**
+```powershell
+.\scripts\odak\sync-odak-source.ps1 -Paths Mng.Ui
+.\scripts\odak\deploy-odak-apps.ps1 -Services mngui -NoCache
+```
+
+---
+
+## 8. İlgili dokümanlar
 
 - [ALARM_RULE_ENGINE_PLAN.md](./ALARM_RULE_ENGINE_PLAN.md)
 - [ALARM_NOTIFICATION_POLICIES.md](./ALARM_NOTIFICATION_POLICIES.md)

@@ -8,6 +8,11 @@ import {
   ocMarkNotificationRead,
 } from '@/services/operationCoreService';
 import type { OcNotification } from '@/types/apps/operationCore';
+import {
+  notificationTypeColor,
+  notificationTypeIcon,
+  resolveNotificationNavigationTarget,
+} from '@/utils/ocNotificationNavigation';
 
 const localeStore = useLocaleStore();
 const { refreshTick } = useNotificationBell();
@@ -59,11 +64,8 @@ async function onItemClick(item: OcNotification) {
       // best-effort
     }
   }
-  if (item.deepLink) {
-    navigateTo(item.deepLink);
-  } else if (item.workItemId) {
-    navigateTo(`/apps/operation-core/work-items/${encodeURIComponent(item.workItemId)}/profile`);
-  }
+  const target = resolveNotificationNavigationTarget(item);
+  if (target) void navigateTo(target);
 }
 
 function goToAll() {
@@ -80,7 +82,13 @@ async function markAllRead() {
   }
 }
 
-const KNOWN_TYPES = new Set(['CommentMention', 'WorkItemAssigned']);
+const KNOWN_TYPES = new Set([
+  'CommentMention',
+  'WorkItemAssigned',
+  'AlarmRaised',
+  'AlarmUpdated',
+  'AlarmResolved',
+]);
 
 function typeLabel(type?: string | null): string {
   const key = type && KNOWN_TYPES.has(type)
@@ -90,25 +98,11 @@ function typeLabel(type?: string | null): string {
 }
 
 function typeIcon(type?: string | null): string {
-  switch (type) {
-    case 'CommentMention':
-      return 'mdi-at';
-    case 'WorkItemAssigned':
-      return 'mdi-account-arrow-right';
-    default:
-      return 'mdi-bell-outline';
-  }
+  return notificationTypeIcon(type);
 }
 
 function typeColor(type?: string | null): string {
-  switch (type) {
-    case 'CommentMention':
-      return 'primary';
-    case 'WorkItemAssigned':
-      return 'info';
-    default:
-      return 'secondary';
-  }
+  return notificationTypeColor(type);
 }
 
 const rtf = computed(() => {

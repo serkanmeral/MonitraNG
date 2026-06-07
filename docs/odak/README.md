@@ -26,8 +26,9 @@ Tüm kurulum ve günlük çalışma akışı tek dokümanda:
 | **[AI_PLANNING_DECISION.md](./AI_PLANNING_DECISION.md)** | **Yapay zeka zamanlama kararı** — çerçeve şimdi, implementasyon çekirdek hat sonrası |
 | **[compliance/README.md](./compliance/README.md)** | Standart uyumluluğu — ISO/IEC 27001 + AS9100 planı |
 | **[notifications/DEVAM.md](./notifications/DEVAM.md)** | MngNotifier e-posta — ⏸️ planlama duraklatildi; `send-template` sirada |
+| **[widgets/README.md](./widgets/README.md)** | **Widget & Dashboard designer** — planlama tamam; [DEVAM.md](./widgets/DEVAM.md) |
 
-Yeni bir chat’te geliştirmeye geçerken önce **ODAK_FULL_SETUP** okuyun; ayrıntı için alt bölümlerdeki linklere inin. OC geliştirmesi için **operationcore** klasörüne; bildirim planlaması için **notifications** klasörüne bakın.
+Yeni bir chat’te geliştirmeye geçerken önce **ODAK_FULL_SETUP** okuyun; ayrıntı için alt bölümlerdeki linklere inin. OC geliştirmesi için **operationcore** klasörüne; bildirim planlaması için **notifications** klasörüne; widget/dashboard mimarisi için **widgets** klasörüne bakın.
 
 ---
 
@@ -104,6 +105,22 @@ docs/odak/
 │   ├── datasets/               ← @mail_templates, @mail_layouts sema + seed
 │   ├── MEVCUT_DURUM.md         ← kod gerçeği (MngNotifier, MO, Keeper, chat)
 │   ├── DEVAM.md                ← ⏸️ kaldigimiz yer (send-template sirada)
+├── widgets/
+│   ├── README.md
+│   ├── ARCHITECTURE.md
+│   ├── MANIFEST_SCHEMA.md
+│   ├── DATA_CATALOG.md
+│   ├── KATALOG_V1.md
+│   ├── DESIGNER_UX.md
+│   ├── PRESENTATION_PRESETS.md
+│   ├── INTERACTIVITY_MODEL.md
+│   ├── DOMAIN_*.md (alarm, siem, operation-core, document-intelligence)
+│   ├── DEVAM.md
+│   ├── schemas/widget-manifest-v1.schema.json
+│   └── datasets/
+├── document_intelligence/
+│   ├── DEVAM.md                ← Faz 1 ✅; Faz 2 OC entegrasyon
+│   └── …                       ← widget: ../widgets/DOMAIN_DOCUMENT_INTELLIGENCE.md
 └── domain/
     ├── DOMAIN_OLUSTURMA.md
     ├── DOMAIN_OLUSTURMA_API.md

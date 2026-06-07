@@ -1,0 +1,12 @@
+{
+  "recipientPersonId": "6a0f8fd13d6ba5d774ee37c7",
+  "policies": {
+    "ac-resolved-notify": "bcca31a3fe9344b591b17c68ae866279",
+    "ac-critical-raised": "640983b6b26d4670845e844bf98fe088",
+    "ac-u1-brute-force-toast": "8c1f638d853641edb896bdee2d2577ba"
+  },
+  "domain": "odak",
+  "gatewayUrl": "http://192.168.20.20:5040",
+  "seededAt": "2026-06-07T06:39:19.1892196Z",
+  "recipientUsername": "odak_admin"
+}

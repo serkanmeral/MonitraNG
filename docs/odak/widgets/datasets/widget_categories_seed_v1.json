@@ -1,0 +1,74 @@
+[
+  {
+    "name": "alarm-kpi",
+    "description": "Alarm özet kartları",
+    "icon": "mdi-bell-alert",
+    "color": "error",
+    "order": 10,
+    "isActive": true,
+    "isSystemCategory": true
+  },
+  {
+    "name": "alarm-charts",
+    "description": "Alarm grafikleri",
+    "icon": "mdi-chart-donut",
+    "color": "error",
+    "order": 11,
+    "isActive": true,
+    "isSystemCategory": true
+  },
+  {
+    "name": "siem-kpi",
+    "description": "SIEM özet kartları",
+    "icon": "mdi-shield-check",
+    "color": "primary",
+    "order": 20,
+    "isActive": true,
+    "isSystemCategory": true
+  },
+  {
+    "name": "siem-charts",
+    "description": "SIEM grafikleri",
+    "icon": "mdi-chart-timeline-variant",
+    "color": "primary",
+    "order": 21,
+    "isActive": true,
+    "isSystemCategory": true
+  },
+  {
+    "name": "oc-kpi",
+    "description": "Operasyon özet kartları (MO)",
+    "icon": "mdi-clipboard-list",
+    "color": "secondary",
+    "order": 30,
+    "isActive": true,
+    "isSystemCategory": true
+  },
+  {
+    "name": "oc-work-queues",
+    "description": "İş kuyrukları ve listeler",
+    "icon": "mdi-format-list-bulleted",
+    "color": "secondary",
+    "order": 31,
+    "isActive": true,
+    "isSystemCategory": true
+  },
+  {
+    "name": "di-lists",
+    "description": "Doküman listeleri",
+    "icon": "mdi-file-document-multiple",
+    "color": "info",
+    "order": 40,
+    "isActive": true,
+    "isSystemCategory": true
+  },
+  {
+    "name": "di-quick-access",
+    "description": "Hızlı erişim ve banner",
+    "icon": "mdi-link-variant",
+    "color": "info",
+    "order": 41,
+    "isActive": true,
+    "isSystemCategory": true
+  }
+]

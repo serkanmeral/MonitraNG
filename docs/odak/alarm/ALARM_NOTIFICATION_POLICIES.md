@@ -1,7 +1,7 @@
 # Alarm Merkezi — Bildirim politikaları
 
 **Son güncelleme:** 7 Haziran 2026  
-**Durum:** 🔄 **AN-3 sırada** — AN-1 CRUD ✅ · AN-2 dispatch ✅ (deploy + UI bekliyor)
+**Durum:** ✅ **AN-1–AN-5 kod hazır** — UI + seed + smoke script; manuel doğrulama: [CONTROL_CHECKLIST.md](../CONTROL_CHECKLIST.md)
 
 **İlişkili:** [IN_APP_TOAST_PLAN.md](../notifications/IN_APP_TOAST_PLAN.md) · MO paraleli: [MO_MAIL_POLICIES.md](../notifications/MO_MAIL_POLICIES.md)
 
@@ -135,12 +135,26 @@ UI proxy: mevcut `Mng.Ui/server/api/alarm/[...path].ts` → gateway.
 
 ## 8. E-posta şablonları
 
-Alarm için `@mail_templates` seed örnekleri (ileride):
+Alarm için `@mail_templates` seed (`notifier_mail_templates_seed.json`):
 
 - `alarm-raised`
 - `alarm-resolved`
 
 Placeholder'lar: `{{alarm.id}}`, `{{alarm.severity}}`, `{{rule.name}}`, `{{event.timestamp}}`, `{{recipient.displayName}}`.
+
+---
+
+## 8b. Odak demo seed
+
+| Dosya | Açıklama |
+|-------|----------|
+| [datasets/alarm_notification_policies_seed.json](./datasets/alarm_notification_policies_seed.json) | 3 örnek politika tanımı |
+| [scripts/seed-alarm-notification-policies.ps1](./scripts/seed-alarm-notification-policies.ps1) | Idempotent seed (`alarm-raised` / `alarm-resolved` mail şablonları dahil) |
+| [scripts/alarm_notification_policies_seed_result.json](./scripts/alarm_notification_policies_seed_result.json) | Son çalıştırma — oluşan policy id'leri |
+
+```powershell
+.\docs\odak\alarm\scripts\seed-alarm-notification-policies.ps1
+```
 
 ---
 

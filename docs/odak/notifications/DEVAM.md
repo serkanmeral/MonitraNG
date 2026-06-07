@@ -7,7 +7,7 @@
 
 ## 1. Tek cümlede durum
 
-**MO bildirimleri uçtan uca:** e-posta (`send-template` → SMTP) + in-app inbox + Hub toaster (`pushToast`, `@notification_templates`, `toastSeverity`). Sırada: alarm dispatch (T4 / AN-1→AN-2), kalan toaster smoke maddeleri, **RabbitMQ diagnostics** (ayrı oturum — [PLATFORM_HANDOFF.md](../PLATFORM_HANDOFF.md) §4).
+**MO bildirimleri uçtan uca:** e-posta + in-app inbox + Hub toaster + **zil deep link** (`NotificationDto.DeepLink` → `ocNotificationNavigation`). **Alarm bildirimleri (AN-1→AN-5) Odak canlı.** Manuel test: [CONTROL_CHECKLIST.md](../CONTROL_CHECKLIST.md) A+B. **RMQ-DIAG** ayrı oturum.
 
 ---
 
@@ -152,4 +152,14 @@ Local Notifier env: `MngNotifierSettings__DataGateway__BaseUrl=http://192.168.20
 - [x] Odak deploy (`mnghub`, `mngoperations`, `mngui`) + `smoke-inapp-toast.ps1`
 - [ ] Kalan smoke: iki kullanıcı izolasyonu, `pushToast: false`, hub kapalı poll
 
-**Devam:** Commit → **AN-1** alarm notification policies (MngAlarm). Toast planı: [IN_APP_TOAST_PLAN.md](./IN_APP_TOAST_PLAN.md).
+**Zil deep link (✅):** `mngoperations` API `deepLink` + `mngui` `NotificationDD` / `/apps/operation-core/notifications` navigasyon.
+
+---
+
+## 8. Sıradaki (yeni oturum)
+
+1. [CONTROL_CHECKLIST.md](../CONTROL_CHECKLIST.md) — A6–A8 (toaster edge), B (alarm policy UI gözle), D (deep link tıklama).
+2. MO toaster kalan smoke maddeleri (yukarıdaki checkbox'lar).
+3. Alarm tarafı handoff: [../alarm/DEVAM.md](../alarm/DEVAM.md) §7.
+
+Toast planı: [IN_APP_TOAST_PLAN.md](./IN_APP_TOAST_PLAN.md).

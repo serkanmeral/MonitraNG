@@ -8,6 +8,12 @@ import type {
   CreateAlarmRuleRequest,
   UpdateAlarmRuleRequest,
 } from '@/types/apps/alarm';
+import type {
+  AlarmNotificationPolicy,
+  CreateAlarmNotificationPolicyRequest,
+  UpdateAlarmNotificationPolicyRequest,
+} from '@/types/apps/alarmNotificationPolicy';
+import { normalizeAlarmNotificationPolicy } from '@/utils/acAlarmNotificationPolicies';
 import { useAuthStore } from '@/stores/auth';
 
 function domainHeaders(): Record<string, string> {
@@ -154,4 +160,66 @@ export function alarmSuppress(alarmId: string): Promise<AlarmSummary> {
 
 export function alarmResolve(alarmId: string): Promise<AlarmSummary> {
   return postAlarmAction(alarmId, 'resolve');
+}
+
+function normalizeAlarmNotificationPolicyList(raw: unknown): AlarmNotificationPolicy[] {
+  const rows = Array.isArray(raw)
+    ? raw
+    : raw && typeof raw === 'object' && Array.isArray((raw as Record<string, unknown>).items)
+      ? ((raw as Record<string, unknown>).items as Record<string, unknown>[])
+      : [];
+  return rows
+    .map((row) => normalizeAlarmNotificationPolicy(row))
+    .filter((p) => p.id && p.name);
+}
+
+export async function alarmNotificationPolicyList(options?: {
+  isActive?: boolean;
+}): Promise<AlarmNotificationPolicy[]> {
+  const raw = await $fetch<unknown>(
+    `/api/alarm/v1/notification-policies${buildQuery({ isActive: options?.isActive })}`,
+    { headers: domainHeaders() },
+  );
+  return normalizeAlarmNotificationPolicyList(raw);
+}
+
+export async function alarmNotificationPolicyGet(policyId: string): Promise<AlarmNotificationPolicy> {
+  const raw = await $fetch<Record<string, unknown>>(
+    `/api/alarm/v1/notification-policies/${encodeURIComponent(policyId)}`,
+    { headers: domainHeaders() },
+  );
+  return normalizeAlarmNotificationPolicy(raw);
+}
+
+export async function alarmNotificationPolicyCreate(
+  body: CreateAlarmNotificationPolicyRequest,
+): Promise<AlarmNotificationPolicy> {
+  const raw = await $fetch<Record<string, unknown>>('/api/alarm/v1/notification-policies', {
+    method: 'POST',
+    headers: domainHeaders(),
+    body,
+  });
+  return normalizeAlarmNotificationPolicy(raw);
+}
+
+export async function alarmNotificationPolicyUpdate(
+  policyId: string,
+  body: UpdateAlarmNotificationPolicyRequest,
+): Promise<AlarmNotificationPolicy> {
+  const raw = await $fetch<Record<string, unknown>>(
+    `/api/alarm/v1/notification-policies/${encodeURIComponent(policyId)}`,
+    {
+      method: 'PUT',
+      headers: domainHeaders(),
+      body,
+    },
+  );
+  return normalizeAlarmNotificationPolicy(raw);
+}
+
+export async function alarmNotificationPolicyDelete(policyId: string): Promise<void> {
+  await $fetch(`/api/alarm/v1/notification-policies/${encodeURIComponent(policyId)}`, {
+    method: 'DELETE',
+    headers: domainHeaders(),
+  });
 }

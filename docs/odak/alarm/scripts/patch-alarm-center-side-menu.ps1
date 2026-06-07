@@ -161,6 +161,7 @@ foreach ($row in $items) {
 $headerOrder = [Math]::Max($maxOrder + 1, 221)
 $alarmsItemOrder = $headerOrder + 1
 $rulesItemOrder = $headerOrder + 2
+$policiesItemOrder = $headerOrder + 3
 
 # --- Header: Alarm Merkezi ---
 $headerResult = Upsert-MenuItem -AllItems $items -Label "Alarm Merkezi header" -FindExisting {
@@ -219,6 +220,25 @@ Upsert-MenuItem -AllItems $items -Label "Alarm kurallari" -FindExisting {
     icon      = "AdjustmentsIcon"
     iconType  = "tabler"
     to        = "/apps/alarm-center/rules"
+    type      = "internal"
+    disabled  = $false
+} | Out-Null
+
+# --- Bildirim politikaları ---
+Upsert-MenuItem -AllItems $items -Label "Bildirim politikalari" -FindExisting {
+    $_.pageCode -eq "alarmCenter.notificationPolicies.menuTitle" -or
+    $_.to -eq "/apps/alarm-center/notification-policies"
+} -Body @{
+    order     = $policiesItemOrder
+    itemType  = "item"
+    level     = 1
+    parentId  = $headerId
+    pageType  = "manager"
+    pageCode  = "alarmCenter.notificationPolicies.menuTitle"
+    title     = "Bildirim politikaları"
+    icon      = "BellRingIcon"
+    iconType  = "tabler"
+    to        = "/apps/alarm-center/notification-policies"
     type      = "internal"
     disabled  = $false
 } | Out-Null

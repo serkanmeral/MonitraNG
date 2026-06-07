@@ -172,6 +172,7 @@ public class NotificationQueryService : INotificationQueryService
         WorkItemKey = WorkItemDataHelper.GetString(row, "workItemKey"),
         SourceDataset = WorkItemDataHelper.GetString(row, "sourceDataset"),
         SourceRecordId = WorkItemDataHelper.GetString(row, "sourceRecordId"),
+        DeepLink = WorkItemDataHelper.GetString(row, "deepLink"),
         CreatedAt = WorkItemDataHelper.GetDateTime(row, "createdAt")
     };
 

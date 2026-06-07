@@ -154,6 +154,72 @@
       "isActive": true
     },
     {
+      "templateKey": "alarm-raised",
+      "name": "Alarm olustu",
+      "description": "Yeni alarm veya alarm guncellemesi bildirimi (MngAlarm dispatch).",
+      "subject": "[Alarm] {{rule.name}} - onem {{alarm.severity}}",
+      "bodyHtml": "<h1 style=\"font-size:20px;margin:0 0 12px;\">Alarm bildirimi</h1><p>Merhaba <strong>{{recipient.displayName}}</strong>,</p><p><strong>{{rule.name}}</strong> kurali icin yeni bir alarm kaydi olustu veya guncellendi.</p><div class=\"info-box\"><h2 class=\"info-box-title\">Alarm ozeti</h2><p><strong>Alarm ID:</strong> {{alarm.id}}</p><p><strong>Onem:</strong> {{alarm.severity}}</p><p><strong>Kural:</strong> {{rule.name}}</p><p><strong>Olay:</strong> {{event.type}}</p><p><strong>Zaman:</strong> {{event.timestamp}}</p></div>",
+      "variables": [
+        "recipient.displayName",
+        "alarm.id",
+        "alarm.severity",
+        "rule.id",
+        "rule.name",
+        "event.type",
+        "event.timestamp",
+        "domain.name"
+      ],
+      "layoutKey": "default",
+      "locale": "tr",
+      "category": "system",
+      "tags": ["alarm", "mngalarm"],
+      "sampleContext": {
+        "recipient": { "displayName": "Operasyon Ekibi" },
+        "alarm": { "id": "a1b2c3d4", "severity": 8 },
+        "rule": { "id": "rule-abc", "name": "CPU yuksek kullanim" },
+        "event": { "type": "AlarmRaised", "timestamp": "2026-06-07T14:30:00Z" },
+        "domain": {
+          "name": "odak",
+          "displayName": "Odak Kompozit Teknolojileri A.S.",
+          "logoUrl": "https://img-kariyer.mncdn.com/mnresize/150/150/UploadFiles/Clients/SquareLogo/983/ai_kk_274983_6022024014542.png"
+        }
+      },
+      "isActive": true
+    },
+    {
+      "templateKey": "alarm-resolved",
+      "name": "Alarm cozuldu",
+      "description": "Alarm cozulme bildirimi (MngAlarm dispatch).",
+      "subject": "[Cozuldu] {{rule.name}} - alarm kapandi",
+      "bodyHtml": "<h1 style=\"font-size:20px;margin:0 0 12px;color:#2e7d32;\">Alarm cozuldu</h1><p>Merhaba <strong>{{recipient.displayName}}</strong>,</p><p><strong>{{rule.name}}</strong> kuralina bagli alarm kaydi normale dondu veya operatör tarafindan cozuldu.</p><div class=\"info-box\"><h2 class=\"info-box-title\">Ozet</h2><p><strong>Alarm ID:</strong> {{alarm.id}}</p><p><strong>Son onem:</strong> {{alarm.severity}}</p><p><strong>Kural:</strong> {{rule.name}}</p><p><strong>Olay:</strong> {{event.type}}</p><p><strong>Zaman:</strong> {{event.timestamp}}</p></div>",
+      "variables": [
+        "recipient.displayName",
+        "alarm.id",
+        "alarm.severity",
+        "rule.id",
+        "rule.name",
+        "event.type",
+        "event.timestamp",
+        "domain.name"
+      ],
+      "layoutKey": "default",
+      "locale": "tr",
+      "category": "system",
+      "tags": ["alarm", "mngalarm"],
+      "sampleContext": {
+        "recipient": { "displayName": "Operasyon Ekibi" },
+        "alarm": { "id": "a1b2c3d4", "severity": 5 },
+        "rule": { "id": "rule-abc", "name": "CPU yuksek kullanim" },
+        "event": { "type": "AlarmResolved", "timestamp": "2026-06-07T15:00:00Z" },
+        "domain": {
+          "name": "odak",
+          "displayName": "Odak Kompozit Teknolojileri A.S.",
+          "logoUrl": "https://img-kariyer.mncdn.com/mnresize/150/150/UploadFiles/Clients/SquareLogo/983/ai_kk_274983_6022024014542.png"
+        }
+      },
+      "isActive": true
+    },
+    {
       "templateKey": "generic-notification",
       "name": "Genel bildirim",
       "description": "Ozel mesaj metni; cagiran title ve body one-liner gonderebilir.",

@@ -14,6 +14,7 @@ public sealed class NotificationDto
     public string? WorkItemKey { get; init; }
     public string? SourceDataset { get; init; }
     public string? SourceRecordId { get; init; }
+    public string? DeepLink { get; init; }
     public DateTime? CreatedAt { get; init; }
 }
 

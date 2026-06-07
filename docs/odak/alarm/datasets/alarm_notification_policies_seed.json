@@ -1,0 +1,56 @@
+{
+  "_comment": "MngAlarm POST /alarm/api/v1/notification-policies — Odak demo politikaları. Script: ../scripts/seed-alarm-notification-policies.ps1",
+  "domain": "odak",
+  "recipientPersonId": "6a0f8fd13d6ba5d774ee37c7",
+  "recipientUsername": "odak_admin",
+  "policies": [
+    {
+      "seedKey": "ac-critical-raised",
+      "name": "Kritik alarmlar (önem ≥ 7)",
+      "description": "Tüm kurallardan önem 7 ve üzeri alarm oluştuğunda operatöre uygulama içi + e-posta. Geniş kapsam (kural filtresi yok).",
+      "eventType": "AlarmRaised",
+      "ruleMatchKey": null,
+      "minSeverity": 7,
+      "maxSeverity": null,
+      "channels": ["inApp", "email"],
+      "emailTemplateKey": "alarm-raised",
+      "emailSubject": null,
+      "settings": { "pushToast": true, "toastSeverity": "warning" },
+      "cooldownMinutes": 15,
+      "priority": 80,
+      "isActive": true
+    },
+    {
+      "seedKey": "ac-u1-brute-force-toast",
+      "name": "U1 Brute force — anlık toaster",
+      "description": "Yalnızca login_failed (U1) kuralı için dar politika. Yüksek öncelik; kural eşleşince genel politikadan önce değerlendirilir.",
+      "eventType": "AlarmRaised",
+      "ruleMatchKey": "login_failed",
+      "minSeverity": null,
+      "maxSeverity": null,
+      "channels": ["inApp"],
+      "emailTemplateKey": null,
+      "emailSubject": null,
+      "settings": { "pushToast": true, "toastSeverity": "error" },
+      "cooldownMinutes": 5,
+      "priority": 90,
+      "isActive": true
+    },
+    {
+      "seedKey": "ac-resolved-notify",
+      "name": "Alarm çözüldü — bilgilendirme",
+      "description": "Koşul normale döndüğünde veya operatör çözdüğünde inbox + e-posta. Toaster: success.",
+      "eventType": "AlarmResolved",
+      "ruleMatchKey": null,
+      "minSeverity": null,
+      "maxSeverity": null,
+      "channels": ["inApp", "email"],
+      "emailTemplateKey": "alarm-resolved",
+      "emailSubject": null,
+      "settings": { "pushToast": true, "toastSeverity": "success" },
+      "cooldownMinutes": 0,
+      "priority": 50,
+      "isActive": true
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "name": "@widget_templates",
+  "description": "Widget şablon kataloğu. MonitraNG seed şablonları ve tenant tarafından klonlanan özel şablonlar. Tam manifest object alanında tutulur.",
+  "forceSchema": true,
+  "logging": "none",
+  "publishMode": "none",
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "templateId",
+      "title": "Şablon Kimliği",
+      "mandatory": true,
+      "unique": true
+    },
+    {
+      "fieldType": "text",
+      "name": "templateVersion",
+      "title": "Şablon Sürümü",
+      "mandatory": true
+    },
+    {
+      "fieldType": "text",
+      "name": "domain",
+      "title": "Domain",
+      "mandatory": true
+    },
+    {
+      "fieldType": "relation",
+      "name": "category",
+      "title": "Kategori",
+      "mandatory": true,
+      "relationDataset": "@widget_categories"
+    },
+    {
+      "fieldType": "text",
+      "name": "title",
+      "title": "Başlık (liste görünümü)",
+      "mandatory": true
+    },
+    {
+      "fieldType": "text",
+      "name": "description",
+      "title": "Açıklama",
+      "mandatory": false
+    },
+    {
+      "fieldType": "text",
+      "name": "tags",
+      "title": "Etiketler",
+      "mandatory": false,
+      "isArray": true
+    },
+    {
+      "fieldType": "object",
+      "name": "manifest",
+      "title": "Widget Template Manifest",
+      "mandatory": true
+    },
+    {
+      "fieldType": "bool",
+      "name": "isSystem",
+      "title": "Sistem Şablonu",
+      "mandatory": true,
+      "defaultValue": true
+    },
+    {
+      "fieldType": "bool",
+      "name": "isActive",
+      "title": "Aktif",
+      "mandatory": true,
+      "defaultValue": true
+    },
+    {
+      "fieldType": "number",
+      "name": "order",
+      "title": "Sıralama",
+      "mandatory": false,
+      "defaultValue": 0
+    }
+  ],
+  "indexList": [
+    {
+      "name": "idx_templateId",
+      "fields": { "templateId": 1 },
+      "unique": true
+    },
+    {
+      "name": "idx_domain",
+      "fields": { "domain": 1, "order": 1 }
+    },
+    {
+      "name": "idx_isSystem",
+      "fields": { "isSystem": 1, "isActive": 1 }
+    }
+  ]
+}
