@@ -163,7 +163,7 @@ Event şeması: [ALARM_RULE_ENGINE_PLAN §8](./ALARM_RULE_ENGINE_PLAN.md)
 
 | Faz | İçerik | Durum |
 |-----|--------|-------|
-| **AN-1** | `@mon_alarm_notification_policies` Mongo + CRUD API | 🔄 sırada |
+| **AN-1** | `@mon_alarm_notification_policies` Mongo + CRUD API | ✅ kod (deploy + smoke bekliyor) |
 | AN-2 | `AlarmNotificationDispatchService` (policy match + inApp + email) | bekliyor |
 | AN-3 | Alarm Center UI (explorer + dialog + person multi-select) | bekliyor |
 | AN-4 | `alarm-raised` / `alarm-resolved` mail seed + E2E | bekliyor |

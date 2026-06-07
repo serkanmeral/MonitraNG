@@ -44,6 +44,48 @@ public sealed class AlarmRulesController(IAlarmRuleService rules) : ControllerBa
 }
 
 [ApiController]
+[Route("api/v1/notification-policies")]
+public sealed class AlarmNotificationPoliciesController(IAlarmNotificationPolicyService policies) : ControllerBase
+{
+    [HttpGet]
+    public async Task<IActionResult> List([FromQuery] bool? isActive, CancellationToken cancellationToken) =>
+        Ok(await policies.ListAsync(isActive, cancellationToken));
+
+    [HttpPost]
+    public async Task<IActionResult> Create(
+        [FromBody] CreateAlarmNotificationPolicyRequest request,
+        CancellationToken cancellationToken)
+    {
+        var policy = await policies.CreateAsync(request, cancellationToken);
+        return CreatedAtAction(nameof(Get), new { policyId = policy.Id }, policy);
+    }
+
+    [HttpGet("{policyId}")]
+    public async Task<IActionResult> Get(string policyId, CancellationToken cancellationToken)
+    {
+        var policy = await policies.GetAsync(policyId, cancellationToken);
+        return policy == null ? NotFound() : Ok(policy);
+    }
+
+    [HttpPut("{policyId}")]
+    public async Task<IActionResult> Update(
+        string policyId,
+        [FromBody] UpdateAlarmNotificationPolicyRequest request,
+        CancellationToken cancellationToken)
+    {
+        var policy = await policies.UpdateAsync(policyId, request, cancellationToken);
+        return policy == null ? NotFound() : Ok(policy);
+    }
+
+    [HttpDelete("{policyId}")]
+    public async Task<IActionResult> Delete(string policyId, CancellationToken cancellationToken)
+    {
+        var deleted = await policies.DeleteAsync(policyId, cancellationToken);
+        return deleted ? NoContent() : NotFound();
+    }
+}
+
+[ApiController]
 [Route("api/v1/alarms")]
 public sealed class AlarmsController(IAlarmQueryService alarms, IAlarmLifecycleService lifecycle) : ControllerBase
 {

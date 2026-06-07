@@ -62,6 +62,38 @@ public interface IAlarmRuleService
     Task<bool> DeleteAsync(string ruleId, CancellationToken cancellationToken = default);
 }
 
+public interface IAlarmNotificationPolicyRepository
+{
+    Task InsertAsync(AlarmNotificationPolicyDocument policy, CancellationToken cancellationToken = default);
+    Task<AlarmNotificationPolicyDocument?> GetByIdAsync(string domainName, string policyId, CancellationToken cancellationToken = default);
+    Task UpdateAsync(AlarmNotificationPolicyDocument policy, CancellationToken cancellationToken = default);
+    Task DeleteAsync(string domainName, string policyId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<AlarmNotificationPolicyDocument>> ListAsync(
+        string domainName,
+        bool? isActive,
+        CancellationToken cancellationToken = default);
+}
+
+public interface IAlarmNotificationPolicyService
+{
+    Task<AlarmNotificationPolicyDocument> CreateAsync(
+        CreateAlarmNotificationPolicyRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<AlarmNotificationPolicyDocument>> ListAsync(
+        bool? isActive,
+        CancellationToken cancellationToken = default);
+
+    Task<AlarmNotificationPolicyDocument?> GetAsync(string policyId, CancellationToken cancellationToken = default);
+
+    Task<AlarmNotificationPolicyDocument?> UpdateAsync(
+        string policyId,
+        UpdateAlarmNotificationPolicyRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> DeleteAsync(string policyId, CancellationToken cancellationToken = default);
+}
+
 public interface IAlarmQueryService
 {
     Task<AlarmListResponse> ListAsync(

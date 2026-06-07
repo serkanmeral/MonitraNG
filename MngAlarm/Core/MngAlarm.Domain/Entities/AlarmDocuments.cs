@@ -114,3 +114,78 @@ public class AlarmDocument
     [BsonElement("lastPublishedAt")]
     public DateTime? LastPublishedAt { get; set; }
 }
+
+[BsonIgnoreExtraElements]
+public class AlarmNotificationPolicyDocument
+{
+    [BsonId]
+    [BsonRepresentation(MongoDB.Bson.BsonType.String)]
+    public string Id { get; set; } = Guid.NewGuid().ToString("N");
+
+    [BsonElement("domainId")]
+    public string DomainId { get; set; } = string.Empty;
+
+    [BsonElement("domainName")]
+    public string DomainName { get; set; } = string.Empty;
+
+    [BsonElement("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [BsonElement("description")]
+    public string? Description { get; set; }
+
+    [BsonElement("eventType")]
+    public string EventType { get; set; } = string.Empty;
+
+    [BsonElement("ruleId")]
+    public string? RuleId { get; set; }
+
+    [BsonElement("minSeverity")]
+    public int? MinSeverity { get; set; }
+
+    [BsonElement("maxSeverity")]
+    public int? MaxSeverity { get; set; }
+
+    [BsonElement("channels")]
+    public List<string> Channels { get; set; } = [];
+
+    [BsonElement("recipientPersonIds")]
+    public List<string> RecipientPersonIds { get; set; } = [];
+
+    [BsonElement("emailTemplateKey")]
+    public string? EmailTemplateKey { get; set; }
+
+    [BsonElement("emailSubject")]
+    public string? EmailSubject { get; set; }
+
+    [BsonElement("settings")]
+    public AlarmNotificationPolicySettings? Settings { get; set; }
+
+    [BsonElement("cooldownMinutes")]
+    public int? CooldownMinutes { get; set; }
+
+    [BsonElement("excludeAcknowledgedBy")]
+    public bool ExcludeAcknowledgedBy { get; set; }
+
+    [BsonElement("priority")]
+    public int? Priority { get; set; }
+
+    [BsonElement("isActive")]
+    public bool IsActive { get; set; } = true;
+
+    [BsonElement("createdAt")]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    [BsonElement("updatedAt")]
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
+
+[BsonIgnoreExtraElements]
+public class AlarmNotificationPolicySettings
+{
+    [BsonElement("pushToast")]
+    public bool? PushToast { get; set; }
+
+    [BsonElement("toastSeverity")]
+    public string? ToastSeverity { get; set; }
+}

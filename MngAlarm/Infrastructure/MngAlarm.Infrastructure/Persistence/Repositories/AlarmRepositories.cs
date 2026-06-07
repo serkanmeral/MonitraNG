@@ -67,6 +67,54 @@ public sealed class AlarmRuleRepository(IAlarmMongoContext context) : IAlarmRule
         context.GetDatabase(domainName).GetCollection<AlarmRuleDocument>(AlarmCollectionNames.Rules);
 }
 
+public sealed class AlarmNotificationPolicyRepository(IAlarmMongoContext context) : IAlarmNotificationPolicyRepository
+{
+    public async Task InsertAsync(AlarmNotificationPolicyDocument policy, CancellationToken cancellationToken = default)
+    {
+        await Collection(policy.DomainName).InsertOneAsync(policy, cancellationToken: cancellationToken);
+    }
+
+    public async Task<AlarmNotificationPolicyDocument?> GetByIdAsync(
+        string domainName,
+        string policyId,
+        CancellationToken cancellationToken = default)
+    {
+        return await Collection(domainName)
+            .Find(x => x.Id == policyId)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task UpdateAsync(AlarmNotificationPolicyDocument policy, CancellationToken cancellationToken = default)
+    {
+        await Collection(policy.DomainName)
+            .ReplaceOneAsync(x => x.Id == policy.Id, policy, cancellationToken: cancellationToken);
+    }
+
+    public async Task DeleteAsync(string domainName, string policyId, CancellationToken cancellationToken = default)
+    {
+        await Collection(domainName).DeleteOneAsync(x => x.Id == policyId, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<AlarmNotificationPolicyDocument>> ListAsync(
+        string domainName,
+        bool? isActive,
+        CancellationToken cancellationToken = default)
+    {
+        var filter = isActive.HasValue
+            ? Builders<AlarmNotificationPolicyDocument>.Filter.Eq(x => x.IsActive, isActive.Value)
+            : FilterDefinition<AlarmNotificationPolicyDocument>.Empty;
+
+        return await Collection(domainName)
+            .Find(filter)
+            .SortByDescending(x => x.Priority)
+            .ThenByDescending(x => x.UpdatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    private IMongoCollection<AlarmNotificationPolicyDocument> Collection(string domainName) =>
+        context.GetDatabase(domainName).GetCollection<AlarmNotificationPolicyDocument>(AlarmCollectionNames.NotificationPolicies);
+}
+
 public sealed class AlarmRepository(IAlarmMongoContext context, AlarmIndexInitializer indexInitializer) : IAlarmRepository
 {
     public async Task<AlarmDocument?> GetActiveByDedupKeyAsync(string domainName, string dedupKey, CancellationToken cancellationToken = default)

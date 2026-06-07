@@ -6,6 +6,20 @@ public static class AlarmCollectionNames
     public const string Alarms = "@mon_alarms";
     public const string CorrelationWindows = "@mon_alarm_correlation_windows";
     public const string ObservationActivity = "@mon_alarm_observation_activity";
+    public const string NotificationPolicies = "@mon_alarm_notification_policies";
+}
+
+public static class AlarmNotificationEventTypes
+{
+    public const string Raised = "AlarmRaised";
+    public const string Updated = "AlarmUpdated";
+    public const string Resolved = "AlarmResolved";
+}
+
+public static class AlarmNotificationChannels
+{
+    public const string InApp = "inApp";
+    public const string Email = "email";
 }
 
 public static class AlarmMessagingConstants

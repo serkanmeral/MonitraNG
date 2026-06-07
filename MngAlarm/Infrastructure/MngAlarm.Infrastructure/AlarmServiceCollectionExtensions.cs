@@ -26,8 +26,10 @@ public static class AlarmServiceCollectionExtensions
         services.AddSingleton<ISequenceStateStore, InMemorySequenceStateStore>();
 
         services.AddScoped<IAlarmRuleRepository, AlarmRuleRepository>();
+        services.AddScoped<IAlarmNotificationPolicyRepository, AlarmNotificationPolicyRepository>();
         services.AddScoped<IAlarmRepository, AlarmRepository>();
         services.AddScoped<IAlarmRuleService, AlarmRuleService>();
+        services.AddScoped<IAlarmNotificationPolicyService, AlarmNotificationPolicyService>();
         services.AddScoped<IAlarmQueryService, AlarmQueryService>();
         services.AddScoped<IAlarmLifecycleService, AlarmLifecycleService>();
         services.AddScoped<IObservationProcessor, ObservationProcessor>();
