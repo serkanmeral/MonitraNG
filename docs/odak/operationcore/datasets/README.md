@@ -2,7 +2,8 @@
 
 | Dosya | Açıklama |
 |-------|----------|
-| [operationcore_dataset_category.json](./operationcore_dataset_category.json) | Kategori **OperationCoreDatasets** |
+| [tedarikciler_dataset.json](./tedarikciler_dataset.json) | **Tedarikci** master — OC lookup demo |
+| [tedarikciler_dataset_category.json](./tedarikciler_dataset_category.json) | Kategori **BusinessDatasets** |
 | [operationcore_datasets_phase1_draft_2026-05-26.json](./operationcore_datasets_phase1_draft_2026-05-26.json) | Güncel `op_*` şema taslağı (20 dataset) |
 | [operationcore_datasets_phase1_current_final_2026-05-25.json](./operationcore_datasets_phase1_current_final_2026-05-25.json) | Eski export (arşiv) |
 

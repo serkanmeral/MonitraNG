@@ -9,6 +9,8 @@ export type OcDynamicFieldWidget =
   | 'prioritySelect'
   | 'boardSelect'
   | 'stateSelect'
+  | 'staticSelect'
+  | 'staticSelectMulti'
   | 'relationSelect'
   | 'relationSelectMulti'
   | 'tags'
@@ -84,6 +86,9 @@ export function resolveOcDynamicFieldWidget(
   }
   // 'tags' → workspace etiket kataloğu (op_tags) destekli, inline oluşturmalı seçici.
   if (ft === 'tags') return 'tags';
+  if (ft === 'select') {
+    return isMultiCardinality(fieldKey, meta) ? 'staticSelectMulti' : 'staticSelect';
+  }
   if (ft === 'relation' || ft === 'array') {
     return isMultiCardinality(fieldKey, meta) ? 'relationSelectMulti' : 'relationSelect';
   }

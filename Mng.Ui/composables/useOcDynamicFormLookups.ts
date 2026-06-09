@@ -1,5 +1,5 @@
 import { ref, watch, type Ref } from 'vue';
-import type { OcFormRuntimeContext } from '@/types/apps/operationCore';
+import type { OcFormFieldRuntimeDto, OcFormRuntimeContext } from '@/types/apps/operationCore';
 import {
   ocListBoardsForWorkspace,
   ocListDataset,
@@ -16,10 +16,27 @@ import {
   resolveOcDynamicFieldWidget,
   resolveRelationDataset,
 } from '@/utils/ocDynamicFormField';
+import { resolveOcFormFieldType } from '@/utils/ocFormFieldLabels';
+import {
+  extractLookupStoredValue,
+  lookupStaticItemsToSelectItems,
+  parseOcLookupFromFieldOptions,
+  resolveLookupDependsOnFilter,
+  resolveEffectiveLookupPresentation,
+  type OcLookupConfig,
+} from '@/utils/ocLookupFieldOptions';
 
 export type OcSelectItem = { title: string; value: string; subtitle?: string };
 
 const PERSONS_LOADING_KEY = '__personUsers__';
+
+function resolveFieldLookup(
+  fieldKey: string,
+  meta?: OcFormFieldRuntimeDto | null
+): OcLookupConfig | null {
+  const ft = resolveOcFormFieldType(fieldKey, meta);
+  return parseOcLookupFromFieldOptions(meta?.options, ft);
+}
 
 /**
  * Form alanları için relation / core select listelerini yükler.
@@ -31,11 +48,7 @@ export function useOcDynamicFormLookups(
   formModel?: Ref<Record<string, unknown>>,
   options?: { readonly?: Ref<boolean> }
 ) {
-  // Readonly (profil) modda hiçbir seçim listesi yüklenmez; alan değerleri
-  // fieldDisplays metniyle gösterilir → state/priority/board/relation/person fetch'leri elenir.
   const isReadonly = () => options?.readonly?.value === true;
-  // Her person alanı kendi picker örneğini kullanır: paylaşılan tek picker'da
-  // bir combobox'taki arama/seçim, diğer alanların listesini daraltıyordu.
   const personPickers = new Map<string, OcPersonPickerApi>();
 
   const priorityItems = ref<OcSelectItem[]>([]);
@@ -43,6 +56,7 @@ export function useOcDynamicFormLookups(
   const boardItems = ref<OcSelectItem[]>([]);
   const relationItemsByKey = ref<Record<string, OcSelectItem[]>>({});
   const loadingKeys = ref<Set<string>>(new Set());
+  const dependsOnParentByField = ref<Record<string, string | null>>({});
 
   function fieldKeysNeedingLookups(): string[] {
     const ctx = context.value;
@@ -58,7 +72,7 @@ export function useOcDynamicFormLookups(
     );
   }
 
-  function needsPersonUsers(keys: string[]): boolean {
+  function needsPersonUsers(keys: string[]) {
     return keys.some((key) => isOcPersonsUserPickerField(key, context.value?.fields[key]));
   }
 
@@ -74,13 +88,43 @@ export function useOcDynamicFormLookups(
     return keys.includes('boardId');
   }
 
-  async function loadRelationForField(fieldKey: string, dataset: string) {
+  function parentValueForField(fieldKey: string): string | null {
+    const lookup = resolveFieldLookup(fieldKey, context.value?.fields[fieldKey]);
+    const parentKey = lookup?.dependsOn?.fieldKey;
+    if (!parentKey || !formModel?.value) return null;
+    return extractLookupStoredValue(formModel.value[parentKey]);
+  }
+
+  function isFieldDependsOnBlocked(fieldKey: string): boolean {
+    const lookup = resolveFieldLookup(fieldKey, context.value?.fields[fieldKey]);
+    if (!lookup?.dependsOn) return false;
+    return !parentValueForField(fieldKey);
+  }
+
+  async function loadRelationForField(fieldKey: string, dataset: string, lookup: OcLookupConfig) {
+    if (lookup.dependsOn && !parentValueForField(fieldKey)) {
+      relationItemsByKey.value = { ...relationItemsByKey.value, [fieldKey]: [] };
+      return;
+    }
+
     loadingKeys.value = new Set(loadingKeys.value).add(fieldKey);
     try {
-      const rows = await ocListDataset(dataset, { limit: 500 });
+      const dependsFilter = lookup.dependsOn
+        ? resolveLookupDependsOnFilter(lookup.dependsOn.filterTemplate, formModel?.value?.[lookup.dependsOn.fieldKey])
+        : null;
+      const filterParts = [lookup.filter, dependsFilter].filter(Boolean);
+      const filter = filterParts.length ? filterParts.join(',') : undefined;
+
+      const rows = await ocListDataset(dataset, {
+        limit: lookup.pageSize,
+        filter,
+      });
       relationItemsByKey.value = {
         ...relationItemsByKey.value,
-        [fieldKey]: recordToDatasetItems(rows),
+        [fieldKey]: recordToDatasetItems(rows, {
+          idKey: lookup.valueField,
+          labelKey: lookup.labelField,
+        }),
       };
     } catch {
       relationItemsByKey.value = { ...relationItemsByKey.value, [fieldKey]: [] };
@@ -169,18 +213,30 @@ export function useOcDynamicFormLookups(
       );
     }
 
-    const loadedDatasets = new Set<string>();
     for (const fieldKey of keys) {
       const meta = ctx.fields[fieldKey];
-      // tags widget (labels + pool tags) kendi seçicisinde (OcTagSelector) workspace-filtreli yükler.
-      if (resolveOcDynamicFieldWidget(fieldKey, meta) === 'tags') continue;
+      const widget = resolveOcDynamicFieldWidget(fieldKey, meta);
+      if (widget === 'tags') continue;
+
+      if (widget === 'staticSelect' || widget === 'staticSelectMulti') {
+        const lookup = resolveFieldLookup(fieldKey, meta);
+        relationItemsByKey.value = {
+          ...relationItemsByKey.value,
+          [fieldKey]: lookupStaticItemsToSelectItems(lookup?.staticItems ?? []),
+        };
+        continue;
+      }
+
       const widgetDataset = resolveRelationDataset(fieldKey, meta);
       if (!widgetDataset) continue;
       if (fieldKey === 'priorityId' || fieldKey === 'boardId' || fieldKey === 'stateId') continue;
       if (fieldKey === 'typeId') continue;
-      if (loadedDatasets.has(`${fieldKey}:${widgetDataset}`)) continue;
-      loadedDatasets.add(`${fieldKey}:${widgetDataset}`);
-      tasks.push(loadRelationForField(fieldKey, widgetDataset));
+
+      const lookup =
+        resolveFieldLookup(fieldKey, meta) ??
+        parseOcLookupFromFieldOptions(null, 'relation')!;
+
+      tasks.push(loadRelationForField(fieldKey, widgetDataset, lookup));
     }
 
     await Promise.all(tasks);
@@ -212,9 +268,16 @@ export function useOcDynamicFormLookups(
     return isOcPersonsUserPickerField(fieldKey, context.value?.fields[fieldKey]);
   }
 
+  function isFieldDisabledByDependsOn(fieldKey: string): boolean {
+    return isFieldDependsOnBlocked(fieldKey);
+  }
+
+  function selectPresentationForField(fieldKey: string): 'dropdown' | 'autocomplete' {
+    const lookup = resolveFieldLookup(fieldKey, context.value?.fields[fieldKey]);
+    return resolveEffectiveLookupPresentation(lookup);
+  }
+
   watch(
-    // readonly de\u011fi\u015fimini de izle: readonly form (profil) edit moduna ge\u00e7ti\u011finde
-    // select/person/relation listeleri o anda y\u00fcklensin (reload() readonly iken erken d\u00f6ner).
     () => [workspaceId.value, context.value, options?.readonly?.value] as const,
     () => {
       void reload();
@@ -232,6 +295,47 @@ export function useOcDynamicFormLookups(
       },
       { deep: true }
     );
+
+    watch(
+      formModel,
+      () => {
+        if (isReadonly()) return;
+        const ctx = context.value;
+        if (!ctx?.fields) return;
+
+        for (const fieldKey of Object.keys(ctx.fields)) {
+          const lookup = resolveFieldLookup(fieldKey, ctx.fields[fieldKey]);
+          if (!lookup?.dependsOn) continue;
+
+          const parentVal = parentValueForField(fieldKey);
+          const prev = dependsOnParentByField.value[fieldKey] ?? null;
+          if (prev === parentVal) continue;
+
+          dependsOnParentByField.value = {
+            ...dependsOnParentByField.value,
+            [fieldKey]: parentVal,
+          };
+
+          if (!parentVal) {
+            const meta = ctx.fields[fieldKey];
+            const multi =
+              resolveOcDynamicFieldWidget(fieldKey, meta) === 'relationSelectMulti' ||
+              resolveOcDynamicFieldWidget(fieldKey, meta) === 'staticSelectMulti';
+            if (formModel.value[fieldKey] != null && formModel.value[fieldKey] !== '') {
+              formModel.value[fieldKey] = multi ? [] : null;
+            }
+            relationItemsByKey.value = { ...relationItemsByKey.value, [fieldKey]: [] };
+            continue;
+          }
+
+          const dataset = resolveRelationDataset(fieldKey, ctx.fields[fieldKey]);
+          if (dataset) {
+            void loadRelationForField(fieldKey, dataset, lookup);
+          }
+        }
+      },
+      { deep: true }
+    );
   }
 
   return {
@@ -243,6 +347,8 @@ export function useOcDynamicFormLookups(
     selectItemsForField,
     isLoadingField,
     isPersonField,
+    isFieldDisabledByDependsOn,
+    selectPresentationForField,
     reload,
   };
 }

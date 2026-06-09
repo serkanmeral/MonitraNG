@@ -1,0 +1,6 @@
+{
+  "_comment": "setup script DG'den gercek category dataId cozer",
+  "categoryName": "BusinessDatasets",
+  "categoryDescription": "Is verisi dataset'leri (tedarikci, urun vb.) — OC lookup demo",
+  "isSystemCategory": false
+}

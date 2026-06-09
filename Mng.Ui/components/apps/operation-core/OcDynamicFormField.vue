@@ -26,6 +26,10 @@ const props = defineProps<{
   workspaceId?: string | null;
   selectItems?: OcSelectItem[];
   selectLoading?: boolean;
+  /** dropdown → v-select; autocomplete/picker → v-autocomplete */
+  selectPresentation?: 'dropdown' | 'autocomplete';
+  /** dependsOn üst alanı boşken devre dışı */
+  selectDependsOnBlocked?: boolean;
   personPicker?: OcPersonPickerApi;
   /** Grup id → ad (readonly grup alanlarında ham id yerine ad göstermek için; profil sağlar). */
   groupNames?: Record<string, string>;
@@ -92,9 +96,15 @@ const isSelectWidget = computed(() =>
     'prioritySelect',
     'boardSelect',
     'stateSelect',
+    'staticSelect',
+    'staticSelectMulti',
     'relationSelect',
     'relationSelectMulti',
   ].includes(widget.value)
+);
+
+const useDropdownSelect = computed(
+  () => props.selectPresentation === 'dropdown' && isSelectWidget.value
 );
 
 // Readonly (profil) görünümde lookup yapılmadığından select/person/grup alanları
@@ -118,6 +128,7 @@ const selectMultiple = computed(
   () =>
     isMulti.value ||
     widget.value === 'relationSelectMulti' ||
+    widget.value === 'staticSelectMulti' ||
     widget.value === 'personsMulti'
 );
 
@@ -137,7 +148,9 @@ const selectMenuProps = computed(() =>
 
 const autocompleteItems = computed(() => props.selectItems ?? []);
 
-const autocompleteLoading = computed(() => props.selectLoading ?? false);
+const selectControlDisabled = computed(
+  () => fieldDisabled.value || props.selectDependsOnBlocked === true
+);
 
 const fieldClass = computed(() => (props.preview ? 'oc-dynamic-form__field--preview' : ''));
 
@@ -156,9 +169,25 @@ function update(value: unknown) {
   model.value = value;
 }
 
-function onAutocompleteUpdate(value: unknown) {
-  if (fieldDisabled.value) return;
-  update(value);
+const autocompleteLoading = computed(() => props.selectLoading ?? false);
+
+function isAllowedSelectValue(value: unknown): boolean {
+  const allowed = new Set(autocompleteItems.value.map((i) => i.value));
+  if (selectMultiple.value && Array.isArray(value)) {
+    return value.every((v) => allowed.has(String(v)));
+  }
+  return value != null && value !== '' && allowed.has(String(value));
+}
+
+function onSelectUpdate(value: unknown) {
+  if (selectControlDisabled.value) return;
+  if (value === null || value === '' || (Array.isArray(value) && value.length === 0)) {
+    update(selectMultiple.value ? [] : null);
+    return;
+  }
+  if (isAllowedSelectValue(value)) {
+    update(value);
+  }
 }
 </script>
 
@@ -205,26 +234,54 @@ function onAutocompleteUpdate(value: unknown) {
     :preview="preview"
   />
 
-  <v-autocomplete
-    v-else-if="isSelectWidget"
+  <v-select
+    v-else-if="isSelectWidget && useDropdownSelect"
     :model-value="selectModelValue"
     :items="autocompleteItems"
     item-title="title"
     item-value="value"
-    :disabled="fieldDisabled"
+    :disabled="selectControlDisabled"
     :loading="autocompleteLoading"
     :menu-props="selectMenuProps"
     :error="showFieldError"
     :error-messages="fieldErrorMessages"
     :multiple="selectMultiple"
     :chips="selectMultiple"
-    :closable-chips="!fieldDisabled && selectMultiple"
+    :closable-chips="!selectControlDisabled && selectMultiple"
     clearable
     density="comfortable"
     variant="outlined"
     hide-details="auto"
     :class="fieldClass"
-    @update:model-value="onAutocompleteUpdate"
+    @update:model-value="onSelectUpdate"
+  >
+    <template #label>
+      <span>{{ label }}</span>
+      <span v-if="behavior.required" class="oc-field-required" aria-hidden="true"> *</span>
+    </template>
+  </v-select>
+
+  <v-autocomplete
+    v-else-if="isSelectWidget"
+    :model-value="selectModelValue"
+    :items="autocompleteItems"
+    item-title="title"
+    item-value="value"
+    :disabled="selectControlDisabled"
+    :loading="autocompleteLoading"
+    :menu-props="selectMenuProps"
+    :error="showFieldError"
+    :error-messages="fieldErrorMessages"
+    :multiple="selectMultiple"
+    :chips="selectMultiple"
+    :closable-chips="!selectControlDisabled && selectMultiple"
+    clearable
+    :auto-select-first="false"
+    density="comfortable"
+    variant="outlined"
+    hide-details="auto"
+    :class="fieldClass"
+    @update:model-value="onSelectUpdate"
   >
     <template #label>
       <span>{{ label }}</span>

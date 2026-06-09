@@ -32,7 +32,18 @@ public partial class RuntimeContextService
 
     private enum ChangeFieldKind { Scalar, Person, Group, Dataset }
 
-    private sealed record ChangeFieldMeta(string Key, string Label, string? FieldType, ChangeFieldKind Kind, string? Dataset);
+    private sealed record ChangeFieldMeta(
+        string Key,
+        string Label,
+        string? FieldType,
+        ChangeFieldKind Kind,
+        string? Dataset,
+        string LabelField)
+    {
+        public string? DatasetResolveKey => string.IsNullOrWhiteSpace(Dataset)
+            ? null
+            : LookupFieldOptionsHelper.ComposeResolveKey(Dataset, LabelField);
+    }
 
     private readonly struct ParsedChange
     {
@@ -182,16 +193,17 @@ public partial class RuntimeContextService
 
         // person alanları (assignee/watchers/reporter/createdBy + person pool).
         if (ft is "persons" or "person" || CorePersonFieldKeys.Contains(key) || key is "reporter" or "createdBy")
-            return new ChangeFieldMeta(key, label, ft, ChangeFieldKind.Person, null);
+            return new ChangeFieldMeta(key, label, ft, ChangeFieldKind.Person, null, LookupFieldOptionsHelper.DefaultLabelField);
 
         // grup alanları (assignmentGroups + personGroups pool).
         if (ft is "persongroups" or "persongroup" or "group" || CoreGroupFieldKeys.Contains(key))
-            return new ChangeFieldMeta(key, label, ft, ChangeFieldKind.Group, null);
+            return new ChangeFieldMeta(key, label, ft, ChangeFieldKind.Group, null, LookupFieldOptionsHelper.DefaultLabelField);
 
         // dataset bazlı çözüm (çekirdek katalog/relation + pool relation).
         string? dataset = null;
-        if (poolByKey.TryGetValue(key, out var pf))
-            dataset = WorkItemDataHelper.GetString(pf, "relationDatasetName");
+        poolByKey.TryGetValue(key, out var poolField);
+        if (poolField != null)
+            dataset = WorkItemDataHelper.GetString(poolField, "relationDatasetName");
         if (string.IsNullOrWhiteSpace(dataset))
             CoreRelationDatasets.TryGetValue(key, out dataset);
         if (string.IsNullOrWhiteSpace(dataset) && string.Equals(key, "typeId", StringComparison.OrdinalIgnoreCase))
@@ -201,10 +213,15 @@ public partial class RuntimeContextService
             dataset = OcDatasets.Tags;
 
         if (!string.IsNullOrWhiteSpace(dataset))
-            return new ChangeFieldMeta(key, label, ft, ChangeFieldKind.Dataset, dataset);
+        {
+            var labelField = poolField != null
+                ? LookupFieldOptionsHelper.ResolveLabelField(poolField)
+                : LookupFieldOptionsHelper.DefaultLabelField;
+            return new ChangeFieldMeta(key, label, ft, ChangeFieldKind.Dataset, dataset, labelField);
+        }
 
         // scalar (text/number/date/bool) → ham gösterilir.
-        return new ChangeFieldMeta(key, label, ft, ChangeFieldKind.Scalar, null);
+        return new ChangeFieldMeta(key, label, ft, ChangeFieldKind.Scalar, null, LookupFieldOptionsHelper.DefaultLabelField);
     }
 
     private static void AccumulateIds(
@@ -225,8 +242,9 @@ public partial class RuntimeContextService
                 foreach (var id in row.To) groupIds.Add(id);
                 break;
             case ChangeFieldKind.Dataset:
-                if (!datasetIds.TryGetValue(meta.Dataset!, out var set))
-                    datasetIds[meta.Dataset!] = set = new HashSet<string>(StringComparer.Ordinal);
+                var resolveKey = meta.DatasetResolveKey!;
+                if (!datasetIds.TryGetValue(resolveKey, out var set))
+                    datasetIds[resolveKey] = set = new HashSet<string>(StringComparer.Ordinal);
                 foreach (var id in row.From) set.Add(id);
                 foreach (var id in row.To) set.Add(id);
                 break;
@@ -250,7 +268,12 @@ public partial class RuntimeContextService
             {
                 ChangeFieldKind.Person => people.TryGetValue(token, out var p) && !string.IsNullOrWhiteSpace(p.Name) ? p.Name! : token,
                 ChangeFieldKind.Group => groups.TryGetValue(token, out var g) && !string.IsNullOrWhiteSpace(g.Name) ? g.Name! : token,
-                ChangeFieldKind.Dataset => datasetMaps.TryGetValue(meta.Dataset!, out var map) && map.TryGetValue(token, out var nm) && !string.IsNullOrWhiteSpace(nm) ? nm : token,
+                ChangeFieldKind.Dataset => meta.DatasetResolveKey != null
+                    && datasetMaps.TryGetValue(meta.DatasetResolveKey, out var map)
+                    && map.TryGetValue(token, out var nm)
+                    && !string.IsNullOrWhiteSpace(nm)
+                        ? nm
+                        : token,
                 _ when meta.FieldType is "richtext" or "rich_text" or "rich-text" =>
                     HtmlRichTextHelper.StripToPlainText(token) ?? token,
                 _ => token,
@@ -262,14 +285,15 @@ public partial class RuntimeContextService
 
     /// <summary>Katalog dataset'leri (state/priority/type/board) cache'li listeden, diğerleri $in query ile çözülür.</summary>
     private Task<Dictionary<string, string>> ResolveChangeDatasetNamesAsync(
-        string dataset,
+        string resolveKey,
         IReadOnlyCollection<string> ids,
         string token,
         CancellationToken cancellationToken)
     {
+        var (dataset, labelField) = LookupFieldOptionsHelper.ParseResolveKey(resolveKey);
         return ChangeCatalogDatasets.Contains(dataset)
             ? ResolveCatalogNamesAsync(dataset, ids, token, cancellationToken)
-            : ResolveRelationNamesAsync(dataset, ids, token, cancellationToken);
+            : ResolveRelationNamesAsync(dataset, ids, labelField, token, cancellationToken);
     }
 
     /// <summary>Katalog dataset'inden (op_states/priorities/work_item_types/boards) id → ad (cache'li, profil-view ile aynı kanal).</summary>

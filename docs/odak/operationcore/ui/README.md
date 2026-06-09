@@ -6,6 +6,7 @@
 
 | Doküman | Konu |
 |---------|------|
+| [OC_UI_LOOKUP_FIELDS.md](./OC_UI_LOOKUP_FIELDS.md) | **Lookup / seçim** — dataset relation, statik select, dependsOn, picker (plan) |
 | [OC_UI_FORM_DEFINITIONS.md](./OC_UI_FORM_DEFINITIONS.md) | **Güncel** — `op_forms` editör, önizleme, `OcDynamicForm`, yeni iş sayfası |
 | [OC_UI_FIELD_POLICY.md](./OC_UI_FIELD_POLICY.md) | **Form** alan politikaları (statik) |
 | [OC_UI_WORKSPACE_POLICIES.md](./OC_UI_WORKSPACE_POLICIES.md) | **Workspace** alan politikaları + **Değerler** sekmesi + tamamlanan işler (§0) |

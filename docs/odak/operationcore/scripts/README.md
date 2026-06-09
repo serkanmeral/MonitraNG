@@ -11,6 +11,7 @@
 | [patch-op-publish-mode-none.ps1](./patch-op-publish-mode-none.ps1) | Mevcut kurulum: `op_*` **`publish_mode: none`** (Q14) |
 | [build-operationcore-datasets-draft.mjs](./build-operationcore-datasets-draft.mjs) | JSON taslagini kaynaktan uret |
 
+| [setup-oc-demo-tedarikci-lookup.ps1](./setup-oc-demo-tedarikci-lookup.ps1) | **tedarikciler** dataset + seed + OC Demo lookup alani/form |
 | [seed-operation-core-demo.ps1](./seed-operation-core-demo.ps1) | Demo metadata: states, workspace, flow, type, form, board |
 | [seed-operation-core-helpdesk-reference.ps1](./seed-operation-core-helpdesk-reference.ps1) | IT Help Desk referans workspace ([reference](../reference/IT_HELP_DESK_REFERENCE.md)) |
 | [get-operationcore-token-prod.ps1](./get-operationcore-token-prod.ps1) | Token — **prod** (`192.168.20.8`) |

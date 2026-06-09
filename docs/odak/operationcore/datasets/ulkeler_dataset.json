@@ -1,0 +1,41 @@
+{
+  "name": "ulkeler",
+  "description": "Ulke master — OC lookup dependsOn demo (ust alan)",
+  "forceSchema": false,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "kod",
+      "title": "Ulke kodu",
+      "mandatory": true,
+      "unique": true,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "ad",
+      "title": "Ulke adi",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "bool",
+      "name": "isActive",
+      "title": "Aktif",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": true
+    }
+  ],
+  "indexList": [
+    {
+      "name": "idx_kod",
+      "fields": { "kod": 1 },
+      "unique": true
+    }
+  ]
+}

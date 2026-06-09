@@ -93,7 +93,9 @@ Değerler → Alanlar sekmesinde `fieldType: file` için:
 { "maxSizeBytes": 5242880, "allowedExtensions": [".pdf", ".png"] }
 ```
 
-Runtime: MO `FormRuntimeContext.fields[key].options` → `enrichFormRuntimeFields` → `OcWorkItemFileField` doğrulaması. Kayıt sonrası form/board’da gecikme varsa metadata cache reload.
+**Dosya alanları:** bkz. §4.1. **Lookup / seçim alanları:** [OC_UI_LOOKUP_FIELDS.md](./OC_UI_LOOKUP_FIELDS.md).
+
+Runtime: MO `FormRuntimeContext.fields[key].options` → `enrichFormRuntimeFields`. Kayıt sonrası gecikme varsa metadata cache reload.
 
 ---
 
@@ -103,7 +105,8 @@ Runtime: MO `FormRuntimeContext.fields[key].options` → `enrichFormRuntimeField
 |----------------------------------|-----|
 | `typeId` | Select (runtime `types`) |
 | `priorityId`, `boardId`, `stateId` | Select (DG listeleri) |
-| `relation` (+ `relationDatasetName`) | Select (`ocListDataset`) |
+| `relation` (+ `relationDatasetName`) | Autocomplete / dropdown — `options.lookup` + `ocListDataset` |
+| `select` | Statik liste — `options.lookup.staticItems` |
 | `number` | `type="number"` |
 | `bool` | Checkbox |
 | `date` / `datetime` | Native date / datetime-local |

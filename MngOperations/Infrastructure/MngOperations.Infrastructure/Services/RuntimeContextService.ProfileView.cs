@@ -310,8 +310,8 @@ public partial class RuntimeContextService
             }
         }
 
-        // relation alanlarını dataset bazında topla → tek seferde çöz (UI'ya giden kayıt çağrılarının yerine).
-        var relationFields = new List<(string Key, string Dataset, IReadOnlyList<string> Ids)>();
+        // relation alanlarını dataset + labelField bazında topla → tek seferde çöz.
+        var relationFields = new List<(string Key, string Dataset, string LabelField, IReadOnlyList<string> Ids)>();
         var datasetIds = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
 
         foreach (var (key, field) in formFields)
@@ -375,9 +375,12 @@ public partial class RuntimeContextService
                 var ids = CollectRefIds(workItem, key);
                 if (ids.Count > 0)
                 {
-                    relationFields.Add((key, dataset!, ids));
-                    if (!datasetIds.TryGetValue(dataset!, out var set))
-                        datasetIds[dataset!] = set = new HashSet<string>(StringComparer.Ordinal);
+                    poolByKey.TryGetValue(key, out var poolField);
+                    var labelField = LookupFieldOptionsHelper.ResolveLabelField(poolField);
+                    relationFields.Add((key, dataset!, labelField, ids));
+                    var resolveKey = LookupFieldOptionsHelper.ComposeResolveKey(dataset!, labelField);
+                    if (!datasetIds.TryGetValue(resolveKey, out var set))
+                        datasetIds[resolveKey] = set = new HashSet<string>(StringComparer.Ordinal);
                     foreach (var id in ids)
                         set.Add(id);
                 }
@@ -387,15 +390,20 @@ public partial class RuntimeContextService
             // diğer (text/number/date/bool) → display üretme; UI ham değeri gösterir.
         }
 
-        // dataset bazında id → ad çöz (paralel).
+        // dataset+labelField bazında id → ad çöz (paralel).
         var nameMapTasks = datasetIds.ToDictionary(
             kv => kv.Key,
-            kv => ResolveRelationNamesAsync(kv.Key, kv.Value, token, cancellationToken));
+            kv =>
+            {
+                var (dataset, labelField) = LookupFieldOptionsHelper.ParseResolveKey(kv.Key);
+                return ResolveRelationNamesAsync(dataset, kv.Value, labelField, token, cancellationToken);
+            });
         await Task.WhenAll(nameMapTasks.Values);
 
-        foreach (var (key, dataset, ids) in relationFields)
+        foreach (var (key, dataset, labelField, ids) in relationFields)
         {
-            var map = nameMapTasks.TryGetValue(dataset, out var task) ? task.Result : null;
+            var resolveKey = LookupFieldOptionsHelper.ComposeResolveKey(dataset, labelField);
+            var map = nameMapTasks.TryGetValue(resolveKey, out var task) ? task.Result : null;
             var names = ids
                 .Select(id => map != null && map.TryGetValue(id, out var nm) && !string.IsNullOrWhiteSpace(nm) ? nm : id)
                 .ToList();
@@ -431,16 +439,18 @@ public partial class RuntimeContextService
     private Task<Dictionary<string, string>> ResolveRelationNamesAsync(
         string dataset,
         IReadOnlyCollection<string> ids,
+        string labelField,
         string token,
         CancellationToken cancellationToken) =>
         ChangeCatalogDatasets.Contains(dataset)
             ? ResolveCatalogNamesAsync(dataset, ids, token, cancellationToken)
-            : ResolveRelationNamesViaQueryAsync(dataset, ids, token, cancellationToken);
+            : ResolveRelationNamesViaQueryAsync(dataset, ids, labelField, token, cancellationToken);
 
     /// <summary>Katalog olmayan relation dataset'leri için $in DG sorgusu.</summary>
     private async Task<Dictionary<string, string>> ResolveRelationNamesViaQueryAsync(
         string dataset,
         IReadOnlyCollection<string> ids,
+        string labelField,
         string token,
         CancellationToken cancellationToken)
     {
@@ -462,11 +472,7 @@ public partial class RuntimeContextService
                 var id = WorkItemDataHelper.GetString(row, "__dataId");
                 if (string.IsNullOrWhiteSpace(id))
                     continue;
-                var name = FirstNonEmpty(
-                    WorkItemDataHelper.GetString(row, "name"),
-                    WorkItemDataHelper.GetString(row, "label"),
-                    WorkItemDataHelper.GetString(row, "title"),
-                    WorkItemDataHelper.GetString(row, "key"));
+                var name = LookupFieldOptionsHelper.ResolveDisplayText(row, labelField);
                 if (!string.IsNullOrWhiteSpace(name))
                     map[id!] = name!;
             }

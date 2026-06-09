@@ -56,6 +56,7 @@ export const OC_POOL_FIELD_TYPE_VALUES = [
   'number',
   'bool',
   'datetime',
+  'select',
   'relation',
   'persons',
   'personGroups',

@@ -1,0 +1,54 @@
+{
+  "name": "sehirler",
+  "description": "Sehir master — OC lookup dependsOn demo (bagimli alan)",
+  "forceSchema": false,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "kod",
+      "title": "Sehir kodu",
+      "mandatory": true,
+      "unique": true,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "ad",
+      "title": "Sehir adi",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "ulkeId",
+      "title": "Ulke id",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "bool",
+      "name": "isActive",
+      "title": "Aktif",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": true
+    }
+  ],
+  "indexList": [
+    {
+      "name": "idx_kod",
+      "fields": { "kod": 1 },
+      "unique": true
+    },
+    {
+      "name": "idx_ulkeId",
+      "fields": { "ulkeId": 1 },
+      "unique": false
+    }
+  ]
+}

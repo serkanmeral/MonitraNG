@@ -1,0 +1,70 @@
+{
+  "name": "tedarikciler",
+  "description": "Tedarikci master verisi — OC lookup (relation) demo",
+  "forceSchema": false,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "kod",
+      "title": "Tedarikci kodu",
+      "mandatory": true,
+      "unique": true,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "unvan",
+      "title": "Unvan",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "vergiNo",
+      "title": "Vergi no",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "sehir",
+      "title": "Sehir",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "email",
+      "title": "E-posta",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "bool",
+      "name": "isActive",
+      "title": "Aktif",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": true
+    }
+  ],
+  "indexList": [
+    {
+      "name": "idx_kod",
+      "fields": { "kod": 1 },
+      "unique": true
+    },
+    {
+      "name": "idx_unvan",
+      "fields": { "unvan": 1 },
+      "unique": false
+    }
+  ]
+}

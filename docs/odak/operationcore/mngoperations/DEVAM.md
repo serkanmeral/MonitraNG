@@ -1,6 +1,6 @@
 # MngOperations & Operation Core UI — Devam noktası (checkpoint)
 
-**Son güncelleme:** 9 Haziran 2026 (**OC-FILE** ✅ · **OC-CACHE-RELOAD** ✅ · mngui deploy)  
+**Son güncelleme:** 9 Haziran 2026 (**OC-FILE** ✅ · **OC-LOOKUP L1+L2** ✅ · **OC-CACHE-RELOAD** ✅ · mngui deploy)  
 **Durum:** SW **SW-0…SW-6** ✅ · … · **UI-PERF-F1+1B** ✅ · **OC-PERF-F2b** ✅ — prod profil warm P95 **1694 ms**; `mngoperations`+`mngui` test+prod `--no-cache`
 
 > **⭐ KALDIĞIMIZ YER (6 Haz 2026) — OC performans paketi deploy + ölçüm:** **PV-PERF-4** (`op_links` $or, `op_tags` katalog cache, timeline dedup) + **Faz 2b** (dashboard query dedup) + metadata TTL **600 sn** + **UI-PERF-2** (45 sn profil cache, mutation `force`). Test `192.168.20.20` + Prod `192.168.20.8` — `mngoperations`+`mngui` `--no-cache`, smoke `gateway=200 ui=200 oc_live=200`. **Prod profil warm P95 1694 ms** ✅ (önce 2377 ms, hedef ≤1800). Test profil warm ~2963 ms ⚠️. Rapor: [diagnostic/DIAGNOSTIC_REPORT_2026-06-06-perf.md](../../diagnostic/DIAGNOSTIC_REPORT_2026-06-06-perf.md). JSON: `oc_pages_prod_post_perf_20260606.json`, `oc_pages_test_post_perf_20260606.json`. **Sıradaki:** ayrı planlama — pano ≤1,2 sn · profil cold · Faz 3 DG cache.
@@ -781,6 +781,20 @@ location /api/scheduler/ {
 **UI:** `OcWorkItemFileField.vue`, `ocFileFieldOptions.ts`, `ocWorkItemFileFields.ts`, `OcWorkspaceDefinitionsFieldsTab.vue`, `OcDynamicFormField.vue`, `OcWorkItemFormDialog.vue`, `work-items/new/index.vue`, locale `en/tr`. **Doküman:** [OC_UI_FORM_DEFINITIONS.md](../ui/OC_UI_FORM_DEFINITIONS.md) §4.1, [FORM_LAYOUT_AND_EXTRA_FIELDS.md](./FORM_LAYOUT_AND_EXTRA_FIELDS.md) §5.
 
 **Test:** file alanı tanımla → forma ekle → cache reload → board «Yeni iş» upload → profil Ekler.
+
+---
+
+## OC-LOOKUP — Pool lookup / seçim alanları L1+L2 (9 Haz 2026)
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **OC-LOOKUP-1** | ✅ UI | **`options.lookup`** — dataset relation: label/value alanı, sunum (dropdown/autocomplete/picker→autocomplete fallback), sistem kategori filtresi, admin dataset combobox. |
+| **OC-LOOKUP-2** | ✅ UI | **`fieldType: select`** — statik seçenekler editörü. |
+| **OC-LOOKUP-3** | ✅ UI | **dependsOn** — üst alan değişince filtre + child temizleme. |
+| **OC-LOOKUP-4** | backlog | Modal picker (`useOcDatasetPicker`). |
+| **OC-LOOKUP-5** | ✅ MO | Profil/aktivite `labelField` resolve (`LookupFieldOptionsHelper`). |
+
+**Kod:** `ocLookupFieldOptions.ts`, `useOcLookupDatasetCatalog.ts`, `OcWorkspaceDefinitionsFieldsTab.vue`, `useOcDynamicFormLookups.ts`, `OcDynamicFormField.vue`. **Spec:** [OC_UI_LOOKUP_FIELDS.md](../ui/OC_UI_LOOKUP_FIELDS.md).
 
 ---
 
