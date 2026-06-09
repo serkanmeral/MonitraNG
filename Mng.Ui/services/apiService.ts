@@ -375,6 +375,22 @@ export function fetchFromDataGateway(
         });
         
         response = rawResponse._data;
+
+        // BFF pagination wrapper: { items, totalCount }
+        if (
+          response &&
+          typeof response === 'object' &&
+          !Array.isArray(response) &&
+          Array.isArray((response as { items?: unknown }).items)
+        ) {
+          const wrapped = response as { items: unknown[]; totalCount?: number };
+          const items = wrapped.items;
+          if (typeof wrapped.totalCount === 'number') {
+            (items as { _totalCount?: number })._totalCount = wrapped.totalCount;
+          }
+          resolve(items);
+          return;
+        }
         
         // Extract X-Total-Count from response headers
         const totalCountHeader = rawResponse.headers.get('x-total-count');

@@ -367,5 +367,3 @@ export function formatAlarmRelativeTime(
 ): string {
   return formatRelativeTime(value, locale, t);
 }
-
-export { formatRelativeTime, copyTextToClipboard } from '@/composables/useSecEventList';

@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useWidgetStore } from '@/stores/apps/widget';
 import { useLocaleStore } from '@/stores/locale';
+import { getWidgetCategoryDisplayName, buildModuleCategorySelectOptions } from '@/utils/widgets/widgetCategoryDomains';
 import { EditIcon, TrashIcon, PlusIcon, RefreshIcon, EyeIcon } from 'vue-tabler-icons';
 import WidgetRenderer from '@/components/widgets/WidgetRenderer.vue';
 
@@ -48,11 +49,8 @@ const isActiveFilter = ref<boolean | 'all'>('all');
 const categoryFilter = ref<string | 'all'>('all');
 const typeFilter = ref<'card' | 'chart' | 'table' | 'banner' | 'all'>('all');
 
-const tableOptions = ref({
-  page: 1,
-  itemsPerPage: 20,
-  sortBy: [] as Array<{ key: string; order: 'asc' | 'desc' }>,
-});
+const tablePage = ref(1);
+const tableItemsPerPage = ref(20);
 
 const headers = computed(() => [
   { title: t('widgets.list.table.headers.name'), key: 'name', sortable: true },
@@ -66,31 +64,22 @@ const headers = computed(() => [
 ]);
 
 const serverItemsLength = computed(() => widgetStore.totalCount);
-const totalPages = computed(() => {
-  const n = widgetStore.totalCount;
-  const size = tableOptions.value.itemsPerPage || 20;
-  return n <= 0 ? 1 : Math.ceil(n / size);
-});
+
 const isInitialLoad = ref(true);
 
-// Category options
-const categoryOptions = computed(() => {
-  const options = [{ value: 'all' as const, title: t('widgets.list.filters.allCategories') }];
-  return [
-    ...options,
-    ...widgetStore.activeCategories.map((cat) => ({
-      value: cat.__dataId ?? cat.dataId ?? '',
-      title: cat.name,
-    })),
-  ];
+// Modul kategorileri (card/chart/table tur degil)
+const moduleCategoryOptions = computed(() => {
+  const options = [{ value: 'all' as const, title: t('widgets.list.filters.allModules') }];
+  const modules = buildModuleCategorySelectOptions(widgetStore.activeCategories, localeStore.locale);
+  return [...options, ...modules];
 });
 
 const typeOptions = computed(() => [
   { value: 'all' as const, title: t('widgets.list.filters.allTypes') },
-  { value: 'card' as const, title: 'Card' },
-  { value: 'chart' as const, title: 'Chart' },
-  { value: 'table' as const, title: 'Table' },
-  { value: 'banner' as const, title: 'Banner' },
+  { value: 'card' as const, title: t('widgets.list.types.card') },
+  { value: 'chart' as const, title: t('widgets.list.types.chart') },
+  { value: 'table' as const, title: t('widgets.list.types.table') },
+  { value: 'banner' as const, title: t('widgets.list.types.banner') },
 ]);
 
 const isActiveOptions = [
@@ -99,10 +88,9 @@ const isActiveOptions = [
   { value: false as const, title: 'Pasif' },
 ];
 
-async function fetchWidgets(options?: typeof tableOptions.value) {
-  const opts = options ?? tableOptions.value;
-  const skip = ((opts.page || 1) - 1) * (opts.itemsPerPage || 20);
-  const limit = opts.itemsPerPage || 20;
+async function fetchWidgets() {
+  const skip = (tablePage.value - 1) * tableItemsPerPage.value;
+  const limit = tableItemsPerPage.value;
   const sort = 'order,name';
   let filter: string | undefined;
   const filters: string[] = [];
@@ -120,25 +108,22 @@ async function fetchWidgets(options?: typeof tableOptions.value) {
   }
 }
 
-watch(
-  () => [tableOptions.value.page, tableOptions.value.itemsPerPage],
-  ([_newPage, newSize], [_oldPage, oldSize]) => {
-    if (isInitialLoad.value) return;
-    if (oldSize !== undefined && newSize !== oldSize) tableOptions.value.page = 1;
-    fetchWidgets();
-  }
-);
+watch([tablePage, tableItemsPerPage], ([, newSize], [, oldSize]) => {
+  if (isInitialLoad.value) return;
+  if (oldSize !== undefined && newSize !== oldSize) tablePage.value = 1;
+  void fetchWidgets();
+});
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 watch(search, () => {
-  if (tableOptions.value.page !== 1) tableOptions.value.page = 1;
+  if (tablePage.value !== 1) tablePage.value = 1;
   if (searchTimeout) clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => fetchWidgets(), 500);
 });
 
 watch([isActiveFilter, categoryFilter, typeFilter], () => {
-  if (tableOptions.value.page !== 1) tableOptions.value.page = 1;
-  fetchWidgets();
+  if (tablePage.value !== 1) tablePage.value = 1;
+  void fetchWidgets();
 });
 
 onMounted(async () => {
@@ -208,9 +193,12 @@ function formatDate(date: string | Date | null | undefined) {
 function getCategoryName(widget: any): string {
   if (typeof widget.category === 'string') {
     const cat = widgetStore.getCategoryById(widget.category);
-    return cat?.name ?? widget.category;
+    return getWidgetCategoryDisplayName(cat ?? undefined, localeStore.locale);
   }
-  return widget.category?.name ?? '-';
+  if (widget.category && typeof widget.category === 'object') {
+    return getWidgetCategoryDisplayName(widget.category as import('@/stores/apps/widget').WidgetCategory, localeStore.locale);
+  }
+  return '—';
 }
 
 function getTypeIcon(type: string): string {
@@ -245,10 +233,10 @@ function getTypeIcon(type: string): string {
             />
             <v-select
               v-model="categoryFilter"
-              :items="categoryOptions"
+              :items="moduleCategoryOptions"
               item-title="title"
               item-value="value"
-              :label="t('widgets.list.filters.category')"
+              :label="t('widgets.list.filters.module')"
               variant="outlined"
               density="compact"
               hide-details
@@ -299,46 +287,18 @@ function getTypeIcon(type: string): string {
           {{ widgetStore.error }}
         </v-alert>
 
-        <v-data-table
+        <v-data-table-server
           v-model="selectedWidgets"
-          v-model:options="tableOptions"
+          v-model:page="tablePage"
+          v-model:items-per-page="tableItemsPerPage"
           :headers="headers"
           :items="widgetStore.widgets"
           :loading="widgetStore.loading"
-          :server-items-length="serverItemsLength"
+          :items-length="serverItemsLength"
           :items-per-page-options="[10, 20, 50, 100]"
           item-value="__dataId"
           class="border rounded-md"
-          hide-default-footer
         >
-          <template v-slot:bottom>
-            <div class="d-flex justify-space-between align-center pa-3 border-top">
-              <div class="text-caption text-medium-emphasis">
-                <strong>{{ t('widgets.list.total') }}:</strong> {{ widgetStore.totalCount }}
-                {{ t('widgets.list.records') }}
-                <span v-if="totalPages > 1" class="ml-2">({{ t('widgets.list.page') }} {{ tableOptions.page }} / {{ totalPages }})</span>
-                <span class="ml-2">
-                  | {{ ((tableOptions.page - 1) * tableOptions.itemsPerPage) + 1 }} -
-                  {{ Math.min(tableOptions.page * tableOptions.itemsPerPage, widgetStore.totalCount) }}
-                  / {{ widgetStore.totalCount }} {{ t('widgets.list.showing') }}
-                </span>
-              </div>
-              <div class="d-flex align-center ga-2">
-                <span class="text-caption text-medium-emphasis">{{ t('widgets.list.itemsPerPage') }}:</span>
-                <v-select
-                  v-model="tableOptions.itemsPerPage"
-                  :items="[10, 20, 50, 100]"
-                  density="compact"
-                  variant="outlined"
-                  hide-details
-                  style="max-width: 80px;"
-                />
-              </div>
-            </div>
-            <div v-if="totalPages > 1" class="d-flex justify-center pa-2 border-top">
-              <v-pagination v-model="tableOptions.page" :length="totalPages" :total-visible="7" density="compact" />
-            </div>
-          </template>
           <template #item.name="{ item }">
             <div class="d-flex align-center ga-2">
               <v-icon size="18" class="text-primary">mdi-widgets</v-icon>
@@ -403,7 +363,7 @@ function getTypeIcon(type: string): string {
               </v-btn>
             </div>
           </template>
-        </v-data-table>
+        </v-data-table-server>
       </v-card-item>
     </v-card>
 

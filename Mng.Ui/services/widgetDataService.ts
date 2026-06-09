@@ -1,5 +1,17 @@
 import { fetchFromDataGateway } from './apiService';
 import type { DataSourceConfigData, Widget } from '@/stores/apps/widget';
+import type { SurfaceContext } from '@/types/apps/widgetManifest';
+import {
+  fetchManifestWidgetData,
+  getManifestBindingFromWidget,
+} from '@/services/widgetManifestDataService';
+import {
+  isManifestServiceDataSource,
+  isManifestStaticDataSource,
+  resolveManifestBindingForFetch,
+  adaptWidgetForRuntime,
+  type WidgetLike,
+} from '@/utils/widgets/widgetManifestAdapter';
 
 /**
  * Widget Data Service
@@ -17,7 +29,39 @@ export interface WidgetDataResponse {
  * @param widget Widget entity
  * @returns Widget verisi
  */
-export async function fetchWidgetData(widget: Widget): Promise<WidgetDataResponse> {
+export async function fetchWidgetData(
+  widget: Widget,
+  context: SurfaceContext = {},
+): Promise<WidgetDataResponse> {
+  const manifestBinding = resolveManifestBindingForFetch(widget as WidgetLike, context);
+  if (manifestBinding && (manifestBinding.kind === 'serviceRef' || manifestBinding.kind === 'queryRef')) {
+    return fetchManifestWidgetData(manifestBinding);
+  }
+  const legacyBinding = getManifestBindingFromWidget(widget);
+  if (legacyBinding?.kind === 'serviceRef' || legacyBinding?.kind === 'queryRef') {
+    return fetchManifestWidgetData(legacyBinding);
+  }
+  if (isManifestStaticDataSource(widget.dataSource)) {
+    return { data: [], total: 0 };
+  }
+
+  const serviceBinding =
+    manifestBinding ??
+    legacyBinding ??
+    (isManifestServiceDataSource(widget.dataSource)
+      ? resolveManifestBindingForFetch(adaptWidgetForRuntime(widget as WidgetLike, context), context)
+      : null);
+  if (isManifestServiceDataSource(widget.dataSource)) {
+    const binding =
+      serviceBinding ??
+      getManifestBindingFromWidget(widget) ??
+      resolveManifestBindingForFetch(adaptWidgetForRuntime(widget as WidgetLike, context), context);
+    if (binding && (binding.kind === 'serviceRef' || binding.kind === 'queryRef')) {
+      return fetchManifestWidgetData(binding);
+    }
+    throw new Error('Manifest servis bağlantısı çözülemedi');
+  }
+
   const dataSource = widget.dataSource;
 
   // Validate dataSource
@@ -54,7 +98,8 @@ export async function fetchWidgetData(widget: Widget): Promise<WidgetDataRespons
         return await fetchWidgetDataPredefined(
           dataset,
           dataSource.predefined.queryName,
-          dataSource.predefined.parameters || {}
+          dataSource.predefined.parameters || {},
+          dataSource.mapping,
         );
 
       default:
@@ -221,16 +266,41 @@ async function fetchWidgetDataAggregate(
 async function fetchWidgetDataPredefined(
   dataset: string,
   queryName: string,
-  parameters: Record<string, any>
+  parameters: Record<string, any>,
+  mapping?: DataSourceConfigData['mapping'],
 ): Promise<WidgetDataResponse> {
   if (!queryName) {
     throw new Error('Predefined query için queryName gereklidir');
   }
 
   const url = `/api/v1/data/${dataset}/queries/${encodeURIComponent(queryName)}`;
-  const body = parameters;
+  const data = await fetchFromDataGateway(url, 'POST', parameters);
 
-  const data = await fetchFromDataGateway(url, 'POST', body);
+  if (Array.isArray(data)) {
+    return { data, total: data.length };
+  }
+  if (data && typeof data === 'object') {
+    const obj = data as Record<string, unknown>;
+    const rowsKey = mapping?.items ?? 'items';
+    const totalKey = mapping?.total ?? 'total';
+    if (Array.isArray(obj[rowsKey])) {
+      return {
+        data: obj[rowsKey] as unknown[],
+        total: typeof obj[totalKey] === 'number' ? (obj[totalKey] as number) : (obj[rowsKey] as unknown[]).length,
+      };
+    }
+    if (Array.isArray(obj.items)) {
+      return {
+        data: obj.items as unknown[],
+        total: typeof obj.total === 'number' ? (obj.total as number) : (obj.items as unknown[]).length,
+      };
+    }
+    const valueKey = mapping?.value ?? 'total';
+    const statValue = obj[valueKey] ?? obj.total ?? obj.count;
+    if (statValue != null) {
+      return { data: [{ value: statValue, total: statValue }], total: 1 };
+    }
+  }
 
   return {
     data: Array.isArray(data) ? data : [data],

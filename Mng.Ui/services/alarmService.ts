@@ -105,6 +105,37 @@ export async function alarmDashboardSnapshot(
   });
 }
 
+export interface AlarmTrendBucket {
+  bucket: string;
+  count: number;
+}
+
+export interface AlarmTrendBucketsResult {
+  from: string;
+  to: string;
+  items: AlarmTrendBucket[];
+}
+
+export async function alarmTrendBuckets(query: { rangeHours?: number } = {}): Promise<AlarmTrendBucketsResult> {
+  const qs = buildQuery({ rangeHours: query.rangeHours ?? 24 });
+  const raw = await $fetch<Record<string, unknown>>(`/api/alarm/v1/alarms/trend-buckets${qs}`, {
+    method: 'GET',
+    headers: domainHeaders(),
+  });
+  const itemsRaw = (raw.items ?? raw.Items ?? []) as Record<string, unknown>[];
+  const items = Array.isArray(itemsRaw)
+    ? itemsRaw.map((row) => ({
+        bucket: String(row.bucket ?? row.Bucket ?? ''),
+        count: Number(row.count ?? row.Count ?? 0),
+      }))
+    : [];
+  return {
+    from: String(raw.from ?? raw.From ?? ''),
+    to: String(raw.to ?? raw.To ?? ''),
+    items,
+  };
+}
+
 export async function alarmRuleList(): Promise<AlarmRule[]> {
   return await $fetch<AlarmRule[]>('/api/alarm/v1/rules', {
     method: 'GET',

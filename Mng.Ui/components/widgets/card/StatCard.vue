@@ -6,6 +6,11 @@ const props = defineProps<{
   widget: Widget;
   data?: WidgetDataResponse | null;
   t?: (key: string) => string;
+  drillDownEnabled?: boolean;
+}>();
+
+const emit = defineEmits<{
+  'drill-down': [];
 }>();
 
 // Extract value from data
@@ -166,8 +171,10 @@ const trendDisplay = computed(() => {
       'stat-card',
       cardConfig.cardDisplay === 'badge' ? 'stat-card--badge' : '',
       `stat-card-${cardConfig.format === 'boolean' && booleanDisplay ? booleanDisplay.color : cardConfig.color}`,
-      cardConfig.bgColor
+      cardConfig.bgColor,
+      drillDownEnabled ? 'stat-card--drill' : '',
     ]"
+    @click="drillDownEnabled ? emit('drill-down') : undefined"
   >
     <v-card-text :class="cardConfig.cardDisplay === 'badge' ? 'pa-3' : 'pa-4'">
       <div class="d-flex align-start justify-space-between">
@@ -187,10 +194,11 @@ const trendDisplay = computed(() => {
             v-else-if="cardConfig.showIcon && cardConfig.iconVariant === 'avatar'"
             :color="cardConfig.color"
             :size="cardConfig.cardDisplay === 'badge' ? 44 : 56"
-            variant="flat"
+            variant="tonal"
+            rounded="lg"
             class="stat-icon-avatar"
           >
-            <v-icon :color="cardConfig.color" :size="cardConfig.cardDisplay === 'badge' ? 22 : 28">
+            <v-icon :size="cardConfig.cardDisplay === 'badge' ? 22 : 28">
               {{ cardConfig.icon }}
             </v-icon>
           </v-avatar>
@@ -274,6 +282,10 @@ const trendDisplay = computed(() => {
 
 .stat-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card--drill {
+  cursor: pointer;
 }
 
 .stat-card--badge .stat-card-badge-content {

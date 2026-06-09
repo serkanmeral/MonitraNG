@@ -6,7 +6,9 @@ import { useAuthStore } from '@/stores/auth';
 import { fetchFromMngKeeper } from '@/services/apiService';
 import WidgetRenderer from './WidgetRenderer.vue';
 import AggregatePipelineBuilder from './AggregatePipelineBuilder.vue';
-import type { WidgetCategory } from '@/stores/apps/widget';
+import { buildModuleCategorySelectOptions } from '@/utils/widgets/widgetCategoryDomains';
+import { isManifestPlaceholderDataset } from '@/utils/widgets/widgetManifestAdapter';
+import { useLocaleStore } from '@/stores/locale';
 
 const props = defineProps<{
   initial?: Widget | null;
@@ -21,6 +23,7 @@ const emit = defineEmits<{
 const widgetStore = useWidgetStore();
 const datasetStore = useDatasetStore();
 const authStore = useAuthStore();
+const localeStore = useLocaleStore();
 
 // Groups for permissions
 const groups = ref<Array<{ id: string; name: string; isActive: boolean }>>([]);
@@ -112,17 +115,10 @@ const isValid = computed(() => {
   return !errors.value.name && !errors.value.title && !errors.value.category && !errors.value.dataset;
 });
 
-// Load categories
-const categories = computed(() => widgetStore.activeCategories);
-const categoryOptions = computed(() => {
-  return categories.value.map((cat) => ({
-    value: cat.__dataId ?? cat.dataId ?? '',
-    title: cat.name,
-    subtitle: cat.description,
-    icon: cat.icon,
-    color: cat.color,
-  }));
-});
+// Modul kategorileri — tur (card/chart/table) widget.type alaninda
+const categoryOptions = computed(() =>
+  buildModuleCategorySelectOptions(widgetStore.activeCategories, localeStore.locale),
+);
 
 // Load datasets
 const datasets = computed(() => datasetStore.datasets);
@@ -188,7 +184,7 @@ function validate() {
     errors.value.title = props.t?.('widgets.form.validation.titleRequired') ?? 'Widget başlığı zorunludur';
   }
   if (!formData.value.category) {
-    errors.value.category = props.t?.('widgets.form.validation.categoryRequired') ?? 'Kategori seçimi zorunludur';
+    errors.value.category = props.t?.('widgets.form.validation.categoryRequired') ?? 'Modül seçimi zorunludur';
   }
   if (!formData.value.dataSource?.dataset?.trim()) {
     errors.value.dataset = props.t?.('widgets.form.validation.datasetRequired') ?? 'Dataset belirtilmelidir';
@@ -247,7 +243,7 @@ onMounted(async () => {
     ]);
     
     // Load dataset schema if dataset is already selected
-    if (formData.value.dataSource?.dataset) {
+    if (formData.value.dataSource?.dataset && !isManifestPlaceholderDataset(formData.value.dataSource.dataset)) {
       try {
         await datasetStore.fetchDatasetByName(formData.value.dataSource.dataset);
       } catch {
@@ -267,7 +263,7 @@ onMounted(async () => {
 watch(
   () => formData.value.dataSource?.dataset,
   async (newDataset) => {
-    if (newDataset) {
+    if (newDataset && !isManifestPlaceholderDataset(newDataset)) {
       try {
         await datasetStore.fetchDatasetByName(newDataset);
       } catch {
@@ -569,7 +565,7 @@ const showPreview = ref(false);
                 variant="outlined"
                 density="comfortable"
                 required
-                :disabled="widgetStore.loading || categories.length === 0"
+                :disabled="widgetStore.loading || categoryOptions.length === 0"
                 :loading="widgetStore.loading"
               >
                 <template #item="{ props: itemProps, item }">

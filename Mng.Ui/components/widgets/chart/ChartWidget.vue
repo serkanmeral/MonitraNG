@@ -10,12 +10,22 @@
 import { ref, computed, onMounted } from 'vue';
 import { useTheme } from 'vuetify';
 import type { Widget, WidgetDataResponse } from '@/stores/apps/widget';
+import type { WidgetInteractions } from '@/utils/widgets/surfaceInteractions';
+import { formatSeverityLabel } from '@/utils/widgets/widgetFieldMappingBridge';
 import { getPrimary, getSecondary } from '@/utils/UpdateColors';
 
 const props = defineProps<{
   widget: Widget;
   data?: WidgetDataResponse | null;
   t?: (key: string) => string;
+  interactions?: WidgetInteractions | null;
+  chartZoomEnabled?: boolean;
+}>();
+
+const emit = defineEmits<{
+  'cross-filter': [row: Record<string, unknown>];
+  'chart-zoom': [fromMs: number, toMs: number];
+  'chart-segment-select': [row: Record<string, unknown>];
 }>();
 
 const theme = useTheme();
@@ -225,12 +235,7 @@ const chartLabels = computed(() => {
     }
     // Labels from xAxis field
     if (cfg.xAxis?.field && data.length > 0) {
-      return data.map((item: any) => {
-        const value = getNestedValue(item, cfg.xAxis!.field!);
-        if (value === null || value === undefined) return '';
-        if (cfg.xAxis!.field === 'timestamp' || looksLikeIsoDate(value)) return formatChartTimestamp(value);
-        return String(value);
-      });
+      return data.map((item: any) => formatAxisLabel(getNestedValue(item, cfg.xAxis!.field!), cfg.xAxis));
     }
     // Grouped chart labels
     if (cfg.groupBy && data.length > 0) {
@@ -249,12 +254,7 @@ const chartLabels = computed(() => {
 
   // Categories from data field
   if (cfg.xAxis?.field && data.length > 0) {
-    return data.map((item: any) => {
-      const value = getNestedValue(item, cfg.xAxis!.field!);
-      if (value === null || value === undefined) return '';
-      if (cfg.xAxis!.field === 'timestamp' || looksLikeIsoDate(value)) return formatChartTimestamp(value);
-      return String(value);
-    });
+    return data.map((item: any) => formatAxisLabel(getNestedValue(item, cfg.xAxis!.field!), cfg.xAxis));
   }
 
   // Grouped chart categories
@@ -281,7 +281,31 @@ const chartOptions = computed(() => {
       fontFamily: 'inherit',
       foreColor: isDark ? '#a1aab2' : '#5a6a85',
       toolbar: {
-        show: cfg.options?.showToolbar || false,
+        show: cfg.options?.showToolbar || props.chartZoomEnabled || false,
+      },
+      zoom: {
+        enabled: props.chartZoomEnabled && !isPieOrDonut && !isRadialBar,
+        type: 'x',
+        autoScaleYaxis: true,
+      },
+      events: {
+        zoomed(_chart: unknown, { xaxis }: { xaxis?: { min?: number; max?: number } }) {
+          if (!props.chartZoomEnabled || xaxis?.min == null || xaxis?.max == null) return;
+          emit('chart-zoom', xaxis.min, xaxis.max);
+        },
+        dataPointSelection(
+          _event: unknown,
+          _chart: unknown,
+          config: { dataPointIndex?: number; seriesIndex?: number },
+        ) {
+          const row = props.data?.data?.[config.dataPointIndex ?? -1];
+          if (row && typeof row === 'object') {
+            emit('chart-segment-select', row as Record<string, unknown>);
+            if (props.interactions?.crossFilter) {
+              emit('cross-filter', row as Record<string, unknown>);
+            }
+          }
+        },
       },
       sparkline: {
         enabled: cfg.options?.sparkline || false,
@@ -391,6 +415,15 @@ const chartOptions = computed(() => {
 });
 
 /** ISO / Z formatındaki zaman değerlerini grafik etiketi için okunabilir formata çevirir */
+function formatAxisLabel(value: unknown, xAxis?: { field?: string; labelFormat?: string }): string {
+  if (value === null || value === undefined) return '';
+  if (xAxis?.labelFormat === 'severity') return formatSeverityLabel(value);
+  if (xAxis?.labelFormat === 'datetime' || xAxis?.field === 'timestamp' || looksLikeIsoDate(value)) {
+    return formatChartTimestamp(value);
+  }
+  return String(value);
+}
+
 function formatChartTimestamp(value: any): string {
   if (value === null || value === undefined) return '';
   const str = String(value).trim();

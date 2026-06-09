@@ -2051,6 +2051,9 @@
       "notFound": "Dashboard not found.",
       "backToList": "Back to list",
       "noLayout": "No layout defined.",
+      "redirectingSiemCenter": "Opening SIEM Security Panel…",
+      "siemCenterSurfaceHint": "This dashboard record is for the SIEM panel; widgets render at /apps/siem-center.",
+      "openSiemCenter": "Open SIEM panel",
       "emptyWidget": "Empty slot",
       "unauthorized": "Unauthorized Access",
       "unauthorizedMessage": "You do not have permission to view this dashboard.",
@@ -2061,6 +2064,39 @@
         "seconds": "Seconds",
         "minutes": "Minutes"
       }
+    },
+    "surface": {
+      "title": "Surface filters",
+      "timeRange": "Time range",
+      "timePreset": {
+        "1h": "Last 1 hour",
+        "6h": "Last 6 hours",
+        "24h": "Last 24 hours",
+        "7d": "Last 7 days"
+      },
+      "severity": "Minimum severity",
+      "severityAll": "All",
+      "severityHigh": "High+",
+      "severityCritical": "Critical",
+      "workspaceId": "Workspace ID",
+      "workspaceIdPlaceholder": "For MO widgets",
+      "autoRefresh": "Auto refresh",
+      "refreshOff": "Off",
+      "refresh30s": "30s",
+      "refresh1m": "1m",
+      "refresh5m": "5m",
+      "refreshNow": "Refresh now",
+      "zoomRange": "Chart zoom range"
+    },
+    "export": {
+      "title": "Export",
+      "snapshotJson": "Snapshot (JSON)",
+      "snapshotJsonHint": "Reporting hook — manifest + data",
+      "csvAll": "CSV (tables)",
+      "csvAllHint": "Supported widgets only",
+      "snapshotEmpty": "No snapshot-exportable widgets.",
+      "csvEmpty": "No CSV-exportable data.",
+      "exportFailed": "Export failed."
     },
     "container": {
       "title": "Dashboard Container",
@@ -2194,12 +2230,27 @@
         "title": "Select Widget",
         "search": "Search",
         "searchPlaceholder": "Widget name or title...",
-        "category": "Category",
-        "allCategories": "All",
+        "module": "Module",
+        "category": "Module",
+        "type": "Type",
+        "allCategories": "All modules",
+        "allModules": "All modules",
         "select": "Select",
         "cancel": "Cancel",
         "noWidgets": "No widgets found",
-        "noWidgetsHint": "Try changing your search criteria."
+        "noWidgetsHint": "Try changing your search criteria.",
+        "tabExisting": "Existing widgets",
+        "tabTemplate": "Create from template",
+        "templateHint": "Pick a V1 catalog template to create a widget and place it on the dashboard.",
+        "quickCreate": {
+          "title": "Template",
+          "name": "Widget name (unique)",
+          "widgetTitle": "Display title",
+          "confirm": "Create and place",
+          "validation": "Name and title are required.",
+          "categoryMissing": "Could not resolve template module. Check @widget_categories seed.",
+          "failed": "Failed to create widget."
+        }
       }
     }
   },
@@ -2227,17 +2278,25 @@
         "noData": "No widgets found",
         "createFirst": "Create First Widget",
       "filters": {
-        "allCategories": "All Categories",
-        "allTypes": "All Types",
-        "category": "Category",
+        "allModules": "All modules",
+        "allCategories": "All modules",
+        "allTypes": "All types",
+        "module": "Module",
+        "category": "Module",
         "type": "Type",
         "status": "Status"
+      },
+      "types": {
+        "card": "Card (stat)",
+        "chart": "Chart",
+        "table": "Table",
+        "banner": "Banner"
       },
       "table": {
         "headers": {
           "name": "Name",
           "title": "Title",
-          "category": "Category",
+          "category": "Module",
           "type": "Type",
           "isActive": "Active",
           "order": "Order",
@@ -2259,8 +2318,8 @@
       "name": "Widget Name",
       "title": "Widget Title",
       "description": "Description",
-      "category": "Category",
-      "type": "Widget Type",
+      "category": "Module",
+      "type": "Type (card/chart/table)",
       "order": "Order",
       "isActive": "Active",
       "dataSource": "Data Source",
@@ -2340,9 +2399,90 @@
         "datasetRequired": "Dataset must be specified"
       }
     },
+    "designer": {
+      "createTitle": "Widget Designer",
+      "editTitle": "Edit Widget",
+      "legacyFormLink": "Advanced (technical) form",
+      "designerFormLink": "Widget Designer",
+      "editTemplateLocked": "Template is fixed; clone from catalog to create a new widget.",
+      "editNameLocked": "Record name cannot be changed (dashboard references).",
+      "editLoadFailed": "Failed to load widget design data.",
+      "saveChanges": "Save changes",
+      "catalogHint": "Start from the V1 template catalog with domain filter and search.",
+      "parametersHint": "Template-specific parameters. Context-bound fields are read-only.",
+      "parametersEmpty": "No editable parameters for this template.",
+      "advancedMode": "Advanced — parameter JSON",
+      "presetGallery": "Presentation preset",
+      "livePreview": "Live preview",
+      "refreshInterval": "Auto refresh",
+      "refreshOff": "Off",
+      "refresh30s": "30 seconds",
+      "refresh1m": "1 minute",
+      "refresh5m": "5 minutes",
+      "permissionGroups": "Authorized groups",
+      "permissionGroupsHint": "Leave empty to allow all users.",
+      "drillDownHint": "Click navigation",
+      "cancel": "Cancel",
+      "back": "Back",
+      "next": "Next",
+      "save": "Save",
+      "steps": {
+        "catalog": "Catalog",
+        "parameters": "Parameters",
+        "appearance": "Appearance",
+        "behavior": "Behavior"
+      },
+      "fields": {
+        "name": "Widget name",
+        "title": "Title",
+        "description": "Description",
+        "isActive": "Active",
+        "order": "Order"
+      },
+      "catalog": {
+        "allModules": "All modules",
+        "allDomains": "All modules",
+        "alarm": "Alarm",
+        "siem": "SIEM",
+        "operationCore": "Operations (MO)",
+        "documentIntelligence": "Documents",
+        "search": "Search templates",
+        "searchPlaceholder": "Title, tag, or templateId...",
+        "empty": "No active templates found."
+      },
+      "parameters": {
+        "fromContext": "Comes from dashboard context ({path})"
+      },
+      "fieldMapping": {
+        "title": "Data & field mapping",
+        "hint": "Maps API response fields to card, chart, or table presentation. Missing mapping shows Item 1 or — in the UI.",
+        "valueField": "Value field",
+        "valueFieldHint": "Numeric field on normalized row (usually value)",
+        "xAxisField": "X-axis / slice label field",
+        "xAxisFieldHint": "e.g. severity, bucket, timestamp",
+        "yAxisField": "Y-axis / value field",
+        "yAxisFieldHint": "e.g. count",
+        "tableColumnsHint": "Columns come from the template; advanced edit via JSON mode.",
+        "warnStatValue": "Value field is missing — card may show —.",
+        "warnChartX": "X-axis field is missing — chart shows Item 1, Item 2.",
+        "warnChartY": "Y value field is missing — chart data may be incomplete.",
+        "warnTableColumns": "Table columns are missing — raw field names will be listed."
+      },
+      "validation": {
+        "stepIncomplete": "Complete this step first.",
+        "nameTitleRequired": "Name and title are required.",
+        "categoryMissing": "Category not found: {slug}"
+      }
+    },
     "view": {
       "notFound": "Widget not found",
       "backToList": "Back to List"
+    },
+    "listActivity": {
+      "noData": "List is empty"
+    },
+    "actions": {
+      "failed": "Action failed"
     },
     "renderer": {
       "noWidgetId": "Widget ID not specified",
@@ -2353,6 +2493,11 @@
       "typeNotSupported": "Widget type not supported: {type}",
       "unauthorized": "Unauthorized",
       "unauthorizedMessage": "You do not have permission to view this widget."
+    },
+    "table": {
+      "items": "records",
+      "noData": "No data",
+      "loading": "Loading..."
     }
   },
   "organization": {
@@ -3561,6 +3706,10 @@
           "noParams": "No parameters.",
           "tokenHint": "You can use tokens in values (wrapped in double curly braces): workspaceId · currentUser · asOf.",
           "saveWidget": "Save widget",
+          "tabTemplate": "From template",
+          "tabCustom": "Custom / edit",
+          "templateHint": "Pick an Operation Core template; fields are filled automatically.",
+          "templateUnsupported": "This template is not supported in the MO dashboard editor.",
           "keyRequired": "Widget key is required.",
           "keyInvalid": "Key may contain only letters, digits and _.",
           "keyDuplicate": "This key is already in use.",
@@ -5456,6 +5605,7 @@
       "pageTitle": "SIEM Security Panel",
       "pageSubtitle": "Last 24 hours: event volume, open alarms, and quick links.",
       "loadError": "Could not load dashboard data.",
+      "missingTemplates": "Some widget templates are missing ({ids}). Legacy panels are shown instead.",
       "refresh": "Refresh",
       "autoRefresh": "Auto refresh",
       "autoRefreshOff": "Off",
@@ -5497,6 +5647,10 @@
       "scenarioColStatus": "Status",
       "scenarioColCount": "24h alarms",
       "scenarioColLastSeen": "Last alarm",
+      "scenarioSummaryOpen": "{n} open",
+      "scenarioSummarySeen": "{n} seen",
+      "scenarioSummaryClean": "{n} clear",
+      "scenarioViewFullPanel": "Full SIEM panel",
       "openEvents": "Security events",
       "alarmColSummary": "Summary",
       "alarmColScenario": "Scenario",

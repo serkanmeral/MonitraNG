@@ -2,14 +2,38 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import type { Widget, WidgetDataResponse } from '@/stores/apps/widget';
 import { useDatasetStore } from '@/stores/apps/dataset';
+import { formatSeverityLabel } from '@/utils/widgets/widgetFieldMappingBridge';
+import { isManifestPlaceholderDataset } from '@/utils/widgets/widgetManifestAdapter';
+import {
+  alarmStatusChipColor,
+  formatAlarmRowSummary,
+  formatAlarmStatusLabel,
+  formatRelativeTimeSimple,
+  formatSeverityChipLabel,
+  formatSiemEventAction,
+  formatSiemEventOutcome,
+  formatWidgetDateTime,
+  isRichTableColumnFormat,
+  severityChipColor,
+  siemEventOutcomeChipColor,
+} from '@/utils/widgets/widgetTableFormats';
+import { useLocaleStore } from '@/stores/locale';
 
 const props = defineProps<{
   widget: Widget;
   data?: WidgetDataResponse | null;
   t?: (key: string) => string;
+  interactions?: import('@/utils/widgets/surfaceInteractions').WidgetInteractions | null;
+}>();
+
+const emit = defineEmits<{
+  'cross-filter': [row: Record<string, unknown>];
+  'row-activate': [row: Record<string, unknown>];
+  action: [action: import('@/utils/widgets/surfaceInteractions').WidgetActionConfig, row: Record<string, unknown>];
 }>();
 
 const datasetStore = useDatasetStore();
+const localeStore = useLocaleStore();
 
 // Table configuration
 interface TableColumn {
@@ -19,7 +43,7 @@ interface TableColumn {
   filterable?: boolean;
   width?: string;
   align?: 'left' | 'center' | 'right';
-  format?: 'text' | 'number' | 'currency' | 'date' | 'boolean' | 'custom';
+  format?: 'text' | 'number' | 'currency' | 'date' | 'boolean' | 'severity' | 'severity-chip' | 'status-chip' | 'datetime-relative' | 'alarm-summary' | 'siem-event-action' | 'siem-event-outcome' | 'custom';
   formatOptions?: {
     currency?: string;
     decimalPlaces?: number;
@@ -52,14 +76,15 @@ interface TableConfig {
 
 // Get dataset schema to determine field types
 const datasetSchema = computed(() => {
-  if (!props.widget.dataSource?.dataset) return null;
-  return datasetStore.getDatasetByName(props.widget.dataSource.dataset);
+  const dataset = props.widget.dataSource?.dataset;
+  if (!dataset || isManifestPlaceholderDataset(dataset)) return null;
+  return datasetStore.getDatasetByName(dataset);
 });
 
 // Enrich columns with field type info from dataset schema
 const enrichedColumns = computed(() => {
-  const config = props.widget.config as any;
-  const columns = config?.columns || [];
+  const config = props.widget.config as Record<string, unknown>;
+  const columns = (config?.columns as TableColumn[] | undefined) ?? [];
   const schema = datasetSchema.value;
   
   if (!schema?.fields) return columns;
@@ -83,14 +108,38 @@ const enrichedColumns = computed(() => {
 
 // Parse config
 const tableConfig = computed((): TableConfig => {
-  const config = props.widget.config as any;
-  
+  const config = props.widget.config as Record<string, unknown>;
+
+  const configuredColumns = enrichedColumns.value.length
+    ? enrichedColumns.value
+    : (config?.columns as TableColumn[] | undefined) ?? [];
+
+  let columns = configuredColumns;
+  if (!columns.length && tableItems.value.length > 0) {
+    const sample = tableItems.value[0] as Record<string, unknown>;
+    columns = Object.keys(sample)
+      .filter((key) => !key.startsWith('_'))
+      .slice(0, 10)
+      .map((key) => ({
+        key,
+        title: key,
+        sortable: true,
+      }));
+  }
+
+  const pageSize =
+    (config?.pagination as { itemsPerPage?: number } | undefined)?.itemsPerPage ??
+    (typeof config?.pageSize === 'number' ? config.pageSize : undefined) ??
+    20;
+
   return {
-    columns: enrichedColumns.value,
+    columns,
     pagination: {
       enabled: config?.pagination?.enabled !== false,
-      itemsPerPage: config?.pagination?.itemsPerPage || 20,
-      itemsPerPageOptions: config?.pagination?.itemsPerPageOptions || [10, 20, 50, 100],
+      itemsPerPage: pageSize,
+      itemsPerPageOptions:
+        (config?.pagination as { itemsPerPageOptions?: number[] } | undefined)?.itemsPerPageOptions ||
+        [10, 20, 50, 100],
     },
     sorting: {
       enabled: config?.sorting?.enabled !== false,
@@ -101,7 +150,7 @@ const tableConfig = computed((): TableConfig => {
       enabled: config?.search?.enabled !== false,
       placeholder: config?.search?.placeholder || 'Ara...',
     },
-    density: config?.density || 'comfortable',
+    density: config?.density || (presentationStyle.value === 'inbox' ? 'comfortable' : 'comfortable'),
     showSelect: config?.showSelect || false,
     striped: config?.striped || false,
   };
@@ -117,7 +166,28 @@ const tableItems = computed(() => {
 
 // Total items for pagination
 const totalItems = computed(() => {
-  return props.data?.total || tableItems.value.length;
+  return props.data?.total ?? tableItems.value.length;
+});
+
+const itemValueKey = computed(() => {
+  const config = props.widget.config as Record<string, unknown>;
+  if (typeof config.itemValue === 'string' && config.itemValue) {
+    return config.itemValue;
+  }
+  const first = tableItems.value[0] as Record<string, unknown> | undefined;
+  if (first?.__dataId != null) return '__dataId';
+  if (first?.id != null) return 'id';
+  return 'id';
+});
+
+const presentationStyle = computed(() => {
+  const config = props.widget.config as Record<string, unknown>;
+  return typeof config.presentationStyle === 'string' ? config.presentationStyle : 'default';
+});
+
+const tableHover = computed(() => {
+  const config = props.widget.config as Record<string, unknown>;
+  return config.hover !== false && (presentationStyle.value === 'inbox' || config.hover === true);
 });
 
 // Vuetify table headers
@@ -201,6 +271,14 @@ function formatPersonGroupValue(value: any): string {
   return value.__dataId || '-';
 }
 
+function cellRawValue(item: Record<string, unknown>, column: TableColumn): unknown {
+  return getNestedValue(item, column.key);
+}
+
+function formatSiemEventActionCell(item: Record<string, unknown>, column: TableColumn): string {
+  return formatSiemEventAction(cellRawValue(item, column), item);
+}
+
 // Format value based on column config
 function formatValue(value: any, column: TableColumn): string {
   if (value === null || value === undefined) return '-';
@@ -261,13 +339,12 @@ function formatValue(value: any, column: TableColumn): string {
         const date = new Date(value);
         if (isNaN(date.getTime())) return String(value);
         const format = column.formatOptions?.dateFormat || 'dd.MM.yyyy HH:mm';
-        // Simple date formatting (can be enhanced with date-fns or similar)
         const day = String(date.getDate()).padStart(2, '0');
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const year = date.getFullYear();
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
-        
+
         if (format.includes('HH:mm')) {
           return `${day}.${month}.${year} ${hours}:${minutes}`;
         }
@@ -275,6 +352,9 @@ function formatValue(value: any, column: TableColumn): string {
       } catch {
         return String(value);
       }
+
+    case 'severity':
+      return formatSeverityLabel(value);
 
     case 'boolean':
       return value ? 'Evet' : 'Hayır';
@@ -319,21 +399,40 @@ const loading = computed(() => {
 
 // Load dataset schema on mount
 onMounted(async () => {
-  if (props.widget.dataSource?.dataset && !datasetSchema.value) {
-    try {
-      await datasetStore.fetchDatasetByName(props.widget.dataSource.dataset);
-    } catch (error) {
-      // Dataset schema not found, ignore
-      console.warn('Dataset schema not found:', props.widget.dataSource.dataset);
+  const dataset = props.widget.dataSource?.dataset;
+  if (!dataset || isManifestPlaceholderDataset(dataset) || datasetSchema.value) return;
+  try {
+    await datasetStore.fetchDatasetByName(dataset);
+  } catch {
+    if (import.meta.env.DEV) {
+      console.warn('Dataset schema not found:', dataset);
     }
   }
 });
 
-const lbl = (key: string) => props.t?.(`widgets.table.${key}`) || key;
+function onRowClick(_event: Event, row: { item: Record<string, unknown> }) {
+  emit('row-activate', row.item);
+}
+
+const lbl = (key: string) => {
+  const i18nKey = `widgets.table.${key}`;
+  const raw = props.t?.(i18nKey);
+  if (typeof raw === 'string' && raw !== i18nKey) return raw;
+  const fallbacks: Record<string, string> = {
+    items: 'kayıt',
+    noData: 'Veri bulunamadı',
+    loading: 'Yükleniyor...',
+  };
+  return fallbacks[key] ?? key;
+};
 </script>
 
 <template>
-  <v-card variant="outlined" class="table-widget">
+  <v-card
+    variant="outlined"
+    class="table-widget h-100"
+    :class="{ 'table-widget--inbox': presentationStyle === 'inbox' }"
+  >
     <v-card-title v-if="widget.title" class="pa-4 pb-2">
       <div class="d-flex align-center justify-space-between">
         <span class="text-h6">{{ widget.title }}</span>
@@ -370,9 +469,15 @@ const lbl = (key: string) => props.t?.(`widgets.table.${key}`) || key;
         :density="tableConfig.density"
         :show-select="tableConfig.showSelect"
         :striped="tableConfig.striped"
-        item-value="__dataId"
-        class="border rounded-md"
+        :hover="tableHover"
+        :item-value="itemValueKey"
+        class="border rounded-lg"
+        :class="{
+          'table-cross-filter': !!interactions?.crossFilter || !!interactions?.rowClick,
+          'ac-style-table': presentationStyle === 'inbox',
+        }"
         :hide-default-footer="!tableConfig.pagination?.enabled"
+        @click:row="onRowClick"
       >
         <!-- Dynamic Column Slots -->
         <template
@@ -381,8 +486,43 @@ const lbl = (key: string) => props.t?.(`widgets.table.${key}`) || key;
           #[`item.${column.key}`]="{ item }"
         >
           <div :class="column.align === 'right' ? 'text-right' : column.align === 'center' ? 'text-center' : ''">
+            <template v-if="isRichTableColumnFormat(column.format)">
+              <template v-if="column.format === 'severity-chip'">
+                <v-chip size="small" :color="severityChipColor(cellRawValue(item, column))" variant="flat">
+                  {{ formatSeverityChipLabel(cellRawValue(item, column)) }}
+                </v-chip>
+              </template>
+              <template v-else-if="column.format === 'status-chip'">
+                <v-chip size="small" :color="alarmStatusChipColor(cellRawValue(item, column))" variant="tonal">
+                  {{ formatAlarmStatusLabel(cellRawValue(item, column)) }}
+                </v-chip>
+              </template>
+              <template v-else-if="column.format === 'datetime-relative'">
+                <div>
+                  <div class="text-body-2">
+                    {{ formatWidgetDateTime(cellRawValue(item, column), column.formatOptions) }}
+                  </div>
+                  <div class="text-caption text-medium-emphasis">
+                    {{ formatRelativeTimeSimple(cellRawValue(item, column), localeStore.locale) }}
+                  </div>
+                </div>
+              </template>
+              <template v-else-if="column.format === 'alarm-summary'">
+                <span class="text-body-2">{{ formatAlarmRowSummary(item) }}</span>
+              </template>
+              <template v-else-if="column.format === 'siem-event-action'">
+                <v-chip size="small" color="primary" variant="tonal">
+                  {{ formatSiemEventActionCell(item, column) }}
+                </v-chip>
+              </template>
+              <template v-else-if="column.format === 'siem-event-outcome'">
+                <v-chip size="small" :color="siemEventOutcomeChipColor(cellRawValue(item, column))" variant="tonal">
+                  {{ formatSiemEventOutcome(cellRawValue(item, column)) }}
+                </v-chip>
+              </template>
+            </template>
             <!-- Array fields with chips -->
-            <template v-if="column.isArray && Array.isArray(getNestedValue(item, column.key))">
+            <template v-else-if="column.isArray && Array.isArray(getNestedValue(item, column.key))">
               <div class="d-flex flex-wrap ga-1">
                 <v-chip
                   v-for="(arrayItem, idx) in getNestedValue(item, column.key)"
@@ -413,11 +553,17 @@ const lbl = (key: string) => props.t?.(`widgets.table.${key}`) || key;
         <!-- Empty State -->
         <template #no-data>
           <div class="text-center pa-8">
-            <v-icon size="48" color="grey-lighten-1" class="mb-2">mdi-database-off</v-icon>
+            <v-icon
+              :icon="presentationStyle === 'inbox' ? 'mdi-bell-off-outline' : 'mdi-database-off'"
+              size="48"
+              color="primary"
+              class="mb-2"
+              :class="{ 'opacity-60': presentationStyle === 'inbox' }"
+            />
             <div class="text-body-1 text-medium-emphasis">
               {{ lbl('noData') || 'Veri bulunamadı' }}
             </div>
-        </div>
+          </div>
         </template>
 
         <!-- Loading State -->
@@ -442,5 +588,18 @@ const lbl = (key: string) => props.t?.(`widgets.table.${key}`) || key;
 
 .table-widget :deep(.v-data-table) {
   border: none;
+}
+
+.table-widget :deep(.table-cross-filter tbody tr) {
+  cursor: pointer;
+}
+
+.table-widget--inbox :deep(.ac-style-table) {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table-widget--inbox :deep(.ac-style-table tbody tr:hover) {
+  background: rgba(var(--v-theme-on-surface), 0.04);
 }
 </style>

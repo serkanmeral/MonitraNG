@@ -3,10 +3,12 @@ import { ref, computed, onMounted, watch } from 'vue';
 import WidgetRenderer from '@/components/widgets/WidgetRenderer.vue';
 import { useWidgetStore } from '@/stores/apps/widget';
 import type { WidgetConfigOverrides } from '@/stores/apps/dashboard';
+import type { SurfaceContext } from '@/types/apps/widgetManifest';
 
 const props = defineProps<{
   widgetId: string;
   widgetOverrides?: WidgetConfigOverrides;
+  surfaceContext?: SurfaceContext;
   rowIdx: number;
   colIdx: number;
   canEdit?: boolean;
@@ -106,6 +108,7 @@ watch([effectiveOverrides, () => props.widgetOverrides], syncFromOverrides, { de
     <widgets-widget-renderer
       :widget-id="widgetId"
       :config-overrides="effectiveOverrides"
+      :surface-context="surfaceContext"
       :t="t"
     />
     <v-menu

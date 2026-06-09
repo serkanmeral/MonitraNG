@@ -2,10 +2,22 @@
 import { computed, onMounted, watch, ref, provide, onUnmounted } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DashboardLayoutRenderer from '@/components/dashboards/DashboardLayoutRenderer.vue';
+import DashboardSurfaceToolbar from '@/components/dashboards/DashboardSurfaceToolbar.vue';
+import DashboardSnapshotExportMenu from '@/components/dashboards/DashboardSnapshotExportMenu.vue';
 import { useDashboardStore } from '@/stores/apps/dashboard';
 import { useDashboardPermissions } from '@/composables/useDashboardPermissions';
 import { useAuthStore } from '@/stores/auth';
+import { useDashboardSurfaceContext } from '@/composables/useDashboardSurfaceContext';
+import { useDashboardWidgetBatch } from '@/composables/useDashboardWidgetBatch';
+import { collectWidgetIdsFromLayout } from '@/utils/widgets/dashboardLayoutUtils';
+import {
+  DASHBOARD_SURFACE_CONTEXT_KEY,
+  DASHBOARD_WIDGET_BATCH_MODE_KEY,
+  DASHBOARD_WIDGET_DATA_KEY,
+} from '@/utils/widgets/dashboardSurfaceKeys';
+import { DASHBOARD_SURFACE_MUTATIONS_KEY } from '@/utils/widgets/dashboardSurfaceMutations';
 import type { DashboardLayout, WidgetConfigOverrides } from '@/stores/apps/dashboard';
+import { isSiemCenterDashboardMeta } from '@/types/apps/siemDashboardSurface';
 
 const route = useRoute();
 const router = useRouter();
@@ -21,6 +33,18 @@ const dashboardStore = useDashboardStore();
 const { canViewDashboard, canEditDashboard } = useDashboardPermissions();
 const authStore = useAuthStore();
 const slug = computed(() => (route.params.slug as string) ?? '');
+
+const {
+  timePreset,
+  severity,
+  workspaceId,
+  customTimeRange,
+  crossFilterVariables,
+  context: surfaceContext,
+  mutations: surfaceMutations,
+} = useDashboardSurfaceContext('24h');
+const refreshSeconds = ref(0);
+let refreshTimer: ReturnType<typeof setInterval> | null = null;
 
 const page = computed(() => ({
   title: dashboardStore.currentDashboard?.title ?? t('dashboards.view.loading'),
@@ -41,12 +65,49 @@ const layout = computed<DashboardLayout | null>(() => {
   return d.layout;
 });
 
+const siemCenterSurface = computed(() => {
+  const meta = dashboardStore.currentDashboard?.layout?.meta;
+  return isSiemCenterDashboardMeta(meta);
+});
+
+const redirectingSiemCenter = ref(false);
+
+const layoutWidgetIds = computed(() => collectWidgetIdsFromLayout(layout.value));
+
+const activeCrossFilters = computed(() => {
+  const vars = crossFilterVariables.value;
+  return Object.entries(vars).filter(([, v]) => v !== null && v !== undefined && v !== '');
+});
+
+function clearCrossFilter(name: string) {
+  surfaceMutations.clearCrossFilterVariable(name);
+}
+
+const {
+  dataByWidgetId,
+  loading: batchLoading,
+  error: batchError,
+  refresh: refreshBatch,
+} = useDashboardWidgetBatch(layoutWidgetIds, surfaceContext);
+
+provide(DASHBOARD_SURFACE_CONTEXT_KEY, surfaceContext);
+provide(DASHBOARD_SURFACE_MUTATIONS_KEY, surfaceMutations);
+provide(DASHBOARD_WIDGET_DATA_KEY, dataByWidgetId);
+provide(DASHBOARD_WIDGET_BATCH_MODE_KEY, true);
+
+const refreshIntervalMs = computed(() => {
+  const sec = refreshSeconds.value;
+  if (sec > 0) return sec * 1000;
+  return null;
+});
+
+provide('dashboardRefreshInterval', refreshIntervalMs);
+
 const notFound = computed(() => !dashboardStore.loading && !dashboardStore.currentDashboard && !!slug.value);
 
-// Permission kontrolü
 const hasViewPermission = computed(() => {
   const dashboard = dashboardStore.currentDashboard;
-  if (!dashboard) return true; // Dashboard yüklenene kadar true (loading state)
+  if (!dashboard) return true;
   return canViewDashboard(dashboard.permissions);
 });
 
@@ -56,8 +117,14 @@ const unauthorized = computed(() => {
 
 async function load() {
   if (!slug.value) return;
+  redirectingSiemCenter.value = false;
   try {
     await dashboardStore.fetchDashboardBySlug(slug.value);
+    const d = dashboardStore.currentDashboard;
+    if (d && isSiemCenterDashboardMeta(d.layout?.meta) && !d.layout?.rows?.length) {
+      redirectingSiemCenter.value = true;
+      await router.replace('/apps/siem-center');
+    }
   } catch {
     dashboardStore.resetCurrent();
   }
@@ -70,18 +137,15 @@ function goToList() {
   router.push('/apps/dashboards');
 }
 
-// Edit permission kontrolü
 const canEdit = computed(() => {
   const dashboard = dashboardStore.currentDashboard;
   if (!dashboard) return false;
-  // Admin veya manager ise edit butonu göster
   if (authStore.isAdmin || authStore.userInfo?.is_manager) {
     return canEditDashboard(dashboard.permissions);
   }
   return false;
 });
 
-// Dashboard ID'sini al (edit sayfasına yönlendirmek için)
 const dashboardId = computed(() => {
   return dashboardStore.currentDashboard?.__dataId ?? dashboardStore.currentDashboard?.dataId ?? '';
 });
@@ -92,24 +156,6 @@ function goToEdit() {
   }
 }
 
-// Refresh time settings
-const refreshTimeUnit = ref<'seconds' | 'minutes'>('seconds');
-const refreshTimeValue = ref<number>(30);
-
-// Calculate refresh interval in milliseconds
-const refreshIntervalMs = computed(() => {
-  if (!refreshTimeValue.value || refreshTimeValue.value <= 0) return null;
-  if (refreshTimeUnit.value === 'seconds') {
-    return refreshTimeValue.value * 1000;
-  } else {
-    return refreshTimeValue.value * 60 * 1000;
-  }
-});
-
-// Provide refresh interval to child components
-provide('dashboardRefreshInterval', refreshIntervalMs);
-
-// Widget ayarları override (dashboard görünümünde değiştirilebilir)
 async function onWidgetOverridesChange(payload: {
   rowIdx: number;
   colIdx: number;
@@ -130,43 +176,49 @@ async function onWidgetOverridesChange(payload: {
     /* store sets error */
   }
 }
+
+function setupRefreshTimer() {
+  if (refreshTimer) {
+    clearInterval(refreshTimer);
+    refreshTimer = null;
+  }
+  const ms = refreshIntervalMs.value;
+  if (ms && ms > 0) {
+    refreshTimer = setInterval(() => refreshBatch(), ms);
+  }
+}
+
+watch(refreshIntervalMs, setupRefreshTimer, { immediate: true });
+
+onUnmounted(() => {
+  if (refreshTimer) clearInterval(refreshTimer);
+});
 </script>
 
 <template>
   <div>
-    <div class="d-flex justify-space-between align-center mb-4">
+    <div class="d-flex flex-wrap justify-space-between align-start ga-3 mb-4">
       <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs" />
-      <div class="d-flex ga-2 align-center">
-        <!-- Refresh Time Settings -->
-        <v-card v-if="layout && hasViewPermission" variant="outlined" class="pa-2">
-          <div class="d-flex align-center ga-2">
-            <v-icon size="20" color="primary">mdi-refresh</v-icon>
-            <span class="text-body-2 text-medium-emphasis mr-2">
-              {{ t('dashboards.view.refreshTime') || 'Yenileme:' }}
-            </span>
-            <v-text-field
-              v-model.number="refreshTimeValue"
-              type="number"
-              min="1"
-              variant="outlined"
-              density="compact"
-              hide-details
-              style="width: 80px;"
-              class="mr-2"
-            ></v-text-field>
-            <v-select
-              v-model="refreshTimeUnit"
-              :items="[
-                { title: t('dashboards.view.refreshUnit.seconds') || 'Saniye', value: 'seconds' },
-                { title: t('dashboards.view.refreshUnit.minutes') || 'Dakika', value: 'minutes' },
-              ]"
-              variant="outlined"
-              density="compact"
-              hide-details
-              style="width: 120px;"
-            ></v-select>
-          </div>
-        </v-card>
+      <div class="d-flex flex-wrap ga-2 align-center justify-end" style="flex: 1;">
+        <DashboardSurfaceToolbar
+          v-if="layout && hasViewPermission"
+          v-model:time-preset="timePreset"
+          v-model:severity="severity"
+          v-model:workspace-id="workspaceId"
+          v-model:refresh-seconds="refreshSeconds"
+          :loading="batchLoading"
+          :t="t"
+          @refresh="refreshBatch()"
+        />
+        <DashboardSnapshotExportMenu
+          v-if="layout && hasViewPermission && dashboardStore.currentDashboard"
+          :dashboard="dashboardStore.currentDashboard"
+          :widget-ids="layoutWidgetIds"
+          :context="surfaceContext"
+          :data-by-widget-id="dataByWidgetId"
+          :disabled="batchLoading"
+          :t="t"
+        />
         <v-btn
           v-if="canEdit && dashboardStore.currentDashboard"
           color="primary"
@@ -190,7 +242,40 @@ async function onWidgetOverridesChange(payload: {
       {{ dashboardStore.error }}
     </v-alert>
 
-    <!-- Unauthorized (403) -->
+    <v-alert
+      v-if="batchError"
+      type="warning"
+      variant="tonal"
+      density="compact"
+      class="mb-4"
+    >
+      {{ batchError }}
+    </v-alert>
+
+    <div v-if="activeCrossFilters.length || customTimeRange" class="d-flex flex-wrap ga-2 mb-4">
+      <v-chip
+        v-if="customTimeRange"
+        size="small"
+        color="primary"
+        variant="tonal"
+        closable
+        @click:close="timePreset = '24h'"
+      >
+        {{ t('dashboards.surface.zoomRange') }}
+      </v-chip>
+      <v-chip
+        v-for="[name, value] in activeCrossFilters"
+        :key="name"
+        size="small"
+        color="secondary"
+        variant="tonal"
+        closable
+        @click:close="clearCrossFilter(name)"
+      >
+        {{ name }}: {{ value }}
+      </v-chip>
+    </div>
+
     <v-card v-if="unauthorized" variant="outlined" class="py-12">
       <div class="text-center">
         <v-icon size="64" color="error" class="mb-4">mdi-lock-alert</v-icon>
@@ -206,7 +291,6 @@ async function onWidgetOverridesChange(payload: {
       </div>
     </v-card>
 
-    <!-- Not Found (404) -->
     <v-card v-else-if="notFound" variant="outlined" class="py-12">
       <div class="text-center">
         <p class="text-h6 text-medium-emphasis mb-4">
@@ -218,7 +302,6 @@ async function onWidgetOverridesChange(payload: {
       </div>
     </v-card>
 
-    <!-- Loading -->
     <template v-else-if="dashboardStore.loading && !dashboardStore.currentDashboard">
       <v-card variant="outlined" class="py-12">
         <div class="text-center text-medium-emphasis">
@@ -227,17 +310,33 @@ async function onWidgetOverridesChange(payload: {
       </v-card>
     </template>
 
-    <!-- Dashboard Content -->
     <template v-else-if="layout && hasViewPermission">
       <dashboards-dashboard-layout-renderer
         :rows="layout.rows"
         :can-edit="canEdit"
+        :surface-context="surfaceContext"
         :t="t"
         @update:widget-overrides="onWidgetOverridesChange"
       />
     </template>
 
-    <!-- No Layout -->
+    <v-card v-else-if="hasViewPermission && redirectingSiemCenter" variant="outlined" class="py-8">
+      <div class="text-center text-medium-emphasis">
+        {{ t('dashboards.view.redirectingSiemCenter') }}
+      </div>
+    </v-card>
+
+    <v-card v-else-if="hasViewPermission && siemCenterSurface" variant="outlined" class="py-8">
+      <div class="text-center">
+        <p class="text-body-1 text-medium-emphasis mb-4">
+          {{ t('dashboards.view.siemCenterSurfaceHint') }}
+        </p>
+        <v-btn color="primary" variant="flat" to="/apps/siem-center">
+          {{ t('dashboards.view.openSiemCenter') }}
+        </v-btn>
+      </div>
+    </v-card>
+
     <v-card v-else-if="hasViewPermission" variant="outlined" class="py-8">
       <div class="text-center text-medium-emphasis">
         {{ t('dashboards.view.noLayout') }}

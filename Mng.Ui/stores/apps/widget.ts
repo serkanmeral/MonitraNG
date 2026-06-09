@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { fetchFromDataGateway } from '@/services/apiService';
+import type { WidgetTemplateRecord } from '@/types/apps/widgetManifest';
 
 /** Widget Category Entity */
 export interface WidgetCategory {
@@ -92,6 +93,11 @@ export interface Widget {
   isActive: boolean;
   order?: number;
   permissions?: WidgetPermissions;
+  /** Manifest v1 — Faz 0+ */
+  manifestVersion?: string;
+  templateId?: string;
+  templateVersion?: string;
+  manifest?: object;
   createInfo?: {
     createdAt: string | Date;
     userInfo?: { uid: string; userName: string; domain: string };
@@ -147,6 +153,7 @@ export interface FetchWidgetsParams {
 
 interface WidgetState {
   widgets: Widget[];
+  templates: WidgetTemplateRecord[];
   currentWidget: Widget | null;
   categories: WidgetCategory[];
   currentCategory: WidgetCategory | null;
@@ -157,6 +164,7 @@ interface WidgetState {
 
 const WIDGETS_DATASET = '@widgets';
 const CATEGORIES_DATASET = '@widget_categories';
+const TEMPLATES_DATASET = '@widget_templates';
 
 function mapToWidgetCategory(item: any): WidgetCategory {
   return {
@@ -198,15 +206,53 @@ function mapToWidget(item: any): Widget {
     config: item.config ?? item.Config,
     isActive: item.isActive ?? item.IsActive ?? true,
     order: item.order ?? item.Order ?? 0,
-    permissions: item.permissions ?? item.Permissions,
+    permissions:
+      item.permissions ??
+      item.Permissions ??
+      ((item.config ?? item.Config)?.permissionGroups
+        ? { groups: (item.config ?? item.Config).permissionGroups }
+        : undefined),
+    manifestVersion:
+      item.manifestVersion ??
+      item.ManifestVersion ??
+      (item.config ?? item.Config)?.manifestVersion,
+    templateId:
+      item.templateId ?? item.TemplateId ?? (item.config ?? item.Config)?.templateId,
+    templateVersion:
+      item.templateVersion ??
+      item.TemplateVersion ??
+      (item.config ?? item.Config)?.templateVersion,
+    manifest:
+      item.manifest ??
+      item.Manifest ??
+      (item.config ?? item.Config)?.manifest,
     createInfo: item.createInfo ?? item.CreateInfo,
     lastUpdateInfo: item.lastUpdateInfo ?? item.LastUpdateInfo ?? null,
+  };
+}
+
+function mapToWidgetTemplate(item: any): WidgetTemplateRecord {
+  return {
+    __dataId: item.__dataId ?? item.dataId ?? '',
+    dataId: item.__dataId ?? item.dataId ?? '',
+    templateId: item.templateId ?? item.TemplateId ?? '',
+    templateVersion: item.templateVersion ?? item.TemplateVersion ?? '1.0.0',
+    domain: item.domain ?? item.Domain ?? 'generic',
+    category: item.category ?? item.Category ?? '',
+    title: item.title ?? item.Title ?? '',
+    description: item.description ?? item.Description,
+    tags: item.tags ?? item.Tags,
+    manifest: item.manifest ?? item.Manifest,
+    isSystem: item.isSystem ?? item.IsSystem ?? true,
+    isActive: item.isActive ?? item.IsActive ?? true,
+    order: item.order ?? item.Order ?? 0,
   };
 }
 
 export const useWidgetStore = defineStore('widget', {
   state: (): WidgetState => ({
     widgets: [],
+    templates: [],
     currentWidget: null,
     categories: [],
     currentCategory: null,
@@ -234,9 +280,56 @@ export const useWidgetStore = defineStore('widget', {
       state.categories.find((c) => (c.__dataId ?? c.dataId) === id),
 
     activeCategories: (state) => state.categories.filter((c) => c.isActive),
+
+    activeTemplates: (state) => state.templates.filter((t) => t.isActive),
+
+    getTemplateById: (state) => (templateId: string) =>
+      state.templates.find((t) => t.templateId === templateId),
   },
 
   actions: {
+    // ========== Widget Templates (@widget_templates) ==========
+
+    async fetchWidgetTemplates(params?: {
+      skip?: number;
+      limit?: number;
+      sort?: string;
+      filter?: string;
+      domain?: string;
+      activeOnly?: boolean;
+    }) {
+      this.loading = true;
+      this.error = null;
+
+      try {
+        const skip = params?.skip ?? 0;
+        const limit = params?.limit ?? 100;
+        const sort = params?.sort ?? 'order,templateId';
+        const filters: string[] = [];
+        if (params?.filter) filters.push(params.filter);
+        if (params?.domain) filters.push(`domain:eq:${params.domain}`);
+        if (params?.activeOnly) filters.push('isActive:eq:true');
+
+        const q = new URLSearchParams();
+        q.set('skip', String(skip));
+        q.set('limit', String(limit));
+        if (sort) q.set('sort', sort);
+        if (filters.length) q.set('filter', filters.join(','));
+
+        const url = `/api/v1/data/${TEMPLATES_DATASET}?${q.toString()}`;
+        const data = await fetchFromDataGateway(url, 'GET');
+        const items = Array.isArray(data) ? data : [];
+        this.templates = items.map(mapToWidgetTemplate);
+        return this.templates;
+      } catch (e: any) {
+        this.error = e.message ?? 'Widget şablonları yüklenirken hata oluştu';
+        this.templates = [];
+        throw e;
+      } finally {
+        this.loading = false;
+      }
+    },
+
     // ========== Widget Categories ==========
 
     async fetchWidgetCategories(params?: { skip?: number; limit?: number; sort?: string; filter?: string }) {

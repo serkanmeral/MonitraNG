@@ -12,6 +12,7 @@ defineOptions({ name: 'OcDashboardGrid' });
 defineProps<{
   rows: OcDashboardLayoutRow[];
   widgetMap: Record<string, OcDashboardWidgetType>;
+  workspaceId?: string | null;
   catalogs: OcBoardCatalogs;
   people: Record<string, OcPersonDisplay>;
   groups: Record<string, OcPersonDisplay>;
@@ -35,6 +36,7 @@ defineProps<{
           v-if="col.rows && col.rows.length"
           :rows="col.rows"
           :widget-map="widgetMap"
+          :workspace-id="workspaceId"
           :catalogs="catalogs"
           :people="people"
           :groups="groups"
@@ -43,6 +45,7 @@ defineProps<{
         <OcDashboardWidget
           v-else-if="col.widgetId && widgetMap[col.widgetId]"
           :widget="widgetMap[col.widgetId]"
+          :workspace-id="workspaceId"
           :catalogs="catalogs"
           :people="people"
           :groups="groups"

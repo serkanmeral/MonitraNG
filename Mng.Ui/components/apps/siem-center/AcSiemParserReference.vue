@@ -11,9 +11,8 @@ import {
   SIEM_SCENARIO_REFERENCES,
   parserStatusColor,
   parserStatusLabelKey,
-  scenarioEventsLink,
 } from '@/composables/useSiemParserCatalog';
-import { SIEM_SCENARIO_CATALOG } from '@/composables/useSiemScenarioCatalog';
+import { SIEM_SCENARIO_CATALOG, scenarioEventsLink } from '@/composables/useSiemScenarioCatalog';
 
 const { t } = useAppI18n();
 

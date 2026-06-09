@@ -92,15 +92,15 @@ export default defineEventHandler(async (event) => {
       });
       
       response = rawResponse._data;
-      
-      // X-Total-Count header'ını response body'ye ekle (pagination için)
+
+      // Pagination: array + X-Total-Count → client'a totalCount ile birlikte ilet
       const totalCountHeader = rawResponse.headers.get('x-total-count');
       if (totalCountHeader && Array.isArray(response)) {
-        // Response array ise, totalCount'u response objesine ekle
-        // Ancak response array olduğu için, wrapper objesi oluştur
-        // Frontend'de response._totalCount veya response.totalCount olarak erişilebilir
-        // Ama daha iyi: response header'ı event header'ına ekle
         setHeader(event, 'X-Total-Count', totalCountHeader);
+        return {
+          items: response,
+          totalCount: parseInt(totalCountHeader, 10),
+        };
       }
     }
     

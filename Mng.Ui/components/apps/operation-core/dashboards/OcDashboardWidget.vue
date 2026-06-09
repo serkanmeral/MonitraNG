@@ -4,6 +4,7 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import OcDashboardSummaryCard from '@/components/apps/operation-core/dashboards/OcDashboardSummaryCard.vue';
 import OcDashboardListWidget from '@/components/apps/operation-core/dashboards/OcDashboardListWidget.vue';
 import OcDashboardChartWidget from '@/components/apps/operation-core/dashboards/OcDashboardChartWidget.vue';
+import OcDashboardWidgetHost from '@/components/apps/operation-core/dashboards/OcDashboardWidgetHost.vue';
 import type {
   OcBoardCatalogs,
   OcDashboardWidget,
@@ -12,6 +13,7 @@ import type {
 
 const props = defineProps<{
   widget: OcDashboardWidget;
+  workspaceId?: string | null;
   catalogs: OcBoardCatalogs;
   people: Record<string, OcPersonDisplay>;
   groups: Record<string, OcPersonDisplay>;
@@ -20,10 +22,31 @@ const props = defineProps<{
 const { t } = useAppI18n();
 
 const kind = computed(() => (props.widget.widgetType || '').toLowerCase());
+
+/** Faz 4 köprüsü: generic WidgetHost henüz legacy OC UX ile eşdeğer değil (tablo kolonları, chart etiketleri, özet kart). */
+const OC_DASHBOARD_WIDGET_HOST = false;
+
+const useWidgetHost = computed(() => {
+  if (!OC_DASHBOARD_WIDGET_HOST) return false;
+  const k = kind.value;
+  return (
+    props.widget.execution?.success === true &&
+    (k === 'summarycard' || k === 'list' || k === 'chart')
+  );
+});
 </script>
 
 <template>
-  <OcDashboardSummaryCard v-if="kind === 'summarycard'" :widget="widget" />
+  <OcDashboardWidgetHost
+    v-if="useWidgetHost"
+    :widget="widget"
+    :workspace-id="workspaceId"
+    :catalogs="catalogs"
+    :people="people"
+    :t="t"
+  />
+
+  <OcDashboardSummaryCard v-else-if="kind === 'summarycard'" :widget="widget" />
 
   <OcDashboardListWidget
     v-else-if="kind === 'list'"

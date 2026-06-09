@@ -36,6 +36,8 @@ export interface LayoutCol {
 export interface DashboardLayout {
   type: 'rows';
   rows: LayoutRow[];
+  /** Surface-specific metadata (D3: siem-center layout persist) */
+  meta?: import('@/types/apps/siemDashboardSurface').SiemCenterDashboardLayoutMeta | Record<string, unknown>;
 }
 
 /** Dashboard permissions */

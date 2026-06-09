@@ -113,6 +113,7 @@ defineExpose({ reload: load, dashboard });
         v-else
         :rows="rows"
         :widget-map="widgetMap"
+        :workspace-id="dashboard.workspaceId"
         :catalogs="dashboard.catalogs"
         :people="dashboard.people"
         :groups="dashboard.groups"

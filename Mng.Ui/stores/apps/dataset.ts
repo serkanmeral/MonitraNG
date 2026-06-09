@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { fetchFromDataGateway } from '@/services/apiService';
+import { isManifestPlaceholderDataset } from '@/utils/widgets/widgetManifestAdapter';
 
 // Field Types
 export type FieldType = 'text' | 'number' | 'bool' | 'datetime' | 'object' | 'relation' | 'persons' | 'personGroups' | 'incremental';
@@ -279,6 +280,10 @@ export const useDatasetStore = defineStore('dataset', {
      * Fetch dataset by name
      */
     async fetchDatasetByName(name: string) {
+      if (isManifestPlaceholderDataset(name)) {
+        return null;
+      }
+
       this.loading = true;
       this.error = null;
       

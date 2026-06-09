@@ -195,6 +195,20 @@ export async function diSearch(q: string, skip = 0, limit = 50): Promise<DiResou
   return mapListResult(raw);
 }
 
+/** Son güncellenen yayınlanmış markdown kayıtları. */
+export async function diGetRecent(limit = 10): Promise<DiResourceListResult> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const raw = await fetchFromDocuments(`${BASE}/recent?${params.toString()}`, 'GET');
+  return mapListResult(raw);
+}
+
+/** Kullanıcının düzenleyebildiği taslak markdown kayıtları. */
+export async function diGetDrafts(limit = 50): Promise<DiResourceListResult> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const raw = await fetchFromDocuments(`${BASE}/drafts?${params.toString()}`, 'GET');
+  return mapListResult(raw);
+}
+
 /** Tek kaynak metadata'sı. */
 export async function diGetById(id: string): Promise<DiResource> {
   const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(id)}`, 'GET');

@@ -7,7 +7,6 @@ import type { SecEventListItem } from '@/types/apps/secEvent';
 import { secEventQuery } from '@/services/secEventService';
 import {
   buildRelatedEventsQuery,
-  copyTextToClipboard,
   eventsLinkForAlarm,
   extractContextFields,
   formatAlarmRelativeTime,
@@ -22,6 +21,7 @@ import {
   statusColor,
   statusLabel,
 } from '@/composables/useAlarmList';
+import { copyTextToClipboard } from '@/composables/useSecEventList';
 import { buildRuleConditionSummary } from '@/composables/useAlarmRuleList';
 
 const props = defineProps<{

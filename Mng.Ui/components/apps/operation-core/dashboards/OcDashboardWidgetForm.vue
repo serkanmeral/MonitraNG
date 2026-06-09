@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import WidgetTemplateCatalog from '@/components/widgets/designer/WidgetTemplateCatalog.vue';
 import type { OcDashboardWidgetDef, OpState, OpPriority } from '@/types/apps/operationCore';
+import type { WidgetTemplateRecord } from '@/types/apps/widgetManifest';
+import {
+  ocTemplateToWidgetDef,
+  suggestOcWidgetKeyFromTemplate,
+} from '@/utils/widgets/ocWidgetTemplateAdapter';
 import {
   OC_SUMMARY_CARD_ACCENTS,
   OC_SUMMARY_CARD_ICONS,
@@ -67,6 +73,7 @@ const form = ref<{
 });
 const paramEntries = ref<ParamEntry[]>([]);
 const errorLocal = ref<string | null>(null);
+const editorTab = ref<'template' | 'custom'>('template');
 
 const isChart = computed(() => form.value.type === 'chart');
 const isSummary = computed(() => form.value.type === 'summaryCard');
@@ -129,6 +136,7 @@ watch(
   (isOpen) => {
     if (!isOpen) return;
     errorLocal.value = null;
+    editorTab.value = props.widget ? 'custom' : 'template';
     const w = props.widget;
     form.value = {
       key: w?.key ?? '',
@@ -175,6 +183,29 @@ function tokenFor(key: string): string | null {
   if (key === 'asOf') return '{{asOf}}';
   if (key === 'workspaceId') return '{{workspaceId}}';
   return null;
+}
+
+function onTemplateSelect(record: WidgetTemplateRecord) {
+  errorLocal.value = null;
+  const key = suggestOcWidgetKeyFromTemplate(record.templateId, props.existingKeys);
+  const def = ocTemplateToWidgetDef(record, { workspaceId: props.workspaceId, key });
+  if (!def) {
+    errorLocal.value = t('operationCore.dashboards.editor.widget.templateUnsupported');
+    return;
+  }
+  form.value = {
+    key: def.key,
+    type: def.type,
+    title: def.title ?? '',
+    queryKey: def.queryKey ?? '',
+    take: def.take != null ? String(def.take) : '',
+    chartType: def.chartType ?? 'donut',
+    groupBy: def.groupBy ?? 'stateId',
+    accentColor: def.accentColor ?? '',
+    icon: def.icon ?? '',
+  };
+  paramEntries.value = paramsToEntries(def.parameters);
+  editorTab.value = 'custom';
 }
 
 function save() {
@@ -229,7 +260,7 @@ function save() {
 </script>
 
 <template>
-  <v-dialog v-model="open" max-width="640" persistent scrollable>
+  <v-dialog v-model="open" max-width="720" persistent scrollable>
     <v-card rounded="lg">
       <v-card-title class="text-h6">
         {{
@@ -252,6 +283,23 @@ function save() {
           {{ errorLocal }}
         </v-alert>
 
+        <v-tabs v-model="editorTab" density="compact" class="mb-3">
+          <v-tab value="template">{{ t('operationCore.dashboards.editor.widget.tabTemplate') }}</v-tab>
+          <v-tab value="custom">{{ t('operationCore.dashboards.editor.widget.tabCustom') }}</v-tab>
+        </v-tabs>
+
+        <div v-if="editorTab === 'template'" class="mb-2">
+          <p class="text-body-2 text-medium-emphasis mb-3">
+            {{ t('operationCore.dashboards.editor.widget.templateHint') }}
+          </p>
+          <WidgetTemplateCatalog
+            domain-filter="operation-core"
+            compact
+            @select="onTemplateSelect"
+          />
+        </div>
+
+        <template v-else>
         <div class="d-flex ga-3 flex-wrap mb-3">
           <v-text-field
             v-model="form.key"
@@ -443,6 +491,7 @@ function save() {
             @click="removeParam(idx)"
           />
         </div>
+        </template>
       </v-card-text>
       <v-divider />
       <v-card-actions>
@@ -450,7 +499,13 @@ function save() {
         <v-btn variant="text" class="text-none" @click="open = false">
           {{ t('operationCore.dashboards.editor.cancel') }}
         </v-btn>
-        <v-btn color="primary" variant="flat" class="text-none" @click="save">
+        <v-btn
+          v-if="editorTab === 'custom'"
+          color="primary"
+          variant="flat"
+          class="text-none"
+          @click="save"
+        >
           {{ t('operationCore.dashboards.editor.widget.saveWidget') }}
         </v-btn>
       </v-card-actions>

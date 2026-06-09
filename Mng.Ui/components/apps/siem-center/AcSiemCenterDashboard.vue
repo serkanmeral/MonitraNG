@@ -1,11 +1,24 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, provide } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import type { AlarmScenarioRollup, AlarmSummary } from '@/types/apps/alarm';
 import {
   fetchSiemDashboardPayload,
   invalidateSiemDashboardCache,
 } from '@/composables/useSiemDashboardData';
+import { useDashboardSurfaceContext } from '@/composables/useDashboardSurfaceContext';
+import { useSiemCenterTemplateBatch } from '@/composables/useSiemCenterTemplateBatch';
+import { useSiemCenterDashboardPersist } from '@/composables/useSiemCenterDashboardPersist';
+import WidgetHost from '@/components/widgets/WidgetHost.vue';
+import DashboardSurfaceToolbar from '@/components/dashboards/DashboardSurfaceToolbar.vue';
+import {
+  DASHBOARD_SURFACE_CONTEXT_KEY,
+  DASHBOARD_WIDGET_BATCH_MODE_KEY,
+  DASHBOARD_WIDGET_DATA_KEY,
+} from '@/utils/widgets/dashboardSurfaceKeys';
+import { DASHBOARD_SURFACE_MUTATIONS_KEY } from '@/utils/widgets/dashboardSurfaceMutations';
+import type { SiemCenterWidgetKey } from '@/utils/widgets/siemCenterWidgets';
+import type { WidgetLike } from '@/utils/widgets/widgetManifestAdapter';
 import { getPrimary, getSecondary } from '@/utils/UpdateColors';
 import {
   loadSiemDashboardLayout,
@@ -20,21 +33,47 @@ import {
   scenarioEventsLink,
   type SiemScenarioDef,
 } from '@/composables/useSiemScenarioCatalog';
-import {
-  loadSiemDashboardRefreshIntervalSec,
-  saveSiemDashboardRefreshIntervalSec,
-  SIEM_DASHBOARD_REFRESH_INTERVALS_SEC,
-  type SiemDashboardRefreshIntervalSec,
-} from '@/composables/useSiemDashboardRefresh';
 
 const { t, locale } = useAppI18n();
+
+const {
+  timePreset,
+  severity,
+  context: surfaceContext,
+  mutations: surfaceMutations,
+} = useDashboardSurfaceContext('24h');
+const {
+  dataByWidgetId,
+  loading: templateBatchLoading,
+  error: templateBatchError,
+  missingTemplates,
+  widgetFor,
+  init: initTemplateBatch,
+  refresh: refreshTemplateBatch,
+} = useSiemCenterTemplateBatch(surfaceContext);
+const layoutPersist = useSiemCenterDashboardPersist();
+const refreshSeconds = ref(0);
+let refreshTimer: ReturnType<typeof setInterval> | null = null;
+
+provide(DASHBOARD_SURFACE_CONTEXT_KEY, surfaceContext);
+provide(DASHBOARD_SURFACE_MUTATIONS_KEY, surfaceMutations);
+provide(DASHBOARD_WIDGET_DATA_KEY, dataByWidgetId);
+provide(DASHBOARD_WIDGET_BATCH_MODE_KEY, true);
+
+const WIDGET_HOST_STAT_KEYS: SiemStatCardId[] = ['eventsTotal', 'openAlarms', 'loginFailed'];
+
+/** SIEM panel stat satırında WidgetHost kartlarını legacy ile aynı görünüme getirir */
+const SIEM_STAT_CARD_OVERRIDES = {
+  variant: 'flat',
+  iconVariant: 'avatar',
+  elevation: 0,
+} as const;
 
 const loading = ref(true);
 const errorLocal = ref<string | null>(null);
 const lastRefreshedAt = ref<number | null>(null);
-const autoRefreshIntervalSec = ref<SiemDashboardRefreshIntervalSec>(loadSiemDashboardRefreshIntervalSec());
 
-let autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
+const panelLoading = computed(() => loading.value || templateBatchLoading.value);
 const customizeOpen = ref(false);
 const layoutDraft = ref<SiemDashboardLayout>(loadSiemDashboardLayout());
 const layout = ref<SiemDashboardLayout>(loadSiemDashboardLayout());
@@ -69,16 +108,22 @@ type ScenarioStripState = 'open' | 'seen' | 'clean';
 const hourlyBuckets = ref<HourlyBucket[]>([]);
 const scenarioCards = ref<ScenarioCard[]>([]);
 
-const timeRangeLabel = computed(() => t('siemCenter.dashboard.range24h'));
+const timeRangeLabel = computed(() => {
+  const preset = timePreset.value;
+  const key = `dashboards.surface.timePreset.${preset}`;
+  const translated = t(key);
+  return translated !== key ? translated : preset;
+});
 
-const autoRefreshOptions = computed(() =>
-  SIEM_DASHBOARD_REFRESH_INTERVALS_SEC.map((sec) => ({
-    title:
-      sec === 0
-        ? t('siemCenter.dashboard.autoRefreshOff')
-        : t('siemCenter.dashboard.autoRefreshMinutes', { n: sec / 60 }),
-    value: sec,
-  })),
+function widgetHostStat(key: SiemStatCardId): WidgetLike | null {
+  if (!WIDGET_HOST_STAT_KEYS.includes(key)) return null;
+  return widgetFor(key as SiemCenterWidgetKey);
+}
+
+const hourlyTrendWidget = computed(() => widgetFor('hourlyTrend'));
+const recentAlarmsWidget = computed(() => widgetFor('recentAlarms'));
+const useRecentAlarmsWidgetHost = computed(
+  () => recentAlarmsWidget.value && hasManifestTableColumns(recentAlarmsWidget.value),
 );
 
 const lastRefreshedLabel = computed(() => {
@@ -192,7 +237,7 @@ const statCardDefs = computed(() => ({
     label: t('siemCenter.dashboard.statDeniedFlow'),
     value: stats.value.deniedFlow,
     color: 'deep-orange',
-    icon: 'mdi-firewall',
+    icon: 'mdi-shield-off-outline',
     to: '/apps/siem-center/events?eventAction=denied_flow',
   },
   newFlow: {
@@ -573,12 +618,14 @@ function moveStat(id: SiemStatCardId, delta: number) {
 function saveLayout() {
   layout.value = JSON.parse(JSON.stringify(layoutDraft.value)) as SiemDashboardLayout;
   saveSiemDashboardLayout(layout.value);
+  void layoutPersist.saveServerLayout(layout.value);
   customizeOpen.value = false;
 }
 
 function restoreDefaultLayout() {
   layoutDraft.value = resetSiemDashboardLayout();
   layout.value = JSON.parse(JSON.stringify(layoutDraft.value)) as SiemDashboardLayout;
+  void layoutPersist.saveServerLayout(layout.value);
   customizeOpen.value = false;
 }
 
@@ -592,7 +639,8 @@ async function loadDashboard(options?: { force?: boolean; silent?: boolean }) {
   }
 
   try {
-    const { events, alarms } = await fetchSiemDashboardPayload({ force });
+    const rangeHours = surfaceContext.value.timeRange?.hours ?? 24;
+    const { events, alarms } = await fetchSiemDashboardPayload({ force, rangeHours });
     stats.value = {
       eventsTotal: events.eventsTotal,
       loginFailed: events.byAction.login_failed ?? 0,
@@ -617,58 +665,53 @@ async function loadDashboard(options?: { force?: boolean; silent?: boolean }) {
   }
 }
 
+function refreshDashboardSilent() {
+  invalidateSiemDashboardCache();
+  void refreshTemplateBatch();
+  void loadDashboard({ force: true, silent: true });
+}
+
 function refreshDashboard() {
   invalidateSiemDashboardCache();
+  void refreshTemplateBatch();
   void loadDashboard({ force: true });
 }
 
-function stopAutoRefresh() {
-  if (autoRefreshTimer) {
-    clearInterval(autoRefreshTimer);
-    autoRefreshTimer = null;
+function setupRefreshTimer() {
+  if (refreshTimer) {
+    clearInterval(refreshTimer);
+    refreshTimer = null;
+  }
+  const sec = refreshSeconds.value;
+  if (sec > 0) {
+    refreshTimer = setInterval(() => refreshDashboardSilent(), sec * 1000);
   }
 }
 
-function startAutoRefresh() {
-  stopAutoRefresh();
-  if (autoRefreshIntervalSec.value <= 0) return;
-  if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+watch(refreshSeconds, setupRefreshTimer);
 
-  autoRefreshTimer = setInterval(() => {
+watch(
+  () => surfaceContext.value,
+  () => {
     invalidateSiemDashboardCache();
     void loadDashboard({ force: true, silent: true });
-  }, autoRefreshIntervalSec.value * 1000);
-}
+  },
+  { deep: true },
+);
 
-function onVisibilityChange() {
-  if (typeof document === 'undefined') return;
-  if (document.visibilityState === 'visible' && autoRefreshIntervalSec.value > 0) {
-    invalidateSiemDashboardCache();
-    void loadDashboard({ force: true, silent: true });
-    startAutoRefresh();
-  } else {
-    stopAutoRefresh();
+onMounted(async () => {
+  const serverLayout = await layoutPersist.loadServerLayout();
+  if (serverLayout) {
+    layout.value = serverLayout;
+    layoutDraft.value = JSON.parse(JSON.stringify(serverLayout)) as SiemDashboardLayout;
   }
-}
-
-watch(autoRefreshIntervalSec, (sec) => {
-  saveSiemDashboardRefreshIntervalSec(sec);
-  startAutoRefresh();
-});
-
-onMounted(() => {
+  void initTemplateBatch();
   void loadDashboard();
-  startAutoRefresh();
-  if (typeof document !== 'undefined') {
-    document.addEventListener('visibilitychange', onVisibilityChange);
-  }
+  setupRefreshTimer();
 });
 
 onUnmounted(() => {
-  stopAutoRefresh();
-  if (typeof document !== 'undefined') {
-    document.removeEventListener('visibilitychange', onVisibilityChange);
-  }
+  if (refreshTimer) clearInterval(refreshTimer);
 });
 </script>
 
@@ -685,42 +728,68 @@ onUnmounted(() => {
       {{ errorLocal }}
     </v-alert>
 
-    <div class="d-flex flex-wrap align-center gap-3 mb-4">
-      <v-chip variant="tonal" color="primary" size="small">
-        {{ timeRangeLabel }}
-      </v-chip>
-      <v-select
-        v-model="autoRefreshIntervalSec"
-        :items="autoRefreshOptions"
-        item-title="title"
-        item-value="value"
-        density="compact"
-        hide-details
-        variant="outlined"
-        prepend-inner-icon="mdi-clock-sync-outline"
-        :label="t('siemCenter.dashboard.autoRefresh')"
-        class="siem-auto-refresh-select"
-        style="max-width: 11rem"
+    <v-alert
+      v-if="templateBatchError"
+      type="warning"
+      variant="tonal"
+      class="mb-4"
+      density="compact"
+    >
+      {{ templateBatchError }}
+    </v-alert>
+
+    <v-alert
+      v-if="missingTemplates.length"
+      type="info"
+      variant="tonal"
+      class="mb-4"
+      density="compact"
+    >
+      {{ t('siemCenter.dashboard.missingTemplates', { ids: missingTemplates.join(', ') }) }}
+    </v-alert>
+
+    <div class="mb-4">
+      <DashboardSurfaceToolbar
+        v-model:time-preset="timePreset"
+        v-model:severity="severity"
+        v-model:refresh-seconds="refreshSeconds"
+        :show-workspace-id="false"
+        :loading="panelLoading"
+        :t="t"
+        @refresh="refreshDashboard"
       />
-      <span v-if="lastRefreshedLabel" class="text-caption text-medium-emphasis">
-        {{ t('siemCenter.dashboard.lastRefreshed', { time: lastRefreshedLabel }) }}
-      </span>
-      <v-spacer />
-      <v-btn variant="tonal" prepend-icon="mdi-view-dashboard-edit" @click="openCustomize">
-        {{ t('siemCenter.dashboard.customize') }}
-      </v-btn>
-      <v-btn variant="tonal" prepend-icon="mdi-refresh" :loading="loading" @click="refreshDashboard">
-        {{ t('siemCenter.dashboard.refresh') }}
-      </v-btn>
+      <div class="d-flex flex-wrap align-center gap-3 mt-2">
+        <span v-if="lastRefreshedLabel" class="text-caption text-medium-emphasis">
+          {{ t('siemCenter.dashboard.lastRefreshed', { time: lastRefreshedLabel }) }}
+        </span>
+        <v-spacer />
+        <v-btn variant="tonal" prepend-icon="mdi-view-dashboard-edit" @click="openCustomize">
+          {{ t('siemCenter.dashboard.customize') }}
+        </v-btn>
+      </div>
     </div>
 
-    <v-row v-if="visibleWidgets.includes('stats')" dense class="mb-4">
-      <v-col v-for="card in statCards" :key="card.key" cols="12" sm="6" md="4" lg="2">
-        <v-skeleton-loader v-if="loading" type="card" class="rounded-lg" />
+    <v-row v-if="visibleWidgets.includes('stats')" dense class="mb-4 siem-stat-row">
+      <v-col v-for="card in statCards" :key="card.key" cols="12" sm="6" md="4" lg="2" class="d-flex">
+        <div
+          v-if="widgetHostStat(card.key)"
+          class="siem-stat-card siem-stat-card--widget h-100 w-100"
+          :class="`siem-stat-card--${card.color}`"
+        >
+          <div class="siem-stat-card__accent" />
+          <WidgetHost
+            class="siem-stat-card__widget-host"
+            :widget="widgetHostStat(card.key)"
+            :config-overrides="SIEM_STAT_CARD_OVERRIDES"
+            :surface-context="surfaceContext"
+            :t="t"
+          />
+        </div>
+        <v-skeleton-loader v-else-if="panelLoading" type="card" class="rounded-lg w-100" />
         <v-card
           v-else
           variant="flat"
-          class="siem-stat-card h-100"
+          class="siem-stat-card h-100 w-100"
           :class="`siem-stat-card--${card.color}`"
           :to="card.to"
           link
@@ -741,14 +810,20 @@ onUnmounted(() => {
 
     <v-row v-if="showChartsRow" class="mb-4">
       <v-col v-if="showEventTimeline" cols="12" lg="8">
-        <v-card variant="flat" class="siem-panel-card rounded-lg pa-4 h-100">
+        <WidgetHost
+          v-if="hourlyTrendWidget"
+          :widget="hourlyTrendWidget"
+          :surface-context="surfaceContext"
+          :t="t"
+        />
+        <v-card v-else variant="flat" class="siem-panel-card rounded-lg pa-4 h-100">
           <h2 class="text-subtitle-1 font-weight-bold mb-1">
             {{ t('siemCenter.dashboard.timelineTitle') }}
           </h2>
           <p class="text-caption text-medium-emphasis mb-3">
             {{ timeRangeLabel }}
           </p>
-          <v-skeleton-loader v-if="loading" type="image" height="240" />
+          <v-skeleton-loader v-if="panelLoading" type="image" height="240" />
           <div v-else-if="hourlyBuckets.every((b) => b.count === 0)" class="siem-chart-empty">
             {{ t('siemCenter.dashboard.timelineEmpty') }}
           </div>
@@ -770,7 +845,7 @@ onUnmounted(() => {
           <p class="text-caption text-medium-emphasis mb-3">
             {{ timeRangeLabel }}
           </p>
-          <v-skeleton-loader v-if="loading" type="image" height="240" />
+          <v-skeleton-loader v-if="panelLoading" type="image" height="240" />
           <div v-else-if="!hasBreakdownChart" class="siem-chart-empty">
             {{ t('siemCenter.dashboard.breakdownEmpty') }}
           </div>
@@ -805,7 +880,7 @@ onUnmounted(() => {
           {{ t('siemCenter.dashboard.openEvents') }}
         </v-btn>
       </div>
-      <v-skeleton-loader v-if="loading" type="image" class="mb-4" />
+      <v-skeleton-loader v-if="panelLoading" type="image" class="mb-4" />
       <template v-else>
         <div class="scenario-status-strip mb-4">
           <div class="d-flex flex-wrap align-center justify-space-between gap-2 mb-2">
@@ -982,8 +1057,16 @@ onUnmounted(() => {
       </template>
     </v-card>
 
+    <WidgetHost
+      v-if="showRecentAlarms && useRecentAlarmsWidgetHost"
+      :widget="recentAlarmsWidget"
+      :surface-context="surfaceContext"
+      :t="t"
+      class="mb-4"
+    />
+
     <v-card
-      v-if="showRecentAlarms"
+      v-else-if="showRecentAlarms"
       variant="flat"
       class="siem-panel-card rounded-lg pa-4 mb-4"
     >
@@ -991,7 +1074,7 @@ onUnmounted(() => {
         <h2 class="text-subtitle-1 font-weight-bold mb-0">
           {{ t('siemCenter.dashboard.recentAlarmsTitle') }}
         </h2>
-        <v-chip v-if="!loading && stats.openAlarms > 0" size="small" color="error" variant="tonal">
+        <v-chip v-if="!panelLoading && stats.openAlarms > 0" size="small" color="error" variant="tonal">
           {{ t('alarmCenter.alarms.statTotal', { count: stats.openAlarms }) }}
         </v-chip>
       </div>
@@ -999,7 +1082,7 @@ onUnmounted(() => {
         {{ t('siemCenter.dashboard.recentAlarmsHint') }}
       </p>
 
-      <v-skeleton-loader v-if="loading" type="table-row@8" />
+      <v-skeleton-loader v-if="panelLoading" type="table-row@8" />
       <v-table v-else density="comfortable" class="siem-alarm-table">
         <thead>
           <tr>
@@ -1125,6 +1208,47 @@ onUnmounted(() => {
   border: 1px solid rgba(var(--v-border-color), calc(var(--v-border-opacity) * 0.85));
   background: rgb(var(--v-theme-surface));
   transition: box-shadow 0.2s ease, transform 0.2s ease;
+  min-height: 5.5rem;
+}
+
+.siem-stat-card--widget {
+  display: flex;
+  flex-direction: column;
+}
+
+.siem-stat-card__widget-host {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.siem-stat-card__widget-host :deep(.stat-card) {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent;
+  height: 100%;
+}
+
+.siem-stat-card__widget-host :deep(.stat-card:hover) {
+  box-shadow: none !important;
+  transform: none;
+}
+
+.siem-stat-card__widget-host :deep(.v-card-text) {
+  padding: 1rem !important;
+}
+
+.siem-stat-card__widget-host :deep(.stat-icon-avatar) {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 8px;
+}
+
+.siem-stat-card__widget-host :deep(.stat-icon-avatar .v-icon) {
+  font-size: 22px !important;
+}
+
+.siem-stat-card__widget-host :deep(.text-h5) {
+  line-height: 1.25;
 }
 
 .siem-stat-card:hover {

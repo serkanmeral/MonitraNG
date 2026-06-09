@@ -2056,6 +2056,9 @@
       "notFound": "Dashboard bulunamadı.",
       "backToList": "Listeye dön",
       "noLayout": "Layout tanımlı değil.",
+      "redirectingSiemCenter": "SIEM Güvenlik Paneli açılıyor…",
+      "siemCenterSurfaceHint": "Bu dashboard kaydı SIEM paneli içindir; widget yerleşimi /apps/siem-center üzerinden gösterilir.",
+      "openSiemCenter": "SIEM paneline git",
       "emptyWidget": "Boş alan",
       "unauthorized": "Yetkisiz Erişim",
       "unauthorizedMessage": "Bu dashboard'u görüntüleme yetkiniz bulunmamaktadır.",
@@ -2066,6 +2069,39 @@
         "seconds": "Saniye",
         "minutes": "Dakika"
       }
+    },
+    "surface": {
+      "title": "Yüzey filtreleri",
+      "timeRange": "Zaman aralığı",
+      "timePreset": {
+        "1h": "Son 1 saat",
+        "6h": "Son 6 saat",
+        "24h": "Son 24 saat",
+        "7d": "Son 7 gün"
+      },
+      "severity": "Minimum önem",
+      "severityAll": "Tümü",
+      "severityHigh": "Yüksek+",
+      "severityCritical": "Kritik",
+      "workspaceId": "Workspace ID",
+      "workspaceIdPlaceholder": "MO widget'ları için",
+      "autoRefresh": "Otomatik yenileme",
+      "refreshOff": "Kapalı",
+      "refresh30s": "30 sn",
+      "refresh1m": "1 dk",
+      "refresh5m": "5 dk",
+      "refreshNow": "Şimdi yenile",
+      "zoomRange": "Grafik zoom aralığı"
+    },
+    "export": {
+      "title": "Dışa aktar",
+      "snapshotJson": "Snapshot (JSON)",
+      "snapshotJsonHint": "Reporting hook — manifest + veri",
+      "csvAll": "CSV (tablolar)",
+      "csvAllHint": "Destekleyen widget'lar",
+      "snapshotEmpty": "Dışa aktarılacak snapshot widget yok.",
+      "csvEmpty": "CSV dışa aktarılacak veri yok.",
+      "exportFailed": "Dışa aktarma başarısız."
     },
     "container": {
       "title": "Dashboard Container",
@@ -2199,12 +2235,27 @@
         "title": "Widget Seç",
         "search": "Ara",
         "searchPlaceholder": "Widget adı veya başlığı...",
-        "category": "Kategori",
-        "allCategories": "Tümü",
+        "module": "Modül",
+        "category": "Modül",
+        "type": "Tür",
+        "allCategories": "Tüm modüller",
+        "allModules": "Tüm modüller",
         "select": "Seç",
         "cancel": "İptal",
         "noWidgets": "Widget bulunamadı",
-        "noWidgetsHint": "Arama kriterlerinizi değiştirmeyi deneyin."
+        "noWidgetsHint": "Arama kriterlerinizi değiştirmeyi deneyin.",
+        "tabExisting": "Mevcut widget'lar",
+        "tabTemplate": "Şablondan oluştur",
+        "templateHint": "V1 katalog şablonlarından yeni widget oluşturup panele ekleyin.",
+        "quickCreate": {
+          "title": "Şablon",
+          "name": "Widget adı (benzersiz)",
+          "widgetTitle": "Görünen başlık",
+          "confirm": "Oluştur ve yerleştir",
+          "validation": "Ad ve başlık zorunludur.",
+          "categoryMissing": "Şablon modülü çözülemedi. @widget_categories seed'ini kontrol edin.",
+          "failed": "Widget oluşturulamadı."
+        }
       }
     }
   },
@@ -2232,18 +2283,26 @@
         "noData": "Widget bulunamadı",
         "createFirst": "İlk Widget'ı Oluştur",
       "filters": {
-        "allCategories": "Tüm Kategoriler",
-        "allTypes": "Tüm Tipler",
-        "category": "Kategori",
-        "type": "Tip",
+        "allModules": "Tüm modüller",
+        "allCategories": "Tüm modüller",
+        "allTypes": "Tüm türler",
+        "module": "Modül",
+        "category": "Modül",
+        "type": "Tür",
         "status": "Durum"
+      },
+      "types": {
+        "card": "Kart (stat)",
+        "chart": "Grafik",
+        "table": "Tablo",
+        "banner": "Banner"
       },
       "table": {
         "headers": {
           "name": "Ad",
           "title": "Başlık",
-          "category": "Kategori",
-          "type": "Tip",
+          "category": "Modül",
+          "type": "Tür",
           "isActive": "Aktif",
           "order": "Sıra",
           "createdAt": "Oluşturulma",
@@ -2264,8 +2323,8 @@
       "name": "Widget Adı",
       "title": "Widget Başlığı",
       "description": "Açıklama",
-      "category": "Kategori",
-      "type": "Widget Tipi",
+      "category": "Modül",
+      "type": "Tür (card/chart/table)",
       "order": "Sıralama",
       "isActive": "Aktif",
       "dataSource": "Veri Kaynağı",
@@ -2349,9 +2408,90 @@
         "datasetRequired": "Dataset belirtilmelidir"
       }
     },
+    "designer": {
+      "createTitle": "Widget Tasarımcısı",
+      "editTitle": "Widget Düzenle",
+      "legacyFormLink": "Gelişmiş (teknik) form",
+      "designerFormLink": "Widget Tasarımcısı",
+      "editTemplateLocked": "Şablon sabittir; yeni bir widget için katalogdan klonlayın.",
+      "editNameLocked": "Kayıt adı değiştirilmez (dashboard referansları).",
+      "editLoadFailed": "Widget tasarım verisi yüklenemedi.",
+      "saveChanges": "Değişiklikleri kaydet",
+      "catalogHint": "Domain filtresi ve arama ile V1 şablon kataloğundan başlayın.",
+      "parametersHint": "Şablona özel parametreler. Dashboard bağlamından gelen alanlar salt okunurdur.",
+      "parametersEmpty": "Bu şablon için düzenlenebilir parametre yok.",
+      "advancedMode": "Gelişmiş — parametre JSON",
+      "presetGallery": "Görünüm preset'i",
+      "livePreview": "Canlı önizleme",
+      "refreshInterval": "Otomatik yenileme",
+      "refreshOff": "Kapalı",
+      "refresh30s": "30 saniye",
+      "refresh1m": "1 dakika",
+      "refresh5m": "5 dakika",
+      "permissionGroups": "Yetkili gruplar",
+      "permissionGroupsHint": "Boş bırakılırsa tüm kullanıcılar görebilir.",
+      "drillDownHint": "Tıklanınca yönlendirme",
+      "cancel": "İptal",
+      "back": "Geri",
+      "next": "İleri",
+      "save": "Kaydet",
+      "steps": {
+        "catalog": "Katalog",
+        "parameters": "Parametreler",
+        "appearance": "Görünüm",
+        "behavior": "Davranış"
+      },
+      "fields": {
+        "name": "Widget adı",
+        "title": "Başlık",
+        "description": "Açıklama",
+        "isActive": "Aktif",
+        "order": "Sıra"
+      },
+      "catalog": {
+        "allModules": "Tüm modüller",
+        "allDomains": "Tüm modüller",
+        "alarm": "Alarm",
+        "siem": "SIEM",
+        "operationCore": "Operasyon (MO)",
+        "documentIntelligence": "Dokümanlar",
+        "search": "Şablon ara",
+        "searchPlaceholder": "Başlık, etiket veya templateId...",
+        "empty": "Aktif şablon bulunamadı."
+      },
+      "parameters": {
+        "fromContext": "Dashboard bağlamından gelir ({path})"
+      },
+      "fieldMapping": {
+        "title": "Veri ve alan eşlemesi",
+        "hint": "API yanıtındaki alan adlarını kart, grafik veya tablo sunumuna bağlar. Eksik eşlemede grafikte Item 1, kartta — görünebilir.",
+        "valueField": "Değer alanı",
+        "valueFieldHint": "Normalize edilmiş satırda sayısal alan (genelde value)",
+        "xAxisField": "X ekseni / dilim etiketi alanı",
+        "xAxisFieldHint": "Örn. severity, bucket, timestamp",
+        "yAxisField": "Y ekseni / değer alanı",
+        "yAxisFieldHint": "Örn. count",
+        "tableColumnsHint": "Sütunlar şablondan gelir; gelişmiş düzenleme JSON modunda.",
+        "warnStatValue": "Değer alanı tanımlı değil — kart boş görünebilir.",
+        "warnChartX": "X ekseni alanı tanımlı değil — grafikte Item 1, Item 2 görünür.",
+        "warnChartY": "Y değer alanı tanımlı değil — grafik verisi eksik olabilir.",
+        "warnTableColumns": "Tablo sütunları tanımlı değil — ham alan adları listelenir."
+      },
+      "validation": {
+        "stepIncomplete": "Bu adımı tamamlayın.",
+        "nameTitleRequired": "Ad ve başlık zorunludur.",
+        "categoryMissing": "Kategori bulunamadı: {slug}"
+      }
+    },
     "view": {
       "notFound": "Widget bulunamadı",
       "backToList": "Listeye Dön"
+    },
+    "listActivity": {
+      "noData": "Liste boş"
+    },
+    "actions": {
+      "failed": "İşlem başarısız"
     },
     "renderer": {
       "noWidgetId": "Widget ID belirtilmemiş",
@@ -2362,6 +2502,11 @@
       "typeNotSupported": "Widget tipi desteklenmiyor: {type}",
       "unauthorized": "Yetkiniz Yok",
       "unauthorizedMessage": "Bu widget'ı görüntüleme yetkiniz bulunmamaktadır."
+    },
+    "table": {
+      "items": "kayıt",
+      "noData": "Veri bulunamadı",
+      "loading": "Yükleniyor..."
     }
   },
   "organization": {
@@ -3574,6 +3719,10 @@
           "noParams": "Parametre yok.",
           "tokenHint": "Değer alanına token girebilirsiniz (çift küme parantezi içinde): workspaceId · currentUser · asOf.",
           "saveWidget": "Widget'ı kaydet",
+          "tabTemplate": "Şablondan",
+          "tabCustom": "Özel / düzenle",
+          "templateHint": "Operation Core şablonu seçin; alanlar otomatik doldurulur.",
+          "templateUnsupported": "Bu şablon MO dashboard editöründe desteklenmiyor.",
           "keyRequired": "Widget anahtarı zorunlu.",
           "keyInvalid": "Anahtar yalnızca harf, rakam ve _ içerebilir.",
           "keyDuplicate": "Bu anahtar zaten kullanılıyor.",
@@ -5469,6 +5618,7 @@
       "pageTitle": "SIEM Güvenlik Paneli",
       "pageSubtitle": "Son 24 saat özeti: olay hacmi, açık alarmlar ve hızlı erişim.",
       "loadError": "Panel verileri yüklenemedi.",
+      "missingTemplates": "Bazı widget şablonları bulunamadı ({ids}). Eski panel bileşenleri gösteriliyor.",
       "refresh": "Yenile",
       "autoRefresh": "Otomatik yenileme",
       "autoRefreshOff": "Kapalı",
@@ -5510,6 +5660,10 @@
       "scenarioColStatus": "Durum",
       "scenarioColCount": "24s alarm",
       "scenarioColLastSeen": "Son alarm",
+      "scenarioSummaryOpen": "{n} açık",
+      "scenarioSummarySeen": "{n} görüldü",
+      "scenarioSummaryClean": "{n} temiz",
+      "scenarioViewFullPanel": "Tam SIEM paneli",
       "openEvents": "Güvenlik olayları",
       "alarmColSummary": "Özet",
       "alarmColScenario": "Senaryo",

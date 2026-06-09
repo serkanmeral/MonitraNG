@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue';
 import WidgetForm from '@/components/widgets/WidgetForm.vue';
+import WidgetDesignerWizard from '@/components/widgets/designer/WidgetDesignerWizard.vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useWidgetStore, type UpdateWidgetDto } from '@/stores/apps/widget';
+import { isManifestWidget } from '@/utils/widgets/widgetManifestAdapter';
 
 definePageMeta({
   layout: 'default',
@@ -18,8 +20,17 @@ const t = (key: string) => (i18n?.t ?? i18n?.global?.t)?.(key) ?? key;
 
 const id = computed(() => (route.params.id as string) ?? '');
 const initial = computed(() => widgetStore.currentWidget);
+const forceLegacyForm = computed(() => route.query.mode === 'advanced');
+const useDesigner = computed(() => {
+  if (forceLegacyForm.value) return false;
+  return initial.value ? isManifestWidget(initial.value) : false;
+});
 
-const page = computed(() => ({ title: t('widgets.form.editTitle') || 'Widget Düzenle' }));
+const page = computed(() => ({
+  title: useDesigner.value
+    ? t('widgets.designer.editTitle') || 'Widget Düzenle'
+    : t('widgets.form.editTitle') || 'Widget Düzenle',
+}));
 const breadcrumbs = computed(() => [
   { text: t('widgets.breadcrumbs.home') || 'Dashboard', disabled: false, href: '/dashboards/analytical' },
   { text: t('widgets.breadcrumbs.widgets') || 'Widgets', disabled: false, href: '/apps/widgets' },
@@ -52,13 +63,52 @@ async function handleSubmit(dto: UpdateWidgetDto) {
 function handleCancel() {
   router.push('/apps/widgets');
 }
+
+const legacyFormLink = computed(() => ({
+  path: `/apps/widgets/${encodeURIComponent(id.value)}/edit`,
+  query: { mode: 'advanced' },
+}));
+
+const designerFormLink = computed(() => ({
+  path: `/apps/widgets/${encodeURIComponent(id.value)}/edit`,
+}));
 </script>
 
 <template>
   <div>
     <template v-if="initial">
       <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs" />
-      <WidgetForm :initial="initial" :t="t" @submit="handleSubmit" @cancel="handleCancel" />
+
+      <div v-if="isManifestWidget(initial)" class="d-flex justify-end mb-3">
+        <v-btn
+          v-if="useDesigner"
+          variant="text"
+          size="small"
+          prepend-icon="mdi-code-braces"
+          :to="legacyFormLink"
+        >
+          {{ t('widgets.designer.legacyFormLink') }}
+        </v-btn>
+        <v-btn
+          v-else
+          variant="text"
+          size="small"
+          prepend-icon="mdi-palette"
+          :to="designerFormLink"
+        >
+          {{ t('widgets.designer.designerFormLink') }}
+        </v-btn>
+      </div>
+
+      <WidgetDesignerWizard
+        v-if="useDesigner"
+        mode="edit"
+        :initial-widget="initial"
+        :t="t"
+        @submit="handleSubmit"
+        @cancel="handleCancel"
+      />
+      <WidgetForm v-else :initial="initial" :t="t" @submit="handleSubmit" @cancel="handleCancel" />
     </template>
     <template v-else>
       <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs" />

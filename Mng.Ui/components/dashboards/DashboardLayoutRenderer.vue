@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import type { LayoutRow, LayoutCol, WidgetConfigOverrides } from '@/stores/apps/dashboard';
+import type { SurfaceContext } from '@/types/apps/widgetManifest';
 import WidgetRenderer from '@/components/widgets/WidgetRenderer.vue';
 import WidgetWithSettings from './WidgetWithSettings.vue';
 
 const props = defineProps<{
   rows: LayoutRow[];
   canEdit?: boolean;
+  surfaceContext?: SurfaceContext;
   t?: (key: string) => string;
 }>();
 
@@ -29,7 +31,7 @@ function onOverridesChange(payload: { rowIdx: number; colIdx: number; overrides:
     <v-row
       v-for="(row, rowIdx) in rows"
       :key="rowIdx"
-      :align="row.align"
+      :align="row.align ?? 'start'"
       :justify="row.justify"
       :no-gutters="row.noGutters"
       :dense="row.dense"
@@ -50,6 +52,7 @@ function onOverridesChange(payload: { rowIdx: number; colIdx: number; overrides:
           v-if="col.rows && col.rows.length"
           :rows="col.rows"
           :can-edit="canEdit"
+          :surface-context="surfaceContext"
           :t="t"
           @update:widget-overrides="emit('update:widgetOverrides', $event)"
         />
@@ -58,6 +61,7 @@ function onOverridesChange(payload: { rowIdx: number; colIdx: number; overrides:
           v-else-if="canEdit && col.widgetId && col.widgetId.trim()"
           :widget-id="col.widgetId"
           :widget-overrides="col.widgetOverrides"
+          :surface-context="surfaceContext"
           :row-idx="rowIdx"
           :col-idx="colIdx"
           :can-edit="canEdit"
@@ -69,6 +73,7 @@ function onOverridesChange(payload: { rowIdx: number; colIdx: number; overrides:
           v-else-if="col.widgetId && col.widgetId.trim()"
           :widget-id="col.widgetId"
           :config-overrides="col.widgetOverrides"
+          :surface-context="surfaceContext"
           :t="t"
         />
         <!-- Empty placeholder -->

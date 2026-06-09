@@ -1,4 +1,4 @@
-import { SIEM_SCENARIO_CATALOG, scenarioEventsLink } from '@/composables/useSiemScenarioCatalog';
+import { SIEM_SCENARIO_CATALOG } from '@/composables/useSiemScenarioCatalog';
 
 /** SIEM parser / kapsam sözlüğü — UI salt okunur referans (SIEM_PARSER_PLAN ile hizalı). */
 export const SIEM_REFERENCE_VERSION = '1.0.0';
@@ -240,5 +240,3 @@ export function parserStatusColor(status: SiemParserCatalogStatus): string {
 export function parserStatusLabelKey(status: SiemParserCatalogStatus): string {
   return `siemCenter.reference.parserStatus.${status}`;
 }
-
-export { scenarioEventsLink };
