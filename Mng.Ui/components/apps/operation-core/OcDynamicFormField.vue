@@ -11,9 +11,12 @@ import {
   isMultiCardinality,
   resolveOcDynamicFieldWidget,
 } from '@/utils/ocDynamicFormField';
-import { resolveOcCoreFieldType } from '@/utils/ocFormFieldLabels';
+import { resolveOcFormFieldType } from '@/utils/ocFormFieldLabels';
 import OcPersonPickerAutocomplete from '@/components/apps/operation-core/OcPersonPickerAutocomplete.vue';
 import OcTagSelector from '@/components/apps/operation-core/OcTagSelector.vue';
+import OcRichTextEditor from '@/components/apps/operation-core/OcRichTextEditor.client.vue';
+import OcRichTextContent from '@/components/apps/operation-core/OcRichTextContent.client.vue';
+import OcWorkItemFileField from '@/components/apps/operation-core/OcWorkItemFileField.vue';
 
 const props = defineProps<{
   fieldKey: string;
@@ -41,16 +44,24 @@ const label = computed(() => props.meta?.label?.trim() || props.fieldKey);
 const widget = computed(() =>
   resolveOcDynamicFieldWidget(props.fieldKey, props.meta, { masked: props.behavior.masked })
 );
-const fieldDisabled = computed(() => props.readonly || props.behavior.readonly);
-const isMulti = computed(() => isMultiCardinality(props.fieldKey, props.meta));
+const formReadonly = computed(() => props.readonly === true);
+const fieldLocked = computed(() => props.behavior.readonly === true);
+const fieldDisabled = computed(() => formReadonly.value || fieldLocked.value);
+const isRichTextWidget = computed(() => widget.value === 'richtext');
+/** Form düzenlenebilirken core açıklama editörü; MO havuz editGroups artefaktını UI'da yoksay. */
+const richTextEditing = computed(() => {
+  if (!isRichTextWidget.value || formReadonly.value) return false;
+  if (props.fieldKey.toLowerCase() === 'description') return true;
+  return !fieldLocked.value;
+});
 
+const isMulti = computed(() => isMultiCardinality(props.fieldKey, props.meta));
 const isPersonsWidget = computed(() => widget.value === 'persons' || widget.value === 'personsMulti');
 const isTagsWidget = computed(() => widget.value === 'tags');
+const isFileWidget = computed(() => widget.value === 'file');
 
 // Grup alanları (personGroups/group): readonly görünümde ham id yerine grup adını göster.
-const fieldType = computed(() =>
-  (props.meta?.fieldType ?? resolveOcCoreFieldType(props.fieldKey)).toLowerCase()
-);
+const fieldType = computed(() => resolveOcFormFieldType(props.fieldKey, props.meta).toLowerCase());
 const isGroupField = computed(() =>
   ['persongroups', 'persongroup', 'group'].includes(fieldType.value)
 );
@@ -94,6 +105,7 @@ const hasFieldDisplay = computed(
 const useReadonlyDisplay = computed(
   () =>
     fieldDisabled.value &&
+    !isRichTextWidget.value &&
     // tags HARİÇ: tags readonly'de de OcTagSelector ile renkli chip gösterir (düz metin değil).
     (isGroupField.value ||
       ((isSelectWidget.value || isPersonsWidget.value) && hasFieldDisplay.value))
@@ -136,7 +148,11 @@ const fieldErrorMessages = computed(() =>
 );
 
 function update(value: unknown) {
-  if (fieldDisabled.value) return;
+  if (isRichTextWidget.value) {
+    if (!richTextEditing.value) return;
+  } else if (fieldDisabled.value) {
+    return;
+  }
   model.value = value;
 }
 
@@ -294,21 +310,45 @@ function onAutocompleteUpdate(value: unknown) {
     </template>
   </v-text-field>
 
-  <v-text-field
-    v-else-if="widget === 'file'"
-    :model-value="String(model ?? '')"
-    readonly
-    :hint="t('operationCore.formUi.fileFieldHint')"
-    persistent-hint
-    density="comfortable"
-    variant="outlined"
-    :class="fieldClass"
-  >
-    <template #label>
+  <div v-else-if="isFileWidget" class="oc-dynamic-form__file-field">
+    <div class="text-caption text-medium-emphasis mb-1 d-flex align-center ga-1">
       <span>{{ label }}</span>
       <span v-if="behavior.required" class="oc-field-required" aria-hidden="true"> *</span>
-    </template>
-  </v-text-field>
+    </div>
+    <OcWorkItemFileField
+      v-model="model"
+      :field-key="fieldKey"
+      :meta="meta"
+      :readonly="fieldDisabled"
+      :error-message="errorMessage"
+    />
+  </div>
+
+  <div v-else-if="isRichTextWidget" class="oc-dynamic-form__richtext-field">
+    <div class="text-caption text-medium-emphasis mb-1 d-flex align-center ga-1">
+      <span>{{ label }}</span>
+      <span v-if="behavior.required" class="oc-field-required" aria-hidden="true"> *</span>
+    </div>
+    <client-only>
+      <OcRichTextContent
+        v-if="!richTextEditing"
+        :html="String(model ?? '')"
+        :class="fieldClass"
+      />
+      <OcRichTextEditor
+        v-else
+        :model-value="String(model ?? '')"
+        :placeholder="label"
+        @update:model-value="(v) => update(v)"
+      />
+      <template #fallback>
+        <v-skeleton-loader type="paragraph" class="rounded-lg" />
+      </template>
+    </client-only>
+    <div v-if="showFieldError" class="text-caption text-error mt-1">
+      {{ errorMessage }}
+    </div>
+  </div>
 
   <v-textarea
     v-else-if="widget === 'textarea'"

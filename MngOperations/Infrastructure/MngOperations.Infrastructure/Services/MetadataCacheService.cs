@@ -5,6 +5,7 @@ using MngOperations.Application.Configuration;
 using MngOperations.Application.Exceptions;
 using MngOperations.Application.Interfaces;
 using MngOperations.Application.Models;
+using MngOperations.Application.Utilities;
 using MngOperations.Domain.Constants;
 
 namespace MngOperations.Infrastructure.Services;
@@ -316,6 +317,152 @@ public class MetadataCacheService : IMetadataCache
         var cacheKey = CatalogCacheKey(dataset);
         _cache.Remove(cacheKey);
         _logger.LogDebug("Catalog cache invalidated {CacheKey}", cacheKey);
+    }
+
+    public async Task<MetadataCacheReloadResult> ReloadWorkspaceAsync(
+        string workspaceId,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(workspaceId))
+        {
+            throw new OperationCoreException(
+                "WORKSPACE_ID_REQUIRED",
+                "workspaceId is required.",
+                "workspaceId zorunludur.",
+                400);
+        }
+
+        var wsId = workspaceId.Trim();
+        var removed = 0;
+
+        void Remove(string suffix)
+        {
+            _cache.Remove(CacheKey(suffix));
+            removed++;
+        }
+
+        Remove($"workspace:{wsId}");
+        Remove($"form:default:{wsId}");
+        Remove($"rules:{wsId}");
+        Remove($"profile:default:{wsId}");
+        Remove($"sla:policies:{wsId}");
+        Remove($"notification-policies:{wsId}");
+
+        var filter = $"workspaceId:eq:{wsId}";
+        var filterQuery = $"filter={Uri.EscapeDataString(filter)}&limit=200";
+
+        var workspace = await _dg.GetByIdAsync<WorkspaceRecord>(
+            OcDatasets.Workspaces,
+            wsId,
+            token,
+            cancellationToken);
+
+        if (workspace == null)
+        {
+            throw new OperationCoreException(
+                "WORKSPACE_NOT_FOUND",
+                $"Workspace '{wsId}' not found.",
+                $"Workspace '{wsId}' bulunamadı.",
+                404);
+        }
+
+        if (!string.IsNullOrWhiteSpace(workspace.DefaultStateFlowId))
+            Remove($"flow:{workspace.DefaultStateFlowId.Trim()}");
+
+        foreach (var form in await _dg.GetAsync<FormRecord>(OcDatasets.Forms, filterQuery, token, cancellationToken))
+        {
+            if (!string.IsNullOrWhiteSpace(form.DataId))
+                Remove($"form:{form.DataId.Trim()}");
+
+            if (!string.IsNullOrWhiteSpace(form.DefaultStateFlowId))
+                Remove($"flow:{form.DefaultStateFlowId.Trim()}");
+        }
+
+        foreach (var board in await _dg.GetAsync<BoardRecord>(OcDatasets.Boards, filterQuery, token, cancellationToken))
+        {
+            if (!string.IsNullOrWhiteSpace(board.DataId))
+                Remove($"board:{board.DataId.Trim()}");
+        }
+
+        foreach (var dashboard in await _dg.GetAsync<DashboardRecord>(OcDatasets.Dashboards, filterQuery, token, cancellationToken))
+        {
+            if (!string.IsNullOrWhiteSpace(dashboard.DataId))
+                Remove($"dashboard:{dashboard.DataId.Trim()}");
+        }
+
+        var flowIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var type in await _dg.GetAsync<WorkItemTypeRecord>(OcDatasets.WorkItemTypes, filterQuery, token, cancellationToken))
+        {
+            if (!string.IsNullOrWhiteSpace(type.DataId))
+                Remove($"type:{type.DataId.Trim()}");
+
+            if (!string.IsNullOrWhiteSpace(type.DefaultStateFlowId))
+                flowIds.Add(type.DefaultStateFlowId.Trim());
+        }
+
+        foreach (var typeId in MetadataRelationHelper.ParseIdList(workspace.EnabledTypeIds))
+        {
+            Remove($"type:{typeId}");
+        }
+
+        foreach (var flow in await _dg.GetAsync<StateFlowRecord>(OcDatasets.StateFlows, filterQuery, token, cancellationToken))
+        {
+            if (!string.IsNullOrWhiteSpace(flow.DataId))
+                flowIds.Add(flow.DataId.Trim());
+        }
+
+        foreach (var flowId in flowIds)
+            Remove($"flow:{flowId}");
+
+        var fieldIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var fieldId in MetadataRelationHelper.ParseIdList(workspace.EnabledFieldIds))
+            fieldIds.Add(fieldId);
+
+        var scopedFields = (await _dg.GetAsync<FieldRecord>(OcDatasets.Fields, filterQuery, token, cancellationToken)).ToList();
+        foreach (var field in scopedFields)
+        {
+            if (!string.IsNullOrWhiteSpace(field.DataId))
+                fieldIds.Add(field.DataId.Trim());
+        }
+
+        foreach (var fieldId in fieldIds)
+            Remove($"field:{fieldId}");
+
+        foreach (var field in scopedFields)
+        {
+            if (!string.IsNullOrWhiteSpace(field.Key))
+                Remove($"field:key:{field.Key.Trim()}");
+        }
+
+        foreach (var fieldId in MetadataRelationHelper.ParseIdList(workspace.EnabledFieldIds))
+        {
+            try
+            {
+                var field = await _dg.GetByIdAsync<FieldRecord>(
+                    OcDatasets.Fields,
+                    fieldId,
+                    token,
+                    cancellationToken);
+                if (!string.IsNullOrWhiteSpace(field?.Key))
+                    Remove($"field:key:{field.Key.Trim()}");
+            }
+            catch (OperationCoreException ex) when (ex.Code == "FIELD_NOT_FOUND")
+            {
+                // enabledFieldIds'te kırık referans — yoksay
+            }
+        }
+
+        _logger.LogInformation(
+            "Metadata cache reloaded for workspace {WorkspaceId} ({KeysRemoved} keys removed)",
+            wsId,
+            removed);
+
+        return new MetadataCacheReloadResult
+        {
+            WorkspaceId = wsId,
+            KeysRemoved = removed
+        };
     }
 
     private string CatalogCacheKey(string dataset) => CacheKey($"catalog:{dataset}");

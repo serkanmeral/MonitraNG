@@ -51,6 +51,10 @@ import type {
 import { buildBoardDgPayload } from '@/utils/ocBoardDgPayload';
 import { buildOcFormLayoutPayload, normalizeOcGridCol, parseOpFormLayout } from '@/utils/ocFormLayout';
 import { validateOcFormModel } from '@/utils/ocFormValidation';
+import {
+  collectWorkItemAttachmentsFromFormModel,
+  resolveOcFormFileFieldKeys,
+} from '@/utils/ocWorkItemFileFields';
 
 export const OC_DATASETS = {
   workspaces: 'op_workspaces',
@@ -567,7 +571,8 @@ export interface OcCreateWorkItemResult {
 export function buildCreateWorkItemRequest(
   model: Record<string, unknown>,
   workspaceId: string,
-  boardId?: string
+  boardId?: string,
+  formContext?: OcFormRuntimeContext | null
 ): OcCreateWorkItemRequest {
   const title = String(model.title ?? '').trim();
   const typeId = String(model.typeId ?? '').trim();
@@ -587,12 +592,23 @@ export function buildCreateWorkItemRequest(
     }
   }
 
+  const fileFieldKeys = new Set(
+    formContext ? resolveOcFormFileFieldKeys(formContext).map((k) => k.toLowerCase()) : []
+  );
+  const attachmentUploads = formContext
+    ? collectWorkItemAttachmentsFromFormModel(model, formContext)
+    : [];
+
   const fields: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(model)) {
     if (OC_CREATE_TOP_LEVEL_KEYS.has(key)) continue;
+    if (fileFieldKeys.has(key.toLowerCase())) continue;
     if (value === undefined || value === null || value === '') continue;
     if (Array.isArray(value) && value.length === 0) continue;
     fields[key] = value;
+  }
+  if (attachmentUploads.length) {
+    fields.attachments = attachmentUploads;
   }
   if (Object.keys(fields).length) body.fields = fields;
 
@@ -1631,8 +1647,8 @@ export async function ocListGlobalPoolFields(): Promise<OpField[]> {
     );
 }
 
-export async function ocCreateField(payload: Record<string, unknown>) {
-  await ocCatalogCreate('fields', payload);
+export async function ocCreateField(payload: Record<string, unknown>): Promise<string | null> {
+  return ocCreateRecordId(OC_DATASETS.fields, payload);
 }
 
 export async function ocUpdateField(fieldId: string, payload: Record<string, unknown>) {
@@ -1673,6 +1689,25 @@ export async function ocGetWorkspace(workspaceId: string): Promise<OpWorkspaceDe
   });
   if (!match) return null;
   return mapWorkspaceDetail(match as Record<string, unknown>);
+}
+
+export interface OcMetadataCacheReloadResult {
+  workspaceId: string;
+  keysRemoved: number;
+}
+
+/** MO metadata önbelleğini workspace kapsamında düşürür (form layout vb. DG güncellemeleri). */
+export async function ocReloadWorkspaceMetadataCache(
+  workspaceId: string
+): Promise<OcMetadataCacheReloadResult> {
+  const raw = (await fetchFromOperations(
+    `/api/v1/workspaces/${encodeURIComponent(workspaceId)}/metadata-cache/reload`,
+    'POST'
+  )) as Record<string, unknown>;
+  return {
+    workspaceId: String(raw.workspaceId ?? raw.WorkspaceId ?? workspaceId),
+    keysRemoved: Number(raw.keysRemoved ?? raw.KeysRemoved ?? 0),
+  };
 }
 
 export async function ocCreateWorkspace(payload: Record<string, unknown>): Promise<string | null> {
@@ -1755,13 +1790,33 @@ export async function ocListPoolFieldsForWorkspace(workspaceId: string): Promise
   ]);
   const scoped = scopedRows
     .map((r) => mapOpField(r as Record<string, unknown>))
-    .filter((f) => f.__dataId && f.key && f.scope === 'pool' && f.workspaceId === workspaceId);
+    .filter((f) => f.__dataId && f.key && f.scope === 'pool');
   const seen = new Set<string>();
   return [...globalRows, ...scoped].filter((f) => {
     if (seen.has(f.__dataId)) return false;
     seen.add(f.__dataId);
     return true;
   });
+}
+
+/**
+ * Form yerleşim editörü — core dışı alanlar: workspace'e özel tanımlar + enabledFieldIds ile
+ * aktive edilmiş global havuz alanları (file vb.).
+ */
+export async function ocListFormLayoutPoolFields(workspaceId: string): Promise<OpField[]> {
+  const ws = await ocGetWorkspace(workspaceId);
+  const enabledSet = new Set(ws?.enabledFieldIds ?? []);
+  const [globalAll, scoped] = await Promise.all([
+    ocListGlobalPoolFields(),
+    ocListWorkspaceScopedFields(workspaceId),
+  ]);
+  const enabledGlobal = globalAll.filter((f) => enabledSet.has(f.__dataId));
+  const byKey = new Map<string, OpField>();
+  for (const f of enabledGlobal) byKey.set(f.key.toLowerCase(), f);
+  for (const f of scoped) byKey.set(f.key.toLowerCase(), f);
+  return [...byKey.values()].sort(
+    (a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999) || a.key.localeCompare(b.key)
+  );
 }
 
 /** Workspace'e özel pool alanları (CRUD tablosu) */
@@ -1773,7 +1828,7 @@ export async function ocListWorkspaceScopedFields(workspaceId: string): Promise<
   });
   return rows
     .map((r) => mapOpField(r as Record<string, unknown>))
-    .filter((f) => f.__dataId && f.key && f.scope === 'pool' && f.workspaceId === workspaceId);
+    .filter((f) => f.__dataId && f.key && f.scope === 'pool');
 }
 
 export async function ocListBoardsForWorkspace(workspaceId: string): Promise<OpBoard[]> {

@@ -477,6 +477,46 @@ public class ResourceService : IResourceService
         return new ResourceListResult { Items = items, Total = items.Count };
     }
 
+    public async Task<ResourceListResult> GetRecentAsync(int limit, CancellationToken ct = default)
+    {
+        var safeLimit = Math.Clamp(limit <= 0 ? 10 : limit, 1, 100);
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        var match = new Dictionary<string, object?> { ["type"] = ResourceType.Markdown };
+        var page = await _dg.QueryPageAsync(DmDatasets.Resources, match, ListQuery, Token, ct);
+        var items = page.Items
+            .Select(MapRow)
+            .Where(r => snapshot.Resolve(r).CanView)
+            .Where(r => ResourceStatus.Normalize(r.status) == ResourceStatus.Published)
+            .Select(r => ToDto(r, snapshot.Resolve(r)))
+            .OrderByDescending(r => r.UpdatedAt ?? r.CreatedAt ?? DateTime.MinValue)
+            .Take(safeLimit)
+            .ToList();
+        return new ResourceListResult { Items = items, Total = items.Count };
+    }
+
+    public async Task<ResourceListResult> GetDraftsAsync(int limit, CancellationToken ct = default)
+    {
+        var safeLimit = Math.Clamp(limit <= 0 ? 50 : limit, 1, 200);
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        var match = new Dictionary<string, object?>
+        {
+            ["type"] = ResourceType.Markdown,
+            ["status"] = ResourceStatus.Draft,
+        };
+        var page = await _dg.QueryPageAsync(DmDatasets.Resources, match, ListQuery, Token, ct);
+        var allDrafts = page.Items
+            .Select(MapRow)
+            .Where(r => snapshot.Resolve(r).CanEdit)
+            .Select(r => ToDto(r, snapshot.Resolve(r)))
+            .OrderByDescending(r => r.UpdatedAt ?? r.CreatedAt ?? DateTime.MinValue)
+            .ToList();
+        return new ResourceListResult
+        {
+            Items = allDrafts.Take(safeLimit).ToList(),
+            Total = allDrafts.Count,
+        };
+    }
+
     // ----- helpers -----
 
     private static string? NormalizeParentId(string? parentId) =>

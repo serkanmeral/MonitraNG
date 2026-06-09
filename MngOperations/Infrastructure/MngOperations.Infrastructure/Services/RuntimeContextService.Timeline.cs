@@ -251,6 +251,8 @@ public partial class RuntimeContextService
                 ChangeFieldKind.Person => people.TryGetValue(token, out var p) && !string.IsNullOrWhiteSpace(p.Name) ? p.Name! : token,
                 ChangeFieldKind.Group => groups.TryGetValue(token, out var g) && !string.IsNullOrWhiteSpace(g.Name) ? g.Name! : token,
                 ChangeFieldKind.Dataset => datasetMaps.TryGetValue(meta.Dataset!, out var map) && map.TryGetValue(token, out var nm) && !string.IsNullOrWhiteSpace(nm) ? nm : token,
+                _ when meta.FieldType is "richtext" or "rich_text" or "rich-text" =>
+                    HtmlRichTextHelper.StripToPlainText(token) ?? token,
                 _ => token,
             });
         }

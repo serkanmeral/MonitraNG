@@ -27,7 +27,7 @@ export interface OcCoreFieldCatalogEntry {
 export const OC_CORE_WORK_ITEM_FIELDS: OcCoreFieldCatalogEntry[] = [
   { key: 'key', fieldType: 'text', group: 'identity' },
   { key: 'title', fieldType: 'text', group: 'identity' },
-  { key: 'description', fieldType: 'text', group: 'identity' },
+  { key: 'description', fieldType: 'richtext', group: 'identity' },
   { key: 'typeId', fieldType: 'relation', group: 'classification' },
   { key: 'category', fieldType: 'text', group: 'classification' },
   { key: 'stateId', fieldType: 'relation', group: 'classification' },
@@ -52,6 +52,7 @@ export const OC_CORE_WORK_ITEM_FIELDS: OcCoreFieldCatalogEntry[] = [
 
 export const OC_POOL_FIELD_TYPE_VALUES = [
   'text',
+  'richtext',
   'number',
   'bool',
   'datetime',

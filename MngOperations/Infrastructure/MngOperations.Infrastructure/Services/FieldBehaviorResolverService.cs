@@ -106,8 +106,13 @@ public sealed class FieldBehaviorResolverService : IFieldBehaviorResolver
         }
 
         var fieldMeta = await TryLoadFieldMetadataAsync(context, fieldName, token, fieldsByKey, cancellationToken);
-        if (fieldMeta != null)
+        // Çekirdek work item alanları (title, description, …): op_fields havuz kaydındaki
+        // viewGroups/editGroups yalnızca özel havuz alanları içindir; core alan davranışını kilitlemesin.
+        if (fieldMeta != null
+            && !FieldBehaviorDefaults.SystemFieldKeys.Contains(fieldName, StringComparer.OrdinalIgnoreCase))
+        {
             layers.Add(FromFieldDefinition(fieldMeta));
+        }
 
         var screenBehaviors = context.Screen switch
         {

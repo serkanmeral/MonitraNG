@@ -61,7 +61,7 @@ public static class WorkItemFieldWriter
         value switch
         {
             null => true,
-            string s => string.IsNullOrWhiteSpace(s),
+            string s => HtmlRichTextHelper.IsEffectivelyEmptyHtml(s),
             _ => false
         };
 }

@@ -9,7 +9,8 @@ public static class OcQueries
         "wi_assigned_to_user",
         "wi_assigned_open",
         "wi_sla_response_breach",
-        "wi_sla_resolve_breach"
+        "wi_sla_resolve_breach",
+        "wi_count_by_state"
     };
 
     public static bool IsAllowed(string dataset, string queryKey) =>

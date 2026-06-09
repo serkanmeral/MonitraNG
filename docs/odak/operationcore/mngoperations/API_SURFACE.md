@@ -85,6 +85,18 @@ Katalog yazma işlemleri **MO üzerinden** geçer; MO hem DG'ye yazar hem de ken
 - Silme: `op_work_items` / `op_workspaces` kullanım kontrolü (`UsageChecks`) — kullanımdaysa 409.
 - Cache: `MetadataCache.InvalidateCatalog(dataset)` (write-through).
 
+### 2.5 Workspace metadata cache reload — 9 Haziran 2026
+
+Form / alan / akış tanımları DG’de güncellenir; MO runtime `IMetadataCache` TTL (~600 sn Odak) nedeniyle gecikmeli yansıyabilir.
+
+| Method | Path | Açıklama |
+|--------|------|----------|
+| `POST` | `/workspaces/{workspaceId}/metadata-cache/reload` | Workspace kapsamlı in-memory cache temizliği |
+
+- Yetki: platform admin veya workspace manager (catalog admin ile aynı çizgi).
+- Yanıt: `MetadataCacheReloadResult` — silinen anahtar sayısı özeti.
+- Kod: `WorkspacesController`, `MetadataCacheAdminService`, `MetadataCacheService.ReloadWorkspaceAsync`.
+
 ---
 
 ## 3. Runtime context (okuma)

@@ -8,7 +8,7 @@ import { gridColSelectItems, normalizeOcGridCol } from '@/utils/ocFormLayout';
 const props = defineProps<{
   sections: OpFormLayoutSection[];
   fieldCols: Record<string, number>;
-  layoutFieldItems: { value: string; title: string }[];
+  layoutFieldItems: { value: string; title: string; fieldType?: string }[];
 }>();
 
 const emit = defineEmits<{
@@ -300,7 +300,15 @@ const fieldToAddBySection = ref<Record<string, string | null>>({});
                   fieldToAddBySection[el.id] = null;
                 }
               "
-            />
+            >
+              <template #item="{ props: itemProps, item }">
+                <v-list-item v-bind="itemProps">
+                  <template v-if="item.raw.fieldType" #subtitle>
+                    <code class="text-caption">{{ item.raw.fieldType }}</code>
+                  </template>
+                </v-list-item>
+              </template>
+            </v-select>
         </v-card-text>
       </v-card>
     </VueDraggableNext>

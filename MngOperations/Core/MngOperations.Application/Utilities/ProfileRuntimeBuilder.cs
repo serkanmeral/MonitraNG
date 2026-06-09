@@ -9,7 +9,7 @@ public static class ProfileRuntimeBuilder
     [
         ("key", "Key", "text"),
         ("title", "Title", "text"),
-        ("description", "Description", "text"),
+        ("description", "Description", "richtext"),
         ("typeId", "Type", "relation"),
         ("stateId", "State", "relation"),
         ("assignee", "Assignee", "persons"),

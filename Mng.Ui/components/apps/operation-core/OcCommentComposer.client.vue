@@ -4,6 +4,7 @@ import { useEditor, EditorContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
 import { useOcPersonPicker } from '@/composables/useOcPersonPicker';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { OC_RICH_TEXT_EMOJIS } from '@/utils/ocRichText';
 import type { OcPersonPickerItem } from '@/utils/ocPersonPicker';
 
 const props = withDefaults(
@@ -45,12 +46,7 @@ const mentionLen = ref(0);
 const mentionMap = ref(new Map<string, string>());
 
 // Hafif emoji paleti (yeni ağır bağımlılık olmadan).
-const EMOJIS = [
-  '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '🙂',
-  '🙃', '😉', '😍', '😘', '😎', '🤩', '🥳', '🤔', '🤨', '😐',
-  '😴', '😢', '😭', '😤', '😡', '👍', '👎', '👏', '🙏', '💪',
-  '🔥', '✅', '❌', '⚠️', '🎉', '💡', '📌', '📎', '❤️', '🚀',
-];
+const EMOJIS = OC_RICH_TEXT_EMOJIS;
 
 const editor = useEditor({
   // Statik deploy / client-only sarmalayıcıda TipTap'ın sessizce çökmesini önler.

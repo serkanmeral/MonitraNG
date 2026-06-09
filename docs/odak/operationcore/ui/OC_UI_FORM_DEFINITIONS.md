@@ -1,6 +1,6 @@
 # Mng.Ui — Operation Core form tanımlama ve dinamik form
 
-**Son güncelleme:** 26 Mayıs 2026  
+**Son güncelleme:** 9 Haziran 2026  
 **Backend:** [FORM_LAYOUT_AND_EXTRA_FIELDS.md](../mngoperations/FORM_LAYOUT_AND_EXTRA_FIELDS.md)  
 **Alan politikası (tek el):** [OC_UI_FIELD_POLICY.md](./OC_UI_FIELD_POLICY.md) · Handoff: [DEVAM.md](../mngoperations/DEVAM.md)
 
@@ -39,6 +39,10 @@ Workspace tanımları → **Forms** sekmesi: `op_forms` CRUD (DataGateway), layo
 | `Mng.Ui/utils/ocFormLayout.ts` | layout parse/build, grid, `dialogMaxWidth` |
 | `Mng.Ui/utils/ocFormFieldLabels.ts` | Etiket + `enrichFormRuntimeFields` |
 | `Mng.Ui/utils/ocDynamicFormField.ts` | Widget kind çözümleme |
+| `Mng.Ui/utils/ocFileFieldOptions.ts` | `op_fields.options` — `maxSizeBytes`, `allowedExtensions` parse/build |
+| `Mng.Ui/utils/ocWorkItemFileFields.ts` | Form model → `attachments` birleştirme |
+| `Mng.Ui/components/.../OcWorkItemFileField.vue` | Dosya seçici widget |
+| `Mng.Ui/components/.../OcWorkspaceDefinitionsFieldsTab.vue` | Alan tanımı: file tipinde MB + uzantı combobox |
 | `Mng.Ui/composables/useOcDynamicFormLookups.ts` | priority/state/board/relation listeleri |
 | `Mng.Ui/composables/useOcPersonPicker.ts` | Keeper kullanıcı arama + sayfalama |
 | `Mng.Ui/utils/ocPersonPicker.ts` | Kullanıcı satır eşlemesi, form model id toplama |
@@ -70,6 +74,26 @@ Kayıt: `operationCoreService` → `ocCreateForm` / `ocUpdateForm` → DG `op_fo
 - **Taslak önizleme:** `buildFormPreviewContextFromDraft()` — editördeki kaydedilmemiş state; MO metadata cache **kullanılmaz**.
 - Bilgi kutusu: «Taslak önizleme» chip’i; modal genişliği `layout.dialogMaxWidth`.
 - Kayıtlı formun MO runtime karşılığı: «Yeni iş» sayfası (`ocGetFormCreateContext`) — cache gecikmesi olabilir.
+- **Metadata cache:** Workspace Tanımları → Genel → «Runtime önbelleğini yenile» veya MO `POST .../metadata-cache/reload` (bkz. [FORM_LAYOUT §5](../mngoperations/FORM_LAYOUT_AND_EXTRA_FIELDS.md)).
+
+---
+
+## 4.1 Pool `file` alanı — `op_fields.options`
+
+Değerler → Alanlar sekmesinde `fieldType: file` için:
+
+| UI alanı | DG `options` |
+|----------|----------------|
+| Max boyut (MB) | `maxSizeBytes` (UI MB → byte) |
+| İzinli uzantılar | `allowedExtensions`: `[".pdf", ".png", …]` (boş = tüm tipler, yalnız max boyut) |
+
+Örnek:
+
+```json
+{ "maxSizeBytes": 5242880, "allowedExtensions": [".pdf", ".png"] }
+```
+
+Runtime: MO `FormRuntimeContext.fields[key].options` → `enrichFormRuntimeFields` → `OcWorkItemFileField` doğrulaması. Kayıt sonrası form/board’da gecikme varsa metadata cache reload.
 
 ---
 
@@ -87,9 +111,10 @@ Kayıt: `operationCoreService` → `ocCreateForm` / `ocUpdateForm` → DG `op_fo
 | `description` | Textarea |
 | `persons` | `v-autocomplete` — Keeper arama (debounce), alt satır (e-posta/@user), sayfalama («Daha fazla»); `watchers` çoklu |
 | `personGroups` | Metin (grup seçici sonraki faz) |
-| `file` | Salt okunur placeholder |
+| `file` | `OcWorkItemFileField` — sürükle-bırak / seç; `op_fields.options` ile max MB + izinli uzantılar |
+| `richtext` | `OcRichTextEditor` / `OcRichTextContent` (TipTap tabanlı HTML) |
 
-Create gönderimi: `buildCreateWorkItemRequest` — core üst seviye + diğerleri `fields` → MO `extraFields` ayrımı.
+Create gönderimi: `buildCreateWorkItemRequest` — core üst seviye + diğerleri `fields` → MO `extraFields` ayrımı. Formdaki **pool `file` alanları** create sırasında base64 payload olarak **`fields.attachments`** (core, `isArray`) dizisine birleştirilir; profil **Ekler** sekmesi aynı alanı okur (ayrı MO upload ucu gerekmez).
 
 ---
 
@@ -124,7 +149,8 @@ Proxy: `Mng.Ui` → `/api/operations/...`, `/api/v1/data/...` (DataGateway)
 | `op_rules` | Geçici form altı → [Workspace politikaları](./OC_UI_WORKSPACE_POLICIES.md) W0 |
 | Koşullu kurallar | [Workspace politikaları](./OC_UI_WORKSPACE_POLICIES.md) |
 | MO runtime vs taslak karşılaştırma | Opsiyonel |
-| Dosya upload widget | Faz 2+ |
+| ~~Dosya upload widget~~ | ✅ create + Ekler (`attachments`); profil **düzenle** modunda form file alanından ekle — ertelenmiş |
+| Form kaydı sonrası otomatik cache reload | Opsiyonel (manuel buton yeterli v1) |
 
 ---
 
@@ -134,6 +160,7 @@ Proxy: `Mng.Ui` → `/api/operations/...`, `/api/v1/data/...` (DataGateway)
 2. Kaydet → **Önizleme** → Board → **Yeni iş** (layout + etiketler).
 3. Pool alan `fieldType: number` → sayı kutusu görünmeli.
 4. `dialogMaxWidth` 720 → önizleme modalı daralmalı.
+5. Değerler → Alanlar → `file` alanı: max MB + uzantı kaydet → forma ekle → cache reload → board «Yeni iş» dosya yükle → kaydet → profil **Ekler**.
 
 ---
 

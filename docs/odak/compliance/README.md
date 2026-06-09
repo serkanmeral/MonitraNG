@@ -12,7 +12,10 @@
 
 | Doküman | İçerik | Durum |
 |---------|--------|--------|
+| [DEVAM.md](./DEVAM.md) | **Devam noktası** — checkpoint, sıradaki adımlar, yeni chat prompt'u | Güncel |
 | [README.md](./README.md) | Bu dosya — vizyon, metodoloji, modül haritası, sözlük | Taslak |
+| [AS9100_MUSTERI_OZET.md](./AS9100_MUSTERI_OZET.md) | AS9100D — müşteri bilgilendirme özeti (amaç, mevcut, eklenecek) | Taslak |
+| [AS9100_MUSTERI_OZET.pdf](./AS9100_MUSTERI_OZET.pdf) | Müşteri özeti — yazdırılabilir PDF (`npm run pdf:as9100`) | Güncel |
 | [ISO27001_PLAN.md](./ISO27001_PLAN.md) | ISO/IEC 27001:2022 — clause + Annex A kontrol eşleme, boşluk analizi | Taslak |
 | [AS9100_PLAN.md](./AS9100_PLAN.md) | AS9100D — sektöre özgü gereksinim eşleme, boşluk analizi | Taslak |
 | [COMPLIANCE_ROADMAP.md](./COMPLIANCE_ROADMAP.md) | Birleşik fazlı yol haritası + izlenebilirlik matrisi + açık sorular | Taslak |
@@ -97,11 +100,12 @@ Uyum eşlemesinde kullanılan MonitraNG bileşenleri:
 
 ## 5. Durum & verilen kararlar
 
-- **Oluşturulma:** 31 May 2026 — başlangıç iskeleti. **Güncelleme:** 1 Haz 2026 — strateji netleşti.
+- **Oluşturulma:** 31 May 2026 — başlangıç iskeleti. **Güncelleme:** 9 Haz 2026 — müşteri bilgilendirme özeti + PDF.
 - **Hedef (karar):** Ürün-kolaylaştırıcı (enabler). Sertifika vaadi değil; müşterinin standartları *işletmesine + denetimde kanıt göstermesine* yardım.
 - **Öncelik (karar):** **AS9100 önce** (ilk müşteri havacılık), ISO 27001 yatay zemin.
 - **İçgörü:** Müşterinin istediği **task manager → AS9100 zemini**, **SIEM → ISO 27001 zemini**. Yani yeni kapsam değil, mevcut işin paketlenmesi.
-- **İlk hedef:** **NCR + CAPA** şablonları (Operation Core WorkItem tipleri). Müşteri bugün Excel kullanıyor; Excel sütunları gerçek spec.
-- **Tüm kararlar ve devam noktası:** [COMPLIANCE_ROADMAP.md](./COMPLIANCE_ROADMAP.md) (§0 kararlar, §4 NCR/CAPA taslağı, §7 kaldığımız yer).
+- **İlk hedef:** **NCR + CAPA** şablonları (Operation Core WorkItem tipleri). İç spec: müşterinin NCR/CAPA prosedür ve form şablonları.
+- **Müşteri dokümanı (karar):** [AS9100_MUSTERI_OZET.md](./AS9100_MUSTERI_OZET.md) — bilgilendirme özeti (teklif/fiyat yok); ilk kurulum dili.
+- **Devam noktası:** [DEVAM.md](./DEVAM.md) · Yol haritası: [COMPLIANCE_ROADMAP.md](./COMPLIANCE_ROADMAP.md)
 
 > Bu klasör üst odak indeksine bağlıdır: [../README.md](../README.md). Platform vizyonu: [../operationcore/major_plan.md](../operationcore/major_plan.md).

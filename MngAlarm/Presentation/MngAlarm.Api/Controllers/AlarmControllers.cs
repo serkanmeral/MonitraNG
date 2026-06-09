@@ -111,6 +111,12 @@ public sealed class AlarmsController(IAlarmQueryService alarms, IAlarmLifecycleS
         CancellationToken cancellationToken = default) =>
         Ok(await alarms.GetDashboardSnapshotAsync(rangeHours, minSeverity, openLimit, cancellationToken));
 
+    [HttpGet("trend-buckets")]
+    public async Task<IActionResult> TrendBuckets(
+        [FromQuery] int rangeHours = 24,
+        CancellationToken cancellationToken = default) =>
+        Ok(await alarms.GetTrendBucketsAsync(rangeHours, cancellationToken));
+
     [HttpGet("{alarmId}")]
     public async Task<IActionResult> Get(string alarmId, CancellationToken cancellationToken)
     {

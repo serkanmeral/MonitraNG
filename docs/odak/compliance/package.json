@@ -1,0 +1,11 @@
+{
+  "name": "monitrang-compliance-docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "pdf:as9100": "node generate-as9100-pdf.mjs"
+  },
+  "devDependencies": {
+    "md-to-pdf": "^5.2.4"
+  }
+}

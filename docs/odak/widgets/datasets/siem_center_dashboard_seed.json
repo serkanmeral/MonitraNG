@@ -1,0 +1,46 @@
+{
+  "dataset": "@dashboards",
+  "record": {
+    "name": "siem-center-default",
+    "title": "SIEM Güvenlik Paneli",
+    "description": "SIEM center surface — layout.meta.surfaceKind=siem-center (D3)",
+    "slug": "siem-center",
+    "isDefault": false,
+    "isActive": true,
+    "order": 10,
+    "layout": {
+      "type": "rows",
+      "rows": [],
+      "meta": {
+        "surfaceKind": "siem-center",
+        "templateSlots": {
+          "eventsTotal": "siem.events-total-stat",
+          "loginFailed": "siem.login-failed-stat",
+          "openAlarms": "siem.open-alarms-stat",
+          "hourlyTrend": "siem.events-hourly-trend",
+          "recentAlarms": "alarm.recent-table"
+        },
+        "siemPanel": {
+          "widgetOrder": [
+            "stats",
+            "eventTimeline",
+            "breakdown",
+            "scenarios",
+            "recentAlarms",
+            "quickLinks"
+          ],
+          "hiddenWidgets": ["quickLinks"],
+          "statCardOrder": [
+            "eventsTotal",
+            "openAlarms",
+            "loginFailed",
+            "deniedFlow",
+            "newFlow"
+          ],
+          "hiddenStatCards": []
+        }
+      }
+    },
+    "permissions": null
+  }
+}

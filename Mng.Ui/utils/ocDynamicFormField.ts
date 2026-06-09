@@ -1,5 +1,5 @@
 import type { OcFormFieldRuntimeDto } from '@/types/apps/operationCore';
-import { resolveOcCoreFieldType } from '@/utils/ocFormFieldLabels';
+import { resolveOcFormFieldType } from '@/utils/ocFormFieldLabels';
 
 /** Core alanlar — DG `op_work_items` şemasında çoklu `persons`. */
 export const OC_CORE_PERSONS_MULTI_KEYS = new Set(['watchers']);
@@ -14,6 +14,7 @@ export type OcDynamicFieldWidget =
   | 'tags'
   | 'text'
   | 'textarea'
+  | 'richtext'
   | 'number'
   | 'bool'
   | 'date'
@@ -44,7 +45,7 @@ export function isOcPersonsUserPickerField(
   fieldKey: string,
   meta?: OcFormFieldRuntimeDto | null
 ): boolean {
-  const ft = (meta?.fieldType ?? resolveOcCoreFieldType(fieldKey)).toLowerCase();
+  const ft = resolveOcFormFieldType(fieldKey, meta).toLowerCase();
   if (ft === 'persongroups' || ft === 'persongroup') return false;
   return ft === 'persons' || ft === 'person' || ft === 'group';
 }
@@ -69,9 +70,9 @@ export function resolveOcDynamicFieldWidget(
   // Çekirdek "Etiketler" alanı workspace tag kataloğunu (op_tags) kullanır → tags widget.
   if (fieldKey === 'labels') return 'tags';
 
-  const ft = (meta?.fieldType ?? resolveOcCoreFieldType(fieldKey)).toLowerCase();
+  const ft = resolveOcFormFieldType(fieldKey, meta).toLowerCase();
 
-  if (fieldKey === 'description') return 'textarea';
+  if (ft === 'richtext' || ft === 'rich_text' || ft === 'rich-text') return 'richtext';
 
   if (ft === 'number') return 'number';
   if (ft === 'bool' || ft === 'boolean') return 'bool';

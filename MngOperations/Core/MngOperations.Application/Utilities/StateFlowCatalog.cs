@@ -116,9 +116,10 @@ public static class StateFlowCatalog
         value switch
         {
             null => true,
-            string s => string.IsNullOrWhiteSpace(s),
+            string s => HtmlRichTextHelper.IsEffectivelyEmptyHtml(s),
             JsonElement el when el.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined => true,
-            JsonElement el when el.ValueKind == JsonValueKind.String => string.IsNullOrWhiteSpace(el.GetString()),
+            JsonElement el when el.ValueKind == JsonValueKind.String =>
+                HtmlRichTextHelper.IsEffectivelyEmptyHtml(el.GetString()),
             _ => false
         };
 

@@ -1,0 +1,957 @@
+{
+  "_comment": "POST /data/api/v1/data/@widget_templates — V1 MonitraNG system templates. categoryName script tarafindan @widget_categories __dataId'ye cozulur.",
+  "dataset": "@widget_templates",
+  "records": [
+    {
+      "templateId": "alarm.open-count-stat",
+      "templateVersion": "1.0.0",
+      "domain": "alarm",
+      "categoryName": "alarm-kpi",
+      "title": "Açık alarm sayısı",
+      "description": "Onaylanmamış açık alarmların anlık sayısı",
+      "tags": ["kpi", "realtime"],
+      "order": 10,
+      "isSystem": true,
+      "isActive": true,
+      "manifest": {
+        "manifestVersion": "1.0",
+        "templateId": "alarm.open-count-stat",
+        "templateVersion": "1.0.0",
+        "domain": "alarm",
+        "category": "alarm-kpi",
+        "title": { "tr": "Açık alarm sayısı", "en": "Open alarm count" },
+        "description": { "tr": "Onaylanmamış açık alarmların anlık sayısı", "en": "Current count of open unacknowledged alarms" },
+        "tags": ["kpi", "realtime"],
+        "presentation": {
+          "kind": "stat",
+          "defaultPreset": "stat-simple",
+          "allowedPresets": ["stat-simple", "stat-sparkline"],
+          "config": { "format": "number", "icon": "mdi-bell-alert", "color": "error" }
+        },
+        "dataBinding": {
+          "serviceRef": "mngalarm:alarms/dashboard-snapshot",
+          "defaultParameters": {
+            "rangeHours": { "$ref": "$timeRange.hours" },
+            "minSeverity": { "$ref": "$variables.severity" }
+          },
+          "fieldMap": { "value": "openTotal" }
+        },
+        "parametersSchema": [
+          {
+            "name": "minSeverity",
+            "type": "enum",
+            "label": { "tr": "Minimum önem", "en": "Minimum severity" },
+            "enum": [
+              { "value": 0, "label": { "tr": "Tümü", "en": "All" } },
+              { "value": 3, "label": { "tr": "Yüksek+", "en": "High+" } },
+              { "value": 4, "label": { "tr": "Kritik", "en": "Critical" } }
+            ],
+            "default": 0,
+            "bindToContext": "variables.severity"
+          }
+        ],
+        "interactions": {
+          "drillDown": {
+            "type": "route",
+            "path": "/apps/alarm-center/alarms",
+            "paramMap": { "openOnly": "true", "minSeverity": "$variables.severity" }
+          }
+        },
+        "export": { "supportsPdf": true, "supportsCsv": false, "supportsPng": true, "supportsSnapshot": true }
+      }
+    },
+    {
+      "templateId": "siem.events-total-stat",
+      "templateVersion": "1.0.0",
+      "domain": "siem",
+      "categoryName": "siem-kpi",
+      "title": "Toplam olay (24s)",
+      "description": "Seçili zaman aralığındaki güvenlik olay sayısı",
+      "tags": ["kpi", "realtime"],
+      "order": 20,
+      "isSystem": true,
+      "isActive": true,
+      "manifest": {
+        "manifestVersion": "1.0",
+        "templateId": "siem.events-total-stat",
+        "templateVersion": "1.0.0",
+        "domain": "siem",
+        "category": "siem-kpi",
+        "title": { "tr": "Toplam olay (24s)", "en": "Total events (24h)" },
+        "presentation": {
+          "kind": "stat",
+          "defaultPreset": "stat-simple",
+          "allowedPresets": ["stat-simple", "stat-sparkline"],
+          "config": { "format": "number", "icon": "mdi-shield-check", "color": "primary" }
+        },
+        "dataBinding": {
+          "serviceRef": "mngreactor:sec-events/dashboard-summary",
+          "defaultParameters": {
+            "rangeHours": { "$ref": "$timeRange.hours" },
+            "excludeUnknown": true
+          },
+          "fieldMap": { "value": "eventsTotal" }
+        },
+        "parametersSchema": [
+          {
+            "name": "rangeHours",
+            "type": "duration",
+            "label": { "tr": "Zaman aralığı", "en": "Time range" },
+            "durationPresets": ["1h", "6h", "24h", "7d"],
+            "default": { "$ref": "$timeRange.hours" },
+            "bindToContext": "timeRange"
+          }
+        ],
+        "interactions": {
+          "drillDown": {
+            "type": "route",
+            "path": "/apps/siem-center/events",
+            "paramMap": { "from": "$timeRange.from", "to": "$timeRange.to" }
+          }
+        },
+        "export": { "supportsPdf": true, "supportsCsv": false, "supportsPng": true, "supportsSnapshot": true }
+      }
+    },
+    {
+      "templateId": "siem.login-failed-stat",
+      "templateVersion": "1.0.0",
+      "domain": "siem",
+      "categoryName": "siem-kpi",
+      "title": "Başarısız giriş",
+      "description": "login_failed aksiyonlu olay sayısı",
+      "tags": ["kpi", "security"],
+      "order": 21,
+      "isSystem": true,
+      "isActive": true,
+      "manifest": {
+        "manifestVersion": "1.0",
+        "templateId": "siem.login-failed-stat",
+        "templateVersion": "1.0.0",
+        "domain": "siem",
+        "category": "siem-kpi",
+        "title": { "tr": "Başarısız giriş", "en": "Failed login" },
+        "presentation": {
+          "kind": "stat",
+          "defaultPreset": "stat-simple",
+          "allowedPresets": ["stat-simple"],
+          "config": { "format": "number", "icon": "mdi-login-variant", "color": "warning" }
+        },
+        "dataBinding": {
+          "serviceRef": "mngreactor:sec-events/dashboard-summary",
+          "defaultParameters": {
+            "rangeHours": { "$ref": "$timeRange.hours" },
+            "excludeUnknown": true
+          },
+          "fieldMap": { "value": "loginFailed" },
+          "advanced": { "mapping": { "loginFailed": "byAction.login_failed" } }
+        },
+        "parametersSchema": [
+          {
+            "name": "rangeHours",
+            "type": "duration",
+            "label": { "tr": "Zaman aralığı", "en": "Time range" },
+            "durationPresets": ["1h", "6h", "24h", "7d"],
+            "default": { "$ref": "$timeRange.hours" },
+            "bindToContext": "timeRange"
+          }
+        ],
+        "interactions": {
+          "drillDown": {
+            "type": "route",
+            "path": "/apps/siem-center/events",
+            "paramMap": { "eventAction": "login_failed", "from": "$timeRange.from", "to": "$timeRange.to" }
+          }
+        },
+        "export": { "supportsPdf": true, "supportsCsv": false, "supportsPng": true, "supportsSnapshot": true }
+      }
+    },
+    {
+      "templateId": "oc.my-assigned-table",
+      "templateVersion": "1.0.0",
+      "domain": "operation-core",
+      "categoryName": "oc-work-queues",
+      "title": "Bana atanan açık işler",
+      "description": "Kullanıcıya atanmış kapanmamış iş öğeleri",
+      "tags": ["queue", "personal"],
+      "order": 30,
+      "isSystem": true,
+      "isActive": true,
+      "manifest": {
+        "manifestVersion": "1.0",
+        "templateId": "oc.my-assigned-table",
+        "templateVersion": "1.0.0",
+        "domain": "operation-core",
+        "category": "oc-work-queues",
+        "title": { "tr": "Bana atanan açık işler", "en": "My open assigned work items" },
+        "presentation": {
+          "kind": "table",
+          "defaultPreset": "table-compact",
+          "allowedPresets": ["table-compact", "table-drilldown"],
+          "config": { "dense": true, "pageSize": 10 }
+        },
+        "dataBinding": {
+          "queryRef": "@op_work_items/queries/wi_assigned_open",
+          "defaultParameters": {
+            "assignee": { "$ref": "$variables.currentUserId" }
+          },
+          "fieldMap": { "rows": "items", "total": "total" }
+        },
+        "parametersSchema": [
+          {
+            "name": "assignee",
+            "type": "string",
+            "label": { "tr": "Atanan (MngPersonId)", "en": "Assignee (MngPersonId)" },
+            "required": true,
+            "hidden": true,
+            "bindToContext": "variables.currentUserId"
+          }
+        ],
+        "interactions": {
+          "rowClick": {
+            "type": "route",
+            "path": "/apps/operation-core/work-items",
+            "paramMap": { "workItemId": "$row.__dataId" }
+          }
+        },
+        "export": { "supportsPdf": true, "supportsCsv": true, "supportsPng": false, "supportsSnapshot": true }
+      }
+    },
+    {
+      "templateId": "di.folder-children-table",
+      "templateVersion": "1.0.0",
+      "domain": "document-intelligence",
+      "categoryName": "di-lists",
+      "title": "Klasör içeriği",
+      "description": "Seçili klasördeki doküman ve alt klasörler",
+      "tags": ["list", "folder"],
+      "order": 40,
+      "isSystem": true,
+      "isActive": true,
+      "manifest": {
+        "manifestVersion": "1.0",
+        "templateId": "di.folder-children-table",
+        "templateVersion": "1.0.0",
+        "domain": "document-intelligence",
+        "category": "di-lists",
+        "title": { "tr": "Klasör içeriği", "en": "Folder contents" },
+        "presentation": {
+          "kind": "table",
+          "defaultPreset": "table-compact",
+          "allowedPresets": ["table-compact", "list-activity"],
+          "config": { "dense": true, "pageSize": 10 }
+        },
+        "dataBinding": {
+          "serviceRef": "mngdocument:resources/children",
+          "defaultParameters": {
+            "folderId": { "$ref": "$variables.folderId" },
+            "limit": 10
+          },
+          "fieldMap": { "rows": "items" }
+        },
+        "parametersSchema": [
+          {
+            "name": "folderId",
+            "type": "string",
+            "label": { "tr": "Klasör", "en": "Folder" },
+            "required": true,
+            "description": { "tr": "Liste gösterilecek klasör kimliği", "en": "Folder resource id" },
+            "bindToContext": "variables.folderId"
+          },
+          {
+            "name": "limit",
+            "type": "number",
+            "label": { "tr": "Satır limiti", "en": "Row limit" },
+            "default": 10
+          }
+        ],
+        "interactions": {
+          "rowClick": {
+            "type": "route",
+            "path": "/apps/document-intelligence",
+            "paramMap": { "resourceId": "$row.id" }
+          }
+        },
+        "export": { "supportsPdf": true, "supportsCsv": true, "supportsPng": false, "supportsSnapshot": true }
+      }
+    },
+    {
+      "templateId": "di.quick-link-banner",
+      "templateVersion": "1.0.0",
+      "domain": "document-intelligence",
+      "categoryName": "di-quick-access",
+      "title": "Dokümanlara git",
+      "description": "Document Intelligence modülüne hızlı erişim bandı",
+      "tags": ["banner", "static"],
+      "order": 41,
+      "isSystem": true,
+      "isActive": true,
+      "manifest": {
+        "manifestVersion": "1.0",
+        "templateId": "di.quick-link-banner",
+        "templateVersion": "1.0.0",
+        "domain": "document-intelligence",
+        "category": "di-quick-access",
+        "title": { "tr": "Dokümanlara git", "en": "Go to documents" },
+        "presentation": {
+          "kind": "banner",
+          "defaultPreset": "banner-info",
+          "allowedPresets": ["banner-info"],
+          "config": {
+            "title": { "tr": "Doküman Zekası", "en": "Document Intelligence" },
+            "message": {
+              "tr": "Klasörler, arama ve sürüm notlarına hızlı erişim",
+              "en": "Quick access to folders, search and release notes"
+            },
+            "icon": "mdi-file-document-multiple",
+            "route": "/apps/document-intelligence",
+            "color": "info"
+          }
+        },
+        "dataBinding": {
+          "serviceRef": "mngdocument:static/banner"
+        },
+        "parametersSchema": [],
+        "interactions": {
+          "drillDown": {
+            "type": "route",
+            "path": "/apps/document-intelligence",
+            "paramMap": {}
+          }
+        },
+        "export": { "supportsPdf": false, "supportsCsv": false, "supportsPng": true, "supportsSnapshot": false }
+      }
+    },
+    {
+      "templateId": "alarm.severity-distribution-donut",
+      "templateVersion": "1.0.0",
+      "domain": "alarm",
+      "categoryName": "alarm-charts",
+      "title": "Severity dağılımı",
+      "description": "Açık alarmların önem derecesine göre dağılımı",
+      "tags": ["chart", "distribution"],
+      "order": 11,
+      "isSystem": true,
+      "isActive": true,
+      "manifest": {
+        "manifestVersion": "1.0",
+        "templateId": "alarm.severity-distribution-donut",
+        "templateVersion": "1.0.0",
+        "domain": "alarm",
+        "category": "alarm-charts",
+        "title": { "tr": "Severity dağılımı", "en": "Severity distribution" },
+        "presentation": {
+          "kind": "chart",
+          "defaultPreset": "chart-donut-breakup",
+          "allowedPresets": ["chart-donut-breakup", "chart-pie"],
+          "config": {
+            "type": "donut",
+            "height": 280,
+            "xAxis": { "field": "severity", "labelFormat": "severity" },
+            "yAxis": { "field": "count" }
+          }
+        },
+        "dataBinding": {
+          "serviceRef": "mngalarm:alarms/dashboard-snapshot",
+          "defaultParameters": {
+            "rangeHours": { "$ref": "$timeRange.hours" }
+          },
+          "fieldMap": { "rows": "severityBuckets", "series": "severity", "value": "count" },
+          "advanced": { "mapping": { "severityBuckets": "scenarioRollup" } }
+        },
+        "parametersSchema": [],
+        "interactions": {
+          "crossFilter": { "variable": "severity", "field": "$row.severity" },
+          "chartZoom": { "enabled": false }
+        },
+        "export": { "supportsPdf": true, "supportsCsv": true, "supportsPng": true, "supportsSnapshot": true }
+      }
+    },
+    {
+      "templateId": "alarm.recent-table",
+      "templateVersion": "1.0.0",
+      "domain": "alarm",
+      "categoryName": "alarm-kpi",
+      "title": "Son alarmlar",
+      "description": "Dashboard snapshot içindeki son açık alarmlar",
+      "tags": ["table", "realtime"],
+      "order": 12,
+      "isSystem": true,
+      "isActive": true,
+      "manifest": {
+        "manifestVersion": "1.0",
+      "templateId": "alarm.recent-table",
+      "templateVersion": "1.0.0",
+      "domain": "alarm",
+      "category": "alarm-kpi",
+      "title": { "tr": "Son alarmlar", "en": "Recent alarms" },
+        "presentation": {
+          "kind": "table",
+          "defaultPreset": "table-inbox",
+          "allowedPresets": ["table-inbox", "table-compact", "table-drilldown", "list-inbox"],
+          "config": {
+            "presentationStyle": "inbox",
+            "hover": true,
+            "density": "comfortable",
+            "pageSize": 10,
+            "itemValue": "id",
+            "pagination": { "enabled": true, "itemsPerPage": 10, "itemsPerPageOptions": [10, 20, 50] },
+            "search": { "enabled": true, "placeholder": "Ara..." },
+            "columns": [
+              { "key": "severity", "title": "Önem", "format": "severity-chip", "width": "100px", "align": "center" },
+              { "key": "status", "title": "Durum", "format": "status-chip", "width": "120px" },
+              { "key": "count", "title": "Adet", "format": "number", "align": "right", "width": "72px" },
+              { "key": "lastSeenAt", "title": "Son görülme", "format": "datetime-relative", "width": "160px" },
+              { "key": "dedupKey", "title": "Özet", "format": "alarm-summary" }
+            ]
+          }
+        },
+        "dataBinding": {
+          "serviceRef": "mngalarm:alarms/dashboard-snapshot",
+          "defaultParameters": {
+            "rangeHours": { "$ref": "$timeRange.hours" },
+            "openLimit": 10,
+            "minSeverity": { "$ref": "$variables.severity" }
+          },
+          "fieldMap": { "rows": "openAlarms", "total": "openTotal" }
+        },
+        "parametersSchema": [
+          {
+            "name": "openLimit",
+            "type": "number",
+            "label": { "tr": "Satır limiti", "en": "Row limit" },
+            "default": 10
+          }
+        ],
+        "interactions": {
+          "rowClick": {
+            "type": "route",
+            "path": "/apps/alarm-center/alarms",
+            "paramMap": { "alarmId": "$row.id" }
+          },
+          "actions": [
+            {
+              "id": "alarm.view",
+              "type": "route",
+              "path": "/apps/alarm-center/alarms",
+              "label": { "tr": "Detay", "en": "Detail" },
+              "icon": "mdi-open-in-new",
+              "parameterMap": { "alarmId": "$row.id" }
+            },
+            {
+              "id": "alarm.acknowledge",
+              "type": "api",
+              "label": { "tr": "Onayla", "en": "Acknowledge" },
+              "icon": "mdi-check",
+              "parameterMap": { "alarmId": "$row.id" },
+              "requiredGroups": ["admins"]
+            }
+          ]
+        },
+        "export": { "supportsPdf": true, "supportsCsv": true, "supportsPng": false, "supportsSnapshot": true }
+      }
+    },
+    {
+      "templateId": "alarm.trend-area",
+      "templateVersion": "1.0.0",
+      "domain": "alarm",
+      "categoryName": "alarm-charts",
+      "title": "Alarm trendi",
+      "description": "Zaman içinde alarm hacmi (bucket API gerekir)",
+      "tags": ["chart", "trend"],
+      "order": 13,
+      "isSystem": true,
+      "isActive": true,
+      "manifest": {
+        "manifestVersion": "1.0",
+        "templateId": "alarm.trend-area",
+        "templateVersion": "1.0.0",
+        "domain": "alarm",
+        "category": "alarm-charts",
+        "title": { "tr": "Alarm trendi", "en": "Alarm trend" },
+        "presentation": {
+          "kind": "chart",
+          "defaultPreset": "chart-area-gradient",
+          "allowedPresets": ["chart-area-gradient", "chart-line-smooth", "chart-bar"],
+          "config": {
+            "type": "area",
+            "height": 280,
+            "xAxis": { "field": "bucket", "labelFormat": "datetime" },
+            "yAxis": { "field": "count" }
+          }
+        },
+        "dataBinding": {
+          "serviceRef": "mngalarm:alarms/trend-buckets",
+          "defaultParameters": {
+            "rangeHours": { "$ref": "$timeRange.hours" }
+          },
+          "fieldMap": { "x": "bucket", "y": "count", "rows": "items" }
+        },
+        "parametersSchema": [
+          {
+            "name": "rangeHours",
+            "type": "duration",
+            "label": { "tr": "Zaman aralığı", "en": "Time range" },
+            "durationPresets": ["6h", "24h", "7d"],
+            "default": { "$ref": "$timeRange.hours" },
+            "bindToContext": "timeRange"
+          }
+        ],
+        "export": { "supportsPdf": true, "supportsCsv": true, "supportsPng": true, "supportsSnapshot": true }
+      }
+    },
+    {
+      "templateId": "siem.open-alarms-stat",
+      "templateVersion": "1.0.0",
+      "domain": "siem",
+      "categoryName": "siem-kpi",
+      "title": "Açık alarmlar",
+      "description": "SIEM paneli için açık alarm sayısı",
+      "tags": ["kpi", "alarm-bridge"],
+      "order": 22,
+      "isSystem": true,
+      "isActive": true,
+      "manifest": {
+        "manifestVersion": "1.0",
+        "templateId": "siem.open-alarms-stat",
+        "templateVersion": "1.0.0",
+        "domain": "siem",
+        "category": "siem-kpi",
+        "title": { "tr": "Açık alarmlar", "en": "Open alarms" },
+        "presentation": {
+          "kind": "stat",
+          "defaultPreset": "stat-simple",
+          "allowedPresets": ["stat-simple"],
+          "config": { "format": "number", "icon": "mdi-bell-alert", "color": "error" }
+        },
+        "dataBinding": {
+          "serviceRef": "mngalarm:alarms/dashboard-snapshot",
+          "defaultParameters": {
+            "rangeHours": { "$ref": "$timeRange.hours" }
+          },
+          "fieldMap": { "value": "openTotal" }
+        },
+        "parametersSchema": [],
+        "interactions": {
+          "drillDown": {
+            "type": "route",
+            "path": "/apps/alarm-center/alarms",
+            "paramMap": { "openOnly": "true" }
+          }
+        },
+        "export": { "supportsPdf": true, "supportsCsv": false, "supportsPng": true, "supportsSnapshot": true }
+      }
+    },
+    {
+      "templateId": "siem.events-hourly-trend",
+      "templateVersion": "1.0.0",
+      "domain": "siem",
+      "categoryName": "siem-charts",
+      "title": "Saatlik olay trendi",
+      "description": "Dashboard summary hourly bucket dizisi",
+      "tags": ["chart", "trend"],
+      "order": 23,
+      "isSystem": true,
+      "isActive": true,
+      "manifest": {
+        "manifestVersion": "1.0",
+        "templateId": "siem.events-hourly-trend",
+        "templateVersion": "1.0.0",
+        "domain": "siem",
+        "category": "siem-charts",
+        "title": { "tr": "Saatlik olay trendi", "en": "Hourly event trend" },
+        "presentation": {
+          "kind": "chart",
+          "defaultPreset": "chart-area-gradient",
+          "allowedPresets": ["chart-area-gradient", "chart-line-smooth", "chart-bar"],
+          "config": {
+            "type": "area",
+            "height": 280,
+            "xAxis": { "field": "hourStart", "type": "datetime" },
+            "yAxis": { "field": "count" }
+          }
+        },
+        "dataBinding": {
+          "serviceRef": "mngreactor:sec-events/dashboard-summary",
+          "defaultParameters": {
+            "rangeHours": { "$ref": "$timeRange.hours" },
+            "excludeUnknown": true
+          },
+          "fieldMap": { "x": "hourStart", "y": "count", "rows": "hourly" }
+        },
+        "parametersSchema": [
+          {
+            "name": "rangeHours",
+            "type": "duration",
+            "label": { "tr": "Zaman aralığı", "en": "Time range" },
+            "durationPresets": ["1h", "6h", "24h", "7d"],
+            "default": { "$ref": "$timeRange.hours" },
+            "bindToContext": "timeRange"
+          }
+        ],
+        "interactions": {
+          "chartZoom": { "enabled": true, "xField": "hourStart" },
+          "drillDown": {
+            "type": "route",
+            "path": "/apps/siem-center/events",
+            "paramMap": { "from": "$timeRange.from", "to": "$timeRange.to" }
+          }
+        },
+        "export": { "supportsPdf": true, "supportsCsv": true, "supportsPng": true, "supportsSnapshot": true }
+      }
+    },
+    {
+      "templateId": "siem.recent-events-table",
+      "templateVersion": "1.0.0",
+      "domain": "siem",
+      "categoryName": "siem-charts",
+      "title": "Son olaylar",
+      "description": "Son güvenlik olayları tablosu",
+      "tags": ["table", "events"],
+      "order": 24,
+      "isSystem": true,
+      "isActive": true,
+      "manifest": {
+        "manifestVersion": "1.0",
+        "templateId": "siem.recent-events-table",
+        "templateVersion": "1.0.0",
+        "domain": "siem",
+        "category": "siem-charts",
+        "title": { "tr": "Son olaylar", "en": "Recent events" },
+        "presentation": {
+          "kind": "table",
+          "defaultPreset": "table-compact",
+          "allowedPresets": ["table-compact", "table-drilldown"],
+          "config": { "dense": true, "pageSize": 15 }
+        },
+        "dataBinding": {
+          "serviceRef": "mngreactor:sec-events/list",
+          "defaultParameters": {
+            "from": { "$ref": "$timeRange.from" },
+            "to": { "$ref": "$timeRange.to" },
+            "limit": 15,
+            "excludeUnknown": true
+          },
+          "fieldMap": { "rows": "items", "total": "total" }
+        },
+        "parametersSchema": [
+          {
+            "name": "limit",
+            "type": "number",
+            "label": { "tr": "Satır limiti", "en": "Row limit" },
+            "default": 15
+          }
+        ],
+        "interactions": {
+          "rowClick": {
+            "type": "route",
+            "path": "/apps/siem-center/events",
+            "paramMap": { "eventId": "$row.id" }
+          }
+        },
+        "export": { "supportsPdf": true, "supportsCsv": true, "supportsPng": false, "supportsSnapshot": true }
+      }
+    },
+    {
+      "templateId": "siem.scenario-cards",
+      "templateVersion": "1.0.0",
+      "domain": "siem",
+      "categoryName": "siem-charts",
+      "title": "Senaryo kartları",
+      "description": "Composite SIEM senaryo grid (Faz 3 migrasyon)",
+      "tags": ["composite", "scenario"],
+      "order": 25,
+      "isSystem": true,
+      "isActive": true,
+      "manifest": {
+        "manifestVersion": "1.0",
+        "templateId": "siem.scenario-cards",
+        "templateVersion": "1.0.0",
+        "domain": "siem",
+        "category": "siem-charts",
+        "title": { "tr": "Senaryo kartları", "en": "Scenario cards" },
+        "presentation": {
+          "kind": "chart",
+          "defaultPreset": "chart-bar",
+          "allowedPresets": ["chart-bar"],
+          "config": { "composite": true, "compact": true, "height": 200 }
+        },
+        "dataBinding": {
+          "serviceRef": "mngalarm:alarms/dashboard-snapshot",
+          "defaultParameters": {
+            "rangeHours": { "$ref": "$timeRange.hours" }
+          },
+          "fieldMap": { "rows": "scenarioRollup" }
+        },
+        "parametersSchema": [],
+        "export": { "supportsPdf": true, "supportsCsv": false, "supportsPng": true, "supportsSnapshot": true }
+      }
+    },
+    {
+      "templateId": "oc.work-items-by-state",
+      "templateVersion": "1.0.0",
+      "domain": "operation-core",
+      "categoryName": "oc-kpi",
+      "title": "Duruma göre işler",
+      "description": "Workspace içinde durum dağılımı (wi_count_by_state gerekir)",
+      "tags": ["chart", "distribution"],
+      "order": 31,
+      "isSystem": true,
+      "isActive": true,
+      "manifest": {
+        "manifestVersion": "1.0",
+        "templateId": "oc.work-items-by-state",
+        "templateVersion": "1.0.0",
+        "domain": "operation-core",
+        "category": "oc-kpi",
+        "title": { "tr": "Duruma göre işler", "en": "Work items by state" },
+        "presentation": {
+          "kind": "chart",
+          "defaultPreset": "chart-donut-breakup",
+          "allowedPresets": ["chart-donut-breakup", "chart-bar"],
+          "config": { "type": "donut", "height": 280 }
+        },
+        "dataBinding": {
+          "queryRef": "@op_work_items/queries/wi_count_by_state",
+          "defaultParameters": {
+            "workspaceId": { "$ref": "$variables.workspaceId" }
+          },
+          "fieldMap": { "rows": "items", "series": "stateName", "value": "count" }
+        },
+        "parametersSchema": [
+          {
+            "name": "workspaceId",
+            "type": "workspace",
+            "label": { "tr": "Workspace", "en": "Workspace" },
+            "required": true,
+            "bindToContext": "variables.workspaceId"
+          }
+        ],
+        "export": { "supportsPdf": true, "supportsCsv": true, "supportsPng": true, "supportsSnapshot": true }
+      }
+    },
+    {
+      "templateId": "oc.sla-breach-stat",
+      "templateVersion": "1.0.0",
+      "domain": "operation-core",
+      "categoryName": "oc-kpi",
+      "title": "SLA ihlali",
+      "description": "Yanıt SLA'sı geçmiş açık iş sayısı",
+      "tags": ["kpi", "sla"],
+      "order": 32,
+      "isSystem": true,
+      "isActive": true,
+      "manifest": {
+        "manifestVersion": "1.0",
+        "templateId": "oc.sla-breach-stat",
+        "templateVersion": "1.0.0",
+        "domain": "operation-core",
+        "category": "oc-kpi",
+        "title": { "tr": "SLA ihlali", "en": "SLA breach count" },
+        "presentation": {
+          "kind": "stat",
+          "defaultPreset": "stat-simple",
+          "allowedPresets": ["stat-simple"],
+          "config": { "format": "number", "icon": "mdi-clock-alert", "color": "warning" }
+        },
+        "dataBinding": {
+          "queryRef": "@op_work_items/queries/wi_sla_response_breach",
+          "defaultParameters": {
+            "workspaceId": { "$ref": "$variables.workspaceId" },
+            "asOf": { "$ref": "$timeRange.to" }
+          },
+          "fieldMap": { "value": "total", "rows": "items" }
+        },
+        "parametersSchema": [
+          {
+            "name": "workspaceId",
+            "type": "workspace",
+            "label": { "tr": "Workspace", "en": "Workspace" },
+            "required": true,
+            "bindToContext": "variables.workspaceId"
+          }
+        ],
+        "export": { "supportsPdf": true, "supportsCsv": false, "supportsPng": true, "supportsSnapshot": true }
+      }
+    },
+    {
+      "templateId": "oc.open-work-queue-table",
+      "templateVersion": "1.0.0",
+      "domain": "operation-core",
+      "categoryName": "oc-work-queues",
+      "title": "İş kuyruğu",
+      "description": "Workspace ve duruma göre iş listesi",
+      "tags": ["queue", "workspace"],
+      "order": 33,
+      "isSystem": true,
+      "isActive": true,
+      "manifest": {
+        "manifestVersion": "1.0",
+        "templateId": "oc.open-work-queue-table",
+        "templateVersion": "1.0.0",
+        "domain": "operation-core",
+        "category": "oc-work-queues",
+        "title": { "tr": "İş kuyruğu", "en": "Work queue" },
+        "presentation": {
+          "kind": "table",
+          "defaultPreset": "table-drilldown",
+          "allowedPresets": ["table-drilldown", "table-compact"],
+          "config": { "dense": true, "pageSize": 20 }
+        },
+        "dataBinding": {
+          "queryRef": "@op_work_items/queries/wi_by_workspace_and_state",
+          "defaultParameters": {
+            "workspaceId": { "$ref": "$variables.workspaceId" },
+            "stateId": { "$ref": "$variables.stateId" }
+          },
+          "fieldMap": { "rows": "items", "total": "total" }
+        },
+        "parametersSchema": [
+          {
+            "name": "workspaceId",
+            "type": "workspace",
+            "label": { "tr": "Workspace", "en": "Workspace" },
+            "required": true,
+            "bindToContext": "variables.workspaceId"
+          },
+          {
+            "name": "stateId",
+            "type": "string",
+            "label": { "tr": "Durum", "en": "State" },
+            "bindToContext": "variables.stateId"
+          }
+        ],
+        "interactions": {
+          "rowClick": {
+            "type": "route",
+            "path": "/apps/operation-core/work-items",
+            "paramMap": { "workItemId": "$row.__dataId" }
+          }
+        },
+        "export": { "supportsPdf": true, "supportsCsv": true, "supportsPng": false, "supportsSnapshot": true }
+      }
+    },
+    {
+      "templateId": "di.recent-search-list",
+      "templateVersion": "1.0.0",
+      "domain": "document-intelligence",
+      "categoryName": "di-lists",
+      "title": "Doküman arama",
+      "description": "Arama sorgusu ile doküman listesi",
+      "tags": ["list", "search"],
+      "order": 42,
+      "isSystem": true,
+      "isActive": true,
+      "manifest": {
+        "manifestVersion": "1.0",
+        "templateId": "di.recent-search-list",
+        "templateVersion": "1.0.0",
+        "domain": "document-intelligence",
+        "category": "di-lists",
+        "title": { "tr": "Doküman arama", "en": "Document search" },
+        "presentation": {
+          "kind": "list",
+          "defaultPreset": "list-activity",
+          "allowedPresets": ["list-activity", "table-compact"],
+          "config": { "pageSize": 10 }
+        },
+        "dataBinding": {
+          "serviceRef": "mngdocument:resources/search",
+          "defaultParameters": {
+            "q": "*",
+            "limit": 10,
+            "folderId": { "$ref": "$variables.folderId" }
+          },
+          "fieldMap": { "rows": "items" }
+        },
+        "parametersSchema": [
+          {
+            "name": "q",
+            "type": "string",
+            "label": { "tr": "Arama", "en": "Search query" },
+            "default": "*"
+          },
+          {
+            "name": "limit",
+            "type": "number",
+            "label": { "tr": "Satır limiti", "en": "Row limit" },
+            "default": 10
+          }
+        ],
+        "export": { "supportsPdf": true, "supportsCsv": true, "supportsPng": false, "supportsSnapshot": true }
+      }
+    },
+    {
+      "templateId": "di.recent-updates-list",
+      "templateVersion": "1.0.0",
+      "domain": "document-intelligence",
+      "categoryName": "di-lists",
+      "title": "Son güncellenenler",
+      "description": "Son yayınlanan dokümanlar (P1 stats API)",
+      "tags": ["list", "recent"],
+      "order": 43,
+      "isSystem": true,
+      "isActive": true,
+      "manifest": {
+        "manifestVersion": "1.0",
+        "templateId": "di.recent-updates-list",
+        "templateVersion": "1.0.0",
+        "domain": "document-intelligence",
+        "category": "di-lists",
+        "title": { "tr": "Son güncellenenler", "en": "Recently updated" },
+        "presentation": {
+          "kind": "list",
+          "defaultPreset": "list-activity",
+          "allowedPresets": ["list-activity"],
+          "config": { "pageSize": 10 }
+        },
+        "dataBinding": {
+          "serviceRef": "mngdocument:resources/recent",
+          "defaultParameters": { "limit": 10 },
+          "fieldMap": { "rows": "items" }
+        },
+        "parametersSchema": [
+          {
+            "name": "limit",
+            "type": "number",
+            "label": { "tr": "Satır limiti", "en": "Row limit" },
+            "default": 10
+          }
+        ],
+        "export": { "supportsPdf": true, "supportsCsv": true, "supportsPng": false, "supportsSnapshot": true }
+      }
+    },
+    {
+      "templateId": "di.draft-count-stat",
+      "templateVersion": "1.0.0",
+      "domain": "document-intelligence",
+      "categoryName": "di-lists",
+      "title": "Taslak sayısı",
+      "description": "Kullanıcının taslak markdown sayısı (P1 API)",
+      "tags": ["kpi", "drafts"],
+      "order": 44,
+      "isSystem": true,
+      "isActive": true,
+      "manifest": {
+        "manifestVersion": "1.0",
+        "templateId": "di.draft-count-stat",
+        "templateVersion": "1.0.0",
+        "domain": "document-intelligence",
+        "category": "di-lists",
+        "title": { "tr": "Taslak sayısı", "en": "Draft count" },
+        "presentation": {
+          "kind": "stat",
+          "defaultPreset": "stat-simple",
+          "allowedPresets": ["stat-simple"],
+          "config": { "format": "number", "icon": "mdi-file-edit", "color": "secondary" }
+        },
+        "dataBinding": {
+          "serviceRef": "mngdocument:resources/drafts",
+          "defaultParameters": { "limit": 1 },
+          "fieldMap": { "value": "total", "rows": "items" }
+        },
+        "parametersSchema": [],
+        "export": { "supportsPdf": true, "supportsCsv": false, "supportsPng": true, "supportsSnapshot": true }
+      }
+    }
+  ]
+}

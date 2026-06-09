@@ -154,7 +154,8 @@ async function submit() {
     const payload = buildCreateWorkItemRequest(
       formModel.value,
       workspaceId.value,
-      boardId.value || undefined
+      boardId.value || undefined,
+      formContext.value
     );
     const created = await ocCreateWorkItem(payload);
     const qs = new URLSearchParams();

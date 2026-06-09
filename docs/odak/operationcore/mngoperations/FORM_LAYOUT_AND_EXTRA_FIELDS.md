@@ -1,6 +1,6 @@
 # MngOperations — Form layout, extraFields, runtime form
 
-**Son güncelleme:** 26 Mayıs 2026  
+**Son güncelleme:** 9 Haziran 2026  
 **Spec:** [operationcore_phase1.md §8.5](../operationcore_phase1.md), [RUNTIME_CONTEXT.md](./RUNTIME_CONTEXT.md)
 
 ---
@@ -86,9 +86,19 @@ MO `FormRuntimeContext.Layout` bu JSON’u **değiştirmeden** UI’ya iletir (`
 
 ## 5. Metadata önbellek
 
-`IMetadataCache.GetFormAsync` — form kaydı TTL ile cache’lenir (~30 sn+).
+`IMetadataCache.GetFormAsync` — form kaydı TTL ile cache’lenir (~600 sn Odak prod).
 
-UI’da form tanımı **DG’den** güncellenir; MO runtime birkaç dakika gecikmeli yansıyabilir. Taslak önizleme UI’da editör state’inden üretilir (MO’ya bağlı değil).
+UI’da form / alan tanımı **DG’den** güncellenir; MO runtime birkaç dakika gecikmeli yansıyabilir. Taslak önizleme UI’da editör state’inden üretilir (MO’ya bağlı değil).
+
+**Manuel yenileme (9 Haz 2026):**
+
+| Katman | Detay |
+|--------|--------|
+| MO | `POST /api/v1/workspaces/{workspaceId}/metadata-cache/reload` — workspace kapsamlı cache anahtarlarını siler; sonraki runtime isteği DG’den taze okur |
+| DTO | `MetadataCacheReloadResult` (`keysRemoved`, `workspaceId`) |
+| UI | Workspace Tanımları → Genel → **Runtime önbelleğini yenile** (`ocReloadWorkspaceMetadataCache`) |
+
+Form veya `op_fields` kaydı sonrası board «Yeni iş» / profil formunda eski layout görünüyorsa önce DG kaydının başarılı olduğunu doğrulayın, ardından bu uç veya ~TTL bekleyin.
 
 ---
 

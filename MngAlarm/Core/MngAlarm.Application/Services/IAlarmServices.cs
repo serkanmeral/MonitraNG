@@ -46,6 +46,13 @@ public interface IAlarmRepository
         DateTime from,
         DateTime to,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<AlarmTrendBucketDto>> GetTrendBucketsAsync(
+        string domainName,
+        DateTime from,
+        DateTime to,
+        IReadOnlyList<DateTime> hourStarts,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IAlarmEventPublisher
@@ -119,6 +126,10 @@ public interface IAlarmQueryService
         int rangeHours = 24,
         int minSeverity = 6,
         int openLimit = 15,
+        CancellationToken cancellationToken = default);
+
+    Task<AlarmTrendBucketsResult> GetTrendBucketsAsync(
+        int rangeHours = 24,
         CancellationToken cancellationToken = default);
 }
 

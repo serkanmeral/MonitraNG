@@ -1,0 +1,59 @@
+{
+  "_comment": "setup-widget-demo-dashboard.ps1 — @widgets instance + @dashboards layout (Bölüm B generic surface testi)",
+  "dashboard": {
+    "name": "widgets-demo-default",
+    "title": "Widget Demo Dashboard",
+    "description": "P0/P1 şablonlarından widget instance + dolu layout — /dashboards/widgets-demo",
+    "slug": "widgets-demo",
+    "isDefault": false,
+    "isActive": true,
+    "order": 5,
+    "permissions": null
+  },
+  "widgets": [
+    {
+      "name": "widgets-demo-open-alarms",
+      "templateId": "alarm.open-count-stat"
+    },
+    {
+      "name": "widgets-demo-siem-events",
+      "templateId": "siem.events-total-stat"
+    },
+    {
+      "name": "widgets-demo-login-failed",
+      "templateId": "siem.login-failed-stat"
+    },
+    {
+      "name": "widgets-demo-severity-donut",
+      "templateId": "alarm.severity-distribution-donut"
+    },
+    {
+      "name": "widgets-demo-recent-alarms",
+      "templateId": "alarm.recent-table"
+    },
+    {
+      "name": "widgets-demo-di-banner",
+      "templateId": "di.quick-link-banner"
+    }
+  ],
+  "layoutRows": [
+    {
+      "cols": [
+        { "span": 4, "widgetName": "widgets-demo-open-alarms" },
+        { "span": 4, "widgetName": "widgets-demo-siem-events" },
+        { "span": 4, "widgetName": "widgets-demo-login-failed" }
+      ]
+    },
+    {
+      "cols": [
+        { "span": 4, "widgetName": "widgets-demo-severity-donut" },
+        { "span": 8, "widgetName": "widgets-demo-recent-alarms" }
+      ]
+    },
+    {
+      "cols": [
+        { "span": 12, "widgetName": "widgets-demo-di-banner" }
+      ]
+    }
+  ]
+}

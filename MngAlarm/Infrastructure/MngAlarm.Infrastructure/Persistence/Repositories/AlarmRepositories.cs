@@ -253,6 +253,57 @@ public sealed class AlarmRepository(IAlarmMongoContext context, AlarmIndexInitia
         }).ToList();
     }
 
+    public async Task<IReadOnlyList<AlarmTrendBucketDto>> GetTrendBucketsAsync(
+        string domainName,
+        DateTime from,
+        DateTime to,
+        IReadOnlyList<DateTime> hourStarts,
+        CancellationToken cancellationToken = default)
+    {
+        await indexInitializer.EnsureAsync(domainName, cancellationToken);
+        var col = Collection(domainName);
+
+        var pipeline = new[]
+        {
+            new BsonDocument("$match", new BsonDocument("lastSeenAt", new BsonDocument
+            {
+                { "$gte", from },
+                { "$lte", to },
+            })),
+            new BsonDocument("$group", new BsonDocument
+            {
+                {
+                    "_id", new BsonDocument("$dateTrunc", new BsonDocument
+                    {
+                        { "date", "$lastSeenAt" },
+                        { "unit", "hour" },
+                        { "timezone", "UTC" },
+                    })
+                },
+                { "count", new BsonDocument("$sum", 1) },
+            }),
+        };
+
+        var docs = await col.Aggregate<BsonDocument>(pipeline).ToListAsync(cancellationToken);
+        var counts = new Dictionary<DateTime, int>();
+        foreach (var doc in docs)
+        {
+            if (!doc.TryGetValue("_id", out var idVal) || idVal.IsBsonNull) continue;
+            var bucket = idVal.ToUniversalTime();
+            bucket = new DateTime(bucket.Year, bucket.Month, bucket.Day, bucket.Hour, 0, 0, DateTimeKind.Utc);
+            counts[bucket] = doc.GetValue("count", 0).ToInt32();
+        }
+
+        return hourStarts
+            .Select(start =>
+            {
+                var key = new DateTime(start.Year, start.Month, start.Day, start.Hour, 0, 0, DateTimeKind.Utc);
+                counts.TryGetValue(key, out var count);
+                return new AlarmTrendBucketDto { Bucket = start, Count = count };
+            })
+            .ToList();
+    }
+
     public async Task InsertAsync(AlarmDocument alarm, CancellationToken cancellationToken = default)
     {
         await indexInitializer.EnsureAsync(alarm.DomainName, cancellationToken);

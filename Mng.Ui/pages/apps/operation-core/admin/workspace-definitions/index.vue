@@ -23,7 +23,7 @@ import {
 import { useDisplay } from 'vuetify';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useAuthStore } from '@/stores/auth';
-import { ocListWorkspaces } from '@/services/operationCoreService';
+import { ocListWorkspaces, ocReloadWorkspaceMetadataCache, ocExtractDgErrorMessage } from '@/services/operationCoreService';
 import {
   OC_WORKSPACE_CATALOG_KEY,
   useOcWorkspaceCatalog,
@@ -45,6 +45,9 @@ const workspaces = ref<OpWorkspace[]>([]);
 const loadingWorkspaces = ref(true);
 const selectedWorkspaceId = ref('');
 const createDialogOpen = ref(false);
+const reloadingCache = ref(false);
+const cacheReloadMessage = ref<string | null>(null);
+const cacheReloadError = ref<string | null>(null);
 
 const workspaceCatalog = useOcWorkspaceCatalog(selectedWorkspaceId);
 provide(OC_WORKSPACE_CATALOG_KEY, workspaceCatalog);
@@ -121,6 +124,28 @@ async function onWorkspaceCreated(id: string) {
   activeTab.value = 'general';
 }
 
+async function reloadMetadataCache() {
+  const wsId = selectedWorkspaceId.value?.trim();
+  if (!wsId) return;
+
+  reloadingCache.value = true;
+  cacheReloadMessage.value = null;
+  cacheReloadError.value = null;
+  try {
+    const result = await ocReloadWorkspaceMetadataCache(wsId);
+    cacheReloadMessage.value = t('operationCore.workspaceDefinitions.metadataCacheReloadSuccess', {
+      count: result.keysRemoved,
+    });
+  } catch (e: unknown) {
+    cacheReloadError.value = ocExtractDgErrorMessage(
+      e,
+      t('operationCore.workspaceDefinitions.metadataCacheReloadError')
+    );
+  } finally {
+    reloadingCache.value = false;
+  }
+}
+
 watch(
   () => route.query.workspaceId,
   () => syncWorkspaceFromRoute()
@@ -181,8 +206,45 @@ onMounted(() => {
         >
           {{ t('operationCore.workspaceDefinitions.newWorkspace') }}
         </v-btn>
+        <v-btn
+          v-if="selectedWorkspaceId"
+          variant="outlined"
+          rounded="lg"
+          class="text-none mt-1"
+          prepend-icon="mdi-cached"
+          :loading="reloadingCache"
+          :disabled="!selectedWorkspaceId || reloadingCache"
+          @click="reloadMetadataCache"
+        >
+          {{ t('operationCore.workspaceDefinitions.reloadMetadataCache') }}
+        </v-btn>
       </div>
+      <p v-if="selectedWorkspaceId" class="text-caption text-medium-emphasis mb-0 mt-3">
+        {{ t('operationCore.workspaceDefinitions.metadataCacheReloadHint') }}
+      </p>
     </v-card>
+
+    <v-alert
+      v-if="cacheReloadMessage"
+      type="success"
+      variant="tonal"
+      class="mb-4 rounded-lg"
+      closable
+      @click:close="cacheReloadMessage = null"
+    >
+      {{ cacheReloadMessage }}
+    </v-alert>
+
+    <v-alert
+      v-if="cacheReloadError"
+      type="error"
+      variant="tonal"
+      class="mb-4 rounded-lg"
+      closable
+      @click:close="cacheReloadError = null"
+    >
+      {{ cacheReloadError }}
+    </v-alert>
 
     <v-alert
       v-if="!loadingWorkspaces && workspaces.length === 0"

@@ -99,6 +99,30 @@ public sealed class AlarmQueryService(IAlarmDomainAccessor domain, IAlarmReposit
         };
     }
 
+    public async Task<AlarmTrendBucketsResult> GetTrendBucketsAsync(
+        int rangeHours = 24,
+        CancellationToken cancellationToken = default)
+    {
+        var ctx = domain.GetRequiredDomain();
+        var hours = Math.Clamp(rangeHours, 1, 168);
+        var to = DateTime.UtcNow;
+        var from = to.AddHours(-hours);
+        var hourStarts = new List<DateTime>(hours);
+        for (var idx = 0; idx < hours; idx++)
+        {
+            var bucketEnd = to.AddHours(-(hours - 1 - idx));
+            hourStarts.Add(DateTime.SpecifyKind(bucketEnd.AddHours(-1), DateTimeKind.Utc));
+        }
+
+        var items = await alarms.GetTrendBucketsAsync(ctx.DomainName, from, to, hourStarts, cancellationToken);
+        return new AlarmTrendBucketsResult
+        {
+            From = from,
+            To = to,
+            Items = items,
+        };
+    }
+
     private static AlarmSummaryDto Map(AlarmDocument alarm) => new()
     {
         Id = alarm.Id,

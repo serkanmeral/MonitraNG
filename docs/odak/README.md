@@ -24,7 +24,7 @@ Tüm kurulum ve günlük çalışma akışı tek dokümanda:
 | **[monitoring/SIEM_FAZ1_HANDOFF.md](./monitoring/SIEM_FAZ1_HANDOFF.md)** | **SIEM Faz 1 implementasyon** (ayrı chat) |
 | **[monitoring/README.md](./monitoring/README.md)** | Güvenlik odaklı izleme / SIEM-hafif — planlama |
 | **[AI_PLANNING_DECISION.md](./AI_PLANNING_DECISION.md)** | **Yapay zeka zamanlama kararı** — çerçeve şimdi, implementasyon çekirdek hat sonrası |
-| **[compliance/README.md](./compliance/README.md)** | Standart uyumluluğu — ISO/IEC 27001 + AS9100 planı |
+| **[compliance/DEVAM.md](./compliance/DEVAM.md)** | Standart uyumluluğu — ISO 27001 + AS9100 checkpoint (müşteri özeti + Faz C1) |
 | **[notifications/DEVAM.md](./notifications/DEVAM.md)** | MngNotifier e-posta — ⏸️ planlama duraklatildi; `send-template` sirada |
 | **[widgets/README.md](./widgets/README.md)** | **Widget & Dashboard designer** — planlama tamam; [DEVAM.md](./widgets/DEVAM.md) |
 

@@ -181,7 +181,8 @@ async function submit() {
       const payload = buildCreateWorkItemRequest(
         formModel.value,
         formContext.value.workspaceId,
-        props.boardId?.trim() || undefined
+        props.boardId?.trim() || undefined,
+        formContext.value
       );
       const created = await ocCreateWorkItem(payload);
       emit('saved', { id: created.id, key: created.key, mode: 'create' });

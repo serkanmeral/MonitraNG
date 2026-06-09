@@ -61,4 +61,13 @@ public interface IMetadataCache
 
     /// <summary>Write-through: katalog yazısından sonra ilgili liste cache'ini düşür.</summary>
     void InvalidateCatalog(string dataset);
+
+    /// <summary>
+    /// Workspace'e bağlı MO metadata önbelleğini DG'den taze okuma için düşürür
+    /// (form layout, board, alan tanımları, kurallar vb.).
+    /// </summary>
+    Task<MetadataCacheReloadResult> ReloadWorkspaceAsync(
+        string workspaceId,
+        string token,
+        CancellationToken cancellationToken = default);
 }

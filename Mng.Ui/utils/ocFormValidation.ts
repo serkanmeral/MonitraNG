@@ -1,4 +1,7 @@
 import type { OcFormFieldRuntimeDto, OcFormRuntimeContext } from '@/types/apps/operationCore';
+import { resolveOcFormFieldType } from '@/utils/ocFormFieldLabels';
+import { isOcFileFieldValueFilled } from '@/utils/ocWorkItemFileFields';
+import { isOcRichTextEmpty } from '@/utils/ocRichText';
 
 export interface OcFormValidationIssue {
   fieldKey: string;
@@ -24,10 +27,22 @@ export function visibleOcFormFieldKeys(ctx: OcFormRuntimeContext): string[] {
 export function isOcFieldValueFilled(
   value: unknown,
   meta?: OcFormFieldRuntimeDto | null,
-  options?: { required?: boolean }
+  options?: { required?: boolean; fieldKey?: string }
 ): boolean {
-  if (meta?.fieldType === 'bool' && options?.required) {
+  const fieldKey = options?.fieldKey ?? meta?.key ?? '';
+  const ft = resolveOcFormFieldType(fieldKey, meta).toLowerCase();
+  if (ft === 'file') {
+    return isOcFileFieldValueFilled(value, meta, fieldKey);
+  }
+  if (ft === 'bool' && options?.required) {
     return value === true;
+  }
+  if ((ft === 'richtext' || ft === 'rich_text' || ft === 'rich-text') && options?.required) {
+    return !isOcRichTextEmpty(typeof value === 'string' ? value : value != null ? String(value) : null);
+  }
+  if (ft === 'richtext' || ft === 'rich_text' || ft === 'rich-text') {
+    if (value === undefined || value === null) return false;
+    return !isOcRichTextEmpty(typeof value === 'string' ? value : String(value));
   }
   if (value === undefined || value === null) return false;
   if (Array.isArray(value)) return value.length > 0;
@@ -53,7 +68,7 @@ export function collectOcFormValidationIssues(
   for (const key of visibleOcFormFieldKeys(ctx)) {
     const behavior = ctx.fieldBehaviors[key];
     if (behavior?.required !== true) continue;
-    if (!isOcFieldValueFilled(model[key], ctx.fields[key], { required: true })) {
+    if (!isOcFieldValueFilled(model[key], ctx.fields[key], { required: true, fieldKey: key })) {
       pushIssue(key);
     }
   }
@@ -62,7 +77,7 @@ export function collectOcFormValidationIssues(
     if (seen.has(key)) continue;
     if (!(key in ctx.fields)) continue;
     if (ctx.fieldBehaviors[key]?.visible === false) continue;
-    if (!isOcFieldValueFilled(model[key], ctx.fields[key], { required: true })) {
+    if (!isOcFieldValueFilled(model[key], ctx.fields[key], { required: true, fieldKey: key })) {
       pushIssue(key);
     }
   }

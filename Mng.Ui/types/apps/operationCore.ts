@@ -269,6 +269,8 @@ export interface OcFormFieldRuntimeDto {
   value?: unknown;
   cardinality?: 'single' | 'multi' | string | null;
   relationDataset?: string | null;
+  /** op_fields.options — file alanında maxSizeBytes / allowedExtensions vb. */
+  options?: Record<string, unknown> | null;
 }
 
 export interface OcFieldBehaviorDto {

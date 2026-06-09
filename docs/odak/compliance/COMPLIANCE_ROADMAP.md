@@ -2,7 +2,7 @@
 
 > **Bu doküman bir "devam noktası" / referanstır.** İki standardın boşluk analizini ([ISO27001_PLAN.md](./ISO27001_PLAN.md), [AS9100_PLAN.md](./AS9100_PLAN.md)) tek, fazlı bir plana bağlar ve bu konuda verilen stratejik kararları kaydeder. Yeni bir oturumda buradan devam edilir.
 
-**Son güncelleme:** 1 Haziran 2026
+**Son güncelleme:** 9 Haziran 2026
 
 ---
 
@@ -18,6 +18,9 @@ Bu yol haritası, bir keşif sohbetinden çıktı. Önemli kararlar:
 | K4 | **İlk somut adım = NCR + CAPA şablonları** (Operation Core WorkItem tipleri). | Her AS9100 denetiminde konuşulur; mevcut motorun üstünde, ağır kod gerektirmez; gerçek müşteriye doğrudan hitap eder. |
 | K5 | **Müşteri NCR/CAPA'yı bugün Excel'de yönetiyor** (yazılım yok). | Rakip yok = kolay giriş. Excel'in acıları (iz/erişim/versiyon yok) tam bizim güçlü yanlarımız. **Müşterinin Excel sütunları = gerçek spec.** |
 | K6 | **Danışman + kodlama asistanı rolü.** Altın kaplamadan kaçın; satışı kapatmayan işi standardı bahane ederek yapma. | Odak ve hız. |
+| K7 | **Müşteri dokümanı = bilgilendirme özeti** (tam teklif / fiyat sayfası yok). | [AS9100_MUSTERI_OZET.md](./AS9100_MUSTERI_OZET.md) + PDF |
+| K8 | Müşteri yüzünde mevcut araçlara atıf yok; **ilk kurulum / dijitalleştirme** dili. | Profesyonel konumlandırma |
+| K9 | İç spec = müşterinin **NCR/CAPA prosedür ve form şablonları** (ziyaret sonrası). | Faz C1 başlangıç girdisi |
 
 **Satış mesajı (müşteriye):** *"AS9100 sertifikalıyız"* DEME. *"Kalite süreçlerinizi — uygunsuzluk, düzeltici faaliyet, denetim, izlenebilirlik — sistemde yönetir ve denetimde kanıt gösterirsiniz"* DE.
 
@@ -54,7 +57,9 @@ Sonuç: standart desteği bir yan yol değil, mevcut yatırımın **konumlandır
 ### Faz C1 — NCR + CAPA pilotu (ŞU ANKİ HEDEF)
 > Mevcut Operation Core motoru üstünde, ağırlıklı olarak metadata (tip + form + state flow). Gerçek havacılık müşterisine yönelik.
 
-- [ ] Müşterinin **Excel sütunlarını** al (gerçek spec) — **bekleyen girdi**
+- [x] Müşteri **bilgilendirme özeti** hazırlandı — [AS9100_MUSTERI_OZET.md](./AS9100_MUSTERI_OZET.md) + PDF
+- [ ] Müşteri ziyareti ve geri bildirim — **bekleyen**
+- [ ] Müşterinin **NCR/CAPA prosedür ve form şablonlarını** al (iç spec) — **bekleyen girdi**
 - [ ] **NCR** WorkItem tipi: form alanları + durum akışı (§4 taslak)
 - [ ] **CAPA** WorkItem tipi: form alanları + durum akışı (§4 taslak)
 - [ ] **NCR → CAPA** parent-child ilişkisi
@@ -151,8 +156,10 @@ Sonuç: standart desteği bir yan yol değil, mevcut yatırımın **konumlandır
 |------|-------|
 | Birincil hedef (enabler vs sertifikasyon)? | ✅ Karar K1 (enabler) |
 | Hangi standart önce? | ✅ Karar K2 (AS9100) |
-| Müşteri NCR/CAPA'yı nasıl yönetiyor? | ✅ Excel (K5) |
-| **Müşterinin Excel sütunları (NCR/CAPA alanları)** | 🔲 **Bekleniyor — Faz C1 başlangıç girdisi** |
+| Müşteri NCR/CAPA'yı nasıl yönetiyor? | ✅ Excel (K5, iç bilgi) |
+| Müşteri bilgilendirme özeti | ✅ [AS9100_MUSTERI_OZET.md](./AS9100_MUSTERI_OZET.md) + PDF (K7) |
+| **Müşteri ziyareti geri bildirimi** | 🔲 **Bekleniyor** |
+| **NCR/CAPA prosedür ve form şablonları** | 🔲 **Bekleniyor — Faz C1 başlangıç girdisi (K9)** |
 | Risk Register: ayrı modül mü, WorkItem tipi mi? | 🔲 C2'de karara bağlanacak |
 | Hedef tarih / sertifikasyon takvimi? | 🔲 Müşteriyle netleşecek |
 | Kanıt (evidence) export'u otomatik mi olmalı? | 🔲 C2 |
@@ -161,7 +168,9 @@ Sonuç: standart desteği bir yan yol değil, mevcut yatırımın **konumlandır
 
 ## 7. Kaldığımız yer (devam noktası)
 
-- Strateji ve roller netleşti (§0).
-- **Sıradaki aksiyon:** Müşteriden NCR/CAPA Excel sütunlarını almak → §4 taslağını kesinleştirmek → NCR/CAPA tiplerini Operation Core'da (tip + form + state flow + parent-child) kurmak.
-- Excel gelene kadar §4 taslağı varsayılan olarak kullanılabilir; geldiğinde alanlar buna göre güncellenir.
-- İlgili kaynaklar: Operation Core motoru → [../operationcore/mngoperations/](../operationcore/mngoperations/README.md); platform vizyonu → [../operationcore/major_plan.md](../operationcore/major_plan.md).
+- Strateji ve roller netleşti (§0, K1–K9).
+- Müşteri bilgilendirme özeti hazır: [AS9100_MUSTERI_OZET.md](./AS9100_MUSTERI_OZET.md) + [AS9100_MUSTERI_OZET.pdf](./AS9100_MUSTERI_OZET.pdf).
+- **Sıradaki aksiyon:** Müşteri ziyareti → geri bildirim → NCR/CAPA prosedür/form şablonlarını al → §4 taslağını kesinleştir → Operation Core'da Kalite Workspace + NCR/CAPA tiplerini kur (Faz C1).
+- §4 taslağı ziyaret öncesi varsayılan; müşteri girdisi gelince güncellenir.
+- **Checkpoint:** [DEVAM.md](./DEVAM.md) (yeni chat prompt'u dahil).
+- İlgili kaynaklar: Operation Core → [../operationcore/mngoperations/](../operationcore/mngoperations/README.md); platform vizyonu → [../operationcore/major_plan.md](../operationcore/major_plan.md).

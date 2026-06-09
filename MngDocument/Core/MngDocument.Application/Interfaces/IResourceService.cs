@@ -45,4 +45,10 @@ public interface IResourceService
     Task<ResourceDto> CreateFileResourceAsync(CreateFileResourceRequest request, CancellationToken ct = default);
 
     Task<ResourceListResult> SearchAsync(string query, int skip, int limit, CancellationToken ct = default);
+
+    /// <summary>Son güncellenen yayınlanmış markdown kayıtları (widget P2).</summary>
+    Task<ResourceListResult> GetRecentAsync(int limit, CancellationToken ct = default);
+
+    /// <summary>Kullanıcının düzenleyebildiği taslak markdown kayıtları (widget P2).</summary>
+    Task<ResourceListResult> GetDraftsAsync(int limit, CancellationToken ct = default);
 }

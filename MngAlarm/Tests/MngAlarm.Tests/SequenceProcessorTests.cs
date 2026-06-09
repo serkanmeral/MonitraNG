@@ -209,6 +209,14 @@ public sealed class SequenceProcessorTests
             DateTime to,
             CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<AlarmScenarioRollupDto>>([]);
+
+        public Task<IReadOnlyList<AlarmTrendBucketDto>> GetTrendBucketsAsync(
+            string domainName,
+            DateTime from,
+            DateTime to,
+            IReadOnlyList<DateTime> hourStarts,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<AlarmTrendBucketDto>>([]);
     }
 
     private sealed class FakePublisher : IAlarmEventPublisher

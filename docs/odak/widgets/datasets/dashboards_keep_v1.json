@@ -1,0 +1,22 @@
+{
+  "_comment": "cleanup-dashboards.ps1 — bu slug disindaki @dashboards kayitlari silinir (WhatIf ile onizleme)",
+  "keepSlugs": [
+    "seed-alarm-overview",
+    "seed-siem-overview",
+    "seed-oc-workspace",
+    "siem-center"
+  ],
+  "keepReasons": {
+    "seed-alarm-overview": "Alarm modulu starter pano — widget designer calisma yuzeyi",
+    "seed-siem-overview": "SIEM modulu starter pano",
+    "seed-oc-workspace": "Operasyon Merkezi starter pano (OC Demo workspace)",
+    "siem-center": "SIEM Guvenlik Paneli layout persist (surfaceKind=siem-center) — /apps/siem-center"
+  },
+  "removeExamples": [
+    "widgets-demo",
+    "tren-ozet",
+    "trenler",
+    "d1s",
+    "dd22"
+  ]
+}

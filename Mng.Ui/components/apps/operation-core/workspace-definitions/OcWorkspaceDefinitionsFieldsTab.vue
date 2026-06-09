@@ -20,6 +20,12 @@ import {
   resolveOcFieldOptionsHint,
   stringifyOcFieldOptions,
 } from '@/utils/ocFieldDefinitions';
+import {
+  buildOcFileFieldOptionsPayload,
+  normalizeOcFileExtensionList,
+  OC_FILE_EXTENSION_PRESETS,
+  parseOcFileFieldOptions,
+} from '@/utils/ocFileFieldOptions';
 
 const props = defineProps<{
   workspaceId: string;
@@ -56,6 +62,8 @@ const defaultForm = () => ({
   sortOrder: '' as string,
   relationDatasetName: '',
   optionsJson: '',
+  maxSizeMb: 5,
+  allowedExtensions: [] as string[],
   isSensitive: false,
 });
 
@@ -98,6 +106,9 @@ const scopedTableHeaders = computed(() => [
 ]);
 
 const showRelationDataset = computed(() => form.value.fieldType === 'relation');
+const showFileOptions = computed(() => form.value.fieldType === 'file');
+
+const fileExtensionPresetItems = [...OC_FILE_EXTENSION_PRESETS];
 
 function categoryLabel(value: string | null | undefined) {
   if (!value) return '—';
@@ -116,6 +127,10 @@ function toggleFieldId(id: string, enabled: boolean) {
   }
 }
 
+function syncAllowedExtensionsFromCombobox(raw: unknown) {
+  form.value.allowedExtensions = normalizeOcFileExtensionList(raw);
+}
+
 function buildFieldPayload(): Record<string, unknown> | null {
   optionsError.value = null;
   const key = form.value.key.trim();
@@ -128,7 +143,10 @@ function buildFieldPayload(): Record<string, unknown> | null {
 
   const optionsRaw = form.value.optionsJson.trim();
   let options: Record<string, unknown> | null = null;
-  if (optionsRaw) {
+  if (form.value.fieldType === 'file') {
+    form.value.allowedExtensions = normalizeOcFileExtensionList(form.value.allowedExtensions);
+    options = buildOcFileFieldOptionsPayload(form.value.maxSizeMb, form.value.allowedExtensions);
+  } else if (optionsRaw) {
     const parsed = parseOcFieldOptions(optionsRaw);
     if (!parsed) {
       optionsError.value = t('operationCore.definitions.fields.optionsInvalid');
@@ -173,7 +191,14 @@ async function loadAll() {
     ]);
     globalFields.value = global;
     scopedFields.value = scoped;
-    selectedFieldIds.value = ws?.enabledFieldIds ? [...ws.enabledFieldIds] : [];
+    const scopedIds = scoped.map((f) => f.__dataId).filter(Boolean);
+    const mergedEnabled = [...new Set([...(ws?.enabledFieldIds ?? []), ...scopedIds])];
+    if (mergedEnabled.length !== (ws?.enabledFieldIds?.length ?? 0)) {
+      await ocUpdateWorkspace(props.workspaceId, { enabledFieldIds: mergedEnabled });
+      selectedFieldIds.value = mergedEnabled;
+    } else {
+      selectedFieldIds.value = ws?.enabledFieldIds ? [...ws.enabledFieldIds] : [];
+    }
   } catch (e: unknown) {
     errorLocal.value = ocExtractDgErrorMessage(
       e,
@@ -202,6 +227,7 @@ function openCreateScoped() {
 function openEditScoped(row: OpField) {
   editId.value = row.__dataId;
   optionsError.value = null;
+  const fileOpts = parseOcFileFieldOptions(row.options);
   form.value = {
     key: row.key,
     label: row.label,
@@ -211,7 +237,9 @@ function openEditScoped(row: OpField) {
     description: row.description ?? '',
     sortOrder: row.sortOrder != null ? String(row.sortOrder) : '',
     relationDatasetName: row.relationDatasetName ?? '',
-    optionsJson: stringifyOcFieldOptions(row.options),
+    optionsJson: row.fieldType === 'file' ? '' : stringifyOcFieldOptions(row.options),
+    maxSizeMb: Math.max(1, Math.round(fileOpts.maxSizeBytes / (1024 * 1024))),
+    allowedExtensions: [...fileOpts.allowedExtensions],
     isSensitive: Boolean(row.isSensitive),
   };
   dialog.value = true;
@@ -255,7 +283,13 @@ async function submitScopedField() {
     if (editId.value) {
       await ocUpdateField(editId.value, body);
     } else {
-      await ocCreateField(body);
+      const newId = await ocCreateField(body);
+      if (newId && !selectedFieldIds.value.includes(newId)) {
+        selectedFieldIds.value = [...selectedFieldIds.value, newId];
+        await ocUpdateWorkspace(props.workspaceId, {
+          enabledFieldIds: selectedFieldIds.value,
+        });
+      }
     }
     dialog.value = false;
     await loadAll();
@@ -485,7 +519,34 @@ async function confirmDelete() {
             density="comfortable"
             variant="outlined"
           />
+          <template v-if="showFileOptions">
+            <v-text-field
+              v-model.number="form.maxSizeMb"
+              class="mt-3"
+              type="number"
+              min="1"
+              max="100"
+              :label="t('operationCore.definitions.fields.fileMaxSizeMb')"
+              :hint="t('operationCore.definitions.fields.fileMaxSizeHint')"
+              persistent-hint
+              density="comfortable"
+            />
+            <v-combobox
+              :model-value="form.allowedExtensions"
+              class="mt-3"
+              :items="fileExtensionPresetItems"
+              multiple
+              chips
+              closable-chips
+              @update:model-value="syncAllowedExtensionsFromCombobox"
+              :label="t('operationCore.definitions.fields.fileAllowedExtensions')"
+              :hint="t('operationCore.definitions.fields.fileAllowedExtensionsHint')"
+              persistent-hint
+              density="comfortable"
+            />
+          </template>
           <v-textarea
+            v-else
             v-model="form.optionsJson"
             class="mt-3"
             :label="t('operationCore.definitions.fields.fieldOptions')"

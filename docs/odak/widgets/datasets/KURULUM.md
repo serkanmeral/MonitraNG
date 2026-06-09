@@ -1,7 +1,7 @@
 # Widget dataset kurulum (planlama)
 
 **Son güncelleme:** 7 Haziran 2026  
-**Durum:** 📋 Script henüz yok — implementasyon Faz 0
+**Durum:** ✅ Kurulum script + seed JSON hazır — Odak provizyonu `setup-widget-templates-datasets.ps1`
 
 ---
 
@@ -12,13 +12,14 @@
 | [DATASETS.md](./DATASETS.md) | `@widget_templates`, `@widgets` genişletme |
 | [widget-templates-dataset-create.json](./widget-templates-dataset-create.json) | DG create JSON |
 | [widget_categories_seed_v1.json](./widget_categories_seed_v1.json) | V1 kategori seed |
-| `widget_templates_seed_v1.json` | 🔲 V1 şablon manifest listesi — [KATALOG_V1.md](../KATALOG_V1.md) |
+| [widget_templates_seed_v1.json](./widget_templates_seed_v1.json) | ✅ V1 şablon manifest listesi (19 kayıt; 6 P0 aktif) — [KATALOG_V1.md](../KATALOG_V1.md) |
+| [widget_dataset_category.json](./widget_dataset_category.json) | `@widget_templates` dataset category |
 
 ---
 
 ## 2. Kurulum sırası (hedef script)
 
-`docs/odak/widgets/scripts/setup-widget-templates-datasets.ps1` *(oluşturulacak)*
+[../scripts/setup-widget-templates-datasets.ps1](../scripts/setup-widget-templates-datasets.ps1)
 
 1. `@widget_categories` — mevcut dataset; seed kategorileri merge (duplicate skip)
 2. `@widget_templates` — dataset create (yoksa)
@@ -37,7 +38,15 @@
 
 ---
 
-## 4. Doğrulama (manuel)
+## 6. Doğrulama
+
+```powershell
+.\docs\odak\operationcore\scripts\get-operationcore-token.ps1
+.\docs\odak\widgets\scripts\setup-widget-templates-datasets.ps1
+.\docs\odak\widgets\scripts\smoke-widget-p0-data.ps1
+```
+
+Manuel HTTP:
 
 ```http
 GET /data/api/v1/data/@widget_templates?filter=domain:eq:alarm&limit=20
@@ -46,7 +55,38 @@ GET /data/api/v1/data/@widget_categories?limit=50
 
 ---
 
-## 5. Domain veri önkoşulları (widget seed öncesi)
+## 4. Starter widget instance seed (Alarm / SIEM / MO)
+
+Modül kategorileri + şablon katalogu hazır olduktan sonra `@widgets` örnek kayıtları:
+
+| Dosya | Açıklama |
+|-------|----------|
+| [widget_instances_seed_v1.json](./widget_instances_seed_v1.json) | 15 widget (4 alarm, 6 siem, 5 MO) + 3 özet dashboard |
+| [../scripts/seed-widget-instances.ps1](../scripts/seed-widget-instances.ps1) | Şablondan instance üretir |
+| [../scripts/widget-instance-helpers.ps1](../scripts/widget-instance-helpers.ps1) | Ortak POST/ kategori çözümleme |
+
+```powershell
+.\docs\odak\operationcore\scripts\get-operationcore-token.ps1
+.\docs\odak\widgets\scripts\reset-widget-catalog.ps1          # modul kategorileri
+.\docs\odak\widgets\scripts\setup-widget-templates-datasets.ps1
+.\docs\odak\operationcore\scripts\seed-operation-core-demo.ps1 # MO workspaceId icin
+.\docs\odak\widgets\scripts\seed-widget-instances.ps1
+# Modul bazli: -Module alarm | siem | operation-core
+# Sadece widget: -SkipDashboards
+```
+
+Dashboard slug'ları: `seed-alarm-overview`, `seed-siem-overview`, `seed-oc-workspace`
+
+### Eski dashboard temizliği
+
+```powershell
+.\docs\odak\widgets\scripts\cleanup-dashboards.ps1 -WhatIf   # onizleme
+.\docs\odak\widgets\scripts\cleanup-dashboards.ps1           # sil
+```
+
+Whitelist: [dashboards_keep_v1.json](./dashboards_keep_v1.json) — starter panolar + `siem-center` (SIEM uygulama layout'u).
+
+---
 
 Widget template seed **tek başına yeterli değil** — veri kaynakları domain chat’lerinde:
 

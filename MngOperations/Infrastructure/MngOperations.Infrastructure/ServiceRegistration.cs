@@ -65,6 +65,7 @@ public static class ServiceRegistration
         services.AddSingleton<IOcEventPublisher, OcEventPublisher>();
         services.AddScoped<IHealthCheckService, HealthCheckService>();
         services.AddScoped<IMetadataCache, MetadataCacheService>();
+        services.AddScoped<IMetadataCacheAdminService, MetadataCacheAdminService>();
         services.AddScoped<ICatalogService, CatalogService>();
         services.AddScoped<IWorkItemKeyGenerator, WorkItemKeyGenerator>();
         services.AddScoped<IPermissionEvaluator, PermissionEvaluator>();

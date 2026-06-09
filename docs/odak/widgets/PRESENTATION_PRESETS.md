@@ -2,7 +2,7 @@
 
 **Son güncelleme:** 7 Haziran 2026  
 **Durum:** 📋 Planlama v1  
-**Implementasyon:** `presentationPresets.ts` (Faz 0) — henüz kod yok
+**Implementasyon:** `Mng.Ui/utils/widgets/presentationPresets.ts`
 
 ---
 

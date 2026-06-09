@@ -1,7 +1,7 @@
 # Widget & Dashboard Designer UX
 
 **Son güncelleme:** 7 Haziran 2026  
-**Durum:** 📋 Planlama v1 — implementasyon yok
+**Durum:** 🚧 Faz 1 — wizard + dashboard picker implement edildi
 
 ---
 
@@ -40,10 +40,11 @@ Ortak: V1 template katalogu ([KATALOG_V1.md](./KATALOG_V1.md)).
 - Context binding gösterimi: “Dashboard filtresinden gelir” (disabled alan)
 - **Gelişmiş mod** (admin accordion): ham JSON, aggregate — kapalı varsayılan
 
-### Adım 3 — Görünüm (preset galeri)
+### Adım 3 — Görünüm (preset galeri + alan eşlemesi)
 
 - Thumbnail grid — [PRESENTATION_PRESETS.md](./PRESENTATION_PRESETS.md)
-- Canlı önizleme (sample data veya gerçek fetch)
+- **Veri & alan eşlemesi** — `valueField`, `xAxis.field`, `yAxis.field` (şablondan varsayılan; override `@widgets.config.presentationConfigOverrides`)
+- Canlı önizleme (gerçek fetch); eksik eşlemede uyarı chip
 - Başlık / açıklama override
 
 ### Adım 4 — Davranış
@@ -67,7 +68,7 @@ Mevcut builder korunur ([DASHBOARD_BUILDER_MECHANISM.md](../../content/Mng.Ui/su
 | Widget picker | V1 katalog modal (domain filtre) |
 | Hücre override | Çark menüsü — parametre / refresh (SurfaceContext override) |
 
-**Surface toolbar** (Faz 2): time range + global variables — Grafana benzeri.
+**Surface toolbar** (Faz 2): time range + global variables — Grafana benzeri. ✅ `/dashboards/:slug`
 
 ---
 

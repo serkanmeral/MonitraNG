@@ -1,74 +1,34 @@
 [
   {
-    "name": "alarm-kpi",
-    "description": "Alarm özet kartları",
+    "name": "Alarm Merkezi",
+    "description": "domain:alarm",
     "icon": "mdi-bell-alert",
     "color": "error",
     "order": 10,
-    "isActive": true,
-    "isSystemCategory": true
+    "isActive": true
   },
   {
-    "name": "alarm-charts",
-    "description": "Alarm grafikleri",
-    "icon": "mdi-chart-donut",
-    "color": "error",
-    "order": 11,
-    "isActive": true,
-    "isSystemCategory": true
-  },
-  {
-    "name": "siem-kpi",
-    "description": "SIEM özet kartları",
+    "name": "SIEM",
+    "description": "domain:siem",
     "icon": "mdi-shield-check",
     "color": "primary",
     "order": 20,
-    "isActive": true,
-    "isSystemCategory": true
+    "isActive": true
   },
   {
-    "name": "siem-charts",
-    "description": "SIEM grafikleri",
-    "icon": "mdi-chart-timeline-variant",
-    "color": "primary",
-    "order": 21,
-    "isActive": true,
-    "isSystemCategory": true
-  },
-  {
-    "name": "oc-kpi",
-    "description": "Operasyon özet kartları (MO)",
+    "name": "Operasyon Merkezi",
+    "description": "domain:operation-core",
     "icon": "mdi-clipboard-list",
     "color": "secondary",
     "order": 30,
-    "isActive": true,
-    "isSystemCategory": true
+    "isActive": true
   },
   {
-    "name": "oc-work-queues",
-    "description": "İş kuyrukları ve listeler",
-    "icon": "mdi-format-list-bulleted",
-    "color": "secondary",
-    "order": 31,
-    "isActive": true,
-    "isSystemCategory": true
-  },
-  {
-    "name": "di-lists",
-    "description": "Doküman listeleri",
+    "name": "Doküman Zekası",
+    "description": "domain:document-intelligence",
     "icon": "mdi-file-document-multiple",
     "color": "info",
     "order": 40,
-    "isActive": true,
-    "isSystemCategory": true
-  },
-  {
-    "name": "di-quick-access",
-    "description": "Hızlı erişim ve banner",
-    "icon": "mdi-link-variant",
-    "color": "info",
-    "order": 41,
-    "isActive": true,
-    "isSystemCategory": true
+    "isActive": true
   }
 ]

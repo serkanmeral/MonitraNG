@@ -9,7 +9,7 @@ public static class FormFieldCatalog
     private static readonly FormFieldDefinition[] CoreDefinitions =
     [
         new("title", "Title", "text", false),
-        new("description", "Description", "text", false),
+        new("description", "Description", "richtext", false),
         new("typeId", "Type", "relation", false),
         new("assignee", "Assignee", "persons", false),
         new("priorityId", "Priority", "relation", false),
@@ -36,6 +36,14 @@ public static class FormFieldCatalog
 
         foreach (var (key, field) in poolFieldsByKey)
         {
+            if (map.TryGetValue(key, out var existing) && !existing.IsPool)
+            {
+                // Core şema alanı — havuz kaydı yalnızca etiket özelleştirir; fieldType sabit kalır.
+                var label = string.IsNullOrWhiteSpace(field.Label) ? existing.Label : field.Label!;
+                map[key] = new FormFieldDefinition(key, label, existing.FieldType, IsPool: false);
+                continue;
+            }
+
             map[key] = new FormFieldDefinition(
                 key,
                 string.IsNullOrWhiteSpace(field.Label) ? key : field.Label!,

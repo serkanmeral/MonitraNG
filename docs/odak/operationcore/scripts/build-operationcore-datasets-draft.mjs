@@ -111,6 +111,34 @@ const WORK_ITEM_QUERIES = [
       { name: 'asOf', type: 'datetime', required: true },
     ],
   },
+  {
+    name: 'wi_count_by_state',
+    description: 'Open WorkItems count grouped by state (workspace donut widget)',
+    pipeline: [
+      {
+        $match: {
+          workspaceId: ':workspaceId',
+          closedAt: null,
+        },
+      },
+      {
+        $group: {
+          _id: '$stateId',
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          stateId: '$_id',
+          stateName: '$_id',
+          count: 1,
+        },
+      },
+      { $sort: { count: -1 } },
+    ],
+    parameters: [{ name: 'workspaceId', type: 'text', required: true }],
+  },
 ];
 
 function fieldText(name, title, opts = {}) {

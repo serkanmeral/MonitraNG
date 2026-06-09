@@ -60,6 +60,18 @@ public class ResourcesController : ControllerBase
         CancellationToken ct = default) =>
         Ok(await _resources.SearchAsync(q, skip, limit, ct));
 
+    /// <summary>Son güncellenen yayınlanmış markdown kayıtları.</summary>
+    [HttpGet("recent")]
+    [ProducesResponseType(typeof(ResourceListResult), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetRecent([FromQuery] int limit = 10, CancellationToken ct = default) =>
+        Ok(await _resources.GetRecentAsync(limit, ct));
+
+    /// <summary>Kullanıcının düzenleyebildiği taslak markdown kayıtları.</summary>
+    [HttpGet("drafts")]
+    [ProducesResponseType(typeof(ResourceListResult), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetDrafts([FromQuery] int limit = 50, CancellationToken ct = default) =>
+        Ok(await _resources.GetDraftsAsync(limit, ct));
+
     /// <summary>Tek kaynak metadata'sı.</summary>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ResourceDto), StatusCodes.Status200OK)]

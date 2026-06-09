@@ -1,7 +1,7 @@
 # V1 Widget Template Katalogu
 
 **Son güncelleme:** 7 Haziran 2026  
-**Durum:** 📋 Planlama — seed JSON henüz yok  
+**Durum:** ✅ Seed JSON hazır — [datasets/widget_templates_seed_v1.json](./datasets/widget_templates_seed_v1.json)  
 **Kapsam:** D7 — alarm · siem · operation-core · document-intelligence
 
 ---
@@ -65,15 +65,21 @@
 ## 3. Öncelik (seed sırası)
 
 1. **P0 — mevcut API/query:** `oc.my-assigned-table`, `siem.events-total-stat`, `siem.login-failed-stat`, `alarm.open-count-stat`, `di.folder-children-table`, `di.quick-link-banner`
-2. **P1 — küçük API/query genişletme:** trend/bucket, `wi_count_by_state`, DI stats
-3. **P2 — composite / entegrasyon:** `siem.scenario-cards`, `di.workitem-linked-docs`
+2. **P1 — küçük API/query genişletme:** `alarm.severity-distribution-donut`, `alarm.recent-table`, `siem.open-alarms-stat`, `siem.events-hourly-trend`, `siem.recent-events-table`, `oc.sla-breach-stat`, `oc.open-work-queue-table`, `di.recent-search-list` — **aktif** (smoke: [scripts/smoke-widget-p1-data.ps1](./scripts/smoke-widget-p1-data.ps1))
+3. **P2 — bekleyen API:** `alarm.trend-area`, `oc.work-items-by-state`, `di.recent-updates-list`, `di.draft-count-stat`, `siem.scenario-cards`
 
 ---
 
-## 4. Seed dosyası (henüz yok)
+## 4. Seed dosyası
 
-Hedef konum: `docs/odak/widgets/datasets/widget_templates_seed_v1.json`  
-Kurulum: `setup-widget-templates-datasets.ps1` (Faz 0 iskelet — bkz. [datasets/KURULUM.md](./datasets/KURULUM.md))
+Konum: [datasets/widget_templates_seed_v1.json](./datasets/widget_templates_seed_v1.json)  
+Kurulum: [scripts/setup-widget-templates-datasets.ps1](./scripts/setup-widget-templates-datasets.ps1) — bkz. [datasets/KURULUM.md](./datasets/KURULUM.md)
+
+| Öncelik | Aktif (`isActive`) | Adet |
+|---------|-------------------|------|
+| P0 | `true` | 6 |
+| P1 | `true` | 8 |
+| P2 | `false` | 5 |
 
 ---
 

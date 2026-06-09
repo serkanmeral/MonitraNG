@@ -25,7 +25,7 @@ import {
   ocDeleteForm,
   ocExtractDgErrorMessage,
   ocListFormsForWorkspace,
-  ocListPoolFieldsForWorkspace,
+  ocListFormLayoutPoolFields,
   ocListStateFlowsForWorkspace,
   ocUpdateForm,
 } from '@/services/operationCoreService';
@@ -246,6 +246,14 @@ function buildPayload() {
   };
 }
 
+async function refreshLayoutPoolFields() {
+  if (!props.workspaceId) {
+    poolFields.value = [];
+    return;
+  }
+  poolFields.value = await ocListFormLayoutPoolFields(props.workspaceId);
+}
+
 async function loadAll() {
   if (!props.workspaceId) return;
   loading.value = true;
@@ -254,7 +262,7 @@ async function loadAll() {
     const [formRows, flows, pool] = await Promise.all([
       ocListFormsForWorkspace(props.workspaceId),
       ocListStateFlowsForWorkspace(props.workspaceId),
-      ocListPoolFieldsForWorkspace(props.workspaceId),
+      ocListFormLayoutPoolFields(props.workspaceId),
       catalog.whenReady(),
     ]);
     const types = catalog.types.value;
@@ -298,6 +306,7 @@ function openCreate() {
   ensureDefaultValuesKeys();
   form.value = next;
   editorTab.value = 'general';
+  void refreshLayoutPoolFields();
   dialog.value = true;
 }
 
@@ -330,6 +339,7 @@ function openEdit(row: OpForm) {
   syncBehaviorsFromSections();
   ensureDefaultValuesKeys();
   editorTab.value = 'general';
+  void refreshLayoutPoolFields();
   dialog.value = true;
 }
 

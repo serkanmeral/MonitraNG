@@ -1,6 +1,6 @@
 # MngOperations & Operation Core UI — Devam noktası (checkpoint)
 
-**Son güncelleme:** 6 Haziran 2026 (**OC-PERF-F2b** ✅ · test `20.20` + prod `20.8` deploy)  
+**Son güncelleme:** 9 Haziran 2026 (**OC-FILE** ✅ · **OC-CACHE-RELOAD** ✅ · mngui deploy)  
 **Durum:** SW **SW-0…SW-6** ✅ · … · **UI-PERF-F1+1B** ✅ · **OC-PERF-F2b** ✅ — prod profil warm P95 **1694 ms**; `mngoperations`+`mngui` test+prod `--no-cache`
 
 > **⭐ KALDIĞIMIZ YER (6 Haz 2026) — OC performans paketi deploy + ölçüm:** **PV-PERF-4** (`op_links` $or, `op_tags` katalog cache, timeline dedup) + **Faz 2b** (dashboard query dedup) + metadata TTL **600 sn** + **UI-PERF-2** (45 sn profil cache, mutation `force`). Test `192.168.20.20` + Prod `192.168.20.8` — `mngoperations`+`mngui` `--no-cache`, smoke `gateway=200 ui=200 oc_live=200`. **Prod profil warm P95 1694 ms** ✅ (önce 2377 ms, hedef ≤1800). Test profil warm ~2963 ms ⚠️. Rapor: [diagnostic/DIAGNOSTIC_REPORT_2026-06-06-perf.md](../../diagnostic/DIAGNOSTIC_REPORT_2026-06-06-perf.md). JSON: `oc_pages_prod_post_perf_20260606.json`, `oc_pages_test_post_perf_20260606.json`. **Sıradaki:** ayrı planlama — pano ≤1,2 sn · profil cold · Faz 3 DG cache.
@@ -768,6 +768,22 @@ location /api/scheduler/ {
 
 ---
 
+## OC-FILE — Form pool `file` alanı + metadata cache reload (9 Haz 2026)
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **OC-FILE-1** | ✅ | **Alan tanımı** — Değerler → Alanlar: `fieldType: file` için max MB + izinli uzantılar; DG `op_fields.options` = `{ maxSizeBytes, allowedExtensions? }`. `ocFileFieldOptions.ts`; combobox nesne dönüşü `coerceOcFileExtensionInput` ile normalize. |
+| **OC-FILE-2** | ✅ | **Create runtime** — `OcWorkItemFileField`; base64 → `buildCreateWorkItemRequest(..., formContext)` → **`fields.attachments`**. Profil **Ekler** sekmesi aynı kanal. MO backend değişikliği yok. |
+| **OC-FILE-3** | ✅ | **Runtime options** — `enrichFormRuntimeFields` + `ocFormValidation` zorunlu file. |
+| **OC-CACHE-1** | ✅ MO Odak | **`POST /api/v1/workspaces/{id}/metadata-cache/reload`** — workspace metadata cache temizliği. |
+| **OC-CACHE-2** | ✅ UI | Workspace Tanımları → Genel → **Runtime önbelleğini yenile**. |
+
+**UI:** `OcWorkItemFileField.vue`, `ocFileFieldOptions.ts`, `ocWorkItemFileFields.ts`, `OcWorkspaceDefinitionsFieldsTab.vue`, `OcDynamicFormField.vue`, `OcWorkItemFormDialog.vue`, `work-items/new/index.vue`, locale `en/tr`. **Doküman:** [OC_UI_FORM_DEFINITIONS.md](../ui/OC_UI_FORM_DEFINITIONS.md) §4.1, [FORM_LAYOUT_AND_EXTRA_FIELDS.md](./FORM_LAYOUT_AND_EXTRA_FIELDS.md) §5.
+
+**Test:** file alanı tanımla → forma ekle → cache reload → board «Yeni iş» upload → profil Ekler.
+
+---
+
 ## Görsel ilerleme
 
 ```text
@@ -809,5 +825,7 @@ location /api/scheduler/ {
 [✓] UI-PERF-1B: operasyon explorer lazy boards + deferred dashboard/relation + kanban batch + ws cache — Odak'ta canlı (2 Haz, 84b296c; diagnostic Faz 1B)
 [✓] UI-PERF doğrulama: deploy sonrası script ölçümü (2 Haz) — tarayıcı Network opsiyonel
 [✓] OC-PERF-F2b: PV-PERF-4 + dashboard query dedup + TTL 600 + UI profil cache — test+prod deploy (6 Haz)
+[✓] OC-FILE: form pool `file` alanı — alan tanımı options (max MB/uzantı) + create upload → `attachments` + profil Ekler — mngui deploy (9 Haz)
+[✓] OC-CACHE-RELOAD: MO `POST .../metadata-cache/reload` + Workspace Tanımları butonu — MO Odak (9 Haz), UI deploy (9 Haz)
 [ ] OC-PERF sonraki: pano ≤1,2 sn · profil cold · Faz 3 DG cache
 ```

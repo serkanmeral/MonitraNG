@@ -46,7 +46,8 @@ function behaviorFor(key: string) {
   return {
     visible: b?.visible !== false,
     required: b?.required === true,
-    readonly: props.readonly || b?.readonly === true,
+    /** Yalnızca alan düzeyi; form salt okunurluğu `:readonly` ile ayrı iletilir. */
+    readonly: b?.readonly === true,
     masked: b?.masked === true,
   };
 }

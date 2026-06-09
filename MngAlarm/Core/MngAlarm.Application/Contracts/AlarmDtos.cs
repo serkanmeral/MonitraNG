@@ -124,4 +124,17 @@ public sealed class AlarmDashboardSnapshot
     public required IReadOnlyList<AlarmScenarioRollupDto> ScenarioRollup { get; init; }
 }
 
+public sealed class AlarmTrendBucketDto
+{
+    public required DateTime Bucket { get; init; }
+    public int Count { get; init; }
+}
+
+public sealed class AlarmTrendBucketsResult
+{
+    public required DateTime From { get; init; }
+    public required DateTime To { get; init; }
+    public required IReadOnlyList<AlarmTrendBucketDto> Items { get; init; }
+}
+
 public sealed record AlarmDomainContext(string DomainId, string DomainName);

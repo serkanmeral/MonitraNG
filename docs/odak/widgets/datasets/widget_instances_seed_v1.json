@@ -1,0 +1,208 @@
+{
+  "_comment": "seed-widget-instances.ps1 — Alarm / SIEM / Operation Core starter @widgets. Sablonlar: @widget_templates (setup-widget-templates-datasets.ps1). OC placeholders: operationcore-demo-seed.json",
+  "contextKeys": {
+    "ocWorkspaceId": "workspaceId",
+    "ocStateOpenId": "states.open",
+    "ocStateInProgressId": "states.inProgress"
+  },
+  "widgets": [
+    {
+      "module": "alarm",
+      "name": "seed-alarm-open-count",
+      "templateId": "alarm.open-count-stat",
+      "order": 11,
+      "description": "Açık alarm KPI — dashboard ve alarm merkezi özeti"
+    },
+    {
+      "module": "alarm",
+      "name": "seed-alarm-severity-donut",
+      "templateId": "alarm.severity-distribution-donut",
+      "order": 12,
+      "description": "Önem dağılımı donut grafiği"
+    },
+    {
+      "module": "alarm",
+      "name": "seed-alarm-recent-table",
+      "templateId": "alarm.recent-table",
+      "order": 13,
+      "parameters": {
+        "openLimit": 15
+      },
+      "description": "Son açık alarmlar tablosu"
+    },
+    {
+      "module": "alarm",
+      "name": "seed-alarm-trend-area",
+      "templateId": "alarm.trend-area",
+      "order": 14,
+      "description": "Saatlik alarm trend alan grafiği"
+    },
+    {
+      "module": "siem",
+      "name": "seed-siem-events-total",
+      "templateId": "siem.events-total-stat",
+      "order": 21,
+      "description": "24s güvenlik olay sayısı"
+    },
+    {
+      "module": "siem",
+      "name": "seed-siem-login-failed",
+      "templateId": "siem.login-failed-stat",
+      "order": 22,
+      "description": "Başarısız giriş olayları KPI"
+    },
+    {
+      "module": "siem",
+      "name": "seed-siem-open-alarms",
+      "templateId": "siem.open-alarms-stat",
+      "order": 23,
+      "description": "SIEM paneli — açık alarm sayısı"
+    },
+    {
+      "module": "siem",
+      "name": "seed-siem-events-hourly-trend",
+      "templateId": "siem.events-hourly-trend",
+      "order": 24,
+      "description": "Saatlik olay trend grafiği"
+    },
+    {
+      "module": "siem",
+      "name": "seed-siem-recent-events-table",
+      "templateId": "siem.recent-events-table",
+      "order": 25,
+      "parameters": {
+        "limit": 20
+      },
+      "description": "Son güvenlik olayları tablosu"
+    },
+    {
+      "module": "siem",
+      "name": "seed-siem-scenario-cards",
+      "templateId": "siem.scenario-cards",
+      "order": 26,
+      "description": "Senaryo rollup kart grid (SIEM panel)"
+    },
+    {
+      "module": "operation-core",
+      "name": "seed-oc-my-assigned-open",
+      "templateId": "oc.my-assigned-table",
+      "order": 31,
+      "description": "Bana atanan açık işler — kişisel kuyruk"
+    },
+    {
+      "module": "operation-core",
+      "name": "seed-oc-work-by-state",
+      "templateId": "oc.work-items-by-state",
+      "order": 32,
+      "parameters": {
+        "workspaceId": "${ocWorkspaceId}"
+      },
+      "description": "Workspace durum dağılımı (donut)"
+    },
+    {
+      "module": "operation-core",
+      "name": "seed-oc-sla-breach",
+      "templateId": "oc.sla-breach-stat",
+      "order": 33,
+      "parameters": {
+        "workspaceId": "${ocWorkspaceId}"
+      },
+      "description": "SLA yanıt ihlali sayısı"
+    },
+    {
+      "module": "operation-core",
+      "name": "seed-oc-queue-open",
+      "templateId": "oc.open-work-queue-table",
+      "order": 34,
+      "parameters": {
+        "workspaceId": "${ocWorkspaceId}",
+        "stateId": "${ocStateOpenId}"
+      },
+      "description": "Açık durumdaki iş kuyruğu"
+    },
+    {
+      "module": "operation-core",
+      "name": "seed-oc-queue-in-progress",
+      "templateId": "oc.open-work-queue-table",
+      "order": 35,
+      "titleOverride": "Devam eden işler",
+      "parameters": {
+        "workspaceId": "${ocWorkspaceId}",
+        "stateId": "${ocStateInProgressId}"
+      },
+      "description": "In Progress kolonu iş listesi"
+    }
+  ],
+  "dashboards": [
+    {
+      "name": "seed-alarm-overview",
+      "title": "Alarm Özet Paneli",
+      "description": "Alarm modülü starter widget'ları — tasarım ve test panosu",
+      "slug": "seed-alarm-overview",
+      "order": 11,
+      "layoutRows": [
+        {
+          "cols": [
+            { "span": 3, "widgetName": "seed-alarm-open-count" },
+            { "span": 3, "widgetName": "seed-alarm-severity-donut" },
+            { "span": 6, "widgetName": "seed-alarm-trend-area" }
+          ]
+        },
+        {
+          "cols": [
+            { "span": 12, "widgetName": "seed-alarm-recent-table" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "seed-siem-overview",
+      "title": "SIEM Özet Paneli",
+      "description": "SIEM modülü starter widget'ları — tasarım ve test panosu",
+      "slug": "seed-siem-overview",
+      "order": 12,
+      "layoutRows": [
+        {
+          "cols": [
+            { "span": 4, "widgetName": "seed-siem-events-total" },
+            { "span": 4, "widgetName": "seed-siem-open-alarms" },
+            { "span": 4, "widgetName": "seed-siem-login-failed" }
+          ]
+        },
+        {
+          "cols": [
+            { "span": 12, "widgetName": "seed-siem-scenario-cards" }
+          ]
+        },
+        {
+          "cols": [
+            { "span": 5, "widgetName": "seed-siem-events-hourly-trend" },
+            { "span": 7, "widgetName": "seed-siem-recent-events-table" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "seed-oc-workspace",
+      "title": "Operasyon Merkezi — Demo Workspace",
+      "description": "MO starter widget'ları (OC Demo workspace) — tasarım ve test panosu",
+      "slug": "seed-oc-workspace",
+      "order": 13,
+      "layoutRows": [
+        {
+          "cols": [
+            { "span": 3, "widgetName": "seed-oc-sla-breach" },
+            { "span": 3, "widgetName": "seed-oc-work-by-state" },
+            { "span": 6, "widgetName": "seed-oc-my-assigned-open" }
+          ]
+        },
+        {
+          "cols": [
+            { "span": 6, "widgetName": "seed-oc-queue-open" },
+            { "span": 6, "widgetName": "seed-oc-queue-in-progress" }
+          ]
+        }
+      ]
+    }
+  ]
+}
