@@ -4,6 +4,7 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import { useOcWorkspaceMetadataCacheReload } from '@/composables/useOcWorkspaceMetadataCacheReload';
 import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import OcFormPreviewDialog from '@/components/apps/operation-core/OcFormPreviewDialog.vue';
+import DiMarkdownEditor from '@/components/apps/document-intelligence/DiMarkdownEditor.vue';
 import OcWorkspaceFormLayoutEditor from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceFormLayoutEditor.vue';
 import OcWorkspaceFormFieldPolicyEditor from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceFormFieldPolicyEditor.vue';
 import {
@@ -69,7 +70,7 @@ const previewValues = ref<Record<string, unknown>>({});
 const editId = ref<string | null>(null);
 const deleteDialog = ref(false);
 const deleteTarget = ref<OpForm | null>(null);
-const editorTab = ref<'general' | 'layout' | 'fieldPolicies'>('general');
+const editorTab = ref<'general' | 'layout' | 'fieldPolicies' | 'help'>('general');
 
 const defaultBehavior = (): OpFormFieldBehavior => ({
   visible: true,
@@ -83,6 +84,7 @@ const defaultForm = () => ({
   description: '',
   formHeading: '',
   formIntro: '',
+  helpMarkdown: '',
   dialogMaxWidth: DEFAULT_OC_FORM_DIALOG_MAX_WIDTH,
   defaultTypeId: '' as string,
   defaultStateFlowId: '' as string,
@@ -209,6 +211,7 @@ function buildPayload() {
   const layout = buildOcFormLayoutPayload({
     formHeading: form.value.formHeading,
     formIntro: form.value.formIntro,
+    helpMarkdown: form.value.helpMarkdown,
     dialogMaxWidth: form.value.dialogMaxWidth,
     sections: form.value.sections,
     fieldCols: form.value.fieldCols,
@@ -319,6 +322,7 @@ function openEdit(row: OpForm) {
     description: row.description ?? '',
     formHeading: row.formHeading ?? '',
     formIntro: row.formIntro ?? '',
+    helpMarkdown: row.helpMarkdown ?? '',
     dialogMaxWidth: row.dialogMaxWidth ?? DEFAULT_OC_FORM_DIALOG_MAX_WIDTH,
     defaultTypeId: row.defaultTypeId ?? '',
     defaultStateFlowId: row.defaultStateFlowId ?? '',
@@ -441,6 +445,7 @@ function openPreview() {
       formName: form.value.name.trim() || t('operationCore.workspaceDefinitions.forms.unnamedForm'),
       formHeading: form.value.formHeading,
       formIntro: form.value.formIntro,
+      helpMarkdown: form.value.helpMarkdown,
       dialogMaxWidth: form.value.dialogMaxWidth,
       defaultTypeId: form.value.defaultTypeId || undefined,
       sections: form.value.sections,
@@ -570,6 +575,9 @@ function openPreview() {
           </v-tab>
           <v-tab value="fieldPolicies" class="text-none">
             {{ t('operationCore.workspaceDefinitions.forms.tabFieldPolicies') }}
+          </v-tab>
+          <v-tab value="help" class="text-none">
+            {{ t('operationCore.workspaceDefinitions.forms.tabHelp') }}
           </v-tab>
         </v-tabs>
 
@@ -716,6 +724,16 @@ function openPreview() {
                 :state-items="stateItems"
                 :board-items="boardItems"
               />
+            </v-window-item>
+
+            <v-window-item value="help">
+              <p class="text-subtitle-2 font-weight-medium mb-1">
+                {{ t('operationCore.workspaceDefinitions.forms.helpTitle') }}
+              </p>
+              <p class="text-caption text-medium-emphasis mb-4">
+                {{ t('operationCore.workspaceDefinitions.forms.helpHint') }}
+              </p>
+              <DiMarkdownEditor v-model="form.helpMarkdown" />
             </v-window-item>
           </v-window>
         </v-card-text>

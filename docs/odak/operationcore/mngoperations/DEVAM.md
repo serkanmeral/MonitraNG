@@ -1,8 +1,9 @@
 # MngOperations & Operation Core UI — Devam noktası (checkpoint)
 
-**Son güncelleme:** 9 Haziran 2026 (**OC-FILE** ✅ · **OC-LOOKUP L1+L2** ✅ · **OC-CACHE-RELOAD** ✅ · mngui deploy)  
-**Durum:** SW **SW-0…SW-6** ✅ · … · **UI-PERF-F1+1B** ✅ · **OC-PERF-F2b** ✅ — prod profil warm P95 **1694 ms**; `mngoperations`+`mngui` test+prod `--no-cache`
+**Son güncelleme:** 9 Haziran 2026 (**WS-HUB-BOARD** ✅ · **OC-FORM-HELP F1** ✅ · Odak `mngui` deploy)  
+**Durum:** SW **SW-0…SW-6** ✅ · … · **UI-PERF-F1+1B** ✅ · **OC-PERF-F2b** ✅ — prod profil warm P95 **1694 ms**
 
+> **⭐ KALDIĞIMIZ YER (9 Haz 2026 — oturum kapanışı):** Bu oturumda **workspace hub** paketi tamamlandı ve canlıya alındı: inline board (`OcBoardPanel`), varsayılan board görünümü, profilden hub'a geri dönüş (`ocWorkItemProfileNav`), tree'den pano düğümü kaldırma. **OC-FORM-HELP F1:** `op_forms.layout.helpMarkdown` — Formlar → **Yardım** sekmesi + Yeni iş modalında Yardım butonu (`OcFormHelpDialog`); demo metin `oc_demo_create_form_help.md` + `patch-oc-demo-form-help.ps1` (Odak DG'de OC Demo Create Form'a yazıldı). **Commit+push+deploy:** bu oturum kapanış commit'i + `mngui` Odak `--no-cache`. **Manuel doğrulandı:** hub inline board ✅ · profil geri ✅ · form yardım (OC Demo Board) ✅. **Sıradaki (önerilen):** (1) **OC-FORM-HELP F2** — edit modal / tam sayfa yeni iş / admin önizlemede yardım; (2) **OC-PERF** — profil cold, pano ≤1,2 sn, widget smoke; (3) opsiyonel hub tam ekran board linki. **Odak:** http://192.168.20.20:3000/apps/operation-core/workspace · demo ws `f414462a-cd9e-427e-87e8-3cdff0502325` · form `OC Demo Create Form`.
 > **⭐ KALDIĞIMIZ YER (6 Haz 2026) — OC performans paketi deploy + ölçüm:** **PV-PERF-4** (`op_links` $or, `op_tags` katalog cache, timeline dedup) + **Faz 2b** (dashboard query dedup) + metadata TTL **600 sn** + **UI-PERF-2** (45 sn profil cache, mutation `force`). Test `192.168.20.20` + Prod `192.168.20.8` — `mngoperations`+`mngui` `--no-cache`, smoke `gateway=200 ui=200 oc_live=200`. **Prod profil warm P95 1694 ms** ✅ (önce 2377 ms, hedef ≤1800). Test profil warm ~2963 ms ⚠️. Rapor: [diagnostic/DIAGNOSTIC_REPORT_2026-06-06-perf.md](../../diagnostic/DIAGNOSTIC_REPORT_2026-06-06-perf.md). JSON: `oc_pages_prod_post_perf_20260606.json`, `oc_pages_test_post_perf_20260606.json`. **Sıradaki:** ayrı planlama — pano ≤1,2 sn · profil cold · Faz 3 DG cache.
 >
 > **KALDIĞIMIZ YER (2 Haz ~12:45) — Diagnostic tamamlandı:** **Faz 2 MO** deploy + ölçüm — `benchmark_faz2_20260602.json` (profile warm P95 **~1,3 sn**, profile-view **~2,3 sn**, dashboard **~1,7 sn** ✅). Yeni **`diagnostic-operation-pages.ps1`** — 10 OC sayfası; `oc_pages_faz2_20260602.json` (explorer/board ✅, profil/pano ~2 sn ⚠️ hedefe yakın). `ws_definitions_faz2` scheduled tab paralel **~2 sn** ✅. Rapor: [diagnostic/DIAGNOSTIC_REPORT_2026-06-02-faz2.md](../../diagnostic/DIAGNOSTIC_REPORT_2026-06-02-faz2.md). **Sıradaki:** pano ≤1 sn için MO query dedup/cache · gerçek cold (`docker restart mngoperations`) · tarayıcı waterfall. **Odak:** http://192.168.20.20:3000
@@ -98,7 +99,7 @@ Pano artık board'ın kendi ekranı (workspace hub merkez paneli) **içinde inli
 | Kod | Durum | Not |
 |-----|--------|-----|
 | **DASH-INLINE-1** | ✅ | **Paylaşılan `OcDashboardView.vue`** — pano yükleme (`ocGetDashboard`) + layout/widget grid render + loading/error/boş/açıklama, `loaded`/`error` event. `dashboards/[id]/index.vue` sadeleşip bunu kullanıyor (tek kaynak; breadcrumb adını `loaded`'dan alır). |
-| **DASH-INLINE-2** | ✅ | **Hub inline pano** — `workspace/index.vue`: board seçiliyken pano atanmışsa içerik alanında `OcDashboardView` inline render. Header "Pano" butonu → **Özet/Pano `v-btn-toggle`** (pano varsa varsayılan **Pano**; `centerView` ref + `selectedBoardDashboardId` watch). "Board'u aç" aynen (gerçek board ayrı tam sayfa). Tree pano düğümü tıklaması (`onOpenDashboard`) artık ayrı sayfa yerine board'ı seçip `centerView='dashboard'`. i18n `workspace.viewSummary` (tr "Özet"/en "Summary"). |
+| **DASH-INLINE-2** | ✅ → **WS-HUB-BOARD** | **Hub inline pano** (2 Haz) — *9 Haz'da davranış güncellendi:* varsayılan **board** (pano değil); board inline `OcBoardPanel`; pano yalnızca **Board \| Pano** toggle ile. Tree pano düğümü **kaldırıldı** (9 Haz). Eski not: Özet/Pano toggle + tree pano düğümü — artık geçerli değil. |
 | **DASH-CARDS-1** | ✅ | **Özet kartı zenginleştirme** — `OcDashboardSummaryCard.vue`: key'den kararlı **renk aksanı** (6'lık palet, sol şerit + `--oc-accent` CSS var), bağlama göre **akıllı ikon** (sla/progress/open/done/assigned → mdi), tonlu ikon rozeti, büyük renkli sayı (2.4rem/800), hover yükselme. |
 | **DASH-CARDS-2** | ✅ | **Liste widget zenginleştirme** — `OcDashboardListWidget.vue`: satırda **öncelik renk şeridi** (`catalogs.priorities[id].color` → sol border), 2 satırlı düzen (key+başlık / state chip+atanan), atanan için **baş-harf avatarı** (`initials()`), hover arka plan, ikonlu boş-durum. |
 | **DASH-CARDS-3 (bug)** | ✅ | **"Bana atanan" boştu — kimlik uzayı** — `{{currentUser}}` → `QueryResolveContext.Username` (`preferred_username`) çözülüyordu; `assignee` ise `MngPersonId` (@users id, NP-4/6 uzayı) ile saklanır → asla eşleşmiyordu. **Düzeltme:** `QueryResolveContext.Username` → **`CurrentUserId`** (anlam netleşti); `QueryParameterResolver` `{{currentUser}}`/`currentuser` bunu kullanır; iki kuruluş yeri (`RuntimeContextService.cs` generic query ucu + `.Dashboard.cs`) artık **`_requestContext.MngPersonId`** besler. |
@@ -796,7 +797,46 @@ location /api/scheduler/ {
 | **OC-LOOKUP-4** | ✅ UI | Modal picker (`useOcDatasetPicker` + `OcLookupDatasetPickerField`). |
 | **OC-LOOKUP-5** | ✅ MO | Profil/aktivite `labelField` resolve (`LookupFieldOptionsHelper`). |
 
-**Kod:** `ocLookupFieldOptions.ts`, `useOcLookupDatasetCatalog.ts`, `OcWorkspaceDefinitionsFieldsTab.vue`, `useOcDynamicFormLookups.ts`, `OcDynamicFormField.vue`. **Spec:** [OC_UI_LOOKUP_FIELDS.md](../ui/OC_UI_LOOKUP_FIELDS.md).
+**Kod:** `ocLookupFieldOptions.ts`, `useOcLookupDatasetCatalog.ts`, `useOcDatasetPicker.ts`, `OcLookupDatasetPickerField.client.vue`, `OcWorkspaceDefinitionsFieldsTab.vue`, `useOcDynamicFormLookups.ts`, `OcDynamicFormField.vue`. **Spec:** [OC_UI_LOOKUP_FIELDS.md](../ui/OC_UI_LOOKUP_FIELDS.md).
+
+---
+
+## WS-HUB-BOARD — Workspace hub inline board + profil geri nav + tree (9 Haz 2026)
+
+Kullanıcı isteği: workspace gezinme tree'sinde board seçilince **ayrı board sayfasına gitmesin**; liste/kanban **sağ panelde** açılsın; **varsayılan board** görünümü olsun; pano isteğe bağlı toggle ile. Profilden dönüş hub'daki board'a gitsin. Tree'de board altında pano listesi **gereksiz**.
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **WS-HUB-1** | ✅ Odak | **`OcBoardPanel.client.vue`** — board runtime extract (`boards/[boardId]/index.vue` → ince sarmalayıcı). `embedded`: breadcrumb/geri/pano-link gizli; liste/kanban/refresh/yeni iş araç çubuğu kalır. |
+| **WS-HUB-2** | ✅ Odak | **Hub varsayılan board** — `workspace/index.vue`: `centerView='board'`; inline `OcBoardPanel`; «Board'u aç» kaldırıldı; pano atanmışsa header **Board \| Pano** toggle. i18n `viewBoard`, `noDashboardAssigned`. |
+| **WS-HUB-3** | ✅ Odak | **Profil geri nav** — `ocWorkItemProfileNav.ts`; hub profil linkleri `from=workspace&workspaceId&boardId`; profil «geri» hub'a; tam sayfa board `from=board`. |
+| **WS-HUB-4** | ✅ | **Tree pano kaldır** — `OcWorkspaceTree`: board altı pano satırı yok; yalnızca Workspace → Board. |
+
+**UI dosyalar:** `OcBoardPanel.client.vue`, `pages/.../workspace/index.vue`, `pages/.../boards/[boardId]/index.vue`, `OcWorkspaceTree.vue`, `OcWorkItemCard.vue`, `OcBoardKanban.vue`, `pages/.../work-items/[id]/profile/index.vue`, `utils/ocWorkItemProfileNav.ts`, `utils/locales/{tr,en}.json`.
+
+**Deploy:** commit `ac0c541` — `mngui`+`mngoperations`+`mngdatagateway` Odak `--no-cache` (9 Haz ~18:00, `gateway=200 ui=200 oc_live=200`).
+
+**Test:** Workspace → tree board → inline liste/kanban → profil → geri (hub'da board) → pano toggle (atanmış board) → `/boards/{id}` deep link hâlâ çalışır.
+
+**Yeni chat handoff (kısa):** «DEVAM.md ⭐ (9 Haz oturum kapanışı) oku. Sıradaki: OC-FORM-HELP F2 veya OC-PERF backlog.»
+
+---
+
+## OC-FORM-HELP — Form yardım dokümanı (Markdown, F1 — 9 Haz 2026)
+
+Form tasarımcısı workspace tanımları → Formlar → **Yardım** sekmesinde Markdown kullanım kılavuzu yazar; metin **`op_forms.layout.helpMarkdown`** alanında saklanır (fiziksel `.md` dosyası yok). Kullanıcı board **Yeni iş** modalında Yardım butonu ile salt okunur görür.
+
+| Kod | Durum | Not |
+|-----|--------|-----|
+| **OC-FORM-HELP-1** | ✅ | `layout.helpMarkdown` parse/build (`ocFormLayout.ts`, `OpForm`, `mapOpForm`, `layoutFromParsed`). |
+| **OC-FORM-HELP-2** | ✅ | Admin **Yardım** sekmesi — `OcWorkspaceDefinitionsFormsTab` + `DiMarkdownEditor`. |
+| **OC-FORM-HELP-3** | ✅ | Runtime — `OcFormHelpDialog` + `OcWorkItemFormDialog` (create, yardım doluysa buton). |
+| **OC-FORM-HELP-4** | ✅ | Demo metin: [oc_demo_create_form_help.md](../datasets/oc_demo_create_form_help.md), sync: `patch-oc-demo-form-help.ps1`. |
+| **OC-FORM-HELP F2** | backlog | Edit modal, tam sayfa yeni iş, admin önizleme. |
+
+**Backend:** değişiklik yok — MO `FormRuntimeContext.Layout` zaten tam JSON iletir.
+
+**Doküman:** [FORM_LAYOUT_AND_EXTRA_FIELDS.md](./FORM_LAYOUT_AND_EXTRA_FIELDS.md) §2 · [OC_UI_FORM_DEFINITIONS.md](../ui/OC_UI_FORM_DEFINITIONS.md)
 
 ---
 
@@ -843,5 +883,9 @@ location /api/scheduler/ {
 [✓] OC-PERF-F2b: PV-PERF-4 + dashboard query dedup + TTL 600 + UI profil cache — test+prod deploy (6 Haz)
 [✓] OC-FILE: form pool `file` alanı — alan tanımı options (max MB/uzantı) + create upload → `attachments` + profil Ekler — mngui deploy (9 Haz)
 [✓] OC-CACHE-RELOAD: MO `POST .../metadata-cache/reload` + Workspace Tanımları butonu — MO Odak (9 Haz), UI deploy (9 Haz)
-[ ] OC-PERF sonraki: pano ≤1,2 sn · profil cold · Faz 3 DG cache
+[✓] OC-LOOKUP L4: modal dataset picker — commit ac0c541, Odak mngui (9 Haz)
+[✓] WS-HUB-BOARD: inline board hub + profil geri nav + tree pano kaldir — Odak mngui (9 Haz)
+[✓] OC-FORM-HELP F1: form yardim MD (layout.helpMarkdown) + demo metin — Odak mngui (9 Haz)
+[ ] OC-FORM-HELP F2: edit modal / tam sayfa yeni is / admin onizleme
+[ ] OC-PERF sonraki: pano ≤1,2 sn · profil cold · widget smoke
 ```

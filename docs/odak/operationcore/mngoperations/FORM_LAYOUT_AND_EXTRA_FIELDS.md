@@ -24,7 +24,8 @@ Kayıt: `op_forms` dataset, `layout` object alanı.
 ```json
 {
   "formHeading": "Üst başlık (isteğe bağlı)",
-  "formIntro": "Üst açıklama (isteğe bağlı)",
+  "formIntro": "Üst açıklama (isteğe bağlı, düz metin)",
+  "helpMarkdown": "# Kullanım\n\nMarkdown yardım metni (Yeni iş modalında Yardım butonu)",
   "dialogMaxWidth": 920,
   "sectionOrder": ["main", "other"],
   "sectionCols": { "main": 12, "other": 6 },

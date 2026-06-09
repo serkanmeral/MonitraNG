@@ -348,6 +348,7 @@ export function mapOpForm(raw: Record<string, unknown>): OpForm {
     isDefault: Boolean(raw.isDefault ?? false),
     formHeading: parsedLayout.formHeading || undefined,
     formIntro: parsedLayout.formIntro || undefined,
+    helpMarkdown: parsedLayout.helpMarkdown || undefined,
     dialogMaxWidth: parsedLayout.dialogMaxWidth,
     layoutSections: parsedLayout.sections,
     sectionCols: parsedLayout.sectionCols,
@@ -447,6 +448,7 @@ function layoutFromParsed(parsed: ReturnType<typeof parseOpFormLayout>): NonNull
   return {
     formHeading: parsed.formHeading || null,
     formIntro: parsed.formIntro || null,
+    helpMarkdown: parsed.helpMarkdown || null,
     dialogMaxWidth: parsed.dialogMaxWidth,
     sectionCols: parsed.sectionCols,
     fieldCols: parsed.fieldCols,
@@ -464,6 +466,7 @@ export interface BuildFormPreviewContextInput {
   formName: string;
   formHeading?: string;
   formIntro?: string;
+  helpMarkdown?: string;
   dialogMaxWidth?: number;
   defaultTypeId?: string;
   sections: OpFormLayoutSection[];
@@ -490,6 +493,7 @@ export function buildFormPreviewContextFromDraft(input: BuildFormPreviewContextI
   const layoutPayload = buildOcFormLayoutPayload({
     formHeading: input.formHeading,
     formIntro: input.formIntro,
+    helpMarkdown: input.helpMarkdown,
     dialogMaxWidth: input.dialogMaxWidth,
     sections: input.sections,
     fieldCols: input.fieldCols,

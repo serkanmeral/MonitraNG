@@ -46,6 +46,8 @@ export function ocFormDialogWidthSelectItems(
 export interface ParsedOpFormLayout {
   formHeading: string;
   formIntro: string;
+  /** Form yardım dokümanı (Markdown, op_forms.layout içinde). */
+  helpMarkdown: string;
   dialogMaxWidth: number;
   sections: OpFormLayoutSection[];
   sectionOrder: string[];
@@ -61,6 +63,7 @@ export function parseOpFormLayout(layoutRaw: unknown): ParsedOpFormLayout {
 
   const formHeading = String(layout.formHeading ?? layout.FormHeading ?? '').trim();
   const formIntro = String(layout.formIntro ?? layout.FormIntro ?? '').trim();
+  const helpMarkdown = String(layout.helpMarkdown ?? layout.HelpMarkdown ?? '').trim();
   const dialogMaxWidth = normalizeOcDialogMaxWidthPx(layout.dialogMaxWidth ?? layout.DialogMaxWidth);
 
   const sectionColsRaw = (layout.sectionCols ?? layout.SectionCols ?? {}) as Record<string, unknown>;
@@ -125,6 +128,7 @@ export function parseOpFormLayout(layoutRaw: unknown): ParsedOpFormLayout {
     return {
       formHeading,
       formIntro,
+      helpMarkdown,
       dialogMaxWidth,
       sections: ordered,
       sectionOrder: ordered.map((s) => s.key),
@@ -136,6 +140,7 @@ export function parseOpFormLayout(layoutRaw: unknown): ParsedOpFormLayout {
   return {
     formHeading,
     formIntro,
+    helpMarkdown,
     dialogMaxWidth,
     sections,
     sectionOrder: sections.map((s) => s.key),
@@ -165,6 +170,7 @@ function parseFieldKeys(fieldsRaw: unknown): string[] {
 export interface OcFormLayoutBuildInput {
   formHeading?: string;
   formIntro?: string;
+  helpMarkdown?: string;
   dialogMaxWidth?: number;
   sections: OpFormLayoutSection[];
   fieldCols: Record<string, number>;
@@ -200,8 +206,10 @@ export function buildOcFormLayoutPayload(input: OcFormLayoutBuildInput): Record<
   if (Object.keys(fieldCols).length) payload.fieldCols = fieldCols;
   const heading = input.formHeading?.trim();
   const intro = input.formIntro?.trim();
+  const helpMd = input.helpMarkdown?.trim();
   if (heading) payload.formHeading = heading;
   if (intro) payload.formIntro = intro;
+  if (helpMd) payload.helpMarkdown = helpMd;
   payload.dialogMaxWidth = normalizeOcDialogMaxWidthPx(input.dialogMaxWidth);
   return payload;
 }

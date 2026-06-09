@@ -17,6 +17,7 @@ Workspace tanımları → **Forms** sekmesi: `op_forms` CRUD (DataGateway), layo
 | Layout’a eklenebilir core alanlar | `OC_FORM_LAYOUT_CORE_FIELD_KEYS` (watchers, reporter, dueDate, …; `key`/state hariç) |
 | `dialogMaxWidth` (modal / sayfa genişliği) | ✅ |
 | `formHeading` / `formIntro` | ✅ |
+| `helpMarkdown` — Formlar → **Yardım** sekmesi; Yeni iş modalında Yardım butonu (`OcFormHelpDialog`) | ✅ F1 (9 Haz 2026) |
 | `fieldBehaviors` + `defaultValues` | ✅ |
 | Boards sekmesi (`op_boards`) temel CRUD | ✅ |
 | `OcDynamicForm` — alan tipi widget’ları | ✅ |

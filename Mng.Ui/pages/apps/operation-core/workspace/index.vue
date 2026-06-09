@@ -66,11 +66,7 @@ async function ensureDashboardNamesForBoards(boards: OpBoard[]) {
   await Promise.all(ids.map(ensureDashboardName));
 }
 
-// Tree'de pano düğümüne tıklayınca: ilgili board'ı seç ve merkez panelde inline pano göster.
-function onOpenDashboard(_dashboardId: string, workspaceId: string, boardId: string) {
-  onSelectBoard(workspaceId, boardId);
-  centerView.value = 'dashboard';
-}
+// Tree'de yalnızca workspace / board seçimi; pano sağ panel toggle ile açılır.
 
 const selectedWorkspace = computed(() =>
   selectedWorkspaceId.value
@@ -289,12 +285,10 @@ onMounted(async () => {
                 :workspace-nodes="treeNodes"
                 :selected-workspace-id="selectedWorkspaceId"
                 :selected-board-id="selectedBoardId"
-                :dashboard-name-by-id="dashboardNameById"
                 :empty-label="t('operationCore.workspace.noWorkspaces')"
                 :label-workspaces-root="t('operationCore.workspace.workspacesRoot')"
                 @select-workspace="onSelectWorkspace"
                 @select-board="onSelectBoard"
-                @open-dashboard="onOpenDashboard"
                 @expand-workspace="onExpandWorkspace"
                 @expand-all-workspaces="onExpandAllWorkspaces"
               />

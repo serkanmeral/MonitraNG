@@ -3828,6 +3828,12 @@
         "closedLate": "Closed late"
       }
     },
+    "formHelp": {
+      "title": "Form help",
+      "open": "Open form help",
+      "close": "Close",
+      "empty": "No help text is defined for this form."
+    },
     "workItemDialog": {
       "createTitle": "New work item",
       "editTitle": "Edit work item",
@@ -5025,6 +5031,9 @@
         "tabGeneral": "General",
         "tabLayout": "Layout",
         "tabFieldPolicies": "Field policies",
+        "tabHelp": "Help",
+        "helpTitle": "Usage guide",
+        "helpHint": "Markdown help text. Shown read-only via the Help button in the New work item dialog. Stored in the form record layout field — not as a separate file.",
         "tabBehaviors": "Behaviors",
         "tabDefaults": "Default values",
         "formHeaderBlock": "Form header",

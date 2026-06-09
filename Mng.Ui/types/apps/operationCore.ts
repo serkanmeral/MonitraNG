@@ -253,6 +253,8 @@ export interface OpForm {
   isDefault?: boolean;
   formHeading?: string;
   formIntro?: string;
+  /** Yardım dokümanı (Markdown, layout.helpMarkdown). */
+  helpMarkdown?: string;
   layoutSections: OpFormLayoutSection[];
   /** layout.dialogMaxWidth (px) */
   dialogMaxWidth?: number;
@@ -283,6 +285,7 @@ export interface OcFieldBehaviorDto {
 export interface OcFormLayoutMeta {
   formHeading?: string | null;
   formIntro?: string | null;
+  helpMarkdown?: string | null;
   /** Yeni iş / önizleme modal genişliği (px). */
   dialogMaxWidth?: number | null;
   sectionCols?: Record<string, number>;

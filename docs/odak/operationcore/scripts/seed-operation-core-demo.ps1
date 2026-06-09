@@ -238,6 +238,11 @@ $typeId = Find-OrCreate -Collection "op_work_item_types" -Filter "name:eq:$typeN
 # --- 5. Form ---
 Write-Host "[5] op_forms..." -ForegroundColor Yellow
 $formName = "$demoTag Create Form"
+$helpMdPath = Join-Path (Join-Path $scriptDir "../datasets") "oc_demo_create_form_help.md"
+$helpMarkdown = ""
+if (Test-Path $helpMdPath) {
+    $helpMarkdown = (Get-Content $helpMdPath -Raw -Encoding UTF8).Trim()
+}
 $formLayout = @{
     sections = @(
         @{
@@ -246,6 +251,9 @@ $formLayout = @{
             fields = @("title", "description", "typeId", "assignee", "priorityId", "boardId")
         }
     )
+}
+if ($helpMarkdown) {
+    $formLayout.helpMarkdown = $helpMarkdown
 }
 $formFieldBehaviors = @{
     title       = @{ visible = $true; required = $true }

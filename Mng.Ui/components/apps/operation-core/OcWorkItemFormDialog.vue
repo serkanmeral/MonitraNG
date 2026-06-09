@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import OcDynamicForm from '@/components/apps/operation-core/OcDynamicForm.vue';
+import OcFormHelpDialog from '@/components/apps/operation-core/OcFormHelpDialog.client.vue';
 import OcPolicyPanel from '@/components/apps/operation-core/OcPolicyPanel.vue';
 import {
   buildCreateWorkItemRequest,
@@ -51,6 +52,10 @@ const formContext = ref<OcFormRuntimeContext | null>(null);
 const formModel = ref<Record<string, unknown>>({});
 const initialModel = ref<Record<string, unknown>>({});
 const validationAttempted = ref(false);
+const helpDialogOpen = ref(false);
+
+const formHelpMarkdown = computed(() => formContext.value?.layout?.helpMarkdown?.trim() ?? '');
+const showFormHelp = computed(() => !isEdit.value && !!formHelpMarkdown.value);
 
 const isEdit = computed(() => props.mode === 'edit');
 
@@ -227,6 +232,17 @@ watch(
             {{ t('operationCore.create.subtitle') }}
           </p>
         </div>
+        <v-btn
+          v-if="showFormHelp"
+          icon
+          variant="text"
+          size="small"
+          :title="t('operationCore.formHelp.open')"
+          :aria-label="t('operationCore.formHelp.open')"
+          @click="helpDialogOpen = true"
+        >
+          <v-icon icon="mdi-help-circle-outline" />
+        </v-btn>
         <v-btn icon variant="text" size="small" :disabled="submitting" @click="open = false">
           <v-icon icon="mdi-close" />
         </v-btn>
@@ -310,6 +326,12 @@ watch(
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <OcFormHelpDialog
+    v-model="helpDialogOpen"
+    :title="formContext?.formName"
+    :markdown="formHelpMarkdown"
+  />
 </template>
 
 <style scoped>

@@ -3841,6 +3841,12 @@
         "closedLate": "Geç kapandı"
       }
     },
+    "formHelp": {
+      "title": "Form yardımı",
+      "open": "Form yardımını aç",
+      "close": "Kapat",
+      "empty": "Bu form için yardım metni tanımlanmamış."
+    },
     "workItemDialog": {
       "createTitle": "Yeni iş",
       "editTitle": "İşi düzenle",
@@ -5038,6 +5044,9 @@
         "tabGeneral": "Genel",
         "tabLayout": "Yerleşim",
         "tabFieldPolicies": "Alan politikaları",
+        "tabHelp": "Yardım",
+        "helpTitle": "Kullanım dokümanı",
+        "helpHint": "Markdown formatında yardım metni. «Yeni iş» modalında Yardım butonu ile salt okunur gösterilir. Metin form kaydının layout alanında saklanır; ayrı dosya oluşturulmaz.",
         "tabBehaviors": "Davranışlar",
         "tabDefaults": "Varsayılan değerler",
         "formHeaderBlock": "Form üst metni",
