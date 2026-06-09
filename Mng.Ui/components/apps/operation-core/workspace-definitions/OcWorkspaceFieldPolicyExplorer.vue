@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useOcWorkspaceMetadataCacheReload } from '@/composables/useOcWorkspaceMetadataCacheReload';
 import { useOcPersonPicker } from '@/composables/useOcPersonPicker';
 import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import { useUserStore } from '@/stores/apps/user';
@@ -46,6 +47,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const metaCache = useOcWorkspaceMetadataCacheReload(() => props.workspaceId);
 const catalog = useOcWorkspaceCatalogInject();
 const userStore = useUserStore();
 const personPicker = useOcPersonPicker();
@@ -522,7 +524,12 @@ async function persistBlob(blob: OcWorkspaceFieldPoliciesBlob) {
     settingsBase.value = settings;
     policiesBlob.value = blob;
     await refreshPolicySummaryTitles(blob);
-    successLocal.value = t('operationCore.workspaceDefinitions.saveSuccess');
+    await metaCache.applySaveSuccess(
+      (msg) => {
+        successLocal.value = msg;
+      },
+      t('operationCore.workspaceDefinitions.saveSuccess')
+    );
   } catch (e: unknown) {
     errorLocal.value = ocExtractDgErrorMessage(
       e,

@@ -36,6 +36,7 @@ namespace MngDataGateway.Persistence.Services
         private readonly FilterParser _filterParser;
         private readonly SortParser _sortParser;
         private readonly IChatMentionNotifier? _chatMentionNotifier;
+        private readonly IGlobalCatalogReadCache? _catalogReadCache;
 
         public DataService(
             ILogger<DataService> logger,
@@ -49,7 +50,8 @@ namespace MngDataGateway.Persistence.Services
             FilterParser filterParser,
             SortParser sortParser,
             MngDataGateway.Application.Interfaces.IEventPublisher? eventPublisher = null,
-            IChatMentionNotifier? chatMentionNotifier = null)
+            IChatMentionNotifier? chatMentionNotifier = null,
+            IGlobalCatalogReadCache? catalogReadCache = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -63,6 +65,17 @@ namespace MngDataGateway.Persistence.Services
             _filterParser = filterParser ?? throw new ArgumentNullException(nameof(filterParser));
             _sortParser = sortParser ?? throw new ArgumentNullException(nameof(sortParser));
             _chatMentionNotifier = chatMentionNotifier;
+            _catalogReadCache = catalogReadCache;
+        }
+
+        private void InvalidateCatalogReadCache(string datasetName, string databaseName)
+        {
+            if (_catalogReadCache == null)
+                return;
+            var settings = _configuration.GetSection("MngDataGatewaySettings").Get<MngDataGatewaySettings>();
+            if (settings?.CatalogReadCache?.Enabled == false)
+                return;
+            _catalogReadCache.Invalidate(databaseName, datasetName);
         }
 
         public async Task<Dictionary<string, object>> CreateAsync(
@@ -136,6 +149,7 @@ namespace MngDataGateway.Persistence.Services
                     "Created data in dataset {DatasetName} with __dataId: {DataId}",
                     datasetName, data.GetValueOrDefault("__dataId"));
 
+                InvalidateCatalogReadCache(datasetName, databaseName);
                 return data;
             }
             catch (DataGatewayException)
@@ -250,6 +264,7 @@ namespace MngDataGateway.Persistence.Services
                     "Updated data in dataset {DatasetName} with __dataId: {DataId}",
                     datasetName, dataId);
 
+                InvalidateCatalogReadCache(datasetName, databaseName);
                 return result;
             }
             catch (DataGatewayException)
@@ -297,6 +312,7 @@ namespace MngDataGateway.Persistence.Services
                 "Hard-deleted and archived data in dataset {DatasetName} with __dataId: {DataId} (expires at {ExpireAt})",
                 datasetName, dataId, expireAt);
 
+            InvalidateCatalogReadCache(datasetName, databaseName);
             return true;
         }
 
@@ -845,6 +861,15 @@ namespace MngDataGateway.Persistence.Services
         {
             try
             {
+                var dgSettings = _configuration.GetSection("MngDataGatewaySettings").Get<MngDataGatewaySettings>();
+                if (dgSettings?.CatalogReadCache?.Enabled != false
+                    && _catalogReadCache != null
+                    && _catalogReadCache.TryGet(databaseName, datasetName, options, out var cachedResult)
+                    && cachedResult != null)
+                {
+                    return cachedResult;
+                }
+
                 // Load schema
                 var schema = await LoadSchemaAsync(datasetName, databaseName);
 
@@ -997,12 +1022,17 @@ namespace MngDataGateway.Persistence.Services
                     "Query executed on dataset {DatasetName}, returned {Count} documents, total: {TotalCount}",
                     datasetName, data.Count, totalCount);
 
-                return new QueryResultDto
+                var queryResult = new QueryResultDto
                 {
                     Data = data,
                     TotalCount = totalCount,
                     Query = pipelineJson
                 };
+
+                if (dgSettings?.CatalogReadCache?.Enabled != false && _catalogReadCache != null)
+                    _catalogReadCache.Set(databaseName, datasetName, options, queryResult);
+
+                return queryResult;
             }
             catch (DataGatewayException)
             {

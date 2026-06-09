@@ -244,13 +244,28 @@ export function buildOcLookupFieldOptionsPayload(config: {
   return { lookup };
 }
 
-/** Picker henüz yok — autocomplete ile render. */
 export function resolveEffectiveLookupPresentation(
   config: OcLookupConfig | null | undefined
-): 'dropdown' | 'autocomplete' {
+): 'dropdown' | 'autocomplete' | 'picker' {
   const p = config?.presentation ?? 'autocomplete';
   if (p === 'dropdown') return 'dropdown';
+  if (p === 'picker') return 'picker';
   return 'autocomplete';
+}
+
+/** Tek veya çoklu lookup/relation değerinden id listesi. */
+export function collectLookupIdsFromValue(value: unknown): string[] {
+  if (value === null || value === undefined || value === '') return [];
+  if (Array.isArray(value)) {
+    const ids: string[] = [];
+    for (const entry of value) {
+      const id = extractLookupStoredValue(entry);
+      if (id) ids.push(id);
+    }
+    return ids;
+  }
+  const single = extractLookupStoredValue(value);
+  return single ? [single] : [];
 }
 
 /** {{parentValue}} yer tutucusunu üst alan değeri ile doldurur (DG filter dizesi). */

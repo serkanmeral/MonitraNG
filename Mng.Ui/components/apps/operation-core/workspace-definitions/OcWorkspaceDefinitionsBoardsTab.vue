@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useOcWorkspaceMetadataCacheReload } from '@/composables/useOcWorkspaceMetadataCacheReload';
 import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import OcWorkspaceBoardDialog from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceBoardDialog.vue';
 import {
@@ -23,6 +24,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const metaCache = useOcWorkspaceMetadataCacheReload(() => props.workspaceId);
 const groupStore = useGroupStore();
 const catalog = useOcWorkspaceCatalogInject();
 
@@ -165,7 +167,12 @@ async function onDialogSave(body: Record<string, unknown>) {
     dialog.value = false;
     await catalog.refresh();
     await loadAll();
-    successLocal.value = t('operationCore.workspaceDefinitions.saveSuccess');
+    await metaCache.applySaveSuccess(
+      (msg) => {
+        successLocal.value = msg;
+      },
+      t('operationCore.workspaceDefinitions.saveSuccess')
+    );
   } catch (e: unknown) {
     errorLocal.value = ocExtractDgErrorMessage(
       e,
@@ -186,7 +193,12 @@ async function confirmDelete() {
     deleteTarget.value = null;
     await catalog.refresh();
     await loadAll();
-    successLocal.value = t('operationCore.workspaceDefinitions.boards.deleteSuccess');
+    await metaCache.applySaveSuccess(
+      (msg) => {
+        successLocal.value = msg;
+      },
+      t('operationCore.workspaceDefinitions.boards.deleteSuccess')
+    );
   } catch (e: unknown) {
     errorLocal.value = ocExtractDgErrorMessage(
       e,

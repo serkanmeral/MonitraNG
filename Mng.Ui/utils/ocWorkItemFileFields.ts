@@ -49,16 +49,32 @@ export function collectWorkItemAttachmentsFromFormModel(
   return payloads;
 }
 
+/** Profil düzenle: değişen file alanlarındaki yeni yüklemeleri mevcut eklerle birleştirir. */
+export function collectNewFileUploadsFromChangedFields(
+  changed: Record<string, unknown>,
+  ctx: OcFormRuntimeContext
+): OcFileUploadPayload[] {
+  const fileKeys = new Set(resolveOcFormFileFieldKeys(ctx).map((k) => k.toLowerCase()));
+  const uploads: OcFileUploadPayload[] = [];
+  for (const [key, value] of Object.entries(changed)) {
+    if (!fileKeys.has(key.toLowerCase())) continue;
+    uploads.push(...collectOcFileUploadPayloads(value));
+  }
+  return uploads;
+}
+
 export function isOcFileFieldValueFilled(
   value: unknown,
   meta?: { fieldType?: string | null; cardinality?: string | null } | null,
-  fieldKey?: string
+  fieldKey?: string,
+  options?: { existingAttachmentCount?: number }
 ): boolean {
   const ft = resolveOcFormFieldType(fieldKey ?? '', meta).toLowerCase();
   if (ft !== 'file') return false;
   const payloads = collectOcFileUploadPayloads(value);
-  if (isMultiCardinality(fieldKey ?? '', meta)) {
-    return payloads.length > 0;
+  if (payloads.length > 0) {
+    if (isMultiCardinality(fieldKey ?? '', meta)) return payloads.length > 0;
+    return payloads.length === 1;
   }
-  return payloads.length === 1;
+  return (options?.existingAttachmentCount ?? 0) > 0;
 }

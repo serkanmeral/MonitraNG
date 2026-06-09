@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useOcWorkspaceMetadataCacheReload } from '@/composables/useOcWorkspaceMetadataCacheReload';
 import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import OcFormPreviewDialog from '@/components/apps/operation-core/OcFormPreviewDialog.vue';
 import OcWorkspaceFormLayoutEditor from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceFormLayoutEditor.vue';
@@ -42,6 +43,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const metaCache = useOcWorkspaceMetadataCacheReload(() => props.workspaceId);
 const catalog = useOcWorkspaceCatalogInject();
 
 const loading = ref(true);
@@ -382,7 +384,12 @@ async function submitForm() {
 
     dialog.value = false;
     await loadAll();
-    successLocal.value = t('operationCore.workspaceDefinitions.saveSuccess');
+    await metaCache.applySaveSuccess(
+      (msg) => {
+        successLocal.value = msg;
+      },
+      t('operationCore.workspaceDefinitions.saveSuccess')
+    );
   } catch (e: unknown) {
     errorLocal.value = ocExtractDgErrorMessage(
       e,
@@ -402,7 +409,12 @@ async function confirmDelete() {
     deleteDialog.value = false;
     deleteTarget.value = null;
     await loadAll();
-    successLocal.value = t('operationCore.workspaceDefinitions.forms.deleteSuccess');
+    await metaCache.applySaveSuccess(
+      (msg) => {
+        successLocal.value = msg;
+      },
+      t('operationCore.workspaceDefinitions.forms.deleteSuccess')
+    );
   } catch (e: unknown) {
     errorLocal.value = ocExtractDgErrorMessage(
       e,

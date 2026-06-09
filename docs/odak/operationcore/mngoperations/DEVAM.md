@@ -190,7 +190,7 @@ Ayrı chat + `docs/odak/diagnostic/` altında ölçüm, kök neden analizi ve UI
 | Faz | Konu | Durum |
 |-----|------|--------|
 | **Faz 2** | MO profil cold (~4 sn), dashboard (~1,6 sn), metadata cache | 🟡 Kısmi (2 Haz: profil metadata paralel, dashboard widget paralel+summary take=1, profile-view timeline 35) |
-| **Faz 3** | DG global katalog read cache | ⬜ Bekliyor |
+| **Faz 3** | DG global katalog read cache | ✅ `GlobalCatalogReadCache` (op_states/priorities/types/fields/tags) |
 | **PV-PERF** | MO work-item dedup + policy cache | ✅ commit `e1f1880` · Odak `mngoperations --no-cache` (2 Haz ~11:04) |
 
 ---
@@ -255,7 +255,7 @@ Kalan 8 warm çağrı: `op_tags` ×2, `op_links` ×2, `op_work_items` getById ×
 
 **Prod ölçüm (warm P95):** profile **1694 ms** ✅ (5 Haz 2377 ms) · dashboard 2047 ms ⚠️ · board 697 ms ✅
 
-**Açık:** pano ≤1,2 sn · profil cold · test profil warm · Faz 3 DG katalog cache
+**Açık:** pano ≤1,2 sn (MO katalog/widget paralel) · profil cold · **Faz 3 DG katalog cache** ✅ (GlobalCatalogReadCache)
 
 ---
 
@@ -775,12 +775,14 @@ location /api/scheduler/ {
 | **OC-FILE-1** | ✅ | **Alan tanımı** — Değerler → Alanlar: `fieldType: file` için max MB + izinli uzantılar; DG `op_fields.options` = `{ maxSizeBytes, allowedExtensions? }`. `ocFileFieldOptions.ts`; combobox nesne dönüşü `coerceOcFileExtensionInput` ile normalize. |
 | **OC-FILE-2** | ✅ | **Create runtime** — `OcWorkItemFileField`; base64 → `buildCreateWorkItemRequest(..., formContext)` → **`fields.attachments`**. Profil **Ekler** sekmesi aynı kanal. MO backend değişikliği yok. |
 | **OC-FILE-3** | ✅ | **Runtime options** — `enrichFormRuntimeFields` + `ocFormValidation` zorunlu file. |
+| **OC-FILE-4** | ✅ UI | **Profil düzenle** — form `file` alanından yeni yükleme → mevcut `attachments` ile PATCH (Ekler sekmesi ile aynı kanal). |
 | **OC-CACHE-1** | ✅ MO Odak | **`POST /api/v1/workspaces/{id}/metadata-cache/reload`** — workspace metadata cache temizliği. |
 | **OC-CACHE-2** | ✅ UI | Workspace Tanımları → Genel → **Runtime önbelleğini yenile**. |
+| **OC-CACHE-3** | ✅ UI | Alan/form/board/akış/politika kaydı sonrası **otomatik** metadata cache reload (`useOcWorkspaceMetadataCacheReload`). |
 
 **UI:** `OcWorkItemFileField.vue`, `ocFileFieldOptions.ts`, `ocWorkItemFileFields.ts`, `OcWorkspaceDefinitionsFieldsTab.vue`, `OcDynamicFormField.vue`, `OcWorkItemFormDialog.vue`, `work-items/new/index.vue`, locale `en/tr`. **Doküman:** [OC_UI_FORM_DEFINITIONS.md](../ui/OC_UI_FORM_DEFINITIONS.md) §4.1, [FORM_LAYOUT_AND_EXTRA_FIELDS.md](./FORM_LAYOUT_AND_EXTRA_FIELDS.md) §5.
 
-**Test:** file alanı tanımla → forma ekle → cache reload → board «Yeni iş» upload → profil Ekler.
+**Test:** file alanı tanımla → forma ekle → cache reload → board «Yeni iş» upload → profil Ekler; profil **Düzenle** → file alanından ekle → Kaydet → Ekler sekmesi.
 
 ---
 
@@ -791,7 +793,7 @@ location /api/scheduler/ {
 | **OC-LOOKUP-1** | ✅ UI | **`options.lookup`** — dataset relation: label/value alanı, sunum (dropdown/autocomplete/picker→autocomplete fallback), sistem kategori filtresi, admin dataset combobox. |
 | **OC-LOOKUP-2** | ✅ UI | **`fieldType: select`** — statik seçenekler editörü. |
 | **OC-LOOKUP-3** | ✅ UI | **dependsOn** — üst alan değişince filtre + child temizleme. |
-| **OC-LOOKUP-4** | backlog | Modal picker (`useOcDatasetPicker`). |
+| **OC-LOOKUP-4** | ✅ UI | Modal picker (`useOcDatasetPicker` + `OcLookupDatasetPickerField`). |
 | **OC-LOOKUP-5** | ✅ MO | Profil/aktivite `labelField` resolve (`LookupFieldOptionsHelper`). |
 
 **Kod:** `ocLookupFieldOptions.ts`, `useOcLookupDatasetCatalog.ts`, `OcWorkspaceDefinitionsFieldsTab.vue`, `useOcDynamicFormLookups.ts`, `OcDynamicFormField.vue`. **Spec:** [OC_UI_LOOKUP_FIELDS.md](../ui/OC_UI_LOOKUP_FIELDS.md).

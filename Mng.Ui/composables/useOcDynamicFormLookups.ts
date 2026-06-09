@@ -9,6 +9,7 @@ import {
   ocListStatesForWorkspace,
 } from '@/services/operationCoreService';
 import { useOcPersonPicker, type OcPersonPickerApi } from '@/composables/useOcPersonPicker';
+import { useOcDatasetPicker, type OcDatasetPickerApi, type OcDatasetPickerConfig } from '@/composables/useOcDatasetPicker';
 import { collectPersonIdsFromValue } from '@/utils/ocPersonPicker';
 import {
   isOcPersonsUserPickerField,
@@ -19,6 +20,7 @@ import {
 import { resolveOcFormFieldType } from '@/utils/ocFormFieldLabels';
 import {
   extractLookupStoredValue,
+  collectLookupIdsFromValue,
   lookupStaticItemsToSelectItems,
   parseOcLookupFromFieldOptions,
   resolveLookupDependsOnFilter,
@@ -50,6 +52,7 @@ export function useOcDynamicFormLookups(
 ) {
   const isReadonly = () => options?.readonly?.value === true;
   const personPickers = new Map<string, OcPersonPickerApi>();
+  const datasetPickers = new Map<string, OcDatasetPickerApi>();
 
   const priorityItems = ref<OcSelectItem[]>([]);
   const stateItems = ref<OcSelectItem[]>([]);
@@ -135,6 +138,52 @@ export function useOcDynamicFormLookups(
     }
   }
 
+  function isDatasetPickerField(fieldKey: string, meta?: OcFormFieldRuntimeDto | null): boolean {
+    const widget = resolveOcDynamicFieldWidget(fieldKey, meta);
+    if (widget !== 'relationSelect' && widget !== 'relationSelectMulti') return false;
+    const lookup = resolveFieldLookup(fieldKey, meta);
+    return resolveEffectiveLookupPresentation(lookup) === 'picker';
+  }
+
+  function buildDatasetPickerConfig(fieldKey: string): OcDatasetPickerConfig {
+    const meta = context.value?.fields[fieldKey];
+    const lookup =
+      resolveFieldLookup(fieldKey, meta) ?? parseOcLookupFromFieldOptions(null, 'relation')!;
+    const dataset = resolveRelationDataset(fieldKey, meta) ?? '';
+    const dependsFilter = lookup.dependsOn
+      ? resolveLookupDependsOnFilter(lookup.dependsOn.filterTemplate, formModel?.value?.[lookup.dependsOn.fieldKey])
+      : null;
+    return {
+      dataset,
+      valueField: lookup.valueField,
+      labelField: lookup.labelField,
+      pageSize: lookup.pageSize,
+      baseFilter: lookup.filter,
+      dependsOnFilter: dependsFilter,
+      searchFields: lookup.searchFields,
+    };
+  }
+
+  function datasetPickerForField(fieldKey: string): OcDatasetPickerApi {
+    let picker = datasetPickers.get(fieldKey);
+    if (!picker) {
+      picker = useOcDatasetPicker(() => buildDatasetPickerConfig(fieldKey));
+      datasetPickers.set(fieldKey, picker);
+    }
+    return picker;
+  }
+
+  function selectedIdsForDatasetField(fieldKey: string): string[] {
+    return collectLookupIdsFromValue(formModel?.value?.[fieldKey]);
+  }
+
+  async function syncDatasetPickerSelection() {
+    await Promise.all(
+      fieldKeysNeedingLookups()
+        .filter((key) => isDatasetPickerField(key, context.value?.fields[key]))
+        .map((key) => datasetPickerForField(key).ensureSelectedLabels(selectedIdsForDatasetField(key)))
+    );
+  }
   function pickerForField(fieldKey: string): OcPersonPickerApi {
     let picker = personPickers.get(fieldKey);
     if (!picker) {
@@ -236,6 +285,11 @@ export function useOcDynamicFormLookups(
         resolveFieldLookup(fieldKey, meta) ??
         parseOcLookupFromFieldOptions(null, 'relation')!;
 
+      if (resolveEffectiveLookupPresentation(lookup) === 'picker') {
+        tasks.push(datasetPickerForField(fieldKey).ensureSelectedLabels(selectedIdsForDatasetField(fieldKey)));
+        continue;
+      }
+
       tasks.push(loadRelationForField(fieldKey, widgetDataset, lookup));
     }
 
@@ -261,6 +315,9 @@ export function useOcDynamicFormLookups(
     if (isOcPersonsUserPickerField(fieldKey, meta)) {
       return loadingKeys.value.has(PERSONS_LOADING_KEY) || pickerForField(fieldKey).loading.value;
     }
+    if (isDatasetPickerField(fieldKey, meta)) {
+      return datasetPickerForField(fieldKey).loading.value;
+    }
     return loadingKeys.value.has(fieldKey);
   }
 
@@ -268,11 +325,15 @@ export function useOcDynamicFormLookups(
     return isOcPersonsUserPickerField(fieldKey, context.value?.fields[fieldKey]);
   }
 
+  function isDatasetPickerFieldForKey(fieldKey: string): boolean {
+    return isDatasetPickerField(fieldKey, context.value?.fields[fieldKey]);
+  }
+
   function isFieldDisabledByDependsOn(fieldKey: string): boolean {
     return isFieldDependsOnBlocked(fieldKey);
   }
 
-  function selectPresentationForField(fieldKey: string): 'dropdown' | 'autocomplete' {
+  function selectPresentationForField(fieldKey: string): 'dropdown' | 'autocomplete' | 'picker' {
     const lookup = resolveFieldLookup(fieldKey, context.value?.fields[fieldKey]);
     return resolveEffectiveLookupPresentation(lookup);
   }
@@ -292,6 +353,19 @@ export function useOcDynamicFormLookups(
         if (isReadonly()) return;
         if (!personFieldKeys().length) return;
         void syncPersonPickerSelection();
+      },
+      { deep: true }
+    );
+
+    watch(
+      formModel,
+      () => {
+        if (isReadonly()) return;
+        const pickerKeys = fieldKeysNeedingLookups().filter((key) =>
+          isDatasetPickerField(key, context.value?.fields[key])
+        );
+        if (!pickerKeys.length) return;
+        void syncDatasetPickerSelection();
       },
       { deep: true }
     );
@@ -325,11 +399,18 @@ export function useOcDynamicFormLookups(
               formModel.value[fieldKey] = multi ? [] : null;
             }
             relationItemsByKey.value = { ...relationItemsByKey.value, [fieldKey]: [] };
+            if (isDatasetPickerField(fieldKey, meta)) {
+              void datasetPickerForField(fieldKey).resetAndFetch('');
+            }
             continue;
           }
 
           const dataset = resolveRelationDataset(fieldKey, ctx.fields[fieldKey]);
-          if (dataset) {
+          if (!dataset) continue;
+
+          if (isDatasetPickerField(fieldKey, ctx.fields[fieldKey])) {
+            void datasetPickerForField(fieldKey).resetAndFetch('');
+          } else {
             void loadRelationForField(fieldKey, dataset, lookup);
           }
         }
@@ -344,9 +425,11 @@ export function useOcDynamicFormLookups(
     boardItems,
     relationItemsByKey,
     pickerForField,
+    datasetPickerForField,
     selectItemsForField,
     isLoadingField,
     isPersonField,
+    isDatasetPickerFieldForKey,
     isFieldDisabledByDependsOn,
     selectPresentationForField,
     reload,

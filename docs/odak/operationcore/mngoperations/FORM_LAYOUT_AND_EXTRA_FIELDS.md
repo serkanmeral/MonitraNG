@@ -98,6 +98,8 @@ UI’da form / alan tanımı **DG’den** güncellenir; MO runtime birkaç dakik
 | DTO | `MetadataCacheReloadResult` (`keysRemoved`, `workspaceId`) |
 | UI | Workspace Tanımları → Genel → **Runtime önbelleğini yenile** (`ocReloadWorkspaceMetadataCache`) |
 
+**Otomatik yenileme (OC-CACHE-3):** Alan / form / board / akış / alan politikası kaydı sonrası UI `useOcWorkspaceMetadataCacheReload` ile aynı uç fail-soft çağrılır; başarı mesajına önbellek sonucu eklenir.
+
 Form veya `op_fields` kaydı sonrası board «Yeni iş» / profil formunda eski layout görünüyorsa önce DG kaydının başarılı olduğunu doğrulayın, ardından bu uç veya ~TTL bekleyin.
 
 ---

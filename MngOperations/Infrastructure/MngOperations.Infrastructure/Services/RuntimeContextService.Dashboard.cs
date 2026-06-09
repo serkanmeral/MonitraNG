@@ -44,6 +44,11 @@ public partial class RuntimeContextService
             UtcNow = DateTime.UtcNow
         };
 
+        // Katalog çözümü widget sonuçlarına bağlı değil — widget DG sorgularıyla paralel başlat (pano warm süresi).
+        var catalogsTask = workspace != null
+            ? BuildBoardCatalogsAsync(workspace, workspaceId!, Array.Empty<string>(), token, cancellationToken)
+            : Task.FromResult(new BoardCatalogsDto());
+
         // Aynı queryKey+parametreli widget'lar tek DG çalıştırması paylaşır (Faz 2b dedup).
         var queryResultCache = new Dictionary<string, Task<IReadOnlyList<WorkItemCardDto>>>(StringComparer.Ordinal);
 
@@ -71,11 +76,13 @@ public partial class RuntimeContextService
             .SelectMany(w => w.Execution!.Items)
             .ToList();
 
-        var people = await ResolvePeopleForCardsAsync(allItems, token, cancellationToken);
-        var groups = await ResolveGroupsForCardsAsync(allItems, token, cancellationToken);
-        var catalogs = workspace != null
-            ? await BuildBoardCatalogsAsync(workspace, workspaceId!, Array.Empty<string>(), token, cancellationToken)
-            : new BoardCatalogsDto();
+        var peopleTask = ResolvePeopleForCardsAsync(allItems, token, cancellationToken);
+        var groupsTask = ResolveGroupsForCardsAsync(allItems, token, cancellationToken);
+        await Task.WhenAll(catalogsTask, peopleTask, groupsTask);
+
+        var catalogs = catalogsTask.Result;
+        var people = peopleTask.Result;
+        var groups = groupsTask.Result;
 
         var canEdit = workspace != null
             && _permissions.CanEditWorkItem(workspace, new Dictionary<string, object?>());

@@ -152,7 +152,7 @@ Proxy: `Mng.Ui` → `/api/operations/...`, `/api/v1/data/...` (DataGateway)
 | `op_rules` | Geçici form altı → [Workspace politikaları](./OC_UI_WORKSPACE_POLICIES.md) W0 |
 | Koşullu kurallar | [Workspace politikaları](./OC_UI_WORKSPACE_POLICIES.md) |
 | MO runtime vs taslak karşılaştırma | Opsiyonel |
-| ~~Dosya upload widget~~ | ✅ create + Ekler (`attachments`); profil **düzenle** modunda form file alanından ekle — ertelenmiş |
+| ~~Dosya upload widget~~ | ✅ create + profil düzenle + Ekler (`attachments`) |
 | Form kaydı sonrası otomatik cache reload | Opsiyonel (manuel buton yeterli v1) |
 
 ---

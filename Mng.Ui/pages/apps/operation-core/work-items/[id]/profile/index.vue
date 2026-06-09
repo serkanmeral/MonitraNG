@@ -15,7 +15,7 @@ import { useOperationCoreStore } from '@/stores/apps/operationCore';
 import { useOcBoardListLookups } from '@/composables/useOcBoardListLookups';
 import { useAppI18n } from '@/composables/useAppI18n';
 import {
-  buildUpdateWorkItemRequest,
+  buildUpdateWorkItemRequestFromFormEdit,
   collectOcFormValidationIssues,
   hasUpdateWorkItemChanges,
   initialFormModelFromContext,
@@ -43,6 +43,7 @@ import type {
 } from '@/types/apps/operationCore';
 import { enrichFormRuntimeFields } from '@/utils/ocFormFieldLabels';
 import { formatCellValue } from '@/utils/ocColumnFormat';
+import { resolveProfileBackToBoardPath } from '@/utils/ocWorkItemProfileNav';
 
 definePageMeta({ layout: 'default' });
 
@@ -53,6 +54,12 @@ const store = useOperationCoreStore();
 const workItemId = computed(() => String(route.params.id ?? ''));
 const boardIdQuery = computed(() =>
   typeof route.query.boardId === 'string' ? route.query.boardId.trim() : ''
+);
+const fromQuery = computed(() =>
+  typeof route.query.from === 'string' ? route.query.from.trim() : ''
+);
+const workspaceIdQuery = computed(() =>
+  typeof route.query.workspaceId === 'string' ? route.query.workspaceId.trim() : ''
 );
 
 const loading = ref(false);
@@ -216,8 +223,21 @@ const { breadcrumbs } = useOperationCoreBreadcrumbs({
   })),
 });
 
-const backToBoardTo = computed(() =>
-  boardIdQuery.value ? `/apps/operation-core/boards/${encodeURIComponent(boardIdQuery.value)}` : null
+const backToBoardTo = computed(() => {
+  const bid = boardIdQuery.value;
+  if (!bid) return null;
+  return resolveProfileBackToBoardPath({
+    boardId: bid,
+    from: fromQuery.value,
+    workspaceId: workspaceIdQuery.value,
+    profileWorkspaceId: profile.value?.workspaceId ?? null,
+  });
+});
+
+const backToBoardTitle = computed(() =>
+  fromQuery.value === 'workspace'
+    ? t('operationCore.board.backToWorkspace')
+    : t('operationCore.board.backToBoard')
 );
 
 // --- Lookups (durum/öncelik/tip + kişi adları) ---
@@ -255,7 +275,9 @@ const canEdit = computed(
 // --- Detaylar sekmesi düzenleme (in-place) ---
 const editValidationIssues = computed(() => {
   if (!editMode.value || !formContext.value) return [];
-  return collectOcFormValidationIssues(formContext.value, formModel.value);
+  return collectOcFormValidationIssues(formContext.value, formModel.value, {
+    existingAttachmentCount: profile.value?.attachments?.length ?? 0,
+  });
 });
 
 const editFieldErrors = computed(() => {
@@ -302,7 +324,11 @@ async function saveFormEdit() {
     editError.value = t('operationCore.create.validationRequired');
     return;
   }
-  const patch = buildUpdateWorkItemRequest(collectFormChanges());
+  const patch = buildUpdateWorkItemRequestFromFormEdit(
+    collectFormChanges(),
+    formContext.value,
+    profile.value?.attachments ?? []
+  );
   if (!hasUpdateWorkItemChanges(patch)) {
     editMode.value = false;
     return;
@@ -601,7 +627,7 @@ watch(workItemId, () => {
           variant="text"
           size="small"
           :to="backToBoardTo"
-          :title="t('operationCore.board.backToBoard')"
+          :title="backToBoardTitle"
         />
         <div class="min-width-0">
           <div class="d-flex align-center ga-2">

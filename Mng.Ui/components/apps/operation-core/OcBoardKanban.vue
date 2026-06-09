@@ -11,6 +11,8 @@ const props = defineProps<{
   /** Kolon başına "daha fazla yükle" devam ediyor mu. */
   columnLoadingMore?: Record<string, boolean>;
   boardId: string;
+  workspaceId?: string | null;
+  profileFrom?: 'board' | 'workspace';
   /** Sürükle-bırak (transition) etkin mi — board permissions.canEdit. */
   editable?: boolean;
 }>();
@@ -115,7 +117,12 @@ function onColumnChange(targetStateId: string, evt: DraggableChangeEvent) {
           @change="onColumnChange(col.stateId, $event)"
         >
           <div v-for="card in localItems[col.stateId] ?? []" :key="card.id" class="oc-card-drag">
-            <OcWorkItemCard :card="card" :board-id="boardId" />
+            <OcWorkItemCard
+              :card="card"
+              :board-id="boardId"
+              :workspace-id="workspaceId"
+              :profile-from="profileFrom ?? 'board'"
+            />
           </div>
         </draggable>
 

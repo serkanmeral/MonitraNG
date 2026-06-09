@@ -52,6 +52,7 @@ import { buildBoardDgPayload } from '@/utils/ocBoardDgPayload';
 import { buildOcFormLayoutPayload, normalizeOcGridCol, parseOpFormLayout } from '@/utils/ocFormLayout';
 import { validateOcFormModel } from '@/utils/ocFormValidation';
 import {
+  collectNewFileUploadsFromChangedFields,
   collectWorkItemAttachmentsFromFormModel,
   resolveOcFormFileFieldKeys,
 } from '@/utils/ocWorkItemFileFields';
@@ -127,12 +128,26 @@ export function ocExtractDgErrorMessage(error: unknown, fallback: string): strin
 }
 
 function parseListResponse(response: unknown): unknown[] {
-  if (Array.isArray(response)) return response;
-  if (response && typeof response === 'object' && 'items' in response && Array.isArray((response as { items: unknown[] }).items))
-    return (response as { items: unknown[] }).items;
-  if (response && typeof response === 'object' && 'data' in response && Array.isArray((response as { data: unknown[] }).data))
-    return (response as { data: unknown[] }).data;
-  return [];
+  return parseListResponseWithTotal(response).items;
+}
+
+function parseListResponseWithTotal(response: unknown): { items: unknown[]; total: number } {
+  if (Array.isArray(response)) {
+    return { items: response, total: response.length };
+  }
+  if (response && typeof response === 'object') {
+    const obj = response as Record<string, unknown>;
+    const items = Array.isArray(obj.items)
+      ? obj.items
+      : Array.isArray(obj.data)
+        ? obj.data
+        : [];
+    const totalRaw = obj.total ?? obj.totalCount ?? obj.count;
+    const total =
+      typeof totalRaw === 'number' && Number.isFinite(totalRaw) ? totalRaw : items.length;
+    return { items, total };
+  }
+  return { items: [], total: 0 };
 }
 
 function buildQuery(params: {
@@ -1174,6 +1189,35 @@ export function buildUpdateWorkItemRequest(changed: Record<string, unknown>): Oc
   return body;
 }
 
+/**
+ * Profil düzenle PATCH — yeni file yüklemeleri mevcut `attachments` ile birleştirilir;
+ * file alan anahtarları extraFields'a yazılmaz.
+ */
+export function buildUpdateWorkItemRequestFromFormEdit(
+  changed: Record<string, unknown>,
+  formContext: OcFormRuntimeContext,
+  existingAttachments: OcAttachment[] = []
+): OcUpdateWorkItemRequest {
+  const fileFieldKeys = new Set(resolveOcFormFileFieldKeys(formContext).map((k) => k.toLowerCase()));
+  const nonFileChanged: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(changed)) {
+    if (!fileFieldKeys.has(key.toLowerCase())) {
+      nonFileChanged[key] = value;
+    }
+  }
+
+  const body = buildUpdateWorkItemRequest(nonFileChanged);
+  const newUploads = collectNewFileUploadsFromChangedFields(changed, formContext);
+  if (newUploads.length) {
+    const attachmentRows: unknown[] = [
+      ...existingAttachments.map((a) => a.raw),
+      ...newUploads,
+    ];
+    body.fields = { ...(body.fields ?? {}), attachments: attachmentRows };
+  }
+  return body;
+}
+
 export function hasUpdateWorkItemChanges(patch: OcUpdateWorkItemRequest): boolean {
   return (
     patch.title !== undefined ||
@@ -1310,6 +1354,17 @@ export async function ocListDataset(
   const url = `/api/v1/data/${encodeURIComponent(dataset)}?${qs}`;
   const raw = await fetchFromDataGateway(url, 'GET');
   return parseListResponse(raw);
+}
+
+/** Sayfalı dataset listesi — modal lookup picker (L4). */
+export async function ocListDatasetPage(
+  dataset: string,
+  options?: { skip?: number; limit?: number; sort?: string; filter?: string; search?: string }
+): Promise<{ items: unknown[]; total: number }> {
+  const qs = buildQuery(options ?? {});
+  const url = `/api/v1/data/${encodeURIComponent(dataset)}?${qs}`;
+  const raw = await fetchFromDataGateway(url, 'GET');
+  return parseListResponseWithTotal(raw);
 }
 
 export async function ocCreate(dataset: string, body: Record<string, unknown>) {

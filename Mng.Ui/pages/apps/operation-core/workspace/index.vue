@@ -4,6 +4,7 @@ import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import OcWorkspaceTree from '@/components/apps/operation-core/OcWorkspaceTree.vue';
 import OcBoardDashboardLink from '@/components/apps/operation-core/OcBoardDashboardLink.vue';
 import OcDashboardView from '@/components/apps/operation-core/dashboards/OcDashboardView.vue';
+import OcBoardPanel from '@/components/apps/operation-core/OcBoardPanel.client.vue';
 import { useResizableTreePanel } from '@/composables/useResizableTreePanel';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import { useOperationCoreStore } from '@/stores/apps/operationCore';
@@ -87,17 +88,20 @@ const selectedBoardDashboardName = computed(() =>
   selectedBoardDashboardId.value ? dashboardNameById.value[selectedBoardDashboardId.value] ?? null : null
 );
 
-// Board seçiliyken merkez panel görünümü: pano varsa inline pano, yoksa özet bilgi.
-const centerView = ref<'summary' | 'dashboard'>('summary');
+// Board seçiliyken merkez panel: varsayılan board; pano isteğe bağlı toggle ile.
+const centerView = ref<'board' | 'dashboard'>('board');
 
-watch(
-  selectedBoardDashboardId,
-  (dashId) => {
-    centerView.value = dashId ? 'dashboard' : 'summary';
-    if (dashId) void ensureDashboardName(dashId);
-  },
-  { immediate: true }
-);
+watch(selectedBoardDashboardId, (dashId) => {
+  if (dashId) void ensureDashboardName(dashId);
+});
+
+watch(selectedBoardId, (id, prev) => {
+  if (id) {
+    centerView.value = 'board';
+  } else if (prev) {
+    store.clearBoardState();
+  }
+});
 
 const { breadcrumbs } = useOperationCoreBreadcrumbs({
   workspace: computed(() =>
@@ -127,6 +131,7 @@ function syncFromRoute() {
   const bd = typeof route.query.boardId === 'string' ? route.query.boardId : null;
   selectedWorkspaceId.value = ws;
   selectedBoardId.value = bd;
+  if (bd) centerView.value = 'board';
 }
 
 async function loadTreeData() {
@@ -165,17 +170,10 @@ function onSelectWorkspace(workspaceId: string) {
 function onSelectBoard(workspaceId: string, boardId: string) {
   selectedWorkspaceId.value = workspaceId;
   selectedBoardId.value = boardId;
+  centerView.value = 'board';
   router.replace({
     path: '/apps/operation-core/workspace',
     query: { workspaceId, boardId },
-  });
-}
-
-function openSelectedBoard() {
-  if (!selectedBoardId.value) return;
-  router.push({
-    path: `/apps/operation-core/boards/${encodeURIComponent(selectedBoardId.value)}`,
-    query: { view: 'list' },
   });
 }
 
@@ -184,9 +182,6 @@ async function onBoardDashboardAssigned(dashboardId: string | null) {
   await store.loadBoardsForWorkspace(selectedWorkspaceId.value, true);
   if (dashboardId) {
     await ensureDashboardName(dashboardId);
-    centerView.value = 'dashboard';
-  } else {
-    centerView.value = 'summary';
   }
 }
 
@@ -350,8 +345,8 @@ onMounted(async () => {
                 divided
                 class="mr-1"
               >
-                <v-btn value="summary" size="small" class="text-none" prepend-icon="mdi-information-outline">
-                  {{ t('operationCore.workspace.viewSummary') }}
+                <v-btn value="board" size="small" class="text-none" prepend-icon="mdi-view-column-outline">
+                  {{ t('operationCore.workspace.viewBoard') }}
                 </v-btn>
                 <v-btn value="dashboard" size="small" class="text-none" prepend-icon="mdi-view-dashboard-outline">
                   {{ t('operationCore.workspace.openDashboard') }}
@@ -366,20 +361,13 @@ onMounted(async () => {
                 class="mr-1"
                 @assigned="onBoardDashboardAssigned"
               />
-              <v-btn
-                size="small"
-                variant="flat"
-                color="primary"
-                class="text-none"
-                prepend-icon="mdi-view-column-outline"
-                @click="openSelectedBoard"
-              >
-                {{ t('operationCore.workspace.openBoard') }}
-              </v-btn>
             </template>
           </v-card-title>
           <v-divider />
-          <v-card-text class="flex-grow-1 overflow-auto pa-4 pa-md-6">
+          <v-card-text
+            class="flex-grow-1 overflow-auto"
+            :class="selectedBoard && centerView === 'board' ? 'pa-0' : 'pa-4 pa-md-6'"
+          >
             <!-- Hiç seçim yok -->
             <div
               v-if="!selectedWorkspace"
@@ -462,7 +450,16 @@ onMounted(async () => {
               </v-row>
             </div>
 
-            <!-- Board seçili + pano görünümü: inline pano -->
+            <!-- Board seçili + inline board -->
+            <OcBoardPanel
+              v-else-if="selectedWorkspace && selectedBoard && centerView === 'board' && selectedBoardId"
+              :key="selectedBoardId"
+              :board-id="selectedBoardId"
+              embedded
+              @dashboard-assigned="onBoardDashboardAssigned"
+            />
+
+            <!-- Board seçili + pano görünümü -->
             <div
               v-else-if="selectedWorkspace && selectedBoard && centerView === 'dashboard' && selectedBoardDashboardId"
             >
@@ -473,35 +470,23 @@ onMounted(async () => {
               />
             </div>
 
-            <!-- Board seçili + özet bilgi -->
+            <!-- Board seçili ama pano atanmamış — pano görünümü seçilemez; board zaten üstte -->
             <div
-              v-else-if="selectedWorkspace && selectedBoard"
+              v-else-if="selectedWorkspace && selectedBoard && centerView === 'dashboard' && !selectedBoardDashboardId"
               class="d-flex align-center justify-center h-100"
             >
               <div class="text-center pa-4 oc-empty-state">
-                <v-icon icon="mdi-view-column-outline" size="56" color="primary" class="mb-4 opacity-70" />
-                <p class="text-h6 font-weight-medium mb-1">
-                  {{ selectedBoard.name }}
+                <v-icon icon="mdi-view-dashboard-outline" size="56" color="primary" class="mb-4 opacity-70" />
+                <p class="text-body-2 text-medium-emphasis mb-4 mx-auto" style="max-width: 420px">
+                  {{ t('operationCore.workspace.noDashboardAssigned') }}
                 </p>
-                <p class="text-body-2 text-medium-emphasis mb-1">
-                  {{ selectedWorkspace.name }}
-                </p>
-                <div class="d-flex align-center justify-center flex-wrap gap-2 mb-4">
-                  <v-chip size="small" variant="tonal" class="text-capitalize">
-                    {{ boardViewTypeLabel(selectedBoard.viewType) }}
-                  </v-chip>
-                </div>
                 <OcBoardDashboardLink
                   v-if="selectedWorkspace"
                   :workspace-id="selectedWorkspace.__dataId"
                   :board="selectedBoard"
-                  :dashboard-name="selectedBoardDashboardName"
-                  class="mb-4 justify-center"
+                  class="justify-center"
                   @assigned="onBoardDashboardAssigned"
                 />
-                <p class="text-body-2 text-medium-emphasis mb-0 mx-auto" style="max-width: 420px">
-                  {{ t('operationCore.workspace.selectedBoardHint') }}
-                </p>
               </div>
             </div>
           </v-card-text>

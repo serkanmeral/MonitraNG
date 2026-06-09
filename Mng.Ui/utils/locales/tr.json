@@ -3623,7 +3623,17 @@
       "personsLoadMore": "Daha fazla kullanıcı yükle",
       "personsLoadMoreHint": "Sonraki sayfa",
       "personsSearchHint": "Ad, kullanıcı adı veya e-posta ile arayın",
-      "personGroupsFieldHint": "Grup seçici sonraki fazda; şimdilik grup kimliği girin."
+      "personGroupsFieldHint": "Grup seçici sonraki fazda; şimdilik grup kimliği girin.",
+      "datasetPicker": {
+        "placeholder": "Kayıt seçmek için tıklayın",
+        "open": "Kayıt seç",
+        "dialogTitle": "Kayıt seç",
+        "searchHint": "Ara…",
+        "empty": "Kayıt bulunamadı.",
+        "select": "Seç",
+        "cancel": "İptal",
+        "labelColumn": "Ad"
+      }
     },
     "workspace": {
       "title": "Çalışma alanı",
@@ -3631,7 +3641,7 @@
       "workspacesRoot": "Workspace'ler",
       "mainTitle": "Operasyon Merkezi",
       "emptyTitle": "Workspace veya board seçin",
-      "emptyHint": "Sol panelden bir workspace seçin; board listesinden bir board işaretleyip tam ekran görünümü için «Board'u aç» düğmesini kullanın.",
+      "emptyHint": "Sol panelden bir workspace seçin veya board listesinden bir board'a tıklayın.",
       "noWorkspaces": "Henüz workspace yok.",
       "collapseTree": "Paneli gizle",
       "showTree": "Paneli göster",
@@ -3646,7 +3656,8 @@
       "selectedBoardHint": "Varsayılan liste görünümü açılır; isteğe bağlı Kanban'a geçebilirsiniz.",
       "openBoard": "Board'u aç",
       "openDashboard": "Pano",
-      "viewSummary": "Özet",
+      "viewBoard": "Board",
+      "noDashboardAssigned": "Bu board'a henüz pano atanmamış. Aşağıdan bir pano bağlayabilir veya Board görünümüne dönebilirsiniz.",
       "viewTypeKanban": "Kanban",
       "viewTypeList": "Liste"
     },
@@ -4245,7 +4256,7 @@
         "relationDatasetRequired": "İlişkili dataset seçilmelidir.",
         "staticItemsRequired": "En az bir statik seçenek (değer + etiket) girin.",
         "lookupPresentationLabel": "Sunum",
-        "lookupPresentationHint": "Picker (modal tablo) yakında; şimdilik autocomplete kullanılır.",
+        "lookupPresentationHint": "Picker: modal tablo ile arama ve sayfalı seçim.",
         "lookupPresentation": {
           "dropdown": "Dropdown",
           "autocomplete": "Autocomplete (arama)",
@@ -4329,9 +4340,11 @@
       "noWorkspaces": "Henüz workspace kaydı yok. İlk workspace'inizi oluşturun.",
       "newWorkspace": "Yeni workspace",
       "reloadMetadataCache": "Runtime önbelleğini yenile",
-      "metadataCacheReloadHint": "Form, board veya alan tanımını kaydettikten sonra «Yeni iş» formunun hemen güncellenmesi için MngOperations metadata önbelleğini düşürür. MO restart gerekmez.",
+      "metadataCacheReloadHint": "Form, board veya alan tanımını kaydettikten sonra «Yeni iş» formunun hemen güncellenmesi için MngOperations metadata önbelleğini düşürür. Alan/form/board kayıtlarında otomatik de çalışır.",
       "metadataCacheReloadSuccess": "Runtime önbelleği yenilendi ({count} kayıt düşürüldü). Board ve formlar bir sonraki istekte güncel metadata kullanır.",
       "metadataCacheReloadError": "Runtime önbelleği yenilenemedi.",
+      "metadataCacheAutoReloadOk": "(Runtime önbelleği güncellendi — {count} kayıt.)",
+      "metadataCacheAutoReloadFailed": "(Runtime önbelleği otomatik yenilenemedi; Genel sekmesinden elle yenileyin.)",
       "create": {
         "title": "Yeni workspace oluştur",
         "subtitle": "Workspace kodu otomatik atanır. Diğer ayarları (yetki grupları, katalog, akış) oluşturduktan sonra Genel ve diğer sekmelerden yapılandırabilirsiniz.",

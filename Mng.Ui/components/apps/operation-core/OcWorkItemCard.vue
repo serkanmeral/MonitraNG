@@ -2,15 +2,20 @@
 import { computed } from 'vue';
 import type { OcWorkItemCard } from '@/types/apps/operationCore';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { buildWorkItemProfilePath, type OcProfileNavFrom } from '@/utils/ocWorkItemProfileNav';
 
 const props = withDefaults(
   defineProps<{
     card: OcWorkItemCard;
     boardId?: string | null;
+    workspaceId?: string | null;
+    profileFrom?: OcProfileNavFrom;
     showAssignee?: boolean;
   }>(),
   {
     boardId: null,
+    workspaceId: null,
+    profileFrom: 'board',
     showAssignee: true,
   }
 );
@@ -25,12 +30,13 @@ const assigneeInitials = computed(() => {
   return a.slice(0, 2).toUpperCase();
 });
 
-const profileTo = computed(() => {
-  const qs = new URLSearchParams();
-  qs.set('from', 'board');
-  if (props.boardId) qs.set('boardId', props.boardId);
-  return `/apps/operation-core/work-items/${encodeURIComponent(props.card.id)}/profile?${qs.toString()}`;
-});
+const profileTo = computed(() =>
+  buildWorkItemProfilePath(props.card.id, {
+    boardId: props.boardId,
+    workspaceId: props.workspaceId,
+    from: props.profileFrom,
+  })
+);
 </script>
 
 <template>

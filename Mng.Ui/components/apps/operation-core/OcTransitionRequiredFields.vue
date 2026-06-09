@@ -27,7 +27,7 @@ const renderKeys = computed(() => props.fieldKeys.filter((key) => !!props.contex
 
 const workspaceId = computed(() => props.context.workspaceId);
 
-const { selectItemsForField, isLoadingField, isPersonField, pickerForField } = useOcDynamicFormLookups(
+const { selectItemsForField, isLoadingField, isPersonField, pickerForField, isDatasetPickerFieldForKey, datasetPickerForField, isFieldDisabledByDependsOn, selectPresentationForField } = useOcDynamicFormLookups(
   workspaceId,
   subContext as unknown as Ref<OcFormRuntimeContext | null>,
   model
@@ -58,7 +58,10 @@ function setFieldValue(key: string, value: unknown) {
         :behavior="behaviorFor(fieldKey)"
         :select-items="selectItemsForField(fieldKey)"
         :select-loading="isLoadingField(fieldKey)"
+        :select-presentation="selectPresentationForField(fieldKey)"
+        :select-depends-on-blocked="isFieldDisabledByDependsOn(fieldKey)"
         :person-picker="isPersonField(fieldKey) ? pickerForField(fieldKey) : undefined"
+        :dataset-picker="isDatasetPickerFieldForKey(fieldKey) ? datasetPickerForField(fieldKey) : undefined"
         @update:model-value="(v) => setFieldValue(fieldKey, v)"
       />
     </v-col>

@@ -1,8 +1,8 @@
 # Operation Core — Lookup / seçim alanları (pool)
 
 **Son güncelleme:** 9 Haziran 2026  
-**Durum:** L1+L2 uygulandı (dataset lookup + statik select) · L3 dependsOn · L4 picker · L5 MO readonly  
-**Kod:** `Mng.Ui/utils/ocLookupFieldOptions.ts` · `useOcDynamicFormLookups.ts` · `OcWorkspaceDefinitionsFieldsTab.vue`
+**Durum:** L1–L5 uygulandı (dataset lookup, statik select, dependsOn, modal picker, MO readonly labelField)  
+**Kod:** `Mng.Ui/utils/ocLookupFieldOptions.ts` · `useOcDynamicFormLookups.ts` · `useOcDatasetPicker.ts` · `OcLookupDatasetPickerField.client.vue`
 
 ---
 
@@ -91,7 +91,7 @@ Persist: `valueField` değeri (varsayılan `__dataId`). `cardinality: multi` →
 |-------|---------|-----|
 | `dropdown` | `v-select` | Küçük listeler |
 | `autocomplete` | `v-autocomplete` | Arama; listeden seçim zorunlu |
-| `picker` | L4 — şimdilik autocomplete fallback | Modal datatable |
+| `picker` | Modal `v-data-table-server` | Arama + sayfalama (L4) |
 
 ---
 
@@ -111,8 +111,8 @@ Persist: `valueField` değeri (varsayılan `__dataId`). `cardinality: multi` →
 | L1 | Dataset lookup: label/value, admin dataset picker, autocomplete | ✅ |
 | L2 | `select` + static items editor | ✅ |
 | L3 | `dependsOn` cascade | ✅ UI temel |
-| L4 | `useOcDatasetPicker` modal | backlog |
-| L5 | MO profil/aktivite `labelField` | backlog |
+| L4 | `useOcDatasetPicker` modal | ✅ |
+| L5 | MO profil/aktivite `labelField` | ✅ |
 
 ---
 

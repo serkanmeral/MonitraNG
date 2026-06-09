@@ -3610,7 +3610,17 @@
       "personsLoadMore": "Load more users",
       "personsLoadMoreHint": "Next page",
       "personsSearchHint": "Search by name, username, or email",
-      "personGroupsFieldHint": "Group picker comes in a later phase; enter a group id for now."
+      "personGroupsFieldHint": "Group picker comes in a later phase; enter a group id for now.",
+      "datasetPicker": {
+        "placeholder": "Click to select a record",
+        "open": "Select record",
+        "dialogTitle": "Select record",
+        "searchHint": "Search…",
+        "empty": "No records found.",
+        "select": "Select",
+        "cancel": "Cancel",
+        "labelColumn": "Name"
+      }
     },
     "workspace": {
       "title": "Workspace",
@@ -3618,7 +3628,7 @@
       "workspacesRoot": "Workspaces",
       "mainTitle": "Operation Core",
       "emptyTitle": "Select a workspace or board",
-      "emptyHint": "Pick a workspace in the left panel; select a board from the list, then use «Open board» for the full-screen view.",
+      "emptyHint": "Pick a workspace in the left panel, or click a board to open it here.",
       "noWorkspaces": "No workspaces yet.",
       "collapseTree": "Hide panel",
       "showTree": "Show panel",
@@ -3633,7 +3643,8 @@
       "selectedBoardHint": "The list view opens by default; switch to Kanban if needed.",
       "openBoard": "Open board",
       "openDashboard": "Dashboard",
-      "viewSummary": "Summary",
+      "viewBoard": "Board",
+      "noDashboardAssigned": "No dashboard is linked to this board yet. Assign one below or switch back to the board view.",
       "viewTypeKanban": "Kanban",
       "viewTypeList": "List"
     },
@@ -4232,7 +4243,7 @@
         "relationDatasetRequired": "Related dataset is required.",
         "staticItemsRequired": "Add at least one static option (value + label).",
         "lookupPresentationLabel": "Presentation",
-        "lookupPresentationHint": "Picker (modal table) coming soon; autocomplete is used for now.",
+        "lookupPresentationHint": "Picker: modal table with search and paginated selection.",
         "lookupPresentation": {
           "dropdown": "Dropdown",
           "autocomplete": "Autocomplete (search)",
@@ -4316,9 +4327,11 @@
       "noWorkspaces": "No workspace records yet. Create your first workspace.",
       "newWorkspace": "New workspace",
       "reloadMetadataCache": "Refresh runtime cache",
-      "metadataCacheReloadHint": "After saving forms, boards, or field definitions, drop MngOperations metadata cache so «New work item» picks up changes immediately — no MO restart.",
+      "metadataCacheReloadHint": "After saving forms, boards, or field definitions, drop MngOperations metadata cache so «New work item» picks up changes immediately. Field/form/board saves also trigger this automatically.",
       "metadataCacheReloadSuccess": "Runtime cache refreshed ({count} entries dropped). Boards and forms use fresh metadata on the next request.",
       "metadataCacheReloadError": "Could not refresh runtime cache.",
+      "metadataCacheAutoReloadOk": "(Runtime cache refreshed — {count} entries.)",
+      "metadataCacheAutoReloadFailed": "(Runtime cache could not be refreshed automatically; use General tab to reload manually.)",
       "create": {
         "title": "Create workspace",
         "subtitle": "The workspace code is assigned automatically. Configure permissions, catalogs and flows from the General and other tabs after creation.",

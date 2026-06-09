@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import type { OcPersonPickerApi } from '@/composables/useOcPersonPicker';
+import type { OcDatasetPickerApi } from '@/composables/useOcDatasetPicker';
 import type { OcFieldBehaviorDto, OcFormFieldRuntimeDto } from '@/types/apps/operationCore';
 import type { OcSelectItem } from '@/composables/useOcDynamicFormLookups';
 import {
@@ -12,7 +13,9 @@ import {
   resolveOcDynamicFieldWidget,
 } from '@/utils/ocDynamicFormField';
 import { resolveOcFormFieldType } from '@/utils/ocFormFieldLabels';
+import { parseOcLookupFromFieldOptions } from '@/utils/ocLookupFieldOptions';
 import OcPersonPickerAutocomplete from '@/components/apps/operation-core/OcPersonPickerAutocomplete.vue';
+import OcLookupDatasetPickerField from '@/components/apps/operation-core/OcLookupDatasetPickerField.client.vue';
 import OcTagSelector from '@/components/apps/operation-core/OcTagSelector.vue';
 import OcRichTextEditor from '@/components/apps/operation-core/OcRichTextEditor.client.vue';
 import OcRichTextContent from '@/components/apps/operation-core/OcRichTextContent.client.vue';
@@ -26,11 +29,12 @@ const props = defineProps<{
   workspaceId?: string | null;
   selectItems?: OcSelectItem[];
   selectLoading?: boolean;
-  /** dropdown → v-select; autocomplete/picker → v-autocomplete */
-  selectPresentation?: 'dropdown' | 'autocomplete';
+  /** dropdown → v-select; autocomplete → v-autocomplete; picker → modal tablo */
+  selectPresentation?: 'dropdown' | 'autocomplete' | 'picker';
   /** dependsOn üst alanı boşken devre dışı */
   selectDependsOnBlocked?: boolean;
   personPicker?: OcPersonPickerApi;
+  datasetPicker?: OcDatasetPickerApi;
   /** Grup id → ad (readonly grup alanlarında ham id yerine ad göstermek için; profil sağlar). */
   groupNames?: Record<string, string>;
   /** MO'da çözülmüş görünen metin (relation/person/katalog) — readonly'de lookup yerine gösterilir. */
@@ -105,6 +109,18 @@ const isSelectWidget = computed(() =>
 
 const useDropdownSelect = computed(
   () => props.selectPresentation === 'dropdown' && isSelectWidget.value
+);
+
+const lookupConfig = computed(() => {
+  const ft = resolveOcFormFieldType(props.fieldKey, props.meta);
+  return parseOcLookupFromFieldOptions(props.meta?.options, ft);
+});
+
+const isDatasetPickerWidget = computed(
+  () =>
+    isSelectWidget.value &&
+    props.selectPresentation === 'picker' &&
+    props.datasetPicker != null
 );
 
 // Readonly (profil) görünümde lookup yapılmadığından select/person/grup alanları
@@ -220,6 +236,25 @@ function onSelectUpdate(value: unknown) {
     :error-messages="fieldErrorMessages"
     :field-class="fieldClass"
   />
+
+  <client-only v-else-if="isDatasetPickerWidget && datasetPicker">
+    <OcLookupDatasetPickerField
+      v-model="model"
+      :multiple="selectMultiple"
+      :disabled="selectControlDisabled"
+      :external-picker="datasetPicker"
+      :label="label"
+      :show-required-mark="behavior.required"
+      :error="showFieldError"
+      :error-messages="fieldErrorMessages"
+      :field-class="fieldClass"
+      :label-field-key="lookupConfig?.labelField"
+      :search-field-keys="lookupConfig?.searchFields ?? []"
+    />
+    <template #fallback>
+      <v-skeleton-loader type="text" />
+    </template>
+  </client-only>
 
   <OcTagSelector
     v-else-if="isTagsWidget"

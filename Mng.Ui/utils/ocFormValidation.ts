@@ -27,12 +27,14 @@ export function visibleOcFormFieldKeys(ctx: OcFormRuntimeContext): string[] {
 export function isOcFieldValueFilled(
   value: unknown,
   meta?: OcFormFieldRuntimeDto | null,
-  options?: { required?: boolean; fieldKey?: string }
+  options?: { required?: boolean; fieldKey?: string; existingAttachmentCount?: number }
 ): boolean {
   const fieldKey = options?.fieldKey ?? meta?.key ?? '';
   const ft = resolveOcFormFieldType(fieldKey, meta).toLowerCase();
   if (ft === 'file') {
-    return isOcFileFieldValueFilled(value, meta, fieldKey);
+    return isOcFileFieldValueFilled(value, meta, fieldKey, {
+      existingAttachmentCount: options?.existingAttachmentCount,
+    });
   }
   if (ft === 'bool' && options?.required) {
     return value === true;
@@ -53,7 +55,8 @@ export function isOcFieldValueFilled(
 
 export function collectOcFormValidationIssues(
   ctx: OcFormRuntimeContext,
-  model: Record<string, unknown>
+  model: Record<string, unknown>,
+  options?: { existingAttachmentCount?: number }
 ): OcFormValidationIssue[] {
   const issues: OcFormValidationIssue[] = [];
   const seen = new Set<string>();
@@ -68,7 +71,13 @@ export function collectOcFormValidationIssues(
   for (const key of visibleOcFormFieldKeys(ctx)) {
     const behavior = ctx.fieldBehaviors[key];
     if (behavior?.required !== true) continue;
-    if (!isOcFieldValueFilled(model[key], ctx.fields[key], { required: true, fieldKey: key })) {
+    if (
+      !isOcFieldValueFilled(model[key], ctx.fields[key], {
+        required: true,
+        fieldKey: key,
+        existingAttachmentCount: options?.existingAttachmentCount,
+      })
+    ) {
       pushIssue(key);
     }
   }

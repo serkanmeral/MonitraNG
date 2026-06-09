@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useOcWorkspaceMetadataCacheReload } from '@/composables/useOcWorkspaceMetadataCacheReload';
 import { useOcLookupDatasetCatalog } from '@/composables/useOcLookupDatasetCatalog';
 import { useDatasetStore } from '@/stores/apps/dataset';
 import {
@@ -43,6 +44,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const metaCache = useOcWorkspaceMetadataCacheReload(() => props.workspaceId);
 const datasetStore = useDatasetStore();
 const {
   load: loadLookupCatalog,
@@ -412,7 +414,12 @@ async function saveSelection() {
       enabledFieldIds: selectedFieldIds.value,
     });
     await loadAll();
-    successLocal.value = t('operationCore.workspaceDefinitions.saveSuccess');
+    await metaCache.applySaveSuccess(
+      (msg) => {
+        successLocal.value = msg;
+      },
+      t('operationCore.workspaceDefinitions.saveSuccess')
+    );
   } catch (e: unknown) {
     errorLocal.value = ocExtractDgErrorMessage(
       e,
@@ -445,6 +452,7 @@ async function submitScopedField() {
     }
     dialog.value = false;
     await loadAll();
+    void metaCache.reloadAfterMetadataChange();
   } catch (e: unknown) {
     errorLocal.value = ocExtractDgErrorMessage(
       e,
@@ -466,6 +474,7 @@ async function confirmDelete() {
     deleteDialog.value = false;
     deleteTarget.value = null;
     await loadAll();
+    void metaCache.reloadAfterMetadataChange();
   } catch (e: unknown) {
     errorLocal.value = ocExtractDgErrorMessage(
       e,

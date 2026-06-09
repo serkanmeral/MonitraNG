@@ -18,6 +18,7 @@ namespace MngDataGateway.Application.Configuration
         public HistorySettings History { get; set; } = new();
         public DeletedDataSettings DeletedData { get; set; } = new();
         public QuerySettings Query { get; set; } = new();
+        public CatalogReadCacheSettings CatalogReadCache { get; set; } = new();
         public FileStorageSettings FileStorage { get; set; } = new();
     }
 
@@ -104,6 +105,17 @@ namespace MngDataGateway.Application.Configuration
         /// Maximum page size for list queries (default: 1000)
         /// </summary>
         public int MaxPageSize { get; set; } = 1000;
+    }
+
+    /// <summary>
+    /// Global katalog dataset listeleri için read-through önbellek (Faz 3).
+    /// </summary>
+    public class CatalogReadCacheSettings
+    {
+        public bool Enabled { get; set; } = true;
+
+        /// <summary>TTL saniye (varsayılan 300).</summary>
+        public int TtlSeconds { get; set; } = 300;
     }
 
     /// <summary>
