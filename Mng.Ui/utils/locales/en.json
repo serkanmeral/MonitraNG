@@ -4212,7 +4212,7 @@
         "fieldSensitive": "Sensitive data (isSensitive)",
         "keyHint": "camelCase or snake_case; cannot be changed after create.",
         "keyInvalid": "Invalid key. Must start with a letter or underscore; only letters, digits, and underscores allowed.",
-        "optionsHint": "E.g. {\"choices\":[\"Low\",\"Medium\",\"High\"]} — optional.",
+        "optionsHint": "JSON object with a choices array — optional.",
         "optionsInvalid": "options must be a valid JSON object.",
         "relationDatasetHint": "When fieldType=relation, target dataset name (e.g. op_labels).",
         "category": {

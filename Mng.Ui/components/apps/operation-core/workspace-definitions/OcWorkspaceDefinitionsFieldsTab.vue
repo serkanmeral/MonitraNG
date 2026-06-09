@@ -17,6 +17,7 @@ import {
   OC_FIELD_KEY_PATTERN,
   OC_POOL_FIELD_TYPE_VALUES,
   parseOcFieldOptions,
+  resolveOcFieldOptionsHint,
   stringifyOcFieldOptions,
 } from '@/utils/ocFieldDefinitions';
 
@@ -24,7 +25,9 @@ const props = defineProps<{
   workspaceId: string;
 }>();
 
-const { t } = useAppI18n();
+const { t, locale } = useAppI18n();
+
+const fieldOptionsHintText = computed(() => resolveOcFieldOptionsHint(locale()));
 
 const loading = ref(true);
 const savingSelection = ref(false);
@@ -486,7 +489,7 @@ async function confirmDelete() {
             v-model="form.optionsJson"
             class="mt-3"
             :label="t('operationCore.definitions.fields.fieldOptions')"
-            :hint="t('operationCore.definitions.fields.optionsHint')"
+            :hint="fieldOptionsHintText"
             persistent-hint
             rows="3"
             auto-grow

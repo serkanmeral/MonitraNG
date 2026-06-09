@@ -113,3 +113,10 @@ export function stringifyOcFieldOptions(value: Record<string, unknown> | null | 
   if (!value || Object.keys(value).length === 0) return '';
   return JSON.stringify(value, null, 2);
 }
+
+/** i18n message compiler `{...}` JSON örneklerini parse edemez; hint doğrudan metin. */
+export function resolveOcFieldOptionsHint(locale: string): string {
+  return locale === 'en'
+    ? 'E.g. {"choices":["Low","Medium","High"]} — optional.'
+    : 'Örn. {"choices":["Düşük","Orta","Yüksek"]} — boş bırakılabilir.';
+}

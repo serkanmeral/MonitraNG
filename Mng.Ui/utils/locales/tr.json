@@ -4225,7 +4225,7 @@
         "fieldSensitive": "Hassas veri (isSensitive)",
         "keyHint": "camelCase veya snake_case; oluşturulduktan sonra değiştirilemez.",
         "keyInvalid": "Key geçersiz. Harf veya alt çizgi ile başlamalı; yalnızca harf, rakam ve alt çizgi içerebilir.",
-        "optionsHint": "Örn. {\"choices\":[\"Düşük\",\"Orta\",\"Yüksek\"]} — boş bırakılabilir.",
+        "optionsHint": "choices dizisi içeren JSON nesnesi — boş bırakılabilir.",
         "optionsInvalid": "options geçerli bir JSON nesnesi olmalıdır.",
         "relationDatasetHint": "fieldType=relation iken hedef dataset adı (ör. op_labels).",
         "category": {
