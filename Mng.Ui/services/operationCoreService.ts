@@ -2019,6 +2019,11 @@ function mapWorkItemCard(raw: Record<string, unknown>): OcWorkItemCard {
     fieldsRaw && typeof fieldsRaw === 'object' && !Array.isArray(fieldsRaw)
       ? (fieldsRaw as Record<string, unknown>)
       : undefined;
+  const fieldDisplaysRaw = raw.fieldDisplays ?? raw.FieldDisplays;
+  const fieldDisplays =
+    fieldDisplaysRaw && typeof fieldDisplaysRaw === 'object' && !Array.isArray(fieldDisplaysRaw)
+      ? parseStringMap(fieldDisplaysRaw)
+      : undefined;
   return {
     id: pickStr(raw, 'id', 'Id') ?? '',
     key: pickStr(raw, 'key', 'Key') ?? '',
@@ -2034,6 +2039,7 @@ function mapWorkItemCard(raw: Record<string, unknown>): OcWorkItemCard {
     closedAt: pickStr(raw, 'closedAt', 'ClosedAt') ?? null,
     sla: mapSlaSnapshot(raw.sla ?? raw.Sla),
     fields,
+    fieldDisplays: fieldDisplays && Object.keys(fieldDisplays).length > 0 ? fieldDisplays : undefined,
   };
 }
 

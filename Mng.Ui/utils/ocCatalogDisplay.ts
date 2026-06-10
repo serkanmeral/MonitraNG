@@ -1,5 +1,10 @@
 import type { OpPriority, OpState, OpWorkItemType } from '@/types/apps/operationCore';
 import { isLegacyHexStatusColor, isTmStatusThemeColor } from '@/utils/taskManagerStatusColor';
+import {
+  defaultIconForPriorityLevel,
+  defaultIconForStateCategory,
+  defaultIconForTypeCategory,
+} from '@/utils/ocCatalogDefaultIcons';
 
 export type OcCatalogKind = 'state' | 'priority' | 'type';
 
@@ -37,6 +42,24 @@ export function resolveCatalogDisplayItem(
   if (hit) return hit;
   const name = fallbackName?.trim() || id;
   return { id, name, color: null, icon: null };
+}
+
+/** Tanımlı ikon yoksa category/level'e göre varsayılan Tabler ikonu uygular. */
+export function enrichCatalogDisplayIcon(
+  item: OcCatalogDisplayItem | null,
+  kind: OcCatalogKind,
+  meta?: { category?: string | null; level?: number | string | null }
+): OcCatalogDisplayItem | null {
+  if (!item) return null;
+  if (item.icon?.trim()) return item;
+  const fallback =
+    kind === 'state'
+      ? defaultIconForStateCategory(meta?.category ?? null)
+      : kind === 'priority'
+        ? defaultIconForPriorityLevel(meta?.level ?? null)
+        : defaultIconForTypeCategory(meta?.category ?? null);
+  if (!fallback) return item;
+  return { ...item, icon: fallback };
 }
 
 /** Metin rengi — Vuetify tema sınıfı veya hex inline style. */

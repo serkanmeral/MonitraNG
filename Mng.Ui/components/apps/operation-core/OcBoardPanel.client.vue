@@ -12,6 +12,7 @@ import type { OcBoardFilterColumn, OcBoardFilterKind } from '@/components/apps/o
 import OcWorkItemFormDialog from '@/components/apps/operation-core/OcWorkItemFormDialog.vue';
 import OcSlaStatusChip from '@/components/apps/operation-core/OcSlaStatusChip.vue';
 import { useOcBoardListLookups } from '@/composables/useOcBoardListLookups';
+import { useOcBoardRelationLookups } from '@/composables/useOcBoardRelationLookups';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import { useOperationCoreStore } from '@/stores/apps/operationCore';
 import { useAppI18n } from '@/composables/useAppI18n';
@@ -22,10 +23,8 @@ import {
   ocExtractDgErrorMessage,
   ocExtractOperationsMessage,
   ocGetDashboardRecord,
-  ocListDataset,
   ocListPoolFieldsForWorkspace,
 } from '@/services/operationCoreService';
-import { recordToDatasetItems } from '@/utils/ocDynamicFormField';
 import type {
   OcBoardListFilter,
   OcBoardListRequest,
@@ -40,11 +39,12 @@ import {
   isCoreListColumn,
   isSystemListColumn,
   listTableCellValue,
-  listTablePoolCellValue,
+  listTablePoolCellDisplay,
   normalizeListTableColumns,
+  resolveListColumnFormat,
   systemColumnRawValue,
 } from '@/utils/ocBoardListColumns';
-import { formatCellValue } from '@/utils/ocColumnFormat';
+import { formatCellValue, type OcFormatOptions } from '@/utils/ocColumnFormat';
 import { evaluateComputedExpr } from '@/utils/ocComputedColumns';
 import { buildWorkItemProfilePath } from '@/utils/ocWorkItemProfileNav';
 
@@ -205,6 +205,23 @@ const poolFieldLabelByKey = computed(
 
 const poolFieldKeys = computed(() => poolFields.value.map((f) => f.key).filter((k): k is string => !!k));
 
+const poolFieldTypeByKey = computed(
+  () => new Map(poolFields.value.filter((f) => f.key).map((f) => [f.key, f.fieldType || '']))
+);
+
+function listCellFormatOptions(key: string, item?: OcWorkItemCard): OcFormatOptions {
+  const opts: OcFormatOptions = { locale: locale() };
+  if (key === 'age' && item) opts.anchorEnd = item.closedAt ?? null;
+  if ((poolFieldTypeByKey.value.get(key) ?? '').toLowerCase() === 'date') {
+    opts.dateOnly = true;
+  }
+  return opts;
+}
+
+function effectiveColumnFormat(key: string): OcColumnFormat | null {
+  return resolveListColumnFormat(key, columnFormat(key), poolFieldTypeByKey.value.get(key));
+}
+
 const personPoolKeySet = computed(
   () =>
     new Set(
@@ -279,18 +296,6 @@ const datePoolKeySet = computed(
     )
 );
 
-// Pool relation alanları: değer = ilgili kaydın __dataId'si; etiketi dataset'ten çözülür.
-const relationPoolFields = computed(() =>
-  poolFields.value.filter(
-    (f) =>
-      f.key &&
-      (f.fieldType || '').toLowerCase() === 'relation' &&
-      !!f.relationDatasetName?.trim()
-  )
-);
-
-const relationPoolKeySet = computed(() => new Set(relationPoolFields.value.map((f) => f.key)));
-
 // Pool tags alanları: çoklu serbest etiket. Filtrede combobox (in/nin) + yüklü satırlardan öneri.
 const tagsPoolKeySet = computed(
   () =>
@@ -322,75 +327,6 @@ const tagOptionsByKey = computed<Record<string, string[]>>(() => {
   return out;
 });
 
-// key → option listesi (value=__dataId, title=ad); filtre v-select'leri için.
-const relationOptionsByKey = ref<Record<string, { value: string; title: string }[]>>({});
-
-// key → (id → ad); liste hücresi etiketleri için.
-const relationLabelByKey = computed(() => {
-  const map = new Map<string, Map<string, string>>();
-  for (const [key, items] of Object.entries(relationOptionsByKey.value)) {
-    map.set(key, new Map(items.map((i) => [i.value, i.title])));
-  }
-  return map;
-});
-
-let relationOptionsLoaded = false;
-
-async function ensureRelationOptions() {
-  if (relationOptionsLoaded) return;
-  relationOptionsLoaded = true;
-  await loadRelationOptions();
-}
-
-async function loadRelationOptions() {
-  const fields = relationPoolFields.value;
-  if (!fields.length) {
-    relationOptionsByKey.value = {};
-    return;
-  }
-  // Aynı dataset birden çok alanda kullanılabilir; dataset bazında bir kez çek.
-  const cache = new Map<string, { value: string; title: string }[]>();
-  const next: Record<string, { value: string; title: string }[]> = {};
-  await Promise.all(
-    fields.map(async (f) => {
-      const dataset = f.relationDatasetName!.trim();
-      const key = f.key as string;
-      try {
-        let items = cache.get(dataset);
-        if (!items) {
-          const rows = await ocListDataset(dataset, { limit: 500 });
-          items = recordToDatasetItems(rows);
-          cache.set(dataset, items);
-        }
-        next[key] = items;
-      } catch {
-        next[key] = [];
-      }
-    })
-  );
-  relationOptionsByKey.value = next;
-}
-
-/** Relation pool değerini (id / id[] / nesne) okunabilir etikete çevirir. */
-function resolveRelationValue(key: string, value: unknown): string {
-  const labels = relationLabelByKey.value.get(key);
-  const entries = Array.isArray(value) ? value : value == null || value === '' ? [] : [value];
-  if (!entries.length) return '—';
-  const names = entries
-    .map((entry) => {
-      if (entry && typeof entry === 'object') {
-        const o = entry as Record<string, unknown>;
-        const id = String(o.__dataId ?? o.dataId ?? o.id ?? '').trim();
-        const inline = o.name ?? o.title ?? o.label;
-        return (inline != null ? String(inline) : '') || labels?.get(id) || id || '';
-      }
-      const id = String(entry).trim();
-      return labels?.get(id) || id;
-    })
-    .filter((n) => n && n !== '—');
-  return names.length ? names.join(', ') : '—';
-}
-
 const listColumnsMeta = computed(() => store.boardContext?.listColumns ?? []);
 
 const sortableKeySet = computed(
@@ -412,6 +348,8 @@ const computedColumnByKey = computed(() => {
 });
 
 function columnLabel(key: string): string {
+  const meta = listColumnsMeta.value.find((c) => c.key === key);
+  if (meta?.label?.trim()) return meta.label.trim();
   const computed = computedColumnByKey.value.get(key);
   if (computed) return computed.label?.trim() || key;
   if (isBuiltInListColumn(key)) {
@@ -444,7 +382,7 @@ function computedCellValue(key: string, item: OcWorkItemCard): string {
   const result = evaluateComputedExpr(def.expr, buildComputedScope(item));
   if (!result.ok) return '⚠';
   if (result.value === null || result.value === undefined || result.value === '') return '—';
-  return formatCellValue(result.value, columnFormat(key), { locale: locale() });
+  return formatCellValue(result.value, columnFormat(key), listCellFormatOptions(key));
 }
 
 const initialStateId = computed(() => store.boardContext?.initialStateId ?? null);
@@ -483,13 +421,18 @@ const listHeaders = computed(() => {
   return cols;
 });
 
+function isRelationPoolKey(key: string): boolean {
+  const f = poolFields.value.find((x) => x.key === key);
+  return (f?.fieldType || '').toLowerCase() === 'relation' && !!f.relationDatasetName?.trim();
+}
+
 function filterKind(key: string): OcBoardFilterKind {
   if (key === 'stateId') return 'state';
   if (key === 'priorityId') return 'priority';
   if (key === 'typeId') return 'type';
   if (key === 'assignee' || key === 'createdBy' || personPoolKeySet.value.has(key)) return 'person';
   if (key === 'assignmentGroups' || groupPoolKeySet.value.has(key)) return 'group';
-  if (relationPoolKeySet.value.has(key)) return 'relation';
+  if (isRelationPoolKey(key)) return 'relation';
   if (tagsPoolKeySet.value.has(key)) return 'tags';
   // Tarih: format ipucu 'date' (createdAt/lastStateChangeAt/closedAt…) veya pool date/datetime alanı.
   if (columnFormat(key) === 'date' || datePoolKeySet.value.has(key)) return 'date';
@@ -504,6 +447,13 @@ const filterableColumns = computed<OcBoardFilterColumn[]>(() =>
     .filter((c) => c.filterable)
     .map((c) => ({ key: c.key, label: columnLabel(c.key), kind: filterKind(c.key) }))
 );
+
+const {
+  relationPoolKeySet,
+  relationOptionsByKey,
+  resolveRelationValue,
+  ensureRelationOptions,
+} = useOcBoardRelationLookups(poolFields, listColumnKeys, filterableColumns);
 
 const stateFilterOptions = computed(() =>
   Array.from(stateById.value.values()).map((c) => ({ value: c.id, title: c.name || c.id }))
@@ -546,9 +496,8 @@ const listRows = computed(() =>
       if (computedColumnByKey.value.has(key)) {
         row[key] = computedCellValue(key, item);
       } else if (isSystemListColumn(key)) {
-        row[key] = formatCellValue(systemColumnRawValue(item, key), columnFormat(key), {
-          locale: locale(),
-          anchorEnd: key === 'age' ? item.closedAt : null,
+        row[key] = formatCellValue(systemColumnRawValue(item, key), effectiveColumnFormat(key), {
+          ...listCellFormatOptions(key, item),
         });
       } else if (isCoreListColumn(key)) {
         row[key] = listTableCellValue(item, key, { stateLabel: stateLabel ?? undefined });
@@ -557,9 +506,16 @@ const listRows = computed(() =>
       } else if (groupPoolKeySet.value.has(key) || key === 'assignmentGroups') {
         row[key] = resolveGroupValue(item.fields?.[key]);
       } else if (relationPoolKeySet.value.has(key)) {
-        row[key] = resolveRelationValue(key, item.fields?.[key]);
+        row[key] =
+          item.fieldDisplays?.[key] ?? resolveRelationValue(key, item.fields?.[key]);
       } else {
-        row[key] = listTablePoolCellValue(item.fields, key);
+        row[key] = listTablePoolCellDisplay(
+          item.fields,
+          key,
+          effectiveColumnFormat(key),
+          listCellFormatOptions(key, item),
+          item.fieldDisplays
+        );
       }
     }
     return row;
@@ -615,7 +571,7 @@ function onListOptions(opts: { page: number; itemsPerPage: number; sortBy: { key
 function onFiltersUpdate(filters: OcBoardListFilter[]) {
   activeFilters.value = filters;
   page.value = 1;
-  void fetchList();
+  void fetchList(true);
 }
 
 watch(searchInput, () => {
@@ -654,7 +610,6 @@ async function loadPoolFields() {
 }
 
 watch(workspaceId, () => {
-  relationOptionsLoaded = false;
   void loadPoolFields();
 }, { immediate: true });
 
@@ -948,7 +903,7 @@ onUnmounted(() => {
     <template v-else-if="store.boardContext">
       <v-card v-if="showList" variant="outlined" class="rounded-lg">
         <div class="pa-3 pb-0">
-          <div class="d-flex align-center flex-wrap ga-2 mb-2">
+          <div class="d-flex align-center flex-wrap ga-2 mb-1">
             <v-text-field
               v-model="searchInput"
               :placeholder="t('operationCore.board.searchPlaceholder')"
@@ -970,6 +925,18 @@ onUnmounted(() => {
             >
               {{ t('operationCore.board.searchClear') }}
             </v-btn>
+            <OcBoardListFilters
+              v-if="filterableColumns.length"
+              :columns="filterableColumns"
+              :state-options="stateFilterOptions"
+              :priority-options="priorityFilterOptions"
+              :type-options="typeFilterOptions"
+              :relation-options-by-key="relationOptionsByKey"
+              :group-options-by-key="groupOptionsByKey"
+              :tag-options-by-key="tagOptionsByKey"
+              @update:filters="onFiltersUpdate"
+              @advanced-open="onFiltersAdvancedOpen"
+            />
             <v-spacer />
             <v-alert
               v-if="store.listError"
@@ -981,19 +948,6 @@ onUnmounted(() => {
               {{ store.listError }}
             </v-alert>
           </div>
-          <OcBoardListFilters
-            v-if="filterableColumns.length"
-            :columns="filterableColumns"
-            :state-options="stateFilterOptions"
-            :priority-options="priorityFilterOptions"
-            :type-options="typeFilterOptions"
-            :relation-options-by-key="relationOptionsByKey"
-            :group-options-by-key="groupOptionsByKey"
-            :tag-options-by-key="tagOptionsByKey"
-            class="mb-2"
-            @update:filters="onFiltersUpdate"
-            @advanced-open="onFiltersAdvancedOpen"
-          />
         </div>
         <v-divider />
         <v-data-table-server

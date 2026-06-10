@@ -1,0 +1,87 @@
+{
+  "name": "odak_urunler",
+  "description": "Odak Uretim — urun / parca master (OC lookup)",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "partNumber",
+      "title": "Parca numarasi",
+      "mandatory": true,
+      "unique": true,
+      "isArray": false,
+      "validation": { "minLength": 2, "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "ad",
+      "title": "Parca adi",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "minLength": 2, "maxLength": 200 }
+    },
+    {
+      "fieldType": "relation",
+      "name": "urunGrubuId",
+      "title": "Urun grubu",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_urun_gruplari"
+    },
+    {
+      "fieldType": "relation",
+      "name": "musteriId",
+      "title": "Musteri (opsiyonel)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_musteriler"
+    },
+    {
+      "fieldType": "text",
+      "name": "revizyon",
+      "title": "Revizyon",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 20 }
+    },
+    {
+      "fieldType": "select",
+      "name": "birim",
+      "title": "Birim",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "options": {
+        "lookup": {
+          "source": "static",
+          "staticItems": [
+            { "value": "adet", "label": "Adet" },
+            { "value": "takim", "label": "Takim" },
+            { "value": "kg", "label": "kg" }
+          ]
+        }
+      }
+    },
+    {
+      "fieldType": "bool",
+      "name": "aktif",
+      "title": "Aktif",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": true
+    }
+  ],
+  "indexList": [
+    { "name": "idx_partNumber", "fields": { "partNumber": 1 }, "unique": true },
+    { "name": "idx_urunGrubuId", "fields": { "urunGrubuId": 1 }, "unique": false },
+    { "name": "idx_musteriId", "fields": { "musteriId": 1 }, "unique": false },
+    { "name": "idx_aktif", "fields": { "aktif": 1 }, "unique": false }
+  ]
+}

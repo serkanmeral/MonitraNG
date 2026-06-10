@@ -1,0 +1,55 @@
+{
+  "name": "odak_urun_gruplari",
+  "description": "Odak Uretim — urun grubu master (OC lookup)",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "kod",
+      "title": "Grup kodu",
+      "mandatory": true,
+      "unique": true,
+      "isArray": false,
+      "validation": {
+        "minLength": 3,
+        "maxLength": 20,
+        "pattern": "^UG-[A-Z0-9]+$",
+        "message": "Kod UG-XXX formatinda olmalidir"
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "ad",
+      "title": "Grup adi",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "minLength": 2, "maxLength": 120 }
+    },
+    {
+      "fieldType": "text",
+      "name": "aciklama",
+      "title": "Aciklama",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 500 }
+    },
+    {
+      "fieldType": "bool",
+      "name": "aktif",
+      "title": "Aktif",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": true
+    }
+  ],
+  "indexList": [
+    { "name": "idx_kod", "fields": { "kod": 1 }, "unique": true },
+    { "name": "idx_ad", "fields": { "ad": 1 }, "unique": false },
+    { "name": "idx_aktif", "fields": { "aktif": 1 }, "unique": false }
+  ]
+}

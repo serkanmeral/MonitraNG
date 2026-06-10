@@ -14,6 +14,7 @@ import type {
 } from '@/types/apps/operationCore';
 import {
   buildCatalogDisplayMap,
+  enrichCatalogDisplayIcon,
   resolveCatalogDisplayItem,
   type OcCatalogDisplayItem,
 } from '@/utils/ocCatalogDisplay';
@@ -64,20 +65,35 @@ export function useOcBoardListLookups(
   const prioritiesContext = computed(() => contextMap('priorities'));
   const typesContext = computed(() => contextMap('types'));
 
-  const hasContextCatalogs = computed(
-    () => !!(statesContext.value || prioritiesContext.value || typesContext.value)
-  );
-
   const stateById = computed(() => statesContext.value ?? buildCatalogDisplayMap(states.value));
   const priorityById = computed(() => prioritiesContext.value ?? buildCatalogDisplayMap(priorities.value));
   const typeById = computed(() => typesContext.value ?? buildCatalogDisplayMap(types.value));
 
-  async function loadCatalogs() {
-    // Board context map'leri mevcutsa ayrı fetch'e gerek yok (cache'ten geliyor).
-    if (hasContextCatalogs.value) {
-      return;
+  const stateMetaById = computed(() => {
+    const m = new Map<string, { category: string }>();
+    for (const s of states.value) {
+      if (s.__dataId) m.set(s.__dataId, { category: String(s.category ?? 'open') });
     }
+    return m;
+  });
 
+  const priorityMetaById = computed(() => {
+    const m = new Map<string, { level: number | string | null }>();
+    for (const p of priorities.value) {
+      if (p.__dataId) m.set(p.__dataId, { level: p.level ?? null });
+    }
+    return m;
+  });
+
+  const typeMetaById = computed(() => {
+    const m = new Map<string, { category: string }>();
+    for (const t of types.value) {
+      if (t.__dataId) m.set(t.__dataId, { category: String(t.category ?? 'task') });
+    }
+    return m;
+  });
+
+  async function loadCatalogs() {
     const id = workspaceId.value?.trim();
     if (!id) {
       states.value = [];
@@ -106,7 +122,7 @@ export function useOcBoardListLookups(
   }
 
   watch(
-    [workspaceId, hasContextCatalogs],
+    workspaceId,
     () => {
       void loadCatalogs();
     },
@@ -114,15 +130,21 @@ export function useOcBoardListLookups(
   );
 
   function resolveState(id: string | null | undefined, fallbackName?: string | null): OcCatalogDisplayItem | null {
-    return resolveCatalogDisplayItem(stateById.value, id, fallbackName);
+    const base = resolveCatalogDisplayItem(stateById.value, id, fallbackName);
+    const meta = id ? stateMetaById.value.get(id) : undefined;
+    return enrichCatalogDisplayIcon(base, 'state', meta);
   }
 
   function resolvePriority(id: string | null | undefined): OcCatalogDisplayItem | null {
-    return resolveCatalogDisplayItem(priorityById.value, id);
+    const base = resolveCatalogDisplayItem(priorityById.value, id);
+    const meta = id ? priorityMetaById.value.get(id) : undefined;
+    return enrichCatalogDisplayIcon(base, 'priority', meta);
   }
 
   function resolveType(id: string | null | undefined): OcCatalogDisplayItem | null {
-    return resolveCatalogDisplayItem(typeById.value, id);
+    const base = resolveCatalogDisplayItem(typeById.value, id);
+    const meta = id ? typeMetaById.value.get(id) : undefined;
+    return enrichCatalogDisplayIcon(base, 'type', meta);
   }
 
   /** Tek bir person id'sini MO people map'inden ada çevirir. */

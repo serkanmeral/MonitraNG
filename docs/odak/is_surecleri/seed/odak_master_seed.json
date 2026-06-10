@@ -1,0 +1,100 @@
+{
+  "musteriler": [
+    {
+      "kod": "MUS-001",
+      "unvan": "Turk Havacilik A.S.",
+      "sektor": "havacilik",
+      "ulke": "Turkiye",
+      "aktif": true
+    },
+    {
+      "kod": "MUS-002",
+      "unvan": "Savunma Sanayi Tedarik Ltd.",
+      "sektor": "savunma",
+      "ulke": "Turkiye",
+      "aktif": true
+    }
+  ],
+  "urunGruplari": [
+    {
+      "kod": "UG-KOM",
+      "ad": "Kompozit yapisal parca",
+      "aciklama": "Carbon/epoxy kompozit parcalar",
+      "aktif": true
+    },
+    {
+      "kod": "UG-KAL",
+      "ad": "Kalip / fikstur / mastar",
+      "aciklama": "Uretim kalip ve fiksturleri",
+      "aktif": true
+    },
+    {
+      "kod": "UG-YM",
+      "ad": "Yari mamul",
+      "aciklama": "Ara proses ciktilari",
+      "aktif": true
+    },
+    {
+      "kod": "UG-MNT",
+      "ad": "Montaj seti",
+      "aciklama": "Montaj ve birlestirme setleri",
+      "aktif": true
+    }
+  ],
+  "urunler": [
+    {
+      "partNumber": "ODK-CMP-1001",
+      "ad": "Kanat kabuk paneli A",
+      "urunGrubuKod": "UG-KOM",
+      "musteriKod": "MUS-001",
+      "revizyon": "Rev03",
+      "birim": "adet",
+      "aktif": true
+    },
+    {
+      "partNumber": "ODK-CMP-1002",
+      "ad": "Govde kaplama paneli B",
+      "urunGrubuKod": "UG-KOM",
+      "musteriKod": "MUS-001",
+      "revizyon": "Rev01",
+      "birim": "adet",
+      "aktif": true
+    },
+    {
+      "partNumber": "ODK-FXT-2001",
+      "ad": "Layup fiksturu L-450",
+      "urunGrubuKod": "UG-KAL",
+      "musteriKod": null,
+      "revizyon": "Rev02",
+      "birim": "takim",
+      "aktif": true
+    },
+    {
+      "partNumber": "ODK-YM-3001",
+      "ad": "On kure preform",
+      "urunGrubuKod": "UG-YM",
+      "musteriKod": "MUS-002",
+      "revizyon": "Rev01",
+      "birim": "adet",
+      "aktif": true
+    },
+    {
+      "partNumber": "ODK-MNT-4001",
+      "ad": "Baglanti seti M8",
+      "urunGrubuKod": "UG-MNT",
+      "musteriKod": "MUS-002",
+      "revizyon": "Rev00",
+      "birim": "takim",
+      "aktif": true
+    },
+    {
+      "partNumber": "ODK-CMP-1003",
+      "ad": "Spoiler yuzeyi C",
+      "urunGrubuKod": "UG-KOM",
+      "musteriKod": "MUS-001",
+      "revizyon": "Rev02",
+      "birim": "adet",
+      "aktif": true
+    }
+  ]
+}

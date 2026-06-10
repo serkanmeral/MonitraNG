@@ -113,7 +113,7 @@ export function parseOcLookupFromFieldOptions(
   optionsRaw: unknown,
   fieldType?: string | null
 ): OcLookupConfig | null {
-  const ft = (fieldType ?? '').toLowerCase();
+  const ft = (typeof fieldType === 'string' ? fieldType : '').toLowerCase();
   const obj =
     optionsRaw && typeof optionsRaw === 'object' && !Array.isArray(optionsRaw)
       ? (optionsRaw as Record<string, unknown>)

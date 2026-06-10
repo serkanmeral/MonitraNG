@@ -440,6 +440,8 @@ export interface OcWorkItemCard {
   sla?: OcSlaSnapshot | null;
   /** Pool alan değerleri (extraFields) — liste tablosu özel sütunları için. */
   fields?: Record<string, unknown>;
+  /** MO tarafında çözülmüş pool alan görünen metinleri (relation vb.). */
+  fieldDisplays?: Record<string, string>;
 }
 
 /** Keeper kişi (person) görünen ad map'i — MO cache'inden gelir. */

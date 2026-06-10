@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import OcPersonPickerAutocomplete from '@/components/apps/operation-core/OcPersonPickerAutocomplete.vue';
 import type { OcBoardListFilter } from '@/types/apps/operationCore';
+import { collectPersonIdsFromValue } from '@/utils/ocPersonPicker';
 
 export type OcBoardFilterKind = 'state' | 'priority' | 'type' | 'person' | 'relation' | 'group' | 'tags' | 'number' | 'date' | 'text';
 
@@ -39,15 +40,11 @@ const emit = defineEmits<{
 
 const { t } = useAppI18n();
 
-// --- Hızlı filtre (kolon başına). Katalog: id[]; person: id|null; text: string. ---
-const values = reactive<Record<string, unknown>>({});
-
-// --- Gelişmiş arama (çok satırlı, AND). ---
-const advancedOpen = ref(false);
+const panelOpen = ref(false);
 const advancedRows = ref<AdvancedRow[]>([]);
 let rowSeq = 0;
 
-watch(advancedOpen, (open, wasOpen) => {
+watch(panelOpen, (open, wasOpen) => {
   if (open && !wasOpen) emit('advanced-open');
 });
 
@@ -78,7 +75,6 @@ function isCatalogKind(kind: OcBoardFilterKind | null): boolean {
   return kind === 'state' || kind === 'priority' || kind === 'type';
 }
 
-// "Select" = sabit katalog (state/priority/type) ∪ pool relation ∪ grup — hepsi v-select + in/nin/eq/ne.
 function isSelectKind(kind: OcBoardFilterKind | null): boolean {
   return isCatalogKind(kind) || kind === 'relation' || kind === 'group';
 }
@@ -88,15 +84,6 @@ function catalogOptions(kind: OcBoardFilterKind): { value: string; title: string
   if (kind === 'priority') return props.priorityOptions;
   if (kind === 'type') return props.typeOptions;
   return [];
-}
-
-function textValue(key: string): string {
-  const v = values[key];
-  return typeof v === 'string' ? v : '';
-}
-
-function setTextValue(key: string, v: string | null) {
-  values[key] = v ?? '';
 }
 
 const fieldOptions = computed(() =>
@@ -128,7 +115,6 @@ function isTagsField(field: string): boolean {
   return kindOf(field) === 'tags';
 }
 
-/** Tags alanı için combobox önerileri (serbest giriş açık; öneriler yüklü satırlardan). */
 function tagComboItems(field: string): string[] {
   return props.tagOptionsByKey?.[field] ?? [];
 }
@@ -146,15 +132,40 @@ function isDateField(field: string): boolean {
   return kindOf(field) === 'date';
 }
 
-// Hızlı filtre satırı sayısal/tarih alanları göstermez — bunlar operatör gerektirir, gelişmiş aramada.
-const quickColumns = computed(() =>
-  props.columns.filter((c) => c.kind !== 'number' && c.kind !== 'date')
-);
-
-/** datetime-local ("YYYY-MM-DDTHH:mm", yerel) → karşılaştırma için UTC ISO string. */
 function toIsoUtc(raw: string): string | null {
   const d = new Date(raw);
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+function scalarFilterValue(kind: OcBoardFilterKind, operator: string, raw: unknown): string | null {
+  if (isSelectKind(kind) && isMultiCatalogOp(operator)) return null;
+  if (isSelectKind(kind)) {
+    if (Array.isArray(raw)) {
+      const ids = raw.filter((v) => v != null && String(v).trim() !== '').map((v) => String(v).trim());
+      return ids[0] ?? null;
+    }
+    if (raw == null || raw === '') return null;
+    return String(raw).trim() || null;
+  }
+  if (kind === 'tags' && isMultiCatalogOp(operator)) return null;
+  if (kind === 'tags') {
+    const tags = tagValueList(raw);
+    return tags[0] ?? null;
+  }
+  if (kind === 'person') {
+    const ids = collectPersonIdsFromValue(raw);
+    return ids[0] ?? null;
+  }
+  if (kind === 'number') {
+    if (raw == null || raw === '') return null;
+    return String(raw).trim() || null;
+  }
+  if (kind === 'date') {
+    const s = typeof raw === 'string' ? raw.trim() : '';
+    return s ? toIsoUtc(s) : null;
+  }
+  const text = typeof raw === 'string' ? raw.trim() : raw == null ? '' : String(raw).trim();
+  return text || null;
 }
 
 function catalogOptionsForField(field: string): { value: string; title: string }[] {
@@ -174,7 +185,7 @@ function defaultValueFor(kind: OcBoardFilterKind, op: string): unknown {
 }
 
 function addAdvancedRow() {
-  advancedOpen.value = true;
+  panelOpen.value = true;
   advancedRows.value.push({ id: ++rowSeq, field: '', operator: '', value: null });
 }
 
@@ -196,46 +207,23 @@ function onRowFieldChange(row: AdvancedRow) {
 function onRowOperatorChange(row: AdvancedRow) {
   const kind = kindOf(row.field);
   if (!kind) return;
-  // Katalog/tags: in/nin (çoklu) ↔ eq/ne (tekli) geçişinde değer tipini uyarla.
   if (isSelectKind(kind) || kind === 'tags') {
     row.value = defaultValueFor(kind, row.operator);
   }
 }
 
-function clearAdvanced() {
+function clearAll() {
   advancedRows.value = [];
 }
 
-function clearAll() {
-  for (const key of Object.keys(values)) {
-    delete values[key];
+function togglePanel() {
+  panelOpen.value = !panelOpen.value;
+  if (panelOpen.value && !advancedRows.value.length) {
+    addAdvancedRow();
   }
-  clearAdvanced();
 }
 
-function quickFilters(): OcBoardListFilter[] {
-  const out: OcBoardListFilter[] = [];
-  for (const col of props.columns) {
-    if (col.kind === 'number' || col.kind === 'date') continue;
-    const v = values[col.key];
-    if (isSelectKind(col.kind)) {
-      const ids = Array.isArray(v) ? (v as string[]).filter(Boolean) : [];
-      if (ids.length) out.push({ field: col.key, operator: 'in', value: ids.join(',') });
-    } else if (col.kind === 'tags') {
-      const tags = tagValueList(v);
-      if (tags.length) out.push({ field: col.key, operator: 'in', value: tags.join(',') });
-    } else if (col.kind === 'person') {
-      const id = typeof v === 'string' ? v.trim() : '';
-      if (id) out.push({ field: col.key, operator: 'eq', value: id });
-    } else {
-      const text = typeof v === 'string' ? v.trim() : '';
-      if (text) out.push({ field: col.key, operator: 'contains', value: text });
-    }
-  }
-  return out;
-}
-
-function advancedFilters(): OcBoardListFilter[] {
+function buildFilters(): OcBoardListFilter[] {
   const out: OcBoardListFilter[] = [];
   for (const row of advancedRows.value) {
     const kind = kindOf(row.field);
@@ -250,14 +238,10 @@ function advancedFilters(): OcBoardListFilter[] {
       const tags = tagValueList(row.value);
       if (!tags.length) continue;
       value = tags.join(',');
-    } else if (kind === 'date') {
-      const raw = typeof row.value === 'string' ? row.value.trim() : '';
-      const iso = raw ? toIsoUtc(raw) : null;
-      if (!iso) continue;
-      value = iso;
     } else {
-      value = typeof row.value === 'string' ? row.value.trim() : '';
-      if (!value) continue;
+      const scalar = scalarFilterValue(kind, row.operator, row.value);
+      if (!scalar) continue;
+      value = scalar;
     }
 
     out.push({ field: row.field, operator: row.operator, value });
@@ -265,146 +249,80 @@ function advancedFilters(): OcBoardListFilter[] {
   return out;
 }
 
-function buildFilters(): OcBoardListFilter[] {
-  return [...quickFilters(), ...advancedFilters()];
-}
-
 const activeCount = computed(() => buildFilters().length);
 
 watch(
-  [values, advancedRows],
+  advancedRows,
   () => {
     emit('update:filters', buildFilters());
   },
   { deep: true }
 );
 
-// Filtrelenebilir sütun seti değişirse, artık geçerli olmayan değerleri/satırları temizle.
 watch(
   () => props.columns.map((c) => c.key).join('|'),
   () => {
     const allowed = new Set(props.columns.map((c) => c.key));
-    for (const key of Object.keys(values)) {
-      if (!allowed.has(key)) delete values[key];
-    }
     advancedRows.value = advancedRows.value.filter((r) => !r.field || allowed.has(r.field));
   }
 );
 </script>
 
 <template>
-  <div v-if="columns.length" class="oc-board-list-filters">
-    <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-2">
-      <div class="text-caption font-weight-medium d-flex align-center ga-1">
-        <v-icon icon="mdi-filter-variant" size="18" />
-        {{ t('operationCore.board.filters.title') }}
-        <v-chip v-if="activeCount" size="x-small" color="primary" variant="flat" class="ml-1">
-          {{ activeCount }}
-        </v-chip>
-      </div>
-      <div class="d-flex align-center ga-1">
-        <v-btn
-          size="x-small"
-          variant="text"
-          class="text-none"
-          :prepend-icon="advancedOpen ? 'mdi-chevron-up' : 'mdi-tune-variant'"
-          @click="advancedOpen = !advancedOpen"
-        >
-          {{ advancedOpen ? t('operationCore.board.filters.advanced.hide') : t('operationCore.board.filters.advanced.show') }}
-        </v-btn>
-        <v-btn
+  <div
+    v-if="columns.length"
+    class="oc-board-list-filters"
+    :class="{ 'oc-board-list-filters--open': panelOpen }"
+  >
+    <div class="d-flex align-center flex-wrap ga-1">
+      <v-btn
+        size="small"
+        variant="text"
+        class="text-none px-2"
+        :color="panelOpen || activeCount ? 'primary' : undefined"
+        @click="togglePanel"
+      >
+        <v-icon icon="mdi-filter-variant" size="18" start />
+        {{ t('operationCore.board.filters.advanced.title') }}
+        <v-chip
           v-if="activeCount"
           size="x-small"
-          variant="text"
-          class="text-none"
-          @click="clearAll"
+          color="primary"
+          variant="flat"
+          class="ml-1"
         >
-          {{ t('operationCore.board.filters.clear') }}
-        </v-btn>
-      </div>
+          {{ activeCount }}
+        </v-chip>
+        <v-icon
+          :icon="panelOpen ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+          size="18"
+          end
+        />
+      </v-btn>
+      <v-btn
+        v-if="panelOpen"
+        size="x-small"
+        variant="tonal"
+        color="primary"
+        class="text-none"
+        prepend-icon="mdi-plus"
+        @click="addAdvancedRow"
+      >
+        {{ t('operationCore.board.filters.advanced.addCondition') }}
+      </v-btn>
+      <v-btn
+        v-if="activeCount"
+        size="x-small"
+        variant="text"
+        class="text-none"
+        @click="clearAll"
+      >
+        {{ t('operationCore.board.filters.clear') }}
+      </v-btn>
     </div>
 
-    <v-row dense>
-      <v-col
-        v-for="col in quickColumns"
-        :key="col.key"
-        cols="12"
-        sm="6"
-        md="4"
-        lg="3"
-      >
-        <v-select
-          v-if="isCatalogField(col.key)"
-          v-model="values[col.key]"
-          :items="catalogOptionsForField(col.key)"
-          item-title="title"
-          item-value="value"
-          :label="col.label"
-          variant="outlined"
-          density="compact"
-          hide-details
-          multiple
-          chips
-          closable-chips
-          clearable
-        />
-        <v-combobox
-          v-else-if="col.kind === 'tags'"
-          v-model="values[col.key]"
-          :items="tagComboItems(col.key)"
-          :label="col.label"
-          variant="outlined"
-          density="compact"
-          hide-details
-          multiple
-          chips
-          closable-chips
-          clearable
-        />
-        <OcPersonPickerAutocomplete
-          v-else-if="col.kind === 'person'"
-          v-model="values[col.key]"
-          :label="col.label"
-          density="compact"
-          variant="outlined"
-          :hide-details="true"
-        />
-        <v-text-field
-          v-else
-          :model-value="textValue(col.key)"
-          :label="col.label"
-          :placeholder="t('operationCore.board.filters.containsPlaceholder')"
-          variant="outlined"
-          density="compact"
-          hide-details
-          clearable
-          @update:model-value="setTextValue(col.key, $event)"
-        />
-      </v-col>
-    </v-row>
-
     <v-expand-transition>
-      <div v-show="advancedOpen" class="oc-advanced-search mt-3 pa-3 rounded-lg">
-        <div class="d-flex align-center justify-space-between flex-wrap ga-2 mb-2">
-          <div class="text-caption font-weight-medium d-flex align-center ga-1">
-            <v-icon icon="mdi-tune-variant" size="18" />
-            {{ t('operationCore.board.filters.advanced.title') }}
-          </div>
-          <v-btn
-            v-if="advancedRows.length"
-            size="x-small"
-            variant="text"
-            class="text-none"
-            @click="clearAdvanced"
-          >
-            {{ t('operationCore.board.filters.advanced.clear') }}
-          </v-btn>
-        </div>
-
-        <p class="text-caption text-medium-emphasis mb-2">
-          {{ t('operationCore.board.filters.advanced.andHint') }}
-        </p>
-
+      <div v-show="panelOpen" class="oc-advanced-search mt-1 pa-2 rounded-lg">
         <p v-if="!advancedRows.length" class="text-caption text-disabled mb-2">
           {{ t('operationCore.board.filters.advanced.empty') }}
         </p>
@@ -543,23 +461,16 @@ watch(
             />
           </v-col>
         </v-row>
-
-        <v-btn
-          size="small"
-          variant="tonal"
-          color="primary"
-          class="text-none mt-1"
-          prepend-icon="mdi-plus"
-          @click="addAdvancedRow"
-        >
-          {{ t('operationCore.board.filters.advanced.addCondition') }}
-        </v-btn>
       </div>
     </v-expand-transition>
   </div>
 </template>
 
 <style scoped>
+.oc-board-list-filters--open {
+  flex: 1 1 100%;
+}
+
 .oc-advanced-search {
   background-color: rgba(var(--v-theme-primary), 0.04);
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));

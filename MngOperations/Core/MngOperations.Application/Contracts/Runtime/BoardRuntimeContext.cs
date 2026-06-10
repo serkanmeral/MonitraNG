@@ -200,4 +200,7 @@ public sealed class WorkItemCardDto
 
     /// <summary>Pool alan değerleri (extraFields) — liste tablosunda özel sütunlar için.</summary>
     public JsonElement? Fields { get; init; }
+
+    /// <summary>Liste sütunları için çözülmüş görünen metinler (relation pool alanları vb.).</summary>
+    public IReadOnlyDictionary<string, string>? FieldDisplays { get; init; }
 }

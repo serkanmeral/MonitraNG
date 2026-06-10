@@ -1,0 +1,6 @@
+{
+  "_comment": "setup script DG'den gercek category dataId cozer",
+  "categoryName": "BusinessDatasets",
+  "categoryDescription": "Odak is verisi — musteri, urun grubu, urun (OC lookup)",
+  "isSystemCategory": false
+}

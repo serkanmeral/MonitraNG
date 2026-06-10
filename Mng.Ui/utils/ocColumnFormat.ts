@@ -18,11 +18,14 @@ const dateFmtCache = new Map<string, Intl.DateTimeFormat>();
 const numberFmtCache = new Map<string, Intl.NumberFormat>();
 const moneyFmtCache = new Map<string, Intl.NumberFormat>();
 
-function getDateFormatter(loc: string): Intl.DateTimeFormat {
-  let fmt = dateFmtCache.get(loc);
+function getDateFormatter(loc: string, dateOnly = false): Intl.DateTimeFormat {
+  const key = dateOnly ? `${loc}|d` : `${loc}|dt`;
+  let fmt = dateFmtCache.get(key);
   if (!fmt) {
-    fmt = new Intl.DateTimeFormat(loc, { dateStyle: 'medium', timeStyle: 'short' });
-    dateFmtCache.set(loc, fmt);
+    fmt = dateOnly
+      ? new Intl.DateTimeFormat(loc, { dateStyle: 'medium' })
+      : new Intl.DateTimeFormat(loc, { dateStyle: 'medium', timeStyle: 'short' });
+    dateFmtCache.set(key, fmt);
   }
   return fmt;
 }
@@ -66,6 +69,8 @@ export interface OcFormatOptions {
   anchorEnd?: string | Date | null;
   /** money formatı için para birimi (varsayılan TRY). */
   currency?: string;
+  /** date: yalnızca tarih (pool `date` alanı). false = tarih + saat. */
+  dateOnly?: boolean;
 }
 
 /**
@@ -83,7 +88,7 @@ export function formatCellValue(
     case 'date': {
       const d = toDate(value);
       if (!d) return EMPTY;
-      return getDateFormatter(intlLocale(opts.locale)).format(d);
+      return getDateFormatter(intlLocale(opts.locale), opts.dateOnly === true).format(d);
     }
     case 'relativeTime': {
       const start = toDate(value);

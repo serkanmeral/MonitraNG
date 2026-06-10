@@ -5,6 +5,7 @@ import type {
   OpStateFlow,
   OcWorkItemCard,
 } from '@/types/apps/operationCore';
+import { formatCellValue, type OcFormatOptions } from '@/utils/ocColumnFormat';
 
 /** Liste tablosunda gösterilebilecek sütunlar (MO WorkItemCard alanları). */
 export const OC_BOARD_LIST_TABLE_COLUMN_KEYS = [
@@ -101,6 +102,44 @@ export function normalizeListTableColumns(
   }
   const picked = (visibleFields ?? []).filter((f) => allowed.has(f));
   return picked.length > 0 ? picked : [...DEFAULT_LIST_COLUMNS];
+}
+
+/** Pool alan tipinden liste sütunu format ipucu (listColumns.format yoksa). */
+export function formatHintFromPoolFieldType(fieldType: string | null | undefined): OcColumnFormat | null {
+  const ft = (fieldType ?? '').toLowerCase();
+  if (ft === 'date' || ft === 'datetime') return 'date';
+  if (ft === 'number') return 'number';
+  return null;
+}
+
+/**
+ * Liste sütunu için efektif format: board meta → sistem varsayılanı → pool fieldType.
+ */
+export function resolveListColumnFormat(
+  key: string,
+  explicitFormat: OcColumnFormat | null | undefined,
+  poolFieldType?: string | null
+): OcColumnFormat | null {
+  if (explicitFormat) return explicitFormat;
+  const fromDefault = defaultFormatForKey(key);
+  if (fromDefault) return fromDefault;
+  return formatHintFromPoolFieldType(poolFieldType);
+}
+
+/** Pool alan hücresi — format ipucu varsa formatCellValue, yoksa fieldDisplays / ham metin. */
+export function listTablePoolCellDisplay(
+  fields: Record<string, unknown> | undefined | null,
+  key: string,
+  format: OcColumnFormat | null | undefined,
+  opts: OcFormatOptions = {},
+  fieldDisplays?: Record<string, string>
+): string {
+  const fmt = format && format !== 'text' ? format : null;
+  if (fmt) {
+    return formatCellValue(fields?.[key], fmt, opts);
+  }
+  if (fieldDisplays?.[key]) return fieldDisplays[key];
+  return listTablePoolCellValue(fields, key);
 }
 
 /** Pool alan değerini liste hücresi için okunabilir metne çevirir (best-effort). */

@@ -545,6 +545,8 @@ public partial class RuntimeContextService : IRuntimeContextService
 
         var listColumns = ParseListColumns(configObject);
         // Computed sütunların DG karşılığı yoktur; alan seçiminden (cardFieldKeys) hariç tutulur.
+        var poolFieldsForLabels = await LoadProfilePoolFieldsAsync(workspaceId, token, cancellationToken);
+        listColumns = EnrichListColumnLabels(listColumns, poolFieldsForLabels);
         var cardFieldKeys = listColumns.Count > 0
             ? listColumns.Where(c => !c.Computed).Select(c => c.Key).ToList()
             : ParseCardFieldKeys(board.VisibleFields);
@@ -882,6 +884,8 @@ public partial class RuntimeContextService : IRuntimeContextService
         var page = await _dg.QueryPageAsync(OcDatasets.WorkItems, match, string.Join("&", queryParts), token, cancellationToken);
 
         var cards = page.Items.Select(MapWorkItemCard).ToList();
+        var poolFields = await LoadProfilePoolFieldsAsync(workspaceId, token, cancellationToken);
+        cards = (await EnrichBoardListCardsAsync(cards, listColumns, poolFields, token, cancellationToken)).ToList();
         var people = await ResolvePeopleForCardsAsync(cards, token, cancellationToken);
         var groups = await ResolveGroupsForCardsAsync(cards, token, cancellationToken);
 

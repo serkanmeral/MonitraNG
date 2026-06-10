@@ -1,0 +1,21 @@
+{
+  "musteriler": {
+    "MUS-001": "49a74ff8-978f-4b16-a264-c1ab4f81f7db",
+    "MUS-002": "742f091b-3c09-4ec7-ab6e-d01256003e0b"
+  },
+  "seededAt": "2026-06-10T19:27:54.0737864Z",
+  "urunler": {
+    "ODK-YM-3001": "ea91ff2b-8769-4ebd-ae4c-a9defd70d72b",
+    "ODK-MNT-4001": "decd3987-afc4-4de5-a6f6-4b9876372b18",
+    "ODK-CMP-1002": "cf8c1dcd-f465-452b-9409-5fc05ae7ef4a",
+    "ODK-FXT-2001": "f2a46d41-de0b-4a57-bca0-351436afcf0a",
+    "ODK-CMP-1003": "8544783a-6edb-4f13-afcc-d409e96eab85",
+    "ODK-CMP-1001": "233c7ff0-5d74-4e1d-931f-6afcf1ff4c9b"
+  },
+  "urunGruplari": {
+    "UG-KAL": "4975ec05-cf08-4890-9f82-f51caf6c8dff",
+    "UG-YM": "49e308d0-dc4b-4f36-8363-d25263f9b2f9",
+    "UG-KOM": "79e602e8-f4ab-4f0d-989d-1f45651bcc6d",
+    "UG-MNT": "510d5d88-3001-4a07-bb1f-86ee44a37d8a"
+  }
+}
