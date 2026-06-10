@@ -1,0 +1,7 @@
+# UI test raporları — ham çıktılar (gitignore önerilir)
+
+Bu klasör Playwright JSON kopyaları ve oturum markdown özetleri için ayrılmıştır.
+
+Kalıcı raporlar: `DIAGNOSTIC_REPORT_YYYY-MM-DD-ui*.md` (üst dizin, commit edilebilir)
+
+Şablon: [DIAGNOSTIC_REPORTS.md](../DIAGNOSTIC_REPORTS.md)

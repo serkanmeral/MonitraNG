@@ -151,7 +151,7 @@
     "apps-task-manager-assigned": "Bana atananlar",
     "apps-chat-room": "Sohbet odası",
     "apps-dataset-categories": "Dataset Kategorileri",
-    "datasets": "Datasetler - 3",
+    "datasets": "Datasetler",
     "two-steps": "İki Adım",
     "apps-events": "Event Mesajları",
     "apps-side-menu-manager": {
@@ -162,9 +162,9 @@
     "apps-groups": "Grup Yönetimi",
     "books": "Kitaplar",
     "apps-books": "Kitaplar",
-    "automated-forms": "Otomatik Formlar 2",
+    "automated-forms": "Otomatik Formlar",
     "apps-automated-forms": {
-      "title": "Otomatik Formlar 12",
+      "title": "Otomatik Formlar",
       "subCaption": "Otomatik formlar oluşturmaya yarar."
     },
     "headers": {
@@ -1889,7 +1889,7 @@
         },
         "fieldLayout": {
           "title": "Alan düzeni ve sıra",
-          "description": "Her alan için form görünümündeki sırası, sütun genişliği ve grubu yapılandırın. Grup sırası, formda grupların görünme sırasını belirler.",
+          "description": "Her alan için sıra, genişlik, grup ve sunum tipini yapılandırın. Ayarlar (tune) ile metin kutusu/textarea/zengin metin ve select/autocomplete seçin; liste sekmesinden görünürlük ve sıralama/filtre ayarlayın.",
           "groupOrderTitle": "Grup sırası",
           "groupOrderDescription": "Grupların formda görünme sırası. Yukarı/aşağı ile değiştirin.",
           "table": {
@@ -1897,7 +1897,8 @@
               "order": "Sıra",
               "fieldName": "Alan adı",
               "columnSpan": "Sütun genişliği",
-              "group": "Grup"
+              "group": "Grup",
+              "presentation": "Sunum"
             }
           },
           "groupPlaceholder": "Grup adı (opsiyonel)",
@@ -1906,6 +1907,30 @@
           "noGroups": "Henüz gruplandırılmış alan yok. Alanlara Grup atayın."
         },
         "noDataset": "Form ayarlarını yapılandırmak için önce bir dataset seçmelisiniz."
+      },
+      "fieldSettings": {
+        "title": "Alan ayarları",
+        "open": "Alan ayarları",
+        "fieldName": "Alan",
+        "cancel": "İptal",
+        "save": "Kaydet",
+        "tabs": {
+          "form": "Form sunumu",
+          "list": "Liste"
+        },
+        "listDescription": "Bu alanın liste tablosundaki görünürlük, sıralama ve filtre davranışı.",
+        "noPresentationOptions": "Bu alan tipi için form sunumu seçeneği yok.",
+        "textWidget": {
+          "label": "Metin sunumu",
+          "text": "Tek satır (textbox)",
+          "textarea": "Çok satır (textarea)",
+          "richtext": "Zengin metin (HTML)"
+        },
+        "choiceWidget": {
+          "label": "Seçim sunumu",
+          "select": "Select (dropdown)",
+          "autocomplete": "Autocomplete (arama)"
+        }
       },
       "buttons": {
         "cancel": "İptal",

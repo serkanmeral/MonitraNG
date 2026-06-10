@@ -1,7 +1,7 @@
 {
   "name": "tedarikciler",
-  "description": "Tedarikci master verisi — OC lookup (relation) demo",
-  "forceSchema": false,
+  "description": "Tedarikci master verisi — OC lookup + Automated Forms POC",
+  "forceSchema": true,
   "logging": "self",
   "publish_mode": "none",
   "fields": [
@@ -11,7 +11,13 @@
       "title": "Tedarikci kodu",
       "mandatory": true,
       "unique": true,
-      "isArray": false
+      "isArray": false,
+      "validation": {
+        "minLength": 3,
+        "maxLength": 20,
+        "pattern": "^TED-[0-9]{3}$",
+        "message": "Kod TED-XXX formatinda olmalidir"
+      }
     },
     {
       "fieldType": "text",
@@ -19,7 +25,38 @@
       "title": "Unvan",
       "mandatory": true,
       "unique": false,
-      "isArray": false
+      "isArray": false,
+      "validation": {
+        "minLength": 2,
+        "maxLength": 200
+      }
+    },
+    {
+      "fieldType": "select",
+      "name": "tedarikciTipi",
+      "title": "Tedarikci tipi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "options": {
+        "lookup": {
+          "source": "static",
+          "staticItems": [
+            { "value": "Malzeme", "label": "Malzeme" },
+            { "value": "Hizmet", "label": "Hizmet" },
+            { "value": "Karma", "label": "Karma" }
+          ]
+        }
+      }
+    },
+    {
+      "fieldType": "relation",
+      "name": "anaTedarikciId",
+      "title": "Ana tedarikci",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "tedarikciler"
     },
     {
       "fieldType": "text",
@@ -27,15 +64,34 @@
       "title": "Vergi no",
       "mandatory": false,
       "unique": false,
-      "isArray": false
+      "isArray": false,
+      "validation": {
+        "pattern": "^[0-9]{10,11}$",
+        "message": "Vergi no 10 veya 11 haneli olmalidir"
+      }
+    },
+    {
+      "fieldType": "number",
+      "name": "odemeVadesiGun",
+      "title": "Odeme vadesi (gun)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": {
+        "min": 0,
+        "max": 365
+      }
     },
     {
       "fieldType": "text",
-      "name": "sehir",
-      "title": "Sehir",
+      "name": "ilgiliKisi",
+      "title": "Ilgili kisi",
       "mandatory": false,
       "unique": false,
-      "isArray": false
+      "isArray": false,
+      "validation": {
+        "maxLength": 100
+      }
     },
     {
       "fieldType": "text",
@@ -43,7 +99,88 @@
       "title": "E-posta",
       "mandatory": false,
       "unique": false,
-      "isArray": false
+      "isArray": false,
+      "validation": {
+        "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+        "message": "Gecerli bir e-posta adresi girin"
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "telefon",
+      "title": "Telefon",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": {
+        "maxLength": 30
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "webSitesi",
+      "title": "Web sitesi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": {
+        "maxLength": 200
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "ulke",
+      "title": "Ulke",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": {
+        "maxLength": 60
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "sehir",
+      "title": "Sehir",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": {
+        "maxLength": 60
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "ilce",
+      "title": "Ilce",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": {
+        "maxLength": 60
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "adres",
+      "title": "Adres",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": {
+        "maxLength": 500
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "notlar",
+      "title": "Notlar",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": {
+        "maxLength": 1000
+      }
     },
     {
       "fieldType": "bool",
@@ -64,6 +201,16 @@
     {
       "name": "idx_unvan",
       "fields": { "unvan": 1 },
+      "unique": false
+    },
+    {
+      "name": "idx_isActive",
+      "fields": { "isActive": 1 },
+      "unique": false
+    },
+    {
+      "name": "idx_sehir",
+      "fields": { "sehir": 1 },
       "unique": false
     }
   ]

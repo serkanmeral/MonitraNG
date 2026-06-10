@@ -1,0 +1,210 @@
+{
+  "formName": "Tedarikci Yonetimi",
+  "formCode": "tedarikciler-form",
+  "description": "Tedarikci master verisi — Automated Forms POC (dinamik form gelistirme odagi)",
+  "datasetName": "tedarikciler",
+  "isActive": true,
+  "sideMenuConfig": {
+    "enabled": true,
+    "routeType": "form",
+    "routePath": "/apps/automated-forms/view/tedarikciler-form"
+  },
+  "listConfig": {
+    "enableSearch": true,
+    "defaultSortBy": "unvan",
+    "defaultSortOrder": "asc",
+    "columns": [
+      {
+        "fieldName": "kod",
+        "visible": true,
+        "order": 1,
+        "sortable": true,
+        "filterable": true,
+        "format": {
+          "type": "color",
+          "textColor": "primary"
+        }
+      },
+      {
+        "fieldName": "unvan",
+        "visible": true,
+        "order": 2,
+        "sortable": true,
+        "filterable": true,
+        "format": {
+          "type": "text-transform",
+          "textTransform": "capitalize"
+        }
+      },
+      {
+        "fieldName": "tedarikciTipi",
+        "visible": true,
+        "order": 3,
+        "sortable": true,
+        "filterable": true,
+        "format": {
+          "type": "conditional-color",
+          "conditions": [
+            {
+              "operator": "eq",
+              "value": "Malzeme",
+              "textColor": "info"
+            },
+            {
+              "operator": "eq",
+              "value": "Hizmet",
+              "textColor": "success"
+            },
+            {
+              "operator": "eq",
+              "value": "Karma",
+              "textColor": "warning"
+            }
+          ],
+          "defaultTextColor": "secondary"
+        }
+      },
+      {
+        "fieldName": "anaTedarikciId",
+        "visible": true,
+        "order": 4,
+        "sortable": false,
+        "filterable": false,
+        "displayField": "unvan"
+      },
+      {
+        "fieldName": "sehir",
+        "visible": true,
+        "order": 5,
+        "sortable": true,
+        "filterable": true,
+        "format": {
+          "type": "text-transform",
+          "textTransform": "uppercase"
+        }
+      },
+      {
+        "fieldName": "telefon",
+        "visible": true,
+        "order": 6,
+        "sortable": false,
+        "filterable": false
+      },
+      {
+        "fieldName": "odemeVadesiGun",
+        "visible": true,
+        "order": 7,
+        "sortable": true,
+        "filterable": false,
+        "format": {
+          "type": "conditional-color",
+          "conditions": [
+            {
+              "operator": "gte",
+              "value": 60,
+              "textColor": "error"
+            },
+            {
+              "operator": "gte",
+              "value": 45,
+              "textColor": "warning"
+            },
+            {
+              "operator": "lte",
+              "value": 30,
+              "textColor": "success"
+            }
+          ],
+          "defaultTextColor": "primary"
+        }
+      },
+      {
+        "fieldName": "isActive",
+        "visible": true,
+        "order": 8,
+        "sortable": true,
+        "filterable": true,
+        "format": {
+          "type": "conditional-color",
+          "conditions": [
+            {
+              "operator": "eq",
+              "value": true,
+              "textColor": "success"
+            },
+            {
+              "operator": "eq",
+              "value": false,
+              "textColor": "error"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "formConfig": {
+    "visibleFields": [
+      "kod",
+      "unvan",
+      "tedarikciTipi",
+      "anaTedarikciId",
+      "isActive",
+      "ilgiliKisi",
+      "email",
+      "telefon",
+      "webSitesi",
+      "ulke",
+      "sehir",
+      "ilce",
+      "adres",
+      "vergiNo",
+      "odemeVadesiGun",
+      "notlar"
+    ],
+    "readonlyFields": [],
+    "readonlyOnEditFields": ["kod"],
+    "fieldOrder": [
+      "kod",
+      "unvan",
+      "tedarikciTipi",
+      "anaTedarikciId",
+      "isActive",
+      "ilgiliKisi",
+      "email",
+      "telefon",
+      "webSitesi",
+      "ulke",
+      "sehir",
+      "ilce",
+      "adres",
+      "vergiNo",
+      "odemeVadesiGun",
+      "notlar"
+    ],
+    "relationFieldConfig": {
+      "anaTedarikciId": {
+        "idField": "__dataId",
+        "displayField": "unvan"
+      }
+    },
+    "fieldLayout": {
+      "kod": { "columnSpan": 4, "group": "Genel" },
+      "unvan": { "columnSpan": 8, "group": "Genel" },
+      "tedarikciTipi": { "columnSpan": 4, "group": "Genel", "choiceWidget": "select" },
+      "anaTedarikciId": { "columnSpan": 4, "group": "Genel", "choiceWidget": "autocomplete" },
+      "isActive": { "columnSpan": 4, "group": "Genel" },
+      "ilgiliKisi": { "columnSpan": 6, "group": "Iletisim" },
+      "email": { "columnSpan": 6, "group": "Iletisim" },
+      "telefon": { "columnSpan": 6, "group": "Iletisim" },
+      "webSitesi": { "columnSpan": 6, "group": "Iletisim" },
+      "ulke": { "columnSpan": 4, "group": "Adres" },
+      "sehir": { "columnSpan": 4, "group": "Adres" },
+      "ilce": { "columnSpan": 4, "group": "Adres" },
+      "adres": { "columnSpan": 12, "group": "Adres", "textWidget": "textarea" },
+      "vergiNo": { "columnSpan": 6, "group": "Finans" },
+      "odemeVadesiGun": { "columnSpan": 6, "group": "Finans" },
+      "notlar": { "columnSpan": 12, "group": "Notlar", "textWidget": "textarea" }
+    },
+    "groupOrder": ["Genel", "Iletisim", "Adres", "Finans", "Notlar"]
+  }
+}

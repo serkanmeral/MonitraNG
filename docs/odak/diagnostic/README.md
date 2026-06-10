@@ -16,7 +16,7 @@ Backend servislerinin **response time** ölçümü ve raporlama. OC performans p
 |------|-------|
 | Ortam | **Test:** `192.168.20.20` · **Müşteri raporu (prod):** `192.168.20.8` — gateway `192.168.20.8` → script otomatik prod token |
 | Müşteri çıktısı | **Dokümanlar → System → Diagnostic Raporu** (`MonitraNG Users`); kaynak: `docs/odak/document_intelligence/system/diagnostic-raporu.md` |
-| Kapsam | **Backend only** — UI E2E sonraki faz |
+| Kapsam | **Backend only** — UI E2E planı: [../testprocs/README.md](../testprocs/README.md) |
 | Metrik | **Warm P95** (ana SLA) + **session cold** (ilk istek) + medyan/min/max |
 | Hedef | Warm P95 ≤ **3000 ms**, session cold ≤ **4000 ms** (runtime); reference ≤ 100 ms |
 

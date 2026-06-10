@@ -100,7 +100,7 @@ public class DatasetSchema : BaseEntity
 public class FieldDefinition
 {
     /// <summary>
-    /// Field type: text, number, bool, datetime, object, relation, persons, personGroups, incremental
+    /// Field type: text, number, bool, datetime, object, relation, persons, personGroups, incremental, file, select
     /// </summary>
     public string fieldType { get; set; } = string.Empty;
 
@@ -163,6 +163,19 @@ public class FieldDefinition
     /// </summary>
     [BsonIgnoreIfNull]
     public FieldValidationRules? validation { get; set; }
+
+    /// <summary>
+    /// Tip'e özgü seçenekler (ör. select → lookup.staticItems) — JSON deserialization
+    /// </summary>
+    [BsonIgnore]
+    public object? options { get; set; }
+
+    /// <summary>
+    /// Tip'e özgü seçenekler — MongoDB storage
+    /// </summary>
+    [BsonElement("options")]
+    [BsonIgnoreIfNull]
+    public MongoDB.Bson.BsonDocument? optionsBson { get; set; }
 }
 
 /// <summary>

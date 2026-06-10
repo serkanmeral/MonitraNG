@@ -48,6 +48,8 @@ export interface AutomatedForm {
   formConfig?: {
     visibleFields: string[];
     readonlyFields: string[];
+    /** Salt okunur yalnizca duzenleme modunda (or. birincil anahtar kod) */
+    readonlyOnEditFields?: string[];
     fieldOrder: string[];
     fieldLabels?: { [fieldName: string]: string };
     relationFieldConfig?: {
@@ -60,6 +62,8 @@ export interface AutomatedForm {
       [fieldName: string]: {
         columnSpan?: number; // 1-12 (default: 6 for normal fields, 12 for object fields)
         group?: string; // Field group name (for grouping fields)
+        textWidget?: 'text' | 'textarea' | 'richtext';
+        choiceWidget?: 'select' | 'autocomplete';
       };
     };
     groupOrder?: string[]; // Display order of groups. Groups not listed appear after.
@@ -129,6 +133,8 @@ export interface CreateAutomatedFormDto {
   formConfig?: {
     visibleFields: string[];
     readonlyFields: string[];
+    /** Salt okunur yalnizca duzenleme modunda (or. birincil anahtar kod) */
+    readonlyOnEditFields?: string[];
     fieldOrder: string[];
     fieldLabels?: { [fieldName: string]: string };
     relationFieldConfig?: {
@@ -141,6 +147,8 @@ export interface CreateAutomatedFormDto {
       [fieldName: string]: {
         columnSpan?: number; // 1-12 (default: 6 for normal fields, 12 for object fields)
         group?: string; // Field group name (for grouping fields)
+        textWidget?: 'text' | 'textarea' | 'richtext';
+        choiceWidget?: 'select' | 'autocomplete';
       };
     };
     groupOrder?: string[];
@@ -193,6 +201,8 @@ export interface UpdateAutomatedFormDto {
   formConfig?: {
     visibleFields: string[];
     readonlyFields: string[];
+    /** Salt okunur yalnizca duzenleme modunda (or. birincil anahtar kod) */
+    readonlyOnEditFields?: string[];
     fieldOrder: string[];
     fieldLabels?: { [fieldName: string]: string };
     relationFieldConfig?: {
@@ -205,6 +215,8 @@ export interface UpdateAutomatedFormDto {
       [fieldName: string]: {
         columnSpan?: number; // 1-12 (default: 6 for normal fields, 12 for object fields)
         group?: string; // Field group name (for grouping fields)
+        textWidget?: 'text' | 'textarea' | 'richtext';
+        choiceWidget?: 'select' | 'autocomplete';
       };
     };
     groupOrder?: string[];

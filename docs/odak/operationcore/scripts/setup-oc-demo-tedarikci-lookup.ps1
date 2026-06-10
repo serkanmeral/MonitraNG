@@ -23,6 +23,7 @@ $repoRoot = (Resolve-Path (Join-Path $scriptDir "../../../..")).Path
 $categoryFile = Join-Path $repoRoot "docs/odak/operationcore/datasets/tedarikciler_dataset_category.json"
 $datasetFile = Join-Path $repoRoot "docs/odak/operationcore/datasets/tedarikciler_dataset.json"
 $seedJson = Join-Path $scriptDir "operationcore-demo-seed.json"
+$supplierSeedFile = Join-Path $repoRoot "docs/odak/dynamicforms/datasets/tedarikciler_seed.json"
 
 $dataPath = if ($UseGateway) { "/data/api/v1/data" } else { "/api/v1/data" }
 $datasetsPath = if ($UseGateway) { "/data/api/v1/datasets" } else { "/api/v1/datasets" }
@@ -136,12 +137,39 @@ function Ensure-Dataset {
     param([string]$CategoryId)
     $schema = Get-Content $datasetFile -Raw -Encoding UTF8 | ConvertFrom-Json
     $getUri = '{0}{1}/{2}' -f $BaseUrl, $datasetsPath, [Uri]::EscapeDataString($schema.name)
+    $exists = $false
     try {
         $null = Invoke-Dg -Method GET -Uri $getUri
-        Write-Host "  SKIP: dataset $($schema.name) zaten var" -ForegroundColor Yellow
-        return
+        $exists = $true
     }
     catch { }
+    $fields = @($schema.fields | ForEach-Object {
+        $f = @{
+            fieldType = $_.fieldType
+            name      = $_.name
+            title     = $_.title
+            mandatory = $_.mandatory
+            unique    = $_.unique
+            isArray   = $_.isArray
+        }
+        if ($_.relationDataset) { $f.relationDataset = $_.relationDataset }
+        if ($_.defaultValue -ne $null) { $f.defaultValue = $_.defaultValue }
+        if ($_.validation) { $f.validation = $_.validation }
+        $f
+    })
+    if ($exists) {
+        $body = @{
+            Description = $schema.description
+            ForceSchema = $schema.forceSchema
+            Logging     = $schema.logging
+            PublishMode = $schema.publish_mode
+            Fields      = $fields
+            IndexList   = @($schema.indexList)
+        }
+        Invoke-Dg -Method PUT -Uri $getUri -Body $body | Out-Null
+        Write-Host "  SYNC: dataset $($schema.name) semasi guncellendi" -ForegroundColor Green
+        return
+    }
     $body = @{
         Name        = $schema.name
         Description = $schema.description
@@ -149,8 +177,8 @@ function Ensure-Dataset {
         ForceSchema = $schema.forceSchema
         Logging     = $schema.logging
         PublishMode = $schema.publish_mode
-        Fields      = $schema.fields
-        IndexList   = $schema.indexList
+        Fields      = $fields
+        IndexList   = @($schema.indexList)
     }
     Invoke-Dg -Method POST -Uri "$BaseUrl$datasetsPath" -Body $body | Out-Null
     Write-Host "  OK: dataset $($schema.name) olusturuldu" -ForegroundColor Green
@@ -193,22 +221,38 @@ Write-Host "[1] Dataset kategori + tedarikciler..." -ForegroundColor Yellow
 $categoryId = Ensure-DatasetCategory -CategoryName "BusinessDatasets"
 Ensure-Dataset -CategoryId $categoryId
 
-# --- 2. Seed tedarikciler ---
+# --- 2. Seed tedarikciler (paylasilan seed dosyasi) ---
 Write-Host "[2] tedarikciler seed..." -ForegroundColor Yellow
-$suppliers = @(
-    @{ kod = "TED-001"; unvan = "ABC Teknoloji A.S."; vergiNo = "1234567890"; sehir = "Istanbul"; email = "info@abc-teknoloji.com"; isActive = $true },
-    @{ kod = "TED-002"; unvan = "Metro Endustri Ltd. Sti."; vergiNo = "2345678901"; sehir = "Ankara"; email = "satis@metro-endustri.com"; isActive = $true },
-    @{ kod = "TED-003"; unvan = "Delta Lojistik A.S."; vergiNo = "3456789012"; sehir = "Izmir"; email = "iletisim@delta-lojistik.com"; isActive = $true },
-    @{ kod = "TED-004"; unvan = "Beta Kimya San. Tic."; vergiNo = "4567890123"; sehir = "Bursa"; email = "destek@beta-kimya.com"; isActive = $true },
-    @{ kod = "TED-005"; unvan = "Omega Elektronik"; vergiNo = "5678901234"; sehir = "Istanbul"; email = "siparis@omega-elektronik.com"; isActive = $true },
-    @{ kod = "TED-006"; unvan = "Sigma Malzeme Tic. A.S."; vergiNo = "6789012345"; sehir = "Ankara"; email = "info@sigma-malzeme.com"; isActive = $true },
-    @{ kod = "TED-007"; unvan = "Nova Otomasyon"; vergiNo = "7890123456"; sehir = "Kocaeli"; email = "teknik@nova-otomasyon.com"; isActive = $true },
-    @{ kod = "TED-008"; unvan = "Penta Insaat Malzemeleri"; vergiNo = "8901234567"; sehir = "Antalya"; email = "satis@penta-insaat.com"; isActive = $false }
-)
+if (-not (Test-Path $supplierSeedFile)) { throw "Seed dosyasi yok: $supplierSeedFile" }
+$seedRows = Get-Content $supplierSeedFile -Raw -Encoding UTF8 | ConvertFrom-Json
+$idByKod = @{}
 $seeded = 0
-foreach ($s in $suppliers) {
-    $null = Find-OrCreate -Collection "tedarikciler" -Filter "kod:eq:$($s.kod)" -Label "Tedarikci $($s.kod)" -Body $s
+foreach ($row in $seedRows) {
+    $body = @{}
+    $row.PSObject.Properties | ForEach-Object {
+        if ($_.Name -ne "anaTedarikciKod") { $body[$_.Name] = $_.Value }
+    }
+    $existing = @(Get-Items (Invoke-Dg -Method GET -Uri "$BaseUrl$dataPath/tedarikciler?limit=1&filter=$([Uri]::EscapeDataString("kod:eq:$($row.kod)"))"))
+    if ($existing.Count -gt 0) {
+        $id = $existing[0].__dataId; if (-not $id) { $id = $existing[0].dataId }
+        Invoke-Dg -Method PUT -Uri "$BaseUrl$dataPath/tedarikciler/$id" -Body $body | Out-Null
+        Write-Host "  SYNC: Tedarikci $($row.kod) ($id)" -ForegroundColor Yellow
+    }
+    else {
+        $created = Invoke-Dg -Method POST -Uri "$BaseUrl$dataPath/tedarikciler" -Body $body
+        $id = Get-DataId $created
+        Write-Host "  OK: Tedarikci $($row.kod) -> $id" -ForegroundColor Green
+    }
+    $idByKod[$row.kod] = $id
     $seeded++
+}
+foreach ($row in $seedRows) {
+    if (-not $row.anaTedarikciKod) { continue }
+    if ($idByKod.ContainsKey($row.kod) -and $idByKod.ContainsKey($row.anaTedarikciKod)) {
+        Invoke-Dg -Method PUT -Uri "$BaseUrl$dataPath/tedarikciler/$($idByKod[$row.kod])" -Body @{
+            anaTedarikciId = $idByKod[$row.anaTedarikciKod]
+        } | Out-Null
+    }
 }
 Write-Host "  Toplam islem: $seeded kayit" -ForegroundColor Gray
 

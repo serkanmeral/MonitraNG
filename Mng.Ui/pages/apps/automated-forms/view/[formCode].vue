@@ -2,6 +2,15 @@
 import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DynamicFormField from '@/components/apps/automated-forms/DynamicFormField.vue';
+import AfListFilters from '@/components/apps/automated-forms/AfListFilters.vue';
+import {
+  afListFiltersToQueryString,
+  resolveAfFilterKind,
+  type AfFilterColumn,
+  type AfListFilter,
+} from '@/utils/afListFilters';
+import { parseAfStaticSelectItems } from '@/utils/afFormFieldPresentation';
+import { ocListDatasetPage } from '@/services/operationCoreService';
 import { useAutomatedFormsStore } from '@/stores/apps/automatedForms';
 import { useDatasetStore } from '@/stores/apps/dataset';
 import { useUserStore } from '@/stores/apps/user';
@@ -56,9 +65,12 @@ const tableOptions = ref({
   sortBy: [] as Array<{ key: string; order: 'asc' | 'desc' }>,
 });
 
-// Filters (field-based)
-const filters = ref<Record<string, string>>({});
-const showFiltersPanel = ref<number[]>([]);
+// Liste filtreleri (gelişmiş — yalnızca filterable sütunlar)
+const activeListFilters = ref<AfListFilter[]>([]);
+const relationFilterOptions = ref<Record<string, { value: string; title: string }[]>>({});
+const groupFilterOptions = ref<Record<string, { value: string; title: string }[]>>({});
+/** Liste relation sütunları: fieldName → (__dataId → görünen etiket) */
+const relationListLabelCache = ref<Record<string, Record<string, string>>>({});
 
 // Search
 const searchQuery = ref('');
@@ -136,6 +148,9 @@ const loadForm = async () => {
       return;
     }
     dataset.value = loadedDataset;
+
+    await loadFilterLookupOptions();
+    await loadRelationListLabels();
     
     // Load data items
     await fetchDataItems();
@@ -150,19 +165,139 @@ const loadForm = async () => {
   }
 };
 
-// Get filterable fields
-const filterableFields = computed(() => {
-  if (!dataset.value || !dataset.value.fields || !form.value) return [];
-  
-  const fields = dataset.value.fields;
-  const listConfig = form.value.listConfig;
-  const columnConfigs = listConfig?.columns || [];
-  
-  return fields.filter(field => {
-    const colConfig = columnConfigs.find(c => c.fieldName === field.name);
-    return colConfig?.filterable ?? false;
-  });
+const filterableColumns = computed<AfFilterColumn[]>(() => {
+  if (!dataset.value?.fields || !form.value) return [];
+
+  const columnConfigs = form.value.listConfig?.columns || [];
+  const cols: AfFilterColumn[] = [];
+
+  for (const colConfig of columnConfigs) {
+    if (!colConfig.filterable) continue;
+    const field = dataset.value.fields.find((f: { name: string }) => f.name === colConfig.fieldName);
+    if (!field || field.name.startsWith('__')) continue;
+
+    const kind = resolveAfFilterKind(field.fieldType);
+    const entry: AfFilterColumn = {
+      key: field.name,
+      label: getFieldLabel(field.name, field, form.value, form.value.datasetName),
+      kind,
+    };
+
+    if (kind === 'select') {
+      entry.selectItems = parseAfStaticSelectItems(field).map((item) => ({
+        value: item.value,
+        title: item.label,
+      }));
+    }
+
+    cols.push(entry);
+  }
+
+  return cols;
 });
+
+async function loadFilterLookupOptions() {
+  if (!dataset.value?.fields || !form.value) return;
+
+  const relationConfig = form.value.formConfig?.relationFieldConfig ?? {};
+  const nextRelation: Record<string, { value: string; title: string }[]> = {};
+  const nextGroup: Record<string, { value: string; title: string }[]> = {};
+
+  for (const col of filterableColumns.value) {
+    const field = dataset.value.fields.find((f: { name: string }) => f.name === col.key);
+    if (!field) continue;
+
+    if (col.kind === 'relation' && field.relationDataset) {
+      const idField = relationConfig[col.key]?.idField || '__dataId';
+      const displayField = relationConfig[col.key]?.displayField || 'unvan';
+      try {
+        const result = await ocListDatasetPage(field.relationDataset, { limit: 200 });
+        nextRelation[col.key] = result.items
+          .map((row) => {
+            if (!row || typeof row !== 'object') return null;
+            const o = row as Record<string, unknown>;
+            const value = String(o[idField] ?? o.__dataId ?? '').trim();
+            const title = String(o[displayField] ?? value).trim();
+            return value && title ? { value, title } : null;
+          })
+          .filter((x): x is { value: string; title: string } => x != null);
+      } catch {
+        nextRelation[col.key] = [];
+      }
+    }
+
+    if (col.kind === 'group') {
+      try {
+        await groupStore.fetchGroups({ page: 1, pageSize: 500 });
+        nextGroup[col.key] = groupStore.groups.map((g) => ({
+          value: g.id,
+          title: g.name,
+        }));
+      } catch {
+        nextGroup[col.key] = [];
+      }
+    }
+  }
+
+  relationFilterOptions.value = nextRelation;
+  groupFilterOptions.value = nextGroup;
+}
+
+function getEffectiveListDisplayField(fieldName: string): string {
+  const columnConfig = form.value?.listConfig?.columns?.find((c) => c.fieldName === fieldName);
+  if (columnConfig?.displayField) return columnConfig.displayField;
+  const relationConfig = form.value?.formConfig?.relationFieldConfig?.[fieldName];
+  if (relationConfig?.displayField) return relationConfig.displayField;
+  const field = dataset.value?.fields?.find((f: { name: string }) => f.name === fieldName);
+  if (field?.relationField) return field.relationField;
+  return 'unvan';
+}
+
+async function loadRelationListLabels() {
+  if (!dataset.value?.fields || !form.value) return;
+
+  const relationConfig = form.value.formConfig?.relationFieldConfig ?? {};
+  const configuredColumns = form.value.listConfig?.columns?.filter((c) => c.visible !== false) ?? [];
+  const fieldNames = configuredColumns.length
+    ? configuredColumns.map((c) => c.fieldName)
+    : dataset.value.fields.map((f: { name: string }) => f.name);
+
+  const next: Record<string, Record<string, string>> = {};
+
+  for (const fieldName of fieldNames) {
+    const field = dataset.value.fields.find((f: { name: string }) => f.name === fieldName);
+    if (field?.fieldType !== 'relation' || !field.relationDataset) continue;
+
+    const idField = relationConfig[fieldName]?.idField || '__dataId';
+    const displayField = getEffectiveListDisplayField(fieldName);
+
+    try {
+      const result = await ocListDatasetPage(field.relationDataset, { limit: 2000 });
+      const map: Record<string, string> = {};
+      for (const row of result.items) {
+        if (!row || typeof row !== 'object') continue;
+        const o = row as Record<string, unknown>;
+        const id = String(o[idField] ?? o.__dataId ?? '').trim();
+        const label = String(o[displayField] ?? id).trim();
+        if (id) map[id] = label;
+      }
+      next[fieldName] = map;
+    } catch {
+      next[fieldName] = {};
+    }
+  }
+
+  relationListLabelCache.value = next;
+}
+
+function onListFiltersUpdate(filters: AfListFilter[]) {
+  activeListFilters.value = filters;
+  if (tableOptions.value.page !== 1) {
+    tableOptions.value.page = 1;
+  }
+  totalCount.value = 0;
+  fetchDataItems();
+}
 
 // Get form fields (filtered and ordered by formConfig)
 const formFields = computed(() => {
@@ -197,37 +332,17 @@ const formFields = computed(() => {
   return filteredFields;
 });
 
-// Build filter string from filters object
-const buildFilterString = (): string => {
-  const filterParts: string[] = [];
-  
-  Object.entries(filters.value).forEach(([fieldName, value]) => {
-    if (value && value.trim()) {
-      const field = dataset.value?.fields?.find(f => f.name === fieldName);
-      if (field) {
-        // Choose operator based on field type
-        let operator = 'contains'; // default for text
-        if (field.fieldType === 'number') {
-          operator = 'eq';
-        } else if (field.fieldType === 'bool') {
-          operator = 'eq';
-        } else if (field.fieldType === 'datetime') {
-          operator = 'eq';
-        }
-        filterParts.push(`${fieldName}:${operator}:${value.trim()}`);
-      }
-    }
-  });
-  
-  return filterParts.join(',');
+const isFormFieldReadonly = (fieldName: string): boolean => {
+  const formConfig = form.value?.formConfig;
+  if (!formConfig) return false;
+  if (formConfig.readonlyFields?.includes(fieldName)) return true;
+  if (formDialogMode.value === 'edit' && formConfig.readonlyOnEditFields?.includes(fieldName)) {
+    return true;
+  }
+  return false;
 };
 
-// Clear all filters
-const clearFilters = () => {
-  filters.value = {};
-  tableOptions.value.page = 1;
-  fetchDataItems();
-};
+const buildFilterString = (): string => afListFiltersToQueryString(activeListFilters.value);
 
 // Fetch data items from dataset
 const fetchDataItems = async () => {
@@ -342,6 +457,7 @@ const tableHeaders = computed(() => {
           key: field.name,
           sortable: colConfig.sortable ?? true,
           filterable: colConfig.filterable ?? false, // For future use
+          minWidth: '160px',
         });
       }
     });
@@ -353,6 +469,7 @@ const tableHeaders = computed(() => {
         key: field.name,
         sortable: true,
         filterable: false,
+        minWidth: '160px',
       });
     });
   }
@@ -365,6 +482,8 @@ const tableHeaders = computed(() => {
       sortable: false,
       filterable: false,
       align: 'end',
+      minWidth: '110px',
+      width: '110px',
     });
   }
   
@@ -477,30 +596,6 @@ watch(
   { deep: true }
 );
 
-// Watch filters with debounce
-let filterTimeout: ReturnType<typeof setTimeout> | null = null;
-watch(
-  () => filters.value,
-  () => {
-    // Reset to first page when filter changes
-    if (tableOptions.value.page !== 1) {
-      tableOptions.value.page = 1;
-    }
-    
-    // Reset totalCount when filters change
-    totalCount.value = 0;
-    
-    // Debounce filter input (500ms)
-    if (filterTimeout) {
-      clearTimeout(filterTimeout);
-    }
-    filterTimeout = setTimeout(() => {
-      fetchDataItems();
-    }, 500);
-  },
-  { deep: true }
-);
-
 // Watch search with debounce
 let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 watch(
@@ -536,7 +631,10 @@ watch(
       form.value = null;
       dataset.value = null;
       dataItems.value = [];
-      filters.value = {};
+      activeListFilters.value = [];
+      relationFilterOptions.value = {};
+      groupFilterOptions.value = {};
+      relationListLabelCache.value = {};
       searchQuery.value = '';
       tableOptions.value.page = 1;
       
@@ -1539,37 +1637,30 @@ const formatCellValue = (value: any, fieldName: string) => {
   }
   
   if (fieldType === 'relation') {
-    // PRIORITY 1: Use displayField from listConfig.columns (for list display)
-    if (displayField && typeof value === 'object' && value !== null) {
-      if (value[displayField] !== undefined) {
-        return String(value[displayField]);
-      }
-    }
-    
-    // PRIORITY 2: Try to use displayField from formConfig if available
-    const relationConfig = form.value?.formConfig?.relationFieldConfig?.[fieldName];
-    if (relationConfig?.displayField && typeof value === 'object' && value !== null) {
-      if (value[relationConfig.displayField] !== undefined) {
-        return String(value[relationConfig.displayField]);
-      }
-    }
-    
-    // Fallback: try common field names (name, title, label)
+    const effectiveDisplayField = getEffectiveListDisplayField(fieldName);
+
     if (typeof value === 'object' && value !== null) {
-      const commonFields = ['name', 'title', 'label', 'text'];
+      if (value[effectiveDisplayField] !== undefined && value[effectiveDisplayField] !== null) {
+        return String(value[effectiveDisplayField]);
+      }
+      const commonFields = ['unvan', 'name', 'title', 'label', 'text'];
       for (const commonField of commonFields) {
-        if (value[commonField] !== undefined) {
+        if (value[commonField] !== undefined && value[commonField] !== null) {
           return String(value[commonField]);
         }
       }
-    }
-    
-    // Last fallback: try __dataId or show as object
-    if (value?.__dataId) {
-      return value.__dataId;
-    }
-    if (typeof value === 'object') {
+      const id = value.__dataId ? String(value.__dataId) : '';
+      if (id && relationListLabelCache.value[fieldName]?.[id]) {
+        return relationListLabelCache.value[fieldName][id];
+      }
+      if (id) return id;
       return JSON.stringify(value);
+    }
+
+    if (typeof value === 'string' && value.trim()) {
+      const cached = relationListLabelCache.value[fieldName]?.[value.trim()];
+      if (cached) return cached;
+      return value;
     }
   }
   
@@ -2348,7 +2439,7 @@ const getFormDescription = (): string => {
   <BaseBreadcrumb :title="page.title" :breadcrumbs="breadcrumbs" />
   
   <v-card elevation="10">
-    <v-card-item>
+    <v-card-item class="af-automated-form-list-card-item">
       <!-- Toolbar -->
       <div class="d-flex justify-space-between align-center mb-4 flex-wrap ga-3">
         <div class="d-flex ga-3 align-center">
@@ -2419,27 +2510,6 @@ const getFormDescription = (): string => {
             class="flex-grow-0"
           ></v-text-field>
           
-          <!-- Filter Button -->
-          <v-btn
-            v-if="form && dataset && filterableFields.length > 0"
-            variant="outlined"
-            :color="Object.keys(filters).some(key => filters[key] && filters[key].trim()) ? 'primary' : 'default'"
-            @click="showFiltersPanel = showFiltersPanel.length > 0 ? [] : [0]"
-          >
-            <template #prepend>
-              <v-icon>mdi-filter</v-icon>
-            </template>
-            {{ t('automated-forms.view.filters.title') }}
-            <v-chip
-              v-if="Object.keys(filters).some(key => filters[key] && filters[key].trim())"
-              size="x-small"
-              color="primary"
-              variant="flat"
-              class="ml-2"
-            >
-              {{ Object.keys(filters).filter(key => filters[key] && filters[key].trim()).length }}
-            </v-chip>
-          </v-btn>
         </div>
       </div>
       
@@ -2479,45 +2549,15 @@ const getFormDescription = (): string => {
         </v-alert>
       </div>
       
-      <!-- Filters Panel -->
-      <v-expansion-panels v-if="form && dataset && filterableFields.length > 0" v-model="showFiltersPanel" variant="accordion" class="mb-4">
-        <v-expansion-panel>
-          <v-expansion-panel-text>
-            <v-row>
-              <v-col
-                v-for="field in filterableFields"
-                :key="field.name"
-                cols="12"
-                md="6"
-                lg="4"
-              >
-                <v-text-field
-                  v-model="filters[field.name]"
-                  :label="getFieldLabel(field.name, field, form, form?.datasetName)"
-                  :placeholder="`${getFieldLabel(field.name, field, form, form?.datasetName)} ${t('automated-forms.view.filters.filterPlaceholder')}`"
-                  variant="outlined"
-                  density="compact"
-                  clearable
-                  hide-details
-                  prepend-inner-icon="mdi-filter-variant"
-                ></v-text-field>
-              </v-col>
-              <v-col cols="12" v-if="filterableFields.length > 0">
-                <v-btn
-                  color="default"
-                  variant="outlined"
-                  size="small"
-                  @click="clearFilters"
-                  :disabled="!Object.keys(filters).some(key => filters[key] && filters[key].trim())"
-                >
-                  <v-icon size="16" class="mr-2">mdi-filter-off</v-icon>
-                  {{ t('automated-forms.view.filters.clear') }}
-                </v-btn>
-              </v-col>
-            </v-row>
-          </v-expansion-panel-text>
-        </v-expansion-panel>
-      </v-expansion-panels>
+      <AfListFilters
+        v-if="form && dataset && filterableColumns.length > 0"
+        :columns="filterableColumns"
+        :relation-options-by-key="relationFilterOptions"
+        :group-options-by-key="groupFilterOptions"
+        @update:filters="onListFiltersUpdate"
+        @advanced-open="loadFilterLookupOptions"
+      />
+
       
       <!-- Empty State -->
       <v-alert
@@ -2538,22 +2578,22 @@ const getFormDescription = (): string => {
         </div>
       </v-alert>
       
-      <!-- Data Table -->
-      <v-data-table
-        v-if="form && dataset"
-        v-model="selectedItems"
-        v-model:options="tableOptions"
-        :headers="tableHeaders"
-        :items="dataItems"
-        :loading="loading"
-        :server-items-length="serverItemsLength"
-        :items-per-page="tableOptions.itemsPerPage"
-        :items-per-page-options="[10, 20, 50, 100]"
-        item-value="__dataId"
-        class="border rounded-md"
-        hide-default-footer
-        @update:options="handleTableOptionsUpdate"
-      >
+      <!-- Data Table (yatay scroll: .af-automated-form-list-scroll) -->
+      <div v-if="form && dataset" class="af-automated-form-list-scroll">
+        <v-data-table
+          v-model="selectedItems"
+          v-model:options="tableOptions"
+          :headers="tableHeaders"
+          :items="dataItems"
+          :loading="loading"
+          :server-items-length="serverItemsLength"
+          :items-per-page="tableOptions.itemsPerPage"
+          :items-per-page-options="[10, 20, 50, 100]"
+          item-value="__dataId"
+          class="border rounded-md af-automated-form-list-table"
+          hide-default-footer
+          @update:options="handleTableOptionsUpdate"
+        >
         <!-- Dynamic Field Columns -->
         <template 
           v-for="header in tableHeaders.filter(h => h.key !== 'actions')" 
@@ -2779,7 +2819,8 @@ const getFormDescription = (): string => {
             </v-btn>
           </div>
         </template>
-      </v-data-table>
+        </v-data-table>
+      </div>
       
       <!-- Pagination -->
       <div v-if="form && dataset && totalCount > 0" class="d-flex align-center justify-space-between mt-4 flex-wrap ga-3">
@@ -2897,10 +2938,11 @@ const getFormDescription = (): string => {
                   <DynamicFormField
                     :field="field"
                     v-model="formDialogData[field.name]"
-                    :readonly="form.formConfig?.readonlyFields?.includes(field.name)"
+                    :readonly="isFormFieldReadonly(field.name)"
                     :disabled="formDialogLoading"
                     :error-messages="fieldErrors[field.name] || []"
                     :relation-config="getRelationConfig(field.name)"
+                    :exclude-relation-id="formDialogMode === 'edit' ? currentEditingItemId : null"
                     :form="form"
                     :dataset-name="form?.datasetName"
                   />
@@ -2922,10 +2964,11 @@ const getFormDescription = (): string => {
               <DynamicFormField
                 :field="field"
                 v-model="formDialogData[field.name]"
-                :readonly="form.formConfig?.readonlyFields?.includes(field.name)"
+                :readonly="isFormFieldReadonly(field.name)"
                 :disabled="formDialogLoading"
                 :error-messages="fieldErrors[field.name] || []"
                 :relation-config="getRelationConfig(field.name)"
+                :exclude-relation-id="formDialogMode === 'edit' ? currentEditingItemId : null"
                 :form="form"
                 :dataset-name="form?.datasetName"
               />
@@ -3062,3 +3105,87 @@ const getFormDescription = (): string => {
     </v-card>
   </v-dialog>
 </template>
+
+<style scoped>
+.af-automated-form-list-card-item {
+  min-width: 0;
+  overflow: visible;
+}
+
+/*
+ * Yatay scroll tek kaynak: .af-automated-form-list-scroll
+ * Vuetify .v-table overflow:hidden scroll çubuğunu gizleyebiliyor; iç katmanlar visible bırakılır.
+ */
+.af-automated-form-list-scroll {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+
+.af-automated-form-list-scroll::-webkit-scrollbar {
+  height: 10px;
+}
+
+.af-automated-form-list-scroll::-webkit-scrollbar-thumb {
+  background: rgba(var(--v-theme-on-surface), 0.35);
+  border-radius: 6px;
+}
+
+.af-automated-form-list-scroll::-webkit-scrollbar-track {
+  background: rgba(var(--v-theme-on-surface), 0.08);
+  border-radius: 6px;
+}
+
+.af-automated-form-list-table {
+  display: block;
+  width: fit-content;
+  min-width: 100%;
+}
+
+.af-automated-form-list-table :deep(.v-table),
+.af-automated-form-list-table :deep(.v-table__wrapper) {
+  overflow: visible !important;
+}
+
+.af-automated-form-list-table :deep(table) {
+  width: auto !important;
+  table-layout: auto !important;
+}
+
+.af-automated-form-list-table :deep(th.v-data-table__th),
+.af-automated-form-list-table :deep(td.v-data-table__td) {
+  white-space: nowrap !important;
+}
+
+.af-automated-form-list-table :deep(thead th:not(:last-child)),
+.af-automated-form-list-table :deep(tbody td:not(:last-child)) {
+  min-width: 160px;
+}
+
+.af-automated-form-list-table :deep(thead th:last-child),
+.af-automated-form-list-table :deep(tbody td:last-child) {
+  min-width: 110px;
+}
+
+/* İşlemler sütunu (son sütun) sağa sabit — yatay scroll'da düzenle/sil hep görünür (OC board list ile aynı). */
+.af-automated-form-list-table :deep(table) > thead > tr > th:last-child,
+.af-automated-form-list-table :deep(table) > tbody > tr > td:last-child {
+  position: sticky;
+  right: 0;
+  background: rgb(var(--v-theme-surface));
+  box-shadow: -6px 0 6px -6px rgba(0, 0, 0, 0.18);
+}
+
+.af-automated-form-list-table :deep(table) > tbody > tr > td:last-child {
+  z-index: 1;
+}
+
+.af-automated-form-list-table :deep(table) > thead > tr > th:last-child {
+  z-index: 2;
+}
+</style>

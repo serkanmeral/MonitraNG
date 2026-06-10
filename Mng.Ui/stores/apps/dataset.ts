@@ -3,7 +3,7 @@ import { fetchFromDataGateway } from '@/services/apiService';
 import { isManifestPlaceholderDataset } from '@/utils/widgets/widgetManifestAdapter';
 
 // Field Types
-export type FieldType = 'text' | 'number' | 'bool' | 'datetime' | 'object' | 'relation' | 'persons' | 'personGroups' | 'incremental';
+export type FieldType = 'text' | 'number' | 'bool' | 'datetime' | 'object' | 'relation' | 'persons' | 'personGroups' | 'incremental' | 'select' | 'file';
 
 // Incremental Options
 export interface IncrementalOptions {
@@ -51,6 +51,7 @@ export interface FieldDefinition {
   datetimeOptions?: DateTimeOptions; // For datetime type
   objectSchema?: ObjectSchema; // For object type (not in backend, but used in UI)
   validation?: FieldValidationRules;
+  options?: Record<string, unknown>;
 }
 
 // Validation Definition
@@ -517,6 +518,7 @@ export const useDatasetStore = defineStore('dataset', {
           maxDate: field.validation?.maxDate ?? field.Validation?.MaxDate ?? undefined,
           message: field.validation?.message ?? field.Validation?.Message ?? undefined,
         } : undefined,
+        options: field.options ?? field.Options ?? undefined,
       }));
     },
 

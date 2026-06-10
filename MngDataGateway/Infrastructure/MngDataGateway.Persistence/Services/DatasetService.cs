@@ -456,6 +456,20 @@ public class DatasetService : IDatasetService
                 converted.defaultValueBson = ConvertObjectToBsonValue(field.defaultValue);
             }
 
+            // Convert options (object) to optionsBson (BsonDocument) if present
+            if (field.options != null)
+            {
+                var optionsBson = ConvertObjectToBsonValue(field.options);
+                if (optionsBson is MongoDB.Bson.BsonDocument optionsDoc)
+                    converted.optionsBson = optionsDoc;
+                else
+                    throw new InvalidOperationException($"Field '{field.name}': options must be a JSON object.");
+            }
+            else if (field.optionsBson != null)
+            {
+                converted.optionsBson = field.optionsBson;
+            }
+
             result.Add(converted);
         }
 
@@ -832,7 +846,7 @@ public class DatasetService : IDatasetService
             }
 
             // Validate field type
-            var validTypes = new[] { "text", "number", "bool", "datetime", "object", "relation", "persons", "personGroups", "incremental", "file" };
+            var validTypes = new[] { "text", "number", "bool", "datetime", "object", "relation", "persons", "personGroups", "incremental", "file", "select" };
             if (!validTypes.Contains(field.fieldType))
             {
                 throw new InvalidOperationException($"Invalid field type: '{field.fieldType}' in field '{field.name}'");
@@ -1032,7 +1046,8 @@ public class DatasetService : IDatasetService
             relationDataset = field.relationDataset,
             incrementalOptions = field.incrementalOptions,
             datetimeOptions = field.datetimeOptions,
-            validation = field.validation
+            validation = field.validation,
+            options = ConvertBsonValueToObject(field.optionsBson)
         }).ToList();
     }
 

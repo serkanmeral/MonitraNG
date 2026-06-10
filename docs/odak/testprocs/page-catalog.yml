@@ -1,0 +1,206 @@
+# Mng.Ui page catalog — machine-readable
+# Used by Playwright smoke generator and diagnostic reports.
+# Human-readable: PAGE_CATALOG.md
+# Last updated: 2026-06-09
+
+version: 1
+environment:
+  odak_test:
+    ui_base: "http://192.168.20.20:3000"
+    gateway_base: "http://192.168.20.20:5040"
+  odak_prod:
+    ui_base: "http://192.168.20.8:3000"
+    gateway_base: "http://192.168.20.8:5040"
+
+personas:
+  admin:
+    description: Full access; bypass menu-permission for admin pageType
+    smoke_required: true
+  manager:
+    description: manager + user pageType; admin routes → /unauthorized
+    smoke_required: false
+  user:
+    description: user pageType with group permissions
+    smoke_required: false
+
+excluded_prefixes:
+  - /ui-components
+  - /datatables
+  - /forms
+  - /tables
+  - /front-pages
+  - /widgets/charts
+  - /theme-pages
+  - /apps/ecommerce
+  - /apps/blog
+  - /apps/chats
+  - /apps/email
+  - /apps/kanban
+  - /apps/tickets
+  - /apps/contacts
+  - /apps/invoice
+
+modules:
+  operation_core:
+    priority: P0
+    backend_diagnostic: docs/odak/diagnostic/scripts/diagnostic-operation-pages.ps1
+    seed_ref: docs/odak/operationcore/scripts/operationcore-demo-seed.json
+    pages:
+      - route: /apps/operation-core
+        purpose: OC landing and navigation
+        personas: [admin, manager]
+        smoke: true
+      - route: /apps/operation-core/workspace
+        purpose: Operational workspace explorer
+        personas: [admin, manager]
+        smoke: true
+        dynamic_params:
+          workspaceId: from_seed
+      - route: /apps/operation-core/boards/{boardId}
+        purpose: Board kanban/list view
+        personas: [admin, manager]
+        smoke: true
+        dynamic_params:
+          boardId: from_seed
+      - route: /apps/operation-core/work-items/new
+        purpose: Create work item
+        personas: [admin, manager]
+        smoke: false
+      - route: /apps/operation-core/work-items/{id}/profile
+        purpose: Work item profile
+        personas: [admin, manager]
+        smoke: true
+        dynamic_params:
+          id: from_seed
+      - route: /apps/operation-core/notifications
+        purpose: Notification inbox
+        personas: [admin, manager]
+        smoke: true
+      - route: /apps/operation-core/dashboards/{id}
+        purpose: OC dashboard view
+        personas: [admin]
+        smoke: true
+        dynamic_params:
+          id: from_seed
+
+  widgets:
+    priority: P0
+    manual_checklist: docs/content/Mng.Ui/support/specs/WIDGET_LIST_PAGE_TEST.md
+    seed_ref: docs/odak/widgets/scripts/
+    required_datasets:
+      - "@widgets"
+      - "@widget_categories"
+    pages:
+      - route: /apps/widgets
+        purpose: Widget list, filter, CRUD entry
+        personas: [admin]
+        smoke: true
+        assertions:
+          - table_visible
+          - search_filters
+          - new_button_navigates
+      - route: /apps/widgets/new
+        purpose: Create widget form
+        personas: [admin]
+        smoke: false
+
+  dashboards:
+    priority: P0
+    pages:
+      - route: /apps/dashboards
+        purpose: Dashboard list
+        personas: [admin]
+        smoke: true
+      - route: /apps/monitoring/widgets
+        purpose: Monitoring widget admin
+        personas: [admin]
+        smoke: true
+
+  datasets:
+    priority: P0
+    pages:
+      - route: /apps/datasets
+        purpose: Dataset management list
+        personas: [admin]
+        smoke: true
+      - route: /apps/dataset-categories
+        purpose: Dataset category management
+        personas: [admin]
+        smoke: true
+      - route: /apps/side-menu-manager
+        purpose: Menu and page permissions
+        personas: [admin]
+        smoke: true
+
+  monitoring:
+    priority: P1
+    pages:
+      - route: /apps/monitoring
+        personas: [admin]
+        smoke: true
+      - route: /apps/monitoring/map
+        personas: [admin]
+        smoke: false
+        notes: Leaflet async; may need extended timeout
+      - route: /apps/monitoring/control
+        personas: [admin]
+        smoke: true
+      - route: /apps/monitoring/organization
+        personas: [admin]
+        smoke: true
+      - route: /apps/monitoring/config
+        personas: [admin]
+        smoke: true
+
+  alarm_center:
+    priority: P1
+    seed_ref: docs/odak/alarm/scripts/
+    pages:
+      - route: /apps/alarm-center
+        personas: [admin]
+        smoke: true
+      - route: /apps/alarm-center/alarms
+        personas: [admin]
+        smoke: true
+      - route: /apps/alarm-center/rules
+        personas: [admin]
+        smoke: true
+      - route: /apps/alarm-center/notification-policies
+        personas: [admin]
+        smoke: true
+
+  document_intelligence:
+    priority: P1
+    backend_diagnostic: docs/odak/diagnostic/scripts/diagnostic-document-intelligence-pages.ps1
+    pages:
+      - route: /apps/document-intelligence
+        personas: [admin, user]
+        smoke: true
+
+  siem_center:
+    priority: P1
+    pages:
+      - route: /apps/siem-center
+        personas: [admin]
+        smoke: true
+      - route: /apps/siem-center/events
+        personas: [admin]
+        smoke: true
+      - route: /apps/siem-center/reference
+        personas: [admin]
+        smoke: true
+
+  welcome:
+    priority: P1
+    pages:
+      - route: /welcome
+        purpose: Home / module cards
+        personas: [admin, manager, user]
+        smoke: true
+
+smoke_defaults:
+  max_console_errors: 0
+  forbidden_status_codes: [500, 502, 503, 504]
+  redirect_login_path: /auth/login
+  unauthorized_path: /unauthorized
+  timeout_ms: 30000

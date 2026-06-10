@@ -7,6 +7,14 @@ import { useDatasetCategoryStore } from '@/stores/apps/datasetCategory';
 import { useAuthStore } from '@/stores/auth';
 import { FileCodeIcon, CheckIcon, XIcon, LanguageIcon } from 'vue-tabler-icons';
 import { fetchFromMngKeeper, fetchFromMngLLM } from '@/services/apiService';
+import {
+  defaultChoiceWidget,
+  defaultTextWidget,
+  supportsChoiceWidget,
+  supportsTextWidget,
+  type AfChoiceWidget,
+  type AfTextWidget,
+} from '@/utils/afFormFieldPresentation';
 
 // Get i18n instance for legacy mode
 const nuxtApp = useNuxtApp();
@@ -121,7 +129,14 @@ const formData = ref({
     readonlyFields: [] as string[],
     fieldOrder: [] as string[],
     relationFieldConfig: {} as { [fieldName: string]: { idField: string; displayField: string } },
-    fieldLayout: {} as { [fieldName: string]: { columnSpan?: number; group?: string } },
+    fieldLayout: {} as {
+      [fieldName: string]: {
+        columnSpan?: number;
+        group?: string;
+        textWidget?: AfTextWidget;
+        choiceWidget?: AfChoiceWidget;
+      };
+    },
     groupOrder: [] as string[],
   },
   isActive: true,
@@ -254,6 +269,32 @@ const formRef = ref();
 const loading = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
+
+// Field settings modal (form presentation + list column options)
+const showFieldSettingsModal = ref(false);
+const fieldSettingsTab = ref<'form' | 'list'>('form');
+const selectedFieldForSettings = ref<{
+  fieldName: string;
+  columnSpan: number;
+  group: string;
+  textWidget: AfTextWidget;
+  choiceWidget: AfChoiceWidget;
+  listVisible: boolean;
+  listSortable: boolean;
+  listFilterable: boolean;
+  listOrder: number;
+} | null>(null);
+
+const textWidgetOptions = computed(() => [
+  { title: t('automated-forms.form.fieldSettings.textWidget.text'), value: 'text' as AfTextWidget },
+  { title: t('automated-forms.form.fieldSettings.textWidget.textarea'), value: 'textarea' as AfTextWidget },
+  { title: t('automated-forms.form.fieldSettings.textWidget.richtext'), value: 'richtext' as AfTextWidget },
+]);
+
+const choiceWidgetOptions = computed(() => [
+  { title: t('automated-forms.form.fieldSettings.choiceWidget.select'), value: 'select' as AfChoiceWidget },
+  { title: t('automated-forms.form.fieldSettings.choiceWidget.autocomplete'), value: 'autocomplete' as AfChoiceWidget },
+]);
 
 // Column settings modal state
 const showColumnSettingsModal = ref(false);
@@ -1432,17 +1473,24 @@ const fieldLayoutConfigs = computed(() => {
   });
   return sorted.map(field => {
     const existingLayout = existingLayouts[field.name];
+    const defaultSpan = field.fieldType === 'object' ? 12 : 6;
     if (existingLayout) {
       return {
         fieldName: field.name,
-        columnSpan: existingLayout.columnSpan || (field.fieldType === 'object' ? 12 : 6),
+        fieldType: field.fieldType,
+        columnSpan: existingLayout.columnSpan || defaultSpan,
         group: existingLayout.group || '',
+        textWidget: existingLayout.textWidget || defaultTextWidget(),
+        choiceWidget: existingLayout.choiceWidget || defaultChoiceWidget(field.fieldType),
       };
     }
     return {
       fieldName: field.name,
-      columnSpan: field.fieldType === 'object' ? 12 : 6,
+      fieldType: field.fieldType,
+      columnSpan: defaultSpan,
       group: '',
+      textWidget: defaultTextWidget(),
+      choiceWidget: defaultChoiceWidget(field.fieldType),
     };
   });
 });
@@ -1491,23 +1539,175 @@ const updateFieldLayoutFromConfigs = () => {
   const dataset = datasetStore.getDatasetByName(formData.value.datasetName);
   if (!dataset || !dataset.fields) return;
   
-  const layout: { [fieldName: string]: { columnSpan?: number; group?: string } } = {};
+  const layout: {
+    [fieldName: string]: {
+      columnSpan?: number;
+      group?: string;
+      textWidget?: AfTextWidget;
+      choiceWidget?: AfChoiceWidget;
+    };
+  } = {};
   
   fieldLayoutConfigs.value.forEach(config => {
     const field = dataset.fields?.find(f => f.name === config.fieldName);
     const defaultColumnSpan = field?.fieldType === 'object' ? 12 : 6;
-    
-    // Only save if different from default or if group is set
-    if (config.columnSpan !== defaultColumnSpan || (config.group && config.group.trim())) {
+    const defaultText = defaultTextWidget();
+    const defaultChoice = defaultChoiceWidget(field?.fieldType ?? 'text');
+    const hasGroup = !!(config.group && config.group.trim());
+    const hasSpan = config.columnSpan !== defaultColumnSpan;
+    const hasText = supportsTextWidget(field?.fieldType ?? '') && config.textWidget !== defaultText;
+    const hasChoice = supportsChoiceWidget(field?.fieldType ?? '') && config.choiceWidget !== defaultChoice;
+
+    if (hasSpan || hasGroup || hasText || hasChoice) {
       layout[config.fieldName] = {
-        columnSpan: config.columnSpan !== defaultColumnSpan ? config.columnSpan : undefined,
-        group: config.group && config.group.trim() ? config.group.trim() : undefined,
+        columnSpan: hasSpan ? config.columnSpan : undefined,
+        group: hasGroup ? config.group.trim() : undefined,
+        textWidget: hasText ? config.textWidget : undefined,
+        choiceWidget: hasChoice ? config.choiceWidget : undefined,
       };
     }
   });
   
   formData.value.formConfig.fieldLayout = layout;
 };
+
+const getDatasetFieldMeta = (fieldName: string) => {
+  if (!formData.value.datasetName) return null;
+  const dataset = datasetStore.getDatasetByName(formData.value.datasetName);
+  return dataset?.fields?.find(f => f.name === fieldName) ?? null;
+};
+
+const getListColumnForField = (fieldName: string) => {
+  const cols = formData.value.listConfig.columns || [];
+  const found = cols.find(c => c.fieldName === fieldName);
+  if (found) return { ...found };
+  const index = listColumnConfigs.value.findIndex(c => c.fieldName === fieldName);
+  const merged = listColumnConfigs.value[index];
+  if (merged) {
+    return {
+      fieldName,
+      visible: merged.visible,
+      sortable: merged.sortable,
+      filterable: merged.filterable,
+      order: merged.order,
+    };
+  }
+  return {
+    fieldName,
+    visible: true,
+    sortable: true,
+    filterable: true,
+    order: index >= 0 ? index : cols.length,
+  };
+};
+
+const openFieldSettings = (item: {
+  fieldName: string;
+  columnSpan: number;
+  group: string;
+  textWidget: AfTextWidget;
+  choiceWidget: AfChoiceWidget;
+}) => {
+  const listCol = getListColumnForField(item.fieldName);
+  selectedFieldForSettings.value = {
+    fieldName: item.fieldName,
+    columnSpan: item.columnSpan,
+    group: item.group || '',
+    textWidget: item.textWidget,
+    choiceWidget: item.choiceWidget,
+    listVisible: listCol.visible,
+    listSortable: listCol.sortable,
+    listFilterable: listCol.filterable,
+    listOrder: listCol.order,
+  };
+  fieldSettingsTab.value = 'form';
+  showFieldSettingsModal.value = true;
+};
+
+const closeFieldSettings = () => {
+  showFieldSettingsModal.value = false;
+  selectedFieldForSettings.value = null;
+};
+
+const saveFieldSettings = () => {
+  if (!selectedFieldForSettings.value) return;
+  const {
+    fieldName,
+    columnSpan,
+    group,
+    textWidget,
+    choiceWidget,
+    listVisible,
+    listSortable,
+    listFilterable,
+    listOrder,
+  } = selectedFieldForSettings.value;
+
+  const field = getDatasetFieldMeta(fieldName);
+  const defaultSpan = field?.fieldType === 'object' ? 12 : 6;
+  const layouts = { ...(formData.value.formConfig.fieldLayout || {}) };
+  const prev = layouts[fieldName] || {};
+  const entry: {
+    columnSpan?: number;
+    group?: string;
+    textWidget?: AfTextWidget;
+    choiceWidget?: AfChoiceWidget;
+  } = {
+    columnSpan: prev.columnSpan,
+    group: prev.group,
+    textWidget: prev.textWidget,
+    choiceWidget: prev.choiceWidget,
+  };
+
+  if (columnSpan !== defaultSpan) entry.columnSpan = columnSpan;
+  else delete entry.columnSpan;
+
+  if (group?.trim()) entry.group = group.trim();
+  else delete entry.group;
+
+  if (field && supportsTextWidget(field.fieldType)) {
+    if (textWidget !== defaultTextWidget()) entry.textWidget = textWidget;
+    else delete entry.textWidget;
+  }
+  if (field && supportsChoiceWidget(field.fieldType)) {
+    if (choiceWidget !== defaultChoiceWidget(field.fieldType)) entry.choiceWidget = choiceWidget;
+    else delete entry.choiceWidget;
+  }
+
+  if (Object.keys(entry).length) {
+    layouts[fieldName] = entry;
+  } else {
+    delete layouts[fieldName];
+  }
+  formData.value.formConfig.fieldLayout = layouts;
+
+  const columnIndex = formData.value.listConfig.columns.findIndex(c => c.fieldName === fieldName);
+  const listPatch = {
+    fieldName,
+    visible: listVisible,
+    sortable: listSortable,
+    filterable: listFilterable,
+    order: listOrder,
+  };
+  if (columnIndex >= 0) {
+    formData.value.listConfig.columns[columnIndex] = {
+      ...formData.value.listConfig.columns[columnIndex],
+      ...listPatch,
+    };
+  } else {
+    formData.value.listConfig.columns.push({
+      ...listPatch,
+      format: { type: 'none' as const },
+    });
+  }
+
+  closeFieldSettings();
+};
+
+const fieldSettingsFieldType = computed(() => {
+  if (!selectedFieldForSettings.value) return '';
+  return getDatasetFieldMeta(selectedFieldForSettings.value.fieldName)?.fieldType ?? '';
+});
 
 // Remove the watch on formData.listConfig.columns - it was causing infinite loops
 // The computed property listColumnConfigs already reads from formData.value.listConfig.columns
@@ -1614,6 +1814,8 @@ const fieldLayoutHeaders = computed(() => [
   { title: t('automated-forms.form.formConfig.fieldLayout.table.headers.fieldName'), key: 'fieldName', sortable: false, width: '200px' },
   { title: t('automated-forms.form.formConfig.fieldLayout.table.headers.columnSpan'), key: 'columnSpan', sortable: false, width: '150px' },
   { title: t('automated-forms.form.formConfig.fieldLayout.table.headers.group'), key: 'group', sortable: false },
+  { title: t('automated-forms.form.formConfig.fieldLayout.table.headers.presentation'), key: 'presentation', sortable: false, width: '160px' },
+  { title: '', key: 'actions', sortable: false, width: '80px', align: 'center' as const },
 ]);
 
 // Check if field is array type
@@ -2208,6 +2410,47 @@ const getDisplayFieldOptionsForModal = (fieldName: string): Array<{ title: strin
                         :disabled="loading"
                         clearable
                       ></v-text-field>
+                    </template>
+
+                    <template v-slot:item.presentation="{ item }">
+                      <div class="d-flex flex-column ga-1 py-1">
+                        <v-chip
+                          v-if="supportsTextWidget(item.fieldType)"
+                          size="x-small"
+                          variant="tonal"
+                          color="secondary"
+                        >
+                          {{ textWidgetOptions.find(o => o.value === item.textWidget)?.title || item.textWidget }}
+                        </v-chip>
+                        <v-chip
+                          v-if="supportsChoiceWidget(item.fieldType)"
+                          size="x-small"
+                          variant="tonal"
+                          color="info"
+                        >
+                          {{ choiceWidgetOptions.find(o => o.value === item.choiceWidget)?.title || item.choiceWidget }}
+                        </v-chip>
+                        <span
+                          v-if="!supportsTextWidget(item.fieldType) && !supportsChoiceWidget(item.fieldType)"
+                          class="text-caption text-medium-emphasis"
+                        >—</span>
+                      </div>
+                    </template>
+
+                    <template v-slot:item.actions="{ item }">
+                      <v-btn
+                        icon="mdi-tune"
+                        variant="text"
+                        size="small"
+                        color="primary"
+                        @click="openFieldSettings(item)"
+                        :disabled="loading"
+                      >
+                        <v-icon>mdi-tune</v-icon>
+                        <v-tooltip activator="parent" location="top">
+                          {{ t('automated-forms.form.fieldSettings.open') }}
+                        </v-tooltip>
+                      </v-btn>
                     </template>
                   </v-data-table>
                   
@@ -2911,6 +3154,120 @@ const getDisplayFieldOptionsForModal = (fieldName: string): Array<{ title: strin
           @click="saveColumnSettings"
         >
           {{ t('automated-forms.form.listConfig.modal.save') }}
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <!-- Field Settings Modal (form widget + list column) -->
+  <v-dialog v-model="showFieldSettingsModal" max-width="640px" persistent>
+    <v-card v-if="selectedFieldForSettings">
+      <v-card-title class="d-flex align-center pa-4 bg-primary text-white">
+        <v-icon class="mr-2" color="white">mdi-tune</v-icon>
+        <span>{{ t('automated-forms.form.fieldSettings.title') }}</span>
+        <v-spacer></v-spacer>
+        <v-btn icon="mdi-close" variant="text" color="white" @click="closeFieldSettings"></v-btn>
+      </v-card-title>
+
+      <v-divider></v-divider>
+
+      <v-tabs v-model="fieldSettingsTab" bg-color="grey-lighten-4" density="compact">
+        <v-tab value="form">{{ t('automated-forms.form.fieldSettings.tabs.form') }}</v-tab>
+        <v-tab value="list">{{ t('automated-forms.form.fieldSettings.tabs.list') }}</v-tab>
+      </v-tabs>
+
+      <v-card-text class="pa-6">
+        <v-window v-model="fieldSettingsTab">
+          <v-window-item value="form">
+            <v-text-field
+              :model-value="getDatasetFieldMeta(selectedFieldForSettings.fieldName)?.title || selectedFieldForSettings.fieldName"
+              :label="t('automated-forms.form.fieldSettings.fieldName')"
+              variant="outlined"
+              readonly
+              class="mb-4"
+            >
+              <template #append>
+                <v-chip size="small" variant="tonal" color="primary">{{ selectedFieldForSettings.fieldName }}</v-chip>
+              </template>
+            </v-text-field>
+
+            <v-select
+              v-if="supportsTextWidget(fieldSettingsFieldType)"
+              v-model="selectedFieldForSettings.textWidget"
+              :items="textWidgetOptions"
+              item-title="title"
+              item-value="value"
+              :label="t('automated-forms.form.fieldSettings.textWidget.label')"
+              variant="outlined"
+              class="mb-4"
+            ></v-select>
+
+            <v-select
+              v-if="supportsChoiceWidget(fieldSettingsFieldType)"
+              v-model="selectedFieldForSettings.choiceWidget"
+              :items="choiceWidgetOptions"
+              item-title="title"
+              item-value="value"
+              :label="t('automated-forms.form.fieldSettings.choiceWidget.label')"
+              variant="outlined"
+              class="mb-4"
+            ></v-select>
+
+            <v-alert
+              v-if="!supportsTextWidget(fieldSettingsFieldType) && !supportsChoiceWidget(fieldSettingsFieldType)"
+              type="info"
+              variant="tonal"
+              density="compact"
+            >
+              {{ t('automated-forms.form.fieldSettings.noPresentationOptions') }}
+            </v-alert>
+          </v-window-item>
+
+          <v-window-item value="list">
+            <p class="text-body-2 text-medium-emphasis mb-4">
+              {{ t('automated-forms.form.fieldSettings.listDescription') }}
+            </p>
+            <v-switch
+              v-model="selectedFieldForSettings.listVisible"
+              :label="t('automated-forms.form.listConfig.modal.visible')"
+              color="primary"
+              hide-details
+              class="mb-2"
+            ></v-switch>
+            <v-switch
+              v-model="selectedFieldForSettings.listSortable"
+              :label="t('automated-forms.form.listConfig.modal.sortable')"
+              color="primary"
+              hide-details
+              class="mb-2"
+            ></v-switch>
+            <v-switch
+              v-model="selectedFieldForSettings.listFilterable"
+              :label="t('automated-forms.form.listConfig.modal.filterable')"
+              color="primary"
+              hide-details
+              class="mb-2"
+            ></v-switch>
+            <v-text-field
+              v-model.number="selectedFieldForSettings.listOrder"
+              :label="t('automated-forms.form.listConfig.modal.order')"
+              type="number"
+              variant="outlined"
+              hide-details
+            ></v-text-field>
+          </v-window-item>
+        </v-window>
+      </v-card-text>
+
+      <v-divider></v-divider>
+
+      <v-card-actions class="pa-4">
+        <v-spacer></v-spacer>
+        <v-btn variant="outlined" @click="closeFieldSettings">
+          {{ t('automated-forms.form.fieldSettings.cancel') }}
+        </v-btn>
+        <v-btn variant="flat" color="primary" @click="saveFieldSettings">
+          {{ t('automated-forms.form.fieldSettings.save') }}
         </v-btn>
       </v-card-actions>
     </v-card>

@@ -3,9 +3,17 @@ import { computed, ref, watch } from 'vue';
 import { useDatasetStore } from '@/stores/apps/dataset';
 import { useUserStore } from '@/stores/apps/user';
 import { useGroupStore } from '@/stores/apps/group';
-import { fetchFromDataGateway } from '@/services/apiService';
 import { useFieldLabel } from '@/composables/useFieldLabel';
+import { useAfRelationPicker } from '@/composables/useAfRelationPicker';
 import FileUploadField from './FileUploadField.vue';
+import OcRichTextEditor from '@/components/apps/operation-core/OcRichTextEditor.client.vue';
+import {
+  parseAfStaticSelectItems,
+  resolveChoiceWidget,
+  resolveTextWidget,
+  type AfChoiceWidget,
+  type AfTextWidget,
+} from '@/utils/afFormFieldPresentation';
 
 const props = defineProps<{
   field: any;
@@ -19,6 +27,10 @@ const props = defineProps<{
   };
   form?: any; // Form object (for field label translation)
   datasetName?: string; // Dataset name (for field label translation)
+  textWidget?: AfTextWidget;
+  choiceWidget?: AfChoiceWidget;
+  /** Edit modunda self-FK seçimini engellemek için (ör. anaTedarikciId) */
+  excludeRelationId?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -51,9 +63,32 @@ const fieldTypeIcon = computed(() => {
     personGroups: 'mdi-account-group',
     incremental: 'mdi-auto-fix',
     file: 'mdi-file-upload',
+    select: 'mdi-form-dropdown',
   };
   return iconMap[type] || 'mdi-form-select';
 });
+
+const effectiveTextWidget = computed(() =>
+  props.textWidget ?? resolveTextWidget(props.form?.formConfig?.fieldLayout?.[props.field.name])
+);
+
+const effectiveChoiceWidget = computed(() =>
+  props.choiceWidget ?? resolveChoiceWidget(props.field.fieldType, props.form?.formConfig?.fieldLayout?.[props.field.name])
+);
+
+const staticSelectItems = computed(() => {
+  if (props.field.fieldType !== 'select') return [];
+  return parseAfStaticSelectItems(props.field).map((item) => ({
+    title: item.label,
+    value: item.value,
+  }));
+});
+
+const isChoiceField = computed(() =>
+  ['relation', 'persons', 'personGroups', 'select'].includes(props.field.fieldType)
+);
+
+const useSelectForChoice = computed(() => effectiveChoiceWidget.value === 'select');
 
 // Helper function to extract ID from expanded relation/person/personGroup object
 const extractIdFromObject = (item: any, fieldType: string): any => {
@@ -150,9 +185,25 @@ const localValue = computed({
   },
 });
 
-// Relation dataset options
-const relationOptions = ref<any[]>([]);
-const relationLoading = ref(false);
+const relationIdField = computed(
+  () => props.relationConfig?.idField || '__dataId'
+);
+const relationDisplayField = computed(
+  () => props.relationConfig?.displayField || props.field.relationField || 'unvan'
+);
+
+const relationPicker = useAfRelationPicker(() => ({
+  dataset: props.field.relationDataset || '',
+  valueField: relationIdField.value,
+  labelField: relationDisplayField.value,
+  pageSize: useSelectForChoice.value ? 200 : 25,
+  excludeId: props.excludeRelationId ?? null,
+}));
+
+const relationOptions = computed(() => relationPicker.items.value);
+const relationLoading = computed(() => relationPicker.loading.value);
+
+const allowAllRelationItems = () => true;
 
 // Users options
 const usersOptions = computed(() => {
@@ -172,43 +223,15 @@ const groupsOptions = computed(() => {
   }));
 });
 
-// Load relation options if field type is relation
-const loadRelationOptions = async () => {
+const loadRelationOptions = async (search = '') => {
   if (props.field.fieldType !== 'relation' || !props.field.relationDataset) return;
-  
-  relationLoading.value = true;
-  try {
-    const url = `/api/v1/data/${encodeURIComponent(props.field.relationDataset)}?skip=0&limit=1000`;
-    const response = await fetchFromDataGateway(url, 'GET');
-    
-    // Get display field from relationConfig or fallback to relationField or '__dataId'
-    const displayField = props.relationConfig?.displayField 
-      || props.field.relationField 
-      || '__dataId';
-    
-    // Get ID field from relationConfig or fallback to '__dataId'
-    const idField = props.relationConfig?.idField || '__dataId';
-    
-    if (Array.isArray(response)) {
-      relationOptions.value = response.map((item: any) => ({
-        title: item[displayField] || item.__dataId || '',
-        value: item[idField] || item.__dataId || '',
-        subtitle: displayField !== idField ? `${idField}: ${item[idField] || item.__dataId || ''}` : undefined,
-      }));
-    } else {
-      const items = response.items || response.Items || [];
-      relationOptions.value = items.map((item: any) => ({
-        title: item[displayField] || item.__dataId || '',
-        value: item[idField] || item.__dataId || '',
-        subtitle: displayField !== idField ? `${idField}: ${item[idField] || item.__dataId || ''}` : undefined,
-      }));
-    }
-  } catch (error) {
-    console.error('Error loading relation options:', error);
-    relationOptions.value = [];
-  } finally {
-    relationLoading.value = false;
-  }
+  await relationPicker.fetchPage(search);
+};
+
+const onRelationSearch = (query: string) => {
+  if (props.field.fieldType !== 'relation') return;
+  if (useSelectForChoice.value) return;
+  relationPicker.onSearchUpdate(query);
 };
 
 // Load users if field type is persons
@@ -243,6 +266,27 @@ watch(() => props.field.fieldType, () => {
     loadGroups();
   }
 }, { immediate: true });
+
+watch(
+  () => [props.field.fieldType, props.field.relationDataset, props.excludeRelationId],
+  () => {
+    if (props.field.fieldType === 'relation') loadRelationOptions();
+  }
+);
+
+watch(
+  () => localValue.value,
+  (val) => {
+    if (props.field.fieldType !== 'relation') return;
+    const id = props.field.isArray
+      ? (Array.isArray(val) ? val[0] : null)
+      : val;
+    void relationPicker.ensureSelectedLabel(
+      id != null && id !== '' ? String(id) : null
+    );
+  },
+  { immediate: true }
+);
 
 // Object JSON value (for object type)
 const objectJsonValue = computed({
@@ -396,16 +440,16 @@ const rules = computed(() => {
 </script>
 
 <template>
-  <!-- Text Field -->
+  <!-- Text Field (textbox) -->
   <v-text-field
-    v-if="field.fieldType === 'text'"
+    v-if="field.fieldType === 'text' && effectiveTextWidget === 'text'"
     v-model="localValue"
     :label="fieldLabel"
     :hint="field.description"
     :persistent-hint="!!field.description"
     :required="field.mandatory"
-    :readonly="readonly || field.fieldType === 'incremental'"
-    :disabled="disabled || field.fieldType === 'incremental'"
+    :readonly="readonly"
+    :disabled="disabled"
     :rules="rules"
     :error-messages="errorMessages"
     variant="outlined"
@@ -416,6 +460,45 @@ const rules = computed(() => {
       <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
     </template>
   </v-text-field>
+
+  <!-- Text Field (textarea) -->
+  <div v-else-if="field.fieldType === 'text' && effectiveTextWidget === 'textarea'" class="mb-2">
+    <div class="d-flex align-center ga-2 mb-2">
+      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis"></v-icon>
+      <v-label class="text-body-1 font-weight-medium">{{ fieldLabel }}</v-label>
+    </div>
+    <v-textarea
+      v-model="localValue"
+      :hint="field.description"
+      :persistent-hint="!!field.description"
+      :required="field.mandatory"
+      :readonly="readonly"
+      :disabled="disabled"
+      :rules="rules"
+      :error-messages="errorMessages"
+      variant="outlined"
+      rows="4"
+      auto-grow
+      clearable
+      density="comfortable"
+    ></v-textarea>
+  </div>
+
+  <!-- Text Field (richtext) -->
+  <div v-else-if="field.fieldType === 'text' && effectiveTextWidget === 'richtext'" class="mb-2">
+    <div class="d-flex align-center ga-2 mb-2">
+      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis"></v-icon>
+      <v-label class="text-body-1 font-weight-medium">{{ fieldLabel }}</v-label>
+    </div>
+    <OcRichTextEditor
+      v-model="localValue"
+      :disabled="readonly || disabled"
+      :min-height="120"
+    />
+    <div v-if="errorMessages?.length" class="text-error text-caption mt-1">
+      {{ errorMessages.join(', ') }}
+    </div>
+  </div>
   
   <!-- Number Field -->
   <v-text-field
@@ -499,9 +582,62 @@ const rules = computed(() => {
     ></v-textarea>
   </div>
   
-  <!-- Relation Field (Autocomplete) -->
+  <!-- Select Field (dataset static enum) -->
+  <v-select
+    v-else-if="field.fieldType === 'select' && useSelectForChoice"
+    v-model="localValue"
+    :items="staticSelectItems"
+    item-title="title"
+    item-value="value"
+    :label="fieldLabel"
+    :hint="field.description"
+    :persistent-hint="!!field.description"
+    :required="field.mandatory"
+    :readonly="readonly"
+    :disabled="disabled"
+    :multiple="field.isArray"
+    :rules="rules"
+    :error-messages="errorMessages"
+    variant="outlined"
+    clearable
+    chips
+    :closable-chips="field.isArray"
+    density="comfortable"
+  >
+    <template v-slot:prepend-inner>
+      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
+    </template>
+  </v-select>
+
   <v-autocomplete
-    v-else-if="field.fieldType === 'relation'"
+    v-else-if="field.fieldType === 'select' && !useSelectForChoice"
+    v-model="localValue"
+    :items="staticSelectItems"
+    item-title="title"
+    item-value="value"
+    :label="fieldLabel"
+    :hint="field.description"
+    :persistent-hint="!!field.description"
+    :required="field.mandatory"
+    :readonly="readonly"
+    :disabled="disabled"
+    :multiple="field.isArray"
+    :rules="rules"
+    :error-messages="errorMessages"
+    variant="outlined"
+    clearable
+    chips
+    :closable-chips="field.isArray"
+    density="comfortable"
+  >
+    <template v-slot:prepend-inner>
+      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
+    </template>
+  </v-autocomplete>
+
+  <!-- Relation Field -->
+  <v-select
+    v-else-if="field.fieldType === 'relation' && useSelectForChoice"
     v-model="localValue"
     :items="relationOptions"
     item-title="title"
@@ -521,7 +657,39 @@ const rules = computed(() => {
     chips
     :closable-chips="field.isArray"
     density="comfortable"
-    @update:search="loadRelationOptions"
+  >
+    <template v-slot:prepend-inner>
+      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
+    </template>
+    <template #item="{ props: itemProps, item: itemData }">
+      <v-list-item v-bind="itemProps" :subtitle="itemData.raw.subtitle"></v-list-item>
+    </template>
+  </v-select>
+
+  <v-autocomplete
+    v-else-if="field.fieldType === 'relation' && !useSelectForChoice"
+    v-model="localValue"
+    :items="relationOptions"
+    item-title="title"
+    item-value="value"
+    :label="fieldLabel"
+    :hint="field.description"
+    :persistent-hint="!!field.description"
+    :required="field.mandatory"
+    :readonly="readonly"
+    :disabled="disabled || relationLoading"
+    :loading="relationLoading"
+    :multiple="field.isArray"
+    :rules="rules"
+    :error-messages="errorMessages"
+    variant="outlined"
+    clearable
+    chips
+    :closable-chips="field.isArray"
+    density="comfortable"
+    :custom-filter="allowAllRelationItems"
+    auto-select-first
+    @update:search="onRelationSearch"
   >
     <template v-slot:prepend-inner>
       <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
@@ -531,9 +699,38 @@ const rules = computed(() => {
     </template>
   </v-autocomplete>
   
-  <!-- Persons Field (Autocomplete) -->
+  <!-- Persons Field -->
+  <v-select
+    v-else-if="field.fieldType === 'persons' && useSelectForChoice"
+    v-model="localValue"
+    :items="usersOptions"
+    item-title="title"
+    item-value="value"
+    :label="fieldLabel"
+    :hint="field.description"
+    :persistent-hint="!!field.description"
+    :required="field.mandatory"
+    :readonly="readonly"
+    :disabled="disabled"
+    :multiple="field.isArray"
+    :rules="rules"
+    :error-messages="errorMessages"
+    variant="outlined"
+    clearable
+    chips
+    closable-chips
+    density="comfortable"
+  >
+    <template v-slot:prepend-inner>
+      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
+    </template>
+    <template #item="{ props, item }">
+      <v-list-item v-bind="props" :subtitle="item.raw.subtitle"></v-list-item>
+    </template>
+  </v-select>
+
   <v-autocomplete
-    v-else-if="field.fieldType === 'persons'"
+    v-else-if="field.fieldType === 'persons' && !useSelectForChoice"
     v-model="localValue"
     :items="usersOptions"
     item-title="title"
@@ -561,9 +758,38 @@ const rules = computed(() => {
     </template>
   </v-autocomplete>
   
-  <!-- Person Groups Field (Autocomplete) -->
+  <!-- Person Groups Field -->
+  <v-select
+    v-else-if="field.fieldType === 'personGroups' && useSelectForChoice"
+    v-model="localValue"
+    :items="groupsOptions"
+    item-title="title"
+    item-value="value"
+    :label="fieldLabel"
+    :hint="field.description"
+    :persistent-hint="!!field.description"
+    :required="field.mandatory"
+    :readonly="readonly"
+    :disabled="disabled"
+    :multiple="field.isArray"
+    :rules="rules"
+    :error-messages="errorMessages"
+    variant="outlined"
+    clearable
+    chips
+    closable-chips
+    density="comfortable"
+  >
+    <template v-slot:prepend-inner>
+      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
+    </template>
+    <template #item="{ props, item }">
+      <v-list-item v-bind="props" :subtitle="item.raw.subtitle"></v-list-item>
+    </template>
+  </v-select>
+
   <v-autocomplete
-    v-else-if="field.fieldType === 'personGroups'"
+    v-else-if="field.fieldType === 'personGroups' && !useSelectForChoice"
     v-model="localValue"
     :items="groupsOptions"
     item-title="title"

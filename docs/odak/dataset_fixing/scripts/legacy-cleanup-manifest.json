@@ -1,0 +1,34 @@
+{
+  "version": "2026-06-10",
+  "description": "Legacy dataset + AF form + side menu temizligi (Odak)",
+  "automatedFormCodes": ["tst_genres", "tst_publishers", "tst_books"],
+  "automatedFormDatasetNames": ["tst_genres", "tst_publishers", "tst_books"],
+  "sideMenuToPatterns": [
+    "*automated-forms/view/tst_*",
+    "*/apps/task-manager*",
+    "*task-manager*"
+  ],
+  "sideMenuPageCodePatterns": [
+    "*tst*",
+    "*task-manager*",
+    "*books*"
+  ],
+  "datasetsToDelete": [
+    "tm_boards",
+    "tm_field_definitions",
+    "tm_issue_comments",
+    "tm_issue_types",
+    "tm_issues",
+    "tm_labels",
+    "tm_priorities",
+    "tm_projects",
+    "tm_sprints",
+    "tm_statuses",
+    "tst_books",
+    "tst_genres",
+    "tst_publishers",
+    "@test_files"
+  ],
+  "deleteLegacyCategoryWhenEmpty": true,
+  "legacyCategoryName": "LegacyDatasets"
+}

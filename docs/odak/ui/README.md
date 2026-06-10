@@ -16,4 +16,6 @@ Bu klasör, Odak ortamında **Mng.Ui** ile ilgili UI kararları ve kısa rehberl
 
 **Backend (LDAP):** K1–K5 + G1 + K3 — [../ldap/DEVAM.md](../ldap/DEVAM.md) (duraklatıldı)
 
+**UI test prosedürleri (plan):** [../testprocs/README.md](../testprocs/README.md)
+
 Genel kurulum: [../ODAK_FULL_SETUP.md](../ODAK_FULL_SETUP.md)

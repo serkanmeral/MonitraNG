@@ -1,0 +1,24 @@
+{
+  "summary": {
+    "auditedAt": "2026-06-10T17:03:36Z",
+    "baseUrl": "http://192.168.20.20:5040",
+    "useGateway": true,
+    "totalCategories": 0,
+    "systemCategories": 0,
+    "totalDatasets": 0,
+    "uncategorized": 0,
+    "inSystemCategory": 0,
+    "afLinkedDatasets": 0,
+    "needsCategoryMove": 0,
+    "reviewDelete": 0,
+    "bySuggestedType": {
+      "A": 0,
+      "D": 0,
+      "E": 0,
+      "B": 0,
+      "C": 0
+    }
+  },
+  "categories": [],
+  "datasets": null
+}

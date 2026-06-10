@@ -3,5 +3,5 @@
   "_comment": "__dataId dokumantasyon icin; setup script DG'den gercek category dataId cozer",
   "categoryName": "OperationCoreDatasets",
   "categoryDescription": "Operation Core (OC) — MngOperations metadata ve operasyonel veri dataset'leri (op_*)",
-  "isSystemCategory": false
+  "isSystemCategory": true
 }

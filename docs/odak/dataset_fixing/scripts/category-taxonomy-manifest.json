@@ -1,0 +1,141 @@
+{
+  "version": "2026-06-10",
+  "description": "Odak dataset kategori taksonomisi — apply-category-taxonomy-odak.ps1",
+  "createCategories": [
+    {
+      "categoryName": "ReferenceDatasets",
+      "categoryDescription": "Paylasilan lookup / referans veri (ulkeler, sehirler vb.) — manager duzenleyebilir",
+      "isSystemCategory": false
+    },
+    {
+      "categoryName": "SchedulerDatasets",
+      "categoryDescription": "MngScheduler — @scheduled_jobs, @job_executions",
+      "isSystemCategory": true
+    },
+    {
+      "categoryName": "WorkflowDatasets",
+      "categoryDescription": "MngWorkflow — pipeline ve workflow dataset tanimlari",
+      "isSystemCategory": true
+    },
+    {
+      "categoryName": "LegacyDatasets",
+      "categoryDescription": "Kaldirilacak veya arsiv dataset'ler (tm_*, demo tst_*) — gecici sistem kategorisi",
+      "isSystemCategory": true
+    }
+  ],
+  "updateCategories": [
+    {
+      "matchName": "OperationCoreDatasets",
+      "categoryDescription": "Operation Core (OC) — MngOperations metadata ve operasyonel veri (op_*)",
+      "isSystemCategory": true
+    },
+    {
+      "matchName": "NotifierDatasets",
+      "categoryDescription": "MngNotifier — e-posta sablonlari ve bildirim sablonlari",
+      "isSystemCategory": true
+    },
+    {
+      "matchName": "DocumentIntelligenceDatasets",
+      "categoryDescription": "Document Intelligence — dm_* dataset'leri",
+      "isSystemCategory": true
+    },
+    {
+      "matchName": "chat_room_datasets",
+      "renameTo": "ChatRoomDatasets",
+      "categoryDescription": "MonitraNG Chat Room — cht_* dataset'leri",
+      "isSystemCategory": true
+    }
+  ],
+  "deleteCategories": [
+    "Car Category",
+    "Book Categories"
+  ],
+  "datasetAssignments": {
+    "System Datasets": [
+      "@automated_forms",
+      "@side_menu",
+      "@user_notes",
+      "@user_preferences",
+      "@widgets",
+      "@widget_categories",
+      "@dashboards"
+    ],
+    "WidgetDatasets": ["@widget_templates"],
+    "OperationCoreDatasets": [
+      "op_activities",
+      "op_boards",
+      "op_comments",
+      "op_dashboards",
+      "op_fields",
+      "op_forms",
+      "op_labels",
+      "op_links",
+      "op_notification_policies",
+      "op_notifications",
+      "op_priorities",
+      "op_profiles",
+      "op_reports",
+      "op_rules",
+      "op_saved_filters",
+      "op_sla_policies",
+      "op_state_flows",
+      "op_states",
+      "op_tags",
+      "op_work_item_schedules",
+      "op_work_item_timelines",
+      "op_work_item_types",
+      "op_work_items",
+      "op_workspaces"
+    ],
+    "Monitoring": [
+      "mon_agents",
+      "mon_asset_type_family",
+      "mon_asset_types",
+      "mon_assets",
+      "mon_collectible_templates",
+      "mon_collection_periods",
+      "mon_engines",
+      "mon_http_auth_configs",
+      "mon_items",
+      "mon_metrics",
+      "mon_schedules"
+    ],
+    "NotifierDatasets": [
+      "@mail_layouts",
+      "@mail_templates",
+      "@notification_templates"
+    ],
+    "ChatRoomDatasets": [
+      "cht_direct_conversations",
+      "cht_group_chats",
+      "cht_messages",
+      "cht_topic_members",
+      "cht_topic_rooms"
+    ],
+    "DocumentIntelligenceDatasets": [
+      "dm_resource_permissions",
+      "dm_resource_versions",
+      "dm_resources"
+    ],
+    "SchedulerDatasets": ["@scheduled_jobs", "@job_executions"],
+    "WorkflowDatasets": ["@wf_validation_pipelines"],
+    "LegacyDatasets": [
+      "tm_boards",
+      "tm_field_definitions",
+      "tm_issue_comments",
+      "tm_issue_types",
+      "tm_issues",
+      "tm_labels",
+      "tm_priorities",
+      "tm_projects",
+      "tm_sprints",
+      "tm_statuses",
+      "tst_books",
+      "tst_genres",
+      "tst_publishers",
+      "@test_files"
+    ],
+    "BusinessDatasets": ["tedarikciler"],
+    "ReferenceDatasets": ["ulkeler", "sehirler"]
+  }
+}

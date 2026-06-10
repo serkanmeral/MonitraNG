@@ -27,8 +27,9 @@ Tüm kurulum ve günlük çalışma akışı tek dokümanda:
 | **[compliance/DEVAM.md](./compliance/DEVAM.md)** | Standart uyumluluğu — ISO 27001 + AS9100 checkpoint (müşteri özeti + Faz C1) |
 | **[notifications/DEVAM.md](./notifications/DEVAM.md)** | MngNotifier e-posta — ⏸️ planlama duraklatildi; `send-template` sirada |
 | **[widgets/README.md](./widgets/README.md)** | **Widget & Dashboard designer** — planlama tamam; [DEVAM.md](./widgets/DEVAM.md) |
+| **[dynamicforms/README.md](./dynamicforms/README.md)** | **Dinamik formlar** — Tedarikçiler AF CRUD POC; yarın: [DEVAM.md](./dynamicforms/DEVAM.md) |
 
-Yeni bir chat’te geliştirmeye geçerken önce **ODAK_FULL_SETUP** okuyun; ayrıntı için alt bölümlerdeki linklere inin. OC geliştirmesi için **operationcore** klasörüne; bildirim planlaması için **notifications** klasörüne; widget/dashboard mimarisi için **widgets** klasörüne bakın.
+Yeni bir chat’te geliştirmeye geçerken önce **ODAK_FULL_SETUP** okuyun; ayrıntı için alt bölümlerdeki linklere inin. OC geliştirmesi için **operationcore** klasörüne; bildirim planlaması için **notifications** klasörüne; widget/dashboard mimarisi için **widgets** klasörüne; dinamik form planlaması için **dynamicforms** klasörüne bakın.
 
 ---
 
@@ -121,6 +122,9 @@ docs/odak/
 ├── document_intelligence/
 │   ├── DEVAM.md                ← Faz 1 ✅; Faz 2 OC entegrasyon
 │   └── …                       ← widget: ../widgets/DOMAIN_DOCUMENT_INTELLIGENCE.md
+├── dynamicforms/
+│   ├── README.md               ← Dinamik form oluşturma planlama (index)
+│   └── DEVAM.md                ← kaldığımız yer
 └── domain/
     ├── DOMAIN_OLUSTURMA.md
     ├── DOMAIN_OLUSTURMA_API.md

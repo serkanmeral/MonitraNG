@@ -1859,7 +1859,7 @@
         },
         "fieldLayout": {
           "title": "Field layout and order",
-          "description": "Configure each field's order, column width and group in the form view. Group order defines the display order of groups.",
+          "description": "Configure order, width, group and presentation per field. Use field settings to pick textbox/textarea/rich text and select/autocomplete; list tab sets visibility, sort and filter.",
           "groupOrderTitle": "Group order",
           "groupOrderDescription": "Order in which groups appear in the form. Use up/down to change.",
           "table": {
@@ -1867,7 +1867,8 @@
               "order": "Order",
               "fieldName": "Field name",
               "columnSpan": "Column width",
-              "group": "Group"
+              "group": "Group",
+              "presentation": "Presentation"
             }
           },
           "groupPlaceholder": "Group name (optional)",
@@ -1876,6 +1877,30 @@
           "noGroups": "No grouped fields yet. Assign a Group to fields."
         },
         "noDataset": "You must select a dataset first to configure form settings."
+      },
+      "fieldSettings": {
+        "title": "Field settings",
+        "open": "Field settings",
+        "fieldName": "Field",
+        "cancel": "Cancel",
+        "save": "Save",
+        "tabs": {
+          "form": "Form presentation",
+          "list": "List"
+        },
+        "listDescription": "Visibility, sorting and filtering for this field in the list table.",
+        "noPresentationOptions": "No form presentation options for this field type.",
+        "textWidget": {
+          "label": "Text presentation",
+          "text": "Single line (textbox)",
+          "textarea": "Multi line (textarea)",
+          "richtext": "Rich text (HTML)"
+        },
+        "choiceWidget": {
+          "label": "Choice presentation",
+          "select": "Select (dropdown)",
+          "autocomplete": "Autocomplete (search)"
+        }
       },
       "buttons": {
         "cancel": "Cancel",
