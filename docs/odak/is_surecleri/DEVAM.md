@@ -1,7 +1,9 @@
 # Odak Uretim — Devam noktasi (checkpoint)
 
-**Son guncelleme:** 10 Haziran 2026 (aksam oturumu)  
-**Durum:** Odak test (`192.168.20.20`) — workspace canli; **liste gorunumu iyilestirmeleri** kodlandi; **mngoperations deploy edildi**; **mngui deploy** bu oturum sonunda yapildi.
+**Son guncelleme:** 11 Haziran 2026 00:10 (oturum kapanisi)  
+**Durum:** Odak test (`192.168.20.20`) — liste gorunumu iyilestirmeleri **commit + push + mngui deploy** tamamlandi.  
+**Git commit:** `586ceec` — `feat(oc): Odak board list view — MO fieldDisplays, UI filters, dates, icons`  
+**Deploy saglik:** `gateway=200 ui=200 oc_live=200` (mngui + mngoperations Odak test)
 
 > **KALDIĞIMIZ YER (10 Haz 2026):** Odak Uretim **Uretim panosu** liste gorunumu uzerinde calisildi. Backend (MO) relation etiketleri ve sütun label zenginlestirmesi **Odak test'e deploy edildi**. UI tarafinda filtre sadelestirme, tarih formatlama, katalog ikonlari ve relation lookup bug fix **commit + mngui deploy** ile canliya alindi. **Yarin:** tarayici/Odak test uzerinde dogrulama, gelismis arama senaryolari, gerekirse seed `listColumns` label sync.
 
