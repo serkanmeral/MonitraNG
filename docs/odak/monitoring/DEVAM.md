@@ -1,7 +1,9 @@
 # DEVAM — SIEM-Hafif + Alarm Merkezi (Kaldığımız Yer)
 
-**Son güncelleme:** 6 Haziran 2026 (oturum sonu — **mola**, diğer modüllere geçiş)  
-**Durum:** ✅ **SIEM Faz 1–4 + Alarm Merkezi operatör UI** · Odak deploy ✅ · Git `main` @ **`969b57b`**
+**Son güncelleme:** 10 Haziran 2026 (SIEM paneli Odak production düzeltmesi — nginx `/api/reactor/`, client JWT)  
+**Durum:** ✅ **SIEM Faz 1–4 + Alarm Merkezi operatör UI** · Odak deploy ✅ · Git `main` (SIEM prod fix bekliyor)
+
+> **⭐ KALDIĞIMIZ YER (10 Haz 2026):** SIEM **Güvenlik Paneli** Odak production (`192.168.20.20:3000`) üzerinde düzeltildi. Kök nedenler: (1) statik `mngui`'de `/api/reactor/` nginx proxy eksikti; (2) `secEventService` production'da `Authorization` göndermiyordu (dev'de Nuxt BFF cookie'den ekliyordu); (3) dashboard import/guard eksikleri. **Doğrulandı:** panel yükleniyor ✅. Detay: [SIEM_DASHBOARD.md § Production](./SIEM_DASHBOARD.md). Deploy: [../deploy/README.md](../deploy/README.md).
 
 **Handoff (yeni chat):** aşağıdaki [§ Mola checkpoint](#mola-checkpoint-6-haz-2026--siem--alarm-merkezi-ui-kapandi) · [HANDOFF.md](./HANDOFF.md)
 

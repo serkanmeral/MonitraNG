@@ -195,6 +195,10 @@ Upload: `Send-OdakRemoteFile` (`OdakSshCommon.ps1`) — SCP başarısız olursa 
 | `Start mng_common first` | Altyapı kapalı | Sunucuda `mng_common` compose up |
 | UI eski görünüyor | Tarayıcı cache | Ctrl+F5; `mngui` rebuild yapıldığından emin olun |
 | Build çok hızlı (~36 sn) ama fix yok | Docker layer cache | `-NoCache` ile tekrar build |
+| SIEM paneli 401 `dashboard-summary` | Production'da JWT header yok | `secEventService` `Authorization` göndermeli; bkz. [SIEM_DASHBOARD.md § Production](../monitoring/SIEM_DASHBOARD.md) |
+| SIEM paneli `.map` / boş grafik | `/api/reactor/` nginx proxy yok | `Mng.Ui/nginx.conf` → `mngreactor:5003`; `mngui` rebuild |
+| `405` `/api/widgets/batch` | Statik SPA'da Nuxt BFF yok | Beklenen; widget verisi client-side fetch |
+| Keeper locale `404` (`/api/keeper/system/locales/*`) | MinIO'da locale yok | Zararsız; build-time locale fallback |
 
 **Agent / Cursor otomasyonu:** Komutları her zaman `pwsh -NoProfile -ExecutionPolicy Bypass -File ...` formunda verin; repo kökünde `.env.odak.local` bulundurun.
 
@@ -219,4 +223,4 @@ pwsh -NoProfile -ExecutionPolicy Bypass -Command "& '...\sync-odak-source.ps1' -
 
 ---
 
-**Son doğrulama:** 2 Haziran 2026 — Faz 1+1B UI performans paketi `mngui` deploy (pwsh + `-Paths Mng.Ui` + `-Services mngui`).
+**Son doğrulama:** 10 Haziran 2026 — SIEM paneli Odak production fix (`nginx` `/api/reactor/`, `secEventService` auth, dashboard guards) · `mngui` deploy.

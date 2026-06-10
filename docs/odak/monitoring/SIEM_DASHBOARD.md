@@ -8,12 +8,42 @@
 
 ## API (panel yükleme)
 
-| Veri | Endpoint |
-|------|----------|
-| Olay özeti (24s) | `GET /reactor/api/v1/sec-events/dashboard-summary` |
-| Alarm özeti | `GET /alarm/api/v1/alarms/dashboard-snapshot` |
+| Veri | Endpoint (gateway) | UI istemci yolu (Odak `mngui`) |
+|------|-------------------|--------------------------------|
+| Olay özeti (24s) | `GET /reactor/api/v1/sec-events/dashboard-summary` | `GET /api/reactor/v1/sec-events/dashboard-summary` |
+| Alarm özeti | `GET /alarm/api/v1/alarms/dashboard-snapshot` | `GET /api/alarm/v1/alarms/dashboard-snapshot` |
 
 Panel tek turda **2 istek** atar (aggregation). Olay arama sayfası mevcut `GET /sec-events` listesini kullanmaya devam eder.
+
+### Production (`mngui` statik SPA — Odak `:3000`)
+
+Lokal `npm run dev` ile production deploy **aynı değildir**:
+
+| Konu | Dev (`npm run dev`) | Production (`npm run generate` + nginx) |
+|------|---------------------|----------------------------------------|
+| `/api/reactor/*` | Nuxt server route cookie → `Authorization` ekler | **`Mng.Ui/nginx.conf`** → `mngreactor:5003` proxy gerekir |
+| JWT | Sunucu tarafında cookie'den taşınır | **`secEventService.ts`** istemciden `Authorization: Bearer …` göndermeli |
+| `/api/widgets/batch` | Nuxt BFF var | Yok — widget batch **client-side** fetch (BFF yalnızca dev) |
+| Locale MinIO | Opsiyonel override | Keeper 404 normal → build-time `utils/locales/*.json` fallback |
+
+**Odak doğrulama (10 Haz 2026):**
+
+```text
+curl -s -o /dev/null -w "%{http_code}" http://192.168.20.20:3000/api/reactor/v1/health   # 200
+# dashboard-summary: giriş sonrası tarayıcıda Authorization ile 200
+```
+
+Deploy: [../deploy/README.md](../deploy/README.md) — `sync-odak-source.ps1 -Paths Mng.Ui` + `deploy-odak-apps.ps1 -Services mngui`
+
+**Sık hatalar (production-only):**
+
+| Belirti | Kök neden | Fix |
+|---------|-----------|-----|
+| `hasManifestTableColumns is not defined` | Eksik import | `AcSiemCenterDashboard.vue` |
+| `Cannot read properties of undefined (reading 'map')` | Reactor yanıtı bozuk / `hourly` yok | nginx `/api/reactor/` + API normalize |
+| `401` dashboard-summary | JWT header yok | `secEventService` → `authHeaders()` |
+| `405` `/api/widgets/batch` | Statik deploy'da BFF yok | Beklenen; client fallback |
+| Keeper locale `404` | MinIO'da locale dosyası yok | Zararsız; build-time locale kullanılır |
 
 ## Özet (legacy not)
 

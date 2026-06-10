@@ -96,7 +96,8 @@ export async function fetchDashboardWidgetsBatch(
   const useBff = options.useBff !== false;
   let map = new Map<string, WidgetDataResponse>();
 
-  if (useBff && import.meta.client) {
+  // Nuxt BFF route only exists in dev (`npm run dev`); static nginx deploy has no server handler.
+  if (useBff && import.meta.client && import.meta.dev) {
     try {
       const response = await $fetch<{
         dataByWidgetId: Record<string, WidgetDataResponse>;

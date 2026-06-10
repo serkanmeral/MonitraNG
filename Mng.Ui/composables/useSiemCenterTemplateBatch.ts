@@ -96,6 +96,7 @@ export function useSiemCenterTemplateBatch(surfaceContext: Ref<SurfaceContext>) 
 
   return {
     slots,
+    dataByWidgetId: dataByTemplateId,
     dataByTemplateId,
     loading,
     error,

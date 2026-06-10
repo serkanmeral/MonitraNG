@@ -18,7 +18,10 @@ import {
 } from '@/utils/widgets/dashboardSurfaceKeys';
 import { DASHBOARD_SURFACE_MUTATIONS_KEY } from '@/utils/widgets/dashboardSurfaceMutations';
 import type { SiemCenterWidgetKey } from '@/utils/widgets/siemCenterWidgets';
-import type { WidgetLike } from '@/utils/widgets/widgetManifestAdapter';
+import {
+  hasManifestTableColumns,
+  type WidgetLike,
+} from '@/utils/widgets/widgetManifestAdapter';
 import { getPrimary, getSecondary } from '@/utils/UpdateColors';
 import {
   loadSiemDashboardLayout,
@@ -179,10 +182,11 @@ function formatHourLabel(iso: string): string {
 }
 
 function buildHourlyBucketsFromSummary(
-  hourly: { hourStart: string; count: number }[],
+  hourly: { hourStart: string; count: number }[] | null | undefined,
 ): HourlyBucket[] {
-  const max = Math.max(...hourly.map((b) => b.count), 1);
-  return hourly.map((bucket) => ({
+  const buckets = Array.isArray(hourly) ? hourly : [];
+  const max = Math.max(...buckets.map((b) => b.count), 1);
+  return buckets.map((bucket) => ({
     label: formatHourLabel(bucket.hourStart),
     count: bucket.count,
     pct: Math.round((bucket.count / max) * 100),
@@ -432,8 +436,11 @@ const breakdownChartSeries = computed(() =>
 
 const hasBreakdownChart = computed(() => breakdownChartSeries.value.some((n) => n > 0));
 
-function buildScenarioCardsFromRollup(rollups: AlarmScenarioRollup[]): ScenarioCard[] {
-  const byKey = new Map(rollups.map((r) => [r.matchKey, r]));
+function buildScenarioCardsFromRollup(
+  rollups: AlarmScenarioRollup[] | null | undefined,
+): ScenarioCard[] {
+  const list = Array.isArray(rollups) ? rollups : [];
+  const byKey = new Map(list.map((r) => [r.matchKey, r]));
   return SIEM_SCENARIO_CATALOG.map((def) => {
     const rollup = byKey.get(def.matchKey);
     return {
@@ -641,14 +648,15 @@ async function loadDashboard(options?: { force?: boolean; silent?: boolean }) {
   try {
     const rangeHours = surfaceContext.value.timeRange?.hours ?? 24;
     const { events, alarms } = await fetchSiemDashboardPayload({ force, rangeHours });
+    const byAction = events.byAction ?? {};
     stats.value = {
       eventsTotal: events.eventsTotal,
-      loginFailed: events.byAction.login_failed ?? 0,
-      deniedFlow: events.byAction.denied_flow ?? 0,
-      newFlow: events.byAction.new_flow ?? 0,
+      loginFailed: byAction.login_failed ?? 0,
+      deniedFlow: byAction.denied_flow ?? 0,
+      newFlow: byAction.new_flow ?? 0,
       openAlarms: alarms.openTotal,
     };
-    recentAlarms.value = alarms.openAlarms;
+    recentAlarms.value = Array.isArray(alarms.openAlarms) ? alarms.openAlarms : [];
     hourlyBuckets.value = buildHourlyBucketsFromSummary(events.hourly);
     scenarioCards.value = buildScenarioCardsFromRollup(alarms.scenarioRollup);
     lastRefreshedAt.value = Date.now();

@@ -4,13 +4,24 @@ import type {
   SecEventQueryResponse,
   SecEventDashboardSummary,
 } from '@/types/apps/secEvent';
+import { getAccessToken } from '@/services/apiService';
 import { useAuthStore } from '@/stores/auth';
 
-function domainHeaders(): Record<string, string> {
-  const auth = useAuthStore();
+async function authHeaders(): Promise<Record<string, string>> {
+  const authStore = useAuthStore();
+  try {
+    await authStore.ensureValidToken();
+  } catch {
+    // Server returns 401 if token is missing or invalid.
+  }
+
   const headers: Record<string, string> = {};
-  if (auth.domainName) {
-    headers['X-Domain-Name'] = auth.domainName;
+  if (authStore.domainName) {
+    headers['X-Domain-Name'] = authStore.domainName;
+  }
+  const token = getAccessToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
   return headers;
 }
@@ -68,7 +79,7 @@ export async function secEventQuery(query: SecEventQuery = {}): Promise<SecEvent
   });
   const raw = await $fetch<Record<string, unknown>>(`/api/reactor/v1/sec-events${qs}`, {
     method: 'GET',
-    headers: domainHeaders(),
+    headers: await authHeaders(),
   });
   return normalizeQueryResponse(raw);
 }
@@ -76,9 +87,36 @@ export async function secEventQuery(query: SecEventQuery = {}): Promise<SecEvent
 export async function secEventGet(id: string): Promise<SecEventListItem> {
   const raw = await $fetch<Record<string, unknown>>(`/api/reactor/v1/sec-events/${encodeURIComponent(id)}`, {
     method: 'GET',
-    headers: domainHeaders(),
+    headers: await authHeaders(),
   });
   return normalizeListItem(raw);
+}
+
+function normalizeDashboardSummary(raw: Record<string, unknown>): SecEventDashboardSummary {
+  const byActionRaw = raw.byAction ?? raw.ByAction;
+  const hourlyRaw = raw.hourly ?? raw.Hourly;
+  const byAction =
+    byActionRaw && typeof byActionRaw === 'object' && !Array.isArray(byActionRaw)
+      ? (byActionRaw as Record<string, number>)
+      : {};
+  const hourly = Array.isArray(hourlyRaw)
+    ? hourlyRaw.map((row) => {
+        const bucket = row as Record<string, unknown>;
+        return {
+          hourStart: String(bucket.hourStart ?? bucket.HourStart ?? ''),
+          count: Number(bucket.count ?? bucket.Count ?? 0),
+        };
+      })
+    : [];
+
+  return {
+    range: String(raw.range ?? raw.Range ?? ''),
+    from: String(raw.from ?? raw.From ?? ''),
+    to: String(raw.to ?? raw.To ?? ''),
+    eventsTotal: Number(raw.eventsTotal ?? raw.EventsTotal ?? 0),
+    byAction,
+    hourly,
+  };
 }
 
 export async function secEventDashboardSummary(options?: {
@@ -89,8 +127,9 @@ export async function secEventDashboardSummary(options?: {
     rangeHours: options?.rangeHours ?? 24,
     excludeUnknown: options?.excludeUnknown ?? true,
   });
-  return await $fetch<SecEventDashboardSummary>(`/api/reactor/v1/sec-events/dashboard-summary${qs}`, {
+  const raw = await $fetch<Record<string, unknown>>(`/api/reactor/v1/sec-events/dashboard-summary${qs}`, {
     method: 'GET',
-    headers: domainHeaders(),
+    headers: await authHeaders(),
   });
+  return normalizeDashboardSummary(raw);
 }

@@ -33,7 +33,9 @@ Widget designer’da kullanıcıya gösterilen **semantik veri kaynakları** ile
 | service | Proxy | Örnek |
 |---------|-------|-------|
 | `mngalarm` | `/api/alarm/v1/` | `mngalarm:alarms/dashboard-snapshot` |
-| `mngreactor` | `/api/reactor/v1/` | `mngreactor:sec-events/dashboard-summary` |
+| `mngreactor` | `/api/reactor/v1/` → nginx → `mngreactor:5003/api/v1/` | `mngreactor:sec-events/dashboard-summary` |
+
+> **Production auth:** `mngreactor` uçları `[Authorize]` — statik `mngui` deploy'da istemci **`Authorization: Bearer`** göndermeli (`secEventService.authHeaders`). Dev'de Nuxt `/api/reactor/*` cookie'den ekler.
 | `mngdocument` | `/api/documents/` | `mngdocument:resources/search` |
 | *(MO)* | DG | `@op_work_items/queries/wi_assigned_open` |
 
