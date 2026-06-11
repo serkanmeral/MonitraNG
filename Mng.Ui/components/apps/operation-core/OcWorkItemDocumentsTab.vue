@@ -1,13 +1,21 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
+import DiFilePreviewDialog from '@/components/apps/document-intelligence/DiFilePreviewDialog.vue';
+import DiMarkdownPreviewDialog from '@/components/apps/document-intelligence/DiMarkdownPreviewDialog.vue';
 import OcLinkDocumentDialog from '@/components/apps/operation-core/OcLinkDocumentDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import {
   diDeleteResourceLink,
   diExtractMessage,
+  diFetchFileBlob,
+  diGetById,
   diGetLinkedResourcesForWorkItem,
 } from '@/services/documentIntelligenceService';
-import type { DiLinkedResource } from '@/types/apps/documentIntelligence';
+import {
+  DI_RESOURCE_TYPE,
+  type DiLinkedResource,
+  type DiResource,
+} from '@/types/apps/documentIntelligence';
 
 const props = defineProps<{
   workItemId: string;
@@ -25,6 +33,13 @@ const error = ref<string | null>(null);
 const items = ref<DiLinkedResource[]>([]);
 const linkDialogOpen = ref(false);
 const deleteBusyId = ref<string | null>(null);
+const previewBusyId = ref<string | null>(null);
+const downloadingId = ref<string | null>(null);
+
+const filePreviewOpen = ref(false);
+const filePreviewResource = ref<DiResource | null>(null);
+const markdownPreviewOpen = ref(false);
+const markdownPreviewResource = ref<DiResource | null>(null);
 
 const excludedResourceIds = ref<string[]>([]);
 
@@ -61,14 +76,100 @@ function relationLabel(type: string): string {
 }
 
 function resourceIcon(item: DiLinkedResource): string {
-  if (item.resourceType === 'markdown') return 'mdi-language-markdown-outline';
+  if (item.resourceType === DI_RESOURCE_TYPE.markdown) return 'mdi-language-markdown-outline';
   const ext = (item.extension || '').toLowerCase();
   if (ext === 'pdf' || item.mimeType?.includes('pdf')) return 'mdi-file-pdf-box';
   return 'mdi-file-document-outline';
 }
 
+function canPreviewLink(item: DiLinkedResource): boolean {
+  if (!item.permissions?.canView) return false;
+  const type = item.resourceType?.trim().toLowerCase();
+  return type === DI_RESOURCE_TYPE.markdown || type === DI_RESOURCE_TYPE.file;
+}
+
+function canDownloadLink(item: DiLinkedResource): boolean {
+  return item.permissions?.canDownload === true && item.resourceType === DI_RESOURCE_TYPE.file;
+}
+
 function openInDi() {
   navigateTo('/apps/document-intelligence');
+}
+
+async function openPreview(item: DiLinkedResource) {
+  const resourceId = item.resourceId?.trim();
+  if (!resourceId || !canPreviewLink(item)) return;
+
+  previewBusyId.value = item.linkId;
+  error.value = null;
+  try {
+    const resource = await diGetById(resourceId);
+    if (resource.type === DI_RESOURCE_TYPE.markdown) {
+      markdownPreviewResource.value = resource;
+      markdownPreviewOpen.value = true;
+      return;
+    }
+    if (resource.type === DI_RESOURCE_TYPE.file) {
+      filePreviewResource.value = resource;
+      filePreviewOpen.value = true;
+      return;
+    }
+    error.value = t('operationCore.profile.documents.previewUnsupported');
+  } catch (e: unknown) {
+    error.value = diExtractMessage(e, t('operationCore.profile.documents.previewError'));
+  } finally {
+    previewBusyId.value = null;
+  }
+}
+
+async function downloadResource(resource: DiResource) {
+  if (!resource.filePath) {
+    error.value = t('operationCore.profile.documents.downloadError');
+    return;
+  }
+  downloadingId.value = resource.id;
+  error.value = null;
+  try {
+    const blob = await diFetchFileBlob(resource.filePath);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = resource.fileName || resource.name || 'dosya';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (e: unknown) {
+    error.value = diExtractMessage(e, t('operationCore.profile.documents.downloadError'));
+  } finally {
+    downloadingId.value = null;
+  }
+}
+
+async function downloadLink(item: DiLinkedResource) {
+  const resourceId = item.resourceId?.trim();
+  if (!resourceId || !canDownloadLink(item)) return;
+
+  downloadingId.value = item.linkId;
+  error.value = null;
+  try {
+    const resource = await diGetById(resourceId);
+    await downloadResource(resource);
+  } catch (e: unknown) {
+    error.value = diExtractMessage(e, t('operationCore.profile.documents.downloadError'));
+  } finally {
+    downloadingId.value = null;
+  }
+}
+
+function showFilePreviewButton(item: DiLinkedResource): boolean {
+  if (!canPreviewLink(item) || item.resourceType !== DI_RESOURCE_TYPE.file) return false;
+  // Özet listede boyut yok; butonu göster, dialog desteklenmeyen türde mesaj verir.
+  return true;
+}
+
+function showMarkdownPreviewButton(item: DiLinkedResource): boolean {
+  return canPreviewLink(item) && item.resourceType === DI_RESOURCE_TYPE.markdown;
 }
 
 async function removeLink(item: DiLinkedResource) {
@@ -118,7 +219,7 @@ onMounted(() => load());
 
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-3" />
 
-    <v-alert v-if="error" type="error" variant="tonal" density="compact" class="mb-3 rounded-lg">
+    <v-alert v-if="error" type="error" variant="tonal" density="compact" class="mb-3 rounded-lg" closable @click:close="error = null">
       {{ error }}
     </v-alert>
 
@@ -135,7 +236,11 @@ onMounted(() => load());
         <template #prepend>
           <v-icon :icon="resourceIcon(item)" size="22" />
         </template>
-        <v-list-item-title class="text-body-2 font-weight-medium">
+        <v-list-item-title
+          class="text-body-2 font-weight-medium"
+          :class="{ 'oc-doc-row--clickable': canPreviewLink(item) }"
+          @click="canPreviewLink(item) && openPreview(item)"
+        >
           {{ resourceLabel(item) }}
         </v-list-item-title>
         <v-list-item-subtitle class="text-caption">
@@ -143,6 +248,24 @@ onMounted(() => load());
           <span v-if="item.resourceType" class="ml-1">· {{ item.resourceType }}</span>
         </v-list-item-subtitle>
         <template #append>
+          <v-btn
+            v-if="showMarkdownPreviewButton(item) || showFilePreviewButton(item)"
+            size="x-small"
+            variant="text"
+            icon="mdi-eye-outline"
+            :loading="previewBusyId === item.linkId"
+            :title="t('operationCore.profile.documents.preview')"
+            @click="openPreview(item)"
+          />
+          <v-btn
+            v-if="canDownloadLink(item)"
+            size="x-small"
+            variant="text"
+            icon="mdi-download"
+            :loading="downloadingId === item.linkId"
+            :title="t('operationCore.profile.documents.download')"
+            @click="downloadLink(item)"
+          />
           <v-btn
             size="x-small"
             variant="text"
@@ -170,11 +293,30 @@ onMounted(() => load());
       :excluded-resource-ids="excludedResourceIds"
       @linked="onLinked"
     />
+
+    <DiFilePreviewDialog
+      v-model="filePreviewOpen"
+      :resource="filePreviewResource"
+      @download="downloadResource"
+    />
+
+    <DiMarkdownPreviewDialog
+      v-model="markdownPreviewOpen"
+      :resource="markdownPreviewResource"
+    />
   </v-card-text>
 </template>
 
 <style scoped>
 .oc-doc-row:hover {
   background: rgba(var(--v-theme-on-surface), 0.04);
+}
+
+.oc-doc-row--clickable {
+  cursor: pointer;
+}
+
+.oc-doc-row--clickable:hover {
+  color: rgb(var(--v-theme-primary));
 }
 </style>
