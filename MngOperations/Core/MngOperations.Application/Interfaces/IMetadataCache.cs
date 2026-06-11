@@ -59,6 +59,30 @@ public interface IMetadataCache
         string token,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Workspace pool alanları (global + workspace scoped) — metadata TTL ile cache'lenir.</summary>
+    Task<IReadOnlyList<Dictionary<string, object?>>> GetWorkspacePoolFieldsAsync(
+        string workspaceId,
+        string token,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Person tipi pool alan key listesi (op_fields taraması cache'li).</summary>
+    Task<IReadOnlyList<string>> GetPersonPoolFieldKeysAsync(
+        string token,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Person grup tipi pool alan key listesi (op_fields taraması cache'li).</summary>
+    Task<IReadOnlyList<string>> GetGroupPoolFieldKeysAsync(
+        string token,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Relation / katalog dataset id → görünen metin (entry bazlı memory cache).</summary>
+    Task<IReadOnlyDictionary<string, string>> ResolveRelationDisplayNamesAsync(
+        string dataset,
+        string labelField,
+        IReadOnlyCollection<string> ids,
+        string token,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Write-through: katalog yazısından sonra ilgili liste cache'ini düşür.</summary>
     void InvalidateCatalog(string dataset);
 

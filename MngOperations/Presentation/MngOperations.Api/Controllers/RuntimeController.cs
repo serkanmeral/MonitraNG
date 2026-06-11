@@ -33,9 +33,12 @@ public class RuntimeController : ControllerBase
     [ProducesResponseType(typeof(ProfileViewContext), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetProfileView(string id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetProfileView(
+        string id,
+        [FromQuery] bool includeTimeline = false,
+        CancellationToken cancellationToken = default)
     {
-        var context = await _runtimeContextService.GetProfileViewAsync(id, cancellationToken);
+        var context = await _runtimeContextService.GetProfileViewAsync(id, includeTimeline, cancellationToken);
         return Ok(context);
     }
 

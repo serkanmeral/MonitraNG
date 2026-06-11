@@ -18,6 +18,10 @@ public sealed class FormRuntimeContext
         = new Dictionary<string, FormFieldRuntimeDto>();
     public IReadOnlyDictionary<string, FieldBehaviorDto> FieldBehaviors { get; init; }
         = new Dictionary<string, FieldBehaviorDto>();
+
+    /// <summary>Workspace pool alan tanımları (op_fields) — UI'nın ayrı DG listesi çekmesini önler.</summary>
+    public IReadOnlyList<Dictionary<string, object?>> PoolFields { get; init; }
+        = Array.Empty<Dictionary<string, object?>>();
 }
 
 public sealed class WorkItemTypeOptionDto

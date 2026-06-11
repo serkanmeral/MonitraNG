@@ -377,6 +377,14 @@ function mapFormFieldRuntimeDto(raw: Record<string, unknown>): OcFormFieldRuntim
   };
 }
 
+function parsePoolFieldsFromRaw(raw: unknown): OpField[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((f): f is Record<string, unknown> => !!f && typeof f === 'object')
+    .map((f) => mapOpField(f))
+    .filter((f) => f.__dataId && f.key);
+}
+
 export function mapFormRuntimeContext(raw: Record<string, unknown>): OcFormRuntimeContext {
   const fieldsRaw = raw.fields ?? raw.Fields;
   const behaviorsRaw = raw.fieldBehaviors ?? raw.FieldBehaviors;
@@ -441,6 +449,7 @@ export function mapFormRuntimeContext(raw: Record<string, unknown>): OcFormRunti
       canComment: perms.canComment === true || perms.CanComment === true,
     },
     types,
+    poolFields: parsePoolFieldsFromRaw(raw.poolFields ?? raw.PoolFields),
   };
 }
 
@@ -947,7 +956,7 @@ export async function ocGetWorkItemProfileView(
   }
 
   const raw = (await fetchFromOperations(
-    `/api/v1/runtime/work-items/${encodeURIComponent(workItemId)}/profile-view`,
+    `/api/v1/runtime/work-items/${encodeURIComponent(workItemId)}/profile-view?includeTimeline=false`,
     'GET'
   )) as Record<string, unknown>;
 
@@ -956,14 +965,12 @@ export async function ocGetWorkItemProfileView(
   const mapped: OcWorkItemProfileView = {
     profile: mapWorkItemProfile((raw.profile ?? raw.Profile ?? {}) as Record<string, unknown>),
     form: mapFormRuntimeContext((raw.form ?? raw.Form ?? {}) as Record<string, unknown>),
+    displayForm: mapFormRuntimeContext(
+      (raw.displayForm ?? raw.DisplayForm ?? raw.form ?? raw.Form ?? {}) as Record<string, unknown>
+    ),
     catalogs: parseBoardCatalogs(raw.catalogs ?? raw.Catalogs),
     boards: parseStringMap(raw.boards ?? raw.Boards),
-    poolFields: Array.isArray(poolRaw)
-      ? poolRaw
-          .filter((f): f is Record<string, unknown> => !!f && typeof f === 'object')
-          .map((f) => mapOpField(f))
-          .filter((f) => f.__dataId && f.key)
-      : [],
+    poolFields: parsePoolFieldsFromRaw(poolRaw),
     fieldDisplays: parseStringMap(raw.fieldDisplays ?? raw.FieldDisplays),
     policy: mapResolvedPolicy(raw.policy ?? raw.Policy),
     timeline: mapTimelinePage(raw.timeline ?? raw.Timeline, 0, 100),
@@ -2171,6 +2178,7 @@ function mapBoardRuntimeContext(raw: Record<string, unknown>): OcBoardRuntimeCon
     defaultSort: mapRuntimeDefaultSort(raw.defaultSort ?? raw.DefaultSort),
     initialStateId: pickStr(raw, 'initialStateId', 'InitialStateId') ?? null,
     catalogs: parseBoardCatalogs(raw.catalogs ?? raw.Catalogs),
+    poolFields: parsePoolFieldsFromRaw(raw.poolFields ?? raw.PoolFields),
   };
 }
 

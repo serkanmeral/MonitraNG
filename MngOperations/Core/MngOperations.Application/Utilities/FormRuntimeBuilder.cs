@@ -143,6 +143,14 @@ public static class FormRuntimeBuilder
 
     private static object? NormalizeValue(object? value)
     {
+        if (value is DateTime dt)
+            return dt.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(dt, DateTimeKind.Utc).ToString("o")
+                : dt.ToUniversalTime().ToString("o");
+
+        if (value is DateTimeOffset dto)
+            return dto.UtcDateTime.ToString("o");
+
         if (value is JsonElement el)
         {
             return el.ValueKind switch

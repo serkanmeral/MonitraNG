@@ -45,61 +45,17 @@ public partial class RuntimeContextService
         return await _personDirectory.GetPeopleAsync(ids, token, cancellationToken);
     }
 
-    /// <summary>Person tipi pool alan key'leri (op_fields, fieldType ∈ persons/person) — cache'li.</summary>
-    private async Task<IReadOnlyList<string>> GetPersonPoolFieldKeysAsync(
+    /// <summary>Person tipi pool alan key'leri (op_fields) — metadata cache.</summary>
+    private Task<IReadOnlyList<string>> GetPersonPoolFieldKeysAsync(
         string token,
-        CancellationToken cancellationToken)
-    {
-        var keys = new List<string>(CorePersonFieldKeys);
-        try
-        {
-            var fields = await _metadataCache.GetCatalogListAsync(OcDatasets.Fields, token, cancellationToken);
-            foreach (var field in fields)
-            {
-                var fieldType = WorkItemDataHelper.GetString(field, "fieldType")?.Trim().ToLowerInvariant();
-                if (fieldType is not ("persons" or "person"))
-                    continue;
+        CancellationToken cancellationToken) =>
+        _metadataCache.GetPersonPoolFieldKeysAsync(token, cancellationToken);
 
-                var key = WorkItemDataHelper.GetString(field, "key");
-                if (!string.IsNullOrWhiteSpace(key) && !keys.Contains(key))
-                    keys.Add(key);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Person pool field keys resolve failed; using core keys only.");
-        }
-
-        return keys;
-    }
-
-    /// <summary>Person grup tipi pool alan key'leri (op_fields, fieldType ∈ personGroups/personGroup/group) — cache'li.</summary>
-    private async Task<IReadOnlyList<string>> GetGroupPoolFieldKeysAsync(
+    /// <summary>Person grup tipi pool alan key'leri — metadata cache.</summary>
+    private Task<IReadOnlyList<string>> GetGroupPoolFieldKeysAsync(
         string token,
-        CancellationToken cancellationToken)
-    {
-        var keys = new List<string>(CoreGroupFieldKeys);
-        try
-        {
-            var fields = await _metadataCache.GetCatalogListAsync(OcDatasets.Fields, token, cancellationToken);
-            foreach (var field in fields)
-            {
-                var fieldType = WorkItemDataHelper.GetString(field, "fieldType")?.Trim().ToLowerInvariant();
-                if (fieldType is not ("persongroups" or "persongroup" or "group"))
-                    continue;
-
-                var key = WorkItemDataHelper.GetString(field, "key");
-                if (!string.IsNullOrWhiteSpace(key) && !keys.Contains(key))
-                    keys.Add(key);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Group pool field keys resolve failed; using core keys only.");
-        }
-
-        return keys;
-    }
+        CancellationToken cancellationToken) =>
+        _metadataCache.GetGroupPoolFieldKeysAsync(token, cancellationToken);
 
     /// <summary>
     /// Sayfadaki kartların grup alanlarından (assignmentGroups + personGroups tipi pool alanlar) id'leri toplar

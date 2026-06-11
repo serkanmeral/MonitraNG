@@ -100,6 +100,7 @@ public partial class RuntimeContextService
         };
 
         var fieldBehaviors = await _fieldBehaviors.ResolveAllAsync(behaviorContext, cancellationToken);
+        var poolFields = await _metadataCache.GetWorkspacePoolFieldsAsync(workspaceId, token, cancellationToken);
 
         var fields = FormRuntimeBuilder.BuildFields(
             mode,
@@ -147,7 +148,64 @@ public partial class RuntimeContextService
             },
             Types = types,
             Fields = fields,
-            FieldBehaviors = fieldBehaviors
+            FieldBehaviors = fieldBehaviors,
+            PoolFields = poolFields
+        };
+    }
+
+    /// <summary>
+    /// Profil detay sekmesi salt okunur görünümü — <c>op_profiles.layout</c> sırası + havuz değerleri.
+    /// </summary>
+    private async Task<FormRuntimeContext> BuildProfileDisplayFormAsync(
+        string workItemId,
+        Dictionary<string, object?> workItem,
+        ProfileRuntimeContext profile,
+        WorkspaceRecord workspace,
+        CancellationToken cancellationToken)
+    {
+        var token = RequireToken();
+
+        var poolCatalog = await WorkItemFieldCatalog.BuildEnabledPoolFieldsByKeyAsync(
+            workspace, _metadataCache, token, cancellationToken);
+        var fieldCatalog = FormFieldCatalog.MergeCoreAndPool(poolCatalog);
+
+        var fields = FormRuntimeBuilder.BuildFields(
+            "edit",
+            workItem,
+            defaultValues: null,
+            profile.Layout,
+            fieldCatalog);
+
+        var profileRecord = await _metadataCache.ResolveDefaultProfileAsync(workspace.DataId!, token, cancellationToken);
+
+        var canEdit = profile.Permissions.CanEdit;
+        var behaviorContext = new FieldBehaviorResolveContext
+        {
+            Screen = FieldBehaviorScreen.Profile,
+            Mode = "display",
+            Workspace = workspace,
+            WorkItem = workItem,
+            Profile = profileRecord,
+            Board = null,
+            StateId = WorkItemDataHelper.GetString(workItem, "stateId"),
+            CanEdit = canEdit,
+            RuleTrigger = RuleTriggers.WorkItemUpdated
+        };
+        var displayFieldBehaviors = await _fieldBehaviors.ResolveAllAsync(behaviorContext, cancellationToken);
+
+        return new FormRuntimeContext
+        {
+            Mode = "display",
+            WorkspaceId = profile.WorkspaceId,
+            WorkItemId = workItemId,
+            FormId = profile.ProfileId,
+            FormName = profile.ProfileName,
+            DefaultTypeId = WorkItemDataHelper.GetString(workItem, "typeId"),
+            InitialStateId = WorkItemDataHelper.GetString(workItem, "stateId"),
+            Layout = profile.Layout,
+            Permissions = profile.Permissions,
+            Fields = fields,
+            FieldBehaviors = displayFieldBehaviors
         };
     }
 
@@ -196,11 +254,11 @@ public partial class RuntimeContextService
 
         if (enabledIds.Count > 0)
         {
-            foreach (var typeId in enabledIds)
-            {
-                var type = await _metadataCache.GetWorkItemTypeAsync(typeId, token, cancellationToken);
+            var typeTasks = enabledIds.Select(typeId =>
+                _metadataCache.GetWorkItemTypeAsync(typeId, token, cancellationToken));
+            var loaded = await Task.WhenAll(typeTasks);
+            foreach (var type in loaded)
                 types.Add(MapTypeOption(type));
-            }
 
             return types;
         }

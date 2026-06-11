@@ -1,0 +1,14 @@
+{
+  "moBaseUrl": "http://192.168.20.20:5040/operations",
+  "boardId": "75ec624c-a8be-4131-b072-9408ace1fd32",
+  "title": "[REFERANS] Tamamlanmis uretim emri — profil kontrolu",
+  "workItemKey": "ODF-0011",
+  "customerOrderRef": "PO-REF-KAPALI-001",
+  "uiHint": "Operasyon Merkezi -> Odak Uretim -> Uretim panosu -> ODF-0011 -> Detaylar",
+  "quantity": 8,
+  "workspaceId": "9f9cc085-81c7-4a92-9fa2-357ad5c654cd",
+  "seededAt": "2026-06-11T16:07:37.5198334Z",
+  "workItemId": "cf7fffb8-a3f2-44dc-b0a7-5d4ea382534a",
+  "displayFormFieldCount": 38,
+  "stateId": "3a710627-d238-433d-86bf-704c0d258c06"
+}

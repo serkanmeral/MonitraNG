@@ -1,4 +1,4 @@
-import type { OcFormRuntimeContext, OpField } from '@/types/apps/operationCore';
+import type { OcFormFieldRuntimeDto, OcFormRuntimeContext, OpField } from '@/types/apps/operationCore';
 import {
   OC_CORE_WORK_ITEM_FIELDS,
   resolveOcCoreFieldCardinality,
@@ -99,6 +99,34 @@ export function enrichFormRuntimeFields(
     };
   }
   return { ...ctx, fields };
+}
+
+/**
+ * Geçiş dialog'u için form context — edit formunda olmayan transition.requiredFields
+ * havuz (op_fields) meta'sı ile tamamlanır.
+ */
+export function buildTransitionRequiredFormContext(
+  ctx: OcFormRuntimeContext,
+  requiredKeys: string[],
+  options?: { poolFields?: OpField[]; translate?: OcFieldLabelTranslate }
+): OcFormRuntimeContext {
+  const fields: Record<string, OcFormFieldRuntimeDto> = { ...ctx.fields };
+  for (const key of requiredKeys) {
+    if (fields[key]) continue;
+    const pool = options?.poolFields?.find((f) => f.key.toLowerCase() === key.toLowerCase());
+    fields[key] = {
+      key,
+      label: resolveOcFieldDisplayLabel(key, {
+        poolLabel: pool?.label ?? null,
+        translate: options?.translate,
+      }),
+      fieldType: resolveOcFormFieldType(key, null, pool),
+      cardinality: pool?.cardinality ?? resolveOcCoreFieldCardinality(key),
+      relationDataset: pool?.relationDatasetName ?? null,
+      options: pool?.options ?? null,
+    };
+  }
+  return { ...ctx, layout: null, fields };
 }
 
 /** @deprecated enrichFormRuntimeFields kullanın */

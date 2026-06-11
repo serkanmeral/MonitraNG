@@ -8,9 +8,12 @@ public interface IRuntimeContextService
 
     /// <summary>
     /// Profil ekranının tüm verisini tek pakette döner (profile + form + katalog + pool alanlar +
-    /// alan görünen değerleri + politika + ilk sayfa timeline). UI'nın ~18 çağrısını 1'e indirir.
+    /// alan görünen değerleri + politika; timeline varsayılan kapalı — ayrı uç).
     /// </summary>
-    Task<ProfileViewContext> GetProfileViewAsync(string workItemId, CancellationToken cancellationToken = default);
+    Task<ProfileViewContext> GetProfileViewAsync(
+        string workItemId,
+        bool includeTimeline = false,
+        CancellationToken cancellationToken = default);
 
     Task<TimelinePage> GetTimelineAsync(
         string workItemId,

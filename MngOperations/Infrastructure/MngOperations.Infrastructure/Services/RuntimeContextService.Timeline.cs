@@ -103,7 +103,7 @@ public partial class RuntimeContextService
             else
             {
                 var formTask = GetFormEditAsync(workItemId, workItem, cancellationToken);
-                var poolTask = LoadProfilePoolFieldsAsync(workspaceId, token, cancellationToken);
+                var poolTask = _metadataCache.GetWorkspacePoolFieldsAsync(workspaceId, token, cancellationToken);
                 await Task.WhenAll(formTask, poolTask);
                 formFields = formTask.Result.Fields ?? formFields;
                 poolFields = poolTask.Result;
@@ -284,16 +284,27 @@ public partial class RuntimeContextService
     }
 
     /// <summary>Katalog dataset'leri (state/priority/type/board) cache'li listeden, diğerleri $in query ile çözülür.</summary>
-    private Task<Dictionary<string, string>> ResolveChangeDatasetNamesAsync(
+    private async Task<Dictionary<string, string>> ResolveChangeDatasetNamesAsync(
         string resolveKey,
         IReadOnlyCollection<string> ids,
         string token,
         CancellationToken cancellationToken)
     {
         var (dataset, labelField) = LookupFieldOptionsHelper.ParseResolveKey(resolveKey);
-        return ChangeCatalogDatasets.Contains(dataset)
-            ? ResolveCatalogNamesAsync(dataset, ids, token, cancellationToken)
-            : ResolveRelationNamesAsync(dataset, ids, labelField, token, cancellationToken);
+        if (ids.Count == 0)
+            return new Dictionary<string, string>(StringComparer.Ordinal);
+
+        try
+        {
+            var resolved = await _metadataCache.ResolveRelationDisplayNamesAsync(
+                dataset, labelField, ids, token, cancellationToken);
+            return new Dictionary<string, string>(resolved, StringComparer.Ordinal);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Timeline change dataset resolve failed for {Dataset}.", dataset);
+            return new Dictionary<string, string>(StringComparer.Ordinal);
+        }
     }
 
     /// <summary>Katalog dataset'inden (op_states/priorities/work_item_types/boards) id → ad (cache'li, profil-view ile aynı kanal).</summary>

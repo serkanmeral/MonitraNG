@@ -164,7 +164,8 @@ public partial class RuntimeContextService : IRuntimeContextService
             Workspace = workspace,
             WorkItem = workItem,
             Profile = profile,
-            Board = board,
+            // Board kart visibleFields profil layout alanlarini kısıtlamaz (workCenter vb. gizlenmesin).
+            Board = null,
             StateId = currentStateId,
             CanEdit = canEdit,
             RuleTrigger = RuleTriggers.WorkItemUpdated
@@ -384,16 +385,17 @@ public partial class RuntimeContextService : IRuntimeContextService
         _permissions.EnsureWorkItemView(workspace, workItem);
 
         var sourceFilter = $"sourceDataset:eq:{OcDatasets.WorkItems},sourceRecordId:eq:{workItemId}";
+        const int timelineSourceFetchLimit = 120;
 
         var commentsTask = _dg.GetAsync<Dictionary<string, object?>>(
             OcDatasets.Comments,
-            $"filter={Uri.EscapeDataString(sourceFilter)}&limit=500",
+            $"filter={Uri.EscapeDataString(sourceFilter)}&sort=-commentDate&limit={timelineSourceFetchLimit}",
             token,
             cancellationToken);
 
         var activitiesTask = _dg.GetAsync<Dictionary<string, object?>>(
             OcDatasets.Activities,
-            $"filter={Uri.EscapeDataString(sourceFilter)}&limit=500",
+            $"filter={Uri.EscapeDataString(sourceFilter)}&sort=-activityDate&limit={timelineSourceFetchLimit}",
             token,
             cancellationToken);
 
@@ -545,7 +547,7 @@ public partial class RuntimeContextService : IRuntimeContextService
 
         var listColumns = ParseListColumns(configObject);
         // Computed sütunların DG karşılığı yoktur; alan seçiminden (cardFieldKeys) hariç tutulur.
-        var poolFieldsForLabels = await LoadProfilePoolFieldsAsync(workspaceId, token, cancellationToken);
+        var poolFieldsForLabels = await _metadataCache.GetWorkspacePoolFieldsAsync(workspaceId, token, cancellationToken);
         listColumns = EnrichListColumnLabels(listColumns, poolFieldsForLabels);
         var cardFieldKeys = listColumns.Count > 0
             ? listColumns.Where(c => !c.Computed).Select(c => c.Key).ToList()
@@ -568,7 +570,8 @@ public partial class RuntimeContextService : IRuntimeContextService
             ListColumns = listColumns,
             DefaultSort = ParseDefaultSort(configObject),
             InitialStateId = initialStateId,
-            Catalogs = await BuildBoardCatalogsAsync(workspace, workspaceId, boardScopeStateIds, token, cancellationToken)
+            Catalogs = await BuildBoardCatalogsAsync(workspace, workspaceId, boardScopeStateIds, token, cancellationToken),
+            PoolFields = poolFieldsForLabels
         };
     }
 
@@ -884,7 +887,7 @@ public partial class RuntimeContextService : IRuntimeContextService
         var page = await _dg.QueryPageAsync(OcDatasets.WorkItems, match, string.Join("&", queryParts), token, cancellationToken);
 
         var cards = page.Items.Select(MapWorkItemCard).ToList();
-        var poolFields = await LoadProfilePoolFieldsAsync(workspaceId, token, cancellationToken);
+        var poolFields = await _metadataCache.GetWorkspacePoolFieldsAsync(workspaceId, token, cancellationToken);
         cards = (await EnrichBoardListCardsAsync(cards, listColumns, poolFields, token, cancellationToken)).ToList();
         var people = await ResolvePeopleForCardsAsync(cards, token, cancellationToken);
         var groups = await ResolveGroupsForCardsAsync(cards, token, cancellationToken);

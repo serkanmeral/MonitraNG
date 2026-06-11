@@ -597,6 +597,11 @@ async function reloadList(force = true) {
 }
 
 async function loadPoolFields() {
+  const ctxFields = store.boardContext?.poolFields;
+  if (ctxFields?.length) {
+    poolFields.value = ctxFields;
+    return;
+  }
   const wsId = workspaceId.value;
   if (!wsId) {
     poolFields.value = [];
@@ -608,6 +613,14 @@ async function loadPoolFields() {
     poolFields.value = [];
   }
 }
+
+watch(
+  () => store.boardContext?.poolFields,
+  (fields) => {
+    if (fields?.length) poolFields.value = fields;
+  },
+  { immediate: true }
+);
 
 watch(workspaceId, () => {
   void loadPoolFields();

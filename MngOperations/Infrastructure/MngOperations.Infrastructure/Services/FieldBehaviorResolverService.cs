@@ -136,7 +136,8 @@ public sealed class FieldBehaviorResolverService : IFieldBehaviorResolver
             context.WorkItem,
             policyHints));
 
-        if (context.Board?.VisibleFields is { } visibleFields)
+        if (context.Board?.VisibleFields is { } visibleFields
+            && context.Screen != FieldBehaviorScreen.Profile)
             layers.Add(FromBoardVisibility(fieldName, visibleFields));
 
         layers.Add(FromPermission(context.CanEdit, context.Mode, fieldName));

@@ -10,7 +10,7 @@ using MngOperations.Domain.Constants;
 
 namespace MngOperations.Infrastructure.Services;
 
-public class MetadataCacheService : IMetadataCache
+public partial class MetadataCacheService : IMetadataCache
 {
     private readonly IMemoryCache _cache;
     private readonly IMngDataGatewayClient _dg;
@@ -348,6 +348,7 @@ public class MetadataCacheService : IMetadataCache
         Remove($"profile:default:{wsId}");
         Remove($"sla:policies:{wsId}");
         Remove($"notification-policies:{wsId}");
+        Remove($"poolfields:{wsId}");
 
         var filter = $"workspaceId:eq:{wsId}";
         var filterQuery = $"filter={Uri.EscapeDataString(filter)}&limit=200";

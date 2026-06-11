@@ -31,6 +31,7 @@ public partial class RuntimeContextService
 
     public async Task<ProfileViewContext> GetProfileViewAsync(
         string workItemId,
+        bool includeTimeline = false,
         CancellationToken cancellationToken = default)
     {
         var perfSw = _perfDiagnostics ? Stopwatch.StartNew() : null;
@@ -43,33 +44,38 @@ public partial class RuntimeContextService
         _permissions.EnsureWorkItemView(workspace, workItem);
 
         var currentStateId = WorkItemDataHelper.GetString(workItem, "stateId") ?? string.Empty;
-        // Katalog state kapsamı en az kaydın mevcut state'ini içersin (sidebar/readonly ad çözümü garanti).
         var scopeStateIds = string.IsNullOrEmpty(currentStateId)
             ? Array.Empty<string>()
             : new[] { currentStateId };
 
-        // Bağımsız ağır işler paralel (hepsi iç ağda; DG/Keeper ms seviyesinde).
-        // workItem zaten yüklendi → alt çağrılara geçir (op_work_items GetById 5×→1×).
         var profileTask = GetProfileAsync(workItemId, workItem, cancellationToken);
         var formTask = GetFormEditAsync(workItemId, workItem, cancellationToken);
-        var poolFieldsTask = LoadProfilePoolFieldsAsync(workspaceId, token, cancellationToken);
-        const int profileViewTimelineTake = 35;
-        // form/pool zaten paralel yükleniyor → timeline aktivite changes çözümünde tekrar DG çağrısı yapmasın.
-        var timelineTask = GetTimelineAsync(
-            workItemId, workItem, 0, profileViewTimelineTake, cancellationToken, formTask, poolFieldsTask);
+        var poolFieldsTask = _metadataCache.GetWorkspacePoolFieldsAsync(workspaceId, token, cancellationToken);
+        Task<TimelinePage>? timelineTask = null;
+        if (includeTimeline)
+        {
+            const int profileViewTimelineTake = 35;
+            timelineTask = GetTimelineAsync(
+                workItemId, workItem, 0, profileViewTimelineTake, cancellationToken, formTask, poolFieldsTask);
+        }
+
         var catalogsTask = BuildBoardCatalogsAsync(workspace, workspaceId, scopeStateIds, token, cancellationToken);
         var policyTask = ResolveProfilePolicyAsync(workItem, workspaceId, token, cancellationToken);
         var boardId = WorkItemDataHelper.GetPersonRefId(workItem, "boardId");
         var boardNamesTask = ResolveProfileViewBoardNamesAsync(boardId, token, cancellationToken);
 
-        await Task.WhenAll(
+        var parallelTasks = new List<Task>
+        {
             profileTask,
             formTask,
-            timelineTask,
+            poolFieldsTask,
             catalogsTask,
             policyTask,
-            poolFieldsTask,
-            boardNamesTask);
+            boardNamesTask
+        };
+        if (timelineTask != null)
+            parallelTasks.Add(timelineTask);
+        await Task.WhenAll(parallelTasks);
 
         var profile = profileTask.Result;
         var form = formTask.Result;
@@ -77,19 +83,25 @@ public partial class RuntimeContextService
         var poolFields = poolFieldsTask.Result;
         var boards = boardNamesTask.Result;
 
+        var profileLayoutKeys = FormLayoutHelper.ExtractOrderedFieldKeys(profile.Layout);
+        var displayForm = profileLayoutKeys.Count > 0
+            ? await BuildProfileDisplayFormAsync(workItemId, workItem, profile, workspace, cancellationToken)
+            : form;
+
         var fieldDisplays = await BuildProfileFieldDisplaysAsync(
-            workItem, form.Fields, catalogs, boards, profile.People, profile.Groups, poolFields, token, cancellationToken);
+            workItem, displayForm.Fields, catalogs, boards, profile.People, profile.Groups, poolFields, token, cancellationToken);
 
         var result = new ProfileViewContext
         {
             Profile = profile,
             Form = form,
+            DisplayForm = displayForm,
             Catalogs = catalogs,
             Boards = boards,
             PoolFields = poolFields,
             FieldDisplays = fieldDisplays,
             Policy = policyTask.Result,
-            Timeline = timelineTask.Result,
+            Timeline = timelineTask?.Result ?? new TimelinePage(),
         };
 
         if (perfSw != null)
@@ -124,42 +136,12 @@ public partial class RuntimeContextService
         return boards;
     }
 
-    /// <summary>op_fields → global pool (workspaceId boş) + bu workspace'e ait pool alanlar (UI ocListPoolFieldsForWorkspace ile birebir).</summary>
-    private async Task<IReadOnlyList<Dictionary<string, object?>>> LoadProfilePoolFieldsAsync(
+    /// <summary>op_fields → global pool + workspace (metadata cache).</summary>
+    private Task<IReadOnlyList<Dictionary<string, object?>>> LoadProfilePoolFieldsAsync(
         string workspaceId,
         string token,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var fields = await _metadataCache.GetCatalogListAsync(OcDatasets.Fields, token, cancellationToken);
-            var result = new List<Dictionary<string, object?>>();
-            var seen = new HashSet<string>(StringComparer.Ordinal);
-
-            foreach (var f in fields)
-            {
-                var scope = (WorkItemDataHelper.GetString(f, "scope") ?? "pool").Trim();
-                if (!string.Equals(scope, "pool", StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                var dataId = WorkItemDataHelper.GetString(f, "__dataId");
-                var key = WorkItemDataHelper.GetString(f, "key");
-                if (string.IsNullOrWhiteSpace(dataId) || string.IsNullOrWhiteSpace(key) || !seen.Add(dataId))
-                    continue;
-
-                var fieldWs = WorkItemDataHelper.GetPersonRefId(f, "workspaceId");
-                if (string.IsNullOrWhiteSpace(fieldWs) || string.Equals(fieldWs, workspaceId, StringComparison.Ordinal))
-                    result.Add(f);
-            }
-
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Profile pool fields load failed.");
-            return Array.Empty<Dictionary<string, object?>>();
-        }
-    }
+        CancellationToken cancellationToken) =>
+        _metadataCache.GetWorkspacePoolFieldsAsync(workspaceId, token, cancellationToken);
 
     /// <summary>OcPolicyPanel scopeMatches/matchedPolicy mantığını MO'ya taşır: op_rules/op_sla_policies
     /// cache'li (workspace bazlı) listelerden okunur — warm'da ek DG çağrısı yapılmaz.</summary>
@@ -442,11 +424,8 @@ public partial class RuntimeContextService
         string labelField,
         string token,
         CancellationToken cancellationToken) =>
-        ChangeCatalogDatasets.Contains(dataset)
-            ? ResolveCatalogNamesAsync(dataset, ids, token, cancellationToken)
-            : ResolveRelationNamesViaQueryAsync(dataset, ids, labelField, token, cancellationToken);
+        ResolveRelationNamesViaQueryAsync(dataset, ids, labelField, token, cancellationToken);
 
-    /// <summary>Katalog olmayan relation dataset'leri için $in DG sorgusu.</summary>
     private async Task<Dictionary<string, string>> ResolveRelationNamesViaQueryAsync(
         string dataset,
         IReadOnlyCollection<string> ids,
@@ -454,35 +433,20 @@ public partial class RuntimeContextService
         string token,
         CancellationToken cancellationToken)
     {
-        var map = new Dictionary<string, string>(StringComparer.Ordinal);
         if (ids.Count == 0)
-            return map;
+            return new Dictionary<string, string>(StringComparer.Ordinal);
 
         try
         {
-            var match = new Dictionary<string, object?>(StringComparer.Ordinal)
-            {
-                ["__dataId"] = new Dictionary<string, object?> { ["$in"] = ids.Cast<object?>().ToList() }
-            };
-            var page = await _dg.QueryPageAsync(
-                dataset, match, $"limit={Math.Max(ids.Count, 1)}&expand=false", token, cancellationToken);
-
-            foreach (var row in page.Items)
-            {
-                var id = WorkItemDataHelper.GetString(row, "__dataId");
-                if (string.IsNullOrWhiteSpace(id))
-                    continue;
-                var name = LookupFieldOptionsHelper.ResolveDisplayText(row, labelField);
-                if (!string.IsNullOrWhiteSpace(name))
-                    map[id!] = name!;
-            }
+            var resolved = await _metadataCache.ResolveRelationDisplayNamesAsync(
+                dataset, labelField, ids, token, cancellationToken);
+            return new Dictionary<string, string>(resolved, StringComparer.Ordinal);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Relation name resolve failed for dataset {Dataset}.", dataset);
+            return new Dictionary<string, string>(StringComparer.Ordinal);
         }
-
-        return map;
     }
 
     /// <summary>Alan değerinden id listesi (string / dizi / genişletilmiş relation nesnesi). Sıra + tekilleştirme korunur.</summary>

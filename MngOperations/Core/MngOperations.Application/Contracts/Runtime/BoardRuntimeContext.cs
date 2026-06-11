@@ -29,6 +29,10 @@ public sealed class BoardRuntimeContext
     /// isim/renk/ikon ile gösterir. MO cache'inden beslenir (Durum 2).
     /// </summary>
     public BoardCatalogsDto Catalogs { get; init; } = new();
+
+    /// <summary>Workspace pool alan tanımları — liste/kanban UI'nın ayrı op_fields çekmesini önler.</summary>
+    public IReadOnlyList<Dictionary<string, object?>> PoolFields { get; init; }
+        = Array.Empty<Dictionary<string, object?>>();
 }
 
 /// <summary>Liste tablosu sütun tanımı (board.config.listColumns).</summary>

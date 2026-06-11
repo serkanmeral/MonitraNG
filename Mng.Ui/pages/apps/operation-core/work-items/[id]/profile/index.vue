@@ -40,9 +40,11 @@ import type {
   OcResolvedPolicy,
   OcTimelineEntry,
   OcWorkItemProfile,
+  OpField,
 } from '@/types/apps/operationCore';
-import { enrichFormRuntimeFields } from '@/utils/ocFormFieldLabels';
+import { buildTransitionRequiredFormContext, enrichFormRuntimeFields } from '@/utils/ocFormFieldLabels';
 import { formatCellValue } from '@/utils/ocColumnFormat';
+import { ocEnrichTransitionFields, ocSeedTransitionFieldModel } from '@/utils/ocTransitionFieldDefaults';
 import { resolveProfileBackToBoardPath } from '@/utils/ocWorkItemProfileNav';
 
 definePageMeta({ layout: 'default' });
@@ -64,8 +66,12 @@ const workspaceIdQuery = computed(() =>
 
 const loading = ref(false);
 const errorLocal = ref<string | null>(null);
+/** Düzenle modu — op_forms edit layout. */
 const formContext = ref<OcFormRuntimeContext | null>(null);
+/** Salt okunur detay — op_profiles layout (geçişlerde girilen alanlar dahil). */
+const profileDisplayContext = ref<OcFormRuntimeContext | null>(null);
 const formModel = ref<Record<string, unknown>>({});
+const displayModel = ref<Record<string, unknown>>({});
 const profile = ref<OcWorkItemProfile | null>(null);
 
 // --- Detaylar sekmesi in-place düzenleme ---
@@ -78,6 +84,7 @@ const editValidationAttempted = ref(false);
 // Tek toplu profile-view payload'ından gelen çözülmüş veriler (ek fetch yapılmaz).
 const catalogs = ref<OcBoardCatalogs | null>(null);
 const fieldDisplays = ref<Record<string, string>>({});
+const poolFields = ref<OpField[]>([]);
 const resolvedPolicy = ref<OcResolvedPolicy | null>(null);
 
 const activeTab = ref<'details' | 'comments' | 'activity' | 'attachments'>('details');
@@ -508,9 +515,8 @@ const transitionFieldModel = ref<Record<string, unknown>>({});
 
 const transitionRequiredKeys = computed<string[]>(() => {
   const action = transitionTarget.value;
-  const ctx = formContext.value;
-  if (!action || !ctx) return [];
-  return action.requiredFields.filter((key) => !!ctx.fields[key]);
+  if (!action) return [];
+  return transitionRequiredKeysFor(action);
 });
 
 // MO StateFlowCatalog.IsEmptyValue ile hizalı: null/boş metin → boş.
@@ -525,6 +531,16 @@ const transitionMissingRequired = computed<string[]>(() =>
   transitionRequiredKeys.value.filter((key) => isTransitionValueEmpty(transitionFieldModel.value[key]))
 );
 
+const transitionFormContext = computed<OcFormRuntimeContext | null>(() => {
+  const ctx = profileDisplayContext.value ?? formContext.value;
+  const action = transitionTarget.value;
+  if (!ctx || !action?.requiredFields.length) return ctx;
+  return buildTransitionRequiredFormContext(ctx, action.requiredFields, {
+    poolFields: poolFields.value,
+    translate: t,
+  });
+});
+
 function actionLabel(action: OcProfileAction): string {
   const explicit = action.label?.trim();
   if (explicit) return explicit;
@@ -536,15 +552,17 @@ function openTransition(action: OcProfileAction) {
   transitionTarget.value = action;
   transitionComment.value = '';
   transitionError.value = null;
-  const ctx = formContext.value;
-  const seed: Record<string, unknown> = {};
-  if (ctx) {
-    for (const key of action.requiredFields) {
-      if (ctx.fields[key]) seed[key] = formModel.value[key];
-    }
-  }
-  transitionFieldModel.value = seed;
+  const keys = transitionRequiredKeysFor(action);
+  transitionFieldModel.value = ocSeedTransitionFieldModel(
+    action.transitionKey,
+    displayModel.value,
+    keys
+  );
   transitionDialog.value = true;
+}
+
+function transitionRequiredKeysFor(action: OcProfileAction): string[] {
+  return action.requiredFields.filter((key) => key.trim().length > 0);
 }
 
 async function confirmTransition() {
@@ -554,9 +572,10 @@ async function confirmTransition() {
   transitionError.value = null;
   try {
     const keys = transitionRequiredKeys.value;
-    const fields = keys.length
+    const rawFields = keys.length
       ? Object.fromEntries(keys.map((key) => [key, transitionFieldModel.value[key]]))
       : null;
+    const fields = ocEnrichTransitionFields(action.transitionKey, displayModel.value, rawFields);
     await ocApplyTransition(workItemId.value, action.transitionKey, {
       comment: transitionComment.value,
       fields,
@@ -582,24 +601,30 @@ async function loadProfile(force = false) {
     if (!store.workspaces.length) {
       await store.loadWorkspaces();
     }
-    // Tek toplu çağrı: form + katalog + pool alan + alan görünen değerleri + politika + ilk sayfa timeline.
+    // Tek toplu çağrı: form + katalog + pool alan + alan görünen değerleri + politika.
     const view = await ocGetWorkItemProfileView(id, { force });
     formContext.value = enrichFormRuntimeFields(view.form, { poolFields: view.poolFields, translate: t });
-    const model = initialFormModelFromContext(view.form);
-    formModel.value = model;
-    initialModel.value = JSON.parse(JSON.stringify(model));
+    profileDisplayContext.value = enrichFormRuntimeFields(view.displayForm, {
+      poolFields: view.poolFields,
+      translate: t,
+    });
+    const editModel = initialFormModelFromContext(view.form);
+    formModel.value = editModel;
+    initialModel.value = JSON.parse(JSON.stringify(editModel));
+    displayModel.value = initialFormModelFromContext(view.displayForm);
     editMode.value = false;
     editValidationAttempted.value = false;
     editError.value = null;
     profile.value = view.profile;
+    poolFields.value = view.poolFields;
     catalogs.value = view.catalogs;
     fieldDisplays.value = view.fieldDisplays;
     resolvedPolicy.value = view.policy;
-    // Timeline payload'la birlikte geldi; ayrı çağrı yok (loadTimeline yorum CRUD sonrası yenilemede kalır).
-    timeline.value = view.timeline.items;
-    timelineTotal.value = view.timeline.total || view.timeline.items.length;
+    // Timeline ayrı uç — profil shell'i bloklamaz (MO includeTimeline=false).
+    void loadTimeline();
   } catch (e: unknown) {
     formContext.value = null;
+    profileDisplayContext.value = null;
     errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.profile.loadError'));
   } finally {
     loading.value = false;
@@ -720,7 +745,7 @@ watch(workItemId, () => {
             <strong v-if="transitionTarget">{{ actionLabel(transitionTarget) }}</strong>
           </p>
 
-          <template v-if="formContext && transitionRequiredKeys.length">
+          <template v-if="transitionFormContext && transitionRequiredKeys.length">
             <div class="d-flex align-center ga-2 mb-2">
               <v-icon icon="mdi-form-textbox" color="primary" size="16" />
               <span class="text-caption font-weight-medium">
@@ -729,7 +754,7 @@ watch(workItemId, () => {
             </div>
             <OcTransitionRequiredFields
               v-model="transitionFieldModel"
-              :context="formContext"
+              :context="transitionFormContext"
               :field-keys="transitionRequiredKeys"
               class="mb-1"
             />
@@ -901,13 +926,22 @@ watch(workItemId, () => {
                 </v-alert>
 
                 <OcDynamicForm
-                  v-if="formContext"
+                  v-if="editMode && formContext"
                   v-model="formModel"
                   :context="formContext"
                   :group-names="groupNames"
                   :field-displays="fieldDisplays"
-                  :field-errors="editMode ? editFieldErrors : undefined"
-                  :readonly="!editMode"
+                  :field-errors="editFieldErrors"
+                  :readonly="false"
+                />
+                <OcDynamicForm
+                  v-else-if="profileDisplayContext"
+                  v-model="displayModel"
+                  :context="profileDisplayContext"
+                  :group-names="groupNames"
+                  :field-displays="fieldDisplays"
+                  readonly
+                  hide-empty-sections
                 />
 
                 <div v-if="editMode" class="d-flex justify-end ga-2 mt-4">

@@ -103,6 +103,12 @@ public sealed class ProfileViewContext
     public required ProfileRuntimeContext Profile { get; init; }
     public required FormRuntimeContext Form { get; init; }
 
+    /// <summary>
+    /// Profil salt okunur görünümü (<c>op_profiles.layout</c> + havuz alan değerleri).
+    /// Layout boşsa <see cref="Form"/> ile aynıdır.
+    /// </summary>
+    public required FormRuntimeContext DisplayForm { get; init; }
+
     /// <summary>states/priorities/types görünen değerleri (sidebar + readonly form).</summary>
     public BoardCatalogsDto Catalogs { get; init; } = new();
 

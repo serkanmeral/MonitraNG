@@ -134,7 +134,10 @@ async function loadForm() {
       return;
     }
 
-    const poolFields = await ocListPoolFieldsForWorkspace(ctx.workspaceId);
+    const poolFields =
+      ctx.poolFields?.length
+        ? ctx.poolFields
+        : await ocListPoolFieldsForWorkspace(ctx.workspaceId);
     formContext.value = enrichFormRuntimeFields(ctx, { poolFields, translate: t });
     const model = initialFormModelFromContext(ctx);
     formModel.value = model;

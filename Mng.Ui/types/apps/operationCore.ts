@@ -312,6 +312,8 @@ export interface OcFormRuntimeContext {
   fieldBehaviors: Record<string, OcFieldBehaviorDto>;
   permissions?: { canView?: boolean; canEdit?: boolean; canComment?: boolean };
   types?: { id: string; name: string; category?: string | null }[];
+  /** MO form context ile gelen pool alan tanımları (ayrı DG listesi gerekmez). */
+  poolFields?: OpField[];
 }
 
 export interface OcWorkspaceTreeNode {
@@ -393,6 +395,8 @@ export interface OcBoardRuntimeContext {
   /** Akıştaki başlangıç state id'si — liste SLA chip akıllı fazı için. */
   initialStateId?: string | null;
   catalogs: OcBoardCatalogs;
+  /** MO board context ile gelen pool alan tanımları. */
+  poolFields?: OpField[];
 }
 
 /** Board liste filtresi (alan + operatör + değer). */
@@ -739,7 +743,10 @@ export interface OcResolvedPolicy {
  */
 export interface OcWorkItemProfileView {
   profile: OcWorkItemProfile;
+  /** Düzenle modu — op_forms edit layout. */
   form: OcFormRuntimeContext;
+  /** Salt okunur detay — op_profiles layout + tüm havuz alan değerleri. */
+  displayForm: OcFormRuntimeContext;
   catalogs: OcBoardCatalogs;
   /** board id → ad (boardId alanı görünen değeri). */
   boards: Record<string, string>;

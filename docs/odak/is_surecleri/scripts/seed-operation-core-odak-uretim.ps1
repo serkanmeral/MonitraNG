@@ -8,6 +8,7 @@
 #   .\docs\odak\is_surecleri\scripts\seed-odak-master-data.ps1
 #   .\docs\odak\is_surecleri\scripts\seed-operation-core-odak-uretim.ps1
 #   .\docs\odak\is_surecleri\scripts\seed-operation-core-odak-uretim.ps1 -SmokeTest -SeedDemo
+#   .\docs\odak\is_surecleri\scripts\seed-odak-closed-reference-order.ps1   # kapali referans emir (profil test)
 
 param(
     [string]$BaseUrl = "http://192.168.20.20:5040",
@@ -159,6 +160,26 @@ function New-StaticSelectOptions {
     }
 }
 
+function New-Transition {
+    param(
+        [string]$Key,
+        [string]$From,
+        [string]$To,
+        [string]$Label,
+        [int]$Order,
+        [string[]]$Required = @()
+    )
+    $h = [ordered]@{
+        transitionKey = $Key
+        fromStateId   = $From
+        toStateId     = $To
+        label         = $Label
+        order         = $Order
+    }
+    if ($Required.Count -gt 0) { $h.requiredFields = @($Required) }
+    return [hashtable]$h
+}
+
 Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host "Odak Uretim — Operation Core seed" -ForegroundColor Cyan
 Write-Host "Gateway: $BaseUrl" -ForegroundColor Cyan
@@ -276,6 +297,18 @@ $optDisposition = New-StaticSelectOptions @(
     @{ value = "hurda"; label = "Hurda" },
     @{ value = "iade"; label = "Tedarikciye iade" }
 )
+$optOrderType = New-StaticSelectOptions @(
+    @{ value = "seri"; label = "Seri uretim" },
+    @{ value = "fai"; label = "FAI (ilk parca)" },
+    @{ value = "rework"; label = "Rework" },
+    @{ value = "prototip"; label = "Prototip" }
+)
+$optInspectionType = New-StaticSelectOptions @(
+    @{ value = "gorsel"; label = "Gorsel muayene" },
+    @{ value = "boyutsal"; label = "Boyutsal" },
+    @{ value = "ndt"; label = "NDT (UT / X-ray vb.)" },
+    @{ value = "kombine"; label = "Kombine" }
+)
 
 $fieldCustomerId = Find-OrCreate -Collection "op_fields" -Filter "key:eq:customerId" -Label "customerId" -Body @{
     key = "customerId"; label = "Musteri"; fieldType = "relation"; scope = "pool"; category = "classification"
@@ -361,6 +394,33 @@ $fieldEffectivenessCheck = Find-OrCreate -Collection "op_fields" -Filter "key:eq
 $fieldCapaTargetDate = Find-OrCreate -Collection "op_fields" -Filter "key:eq:capaTargetDate" -Label "capaTargetDate" -Body @{
     key = "capaTargetDate"; label = "Hedef tarih"; fieldType = "datetime"; scope = "pool"; category = "technical"
 }
+$fieldOrderType = Find-OrCreate -Collection "op_fields" -Filter "key:eq:orderType" -Label "orderType" -Body @{
+    key = "orderType"; label = "Emir tipi"; fieldType = "select"; scope = "pool"; category = "classification"; options = $optOrderType
+}
+$fieldInspectionType = Find-OrCreate -Collection "op_fields" -Filter "key:eq:inspectionType" -Label "inspectionType" -Body @{
+    key = "inspectionType"; label = "Muayene tipi"; fieldType = "select"; scope = "pool"; category = "resolution"; options = $optInspectionType
+}
+$fieldAcceptedQty = Find-OrCreate -Collection "op_fields" -Filter "key:eq:acceptedQty" -Label "acceptedQty" -Body @{
+    key = "acceptedQty"; label = "Kabul edilen adet"; fieldType = "number"; scope = "pool"; category = "technical"
+}
+$fieldRejectedQty = Find-OrCreate -Collection "op_fields" -Filter "key:eq:rejectedQty" -Label "rejectedQty" -Body @{
+    key = "rejectedQty"; label = "Red adet"; fieldType = "number"; scope = "pool"; category = "technical"
+}
+$fieldMeasurementSummary = Find-OrCreate -Collection "op_fields" -Filter "key:eq:measurementSummary" -Label "measurementSummary" -Body @{
+    key = "measurementSummary"; label = "Olcum ozeti"; fieldType = "text"; scope = "pool"; category = "resolution"
+}
+$fieldProductionStartNote = Find-OrCreate -Collection "op_fields" -Filter "key:eq:productionStartNote" -Label "productionStartNote" -Body @{
+    key = "productionStartNote"; label = "Uretim notu"; fieldType = "text"; scope = "pool"; category = "technical"
+}
+$fieldProducedQty = Find-OrCreate -Collection "op_fields" -Filter "key:eq:producedQty" -Label "producedQty" -Body @{
+    key = "producedQty"; label = "Uretilen adet"; fieldType = "number"; scope = "pool"; category = "technical"
+}
+$fieldShipmentQty = Find-OrCreate -Collection "op_fields" -Filter "key:eq:shipmentQty" -Label "shipmentQty" -Body @{
+    key = "shipmentQty"; label = "Bu sevk adedi"; fieldType = "number"; scope = "pool"; category = "technical"
+}
+$fieldShippedQty = Find-OrCreate -Collection "op_fields" -Filter "key:eq:shippedQty" -Label "shippedQty" -Body @{
+    key = "shippedQty"; label = "Toplam sevk edilen"; fieldType = "number"; scope = "pool"; category = "technical"
+}
 
 # Relation alanlari — lookup labelField sync (liste + form icin kalici cozum).
 Write-Host "[5b] op_fields relation sync..." -ForegroundColor Yellow
@@ -402,6 +462,9 @@ foreach ($fieldPatch in @(
 $enabledFieldIds = @(
     $fieldCustomerId, $fieldProductGroupId, $fieldProductId, $fieldCustomerOrderRef,
     $fieldQuantity, $fieldPlannedDate, $fieldWorkCenter, $fieldLotSerial,
+    $fieldOrderType, $fieldInspectionType, $fieldAcceptedQty, $fieldRejectedQty,
+    $fieldMeasurementSummary, $fieldProductionStartNote, $fieldProducedQty,
+    $fieldShipmentQty, $fieldShippedQty,
     $fieldQualityResult, $fieldQualityNotes, $fieldStorageLocation, $fieldPackagingOk,
     $fieldWaybillNo, $fieldShipmentNotes,
     $fieldNcrSource, $fieldDefectDescription, $fieldAffectedQty, $fieldContainmentAction,
@@ -440,18 +503,19 @@ $workspaceId = Find-OrCreate -Collection "op_workspaces" -Filter "name:eq:$works
 Write-Host "[8] op_state_flows..." -ForegroundColor Yellow
 $mainFlowName = "$tag - Ana Akis"
 $mainTransitions = @(
-    @{ transitionKey = "plan"; fromStateId = $stNew; toStateId = $stPlanned; label = "Planla"; order = 0 },
-    @{ transitionKey = "start_production"; fromStateId = $stPlanned; toStateId = $stProduction; label = "Uretime al"; order = 1 },
-    @{ transitionKey = "skip_to_production"; fromStateId = $stNew; toStateId = $stProduction; label = "Dogrudan uretime al"; order = 2 },
-    @{ transitionKey = "send_to_quality"; fromStateId = $stProduction; toStateId = $stQuality; label = "Kaliteye gonder"; order = 3 },
-    @{ transitionKey = "hold_quality"; fromStateId = $stQuality; toStateId = $stQualityHold; label = "Uygunsuzluk — bekle"; order = 4 },
-    @{ transitionKey = "resume_from_hold"; fromStateId = $stQualityHold; toStateId = $stQuality; label = "Tekrar kaliteye al"; order = 5 },
-    @{ transitionKey = "approve_quality"; fromStateId = $stQuality; toStateId = $stStorage; label = "Kalite onayi"; order = 6 },
-    @{ transitionKey = "move_to_ship_prep"; fromStateId = $stStorage; toStateId = $stShipPrep; label = "Sevkiyata hazirla"; order = 7 },
-    @{ transitionKey = "ship"; fromStateId = $stShipPrep; toStateId = $stShipped; label = "Sevk et"; order = 8 },
-    @{ transitionKey = "close_order"; fromStateId = $stShipped; toStateId = $stClosed; label = "Kapat"; order = 9 },
-    @{ transitionKey = "cancel"; fromStateId = $stNew; toStateId = $stClosed; label = "Iptal et"; order = 10 },
-    @{ transitionKey = "cancel_planned"; fromStateId = $stPlanned; toStateId = $stClosed; label = "Iptal et"; order = 11 }
+    (New-Transition -Key "plan" -From $stNew -To $stPlanned -Label "Planla" -Order 0 -Required @("productGroupId", "productId", "quantity", "plannedDate", "orderType")),
+    (New-Transition -Key "start_production" -From $stPlanned -To $stProduction -Label "Uretime al" -Order 1 -Required @("workCenter")),
+    (New-Transition -Key "skip_to_production" -From $stNew -To $stProduction -Label "Dogrudan uretime al" -Order 2 -Required @("workCenter")),
+    (New-Transition -Key "send_to_quality" -From $stProduction -To $stQuality -Label "Kaliteye gonder" -Order 3 -Required @("lotSerial")),
+    (New-Transition -Key "hold_quality" -From $stQuality -To $stQualityHold -Label "Uygunsuzluk — bekle" -Order 4 -Required @("qualityResult", "qualityNotes")),
+    (New-Transition -Key "resume_from_hold" -From $stQualityHold -To $stQuality -Label "Tekrar kaliteye al" -Order 5),
+    (New-Transition -Key "approve_quality" -From $stQuality -To $stStorage -Label "Kalite onayi" -Order 6 -Required @("qualityResult", "qualityNotes", "inspectionType")),
+    (New-Transition -Key "move_to_ship_prep" -From $stStorage -To $stShipPrep -Label "Sevkiyata hazirla" -Order 7 -Required @("storageLocation", "packagingOk")),
+    (New-Transition -Key "ship_partial" -From $stShipPrep -To $stShipPrep -Label "Kismi sevk" -Order 8 -Required @("waybillNo", "shipmentQty")),
+    (New-Transition -Key "ship_complete" -From $stShipPrep -To $stShipped -Label "Sevkiyati tamamla" -Order 9),
+    (New-Transition -Key "close_order" -From $stShipped -To $stClosed -Label "Kapat" -Order 10),
+    (New-Transition -Key "cancel" -From $stNew -To $stClosed -Label "Iptal et" -Order 11),
+    (New-Transition -Key "cancel_planned" -From $stPlanned -To $stClosed -Label "Iptal et" -Order 12)
 )
 $mainFlowId = Find-OrCreate -Collection "op_state_flows" -Filter "name:eq:$mainFlowName" -Label "Ana akis" -Body @{
     name = $mainFlowName; workspaceId = $workspaceId; initialStateId = $stNew
@@ -509,42 +573,46 @@ foreach ($pair in @(
 # --- 9. Forms ---
 Write-Host "[9] op_forms..." -ForegroundColor Yellow
 $formOrderName = "$tag - Yeni emir"
+$helpMdPath = Join-Path $scriptDir "../seed/odak_uretim_yeni_emir_form_help.md"
+$helpMarkdown = ""
+if (Test-Path $helpMdPath) {
+    $helpMarkdown = (Get-Content $helpMdPath -Raw -Encoding UTF8).Trim()
+}
+$formOrderLayout = @{
+    sections = @(
+        @{
+            key = "general"; title = "Genel"
+            fields = @("title", "description", "typeId", "priorityId", "orderType", "customerId", "customerOrderRef")
+        }
+    )
+}
+if ($helpMarkdown) {
+    $formOrderLayout.helpMarkdown = $helpMarkdown
+}
 $formOrderId = Find-OrCreate -Collection "op_forms" -Filter "name:eq:$formOrderName" -Label "Form emir" -Body @{
     name = $formOrderName; workspaceId = $workspaceId; defaultTypeId = $typeOrderId
     defaultStateFlowId = $mainFlowId; defaultStateId = $stNew; isDefault = $true
-    layout = @{
-        sections = @(
-            @{
-                key = "general"; title = "Genel"; fields = @("title", "description", "typeId", "priorityId", "customerId", "customerOrderRef")
-            },
-            @{
-                key = "product"; title = "Urun"; fields = @("productGroupId", "productId", "quantity", "plannedDate")
-            }
-        )
-    }
+    layout = $formOrderLayout
     fieldBehaviors = @{
         title = @{ visible = $true; required = $true }
         typeId = @{ visible = $true; required = $true }
         priorityId = @{ visible = $true; required = $true }
-        customerId = @{ visible = $true }
-        productGroupId = @{ visible = $true }
-        productId = @{ visible = $true }
-        quantity = @{ visible = $true }
+        orderType = @{ visible = $true; required = $true; defaultValue = "seri" }
+        customerId = @{ visible = $true; required = $true }
+        customerOrderRef = @{ visible = $true; required = $true }
     }
 }
 Sync-Record -Collection "op_forms" -Id $formOrderId -Label "Form emir sync" -Body @{
     name = $formOrderName; workspaceId = $workspaceId; defaultTypeId = $typeOrderId
     defaultStateFlowId = $mainFlowId; defaultStateId = $stNew; isDefault = $true
-    layout = @{
-        sections = @(
-            @{ key = "general"; title = "Genel"; fields = @("title", "description", "typeId", "priorityId", "customerId", "customerOrderRef") },
-            @{ key = "product"; title = "Urun"; fields = @("productGroupId", "productId", "quantity", "plannedDate") }
-        )
-    }
+    layout = $formOrderLayout
     fieldBehaviors = @{
         title = @{ visible = $true; required = $true }
         typeId = @{ visible = $true; required = $true }
         priorityId = @{ visible = $true; required = $true }
+        orderType = @{ visible = $true; required = $true; defaultValue = "seri" }
+        customerId = @{ visible = $true; required = $true }
+        customerOrderRef = @{ visible = $true; required = $true }
     }
 }
 
@@ -602,7 +670,9 @@ $mainBoardListColumns = @(
     @{ key = "typeId"; label = "Tip"; sortable = $true; filterable = $true },
     @{ key = "customerId"; label = "Musteri"; sortable = $false; filterable = $true },
     @{ key = "productId"; label = "Urun / parca"; sortable = $false; filterable = $true },
+    @{ key = "orderType"; label = "Emir tipi"; sortable = $true; filterable = $true },
     @{ key = "quantity"; label = "Miktar"; sortable = $true; filterable = $true },
+    @{ key = "shippedQty"; label = "Sevk edilen"; sortable = $true; filterable = $false },
     @{ key = "plannedDate"; label = "Planlanan bitis"; sortable = $true; filterable = $true; format = "date" },
     @{ key = "assignee"; label = "Atanan"; sortable = $false; filterable = $true }
 )
@@ -613,7 +683,7 @@ $mainBoardProdBody = @{
     defaultStateFlowId = $mainFlowId
     defaultFormId = $formOrderId
     isDefault = $true
-    visibleFields = @("key", "title", "typeId", "priorityId", "assignee", "stateId", "customerId", "productId", "quantity", "plannedDate")
+    visibleFields = @("key", "title", "typeId", "priorityId", "assignee", "stateId", "customerId", "productId", "orderType", "quantity", "shippedQty", "plannedDate")
     config = @{
         columns = $mainBoardScopeColumns
         listColumns = $mainBoardListColumns
@@ -633,11 +703,13 @@ $boardQualityId = Find-OrCreate -Collection "op_boards" -Filter "name:eq:$boardQ
 }
 
 $boardShipName = "$tag - Depo sevkiyat"
-$boardShipId = Find-OrCreate -Collection "op_boards" -Filter "name:eq:$boardShipName" -Label "Depo sevkiyat" -Body @{
+$boardShipBody = @{
     name = $boardShipName; workspaceId = $workspaceId; viewType = "list"
     defaultStateFlowId = $mainFlowId; defaultFormId = $formOrderId; isDefault = $false
-    visibleFields = @("key", "title", "stateId", "storageLocation", "waybillNo", "packagingOk")
+    visibleFields = @("key", "title", "stateId", "storageLocation", "waybillNo", "shippedQty", "shipmentQty", "packagingOk")
 }
+$boardShipId = Find-OrCreate -Collection "op_boards" -Filter "name:eq:$boardShipName" -Label "Depo sevkiyat" -Body $boardShipBody
+Sync-Record -Collection "op_boards" -Id $boardShipId -Label "Depo sevkiyat sync" -Body $boardShipBody
 
 # --- 11. Profile ---
 Write-Host "[11] op_profiles..." -ForegroundColor Yellow
@@ -656,21 +728,68 @@ $profileId = Find-OrCreate -Collection "op_profiles" -Filter "name:eq:$profileNa
     actions = @(
         @{ transitionKey = "plan"; order = 0; label = "Planla" },
         @{ transitionKey = "start_production"; order = 1; label = "Uretime al" },
-        @{ transitionKey = "send_to_quality"; order = 2; label = "Kaliteye gonder" },
-        @{ transitionKey = "approve_quality"; order = 3; label = "Kalite onayi" },
-        @{ transitionKey = "move_to_ship_prep"; order = 4; label = "Sevkiyata hazirla" },
-        @{ transitionKey = "ship"; order = 5; label = "Sevk et" },
-        @{ transitionKey = "close_order"; order = 6; label = "Kapat" }
+        @{ transitionKey = "skip_to_production"; order = 2; label = "Dogrudan uretime al" },
+        @{ transitionKey = "send_to_quality"; order = 3; label = "Kaliteye gonder" },
+        @{ transitionKey = "hold_quality"; order = 4; label = "Uygunsuzluk — bekle" },
+        @{ transitionKey = "resume_from_hold"; order = 5; label = "Tekrar kaliteye al" },
+        @{ transitionKey = "approve_quality"; order = 6; label = "Kalite onayi" },
+        @{ transitionKey = "move_to_ship_prep"; order = 7; label = "Sevkiyata hazirla" },
+        @{ transitionKey = "ship_partial"; order = 8; label = "Kismi sevk" },
+        @{ transitionKey = "ship_complete"; order = 9; label = "Sevkiyati tamamla" },
+        @{ transitionKey = "close_order"; order = 10; label = "Kapat" }
     )
     header = @{ showBreadcrumb = $true; showKey = $true }
     sidebar = @{ showSla = $false; showWatchers = $true }
     panels = @{ timeline = @{ enabled = $true }; comments = @{ enabled = $true } }
     layout = @{
         sections = @(
-            @{ key = "summary"; title = "Ozet"; fields = @("title", "description", "typeId", "priorityId", "assignee", "key") },
-            @{ key = "order"; title = "Siparis / urun"; fields = @("customerId", "customerOrderRef", "productGroupId", "productId", "quantity", "plannedDate", "workCenter", "lotSerial") },
-            @{ key = "quality"; title = "Kalite"; fields = @("qualityResult", "qualityNotes", "ncrSource", "defectDescription", "disposition", "dispositionReason") },
-            @{ key = "logistics"; title = "Depo / sevkiyat"; fields = @("storageLocation", "packagingOk", "waybillNo", "shipmentNotes") },
+            @{ key = "summary"; title = "Ozet"; fields = @("title", "description", "typeId", "priorityId", "orderType", "assignee", "key") },
+            @{ key = "order"; title = "Siparis / urun"; fields = @("customerId", "customerOrderRef", "productGroupId", "productId", "quantity", "plannedDate") },
+            @{ key = "production"; title = "Uretim"; fields = @("workCenter", "productionStartNote", "lotSerial", "producedQty") },
+            @{ key = "quality"; title = "Kalite"; fields = @("qualityResult", "qualityNotes", "inspectionType", "acceptedQty", "rejectedQty", "measurementSummary") },
+            @{ key = "logistics"; title = "Depo / sevkiyat"; fields = @("storageLocation", "packagingOk", "waybillNo", "shipmentQty", "shippedQty", "shipmentNotes") },
+            @{ key = "ncr"; title = "NCR (referans)"; fields = @("ncrSource", "defectDescription", "disposition", "dispositionReason") },
+            @{ key = "capa"; title = "CAPA"; fields = @("rootCause", "correctiveAction", "preventiveAction", "effectivenessCheck", "capaTargetDate") }
+        )
+    }
+}
+Sync-Record -Collection "op_profiles" -Id $profileId -Label "Profile sync" -Body @{
+    name = $profileName; workspaceId = $workspaceId; defaultTypeId = $typeOrderId; isDefault = $true
+    fieldBehaviors = @{
+        title = @{ visible = $true; required = $true }
+        typeId = @{ visible = $true; readonly = $true }
+        priorityId = @{ visible = $true }
+        orderType = @{ visible = $true }
+        customerId = @{ visible = $true }
+        productId = @{ visible = $true }
+        shippedQty = @{ visible = $true; readonly = $true }
+        qualityResult = @{ visible = $true }
+        disposition = @{ visible = $true }
+    }
+    actions = @(
+        @{ transitionKey = "plan"; order = 0; label = "Planla" },
+        @{ transitionKey = "start_production"; order = 1; label = "Uretime al" },
+        @{ transitionKey = "skip_to_production"; order = 2; label = "Dogrudan uretime al" },
+        @{ transitionKey = "send_to_quality"; order = 3; label = "Kaliteye gonder" },
+        @{ transitionKey = "hold_quality"; order = 4; label = "Uygunsuzluk — bekle" },
+        @{ transitionKey = "resume_from_hold"; order = 5; label = "Tekrar kaliteye al" },
+        @{ transitionKey = "approve_quality"; order = 6; label = "Kalite onayi" },
+        @{ transitionKey = "move_to_ship_prep"; order = 7; label = "Sevkiyata hazirla" },
+        @{ transitionKey = "ship_partial"; order = 8; label = "Kismi sevk" },
+        @{ transitionKey = "ship_complete"; order = 9; label = "Sevkiyati tamamla" },
+        @{ transitionKey = "close_order"; order = 10; label = "Kapat" }
+    )
+    header = @{ showBreadcrumb = $true; showKey = $true }
+    sidebar = @{ showSla = $false; showWatchers = $true }
+    panels = @{ timeline = @{ enabled = $true }; comments = @{ enabled = $true } }
+    layout = @{
+        sections = @(
+            @{ key = "summary"; title = "Ozet"; fields = @("title", "description", "typeId", "priorityId", "orderType", "assignee", "key") },
+            @{ key = "order"; title = "Siparis / urun"; fields = @("customerId", "customerOrderRef", "productGroupId", "productId", "quantity", "plannedDate") },
+            @{ key = "production"; title = "Uretim"; fields = @("workCenter", "productionStartNote", "lotSerial", "producedQty") },
+            @{ key = "quality"; title = "Kalite"; fields = @("qualityResult", "qualityNotes", "inspectionType", "acceptedQty", "rejectedQty", "measurementSummary") },
+            @{ key = "logistics"; title = "Depo / sevkiyat"; fields = @("storageLocation", "packagingOk", "waybillNo", "shipmentQty", "shippedQty", "shipmentNotes") },
+            @{ key = "ncr"; title = "NCR (referans)"; fields = @("ncrSource", "defectDescription", "disposition", "dispositionReason") },
             @{ key = "capa"; title = "CAPA"; fields = @("rootCause", "correctiveAction", "preventiveAction", "effectivenessCheck", "capaTargetDate") }
         )
     }
@@ -694,6 +813,46 @@ Find-OrCreate -Collection "op_rules" -Filter "name:eq:$tag - CAPA etkinlik zorun
     conditions = @{ field = "effectivenessCheck"; cmp = "empty" }
     errorMessage = "CAPA kapatmadan once etkinlik dogrulamasi girilmelidir."
     isActive = $true; priority = 100
+} | Out-Null
+
+Find-OrCreate -Collection "op_rules" -Filter "name:eq:$tag - Create musteri zorunlu" -Label "Create customer rule" -Body @{
+    name = "$tag - Create musteri zorunlu"; workspaceId = $workspaceId; ruleType = "validation"
+    trigger = "WorkItemCreated"; typeId = $typeOrderId; applyMode = "pre"
+    conditions = @{ field = "fields.customerId"; cmp = "empty" }
+    errorMessage = "Uretim emri icin musteri secilmelidir."
+    isActive = $true; priority = 90
+} | Out-Null
+
+Find-OrCreate -Collection "op_rules" -Filter "name:eq:$tag - Create siparis no zorunlu" -Label "Create PO rule" -Body @{
+    name = "$tag - Create siparis no zorunlu"; workspaceId = $workspaceId; ruleType = "validation"
+    trigger = "WorkItemCreated"; typeId = $typeOrderId; applyMode = "pre"
+    conditions = @{ field = "fields.customerOrderRef"; cmp = "empty" }
+    errorMessage = "Musteri siparis numarasi zorunludur."
+    isActive = $true; priority = 91
+} | Out-Null
+
+Find-OrCreate -Collection "op_rules" -Filter "name:eq:$tag - Sartli kabul acceptedQty" -Label "Sartli acceptedQty" -Body @{
+    name = "$tag - Sartli kabul acceptedQty"; workspaceId = $workspaceId; ruleType = "validation"
+    trigger = "WorkItemTransition"; transitionKey = "approve_quality"; typeId = $typeOrderId; applyMode = "pre"
+    conditions = @{
+        op = "and"
+        items = @(@{ field = "fields.qualityResult"; cmp = "eq"; value = "sartli" })
+    }
+    validation = @{ field = "fields.acceptedQty"; cmp = "notempty" }
+    errorMessage = "Sartli kabulde kabul edilen adet girilmelidir."
+    isActive = $true; priority = 95
+} | Out-Null
+
+Find-OrCreate -Collection "op_rules" -Filter "name:eq:$tag - Kalite onay uygunsuz engel" -Label "Approve block uygunsuz" -Body @{
+    name = "$tag - Kalite onay uygunsuz engel"; workspaceId = $workspaceId; ruleType = "validation"
+    trigger = "WorkItemTransition"; transitionKey = "approve_quality"; typeId = $typeOrderId; applyMode = "pre"
+    conditions = @{
+        op = "and"
+        items = @(@{ field = "fields.qualityResult"; cmp = "eq"; value = "uygunsuz" })
+    }
+    validation = @{ field = "fields.qualityResult"; cmp = "ne"; value = "uygunsuz" }
+    errorMessage = "Uygunsuz kayit icin Kalite onayi yerine Uygunsuzluk — bekle gecisini kullanin."
+    isActive = $true; priority = 96
 } | Out-Null
 
 # --- 13. Dashboard ---
@@ -825,7 +984,12 @@ if ($SmokeTest -or $SeedDemo) {
             typeId      = $typeOrderId
             title       = "$tag smoke $(Get-Date -Format 'HHmmss')"
             boardId     = $boardProdId
-            fields      = @{ priorityId = $prioNormalId }
+            fields      = @{
+                priorityId       = $prioNormalId
+                orderType        = "seri"
+                customerId       = $customerId
+                customerOrderRef = "PO-SMOKE-$(Get-Date -Format 'yyyyMMdd')"
+            }
         } | ConvertTo-Json -Depth 6 -Compress
         $created = Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items" -Method POST -Body $createBody @moParams
         Write-Host "  OK: smoke create -> $($created.workItem.key)" -ForegroundColor Green
@@ -833,7 +997,7 @@ if ($SmokeTest -or $SeedDemo) {
     }
 
     if ($SeedDemo) {
-        # ODF-0001 uretim emri (planlandi)
+        # ODF-0001 uretim emri
         $body1 = @{
             workspaceId = $workspaceId
             typeId      = $typeOrderId
@@ -841,21 +1005,27 @@ if ($SmokeTest -or $SeedDemo) {
             boardId     = $boardProdId
             fields      = @{
                 priorityId       = $prioNormalId
+                orderType        = "seri"
                 customerId       = $customerId
                 customerOrderRef = "PO-2026-0142"
-                productGroupId   = $productGroupId
-                productId        = $productId
-                quantity         = 10
-                plannedDate      = (Get-Date).AddDays(14).ToUniversalTime().ToString("o")
             }
         } | ConvertTo-Json -Depth 8 -Compress
         $wi1 = Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items" -Method POST -Body $body1 @moParams
         $wi1Id = $wi1.workItem.id
         Write-Host "  OK: demo emir -> $($wi1.workItem.key)" -ForegroundColor Green
 
-        Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items/$wi1Id/transitions/plan" -Method POST -Body "{}" @moParams | Out-Null
-        Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items/$wi1Id/transitions/start_production" -Method POST -Body "{}" @moParams | Out-Null
-        Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items/$wi1Id/transitions/send_to_quality" -Method POST -Body (@{ fields = @{ workCenter = "Otomatik layup hattı"; lotSerial = "LOT-2026-0421" } } | ConvertTo-Json -Compress) @moParams | Out-Null
+        $planBody = @{
+            fields = @{
+                productGroupId = $productGroupId
+                productId      = $productId
+                quantity       = 10
+                plannedDate    = (Get-Date).AddDays(14).ToUniversalTime().ToString("o")
+                orderType      = "seri"
+            }
+        } | ConvertTo-Json -Depth 6 -Compress
+        Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items/$wi1Id/transitions/plan" -Method POST -Body $planBody @moParams | Out-Null
+        Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items/$wi1Id/transitions/start_production" -Method POST -Body (@{ fields = @{ workCenter = "Otomatik layup hatti" } } | ConvertTo-Json -Compress) @moParams | Out-Null
+        Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items/$wi1Id/transitions/send_to_quality" -Method POST -Body (@{ fields = @{ lotSerial = "LOT-2026-0421" } } | ConvertTo-Json -Compress) @moParams | Out-Null
         Write-Host "  OK: demo emir -> kalite kontrol" -ForegroundColor Green
 
         # NCR
@@ -904,26 +1074,89 @@ if ($SmokeTest -or $SeedDemo) {
             boardId     = $boardProdId
             fields      = @{
                 priorityId       = $prioNormalId
+                orderType        = "seri"
+                customerId       = $customerId
                 customerOrderRef = "PO-2026-0155"
-                quantity         = 5
             }
         } | ConvertTo-Json -Depth 6 -Compress
         $wi2 = Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items" -Method POST -Body $body2 @moParams
         $wi2Id = $wi2.workItem.id
-        foreach ($tk in @("plan", "start_production", "send_to_quality", "approve_quality")) {
+        $plan2 = @{
+            fields = @{
+                productGroupId = $productGroupId
+                productId      = $productId
+                quantity       = 5
+                plannedDate    = (Get-Date).AddDays(10).ToUniversalTime().ToString("o")
+                orderType      = "seri"
+            }
+        } | ConvertTo-Json -Depth 6 -Compress
+        Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items/$wi2Id/transitions/plan" -Method POST -Body $plan2 @moParams | Out-Null
+        foreach ($tk in @("start_production", "send_to_quality", "approve_quality")) {
             $extra = @{}
-            if ($tk -eq "send_to_quality") { $extra = @{ fields = @{ lotSerial = "LOT-2026-0430"; workCenter = "Pres hattı" } } }
-            if ($tk -eq "approve_quality") { $extra = @{ fields = @{ qualityResult = "uygun"; qualityNotes = "Final muayene OK" } } }
+            if ($tk -eq "start_production") { $extra = @{ fields = @{ workCenter = "Pres hatti" } } }
+            if ($tk -eq "send_to_quality") { $extra = @{ fields = @{ lotSerial = "LOT-2026-0430" } } }
+            if ($tk -eq "approve_quality") {
+                $extra = @{
+                    fields = @{
+                        qualityResult     = "uygun"
+                        qualityNotes      = "Final muayene OK"
+                        inspectionType    = "kombine"
+                        acceptedQty       = 5
+                    }
+                }
+            }
             $pb = if ($extra.Count -gt 0) { $extra | ConvertTo-Json -Compress } else { "{}" }
             Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items/$wi2Id/transitions/$tk" -Method POST -Body $pb @moParams | Out-Null
         }
         Write-Host "  OK: demo emir 2 -> depoda ($($wi2.workItem.key))" -ForegroundColor Green
+
+        # ODF referans — tam kapali emir (profil detay dogrulama)
+        $refTitle = "[REFERANS] Tamamlanmis uretim emri — profil kontrolu"
+        $refPo = "PO-REF-KAPALI-001"
+        $body3 = @{
+            workspaceId = $workspaceId
+            typeId      = $typeOrderId
+            title       = $refTitle
+            boardId     = $boardProdId
+            fields      = @{
+                priorityId       = $prioNormalId
+                orderType        = "seri"
+                customerId       = $customerId
+                customerOrderRef = $refPo
+                description      = "Profil detay referans — tum asama alanlari dolu."
+            }
+        } | ConvertTo-Json -Depth 8 -Compress
+        $wi3 = Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items" -Method POST -Body $body3 @moParams
+        $wi3Id = $wi3.workItem.id
+        $refQty = 8
+        Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items/$wi3Id/transitions/plan" -Method POST -Body (@{
+            fields = @{
+                productGroupId = $productGroupId; productId = $productId; quantity = $refQty
+                plannedDate = (Get-Date).AddDays(-21).ToUniversalTime().ToString("o"); orderType = "seri"
+            }
+        } | ConvertTo-Json -Compress) @moParams | Out-Null
+        foreach ($step in @(
+            @{ tk = "start_production"; f = @{ workCenter = "Otomatik layup hatti"; productionStartNote = "Demo referans uretim" } },
+            @{ tk = "send_to_quality"; f = @{ lotSerial = "LOT-REF-2026-001"; producedQty = $refQty } },
+            @{ tk = "approve_quality"; f = @{
+                qualityResult = "uygun"; qualityNotes = "Final OK"; inspectionType = "kombine"
+                acceptedQty = $refQty; rejectedQty = 0; measurementSummary = "Tolerans icinde"
+            } },
+            @{ tk = "move_to_ship_prep"; f = @{ storageLocation = "DEPO-A / Raf 12"; packagingOk = $true } },
+            @{ tk = "ship_partial"; f = @{ waybillNo = "IRS-REF-2026-8842"; shipmentQty = $refQty; shipmentNotes = "Tam sevkiyat" } }
+        )) {
+            Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items/$wi3Id/transitions/$($step.tk)" -Method POST -Body (@{ fields = $step.f } | ConvertTo-Json -Depth 8 -Compress) @moParams | Out-Null
+        }
+        Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items/$wi3Id/transitions/ship_complete" -Method POST -Body "{}" @moParams | Out-Null
+        Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items/$wi3Id/transitions/close_order" -Method POST -Body "{}" @moParams | Out-Null
+        Write-Host "  OK: referans kapali emir -> $($wi3.workItem.key) ($refPo)" -ForegroundColor Green
 
         $summary.demo = @{
             order1 = @{ id = $wi1Id; key = $wi1.workItem.key }
             ncr    = @{ id = $ncrId; key = $ncr.workItem.key }
             capa   = @{ id = $capa.workItem.id; key = $capa.workItem.key }
             order2 = @{ id = $wi2Id; key = $wi2.workItem.key }
+            closedReference = @{ id = $wi3Id; key = $wi3.workItem.key; customerOrderRef = $refPo; title = $refTitle }
         }
     }
 

@@ -9,6 +9,8 @@ const props = defineProps<{
   context: OcFormRuntimeContext;
   readonly?: boolean;
   preview?: boolean;
+  /** Salt okunur profil görünümünde değeri olmayan alan/bölümleri gizle. */
+  hideEmptySections?: boolean;
   /** Alan anahtarı → hata mesajı (submit doğrulaması sonrası). */
   fieldErrors?: Record<string, string>;
   /** Grup id → ad (readonly grup alanlarında ad göstermek için). */
@@ -30,17 +32,6 @@ const { selectItemsForField, isLoadingField, isPersonField, pickerForField, isDa
   { readonly: readonlyRef }
 );
 
-const sections = computed<OcFormLayoutSectionRuntime[]>(() => {
-  if (props.context.layout?.sections?.length) {
-    return props.context.layout.sections.filter((s) => s.fields.length > 0);
-  }
-  const keys = Object.keys(props.context.fields);
-  return keys.length ? [{ key: 'main', title: null, cols: 12, fields: keys }] : [];
-});
-
-const formHeading = computed(() => props.context.layout?.formHeading?.trim() ?? '');
-const formIntro = computed(() => props.context.layout?.formIntro?.trim() ?? '');
-
 function behaviorFor(key: string) {
   const b = props.context.fieldBehaviors[key];
   return {
@@ -51,6 +42,42 @@ function behaviorFor(key: string) {
     masked: b?.masked === true,
   };
 }
+
+function isFieldValueEmpty(value: unknown): boolean {
+  if (value == null) return true;
+  if (typeof value === 'string') return value.trim().length === 0;
+  if (Array.isArray(value)) return value.length === 0;
+  return false;
+}
+
+function fieldHasReadonlyContent(fieldKey: string): boolean {
+  if (!behaviorFor(fieldKey).visible) return false;
+  const display = props.fieldDisplays?.[fieldKey];
+  if (display != null && String(display).trim().length > 0) return true;
+  return !isFieldValueEmpty(model.value[fieldKey]);
+}
+
+const sections = computed<OcFormLayoutSectionRuntime[]>(() => {
+  let base: OcFormLayoutSectionRuntime[];
+  if (props.context.layout?.sections?.length) {
+    base = props.context.layout.sections.filter((s) => s.fields.length > 0);
+  } else {
+    const keys = Object.keys(props.context.fields);
+    base = keys.length ? [{ key: 'main', title: null, cols: 12, fields: keys }] : [];
+  }
+
+  if (!props.hideEmptySections || !props.readonly) return base;
+
+  return base
+    .map((section) => ({
+      ...section,
+      fields: section.fields.filter((fieldKey) => fieldHasReadonlyContent(fieldKey)),
+    }))
+    .filter((section) => section.fields.length > 0);
+});
+
+const formHeading = computed(() => props.context.layout?.formHeading?.trim() ?? '');
+const formIntro = computed(() => props.context.layout?.formIntro?.trim() ?? '');
 
 function fieldMeta(key: string) {
   return props.context.fields[key];

@@ -119,15 +119,14 @@ async function loadForm() {
       await store.loadWorkspaces();
     }
     resolvedFormId.value = await resolveFormId();
-    const [ctx, poolFields] = await Promise.all([
-      ocGetFormCreateContext(ws, { formId: resolvedFormId.value }),
-      ocListPoolFieldsForWorkspace(ws),
-    ]);
+    const ctx = await ocGetFormCreateContext(ws, { formId: resolvedFormId.value });
     if (ctx.permissions?.canEdit === false) {
       errorLocal.value = t('operationCore.create.noPermission');
       formContext.value = null;
       return;
     }
+    const poolFields =
+      ctx.poolFields?.length ? ctx.poolFields : await ocListPoolFieldsForWorkspace(ws);
     formContext.value = enrichFormRuntimeFields(ctx, { poolFields, translate: t });
     formModel.value = initialFormModelFromContext(ctx);
     validationAttempted.value = false;

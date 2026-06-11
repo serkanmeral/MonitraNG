@@ -134,11 +134,23 @@ const useReadonlyDisplay = computed(
     !isRichTextWidget.value &&
     // tags HARİÇ: tags readonly'de de OcTagSelector ile renkli chip gösterir (düz metin değil).
     (isGroupField.value ||
-      ((isSelectWidget.value || isPersonsWidget.value) && hasFieldDisplay.value))
+      ((isSelectWidget.value || isPersonsWidget.value) && hasFieldDisplay.value) ||
+      widget.value === 'date' ||
+      widget.value === 'datetime')
 );
-const readonlyDisplayText = computed(() =>
-  isGroupField.value ? groupReadonlyText.value : String(props.fieldDisplay ?? '').trim() || '—'
-);
+const readonlyDisplayText = computed(() => {
+  if (isGroupField.value) return groupReadonlyText.value;
+  if (widget.value === 'date' || widget.value === 'datetime') {
+    const raw = model.value;
+    if (raw == null || raw === '') return '—';
+    const d = new Date(String(raw));
+    if (Number.isNaN(d.getTime())) return String(raw);
+    return widget.value === 'date'
+      ? d.toLocaleDateString('tr-TR')
+      : d.toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' });
+  }
+  return String(props.fieldDisplay ?? '').trim() || '—';
+});
 
 const selectMultiple = computed(
   () =>
