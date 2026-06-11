@@ -46,6 +46,8 @@ export const useOperationCoreStore = defineStore('operationCore', {
     listTotal: 0,
     listLoading: false,
     listError: null as string | null,
+    /** Board geçişinde geciken API yanıtlarının state'e yazılmasını engeller. */
+    boardDataEpoch: 0,
   }),
 
   getters: {
@@ -127,6 +129,7 @@ export const useOperationCoreStore = defineStore('operationCore', {
     },
 
     clearBoardState() {
+      this.boardDataEpoch += 1;
       this.activeBoardId = null;
       this.boardContext = null;
       this.columnItems = {};
@@ -147,7 +150,9 @@ export const useOperationCoreStore = defineStore('operationCore', {
       }
 
       const switchingBoard = this.boardContext?.boardId !== boardId;
-      this.activeBoardId = boardId;
+      const requestBoardId = boardId;
+      const epoch = ++this.boardDataEpoch;
+      this.activeBoardId = requestBoardId;
       this.loadingBoardContext = true;
       this.boardError = null;
 
@@ -167,27 +172,34 @@ export const useOperationCoreStore = defineStore('operationCore', {
       this.listError = null;
 
       try {
-        const ctx = await ocGetBoardContext(boardId);
+        const ctx = await ocGetBoardContext(requestBoardId);
+        if (this.boardDataEpoch !== epoch || this.activeBoardId !== requestBoardId) return;
         this.boardContext = ctx;
         // Liste görünümü server-side sayfalama kullanır (kolonları toplu yüklemez); kanban kolon sorgularıyla çalışır.
         const isList = (ctx.viewType ?? 'list') !== 'kanban';
         if (!isList) {
-          await this.loadAllColumns(ctx.columns);
+          await this.loadAllColumns(ctx.columns, epoch, requestBoardId);
         }
       } catch (e: unknown) {
+        if (this.boardDataEpoch !== epoch || this.activeBoardId !== requestBoardId) return;
         this.boardContext = null;
         this.boardError = e instanceof Error ? e.message : String(e);
       } finally {
-        this.loadingBoardContext = false;
+        if (this.boardDataEpoch === epoch && this.activeBoardId === requestBoardId) {
+          this.loadingBoardContext = false;
+        }
       }
     },
 
-    async loadBoardListPage(request: OcBoardListRequest) {
-      if (!this.activeBoardId) return;
+    async loadBoardListPage(request: OcBoardListRequest, expectedBoardId?: string) {
+      const targetBoardId = (expectedBoardId ?? this.activeBoardId)?.trim();
+      if (!targetBoardId) return;
+      const epoch = this.boardDataEpoch;
       this.listLoading = true;
       this.listError = null;
       try {
-        const res = await ocGetBoardListPage(this.activeBoardId, request);
+        const res = await ocGetBoardListPage(targetBoardId, request);
+        if (this.boardDataEpoch !== epoch || this.activeBoardId !== targetBoardId) return;
         this.listItems = res.items;
         this.listTotal = res.total;
         if (res.people && Object.keys(res.people).length > 0) {
@@ -197,15 +209,22 @@ export const useOperationCoreStore = defineStore('operationCore', {
           this.boardGroups = { ...this.boardGroups, ...res.groups };
         }
       } catch (e: unknown) {
+        if (this.boardDataEpoch !== epoch || this.activeBoardId !== targetBoardId) return;
         this.listItems = [];
         this.listTotal = 0;
         this.listError = e instanceof Error ? e.message : String(e);
       } finally {
-        this.listLoading = false;
+        if (this.boardDataEpoch === epoch && this.activeBoardId === targetBoardId) {
+          this.listLoading = false;
+        }
       }
     },
 
-    async loadColumn(column: OcBoardColumn) {
+    async loadColumn(column: OcBoardColumn, epoch?: number, expectedBoardId?: string) {
+      const boardId = expectedBoardId ?? this.activeBoardId;
+      const generation = epoch ?? this.boardDataEpoch;
+      if (!boardId) return;
+
       const stateId = column.stateId;
       this.columnLoading = { ...this.columnLoading, [stateId]: true };
       this.columnItems = {
@@ -215,6 +234,7 @@ export const useOperationCoreStore = defineStore('operationCore', {
 
       try {
         const res = await ocExecuteQuery(column.queryKey, ocBuildColumnQueryRequest(column));
+        if (this.boardDataEpoch !== generation || this.activeBoardId !== boardId) return;
         this.columnItems = {
           ...this.columnItems,
           [stateId]: { items: res.items, total: res.total, error: null },
@@ -226,6 +246,7 @@ export const useOperationCoreStore = defineStore('operationCore', {
           this.boardGroups = { ...this.boardGroups, ...res.groups };
         }
       } catch (e: unknown) {
+        if (this.boardDataEpoch !== generation || this.activeBoardId !== boardId) return;
         this.columnItems = {
           ...this.columnItems,
           [stateId]: {
@@ -235,7 +256,9 @@ export const useOperationCoreStore = defineStore('operationCore', {
           },
         };
       } finally {
-        this.columnLoading = { ...this.columnLoading, [stateId]: false };
+        if (this.boardDataEpoch === generation && this.activeBoardId === boardId) {
+          this.columnLoading = { ...this.columnLoading, [stateId]: false };
+        }
       }
     },
 
@@ -270,11 +293,11 @@ export const useOperationCoreStore = defineStore('operationCore', {
       }
     },
 
-    async loadAllColumns(columns: OcBoardColumn[]) {
+    async loadAllColumns(columns: OcBoardColumn[], epoch?: number, expectedBoardId?: string) {
       const concurrency = 4;
       for (let i = 0; i < columns.length; i += concurrency) {
         const batch = columns.slice(i, i + concurrency);
-        await Promise.all(batch.map((col) => this.loadColumn(col)));
+        await Promise.all(batch.map((col) => this.loadColumn(col, epoch, expectedBoardId)));
       }
     },
 

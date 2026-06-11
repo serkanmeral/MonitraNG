@@ -113,7 +113,10 @@ const boardContextMatches = computed(
 
 const boardListDataPending = computed(() => {
   if (!boardContextMatches.value || !showList.value) return false;
-  return store.listLoading && store.listItems.length === 0 && !store.listError;
+  return (
+    listBootstrapPending.value
+    || (store.listLoading && store.listItems.length === 0 && !store.listError)
+  );
 });
 
 const showBoardLoadingPanel = computed(() => {
@@ -571,6 +574,21 @@ const itemsPerPageOptions = [
 
 let lastSignature = '';
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
+/** loadPage tamamlanana kadar v-data-table mount'unun eski listeyi tetiklemesini engeller. */
+const listBootstrapPending = ref(false);
+
+function resetListUiState() {
+  page.value = 1;
+  itemsPerPage.value = 25;
+  sortBy.value = [];
+  searchInput.value = '';
+  activeFilters.value = [];
+  lastSignature = '';
+  if (searchTimer) {
+    clearTimeout(searchTimer);
+    searchTimer = null;
+  }
+}
 
 function buildListRequest(): OcBoardListRequest {
   const primary = sortBy.value[0];
@@ -587,15 +605,17 @@ function buildListRequest(): OcBoardListRequest {
 }
 
 async function fetchList(force = false) {
-  if (!store.boardContext) return;
+  const id = boardId.value;
+  if (!id || !store.boardContext || store.boardContext.boardId !== id) return;
   const req = buildListRequest();
   const sig = JSON.stringify(req);
   if (!force && sig === lastSignature) return;
   lastSignature = sig;
-  await store.loadBoardListPage(req);
+  await store.loadBoardListPage(req, id);
 }
 
 function onListOptions(opts: { page: number; itemsPerPage: number; sortBy: { key: string; order: 'asc' | 'desc' }[] }) {
+  if (listBootstrapPending.value || !boardContextMatches.value) return;
   page.value = opts.page;
   itemsPerPage.value = opts.itemsPerPage > 0 ? opts.itemsPerPage : 25;
   sortBy.value = Array.isArray(opts.sortBy) ? opts.sortBy : [];
@@ -813,15 +833,21 @@ async function loadPage() {
     store.clearBoardState();
     return;
   }
+  resetListUiState();
+  listBootstrapPending.value = true;
   if (!store.workspaces.length) {
     await store.loadWorkspaces();
   }
+  if (boardId.value !== id) return;
   await store.loadBoard(id);
+  if (boardId.value !== id) return;
   applyDefaultDisplayMode();
   // Liste görünümü server-side ilk sayfayı çeker (kanban kolon sorgularıyla yüklenir).
-  lastSignature = '';
   if (showList.value) {
-    void fetchList(true);
+    await fetchList(true);
+  }
+  if (boardId.value === id) {
+    listBootstrapPending.value = false;
   }
 }
 
@@ -842,7 +868,11 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  store.clearBoardState();
+  listBootstrapPending.value = false;
+  // Yeni board paneli mount olduysa paylaşımlı store'u silme (geç yanıt + flash önlemi).
+  if (store.activeBoardId === boardId.value) {
+    store.clearBoardState();
+  }
 });
 </script>
 
