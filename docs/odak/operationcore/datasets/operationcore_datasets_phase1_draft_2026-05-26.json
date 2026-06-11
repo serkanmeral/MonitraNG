@@ -4731,6 +4731,16 @@
         "isArray": false,
         "relationDataset": "op_work_items",
         "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "runCount",
+        "title": "Çalışma sayısı",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
       }
     ],
     "indexList": [

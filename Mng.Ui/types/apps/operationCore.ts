@@ -675,6 +675,33 @@ export interface OcWorkItemLinkSummary {
   linkType: string;
   direction: string;
   otherWorkItemId: string;
+  otherWorkItemKey?: string | null;
+  otherWorkItemTitle?: string | null;
+  otherBoardId?: string | null;
+  description?: string | null;
+}
+
+/** Üst/alt kayıt özeti (parentItemId ağacı). */
+export interface OcWorkItemRelationSummary {
+  id: string;
+  key: string;
+  title: string;
+  typeId?: string | null;
+  boardId?: string | null;
+  stateId?: string | null;
+}
+
+export interface OcCreateWorkItemLinkRequest {
+  targetWorkItemId: string;
+  linkType: string;
+  description?: string | null;
+}
+
+export interface OcWorkItemLink {
+  id: string;
+  sourceWorkItemId: string;
+  targetWorkItemId: string;
+  linkType: string;
   description?: string | null;
 }
 
@@ -718,6 +745,8 @@ export interface OcWorkItemProfile {
   sla?: OcSlaSnapshot | null;
   watchers: string[];
   links: OcWorkItemLinkSummary[];
+  parent?: OcWorkItemRelationSummary | null;
+  children: OcWorkItemRelationSummary[];
   /** Person id → görünen ad (assignee/reporter/watchers). */
   people: Record<string, OcPersonDisplay>;
   /** Grup id → grup adı (assignmentGroups + personGroups tipi pool alanlar). */

@@ -206,6 +206,19 @@ function fieldDatetime(name, title, opts = {}) {
   };
 }
 
+function fieldNumber(name, title, opts = {}) {
+  return {
+    fieldType: 'number',
+    name,
+    title,
+    mandatory: opts.mandatory ?? false,
+    unique: false,
+    isArray: false,
+    relationDataset: null,
+    incrementalOptions: null,
+  };
+}
+
 const OP_TAGS = 'op_tags';
 
 function buildOpTagsDataset() {
@@ -263,6 +276,7 @@ function buildOpWorkspaceAutomationsDataset() {
       fieldObject('actions', 'Aksiyon listesi (createWorkItem, …)'),
       fieldDatetime('lastRunAt', 'Son çalışma'),
       fieldRelation('lastCreatedWorkItemId', 'Son oluşan WI', 'op_work_items'),
+      fieldNumber('runCount', 'Çalışma sayısı'),
     ],
     indexList: [
       {

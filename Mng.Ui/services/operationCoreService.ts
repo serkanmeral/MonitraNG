@@ -26,8 +26,11 @@ import type {
   OcTimelineEntry,
   OcTimelinePage,
   OcWorkItemCard,
+  OcCreateWorkItemLinkRequest,
+  OcWorkItemLink,
   OcWorkItemLinkSummary,
   OcWorkItemProfile,
+  OcWorkItemRelationSummary,
   OcWorkItemProfileView,
   OcWorkItemSummary,
   OpBoard,
@@ -717,12 +720,38 @@ function mapWorkItemSummary(raw: Record<string, unknown>): OcWorkItemSummary {
   };
 }
 
+function mapWorkItemRelation(raw: Record<string, unknown>): OcWorkItemRelationSummary | null {
+  const id = pickStr(raw, 'id', 'Id') ?? '';
+  if (!id) return null;
+  return {
+    id,
+    key: pickStr(raw, 'key', 'Key') ?? id,
+    title: pickStr(raw, 'title', 'Title') ?? '',
+    typeId: pickStr(raw, 'typeId', 'TypeId') ?? null,
+    boardId: pickStr(raw, 'boardId', 'BoardId') ?? null,
+    stateId: pickStr(raw, 'stateId', 'StateId') ?? null,
+  };
+}
+
 function mapWorkItemLink(raw: Record<string, unknown>): OcWorkItemLinkSummary {
   return {
     id: pickStr(raw, 'id', 'Id') ?? '',
     linkType: pickStr(raw, 'linkType', 'LinkType') ?? '',
     direction: pickStr(raw, 'direction', 'Direction') ?? '',
     otherWorkItemId: pickStr(raw, 'otherWorkItemId', 'OtherWorkItemId') ?? '',
+    otherWorkItemKey: pickStr(raw, 'otherWorkItemKey', 'OtherWorkItemKey') ?? null,
+    otherWorkItemTitle: pickStr(raw, 'otherWorkItemTitle', 'OtherWorkItemTitle') ?? null,
+    otherBoardId: pickStr(raw, 'otherBoardId', 'OtherBoardId') ?? null,
+    description: pickStr(raw, 'description', 'Description') ?? null,
+  };
+}
+
+function mapWorkItemLinkDto(raw: Record<string, unknown>): OcWorkItemLink {
+  return {
+    id: pickStr(raw, 'id', 'Id') ?? '',
+    sourceWorkItemId: pickStr(raw, 'sourceWorkItemId', 'SourceWorkItemId') ?? '',
+    targetWorkItemId: pickStr(raw, 'targetWorkItemId', 'TargetWorkItemId') ?? '',
+    linkType: pickStr(raw, 'linkType', 'LinkType') ?? '',
     description: pickStr(raw, 'description', 'Description') ?? null,
   };
 }
@@ -752,8 +781,14 @@ function mapWorkItemProfile(raw: Record<string, unknown>): OcWorkItemProfile {
   const perms = (raw.permissions ?? raw.Permissions ?? {}) as Record<string, unknown>;
   const watchers = raw.watchers ?? raw.Watchers;
   const links = raw.links ?? raw.Links;
+  const parentRaw = raw.parent ?? raw.Parent;
+  const childrenRaw = raw.children ?? raw.Children;
   const actions = raw.actions ?? raw.Actions;
   const summary = mapWorkItemSummary(wiRaw);
+  const parent =
+    parentRaw && typeof parentRaw === 'object'
+      ? mapWorkItemRelation(parentRaw as Record<string, unknown>)
+      : null;
   return {
     workspaceId: pickStr(raw, 'workspaceId', 'WorkspaceId') ?? '',
     workItem: summary,
@@ -770,6 +805,12 @@ function mapWorkItemProfile(raw: Record<string, unknown>): OcWorkItemProfile {
     sla: mapSlaSnapshot(raw.sla ?? raw.Sla),
     watchers: Array.isArray(watchers) ? watchers.map(String) : [],
     links: Array.isArray(links) ? links.map((l) => mapWorkItemLink(l as Record<string, unknown>)) : [],
+    parent,
+    children: Array.isArray(childrenRaw)
+      ? childrenRaw
+          .map((c) => mapWorkItemRelation(c as Record<string, unknown>))
+          .filter((c): c is OcWorkItemRelationSummary => !!c)
+      : [],
     people: parsePeopleMap(raw.people ?? raw.People),
     groups: parsePeopleMap(raw.groups ?? raw.Groups),
     createdBy: pickStr(wiRaw, 'createdBy', 'CreatedBy') ?? null,
@@ -844,6 +885,33 @@ function mapComment(raw: Record<string, unknown>): OcComment {
     parentCommentId: pickStr(raw, 'parentCommentId', 'ParentCommentId') ?? null,
     commentDate: pickStr(raw, 'commentDate', 'CommentDate') ?? null,
   };
+}
+
+/** İş kaydı arası manuel bağlantı oluşturur (op_links). */
+export async function ocCreateWorkItemLink(
+  workItemId: string,
+  request: OcCreateWorkItemLinkRequest
+): Promise<OcWorkItemLink> {
+  const raw = (await fetchFromOperations(
+    `/api/v1/work-items/${encodeURIComponent(workItemId)}/links`,
+    'POST',
+    {
+      targetWorkItemId: request.targetWorkItemId,
+      linkType: request.linkType,
+      description: request.description ?? undefined,
+    }
+  )) as Record<string, unknown>;
+  ocInvalidateWorkItemProfileView(workItemId);
+  return mapWorkItemLinkDto(raw);
+}
+
+/** İş kaydı arası manuel bağlantıyı kaldırır. */
+export async function ocDeleteWorkItemLink(workItemId: string, linkId: string): Promise<void> {
+  await fetchFromOperations(
+    `/api/v1/work-items/${encodeURIComponent(workItemId)}/links/${encodeURIComponent(linkId)}`,
+    'DELETE'
+  );
+  ocInvalidateWorkItemProfileView(workItemId);
 }
 
 /** İş kaydı profil context'i (sidebar: SLA/meta/people/links + izinler). */

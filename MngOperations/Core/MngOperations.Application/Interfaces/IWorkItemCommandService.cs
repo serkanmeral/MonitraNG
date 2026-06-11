@@ -48,4 +48,14 @@ public interface IWorkItemCommandService
         string workItemId,
         string trigger,
         CancellationToken cancellationToken = default);
+
+    Task<WorkItemLinkDto> CreateLinkAsync(
+        string sourceWorkItemId,
+        CreateWorkItemLinkRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task DeleteLinkAsync(
+        string workItemId,
+        string linkId,
+        CancellationToken cancellationToken = default);
 }

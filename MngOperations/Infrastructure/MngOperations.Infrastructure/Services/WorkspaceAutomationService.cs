@@ -15,17 +15,20 @@ public sealed class WorkspaceAutomationService : IWorkspaceAutomationService
     private readonly IMetadataCache _metadataCache;
     private readonly Lazy<IWorkItemCommandService> _workItemCommand;
     private readonly IMngDataGatewayClient _dg;
+    private readonly IRequestContext _requestContext;
     private readonly ILogger<WorkspaceAutomationService> _logger;
 
     public WorkspaceAutomationService(
         IMetadataCache metadataCache,
         Lazy<IWorkItemCommandService> workItemCommand,
         IMngDataGatewayClient dg,
+        IRequestContext requestContext,
         ILogger<WorkspaceAutomationService> logger)
     {
         _metadataCache = metadataCache;
         _workItemCommand = workItemCommand;
         _dg = dg;
+        _requestContext = requestContext;
         _logger = logger;
     }
 
@@ -341,19 +344,29 @@ public sealed class WorkspaceAutomationService : IWorkspaceAutomationService
         string token,
         CancellationToken cancellationToken)
     {
-        var patch = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+        try
         {
-            ["lastRunAt"] = DateTime.UtcNow,
-            ["lastCreatedWorkItemId"] = createdWorkItemId,
-            ["runCount"] = previousRunCount + 1
-        };
+            var patch = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["lastRunAt"] = DateTime.UtcNow,
+                ["lastCreatedWorkItemId"] = createdWorkItemId,
+                ["runCount"] = previousRunCount + 1
+            };
 
-        await _dg.UpdateAsync(
-            OcDatasets.WorkspaceAutomations,
-            automationId,
-            patch,
-            token,
-            cancellationToken);
+            await _dg.UpdateAsync(
+                OcDatasets.WorkspaceAutomations,
+                automationId,
+                patch,
+                token,
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Failed to patch automation run metadata for {AutomationId}",
+                automationId);
+        }
     }
 
     private async Task WriteSourceActivityAsync(
@@ -364,23 +377,38 @@ public sealed class WorkspaceAutomationService : IWorkspaceAutomationService
         CancellationToken cancellationToken,
         Dictionary<string, object?>? extra = null)
     {
-        var payload = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+        try
         {
-            ["workItemId"] = context.WorkItemId,
-            ["workItemKey"] = context.WorkItemKey,
-            ["activityType"] = activityType,
-            ["eventType"] = context.EventName,
-            ["summary"] = summary,
-            ["actor"] = "system"
-        };
+            var payload = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["sourceDataset"] = OcDatasets.WorkItems,
+                ["sourceRecordId"] = context.WorkItemId,
+                ["activityType"] = activityType,
+                ["eventType"] = context.EventName,
+                ["message"] = summary,
+                ["activityDate"] = DateTime.UtcNow,
+                ["isSystemGenerated"] = true
+            };
 
-        if (extra != null)
-        {
-            foreach (var kv in extra)
-                payload[kv.Key] = kv.Value;
+            if (!string.IsNullOrWhiteSpace(_requestContext.MngPersonId))
+                payload["actor"] = _requestContext.MngPersonId;
+
+            if (extra is { Count: > 0 })
+            {
+                extra["workItemKey"] = context.WorkItemKey;
+                payload["payload"] = extra;
+            }
+
+            await _dg.CreateAsync(OcDatasets.Activities, payload, token, cancellationToken);
         }
-
-        await _dg.CreateAsync(OcDatasets.Activities, payload, token, cancellationToken);
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Automation activity write failed for work item {WorkItemId} ({ActivityType})",
+                context.WorkItemId,
+                activityType);
+        }
     }
 
     private static string GetRelationMode(WorkspaceAutomationRecord automation)

@@ -103,6 +103,8 @@ public partial class RuntimeContextService : IRuntimeContextService
 
         // Giden+gelen linkler tek $or sorgusu (2 DG çağrısı → 1).
         var linksTask = LoadProfileLinksAsync(workItemId, token, cancellationToken);
+        var parentTask = LoadProfileParentAsync(workItem, token, cancellationToken);
+        var childrenTask = LoadProfileChildrenAsync(workItemId, token, cancellationToken);
 
         // Profil yalnız son DefaultStateSegmentCount segmenti gösterir; en yeniler için DG-side sort.
         var segmentsTask = _dg.GetAsync<Dictionary<string, object?>>(
@@ -173,9 +175,11 @@ public partial class RuntimeContextService : IRuntimeContextService
 
         var fieldBehaviors = await _fieldBehaviors.ResolveAllAsync(behaviorContext, cancellationToken);
 
-        await Task.WhenAll(linksTask, segmentsTask);
+        await Task.WhenAll(linksTask, segmentsTask, parentTask, childrenTask);
 
-        var links = linksTask.Result;
+        var links = await EnrichLinkSummariesAsync(linksTask.Result, token, cancellationToken);
+        var parent = parentTask.Result;
+        var children = childrenTask.Result;
 
         var stateSegments = segmentsTask.Result
             .Select(ProfileRuntimeMapper.MapStateSegment)
@@ -244,6 +248,8 @@ public partial class RuntimeContextService : IRuntimeContextService
             Sla = SlaSnapshotHelper.MapFromWorkItem(workItem),
             Watchers = WorkItemDataHelper.GetStringList(workItem, "watchers"),
             Links = links,
+            Parent = parent,
+            Children = children,
             StateSegments = stateSegments,
             People = profilePeople,
             Groups = profileGroups,
@@ -257,6 +263,117 @@ public partial class RuntimeContextService : IRuntimeContextService
         }
 
         return result;
+    }
+
+    private async Task<WorkItemRelationSummaryDto?> LoadProfileParentAsync(
+        IReadOnlyDictionary<string, object?> workItem,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var parentId = WorkItemDataHelper.GetString(workItem, "parentItemId");
+        if (string.IsNullOrWhiteSpace(parentId))
+            return null;
+
+        try
+        {
+            var parent = await _dg.GetByIdAsync<Dictionary<string, object?>>(
+                OcDatasets.WorkItems, parentId, token, cancellationToken, expand: false);
+            if (parent == null)
+                return null;
+
+            return ProfileRuntimeBuilder.BuildRelationSummary(parentId, parent);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Profile parent load failed for parent {ParentId}.", parentId);
+            return null;
+        }
+    }
+
+    private async Task<IReadOnlyList<WorkItemRelationSummaryDto>> LoadProfileChildrenAsync(
+        string workItemId,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var rows = await _dg.GetAsync<Dictionary<string, object?>>(
+                OcDatasets.WorkItems,
+                $"filter={Uri.EscapeDataString($"parentItemId:eq:{workItemId}")}&limit=50&expand=false",
+                token,
+                cancellationToken);
+
+            return rows
+                .Select(row =>
+                {
+                    var id = WorkItemDataHelper.GetDataId(row) ?? string.Empty;
+                    return ProfileRuntimeBuilder.BuildRelationSummary(id, row);
+                })
+                .Where(r => !string.IsNullOrWhiteSpace(r.Id))
+                .OrderBy(r => r.Key, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Profile children load failed for work item {WorkItemId}.", workItemId);
+            return Array.Empty<WorkItemRelationSummaryDto>();
+        }
+    }
+
+    private async Task<List<WorkItemLinkSummaryDto>> EnrichLinkSummariesAsync(
+        IReadOnlyList<WorkItemLinkSummaryDto> links,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        if (links.Count == 0)
+            return new List<WorkItemLinkSummaryDto>();
+
+        var otherIds = links
+            .Select(l => l.OtherWorkItemId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var lookup = new Dictionary<string, Dictionary<string, object?>>(StringComparer.OrdinalIgnoreCase);
+        var loadTasks = otherIds.Select(async id =>
+        {
+            try
+            {
+                var row = await _dg.GetByIdAsync<Dictionary<string, object?>>(
+                    OcDatasets.WorkItems, id, token, cancellationToken, expand: false);
+                if (row != null)
+                    lookup[id] = row;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Link target work item {WorkItemId} could not be loaded.", id);
+            }
+        });
+        await Task.WhenAll(loadTasks);
+
+        var enriched = new List<WorkItemLinkSummaryDto>(links.Count);
+        foreach (var link in links)
+        {
+            if (!lookup.TryGetValue(link.OtherWorkItemId, out var other))
+            {
+                enriched.Add(link);
+                continue;
+            }
+
+            enriched.Add(new WorkItemLinkSummaryDto
+            {
+                Id = link.Id,
+                LinkType = link.LinkType,
+                Direction = link.Direction,
+                OtherWorkItemId = link.OtherWorkItemId,
+                OtherWorkItemKey = WorkItemDataHelper.GetString(other, "key"),
+                OtherWorkItemTitle = WorkItemDataHelper.GetString(other, "title"),
+                OtherBoardId = WorkItemDataHelper.GetString(other, "boardId"),
+                Description = link.Description
+            });
+        }
+
+        return enriched;
     }
 
     /// <summary>Giden+gelen iş bağlantılarını tek DG $or sorgusuyla yükler (PV-PERF-4).</summary>

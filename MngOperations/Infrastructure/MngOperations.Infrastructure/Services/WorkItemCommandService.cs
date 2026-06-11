@@ -732,6 +732,193 @@ public class WorkItemCommandService : IWorkItemCommandService
             cancellationToken);
     }
 
+    public async Task<WorkItemLinkDto> CreateLinkAsync(
+        string sourceWorkItemId,
+        CreateWorkItemLinkRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var token = RequireToken();
+
+        if (!WorkItemLinkTypes.IsAllowed(request.LinkType))
+        {
+            throw new OperationCoreException(
+                "INVALID_LINK_TYPE",
+                $"Link type '{request.LinkType}' is not allowed.",
+                $"'{request.LinkType}' bağlantı tipi desteklenmiyor.",
+                400);
+        }
+
+        var targetWorkItemId = request.TargetWorkItemId?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(targetWorkItemId))
+        {
+            throw new OperationCoreException(
+                "VALIDATION_ERROR",
+                "targetWorkItemId is required.",
+                "Hedef iş kaydı zorunludur.",
+                400);
+        }
+
+        if (string.Equals(sourceWorkItemId, targetWorkItemId, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new OperationCoreException(
+                "LINK_SELF_REFERENCE",
+                "A work item cannot link to itself.",
+                "Bir iş kaydı kendine bağlanamaz.",
+                400);
+        }
+
+        var source = await LoadWorkItemAsync(sourceWorkItemId, token, cancellationToken);
+        var sourceWorkspaceId = GetString(source, "workspaceId")
+            ?? throw new OperationCoreException("WORK_ITEM_INVALID", "workspaceId missing on source work item.", "Kaynak kayıtta workspaceId yok.", 500);
+
+        var workspace = await _metadataCache.GetWorkspaceAsync(sourceWorkspaceId, token, cancellationToken);
+        _permissions.EnsureWorkItemUpdate(workspace, source);
+
+        var target = await LoadWorkItemAsync(targetWorkItemId, token, cancellationToken);
+        var targetWorkspaceId = GetString(target, "workspaceId")
+            ?? throw new OperationCoreException("WORK_ITEM_INVALID", "workspaceId missing on target work item.", "Hedef kayıtta workspaceId yok.", 500);
+
+        if (!string.Equals(sourceWorkspaceId, targetWorkspaceId, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new OperationCoreException(
+                "LINK_WORKSPACE_MISMATCH",
+                "Linked work items must belong to the same workspace.",
+                "Bağlantılı işler aynı workspace içinde olmalıdır.",
+                400);
+        }
+
+        _permissions.EnsureWorkItemView(workspace, target);
+
+        var sourceKey = GetString(source, "key") ?? sourceWorkItemId;
+        var targetKey = GetString(target, "key") ?? targetWorkItemId;
+        var linkType = request.LinkType.Trim().ToLowerInvariant();
+
+        var payload = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["sourceWorkItemId"] = sourceWorkItemId,
+            ["targetWorkItemId"] = targetWorkItemId,
+            ["linkType"] = linkType,
+            ["createdAt"] = DateTime.UtcNow
+        };
+
+        if (!string.IsNullOrWhiteSpace(request.Description))
+            payload["description"] = request.Description.Trim();
+
+        if (!string.IsNullOrWhiteSpace(_requestContext.MngPersonId))
+            payload["createdBy"] = _requestContext.MngPersonId;
+
+        Dictionary<string, object?> persisted;
+        try
+        {
+            persisted = await _dg.CreateAsync(OcDatasets.Links, payload, token, cancellationToken);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
+        {
+            throw new OperationCoreException(
+                "LINK_ALREADY_EXISTS",
+                "A link with the same source, target and type already exists.",
+                "Bu kaynak, hedef ve tip ile bağlantı zaten var.",
+                409);
+        }
+
+        var linkId = GetDataId(persisted);
+        await WriteActivityAsync(
+            sourceWorkItemId,
+            sourceKey,
+            "LinkCreated",
+            $"Bağlantı oluşturuldu: {linkType} → {targetKey}",
+            token,
+            cancellationToken,
+            new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["linkId"] = linkId,
+                ["linkType"] = linkType,
+                ["targetWorkItemId"] = targetWorkItemId,
+                ["targetWorkItemKey"] = targetKey
+            });
+
+        return MapWorkItemLink(persisted, linkId);
+    }
+
+    public async Task DeleteLinkAsync(
+        string workItemId,
+        string linkId,
+        CancellationToken cancellationToken = default)
+    {
+        var token = RequireToken();
+
+        var link = await _dg.GetByIdAsync<Dictionary<string, object?>>(OcDatasets.Links, linkId, token, cancellationToken);
+        if (link == null)
+        {
+            throw new OperationCoreException(
+                "LINK_NOT_FOUND",
+                $"Link '{linkId}' not found.",
+                $"Bağlantı '{linkId}' bulunamadı.",
+                404);
+        }
+
+        var sourceId = GetString(link, "sourceWorkItemId") ?? string.Empty;
+        var targetId = GetString(link, "targetWorkItemId") ?? string.Empty;
+        if (!string.Equals(sourceId, workItemId, StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(targetId, workItemId, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new OperationCoreException(
+                "LINK_NOT_FOUND",
+                "Link does not belong to this work item.",
+                "Bağlantı bu iş kaydına ait değil.",
+                404);
+        }
+
+        var anchorId = string.Equals(sourceId, workItemId, StringComparison.OrdinalIgnoreCase) ? sourceId : targetId;
+        var anchor = await LoadWorkItemAsync(anchorId, token, cancellationToken);
+        var workspaceId = GetString(anchor, "workspaceId")
+            ?? throw new OperationCoreException("WORK_ITEM_INVALID", "workspaceId missing.", "workspaceId yok.", 500);
+
+        var workspace = await _metadataCache.GetWorkspaceAsync(workspaceId, token, cancellationToken);
+        _permissions.EnsureWorkItemUpdate(workspace, anchor);
+
+        var anchorKey = GetString(anchor, "key") ?? anchorId;
+        var linkType = GetString(link, "linkType") ?? "relates_to";
+        var otherId = string.Equals(sourceId, workItemId, StringComparison.OrdinalIgnoreCase) ? targetId : sourceId;
+        var other = await LoadWorkItemAsync(otherId, token, cancellationToken);
+        var otherKey = GetString(other, "key") ?? otherId;
+
+        var deleted = await _dg.DeleteAsync(OcDatasets.Links, linkId, token, cancellationToken);
+        if (!deleted)
+        {
+            throw new OperationCoreException(
+                "LINK_DELETE_FAILED",
+                $"Link '{linkId}' could not be deleted.",
+                $"Bağlantı '{linkId}' silinemedi.",
+                502);
+        }
+
+        await WriteActivityAsync(
+            workItemId,
+            anchorKey,
+            "LinkRemoved",
+            $"Bağlantı kaldırıldı: {linkType} — {otherKey}",
+            token,
+            cancellationToken,
+            new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["linkId"] = linkId,
+                ["linkType"] = linkType,
+                ["otherWorkItemId"] = otherId,
+                ["otherWorkItemKey"] = otherKey
+            });
+    }
+
+    private static WorkItemLinkDto MapWorkItemLink(IReadOnlyDictionary<string, object?> row, string linkId) =>
+        new()
+        {
+            Id = linkId,
+            SourceWorkItemId = GetStringFromDict(row, "sourceWorkItemId") ?? string.Empty,
+            TargetWorkItemId = GetStringFromDict(row, "targetWorkItemId") ?? string.Empty,
+            LinkType = GetStringFromDict(row, "linkType") ?? WorkItemLinkTypes.RelatesTo,
+            Description = GetStringFromDict(row, "description")
+        };
+
     /// <summary>
     /// Silmeden önce bloklayan ilişki kontrolü: bağlı link (kaynak/hedef) veya alt kayıt (parentItemId) varsa
     /// 409 WORK_ITEM_HAS_RELATIONS fırlatır (sayılar details'te). `force` ile bu kontrol atlanır.

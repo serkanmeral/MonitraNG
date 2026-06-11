@@ -140,4 +140,32 @@ public class WorkItemsController : ControllerBase
         await _workItemCommandService.DeleteCommentAsync(id, commentId, cancellationToken);
         return NoContent();
     }
+
+    [HttpPost("{id}/links")]
+    [ProducesResponseType(typeof(WorkItemLinkDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CreateLink(
+        string id,
+        [FromBody] CreateWorkItemLinkRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _workItemCommandService.CreateLinkAsync(id, request, cancellationToken);
+        return CreatedAtAction(nameof(CreateLink), new { id, linkId = result.Id }, result);
+    }
+
+    [HttpDelete("{id}/links/{linkId}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteLink(
+        string id,
+        string linkId,
+        CancellationToken cancellationToken)
+    {
+        await _workItemCommandService.DeleteLinkAsync(id, linkId, cancellationToken);
+        return NoContent();
+    }
 }

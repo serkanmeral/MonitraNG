@@ -19,6 +19,7 @@ MonitraNG operasyonel iş yönetim modülü. Backend servisi: **MngOperations**.
 | [ui/OC_UI_FIELD_POLICY.md](./ui/OC_UI_FIELD_POLICY.md) | Form **alan politikaları** + backlog | Güncel |
 | [ui/OC_UI_WORKSPACE_POLICIES.md](./ui/OC_UI_WORKSPACE_POLICIES.md) | **Workspace politikaları + Değerler** · P-UX / R-UX (§0.5) | Güncel |
 | [mngoperations/DEVAM.md](./mngoperations/DEVAM.md) | **Devam noktası** — Admin Faz 1 plan | Güncel |
+| [mngoperations/WORKSPACE_AUTOMATION_PLANNING.md](./mngoperations/WORKSPACE_AUTOMATION_PLANNING.md) | **Workspace otomasyonu** — Otomatik işler planlama (v0.1) | Planlama |
 | [ui/OC_UI_ADMIN_FAZ1_PLAN.md](./ui/OC_UI_ADMIN_FAZ1_PLAN.md) | **Admin UX Faz 1** — sıra + bugün | Güncel |
 | [ui/OC_UI_RULES_FAZ1.md](./ui/OC_UI_RULES_FAZ1.md) | **Kurallar** R-Core + R-UX (§8) | Güncel |
 | [mngoperations/SLA_FAZ1_PLAN.md](./mngoperations/SLA_FAZ1_PLAN.md) | SLA planlama (geliştirme Faz 1.5+) | Güncel |

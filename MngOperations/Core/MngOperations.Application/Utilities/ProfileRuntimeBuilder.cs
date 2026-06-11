@@ -65,6 +65,19 @@ public static class ProfileRuntimeBuilder
         };
     }
 
+    public static WorkItemRelationSummaryDto BuildRelationSummary(
+        string workItemId,
+        IReadOnlyDictionary<string, object?> workItem) =>
+        new()
+        {
+            Id = workItemId,
+            Key = WorkItemDataHelper.GetString(workItem, "key") ?? workItemId,
+            Title = WorkItemDataHelper.GetString(workItem, "title") ?? string.Empty,
+            TypeId = WorkItemDataHelper.GetString(workItem, "typeId"),
+            BoardId = WorkItemDataHelper.GetString(workItem, "boardId"),
+            StateId = WorkItemDataHelper.GetString(workItem, "stateId")
+        };
+
     private static object? FormRuntimeBuilderNormalize(object? value)
     {
         if (value is JsonElement el)

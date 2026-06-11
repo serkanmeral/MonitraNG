@@ -9,6 +9,7 @@ import OcCommentComposer from '@/components/apps/operation-core/OcCommentCompose
 import OcPolicyPanel from '@/components/apps/operation-core/OcPolicyPanel.vue';
 import OcTransitionRequiredFields from '@/components/apps/operation-core/OcTransitionRequiredFields.vue';
 import OcAttachmentPreviewDialog from '@/components/apps/operation-core/OcAttachmentPreviewDialog.vue';
+import OcWorkItemRelationsCard from '@/components/apps/operation-core/OcWorkItemRelationsCard.vue';
 import { isPreviewable } from '@/utils/ocAttachmentPreview';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import { useOperationCoreStore } from '@/stores/apps/operationCore';
@@ -1386,21 +1387,18 @@ watch(workItemId, () => {
           </v-card-text>
         </v-card>
 
-        <!-- Links -->
-        <v-card v-if="profile?.links?.length" variant="outlined" class="rounded-lg">
-          <v-card-text class="pa-4">
-            <div class="text-subtitle-2 font-weight-bold mb-2">{{ t('operationCore.profile.links.title') }}</div>
-            <div v-for="link in profile.links" :key="link.id" class="oc-meta-row">
-              <span class="oc-meta-label">{{ link.linkType }}</span>
-              <NuxtLink
-                :to="`/apps/operation-core/work-items/${encodeURIComponent(link.otherWorkItemId)}/profile`"
-                class="text-primary text-decoration-none oc-meta-value"
-              >
-                {{ link.otherWorkItemId }}
-              </NuxtLink>
-            </div>
-          </v-card-text>
-        </v-card>
+        <OcWorkItemRelationsCard
+          v-if="profile"
+          :work-item-id="workItemId"
+          :workspace-id="profile.workspaceId"
+          :can-edit="profile.permissions.canEdit"
+          :parent="profile.parent"
+          :children="profile.children"
+          :links="profile.links"
+          :board-id="boardIdQuery || profile.workItem.boardId"
+          :workspace-id-query="workspaceIdQuery || profile.workspaceId"
+          @refresh="loadProfile(true)"
+        />
       </v-col>
     </v-row>
   </div>

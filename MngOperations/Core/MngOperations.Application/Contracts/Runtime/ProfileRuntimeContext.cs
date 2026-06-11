@@ -21,6 +21,8 @@ public sealed class ProfileRuntimeContext
     public SlaSnapshotDto? Sla { get; init; }
     public IReadOnlyList<string> Watchers { get; init; } = Array.Empty<string>();
     public IReadOnlyList<WorkItemLinkSummaryDto> Links { get; init; } = Array.Empty<WorkItemLinkSummaryDto>();
+    public WorkItemRelationSummaryDto? Parent { get; init; }
+    public IReadOnlyList<WorkItemRelationSummaryDto> Children { get; init; } = Array.Empty<WorkItemRelationSummaryDto>();
     public IReadOnlyList<StateSegmentDto> StateSegments { get; init; } = Array.Empty<StateSegmentDto>();
 
     /// <summary>Person id → görünen ad (assignee/reporter/createdBy/watchers) — sidebar isim çözümü.</summary>
@@ -62,7 +64,20 @@ public sealed class WorkItemLinkSummaryDto
     public required string LinkType { get; init; }
     public required string Direction { get; init; }
     public required string OtherWorkItemId { get; init; }
+    public string? OtherWorkItemKey { get; init; }
+    public string? OtherWorkItemTitle { get; init; }
+    public string? OtherBoardId { get; init; }
     public string? Description { get; init; }
+}
+
+public sealed class WorkItemRelationSummaryDto
+{
+    public required string Id { get; init; }
+    public required string Key { get; init; }
+    public required string Title { get; init; }
+    public string? TypeId { get; init; }
+    public string? BoardId { get; init; }
+    public string? StateId { get; init; }
 }
 
 public sealed class RuntimePermissionsDto

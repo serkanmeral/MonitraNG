@@ -3970,6 +3970,38 @@
       },
       "links": {
         "title": "Bağlı kayıtlar"
+      },
+      "relations": {
+        "title": "İlişkiler",
+        "parent": "Üst kayıt",
+        "children": "Alt kayıtlar",
+        "linksSection": "Bağlantılar",
+        "linkAction": "Bağla",
+        "unlink": "Bağlantıyı kaldır",
+        "empty": "Henüz ilişki yok. «Bağla» ile manuel bağlantı ekleyebilirsiniz.",
+        "deleteError": "Bağlantı kaldırılamadı.",
+        "blocks": "{key} engelleniyor",
+        "blockedBy": "{key} tarafından engelleniyor",
+        "duplicates": "{key} yineleniyor",
+        "duplicatedBy": "{key} tarafından yineleniyor",
+        "linkTypes": {
+          "relates_to": "İlişkili",
+          "blocks": "Engeller",
+          "duplicates": "Yineler"
+        },
+        "linkDialog": {
+          "title": "İş kaydı bağla",
+          "linkType": "Bağlantı tipi",
+          "search": "Ara",
+          "searchPlaceholder": "Anahtar veya başlık…",
+          "description": "Açıklama (isteğe bağlı)",
+          "noResults": "Eşleşen kayıt bulunamadı.",
+          "searchError": "Arama yapılamadı.",
+          "targetRequired": "Lütfen bir hedef kayıt seçin.",
+          "submitError": "Bağlantı oluşturulamadı.",
+          "cancel": "İptal",
+          "submit": "Bağla"
+        }
       }
     },
     "policies": {

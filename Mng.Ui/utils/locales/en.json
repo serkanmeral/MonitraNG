@@ -3957,6 +3957,38 @@
       },
       "links": {
         "title": "Linked items"
+      },
+      "relations": {
+        "title": "Relations",
+        "parent": "Parent",
+        "children": "Child items",
+        "linksSection": "Links",
+        "linkAction": "Link",
+        "unlink": "Remove link",
+        "empty": "No relations yet. Use «Link» to add a manual connection.",
+        "deleteError": "Could not remove the link.",
+        "blocks": "blocks {key}",
+        "blockedBy": "blocked by {key}",
+        "duplicates": "duplicates {key}",
+        "duplicatedBy": "duplicated by {key}",
+        "linkTypes": {
+          "relates_to": "Related",
+          "blocks": "Blocks",
+          "duplicates": "Duplicates"
+        },
+        "linkDialog": {
+          "title": "Link work item",
+          "linkType": "Link type",
+          "search": "Search",
+          "searchPlaceholder": "Key or title…",
+          "description": "Description (optional)",
+          "noResults": "No matching items found.",
+          "searchError": "Search failed.",
+          "targetRequired": "Please select a target item.",
+          "submitError": "Could not create the link.",
+          "cancel": "Cancel",
+          "submit": "Link"
+        }
       }
     },
     "policies": {
