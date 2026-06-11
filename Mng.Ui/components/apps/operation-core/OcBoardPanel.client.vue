@@ -215,7 +215,7 @@ watch(
 watch(
   workspaceId,
   (wsId) => {
-    if (wsId) void store.loadBoardsForWorkspace(wsId, true);
+    if (wsId) void store.loadBoardsForWorkspace(wsId);
   },
   { immediate: true }
 );
@@ -680,17 +680,7 @@ watch(workspaceId, () => {
   void loadPoolFields();
 }, { immediate: true });
 
-watch(
-  filterableColumns,
-  (cols) => {
-    if (cols.some((c) => c.kind === 'relation')) {
-      void ensureRelationOptions();
-    }
-  },
-  { immediate: true }
-);
-
-function onFiltersAdvancedOpen() {
+function onFiltersPanelOpen() {
   void ensureRelationOptions();
 }
 
@@ -827,6 +817,26 @@ const backToWorkspaceTo = computed(() => {
   return `/apps/operation-core/workspace?${qs.toString()}`;
 });
 
+function findCachedBoardMeta(targetBoardId: string): OpBoard | null {
+  for (const boards of Object.values(store.boardsByWorkspace)) {
+    const match = boards.find((b) => b.__dataId === targetBoardId);
+    if (match) return match;
+  }
+  return null;
+}
+
+function wantsKanbanView(): boolean {
+  if (props.embedded) return displayMode.value === 'kanban';
+  return route.query.view === 'kanban';
+}
+
+function shouldPrefetchListForBoard(targetBoardId: string): boolean {
+  const meta = findCachedBoardMeta(targetBoardId);
+  if (!meta) return !wantsKanbanView();
+  if (meta.viewType !== 'kanban') return true;
+  return !wantsKanbanView();
+}
+
 async function loadPage() {
   const id = boardId.value;
   if (!id) {
@@ -839,12 +849,27 @@ async function loadPage() {
     await store.loadWorkspaces();
   }
   if (boardId.value !== id) return;
-  await store.loadBoard(id);
+
+  const prefetchList = shouldPrefetchListForBoard(id);
+  const listPrefetchRequest: OcBoardListRequest = {
+    skip: 0,
+    take: itemsPerPage.value,
+  };
+  const loadTasks: Promise<unknown>[] = [store.loadBoard(id)];
+  if (prefetchList) {
+    loadTasks.push(store.loadBoardListPage(listPrefetchRequest, id));
+  }
+
+  await Promise.all(loadTasks);
   if (boardId.value !== id) return;
   applyDefaultDisplayMode();
-  // Liste görünümü server-side ilk sayfayı çeker (kanban kolon sorgularıyla yüklenir).
+
   if (showList.value) {
-    await fetchList(true);
+    if (prefetchList) {
+      lastSignature = JSON.stringify(listPrefetchRequest);
+    } else {
+      await fetchList(true);
+    }
   }
   if (boardId.value === id) {
     listBootstrapPending.value = false;
@@ -1027,7 +1052,7 @@ onUnmounted(() => {
               :group-options-by-key="groupOptionsByKey"
               :tag-options-by-key="tagOptionsByKey"
               @update:filters="onFiltersUpdate"
-              @advanced-open="onFiltersAdvancedOpen"
+              @advanced-open="onFiltersPanelOpen"
             />
             <v-spacer />
             <v-alert

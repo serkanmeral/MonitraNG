@@ -1,4 +1,4 @@
-import { computed, ref, watch, type Ref } from 'vue';
+import { computed, ref, type Ref } from 'vue';
 import { ocListDataset } from '@/services/operationCoreService';
 import type { OpField } from '@/types/apps/operationCore';
 import { recordToDatasetItems } from '@/utils/ocDynamicFormField';
@@ -150,14 +150,6 @@ export function useOcBoardRelationLookups(
   async function ensureRelationOptions() {
     await loadRelationOptions(keysToLoad.value);
   }
-
-  watch(
-    [poolFields, keysToLoad],
-    ([, keys]) => {
-      void loadRelationOptions(keys);
-    },
-    { immediate: true }
-  );
 
   return {
     relationPoolKeySet,
