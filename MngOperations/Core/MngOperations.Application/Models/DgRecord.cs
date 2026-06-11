@@ -369,3 +369,29 @@ public sealed class WorkItemScheduleRecord : DgRecord
     [JsonPropertyName("lastWorkItemId")]
     public string? LastWorkItemId { get; set; }
 }
+
+public sealed class WorkspaceAutomationRecord : DgRecord
+{
+    [JsonPropertyName("workspaceId")]
+    public string? WorkspaceId { get; set; }
+
+    public string? Name { get; set; }
+    public string? Description { get; set; }
+
+    [JsonPropertyName("isActive")]
+    public bool IsActive { get; set; } = true;
+
+    public JsonElement? Trigger { get; set; }
+    public JsonElement? Idempotency { get; set; }
+    public JsonElement? Relation { get; set; }
+    public JsonElement? Actions { get; set; }
+
+    [JsonPropertyName("lastRunAt")]
+    public DateTime? LastRunAt { get; set; }
+
+    [JsonPropertyName("lastCreatedWorkItemId")]
+    public string? LastCreatedWorkItemId { get; set; }
+
+    [JsonPropertyName("runCount")]
+    public int? RunCount { get; set; }
+}

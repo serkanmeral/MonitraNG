@@ -1,46 +1,11 @@
 # Odak Uretim — Devam noktasi (checkpoint)
 
-**Son guncelleme:** 11 Haziran 2026 00:10 (oturum kapanisi)  
-**Durum:** Odak test (`192.168.20.20`) — liste gorunumu iyilestirmeleri **commit + push + mngui deploy** tamamlandi.  
-**Git commit:** `586ceec` — `feat(oc): Odak board list view — MO fieldDisplays, UI filters, dates, icons`  
-**Deploy saglik:** `gateway=200 ui=200 oc_live=200` (mngui + mngoperations Odak test)
+**Son guncelleme:** 11 Haziran 2026 (otomasyon planlama v0.2 kapanisi)  
+**Durum:** Odak test perf paketi **commit + deploy** tamam. **Workspace otomasyonu planlama tamam** — implementasyon SW-A0 bekliyor.  
+**Git commit (perf):** `b00d6a4` — `perf(operation-core): Odak profil/board hizlandirma ve UI runtime iyilestirmeleri`  
+**Deploy saglik:** `gateway=200 ui=200 oc_live=200` (mngui Odak test)
 
-> **KALDIĞIMIZ YER (10 Haz 2026):** Odak Uretim **Uretim panosu** liste gorunumu uzerinde calisildi. Backend (MO) relation etiketleri ve sütun label zenginlestirmesi **Odak test'e deploy edildi**. UI tarafinda filtre sadelestirme, tarih formatlama, katalog ikonlari ve relation lookup bug fix **commit + mngui deploy** ile canliya alindi. **Yarin:** tarayici/Odak test uzerinde dogrulama, gelismis arama senaryolari, gerekirse seed `listColumns` label sync.
-
----
-
-## Bu oturumda tamamlananlar (10 Haz 2026)
-
-### MngOperations (deploy edildi — Odak test)
-
-| Konu | Aciklama |
-|------|----------|
-| Board list `fieldDisplays` | Relation pool alanlari (customerId, productId vb.) sunucuda cozulup liste API'sinde donuyor |
-| `listColumns.label` | Board context'te `op_fields.label` ile zenginlestirme |
-| Dosyalar | `RuntimeContextService.BoardList.cs`, `WorkItemCardDto.FieldDisplays`, `GetBoardAsync` / `GetBoardListAsync` |
-
-Deploy komutu (yapildi):
-```powershell
-pwsh -NoProfile -ExecutionPolicy Bypass -Command "& { .\scripts\odak\sync-odak-source.ps1 -Paths @('MngOperations','ApplicationResources/mng_apps') }"
-pwsh -NoProfile -ExecutionPolicy Bypass -Command "& { .\scripts\odak\deploy-odak-apps.ps1 -Services mngoperations -NoCache }"
-```
-
-### Mng.Ui (commit + mngui deploy)
-
-| Konu | Aciklama |
-|------|----------|
-| Relation lookup bug | `useOcBoardRelationLookups` — `parseOcLookupFromFieldOptions` arguman sirasi duzeltildi (liste kiriliyordu) |
-| `fieldDisplays` | `OcWorkItemCard.fieldDisplays` + liste hucrelerinde MO etiketleri oncelikli |
-| Hizli filtre kaldirildi | Yalnizca **gelismis arama** (kapali varsayilan, arama satirinda kompakt) |
-| Filtre bug | `fetchList(true)` + gelismis arama scalar deger cikarimi |
-| Tarih formatlama | Pool + sistem sütunlari `formatCellValue` (plannedDate datetime, date-only alanlar) |
-| Katalog ikonlari | Durum / oncelik / tip — tanimli ikon veya category/level varsayilan Tabler ikonlari + renk |
-| Yeni dosyalar | `useOcBoardRelationLookups.ts`, `ocCatalogDefaultIcons.ts` |
-
-### Seed (script guncellendi, sync opsiyonel)
-
-- `seed-operation-core-odak-uretim.ps1` — `listColumns` icin `label` alanlari (Musteri, Urun, Planlanan bitis vb.)
-- MO zaten `op_fields`'tan label dolduruyor; seed tekrar calistirmak sadece board config icin faydali
+> **⭐ KALDIĞIMIZ YER (11 Haz 2026 — planlama v0.2):** Performans ve form yardimi tamam (asagida). **Kalite uygunsuzluk → NCR** icin workspace otomasyonu planlamasi **tamamlandi** (kod yok). **Model:** WI duruma geldi → hedef board'da is olustur + alan eslemesi; varsayilan `parentItemId` (ODF→NCR). Alarm/dokuman aksiyonlari semada hazir, MVP disi. **Dokumanlar:** [WORKSPACE_AUTOMATION_PLANNING.md](../operationcore/mngoperations/WORKSPACE_AUTOMATION_PLANNING.md), [OC_UI_WORKSPACE_AUTOMATIONS.md](../operationcore/ui/OC_UI_WORKSPACE_AUTOMATIONS.md). **Siradaki:** SW-A0…A3 (dataset → MO → UI → Odak seed/E2E). **Yeni chat:** bu dosya + `operationcore/mngoperations/DEVAM.md` + planlama dokumanlari.
 
 ---
 
@@ -50,59 +15,91 @@ pwsh -NoProfile -ExecutionPolicy Bypass -Command "& { .\scripts\odak\deploy-odak
 |------|--------|
 | Workspace | Odak Uretim — `9f9cc085-81c7-4a92-9fa2-357ad5c654cd` |
 | Uretim panosu boardId | `75ec624c-a8be-4131-b072-9408ace1fd32` |
+| Referans kapali emir | ODF-0011 — `cf7fffb8-a3f2-44dc-b0a7-5d4ea382534a` |
 | Gateway | http://192.168.20.20:5040 |
 | UI (Odak test) | http://192.168.20.20:3000 |
-| Lokal UI dev | `npm run dev` (gateway Odak'a yonlendirilmeli) |
 
-**UI:** http://192.168.20.20:3000/apps/operation-core/workspace → **Odak Uretim** → **Uretim panosu** (liste gorunumu)
+---
+
+## Bu oturumda tamamlananlar (11 Haz 2026)
+
+### Performans (MO + UI) — commit `b00d6a4`
+
+| Konu | Sonuc |
+|------|--------|
+| profile-view | Timeline varsayilan kapali; warm P95 ~1488 ms (once ~4588 ms) |
+| Board list | warm P95 ~331 ms (once ~980 ms) |
+| MO cache | poolFields, relation display, person/group pool keys |
+| UI | Lazy timeline, MO poolFields, displayForm, gecis dialog fix |
+
+Diagnostic: `docs/odak/diagnostic/reports/oc_pages_odak_uretim_post_perf_20260611_205036.json`
+
+### Form yardimi
+
+- Yeni emir formu: `docs/odak/is_surecleri/seed/odak_uretim_yeni_emir_form_help.md`
+- Patch: `docs/odak/is_surecleri/scripts/patch-odak-uretim-form-help.ps1`
+
+### Workspace otomasyonu planlama (v0.2)
+
+| Konu | Karar |
+|------|--------|
+| Ilk senaryo | `hold_quality` + uygunsuz → NCR (Kalite kuyrugu), `parentItemId`=ODF |
+| UI | **Otomatik isler** sekmesi (`tab=automations`) |
+| Dataset | `op_workspace_automations` (tetik + aksiyon tek kayit) |
+| Alan eslemesi | Uretim alanlari → NCR alanlari (lotSerial, qualityNotes, …) |
+| Iliski | Varsayilan parent-child; coklu NCR serbest (`idempotency: none`) |
+| Mevcut durum | Demo NCR **manuel** (seed script) |
+
+Tam plan: [WORKSPACE_AUTOMATION_PLANNING.md](../operationcore/mngoperations/WORKSPACE_AUTOMATION_PLANNING.md) · UI: [OC_UI_WORKSPACE_AUTOMATIONS.md](../operationcore/ui/OC_UI_WORKSPACE_AUTOMATIONS.md)
+
+### Daha once (v0.2 sprint)
+
+- Create form sadelestirme, gecis zorunluluklari, kismi sevkiyat alanlari
+- Referans seed ODF-0011 (kapali PO)
 
 ---
 
 ## Bilinen / acik noktalar
 
-1. **Gelismis arama** — backend filtre calisiyor (MO); UI fix'leri deploy sonrasi Odak'ta dogrulanmali (stateId, relation eq/in vb.)
-2. **SignalR / locales 404** — lokal dev'de Hub ve keeper locale gürültüsü; listeyi engellemez
-3. **op_fields 503** — ara sira DG; MO `fieldDisplays` ile relation hucreleri yine dolabilir
-4. **Kanban kartlari** — ikonlar simdilik liste sütunlarinda; kanban chip'leri ayri iyilestirme olabilir
-5. **Musteri geri bildirimi** — alan / durum revizyonu bekleniyor (asagidaki “sonraki adimlar”)
+1. **Kanban performans** — diagnostic WARN (~4,6 sn P95); liste/profil iyilesti
+2. **Sevkiyat birikimi** (`shippedQty`) — generic rule engine; MO hardcode yok
+3. **Yetkilendirme** — rol matrisi musteri talebi bekliyor
+4. **NCR/CAPA form yardim** — ertelendi
+5. **View-only gecis UX** — buton gorunur, 403 bilinen
 
 ---
 
-## Sonraki adimlar (yarin)
+## Sonraki adimlar
 
-1. **Odak test dogrulama** — liste: musteri/urun adlari, tarih formati, durum/oncelik/tip ikonlari, gelismis arama (or. Durum = Kapandi)
-2. Gerekirse `-SeedDemo` / seed sync (listColumns label) — MO label zenginlestirme yetiyorsa atlanabilir
-3. Kapali isler (ODF-0007 vb.) board scope + filtre ile gorunurluk kontrolu
-4. Musteri geri bildirimi sonrasi alan / akis revizyonu
-5. Keycloak grup haritasi (`uretim`, `kalite`, `depo`) — planli
-6. Opsiyonel: kanban kartlarinda katalog ikonlari
+### Oncelik 1 — Workspace otomasyonu implementasyonu
+
+| Faz | Is |
+|-----|-----|
+| SW-A0 | `op_workspace_automations` dataset + generator + setup |
+| SW-A1 | MO `WorkspaceAutomationService` + transition hook |
+| SW-A2 | UI Otomatik isler sekmesi |
+| SW-A3 | Odak seed (NCR otomasyonu) + E2E; manuel demo script NCR kaldir |
+| SW-A4 | Simule et, activity, i18n |
+
+### Oncelik 2 — Odak dogrulama (paralel)
+
+1. Liste, gelismis arama, ODF-0011 profil, Yeni is Yardim dialog
+2. Tam lifecycle testi (plan → uretim → kalite → sevkiyat)
 
 ---
 
-## Kurulum (Odak test — ilk kurulum / yeniden seed)
+## Kurulum (Odak test)
 
 ```powershell
-# Repo kokunden
 .\docs\odak\operationcore\scripts\get-operationcore-token.ps1
 .\docs\odak\is_surecleri\scripts\run-odak-uretim-full-setup.ps1
 ```
 
-Deploy (UI):
+Deploy UI:
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -Command "& { .\scripts\odak\sync-odak-source.ps1 -Paths @('Mng.Ui') }"
 pwsh -NoProfile -ExecutionPolicy Bypass -Command "& { .\scripts\odak\deploy-odak-apps.ps1 -Services mngui }"
 ```
-
----
-
-## Onceden tamamlananlar (ozet)
-
-| # | Cikti |
-|---|--------|
-| 1 | [referans/ODAK_URETIM_WORKSPACE_TASLAK.md](./referans/ODAK_URETIM_WORKSPACE_TASLAK.md) |
-| 2 | Master dataset + seed scriptleri (`setup-odak-master-datasets`, `seed-odak-master-data`) |
-| 3 | `seed-operation-core-odak-uretim.ps1` — OC metadata + demo ODF kayitlari |
-| 4 | Board modeli: Uretim panosu (liste) · Kalite kuyrugu · Depo sevkiyat |
 
 ---
 
@@ -111,4 +108,5 @@ pwsh -NoProfile -ExecutionPolicy Bypass -Command "& { .\scripts\odak\deploy-odak
 - [README.md](./README.md)
 - [referans/ODAK_URETIM_WORKSPACE_TASLAK.md](./referans/ODAK_URETIM_WORKSPACE_TASLAK.md)
 - [../operationcore/mngoperations/DEVAM.md](../operationcore/mngoperations/DEVAM.md)
-- [../deploy/README.md](../deploy/README.md)
+- [../operationcore/mngoperations/WORKSPACE_AUTOMATION_PLANNING.md](../operationcore/mngoperations/WORKSPACE_AUTOMATION_PLANNING.md)
+- [../operationcore/ui/OC_UI_WORKSPACE_AUTOMATIONS.md](../operationcore/ui/OC_UI_WORKSPACE_AUTOMATIONS.md)

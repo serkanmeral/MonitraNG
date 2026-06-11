@@ -16,6 +16,7 @@ export const OC_WORKSPACE_DEFINITION_TAB_KEYS = [
   'policies',
   'rules',
   'scheduled',
+  'automations',
   'sla',
   'mail',
 ] as const;

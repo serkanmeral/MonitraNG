@@ -3,7 +3,7 @@
 **Son güncelleme:** 28 Mayıs 2026 (SW-4d sihirbaz + Odak deploy doğrulama)  
 **Durum:** SW-0…SW-4d + SW-2/3a/b/c ✅ Odak · **SW-5** cron E2E smoke · **SW-6** backlog  
 **UI:** [OC_UI_SCHEDULED_WORK_ITEMS.md](../ui/OC_UI_SCHEDULED_WORK_ITEMS.md)  
-**İlişkili:** [API_SURFACE.md](./API_SURFACE.md) · [PIPELINES.md](./PIPELINES.md) §6 · [INTEGRATIONS.md](./INTEGRATIONS.md) · [PERMISSIONS_LAYERING.md](./PERMISSIONS_LAYERING.md)
+**İlişkili:** [API_SURFACE.md](./API_SURFACE.md) · [PIPELINES.md](./PIPELINES.md) §6 · [INTEGRATIONS.md](./INTEGRATIONS.md) · [PERMISSIONS_LAYERING.md](./PERMISSIONS_LAYERING.md) · **Kardeş (olay-tetikli):** [WORKSPACE_AUTOMATION_PLANNING.md](./WORKSPACE_AUTOMATION_PLANNING.md) · [OC_UI_WORKSPACE_AUTOMATIONS.md](../ui/OC_UI_WORKSPACE_AUTOMATIONS.md)
 
 ---
 

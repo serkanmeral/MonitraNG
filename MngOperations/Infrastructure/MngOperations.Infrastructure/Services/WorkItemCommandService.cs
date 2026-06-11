@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using MngOperations.Application.Contracts.Automations;
 using MngOperations.Application.Contracts.WorkItems;
 using MngOperations.Application.Contracts.Workflow;
 using MngOperations.Application.Events;
@@ -34,6 +35,7 @@ public class WorkItemCommandService : IWorkItemCommandService
     private readonly IWorkItemTimelineService _timelineService;
     private readonly INotificationOrchestrator _notifications;
     private readonly IMngWorkflowClient _workflowClient;
+    private readonly IWorkspaceAutomationService _workspaceAutomations;
     private readonly ILogger<WorkItemCommandService> _logger;
 
     private static readonly HashSet<string> PatchForbiddenKeys = new(StringComparer.OrdinalIgnoreCase)
@@ -55,6 +57,7 @@ public class WorkItemCommandService : IWorkItemCommandService
         IWorkItemTimelineService timelineService,
         INotificationOrchestrator notifications,
         IMngWorkflowClient workflowClient,
+        IWorkspaceAutomationService workspaceAutomations,
         ILogger<WorkItemCommandService> logger)
     {
         _requestContext = requestContext;
@@ -69,6 +72,7 @@ public class WorkItemCommandService : IWorkItemCommandService
         _timelineService = timelineService;
         _notifications = notifications;
         _workflowClient = workflowClient;
+        _workspaceAutomations = workspaceAutomations;
         _logger = logger;
     }
 
@@ -432,6 +436,27 @@ public class WorkItemCommandService : IWorkItemCommandService
                 transitionKey,
                 currentStateId,
                 toStateId),
+            snapshot);
+
+        await RunPipelineSideEffectAsync(
+            pipeline,
+            PipelineSteps.WorkspaceAutomations,
+            () => _workspaceAutomations.ExecuteOnWorkItemTransitionAsync(
+                new WorkspaceAutomationTriggerContext
+                {
+                    EventName = RuleTriggers.WorkItemTransitioned,
+                    WorkspaceId = workspaceId,
+                    BoardId = GetString(updated, "boardId"),
+                    TypeId = GetString(updated, "typeId"),
+                    WorkItemId = workItemId,
+                    WorkItemKey = wiKey,
+                    ToStateId = toStateId,
+                    FromStateId = currentStateId,
+                    TransitionKey = transitionKey,
+                    WorkItem = updated
+                },
+                token,
+                cancellationToken),
             snapshot);
 
         await RunPipelineSideEffectAsync(

@@ -2776,7 +2776,9 @@
           {
             "$group": {
               "_id": "$stateId",
-              "count": { "$sum": 1 }
+              "count": {
+                "$sum": 1
+              }
             }
           },
           {
@@ -2788,7 +2790,9 @@
             }
           },
           {
-            "$sort": { "count": -1 }
+            "$sort": {
+              "count": -1
+            }
           }
         ],
         "parameters": [
@@ -4584,6 +4588,143 @@
       {
         "fieldType": "relation",
         "name": "lastWorkItemId",
+        "title": "Son oluşan WI",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_work_items",
+        "incrementalOptions": null
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_workspaceId",
+        "fields": {
+          "workspaceId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_workspaceId_isActive",
+        "fields": {
+          "workspaceId": 1,
+          "isActive": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_workspaceId_name",
+        "fields": {
+          "workspaceId": 1,
+          "name": 1
+        },
+        "unique": true
+      }
+    ],
+    "queries": []
+  },
+  {
+    "__dataId": null,
+    "name": "op_workspace_automations",
+    "description": "Operational Core - Event-driven workspace automations (trigger + actions)",
+    "category": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Ad",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Açıklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "workspaceId",
+        "title": "Workspace",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": "op_workspaces",
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "bool",
+        "name": "isActive",
+        "title": "Aktif",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "trigger",
+        "title": "Tetikleyici (kind, scope, conditions)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "idempotency",
+        "title": "Idempotency ({ mode })",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "relation",
+        "title": "İlişki ({ mode })",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "object",
+        "name": "actions",
+        "title": "Aksiyon listesi (createWorkItem, …)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "lastRunAt",
+        "title": "Son çalışma",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "relation",
+        "name": "lastCreatedWorkItemId",
         "title": "Son oluşan WI",
         "mandatory": false,
         "unique": false,

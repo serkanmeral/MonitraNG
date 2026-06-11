@@ -49,6 +49,60 @@ export interface OpStateFlowTransition {
   permissionGroups?: string[];
 }
 
+export type OcAutomationIdempotencyMode = 'none' | 'one_per_source';
+export type OcAutomationRelationMode = 'parent' | 'none';
+
+export type OcFieldMappingSource = 'field' | 'static' | 'token' | 'relation';
+
+export interface OcFieldMapping {
+  target: string;
+  source: OcFieldMappingSource;
+  path?: string;
+  value?: string;
+  template?: string;
+  relation?: 'parent';
+}
+
+export interface OcAutomationTriggerWorkItem {
+  kind: 'workItemStateReached';
+  boardId?: string;
+  typeId?: string;
+  toStateId?: string;
+  transitionKey?: string;
+  conditions?: unknown;
+}
+
+export type OcAutomationTrigger = OcAutomationTriggerWorkItem | { kind: 'alarmRaised'; [key: string]: unknown };
+
+export interface OcAutomationCreateWorkItemAction {
+  type: 'createWorkItem';
+  order: number;
+  target: { boardId: string; typeId: string };
+  title: string;
+  description?: string;
+  assignee?: string;
+  priorityId?: string;
+  fieldMappings: OcFieldMapping[];
+}
+
+export type OcAutomationAction = OcAutomationCreateWorkItemAction | { type: 'generateDocument'; order: number };
+
+/** op_workspace_automations — olay-tetikli workspace otomasyonu */
+export interface OpWorkspaceAutomation {
+  __dataId: string;
+  workspaceId: string;
+  name: string;
+  description?: string | null;
+  isActive: boolean;
+  trigger: OcAutomationTrigger;
+  idempotency: { mode: OcAutomationIdempotencyMode };
+  relation: { mode: OcAutomationRelationMode };
+  actions: OcAutomationAction[];
+  lastRunAt?: string | null;
+  lastCreatedWorkItemId?: string | null;
+  runCount?: number | null;
+}
+
 /** op_work_item_schedules — zamanlanmış WI şablonu */
 export interface OpWorkItemSchedule {
   __dataId: string;

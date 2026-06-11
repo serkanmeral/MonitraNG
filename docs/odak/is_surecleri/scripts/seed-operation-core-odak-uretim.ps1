@@ -855,6 +855,47 @@ Find-OrCreate -Collection "op_rules" -Filter "name:eq:$tag - Kalite onay uygunsu
     isActive = $true; priority = 96
 } | Out-Null
 
+# --- 12b. Workspace automations (SW-A3) ---
+Write-Host "[12b] op_workspace_automations..." -ForegroundColor Yellow
+$autoName = "$tag - Uygunsuzluk -> NCR"
+$autoBody = @{
+    name        = $autoName
+    workspaceId = $workspaceId
+    isActive    = $true
+    description = "hold_quality + uygunsuz -> Kalite kuyrugunda NCR (parent=ODF)"
+    trigger     = @{
+        kind          = "workItemStateReached"
+        typeId        = $typeOrderId
+        transitionKey = "hold_quality"
+        conditions    = @{
+            op    = "and"
+            items = @(@{ field = "fields.qualityResult"; cmp = "eq"; value = "uygunsuz" })
+        }
+    }
+    idempotency = @{ mode = "none" }
+    relation    = @{ mode = "parent" }
+    actions     = @(
+        @{
+            type          = "createWorkItem"
+            order         = 1
+            target        = @{ boardId = $boardQualityId; typeId = $typeNcrId }
+            title         = "Uygunsuzluk — {{source.key}}"
+            assignee      = "{{source.assignee}}"
+            fieldMappings = @(
+                @{ target = "parentItemId"; source = "relation"; relation = "parent" },
+                @{ target = "lotSerial"; source = "field"; path = "fields.lotSerial" },
+                @{ target = "defectDescription"; source = "field"; path = "fields.qualityNotes" },
+                @{ target = "ncrSource"; source = "static"; value = "final_inspection" },
+                @{ target = "priorityId"; source = "static"; value = $prioHighId },
+                @{ target = "affectedQty"; source = "static"; value = "2" },
+                @{ target = "containmentAction"; source = "static"; value = "Etkilenen adetler ayrildi" }
+            )
+        }
+    )
+}
+$autoId = Find-OrCreate -Collection "op_workspace_automations" -Filter "name:eq:$autoName" -Label "NCR otomasyon" -Body $autoBody
+Sync-Record -Collection "op_workspace_automations" -Id $autoId -Label "NCR otomasyon sync" -Body $autoBody
+
 # --- 13. Dashboard ---
 Write-Host "[13] op_dashboards..." -ForegroundColor Yellow
 $dashboardName = "$tag - Ozet pano"
@@ -1028,27 +1069,21 @@ if ($SmokeTest -or $SeedDemo) {
         Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items/$wi1Id/transitions/send_to_quality" -Method POST -Body (@{ fields = @{ lotSerial = "LOT-2026-0421" } } | ConvertTo-Json -Compress) @moParams | Out-Null
         Write-Host "  OK: demo emir -> kalite kontrol" -ForegroundColor Green
 
-        # NCR
-        $bodyNcr = @{
-            workspaceId  = $workspaceId
-            typeId       = $typeNcrId
-            title        = "Layup bosluk hatasi — 2 adet"
-            parentItemId = $wi1Id
-            boardId      = $boardQualityId
-            fields       = @{
-                priorityId         = $prioHighId
-                ncrSource          = "proses"
-                defectDescription  = "Yuzeyde bosluk / delaminasyon tespit edildi"
-                affectedQty        = 2
-                containmentAction  = "Etkilenen 2 adet ayirildi, hat durduruldu"
-                lotSerial          = "LOT-2026-0421"
+        # NCR — workspace otomasyonu (hold_quality + uygunsuz)
+        Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items/$wi1Id/transitions/hold_quality" -Method POST -Body (@{
+            fields = @{
+                qualityResult = "uygunsuz"
+                qualityNotes  = "Yuzeyde bosluk / delaminasyon tespit edildi"
             }
-        } | ConvertTo-Json -Depth 8 -Compress
-        $ncr = Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items" -Method POST -Body $bodyNcr @moParams
-        $ncrId = $ncr.workItem.id
-        Write-Host "  OK: demo NCR -> $($ncr.workItem.key)" -ForegroundColor Green
-
-        Invoke-RestMethod -Uri "$MoBaseUrl/api/v1/work-items/$wi1Id/transitions/hold_quality" -Method POST -Body (@{ fields = @{ qualityResult = "uygunsuz"; qualityNotes = "NCR acildi" } } | ConvertTo-Json -Compress) @moParams | Out-Null
+        } | ConvertTo-Json -Depth 6 -Compress) @moParams | Out-Null
+        Start-Sleep -Seconds 1
+        $ncrRows = Invoke-DgGet -Collection "op_work_items" -Filter "parentItemId:eq:$wi1Id" -Limit 5
+        $ncrItems = @($ncrRows.items)
+        if (-not $ncrItems.Count -and $ncrRows.data) { $ncrItems = @($ncrRows.data) }
+        if (-not $ncrItems.Count) { throw "Demo NCR otomasyonu ile olusmadi (parentItemId=$wi1Id)" }
+        $ncrId = $ncrItems[0].__dataId
+        $ncrKey = $ncrItems[0].key
+        Write-Host "  OK: demo NCR (otomasyon) -> $ncrKey" -ForegroundColor Green
 
         # CAPA
         $bodyCapa = @{

@@ -70,6 +70,7 @@ export const OC_DATASETS = {
   slaPolicies: 'op_sla_policies',
   notificationPolicies: 'op_notification_policies',
   workItemSchedules: 'op_work_item_schedules',
+  workspaceAutomations: 'op_workspace_automations',
   profiles: 'op_profiles',
   tags: 'op_tags',
   dashboards: 'op_dashboards',
@@ -1955,6 +1956,8 @@ export * from '@/services/operationCore/notificationPolicies';
 
 // İş kaydı zamanlamaları (op_work_item_schedules) → services/operationCore/schedules.ts
 export * from '@/services/operationCore/schedules';
+// Workspace otomasyonları (op_workspace_automations)
+export * from '@/services/operationCore/automations';
 
 // Etiketler (op_tags, workspace-kapsamlı) → services/operationCore/tags.ts
 export * from '@/services/operationCore/tags';

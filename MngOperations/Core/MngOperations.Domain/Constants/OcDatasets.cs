@@ -22,5 +22,6 @@ public static class OcDatasets
     public const string Notifications = "op_notifications";
     public const string Comments = "op_comments";
     public const string WorkItemSchedules = "op_work_item_schedules";
+    public const string WorkspaceAutomations = "op_workspace_automations";
     public const string Tags = "op_tags";
 }

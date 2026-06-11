@@ -22,6 +22,11 @@ public interface IMetadataCache
         string token,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<WorkspaceAutomationRecord>> GetWorkspaceAutomationsForWorkspaceAsync(
+        string workspaceId,
+        string token,
+        CancellationToken cancellationToken = default);
+
     Task<FieldRecord> GetFieldAsync(string fieldId, string token, CancellationToken cancellationToken = default);
 
     Task<FieldRecord?> FindFieldByKeyAsync(string fieldKey, string token, CancellationToken cancellationToken = default);

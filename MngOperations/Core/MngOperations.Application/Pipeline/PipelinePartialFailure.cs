@@ -15,6 +15,7 @@ public static class PipelineSteps
     public const string PersistActivity = "persistActivity";
     public const string PersistComment = "persistComment";
     public const string AutomationRules = "automationRules";
+    public const string WorkspaceAutomations = "workspaceAutomations";
     public const string PublishRabbitMq = "publishRabbitMq";
     public const string DispatchNotifications = "dispatchNotifications";
 }

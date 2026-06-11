@@ -4,7 +4,8 @@
 **Durum:** SW-0…SW-4d ✅ · SW-2/3 Odak ✅ · SW-5 cron E2E · SW-6 backlog  
 **Backend auth:** [SCHEDULED_WORK_ITEMS.md §4.1](../mngoperations/SCHEDULED_WORK_ITEMS.md)  
 **Backend:** [SCHEDULED_WORK_ITEMS.md](../mngoperations/SCHEDULED_WORK_ITEMS.md)  
-**Handoff:** [DEVAM.md](../mngoperations/DEVAM.md)
+**Handoff:** [DEVAM.md](../mngoperations/DEVAM.md)  
+**Kardeş (olay-tetikli):** [OC_UI_WORKSPACE_AUTOMATIONS.md](./OC_UI_WORKSPACE_AUTOMATIONS.md) · [WORKSPACE_AUTOMATION_PLANNING.md](../mngoperations/WORKSPACE_AUTOMATION_PLANNING.md)
 
 ---
 

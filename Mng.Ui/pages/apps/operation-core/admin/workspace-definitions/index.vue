@@ -11,6 +11,7 @@ import OcWorkspaceDefinitionsDashboardsTab from '@/components/apps/operation-cor
 import OcWorkspaceDefinitionsPoliciesTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsPoliciesTab.vue';
 import OcWorkspaceDefinitionsRulesTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsRulesTab.vue';
 import OcWorkspaceDefinitionsScheduledWorkItemsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsScheduledWorkItemsTab.vue';
+import OcWorkspaceDefinitionsAutomationsTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsAutomationsTab.vue';
 import OcWorkspaceDefinitionsSlaTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsSlaTab.vue';
 import OcWorkspaceDefinitionsMailTab from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceDefinitionsMailTab.vue';
 import OcWorkspaceCreateDialog from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceCreateDialog.vue';
@@ -78,6 +79,7 @@ const TAB_ICONS: Record<OcWorkspaceDefinitionTabKey, string> = {
   policies: 'mdi-shield-account-outline',
   rules: 'mdi-format-list-checks',
   scheduled: 'mdi-calendar-clock',
+  automations: 'mdi-lightning-bolt',
   sla: 'mdi-clock-check-outline',
   mail: 'mdi-bell-outline',
 };
@@ -331,6 +333,10 @@ onMounted(() => {
           />
           <OcWorkspaceDefinitionsScheduledWorkItemsTab
             v-else-if="tab.key === 'scheduled'"
+            :workspace-id="selectedWorkspaceId"
+          />
+          <OcWorkspaceDefinitionsAutomationsTab
+            v-else-if="tab.key === 'automations'"
             :workspace-id="selectedWorkspaceId"
           />
           <OcWorkspaceDefinitionsSlaTab

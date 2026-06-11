@@ -123,6 +123,27 @@ public partial class MetadataCacheService : IMetadataCache
         return rules;
     }
 
+    public async Task<IReadOnlyList<WorkspaceAutomationRecord>> GetWorkspaceAutomationsForWorkspaceAsync(
+        string workspaceId,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        var cacheKey = CacheKey($"automations:{workspaceId}");
+        if (_cache.TryGetValue(cacheKey, out IReadOnlyList<WorkspaceAutomationRecord>? cached) && cached != null)
+            return cached;
+
+        var filter = $"workspaceId:eq:{workspaceId}";
+        var automations = (await _dg.GetAsync<WorkspaceAutomationRecord>(
+            OcDatasets.WorkspaceAutomations,
+            $"filter={Uri.EscapeDataString(filter)}&limit=200",
+            token,
+            cancellationToken)).ToList();
+
+        _cache.Set(cacheKey, automations, _ttl);
+        _logger.LogDebug("Metadata cache set {CacheKey} ({Count} automations)", cacheKey, automations.Count);
+        return automations;
+    }
+
     public Task<FieldRecord> GetFieldAsync(string fieldId, string token, CancellationToken cancellationToken = default) =>
         GetOrLoadAsync(
             CacheKey($"field:{fieldId}"),
@@ -345,6 +366,7 @@ public partial class MetadataCacheService : IMetadataCache
         Remove($"workspace:{wsId}");
         Remove($"form:default:{wsId}");
         Remove($"rules:{wsId}");
+        Remove($"automations:{wsId}");
         Remove($"profile:default:{wsId}");
         Remove($"sla:policies:{wsId}");
         Remove($"notification-policies:{wsId}");

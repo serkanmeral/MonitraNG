@@ -240,6 +240,50 @@ function buildOpTagsDataset() {
 }
 
 const OP_WORK_ITEM_SCHEDULES = 'op_work_item_schedules';
+const OP_WORKSPACE_AUTOMATIONS = 'op_workspace_automations';
+
+function buildOpWorkspaceAutomationsDataset() {
+  return {
+    __dataId: null,
+    name: OP_WORKSPACE_AUTOMATIONS,
+    description:
+      'Operational Core - Event-driven workspace automations (trigger + actions)',
+    category: OPERATION_CORE_CATEGORY_ID,
+    forceSchema: false,
+    logging: 'self',
+    publish_mode: 'none',
+    fields: [
+      fieldText('name', 'Ad', { mandatory: true }),
+      fieldText('description', 'Açıklama'),
+      fieldRelation('workspaceId', 'Workspace', 'op_workspaces', { mandatory: true }),
+      fieldBool('isActive', 'Aktif', { mandatory: true }),
+      fieldObject('trigger', 'Tetikleyici (kind, scope, conditions)'),
+      fieldObject('idempotency', 'Idempotency ({ mode })'),
+      fieldObject('relation', 'İlişki ({ mode })'),
+      fieldObject('actions', 'Aksiyon listesi (createWorkItem, …)'),
+      fieldDatetime('lastRunAt', 'Son çalışma'),
+      fieldRelation('lastCreatedWorkItemId', 'Son oluşan WI', 'op_work_items'),
+    ],
+    indexList: [
+      {
+        name: 'idx_workspaceId',
+        fields: { workspaceId: 1 },
+        unique: false,
+      },
+      {
+        name: 'idx_workspaceId_isActive',
+        fields: { workspaceId: 1, isActive: 1 },
+        unique: false,
+      },
+      {
+        name: 'idx_workspaceId_name',
+        fields: { workspaceId: 1, name: 1 },
+        unique: true,
+      },
+    ],
+    queries: [],
+  };
+}
 
 function buildOpWorkItemSchedulesDataset() {
   return {
@@ -436,6 +480,9 @@ const datasets = JSON.parse(raw);
 const patched = datasets.map(patchDataset);
 if (!patched.some((d) => d.name === OP_WORK_ITEM_SCHEDULES)) {
   patched.push(buildOpWorkItemSchedulesDataset());
+}
+if (!patched.some((d) => d.name === OP_WORKSPACE_AUTOMATIONS)) {
+  patched.push(buildOpWorkspaceAutomationsDataset());
 }
 if (!patched.some((d) => d.name === OP_TAGS)) {
   patched.push(buildOpTagsDataset());
