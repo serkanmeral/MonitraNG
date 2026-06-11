@@ -6,6 +6,7 @@ import DiMarkdownViewer from '@/components/apps/document-intelligence/DiMarkdown
 import DiMarkdownEditor from '@/components/apps/document-intelligence/DiMarkdownEditor.vue';
 import DiPermissionsDialog from '@/components/apps/document-intelligence/DiPermissionsDialog.vue';
 import DiFilePreviewDialog from '@/components/apps/document-intelligence/DiFilePreviewDialog.vue';
+import DiLinkedWorkItemsPanel from '@/components/apps/document-intelligence/DiLinkedWorkItemsPanel.vue';
 import { isDiPreviewable } from '@/utils/diFilePreview';
 import { useResizableTreePanel } from '@/composables/useResizableTreePanel';
 import { useAppI18n } from '@/composables/useAppI18n';
@@ -905,6 +906,12 @@ onMounted(async () => {
 
               <DiMarkdownEditor v-if="docMode === 'edit'" v-model="editContent" />
               <DiMarkdownViewer v-else :content="docContent" :empty-label="t('documentIntelligence.emptyDoc')" />
+
+              <DiLinkedWorkItemsPanel
+                v-if="openDoc && docMode !== 'edit'"
+                :resource-id="openDoc.id"
+                class="mt-4"
+              />
             </template>
 
             <!-- Klasör tarayıcı -->

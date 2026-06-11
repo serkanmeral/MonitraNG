@@ -6,7 +6,8 @@ import {
   ocUpdate,
   resolveRelationId,
 } from '@/services/operationCoreService';
-import type { OpWorkspaceAutomation } from '@/types/apps/operationCore';
+import { fetchFromOperations } from '@/services/apiService';
+import type { OcAutomationSimulateResult, OpWorkspaceAutomation } from '@/types/apps/operationCore';
 
 function parseJsonObject(raw: unknown): Record<string, unknown> | null {
   if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
@@ -110,4 +111,74 @@ export async function ocUpdateWorkspaceAutomation(
 
 export async function ocDeleteWorkspaceAutomation(automationId: string) {
   await ocDelete(OC_DATASETS.workspaceAutomations, automationId);
+}
+
+function mapAutomationSimulatePreview(raw: Record<string, unknown>) {
+  const fieldsRaw = raw.resolvedFields ?? raw.ResolvedFields;
+  const fields =
+    fieldsRaw && typeof fieldsRaw === 'object' && !Array.isArray(fieldsRaw)
+      ? (fieldsRaw as Record<string, unknown>)
+      : {};
+  return {
+    resolvedTitle: raw.resolvedTitle != null ? String(raw.resolvedTitle) : raw.ResolvedTitle != null ? String(raw.ResolvedTitle) : null,
+    resolvedDescription:
+      raw.resolvedDescription != null
+        ? String(raw.resolvedDescription)
+        : raw.ResolvedDescription != null
+          ? String(raw.ResolvedDescription)
+          : null,
+    targetBoardId: String(raw.targetBoardId ?? raw.TargetBoardId ?? '') || null,
+    targetTypeId: String(raw.targetTypeId ?? raw.TargetTypeId ?? '') || null,
+    resolvedAssignee:
+      raw.resolvedAssignee != null
+        ? String(raw.resolvedAssignee)
+        : raw.ResolvedAssignee != null
+          ? String(raw.ResolvedAssignee)
+          : null,
+    resolvedFields: fields,
+  };
+}
+
+function mapAutomationSimulateResult(raw: Record<string, unknown>): OcAutomationSimulateResult {
+  const previewRaw = raw.preview ?? raw.Preview;
+  const createdRaw = raw.createdWorkItem ?? raw.CreatedWorkItem;
+  const preview =
+    previewRaw && typeof previewRaw === 'object'
+      ? mapAutomationSimulatePreview(previewRaw as Record<string, unknown>)
+      : null;
+  const created =
+    createdRaw && typeof createdRaw === 'object'
+      ? {
+          id: String((createdRaw as Record<string, unknown>).id ?? (createdRaw as Record<string, unknown>).Id ?? ''),
+          key: String((createdRaw as Record<string, unknown>).key ?? (createdRaw as Record<string, unknown>).Key ?? ''),
+          code:
+            (createdRaw as Record<string, unknown>).code != null
+              ? String((createdRaw as Record<string, unknown>).code)
+              : (createdRaw as Record<string, unknown>).Code != null
+                ? String((createdRaw as Record<string, unknown>).Code)
+                : null,
+        }
+      : null;
+
+  return {
+    matched: Boolean(raw.matched ?? raw.Matched),
+    reason: raw.reason != null ? String(raw.reason) : raw.Reason != null ? String(raw.Reason) : null,
+    executed: Boolean(raw.executed ?? raw.Executed),
+    preview,
+    createdWorkItem: created?.id ? created : null,
+  };
+}
+
+/** SW-A4: Otomasyonu kaynak iş kaydına karşı simüle eder (önizleme veya çalıştırma). */
+export async function ocSimulateWorkspaceAutomation(
+  automationId: string,
+  workItemId: string,
+  execute = false
+): Promise<OcAutomationSimulateResult> {
+  const raw = (await fetchFromOperations(
+    `/api/v1/workspace-automations/${encodeURIComponent(automationId)}/simulate`,
+    'POST',
+    { workItemId, execute }
+  )) as Record<string, unknown>;
+  return mapAutomationSimulateResult(raw);
 }

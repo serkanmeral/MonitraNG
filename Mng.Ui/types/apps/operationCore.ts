@@ -88,6 +88,29 @@ export interface OcAutomationCreateWorkItemAction {
 export type OcAutomationAction = OcAutomationCreateWorkItemAction | { type: 'generateDocument'; order: number };
 
 /** op_workspace_automations — olay-tetikli workspace otomasyonu */
+export interface OcAutomationSimulatePreview {
+  resolvedTitle?: string | null;
+  resolvedDescription?: string | null;
+  targetBoardId?: string | null;
+  targetTypeId?: string | null;
+  resolvedAssignee?: string | null;
+  resolvedFields?: Record<string, unknown>;
+}
+
+export interface OcAutomationSimulateCreated {
+  id: string;
+  key: string;
+  code?: string | null;
+}
+
+export interface OcAutomationSimulateResult {
+  matched: boolean;
+  reason?: string | null;
+  executed: boolean;
+  preview?: OcAutomationSimulatePreview | null;
+  createdWorkItem?: OcAutomationSimulateCreated | null;
+}
+
 export interface OpWorkspaceAutomation {
   __dataId: string;
   workspaceId: string;

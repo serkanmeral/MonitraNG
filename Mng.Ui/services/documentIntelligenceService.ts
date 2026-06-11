@@ -5,6 +5,11 @@ import {
   type DiCreateFileResourceRequest,
   type DiCreateFolderRequest,
   type DiCreateMarkdownRequest,
+  type DiCreateResourceLinkRequest,
+  type DiLinkedResource,
+  type DiLinkedWorkItem,
+  type DiResourceLink,
+  type DiResourceLinkListResult,
   type DiEffectivePermission,
   type DiFolderPermissions,
   type DiGroupPermission,
@@ -23,6 +28,7 @@ import {
 } from '@/types/apps/documentIntelligence';
 
 const BASE = '/api/v1/resources';
+const LINKS_BASE = '/api/v1';
 
 function asRecord(raw: unknown): Record<string, unknown> {
   return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
@@ -311,6 +317,86 @@ export async function diCreateFileResource(request: DiCreateFileResourceRequest)
 /** Yüklenen dosyayı DG üzerinden blob olarak indirir (binary MngDocument'ten geçmez). */
 export async function diFetchFileBlob(filePath: string): Promise<Blob> {
   return fetchBlobFromDataGateway(`/api/v1/files/download?filePath=${encodeURIComponent(filePath)}`);
+}
+
+// --- Faz 2: work item ↔ doküman bağlantıları ---
+
+function mapResourceLink(raw: unknown): DiResourceLink {
+  const o = asRecord(raw);
+  return {
+    id: str(o, 'id') ?? '',
+    resourceId: str(o, 'resourceId') ?? '',
+    targetModule: str(o, 'targetModule') ?? '',
+    targetType: str(o, 'targetType') ?? '',
+    targetId: str(o, 'targetId') ?? '',
+    relationType: str(o, 'relationType') ?? 'reference',
+    createdBy: str(o, 'createdBy'),
+    createdAt: str(o, 'createdAt'),
+  };
+}
+
+function mapLinkedWorkItem(raw: unknown): DiLinkedWorkItem {
+  const o = asRecord(raw);
+  return {
+    linkId: str(o, 'linkId') ?? '',
+    workItemId: str(o, 'workItemId') ?? '',
+    workItemKey: str(o, 'workItemKey'),
+    workItemTitle: str(o, 'workItemTitle'),
+    boardId: str(o, 'boardId'),
+    workspaceId: str(o, 'workspaceId'),
+    relationType: str(o, 'relationType') ?? 'reference',
+  };
+}
+
+function mapLinkedResource(raw: unknown): DiLinkedResource {
+  const o = asRecord(raw);
+  return {
+    linkId: str(o, 'linkId') ?? '',
+    resourceId: str(o, 'resourceId') ?? '',
+    relationType: str(o, 'relationType') ?? 'reference',
+    resourceType: str(o, 'resourceType'),
+    name: str(o, 'name'),
+    title: str(o, 'title'),
+    mimeType: str(o, 'mimeType'),
+    extension: str(o, 'extension'),
+    permissions: mapEffective(o.permissions),
+  };
+}
+
+function mapLinkListResult<T>(raw: unknown, mapItem: (item: unknown) => T): DiResourceLinkListResult<T> {
+  const o = asRecord(raw);
+  const itemsRaw = Array.isArray(o.items) ? o.items : [];
+  return {
+    items: itemsRaw.map(mapItem),
+    total: num(o, 'total') ?? itemsRaw.length,
+  };
+}
+
+export async function diCreateResourceLink(request: DiCreateResourceLinkRequest): Promise<DiResourceLink> {
+  const raw = await fetchFromDocuments(`${LINKS_BASE}/resource-links`, 'POST', request);
+  return mapResourceLink(raw);
+}
+
+export async function diDeleteResourceLink(linkId: string): Promise<void> {
+  await fetchFromDocuments(`${LINKS_BASE}/resource-links/${encodeURIComponent(linkId)}`, 'DELETE');
+}
+
+export async function diGetLinkedWorkItems(resourceId: string): Promise<DiResourceLinkListResult<DiLinkedWorkItem>> {
+  const raw = await fetchFromDocuments(
+    `${LINKS_BASE}/resources/${encodeURIComponent(resourceId)}/linked-work-items`,
+    'GET'
+  );
+  return mapLinkListResult(raw, mapLinkedWorkItem);
+}
+
+export async function diGetLinkedResourcesForWorkItem(
+  workItemId: string
+): Promise<DiResourceLinkListResult<DiLinkedResource>> {
+  const raw = await fetchFromDocuments(
+    `${LINKS_BASE}/work-items/${encodeURIComponent(workItemId)}/linked-resources`,
+    'GET'
+  );
+  return mapLinkListResult(raw, mapLinkedResource);
 }
 
 // --- Grup bazlı klasör yetkilendirmesi + miras ---

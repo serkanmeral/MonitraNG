@@ -215,3 +215,53 @@ export interface DiCreateFileResourceRequest {
 
 /** Ağaç kökü için sanal düğüm kimliği (UI). */
 export const DI_ROOT_ID = '__di_root__';
+
+/** dm_resource_links.relationType değerleri (Faz 2). */
+export const DI_LINK_RELATION_TYPES = ['reference', 'attachment', 'evidence', 'output'] as const;
+export type DiLinkRelationType = (typeof DI_LINK_RELATION_TYPES)[number];
+
+export interface DiResourceLink {
+  id: string;
+  resourceId: string;
+  targetModule: string;
+  targetType: string;
+  targetId: string;
+  relationType: DiLinkRelationType | string;
+  createdBy: string | null;
+  createdAt: string | null;
+}
+
+export interface DiLinkedWorkItem {
+  linkId: string;
+  workItemId: string;
+  workItemKey: string | null;
+  workItemTitle: string | null;
+  boardId: string | null;
+  workspaceId: string | null;
+  relationType: DiLinkRelationType | string;
+}
+
+export interface DiLinkedResource {
+  linkId: string;
+  resourceId: string;
+  relationType: DiLinkRelationType | string;
+  resourceType: string | null;
+  name: string | null;
+  title: string | null;
+  mimeType: string | null;
+  extension: string | null;
+  permissions: DiEffectivePermission;
+}
+
+export interface DiCreateResourceLinkRequest {
+  resourceId: string;
+  targetModule: string;
+  targetType: string;
+  targetId: string;
+  relationType: DiLinkRelationType | string;
+}
+
+export interface DiResourceLinkListResult<T> {
+  items: T[];
+  total: number;
+}

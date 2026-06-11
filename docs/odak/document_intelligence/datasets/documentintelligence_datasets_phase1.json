@@ -355,5 +355,97 @@
         "unique": false
       }
     ]
+  },
+  {
+    "__dataId": null,
+    "name": "dm_resource_links",
+    "description": "Document Intelligence - Kaynaklar ile diger modul kayitlari arasindaki iliskiler (Faz 2: operationCore workItem).",
+    "category": "b2f1c0a4-9d3e-4a87-bf21-7c5e9a0d1e34",
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "resourceId",
+        "title": "DI kaynak id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "targetModule",
+        "title": "Hedef modul",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "targetType",
+        "title": "Hedef tip",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "targetId",
+        "title": "Hedef kayit id",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "relationType",
+        "title": "Iliski tipi (reference|attachment|evidence|output)",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_link_resourceId",
+        "fields": {
+          "resourceId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_link_target",
+        "fields": {
+          "targetModule": 1,
+          "targetType": 1,
+          "targetId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_link_unique",
+        "fields": {
+          "resourceId": 1,
+          "targetModule": 1,
+          "targetType": 1,
+          "targetId": 1,
+          "relationType": 1
+        },
+        "unique": true
+      }
+    ]
   }
 ]

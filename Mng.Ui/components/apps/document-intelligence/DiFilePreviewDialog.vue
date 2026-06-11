@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import DiLinkedWorkItemsPanel from '@/components/apps/document-intelligence/DiLinkedWorkItemsPanel.vue';
 import { diFetchFileBlob, diExtractMessage } from '@/services/documentIntelligenceService';
 import { diPreviewKind, diPreviewMime } from '@/utils/diFilePreview';
 import type { DiResource } from '@/types/apps/documentIntelligence';
@@ -130,6 +131,13 @@ function triggerDownload() {
         <div v-else class="text-body-2 text-medium-emphasis text-center py-12 px-4">
           {{ t('documentIntelligence.previewUnavailable') }}
         </div>
+
+        <template v-if="resource?.id">
+          <v-divider />
+          <div class="pa-4">
+            <DiLinkedWorkItemsPanel :resource-id="resource.id" />
+          </div>
+        </template>
       </v-card-text>
     </v-card>
   </v-dialog>

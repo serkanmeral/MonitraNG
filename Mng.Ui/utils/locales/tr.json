@@ -3441,6 +3441,17 @@
     "history": "Geçmiş",
     "metaCreated": "Oluşturan",
     "metaUpdated": "Son güncelleyen",
+    "linkedWorkItems": {
+      "title": "İlişkili işler",
+      "empty": "Bu dokümana bağlı iş kaydı yok.",
+      "loadError": "İlişkili işler yüklenemedi."
+    },
+    "linkRelationTypes": {
+      "reference": "Referans",
+      "attachment": "Ek",
+      "evidence": "Kanıt",
+      "output": "Çıktı"
+    },
     "versionHistory": "Sürüm geçmişi",
     "noVersions": "Henüz sürüm yok.",
     "currentVersion": "Güncel",
@@ -3900,7 +3911,29 @@
         "details": "Detaylar",
         "comments": "Yorumlar",
         "activity": "Aktivite",
-        "attachments": "Ekler"
+        "attachments": "Ekler",
+        "documents": "Dökümanlar"
+      },
+      "documents": {
+        "hint": "Document Intelligence kaynaklarına referans bağlantıları (eklerden ayrı).",
+        "linkAction": "Döküman bağla",
+        "linkConfirm": "Bağla",
+        "cancel": "İptal",
+        "empty": "Henüz bağlı döküman yok.",
+        "loadError": "Döküman bağlantıları yüklenemedi.",
+        "linkError": "Döküman bağlanamadı.",
+        "deleteError": "Bağlantı kaldırılamadı.",
+        "unlink": "Bağlantıyı kaldır",
+        "openDi": "Doküman Yöneticisi'nde aç",
+        "relationType": "İlişki tipi",
+        "noLinkable": "Bu klasörde bağlanabilir dosya veya markdown yok.",
+        "loadTreeError": "Döküman ağacı yüklenemedi.",
+        "relationTypes": {
+          "reference": "Referans",
+          "attachment": "Ek (DI)",
+          "evidence": "Kanıt",
+          "output": "Çıktı"
+        }
       },
       "activity": {
         "empty": "Henüz aktivite kaydı yok."
@@ -4622,7 +4655,24 @@
         "validationName": "Lütfen ad girin.",
         "validationTargetBoard": "Lütfen hedef board seçin.",
         "validationTargetType": "Lütfen hedef iş tipi seçin.",
-        "validationTitle": "Lütfen başlık şablonu girin."
+        "validationTitle": "Lütfen başlık şablonu girin.",
+        "simulate": {
+          "action": "Simüle et",
+          "title": "Otomasyon simülasyonu",
+          "search": "Kaynak iş kaydı",
+          "searchPlaceholder": "Anahtar veya başlık…",
+          "noResults": "Eşleşen iş kaydı bulunamadı.",
+          "targetRequired": "Lütfen bir kaynak iş kaydı seçin.",
+          "preview": "Önizle",
+          "execute": "Çalıştır",
+          "close": "Kapat",
+          "matched": "Tetik eşleşti",
+          "notMatched": "Tetik eşleşmedi",
+          "previewTitle": "Oluşturulacak iş özeti",
+          "created": "İş oluşturuldu: {key}",
+          "error": "Simülasyon yapılamadı.",
+          "executeError": "Otomasyon çalıştırılamadı."
+        }
       },
       "sla": {
         "pageTitle": "SLA politikaları",

@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using MngOperations.Application.Contracts.Automations;
 using MngOperations.Application.Contracts.WorkItems;
+using MngOperations.Application.Exceptions;
 using MngOperations.Application.Interfaces;
 using MngOperations.Application.Models;
 using MngOperations.Application.Rules;
@@ -77,6 +78,148 @@ public sealed class WorkspaceAutomationService : IWorkspaceAutomationService
                     cancellationToken);
             }
         }
+    }
+
+    public async Task<SimulateWorkspaceAutomationResult> SimulateAsync(
+        string automationId,
+        SimulateWorkspaceAutomationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        RequireManagerOrAdmin();
+
+        var token = RequireBearerToken();
+        var workItemId = request.WorkItemId?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(workItemId))
+        {
+            throw new OperationCoreException(
+                "VALIDATION_ERROR",
+                "workItemId is required.",
+                "Kaynak iş kaydı zorunludur.",
+                400);
+        }
+
+        var automation = await LoadAutomationAsync(automationId, token, cancellationToken);
+        var workItem = await LoadWorkItemAsync(workItemId, token, cancellationToken);
+
+        var workspaceId = WorkItemDataHelper.GetString(workItem, "workspaceId")
+            ?? throw new OperationCoreException(
+                "WORK_ITEM_INVALID",
+                "workspaceId missing on work item.",
+                "Kayıtta workspaceId yok.",
+                500);
+
+        var automationWorkspaceId = automation.WorkspaceId?.Trim() ?? string.Empty;
+        if (!string.Equals(automationWorkspaceId, workspaceId, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new OperationCoreException(
+                "AUTOMATION_WORKSPACE_MISMATCH",
+                "Work item and automation must belong to the same workspace.",
+                "İş kaydı ve otomasyon aynı workspace içinde olmalıdır.",
+                400);
+        }
+
+        var context = BuildSimulatedContext(automation, workItemId, workItem);
+
+        if (automation.Trigger is not { ValueKind: JsonValueKind.Object } trigger)
+        {
+            return new SimulateWorkspaceAutomationResult
+            {
+                Matched = false,
+                Reason = "Tetik tanımı eksik veya geçersiz."
+            };
+        }
+
+        if (!MatchesTrigger(trigger, context))
+        {
+            return new SimulateWorkspaceAutomationResult
+            {
+                Matched = false,
+                Reason = "Tetik koşulları bu kayıt için sağlanmıyor."
+            };
+        }
+
+        if (!automation.IsActive)
+        {
+            return new SimulateWorkspaceAutomationResult
+            {
+                Matched = false,
+                Reason = "Otomasyon pasif."
+            };
+        }
+
+        var action = FindCreateWorkItemAction(automation);
+        if (action is null)
+        {
+            return new SimulateWorkspaceAutomationResult
+            {
+                Matched = false,
+                Reason = "Desteklenen createWorkItem aksiyonu bulunamadı."
+            };
+        }
+
+        var preview = BuildActionPreview(automation, action.Value, context);
+
+        if (!request.Execute)
+        {
+            return new SimulateWorkspaceAutomationResult
+            {
+                Matched = true,
+                Preview = preview
+            };
+        }
+
+        var createResult = await ExecuteCreateWorkItemActionAsync(
+            automation,
+            action.Value,
+            context,
+            token,
+            cancellationToken);
+
+        if (createResult == null)
+        {
+            return new SimulateWorkspaceAutomationResult
+            {
+                Matched = true,
+                Preview = preview,
+                Reason = "Aksiyon çalıştırılamadı (hedef board/tip eksik olabilir)."
+            };
+        }
+
+        var automationRecordId = automation.DataId ?? automationId;
+        await PatchAutomationRunMetadataAsync(
+            automationRecordId,
+            createResult.WorkItem.Id,
+            automation.RunCount ?? 0,
+            token,
+            cancellationToken);
+
+        await WriteSourceActivityAsync(
+            context,
+            "AutomationExecuted",
+            $"Otomasyon simülasyonu «{automation.Name}» → {createResult.WorkItem.Key} oluşturuldu",
+            token,
+            cancellationToken,
+            new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["automationId"] = automationRecordId,
+                ["createdWorkItemId"] = createResult.WorkItem.Id,
+                ["createdWorkItemKey"] = createResult.WorkItem.Key,
+                ["code"] = createResult.Code,
+                ["simulated"] = true
+            });
+
+        return new SimulateWorkspaceAutomationResult
+        {
+            Matched = true,
+            Executed = true,
+            Preview = preview,
+            CreatedWorkItem = new WorkspaceAutomationSimulateCreatedDto
+            {
+                Id = createResult.WorkItem.Id,
+                Key = createResult.WorkItem.Key,
+                Code = createResult.Code
+            }
+        };
     }
 
     private async Task TryExecuteAutomationAsync(
@@ -458,5 +601,165 @@ public sealed class WorkspaceAutomationService : IWorkspaceAutomationService
     {
         value = GetJsonString(element, propertyName) ?? string.Empty;
         return !string.IsNullOrWhiteSpace(value);
+    }
+
+    private async Task<WorkspaceAutomationRecord> LoadAutomationAsync(
+        string automationId,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var row = await _dg.GetByIdAsync<WorkspaceAutomationRecord>(
+            OcDatasets.WorkspaceAutomations,
+            automationId,
+            token,
+            cancellationToken,
+            expand: false);
+
+        if (row == null)
+        {
+            throw new OperationCoreException(
+                "AUTOMATION_NOT_FOUND",
+                $"Automation '{automationId}' not found.",
+                $"Otomasyon '{automationId}' bulunamadı.",
+                404);
+        }
+
+        return row;
+    }
+
+    private async Task<Dictionary<string, object?>> LoadWorkItemAsync(
+        string workItemId,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        var row = await _dg.GetByIdAsync<Dictionary<string, object?>>(
+            OcDatasets.WorkItems,
+            workItemId,
+            token,
+            cancellationToken,
+            expand: false);
+
+        if (row == null)
+        {
+            throw new OperationCoreException(
+                "WORK_ITEM_NOT_FOUND",
+                $"Work item '{workItemId}' not found.",
+                $"İş kaydı '{workItemId}' bulunamadı.",
+                404);
+        }
+
+        return new Dictionary<string, object?>(row, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static WorkspaceAutomationTriggerContext BuildSimulatedContext(
+        WorkspaceAutomationRecord automation,
+        string workItemId,
+        IReadOnlyDictionary<string, object?> workItem)
+    {
+        string? transitionKey = null;
+        string? toStateId = null;
+        if (automation.Trigger is { ValueKind: JsonValueKind.Object } trigger)
+        {
+            transitionKey = GetJsonString(trigger, "transitionKey");
+            toStateId = GetJsonString(trigger, "toStateId");
+        }
+
+        return new WorkspaceAutomationTriggerContext
+        {
+            EventName = "WorkspaceAutomationSimulated",
+            WorkspaceId = automation.WorkspaceId ?? string.Empty,
+            BoardId = WorkItemDataHelper.GetString(workItem, "boardId"),
+            TypeId = WorkItemDataHelper.GetString(workItem, "typeId"),
+            WorkItemId = workItemId,
+            WorkItemKey = WorkItemDataHelper.GetString(workItem, "key") ?? workItemId,
+            FromStateId = WorkItemDataHelper.GetString(workItem, "stateId"),
+            ToStateId = toStateId ?? WorkItemDataHelper.GetString(workItem, "stateId"),
+            TransitionKey = transitionKey,
+            WorkItem = workItem
+        };
+    }
+
+    private static JsonElement? FindCreateWorkItemAction(WorkspaceAutomationRecord automation)
+    {
+        if (automation.Actions is not { ValueKind: JsonValueKind.Array } actions)
+            return null;
+
+        foreach (var action in actions.EnumerateArray().OrderBy(GetActionOrder))
+        {
+            if (action.TryGetProperty("type", out var typeProp)
+                && typeProp.ValueKind == JsonValueKind.String
+                && string.Equals(typeProp.GetString(), "createWorkItem", StringComparison.OrdinalIgnoreCase))
+            {
+                return action;
+            }
+        }
+
+        return null;
+    }
+
+    private static WorkspaceAutomationSimulatePreviewDto BuildActionPreview(
+        WorkspaceAutomationRecord automation,
+        JsonElement action,
+        WorkspaceAutomationTriggerContext context)
+    {
+        var titleTemplate = GetJsonString(action, "title");
+        var title = AutomationTokenResolver.Resolve(titleTemplate, context);
+        if (string.IsNullOrWhiteSpace(title))
+            title = $"Auto — {context.WorkItemKey}";
+
+        var description = GetJsonString(action, "description");
+        if (!string.IsNullOrWhiteSpace(description))
+            description = AutomationTokenResolver.Resolve(description, context);
+
+        var assigneeRaw = GetJsonString(action, "assignee");
+        var assignee = string.IsNullOrWhiteSpace(assigneeRaw)
+            ? null
+            : AutomationTokenResolver.Resolve(assigneeRaw, context);
+
+        string? boardId = null;
+        string? typeId = null;
+        if (action.TryGetProperty("target", out var target) && target.ValueKind == JsonValueKind.Object)
+        {
+            boardId = GetJsonString(target, "boardId");
+            typeId = GetJsonString(target, "typeId");
+        }
+
+        var fields = BuildFieldDictionary(action, automation, context);
+
+        return new WorkspaceAutomationSimulatePreviewDto
+        {
+            ResolvedTitle = title,
+            ResolvedDescription = description,
+            TargetBoardId = boardId,
+            TargetTypeId = typeId,
+            ResolvedAssignee = assignee,
+            ResolvedFields = fields
+        };
+    }
+
+    private void RequireManagerOrAdmin()
+    {
+        if (_requestContext.IsAdmin || _requestContext.IsManager)
+            return;
+
+        throw new OperationCoreException(
+            "FORBIDDEN",
+            "Only domain managers can simulate workspace automations.",
+            "Otomasyon simülasyonunu yalnızca domain yöneticileri çalıştırabilir.",
+            403);
+    }
+
+    private string RequireBearerToken()
+    {
+        if (string.IsNullOrWhiteSpace(_requestContext.BearerToken))
+        {
+            throw new OperationCoreException(
+                "UNAUTHORIZED",
+                "Bearer token is required.",
+                "Bearer token gerekli.",
+                401);
+        }
+
+        return _requestContext.BearerToken;
     }
 }

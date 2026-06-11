@@ -5,6 +5,7 @@ import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog
 import OcWorkspaceAutomationDialog, {
   type OcAutomationFormModel,
 } from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceAutomationDialog.vue';
+import OcWorkspaceAutomationSimulateDialog from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceAutomationSimulateDialog.vue';
 import {
   ocCreateWorkspaceAutomation,
   ocDeleteWorkspaceAutomation,
@@ -37,6 +38,8 @@ const editId = ref<string | null>(null);
 const dialogRef = ref<InstanceType<typeof OcWorkspaceAutomationDialog> | null>(null);
 const deleteDialog = ref(false);
 const deleteTarget = ref<OpWorkspaceAutomation | null>(null);
+const simulateDialog = ref(false);
+const simulateTarget = ref<OpWorkspaceAutomation | null>(null);
 
 const boardItems = computed(() =>
   boards.value.map((b) => ({ value: b.__dataId, title: b.name }))
@@ -275,6 +278,15 @@ function openDelete(row: OpWorkspaceAutomation) {
   deleteDialog.value = true;
 }
 
+function openSimulate(row: OpWorkspaceAutomation) {
+  simulateTarget.value = row;
+  simulateDialog.value = true;
+}
+
+async function onSimulated() {
+  await loadAll();
+}
+
 async function onSave(form: OcAutomationFormModel) {
   saving.value = true;
   errorLocal.value = null;
@@ -397,6 +409,13 @@ async function confirmDelete() {
         </div>
       </template>
       <template #item.actions="{ item }">
+        <v-btn
+          icon="mdi-flask-outline"
+          variant="text"
+          size="small"
+          :title="t('operationCore.workspaceDefinitions.automations.simulate.action')"
+          @click="openSimulate(item)"
+        />
         <v-btn icon="mdi-pencil-outline" variant="text" size="small" @click="openEdit(item)" />
         <v-btn icon="mdi-delete-outline" variant="text" size="small" color="error" @click="openDelete(item)" />
       </template>
@@ -411,6 +430,15 @@ async function confirmDelete() {
       :transition-items="transitionItems"
       :saving="saving"
       @save="onSave"
+    />
+
+    <OcWorkspaceAutomationSimulateDialog
+      v-model="simulateDialog"
+      :automation="simulateTarget"
+      :workspace-id="workspaceId"
+      :board-name-by-id="boardNameById"
+      :type-name-by-id="typeNameById"
+      @executed="onSimulated"
     />
 
     <v-dialog v-model="deleteDialog" max-width="440" persistent>

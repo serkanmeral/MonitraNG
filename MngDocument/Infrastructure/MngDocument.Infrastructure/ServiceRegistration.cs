@@ -20,6 +20,7 @@ public static class ServiceRegistration
         services.AddScoped<IMngDataGatewayClient, MngDataGatewayClient>();
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<IResourceService, ResourceService>();
+        services.AddScoped<IResourceLinkService, ResourceLinkService>();
 
         return services;
     }

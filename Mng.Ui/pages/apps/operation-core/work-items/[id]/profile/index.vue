@@ -10,6 +10,8 @@ import OcPolicyPanel from '@/components/apps/operation-core/OcPolicyPanel.vue';
 import OcTransitionRequiredFields from '@/components/apps/operation-core/OcTransitionRequiredFields.vue';
 import OcAttachmentPreviewDialog from '@/components/apps/operation-core/OcAttachmentPreviewDialog.vue';
 import OcWorkItemRelationsCard from '@/components/apps/operation-core/OcWorkItemRelationsCard.vue';
+import OcWorkItemDocumentsTab from '@/components/apps/operation-core/OcWorkItemDocumentsTab.vue';
+import { diGetLinkedResourcesForWorkItem } from '@/services/documentIntelligenceService';
 import { isPreviewable } from '@/utils/ocAttachmentPreview';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import { useOperationCoreStore } from '@/stores/apps/operationCore';
@@ -354,6 +356,27 @@ async function saveFormEdit() {
   }
 }
 
+// --- DI doküman bağlantıları (Faz 2) ---
+const documentLinkCount = ref(0);
+
+async function loadDocumentLinks() {
+  const id = workItemId.value.trim();
+  if (!id) {
+    documentLinkCount.value = 0;
+    return;
+  }
+  try {
+    const res = await diGetLinkedResourcesForWorkItem(id);
+    documentLinkCount.value = res.total;
+  } catch {
+    documentLinkCount.value = 0;
+  }
+}
+
+function onDocumentsChanged() {
+  void loadDocumentLinks();
+}
+
 // --- Ekler ---
 const attachments = computed<OcAttachment[]>(() => profile.value?.attachments ?? []);
 const fileInput = ref<HTMLInputElement | null>(null);
@@ -623,6 +646,7 @@ async function loadProfile(force = false) {
     resolvedPolicy.value = view.policy;
     // Timeline ayrı uç — profil shell'i bloklamaz (MO includeTimeline=false).
     void loadTimeline();
+    void loadDocumentLinks();
   } catch (e: unknown) {
     formContext.value = null;
     profileDisplayContext.value = null;
@@ -895,6 +919,13 @@ watch(workItemId, () => {
               {{ t('operationCore.profile.tabs.attachments') }}
               <v-chip v-if="attachments.length" size="x-small" class="ml-2" color="primary" variant="tonal">
                 {{ attachments.length }}
+              </v-chip>
+            </v-tab>
+            <v-tab value="documents" class="text-none">
+              <v-icon icon="mdi-file-document-multiple-outline" start size="18" />
+              {{ t('operationCore.profile.tabs.documents') }}
+              <v-chip v-if="documentLinkCount" size="x-small" class="ml-2" color="primary" variant="tonal">
+                {{ documentLinkCount }}
               </v-chip>
             </v-tab>
           </v-tabs>
@@ -1280,6 +1311,14 @@ watch(workItemId, () => {
                   </v-list-item>
                 </v-list>
               </v-card-text>
+            </v-window-item>
+
+            <v-window-item value="documents">
+              <OcWorkItemDocumentsTab
+                :work-item-id="workItemId"
+                :can-edit="canEdit"
+                @changed="onDocumentsChanged"
+              />
             </v-window-item>
           </v-window>
         </v-card>

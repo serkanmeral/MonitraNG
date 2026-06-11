@@ -3428,6 +3428,17 @@
     "history": "History",
     "metaCreated": "Created by",
     "metaUpdated": "Last updated by",
+    "linkedWorkItems": {
+      "title": "Linked work items",
+      "empty": "No work items linked to this document.",
+      "loadError": "Could not load linked work items."
+    },
+    "linkRelationTypes": {
+      "reference": "Reference",
+      "attachment": "Attachment",
+      "evidence": "Evidence",
+      "output": "Output"
+    },
     "versionHistory": "Version history",
     "noVersions": "No versions yet.",
     "currentVersion": "Current",
@@ -3887,7 +3898,29 @@
         "details": "Details",
         "comments": "Comments",
         "activity": "Activity",
-        "attachments": "Attachments"
+        "attachments": "Attachments",
+        "documents": "Documents"
+      },
+      "documents": {
+        "hint": "References to Document Intelligence resources (separate from file attachments).",
+        "linkAction": "Link document",
+        "linkConfirm": "Link",
+        "cancel": "Cancel",
+        "empty": "No linked documents yet.",
+        "loadError": "Could not load document links.",
+        "linkError": "Could not link document.",
+        "deleteError": "Could not remove link.",
+        "unlink": "Remove link",
+        "openDi": "Open in Document Manager",
+        "relationType": "Relation type",
+        "noLinkable": "No linkable markdown or files in this folder.",
+        "loadTreeError": "Could not load document tree.",
+        "relationTypes": {
+          "reference": "Reference",
+          "attachment": "Attachment (DI)",
+          "evidence": "Evidence",
+          "output": "Output"
+        }
       },
       "activity": {
         "empty": "No activity recorded yet."
@@ -4609,7 +4642,24 @@
         "validationName": "Please enter a name.",
         "validationTargetBoard": "Please select a target board.",
         "validationTargetType": "Please select a target work item type.",
-        "validationTitle": "Please enter a title template."
+        "validationTitle": "Please enter a title template.",
+        "simulate": {
+          "action": "Simulate",
+          "title": "Automation simulation",
+          "search": "Source work item",
+          "searchPlaceholder": "Key or title…",
+          "noResults": "No matching work items found.",
+          "targetRequired": "Please select a source work item.",
+          "preview": "Preview",
+          "execute": "Run",
+          "close": "Close",
+          "matched": "Trigger matched",
+          "notMatched": "Trigger did not match",
+          "previewTitle": "Work item to be created",
+          "created": "Work item created: {key}",
+          "error": "Simulation failed.",
+          "executeError": "Could not run the automation."
+        }
       },
       "sla": {
         "pageTitle": "SLA policies",
