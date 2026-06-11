@@ -65,6 +65,16 @@ export function useOcBoardListLookups(
   const prioritiesContext = computed(() => contextMap('priorities'));
   const typesContext = computed(() => contextMap('types'));
 
+  function hasContextCatalogs(): boolean {
+    const src = catalogsSource?.value;
+    if (!src) return false;
+    return (
+      Object.keys(src.states ?? {}).length > 0
+      && Object.keys(src.priorities ?? {}).length > 0
+      && Object.keys(src.types ?? {}).length > 0
+    );
+  }
+
   const stateById = computed(() => statesContext.value ?? buildCatalogDisplayMap(states.value));
   const priorityById = computed(() => prioritiesContext.value ?? buildCatalogDisplayMap(priorities.value));
   const typeById = computed(() => typesContext.value ?? buildCatalogDisplayMap(types.value));
@@ -93,6 +103,9 @@ export function useOcBoardListLookups(
     return m;
   });
 
+  let loadCatalogsInflight: Promise<void> | null = null;
+  let loadCatalogsWorkspaceId: string | null = null;
+
   async function loadCatalogs() {
     const id = workspaceId.value?.trim();
     if (!id) {
@@ -101,8 +114,20 @@ export function useOcBoardListLookups(
       types.value = [];
       return;
     }
+    if (hasContextCatalogs()) {
+      states.value = [];
+      priorities.value = [];
+      types.value = [];
+      return;
+    }
+    if (loadCatalogsInflight && loadCatalogsWorkspaceId === id) {
+      await loadCatalogsInflight;
+      return;
+    }
 
     loadingCatalogs.value = true;
+    loadCatalogsWorkspaceId = id;
+    loadCatalogsInflight = (async () => {
     try {
       const [stateRows, priorityRows, typeRows] = await Promise.all([
         ocListStatesForWorkspace(id, { fallbackAll: true }),
@@ -118,15 +143,19 @@ export function useOcBoardListLookups(
       types.value = [];
     } finally {
       loadingCatalogs.value = false;
+      loadCatalogsInflight = null;
+      loadCatalogsWorkspaceId = null;
     }
+    })();
+    await loadCatalogsInflight;
   }
 
   watch(
-    workspaceId,
+    [workspaceId, () => catalogsSource?.value],
     () => {
       void loadCatalogs();
     },
-    { immediate: true }
+    { immediate: true, deep: true }
   );
 
   function resolveState(id: string | null | undefined, fallbackName?: string | null): OcCatalogDisplayItem | null {

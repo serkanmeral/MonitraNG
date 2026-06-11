@@ -1804,26 +1804,41 @@ export async function ocListWorkspaces(): Promise<OpWorkspace[]> {
     .filter((w) => w.__dataId && w.name);
 }
 
-export async function ocGetWorkspace(workspaceId: string): Promise<OpWorkspaceDetail | null> {
-  const url = `/api/v1/data/${encodeURIComponent(OC_DATASETS.workspaces)}/${encodeURIComponent(workspaceId)}`;
-  try {
-    const raw = await fetchFromDataGateway(url, 'GET');
-    const record = parseSingleDgRecord(raw);
-    if (record) {
-      const detail = mapWorkspaceDetail(record);
-      if (detail.__dataId) return detail;
-    }
-  } catch {
-    // GET by id başarısız olursa listeden fallback
-  }
+const ocGetWorkspaceInflight = new Map<string, Promise<OpWorkspaceDetail | null>>();
 
-  const rows = await ocListDataset(OC_DATASETS.workspaces, { limit: 500 });
-  const match = rows.find((r) => {
-    const id = String((r as Record<string, unknown>).__dataId ?? (r as Record<string, unknown>).dataId ?? '');
-    return id === workspaceId;
+export async function ocGetWorkspace(workspaceId: string): Promise<OpWorkspaceDetail | null> {
+  const id = workspaceId?.trim();
+  if (!id) return null;
+
+  const pending = ocGetWorkspaceInflight.get(id);
+  if (pending) return pending;
+
+  const request = (async (): Promise<OpWorkspaceDetail | null> => {
+    const url = `/api/v1/data/${encodeURIComponent(OC_DATASETS.workspaces)}/${encodeURIComponent(id)}`;
+    try {
+      const raw = await fetchFromDataGateway(url, 'GET');
+      const record = parseSingleDgRecord(raw);
+      if (record) {
+        const detail = mapWorkspaceDetail(record);
+        if (detail.__dataId) return detail;
+      }
+    } catch {
+      // GET by id başarısız olursa listeden fallback
+    }
+
+    const rows = await ocListDataset(OC_DATASETS.workspaces, { limit: 500 });
+    const match = rows.find((r) => {
+      const rowId = String((r as Record<string, unknown>).__dataId ?? (r as Record<string, unknown>).dataId ?? '');
+      return rowId === id;
+    });
+    if (!match) return null;
+    return mapWorkspaceDetail(match as Record<string, unknown>);
+  })().finally(() => {
+    ocGetWorkspaceInflight.delete(id);
   });
-  if (!match) return null;
-  return mapWorkspaceDetail(match as Record<string, unknown>);
+
+  ocGetWorkspaceInflight.set(id, request);
+  return request;
 }
 
 export interface OcMetadataCacheReloadResult {

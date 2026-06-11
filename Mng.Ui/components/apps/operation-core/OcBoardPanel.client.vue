@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, watch, onMounted, onUnmounted, ref, defineAsyncComponent } from 'vue';
+import { computed, watch, onUnmounted, ref, defineAsyncComponent } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import OcBoardCatalogLabel from '@/components/apps/operation-core/OcBoardCatalogLabel.vue';
 // Kanban yalnız kanban görünümünde render edilir; list-only board'da bundle'a girmesin.
@@ -215,7 +215,8 @@ watch(
 watch(
   workspaceId,
   (wsId) => {
-    if (wsId) void store.loadBoardsForWorkspace(wsId);
+    if (!wsId || props.embedded || store.boardsByWorkspace[wsId]) return;
+    void store.loadBoardsForWorkspace(wsId);
   },
   { immediate: true }
 );
@@ -866,7 +867,7 @@ async function loadPage() {
 
   if (showList.value) {
     if (prefetchList) {
-      lastSignature = JSON.stringify(listPrefetchRequest);
+      lastSignature = JSON.stringify(buildListRequest());
     } else {
       await fetchList(true);
     }
@@ -876,21 +877,21 @@ async function loadPage() {
   }
 }
 
-watch(boardId, () => {
-  void loadPage();
-});
+watch(
+  boardId,
+  () => {
+    if (!props.embedded) {
+      syncDisplayModeFromRoute();
+    }
+    void loadPage();
+  },
+  { immediate: true }
+);
 
 watch(
   () => route.query.view,
   () => syncDisplayModeFromRoute()
 );
-
-onMounted(() => {
-  if (!props.embedded) {
-    syncDisplayModeFromRoute();
-  }
-  void loadPage();
-});
 
 onUnmounted(() => {
   listBootstrapPending.value = false;
@@ -1188,7 +1189,7 @@ onUnmounted(() => {
     </v-snackbar>
 
     <OcWorkItemFormDialog
-      v-if="store.boardContext"
+      v-if="boardContextMatches && !showBoardLoadingPanel"
       v-model="formDialogOpen"
       :mode="formDialogMode"
       :workspace-id="store.boardContext.workspaceId"
