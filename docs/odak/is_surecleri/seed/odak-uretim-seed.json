@@ -1,68 +1,46 @@
 {
-  "workspaceName": "Odak Uretim",
-  "priorities": {
-    "low": "61fdaa6c-b68d-4c7f-a9c6-f155b8c17b03",
-    "high": "f0f8176a-0d7c-4d58-b4d4-49b429733496",
-    "normal": "40d88124-4b36-458c-b37d-b2bc3ed63099",
-    "urgent": "ebfa924d-66ee-4f6a-ab11-7731696bd080"
-  },
-  "states": {
-    "ncrOpen": "05c4af17-26f6-494c-b6a4-6abe442e1552",
-    "shipPrep": "da5a0e4e-0d6b-4df7-9762-53a7f47b9f96",
-    "ncrClosed": "33b7bce0-a2d0-4a51-9235-241232b2f9d2",
-    "closed": "3a710627-d238-433d-86bf-704c0d258c06",
-    "shipped": "1742bd71-da6f-4fd0-882b-0e213bc05149",
-    "capaClosed": "40cd7ede-7470-47ab-9a1e-9cd085ace0f5",
-    "planned": "b0436ce4-caf9-4b58-8f32-f5ca3028f2ee",
-    "quality": "ce375adb-19ee-4100-9a2f-211e9d1679d2",
-    "capaOpen": "09c16a33-1aa0-4b53-b845-42eeb8161364",
-    "storage": "a2a12f1a-005d-4460-95db-cd94cb174ed3",
-    "qualityHold": "b3366727-dadd-4284-a47f-ac3ecd317782",
-    "production": "82068d6f-7f96-47c6-8359-816ddd3b6c8c",
-    "new": "08c518b3-7d74-4e18-a2b9-763a06ef28d7"
-  },
-  "seededAt": "2026-06-11T19:06:54.3619110Z",
-  "types": {
-    "capa": "a82710c5-a1f9-4930-933b-35c39a0e9ea1",
-    "ncr": "a8c6bd1f-4783-423a-899f-d552548889e3",
-    "order": "c2a1b262-201a-4ae4-999b-75ef4188ef95"
-  },
-  "ncrFlowId": "d6d86797-e9d0-49dd-b4e5-3567aebc0305",
-  "dashboardId": "0fecf373-463e-4ff7-9386-ad2a51742a7f",
-  "boardProdId": "75ec624c-a8be-4131-b072-9408ace1fd32",
-  "formOrderId": "7f0a3945-8753-435c-8783-d7f4cb77ee97",
-  "mainFlowId": "fb0a1126-1b57-47f6-9284-fb39f0c5ecd9",
-  "formCapaId": "a20801dd-b762-4431-ab4b-c86dfc9b206d",
-  "boardQualityId": "fbc470c2-01a4-4992-b45a-bd1d099f59ab",
-  "tag": "Odak Uretim",
-  "formNcrId": "90bb27f8-fc9e-45b3-b402-543034785755",
-  "gatewayUrl": "http://192.168.20.20:5040",
-  "capaFlowId": "a7a13abe-591b-40d9-9fe9-9599de6e0b46",
-  "demo": {
-    "capa": {
-      "key": "ODF-0017",
-      "id": "302b7eab-d7ca-4181-b58a-1b6068abd426"
-    },
-    "order1": {
-      "key": "ODF-0015",
-      "id": "9262f6c0-625c-4118-bef7-cbff657b1364"
-    },
-    "closedReference": {
-      "key": "ODF-0019",
-      "title": "[REFERANS] Tamamlanmis uretim emri — profil kontrolu",
-      "customerOrderRef": "PO-REF-KAPALI-001",
-      "id": "0c54127a-7ebc-42d2-9803-8ae7470b4510"
-    },
-    "ncr": {
-      "key": null,
-      "id": null
-    },
-    "order2": {
-      "key": "ODF-0018",
-      "id": "7630ed10-ed41-4530-bd50-78a1f873f977"
-    }
-  },
   "workspaceId": "9f9cc085-81c7-4a92-9fa2-357ad5c654cd",
   "boardShipId": "4a5ffada-986f-4021-9114-0d597e331ccb",
-  "profileId": "5bd35f70-842d-44c2-b747-efdb35a0e1bb"
+  "ncrFlowId": "d6d86797-e9d0-49dd-b4e5-3567aebc0305",
+  "seededAt": "2026-06-11T20:49:57.0783719Z",
+  "dashboardId": "0fecf373-463e-4ff7-9386-ad2a51742a7f",
+  "priorities": {
+    "low": "61fdaa6c-b68d-4c7f-a9c6-f155b8c17b03",
+    "urgent": "ebfa924d-66ee-4f6a-ab11-7731696bd080",
+    "normal": "40d88124-4b36-458c-b37d-b2bc3ed63099",
+    "high": "f0f8176a-0d7c-4d58-b4d4-49b429733496"
+  },
+  "tag": "Odak Uretim",
+  "workspaceName": "Odak Uretim",
+  "profileId": "5bd35f70-842d-44c2-b747-efdb35a0e1bb",
+  "formOrderId": "7f0a3945-8753-435c-8783-d7f4cb77ee97",
+  "gatewayUrl": "http://192.168.20.20:5040",
+  "states": {
+    "shipped": "1742bd71-da6f-4fd0-882b-0e213bc05149",
+    "ncrClosed": "33b7bce0-a2d0-4a51-9235-241232b2f9d2",
+    "shipPrep": "da5a0e4e-0d6b-4df7-9762-53a7f47b9f96",
+    "capaOpen": "09c16a33-1aa0-4b53-b845-42eeb8161364",
+    "ncrOpen": "05c4af17-26f6-494c-b6a4-6abe442e1552",
+    "planned": "b0436ce4-caf9-4b58-8f32-f5ca3028f2ee",
+    "capaClosed": "40cd7ede-7470-47ab-9a1e-9cd085ace0f5",
+    "qualityHold": "b3366727-dadd-4284-a47f-ac3ecd317782",
+    "storage": "a2a12f1a-005d-4460-95db-cd94cb174ed3",
+    "production": "82068d6f-7f96-47c6-8359-816ddd3b6c8c",
+    "quality": "ce375adb-19ee-4100-9a2f-211e9d1679d2",
+    "closed": "3a710627-d238-433d-86bf-704c0d258c06",
+    "new": "08c518b3-7d74-4e18-a2b9-763a06ef28d7"
+  },
+  "mainFlowId": "fb0a1126-1b57-47f6-9284-fb39f0c5ecd9",
+  "formCapaId": "a20801dd-b762-4431-ab4b-c86dfc9b206d",
+  "types": {
+    "order": "c2a1b262-201a-4ae4-999b-75ef4188ef95",
+    "ncr": "a8c6bd1f-4783-423a-899f-d552548889e3",
+    "capa": "a82710c5-a1f9-4930-933b-35c39a0e9ea1"
+  },
+  "formNcrId": "90bb27f8-fc9e-45b3-b402-543034785755",
+  "boardProdId": "75ec624c-a8be-4131-b072-9408ace1fd32",
+  "boardCapaId": "bcd054f1-2e8b-44cd-8cca-718e3038d88b",
+  "boardNcrId": "fbc470c2-01a4-4992-b45a-bd1d099f59ab",
+  "capaFlowId": "a7a13abe-591b-40d9-9fe9-9599de6e0b46",
+  "boardQualityId": "fbc470c2-01a4-4992-b45a-bd1d099f59ab"
 }

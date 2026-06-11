@@ -3778,6 +3778,9 @@
     "board": {
       "placeholderTitle": "Board",
       "loadingTitle": "Loading board…",
+      "loadingPanelTitle": "Loading board",
+      "loadingPanelSwitching": "Switching board",
+      "loadingPanelHint": "Preparing data, please wait…",
       "sprint2Hint": "Kanban / list board view will open here in Sprint 2.",
       "backToWorkspace": "Back to workspace",
       "backToBoard": "Back to board",

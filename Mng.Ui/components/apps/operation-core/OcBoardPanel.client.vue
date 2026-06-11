@@ -107,6 +107,40 @@ function setDisplayMode(mode: BoardDisplayMode) {
 const showList = computed(() => !boardIsKanban.value || displayMode.value === 'list');
 const showKanban = computed(() => boardIsKanban.value && displayMode.value === 'kanban');
 
+const boardContextMatches = computed(
+  () => !!store.boardContext && store.boardContext.boardId === boardId.value
+);
+
+const boardListDataPending = computed(() => {
+  if (!boardContextMatches.value || !showList.value) return false;
+  return store.listLoading && store.listItems.length === 0 && !store.listError;
+});
+
+const showBoardLoadingPanel = computed(() => {
+  if (!boardId.value) return false;
+  if (store.boardError && !store.boardContext) return false;
+  if (store.loadingBoardContext) return true;
+  if (!boardContextMatches.value && !!boardId.value) return true;
+  return boardListDataPending.value;
+});
+
+const loadingBoardName = computed(() => {
+  const id = boardId.value;
+  if (!id) return '';
+  for (const boards of Object.values(store.boardsByWorkspace)) {
+    const match = boards.find((b) => b.__dataId === id);
+    if (match?.name) return match.name;
+  }
+  return store.boardContext?.name ?? '';
+});
+
+const loadingPanelTitle = computed(() => {
+  if (store.boardContext && store.boardContext.boardId !== boardId.value) {
+    return t('operationCore.board.loadingPanelSwitching');
+  }
+  return t('operationCore.board.loadingPanelTitle');
+});
+
 const workspaceName = computed(() => {
   const wsId = store.boardContext?.workspaceId;
   if (!wsId) return '';
@@ -909,11 +943,26 @@ onUnmounted(() => {
       </v-card-title>
     </v-card>
 
-    <div v-if="store.loadingBoardContext && !store.boardContext" class="d-flex justify-center py-16">
-      <v-progress-circular indeterminate color="primary" size="40" />
-    </div>
+    <div
+      class="oc-board-panel__content position-relative"
+      :class="{ 'oc-board-panel__content--embedded': embedded }"
+    >
+      <div v-if="showBoardLoadingPanel" class="oc-board-loading-panel">
+        <v-card variant="flat" class="oc-board-loading-panel__card text-center pa-8 rounded-xl">
+          <v-progress-circular indeterminate color="primary" size="48" width="4" class="mb-4" />
+          <div class="text-subtitle-1 font-weight-medium mb-1">
+            {{ loadingPanelTitle }}
+          </div>
+          <p v-if="loadingBoardName" class="text-body-2 font-weight-medium text-primary mb-1">
+            {{ loadingBoardName }}
+          </p>
+          <p class="text-body-2 text-medium-emphasis mb-0">
+            {{ t('operationCore.board.loadingPanelHint') }}
+          </p>
+        </v-card>
+      </div>
 
-    <template v-else-if="store.boardContext">
+      <template v-else-if="boardContextMatches">
       <v-card v-if="showList" variant="outlined" class="rounded-lg">
         <div class="pa-3 pb-0">
           <div class="d-flex align-center flex-wrap ga-2 mb-1">
@@ -1049,18 +1098,19 @@ onUnmounted(() => {
         @transition="onKanbanTransition"
         @load-more="store.loadMoreColumn($event)"
       />
-    </template>
+      </template>
 
-    <v-card v-else-if="!store.loadingBoardContext" variant="outlined" class="rounded-lg">
-      <v-card-text class="pa-8 text-center text-medium-emphasis">
-        {{ t('operationCore.board.notFound') }}
-        <div class="mt-4">
-          <v-btn variant="tonal" color="primary" class="text-none" to="/apps/operation-core/workspace">
-            {{ t('operationCore.board.backToWorkspace') }}
-          </v-btn>
-        </div>
-      </v-card-text>
-    </v-card>
+      <v-card v-else-if="!showBoardLoadingPanel" variant="outlined" class="rounded-lg">
+        <v-card-text class="pa-8 text-center text-medium-emphasis">
+          {{ t('operationCore.board.notFound') }}
+          <div class="mt-4">
+            <v-btn variant="tonal" color="primary" class="text-none" to="/apps/operation-core/workspace">
+              {{ t('operationCore.board.backToWorkspace') }}
+            </v-btn>
+          </div>
+        </v-card-text>
+      </v-card>
+    </div>
 
     <v-snackbar
       v-model="transitionSnackbar"
@@ -1184,5 +1234,28 @@ onUnmounted(() => {
 
 .oc-board-list-table :deep(table) > thead > tr > th:last-child {
   z-index: 2;
+}
+
+.oc-board-panel__content {
+  min-height: 280px;
+}
+
+.oc-board-panel__content--embedded {
+  min-height: 360px;
+}
+
+.oc-board-loading-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: inherit;
+  padding: 2rem 1rem;
+  background: rgba(var(--v-theme-surface), 0.92);
+}
+
+.oc-board-loading-panel__card {
+  max-width: 420px;
+  width: 100%;
+  background: transparent !important;
 }
 </style>

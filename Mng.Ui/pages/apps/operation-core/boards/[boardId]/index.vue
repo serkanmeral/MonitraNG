@@ -9,5 +9,5 @@ const boardId = computed(() => String(route.params.boardId ?? ''));
 </script>
 
 <template>
-  <OcBoardPanel :board-id="boardId" />
+  <OcBoardPanel :key="boardId" :board-id="boardId" />
 </template>

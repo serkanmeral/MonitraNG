@@ -146,9 +146,16 @@ export const useOperationCoreStore = defineStore('operationCore', {
         return;
       }
 
+      const switchingBoard = this.boardContext?.boardId !== boardId;
       this.activeBoardId = boardId;
       this.loadingBoardContext = true;
       this.boardError = null;
+
+      // Board değişiminde eski board verisini hemen kaldır (yanlış board flash'ını önler).
+      if (switchingBoard) {
+        this.boardContext = null;
+      }
+
       this.columnItems = {};
       this.columnLoading = {};
       this.columnLoadingMore = {};

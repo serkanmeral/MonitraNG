@@ -128,6 +128,42 @@ function Sync-Record {
     }
 }
 
+function Find-OrCreate-ByNames {
+    param(
+        [string]$Collection,
+        [string[]]$Names,
+        [object]$Body,
+        [string]$Label
+    )
+    foreach ($name in $Names) {
+        if ([string]::IsNullOrWhiteSpace($name)) { continue }
+        $existing = @(Get-Items (Invoke-DgGet -Collection $Collection -Filter "name:eq:$name" -Limit 5))
+        if ($existing.Count -gt 0) {
+            $id = $existing[0].__dataId; if (-not $id) { $id = $existing[0].dataId }
+            Write-Host "  SKIP: $Label ($id) [$name]" -ForegroundColor Yellow
+            return $id
+        }
+    }
+    try {
+        $created = Invoke-DgPost -Collection $Collection -Body $Body
+        $id = Get-DataId $created
+        Write-Host "  OK: $Label -> $id" -ForegroundColor Green
+        return $id
+    }
+    catch {
+        foreach ($name in $Names) {
+            if ([string]::IsNullOrWhiteSpace($name)) { continue }
+            $retry = @(Get-Items (Invoke-DgGet -Collection $Collection -Filter "name:eq:$name" -Limit 5))
+            if ($retry.Count -gt 0) {
+                $id = $retry[0].__dataId; if (-not $id) { $id = $retry[0].dataId }
+                Write-Host "  SKIP: $Label (duplicate -> $id) [$name]" -ForegroundColor Yellow
+                return $id
+            }
+        }
+        throw
+    }
+}
+
 function New-LookupOptions {
     param(
         [string]$DatasetName,
@@ -528,11 +564,11 @@ Sync-Record -Collection "op_state_flows" -Id $mainFlowId -Label "Ana akis sync" 
 
 $ncrFlowName = "$tag - NCR"
 $ncrTransitions = @(
-    @{ transitionKey = "contain"; fromStateId = $stNcrOpen; toStateId = $stNcrContain; label = "Kontrol altina al"; order = 0 },
-    @{ transitionKey = "review"; fromStateId = $stNcrContain; toStateId = $stNcrReview; label = "Degerlendir"; order = 1 },
-    @{ transitionKey = "decide"; fromStateId = $stNcrReview; toStateId = $stNcrDecided; label = "Karar ver"; order = 2 },
-    @{ transitionKey = "close_ncr"; fromStateId = $stNcrDecided; toStateId = $stNcrClosed; label = "Kapat"; order = 3 },
-    @{ transitionKey = "reopen_ncr"; fromStateId = $stNcrDecided; toStateId = $stNcrReview; label = "Yeniden ac"; order = 4 }
+    (New-Transition -Key "contain" -From $stNcrOpen -To $stNcrContain -Label "Kontrol altina al" -Order 0 -Required @("containmentAction")),
+    (New-Transition -Key "review" -From $stNcrContain -To $stNcrReview -Label "Degerlendir" -Order 1),
+    (New-Transition -Key "decide" -From $stNcrReview -To $stNcrDecided -Label "Karar ver" -Order 2 -Required @("disposition")),
+    (New-Transition -Key "close_ncr" -From $stNcrDecided -To $stNcrClosed -Label "Kapat" -Order 3 -Required @("disposition", "dispositionReason")),
+    (New-Transition -Key "reopen_ncr" -From $stNcrDecided -To $stNcrReview -Label "Yeniden ac" -Order 4)
 )
 $ncrFlowId = Find-OrCreate -Collection "op_state_flows" -Filter "name:eq:$ncrFlowName" -Label "NCR akis" -Body @{
     name = $ncrFlowName; workspaceId = $workspaceId; initialStateId = $stNcrOpen
@@ -545,11 +581,11 @@ Sync-Record -Collection "op_state_flows" -Id $ncrFlowId -Label "NCR akis sync" -
 
 $capaFlowName = "$tag - CAPA"
 $capaTransitions = @(
-    @{ transitionKey = "analyze_root"; fromStateId = $stCapaOpen; toStateId = $stCapaRoot; label = "Kok neden analizi"; order = 0 },
-    @{ transitionKey = "plan_action"; fromStateId = $stCapaRoot; toStateId = $stCapaPlan; label = "Aksiyon planla"; order = 1 },
-    @{ transitionKey = "implement"; fromStateId = $stCapaPlan; toStateId = $stCapaImpl; label = "Uygula"; order = 2 },
-    @{ transitionKey = "verify"; fromStateId = $stCapaImpl; toStateId = $stCapaVerify; label = "Dogrula"; order = 3 },
-    @{ transitionKey = "close_capa"; fromStateId = $stCapaVerify; toStateId = $stCapaClosed; label = "Kapat"; order = 4 }
+    (New-Transition -Key "analyze_root" -From $stCapaOpen -To $stCapaRoot -Label "Kok neden analizi" -Order 0 -Required @("rootCause")),
+    (New-Transition -Key "plan_action" -From $stCapaRoot -To $stCapaPlan -Label "Aksiyon planla" -Order 1 -Required @("correctiveAction")),
+    (New-Transition -Key "implement" -From $stCapaPlan -To $stCapaImpl -Label "Uygula" -Order 2),
+    (New-Transition -Key "verify" -From $stCapaImpl -To $stCapaVerify -Label "Dogrula" -Order 3 -Required @("effectivenessCheck")),
+    (New-Transition -Key "close_capa" -From $stCapaVerify -To $stCapaClosed -Label "Kapat" -Order 4 -Required @("effectivenessCheck"))
 )
 $capaFlowId = Find-OrCreate -Collection "op_state_flows" -Filter "name:eq:$capaFlowName" -Label "CAPA akis" -Body @{
     name = $capaFlowName; workspaceId = $workspaceId; initialStateId = $stCapaOpen
@@ -617,34 +653,58 @@ Sync-Record -Collection "op_forms" -Id $formOrderId -Label "Form emir sync" -Bod
 }
 
 $formNcrName = "$tag - NCR kaydi"
-$formNcrId = Find-OrCreate -Collection "op_forms" -Filter "name:eq:$formNcrName" -Label "Form NCR" -Body @{
+$formNcrLayout = @{
+    sections = @(
+        @{
+            key = "ncr"
+            title = "Uygunsuzluk (NCR)"
+            fields = @(
+                "title", "typeId", "priorityId", "ncrSource", "defectDescription",
+                "affectedQty", "lotSerial", "containmentAction", "disposition", "dispositionReason"
+            )
+        }
+    )
+}
+$formNcrBody = @{
     name = $formNcrName; workspaceId = $workspaceId; defaultTypeId = $typeNcrId
     defaultStateFlowId = $ncrFlowId; defaultStateId = $stNcrOpen; isDefault = $false
-    layout = @{
-        sections = @(
-            @{ key = "ncr"; title = "Uygunsuzluk"; fields = @("title", "typeId", "priorityId", "ncrSource", "defectDescription", "affectedQty", "containmentAction", "lotSerial") }
-        )
-    }
+    layout = $formNcrLayout
     fieldBehaviors = @{
         title = @{ visible = $true; required = $true }
         defectDescription = @{ visible = $true; required = $true }
         ncrSource = @{ visible = $true; required = $true }
+        affectedQty = @{ visible = $true }
+        lotSerial = @{ visible = $true }
     }
 }
+$formNcrId = Find-OrCreate -Collection "op_forms" -Filter "name:eq:$formNcrName" -Label "Form NCR" -Body $formNcrBody
+Sync-Record -Collection "op_forms" -Id $formNcrId -Label "Form NCR sync" -Body $formNcrBody
 
 $formCapaName = "$tag - CAPA kaydi"
-$formCapaId = Find-OrCreate -Collection "op_forms" -Filter "name:eq:$formCapaName" -Label "Form CAPA" -Body @{
+$formCapaLayout = @{
+    sections = @(
+        @{
+            key = "capa"
+            title = "Duzeltici faaliyet (CAPA)"
+            fields = @(
+                "title", "typeId", "priorityId", "rootCause", "correctiveAction",
+                "preventiveAction", "capaTargetDate", "effectivenessCheck"
+            )
+        }
+    )
+}
+$formCapaBody = @{
     name = $formCapaName; workspaceId = $workspaceId; defaultTypeId = $typeCapaId
     defaultStateFlowId = $capaFlowId; defaultStateId = $stCapaOpen; isDefault = $false
-    layout = @{
-        sections = @(
-            @{ key = "capa"; title = "CAPA"; fields = @("title", "typeId", "priorityId", "rootCause", "correctiveAction", "preventiveAction", "capaTargetDate") }
-        )
-    }
+    layout = $formCapaLayout
     fieldBehaviors = @{
         title = @{ visible = $true; required = $true }
+        rootCause = @{ visible = $true }
+        correctiveAction = @{ visible = $true }
     }
 }
+$formCapaId = Find-OrCreate -Collection "op_forms" -Filter "name:eq:$formCapaName" -Label "Form CAPA" -Body $formCapaBody
+Sync-Record -Collection "op_forms" -Id $formCapaId -Label "Form CAPA sync" -Body $formCapaBody
 
 # --- 10. Boards ---
 Write-Host "[10] op_boards..." -ForegroundColor Yellow
@@ -695,12 +755,80 @@ $boardProdName = "$tag - Uretim panosu"
 $boardProdId = Find-OrCreate -Collection "op_boards" -Filter "name:eq:$boardProdName" -Label "Uretim panosu" -Body $mainBoardProdBody
 Sync-Record -Collection "op_boards" -Id $boardProdId -Label "Uretim panosu sync" -Body $mainBoardProdBody
 
-$boardQualityName = "$tag - Kalite kuyrugu"
-$boardQualityId = Find-OrCreate -Collection "op_boards" -Filter "name:eq:$boardQualityName" -Label "Kalite kuyrugu" -Body @{
-    name = $boardQualityName; workspaceId = $workspaceId; viewType = "list"
-    defaultStateFlowId = $ncrFlowId; defaultFormId = $formNcrId; isDefault = $false
-    visibleFields = @("key", "title", "typeId", "stateId", "defectDescription", "ncrSource")
+$boardNcrName = "$tag - NCR Kuyrugu"
+$boardNcrLegacyName = "$tag - Kalite kuyrugu"
+$ncrBoardColumns = @(
+    @{ stateId = $stNcrOpen; title = "Acik"; queryKey = "wi_board_column" },
+    @{ stateId = $stNcrContain; title = "Kontrol altinda"; queryKey = "wi_board_column" },
+    @{ stateId = $stNcrReview; title = "Degerlendirme"; queryKey = "wi_board_column" },
+    @{ stateId = $stNcrDecided; title = "Karar verildi"; queryKey = "wi_board_column" },
+    @{ stateId = $stNcrClosed; title = "Kapandi"; queryKey = "wi_board_column" }
+)
+$ncrBoardListColumns = @(
+    @{ key = "key"; label = "No"; sortable = $true; filterable = $false },
+    @{ key = "title"; label = "Baslik"; sortable = $true; filterable = $true },
+    @{ key = "stateId"; label = "Durum"; sortable = $true; filterable = $true },
+    @{ key = "priorityId"; label = "Oncelik"; sortable = $true; filterable = $true },
+    @{ key = "ncrSource"; label = "Tespit asamasi"; sortable = $true; filterable = $true },
+    @{ key = "defectDescription"; label = "Uygunsuzluk"; sortable = $false; filterable = $true },
+    @{ key = "affectedQty"; label = "Etkilenen adet"; sortable = $true; filterable = $false },
+    @{ key = "lotSerial"; label = "Lot / seri"; sortable = $false; filterable = $true },
+    @{ key = "assignee"; label = "Atanan"; sortable = $false; filterable = $true }
+)
+$boardNcrBody = @{
+    name = $boardNcrName
+    workspaceId = $workspaceId
+    viewType = "kanban"
+    defaultStateFlowId = $ncrFlowId
+    defaultFormId = $formNcrId
+    isDefault = $false
+    visibleFields = @("key", "title", "typeId", "stateId", "priorityId", "ncrSource", "defectDescription", "affectedQty", "lotSerial", "assignee")
+    config = @{
+        columns = $ncrBoardColumns
+        listColumns = $ncrBoardListColumns
+        defaultSort = @{ field = "lastStateChangeAt"; direction = "desc" }
+    }
 }
+$boardNcrId = Find-OrCreate-ByNames -Collection "op_boards" -Names @($boardNcrName, $boardNcrLegacyName) -Label "NCR Kuyrugu" -Body $boardNcrBody
+Sync-Record -Collection "op_boards" -Id $boardNcrId -Label "NCR Kuyrugu sync" -Body $boardNcrBody
+# Geriye donuk referanslar (otomasyon, ozet)
+$boardQualityId = $boardNcrId
+
+$boardCapaName = "$tag - CAPA Kuyrugu"
+$capaBoardColumns = @(
+    @{ stateId = $stCapaOpen; title = "Acik"; queryKey = "wi_board_column" },
+    @{ stateId = $stCapaRoot; title = "Kok neden"; queryKey = "wi_board_column" },
+    @{ stateId = $stCapaPlan; title = "Aksiyon plani"; queryKey = "wi_board_column" },
+    @{ stateId = $stCapaImpl; title = "Uygulama"; queryKey = "wi_board_column" },
+    @{ stateId = $stCapaVerify; title = "Dogrulama"; queryKey = "wi_board_column" },
+    @{ stateId = $stCapaClosed; title = "Kapandi"; queryKey = "wi_board_column" }
+)
+$capaBoardListColumns = @(
+    @{ key = "key"; label = "No"; sortable = $true; filterable = $false },
+    @{ key = "title"; label = "Baslik"; sortable = $true; filterable = $true },
+    @{ key = "stateId"; label = "Durum"; sortable = $true; filterable = $true },
+    @{ key = "priorityId"; label = "Oncelik"; sortable = $true; filterable = $true },
+    @{ key = "rootCause"; label = "Kok neden"; sortable = $false; filterable = $true },
+    @{ key = "correctiveAction"; label = "Duzeltici faaliyet"; sortable = $false; filterable = $true },
+    @{ key = "capaTargetDate"; label = "Hedef tarih"; sortable = $true; filterable = $true; format = "date" },
+    @{ key = "assignee"; label = "Atanan"; sortable = $false; filterable = $true }
+)
+$boardCapaBody = @{
+    name = $boardCapaName
+    workspaceId = $workspaceId
+    viewType = "kanban"
+    defaultStateFlowId = $capaFlowId
+    defaultFormId = $formCapaId
+    isDefault = $false
+    visibleFields = @("key", "title", "typeId", "stateId", "priorityId", "rootCause", "correctiveAction", "capaTargetDate", "assignee")
+    config = @{
+        columns = $capaBoardColumns
+        listColumns = $capaBoardListColumns
+        defaultSort = @{ field = "lastStateChangeAt"; direction = "desc" }
+    }
+}
+$boardCapaId = Find-OrCreate -Collection "op_boards" -Filter "name:eq:$boardCapaName" -Label "CAPA Kuyrugu" -Body $boardCapaBody
+Sync-Record -Collection "op_boards" -Id $boardCapaId -Label "CAPA Kuyrugu sync" -Body $boardCapaBody
 
 $boardShipName = "$tag - Depo sevkiyat"
 $boardShipBody = @{
@@ -713,86 +841,78 @@ Sync-Record -Collection "op_boards" -Id $boardShipId -Label "Depo sevkiyat sync"
 
 # --- 11. Profile ---
 Write-Host "[11] op_profiles..." -ForegroundColor Yellow
+$profileActions = @(
+    @{ transitionKey = "plan"; order = 0; label = "Planla" },
+    @{ transitionKey = "start_production"; order = 1; label = "Uretime al" },
+    @{ transitionKey = "skip_to_production"; order = 2; label = "Dogrudan uretime al" },
+    @{ transitionKey = "send_to_quality"; order = 3; label = "Kaliteye gonder" },
+    @{ transitionKey = "hold_quality"; order = 4; label = "Uygunsuzluk — bekle" },
+    @{ transitionKey = "resume_from_hold"; order = 5; label = "Tekrar kaliteye al" },
+    @{ transitionKey = "approve_quality"; order = 6; label = "Kalite onayi" },
+    @{ transitionKey = "move_to_ship_prep"; order = 7; label = "Sevkiyata hazirla" },
+    @{ transitionKey = "ship_partial"; order = 8; label = "Kismi sevk" },
+    @{ transitionKey = "ship_complete"; order = 9; label = "Sevkiyati tamamla" },
+    @{ transitionKey = "close_order"; order = 10; label = "Kapat" },
+    @{ transitionKey = "contain"; order = 20; label = "Kontrol altina al" },
+    @{ transitionKey = "review"; order = 21; label = "Degerlendir" },
+    @{ transitionKey = "decide"; order = 22; label = "Karar ver" },
+    @{ transitionKey = "close_ncr"; order = 23; label = "NCR kapat" },
+    @{ transitionKey = "reopen_ncr"; order = 24; label = "Yeniden ac" },
+    @{ transitionKey = "analyze_root"; order = 30; label = "Kok neden analizi" },
+    @{ transitionKey = "plan_action"; order = 31; label = "Aksiyon planla" },
+    @{ transitionKey = "implement"; order = 32; label = "Uygula" },
+    @{ transitionKey = "verify"; order = 33; label = "Dogrula" },
+    @{ transitionKey = "close_capa"; order = 34; label = "CAPA kapat" }
+)
+$profileLayout = @{
+    sections = @(
+        @{ key = "summary"; title = "Ozet"; fields = @("title", "description", "typeId", "priorityId", "assignee", "key") },
+        @{ key = "ncr"; title = "Uygunsuzluk (NCR)"; fields = @("ncrSource", "defectDescription", "affectedQty", "lotSerial", "containmentAction", "disposition", "dispositionReason") },
+        @{ key = "capa"; title = "Duzeltici faaliyet (CAPA)"; fields = @("rootCause", "correctiveAction", "preventiveAction", "effectivenessCheck", "capaTargetDate") },
+        @{ key = "order"; title = "Siparis / urun"; fields = @("orderType", "customerId", "customerOrderRef", "productGroupId", "productId", "quantity", "plannedDate") },
+        @{ key = "production"; title = "Uretim"; fields = @("workCenter", "productionStartNote", "lotSerial", "producedQty") },
+        @{ key = "quality"; title = "Kalite"; fields = @("qualityResult", "qualityNotes", "inspectionType", "acceptedQty", "rejectedQty", "measurementSummary") },
+        @{ key = "logistics"; title = "Depo / sevkiyat"; fields = @("storageLocation", "packagingOk", "waybillNo", "shipmentQty", "shippedQty", "shipmentNotes") }
+    )
+}
+$profileFieldBehaviors = @{
+    title = @{ visible = $true; required = $true }
+    typeId = @{ visible = $true; readonly = $true }
+    priorityId = @{ visible = $true }
+    orderType = @{ visible = $true }
+    customerId = @{ visible = $true }
+    productId = @{ visible = $true }
+    shippedQty = @{ visible = $true; readonly = $true }
+    ncrSource = @{ visible = $true }
+    defectDescription = @{ visible = $true }
+    containmentAction = @{ visible = $true }
+    disposition = @{ visible = $true }
+    dispositionReason = @{ visible = $true }
+    rootCause = @{ visible = $true }
+    correctiveAction = @{ visible = $true }
+    preventiveAction = @{ visible = $true }
+    effectivenessCheck = @{ visible = $true }
+    capaTargetDate = @{ visible = $true }
+    qualityResult = @{ visible = $true }
+}
 $profileName = "$tag - Kayit profili"
 $profileId = Find-OrCreate -Collection "op_profiles" -Filter "name:eq:$profileName" -Label "Profile" -Body @{
     name = $profileName; workspaceId = $workspaceId; defaultTypeId = $typeOrderId; isDefault = $true
-    fieldBehaviors = @{
-        title = @{ visible = $true; required = $true }
-        typeId = @{ visible = $true; readonly = $true }
-        priorityId = @{ visible = $true }
-        customerId = @{ visible = $true }
-        productId = @{ visible = $true }
-        qualityResult = @{ visible = $true }
-        disposition = @{ visible = $true }
-    }
-    actions = @(
-        @{ transitionKey = "plan"; order = 0; label = "Planla" },
-        @{ transitionKey = "start_production"; order = 1; label = "Uretime al" },
-        @{ transitionKey = "skip_to_production"; order = 2; label = "Dogrudan uretime al" },
-        @{ transitionKey = "send_to_quality"; order = 3; label = "Kaliteye gonder" },
-        @{ transitionKey = "hold_quality"; order = 4; label = "Uygunsuzluk — bekle" },
-        @{ transitionKey = "resume_from_hold"; order = 5; label = "Tekrar kaliteye al" },
-        @{ transitionKey = "approve_quality"; order = 6; label = "Kalite onayi" },
-        @{ transitionKey = "move_to_ship_prep"; order = 7; label = "Sevkiyata hazirla" },
-        @{ transitionKey = "ship_partial"; order = 8; label = "Kismi sevk" },
-        @{ transitionKey = "ship_complete"; order = 9; label = "Sevkiyati tamamla" },
-        @{ transitionKey = "close_order"; order = 10; label = "Kapat" }
-    )
+    fieldBehaviors = $profileFieldBehaviors
+    actions = $profileActions
     header = @{ showBreadcrumb = $true; showKey = $true }
     sidebar = @{ showSla = $false; showWatchers = $true }
     panels = @{ timeline = @{ enabled = $true }; comments = @{ enabled = $true } }
-    layout = @{
-        sections = @(
-            @{ key = "summary"; title = "Ozet"; fields = @("title", "description", "typeId", "priorityId", "orderType", "assignee", "key") },
-            @{ key = "order"; title = "Siparis / urun"; fields = @("customerId", "customerOrderRef", "productGroupId", "productId", "quantity", "plannedDate") },
-            @{ key = "production"; title = "Uretim"; fields = @("workCenter", "productionStartNote", "lotSerial", "producedQty") },
-            @{ key = "quality"; title = "Kalite"; fields = @("qualityResult", "qualityNotes", "inspectionType", "acceptedQty", "rejectedQty", "measurementSummary") },
-            @{ key = "logistics"; title = "Depo / sevkiyat"; fields = @("storageLocation", "packagingOk", "waybillNo", "shipmentQty", "shippedQty", "shipmentNotes") },
-            @{ key = "ncr"; title = "NCR (referans)"; fields = @("ncrSource", "defectDescription", "disposition", "dispositionReason") },
-            @{ key = "capa"; title = "CAPA"; fields = @("rootCause", "correctiveAction", "preventiveAction", "effectivenessCheck", "capaTargetDate") }
-        )
-    }
+    layout = $profileLayout
 }
 Sync-Record -Collection "op_profiles" -Id $profileId -Label "Profile sync" -Body @{
     name = $profileName; workspaceId = $workspaceId; defaultTypeId = $typeOrderId; isDefault = $true
-    fieldBehaviors = @{
-        title = @{ visible = $true; required = $true }
-        typeId = @{ visible = $true; readonly = $true }
-        priorityId = @{ visible = $true }
-        orderType = @{ visible = $true }
-        customerId = @{ visible = $true }
-        productId = @{ visible = $true }
-        shippedQty = @{ visible = $true; readonly = $true }
-        qualityResult = @{ visible = $true }
-        disposition = @{ visible = $true }
-    }
-    actions = @(
-        @{ transitionKey = "plan"; order = 0; label = "Planla" },
-        @{ transitionKey = "start_production"; order = 1; label = "Uretime al" },
-        @{ transitionKey = "skip_to_production"; order = 2; label = "Dogrudan uretime al" },
-        @{ transitionKey = "send_to_quality"; order = 3; label = "Kaliteye gonder" },
-        @{ transitionKey = "hold_quality"; order = 4; label = "Uygunsuzluk — bekle" },
-        @{ transitionKey = "resume_from_hold"; order = 5; label = "Tekrar kaliteye al" },
-        @{ transitionKey = "approve_quality"; order = 6; label = "Kalite onayi" },
-        @{ transitionKey = "move_to_ship_prep"; order = 7; label = "Sevkiyata hazirla" },
-        @{ transitionKey = "ship_partial"; order = 8; label = "Kismi sevk" },
-        @{ transitionKey = "ship_complete"; order = 9; label = "Sevkiyati tamamla" },
-        @{ transitionKey = "close_order"; order = 10; label = "Kapat" }
-    )
+    fieldBehaviors = $profileFieldBehaviors
+    actions = $profileActions
     header = @{ showBreadcrumb = $true; showKey = $true }
     sidebar = @{ showSla = $false; showWatchers = $true }
     panels = @{ timeline = @{ enabled = $true }; comments = @{ enabled = $true } }
-    layout = @{
-        sections = @(
-            @{ key = "summary"; title = "Ozet"; fields = @("title", "description", "typeId", "priorityId", "orderType", "assignee", "key") },
-            @{ key = "order"; title = "Siparis / urun"; fields = @("customerId", "customerOrderRef", "productGroupId", "productId", "quantity", "plannedDate") },
-            @{ key = "production"; title = "Uretim"; fields = @("workCenter", "productionStartNote", "lotSerial", "producedQty") },
-            @{ key = "quality"; title = "Kalite"; fields = @("qualityResult", "qualityNotes", "inspectionType", "acceptedQty", "rejectedQty", "measurementSummary") },
-            @{ key = "logistics"; title = "Depo / sevkiyat"; fields = @("storageLocation", "packagingOk", "waybillNo", "shipmentQty", "shippedQty", "shipmentNotes") },
-            @{ key = "ncr"; title = "NCR (referans)"; fields = @("ncrSource", "defectDescription", "disposition", "dispositionReason") },
-            @{ key = "capa"; title = "CAPA"; fields = @("rootCause", "correctiveAction", "preventiveAction", "effectivenessCheck", "capaTargetDate") }
-        )
-    }
+    layout = $profileLayout
 }
 
 # --- 12. Rules ---
@@ -804,6 +924,24 @@ Find-OrCreate -Collection "op_rules" -Filter "name:eq:$tag - NCR disposition zor
     conditions = @{ field = "disposition"; cmp = "empty" }
     errorMessage = "NCR kapatmadan once disposition secilmelidir."
     isActive = $true; priority = 100
+} | Out-Null
+
+Find-OrCreate -Collection "op_rules" -Filter "name:eq:$tag - NCR disposition gerekcesi zorunlu" -Label "NCR reason rule" -Body @{
+    name = "$tag - NCR disposition gerekcesi zorunlu"; workspaceId = $workspaceId; ruleType = "validation"
+    trigger = "WorkItemTransition"; transitionKey = "close_ncr"; applyMode = "pre"
+    typeId = $typeNcrId
+    conditions = @{ field = "dispositionReason"; cmp = "empty" }
+    errorMessage = "NCR kapatmadan once disposition gerekcesi girilmelidir."
+    isActive = $true; priority = 101
+} | Out-Null
+
+Find-OrCreate -Collection "op_rules" -Filter "name:eq:$tag - NCR containment zorunlu" -Label "NCR contain rule" -Body @{
+    name = "$tag - NCR containment zorunlu"; workspaceId = $workspaceId; ruleType = "validation"
+    trigger = "WorkItemTransition"; transitionKey = "contain"; applyMode = "pre"
+    typeId = $typeNcrId
+    conditions = @{ field = "containmentAction"; cmp = "empty" }
+    errorMessage = "Kontrol altina almadan once acil kontrol aksiyonu girilmelidir."
+    isActive = $true; priority = 102
 } | Out-Null
 
 Find-OrCreate -Collection "op_rules" -Filter "name:eq:$tag - CAPA etkinlik zorunlu" -Label "CAPA rule" -Body @{
@@ -862,7 +1000,7 @@ $autoBody = @{
     name        = $autoName
     workspaceId = $workspaceId
     isActive    = $true
-    description = "hold_quality + uygunsuz -> Kalite kuyrugunda NCR (parent=ODF)"
+    description = "hold_quality + uygunsuz -> NCR Kuyrugunda NCR (parent=ODF)"
     trigger     = @{
         kind          = "workItemStateReached"
         typeId        = $typeOrderId
@@ -878,17 +1016,17 @@ $autoBody = @{
         @{
             type          = "createWorkItem"
             order         = 1
-            target        = @{ boardId = $boardQualityId; typeId = $typeNcrId }
+            target        = @{ boardId = $boardNcrId; typeId = $typeNcrId }
             title         = "Uygunsuzluk — {{source.key}}"
             assignee      = "{{source.assignee}}"
             fieldMappings = @(
                 @{ target = "parentItemId"; source = "relation"; relation = "parent" },
                 @{ target = "lotSerial"; source = "field"; path = "fields.lotSerial" },
                 @{ target = "defectDescription"; source = "field"; path = "fields.qualityNotes" },
-                @{ target = "ncrSource"; source = "static"; value = "final_inspection" },
+                @{ target = "ncrSource"; source = "static"; value = "final" },
                 @{ target = "priorityId"; source = "static"; value = $prioHighId },
-                @{ target = "affectedQty"; source = "static"; value = "2" },
-                @{ target = "containmentAction"; source = "static"; value = "Etkilenen adetler ayrildi" }
+                @{ target = "affectedQty"; source = "field"; path = "fields.rejectedQty" },
+                @{ target = "containmentAction"; source = "static"; value = "Etkilenen adetler ayirtildi ve etiketlendi" }
             )
         }
     )
@@ -981,6 +1119,8 @@ $summary = @{
     ncrFlowId     = $ncrFlowId
     capaFlowId    = $capaFlowId
     boardProdId   = $boardProdId
+    boardNcrId    = $boardNcrId
+    boardCapaId   = $boardCapaId
     boardQualityId = $boardQualityId
     boardShipId   = $boardShipId
     formOrderId   = $formOrderId
@@ -1089,6 +1229,7 @@ if ($SmokeTest -or $SeedDemo) {
         $bodyCapa = @{
             workspaceId  = $workspaceId
             typeId       = $typeCapaId
+            boardId      = $boardCapaId
             title        = "Layup proses parametresi duzeltmesi"
             parentItemId = $ncrId
             fields       = @{

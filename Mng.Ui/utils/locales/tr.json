@@ -3791,6 +3791,9 @@
     "board": {
       "placeholderTitle": "Board",
       "loadingTitle": "Board yükleniyor…",
+      "loadingPanelTitle": "Board yükleniyor",
+      "loadingPanelSwitching": "Board değiştiriliyor",
+      "loadingPanelHint": "Veriler hazırlanıyor, lütfen bekleyin…",
       "sprint2Hint": "Kanban / list board görünümü Sprint 2'de burada açılacak.",
       "backToWorkspace": "Çalışma alanına dön",
       "backToBoard": "Board'a dön",
