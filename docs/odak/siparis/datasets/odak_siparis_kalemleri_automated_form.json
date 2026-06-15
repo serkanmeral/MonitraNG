@@ -1,0 +1,154 @@
+{
+  "formName": "Odak Siparis Kalemleri",
+  "formCode": "odak-siparis-kalemleri-form",
+  "description": "Is paketi PO kalemleri — hub detay sekmesi veya dogrudan AF runtime (Automated Forms)",
+  "datasetName": "odak_siparis_kalemleri",
+  "isActive": true,
+  "sideMenuConfig": {
+    "enabled": false,
+    "routeType": "form",
+    "routePath": "/apps/automated-forms/view/odak-siparis-kalemleri-form"
+  },
+  "listConfig": {
+    "enableSearch": true,
+    "defaultSortBy": "lineNo",
+    "defaultSortOrder": "asc",
+    "columns": [
+      {
+        "fieldName": "lineNo",
+        "visible": true,
+        "order": 1,
+        "sortable": true,
+        "filterable": true,
+        "format": { "type": "color", "textColor": "primary" }
+      },
+      {
+        "fieldName": "customerProjectNo",
+        "visible": true,
+        "order": 2,
+        "sortable": true,
+        "filterable": true
+      },
+      {
+        "fieldName": "customerPoNo",
+        "visible": true,
+        "order": 3,
+        "sortable": true,
+        "filterable": true
+      },
+      {
+        "fieldName": "customerPoItemNo",
+        "visible": true,
+        "order": 4,
+        "sortable": true,
+        "filterable": true
+      },
+      {
+        "fieldName": "description",
+        "visible": true,
+        "order": 5,
+        "sortable": true,
+        "filterable": true
+      },
+      {
+        "fieldName": "quantity",
+        "visible": true,
+        "order": 6,
+        "sortable": true,
+        "filterable": false
+      },
+      {
+        "fieldName": "unit",
+        "visible": true,
+        "order": 7,
+        "sortable": true,
+        "filterable": true
+      },
+      {
+        "fieldName": "shippedQuantity",
+        "visible": true,
+        "order": 8,
+        "sortable": true,
+        "filterable": false
+      },
+      {
+        "fieldName": "shipmentDate",
+        "visible": true,
+        "order": 9,
+        "sortable": true,
+        "filterable": true
+      }
+    ]
+  },
+  "formConfig": {
+    "visibleFields": [
+      "parentPackageId",
+      "lineNo",
+      "customerProjectNo",
+      "customerPoNo",
+      "customerPoItemNo",
+      "description",
+      "poItemRevNo",
+      "customerJobNo",
+      "productId",
+      "quantity",
+      "unit",
+      "shippedQuantity",
+      "qualityReqs",
+      "isFai",
+      "isFaiComplete",
+      "shipmentDate",
+      "shipmentAddress",
+      "unitCost",
+      "totalCost",
+      "currency"
+    ],
+    "readonlyFields": ["shippedQuantity"],
+    "readonlyOnEditFields": ["parentWorkItemId", "lineNo"],
+    "fieldOrder": [
+      "parentPackageId",
+      "lineNo",
+      "customerProjectNo",
+      "customerPoNo",
+      "customerPoItemNo",
+      "customerJobNo",
+      "poItemRevNo",
+      "description",
+      "productId",
+      "quantity",
+      "unit",
+      "shippedQuantity",
+      "qualityReqs",
+      "isFai",
+      "isFaiComplete",
+      "shipmentDate",
+      "shipmentAddress",
+      "unitCost",
+      "totalCost",
+      "currency"
+    ],
+    "fieldLayout": {
+      "parentWorkItemId": { "columnSpan": 12, "group": "Baglanti", "choiceWidget": "autocomplete" },
+      "lineNo": { "columnSpan": 4, "group": "Baglanti" },
+      "customerProjectNo": { "columnSpan": 4, "group": "Musteri PO" },
+      "customerPoNo": { "columnSpan": 4, "group": "Musteri PO" },
+      "customerPoItemNo": { "columnSpan": 4, "group": "Musteri PO" },
+      "customerJobNo": { "columnSpan": 4, "group": "Musteri PO" },
+      "poItemRevNo": { "columnSpan": 4, "group": "Musteri PO" },
+      "description": { "columnSpan": 12, "group": "Urun", "textWidget": "textarea" },
+      "productId": { "columnSpan": 12, "group": "Urun", "choiceWidget": "autocomplete" },
+      "quantity": { "columnSpan": 4, "group": "Miktar" },
+      "unit": { "columnSpan": 4, "group": "Miktar", "choiceWidget": "select" },
+      "shippedQuantity": { "columnSpan": 4, "group": "Miktar" },
+      "qualityReqs": { "columnSpan": 12, "group": "Kalite", "textWidget": "textarea" },
+      "isFai": { "columnSpan": 4, "group": "Kalite" },
+      "isFaiComplete": { "columnSpan": 4, "group": "Kalite" },
+      "shipmentDate": { "columnSpan": 6, "group": "Sevkiyat" },
+      "shipmentAddress": { "columnSpan": 12, "group": "Sevkiyat", "textWidget": "textarea" },
+      "unitCost": { "columnSpan": 4, "group": "Maliyet" },
+      "totalCost": { "columnSpan": 4, "group": "Maliyet" },
+      "currency": { "columnSpan": 4, "group": "Maliyet", "choiceWidget": "select" }
+    },
+    "groupOrder": ["Baglanti", "Musteri PO", "Urun", "Miktar", "Kalite", "Sevkiyat", "Maliyet"]
+  }
+}

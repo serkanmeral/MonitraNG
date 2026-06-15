@@ -1,0 +1,78 @@
+{
+  "formName": "Odak Is Paketleri",
+  "formCode": "odak-is-paketleri-form",
+  "description": "Is paketi ust kaydi — Odak Siparis hub (DG odak_is_paketleri)",
+  "datasetName": "odak_is_paketleri",
+  "isActive": true,
+  "sideMenuConfig": {
+    "enabled": false,
+    "routeType": "form",
+    "routePath": "/apps/automated-forms/view/odak-is-paketleri-form"
+  },
+  "listConfig": {
+    "enableSearch": true,
+    "defaultSortBy": "packageNo",
+    "defaultSortOrder": "desc",
+    "columns": [
+      { "fieldName": "packageNo", "visible": true, "order": 1, "sortable": true, "filterable": true },
+      { "fieldName": "name", "visible": true, "order": 2, "sortable": true, "filterable": true },
+      { "fieldName": "customerId", "visible": true, "order": 3, "sortable": false, "filterable": true },
+      { "fieldName": "status", "visible": true, "order": 4, "sortable": true, "filterable": true },
+      { "fieldName": "beginDate", "visible": true, "order": 5, "sortable": true, "filterable": true },
+      { "fieldName": "deliveryDate", "visible": true, "order": 6, "sortable": true, "filterable": true },
+      { "fieldName": "lineCount", "visible": true, "order": 7, "sortable": true, "filterable": false }
+    ]
+  },
+  "formConfig": {
+    "visibleFields": [
+      "packageNo",
+      "name",
+      "customerId",
+      "status",
+      "beginDate",
+      "deliveryDate",
+      "deliveryAddress",
+      "notes",
+      "paymentDetail",
+      "partCount",
+      "stockCount",
+      "shippedCount",
+      "poVersion"
+    ],
+    "readonlyFields": ["lineCount", "legacyPackageId", "workItemId", "workItemKey"],
+    "readonlyOnEditFields": ["packageNo"],
+    "fieldOrder": [
+      "packageNo",
+      "name",
+      "customerId",
+      "status",
+      "beginDate",
+      "deliveryDate",
+      "deliveryAddress",
+      "notes",
+      "paymentDetail",
+      "partCount",
+      "stockCount",
+      "shippedCount",
+      "lineCount",
+      "poVersion"
+    ],
+    "fieldLayout": {
+      "packageNo": { "columnSpan": 4, "group": "Genel" },
+      "name": { "columnSpan": 8, "group": "Genel" },
+      "customerId": { "columnSpan": 12, "group": "Genel", "choiceWidget": "autocomplete" },
+      "status": { "columnSpan": 4, "group": "Genel", "choiceWidget": "select" },
+      "beginDate": { "columnSpan": 4, "group": "Tarihler" },
+      "deliveryDate": { "columnSpan": 4, "group": "Tarihler" },
+      "deliveryAddress": { "columnSpan": 12, "group": "Teslimat", "textWidget": "textarea" },
+      "notes": { "columnSpan": 12, "group": "Notlar", "textWidget": "textarea" },
+      "paymentDetail": { "columnSpan": 12, "group": "Notlar" },
+      "partCount": { "columnSpan": 4, "group": "Ozet" },
+      "stockCount": { "columnSpan": 4, "group": "Ozet" },
+      "shippedCount": { "columnSpan": 4, "group": "Ozet" },
+      "lineCount": { "columnSpan": 4, "group": "Ozet" },
+      "poVersion": { "columnSpan": 4, "group": "PO" }
+    },
+    "groupOrder": ["Genel", "Tarihler", "Teslimat", "Notlar", "Ozet", "PO"]
+  }
+}

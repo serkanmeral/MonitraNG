@@ -151,6 +151,8 @@ const loadForm = async () => {
 
     await loadFilterLookupOptions();
     await loadRelationListLabels();
+
+    await applyHubRouteQuery();
     
     // Load data items
     await fetchDataItems();
@@ -728,16 +730,41 @@ const initializeFormDialogData = () => {
 };
 
 // Open create dialog
-const createNewItem = () => {
+const createNewItem = (preset?: Record<string, unknown>) => {
   if (!form.value || !dataset.value) return;
   
   formDialogMode.value = 'create';
-  formDialogData.value = initializeFormDialogData();
+  formDialogData.value = { ...initializeFormDialogData(), ...(preset ?? {}) };
   formDialogError.value = '';
   formDialogSuccess.value = '';
   fieldErrors.value = {}; // Clear field errors
+  currentEditingItemId.value = null;
   showFormDialog.value = true;
 };
+
+/** Odak Siparis hub — parentPackageId / parentWorkItemId / editId query parametreleri */
+async function applyHubRouteQuery() {
+  const parentPackageId =
+    typeof route.query.parentPackageId === 'string' ? route.query.parentPackageId.trim() : '';
+  const parentWorkItemId =
+    typeof route.query.parentWorkItemId === 'string' ? route.query.parentWorkItemId.trim() : '';
+  const parentId = parentPackageId || parentWorkItemId;
+  const parentField = parentPackageId ? 'parentPackageId' : 'parentWorkItemId';
+
+  if (parentId) {
+    activeListFilters.value = [{ field: parentField, operator: 'eq', value: parentId }];
+  }
+
+  const editId = typeof route.query.editId === 'string' ? route.query.editId.trim() : '';
+  if (editId) {
+    await editItem({ __dataId: editId });
+    return;
+  }
+
+  if (route.query.mode === 'create' && parentId) {
+    createNewItem({ [parentField]: parentId });
+  }
+}
 
 // Open edit dialog
 const editItem = async (item: any) => {
@@ -910,6 +937,25 @@ const saveForm = async () => {
     setTimeout(async () => {
       showFormDialog.value = false;
       formDialogSuccess.value = '';
+      const returnTo =
+        typeof route.query.returnTo === 'string' ? route.query.returnTo.trim() : '';
+      const parentPackageId =
+        typeof route.query.parentPackageId === 'string' ? route.query.parentPackageId.trim() : '';
+      const parentWorkItemId =
+        typeof route.query.parentWorkItemId === 'string' ? route.query.parentWorkItemId.trim() : '';
+      const parentId = parentPackageId || parentWorkItemId;
+      if (returnTo) {
+        await router.push(returnTo);
+        return;
+      }
+      if (parentPackageId) {
+        await router.push(`/apps/odak-siparis/packages/${encodeURIComponent(parentPackageId)}?tab=lines`);
+        return;
+      }
+      if (parentId) {
+        await router.push(`/apps/odak-siparis/packages/${encodeURIComponent(parentId)}?tab=lines`);
+        return;
+      }
       await fetchDataItems();
     }, 1500);
   } catch (error: any) {

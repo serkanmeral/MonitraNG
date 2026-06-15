@@ -1,0 +1,266 @@
+{
+  "name": "odak_siparis_kalemleri",
+  "description": "Odak Siparis — is paketi PO kalemleri (packageitems karsiligi)",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "relation",
+      "name": "parentPackageId",
+      "title": "Is paketi",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_is_paketleri"
+    },
+    {
+      "fieldType": "text",
+      "name": "parentWorkItemId",
+      "title": "Legacy idx_parent_line uyumu (parentPackageId ile ayni DG id)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "number",
+      "name": "lineNo",
+      "title": "Kalem no",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "min": 1, "max": 9999 }
+    },
+    {
+      "fieldType": "text",
+      "name": "customerProjectNo",
+      "title": "Musteri proje no",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "customerPoNo",
+      "title": "Musteri PO no",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "number",
+      "name": "customerPoItemNo",
+      "title": "Musteri PO kalem no",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "min": 0, "max": 99999 }
+    },
+    {
+      "fieldType": "text",
+      "name": "description",
+      "title": "Urun ve hizmet tanimi",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "minLength": 1, "maxLength": 2000 }
+    },
+    {
+      "fieldType": "text",
+      "name": "poItemRevNo",
+      "title": "Urun revizyonu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    },
+    {
+      "fieldType": "text",
+      "name": "customerJobNo",
+      "title": "Musteri is emri",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "relation",
+      "name": "productId",
+      "title": "Urun (master)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_urunler"
+    },
+    {
+      "fieldType": "number",
+      "name": "quantity",
+      "title": "Miktar",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "min": 0 }
+    },
+    {
+      "fieldType": "select",
+      "name": "unit",
+      "title": "Birim",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": "adet",
+      "options": {
+        "lookup": {
+          "source": "static",
+          "staticItems": [
+            { "value": "adet", "label": "Adet" },
+            { "value": "takim", "label": "Takim" },
+            { "value": "kg", "label": "kg" },
+            { "value": "m", "label": "m" },
+            { "value": "m2", "label": "m2" },
+            { "value": "set", "label": "Set" }
+          ]
+        }
+      }
+    },
+    {
+      "fieldType": "number",
+      "name": "shippedQuantity",
+      "title": "Sevk miktari",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": 0,
+      "validation": { "min": 0 }
+    },
+    {
+      "fieldType": "number",
+      "name": "unitCost",
+      "title": "Birim fiyat",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "min": 0 }
+    },
+    {
+      "fieldType": "number",
+      "name": "totalCost",
+      "title": "Toplam maliyet",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "min": 0 }
+    },
+    {
+      "fieldType": "select",
+      "name": "currency",
+      "title": "Para birimi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "options": {
+        "lookup": {
+          "source": "static",
+          "staticItems": [
+            { "value": "TRY", "label": "TRY" },
+            { "value": "USD", "label": "USD" },
+            { "value": "EUR", "label": "EUR" },
+            { "value": "GBP", "label": "GBP" }
+          ]
+        }
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "qualityReqs",
+      "title": "Kalite isterleri",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 1000 }
+    },
+    {
+      "fieldType": "bool",
+      "name": "isFai",
+      "title": "FAI yapilacak mi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": false
+    },
+    {
+      "fieldType": "bool",
+      "name": "isFaiComplete",
+      "title": "FAI tamamlandi (legacy faicomp)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": false
+    },
+    {
+      "fieldType": "datetime",
+      "name": "shipmentDate",
+      "title": "Sevkiyat tarihi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "shipmentAddress",
+      "title": "Sevkiyat adresi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 500 }
+    },
+    {
+      "fieldType": "text",
+      "name": "legacyLineId",
+      "title": "Legacy packageitems id",
+      "mandatory": false,
+      "unique": true,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    },
+    {
+      "fieldType": "text",
+      "name": "legacyPackageId",
+      "title": "Legacy packages id",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    }
+  ],
+  "indexList": [
+    {
+      "name": "idx_parent_line",
+      "fields": { "parentPackageId": 1, "lineNo": 1 },
+      "unique": true
+    },
+    {
+      "name": "idx_parentPackageId",
+      "fields": { "parentPackageId": 1 },
+      "unique": false
+    },
+    {
+      "name": "idx_customerPoNo",
+      "fields": { "customerPoNo": 1 },
+      "unique": false
+    },
+    {
+      "name": "idx_customerProjectNo",
+      "fields": { "customerProjectNo": 1 },
+      "unique": false
+    },
+    {
+      "name": "idx_legacyLineId",
+      "fields": { "legacyLineId": 1 },
+      "unique": true
+    }
+  ]
+}

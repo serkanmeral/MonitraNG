@@ -1,0 +1,23 @@
+{
+  "package": {
+    "id": "233",
+    "package_no": "2020-026",
+    "name": "BNWC61 END PLUG CNC İŞLEME",
+    "customer_id": "258",
+    "status": "1",
+    "begin_date": "2020-05-20",
+    "delivery_date": "2020-07-04",
+    "address": "FETHİYE MAHALLESİ, HAVACILIK BULVARI NO:17 06980 KAHRAMANKAZAN ANKARA",
+    "notes": null,
+    "part_count": "96",
+    "po_version": "0",
+    "firm_name": "TAI"
+  },
+  "exportedAt": "2026-06-13T17:46:40.7419362Z",
+  "items": [],
+  "source": {
+    "note": "export-legacy-package-from-sql.ps1",
+    "sqlDump": "C:\\Users\\monitra\\kalite-legacy-docker\\db\\init\\01-kalite.sql"
+  },
+  "packageNo": "2020-026"
+}

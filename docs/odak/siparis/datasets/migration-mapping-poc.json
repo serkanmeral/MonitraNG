@@ -1,0 +1,34 @@
+{
+  "migrations": [
+    {
+      "migratedAt": "2026-06-13T17:35:00Z",
+      "legacyPackageNo": "2018-004",
+      "legacyPackageId": "132",
+      "workItemId": "ab18500e-7dc3-43f4-bc2c-338377450d7c",
+      "workItemKey": "ODF-0035",
+      "lineCount": 15,
+      "legacyJsonPath": "docs/odak/siparis/datasets/legacy-package-sample.json",
+      "note": "Faz 1 POC — Uretim emri WI + odak_siparis_kalemleri"
+    },
+    {
+      "note": "Faz 1 POC — Uretim emri WI + odak_siparis_kalemleri",
+      "workItemKey": "ODF-0036",
+      "migratedAt": "2026-06-13T17:48:16.6539726Z",
+      "lineCount": 0,
+      "workItemId": "1ac9d5b7-f9d0-420a-8f10-63115ee41ed0",
+      "legacyPackageNo": "2020-039",
+      "legacyJsonPath": "C:\\Users\\monitra\\Dev\\MonitraNG\\MonitraNG\\docs\\odak\\siparis\\datasets\\legacy-package-2020-039.json",
+      "legacyPackageId": "246"
+    },
+    {
+      "workItemKey": "ODF-0037",
+      "workItemId": "494881dd-8f8d-4b14-ac07-2fce0c2971db",
+      "legacyPackageId": "233",
+      "legacyJsonPath": "C:\\Users\\monitra\\Dev\\MonitraNG\\MonitraNG\\docs\\odak\\siparis\\datasets\\legacy-package-2020-026.json",
+      "migratedAt": "2026-06-13T17:48:19.9932423Z",
+      "legacyPackageNo": "2020-026",
+      "note": "Faz 1 POC — Uretim emri WI + odak_siparis_kalemleri",
+      "lineCount": 0
+    }
+  ]
+}

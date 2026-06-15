@@ -1,0 +1,48 @@
+services:
+  mysql:
+    image: mysql:8.0
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --max_allowed_packet=256M
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: kalite
+      MYSQL_USER: kalite
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - kalite_mysql_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    volumes:
+      - ./app:/var/www/html
+      - ./uploads:/var/www/uploads:ro
+    environment:
+      CAKEPHP_UPLOAD_ROOT: /var/www/uploads/
+      DB_HOST: mysql
+      DB_USER: kalite
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_NAME: kalite
+      SECURITY_SALT: ${SECURITY_SALT:-local-dev-salt-change-me}
+    env_file:
+      - .env
+
+volumes:
+  kalite_mysql_data:

@@ -1,0 +1,6 @@
+# Runtime data — never commit
+.env
+app/
+uploads/
+db/init/*.sql
+*.zip

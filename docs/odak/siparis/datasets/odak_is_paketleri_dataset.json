@@ -1,0 +1,265 @@
+{
+  "name": "odak_is_paketleri",
+  "description": "Odak Siparis — is paketi ust kaydi (legacy packages karsiligi, MO bagimsiz)",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "legacyPackageId",
+      "title": "Legacy packages.id",
+      "mandatory": true,
+      "unique": true,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    },
+    {
+      "fieldType": "text",
+      "name": "packageNo",
+      "title": "Is paketi no",
+      "mandatory": true,
+      "unique": true,
+      "isArray": false,
+      "validation": { "minLength": 1, "maxLength": 32 }
+    },
+    {
+      "fieldType": "text",
+      "name": "name",
+      "title": "Is paketi ismi",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "minLength": 1, "maxLength": 300 }
+    },
+    {
+      "fieldType": "relation",
+      "name": "customerId",
+      "title": "Musteri",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_musteriler"
+    },
+    {
+      "fieldType": "select",
+      "name": "status",
+      "title": "Durum",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": "open",
+      "options": {
+        "lookup": {
+          "source": "static",
+          "staticItems": [
+            { "value": "open", "label": "Acik" },
+            { "value": "closed", "label": "Kapali" }
+          ]
+        }
+      }
+    },
+    {
+      "fieldType": "datetime",
+      "name": "closedAt",
+      "title": "Kapanis tarihi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "datetime",
+      "name": "beginDate",
+      "title": "Baslangic tarihi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "datetime",
+      "name": "deliveryDate",
+      "title": "Termin tarihi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "deliveryAddress",
+      "title": "Teslimat adresi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 1000 }
+    },
+    {
+      "fieldType": "text",
+      "name": "notes",
+      "title": "Notlar",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 4000 }
+    },
+    {
+      "fieldType": "text",
+      "name": "paymentDetail",
+      "title": "Odeme bilgisi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 500 }
+    },
+    {
+      "fieldType": "number",
+      "name": "partCount",
+      "title": "Parca sayisi (legacy)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "min": 0 }
+    },
+    {
+      "fieldType": "number",
+      "name": "stockCount",
+      "title": "Stok sayisi (legacy)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "min": 0 }
+    },
+    {
+      "fieldType": "number",
+      "name": "shippedCount",
+      "title": "Sevk sayisi (legacy)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "min": 0 }
+    },
+    {
+      "fieldType": "number",
+      "name": "lineCount",
+      "title": "Kalem sayisi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": 0,
+      "validation": { "min": 0 }
+    },
+    {
+      "fieldType": "text",
+      "name": "poDocumentPath",
+      "title": "PO PDF yolu (legacy polink)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 500 }
+    },
+    {
+      "fieldType": "text",
+      "name": "poDocumentPathRedacted",
+      "title": "PO PDF redacted (legacy porlink)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 500 }
+    },
+    {
+      "fieldType": "text",
+      "name": "poVersion",
+      "title": "PO revizyon",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    },
+    {
+      "fieldType": "text",
+      "name": "poStorageKey",
+      "title": "PO dosya storage key",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 500 }
+    },
+    {
+      "fieldType": "text",
+      "name": "legacyResponsibleId",
+      "title": "Legacy responsible (employee id)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    },
+    {
+      "fieldType": "text",
+      "name": "legacyDesignResponsibleId",
+      "title": "Legacy design responsible id",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    },
+    {
+      "fieldType": "text",
+      "name": "legacyManufactureResponsibleId",
+      "title": "Legacy manufacture responsible id",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    },
+    {
+      "fieldType": "text",
+      "name": "legacyContactId",
+      "title": "Legacy contact id",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    },
+    {
+      "fieldType": "datetime",
+      "name": "legacyCreatedAt",
+      "title": "Legacy created",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "legacyCreatedBy",
+      "title": "Legacy created_by",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "workItemId",
+      "title": "MO work item id (gelecek)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "workItemKey",
+      "title": "MO work item key (gelecek)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    }
+  ],
+  "indexList": [
+    { "name": "idx_legacyPackageId", "fields": { "legacyPackageId": 1 }, "unique": true },
+    { "name": "idx_packageNo", "fields": { "packageNo": 1 }, "unique": true },
+    { "name": "idx_status", "fields": { "status": 1 }, "unique": false },
+    { "name": "idx_customerId", "fields": { "customerId": 1 }, "unique": false },
+    { "name": "idx_status_deliveryDate", "fields": { "status": 1, "deliveryDate": 1 }, "unique": false }
+  ]
+}
