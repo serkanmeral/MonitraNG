@@ -7,6 +7,7 @@ export const ODAK_SIPARIS_CONFIG = {
   linesDataset: 'odak_siparis_kalemleri',
   linesFormCode: 'odak-siparis-kalemleri-form',
   customersDataset: 'odak_musteriler',
+  customersFormCode: 'odak-musteriler-form',
 
   /** MO koprusu — ileride; hub DG kullanir */
   workspaceId: '9f9cc085-81c7-4a92-9fa2-357ad5c654cd',
@@ -30,7 +31,21 @@ export interface OdakPackageRow {
   notes?: string;
   paymentDetail?: string;
   partCount?: number;
+  stockCount?: number;
+  shippedCount?: number;
   lineCount?: number;
+  legacyResponsibleId?: string;
+  legacyDesignResponsibleId?: string;
+  legacyManufactureResponsibleId?: string;
+  legacyContactId?: string;
+  legacyCreatedAt?: string;
+  legacyCreatedBy?: string;
+  legacyUpdatedAt?: string;
+  legacyUpdatedBy?: string;
+  __createdAt?: string;
+  __updatedAt?: string;
+  __createdBy?: string;
+  __updatedBy?: string;
   workItemId?: string;
   workItemKey?: string;
 }

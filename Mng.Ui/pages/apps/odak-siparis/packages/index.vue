@@ -1,19 +1,27 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import AfListFilters from '@/components/apps/automated-forms/AfListFilters.vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { ocDelete } from '@/services/operationCoreService';
+import type { AfFilterColumn, AfListFilter } from '@/utils/afListFilters';
 import { ODAK_SIPARIS_CONFIG, type OdakPackageRow } from '@/utils/odakSiparisConfig';
 import {
+  customerFormRoute,
+  customerIdFromRow,
   customerLabelFromRow,
   fetchCustomerLabelMap,
   fetchOdakPackagesPage,
   fetchPackageLineStatsMap,
+  formatOdakDate,
+  formatOdakNumber,
   packageDataId,
   packageDisplayNo,
   packageStatusLabel,
   type OdakPackageLineStats,
+  type OdakPackageListSort,
 } from '@/utils/odakSiparisService';
-import { PlusIcon, RefreshIcon } from 'vue-tabler-icons';
+import { EditIcon, EyeIcon, PlusIcon, RefreshIcon, TrashIcon } from 'vue-tabler-icons';
 
 definePageMeta({ layout: 'default' });
 
@@ -24,86 +32,119 @@ type StatusTab = 'open' | 'closed' | 'all';
 
 const statusTab = ref<StatusTab>('open');
 const searchQuery = ref('');
-const searchPanelOpen = ref<number | undefined>(undefined);
+const lineSearchPanelOpen = ref<number | undefined>(undefined);
 const loading = ref(false);
 const errorMessage = ref('');
 const items = ref<OdakPackageRow[]>([]);
 const lineStats = ref<Map<string, OdakPackageLineStats>>(new Map());
 const customerLabels = ref<Record<string, string>>({});
+const relationFilterOptions = ref<Record<string, { value: string; title: string }[]>>({});
+const activeListFilters = ref<AfListFilter[]>([]);
 const totalCount = ref(0);
 const tablePage = ref(1);
 const tableItemsPerPage = ref(20);
+const tableItemsPerPageOptions = [10, 20, 50, 100];
+const tableSortBy = ref<OdakPackageListSort[]>([{ key: 'displayNo', order: 'desc' }]);
 
-const adv = ref({
-  packageNo: '',
-  packageName: '',
+const paginationLabel = computed(() =>
+  t('odakSiparis.packages.paginationSummary', {
+    from: totalCount.value === 0 ? 0 : (tablePage.value - 1) * tableItemsPerPage.value + 1,
+    to: Math.min(tablePage.value * tableItemsPerPage.value, totalCount.value),
+    total: totalCount.value,
+  })
+);
+const deleteDialog = ref(false);
+const itemToDelete = ref<OdakPackageRow | null>(null);
+const deleting = ref(false);
+
+/** Kalem dataset alanlari — sunucu filtresi yok; line stats ile client filtre. */
+const lineAdv = ref({
   customerPo: '',
-  customerName: '',
   customerProjectNo: '',
   customerPoItem: '',
   productDesc: '',
 });
 
-const page = computed(() => ({ title: 'Is Paketleri' }));
+const page = computed(() => ({ title: t('odakSiparis.packages.title') }));
 const breadcrumbs = computed(() => [
   { text: t('operationCore.breadcrumbs.home'), disabled: false, href: '/dashboards/analytical' },
-  { text: 'Odak Siparis', disabled: false, href: '/apps/odak-siparis/packages' },
-  { text: 'Is Paketleri', disabled: true, href: '#' },
+  { text: t('odakSiparis.module'), disabled: false, href: '/apps/odak-siparis/packages' },
+  { text: t('odakSiparis.packages.title'), disabled: true, href: '#' },
 ]);
 
-const statusTabs = [
-  { value: 'open' as const, label: 'Acik' },
-  { value: 'closed' as const, label: 'Kapali' },
-  { value: 'all' as const, label: 'Tumu' },
-];
+const statusTabs = computed(() => [
+  { value: 'open' as const, label: t('odakSiparis.packages.tabs.open') },
+  { value: 'closed' as const, label: t('odakSiparis.packages.tabs.closed') },
+  { value: 'all' as const, label: t('odakSiparis.packages.tabs.all') },
+]);
 
-const headers = [
-  { title: 'Is Paketi No', key: 'displayNo', sortable: false },
-  { title: 'Is Paketi Ismi', key: 'name', sortable: false },
-  { title: 'Musteri', key: 'customer', sortable: false },
-  { title: 'Musteri PO', key: 'customerPo', sortable: false },
-  { title: 'Proje No', key: 'projectNo', sortable: false },
-  { title: 'Kalem', key: 'lineCount', sortable: false, width: 72 },
-  { title: 'Durum', key: 'statusLabel', sortable: false },
-  { title: 'Termin', key: 'deliveryDate', sortable: false },
-  { title: 'Eylemler', key: 'actions', sortable: false, align: 'center' as const, width: 120 },
-];
+/** odak-is-paketleri-form listConfig.filterable ile hizali (status sekmelerde). */
+const packageFilterColumns = computed<AfFilterColumn[]>(() => [
+  { key: 'packageNo', label: t('odakSiparis.packages.searchFields.packageNo'), kind: 'text' },
+  { key: 'name', label: t('odakSiparis.packages.searchFields.packageName'), kind: 'text' },
+  { key: 'customerId', label: t('odakSiparis.packages.searchFields.customerName'), kind: 'relation' },
+  { key: 'beginDate', label: t('odakSiparis.packages.columns.beginDate'), kind: 'date' },
+  { key: 'deliveryDate', label: t('odakSiparis.packages.columns.deliveryDate'), kind: 'date' },
+  { key: 'partCount', label: t('odakSiparis.packages.columns.partCount'), kind: 'number' },
+  { key: 'stockCount', label: t('odakSiparis.packages.columns.stockCount'), kind: 'number' },
+]);
+
+const headers = computed(() => [
+  { title: t('odakSiparis.packages.columns.packageNo'), key: 'displayNo', sortable: true },
+  { title: t('odakSiparis.packages.columns.name'), key: 'name', sortable: true },
+  { title: t('odakSiparis.packages.columns.customer'), key: 'customer', sortable: true },
+  { title: t('odakSiparis.packages.columns.customerPo'), key: 'customerPo', sortable: false },
+  { title: t('odakSiparis.packages.columns.projectNo'), key: 'projectNo', sortable: false },
+  { title: t('odakSiparis.packages.columns.partCount'), key: 'partCount', sortable: true, width: 88 },
+  { title: t('odakSiparis.packages.columns.stockCount'), key: 'stockCount', sortable: true, width: 88 },
+  { title: t('odakSiparis.packages.columns.lineCount'), key: 'lineCount', sortable: true, width: 72 },
+  { title: t('odakSiparis.packages.columns.status'), key: 'statusLabel', sortable: true },
+  { title: t('odakSiparis.packages.columns.beginDate'), key: 'beginDate', sortable: true },
+  { title: t('odakSiparis.packages.columns.deliveryDate'), key: 'deliveryDate', sortable: true },
+  {
+    title: t('odakSiparis.packages.columns.actions'),
+    key: 'actions',
+    sortable: false,
+    align: 'end' as const,
+    width: 132,
+  },
+]);
+
+const deleteLineCount = computed(() => {
+  const item = itemToDelete.value;
+  if (!item) return 0;
+  const id = packageDataId(item);
+  return lineStats.value.get(id)?.lineCount ?? item.lineCount ?? 0;
+});
 
 const hasLineSearch = computed(
   () =>
     Boolean(
-      adv.value.customerProjectNo.trim() ||
-        adv.value.customerPoItem.trim() ||
-        adv.value.productDesc.trim()
+      lineAdv.value.customerProjectNo.trim() ||
+        lineAdv.value.customerPoItem.trim() ||
+        lineAdv.value.productDesc.trim()
     )
 );
 
-const hasClientFilter = computed(
-  () =>
-    Boolean(
-      adv.value.customerName.trim() ||
-        adv.value.customerPo.trim() ||
-        hasLineSearch.value
-    )
-);
+const needsLineStats = computed(() => Boolean(lineAdv.value.customerPo.trim() || hasLineSearch.value));
 
-function buildSearchText(): string | undefined {
-  const parts = [searchQuery.value.trim(), adv.value.packageName.trim()].filter(Boolean);
-  return parts.length ? parts.join(' ') : undefined;
-}
+const hasLineFilter = computed(() => needsLineStats.value);
 
-function applyClientFilters(list: OdakPackageRow[]): OdakPackageRow[] {
+function applyLineFilters(list: OdakPackageRow[]): OdakPackageRow[] {
   let result = list;
-  const cust = adv.value.customerName.trim().toLowerCase();
-  if (cust) {
-    result = result.filter((item) =>
-      customerLabelFromRow(item, customerLabels.value).toLowerCase().includes(cust)
-    );
+
+  if (lineAdv.value.customerPo.trim()) {
+    const po = lineAdv.value.customerPo.trim().toLowerCase();
+    result = result.filter((item) => {
+      const id = packageDataId(item);
+      return (lineStats.value.get(id)?.customerPoNos ?? '').toLowerCase().includes(po);
+    });
   }
+
   if (hasLineSearch.value) {
-    const proj = adv.value.customerProjectNo.trim().toLowerCase();
-    const poItem = adv.value.customerPoItem.trim().toLowerCase();
-    const desc = adv.value.productDesc.trim().toLowerCase();
+    const proj = lineAdv.value.customerProjectNo.trim().toLowerCase();
+    const poItem = lineAdv.value.customerPoItem.trim().toLowerCase();
+    const desc = lineAdv.value.productDesc.trim().toLowerCase();
     result = result.filter((item) => {
       const id = packageDataId(item);
       const stats = lineStats.value.get(id);
@@ -114,85 +155,137 @@ function applyClientFilters(list: OdakPackageRow[]): OdakPackageRow[] {
       return true;
     });
   }
+
   return result;
 }
 
-function rowDeliveryDate(item: OdakPackageRow): string {
-  if (!item.deliveryDate) return '—';
-  try {
-    return new Date(String(item.deliveryDate)).toLocaleDateString('tr-TR');
-  } catch {
-    return String(item.deliveryDate);
-  }
+function compareText(a: string, b: string): number {
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+}
+
+function compareNumber(a: number | null | undefined, b: number | null | undefined): number {
+  const na = a ?? Number.NEGATIVE_INFINITY;
+  const nb = b ?? Number.NEGATIVE_INFINITY;
+  return na === nb ? 0 : na < nb ? -1 : 1;
+}
+
+function sortPackagesClient(list: OdakPackageRow[], sortBy: OdakPackageListSort[]): OdakPackageRow[] {
+  const primary = sortBy[0];
+  if (!primary) return list;
+  const dir = primary.order === 'desc' ? -1 : 1;
+  const key = primary.key;
+  return [...list].sort((a, b) => {
+    let cmp = 0;
+    switch (key) {
+      case 'displayNo':
+        cmp = compareText(packageDisplayNo(a), packageDisplayNo(b));
+        break;
+      case 'name':
+        cmp = compareText(String(a.name ?? ''), String(b.name ?? ''));
+        break;
+      case 'customer':
+        cmp = compareText(
+          customerLabelFromRow(a, customerLabels.value),
+          customerLabelFromRow(b, customerLabels.value)
+        );
+        break;
+      case 'statusLabel':
+        cmp = compareText(String(a.status ?? ''), String(b.status ?? ''));
+        break;
+      case 'beginDate':
+        cmp = compareText(String(a.beginDate ?? ''), String(b.beginDate ?? ''));
+        break;
+      case 'deliveryDate':
+        cmp = compareText(String(a.deliveryDate ?? ''), String(b.deliveryDate ?? ''));
+        break;
+      case 'partCount':
+        cmp = compareNumber(a.partCount, b.partCount);
+        break;
+      case 'stockCount':
+        cmp = compareNumber(a.stockCount, b.stockCount);
+        break;
+      case 'lineCount':
+        cmp = compareNumber(a.lineCount ?? lineStats.value.get(packageDataId(a))?.lineCount, b.lineCount ?? lineStats.value.get(packageDataId(b))?.lineCount);
+        break;
+      default:
+        cmp = 0;
+    }
+    return cmp * dir;
+  });
 }
 
 function lineCountFor(item: OdakPackageRow): string {
-  const id = packageDataId(item);
-  const fromStats = lineStats.value.get(id)?.lineCount;
+  if (item.lineCount != null && item.lineCount >= 0) return String(item.lineCount);
+  const fromStats = lineStats.value.get(packageDataId(item))?.lineCount;
   if (fromStats != null && fromStats > 0) return String(fromStats);
-  if (item.lineCount != null && item.lineCount > 0) return String(item.lineCount);
   return '—';
 }
 
 function rowPo(item: OdakPackageRow): string {
-  const id = packageDataId(item);
-  const fromLines = lineStats.value.get(id)?.customerPoNos;
-  if (fromLines) return fromLines;
-  return '—';
+  return lineStats.value.get(packageDataId(item))?.customerPoNos || '—';
 }
 
 function rowProjectNo(item: OdakPackageRow): string {
-  const id = packageDataId(item);
-  return lineStats.value.get(id)?.customerProjectNos || '—';
+  return lineStats.value.get(packageDataId(item))?.customerProjectNos || '—';
 }
 
-function clearAdvancedSearch() {
-  adv.value = {
-    packageNo: '',
-    packageName: '',
+async function ensureCustomerLabels() {
+  if (Object.keys(customerLabels.value).length) return;
+  customerLabels.value = await fetchCustomerLabelMap();
+}
+
+async function loadFilterRelationOptions() {
+  await ensureCustomerLabels();
+  relationFilterOptions.value = {
+    customerId: Object.entries(customerLabels.value).map(([value, title]) => ({ value, title })),
+  };
+}
+
+function onListFiltersUpdate(filters: AfListFilter[]) {
+  activeListFilters.value = filters;
+  if (tablePage.value !== 1) tablePage.value = 1;
+  else void fetchPackages();
+}
+
+function clearLineSearch() {
+  lineAdv.value = {
     customerPo: '',
-    customerName: '',
     customerProjectNo: '',
     customerPoItem: '',
     productDesc: '',
   };
-  searchQuery.value = '';
 }
 
 async function fetchPackages() {
   loading.value = true;
   errorMessage.value = '';
   try {
-    if (!Object.keys(customerLabels.value).length) {
-      customerLabels.value = await fetchCustomerLabelMap();
-    }
+    await ensureCustomerLabels();
 
-    const skip = hasClientFilter.value ? 0 : (tablePage.value - 1) * tableItemsPerPage.value;
-    const limit = hasClientFilter.value ? 500 : tableItemsPerPage.value;
+    const skip = hasLineFilter.value ? 0 : (tablePage.value - 1) * tableItemsPerPage.value;
+    const limit = hasLineFilter.value ? 500 : tableItemsPerPage.value;
 
     const resp = await fetchOdakPackagesPage({
       statusTab: statusTab.value,
       skip,
       limit,
-      search: buildSearchText(),
-      packageNo: adv.value.packageNo.trim() || undefined,
+      search: searchQuery.value.trim() || undefined,
+      advancedFilters: activeListFilters.value,
+      sortBy: tableSortBy.value,
     });
 
     let filtered = [...resp.items];
-    const stats = await fetchPackageLineStatsMap(filtered.map((x) => packageDataId(x)));
-    lineStats.value = stats;
 
-    if (adv.value.customerPo.trim()) {
-      const po = adv.value.customerPo.trim().toLowerCase();
-      filtered = filtered.filter((item) => {
-        const id = packageDataId(item);
-        return (lineStats.value.get(id)?.customerPoNos ?? '').toLowerCase().includes(po);
-      });
+    if (needsLineStats.value) {
+      const stats = await fetchPackageLineStatsMap(filtered.map((x) => packageDataId(x)));
+      lineStats.value = stats;
+      filtered = applyLineFilters(filtered);
+    } else {
+      lineStats.value = new Map();
     }
 
-    filtered = applyClientFilters(filtered);
-
-    if (hasClientFilter.value) {
+    if (hasLineFilter.value) {
+      filtered = sortPackagesClient(filtered, tableSortBy.value);
       const start = (tablePage.value - 1) * tableItemsPerPage.value;
       totalCount.value = filtered.length;
       items.value = filtered.slice(start, start + tableItemsPerPage.value);
@@ -214,6 +307,42 @@ function openDetail(item: OdakPackageRow) {
   router.push(`/apps/odak-siparis/packages/${encodeURIComponent(packageDataId(item))}`);
 }
 
+function openEdit(item: OdakPackageRow) {
+  const id = packageDataId(item);
+  if (!id) return;
+  router.push({
+    path: `/apps/automated-forms/view/${ODAK_SIPARIS_CONFIG.packagesFormCode}`,
+    query: {
+      editId: id,
+      returnTo: '/apps/odak-siparis/packages',
+    },
+  });
+}
+
+function confirmDelete(item: OdakPackageRow) {
+  itemToDelete.value = item;
+  deleteDialog.value = true;
+}
+
+async function doDelete() {
+  const item = itemToDelete.value;
+  if (!item) return;
+  const id = packageDataId(item);
+  if (!id) return;
+  deleting.value = true;
+  errorMessage.value = '';
+  try {
+    await ocDelete(ODAK_SIPARIS_CONFIG.packagesDataset, id);
+    deleteDialog.value = false;
+    itemToDelete.value = null;
+    await fetchPackages();
+  } catch (e: unknown) {
+    errorMessage.value = e instanceof Error ? e.message : String(e);
+  } finally {
+    deleting.value = false;
+  }
+}
+
 function createPackage() {
   router.push({
     path: `/apps/automated-forms/view/${ODAK_SIPARIS_CONFIG.packagesFormCode}`,
@@ -224,9 +353,36 @@ function createPackage() {
   });
 }
 
-watch([statusTab, tablePage, tableItemsPerPage], () => {
-  void fetchPackages();
+watch(statusTab, () => {
+  if (tablePage.value !== 1) {
+    tablePage.value = 1;
+  } else {
+    void fetchPackages();
+  }
 });
+
+type TableOptions = {
+  page: number;
+  itemsPerPage: number;
+  sortBy?: OdakPackageListSort[];
+};
+
+function onTableOptions(options: TableOptions) {
+  const nextSort = Array.isArray(options.sortBy) && options.sortBy.length
+    ? options.sortBy
+    : [{ key: 'displayNo', order: 'desc' as const }];
+  const sortChanged = JSON.stringify(nextSort) !== JSON.stringify(tableSortBy.value);
+  const nextSize = options.itemsPerPage;
+  const sizeChanged = nextSize !== tableItemsPerPage.value;
+  let nextPage = options.page;
+  if (sortChanged || sizeChanged) nextPage = 1;
+  const pageChanged = nextPage !== tablePage.value;
+  if (!sortChanged && !pageChanged && !sizeChanged) return;
+  tableSortBy.value = nextSort;
+  tablePage.value = nextPage;
+  tableItemsPerPage.value = nextSize;
+  void fetchPackages();
+}
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 function scheduleFetch() {
@@ -236,7 +392,7 @@ function scheduleFetch() {
 }
 
 watch(searchQuery, scheduleFetch);
-watch(adv, scheduleFetch, { deep: true });
+watch(lineAdv, scheduleFetch, { deep: true });
 
 onMounted(() => {
   void fetchPackages();
@@ -249,7 +405,7 @@ onMounted(() => {
 
     <v-card elevation="10">
       <v-card-title class="d-flex flex-wrap align-center ga-3 py-4">
-        <span class="text-h6">Is Paketleri</span>
+        <span class="text-h6">{{ t('odakSiparis.packages.title') }}</span>
         <v-spacer />
         <v-text-field
           v-model="searchQuery"
@@ -258,7 +414,7 @@ onMounted(() => {
           hide-details
           clearable
           prepend-inner-icon="mdi-magnify"
-          placeholder="Hizli arama..."
+          :placeholder="t('odakSiparis.packages.quickSearch')"
           style="max-width: 220px"
         />
         <v-btn icon variant="outlined" size="small" :loading="loading" @click="fetchPackages">
@@ -266,61 +422,71 @@ onMounted(() => {
         </v-btn>
         <v-btn color="primary" variant="flat" @click="createPackage">
           <PlusIcon class="mr-1" size="18" />
-          Is Paketi Ekle
+          {{ t('odakSiparis.packages.add') }}
         </v-btn>
       </v-card-title>
 
-      <v-expansion-panels v-model="searchPanelOpen" class="px-4 pb-2">
-        <v-expansion-panel>
-          <v-expansion-panel-title>Is Paketi Arama</v-expansion-panel-title>
-          <v-expansion-panel-text>
-            <v-row dense>
-              <v-col cols="12" sm="6" md="4">
-                <v-text-field v-model="adv.packageNo" label="Is Paketi No" density="compact" hide-details />
-              </v-col>
-              <v-col cols="12" sm="6" md="4">
-                <v-text-field v-model="adv.packageName" label="Is Paketi Ismi" density="compact" hide-details />
-              </v-col>
-              <v-col cols="12" sm="6" md="4">
-                <v-text-field v-model="adv.customerPo" label="Musteri PO No" density="compact" hide-details />
-              </v-col>
-              <v-col cols="12" sm="6" md="4">
-                <v-text-field v-model="adv.customerName" label="Musteri" density="compact" hide-details />
-              </v-col>
-              <v-col cols="12" sm="6" md="4">
-                <v-text-field
-                  v-model="adv.customerProjectNo"
-                  label="Musteri Proje No"
-                  density="compact"
-                  hide-details
-                />
-              </v-col>
-              <v-col cols="12" sm="6" md="4">
-                <v-text-field
-                  v-model="adv.customerPoItem"
-                  label="Musteri PO Kalem"
-                  density="compact"
-                  hide-details
-                />
-              </v-col>
-              <v-col cols="12" sm="6" md="4">
-                <v-text-field
-                  v-model="adv.productDesc"
-                  label="Urun / Hizmet Tanimi"
-                  density="compact"
-                  hide-details
-                  hint="Kalem bazli — yuklenen paketler uzerinde"
-                  persistent-hint
-                />
-              </v-col>
-              <v-col cols="12" class="d-flex ga-2">
-                <v-btn size="small" variant="tonal" @click="scheduleFetch">Ara</v-btn>
-                <v-btn size="small" variant="text" @click="clearAdvancedSearch">Temizle</v-btn>
-              </v-col>
-            </v-row>
-          </v-expansion-panel-text>
-        </v-expansion-panel>
-      </v-expansion-panels>
+      <div class="px-4">
+        <AfListFilters
+          :columns="packageFilterColumns"
+          :relation-options-by-key="relationFilterOptions"
+          @update:filters="onListFiltersUpdate"
+          @advanced-open="loadFilterRelationOptions"
+        />
+
+        <v-expansion-panels v-model="lineSearchPanelOpen" class="pb-2">
+          <v-expansion-panel>
+            <v-expansion-panel-title>{{ t('odakSiparis.packages.lineSearchPanel') }}</v-expansion-panel-title>
+            <v-expansion-panel-text>
+              <v-alert type="info" variant="tonal" density="compact" class="mb-3">
+                {{ t('odakSiparis.packages.lineSearchHint') }}
+              </v-alert>
+              <v-row dense>
+                <v-col cols="12" sm="6" md="3">
+                  <v-text-field
+                    v-model="lineAdv.customerPo"
+                    :label="t('odakSiparis.packages.searchFields.customerPo')"
+                    density="compact"
+                    hide-details
+                  />
+                </v-col>
+                <v-col cols="12" sm="6" md="3">
+                  <v-text-field
+                    v-model="lineAdv.customerProjectNo"
+                    :label="t('odakSiparis.packages.searchFields.customerProjectNo')"
+                    density="compact"
+                    hide-details
+                  />
+                </v-col>
+                <v-col cols="12" sm="6" md="3">
+                  <v-text-field
+                    v-model="lineAdv.customerPoItem"
+                    :label="t('odakSiparis.packages.searchFields.customerPoItem')"
+                    density="compact"
+                    hide-details
+                  />
+                </v-col>
+                <v-col cols="12" sm="6" md="3">
+                  <v-text-field
+                    v-model="lineAdv.productDesc"
+                    :label="t('odakSiparis.packages.searchFields.productDesc')"
+                    density="compact"
+                    hide-details
+                  />
+                </v-col>
+                <v-col cols="12" class="d-flex ga-2">
+                  <v-btn size="small" variant="tonal" @click="scheduleFetch">
+                    {{ t('odakSiparis.packages.search') }}
+                  </v-btn>
+                  <v-btn size="small" variant="text" @click="clearLineSearch">
+                    {{ t('odakSiparis.packages.clear') }}
+                  </v-btn>
+                </v-col>
+              </v-row>
+            </v-expansion-panel-text>
+          </v-expansion-panel>
+        </v-expansion-panels>
+      </div>
 
       <v-tabs v-model="statusTab" color="primary" class="px-4">
         <v-tab v-for="tab in statusTabs" :key="tab.value" :value="tab.value">
@@ -332,21 +498,22 @@ onMounted(() => {
         <v-alert v-if="errorMessage" type="error" variant="tonal" class="mb-4">
           {{ errorMessage }}
         </v-alert>
-        <v-alert v-if="hasClientFilter" type="info" variant="tonal" density="compact" class="mb-4">
-          Musteri / kalem bazli arama aktif — sonuclar yuklenen paketler uzerinde filtrelenir.
+        <v-alert v-if="hasLineFilter" type="info" variant="tonal" density="compact" class="mb-4">
+          {{ t('odakSiparis.packages.clientFilterHint') }}
         </v-alert>
 
-        <v-data-table
+        <v-data-table-server
           :headers="headers"
           :items="items"
           :loading="loading"
           :items-per-page="tableItemsPerPage"
+          :items-per-page-options="tableItemsPerPageOptions"
           :page="tablePage"
           :items-length="totalCount"
+          :sort-by="tableSortBy"
           item-value="__dataId"
-          class="border rounded-md"
-          @update:page="(p) => (tablePage = p)"
-          @update:items-per-page="(n) => (tableItemsPerPage = n)"
+          class="border rounded-md odak-packages-list-table"
+          @update:options="onTableOptions"
         >
           <template #item.displayNo="{ item }">
             <a
@@ -358,7 +525,14 @@ onMounted(() => {
             </a>
           </template>
           <template #item.customer="{ item }">
-            {{ customerLabelFromRow(item, customerLabels) }}
+            <NuxtLink
+              v-if="customerIdFromRow(item)"
+              :to="customerFormRoute(customerIdFromRow(item))"
+              class="text-primary text-decoration-none"
+            >
+              {{ customerLabelFromRow(item, customerLabels) }}
+            </NuxtLink>
+            <span v-else>{{ customerLabelFromRow(item, customerLabels) }}</span>
           </template>
           <template #item.customerPo="{ item }">
             {{ rowPo(item) }}
@@ -366,22 +540,80 @@ onMounted(() => {
           <template #item.projectNo="{ item }">
             {{ rowProjectNo(item) }}
           </template>
+          <template #item.partCount="{ item }">
+            {{ formatOdakNumber(item.partCount) }}
+          </template>
+          <template #item.stockCount="{ item }">
+            {{ formatOdakNumber(item.stockCount) }}
+          </template>
           <template #item.lineCount="{ item }">
             {{ lineCountFor(item) }}
           </template>
           <template #item.statusLabel="{ item }">
             {{ packageStatusLabel(item.status) }}
           </template>
+          <template #item.beginDate="{ item }">
+            {{ formatOdakDate(item.beginDate) }}
+          </template>
           <template #item.deliveryDate="{ item }">
-            {{ rowDeliveryDate(item) }}
+            {{ formatOdakDate(item.deliveryDate) }}
           </template>
           <template #item.actions="{ item }">
-            <v-btn size="small" variant="text" color="primary" @click="openDetail(item)">
-              Goruntule
-            </v-btn>
+            <div class="d-inline-flex align-center justify-end ga-1">
+              <v-btn icon size="x-small" variant="text" color="primary" @click="openDetail(item)">
+                <EyeIcon size="18" />
+              </v-btn>
+              <v-btn icon size="x-small" variant="text" @click="openEdit(item)">
+                <EditIcon size="18" />
+              </v-btn>
+              <v-btn icon size="x-small" variant="text" color="error" @click="confirmDelete(item)">
+                <TrashIcon size="18" />
+              </v-btn>
+            </div>
           </template>
-        </v-data-table>
+        </v-data-table-server>
+        <div v-if="totalCount > 0" class="text-caption text-medium-emphasis mt-2">
+          {{ paginationLabel }}
+        </div>
       </v-card-text>
     </v-card>
+
+    <v-dialog v-model="deleteDialog" max-width="460">
+      <v-card>
+        <v-card-title>{{ t('odakSiparis.packages.deleteTitle') }}</v-card-title>
+        <v-card-text>
+          <p>{{ t('odakSiparis.packages.deleteConfirm') }}</p>
+          <p v-if="deleteLineCount > 0" class="text-medium-emphasis mb-0">
+            {{ t('odakSiparis.packages.deleteWithLines', { count: deleteLineCount }) }}
+          </p>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="deleteDialog = false">{{ t('odakSiparis.packages.cancel') }}</v-btn>
+          <v-btn color="error" variant="flat" :loading="deleting" @click="doDelete">
+            {{ t('odakSiparis.packages.delete') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
+
+<style scoped>
+/* İşlemler sütunu — OcBoardPanel ile aynı: yatay scroll'da sağda sabit kalır. */
+.odak-packages-list-table :deep(table) > thead > tr > th:last-child,
+.odak-packages-list-table :deep(table) > tbody > tr > td:last-child {
+  position: sticky;
+  right: 0;
+  background: rgb(var(--v-theme-surface));
+  box-shadow: -6px 0 6px -6px rgba(0, 0, 0, 0.18);
+}
+
+.odak-packages-list-table :deep(table) > tbody > tr > td:last-child {
+  z-index: 1;
+}
+
+.odak-packages-list-table :deep(table) > thead > tr > th:last-child {
+  z-index: 2;
+}
+</style>

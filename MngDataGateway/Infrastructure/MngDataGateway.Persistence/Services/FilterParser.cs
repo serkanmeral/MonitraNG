@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 
@@ -28,7 +30,7 @@ namespace MngDataGateway.Persistence.Services
             if (string.IsNullOrWhiteSpace(filterString))
                 return null;
 
-            var filters = filterString.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            var filters = SplitFilterClauses(filterString);
             if (filters.Length == 0)
                 return null;
 
@@ -69,14 +71,17 @@ namespace MngDataGateway.Persistence.Services
         /// </summary>
         private BsonValue? BuildCondition(string fieldName, string operatorStr, string valueStr)
         {
+            var comparisonValue = NormalizeDateComparisonValue(operatorStr, valueStr);
+
             return operatorStr switch
             {
-                "eq" => ParseValue(valueStr),
-                "ne" => new BsonDocument("$ne", ParseValue(valueStr)),
-                "gt" => new BsonDocument("$gt", ParseValue(valueStr)),
-                "gte" => new BsonDocument("$gte", ParseValue(valueStr)),
-                "lt" => new BsonDocument("$lt", ParseValue(valueStr)),
-                "lte" => new BsonDocument("$lte", ParseValue(valueStr)),
+                "eq" when IsDateOnly(valueStr) => new BsonDocument("$regex", new BsonString($"^{Regex.Escape(valueStr)}")).Add("$options", "i"),
+                "eq" => ParseValue(comparisonValue),
+                "ne" => new BsonDocument("$ne", ParseValue(comparisonValue)),
+                "gt" => new BsonDocument("$gt", ParseValue(comparisonValue)),
+                "gte" => new BsonDocument("$gte", ParseValue(comparisonValue)),
+                "lt" => new BsonDocument("$lt", ParseValue(comparisonValue)),
+                "lte" => new BsonDocument("$lte", ParseValue(comparisonValue)),
                 "in" => new BsonDocument("$in", ParseArrayValue(valueStr)),
                 "nin" => new BsonDocument("$nin", ParseArrayValue(valueStr)),
                 "contains" => new BsonDocument("$regex", new BsonString(valueStr)).Add("$options", "i"),
@@ -87,28 +92,50 @@ namespace MngDataGateway.Persistence.Services
         }
 
         /// <summary>
-        /// Parse value string to BsonValue (try number, bool, then string)
+        /// Parse value string to BsonValue (try number, bool, then string).
+        /// ISO date strings stay as strings so filters match ISO string fields in MongoDB.
         /// </summary>
         private BsonValue ParseValue(string valueStr)
         {
             // Try number
-            if (int.TryParse(valueStr, out var intValue))
+            if (int.TryParse(valueStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var intValue))
                 return intValue;
-            if (long.TryParse(valueStr, out var longValue))
+            if (long.TryParse(valueStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var longValue))
                 return longValue;
-            if (double.TryParse(valueStr, out var doubleValue))
+            if (double.TryParse(valueStr, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleValue))
                 return doubleValue;
 
             // Try bool
             if (bool.TryParse(valueStr, out var boolValue))
                 return boolValue;
 
-            // Try DateTime
-            if (DateTime.TryParse(valueStr, out var dateValue))
-                return dateValue;
-
-            // Default to string
+            // Default to string (including ISO date/datetime values)
             return valueStr;
+        }
+
+        private static bool IsDateOnly(string valueStr) =>
+            !string.IsNullOrWhiteSpace(valueStr)
+            && DateTime.TryParseExact(
+                valueStr.Trim(),
+                "yyyy-MM-dd",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out _);
+
+        /// <summary>
+        /// Expand calendar-day filters for ISO string datetime fields (gte/lte/gt on YYYY-MM-DD).
+        /// </summary>
+        private static string NormalizeDateComparisonValue(string operatorStr, string valueStr)
+        {
+            if (!IsDateOnly(valueStr))
+                return valueStr;
+
+            return operatorStr switch
+            {
+                "lte" => $"{valueStr}T23:59:59.9999999Z",
+                "gt" => $"{valueStr}T23:59:59.9999999Z",
+                _ => valueStr
+            };
         }
 
         /// <summary>
@@ -143,6 +170,44 @@ namespace MngDataGateway.Persistence.Services
             }
 
             return array;
+        }
+
+        /// <summary>
+        /// Split filter clauses on top-level commas only (commas inside JSON array values are preserved).
+        /// </summary>
+        private static string[] SplitFilterClauses(string filterString)
+        {
+            var clauses = new List<string>();
+            var current = new System.Text.StringBuilder();
+            var bracketDepth = 0;
+
+            foreach (var ch in filterString)
+            {
+                if (ch == '[')
+                    bracketDepth++;
+                else if (ch == ']' && bracketDepth > 0)
+                    bracketDepth--;
+
+                if (ch == ',' && bracketDepth == 0)
+                {
+                    if (current.Length > 0)
+                    {
+                        clauses.Add(current.ToString());
+                        current.Clear();
+                    }
+                    continue;
+                }
+
+                current.Append(ch);
+            }
+
+            if (current.Length > 0)
+                clauses.Add(current.ToString());
+
+            return clauses
+                .Select(c => c.Trim())
+                .Where(c => !string.IsNullOrEmpty(c))
+                .ToArray();
         }
     }
 }

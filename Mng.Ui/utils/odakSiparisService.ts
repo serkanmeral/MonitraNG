@@ -1,5 +1,6 @@
 import { fetchFromDataGateway } from '@/services/apiService';
 import { ocListDatasetPage } from '@/services/operationCoreService';
+import { afListFiltersToQueryString, type AfListFilter } from '@/utils/afListFilters';
 import { ODAK_SIPARIS_CONFIG, type OdakPackageRow } from '@/utils/odakSiparisConfig';
 
 export function packageDataId(row: OdakPackageRow | Record<string, unknown>): string {
@@ -14,9 +15,31 @@ export function packageDisplayNo(row: OdakPackageRow | Record<string, unknown>):
 }
 
 export function packageStatusLabel(status: unknown): string {
-  if (status === 'closed') return 'Kapali';
-  if (status === 'open') return 'Acik';
+  if (status === 'closed') return 'Kapalı';
+  if (status === 'open') return 'Açık';
   return status != null ? String(status) : '—';
+}
+
+export function formatOdakDate(v: unknown): string {
+  if (!v) return '—';
+  try {
+    return new Date(String(v)).toLocaleDateString('tr-TR');
+  } catch {
+    return String(v);
+  }
+}
+
+export function formatOdakNumber(v: unknown): string {
+  if (v == null || v === '') return '—';
+  return String(v);
+}
+
+export function customerIdFromRow(row: OdakPackageRow | Record<string, unknown>): string {
+  return resolveRelationId((row as OdakPackageRow).customerId);
+}
+
+export function customerFormRoute(customerId: string): string {
+  return `/apps/automated-forms/view/${ODAK_SIPARIS_CONFIG.customersFormCode}?editId=${encodeURIComponent(customerId)}`;
 }
 
 function resolveRelationId(raw: unknown): string {
@@ -44,7 +67,12 @@ export function customerLabelFromRow(
   return id || '—';
 }
 
-export async function fetchCustomerLabelMap(): Promise<Record<string, string>> {
+const CUSTOMER_LABEL_CACHE_TTL_MS = 600_000;
+
+let customerLabelCache: { map: Record<string, string>; expiresAt: number } | null = null;
+let customerLabelInflight: Promise<Record<string, string>> | null = null;
+
+async function loadCustomerLabelMap(): Promise<Record<string, string>> {
   const map: Record<string, string> = {};
   try {
     const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.customersDataset, {
@@ -63,21 +91,83 @@ export async function fetchCustomerLabelMap(): Promise<Record<string, string>> {
   return map;
 }
 
+/** Oturum cache — liste + detay tekrar tekrar 3000 musteri cekmesin (P3). */
+export async function fetchCustomerLabelMap(forceRefresh = false): Promise<Record<string, string>> {
+  const now = Date.now();
+  if (!forceRefresh && customerLabelCache && customerLabelCache.expiresAt > now) {
+    return customerLabelCache.map;
+  }
+  if (!forceRefresh && customerLabelInflight) {
+    return customerLabelInflight;
+  }
+
+  customerLabelInflight = (async () => {
+    const map = await loadCustomerLabelMap();
+    customerLabelCache = { map, expiresAt: Date.now() + CUSTOMER_LABEL_CACHE_TTL_MS };
+    return map;
+  })();
+
+  try {
+    return await customerLabelInflight;
+  } finally {
+    customerLabelInflight = null;
+  }
+}
+
+export function invalidateOdakSiparisCustomerCache(): void {
+  customerLabelCache = null;
+}
+
+export interface OdakPackageListSort {
+  key: string;
+  order: 'asc' | 'desc';
+}
+
+/** Tablo sütun anahtarı → DG dataset alanı (odak-is-paketleri-form listConfig). */
+export const PACKAGE_LIST_SORT_FIELD_MAP: Record<string, string> = {
+  displayNo: 'packageNo',
+  name: 'name',
+  customer: 'customerId.unvan',
+  statusLabel: 'status',
+  beginDate: 'beginDate',
+  deliveryDate: 'deliveryDate',
+  lineCount: 'lineCount',
+  partCount: 'partCount',
+  stockCount: 'stockCount',
+};
+
+export function buildPackageListSort(sortBy?: OdakPackageListSort[]): string {
+  const primary = sortBy?.[0];
+  if (!primary) return '-packageNo';
+  const field = PACKAGE_LIST_SORT_FIELD_MAP[primary.key];
+  if (!field) return '-packageNo';
+  return primary.order === 'desc' ? `-${field}` : field;
+}
+
 export interface OdakPackageListQuery {
   statusTab: 'open' | 'closed' | 'all';
   skip?: number;
   limit?: number;
   search?: string;
+  sortBy?: OdakPackageListSort[];
+  /** @deprecated use advancedFilters */
   packageNo?: string;
+  advancedFilters?: AfListFilter[];
 }
 
 export function buildPackageListFilter(query: OdakPackageListQuery): string | undefined {
   const parts: string[] = [];
   if (query.statusTab === 'open') parts.push('status:eq:open');
   else if (query.statusTab === 'closed') parts.push('status:eq:closed');
-  if (query.packageNo?.trim()) {
+
+  const advanced = afListFiltersToQueryString(query.advancedFilters ?? []);
+  if (advanced) parts.push(advanced);
+
+  // Geriye uyumluluk
+  if (query.packageNo?.trim() && !advanced.includes('packageNo:')) {
     parts.push(`packageNo:contains:${query.packageNo.trim()}`);
   }
+
   return parts.length ? parts.join(',') : undefined;
 }
 
@@ -87,7 +177,7 @@ export async function fetchOdakPackagesPage(
   const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.packagesDataset, {
     skip: query.skip ?? 0,
     limit: query.limit ?? 20,
-    sort: 'packageNo:desc',
+    sort: buildPackageListSort(query.sortBy),
     filter: buildPackageListFilter(query),
     search: query.search?.trim() || undefined,
   });
@@ -136,40 +226,46 @@ export async function fetchPackageLineStatsMap(
     chunks.push(packageIds.slice(i, i + 8));
   }
 
-  for (const chunk of chunks) {
-    const filter = chunk.map((id) => `parentPackageId eq '${id}'`).join(' or ');
-    try {
-      const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.linesDataset, {
-        filter,
-        limit: 2000,
-      });
-      for (const row of resp.items ?? []) {
-        const rec = row as Record<string, unknown>;
-        const parentRaw = rec.parentPackageId;
-        const parentId =
-          typeof parentRaw === 'string'
-            ? parentRaw
-            : parentRaw && typeof parentRaw === 'object'
-              ? String(
-                  (parentRaw as Record<string, unknown>).__dataId ??
-                    (parentRaw as Record<string, unknown>).dataId ??
-                    ''
-                )
-              : '';
-        if (!parentId || !result.has(parentId)) continue;
-
-        const stats = result.get(parentId)!;
-        stats.lineCount += 1;
-        const po = rec.customerPoNo != null ? String(rec.customerPoNo) : '';
-        const proj = rec.customerProjectNo != null ? String(rec.customerProjectNo) : '';
-        const desc = rec.description != null ? String(rec.description) : '';
-        if (po) stats.customerPoNos = mergeLabels(stats.customerPoNos, po);
-        if (proj) stats.customerProjectNos = mergeLabels(stats.customerProjectNos, proj);
-        if (desc.trim()) stats.descriptions.push(desc.trim());
-        result.set(parentId, stats);
+  const chunkItemLists = await Promise.all(
+    chunks.map(async (chunk) => {
+      const filter = chunk.map((id) => `parentPackageId eq '${id}'`).join(' or ');
+      try {
+        const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.linesDataset, {
+          filter,
+          limit: 2000,
+        });
+        return resp.items ?? [];
+      } catch {
+        return [];
       }
-    } catch {
-      // Liste yine de gosterilir
+    })
+  );
+
+  for (const rows of chunkItemLists) {
+    for (const row of rows) {
+      const rec = row as Record<string, unknown>;
+      const parentRaw = rec.parentPackageId;
+      const parentId =
+        typeof parentRaw === 'string'
+          ? parentRaw
+          : parentRaw && typeof parentRaw === 'object'
+            ? String(
+                (parentRaw as Record<string, unknown>).__dataId ??
+                  (parentRaw as Record<string, unknown>).dataId ??
+                  ''
+              )
+            : '';
+      if (!parentId || !result.has(parentId)) continue;
+
+      const stats = result.get(parentId)!;
+      stats.lineCount += 1;
+      const po = rec.customerPoNo != null ? String(rec.customerPoNo) : '';
+      const proj = rec.customerProjectNo != null ? String(rec.customerProjectNo) : '';
+      const desc = rec.description != null ? String(rec.description) : '';
+      if (po) stats.customerPoNos = mergeLabels(stats.customerPoNos, po);
+      if (proj) stats.customerProjectNos = mergeLabels(stats.customerProjectNos, proj);
+      if (desc.trim()) stats.descriptions.push(desc.trim());
+      result.set(parentId, stats);
     }
   }
 

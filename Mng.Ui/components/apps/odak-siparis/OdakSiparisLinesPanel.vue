@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import { useAppI18n } from '@/composables/useAppI18n';
 import { ocListDatasetPage, ocDelete } from '@/services/operationCoreService';
 import { ODAK_SIPARIS_CONFIG } from '@/utils/odakSiparisConfig';
+import { formatOdakDate } from '@/utils/odakSiparisService';
 import { PlusIcon, EditIcon, TrashIcon, RefreshIcon } from 'vue-tabler-icons';
 
 const props = defineProps<{
@@ -9,6 +11,7 @@ const props = defineProps<{
   packageNo?: string;
 }>();
 
+const { t } = useAppI18n();
 const router = useRouter();
 const loading = ref(false);
 const errorMessage = ref('');
@@ -17,32 +20,33 @@ const deleteDialog = ref(false);
 const lineToDelete = ref<Record<string, unknown> | null>(null);
 const deleting = ref(false);
 
-const headers = [
-  { title: 'Kalem No', key: 'lineNo', width: 90 },
-  { title: 'Musteri PO No', key: 'customerPoNo' },
-  { title: 'PO Kalem', key: 'customerPoItemNo', width: 90 },
-  { title: 'Tanim', key: 'description' },
-  { title: 'Miktar', key: 'quantity', width: 90 },
-  { title: 'Birim', key: 'unit', width: 80 },
-  { title: 'Sevk T.', key: 'shipmentDate', width: 110 },
-  { title: 'Eylem', key: 'actions', sortable: false, align: 'center' as const, width: 120 },
-];
+const headers = computed(() => [
+  { title: t('odakSiparis.lines.columns.lineNo'), key: 'lineNo', width: 90 },
+  { title: t('odakSiparis.lines.columns.customerProjectNo'), key: 'customerProjectNo', width: 120 },
+  { title: t('odakSiparis.lines.columns.customerPoNo'), key: 'customerPoNo' },
+  { title: t('odakSiparis.lines.columns.customerPoItemNo'), key: 'customerPoItemNo', width: 90 },
+  { title: t('odakSiparis.lines.columns.description'), key: 'description' },
+  { title: t('odakSiparis.lines.columns.quantity'), key: 'quantity', width: 90 },
+  { title: t('odakSiparis.lines.columns.unit'), key: 'unit', width: 80 },
+  { title: t('odakSiparis.lines.columns.shipmentDate'), key: 'shipmentDate', width: 110 },
+  { title: t('odakSiparis.lines.columns.shipmentAddress'), key: 'shipmentAddress' },
+  {
+    title: t('odakSiparis.lines.columns.actions'),
+    key: 'actions',
+    sortable: false,
+    align: 'center' as const,
+    width: 120,
+  },
+]);
 
 const filterLabel = computed(() =>
-  props.packageNo ? `${props.packageNo} kalemleri` : 'Siparis kalemleri'
+  props.packageNo
+    ? `${props.packageNo} ${t('odakSiparis.detail.tabs.lines').toLowerCase()}`
+    : t('odakSiparis.lines.defaultTitle')
 );
 
 function lineId(row: Record<string, unknown>): string {
   return String(row.__dataId ?? row.dataId ?? '');
-}
-
-function formatDate(v: unknown): string {
-  if (!v) return '—';
-  try {
-    return new Date(String(v)).toLocaleDateString('tr-TR');
-  } catch {
-    return String(v);
-  }
 }
 
 async function loadLines() {
@@ -136,7 +140,7 @@ onMounted(() => {
       </v-btn>
       <v-btn color="primary" variant="flat" size="small" @click="openCreate">
         <PlusIcon class="mr-1" size="16" />
-        Kalem Ekle
+        {{ t('odakSiparis.lines.add') }}
       </v-btn>
     </div>
 
@@ -153,7 +157,7 @@ onMounted(() => {
       class="border rounded-md"
     >
       <template #item.shipmentDate="{ item }">
-        {{ formatDate(item.shipmentDate) }}
+        {{ formatOdakDate(item.shipmentDate) }}
       </template>
       <template #item.actions="{ item }">
         <v-btn icon size="x-small" variant="text" @click="openEdit(item)">
@@ -167,12 +171,14 @@ onMounted(() => {
 
     <v-dialog v-model="deleteDialog" max-width="420">
       <v-card>
-        <v-card-title>Kalemi sil</v-card-title>
-        <v-card-text>Bu kalemi silmek istediginize emin misiniz?</v-card-text>
+        <v-card-title>{{ t('odakSiparis.lines.deleteTitle') }}</v-card-title>
+        <v-card-text>{{ t('odakSiparis.lines.deleteConfirm') }}</v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="deleteDialog = false">Iptal</v-btn>
-          <v-btn color="error" variant="flat" :loading="deleting" @click="doDelete">Sil</v-btn>
+          <v-btn variant="text" @click="deleteDialog = false">{{ t('odakSiparis.packages.cancel') }}</v-btn>
+          <v-btn color="error" variant="flat" :loading="deleting" @click="doDelete">
+            {{ t('odakSiparis.packages.delete') }}
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

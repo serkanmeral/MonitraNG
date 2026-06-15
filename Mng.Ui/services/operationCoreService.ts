@@ -135,9 +135,26 @@ function parseListResponse(response: unknown): unknown[] {
   return parseListResponseWithTotal(response).items;
 }
 
+function readListTotal(response: unknown, items: unknown[]): number {
+  if (Array.isArray(response)) {
+    const arr = response as unknown[] & { _totalCount?: number };
+    if (typeof arr._totalCount === 'number' && Number.isFinite(arr._totalCount)) {
+      return arr._totalCount;
+    }
+  }
+  if (response && typeof response === 'object' && !Array.isArray(response)) {
+    const obj = response as Record<string, unknown>;
+    const totalRaw = obj.total ?? obj.totalCount ?? obj.count;
+    if (typeof totalRaw === 'number' && Number.isFinite(totalRaw)) {
+      return totalRaw;
+    }
+  }
+  return items.length;
+}
+
 function parseListResponseWithTotal(response: unknown): { items: unknown[]; total: number } {
   if (Array.isArray(response)) {
-    return { items: response, total: response.length };
+    return { items: response, total: readListTotal(response, response) };
   }
   if (response && typeof response === 'object') {
     const obj = response as Record<string, unknown>;
@@ -146,10 +163,7 @@ function parseListResponseWithTotal(response: unknown): { items: unknown[]; tota
       : Array.isArray(obj.data)
         ? obj.data
         : [];
-    const totalRaw = obj.total ?? obj.totalCount ?? obj.count;
-    const total =
-      typeof totalRaw === 'number' && Number.isFinite(totalRaw) ? totalRaw : items.length;
-    return { items, total };
+    return { items, total: readListTotal(response, items) };
   }
   return { items: [], total: 0 };
 }
@@ -2350,9 +2364,19 @@ export async function ocGetBoardListPage(
   if (request.sort?.field) {
     body.sort = { field: request.sort.field, direction: request.sort.direction === 'desc' ? 'desc' : 'asc' };
   }
-  const filters = (request.filters ?? []).filter((f) => f.field && f.value != null && String(f.value).trim() !== '');
+  const nullOps = new Set(['null', 'empty', 'notnull', 'notempty']);
+  const filters = (request.filters ?? []).filter((f) => {
+    if (!f.field?.trim()) return false;
+    const op = (f.operator || 'eq').toLowerCase();
+    if (nullOps.has(op)) return true;
+    return f.value != null && String(f.value).trim() !== '';
+  });
   if (filters.length) {
-    body.filters = filters.map((f) => ({ field: f.field, operator: f.operator || 'eq', value: String(f.value) }));
+    body.filters = filters.map((f) => ({
+      field: f.field,
+      operator: f.operator || 'eq',
+      value: f.value != null ? String(f.value) : '',
+    }));
   }
   if (request.search?.trim()) {
     body.search = request.search.trim();

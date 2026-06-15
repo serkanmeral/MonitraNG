@@ -795,6 +795,13 @@ services:
       - MngAlarmSettings__RabbitMq__Password=admin123
       - MngAlarmSettings__Engine__ConsumeObservations=true
       - MngAlarmSettings__Engine__ReactorBridge__Enabled=true
+    networks:
+      - mng_common_mng_network
+    depends_on:
+      - mngalarm
+    restart: unless-stopped
+
+  mngoperations:
     build:
       context: ../../MngOperations
       dockerfile: Presentation/MngOperations.Api/Dockerfile

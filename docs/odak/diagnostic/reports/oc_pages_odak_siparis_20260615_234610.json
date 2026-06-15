@@ -1,0 +1,162 @@
+{
+  "generatedAtUtc": "2026-06-15T20:46:10.5179394Z",
+  "pageTargets": {
+    "packages_list_adv_filter": 8000,
+    "package_detail_with_lines": 1800,
+    "package_detail_summary": 1200,
+    "packages_list_open": 1500,
+    "packages_list_tab_switch": 1200
+  },
+  "singleEndpointMs": [
+    {
+      "success": true,
+      "bodyBytes": 11141,
+      "ms": 528,
+      "label": "customers_3000"
+    },
+    {
+      "success": true,
+      "bodyBytes": 17082,
+      "ms": 645,
+      "label": "packages_20_open"
+    },
+    {
+      "success": true,
+      "bodyBytes": 813,
+      "ms": 410,
+      "label": "package_expand"
+    },
+    {
+      "success": true,
+      "bodyBytes": 685673,
+      "ms": 5764,
+      "label": "lines_single_parent"
+    }
+  ],
+  "pages": [
+    {
+      "lastRunSuccess": true,
+      "note": null,
+      "sessionColdWallMs": 13255,
+      "title": "Is Paketleri listesi — Acik sekmesi (UI: customers + 20 paket + line stats)",
+      "targetWallMs": 1500,
+      "warmMedianWallMs": 12906,
+      "lastRunSumMs": 14148.0,
+      "lastRunApiCallCount": 5,
+      "pageId": "packages_list_open",
+      "ok": false,
+      "lastRunWallMs": 14154,
+      "warmP95WallMs": 14154,
+      "lastRunLineStatsChunks": 3
+    },
+    {
+      "lastRunSuccess": true,
+      "note": null,
+      "sessionColdWallMs": 13304,
+      "title": "Liste — sekme degisimi / sayfa yenileme (ayni API deseni)",
+      "targetWallMs": 1200,
+      "warmMedianWallMs": 12885,
+      "lastRunSumMs": 13673.0,
+      "lastRunApiCallCount": 5,
+      "pageId": "packages_list_tab_switch",
+      "ok": false,
+      "lastRunWallMs": 13677,
+      "warmP95WallMs": 13677,
+      "lastRunLineStatsChunks": 3
+    },
+    {
+      "lastRunSuccess": true,
+      "note": null,
+      "sessionColdWallMs": 115711,
+      "title": "Liste — musteri/kalem aramasi (UI limit=500 + line stats x63 chunk)",
+      "targetWallMs": 8000,
+      "warmMedianWallMs": 115922,
+      "lastRunSumMs": 115515.0,
+      "lastRunApiCallCount": 30,
+      "pageId": "packages_list_adv_filter",
+      "ok": false,
+      "lastRunWallMs": 115922,
+      "warmP95WallMs": 116314,
+      "lastRunLineStatsChunks": 28
+    },
+    {
+      "lastRunSuccess": true,
+      "note": "OdakSiparisLinesPanel v-show ile mount oldugundan lines API ozet sekmesinde de tetiklenir",
+      "sessionColdWallMs": 6440,
+      "title": "Paket detay — Ozet sekmesi (UI yine customers + expand + lines panel mount)",
+      "targetWallMs": 1200,
+      "warmMedianWallMs": 6297,
+      "lastRunSumMs": 6295.0,
+      "lastRunApiCallCount": 3,
+      "pageId": "package_detail_summary",
+      "ok": false,
+      "lastRunWallMs": 6297,
+      "warmP95WallMs": 6393,
+      "lastRunLineStatsChunks": null
+    },
+    {
+      "lastRunSuccess": true,
+      "note": null,
+      "sessionColdWallMs": 6408,
+      "title": "Paket detay — Kalemler sekmesi (customers + expand + lines)",
+      "targetWallMs": 1800,
+      "warmMedianWallMs": 6185,
+      "lastRunSumMs": 6184.0,
+      "lastRunApiCallCount": 3,
+      "pageId": "package_detail_with_lines",
+      "ok": false,
+      "lastRunWallMs": 6185,
+      "warmP95WallMs": 6283,
+      "lastRunLineStatsChunks": null
+    }
+  ],
+  "lineStatsComparison": {
+    "parallelChunks": 3,
+    "sequentialSumMs": 12330.0,
+    "sequentialWallMs": 12332,
+    "sequentialChunks": 3,
+    "parallelSumMs": 17682.0,
+    "parallelWallMs": 6053
+  },
+  "environment": {
+    "gatewayBaseUrl": "http://192.168.20.20:5040",
+    "lineStatsChunkSize": 8,
+    "clientFilterLimit": 500,
+    "warmIterations": 2,
+    "samplePackageId": "434fe0ae-9743-4d1a-8e5f-a785afc101cb",
+    "listPageSize": 20
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "title": "Line stats N+1 chunk (sequential)",
+      "detail": "fetchPackageLineStatsMap her 8 paket icin ayri DG list cagrisi yapar; 20 satir = 3 sequential, 500 satir = 63 sequential."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "title": "Musteri haritasi her sayfa yuklemesinde",
+      "detail": "fetchCustomerLabelMap limit=3000 tek seferde cekilir; liste + detay her acilista tekrarlanir (oturum cache yok)."
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "title": "Detayda Kalemler paneli erken mount",
+      "detail": "OdakSiparisLinesPanel v-show ile her zaman mount; ozet sekmesinde bile lines API tetiklenir."
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "title": "Gelismis arama limit=500",
+      "detail": "hasClientFilter aktifken 500 paket + line stats chunk patlamasi."
+    },
+    {
+      "id": "F5",
+      "severity": "low",
+      "title": "Dataset alanlari kullanilmiyor",
+      "detail": "odak_is_paketleri.lineCount/partCount mevcut; PO/proje icin line stats zorunlu degil (lazy veya arama aninda)."
+    }
+  ],
+  "module": "odak-siparis"
+}

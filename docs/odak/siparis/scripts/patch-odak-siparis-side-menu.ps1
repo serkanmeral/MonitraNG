@@ -107,7 +107,7 @@ $headerId = Upsert-MenuItem -AllItems $items -Label "Odak Siparis header" -FindE
     parentId = $null
     pageType = "manager"
     pageCode = "odakSiparis.menuHeader"
-    header   = "Odak Siparis"
+    header   = "Odak Sipariş"
     disabled = $false
 }
 
@@ -120,7 +120,7 @@ Upsert-MenuItem -AllItems $items -Label "Is Paketleri" -FindExisting {
     parentId    = $headerId
     pageType    = "user"
     pageCode    = "odakSiparis.packages.menuTitle"
-    title       = "Is Paketleri"
+    title       = "İş Paketleri"
     icon        = "ClipboardListIcon"
     iconType    = "tabler"
     to          = "/apps/odak-siparis/packages"

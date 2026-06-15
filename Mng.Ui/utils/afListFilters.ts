@@ -48,6 +48,13 @@ export function resolveAfFilterKind(fieldType: string): AfListFilterKind {
 export function afListFiltersToQueryString(filters: AfListFilter[]): string {
   return filters
     .filter((f) => f.field && f.operator && f.value !== undefined && f.value !== '')
-    .map((f) => `${f.field}:${f.operator}:${f.value}`)
+    .map((f) => {
+      let value = f.value;
+      if (f.operator === 'in' || f.operator === 'nin') {
+        const items = value.split(',').map((v) => v.trim()).filter(Boolean);
+        if (items.length > 1) value = JSON.stringify(items);
+      }
+      return `${f.field}:${f.operator}:${value}`;
+    })
     .join(',');
 }

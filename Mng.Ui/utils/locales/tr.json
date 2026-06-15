@@ -185,8 +185,10 @@
       "management": "Management",
       "management.menuHeader": "MANAGEMENT",
       "notifier.templates.menuHeader": "Şablonlar",
-      "securityManagement.menuHeader": "Güvenlik Yönetimi"
+      "securityManagement.menuHeader": "Güvenlik Yönetimi",
+      "odakSiparis.menuHeader": "Odak Sipariş"
     },
+    "odakSiparis.packages.menuTitle": "İş Paketleri",
     "securityManagement.menuHeader": "Güvenlik Yönetimi",
     "alarmCenter.menuTitle": "Alarm Merkezi",
     "siemCenter.dashboard.menuTitle": "SIEM Güvenlik Paneli",
@@ -3588,6 +3590,113 @@
       "previewHintDraft": "Kaydetmeden önizleme: formdaki taslak içerik Notifier'a gönderilir.",
       "dialogHint": "bodyHtml yalnızca içerik bloğudur. Görsel editör veya HTML kaynak sekmesi ile düzenleyin; önizleme örnek context ile Notifier üzerinden yapılır.",
       "technicalFootnote": "Dataset: @mail_templates · Render: MngNotifier preview-template / send-template"
+    }
+  },
+  "odakSiparis": {
+    "module": "Odak Sipariş",
+    "packages": {
+      "title": "İş Paketleri",
+      "quickSearch": "Hızlı arama…",
+      "add": "İş Paketi Ekle",
+      "searchPanel": "İş Paketi Arama",
+      "search": "Ara",
+      "clear": "Temizle",
+      "clientFilterHint": "Müşteri / kalem bazlı arama aktif — sonuçlar yüklenen paketler üzerinde filtrelenir.",
+      "poProjectLazyHint": "Müşteri PO ve Proje No sütunları gelişmiş aramada doldurulur; kalem sayısı paket kaydından gelir.",
+      "lineSearchPanel": "Kalem bazlı arama",
+      "lineSearchHint": "Kalemlerde arama yapılır (Müşteri PO, proje no, ürün tanımı). En fazla 500 paket üzerinde filtrelenir; tam sonuç için paket alanlarını üstteki gelişmiş filtrede kullanın.",
+      "paginationSummary": "{from}–{to} / {total} kayıt",
+      "notFound": "İş paketi bulunamadı.",
+      "deleteTitle": "İş paketini sil",
+      "deleteConfirm": "Bu iş paketini silmek istediğinize emin misiniz?",
+      "deleteWithLines": "Bu pakette {count} kalem var. Silme işlemi başarısız olabilir.",
+      "cancel": "İptal",
+      "delete": "Sil",
+      "view": "Görüntüle",
+      "edit": "Düzenle",
+      "tabs": {
+        "open": "Açık",
+        "closed": "Kapalı",
+        "all": "Tümü"
+      },
+      "columns": {
+        "packageNo": "İş Paketi No",
+        "name": "İş Paketi İsmi",
+        "customer": "Müşteri",
+        "customerPo": "Müşteri PO",
+        "projectNo": "Proje No",
+        "partCount": "Parça Sayısı",
+        "stockCount": "Stok Sayısı",
+        "lineCount": "Kalem",
+        "status": "Durum",
+        "beginDate": "Başlangıç",
+        "deliveryDate": "Termin",
+        "actions": "Eylemler"
+      },
+      "searchFields": {
+        "packageNo": "İş Paketi No",
+        "packageName": "İş Paketi İsmi",
+        "customerPo": "Müşteri PO No",
+        "customerName": "Müşteri",
+        "customerProjectNo": "Müşteri Proje No",
+        "customerPoItem": "Müşteri PO Kalem",
+        "productDesc": "Ürün / Hizmet Tanımı",
+        "productDescHint": "Kalem bazlı — yüklenen paketler üzerinde"
+      }
+    },
+    "detail": {
+      "title": "İş Paketi",
+      "edit": "Düzenle",
+      "delete": "Sil",
+      "moProfile": "MO Profil",
+      "tabs": {
+        "summary": "Özet",
+        "lines": "Kalemler"
+      },
+      "fields": {
+        "packageNo": "ODAK İş Paketi No",
+        "name": "İş Paketi İsmi",
+        "status": "Durum",
+        "customer": "Müşteri",
+        "customerContact": "Müşteri İş Paketi Sorumlusu",
+        "packageResponsible": "ODAK İş Paketi Sorumlusu",
+        "designResponsible": "Tasarım Sorumlusu",
+        "manufactureResponsible": "Üretim Sorumlusu",
+        "partCount": "Parça Sayısı",
+        "stockCount": "Stok Sayısı",
+        "shippedCount": "Sevk Sayısı",
+        "lineCount": "Kalem sayısı",
+        "beginDate": "Başlangıç",
+        "deliveryDate": "Termin",
+        "deliveryAddress": "Teslimat adresi",
+        "paymentDetail": "Ödeme bilgisi",
+        "notes": "Notlar",
+        "createdAt": "Sisteme giriş",
+        "updatedAt": "Son düzenleme",
+        "createdBy": "Oluşturan",
+        "updatedBy": "Son düzenleyen",
+        "workItemKey": "MO kayıt"
+      },
+      "deleteTitle": "İş paketini sil",
+      "deleteConfirm": "Bu iş paketini silmek istediğinize emin misiniz?"
+    },
+    "lines": {
+      "defaultTitle": "Sipariş kalemleri",
+      "add": "Kalem Ekle",
+      "deleteTitle": "Kalemi sil",
+      "deleteConfirm": "Bu kalemi silmek istediğinize emin misiniz?",
+      "columns": {
+        "lineNo": "Kalem No",
+        "customerProjectNo": "Müşteri Proje No",
+        "customerPoNo": "Müşteri PO No",
+        "customerPoItemNo": "PO Kalem",
+        "description": "Tanım",
+        "quantity": "Miktar",
+        "unit": "Birim",
+        "shipmentDate": "Sevk T.",
+        "shipmentAddress": "Sevk Adresi",
+        "actions": "Eylem"
+      }
     }
   },
   "operationCore": {

@@ -1,6 +1,24 @@
 # Diagnostic — devam noktası
 
-**Son güncelleme:** 6 Haziran 2026
+**Son güncelleme:** 16 Haziran 2026
+
+## ⭐ Son durum — Odak Sipariş Hub UI (15–16 Haziran 2026)
+
+**Bağlam:** DG-only paket listesi — performans, sayfalama, gelişmiş filtre, sıralama, DG FilterParser (çoklu müşteri + tarih).  
+**Deploy:** `mngdatagateway` + `mngui` Odak `192.168.20.20` (16 Haz).  
+**Rapor:** `reports/oc_pages_odak_siparis_20260615_234610.json` (P1 öncesi baseline; line stats kaldırıldı).  
+**Checkpoint:** [../siparis/DEVAM.md](../siparis/DEVAM.md) ⭐
+
+---
+
+## ⭐ Son durum — Board liste network analizi (11–12 Haziran 2026)
+
+**Bağlam:** Odak Üretim workspace hub — board list tıklanınca gereksiz DG istekleri (katalog ×2, workspace GET ×6, list ×2).  
+**Düzeltme:** UI `68974b4` — context katalog skip, `ocGetWorkspace` inflight, liste imza dedupe. Kullanıcı deploy sonrası **OK**.  
+**Raporlar:** `reports/oc_pages_odak_uretim_list_20260611_235331.json`, `oc_pages_odak_uretim_ncr_20260611_235448.json`  
+**Checkpoint:** [../is_surecleri/DEVAM.md](../is_surecleri/DEVAM.md) · [../operationcore/mngoperations/DEVAM.md](../operationcore/mngoperations/DEVAM.md) § OC-BOARD-PERF
+
+---
 
 ## ⭐ Son durum — OC performans paketi (6 Haziran 2026)
 

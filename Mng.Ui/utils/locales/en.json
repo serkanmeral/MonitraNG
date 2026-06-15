@@ -152,8 +152,10 @@
       "management": "Management",
       "management.menuHeader": "MANAGEMENT",
       "notifier.templates.menuHeader": "Templates",
-      "securityManagement.menuHeader": "Security Management"
+      "securityManagement.menuHeader": "Security Management",
+      "odakSiparis.menuHeader": "Odak Orders"
     },
+    "odakSiparis.packages.menuTitle": "Work Packages",
     "securityManagement.menuHeader": "Security Management",
     "alarmCenter.menuTitle": "Alarm Center",
     "siemCenter.dashboard.menuTitle": "SIEM Security Panel",
@@ -3575,6 +3577,113 @@
       "previewHintDraft": "Preview before save: draft content from the form is sent to Notifier.",
       "dialogHint": "bodyHtml is content only. Edit in visual or HTML source mode; preview uses sample context via Notifier.",
       "technicalFootnote": "Dataset: @mail_templates · Render: MngNotifier preview-template / send-template"
+    }
+  },
+  "odakSiparis": {
+    "module": "Odak Orders",
+    "packages": {
+      "title": "Work Packages",
+      "quickSearch": "Quick search…",
+      "add": "Add Work Package",
+      "searchPanel": "Work Package Search",
+      "search": "Search",
+      "clear": "Clear",
+      "clientFilterHint": "Customer / line search is active — results are filtered on loaded packages.",
+      "poProjectLazyHint": "Customer PO and Project No columns fill in via advanced search; line count comes from the package record.",
+      "lineSearchPanel": "Line-based search",
+      "lineSearchHint": "Searches order lines (customer PO, project no, description). Filters up to 500 packages; use advanced filters above for package fields.",
+      "paginationSummary": "{from}–{to} of {total} records",
+      "notFound": "Work package not found.",
+      "deleteTitle": "Delete work package",
+      "deleteConfirm": "Are you sure you want to delete this work package?",
+      "deleteWithLines": "This package has {count} lines. Delete may fail.",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "view": "View",
+      "edit": "Edit",
+      "tabs": {
+        "open": "Open",
+        "closed": "Closed",
+        "all": "All"
+      },
+      "columns": {
+        "packageNo": "Work Package No",
+        "name": "Work Package Name",
+        "customer": "Customer",
+        "customerPo": "Customer PO",
+        "projectNo": "Project No",
+        "partCount": "Part Count",
+        "stockCount": "Stock Count",
+        "lineCount": "Lines",
+        "status": "Status",
+        "beginDate": "Start",
+        "deliveryDate": "Due",
+        "actions": "Actions"
+      },
+      "searchFields": {
+        "packageNo": "Work Package No",
+        "packageName": "Work Package Name",
+        "customerPo": "Customer PO No",
+        "customerName": "Customer",
+        "customerProjectNo": "Customer Project No",
+        "customerPoItem": "Customer PO Item",
+        "productDesc": "Product / Service Description",
+        "productDescHint": "Line-based — on loaded packages"
+      }
+    },
+    "detail": {
+      "title": "Work Package",
+      "edit": "Edit",
+      "delete": "Delete",
+      "moProfile": "MO Profile",
+      "tabs": {
+        "summary": "Summary",
+        "lines": "Lines"
+      },
+      "fields": {
+        "packageNo": "ODAK Work Package No",
+        "name": "Work Package Name",
+        "status": "Status",
+        "customer": "Customer",
+        "customerContact": "Customer Package Contact",
+        "packageResponsible": "ODAK Package Owner",
+        "designResponsible": "Design Owner",
+        "manufactureResponsible": "Manufacturing Owner",
+        "partCount": "Part Count",
+        "stockCount": "Stock Count",
+        "shippedCount": "Shipped Count",
+        "lineCount": "Line count",
+        "beginDate": "Start",
+        "deliveryDate": "Due",
+        "deliveryAddress": "Delivery address",
+        "paymentDetail": "Payment info",
+        "notes": "Notes",
+        "createdAt": "Created",
+        "updatedAt": "Last updated",
+        "createdBy": "Created by",
+        "updatedBy": "Updated by",
+        "workItemKey": "MO record"
+      },
+      "deleteTitle": "Delete work package",
+      "deleteConfirm": "Are you sure you want to delete this work package?"
+    },
+    "lines": {
+      "defaultTitle": "Order lines",
+      "add": "Add Line",
+      "deleteTitle": "Delete line",
+      "deleteConfirm": "Are you sure you want to delete this line?",
+      "columns": {
+        "lineNo": "Line No",
+        "customerProjectNo": "Customer Project No",
+        "customerPoNo": "Customer PO No",
+        "customerPoItemNo": "PO Item",
+        "description": "Description",
+        "quantity": "Qty",
+        "unit": "Unit",
+        "shipmentDate": "Ship Date",
+        "shipmentAddress": "Ship Address",
+        "actions": "Actions"
+      }
     }
   },
   "operationCore": {

@@ -120,6 +120,17 @@ function toIsoUtc(raw: string): string | null {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
+function formatDateFilterValue(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  // Takvim günü (YYYY-MM-DD) — DG ISO string alanları ile uyumlu
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+  const iso = toIsoUtc(trimmed);
+  if (!iso) return null;
+  // datetime-local → yalnızca gün kısmını kullan (timezone kayması önlenir)
+  return iso.slice(0, 10);
+}
+
 function addAdvancedRow() {
   panelOpen.value = true;
   advancedRows.value.push({ id: ++rowSeq, field: '', operator: '', value: null });
@@ -169,9 +180,9 @@ function buildFilters(): AfListFilter[] {
       value = b;
     } else if (kind === 'date') {
       const raw = typeof row.value === 'string' ? row.value.trim() : '';
-      const iso = raw ? toIsoUtc(raw) : null;
-      if (!iso) continue;
-      value = iso;
+      const day = formatDateFilterValue(raw);
+      if (!day) continue;
+      value = day;
     } else if (kind === 'person') {
       const id = typeof row.value === 'string' ? row.value.trim() : '';
       if (!id) continue;
@@ -343,7 +354,7 @@ watch(
             <v-text-field
               v-else-if="isDateField(row.field)"
               v-model="row.value"
-              type="datetime-local"
+              type="date"
               :label="t('operationCore.board.filters.advanced.value')"
               variant="outlined"
               density="compact"
