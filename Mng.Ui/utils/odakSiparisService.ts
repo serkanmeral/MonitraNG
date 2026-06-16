@@ -244,6 +244,46 @@ export interface OdakPackageLineStats {
   descriptions: string[];
 }
 
+/** Kalem bazli liste filtresi (export + liste ortak). */
+export interface OdakPackageLineAdvFilter {
+  customerPo?: string;
+  customerProjectNo?: string;
+  customerPoItem?: string;
+  productDesc?: string;
+}
+
+export function filterPackagesByLineAdv(
+  list: OdakPackageRow[],
+  lineAdv: OdakPackageLineAdvFilter,
+  lineStats: Map<string, OdakPackageLineStats>
+): OdakPackageRow[] {
+  let result = list;
+  const po = lineAdv.customerPo?.trim().toLowerCase() ?? '';
+  const proj = lineAdv.customerProjectNo?.trim().toLowerCase() ?? '';
+  const poItem = lineAdv.customerPoItem?.trim().toLowerCase() ?? '';
+  const desc = lineAdv.productDesc?.trim().toLowerCase() ?? '';
+
+  if (po) {
+    result = result.filter((item) => {
+      const id = packageDataId(item);
+      return (lineStats.get(id)?.customerPoNos ?? '').toLowerCase().includes(po);
+    });
+  }
+
+  if (proj || poItem || desc) {
+    result = result.filter((item) => {
+      const stats = lineStats.get(packageDataId(item));
+      if (!stats) return false;
+      if (proj && !stats.customerProjectNos.toLowerCase().includes(proj)) return false;
+      if (poItem && !stats.customerPoNos.toLowerCase().includes(poItem)) return false;
+      if (desc && !stats.descriptions.some((d) => d.toLowerCase().includes(desc))) return false;
+      return true;
+    });
+  }
+
+  return result;
+}
+
 function mergeLabels(existing: string, add: string): string {
   if (!add.trim()) return existing;
   const set = new Set([...existing.split(', ').filter(Boolean), add.trim()]);

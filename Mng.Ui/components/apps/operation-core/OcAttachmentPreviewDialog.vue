@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { ocFetchAttachmentBlob, ocExtractDgErrorMessage } from '@/services/operationCoreService';
-import { previewKind, previewMime } from '@/utils/ocAttachmentPreview';
+import { previewKind, previewMime, typedBlobForPreview } from '@/utils/ocAttachmentPreview';
 import type { OcAttachment } from '@/types/apps/operationCore';
 
 const props = defineProps<{
@@ -50,7 +50,7 @@ async function loadPreview(att: OcAttachment) {
     } else {
       // DG octet-stream döndürürse iframe/img render etmeyip indirir; doğru MIME ile yeniden sar.
       const mime = previewMime(att);
-      const typed = mime && blob.type !== mime ? new Blob([blob], { type: mime }) : blob;
+      const typed = mime ? typedBlobForPreview(blob, att.fileName ?? 'file') : blob;
       objectUrl.value = URL.createObjectURL(typed);
     }
   } catch (e: unknown) {

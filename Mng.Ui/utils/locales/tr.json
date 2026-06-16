@@ -3598,6 +3598,9 @@
       "title": "İş Paketleri",
       "quickSearch": "Hızlı arama…",
       "add": "İş Paketi Ekle",
+      "export": "Dışa aktar",
+      "exportSuccess": "{count} kayıt dışa aktarıldı.",
+      "exportTruncated": "{count} kayıt dışa aktarıldı (üst sınır {max}).",
       "searchPanel": "İş Paketi Arama",
       "search": "Ara",
       "clear": "Temizle",
@@ -3696,6 +3699,33 @@
         "openHub": "Müşteri kartını aç",
         "openPackages": "Bu müşterinin iş paketleri",
         "notFound": "Müşteri bulunamadı."
+      }
+    },
+    "po": {
+      "title": "Müşteri sipariş belgesi (PO PDF)",
+      "titleShort": "PO PDF",
+      "hint": "Müşterinin gönderdiği sipariş PDF’ini bu iş paketine ekleyin. Yalnızca PDF (en fazla 25 MB).",
+      "hintShort": "PDF seçin veya mevcut belgeyi önizleyin.",
+      "fileListTitle": "Ekli belgeler ({count})",
+      "storedFile": "Kayıtlı",
+      "hasDocument": "PDF yüklü",
+      "noDocument": "Henüz PO PDF eklenmedi.",
+      "pendingUpload": "Kaydedilmemiş",
+      "preview": "Önizleme",
+      "previewDialogTitle": "PO PDF önizleme",
+      "showPreview": "Önizlemeyi göster",
+      "hidePreview": "Gizle",
+      "previewFailed": "PDF önizlemesi yüklenemedi.",
+      "downloadInstead": "İndirerek aç",
+      "openInNewTab": "Yeni sekmede aç",
+      "chooseFile": "PDF seç",
+      "replaceFile": "PDF değiştir",
+      "remove": "Kaldır",
+      "download": "İndir",
+      "save": "PO kaydet",
+      "errors": {
+        "pdfOnly": "Yalnızca PDF dosyası yüklenebilir.",
+        "tooLarge": "Dosya en fazla {max} MB olabilir."
       }
     },
     "detail": {

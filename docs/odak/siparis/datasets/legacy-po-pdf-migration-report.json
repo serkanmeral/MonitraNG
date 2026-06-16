@@ -1,0 +1,85 @@
+{
+  "migratedAt": "2026-06-16T22:10:19.0069255Z",
+  "results": [
+    {
+      "packageNo": "2023-077",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "ok",
+      "message": "Yuklendi",
+      "dgDataId": "3e00d36e-96d6-480b-8a11-e42c25e1ed0a",
+      "fileName": "2023-077.pdf",
+      "fileBytes": 598705
+    },
+    {
+      "packageNo": "2022-016",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "ok",
+      "message": "Yuklendi",
+      "dgDataId": "037c3a2c-47ed-4835-9bc0-fd648e26e9cd",
+      "fileName": "2022-016.pdf",
+      "fileBytes": 599760
+    },
+    {
+      "packageNo": "2022-015",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "ok",
+      "message": "Yuklendi",
+      "dgDataId": "b2931d36-b30b-44ba-bf19-c4e692b4a460",
+      "fileName": "2022-015.pdf",
+      "fileBytes": 596445
+    },
+    {
+      "packageNo": "2022-014",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "ok",
+      "message": "Yuklendi",
+      "dgDataId": "8f7f1011-d7e2-4267-82da-314cd22fe5f7",
+      "fileName": "2022-014.pdf",
+      "fileBytes": 137721
+    },
+    {
+      "packageNo": "2022-013",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "ok",
+      "message": "Yuklendi",
+      "dgDataId": "f58dab46-faee-4f0e-96e3-b4ef72d3b22c",
+      "fileName": "2022-013.pdf",
+      "fileBytes": 137848
+    },
+    {
+      "packageNo": "2022-012",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "ok",
+      "message": "Yuklendi",
+      "dgDataId": "da050de4-fbd7-431f-a2fa-a108e8989b98",
+      "fileName": "2022-012.pdf",
+      "fileBytes": 137708
+    },
+    {
+      "packageNo": "2021-067",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": "2",
+      "status": "ok",
+      "message": "Yuklendi",
+      "dgDataId": "e638f4df-72a7-4fe5-943a-3d30adf53e12",
+      "fileName": "2021-067_2.pdf",
+      "fileBytes": 54537
+    }
+  ],
+  "baseUrl": "http://192.168.20.20:5040",
+  "dryRun": false,
+  "legacyUploadRoot": "C:\\Users\\monitra\\kalite-legacy-local\\uploads",
+  "summary": {
+    "fileNotFound": 0,
+    "dgNotFound": 0,
+    "skipped": 0,
+    "ok": 7,
+    "failed": 0
+  }
+}

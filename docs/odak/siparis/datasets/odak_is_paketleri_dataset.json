@@ -175,6 +175,14 @@
       "validation": { "maxLength": 32 }
     },
     {
+      "fieldType": "file",
+      "name": "poDocument",
+      "title": "Musteri siparis PDF (PO)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
       "fieldType": "text",
       "name": "poStorageKey",
       "title": "PO dosya storage key",

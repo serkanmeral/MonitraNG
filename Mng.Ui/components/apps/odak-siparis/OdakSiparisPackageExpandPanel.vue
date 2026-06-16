@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import OdakSiparisLinesPanel from '@/components/apps/odak-siparis/OdakSiparisLinesPanel.vue';
+import OdakSiparisPoDocumentPanel from '@/components/apps/odak-siparis/OdakSiparisPoDocumentPanel.vue';
 import OdakSiparisQualityPanel from '@/components/apps/odak-siparis/OdakSiparisQualityPanel.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import type { OdakPackageRow } from '@/utils/odakSiparisConfig';
@@ -102,32 +103,44 @@ watch(activeTab, (tab) => {
       <v-tab value="quality">{{ t('odakSiparis.detail.tabs.quality') }}</v-tab>
     </v-tabs>
 
-    <div v-show="activeTab === 'summary'">
-      <v-table density="compact" class="border rounded-md bg-surface">
-        <tbody>
-          <tr v-for="row in summaryRows" :key="row.label">
-            <td class="font-weight-medium text-medium-emphasis" width="200">{{ row.label }}</td>
-            <td>
-              <a
-                v-if="row.customerId"
-                href="#"
-                class="text-primary text-decoration-none"
-                @click.prevent="emit('open-customer', row.customerId!)"
-              >
-                {{ row.value }}
-              </a>
-              <NuxtLink
-                v-else-if="row.link"
-                :to="row.link"
-                class="text-primary text-decoration-none"
-              >
-                {{ row.value }}
-              </NuxtLink>
-              <span v-else class="text-body-2">{{ row.value }}</span>
-            </td>
-          </tr>
-        </tbody>
-      </v-table>
+    <div v-show="activeTab === 'summary'" class="odak-summary-split">
+      <v-row dense align="stretch">
+        <v-col cols="12" md="7" class="odak-summary-split__info">
+          <v-table density="compact" class="border rounded-md bg-surface h-100">
+            <tbody>
+              <tr v-for="row in summaryRows" :key="row.label">
+                <td class="font-weight-medium text-medium-emphasis" width="200">{{ row.label }}</td>
+                <td>
+                  <a
+                    v-if="row.customerId"
+                    href="#"
+                    class="text-primary text-decoration-none"
+                    @click.prevent="emit('open-customer', row.customerId!)"
+                  >
+                    {{ row.value }}
+                  </a>
+                  <NuxtLink
+                    v-else-if="row.link"
+                    :to="row.link"
+                    class="text-primary text-decoration-none"
+                  >
+                    {{ row.value }}
+                  </NuxtLink>
+                  <span v-else class="text-body-2">{{ row.value }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </v-table>
+        </v-col>
+        <v-col cols="12" md="5" class="odak-summary-split__po">
+          <OdakSiparisPoDocumentPanel
+            :key="`${packageId}-po`"
+            :package-id="packageId"
+            :package-no="(pkg ?? packageRow).packageNo"
+            @saved="loadPackage"
+          />
+        </v-col>
+      </v-row>
     </div>
 
     <div v-if="activeTab === 'lines'">
@@ -153,5 +166,16 @@ watch(activeTab, (tab) => {
 .odak-package-expand-panel {
   background: rgba(var(--v-theme-surface-variant), 0.25);
   border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+.odak-summary-split__po {
+  min-height: 0;
+}
+
+@media (min-width: 960px) {
+  .odak-summary-split__info,
+  .odak-summary-split__po {
+    align-self: stretch;
+  }
 }
 </style>

@@ -19,6 +19,7 @@ import {
   fetchPackageLineStatsMap,
   formatOdakDate,
   formatOdakNumber,
+  filterPackagesByLineAdv,
   invalidateOdakSiparisCustomerCache,
   packageDataId,
   packageDisplayNo,
@@ -28,7 +29,8 @@ import {
 } from '@/utils/odakSiparisService';
 import type { OdakCustomerDialogMode } from '@/utils/odakSiparisCustomerService';
 import type { OdakPackageDialogMode } from '@/utils/odakSiparisPackageService';
-import { CertificateIcon, EditIcon, PlusIcon, RefreshIcon, TrashIcon } from 'vue-tabler-icons';
+import { exportOdakPackagesToCsv, ODAK_PACKAGE_EXPORT_MAX } from '@/utils/odakSiparisPackageExport';
+import { CertificateIcon, DownloadIcon, EditIcon, PlusIcon, RefreshIcon, TrashIcon } from 'vue-tabler-icons';
 
 definePageMeta({ layout: 'default' });
 
@@ -83,6 +85,8 @@ const paginationLabel = computed(() =>
 const deleteDialog = ref(false);
 const itemToDelete = ref<OdakPackageRow | null>(null);
 const deleting = ref(false);
+const exporting = ref(false);
+const exportMessage = ref('');
 
 /** Kalem dataset alanlari — sunucu filtresi yok; line stats ile client filtre. */
 const lineAdv = ref({
@@ -159,32 +163,7 @@ const needsLineStats = computed(() => Boolean(lineAdv.value.customerPo.trim() ||
 const hasLineFilter = computed(() => needsLineStats.value);
 
 function applyLineFilters(list: OdakPackageRow[]): OdakPackageRow[] {
-  let result = list;
-
-  if (lineAdv.value.customerPo.trim()) {
-    const po = lineAdv.value.customerPo.trim().toLowerCase();
-    result = result.filter((item) => {
-      const id = packageDataId(item);
-      return (lineStats.value.get(id)?.customerPoNos ?? '').toLowerCase().includes(po);
-    });
-  }
-
-  if (hasLineSearch.value) {
-    const proj = lineAdv.value.customerProjectNo.trim().toLowerCase();
-    const poItem = lineAdv.value.customerPoItem.trim().toLowerCase();
-    const desc = lineAdv.value.productDesc.trim().toLowerCase();
-    result = result.filter((item) => {
-      const id = packageDataId(item);
-      const stats = lineStats.value.get(id);
-      if (!stats) return false;
-      if (proj && !stats.customerProjectNos.toLowerCase().includes(proj)) return false;
-      if (poItem && !stats.customerPoNos.toLowerCase().includes(poItem)) return false;
-      if (desc && !stats.descriptions.some((d) => d.toLowerCase().includes(desc))) return false;
-      return true;
-    });
-  }
-
-  return result;
+  return filterPackagesByLineAdv(list, lineAdv.value, lineStats.value);
 }
 
 function compareText(a: string, b: string): number {
@@ -281,6 +260,45 @@ function clearLineSearch() {
     customerPoItem: '',
     productDesc: '',
   };
+}
+
+async function exportPackages() {
+  exporting.value = true;
+  exportMessage.value = '';
+  errorMessage.value = '';
+  try {
+    const columnLabels = {
+      packageNo: t('odakSiparis.packages.columns.packageNo'),
+      name: t('odakSiparis.packages.columns.name'),
+      customer: t('odakSiparis.packages.columns.customer'),
+      customerPo: t('odakSiparis.packages.columns.customerPo'),
+      projectNo: t('odakSiparis.packages.columns.projectNo'),
+      partCount: t('odakSiparis.packages.columns.partCount'),
+      stockCount: t('odakSiparis.packages.columns.stockCount'),
+      lineCount: t('odakSiparis.packages.columns.lineCount'),
+      status: t('odakSiparis.packages.columns.status'),
+      beginDate: t('odakSiparis.packages.columns.beginDate'),
+      deliveryDate: t('odakSiparis.packages.columns.deliveryDate'),
+      poVersion: t('odakSiparis.packages.fields.poVersion'),
+    };
+    const result = await exportOdakPackagesToCsv(
+      {
+        statusTab: statusTab.value,
+        search: searchText() || undefined,
+        advancedFilters: activeListFilters.value,
+        lineAdv: lineAdv.value,
+        sortBy: tableSortBy.value,
+      },
+      columnLabels
+    );
+    exportMessage.value = result.truncated
+      ? t('odakSiparis.packages.exportTruncated', { count: result.rowCount, max: ODAK_PACKAGE_EXPORT_MAX })
+      : t('odakSiparis.packages.exportSuccess', { count: result.rowCount });
+  } catch (e: unknown) {
+    errorMessage.value = e instanceof Error ? e.message : String(e);
+  } finally {
+    exporting.value = false;
+  }
 }
 
 async function fetchPackages() {
@@ -568,11 +586,25 @@ async function initPackagesPage() {
         <v-btn icon variant="outlined" size="small" :loading="loading" @click="fetchPackages">
           <RefreshIcon size="18" />
         </v-btn>
+        <v-btn
+          variant="outlined"
+          size="small"
+          :loading="exporting"
+          :disabled="loading"
+          @click="exportPackages"
+        >
+          <DownloadIcon size="18" class="mr-1" />
+          {{ t('odakSiparis.packages.export') }}
+        </v-btn>
         <v-btn color="primary" variant="flat" @click="createPackage">
           <PlusIcon class="mr-1" size="18" />
           {{ t('odakSiparis.packages.add') }}
         </v-btn>
       </v-card-title>
+
+      <v-alert v-if="exportMessage" type="success" variant="tonal" density="compact" class="mx-4 mb-2">
+        {{ exportMessage }}
+      </v-alert>
 
       <div class="px-4">
         <AfListFilters

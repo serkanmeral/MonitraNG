@@ -9,6 +9,7 @@ import {
   lineBelongsToPackage,
   packageDataId,
 } from '@/utils/odakSiparisService';
+import { fromDateInputValue, toDateInputValue } from '@/utils/odakSiparisDateUtils';
 
 export type OdakLineDialogMode = 'view' | 'create' | 'edit';
 
@@ -36,23 +37,6 @@ export function productIdFromRow(raw: unknown): string {
   if (typeof raw === 'string') return raw;
   if (typeof raw === 'object') return packageDataId(raw as Record<string, unknown>);
   return String(raw);
-}
-
-export function toDateInputValue(v: unknown): string {
-  if (!v) return '';
-  try {
-    const d = new Date(String(v));
-    if (Number.isNaN(d.getTime())) return '';
-    return d.toISOString().slice(0, 10);
-  } catch {
-    return '';
-  }
-}
-
-export function fromDateInputValue(v: string): string | null {
-  const trimmed = v.trim();
-  if (!trimmed) return null;
-  return `${trimmed}T21:00:00.0000000Z`;
 }
 
 export interface OdakLineFormModel {

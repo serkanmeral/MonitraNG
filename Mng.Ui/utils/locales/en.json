@@ -3585,6 +3585,9 @@
       "title": "Work Packages",
       "quickSearch": "Quick search…",
       "add": "Add Work Package",
+      "export": "Export",
+      "exportSuccess": "Exported {count} records.",
+      "exportTruncated": "Exported {count} records (limit {max}).",
       "searchPanel": "Work Package Search",
       "search": "Search",
       "clear": "Clear",
@@ -3683,6 +3686,33 @@
         "openHub": "Open customer record",
         "openPackages": "Work packages for this customer",
         "notFound": "Customer not found."
+      }
+    },
+    "po": {
+      "title": "Customer purchase order (PO PDF)",
+      "titleShort": "PO PDF",
+      "hint": "Attach the customer's order PDF to this work package. PDF only (max 25 MB).",
+      "hintShort": "Choose a PDF or preview the attached document.",
+      "fileListTitle": "Attached documents ({count})",
+      "storedFile": "Saved",
+      "hasDocument": "PDF on file",
+      "noDocument": "No PO PDF attached yet.",
+      "pendingUpload": "Unsaved",
+      "preview": "Preview",
+      "previewDialogTitle": "PO PDF preview",
+      "showPreview": "Show preview",
+      "hidePreview": "Hide",
+      "previewFailed": "Could not load PDF preview.",
+      "downloadInstead": "Open via download",
+      "openInNewTab": "Open in new tab",
+      "chooseFile": "Choose PDF",
+      "replaceFile": "Replace PDF",
+      "remove": "Remove",
+      "download": "Download",
+      "save": "Save PO",
+      "errors": {
+        "pdfOnly": "Only PDF files are allowed.",
+        "tooLarge": "File size must be at most {max} MB."
       }
     },
     "detail": {

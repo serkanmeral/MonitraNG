@@ -59,7 +59,33 @@ export interface OdakPackageRow {
   workItemId?: string;
   workItemKey?: string;
   poVersion?: string;
+  poDocument?: OdakFileFieldValue | null;
+  poDocumentPath?: string | null;
+  poStorageKey?: string | null;
 }
+
+/** DG file alani — kayit sonrasi metadata veya upload oncesi base64 payload. */
+export type OdakFileFieldValue =
+  | string
+  | {
+      path?: string;
+      file_name?: string;
+      file_ext?: string;
+      file_size?: number;
+      upload_time?: string;
+      content?: string;
+      originalFileName?: string;
+    };
+
+export const ODAK_PO_FILE_FIELD = {
+  fieldType: 'file',
+  name: 'poDocument',
+  isArray: false,
+  fileOptions: {
+    maxSize: 25 * 1024 * 1024,
+    allowedExtensions: ['.pdf'],
+  },
+} as const;
 
 export type OdakCustomerSektor = 'havacilik' | 'savunma' | 'diger';
 

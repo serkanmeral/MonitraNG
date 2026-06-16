@@ -6,11 +6,8 @@ import {
   type OdakCapaRow,
 } from '@/utils/odakSiparisConfig';
 import { formatOdakDate, packageDataId } from '@/utils/odakSiparisService';
-import {
-  fromDateInputValue,
-  ncrDisplayNo,
-  toDateInputValue,
-} from '@/utils/odakSiparisNcrService';
+import { fromDateInputValue, toDateInputValue } from '@/utils/odakSiparisDateUtils';
+import { ncrDisplayNo } from '@/utils/odakSiparisNcrService';
 
 export type OdakCapaDialogMode = 'view' | 'create' | 'edit';
 

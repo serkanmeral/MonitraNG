@@ -43,6 +43,22 @@ export function previewMime(att: OcAttachment): string | null {
   return EXT_MIME[attExt(att)] ?? null;
 }
 
+/** Uzantıya göre önizleme MIME tipi (yoksa null). */
+export function previewMimeForFileName(fileName: string): string | null {
+  const dot = fileName.lastIndexOf('.');
+  const ext = dot >= 0 ? fileName.slice(dot + 1).toLowerCase().trim() : '';
+  return EXT_MIME[ext] ?? null;
+}
+
+/**
+ * DG octet-stream döndürürse iframe render etmeyip indirir; doğru MIME ile yeniden sar.
+ */
+export function typedBlobForPreview(blob: Blob, fileName: string): Blob {
+  const mime = previewMimeForFileName(fileName);
+  if (!mime || blob.type === mime) return blob;
+  return new Blob([blob], { type: mime });
+}
+
 /** Uzantıya göre önizleme türünü (boyut sınırı dikkate alınmadan) döndürür. */
 export function previewKindByExt(att: OcAttachment): OcAttachmentPreviewKind {
   const ext = attExt(att);

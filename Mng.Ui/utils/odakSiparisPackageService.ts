@@ -6,7 +6,7 @@ import {
   fetchOdakPackageById,
   packageDataId,
 } from '@/utils/odakSiparisService';
-import { fromDateInputValue, toDateInputValue } from '@/utils/odakSiparisLineService';
+import { fromDateInputValue, toDateInputValue } from '@/utils/odakSiparisDateUtils';
 
 export type OdakPackageDialogMode = 'create' | 'edit';
 
