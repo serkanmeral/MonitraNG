@@ -3602,7 +3602,7 @@
       "search": "Ara",
       "clear": "Temizle",
       "clientFilterHint": "Müşteri / kalem bazlı arama aktif — sonuçlar yüklenen paketler üzerinde filtrelenir.",
-      "poProjectLazyHint": "Müşteri PO ve Proje No sütunları gelişmiş aramada doldurulur; kalem sayısı paket kaydından gelir.",
+      "poProjectLazyHint": "Müşteri PO ve Proje No, listedeki paketlerin kalem özetinden doldurulur.",
       "lineSearchPanel": "Kalem bazlı arama",
       "lineSearchHint": "Kalemlerde arama yapılır (Müşteri PO, proje no, ürün tanımı). En fazla 500 paket üzerinde filtrelenir; tam sonuç için paket alanlarını üstteki gelişmiş filtrede kullanın.",
       "paginationSummary": "{from}–{to} / {total} kayıt",
@@ -3614,6 +3614,20 @@
       "delete": "Sil",
       "view": "Görüntüle",
       "edit": "Düzenle",
+      "openFullDetail": "Tam detay sayfası",
+      "fields": {
+        "poVersion": "PO versiyonu"
+      },
+      "dialog": {
+        "createTitle": "Yeni iş paketi",
+        "editTitle": "İş paketi düzenle — {no}",
+        "missingId": "Paket kimliği bulunamadı.",
+        "notFound": "İş paketi yüklenemedi."
+      },
+      "validation": {
+        "packageNoRequired": "İş paketi numarası zorunludur.",
+        "nameRequired": "İş paketi ismi zorunludur."
+      },
       "tabs": {
         "open": "Açık",
         "closed": "Kapalı",
@@ -3642,6 +3656,45 @@
         "customerPoItem": "Müşteri PO Kalem",
         "productDesc": "Ürün / Hizmet Tanımı",
         "productDescHint": "Kalem bazlı — yüklenen paketler üzerinde"
+      }
+    },
+    "customers": {
+      "title": "Müşteriler",
+      "add": "Müşteri Ekle",
+      "openPackages": "İş paketlerini göster",
+      "activeYes": "Aktif",
+      "activeNo": "Pasif",
+      "deleteTitle": "Müşteriyi sil",
+      "deleteConfirm": "Bu müşteri kaydını silmek istediğinize emin misiniz?",
+      "tabs": {
+        "active": "Aktif",
+        "inactive": "Pasif",
+        "all": "Tümü"
+      },
+      "fields": {
+        "kod": "Müşteri kodu",
+        "unvan": "Unvan",
+        "sektor": "Sektör",
+        "ulke": "Ülke",
+        "aktif": "Aktif",
+        "notlar": "Notlar"
+      },
+      "dialog": {
+        "createTitle": "Yeni müşteri",
+        "editTitle": "Müşteri düzenle — {name}",
+        "missingId": "Müşteri kimliği bulunamadı.",
+        "notFound": "Müşteri yüklenemedi."
+      },
+      "validation": {
+        "kodRequired": "Müşteri kodu zorunludur (MUS-XXX).",
+        "unvanRequired": "Unvan zorunludur."
+      },
+      "drawer": {
+        "title": "Müşteri özeti",
+        "edit": "Düzenle",
+        "openHub": "Müşteri kartını aç",
+        "openPackages": "Bu müşterinin iş paketleri",
+        "notFound": "Müşteri bulunamadı."
       }
     },
     "detail": {
@@ -3683,8 +3736,57 @@
     "lines": {
       "defaultTitle": "Sipariş kalemleri",
       "add": "Kalem Ekle",
+      "viewFull": "Tam detay",
+      "expandTitle": "Kalem {lineNo} — özet",
       "deleteTitle": "Kalemi sil",
       "deleteConfirm": "Bu kalemi silmek istediğinize emin misiniz?",
+      "groups": {
+        "customerPo": "Müşteri PO",
+        "product": "Ürün / Hizmet",
+        "quantity": "Miktar",
+        "quality": "Kalite",
+        "shipment": "Sevkiyat",
+        "cost": "Maliyet"
+      },
+      "fields": {
+        "lineNo": "Kalem No",
+        "customerProjectNo": "Müşteri Proje No",
+        "customerPoNo": "Müşteri PO No",
+        "customerPoItemNo": "PO Kalem No",
+        "customerJobNo": "Müşteri İş Emri",
+        "poItemRevNo": "Ürün Revizyonu",
+        "description": "Ürün ve Hizmet Tanımı",
+        "productId": "Ürün (master)",
+        "quantity": "Miktar",
+        "unit": "Birim",
+        "shippedQuantity": "Sevk Miktarı",
+        "qualityReqs": "Kalite İsterleri",
+        "isFai": "FAI yapılacak",
+        "isFaiComplete": "FAI tamamlandı",
+        "shipmentDate": "Sevkiyat Tarihi",
+        "shipmentAddress": "Sevkiyat Adresi",
+        "unitCost": "Birim Fiyat",
+        "totalCost": "Toplam Maliyet",
+        "currency": "Para Birimi"
+      },
+      "dialog": {
+        "createTitle": "Yeni kalem",
+        "editTitle": "Kalem düzenle",
+        "viewTitle": "Kalem {lineNo}",
+        "viewHint": "Salt okunur özet — düzenlemek için alttaki butonu kullanın.",
+        "create": "Oluştur",
+        "save": "Kaydet",
+        "edit": "Düzenle",
+        "cancel": "İptal",
+        "close": "Kapat",
+        "missingId": "Kalem kimliği bulunamadı.",
+        "notFound": "Kalem bulunamadı."
+      },
+      "validation": {
+        "descriptionRequired": "Ürün/hizmet tanımı zorunludur.",
+        "quantityRequired": "Geçerli bir miktar girin.",
+        "lineNoRequired": "Geçerli bir kalem numarası girin."
+      },
       "columns": {
         "lineNo": "Kalem No",
         "customerProjectNo": "Müşteri Proje No",

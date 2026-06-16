@@ -1,32 +1,39 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import AfListFilters from '@/components/apps/automated-forms/AfListFilters.vue';
+import OdakSiparisCustomerDialog from '@/components/apps/odak-siparis/OdakSiparisCustomerDialog.vue';
+import OdakSiparisCustomerDrawer from '@/components/apps/odak-siparis/OdakSiparisCustomerDrawer.vue';
+import OdakSiparisPackageDialog from '@/components/apps/odak-siparis/OdakSiparisPackageDialog.vue';
+import OdakSiparisPackageExpandPanel from '@/components/apps/odak-siparis/OdakSiparisPackageExpandPanel.vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { ocDelete } from '@/services/operationCoreService';
 import type { AfFilterColumn, AfListFilter } from '@/utils/afListFilters';
-import { ODAK_SIPARIS_CONFIG, type OdakPackageRow } from '@/utils/odakSiparisConfig';
+import { ODAK_SIPARIS_CONFIG, ODAK_DATA_TABLE_EXPAND_COLUMN, type OdakPackageRow } from '@/utils/odakSiparisConfig';
 import {
-  customerFormRoute,
   customerIdFromRow,
   customerLabelFromRow,
   fetchCustomerLabelMap,
+  fetchCustomerRelationOptions,
   fetchOdakPackagesPage,
   fetchPackageLineStatsMap,
   formatOdakDate,
   formatOdakNumber,
+  invalidateOdakSiparisCustomerCache,
   packageDataId,
   packageDisplayNo,
   packageStatusLabel,
   type OdakPackageLineStats,
   type OdakPackageListSort,
 } from '@/utils/odakSiparisService';
-import { EditIcon, EyeIcon, PlusIcon, RefreshIcon, TrashIcon } from 'vue-tabler-icons';
+import type { OdakCustomerDialogMode } from '@/utils/odakSiparisCustomerService';
+import type { OdakPackageDialogMode } from '@/utils/odakSiparisPackageService';
+import { EditIcon, PlusIcon, RefreshIcon, TrashIcon } from 'vue-tabler-icons';
 
 definePageMeta({ layout: 'default' });
 
 const { t } = useAppI18n();
-const router = useRouter();
+const route = useRoute();
 
 type StatusTab = 'open' | 'closed' | 'all';
 
@@ -45,6 +52,18 @@ const tablePage = ref(1);
 const tableItemsPerPage = ref(20);
 const tableItemsPerPageOptions = [10, 20, 50, 100];
 const tableSortBy = ref<OdakPackageListSort[]>([{ key: 'displayNo', order: 'desc' }]);
+const expandedIds = ref<string[]>([]);
+const expandRefreshToken = ref(0);
+const packageDialogOpen = ref(false);
+const packageDialogMode = ref<OdakPackageDialogMode>('create');
+const packageDialogId = ref<string | undefined>();
+const packageDialogSeed = ref<OdakPackageRow | null>(null);
+const customerDrawerOpen = ref(false);
+const customerDrawerId = ref<string | undefined>();
+const customerDialogOpen = ref(false);
+const customerDialogMode = ref<OdakCustomerDialogMode>('edit');
+const customerDialogId = ref<string | undefined>();
+const pendingCustomerFilterId = ref<string | null>(null);
 
 const paginationLabel = computed(() =>
   t('odakSiparis.packages.paginationSummary', {
@@ -90,6 +109,7 @@ const packageFilterColumns = computed<AfFilterColumn[]>(() => [
 ]);
 
 const headers = computed(() => [
+  { ...ODAK_DATA_TABLE_EXPAND_COLUMN },
   { title: t('odakSiparis.packages.columns.packageNo'), key: 'displayNo', sortable: true },
   { title: t('odakSiparis.packages.columns.name'), key: 'name', sortable: true },
   { title: t('odakSiparis.packages.columns.customer'), key: 'customer', sortable: true },
@@ -106,7 +126,7 @@ const headers = computed(() => [
     key: 'actions',
     sortable: false,
     align: 'end' as const,
-    width: 132,
+    width: 88,
   },
 ]);
 
@@ -235,9 +255,8 @@ async function ensureCustomerLabels() {
 }
 
 async function loadFilterRelationOptions() {
-  await ensureCustomerLabels();
   relationFilterOptions.value = {
-    customerId: Object.entries(customerLabels.value).map(([value, title]) => ({ value, title })),
+    customerId: await fetchCustomerRelationOptions(),
   };
 }
 
@@ -280,8 +299,6 @@ async function fetchPackages() {
       const stats = await fetchPackageLineStatsMap(filtered.map((x) => packageDataId(x)));
       lineStats.value = stats;
       filtered = applyLineFilters(filtered);
-    } else {
-      lineStats.value = new Map();
     }
 
     if (hasLineFilter.value) {
@@ -292,6 +309,9 @@ async function fetchPackages() {
     } else {
       items.value = filtered;
       totalCount.value = resp.total ?? filtered.length;
+      // B: gorunen sayfa icin PO/Proje ozeti (chunk basina ~3 paralel DG cagrisi / 20 paket).
+      const pageIds = items.value.map((x) => packageDataId(x)).filter(Boolean);
+      lineStats.value = pageIds.length ? await fetchPackageLineStatsMap(pageIds) : new Map();
     }
   } catch (e: unknown) {
     errorMessage.value = e instanceof Error ? e.message : String(e);
@@ -303,20 +323,54 @@ async function fetchPackages() {
   }
 }
 
-function openDetail(item: OdakPackageRow) {
-  router.push(`/apps/odak-siparis/packages/${encodeURIComponent(packageDataId(item))}`);
+function openCustomerDrawer(customerId: string) {
+  if (!customerId) return;
+  customerDrawerId.value = customerId;
+  customerDrawerOpen.value = true;
 }
 
-function openEdit(item: OdakPackageRow) {
+function openCustomerEdit(customerId: string) {
+  customerDrawerOpen.value = false;
+  customerDialogMode.value = 'edit';
+  customerDialogId.value = customerId;
+  customerDialogOpen.value = true;
+}
+
+async function onCustomerSaved() {
+  invalidateOdakSiparisCustomerCache();
+  customerLabels.value = await fetchCustomerLabelMap(true);
+  await fetchPackages();
+}
+
+function toggleExpand(item: OdakPackageRow) {
   const id = packageDataId(item);
   if (!id) return;
-  router.push({
-    path: `/apps/automated-forms/view/${ODAK_SIPARIS_CONFIG.packagesFormCode}`,
-    query: {
-      editId: id,
-      returnTo: '/apps/odak-siparis/packages',
-    },
-  });
+  expandedIds.value = expandedIds.value.includes(id) ? [] : [id];
+}
+
+function openPackageDialog(mode: OdakPackageDialogMode, item?: OdakPackageRow) {
+  packageDialogMode.value = mode;
+  packageDialogId.value = item ? packageDataId(item) : undefined;
+  packageDialogSeed.value = item ?? null;
+  packageDialogOpen.value = true;
+}
+
+async function onPackageSaved(packageId?: string) {
+  await fetchPackages();
+  if (packageId) {
+    expandedIds.value = [packageId];
+    expandRefreshToken.value += 1;
+  }
+}
+
+watch(expandedIds, (ids) => {
+  if (ids.length > 1) {
+    expandedIds.value = [ids[ids.length - 1]!];
+  }
+});
+
+function openEdit(item: OdakPackageRow) {
+  openPackageDialog('edit', item);
 }
 
 function confirmDelete(item: OdakPackageRow) {
@@ -344,16 +398,11 @@ async function doDelete() {
 }
 
 function createPackage() {
-  router.push({
-    path: `/apps/automated-forms/view/${ODAK_SIPARIS_CONFIG.packagesFormCode}`,
-    query: {
-      mode: 'create',
-      returnTo: '/apps/odak-siparis/packages',
-    },
-  });
+  openPackageDialog('create');
 }
 
 watch(statusTab, () => {
+  expandedIds.value = [];
   if (tablePage.value !== 1) {
     tablePage.value = 1;
   } else {
@@ -378,6 +427,7 @@ function onTableOptions(options: TableOptions) {
   if (sortChanged || sizeChanged) nextPage = 1;
   const pageChanged = nextPage !== tablePage.value;
   if (!sortChanged && !pageChanged && !sizeChanged) return;
+  expandedIds.value = [];
   tableSortBy.value = nextSort;
   tablePage.value = nextPage;
   tableItemsPerPage.value = nextSize;
@@ -395,8 +445,28 @@ watch(searchQuery, scheduleFetch);
 watch(lineAdv, scheduleFetch, { deep: true });
 
 onMounted(() => {
-  void fetchPackages();
+  const expand = route.query.expand;
+  if (typeof expand === 'string' && expand.trim()) {
+    expandedIds.value = [expand.trim()];
+  }
+  const customerId = route.query.customerId;
+  if (typeof customerId === 'string' && customerId.trim()) {
+    pendingCustomerFilterId.value = customerId.trim();
+    statusTab.value = 'all';
+  }
+  void initPackagesPage();
 });
+
+async function initPackagesPage() {
+  await ensureCustomerLabels();
+  if (pendingCustomerFilterId.value) {
+    activeListFilters.value = [
+      { field: 'customerId', operator: 'eq', value: pendingCustomerFilterId.value },
+    ];
+    pendingCustomerFilterId.value = null;
+  }
+  await fetchPackages();
+}
 </script>
 
 <template>
@@ -503,6 +573,7 @@ onMounted(() => {
         </v-alert>
 
         <v-data-table-server
+          v-model:expanded="expandedIds"
           :headers="headers"
           :items="items"
           :loading="loading"
@@ -512,26 +583,41 @@ onMounted(() => {
           :items-length="totalCount"
           :sort-by="tableSortBy"
           item-value="__dataId"
+          show-expand
+          :expand-on-click="false"
           class="border rounded-md odak-packages-list-table"
           @update:options="onTableOptions"
         >
+          <template #expanded-row="{ columns, item }">
+            <tr>
+              <td :colspan="columns.length" class="pa-0">
+                <OdakSiparisPackageExpandPanel
+                  :key="`${packageDataId(item)}-${expandRefreshToken}`"
+                  :package-row="item"
+                  :customer-labels="customerLabels"
+                  @open-customer="openCustomerDrawer"
+                />
+              </td>
+            </tr>
+          </template>
           <template #item.displayNo="{ item }">
             <a
               href="#"
               class="text-primary text-decoration-none font-weight-medium"
-              @click.prevent="openDetail(item)"
+              @click.prevent="toggleExpand(item)"
             >
               {{ packageDisplayNo(item) }}
             </a>
           </template>
           <template #item.customer="{ item }">
-            <NuxtLink
+            <a
               v-if="customerIdFromRow(item)"
-              :to="customerFormRoute(customerIdFromRow(item))"
+              href="#"
               class="text-primary text-decoration-none"
+              @click.prevent="openCustomerDrawer(customerIdFromRow(item))"
             >
               {{ customerLabelFromRow(item, customerLabels) }}
-            </NuxtLink>
+            </a>
             <span v-else>{{ customerLabelFromRow(item, customerLabels) }}</span>
           </template>
           <template #item.customerPo="{ item }">
@@ -560,9 +646,6 @@ onMounted(() => {
           </template>
           <template #item.actions="{ item }">
             <div class="d-inline-flex align-center justify-end ga-1">
-              <v-btn icon size="x-small" variant="text" color="primary" @click="openDetail(item)">
-                <EyeIcon size="18" />
-              </v-btn>
               <v-btn icon size="x-small" variant="text" @click="openEdit(item)">
                 <EditIcon size="18" />
               </v-btn>
@@ -577,6 +660,26 @@ onMounted(() => {
         </div>
       </v-card-text>
     </v-card>
+
+    <OdakSiparisCustomerDrawer
+      v-model="customerDrawerOpen"
+      :customer-id="customerDrawerId"
+      @edit="openCustomerEdit"
+    />
+    <OdakSiparisCustomerDialog
+      v-model="customerDialogOpen"
+      :mode="customerDialogMode"
+      :customer-id="customerDialogId"
+      @saved="onCustomerSaved"
+    />
+
+    <OdakSiparisPackageDialog
+      v-model="packageDialogOpen"
+      :mode="packageDialogMode"
+      :package-id="packageDialogId"
+      :seed-row="packageDialogSeed"
+      @saved="onPackageSaved"
+    />
 
     <v-dialog v-model="deleteDialog" max-width="460">
       <v-card>
@@ -600,16 +703,26 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* İşlemler sütunu — OcBoardPanel ile aynı: yatay scroll'da sağda sabit kalır. */
+/* Expand sütunu (ilk sütun) — yatay scroll'da solda sabit. */
+.odak-packages-list-table :deep(table) > thead > tr > th:first-child,
+.odak-packages-list-table :deep(table) > tbody > tr:not(.v-data-table__expanded__content) > td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: rgb(var(--v-theme-surface));
+  box-shadow: 6px 0 6px -6px rgba(0, 0, 0, 0.12);
+}
+
+/* İşlemler sütunu — yatay scroll'da sağda sabit. */
 .odak-packages-list-table :deep(table) > thead > tr > th:last-child,
-.odak-packages-list-table :deep(table) > tbody > tr > td:last-child {
+.odak-packages-list-table :deep(table) > tbody > tr:not(.v-data-table__expanded__content) > td:last-child {
   position: sticky;
   right: 0;
   background: rgb(var(--v-theme-surface));
   box-shadow: -6px 0 6px -6px rgba(0, 0, 0, 0.18);
 }
 
-.odak-packages-list-table :deep(table) > tbody > tr > td:last-child {
+.odak-packages-list-table :deep(table) > tbody > tr:not(.v-data-table__expanded__content) > td:last-child {
   z-index: 1;
 }
 

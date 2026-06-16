@@ -99,12 +99,22 @@ function isBoolField(field: string): boolean {
   return kindOf(field) === 'bool';
 }
 
+function sortFilterSelectOptions(items: { value: string; title: string }[]): { value: string; title: string }[] {
+  return [...items].sort((a, b) =>
+    a.title.localeCompare(b.title, 'tr', { numeric: true, sensitivity: 'base' })
+  );
+}
+
 function selectOptionsForField(field: string): { value: string; title: string }[] {
   const kind = kindOf(field);
   const col = columnByKey.value.get(field);
   if (kind === 'select') return col?.selectItems ?? [];
-  if (kind === 'relation') return props.relationOptionsByKey?.[field] ?? [];
-  if (kind === 'group') return props.groupOptionsByKey?.[field] ?? [];
+  if (kind === 'relation') {
+    return sortFilterSelectOptions(props.relationOptionsByKey?.[field] ?? []);
+  }
+  if (kind === 'group') {
+    return sortFilterSelectOptions(props.groupOptionsByKey?.[field] ?? []);
+  }
   return [];
 }
 

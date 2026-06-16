@@ -3589,7 +3589,7 @@
       "search": "Search",
       "clear": "Clear",
       "clientFilterHint": "Customer / line search is active — results are filtered on loaded packages.",
-      "poProjectLazyHint": "Customer PO and Project No columns fill in via advanced search; line count comes from the package record.",
+      "poProjectLazyHint": "Customer PO and Project No are filled from line summaries for packages on the current page.",
       "lineSearchPanel": "Line-based search",
       "lineSearchHint": "Searches order lines (customer PO, project no, description). Filters up to 500 packages; use advanced filters above for package fields.",
       "paginationSummary": "{from}–{to} of {total} records",
@@ -3601,6 +3601,20 @@
       "delete": "Delete",
       "view": "View",
       "edit": "Edit",
+      "openFullDetail": "Full detail page",
+      "fields": {
+        "poVersion": "PO version"
+      },
+      "dialog": {
+        "createTitle": "New work package",
+        "editTitle": "Edit work package — {no}",
+        "missingId": "Package id not found.",
+        "notFound": "Could not load work package."
+      },
+      "validation": {
+        "packageNoRequired": "Work package number is required.",
+        "nameRequired": "Work package name is required."
+      },
       "tabs": {
         "open": "Open",
         "closed": "Closed",
@@ -3629,6 +3643,45 @@
         "customerPoItem": "Customer PO Item",
         "productDesc": "Product / Service Description",
         "productDescHint": "Line-based — on loaded packages"
+      }
+    },
+    "customers": {
+      "title": "Customers",
+      "add": "Add Customer",
+      "openPackages": "Show work packages",
+      "activeYes": "Active",
+      "activeNo": "Inactive",
+      "deleteTitle": "Delete customer",
+      "deleteConfirm": "Are you sure you want to delete this customer?",
+      "tabs": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "all": "All"
+      },
+      "fields": {
+        "kod": "Customer code",
+        "unvan": "Company name",
+        "sektor": "Sector",
+        "ulke": "Country",
+        "aktif": "Active",
+        "notlar": "Notes"
+      },
+      "dialog": {
+        "createTitle": "New customer",
+        "editTitle": "Edit customer — {name}",
+        "missingId": "Customer id not found.",
+        "notFound": "Could not load customer."
+      },
+      "validation": {
+        "kodRequired": "Customer code is required (MUS-XXX).",
+        "unvanRequired": "Company name is required."
+      },
+      "drawer": {
+        "title": "Customer summary",
+        "edit": "Edit",
+        "openHub": "Open customer record",
+        "openPackages": "Work packages for this customer",
+        "notFound": "Customer not found."
       }
     },
     "detail": {
@@ -3670,8 +3723,57 @@
     "lines": {
       "defaultTitle": "Order lines",
       "add": "Add Line",
+      "viewFull": "Full detail",
+      "expandTitle": "Line {lineNo} — summary",
       "deleteTitle": "Delete line",
       "deleteConfirm": "Are you sure you want to delete this line?",
+      "groups": {
+        "customerPo": "Customer PO",
+        "product": "Product / Service",
+        "quantity": "Quantity",
+        "quality": "Quality",
+        "shipment": "Shipment",
+        "cost": "Cost"
+      },
+      "fields": {
+        "lineNo": "Line No",
+        "customerProjectNo": "Customer Project No",
+        "customerPoNo": "Customer PO No",
+        "customerPoItemNo": "PO Item No",
+        "customerJobNo": "Customer Job No",
+        "poItemRevNo": "Item Revision",
+        "description": "Product / Service Description",
+        "productId": "Product (master)",
+        "quantity": "Quantity",
+        "unit": "Unit",
+        "shippedQuantity": "Shipped Qty",
+        "qualityReqs": "Quality Requirements",
+        "isFai": "FAI required",
+        "isFaiComplete": "FAI complete",
+        "shipmentDate": "Shipment Date",
+        "shipmentAddress": "Shipment Address",
+        "unitCost": "Unit Price",
+        "totalCost": "Total Cost",
+        "currency": "Currency"
+      },
+      "dialog": {
+        "createTitle": "New line",
+        "editTitle": "Edit line",
+        "viewTitle": "Line {lineNo}",
+        "viewHint": "Read-only summary — use the button below to edit.",
+        "create": "Create",
+        "save": "Save",
+        "edit": "Edit",
+        "cancel": "Cancel",
+        "close": "Close",
+        "missingId": "Line id not found.",
+        "notFound": "Line not found."
+      },
+      "validation": {
+        "descriptionRequired": "Description is required.",
+        "quantityRequired": "Enter a valid quantity.",
+        "lineNoRequired": "Enter a valid line number."
+      },
       "columns": {
         "lineNo": "Line No",
         "customerProjectNo": "Customer Project No",

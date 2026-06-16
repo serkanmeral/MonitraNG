@@ -1,52 +1,72 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import OdakSiparisLineDialog from '@/components/apps/odak-siparis/OdakSiparisLineDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
-import { ocListDatasetPage, ocDelete } from '@/services/operationCoreService';
-import { ODAK_SIPARIS_CONFIG } from '@/utils/odakSiparisConfig';
+import { ocDelete } from '@/services/operationCoreService';
+import { ODAK_SIPARIS_CONFIG, ODAK_DATA_TABLE_EXPAND_COLUMN, type OdakLineRow } from '@/utils/odakSiparisConfig';
+import { buildOdakLineExpandSummaryRows } from '@/utils/odakSiparisLineSummary';
+import {
+  lineDataId,
+  listLinesForPackage,
+  type OdakLineDialogMode,
+} from '@/utils/odakSiparisLineService';
 import { formatOdakDate } from '@/utils/odakSiparisService';
-import { PlusIcon, EditIcon, TrashIcon, RefreshIcon } from 'vue-tabler-icons';
+import { EditIcon, EyeIcon, PlusIcon, RefreshIcon, TrashIcon } from 'vue-tabler-icons';
 
-const props = defineProps<{
-  packageId: string;
-  packageNo?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    packageId: string;
+    packageNo?: string;
+    compact?: boolean;
+  }>(),
+  {
+    compact: false,
+  }
+);
 
 const { t } = useAppI18n();
-const router = useRouter();
+
 const loading = ref(false);
 const errorMessage = ref('');
-const lines = ref<Record<string, unknown>[]>([]);
+const lines = ref<OdakLineRow[]>([]);
+const expandedLineIds = ref<string[]>([]);
+
 const deleteDialog = ref(false);
-const lineToDelete = ref<Record<string, unknown> | null>(null);
+const lineToDelete = ref<OdakLineRow | null>(null);
 const deleting = ref(false);
 
+const lineDialogOpen = ref(false);
+const lineDialogMode = ref<OdakLineDialogMode>('view');
+const lineDialogId = ref<string | undefined>();
+const lineDialogSeed = ref<OdakLineRow | null>(null);
+
 const headers = computed(() => [
-  { title: t('odakSiparis.lines.columns.lineNo'), key: 'lineNo', width: 90 },
+  { ...ODAK_DATA_TABLE_EXPAND_COLUMN },
+  { title: t('odakSiparis.lines.columns.lineNo'), key: 'lineNo', width: 88 },
   { title: t('odakSiparis.lines.columns.customerProjectNo'), key: 'customerProjectNo', width: 120 },
-  { title: t('odakSiparis.lines.columns.customerPoNo'), key: 'customerPoNo' },
-  { title: t('odakSiparis.lines.columns.customerPoItemNo'), key: 'customerPoItemNo', width: 90 },
-  { title: t('odakSiparis.lines.columns.description'), key: 'description' },
-  { title: t('odakSiparis.lines.columns.quantity'), key: 'quantity', width: 90 },
-  { title: t('odakSiparis.lines.columns.unit'), key: 'unit', width: 80 },
-  { title: t('odakSiparis.lines.columns.shipmentDate'), key: 'shipmentDate', width: 110 },
-  { title: t('odakSiparis.lines.columns.shipmentAddress'), key: 'shipmentAddress' },
+  { title: t('odakSiparis.lines.columns.customerPoNo'), key: 'customerPoNo', width: 120 },
+  { title: t('odakSiparis.lines.columns.customerPoItemNo'), key: 'customerPoItemNo', width: 88 },
+  { title: t('odakSiparis.lines.columns.description'), key: 'description', minWidth: 180 },
+  { title: t('odakSiparis.lines.columns.quantity'), key: 'quantity', width: 88 },
+  { title: t('odakSiparis.lines.columns.unit'), key: 'unit', width: 72 },
   {
     title: t('odakSiparis.lines.columns.actions'),
     key: 'actions',
     sortable: false,
-    align: 'center' as const,
-    width: 120,
+    align: 'end' as const,
+    width: 132,
   },
 ]);
 
-const filterLabel = computed(() =>
-  props.packageNo
-    ? `${props.packageNo} ${t('odakSiparis.detail.tabs.lines').toLowerCase()}`
-    : t('odakSiparis.lines.defaultTitle')
-);
+const filterLabel = computed(() => {
+  if (props.compact) return '';
+  return props.packageNo
+    ? `${props.packageNo} · ${t('odakSiparis.detail.tabs.lines')}`
+    : t('odakSiparis.lines.defaultTitle');
+});
 
-function lineId(row: Record<string, unknown>): string {
-  return String(row.__dataId ?? row.dataId ?? '');
+function expandSummaryRows(line: OdakLineRow) {
+  return buildOdakLineExpandSummaryRows(line, t);
 }
 
 async function loadLines() {
@@ -54,13 +74,7 @@ async function loadLines() {
   loading.value = true;
   errorMessage.value = '';
   try {
-    const filter = `parentPackageId eq '${props.packageId}'`;
-    const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.linesDataset, {
-      filter,
-      sort: 'lineNo:asc',
-      limit: 500,
-    });
-    lines.value = (resp.items ?? []) as Record<string, unknown>[];
+    lines.value = await listLinesForPackage(props.packageId);
   } catch (e: unknown) {
     errorMessage.value = e instanceof Error ? e.message : String(e);
     lines.value = [];
@@ -69,33 +83,14 @@ async function loadLines() {
   }
 }
 
-function openCreate() {
-  const returnTo = `/apps/odak-siparis/packages/${encodeURIComponent(props.packageId)}?tab=lines`;
-  router.push({
-    path: `/apps/automated-forms/view/${ODAK_SIPARIS_CONFIG.linesFormCode}`,
-    query: {
-      parentPackageId: props.packageId,
-      mode: 'create',
-      returnTo,
-    },
-  });
+function openLineDialog(mode: OdakLineDialogMode, row?: OdakLineRow) {
+  lineDialogMode.value = mode;
+  lineDialogId.value = row ? lineDataId(row) : undefined;
+  lineDialogSeed.value = row ?? null;
+  lineDialogOpen.value = true;
 }
 
-function openEdit(row: Record<string, unknown>) {
-  const id = lineId(row);
-  if (!id) return;
-  const returnTo = `/apps/odak-siparis/packages/${encodeURIComponent(props.packageId)}?tab=lines`;
-  router.push({
-    path: `/apps/automated-forms/view/${ODAK_SIPARIS_CONFIG.linesFormCode}`,
-    query: {
-      parentPackageId: props.packageId,
-      editId: id,
-      returnTo,
-    },
-  });
-}
-
-function confirmDelete(row: Record<string, unknown>) {
+function confirmDelete(row: OdakLineRow) {
   lineToDelete.value = row;
   deleteDialog.value = true;
 }
@@ -103,7 +98,7 @@ function confirmDelete(row: Record<string, unknown>) {
 async function doDelete() {
   const row = lineToDelete.value;
   if (!row) return;
-  const id = lineId(row);
+  const id = lineDataId(row);
   if (!id) return;
   deleting.value = true;
   try {
@@ -118,9 +113,14 @@ async function doDelete() {
   }
 }
 
+watch(expandedLineIds, (ids) => {
+  if (ids.length > 1) expandedLineIds.value = [ids[ids.length - 1]!];
+});
+
 watch(
   () => props.packageId,
   () => {
+    expandedLineIds.value = [];
     void loadLines();
   }
 );
@@ -132,13 +132,16 @@ onMounted(() => {
 
 <template>
   <div>
-    <div class="d-flex flex-wrap align-center ga-2 mb-4">
-      <span class="text-subtitle-1 font-weight-medium">{{ filterLabel }}</span>
+    <div class="d-flex flex-wrap align-center ga-2 mb-3">
+      <span v-if="filterLabel" class="text-subtitle-1 font-weight-medium">{{ filterLabel }}</span>
+      <v-chip v-if="lines.length" size="small" variant="tonal" color="primary">
+        {{ lines.length }}
+      </v-chip>
       <v-spacer />
       <v-btn icon variant="outlined" size="small" :loading="loading" @click="loadLines">
         <RefreshIcon size="18" />
       </v-btn>
-      <v-btn color="primary" variant="flat" size="small" @click="openCreate">
+      <v-btn color="primary" variant="flat" size="small" @click="openLineDialog('create')">
         <PlusIcon class="mr-1" size="16" />
         {{ t('odakSiparis.lines.add') }}
       </v-btn>
@@ -149,25 +152,77 @@ onMounted(() => {
     </v-alert>
 
     <v-data-table
+      v-model:expanded="expandedLineIds"
       :headers="headers"
       :items="lines"
       :loading="loading"
       item-value="__dataId"
-      density="comfortable"
-      class="border rounded-md"
+      show-expand
+      :expand-on-click="false"
+      :density="compact ? 'compact' : 'comfortable'"
+      class="border rounded-md odak-lines-table"
     >
+      <template #expanded-row="{ columns, item }">
+        <tr>
+          <td :colspan="columns.length" class="pa-0">
+            <div class="odak-line-expand-panel pa-3 px-4">
+              <div class="text-caption font-weight-medium text-medium-emphasis mb-2">
+                {{ t('odakSiparis.lines.expandTitle', { lineNo: item.lineNo ?? '—' }) }}
+              </div>
+              <v-row dense>
+                <v-col
+                  v-for="row in expandSummaryRows(item)"
+                  :key="row.label"
+                  cols="12"
+                  sm="6"
+                  md="4"
+                >
+                  <div class="text-caption text-medium-emphasis">{{ row.label }}</div>
+                  <div class="text-body-2">{{ row.value }}</div>
+                </v-col>
+              </v-row>
+              <div class="mt-2">
+                <v-btn size="small" variant="tonal" color="primary" @click="openLineDialog('view', item)">
+                  {{ t('odakSiparis.lines.viewFull') }}
+                </v-btn>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </template>
+
+      <template #item.description="{ item }">
+        <span class="text-truncate d-inline-block" style="max-width: 280px" :title="item.description">
+          {{ item.description || '—' }}
+        </span>
+      </template>
       <template #item.shipmentDate="{ item }">
         {{ formatOdakDate(item.shipmentDate) }}
       </template>
       <template #item.actions="{ item }">
-        <v-btn icon size="x-small" variant="text" @click="openEdit(item)">
-          <EditIcon size="18" />
-        </v-btn>
-        <v-btn icon size="x-small" variant="text" color="error" @click="confirmDelete(item)">
-          <TrashIcon size="18" />
-        </v-btn>
+        <div class="d-inline-flex align-center justify-end ga-1">
+          <v-btn icon size="x-small" variant="text" color="primary" @click="openLineDialog('view', item)">
+            <EyeIcon size="18" />
+          </v-btn>
+          <v-btn icon size="x-small" variant="text" @click="openLineDialog('edit', item)">
+            <EditIcon size="18" />
+          </v-btn>
+          <v-btn icon size="x-small" variant="text" color="error" @click="confirmDelete(item)">
+            <TrashIcon size="18" />
+          </v-btn>
+        </div>
       </template>
     </v-data-table>
+
+    <OdakSiparisLineDialog
+      v-model="lineDialogOpen"
+      :mode="lineDialogMode"
+      :package-id="packageId"
+      :package-no="packageNo"
+      :line-id="lineDialogId"
+      :seed-row="lineDialogSeed"
+      @saved="loadLines"
+    />
 
     <v-dialog v-model="deleteDialog" max-width="420">
       <v-card>
@@ -184,3 +239,33 @@ onMounted(() => {
     </v-dialog>
   </div>
 </template>
+
+<style scoped>
+.odak-line-expand-panel {
+  background: rgba(var(--v-theme-surface-variant), 0.2);
+  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+/* Expand (ilk sütun) solda sabit; eylemler sağda sabit. */
+.odak-lines-table :deep(table) > thead > tr > th:first-child,
+.odak-lines-table :deep(table) > tbody > tr:not(.v-data-table__expanded__content) > td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: rgb(var(--v-theme-surface));
+  box-shadow: 6px 0 6px -6px rgba(0, 0, 0, 0.12);
+}
+
+.odak-lines-table :deep(table) > thead > tr > th:last-child,
+.odak-lines-table :deep(table) > tbody > tr:not(.v-data-table__expanded__content) > td:last-child {
+  position: sticky;
+  right: 0;
+  background: rgb(var(--v-theme-surface));
+  box-shadow: -6px 0 6px -6px rgba(0, 0, 0, 0.18);
+  z-index: 1;
+}
+
+.odak-lines-table :deep(table) > thead > tr > th:last-child {
+  z-index: 2;
+}
+</style>

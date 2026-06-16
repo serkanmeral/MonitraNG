@@ -129,4 +129,22 @@ Upsert-MenuItem -AllItems $items -Label "Is Paketleri" -FindExisting {
     permissions = $defaultPerms
 } | Out-Null
 
-Write-Host "`nTamamlandi -> /apps/odak-siparis/packages" -ForegroundColor Cyan
+Upsert-MenuItem -AllItems $items -Label "Musteriler" -FindExisting {
+    $_.pageCode -eq "odakSiparis.customers.menuTitle" -or $_.to -eq "/apps/odak-siparis/customers"
+} -Body @{
+    order       = ($maxOrder + 3)
+    itemType    = "item"
+    level       = 1
+    parentId    = $headerId
+    pageType    = "user"
+    pageCode    = "odakSiparis.customers.menuTitle"
+    title       = "Müşteriler"
+    icon        = "BuildingIcon"
+    iconType    = "tabler"
+    to          = "/apps/odak-siparis/customers"
+    type        = "internal"
+    disabled    = $false
+    permissions = $defaultPerms
+} | Out-Null
+
+Write-Host "`nTamamlandi -> /apps/odak-siparis/packages , /apps/odak-siparis/customers" -ForegroundColor Cyan

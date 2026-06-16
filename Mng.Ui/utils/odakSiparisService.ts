@@ -39,7 +39,13 @@ export function customerIdFromRow(row: OdakPackageRow | Record<string, unknown>)
 }
 
 export function customerFormRoute(customerId: string): string {
-  return `/apps/automated-forms/view/${ODAK_SIPARIS_CONFIG.customersFormCode}?editId=${encodeURIComponent(customerId)}`;
+  return customerHubRoute(customerId);
+}
+
+export function customerHubRoute(customerId?: string): string {
+  const base = '/apps/odak-siparis/customers';
+  if (!customerId) return base;
+  return `${base}?edit=${encodeURIComponent(customerId)}`;
 }
 
 function resolveRelationId(raw: unknown): string {
@@ -50,6 +56,25 @@ function resolveRelationId(raw: unknown): string {
     return String(o.__dataId ?? o.dataId ?? o.id ?? '');
   }
   return String(raw);
+}
+
+/** DG filter — tek paketin kalemleri (field:operator:value). */
+export function buildLinesByParentPackageFilter(parentPackageId: string): string {
+  return `parentPackageId:eq:${parentPackageId}`;
+}
+
+/** DG filter — birden fazla paket (line stats chunk). */
+export function buildLinesByParentPackagesFilter(parentPackageIds: string[]): string | undefined {
+  const ids = parentPackageIds.map((id) => id.trim()).filter(Boolean);
+  if (!ids.length) return undefined;
+  if (ids.length === 1) return buildLinesByParentPackageFilter(ids[0]!);
+  return `parentPackageId:in:${JSON.stringify(ids)}`;
+}
+
+/** Sunucu filtresi yanlis donerse client-side guvenlik agi. */
+export function lineBelongsToPackage(row: Record<string, unknown>, packageId: string): boolean {
+  if (!packageId) return false;
+  return resolveRelationId(row.parentPackageId) === packageId;
 }
 
 export function customerLabelFromRow(
@@ -116,6 +141,22 @@ export async function fetchCustomerLabelMap(forceRefresh = false): Promise<Recor
 
 export function invalidateOdakSiparisCustomerCache(): void {
   customerLabelCache = null;
+}
+
+/** Combobox / autocomplete — unvan A→Z (Türkçe locale). */
+export function customerLabelMapToRelationOptions(
+  map: Record<string, string>
+): { value: string; title: string }[] {
+  return Object.entries(map)
+    .map(([value, title]) => ({ value, title }))
+    .sort((a, b) => a.title.localeCompare(b.title, 'tr', { numeric: true, sensitivity: 'base' }));
+}
+
+export async function fetchCustomerRelationOptions(
+  forceRefresh = false
+): Promise<{ value: string; title: string }[]> {
+  const map = await fetchCustomerLabelMap(forceRefresh);
+  return customerLabelMapToRelationOptions(map);
 }
 
 export interface OdakPackageListSort {
@@ -228,13 +269,18 @@ export async function fetchPackageLineStatsMap(
 
   const chunkItemLists = await Promise.all(
     chunks.map(async (chunk) => {
-      const filter = chunk.map((id) => `parentPackageId eq '${id}'`).join(' or ');
+      const filter = buildLinesByParentPackagesFilter(chunk);
+      if (!filter) return [];
       try {
         const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.linesDataset, {
           filter,
           limit: 2000,
         });
-        return resp.items ?? [];
+        return (resp.items ?? []).filter((row) => {
+          const rec = row as Record<string, unknown>;
+          const parentId = resolveRelationId(rec.parentPackageId);
+          return parentId && chunk.includes(parentId);
+        });
       } catch {
         return [];
       }
@@ -244,17 +290,7 @@ export async function fetchPackageLineStatsMap(
   for (const rows of chunkItemLists) {
     for (const row of rows) {
       const rec = row as Record<string, unknown>;
-      const parentRaw = rec.parentPackageId;
-      const parentId =
-        typeof parentRaw === 'string'
-          ? parentRaw
-          : parentRaw && typeof parentRaw === 'object'
-            ? String(
-                (parentRaw as Record<string, unknown>).__dataId ??
-                  (parentRaw as Record<string, unknown>).dataId ??
-                  ''
-              )
-            : '';
+      const parentId = resolveRelationId(rec.parentPackageId);
       if (!parentId || !result.has(parentId)) continue;
 
       const stats = result.get(parentId)!;
