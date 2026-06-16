@@ -31,7 +31,7 @@ if (-not (Test-Path $exportDir)) {
 
 $listSql = "SELECT package_no FROM packages ORDER BY package_no;"
 $queryParams = @{
-    Host     = $LegacyMySqlHost
+    MySqlHost = $LegacyMySqlHost
     Port     = $LegacyMySqlPort
     User     = $LegacyMySqlUser
     Password = $LegacyMySqlPassword

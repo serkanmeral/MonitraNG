@@ -8,6 +8,8 @@ export const ODAK_SIPARIS_CONFIG = {
   linesFormCode: 'odak-siparis-kalemleri-form',
   customersDataset: 'odak_musteriler',
   customersFormCode: 'odak-musteriler-form',
+  ncrDataset: 'odak_ncr',
+  capaDataset: 'odak_capa',
 
   /** MO koprusu — ileride; hub DG kullanir */
   workspaceId: '9f9cc085-81c7-4a92-9fa2-357ad5c654cd',
@@ -119,4 +121,96 @@ export interface OdakLineRow {
   totalCost?: number;
   currency?: string;
   legacyLineId?: string;
+}
+
+export type OdakNcrStatus =
+  | 'MRB Bekleniyor'
+  | 'Rework/Kontrol Bekleniyor'
+  | 'Değerlendirme Bekleniyor'
+  | 'DF No Bekleniyor'
+  | 'Müşteri Dönüşü Bekleniyor'
+  | 'DF Düzenlenecek'
+  | 'Kapalı';
+
+export type OdakFaiStatus = 'FAI Bekliyor' | 'FAI Yapıldı' | 'FAI Formu Doldurulmayacak';
+export type OdakCapaStatus = 'Acik' | 'Takip' | 'Kapali';
+
+export const ODAK_NCR_STATUS_OPTIONS = [
+  { value: 'MRB Bekleniyor', title: 'MRB Bekleniyor' },
+  { value: 'Rework/Kontrol Bekleniyor', title: 'Rework/Kontrol Bekleniyor' },
+  { value: 'Değerlendirme Bekleniyor', title: 'Değerlendirme Bekleniyor' },
+  { value: 'DF No Bekleniyor', title: 'DF No Bekleniyor' },
+  { value: 'Müşteri Dönüşü Bekleniyor', title: 'Müşteri Dönüşü Bekleniyor' },
+  { value: 'DF Düzenlenecek', title: 'DF Düzenlenecek' },
+  { value: 'Kapalı', title: 'Kapalı' },
+] as const;
+
+export const ODAK_FAI_STATUS_OPTIONS = [
+  { value: 'FAI Bekliyor', title: 'FAI Bekliyor' },
+  { value: 'FAI Yapıldı', title: 'FAI Yapıldı' },
+  { value: 'FAI Formu Doldurulmayacak', title: 'FAI Formu Doldurulmayacak' },
+] as const;
+
+export const ODAK_CAPA_STATUS_OPTIONS = [
+  { value: 'Acik', title: 'Açık' },
+  { value: 'Takip', title: 'Takip' },
+  { value: 'Kapali', title: 'Kapalı' },
+] as const;
+
+export interface OdakNcrRow {
+  __dataId?: string;
+  dataId?: string;
+  ncrNo?: string;
+  legacyNcNo?: string;
+  parentPackageId?: unknown;
+  parentLineId?: unknown;
+  ncStatus?: OdakNcrStatus | string;
+  ncDate?: string;
+  controlType?: string;
+  descriptor?: string;
+  explanation?: string;
+  productCode?: string;
+  jobNo?: string;
+  partCount?: number;
+  reworkCount?: number;
+  repairCount?: number;
+  observeCount?: number;
+  scrapCount?: number;
+  asisCount?: number;
+  returnCount?: number;
+  otherCount?: number;
+  faiStatus?: OdakFaiStatus | string;
+  errorCode?: string;
+  ncAction?: string;
+  responsible?: string;
+  closureDate?: string;
+  notes?: string;
+  legacyNcrId?: string;
+  __createdAt?: string;
+}
+
+export interface OdakCapaRow {
+  __dataId?: string;
+  dataId?: string;
+  capaNo?: string;
+  legacyCapaNo?: string;
+  parentPackageId?: unknown;
+  parentNcrId?: unknown;
+  cpaDate?: string;
+  source?: string;
+  requestDivision?: string;
+  description?: string;
+  nonconformity?: string;
+  tecnique?: string;
+  errorCode?: string;
+  rootCause?: string;
+  correctiveAction?: string;
+  preventiveAction?: string;
+  firstFollowupDate?: string;
+  secondFollowupDate?: string;
+  closedDate?: string;
+  capaStatus?: OdakCapaStatus | string;
+  notes?: string;
+  legacyCapaId?: string;
+  __createdAt?: string;
 }

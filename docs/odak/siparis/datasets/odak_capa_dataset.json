@@ -1,0 +1,204 @@
+{
+  "name": "odak_capa",
+  "description": "Odak Siparis — duzeltici faaliyet (CAPA), kurum Kalite cpas tablosu ile uyumlu",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "incremental",
+      "name": "capaNo",
+      "title": "CAPA No (DG)",
+      "mandatory": true,
+      "unique": true,
+      "isArray": false,
+      "incrementalOptions": {
+        "format": "CAPA-{0:D4}",
+        "startValue": 1,
+        "incrementStep": 1
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "legacyCapaNo",
+      "title": "Kurum cpa_no / form_no",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 40 }
+    },
+    {
+      "fieldType": "relation",
+      "name": "parentPackageId",
+      "title": "Is paketi",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_is_paketleri"
+    },
+    {
+      "fieldType": "relation",
+      "name": "parentNcrId",
+      "title": "Bagli NCR",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_ncr"
+    },
+    {
+      "fieldType": "datetime",
+      "name": "cpaDate",
+      "title": "CAPA tarihi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "source",
+      "title": "Kaynak",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 120 }
+    },
+    {
+      "fieldType": "text",
+      "name": "requestDivision",
+      "title": "Talep eden birim",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 120 }
+    },
+    {
+      "fieldType": "text",
+      "name": "description",
+      "title": "Aciklama (descript)",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "minLength": 2, "maxLength": 4000 }
+    },
+    {
+      "fieldType": "text",
+      "name": "nonconformity",
+      "title": "Uygunsuzluk",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 4000 }
+    },
+    {
+      "fieldType": "text",
+      "name": "tecnique",
+      "title": "Teknik / yontem",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 120 }
+    },
+    {
+      "fieldType": "text",
+      "name": "errorCode",
+      "title": "Hata kodu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 20 }
+    },
+    {
+      "fieldType": "text",
+      "name": "rootCause",
+      "title": "Kok neden",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 4000 }
+    },
+    {
+      "fieldType": "text",
+      "name": "correctiveAction",
+      "title": "Duzeltici faaliyet",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 4000 }
+    },
+    {
+      "fieldType": "text",
+      "name": "preventiveAction",
+      "title": "Onleyici faaliyet",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 4000 }
+    },
+    {
+      "fieldType": "datetime",
+      "name": "firstFollowupDate",
+      "title": "1. takip tarihi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "datetime",
+      "name": "secondFollowupDate",
+      "title": "2. takip tarihi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "datetime",
+      "name": "closedDate",
+      "title": "Kapanis tarihi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "select",
+      "name": "capaStatus",
+      "title": "Durum",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": "Acik",
+      "options": {
+        "lookup": {
+          "source": "static",
+          "staticItems": [
+            { "value": "Acik", "label": "Acik" },
+            { "value": "Takip", "label": "Takip" },
+            { "value": "Kapali", "label": "Kapali" }
+          ]
+        }
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "notes",
+      "title": "Notlar",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 4000 }
+    },
+    {
+      "fieldType": "text",
+      "name": "legacyCapaId",
+      "title": "Legacy cpas.id",
+      "mandatory": false,
+      "unique": true,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    }
+  ],
+  "indexList": [
+    { "name": "idx_odak_capa_parent_package", "fields": { "parentPackageId": 1 }, "unique": false },
+    { "name": "idx_odak_capa_parent_ncr", "fields": { "parentNcrId": 1 }, "unique": false },
+    { "name": "idx_odak_capa_legacy", "fields": { "legacyCapaId": 1 }, "unique": true }
+  ]
+}

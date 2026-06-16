@@ -28,17 +28,24 @@ import {
 } from '@/utils/odakSiparisService';
 import type { OdakCustomerDialogMode } from '@/utils/odakSiparisCustomerService';
 import type { OdakPackageDialogMode } from '@/utils/odakSiparisPackageService';
-import { EditIcon, PlusIcon, RefreshIcon, TrashIcon } from 'vue-tabler-icons';
+import { CertificateIcon, EditIcon, PlusIcon, RefreshIcon, TrashIcon } from 'vue-tabler-icons';
 
 definePageMeta({ layout: 'default' });
 
 const { t } = useAppI18n();
 const route = useRoute();
+const router = useRouter();
 
 type StatusTab = 'open' | 'closed' | 'all';
+type ExpandTab = 'summary' | 'lines' | 'quality';
 
 const statusTab = ref<StatusTab>('open');
 const searchQuery = ref('');
+
+function searchText(): string {
+  const q = searchQuery.value;
+  return typeof q === 'string' ? q.trim() : '';
+}
 const lineSearchPanelOpen = ref<number | undefined>(undefined);
 const loading = ref(false);
 const errorMessage = ref('');
@@ -53,6 +60,7 @@ const tableItemsPerPage = ref(20);
 const tableItemsPerPageOptions = [10, 20, 50, 100];
 const tableSortBy = ref<OdakPackageListSort[]>([{ key: 'displayNo', order: 'desc' }]);
 const expandedIds = ref<string[]>([]);
+const expandActiveTab = ref<ExpandTab>('summary');
 const expandRefreshToken = ref(0);
 const packageDialogOpen = ref(false);
 const packageDialogMode = ref<OdakPackageDialogMode>('create');
@@ -126,7 +134,7 @@ const headers = computed(() => [
     key: 'actions',
     sortable: false,
     align: 'end' as const,
-    width: 88,
+    width: 120,
   },
 ]);
 
@@ -288,7 +296,7 @@ async function fetchPackages() {
       statusTab: statusTab.value,
       skip,
       limit,
-      search: searchQuery.value.trim() || undefined,
+      search: searchText() || undefined,
       advancedFilters: activeListFilters.value,
       sortBy: tableSortBy.value,
     });
@@ -342,10 +350,62 @@ async function onCustomerSaved() {
   await fetchPackages();
 }
 
+function parseExpandTabFromQuery(): ExpandTab {
+  const tab = route.query.tab;
+  if (tab === 'lines') return 'lines';
+  if (tab === 'quality') return 'quality';
+  return 'summary';
+}
+
+function syncExpandRoute() {
+  const id = expandedIds.value[0];
+  const nextQuery: Record<string, string | string[] | undefined> = { ...route.query };
+  if (id) {
+    nextQuery.expand = id;
+    if (expandActiveTab.value !== 'summary') {
+      nextQuery.tab = expandActiveTab.value;
+    } else {
+      delete nextQuery.tab;
+    }
+  } else {
+    delete nextQuery.expand;
+    delete nextQuery.tab;
+  }
+  const currentExpand = typeof route.query.expand === 'string' ? route.query.expand : '';
+  const currentTab = typeof route.query.tab === 'string' ? route.query.tab : '';
+  const nextTab = typeof nextQuery.tab === 'string' ? nextQuery.tab : '';
+  if (currentExpand === (id ?? '') && currentTab === nextTab) return;
+  void router.replace({ query: nextQuery });
+}
+
+function expandPackage(item: OdakPackageRow, tab: ExpandTab = 'summary') {
+  const id = packageDataId(item);
+  if (!id) return;
+  expandActiveTab.value = tab;
+  expandedIds.value = [id];
+  expandRefreshToken.value += 1;
+  syncExpandRoute();
+}
+
 function toggleExpand(item: OdakPackageRow) {
   const id = packageDataId(item);
   if (!id) return;
-  expandedIds.value = expandedIds.value.includes(id) ? [] : [id];
+  if (expandedIds.value.includes(id)) {
+    expandedIds.value = [];
+    expandActiveTab.value = 'summary';
+  } else {
+    expandActiveTab.value = 'summary';
+    expandedIds.value = [id];
+    expandRefreshToken.value += 1;
+  }
+  syncExpandRoute();
+}
+
+function openQuality(item: OdakPackageRow) {
+  expandPackage(item, 'quality');
+  if (statusTab.value !== 'all') {
+    statusTab.value = 'all';
+  }
 }
 
 function openPackageDialog(mode: OdakPackageDialogMode, item?: OdakPackageRow) {
@@ -358,14 +418,22 @@ function openPackageDialog(mode: OdakPackageDialogMode, item?: OdakPackageRow) {
 async function onPackageSaved(packageId?: string) {
   await fetchPackages();
   if (packageId) {
+    expandActiveTab.value = 'summary';
     expandedIds.value = [packageId];
     expandRefreshToken.value += 1;
+    syncExpandRoute();
   }
 }
 
 watch(expandedIds, (ids) => {
   if (ids.length > 1) {
     expandedIds.value = [ids[ids.length - 1]!];
+  }
+});
+
+watch(expandActiveTab, () => {
+  if (expandedIds.value.length === 1) {
+    syncExpandRoute();
   }
 });
 
@@ -403,6 +471,8 @@ function createPackage() {
 
 watch(statusTab, () => {
   expandedIds.value = [];
+  expandActiveTab.value = 'summary';
+  syncExpandRoute();
   if (tablePage.value !== 1) {
     tablePage.value = 1;
   } else {
@@ -441,13 +511,21 @@ function scheduleFetch() {
   searchTimer = setTimeout(() => void fetchPackages(), 400);
 }
 
-watch(searchQuery, scheduleFetch);
+watch(searchQuery, (v) => {
+  if (v == null) {
+    searchQuery.value = '';
+    return;
+  }
+  scheduleFetch();
+});
 watch(lineAdv, scheduleFetch, { deep: true });
 
 onMounted(() => {
   const expand = route.query.expand;
   if (typeof expand === 'string' && expand.trim()) {
     expandedIds.value = [expand.trim()];
+    expandActiveTab.value = parseExpandTabFromQuery();
+    statusTab.value = 'all';
   }
   const customerId = route.query.customerId;
   if (typeof customerId === 'string' && customerId.trim()) {
@@ -595,7 +673,9 @@ async function initPackagesPage() {
                   :key="`${packageDataId(item)}-${expandRefreshToken}`"
                   :package-row="item"
                   :customer-labels="customerLabels"
+                  :initial-tab="expandActiveTab"
                   @open-customer="openCustomerDrawer"
+                  @update:active-tab="expandActiveTab = $event"
                 />
               </td>
             </tr>
@@ -646,6 +726,16 @@ async function initPackagesPage() {
           </template>
           <template #item.actions="{ item }">
             <div class="d-inline-flex align-center justify-end ga-1">
+              <v-btn
+                icon
+                size="x-small"
+                variant="text"
+                color="secondary"
+                :title="t('odakSiparis.packages.openQuality')"
+                @click="openQuality(item)"
+              >
+                <CertificateIcon size="18" />
+              </v-btn>
               <v-btn icon size="x-small" variant="text" @click="openEdit(item)">
                 <EditIcon size="18" />
               </v-btn>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import OdakSiparisLinesPanel from '@/components/apps/odak-siparis/OdakSiparisLinesPanel.vue';
+import OdakSiparisQualityPanel from '@/components/apps/odak-siparis/OdakSiparisQualityPanel.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import type { OdakPackageRow } from '@/utils/odakSiparisConfig';
 import {
@@ -13,16 +14,28 @@ import { buildOdakPackageSummaryRows } from '@/utils/odakSiparisSummary';
 const props = defineProps<{
   packageRow: OdakPackageRow;
   customerLabels: Record<string, string>;
+  /** Liste sayfasindan expand acilirken baslangic sekmesi (URL ile senkron). */
+  initialTab?: 'summary' | 'lines' | 'quality';
 }>();
 
 const emit = defineEmits<{
   'open-customer': [customerId: string];
+  'update:activeTab': ['summary' | 'lines' | 'quality'];
 }>();
 
 const { t } = useAppI18n();
 const route = useRoute();
 
-const activeTab = ref<'summary' | 'lines'>(route.query.tab === 'lines' ? 'lines' : 'summary');
+type ExpandTab = 'summary' | 'lines' | 'quality';
+
+function tabFromRouteQuery(): ExpandTab {
+  const tabFromQuery = route.query.tab;
+  if (tabFromQuery === 'lines') return 'lines';
+  if (tabFromQuery === 'quality') return 'quality';
+  return 'summary';
+}
+
+const activeTab = ref<ExpandTab>(props.initialTab ?? tabFromRouteQuery());
 const loading = ref(false);
 const errorMessage = ref('');
 const pkg = ref<OdakPackageRow | null>(null);
@@ -59,6 +72,17 @@ watch(
     void loadPackage();
   }
 );
+
+watch(
+  () => props.initialTab,
+  (tab) => {
+    if (tab) activeTab.value = tab;
+  }
+);
+
+watch(activeTab, (tab) => {
+  emit('update:activeTab', tab);
+});
 </script>
 
 <template>
@@ -75,6 +99,7 @@ watch(
     <v-tabs v-model="activeTab" color="primary" density="compact" class="mb-3">
       <v-tab value="summary">{{ t('odakSiparis.detail.tabs.summary') }}</v-tab>
       <v-tab value="lines">{{ t('odakSiparis.detail.tabs.lines') }}</v-tab>
+      <v-tab value="quality">{{ t('odakSiparis.detail.tabs.quality') }}</v-tab>
     </v-tabs>
 
     <div v-show="activeTab === 'summary'">
@@ -111,6 +136,14 @@ watch(
         :package-id="packageId"
         :package-no="(pkg ?? packageRow).packageNo"
         compact
+      />
+    </div>
+
+    <div v-if="activeTab === 'quality'">
+      <OdakSiparisQualityPanel
+        :key="packageId"
+        :package-id="packageId"
+        :package-no="(pkg ?? packageRow).packageNo"
       />
     </div>
   </div>

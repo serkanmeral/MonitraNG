@@ -3615,6 +3615,7 @@
       "view": "Görüntüle",
       "edit": "Düzenle",
       "openFullDetail": "Tam detay sayfası",
+      "openQuality": "Kalite (NCR/CAPA)",
       "fields": {
         "poVersion": "PO versiyonu"
       },
@@ -3704,7 +3705,8 @@
       "moProfile": "MO Profil",
       "tabs": {
         "summary": "Özet",
-        "lines": "Kalemler"
+        "lines": "Kalemler",
+        "quality": "Kalite"
       },
       "fields": {
         "packageNo": "ODAK İş Paketi No",
@@ -3732,6 +3734,99 @@
       },
       "deleteTitle": "İş paketini sil",
       "deleteConfirm": "Bu iş paketini silmek istediğinize emin misiniz?"
+    },
+    "quality": {
+      "tabs": {
+        "ncr": "NCR",
+        "capa": "CAPA"
+      },
+      "ncr": {
+        "summary": "{count} NCR · {open} açık",
+        "add": "NCR ekle",
+        "empty": "Bu iş paketine bağlı NCR kaydı yok.",
+        "deleteTitle": "NCR sil",
+        "deleteConfirm": "Bu NCR kaydını silmek istediğinize emin misiniz?",
+        "columns": {
+          "ncrNo": "NCR No",
+          "descriptor": "Tanım",
+          "ncStatus": "Durum",
+          "controlType": "Kontrol tipi",
+          "partCount": "Parça",
+          "createdAt": "Oluşturma"
+        },
+        "fields": {
+          "ncrNo": "NCR No",
+          "ncStatus": "Durum",
+          "ncDate": "Uygunsuzluk tarihi",
+          "controlType": "Kontrol tipi",
+          "descriptor": "Tanım (descriptor)",
+          "explanation": "Açıklama",
+          "parentLineId": "Sipariş kalemi",
+          "productCode": "Ürün kodu",
+          "jobNo": "İş emri no",
+          "partCount": "Parça sayısı",
+          "reworkCount": "Rework adet",
+          "scrapCount": "Hurda adet",
+          "faiStatus": "FAI durumu",
+          "errorCode": "Hata kodu",
+          "ncAction": "Aksiyon",
+          "responsible": "Sorumlu",
+          "closureDate": "Kapanış tarihi",
+          "notes": "Notlar"
+        },
+        "dialog": {
+          "createTitle": "Yeni NCR",
+          "editTitle": "NCR düzenle",
+          "viewTitle": "NCR {ncrNo}",
+          "viewHint": "Salt okunur özet — düzenlemek için alttaki butonu kullanın.",
+          "missingId": "NCR kimliği bulunamadı.",
+          "notFound": "NCR bulunamadı."
+        },
+        "validation": {
+          "descriptorRequired": "Tanım (descriptor) zorunludur."
+        }
+      },
+      "capa": {
+        "summary": "{count} CAPA · {open} açık",
+        "add": "CAPA ekle",
+        "empty": "Bu iş paketine bağlı CAPA kaydı yok.",
+        "deleteTitle": "CAPA sil",
+        "deleteConfirm": "Bu CAPA kaydını silmek istediğinize emin misiniz?",
+        "columns": {
+          "capaNo": "CAPA No",
+          "description": "Açıklama",
+          "capaStatus": "Durum",
+          "parentNcr": "Bağlı NCR",
+          "cpaDate": "CAPA tarihi",
+          "createdAt": "Oluşturma"
+        },
+        "fields": {
+          "capaNo": "CAPA No",
+          "capaStatus": "Durum",
+          "parentNcrId": "Bağlı NCR",
+          "cpaDate": "CAPA tarihi",
+          "source": "Kaynak",
+          "requestDivision": "Talep eden birim",
+          "description": "Açıklama",
+          "nonconformity": "Uygunsuzluk",
+          "rootCause": "Kök neden",
+          "correctiveAction": "Düzeltici faaliyet",
+          "preventiveAction": "Önleyici faaliyet",
+          "closedDate": "Kapanış tarihi",
+          "notes": "Notlar"
+        },
+        "dialog": {
+          "createTitle": "Yeni CAPA",
+          "editTitle": "CAPA düzenle",
+          "viewTitle": "CAPA {capaNo}",
+          "viewHint": "Salt okunur özet — düzenlemek için alttaki butonu kullanın.",
+          "missingId": "CAPA kimliği bulunamadı.",
+          "notFound": "CAPA bulunamadı."
+        },
+        "validation": {
+          "descriptionRequired": "Açıklama zorunludur."
+        }
+      }
     },
     "lines": {
       "defaultTitle": "Sipariş kalemleri",

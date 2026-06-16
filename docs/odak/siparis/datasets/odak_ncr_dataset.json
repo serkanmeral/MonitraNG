@@ -1,0 +1,273 @@
+{
+  "name": "odak_ncr",
+  "description": "Odak Siparis — uygunsuzluk (NCR), kurum Kalite ncs tablosu ile uyumlu alanlar",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "incremental",
+      "name": "ncrNo",
+      "title": "NCR No (DG)",
+      "mandatory": true,
+      "unique": true,
+      "isArray": false,
+      "incrementalOptions": {
+        "format": "NCR-{0:D4}",
+        "startValue": 1,
+        "incrementStep": 1
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "legacyNcNo",
+      "title": "Kurum nc_no",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 20 }
+    },
+    {
+      "fieldType": "relation",
+      "name": "parentPackageId",
+      "title": "Is paketi",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_is_paketleri"
+    },
+    {
+      "fieldType": "relation",
+      "name": "parentLineId",
+      "title": "Siparis kalemi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_siparis_kalemleri"
+    },
+    {
+      "fieldType": "select",
+      "name": "ncStatus",
+      "title": "Durum (nc_status)",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": "Değerlendirme Bekleniyor",
+      "options": {
+        "lookup": {
+          "source": "static",
+          "staticItems": [
+            { "value": "MRB Bekleniyor", "label": "MRB Bekleniyor" },
+            { "value": "Rework/Kontrol Bekleniyor", "label": "Rework/Kontrol Bekleniyor" },
+            { "value": "Değerlendirme Bekleniyor", "label": "Değerlendirme Bekleniyor" },
+            { "value": "DF No Bekleniyor", "label": "DF No Bekleniyor" },
+            { "value": "Müşteri Dönüşü Bekleniyor", "label": "Müşteri Dönüşü Bekleniyor" },
+            { "value": "DF Düzenlenecek", "label": "DF Düzenlenecek" },
+            { "value": "Kapalı", "label": "Kapalı" }
+          ]
+        }
+      }
+    },
+    {
+      "fieldType": "datetime",
+      "name": "ncDate",
+      "title": "Uygunsuzluk tarihi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "controlType",
+      "title": "Kontrol tipi (control_type)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 120 }
+    },
+    {
+      "fieldType": "text",
+      "name": "descriptor",
+      "title": "Tanim (descriptor)",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "minLength": 2, "maxLength": 500 }
+    },
+    {
+      "fieldType": "text",
+      "name": "explanation",
+      "title": "Aciklama (explanation)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 4000 }
+    },
+    {
+      "fieldType": "text",
+      "name": "productCode",
+      "title": "Urun kodu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 500 }
+    },
+    {
+      "fieldType": "text",
+      "name": "jobNo",
+      "title": "Is emri no",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 500 }
+    },
+    {
+      "fieldType": "number",
+      "name": "partCount",
+      "title": "Parca sayisi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "min": 0 }
+    },
+    {
+      "fieldType": "number",
+      "name": "reworkCount",
+      "title": "Rework adet",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "min": 0 }
+    },
+    {
+      "fieldType": "number",
+      "name": "repairCount",
+      "title": "Tamir adet",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "min": 0 }
+    },
+    {
+      "fieldType": "number",
+      "name": "observeCount",
+      "title": "Siki kullanim adet",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "min": 0 }
+    },
+    {
+      "fieldType": "number",
+      "name": "scrapCount",
+      "title": "Hurda adet",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "min": 0 }
+    },
+    {
+      "fieldType": "number",
+      "name": "asisCount",
+      "title": "Oldugu gibi adet",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "min": 0 }
+    },
+    {
+      "fieldType": "number",
+      "name": "returnCount",
+      "title": "Iade adet",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "min": 0 }
+    },
+    {
+      "fieldType": "number",
+      "name": "otherCount",
+      "title": "Diger adet",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "min": 0 }
+    },
+    {
+      "fieldType": "select",
+      "name": "faiStatus",
+      "title": "FAI durumu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "options": {
+        "lookup": {
+          "source": "static",
+          "staticItems": [
+            { "value": "FAI Bekliyor", "label": "FAI Bekliyor" },
+            { "value": "FAI Yapıldı", "label": "FAI Yapıldı" },
+            { "value": "FAI Formu Doldurulmayacak", "label": "FAI Formu Doldurulmayacak" }
+          ]
+        }
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "errorCode",
+      "title": "Hata kodu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 120 }
+    },
+    {
+      "fieldType": "text",
+      "name": "ncAction",
+      "title": "Aksiyon (nc_action)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 4000 }
+    },
+    {
+      "fieldType": "text",
+      "name": "responsible",
+      "title": "Sorumlu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 200 }
+    },
+    {
+      "fieldType": "datetime",
+      "name": "closureDate",
+      "title": "Kapanis tarihi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "notes",
+      "title": "Notlar",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 4000 }
+    },
+    {
+      "fieldType": "text",
+      "name": "legacyNcrId",
+      "title": "Legacy ncs.id",
+      "mandatory": false,
+      "unique": true,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    }
+  ],
+  "indexList": [
+    { "name": "idx_odak_ncr_parent_package", "fields": { "parentPackageId": 1 }, "unique": false },
+    { "name": "idx_odak_ncr_nc_status", "fields": { "ncStatus": 1 }, "unique": false },
+    { "name": "idx_odak_ncr_legacy", "fields": { "legacyNcrId": 1 }, "unique": true }
+  ]
+}

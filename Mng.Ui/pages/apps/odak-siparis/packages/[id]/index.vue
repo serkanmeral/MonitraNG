@@ -6,7 +6,11 @@ const route = useRoute();
 const router = useRouter();
 
 const packageId = computed(() => String(route.params.id ?? '').trim());
-const tab = computed(() => (route.query.tab === 'lines' ? 'lines' : undefined));
+const tab = computed(() => {
+  const t = route.query.tab;
+  if (t === 'lines' || t === 'quality') return t;
+  return undefined;
+});
 
 onMounted(() => {
   const id = packageId.value;

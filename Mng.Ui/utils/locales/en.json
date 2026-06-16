@@ -3602,6 +3602,7 @@
       "view": "View",
       "edit": "Edit",
       "openFullDetail": "Full detail page",
+      "openQuality": "Quality (NCR/CAPA)",
       "fields": {
         "poVersion": "PO version"
       },
@@ -3691,7 +3692,8 @@
       "moProfile": "MO Profile",
       "tabs": {
         "summary": "Summary",
-        "lines": "Lines"
+        "lines": "Lines",
+        "quality": "Quality"
       },
       "fields": {
         "packageNo": "ODAK Work Package No",
@@ -3719,6 +3721,99 @@
       },
       "deleteTitle": "Delete work package",
       "deleteConfirm": "Are you sure you want to delete this work package?"
+    },
+    "quality": {
+      "tabs": {
+        "ncr": "NCR",
+        "capa": "CAPA"
+      },
+      "ncr": {
+        "summary": "{count} NCR · {open} open",
+        "add": "Add NCR",
+        "empty": "No NCR records linked to this work package.",
+        "deleteTitle": "Delete NCR",
+        "deleteConfirm": "Are you sure you want to delete this NCR record?",
+        "columns": {
+          "ncrNo": "NCR No",
+          "descriptor": "Description",
+          "ncStatus": "Status",
+          "controlType": "Control type",
+          "partCount": "Parts",
+          "createdAt": "Created"
+        },
+        "fields": {
+          "ncrNo": "NCR No",
+          "ncStatus": "Status",
+          "ncDate": "NC date",
+          "controlType": "Control type",
+          "descriptor": "Descriptor",
+          "explanation": "Explanation",
+          "parentLineId": "Order line",
+          "productCode": "Product code",
+          "jobNo": "Job no",
+          "partCount": "Part count",
+          "reworkCount": "Rework qty",
+          "scrapCount": "Scrap qty",
+          "faiStatus": "FAI status",
+          "errorCode": "Error code",
+          "ncAction": "Action",
+          "responsible": "Responsible",
+          "closureDate": "Closure date",
+          "notes": "Notes"
+        },
+        "dialog": {
+          "createTitle": "New NCR",
+          "editTitle": "Edit NCR",
+          "viewTitle": "NCR {ncrNo}",
+          "viewHint": "Read-only summary — use the button below to edit.",
+          "missingId": "NCR id not found.",
+          "notFound": "NCR not found."
+        },
+        "validation": {
+          "descriptorRequired": "Descriptor is required."
+        }
+      },
+      "capa": {
+        "summary": "{count} CAPA · {open} open",
+        "add": "Add CAPA",
+        "empty": "No CAPA records linked to this work package.",
+        "deleteTitle": "Delete CAPA",
+        "deleteConfirm": "Are you sure you want to delete this CAPA record?",
+        "columns": {
+          "capaNo": "CAPA No",
+          "description": "Description",
+          "capaStatus": "Status",
+          "parentNcr": "Linked NCR",
+          "cpaDate": "CAPA date",
+          "createdAt": "Created"
+        },
+        "fields": {
+          "capaNo": "CAPA No",
+          "capaStatus": "Status",
+          "parentNcrId": "Linked NCR",
+          "cpaDate": "CAPA date",
+          "source": "Source",
+          "requestDivision": "Request division",
+          "description": "Description",
+          "nonconformity": "Nonconformity",
+          "rootCause": "Root cause",
+          "correctiveAction": "Corrective action",
+          "preventiveAction": "Preventive action",
+          "closedDate": "Closed date",
+          "notes": "Notes"
+        },
+        "dialog": {
+          "createTitle": "New CAPA",
+          "editTitle": "Edit CAPA",
+          "viewTitle": "CAPA {capaNo}",
+          "viewHint": "Read-only summary — use the button below to edit.",
+          "missingId": "CAPA id not found.",
+          "notFound": "CAPA not found."
+        },
+        "validation": {
+          "descriptionRequired": "Description is required."
+        }
+      }
     },
     "lines": {
       "defaultTitle": "Order lines",

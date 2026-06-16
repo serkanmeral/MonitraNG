@@ -596,6 +596,7 @@ const OC_CREATE_TOP_LEVEL_KEYS = new Set([
   'boardId',
   'assignee',
   'priorityId',
+  'parentItemId',
 ]);
 
 export interface OcCreateWorkItemRequest {
@@ -606,6 +607,7 @@ export interface OcCreateWorkItemRequest {
   boardId?: string;
   assignee?: string;
   priorityId?: string;
+  parentItemId?: string;
   fields?: Record<string, unknown>;
 }
 
@@ -631,7 +633,7 @@ export function buildCreateWorkItemRequest(
     body.description = String(description).trim();
   }
 
-  for (const key of ['assignee', 'priorityId'] as const) {
+  for (const key of ['assignee', 'priorityId', 'parentItemId'] as const) {
     const value = model[key];
     if (value != null && String(value).trim()) {
       body[key] = String(value).trim();

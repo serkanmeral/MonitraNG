@@ -54,7 +54,7 @@ function Get-TotalCount {
 }
 
 $queryParams = @{
-    Host     = $LegacyMySqlHost
+    MySqlHost = $LegacyMySqlHost
     Port     = $LegacyMySqlPort
     User     = $LegacyMySqlUser
     Password = $LegacyMySqlPassword

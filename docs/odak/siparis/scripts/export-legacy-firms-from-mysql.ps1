@@ -31,7 +31,7 @@ ORDER BY f.id;
 Write-Host "Export firms (customers) -> $OutputFile" -ForegroundColor Cyan
 
 $queryParams = @{
-    Host     = $LegacyMySqlHost
+    MySqlHost = $LegacyMySqlHost
     Port     = $LegacyMySqlPort
     User     = $LegacyMySqlUser
     Password = $LegacyMySqlPassword
