@@ -36,9 +36,7 @@ async function load() {
   errorMessage.value = '';
   successMessage.value = '';
   try {
-    if (!groupStore.groups?.length) {
-      await groupStore.fetchGroups({ page: 1, pageSize: 500 });
-    }
+    await groupStore.fetchAllGroups();
     const resp = await loadOdakPackagePoDocumentAccessConfig();
     config.value = resp.config;
     rowId.value = resp.rowId;

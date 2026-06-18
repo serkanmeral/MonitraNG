@@ -107,7 +107,7 @@ function save() {
 }
 
 onMounted(() => {
-  void groupStore.fetchGroups();
+  void groupStore.fetchAllGroups();
 });
 </script>
 

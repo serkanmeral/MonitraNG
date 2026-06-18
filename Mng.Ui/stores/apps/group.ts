@@ -144,6 +144,57 @@ export const useGroupStore = defineStore('group', {
       }
     },
 
+    /** Keeper gruplarını sayfalı API üzerinden tamamını yükler (MaxPageSize=100). */
+    async fetchAllGroups(params?: { search?: string; isActive?: boolean }) {
+      this.loading = true;
+      this.error = null;
+
+      try {
+        const pageSize = 100;
+        let page = 1;
+        let totalPages = 1;
+        const aggregated: Group[] = [];
+
+        while (page <= totalPages) {
+          const queryParams = new URLSearchParams();
+          queryParams.append('page', page.toString());
+          queryParams.append('pageSize', pageSize.toString());
+          if (params?.search) queryParams.append('searchTerm', params.search);
+          if (params?.isActive !== undefined) {
+            queryParams.append('isActive', params.isActive.toString());
+          }
+
+          const url = `/group?${queryParams.toString()}`;
+          const response = await fetchFromMngKeeper(url, 'GET');
+
+          if (response.IsSuccess === false) {
+            throw new Error(response.ErrorMessage || 'Gruplar yüklenirken bir hata oluştu');
+          }
+
+          const groupsArray = response.groups || response.Groups;
+          totalPages = response.totalPages ?? response.TotalPages ?? 1;
+
+          if (groupsArray && Array.isArray(groupsArray)) {
+            aggregated.push(
+              ...groupsArray.map((group: Record<string, unknown>) => mapApiGroupToGroup(group))
+            );
+          }
+
+          page += 1;
+        }
+
+        this.groups = aggregated;
+        this.totalCount = aggregated.length;
+        this.page = 1;
+        this.pageSize = aggregated.length || pageSize;
+        this.totalPages = 1;
+      } catch (err: any) {
+        this.error = err.message || 'Gruplar yüklenirken bir hata oluştu.';
+      } finally {
+        this.loading = false;
+      }
+    },
+
     async fetchGroupById(groupId: string) {
       this.loading = true;
       this.error = null;
