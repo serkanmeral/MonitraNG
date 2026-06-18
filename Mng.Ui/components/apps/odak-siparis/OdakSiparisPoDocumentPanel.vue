@@ -1,19 +1,33 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import OdakSiparisPoDocumentSection from '@/components/apps/odak-siparis/OdakSiparisPoDocumentSection.vue';
+import { useOdakFieldAccess } from '@/composables/useOdakFieldAccess';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useAuthStore } from '@/stores/auth';
+import type { OdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
+import { packageRecordForPolicyEval } from '@/utils/odakSiparisFieldPolicies';
+import type { OdakPackageRow, OdakPoDocumentScope } from '@/utils/odakSiparisConfig';
 import {
+  loadOdakHubFieldPoliciesOnly,
+  loadOdakPackagePoDocumentAccessOnly,
+} from '@/utils/odakSiparisHubSettingsService';
+import {
+  canViewRestrictedPoDocuments,
+  type OdakPackagePoDocumentAccessConfig,
+} from '@/utils/odakSiparisPoDocumentAccess';
+import {
+  appendPoDocumentUpload,
   buildPoUploadPayload,
   downloadPoEntry,
-  hasPendingPoUpload,
-  hasStoredPoDocument,
-  isPoDocumentDirty,
-  listPoDocumentEntries,
+  hasAnyPendingPoUpload,
+  hasAnyStoredPoDocument,
+  isPoDocumentsStateDirty,
   loadPackagePoState,
   resolvePoEntryPreviewBlobUrl,
-  savePackagePoDocument,
+  savePackagePoDocuments,
   type PoDocumentEntry,
 } from '@/utils/odakSiparisPoService';
-import { DownloadIcon, EyeIcon, TrashIcon, UploadIcon, XIcon } from 'vue-tabler-icons';
+import { XIcon } from 'vue-tabler-icons';
 
 const props = defineProps<{
   packageId: string;
@@ -25,16 +39,19 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const auth = useAuthStore();
 
 const loading = ref(false);
 const saving = ref(false);
 const errorMessage = ref('');
-const poDocument = ref<unknown>(null);
-const savedPoDocument = ref<unknown>(null);
+const poDocumentsGlobal = ref<unknown>(null);
+const poDocumentsRestricted = ref<unknown>(null);
+const savedGlobal = ref<unknown>(null);
+const savedRestricted = ref<unknown>(null);
 const poVersion = ref('');
 const savedPoVersion = ref('');
-const selectedKey = ref<string | null>(null);
-const fileInput = ref<HTMLInputElement | null>(null);
+const accessConfig = ref<OdakPackagePoDocumentAccessConfig>({ restrictedViewerGroups: [] });
+const fieldPolicies = ref<OdakFieldPoliciesBlob>({ policiesByField: {} });
 
 const previewDialogOpen = ref(false);
 const previewDialogLoading = ref(false);
@@ -42,20 +59,44 @@ const previewDialogError = ref('');
 const previewDialogUrl = ref<string | null>(null);
 const previewDialogObjectUrl = ref<string | null>(null);
 const previewDialogFileName = ref('');
+const previewScope = ref<OdakPoDocumentScope>('global');
+const previewEntry = ref<PoDocumentEntry | null>(null);
 
-const fileEntries = computed(() => listPoDocumentEntries(poDocument.value, props.packageNo));
+const userGroups = computed(() => auth.userGroups);
+const policyRecord = computed(() =>
+  packageRecordForPolicyEval({ poVersion: poVersion.value } as OdakPackageRow)
+);
+const { canViewField, canEditField } = useOdakFieldAccess(fieldPolicies);
 
-const selectedEntry = computed(
-  () => fileEntries.value.find((e) => e.key === selectedKey.value) ?? fileEntries.value[0] ?? null
+const canViewGlobal = computed(() => canViewField('poDocumentsGlobal', policyRecord.value));
+const canEditGlobal = computed(() => canEditField('poDocumentsGlobal', policyRecord.value));
+const canViewRestrictedSection = computed(
+  () =>
+    canViewRestrictedPoDocuments(userGroups.value, accessConfig.value) &&
+    canViewField('poDocumentsRestricted', policyRecord.value)
+);
+const canEditRestricted = computed(() => canEditField('poDocumentsRestricted', policyRecord.value));
+
+const hasStored = computed(() =>
+  hasAnyStoredPoDocument(poDocumentsGlobal.value, poDocumentsRestricted.value)
+);
+const hasPending = computed(() =>
+  hasAnyPendingPoUpload(poDocumentsGlobal.value, poDocumentsRestricted.value)
 );
 
-const hasStored = computed(() => hasStoredPoDocument(poDocument.value));
-const hasPending = computed(() => hasPendingPoUpload(poDocument.value));
-
-const dirty = computed(
-  () =>
-    isPoDocumentDirty(poDocument.value, savedPoDocument.value) ||
-    poVersion.value.trim() !== savedPoVersion.value.trim()
+const dirty = computed(() =>
+  isPoDocumentsStateDirty(
+    {
+      global: poDocumentsGlobal.value,
+      restricted: poDocumentsRestricted.value,
+      poVersion: poVersion.value,
+    },
+    {
+      global: savedGlobal.value,
+      restricted: savedRestricted.value,
+      poVersion: savedPoVersion.value,
+    }
+  )
 );
 
 function revokePreviewObjectUrl() {
@@ -70,18 +111,8 @@ function closePreviewDialog() {
   previewDialogUrl.value = null;
   previewDialogError.value = '';
   previewDialogFileName.value = '';
+  previewEntry.value = null;
   revokePreviewObjectUrl();
-}
-
-function syncSelection() {
-  const entries = fileEntries.value;
-  if (!entries.length) {
-    selectedKey.value = null;
-    return;
-  }
-  if (!selectedKey.value || !entries.some((e) => e.key === selectedKey.value)) {
-    selectedKey.value = entries[0]!.key;
-  }
 }
 
 async function reload() {
@@ -89,12 +120,24 @@ async function reload() {
   loading.value = true;
   errorMessage.value = '';
   try {
-    const state = await loadPackagePoState(props.packageId);
-    poDocument.value = state.poDocument;
-    savedPoDocument.value = state.poDocument;
+    const [access, policies] = await Promise.all([
+      loadOdakPackagePoDocumentAccessOnly(),
+      loadOdakHubFieldPoliciesOnly('field_policies'),
+    ]);
+    accessConfig.value = access;
+    fieldPolicies.value = policies;
+
+    const state = await loadPackagePoState(props.packageId, {
+      userGroups: userGroups.value,
+      accessConfig: access,
+    });
+
+    poDocumentsGlobal.value = state.poDocumentsGlobal;
+    poDocumentsRestricted.value = state.poDocumentsRestricted;
+    savedGlobal.value = state.poDocumentsGlobal;
+    savedRestricted.value = state.poDocumentsRestricted;
     poVersion.value = state.poVersion;
     savedPoVersion.value = state.poVersion;
-    syncSelection();
   } catch (e: unknown) {
     errorMessage.value = e instanceof Error ? e.message : String(e);
   } finally {
@@ -107,7 +150,13 @@ async function savePo() {
   saving.value = true;
   errorMessage.value = '';
   try {
-    await savePackagePoDocument(props.packageId, poDocument.value, poVersion.value);
+    await savePackagePoDocuments(props.packageId, {
+      poDocumentsGlobal: canViewGlobal.value ? poDocumentsGlobal.value : savedGlobal.value,
+      poDocumentsRestricted: canViewRestrictedSection.value
+        ? poDocumentsRestricted.value
+        : savedRestricted.value,
+      poVersion: poVersion.value,
+    });
     await reload();
     emit('saved');
   } catch (e: unknown) {
@@ -117,47 +166,33 @@ async function savePo() {
   }
 }
 
-function openFilePicker() {
-  if (loading.value || saving.value) return;
-  fileInput.value?.click();
+function mapUploadError(e: unknown): string {
+  if (e instanceof Error && e.message === 'PDF only') return t('odakSiparis.po.errors.pdfOnly');
+  if (e instanceof Error && e.message === 'File too large') {
+    return t('odakSiparis.po.errors.tooLarge', { max: 25 });
+  }
+  return e instanceof Error ? e.message : String(e);
 }
 
-async function onFileSelected(event: Event) {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  input.value = '';
-  if (!file) return;
+async function addFiles(scope: OdakPoDocumentScope, files: FileList) {
   errorMessage.value = '';
   try {
-    poDocument.value = await buildPoUploadPayload(file);
-    syncSelection();
-    if (selectedEntry.value) {
-      await openPreviewModal(selectedEntry.value);
+    let current = scope === 'global' ? poDocumentsGlobal.value : poDocumentsRestricted.value;
+    const prefix = scope === 'global' ? 'global' : 'restricted';
+    for (const file of Array.from(files)) {
+      const payload = await buildPoUploadPayload(file, scope);
+      current = appendPoDocumentUpload(current, payload, prefix);
     }
+    if (scope === 'global') poDocumentsGlobal.value = current;
+    else poDocumentsRestricted.value = current;
   } catch (e: unknown) {
-    errorMessage.value =
-      e instanceof Error && e.message === 'PDF only'
-        ? t('odakSiparis.po.errors.pdfOnly')
-        : e instanceof Error && e.message === 'File too large'
-          ? t('odakSiparis.po.errors.tooLarge', { max: 25 })
-          : e instanceof Error
-            ? e.message
-            : String(e);
+    errorMessage.value = mapUploadError(e);
   }
 }
 
-function clearDocument() {
-  poDocument.value = null;
-  selectedKey.value = null;
-  closePreviewDialog();
-}
-
-function selectEntry(entry: PoDocumentEntry) {
-  selectedKey.value = entry.key;
-}
-
-async function openPreviewModal(entry: PoDocumentEntry) {
-  selectEntry(entry);
+async function openPreviewModal(entry: PoDocumentEntry, scope: OdakPoDocumentScope) {
+  previewScope.value = scope;
+  previewEntry.value = entry;
   revokePreviewObjectUrl();
   previewDialogUrl.value = null;
   previewDialogError.value = '';
@@ -165,25 +200,40 @@ async function openPreviewModal(entry: PoDocumentEntry) {
   previewDialogOpen.value = true;
   previewDialogLoading.value = true;
   try {
-    const url = await resolvePoEntryPreviewBlobUrl(entry);
+    const url = await resolvePoEntryPreviewBlobUrl(
+      entry,
+      scope,
+      userGroups.value,
+      accessConfig.value
+    );
     previewDialogUrl.value = url;
-    if (url.startsWith('blob:')) {
-      previewDialogObjectUrl.value = url;
-    }
+    if (url.startsWith('blob:')) previewDialogObjectUrl.value = url;
   } catch (e: unknown) {
-    previewDialogError.value = e instanceof Error ? e.message : String(e);
+    if (e instanceof Error && e.message === 'PO access denied') {
+      previewDialogError.value = t('odakSiparis.po.errors.accessDenied');
+    } else {
+      previewDialogError.value = e instanceof Error ? e.message : String(e);
+    }
   } finally {
     previewDialogLoading.value = false;
   }
 }
 
-async function downloadEntry(entry: PoDocumentEntry) {
+async function downloadEntry(entry: PoDocumentEntry, scope: OdakPoDocumentScope) {
   errorMessage.value = '';
   try {
-    await downloadPoEntry(entry);
+    await downloadPoEntry(entry, scope, userGroups.value, accessConfig.value);
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    if (e instanceof Error && e.message === 'PO access denied') {
+      errorMessage.value = t('odakSiparis.po.errors.accessDenied');
+    } else {
+      errorMessage.value = e instanceof Error ? e.message : String(e);
+    }
   }
+}
+
+function previewScopeFromKey(key: string): OdakPoDocumentScope {
+  return key.startsWith('restricted') ? 'restricted' : 'global';
 }
 
 watch(
@@ -193,10 +243,6 @@ watch(
   },
   { immediate: true }
 );
-
-watch(fileEntries, () => {
-  syncSelection();
-});
 
 onBeforeUnmount(() => {
   revokePreviewObjectUrl();
@@ -213,93 +259,49 @@ onBeforeUnmount(() => {
       <v-chip v-else-if="hasPending" size="x-small" color="warning" variant="tonal">
         {{ t('odakSiparis.po.pendingUpload') }}
       </v-chip>
-      <v-spacer />
-      <input
-        ref="fileInput"
-        type="file"
-        accept=".pdf,application/pdf"
-        class="d-none"
-        @change="onFileSelected"
-      />
-      <v-btn size="small" variant="tonal" color="primary" :disabled="loading || saving" @click="openFilePicker">
-        <UploadIcon size="16" class="mr-1" />
-        {{ fileEntries.length ? t('odakSiparis.po.replaceFile') : t('odakSiparis.po.chooseFile') }}
-      </v-btn>
     </v-card-title>
     <v-divider />
 
-    <v-card-text class="px-3 py-2 flex-grow-1 d-flex flex-column ga-2">
+    <v-card-text class="px-3 py-2 flex-grow-1 d-flex flex-column ga-3">
       <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact">
         {{ errorMessage }}
       </v-alert>
       <v-progress-linear v-if="loading" indeterminate color="primary" />
 
-      <div v-if="fileEntries.length" class="odak-po-files border rounded-md">
-        <div class="odak-po-files__header text-caption font-weight-medium px-3 py-2">
-          {{ t('odakSiparis.po.fileListTitle', { count: fileEntries.length }) }}
-        </div>
-        <v-list density="compact" class="py-0 bg-transparent">
-          <v-list-item
-            v-for="entry in fileEntries"
-            :key="entry.key"
-            :active="selectedEntry?.key === entry.key"
-            color="primary"
-            rounded="0"
-            class="odak-po-files__row"
-            @click="selectEntry(entry)"
-          >
-            <template #prepend>
-              <v-icon icon="mdi-file-pdf-box" color="error" size="22" />
-            </template>
-            <v-list-item-title class="text-body-2 font-weight-medium text-wrap">
-              {{ entry.fileName }}
-            </v-list-item-title>
-            <v-list-item-subtitle class="text-caption">
-              <span v-if="entry.isPending">{{ t('odakSiparis.po.pendingUpload') }}</span>
-              <span v-else>{{ t('odakSiparis.po.storedFile') }}</span>
-            </v-list-item-subtitle>
-            <template #append>
-              <div class="d-flex align-center ga-1" @click.stop>
-                <v-btn
-                  icon
-                  size="x-small"
-                  variant="text"
-                  color="primary"
-                  :title="t('odakSiparis.po.preview')"
-                  @click="openPreviewModal(entry)"
-                >
-                  <EyeIcon size="18" />
-                </v-btn>
-                <v-btn
-                  icon
-                  size="x-small"
-                  variant="text"
-                  :title="t('odakSiparis.po.download')"
-                  @click="downloadEntry(entry)"
-                >
-                  <DownloadIcon size="18" />
-                </v-btn>
-                <v-btn
-                  icon
-                  size="x-small"
-                  variant="text"
-                  color="error"
-                  :title="t('odakSiparis.po.remove')"
-                  @click="clearDocument"
-                >
-                  <TrashIcon size="18" />
-                </v-btn>
-              </div>
-            </template>
-          </v-list-item>
-        </v-list>
-      </div>
+      <OdakSiparisPoDocumentSection
+        v-if="canViewGlobal"
+        v-model="poDocumentsGlobal"
+        :title="t('odakSiparis.po.sections.global')"
+        :hint="t('odakSiparis.po.sections.globalHint')"
+        :readonly="!canEditGlobal"
+        :package-no="packageNo"
+        key-prefix="global"
+        @add-files="addFiles('global', $event)"
+        @preview="openPreviewModal($event, 'global')"
+        @download="downloadEntry($event, 'global')"
+      />
 
-      <div v-else class="odak-po-empty border rounded-md pa-4 text-center">
-        <v-icon icon="mdi-file-pdf-box" size="36" color="medium-emphasis" class="mb-2" />
-        <p class="text-body-2 text-medium-emphasis mb-0">{{ t('odakSiparis.po.noDocument') }}</p>
-        <p class="text-caption text-medium-emphasis mt-1 mb-0">{{ t('odakSiparis.po.hintShort') }}</p>
-      </div>
+      <OdakSiparisPoDocumentSection
+        v-if="canViewRestrictedSection"
+        v-model="poDocumentsRestricted"
+        :title="t('odakSiparis.po.sections.restricted')"
+        :hint="t('odakSiparis.po.sections.restrictedHint')"
+        :readonly="!canEditRestricted"
+        :package-no="packageNo"
+        key-prefix="restricted"
+        @add-files="addFiles('restricted', $event)"
+        @preview="openPreviewModal($event, 'restricted')"
+        @download="downloadEntry($event, 'restricted')"
+      />
+
+      <v-alert
+        v-if="!canViewGlobal && !canViewRestrictedSection && !loading"
+        type="info"
+        variant="tonal"
+        density="compact"
+      >
+        {{ t('odakSiparis.po.noAccess') }}
+      </v-alert>
 
       <v-text-field
         v-model="poVersion"
@@ -324,13 +326,7 @@ onBeforeUnmount(() => {
       </div>
     </v-card-text>
 
-    <!-- PDF onizleme modali -->
-    <v-dialog
-      v-model="previewDialogOpen"
-      max-width="960"
-      scrollable
-      @after-leave="closePreviewDialog"
-    >
+    <v-dialog v-model="previewDialogOpen" max-width="960" scrollable @after-leave="closePreviewDialog">
       <v-card class="odak-po-preview-dialog">
         <v-card-title class="d-flex align-center py-2 px-3">
           <span class="text-subtitle-2">{{ t('odakSiparis.po.previewDialogTitle') }}</span>
@@ -353,17 +349,16 @@ onBeforeUnmount(() => {
             density="compact"
             class="ma-3"
           >
-            {{ t('odakSiparis.po.previewFailed') }}
-            <template v-if="selectedEntry">
-              <v-btn
-                size="x-small"
-                variant="text"
-                class="ms-1"
-                @click="downloadEntry(selectedEntry)"
-              >
-                {{ t('odakSiparis.po.downloadInstead') }}
-              </v-btn>
-            </template>
+            {{ previewDialogError || t('odakSiparis.po.previewFailed') }}
+            <v-btn
+              v-if="previewEntry"
+              size="x-small"
+              variant="text"
+              class="ms-1"
+              @click="downloadEntry(previewEntry, previewScopeFromKey(previewEntry.key))"
+            >
+              {{ t('odakSiparis.po.downloadInstead') }}
+            </v-btn>
           </v-alert>
           <iframe
             v-else-if="previewDialogUrl"
@@ -382,27 +377,6 @@ onBeforeUnmount(() => {
 .odak-po-panel {
   background: rgba(var(--v-theme-surface), 1);
   min-height: 0;
-}
-
-.odak-po-files {
-  background: rgba(var(--v-theme-surface-variant), 0.35);
-}
-
-.odak-po-files__header {
-  border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  color: rgba(var(--v-theme-on-surface), 0.85);
-}
-
-.odak-po-files__row {
-  border-bottom: 1px solid rgba(var(--v-border-color), calc(var(--v-border-opacity) * 0.6));
-}
-
-.odak-po-files__row:last-child {
-  border-bottom: none;
-}
-
-.odak-po-empty {
-  background: rgba(var(--v-theme-on-surface), 0.03);
 }
 
 .odak-po-preview-dialog__body {

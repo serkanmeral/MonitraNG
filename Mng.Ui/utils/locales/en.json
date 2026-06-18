@@ -3658,6 +3658,7 @@
         "tabs": {
           "listColumns": "List columns",
           "notifications": "Notifications",
+          "poDocumentAccess": "PO document access",
           "fieldPolicies": "Field permissions"
         },
         "listColumns": {
@@ -3768,7 +3769,14 @@
           "lineCount": "Line count",
           "poVersion": "Revision no",
           "customerPo": "Customer PO",
-          "projectNo": "Project no"
+          "projectNo": "Project no",
+          "poDocumentsGlobal": "PO PDF (global)",
+          "poDocumentsRestricted": "PO PDF (restricted)"
+        },
+        "poDocumentAccess": {
+          "hint": "Only selected groups can view and download files in the restricted PO PDF section. The global section is visible to everyone who can read the work package; use Field permissions to control upload/edit access.",
+          "groupsLabel": "Restricted PO PDF viewer groups",
+          "groupsHint": "If empty, no one can view the restricted section."
         }
       }
     },
@@ -3850,6 +3858,7 @@
       "storedFile": "Saved",
       "hasDocument": "PDF on file",
       "noDocument": "No PO PDF attached yet.",
+      "noAccess": "You do not have permission to view PO documents.",
       "pendingUpload": "Unsaved",
       "preview": "Preview",
       "previewDialogTitle": "PO PDF preview",
@@ -3859,13 +3868,21 @@
       "downloadInstead": "Open via download",
       "openInNewTab": "Open in new tab",
       "chooseFile": "Choose PDF",
+      "addFiles": "Add PDF",
       "replaceFile": "Replace PDF",
       "remove": "Remove",
       "download": "Download",
       "save": "Save PO",
+      "sections": {
+        "global": "Global",
+        "globalHint": "All users who can view this work package can see these files.",
+        "restricted": "Restricted",
+        "restrictedHint": "Only groups configured in settings can view these files."
+      },
       "errors": {
         "pdfOnly": "Only PDF files are allowed.",
-        "tooLarge": "File size must be at most {max} MB."
+        "tooLarge": "File size must be at most {max} MB.",
+        "accessDenied": "You do not have permission to view this PO document."
       }
     },
     "detail": {

@@ -78,6 +78,9 @@ export interface OdakPackageRow {
   poVersion?: string;
   poDocument?: OdakFileFieldValue | null;
   poDocumentPath?: string | null;
+  poDocumentPathRedacted?: string | null;
+  poDocumentsGlobal?: OdakFileFieldValue[] | null;
+  poDocumentsRestricted?: OdakFileFieldValue[] | null;
   poStorageKey?: string | null;
 }
 
@@ -103,6 +106,28 @@ export const ODAK_PO_FILE_FIELD = {
     allowedExtensions: ['.pdf'],
   },
 } as const;
+
+export const ODAK_PO_GLOBAL_FILE_FIELD = {
+  fieldType: 'file',
+  name: 'poDocumentsGlobal',
+  isArray: true,
+  fileOptions: {
+    maxSize: 25 * 1024 * 1024,
+    allowedExtensions: ['.pdf'],
+  },
+} as const;
+
+export const ODAK_PO_RESTRICTED_FILE_FIELD = {
+  fieldType: 'file',
+  name: 'poDocumentsRestricted',
+  isArray: true,
+  fileOptions: {
+    maxSize: 25 * 1024 * 1024,
+    allowedExtensions: ['.pdf'],
+  },
+} as const;
+
+export type OdakPoDocumentScope = 'global' | 'restricted';
 
 export type OdakCustomerSektor = 'havacilik' | 'savunma' | 'diger';
 

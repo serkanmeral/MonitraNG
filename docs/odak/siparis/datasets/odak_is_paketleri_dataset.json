@@ -204,10 +204,34 @@
     {
       "fieldType": "file",
       "name": "poDocument",
-      "title": "Musteri siparis PDF (PO)",
+      "title": "Musteri siparis PDF (PO) — legacy tek dosya",
       "mandatory": false,
       "unique": false,
       "isArray": false
+    },
+    {
+      "fieldType": "file",
+      "name": "poDocumentsGlobal",
+      "title": "PO PDF (genel)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": true,
+      "fileOptions": {
+        "maxSize": 26214400,
+        "allowedExtensions": [".pdf"]
+      }
+    },
+    {
+      "fieldType": "file",
+      "name": "poDocumentsRestricted",
+      "title": "PO PDF (yetkilendirilmis)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": true,
+      "fileOptions": {
+        "maxSize": 26214400,
+        "allowedExtensions": [".pdf"]
+      }
     },
     {
       "fieldType": "text",

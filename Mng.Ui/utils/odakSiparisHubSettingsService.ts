@@ -1,4 +1,8 @@
-import { ocCreate, ocListDataset, ocUpdate } from '@/services/operationCoreService';
+import {
+  defaultOdakPackagePoDocumentAccessConfig,
+  mergeOdakPackagePoDocumentAccessConfig,
+  type OdakPackagePoDocumentAccessConfig,
+} from '@/utils/odakSiparisPoDocumentAccess';
 import { ODAK_SIPARIS_CONFIG } from '@/utils/odakSiparisConfig';
 import type { OdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
 import {
@@ -21,6 +25,7 @@ import {
   mergeOdakShipmentListConfig,
   type OdakShipmentListConfig,
 } from '@/utils/odakSiparisShipmentListSettings';
+import { ocCreate, ocListDataset, ocUpdate } from '@/services/operationCoreService';
 
 export type OdakHubSettingsScope =
   | 'packages_list'
@@ -28,7 +33,8 @@ export type OdakHubSettingsScope =
   | 'shipments_list'
   | 'field_policies'
   | 'lines_field_policies'
-  | 'shipments_field_policies';
+  | 'shipments_field_policies'
+  | 'package_po_document_access';
 
 export type OdakHubListSettingsScope = 'packages_list' | 'lines_list' | 'shipments_list';
 
@@ -276,6 +282,7 @@ export interface OdakPackageHubRuntimeSettings {
 let runtimeCache: OdakPackageHubRuntimeSettings | null = null;
 let runtimeCacheAt = 0;
 const listConfigOnlyCache = new Map<OdakHubListSettingsScope, { config: OdakHubListConfig; at: number }>();
+let poDocumentAccessCache: { config: OdakPackagePoDocumentAccessConfig; at: number } | null = null;
 const RUNTIME_CACHE_MS = 30_000;
 
 export async function loadOdakPackageHubRuntimeSettings(
@@ -303,6 +310,7 @@ export function invalidateOdakPackageHubSettingsCache(): void {
   runtimeCacheAt = 0;
   listConfigOnlyCache.clear();
   fieldPoliciesOnlyCache.clear();
+  poDocumentAccessCache = null;
 }
 
 export async function loadOdakPackageListConfigOnly(): Promise<OdakPackageListConfig> {
@@ -360,3 +368,45 @@ export function defaultOdakHubListConfig(scope: OdakHubListSettingsScope): OdakH
 export function mergeOdakHubListConfig(scope: OdakHubListSettingsScope, saved: unknown): OdakHubListConfig {
   return LIST_SCOPE_MERGE[scope](saved);
 }
+
+export async function loadOdakPackagePoDocumentAccessConfig(): Promise<{
+  config: OdakPackagePoDocumentAccessConfig;
+  rowId: string | null;
+}> {
+  const row = await loadHubRow('package_po_document_access');
+  const parsed = row ? parseConfigJson(row.configJson) : null;
+  return {
+    config: mergeOdakPackagePoDocumentAccessConfig(parsed),
+    rowId: row?.__dataId ?? null,
+  };
+}
+
+export async function saveOdakPackagePoDocumentAccessConfig(
+  config: OdakPackagePoDocumentAccessConfig,
+  rowId: string | null
+): Promise<string> {
+  const body = {
+    scope: 'package_po_document_access' as const,
+    configJson: JSON.stringify({ poDocumentAccess: config }),
+  };
+  if (rowId) {
+    await ocUpdate(ODAK_SIPARIS_CONFIG.hubSettingsDataset, rowId, body);
+    return rowId;
+  }
+  const created = (await ocCreate(ODAK_SIPARIS_CONFIG.hubSettingsDataset, body)) as Record<string, unknown>;
+  return hubDataId(created);
+}
+
+export async function loadOdakPackagePoDocumentAccessOnly(
+  force = false
+): Promise<OdakPackagePoDocumentAccessConfig> {
+  const now = Date.now();
+  if (!force && poDocumentAccessCache && now - poDocumentAccessCache.at < RUNTIME_CACHE_MS) {
+    return poDocumentAccessCache.config;
+  }
+  const resp = await loadOdakPackagePoDocumentAccessConfig();
+  poDocumentAccessCache = { config: resp.config, at: now };
+  return resp.config;
+}
+
+export { defaultOdakPackagePoDocumentAccessConfig };

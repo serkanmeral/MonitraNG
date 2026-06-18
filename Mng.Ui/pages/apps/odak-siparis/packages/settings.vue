@@ -4,6 +4,7 @@ import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import OdakSiparisPackageSettingsListColumnsTab from '@/components/apps/odak-siparis/OdakSiparisPackageSettingsListColumnsTab.vue';
 import OdakSiparisPackageSettingsFieldPoliciesTab from '@/components/apps/odak-siparis/OdakSiparisPackageSettingsFieldPoliciesTab.vue';
 import OdakSiparisPackageSettingsNotificationsTab from '@/components/apps/odak-siparis/OdakSiparisPackageSettingsNotificationsTab.vue';
+import OdakSiparisPackageSettingsPoDocumentAccessTab from '@/components/apps/odak-siparis/OdakSiparisPackageSettingsPoDocumentAccessTab.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 
 definePageMeta({
@@ -25,6 +26,7 @@ const breadcrumbs = [
 const tabs = [
   { value: 'listColumns', label: t('odakSiparis.packages.settings.tabs.listColumns') },
   { value: 'notifications', label: t('odakSiparis.packages.settings.tabs.notifications') },
+  { value: 'poDocumentAccess', label: t('odakSiparis.packages.settings.tabs.poDocumentAccess') },
   { value: 'fieldPolicies', label: t('odakSiparis.packages.settings.tabs.fieldPolicies') },
 ];
 </script>
@@ -53,6 +55,9 @@ const tabs = [
           </v-window-item>
           <v-window-item value="notifications">
             <OdakSiparisPackageSettingsNotificationsTab />
+          </v-window-item>
+          <v-window-item value="poDocumentAccess">
+            <OdakSiparisPackageSettingsPoDocumentAccessTab />
           </v-window-item>
           <v-window-item value="fieldPolicies">
             <OdakSiparisPackageSettingsFieldPoliciesTab />

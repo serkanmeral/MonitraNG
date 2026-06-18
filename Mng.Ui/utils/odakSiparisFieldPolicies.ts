@@ -71,6 +71,8 @@ export const ODAK_PACKAGE_POLICY_FIELD_KEYS = [
   'poVersion',
   'customerPo',
   'projectNo',
+  'poDocumentsGlobal',
+  'poDocumentsRestricted',
 ] as const;
 
 export type OdakPackagePolicyFieldKey = (typeof ODAK_PACKAGE_POLICY_FIELD_KEYS)[number];
