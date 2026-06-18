@@ -1,4 +1,5 @@
 import type { OdakLineRow } from '@/utils/odakSiparisConfig';
+import { formatQualityRequirementsSummary } from '@/utils/odakSiparisCustomerQualityReqService';
 import { formatOdakDate, formatOdakNumber } from '@/utils/odakSiparisService';
 import { productLabelFromRow } from '@/utils/odakSiparisLineService';
 
@@ -32,6 +33,7 @@ export function buildOdakLineExpandSummaryRows(
   const extras = [
     optionalLineRow(t, 'odakSiparis.lines.fields.customerJobNo', line.customerJobNo),
     optionalLineRow(t, 'odakSiparis.lines.fields.poItemRevNo', line.poItemRevNo),
+    optionalLineRow(t, 'odakSiparis.lines.fields.qualityRequirementIds', formatQualityRequirementsSummary(line)),
     optionalLineRow(t, 'odakSiparis.lines.fields.qualityReqs', line.qualityReqs),
     { label: t('odakSiparis.lines.fields.isFai'), value: boolLabel(line.isFai) },
     { label: t('odakSiparis.lines.fields.isFaiComplete'), value: boolLabel(line.isFaiComplete) },

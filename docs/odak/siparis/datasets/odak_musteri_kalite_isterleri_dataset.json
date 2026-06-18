@@ -1,0 +1,68 @@
+{
+  "name": "odak_musteri_kalite_isterleri",
+  "description": "Odak Siparis — musteri bazli kalite isterleri master listesi",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "relation",
+      "name": "parentCustomerId",
+      "title": "Musteri",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_musteriler"
+    },
+    {
+      "fieldType": "text",
+      "name": "kod",
+      "title": "Kod",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "minLength": 1, "maxLength": 32 }
+    },
+    {
+      "fieldType": "text",
+      "name": "ad",
+      "title": "Ad",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "minLength": 2, "maxLength": 200 }
+    },
+    {
+      "fieldType": "text",
+      "name": "aciklama",
+      "title": "Aciklama",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 2000 }
+    },
+    {
+      "fieldType": "bool",
+      "name": "faiUygulanacak",
+      "title": "FAI uygulanacak",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": false
+    },
+    {
+      "fieldType": "bool",
+      "name": "aktif",
+      "title": "Aktif",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": true
+    }
+  ],
+  "indexList": [
+    { "name": "idx_parentCustomerId", "fields": { "parentCustomerId": 1 }, "unique": false },
+    { "name": "idx_parentCustomerId_kod", "fields": { "parentCustomerId": 1, "kod": 1 }, "unique": true },
+    { "name": "idx_parentCustomerId_aktif", "fields": { "parentCustomerId": 1, "aktif": 1 }, "unique": false }
+  ]
+}

@@ -3847,6 +3847,48 @@
           "emailRequired": "Email is required.",
           "emailInvalid": "Enter a valid email address."
         }
+      },
+      "qualityReqs": {
+        "title": "Quality requirements",
+        "add": "Add requirement",
+        "empty": "No quality requirements defined for this customer yet.",
+        "inactive": "Inactive",
+        "faiYes": "Yes",
+        "faiNo": "No",
+        "copyFromTemplate": "Import from template",
+        "copyFromCustomer": "Copy from customer",
+        "copyDone": "{count} quality requirement(s) added.",
+        "copyNone": "Nothing to add (duplicate code or empty selection).",
+        "deleteTitle": "Delete quality requirement",
+        "deleteConfirm": "Are you sure you want to delete this quality requirement?",
+        "fields": {
+          "kod": "Code",
+          "ad": "Name",
+          "aciklama": "Description",
+          "faiUygulanacak": "FAI applies",
+          "aktif": "Active"
+        },
+        "dialog": {
+          "createTitle": "New quality requirement",
+          "editTitle": "Edit quality requirement — {name}",
+          "missingId": "Record id not found.",
+          "missingCustomer": "Customer id not found.",
+          "notFound": "Could not load quality requirement."
+        },
+        "copyDialog": {
+          "templateTitle": "Import from template",
+          "customerTitle": "Copy from customer",
+          "templateHint": "Selected templates are copied to the customer. Existing codes are skipped.",
+          "customerHint": "Active requirements from the source customer are copied.",
+          "selectTemplates": "Templates",
+          "selectCustomer": "Source customer",
+          "import": "Import"
+        },
+        "validation": {
+          "kodRequired": "Code is required.",
+          "adRequired": "Name is required.",
+          "kodDuplicate": "This code already exists for this customer."
+        }
       }
     },
     "po": {
@@ -4044,7 +4086,8 @@
         "quantity": "Quantity",
         "unit": "Unit",
         "shippedQuantity": "Shipped Qty",
-        "qualityReqs": "Quality Requirements",
+        "qualityReqs": "Additional note (quality)",
+        "qualityRequirementIds": "Applied quality requirements",
         "isFai": "FAI required",
         "isFaiComplete": "FAI complete",
         "deliveryDate": "Due Date",
@@ -4067,9 +4110,21 @@
         "missingId": "Line id not found.",
         "notFound": "Line not found."
       },
+      "qualityPicker": {
+        "addLabel": "Add quality requirement",
+        "noCustomer": "No customer on this work package — quality requirements cannot be selected.",
+        "noneSelected": "No quality requirements selected yet.",
+        "faiAutoHint": "At least one selected requirement requires FAI; you can turn it off with the switch.",
+        "columns": {
+          "kod": "Code",
+          "ad": "Name",
+          "fai": "FAI"
+        }
+      },
       "validation": {
         "descriptionRequired": "Description is required.",
         "quantityRequired": "Enter a valid quantity.",
+        "noCustomerQualityReqs": "No quality requirements for this customer. Add them from the customer card.",
         "lineNoRequired": "Enter a valid line number."
       },
       "columns": {

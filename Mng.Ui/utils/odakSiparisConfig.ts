@@ -9,6 +9,8 @@ export const ODAK_SIPARIS_CONFIG = {
   customersDataset: 'odak_musteriler',
   customersFormCode: 'odak-musteriler-form',
   customerContactsDataset: 'odak_musteri_kisileri',
+  customerQualityReqsDataset: 'odak_musteri_kalite_isterleri',
+  qualityReqTemplatesDataset: 'odak_kalite_isteri_sablonlari',
   ncrDataset: 'odak_ncr',
   capaDataset: 'odak_capa',
   shipmentsDataset: 'odak_sevkiyatlar',
@@ -156,6 +158,29 @@ export interface OdakCustomerContactRow {
   legacyContactId?: string;
 }
 
+export interface OdakCustomerQualityReqRow {
+  __dataId?: string;
+  dataId?: string;
+  parentCustomerId?: unknown;
+  kod?: string;
+  ad?: string;
+  aciklama?: string;
+  faiUygulanacak?: boolean;
+  aktif?: boolean;
+}
+
+export interface OdakQualityReqTemplateRow {
+  __dataId?: string;
+  dataId?: string;
+  kod?: string;
+  ad?: string;
+  aciklama?: string;
+  faiUygulanacak?: boolean;
+  sektor?: string;
+  sira?: number;
+  aktif?: boolean;
+}
+
 export const ODAK_CUSTOMER_SEKTOR_OPTIONS = [
   { value: 'havacilik', title: 'Havacılık' },
   { value: 'savunma', title: 'Savunma' },
@@ -196,6 +221,7 @@ export interface OdakLineRow {
   unit?: string;
   shippedQuantity?: number;
   qualityReqs?: string;
+  qualityRequirementIds?: unknown;
   isFai?: boolean;
   isFaiComplete?: boolean;
   /** Kalem termin tarihi (iş paketi termininden bağımsız). */

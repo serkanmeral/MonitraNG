@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import AfListFilters from '@/components/apps/automated-forms/AfListFilters.vue';
 import OdakSiparisCustomerContactsPanel from '@/components/apps/odak-siparis/OdakSiparisCustomerContactsPanel.vue';
+import OdakSiparisCustomerQualityReqPanel from '@/components/apps/odak-siparis/OdakSiparisCustomerQualityReqPanel.vue';
 import OdakSiparisCustomerDialog from '@/components/apps/odak-siparis/OdakSiparisCustomerDialog.vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
@@ -282,6 +283,7 @@ onMounted(() => {
             <tr>
               <td :colspan="columns.length" class="pa-0">
                 <OdakSiparisCustomerContactsPanel :customer-row="item" />
+                <OdakSiparisCustomerQualityReqPanel :customer-row="item" />
               </td>
             </tr>
           </template>

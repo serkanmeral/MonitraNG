@@ -1,9 +1,9 @@
 # Odak Sipariş — Devam noktası (checkpoint)
 
-**Son güncelleme:** 16 Haziran 2026 (gece)  
-**Durum:** ✅ Faz 1 kalite deploy · ✅ Faz 1b PO PDF + export (kod) · ✅ PO migrasyon POC (7 paket DG) · ⏳ Sunum walkthrough
+**Son güncelleme:** 18 Haziran 2026  
+**Durum:** ✅ Faz 1 kalite deploy · ✅ Faz 1b PO PDF (genel/yetkilendirilmiş) · ✅ Kalite isterleri master + kalem · ⏳ Faz 1b fiyat alanları · ⏳ Tam PO migrasyon
 
-> **⭐ KALDIĞIMIZ YER:** **Faz 1b** tamamlandı (local + commit): PO PDF paneli (modal önizleme, DG `file` alanı), liste **Dışa aktar** (CSV/Excel), legacy PO migrasyon scriptleri + **7 paket POC** Odak DG'de. **mngui deploy** bu oturumda yapıldı. **Yarın:** müşteri sunumu (demo paketleri aşağıda) · fiyat alanları · tam PO migrasyon (uploads sync).
+> **⭐ KALDIĞIMIZ YER:** **Kalite isterleri** tamamlandı (UI + DG dataset + deploy): müşteri bazlı master (`odak_musteri_kalite_isterleri`), şablon kataloğu, kalem `qualityRequirementIds` çoklu seçim, FAI otomasyonu (kullanıcı kapatabilir). **Sonraki:** fiyat alanları · tam PO PDF migrasyon · legacy `quality_reqs` metninden master'a taşıma (opsiyonel) · MO köprüsü.
 
 ---
 
@@ -13,12 +13,15 @@
 Legacy MySQL (kalite) / SQL dump
     → DG POST
         odak_musteriler
-        odak_is_paketleri   (+ poDocument file alanı)
-        odak_siparis_kalemleri
+        odak_musteri_kisileri
+        odak_musteri_kalite_isterleri   (müşteri bazlı master)
+        odak_kalite_isteri_sablonlari   (şablon kataloğu)
+        odak_is_paketleri   (+ poDocumentsGlobal / poDocumentsRestricted)
+        odak_siparis_kalemleri   (+ qualityRequirementIds relation[])
         odak_ncr              (501 kayıt)
         odak_capa             (25 kayıt)
 
-Hub UI: native dialog (MO köprüsü yok) — NCR/CAPA + PO PDF
+Hub UI: native dialog (MO köprüsü yok) — NCR/CAPA + PO PDF + kalite isterleri
 MO (op_work_items): sonraki faz
 ```
 
@@ -64,6 +67,33 @@ Diğer POC: 2022-013 … 2022-016 (hepsi kapalı, PO yüklü). **Not:** PO ile N
 
 ---
 
+## Oturumda tamamlanan işler (18 Haziran 2026)
+
+### Kalite isterleri — master + kalem
+
+- [x] DG: `odak_musteri_kalite_isterleri` (müşteri bazlı: kod, ad, açıklama, faiUygulanacak, aktif)
+- [x] DG: `odak_kalite_isteri_sablonlari` + 5 seed şablon (KI-COC, KI-FAI, KI-MTR, KI-AS9102, KI-ROHS)
+- [x] DG: `odak_siparis_kalemleri.qualityRequirementIds` (relation[], çoklu); `qualityReqs` ek not olarak kaldı
+- [x] UI: Müşteriler expand → **Kalite İsterleri** paneli (CRUD, şablondan içe aktar, müşteriden kopyala)
+- [x] UI: Kalem dialog → tablo (Kod, Ad, FAI) + çoklu seçim; pasif isterler yeni seçimde gizli, eski kalemlerde görünür
+- [x] UI: FAI otomasyonu — seçilen isterlerden biri `faiUygulanacak=true` ise `isFai` açılır; kullanıcı switch ile kapatabilir
+- [x] Script: `setup-odak-musteri-kalite-isterleri-dataset.ps1`; `setup-odak-siparis-datasets.ps1` [3/8]
+- [x] Dataset kurulumu Odak test ortamında çalıştırıldı (192.168.20.20:5040)
+- [x] Commit + push + **mngui** deploy
+
+### İlgili dosyalar
+
+| Dosya | Amaç |
+|-------|------|
+| `Mng.Ui/components/apps/odak-siparis/OdakSiparisCustomerQualityReqPanel.vue` | Müşteri kalite CRUD |
+| `Mng.Ui/components/apps/odak-siparis/OdakSiparisLineQualityReqPicker.vue` | Kalem çoklu seçim |
+| `Mng.Ui/utils/odakSiparisCustomerQualityReqService.ts` | CRUD, kopyalama, FAI hesap |
+| `docs/odak/siparis/scripts/setup-odak-musteri-kalite-isterleri-dataset.ps1` | Dataset kurulum |
+
+**Müşteriler:** http://192.168.20.20:3000/apps/odak-siparis/customers (expand → Kalite İsterleri)
+
+---
+
 ## Oturumda tamamlanan işler (16 Haziran 2026 — gece)
 
 ### Faz 1b — PO PDF
@@ -102,7 +132,9 @@ Diğer POC: 2022-013 … 2022-016 (hepsi kapalı, PO yüklü). **Not:** PO ile N
 |-------|------|
 | `Mng.Ui/pages/apps/odak-siparis/packages/index.vue` | Liste + export + expand |
 | `Mng.Ui/components/apps/odak-siparis/OdakSiparisPackageExpandPanel.vue` | Özet / kalemler / kalite |
-| `Mng.Ui/components/apps/odak-siparis/OdakSiparisPoDocumentPanel.vue` | PO PDF |
+| `Mng.Ui/components/apps/odak-siparis/OdakSiparisCustomerQualityReqPanel.vue` | Müşteri kalite isterleri |
+| `Mng.Ui/components/apps/odak-siparis/OdakSiparisLineQualityReqPicker.vue` | Kalem kalite seçimi |
+| `Mng.Ui/components/apps/odak-siparis/OdakSiparisPoDocumentPanel.vue` | PO PDF (genel + yetkilendirilmiş) |
 | `Mng.Ui/components/apps/odak-siparis/OdakSiparisQualityPanel.vue` | NCR + CAPA |
 | `Mng.Ui/utils/odakSiparisPoService.ts` | PO upload/preview/save |
 | `Mng.Ui/utils/odakSiparisPackageExport.ts` | CSV export |
@@ -121,6 +153,7 @@ Diğer POC: 2022-013 … 2022-016 (hepsi kapalı, PO yüklü). **Not:** PO ile N
 | Faz 1b PO PDF UI | ✅ | Deploy edildi |
 | Faz 1b Export | ✅ | Deploy edildi |
 | PO PDF migrasyon POC | ✅ | 7 paket; tam migrasyon bekliyor |
+| Kalite isterleri master + kalem UI | ✅ | Deploy edildi (18 Haz) |
 | Faz 1b fiyat alanları | ⏳ | Sonraki |
 | Kalan 8 kalem + paket `"9"` | ⏳ | Veri |
 | Döküman paketi | 📋 | [DOKUMAN_PAKETI_NOTU.md](./DOKUMAN_PAKETI_NOTU.md) |
@@ -128,13 +161,13 @@ Diğer POC: 2022-013 … 2022-016 (hepsi kapalı, PO yüklü). **Not:** PO ile N
 
 ---
 
-## Sonraki adımlar (17 Haziran 2026)
+## Sonraki adımlar
 
-1. **Müşteri sunumu** — demo paketleri (yukarı tablo)
-2. Sunum geri bildirimi → küçük UX düzeltmeleri
-3. **Faz 1b fiyat alanları** — birim/toplam, rol bazlı görünürlük
-4. **Tam PO PDF migrasyon** — `sync-legacy-from-server` + batch `-SkipExisting`
-5. Kalan 8 kalem + paket `"9"`
+1. **Faz 1b fiyat alanları** — birim/toplam, rol bazlı görünürlük (hub alan politikası)
+2. **Tam PO PDF migrasyon** — `sync-legacy-from-server` + batch `-SkipExisting`
+3. Legacy `quality_reqs` serbest metin → müşteri master'a taşıma (opsiyonel, ayrı script)
+4. Kalan 8 kalem + paket `"9"` (veri)
+5. MO `workItemId` köprüsü (sonraki faz)
 
 ---
 
@@ -142,7 +175,9 @@ Diğer POC: 2022-013 … 2022-016 (hepsi kapalı, PO yüklü). **Not:** PO ile N
 
 | Script | Amaç |
 |--------|------|
-| `migrate-legacy-po-pdf-to-dg.ps1` | Legacy PO PDF → DG `poDocument` |
+| `setup-odak-musteri-kalite-isterleri-dataset.ps1` | Kalite isterleri + şablon + (opsiyonel) kalem alanı |
+| `setup-odak-siparis-datasets.ps1` | Tüm sipariş DG kurulumu (8 adım) |
+| `migrate-legacy-po-pdf-to-dg.ps1` | Legacy PO PDF → DG |
 | `export-legacy-po-candidates-from-mysql.ps1` | PO aday listesi |
 | `migrate-legacy-ncs-to-dg.ps1` | NCR/CAPA |
 | `patch-odak-siparis-side-menu.ps1` | Yan menü |
@@ -157,7 +192,9 @@ Diğer POC: 2022-013 … 2022-016 (hepsi kapalı, PO yüklü). **Not:** PO ile N
 
 ## Önemli notlar
 
-- PO PDF: DG `file` alanı; kayıt sonrası `{ path, file_name, ... }`
+- Kalite isterleri: müşteri içinde `kod` unique; pasif ister yeni kalemlerde seçilemez
+- FAI: seçimden otomatik açılır; kullanıcı kapatabilir; yeni FAI isteri eklenince tekrar açılabilir
+- PO PDF: `poDocumentsGlobal` + `poDocumentsRestricted`; yetkilendirilmiş erişim hub ayarlarında
 - Önizleme: `fetchBlobFromDataGateway` + PDF MIME (proxy URL iframe'de çalışmıyordu)
 - Kapalı paketlerde kalite: **Tümü** sekmesi
 - Local uploads'ta sadece ~7 MUSTERI_PO PDF var; tam migrasyon için sunucu sync gerekir

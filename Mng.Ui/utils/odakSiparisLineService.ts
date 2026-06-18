@@ -15,7 +15,10 @@ import {
 } from '@/utils/odakSiparisFieldPolicies';
 import { loadOdakLineFieldPoliciesOnly } from '@/utils/odakSiparisHubSettingsService';
 import { fromDateInputValue, toDateInputValue } from '@/utils/odakSiparisDateUtils';
-import { useAuthStore } from '@/stores/auth';
+import {
+  computeIsFaiFromQualityReqs,
+  qualityRequirementIdsFromRow,
+} from '@/utils/odakSiparisCustomerQualityReqService';
 
 export type OdakLineDialogMode = 'view' | 'create' | 'edit';
 
@@ -76,6 +79,7 @@ export interface OdakLineFormModel {
   unit: string;
   shippedQuantity: number | null;
   qualityReqs: string;
+  qualityRequirementIds: string[];
   isFai: boolean;
   isFaiComplete: boolean;
   deliveryDate: string;
@@ -101,6 +105,7 @@ export function emptyLineFormModel(partial?: Partial<OdakLineFormModel>): OdakLi
     unit: partial?.unit ?? 'adet',
     shippedQuantity: partial?.shippedQuantity ?? 0,
     qualityReqs: partial?.qualityReqs ?? '',
+    qualityRequirementIds: partial?.qualityRequirementIds ?? [],
     isFai: partial?.isFai ?? false,
     isFaiComplete: partial?.isFaiComplete ?? false,
     deliveryDate: partial?.deliveryDate ?? '',
@@ -127,6 +132,7 @@ export function lineRowToFormModel(row: OdakLineRow): OdakLineFormModel {
     unit: row.unit ?? 'adet',
     shippedQuantity: row.shippedQuantity ?? 0,
     qualityReqs: row.qualityReqs ?? '',
+    qualityRequirementIds: qualityRequirementIdsFromRow(row.qualityRequirementIds),
     isFai: Boolean(row.isFai),
     isFaiComplete: Boolean(row.isFaiComplete),
     deliveryDate: toDateInputValue(row.deliveryDate),
@@ -158,6 +164,7 @@ export function formModelToPayload(
     quantity: form.quantity,
     unit: form.unit || 'adet',
     qualityReqs: form.qualityReqs.trim() || null,
+    qualityRequirementIds: form.qualityRequirementIds.length ? form.qualityRequirementIds : null,
     isFai: form.isFai,
     isFaiComplete: form.isFaiComplete,
     deliveryDate: fromDateInputValue(form.deliveryDate),
@@ -263,6 +270,7 @@ export async function listLinesForPackage(packageId: string): Promise<OdakLineRo
     filter,
     sort: 'lineNo:asc',
     limit: 500,
+    expand: true,
   });
   return ((resp.items ?? []) as OdakLineRow[]).filter((row) =>
     lineBelongsToPackage(row as Record<string, unknown>, packageId)

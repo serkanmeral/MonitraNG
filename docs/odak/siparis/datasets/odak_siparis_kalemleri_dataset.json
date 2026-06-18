@@ -185,11 +185,20 @@
     {
       "fieldType": "text",
       "name": "qualityReqs",
-      "title": "Kalite isterleri",
+      "title": "Kalite isterleri (ek not)",
       "mandatory": false,
       "unique": false,
       "isArray": false,
       "validation": { "maxLength": 1000 }
+    },
+    {
+      "fieldType": "relation",
+      "name": "qualityRequirementIds",
+      "title": "Uygulanan kalite isterleri",
+      "mandatory": false,
+      "unique": false,
+      "isArray": true,
+      "relationDataset": "odak_musteri_kalite_isterleri"
     },
     {
       "fieldType": "bool",

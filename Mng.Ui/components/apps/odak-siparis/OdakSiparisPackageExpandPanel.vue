@@ -10,6 +10,7 @@ import {
   fetchOdakPackageById,
   packageDataId,
   packageDisplayNo,
+  customerIdFromRow,
 } from '@/utils/odakSiparisService';
 import { buildOdakPackageSummaryRows } from '@/utils/odakSiparisSummary';
 
@@ -45,6 +46,8 @@ const pkg = ref<OdakPackageRow | null>(null);
 const linesRefreshKey = ref(0);
 
 const packageId = computed(() => packageDataId(props.packageRow));
+
+const customerId = computed(() => customerIdFromRow(pkg.value ?? props.packageRow));
 
 const summaryRows = computed(() => {
   const p = pkg.value ?? props.packageRow;
@@ -156,6 +159,7 @@ function onShipmentSaved() {
         :key="`${packageId}-${linesRefreshKey}`"
         :package-id="packageId"
         :package-no="(pkg ?? packageRow).packageNo"
+        :customer-id="customerId"
         compact
       />
     </div>

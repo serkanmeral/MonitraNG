@@ -1,4 +1,5 @@
 import type { OdakLineRow } from '@/utils/odakSiparisConfig';
+import { formatQualityRequirementsSummary } from '@/utils/odakSiparisCustomerQualityReqService';
 import {
   buildFieldToListKeyMap,
   buildHubListHeaders,
@@ -40,11 +41,12 @@ export const ODAK_LINE_LIST_FIELD_CATALOG: OdakHubListFieldDef[] = [
   { fieldName: 'shipmentDate', listKey: 'shipmentDate', defaultVisible: false, defaultSortable: true, defaultFilterable: false, defaultOrder: 14, width: 110 },
   { fieldName: 'shipmentAddress', listKey: 'shipmentAddress', defaultVisible: false, defaultSortable: false, defaultFilterable: false, defaultOrder: 15 },
   { fieldName: 'qualityReqs', listKey: 'qualityReqs', defaultVisible: false, defaultSortable: false, defaultFilterable: false, defaultOrder: 16 },
-  { fieldName: 'isFai', listKey: 'isFai', defaultVisible: false, defaultSortable: false, defaultFilterable: false, defaultOrder: 17, width: 88 },
-  { fieldName: 'isFaiComplete', listKey: 'isFaiComplete', defaultVisible: false, defaultSortable: false, defaultFilterable: false, defaultOrder: 18, width: 100 },
-  { fieldName: 'unitCost', listKey: 'unitCost', defaultVisible: false, defaultSortable: true, defaultFilterable: false, defaultOrder: 19, width: 100 },
-  { fieldName: 'totalCost', listKey: 'totalCost', defaultVisible: false, defaultSortable: true, defaultFilterable: false, defaultOrder: 20, width: 110 },
-  { fieldName: 'currency', listKey: 'currency', defaultVisible: false, defaultSortable: false, defaultFilterable: false, defaultOrder: 21, width: 80 },
+  { fieldName: 'qualityRequirementIds', listKey: 'qualityRequirementIds', defaultVisible: false, defaultSortable: false, defaultFilterable: false, defaultOrder: 17 },
+  { fieldName: 'isFai', listKey: 'isFai', defaultVisible: false, defaultSortable: false, defaultFilterable: false, defaultOrder: 18, width: 88 },
+  { fieldName: 'isFaiComplete', listKey: 'isFaiComplete', defaultVisible: false, defaultSortable: false, defaultFilterable: false, defaultOrder: 19, width: 100 },
+  { fieldName: 'unitCost', listKey: 'unitCost', defaultVisible: false, defaultSortable: true, defaultFilterable: false, defaultOrder: 20, width: 100 },
+  { fieldName: 'totalCost', listKey: 'totalCost', defaultVisible: false, defaultSortable: true, defaultFilterable: false, defaultOrder: 21, width: 110 },
+  { fieldName: 'currency', listKey: 'currency', defaultVisible: false, defaultSortable: false, defaultFilterable: false, defaultOrder: 22, width: 80 },
 ];
 
 export const ODAK_LINE_LIST_FIELD_TO_KEY = buildFieldToListKeyMap(ODAK_LINE_LIST_FIELD_CATALOG);
@@ -128,6 +130,8 @@ export function lineListCellRaw(row: OdakLineRow, listKey: string): string {
       return String(row.shipmentAddress ?? '').trim() || '—';
     case 'qualityReqs':
       return String(row.qualityReqs ?? '').trim() || '—';
+    case 'qualityRequirementIds':
+      return formatQualityRequirementsSummary(row) || '—';
     case 'isFai':
       return row.isFai ? 'Evet' : 'Hayır';
     case 'isFaiComplete':

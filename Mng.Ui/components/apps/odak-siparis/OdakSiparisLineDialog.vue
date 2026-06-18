@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
+import OdakSiparisLineQualityReqPicker from '@/components/apps/odak-siparis/OdakSiparisLineQualityReqPicker.vue';
 import { useOdakFieldAccess } from '@/composables/useOdakFieldAccess';
 import { useAppI18n } from '@/composables/useAppI18n';
 import {
@@ -33,6 +34,7 @@ const props = defineProps<{
   mode: OdakLineDialogMode;
   packageId: string;
   packageNo?: string;
+  customerId?: string | null;
   lineId?: string;
   /** Liste satirindan hizli acilis — tam kayit icin yine fetch edilir. */
   seedRow?: OdakLineRow | null;
@@ -90,7 +92,11 @@ const showQuantityGroup = computed(
 );
 
 const showQualityGroup = computed(
-  () => fieldVisible('qualityReqs') || fieldVisible('isFai') || fieldVisible('isFaiComplete')
+  () =>
+    fieldVisible('qualityRequirementIds') ||
+    fieldVisible('qualityReqs') ||
+    fieldVisible('isFai') ||
+    fieldVisible('isFaiComplete')
 );
 
 const showShipmentGroup = computed(
@@ -164,6 +170,10 @@ async function loadDialogData() {
   } finally {
     loading.value = false;
   }
+}
+
+function onQualityReqFaiSuggest(value: boolean) {
+  form.isFai = value;
 }
 
 function closeDialog() {
@@ -448,6 +458,17 @@ watch(
             </v-card-subtitle>
             <v-card-text class="pt-0">
               <v-row dense>
+                <v-col v-if="fieldVisible('qualityRequirementIds')" cols="12">
+                  <div class="text-caption text-medium-emphasis mb-1">
+                    {{ t('odakSiparis.lines.fields.qualityRequirementIds') }}
+                  </div>
+                  <OdakSiparisLineQualityReqPicker
+                    v-model="form.qualityRequirementIds"
+                    :customer-id="customerId"
+                    :readonly="isFieldReadonly('qualityRequirementIds')"
+                    @fai-suggest="onQualityReqFaiSuggest"
+                  />
+                </v-col>
                 <v-col v-if="fieldVisible('qualityReqs')" cols="12">
                   <v-textarea
                     v-model="form.qualityReqs"
@@ -469,6 +490,12 @@ watch(
                     hide-details
                     density="compact"
                   />
+                  <p
+                    v-if="form.isFai && form.qualityRequirementIds.length"
+                    class="text-caption text-medium-emphasis mt-1 mb-0"
+                  >
+                    {{ t('odakSiparis.lines.qualityPicker.faiAutoHint') }}
+                  </p>
                 </v-col>
                 <v-col v-if="fieldVisible('isFaiComplete')" cols="12" sm="6">
                   <v-switch

@@ -3935,6 +3935,48 @@
           "emailRequired": "E-posta zorunludur.",
           "emailInvalid": "Geçerli bir e-posta adresi girin."
         }
+      },
+      "qualityReqs": {
+        "title": "Kalite İsterleri",
+        "add": "İster ekle",
+        "empty": "Bu müşteri için henüz kalite isteri tanımlanmadı.",
+        "inactive": "Pasif",
+        "faiYes": "Evet",
+        "faiNo": "Hayır",
+        "copyFromTemplate": "Şablondan içe aktar",
+        "copyFromCustomer": "Müşteriden kopyala",
+        "copyDone": "{count} kalite isteri eklendi.",
+        "copyNone": "Eklenecek yeni ister bulunamadı (kod çakışması veya boş seçim).",
+        "deleteTitle": "Kalite isterini sil",
+        "deleteConfirm": "Bu kalite isteri kaydını silmek istediğinize emin misiniz?",
+        "fields": {
+          "kod": "Kod",
+          "ad": "Ad",
+          "aciklama": "Açıklama",
+          "faiUygulanacak": "FAI uygulanacak",
+          "aktif": "Aktif"
+        },
+        "dialog": {
+          "createTitle": "Yeni kalite isteri",
+          "editTitle": "Kalite isteri düzenle — {name}",
+          "missingId": "Kayıt kimliği bulunamadı.",
+          "missingCustomer": "Müşteri kimliği bulunamadı.",
+          "notFound": "Kalite isteri yüklenemedi."
+        },
+        "copyDialog": {
+          "templateTitle": "Şablondan içe aktar",
+          "customerTitle": "Müşteriden kopyala",
+          "templateHint": "Seçilen şablonlar müşteriye kopyalanır. Aynı kod zaten varsa atlanır.",
+          "customerHint": "Kaynak müşterinin aktif isterleri hedef müşteriye kopyalanır.",
+          "selectTemplates": "Şablonlar",
+          "selectCustomer": "Kaynak müşteri",
+          "import": "İçe aktar"
+        },
+        "validation": {
+          "kodRequired": "Kod zorunludur.",
+          "adRequired": "Ad zorunludur.",
+          "kodDuplicate": "Bu kod bu müşteri için zaten tanımlı."
+        }
       }
     },
     "po": {
@@ -4132,7 +4174,8 @@
         "quantity": "Miktar",
         "unit": "Birim",
         "shippedQuantity": "Sevk Miktarı",
-        "qualityReqs": "Kalite İsterleri",
+        "qualityReqs": "Ek not (kalite)",
+        "qualityRequirementIds": "Uygulanan kalite isterleri",
         "isFai": "FAI yapılacak",
         "isFaiComplete": "FAI tamamlandı",
         "deliveryDate": "Termin Tarihi",
@@ -4155,9 +4198,21 @@
         "missingId": "Kalem kimliği bulunamadı.",
         "notFound": "Kalem bulunamadı."
       },
+      "qualityPicker": {
+        "addLabel": "Kalite isteri ekle",
+        "noCustomer": "İş paketine müşteri atanmadığı için kalite isteri seçilemez.",
+        "noneSelected": "Henüz kalite isteri seçilmedi.",
+        "faiAutoHint": "Seçilen isterlerden en az biri FAI gerektiriyor; anahtarı kapatarak devre dışı bırakabilirsiniz.",
+        "columns": {
+          "kod": "Kod",
+          "ad": "Ad",
+          "fai": "FAI"
+        }
+      },
       "validation": {
         "descriptionRequired": "Ürün/hizmet tanımı zorunludur.",
         "quantityRequired": "Geçerli bir miktar girin.",
+        "noCustomerQualityReqs": "Bu müşteri için tanımlı kalite isteri yok. Müşteri kartından ister ekleyin.",
         "lineNoRequired": "Geçerli bir kalem numarası girin."
       },
       "columns": {

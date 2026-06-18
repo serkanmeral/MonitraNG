@@ -1,0 +1,87 @@
+{
+  "name": "odak_kalite_isteri_sablonlari",
+  "description": "Odak Siparis — kalite isteri sablon katalogu (musteriye kopyalama)",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "kod",
+      "title": "Kod",
+      "mandatory": true,
+      "unique": true,
+      "isArray": false,
+      "validation": { "minLength": 1, "maxLength": 32 }
+    },
+    {
+      "fieldType": "text",
+      "name": "ad",
+      "title": "Ad",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "minLength": 2, "maxLength": 200 }
+    },
+    {
+      "fieldType": "text",
+      "name": "aciklama",
+      "title": "Aciklama",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 2000 }
+    },
+    {
+      "fieldType": "bool",
+      "name": "faiUygulanacak",
+      "title": "FAI uygulanacak",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": false
+    },
+    {
+      "fieldType": "select",
+      "name": "sektor",
+      "title": "Sektor",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "options": {
+        "lookup": {
+          "source": "static",
+          "staticItems": [
+            { "value": "genel", "label": "Genel" },
+            { "value": "havacilik", "label": "Havacilik" },
+            { "value": "savunma", "label": "Savunma" },
+            { "value": "diger", "label": "Diger" }
+          ]
+        }
+      }
+    },
+    {
+      "fieldType": "number",
+      "name": "sira",
+      "title": "Sira",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": 0,
+      "validation": { "min": 0, "max": 9999 }
+    },
+    {
+      "fieldType": "bool",
+      "name": "aktif",
+      "title": "Aktif",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": true
+    }
+  ],
+  "indexList": [
+    { "name": "idx_kod", "fields": { "kod": 1 }, "unique": true },
+    { "name": "idx_sektor_sira", "fields": { "sektor": 1, "sira": 1 }, "unique": false }
+  ]
+}

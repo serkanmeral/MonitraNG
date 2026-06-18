@@ -1,18 +1,14 @@
-# Odak Siparis — odak_siparis_kalemleri dataset + Automated Form kurulumu
+# Odak Siparis — odak_musteri_kalite_isterleri + odak_kalite_isteri_sablonlari + kalem qualityRequirementIds
 #
 # Usage (repo kokunden):
 #   .\docs\odak\operationcore\scripts\get-operationcore-token.ps1
-#   .\docs\odak\siparis\scripts\setup-odak-siparis-kalemleri-dataset.ps1
-#
-# Runtime (hub entegrasyonu oncesi test):
-#   /apps/automated-forms/view/odak-siparis-kalemleri-form
-#
-# Not: sideMenuConfig.enabled=false — kalemler hub detay sekmesinden acilacak.
+#   .\docs\odak\siparis\scripts\setup-odak-musteri-kalite-isterleri-dataset.ps1
 
 param(
     [string]$BaseUrl = "http://192.168.20.20:5040",
     [switch]$UseGateway = $true,
-    [switch]$SkipSchema = $false
+    [switch]$SeedTemplates = $true,
+    [switch]$SkipKalemleri = $false
 )
 
 $ErrorActionPreference = "Stop"
@@ -22,16 +18,9 @@ $datasetDir = Join-Path $repoRoot "docs/odak/siparis/datasets"
 $categoryFile = Join-Path $repoRoot "docs/odak/is_surecleri/datasets/odak_business_dataset_category.json"
 $ocTokenScript = Join-Path $repoRoot "docs/odak/operationcore/scripts/load-operationcore-token.ps1"
 
-$datasetFile = Join-Path $datasetDir "odak_siparis_kalemleri_dataset.json"
-$formFile = Join-Path $datasetDir "odak_siparis_kalemleri_automated_form.json"
-
 $dataPath = if ($UseGateway) { "/data/api/v1/data" } else { "/api/v1/data" }
 $datasetsPath = if ($UseGateway) { "/data/api/v1/datasets" } else { "/api/v1/datasets" }
 $categoriesPath = if ($UseGateway) { "/data/api/v1/dataset-categories" } else { "/api/v1/dataset-categories" }
-
-if (-not (Test-Path $ocTokenScript)) { throw "Token script yok: $ocTokenScript" }
-if (-not (Test-Path $datasetFile)) { throw "Dataset dosyasi yok: $datasetFile" }
-if (-not (Test-Path $formFile)) { throw "Form dosyasi yok: $formFile" }
 
 $token = & $ocTokenScript
 if ([string]::IsNullOrEmpty($token)) { throw "Token alinamadi." }
@@ -78,14 +67,6 @@ function Get-Items {
     return @($Response)
 }
 
-function Get-DataId {
-    param($Response)
-    if (-not $Response) { return $null }
-    $d = $Response.data; if (-not $d) { $d = $Response.Data }; if (-not $d) { $d = $Response }
-    $id = $d.__dataId; if (-not $id) { $id = $d.dataId }; if (-not $id) { $id = $d.DataId }
-    return $id
-}
-
 function Convert-FieldOptions {
     param($Options)
     if (-not $Options) { return $null }
@@ -95,12 +76,7 @@ function Convert-FieldOptions {
         $items = @($lookup.staticItems | ForEach-Object {
             @{ value = [string]$_.value; label = [string]$_.label }
         })
-        return @{
-            lookup = @{
-                source      = [string]$lookup.source
-                staticItems = $items
-            }
-        }
+        return @{ lookup = @{ source = [string]$lookup.source; staticItems = $items } }
     }
     if ($lookup.source) {
         return @{ lookup = @{ source = [string]$lookup.source } }
@@ -114,10 +90,8 @@ function Ensure-DatasetCategory {
     $found = @(Get-Items (Invoke-Dg -Method GET -Uri $listUri)) | Where-Object { $_.categoryName -eq $CategoryName } | Select-Object -First 1
     if ($found) {
         $id = $found.dataId; if (-not $id) { $id = $found.__dataId }
-        Write-Host "  Category mevcut: $CategoryName ($id)" -ForegroundColor Yellow
         return $id
     }
-    if (-not (Test-Path $categoryFile)) { throw "Category file yok: $categoryFile" }
     $cat = Get-Content $categoryFile -Raw -Encoding UTF8 | ConvertFrom-Json
     $body = @{
         categoryName        = $cat.categoryName
@@ -128,7 +102,6 @@ function Ensure-DatasetCategory {
     $found2 = @(Get-Items (Invoke-Dg -Method GET -Uri $listUri)) | Where-Object { $_.categoryName -eq $CategoryName } | Select-Object -First 1
     if (-not $found2) { throw "Category olusturulamadi: $CategoryName" }
     $id = $found2.dataId; if (-not $id) { $id = $found2.__dataId }
-    Write-Host "  OK: Category $CategoryName -> $id" -ForegroundColor Green
     return $id
 }
 
@@ -174,7 +147,7 @@ function Ensure-DatasetSchema {
             IndexList   = @($schema.indexList)
         }
         Invoke-Dg -Method PUT -Uri $getUri -Body $body | Out-Null
-        Write-Host "  SYNC: dataset $name ($($fields.Count) alan)" -ForegroundColor Green
+        Write-Host "  SYNC: $name ($($fields.Count) alan)" -ForegroundColor Green
     }
     else {
         $body = @{
@@ -188,56 +161,41 @@ function Ensure-DatasetSchema {
             IndexList   = @($schema.indexList)
         }
         Invoke-Dg -Method POST -Uri "$BaseUrl$datasetsPath" -Body $body | Out-Null
-        Write-Host "  OK: dataset $name olusturuldu" -ForegroundColor Green
+        Write-Host "  OK: $name olusturuldu" -ForegroundColor Green
     }
 }
 
-function Ensure-AutomatedForm {
-    param([string]$FormFilePath)
-    $formDef = Get-Content $FormFilePath -Raw -Encoding UTF8 | ConvertFrom-Json
-    $formCode = $formDef.formCode
-    $filter = "formCode:eq:$formCode"
-    $existing = @(Get-Items (Invoke-Dg -Method GET -Uri "$BaseUrl$dataPath/@automated_forms?limit=1&filter=$([Uri]::EscapeDataString($filter))"))
-    $body = @{
-        formName       = $formDef.formName
-        formCode       = $formDef.formCode
-        description    = $formDef.description
-        datasetName    = $formDef.datasetName
-        isActive       = $formDef.isActive
-        sideMenuConfig = $formDef.sideMenuConfig
-        listConfig     = $formDef.listConfig
-        formConfig     = $formDef.formConfig
-    }
+function Seed-QualityTemplates {
+    $dataset = "odak_kalite_isteri_sablonlari"
+    $listUri = '{0}{1}/{2}?limit=1' -f $BaseUrl, $dataPath, [Uri]::EscapeDataString($dataset)
+    $existing = @(Get-Items (Invoke-Dg -Method GET -Uri $listUri))
     if ($existing.Count -gt 0) {
-        $id = $existing[0].__dataId; if (-not $id) { $id = $existing[0].dataId }
-        Invoke-Dg -Method PUT -Uri "$BaseUrl$dataPath/@automated_forms/$id" -Body $body | Out-Null
-        Write-Host "  SYNC: $formCode ($id)" -ForegroundColor Yellow
+        Write-Host "  Sablon seed atlandi (kayit var)" -ForegroundColor Gray
+        return
     }
-    else {
-        $created = Invoke-Dg -Method POST -Uri "$BaseUrl$dataPath/@automated_forms" -Body $body
-        $id = Get-DataId $created
-        Write-Host "  OK: $formCode -> $id" -ForegroundColor Green
+    $templates = @(
+        @{ kod = "KI-COC"; ad = "COC / Uygunluk Belgesi"; aciklama = "Certificate of Conformance"; faiUygulanacak = $false; sektor = "genel"; sira = 10; aktif = $true },
+        @{ kod = "KI-FAI"; ad = "First Article Inspection"; aciklama = "Ilk parca muayenesi"; faiUygulanacak = $true; sektor = "havacilik"; sira = 20; aktif = $true },
+        @{ kod = "KI-MTR"; ad = "Malzeme Test Raporu (MTR)"; aciklama = "Material test report"; faiUygulanacak = $false; sektor = "genel"; sira = 30; aktif = $true },
+        @{ kod = "KI-AS9102"; ad = "AS9102 FAI Formu"; aciklama = "Havacilik FAI dokumantasyonu"; faiUygulanacak = $true; sektor = "havacilik"; sira = 40; aktif = $true },
+        @{ kod = "KI-ROHS"; ad = "RoHS Uygunluk"; aciklama = "RoHS declaration"; faiUygulanacak = $false; sektor = "diger"; sira = 50; aktif = $true }
+    )
+    foreach ($t in $templates) {
+        $createUri = '{0}{1}/{2}' -f $BaseUrl, $dataPath, [Uri]::EscapeDataString($dataset)
+        Invoke-Dg -Method POST -Uri $createUri -Body $t | Out-Null
     }
+    Write-Host "  OK: $($templates.Count) sablon seed" -ForegroundColor Green
 }
 
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "Odak Siparis - odak_siparis_kalemleri" -ForegroundColor Cyan
-Write-Host "Gateway: $BaseUrl" -ForegroundColor Cyan
-Write-Host "========================================`n" -ForegroundColor Cyan
-
-if (-not $SkipSchema) {
-    Write-Host "[1] Dataset semasi..." -ForegroundColor Yellow
-    $categoryId = Ensure-DatasetCategory -CategoryName "BusinessDatasets"
-    Ensure-DatasetSchema -CategoryId $categoryId -DatasetFilePath $datasetFile
+Write-Host "`n=== setup-odak-musteri-kalite-isterleri-dataset ===" -ForegroundColor Cyan
+$categoryId = Ensure-DatasetCategory -CategoryName "BusinessDatasets"
+Ensure-DatasetSchema -CategoryId $categoryId -DatasetFilePath (Join-Path $datasetDir "odak_musteri_kalite_isterleri_dataset.json")
+Ensure-DatasetSchema -CategoryId $categoryId -DatasetFilePath (Join-Path $datasetDir "odak_kalite_isteri_sablonlari_dataset.json")
+if (-not $SkipKalemleri) {
+    Ensure-DatasetSchema -CategoryId $categoryId -DatasetFilePath (Join-Path $datasetDir "odak_siparis_kalemleri_dataset.json")
+} else {
+    Write-Host "  Kalemler semasi atlandi (-SkipKalemleri)" -ForegroundColor Gray
 }
-else {
-    Write-Host "[1] Dataset sema atlandi (-SkipSchema)" -ForegroundColor Gray
-}
-
-Write-Host "[2] @automated_forms..." -ForegroundColor Yellow
-Ensure-AutomatedForm -FormFilePath $formFile
-
-Write-Host ""
-Write-Host "Tamamlandi." -ForegroundColor Cyan
-Write-Host "AF runtime: /apps/automated-forms/view/odak-siparis-kalemleri-form" -ForegroundColor Gray
-Write-Host "Sonraki: migrate-legacy-package-to-dg.ps1 (MO yok)" -ForegroundColor Gray
+if ($SeedTemplates) { Seed-QualityTemplates }
+Write-Host "`nTamamlandi. Hub: Musteriler -> expand -> Kalite Isterleri." -ForegroundColor Cyan
+Write-Host "Tek basina kalem alani icin: setup-odak-siparis-kalemleri-dataset.ps1" -ForegroundColor Gray

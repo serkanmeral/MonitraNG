@@ -36,10 +36,12 @@ const props = withDefaults(
   defineProps<{
     packageId: string;
     packageNo?: string;
+    customerId?: string | null;
     compact?: boolean;
   }>(),
   {
     compact: false,
+    customerId: null,
   }
 );
 
@@ -277,6 +279,7 @@ onMounted(() => {
       :mode="lineDialogMode"
       :package-id="packageId"
       :package-no="packageNo"
+      :customer-id="customerId"
       :line-id="lineDialogId"
       :seed-row="lineDialogSeed"
       @saved="loadLines"
