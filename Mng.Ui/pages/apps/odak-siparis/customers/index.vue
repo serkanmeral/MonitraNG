@@ -50,7 +50,7 @@ const deleting = ref(false);
 
 const page = computed(() => ({ title: t('odakSiparis.customers.title') }));
 const breadcrumbs = computed(() => [
-  { text: t('operationCore.breadcrumbs.home'), disabled: false, href: '/dashboards/analytical' },
+  { text: t('breadcrumbs.home'), disabled: false, href: '/dashboards/analytical' },
   { text: t('odakSiparis.module'), disabled: false, href: '/apps/odak-siparis/packages' },
   { text: t('odakSiparis.customers.title'), disabled: true, href: '#' },
 ]);

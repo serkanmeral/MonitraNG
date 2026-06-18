@@ -142,7 +142,7 @@ function cellStyle(listKey: string, raw: string, item: OdakPackageRow): Record<s
 
 const page = computed(() => ({ title: t('odakSiparis.packages.title') }));
 const breadcrumbs = computed(() => [
-  { text: t('operationCore.breadcrumbs.home'), disabled: false, href: '/dashboards/analytical' },
+  { text: t('breadcrumbs.home'), disabled: false, href: '/dashboards/analytical' },
   { text: t('odakSiparis.module'), disabled: false, href: '/apps/odak-siparis/packages' },
   { text: t('odakSiparis.packages.title'), disabled: true, href: '#' },
 ]);

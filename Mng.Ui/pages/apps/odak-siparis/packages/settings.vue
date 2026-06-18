@@ -17,7 +17,7 @@ const activeTab = ref('listColumns');
 
 const page = { title: t('odakSiparis.packages.settings.title') };
 const breadcrumbs = [
-  { text: t('operationCore.breadcrumbs.home'), disabled: false, href: '/dashboards/analytical' },
+  { text: t('breadcrumbs.home'), disabled: false, href: '/dashboards/analytical' },
   { text: t('odakSiparis.module'), disabled: false, href: '/apps/odak-siparis/packages' },
   { text: t('odakSiparis.packages.title'), disabled: false, href: '/apps/odak-siparis/packages' },
   { text: t('odakSiparis.packages.settings.title'), disabled: true, href: '#' },
