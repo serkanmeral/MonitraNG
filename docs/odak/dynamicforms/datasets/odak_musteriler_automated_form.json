@@ -1,0 +1,86 @@
+{
+  "formName": "Odak Musteriler",
+  "formCode": "odak-musteriler-form",
+  "description": "Odak Uretim — musteri master verisi (Automated Forms)",
+  "datasetName": "odak_musteriler",
+  "isActive": true,
+  "sideMenuConfig": {
+    "enabled": true,
+    "routeType": "form",
+    "routePath": "/apps/automated-forms/view/odak-musteriler-form"
+  },
+  "listConfig": {
+    "enableSearch": true,
+    "defaultSortBy": "unvan",
+    "defaultSortOrder": "asc",
+    "columns": [
+      {
+        "fieldName": "kod",
+        "visible": true,
+        "order": 1,
+        "sortable": true,
+        "filterable": true,
+        "format": { "type": "color", "textColor": "primary" }
+      },
+      {
+        "fieldName": "unvan",
+        "visible": true,
+        "order": 2,
+        "sortable": true,
+        "filterable": true,
+        "format": { "type": "text-transform", "textTransform": "capitalize" }
+      },
+      {
+        "fieldName": "sektor",
+        "visible": true,
+        "order": 3,
+        "sortable": true,
+        "filterable": true,
+        "format": {
+          "type": "conditional-color",
+          "conditions": [
+            { "operator": "eq", "value": "havacilik", "textColor": "info" },
+            { "operator": "eq", "value": "savunma", "textColor": "warning" },
+            { "operator": "eq", "value": "diger", "textColor": "secondary" }
+          ]
+        }
+      },
+      {
+        "fieldName": "ulke",
+        "visible": true,
+        "order": 4,
+        "sortable": true,
+        "filterable": true
+      },
+      {
+        "fieldName": "aktif",
+        "visible": true,
+        "order": 5,
+        "sortable": true,
+        "filterable": true,
+        "format": {
+          "type": "conditional-color",
+          "conditions": [
+            { "operator": "eq", "value": true, "textColor": "success" },
+            { "operator": "eq", "value": false, "textColor": "error" }
+          ]
+        }
+      }
+    ]
+  },
+  "formConfig": {
+    "visibleFields": ["kod", "unvan", "sektor", "ulke", "aktif", "notlar"],
+    "readonlyFields": [],
+    "readonlyOnEditFields": ["kod"],
+    "fieldOrder": ["kod", "unvan", "sektor", "ulke", "aktif", "notlar"],
+    "fieldLayout": {
+      "kod": { "columnSpan": 4, "group": "Genel" },
+      "unvan": { "columnSpan": 8, "group": "Genel" },
+      "sektor": { "columnSpan": 6, "group": "Genel", "choiceWidget": "select" },
+      "ulke": { "columnSpan": 6, "group": "Genel" },
+      "aktif": { "columnSpan": 4, "group": "Genel" },
+      "notlar": { "columnSpan": 12, "group": "Notlar", "textWidget": "textarea" }
+    },
+    "groupOrder": ["Genel", "Notlar"]
+  }
+}

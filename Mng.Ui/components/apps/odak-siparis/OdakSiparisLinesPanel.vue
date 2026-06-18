@@ -1,16 +1,35 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import OdakSiparisLineDialog from '@/components/apps/odak-siparis/OdakSiparisLineDialog.vue';
+import OdakSiparisSubListScroll from '@/components/apps/odak-siparis/OdakSiparisSubListScroll.vue';
+import OdakSiparisSubListToolbar from '@/components/apps/odak-siparis/OdakSiparisSubListToolbar.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { ocDelete } from '@/services/operationCoreService';
-import { ODAK_SIPARIS_CONFIG, ODAK_DATA_TABLE_EXPAND_COLUMN, type OdakLineRow } from '@/utils/odakSiparisConfig';
+import {
+  ODAK_SIPARIS_CONFIG,
+  ODAK_DATA_TABLE_EXPAND_COLUMN,
+  ODAK_DATA_TABLE_STICKY_ACTIONS_HEADER,
+  ODAK_SUB_LIST_TABLE_CLASS,
+  type OdakLineRow,
+} from '@/utils/odakSiparisConfig';
+import { hubListCellDisplayValue, hubListCellStyle } from '@/utils/odakSiparisHubListCellFormat';
+import { loadOdakLineFieldPoliciesOnly, loadOdakLineListConfigOnly } from '@/utils/odakSiparisHubSettingsService';
+import {
+  buildLineListHeaders,
+  defaultOdakLineListConfig,
+  lineListCellRaw,
+  ODAK_LINE_LIST_KEY_TO_FIELD,
+  type OdakLineListConfig,
+} from '@/utils/odakSiparisLineListSettings';
+import type { OdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
+import { useOdakFieldAccess } from '@/composables/useOdakFieldAccess';
+import { odakLineSettingsFieldLabelTr } from '@/utils/odakSiparisSettingsLabels';
 import { buildOdakLineExpandSummaryRows } from '@/utils/odakSiparisLineSummary';
 import {
   lineDataId,
   listLinesForPackage,
   type OdakLineDialogMode,
 } from '@/utils/odakSiparisLineService';
-import { formatOdakDate } from '@/utils/odakSiparisService';
 import { EditIcon, EyeIcon, PlusIcon, RefreshIcon, TrashIcon } from 'vue-tabler-icons';
 
 const props = withDefaults(
@@ -40,23 +59,37 @@ const lineDialogMode = ref<OdakLineDialogMode>('view');
 const lineDialogId = ref<string | undefined>();
 const lineDialogSeed = ref<OdakLineRow | null>(null);
 
+const listConfig = ref<OdakLineListConfig>(defaultOdakLineListConfig());
+const fieldPolicies = ref<OdakFieldPoliciesBlob>({ policiesByField: {} });
+const { canViewListColumn } = useOdakFieldAccess(fieldPolicies, ODAK_LINE_LIST_KEY_TO_FIELD);
+
+function columnTitle(fieldName: string, listKey: string): string {
+  void listKey;
+  return odakLineSettingsFieldLabelTr(fieldName);
+}
+
+const configurableHeaders = computed(() =>
+  buildLineListHeaders(listConfig.value, columnTitle, (listKey) => canViewListColumn(listKey))
+);
+
 const headers = computed(() => [
   { ...ODAK_DATA_TABLE_EXPAND_COLUMN },
-  { title: t('odakSiparis.lines.columns.lineNo'), key: 'lineNo', width: 88 },
-  { title: t('odakSiparis.lines.columns.customerProjectNo'), key: 'customerProjectNo', width: 120 },
-  { title: t('odakSiparis.lines.columns.customerPoNo'), key: 'customerPoNo', width: 120 },
-  { title: t('odakSiparis.lines.columns.customerPoItemNo'), key: 'customerPoItemNo', width: 88 },
-  { title: t('odakSiparis.lines.columns.description'), key: 'description', minWidth: 180 },
-  { title: t('odakSiparis.lines.columns.quantity'), key: 'quantity', width: 88 },
-  { title: t('odakSiparis.lines.columns.unit'), key: 'unit', width: 72 },
+  ...configurableHeaders.value,
   {
     title: t('odakSiparis.lines.columns.actions'),
     key: 'actions',
-    sortable: false,
-    align: 'end' as const,
     width: 132,
+    ...ODAK_DATA_TABLE_STICKY_ACTIONS_HEADER,
   },
 ]);
+
+function cellDisplayValue(raw: string, listKey: string, item: OdakLineRow): string {
+  return hubListCellDisplayValue(raw, listKey, listConfig.value, ODAK_LINE_LIST_KEY_TO_FIELD, item);
+}
+
+function cellStyle(listKey: string, raw: string, item: OdakLineRow): Record<string, string> {
+  return hubListCellStyle(listKey, raw, listConfig.value, ODAK_LINE_LIST_KEY_TO_FIELD, item);
+}
 
 const filterLabel = computed(() => {
   if (props.compact) return '';
@@ -126,42 +159,62 @@ watch(
 );
 
 onMounted(() => {
+  void loadOdakLineListConfigOnly()
+    .then((cfg) => {
+      listConfig.value = cfg;
+    })
+    .catch(() => {
+      listConfig.value = defaultOdakLineListConfig();
+    });
+  void loadOdakLineFieldPoliciesOnly()
+    .then((blob) => {
+      fieldPolicies.value = blob;
+    })
+    .catch(() => {
+      fieldPolicies.value = { policiesByField: {} };
+    });
   void loadLines();
 });
 </script>
 
 <template>
   <div>
-    <div class="d-flex flex-wrap align-center ga-2 mb-3">
-      <span v-if="filterLabel" class="text-subtitle-1 font-weight-medium">{{ filterLabel }}</span>
-      <v-chip v-if="lines.length" size="small" variant="tonal" color="primary">
-        {{ lines.length }}
-      </v-chip>
-      <v-spacer />
-      <v-btn icon variant="outlined" size="small" :loading="loading" @click="loadLines">
-        <RefreshIcon size="18" />
-      </v-btn>
-      <v-btn color="primary" variant="flat" size="small" @click="openLineDialog('create')">
-        <PlusIcon class="mr-1" size="16" />
-        {{ t('odakSiparis.lines.add') }}
-      </v-btn>
-    </div>
-
     <v-alert v-if="errorMessage" type="error" variant="tonal" class="mb-3">
       {{ errorMessage }}
     </v-alert>
 
-    <v-data-table
-      v-model:expanded="expandedLineIds"
-      :headers="headers"
-      :items="lines"
-      :loading="loading"
-      item-value="__dataId"
-      show-expand
-      :expand-on-click="false"
-      :density="compact ? 'compact' : 'comfortable'"
-      class="border rounded-md odak-lines-table"
-    >
+    <OdakSiparisSubListScroll sticky-expand-column>
+      <template #toolbar>
+        <OdakSiparisSubListToolbar>
+          <template #info>
+            <span v-if="filterLabel" class="text-subtitle-1 font-weight-medium">{{ filterLabel }}</span>
+            <v-chip v-if="lines.length" size="small" variant="tonal" color="primary">
+              {{ lines.length }}
+            </v-chip>
+          </template>
+          <template #actions>
+            <v-btn icon variant="outlined" size="small" :loading="loading" @click="loadLines">
+              <RefreshIcon size="18" />
+            </v-btn>
+            <v-btn color="primary" variant="flat" size="small" @click="openLineDialog('create')">
+              <PlusIcon class="mr-1" size="16" />
+              {{ t('odakSiparis.lines.add') }}
+            </v-btn>
+          </template>
+        </OdakSiparisSubListToolbar>
+      </template>
+
+      <v-data-table
+        v-model:expanded="expandedLineIds"
+        :headers="headers"
+        :items="lines"
+        :loading="loading"
+        item-value="__dataId"
+        show-expand
+        :expand-on-click="false"
+        :density="compact ? 'compact' : 'comfortable'"
+        :class="['border', 'rounded-md', ODAK_SUB_LIST_TABLE_CLASS]"
+      >
       <template #expanded-row="{ columns, item }">
         <tr>
           <td :colspan="columns.length" class="pa-0">
@@ -191,13 +244,17 @@ onMounted(() => {
         </tr>
       </template>
 
-      <template #item.description="{ item }">
-        <span class="text-truncate d-inline-block" style="max-width: 280px" :title="item.description">
-          {{ item.description || '—' }}
+      <template v-for="col in configurableHeaders" :key="col.key" #[`item.${col.key}`]="{ item }">
+        <span
+          :class="col.key === 'description' ? 'text-truncate d-inline-block' : undefined"
+          :style="[
+            col.key === 'description' ? { maxWidth: '280px' } : undefined,
+            cellStyle(col.key, lineListCellRaw(item, col.key), item),
+          ]"
+          :title="col.key === 'description' ? item.description : undefined"
+        >
+          {{ cellDisplayValue(lineListCellRaw(item, col.key), col.key, item) }}
         </span>
-      </template>
-      <template #item.shipmentDate="{ item }">
-        {{ formatOdakDate(item.shipmentDate) }}
       </template>
       <template #item.actions="{ item }">
         <div class="d-inline-flex align-center justify-end ga-1">
@@ -213,6 +270,7 @@ onMounted(() => {
         </div>
       </template>
     </v-data-table>
+    </OdakSiparisSubListScroll>
 
     <OdakSiparisLineDialog
       v-model="lineDialogOpen"
@@ -244,28 +302,5 @@ onMounted(() => {
 .odak-line-expand-panel {
   background: rgba(var(--v-theme-surface-variant), 0.2);
   border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-}
-
-/* Expand (ilk sütun) solda sabit; eylemler sağda sabit. */
-.odak-lines-table :deep(table) > thead > tr > th:first-child,
-.odak-lines-table :deep(table) > tbody > tr:not(.v-data-table__expanded__content) > td:first-child {
-  position: sticky;
-  left: 0;
-  z-index: 3;
-  background: rgb(var(--v-theme-surface));
-  box-shadow: 6px 0 6px -6px rgba(0, 0, 0, 0.12);
-}
-
-.odak-lines-table :deep(table) > thead > tr > th:last-child,
-.odak-lines-table :deep(table) > tbody > tr:not(.v-data-table__expanded__content) > td:last-child {
-  position: sticky;
-  right: 0;
-  background: rgb(var(--v-theme-surface));
-  box-shadow: -6px 0 6px -6px rgba(0, 0, 0, 0.18);
-  z-index: 1;
-}
-
-.odak-lines-table :deep(table) > thead > tr > th:last-child {
-  z-index: 2;
 }
 </style>

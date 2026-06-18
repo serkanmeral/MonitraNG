@@ -8,8 +8,13 @@ export const ODAK_SIPARIS_CONFIG = {
   linesFormCode: 'odak-siparis-kalemleri-form',
   customersDataset: 'odak_musteriler',
   customersFormCode: 'odak-musteriler-form',
+  customerContactsDataset: 'odak_musteri_kisileri',
   ncrDataset: 'odak_ncr',
   capaDataset: 'odak_capa',
+  shipmentsDataset: 'odak_sevkiyatlar',
+  shipmentLinesDataset: 'odak_sevkiyat_kalemleri',
+  hubSettingsDataset: 'odak_siparis_hub_ayarlari',
+  notificationPoliciesDataset: 'odak_siparis_notification_policies',
 
   /** MO koprusu — ileride; hub DG kullanir */
   workspaceId: '9f9cc085-81c7-4a92-9fa2-357ad5c654cd',
@@ -25,6 +30,15 @@ export const ODAK_DATA_TABLE_EXPAND_COLUMN = {
   width: 48,
 } as const;
 
+/** Vuetify: eylemler sütunu — odak-sub-list-table ile; son sütun olmalı. */
+export const ODAK_DATA_TABLE_STICKY_ACTIONS_HEADER = {
+  sortable: false,
+  align: 'end' as const,
+} as const;
+
+/** Odak alt liste tabloları — OdakSiparisSubListScroll içinde kullanılır. */
+export const ODAK_SUB_LIST_TABLE_CLASS = 'odak-sub-list-table';
+
 export type OdakPackageStatus = 'open' | 'closed';
 
 export interface OdakPackageRow {
@@ -33,6 +47,9 @@ export interface OdakPackageRow {
   packageNo?: string;
   name?: string;
   customerId?: unknown;
+  customerContactId?: unknown;
+  designContactId?: unknown;
+  manufactureContactId?: unknown;
   status?: OdakPackageStatus | string;
   closedAt?: string | null;
   beginDate?: string;
@@ -101,6 +118,19 @@ export interface OdakCustomerRow {
   legacyFirmId?: string;
 }
 
+export interface OdakCustomerContactRow {
+  __dataId?: string;
+  dataId?: string;
+  parentCustomerId?: unknown;
+  ad?: string;
+  email?: string;
+  telefon?: string;
+  gorevUnvani?: string;
+  birincilKisi?: boolean;
+  aktif?: boolean;
+  legacyContactId?: string;
+}
+
 export const ODAK_CUSTOMER_SEKTOR_OPTIONS = [
   { value: 'havacilik', title: 'Havacılık' },
   { value: 'savunma', title: 'Savunma' },
@@ -131,6 +161,8 @@ export interface OdakLineRow {
   customerProjectNo?: string;
   customerPoNo?: string;
   customerPoItemNo?: number | string;
+  /** Müşteri SAS (satın alma) kalem numarası — PO kalem no'dan ayrı. */
+  sasItemNo?: string;
   customerJobNo?: string;
   poItemRevNo?: string;
   description?: string;
@@ -141,6 +173,8 @@ export interface OdakLineRow {
   qualityReqs?: string;
   isFai?: boolean;
   isFaiComplete?: boolean;
+  /** Kalem termin tarihi (iş paketi termininden bağımsız). */
+  deliveryDate?: string;
   shipmentDate?: string;
   shipmentAddress?: string;
   unitCost?: number;
@@ -213,6 +247,50 @@ export interface OdakNcrRow {
   notes?: string;
   legacyNcrId?: string;
   __createdAt?: string;
+}
+
+export type OdakShipmentStatus = 'Planlandi' | 'Tamamlandi' | 'Iptal';
+export type OdakQcfStatus = 'Yok' | 'Bekliyor' | 'Tamamlandi';
+
+export const ODAK_SHIPMENT_STATUS_OPTIONS = [
+  { value: 'Planlandi', title: 'Planlandı' },
+  { value: 'Tamamlandi', title: 'Tamamlandı' },
+  { value: 'Iptal', title: 'İptal' },
+] as const;
+
+export const ODAK_QCF_STATUS_OPTIONS = [
+  { value: 'Yok', title: 'Yok' },
+  { value: 'Bekliyor', title: 'Bekliyor' },
+  { value: 'Tamamlandi', title: 'Tamamlandı' },
+] as const;
+
+export interface OdakShipmentRow {
+  __dataId?: string;
+  dataId?: string;
+  parentPackageId?: unknown;
+  waybillNo?: string;
+  shipmentDate?: string;
+  status?: OdakShipmentStatus | string;
+  controlType?: string;
+  shipmentAddress?: string;
+  notes?: string;
+  qcfStatus?: OdakQcfStatus | string;
+  qcfReferenceNo?: string;
+  qcfNotes?: string;
+  legacyShipmentId?: string;
+  __createdAt?: string;
+}
+
+export interface OdakShipmentLineRow {
+  __dataId?: string;
+  dataId?: string;
+  parentShipmentId?: unknown;
+  parentPackageId?: unknown;
+  parentLineId?: unknown;
+  shippedQuantity?: number;
+  lineNo?: number;
+  lineDescription?: string;
+  legacyShipmentItemId?: string;
 }
 
 export interface OdakCapaRow {

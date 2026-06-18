@@ -1,0 +1,126 @@
+{
+  "pages": [
+    {
+      "targetWallMs": 1200,
+      "pageId": "explorer_open",
+      "ok": true,
+      "warmMedianWallMs": 661,
+      "sessionColdWallMs": 843,
+      "title": "Workspace explorer — ilk acilis (workspaces + MO live)",
+      "lastRunSuccess": true,
+      "warmP95WallMs": 774
+    },
+    {
+      "targetWallMs": 900,
+      "pageId": "explorer_select_board",
+      "ok": false,
+      "warmMedianWallMs": 1007,
+      "sessionColdWallMs": 953,
+      "title": "Explorer — workspace sec + board listesi (lazy)",
+      "lastRunSuccess": true,
+      "warmP95WallMs": 1021
+    },
+    {
+      "targetWallMs": 1200,
+      "pageId": "board_list_open",
+      "ok": false,
+      "warmMedianWallMs": 1004,
+      "sessionColdWallMs": 977,
+      "title": "Board sayfasi — list gorunumu (context + list + pool fields)",
+      "lastRunSuccess": true,
+      "warmP95WallMs": 1206
+    },
+    {
+      "targetWallMs": 3500,
+      "pageId": "board_kanban_open",
+      "ok": true,
+      "warmMedianWallMs": 2816,
+      "sessionColdWallMs": 5859,
+      "title": "Board — kanban (context + kolon sorgulari, batch 4)",
+      "lastRunSuccess": true,
+      "warmP95WallMs": 2899
+    },
+    {
+      "targetWallMs": 1800,
+      "pageId": "profile_open",
+      "ok": false,
+      "warmMedianWallMs": 2493,
+      "sessionColdWallMs": 2474,
+      "title": "Is profili — profile-view (tek toplu MO)",
+      "lastRunSuccess": true,
+      "warmP95WallMs": 2685
+    },
+    {
+      "targetWallMs": 1200,
+      "pageId": "dashboard_view",
+      "ok": false,
+      "warmMedianWallMs": 2293,
+      "sessionColdWallMs": 1485,
+      "title": "Pano — runtime dashboard (widget execute)",
+      "lastRunSuccess": true,
+      "warmP95WallMs": 2351
+    },
+    {
+      "targetWallMs": 2000,
+      "pageId": "work_item_new",
+      "ok": true,
+      "warmMedianWallMs": 1291,
+      "sessionColdWallMs": 1548,
+      "title": "Yeni is — form create context + boards",
+      "lastRunSuccess": true,
+      "warmP95WallMs": 1299
+    },
+    {
+      "targetWallMs": 1500,
+      "pageId": "notifications_inbox",
+      "ok": false,
+      "warmMedianWallMs": 1712,
+      "sessionColdWallMs": 1585,
+      "title": "Bildirimler — in-app liste",
+      "lastRunSuccess": true,
+      "warmP95WallMs": 1787
+    },
+    {
+      "targetWallMs": 2500,
+      "pageId": "admin_scheduled_jobs",
+      "ok": true,
+      "warmMedianWallMs": 1229,
+      "sessionColdWallMs": 1396,
+      "title": "Admin — zamanlanmis joblar (scheduler + DG schedules)",
+      "lastRunSuccess": true,
+      "warmP95WallMs": 2215
+    },
+    {
+      "targetWallMs": 800,
+      "pageId": "admin_ws_defs_shell",
+      "ok": false,
+      "warmMedianWallMs": 917,
+      "sessionColdWallMs": 885,
+      "title": "Admin — workspace tanimlari kabuk (workspace listesi)",
+      "lastRunSuccess": true,
+      "warmP95WallMs": 995
+    }
+  ],
+  "environment": {
+    "kanbanColumnCountSimulated": 5,
+    "gatewayBaseUrl": "http://192.168.20.20:5040",
+    "workspaceId": "9f9cc085-81c7-4a92-9fa2-357ad5c654cd",
+    "dashboardId": "0fecf373-463e-4ff7-9386-ad2a51742a7f",
+    "boardId": "fbc470c2-01a4-4992-b45a-bd1d099f59ab",
+    "workItemId": "0409ad5f-40be-44ef-ad3c-cce7408b08ef",
+    "warmIterations": 3
+  },
+  "generatedAtUtc": "2026-06-11T20:55:54.0672941Z",
+  "pageTargets": {
+    "admin_scheduled_jobs": 2500,
+    "board_kanban_open": 3500,
+    "explorer_open": 1200,
+    "notifications_inbox": 1500,
+    "admin_ws_defs_shell": 800,
+    "profile_open": 1800,
+    "explorer_select_board": 900,
+    "dashboard_view": 1200,
+    "work_item_new": 2000,
+    "board_list_open": 1200
+  }
+}

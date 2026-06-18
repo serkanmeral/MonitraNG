@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import OdakSiparisLinesPanel from '@/components/apps/odak-siparis/OdakSiparisLinesPanel.vue';
 import OdakSiparisPoDocumentPanel from '@/components/apps/odak-siparis/OdakSiparisPoDocumentPanel.vue';
 import OdakSiparisQualityPanel from '@/components/apps/odak-siparis/OdakSiparisQualityPanel.vue';
+import OdakSiparisShipmentsPanel from '@/components/apps/odak-siparis/OdakSiparisShipmentsPanel.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import type { OdakPackageRow } from '@/utils/odakSiparisConfig';
 import {
@@ -16,22 +17,23 @@ const props = defineProps<{
   packageRow: OdakPackageRow;
   customerLabels: Record<string, string>;
   /** Liste sayfasindan expand acilirken baslangic sekmesi (URL ile senkron). */
-  initialTab?: 'summary' | 'lines' | 'quality';
+  initialTab?: 'summary' | 'lines' | 'shipments' | 'quality';
 }>();
 
 const emit = defineEmits<{
   'open-customer': [customerId: string];
-  'update:activeTab': ['summary' | 'lines' | 'quality'];
+  'update:activeTab': ['summary' | 'lines' | 'shipments' | 'quality'];
 }>();
 
 const { t } = useAppI18n();
 const route = useRoute();
 
-type ExpandTab = 'summary' | 'lines' | 'quality';
+type ExpandTab = 'summary' | 'lines' | 'shipments' | 'quality';
 
 function tabFromRouteQuery(): ExpandTab {
   const tabFromQuery = route.query.tab;
   if (tabFromQuery === 'lines') return 'lines';
+  if (tabFromQuery === 'shipments') return 'shipments';
   if (tabFromQuery === 'quality') return 'quality';
   return 'summary';
 }
@@ -40,6 +42,7 @@ const activeTab = ref<ExpandTab>(props.initialTab ?? tabFromRouteQuery());
 const loading = ref(false);
 const errorMessage = ref('');
 const pkg = ref<OdakPackageRow | null>(null);
+const linesRefreshKey = ref(0);
 
 const packageId = computed(() => packageDataId(props.packageRow));
 
@@ -84,6 +87,10 @@ watch(
 watch(activeTab, (tab) => {
   emit('update:activeTab', tab);
 });
+
+function onShipmentSaved() {
+  linesRefreshKey.value += 1;
+}
 </script>
 
 <template>
@@ -100,6 +107,7 @@ watch(activeTab, (tab) => {
     <v-tabs v-model="activeTab" color="primary" density="compact" class="mb-3">
       <v-tab value="summary">{{ t('odakSiparis.detail.tabs.summary') }}</v-tab>
       <v-tab value="lines">{{ t('odakSiparis.detail.tabs.lines') }}</v-tab>
+      <v-tab value="shipments">{{ t('odakSiparis.detail.tabs.shipments') }}</v-tab>
       <v-tab value="quality">{{ t('odakSiparis.detail.tabs.quality') }}</v-tab>
     </v-tabs>
 
@@ -145,10 +153,19 @@ watch(activeTab, (tab) => {
 
     <div v-if="activeTab === 'lines'">
       <OdakSiparisLinesPanel
-        :key="packageId"
+        :key="`${packageId}-${linesRefreshKey}`"
         :package-id="packageId"
         :package-no="(pkg ?? packageRow).packageNo"
         compact
+      />
+    </div>
+
+    <div v-if="activeTab === 'shipments'">
+      <OdakSiparisShipmentsPanel
+        :key="packageId"
+        :package-id="packageId"
+        :package-no="(pkg ?? packageRow).packageNo"
+        @saved="onShipmentSaved"
       />
     </div>
 
@@ -166,6 +183,8 @@ watch(activeTab, (tab) => {
 .odak-package-expand-panel {
   background: rgba(var(--v-theme-surface-variant), 0.25);
   border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  min-width: 0;
+  overflow: visible;
 }
 
 .odak-summary-split__po {

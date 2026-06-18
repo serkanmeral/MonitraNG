@@ -7,6 +7,15 @@
   "fields": [
     {
       "fieldType": "text",
+      "name": "legacyFirmId",
+      "title": "Legacy firms.id",
+      "mandatory": false,
+      "unique": true,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    },
+    {
+      "fieldType": "text",
       "name": "kod",
       "title": "Musteri kodu",
       "mandatory": true,
@@ -15,7 +24,7 @@
       "validation": {
         "minLength": 3,
         "maxLength": 20,
-        "pattern": "^MUS-[0-9]{3}$",
+        "pattern": "^MUS-[0-9]{3,6}$",
         "message": "Kod MUS-XXX formatinda olmalidir"
       }
     },
@@ -75,6 +84,7 @@
     }
   ],
   "indexList": [
+    { "name": "idx_legacyFirmId", "fields": { "legacyFirmId": 1 }, "unique": true },
     { "name": "idx_kod", "fields": { "kod": 1 }, "unique": true },
     { "name": "idx_unvan", "fields": { "unvan": 1 }, "unique": false },
     { "name": "idx_aktif", "fields": { "aktif": 1 }, "unique": false }

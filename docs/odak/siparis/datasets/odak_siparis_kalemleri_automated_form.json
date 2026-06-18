@@ -44,37 +44,51 @@
         "filterable": true
       },
       {
-        "fieldName": "description",
+        "fieldName": "sasItemNo",
         "visible": true,
         "order": 5,
         "sortable": true,
         "filterable": true
       },
       {
-        "fieldName": "quantity",
+        "fieldName": "description",
         "visible": true,
         "order": 6,
+        "sortable": true,
+        "filterable": true
+      },
+      {
+        "fieldName": "quantity",
+        "visible": true,
+        "order": 7,
         "sortable": true,
         "filterable": false
       },
       {
         "fieldName": "unit",
         "visible": true,
-        "order": 7,
+        "order": 8,
         "sortable": true,
         "filterable": true
       },
       {
         "fieldName": "shippedQuantity",
         "visible": true,
-        "order": 8,
+        "order": 9,
         "sortable": true,
         "filterable": false
       },
       {
+        "fieldName": "deliveryDate",
+        "visible": true,
+        "order": 10,
+        "sortable": true,
+        "filterable": true
+      },
+      {
         "fieldName": "shipmentDate",
         "visible": true,
-        "order": 9,
+        "order": 11,
         "sortable": true,
         "filterable": true
       }
@@ -87,6 +101,7 @@
       "customerProjectNo",
       "customerPoNo",
       "customerPoItemNo",
+      "sasItemNo",
       "description",
       "poItemRevNo",
       "customerJobNo",
@@ -97,6 +112,7 @@
       "qualityReqs",
       "isFai",
       "isFaiComplete",
+      "deliveryDate",
       "shipmentDate",
       "shipmentAddress",
       "unitCost",
@@ -121,6 +137,7 @@
       "qualityReqs",
       "isFai",
       "isFaiComplete",
+      "deliveryDate",
       "shipmentDate",
       "shipmentAddress",
       "unitCost",
@@ -133,6 +150,7 @@
       "customerProjectNo": { "columnSpan": 4, "group": "Musteri PO" },
       "customerPoNo": { "columnSpan": 4, "group": "Musteri PO" },
       "customerPoItemNo": { "columnSpan": 4, "group": "Musteri PO" },
+      "sasItemNo": { "columnSpan": 4, "group": "Musteri PO" },
       "customerJobNo": { "columnSpan": 4, "group": "Musteri PO" },
       "poItemRevNo": { "columnSpan": 4, "group": "Musteri PO" },
       "description": { "columnSpan": 12, "group": "Urun", "textWidget": "textarea" },
@@ -143,6 +161,7 @@
       "qualityReqs": { "columnSpan": 12, "group": "Kalite", "textWidget": "textarea" },
       "isFai": { "columnSpan": 4, "group": "Kalite" },
       "isFaiComplete": { "columnSpan": 4, "group": "Kalite" },
+      "deliveryDate": { "columnSpan": 6, "group": "Sevkiyat" },
       "shipmentDate": { "columnSpan": 6, "group": "Sevkiyat" },
       "shipmentAddress": { "columnSpan": 12, "group": "Sevkiyat", "textWidget": "textarea" },
       "unitCost": { "columnSpan": 4, "group": "Maliyet" },

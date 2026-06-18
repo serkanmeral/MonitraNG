@@ -6,7 +6,7 @@ import {
   ODAK_NCR_STATUS_OPTIONS,
   type OdakNcrRow,
 } from '@/utils/odakSiparisConfig';
-import { listLinesForPackage, lineDataId } from '@/utils/odakSiparisLineService';
+import { formatLineSelectLabel, listLinesForPackage, lineDataId } from '@/utils/odakSiparisLineService';
 import {
   createOdakNcr,
   emptyNcrFormModel,
@@ -64,13 +64,13 @@ async function loadLineOptions() {
   }
   try {
     const lines = await listLinesForPackage(props.packageId);
+    const seen = new Set<string>();
     lineItems.value = lines
       .map((line) => {
         const id = lineDataId(line);
-        if (!id) return null;
-        const no = line.lineNo ?? '—';
-        const desc = line.description?.trim() || '';
-        return { value: id, title: desc ? `${no} — ${desc}` : String(no) };
+        if (!id || seen.has(id)) return null;
+        seen.add(id);
+        return { value: id, title: formatLineSelectLabel(line) };
       })
       .filter((x): x is { value: string; title: string } => !!x);
   } catch {

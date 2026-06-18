@@ -61,6 +61,15 @@
     },
     {
       "fieldType": "text",
+      "name": "sasItemNo",
+      "title": "SAS kalem no",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
       "name": "description",
       "title": "Urun ve hizmet tanimi",
       "mandatory": true,
@@ -199,6 +208,14 @@
       "unique": false,
       "isArray": false,
       "defaultValue": false
+    },
+    {
+      "fieldType": "datetime",
+      "name": "deliveryDate",
+      "title": "Termin tarihi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
     },
     {
       "fieldType": "datetime",

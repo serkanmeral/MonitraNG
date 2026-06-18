@@ -1,0 +1,27 @@
+{
+  "name": "odak_siparis_notification_policies",
+  "description": "Odak Siparis — e-posta bildirim politikaları (is paketi olaylari)",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    { "fieldType": "text", "name": "name", "title": "Ad", "mandatory": true, "unique": false, "isArray": false, "validation": { "maxLength": 200 } },
+    { "fieldType": "text", "name": "description", "title": "Aciklama", "mandatory": false, "unique": false, "isArray": false, "validation": { "maxLength": 2000 } },
+    { "fieldType": "text", "name": "eventType", "title": "Olay", "mandatory": true, "unique": false, "isArray": false, "validation": { "maxLength": 64 } },
+    { "fieldType": "text", "name": "recipientPersonIds", "title": "Alici person id listesi", "mandatory": true, "unique": false, "isArray": true },
+    { "fieldType": "text", "name": "emailTemplateKey", "title": "E-posta sablon anahtari", "mandatory": false, "unique": false, "isArray": false, "validation": { "maxLength": 128 } },
+    { "fieldType": "text", "name": "emailSubject", "title": "Konu override", "mandatory": false, "unique": false, "isArray": false, "validation": { "maxLength": 500 } },
+    { "fieldType": "bool", "name": "excludeActor", "title": "Islemi yapan haric", "mandatory": false, "unique": false, "isArray": false },
+    { "fieldType": "text", "name": "updateTriggerMode", "title": "Guncelleme tetik modu", "mandatory": false, "unique": false, "isArray": false, "validation": { "maxLength": 32 } },
+    { "fieldType": "text", "name": "watchedFields", "title": "Izlenen alanlar", "mandatory": false, "unique": false, "isArray": true },
+    { "fieldType": "text", "name": "shipmentTriggerMode", "title": "Sevkiyat tetik modu", "mandatory": false, "unique": false, "isArray": false, "validation": { "maxLength": 32 } },
+    { "fieldType": "text", "name": "fromStatus", "title": "Onceki durum", "mandatory": false, "unique": false, "isArray": false, "validation": { "maxLength": 64 } },
+    { "fieldType": "text", "name": "toStatus", "title": "Yeni durum", "mandatory": false, "unique": false, "isArray": false, "validation": { "maxLength": 64 } },
+    { "fieldType": "text", "name": "targetStatus", "title": "Hedef durum", "mandatory": false, "unique": false, "isArray": false, "validation": { "maxLength": 64 } },
+    { "fieldType": "number", "name": "priority", "title": "Oncelik", "mandatory": false, "unique": false, "isArray": false },
+    { "fieldType": "bool", "name": "isActive", "title": "Aktif", "mandatory": false, "unique": false, "isArray": false, "defaultValue": true }
+  ],
+  "indexList": [
+    { "name": "idx_event_active", "fields": { "eventType": 1, "isActive": 1 }, "unique": false }
+  ]
+}

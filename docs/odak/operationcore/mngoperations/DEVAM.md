@@ -1,9 +1,11 @@
 # MngOperations & Operation Core UI — Devam noktası (checkpoint)
 
-**Son güncelleme:** 11 Haziran 2026 (**OC-AUTO-PLAN v0.2** ✅ · **OC-PERF Odak** ✅ commit `b00d6a4`)  
-**Durum:** Zamanlanmış işler **SW-0…SW-6** ✅ · Odak perf deploy ✅ · **Workspace otomasyonu** planlama **tamam** — implementasyon **SW-A0** bekliyor (kod yok)
+**Son güncelleme:** 12 Haziran 2026 (**OC-BOARD-PERF** ✅ · **NCR/CAPA seed** ✅ · commit `68974b4`)  
+**Durum:** Board liste açılış network dedupe deploy ✅ · Workspace otomasyonu planlama tamam — **SW-A0** bekliyor (kod yok)
 
-> **⭐ KALDIĞIMIZ YER (11 Haz 2026 — otomasyon planlama v0.2 kapanışı):** **Workspace otomasyonu** planlaması tamamlandı. **Model:** 2 olay (WI duruma geldi · alarm şema) × 2 aksiyon (iş oluştur MVP · döküman faz 2). **Kararlar:** **Otomatik işler** ayrı sekme; `op_workspace_automations` tek kayıt; şablon + **alan eşlemesi** + varsayılan **`parentItemId`**; idempotency `none`; hata → geçiş kalır. **Dokümanlar:** [WORKSPACE_AUTOMATION_PLANNING.md](./WORKSPACE_AUTOMATION_PLANNING.md) (v0.2), [OC_UI_WORKSPACE_AUTOMATIONS.md](../ui/OC_UI_WORKSPACE_AUTOMATIONS.md). Odak referans: `hold_quality` + uygunsuz → NCR. **Implementasyon başlamadı.** **Sıradaki:** **SW-A0** (dataset `op_workspace_automations` + generator) → SW-A1 (MO) → SW-A2 (UI) → SW-A3 (Odak seed/E2E). **Yeni chat:** bu DEVAM + planlama + UI dokümanı + [../../is_surecleri/DEVAM.md](../../is_surecleri/DEVAM.md).
+> **⭐ KALDIĞIMIZ YER (12 Haz 2026 — mola):** Odak Üretim **NCR/CAPA** seed + **OcBoardPanel** performans paketi canlı. **UI commit zinciri:** `774d823` (seed + loading panel) → `2bdd432` (stale list) → `730e585` (paralel context+list, lazy relation) → `68974b4` (katalog DG atla, `ocGetWorkspace` dedupe, çift list engeli). Kullanıcı network sonrası **OK** dedi. **Sıradaki:** [../../is_surecleri/DEVAM.md](../../is_surecleri/DEVAM.md) öncelikleri (NCR lifecycle test, SW-A0…). **Yeni chat:** bu DEVAM ⭐ + is_surecleri DEVAM ⭐.
+>
+> **⭐ KALDIĞIMIZ YER (11 Haz 2026 — otomasyon planlama v0.2 kapanışı):** **Workspace otomasyonu** planlaması tamamlandı. **Model:** 2 olay (WI duruma geldi · alarm şema) × 2 aksiyon (iş oluştur MVP · döküman faz 2). **Kararlar:** **Otomatik işler** ayrı sekme; `op_workspace_automations` tek kayıt; şablon + **alan eşlemesi** + varsayılan **`parentItemId`**; idempotency `none`; hata → geçiş kalır. **Dokümanlar:** [WORKSPACE_AUTOMATION_PLANNING.md](./WORKSPACE_AUTOMATION_PLANNING.md) (v0.2), [OC_UI_WORKSPACE_AUTOMATIONS.md](../ui/OC_UI_WORKSPACE_AUTOMATIONS.md). Odak referans: `hold_quality` + uygunsuz → NCR. **Implementasyon başlamadı.** **Sıradaki:** **SW-A0** (dataset `op_workspace_automations` + generator) → SW-A1 (MO) → SW-A2 (UI) → SW-A3 (Odak seed/E2E).
 >
 > **⭐ KALDIĞIMIZ YER (11 Haz 2026 — perf oturumu):** Odak Üretim **performans paketi** commit+push+deploy tamam (`b00d6a4`: profile-view lazy timeline, metadata cache, UI poolFields/displayForm). Aynı oturumda Kalite → NCR ihtiyacı planlamaya evrildi (yukarıdaki v0.2 bloğu).
 >
@@ -37,6 +39,21 @@
 > **Kaldığımız yer (31 May, önceki):** Biriken backlog (F-T2/F-K, BLF-10, NP-7, BL-GRP, BO-5/6, BL-GRP-2) **`mngoperations`+`mngui` Odak'a deploy edildi** (31 May ~02:28, healthy — `gateway=200 ui=200`, SLA-1 smoke yeşil OCD-0065). Ardından **grup alan filtresi (BL-GRP-3)** de yapıldı ve `mngui` deploy edildi (31 May ~02:41, `ui=200`). Tüm biriken işler Odak'ta canlı; değişiklikler `main`'e **commit + push** edildi. Ardından **Keeper `by-ids` toplu uç + Redis profil cache (BL-KB)** yapıldı (User/Group `POST by-ids`; MO dizin servisleri tek istekte çözer, N+1 giderildi; Keeper'da `IDirectoryCache` Redis cache + CRUD invalidation) ve **`mngkeeper`+`mngoperations` Odak'a deploy edildi** (31 May ~03:04, healthy). Ardından **Faz-4 / dosya bölme (B)** kısmen yapıldı (davranış birebir aynı): `RuntimeContextService.cs` 1549→1015 satır + 3 `partial` dosya (MO build 0/0); `operationCoreService.ts` 2324→2025 satır, leaf domain'ler (notifications/rules/sla/schedules) `services/operationCore/` altına barrel ile taşındı (`nuxt build` temiz). Henüz commit/deploy **yapılmadı**. Sıradaki: kalan TS domain'leri (opsiyonel) ve/veya tablo sanallaştırma (ihtiyaç doğunca).
 
 **Ana plan:** [OC_UI_ADMIN_FAZ1_PLAN.md](../ui/OC_UI_ADMIN_FAZ1_PLAN.md) · **Odak deploy:** [../../deploy/README.md](../../deploy/README.md) · **Perf (Mayıs):** [PERF_OPTIMIZATION.md](PERF_OPTIMIZATION.md) · **Perf (Haziran UI Faz 1+1B):** [../../diagnostic/PERFORMANCE_ROADMAP.md](../../diagnostic/PERFORMANCE_ROADMAP.md) · **Kontrol rehberi:** [PERF_KONTROL_REHBERI.md](PERF_KONTROL_REHBERI.md)
+
+---
+
+## OC-BOARD-PERF — Board liste açılış network (11–12 Haz 2026)
+
+| Kod | Commit | Değişen | Not |
+|-----|--------|---------|-----|
+| **OC-BOARD-LOAD** | `774d823` | `OcBoardPanel`, `operationCore` store | Board değişiminde loading panel; `:key="boardId"` |
+| **OC-BOARD-RACE** | `2bdd432` | store `boardDataEpoch`, `loadBoardListPage` guard | Eski board listesi flash / geç yanıt |
+| **OC-BOARD-PAR** | `730e585` | `loadPage` Promise.all, `useOcBoardRelationLookups` lazy | Context+list paralel; relation DG yalnız filtre açılışında |
+| **OC-BOARD-DEDUP** | `68974b4` | `useOcBoardListLookups`, `ocGetWorkspace` inflight, `lastSignature` | DG katalog tekrarı yok; tek `list`; embedded board cache |
+
+**Kök neden (network waterfall):** `useOcBoardListLookups` context `catalogs` varken `ocListStatesForWorkspace` vb. çağırıyordu → her biri `ocGetWorkspace` (workspace UUID ×3, çift batch = ×6) + çift `list` (prefetch sort imzası ≠ `buildListRequest`).
+
+**Odak Üretim referans:** [../../is_surecleri/DEVAM.md](../../is_surecleri/DEVAM.md)
 
 ---
 

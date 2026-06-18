@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import OdakSiparisCustomerContactCards from '@/components/apps/odak-siparis/OdakSiparisCustomerContactCards.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import type { OdakCustomerRow } from '@/utils/odakSiparisConfig';
 import {
@@ -85,7 +86,7 @@ watch(
     :model-value="modelValue"
     location="right"
     temporary
-    width="380"
+    width="400"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <div class="d-flex flex-column h-100">
@@ -142,6 +143,13 @@ watch(
             </tr>
           </tbody>
         </v-table>
+
+        <OdakSiparisCustomerContactCards
+          v-if="customer && props.customerId"
+          :customer-id="props.customerId"
+          compact
+          class="mt-4"
+        />
       </div>
 
       <div class="pa-4 border-t d-flex flex-column ga-2">

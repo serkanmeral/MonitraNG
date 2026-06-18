@@ -30,6 +30,11 @@ const workspaceId = computed(() =>
   typeof route.query.workspaceId === 'string' ? route.query.workspaceId.trim() : ''
 );
 const boardId = computed(() => (typeof route.query.boardId === 'string' ? route.query.boardId.trim() : ''));
+const typeIdQuery = computed(() => (typeof route.query.typeId === 'string' ? route.query.typeId.trim() : ''));
+const parentItemIdQuery = computed(() =>
+  typeof route.query.parentItemId === 'string' ? route.query.parentItemId.trim() : ''
+);
+const fromHub = computed(() => route.query.from === 'odak-siparis');
 const formIdQuery = computed(() => (typeof route.query.formId === 'string' ? route.query.formId.trim() : ''));
 
 const loading = ref(false);
@@ -129,6 +134,12 @@ async function loadForm() {
       ctx.poolFields?.length ? ctx.poolFields : await ocListPoolFieldsForWorkspace(ws);
     formContext.value = enrichFormRuntimeFields(ctx, { poolFields, translate: t });
     formModel.value = initialFormModelFromContext(ctx);
+    if (typeIdQuery.value) {
+      formModel.value.typeId = typeIdQuery.value;
+    }
+    if (parentItemIdQuery.value) {
+      formModel.value.parentItemId = parentItemIdQuery.value;
+    }
     validationAttempted.value = false;
   } catch (e: unknown) {
     formContext.value = null;
@@ -157,6 +168,16 @@ async function submit() {
       formContext.value
     );
     const created = await ocCreateWorkItem(payload);
+    if (fromHub.value) {
+      const qs = new URLSearchParams();
+      if (workspaceId.value) qs.set('workspaceId', workspaceId.value);
+      if (boardId.value) qs.set('boardId', boardId.value);
+      const suffix = qs.toString() ? `?${qs.toString()}` : '';
+      await router.push(
+        `/apps/operation-core/work-items/${encodeURIComponent(created.id)}/profile${suffix}`
+      );
+      return;
+    }
     const qs = new URLSearchParams();
     if (boardId.value) qs.set('from', 'board');
     if (boardId.value) qs.set('boardId', boardId.value);

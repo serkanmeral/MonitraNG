@@ -9,12 +9,35 @@ import {
   lineBelongsToPackage,
   packageDataId,
 } from '@/utils/odakSiparisService';
+import {
+  filterLinePayloadByFieldAccess,
+  lineRecordForPolicyEval,
+} from '@/utils/odakSiparisFieldPolicies';
+import { loadOdakLineFieldPoliciesOnly } from '@/utils/odakSiparisHubSettingsService';
 import { fromDateInputValue, toDateInputValue } from '@/utils/odakSiparisDateUtils';
+import { useAuthStore } from '@/stores/auth';
 
 export type OdakLineDialogMode = 'view' | 'create' | 'edit';
 
 export function lineDataId(row: OdakLineRow | Record<string, unknown>): string {
   return packageDataId(row);
+}
+
+/** Combobox / select — ayni aciklama tekrar eden kalemleri ayirt etmek icin. */
+export function formatLineSelectLabel(line: OdakLineRow | Record<string, unknown>): string {
+  const row = line as OdakLineRow;
+  const no = row.lineNo ?? '—';
+  const desc = row.description?.trim() || '';
+  const parts: string[] = [`#${no}`];
+  if (row.customerPoItemNo != null && String(row.customerPoItemNo).trim() !== '') {
+    parts.push(`PO kalem ${row.customerPoItemNo}`);
+  }
+  if (row.quantity != null) {
+    const unit = (row.unit ?? 'adet').trim() || 'adet';
+    parts.push(`${row.quantity} ${unit}`);
+  }
+  const prefix = parts.join(' · ');
+  return desc ? `${prefix} — ${desc}` : prefix;
 }
 
 export function productLabelFromRow(raw: unknown): string {
@@ -44,6 +67,7 @@ export interface OdakLineFormModel {
   customerProjectNo: string;
   customerPoNo: string;
   customerPoItemNo: string;
+  sasItemNo: string;
   customerJobNo: string;
   poItemRevNo: string;
   description: string;
@@ -54,6 +78,7 @@ export interface OdakLineFormModel {
   qualityReqs: string;
   isFai: boolean;
   isFaiComplete: boolean;
+  deliveryDate: string;
   shipmentDate: string;
   shipmentAddress: string;
   unitCost: number | null;
@@ -67,6 +92,7 @@ export function emptyLineFormModel(partial?: Partial<OdakLineFormModel>): OdakLi
     customerProjectNo: partial?.customerProjectNo ?? '',
     customerPoNo: partial?.customerPoNo ?? '',
     customerPoItemNo: partial?.customerPoItemNo ?? '',
+    sasItemNo: partial?.sasItemNo ?? '',
     customerJobNo: partial?.customerJobNo ?? '',
     poItemRevNo: partial?.poItemRevNo ?? '',
     description: partial?.description ?? '',
@@ -77,6 +103,7 @@ export function emptyLineFormModel(partial?: Partial<OdakLineFormModel>): OdakLi
     qualityReqs: partial?.qualityReqs ?? '',
     isFai: partial?.isFai ?? false,
     isFaiComplete: partial?.isFaiComplete ?? false,
+    deliveryDate: partial?.deliveryDate ?? '',
     shipmentDate: partial?.shipmentDate ?? '',
     shipmentAddress: partial?.shipmentAddress ?? '',
     unitCost: partial?.unitCost ?? null,
@@ -91,6 +118,7 @@ export function lineRowToFormModel(row: OdakLineRow): OdakLineFormModel {
     customerProjectNo: row.customerProjectNo ?? '',
     customerPoNo: row.customerPoNo ?? '',
     customerPoItemNo: row.customerPoItemNo != null ? String(row.customerPoItemNo) : '',
+    sasItemNo: row.sasItemNo ?? '',
     customerJobNo: row.customerJobNo ?? '',
     poItemRevNo: row.poItemRevNo ?? '',
     description: row.description ?? '',
@@ -101,6 +129,7 @@ export function lineRowToFormModel(row: OdakLineRow): OdakLineFormModel {
     qualityReqs: row.qualityReqs ?? '',
     isFai: Boolean(row.isFai),
     isFaiComplete: Boolean(row.isFaiComplete),
+    deliveryDate: toDateInputValue(row.deliveryDate),
     shipmentDate: toDateInputValue(row.shipmentDate),
     shipmentAddress: row.shipmentAddress ?? '',
     unitCost: row.unitCost ?? null,
@@ -121,6 +150,7 @@ export function formModelToPayload(
     customerProjectNo: form.customerProjectNo.trim() || null,
     customerPoNo: form.customerPoNo.trim() || null,
     customerPoItemNo: poItem ? Number(poItem) : null,
+    sasItemNo: form.sasItemNo.trim() || null,
     customerJobNo: form.customerJobNo.trim() || null,
     poItemRevNo: form.poItemRevNo.trim() || null,
     description: form.description.trim(),
@@ -130,6 +160,7 @@ export function formModelToPayload(
     qualityReqs: form.qualityReqs.trim() || null,
     isFai: form.isFai,
     isFaiComplete: form.isFaiComplete,
+    deliveryDate: fromDateInputValue(form.deliveryDate),
     shipmentDate: fromDateInputValue(form.shipmentDate),
     shipmentAddress: form.shipmentAddress.trim() || null,
     unitCost: form.unitCost,
@@ -185,12 +216,30 @@ export async function searchOdakProducts(query: string): Promise<{ value: string
     .filter((x): x is { value: string; title: string } => !!x);
 }
 
+async function applyLineFieldPolicyToPayload(
+  body: Record<string, unknown>,
+  existingRow?: OdakLineRow | null
+): Promise<Record<string, unknown>> {
+  let blob = { policiesByField: {} };
+  try {
+    blob = await loadOdakLineFieldPoliciesOnly();
+  } catch {
+    /* open defaults */
+  }
+  const auth = useAuthStore();
+  const record = existingRow
+    ? lineRecordForPolicyEval(existingRow)
+    : lineRecordForPolicyEval(body as OdakLineRow);
+  return filterLinePayloadByFieldAccess(body, auth.userGroups, record, blob);
+}
+
 export async function createOdakLine(
   packageId: string,
   form: OdakLineFormModel
 ): Promise<string | null> {
   syncLineTotalCost(form);
-  const body = formModelToPayload(form, packageId);
+  let body = formModelToPayload(form, packageId);
+  body = await applyLineFieldPolicyToPayload(body);
   const created = await ocCreate(ODAK_SIPARIS_CONFIG.linesDataset, body);
   const o = created as Record<string, unknown>;
   return packageDataId(o) || null;
@@ -199,10 +248,12 @@ export async function createOdakLine(
 export async function updateOdakLine(
   lineId: string,
   packageId: string,
-  form: OdakLineFormModel
+  form: OdakLineFormModel,
+  existingRow?: OdakLineRow | null
 ): Promise<void> {
   syncLineTotalCost(form);
-  const body = formModelToPayload(form, packageId);
+  let body = formModelToPayload(form, packageId);
+  body = await applyLineFieldPolicyToPayload(body, existingRow ?? null);
   await ocUpdate(ODAK_SIPARIS_CONFIG.linesDataset, lineId, body);
 }
 

@@ -1,9 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import OdakSiparisNcrDialog from '@/components/apps/odak-siparis/OdakSiparisNcrDialog.vue';
+import OdakSiparisSubListScroll from '@/components/apps/odak-siparis/OdakSiparisSubListScroll.vue';
+import OdakSiparisSubListToolbar from '@/components/apps/odak-siparis/OdakSiparisSubListToolbar.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { ocDelete } from '@/services/operationCoreService';
-import { ODAK_SIPARIS_CONFIG, type OdakNcrRow } from '@/utils/odakSiparisConfig';
+import {
+  ODAK_DATA_TABLE_STICKY_ACTIONS_HEADER,
+  ODAK_SIPARIS_CONFIG,
+  ODAK_SUB_LIST_TABLE_CLASS,
+  type OdakNcrRow,
+} from '@/utils/odakSiparisConfig';
 import {
   countOpenNcrs,
   formatNcrDate,
@@ -47,9 +54,8 @@ const headers = computed(() => [
   {
     title: t('odakSiparis.packages.columns.actions'),
     key: 'actions',
-    sortable: false,
-    align: 'end' as const,
     width: 132,
+    ...ODAK_DATA_TABLE_STICKY_ACTIONS_HEADER,
   },
 ]);
 
@@ -113,34 +119,40 @@ defineExpose({ reload: loadItems });
 
 <template>
   <div>
-    <div class="d-flex flex-wrap align-center ga-2 mb-3">
-      <div class="text-body-2 text-medium-emphasis">
-        {{ t('odakSiparis.quality.ncr.summary', { count: items.length, open: openCount }) }}
-      </div>
-      <v-spacer />
-      <v-btn icon variant="outlined" size="small" :loading="loading" @click="loadItems">
-        <RefreshIcon size="18" />
-      </v-btn>
-      <v-btn color="primary" variant="flat" size="small" @click="openDialog('create')">
-        <PlusIcon class="mr-1" size="16" />
-        {{ t('odakSiparis.quality.ncr.add') }}
-      </v-btn>
-    </div>
-
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-3">
       {{ errorMessage }}
     </v-alert>
 
-    <v-data-table
-      :headers="headers"
-      :items="items"
-      :loading="loading"
-      item-value="__dataId"
-      density="compact"
-      class="border rounded-md bg-surface"
-      :items-per-page="10"
-      hide-default-footer
-    >
+    <OdakSiparisSubListScroll>
+      <template #toolbar>
+        <OdakSiparisSubListToolbar>
+          <template #info>
+            <div class="text-body-2 text-medium-emphasis">
+              {{ t('odakSiparis.quality.ncr.summary', { count: items.length, open: openCount }) }}
+            </div>
+          </template>
+          <template #actions>
+            <v-btn icon variant="outlined" size="small" :loading="loading" @click="loadItems">
+              <RefreshIcon size="18" />
+            </v-btn>
+            <v-btn color="primary" variant="flat" size="small" @click="openDialog('create')">
+              <PlusIcon class="mr-1" size="16" />
+              {{ t('odakSiparis.quality.ncr.add') }}
+            </v-btn>
+          </template>
+        </OdakSiparisSubListToolbar>
+      </template>
+
+      <v-data-table
+        :headers="headers"
+        :items="items"
+        :loading="loading"
+        item-value="__dataId"
+        density="compact"
+        :class="['border', 'rounded-md', 'bg-surface', ODAK_SUB_LIST_TABLE_CLASS]"
+        :items-per-page="10"
+        hide-default-footer
+      >
       <template #item.ncrNo="{ item }">
         <span class="font-weight-medium">{{ ncrDisplayNo(item) }}</span>
       </template>
@@ -175,6 +187,7 @@ defineExpose({ reload: loadItems });
         </div>
       </template>
     </v-data-table>
+    </OdakSiparisSubListScroll>
 
     <OdakSiparisNcrDialog
       v-model="dialogOpen"

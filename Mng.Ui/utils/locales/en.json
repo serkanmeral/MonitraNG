@@ -3607,13 +3607,15 @@
       "openFullDetail": "Full detail page",
       "openQuality": "Quality (NCR/CAPA)",
       "fields": {
-        "poVersion": "PO version"
+        "poVersion": "Revision number (Rev No)"
       },
       "dialog": {
         "createTitle": "New work package",
         "editTitle": "Edit work package — {no}",
         "missingId": "Package id not found.",
-        "notFound": "Could not load work package."
+        "notFound": "Could not load work package.",
+        "selectCustomerFirst": "Select a customer first; contacts are listed per customer.",
+        "customerContactsGroup": "Customer responsibles"
       },
       "validation": {
         "packageNoRequired": "Work package number is required.",
@@ -3647,6 +3649,127 @@
         "customerPoItem": "Customer PO Item",
         "productDesc": "Product / Service Description",
         "productDescHint": "Line-based — on loaded packages"
+      },
+      "settings": {
+        "title": "Work Package Settings",
+        "backToList": "Back to list",
+        "save": "Save",
+        "saved": "Settings saved.",
+        "tabs": {
+          "listColumns": "List columns",
+          "notifications": "Notifications",
+          "fieldPolicies": "Field permissions"
+        },
+        "listColumns": {
+          "hint": "Shared list layout for all users. Drag rows to reorder columns.",
+          "visible": "Visible",
+          "sortable": "Sortable",
+          "filterable": "Filterable",
+          "reset": "Reset to defaults",
+          "editFormat": "Format",
+          "formatTitle": "Column format — {column}",
+          "clearFormat": "Clear format",
+          "noFormat": "No format",
+          "empty": "No column definitions found. Use Reset to defaults to recreate them."
+        },
+        "listTabs": {
+          "packages": "Work packages",
+          "lines": "Line items",
+          "shipments": "Shipments",
+          "linesHint": "Shared column settings for the line list inside work package detail.",
+          "shipmentsHint": "Shared column settings for the shipment list inside work package detail."
+        },
+        "notifications": {
+          "hint": "Email notification policies. Only Keeper users can be selected as recipients.",
+          "addPolicy": "Add policy",
+          "editPolicy": "Edit policy",
+          "deleteTitle": "Delete policy",
+          "deleteConfirm": "Are you sure you want to delete this notification policy?",
+          "colName": "Name",
+          "colEvent": "Event",
+          "colRecipients": "Recipients",
+          "colTemplate": "Template",
+          "colStatus": "Status",
+          "active": "Active",
+          "inactive": "Inactive",
+          "fieldName": "Policy name",
+          "fieldDescription": "Description",
+          "fieldEvent": "Event type",
+          "fieldPriority": "Priority",
+          "fieldRecipients": "Recipients (Keeper users)",
+          "fieldTemplate": "Email template",
+          "fieldSubject": "Email subject",
+          "fieldActive": "Active",
+          "excludeActor": "Exclude actor",
+          "updateTrigger": "Update trigger",
+          "updateAlways": "On every update",
+          "updateFields": "When specific fields change",
+          "watchedFields": "Watched fields",
+          "shipmentTrigger": "Shipment trigger",
+          "shipmentTransition": "Status transition",
+          "shipmentToStatus": "When reaching target status",
+          "shipmentAlways": "On every shipment save",
+          "fromStatus": "From status",
+          "toStatus": "To status",
+          "targetStatus": "Target status",
+          "eventTypes": {
+            "PackageCreated": "Work package created",
+            "PackageUpdated": "Work package updated",
+            "ShipmentCompleted": "Shipment completed"
+          }
+        },
+        "fieldPolicies": {
+          "hint": "Group-based field visibility and read-only rules. No policy means everyone can view and edit.",
+          "addVisibility": "Add visibility policy",
+          "addReadonly": "Add read-only policy",
+          "colKind": "Kind",
+          "colGroups": "Groups",
+          "colScope": "Scope",
+          "colEffect": "Effect",
+          "kindVisibility": "Visibility",
+          "kindReadonly": "Read-only",
+          "allGroups": "All groups",
+          "scopeAlways": "Always",
+          "scopeConditional": "Conditional",
+          "visible": "Visible",
+          "hidden": "Hidden",
+          "readonly": "Read-only",
+          "editable": "Editable",
+          "groups": "Groups",
+          "groupsHint": "Leave empty to apply to all groups.",
+          "conditions": "Conditions",
+          "addCondition": "Add condition",
+          "addTitle": "{field} — add policy",
+          "editTitle": "{field} — edit policy"
+        },
+        "fieldTabs": {
+          "packages": "Work packages",
+          "lines": "Line items",
+          "shipments": "Shipments",
+          "linesHint": "Group-based visibility and read-only rules for the line form. Default: cost fields hidden.",
+          "shipmentsHint": "Group-based visibility and read-only rules for the shipment form."
+        },
+        "fieldPolicyFields": {
+          "packageNo": "Work package no",
+          "name": "Work package name",
+          "customerId": "Customer",
+          "customerContactId": "Customer contact",
+          "designContactId": "Design responsible",
+          "manufactureContactId": "Manufacturing responsible",
+          "status": "Status",
+          "closedAt": "Closed at",
+          "beginDate": "Start date",
+          "deliveryDate": "Due date",
+          "deliveryAddress": "Delivery address",
+          "notes": "Notes",
+          "partCount": "Part count",
+          "stockCount": "Stock count",
+          "shippedCount": "Shipped count",
+          "lineCount": "Line count",
+          "poVersion": "Revision no",
+          "customerPo": "Customer PO",
+          "projectNo": "Project no"
+        }
       }
     },
     "customers": {
@@ -3685,7 +3808,37 @@
         "edit": "Edit",
         "openHub": "Open customer record",
         "openPackages": "Work packages for this customer",
-        "notFound": "Customer not found."
+        "notFound": "Customer not found.",
+        "contactsSection": "Contacts",
+        "noContacts": "No contacts registered for this customer."
+      },
+      "contacts": {
+        "title": "Contacts",
+        "add": "Add contact",
+        "empty": "No contacts defined for this customer yet.",
+        "primaryYes": "Primary",
+        "deleteTitle": "Delete contact",
+        "deleteConfirm": "Are you sure you want to delete this contact?",
+        "fields": {
+          "ad": "Full name",
+          "email": "Email",
+          "telefon": "Phone",
+          "gorevUnvani": "Role / Title",
+          "birincilKisi": "Primary contact",
+          "aktif": "Active"
+        },
+        "dialog": {
+          "createTitle": "New contact",
+          "editTitle": "Edit contact — {name}",
+          "missingId": "Contact id not found.",
+          "missingCustomer": "Customer id not found.",
+          "notFound": "Could not load contact."
+        },
+        "validation": {
+          "adRequired": "Full name is required.",
+          "emailRequired": "Email is required.",
+          "emailInvalid": "Enter a valid email address."
+        }
       }
     },
     "po": {
@@ -3723,6 +3876,7 @@
       "tabs": {
         "summary": "Summary",
         "lines": "Lines",
+        "shipments": "Shipments",
         "quality": "Quality"
       },
       "fields": {
@@ -3865,6 +4019,7 @@
         "customerProjectNo": "Customer Project No",
         "customerPoNo": "Customer PO No",
         "customerPoItemNo": "PO Item No",
+        "sasItemNo": "SAS Item No",
         "customerJobNo": "Customer Job No",
         "poItemRevNo": "Item Revision",
         "description": "Product / Service Description",
@@ -3875,6 +4030,7 @@
         "qualityReqs": "Quality Requirements",
         "isFai": "FAI required",
         "isFaiComplete": "FAI complete",
+        "deliveryDate": "Due Date",
         "shipmentDate": "Shipment Date",
         "shipmentAddress": "Shipment Address",
         "unitCost": "Unit Price",
@@ -3904,12 +4060,55 @@
         "customerProjectNo": "Customer Project No",
         "customerPoNo": "Customer PO No",
         "customerPoItemNo": "PO Item",
+        "sasItemNo": "SAS Item",
         "description": "Description",
         "quantity": "Qty",
         "unit": "Unit",
+        "shippedQuantity": "Shipped",
+        "remainingQuantity": "Remaining",
+        "deliveryDate": "Due",
         "shipmentDate": "Ship Date",
         "shipmentAddress": "Ship Address",
         "actions": "Actions"
+      }
+    },
+    "shipments": {
+      "summary": "{count} shipments · {completed} completed",
+      "add": "Add Shipment",
+      "empty": "No shipment records linked to this work package.",
+      "deleteTitle": "Delete shipment",
+      "deleteConfirm": "Are you sure you want to delete this shipment record?",
+      "columns": {
+        "waybillNo": "Waybill No",
+        "shipmentDate": "Shipment Date",
+        "status": "Status",
+        "lineQty": "Total Qty",
+        "qcfStatus": "QCF",
+        "controlType": "Control Type"
+      },
+      "fields": {
+        "waybillNo": "Waybill no",
+        "shipmentDate": "Shipment date",
+        "status": "Status",
+        "controlType": "Control type",
+        "shipmentAddress": "Shipment address",
+        "notes": "Notes",
+        "qcfGroup": "Shipment quality form (QCF)",
+        "qcfStatus": "QCF status",
+        "qcfReferenceNo": "QCF reference no",
+        "qcfNotes": "QCF notes"
+      },
+      "dialog": {
+        "createTitle": "New shipment",
+        "editTitle": "Edit shipment",
+        "viewTitle": "Shipment {waybillNo}",
+        "missingId": "Shipment id not found.",
+        "notFound": "Shipment not found.",
+        "linesTitle": "Shipment lines",
+        "addLine": "Add line",
+        "lineSelect": "Order line",
+        "shippedQty": "Shipped qty",
+        "lineHint": "Order: {quantity} · Shipped: {shipped} · Remaining: {remaining}"
       }
     }
   },

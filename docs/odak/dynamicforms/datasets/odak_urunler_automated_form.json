@@ -1,0 +1,120 @@
+{
+  "formName": "Odak Urunler",
+  "formCode": "odak-urunler-form",
+  "description": "Odak Uretim — urun / parca master verisi (Automated Forms)",
+  "datasetName": "odak_urunler",
+  "isActive": true,
+  "sideMenuConfig": {
+    "enabled": true,
+    "routeType": "form",
+    "routePath": "/apps/automated-forms/view/odak-urunler-form"
+  },
+  "listConfig": {
+    "enableSearch": true,
+    "defaultSortBy": "partNumber",
+    "defaultSortOrder": "asc",
+    "columns": [
+      {
+        "fieldName": "partNumber",
+        "visible": true,
+        "order": 1,
+        "sortable": true,
+        "filterable": true,
+        "format": { "type": "color", "textColor": "primary" }
+      },
+      {
+        "fieldName": "ad",
+        "visible": true,
+        "order": 2,
+        "sortable": true,
+        "filterable": true
+      },
+      {
+        "fieldName": "urunGrubuId",
+        "visible": true,
+        "order": 3,
+        "sortable": false,
+        "filterable": false,
+        "displayField": "ad"
+      },
+      {
+        "fieldName": "musteriId",
+        "visible": true,
+        "order": 4,
+        "sortable": false,
+        "filterable": false,
+        "displayField": "unvan"
+      },
+      {
+        "fieldName": "revizyon",
+        "visible": true,
+        "order": 5,
+        "sortable": true,
+        "filterable": true
+      },
+      {
+        "fieldName": "birim",
+        "visible": true,
+        "order": 6,
+        "sortable": true,
+        "filterable": true
+      },
+      {
+        "fieldName": "aktif",
+        "visible": true,
+        "order": 7,
+        "sortable": true,
+        "filterable": true,
+        "format": {
+          "type": "conditional-color",
+          "conditions": [
+            { "operator": "eq", "value": true, "textColor": "success" },
+            { "operator": "eq", "value": false, "textColor": "error" }
+          ]
+        }
+      }
+    ]
+  },
+  "formConfig": {
+    "visibleFields": [
+      "partNumber",
+      "ad",
+      "urunGrubuId",
+      "musteriId",
+      "revizyon",
+      "birim",
+      "aktif"
+    ],
+    "readonlyFields": [],
+    "readonlyOnEditFields": ["partNumber"],
+    "fieldOrder": [
+      "partNumber",
+      "ad",
+      "urunGrubuId",
+      "musteriId",
+      "revizyon",
+      "birim",
+      "aktif"
+    ],
+    "relationFieldConfig": {
+      "urunGrubuId": {
+        "idField": "__dataId",
+        "displayField": "ad"
+      },
+      "musteriId": {
+        "idField": "__dataId",
+        "displayField": "unvan"
+      }
+    },
+    "fieldLayout": {
+      "partNumber": { "columnSpan": 4, "group": "Genel" },
+      "ad": { "columnSpan": 8, "group": "Genel" },
+      "urunGrubuId": { "columnSpan": 6, "group": "Genel", "choiceWidget": "autocomplete" },
+      "musteriId": { "columnSpan": 6, "group": "Genel", "choiceWidget": "autocomplete" },
+      "revizyon": { "columnSpan": 4, "group": "Detay" },
+      "birim": { "columnSpan": 4, "group": "Detay", "choiceWidget": "select" },
+      "aktif": { "columnSpan": 4, "group": "Detay" }
+    },
+    "groupOrder": ["Genel", "Detay"]
+  }
+}

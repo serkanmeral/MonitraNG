@@ -35,12 +35,21 @@
   "types": {
     "order": "c2a1b262-201a-4ae4-999b-75ef4188ef95",
     "ncr": "a8c6bd1f-4783-423a-899f-d552548889e3",
-    "capa": "a82710c5-a1f9-4930-933b-35c39a0e9ea1"
+    "capa": "a82710c5-a1f9-4930-933b-35c39a0e9ea1",
+    "package": "cb3d5251-8c75-4e2a-9b4f-8df05f91f9d3"
   },
   "formNcrId": "90bb27f8-fc9e-45b3-b402-543034785755",
   "boardProdId": "75ec624c-a8be-4131-b072-9408ace1fd32",
   "boardCapaId": "bcd054f1-2e8b-44cd-8cca-718e3038d88b",
   "boardNcrId": "fbc470c2-01a4-4992-b45a-bd1d099f59ab",
   "capaFlowId": "a7a13abe-591b-40d9-9fe9-9599de6e0b46",
-  "boardQualityId": "fbc470c2-01a4-4992-b45a-bd1d099f59ab"
+  "boardQualityId": "fbc470c2-01a4-4992-b45a-bd1d099f59ab",
+  "boardPackageId": "3a9b74c3-49a5-4d3b-b7e7-cd0f50d4911a",
+  "formPackageId": "33b419df-6acf-4520-a5ab-509dd31bcf84",
+  "packageFields": {
+    "packageNo": "9a9df268-d11a-4811-abc5-1007afa59184",
+    "beginDate": "927d310e-33c3-49a6-9d42-8b3d09c2b717",
+    "legacyPackageId": "bb8a3145-32a3-4e05-84c7-40423d446d58",
+    "address": "cd7a7b00-785d-4b47-893f-4a0967376b04"
+  }
 }

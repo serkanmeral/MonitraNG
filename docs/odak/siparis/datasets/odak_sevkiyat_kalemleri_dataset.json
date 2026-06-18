@@ -1,0 +1,94 @@
+{
+  "name": "odak_sevkiyat_kalemleri",
+  "description": "Odak Siparis — sevkiyat satirlari (shipmentitems karsiligi)",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "relation",
+      "name": "parentShipmentId",
+      "title": "Sevkiyat",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_sevkiyatlar"
+    },
+    {
+      "fieldType": "relation",
+      "name": "parentPackageId",
+      "title": "Is paketi",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_is_paketleri"
+    },
+    {
+      "fieldType": "relation",
+      "name": "parentLineId",
+      "title": "Siparis kalemi",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_siparis_kalemleri"
+    },
+    {
+      "fieldType": "number",
+      "name": "shippedQuantity",
+      "title": "Sevk miktari",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "min": 0 }
+    },
+    {
+      "fieldType": "number",
+      "name": "lineNo",
+      "title": "Kalem no (snapshot)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "min": 0 }
+    },
+    {
+      "fieldType": "text",
+      "name": "lineDescription",
+      "title": "Kalem tanimi (snapshot)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 500 }
+    },
+    {
+      "fieldType": "text",
+      "name": "legacyShipmentItemId",
+      "title": "Legacy shipmentitems id",
+      "mandatory": false,
+      "unique": true,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    }
+  ],
+  "indexList": [
+    {
+      "name": "idx_parentShipmentId",
+      "fields": { "parentShipmentId": 1 },
+      "unique": false
+    },
+    {
+      "name": "idx_parentPackageId",
+      "fields": { "parentPackageId": 1 },
+      "unique": false
+    },
+    {
+      "name": "idx_parentLineId",
+      "fields": { "parentLineId": 1 },
+      "unique": false
+    },
+    {
+      "name": "idx_legacyShipmentItemId",
+      "fields": { "legacyShipmentItemId": 1 },
+      "unique": true
+    }
+  ]
+}

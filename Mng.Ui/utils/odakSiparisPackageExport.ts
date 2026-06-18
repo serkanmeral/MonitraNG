@@ -9,8 +9,6 @@ import {
   packageDataId,
   packageDisplayNo,
   packageStatusLabel,
-  filterPackagesByLineAdv,
-  type OdakPackageLineAdvFilter,
   type OdakPackageLineStats,
   type OdakPackageListQuery,
   type OdakPackageListSort,
@@ -19,12 +17,19 @@ import {
 export const ODAK_PACKAGE_EXPORT_MAX = 5000;
 const EXPORT_PAGE_SIZE = 500;
 
+/** Liste header.key → CSV sütun anahtarı */
+const LIST_KEY_TO_EXPORT_KEY: Record<string, string> = {
+  displayNo: 'packageNo',
+  statusLabel: 'status',
+};
+
 export interface OdakPackageExportQuery {
   statusTab: OdakPackageListQuery['statusTab'];
   search?: string;
   advancedFilters?: AfListFilter[];
-  lineAdv?: OdakPackageLineAdvFilter;
   sortBy?: OdakPackageListSort[];
+  /** Hub listConfig ile görünür sütunlar (header.key). Boşsa tüm sütunlar. */
+  visibleExportKeys?: string[];
 }
 
 export interface OdakPackageExportColumn {
@@ -46,8 +51,13 @@ export function odakPackageExportColumns(labels: Record<string, string>): OdakPa
     { key: 'status', label: labels.status ?? 'Durum' },
     { key: 'beginDate', label: labels.beginDate ?? 'Başlangıç' },
     { key: 'deliveryDate', label: labels.deliveryDate ?? 'Termin' },
-    { key: 'poVersion', label: labels.poVersion ?? 'PO versiyonu' },
+    { key: 'poVersion', label: labels.poVersion ?? 'Revize numarası (Rev No)' },
   ];
+}
+
+function resolveExportColumnKeys(visibleListKeys?: string[]): string[] | undefined {
+  if (!visibleListKeys?.length) return undefined;
+  return visibleListKeys.map((k) => LIST_KEY_TO_EXPORT_KEY[k] ?? k);
 }
 
 function lineCountLabel(item: OdakPackageRow, lineStats: Map<string, OdakPackageLineStats>): string {
@@ -116,35 +126,30 @@ async function fetchAllPackagesForExport(query: OdakPackageExportQuery): Promise
   return all.slice(0, ODAK_PACKAGE_EXPORT_MAX);
 }
 
-function needsLineStats(lineAdv?: OdakPackageLineAdvFilter): boolean {
-  if (!lineAdv) return false;
-  return Boolean(
-    lineAdv.customerPo?.trim() ||
-      lineAdv.customerProjectNo?.trim() ||
-      lineAdv.customerPoItem?.trim() ||
-      lineAdv.productDesc?.trim()
-  );
-}
-
 /** Mevcut liste filtreleriyle is paketlerini CSV (Excel uyumlu) olarak indirir. */
 export async function exportOdakPackagesToCsv(
   query: OdakPackageExportQuery,
   columnLabels: Record<string, string>
 ): Promise<{ rowCount: number; truncated: boolean }> {
   const customerLabels = await fetchCustomerLabelMap();
-  let items = await fetchAllPackagesForExport(query);
+  const items = await fetchAllPackagesForExport(query);
   const truncated = items.length >= ODAK_PACKAGE_EXPORT_MAX;
 
+  const exportKeys = resolveExportColumnKeys(query.visibleExportKeys);
+  const needsLineStats =
+    !exportKeys || exportKeys.includes('customerPo') || exportKeys.includes('projectNo');
+
   let lineStats = new Map<string, OdakPackageLineStats>();
-  if (items.length) {
+  if (items.length && needsLineStats) {
     lineStats = await fetchPackageLineStatsMap(items.map((x) => packageDataId(x)).filter(Boolean));
   }
 
-  if (needsLineStats(query.lineAdv)) {
-    items = filterPackagesByLineAdv(items, query.lineAdv ?? {}, lineStats);
+  let columns = odakPackageExportColumns(columnLabels);
+  if (exportKeys?.length) {
+    const allowed = new Set(exportKeys);
+    columns = columns.filter((c) => allowed.has(c.key));
   }
 
-  const columns = odakPackageExportColumns(columnLabels);
   const rows = buildOdakPackageExportRows(items, customerLabels, lineStats);
   const headers = columns.map((c) => c.label);
   const data = rows.map((row) => {

@@ -1,0 +1,144 @@
+{
+  "name": "odak_sevkiyatlar",
+  "description": "Odak Siparis — is paketi sevkiyat header (shipments karsiligi)",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "relation",
+      "name": "parentPackageId",
+      "title": "Is paketi",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_is_paketleri"
+    },
+    {
+      "fieldType": "text",
+      "name": "waybillNo",
+      "title": "Irsaliye no",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "datetime",
+      "name": "shipmentDate",
+      "title": "Sevkiyat tarihi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "select",
+      "name": "status",
+      "title": "Durum",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": "Planlandi",
+      "options": {
+        "lookup": {
+          "source": "static",
+          "staticItems": [
+            { "value": "Planlandi", "label": "Planlandi" },
+            { "value": "Tamamlandi", "label": "Tamamlandi" },
+            { "value": "Iptal", "label": "Iptal" }
+          ]
+        }
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "controlType",
+      "title": "Denetim tipi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "shipmentAddress",
+      "title": "Sevkiyat adresi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 500 }
+    },
+    {
+      "fieldType": "text",
+      "name": "notes",
+      "title": "Notlar",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 2000 }
+    },
+    {
+      "fieldType": "select",
+      "name": "qcfStatus",
+      "title": "QCF durumu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": "Yok",
+      "options": {
+        "lookup": {
+          "source": "static",
+          "staticItems": [
+            { "value": "Yok", "label": "Yok" },
+            { "value": "Bekliyor", "label": "Bekliyor" },
+            { "value": "Tamamlandi", "label": "Tamamlandi" }
+          ]
+        }
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "qcfReferenceNo",
+      "title": "QCF referans no",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "qcfNotes",
+      "title": "QCF notlari",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 1000 }
+    },
+    {
+      "fieldType": "text",
+      "name": "legacyShipmentId",
+      "title": "Legacy shipments id",
+      "mandatory": false,
+      "unique": true,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    }
+  ],
+  "indexList": [
+    {
+      "name": "idx_parentPackageId",
+      "fields": { "parentPackageId": 1, "shipmentDate": -1 },
+      "unique": false
+    },
+    {
+      "name": "idx_waybillNo",
+      "fields": { "waybillNo": 1 },
+      "unique": false
+    },
+    {
+      "name": "idx_legacyShipmentId",
+      "fields": { "legacyShipmentId": 1 },
+      "unique": true
+    }
+  ]
+}

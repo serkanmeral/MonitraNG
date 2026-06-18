@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import AfListFilters from '@/components/apps/automated-forms/AfListFilters.vue';
+import OdakSiparisCustomerContactsPanel from '@/components/apps/odak-siparis/OdakSiparisCustomerContactsPanel.vue';
 import OdakSiparisCustomerDialog from '@/components/apps/odak-siparis/OdakSiparisCustomerDialog.vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { ocDelete } from '@/services/operationCoreService';
 import type { AfFilterColumn, AfListFilter } from '@/utils/afListFilters';
-import { ODAK_SIPARIS_CONFIG, type OdakCustomerRow } from '@/utils/odakSiparisConfig';
+import { ODAK_DATA_TABLE_EXPAND_COLUMN, ODAK_SIPARIS_CONFIG, type OdakCustomerRow } from '@/utils/odakSiparisConfig';
 import {
   customerSektorLabel,
   fetchOdakCustomersPage,
@@ -36,6 +37,7 @@ const tablePage = ref(1);
 const tableItemsPerPage = ref(20);
 const tableItemsPerPageOptions = [10, 20, 50, 100];
 const tableSortBy = ref<OdakCustomerListSort[]>([{ key: 'unvan', order: 'asc' }]);
+const expandedIds = ref<string[]>([]);
 
 const dialogOpen = ref(false);
 const dialogMode = ref<OdakCustomerDialogMode>('create');
@@ -67,6 +69,7 @@ const filterColumns = computed<AfFilterColumn[]>(() => [
 ]);
 
 const headers = computed(() => [
+  { ...ODAK_DATA_TABLE_EXPAND_COLUMN },
   { title: t('odakSiparis.customers.fields.kod'), key: 'kod', sortable: true },
   { title: t('odakSiparis.customers.fields.unvan'), key: 'unvan', sortable: true },
   { title: t('odakSiparis.customers.fields.sektor'), key: 'sektor', sortable: true },
@@ -195,6 +198,10 @@ watch(aktifTab, () => {
   else void fetchCustomers();
 });
 
+watch(expandedIds, (ids) => {
+  if (ids.length > 1) expandedIds.value = [ids[ids.length - 1]!];
+});
+
 function openPackagesFor(item: OdakCustomerRow) {
   const id = packageDataId(item);
   if (!id) return;
@@ -256,6 +263,7 @@ onMounted(() => {
         </v-alert>
 
         <v-data-table-server
+          v-model:expanded="expandedIds"
           :headers="headers"
           :items="items"
           :loading="loading"
@@ -265,9 +273,18 @@ onMounted(() => {
           :items-length="totalCount"
           :sort-by="tableSortBy"
           item-value="__dataId"
-          class="border rounded-md"
+          show-expand
+          :expand-on-click="false"
+          class="border rounded-md odak-customers-list-table"
           @update:options="onTableOptions"
         >
+          <template #expanded-row="{ columns, item }">
+            <tr>
+              <td :colspan="columns.length" class="pa-0">
+                <OdakSiparisCustomerContactsPanel :customer-row="item" />
+              </td>
+            </tr>
+          </template>
           <template #item.kod="{ item }">
             <a
               href="#"
@@ -328,3 +345,10 @@ onMounted(() => {
     </v-dialog>
   </div>
 </template>
+
+<style scoped>
+.odak-customers-list-table :deep(table) > tbody > tr:not(.v-data-table__expanded__content) > td:first-child {
+  width: 48px;
+  padding-inline: 8px;
+}
+</style>

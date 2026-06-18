@@ -1,0 +1,30 @@
+{
+  "name": "odak_siparis_hub_ayarlari",
+  "description": "Odak Siparis hub — ortak UI ayarlari (liste sutunlari, alan yetkileri)",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "scope",
+      "title": "Ayar kapsami",
+      "mandatory": true,
+      "unique": true,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "configJson",
+      "title": "Config JSON",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 200000 }
+    }
+  ],
+  "indexList": [
+    { "name": "idx_scope", "fields": { "scope": 1 }, "unique": true }
+  ]
+}

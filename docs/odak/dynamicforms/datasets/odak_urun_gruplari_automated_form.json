@@ -1,0 +1,68 @@
+{
+  "formName": "Odak Urun Gruplari",
+  "formCode": "odak-urun-gruplari-form",
+  "description": "Odak Uretim — urun grubu master verisi (Automated Forms)",
+  "datasetName": "odak_urun_gruplari",
+  "isActive": true,
+  "sideMenuConfig": {
+    "enabled": true,
+    "routeType": "form",
+    "routePath": "/apps/automated-forms/view/odak-urun-gruplari-form"
+  },
+  "listConfig": {
+    "enableSearch": true,
+    "defaultSortBy": "ad",
+    "defaultSortOrder": "asc",
+    "columns": [
+      {
+        "fieldName": "kod",
+        "visible": true,
+        "order": 1,
+        "sortable": true,
+        "filterable": true,
+        "format": { "type": "color", "textColor": "primary" }
+      },
+      {
+        "fieldName": "ad",
+        "visible": true,
+        "order": 2,
+        "sortable": true,
+        "filterable": true
+      },
+      {
+        "fieldName": "aciklama",
+        "visible": true,
+        "order": 3,
+        "sortable": false,
+        "filterable": true
+      },
+      {
+        "fieldName": "aktif",
+        "visible": true,
+        "order": 4,
+        "sortable": true,
+        "filterable": true,
+        "format": {
+          "type": "conditional-color",
+          "conditions": [
+            { "operator": "eq", "value": true, "textColor": "success" },
+            { "operator": "eq", "value": false, "textColor": "error" }
+          ]
+        }
+      }
+    ]
+  },
+  "formConfig": {
+    "visibleFields": ["kod", "ad", "aciklama", "aktif"],
+    "readonlyFields": [],
+    "readonlyOnEditFields": ["kod"],
+    "fieldOrder": ["kod", "ad", "aciklama", "aktif"],
+    "fieldLayout": {
+      "kod": { "columnSpan": 4, "group": "Genel" },
+      "ad": { "columnSpan": 8, "group": "Genel" },
+      "aciklama": { "columnSpan": 12, "group": "Genel", "textWidget": "textarea" },
+      "aktif": { "columnSpan": 4, "group": "Genel" }
+    },
+    "groupOrder": ["Genel"]
+  }
+}

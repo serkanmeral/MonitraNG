@@ -734,6 +734,8 @@ $mainBoardListColumns = @(
     @{ key = "quantity"; label = "Miktar"; sortable = $true; filterable = $true },
     @{ key = "shippedQty"; label = "Sevk edilen"; sortable = $true; filterable = $false },
     @{ key = "plannedDate"; label = "Planlanan bitis"; sortable = $true; filterable = $true; format = "date" },
+    @{ key = "customerOrderRef"; label = "Musteri PO"; sortable = $true; filterable = $true },
+    @{ key = "closedAt"; label = "Kapanis"; sortable = $true; filterable = $true; format = "date" },
     @{ key = "assignee"; label = "Atanan"; sortable = $false; filterable = $true }
 )
 $mainBoardProdBody = @{

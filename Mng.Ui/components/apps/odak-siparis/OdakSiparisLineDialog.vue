@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
+import { useOdakFieldAccess } from '@/composables/useOdakFieldAccess';
 import { useAppI18n } from '@/composables/useAppI18n';
 import {
   ODAK_LINE_CURRENCY_OPTIONS,
   ODAK_LINE_UNIT_OPTIONS,
   type OdakLineRow,
 } from '@/utils/odakSiparisConfig';
+import type { OdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
+import {
+  lineRecordForPolicyEval,
+  ODAK_LINE_LIST_KEY_TO_FIELD,
+} from '@/utils/odakSiparisFieldPolicies';
+import { loadOdakLineFieldPoliciesOnly } from '@/utils/odakSiparisHubSettingsService';
 import {
   createOdakLine,
   emptyLineFormModel,
@@ -44,12 +51,55 @@ const errorMessage = ref('');
 const internalMode = ref<OdakLineDialogMode>('view');
 const loadedLine = ref<OdakLineRow | null>(null);
 const form = reactive<OdakLineFormModel>(emptyLineFormModel());
+const fieldPolicies = ref<OdakFieldPoliciesBlob>({ policiesByField: {} });
+const { canViewField, canEditField } = useOdakFieldAccess(fieldPolicies, ODAK_LINE_LIST_KEY_TO_FIELD);
 
 const productItems = ref<{ value: string; title: string }[]>([]);
 const productSearchLoading = ref(false);
 let productSearchTimer: ReturnType<typeof setTimeout> | null = null;
 
 const readonly = computed(() => internalMode.value === 'view');
+
+const policyRecord = computed(() =>
+  loadedLine.value ? lineRecordForPolicyEval(loadedLine.value) : lineRecordForPolicyEval(form)
+);
+
+function fieldVisible(fieldKey: string): boolean {
+  return canViewField(fieldKey, policyRecord.value);
+}
+
+function isFieldReadonly(fieldKey: string): boolean {
+  return readonly.value || !canEditField(fieldKey, policyRecord.value);
+}
+
+const showCustomerPoGroup = computed(
+  () =>
+    fieldVisible('lineNo') ||
+    fieldVisible('customerProjectNo') ||
+    fieldVisible('customerPoNo') ||
+    fieldVisible('customerPoItemNo') ||
+    fieldVisible('sasItemNo') ||
+    fieldVisible('customerJobNo') ||
+    fieldVisible('poItemRevNo')
+);
+
+const showProductGroup = computed(() => fieldVisible('description') || fieldVisible('productId'));
+
+const showQuantityGroup = computed(
+  () => fieldVisible('quantity') || fieldVisible('unit') || fieldVisible('shippedQuantity')
+);
+
+const showQualityGroup = computed(
+  () => fieldVisible('qualityReqs') || fieldVisible('isFai') || fieldVisible('isFaiComplete')
+);
+
+const showShipmentGroup = computed(
+  () => fieldVisible('deliveryDate') || fieldVisible('shipmentDate') || fieldVisible('shipmentAddress')
+);
+
+const showCostGroup = computed(
+  () => fieldVisible('unitCost') || fieldVisible('totalCost') || fieldVisible('currency')
+);
 
 const dialogTitle = computed(() => {
   const pkg = props.packageNo ? ` · ${props.packageNo}` : '';
@@ -90,6 +140,7 @@ async function loadDialogData() {
   productItems.value = [];
 
   try {
+    fieldPolicies.value = await loadOdakLineFieldPoliciesOnly();
     if (internalMode.value === 'create') {
       const nextNo = await fetchNextLineNo(props.packageId);
       Object.assign(form, emptyLineFormModel({ lineNo: nextNo }));
@@ -143,7 +194,7 @@ async function saveLine() {
     if (internalMode.value === 'create') {
       await createOdakLine(props.packageId, form);
     } else if (props.lineId) {
-      await updateOdakLine(props.lineId, props.packageId, form);
+      await updateOdakLine(props.lineId, props.packageId, form, loadedLine.value);
     }
     emit('saved');
     closeDialog();
@@ -215,68 +266,78 @@ watch(
 
         <template v-if="!loading">
           <!-- Müşteri PO -->
-          <v-card variant="outlined" class="mb-4 section-card">
+          <v-card v-if="showCustomerPoGroup" variant="outlined" class="mb-4 section-card">
             <v-card-subtitle class="font-weight-medium py-3">
               {{ t('odakSiparis.lines.groups.customerPo') }}
             </v-card-subtitle>
             <v-card-text class="pt-0">
               <v-row dense>
-                <v-col cols="12" sm="4">
+                <v-col v-if="fieldVisible('lineNo')" cols="12" sm="4">
                   <v-text-field
                     v-model="form.lineNo"
                     :label="t('odakSiparis.lines.fields.lineNo')"
-                    :readonly="readonly || internalMode === 'edit'"
+                    :readonly="isFieldReadonly('lineNo') || internalMode === 'edit'"
                     variant="outlined"
                     density="comfortable"
                     type="number"
                     hide-details="auto"
                   />
                 </v-col>
-                <v-col cols="12" sm="4">
+                <v-col v-if="fieldVisible('customerProjectNo')" cols="12" sm="4">
                   <v-text-field
                     v-model="form.customerProjectNo"
                     :label="t('odakSiparis.lines.fields.customerProjectNo')"
-                    :readonly="readonly"
+                    :readonly="isFieldReadonly('customerProjectNo')"
                     variant="outlined"
                     density="comfortable"
                     hide-details
                   />
                 </v-col>
-                <v-col cols="12" sm="4">
+                <v-col v-if="fieldVisible('customerPoNo')" cols="12" sm="4">
                   <v-text-field
                     v-model="form.customerPoNo"
                     :label="t('odakSiparis.lines.fields.customerPoNo')"
-                    :readonly="readonly"
+                    :readonly="isFieldReadonly('customerPoNo')"
                     variant="outlined"
                     density="comfortable"
                     hide-details
                   />
                 </v-col>
-                <v-col cols="12" sm="4">
+                <v-col v-if="fieldVisible('customerPoItemNo')" cols="12" sm="4">
                   <v-text-field
                     v-model="form.customerPoItemNo"
                     :label="t('odakSiparis.lines.fields.customerPoItemNo')"
-                    :readonly="readonly"
+                    :readonly="isFieldReadonly('customerPoItemNo')"
                     variant="outlined"
                     density="comfortable"
                     hide-details
                   />
                 </v-col>
-                <v-col cols="12" sm="4">
+                <v-col v-if="fieldVisible('sasItemNo')" cols="12" sm="4">
+                  <v-text-field
+                    v-model="form.sasItemNo"
+                    :label="t('odakSiparis.lines.fields.sasItemNo')"
+                    :readonly="isFieldReadonly('sasItemNo')"
+                    variant="outlined"
+                    density="comfortable"
+                    hide-details
+                  />
+                </v-col>
+                <v-col v-if="fieldVisible('customerJobNo')" cols="12" sm="4">
                   <v-text-field
                     v-model="form.customerJobNo"
                     :label="t('odakSiparis.lines.fields.customerJobNo')"
-                    :readonly="readonly"
+                    :readonly="isFieldReadonly('customerJobNo')"
                     variant="outlined"
                     density="comfortable"
                     hide-details
                   />
                 </v-col>
-                <v-col cols="12" sm="4">
+                <v-col v-if="fieldVisible('poItemRevNo')" cols="12" sm="4">
                   <v-text-field
                     v-model="form.poItemRevNo"
                     :label="t('odakSiparis.lines.fields.poItemRevNo')"
-                    :readonly="readonly"
+                    :readonly="isFieldReadonly('poItemRevNo')"
                     variant="outlined"
                     density="comfortable"
                     hide-details
@@ -287,17 +348,17 @@ watch(
           </v-card>
 
           <!-- Ürün -->
-          <v-card variant="outlined" class="mb-4 section-card">
+          <v-card v-if="showProductGroup" variant="outlined" class="mb-4 section-card">
             <v-card-subtitle class="font-weight-medium py-3">
               {{ t('odakSiparis.lines.groups.product') }}
             </v-card-subtitle>
             <v-card-text class="pt-0">
               <v-row dense>
-                <v-col cols="12">
+                <v-col v-if="fieldVisible('description')" cols="12">
                   <v-textarea
                     v-model="form.description"
                     :label="t('odakSiparis.lines.fields.description')"
-                    :readonly="readonly"
+                    :readonly="isFieldReadonly('description')"
                     variant="outlined"
                     density="comfortable"
                     rows="2"
@@ -305,9 +366,9 @@ watch(
                     hide-details="auto"
                   />
                 </v-col>
-                <v-col cols="12">
+                <v-col v-if="fieldVisible('productId')" cols="12">
                   <v-autocomplete
-                    v-if="!readonly"
+                    v-if="!isFieldReadonly('productId')"
                     v-model="form.productId"
                     :items="productItems"
                     :label="t('odakSiparis.lines.fields.productId')"
@@ -336,37 +397,37 @@ watch(
           </v-card>
 
           <!-- Miktar -->
-          <v-card variant="outlined" class="mb-4 section-card">
+          <v-card v-if="showQuantityGroup" variant="outlined" class="mb-4 section-card">
             <v-card-subtitle class="font-weight-medium py-3">
               {{ t('odakSiparis.lines.groups.quantity') }}
             </v-card-subtitle>
             <v-card-text class="pt-0">
               <v-row dense>
-                <v-col cols="12" sm="4">
+                <v-col v-if="fieldVisible('quantity')" cols="12" sm="4">
                   <v-text-field
                     v-model.number="form.quantity"
                     :label="t('odakSiparis.lines.fields.quantity')"
-                    :readonly="readonly"
+                    :readonly="isFieldReadonly('quantity')"
                     variant="outlined"
                     density="comfortable"
                     type="number"
                     hide-details
                   />
                 </v-col>
-                <v-col cols="12" sm="4">
+                <v-col v-if="fieldVisible('unit')" cols="12" sm="4">
                   <v-select
                     v-model="form.unit"
                     :items="unitItems"
                     item-title="title"
                     item-value="value"
                     :label="t('odakSiparis.lines.fields.unit')"
-                    :readonly="readonly"
+                    :readonly="isFieldReadonly('unit')"
                     variant="outlined"
                     density="comfortable"
                     hide-details
                   />
                 </v-col>
-                <v-col cols="12" sm="4">
+                <v-col v-if="fieldVisible('shippedQuantity')" cols="12" sm="4">
                   <v-text-field
                     :model-value="form.shippedQuantity ?? 0"
                     :label="t('odakSiparis.lines.fields.shippedQuantity')"
@@ -381,17 +442,17 @@ watch(
           </v-card>
 
           <!-- Kalite -->
-          <v-card variant="outlined" class="mb-4 section-card">
+          <v-card v-if="showQualityGroup" variant="outlined" class="mb-4 section-card">
             <v-card-subtitle class="font-weight-medium py-3">
               {{ t('odakSiparis.lines.groups.quality') }}
             </v-card-subtitle>
             <v-card-text class="pt-0">
               <v-row dense>
-                <v-col cols="12">
+                <v-col v-if="fieldVisible('qualityReqs')" cols="12">
                   <v-textarea
                     v-model="form.qualityReqs"
                     :label="t('odakSiparis.lines.fields.qualityReqs')"
-                    :readonly="readonly"
+                    :readonly="isFieldReadonly('qualityReqs')"
                     variant="outlined"
                     density="comfortable"
                     rows="2"
@@ -399,21 +460,21 @@ watch(
                     hide-details
                   />
                 </v-col>
-                <v-col cols="12" sm="6">
+                <v-col v-if="fieldVisible('isFai')" cols="12" sm="6">
                   <v-switch
                     v-model="form.isFai"
                     :label="t('odakSiparis.lines.fields.isFai')"
-                    :readonly="readonly"
+                    :readonly="isFieldReadonly('isFai')"
                     color="primary"
                     hide-details
                     density="compact"
                   />
                 </v-col>
-                <v-col cols="12" sm="6">
+                <v-col v-if="fieldVisible('isFaiComplete')" cols="12" sm="6">
                   <v-switch
                     v-model="form.isFaiComplete"
                     :label="t('odakSiparis.lines.fields.isFaiComplete')"
-                    :readonly="readonly"
+                    :readonly="isFieldReadonly('isFaiComplete')"
                     color="primary"
                     hide-details
                     density="compact"
@@ -423,18 +484,29 @@ watch(
             </v-card-text>
           </v-card>
 
-          <!-- Sevkiyat + Maliyet -->
           <v-row dense>
-            <v-col cols="12" md="6">
+            <v-col v-if="showShipmentGroup" cols="12" md="6">
               <v-card variant="outlined" class="section-card h-100">
                 <v-card-subtitle class="font-weight-medium py-3">
                   {{ t('odakSiparis.lines.groups.shipment') }}
                 </v-card-subtitle>
                 <v-card-text class="pt-0">
                   <v-text-field
+                    v-if="fieldVisible('deliveryDate')"
+                    v-model="form.deliveryDate"
+                    :label="t('odakSiparis.lines.fields.deliveryDate')"
+                    :readonly="isFieldReadonly('deliveryDate')"
+                    variant="outlined"
+                    density="comfortable"
+                    type="date"
+                    hide-details
+                    class="mb-3"
+                  />
+                  <v-text-field
+                    v-if="fieldVisible('shipmentDate')"
                     v-model="form.shipmentDate"
                     :label="t('odakSiparis.lines.fields.shipmentDate')"
-                    :readonly="readonly"
+                    :readonly="isFieldReadonly('shipmentDate')"
                     variant="outlined"
                     density="comfortable"
                     type="date"
@@ -442,9 +514,10 @@ watch(
                     class="mb-3"
                   />
                   <v-textarea
+                    v-if="fieldVisible('shipmentAddress')"
                     v-model="form.shipmentAddress"
                     :label="t('odakSiparis.lines.fields.shipmentAddress')"
-                    :readonly="readonly"
+                    :readonly="isFieldReadonly('shipmentAddress')"
                     variant="outlined"
                     density="comfortable"
                     rows="2"
@@ -453,25 +526,25 @@ watch(
                 </v-card-text>
               </v-card>
             </v-col>
-            <v-col cols="12" md="6">
+            <v-col v-if="showCostGroup" cols="12" md="6">
               <v-card variant="outlined" class="section-card h-100">
                 <v-card-subtitle class="font-weight-medium py-3">
                   {{ t('odakSiparis.lines.groups.cost') }}
                 </v-card-subtitle>
                 <v-card-text class="pt-0">
                   <v-row dense>
-                    <v-col cols="12" sm="6">
+                    <v-col v-if="fieldVisible('unitCost')" cols="12" sm="6">
                       <v-text-field
                         v-model.number="form.unitCost"
                         :label="t('odakSiparis.lines.fields.unitCost')"
-                        :readonly="readonly"
+                        :readonly="isFieldReadonly('unitCost')"
                         variant="outlined"
                         density="comfortable"
                         type="number"
                         hide-details
                       />
                     </v-col>
-                    <v-col cols="12" sm="6">
+                    <v-col v-if="fieldVisible('totalCost')" cols="12" sm="6">
                       <v-text-field
                         v-model.number="form.totalCost"
                         :label="t('odakSiparis.lines.fields.totalCost')"
@@ -482,14 +555,14 @@ watch(
                         hide-details
                       />
                     </v-col>
-                    <v-col cols="12">
+                    <v-col v-if="fieldVisible('currency')" cols="12">
                       <v-select
                         v-model="form.currency"
                         :items="currencyItems"
                         item-title="title"
                         item-value="value"
                         :label="t('odakSiparis.lines.fields.currency')"
-                        :readonly="readonly"
+                        :readonly="isFieldReadonly('currency')"
                         variant="outlined"
                         density="comfortable"
                         hide-details

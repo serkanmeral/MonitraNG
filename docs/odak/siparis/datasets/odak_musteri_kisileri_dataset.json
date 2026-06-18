@@ -1,0 +1,91 @@
+{
+  "name": "odak_musteri_kisileri",
+  "description": "Odak Siparis — musteri kisi listesi (legacy contacts karsiligi)",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "relation",
+      "name": "parentCustomerId",
+      "title": "Musteri",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_musteriler"
+    },
+    {
+      "fieldType": "text",
+      "name": "ad",
+      "title": "Ad Soyad",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "minLength": 2, "maxLength": 120 }
+    },
+    {
+      "fieldType": "text",
+      "name": "email",
+      "title": "E-posta",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": {
+        "maxLength": 200,
+        "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
+        "message": "Gecerli bir e-posta adresi girin"
+      }
+    },
+    {
+      "fieldType": "text",
+      "name": "telefon",
+      "title": "Telefon",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 40 }
+    },
+    {
+      "fieldType": "text",
+      "name": "gorevUnvani",
+      "title": "Gorev / Unvan",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 120 }
+    },
+    {
+      "fieldType": "bool",
+      "name": "birincilKisi",
+      "title": "Birincil kisi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": false
+    },
+    {
+      "fieldType": "bool",
+      "name": "aktif",
+      "title": "Aktif",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": true
+    },
+    {
+      "fieldType": "text",
+      "name": "legacyContactId",
+      "title": "Legacy contact id",
+      "mandatory": false,
+      "unique": true,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    }
+  ],
+  "indexList": [
+    { "name": "idx_parentCustomerId", "fields": { "parentCustomerId": 1 }, "unique": false },
+    { "name": "idx_parentCustomerId_birincil", "fields": { "parentCustomerId": 1, "birincilKisi": 1 }, "unique": false },
+    { "name": "idx_legacyContactId", "fields": { "legacyContactId": 1 }, "unique": true },
+    { "name": "idx_email", "fields": { "email": 1 }, "unique": false }
+  ]
+}

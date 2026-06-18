@@ -3620,13 +3620,15 @@
       "openFullDetail": "Tam detay sayfası",
       "openQuality": "Kalite (NCR/CAPA)",
       "fields": {
-        "poVersion": "PO versiyonu"
+        "poVersion": "Revize numarası (Rev No)"
       },
       "dialog": {
         "createTitle": "Yeni iş paketi",
         "editTitle": "İş paketi düzenle — {no}",
         "missingId": "Paket kimliği bulunamadı.",
-        "notFound": "İş paketi yüklenemedi."
+        "notFound": "İş paketi yüklenemedi.",
+        "selectCustomerFirst": "Önce müşteri seçin; kişiler müşteriye göre listelenir.",
+        "customerContactsGroup": "Müşteri sorumluları"
       },
       "validation": {
         "packageNoRequired": "İş paketi numarası zorunludur.",
@@ -3660,6 +3662,202 @@
         "customerPoItem": "Müşteri PO Kalem",
         "productDesc": "Ürün / Hizmet Tanımı",
         "productDescHint": "Kalem bazlı — yüklenen paketler üzerinde"
+      },
+      "settings": {
+        "title": "İş Paketi Ayarları",
+        "backToList": "Listeye dön",
+        "save": "Kaydet",
+        "saved": "Ayarlar kaydedildi.",
+        "tabs": {
+          "listColumns": "Liste sütunları",
+          "notifications": "Bildirimler",
+          "fieldPolicies": "Alan yetkileri"
+        },
+        "listColumns": {
+          "hint": "Tüm kullanıcılar için geçerli liste görünümü. Sütun sırasını sürükleyerek değiştirin.",
+          "visible": "Görünür",
+          "sortable": "Sıralanabilir",
+          "filterable": "Filtrelenebilir",
+          "reset": "Varsayılana dön",
+          "editFormat": "Biçimlendirme",
+          "formatTitle": "Sütun biçimlendirme — {column}",
+          "clearFormat": "Biçimlendirmeyi temizle",
+          "noFormat": "Biçimlendirme yok",
+          "empty": "Sütun tanımı bulunamadı. Varsayılana dön ile yeniden oluşturabilirsiniz."
+        },
+        "listTabs": {
+          "packages": "İş paketleri",
+          "lines": "İş kalemleri",
+          "shipments": "Sevkiyatlar",
+          "linesHint": "İş paketi detayındaki kalem listesi için ortak sütun ayarları.",
+          "shipmentsHint": "İş paketi detayındaki sevkiyat listesi için ortak sütun ayarları."
+        },
+        "formatting": {
+          "type": "Biçim türü",
+          "types": {
+            "none": "Yok",
+            "regex": "Düzenli ifade",
+            "number": "Sayı",
+            "date": "Tarih",
+            "currency": "Para birimi",
+            "textTransform": "Metin dönüşümü",
+            "color": "Renk",
+            "conditionalColor": "Koşullu renk"
+          },
+          "regexPattern": "Desen",
+          "regexPatternPlaceholder": "Örn: /pattern/g",
+          "regexReplacement": "Değiştirme metni",
+          "regexReplacementPlaceholder": "Yerine yazılacak metin",
+          "decimalPlaces": "Ondalık basamak",
+          "thousandSeparator": "Binlik ayırıcı",
+          "currencySymbol": "Para birimi simgesi",
+          "currencySymbolPlaceholder": "Örn: ₺, $, €",
+          "dateFormat": "Tarih biçimi",
+          "showTime": "Saati göster",
+          "timeFormat": "Saat biçimi",
+          "timeFormats": {
+            "hhmm": "Saat ve dakika",
+            "hhmmss": "Saat, dakika ve saniye"
+          },
+          "textTransform": "Metin dönüşümü",
+          "textTransformTypes": {
+            "uppercase": "Büyük harf",
+            "lowercase": "Küçük harf",
+            "capitalize": "Baş harf büyük"
+          },
+          "textColor": "Metin rengi",
+          "backgroundColor": "Arka plan rengi",
+          "customTextColor": "Özel metin rengi",
+          "customBackgroundColor": "Özel arka plan rengi",
+          "customColorPlaceholder": "#FF0000 veya rgb(255,0,0)",
+          "defaultTextColor": "Varsayılan metin rengi",
+          "defaultBackgroundColor": "Varsayılan arka plan rengi",
+          "colors": {
+            "primary": "Birincil",
+            "secondary": "İkincil",
+            "success": "Başarılı (yeşil)",
+            "error": "Hata (kırmızı)",
+            "warning": "Uyarı (sarı)",
+            "info": "Bilgi (mavi)",
+            "custom": "Özel renk"
+          },
+          "conditions": {
+            "title": "Koşullar",
+            "field": "Alan",
+            "operator": "Operatör",
+            "value": "Değer",
+            "add": "Koşul ekle",
+            "default": "Varsayılan renkler"
+          },
+          "operators": {
+            "eq": "Eşittir",
+            "ne": "Eşit değildir",
+            "gt": "Büyüktür",
+            "gte": "Büyük veya eşit",
+            "lt": "Küçüktür",
+            "lte": "Küçük veya eşit",
+            "contains": "İçerir",
+            "startsWith": "İle başlar",
+            "endsWith": "İle biter",
+            "in": "Listede",
+            "notIn": "Listede değil"
+          }
+        },
+        "notifications": {
+          "hint": "E-posta bildirim politikaları. Yalnızca Keeper kullanıcıları alıcı olarak seçilebilir.",
+          "addPolicy": "Politika ekle",
+          "editPolicy": "Politikayı düzenle",
+          "deleteTitle": "Politikayı sil",
+          "deleteConfirm": "Bu bildirim politikasını silmek istediğinize emin misiniz?",
+          "colName": "Ad",
+          "colEvent": "Olay",
+          "colRecipients": "Alıcılar",
+          "colTemplate": "Şablon",
+          "colStatus": "Durum",
+          "active": "Aktif",
+          "inactive": "Pasif",
+          "fieldName": "Politika adı",
+          "fieldDescription": "Açıklama",
+          "fieldEvent": "Olay türü",
+          "fieldPriority": "Öncelik",
+          "fieldRecipients": "Alıcılar (Keeper kullanıcıları)",
+          "fieldTemplate": "E-posta şablonu",
+          "fieldSubject": "E-posta konusu",
+          "fieldActive": "Aktif",
+          "excludeActor": "İşlemi yapan kişiyi hariç tut",
+          "updateTrigger": "Güncelleme tetikleyicisi",
+          "updateAlways": "Her güncellemede",
+          "updateFields": "Belirli alanlar değişince",
+          "watchedFields": "İzlenen alanlar",
+          "shipmentTrigger": "Sevkiyat tetikleyicisi",
+          "shipmentTransition": "Durum geçişi",
+          "shipmentToStatus": "Hedef duruma ulaşınca",
+          "shipmentAlways": "Her sevkiyat kaydında",
+          "fromStatus": "Önceki durum",
+          "toStatus": "Yeni durum",
+          "targetStatus": "Hedef durum",
+          "eventTypes": {
+            "PackageCreated": "İş paketi oluşturuldu",
+            "PackageUpdated": "İş paketi güncellendi",
+            "ShipmentCompleted": "Sevkiyat tamamlandı"
+          }
+        },
+        "fieldPolicies": {
+          "hint": "Grup bazlı alan görünürlüğü ve salt okunur kuralları. Politika yoksa herkes görür/düzenler.",
+          "addVisibility": "Görünürlük politikası ekle",
+          "addReadonly": "Salt okunur politikası ekle",
+          "colKind": "Tür",
+          "colGroups": "Gruplar",
+          "colScope": "Kapsam",
+          "colEffect": "Etki",
+          "kindVisibility": "Görünürlük",
+          "kindReadonly": "Salt okunur",
+          "allGroups": "Tüm gruplar",
+          "scopeAlways": "Her zaman",
+          "scopeConditional": "Koşullu",
+          "visible": "Görünür",
+          "hidden": "Gizli",
+          "readonly": "Salt okunur",
+          "editable": "Düzenlenebilir",
+          "groups": "Gruplar",
+          "groupsHint": "Boş bırakılırsa tüm gruplara uygulanır.",
+          "conditions": "Koşullar",
+          "addCondition": "Koşul ekle",
+          "addTitle": "{field} — politika ekle",
+          "editTitle": "{field} — politika düzenle",
+          "conditionField": "Alan",
+          "conditionValue": "Değer",
+          "operatorEq": "Eşittir",
+          "operatorNe": "Eşit değildir"
+        },
+        "fieldTabs": {
+          "packages": "İş paketleri",
+          "lines": "İş kalemleri",
+          "shipments": "Sevkiyatlar",
+          "linesHint": "Kalem formu (dialog) alanları için grup bazlı görünürlük ve salt okunur kuralları. Varsayılan: maliyet alanları gizli.",
+          "shipmentsHint": "Sevkiyat formu alanları için grup bazlı görünürlük ve salt okunur kuralları."
+        },
+        "fieldPolicyFields": {
+          "packageNo": "ODAK İş Paketi No",
+          "name": "İş Paketi İsmi",
+          "customerId": "Müşteri",
+          "customerContactId": "Müşteri İş Paketi Sorumlusu",
+          "designContactId": "Tasarım Sorumlusu",
+          "manufactureContactId": "Üretim Sorumlusu",
+          "status": "Durum",
+          "closedAt": "Kapanış tarihi",
+          "beginDate": "Başlangıç",
+          "deliveryDate": "Termin",
+          "deliveryAddress": "Teslimat adresi",
+          "notes": "Notlar",
+          "partCount": "Parça sayısı",
+          "stockCount": "Stok sayısı",
+          "shippedCount": "Sevk sayısı",
+          "lineCount": "Kalem sayısı",
+          "poVersion": "Revize numarası (Rev No)",
+          "customerPo": "Müşteri PO",
+          "projectNo": "Proje No"
+        }
       }
     },
     "customers": {
@@ -3698,7 +3896,37 @@
         "edit": "Düzenle",
         "openHub": "Müşteri kartını aç",
         "openPackages": "Bu müşterinin iş paketleri",
-        "notFound": "Müşteri bulunamadı."
+        "notFound": "Müşteri bulunamadı.",
+        "contactsSection": "Kişiler",
+        "noContacts": "Bu müşteri için kayıtlı kişi yok."
+      },
+      "contacts": {
+        "title": "Kişiler",
+        "add": "Kişi ekle",
+        "empty": "Bu müşteri için henüz kişi tanımlanmadı.",
+        "primaryYes": "Birincil",
+        "deleteTitle": "Kişiyi sil",
+        "deleteConfirm": "Bu kişi kaydını silmek istediğinize emin misiniz?",
+        "fields": {
+          "ad": "Ad Soyad",
+          "email": "E-posta",
+          "telefon": "Telefon",
+          "gorevUnvani": "Görev / Unvan",
+          "birincilKisi": "Birincil kişi",
+          "aktif": "Aktif"
+        },
+        "dialog": {
+          "createTitle": "Yeni kişi",
+          "editTitle": "Kişi düzenle — {name}",
+          "missingId": "Kişi kimliği bulunamadı.",
+          "missingCustomer": "Müşteri kimliği bulunamadı.",
+          "notFound": "Kişi yüklenemedi."
+        },
+        "validation": {
+          "adRequired": "Ad soyad zorunludur.",
+          "emailRequired": "E-posta zorunludur.",
+          "emailInvalid": "Geçerli bir e-posta adresi girin."
+        }
       }
     },
     "po": {
@@ -3736,6 +3964,7 @@
       "tabs": {
         "summary": "Özet",
         "lines": "Kalemler",
+        "shipments": "Sevkiyatlar",
         "quality": "Kalite"
       },
       "fields": {
@@ -3878,6 +4107,7 @@
         "customerProjectNo": "Müşteri Proje No",
         "customerPoNo": "Müşteri PO No",
         "customerPoItemNo": "PO Kalem No",
+        "sasItemNo": "SAS Kalem No",
         "customerJobNo": "Müşteri İş Emri",
         "poItemRevNo": "Ürün Revizyonu",
         "description": "Ürün ve Hizmet Tanımı",
@@ -3888,6 +4118,7 @@
         "qualityReqs": "Kalite İsterleri",
         "isFai": "FAI yapılacak",
         "isFaiComplete": "FAI tamamlandı",
+        "deliveryDate": "Termin Tarihi",
         "shipmentDate": "Sevkiyat Tarihi",
         "shipmentAddress": "Sevkiyat Adresi",
         "unitCost": "Birim Fiyat",
@@ -3917,12 +4148,55 @@
         "customerProjectNo": "Müşteri Proje No",
         "customerPoNo": "Müşteri PO No",
         "customerPoItemNo": "PO Kalem",
+        "sasItemNo": "SAS Kalem",
         "description": "Tanım",
         "quantity": "Miktar",
         "unit": "Birim",
+        "shippedQuantity": "Sevk Mik.",
+        "remainingQuantity": "Kalan",
+        "deliveryDate": "Termin",
         "shipmentDate": "Sevk T.",
         "shipmentAddress": "Sevk Adresi",
         "actions": "Eylem"
+      }
+    },
+    "shipments": {
+      "summary": "{count} sevkiyat · {completed} tamamlandı",
+      "add": "Sevkiyat Ekle",
+      "empty": "Bu iş paketine bağlı sevkiyat kaydı yok.",
+      "deleteTitle": "Sevkiyat sil",
+      "deleteConfirm": "Bu sevkiyat kaydını silmek istediğinize emin misiniz?",
+      "columns": {
+        "waybillNo": "İrsaliye No",
+        "shipmentDate": "Sevkiyat Tarihi",
+        "status": "Durum",
+        "lineQty": "Toplam Miktar",
+        "qcfStatus": "QCF",
+        "controlType": "Denetim Tipi"
+      },
+      "fields": {
+        "waybillNo": "İrsaliye no",
+        "shipmentDate": "Sevkiyat tarihi",
+        "status": "Durum",
+        "controlType": "Denetim tipi",
+        "shipmentAddress": "Sevkiyat adresi",
+        "notes": "Notlar",
+        "qcfGroup": "Sevkiyat kalite formu (QCF)",
+        "qcfStatus": "QCF durumu",
+        "qcfReferenceNo": "QCF referans no",
+        "qcfNotes": "QCF notları"
+      },
+      "dialog": {
+        "createTitle": "Yeni sevkiyat",
+        "editTitle": "Sevkiyat düzenle",
+        "viewTitle": "Sevkiyat {waybillNo}",
+        "missingId": "Sevkiyat kimliği bulunamadı.",
+        "notFound": "Sevkiyat bulunamadı.",
+        "linesTitle": "Sevk kalemleri",
+        "addLine": "Kalem ekle",
+        "lineSelect": "Sipariş kalemi",
+        "shippedQty": "Sevk miktarı",
+        "lineHint": "Sipariş: {quantity} · Sevk edilen: {shipped} · Kalan: {remaining}"
       }
     }
   },

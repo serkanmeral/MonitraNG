@@ -954,7 +954,10 @@ public partial class RuntimeContextService : IRuntimeContextService
         {
             foreach (var f in request.Filters)
             {
-                if (f == null || string.IsNullOrWhiteSpace(f.Field) || string.IsNullOrWhiteSpace(f.Value))
+                if (f == null || string.IsNullOrWhiteSpace(f.Field))
+                    continue;
+                var op = (f.Operator ?? "eq").Trim().ToLowerInvariant();
+                if (op is not ("null" or "empty" or "notnull" or "notempty") && string.IsNullOrWhiteSpace(f.Value))
                     continue;
                 if (!filterableKeys.Contains(f.Field))
                     continue;
@@ -963,6 +966,18 @@ public partial class RuntimeContextService : IRuntimeContextService
                 // workspaceId/boardId sabit kapsam — kullanıcı filtresi olamaz (stateId $and ile kesişerek güvenli).
                 if (path is "workspaceId" or "boardId")
                     continue;
+
+                // null/empty: Mongo { field: null } — alan yok veya null (BuildMatchCondition C# null döndürdüğü için ayrı ele alınır).
+                if (op is "null" or "empty")
+                {
+                    and.Add(new Dictionary<string, object?> { [path] = (object?)null });
+                    continue;
+                }
+                if (op is "notnull" or "notempty")
+                {
+                    and.Add(new Dictionary<string, object?> { [path] = new Dictionary<string, object?> { ["$ne"] = (object?)null } });
+                    continue;
+                }
 
                 var condition = BuildMatchCondition(f.Operator, f.Value!);
                 if (condition != null)

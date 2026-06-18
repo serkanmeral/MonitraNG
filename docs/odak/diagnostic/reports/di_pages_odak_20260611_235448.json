@@ -1,0 +1,268 @@
+{
+  "environment": {
+    "sampleFolderId": "e7a5233d-0bc8-4f7f-8b30-2e9703841f17",
+    "warmIterations": 3,
+    "sampleMarkdownId": "e6f45115-776a-4a1e-93a7-3241efaab102",
+    "gatewayBaseUrl": "http://192.168.20.20:5040",
+    "documentApiBase": "http://192.168.20.20:5040/documents/api/v1/resources"
+  },
+  "analysisNotes": [
+    "Optimized: bootstrap/browse use one snapshot per HTTP request (showHistory=false on snapshot queries).",
+    "Legacy: parallel tree+children or triple folder APIs multiply snapshot/DG load."
+  ],
+  "endpointBreakdownWarm1": [
+    {
+      "label": "ep_bootstrap",
+      "uri": "http://192.168.20.20:5040/documents/api/v1/resources/bootstrap",
+      "success": true,
+      "ms": 3180
+    },
+    {
+      "label": "ep_browse_root",
+      "uri": "http://192.168.20.20:5040/documents/api/v1/resources/browse",
+      "success": true,
+      "ms": 2296
+    },
+    {
+      "label": "ep_tree",
+      "uri": "http://192.168.20.20:5040/documents/api/v1/resources/tree",
+      "success": true,
+      "ms": 4801
+    },
+    {
+      "label": "ep_children",
+      "uri": "http://192.168.20.20:5040/documents/api/v1/resources/children",
+      "success": true,
+      "ms": 3328
+    },
+    {
+      "label": "ep_children_folder",
+      "uri": "http://192.168.20.20:5040/documents/api/v1/resources/children?parentId=e7a5233d-0bc8-4f7f-8b30-2e9703841f17",
+      "success": true,
+      "ms": 4888
+    },
+    {
+      "label": "ep_breadcrumb",
+      "uri": "http://192.168.20.20:5040/documents/api/v1/resources/e7a5233d-0bc8-4f7f-8b30-2e9703841f17/breadcrumb",
+      "success": true,
+      "ms": 2798
+    },
+    {
+      "label": "ep_getById",
+      "uri": "http://192.168.20.20:5040/documents/api/v1/resources/e7a5233d-0bc8-4f7f-8b30-2e9703841f17",
+      "success": true,
+      "ms": 2923
+    },
+    {
+      "label": "ep_permissions",
+      "uri": "http://192.168.20.20:5040/documents/api/v1/resources/e7a5233d-0bc8-4f7f-8b30-2e9703841f17/permissions",
+      "success": true,
+      "ms": 3406
+    },
+    {
+      "label": "ep_markdown_content",
+      "uri": "http://192.168.20.20:5040/documents/api/v1/resources/markdown/e6f45115-776a-4a1e-93a7-3241efaab102/content",
+      "success": true,
+      "ms": 4455
+    },
+    {
+      "label": "ep_search",
+      "uri": "http://192.168.20.20:5040/documents/api/v1/resources/search?q=a&skip=0&limit=50",
+      "success": true,
+      "ms": 5235
+    }
+  ],
+  "module": "document_intelligence",
+  "pages": [
+    {
+      "targetWallMs": 1200,
+      "lastRunSuccess": true,
+      "warmMedianWallMs": 2299,
+      "ok": false,
+      "lastRunDetails": [
+        {
+          "error": null,
+          "label": "bootstrap",
+          "success": true,
+          "ms": 2187
+        }
+      ],
+      "sessionColdWallMs": 2313,
+      "title": "Resources — bootstrap (tree + kok children, tek istek)",
+      "warmP95WallMs": 3303,
+      "pageId": "di_bootstrap_open"
+    },
+    {
+      "targetWallMs": 2000,
+      "lastRunSuccess": true,
+      "warmMedianWallMs": 2702,
+      "ok": false,
+      "lastRunDetails": [
+        {
+          "error": null,
+          "label": "tree",
+          "success": true,
+          "ms": 2219
+        },
+        {
+          "error": null,
+          "label": "children_root",
+          "success": true,
+          "ms": 2681
+        }
+      ],
+      "sessionColdWallMs": 2796,
+      "title": "Resources — eski ilk acilis (tree + children paralel, karsilastirma)",
+      "warmP95WallMs": 3072,
+      "pageId": "di_initial_open"
+    },
+    {
+      "targetWallMs": 800,
+      "lastRunSuccess": true,
+      "warmMedianWallMs": 911,
+      "ok": false,
+      "lastRunDetails": [
+        {
+          "error": null,
+          "label": "browse",
+          "success": true,
+          "ms": 961
+        }
+      ],
+      "sessionColdWallMs": 890,
+      "title": "Kok klasor — browse (tek istek)",
+      "warmP95WallMs": 962,
+      "pageId": "di_browse_root"
+    },
+    {
+      "targetWallMs": 1200,
+      "lastRunSuccess": true,
+      "warmMedianWallMs": 1210,
+      "ok": false,
+      "lastRunDetails": [
+        {
+          "error": null,
+          "label": "browse",
+          "success": true,
+          "ms": 1188
+        }
+      ],
+      "sessionColdWallMs": 1247,
+      "title": "Klasor secimi — browse (tek istek)",
+      "warmP95WallMs": 1264,
+      "pageId": "di_browse_folder"
+    },
+    {
+      "targetWallMs": 2500,
+      "lastRunSuccess": true,
+      "warmMedianWallMs": 3413,
+      "ok": false,
+      "lastRunDetails": [
+        {
+          "error": null,
+          "label": "children",
+          "success": true,
+          "ms": 1982
+        },
+        {
+          "error": null,
+          "label": "breadcrumb",
+          "success": true,
+          "ms": 2946
+        },
+        {
+          "error": null,
+          "label": "getById",
+          "success": true,
+          "ms": 2944
+        }
+      ],
+      "sessionColdWallMs": 2839,
+      "title": "Klasor secimi — eski (3 API paralel, karsilastirma)",
+      "warmP95WallMs": 3498,
+      "pageId": "di_select_folder"
+    },
+    {
+      "targetWallMs": 2000,
+      "lastRunSuccess": true,
+      "warmMedianWallMs": 939,
+      "ok": true,
+      "lastRunDetails": [
+        {
+          "error": null,
+          "label": "permissions",
+          "success": true,
+          "ms": 891
+        }
+      ],
+      "sessionColdWallMs": 899,
+      "title": "Izinler diyalogu (GET permissions — snapshot + folder)",
+      "warmP95WallMs": 967,
+      "pageId": "di_permissions_dialog"
+    },
+    {
+      "targetWallMs": 2000,
+      "lastRunSuccess": true,
+      "warmMedianWallMs": 922,
+      "ok": true,
+      "lastRunDetails": [
+        {
+          "error": null,
+          "label": "markdown_content",
+          "success": true,
+          "ms": 912
+        }
+      ],
+      "sessionColdWallMs": 926,
+      "title": "Markdown ac (content + breadcrumb parent, sirali)",
+      "warmP95WallMs": 926,
+      "pageId": "di_open_markdown"
+    },
+    {
+      "targetWallMs": 2500,
+      "lastRunSuccess": true,
+      "warmMedianWallMs": 923,
+      "ok": true,
+      "lastRunDetails": [
+        {
+          "error": null,
+          "label": "search",
+          "success": true,
+          "ms": 923
+        }
+      ],
+      "sessionColdWallMs": 1131,
+      "title": "Arama (q=test, limit=50)",
+      "warmP95WallMs": 1005,
+      "pageId": "di_search"
+    }
+  ],
+  "generatedAtUtc": "2026-06-11T20:56:27.5015422Z",
+  "dgReference": [
+    {
+      "label": "dg_dm_resources",
+      "success": true,
+      "ms": 603
+    },
+    {
+      "label": "dg_dm_resource_permissions",
+      "success": true,
+      "ms": 766
+    },
+    {
+      "label": "dg_dm_resource_versions",
+      "success": true,
+      "ms": 805
+    }
+  ],
+  "pageTargets": {
+    "di_bootstrap_open": 1200,
+    "di_search": 2500,
+    "di_permissions_dialog": 2000,
+    "di_select_folder": 2500,
+    "di_browse_folder": 1200,
+    "di_browse_root": 800,
+    "di_open_markdown": 2000,
+    "di_initial_open": 2000
+  }
+}

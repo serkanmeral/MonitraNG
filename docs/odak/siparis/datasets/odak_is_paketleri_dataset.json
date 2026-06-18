@@ -42,6 +42,33 @@
       "relationDataset": "odak_musteriler"
     },
     {
+      "fieldType": "relation",
+      "name": "customerContactId",
+      "title": "Musteri is paketi sorumlusu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_musteri_kisileri"
+    },
+    {
+      "fieldType": "relation",
+      "name": "designContactId",
+      "title": "Musteri tasarim sorumlusu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_musteri_kisileri"
+    },
+    {
+      "fieldType": "relation",
+      "name": "manufactureContactId",
+      "title": "Musteri uretim sorumlusu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_musteri_kisileri"
+    },
+    {
       "fieldType": "select",
       "name": "status",
       "title": "Durum",
@@ -168,7 +195,7 @@
     {
       "fieldType": "text",
       "name": "poVersion",
-      "title": "PO revizyon",
+      "title": "Revize numarasi (Rev No)",
       "mandatory": false,
       "unique": false,
       "isArray": false,
@@ -268,6 +295,9 @@
     { "name": "idx_packageNo", "fields": { "packageNo": 1 }, "unique": true },
     { "name": "idx_status", "fields": { "status": 1 }, "unique": false },
     { "name": "idx_customerId", "fields": { "customerId": 1 }, "unique": false },
+    { "name": "idx_customerContactId", "fields": { "customerContactId": 1 }, "unique": false },
+    { "name": "idx_designContactId", "fields": { "designContactId": 1 }, "unique": false },
+    { "name": "idx_manufactureContactId", "fields": { "manufactureContactId": 1 }, "unique": false },
     { "name": "idx_status_deliveryDate", "fields": { "status": 1, "deliveryDate": 1 }, "unique": false }
   ]
 }

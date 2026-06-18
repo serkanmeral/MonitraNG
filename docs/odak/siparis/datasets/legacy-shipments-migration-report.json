@@ -1,0 +1,16 @@
+{
+  "dryRun": false,
+  "packageNo": "2022-012",
+  "results": [
+    {
+      "waybillNo": "5998",
+      "legacyShipmentId": "1087",
+      "dgShipmentId": "0b9acdeb-dd02-44ad-978c-602af520f81c",
+      "status": "ok"
+    }
+  ],
+  "fail": 0,
+  "migratedAt": "2026-06-18T16:54:30.8967145Z",
+  "skip": 0,
+  "ok": 1
+}

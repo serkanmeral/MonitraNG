@@ -92,6 +92,82 @@ export function customerLabelFromRow(
   return id || '—';
 }
 
+export function contactLabelFromRow(
+  row: OdakPackageRow | Record<string, unknown>,
+  field: 'customerContactId' | 'designContactId' | 'manufactureContactId'
+): string {
+  const raw = (row as OdakPackageRow)[field];
+  if (raw != null && typeof raw === 'object') {
+    const o = raw as Record<string, unknown>;
+    const name = o.ad ?? o.Ad ?? o.name ?? o.unvan;
+    if (name != null && String(name).trim()) return String(name).trim();
+    const email = o.email ?? o.Email;
+    if (email != null && String(email).trim()) return String(email).trim();
+  }
+  const id = resolveRelationId(raw);
+  return id || '—';
+}
+
+export interface PackageListCellContext {
+  customerLabels: Record<string, string>;
+  lineStats: Map<string, OdakPackageLineStats>;
+}
+
+/** Liste sütun key → hücre ham metni (format uygulanmadan). */
+export function packageListCellRaw(
+  item: OdakPackageRow,
+  listKey: string,
+  ctx: PackageListCellContext
+): string {
+  const id = packageDataId(item);
+  const stats = ctx.lineStats.get(id);
+  switch (listKey) {
+    case 'displayNo':
+      return packageDisplayNo(item);
+    case 'name':
+      return String(item.name ?? '');
+    case 'customer':
+      return customerLabelFromRow(item, ctx.customerLabels);
+    case 'customerContact':
+      return contactLabelFromRow(item, 'customerContactId');
+    case 'designContact':
+      return contactLabelFromRow(item, 'designContactId');
+    case 'manufactureContact':
+      return contactLabelFromRow(item, 'manufactureContactId');
+    case 'customerPo':
+      return stats?.customerPoNos || '—';
+    case 'projectNo':
+      return stats?.customerProjectNos || '—';
+    case 'poVersion':
+      return String(item.poVersion ?? '');
+    case 'partCount':
+      return formatOdakNumber(item.partCount);
+    case 'stockCount':
+      return formatOdakNumber(item.stockCount);
+    case 'shippedCount':
+      return formatOdakNumber(item.shippedCount);
+    case 'lineCount': {
+      if (item.lineCount != null && item.lineCount >= 0) return String(item.lineCount);
+      const fromStats = stats?.lineCount;
+      return fromStats != null && fromStats > 0 ? String(fromStats) : '—';
+    }
+    case 'statusLabel':
+      return packageStatusLabel(item.status);
+    case 'beginDate':
+      return formatOdakDate(item.beginDate);
+    case 'deliveryDate':
+      return formatOdakDate(item.deliveryDate);
+    case 'closedAt':
+      return formatOdakDate(item.closedAt);
+    case 'deliveryAddress':
+      return String(item.deliveryAddress ?? '').trim() || '—';
+    case 'notes':
+      return String(item.notes ?? '').trim() || '—';
+    default:
+      return '—';
+  }
+}
+
 const CUSTOMER_LABEL_CACHE_TTL_MS = 600_000;
 
 let customerLabelCache: { map: Record<string, string>; expiresAt: number } | null = null;
@@ -172,9 +248,12 @@ export const PACKAGE_LIST_SORT_FIELD_MAP: Record<string, string> = {
   statusLabel: 'status',
   beginDate: 'beginDate',
   deliveryDate: 'deliveryDate',
+  closedAt: 'closedAt',
   lineCount: 'lineCount',
   partCount: 'partCount',
   stockCount: 'stockCount',
+  shippedCount: 'shippedCount',
+  poVersion: 'poVersion',
 };
 
 export function buildPackageListSort(sortBy?: OdakPackageListSort[]): string {

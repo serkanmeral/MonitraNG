@@ -6,6 +6,7 @@ import {
   formatOdakNumber,
   packageStatusLabel,
 } from '@/utils/odakSiparisService';
+import { customerContactLabelFromRow } from '@/utils/odakSiparisCustomerContactService';
 
 export type OdakPackageSummaryRow = {
   label: string;
@@ -22,6 +23,14 @@ function optionalSummaryRow(
 ): OdakPackageSummaryRow | null {
   if (value == null || value === '') return null;
   return { label: t(labelKey), value: String(value) };
+}
+
+function contactSummaryValue(contactField: unknown, legacyId?: string): string {
+  if (contactField != null && contactField !== '') {
+    return customerContactLabelFromRow(contactField);
+  }
+  if (legacyId != null && legacyId !== '') return String(legacyId);
+  return '—';
 }
 
 /** Detay sayfasi ve liste expanded-row ozeti icin ortak alan listesi. */
@@ -42,6 +51,18 @@ export function buildOdakPackageSummaryRows(
       value: customerLabel,
       customerId: customerId || undefined,
     },
+    {
+      label: t('odakSiparis.detail.fields.customerContact'),
+      value: contactSummaryValue(pkg.customerContactId, pkg.legacyContactId),
+    },
+    {
+      label: t('odakSiparis.detail.fields.designResponsible'),
+      value: contactSummaryValue(pkg.designContactId, pkg.legacyDesignResponsibleId),
+    },
+    {
+      label: t('odakSiparis.detail.fields.manufactureResponsible'),
+      value: contactSummaryValue(pkg.manufactureContactId, pkg.legacyManufactureResponsibleId),
+    },
     { label: t('odakSiparis.detail.fields.partCount'), value: formatOdakNumber(pkg.partCount) },
     { label: t('odakSiparis.detail.fields.stockCount'), value: formatOdakNumber(pkg.stockCount) },
     { label: t('odakSiparis.detail.fields.shippedCount'), value: formatOdakNumber(pkg.shippedCount) },
@@ -49,15 +70,11 @@ export function buildOdakPackageSummaryRows(
     { label: t('odakSiparis.detail.fields.beginDate'), value: formatOdakDate(pkg.beginDate) },
     { label: t('odakSiparis.detail.fields.deliveryDate'), value: formatOdakDate(pkg.deliveryDate) },
     { label: t('odakSiparis.detail.fields.deliveryAddress'), value: pkg.deliveryAddress ?? '—' },
-    { label: t('odakSiparis.detail.fields.paymentDetail'), value: pkg.paymentDetail ?? '—' },
     { label: t('odakSiparis.detail.fields.notes'), value: pkg.notes ?? '—' },
   ];
 
   const legacyRows = [
-    optionalSummaryRow(t, 'odakSiparis.detail.fields.customerContact', pkg.legacyContactId),
     optionalSummaryRow(t, 'odakSiparis.detail.fields.packageResponsible', pkg.legacyResponsibleId),
-    optionalSummaryRow(t, 'odakSiparis.detail.fields.designResponsible', pkg.legacyDesignResponsibleId),
-    optionalSummaryRow(t, 'odakSiparis.detail.fields.manufactureResponsible', pkg.legacyManufactureResponsibleId),
   ].filter(Boolean) as OdakPackageSummaryRow[];
   rows.push(...legacyRows);
 

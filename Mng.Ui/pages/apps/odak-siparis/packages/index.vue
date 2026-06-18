@@ -6,10 +6,26 @@ import OdakSiparisCustomerDrawer from '@/components/apps/odak-siparis/OdakSipari
 import OdakSiparisPackageDialog from '@/components/apps/odak-siparis/OdakSiparisPackageDialog.vue';
 import OdakSiparisPackageExpandPanel from '@/components/apps/odak-siparis/OdakSiparisPackageExpandPanel.vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
+import { useOdakPackageFieldAccess } from '@/composables/useOdakPackageFieldAccess';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useAuthStore } from '@/stores/auth';
 import { ocDelete } from '@/services/operationCoreService';
 import type { AfFilterColumn, AfListFilter } from '@/utils/afListFilters';
+import {
+  applyListColumnFormatting,
+  getListColumnCellStyle,
+} from '@/utils/afListColumnFormat';
 import { ODAK_SIPARIS_CONFIG, ODAK_DATA_TABLE_EXPAND_COLUMN, type OdakPackageRow } from '@/utils/odakSiparisConfig';
+import type { OdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
+import { loadOdakPackageHubRuntimeSettings } from '@/utils/odakSiparisHubSettingsService';
+import {
+  buildPackageFilterColumns,
+  buildPackageListHeaders,
+  defaultOdakPackageListConfig,
+  fieldNameFromListSortKey,
+  listSortKeyFromField,
+  type OdakPackageListConfig,
+} from '@/utils/odakSiparisPackageListSettings';
 import {
   customerIdFromRow,
   customerLabelFromRow,
@@ -19,10 +35,10 @@ import {
   fetchPackageLineStatsMap,
   formatOdakDate,
   formatOdakNumber,
-  filterPackagesByLineAdv,
   invalidateOdakSiparisCustomerCache,
   packageDataId,
   packageDisplayNo,
+  packageListCellRaw,
   packageStatusLabel,
   type OdakPackageLineStats,
   type OdakPackageListSort,
@@ -30,16 +46,18 @@ import {
 import type { OdakCustomerDialogMode } from '@/utils/odakSiparisCustomerService';
 import type { OdakPackageDialogMode } from '@/utils/odakSiparisPackageService';
 import { exportOdakPackagesToCsv, ODAK_PACKAGE_EXPORT_MAX } from '@/utils/odakSiparisPackageExport';
-import { CertificateIcon, DownloadIcon, EditIcon, PlusIcon, RefreshIcon, TrashIcon } from 'vue-tabler-icons';
+import { odakPackageSettingsFieldLabelTr } from '@/utils/odakSiparisSettingsLabels';
+import { CertificateIcon, DownloadIcon, EditIcon, PlusIcon, RefreshIcon, SettingsIcon, TrashIcon } from 'vue-tabler-icons';
 
 definePageMeta({ layout: 'default' });
 
 const { t } = useAppI18n();
+const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 
 type StatusTab = 'open' | 'closed' | 'all';
-type ExpandTab = 'summary' | 'lines' | 'quality';
+type ExpandTab = 'summary' | 'lines' | 'shipments' | 'quality';
 
 const statusTab = ref<StatusTab>('open');
 const searchQuery = ref('');
@@ -48,11 +66,13 @@ function searchText(): string {
   const q = searchQuery.value;
   return typeof q === 'string' ? q.trim() : '';
 }
-const lineSearchPanelOpen = ref<number | undefined>(undefined);
 const loading = ref(false);
 const errorMessage = ref('');
 const items = ref<OdakPackageRow[]>([]);
 const lineStats = ref<Map<string, OdakPackageLineStats>>(new Map());
+const listConfig = ref<OdakPackageListConfig>(defaultOdakPackageListConfig());
+const fieldPolicies = ref<OdakFieldPoliciesBlob>({ policiesByField: {} });
+const { canViewListColumn } = useOdakPackageFieldAccess(fieldPolicies);
 const customerLabels = ref<Record<string, string>>({});
 const relationFilterOptions = ref<Record<string, { value: string; title: string }[]>>({});
 const activeListFilters = ref<AfListFilter[]>([]);
@@ -88,13 +108,37 @@ const deleting = ref(false);
 const exporting = ref(false);
 const exportMessage = ref('');
 
-/** Kalem dataset alanlari — sunucu filtresi yok; line stats ile client filtre. */
-const lineAdv = ref({
-  customerPo: '',
-  customerProjectNo: '',
-  customerPoItem: '',
-  productDesc: '',
-});
+function columnTitle(fieldName: string, _listKey: string): string {
+  return odakPackageSettingsFieldLabelTr(fieldName);
+}
+
+function listCellContext() {
+  return { customerLabels: customerLabels.value, lineStats: lineStats.value };
+}
+
+const genericListColumns = computed(() =>
+  configurableHeaders.value.filter((h) => h.key !== 'displayNo' && h.key !== 'customer')
+);
+
+function filterFieldLabel(fieldName: string): string {
+  return odakPackageSettingsFieldLabelTr(fieldName);
+}
+
+function columnConfigForListKey(listKey: string) {
+  const fieldName = fieldNameFromListSortKey(listKey);
+  return listConfig.value.columns.find((c) => c.fieldName === fieldName);
+}
+
+function cellDisplayValue(raw: string, listKey: string, item: OdakPackageRow): string {
+  const col = columnConfigForListKey(listKey);
+  return applyListColumnFormatting(raw, col?.format);
+}
+
+function cellStyle(listKey: string, raw: string, item: OdakPackageRow): Record<string, string> {
+  const col = columnConfigForListKey(listKey);
+  const fieldName = fieldNameFromListSortKey(listKey);
+  return getListColumnCellStyle(raw, fieldName, col?.format, item as Record<string, unknown>);
+}
 
 const page = computed(() => ({ title: t('odakSiparis.packages.title') }));
 const breadcrumbs = computed(() => [
@@ -109,30 +153,20 @@ const statusTabs = computed(() => [
   { value: 'all' as const, label: t('odakSiparis.packages.tabs.all') },
 ]);
 
-/** odak-is-paketleri-form listConfig.filterable ile hizali (status sekmelerde). */
-const packageFilterColumns = computed<AfFilterColumn[]>(() => [
-  { key: 'packageNo', label: t('odakSiparis.packages.searchFields.packageNo'), kind: 'text' },
-  { key: 'name', label: t('odakSiparis.packages.searchFields.packageName'), kind: 'text' },
-  { key: 'customerId', label: t('odakSiparis.packages.searchFields.customerName'), kind: 'relation' },
-  { key: 'beginDate', label: t('odakSiparis.packages.columns.beginDate'), kind: 'date' },
-  { key: 'deliveryDate', label: t('odakSiparis.packages.columns.deliveryDate'), kind: 'date' },
-  { key: 'partCount', label: t('odakSiparis.packages.columns.partCount'), kind: 'number' },
-  { key: 'stockCount', label: t('odakSiparis.packages.columns.stockCount'), kind: 'number' },
-]);
+/** Hub ortak listConfig.filterable ile hizali. */
+const packageFilterColumns = computed<AfFilterColumn[]>(() =>
+  buildPackageFilterColumns(listConfig.value, filterFieldLabel)
+);
+
+const configurableHeaders = computed(() =>
+  buildPackageListHeaders(listConfig.value, columnTitle, (listKey) =>
+    canViewListColumn(listKey)
+  )
+);
 
 const headers = computed(() => [
   { ...ODAK_DATA_TABLE_EXPAND_COLUMN },
-  { title: t('odakSiparis.packages.columns.packageNo'), key: 'displayNo', sortable: true },
-  { title: t('odakSiparis.packages.columns.name'), key: 'name', sortable: true },
-  { title: t('odakSiparis.packages.columns.customer'), key: 'customer', sortable: true },
-  { title: t('odakSiparis.packages.columns.customerPo'), key: 'customerPo', sortable: false },
-  { title: t('odakSiparis.packages.columns.projectNo'), key: 'projectNo', sortable: false },
-  { title: t('odakSiparis.packages.columns.partCount'), key: 'partCount', sortable: true, width: 88 },
-  { title: t('odakSiparis.packages.columns.stockCount'), key: 'stockCount', sortable: true, width: 88 },
-  { title: t('odakSiparis.packages.columns.lineCount'), key: 'lineCount', sortable: true, width: 72 },
-  { title: t('odakSiparis.packages.columns.status'), key: 'statusLabel', sortable: true },
-  { title: t('odakSiparis.packages.columns.beginDate'), key: 'beginDate', sortable: true },
-  { title: t('odakSiparis.packages.columns.deliveryDate'), key: 'deliveryDate', sortable: true },
+  ...configurableHeaders.value,
   {
     title: t('odakSiparis.packages.columns.actions'),
     key: 'actions',
@@ -149,91 +183,10 @@ const deleteLineCount = computed(() => {
   return lineStats.value.get(id)?.lineCount ?? item.lineCount ?? 0;
 });
 
-const hasLineSearch = computed(
-  () =>
-    Boolean(
-      lineAdv.value.customerProjectNo.trim() ||
-        lineAdv.value.customerPoItem.trim() ||
-        lineAdv.value.productDesc.trim()
-    )
-);
-
-const needsLineStats = computed(() => Boolean(lineAdv.value.customerPo.trim() || hasLineSearch.value));
-
-const hasLineFilter = computed(() => needsLineStats.value);
-
-function applyLineFilters(list: OdakPackageRow[]): OdakPackageRow[] {
-  return filterPackagesByLineAdv(list, lineAdv.value, lineStats.value);
-}
-
-function compareText(a: string, b: string): number {
-  return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-}
-
-function compareNumber(a: number | null | undefined, b: number | null | undefined): number {
-  const na = a ?? Number.NEGATIVE_INFINITY;
-  const nb = b ?? Number.NEGATIVE_INFINITY;
-  return na === nb ? 0 : na < nb ? -1 : 1;
-}
-
-function sortPackagesClient(list: OdakPackageRow[], sortBy: OdakPackageListSort[]): OdakPackageRow[] {
-  const primary = sortBy[0];
-  if (!primary) return list;
-  const dir = primary.order === 'desc' ? -1 : 1;
-  const key = primary.key;
-  return [...list].sort((a, b) => {
-    let cmp = 0;
-    switch (key) {
-      case 'displayNo':
-        cmp = compareText(packageDisplayNo(a), packageDisplayNo(b));
-        break;
-      case 'name':
-        cmp = compareText(String(a.name ?? ''), String(b.name ?? ''));
-        break;
-      case 'customer':
-        cmp = compareText(
-          customerLabelFromRow(a, customerLabels.value),
-          customerLabelFromRow(b, customerLabels.value)
-        );
-        break;
-      case 'statusLabel':
-        cmp = compareText(String(a.status ?? ''), String(b.status ?? ''));
-        break;
-      case 'beginDate':
-        cmp = compareText(String(a.beginDate ?? ''), String(b.beginDate ?? ''));
-        break;
-      case 'deliveryDate':
-        cmp = compareText(String(a.deliveryDate ?? ''), String(b.deliveryDate ?? ''));
-        break;
-      case 'partCount':
-        cmp = compareNumber(a.partCount, b.partCount);
-        break;
-      case 'stockCount':
-        cmp = compareNumber(a.stockCount, b.stockCount);
-        break;
-      case 'lineCount':
-        cmp = compareNumber(a.lineCount ?? lineStats.value.get(packageDataId(a))?.lineCount, b.lineCount ?? lineStats.value.get(packageDataId(b))?.lineCount);
-        break;
-      default:
-        cmp = 0;
-    }
-    return cmp * dir;
-  });
-}
-
-function lineCountFor(item: OdakPackageRow): string {
-  if (item.lineCount != null && item.lineCount >= 0) return String(item.lineCount);
-  const fromStats = lineStats.value.get(packageDataId(item))?.lineCount;
-  if (fromStats != null && fromStats > 0) return String(fromStats);
-  return '—';
-}
-
-function rowPo(item: OdakPackageRow): string {
-  return lineStats.value.get(packageDataId(item))?.customerPoNos || '—';
-}
-
-function rowProjectNo(item: OdakPackageRow): string {
-  return lineStats.value.get(packageDataId(item))?.customerProjectNos || '—';
+function onListFiltersUpdate(filters: AfListFilter[]) {
+  activeListFilters.value = filters;
+  if (tablePage.value !== 1) tablePage.value = 1;
+  else void fetchPackages();
 }
 
 async function ensureCustomerLabels() {
@@ -244,21 +197,6 @@ async function ensureCustomerLabels() {
 async function loadFilterRelationOptions() {
   relationFilterOptions.value = {
     customerId: await fetchCustomerRelationOptions(),
-  };
-}
-
-function onListFiltersUpdate(filters: AfListFilter[]) {
-  activeListFilters.value = filters;
-  if (tablePage.value !== 1) tablePage.value = 1;
-  else void fetchPackages();
-}
-
-function clearLineSearch() {
-  lineAdv.value = {
-    customerPo: '',
-    customerProjectNo: '',
-    customerPoItem: '',
-    productDesc: '',
   };
 }
 
@@ -286,8 +224,8 @@ async function exportPackages() {
         statusTab: statusTab.value,
         search: searchText() || undefined,
         advancedFilters: activeListFilters.value,
-        lineAdv: lineAdv.value,
         sortBy: tableSortBy.value,
+        visibleExportKeys: configurableHeaders.value.map((h) => h.key),
       },
       columnLabels
     );
@@ -307,8 +245,8 @@ async function fetchPackages() {
   try {
     await ensureCustomerLabels();
 
-    const skip = hasLineFilter.value ? 0 : (tablePage.value - 1) * tableItemsPerPage.value;
-    const limit = hasLineFilter.value ? 500 : tableItemsPerPage.value;
+    const skip = (tablePage.value - 1) * tableItemsPerPage.value;
+    const limit = tableItemsPerPage.value;
 
     const resp = await fetchOdakPackagesPage({
       statusTab: statusTab.value,
@@ -319,26 +257,14 @@ async function fetchPackages() {
       sortBy: tableSortBy.value,
     });
 
-    let filtered = [...resp.items];
-
-    if (needsLineStats.value) {
-      const stats = await fetchPackageLineStatsMap(filtered.map((x) => packageDataId(x)));
-      lineStats.value = stats;
-      filtered = applyLineFilters(filtered);
-    }
-
-    if (hasLineFilter.value) {
-      filtered = sortPackagesClient(filtered, tableSortBy.value);
-      const start = (tablePage.value - 1) * tableItemsPerPage.value;
-      totalCount.value = filtered.length;
-      items.value = filtered.slice(start, start + tableItemsPerPage.value);
-    } else {
-      items.value = filtered;
-      totalCount.value = resp.total ?? filtered.length;
-      // B: gorunen sayfa icin PO/Proje ozeti (chunk basina ~3 paralel DG cagrisi / 20 paket).
-      const pageIds = items.value.map((x) => packageDataId(x)).filter(Boolean);
-      lineStats.value = pageIds.length ? await fetchPackageLineStatsMap(pageIds) : new Map();
-    }
+    items.value = [...resp.items];
+    totalCount.value = resp.total ?? items.value.length;
+    const pageIds = items.value.map((x) => packageDataId(x)).filter(Boolean);
+    const needsPoCols = configurableHeaders.value.some(
+      (h) => h.key === 'customerPo' || h.key === 'projectNo'
+    );
+    lineStats.value =
+      needsPoCols && pageIds.length ? await fetchPackageLineStatsMap(pageIds) : new Map();
   } catch (e: unknown) {
     errorMessage.value = e instanceof Error ? e.message : String(e);
     items.value = [];
@@ -371,6 +297,7 @@ async function onCustomerSaved() {
 function parseExpandTabFromQuery(): ExpandTab {
   const tab = route.query.tab;
   if (tab === 'lines') return 'lines';
+  if (tab === 'shipments') return 'shipments';
   if (tab === 'quality') return 'quality';
   return 'summary';
 }
@@ -536,7 +463,22 @@ watch(searchQuery, (v) => {
   }
   scheduleFetch();
 });
-watch(lineAdv, scheduleFetch, { deep: true });
+
+async function loadHubSettings() {
+  try {
+    const settings = await loadOdakPackageHubRuntimeSettings();
+    listConfig.value = settings.listConfig;
+    fieldPolicies.value = settings.fieldPolicies;
+    const sortField = settings.listConfig.defaultSortBy ?? 'packageNo';
+    const sortKey = listSortKeyFromField(sortField);
+    tableSortBy.value = [
+      { key: sortKey, order: settings.listConfig.defaultSortOrder ?? 'desc' },
+    ];
+  } catch {
+    listConfig.value = defaultOdakPackageListConfig();
+    fieldPolicies.value = { policiesByField: {} };
+  }
+}
 
 onMounted(() => {
   const expand = route.query.expand;
@@ -554,6 +496,7 @@ onMounted(() => {
 });
 
 async function initPackagesPage() {
+  await loadHubSettings();
   await ensureCustomerLabels();
   if (pendingCustomerFilterId.value) {
     activeListFilters.value = [
@@ -583,6 +526,15 @@ async function initPackagesPage() {
           :placeholder="t('odakSiparis.packages.quickSearch')"
           style="max-width: 220px"
         />
+        <v-btn
+          v-if="auth.isManager"
+          variant="outlined"
+          size="small"
+          to="/apps/odak-siparis/packages/settings"
+        >
+          <SettingsIcon size="18" class="mr-1" />
+          {{ t('odakSiparis.packages.settings.title') }}
+        </v-btn>
         <v-btn icon variant="outlined" size="small" :loading="loading" @click="fetchPackages">
           <RefreshIcon size="18" />
         </v-btn>
@@ -614,58 +566,6 @@ async function initPackagesPage() {
           @advanced-open="loadFilterRelationOptions"
         />
 
-        <v-expansion-panels v-model="lineSearchPanelOpen" class="pb-2">
-          <v-expansion-panel>
-            <v-expansion-panel-title>{{ t('odakSiparis.packages.lineSearchPanel') }}</v-expansion-panel-title>
-            <v-expansion-panel-text>
-              <v-alert type="info" variant="tonal" density="compact" class="mb-3">
-                {{ t('odakSiparis.packages.lineSearchHint') }}
-              </v-alert>
-              <v-row dense>
-                <v-col cols="12" sm="6" md="3">
-                  <v-text-field
-                    v-model="lineAdv.customerPo"
-                    :label="t('odakSiparis.packages.searchFields.customerPo')"
-                    density="compact"
-                    hide-details
-                  />
-                </v-col>
-                <v-col cols="12" sm="6" md="3">
-                  <v-text-field
-                    v-model="lineAdv.customerProjectNo"
-                    :label="t('odakSiparis.packages.searchFields.customerProjectNo')"
-                    density="compact"
-                    hide-details
-                  />
-                </v-col>
-                <v-col cols="12" sm="6" md="3">
-                  <v-text-field
-                    v-model="lineAdv.customerPoItem"
-                    :label="t('odakSiparis.packages.searchFields.customerPoItem')"
-                    density="compact"
-                    hide-details
-                  />
-                </v-col>
-                <v-col cols="12" sm="6" md="3">
-                  <v-text-field
-                    v-model="lineAdv.productDesc"
-                    :label="t('odakSiparis.packages.searchFields.productDesc')"
-                    density="compact"
-                    hide-details
-                  />
-                </v-col>
-                <v-col cols="12" class="d-flex ga-2">
-                  <v-btn size="small" variant="tonal" @click="scheduleFetch">
-                    {{ t('odakSiparis.packages.search') }}
-                  </v-btn>
-                  <v-btn size="small" variant="text" @click="clearLineSearch">
-                    {{ t('odakSiparis.packages.clear') }}
-                  </v-btn>
-                </v-col>
-              </v-row>
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-        </v-expansion-panels>
       </div>
 
       <v-tabs v-model="statusTab" color="primary" class="px-4">
@@ -678,10 +578,8 @@ async function initPackagesPage() {
         <v-alert v-if="errorMessage" type="error" variant="tonal" class="mb-4">
           {{ errorMessage }}
         </v-alert>
-        <v-alert v-if="hasLineFilter" type="info" variant="tonal" density="compact" class="mb-4">
-          {{ t('odakSiparis.packages.clientFilterHint') }}
-        </v-alert>
 
+        <div class="odak-packages-list-scroll">
         <v-data-table-server
           v-model:expanded="expandedIds"
           :headers="headers"
@@ -701,6 +599,7 @@ async function initPackagesPage() {
           <template #expanded-row="{ columns, item }">
             <tr>
               <td :colspan="columns.length" class="pa-0">
+                <div class="odak-package-expand-viewport">
                 <OdakSiparisPackageExpandPanel
                   :key="`${packageDataId(item)}-${expandRefreshToken}`"
                   :package-row="item"
@@ -709,6 +608,7 @@ async function initPackagesPage() {
                   @open-customer="openCustomerDrawer"
                   @update:active-tab="expandActiveTab = $event"
                 />
+                </div>
               </td>
             </tr>
           </template>
@@ -716,9 +616,16 @@ async function initPackagesPage() {
             <a
               href="#"
               class="text-primary text-decoration-none font-weight-medium"
+              :style="cellStyle('displayNo', packageListCellRaw(item, 'displayNo', listCellContext()), item)"
               @click.prevent="toggleExpand(item)"
             >
-              {{ packageDisplayNo(item) }}
+              {{
+                cellDisplayValue(
+                  packageListCellRaw(item, 'displayNo', listCellContext()),
+                  'displayNo',
+                  item
+                )
+              }}
             </a>
           </template>
           <template #item.customer="{ item }">
@@ -726,35 +633,44 @@ async function initPackagesPage() {
               v-if="customerIdFromRow(item)"
               href="#"
               class="text-primary text-decoration-none"
+              :style="cellStyle('customer', packageListCellRaw(item, 'customer', listCellContext()), item)"
               @click.prevent="openCustomerDrawer(customerIdFromRow(item))"
             >
-              {{ customerLabelFromRow(item, customerLabels) }}
+              {{
+                cellDisplayValue(
+                  packageListCellRaw(item, 'customer', listCellContext()),
+                  'customer',
+                  item
+                )
+              }}
             </a>
-            <span v-else>{{ customerLabelFromRow(item, customerLabels) }}</span>
+            <span
+              v-else
+              :style="cellStyle('customer', packageListCellRaw(item, 'customer', listCellContext()), item)"
+            >
+              {{
+                cellDisplayValue(
+                  packageListCellRaw(item, 'customer', listCellContext()),
+                  'customer',
+                  item
+                )
+              }}
+            </span>
           </template>
-          <template #item.customerPo="{ item }">
-            {{ rowPo(item) }}
-          </template>
-          <template #item.projectNo="{ item }">
-            {{ rowProjectNo(item) }}
-          </template>
-          <template #item.partCount="{ item }">
-            {{ formatOdakNumber(item.partCount) }}
-          </template>
-          <template #item.stockCount="{ item }">
-            {{ formatOdakNumber(item.stockCount) }}
-          </template>
-          <template #item.lineCount="{ item }">
-            {{ lineCountFor(item) }}
-          </template>
-          <template #item.statusLabel="{ item }">
-            {{ packageStatusLabel(item.status) }}
-          </template>
-          <template #item.beginDate="{ item }">
-            {{ formatOdakDate(item.beginDate) }}
-          </template>
-          <template #item.deliveryDate="{ item }">
-            {{ formatOdakDate(item.deliveryDate) }}
+          <template v-for="col in genericListColumns" :key="col.key" #[`item.${col.key}`]="{ item }">
+            <span
+              :style="
+                cellStyle(col.key, packageListCellRaw(item, col.key, listCellContext()), item)
+              "
+            >
+              {{
+                cellDisplayValue(
+                  packageListCellRaw(item, col.key, listCellContext()),
+                  col.key,
+                  item
+                )
+              }}
+            </span>
           </template>
           <template #item.actions="{ item }">
             <div class="d-inline-flex align-center justify-end ga-1">
@@ -777,6 +693,7 @@ async function initPackagesPage() {
             </div>
           </template>
         </v-data-table-server>
+        </div>
         <div v-if="totalCount > 0" class="text-caption text-medium-emphasis mt-2">
           {{ paginationLabel }}
         </div>
@@ -825,6 +742,63 @@ async function initPackagesPage() {
 </template>
 
 <style scoped>
+/*
+ * Yatay scroll tek kaynak: .odak-packages-list-scroll
+ * Alt liste (expand panel) bu konteynerin içinde; geniş tablo üst tabloyu şişirirken
+ * expand viewport container query ile görünür genişliğe sabitlenir.
+ */
+.odak-packages-list-scroll {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+  container-type: inline-size;
+  container-name: odak-packages-scroll;
+  padding-bottom: 2px;
+}
+
+.odak-packages-list-table {
+  display: block;
+  width: fit-content;
+  min-width: 100%;
+}
+
+.odak-packages-list-table :deep(.v-table),
+.odak-packages-list-table :deep(.v-table__wrapper) {
+  overflow: visible !important;
+}
+
+.odak-packages-list-table :deep(table) {
+  width: auto !important;
+  table-layout: auto !important;
+}
+
+.odak-packages-list-table :deep(.v-data-table__expanded__content > td) {
+  overflow: visible;
+  padding: 0 !important;
+}
+
+/* Expand panel — üst tablo yatay scroll'da görünür alan genişliğinde kalır. */
+.odak-package-expand-viewport {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  background: rgb(var(--v-theme-surface));
+}
+
+@supports (width: 100cqi) {
+  .odak-package-expand-viewport {
+    width: 100cqi;
+    max-width: 100cqi;
+  }
+}
+
 /* Expand sütunu (ilk sütun) — yatay scroll'da solda sabit. */
 .odak-packages-list-table :deep(table) > thead > tr > th:first-child,
 .odak-packages-list-table :deep(table) > tbody > tr:not(.v-data-table__expanded__content) > td:first-child {

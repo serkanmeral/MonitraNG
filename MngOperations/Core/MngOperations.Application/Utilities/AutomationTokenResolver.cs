@@ -16,7 +16,7 @@ public static partial class AutomationTokenResolver
         {
             var path = match.Groups[1].Value.Trim();
             var value = ResolvePath(path, context);
-            return value ?? match.Value;
+            return value ?? string.Empty;
         });
     }
 
