@@ -10,38 +10,92 @@
 > docs/odak/document_intelligence/DEVAM.md
 > (Detaylı plan: docs/odak/document_intelligence/MonitraNG_Document_Intelligence_Planning.md)
 >
-> DURUM: Faz 1 TAMAMLANDI ve test sunucusuna (Odak) deploy edildi. Tüm özellikler canlı:
-> resources/tree, klasör CRUD, markdown editör/preview/sürüm geçmişi, dosya yükle/indir/inline
-> önizleme, arama, audit, grup bazlı yetkilendirme + miras, taslak/yayınla (draft/published).
-> Hem mngdocument hem mngui Odak'ta healthy.
+> DURUM: Faz 1 ✅ canlı (Odak). D1-alpha (Belge tasarımcısı / şablon kaynağından oluşturma)
+> backend Odak'ta deploy edildi; UI iskeleti yerelde (mngui deploy EDİLMEDİ).
+> API smoke: GET /documents/api/v1/templates → {"items":[],"total":0}
 >
 > ÇALIŞMA KURALLARI:
 > - Yanıtlar Türkçe.
 > - Backend (MngDocument vb.) değişiklikleri sormadan otomatik deploy edilebilir.
 > - UI (mngui) deploy'u YALNIZCA ben açıkça isteyince yapılır.
-> - npm run dev'i ben yerelde (port 3000) çalıştırıyorum; sen yeni bir dev süreci başlatma.
+> - npm run dev'i ben yerelde çalıştırıyorum; sen yeni bir dev süreci başlatma.
 >
 > ORTAM / DEPLOY:
 > - Test sunucusu (Odak): 192.168.20.20, gateway :5040.
->   DG route: /data/api/v1/...  ·  MngDocument: /documents/api/v1/...
-> - Deploy: scripts/odak/sync-odak-source.ps1 -Paths <X> + scripts/odak/deploy-odak-apps.ps1 -Services <svc>
->   Token: docs/odak/operationcore/scripts/load-operationcore-token.ps1 (süresi dolarsa yenile).
+>   DG: /data/api/v1/...  ·  MngDocument: /documents/api/v1/...
+> - Sync: pwsh scripts/odak/sync-odak-source.ps1 -Server 192.168.20.20 -Paths <X>
+> - Deploy: pwsh scripts/odak/deploy-odak-apps.ps1 -Server 192.168.20.20 -Services mngdocument [-NoCache]
+> - Token: docs/odak/operationcore/scripts/load-operationcore-token.ps1
+>   (Token dosyası: $env:TEMP\operationcore_dg_token.txt — stdout değil!)
+> - Dataset: docs/odak/document_intelligence/scripts/setup-document-intelligence-datasets.ps1
+> - SSH/Posh-SSH: docs/odak/deploy/README.md · operationcore/scripts/README.md
 >
 > SIRADAKİ İŞ (bana seçtir):
-> 1. Faz 2 — OperationCore entegrasyonu: WorkItem ↔ doküman ilişkisi (çift yönlü, yetki kontrollü).
-> 2. Non-admin canlı doğrulama: gerçek (admin olmayan) kullanıcıyla tree/children filtreleme + 403
->    testi (Faz 1'de admin bypass nedeniyle yapılmadı).
-> 3. (Ops.) dm_resource_versions dataset'inde DG logging'i açıp tam audit (IP/değişiklik izi).
+> 1. D1-alpha UI doğrulama — yerel npm run dev → /apps/document-intelligence/designer
+> 2. D2 — incremental belge numarası runtime (DG @__counters)
+> 3. D4 — basit DOCX merge + indirme
+> 4. Faz 2 OC — WorkItem ↔ doküman (kısmen kodda var; tam entegrasyon)
 >
 > DEVAM.md'yi okuyup özetle ve hangi seçenekle devam edeceğimi sor.
 > ```
 
-**Son güncelleme:** 5 Haziran 2026 (**System dokümanları** — Öğreticiler, Sürüm Notları, Diagnostic Raporu; manager bypass; prod seed)
-**Durum:** **🎉 Faz 1 TAMAMLANDI ✅** — tüm özellikler (resources/tree/markdown/dosya/arama/audit/sürüm geçmişi + yetkilendirme + miras + inline preview + taslak) uçtan uca **canlıda** (`mngdocument` + `mngui` deploy edildi). Sıradaki: Faz 2 (OperationCore entegrasyonu).
+**Son güncelleme:** 23 Haziran 2026 (**D1-alpha** — Belge tasarımcısı backend + UI iskelet; `dm_document_templates`; Odak deploy)
+**Durum:** **Faz 1 ✅ canlı** · **D1-alpha backend ✅ Odak'ta** · **D1-alpha UI ⚠️ yerelde (deploy bekliyor)** · Commit/push yapılmadı.
 
-> **⭐ KALDIĞIMIZ YER (1 Haz ~21:00) — yeni chat buradan devam edecek:** **Faz 1 kapatıldı.** Bu turda **"taslak olarak kaydet"** eklendi: `dm_resources.status` (draft/published), `CreateMarkdownRequest.IsDraft` + `UpdateMarkdownRequest.IsDraft?` (null=koru), `ResourceDto.Status`; UI'da oluşturma + editörde **taslak/yayınla** butonları ve **taslak rozeti**. **Hem `mngdocument` hem `mngui` Odak'a deploy edildi ve canlı** (gateway 200, ui :3000 200; backend draft yaşam döngüsü doğrulandı). Faz 1'in tüm özellikleri (resources/tree/markdown/dosya/arama/audit/VH + PERM + miras + PREVIEW + DRAFT) artık test sunucusunda. **Sıradaki: Faz 2 — OperationCore WorkItem ↔ doküman ilişkisi.** (Ops.: non-admin canlı filtreleme/403 doğrulaması yapılmadı — admin bypass.)
+> **⭐ KALDIĞIMIZ YER (23 Haz 2026) — yeni chat buradan devam edecek:** **Document Designer ince dikey dilim (D1-alpha)** implement edildi. DOCX kaynak seç → paragraf yapısı parse → parametre tanımı (manual / incremental format) → şablon kaydı. **Backend (MngDocument):** `DocumentTemplatesController`, `DocumentTemplateService`, `DocxStructureParser`; dataset `dm_document_templates`; `IMngDataGatewayClient.DownloadFileAsync`. **UI (Mng.Ui, yerel):** `/apps/document-intelligence/designer`, `documentIntelligenceService` template uçları, i18n. **Odak:** `MngDocument` sync edildi; `mngdocument` `--no-cache` build+up (**healthy**, :5095); `dm_document_templates` dataset provizyonlandı; smoke `GET http://192.168.20.20:5040/documents/api/v1/templates` → boş liste ✅. **`mngui` deploy EDİLMEDİ** (kullanıcı kuralı). **Henüz yok:** runtime incremental numara (D2), DOCX merge/PDF (D4), tablo parametreleri (D3), content control enjekte. **Deploy notu:** sync/deploy için `-Server 192.168.20.20` kullan; SCP bazen `Permission denied` verir, SSH shell (`deploy-odak-apps`) çalışır. **Sıradaki:** UI yerel test veya D2/D4 dilimi seçimi.
 
 **Ana plan:** [MonitraNG_Document_Intelligence_Planning.md](MonitraNG_Document_Intelligence_Planning.md) · **Faz 1 dataset'leri:** [datasets/documentintelligence_datasets_phase1.json](datasets/documentintelligence_datasets_phase1.json) · **Widget kütüphanesi kapsamı (planlama):** [../widgets/DOMAIN_DOCUMENT_INTELLIGENCE.md](../widgets/DOMAIN_DOCUMENT_INTELLIGENCE.md)
+
+---
+
+## D1-DESIGNER — Belge tasarımcısı (D1-alpha, 23 Haziran 2026)
+
+**Amaç:** "From Template" akışının ilk dilimi — mevcut DOCX kaynağından şablon oluşturma, paragraf seçimi, parametre kaydı. Sample referans: `docs/odak/document_intelligence/sample/ODK-COC-23-202.docx`, `ODK-COC-B-23-109.docx` (antetli, merge field yok).
+
+**Dataset:** `dm_document_templates` — `documentintelligence_datasets_phase1.json` + `setup-document-intelligence-datasets.ps1` (Odak'ta ✅).
+
+**Backend (MngDocument) — API** (`/documents/api/v1/templates`, `[Authorize]`):
+
+| Metot | Uç | Açıklama |
+|-------|-----|----------|
+| GET | `/templates` | Şablon listesi |
+| GET | `/templates/{id}` | Detay + parametreler |
+| POST | `/templates/from-source` | DOCX kaynaktan şablon oluştur |
+| GET | `/templates/source/{resourceId}/structure` | OOXML paragraf parse |
+| PUT | `/templates/{id}/parameters` | Parametre kaydı |
+
+**Yeni/ değişen dosyalar (backend):**
+- `MngDocument/.../Controllers/DocumentTemplatesController.cs`
+- `MngDocument/.../Services/DocumentTemplateService.cs`, `DocxStructureParser.cs`
+- `MngDocument/.../Contracts/Templates/*`, `Models/DmDocumentTemplate.cs`
+- `DmDatasets.DocumentTemplates`, `IMngDataGatewayClient.DownloadFileAsync`
+
+**UI (Mng.Ui — yerel, deploy bekliyor):**
+- `pages/apps/document-intelligence/designer/index.vue` — liste, paragraf seçimi, parametre ekleme
+- `services/documentIntelligenceService.ts` — `diListTemplates`, `diGetTemplate`, `diCreateTemplateFromSource`, `diGetDocxStructure`, `diUpdateTemplateParameters`
+- `types/apps/documentIntelligence.ts`, `utils/locales/tr.json` + `en.json` (`documentIntelligence.designer.*`)
+- Ana sayfa: `document-intelligence/index.vue` → "Belge tasarımcısı" butonu
+
+**Parametre modeli (kayıt anı):** `parameters[]` — `valueSource.mode`: `manual`, `incremental` (format string, örn. `{0:D3}`, `{yy}`); runtime numara üretimi **henüz yok** (D2).
+
+**Build:** `dotnet build MngDocument.sln -c Release` ✅ (local).
+
+**Odak deploy (23 Haz):**
+```powershell
+pwsh -File .\scripts\odak\sync-odak-source.ps1 -Server 192.168.20.20 -Paths @('MngDocument','ApplicationResources/mng_apps','docs/odak/document_intelligence')
+pwsh -File .\scripts\odak\deploy-odak-apps.ps1 -Server 192.168.20.20 -Services mngdocument -NoCache
+$env:DI_TOKEN = (Get-Content "$env:TEMP\operationcore_dg_token.txt" -Raw).Trim()
+.\docs\odak\document_intelligence\scripts\setup-document-intelligence-datasets.ps1
+```
+
+**Smoke:** `scripts/tests/MngDocument/smoke-templates-odak.ps1` (token dosyasından).
+
+**Bilinçli kapsam dışı (sonraki dilimler):**
+- D2: DG `@__counters` ile runtime incremental numara
+- D3: tablo/liste parametreleri (CoC-B boyama tabloları)
+- D4: DOCX merge + PDF indirme
+- D5: OperationCore work item bağlantısı (Faz 2 kısmen mevcut: `ResourceLinkService`, `OcWorkItemDocumentsTab`)
+- Şablona SDT/content control enjekte (merge anında)
 
 ---
 
@@ -216,17 +270,23 @@
 ## Deploy & ortam
 
 - **Üretim:** `192.168.20.8`, gateway `:5040`.
-- **Test sunucusu (Odak):** `192.168.20.20`, gateway `:5040`. DG route: `/data/api/v1/...`; MngDocument route: `/documents/api/v1/...`.
-- **`mngdocument`:** tüm Faz 1 + VH + AUDIT + **PERM** + **DRAFT** → **canlı (healthy)** (1 Haz ~20:52 yeniden deploy).
-- **`mngui`:** VH + audit + **PERM** (+ gösterim düzeltmesi) + **PREVIEW** + **DRAFT** → **canlı (healthy)** (1 Haz ~20:57 deploy; ui :3000 = 200).
-- **DG dataset:** `dm_resource_permissions` Odak DG'de oluşturuldu (`setup-document-intelligence-datasets.ps1`).
-- Deploy: `scripts/odak/sync-odak-source.ps1 -Paths <X>` + `scripts/odak/deploy-odak-apps.ps1 -Services <svc>`. Token: `docs/odak/operationcore/scripts/load-operationcore-token.ps1`.
+- **Test sunucusu (Odak):** `192.168.20.20`, gateway `:5040`. DG route: `/data/api/v1/...`; MngDocument route: `/documents/api/v1/...` (container doğrudan `:5095`).
+- **`mngdocument`:** Faz 1 + **D1-alpha templates API** → **canlı (healthy)** (23 Haz ~22:52 `--no-cache` deploy).
+- **`mngui`:** Faz 1 özellikleri canlı; **designer sayfası deploy EDİLMEDİ** (yerel `npm run dev` ile test).
+- **DG dataset'leri:** `dm_*` + **`dm_document_templates`** Odak'ta (`setup-document-intelligence-datasets.ps1`).
+- **Deploy rehberi:** [../deploy/README.md](../deploy/README.md) · OC token/script deseni: [../operationcore/scripts/README.md](../operationcore/scripts/README.md).
+- **SSH:** `.env.odak.local` → `ODAK_SSH_PASSWORD`; `scripts/odak/OdakSshCommon.ps1`. Sync'te `-Server 192.168.20.20` açık verin; SCP arızalıysa `deploy-odak-apps` (SSH shell) yine çalışır.
 
 ---
 
 ## Sıradaki iş (öncelik kullanıcı seçimine bağlı)
 
-1. **Faz 2 — OperationCore entegrasyonu**: WorkItem ↔ doküman ilişkisi (çift yönlü, yetki kontrollü).
-2. **Non-admin canlı doğrulama** — gerçek (admin olmayan) kullanıcıyla tree/children filtreleme + 403.
-3. (Ops.) `dm_resource_versions` dataset'inde DG logging'i açıp tam audit (IP/değişiklik izi).
-4. (Ops.) Diagnostic: JSON → markdown otomasyon script'i; müşteri rapor periyodu tanımı.
+1. **D1-alpha UI doğrulama** — yerel dev → `/apps/document-intelligence/designer` (backend Odak'ta hazır).
+2. **D2 — Incremental numara runtime** — `dm_document_generations` + DG counter; tanımdaki format string'i çalıştır.
+3. **D4 — DOCX merge + indirme** — parametre değerleriyle basit birleştirme.
+4. **D3 — Tablo parametreleri** — `ODK-COC-B-23-109` gibi tablolu şablonlar.
+5. **Faz 2 — OperationCore entegrasyonu** — WorkItem ↔ doküman (kısmen kodda; tam akış + yetki).
+6. **Non-admin canlı doğrulama** — tree/children filtreleme + 403 (Faz 1 açık iş).
+7. (Ops.) `dm_resource_versions` DG logging; diagnostic otomasyon.
+
+**Commit/push:** Bu oturumdaki D1-alpha değişiklikleri henüz commit edilmedi.

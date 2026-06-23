@@ -25,10 +25,18 @@ import {
   type DiSetFolderPermissionsRequest,
   type DiTreeNode,
   type DiUpdateMarkdownRequest,
+  type DiCreateTemplateFromSourceRequest,
+  type DiDocxStructure,
+  type DiTemplateDetail,
+  type DiTemplateListResult,
+  type DiTemplateParameter,
+  type DiTemplateSummary,
+  type DiUpdateTemplateParametersRequest,
 } from '@/types/apps/documentIntelligence';
 
 const BASE = '/api/v1/resources';
 const LINKS_BASE = '/api/v1';
+const TEMPLATES_BASE = '/api/v1/templates';
 
 function asRecord(raw: unknown): Record<string, unknown> {
   return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
@@ -423,6 +431,122 @@ export async function diBreakInheritance(folderId: string): Promise<DiFolderPerm
 export async function diRestoreInheritance(folderId: string): Promise<DiFolderPermissions> {
   const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(folderId)}/permissions/restore-inheritance`, 'POST');
   return mapFolderPermissions(raw);
+}
+
+// --- Document Designer (templates) ---
+
+function mapTemplateSummary(raw: unknown): DiTemplateSummary {
+  const o = asRecord(raw);
+  return {
+    id: str(o, 'id') ?? '',
+    name: str(o, 'name') ?? '',
+    description: str(o, 'description'),
+    sourceResourceId: str(o, 'sourceResourceId') ?? '',
+    sourceFileName: str(o, 'sourceFileName'),
+    creationMode: str(o, 'creationMode') ?? 'fromTemplate',
+    status: str(o, 'status') ?? 'draft',
+    parameterCount: num(o, 'parameterCount') ?? 0,
+    createdBy: str(o, 'createdBy'),
+    createdAt: str(o, 'createdAt'),
+    updatedAt: str(o, 'updatedAt'),
+  };
+}
+
+function mapTemplateParameter(raw: unknown): DiTemplateParameter {
+  const o = asRecord(raw);
+  const inc = o.incremental;
+  const bind = o.sourceBinding;
+  return {
+    key: str(o, 'key') ?? '',
+    label: str(o, 'label') ?? '',
+    dataType: str(o, 'dataType') ?? 'text',
+    valueSourceMode: str(o, 'valueSourceMode') ?? 'manual',
+    incremental:
+      inc && typeof inc === 'object'
+        ? {
+            format: str(asRecord(inc), 'format') ?? '',
+            startValue: num(asRecord(inc), 'startValue') ?? 1,
+            incrementStep: num(asRecord(inc), 'incrementStep') ?? 1,
+            scopeKey: str(asRecord(inc), 'scopeKey'),
+            resetPolicy: str(asRecord(inc), 'resetPolicy') ?? 'none',
+          }
+        : null,
+    sourceBinding:
+      bind && typeof bind === 'object'
+        ? {
+            regionKind: str(asRecord(bind), 'regionKind') ?? 'paragraph',
+            paragraphIndex: num(asRecord(bind), 'paragraphIndex') ?? 0,
+            originalText: str(asRecord(bind), 'originalText'),
+            charStart: num(asRecord(bind), 'charStart'),
+            charEnd: num(asRecord(bind), 'charEnd'),
+          }
+        : null,
+  };
+}
+
+function mapTemplateDetail(raw: unknown): DiTemplateDetail {
+  const summary = mapTemplateSummary(raw);
+  const o = asRecord(raw);
+  const paramsRaw = o.parameters;
+  return {
+    ...summary,
+    schemaVersion: str(o, 'schemaVersion') ?? '1.0',
+    parameters: Array.isArray(paramsRaw) ? paramsRaw.map(mapTemplateParameter) : [],
+  };
+}
+
+export async function diListTemplates(): Promise<DiTemplateListResult> {
+  const raw = await fetchFromDocuments(TEMPLATES_BASE, 'GET');
+  const o = asRecord(raw);
+  const itemsRaw = Array.isArray(o.items) ? o.items : [];
+  return {
+    items: itemsRaw.map(mapTemplateSummary),
+    total: num(o, 'total') ?? itemsRaw.length,
+  };
+}
+
+export async function diGetTemplate(id: string): Promise<DiTemplateDetail> {
+  const raw = await fetchFromDocuments(`${TEMPLATES_BASE}/${encodeURIComponent(id)}`, 'GET');
+  return mapTemplateDetail(raw);
+}
+
+export async function diCreateTemplateFromSource(
+  request: DiCreateTemplateFromSourceRequest
+): Promise<DiTemplateDetail> {
+  const raw = await fetchFromDocuments(`${TEMPLATES_BASE}/from-source`, 'POST', request);
+  return mapTemplateDetail(raw);
+}
+
+export async function diGetDocxStructure(resourceId: string): Promise<DiDocxStructure> {
+  const raw = await fetchFromDocuments(
+    `${TEMPLATES_BASE}/source/${encodeURIComponent(resourceId)}/structure`,
+    'GET'
+  );
+  const o = asRecord(raw);
+  const parasRaw = o.paragraphs;
+  return {
+    resourceId: str(o, 'resourceId') ?? resourceId,
+    fileName: str(o, 'fileName'),
+    tableCount: num(o, 'tableCount') ?? 0,
+    paragraphs: Array.isArray(parasRaw)
+      ? parasRaw.map((p) => {
+          const pr = asRecord(p);
+          return { index: num(pr, 'index') ?? 0, text: str(pr, 'text') ?? '' };
+        })
+      : [],
+  };
+}
+
+export async function diUpdateTemplateParameters(
+  templateId: string,
+  request: DiUpdateTemplateParametersRequest
+): Promise<DiTemplateDetail> {
+  const raw = await fetchFromDocuments(
+    `${TEMPLATES_BASE}/${encodeURIComponent(templateId)}/parameters`,
+    'PUT',
+    request
+  );
+  return mapTemplateDetail(raw);
 }
 
 /** MngDocument/HTTP hata gövdesinden `code` döndürür (guard ayrımı için, örn. RESOURCE_HAS_CHILDREN). */

@@ -695,6 +695,19 @@ onMounted(async () => {
   <div>
     <BaseBreadcrumb :title="t('documentIntelligence.title')" :breadcrumbs="breadcrumbs" />
 
+    <div class="d-flex justify-end mb-3">
+      <v-btn
+        to="/apps/document-intelligence/designer"
+        variant="tonal"
+        color="primary"
+        size="small"
+        class="text-none"
+        prepend-icon="mdi-file-document-edit-outline"
+      >
+        {{ t('documentIntelligence.designer.openDesigner') }}
+      </v-btn>
+    </div>
+
     <v-card elevation="10" rounded="lg" class="overflow-hidden">
       <div class="d-flex di-layout">
         <!-- Sol panel: klasör ağacı -->

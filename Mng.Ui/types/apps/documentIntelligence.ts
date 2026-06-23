@@ -265,3 +265,78 @@ export interface DiResourceLinkListResult<T> {
   items: T[];
   total: number;
 }
+
+// --- Document Designer (templates) ---
+
+export type DiTemplateValueSourceMode = 'manual' | 'incremental' | 'computed' | 'binding' | 'static';
+
+export interface DiTemplateIncrementalOptions {
+  format: string;
+  startValue?: number;
+  incrementStep?: number;
+  scopeKey?: string | null;
+  resetPolicy?: string;
+}
+
+export interface DiTemplateSourceBinding {
+  regionKind: string;
+  paragraphIndex: number;
+  originalText?: string | null;
+  charStart?: number | null;
+  charEnd?: number | null;
+}
+
+export interface DiTemplateParameter {
+  key: string;
+  label: string;
+  dataType: string;
+  valueSourceMode: DiTemplateValueSourceMode | string;
+  incremental?: DiTemplateIncrementalOptions | null;
+  sourceBinding?: DiTemplateSourceBinding | null;
+}
+
+export interface DiTemplateSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  sourceResourceId: string;
+  sourceFileName: string | null;
+  creationMode: string;
+  status: string;
+  parameterCount: number;
+  createdBy: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface DiTemplateDetail extends DiTemplateSummary {
+  schemaVersion: string;
+  parameters: DiTemplateParameter[];
+}
+
+export interface DiTemplateListResult {
+  items: DiTemplateSummary[];
+  total: number;
+}
+
+export interface DiDocxParagraph {
+  index: number;
+  text: string;
+}
+
+export interface DiDocxStructure {
+  resourceId: string;
+  fileName: string | null;
+  paragraphs: DiDocxParagraph[];
+  tableCount: number;
+}
+
+export interface DiCreateTemplateFromSourceRequest {
+  name?: string;
+  description?: string;
+  sourceResourceId: string;
+}
+
+export interface DiUpdateTemplateParametersRequest {
+  parameters: DiTemplateParameter[];
+}

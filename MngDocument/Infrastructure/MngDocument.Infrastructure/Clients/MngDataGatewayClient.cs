@@ -161,6 +161,23 @@ public class MngDataGatewayClient : IMngDataGatewayClient
         return new DataGatewayPage(items, total);
     }
 
+    public async Task<byte[]> DownloadFileAsync(
+        string filePath,
+        string? token = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(filePath))
+            throw new ArgumentException("File path is required.", nameof(filePath));
+
+        var encoded = Uri.EscapeDataString(filePath);
+        using var response = await SendWithRetryAsync(
+            () => CreateRequest(HttpMethod.Get, $"files/download?filePath={encoded}", token),
+            cancellationToken);
+
+        await EnsureSuccessOrThrowAsync(response, cancellationToken);
+        return await response.Content.ReadAsByteArrayAsync(cancellationToken);
+    }
+
     private async Task<T> SendJsonAsync<T>(
         HttpMethod method,
         string url,

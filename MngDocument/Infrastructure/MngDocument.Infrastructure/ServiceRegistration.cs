@@ -21,6 +21,7 @@ public static class ServiceRegistration
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<IResourceService, ResourceService>();
         services.AddScoped<IResourceLinkService, ResourceLinkService>();
+        services.AddScoped<IDocumentTemplateService, DocumentTemplateService>();
 
         return services;
     }

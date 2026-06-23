@@ -10,4 +10,5 @@ public static class DmDatasets
     public const string ResourceVersions = "dm_resource_versions";
     public const string ResourcePermissions = "dm_resource_permissions";
     public const string ResourceLinks = "dm_resource_links";
+    public const string DocumentTemplates = "dm_document_templates";
 }

@@ -31,6 +31,9 @@ public interface IMngDataGatewayClient
         string? query = null,
         string? token = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>DG <c>GET files/download?filePath=</c> — MinIO binary içerik.</summary>
+    Task<byte[]> DownloadFileAsync(string filePath, string? token = null, CancellationToken cancellationToken = default);
 }
 
 /// <summary>DG list sonucu: sayfa satırları + filtre/arama sonrası toplam kayıt sayısı.</summary>
