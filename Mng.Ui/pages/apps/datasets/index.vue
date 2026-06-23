@@ -464,6 +464,7 @@ const handleExportJSON = async () => {
         :items="tableItems"
         :loading="datasetStore.loading"
         :server-items-length="serverItemsLength"
+        :items-per-page="tableOptions.itemsPerPage"
         :items-per-page-options="[20, 50, 100]"
         item-value="name"
         class="border rounded-md"

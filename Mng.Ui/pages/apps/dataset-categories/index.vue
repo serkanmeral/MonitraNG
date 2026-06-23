@@ -286,6 +286,7 @@ const truncateText = (text: string | null | undefined, maxLength: number = 50) =
         :items="filteredCategories"
         :loading="categoryStore.loading"
         :server-items-length="serverItemsLength"
+        :items-per-page="tableOptions.itemsPerPage"
         :items-per-page-options="[20, 50, 100]"
         item-value="dataId"
         class="border rounded-md"
