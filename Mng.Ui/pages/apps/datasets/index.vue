@@ -90,16 +90,9 @@ const headers = computed(() => [
   { title: t('datasets.table.headers.actions'), key: 'actions', sortable: false, align: 'end' },
 ]);
 
-// Computed: Server items length (reactive)
-// Admin olmayan kullanıcılar için isSystemCategory: true olan kategorilere ait dataset'leri saymadan totalCount hesapla
-const serverItemsLength = computed(() => {
-  if (isAdmin.value) {
-    // Admin kullanıcılar için tüm dataset'ler
-    return datasetStore.totalCount || 0;
-  }
-  // Admin olmayan kullanıcılar için filtrelenmiş dataset sayısı
-  return filteredDatasets.value.length;
-});
+// Computed: Server items length — backend totalCount drives pagination;
+// non-admin system-category filtering is display-only on the current page.
+const serverItemsLength = computed(() => datasetStore.totalCount || 0);
 
 // Fetch categories for display
 const loadCategories = async () => {

@@ -258,10 +258,17 @@ export const useDatasetStore = defineStore('dataset', {
           this.pageSize = pageSizeValue;
           this.totalPages = totalPagesValue;
         } else if (Array.isArray(response)) {
-          // Fallback: Direct array response
-          this.datasets = response.map((item: any) => this.mapToDataset(item));
-          this.totalCount = response.length;
-          this.totalPages = Math.ceil(this.totalCount / this.pageSize);
+          // Fallback: unwrapped array (apiService attaches _totalCount from PagedResultDto)
+          const arr = response as unknown[] & { _totalCount?: number };
+          this.datasets = arr.map((item: any) => this.mapToDataset(item));
+          const totalFromMeta = arr._totalCount;
+          this.totalCount =
+            typeof totalFromMeta === 'number' && Number.isFinite(totalFromMeta)
+              ? totalFromMeta
+              : arr.length;
+          this.pageNumber = pageNumber;
+          this.pageSize = pageSize;
+          this.totalPages = Math.ceil(this.totalCount / pageSize) || 0;
         } else {
           this.datasets = [];
           this.totalCount = 0;

@@ -376,17 +376,37 @@ export function fetchFromDataGateway(
         
         response = rawResponse._data;
 
-        // BFF pagination wrapper: { items, totalCount }
+        // BFF pagination wrapper: { items, totalCount } — PagedResultDto ise tam nesneyi koru
         if (
           response &&
           typeof response === 'object' &&
           !Array.isArray(response) &&
-          Array.isArray((response as { items?: unknown }).items)
+          (Array.isArray((response as { items?: unknown }).items) ||
+            Array.isArray((response as { Items?: unknown }).Items))
         ) {
-          const wrapped = response as { items: unknown[]; totalCount?: number };
-          const items = wrapped.items;
-          if (typeof wrapped.totalCount === 'number') {
-            (items as { _totalCount?: number })._totalCount = wrapped.totalCount;
+          const wrapped = response as {
+            items?: unknown[];
+            Items?: unknown[];
+            totalCount?: number;
+            TotalCount?: number;
+            pageNumber?: number;
+            PageNumber?: number;
+            totalPages?: number;
+            TotalPages?: number;
+          };
+          const hasPagedMetadata =
+            wrapped.pageNumber != null ||
+            wrapped.PageNumber != null ||
+            wrapped.totalPages != null ||
+            wrapped.TotalPages != null;
+          if (hasPagedMetadata) {
+            resolve(response);
+            return;
+          }
+          const items = wrapped.items ?? wrapped.Items ?? [];
+          const totalCountValue = wrapped.totalCount ?? wrapped.TotalCount;
+          if (typeof totalCountValue === 'number') {
+            (items as { _totalCount?: number })._totalCount = totalCountValue;
           }
           resolve(items);
           return;

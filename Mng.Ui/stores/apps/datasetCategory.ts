@@ -113,10 +113,17 @@ export const useDatasetCategoryStore = defineStore('datasetCategory', {
           this.pageSize = pageSizeValue;
           this.totalPages = totalPagesValue;
         } else if (Array.isArray(response)) {
-          // Fallback: Direct array response
-          this.categories = response.map((item: any) => this.mapToCategory(item));
-          this.totalCount = response.length;
-          this.totalPages = Math.ceil(this.totalCount / this.pageSize);
+          // Fallback: unwrapped array (apiService attaches _totalCount from PagedResultDto)
+          const arr = response as unknown[] & { _totalCount?: number };
+          this.categories = arr.map((item: any) => this.mapToCategory(item));
+          const totalFromMeta = arr._totalCount;
+          this.totalCount =
+            typeof totalFromMeta === 'number' && Number.isFinite(totalFromMeta)
+              ? totalFromMeta
+              : arr.length;
+          this.pageNumber = pageNumber;
+          this.pageSize = pageSize;
+          this.totalPages = Math.ceil(this.totalCount / pageSize) || 0;
         } else {
           this.categories = [];
           this.totalCount = 0;

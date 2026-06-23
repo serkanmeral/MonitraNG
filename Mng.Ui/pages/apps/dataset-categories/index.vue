@@ -74,20 +74,9 @@ const headers = computed(() => [
   { title: t('datasetCategories.table.headers.actions'), key: 'actions', sortable: false, align: 'end' },
 ]);
 
-// Computed: Server items length (reactive)
-// Admin olmayan kullanıcılar için isSystemCategory: true olanları saymadan totalCount hesapla
-const serverItemsLength = computed(() => {
-  if (isAdmin.value) {
-    // Admin kullanıcılar için tüm kategoriler
-    return categoryStore.totalCount || 0;
-  }
-  // Admin olmayan kullanıcılar için filtrelenmiş kategori sayısı
-  // Not: Backend'den gelen totalCount'tan isSystemCategory: true olanları çıkarmak için
-  // client-side filtreleme yapıyoruz, bu yüzden filteredCategories.length kullanıyoruz
-  // Ancak pagination için backend'den gelen totalCount'u kullanmak daha doğru olur
-  // Bu durumda backend'den gelen totalCount'u kullanıyoruz ama client-side filtreleme yapıyoruz
-  return filteredCategories.value.length;
-});
+// Computed: Server items length — backend totalCount drives pagination;
+// non-admin system-category filtering is display-only on the current page.
+const serverItemsLength = computed(() => categoryStore.totalCount || 0);
 
 // Fetch categories function
 const fetchCategories = async (options?: any) => {
