@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
-import { useDatasetStore } from '@/stores/apps/dataset';
+import { useDatasetStore, type Dataset } from '@/stores/apps/dataset';
 import { useDatasetCategoryStore } from '@/stores/apps/datasetCategory';
 import { useAuthStore } from '@/stores/auth';
 import { EditIcon, EyeIcon, TrashIcon, DatabaseIcon, PlusIcon, RefreshIcon, TagIcon, DownloadIcon } from 'vue-tabler-icons';
@@ -28,27 +28,29 @@ const router = useRouter();
 // Check if user is admin
 const isAdmin = computed(() => authStore.isAdmin);
 
-// Filtered datasets: Admin olmayan kullanıcılar için isSystemCategory: true olan kategorilere ait dataset'leri filtrele
-const filteredDatasets = computed(() => {
+// Non-admin: all visible datasets loaded once, paginated client-side
+const managerVisibleDatasets = ref<Dataset[]>([]);
+
+const isDatasetVisibleToNonAdmin = (dataset: Dataset): boolean => {
+  if (!dataset.category) {
+    return true;
+  }
+  const category = categoryStore.getCategoryById(dataset.category);
+  if (!category) {
+    return true;
+  }
+  return !category.isSystemCategory;
+};
+
+// Table rows: admin = server page; manager = client slice of filtered full list
+const tableItems = computed(() => {
   if (isAdmin.value) {
-    // Admin kullanıcılar tüm dataset'leri görebilir
     return datasetStore.datasets;
   }
-  // Admin olmayan kullanıcılar için isSystemCategory: true olan kategorilere ait dataset'leri filtrele
-  return datasetStore.datasets.filter(dataset => {
-    // Eğer dataset'in category'si yoksa göster
-    if (!dataset.category) {
-      return true;
-    }
-    // Kategori bilgisini al
-    const category = categoryStore.getCategoryById(dataset.category);
-    // Eğer kategori bulunamazsa göster (güvenlik için)
-    if (!category) {
-      return true;
-    }
-    // isSystemCategory: true olan kategorilere ait dataset'leri filtrele
-    return !category.isSystemCategory;
-  });
+  const page = tableOptions.value.page || 1;
+  const perPage = tableOptions.value.itemsPerPage || 20;
+  const start = (page - 1) * perPage;
+  return managerVisibleDatasets.value.slice(start, start + perPage);
 });
 
 const page = computed(() => ({ title: t('datasets.title') }));
@@ -90,9 +92,21 @@ const headers = computed(() => [
   { title: t('datasets.table.headers.actions'), key: 'actions', sortable: false, align: 'end' },
 ]);
 
-// Computed: Server items length — backend totalCount drives pagination;
-// non-admin system-category filtering is display-only on the current page.
-const serverItemsLength = computed(() => datasetStore.totalCount || 0);
+const serverItemsLength = computed(() => {
+  if (isAdmin.value) {
+    return datasetStore.totalCount || 0;
+  }
+  return managerVisibleDatasets.value.length;
+});
+
+const displayTotalPages = computed(() => {
+  if (isAdmin.value) {
+    return datasetStore.totalPages || 1;
+  }
+  const perPage = tableOptions.value.itemsPerPage || 20;
+  const total = managerVisibleDatasets.value.length;
+  return Math.max(1, Math.ceil(total / perPage) || 1);
+});
 
 // Fetch categories for display
 const loadCategories = async () => {
@@ -110,10 +124,28 @@ const getCategoryName = (categoryId: string | undefined | null): string => {
   return category?.categoryName || categoryId;
 };
 
+const loadManagerVisibleDatasets = async () => {
+  try {
+    const all = await datasetStore.fetchAllDatasets();
+    managerVisibleDatasets.value = all.filter(isDatasetVisibleToNonAdmin);
+    const maxPage = displayTotalPages.value;
+    if (tableOptions.value.page > maxPage) {
+      tableOptions.value.page = maxPage;
+    }
+  } catch {
+    managerVisibleDatasets.value = [];
+  }
+};
+
 // Fetch datasets function
 const fetchDatasets = async (options?: any) => {
+  if (!isAdmin.value) {
+    await loadManagerVisibleDatasets();
+    return;
+  }
+
   const currentOptions = options || tableOptions.value;
-  
+
   const params: {
     pageNumber?: number;
     pageSize?: number;
@@ -121,15 +153,10 @@ const fetchDatasets = async (options?: any) => {
     pageNumber: currentOptions.page || 1,
     pageSize: currentOptions.itemsPerPage || 20,
   };
-  
-  // Note: search parameter is not yet implemented in backend
-  // if (search.value && search.value.trim()) {
-  //   params.search = search.value.trim();
-  // }
-  
+
   try {
     await datasetStore.fetchDatasets(params);
-  } catch (error) {
+  } catch {
     // Error handled by store
   }
 };
@@ -142,6 +169,13 @@ watch(
   () => [tableOptions.value.page, tableOptions.value.itemsPerPage],
   () => {
     if (isInitialLoad.value) {
+      return;
+    }
+    if (!isAdmin.value) {
+      const maxPage = displayTotalPages.value;
+      if (tableOptions.value.page > maxPage) {
+        tableOptions.value.page = maxPage;
+      }
       return;
     }
     fetchDatasets();
@@ -238,64 +272,20 @@ const truncateText = (text: string | null | undefined, maxLength: number = 50) =
 // Export functions
 const exporting = ref(false);
 
-// Fetch all datasets for export (without pagination)
-const fetchAllDatasetsForExport = async (): Promise<any[]> => {
-  const allDatasets: any[] = [];
-  let currentPage = 1;
-  const pageSize = 100; // Large page size to minimize requests
-  let hasMore = true;
-  
-  while (hasMore) {
-    try {
-      const params: {
-        pageNumber?: number;
-        pageSize?: number;
-      } = {
-        pageNumber: currentPage,
-        pageSize: pageSize,
-      };
-      
-      // Note: If search is implemented in backend, add it here
-      // if (search.value && search.value.trim()) {
-      //   params.search = search.value.trim();
-      // }
-      
-      await datasetStore.fetchDatasets(params);
-      
-      if (datasetStore.datasets && datasetStore.datasets.length > 0) {
-        // Admin olmayan kullanıcılar için isSystemCategory: true olan kategorilere ait dataset'leri filtrele
-        const datasetsToAdd = isAdmin.value 
-          ? datasetStore.datasets 
-          : datasetStore.datasets.filter(dataset => {
-              if (!dataset.category) {
-                return true;
-              }
-              const category = categoryStore.getCategoryById(dataset.category);
-              if (!category) {
-                return true;
-              }
-              return !category.isSystemCategory;
-            });
-        
-        allDatasets.push(...datasetsToAdd);
-        
-        // Check if there are more pages
-        const totalPages = datasetStore.totalPages || 1;
-        if (currentPage >= totalPages) {
-          hasMore = false;
-        } else {
-          currentPage++;
-        }
-      } else {
-        hasMore = false;
-      }
-    } catch (error) {
-      console.error('Error fetching datasets for export:', error);
-      hasMore = false;
+const fetchAllDatasetsForExport = async (): Promise<Dataset[]> => {
+  try {
+    if (isAdmin.value) {
+      return await datasetStore.fetchAllDatasets();
     }
+    if (managerVisibleDatasets.value.length > 0) {
+      return [...managerVisibleDatasets.value];
+    }
+    await loadManagerVisibleDatasets();
+    return [...managerVisibleDatasets.value];
+  } catch (error) {
+    console.error('Error fetching datasets for export:', error);
+    return [];
   }
-  
-  return allDatasets;
 };
 
 // Prepare dataset data for export (flatten nested objects)
@@ -471,7 +461,7 @@ const handleExportJSON = async () => {
         v-model="selectedDatasets"
         v-model:options="tableOptions"
         :headers="headers"
-        :items="filteredDatasets"
+        :items="tableItems"
         :loading="datasetStore.loading"
         :server-items-length="serverItemsLength"
         :items-per-page-options="[20, 50, 100]"
@@ -595,8 +585,8 @@ const handleExportJSON = async () => {
           <div class="d-flex justify-space-between align-center pa-3 border-top">
             <div class="text-caption text-medium-emphasis">
               <strong>{{ t('datasets.pagination.total') }}</strong> {{ serverItemsLength }} {{ t('datasets.pagination.records') }}
-              <span v-if="datasetStore.totalPages > 1" class="ml-2">
-                ({{ t('datasets.pagination.page') }} {{ tableOptions.page }} / {{ datasetStore.totalPages }})
+              <span v-if="displayTotalPages > 1" class="ml-2">
+                ({{ t('datasets.pagination.page') }} {{ tableOptions.page }} / {{ displayTotalPages }})
               </span>
               <span class="ml-2">
                 | {{ ((tableOptions.page - 1) * tableOptions.itemsPerPage) + 1 }} - 
@@ -619,7 +609,7 @@ const handleExportJSON = async () => {
           <div class="d-flex justify-center pa-2 border-top">
             <v-pagination
               v-model="tableOptions.page"
-              :length="datasetStore.totalPages"
+              :length="displayTotalPages"
               :total-visible="7"
               density="compact"
             />

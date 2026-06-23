@@ -285,6 +285,28 @@ export const useDatasetStore = defineStore('dataset', {
     },
 
     /**
+     * Fetch all dataset pages (for export and non-admin filtered listing).
+     */
+    async fetchAllDatasets(): Promise<Dataset[]> {
+      const all: Dataset[] = [];
+      let pageNumber = 1;
+      const pageSize = 100;
+      let totalPages = 1;
+
+      while (pageNumber <= totalPages) {
+        await this.fetchDatasets({ pageNumber, pageSize });
+        if (!this.datasets.length) {
+          break;
+        }
+        all.push(...this.datasets);
+        totalPages = this.totalPages || 1;
+        pageNumber++;
+      }
+
+      return all;
+    },
+
+    /**
      * Fetch dataset by name
      */
     async fetchDatasetByName(name: string) {
