@@ -13,6 +13,10 @@ param(
 if ($PathsCsv -and $Paths.Count -eq 0) {
     $Paths = $PathsCsv -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
 }
+# pwsh -File ile -Paths @('a','b') tek eleman sayilabiliyor; virgullu tek string'i ayir
+if ($Paths.Count -eq 1 -and $Paths[0] -match ',') {
+    $Paths = $Paths[0] -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+}
 
 $prodServer = "192.168.20.8"
 $scriptDir = $PSScriptRoot

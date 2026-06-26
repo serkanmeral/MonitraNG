@@ -16,8 +16,7 @@ public static class DocxStructureParser
     public static ParseResult Parse(Stream docxStream)
     {
         using var archive = new ZipArchive(docxStream, ZipArchiveMode.Read, leaveOpen: true);
-        var entry = archive.GetEntry("word/document.xml")
-            ?? throw new InvalidOperationException("Invalid DOCX: word/document.xml not found.");
+        var entry = DocxZipHelper.GetRequiredEntry(archive, "word/document.xml");
 
         using var entryStream = entry.Open();
         var doc = XDocument.Load(entryStream);

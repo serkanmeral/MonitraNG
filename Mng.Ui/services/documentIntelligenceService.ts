@@ -26,17 +26,32 @@ import {
   type DiTreeNode,
   type DiUpdateMarkdownRequest,
   type DiCreateTemplateFromSourceRequest,
+  type DiCreateTemplateFromReferenceRequest,
+  type DiCreateBlankTemplateRequest,
+  type DiTemplateEditorSession,
+  type DiCreateTemplateCategoryRequest,
   type DiDocxStructure,
+  type DiRenameTemplateCategoryRequest,
+  type DiTemplateCategory,
   type DiTemplateDetail,
   type DiTemplateListResult,
   type DiTemplateParameter,
   type DiTemplateSummary,
   type DiUpdateTemplateParametersRequest,
+  type DiUpdateTemplateMetadataRequest,
+  type DiUpdateTemplateLetterheadRequest,
+  type DiUpdateTemplateFooterRequest,
+  type DiUpdateTemplatePageStructureRequest,
+  type DiTemplateLetterhead,
+  type DiTemplateFooter,
+  type DiTemplatePageLayout,
 } from '@/types/apps/documentIntelligence';
+import { diNormalizePageLayout } from '@/utils/diPageLayout';
 
 const BASE = '/api/v1/resources';
 const LINKS_BASE = '/api/v1';
 const TEMPLATES_BASE = '/api/v1/templates';
+const TEMPLATE_CATEGORIES_BASE = '/api/v1/template-categories';
 
 function asRecord(raw: unknown): Record<string, unknown> {
   return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
@@ -435,13 +450,43 @@ export async function diRestoreInheritance(folderId: string): Promise<DiFolderPe
 
 // --- Document Designer (templates) ---
 
+function mapTemplateCategory(raw: unknown): DiTemplateCategory {
+  const o = asRecord(raw);
+  return {
+    id: str(o, 'id') ?? '',
+    parentId: str(o, 'parentId'),
+    ancestorIds: strArray(o.ancestorIds),
+    name: str(o, 'name') ?? '',
+    description: str(o, 'description'),
+    sortOrder: num(o, 'sortOrder') ?? 0,
+    status: str(o, 'status') ?? 'active',
+    createdBy: str(o, 'createdBy'),
+    createdAt: str(o, 'createdAt'),
+    updatedAt: str(o, 'updatedAt'),
+  };
+}
+
+function mapCategoryTreeNode(raw: unknown): DiTreeNode {
+  const o = asRecord(raw);
+  const childrenRaw = o.children;
+  return {
+    id: str(o, 'id') ?? '',
+    name: str(o, 'name') ?? '',
+    parentId: str(o, 'parentId'),
+    children: Array.isArray(childrenRaw) ? childrenRaw.map(mapCategoryTreeNode) : [],
+  };
+}
+
 function mapTemplateSummary(raw: unknown): DiTemplateSummary {
   const o = asRecord(raw);
   return {
     id: str(o, 'id') ?? '',
+    categoryId: str(o, 'categoryId'),
     name: str(o, 'name') ?? '',
+    code: str(o, 'code'),
     description: str(o, 'description'),
-    sourceResourceId: str(o, 'sourceResourceId') ?? '',
+    sourceResourceId: str(o, 'sourceResourceId'),
+    sourceStoragePath: str(o, 'sourceStoragePath'),
     sourceFileName: str(o, 'sourceFileName'),
     creationMode: str(o, 'creationMode') ?? 'fromTemplate',
     status: str(o, 'status') ?? 'draft',
@@ -484,6 +529,45 @@ function mapTemplateParameter(raw: unknown): DiTemplateParameter {
   };
 }
 
+function mapTemplateLetterhead(raw: unknown): DiTemplateLetterhead | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = asRecord(raw);
+  return {
+    enabled: Boolean(o.enabled),
+    showLogo: o.showLogo !== false,
+    showDocumentName: o.showDocumentName !== false,
+    showDocumentNumber: o.showDocumentNumber !== false,
+    showGeneratedAt: o.showGeneratedAt !== false,
+  };
+}
+
+function mapTemplateFooter(raw: unknown): DiTemplateFooter | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = asRecord(raw);
+  return {
+    enabled: Boolean(o.enabled),
+    showFormRevision: o.showFormRevision !== false,
+    showOfficeColumns: o.showOfficeColumns !== false,
+    showAddresses: o.showAddresses !== false,
+    showContacts: o.showContacts !== false,
+    showDividerLine: o.showDividerLine !== false,
+  };
+}
+
+function mapTemplatePageLayout(raw: unknown): DiTemplatePageLayout | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const o = asRecord(raw);
+  return diNormalizePageLayout({
+    marginTopTwips: num(o, 'marginTopTwips') ?? undefined,
+    marginRightTwips: num(o, 'marginRightTwips') ?? undefined,
+    marginBottomTwips: num(o, 'marginBottomTwips') ?? undefined,
+    marginLeftTwips: num(o, 'marginLeftTwips') ?? undefined,
+    headerDistanceTwips: num(o, 'headerDistanceTwips') ?? undefined,
+    footerDistanceTwips: num(o, 'footerDistanceTwips') ?? undefined,
+    footerLeftIndentTwips: num(o, 'footerLeftIndentTwips') ?? undefined,
+  });
+}
+
 function mapTemplateDetail(raw: unknown): DiTemplateDetail {
   const summary = mapTemplateSummary(raw);
   const o = asRecord(raw);
@@ -491,12 +575,44 @@ function mapTemplateDetail(raw: unknown): DiTemplateDetail {
   return {
     ...summary,
     schemaVersion: str(o, 'schemaVersion') ?? '1.0',
+    letterhead: mapTemplateLetterhead(o.letterhead),
+    footer: mapTemplateFooter(o.footer),
+    pageLayout: mapTemplatePageLayout(o.pageLayout),
     parameters: Array.isArray(paramsRaw) ? paramsRaw.map(mapTemplateParameter) : [],
   };
 }
 
-export async function diListTemplates(): Promise<DiTemplateListResult> {
-  const raw = await fetchFromDocuments(TEMPLATES_BASE, 'GET');
+export async function diGetTemplateCategoryTree(): Promise<DiTreeNode[]> {
+  const raw = await fetchFromDocuments(`${TEMPLATE_CATEGORIES_BASE}/tree`, 'GET');
+  return Array.isArray(raw) ? raw.map(mapCategoryTreeNode) : [];
+}
+
+export async function diCreateTemplateCategory(
+  request: DiCreateTemplateCategoryRequest
+): Promise<DiTemplateCategory> {
+  const raw = await fetchFromDocuments(TEMPLATE_CATEGORIES_BASE, 'POST', request);
+  return mapTemplateCategory(raw);
+}
+
+export async function diRenameTemplateCategory(
+  id: string,
+  request: DiRenameTemplateCategoryRequest
+): Promise<DiTemplateCategory> {
+  const raw = await fetchFromDocuments(
+    `${TEMPLATE_CATEGORIES_BASE}/${encodeURIComponent(id)}/rename`,
+    'PUT',
+    request
+  );
+  return mapTemplateCategory(raw);
+}
+
+export async function diDeleteTemplateCategory(id: string): Promise<void> {
+  await fetchFromDocuments(`${TEMPLATE_CATEGORIES_BASE}/${encodeURIComponent(id)}`, 'DELETE');
+}
+
+export async function diListTemplates(categoryId?: string | null): Promise<DiTemplateListResult> {
+  const query = categoryId ? `?categoryId=${encodeURIComponent(categoryId)}` : '';
+  const raw = await fetchFromDocuments(`${TEMPLATES_BASE}${query}`, 'GET');
   const o = asRecord(raw);
   const itemsRaw = Array.isArray(o.items) ? o.items : [];
   return {
@@ -510,6 +626,10 @@ export async function diGetTemplate(id: string): Promise<DiTemplateDetail> {
   return mapTemplateDetail(raw);
 }
 
+export async function diDeleteTemplate(id: string): Promise<void> {
+  await fetchFromDocuments(`${TEMPLATES_BASE}/${encodeURIComponent(id)}`, 'DELETE');
+}
+
 export async function diCreateTemplateFromSource(
   request: DiCreateTemplateFromSourceRequest
 ): Promise<DiTemplateDetail> {
@@ -517,15 +637,71 @@ export async function diCreateTemplateFromSource(
   return mapTemplateDetail(raw);
 }
 
+export async function diCreateTemplateFromReference(
+  request: DiCreateTemplateFromReferenceRequest
+): Promise<DiTemplateDetail> {
+  const raw = await fetchFromDocuments(`${TEMPLATES_BASE}/from-reference`, 'POST', request);
+  return mapTemplateDetail(raw);
+}
+
+export async function diCreateBlankTemplate(
+  request: DiCreateBlankTemplateRequest
+): Promise<DiTemplateDetail> {
+  const raw = await fetchFromDocuments(`${TEMPLATES_BASE}/blank`, 'POST', request);
+  return mapTemplateDetail(raw);
+}
+
+export async function diDuplicateTemplate(
+  templateId: string,
+  request: DiDuplicateTemplateRequest
+): Promise<DiTemplateDetail> {
+  const raw = await fetchFromDocuments(
+    `${TEMPLATES_BASE}/${encodeURIComponent(templateId)}/duplicate`,
+    'POST',
+    request
+  );
+  return mapTemplateDetail(raw);
+}
+
+export async function diGetTemplateEditorSession(templateId: string): Promise<DiTemplateEditorSession> {
+  const raw = await fetchFromDocuments(
+    `${TEMPLATES_BASE}/${encodeURIComponent(templateId)}/editor-session`,
+    'GET'
+  );
+  const o = asRecord(raw);
+  return {
+    templateId: str(o, 'templateId') ?? templateId,
+    editorUrl: str(o, 'editorUrl') ?? '',
+    accessToken: str(o, 'accessToken') ?? '',
+    wopiSrc: str(o, 'wopiSrc') ?? '',
+    readOnly: Boolean(o.readOnly),
+  };
+}
+
 export async function diGetDocxStructure(resourceId: string): Promise<DiDocxStructure> {
   const raw = await fetchFromDocuments(
     `${TEMPLATES_BASE}/source/${encodeURIComponent(resourceId)}/structure`,
     'GET'
   );
+  return mapDocxStructure(raw, resourceId);
+}
+
+export async function diGetTemplateDocxStructure(templateId: string): Promise<DiDocxStructure> {
+  const raw = await fetchFromDocuments(
+    `${TEMPLATES_BASE}/${encodeURIComponent(templateId)}/source/structure`,
+    'GET'
+  );
+  return mapDocxStructure(raw, templateId);
+}
+
+function mapDocxStructure(raw: unknown, fallbackId: string): DiDocxStructure {
   const o = asRecord(raw);
   const parasRaw = o.paragraphs;
+  const phRaw = o.placeholders;
+  const warnRaw = o.placeholderWarnings;
   return {
-    resourceId: str(o, 'resourceId') ?? resourceId,
+    templateId: str(o, 'templateId'),
+    resourceId: str(o, 'resourceId') ?? fallbackId,
     fileName: str(o, 'fileName'),
     tableCount: num(o, 'tableCount') ?? 0,
     paragraphs: Array.isArray(parasRaw)
@@ -533,6 +709,19 @@ export async function diGetDocxStructure(resourceId: string): Promise<DiDocxStru
           const pr = asRecord(p);
           return { index: num(pr, 'index') ?? 0, text: str(pr, 'text') ?? '' };
         })
+      : [],
+    placeholders: Array.isArray(phRaw)
+      ? phRaw.map((p) => {
+          const pr = asRecord(p);
+          return {
+            key: str(pr, 'key') ?? '',
+            token: str(pr, 'token') ?? '',
+            occurrenceCount: num(pr, 'occurrenceCount') ?? 0,
+          };
+        })
+      : [],
+    placeholderWarnings: Array.isArray(warnRaw)
+      ? warnRaw.filter((w): w is string => typeof w === 'string')
       : [],
   };
 }
@@ -545,6 +734,62 @@ export async function diUpdateTemplateParameters(
     `${TEMPLATES_BASE}/${encodeURIComponent(templateId)}/parameters`,
     'PUT',
     request
+  );
+  return mapTemplateDetail(raw);
+}
+
+export async function diUpdateTemplateMetadata(
+  templateId: string,
+  request: DiUpdateTemplateMetadataRequest
+): Promise<DiTemplateDetail> {
+  const raw = await fetchFromDocuments(
+    `${TEMPLATES_BASE}/${encodeURIComponent(templateId)}/metadata`,
+    'PUT',
+    request
+  );
+  return mapTemplateDetail(raw);
+}
+
+export async function diUpdateTemplateLetterhead(
+  templateId: string,
+  request: DiUpdateTemplateLetterheadRequest
+): Promise<DiTemplateDetail> {
+  const raw = await fetchFromDocuments(
+    `${TEMPLATES_BASE}/${encodeURIComponent(templateId)}/letterhead`,
+    'PUT',
+    request
+  );
+  return mapTemplateDetail(raw);
+}
+
+export async function diUpdateTemplateFooter(
+  templateId: string,
+  request: DiUpdateTemplateFooterRequest
+): Promise<DiTemplateDetail> {
+  const raw = await fetchFromDocuments(
+    `${TEMPLATES_BASE}/${encodeURIComponent(templateId)}/footer`,
+    'PUT',
+    request
+  );
+  return mapTemplateDetail(raw);
+}
+
+export async function diUpdateTemplatePageStructure(
+  templateId: string,
+  request: DiUpdateTemplatePageStructureRequest
+): Promise<DiTemplateDetail> {
+  const raw = await fetchFromDocuments(
+    `${TEMPLATES_BASE}/${encodeURIComponent(templateId)}/page-structure`,
+    'PUT',
+    request
+  );
+  return mapTemplateDetail(raw);
+}
+
+export async function diPublishTemplate(templateId: string): Promise<DiTemplateDetail> {
+  const raw = await fetchFromDocuments(
+    `${TEMPLATES_BASE}/${encodeURIComponent(templateId)}/publish`,
+    'POST'
   );
   return mapTemplateDetail(raw);
 }

@@ -1,0 +1,35 @@
+[
+  {
+    "name": "Kalite Belgeleri",
+    "description": "CoC, test raporu ve kalite çıktı şablonları",
+    "children": [
+      {
+        "name": "CoC / Uygunluk Sertifikaları",
+        "description": "ODK-COC antetli uygunluk sertifikası şablonları"
+      },
+      {
+        "name": "Test Raporları",
+        "description": "Laboratuvar ve saha test raporu şablonları"
+      }
+    ]
+  },
+  {
+    "name": "Operasyon Formları",
+    "description": "İş emri, onay ve operasyonel form çıktıları",
+    "children": [
+      {
+        "name": "İş Emri Çıktıları",
+        "description": "Work item ve süreç çıktı belgeleri"
+      },
+      {
+        "name": "Onay / İmza Formları",
+        "description": "Onay, imza ve yetki formları"
+      }
+    ]
+  },
+  {
+    "name": "Genel Şablonlar",
+    "description": "Domain geneli tekrar kullanılabilir antet ve metin şablonları",
+    "children": []
+  }
+]

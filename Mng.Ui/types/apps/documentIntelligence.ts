@@ -268,6 +268,32 @@ export interface DiResourceLinkListResult<T> {
 
 // --- Document Designer (templates) ---
 
+/** Belge tasarımcısı kategori ağacı sanal kök id (DiResourceTree ile uyumlu). */
+export const DI_DESIGNER_ROOT_ID = '__di_designer_root__';
+
+export interface DiTemplateCategory {
+  id: string;
+  parentId: string | null;
+  ancestorIds: string[];
+  name: string;
+  description: string | null;
+  sortOrder: number;
+  status: string;
+  createdBy: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface DiCreateTemplateCategoryRequest {
+  name: string;
+  description?: string;
+  parentId?: string | null;
+}
+
+export interface DiRenameTemplateCategoryRequest {
+  name: string;
+}
+
 export type DiTemplateValueSourceMode = 'manual' | 'incremental' | 'computed' | 'binding' | 'static';
 
 export interface DiTemplateIncrementalOptions {
@@ -297,9 +323,12 @@ export interface DiTemplateParameter {
 
 export interface DiTemplateSummary {
   id: string;
+  categoryId: string | null;
   name: string;
+  code: string | null;
   description: string | null;
-  sourceResourceId: string;
+  sourceResourceId: string | null;
+  sourceStoragePath: string | null;
   sourceFileName: string | null;
   creationMode: string;
   status: string;
@@ -311,7 +340,37 @@ export interface DiTemplateSummary {
 
 export interface DiTemplateDetail extends DiTemplateSummary {
   schemaVersion: string;
+  letterhead: DiTemplateLetterhead | null;
+  footer: DiTemplateFooter | null;
+  pageLayout: DiTemplatePageLayout | null;
   parameters: DiTemplateParameter[];
+}
+
+export interface DiTemplatePageLayout {
+  marginTopTwips: number;
+  marginRightTwips: number;
+  marginBottomTwips: number;
+  marginLeftTwips: number;
+  headerDistanceTwips: number;
+  footerDistanceTwips: number;
+  footerLeftIndentTwips: number;
+}
+
+export interface DiTemplateFooter {
+  enabled: boolean;
+  showFormRevision: boolean;
+  showOfficeColumns: boolean;
+  showAddresses: boolean;
+  showContacts: boolean;
+  showDividerLine: boolean;
+}
+
+export interface DiTemplateLetterhead {
+  enabled: boolean;
+  showLogo: boolean;
+  showDocumentName: boolean;
+  showDocumentNumber: boolean;
+  showGeneratedAt: boolean;
 }
 
 export interface DiTemplateListResult {
@@ -324,11 +383,20 @@ export interface DiDocxParagraph {
   text: string;
 }
 
+export interface DiDocxPlaceholder {
+  key: string;
+  token: string;
+  occurrenceCount: number;
+}
+
 export interface DiDocxStructure {
+  templateId?: string | null;
   resourceId: string;
   fileName: string | null;
   paragraphs: DiDocxParagraph[];
   tableCount: number;
+  placeholders: DiDocxPlaceholder[];
+  placeholderWarnings: string[];
 }
 
 export interface DiCreateTemplateFromSourceRequest {
@@ -337,6 +405,60 @@ export interface DiCreateTemplateFromSourceRequest {
   sourceResourceId: string;
 }
 
+export interface DiCreateTemplateFromReferenceRequest {
+  categoryId: string;
+  name?: string;
+  description?: string;
+  content: string;
+  fileName: string;
+  size?: number;
+}
+
 export interface DiUpdateTemplateParametersRequest {
   parameters: DiTemplateParameter[];
+}
+
+export interface DiUpdateTemplateMetadataRequest {
+  name: string;
+  code: string;
+}
+
+export interface DiCreateBlankTemplateRequest {
+  categoryId: string;
+  name?: string;
+  code: string;
+  letterhead?: DiTemplateLetterhead | null;
+  footer?: DiTemplateFooter | null;
+}
+
+export interface DiDuplicateTemplateRequest {
+  categoryId: string;
+  name: string;
+  code: string;
+  description?: string | null;
+  letterhead?: DiTemplateLetterhead | null;
+  footer?: DiTemplateFooter | null;
+  pageLayout?: DiTemplatePageLayout | null;
+}
+
+export interface DiUpdateTemplateFooterRequest {
+  footer: DiTemplateFooter;
+}
+
+export interface DiUpdateTemplateLetterheadRequest {
+  letterhead: DiTemplateLetterhead;
+}
+
+export interface DiUpdateTemplatePageStructureRequest {
+  pageLayout?: DiTemplatePageLayout | null;
+  letterhead?: DiTemplateLetterhead | null;
+  footer?: DiTemplateFooter | null;
+}
+
+export interface DiTemplateEditorSession {
+  templateId: string;
+  editorUrl: string;
+  accessToken: string;
+  wopiSrc: string;
+  readOnly: boolean;
 }

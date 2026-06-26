@@ -3,48 +3,68 @@
 > ## 🚀 Yeni chat başlangıç prompt'u (kopyala-yapıştır)
 >
 > ```
-> MonitraNG / Document Intelligence (MngDocument) modülünde çalışıyoruz.
+> MonitraNG / Document Intelligence (MngDocument + Belge tasarımcısı UI) modülünde çalışıyoruz.
 > Repo: c:\Users\monitra\Dev\MonitraNG\MonitraNG
 >
-> Başlamadan önce şu checkpoint dosyasını oku ve bana kısa bir "kaldığımız yer" özeti ver:
-> docs/odak/document_intelligence/DEVAM.md
-> (Detaylı plan: docs/odak/document_intelligence/MonitraNG_Document_Intelligence_Planning.md)
+> Başlamadan önce şu checkpoint dosyalarını oku ve kısa bir "kaldığımız yer" özeti ver:
+> - docs/odak/document_intelligence/DEVAM.md (ana plan)
+> - docs/MngDocument/current_status.md (backend oturum özeti)
 >
-> DURUM: Faz 1 ✅ canlı (Odak). D1-alpha (Belge tasarımcısı / şablon kaynağından oluşturma)
-> backend Odak'ta deploy edildi; UI iskeleti yerelde (mngui deploy EDİLMEDİ).
-> API smoke: GET /documents/api/v1/templates → {"items":[],"total":0}
+> DURUM (26 Haz 2026 akşam):
+> - Sayfa yapısı ✅ — PUT /templates/{id}/page-structure (margin + antet + altbilgi)
+> - Footer tablo ✅ — FooterInjector 2 sütun; antet {{documentName}} parametresi
+> - Prod deploy ✅ — mngdocument + mngui @ 192.168.20.8
+> - COC-STANDARD ✅ — update-coc-template-prod.ps1 -SkipParameterize (18 placeholder)
+> - Sırada: Collabora UAT (footer tablo tutamaçları), D2 incremental docNo, parametre UI
 >
 > ÇALIŞMA KURALLARI:
 > - Yanıtlar Türkçe.
-> - Backend (MngDocument vb.) değişiklikleri sormadan otomatik deploy edilebilir.
-> - UI (mngui) deploy'u YALNIZCA ben açıkça isteyince yapılır.
-> - npm run dev'i ben yerelde çalıştırıyorum; sen yeni bir dev süreci başlatma.
+> - Backend deploy: sync-odak-prod.ps1 + deploy-odak-prod.ps1 -Services mngdocument
+> - UI deploy: yalnızca açıkça istenince; Dockerfile NODE_OPTIONS=4096 gerekli
+> - Token prod: get-operationcore-token-prod.ps1 → operationcore_dg_token_prod.txt
 >
-> ORTAM / DEPLOY:
-> - Test sunucusu (Odak): 192.168.20.20, gateway :5040.
->   DG: /data/api/v1/...  ·  MngDocument: /documents/api/v1/...
-> - Sync: pwsh scripts/odak/sync-odak-source.ps1 -Server 192.168.20.20 -Paths <X>
-> - Deploy: pwsh scripts/odak/deploy-odak-apps.ps1 -Server 192.168.20.20 -Services mngdocument [-NoCache]
-> - Token: docs/odak/operationcore/scripts/load-operationcore-token.ps1
->   (Token dosyası: $env:TEMP\operationcore_dg_token.txt — stdout değil!)
-> - Dataset: docs/odak/document_intelligence/scripts/setup-document-intelligence-datasets.ps1
-> - SSH/Posh-SSH: docs/odak/deploy/README.md · operationcore/scripts/README.md
->
-> SIRADAKİ İŞ (bana seçtir):
-> 1. D1-alpha UI doğrulama — yerel npm run dev → /apps/document-intelligence/designer
-> 2. D2 — incremental belge numarası runtime (DG @__counters)
-> 3. D4 — basit DOCX merge + indirme
-> 4. Faz 2 OC — WorkItem ↔ doküman (kısmen kodda var; tam entegrasyon)
->
-> DEVAM.md'yi okuyup özetle ve hangi seçenekle devam edeceğimi sor.
+> DEVAM.md + current_status okuyup özetle; bir sonraki adımı sor.
 > ```
 
-**Son güncelleme:** 23 Haziran 2026 (**D1-alpha** — Belge tasarımcısı backend + UI iskelet; `dm_document_templates`; Odak deploy)
-**Durum:** **Faz 1 ✅ canlı** · **D1-alpha backend ✅ Odak'ta** · **D1-alpha UI ⚠️ yerelde (deploy bekliyor)** · Commit/push yapılmadı.
+**Son güncelleme:** 26 Haziran 2026 (**Sayfa yapısı + footer tablo + prod deploy**)
+**Durum:** **D1-designer ✅ prod** · **Sayfa yapısı API/UI ✅** · **COC-STANDARD prod güncellendi** · **Sırada: UAT + D2**
 
-> **⭐ KALDIĞIMIZ YER (23 Haz 2026) — yeni chat buradan devam edecek:** **Document Designer ince dikey dilim (D1-alpha)** implement edildi. DOCX kaynak seç → paragraf yapısı parse → parametre tanımı (manual / incremental format) → şablon kaydı. **Backend (MngDocument):** `DocumentTemplatesController`, `DocumentTemplateService`, `DocxStructureParser`; dataset `dm_document_templates`; `IMngDataGatewayClient.DownloadFileAsync`. **UI (Mng.Ui, yerel):** `/apps/document-intelligence/designer`, `documentIntelligenceService` template uçları, i18n. **Odak:** `MngDocument` sync edildi; `mngdocument` `--no-cache` build+up (**healthy**, :5095); `dm_document_templates` dataset provizyonlandı; smoke `GET http://192.168.20.20:5040/documents/api/v1/templates` → boş liste ✅. **`mngui` deploy EDİLMEDİ** (kullanıcı kuralı). **Henüz yok:** runtime incremental numara (D2), DOCX merge/PDF (D4), tablo parametreleri (D3), content control enjekte. **Deploy notu:** sync/deploy için `-Server 192.168.20.20` kullan; SCP bazen `Permission denied` verir, SSH shell (`deploy-odak-apps`) çalışır. **Sıradaki:** UI yerel test veya D2/D4 dilimi seçimi.
+> **⭐ KALDIĞIMIZ YER (26 Haz 2026 — oturum sonu):**
+> - **Backend:** `PageLayoutInjector`, `FooterInjector` (2 sütun tablo), `UpdatePageStructureAsync`, schema 1.3, `documentName` sistem parametresi.
+> - **UI:** `DiTemplatePageStructureForm` — designer diyaloglarında antet/altbilgi/kenar boşlukları tek panel; `diUpdateTemplatePageStructure`.
+> - **Prod:** `mngdocument` + `mngui` deploy edildi. CoC: WOPI upload + `page-structure` PUT OK.
+> - **Doğrulama bekliyor:** Collabora editörde footer tablo sütun tutamaçları; placeholder uyarısı (`docNo` run bölünmesi — fonksiyonel).
+> - **Sıradaki:** D2 incremental numara · parametre tanımı UI · isteğe bağlı blank-create'e pageLayout.
+> - **Detay:** [docs/MngDocument/current_status.md](../../MngDocument/current_status.md) · **Prod:** [PROD_OPERATIONS_AND_MIGRATION.md](./PROD_OPERATIONS_AND_MIGRATION.md)
 
-**Ana plan:** [MonitraNG_Document_Intelligence_Planning.md](MonitraNG_Document_Intelligence_Planning.md) · **Faz 1 dataset'leri:** [datasets/documentintelligence_datasets_phase1.json](datasets/documentintelligence_datasets_phase1.json) · **Widget kütüphanesi kapsamı (planlama):** [../widgets/DOMAIN_DOCUMENT_INTELLIGENCE.md](../widgets/DOMAIN_DOCUMENT_INTELLIGENCE.md)
+**Ana plan:** [MonitraNG_Document_Intelligence_Planning.md](MonitraNG_Document_Intelligence_Planning.md) · **Prod / taşıma:** [PROD_OPERATIONS_AND_MIGRATION.md](PROD_OPERATIONS_AND_MIGRATION.md) · **Faz 1 dataset'leri:** [datasets/documentintelligence_datasets_phase1.json](datasets/documentintelligence_datasets_phase1.json)
+
+---
+
+## D1-PAGESTRUCTURE — Sayfa yapısı + footer tablo (26 Haziran 2026)
+
+**Amaç:** Antet/altbilgi/kenar boşluklarını tek “Sayfa yapısı” panelinde yönetmek; footer’ı header gibi **2 sütunlu tablo** ile Collabora’da hizalanabilir yapmak; belge adını `{{documentName}}` parametresi olarak kullanmak.
+
+**Backend:**
+| Bileşen | Açıklama |
+|---------|----------|
+| `PUT /templates/{id}/page-structure` | `pageLayout` + `letterhead` + `footer` |
+| `PageLayoutInjector` | `sectPr` margin / header-footer distance (ODK referans twips) |
+| `FooterInjector` | Tablo tabanlı altbilgi (form revizyon + ofis sütunları) |
+| `LetterheadInjector` | 3 sütun antet; orta sütun `{{documentName}}` |
+| `TemplateModelSerializer` | schema **1.3**, `EnsureLetterheadParameters` / `documentName` |
+
+**UI:** `DiTemplatePageStructureForm.vue`, `diPageLayout.ts`, designer diyalogları → `diUpdateTemplatePageStructure`.
+
+**Prod (26 Haz):**
+```powershell
+.\scripts\odak\sync-odak-prod.ps1 -PathsCsv "MngDocument,Mng.Ui,docs/odak/document_intelligence"
+.\scripts\odak\deploy-odak-prod.ps1 -Services "mngdocument,mngui" -NoCache
+.\docs\odak\document_intelligence\scripts\update-coc-template-prod.ps1 -SkipParameterize
+```
+- COC-STANDARD id: `a5a7c41f-47b7-4cc1-920b-3d485874c362` · 18 placeholder · `pageLayout` ODK defaults.
+
+**Bilininen:** Scanner uyarısı — `docNo` XML run bölünmesi (17–18 key tanınıyor, fonksiyonel).
 
 ---
 
@@ -269,24 +289,22 @@ $env:DI_TOKEN = (Get-Content "$env:TEMP\operationcore_dg_token.txt" -Raw).Trim()
 
 ## Deploy & ortam
 
-- **Üretim:** `192.168.20.8`, gateway `:5040`.
-- **Test sunucusu (Odak):** `192.168.20.20`, gateway `:5040`. DG route: `/data/api/v1/...`; MngDocument route: `/documents/api/v1/...` (container doğrudan `:5095`).
-- **`mngdocument`:** Faz 1 + **D1-alpha templates API** → **canlı (healthy)** (23 Haz ~22:52 `--no-cache` deploy).
-- **`mngui`:** Faz 1 özellikleri canlı; **designer sayfası deploy EDİLMEDİ** (yerel `npm run dev` ile test).
-- **DG dataset'leri:** `dm_*` + **`dm_document_templates`** Odak'ta (`setup-document-intelligence-datasets.ps1`).
-- **Deploy rehberi:** [../deploy/README.md](../deploy/README.md) · OC token/script deseni: [../operationcore/scripts/README.md](../operationcore/scripts/README.md).
-- **SSH:** `.env.odak.local` → `ODAK_SSH_PASSWORD`; `scripts/odak/OdakSshCommon.ps1`. Sync'te `-Server 192.168.20.20` açık verin; SCP arızalıysa `deploy-odak-apps` (SSH shell) yine çalışır.
+- **Üretim:** `192.168.20.8`, gateway `:5040`, UI `:3000`, WOPI `:5095`, Collabora `:9980`.
+- **Test sunucusu (Odak):** `192.168.20.20`, gateway `:5040`.
+- **`mngdocument` + `mngui` + `gotenberg` + `collabora`:** ✅ prod (26 Haz 2026).
+- **Belge tasarımcısı:** ✅ prod UI + backend; COC-STANDARD page-structure güncellendi.
+- **Sync prod:** `scripts/odak/sync-odak-prod.ps1` · **Deploy:** `scripts/odak/deploy-odak-prod.ps1`
+- **Token prod:** `docs/odak/operationcore/scripts/get-operationcore-token-prod.ps1`
+- **CoC script:** `docs/odak/document_intelligence/scripts/update-coc-template-prod.ps1`
 
 ---
 
-## Sıradaki iş (öncelik kullanıcı seçimine bağlı)
+## Sıradaki iş (öncelik)
 
-1. **D1-alpha UI doğrulama** — yerel dev → `/apps/document-intelligence/designer` (backend Odak'ta hazır).
-2. **D2 — Incremental numara runtime** — `dm_document_generations` + DG counter; tanımdaki format string'i çalıştır.
-3. **D4 — DOCX merge + indirme** — parametre değerleriyle basit birleştirme.
-4. **D3 — Tablo parametreleri** — `ODK-COC-B-23-109` gibi tablolu şablonlar.
-5. **Faz 2 — OperationCore entegrasyonu** — WorkItem ↔ doküman (kısmen kodda; tam akış + yetki).
-6. **Non-admin canlı doğrulama** — tree/children filtreleme + 403 (Faz 1 açık iş).
-7. (Ops.) `dm_resource_versions` DG logging; diagnostic otomasyon.
+1. **Collabora UAT** — COC-STANDARD editör: footer tablo sütun tutamaçları, sayfa yapısı paneli (metadata dialog).
+2. **D2 — Incremental numara runtime** — `docNo` / DG `@__counters`.
+3. **Parametre tanımı UI** — placeholder envanteri ↔ parametre eşleme akışı.
+4. **D4 merge** — WorkItem / basit DOCX birleştirme + indirme.
+5. **Blank create** — `pageLayout`'u create API'ye taşıma (şu an edit dialog / varsayılan).
 
-**Commit/push:** Bu oturumdaki D1-alpha değişiklikleri henüz commit edilmedi.
+**Commit:** 26 Haz 2026 — sayfa yapısı + footer tablo + prod deploy (GitLab + GitHub).

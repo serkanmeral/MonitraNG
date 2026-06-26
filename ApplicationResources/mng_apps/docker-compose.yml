@@ -865,11 +865,21 @@ services:
       - MngDocumentSettings__OpenApiServerPath=https://api.monitra.local/documents
       - MngDocumentSettings__DataGateway__BaseUrl=http://mngdatagateway:5010
       - MngDocumentSettings__DataGateway__ApiVersion=v1
+      - MngDocumentSettings__DocumentRendering__Enabled=true
+      - MngDocumentSettings__DocumentRendering__GotenbergBaseUrl=http://gotenberg:3000
+      - MngDocumentSettings__DocumentRendering__TimeoutSeconds=120
+      - MngDocumentSettings__Collabora__Enabled=true
+      - MngDocumentSettings__Collabora__PublicBaseUrl=http://localhost:9980
+      - MngDocumentSettings__Collabora__EditorPath=/browser/dist/cool.html
+      - MngDocumentSettings__Wopi__HostBaseUrl=http://mngdocument:5095
+      - MngDocumentSettings__Wopi__SessionMinutes=480
       - Serilog__WriteTo__1__Args__serverUrl=http://seq:80
     networks:
       - mng_common_mng_network
     depends_on:
       - mngdatagateway
+      - gotenberg
+      - collabora
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5095/health || exit 1"]
@@ -877,6 +887,55 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+
+  # Headless LibreOffice — DOCX→PDF (on-prem, dış port yok)
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: gotenberg
+    command:
+      - "gotenberg"
+      - "--api-timeout=120s"
+      - "--libreoffice-restart-after=10"
+      - "--libreoffice-max-queue-size=20"
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+          cpus: "1.0"
+
+  # Collabora Online CODE — tarayıcı DOCX editörü (WOPI)
+  collabora:
+    image: collabora/code:24.04.13.1.1
+    container_name: collabora
+    ports:
+      - "9980:9980"
+    environment:
+      - aliasgroup1=http://localhost:9980,http://localhost:5040,http://localhost:3000,http://127.0.0.1:3000,http://mngdocument:5095
+    command:
+      - --o:ssl.enable=false
+      - --o:ssl.termination=false
+      - --o:user_interface.mode=compact
+      - --o:home_mode.enable=true
+      - "--o:net.content_security_policy=frame-ancestors localhost:* 127.0.0.1:* host.docker.internal:* mngdocument:*;"
+    cap_add:
+      - MKNOD
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2048M
 
   ollama:
     image: ollama/ollama:latest

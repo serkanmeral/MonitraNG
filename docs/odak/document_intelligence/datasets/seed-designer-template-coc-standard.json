@@ -1,0 +1,144 @@
+{
+  "categoryPath": ["Kalite Belgeleri", "CoC / Uygunluk Sertifikaları"],
+  "template": {
+    "name": "Uygunluk Belgesi",
+    "code": "COC-STANDARD",
+    "description": "ODK-COC referans şablonu — placeholder gövde, 3 sütunlu antet, kurumsal altbilgi.",
+    "docxFile": "ODK-COC-template-seed.docx",
+    "letterhead": {
+      "enabled": true,
+      "showLogo": true,
+      "showDocumentName": true,
+      "showDocumentNumber": true,
+      "showGeneratedAt": true
+    },
+    "footer": {
+      "enabled": true,
+      "showFormRevision": true,
+      "showOfficeColumns": true,
+      "showAddresses": true,
+      "showContacts": true,
+      "showDividerLine": true
+    },
+    "pageLayout": {
+      "marginTopTwips": 1440,
+      "marginRightTwips": 1797,
+      "marginBottomTwips": 1440,
+      "marginLeftTwips": 1797,
+      "headerDistanceTwips": 709,
+      "footerDistanceTwips": 658,
+      "footerLeftIndentTwips": -567
+    },
+    "parameters": [
+      {
+        "key": "documentName",
+        "label": "Belge Adı",
+        "dataType": "text",
+        "valueSourceMode": "manual"
+      },
+      {
+        "key": "docNo",
+        "label": "Belge Numarası",
+        "dataType": "text",
+        "valueSourceMode": "incremental",
+        "incremental": {
+          "format": "ODK-COC-{yyyy}-{0:D3}",
+          "startValue": 1,
+          "incrementStep": 1,
+          "scopeKey": "domain",
+          "resetPolicy": "yearly"
+        }
+      },
+      {
+        "key": "workPackageNo",
+        "label": "İş Paketi No",
+        "dataType": "text",
+        "valueSourceMode": "manual"
+      },
+      {
+        "key": "issueDate",
+        "label": "Düzenlenme Tarihi",
+        "dataType": "date",
+        "valueSourceMode": "manual"
+      },
+      {
+        "key": "customerName",
+        "label": "Firma Bilgileri",
+        "dataType": "text",
+        "valueSourceMode": "manual"
+      },
+      {
+        "key": "orderNo",
+        "label": "Sipariş No",
+        "dataType": "text",
+        "valueSourceMode": "manual"
+      },
+      {
+        "key": "partDescription",
+        "label": "Parça Tanımı",
+        "dataType": "text",
+        "valueSourceMode": "manual"
+      },
+      {
+        "key": "drawingNo",
+        "label": "Teknik Resim No",
+        "dataType": "text",
+        "valueSourceMode": "manual"
+      },
+      {
+        "key": "drawingRef",
+        "label": "Teknik Resim Referansı (GN)",
+        "dataType": "text",
+        "valueSourceMode": "manual"
+      },
+      {
+        "key": "drawingRevision",
+        "label": "TR Revizyon No",
+        "dataType": "text",
+        "valueSourceMode": "manual"
+      },
+      {
+        "key": "partQuantity",
+        "label": "Parça Adedi",
+        "dataType": "text",
+        "valueSourceMode": "manual"
+      },
+      {
+        "key": "serialNo",
+        "label": "Parça Seri No",
+        "dataType": "text",
+        "valueSourceMode": "manual"
+      },
+      {
+        "key": "complianceStatement",
+        "label": "Uygunluk beyanı",
+        "dataType": "text",
+        "valueSourceMode": "manual"
+      },
+      {
+        "key": "leakTestStatement",
+        "label": "Sızdırmazlık test beyanı",
+        "dataType": "text",
+        "valueSourceMode": "manual"
+      },
+      {
+        "key": "attachmentsNote",
+        "label": "Açıklamalar / ekler",
+        "dataType": "text",
+        "valueSourceMode": "manual"
+      },
+      {
+        "key": "signatoryName",
+        "label": "İmza — ad soyad",
+        "dataType": "text",
+        "valueSourceMode": "manual"
+      },
+      {
+        "key": "signatoryTitle",
+        "label": "İmza — unvan",
+        "dataType": "text",
+        "valueSourceMode": "manual"
+      }
+    ]
+  }
+}

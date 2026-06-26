@@ -1,13 +1,19 @@
+using System.Text.Json;
+
 namespace MngDocument.Application.Models;
 
 /// <summary><c>dm_document_templates</c> DG kaydı.</summary>
 public class DmDocumentTemplate
 {
     public string? __dataId { get; set; }
+    public string? categoryId { get; set; }
     public string? name { get; set; }
+    public string? code { get; set; }
     public string? description { get; set; }
     public string? sourceResourceId { get; set; }
+    public string? sourceStoragePath { get; set; }
     public string? sourceFileName { get; set; }
+    public JsonElement? referenceFile { get; set; }
     public string? creationMode { get; set; }
     public string? status { get; set; }
     public string? modelJson { get; set; }

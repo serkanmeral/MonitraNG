@@ -703,10 +703,21 @@ services:
       - MngDocumentSettings__OpenApiServerPath=${OPENAPI_SERVER_PATH:-https://api.monitra.local}/documents
       - MngDocumentSettings__DataGateway__BaseUrl=${MNGDATAGATEWAY_URL:-http://mngdatagateway:5010}
       - MngDocumentSettings__DataGateway__ApiVersion=v1
+      - MngDocumentSettings__DocumentRendering__Enabled=${DOCUMENT_RENDERING_ENABLED:-true}
+      - MngDocumentSettings__DocumentRendering__GotenbergBaseUrl=${GOTENBERG_URL:-http://gotenberg:3000}
+      - MngDocumentSettings__DocumentRendering__TimeoutSeconds=${DOCUMENT_RENDERING_TIMEOUT:-120}
+      - MngDocumentSettings__Collabora__Enabled=${COLLABORA_ENABLED:-true}
+      - MngDocumentSettings__Collabora__PublicBaseUrl=${COLLABORA_PUBLIC_URL:-http://192.168.20.8:9980}
+      - MngDocumentSettings__Collabora__EditorPath=${COLLABORA_EDITOR_PATH:-/browser/dist/cool.html}
+      - MngDocumentSettings__Wopi__HostBaseUrl=${WOPI_HOST_URL:-http://mngdocument:5095}
+      - MngDocumentSettings__Wopi__SessionMinutes=${WOPI_SESSION_MINUTES:-480}
+      - MngDocumentSettings__Keeper__BaseUrl=${MNGKEEPER_URL:-http://mngkeeper:5001}
     networks:
       - mng_common_mng_network
     depends_on:
       - mngdatagateway
+      - gotenberg
+      - collabora
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:5095/health || exit 1"]
@@ -719,6 +730,53 @@ services:
         limits:
           cpus: '0.5'
           memory: 512M
+
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    container_name: gotenberg
+    command:
+      - "gotenberg"
+      - "--api-timeout=120s"
+      - "--libreoffice-restart-after=10"
+      - "--libreoffice-max-queue-size=20"
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1536M
+
+  collabora:
+    image: collabora/code:24.04.13.1.1
+    container_name: collabora
+    ports:
+      - "9980:9980"
+    environment:
+      - aliasgroup1=${COLLABORA_ALIASGROUP:-http://192.168.20.8:9980,http://192.168.20.8:5040,http://192.168.20.8:3000,http://192.168.20.20:3000,http://localhost:3000,http://127.0.0.1:3000,https://mng.odaksavunma.com,http://mngdocument:5095}
+    command:
+      - --o:ssl.enable=false
+      - --o:ssl.termination=false
+      - --o:user_interface.mode=compact
+      - --o:home_mode.enable=true
+      - "--o:net.content_security_policy=frame-ancestors localhost:* 127.0.0.1:* 192.168.20.8:* 192.168.20.20:* mng.odaksavunma.com:* mngdocument:*;"
+    cap_add:
+      - MKNOD
+    networks:
+      - mng_common_mng_network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2048M
 
   mngadmin:
     build:

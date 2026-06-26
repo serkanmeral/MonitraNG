@@ -15,6 +15,11 @@ public static class ServiceRegistration
             s.OpenApiServerPath = settings.OpenApiServerPath;
             s.DataGateway = settings.DataGateway;
             s.Resources = settings.Resources;
+            s.DocumentRendering = settings.DocumentRendering;
+            s.Collabora = settings.Collabora;
+            s.Wopi = settings.Wopi;
+            s.Keeper = settings.Keeper;
+            s.FooterProfile = settings.FooterProfile;
         });
 
         return services;

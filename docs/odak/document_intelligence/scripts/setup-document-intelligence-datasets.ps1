@@ -139,7 +139,7 @@ else {
 }
 
 $schemas = Get-Content $datasetsFile -Raw -Encoding UTF8 | ConvertFrom-Json
-$order = @("dm_resources", "dm_resource_versions", "dm_resource_permissions", "dm_resource_links", "dm_document_templates")
+$order = @("dm_resources", "dm_resource_versions", "dm_resource_permissions", "dm_resource_links", "dm_template_categories", "dm_document_templates")
 $byName = @{}
 foreach ($s in $schemas) { $byName[$s.name] = $s }
 

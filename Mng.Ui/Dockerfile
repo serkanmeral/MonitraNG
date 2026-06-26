@@ -18,6 +18,7 @@ ARG GATEWAY_URL=
 ARG HUB_URL=
 ENV GATEWAY_URL=$GATEWAY_URL
 ENV HUB_URL=$HUB_URL
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 # Build the application (SPA için generate kullanıyoruz)
 RUN npm run generate

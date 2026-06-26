@@ -8,6 +8,11 @@ public class MngDocumentSettings
     public string OpenApiServerPath { get; set; } = string.Empty;
     public DataGatewaySettings DataGateway { get; set; } = new();
     public ResourceSettings Resources { get; set; } = new();
+    public DocumentRenderingSettings DocumentRendering { get; set; } = new();
+    public CollaboraSettings Collabora { get; set; } = new();
+    public WopiSettings Wopi { get; set; } = new();
+    public KeeperSettings Keeper { get; set; } = new();
+    public DomainFooterProfileSettings FooterProfile { get; set; } = new();
 }
 
 public class ServerSettings

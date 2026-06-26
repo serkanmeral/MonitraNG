@@ -9,9 +9,12 @@ public sealed class TemplateListResult
 public class TemplateSummaryDto
 {
     public string Id { get; init; } = string.Empty;
+    public string? CategoryId { get; init; }
     public string Name { get; init; } = string.Empty;
+    public string? Code { get; init; }
     public string? Description { get; init; }
-    public string SourceResourceId { get; init; } = string.Empty;
+    public string? SourceResourceId { get; init; }
+    public string? SourceStoragePath { get; init; }
     public string? SourceFileName { get; init; }
     public string CreationMode { get; init; } = "fromTemplate";
     public string Status { get; init; } = "draft";
@@ -24,6 +27,9 @@ public class TemplateSummaryDto
 public sealed class TemplateDetailDto : TemplateSummaryDto
 {
     public string SchemaVersion { get; init; } = "1.0";
+    public TemplatePageLayoutDto? PageLayout { get; init; }
+    public TemplateLetterheadDto? Letterhead { get; init; }
+    public TemplateFooterDto? Footer { get; init; }
     public IReadOnlyList<TemplateParameterDto> Parameters { get; init; } = Array.Empty<TemplateParameterDto>();
 }
 
@@ -57,10 +63,21 @@ public sealed class TemplateSourceBindingDto
 
 public sealed class DocxStructureDto
 {
+    public string TemplateId { get; init; } = string.Empty;
     public string ResourceId { get; init; } = string.Empty;
     public string? FileName { get; init; }
     public IReadOnlyList<DocxParagraphDto> Paragraphs { get; init; } = Array.Empty<DocxParagraphDto>();
     public int TableCount { get; init; }
+    /// <summary>DOCX içinde bulunan <c>{{paramKey}}</c> placeholder envanteri.</summary>
+    public IReadOnlyList<DocxPlaceholderDto> Placeholders { get; init; } = Array.Empty<DocxPlaceholderDto>();
+    public IReadOnlyList<string> PlaceholderWarnings { get; init; } = Array.Empty<string>();
+}
+
+public sealed class DocxPlaceholderDto
+{
+    public string Key { get; init; } = string.Empty;
+    public string Token { get; init; } = string.Empty;
+    public int OccurrenceCount { get; init; }
 }
 
 public sealed class DocxParagraphDto

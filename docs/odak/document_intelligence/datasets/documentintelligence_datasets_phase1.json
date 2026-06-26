@@ -450,8 +450,8 @@
   },
   {
     "__dataId": null,
-    "name": "dm_document_templates",
-    "description": "Document Designer - parametreli sablon tanimlari (fromTemplate).",
+    "name": "dm_template_categories",
+    "description": "Document Designer - sablon katalog agaci (DI klasorlerinden ayri).",
     "category": "b2f1c0a4-9d3e-4a87-bf21-7c5e9a0d1e34",
     "forceSchema": false,
     "logging": "self",
@@ -459,9 +459,149 @@
     "fields": [
       {
         "fieldType": "text",
+        "name": "parentId",
+        "title": "Ust kategori",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "ancestorIds",
+        "title": "Atalar",
+        "mandatory": false,
+        "unique": false,
+        "isArray": true,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Kategori adi",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Aciklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "number",
+        "name": "sortOrder",
+        "title": "Sira",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "status",
+        "title": "Durum",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "createdBy",
+        "title": "Olusturan",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "createdAt",
+        "title": "Olusturulma",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "updatedBy",
+        "title": "Guncelleyen",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "datetime",
+        "name": "updatedAt",
+        "title": "Guncellenme",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      }
+    ],
+    "validations": [],
+    "queries": [],
+    "indexList": [
+      {
+        "name": "idx_tplcat_parentId",
+        "fields": { "parentId": 1 },
+        "unique": false
+      }
+    ]
+  },
+  {
+    "__dataId": null,
+    "name": "dm_document_templates",
+    "description": "Document Designer - parametreli sablon tanimlari (fromTemplate / fromReference).",
+    "category": "b2f1c0a4-9d3e-4a87-bf21-7c5e9a0d1e34",
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "categoryId",
+        "title": "Katalog kategori id",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
         "name": "name",
         "title": "Sablon adi",
         "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "code",
+        "title": "Sablon kodu",
+        "mandatory": false,
         "unique": false,
         "isArray": false,
         "relationDataset": null,
@@ -480,8 +620,28 @@
       {
         "fieldType": "text",
         "name": "sourceResourceId",
-        "title": "Kaynak dm_resources id",
-        "mandatory": true,
+        "title": "Kaynak dm_resources id (legacy)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "sourceStoragePath",
+        "title": "Referans DOCX MinIO yolu",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "file",
+        "name": "referenceFile",
+        "title": "Referans DOCX dosyasi",
+        "mandatory": false,
         "unique": false,
         "isArray": false,
         "relationDataset": null,
@@ -582,6 +742,13 @@
         "name": "idx_tpl_name",
         "fields": {
           "name": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_tpl_categoryId",
+        "fields": {
+          "categoryId": 1
         },
         "unique": false
       }
