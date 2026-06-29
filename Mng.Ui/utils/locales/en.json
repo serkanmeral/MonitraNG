@@ -156,6 +156,7 @@
       "odakSiparis.menuHeader": "Odak Orders"
     },
     "odakSiparis.packages.menuTitle": "Work Packages",
+    "odakSiparis.customers.menuTitle": "Actors",
     "securityManagement.menuHeader": "Security Management",
     "alarmCenter.menuTitle": "Alarm Center",
     "siemCenter.dashboard.menuTitle": "SIEM Security Panel",
@@ -3963,35 +3964,41 @@
       }
     },
     "customers": {
-      "title": "Customers",
-      "add": "Add Customer",
+      "title": "Actors",
+      "add": "Add Actor",
       "openPackages": "Show work packages",
+      "roleMusteri": "Customer",
+      "roleTedarikci": "Supplier",
       "activeYes": "Active",
       "activeNo": "Inactive",
-      "deleteTitle": "Delete customer",
-      "deleteConfirm": "Are you sure you want to delete this customer?",
+      "deleteTitle": "Delete actor",
+      "deleteConfirm": "Are you sure you want to delete this actor?",
       "tabs": {
         "active": "Active",
         "inactive": "Inactive",
         "all": "All"
       },
       "fields": {
-        "kod": "Customer code",
+        "kod": "Code",
         "unvan": "Company name",
+        "roles": "Roles",
+        "isMusteri": "Customer",
+        "isTedarikci": "Supplier",
         "sektor": "Sector",
         "ulke": "Country",
         "aktif": "Active",
         "notlar": "Notes"
       },
       "dialog": {
-        "createTitle": "New customer",
-        "editTitle": "Edit customer — {name}",
-        "missingId": "Customer id not found.",
-        "notFound": "Could not load customer."
+        "createTitle": "New actor",
+        "editTitle": "Edit actor — {name}",
+        "missingId": "Actor id not found.",
+        "notFound": "Could not load actor."
       },
       "validation": {
-        "kodRequired": "Customer code is required (MUS-XXX).",
-        "unvanRequired": "Company name is required."
+        "kodRequired": "Code is required (MUS-XXX).",
+        "unvanRequired": "Company name is required.",
+        "roleRequired": "Select at least one role (customer and/or supplier)."
       },
       "drawer": {
         "title": "Customer summary",
@@ -4120,7 +4127,8 @@
         "shipments": "Shipments",
         "documents": "Line documents",
         "coc": "Line documents",
-        "quality": "Quality"
+        "quality": "Quality",
+        "dashboard": "Dashboard"
       },
       "fields": {
         "packageNo": "ODAK Work Package No",
@@ -4148,6 +4156,89 @@
       },
       "deleteTitle": "Delete work package",
       "deleteConfirm": "Are you sure you want to delete this work package?"
+    },
+    "dashboard": {
+      "global": {
+        "pageTitle": "Work Package Operations",
+        "openFromPackages": "Operations Dashboard",
+        "refresh": "Refresh",
+        "heroEyebrow": "Odak Orders",
+        "heroTitle": "Operations Overview",
+        "heroSubtitle": "Open work packages, delivery pressure, and quality signals in one view.",
+        "statusMixTitle": "Status mix",
+        "qualityTitle": "Quality summary",
+        "topCustomersTitle": "Top customers",
+        "upcomingTitle": "Upcoming deliveries",
+        "urgency": "Urgency",
+        "total": "Total",
+        "noData": "No data yet.",
+        "noUpcoming": "No open packages with a delivery date.",
+        "overdue": "Overdue",
+        "dueSoon": "Due soon",
+        "onTrack": "On track",
+        "stats": {
+          "open": "Open packages",
+          "closed": "Closed packages",
+          "dueSoon": "Due within 7 days",
+          "overdue": "Overdue",
+          "openNcr": "Open NCR",
+          "openCapa": "Open CAPA"
+        }
+      },
+      "package": {
+        "heroEyebrow": "Work package dashboard",
+        "noDeliveryDate": "No delivery date",
+        "overdueDays": "{days} days overdue",
+        "dueToday": "Due today",
+        "daysLeft": "{days} days left",
+        "fulfillmentTitle": "Shipment progress",
+        "fulfillmentPct": "{pct}% complete",
+        "fulfillmentUnavailable": "Cannot compute ratio without part count.",
+        "timelineTitle": "Timeline",
+        "stats": {
+          "lines": "Lines",
+          "shipments": "Shipments",
+          "shipmentsHint": "Completed / total",
+          "openNcr": "Open NCR",
+          "openCapa": "Open CAPA"
+        }
+      },
+      "customer": {
+        "heroEyebrow": "Actor dashboard",
+        "supplierOnlyHint": "This record is supplier-only; work package metrics are hidden.",
+        "missingIdHint": "Could not resolve this actor record; dashboard failed to load. Try collapsing and expanding the row again.",
+        "recentPackagesTitle": "Open work packages",
+        "noOpenPackages": "No open work packages for this customer.",
+        "stats": {
+          "openPackages": "Open packages",
+          "closedPackages": "Closed packages",
+          "dueSoon": "Due soon",
+          "overdue": "Overdue",
+          "contacts": "Contacts",
+          "qualityReqs": "Quality requirements",
+          "openNcr": "Open NCR",
+          "openCapa": "Open CAPA"
+        }
+      },
+      "customerGlobal": {
+        "pageTitle": "Customer Portfolio Dashboard",
+        "heroEyebrow": "Odak Orders · Actors",
+        "heroTitle": "Customer Portfolio Overview",
+        "heroSubtitle": "Active customers, open workload, and delivery risk in one view.",
+        "sectorTitle": "Sector breakdown",
+        "topCustomersTitle": "Top customers (open packages)",
+        "atRiskTitle": "Customers at delivery risk",
+        "noAtRisk": "No customers with overdue packages.",
+        "openCountLabel": "{count} open",
+        "overdueCountLabel": "{count} overdue",
+        "inactiveHint": "Inactive customer records: {count}",
+        "stats": {
+          "activeCustomers": "Active customers",
+          "withOpenPackages": "With open packages",
+          "openPackages": "Total open packages",
+          "overduePackages": "Overdue packages"
+        }
+      }
     },
     "quality": {
       "tabs": {

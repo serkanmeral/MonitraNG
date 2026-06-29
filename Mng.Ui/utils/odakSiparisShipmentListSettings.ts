@@ -4,11 +4,11 @@ import {
   buildHubListHeaders,
   buildListKeyToFieldMap,
   defaultHubListConfigFromCatalog,
-  fieldNameFromListSortKey,
-  listSortKeyFromField,
+  filterHubListConfigToCatalog,
+  hubFieldNameFromListSortKey,
+  hubListSortKeyFromField,
   mergeHubListConfig,
   parseHubListConfig,
-  filterHubListConfigToCatalog,
   type OdakHubListConfig,
   type OdakHubListFieldDef,
   type OdakHubListHeader,
@@ -73,11 +73,11 @@ export function buildShipmentListHeaders(
 }
 
 export function listSortKeyFromShipmentField(fieldName: string): string {
-  return listSortKeyFromField(fieldName, ODAK_SHIPMENT_LIST_FIELD_TO_KEY);
+  return hubListSortKeyFromField(fieldName, ODAK_SHIPMENT_LIST_FIELD_TO_KEY);
 }
 
 export function fieldNameFromShipmentListKey(sortKey: string): string {
-  return fieldNameFromListSortKey(sortKey, ODAK_SHIPMENT_LIST_KEY_TO_FIELD);
+  return hubFieldNameFromListSortKey(sortKey, ODAK_SHIPMENT_LIST_KEY_TO_FIELD);
 }
 
 export interface ShipmentListCellContext {

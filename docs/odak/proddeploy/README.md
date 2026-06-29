@@ -6,7 +6,7 @@
 
 **Ne zaman buraya bakılır:** “Production deploy yap”, “prod’a at”, “192.168.20.8’e deploy” gibi açık isteklerde — önce bu indeks, ardından [AGENT_PRODUCTION_DEPLOY.md](./AGENT_PRODUCTION_DEPLOY.md) veya [DEPLOY_PRODUCTION.md](./DEPLOY_PRODUCTION.md).
 
-**Kaldığımız yer / IT sonrası devam:** **[DEVAM.md](./DEVAM.md)** (4 Haziran 2026 — mng_common dosyaları hazır, Docker bekliyor)
+**Kaldığımız yer / devam:** **[DEVAM.md](./DEVAM.md)** (20 Haziran 2026 — legacy iş verisi prod’da, PO PDF bekliyor)
 
 ---
 
@@ -25,7 +25,8 @@ Ayrıntılı karşılaştırma: [ENVIRONMENTS.md](./ENVIRONMENTS.md).
 
 | Dosya | İçerik |
 |-------|--------|
-| **[DEVAM.md](./DEVAM.md)** | **Checkpoint** — sıradaki adımlar, IT listesi |
+| **[DEVAM.md](./DEVAM.md)** | **Checkpoint** — sıradaki adımlar |
+| **[LEGACY_DATA_MIGRATION_PROD.md](./LEGACY_DATA_MIGRATION_PROD.md)** | **Legacy Kalite → prod DG** (20 Haziran 2026) |
 | **[INDEPENDENCE.md](./INDEPENDENCE.md)** | **Tam bağımsızlık** — paylaşılan altyapı/veri yok |
 | [ENVIRONMENTS.md](./ENVIRONMENTS.md) | Test vs production; URL/port matrisi |
 | [SERVER_ACCESS.md](./SERVER_ACCESS.md) | SSH, kimlik bilgisi (repoda parola yok) |

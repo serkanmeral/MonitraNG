@@ -1,6 +1,7 @@
 import { ref, watch, type Ref } from 'vue';
 import type { OcFormFieldRuntimeDto, OcFormRuntimeContext } from '@/types/apps/operationCore';
 import {
+  OC_DATASETS,
   ocListBoardsForWorkspace,
   ocListDataset,
   ocListPriorities,
@@ -12,11 +13,13 @@ import { useOcPersonPicker, type OcPersonPickerApi } from '@/composables/useOcPe
 import { useOcDatasetPicker, type OcDatasetPickerApi, type OcDatasetPickerConfig } from '@/composables/useOcDatasetPicker';
 import { collectPersonIdsFromValue } from '@/utils/ocPersonPicker';
 import {
+  isOcGroupPickerField,
   isOcPersonsUserPickerField,
   recordToDatasetItems,
   resolveOcDynamicFieldWidget,
   resolveRelationDataset,
 } from '@/utils/ocDynamicFormField';
+import { useGroupStore } from '@/stores/apps/group';
 import { resolveOcFormFieldType } from '@/utils/ocFormFieldLabels';
 import {
   extractLookupStoredValue,
@@ -54,9 +57,12 @@ export function useOcDynamicFormLookups(
   const personPickers = new Map<string, OcPersonPickerApi>();
   const datasetPickers = new Map<string, OcDatasetPickerApi>();
 
+  const groupStore = useGroupStore();
   const priorityItems = ref<OcSelectItem[]>([]);
   const stateItems = ref<OcSelectItem[]>([]);
   const boardItems = ref<OcSelectItem[]>([]);
+  const groupItems = ref<OcSelectItem[]>([]);
+  const typeItems = ref<OcSelectItem[]>([]);
   const relationItemsByKey = ref<Record<string, OcSelectItem[]>>({});
   const loadingKeys = ref<Set<string>>(new Set());
   const dependsOnParentByField = ref<Record<string, string | null>>({});
@@ -89,6 +95,55 @@ export function useOcDynamicFormLookups(
 
   function needsBoard(keys: string[]) {
     return keys.includes('boardId');
+  }
+
+  function needsGroups(keys: string[]) {
+    return keys.some((key) => isOcGroupPickerField(key, context.value?.fields[key]));
+  }
+
+  function needsTypes(keys: string[]) {
+    return keys.includes('typeId');
+  }
+
+  async function loadTypeItems() {
+    const ctx = context.value;
+    if (!ctx) {
+      typeItems.value = [];
+      return;
+    }
+
+    const byId = new Map<string, OcSelectItem>();
+    for (const t of ctx.types ?? []) {
+      byId.set(t.id, { title: t.name, value: t.id });
+    }
+
+    const missing = new Set<string>();
+    const defaultId = ctx.defaultTypeId?.trim();
+    if (defaultId && !byId.has(defaultId)) missing.add(defaultId);
+    const modelTypeId = formModel?.value?.typeId;
+    if (typeof modelTypeId === 'string' && modelTypeId.trim() && !byId.has(modelTypeId.trim())) {
+      missing.add(modelTypeId.trim());
+    }
+
+    if (missing.size > 0) {
+      await Promise.all(
+        [...missing].map(async (id) => {
+          try {
+            const rows = await ocListDataset(OC_DATASETS.workItemTypes, {
+              filter: `__dataId:eq:${id}`,
+              limit: 1,
+            });
+            const row = rows[0] as Record<string, unknown> | undefined;
+            const name = String(row?.name ?? row?.Name ?? id).trim() || id;
+            byId.set(id, { title: name, value: id });
+          } catch {
+            byId.set(id, { title: id, value: id });
+          }
+        })
+      );
+    }
+
+    typeItems.value = Array.from(byId.values());
   }
 
   function parentValueForField(fieldKey: string): string | null {
@@ -262,6 +317,32 @@ export function useOcDynamicFormLookups(
       );
     }
 
+    if (needsGroups(keys)) {
+      tasks.push(
+        (async () => {
+          if (!groupStore.groups?.length) {
+            await groupStore.fetchGroups({ pageSize: 500 });
+          }
+          groupItems.value = groupStore.activeGroups.map((g) => ({
+            title: g.name,
+            value: g.id || g.groupId,
+            subtitle: g.description?.trim() || undefined,
+          }));
+        })()
+      );
+    }
+
+    if (needsTypes(keys)) {
+      loadingKeys.value = new Set(loadingKeys.value).add('typeId');
+      tasks.push(
+        loadTypeItems().finally(() => {
+          const next = new Set(loadingKeys.value);
+          next.delete('typeId');
+          loadingKeys.value = next;
+        })
+      );
+    }
+
     for (const fieldKey of keys) {
       const meta = ctx.fields[fieldKey];
       const widget = resolveOcDynamicFieldWidget(fieldKey, meta);
@@ -298,20 +379,27 @@ export function useOcDynamicFormLookups(
 
   function selectItemsForField(fieldKey: string): OcSelectItem[] {
     const meta = context.value?.fields[fieldKey];
+    if (isOcGroupPickerField(fieldKey, meta)) {
+      return groupItems.value;
+    }
     if (isOcPersonsUserPickerField(fieldKey, meta)) {
       return pickerForField(fieldKey).items.value;
     }
     if (fieldKey === 'priorityId') return priorityItems.value;
     if (fieldKey === 'boardId') return boardItems.value;
     if (fieldKey === 'stateId') return stateItems.value;
-    if (fieldKey === 'typeId') {
-      return (context.value?.types ?? []).map((t) => ({ title: t.name, value: t.id }));
-    }
+    if (fieldKey === 'typeId') return typeItems.value;
     return relationItemsByKey.value[fieldKey] ?? [];
   }
 
   function isLoadingField(fieldKey: string): boolean {
     const meta = context.value?.fields[fieldKey];
+    if (fieldKey === 'typeId') {
+      return loadingKeys.value.has('typeId');
+    }
+    if (isOcGroupPickerField(fieldKey, meta)) {
+      return groupStore.loading;
+    }
     if (isOcPersonsUserPickerField(fieldKey, meta)) {
       return loadingKeys.value.has(PERSONS_LOADING_KEY) || pickerForField(fieldKey).loading.value;
     }

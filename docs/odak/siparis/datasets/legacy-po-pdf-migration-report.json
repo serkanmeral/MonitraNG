@@ -1,15 +1,3611 @@
 {
-  "migratedAt": "2026-06-16T22:10:19.0069255Z",
+  "migratedAt": "2026-06-20T08:41:34.4106471Z",
+  "summary": {
+    "failed": 0,
+    "fileNotFound": 296,
+    "dgNotFound": 362,
+    "ok": 6,
+    "skipped": 0
+  },
+  "baseUrl": "http://192.168.20.8:5040",
+  "dryRun": false,
+  "legacyUploadRoot": "C:\\Users\\monitra\\kalite-legacy-local\\uploads",
   "results": [
+    {
+      "packageNo": "2026-022",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-022"
+    },
+    {
+      "packageNo": "2026-021",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-021"
+    },
+    {
+      "packageNo": "2026-020",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-020"
+    },
+    {
+      "packageNo": "2026-019",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-019"
+    },
+    {
+      "packageNo": "2026-018",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-018"
+    },
+    {
+      "packageNo": "2026-017",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-017"
+    },
+    {
+      "packageNo": "2026-016",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-016"
+    },
+    {
+      "packageNo": "2026-015",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-015"
+    },
+    {
+      "packageNo": "2026-014",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": "03",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-014"
+    },
+    {
+      "packageNo": "2026-013",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-013"
+    },
+    {
+      "packageNo": "2026-012",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-012"
+    },
+    {
+      "packageNo": "2026-011",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-011"
+    },
+    {
+      "packageNo": "2026-010",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-010"
+    },
+    {
+      "packageNo": "2026-009",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-009"
+    },
+    {
+      "packageNo": "2026-008",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-008"
+    },
+    {
+      "packageNo": "2026-007",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": "02",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-007"
+    },
+    {
+      "packageNo": "2026-006",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-006"
+    },
+    {
+      "packageNo": "2026-005",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-005"
+    },
+    {
+      "packageNo": "2026-004",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-004"
+    },
+    {
+      "packageNo": "2026-003",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-003"
+    },
+    {
+      "packageNo": "2026-002",
+      "polink": "Yonetim/MUSTERI_PO/2026/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2026-002"
+    },
+    {
+      "packageNo": "2025-173",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-173"
+    },
+    {
+      "packageNo": "2025-172",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-172"
+    },
+    {
+      "packageNo": "2025-171",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-171"
+    },
+    {
+      "packageNo": "2025-170",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-170"
+    },
+    {
+      "packageNo": "2025-169",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-169"
+    },
+    {
+      "packageNo": "2025-168",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-168"
+    },
+    {
+      "packageNo": "2025-167",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-167"
+    },
+    {
+      "packageNo": "2025-162",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-162"
+    },
+    {
+      "packageNo": "2025-165",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-165"
+    },
+    {
+      "packageNo": "2025-164",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-164"
+    },
+    {
+      "packageNo": "2025-163",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-163"
+    },
+    {
+      "packageNo": "2025-166",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-166"
+    },
+    {
+      "packageNo": "2025-160",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-160"
+    },
+    {
+      "packageNo": "2025-159",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-159"
+    },
+    {
+      "packageNo": "2025-158",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-158"
+    },
+    {
+      "packageNo": "2025-156",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-156"
+    },
+    {
+      "packageNo": "2025-155",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-155"
+    },
+    {
+      "packageNo": "2025-154",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "02",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-154"
+    },
+    {
+      "packageNo": "2025-153",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-153"
+    },
+    {
+      "packageNo": "2025-152",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-152"
+    },
+    {
+      "packageNo": "2025-151",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-151"
+    },
+    {
+      "packageNo": "2025-150",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-150"
+    },
+    {
+      "packageNo": "2025-149",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-149"
+    },
+    {
+      "packageNo": "2025-148",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-148"
+    },
+    {
+      "packageNo": "2025-147",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-147"
+    },
+    {
+      "packageNo": "2025-146",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-146"
+    },
+    {
+      "packageNo": "2025-145",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-145"
+    },
+    {
+      "packageNo": "2025-144",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-144"
+    },
+    {
+      "packageNo": "2025-143",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-143"
+    },
+    {
+      "packageNo": "2025-142",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-142"
+    },
+    {
+      "packageNo": "2025-141",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-141"
+    },
+    {
+      "packageNo": "2025-140",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-140"
+    },
+    {
+      "packageNo": "2025-139",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-139"
+    },
+    {
+      "packageNo": "2025-138",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-138"
+    },
+    {
+      "packageNo": "2025-137",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-137"
+    },
+    {
+      "packageNo": "2025-136",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-136"
+    },
+    {
+      "packageNo": "2025-135",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-135"
+    },
+    {
+      "packageNo": "2025-134",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-134"
+    },
+    {
+      "packageNo": "2025-133",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-133"
+    },
+    {
+      "packageNo": "2025-132",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-132"
+    },
+    {
+      "packageNo": "2025-131",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-131"
+    },
+    {
+      "packageNo": "2025-130",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-130"
+    },
+    {
+      "packageNo": "2025-129",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-129"
+    },
+    {
+      "packageNo": "2025-128",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-128"
+    },
+    {
+      "packageNo": "2025-127",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-127"
+    },
+    {
+      "packageNo": "2025-126",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-126"
+    },
+    {
+      "packageNo": "2025-125",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-125"
+    },
+    {
+      "packageNo": "2025-124",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-124"
+    },
+    {
+      "packageNo": "2025-123",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-123"
+    },
+    {
+      "packageNo": "2025-122",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-122"
+    },
+    {
+      "packageNo": "2025-121",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-121"
+    },
+    {
+      "packageNo": "2025-120",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-120"
+    },
+    {
+      "packageNo": "2025-119",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "02",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-119"
+    },
+    {
+      "packageNo": "2025-118",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-118"
+    },
+    {
+      "packageNo": "2025-117",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-117"
+    },
+    {
+      "packageNo": "2025-116",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-116"
+    },
+    {
+      "packageNo": "2025-115",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-115"
+    },
+    {
+      "packageNo": "2025-114",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-114"
+    },
+    {
+      "packageNo": "2025-113",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-113"
+    },
+    {
+      "packageNo": "2025-112",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-112"
+    },
+    {
+      "packageNo": "2025-111",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-111"
+    },
+    {
+      "packageNo": "2025-110",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-110"
+    },
+    {
+      "packageNo": "2025-109",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-109"
+    },
+    {
+      "packageNo": "2025-108",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-108"
+    },
+    {
+      "packageNo": "2025-107",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-107"
+    },
+    {
+      "packageNo": "2025-106",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-106"
+    },
+    {
+      "packageNo": "2025-105",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-105"
+    },
+    {
+      "packageNo": "2025-104",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-104"
+    },
+    {
+      "packageNo": "2025-103",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-103"
+    },
+    {
+      "packageNo": "2025-102",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "03",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-102"
+    },
+    {
+      "packageNo": "2025-101",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-101"
+    },
+    {
+      "packageNo": "2025-100",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-100"
+    },
+    {
+      "packageNo": "2025-099",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-099"
+    },
+    {
+      "packageNo": "2025-098",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-098"
+    },
+    {
+      "packageNo": "2025-097",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-097"
+    },
+    {
+      "packageNo": "2025-096",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-096"
+    },
+    {
+      "packageNo": "2025-095",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-095"
+    },
+    {
+      "packageNo": "2025-094",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-094"
+    },
+    {
+      "packageNo": "2025-093",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-093"
+    },
+    {
+      "packageNo": "2025-092",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-092"
+    },
+    {
+      "packageNo": "2025-091",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-091"
+    },
+    {
+      "packageNo": "2025-090",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-090"
+    },
+    {
+      "packageNo": "2025-089",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "02",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-089"
+    },
+    {
+      "packageNo": "2025-088",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-088"
+    },
+    {
+      "packageNo": "2025-087",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-087"
+    },
+    {
+      "packageNo": "2025-086",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-086"
+    },
+    {
+      "packageNo": "2025-085",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-085"
+    },
+    {
+      "packageNo": "2025-084",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-084"
+    },
+    {
+      "packageNo": "2025-083",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-083"
+    },
+    {
+      "packageNo": "2025-082",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-082"
+    },
+    {
+      "packageNo": "2025-081",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "02",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-081"
+    },
+    {
+      "packageNo": "2025-080",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-080"
+    },
+    {
+      "packageNo": "2025-079",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-079"
+    },
+    {
+      "packageNo": "2025-078",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-078"
+    },
+    {
+      "packageNo": "2025-077",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-077"
+    },
+    {
+      "packageNo": "2025-076",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-076"
+    },
+    {
+      "packageNo": "2025-075",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-075"
+    },
+    {
+      "packageNo": "2025-074",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-074"
+    },
+    {
+      "packageNo": "2025-073",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-073"
+    },
+    {
+      "packageNo": "2025-072",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-072"
+    },
+    {
+      "packageNo": "2025-071",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-071"
+    },
+    {
+      "packageNo": "2025-070",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-070"
+    },
+    {
+      "packageNo": "2025-069",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-069"
+    },
+    {
+      "packageNo": "2025-068",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-068"
+    },
+    {
+      "packageNo": "2025-067",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-067"
+    },
+    {
+      "packageNo": "2025-066",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-066"
+    },
+    {
+      "packageNo": "2025-065",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-065"
+    },
+    {
+      "packageNo": "2025-064",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-064"
+    },
+    {
+      "packageNo": "2025-063",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-063"
+    },
+    {
+      "packageNo": "2025-062",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-062"
+    },
+    {
+      "packageNo": "2025-061",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-061"
+    },
+    {
+      "packageNo": "2025-060",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-060"
+    },
+    {
+      "packageNo": "2025-059",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-059"
+    },
+    {
+      "packageNo": "2025-058",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-058"
+    },
+    {
+      "packageNo": "2025-057",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-057"
+    },
+    {
+      "packageNo": "2025-056",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-056"
+    },
+    {
+      "packageNo": "2025-055",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-055"
+    },
+    {
+      "packageNo": "2025-054",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "04",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-054"
+    },
+    {
+      "packageNo": "2025-053",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-053"
+    },
+    {
+      "packageNo": "2025-052",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-052"
+    },
+    {
+      "packageNo": "2025-051",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "02",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-051"
+    },
+    {
+      "packageNo": "2025-050",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-050"
+    },
+    {
+      "packageNo": "2025-049",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-049"
+    },
+    {
+      "packageNo": "2025-048",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-048"
+    },
+    {
+      "packageNo": "2025-046",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-046"
+    },
+    {
+      "packageNo": "2025-047",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-047"
+    },
+    {
+      "packageNo": "2025-045",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-045"
+    },
+    {
+      "packageNo": "2025-044",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-044"
+    },
+    {
+      "packageNo": "2025-043",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-043"
+    },
+    {
+      "packageNo": "2025-042",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-042"
+    },
+    {
+      "packageNo": "2025-041",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-041"
+    },
+    {
+      "packageNo": "2025-040",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "04",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-040"
+    },
+    {
+      "packageNo": "2025-039",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-039"
+    },
+    {
+      "packageNo": "2025-038",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-038"
+    },
+    {
+      "packageNo": "2025-037",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-037"
+    },
+    {
+      "packageNo": "2025-036",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-036"
+    },
+    {
+      "packageNo": "2025-035",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-035"
+    },
+    {
+      "packageNo": "2025-034",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-034"
+    },
+    {
+      "packageNo": "2025-033",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-033"
+    },
+    {
+      "packageNo": "2025-031",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-031"
+    },
+    {
+      "packageNo": "2025-030",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-030"
+    },
+    {
+      "packageNo": "2025-029",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-029"
+    },
+    {
+      "packageNo": "2025-028",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-028"
+    },
+    {
+      "packageNo": "2025-027",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-027"
+    },
+    {
+      "packageNo": "2025-026",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-026"
+    },
+    {
+      "packageNo": "2025-025",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-025"
+    },
+    {
+      "packageNo": "2025-024",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-024"
+    },
+    {
+      "packageNo": "2025-023",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "05",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-023"
+    },
+    {
+      "packageNo": "2025-022",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-022"
+    },
+    {
+      "packageNo": "2025-021",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-021"
+    },
+    {
+      "packageNo": "2025-020",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "18",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-020"
+    },
+    {
+      "packageNo": "2025-019",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-019"
+    },
+    {
+      "packageNo": "2025-018",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-018"
+    },
+    {
+      "packageNo": "2025-017",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-017"
+    },
+    {
+      "packageNo": "2025-016",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-016"
+    },
+    {
+      "packageNo": "2025-015",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-015"
+    },
+    {
+      "packageNo": "2025-014",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-014"
+    },
+    {
+      "packageNo": "2025-013",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-013"
+    },
+    {
+      "packageNo": "2025-012",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-012"
+    },
+    {
+      "packageNo": "2025-011",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "02",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-011"
+    },
+    {
+      "packageNo": "2025-010",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-010"
+    },
+    {
+      "packageNo": "2025-009",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-009"
+    },
+    {
+      "packageNo": "2025-008",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-008"
+    },
+    {
+      "packageNo": "2025-007",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-007"
+    },
+    {
+      "packageNo": "2025-006",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "03",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-006"
+    },
+    {
+      "packageNo": "2025-005",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-005"
+    },
+    {
+      "packageNo": "2025-004",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-004"
+    },
+    {
+      "packageNo": "2025-003",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": "04",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-003"
+    },
+    {
+      "packageNo": "2025-002",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-002"
+    },
+    {
+      "packageNo": "2025-001",
+      "polink": "Yonetim/MUSTERI_PO/2025/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2025-001"
+    },
+    {
+      "packageNo": "2024-109",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-109"
+    },
+    {
+      "packageNo": "2024-108",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-108"
+    },
+    {
+      "packageNo": "2024-107",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-107"
+    },
+    {
+      "packageNo": "2024-106",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-106"
+    },
+    {
+      "packageNo": "2024-105",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-105"
+    },
+    {
+      "packageNo": "2024-104",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-104"
+    },
+    {
+      "packageNo": "2024-103",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-103"
+    },
+    {
+      "packageNo": "2024-102",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-102"
+    },
+    {
+      "packageNo": "2024-101",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-101"
+    },
+    {
+      "packageNo": "2024-100",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-100"
+    },
+    {
+      "packageNo": "2024-099",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-099"
+    },
+    {
+      "packageNo": "2024-098",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-098"
+    },
+    {
+      "packageNo": "2024-097",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-097"
+    },
+    {
+      "packageNo": "2024-096",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-096"
+    },
+    {
+      "packageNo": "2024-095",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-095"
+    },
+    {
+      "packageNo": "2024-094",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-094"
+    },
+    {
+      "packageNo": "2024-093",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-093"
+    },
+    {
+      "packageNo": "2024-092",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-092"
+    },
+    {
+      "packageNo": "2024-091",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-091"
+    },
+    {
+      "packageNo": "2024-090",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-090"
+    },
+    {
+      "packageNo": "2024-089",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-089"
+    },
+    {
+      "packageNo": "2024-088",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-088"
+    },
+    {
+      "packageNo": "2024-087",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-087"
+    },
+    {
+      "packageNo": "2024-086",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-086"
+    },
+    {
+      "packageNo": "2024-085",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-085"
+    },
+    {
+      "packageNo": "2024-084",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-084"
+    },
+    {
+      "packageNo": "2024-083",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-083"
+    },
+    {
+      "packageNo": "2024-082",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-082"
+    },
+    {
+      "packageNo": "2024-081",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-081"
+    },
+    {
+      "packageNo": "2024-080",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-080"
+    },
+    {
+      "packageNo": "2024-079",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-079"
+    },
+    {
+      "packageNo": "2024-078",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-078"
+    },
+    {
+      "packageNo": "2024-077",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-077"
+    },
+    {
+      "packageNo": "2024-076",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-076"
+    },
+    {
+      "packageNo": "2024-075",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-075"
+    },
+    {
+      "packageNo": "2024-074",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-074"
+    },
+    {
+      "packageNo": "2024-073",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-073"
+    },
+    {
+      "packageNo": "2024-072",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-072"
+    },
+    {
+      "packageNo": "2024-071",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-071"
+    },
+    {
+      "packageNo": "2024-070",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-070"
+    },
+    {
+      "packageNo": "2024-069",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "04",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-069"
+    },
+    {
+      "packageNo": "2024-068",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-068"
+    },
+    {
+      "packageNo": "2024-067",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-067"
+    },
+    {
+      "packageNo": "2024-066",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-066"
+    },
+    {
+      "packageNo": "2024-065",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-065"
+    },
+    {
+      "packageNo": "2024-064",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-064"
+    },
+    {
+      "packageNo": "2024-063",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-063"
+    },
+    {
+      "packageNo": "2024-062",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-062"
+    },
+    {
+      "packageNo": "2024-061",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-061"
+    },
+    {
+      "packageNo": "2024-060",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-060"
+    },
+    {
+      "packageNo": "2024-059",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-059"
+    },
+    {
+      "packageNo": "2024-058",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-058"
+    },
+    {
+      "packageNo": "2024-056",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-056"
+    },
+    {
+      "packageNo": "2024-057",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-057"
+    },
+    {
+      "packageNo": "2024-055",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-055"
+    },
+    {
+      "packageNo": "2024-054",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-054"
+    },
+    {
+      "packageNo": "2024-053",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-053"
+    },
+    {
+      "packageNo": "2024-052",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-052"
+    },
+    {
+      "packageNo": "2024-051",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-051"
+    },
+    {
+      "packageNo": "2024-050",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-050"
+    },
+    {
+      "packageNo": "2024-049",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-049"
+    },
+    {
+      "packageNo": "2024-048",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-048"
+    },
+    {
+      "packageNo": "2024-047",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "07",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-047"
+    },
+    {
+      "packageNo": "2024-046",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-046"
+    },
+    {
+      "packageNo": "2024-045",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-045"
+    },
+    {
+      "packageNo": "2024-044",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-044"
+    },
+    {
+      "packageNo": "2024-043",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-043"
+    },
+    {
+      "packageNo": "2024-042",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-042"
+    },
+    {
+      "packageNo": "2024-041",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "05",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-041"
+    },
+    {
+      "packageNo": "2024-040",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-040"
+    },
+    {
+      "packageNo": "2024-039",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-039"
+    },
+    {
+      "packageNo": "2024-038",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-038"
+    },
+    {
+      "packageNo": "2024-034",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "03",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-034"
+    },
+    {
+      "packageNo": "2024-036",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "07",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-036"
+    },
+    {
+      "packageNo": "2024-035",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-035"
+    },
+    {
+      "packageNo": "2024-037",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "09",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-037"
+    },
+    {
+      "packageNo": "2024-033",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-033"
+    },
+    {
+      "packageNo": "2024-032",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-032"
+    },
+    {
+      "packageNo": "2024-031",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-031"
+    },
+    {
+      "packageNo": "2024-030",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-030"
+    },
+    {
+      "packageNo": "2024-029",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-029"
+    },
+    {
+      "packageNo": "2024-028",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-028"
+    },
+    {
+      "packageNo": "2024-027",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-027"
+    },
+    {
+      "packageNo": "2024-026",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-026"
+    },
+    {
+      "packageNo": "2024-025",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-025"
+    },
+    {
+      "packageNo": "2024-024",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "06",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-024"
+    },
+    {
+      "packageNo": "2024-023",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-023"
+    },
+    {
+      "packageNo": "2024-022",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-022"
+    },
+    {
+      "packageNo": "2024-021",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-021"
+    },
+    {
+      "packageNo": "2024-020",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-020"
+    },
+    {
+      "packageNo": "2024-019",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-019"
+    },
+    {
+      "packageNo": "2024-018",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-018"
+    },
+    {
+      "packageNo": "2024-017",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-017"
+    },
+    {
+      "packageNo": "2024-016",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-016"
+    },
+    {
+      "packageNo": "2024-015",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "04",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-015"
+    },
+    {
+      "packageNo": "2024-014",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "15",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-014"
+    },
+    {
+      "packageNo": "2024-013",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-013"
+    },
+    {
+      "packageNo": "2024-012",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-012"
+    },
+    {
+      "packageNo": "2024-011",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-011"
+    },
+    {
+      "packageNo": "2024-010",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-010"
+    },
+    {
+      "packageNo": "2024-009",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-009"
+    },
+    {
+      "packageNo": "2024-008",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-008"
+    },
+    {
+      "packageNo": "2024-007",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-007"
+    },
+    {
+      "packageNo": "2024-006",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-006"
+    },
+    {
+      "packageNo": "2024-005",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-005"
+    },
+    {
+      "packageNo": "2024-004",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "08",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-004"
+    },
+    {
+      "packageNo": "2024-003",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-003"
+    },
+    {
+      "packageNo": "2024-002",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-002"
+    },
+    {
+      "packageNo": "2024-001",
+      "polink": "Yonetim/MUSTERI_PO/2024/",
+      "poVersion": "02",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2024-001"
+    },
+    {
+      "packageNo": "2023-102",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "02",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-102"
+    },
+    {
+      "packageNo": "2023-101",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-101"
+    },
+    {
+      "packageNo": "2023-100",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-100"
+    },
+    {
+      "packageNo": "2023-099",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-099"
+    },
+    {
+      "packageNo": "2023-098",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-098"
+    },
+    {
+      "packageNo": "2023-097",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "05",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-097"
+    },
+    {
+      "packageNo": "2023-096",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-096"
+    },
+    {
+      "packageNo": "2023-095",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-095"
+    },
+    {
+      "packageNo": "2023-093",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-093"
+    },
+    {
+      "packageNo": "2023-092",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-092"
+    },
+    {
+      "packageNo": "2023-091",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-091"
+    },
+    {
+      "packageNo": "2023-090",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-090"
+    },
+    {
+      "packageNo": "2023-089",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "10",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-089"
+    },
+    {
+      "packageNo": "2023-088",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-088"
+    },
+    {
+      "packageNo": "2023-087",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-087"
+    },
+    {
+      "packageNo": "2023-086",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-086"
+    },
+    {
+      "packageNo": "2023-085",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-085"
+    },
+    {
+      "packageNo": "2023-084",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "03",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-084"
+    },
+    {
+      "packageNo": "2023-083",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-083"
+    },
+    {
+      "packageNo": "2023-082",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-082"
+    },
+    {
+      "packageNo": "2023-081",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "03",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-081"
+    },
+    {
+      "packageNo": "2023-080",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-080"
+    },
+    {
+      "packageNo": "2023-079",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "05",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-079"
+    },
+    {
+      "packageNo": "2023-078",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-078"
+    },
     {
       "packageNo": "2023-077",
       "polink": "Yonetim/MUSTERI_PO/2023/",
       "poVersion": null,
-      "status": "ok",
-      "message": "Yuklendi",
-      "dgDataId": "3e00d36e-96d6-480b-8a11-e42c25e1ed0a",
-      "fileName": "2023-077.pdf",
-      "fileBytes": 598705
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-077"
+    },
+    {
+      "packageNo": "2023-076",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-076"
+    },
+    {
+      "packageNo": "2023-075",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-075"
+    },
+    {
+      "packageNo": "2023-074",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-074"
+    },
+    {
+      "packageNo": "2023-073",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-073"
+    },
+    {
+      "packageNo": "2023-072",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-072"
+    },
+    {
+      "packageNo": "2023-071",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-071"
+    },
+    {
+      "packageNo": "2023-070",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-070"
+    },
+    {
+      "packageNo": "2023-069",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-069"
+    },
+    {
+      "packageNo": "2023-068",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-068"
+    },
+    {
+      "packageNo": "2023-067",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-067"
+    },
+    {
+      "packageNo": "2023-066",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-066"
+    },
+    {
+      "packageNo": "2023-065",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "01",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-065"
+    },
+    {
+      "packageNo": "2023-064",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-064"
+    },
+    {
+      "packageNo": "2023-063",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-063"
+    },
+    {
+      "packageNo": "2023-062",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-062"
+    },
+    {
+      "packageNo": "2023-061",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-061"
+    },
+    {
+      "packageNo": "2023-060",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "23",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-060"
+    },
+    {
+      "packageNo": "2023-059",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-059"
+    },
+    {
+      "packageNo": "2023-058",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-058"
+    },
+    {
+      "packageNo": "2023-057",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-057"
+    },
+    {
+      "packageNo": "2023-056",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-056"
+    },
+    {
+      "packageNo": "2023-055",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-055"
+    },
+    {
+      "packageNo": "2023-054",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "06",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-054"
+    },
+    {
+      "packageNo": "2023-053",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-053"
+    },
+    {
+      "packageNo": "2023-052",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-052"
+    },
+    {
+      "packageNo": "2023-051",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-051"
+    },
+    {
+      "packageNo": "2023-050",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-050"
+    },
+    {
+      "packageNo": "2023-049",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "03",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-049"
+    },
+    {
+      "packageNo": "2023-047",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "17",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-047"
+    },
+    {
+      "packageNo": "2023-046",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-046"
+    },
+    {
+      "packageNo": "2023-045",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-045"
+    },
+    {
+      "packageNo": "2023-044",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "09",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-044"
+    },
+    {
+      "packageNo": "2023-043",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "29",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-043"
+    },
+    {
+      "packageNo": "2023-042",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "04",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-042"
+    },
+    {
+      "packageNo": "2023-041",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-041"
+    },
+    {
+      "packageNo": "2023-040",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-040"
+    },
+    {
+      "packageNo": "2023-039",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "03",
+      "status": "dgNotFound",
+      "message": "DG paketi yok: 2023-039"
+    },
+    {
+      "packageNo": "2023-038",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "02",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-038_02.pdf",
+      "dgDataId": "a7092207-b351-4541-99a4-3a4bcba712c3",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-038_02.pdf"
+    },
+    {
+      "packageNo": "2023-037",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-037.pdf",
+      "dgDataId": "b4c4b968-f05a-4223-ae22-a8f5b9aa8f42",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-037.pdf"
+    },
+    {
+      "packageNo": "2023-036",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "04",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-036_04.pdf",
+      "dgDataId": "86787dc3-a44a-4e64-b446-202f0ec13b38",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-036_04.pdf"
+    },
+    {
+      "packageNo": "2023-035",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "05",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-035_05.pdf",
+      "dgDataId": "26cf4fc2-a477-43ec-bb06-d8e37fcb72a0",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-035_05.pdf"
+    },
+    {
+      "packageNo": "2023-034",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "02",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-034_02.pdf",
+      "dgDataId": "a98d68da-919f-47a3-a835-82558c0fec71",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-034_02.pdf"
+    },
+    {
+      "packageNo": "2023-033",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-033.pdf",
+      "dgDataId": "07ab454b-9c17-4c77-ab23-6b1de5e2d180",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-033.pdf"
+    },
+    {
+      "packageNo": "2023-032",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-032_01.pdf",
+      "dgDataId": "c559a2e2-1cb7-48ea-b0da-2cf5be8e58e7",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-032_01.pdf"
+    },
+    {
+      "packageNo": "2023-031",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-031_01.pdf",
+      "dgDataId": "e0ed9eca-c9ef-4364-a02d-cc93aaa31ce7",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-031_01.pdf"
+    },
+    {
+      "packageNo": "2023-030",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-030.pdf",
+      "dgDataId": "7607769d-6760-4661-ab8e-96b2b294536f",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-030.pdf"
+    },
+    {
+      "packageNo": "2023-029",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-029.pdf",
+      "dgDataId": "db346e91-982d-4642-97bc-c38496c5a340",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-029.pdf"
+    },
+    {
+      "packageNo": "2023-028",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-028.pdf",
+      "dgDataId": "48abc0f9-6e91-4b8b-bb94-05ba95d546ab",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-028.pdf"
+    },
+    {
+      "packageNo": "2023-027",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-027.pdf",
+      "dgDataId": "5ec4bedc-6043-4c1e-a5aa-2dd97fdb4bd0",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-027.pdf"
+    },
+    {
+      "packageNo": "2023-026",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-026_01.pdf",
+      "dgDataId": "e9bb413e-4652-48c7-9d23-c178fdc57a97",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-026_01.pdf"
+    },
+    {
+      "packageNo": "2023-025",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "09",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-025_09.pdf",
+      "dgDataId": "6555bfca-8018-4493-bfa4-6132cc9db2a1",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-025_09.pdf"
+    },
+    {
+      "packageNo": "2023-024",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-024.pdf",
+      "dgDataId": "dcea5ce1-eeb2-46e9-8e2a-590c5fa1fedd",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-024.pdf"
+    },
+    {
+      "packageNo": "2023-023",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-023.pdf",
+      "dgDataId": "8c6f6a21-e088-4b6a-95e0-74ce95b3eec3",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-023.pdf"
+    },
+    {
+      "packageNo": "2023-022",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-022.pdf",
+      "dgDataId": "b01a6cd0-dc7c-4d35-b5b2-d7db87c12ad9",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-022.pdf"
+    },
+    {
+      "packageNo": "2023-021",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "06",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-021_06.pdf",
+      "dgDataId": "9e4c6f76-4e0c-4678-a364-42fe54791e09",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-021_06.pdf"
+    },
+    {
+      "packageNo": "2023-020",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-020.pdf",
+      "dgDataId": "eac9af16-f997-4203-bb8f-92b1f56d781a",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-020.pdf"
+    },
+    {
+      "packageNo": "2023-019",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-019.pdf",
+      "dgDataId": "ac00fa00-bfc0-42a8-a6c5-921c062b5ed3",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-019.pdf"
+    },
+    {
+      "packageNo": "2023-018",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-018.pdf",
+      "dgDataId": "9367836f-c544-43ae-95aa-f0138f05a3b6",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-018.pdf"
+    },
+    {
+      "packageNo": "2023-017",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-017.pdf",
+      "dgDataId": "9a394138-9d21-4ecc-9df1-36088f14765d",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-017.pdf"
+    },
+    {
+      "packageNo": "2023-016",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-016.pdf",
+      "dgDataId": "78bf2b93-e328-47cf-bc1a-98783909b4d8",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-016.pdf"
+    },
+    {
+      "packageNo": "2023-015",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-015.pdf",
+      "dgDataId": "7681e1e7-7485-4665-bce9-719f59f276c9",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-015.pdf"
+    },
+    {
+      "packageNo": "2023-014",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-014.pdf",
+      "dgDataId": "72c9ca31-0b19-4367-8caa-99b0e2305106",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-014.pdf"
+    },
+    {
+      "packageNo": "2023-013",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-013.pdf",
+      "dgDataId": "e3da4c1c-f72b-4ab9-9bbe-f36eeac196b9",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-013.pdf"
+    },
+    {
+      "packageNo": "2023-012",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-012.pdf",
+      "dgDataId": "bb64f1ab-6964-4eb2-b548-e4ed2a4899c3",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-012.pdf"
+    },
+    {
+      "packageNo": "2023-011",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-011.pdf",
+      "dgDataId": "26c3ada0-222a-4413-9e86-a70679a55732",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-011.pdf"
+    },
+    {
+      "packageNo": "2023-010",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-010.pdf",
+      "dgDataId": "8f17e1eb-f58c-4141-bb40-0bc28ef68324",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-010.pdf"
+    },
+    {
+      "packageNo": "2023-009",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-009_01.pdf",
+      "dgDataId": "0001103f-7a43-4f58-82d8-15481c046fdf",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-009_01.pdf"
+    },
+    {
+      "packageNo": "2023-008",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-008.pdf",
+      "dgDataId": "2b5d3a0a-9d58-4311-a58b-389428a00f87",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-008.pdf"
+    },
+    {
+      "packageNo": "2023-007",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-007.pdf",
+      "dgDataId": "9bbc4b6c-af0b-4191-9e8c-449c9f666685",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-007.pdf"
+    },
+    {
+      "packageNo": "2023-006",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-006.pdf",
+      "dgDataId": "013c1ca7-7f3b-49b4-af81-5246006ab0dd",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-006.pdf"
+    },
+    {
+      "packageNo": "2023-005",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-005.pdf",
+      "dgDataId": "1281e1a7-178d-4a32-b5db-5bccd22bfe82",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-005.pdf"
+    },
+    {
+      "packageNo": "2023-004",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-004.pdf",
+      "dgDataId": "fcbdacf4-e2ea-4dde-b187-6413b006ebe9",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-004.pdf"
+    },
+    {
+      "packageNo": "2023-003",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-003.pdf",
+      "dgDataId": "c43ca12f-a32c-43dd-a7c3-5e3ed21fbba6",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-003.pdf"
+    },
+    {
+      "packageNo": "2023-002",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-002.pdf",
+      "dgDataId": "6542d011-dca1-495d-8837-3556ec1fa765",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-002.pdf"
+    },
+    {
+      "packageNo": "2023-001",
+      "polink": "Yonetim/MUSTERI_PO/2023/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2023\\2023-001.pdf",
+      "dgDataId": "96da0dfd-6f97-4feb-9bd2-dd25a7c7cfee",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2023\\2023-001.pdf"
+    },
+    {
+      "packageNo": "2022-099",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-099.pdf",
+      "dgDataId": "ff1b106c-5b69-4e34-b64c-0102f25dc6d7",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-099.pdf"
+    },
+    {
+      "packageNo": "2022-098",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": "04",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-098_04.pdf",
+      "dgDataId": "6a910c8f-b091-4852-a587-0928ff2e1443",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-098_04.pdf"
+    },
+    {
+      "packageNo": "2022-097",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": "02",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-097_02.pdf",
+      "dgDataId": "baa62968-b04e-4aea-a53d-d5f93ea91296",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-097_02.pdf"
+    },
+    {
+      "packageNo": "2022-096",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-096.pdf",
+      "dgDataId": "06ff633d-81ed-4262-bc0f-be7ab468a61a",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-096.pdf"
+    },
+    {
+      "packageNo": "2022-095",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-095.pdf",
+      "dgDataId": "593ae7d5-79ba-4287-9f95-011505696210",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-095.pdf"
+    },
+    {
+      "packageNo": "2022-094",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-094.pdf",
+      "dgDataId": "51e5bdd6-85bd-4e9b-977f-68a2f932683e",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-094.pdf"
+    },
+    {
+      "packageNo": "2022-093",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": "02",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-093_02.pdf",
+      "dgDataId": "0a6c284e-bf60-4407-905f-6e0e11b3f6a3",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-093_02.pdf"
+    },
+    {
+      "packageNo": "2022-091",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-091.pdf",
+      "dgDataId": "5670d672-26f9-452e-947f-06dabe986209",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-091.pdf"
+    },
+    {
+      "packageNo": "2022-090",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-090.pdf",
+      "dgDataId": "fbb47f4a-fe98-4866-b19b-57baf823c79f",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-090.pdf"
+    },
+    {
+      "packageNo": "2022-089",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-089.pdf",
+      "dgDataId": "58be4532-4dd8-4bd9-8752-3bc8c549198e",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-089.pdf"
+    },
+    {
+      "packageNo": "2022-087",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-087.pdf",
+      "dgDataId": "0927430a-7dd1-4a8d-96f2-a53cd064e869",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-087.pdf"
+    },
+    {
+      "packageNo": "2022-086",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-086_01.pdf",
+      "dgDataId": "31aa8bc6-c9b7-4940-85c9-d8407c547416",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-086_01.pdf"
+    },
+    {
+      "packageNo": "2022-085",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-085_01.pdf",
+      "dgDataId": "fdca6f36-03f0-4172-baf3-9e31664f694b",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-085_01.pdf"
+    },
+    {
+      "packageNo": "2022-084",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-084.pdf",
+      "dgDataId": "050eb2bf-6fe2-485a-85dc-8cd8ea1d4242",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-084.pdf"
+    },
+    {
+      "packageNo": "2022-083",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-083_01.pdf",
+      "dgDataId": "c1c248ff-190b-464d-9545-4c37ee5b48e2",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-083_01.pdf"
+    },
+    {
+      "packageNo": "2022-082",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-082.pdf",
+      "dgDataId": "878adc44-18a9-4947-96bf-cdc73b36b685",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-082.pdf"
+    },
+    {
+      "packageNo": "2022-081",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-081.pdf",
+      "dgDataId": "ca192bee-2377-43bf-bf37-d71e1e00d53c",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-081.pdf"
+    },
+    {
+      "packageNo": "2022-080",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-080.pdf",
+      "dgDataId": "c7cc6193-2def-42a3-a2c2-d5d7d5fa5c4f",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-080.pdf"
+    },
+    {
+      "packageNo": "2022-079",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-079.pdf",
+      "dgDataId": "db932521-c43f-4917-bfeb-9f69ce804b88",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-079.pdf"
+    },
+    {
+      "packageNo": "2022-078",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-078.pdf",
+      "dgDataId": "b1d206cf-6c29-43e7-8c88-4fe7ce9220c5",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-078.pdf"
+    },
+    {
+      "packageNo": "2022-077",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-077.pdf",
+      "dgDataId": "612f0348-7b96-4345-a396-4023bccb6a31",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-077.pdf"
+    },
+    {
+      "packageNo": "2022-076",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-076.pdf",
+      "dgDataId": "c1d36a06-1399-4866-a8e6-989a76b65f0c",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-076.pdf"
+    },
+    {
+      "packageNo": "2022-075",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": "02",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-075_02.pdf",
+      "dgDataId": "a52529b0-57a5-45a5-bd79-20041fe814c7",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-075_02.pdf"
+    },
+    {
+      "packageNo": "2022-074",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-074.pdf",
+      "dgDataId": "8f95d06e-c077-47f6-a0a0-92f5a1f28609",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-074.pdf"
+    },
+    {
+      "packageNo": "2022-073",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-073.pdf",
+      "dgDataId": "ddfc506e-e6d9-4537-b03b-d84d18fd213f",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-073.pdf"
+    },
+    {
+      "packageNo": "2022-072",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-072.pdf",
+      "dgDataId": "35c32275-cf66-44e5-a49f-eca15386a6c4",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-072.pdf"
+    },
+    {
+      "packageNo": "2022-071",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-071.pdf",
+      "dgDataId": "9cd38bf6-2350-4356-bd53-4fc03e16dbed",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-071.pdf"
+    },
+    {
+      "packageNo": "2022-070",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-070.pdf",
+      "dgDataId": "c048daee-562e-4377-9928-0314098ba600",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-070.pdf"
+    },
+    {
+      "packageNo": "2022-069",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-069.pdf",
+      "dgDataId": "60768b2b-0af9-4ad3-b9b5-179f166db416",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-069.pdf"
+    },
+    {
+      "packageNo": "2022-068",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-068.pdf",
+      "dgDataId": "f62bee11-800a-4ee0-bda3-f7c80121eee9",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-068.pdf"
+    },
+    {
+      "packageNo": "2022-067",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": "02",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-067_02.pdf",
+      "dgDataId": "fa5d027f-98dd-468b-8f44-98f7412876ba",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-067_02.pdf"
+    },
+    {
+      "packageNo": "2022-066",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-066.pdf",
+      "dgDataId": "0ed79cbd-3661-4a1e-8a06-c438088020ae",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-066.pdf"
+    },
+    {
+      "packageNo": "2022-065",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-065.pdf",
+      "dgDataId": "29d1e707-e937-4069-982c-efeafc6b2684",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-065.pdf"
+    },
+    {
+      "packageNo": "2022-064",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-064_01.pdf",
+      "dgDataId": "f750aaeb-a82c-45b5-9507-0ffbdff041c8",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-064_01.pdf"
+    },
+    {
+      "packageNo": "2022-063",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-063.pdf",
+      "dgDataId": "a7b801fd-8784-4668-84b2-a3cfc68f9962",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-063.pdf"
+    },
+    {
+      "packageNo": "2022-062",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-062_01.pdf",
+      "dgDataId": "69c6611f-4e98-41b5-b0b3-8481bc18abaf",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-062_01.pdf"
+    },
+    {
+      "packageNo": "2022-061",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-061.pdf",
+      "dgDataId": "82b04a87-1a71-40e1-a885-632f4d09d92e",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-061.pdf"
+    },
+    {
+      "packageNo": "2022-060",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-060.pdf",
+      "dgDataId": "f87c90fb-e6c3-44d1-98f8-7c11e47a61d4",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-060.pdf"
+    },
+    {
+      "packageNo": "2022-059",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-059.pdf",
+      "dgDataId": "3ed16309-60d8-42af-ae87-5cfea252bd28",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-059.pdf"
+    },
+    {
+      "packageNo": "2022-058",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-058.pdf",
+      "dgDataId": "5f095a04-8c64-4a83-a8fa-16c225c6c577",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-058.pdf"
+    },
+    {
+      "packageNo": "2022-057",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-057_01.pdf",
+      "dgDataId": "b0d533a2-1513-452d-b227-1fd71c73df4f",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-057_01.pdf"
+    },
+    {
+      "packageNo": "2022-056",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-056.pdf",
+      "dgDataId": "abf42bda-4e88-4853-9f58-d2839ac68829",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-056.pdf"
+    },
+    {
+      "packageNo": "2022-055",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-055.pdf",
+      "dgDataId": "a5167def-f6bc-44ec-9c33-610f2c1355a5",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-055.pdf"
+    },
+    {
+      "packageNo": "2022-054",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-054.pdf",
+      "dgDataId": "d5d846a8-252b-4aa5-a42b-aebcf4212025",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-054.pdf"
+    },
+    {
+      "packageNo": "2022-053",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-053.pdf",
+      "dgDataId": "6c250c47-353e-420e-975b-9b876bae243b",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-053.pdf"
+    },
+    {
+      "packageNo": "2022-052",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-052.pdf",
+      "dgDataId": "c785f385-cc2c-4167-ad12-df332273dfdc",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-052.pdf"
+    },
+    {
+      "packageNo": "2022-051",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-051.pdf",
+      "dgDataId": "553cfcd3-9f3a-4426-887f-a5f24e50782e",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-051.pdf"
+    },
+    {
+      "packageNo": "2022-050",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-050.pdf",
+      "dgDataId": "4a5ae604-b642-48d5-afc2-10e5c851d3f8",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-050.pdf"
+    },
+    {
+      "packageNo": "2022-049",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-049.pdf",
+      "dgDataId": "e1b7b957-fe3d-48a0-967e-ed11ba048171",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-049.pdf"
+    },
+    {
+      "packageNo": "2022-048",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-048.pdf",
+      "dgDataId": "2d116918-7d02-4183-8216-77db733a2a70",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-048.pdf"
+    },
+    {
+      "packageNo": "2022-047",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-047.pdf",
+      "dgDataId": "adb8b741-fc33-4526-ad43-9d8f89096b6c",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-047.pdf"
+    },
+    {
+      "packageNo": "2022-046",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-046_01.pdf",
+      "dgDataId": "439f406a-a29f-4b70-8889-c31686686394",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-046_01.pdf"
+    },
+    {
+      "packageNo": "2022-045",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": "21",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-045_21.pdf",
+      "dgDataId": "b19e1f62-55df-4219-bf3b-3211117be796",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-045_21.pdf"
+    },
+    {
+      "packageNo": "2022-044",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-044.pdf",
+      "dgDataId": "345fccf0-b58f-42b2-b7f0-d45deef4f2eb",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-044.pdf"
+    },
+    {
+      "packageNo": "2022-043",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-043.pdf",
+      "dgDataId": "f1d9132a-dd64-4abd-8cd8-f4de68760445",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-043.pdf"
+    },
+    {
+      "packageNo": "2022-042",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": "14",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-042_14.pdf",
+      "dgDataId": "450e1538-26a1-4501-87b3-60d7dffd3eeb",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-042_14.pdf"
+    },
+    {
+      "packageNo": "2022-041",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-041.pdf",
+      "dgDataId": "f81272b1-737b-4038-a755-894746d92262",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-041.pdf"
+    },
+    {
+      "packageNo": "2022-040",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-040.pdf",
+      "dgDataId": "6b2f3669-2b76-484f-86f5-af6893772f4f",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-040.pdf"
+    },
+    {
+      "packageNo": "2022-039",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-039.pdf",
+      "dgDataId": "0780b00c-6d84-48e5-89ef-a09a927fb8b3",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-039.pdf"
+    },
+    {
+      "packageNo": "2022-038",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-038.pdf",
+      "dgDataId": "4e44f83d-01a7-490a-9c85-636d64ff7de1",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-038.pdf"
+    },
+    {
+      "packageNo": "2022-037",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-037.pdf",
+      "dgDataId": "d2bbd5b3-a021-4926-9c1b-e6ae41f95ccd",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-037.pdf"
+    },
+    {
+      "packageNo": "2022-036",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-036.pdf",
+      "dgDataId": "1fbc4b63-e578-4ce3-85ab-28d4c3b8d568",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-036.pdf"
+    },
+    {
+      "packageNo": "2022-035",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-035.pdf",
+      "dgDataId": "e78de5e1-0bb6-417c-930d-42233c67fc64",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-035.pdf"
+    },
+    {
+      "packageNo": "2022-034",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-034.pdf",
+      "dgDataId": "2e4b2008-7418-430a-9950-5d240c731429",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-034.pdf"
+    },
+    {
+      "packageNo": "2022-033",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-033.pdf",
+      "dgDataId": "23511b91-9864-4ccf-a136-fa7c5a9a4d63",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-033.pdf"
+    },
+    {
+      "packageNo": "2022-032",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-032.pdf",
+      "dgDataId": "37822476-64a1-4888-98ff-2cb7852f6b6f",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-032.pdf"
+    },
+    {
+      "packageNo": "2022-031",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-031.pdf",
+      "dgDataId": "4e27f64f-af21-49f9-964a-e32d2deef1b3",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-031.pdf"
+    },
+    {
+      "packageNo": "2022-030",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-030_01.pdf",
+      "dgDataId": "6c787f26-7732-4735-9909-42f5c0b1e757",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-030_01.pdf"
+    },
+    {
+      "packageNo": "2022-028",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-028.pdf",
+      "dgDataId": "1bd614b6-7708-4819-8e4b-22a73bf457ba",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-028.pdf"
+    },
+    {
+      "packageNo": "2022-027",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-027.pdf",
+      "dgDataId": "07557b8e-6667-44bb-98a4-fed4f9745a74",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-027.pdf"
+    },
+    {
+      "packageNo": "2022-026",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-026.pdf",
+      "dgDataId": "0d533b02-ba4b-404a-91fd-491d107e6868",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-026.pdf"
+    },
+    {
+      "packageNo": "2022-025",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": "02",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-025_02.pdf",
+      "dgDataId": "0cedbbb2-f7cf-49fd-832a-45425f22158d",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-025_02.pdf"
+    },
+    {
+      "packageNo": "2022-024",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-024.pdf",
+      "dgDataId": "108d6855-d826-472e-9dbe-0468ca4fa958",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-024.pdf"
+    },
+    {
+      "packageNo": "2022-023",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-023.pdf",
+      "dgDataId": "f5c6122e-3b7d-47ec-8d02-6ddc4903e433",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-023.pdf"
+    },
+    {
+      "packageNo": "2022-022",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-022.pdf",
+      "dgDataId": "5345ed67-3fda-4af1-b882-62ec53882e28",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-022.pdf"
+    },
+    {
+      "packageNo": "2022-021",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-021.pdf",
+      "dgDataId": "bae66de2-1d81-4b48-bf7a-d504c1e7ee64",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-021.pdf"
+    },
+    {
+      "packageNo": "2022-020",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-020.pdf",
+      "dgDataId": "f8822743-ade8-4bf8-b799-611cdf39ba63",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-020.pdf"
+    },
+    {
+      "packageNo": "2022-019",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-019.pdf",
+      "dgDataId": "b0551f25-7cef-4928-849d-f1a718dbf6d7",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-019.pdf"
+    },
+    {
+      "packageNo": "2022-018",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-018.pdf",
+      "dgDataId": "356c7673-324e-4068-9103-d5199e3727cd",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-018.pdf"
+    },
+    {
+      "packageNo": "2022-017",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-017_01.pdf",
+      "dgDataId": "cfbff999-e644-4655-bc6c-0079576911ee",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-017_01.pdf"
     },
     {
       "packageNo": "2022-016",
@@ -17,7 +3613,7 @@
       "poVersion": null,
       "status": "ok",
       "message": "Yuklendi",
-      "dgDataId": "037c3a2c-47ed-4835-9bc0-fd648e26e9cd",
+      "dgDataId": "4685dd6e-4cca-4d37-8e4a-f44bd14c1258",
       "fileName": "2022-016.pdf",
       "fileBytes": 599760
     },
@@ -27,7 +3623,7 @@
       "poVersion": null,
       "status": "ok",
       "message": "Yuklendi",
-      "dgDataId": "b2931d36-b30b-44ba-bf19-c4e692b4a460",
+      "dgDataId": "f5d460bb-5d2b-4f16-bc1f-8ed092737501",
       "fileName": "2022-015.pdf",
       "fileBytes": 596445
     },
@@ -37,7 +3633,7 @@
       "poVersion": null,
       "status": "ok",
       "message": "Yuklendi",
-      "dgDataId": "8f7f1011-d7e2-4267-82da-314cd22fe5f7",
+      "dgDataId": "00ef0243-7551-4698-a2bc-42b33acf67f6",
       "fileName": "2022-014.pdf",
       "fileBytes": 137721
     },
@@ -47,7 +3643,7 @@
       "poVersion": null,
       "status": "ok",
       "message": "Yuklendi",
-      "dgDataId": "f58dab46-faee-4f0e-96e3-b4ef72d3b22c",
+      "dgDataId": "c7f9ad20-3cfe-49b3-a29c-93a67588cc71",
       "fileName": "2022-013.pdf",
       "fileBytes": 137848
     },
@@ -57,9 +3653,108 @@
       "poVersion": null,
       "status": "ok",
       "message": "Yuklendi",
-      "dgDataId": "da050de4-fbd7-431f-a2fa-a108e8989b98",
+      "dgDataId": "c27984cf-73fd-44a1-bf76-a1b5953fde88",
       "fileName": "2022-012.pdf",
       "fileBytes": 137708
+    },
+    {
+      "packageNo": "2022-011",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-011.pdf",
+      "dgDataId": "69382ab0-abb3-4d87-ae65-925cb3d241e8",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-011.pdf"
+    },
+    {
+      "packageNo": "2022-010",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-010.pdf",
+      "dgDataId": "bed0820a-897b-4f16-bf7f-4cfc67c0fc73",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-010.pdf"
+    },
+    {
+      "packageNo": "2022-009",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-009.pdf",
+      "dgDataId": "7cbe14fe-2420-484a-ae56-2bfe7cdc06bd",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-009.pdf"
+    },
+    {
+      "packageNo": "2022-008",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-008.pdf",
+      "dgDataId": "b15a0d83-45db-4eb6-a623-a7baf4c59555",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-008.pdf"
+    },
+    {
+      "packageNo": "2022-007",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-007.pdf",
+      "dgDataId": "753af043-f57b-472d-953a-058da6e43db1",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-007.pdf"
+    },
+    {
+      "packageNo": "2022-006",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-006.pdf",
+      "dgDataId": "c561ce9c-9958-44b5-aa59-518742e7dc36",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-006.pdf"
+    },
+    {
+      "packageNo": "2022-005",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-005.pdf",
+      "dgDataId": "12516c34-d0fe-46eb-8e59-4ddd71144e26",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-005.pdf"
+    },
+    {
+      "packageNo": "2022-004",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-004_01.pdf",
+      "dgDataId": "026efb78-6d6e-4a7a-adc7-2f5e96438307",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-004_01.pdf"
+    },
+    {
+      "packageNo": "2022-003",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-003.pdf",
+      "dgDataId": "bbfad1f8-bd6a-4f14-8d74-9eb4cfc111cc",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-003.pdf"
+    },
+    {
+      "packageNo": "2022-002",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-002.pdf",
+      "dgDataId": "7a394189-5a9b-4b23-8608-9e87817cff89",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-002.pdf"
+    },
+    {
+      "packageNo": "2022-001",
+      "polink": "Yonetim/MUSTERI_PO/2022/",
+      "poVersion": "02",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2022\\2022-001_02.pdf",
+      "dgDataId": "7b3525a6-0911-40bf-8767-c956721f1af3",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2022\\2022-001_02.pdf"
     },
     {
       "packageNo": "2021-067",
@@ -67,19 +3762,1512 @@
       "poVersion": "2",
       "status": "ok",
       "message": "Yuklendi",
-      "dgDataId": "e638f4df-72a7-4fe5-943a-3d30adf53e12",
+      "dgDataId": "6ec3ef3c-207e-491d-bb0f-8ffb80e9a937",
       "fileName": "2021-067_2.pdf",
       "fileBytes": 54537
+    },
+    {
+      "packageNo": "2021-066",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-066.pdf",
+      "dgDataId": "aec788b3-60e1-41fc-a996-8d14c9f675d5",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-066.pdf"
+    },
+    {
+      "packageNo": "2021-065",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-065.pdf",
+      "dgDataId": "1c49fdae-d53f-4960-972f-eb402f5b6b8f",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-065.pdf"
+    },
+    {
+      "packageNo": "2021-064",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-064.pdf",
+      "dgDataId": "4e265cd9-2da9-4c76-9372-a2cfe8408685",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-064.pdf"
+    },
+    {
+      "packageNo": "2021-063",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-063.pdf",
+      "dgDataId": "7634c63a-3b3e-4b46-bbde-19c23e137214",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-063.pdf"
+    },
+    {
+      "packageNo": "2021-062",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-062.pdf",
+      "dgDataId": "ce995b1f-3ad0-4439-9c0f-622bb3e95634",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-062.pdf"
+    },
+    {
+      "packageNo": "2021-060",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-060.pdf",
+      "dgDataId": "e1be795a-f787-4f50-aa21-d294c26c3669",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-060.pdf"
+    },
+    {
+      "packageNo": "2021-061",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-061.pdf",
+      "dgDataId": "63a7452f-c416-4b3c-b0d4-356a7cc7184d",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-061.pdf"
+    },
+    {
+      "packageNo": "2021-059",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": "02",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-059_02.pdf",
+      "dgDataId": "85f95675-8edf-4051-8c2c-ab191d7e2ade",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-059_02.pdf"
+    },
+    {
+      "packageNo": "2021-058",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-058.pdf",
+      "dgDataId": "351243ff-c777-49cd-8a13-0b94af63a7e9",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-058.pdf"
+    },
+    {
+      "packageNo": "2021-057",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-057_01.pdf",
+      "dgDataId": "8bc0cc94-1d04-4fc1-a40b-4acad1530998",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-057_01.pdf"
+    },
+    {
+      "packageNo": "2021-056",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-056.pdf",
+      "dgDataId": "9a6982f5-1075-4a7f-a11f-e6c6523f9e7d",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-056.pdf"
+    },
+    {
+      "packageNo": "2021-055",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-055_01.pdf",
+      "dgDataId": "ea2ca63a-6fd3-4826-8a96-3bb72f19d3a7",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-055_01.pdf"
+    },
+    {
+      "packageNo": "2021-054",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-054.pdf",
+      "dgDataId": "ff6adddf-fa8d-4ec3-89cc-3e7ab3145ace",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-054.pdf"
+    },
+    {
+      "packageNo": "2021-053",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-053_01.pdf",
+      "dgDataId": "2bffb382-c605-4f0f-ad05-09885df5cc9d",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-053_01.pdf"
+    },
+    {
+      "packageNo": "2021-052",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-052.pdf",
+      "dgDataId": "09536505-896f-4f98-83f6-00642fbf2d0c",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-052.pdf"
+    },
+    {
+      "packageNo": "2021-051",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-051.pdf",
+      "dgDataId": "88c4e8a9-c489-434c-9665-2f779deece08",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-051.pdf"
+    },
+    {
+      "packageNo": "2021-050",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-050.pdf",
+      "dgDataId": "85687f0b-c4df-4d56-8118-b8768fffaebf",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-050.pdf"
+    },
+    {
+      "packageNo": "2021-049",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-049.pdf",
+      "dgDataId": "70600b4d-82b1-4aba-baa8-ea4dc562c0ae",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-049.pdf"
+    },
+    {
+      "packageNo": "2021-048",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-048.pdf",
+      "dgDataId": "fa8a98f4-ed8d-4323-b3c5-caf1ef59569d",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-048.pdf"
+    },
+    {
+      "packageNo": "2021-047",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-047_01.pdf",
+      "dgDataId": "744a388d-7a34-44db-b416-d40be9976b0d",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-047_01.pdf"
+    },
+    {
+      "packageNo": "2021-045",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-045.pdf",
+      "dgDataId": "934fbd1a-5a86-4f5d-82bb-99577036b05e",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-045.pdf"
+    },
+    {
+      "packageNo": "2021-044",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": "02",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-044_02.pdf",
+      "dgDataId": "f709eb68-38d3-4535-a0a8-b3b57f0ceb3a",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-044_02.pdf"
+    },
+    {
+      "packageNo": "2021-043",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": "2",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-043_2.pdf",
+      "dgDataId": "0cb6a129-7f34-46af-8d30-cecc83985412",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-043_2.pdf"
+    },
+    {
+      "packageNo": "2021-042",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-042.pdf",
+      "dgDataId": "a8505bd7-d992-4037-8db8-b497106f8645",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-042.pdf"
+    },
+    {
+      "packageNo": "2021-041",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-041.pdf",
+      "dgDataId": "a7df87a5-014b-4897-8b07-c563fcff1abd",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-041.pdf"
+    },
+    {
+      "packageNo": "2021-040",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-040.pdf",
+      "dgDataId": "ff86942f-837e-429a-bc1a-ebfdc88a1c6b",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-040.pdf"
+    },
+    {
+      "packageNo": "2021-039",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-039.pdf",
+      "dgDataId": "696286ba-a0ab-41cc-bdc6-45879af54ead",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-039.pdf"
+    },
+    {
+      "packageNo": "2021-038",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-038.pdf",
+      "dgDataId": "d2f23581-7716-4892-87f9-c2b3cd08e2fb",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-038.pdf"
+    },
+    {
+      "packageNo": "2021-037",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-037_01.pdf",
+      "dgDataId": "9273683a-56f9-46f4-b1ae-60e393ed9cfe",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-037_01.pdf"
+    },
+    {
+      "packageNo": "2021-036",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-036.pdf",
+      "dgDataId": "24b0521a-7a01-4a44-a5d1-4c12f16b67c5",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-036.pdf"
+    },
+    {
+      "packageNo": "2021-035",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-035.pdf",
+      "dgDataId": "f1d65bf1-73b1-43e8-97e5-d19e9f51855c",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-035.pdf"
+    },
+    {
+      "packageNo": "2021-034",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-034.pdf",
+      "dgDataId": "9db74fff-f467-4645-bee8-85d4ba35d560",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-034.pdf"
+    },
+    {
+      "packageNo": "2021-033",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-033.pdf",
+      "dgDataId": "43d2bb68-46e2-457f-9a07-02b2dd9e8c79",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-033.pdf"
+    },
+    {
+      "packageNo": "2021-032",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-032.pdf",
+      "dgDataId": "fe1deb8c-c0d0-4fa8-a4e8-b6b058f42786",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-032.pdf"
+    },
+    {
+      "packageNo": "2021-031",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-031.pdf",
+      "dgDataId": "d1a00172-fa6e-4e3f-8290-b94ff86e5526",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-031.pdf"
+    },
+    {
+      "packageNo": "2021-030",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-030.pdf",
+      "dgDataId": "f213f761-043b-443e-bd7e-b18720c351f5",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-030.pdf"
+    },
+    {
+      "packageNo": "2021-029",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-029.pdf",
+      "dgDataId": "fdb23c53-81a6-4a67-ba00-92be69c634c6",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-029.pdf"
+    },
+    {
+      "packageNo": "2021-028",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-028.pdf",
+      "dgDataId": "184f01ce-fa91-48e0-ad7d-04f4276c1d67",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-028.pdf"
+    },
+    {
+      "packageNo": "2021-027",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-027.pdf",
+      "dgDataId": "ad07a388-a609-4c1c-8bb5-a5646861b6e4",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-027.pdf"
+    },
+    {
+      "packageNo": "2021-026",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-026.pdf",
+      "dgDataId": "e617757b-97ab-4a52-9bfe-76a24b046f31",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-026.pdf"
+    },
+    {
+      "packageNo": "2021-025",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": "02",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-025_02.pdf",
+      "dgDataId": "46ad37df-2145-435d-823c-1d2ffd356ad8",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-025_02.pdf"
+    },
+    {
+      "packageNo": "2021-024",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": "05",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-024_05.pdf",
+      "dgDataId": "1c09e646-cd09-4db0-a676-d7eb3d856de7",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-024_05.pdf"
+    },
+    {
+      "packageNo": "2021-023",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-023.pdf",
+      "dgDataId": "65681f14-9714-4d77-a4cc-a93c64204559",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-023.pdf"
+    },
+    {
+      "packageNo": "2021-022",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-022.pdf",
+      "dgDataId": "573643a5-b45d-4de8-96b1-327a50260338",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-022.pdf"
+    },
+    {
+      "packageNo": "2021-021",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-021.pdf",
+      "dgDataId": "54462ce6-d26b-428a-85a2-f43f69adb192",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-021.pdf"
+    },
+    {
+      "packageNo": "2021-020",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-020.pdf",
+      "dgDataId": "ed98435e-45ce-4b64-bb42-d0735edb5551",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-020.pdf"
+    },
+    {
+      "packageNo": "2021-019",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-019.pdf",
+      "dgDataId": "c01158e9-a2b6-4ad7-bc18-5e9c67f0e411",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-019.pdf"
+    },
+    {
+      "packageNo": "2021-018",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-018.pdf",
+      "dgDataId": "14986c36-1511-42c4-a8e7-b782f03a9fe4",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-018.pdf"
+    },
+    {
+      "packageNo": "2021-017",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-017.pdf",
+      "dgDataId": "2ce19578-d093-41a2-9eee-7c37f66b780c",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-017.pdf"
+    },
+    {
+      "packageNo": "2021-016",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-016.pdf",
+      "dgDataId": "3e326756-261a-4160-b541-2c534346054a",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-016.pdf"
+    },
+    {
+      "packageNo": "2021-015",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": "04",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-015_04.pdf",
+      "dgDataId": "2055dbf1-1c06-44a8-b9fb-8d81c8bca4cb",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-015_04.pdf"
+    },
+    {
+      "packageNo": "2021-014",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-014.pdf",
+      "dgDataId": "107a3dd3-7e66-43e4-9a09-c2fafa2607dd",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-014.pdf"
+    },
+    {
+      "packageNo": "2021-013",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-013.pdf",
+      "dgDataId": "c536950e-9a3c-4d5c-9e08-9cec13b4d20e",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-013.pdf"
+    },
+    {
+      "packageNo": "2021-012",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": "1",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-012_1.pdf",
+      "dgDataId": "5ab3cccb-6932-4e63-91bc-57f5c2843d73",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-012_1.pdf"
+    },
+    {
+      "packageNo": "2021-011",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-011.pdf",
+      "dgDataId": "5dfd104f-b340-4a14-8d31-ffea8b3ee37c",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-011.pdf"
+    },
+    {
+      "packageNo": "2021-010",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-010.pdf",
+      "dgDataId": "03a3c812-cf8d-4e80-a7ca-4e73c53c1e28",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-010.pdf"
+    },
+    {
+      "packageNo": "2021-009",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": "02",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-009_02.pdf",
+      "dgDataId": "3448e6b1-168a-402f-b5bf-57c6aa6170b3",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-009_02.pdf"
+    },
+    {
+      "packageNo": "2021-008",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-008.pdf",
+      "dgDataId": "8013c181-ad03-4b78-b467-199003009e78",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-008.pdf"
+    },
+    {
+      "packageNo": "2021-007",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-007.pdf",
+      "dgDataId": "43036b5a-2352-467e-8ced-1966f814da5f",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-007.pdf"
+    },
+    {
+      "packageNo": "2021-006",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-006.pdf",
+      "dgDataId": "80d0f62e-eccd-485a-99d9-71fac7e45147",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-006.pdf"
+    },
+    {
+      "packageNo": "2021-005",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-005.pdf",
+      "dgDataId": "9c21a164-64c7-4c81-93f8-5f4e91c6238e",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-005.pdf"
+    },
+    {
+      "packageNo": "2021-004",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-004_01.pdf",
+      "dgDataId": "dc304c8f-4c61-48f0-90ed-9c3045c44b6f",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-004_01.pdf"
+    },
+    {
+      "packageNo": "2021-003",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": "AA",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-003_AA.pdf",
+      "dgDataId": "0a39caeb-0af8-490f-9f2d-b0c754a925c7",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-003_AA.pdf"
+    },
+    {
+      "packageNo": "2021-002",
+      "polink": "Yonetim/MUSTERI_PO/2021/",
+      "poVersion": "03",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2021\\2021-002_03.pdf",
+      "dgDataId": "bde27269-d3e5-46cc-8cd5-19a8fc19c367",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2021\\2021-002_03.pdf"
+    },
+    {
+      "packageNo": "2020-055",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-055_01.pdf",
+      "dgDataId": "93752a72-94fb-49bd-b8ad-5cfc0c2f6151",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-055_01.pdf"
+    },
+    {
+      "packageNo": "2020-054",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-054_0.pdf",
+      "dgDataId": "22948fb4-0f49-493a-aa89-bffa96a8cab9",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-054_0.pdf"
+    },
+    {
+      "packageNo": "2020-053",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-053_0.pdf",
+      "dgDataId": "8861b06b-0f1e-495d-a9e2-eb28862b4e78",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-053_0.pdf"
+    },
+    {
+      "packageNo": "2020-052",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "05",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-052_05.pdf",
+      "dgDataId": "95702333-806f-4c08-8005-14aecda07898",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-052_05.pdf"
+    },
+    {
+      "packageNo": "2020-051",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-051.pdf",
+      "dgDataId": "d4a96592-a669-45b0-b236-46a614306078",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-051.pdf"
+    },
+    {
+      "packageNo": "2020-050",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-050_0.pdf",
+      "dgDataId": "bda71b22-9973-4695-a422-a0f665dfae49",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-050_0.pdf"
+    },
+    {
+      "packageNo": "2020-049",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-049_0.pdf",
+      "dgDataId": "47e5e271-6ddf-494c-8ccc-724673ab36d9",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-049_0.pdf"
+    },
+    {
+      "packageNo": "2020-048",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-048.pdf",
+      "dgDataId": "f394ded0-24e6-48cd-b59d-c14ffef05e08",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-048.pdf"
+    },
+    {
+      "packageNo": "2020-047",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-047.pdf",
+      "dgDataId": "6ab7886c-a45c-4365-9710-4da8eeefdcc7",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-047.pdf"
+    },
+    {
+      "packageNo": "2020-045",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-045.pdf",
+      "dgDataId": "bc2afdf5-cbba-4c05-9552-492978c78a7a",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-045.pdf"
+    },
+    {
+      "packageNo": "2020-044",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-044_0.pdf",
+      "dgDataId": "b58c16bb-cede-4341-91b3-308f5ca3f1ef",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-044_0.pdf"
+    },
+    {
+      "packageNo": "2020-042",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-042_0.pdf",
+      "dgDataId": "f5686447-c6ed-4b83-af51-c6947df99b2e",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-042_0.pdf"
+    },
+    {
+      "packageNo": "2020-041",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-041_0.pdf",
+      "dgDataId": "38278e32-493a-4b27-87fe-71af8d7786dc",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-041_0.pdf"
+    },
+    {
+      "packageNo": "2020-040",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-040_0.pdf",
+      "dgDataId": "d3e641fa-b877-4a45-be2a-4c2d036d30d9",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-040_0.pdf"
+    },
+    {
+      "packageNo": "2020-039",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "01",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-039_01.pdf",
+      "dgDataId": "3a9f9f1a-7cf3-4f47-897e-eb1a5f875ad0",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-039_01.pdf"
+    },
+    {
+      "packageNo": "2020-038",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-038_0.pdf",
+      "dgDataId": "5ee93b26-0220-4f3a-b4dd-4dff178c95f6",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-038_0.pdf"
+    },
+    {
+      "packageNo": "2020-037",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-037_0.pdf",
+      "dgDataId": "8a120ae8-feea-467b-9b7b-3230204919cc",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-037_0.pdf"
+    },
+    {
+      "packageNo": "2020-031",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-031_0.pdf",
+      "dgDataId": "12bc6083-2409-4af1-97e9-ca25c16812e2",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-031_0.pdf"
+    },
+    {
+      "packageNo": "2020-036",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-036_0.pdf",
+      "dgDataId": "0e55f5f3-ede5-47e3-8c8e-29461a0b601d",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-036_0.pdf"
+    },
+    {
+      "packageNo": "2020-035",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-035_0.pdf",
+      "dgDataId": "8120b193-fc6b-436f-8776-d3a905c111b4",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-035_0.pdf"
+    },
+    {
+      "packageNo": "2020-034",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-034_0.pdf",
+      "dgDataId": "85dcf368-9149-450f-9d54-564b9686d1c8",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-034_0.pdf"
+    },
+    {
+      "packageNo": "2020-033",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-033_0.pdf",
+      "dgDataId": "949aff28-a47e-4323-812c-12db45d36685",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-033_0.pdf"
+    },
+    {
+      "packageNo": "2020-032",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "2",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-032_2.pdf",
+      "dgDataId": "c1e189e6-be61-4f49-9b25-6de39be382f0",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-032_2.pdf"
+    },
+    {
+      "packageNo": "2020-030",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "7",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-030_7.pdf",
+      "dgDataId": "598e3a82-ff64-4c4e-ab0b-87f9bc775432",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-030_7.pdf"
+    },
+    {
+      "packageNo": "2020-029",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-029_0.pdf",
+      "dgDataId": "8be53d89-3667-4d2d-8c2f-fdf0d18ad7b8",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-029_0.pdf"
+    },
+    {
+      "packageNo": "2020-028",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-028_0.pdf",
+      "dgDataId": "48402892-2c64-4f59-be3d-ca6545827eb7",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-028_0.pdf"
+    },
+    {
+      "packageNo": "2020-027",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "06",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-027_06.pdf",
+      "dgDataId": "a41af1ad-1364-4628-9354-7fd00ea57834",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-027_06.pdf"
+    },
+    {
+      "packageNo": "2020-026",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-026_0.pdf",
+      "dgDataId": "ee9d3796-1c32-4e1a-b8f3-fdbfcf3deb47",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-026_0.pdf"
+    },
+    {
+      "packageNo": "2020-025",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-025_0.pdf",
+      "dgDataId": "96d8de74-beb2-45bc-b0dc-89570c969728",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-025_0.pdf"
+    },
+    {
+      "packageNo": "2020-022",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-022.pdf",
+      "dgDataId": "70050ede-090e-41ce-a158-49c316a8eaba",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-022.pdf"
+    },
+    {
+      "packageNo": "2020-024",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-024_0.pdf",
+      "dgDataId": "7f849713-a7b1-4b8f-8ff8-c950221b09ec",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-024_0.pdf"
+    },
+    {
+      "packageNo": "2020-023",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-023_0.pdf",
+      "dgDataId": "99e8b22d-8d61-4298-a26b-572350c913b0",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-023_0.pdf"
+    },
+    {
+      "packageNo": "2020-021",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-021_0.pdf",
+      "dgDataId": "c8c4c186-b02b-4245-a0d4-a4e8ba74c387",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-021_0.pdf"
+    },
+    {
+      "packageNo": "2020-017",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-017_0.pdf",
+      "dgDataId": "3c7d4e24-06e0-4541-9337-965a5560a7d7",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-017_0.pdf"
+    },
+    {
+      "packageNo": "2020-016",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-016_0.pdf",
+      "dgDataId": "e82c3eb0-a890-4300-808a-c07ed986715c",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-016_0.pdf"
+    },
+    {
+      "packageNo": "2020-015",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-015_0.pdf",
+      "dgDataId": "36fcd990-8544-4c30-99b3-14af36ec4422",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-015_0.pdf"
+    },
+    {
+      "packageNo": "2020-013",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-013_0.pdf",
+      "dgDataId": "92dcd6e5-db4e-46e4-b743-0df702938a60",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-013_0.pdf"
+    },
+    {
+      "packageNo": "2020-012",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-012_0.pdf",
+      "dgDataId": "3d11c456-a958-4d56-b1e4-cac7443fd2c7",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-012_0.pdf"
+    },
+    {
+      "packageNo": "2020-011",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-011.pdf",
+      "dgDataId": "972975cd-a07b-43b9-93f9-722e8c3507f6",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-011.pdf"
+    },
+    {
+      "packageNo": "2020-010",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-010.pdf",
+      "dgDataId": "83be264c-f4fe-43fd-9d5a-3e7d51265e1d",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-010.pdf"
+    },
+    {
+      "packageNo": "2020-009",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-009_0.pdf",
+      "dgDataId": "22189022-35f9-4369-8145-d2609c2e08f6",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-009_0.pdf"
+    },
+    {
+      "packageNo": "2020-008",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-008.pdf",
+      "dgDataId": "0c22bf98-5fd2-435a-bb81-08dd9ed543e6",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-008.pdf"
+    },
+    {
+      "packageNo": "2020-006",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-006_0.pdf",
+      "dgDataId": "d4d3d0a1-fe27-475f-8086-1092e06ffae8",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-006_0.pdf"
+    },
+    {
+      "packageNo": "2020-002",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-002.pdf",
+      "dgDataId": "afb9fd39-8087-49ba-b6b9-20cfb30804cf",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-002.pdf"
+    },
+    {
+      "packageNo": "2020-003",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-003_0.pdf",
+      "dgDataId": "38b883f0-8dfc-49b5-9b17-d2ab6bf85088",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-003_0.pdf"
+    },
+    {
+      "packageNo": "2020-004",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "1",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2020-004_1.pdf",
+      "dgDataId": "366735a6-bc23-4709-bef6-6c04e8347dd4",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2020-004_1.pdf"
+    },
+    {
+      "packageNo": "2019-035",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-035.pdf",
+      "dgDataId": "0009c18d-f9b5-4afd-bfed-033711952040",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-035.pdf"
+    },
+    {
+      "packageNo": "2019-034",
+      "polink": "Yonetim/MUSTERI_PO/2020/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2020\\2019-034_0.pdf",
+      "dgDataId": "9154b097-ad71-43f1-9348-62c97298cdf0",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2020\\2019-034_0.pdf"
+    },
+    {
+      "packageNo": "2019-033",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "1",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-033_1.pdf",
+      "dgDataId": "ff447a31-ba07-47e8-a2fa-7eddeadc5a4a",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-033_1.pdf"
+    },
+    {
+      "packageNo": "2019-032",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-032_0.pdf",
+      "dgDataId": "ae0022b6-72dd-467d-a42b-57c762f0f935",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-032_0.pdf"
+    },
+    {
+      "packageNo": "2019-031",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-031_0.pdf",
+      "dgDataId": "9c103ab2-7fc4-4702-b8da-3e09b7163c04",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-031_0.pdf"
+    },
+    {
+      "packageNo": "2019-028",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-028.pdf",
+      "dgDataId": "f70ce15a-d764-4e32-a9e9-7c0fd97e8f80",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-028.pdf"
+    },
+    {
+      "packageNo": "2019-027",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-027_0.pdf",
+      "dgDataId": "aa5068d4-15e2-4d95-9a07-0905c8406d7c",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-027_0.pdf"
+    },
+    {
+      "packageNo": "2019-026",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-026_0.pdf",
+      "dgDataId": "f6930bf7-c55e-4c2a-9507-fa03a0cd3923",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-026_0.pdf"
+    },
+    {
+      "packageNo": "2019-025",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-025_0.pdf",
+      "dgDataId": "c218256b-0be7-4ff6-bddf-6eec3940f8f4",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-025_0.pdf"
+    },
+    {
+      "packageNo": "2019-024",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-024.pdf",
+      "dgDataId": "f1907a64-02f9-42fe-b0f5-c6b72c70d000",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-024.pdf"
+    },
+    {
+      "packageNo": "2019-023",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-023_0.pdf",
+      "dgDataId": "6a275457-22a4-4c09-be12-0e3b9d7bd03d",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-023_0.pdf"
+    },
+    {
+      "packageNo": "2019-019",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "4",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-019_4.pdf",
+      "dgDataId": "efb455f1-c50f-4158-876e-9c6bb5d1c0b3",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-019_4.pdf"
+    },
+    {
+      "packageNo": "2019-021",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-021_0.pdf",
+      "dgDataId": "afabb19b-9964-496b-90f1-75127739514f",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-021_0.pdf"
+    },
+    {
+      "packageNo": "2019-017",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-017_0.pdf",
+      "dgDataId": "10ed85fa-d8d1-40b3-902b-fdae8b6f712a",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-017_0.pdf"
+    },
+    {
+      "packageNo": "2019-016",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-016.pdf",
+      "dgDataId": "e1ef91df-fe95-4c70-bec9-0010de96ec6a",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-016.pdf"
+    },
+    {
+      "packageNo": "2019-015",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-015_0.pdf",
+      "dgDataId": "91eb103f-0abc-43c8-8009-b676bb3f46b9",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-015_0.pdf"
+    },
+    {
+      "packageNo": "2019-014",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-014.pdf",
+      "dgDataId": "c9010dfd-0235-4d67-87aa-2593b0cd8117",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-014.pdf"
+    },
+    {
+      "packageNo": "2019-010",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "20",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-010_20.pdf",
+      "dgDataId": "92e0e596-c4aa-484d-99f4-6bffe8325934",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-010_20.pdf"
+    },
+    {
+      "packageNo": "2019-013",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "1",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-013_1.pdf",
+      "dgDataId": "6eb01bd4-a035-4e8f-a509-c2dc923ab589",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-013_1.pdf"
+    },
+    {
+      "packageNo": "2019-012",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-012_0.pdf",
+      "dgDataId": "71b717a1-2bd7-4551-8806-09fe63d55e22",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-012_0.pdf"
+    },
+    {
+      "packageNo": "2019-011",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-011_0.pdf",
+      "dgDataId": "f09fcb84-95ad-4a6d-a7cc-1d03920cb10e",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-011_0.pdf"
+    },
+    {
+      "packageNo": "2019-009",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-009_0.pdf",
+      "dgDataId": "306cc6e3-701b-47e9-ac02-dae8af13f3e8",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-009_0.pdf"
+    },
+    {
+      "packageNo": "2019-008",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-008_0.pdf",
+      "dgDataId": "fe0a488c-cb59-4747-b6d9-ed2ceca6fd96",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-008_0.pdf"
+    },
+    {
+      "packageNo": "2019-007",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "3",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-007_3.pdf",
+      "dgDataId": "6134f6c4-bd54-4b44-a109-fff8d51bf485",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-007_3.pdf"
+    },
+    {
+      "packageNo": "2019-006",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-006_0.pdf",
+      "dgDataId": "6e1fb4de-60a6-4652-83f4-85f5ab43abaa",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-006_0.pdf"
+    },
+    {
+      "packageNo": "2019-005",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-005_0.pdf",
+      "dgDataId": "56c6e2f0-e624-4996-ae0c-df6a2b752c26",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-005_0.pdf"
+    },
+    {
+      "packageNo": "2019-004",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-004.pdf",
+      "dgDataId": "a079bb17-69a1-42fa-b3f1-e0d27c764728",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-004.pdf"
+    },
+    {
+      "packageNo": "2019-003",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-003.pdf",
+      "dgDataId": "143a9633-c62b-40bf-83f4-c214e8163213",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-003.pdf"
+    },
+    {
+      "packageNo": "2019-002",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-002_0.pdf",
+      "dgDataId": "e53a4c9d-1350-4d6f-b423-a69fb1ebb499",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-002_0.pdf"
+    },
+    {
+      "packageNo": "2019-001",
+      "polink": "Yonetim/MUSTERI_PO/2019/",
+      "poVersion": "2",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2019\\2019-001_2.pdf",
+      "dgDataId": "755d8711-62c1-46ad-bd19-b0935d267222",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2019\\2019-001_2.pdf"
+    },
+    {
+      "packageNo": "2018-039",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-039_0.pdf",
+      "dgDataId": "9b6e88a1-80a8-409b-8783-90db0067fccd",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-039_0.pdf"
+    },
+    {
+      "packageNo": "2018-041",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-041_0.pdf",
+      "dgDataId": "70066232-6569-46ff-b623-a9f413ae0bd4",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-041_0.pdf"
+    },
+    {
+      "packageNo": "2018-040",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": "2",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-040_2.pdf",
+      "dgDataId": "05b8b78e-acfb-4c2f-8aee-352acfc36049",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-040_2.pdf"
+    },
+    {
+      "packageNo": "2018-037",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-037_0.pdf",
+      "dgDataId": "53c936e2-cbdb-4d6c-897a-98c18e60fb69",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-037_0.pdf"
+    },
+    {
+      "packageNo": "2018-036",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-036_0.pdf",
+      "dgDataId": "8c01f0e2-e796-44f8-8e69-2c465be68367",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-036_0.pdf"
+    },
+    {
+      "packageNo": "2018-035",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": "0",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-035_0.pdf",
+      "dgDataId": "7316a809-05c7-46af-a0de-ab49d28cbb32",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-035_0.pdf"
+    },
+    {
+      "packageNo": "2018-034",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-034.pdf",
+      "dgDataId": "54666996-e9d7-496f-b3dd-eb741e13754d",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-034.pdf"
+    },
+    {
+      "packageNo": "2018-033",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": "1",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-033_1.pdf",
+      "dgDataId": "4dacecd6-2216-4238-81d3-e1347ba3ecf2",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-033_1.pdf"
+    },
+    {
+      "packageNo": "2018-032",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-032.pdf",
+      "dgDataId": "4bb4166e-8385-4f17-b4fc-a67867052e72",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-032.pdf"
+    },
+    {
+      "packageNo": "2018-031",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-031.pdf",
+      "dgDataId": "07072774-725d-4555-888e-ab12be43e304",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-031.pdf"
+    },
+    {
+      "packageNo": "2018-030",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-030.pdf",
+      "dgDataId": "5581d1c2-d203-40aa-8103-f36acb8c0563",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-030.pdf"
+    },
+    {
+      "packageNo": "2018-029",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-029.pdf",
+      "dgDataId": "b9898463-30f2-45ea-84be-7541c5ac08ca",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-029.pdf"
+    },
+    {
+      "packageNo": "2018-028",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-028.pdf",
+      "dgDataId": "bbfd6b90-e705-4cb5-95ac-95b1ea90a469",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-028.pdf"
+    },
+    {
+      "packageNo": "2018-027",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-027.pdf",
+      "dgDataId": "acc7388e-7133-431d-9634-21789b9db936",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-027.pdf"
+    },
+    {
+      "packageNo": "2018-025",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-025.pdf",
+      "dgDataId": "16a8cebb-b7e4-4279-9e4b-7f8ff9cce94e",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-025.pdf"
+    },
+    {
+      "packageNo": "2018-024",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": "24",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-024_24.pdf",
+      "dgDataId": "a55dc8ce-03f8-4074-906f-8b1ffde6eea2",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-024_24.pdf"
+    },
+    {
+      "packageNo": "2018-023",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-023.pdf",
+      "dgDataId": "521eed05-36d1-4b4c-b344-b17afcb6d172",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-023.pdf"
+    },
+    {
+      "packageNo": "2018-022",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": "1",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-022_1.pdf",
+      "dgDataId": "8d6f650a-9a9a-4b7b-abe0-54a6b7e33fe2",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-022_1.pdf"
+    },
+    {
+      "packageNo": "2018-021",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-021.pdf",
+      "dgDataId": "c13ca166-1045-4b0f-8fa0-07589ec50ead",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-021.pdf"
+    },
+    {
+      "packageNo": "2018-020",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-020.pdf",
+      "dgDataId": "fe651887-0027-4e88-a17e-4c00e1836e8c",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-020.pdf"
+    },
+    {
+      "packageNo": "2018-019",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": "2",
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-019_2.pdf",
+      "dgDataId": "23a895c1-18fd-4986-9309-462f116acc9c",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-019_2.pdf"
+    },
+    {
+      "packageNo": "2018-018",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-018.pdf",
+      "dgDataId": "51992e77-5fde-4a96-aa8e-d630d0624f7b",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-018.pdf"
+    },
+    {
+      "packageNo": "2018-016",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-016.pdf",
+      "dgDataId": "81af7088-284b-410a-b426-48e2598c8251",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-016.pdf"
+    },
+    {
+      "packageNo": "2018-017",
+      "polink": "Yonetim/MUSTERI_PO/2018/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2018\\2018-017.pdf",
+      "dgDataId": "56fdb23c-3584-4b6f-818d-d723e14bcb10",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2018\\2018-017.pdf"
+    },
+    {
+      "packageNo": "2017-015",
+      "polink": "Yonetim/MUSTERI_PO/2017/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2017\\2017-015.pdf",
+      "dgDataId": "875f0a57-c0d8-4bd4-ade0-d95f5641fa3d",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2017\\2017-015.pdf"
+    },
+    {
+      "packageNo": "IX05",
+      "polink": "Yonetim/MUSTERI_PO/2016/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2016\\IX05.pdf",
+      "dgDataId": "03c641a2-1a53-493d-b609-6a82861ce09d",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2016\\IX05.pdf"
+    },
+    {
+      "packageNo": "IX04",
+      "polink": "Yonetim/MUSTERI_PO/2016/",
+      "poVersion": null,
+      "status": "fileNotFound",
+      "message": "PDF yok: Yonetim\\MUSTERI_PO\\2016\\IX04.pdf",
+      "dgDataId": "f31dace1-35e5-433e-8565-0b1e1d5acccb",
+      "expectedRelativePath": "Yonetim\\MUSTERI_PO\\2016\\IX04.pdf"
     }
-  ],
-  "baseUrl": "http://192.168.20.20:5040",
-  "dryRun": false,
-  "legacyUploadRoot": "C:\\Users\\monitra\\kalite-legacy-local\\uploads",
-  "summary": {
-    "fileNotFound": 0,
-    "dgNotFound": 0,
-    "skipped": 0,
-    "ok": 7,
-    "failed": 0
-  }
+  ]
 }

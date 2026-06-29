@@ -30,26 +30,13 @@ $ocTokenScript = Join-Path $repoRoot "docs/odak/operationcore/scripts/load-opera
 $mappingFile = Join-Path $scriptDir "..\datasets\migration-mapping-dg.json"
 $firmMappingFile = Join-Path $scriptDir "..\datasets\migration-firm-mapping.json"
 
-$token = & $ocTokenScript
-if ([string]::IsNullOrEmpty($token)) { throw "Token alinamadi." }
-
-$headers = @{
-    "Authorization" = "Bearer $token"
-    "Content-Type"  = "application/json"
-}
+$dgAuth = Initialize-DgMigrationHeaders -TokenScriptPath $ocTokenScript
+$headers = $dgAuth.Headers
 [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
 
 function Invoke-Dg {
     param([string]$Method, [string]$Uri, [object]$Body = $null)
-    $p = @{ Uri = $Uri; Method = $Method; Headers = $headers; ErrorAction = "Stop" }
-    if ($Uri.StartsWith("https://") -and (Get-Command Invoke-RestMethod).Parameters.ContainsKey("SkipCertificateCheck")) {
-        $p.SkipCertificateCheck = $true
-    }
-    if ($null -ne $Body) {
-        $p.Body = if ($Body -is [string]) { $Body } else { $Body | ConvertTo-Json -Depth 20 -Compress }
-        $p.ContentType = "application/json"
-    }
-    return Invoke-RestMethod @p
+    return Invoke-DgMigrationApi -AuthContext $dgAuth -Method $Method -Uri $Uri -Body $Body -RetryOnUnauthorized
 }
 
 function Get-DataId {
@@ -77,14 +64,6 @@ function To-IsoDate {
 
 function To-IntOrNull { param($Value); if ($null -eq $Value -or $Value -eq "") { return $null }; if ([string]$Value -notmatch '^\d+$') { return $null }; return [int]$Value }
 function To-DoubleOrNull { param($Value); if ($null -eq $Value -or $Value -eq "") { return $null }; return [double]$Value }
-
-function Limit-String {
-    param([object]$Value, [int]$MaxLength)
-    if ($null -eq $Value) { return $null }
-    $text = [string]$Value
-    if ($text.Length -le $MaxLength) { return $text }
-    return $text.Substring(0, $MaxLength)
-}
 
 function Get-RelationId {
     param($Value)
@@ -212,7 +191,7 @@ if (-not $SkipFirms) {
     $createdFirms = 0
     foreach ($f in $customers) {
         $legacyId = [string]$f[0]
-        $unvan = [string]$f[4]
+        $unvan = Limit-LegacyText $f[4] 500
         if ([string]::IsNullOrWhiteSpace($unvan)) { continue }
         if ($firmMap.ContainsKey($legacyId)) { continue }
 
@@ -274,6 +253,9 @@ $i = 0
 
 foreach ($p in $pkgList) {
     $i++
+    if ($i % 40 -eq 0) {
+        Update-DgMigrationToken -AuthContext $dgAuth
+    }
     $legacyPackageId = [string]$p[0]
     $packageNo = [string]$p[1]
     if ($i % 25 -eq 0 -or $i -eq 1) {
@@ -297,15 +279,15 @@ foreach ($p in $pkgList) {
             $packageBody = @{
                 legacyPackageId                = $legacyPackageId
                 packageNo                      = $packageNo
-                name                           = if ($p[4]) { [string]$p[4] } else { "Is paketi $packageNo" }
+                name                           = if ($p[4]) { Limit-LegacyText $p[4] 500 } else { "Is paketi $packageNo" }
                 customerId                     = $customerId
                 status                         = $status
                 closedAt                       = if ($status -eq 'closed') { To-IsoDate $p[21] } else { $null }
                 beginDate                      = To-IsoDate $p[20]
                 deliveryDate                   = To-IsoDate $p[21]
-                deliveryAddress                = if ($p[10]) { [string]$p[10] } else { $null }
-                notes                          = if ($p[11]) { [string]$p[11] } else { $null }
-                paymentDetail                  = if ($p[15]) { [string]$p[15] } else { $null }
+                deliveryAddress                = if ($p[10]) { Limit-LegacyText $p[10] 500 } else { $null }
+                notes                          = if ($p[11]) { Limit-LegacyText $p[11] 2000 } else { $null }
+                paymentDetail                  = if ($p[15]) { Limit-LegacyText $p[15] 500 } else { $null }
                 partCount                      = To-IntOrNull $p[16]
                 stockCount                     = To-IntOrNull $p[17]
                 shippedCount                   = To-IntOrNull $p[18]
@@ -368,7 +350,7 @@ foreach ($p in $pkgList) {
                 continue
             }
 
-            $description = Limit-String ([string]$item[6]) 2000
+            $description = Limit-LegacyText $item[6] 2000
             if ([string]::IsNullOrWhiteSpace($description)) {
                 $description = "Legacy kalem $lineNo"
             }
@@ -378,21 +360,21 @@ foreach ($p in $pkgList) {
                 parentPackageId   = $packageDataId
                 parentWorkItemId  = $packageDataId
                 lineNo            = $lineNo
-                customerProjectNo = Limit-String $item[2] 64
-                customerPoNo      = Limit-String $item[4] 64
+                customerProjectNo = Limit-LegacyText $item[2] 64
+                customerPoNo      = Limit-LegacyText $item[4] 64
                 customerPoItemNo  = To-IntOrNull $item[5]
                 description       = $description
-                poItemRevNo       = Limit-String $item[7] 32
-                customerJobNo     = Limit-String $item[8] 64
+                poItemRevNo       = Limit-LegacyText $item[7] 32
+                customerJobNo     = Limit-LegacyText $item[8] 64
                 quantity          = if ($null -ne $item[9] -and $item[9] -ne "") { [double]$item[9] } else { 0 }
                 unit              = Map-Unit ([string]$item[10])
                 unitCost          = To-DoubleOrNull $item[11]
                 totalCost         = To-DoubleOrNull $item[12]
-                qualityReqs       = Limit-String $item[14] 1000
+                qualityReqs       = Limit-LegacyText $item[14] 1000
                 isFai             = [bool]([int]$item[15] -eq 1)
                 isFaiComplete     = [bool]([int]$item[16] -eq 1)
                 shipmentDate      = To-IsoDate $item[17]
-                shipmentAddress   = Limit-String $item[18] 500
+                shipmentAddress   = Limit-LegacyText $item[18] 500
                 legacyLineId      = $legacyLineId
                 legacyPackageId   = $legacyPackageId
                 shippedQuantity   = 0

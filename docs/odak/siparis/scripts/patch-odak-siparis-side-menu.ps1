@@ -173,7 +173,7 @@ Upsert-MenuItem -AllItems $items -Label "Is Paketleri" -FindExisting {
     permissions = $defaultPerms
 } | Out-Null
 
-Upsert-MenuItem -AllItems $items -Label "Musteriler" -FindExisting {
+Upsert-MenuItem -AllItems $items -Label "Aktörler" -FindExisting {
     $_.pageCode -eq "odakSiparis.customers.menuTitle" -or $_.to -eq "/apps/odak-siparis/customers"
 } -Body @{
     order       = 268
@@ -182,7 +182,7 @@ Upsert-MenuItem -AllItems $items -Label "Musteriler" -FindExisting {
     parentId    = $headerId
     pageType    = "user"
     pageCode    = "odakSiparis.customers.menuTitle"
-    title       = "Müşteriler"
+    title       = "Aktörler"
     icon        = "BuildingIcon"
     iconType    = "tabler"
     to          = "/apps/odak-siparis/customers"

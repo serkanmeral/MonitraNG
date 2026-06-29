@@ -11,6 +11,7 @@
 param(
     [string[]]$PackageNos = @(),
     [int]$Limit = 10,
+    [switch]$All,
     [string]$LegacyUploadRoot = "",
     [string]$CandidatesJsonPath = "",
 
@@ -128,22 +129,24 @@ Write-Host "`n=== migrate-legacy-po-pdf-to-dg ===" -ForegroundColor Cyan
 Write-Host "Upload root: $LegacyUploadRoot" -ForegroundColor Gray
 Write-Host "DG: $BaseUrl$dataPath/$dataset" -ForegroundColor Gray
 
+$rowLimit = if ($All) { 999999 } else { $Limit }
+
 if (-not (Test-Path $LegacyUploadRoot)) {
     Write-Host "Uyari: Upload root yok — dosya bulunamadi hatalari beklenir." -ForegroundColor Yellow
 }
 
 $candidates = @()
 if ($PackageNos -and $PackageNos.Count -gt 0) {
-    $candidates = Load-LegacyPoCandidatesFromMySql -OnlyPackageNos $PackageNos -RowLimit ([Math]::Max($PackageNos.Count, $Limit))
+    $candidates = Load-LegacyPoCandidatesFromMySql -OnlyPackageNos $PackageNos -RowLimit ([Math]::Max($PackageNos.Count, $rowLimit))
 }
 elseif (Test-Path $CandidatesJsonPath) {
     $json = Get-Content $CandidatesJsonPath -Raw -Encoding UTF8 | ConvertFrom-Json
     if ($json.candidates) {
-        $candidates = @($json.candidates | Select-Object -First $Limit)
+        $candidates = if ($All) { @($json.candidates) } else { @($json.candidates | Select-Object -First $Limit) }
     }
 }
 else {
-    $candidates = Load-LegacyPoCandidatesFromMySql -OnlyPackageNos @() -RowLimit $Limit
+    $candidates = Load-LegacyPoCandidatesFromMySql -OnlyPackageNos @() -RowLimit $rowLimit
 }
 
 if (-not $candidates.Count) {

@@ -5,7 +5,7 @@ import {
   ODAK_SIPARIS_CONFIG,
   type OdakCapaRow,
 } from '@/utils/odakSiparisConfig';
-import { formatOdakDate, packageDataId } from '@/utils/odakSiparisService';
+import { formatOdakDate, buildRelationInFilter, packageDataId } from '@/utils/odakSiparisService';
 import { fromDateInputValue, toDateInputValue } from '@/utils/odakSiparisDateUtils';
 import { ncrDisplayNo } from '@/utils/odakSiparisNcrService';
 
@@ -27,6 +27,10 @@ export function capaDataId(row: OdakCapaRow | Record<string, unknown>): string {
 
 export function buildCapaByParentPackageFilter(parentPackageId: string): string {
   return `parentPackageId:eq:${parentPackageId}`;
+}
+
+export function buildCapaByParentPackagesFilter(parentPackageIds: string[]): string | undefined {
+  return buildRelationInFilter('parentPackageId', parentPackageIds);
 }
 
 export function capaBelongsToPackage(row: Record<string, unknown>, packageId: string): boolean {
@@ -142,14 +146,20 @@ export async function fetchOdakCapaById(capaId: string): Promise<OdakCapaRow | n
 
 export async function listCapasForPackage(packageId: string): Promise<OdakCapaRow[]> {
   if (!packageId) return [];
-  const filter = buildCapaByParentPackageFilter(packageId);
+  return listCapasForPackages([packageId]);
+}
+
+export async function listCapasForPackages(parentPackageIds: string[]): Promise<OdakCapaRow[]> {
+  const filter = buildCapaByParentPackagesFilter(parentPackageIds);
+  if (!filter) return [];
+  const packageIdSet = new Set(parentPackageIds.map((id) => id.trim()).filter(Boolean));
   const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.capaDataset, {
     filter,
     sort: '-__createdAt',
     limit: 500,
   });
   return ((resp.items ?? []) as OdakCapaRow[]).filter((row) =>
-    capaBelongsToPackage(row as Record<string, unknown>, packageId)
+    packageIdSet.has(resolveRelationId(row.parentPackageId))
   );
 }
 

@@ -8,10 +8,8 @@ import {
   type OdakShipmentRow,
 } from '@/utils/odakSiparisConfig';
 import type { OdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
-import {
-  ODAK_SHIPMENT_LIST_KEY_TO_FIELD,
-  shipmentRecordForPolicyEval,
-} from '@/utils/odakSiparisFieldPolicies';
+import { shipmentRecordForPolicyEval } from '@/utils/odakSiparisFieldPolicies';
+import { ODAK_SHIPMENT_LIST_KEY_TO_FIELD } from '@/utils/odakSiparisShipmentListSettings';
 import { loadOdakShipmentFieldPoliciesOnly } from '@/utils/odakSiparisHubSettingsService';
 import { formatLineSelectLabel, lineDataId, listLinesForPackage } from '@/utils/odakSiparisLineService';
 import {

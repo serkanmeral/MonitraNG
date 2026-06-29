@@ -1,8 +1,8 @@
 # Production sunucu durumu
 
 **Host:** `192.168.20.8` (`monitrang-prod`)  
-**Son güncelleme:** 4 Haziran 2026  
-**Kaldığımız yer (detay):** [DEVAM.md](./DEVAM.md) ← **IT sonrası buradan devam**  
+**Son güncelleme:** 20 Haziran 2026  
+**Kaldığımız yer (detay):** [DEVAM.md](./DEVAM.md) · Legacy migrasyon: [LEGACY_DATA_MIGRATION_PROD.md](./LEGACY_DATA_MIGRATION_PROD.md)  
 **Bağımsızlık:** Kendi `mng_common` + volume’lar — test `20.20` ile paylaşım yok → [INDEPENDENCE.md](./INDEPENDENCE.md)
 
 ---
@@ -15,7 +15,9 @@
 | P1b mng_common `compose up` | ✅ 5 Haziran 2026 |
 | P2 Keycloak realm/secret | 👤 Kullanıcı |
 | P3 mng_apps deploy | ✅ |
-| P2+ mng_apps / domain | ⏳ Bekliyor |
+| P2+ mng_apps / domain | ✅ |
+| P5 Legacy iş verisi (DG) | ✅ çekirdek — bkz. [LEGACY_DATA_MIGRATION_PROD.md](./LEGACY_DATA_MIGRATION_PROD.md) |
+| P6 PO PDF + UAT | ⏳ |
 
 ---
 

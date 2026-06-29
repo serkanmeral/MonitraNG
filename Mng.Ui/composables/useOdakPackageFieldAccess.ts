@@ -1,6 +1,7 @@
 import { type Ref } from 'vue';
 import type { OdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
-import { ODAK_PACKAGE_LIST_KEY_TO_FIELD, packageRecordForPolicyEval } from '@/utils/odakSiparisFieldPolicies';
+import { ODAK_PACKAGE_LIST_KEY_TO_FIELD } from '@/utils/odakSiparisPackageListSettings';
+import { packageRecordForPolicyEval } from '@/utils/odakSiparisFieldPolicies';
 import type { OdakPackageRow } from '@/utils/odakSiparisConfig';
 import { useOdakFieldAccess } from '@/composables/useOdakFieldAccess';
 

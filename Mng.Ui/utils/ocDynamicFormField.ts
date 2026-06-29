@@ -23,6 +23,8 @@ export type OcDynamicFieldWidget =
   | 'datetime'
   | 'persons'
   | 'personsMulti'
+  | 'groupSelect'
+  | 'groupSelectMulti'
   | 'file'
   | 'password';
 
@@ -42,14 +44,23 @@ export function isMultiCardinality(fieldKey: string, meta?: OcFormFieldRuntimeDt
   return c === 'multi' || c === 'multiple';
 }
 
+/** Keeper kullanıcı grubu seçici (personGroups / group pool alanları). */
+export function isOcGroupPickerField(
+  fieldKey: string,
+  meta?: OcFormFieldRuntimeDto | null
+): boolean {
+  const ft = resolveOcFormFieldType(fieldKey, meta).toLowerCase();
+  return ft === 'persongroups' || ft === 'persongroup' || ft === 'group';
+}
+
 /** Keeper kullanıcı seçici (personGroups hariç). */
 export function isOcPersonsUserPickerField(
   fieldKey: string,
   meta?: OcFormFieldRuntimeDto | null
 ): boolean {
   const ft = resolveOcFormFieldType(fieldKey, meta).toLowerCase();
-  if (ft === 'persongroups' || ft === 'persongroup') return false;
-  return ft === 'persons' || ft === 'person' || ft === 'group';
+  if (isOcGroupPickerField(fieldKey, meta)) return false;
+  return ft === 'persons' || ft === 'person';
 }
 
 export function resolveRelationDataset(fieldKey: string, meta?: OcFormFieldRuntimeDto | null): string | null {
@@ -81,7 +92,10 @@ export function resolveOcDynamicFieldWidget(
   if (ft === 'date') return 'date';
   if (ft === 'datetime') return 'datetime';
   if (ft === 'file') return 'file';
-  if (ft === 'persons' || ft === 'persongroups' || ft === 'person' || ft === 'group') {
+  if (ft === 'persongroups' || ft === 'persongroup' || ft === 'group') {
+    return isMultiCardinality(fieldKey, meta) ? 'groupSelectMulti' : 'groupSelect';
+  }
+  if (ft === 'persons' || ft === 'person') {
     return isMultiCardinality(fieldKey, meta) ? 'personsMulti' : 'persons';
   }
   // 'tags' → workspace etiket kataloğu (op_tags) destekli, inline oluşturmalı seçici.

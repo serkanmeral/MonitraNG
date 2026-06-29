@@ -2,11 +2,21 @@
 # Usage: $token = .\load-operationcore-token.ps1
 
 param(
-    [string]$TokenFile = "$env:TEMP\operationcore_dg_token.txt",
+    [string]$TokenFile = "",
     [switch]$AutoRefresh = $true
 )
 
-$getOcTokenScript = Join-Path $PSScriptRoot "get-operationcore-token.ps1"
+$useProd = ($env:MNG_OC_USE_PROD_TOKEN -eq "1")
+if ([string]::IsNullOrEmpty($TokenFile)) {
+    $TokenFile = if ($useProd) { "$env:TEMP\operationcore_dg_token_prod.txt" } else { "$env:TEMP\operationcore_dg_token.txt" }
+}
+
+$getOcTokenScript = if ($useProd) {
+    Join-Path $PSScriptRoot "get-operationcore-token-prod.ps1"
+}
+else {
+    Join-Path $PSScriptRoot "get-operationcore-token.ps1"
+}
 
 if ($AutoRefresh -or -not (Test-Path $TokenFile)) {
     if (-not (Test-Path $getOcTokenScript)) {

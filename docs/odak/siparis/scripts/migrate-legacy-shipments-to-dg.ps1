@@ -178,13 +178,13 @@ foreach ($s in $shipments) {
     $body = @{
         parentPackageId   = $dgPackageId
         legacyShipmentId  = $legacyShipId
-        waybillNo         = if ($s.shipment_no) { [string]$s.shipment_no } elseif ($s.bill_no) { [string]$s.bill_no } else { $null }
+        waybillNo         = if ($s.shipment_no) { Limit-LegacyText $s.shipment_no 64 } elseif ($s.bill_no) { Limit-LegacyText $s.bill_no 64 } else { $null }
         status            = Map-ShipmentStatus ([string]$s.status)
-        controlType       = if ($s.inspection_type) { [string]$s.inspection_type } else { $null }
-        shipmentAddress   = if ($s.address) { [string]$s.address } else { $null }
-        notes             = if ($s.notes) { [string]$s.notes } else { if ($s.descript) { [string]$s.descript } else { $null } }
+        controlType       = if ($s.inspection_type) { Limit-LegacyText $s.inspection_type 200 } else { $null }
+        shipmentAddress   = if ($s.address) { Limit-LegacyText $s.address 500 } else { $null }
+        notes             = if ($s.notes) { Limit-LegacyText $s.notes 2000 } elseif ($s.descript) { Limit-LegacyText $s.descript 2000 } else { $null }
         qcfStatus         = Map-QcfStatus $qcf
-        qcfReferenceNo    = if ($qcf -and $qcf.qcf_no) { [string]$qcf.qcf_no } elseif ($qcf -and $qcf.form_no) { [string]$qcf.form_no } else { $null }
+        qcfReferenceNo    = if ($qcf -and $qcf.qcf_no) { Limit-LegacyText $qcf.qcf_no 64 } elseif ($qcf -and $qcf.form_no) { Limit-LegacyText $qcf.form_no 64 } else { $null }
         qcfNotes          = $null
     }
     if ($s.shipment_date) {

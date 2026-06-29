@@ -1,6 +1,6 @@
 {
   "name": "odak_musteriler",
-  "description": "Odak Uretim — musteri master (OC lookup)",
+  "description": "Odak — aktor master (musteri / tedarikci / her ikisi)",
   "forceSchema": true,
   "logging": "self",
   "publish_mode": "none",
@@ -17,7 +17,7 @@
     {
       "fieldType": "text",
       "name": "kod",
-      "title": "Musteri kodu",
+      "title": "Aktor kodu",
       "mandatory": true,
       "unique": true,
       "isArray": false,
@@ -66,6 +66,24 @@
     },
     {
       "fieldType": "bool",
+      "name": "isMusteri",
+      "title": "Musteri",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": true
+    },
+    {
+      "fieldType": "bool",
+      "name": "isTedarikci",
+      "title": "Tedarikci",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": false
+    },
+    {
+      "fieldType": "bool",
       "name": "aktif",
       "title": "Aktif",
       "mandatory": false,
@@ -87,6 +105,8 @@
     { "name": "idx_legacyFirmId", "fields": { "legacyFirmId": 1 }, "unique": true },
     { "name": "idx_kod", "fields": { "kod": 1 }, "unique": true },
     { "name": "idx_unvan", "fields": { "unvan": 1 }, "unique": false },
-    { "name": "idx_aktif", "fields": { "aktif": 1 }, "unique": false }
+    { "name": "idx_aktif", "fields": { "aktif": 1 }, "unique": false },
+    { "name": "idx_isMusteri", "fields": { "isMusteri": 1 }, "unique": false },
+    { "name": "idx_isTedarikci", "fields": { "isTedarikci": 1 }, "unique": false }
   ]
 }

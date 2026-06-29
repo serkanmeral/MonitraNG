@@ -21,6 +21,7 @@ param(
 $ErrorActionPreference = "Stop"
 $scriptDir = $PSScriptRoot
 $repoRoot = (Resolve-Path (Join-Path $scriptDir "../../../..")).Path
+. (Join-Path $scriptDir "lib/DgMigrationCommon.ps1")
 
 if ([string]::IsNullOrEmpty($MappingFile)) {
     $MappingFile = Join-Path $scriptDir "..\datasets\migration-mapping-poc.json"
@@ -131,21 +132,21 @@ foreach ($item in @($legacy.items)) {
     $lineBody = @{
         parentWorkItemId  = $WorkItemId
         lineNo            = [int]$item.number
-        customerProjectNo = if ($item.customer_project_no) { [string]$item.customer_project_no } else { $null }
-        customerPoNo      = if ($item.customer_po_no) { [string]$item.customer_po_no } else { $null }
+        customerProjectNo = if ($item.customer_project_no) { Limit-LegacyText $item.customer_project_no 64 } else { $null }
+        customerPoNo      = if ($item.customer_po_no) { Limit-LegacyText $item.customer_po_no 64 } else { $null }
         customerPoItemNo  = if ($null -ne $item.customer_po_item_no -and $item.customer_po_item_no -ne "") { [int]$item.customer_po_item_no } else { $null }
-        description       = [string]$item.description
-        poItemRevNo       = if ($item.po_item_rev_no) { [string]$item.po_item_rev_no } else { $null }
-        customerJobNo     = if ($item.customer_job_no) { [string]$item.customer_job_no } else { $null }
+        description       = Limit-LegacyText $item.description 2000
+        poItemRevNo       = if ($item.po_item_rev_no) { Limit-LegacyText $item.po_item_rev_no 32 } else { $null }
+        customerJobNo     = if ($item.customer_job_no) { Limit-LegacyText $item.customer_job_no 64 } else { $null }
         quantity          = if ($null -ne $item.count -and $item.count -ne "") { [double]$item.count } else { 0 }
         unit              = Map-Unit ([string]$item.unit)
         unitCost          = if ($item.unit_cost -and $item.unit_cost -ne "") { [double]$item.unit_cost } else { $null }
         totalCost         = if ($item.total_cost -and $item.total_cost -ne "") { [double]$item.total_cost } else { $null }
         currency          = if ($item.currency) { [string]$item.currency } else { $null }
-        qualityReqs       = if ($item.quality_reqs) { [string]$item.quality_reqs } else { $null }
+        qualityReqs       = if ($item.quality_reqs) { Limit-LegacyText $item.quality_reqs 1000 } else { $null }
         isFai             = [bool]([int]$item.isfai -eq 1)
         shipmentDate      = To-IsoDate $item.shipment_date
-        shipmentAddress   = if ($item.shipment_address) { [string]$item.shipment_address } else { $null }
+        shipmentAddress   = if ($item.shipment_address) { Limit-LegacyText $item.shipment_address 500 } else { $null }
         legacyLineId      = $legacyLineId
         legacyPackageId   = $legacyPackageId
         shippedQuantity   = 0

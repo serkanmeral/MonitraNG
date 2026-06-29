@@ -1,4 +1,8 @@
 # Odak sunucuda mng_apps build + up (ön koşul: sync-odak-source.ps1, mng_common ayakta)
+#
+# OFFLINE (prod/test internetsiz): deploy-odak-prod-offline.ps1 / deploy-odak-test-offline.ps1
+#   Gelistirme makinesinde docker build -> tar -> sunucuda docker load -> bu script -NoBuild
+#
 # Kullanım:
 #   .\scripts\odak\deploy-odak-apps.ps1
 #   .\scripts\odak\deploy-odak-apps.ps1 -Services mngkeeper,mngui

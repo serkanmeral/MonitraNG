@@ -260,6 +260,7 @@ public partial class RuntimeContextService
             foreach (var type in loaded)
                 types.Add(MapTypeOption(type));
 
+            await EnsureTypeOptionAsync(types, form?.DefaultTypeId, token, cancellationToken);
             return types;
         }
 
@@ -280,6 +281,21 @@ public partial class RuntimeContextService
         }
 
         return types;
+    }
+
+    /// <summary>
+    /// Form varsayılan tipi workspace enabled listesinde yoksa seçeneklere ekler (v-select ham id göstermesin).
+    /// </summary>
+    private async Task EnsureTypeOptionAsync(
+        List<WorkItemTypeOptionDto> types,
+        string? typeId,
+        string token,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(typeId)) return;
+        if (types.Any(t => string.Equals(t.Id, typeId, StringComparison.Ordinal))) return;
+        var type = await _metadataCache.GetWorkItemTypeAsync(typeId, token, cancellationToken);
+        types.Insert(0, MapTypeOption(type));
     }
 
     private static WorkItemTypeOptionDto MapTypeOption(WorkItemTypeRecord type) =>

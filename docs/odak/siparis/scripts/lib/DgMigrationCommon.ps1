@@ -1,5 +1,96 @@
 # DG migration helpers — filter API unreliable; client-side legacy id map
 
+function Sanitize-LegacyText {
+    param([object]$Value)
+    if ($null -eq $Value) { return $null }
+    $text = [string]$Value
+    if ([string]::IsNullOrEmpty($text)) { return $text }
+    # Fix mojibake: UTF-8 bytes previously interpreted as ISO-8859-1 (common with Turkish "ı", "ş", etc.)
+    $latin = [System.Text.Encoding]::GetEncoding("ISO-8859-1")
+    $utf8 = [System.Text.Encoding]::UTF8
+    try {
+        $bytes = $latin.GetBytes($text)
+        $fixed = $utf8.GetString($bytes)
+        if (-not [string]::IsNullOrWhiteSpace($fixed)) { $text = $fixed }
+    }
+    catch { }
+    $sb = New-Object System.Text.StringBuilder
+    foreach ($ch in $text.ToCharArray()) {
+        $code = [int]$ch
+        if ($code -lt 32 -and $code -notin @(9, 10, 13)) { continue }
+        if ([char]::IsSurrogate($ch)) { continue }
+        [void]$sb.Append($ch)
+    }
+    return $sb.ToString()
+}
+
+function Limit-LegacyText {
+    param([object]$Value, [int]$MaxLength)
+    if ($null -eq $Value) { return $null }
+    $text = Sanitize-LegacyText $Value
+    if ($text.Length -le $MaxLength) { return $text }
+    return $text.Substring(0, $MaxLength)
+}
+
+# Backward-compatible alias used by migrate-remaining-lines.ps1
+function Sanitize-JsonText {
+    param([object]$Value)
+    return Sanitize-LegacyText $Value
+}
+
+function Initialize-DgMigrationHeaders {
+    param([string]$TokenScriptPath)
+    $token = & $TokenScriptPath
+    if ([string]::IsNullOrEmpty($token)) { throw "Token alinamadi." }
+    return @{
+        TokenScript = $TokenScriptPath
+        Headers     = @{
+            "Authorization" = "Bearer $token"
+            "Content-Type"  = "application/json"
+        }
+    }
+}
+
+function Update-DgMigrationToken {
+    param([hashtable]$AuthContext)
+    $token = & $AuthContext.TokenScript
+    if ([string]::IsNullOrEmpty($token)) { throw "Token alinamadi." }
+    $AuthContext.Headers.Authorization = "Bearer $token"
+}
+
+function Invoke-DgMigrationApi {
+    param(
+        [hashtable]$AuthContext,
+        [string]$Method,
+        [string]$Uri,
+        [object]$Body = $null,
+        [switch]$RetryOnUnauthorized
+    )
+    for ($attempt = 0; $attempt -lt 2; $attempt++) {
+        $p = @{ Uri = $Uri; Method = $Method; Headers = $AuthContext.Headers; ErrorAction = "Stop" }
+        if ($Uri.StartsWith("https://") -and (Get-Command Invoke-RestMethod).Parameters.ContainsKey("SkipCertificateCheck")) {
+            $p.SkipCertificateCheck = $true
+        }
+        if ($null -ne $Body) {
+            $p.Body = if ($Body -is [string]) { $Body } else { $Body | ConvertTo-Json -Depth 20 -Compress }
+            $p.ContentType = "application/json"
+        }
+        try {
+            return Invoke-RestMethod @p
+        }
+        catch {
+            $detail = [string]$_.Exception.Message
+            if ($_.ErrorDetails -and $_.ErrorDetails.Message) { $detail = [string]$_.ErrorDetails.Message }
+            if ($RetryOnUnauthorized -and $attempt -eq 0 -and ($detail -match '401|Unauthorized')) {
+                Write-Host "  Token yenileniyor (401)..." -ForegroundColor Yellow
+                Update-DgMigrationToken -AuthContext $AuthContext
+                continue
+            }
+            throw
+        }
+    }
+}
+
 function Get-DgListPage {
     param(
         [hashtable]$InvokeDg,

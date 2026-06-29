@@ -118,8 +118,8 @@ export const ODAK_SHIPMENT_POLICY_FIELD_KEYS = [
 
 export type OdakShipmentPolicyFieldKey = (typeof ODAK_SHIPMENT_POLICY_FIELD_KEYS)[number];
 
-/** Liste sütun key → policy alan adı (iş paketi) */
-export const ODAK_PACKAGE_LIST_KEY_TO_FIELD: Record<string, string> = {
+/** Policy eval — keep in sync with list settings catalogs (not exported; avoids Nuxt auto-import clash). */
+const PACKAGE_LIST_KEY_TO_FIELD: Record<string, string> = {
   displayNo: 'packageNo',
   name: 'name',
   customer: 'customerId',
@@ -141,7 +141,7 @@ export const ODAK_PACKAGE_LIST_KEY_TO_FIELD: Record<string, string> = {
   notes: 'notes',
 };
 
-export const ODAK_LINE_LIST_KEY_TO_FIELD: Record<string, string> = {
+const LINE_LIST_KEY_TO_FIELD: Record<string, string> = {
   lineNo: 'lineNo',
   customerProjectNo: 'customerProjectNo',
   customerPoNo: 'customerPoNo',
@@ -166,7 +166,7 @@ export const ODAK_LINE_LIST_KEY_TO_FIELD: Record<string, string> = {
   currency: 'currency',
 };
 
-export const ODAK_SHIPMENT_LIST_KEY_TO_FIELD: Record<string, string> = {
+const SHIPMENT_LIST_KEY_TO_FIELD: Record<string, string> = {
   waybillNo: 'waybillNo',
   shipmentDate: 'shipmentDate',
   status: 'status',
@@ -398,7 +398,7 @@ export function resolveOdakListColumnAccess(
   userGroups: string[],
   record: Record<string, unknown>,
   blob: OdakFieldPoliciesBlob | null | undefined,
-  listKeyToField: Record<string, string> = ODAK_PACKAGE_LIST_KEY_TO_FIELD
+  listKeyToField: Record<string, string> = PACKAGE_LIST_KEY_TO_FIELD
 ): OdakFieldAccess {
   const fieldKey = listKeyToField[listColumnKey] ?? listColumnKey;
   return resolveOdakFieldAccess(fieldKey, userGroups, record, blob);
@@ -410,7 +410,7 @@ export function resolveOdakPackageListColumnAccess(
   record: Record<string, unknown>,
   blob: OdakFieldPoliciesBlob | null | undefined
 ): OdakFieldAccess {
-  return resolveOdakListColumnAccess(listColumnKey, userGroups, record, blob, ODAK_PACKAGE_LIST_KEY_TO_FIELD);
+  return resolveOdakListColumnAccess(listColumnKey, userGroups, record, blob, PACKAGE_LIST_KEY_TO_FIELD);
 }
 
 export function resolveOdakLineListColumnAccess(
@@ -419,7 +419,7 @@ export function resolveOdakLineListColumnAccess(
   record: Record<string, unknown>,
   blob: OdakFieldPoliciesBlob | null | undefined
 ): OdakFieldAccess {
-  return resolveOdakListColumnAccess(listColumnKey, userGroups, record, blob, ODAK_LINE_LIST_KEY_TO_FIELD);
+  return resolveOdakListColumnAccess(listColumnKey, userGroups, record, blob, LINE_LIST_KEY_TO_FIELD);
 }
 
 export function resolveOdakShipmentListColumnAccess(
@@ -428,7 +428,7 @@ export function resolveOdakShipmentListColumnAccess(
   record: Record<string, unknown>,
   blob: OdakFieldPoliciesBlob | null | undefined
 ): OdakFieldAccess {
-  return resolveOdakListColumnAccess(listColumnKey, userGroups, record, blob, ODAK_SHIPMENT_LIST_KEY_TO_FIELD);
+  return resolveOdakListColumnAccess(listColumnKey, userGroups, record, blob, SHIPMENT_LIST_KEY_TO_FIELD);
 }
 
 export function filterPayloadByFieldAccess(

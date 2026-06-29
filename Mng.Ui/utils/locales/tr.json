@@ -189,6 +189,7 @@
       "odakSiparis.menuHeader": "Odak Sipariş"
     },
     "odakSiparis.packages.menuTitle": "İş Paketleri",
+    "odakSiparis.customers.menuTitle": "Aktörler",
     "securityManagement.menuHeader": "Güvenlik Yönetimi",
     "alarmCenter.menuTitle": "Alarm Merkezi",
     "siemCenter.dashboard.menuTitle": "SIEM Güvenlik Paneli",
@@ -4051,35 +4052,41 @@
       }
     },
     "customers": {
-      "title": "Müşteriler",
-      "add": "Müşteri Ekle",
+      "title": "Aktörler",
+      "add": "Aktör Ekle",
       "openPackages": "İş paketlerini göster",
+      "roleMusteri": "Müşteri",
+      "roleTedarikci": "Tedarikçi",
       "activeYes": "Aktif",
       "activeNo": "Pasif",
-      "deleteTitle": "Müşteriyi sil",
-      "deleteConfirm": "Bu müşteri kaydını silmek istediğinize emin misiniz?",
+      "deleteTitle": "Aktörü sil",
+      "deleteConfirm": "Bu aktör kaydını silmek istediğinize emin misiniz?",
       "tabs": {
         "active": "Aktif",
         "inactive": "Pasif",
         "all": "Tümü"
       },
       "fields": {
-        "kod": "Müşteri kodu",
+        "kod": "Kod",
         "unvan": "Unvan",
+        "roles": "Roller",
+        "isMusteri": "Müşteri",
+        "isTedarikci": "Tedarikçi",
         "sektor": "Sektör",
         "ulke": "Ülke",
         "aktif": "Aktif",
         "notlar": "Notlar"
       },
       "dialog": {
-        "createTitle": "Yeni müşteri",
-        "editTitle": "Müşteri düzenle — {name}",
-        "missingId": "Müşteri kimliği bulunamadı.",
-        "notFound": "Müşteri yüklenemedi."
+        "createTitle": "Yeni aktör",
+        "editTitle": "Aktör düzenle — {name}",
+        "missingId": "Aktör kimliği bulunamadı.",
+        "notFound": "Aktör yüklenemedi."
       },
       "validation": {
-        "kodRequired": "Müşteri kodu zorunludur (MUS-XXX).",
-        "unvanRequired": "Unvan zorunludur."
+        "kodRequired": "Kod zorunludur (MUS-XXX).",
+        "unvanRequired": "Unvan zorunludur.",
+        "roleRequired": "En az bir rol seçilmelidir (müşteri ve/veya tedarikçi)."
       },
       "drawer": {
         "title": "Müşteri özeti",
@@ -4208,7 +4215,8 @@
         "shipments": "Sevkiyatlar",
         "documents": "Kalem Belgeleri",
         "coc": "Kalem Belgeleri",
-        "quality": "Kalite"
+        "quality": "Kalite",
+        "dashboard": "Pano"
       },
       "fields": {
         "packageNo": "ODAK İş Paketi No",
@@ -4236,6 +4244,89 @@
       },
       "deleteTitle": "İş paketini sil",
       "deleteConfirm": "Bu iş paketini silmek istediğinize emin misiniz?"
+    },
+    "dashboard": {
+      "global": {
+        "pageTitle": "İş Paketleri Operasyon Paneli",
+        "openFromPackages": "Operasyon Paneli",
+        "refresh": "Yenile",
+        "heroEyebrow": "Odak Sipariş",
+        "heroTitle": "Operasyon Özeti",
+        "heroSubtitle": "Açık iş paketleri, termin baskısı ve kalite sinyallerinin tek ekranda görünümü.",
+        "statusMixTitle": "Durum dağılımı",
+        "qualityTitle": "Kalite özeti",
+        "topCustomersTitle": "En yoğun müşteriler",
+        "upcomingTitle": "Yaklaşan terminler",
+        "urgency": "Aciliyet",
+        "total": "Toplam",
+        "noData": "Henüz veri yok.",
+        "noUpcoming": "Termin tarihi tanımlı açık paket bulunamadı.",
+        "overdue": "Gecikmiş",
+        "dueSoon": "Yakın termin",
+        "onTrack": "Planında",
+        "stats": {
+          "open": "Açık paket",
+          "closed": "Kapalı paket",
+          "dueSoon": "7 gün içinde termin",
+          "overdue": "Geciken termin",
+          "openNcr": "Açık NCR",
+          "openCapa": "Açık CAPA"
+        }
+      },
+      "package": {
+        "heroEyebrow": "İş paketi panosu",
+        "noDeliveryDate": "Termin tanımlı değil",
+        "overdueDays": "{days} gün gecikmiş",
+        "dueToday": "Bugün termin",
+        "daysLeft": "{days} gün kaldı",
+        "fulfillmentTitle": "Sevk ilerlemesi",
+        "fulfillmentPct": "Tamamlanma %{pct}",
+        "fulfillmentUnavailable": "Parça sayısı tanımlı olmadığı için oran hesaplanamıyor.",
+        "timelineTitle": "Zaman çizelgesi",
+        "stats": {
+          "lines": "Kalem",
+          "shipments": "Sevkiyat",
+          "shipmentsHint": "Tamamlanan / toplam",
+          "openNcr": "Açık NCR",
+          "openCapa": "Açık CAPA"
+        }
+      },
+      "customer": {
+        "heroEyebrow": "Aktör panosu",
+        "supplierOnlyHint": "Bu kayıt yalnızca tedarikçi rolünde; iş paketi metrikleri gösterilmez.",
+        "missingIdHint": "Aktör kaydı tanımlanamadı; pano yüklenemedi. Satırı kapatıp yeniden açmayı deneyin.",
+        "recentPackagesTitle": "Açık iş paketleri",
+        "noOpenPackages": "Bu müşteriye bağlı açık iş paketi yok.",
+        "stats": {
+          "openPackages": "Açık paket",
+          "closedPackages": "Kapalı paket",
+          "dueSoon": "Yakın termin",
+          "overdue": "Geciken",
+          "contacts": "Kişi",
+          "qualityReqs": "Kalite isteri",
+          "openNcr": "Açık NCR",
+          "openCapa": "Açık CAPA"
+        }
+      },
+      "customerGlobal": {
+        "pageTitle": "Müşteri Portföy Paneli",
+        "heroEyebrow": "Odak Sipariş · Aktörler",
+        "heroTitle": "Müşteri Portföy Özeti",
+        "heroSubtitle": "Aktif müşteriler, açık iş yükü ve termin riski — müşteri bazlı operasyon vitrini.",
+        "sectorTitle": "Sektör dağılımı",
+        "topCustomersTitle": "En yoğun müşteriler (açık paket)",
+        "atRiskTitle": "Termin riski taşıyan müşteriler",
+        "noAtRisk": "Geciken paketi olan müşteri yok.",
+        "openCountLabel": "{count} açık",
+        "overdueCountLabel": "{count} geciken",
+        "inactiveHint": "Pasif müşteri kaydı: {count}",
+        "stats": {
+          "activeCustomers": "Aktif müşteri",
+          "withOpenPackages": "Açık paketi olan",
+          "openPackages": "Toplam açık paket",
+          "overduePackages": "Geciken paket"
+        }
+      }
     },
     "quality": {
       "tabs": {

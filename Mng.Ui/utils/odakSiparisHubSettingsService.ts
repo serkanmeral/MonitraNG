@@ -408,5 +408,3 @@ export async function loadOdakPackagePoDocumentAccessOnly(
   poDocumentAccessCache = { config: resp.config, at: now };
   return resp.config;
 }
-
-export { defaultOdakPackagePoDocumentAccessConfig };

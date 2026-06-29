@@ -1,0 +1,20 @@
+{
+  "dataset": "@dashboards",
+  "record": {
+    "name": "odak-musteriler-portfolio",
+    "title": "Müşteri Portföy Paneli",
+    "description": "Odak Sipariş — müşteri portföy vitrini (/dashboards/odak-musteriler)",
+    "slug": "odak-musteriler",
+    "isDefault": false,
+    "isActive": true,
+    "order": 4,
+    "layout": {
+      "type": "rows",
+      "rows": [],
+      "meta": {
+        "surfaceKind": "odak-musteriler"
+      }
+    },
+    "permissions": null
+  }
+}

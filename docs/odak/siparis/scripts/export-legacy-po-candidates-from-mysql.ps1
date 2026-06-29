@@ -8,6 +8,7 @@
 
 param(
     [int]$Limit = 50,
+    [switch]$All,
     [string]$LegacyUploadRoot = "",
 
     [string]$LegacyMySqlHost = "127.0.0.1",
@@ -49,7 +50,7 @@ SELECT JSON_OBJECT(
 FROM packages p
 WHERE p.polink IS NOT NULL AND TRIM(p.polink) <> ''
 ORDER BY p.id DESC
-LIMIT $Limit;
+$(if (-not $All) { "LIMIT $Limit" });
 "@
 
 $rows = Invoke-LegacyMySqlJsonRows -Sql $sql -MySqlHost $LegacyMySqlHost -Port $LegacyMySqlPort `

@@ -10,5 +10,3 @@ export interface OdakHubListSettingsTabBindings {
   loadConfig: () => Promise<{ config: OdakHubListConfig; rowId: string | null }>;
   saveConfig: (config: OdakHubListConfig, rowId: string | null) => Promise<string>;
 }
-
-export type { OdakHubListColumnConfig, OdakHubListConfig };

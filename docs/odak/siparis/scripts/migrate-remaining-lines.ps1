@@ -16,46 +16,18 @@ $repoRoot = (Resolve-Path (Join-Path $scriptDir "../../../..")).Path
 
 $dumpPath = Get-LegacySqlDumpPath -SqlDumpPath $SqlDumpPath
 $dataPath = if ($UseGateway) { "/data/api/v1/data" } else { "/api/v1/data" }
-$token = & (Join-Path $repoRoot "docs/odak/operationcore/scripts/load-operationcore-token.ps1")
-$headers = @{ Authorization = "Bearer $token"; "Content-Type" = "application/json" }
+$ocTokenScript = Join-Path $repoRoot "docs/odak/operationcore/scripts/load-operationcore-token.ps1"
+$dgAuth = Initialize-DgMigrationHeaders -TokenScriptPath $ocTokenScript
+$headers = $dgAuth.Headers
 
 function Invoke-Dg {
     param([string]$Method, [string]$Uri, [object]$Body = $null)
-    $p = @{ Uri = $Uri; Method = $Method; Headers = $headers; ErrorAction = "Stop" }
-    if ($null -ne $Body) {
-        $p.Body = $Body | ConvertTo-Json -Depth 20 -Compress
-        $p.ContentType = "application/json"
-    }
-    return Invoke-RestMethod @p
+    return Invoke-DgMigrationApi -AuthContext $dgAuth -Method $Method -Uri $Uri -Body $Body -RetryOnUnauthorized
 }
 
 function To-IntOrNull { param($Value); if ($null -eq $Value -or $Value -eq "") { return $null }; if ([string]$Value -notmatch '^\d+$') { return $null }; return [int]$Value }
 function To-DoubleOrNull { param($Value); if ($null -eq $Value -or $Value -eq "") { return $null }; return [double]$Value }
 function To-IsoDate { param($Value); if ([string]::IsNullOrWhiteSpace($Value)) { return $null }; try { return ([datetime]$Value).ToUniversalTime().ToString("o") } catch { return $null } }
-function Sanitize-JsonText {
-    param([object]$Value)
-    if ($null -eq $Value) { return $null }
-    $text = [string]$Value
-    if ([string]::IsNullOrEmpty($text)) { return $text }
-    $latin = [System.Text.Encoding]::GetEncoding("ISO-8859-1")
-    $utf8 = [System.Text.Encoding]::UTF8
-    try {
-        $bytes = $latin.GetBytes($text)
-        $fixed = $utf8.GetString($bytes)
-        if (-not [string]::IsNullOrWhiteSpace($fixed)) { $text = $fixed }
-    }
-    catch { }
-    $sb = New-Object System.Text.StringBuilder
-    foreach ($ch in $text.ToCharArray()) {
-        $code = [int]$ch
-        if ($code -lt 32 -and $code -notin @(9, 10, 13)) { continue }
-        if ([char]::IsSurrogate($ch)) { continue }
-        [void]$sb.Append($ch)
-    }
-    return $sb.ToString()
-}
-
-function Limit-String { param([object]$Value, [int]$MaxLength); if ($null -eq $Value) { return $null }; $t = [string]$Value; if ($t.Length -le $MaxLength) { return $t }; return $t.Substring(0, $MaxLength) }
 function Map-Unit {
     param([string]$LegacyUnit)
     if ([string]::IsNullOrWhiteSpace($LegacyUnit)) { return "adet" }
@@ -101,6 +73,10 @@ foreach ($item in $itemRows) {
     $n++
     if ($n % 500 -eq 0) { Write-Host "  ... $n / $($itemRows.Count)" -ForegroundColor Gray }
 
+    if ($n % 200 -eq 0) {
+        Update-DgMigrationToken -AuthContext $dgAuth
+    }
+
     $legacyLineId = [string]$item[0]
     $legacyPkgId = [string]$item[1]
     $lineNo = To-IntOrNull $item[3]
@@ -113,7 +89,7 @@ foreach ($item in $itemRows) {
     if ($parentLineMap.ContainsKey($parentLineKey)) { $skip++; continue }
 
     $packageNo = $pkgNoById[$legacyPkgId]
-    $description = Limit-String (Sanitize-JsonText ([string]$item[6])) 2000
+    $description = Limit-LegacyText $item[6] 2000
     if ([string]::IsNullOrWhiteSpace($description)) { $description = "Legacy kalem $lineNo" }
     $mappedCurrency = Map-Currency ([string]$item[13])
 
@@ -121,21 +97,21 @@ foreach ($item in $itemRows) {
         parentPackageId   = $parentId
         parentWorkItemId  = $parentId
         lineNo            = $lineNo
-        customerProjectNo = Limit-String (Sanitize-JsonText $item[2]) 64
-        customerPoNo      = Limit-String (Sanitize-JsonText $item[4]) 64
+        customerProjectNo = Limit-LegacyText $item[2] 64
+        customerPoNo      = Limit-LegacyText $item[4] 64
         customerPoItemNo  = To-IntOrNull $item[5]
         description       = $description
-        poItemRevNo       = Limit-String (Sanitize-JsonText $item[7]) 32
-        customerJobNo     = Limit-String (Sanitize-JsonText $item[8]) 64
+        poItemRevNo       = Limit-LegacyText $item[7] 32
+        customerJobNo     = Limit-LegacyText $item[8] 64
         quantity          = if ($null -ne $item[9] -and $item[9] -ne "") { [double]$item[9] } else { 0 }
         unit              = Map-Unit ([string]$item[10])
         unitCost          = To-DoubleOrNull $item[11]
         totalCost         = To-DoubleOrNull $item[12]
-        qualityReqs       = Limit-String (Sanitize-JsonText $item[14]) 1000
+        qualityReqs       = Limit-LegacyText $item[14] 1000
         isFai             = [bool]([int]$item[15] -eq 1)
         isFaiComplete     = [bool]([int]$item[16] -eq 1)
         shipmentDate      = To-IsoDate $item[17]
-        shipmentAddress   = Limit-String (Sanitize-JsonText $item[18]) 500
+        shipmentAddress   = Limit-LegacyText $item[18] 500
         legacyLineId      = $legacyLineId
         legacyPackageId   = $legacyPkgId
         shippedQuantity   = 0

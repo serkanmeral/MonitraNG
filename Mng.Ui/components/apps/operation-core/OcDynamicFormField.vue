@@ -104,6 +104,8 @@ const isSelectWidget = computed(() =>
     'staticSelectMulti',
     'relationSelect',
     'relationSelectMulti',
+    'groupSelect',
+    'groupSelectMulti',
   ].includes(widget.value)
 );
 
@@ -157,7 +159,8 @@ const selectMultiple = computed(
     isMulti.value ||
     widget.value === 'relationSelectMulti' ||
     widget.value === 'staticSelectMulti' ||
-    widget.value === 'personsMulti'
+    widget.value === 'personsMulti' ||
+    widget.value === 'groupSelectMulti'
 );
 
 const selectModelValue = computed(() => {

@@ -3,8 +3,18 @@ import { ocListDatasetPage } from '@/services/operationCoreService';
 import { afListFiltersToQueryString, type AfListFilter } from '@/utils/afListFilters';
 import { ODAK_SIPARIS_CONFIG, type OdakPackageRow } from '@/utils/odakSiparisConfig';
 
+/** VDataTable slot item may be raw row or `{ raw: row }` depending on table variant. */
+export function resolveDataTableRow<T extends Record<string, unknown>>(
+  item: T | { raw?: T } | null | undefined
+): T {
+  if (item != null && typeof item === 'object' && 'raw' in item && item.raw && typeof item.raw === 'object') {
+    return item.raw as T;
+  }
+  return (item ?? {}) as T;
+}
+
 export function packageDataId(row: OdakPackageRow | Record<string, unknown>): string {
-  const r = row as Record<string, unknown>;
+  const r = resolveDataTableRow(row as Record<string, unknown>);
   return String(r.__dataId ?? r.dataId ?? '');
 }
 
@@ -58,6 +68,14 @@ function resolveRelationId(raw: unknown): string {
   return String(raw);
 }
 
+/** DG filter — relation field için tek veya çoklu id (parentPackageId vb.). */
+export function buildRelationInFilter(relationField: string, ids: string[]): string | undefined {
+  const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))];
+  if (!unique.length) return undefined;
+  if (unique.length === 1) return `${relationField}:eq:${unique[0]}`;
+  return `${relationField}:in:${JSON.stringify(unique)}`;
+}
+
 /** DG filter — tek paketin kalemleri (field:operator:value). */
 export function buildLinesByParentPackageFilter(parentPackageId: string): string {
   return `parentPackageId:eq:${parentPackageId}`;
@@ -65,10 +83,7 @@ export function buildLinesByParentPackageFilter(parentPackageId: string): string
 
 /** DG filter — birden fazla paket (line stats chunk). */
 export function buildLinesByParentPackagesFilter(parentPackageIds: string[]): string | undefined {
-  const ids = parentPackageIds.map((id) => id.trim()).filter(Boolean);
-  if (!ids.length) return undefined;
-  if (ids.length === 1) return buildLinesByParentPackageFilter(ids[0]!);
-  return `parentPackageId:in:${JSON.stringify(ids)}`;
+  return buildRelationInFilter('parentPackageId', parentPackageIds);
 }
 
 /** Sunucu filtresi yanlis donerse client-side guvenlik agi. */
@@ -172,13 +187,15 @@ const CUSTOMER_LABEL_CACHE_TTL_MS = 600_000;
 
 let customerLabelCache: { map: Record<string, string>; expiresAt: number } | null = null;
 let customerLabelInflight: Promise<Record<string, string>> | null = null;
+let customerRelationOptionsCache: { items: { value: string; title: string }[]; expiresAt: number } | null = null;
 
-async function loadCustomerLabelMap(): Promise<Record<string, string>> {
+async function loadCustomerLabelMap(customersOnly = false): Promise<Record<string, string>> {
   const map: Record<string, string> = {};
   try {
     const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.customersDataset, {
       limit: 3000,
       sort: 'unvan:asc',
+      filter: customersOnly ? 'isMusteri:eq:true' : undefined,
     });
     for (const row of resp.items ?? []) {
       const o = row as Record<string, unknown>;
@@ -217,6 +234,7 @@ export async function fetchCustomerLabelMap(forceRefresh = false): Promise<Recor
 
 export function invalidateOdakSiparisCustomerCache(): void {
   customerLabelCache = null;
+  customerRelationOptionsCache = null;
 }
 
 /** Combobox / autocomplete — unvan A→Z (Türkçe locale). */
@@ -231,8 +249,15 @@ export function customerLabelMapToRelationOptions(
 export async function fetchCustomerRelationOptions(
   forceRefresh = false
 ): Promise<{ value: string; title: string }[]> {
-  const map = await fetchCustomerLabelMap(forceRefresh);
-  return customerLabelMapToRelationOptions(map);
+  const now = Date.now();
+  if (!forceRefresh && customerRelationOptionsCache && customerRelationOptionsCache.expiresAt > now) {
+    return customerRelationOptionsCache.items;
+  }
+
+  const map = await loadCustomerLabelMap(true);
+  const items = customerLabelMapToRelationOptions(map);
+  customerRelationOptionsCache = { items, expiresAt: now + CUSTOMER_LABEL_CACHE_TTL_MS };
+  return items;
 }
 
 export interface OdakPackageListSort {

@@ -140,6 +140,8 @@ export interface OdakCustomerRow {
   unvan?: string;
   sektor?: OdakCustomerSektor | string;
   ulke?: string;
+  isMusteri?: boolean;
+  isTedarikci?: boolean;
   aktif?: boolean;
   notlar?: string;
   legacyFirmId?: string;

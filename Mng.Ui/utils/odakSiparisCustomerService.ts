@@ -8,6 +8,8 @@ export interface OdakCustomerFormModel {
   unvan: string;
   sektor: string | null;
   ulke: string;
+  isMusteri: boolean;
+  isTedarikci: boolean;
   aktif: boolean;
   notlar: string;
 }
@@ -37,12 +39,26 @@ export function customerSektorLabel(value: unknown): string {
   return hit?.title ?? String(value);
 }
 
+/** Aktör rol bayrakları — liste chip'leri için. */
+export function customerActorRoleChips(row: Pick<OdakCustomerRow, 'isMusteri' | 'isTedarikci'>): Array<'musteri' | 'tedarikci'> {
+  const roles: Array<'musteri' | 'tedarikci'> = [];
+  if (row.isMusteri !== false) roles.push('musteri');
+  if (row.isTedarikci === true) roles.push('tedarikci');
+  return roles;
+}
+
+export function isCustomerActor(row: Pick<OdakCustomerRow, 'isMusteri'>): boolean {
+  return row.isMusteri !== false;
+}
+
 export function emptyCustomerFormModel(partial?: Partial<OdakCustomerFormModel>): OdakCustomerFormModel {
   return {
     kod: partial?.kod ?? '',
     unvan: partial?.unvan ?? '',
     sektor: partial?.sektor ?? null,
     ulke: partial?.ulke ?? '',
+    isMusteri: partial?.isMusteri ?? true,
+    isTedarikci: partial?.isTedarikci ?? false,
     aktif: partial?.aktif ?? true,
     notlar: partial?.notlar ?? '',
   };
@@ -54,6 +70,8 @@ export function customerRowToFormModel(row: OdakCustomerRow): OdakCustomerFormMo
     unvan: row.unvan ?? '',
     sektor: row.sektor ?? null,
     ulke: row.ulke ?? '',
+    isMusteri: row.isMusteri !== false,
+    isTedarikci: row.isTedarikci === true,
     aktif: row.aktif !== false,
     notlar: row.notlar ?? '',
   });
@@ -65,6 +83,8 @@ export function formModelToCustomerPayload(form: OdakCustomerFormModel): Record<
     unvan: form.unvan.trim(),
     sektor: form.sektor || null,
     ulke: form.ulke.trim() || null,
+    isMusteri: form.isMusteri,
+    isTedarikci: form.isTedarikci,
     aktif: form.aktif,
     notlar: form.notlar.trim() || null,
   };

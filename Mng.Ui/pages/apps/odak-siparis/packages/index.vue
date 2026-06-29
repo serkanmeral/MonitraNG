@@ -57,7 +57,7 @@ const route = useRoute();
 const router = useRouter();
 
 type StatusTab = 'open' | 'closed' | 'all';
-type ExpandTab = 'summary' | 'lines' | 'shipments' | 'quality' | 'documents';
+type ExpandTab = 'summary' | 'dashboard' | 'lines' | 'shipments' | 'quality' | 'documents';
 
 const statusTab = ref<StatusTab>('open');
 const searchQuery = ref('');
@@ -296,11 +296,21 @@ async function onCustomerSaved() {
 
 function parseExpandTabFromQuery(): ExpandTab {
   const tab = route.query.tab;
+  if (tab === 'dashboard') return 'dashboard';
   if (tab === 'lines') return 'lines';
   if (tab === 'shipments') return 'shipments';
   if (tab === 'quality') return 'quality';
   if (tab === 'documents' || tab === 'coc') return 'documents';
   return 'summary';
+}
+
+function onExpandNavigate(tab: 'lines' | 'shipments' | 'quality' | 'documents') {
+  expandActiveTab.value = tab;
+  syncExpandRoute();
+}
+
+function openGlobalDashboard() {
+  void router.push('/dashboards/odak-siparis');
 }
 
 function syncExpandRoute() {
@@ -536,6 +546,9 @@ async function initPackagesPage() {
           <SettingsIcon size="18" class="mr-1" />
           {{ t('odakSiparis.packages.settings.title') }}
         </v-btn>
+        <v-btn variant="tonal" color="primary" prepend-icon="mdi-view-dashboard-outline" @click="openGlobalDashboard">
+          {{ t('odakSiparis.dashboard.global.openFromPackages') }}
+        </v-btn>
         <v-btn icon variant="outlined" size="small" :loading="loading" @click="fetchPackages">
           <RefreshIcon size="18" />
         </v-btn>
@@ -608,6 +621,7 @@ async function initPackagesPage() {
                   :initial-tab="expandActiveTab"
                   @open-customer="openCustomerDrawer"
                   @update:active-tab="expandActiveTab = $event"
+                  @navigate="onExpandNavigate"
                 />
                 </div>
               </td>

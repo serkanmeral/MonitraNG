@@ -16,6 +16,7 @@ param(
 $ErrorActionPreference = "Stop"
 $scriptDir = $PSScriptRoot
 $repoRoot = (Resolve-Path (Join-Path $scriptDir "../../../..")).Path
+. (Join-Path $scriptDir "lib/DgMigrationCommon.ps1")
 
 if ([string]::IsNullOrEmpty($LegacyFirmsJsonPath)) {
     $LegacyFirmsJsonPath = Join-Path $scriptDir "..\datasets\legacy-firms-customers.json"
@@ -99,7 +100,7 @@ $skipped = 0
 
 foreach ($firm in $firms) {
     $legacyId = [string]$firm.id
-    $unvan = [string]$firm.name
+    $unvan = Limit-LegacyText $firm.name 500
     if ([string]::IsNullOrWhiteSpace($unvan)) {
         Write-Host "SKIP: legacyFirmId=$legacyId (bos unvan)" -ForegroundColor Yellow
         $skipped++
@@ -114,14 +115,21 @@ foreach ($firm in $firms) {
         continue
     }
 
+    $isCustomer = $true
+    $isSupplier = $false
+    if ($null -ne $firm.is_customer) { $isCustomer = [string]$firm.is_customer -in @('1', 'true', 'True') }
+    if ($null -ne $firm.is_supplier) { $isSupplier = [string]$firm.is_supplier -in @('1', 'true', 'True') }
+
     $kod = Format-MusteriKod -LegacyFirmId $legacyId
     $body = @{
         legacyFirmId = $legacyId
         kod          = $kod
         unvan        = $unvan.Trim()
+        isMusteri    = $isCustomer
+        isTedarikci  = $isSupplier
         aktif        = $true
     }
-    if ($firm.country) { $body.ulke = [string]$firm.country }
+    if ($firm.country) { $body.ulke = Limit-LegacyText $firm.country 64 }
 
     if ($DryRun) {
         Write-Host "[DRY] $kod -> $unvan" -ForegroundColor Yellow

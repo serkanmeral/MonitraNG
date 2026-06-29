@@ -1,7 +1,7 @@
 {
-  "formName": "Odak Musteriler",
+  "formName": "Odak Aktörler",
   "formCode": "odak-musteriler-form",
-  "description": "Odak Uretim — musteri master verisi (Automated Forms)",
+  "description": "Odak — aktör master verisi (müşteri / tedarikçi)",
   "datasetName": "odak_musteriler",
   "isActive": true,
   "sideMenuConfig": {
@@ -31,9 +31,35 @@
         "format": { "type": "text-transform", "textTransform": "capitalize" }
       },
       {
-        "fieldName": "sektor",
+        "fieldName": "isMusteri",
         "visible": true,
         "order": 3,
+        "sortable": true,
+        "filterable": true,
+        "format": {
+          "type": "conditional-color",
+          "conditions": [
+            { "operator": "eq", "value": true, "textColor": "primary" }
+          ]
+        }
+      },
+      {
+        "fieldName": "isTedarikci",
+        "visible": true,
+        "order": 4,
+        "sortable": true,
+        "filterable": true,
+        "format": {
+          "type": "conditional-color",
+          "conditions": [
+            { "operator": "eq", "value": true, "textColor": "warning" }
+          ]
+        }
+      },
+      {
+        "fieldName": "sektor",
+        "visible": true,
+        "order": 5,
         "sortable": true,
         "filterable": true,
         "format": {
@@ -48,14 +74,14 @@
       {
         "fieldName": "ulke",
         "visible": true,
-        "order": 4,
+        "order": 6,
         "sortable": true,
         "filterable": true
       },
       {
         "fieldName": "aktif",
         "visible": true,
-        "order": 5,
+        "order": 7,
         "sortable": true,
         "filterable": true,
         "format": {
@@ -69,18 +95,20 @@
     ]
   },
   "formConfig": {
-    "visibleFields": ["kod", "unvan", "sektor", "ulke", "aktif", "notlar"],
+    "visibleFields": ["kod", "unvan", "isMusteri", "isTedarikci", "sektor", "ulke", "aktif", "notlar"],
     "readonlyFields": [],
     "readonlyOnEditFields": ["kod"],
-    "fieldOrder": ["kod", "unvan", "sektor", "ulke", "aktif", "notlar"],
+    "fieldOrder": ["kod", "unvan", "isMusteri", "isTedarikci", "sektor", "ulke", "aktif", "notlar"],
     "fieldLayout": {
       "kod": { "columnSpan": 4, "group": "Genel" },
       "unvan": { "columnSpan": 8, "group": "Genel" },
+      "isMusteri": { "columnSpan": 6, "group": "Roller" },
+      "isTedarikci": { "columnSpan": 6, "group": "Roller" },
       "sektor": { "columnSpan": 6, "group": "Genel", "choiceWidget": "select" },
       "ulke": { "columnSpan": 6, "group": "Genel" },
       "aktif": { "columnSpan": 4, "group": "Genel" },
       "notlar": { "columnSpan": 12, "group": "Notlar", "textWidget": "textarea" }
     },
-    "groupOrder": ["Genel", "Notlar"]
+    "groupOrder": ["Genel", "Roller", "Notlar"]
   }
 }

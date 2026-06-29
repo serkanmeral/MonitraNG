@@ -187,6 +187,9 @@ Write-Host "[3] op_fields..." -ForegroundColor Yellow
 $fieldAffectedUserId = Find-OrCreate -Collection "op_fields" -Filter "key:eq:affectedUser" -Label "affectedUser" -Body @{
     key = "affectedUser"; label = "Etkilenen kullanici"; fieldType = "persons"; scope = "pool"; category = "assignment"; cardinality = "single"
 }
+$fieldAffectedGroupsId = Find-OrCreate -Collection "op_fields" -Filter "key:eq:affectedGroups" -Label "affectedGroups" -Body @{
+    key = "affectedGroups"; label = "Etkilenen gruplar"; fieldType = "personGroups"; scope = "pool"; category = "assignment"; cardinality = "multi"
+}
 $fieldAffectedAssetId = Find-OrCreate -Collection "op_fields" -Filter "key:eq:affectedAsset" -Label "affectedAsset" -Body @{
     key = "affectedAsset"; label = "Etkilenen varlik"; fieldType = "text"; scope = "pool"; category = "technical"
 }
@@ -226,7 +229,7 @@ $workspaceId = Find-OrCreate -Collection "op_workspaces" -Filter "name:eq:$works
     adminGroups           = @($adminGroupId)
     enabledTypeIds        = @($typeIncidentId, $typeServiceId, $typeProblemId, $typeAccessId)
     enabledPriorityIds    = @($prioP1Id, $prioP2Id, $prioP3Id, $prioP4Id)
-    enabledFieldIds       = @($fieldAffectedUserId, $fieldAffectedAssetId, $fieldRequestCategoryId, $fieldResolutionId)
+    enabledFieldIds       = @($fieldAffectedUserId, $fieldAffectedAssetId, $fieldRequestCategoryId, $fieldResolutionId, $fieldAffectedGroupsId)
     enabledStateIds       = @(
         $stateNewId, $stateAssignedId, $stateProgressId, $stateWaitingId, $stateResolvedId, $stateClosedId
     )
@@ -245,7 +248,7 @@ Invoke-DgPut -Collection "op_workspaces" -Id $workspaceId -Body @{
     adminGroups           = @($adminGroupId)
     enabledTypeIds        = @($typeIncidentId, $typeServiceId, $typeProblemId, $typeAccessId)
     enabledPriorityIds    = @($prioP1Id, $prioP2Id, $prioP3Id, $prioP4Id)
-    enabledFieldIds       = @($fieldAffectedUserId, $fieldAffectedAssetId, $fieldRequestCategoryId, $fieldResolutionId)
+    enabledFieldIds       = @($fieldAffectedUserId, $fieldAffectedAssetId, $fieldRequestCategoryId, $fieldResolutionId, $fieldAffectedGroupsId)
     enabledStateIds       = @(
         $stateNewId, $stateAssignedId, $stateProgressId, $stateWaitingId, $stateResolvedId, $stateClosedId
     )
@@ -337,7 +340,7 @@ $formBody = @{
             @{
                 key    = "main"
                 title  = "Talep bilgileri"
-                fields = @("title", "description", "typeId", "priorityId", "labels", "impact", "urgency", "requestCategory", "affectedUser", "affectedAsset")
+                fields = @("title", "description", "typeId", "priorityId", "labels", "affectedAsset", "affectedGroups")
             }
         )
     }
@@ -348,11 +351,12 @@ $formBody = @{
         priorityId      = @{ visible = $true }
         labels          = @{ visible = $true }
         assignee        = @{ visible = $false }
-        impact          = @{ visible = $true }
-        urgency         = @{ visible = $true }
-        requestCategory = @{ visible = $true }
-        affectedUser    = @{ visible = $true }
+        impact          = @{ visible = $false }
+        urgency         = @{ visible = $false }
+        requestCategory = @{ visible = $false }
+        affectedUser    = @{ visible = $false }
         affectedAsset   = @{ visible = $true }
+        affectedGroups  = @{ visible = $true }
     }
     defaultValues      = @{
         priorityId = $prioP3Id
@@ -496,11 +500,12 @@ $profileBody = @{
         priorityId         = @{ visible = $true }
         assignee           = @{ visible = $true }
         labels             = @{ visible = $true }
-        impact             = @{ visible = $true }
-        urgency            = @{ visible = $true }
-        requestCategory    = @{ visible = $true }
-        affectedUser       = @{ visible = $true }
+        impact             = @{ visible = $false }
+        urgency            = @{ visible = $false }
+        requestCategory    = @{ visible = $false }
+        affectedUser       = @{ visible = $false }
         affectedAsset      = @{ visible = $true }
+        affectedGroups     = @{ visible = $true }
         resolutionSummary  = @{ visible = $true }
     }
     actions        = @(
@@ -518,7 +523,7 @@ $profileBody = @{
     panels         = @{ timeline = @{ enabled = $true }; comments = @{ enabled = $true } }
     layout         = @{
         sections = @(
-            @{ key = "summary"; title = "Ozet"; fields = @("title", "description", "typeId", "priorityId", "assignee", "labels", "key", "impact", "urgency", "requestCategory", "affectedUser", "affectedAsset") },
+            @{ key = "summary"; title = "Ozet"; fields = @("title", "description", "typeId", "priorityId", "assignee", "labels", "key", "affectedAsset", "affectedGroups") },
             @{ key = "resolution"; title = "Cozum"; fields = @("resolutionSummary") }
         )
     }

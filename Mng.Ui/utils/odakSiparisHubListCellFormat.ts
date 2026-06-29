@@ -3,14 +3,14 @@ import {
   getListColumnCellStyle,
 } from '@/utils/afListColumnFormat';
 import type { OdakHubListConfig } from '@/utils/odakSiparisHubListConfig';
-import { fieldNameFromListSortKey } from '@/utils/odakSiparisHubListConfig';
+import { hubFieldNameFromListSortKey } from '@/utils/odakSiparisHubListConfig';
 
 export function columnConfigForListKey(
   listConfig: OdakHubListConfig,
   listKey: string,
   listKeyToField: Record<string, string>
 ) {
-  const fieldName = fieldNameFromListSortKey(listKey, listKeyToField);
+  const fieldName = hubFieldNameFromListSortKey(listKey, listKeyToField);
   return listConfig.columns.find((c) => c.fieldName === fieldName);
 }
 
@@ -33,6 +33,6 @@ export function hubListCellStyle(
   item: Record<string, unknown>
 ): Record<string, string> {
   const col = columnConfigForListKey(listConfig, listKey, listKeyToField);
-  const fieldName = fieldNameFromListSortKey(listKey, listKeyToField);
+  const fieldName = hubFieldNameFromListSortKey(listKey, listKeyToField);
   return getListColumnCellStyle(raw, fieldName, col?.format, item);
 }

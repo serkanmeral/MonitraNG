@@ -6,7 +6,7 @@ import {
   ODAK_SIPARIS_CONFIG,
   type OdakNcrRow,
 } from '@/utils/odakSiparisConfig';
-import { formatOdakDate, packageDataId } from '@/utils/odakSiparisService';
+import { formatOdakDate, buildRelationInFilter, packageDataId } from '@/utils/odakSiparisService';
 import { fromDateInputValue, toDateInputValue } from '@/utils/odakSiparisDateUtils';
 
 export type OdakNcrDialogMode = 'view' | 'create' | 'edit';
@@ -27,6 +27,10 @@ export function ncrDataId(row: OdakNcrRow | Record<string, unknown>): string {
 
 export function buildNcrByParentPackageFilter(parentPackageId: string): string {
   return `parentPackageId:eq:${parentPackageId}`;
+}
+
+export function buildNcrByParentPackagesFilter(parentPackageIds: string[]): string | undefined {
+  return buildRelationInFilter('parentPackageId', parentPackageIds);
 }
 
 export function ncrBelongsToPackage(row: Record<string, unknown>, packageId: string): boolean {
@@ -184,14 +188,20 @@ export async function fetchOdakNcrById(ncrId: string): Promise<OdakNcrRow | null
 
 export async function listNcrsForPackage(packageId: string): Promise<OdakNcrRow[]> {
   if (!packageId) return [];
-  const filter = buildNcrByParentPackageFilter(packageId);
+  return listNcrsForPackages([packageId]);
+}
+
+export async function listNcrsForPackages(parentPackageIds: string[]): Promise<OdakNcrRow[]> {
+  const filter = buildNcrByParentPackagesFilter(parentPackageIds);
+  if (!filter) return [];
+  const packageIdSet = new Set(parentPackageIds.map((id) => id.trim()).filter(Boolean));
   const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.ncrDataset, {
     filter,
     sort: '-__createdAt',
     limit: 500,
   });
   return ((resp.items ?? []) as OdakNcrRow[]).filter((row) =>
-    ncrBelongsToPackage(row as Record<string, unknown>, packageId)
+    packageIdSet.has(resolveRelationId(row.parentPackageId))
   );
 }
 

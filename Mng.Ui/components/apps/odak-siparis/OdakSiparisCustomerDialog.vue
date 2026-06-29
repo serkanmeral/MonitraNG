@@ -81,6 +81,10 @@ async function saveCustomer() {
     errorMessage.value = t('odakSiparis.customers.validation.unvanRequired');
     return;
   }
+  if (!form.isMusteri && !form.isTedarikci) {
+    errorMessage.value = t('odakSiparis.customers.validation.roleRequired');
+    return;
+  }
 
   saving.value = true;
   try {
@@ -150,6 +154,22 @@ watch(
                 variant="outlined"
                 density="comfortable"
                 hide-details="auto"
+              />
+            </v-col>
+            <v-col cols="12" sm="6">
+              <v-switch
+                v-model="form.isMusteri"
+                :label="t('odakSiparis.customers.fields.isMusteri')"
+                color="primary"
+                hide-details
+              />
+            </v-col>
+            <v-col cols="12" sm="6">
+              <v-switch
+                v-model="form.isTedarikci"
+                :label="t('odakSiparis.customers.fields.isTedarikci')"
+                color="warning"
+                hide-details
               />
             </v-col>
             <v-col cols="12" sm="6">

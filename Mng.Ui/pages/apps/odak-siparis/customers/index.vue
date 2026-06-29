@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import AfListFilters from '@/components/apps/automated-forms/AfListFilters.vue';
-import OdakSiparisCustomerContactsPanel from '@/components/apps/odak-siparis/OdakSiparisCustomerContactsPanel.vue';
-import OdakSiparisCustomerQualityReqPanel from '@/components/apps/odak-siparis/OdakSiparisCustomerQualityReqPanel.vue';
+import OdakSiparisCustomerExpandPanel from '@/components/apps/odak-siparis/OdakSiparisCustomerExpandPanel.vue';
 import OdakSiparisCustomerDialog from '@/components/apps/odak-siparis/OdakSiparisCustomerDialog.vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
@@ -11,12 +10,14 @@ import type { AfFilterColumn, AfListFilter } from '@/utils/afListFilters';
 import { ODAK_DATA_TABLE_EXPAND_COLUMN, ODAK_SIPARIS_CONFIG, type OdakCustomerRow } from '@/utils/odakSiparisConfig';
 import {
   customerSektorLabel,
+  customerActorRoleChips,
   fetchOdakCustomersPage,
+  isCustomerActor,
   packagesByCustomerRoute,
   type OdakCustomerDialogMode,
   type OdakCustomerListSort,
 } from '@/utils/odakSiparisCustomerService';
-import { invalidateOdakSiparisCustomerCache, packageDataId } from '@/utils/odakSiparisService';
+import { invalidateOdakSiparisCustomerCache, packageDataId, resolveDataTableRow } from '@/utils/odakSiparisService';
 import { EditIcon, PlusIcon, RefreshIcon, TrashIcon } from 'vue-tabler-icons';
 
 definePageMeta({ layout: 'default' });
@@ -39,6 +40,7 @@ const tableItemsPerPage = ref(20);
 const tableItemsPerPageOptions = [10, 20, 50, 100];
 const tableSortBy = ref<OdakCustomerListSort[]>([{ key: 'unvan', order: 'asc' }]);
 const expandedIds = ref<string[]>([]);
+const expandRefreshToken = ref(0);
 
 const dialogOpen = ref(false);
 const dialogMode = ref<OdakCustomerDialogMode>('create');
@@ -65,6 +67,8 @@ const aktifTabs = computed(() => [
 const filterColumns = computed<AfFilterColumn[]>(() => [
   { key: 'kod', label: t('odakSiparis.customers.fields.kod'), kind: 'text' },
   { key: 'unvan', label: t('odakSiparis.customers.fields.unvan'), kind: 'text' },
+  { key: 'isMusteri', label: t('odakSiparis.customers.fields.isMusteri'), kind: 'bool' },
+  { key: 'isTedarikci', label: t('odakSiparis.customers.fields.isTedarikci'), kind: 'bool' },
   { key: 'sektor', label: t('odakSiparis.customers.fields.sektor'), kind: 'text' },
   { key: 'ulke', label: t('odakSiparis.customers.fields.ulke'), kind: 'text' },
 ]);
@@ -73,6 +77,7 @@ const headers = computed(() => [
   { ...ODAK_DATA_TABLE_EXPAND_COLUMN },
   { title: t('odakSiparis.customers.fields.kod'), key: 'kod', sortable: true },
   { title: t('odakSiparis.customers.fields.unvan'), key: 'unvan', sortable: true },
+  { title: t('odakSiparis.customers.fields.roles'), key: 'actorRoles', sortable: false },
   { title: t('odakSiparis.customers.fields.sektor'), key: 'sektor', sortable: true },
   { title: t('odakSiparis.customers.fields.ulke'), key: 'ulke', sortable: true },
   { title: t('odakSiparis.customers.fields.aktif'), key: 'aktifLabel', sortable: true },
@@ -156,11 +161,25 @@ async function doDelete() {
 
 async function onCustomerSaved() {
   invalidateOdakSiparisCustomerCache();
+  const keepExpanded = expandedIds.value.length ? [...expandedIds.value] : [];
   await fetchCustomers();
+  if (keepExpanded.length) {
+    expandedIds.value = keepExpanded;
+    expandRefreshToken.value += 1;
+  }
   const edit = route.query.edit;
   if (typeof edit === 'string' && edit.trim()) {
     void router.replace({ path: route.path, query: {} });
   }
+}
+
+function customerExpandRow(item: OdakCustomerRow | { raw?: OdakCustomerRow }) {
+  return resolveDataTableRow(item as Record<string, unknown>) as OdakCustomerRow;
+}
+
+function customerExpandKey(item: OdakCustomerRow | { raw?: OdakCustomerRow }) {
+  const row = customerExpandRow(item);
+  return `${packageDataId(row)}-${expandRefreshToken.value}-${row.isMusteri}-${row.isTedarikci}`;
 }
 
 type TableOptions = {
@@ -282,8 +301,11 @@ onMounted(() => {
           <template #expanded-row="{ columns, item }">
             <tr>
               <td :colspan="columns.length" class="pa-0">
-                <OdakSiparisCustomerContactsPanel :customer-row="item" />
-                <OdakSiparisCustomerQualityReqPanel :customer-row="item" />
+                <OdakSiparisCustomerExpandPanel
+                  :key="customerExpandKey(item)"
+                  :customer-row="customerExpandRow(item)"
+                  :refresh-token="expandRefreshToken"
+                />
               </td>
             </tr>
           </template>
@@ -299,6 +321,20 @@ onMounted(() => {
           <template #item.sektor="{ item }">
             {{ customerSektorLabel(item.sektor) }}
           </template>
+          <template #item.actorRoles="{ item }">
+            <div class="d-flex flex-wrap ga-1 py-1">
+              <v-chip
+                v-for="role in customerActorRoleChips(item)"
+                :key="role"
+                size="x-small"
+                :color="role === 'musteri' ? 'primary' : 'warning'"
+                variant="tonal"
+              >
+                {{ role === 'musteri' ? t('odakSiparis.customers.roleMusteri') : t('odakSiparis.customers.roleTedarikci') }}
+              </v-chip>
+              <span v-if="!customerActorRoleChips(item).length" class="text-medium-emphasis">—</span>
+            </div>
+          </template>
           <template #item.aktifLabel="{ item }">
             <v-chip size="x-small" :color="item.aktif !== false ? 'success' : 'error'" variant="tonal">
               {{ item.aktif !== false ? t('odakSiparis.customers.activeYes') : t('odakSiparis.customers.activeNo') }}
@@ -306,7 +342,14 @@ onMounted(() => {
           </template>
           <template #item.actions="{ item }">
             <div class="d-inline-flex align-center justify-end ga-1">
-              <v-btn icon size="x-small" variant="text" :title="t('odakSiparis.customers.openPackages')" @click="openPackagesFor(item)">
+              <v-btn
+                v-if="isCustomerActor(item)"
+                icon
+                size="x-small"
+                variant="text"
+                :title="t('odakSiparis.customers.openPackages')"
+                @click="openPackagesFor(item)"
+              >
                 <v-icon size="18">mdi-clipboard-list-outline</v-icon>
               </v-btn>
               <v-btn icon size="x-small" variant="text" @click="openDialog('edit', item)">

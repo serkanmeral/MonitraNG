@@ -84,7 +84,7 @@ function Map-CapaStatus {
 
 function Build-NcrBody {
     param($nc, [string]$LegacyNcrId, [string]$ParentPackageId)
-    $descriptor = [string]$nc.descriptor
+    $descriptor = Limit-LegacyText $nc.descriptor 500
     if ([string]::IsNullOrWhiteSpace($descriptor) -or $descriptor.Trim().Length -lt 2) {
         $descriptor = if ($nc.nc_no) { "NCR $([string]$nc.nc_no)" } else { "NCR $LegacyNcrId" }
     }
@@ -92,15 +92,15 @@ function Build-NcrBody {
     $body = @{
         legacyNcrId     = $LegacyNcrId
         parentPackageId = $ParentPackageId
-        ncStatus        = if ($nc.nc_status) { [string]$nc.nc_status } else { "Değerlendirme Bekleniyor" }
+        ncStatus        = if ($nc.nc_status) { Limit-LegacyText $nc.nc_status 200 } else { "Değerlendirme Bekleniyor" }
         descriptor      = $descriptor.Trim()
     }
     if ($nc.nc_no) { $body.legacyNcNo = [string]$nc.nc_no }
     if ($nc.nc_date) { $d = To-IsoDate ([string]$nc.nc_date); if ($d) { $body.ncDate = $d } }
-    if ($nc.control_type) { $body.controlType = [string]$nc.control_type }
-    if ($nc.explanation) { $body.explanation = [string]$nc.explanation }
-    if ($nc.product_code) { $body.productCode = [string]$nc.product_code }
-    if ($nc.job_no) { $body.jobNo = [string]$nc.job_no }
+    if ($nc.control_type) { $body.controlType = Limit-LegacyText $nc.control_type 200 }
+    if ($nc.explanation) { $body.explanation = Limit-LegacyText $nc.explanation 4000 }
+    if ($nc.product_code) { $body.productCode = Limit-LegacyText $nc.product_code 128 }
+    if ($nc.job_no) { $body.jobNo = Limit-LegacyText $nc.job_no 128 }
     foreach ($numField in @("part_count", "rework_count", "repair_count", "observe_count", "scrap_count", "asis_count", "return_count", "other_count")) {
         $val = $nc.$numField
         if ($null -ne $val -and [string]$val -ne "NULL") {
@@ -110,12 +110,12 @@ function Build-NcrBody {
             try { $body[$prop] = [double]$val } catch { }
         }
     }
-    if ($nc.fai_status) { $body.faiStatus = [string]$nc.fai_status }
-    if ($nc.error_code) { $body.errorCode = [string]$nc.error_code }
-    if ($nc.nc_action) { $body.ncAction = [string]$nc.nc_action }
-    if ($nc.responsible) { $body.responsible = [string]$nc.responsible }
+    if ($nc.fai_status) { $body.faiStatus = Limit-LegacyText $nc.fai_status 200 }
+    if ($nc.error_code) { $body.errorCode = Limit-LegacyText $nc.error_code 128 }
+    if ($nc.nc_action) { $body.ncAction = Limit-LegacyText $nc.nc_action 2000 }
+    if ($nc.responsible) { $body.responsible = Limit-LegacyText $nc.responsible 256 }
     if ($nc.closure_date) { $d = To-IsoDate ([string]$nc.closure_date); if ($d) { $body.closureDate = $d } }
-    if ($nc.notes) { $body.notes = [string]$nc.notes }
+    if ($nc.notes) { $body.notes = Limit-LegacyText $nc.notes 4000 }
     return $body
 }
 
@@ -250,7 +250,7 @@ foreach ($cp in $cpasList) {
     }
 
     $legacyCapaNo = if ($cp.form_no) { [string]$cp.form_no } elseif ($cp.cpa_no) { [string]$cp.cpa_no } else { "$($cp.form_year)-$($cp.id)" }
-    $description = [string]$cp.descript
+    $description = Limit-LegacyText $cp.descript 2000
     if ([string]::IsNullOrWhiteSpace($description)) { $description = "CAPA $legacyCapaId" }
 
     $legacyNcrId = $cpaToNc[$legacyCapaId]
@@ -280,11 +280,11 @@ foreach ($cp in $cpasList) {
         description     = $description.Trim()
     }
     if ($cp.cpa_date) { $d = To-IsoDate ([string]$cp.cpa_date); if ($d) { $body.cpaDate = $d } }
-    if ($cp.source) { $body.source = [string]$cp.source }
-    if ($cp.request_division) { $body.requestDivision = [string]$cp.request_division }
-    if ($cp.nonconformity) { $body.nonconformity = [string]$cp.nonconformity }
-    if ($cp.tecnique) { $body.tecnique = [string]$cp.tecnique }
-    if ($cp.error_code) { $body.errorCode = [string]$cp.error_code }
+    if ($cp.source) { $body.source = Limit-LegacyText $cp.source 500 }
+    if ($cp.request_division) { $body.requestDivision = Limit-LegacyText $cp.request_division 256 }
+    if ($cp.nonconformity) { $body.nonconformity = Limit-LegacyText $cp.nonconformity 4000 }
+    if ($cp.tecnique) { $body.tecnique = Limit-LegacyText $cp.tecnique 2000 }
+    if ($cp.error_code) { $body.errorCode = Limit-LegacyText $cp.error_code 128 }
     if ($cp.first_followup_date) { $d = To-IsoDate ([string]$cp.first_followup_date); if ($d) { $body.firstFollowupDate = $d } }
     if ($cp.second_followup_date) { $d = To-IsoDate ([string]$cp.second_followup_date); if ($d) { $body.secondFollowupDate = $d } }
     if ($cp.closed_date) { $d = To-IsoDate ([string]$cp.closed_date); if ($d) { $body.closedDate = $d } }

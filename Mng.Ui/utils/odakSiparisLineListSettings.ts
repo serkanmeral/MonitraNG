@@ -5,11 +5,11 @@ import {
   buildHubListHeaders,
   buildListKeyToFieldMap,
   defaultHubListConfigFromCatalog,
-  fieldNameFromListSortKey,
-  listSortKeyFromField,
+  filterHubListConfigToCatalog,
+  hubFieldNameFromListSortKey,
+  hubListSortKeyFromField,
   mergeHubListConfig,
   parseHubListConfig,
-  filterHubListConfigToCatalog,
   type OdakHubListConfig,
   type OdakHubListFieldDef,
   type OdakHubListHeader,
@@ -89,11 +89,11 @@ export function buildLineListHeaders(
 }
 
 export function listSortKeyFromLineField(fieldName: string): string {
-  return listSortKeyFromField(fieldName, ODAK_LINE_LIST_FIELD_TO_KEY);
+  return hubListSortKeyFromField(fieldName, ODAK_LINE_LIST_FIELD_TO_KEY);
 }
 
 export function fieldNameFromLineListKey(sortKey: string): string {
-  return fieldNameFromListSortKey(sortKey, ODAK_LINE_LIST_KEY_TO_FIELD);
+  return hubFieldNameFromListSortKey(sortKey, ODAK_LINE_LIST_KEY_TO_FIELD);
 }
 
 export function lineListCellRaw(row: OdakLineRow, listKey: string): string {

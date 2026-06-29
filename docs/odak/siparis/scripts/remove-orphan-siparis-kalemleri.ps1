@@ -21,7 +21,11 @@ $headers = @{ Authorization = "Bearer $token" }
 
 function Invoke-Dg {
     param([string]$Method, [string]$Uri)
-    Invoke-RestMethod -Uri $Uri -Method $Method -Headers $headers -ErrorAction Stop
+    $p = @{ Uri = $Uri; Method = $Method; Headers = $headers; ErrorAction = "Stop" }
+    if ($Uri.StartsWith("https://") -and (Get-Command Invoke-RestMethod).Parameters.ContainsKey("SkipCertificateCheck")) {
+        $p.SkipCertificateCheck = $true
+    }
+    Invoke-RestMethod @p
 }
 
 function Test-OrphanLine {

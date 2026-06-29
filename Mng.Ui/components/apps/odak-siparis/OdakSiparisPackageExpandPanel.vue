@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import OdakSiparisPackageDashboardPanel from '@/components/apps/odak-siparis/OdakSiparisPackageDashboardPanel.vue';
 import OdakSiparisLinesPanel from '@/components/apps/odak-siparis/OdakSiparisLinesPanel.vue';
 import OdakSiparisLineDocumentsPanel from '@/components/apps/odak-siparis/OdakSiparisLineDocumentsPanel.vue';
 import OdakSiparisPoDocumentPanel from '@/components/apps/odak-siparis/OdakSiparisPoDocumentPanel.vue';
@@ -19,21 +20,23 @@ const props = defineProps<{
   packageRow: OdakPackageRow;
   customerLabels: Record<string, string>;
   /** Liste sayfasindan expand acilirken baslangic sekmesi (URL ile senkron). */
-  initialTab?: 'summary' | 'lines' | 'shipments' | 'quality' | 'documents';
+  initialTab?: 'summary' | 'dashboard' | 'lines' | 'shipments' | 'quality' | 'documents';
 }>();
 
 const emit = defineEmits<{
   'open-customer': [customerId: string];
-  'update:activeTab': ['summary' | 'lines' | 'shipments' | 'quality' | 'documents'];
+  'update:activeTab': ['summary' | 'dashboard' | 'lines' | 'shipments' | 'quality' | 'documents'];
+  navigate: [tab: 'lines' | 'shipments' | 'quality' | 'documents'];
 }>();
 
 const { t } = useAppI18n();
 const route = useRoute();
 
-type ExpandTab = 'summary' | 'lines' | 'shipments' | 'quality' | 'documents';
+type ExpandTab = 'summary' | 'dashboard' | 'lines' | 'shipments' | 'quality' | 'documents';
 
 function tabFromRouteQuery(): ExpandTab {
   const tabFromQuery = route.query.tab;
+  if (tabFromQuery === 'dashboard') return 'dashboard';
   if (tabFromQuery === 'lines') return 'lines';
   if (tabFromQuery === 'shipments') return 'shipments';
   if (tabFromQuery === 'quality') return 'quality';
@@ -111,6 +114,7 @@ function onShipmentSaved() {
 
     <v-tabs v-model="activeTab" color="primary" density="compact" class="mb-3">
       <v-tab value="summary">{{ t('odakSiparis.detail.tabs.summary') }}</v-tab>
+      <v-tab value="dashboard">{{ t('odakSiparis.detail.tabs.dashboard') }}</v-tab>
       <v-tab value="lines">{{ t('odakSiparis.detail.tabs.lines') }}</v-tab>
       <v-tab value="shipments">{{ t('odakSiparis.detail.tabs.shipments') }}</v-tab>
       <v-tab value="documents">{{ t('odakSiparis.detail.tabs.documents') }}</v-tab>
@@ -155,6 +159,16 @@ function onShipmentSaved() {
           />
         </v-col>
       </v-row>
+    </div>
+
+    <div v-if="activeTab === 'dashboard'">
+      <OdakSiparisPackageDashboardPanel
+        :key="`${packageId}-dashboard`"
+        :package-id="packageId"
+        :package-row="pkg ?? packageRow"
+        :customer-labels="customerLabels"
+        @navigate="emit('navigate', $event)"
+      />
     </div>
 
     <div v-if="activeTab === 'lines'">

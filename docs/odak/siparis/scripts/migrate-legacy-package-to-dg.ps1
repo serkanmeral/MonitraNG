@@ -20,6 +20,7 @@ param(
 $ErrorActionPreference = "Stop"
 $scriptDir = $PSScriptRoot
 $repoRoot = (Resolve-Path (Join-Path $scriptDir "../../../..")).Path
+. (Join-Path $scriptDir "lib/DgMigrationCommon.ps1")
 
 if ([string]::IsNullOrEmpty($FirmMappingFile)) {
     $FirmMappingFile = Join-Path $scriptDir "..\datasets\migration-firm-mapping.json"
@@ -206,15 +207,15 @@ $closedAt = if ($status -eq "closed") { To-IsoDate $pkg.delivery_date } else { $
 $packageBody = @{
     legacyPackageId               = $legacyPackageId
     packageNo                     = $packageNo
-    name                          = if ($pkg.name) { [string]$pkg.name } else { "Is paketi $packageNo" }
+    name                          = if ($pkg.name) { Limit-LegacyText $pkg.name 500 } else { "Is paketi $packageNo" }
     customerId                    = $customerId
     status                        = $status
     closedAt                      = $closedAt
     beginDate                     = To-IsoDate $pkg.begin_date
     deliveryDate                  = To-IsoDate $pkg.delivery_date
-    deliveryAddress               = if ($pkg.address) { [string]$pkg.address } else { $null }
-    notes                         = if ($pkg.notes) { [string]$pkg.notes } else { $null }
-    paymentDetail                 = if ($pkg.payment_detail) { [string]$pkg.payment_detail } else { $null }
+    deliveryAddress               = if ($pkg.address) { Limit-LegacyText $pkg.address 500 } else { $null }
+    notes                         = if ($pkg.notes) { Limit-LegacyText $pkg.notes 2000 } else { $null }
+    paymentDetail                 = if ($pkg.payment_detail) { Limit-LegacyText $pkg.payment_detail 500 } else { $null }
     partCount                     = To-IntOrNull $pkg.part_count
     stockCount                    = To-IntOrNull $pkg.stock_count
     shippedCount                  = To-IntOrNull $pkg.shipped_count
@@ -246,22 +247,22 @@ foreach ($item in @($legacy.items)) {
     $lineBody = @{
         parentPackageId   = $packageDataId
         lineNo            = [int]$item.number
-        customerProjectNo = if ($item.customer_project_no) { [string]$item.customer_project_no } else { $null }
-        customerPoNo      = if ($item.customer_po_no) { [string]$item.customer_po_no } else { $null }
+        customerProjectNo = if ($item.customer_project_no) { Limit-LegacyText $item.customer_project_no 64 } else { $null }
+        customerPoNo      = if ($item.customer_po_no) { Limit-LegacyText $item.customer_po_no 64 } else { $null }
         customerPoItemNo  = To-IntOrNull $item.customer_po_item_no
-        description       = [string]$item.description
-        poItemRevNo       = if ($item.po_item_rev_no) { [string]$item.po_item_rev_no } else { $null }
-        customerJobNo     = if ($item.customer_job_no) { [string]$item.customer_job_no } else { $null }
+        description       = Limit-LegacyText $item.description 2000
+        poItemRevNo       = if ($item.po_item_rev_no) { Limit-LegacyText $item.po_item_rev_no 32 } else { $null }
+        customerJobNo     = if ($item.customer_job_no) { Limit-LegacyText $item.customer_job_no 64 } else { $null }
         quantity          = if ($null -ne $item.count -and $item.count -ne "") { [double]$item.count } else { 0 }
         unit              = Map-Unit ([string]$item.unit)
         unitCost          = To-DoubleOrNull $item.unit_cost
         totalCost         = To-DoubleOrNull $item.total_cost
         currency          = if ($item.currency) { [string]$item.currency } else { $null }
-        qualityReqs       = if ($item.quality_reqs) { [string]$item.quality_reqs } else { $null }
+        qualityReqs       = if ($item.quality_reqs) { Limit-LegacyText $item.quality_reqs 1000 } else { $null }
         isFai             = [bool]([int]$item.isfai -eq 1)
         isFaiComplete     = [bool]([int]$item.faicomp -eq 1)
         shipmentDate      = To-IsoDate $item.shipment_date
-        shipmentAddress   = if ($item.shipment_address) { [string]$item.shipment_address } else { $null }
+        shipmentAddress   = if ($item.shipment_address) { Limit-LegacyText $item.shipment_address 500 } else { $null }
         legacyLineId      = [string]$item.id
         legacyPackageId   = $legacyPackageId
         shippedQuantity   = 0

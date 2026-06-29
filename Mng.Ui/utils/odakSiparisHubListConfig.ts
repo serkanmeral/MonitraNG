@@ -164,10 +164,10 @@ export function buildHubListHeaders(
   return headers;
 }
 
-export function listSortKeyFromField(fieldName: string, fieldToListKey: Record<string, string>): string {
+export function hubListSortKeyFromField(fieldName: string, fieldToListKey: Record<string, string>): string {
   return fieldToListKey[fieldName] ?? fieldName;
 }
 
-export function fieldNameFromListSortKey(sortKey: string, listKeyToField: Record<string, string>): string {
+export function hubFieldNameFromListSortKey(sortKey: string, listKeyToField: Record<string, string>): string {
   return listKeyToField[sortKey] ?? sortKey;
 }

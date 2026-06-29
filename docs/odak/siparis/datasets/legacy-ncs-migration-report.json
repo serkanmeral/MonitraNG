@@ -1,13 +1,13 @@
 {
-  "ncr": {
+  "capa": {
+    "skippedExisting": 110,
+    "noNcrLink": 85,
     "created": 0,
-    "skippedExisting": 0,
-    "repaired": 499,
-    "invalidId": 0,
     "failed": 0,
-    "noPackage": 57,
     "packageNotInDg": 0
   },
+  "repairText": false,
+  "dryRun": false,
   "ncrFailures": [
     {
       "legacyNcrId": "40",
@@ -238,16 +238,16 @@
       "reason": "empty_package_id"
     }
   ],
-  "capaFailures": [],
-  "runAt": "2026-06-16T20:55:13.8274138Z",
   "sourceFile": "C:\\Users\\monitra\\Dev\\MonitraNG\\MonitraNG\\docs\\odak\\siparis\\scripts\\..\\datasets\\legacy-ncs-cpas.json",
-  "repairText": true,
-  "capa": {
+  "capaFailures": [],
+  "ncr": {
     "packageNotInDg": 0,
+    "created": 51,
+    "skippedExisting": 448,
+    "invalidId": 0,
+    "noPackage": 57,
     "failed": 0,
-    "created": 0,
-    "skippedExisting": 110,
-    "noNcrLink": 85
+    "repaired": 0
   },
-  "dryRun": false
+  "runAt": "2026-06-20T09:04:56.0340247Z"
 }

@@ -53,7 +53,8 @@ public static class ServiceRegistration
 
         services.AddScoped<IMngKeeperDirectorySyncClient, MngKeeperDirectorySyncClient>();
         services.AddScoped<IDirectorySyncOrchestrationService, DirectorySyncOrchestrationService>();
-        services.AddScoped<IMngKeeperAuthClient, MngKeeperAuthClient>();
+        // Singleton: in-memory Keeper token cache shared across JobSync polls and Quartz jobs.
+        services.AddSingleton<IMngKeeperAuthClient, MngKeeperAuthClient>();
         services.AddScoped<IWorkItemScheduleOrchestrationService, WorkItemScheduleOrchestrationService>();
         services.AddScoped<ISlaBreachScanOrchestrationService, SlaBreachScanOrchestrationService>();
         services.AddScoped<IAlarmValidationOrchestrationService, AlarmValidationOrchestrationService>();

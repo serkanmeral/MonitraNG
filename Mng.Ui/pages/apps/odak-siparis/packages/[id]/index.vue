@@ -8,7 +8,7 @@ const router = useRouter();
 const packageId = computed(() => String(route.params.id ?? '').trim());
 const tab = computed(() => {
   const t = route.query.tab;
-  if (t === 'lines' || t === 'quality') return t;
+  if (t === 'lines' || t === 'quality' || t === 'dashboard' || t === 'shipments' || t === 'documents') return t;
   return undefined;
 });
 

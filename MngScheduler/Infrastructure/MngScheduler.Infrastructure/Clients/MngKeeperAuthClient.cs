@@ -8,11 +8,24 @@ using MngScheduler.Application.Interfaces;
 
 namespace MngScheduler.Infrastructure.Clients;
 
+/// <summary>
+/// MngKeeper password grant client with in-memory token cache (singleton lifetime).
+/// Avoids full login + Keycloak directory sync on every JobSync poll (default 30s).
+/// </summary>
 public class MngKeeperAuthClient : IMngKeeperAuthClient
 {
+    private const int RefreshBufferSeconds = 60;
+    private const int DefaultExpiresInSeconds = 300;
+    private const int MinCacheLifetimeSeconds = 30;
+
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<MngKeeperAuthClient> _logger;
     private readonly MngSchedulerSettings _settings;
+    private readonly SemaphoreSlim _refreshLock = new(1, 1);
+
+    private string? _cacheKey;
+    private string? _cachedAccessToken;
+    private DateTime _cachedExpiresAtUtc = DateTime.MinValue;
 
     public MngKeeperAuthClient(
         IHttpClientFactory httpClientFactory,
@@ -36,6 +49,80 @@ public class MngKeeperAuthClient : IMngKeeperAuthClient
             return Fail(0, "WorkItemSchedule ServiceAccount DomainName, Username and Password are required.");
         }
 
+        var cacheKey = BuildCacheKey(account.DomainName, account.Username);
+        if (TryGetCachedToken(cacheKey, out var cached))
+        {
+            _logger.LogDebug(
+                "[WorkItemSchedule] Using cached Keeper token domain={Domain} user={Username} expiresInSec={ExpiresIn}",
+                account.DomainName,
+                account.Username,
+                cached.ExpiresInSeconds);
+            return cached;
+        }
+
+        await _refreshLock.WaitAsync(cancellationToken);
+        try
+        {
+            if (TryGetCachedToken(cacheKey, out cached))
+            {
+                _logger.LogDebug(
+                    "[WorkItemSchedule] Using cached Keeper token (after lock) domain={Domain} user={Username}",
+                    account.DomainName,
+                    account.Username);
+                return cached;
+            }
+
+            var fetched = await RequestTokenAsync(account, cancellationToken);
+            if (fetched.Success && !string.IsNullOrWhiteSpace(fetched.AccessToken))
+            {
+                StoreInCache(cacheKey, fetched.AccessToken, fetched.ExpiresInSeconds);
+            }
+
+            return fetched;
+        }
+        finally
+        {
+            _refreshLock.Release();
+        }
+    }
+
+    private bool TryGetCachedToken(string cacheKey, out MngKeeperAccessTokenResult result)
+    {
+        result = null!;
+        if (_cacheKey != cacheKey || string.IsNullOrWhiteSpace(_cachedAccessToken))
+            return false;
+
+        if (DateTime.UtcNow >= _cachedExpiresAtUtc)
+            return false;
+
+        result = new MngKeeperAccessTokenResult
+        {
+            Success = true,
+            AccessToken = _cachedAccessToken,
+            ExpiresInSeconds = Math.Max(0, (int)(_cachedExpiresAtUtc - DateTime.UtcNow).TotalSeconds),
+            HttpStatusCode = 200,
+        };
+        return true;
+    }
+
+    private void StoreInCache(string cacheKey, string accessToken, int? expiresInSeconds)
+    {
+        var expiresIn = expiresInSeconds is > 0 ? expiresInSeconds.Value : DefaultExpiresInSeconds;
+        var cacheLifetime = Math.Max(MinCacheLifetimeSeconds, expiresIn - RefreshBufferSeconds);
+
+        _cacheKey = cacheKey;
+        _cachedAccessToken = accessToken;
+        _cachedExpiresAtUtc = DateTime.UtcNow.AddSeconds(cacheLifetime);
+    }
+
+    private static string BuildCacheKey(string domain, string username) =>
+        $"{domain.Trim().ToLowerInvariant()}|{username.Trim().ToLowerInvariant()}";
+
+    private async Task<MngKeeperAccessTokenResult> RequestTokenAsync(
+        WorkItemScheduleServiceAccountSettings account,
+        CancellationToken cancellationToken)
+    {
+        var oc = _settings.WorkItemScheduleOrchestration;
         var keeperBase = ResolveKeeperBaseUrl();
         var tokenPath = string.IsNullOrWhiteSpace(oc.KeeperTokenPath)
             ? "/api/auth/token"
@@ -95,16 +182,18 @@ public class MngKeeperAuthClient : IMngKeeperAuthClient
                 return Fail(statusCode, "Keeper response missing accessToken");
             }
 
+            var expiresIn = tokenResponse?.ResolvedExpiresIn;
             _logger.LogInformation(
-                "[WorkItemSchedule] Keeper token acquired domain={Domain} user={Username}",
+                "[WorkItemSchedule] Keeper token acquired domain={Domain} user={Username} expiresInSec={ExpiresIn}",
                 account.DomainName,
-                account.Username);
+                account.Username,
+                expiresIn);
 
             return new MngKeeperAccessTokenResult
             {
                 Success = true,
                 AccessToken = accessToken,
-                ExpiresInSeconds = tokenResponse?.ResolvedExpiresIn,
+                ExpiresInSeconds = expiresIn,
                 HttpStatusCode = statusCode,
             };
         }

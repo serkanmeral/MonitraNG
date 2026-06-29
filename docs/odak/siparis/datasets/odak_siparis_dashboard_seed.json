@@ -1,0 +1,20 @@
+{
+  "dataset": "@dashboards",
+  "record": {
+    "name": "odak-siparis-operations",
+    "title": "İş Paketleri Operasyon Paneli",
+    "description": "Odak Sipariş — tüm iş paketleri operasyon vitrini (/dashboards/odak-siparis)",
+    "slug": "odak-siparis",
+    "isDefault": false,
+    "isActive": true,
+    "order": 3,
+    "layout": {
+      "type": "rows",
+      "rows": [],
+      "meta": {
+        "surfaceKind": "odak-siparis"
+      }
+    },
+    "permissions": null
+  }
+}
