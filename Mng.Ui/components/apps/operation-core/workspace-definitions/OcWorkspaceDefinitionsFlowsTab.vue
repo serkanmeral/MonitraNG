@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useOcWorkspaceMetadataCacheReload } from '@/composables/useOcWorkspaceMetadataCacheReload';
 import {
   ocCreateStateFlow,
   ocDeleteStateFlow,
-  ocExtractDgErrorMessage,
+
   ocGetWorkspace,
   ocListPoolFieldsForWorkspace,
   ocListStateFlowsForWorkspace,
@@ -23,6 +24,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const metaCache = useOcWorkspaceMetadataCacheReload(() => props.workspaceId);
 const groupStore = useGroupStore();
 
@@ -152,10 +154,7 @@ async function loadAll() {
       await groupStore.fetchGroups({ pageSize: 500 });
     }
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.flows.loadError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.flows.loadError');
   } finally {
     loading.value = false;
   }
@@ -270,10 +269,7 @@ async function submitForm() {
       t('operationCore.workspaceDefinitions.saveSuccess')
     );
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.flows.saveError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.flows.saveError');
   } finally {
     saving.value = false;
   }
@@ -299,10 +295,7 @@ async function confirmDelete() {
       t('operationCore.workspaceDefinitions.flows.deleteSuccess')
     );
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.flows.deleteError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.flows.deleteError');
     deleteDialog.value = false;
   } finally {
     deleting.value = false;

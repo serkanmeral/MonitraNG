@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue';
 import { VueDraggableNext } from 'vue-draggable-next';
 import OdakSiparisListColumnFormatDialog from '@/components/apps/odak-siparis/OdakSiparisListColumnFormatDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { isActiveListColumnFormat, type AfListColumnFormat } from '@/utils/afListColumnFormat';
 import type { OdakHubListColumnConfig, OdakHubListConfig } from '@/utils/odakSiparisHubListConfig';
 import { odakPackageSettingsFormatTypeLabelTr } from '@/utils/odakSiparisSettingsLabels';
@@ -19,6 +20,7 @@ const props = defineProps({
 });
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const loading = ref(true);
 const saving = ref(false);
@@ -80,7 +82,7 @@ async function load() {
     listConfig.value = (props.mergeConfig as (saved: unknown) => OdakHubListConfig)({ listConfig: resp.config });
     rowId.value = resp.rowId;
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
     listConfig.value = (props.defaultConfig as () => OdakHubListConfig)();
   } finally {
     loading.value = false;
@@ -100,7 +102,7 @@ async function save() {
     invalidateOdakPackageHubSettingsCache();
     successMessage.value = t('odakSiparis.packages.settings.saved');
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     saving.value = false;
   }

@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { useOdakFieldAccess } from '@/composables/useOdakFieldAccess';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
   ODAK_QCF_STATUS_OPTIONS,
   ODAK_SHIPMENT_STATUS_OPTIONS,
@@ -39,6 +40,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const loading = ref(false);
 const saving = ref(false);
@@ -139,7 +141,7 @@ async function loadShipment() {
     Object.assign(form, model);
     loadedRow.value = (await fetchOdakShipmentById(id)) ?? props.seedRow ?? null;
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     loading.value = false;
   }
@@ -182,7 +184,7 @@ async function save() {
     emit('saved');
     emit('update:modelValue', false);
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     saving.value = false;
   }

@@ -17,6 +17,8 @@ import {
 } from '@/utils/diResourceLink';
 import { useResizableTreePanel } from '@/composables/useResizableTreePanel';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useAppToast } from '@/composables/useAppToast';
+import { useApiErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAuthStore } from '@/stores/auth';
 import {
   LayoutSidebarLeftCollapseIcon,
@@ -40,7 +42,6 @@ import {
   diGetMarkdownVersionContent,
   diRestoreMarkdownVersion,
   diErrorStatus,
-  diExtractMessage,
 } from '@/services/documentIntelligenceService';
 import {
   diFullPermission,
@@ -56,6 +57,8 @@ import {
 definePageMeta({ layout: 'default' });
 
 const { t } = useAppI18n();
+const { push } = useAppToast();
+const { notifyApiError } = useApiErrorNotify();
 const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
@@ -99,15 +102,19 @@ const searchActive = ref(false);
 const searching = ref(false);
 const searchResults = ref<DiResource[]>([]);
 
-// Snackbar
-const snackbar = ref(false);
-const snackbarText = ref('');
-const snackbarColor = ref<'success' | 'error' | 'info'>('info');
-
 function notify(text: string, color: 'success' | 'error' | 'info' = 'info') {
-  snackbarText.value = text;
-  snackbarColor.value = color;
-  snackbar.value = true;
+  push({
+    title: color === 'success' ? t('documentIntelligence.notify.successTitle') : t('errors.dg.toastTitle'),
+    message: text,
+    severity: color,
+  });
+}
+
+function notifyError(error: unknown, fallbackKey: string) {
+  notifyApiError(error, {
+    fallbackKey,
+    title: t('errors.dg.toastTitle'),
+  });
 }
 
 // --- Diyaloglar ---
@@ -209,7 +216,7 @@ async function refreshWorkspace() {
   try {
     applyBootstrap(await diGetBootstrap(selectedFolderId.value));
   } catch (e) {
-    notify(diExtractMessage(e, t('documentIntelligence.errors.treeLoad')), 'error');
+    notifyError(e, 'documentIntelligence.errors.treeLoad');
   } finally {
     treeLoading.value = false;
     childrenLoading.value = false;
@@ -222,7 +229,7 @@ async function refreshListing() {
   try {
     applyBrowseContext(await diGetBrowseContext(selectedFolderId.value));
   } catch (e) {
-    notify(diExtractMessage(e, t('documentIntelligence.errors.childrenLoad')), 'error');
+    notifyError(e, 'documentIntelligence.errors.childrenLoad');
     children.value = [];
   } finally {
     childrenLoading.value = false;
@@ -250,7 +257,7 @@ async function selectFolder(folderId: string | null, options?: { syncUrl?: boole
   try {
     applyBrowseContext(await diGetBrowseContext(folderId));
   } catch (e) {
-    notify(diExtractMessage(e, t('documentIntelligence.errors.childrenLoad')), 'error');
+    notifyError(e, 'documentIntelligence.errors.childrenLoad');
     children.value = [];
     folderPath.value = [];
     selectedFolder.value = null;
@@ -295,7 +302,7 @@ async function openMarkdown(resource: DiResource) {
       await loadFolderPath(resource.parentId);
     }
   } catch (e) {
-    notify(diExtractMessage(e, t('documentIntelligence.errors.docLoad')), 'error');
+    notifyError(e, 'documentIntelligence.errors.docLoad');
     mainMode.value = 'browse';
   } finally {
     docLoading.value = false;
@@ -316,7 +323,7 @@ async function openHistory() {
   try {
     versions.value = await diGetMarkdownVersions(openDoc.value.id);
   } catch (e) {
-    notify(diExtractMessage(e, t('documentIntelligence.errors.versionsLoad')), 'error');
+    notifyError(e, 'documentIntelligence.errors.versionsLoad');
     versions.value = [];
   } finally {
     versionsLoading.value = false;
@@ -331,7 +338,7 @@ async function previewVersion(v: DiMarkdownVersion) {
     const c = await diGetMarkdownVersionContent(openDoc.value.id, v.versionNumber);
     versionContent.value = c.content;
   } catch (e) {
-    notify(diExtractMessage(e, t('documentIntelligence.errors.versionLoad')), 'error');
+    notifyError(e, 'documentIntelligence.errors.versionLoad');
     versionContent.value = '';
   } finally {
     versionContentLoading.value = false;
@@ -347,7 +354,7 @@ async function restoreVersion(v: DiMarkdownVersion) {
     notify(t('documentIntelligence.versionRestored', { n: v.versionNumber }), 'success');
     await openMarkdown(restored);
   } catch (e) {
-    notify(diExtractMessage(e, t('documentIntelligence.errors.versionRestore')), 'error');
+    notifyError(e, 'documentIntelligence.errors.versionRestore');
   } finally {
     restoringVersion.value = null;
   }
@@ -391,7 +398,7 @@ async function saveEdit(asDraft = false) {
       // Güncel sürümü tekrar yükle
       await openMarkdown(openDoc.value);
     } else {
-      notify(diExtractMessage(e, t('documentIntelligence.errors.save')), 'error');
+      notifyError(e, 'documentIntelligence.errors.save');
     }
   } finally {
     saving.value = false;
@@ -414,7 +421,7 @@ async function submitFolder() {
     notify(t('documentIntelligence.folderCreated'), 'success');
     await refreshWorkspace();
   } catch (e) {
-    notify(diExtractMessage(e, t('documentIntelligence.errors.create')), 'error');
+    notifyError(e, 'documentIntelligence.errors.create');
   } finally {
     busy.value = false;
   }
@@ -437,7 +444,7 @@ async function submitDoc(asDraft = false) {
     await openMarkdown(created);
     startEdit();
   } catch (e) {
-    notify(diExtractMessage(e, t('documentIntelligence.errors.create')), 'error');
+    notifyError(e, 'documentIntelligence.errors.create');
   } finally {
     busy.value = false;
   }
@@ -464,7 +471,7 @@ async function submitRename() {
       openDoc.value = { ...openDoc.value, name, title: name };
     }
   } catch (e) {
-    notify(diExtractMessage(e, t('documentIntelligence.errors.rename')), 'error');
+    notifyError(e, 'documentIntelligence.errors.rename');
   } finally {
     busy.value = false;
   }
@@ -487,7 +494,7 @@ async function submitMove() {
     notify(t('documentIntelligence.moved'), 'success');
     await refreshWorkspace();
   } catch (e) {
-    notify(diExtractMessage(e, t('documentIntelligence.errors.move')), 'error');
+    notifyError(e, 'documentIntelligence.errors.move');
   } finally {
     busy.value = false;
   }
@@ -519,7 +526,7 @@ async function submitDelete() {
       deleteForce.value = true;
       notify(t('documentIntelligence.errors.notEmpty'), 'error');
     } else {
-      notify(diExtractMessage(e, t('documentIntelligence.errors.delete')), 'error');
+      notifyError(e, 'documentIntelligence.errors.delete');
     }
   } finally {
     busy.value = false;
@@ -601,7 +608,7 @@ async function submitFile() {
     notify(t('documentIntelligence.fileUploaded'), 'success');
     await refreshListing();
   } catch (e) {
-    notify(diExtractMessage(e, t('documentIntelligence.errors.upload')), 'error');
+    notifyError(e, 'documentIntelligence.errors.upload');
   } finally {
     busy.value = false;
   }
@@ -609,7 +616,7 @@ async function submitFile() {
 
 async function downloadFile(resource: DiResource) {
   if (!resource.filePath) {
-    notify(diExtractMessage(null, t('documentIntelligence.errors.download')), 'error');
+    notifyError(null, 'documentIntelligence.errors.download');
     return;
   }
   downloadingId.value = resource.id;
@@ -624,7 +631,7 @@ async function downloadFile(resource: DiResource) {
     a.remove();
     URL.revokeObjectURL(url);
   } catch (e) {
-    notify(diExtractMessage(e, t('documentIntelligence.errors.download')), 'error');
+    notifyError(e, 'documentIntelligence.errors.download');
   } finally {
     downloadingId.value = null;
   }
@@ -652,7 +659,7 @@ async function runSearch() {
     const res = await diSearch(q, 0, 50);
     searchResults.value = res.items;
   } catch (e) {
-    notify(diExtractMessage(e, t('documentIntelligence.errors.search')), 'error');
+    notifyError(e, 'documentIntelligence.errors.search');
     searchResults.value = [];
   } finally {
     searching.value = false;
@@ -705,7 +712,7 @@ onMounted(async () => {
     applyBootstrap(await diGetBootstrap(initialFolder));
     selectedFolderId.value = initialFolder;
   } catch (e) {
-    notify(diExtractMessage(e, t('documentIntelligence.errors.treeLoad')), 'error');
+    notifyError(e, 'documentIntelligence.errors.treeLoad');
   } finally {
     treeLoading.value = false;
     childrenLoading.value = false;
@@ -1383,9 +1390,6 @@ watch(
       :resource="fileEditorResource"
     />
 
-    <v-snackbar v-model="snackbar" :color="snackbarColor" location="top right" :timeout="3500">
-      {{ snackbarText }}
-    </v-snackbar>
   </div>
 </template>
 

@@ -166,13 +166,9 @@ public class FilesController : ControllerBase
         {
             return this.ErrorResponse(uploadPath, "INVALID_REQUEST", ex.Message);
         }
-        catch (DataGatewayException ex) when (ex.ValidationErrors != null)
-        {
-            return this.HandleValidationError(ex, uploadPath, _logger);
-        }
         catch (Exception ex)
         {
-            return this.HandleError(ex, uploadPath, "UPLOAD_FAILED", "Failed to upload file", _logger, includeStackTrace: true);
+            return this.HandleException(ex, uploadPath, "UPLOAD_FAILED", "Failed to upload file", _logger, includeStackTrace: true);
         }
     }
 

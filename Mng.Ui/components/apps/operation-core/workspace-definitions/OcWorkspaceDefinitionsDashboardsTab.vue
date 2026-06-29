@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import OcDashboardWidgetForm from '@/components/apps/operation-core/dashboards/OcDashboardWidgetForm.vue';
 import OcDashboardLayoutEditor from '@/components/apps/operation-core/dashboards/OcDashboardLayoutEditor.vue';
 import {
   ocCreateDashboard,
   ocDeleteDashboard,
-  ocExtractDgErrorMessage,
+
   ocGetBoard,
   ocGetDashboardRecord,
   ocListBoardsForWorkspace,
@@ -28,6 +29,7 @@ import { buildSummaryCardConfig } from '@/utils/ocDashboardWidgetStyle';
 const props = defineProps<{ workspaceId: string }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const catalog = useOcWorkspaceCatalogInject();
 
 const loading = ref(true);
@@ -94,7 +96,7 @@ async function linkBoardToDashboard() {
     workspaceBoards.value = await ocListBoardsForWorkspace(props.workspaceId);
     successLocal.value = t('operationCore.dashboards.editor.linkBoardSuccess');
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.dashboards.editor.linkBoardError'));
+    errorLocal.value = panelError(e, 'operationCore.dashboards.editor.linkBoardError');
   } finally {
     linkingBoard.value = false;
   }
@@ -108,7 +110,7 @@ async function unlinkBoardFromDashboard(board: OpBoard) {
     workspaceBoards.value = await ocListBoardsForWorkspace(props.workspaceId);
     successLocal.value = t('operationCore.dashboards.editor.unlinkBoardSuccess');
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.dashboards.editor.linkBoardError'));
+    errorLocal.value = panelError(e, 'operationCore.dashboards.editor.linkBoardError');
   } finally {
     linkingBoard.value = false;
   }
@@ -129,7 +131,7 @@ async function loadAll() {
     states.value = catalog.states.value;
     priorities.value = catalog.priorities.value;
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.dashboards.editor.loadError'));
+    errorLocal.value = panelError(e, 'operationCore.dashboards.editor.loadError');
   } finally {
     loading.value = false;
   }
@@ -166,7 +168,7 @@ async function openEdit(item: OcDashboardListItem) {
       : { type: 'rows', rows: [] };
     editorOpen.value = true;
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.dashboards.editor.loadError'));
+    errorLocal.value = panelError(e, 'operationCore.dashboards.editor.loadError');
   }
 }
 
@@ -273,7 +275,7 @@ async function saveDashboard() {
     await loadAll();
     successLocal.value = t('operationCore.workspaceDefinitions.saveSuccess');
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.dashboards.editor.saveError'));
+    errorLocal.value = panelError(e, 'operationCore.dashboards.editor.saveError');
   } finally {
     saving.value = false;
   }
@@ -294,7 +296,7 @@ async function doDelete() {
     deleteTarget.value = null;
     await loadAll();
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.dashboards.editor.deleteError'));
+    errorLocal.value = panelError(e, 'operationCore.dashboards.editor.deleteError');
   } finally {
     deleting.value = false;
   }

@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import OdakSiparisLineQualityReqPicker from '@/components/apps/odak-siparis/OdakSiparisLineQualityReqPicker.vue';
 import { useOdakFieldAccess } from '@/composables/useOdakFieldAccess';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
   ODAK_LINE_CURRENCY_OPTIONS,
   ODAK_LINE_UNIT_OPTIONS,
@@ -44,6 +45,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const loading = ref(false);
 const saving = ref(false);
@@ -164,7 +166,7 @@ async function loadDialogData() {
     loadedLine.value = full;
     resetFormFromRow(full);
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     loading.value = false;
   }
@@ -207,7 +209,7 @@ async function saveLine() {
     emit('saved');
     closeDialog();
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     saving.value = false;
   }

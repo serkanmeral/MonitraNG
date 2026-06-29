@@ -3379,6 +3379,9 @@
     "menuTitle": "Documents",
     "menuHeader": "Resources",
     "title": "Document Manager",
+    "notify": {
+      "successTitle": "Success"
+    },
     "explorer": "Explorer",
     "allDocuments": "All documents",
     "loadingContents": "Loading folder contents…",
@@ -3993,7 +3996,11 @@
         "createTitle": "New actor",
         "editTitle": "Edit actor — {name}",
         "missingId": "Actor id not found.",
-        "notFound": "Could not load actor."
+        "notFound": "Could not load actor.",
+        "loadErrorTitle": "Could not load actor",
+        "loadError": "An error occurred while loading actor details.",
+        "saveErrorTitle": "Save failed",
+        "saveError": "An error occurred while saving the actor."
       },
       "validation": {
         "kodRequired": "Code is required (MUS-XXX).",
@@ -4827,7 +4834,9 @@
       "editTitle": "Edit work item",
       "save": "Save",
       "missingWorkItem": "Work item not found.",
-      "noEditPermission": "You do not have permission to edit this work item."
+      "noEditPermission": "You do not have permission to edit this work item.",
+      "loadErrorTitle": "Could not load form",
+      "saveErrorTitle": "Save failed"
     },
     "profile": {
       "placeholderTitle": "Work item profile",
@@ -7209,6 +7218,28 @@
         "event": "Event",
         "schedule": "Schedule"
       }
+    }
+  },
+  "errors": {
+    "dg": {
+      "generic": "An error occurred while processing your request.",
+      "validationError": "Validation error.",
+      "duplicateKey": "This value is already registered.",
+      "uniqueConstraint": "Unique constraint violated.",
+      "uniqueConstraintField": "Field '{field}' must be unique; this value is already in use.",
+      "datasetNotFound": "Dataset not found.",
+      "dataNotFound": "Record not found.",
+      "queryNotFound": "Query not found.",
+      "missingParameter": "Required parameter is missing.",
+      "invalidArgument": "Invalid request.",
+      "invalidFormat": "Invalid format.",
+      "invalidOperation": "Invalid operation.",
+      "databaseWriteError": "Database write error. Please check your input.",
+      "forbidden": "You do not have permission for this action.",
+      "unauthorized": "Session is invalid or expired.",
+      "internalError": "An unexpected server error occurred.",
+      "field": "Field",
+      "toastTitle": "Operation failed"
     }
   }
 }

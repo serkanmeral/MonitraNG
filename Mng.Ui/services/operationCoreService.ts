@@ -1,4 +1,5 @@
 import { fetchBlobFromDataGateway, fetchFromDataGateway, fetchFromOperations } from '@/services/apiService';
+import { dgExtractMessage } from '@/utils/dgErrorUtils';
 import type {
   OcAttachment,
   OcBoardCatalogs,
@@ -99,36 +100,7 @@ export function parseSingleDgRecord(response: unknown): Record<string, unknown> 
 
 /** DG hata gövdesinden okunabilir mesaj çıkarır */
 export function ocExtractDgErrorMessage(error: unknown, fallback: string): string {
-  if (!(error instanceof Error)) return fallback;
-  const data = (error as { data?: unknown }).data;
-  if (data && typeof data === 'object') {
-    const d = data as Record<string, unknown>;
-    const nested = d.error;
-    if (nested && typeof nested === 'object') {
-      const err = nested as Record<string, unknown>;
-      const details = err.details;
-      if (Array.isArray(details) && details.length > 0) {
-        const parts = details
-          .map((item) => {
-            if (item && typeof item === 'object') {
-              const row = item as Record<string, unknown>;
-              const field = row.field ?? row.Field;
-              const message = row.message ?? row.Message;
-              if (field && message) return `${field}: ${message}`;
-              if (message) return String(message);
-            }
-            return null;
-          })
-          .filter(Boolean);
-        if (parts.length) return parts.join('; ');
-      }
-      if (err.message) return String(err.message);
-      if (err.code) return String(err.code);
-    }
-    if (d.message) return String(d.message);
-    if (d.errorDescription) return String(d.errorDescription);
-  }
-  return error.message || fallback;
+  return dgExtractMessage(error, fallback);
 }
 
 function parseListResponse(response: unknown): unknown[] {

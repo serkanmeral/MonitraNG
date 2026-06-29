@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import OdakSiparisDashboardStatCard from '@/components/apps/odak-siparis/OdakSiparisDashboardStatCard.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import type { OdakCustomerRow } from '@/utils/odakSiparisConfig';
 import { customerActorRoleChips, packagesByCustomerRoute } from '@/utils/odakSiparisCustomerService';
 import {
@@ -15,6 +16,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const router = useRouter();
 
 const loading = ref(false);
@@ -50,7 +52,7 @@ async function loadMetrics() {
   try {
     metrics.value = await fetchCustomerDashboardMetrics(id, props.customerRow);
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
     metrics.value = null;
   } finally {
     loading.value = false;

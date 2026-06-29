@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
-  ocExtractDgErrorMessage,
+
   ocListDatasetPage,
   ocSimulateWorkspaceAutomation,
 } from '@/services/operationCoreService';
@@ -22,6 +23,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const open = computed({
   get: () => props.modelValue,
@@ -121,10 +123,7 @@ async function preview() {
   try {
     result.value = await ocSimulateWorkspaceAutomation(automationId, workItemId, false);
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.automations.simulate.error')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.automations.simulate.error');
   } finally {
     previewing.value = false;
   }
@@ -143,10 +142,7 @@ async function execute() {
       emit('executed');
     }
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.automations.simulate.executeError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.automations.simulate.executeError');
   } finally {
     executing.value = false;
   }

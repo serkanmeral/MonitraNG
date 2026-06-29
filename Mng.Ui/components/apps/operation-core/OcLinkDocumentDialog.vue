@@ -2,9 +2,9 @@
 import { computed, ref, watch } from 'vue';
 import DiResourceTree from '@/components/apps/document-intelligence/DiResourceTree.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
   diCreateResourceLink,
-  diExtractMessage,
   diGetBootstrap,
 } from '@/services/documentIntelligenceService';
 import {
@@ -27,6 +27,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const open = computed({
   get: () => props.modelValue,
@@ -85,7 +86,7 @@ async function loadTree() {
     children.value = boot.children.items;
     selectedFolderId.value = null;
   } catch (e: unknown) {
-    errorLocal.value = diExtractMessage(e, t('operationCore.profile.documents.loadTreeError'));
+    errorLocal.value = panelError(e, 'operationCore.profile.documents.loadTreeError');
   } finally {
     treeLoading.value = false;
     childrenLoading.value = false;
@@ -101,7 +102,7 @@ async function selectFolder(folderId: string | null) {
     const boot = await diGetBootstrap(folderId);
     children.value = boot.children.items;
   } catch (e: unknown) {
-    errorLocal.value = diExtractMessage(e, t('operationCore.profile.documents.loadTreeError'));
+    errorLocal.value = panelError(e, 'operationCore.profile.documents.loadTreeError');
     children.value = [];
   } finally {
     childrenLoading.value = false;
@@ -126,7 +127,7 @@ async function submit() {
     emit('linked');
     open.value = false;
   } catch (e: unknown) {
-    errorLocal.value = diExtractMessage(e, t('operationCore.profile.documents.linkError'));
+    errorLocal.value = panelError(e, 'operationCore.profile.documents.linkError');
   } finally {
     submitting.value = false;
   }

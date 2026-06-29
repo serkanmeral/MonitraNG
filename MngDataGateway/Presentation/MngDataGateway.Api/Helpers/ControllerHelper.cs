@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MngDataGateway.Application.DTOs.Common;
+using MngDataGateway.Domain.Constants;
 using MngDataGateway.Domain.Exceptions;
+using MngDataGateway.Persistence.Helpers;
 using System;
 
 namespace MngDataGateway.Api.Helpers;
@@ -38,6 +40,103 @@ public static class ControllerHelper
     }
 
     /// <summary>
+    /// Unified handler for any exception — maps infrastructure errors then returns appropriate HTTP status.
+    /// </summary>
+    public static IActionResult HandleException(
+        this ControllerBase controller,
+        Exception ex,
+        string path,
+        string serverErrorCode,
+        string serverErrorMessage,
+        ILogger? logger = null,
+        bool includeStackTrace = false)
+    {
+        var dgEx = ex is DataGatewayException existing
+            ? existing
+            : DgExceptionMapper.Map(ex, serverErrorMessage);
+
+        return controller.HandleDataGatewayException(
+            dgEx, path, serverErrorCode, serverErrorMessage, logger, includeStackTrace);
+    }
+
+    /// <summary>
+    /// Maps typed DataGateway exceptions to HTTP responses.
+    /// </summary>
+    public static IActionResult HandleDataGatewayException(
+        this ControllerBase controller,
+        DataGatewayException ex,
+        string path,
+        string serverErrorCode,
+        string serverErrorMessage,
+        ILogger? logger = null,
+        bool includeStackTrace = false)
+    {
+        switch (ex)
+        {
+            case ConflictException conflict:
+                logger?.LogWarning(conflict, "Conflict at {Path}", path);
+                return controller.ErrorResponse(
+                    path,
+                    ErrorCodes.DUPLICATE_KEY,
+                    conflict.Message,
+                    conflict.ValidationErrors,
+                    statusCode: StatusCodes.Status409Conflict);
+
+            case ValidationException:
+            case DataGatewayException dg when dg.ValidationErrors is { Count: > 0 }:
+                return controller.HandleValidationError(ex, path, logger);
+
+            case NotFoundException notFound:
+                return controller.HandleNotFoundError(notFound, path, logger, ResolveNotFoundCode(notFound));
+
+            case UnauthorizedException unauthorized:
+                logger?.LogWarning(unauthorized, "Unauthorized at {Path}", path);
+                return controller.ErrorResponse(
+                    path,
+                    ErrorCodes.UNAUTHORIZED,
+                    unauthorized.Message,
+                    statusCode: StatusCodes.Status401Unauthorized);
+
+            case ForbiddenException forbidden:
+                logger?.LogWarning(forbidden, "Forbidden at {Path}", path);
+                return controller.ErrorResponse(
+                    path,
+                    ErrorCodes.FORBIDDEN,
+                    forbidden.Message,
+                    statusCode: StatusCodes.Status403Forbidden);
+
+            case BadRequestException badRequest:
+                logger?.LogWarning(badRequest, "Bad request at {Path}", path);
+                return controller.ErrorResponse(
+                    path,
+                    badRequest.ErrorCode ?? ErrorCodes.INVALID_ARGUMENT,
+                    badRequest.Message,
+                    badRequest.ValidationErrors ?? (object?)badRequest.InnerException?.Message,
+                    statusCode: StatusCodes.Status400BadRequest);
+
+            default:
+                if (DgExceptionMapper.IsClientError(ex))
+                {
+                    logger?.LogWarning(ex, "Client error at {Path}: {Message}", path, ex.Message);
+                    return controller.ErrorResponse(
+                        path,
+                        ex.ErrorCode ?? ErrorCodes.INVALID_ARGUMENT,
+                        ex.Message,
+                        ex.ValidationErrors ?? (object?)ex.InnerException?.Message,
+                        statusCode: StatusCodes.Status400BadRequest);
+                }
+
+                return controller.HandleError(
+                    ex,
+                    path,
+                    ex.ErrorCode ?? serverErrorCode,
+                    serverErrorMessage,
+                    logger,
+                    includeStackTrace);
+        }
+    }
+
+    /// <summary>
     /// Handle DataGatewayException with validation errors
     /// </summary>
     public static IActionResult HandleValidationError(
@@ -53,7 +152,7 @@ public static class ControllerHelper
             Success = false,
             Error = new ErrorDetailDto
             {
-                Code = "VALIDATION_ERROR",
+                Code = ErrorCodes.VALIDATION_ERROR,
                 Message = ex.Message,
                 Details = ex.ValidationErrors
             },
@@ -68,7 +167,8 @@ public static class ControllerHelper
         this ControllerBase controller,
         DataGatewayException ex,
         string path,
-        ILogger? logger = null)
+        ILogger? logger = null,
+        string? errorCode = null)
     {
         logger?.LogWarning(ex, "Resource not found at {Path}: {Message}", path, ex.Message);
 
@@ -77,7 +177,7 @@ public static class ControllerHelper
             Success = false,
             Error = new ErrorDetailDto
             {
-                Code = "DATASET_NOT_FOUND",
+                Code = errorCode ?? ex.ErrorCode ?? ErrorCodes.RESOURCE_NOT_FOUND,
                 Message = ex.Message
             },
             Meta = CreateMeta(path)
@@ -110,7 +210,7 @@ public static class ControllerHelper
     }
 
     /// <summary>
-    /// Handle generic exception with logging
+    /// Handle generic exception with logging (true server errors)
     /// </summary>
     public static IActionResult HandleError(
         this ControllerBase controller,
@@ -137,12 +237,12 @@ public static class ControllerHelper
                         innerException = ex.InnerException?.Message,
                         stackTrace = ex.StackTrace?.Split('\n').Take(5).ToArray()
                     }
-                    : ex.Message
+                    : ex.InnerException?.Message ?? ex.Message
             },
             Meta = CreateMeta(path)
         };
 
-        return controller.StatusCode(500, errorResponse);
+        return controller.StatusCode(StatusCodes.Status500InternalServerError, errorResponse);
     }
 
     /// <summary>
@@ -182,5 +282,21 @@ public static class ControllerHelper
 
         return controller.StatusCode(statusCode, errorResponse);
     }
-}
 
+    private static string ResolveNotFoundCode(NotFoundException ex)
+    {
+        if (!string.IsNullOrEmpty(ex.ErrorCode))
+            return ex.ErrorCode;
+
+        if (ex.Message.Contains("Dataset", StringComparison.OrdinalIgnoreCase))
+            return ErrorCodes.DATASET_NOT_FOUND;
+
+        if (ex.Message.Contains("query", StringComparison.OrdinalIgnoreCase))
+            return ErrorCodes.QUERY_NOT_FOUND;
+
+        if (ex.Message.Contains("__dataId", StringComparison.OrdinalIgnoreCase))
+            return ErrorCodes.DATA_NOT_FOUND;
+
+        return ErrorCodes.RESOURCE_NOT_FOUND;
+    }
+}

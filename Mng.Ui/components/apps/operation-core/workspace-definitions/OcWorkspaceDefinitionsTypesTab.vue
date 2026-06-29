@@ -2,10 +2,11 @@
 import { ref, computed, watch } from 'vue';
 import TmStatusIconPicker from '@/components/apps/task-manager/TmStatusIconPicker.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
   ocCreateWorkItemType,
   ocDeleteWorkItemType,
-  ocExtractDgErrorMessage,
+
   ocGetWorkspace,
   ocListGlobalWorkItemTypes,
   ocListWorkspaceScopedWorkItemTypes,
@@ -25,6 +26,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const loading = ref(true);
 const savingSelection = ref(false);
@@ -129,10 +131,7 @@ async function loadAll() {
     scopedTypes.value = scoped;
     selectedTypeIds.value = ws?.enabledTypeIds ? [...ws.enabledTypeIds] : [];
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.types.loadError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.types.loadError');
   } finally {
     loading.value = false;
   }
@@ -184,10 +183,7 @@ async function saveSelection() {
     await loadAll();
     successLocal.value = t('operationCore.workspaceDefinitions.saveSuccess');
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.types.saveSelectionError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.types.saveSelectionError');
   } finally {
     savingSelection.value = false;
   }
@@ -207,10 +203,7 @@ async function submitScopedType() {
     dialog.value = false;
     await loadAll();
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.definitions.types.saveError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.definitions.types.saveError');
   } finally {
     savingType.value = false;
   }
@@ -228,10 +221,7 @@ async function confirmDelete() {
     deleteTarget.value = null;
     await loadAll();
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.definitions.types.deleteError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.definitions.types.deleteError');
     deleteDialog.value = false;
   } finally {
     deleting.value = false;

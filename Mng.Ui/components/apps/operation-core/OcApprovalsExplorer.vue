@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAuthStore } from '@/stores/auth';
 import type { WorkflowApprovalSummary } from '@/types/apps/workflow';
 import { workflowDecideApproval, workflowListApprovals } from '@/services/workflowService';
 
 const { t, locale } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const auth = useAuthStore();
 
 const loading = ref(true);
@@ -55,7 +57,7 @@ async function loadRows() {
   try {
     rows.value = await workflowListApprovals(pendingOnly.value ? 'Pending' : undefined);
   } catch (e: unknown) {
-    errorLocal.value = e instanceof Error ? e.message : t('operationCore.adminApprovals.loadError');
+    errorLocal.value = panelError(e, 'operationCore.adminApprovals.loadError');
     rows.value = [];
   } finally {
     loading.value = false;
@@ -75,7 +77,7 @@ async function decide(row: WorkflowApprovalSummary, approved: boolean) {
     infoLocal.value = t('operationCore.adminApprovals.decideSuccess');
     await loadRows();
   } catch (e: unknown) {
-    errorLocal.value = e instanceof Error ? e.message : t('operationCore.adminApprovals.decideError');
+    errorLocal.value = panelError(e, 'operationCore.adminApprovals.decideError');
   } finally {
     decidingId.value = null;
   }

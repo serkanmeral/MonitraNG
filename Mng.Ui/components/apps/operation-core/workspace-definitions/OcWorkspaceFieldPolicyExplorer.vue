@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useOcWorkspaceMetadataCacheReload } from '@/composables/useOcWorkspaceMetadataCacheReload';
 import { useOcPersonPicker } from '@/composables/useOcPersonPicker';
 import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
@@ -8,7 +9,7 @@ import { useUserStore } from '@/stores/apps/user';
 import OcWorkspacePolicyDialog from '@/components/apps/operation-core/workspace-definitions/OcWorkspacePolicyDialog.vue';
 import {
   OC_DATASETS,
-  ocExtractDgErrorMessage,
+
   ocGetDatasetRecordTitle,
   ocListGlobalWorkItemTypes,
   ocListPriorities,
@@ -47,6 +48,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const metaCache = useOcWorkspaceMetadataCacheReload(() => props.workspaceId);
 const catalog = useOcWorkspaceCatalogInject();
 const userStore = useUserStore();
@@ -504,10 +506,7 @@ async function loadData() {
     policiesBlob.value = parseWorkspaceFieldPoliciesFromSettings(settings);
     await refreshPolicySummaryTitles(policiesBlob.value);
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.policies.loadError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.policies.loadError');
   } finally {
     loading.value = false;
   }
@@ -531,10 +530,7 @@ async function persistBlob(blob: OcWorkspaceFieldPoliciesBlob) {
       t('operationCore.workspaceDefinitions.saveSuccess')
     );
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.policies.saveError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.policies.saveError');
   } finally {
     saving.value = false;
   }

@@ -4,6 +4,7 @@ import OdakSiparisLineDialog from '@/components/apps/odak-siparis/OdakSiparisLin
 import OdakSiparisSubListScroll from '@/components/apps/odak-siparis/OdakSiparisSubListScroll.vue';
 import OdakSiparisSubListToolbar from '@/components/apps/odak-siparis/OdakSiparisSubListToolbar.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { ocDelete } from '@/services/operationCoreService';
 import {
   ODAK_SIPARIS_CONFIG,
@@ -46,6 +47,7 @@ const props = withDefaults(
 );
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const loading = ref(false);
 const errorMessage = ref('');
@@ -111,7 +113,7 @@ async function loadLines() {
   try {
     lines.value = await listLinesForPackage(props.packageId);
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
     lines.value = [];
   } finally {
     loading.value = false;
@@ -142,7 +144,7 @@ async function doDelete() {
     lineToDelete.value = null;
     await loadLines();
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     deleting.value = false;
   }

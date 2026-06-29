@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useOcWorkspaceMetadataCacheReload } from '@/composables/useOcWorkspaceMetadataCacheReload';
 import { useOcLookupDatasetCatalog } from '@/composables/useOcLookupDatasetCatalog';
 import { useDatasetStore } from '@/stores/apps/dataset';
 import {
   ocCreateField,
   ocDeleteField,
-  ocExtractDgErrorMessage,
+
   ocGetWorkspace,
   ocListGlobalPoolFields,
   ocListWorkspaceScopedFields,
@@ -44,6 +45,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const metaCache = useOcWorkspaceMetadataCacheReload(() => props.workspaceId);
 const datasetStore = useDatasetStore();
 const {
@@ -323,10 +325,7 @@ async function loadAll() {
       selectedFieldIds.value = ws?.enabledFieldIds ? [...ws.enabledFieldIds] : [];
     }
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.fields.loadError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.fields.loadError');
   } finally {
     loading.value = false;
   }
@@ -421,10 +420,7 @@ async function saveSelection() {
       t('operationCore.workspaceDefinitions.saveSuccess')
     );
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.fields.saveSelectionError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.fields.saveSelectionError');
   } finally {
     savingSelection.value = false;
   }
@@ -454,10 +450,7 @@ async function submitScopedField() {
     await loadAll();
     void metaCache.reloadAfterMetadataChange();
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.definitions.fields.saveError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.definitions.fields.saveError');
   } finally {
     savingField.value = false;
   }
@@ -476,10 +469,7 @@ async function confirmDelete() {
     await loadAll();
     void metaCache.reloadAfterMetadataChange();
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.definitions.fields.deleteError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.definitions.fields.deleteError');
     deleteDialog.value = false;
   } finally {
     deleting.value = false;

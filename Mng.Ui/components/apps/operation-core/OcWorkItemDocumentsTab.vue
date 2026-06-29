@@ -4,9 +4,9 @@ import DiFilePreviewDialog from '@/components/apps/document-intelligence/DiFileP
 import DiMarkdownPreviewDialog from '@/components/apps/document-intelligence/DiMarkdownPreviewDialog.vue';
 import OcLinkDocumentDialog from '@/components/apps/operation-core/OcLinkDocumentDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
   diDeleteResourceLink,
-  diExtractMessage,
   diFetchFileBlob,
   diGetById,
   diGetLinkedResourcesForWorkItem,
@@ -27,6 +27,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const loading = ref(false);
 const error = ref<string | null>(null);
@@ -56,7 +57,7 @@ async function load() {
     items.value = res.items;
     excludedResourceIds.value = res.items.map((x) => x.resourceId);
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('operationCore.profile.documents.loadError'));
+    error.value = panelError(e, 'operationCore.profile.documents.loadError');
     items.value = [];
   } finally {
     loading.value = false;
@@ -116,7 +117,7 @@ async function openPreview(item: DiLinkedResource) {
     }
     error.value = t('operationCore.profile.documents.previewUnsupported');
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('operationCore.profile.documents.previewError'));
+    error.value = panelError(e, 'operationCore.profile.documents.previewError');
   } finally {
     previewBusyId.value = null;
   }
@@ -140,7 +141,7 @@ async function downloadResource(resource: DiResource) {
     a.remove();
     URL.revokeObjectURL(url);
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('operationCore.profile.documents.downloadError'));
+    error.value = panelError(e, 'operationCore.profile.documents.downloadError');
   } finally {
     downloadingId.value = null;
   }
@@ -156,7 +157,7 @@ async function downloadLink(item: DiLinkedResource) {
     const resource = await diGetById(resourceId);
     await downloadResource(resource);
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('operationCore.profile.documents.downloadError'));
+    error.value = panelError(e, 'operationCore.profile.documents.downloadError');
   } finally {
     downloadingId.value = null;
   }
@@ -182,7 +183,7 @@ async function removeLink(item: DiLinkedResource) {
     await load();
     emit('changed');
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('operationCore.profile.documents.deleteError'));
+    error.value = panelError(e, 'operationCore.profile.documents.deleteError');
   } finally {
     deleteBusyId.value = null;
   }

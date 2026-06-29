@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import DiLinkedWorkItemsPanel from '@/components/apps/document-intelligence/DiLinkedWorkItemsPanel.vue';
-import { diFetchFileBlob, diExtractMessage } from '@/services/documentIntelligenceService';
+import { diFetchFileBlob } from '@/services/documentIntelligenceService';
 import { diPreviewKind, diPreviewMime } from '@/utils/diFilePreview';
 import type { DiResource } from '@/types/apps/documentIntelligence';
 
@@ -17,6 +18,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const open = computed({
   get: () => props.modelValue,
@@ -56,7 +58,7 @@ async function loadPreview(resource: DiResource) {
       objectUrl.value = URL.createObjectURL(typed);
     }
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.errors.preview'));
+    error.value = panelError(e, 'documentIntelligence.errors.preview');
   } finally {
     loading.value = false;
   }

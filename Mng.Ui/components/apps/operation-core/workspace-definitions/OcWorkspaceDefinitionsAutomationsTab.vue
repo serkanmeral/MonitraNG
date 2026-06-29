@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import OcWorkspaceAutomationDialog, {
   type OcAutomationFormModel,
@@ -9,7 +10,7 @@ import OcWorkspaceAutomationSimulateDialog from '@/components/apps/operation-cor
 import {
   ocCreateWorkspaceAutomation,
   ocDeleteWorkspaceAutomation,
-  ocExtractDgErrorMessage,
+
   ocListAutomationsForWorkspace,
   ocUpdateWorkspaceAutomation,
 } from '@/services/operationCoreService';
@@ -21,6 +22,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const catalog = useOcWorkspaceCatalogInject();
 
 const loading = ref(true);
@@ -123,10 +125,7 @@ async function loadAll() {
     boards.value = catalog.boards.value;
     types.value = catalog.types.value;
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.automations.loadError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.automations.loadError');
   } finally {
     loading.value = false;
   }
@@ -300,10 +299,7 @@ async function onSave(form: OcAutomationFormModel) {
     dialog.value = false;
     await loadAll();
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.automations.saveError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.automations.saveError');
   } finally {
     saving.value = false;
   }
@@ -319,10 +315,7 @@ async function confirmDelete() {
     deleteTarget.value = null;
     await loadAll();
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.automations.deleteError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.automations.deleteError');
   } finally {
     deleting.value = false;
   }

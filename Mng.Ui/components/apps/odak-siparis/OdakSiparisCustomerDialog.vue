@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
+import { useOdakFormErrorHandler } from '@/composables/useOdakFormErrorHandler';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { ODAK_CUSTOMER_SEKTOR_OPTIONS, type OdakCustomerRow } from '@/utils/odakSiparisConfig';
 import {
@@ -25,10 +26,35 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const {
+  fieldErrors,
+  clearFieldErrors,
+  fieldMessages,
+  notifyClientValidation,
+  handleLoadError,
+  handleSaveError,
+} = useOdakFormErrorHandler({
+  saveErrorTitleKey: 'odakSiparis.customers.dialog.saveErrorTitle',
+  loadErrorTitleKey: 'odakSiparis.customers.dialog.loadErrorTitle',
+  saveFallbackKey: 'odakSiparis.customers.dialog.saveError',
+  loadFallbackKey: 'odakSiparis.customers.dialog.loadError',
+  fieldLabelResolver: resolveCustomerFieldLabel,
+});
+
+function resolveCustomerFieldLabel(field: string): string {
+  const labels: Record<string, string> = {
+    kod: t('odakSiparis.customers.fields.kod'),
+    unvan: t('odakSiparis.customers.fields.unvan'),
+    isMusteri: t('odakSiparis.customers.fields.isMusteri'),
+    isTedarikci: t('odakSiparis.customers.fields.isTedarikci'),
+    sektor: t('odakSiparis.customers.fields.sektor'),
+    ulke: t('odakSiparis.customers.fields.ulke'),
+  };
+  return labels[field] ?? field;
+}
 
 const loading = ref(false);
 const saving = ref(false);
-const errorMessage = ref('');
 const form = reactive<OdakCustomerFormModel>(emptyCustomerFormModel());
 
 const isEdit = computed(() => props.mode === 'edit');
@@ -45,7 +71,7 @@ const sektorItems = computed(() =>
 
 async function loadDialog() {
   if (!props.modelValue) return;
-  errorMessage.value = '';
+  clearFieldErrors();
   loading.value = true;
   try {
     if (props.mode === 'create') {
@@ -61,7 +87,7 @@ async function loadDialog() {
     if (!full) throw new Error(t('odakSiparis.customers.dialog.notFound'));
     Object.assign(form, customerRowToFormModel(full));
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    handleLoadError(e);
   } finally {
     loading.value = false;
   }
@@ -72,17 +98,21 @@ function closeDialog() {
 }
 
 async function saveCustomer() {
-  errorMessage.value = '';
+  clearFieldErrors();
+
+  const clientErrors: Record<string, string> = {};
   if (!form.kod.trim()) {
-    errorMessage.value = t('odakSiparis.customers.validation.kodRequired');
-    return;
+    clientErrors.kod = t('odakSiparis.customers.validation.kodRequired');
   }
   if (!form.unvan.trim()) {
-    errorMessage.value = t('odakSiparis.customers.validation.unvanRequired');
-    return;
+    clientErrors.unvan = t('odakSiparis.customers.validation.unvanRequired');
   }
   if (!form.isMusteri && !form.isTedarikci) {
-    errorMessage.value = t('odakSiparis.customers.validation.roleRequired');
+    clientErrors._form = t('odakSiparis.customers.validation.roleRequired');
+  }
+
+  if (Object.keys(clientErrors).length > 0) {
+    notifyClientValidation(clientErrors);
     return;
   }
 
@@ -97,7 +127,7 @@ async function saveCustomer() {
     }
     closeDialog();
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    handleSaveError(e);
   } finally {
     saving.value = false;
   }
@@ -129,8 +159,14 @@ watch(
       <v-divider />
 
       <v-card-text class="px-5 py-4">
-        <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">
-          {{ errorMessage }}
+        <v-alert
+          v-if="fieldErrors._form?.length"
+          type="warning"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          {{ fieldErrors._form.join(' ') }}
         </v-alert>
         <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
 
@@ -141,6 +177,7 @@ watch(
                 v-model="form.kod"
                 :label="t('odakSiparis.customers.fields.kod')"
                 :readonly="isEdit"
+                :error-messages="fieldMessages('kod')"
                 variant="outlined"
                 density="comfortable"
                 placeholder="MUS-001"
@@ -151,6 +188,7 @@ watch(
               <v-text-field
                 v-model="form.unvan"
                 :label="t('odakSiparis.customers.fields.unvan')"
+                :error-messages="fieldMessages('unvan')"
                 variant="outlined"
                 density="comfortable"
                 hide-details="auto"
@@ -179,19 +217,21 @@ watch(
                 item-title="title"
                 item-value="value"
                 :label="t('odakSiparis.customers.fields.sektor')"
+                :error-messages="fieldMessages('sektor')"
                 variant="outlined"
                 density="comfortable"
                 clearable
-                hide-details
+                hide-details="auto"
               />
             </v-col>
             <v-col cols="12" sm="6">
               <v-text-field
                 v-model="form.ulke"
                 :label="t('odakSiparis.customers.fields.ulke')"
+                :error-messages="fieldMessages('ulke')"
                 variant="outlined"
                 density="comfortable"
-                hide-details
+                hide-details="auto"
               />
             </v-col>
             <v-col cols="12" sm="4">

@@ -2,7 +2,8 @@
 import { computed, ref, watch } from 'vue';
 import DiMarkdownViewer from '@/components/apps/document-intelligence/DiMarkdownViewer.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
-import { diExtractMessage, diGetMarkdownContent } from '@/services/documentIntelligenceService';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
+import { diGetMarkdownContent } from '@/services/documentIntelligenceService';
 import type { DiResource } from '@/types/apps/documentIntelligence';
 
 const props = defineProps<{
@@ -15,6 +16,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const open = computed({
   get: () => props.modelValue,
@@ -39,7 +41,7 @@ async function loadContent(resource: DiResource) {
     const c = await diGetMarkdownContent(resource.id);
     content.value = c.content ?? '';
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.errors.preview'));
+    error.value = panelError(e, 'documentIntelligence.errors.preview');
   } finally {
     loading.value = false;
   }

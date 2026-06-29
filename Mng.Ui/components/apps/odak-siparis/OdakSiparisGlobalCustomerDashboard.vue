@@ -2,12 +2,14 @@
 import { computed, onMounted, ref } from 'vue';
 import OdakSiparisDashboardStatCard from '@/components/apps/odak-siparis/OdakSiparisDashboardStatCard.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
   fetchGlobalCustomerDashboardMetrics,
   type OdakGlobalCustomerDashboardMetrics,
 } from '@/utils/odakSiparisDashboardService';
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const loading = ref(false);
 const errorMessage = ref('');
 const metrics = ref<OdakGlobalCustomerDashboardMetrics | null>(null);
@@ -30,7 +32,7 @@ async function load() {
   try {
     metrics.value = await fetchGlobalCustomerDashboardMetrics();
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     loading.value = false;
   }

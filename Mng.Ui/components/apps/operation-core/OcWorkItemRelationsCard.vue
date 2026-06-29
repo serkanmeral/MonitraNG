@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import OcLinkWorkItemDialog from '@/components/apps/operation-core/OcLinkWorkItemDialog.vue';
-import { ocDeleteWorkItemLink, ocExtractDgErrorMessage } from '@/services/operationCoreService';
+import { ocDeleteWorkItemLink } from '@/services/operationCoreService';
 import type { OcWorkItemLinkSummary, OcWorkItemRelationSummary } from '@/types/apps/operationCore';
 import { buildWorkItemProfilePath } from '@/utils/ocWorkItemProfileNav';
 
@@ -22,6 +23,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const linkDialogOpen = ref(false);
 const deleteBusyId = ref<string | null>(null);
@@ -70,7 +72,7 @@ async function removeLink(link: OcWorkItemLinkSummary) {
     await ocDeleteWorkItemLink(props.workItemId, linkId);
     emit('refresh');
   } catch (e: unknown) {
-    actionError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.relations.deleteError'));
+    actionError.value = panelError(e, 'operationCore.profile.relations.deleteError');
   } finally {
     deleteBusyId.value = null;
   }

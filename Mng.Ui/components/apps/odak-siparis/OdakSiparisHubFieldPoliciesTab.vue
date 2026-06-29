@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue';
 import OdakSiparisFieldPolicyDialog from '@/components/apps/odak-siparis/OdakSiparisFieldPolicyDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
   emptyOdakFieldPoliciesBlob,
   policiesForOdakField,
@@ -26,6 +27,7 @@ const props = defineProps({
 });
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const loading = ref(true);
 const saving = ref(false);
@@ -104,7 +106,7 @@ async function load() {
       selectedField.value = props.fieldKeys[0] ?? '';
     }
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     loading.value = false;
   }
@@ -121,7 +123,7 @@ async function save() {
     invalidateOdakPackageHubSettingsCache();
     successMessage.value = t('odakSiparis.packages.settings.saved');
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     saving.value = false;
   }

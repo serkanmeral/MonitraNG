@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
   ocCreateWorkItemLink,
-  ocExtractDgErrorMessage,
+
   ocListDatasetPage,
 } from '@/services/operationCoreService';
 import type { OcWorkItemLinkSummary } from '@/types/apps/operationCore';
@@ -23,6 +24,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const open = computed({
   get: () => props.modelValue,
@@ -95,7 +97,7 @@ async function runSearch() {
       })
       .filter((r) => !!r.id);
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.profile.relations.linkDialog.searchError'));
+    errorLocal.value = panelError(e, 'operationCore.profile.relations.linkDialog.searchError');
     results.value = [];
     total.value = 0;
   } finally {
@@ -145,7 +147,7 @@ async function submit() {
     open.value = false;
     emit('linked');
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.profile.relations.linkDialog.submitError'));
+    errorLocal.value = panelError(e, 'operationCore.profile.relations.linkDialog.submitError');
   } finally {
     submitting.value = false;
   }

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
   ocCreateTag,
   ocDeleteTag,
-  ocExtractDgErrorMessage,
+
   ocListTagsForWorkspace,
   ocUpdateTag,
 } from '@/services/operationCoreService';
@@ -16,6 +17,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const loading = ref(true);
 const saving = ref(false);
@@ -48,7 +50,7 @@ async function loadAll() {
   try {
     tags.value = await ocListTagsForWorkspace(props.workspaceId);
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.tags.loadError'));
+    errorLocal.value = panelError(e, 'operationCore.tags.loadError');
   } finally {
     loading.value = false;
   }
@@ -90,7 +92,7 @@ async function save() {
     await loadAll();
     successLocal.value = t('operationCore.workspaceDefinitions.saveSuccess');
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.tags.saveError'));
+    errorLocal.value = panelError(e, 'operationCore.tags.saveError');
   } finally {
     saving.value = false;
   }
@@ -111,7 +113,7 @@ async function doDelete() {
     deleteTarget.value = null;
     await loadAll();
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.tags.deleteError'));
+    errorLocal.value = panelError(e, 'operationCore.tags.deleteError');
   } finally {
     deleting.value = false;
   }

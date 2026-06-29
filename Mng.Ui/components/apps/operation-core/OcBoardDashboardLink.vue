@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
-  ocExtractDgErrorMessage,
+
   ocListDashboardsForWorkspace,
   ocSetBoardDefaultDashboard,
 } from '@/services/operationCoreService';
@@ -24,6 +25,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const menuOpen = ref(false);
 const loading = ref(false);
@@ -48,7 +50,7 @@ async function loadDashboards() {
     const rows = await ocListDashboardsForWorkspace(props.workspaceId);
     dashboardItems.value = rows.map((d) => ({ value: d.id, title: d.name }));
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.board.dashboardLink.loadError'));
+    errorLocal.value = panelError(e, 'operationCore.board.dashboardLink.loadError');
   } finally {
     loading.value = false;
   }
@@ -71,7 +73,7 @@ async function saveSelection(clear = false) {
     menuOpen.value = false;
     emit('assigned', dashId);
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.board.dashboardLink.saveError'));
+    errorLocal.value = panelError(e, 'operationCore.board.dashboardLink.saveError');
   } finally {
     saving.value = false;
   }

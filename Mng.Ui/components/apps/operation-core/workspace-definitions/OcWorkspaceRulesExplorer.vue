@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useOcPersonPicker } from '@/composables/useOcPersonPicker';
 import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import { useUserStore } from '@/stores/apps/user';
@@ -8,7 +9,6 @@ import OcWorkspaceRuleDialog from '@/components/apps/operation-core/workspace-de
 import {
   ocCreateRule,
   ocDeleteRule,
-  ocExtractDgErrorMessage,
   ocListPoolFieldsForWorkspace,
   ocListRulesForWorkspace,
   ocListStateFlowsForWorkspace,
@@ -39,6 +39,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const personPicker = useOcPersonPicker();
 const catalog = useOcWorkspaceCatalogInject();
 const userStore = useUserStore();
@@ -335,10 +336,7 @@ async function loadAll() {
     seedTitleMaps(typeItems.value, boardItems.value, stateItems.value);
     await resolvePersonTitles(collectPersonIdsFromRules(ruleRows));
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.forms.rulesLoadError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.forms.rulesLoadError');
   } finally {
     loading.value = false;
   }
@@ -377,11 +375,11 @@ async function onSaveRule(payload: Record<string, unknown>) {
     await loadAll();
     successLocal.value = t('operationCore.workspaceDefinitions.rules.saveSuccess');
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
+    errorLocal.value = panelError(
       e,
       editingRule.value
-        ? t('operationCore.workspaceDefinitions.rules.updateError')
-        : t('operationCore.workspaceDefinitions.forms.rulesCreateError')
+        ? 'operationCore.workspaceDefinitions.rules.updateError'
+        : 'operationCore.workspaceDefinitions.forms.rulesCreateError',
     );
   } finally {
     saving.value = false;
@@ -403,10 +401,7 @@ async function confirmDelete() {
     deleteTarget.value = null;
     await loadAll();
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.forms.rulesDeleteError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.forms.rulesDeleteError');
   } finally {
     deleting.value = false;
   }

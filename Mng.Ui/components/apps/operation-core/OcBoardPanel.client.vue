@@ -16,11 +16,12 @@ import { useOcBoardRelationLookups } from '@/composables/useOcBoardRelationLooku
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import { useOperationCoreStore } from '@/stores/apps/operationCore';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
   ocApplyTransition,
   ocDeleteWorkItem,
   ocErrorCode,
-  ocExtractDgErrorMessage,
+
   ocExtractOperationsMessage,
   ocGetDashboardRecord,
   ocListPoolFieldsForWorkspace,
@@ -64,6 +65,7 @@ const emit = defineEmits<{
 }>();
 
 const { t, locale } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const route = useRoute();
 const router = useRouter();
 const store = useOperationCoreStore();
@@ -802,7 +804,7 @@ async function onKanbanTransition(payload: { card: OcWorkItemCard; fromStateId: 
     await ocApplyTransition(card.id, transition.transitionKey);
     showTransitionMsg(t('operationCore.board.transition.success'), 'success');
   } catch (e: unknown) {
-    showTransitionMsg(ocExtractDgErrorMessage(e, t('operationCore.board.transition.error')), 'error');
+    showTransitionMsg(panelError(e, 'operationCore.board.transition.error'), 'error');
   } finally {
     await store.refreshBoard();
   }

@@ -148,20 +148,10 @@ namespace MngDataGateway.Api.Controllers
                 var path = $"/api/v1/data/{datasetName}";
                 return this.SuccessResponse(result, path);
             }
-            catch (DataGatewayException ex) when (ex.ValidationErrors != null)
-            {
-                var path = $"/api/v1/data/{datasetName}";
-                return this.HandleValidationError(ex, path, _logger);
-            }
-            catch (DataGatewayException ex) when (ex.Message.Contains("not found"))
-            {
-                var path = $"/api/v1/data/{datasetName}";
-                return this.HandleNotFoundError(ex, path, _logger);
-            }
             catch (Exception ex)
             {
                 var path = $"/api/v1/data/{datasetName}";
-                return this.HandleError(ex, path, "CREATE_FAILED", "Failed to create data", _logger, includeStackTrace: true);
+                return this.HandleException(ex, path, "CREATE_FAILED", "Failed to create data", _logger, includeStackTrace: true);
             }
         }
 
@@ -288,17 +278,9 @@ namespace MngDataGateway.Api.Controllers
                 Response.Headers["X-Total-Count"] = result.TotalCount.ToString();
                 return Ok(result.Data);
             }
-            catch (DataGatewayException ex) when (ex.ValidationErrors != null)
-            {
-                return this.HandleValidationError(ex, GetApiPath(datasetName), _logger);
-            }
-            catch (DataGatewayException ex)
-            {
-                return this.HandleNotFoundError(ex, GetApiPath(datasetName), _logger);
-            }
             catch (Exception ex)
             {
-                return this.HandleError(ex, GetApiPath(datasetName), "LIST_FAILED", "Failed to list data", _logger);
+                return this.HandleException(ex, GetApiPath(datasetName), "LIST_FAILED", "Failed to list data", _logger);
             }
         }
 
@@ -407,13 +389,9 @@ namespace MngDataGateway.Api.Controllers
                 // Always return array (even if single item)
                 return Ok(queryResult.Data);
             }
-            catch (DataGatewayException ex)
-            {
-                return this.HandleNotFoundError(ex, GetApiPath(datasetName, dataId), _logger);
-            }
             catch (Exception ex)
             {
-                return this.HandleError(ex, GetApiPath(datasetName, dataId), "GET_FAILED", "Failed to get data", _logger);
+                return this.HandleException(ex, GetApiPath(datasetName, dataId), "GET_FAILED", "Failed to get data", _logger);
             }
         }
 
@@ -486,13 +464,9 @@ namespace MngDataGateway.Api.Controllers
 
                 return this.SuccessResponse(result, GetApiPath(datasetName, dataId));
             }
-            catch (DataGatewayException ex) when (ex.ValidationErrors != null)
-            {
-                return this.HandleValidationError(ex, GetApiPath(datasetName, dataId), _logger);
-            }
             catch (Exception ex)
             {
-                return this.HandleError(ex, GetApiPath(datasetName, dataId), "UPDATE_FAILED", "Failed to update data", _logger);
+                return this.HandleException(ex, GetApiPath(datasetName, dataId), "UPDATE_FAILED", "Failed to update data", _logger);
             }
         }
 
@@ -550,7 +524,7 @@ namespace MngDataGateway.Api.Controllers
             }
             catch (Exception ex)
             {
-                return this.HandleError(ex, GetApiPath(datasetName, dataId), "DELETE_FAILED", "Failed to delete data", _logger);
+                return this.HandleException(ex, GetApiPath(datasetName, dataId), "DELETE_FAILED", "Failed to delete data", _logger);
             }
         }
 
@@ -595,7 +569,7 @@ namespace MngDataGateway.Api.Controllers
             }
             catch (Exception ex)
             {
-                return this.HandleError(ex, GetApiPath(datasetName, dataId, "restore"), "RESTORE_FAILED", "Failed to restore data", _logger);
+                return this.HandleException(ex, GetApiPath(datasetName, dataId, "restore"), "RESTORE_FAILED", "Failed to restore data", _logger);
             }
         }
 
@@ -704,17 +678,9 @@ namespace MngDataGateway.Api.Controllers
                 // Always return array (even if single item)
                 return Ok(result.Data);
             }
-            catch (DataGatewayException ex) when (ex.ValidationErrors != null)
-            {
-                return this.HandleValidationError(ex, GetApiPath(datasetName, action: "query"), _logger);
-            }
-            catch (DataGatewayException ex)
-            {
-                return this.HandleNotFoundError(ex, GetApiPath(datasetName, action: "query"), _logger);
-            }
             catch (Exception ex)
             {
-                return this.HandleError(ex, GetApiPath(datasetName, action: "query"), "QUERY_FAILED", "Failed to query data", _logger);
+                return this.HandleException(ex, GetApiPath(datasetName, action: "query"), "QUERY_FAILED", "Failed to query data", _logger);
             }
         }
 
@@ -772,7 +738,7 @@ namespace MngDataGateway.Api.Controllers
             }
             catch (Exception ex)
             {
-                return this.HandleError(ex, GetApiPath(datasetName, action: "aggregate"), "AGGREGATE_FAILED", "Failed to execute aggregate", _logger);
+                return this.HandleException(ex, GetApiPath(datasetName, action: "aggregate"), "AGGREGATE_FAILED", "Failed to execute aggregate", _logger);
             }
         }
 
@@ -809,20 +775,10 @@ namespace MngDataGateway.Api.Controllers
                 // Always return array
                 return Ok(data);
             }
-            catch (DataGatewayException ex)
-            {
-                var queryPath = GetApiPath(datasetName, action: $"queries/{queryName}");
-                if (ex.Message.Contains("not found"))
-                {
-                    return this.ErrorResponse(queryPath, "QUERY_NOT_FOUND", ex.Message, statusCode: 404);
-                }
-
-                return this.HandleDataGatewayError(ex, queryPath, "QUERY_ERROR", _logger);
-            }
             catch (Exception ex)
             {
                 var queryPath = GetApiPath(datasetName, action: $"queries/{queryName}");
-                return this.HandleError(ex, queryPath, "QUERY_EXECUTION_FAILED", "Failed to execute predefined query", _logger);
+                return this.HandleException(ex, queryPath, "QUERY_EXECUTION_FAILED", "Failed to execute predefined query", _logger);
             }
         }
 
@@ -1504,13 +1460,9 @@ namespace MngDataGateway.Api.Controllers
 
                 return this.SuccessResponse(result, bulkPath);
             }
-            catch (DataGatewayException ex) when (ex.Message.Contains("not found"))
-            {
-                return this.HandleNotFoundError(ex, bulkPath, _logger);
-            }
             catch (Exception ex)
             {
-                return this.HandleError(ex, bulkPath, "BULK_CREATE_FAILED", "Failed to bulk create data", _logger);
+                return this.HandleException(ex, bulkPath, "BULK_CREATE_FAILED", "Failed to bulk create data", _logger);
             }
         }
 

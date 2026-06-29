@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { ODAK_CAPA_STATUS_OPTIONS, type OdakCapaRow } from '@/utils/odakSiparisConfig';
 import {
   capaDisplayNo,
@@ -29,6 +30,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const loading = ref(false);
 const saving = ref(false);
@@ -92,7 +94,7 @@ async function loadDialogData() {
     loadedRow.value = full;
     Object.assign(form, capaRowToFormModel(full));
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     loading.value = false;
   }
@@ -122,7 +124,7 @@ async function saveCapa() {
     emit('saved');
     closeDialog();
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     saving.value = false;
   }

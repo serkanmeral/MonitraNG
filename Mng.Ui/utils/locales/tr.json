@@ -3392,6 +3392,9 @@
     "menuTitle": "Dokümanlar",
     "menuHeader": "Kaynaklar",
     "title": "Doküman Yöneticisi",
+    "notify": {
+      "successTitle": "Başarılı"
+    },
     "explorer": "Gezgin",
     "allDocuments": "Tüm dokümanlar",
     "loadingContents": "Klasör içeriği yükleniyor…",
@@ -4081,7 +4084,11 @@
         "createTitle": "Yeni aktör",
         "editTitle": "Aktör düzenle — {name}",
         "missingId": "Aktör kimliği bulunamadı.",
-        "notFound": "Aktör yüklenemedi."
+        "notFound": "Aktör yüklenemedi.",
+        "loadErrorTitle": "Aktör yüklenemedi",
+        "loadError": "Aktör bilgileri alınırken hata oluştu.",
+        "saveErrorTitle": "Kayıt başarısız",
+        "saveError": "Aktör kaydedilirken hata oluştu."
       },
       "validation": {
         "kodRequired": "Kod zorunludur (MUS-XXX).",
@@ -4915,7 +4922,9 @@
       "editTitle": "İşi düzenle",
       "save": "Kaydet",
       "missingWorkItem": "İş kaydı bulunamadı.",
-      "noEditPermission": "Bu iş kaydını düzenleme yetkiniz yok."
+      "noEditPermission": "Bu iş kaydını düzenleme yetkiniz yok.",
+      "loadErrorTitle": "Form yüklenemedi",
+      "saveErrorTitle": "Kayıt başarısız"
     },
     "profile": {
       "placeholderTitle": "İş profili",
@@ -7334,6 +7343,28 @@
         "description": "Workspace ve board'lar üzerinden iş öğelerini yönetin; geçişler, kurallar ve profil MngOperations runtime'ından gelir.",
         "linkWorkspace": "Çalışma alanı"
       }
+    }
+  },
+  "errors": {
+    "dg": {
+      "generic": "İşlem sırasında bir hata oluştu.",
+      "validationError": "Doğrulama hatası.",
+      "duplicateKey": "Bu değer zaten kayıtlı.",
+      "uniqueConstraint": "Benzersizlik kuralı ihlal edildi.",
+      "uniqueConstraintField": "'{field}' alanı benzersiz olmalı; bu değer zaten kullanılıyor.",
+      "datasetNotFound": "Veri seti bulunamadı.",
+      "dataNotFound": "Kayıt bulunamadı.",
+      "queryNotFound": "Sorgu bulunamadı.",
+      "missingParameter": "Zorunlu parametre eksik.",
+      "invalidArgument": "Geçersiz istek.",
+      "invalidFormat": "Geçersiz format.",
+      "invalidOperation": "Geçersiz işlem.",
+      "databaseWriteError": "Veritabanı yazma hatası. Girdiğiniz değerleri kontrol edin.",
+      "forbidden": "Bu işlem için yetkiniz yok.",
+      "unauthorized": "Oturum geçersiz veya süresi dolmuş.",
+      "internalError": "Beklenmeyen bir sunucu hatası oluştu.",
+      "field": "Alan",
+      "toastTitle": "İşlem başarısız"
     }
   }
 }

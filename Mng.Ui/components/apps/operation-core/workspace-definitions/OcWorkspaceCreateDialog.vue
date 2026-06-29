@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
-import { ocCreateWorkspace, ocExtractDgErrorMessage } from '@/services/operationCoreService';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
+import { ocCreateWorkspace } from '@/services/operationCoreService';
 import { OC_WORKSPACE_TYPE_VALUES } from '@/types/apps/operationCore';
 
 const props = defineProps<{
@@ -14,6 +15,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const saving = ref(false);
 const errorLocal = ref<string | null>(null);
@@ -69,10 +71,7 @@ async function save() {
     emit('created', id);
     close();
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.create.saveError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.create.saveError');
   } finally {
     saving.value = false;
   }

@@ -289,6 +289,7 @@ namespace MngDataGateway.Persistence.Services
                         errors.Add(new ValidationErrorDto
                         {
                             Field = field.name,
+                            Code = Domain.Constants.ErrorCodes.VALIDATION_UNIQUE_CONSTRAINT,
                             Message = $"Field '{field.name}' must be unique. Value '{value}' already exists",
                             Value = value
                         });

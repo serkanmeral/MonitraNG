@@ -23,8 +23,9 @@ import {
 } from '@/composables/useOcWorkspaceDefinitionTabs';
 import { useDisplay } from 'vuetify';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAuthStore } from '@/stores/auth';
-import { ocListWorkspaces, ocReloadWorkspaceMetadataCache, ocExtractDgErrorMessage } from '@/services/operationCoreService';
+import { ocListWorkspaces, ocReloadWorkspaceMetadataCache } from '@/services/operationCoreService';
 import {
   OC_WORKSPACE_CATALOG_KEY,
   useOcWorkspaceCatalog,
@@ -34,6 +35,7 @@ import type { OpWorkspace } from '@/types/apps/operationCore';
 definePageMeta({ layout: 'default' });
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const { mdAndUp } = useDisplay();
 const route = useRoute();
 const router = useRouter();
@@ -139,10 +141,7 @@ async function reloadMetadataCache() {
       count: result.keysRemoved,
     });
   } catch (e: unknown) {
-    cacheReloadError.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.metadataCacheReloadError')
-    );
+    cacheReloadError.value = panelError(e, 'operationCore.workspaceDefinitions.metadataCacheReloadError');
   } finally {
     reloadingCache.value = false;
   }

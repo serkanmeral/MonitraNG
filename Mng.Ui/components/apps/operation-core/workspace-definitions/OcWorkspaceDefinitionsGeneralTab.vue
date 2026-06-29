@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
-import { ocExtractDgErrorMessage, ocGetWorkspace, ocUpdateWorkspace } from '@/services/operationCoreService';
+import { ocGetWorkspace, ocUpdateWorkspace } from '@/services/operationCoreService';
 import { useGroupStore } from '@/stores/apps/group';
 import type { OpWorkspaceDetail } from '@/types/apps/operationCore';
 import { OC_WORKSPACE_TYPE_VALUES } from '@/types/apps/operationCore';
@@ -12,6 +13,7 @@ const props = defineProps<{
 }>();
 
 const { t, locale } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const groupStore = useGroupStore();
 const catalog = useOcWorkspaceCatalogInject();
 
@@ -82,10 +84,7 @@ async function loadWorkspace() {
       };
     }
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.general.loadError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.general.loadError');
   } finally {
     loading.value = false;
   }
@@ -122,10 +121,7 @@ async function saveGeneral() {
     await loadWorkspace();
     successLocal.value = t('operationCore.workspaceDefinitions.saveSuccess');
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.general.saveError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.general.saveError');
   } finally {
     saving.value = false;
   }

@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { useOdakPackageFieldAccess } from '@/composables/useOdakPackageFieldAccess';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import type { OdakPackageRow } from '@/utils/odakSiparisConfig';
 import type { OdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
 import { loadOdakPackageHubRuntimeSettings } from '@/utils/odakSiparisHubSettingsService';
@@ -31,6 +32,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const loading = ref(false);
 const saving = ref(false);
@@ -129,7 +131,7 @@ async function loadDialog() {
       customerItems.value = [{ value: cid, title: label }, ...customerItems.value];
     }
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     loading.value = false;
     skipContactReset.value = false;
@@ -162,7 +164,7 @@ async function savePackage() {
     }
     closeDialog();
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     saving.value = false;
   }

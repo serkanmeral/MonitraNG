@@ -5,12 +5,13 @@ import OcDynamicForm from '@/components/apps/operation-core/OcDynamicForm.vue';
 import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBreadcrumbs';
 import { useOperationCoreStore } from '@/stores/apps/operationCore';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
   buildCreateWorkItemRequest,
   collectOcFormValidationIssues,
   initialFormModelFromContext,
   ocCreateWorkItem,
-  ocExtractDgErrorMessage,
+
   ocGetFormCreateContext,
   ocListBoardsForWorkspace,
   ocListPoolFieldsForWorkspace,
@@ -22,6 +23,7 @@ import { normalizeOcDialogMaxWidthPx } from '@/utils/ocFormLayout';
 definePageMeta({ layout: 'default' });
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const route = useRoute();
 const router = useRouter();
 const store = useOperationCoreStore();
@@ -143,7 +145,7 @@ async function loadForm() {
     validationAttempted.value = false;
   } catch (e: unknown) {
     formContext.value = null;
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.create.loadError'));
+    errorLocal.value = panelError(e, 'operationCore.create.loadError');
   } finally {
     loading.value = false;
   }
@@ -186,7 +188,7 @@ async function submit() {
       `/apps/operation-core/work-items/${encodeURIComponent(created.id)}/profile${suffix}`
     );
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.create.submitError'));
+    errorLocal.value = panelError(e, 'operationCore.create.submitError');
   } finally {
     submitting.value = false;
   }

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
-import { diExtractMessage, diGetLinkedWorkItems } from '@/services/documentIntelligenceService';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
+import { diGetLinkedWorkItems } from '@/services/documentIntelligenceService';
 import type { DiLinkedWorkItem } from '@/types/apps/documentIntelligence';
 import { buildWorkItemProfilePath } from '@/utils/ocWorkItemProfileNav';
 
@@ -10,6 +11,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const loading = ref(false);
 const error = ref<string | null>(null);
@@ -27,7 +29,7 @@ async function load() {
     const res = await diGetLinkedWorkItems(id);
     items.value = res.items;
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.linkedWorkItems.loadError'));
+    error.value = panelError(e, 'documentIntelligence.linkedWorkItems.loadError');
     items.value = [];
   } finally {
     loading.value = false;

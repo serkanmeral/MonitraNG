@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import DiCollaboraEditor from '@/components/apps/document-intelligence/DiCollaboraEditor.vue';
-import { diExtractMessage, diGetResourceEditorSession } from '@/services/documentIntelligenceService';
+import { diGetResourceEditorSession } from '@/services/documentIntelligenceService';
 import type { DiResource } from '@/types/apps/documentIntelligence';
 
 const props = defineProps<{
@@ -15,6 +16,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const open = computed({
   get: () => props.modelValue,
@@ -48,7 +50,7 @@ async function loadEditor(resource: DiResource) {
     viaTemplateFallback.value = Boolean(session.viaTemplateFallback);
     editorUrl.value = session.editorUrl || null;
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.errors.editorSession'));
+    error.value = panelError(e, 'documentIntelligence.errors.editorSession');
   } finally {
     loading.value = false;
   }

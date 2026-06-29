@@ -6,6 +6,7 @@ import DiTemplatePageStructureForm from '@/components/apps/document-intelligence
 import DiDesignerParametersDialog from '@/components/apps/document-intelligence/DiDesignerParametersDialog.vue';
 import { useResizableTreePanel } from '@/composables/useResizableTreePanel';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
   diCreateBlankTemplate,
   diCreateTemplateCategory,
@@ -14,7 +15,7 @@ import {
   diDeleteTemplateCategory,
   diDuplicateTemplate,
   diErrorCode,
-  diExtractMessage,
+
   diGetTemplate,
   diGetTemplateCategoryTree,
   diListTemplates,
@@ -41,6 +42,7 @@ import {
 definePageMeta({ layout: 'default' });
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const route = useRoute();
 const router = useRouter();
 
@@ -246,7 +248,7 @@ async function loadCategoryTree() {
   try {
     categoryTree.value = await diGetTemplateCategoryTree();
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.categoryTree'));
+    error.value = panelError(e, 'documentIntelligence.designer.errors.categoryTree');
   } finally {
     categoryTreeLoading.value = false;
   }
@@ -265,7 +267,7 @@ async function refreshTemplates() {
     const res = await diListTemplates(categoryId);
     templates.value = res.items;
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.list'));
+    error.value = panelError(e, 'documentIntelligence.designer.errors.list');
     templates.value = [];
   } finally {
     templatesLoading.value = false;
@@ -305,7 +307,7 @@ async function submitNewTemplate() {
     await refreshTemplates();
     notify.value = t('documentIntelligence.designer.blankCreated');
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.createBlank'));
+    error.value = panelError(e, 'documentIntelligence.designer.errors.createBlank');
   } finally {
     creatingTemplate.value = false;
   }
@@ -354,7 +356,7 @@ async function submitUnpublishTemplate() {
       navigateToTemplateEditor(templateId);
     }
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.unpublish'));
+    error.value = panelError(e, 'documentIntelligence.designer.errors.unpublish');
   } finally {
     unpublishingTemplate.value = false;
   }
@@ -387,7 +389,7 @@ async function submitDeleteTemplate() {
     await refreshTemplates();
     notify.value = t('documentIntelligence.designer.templateDeleted');
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.deleteTemplate'));
+    error.value = panelError(e, 'documentIntelligence.designer.errors.deleteTemplate');
   } finally {
     deletingTemplate.value = false;
   }
@@ -454,7 +456,7 @@ async function submitEditTemplateMetadata() {
     await refreshTemplates();
     notify.value = t('documentIntelligence.designer.metadataUpdated');
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.updateMetadata'));
+    error.value = panelError(e, 'documentIntelligence.designer.errors.updateMetadata');
   } finally {
     savingTemplateMetadata.value = false;
   }
@@ -479,7 +481,7 @@ async function submitPublishTemplate() {
     await refreshTemplates();
     notify.value = t('documentIntelligence.published');
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.publish'));
+    error.value = panelError(e, 'documentIntelligence.designer.errors.publish');
   } finally {
     publishingTemplate.value = false;
   }
@@ -553,7 +555,7 @@ async function submitCopyTemplate() {
       query: { categoryId },
     });
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.duplicate'));
+    error.value = panelError(e, 'documentIntelligence.designer.errors.duplicate');
   } finally {
     copyingTemplate.value = false;
   }
@@ -579,7 +581,7 @@ async function submitNewCategory() {
     await selectCategory(created.id);
     notify.value = t('documentIntelligence.designer.categoryCreated');
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.categoryCreate'));
+    error.value = panelError(e, 'documentIntelligence.designer.errors.categoryCreate');
   } finally {
     creatingCategory.value = false;
   }
@@ -603,7 +605,7 @@ async function submitRenameCategory() {
     renameCategoryDialog.value = false;
     notify.value = t('documentIntelligence.designer.categoryRenamed');
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.categoryRename'));
+    error.value = panelError(e, 'documentIntelligence.designer.errors.categoryRename');
   } finally {
     renamingCategory.value = false;
   }
@@ -632,7 +634,7 @@ async function submitDeleteCategory() {
     } else if (code === 'CATEGORY_NOT_EMPTY') {
       error.value = t('documentIntelligence.designer.errors.categoryNotEmpty');
     } else {
-      error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.categoryDelete'));
+      error.value = panelError(e, 'documentIntelligence.designer.errors.categoryDelete');
     }
   } finally {
     deletingCategory.value = false;
@@ -696,7 +698,7 @@ async function submitUpload() {
     await refreshTemplates();
     notify.value = t('documentIntelligence.designer.templateCreatedPlaceholderHint');
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.create'));
+    error.value = panelError(e, 'documentIntelligence.designer.errors.create');
   } finally {
     uploading.value = false;
   }

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import OcWorkspaceSlaPolicyDialog from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceSlaPolicyDialog.vue';
 import {
   ocCreateSlaPolicy,
   ocDeleteSlaPolicy,
-  ocExtractDgErrorMessage,
+
   ocListSlaPoliciesForWorkspace,
   ocUpdateSlaPolicy,
 } from '@/services/operationCoreService';
@@ -22,6 +23,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const catalog = useOcWorkspaceCatalogInject();
 
 const loading = ref(true);
@@ -124,7 +126,7 @@ async function loadAll() {
     types.value = catalog.types.value;
     priorities.value = catalog.priorities.value;
   } catch (e) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.workspaceDefinitions.sla.loadError'));
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.sla.loadError');
   } finally {
     loading.value = false;
   }
@@ -167,7 +169,7 @@ async function savePolicy(payload: Record<string, unknown>) {
     successLocal.value = t('operationCore.workspaceDefinitions.sla.saveSuccess');
     await loadAll();
   } catch (e) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.workspaceDefinitions.sla.saveError'));
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.sla.saveError');
   } finally {
     saving.value = false;
   }
@@ -183,7 +185,7 @@ async function deletePolicy() {
     successLocal.value = t('operationCore.workspaceDefinitions.sla.deleteSuccess');
     await loadAll();
   } catch (e) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.workspaceDefinitions.sla.deleteError'));
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.sla.deleteError');
   } finally {
     deleting.value = false;
   }

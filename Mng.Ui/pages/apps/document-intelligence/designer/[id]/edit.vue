@@ -3,8 +3,9 @@ import { computed, onMounted, ref } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DiCollaboraEditor from '@/components/apps/document-intelligence/DiCollaboraEditor.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
-  diExtractMessage,
+
   diGetTemplate,
   diGetTemplateEditorSession,
   diPublishTemplate,
@@ -15,6 +16,7 @@ import type { DiTemplateDetail } from '@/types/apps/documentIntelligence';
 definePageMeta({ layout: 'default' });
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const route = useRoute();
 const router = useRouter();
 
@@ -77,9 +79,9 @@ async function loadEditor() {
     editorReadOnly.value = session.readOnly || isPublished.value;
     editorUrl.value = session.editorUrl || null;
   } catch (e: unknown) {
-    const message = diExtractMessage(e, t('documentIntelligence.designer.errors.load'));
+    const message = panelError(e, 'documentIntelligence.designer.errors.load');
     error.value = message;
-    editorError.value = diExtractMessage(e, t('documentIntelligence.designer.errors.editorSession'));
+    editorError.value = message;
     template.value = null;
     editorUrl.value = null;
   } finally {
@@ -115,7 +117,7 @@ async function submitPublish() {
     notify.value = t('documentIntelligence.published');
     await loadEditor();
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.publish'));
+    error.value = panelError(e, 'documentIntelligence.designer.errors.publish');
   } finally {
     publishing.value = false;
   }
@@ -134,7 +136,7 @@ async function submitUnpublish() {
     notify.value = t('documentIntelligence.designer.unpublished');
     await loadEditor();
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.unpublish'));
+    error.value = panelError(e, 'documentIntelligence.designer.errors.unpublish');
   } finally {
     unpublishing.value = false;
   }

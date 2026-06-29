@@ -17,6 +17,7 @@ import { useOperationCoreBreadcrumbs } from '@/composables/useOperationCoreBread
 import { useOperationCoreStore } from '@/stores/apps/operationCore';
 import { useOcBoardListLookups } from '@/composables/useOcBoardListLookups';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
   buildUpdateWorkItemRequestFromFormEdit,
   collectOcFormValidationIssues,
@@ -27,7 +28,7 @@ import {
   ocApplyTransition,
   ocDeleteWorkItemComment,
   ocDownloadAttachment,
-  ocExtractDgErrorMessage,
+
   ocGetWorkItemProfileView,
   ocGetWorkItemTimeline,
   ocRemoveWorkItemAttachment,
@@ -53,6 +54,7 @@ import { resolveProfileBackToBoardPath } from '@/utils/ocWorkItemProfileNav';
 definePageMeta({ layout: 'default' });
 
 const { t, locale } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const route = useRoute();
 const store = useOperationCoreStore();
 
@@ -137,7 +139,7 @@ async function submitEdit(commentId: string, payload: { html: string }) {
     editingId.value = null;
     await loadTimeline();
   } catch (e: unknown) {
-    commentError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.comments.error'));
+    commentError.value = panelError(e, 'operationCore.profile.comments.error');
   } finally {
     editSending.value = false;
   }
@@ -153,7 +155,7 @@ async function confirmDeleteComment() {
     deleteTargetId.value = null;
     await loadTimeline();
   } catch (e: unknown) {
-    commentError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.comments.error'));
+    commentError.value = panelError(e, 'operationCore.profile.comments.error');
   } finally {
     deleteBusy.value = false;
   }
@@ -350,7 +352,7 @@ async function saveFormEdit() {
     editMode.value = false;
     await loadProfile(true);
   } catch (e: unknown) {
-    editError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.edit.saveError'));
+    editError.value = panelError(e, 'operationCore.profile.edit.saveError');
   } finally {
     savingEdit.value = false;
   }
@@ -415,7 +417,7 @@ async function onFileSelected(event: Event) {
   try {
     profile.value = await ocAddWorkItemAttachment(workItemId.value, attachments.value, file);
   } catch (e: unknown) {
-    attachError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.attachments.uploadError'));
+    attachError.value = panelError(e, 'operationCore.profile.attachments.uploadError');
   } finally {
     attachUploading.value = false;
   }
@@ -426,7 +428,7 @@ async function downloadAttachment(att: OcAttachment) {
   try {
     await ocDownloadAttachment(att);
   } catch (e: unknown) {
-    attachError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.attachments.downloadError'));
+    attachError.value = panelError(e, 'operationCore.profile.attachments.downloadError');
   }
 }
 
@@ -455,7 +457,7 @@ async function removeAttachment(att: OcAttachment) {
   try {
     profile.value = await ocRemoveWorkItemAttachment(workItemId.value, attachments.value, att.path);
   } catch (e: unknown) {
-    attachError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.attachments.removeError'));
+    attachError.value = panelError(e, 'operationCore.profile.attachments.removeError');
   } finally {
     removingPath.value = null;
   }
@@ -519,7 +521,7 @@ async function submitComment(payload: { html: string; mentions: string[]; files:
     cancelReply();
     await loadTimeline();
   } catch (e: unknown) {
-    commentError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.comments.error'));
+    commentError.value = panelError(e, 'operationCore.profile.comments.error');
   } finally {
     commentSending.value = false;
   }
@@ -609,7 +611,7 @@ async function confirmTransition() {
     transitionFieldModel.value = {};
     await loadProfile(true);
   } catch (e: unknown) {
-    transitionError.value = ocExtractDgErrorMessage(e, t('operationCore.profile.transitions.error'));
+    transitionError.value = panelError(e, 'operationCore.profile.transitions.error');
   } finally {
     transitionBusy.value = false;
   }
@@ -650,7 +652,7 @@ async function loadProfile(force = false) {
   } catch (e: unknown) {
     formContext.value = null;
     profileDisplayContext.value = null;
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.profile.loadError'));
+    errorLocal.value = panelError(e, 'operationCore.profile.loadError');
   } finally {
     loading.value = false;
   }

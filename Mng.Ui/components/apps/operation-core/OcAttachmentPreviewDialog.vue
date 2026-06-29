@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
-import { ocFetchAttachmentBlob, ocExtractDgErrorMessage } from '@/services/operationCoreService';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
+import { ocFetchAttachmentBlob } from '@/services/operationCoreService';
 import { previewKind, previewMime, typedBlobForPreview } from '@/utils/ocAttachmentPreview';
 import type { OcAttachment } from '@/types/apps/operationCore';
 
@@ -16,6 +17,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const open = computed({
   get: () => props.modelValue,
@@ -54,7 +56,7 @@ async function loadPreview(att: OcAttachment) {
       objectUrl.value = URL.createObjectURL(typed);
     }
   } catch (e: unknown) {
-    error.value = ocExtractDgErrorMessage(e, t('operationCore.profile.attachments.previewError'));
+    error.value = panelError(e, 'operationCore.profile.attachments.previewError');
   } finally {
     loading.value = false;
   }

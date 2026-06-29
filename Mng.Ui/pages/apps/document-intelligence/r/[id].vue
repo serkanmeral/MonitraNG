@@ -6,11 +6,13 @@ import DiFilePreviewDialog from '@/components/apps/document-intelligence/DiFileP
 import DiResourceEditorDialog from '@/components/apps/document-intelligence/DiResourceEditorDialog.vue';
 import DiLinkedWorkItemsPanel from '@/components/apps/document-intelligence/DiLinkedWorkItemsPanel.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useAppToast } from '@/composables/useAppToast';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { isDiDocxEditable, isDiPreviewable } from '@/utils/diFilePreview';
 import { DI_HOME_PATH, buildDiFolderUrl } from '@/utils/diResourceLink';
 import {
   diErrorStatus,
-  diExtractMessage,
+
   diFetchFileBlob,
   diGetBreadcrumb,
   diGetById,
@@ -21,6 +23,8 @@ import type { DiBreadcrumb, DiResource } from '@/types/apps/documentIntelligence
 definePageMeta({ layout: 'default' });
 
 const { t } = useAppI18n();
+const { push } = useAppToast();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const route = useRoute();
 
 const resourceId = computed(() => String(route.params.id ?? '').trim());
@@ -37,9 +41,6 @@ const previewOpen = ref(false);
 const markdownContent = ref('');
 const markdownLoading = ref(false);
 const showMarkdown = ref(false);
-
-const snackbar = ref(false);
-const snackbarText = ref('');
 
 function resourceLabel(r: DiResource | null): string {
   if (!r) return '…';
@@ -76,7 +77,7 @@ async function downloadFile(r: DiResource) {
     URL.revokeObjectURL(url);
     downloadedFallback.value = true;
   } catch (e: unknown) {
-    errorMessage.value = diExtractMessage(e, t('documentIntelligence.errors.download'));
+    errorMessage.value = panelError(e, 'documentIntelligence.errors.download');
   }
 }
 
@@ -95,7 +96,7 @@ async function openLoadedResource(r: DiResource) {
       const c = await diGetMarkdownContent(r.id);
       markdownContent.value = c.content;
     } catch (e: unknown) {
-      errorMessage.value = diExtractMessage(e, t('documentIntelligence.errors.docLoad'));
+      errorMessage.value = panelError(e, 'documentIntelligence.errors.docLoad');
     } finally {
       markdownLoading.value = false;
     }
@@ -140,7 +141,7 @@ async function loadResource() {
     if (diErrorStatus(e) === 404) {
       errorMessage.value = t('documentIntelligence.errors.resourceNotFound');
     } else {
-      errorMessage.value = diExtractMessage(e, t('documentIntelligence.errors.docLoad'));
+      errorMessage.value = panelError(e, 'documentIntelligence.errors.docLoad');
     }
   } finally {
     loading.value = false;
@@ -160,11 +161,17 @@ function onPreviewOpenChange(open: boolean) {
 async function copyShareLink() {
   try {
     await navigator.clipboard.writeText(window.location.href);
-    snackbarText.value = t('documentIntelligence.linkCopied');
-    snackbar.value = true;
+    push({
+      title: t('documentIntelligence.notify.successTitle'),
+      message: t('documentIntelligence.linkCopied'),
+      severity: 'success',
+    });
   } catch {
-    snackbarText.value = t('documentIntelligence.linkCopyFailed');
-    snackbar.value = true;
+    push({
+      title: t('errors.dg.toastTitle'),
+      message: t('documentIntelligence.linkCopyFailed'),
+      severity: 'error',
+    });
   }
 }
 
@@ -266,8 +273,5 @@ watch(resourceId, () => {
       @update:model-value="onPreviewOpenChange"
     />
 
-    <v-snackbar v-model="snackbar" location="top right" :timeout="2500">
-      {{ snackbarText }}
-    </v-snackbar>
   </div>
 </template>

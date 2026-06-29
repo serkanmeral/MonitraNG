@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import OcWorkspaceMailPolicyDialog from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceMailPolicyDialog.vue';
 import { ocListStateFlowsForWorkspace } from '@/services/operationCore/flows';
@@ -9,7 +10,7 @@ import { listActiveMailTemplateOptions } from '@/services/notifier/mailTemplates
 import {
   ocCreateNotificationPolicy,
   ocDeleteNotificationPolicy,
-  ocExtractDgErrorMessage,
+
   ocListNotificationPoliciesForWorkspace,
   ocListPoolFieldsForWorkspace,
   ocUpdateNotificationPolicy,
@@ -29,6 +30,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const catalog = useOcWorkspaceCatalogInject();
 
 const loading = ref(true);
@@ -179,7 +181,7 @@ async function loadAll() {
     const transitions = flows.flatMap((f) => f.transitions);
     transitionOptions.value = collectTransitionOptions(transitions);
   } catch (e) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.workspaceDefinitions.mail.loadError'));
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.mail.loadError');
   } finally {
     loading.value = false;
   }
@@ -222,7 +224,7 @@ async function savePolicy(payload: Record<string, unknown>) {
     successLocal.value = t('operationCore.workspaceDefinitions.mail.saveSuccess');
     await loadAll();
   } catch (e) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.workspaceDefinitions.mail.saveError'));
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.mail.saveError');
   } finally {
     saving.value = false;
   }
@@ -238,7 +240,7 @@ async function deletePolicy() {
     successLocal.value = t('operationCore.workspaceDefinitions.mail.deleteSuccess');
     await loadAll();
   } catch (e) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.workspaceDefinitions.mail.deleteError'));
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.mail.deleteError');
   } finally {
     deleting.value = false;
   }

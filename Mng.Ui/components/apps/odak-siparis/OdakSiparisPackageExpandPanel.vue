@@ -7,6 +7,7 @@ import OdakSiparisPoDocumentPanel from '@/components/apps/odak-siparis/OdakSipar
 import OdakSiparisQualityPanel from '@/components/apps/odak-siparis/OdakSiparisQualityPanel.vue';
 import OdakSiparisShipmentsPanel from '@/components/apps/odak-siparis/OdakSiparisShipmentsPanel.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import type { OdakPackageRow } from '@/utils/odakSiparisConfig';
 import {
   fetchOdakPackageById,
@@ -30,6 +31,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const route = useRoute();
 
 type ExpandTab = 'summary' | 'dashboard' | 'lines' | 'shipments' | 'quality' | 'documents';
@@ -67,7 +69,7 @@ async function loadPackage() {
   try {
     pkg.value = (await fetchOdakPackageById(id)) ?? props.packageRow;
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
     pkg.value = props.packageRow;
   } finally {
     loading.value = false;

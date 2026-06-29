@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
-  ocExtractDgErrorMessage,
+
   ocGetWorkspace,
   ocListPriorities,
   ocSaveWorkspaceEnabledPriorityIds,
@@ -15,6 +16,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const loading = ref(true);
 const savingSelection = ref(false);
@@ -55,10 +57,7 @@ async function loadAll() {
     globalPriorities.value = priorities;
     selectedPriorityIds.value = ws?.enabledPriorityIds ? [...ws.enabledPriorityIds] : [];
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.priorities.loadError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.priorities.loadError');
   } finally {
     loading.value = false;
   }
@@ -82,10 +81,7 @@ async function saveSelection() {
     await loadAll();
     successLocal.value = t('operationCore.workspaceDefinitions.saveSuccess');
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.priorities.saveSelectionError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.priorities.saveSelectionError');
   } finally {
     savingSelection.value = false;
   }

@@ -1,5 +1,8 @@
 using System.Net;
-using System.Text.Json;
+using MngDataGateway.Application.DTOs.Common;
+using MngDataGateway.Domain.Constants;
+using MngDataGateway.Domain.Exceptions;
+using MngDataGateway.Persistence.Helpers;
 
 namespace MngDataGateway.Api.Middleware;
 
@@ -29,37 +32,89 @@ public class GlobalExceptionHandlerMiddleware
 
     private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
+        var path = context.Request.Path.Value ?? "/";
+        var dgEx = exception is DataGatewayException existing
+            ? existing
+            : DgExceptionMapper.Map(exception, "An unexpected error occurred");
+
+        var (statusCode, errorCode, message, details) = MapToResponse(dgEx, path);
+
         context.Response.ContentType = "application/json";
+        context.Response.StatusCode = statusCode;
 
-        var (statusCode, message) = exception switch
+        var response = new ErrorResponseDto
         {
-            ArgumentNullException => (HttpStatusCode.BadRequest, "Required argument is missing"),
-            ArgumentException => (HttpStatusCode.BadRequest, "Invalid argument provided"),
-            UnauthorizedAccessException => (HttpStatusCode.Unauthorized, "Access denied"),
-            InvalidOperationException => (HttpStatusCode.BadRequest, "Invalid operation"),
-            KeyNotFoundException => (HttpStatusCode.NotFound, "Resource not found"),
-            TimeoutException => (HttpStatusCode.RequestTimeout, "Operation timed out"),
-            _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred")
+            Success = false,
+            Error = new ErrorDetailDto
+            {
+                Code = errorCode,
+                Message = message,
+                Details = details
+            },
+            Meta = new ResponseMetaDto
+            {
+                Timestamp = DateTime.UtcNow,
+                Path = path
+            }
         };
 
-        context.Response.StatusCode = (int)statusCode;
+        await context.Response.WriteAsJsonAsync(response);
+    }
 
-        var response = new
+    private static (int StatusCode, string ErrorCode, string Message, object? Details) MapToResponse(
+        DataGatewayException ex,
+        string path)
+    {
+        return ex switch
         {
-            StatusCode = statusCode,
-            Message = message,
-            Timestamp = DateTime.UtcNow,
-            TraceId = context.TraceIdentifier,
-            Path = context.Request.Path,
-            Method = context.Request.Method
-        };
+            ConflictException conflict => (
+                StatusCodes.Status409Conflict,
+                ErrorCodes.DUPLICATE_KEY,
+                conflict.Message,
+                conflict.ValidationErrors),
 
-        var options = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        };
+            DataGatewayException dg when dg is ValidationException || dg.ValidationErrors is { Count: > 0 } => (
+                StatusCodes.Status400BadRequest,
+                ErrorCodes.VALIDATION_ERROR,
+                dg.Message,
+                dg.ValidationErrors),
 
-        await context.Response.WriteAsync(JsonSerializer.Serialize(response, options));
+            NotFoundException => (
+                StatusCodes.Status404NotFound,
+                ex.ErrorCode ?? ErrorCodes.RESOURCE_NOT_FOUND,
+                ex.Message,
+                null),
+
+            UnauthorizedException => (
+                StatusCodes.Status401Unauthorized,
+                ErrorCodes.UNAUTHORIZED,
+                ex.Message,
+                null),
+
+            ForbiddenException => (
+                StatusCodes.Status403Forbidden,
+                ErrorCodes.FORBIDDEN,
+                ex.Message,
+                null),
+
+            BadRequestException badRequest => (
+                StatusCodes.Status400BadRequest,
+                badRequest.ErrorCode ?? ErrorCodes.INVALID_ARGUMENT,
+                badRequest.Message,
+                badRequest.ValidationErrors ?? (object?)badRequest.InnerException?.Message),
+
+            _ when DgExceptionMapper.IsClientError(ex) => (
+                StatusCodes.Status400BadRequest,
+                ex.ErrorCode ?? ErrorCodes.INVALID_ARGUMENT,
+                ex.Message,
+                ex.ValidationErrors ?? (object?)ex.InnerException?.Message),
+
+            _ => (
+                StatusCodes.Status500InternalServerError,
+                ex.ErrorCode ?? ErrorCodes.INTERNAL_ERROR,
+                ex.Message,
+                ex.InnerException?.Message)
+        };
     }
 }
 
@@ -70,4 +125,3 @@ public static class GlobalExceptionHandlerMiddlewareExtensions
         return builder.UseMiddleware<GlobalExceptionHandlerMiddleware>();
     }
 }
-

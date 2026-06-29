@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import OdakSiparisNotificationPolicyDialog from '@/components/apps/odak-siparis/OdakSiparisNotificationPolicyDialog.vue';
 import { listActiveMailTemplateOptions } from '@/services/notifier/mailTemplates';
 import {
@@ -14,6 +15,7 @@ import {
 } from '@/utils/odakSiparisNotificationPolicies';
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const loading = ref(true);
 const saving = ref(false);
@@ -42,7 +44,7 @@ async function load() {
     policies.value = await listOdakNotificationPolicies();
     emailTemplateItems.value = await listActiveMailTemplateOptions();
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     loading.value = false;
   }
@@ -76,7 +78,7 @@ async function onSave(draft: OdakNotificationPolicyDraft) {
     dialogOpen.value = false;
     await load();
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     saving.value = false;
   }
@@ -93,7 +95,7 @@ async function doDelete() {
     deleteTarget.value = null;
     await load();
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     deleting.value = false;
   }

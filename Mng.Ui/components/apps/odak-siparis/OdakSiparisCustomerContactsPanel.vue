@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import OdakSiparisCustomerContactDialog from '@/components/apps/odak-siparis/OdakSiparisCustomerContactDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import type { OdakCustomerContactRow, OdakCustomerRow } from '@/utils/odakSiparisConfig';
 import {
   contactDataId,
@@ -17,6 +18,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const loading = ref(false);
 const errorMessage = ref('');
@@ -58,7 +60,7 @@ async function loadContacts() {
   try {
     contacts.value = await listContactsForCustomer(id);
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
     contacts.value = [];
   } finally {
     loading.value = false;
@@ -89,7 +91,7 @@ async function doDelete() {
     contactToDelete.value = null;
     await loadContacts();
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     deleting.value = false;
   }

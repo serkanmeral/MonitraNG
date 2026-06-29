@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import OdakSiparisCustomerQualityReqCopyDialog from '@/components/apps/odak-siparis/OdakSiparisCustomerQualityReqCopyDialog.vue';
 import OdakSiparisCustomerQualityReqDialog from '@/components/apps/odak-siparis/OdakSiparisCustomerQualityReqDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import type { OdakCustomerQualityReqRow, OdakCustomerRow } from '@/utils/odakSiparisConfig';
 import {
   deleteOdakCustomerQualityReq,
@@ -18,6 +19,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const loading = ref(false);
 const errorMessage = ref('');
@@ -60,7 +62,7 @@ async function loadReqs() {
   try {
     reqs.value = await listQualityReqsForCustomer(id);
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
     reqs.value = [];
   } finally {
     loading.value = false;
@@ -96,7 +98,7 @@ async function doDelete() {
     reqToDelete.value = null;
     await loadReqs();
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     deleting.value = false;
   }

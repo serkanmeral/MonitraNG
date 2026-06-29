@@ -2,8 +2,9 @@
 import { computed, ref, watch } from 'vue';
 import DiDesignerPlaceholderPanel from '@/components/apps/document-intelligence/DiDesignerPlaceholderPanel.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
-  diExtractMessage,
+
   diGetTemplate,
   diGetTemplateDocxStructure,
   diListDocumentContextTypes,
@@ -35,6 +36,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const loading = ref(false);
 const saving = ref(false);
@@ -143,7 +145,7 @@ async function loadDialogData() {
       selectedKey.value = placeholders.value[0]!.key;
     }
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.load'));
+    error.value = panelError(e, 'documentIntelligence.designer.errors.load');
     parameters.value = [];
   } finally {
     loading.value = false;
@@ -221,7 +223,7 @@ async function runPreview() {
     previewValues.value = res.values;
     previewMissing.value = res.missingKeys;
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.load'));
+    error.value = panelError(e, 'documentIntelligence.designer.errors.load');
   } finally {
     previewLoading.value = false;
   }
@@ -243,7 +245,7 @@ async function saveParameters() {
     notify.value = t('documentIntelligence.designer.saved');
     emit('saved');
   } catch (e: unknown) {
-    error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.save'));
+    error.value = panelError(e, 'documentIntelligence.designer.errors.save');
   } finally {
     saving.value = false;
   }

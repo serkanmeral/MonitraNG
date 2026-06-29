@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useOcWorkspaceMetadataCacheReload } from '@/composables/useOcWorkspaceMetadataCacheReload';
 import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import OcFormPreviewDialog from '@/components/apps/operation-core/OcFormPreviewDialog.vue';
@@ -25,7 +26,7 @@ import {
   buildOcFormLayoutPayload,
   ocCreateForm,
   ocDeleteForm,
-  ocExtractDgErrorMessage,
+
   ocListFormsForWorkspace,
   ocListFormLayoutPoolFields,
   ocListStateFlowsForWorkspace,
@@ -44,6 +45,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const metaCache = useOcWorkspaceMetadataCacheReload(() => props.workspaceId);
 const catalog = useOcWorkspaceCatalogInject();
 
@@ -283,10 +285,7 @@ async function loadAll() {
     priorityItems.value = priorities.map((x) => ({ value: x.__dataId, title: x.name }));
     boardItems.value = boards.map((x) => ({ value: x.__dataId, title: x.name }));
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.forms.loadError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.forms.loadError');
   } finally {
     loading.value = false;
   }
@@ -395,10 +394,7 @@ async function submitForm() {
       t('operationCore.workspaceDefinitions.saveSuccess')
     );
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.forms.saveError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.forms.saveError');
   } finally {
     saving.value = false;
   }
@@ -420,10 +416,7 @@ async function confirmDelete() {
       t('operationCore.workspaceDefinitions.forms.deleteSuccess')
     );
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.forms.deleteError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.forms.deleteError');
     deleteDialog.value = false;
   } finally {
     deleting.value = false;
@@ -468,10 +461,7 @@ function openPreview() {
     previewValues.value = values;
     previewDialog.value = true;
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.forms.previewError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.forms.previewError');
   } finally {
     previewLoading.value = false;
   }

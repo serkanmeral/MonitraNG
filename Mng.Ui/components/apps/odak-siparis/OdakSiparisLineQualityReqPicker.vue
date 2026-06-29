@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import type { OdakCustomerQualityReqRow } from '@/utils/odakSiparisConfig';
 import {
   computeIsFaiFromQualityReqs,
@@ -28,6 +29,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const loading = ref(false);
 const errorMessage = ref('');
@@ -82,7 +84,7 @@ async function loadReqs() {
   try {
     allReqs.value = await listQualityReqsForCustomer(id, { activeOnly: false });
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
     allReqs.value = [];
   } finally {
     loading.value = false;

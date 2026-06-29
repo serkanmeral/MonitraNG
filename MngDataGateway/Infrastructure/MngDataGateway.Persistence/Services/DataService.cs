@@ -12,8 +12,10 @@ using MngDataGateway.Application.DTOs.Data;
 using MngDataGateway.Application.DTOs.Validation;
 using MngDataGateway.Application.Services;
 using MngDataGateway.Domain.Entities;
+using MngDataGateway.Domain.Constants;
 using MngDataGateway.Domain.Exceptions;
 using MngDataGateway.Persistence.Extensions;
+using MngDataGateway.Persistence.Helpers;
 using MngDataGateway.Persistence.Services;
 
 namespace MngDataGateway.Persistence.Services
@@ -99,10 +101,7 @@ namespace MngDataGateway.Persistence.Services
 
                 if (!validationResult.IsValid)
                 {
-                    throw new DataGatewayException("Validation failed")
-                    {
-                        ValidationErrors = validationResult.Errors.Cast<object>().ToList()
-                    };
+                    throw ValidationException.FromErrors("Validation failed", validationResult.Errors);
                 }
 
                 // 3. Pre-process
@@ -159,7 +158,7 @@ namespace MngDataGateway.Persistence.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to create data in dataset {DatasetName}", datasetName);
-                throw new DataGatewayException("Failed to create data", ex);
+                throw DgExceptionMapper.Map(ex, "Failed to create data");
             }
         }
 
@@ -212,7 +211,10 @@ namespace MngDataGateway.Persistence.Services
                 var existingDoc = await _dataRepository.FindByIdAsync(databaseName, schema.CollectionName, dataId);
                 if (existingDoc == null)
                 {
-                    throw new DataGatewayException($"Data with __dataId '{dataId}' not found");
+                    throw new NotFoundException($"Data with __dataId '{dataId}' not found")
+                    {
+                        ErrorCode = ErrorCodes.DATA_NOT_FOUND
+                    };
                 }
 
                 // 3. Validate updates
@@ -221,10 +223,7 @@ namespace MngDataGateway.Persistence.Services
 
                 if (!validationResult.IsValid)
                 {
-                    throw new DataGatewayException("Validation failed")
-                    {
-                        ValidationErrors = validationResult.Errors.Cast<object>().ToList()
-                    };
+                    throw ValidationException.FromErrors("Validation failed", validationResult.Errors);
                 }
 
                 // 4. Add history if logging mode is "self"
@@ -239,7 +238,7 @@ namespace MngDataGateway.Persistence.Services
 
                 if (!success)
                 {
-                    throw new DataGatewayException("Failed to update data");
+                    throw new BadRequestException("Failed to update data", ErrorCodes.DATABASE_WRITE_ERROR);
                 }
 
                 // 6. Get updated data
@@ -274,7 +273,7 @@ namespace MngDataGateway.Persistence.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to update data in dataset {DatasetName}", datasetName);
-                throw new DataGatewayException("Failed to update data", ex);
+                throw DgExceptionMapper.Map(ex, "Failed to update data");
             }
         }
 
@@ -481,7 +480,7 @@ namespace MngDataGateway.Persistence.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to bulk create data in dataset {DatasetName}", datasetName);
-                throw new DataGatewayException("Failed to bulk create data", ex);
+                throw DgExceptionMapper.Map(ex, "Failed to bulk create data");
             }
         }
 
@@ -492,7 +491,10 @@ namespace MngDataGateway.Persistence.Services
             var schema = await _datasetService.GetSchemaEntityByNameAsync(datasetName);
             if (schema == null)
             {
-                throw new DataGatewayException($"Dataset '{datasetName}' not found");
+                throw new NotFoundException($"Dataset '{datasetName}' not found")
+                {
+                    ErrorCode = ErrorCodes.DATASET_NOT_FOUND
+                };
             }
 
             // No need to fix query pipeline - it's already stored correctly in MongoDB as BsonDocument
@@ -1042,7 +1044,7 @@ namespace MngDataGateway.Persistence.Services
             {
                 _logger.LogError(ex, "Failed to query data in dataset {DatasetName}. Exception: {ExceptionType}, Message: {Message}, Inner: {InnerMessage}, StackTrace: {StackTrace}", 
                     datasetName, ex.GetType().Name, ex.Message, ex.InnerException?.Message, ex.StackTrace);
-                throw new DataGatewayException("Failed to query data", ex);
+                throw DgExceptionMapper.Map(ex, "Failed to query data");
             }
         }
 
@@ -1132,7 +1134,7 @@ namespace MngDataGateway.Persistence.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to query data {DataId} in dataset {DatasetName}", dataId, datasetName);
-                throw new DataGatewayException("Failed to query data", ex);
+                throw DgExceptionMapper.Map(ex, "Failed to query data");
             }
         }
 
@@ -1281,7 +1283,7 @@ namespace MngDataGateway.Persistence.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to query data with match in dataset {DatasetName}", datasetName);
-                throw new DataGatewayException("Failed to query data", ex);
+                throw DgExceptionMapper.Map(ex, "Failed to query data");
             }
         }
 
@@ -1300,7 +1302,10 @@ namespace MngDataGateway.Persistence.Services
                 var queryDef = schema.queries?.FirstOrDefault(q => q.name == queryName);
                 if (queryDef == null)
                 {
-                    throw new DataGatewayException($"Predefined query '{queryName}' not found in dataset '{datasetName}'");
+                    throw new NotFoundException($"Predefined query '{queryName}' not found in dataset '{datasetName}'")
+                    {
+                        ErrorCode = ErrorCodes.QUERY_NOT_FOUND
+                    };
                 }
 
                 // Log parameter definitions for debugging
@@ -1427,7 +1432,7 @@ namespace MngDataGateway.Persistence.Services
             {
                 _logger.LogError(ex, "Failed to execute predefined query '{QueryName}' in dataset {DatasetName}. Exception: {ExceptionType}, Message: {Message}, Inner: {InnerMessage}, StackTrace: {StackTrace}", 
                     queryName, datasetName, ex.GetType().Name, ex.Message, ex.InnerException?.Message, ex.StackTrace);
-                throw new DataGatewayException($"Failed to execute predefined query '{queryName}'", ex);
+                throw DgExceptionMapper.Map(ex, $"Failed to execute predefined query '{queryName}'");
             }
         }
 
@@ -1464,7 +1469,7 @@ namespace MngDataGateway.Persistence.Services
             {
                 _logger.LogError(ex, "Failed to execute raw aggregate in dataset {DatasetName}. Exception: {ExceptionType}, Message: {Message}, Inner: {InnerMessage}, StackTrace: {StackTrace}", 
                     datasetName, ex.GetType().Name, ex.Message, ex.InnerException?.Message, ex.StackTrace);
-                throw new DataGatewayException("Failed to execute raw aggregate", ex);
+                throw DgExceptionMapper.Map(ex, "Failed to execute raw aggregate");
             }
         }
 
@@ -1903,7 +1908,9 @@ namespace MngDataGateway.Persistence.Services
                 var missingParams = legacyParamNames.Where(p => !providedParameters.ContainsKey(p)).ToList();
                 if (missingParams.Any())
                 {
-                    throw new DataGatewayException($"Missing required parameters: {string.Join(", ", missingParams)}");
+                    throw new BadRequestException(
+                        $"Missing required parameters: {string.Join(", ", missingParams)}",
+                        ErrorCodes.MISSING_PARAMETER);
                 }
 
                 // Convert parameters (no type checking, just pass through)
@@ -1932,7 +1939,9 @@ namespace MngDataGateway.Persistence.Services
                     {
                         if (isRequired)
                         {
-                            throw new DataGatewayException($"Missing required parameter '{paramName}' (type: {paramType})");
+                            throw new BadRequestException(
+                                $"Missing required parameter '{paramName}' (type: {paramType})",
+                                ErrorCodes.MISSING_PARAMETER);
                         }
                         continue; // Skip optional parameters
                     }
@@ -1947,8 +1956,9 @@ namespace MngDataGateway.Persistence.Services
                     }
                     catch (Exception ex)
                     {
-                        throw new DataGatewayException(
-                            $"Invalid parameter '{paramName}': Expected type '{paramType}', but received '{paramValue?.GetType().Name}'. {ex.Message}");
+                        throw new BadRequestException(
+                            $"Invalid parameter '{paramName}': Expected type '{paramType}', but received '{paramValue?.GetType().Name}'. {ex.Message}",
+                            ErrorCodes.INVALID_ARGUMENT);
                     }
                 }
 
@@ -1973,7 +1983,9 @@ namespace MngDataGateway.Persistence.Services
                             var missingParams = bsonParamNames.Where(p => !providedParameters.ContainsKey(p)).ToList();
                             if (missingParams.Any())
                             {
-                                throw new DataGatewayException($"Missing required parameters: {string.Join(", ", missingParams)}");
+                                throw new BadRequestException(
+                        $"Missing required parameters: {string.Join(", ", missingParams)}",
+                        ErrorCodes.MISSING_PARAMETER);
                             }
                             foreach (var paramName in bsonParamNames)
                             {
@@ -2026,7 +2038,7 @@ namespace MngDataGateway.Persistence.Services
             {
                 _logger.LogError(ex, "Failed to parse parameter definitions for query '{QueryName}'. Type: {Type}", 
                     queryName, parameterDefinitions?.GetType().FullName ?? "null");
-                throw new DataGatewayException($"Invalid parameter definitions format for query '{queryName}': {ex.Message}", ex);
+                throw DgExceptionMapper.Map(ex, $"Invalid parameter definitions format for query '{queryName}'");
             }
 
             // If we reach here, parameterDefinitions is in an unknown format
@@ -2034,7 +2046,9 @@ namespace MngDataGateway.Persistence.Services
                 queryName, 
                 parameterDefinitions?.GetType().FullName ?? "null",
                 parameterDefinitions?.ToString() ?? "null");
-            throw new DataGatewayException($"Unknown parameter definitions format for query '{queryName}'. Expected List<string> or List<QueryParameterDefinition>.");
+            throw new BadRequestException(
+                $"Unknown parameter definitions format for query '{queryName}'. Expected List<string> or List<QueryParameterDefinition>.",
+                ErrorCodes.INVALID_FORMAT);
         }
 
         /// <summary>

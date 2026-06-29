@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { useApiErrorNotify, usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { useAppToast } from '@/composables/useAppToast';
 import type { DiGenerateDocumentResult, DiTemplateSummary } from '@/types/apps/documentIntelligence';
 import type { OdakLineRow } from '@/utils/odakSiparisConfig';
 import { lineDataId } from '@/utils/odakSiparisLineService';
 import {
   generateOdakLineDocument,
   isLineDocumentAlreadyGeneratedError,
-  lineDocumentErrorMessage,
   lineEligibleForProfile,
   profileCodeForTemplate,
   type OdakLineDocumentProfileCode,
@@ -25,6 +26,9 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
+const { notifyApiError } = useApiErrorNotify();
+const { push } = useAppToast();
 
 const loadingTemplates = ref(false);
 const templates = ref<DiTemplateSummary[]>([]);
@@ -94,7 +98,7 @@ async function loadTemplates() {
       templateCode.value = templates.value[0]!.code ?? null;
     }
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
     templates.value = [];
   } finally {
     loadingTemplates.value = false;
@@ -114,10 +118,14 @@ async function submit() {
     emit('update:modelValue', false);
   } catch (e: unknown) {
     if (isLineDocumentAlreadyGeneratedError(e)) {
-      errorMessage.value = t('odakSiparis.lineDocuments.alreadyGenerated');
+      const msg = t('odakSiparis.lineDocuments.alreadyGenerated');
+      errorMessage.value = msg;
+      push({ title: t('errors.dg.toastTitle'), message: msg, severity: 'warning' });
       emit('created', null);
     } else {
-      errorMessage.value = lineDocumentErrorMessage(e, t('odakSiparis.lineDocuments.generateError'));
+      errorMessage.value = notifyApiError(e, {
+        fallbackKey: 'odakSiparis.lineDocuments.generateError',
+      }).message;
     }
   } finally {
     submitting.value = false;

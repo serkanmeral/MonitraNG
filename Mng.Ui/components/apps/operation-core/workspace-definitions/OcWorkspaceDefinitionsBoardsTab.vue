@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useOcWorkspaceMetadataCacheReload } from '@/composables/useOcWorkspaceMetadataCacheReload';
 import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import OcWorkspaceBoardDialog from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceBoardDialog.vue';
 import {
   ocCreateBoard,
   ocDeleteBoard,
-  ocExtractDgErrorMessage,
+
   ocListBoardsForWorkspace,
   ocListDashboardsForWorkspace,
   ocListFormsForWorkspace,
@@ -24,6 +25,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const metaCache = useOcWorkspaceMetadataCacheReload(() => props.workspaceId);
 const groupStore = useGroupStore();
 const catalog = useOcWorkspaceCatalogInject();
@@ -118,10 +120,7 @@ async function loadAll() {
     priorityItems.value = priorities.map((p) => ({ value: p.__dataId, title: p.name }));
     enabledStateIds.value = ws?.enabledStateIds ?? [];
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.boards.loadError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.boards.loadError');
   } finally {
     loading.value = false;
   }
@@ -174,10 +173,7 @@ async function onDialogSave(body: Record<string, unknown>) {
       t('operationCore.workspaceDefinitions.saveSuccess')
     );
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.boards.saveError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.boards.saveError');
   } finally {
     saving.value = false;
   }
@@ -200,10 +196,7 @@ async function confirmDelete() {
       t('operationCore.workspaceDefinitions.boards.deleteSuccess')
     );
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.boards.deleteError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.boards.deleteError');
     deleteDialog.value = false;
   } finally {
     deleting.value = false;

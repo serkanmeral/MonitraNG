@@ -3,12 +3,13 @@ import { ref, computed, watch } from 'vue';
 import { fetchFromMngKeeper } from '@/services/apiService';
 import { useAuthStore } from '@/stores/auth';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
   diGetPermissions,
   diSetPermissions,
   diBreakInheritance,
   diRestoreInheritance,
-  diExtractMessage,
+
 } from '@/services/documentIntelligenceService';
 import {
   DI_PERMISSION_ACTIONS,
@@ -30,6 +31,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const authStore = useAuthStore();
 
 const open = computed({
@@ -141,7 +143,7 @@ async function loadPermissions() {
     perms.value = await diGetPermissions(props.folderId);
     buildMatrix(perms.value.groups);
   } catch (e) {
-    emit('notify', diExtractMessage(e, t('documentIntelligence.permissions.errors.load')), 'error');
+    emit('notify', panelError(e, 'documentIntelligence.permissions.errors.load'), 'error');
     perms.value = null;
   } finally {
     loading.value = false;
@@ -203,7 +205,7 @@ async function save() {
     emit('notify', t('documentIntelligence.permissions.saved'), 'success');
     emit('changed');
   } catch (e) {
-    emit('notify', diExtractMessage(e, t('documentIntelligence.permissions.errors.save')), 'error');
+    emit('notify', panelError(e, 'documentIntelligence.permissions.errors.save'), 'error');
   } finally {
     saving.value = false;
   }
@@ -218,7 +220,7 @@ async function breakInheritance() {
     emit('notify', t('documentIntelligence.permissions.inheritanceBrokenMsg'), 'success');
     emit('changed');
   } catch (e) {
-    emit('notify', diExtractMessage(e, t('documentIntelligence.permissions.errors.break')), 'error');
+    emit('notify', panelError(e, 'documentIntelligence.permissions.errors.break'), 'error');
   } finally {
     busy.value = false;
   }
@@ -233,7 +235,7 @@ async function restoreInheritance() {
     emit('notify', t('documentIntelligence.permissions.inheritanceRestoredMsg'), 'success');
     emit('changed');
   } catch (e) {
-    emit('notify', diExtractMessage(e, t('documentIntelligence.permissions.errors.restore')), 'error');
+    emit('notify', panelError(e, 'documentIntelligence.permissions.errors.restore'), 'error');
   } finally {
     busy.value = false;
   }

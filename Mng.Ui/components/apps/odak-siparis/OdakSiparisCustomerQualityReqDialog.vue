@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import type { OdakCustomerQualityReqRow } from '@/utils/odakSiparisConfig';
 import {
   createOdakCustomerQualityReq,
@@ -28,6 +29,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const loading = ref(false);
 const saving = ref(false);
@@ -62,7 +64,7 @@ async function loadDialog() {
     if (!full) throw new Error(t('odakSiparis.customers.qualityReqs.dialog.notFound'));
     Object.assign(form, qualityReqRowToFormModel(full));
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     loading.value = false;
   }
@@ -93,7 +95,7 @@ async function saveReq() {
     emit('saved');
     closeDialog();
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     saving.value = false;
   }

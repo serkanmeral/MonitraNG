@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { useApiErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAppI18n } from '@/composables/useAppI18n';
 import OcDynamicForm from '@/components/apps/operation-core/OcDynamicForm.vue';
 import OcFormHelpDialog from '@/components/apps/operation-core/OcFormHelpDialog.client.vue';
@@ -11,7 +12,6 @@ import {
   hasUpdateWorkItemChanges,
   initialFormModelFromContext,
   ocCreateWorkItem,
-  ocExtractDgErrorMessage,
   ocGetFormCreateContext,
   ocGetFormEditContext,
   ocListBoardsForWorkspace,
@@ -39,6 +39,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const { notifyApiError } = useApiErrorNotify();
 
 const open = computed({
   get: () => props.modelValue,
@@ -144,7 +145,10 @@ async function loadForm() {
     initialModel.value = JSON.parse(JSON.stringify(model));
   } catch (e: unknown) {
     formContext.value = null;
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.create.loadError'));
+    errorLocal.value = notifyApiError(e, {
+      title: t('operationCore.workItemDialog.loadErrorTitle'),
+      fallbackKey: 'operationCore.create.loadError',
+    }).message;
   } finally {
     loading.value = false;
   }
@@ -197,7 +201,10 @@ async function submit() {
     }
     open.value = false;
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(e, t('operationCore.create.submitError'));
+    errorLocal.value = notifyApiError(e, {
+      title: t('operationCore.workItemDialog.saveErrorTitle'),
+      fallbackKey: 'operationCore.create.submitError',
+    }).message;
   } finally {
     submitting.value = false;
   }

@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import OdakSiparisPoDocumentSection from '@/components/apps/odak-siparis/OdakSiparisPoDocumentSection.vue';
 import { useOdakFieldAccess } from '@/composables/useOdakFieldAccess';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useAuthStore } from '@/stores/auth';
 import type { OdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
 import { packageRecordForPolicyEval } from '@/utils/odakSiparisFieldPolicies';
@@ -39,6 +40,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const auth = useAuthStore();
 
 const loading = ref(false);
@@ -139,7 +141,7 @@ async function reload() {
     poVersion.value = state.poVersion;
     savedPoVersion.value = state.poVersion;
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     loading.value = false;
   }
@@ -160,7 +162,7 @@ async function savePo() {
     await reload();
     emit('saved');
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
   } finally {
     saving.value = false;
   }
@@ -227,7 +229,7 @@ async function downloadEntry(entry: PoDocumentEntry, scope: OdakPoDocumentScope)
     if (e instanceof Error && e.message === 'PO access denied') {
       errorMessage.value = t('odakSiparis.po.errors.accessDenied');
     } else {
-      errorMessage.value = e instanceof Error ? e.message : String(e);
+      errorMessage.value = panelError(e, 'errors.dg.generic');
     }
   }
 }

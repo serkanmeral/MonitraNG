@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import OdakSiparisCustomerContactCards from '@/components/apps/odak-siparis/OdakSiparisCustomerContactCards.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import type { OdakCustomerRow } from '@/utils/odakSiparisConfig';
 import {
   customerSektorLabel,
@@ -21,6 +22,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const router = useRouter();
 
 const loading = ref(false);
@@ -42,7 +44,7 @@ async function loadCustomer() {
     customer.value = await fetchOdakCustomerById(id);
     if (!customer.value) errorMessage.value = t('odakSiparis.customers.drawer.notFound');
   } catch (e: unknown) {
-    errorMessage.value = e instanceof Error ? e.message : String(e);
+    errorMessage.value = panelError(e, 'errors.dg.generic');
     customer.value = null;
   } finally {
     loading.value = false;

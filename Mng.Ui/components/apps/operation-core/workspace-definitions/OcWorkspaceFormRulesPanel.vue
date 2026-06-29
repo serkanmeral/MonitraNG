@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
   buildOcDefaultSetAssigneeRulePayload,
   buildOcDefaultSetFieldRulePayload,
@@ -11,7 +12,7 @@ import {
 import {
   ocCreateRule,
   ocDeleteRule,
-  ocExtractDgErrorMessage,
+
   ocListRulesForWorkspace,
 } from '@/services/operationCoreService';
 import OcPersonPickerAutocomplete from '@/components/apps/operation-core/OcPersonPickerAutocomplete.vue';
@@ -31,6 +32,7 @@ const props = withDefaults(
 );
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 
 const loading = ref(false);
 const saving = ref(false);
@@ -101,10 +103,7 @@ async function loadRules() {
   try {
     rules.value = await ocListRulesForWorkspace(props.workspaceId);
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.forms.rulesLoadError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.forms.rulesLoadError');
   } finally {
     loading.value = false;
   }
@@ -203,10 +202,7 @@ async function submitCreate() {
     createDialog.value = false;
     await loadRules();
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.forms.rulesCreateError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.forms.rulesCreateError');
   } finally {
     saving.value = false;
   }
@@ -227,10 +223,7 @@ async function confirmDelete() {
     deleteTarget.value = null;
     await loadRules();
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.forms.rulesDeleteError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.forms.rulesDeleteError');
   } finally {
     deleting.value = false;
   }

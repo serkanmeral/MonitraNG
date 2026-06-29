@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useOcPersonPicker } from '@/composables/useOcPersonPicker';
 import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
 import { useUserStore } from '@/stores/apps/user';
@@ -10,7 +11,7 @@ import OcWorkspaceScheduleDialog, {
 import {
   ocCreateWorkItemSchedule,
   ocDeleteWorkItemSchedule,
-  ocExtractDgErrorMessage,
+
   ocListSchedulesForWorkspace,
   ocRunWorkItemScheduleNow,
   ocSyncWorkItemScheduleScheduler,
@@ -32,6 +33,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
 const personPicker = useOcPersonPicker();
 const catalog = useOcWorkspaceCatalogInject();
 const userStore = useUserStore();
@@ -157,10 +159,7 @@ async function loadAll() {
     const assigneeIds = [...new Set(scheduleRows.map((s) => s.assignee).filter(Boolean))];
     if (assigneeIds.length) await personPicker.ensureSelectedIds(assigneeIds);
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.scheduled.loadError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.scheduled.loadError');
   } finally {
     loading.value = false;
   }
@@ -262,18 +261,12 @@ async function onSaveForm(form: OcScheduleFormModel) {
       infoLocal.value = t('operationCore.workspaceDefinitions.scheduled.saveSuccess');
     } catch (syncErr: unknown) {
       infoLocal.value = t('operationCore.workspaceDefinitions.scheduled.saveSuccess');
-      errorLocal.value = ocExtractDgErrorMessage(
-        syncErr,
-        t('operationCore.workspaceDefinitions.scheduled.schedulerSyncWarning')
-      );
+      errorLocal.value = panelError(syncErr, 'operationCore.workspaceDefinitions.scheduled.schedulerSyncWarning');
     }
     dialog.value = false;
     await loadAll();
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.scheduled.saveError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.scheduled.saveError');
   } finally {
     saving.value = false;
   }
@@ -287,20 +280,14 @@ async function confirmDelete() {
     try {
       await ocUnlinkWorkItemScheduleScheduler(deleteTarget.value.__dataId);
     } catch (unlinkErr: unknown) {
-      errorLocal.value = ocExtractDgErrorMessage(
-        unlinkErr,
-        t('operationCore.workspaceDefinitions.scheduled.schedulerUnlinkWarning')
-      );
+      errorLocal.value = panelError(unlinkErr, 'operationCore.workspaceDefinitions.scheduled.schedulerUnlinkWarning');
     }
     await ocDeleteWorkItemSchedule(deleteTarget.value.__dataId);
     deleteDialog.value = false;
     deleteTarget.value = null;
     await loadAll();
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.scheduled.deleteError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.scheduled.deleteError');
     deleteDialog.value = false;
   } finally {
     deleting.value = false;
@@ -316,10 +303,7 @@ async function runNow(row: OpWorkItemSchedule) {
     infoLocal.value = t('operationCore.workspaceDefinitions.scheduled.runNowSuccess');
     await loadAll();
   } catch (e: unknown) {
-    errorLocal.value = ocExtractDgErrorMessage(
-      e,
-      t('operationCore.workspaceDefinitions.scheduled.runNowError')
-    );
+    errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.scheduled.runNowError');
   } finally {
     runningId.value = null;
   }
