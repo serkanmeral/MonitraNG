@@ -13,6 +13,7 @@ public class MngDocumentSettings
     public WopiSettings Wopi { get; set; } = new();
     public KeeperSettings Keeper { get; set; } = new();
     public DomainFooterProfileSettings FooterProfile { get; set; } = new();
+    public DocumentGenerationSettings DocumentGeneration { get; set; } = new();
 }
 
 public class ServerSettings

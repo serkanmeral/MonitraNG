@@ -57,7 +57,7 @@ const route = useRoute();
 const router = useRouter();
 
 type StatusTab = 'open' | 'closed' | 'all';
-type ExpandTab = 'summary' | 'lines' | 'shipments' | 'quality';
+type ExpandTab = 'summary' | 'lines' | 'shipments' | 'quality' | 'documents';
 
 const statusTab = ref<StatusTab>('open');
 const searchQuery = ref('');
@@ -299,6 +299,7 @@ function parseExpandTabFromQuery(): ExpandTab {
   if (tab === 'lines') return 'lines';
   if (tab === 'shipments') return 'shipments';
   if (tab === 'quality') return 'quality';
+  if (tab === 'documents' || tab === 'coc') return 'documents';
   return 'summary';
 }
 

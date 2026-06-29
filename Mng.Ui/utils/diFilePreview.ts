@@ -69,3 +69,15 @@ export function diPreviewKind(resource: DiResource): DiFilePreviewKind {
 export function isDiPreviewable(resource: DiResource): boolean {
   return diPreviewKind(resource) !== 'none';
 }
+
+const DOCX_EXTS = ['docx'];
+
+/** Collabora editöründe açılabilir DOCX dosyası mı? */
+export function isDiDocxEditable(resource: DiResource): boolean {
+  if (resource.type !== 'file') return false;
+  if (!resource.hasContent && !resource.filePath) return false;
+  const ext = resExt(resource);
+  if (DOCX_EXTS.includes(ext)) return true;
+  const mime = (resource.mimeType ?? '').toLowerCase();
+  return mime.includes('wordprocessingml');
+}

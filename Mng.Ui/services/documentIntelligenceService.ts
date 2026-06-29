@@ -29,6 +29,7 @@ import {
   type DiCreateTemplateFromReferenceRequest,
   type DiCreateBlankTemplateRequest,
   type DiTemplateEditorSession,
+  type DiResourceEditorSession,
   type DiCreateTemplateCategoryRequest,
   type DiDocxStructure,
   type DiRenameTemplateCategoryRequest,
@@ -45,6 +46,11 @@ import {
   type DiTemplateLetterhead,
   type DiTemplateFooter,
   type DiTemplatePageLayout,
+  type DiDocumentContextType,
+  type DiGenerateDocumentRequest,
+  type DiGenerateDocumentResult,
+  type DiDocumentGenerationStatus,
+  type DiDocumentGenerationPreview,
 } from '@/types/apps/documentIntelligence';
 import { diNormalizePageLayout } from '@/utils/diPageLayout';
 
@@ -52,6 +58,7 @@ const BASE = '/api/v1/resources';
 const LINKS_BASE = '/api/v1';
 const TEMPLATES_BASE = '/api/v1/templates';
 const TEMPLATE_CATEGORIES_BASE = '/api/v1/template-categories';
+const GENERATE_BASE = '/api/v1/generate';
 
 function asRecord(raw: unknown): Record<string, unknown> {
   return raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
@@ -491,6 +498,8 @@ function mapTemplateSummary(raw: unknown): DiTemplateSummary {
     creationMode: str(o, 'creationMode') ?? 'fromTemplate',
     status: str(o, 'status') ?? 'draft',
     parameterCount: num(o, 'parameterCount') ?? 0,
+    primaryContextType: str(o, 'primaryContextType'),
+    generationProfile: str(o, 'generationProfile'),
     createdBy: str(o, 'createdBy'),
     createdAt: str(o, 'createdAt'),
     updatedAt: str(o, 'updatedAt'),
@@ -500,12 +509,15 @@ function mapTemplateSummary(raw: unknown): DiTemplateSummary {
 function mapTemplateParameter(raw: unknown): DiTemplateParameter {
   const o = asRecord(raw);
   const inc = o.incremental;
-  const bind = o.sourceBinding;
+  const bind = o.docBinding ?? o.sourceBinding;
+  const ctx = o.contextBinding;
   return {
     key: str(o, 'key') ?? '',
     label: str(o, 'label') ?? '',
     dataType: str(o, 'dataType') ?? 'text',
     valueSourceMode: str(o, 'valueSourceMode') ?? 'manual',
+    defaultValue: str(o, 'defaultValue'),
+    format: str(o, 'format'),
     incremental:
       inc && typeof inc === 'object'
         ? {
@@ -516,6 +528,16 @@ function mapTemplateParameter(raw: unknown): DiTemplateParameter {
             resetPolicy: str(asRecord(inc), 'resetPolicy') ?? 'none',
           }
         : null,
+    docBinding:
+      bind && typeof bind === 'object'
+        ? {
+            regionKind: str(asRecord(bind), 'regionKind') ?? 'paragraph',
+            paragraphIndex: num(asRecord(bind), 'paragraphIndex') ?? 0,
+            originalText: str(asRecord(bind), 'originalText'),
+            charStart: num(asRecord(bind), 'charStart'),
+            charEnd: num(asRecord(bind), 'charEnd'),
+          }
+        : null,
     sourceBinding:
       bind && typeof bind === 'object'
         ? {
@@ -524,6 +546,15 @@ function mapTemplateParameter(raw: unknown): DiTemplateParameter {
             originalText: str(asRecord(bind), 'originalText'),
             charStart: num(asRecord(bind), 'charStart'),
             charEnd: num(asRecord(bind), 'charEnd'),
+          }
+        : null,
+    contextBinding:
+      ctx && typeof ctx === 'object'
+        ? {
+            path: str(asRecord(ctx), 'path') ?? '',
+            fallbackPath: str(asRecord(ctx), 'fallbackPath'),
+            defaultValue: str(asRecord(ctx), 'defaultValue'),
+            format: str(asRecord(ctx), 'format'),
           }
         : null,
   };
@@ -575,6 +606,8 @@ function mapTemplateDetail(raw: unknown): DiTemplateDetail {
   return {
     ...summary,
     schemaVersion: str(o, 'schemaVersion') ?? '1.0',
+    primaryContextType: summary.primaryContextType ?? str(o, 'primaryContextType'),
+    generationProfile: summary.generationProfile ?? str(o, 'generationProfile'),
     letterhead: mapTemplateLetterhead(o.letterhead),
     footer: mapTemplateFooter(o.footer),
     pageLayout: mapTemplatePageLayout(o.pageLayout),
@@ -676,6 +709,85 @@ export async function diGetTemplateEditorSession(templateId: string): Promise<Di
     wopiSrc: str(o, 'wopiSrc') ?? '',
     readOnly: Boolean(o.readOnly),
   };
+}
+
+const RESOURCE_EDITOR_TEMPLATE_KEY = 'di-resource-editor-template';
+
+function mapResourceEditorSession(
+  raw: unknown,
+  resourceId: string
+): DiResourceEditorSession {
+  const o = asRecord(raw);
+  return {
+    resourceId: str(o, 'resourceId') ?? resourceId,
+    editorUrl: str(o, 'editorUrl') ?? '',
+    accessToken: str(o, 'accessToken') ?? '',
+    wopiSrc: str(o, 'wopiSrc') ?? '',
+    readOnly: Boolean(o.readOnly),
+  };
+}
+
+async function diGetResourceEditorSessionViaTemplate(
+  resourceId: string,
+  resourceName?: string
+): Promise<DiResourceEditorSession> {
+  const cacheKey = `${RESOURCE_EDITOR_TEMPLATE_KEY}:${resourceId}`;
+
+  if (import.meta.client) {
+    const cachedTemplateId = sessionStorage.getItem(cacheKey);
+    if (cachedTemplateId) {
+      try {
+        const session = await diGetTemplateEditorSession(cachedTemplateId);
+        return {
+          resourceId,
+          editorUrl: session.editorUrl,
+          accessToken: session.accessToken,
+          wopiSrc: session.wopiSrc,
+          readOnly: session.readOnly,
+          viaTemplateFallback: true,
+        };
+      } catch {
+        sessionStorage.removeItem(cacheKey);
+      }
+    }
+  }
+
+  const tpl = await diCreateTemplateFromSource({
+    sourceResourceId: resourceId,
+    name: resourceName?.trim() || undefined,
+  });
+
+  if (import.meta.client) {
+    sessionStorage.setItem(cacheKey, tpl.id);
+  }
+
+  const session = await diGetTemplateEditorSession(tpl.id);
+  return {
+    resourceId,
+    editorUrl: session.editorUrl,
+    accessToken: session.accessToken,
+    wopiSrc: session.wopiSrc,
+    readOnly: session.readOnly,
+    viaTemplateFallback: true,
+  };
+}
+
+export async function diGetResourceEditorSession(
+  resourceId: string,
+  resourceName?: string
+): Promise<DiResourceEditorSession> {
+  try {
+    const raw = await fetchFromDocuments(
+      `${BASE}/${encodeURIComponent(resourceId)}/editor-session`,
+      'GET'
+    );
+    return mapResourceEditorSession(raw, resourceId);
+  } catch (error: unknown) {
+    if (diErrorStatus(error) === 404) {
+      return diGetResourceEditorSessionViaTemplate(resourceId, resourceName);
+    }
+    throw error;
+  }
 }
 
 export async function diGetDocxStructure(resourceId: string): Promise<DiDocxStructure> {
@@ -792,6 +904,122 @@ export async function diPublishTemplate(templateId: string): Promise<DiTemplateD
     'POST'
   );
   return mapTemplateDetail(raw);
+}
+
+export async function diUnpublishTemplate(templateId: string): Promise<DiTemplateDetail> {
+  const raw = await fetchFromDocuments(
+    `${TEMPLATES_BASE}/${encodeURIComponent(templateId)}/unpublish`,
+    'POST'
+  );
+  return mapTemplateDetail(raw);
+}
+
+function mapContextType(raw: unknown): DiDocumentContextType {
+  const o = asRecord(raw);
+  const fieldsRaw = o.fields;
+  return {
+    type: str(o, 'type') ?? '',
+    displayName: str(o, 'displayName') ?? '',
+    rootDataset: str(o, 'rootDataset') ?? '',
+    fields: Array.isArray(fieldsRaw)
+      ? fieldsRaw.map((f) => {
+          const fr = asRecord(f);
+          return {
+            path: str(fr, 'path') ?? '',
+            label: str(fr, 'label') ?? '',
+            dataType: str(fr, 'dataType') ?? 'text',
+          };
+        })
+      : [],
+  };
+}
+
+function mapGenerateResult(raw: unknown): DiGenerateDocumentResult {
+  const o = asRecord(raw);
+  const folderRaw = o.folderPath;
+  const valuesRaw = o.resolvedValues;
+  const undefinedParameterKeys = strArray(o.undefinedParameterKeys);
+  const unresolvedParameterKeys = strArray(o.unresolvedParameterKeys);
+  const remainingPlaceholderKeys = strArray(o.remainingPlaceholderKeys);
+  return {
+    profileCode: str(o, 'profileCode') ?? '',
+    contextType: str(o, 'contextType') ?? '',
+    contextId: str(o, 'contextId') ?? '',
+    templateId: str(o, 'templateId') ?? '',
+    templateCode: str(o, 'templateCode') ?? '',
+    docNo: str(o, 'docNo'),
+    resourceId: str(o, 'resourceId') ?? '',
+    fileName: str(o, 'fileName') ?? '',
+    folderPath: Array.isArray(folderRaw) ? folderRaw.map((x) => String(x)) : [],
+    generatedAt: str(o, 'generatedAt') ?? '',
+    resolvedValues:
+      valuesRaw && typeof valuesRaw === 'object'
+        ? Object.fromEntries(
+            Object.entries(valuesRaw as Record<string, unknown>).map(([k, v]) => [k, String(v ?? '')])
+          )
+        : {},
+    undefinedParameterKeys,
+    unresolvedParameterKeys,
+    remainingPlaceholderKeys,
+    hasParameterWarnings:
+      Boolean(o.hasParameterWarnings) ||
+      undefinedParameterKeys.length > 0 ||
+      unresolvedParameterKeys.length > 0,
+  };
+}
+
+export async function diListDocumentContextTypes(): Promise<DiDocumentContextType[]> {
+  const raw = await fetchFromDocuments(`${GENERATE_BASE}/context-types`, 'GET');
+  return Array.isArray(raw) ? raw.map(mapContextType) : [];
+}
+
+export async function diPreviewDocumentGeneration(
+  profileCode: string,
+  contextId: string
+): Promise<DiDocumentGenerationPreview> {
+  const q = new URLSearchParams({ profileCode, contextId });
+  const raw = await fetchFromDocuments(`${GENERATE_BASE}/preview?${q.toString()}`, 'GET');
+  const o = asRecord(raw);
+  const valuesRaw = o.values;
+  const missingRaw = o.missingKeys;
+  return {
+    profileCode: str(o, 'profileCode') ?? profileCode,
+    contextType: str(o, 'contextType') ?? '',
+    contextId: str(o, 'contextId') ?? contextId,
+    values:
+      valuesRaw && typeof valuesRaw === 'object'
+        ? Object.fromEntries(
+            Object.entries(valuesRaw as Record<string, unknown>).map(([k, v]) => [k, String(v ?? '')])
+          )
+        : {},
+    missingKeys: Array.isArray(missingRaw) ? missingRaw.map((x) => String(x)) : [],
+    undefinedParameterKeys: strArray(o.undefinedParameterKeys),
+    unresolvedParameterKeys: strArray(o.unresolvedParameterKeys),
+  };
+}
+
+export async function diGetDocumentGenerationStatus(
+  profileCode: string,
+  contextId: string
+): Promise<DiDocumentGenerationStatus> {
+  const q = new URLSearchParams({ profileCode, contextId });
+  const raw = await fetchFromDocuments(`${GENERATE_BASE}/status?${q.toString()}`, 'GET');
+  const o = asRecord(raw);
+  return {
+    profileCode: str(o, 'profileCode') ?? profileCode,
+    contextType: str(o, 'contextType') ?? '',
+    contextId: str(o, 'contextId') ?? contextId,
+    generated: Boolean(o.generated),
+    docNo: str(o, 'docNo'),
+    resourceId: str(o, 'resourceId'),
+    fileName: str(o, 'fileName'),
+    generatedAt: str(o, 'generatedAt'),
+  };
+}
+
+export async function diGenerateDocument(request: DiGenerateDocumentRequest): Promise<DiGenerateDocumentResult> {
+  const raw = await fetchFromDocuments(GENERATE_BASE, 'POST', request);
+  return mapGenerateResult(raw);
 }
 
 /** MngDocument/HTTP hata gövdesinden `code` döndürür (guard ayrımı için, örn. RESOURCE_HAS_CHILDREN). */

@@ -13,6 +13,7 @@ public interface IDocumentTemplateService
     Task<TemplateDetailDto> UpdateFooterAsync(string id, UpdateTemplateFooterRequest request, CancellationToken ct = default);
     Task<TemplateDetailDto> UpdatePageStructureAsync(string id, UpdateTemplatePageStructureRequest request, CancellationToken ct = default);
     Task<TemplateDetailDto> PublishAsync(string id, CancellationToken ct = default);
+    Task<TemplateDetailDto> UnpublishAsync(string id, CancellationToken ct = default);
     Task<TemplateDetailDto> CreateFromSourceAsync(CreateTemplateFromSourceRequest request, CancellationToken ct = default);
     Task<TemplateDetailDto> CreateFromReferenceAsync(CreateTemplateFromReferenceRequest request, CancellationToken ct = default);
     Task<TemplateDetailDto> DuplicateAsync(string id, DuplicateTemplateRequest request, CancellationToken ct = default);

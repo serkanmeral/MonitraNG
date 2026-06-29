@@ -19,11 +19,16 @@ public class ResourcesController : ControllerBase
 {
     private readonly IResourceService _resources;
     private readonly IPermissionService _permissions;
+    private readonly IResourceEditorService _resourceEditor;
 
-    public ResourcesController(IResourceService resources, IPermissionService permissions)
+    public ResourcesController(
+        IResourceService resources,
+        IPermissionService permissions,
+        IResourceEditorService resourceEditor)
     {
         _resources = resources;
         _permissions = permissions;
+        _resourceEditor = resourceEditor;
     }
 
     /// <summary>Klasör ağacı (yalnızca klasörler, iç içe).</summary>
@@ -162,6 +167,13 @@ public class ResourcesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RestoreMarkdownVersion(string id, int versionNumber, CancellationToken ct) =>
         Ok(await _resources.RestoreMarkdownVersionAsync(id, versionNumber, ct));
+
+    /// <summary>Collabora editör oturumu (DOCX dosyaları, iframe URL + WOPI token).</summary>
+    [HttpGet("{id}/editor-session")]
+    [ProducesResponseType(typeof(ResourceEditorSessionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetEditorSession(string id, CancellationToken ct) =>
+        Ok(await _resourceEditor.CreateEditorSessionAsync(id, ct));
 
     /// <summary>
     /// Yüklenen dosya için metadata kaydı oluşturur. UI dönen <c>id</c> ile DG

@@ -1,13 +1,20 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DiResourceTree from '@/components/apps/document-intelligence/DiResourceTree.vue';
 import DiMarkdownViewer from '@/components/apps/document-intelligence/DiMarkdownViewer.vue';
 import DiMarkdownEditor from '@/components/apps/document-intelligence/DiMarkdownEditor.vue';
 import DiPermissionsDialog from '@/components/apps/document-intelligence/DiPermissionsDialog.vue';
 import DiFilePreviewDialog from '@/components/apps/document-intelligence/DiFilePreviewDialog.vue';
+import DiResourceEditorDialog from '@/components/apps/document-intelligence/DiResourceEditorDialog.vue';
 import DiLinkedWorkItemsPanel from '@/components/apps/document-intelligence/DiLinkedWorkItemsPanel.vue';
-import { isDiPreviewable } from '@/utils/diFilePreview';
+import { isDiPreviewable, isDiDocxEditable } from '@/utils/diFilePreview';
+import {
+  DI_HOME_PATH,
+  buildDiResourceUrl,
+  parseFolderIdQuery,
+  parseLegacyResourceIdQuery,
+} from '@/utils/diResourceLink';
 import { useResizableTreePanel } from '@/composables/useResizableTreePanel';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useAuthStore } from '@/stores/auth';
@@ -50,6 +57,8 @@ definePageMeta({ layout: 'default' });
 
 const { t } = useAppI18n();
 const authStore = useAuthStore();
+const route = useRoute();
+const router = useRouter();
 
 const {
   treeWidth,
@@ -143,6 +152,10 @@ const downloadingId = ref<string | null>(null);
 const filePreviewOpen = ref(false);
 const filePreviewResource = ref<DiResource | null>(null);
 
+// DOCX Collabora editör
+const fileEditorOpen = ref(false);
+const fileEditorResource = ref<DiResource | null>(null);
+
 const breadcrumbs = computed(() => {
   const base = [{ title: t('documentIntelligence.menuTitle'), disabled: folderPath.value.length === 0 }];
   return [...base, ...folderPath.value.map((b, i) => ({ title: b.name, disabled: i === folderPath.value.length - 1 }))];
@@ -228,7 +241,7 @@ async function loadFolderPath(folderId: string | null) {
   }
 }
 
-async function selectFolder(folderId: string | null) {
+async function selectFolder(folderId: string | null, options?: { syncUrl?: boolean }) {
   searchActive.value = false;
   mainMode.value = 'browse';
   selectedFolderId.value = folderId;
@@ -244,6 +257,13 @@ async function selectFolder(folderId: string | null) {
   } finally {
     childrenLoading.value = false;
   }
+
+  if (options?.syncUrl !== false && route.path === DI_HOME_PATH) {
+    await router.replace({
+      path: DI_HOME_PATH,
+      query: folderId ? { folderId } : {},
+    });
+  }
 }
 
 async function openResource(resource: DiResource) {
@@ -251,21 +271,15 @@ async function openResource(resource: DiResource) {
     await selectFolder(resource.id);
     return;
   }
-  if (resource.type === 'markdown') {
-    await openMarkdown(resource);
-    return;
-  }
-  // Önizlenebilir dosyalarda satır tıklaması önizlemeyi açar; aksi halde indirir.
-  if (isDiPreviewable(resource)) {
-    openFilePreview(resource);
-    return;
-  }
-  await downloadFile(resource);
+  await navigateTo(buildDiResourceUrl(resource.id));
 }
 
 function openFilePreview(resource: DiResource) {
-  filePreviewResource.value = resource;
-  filePreviewOpen.value = true;
+  void navigateTo(buildDiResourceUrl(resource.id));
+}
+
+function openFileEditor(resource: DiResource) {
+  void navigateTo(buildDiResourceUrl(resource.id));
 }
 
 async function openMarkdown(resource: DiResource) {
@@ -677,11 +691,19 @@ function formatSize(bytes: number | null): string {
 }
 
 onMounted(async () => {
+  const legacyId = parseLegacyResourceIdQuery(route.query as Record<string, unknown>);
+  if (legacyId) {
+    await navigateTo(buildDiResourceUrl(legacyId), { replace: true });
+    return;
+  }
+
   treeLoading.value = true;
   childrenLoading.value = true;
   try {
-    applyBootstrap(await diGetBootstrap(null));
-    selectedFolderId.value = null;
+    const folderId = parseFolderIdQuery(route.query as Record<string, unknown>);
+    const initialFolder = folderId === undefined ? null : folderId;
+    applyBootstrap(await diGetBootstrap(initialFolder));
+    selectedFolderId.value = initialFolder;
   } catch (e) {
     notify(diExtractMessage(e, t('documentIntelligence.errors.treeLoad')), 'error');
   } finally {
@@ -689,6 +711,17 @@ onMounted(async () => {
     childrenLoading.value = false;
   }
 });
+
+watch(
+  () => route.query.folderId,
+  async () => {
+    if (route.path !== DI_HOME_PATH) return;
+    const folderId = parseFolderIdQuery(route.query as Record<string, unknown>);
+    if (folderId === undefined) return;
+    if (selectedFolderId.value === folderId) return;
+    await selectFolder(folderId, { syncUrl: false });
+  }
+);
 </script>
 
 <template>
@@ -1026,6 +1059,16 @@ onMounted(async () => {
                       </v-list-item-subtitle>
                       <template #append>
                         <v-btn
+                          v-if="d.type === 'file' && d.permissions.canDownload && isDiDocxEditable(d)"
+                          icon
+                          size="x-small"
+                          variant="text"
+                          :title="t('documentIntelligence.openInEditor')"
+                          @click.stop="openFileEditor(d)"
+                        >
+                          <v-icon size="18">mdi-file-document-edit-outline</v-icon>
+                        </v-btn>
+                        <v-btn
                           v-if="d.type === 'file' && d.permissions.canDownload && isDiPreviewable(d)"
                           icon
                           size="x-small"
@@ -1053,6 +1096,7 @@ onMounted(async () => {
                             </v-btn>
                           </template>
                           <v-list density="compact">
+                            <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiDocxEditable(d)" prepend-icon="mdi-file-document-edit-outline" :title="t('documentIntelligence.openInEditor')" @click="openFileEditor(d)" />
                             <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiPreviewable(d)" prepend-icon="mdi-file-eye-outline" :title="t('documentIntelligence.preview')" @click="openFilePreview(d)" />
                             <v-list-item v-if="d.type === 'file' && d.permissions.canDownload" prepend-icon="mdi-download" :title="t('documentIntelligence.download')" @click="downloadFile(d)" />
                             <v-list-item v-if="d.permissions.canEdit" prepend-icon="mdi-pencil-box-outline" :title="t('documentIntelligence.rename')" @click="openRename(d)" />
@@ -1332,6 +1376,11 @@ onMounted(async () => {
       v-model="filePreviewOpen"
       :resource="filePreviewResource"
       @download="downloadFile"
+    />
+
+    <DiResourceEditorDialog
+      v-model="fileEditorOpen"
+      :resource="fileEditorResource"
     />
 
     <v-snackbar v-model="snackbar" :color="snackbarColor" location="top right" :timeout="3500">

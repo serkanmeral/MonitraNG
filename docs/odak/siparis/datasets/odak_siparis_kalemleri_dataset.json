@@ -260,6 +260,94 @@
       "unique": false,
       "isArray": false,
       "validation": { "maxLength": 32 }
+    },
+    {
+      "fieldType": "text",
+      "name": "cocDiResourceId",
+      "title": "Uygunluk belgesi DI kaynak id",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "cocDocNo",
+      "title": "Uygunluk belgesi numarasi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "datetime",
+      "name": "cocGeneratedAt",
+      "title": "Uygunluk belgesi uretim zamani",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "cocTemplateCode",
+      "title": "Uygunluk belgesi sablon kodu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "cocTemplateName",
+      "title": "Uygunluk belgesi sablon adi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 128 }
+    },
+    {
+      "fieldType": "text",
+      "name": "activityDiResourceId",
+      "title": "Kalem activity raporu DI kaynak id",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "activityDocNo",
+      "title": "Kalem activity raporu belge no",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "datetime",
+      "name": "activityGeneratedAt",
+      "title": "Kalem activity raporu uretim zamani",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "activityTemplateCode",
+      "title": "Kalem activity raporu sablon kodu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "activityTemplateName",
+      "title": "Kalem activity raporu sablon adi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 128 }
     }
   ],
   "indexList": [

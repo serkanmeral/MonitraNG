@@ -294,7 +294,14 @@ export interface DiRenameTemplateCategoryRequest {
   name: string;
 }
 
-export type DiTemplateValueSourceMode = 'manual' | 'incremental' | 'computed' | 'binding' | 'static';
+export type DiTemplateValueSourceMode =
+  | 'manual'
+  | 'incremental'
+  | 'computed'
+  | 'binding'
+  | 'static'
+  | 'context'
+  | 'generated';
 
 export interface DiTemplateIncrementalOptions {
   format: string;
@@ -304,7 +311,14 @@ export interface DiTemplateIncrementalOptions {
   resetPolicy?: string;
 }
 
-export interface DiTemplateSourceBinding {
+export interface DiTemplateContextBinding {
+  path: string;
+  fallbackPath?: string | null;
+  defaultValue?: string | null;
+  format?: string | null;
+}
+
+export interface DiTemplateDocBinding {
   regionKind: string;
   paragraphIndex: number;
   originalText?: string | null;
@@ -312,13 +326,21 @@ export interface DiTemplateSourceBinding {
   charEnd?: number | null;
 }
 
+/** @deprecated use DiTemplateDocBinding */
+export type DiTemplateSourceBinding = DiTemplateDocBinding;
+
 export interface DiTemplateParameter {
   key: string;
   label: string;
   dataType: string;
   valueSourceMode: DiTemplateValueSourceMode | string;
+  defaultValue?: string | null;
+  format?: string | null;
   incremental?: DiTemplateIncrementalOptions | null;
-  sourceBinding?: DiTemplateSourceBinding | null;
+  docBinding?: DiTemplateDocBinding | null;
+  /** @deprecated use docBinding */
+  sourceBinding?: DiTemplateDocBinding | null;
+  contextBinding?: DiTemplateContextBinding | null;
 }
 
 export interface DiTemplateSummary {
@@ -333,9 +355,70 @@ export interface DiTemplateSummary {
   creationMode: string;
   status: string;
   parameterCount: number;
+  primaryContextType?: string | null;
+  generationProfile?: string | null;
   createdBy: string | null;
   createdAt: string | null;
   updatedAt: string | null;
+}
+
+export interface DiDocumentContextField {
+  path: string;
+  label: string;
+  dataType: string;
+}
+
+export interface DiDocumentContextType {
+  type: string;
+  displayName: string;
+  rootDataset: string;
+  fields: DiDocumentContextField[];
+}
+
+export interface DiGenerateDocumentRequest {
+  profileCode: string;
+  templateCode?: string;
+  context: { type: string; id: string };
+  overrides?: Record<string, string>;
+}
+
+export interface DiGenerateDocumentResult {
+  profileCode: string;
+  contextType: string;
+  contextId: string;
+  templateId: string;
+  templateCode: string;
+  docNo?: string | null;
+  resourceId: string;
+  fileName: string;
+  folderPath: string[];
+  generatedAt: string;
+  resolvedValues: Record<string, string>;
+  undefinedParameterKeys: string[];
+  unresolvedParameterKeys: string[];
+  remainingPlaceholderKeys: string[];
+  hasParameterWarnings: boolean;
+}
+
+export interface DiDocumentGenerationStatus {
+  profileCode: string;
+  contextType: string;
+  contextId: string;
+  generated: boolean;
+  docNo?: string | null;
+  resourceId?: string | null;
+  fileName?: string | null;
+  generatedAt?: string | null;
+}
+
+export interface DiDocumentGenerationPreview {
+  profileCode: string;
+  contextType: string;
+  contextId: string;
+  values: Record<string, string>;
+  missingKeys: string[];
+  undefinedParameterKeys: string[];
+  unresolvedParameterKeys: string[];
 }
 
 export interface DiTemplateDetail extends DiTemplateSummary {
@@ -415,6 +498,8 @@ export interface DiCreateTemplateFromReferenceRequest {
 }
 
 export interface DiUpdateTemplateParametersRequest {
+  primaryContextType?: string | null;
+  generationProfile?: string | null;
   parameters: DiTemplateParameter[];
 }
 
@@ -461,4 +546,14 @@ export interface DiTemplateEditorSession {
   accessToken: string;
   wopiSrc: string;
   readOnly: boolean;
+}
+
+export interface DiResourceEditorSession {
+  resourceId: string;
+  editorUrl: string;
+  accessToken: string;
+  wopiSrc: string;
+  readOnly: boolean;
+  /** Prod'da resource editor-session yoksa şablon kopyası üzerinden açıldı. */
+  viaTemplateFallback?: boolean;
 }

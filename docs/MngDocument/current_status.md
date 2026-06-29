@@ -2,41 +2,61 @@
 
 ## Son Çalışılan Konu
 
-Document Intelligence **Belge tasarımcısı**: sayfa yapısı (kenar boşlukları + antet + altbilgi), footer tablo enjeksiyonu, `documentName` parametresi, Collabora WOPI editör, Gotenberg PDF render altyapısı. Prod (192.168.20.8) deploy ve COC-STANDARD şablon güncellemesi.
+Odak **kalem belgeleri** (CoC + Activity), **LINE-ACTIVITY-STD** şablon tasarımı, belge üretimi (generation profiles), parametre uyarıları, DI deep link, şablon **görüntüle / kilidi aç** akışı.
 
-## Tamamlanan İşler
+## Tamamlanan İşler (bu oturum)
 
-- **Sayfa yapısı API:** `PUT /templates/{id}/page-structure` — `pageLayout`, `letterhead`, `footer` tek istekte; `PageLayoutInjector` + `TemplatePageLayoutModel` (schema 1.3).
-- **Footer tablo:** `FooterInjector` — 2 sütunlu tablo (header ile aynı Collabora sütun tutamaçları).
-- **Antet:** `LetterheadInjector` — orta sütun `{{documentName}}`; sistem parametresi `documentName`.
-- **Şablon CRUD genişlemesi:** kategori ağacı, blank/referans/duplicate, metadata, publish, letterhead/footer (legacy uçlar), editor-session, WOPI.
-- **Render:** `DocxPlaceholderMerger`, `POST /templates/{id}/render/pdf`, Gotenberg servisi (docker-compose).
-- **UI:** Designer liste + editör (`Collabora`), `DiTemplatePageStructureForm`, placeholder envanteri paneli, kopyala modalı.
-- **Prod deploy (26 Haz 2026):** `mngdocument` + `mngui` (Dockerfile `NODE_OPTIONS=4096` OOM fix). `update-coc-template-prod.ps1 -SkipParameterize` → page-structure OK, 18 placeholder (`documentName` dahil).
+### Belge üretimi (backend)
+- `DocumentGenerationService` — merge, placeholder koruma, `HasParameterWarnings`, tanımsız/boş parametre analizi.
+- Generation profilleri: `odak.coc.fromLine`, `odak.line.activity.fromLine` (`appsettings.json`).
+- `DocumentContextCatalog` — kalem/paket/sevkiyat/CoC/activity alanları.
+- Activity writeback: `activityDiResourceId`, `activityDocNo`, `activityGeneratedAt`, vb.
+- `DocumentParameterResolver` — bool → Evet/Hayır.
+- **`POST /templates/{id}/unpublish`** — üretimde aktif şablonu düzenlenebilir yapma (belge üretimi unpublish sonrası durur).
 
-## Devam Eden İşler
+### Activity şablonu (LINE-ACTIVITY-STD)
+- Profesyonel DOCX gövdesi: `build-line-activity-seed-docx.ps1` + `line-activity-docx-content.json` (UTF-8, Türkçe karakter düzeltmesi).
+- Seed/deploy: `seed-designer-template-line-activity-standard.ps1`, `deploy-line-activity-design-test.ps1`, `patch-line-activity-standard-test.ps1`.
+- Test sunucusunda şablon **published**; Türkçe etiketler doğrulandı.
+- `styles.xml` bozukluğu giderildi (Collabora “belge yüklenemedi” hatası).
 
-- Collabora’da footer tablo sütun tutamaçlarının **görsel doğrulaması** (kullanıcı UAT).
-- `docNo` run bölünmesi → placeholder scanner uyarısı (fonksiyonel, 18 key tanınıyor).
+### UI — Kalem belgeleri (Odak)
+- Sekme: **Kalem Belgeleri** (`documents`, `?tab=coc` alias).
+- `OdakSiparisLineDocumentsPanel`, `OdakSiparisLineDocumentsCreateDialog`.
+- Combobox: COC-STANDARD + LINE-ACTIVITY-STD.
+- `odakSiparisLineDocumentService.ts`, deep link `/apps/document-intelligence/r/{id}`.
 
-## Sonraki Adımlar
+### UI — Belge tasarımcısı
+- **Üretimde aktif** / **Düzenlenebilir** terminolojisi.
+- Published şablon: **Görüntüle** (Collabora salt okunur) + **Kilidi aç** (unpublish → düzenle).
+- Editör sayfası: unpublish + üretimde aktif et butonları.
 
-1. **D2** — incremental `docNo` runtime (DG `@__counters`).
-2. **Parametre tanımı UI** — placeholder envanterinden parametre eşleme akışını tamamlama.
-3. **D4 merge** — WorkItem / basit DOCX merge + indirme akışı.
-4. **Yeni blank şablon** oluştururken `pageLayout`’u create API’ye taşıma (şu an varsayılan + edit dialog).
+### Dataset
+- `odak_siparis_kalemleri` — activity writeback alanları (36 alan).
+
+## Devam Eden / Faz 2
+
+- Activity DOCX: sevkiyat satır tablosu, timeline, computed parametreler.
+- Parametre scanner uyarısı (33 incomplete `{` — footer/header XML, fonksiyonel).
+- `mngdocument` deploy sonrası bool Evet/Hayır canlı doğrulama.
+
+## Sonraki Adımlar (yeni oturum)
+
+1. **Antet yönetimi** — letterhead seçenekleri, önizleme, şablon başına ince ayar.
+2. **Parametre yönetimi UI** — placeholder envanteri, context binding, incremental docNo (D2), designer parametre diyalogu iyileştirme.
+3. İsteğe bağlı: published şablon salt okunur önizleme iyileştirmeleri.
 
 ## Önemli Notlar
 
-- Prod token: `docs/odak/operationcore/scripts/get-operationcore-token-prod.ps1` → `$env:TEMP\operationcore_dg_token_prod.txt`
-- CoC güncelleme: `docs/odak/document_intelligence/scripts/update-coc-template-prod.ps1 -SkipParameterize`
-- WOPI host (dışarıdan): `http://192.168.20.8:5095`
-- COC-STANDARD id: `a5a7c41f-47b7-4cc1-920b-3d485874c362`
+- Test gateway: `http://192.168.20.20:5040`, WOPI: `:5095`.
+- Activity deploy: `docs/odak/document_intelligence/scripts/deploy-line-activity-design-test.ps1`
+- Published şablon WOPI yazılamaz; düzenleme için **unpublish** veya seed `-Replace` (ops).
+- Token: `docs/odak/operationcore/scripts/load-operationcore-token.ps1`
 
 ## Son Güncelleme
 
-**26 Haziran 2026** — Sayfa yapısı + footer tablo + prod deploy tamamlandı; checkpoint `docs/odak/document_intelligence/DEVAM.md`.
+**29 Haziran 2026** — Activity şablon tasarımı, kalem belgeleri, unpublish akışı tamamlandı; sırada antet + parametre yönetimi.
 
 ## Nerede Kalmıştık
 
-Backend ve UI prod’da. COC şablonu page-structure ile yenilendi. Yarın: Collabora UAT, ardından D2 veya parametre UI ile devam.
+Belge tasarımı oturumu hedeflerine ulaşıldı. Yeni chat’te **antet** ve **parametre yönetimi** ile devam edilecek. Test’e `mngdocument` + `mngui` deploy (unpublish API + UI) gerekebilir.

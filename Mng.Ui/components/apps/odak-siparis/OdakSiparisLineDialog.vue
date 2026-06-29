@@ -9,10 +9,8 @@ import {
   type OdakLineRow,
 } from '@/utils/odakSiparisConfig';
 import type { OdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
-import {
-  lineRecordForPolicyEval,
-  ODAK_LINE_LIST_KEY_TO_FIELD,
-} from '@/utils/odakSiparisFieldPolicies';
+import { lineRecordForPolicyEval } from '@/utils/odakSiparisFieldPolicies';
+import { ODAK_LINE_LIST_KEY_TO_FIELD } from '@/utils/odakSiparisLineListSettings';
 import { loadOdakLineFieldPoliciesOnly } from '@/utils/odakSiparisHubSettingsService';
 import {
   createOdakLine,

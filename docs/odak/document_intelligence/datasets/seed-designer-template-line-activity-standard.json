@@ -1,0 +1,213 @@
+{
+  "categoryPath": ["Operasyon Belgeleri", "Kalem Activity / Yaşam Döngüsü"],
+  "template": {
+    "name": "Kalem Activity Raporu",
+    "code": "LINE-ACTIVITY-STD",
+    "description": "Kalem yaşam döngüsü özeti — iş paketi, kalite, sevkiyat ve CoC referansları (Faz 1).",
+    "primaryContextType": "odak.siparis.line",
+    "generationProfile": "odak.line.activity.fromLine",
+    "docxFile": "ODK-LINE-ACTIVITY-template-seed.docx",
+    "letterhead": {
+      "enabled": true,
+      "showLogo": true,
+      "showDocumentName": true,
+      "showDocumentNumber": true,
+      "showGeneratedAt": true
+    },
+    "footer": {
+      "enabled": true,
+      "showFormRevision": true,
+      "showOfficeColumns": true,
+      "showAddresses": true,
+      "showContacts": true,
+      "showDividerLine": false
+    },
+    "pageLayout": {
+      "marginTopTwips": 1440,
+      "marginRightTwips": 1797,
+      "marginBottomTwips": 1440,
+      "marginLeftTwips": 1797,
+      "headerDistanceTwips": 709,
+      "footerDistanceTwips": 658,
+      "footerLeftIndentTwips": -567
+    },
+    "parameters": [
+      {
+        "key": "documentName",
+        "label": "Belge Adı",
+        "dataType": "text",
+        "valueSourceMode": "static",
+        "defaultValue": "Kalem Activity Raporu"
+      },
+      {
+        "key": "docNo",
+        "label": "Belge Numarası",
+        "dataType": "text",
+        "valueSourceMode": "incremental",
+        "incremental": {
+          "format": "ODK-ACT-{yy}-{0}",
+          "startValue": 1,
+          "incrementStep": 1,
+          "scopeKey": "odak-line-activity-docno",
+          "resetPolicy": "yearly"
+        }
+      },
+      {
+        "key": "issueDate",
+        "label": "Düzenlenme Tarihi",
+        "dataType": "date",
+        "valueSourceMode": "generated",
+        "format": "dd.MM.yyyy"
+      },
+      {
+        "key": "lineNo",
+        "label": "Kalem No",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "lineNo" }
+      },
+      {
+        "key": "workPackageNo",
+        "label": "İş Paketi No",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "parentPackageId.packageNo" }
+      },
+      {
+        "key": "workPackageName",
+        "label": "İş Paketi Adı",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "parentPackageId.name" }
+      },
+      {
+        "key": "customerName",
+        "label": "Müşteri",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "parentPackageId.customerId.unvan" }
+      },
+      {
+        "key": "orderNo",
+        "label": "Sipariş No",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "customerPoNo" }
+      },
+      {
+        "key": "partDescription",
+        "label": "Parça Tanımı",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "description" }
+      },
+      {
+        "key": "drawingNo",
+        "label": "Teknik Resim No",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "productId.partNumber" }
+      },
+      {
+        "key": "drawingRevision",
+        "label": "TR Revizyon",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": {
+          "path": "poItemRevNo",
+          "fallbackPath": "productId.revizyon"
+        }
+      },
+      {
+        "key": "partQuantity",
+        "label": "Sipariş Miktarı",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": {
+          "path": "quantity",
+          "format": "{quantity} {unit}"
+        }
+      },
+      {
+        "key": "shippedSummary",
+        "label": "Sevk Özeti",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": {
+          "path": "shippedQuantity",
+          "format": "{shippedQuantity} / {quantity} {unit}"
+        }
+      },
+      {
+        "key": "lineDeliveryDate",
+        "label": "Kalem Termin",
+        "dataType": "date",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "deliveryDate", "format": "dd.MM.yyyy" }
+      },
+      {
+        "key": "packageDeliveryDate",
+        "label": "İş Paketi Termin",
+        "dataType": "date",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "parentPackageId.deliveryDate", "format": "dd.MM.yyyy" }
+      },
+      {
+        "key": "shipmentDate",
+        "label": "Sevkiyat Tarihi",
+        "dataType": "date",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "shipmentDate", "format": "dd.MM.yyyy" }
+      },
+      {
+        "key": "shipmentAddress",
+        "label": "Sevkiyat Adresi",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "shipmentAddress" }
+      },
+      {
+        "key": "qualityReqs",
+        "label": "Kalite İsterleri",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "qualityReqs" }
+      },
+      {
+        "key": "isFai",
+        "label": "FAI Gerekli",
+        "dataType": "bool",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "isFai" }
+      },
+      {
+        "key": "isFaiComplete",
+        "label": "FAI Tamamlandı",
+        "dataType": "bool",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "isFaiComplete" }
+      },
+      {
+        "key": "cocDocNo",
+        "label": "Uygunluk Belgesi No",
+        "dataType": "text",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "cocDocNo" }
+      },
+      {
+        "key": "cocGeneratedAt",
+        "label": "CoC Üretim Tarihi",
+        "dataType": "date",
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "cocGeneratedAt", "format": "dd.MM.yyyy" }
+      },
+      {
+        "key": "generatedAt",
+        "label": "Rapor Üretim Zamanı",
+        "dataType": "date",
+        "valueSourceMode": "generated",
+        "format": "dd.MM.yyyy HH:mm"
+      }
+    ]
+  }
+}

@@ -19,6 +19,8 @@ public class TemplateSummaryDto
     public string CreationMode { get; init; } = "fromTemplate";
     public string Status { get; init; } = "draft";
     public int ParameterCount { get; init; }
+    public string? PrimaryContextType { get; init; }
+    public string? GenerationProfile { get; init; }
     public string? CreatedBy { get; init; }
     public DateTime? CreatedAt { get; init; }
     public DateTime? UpdatedAt { get; init; }
@@ -39,8 +41,15 @@ public sealed class TemplateParameterDto
     public string Label { get; init; } = string.Empty;
     public string DataType { get; init; } = "text";
     public string ValueSourceMode { get; init; } = "manual";
+    public string? DefaultValue { get; init; }
+    public string? Format { get; init; }
     public TemplateIncrementalOptionsDto? Incremental { get; init; }
-    public TemplateSourceBindingDto? SourceBinding { get; init; }
+    public TemplateDocBindingDto? DocBinding { get; init; }
+
+    /// <summary>Legacy API alias for <see cref="DocBinding"/>.</summary>
+    public TemplateDocBindingDto? SourceBinding => DocBinding;
+
+    public TemplateContextBindingDto? ContextBinding { get; init; }
 }
 
 public sealed class TemplateIncrementalOptionsDto
@@ -52,13 +61,24 @@ public sealed class TemplateIncrementalOptionsDto
     public string ResetPolicy { get; init; } = "none";
 }
 
-public sealed class TemplateSourceBindingDto
+public class TemplateDocBindingDto
 {
     public string RegionKind { get; init; } = "paragraph";
     public int ParagraphIndex { get; init; }
     public string? OriginalText { get; init; }
     public int? CharStart { get; init; }
     public int? CharEnd { get; init; }
+}
+
+/// <summary>Legacy name — use <see cref="TemplateDocBindingDto"/>.</summary>
+public sealed class TemplateSourceBindingDto : TemplateDocBindingDto;
+
+public sealed class TemplateContextBindingDto
+{
+    public string Path { get; init; } = string.Empty;
+    public string? FallbackPath { get; init; }
+    public string? DefaultValue { get; init; }
+    public string? Format { get; init; }
 }
 
 public sealed class DocxStructureDto

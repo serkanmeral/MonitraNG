@@ -330,6 +330,38 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
         return ToDetail(updated);
     }
 
+    public async Task<TemplateDetailDto> UnpublishAsync(string id, CancellationToken ct = default)
+    {
+        var templateId = id?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(templateId))
+            throw DocumentException.NotFound();
+
+        var existing = await LoadTemplateOrThrowAsync(templateId, ct);
+        if (!string.Equals(existing.status, TemplateStatus.Published, StringComparison.OrdinalIgnoreCase))
+        {
+            throw DocumentException.Validation(
+                "TEMPLATE_NOT_PUBLISHED",
+                "Template is not published.",
+                "Yalnızca üretimde aktif şablonlar taslağa alınabilir.");
+        }
+
+        var payload = new Dictionary<string, object?>
+        {
+            ["status"] = TemplateStatus.Draft,
+            ["updatedBy"] = _ctx.Username,
+            ["updatedAt"] = DateTime.UtcNow
+        };
+
+        var updated = await _dg.UpdateAsync<DmDocumentTemplate>(
+            DmDatasets.DocumentTemplates,
+            templateId,
+            payload,
+            Token,
+            ct);
+
+        return ToDetail(updated);
+    }
+
     public async Task<TemplateDetailDto> CreateFromSourceAsync(
         CreateTemplateFromSourceRequest request,
         CancellationToken ct = default)
@@ -636,6 +668,14 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
 
         var existingModel = TemplateModelSerializer.Parse(existing.modelJson);
         existingModel.SchemaVersion = TemplateModelSerializer.CurrentSchemaVersion;
+        if (request.PrimaryContextType is not null)
+            existingModel.PrimaryContextType = string.IsNullOrWhiteSpace(request.PrimaryContextType)
+                ? null
+                : request.PrimaryContextType.Trim();
+        if (request.GenerationProfile is not null)
+            existingModel.GenerationProfile = string.IsNullOrWhiteSpace(request.GenerationProfile)
+                ? null
+                : request.GenerationProfile.Trim();
         existingModel.Parameters = parameters.Select(TemplateParameterMapper.ToModel).ToList();
 
         var payload = new Dictionary<string, object?>
@@ -1014,6 +1054,15 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
                     "Generated parameters must use date/datetime type.",
                     "Üretim zamanı parametreleri date/datetime olmalıdır.");
             }
+
+            if (string.Equals(p.ValueSourceMode, "context", StringComparison.OrdinalIgnoreCase)
+                && (p.ContextBinding is null || string.IsNullOrWhiteSpace(p.ContextBinding.Path)))
+            {
+                throw DocumentException.Validation(
+                    "CONTEXT_PATH_REQUIRED",
+                    "Context parameters require contextBinding.path.",
+                    "Kaynak alanı parametreleri için contextBinding.path zorunludur.");
+            }
         }
     }
 
@@ -1078,6 +1127,7 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
     private static TemplateSummaryDto ToSummary(DmDocumentTemplate row)
     {
         var (path, fileName) = DgFileFieldReader.Read(row);
+        var model = ParseModel(row.modelJson);
         return new()
         {
             Id = row.__dataId ?? string.Empty,
@@ -1090,7 +1140,9 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
             SourceFileName = row.sourceFileName ?? fileName,
             CreationMode = row.creationMode ?? TemplateCreationMode.FromReference,
             Status = row.status ?? TemplateStatus.Draft,
-            ParameterCount = ParseModel(row.modelJson).Parameters.Count,
+            ParameterCount = model.Parameters.Count,
+            PrimaryContextType = model.PrimaryContextType,
+            GenerationProfile = model.GenerationProfile,
             CreatedBy = row.createdBy,
             CreatedAt = row.createdAt,
             UpdatedAt = row.updatedAt
@@ -1118,6 +1170,8 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
             CreatedAt = summary.CreatedAt,
             UpdatedAt = summary.UpdatedAt,
             SchemaVersion = model.SchemaVersion,
+            PrimaryContextType = model.PrimaryContextType,
+            GenerationProfile = model.GenerationProfile,
             Letterhead = TemplateModelSerializer.ToLetterheadDto(model.Letterhead),
             Footer = TemplateModelSerializer.ToFooterDto(model.Footer),
             PageLayout = TemplateModelSerializer.ToPageLayoutDto(model.PageLayout),

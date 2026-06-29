@@ -4,6 +4,8 @@
     "name": "Uygunluk Belgesi",
     "code": "COC-STANDARD",
     "description": "ODK-COC referans şablonu — placeholder gövde, 3 sütunlu antet, kurumsal altbilgi.",
+    "primaryContextType": "odak.siparis.line",
+    "generationProfile": "odak.coc.fromLine",
     "docxFile": "ODK-COC-template-seed.docx",
     "letterhead": {
       "enabled": true,
@@ -18,7 +20,7 @@
       "showOfficeColumns": true,
       "showAddresses": true,
       "showContacts": true,
-      "showDividerLine": true
+      "showDividerLine": false
     },
     "pageLayout": {
       "marginTopTwips": 1440,
@@ -34,7 +36,8 @@
         "key": "documentName",
         "label": "Belge Adı",
         "dataType": "text",
-        "valueSourceMode": "manual"
+        "valueSourceMode": "static",
+        "defaultValue": "Uygunluk Belgesi"
       },
       {
         "key": "docNo",
@@ -42,10 +45,10 @@
         "dataType": "text",
         "valueSourceMode": "incremental",
         "incremental": {
-          "format": "ODK-COC-{yyyy}-{0:D3}",
+          "format": "ODK-COC-{yy}-{0}",
           "startValue": 1,
           "incrementStep": 1,
-          "scopeKey": "domain",
+          "scopeKey": "odak-coc-docno",
           "resetPolicy": "yearly"
         }
       },
@@ -53,37 +56,43 @@
         "key": "workPackageNo",
         "label": "İş Paketi No",
         "dataType": "text",
-        "valueSourceMode": "manual"
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "parentPackageId.packageNo" }
       },
       {
         "key": "issueDate",
         "label": "Düzenlenme Tarihi",
         "dataType": "date",
-        "valueSourceMode": "manual"
+        "valueSourceMode": "generated",
+        "format": "dd.MM.yyyy"
       },
       {
         "key": "customerName",
         "label": "Firma Bilgileri",
         "dataType": "text",
-        "valueSourceMode": "manual"
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "parentPackageId.customerId.unvan" }
       },
       {
         "key": "orderNo",
         "label": "Sipariş No",
         "dataType": "text",
-        "valueSourceMode": "manual"
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "customerPoNo" }
       },
       {
         "key": "partDescription",
         "label": "Parça Tanımı",
         "dataType": "text",
-        "valueSourceMode": "manual"
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "description" }
       },
       {
         "key": "drawingNo",
         "label": "Teknik Resim No",
         "dataType": "text",
-        "valueSourceMode": "manual"
+        "valueSourceMode": "context",
+        "contextBinding": { "path": "productId.partNumber" }
       },
       {
         "key": "drawingRef",
@@ -95,13 +104,21 @@
         "key": "drawingRevision",
         "label": "TR Revizyon No",
         "dataType": "text",
-        "valueSourceMode": "manual"
+        "valueSourceMode": "context",
+        "contextBinding": {
+          "path": "poItemRevNo",
+          "fallbackPath": "productId.revizyon"
+        }
       },
       {
         "key": "partQuantity",
         "label": "Parça Adedi",
         "dataType": "text",
-        "valueSourceMode": "manual"
+        "valueSourceMode": "context",
+        "contextBinding": {
+          "path": "quantity",
+          "format": "{quantity} {unit}"
+        }
       },
       {
         "key": "serialNo",
@@ -110,20 +127,14 @@
         "valueSourceMode": "manual"
       },
       {
-        "key": "complianceStatement",
-        "label": "Uygunluk beyanı",
+        "key": "leakTestNoteNo",
+        "label": "Sızdırmazlık test not no",
         "dataType": "text",
         "valueSourceMode": "manual"
       },
       {
-        "key": "leakTestStatement",
-        "label": "Sızdırmazlık test beyanı",
-        "dataType": "text",
-        "valueSourceMode": "manual"
-      },
-      {
-        "key": "attachmentsNote",
-        "label": "Açıklamalar / ekler",
+        "key": "leakTestPressureMbar",
+        "label": "Test basıncı (mbar)",
         "dataType": "text",
         "valueSourceMode": "manual"
       },
@@ -131,13 +142,22 @@
         "key": "signatoryName",
         "label": "İmza — ad soyad",
         "dataType": "text",
-        "valueSourceMode": "manual"
+        "valueSourceMode": "static",
+        "defaultValue": "GİZEM CANDAŞ"
       },
       {
         "key": "signatoryTitle",
         "label": "İmza — unvan",
         "dataType": "text",
-        "valueSourceMode": "manual"
+        "valueSourceMode": "static",
+        "defaultValue": "KALİTE KONTROL YÖNETİCİSİ"
+      },
+      {
+        "key": "generatedAt",
+        "label": "Üretim zamanı",
+        "dataType": "date",
+        "valueSourceMode": "generated",
+        "format": "dd.MM.yyyy"
       }
     ]
   }

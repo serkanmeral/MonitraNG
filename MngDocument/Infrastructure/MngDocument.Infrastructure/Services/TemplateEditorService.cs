@@ -178,7 +178,8 @@ public sealed class TemplateEditorService : ITemplateEditorService
             UserId = userId,
             UserName = userName,
             DataGatewayToken = Token,
-            Version = "1"
+            Version = "1",
+            ReadOnly = readOnly
         };
 
         var ttl = TimeSpan.FromMinutes(Math.Clamp(_settings.Wopi.SessionMinutes, 15, 1440));
@@ -338,6 +339,9 @@ public sealed class TemplateEditorService : ITemplateEditorService
 
     private static void EnsureTemplateSession(string templateId, WopiSession session)
     {
+        if (!string.IsNullOrWhiteSpace(session.ResourceId))
+            throw DocumentException.NotFound("WOPI oturumu geçersiz.");
+
         if (!string.Equals(templateId, session.TemplateId, StringComparison.Ordinal))
             throw DocumentException.NotFound("WOPI oturumu geçersiz.");
     }

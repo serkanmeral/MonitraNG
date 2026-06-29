@@ -46,65 +46,6 @@ public sealed class TemplateLetterheadApplier : ITemplateLetterheadApplier
     }
 }
 
-public static class TemplateParameterMapper
-{
-    public static TemplateParameterDto ToDto(TemplateParameterModel model) => new()
-    {
-        Key = model.Key,
-        Label = model.Label,
-        DataType = model.DataType,
-        ValueSourceMode = model.ValueSourceMode,
-        Incremental = model.Incremental is null
-            ? null
-            : new TemplateIncrementalOptionsDto
-            {
-                Format = model.Incremental.Format,
-                StartValue = model.Incremental.StartValue,
-                IncrementStep = model.Incremental.IncrementStep,
-                ScopeKey = model.Incremental.ScopeKey,
-                ResetPolicy = model.Incremental.ResetPolicy
-            },
-        SourceBinding = model.SourceBinding is null
-            ? null
-            : new TemplateSourceBindingDto
-            {
-                RegionKind = model.SourceBinding.RegionKind,
-                ParagraphIndex = model.SourceBinding.ParagraphIndex,
-                OriginalText = model.SourceBinding.OriginalText,
-                CharStart = model.SourceBinding.CharStart,
-                CharEnd = model.SourceBinding.CharEnd
-            }
-    };
-
-    public static TemplateParameterModel ToModel(TemplateParameterDto dto) => new()
-    {
-        Key = dto.Key,
-        Label = dto.Label,
-        DataType = dto.DataType,
-        ValueSourceMode = dto.ValueSourceMode,
-        Incremental = dto.Incremental is null
-            ? null
-            : new TemplateIncrementalModel
-            {
-                Format = dto.Incremental.Format,
-                StartValue = dto.Incremental.StartValue,
-                IncrementStep = dto.Incremental.IncrementStep,
-                ScopeKey = dto.Incremental.ScopeKey,
-                ResetPolicy = dto.Incremental.ResetPolicy
-            },
-        SourceBinding = dto.SourceBinding is null
-            ? null
-            : new TemplateSourceBindingModel
-            {
-                RegionKind = dto.SourceBinding.RegionKind,
-                ParagraphIndex = dto.SourceBinding.ParagraphIndex,
-                OriginalText = dto.SourceBinding.OriginalText,
-                CharStart = dto.SourceBinding.CharStart,
-                CharEnd = dto.SourceBinding.CharEnd
-            }
-    };
-}
-
 public static class TemplateDraftGuard
 {
     public static void EnsureDraft(DmDocumentTemplate template)

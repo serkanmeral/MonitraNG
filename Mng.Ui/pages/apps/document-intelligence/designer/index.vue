@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DiResourceTree from '@/components/apps/document-intelligence/DiResourceTree.vue';
 import DiTemplatePageStructureForm from '@/components/apps/document-intelligence/DiTemplatePageStructureForm.vue';
+import DiDesignerParametersDialog from '@/components/apps/document-intelligence/DiDesignerParametersDialog.vue';
 import { useResizableTreePanel } from '@/composables/useResizableTreePanel';
 import { useAppI18n } from '@/composables/useAppI18n';
 import {
@@ -18,6 +19,7 @@ import {
   diGetTemplateCategoryTree,
   diListTemplates,
   diPublishTemplate,
+  diUnpublishTemplate,
   diRenameTemplateCategory,
   diUpdateTemplateMetadata,
   diUpdateTemplatePageStructure,
@@ -73,7 +75,7 @@ function createDefaultFooter(): DiTemplateFooter {
     showOfficeColumns: true,
     showAddresses: true,
     showContacts: true,
-    showDividerLine: true,
+    showDividerLine: false,
   };
 }
 
@@ -93,8 +95,8 @@ function isDraftTemplate(tpl: DiTemplateSummary): boolean {
 
 function statusLabel(status: string): string {
   const normalized = status.toLowerCase();
-  if (normalized === 'draft') return t('documentIntelligence.draft');
-  if (normalized === 'published') return t('documentIntelligence.designer.statusPublished');
+  if (normalized === 'draft') return t('documentIntelligence.designer.statusDraft');
+  if (normalized === 'published') return t('documentIntelligence.designer.statusActive');
   return status;
 }
 
@@ -145,6 +147,11 @@ const publishTemplateDialog = ref(false);
 const templateToPublish = ref<DiTemplateSummary | null>(null);
 const publishingTemplate = ref(false);
 
+const unpublishTemplateDialog = ref(false);
+const templateToUnpublish = ref<DiTemplateSummary | null>(null);
+const unpublishingTemplate = ref(false);
+const unpublishThenEdit = ref(false);
+
 const copyTemplateDialog = ref(false);
 const templateToCopy = ref<DiTemplateSummary | null>(null);
 const copyTargetCategoryId = ref<string | null>(null);
@@ -162,6 +169,9 @@ const uploadDialog = ref(false);
 const uploadFile = ref<File | null>(null);
 const uploadName = ref('');
 const uploading = ref(false);
+
+const parametersDialog = ref(false);
+const templateForParameters = ref<DiTemplateSummary | null>(null);
 
 const selectedCategoryName = computed(() => {
   if (!selectedCategoryId.value) return '';
@@ -303,11 +313,60 @@ async function submitNewTemplate() {
 
 function openEditor(tpl: DiTemplateSummary) {
   if (!isDraftTemplate(tpl)) return;
+  navigateToTemplateEditor(tpl.id);
+}
+
+function openViewTemplate(tpl: DiTemplateSummary) {
+  navigateToTemplateEditor(tpl.id);
+}
+
+function navigateToTemplateEditor(templateId: string) {
   const query = selectedCategoryId.value ? { categoryId: selectedCategoryId.value } : undefined;
   router.push({
-    path: `/apps/document-intelligence/designer/${tpl.id}/edit`,
+    path: `/apps/document-intelligence/designer/${templateId}/edit`,
     query,
   });
+}
+
+function openUnpublishTemplateDialog(tpl: DiTemplateSummary, thenEdit = false) {
+  templateToUnpublish.value = tpl;
+  unpublishThenEdit.value = thenEdit;
+  unpublishTemplateDialog.value = true;
+}
+
+async function submitUnpublishTemplate() {
+  const tpl = templateToUnpublish.value;
+  if (!tpl) return;
+
+  unpublishingTemplate.value = true;
+  error.value = null;
+  notify.value = null;
+  try {
+    await diUnpublishTemplate(tpl.id);
+    unpublishTemplateDialog.value = false;
+    const editAfter = unpublishThenEdit.value;
+    const templateId = tpl.id;
+    templateToUnpublish.value = null;
+    unpublishThenEdit.value = false;
+    await refreshTemplates();
+    notify.value = t('documentIntelligence.designer.unpublished');
+    if (editAfter) {
+      navigateToTemplateEditor(templateId);
+    }
+  } catch (e: unknown) {
+    error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.unpublish'));
+  } finally {
+    unpublishingTemplate.value = false;
+  }
+}
+
+function openParametersDialog(tpl: DiTemplateSummary) {
+  templateForParameters.value = tpl;
+  parametersDialog.value = true;
+}
+
+async function onParametersSaved() {
+  await refreshTemplates();
 }
 
 function openDeleteTemplateDialog(tpl: DiTemplateSummary) {
@@ -825,6 +884,15 @@ onMounted(async () => {
                   icon
                   size="small"
                   variant="text"
+                  :title="t('documentIntelligence.designer.advancedParameters')"
+                  @click="openParametersDialog(item)"
+                >
+                  <v-icon icon="mdi-form-select" />
+                </v-btn>
+                <v-btn
+                  icon
+                  size="small"
+                  variant="text"
                   :title="t('documentIntelligence.designer.editMetadata')"
                   @click="openEditTemplateDialog(item)"
                 >
@@ -846,10 +914,22 @@ onMounted(async () => {
                   icon
                   size="small"
                   variant="text"
-                  disabled
-                  :title="t('documentIntelligence.designer.publishedNoEdit')"
+                  color="primary"
+                  :title="t('documentIntelligence.designer.viewTemplate')"
+                  @click="openViewTemplate(item)"
                 >
-                  <v-icon icon="mdi-lock-outline" />
+                  <v-icon icon="mdi-eye-outline" />
+                </v-btn>
+                <v-btn
+                  v-if="!isDraftTemplate(item)"
+                  icon
+                  size="small"
+                  variant="text"
+                  color="warning"
+                  :title="t('documentIntelligence.designer.unpublishToEdit')"
+                  @click="openUnpublishTemplateDialog(item, true)"
+                >
+                  <v-icon icon="mdi-lock-open-variant-outline" />
                 </v-btn>
                 <v-btn
                   v-if="isDraftTemplate(item)"
@@ -857,7 +937,7 @@ onMounted(async () => {
                   size="small"
                   variant="text"
                   color="success"
-                  :title="t('documentIntelligence.publish')"
+                  :title="t('documentIntelligence.designer.activateForGeneration')"
                   @click="openPublishTemplateDialog(item)"
                 >
                   <v-icon icon="mdi-publish" />
@@ -1105,7 +1185,7 @@ onMounted(async () => {
     <v-dialog v-model="publishTemplateDialog" max-width="480">
       <v-card rounded="lg">
         <v-card-title class="text-h6 font-weight-bold">
-          {{ t('documentIntelligence.publish') }}
+          {{ t('documentIntelligence.designer.activateForGeneration') }}
         </v-card-title>
         <v-divider />
         <v-card-text class="pa-4 text-body-2">
@@ -1128,7 +1208,39 @@ onMounted(async () => {
             :loading="publishingTemplate"
             @click="submitPublishTemplate"
           >
-            {{ t('documentIntelligence.publish') }}
+            {{ t('documentIntelligence.designer.activateForGeneration') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="unpublishTemplateDialog" max-width="520">
+      <v-card rounded="lg">
+        <v-card-title class="text-h6 font-weight-bold">
+          {{ t('documentIntelligence.designer.unpublishToEdit') }}
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="pa-4 text-body-2">
+          {{
+            t('documentIntelligence.designer.unpublishConfirm', {
+              name: templateToUnpublish?.name ?? '',
+            })
+          }}
+        </v-card-text>
+        <v-divider />
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="unpublishTemplateDialog = false">
+            {{ t('documentIntelligence.cancel') }}
+          </v-btn>
+          <v-btn
+            color="warning"
+            variant="flat"
+            class="text-none"
+            :loading="unpublishingTemplate"
+            @click="submitUnpublishTemplate"
+          >
+            {{ t('documentIntelligence.designer.unpublishToEdit') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -1318,6 +1430,12 @@ onMounted(async () => {
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <DiDesignerParametersDialog
+      v-model="parametersDialog"
+      :template="templateForParameters"
+      @saved="onParametersSaved"
+    />
   </div>
 </template>
 

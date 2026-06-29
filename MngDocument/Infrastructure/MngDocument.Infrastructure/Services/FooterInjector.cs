@@ -23,6 +23,10 @@ public static class FooterInjector
     private const string FooterPartPath = "word/footer1.xml";
     internal const string FooterReferenceRelId = "rIdFooter1";
 
+    // ODK-COC-23-202.docx printable width (pgSz.w - pgMar.left - pgMar.right)
+    private const int ContentWidthTwips = 8316;
+    private const int ColumnWidthTwips = ContentWidthTwips / 2;
+
     public static byte[] Apply(byte[] docxBytes, FooterApplyRequest request)
     {
         if (!request.Footer.Enabled)
@@ -74,7 +78,7 @@ public static class FooterInjector
         if (footer.ShowFormRevision)
         {
             var revision = $"{EscapeXml(profile.FormCode)} {EscapeXml(profile.FormRevision)} {EscapeXml(profile.FormRevisionDate)}".Trim();
-            rows.Add(BuildMergedRow(revision, fontSize: 14, bold: false, layout.FooterLeftIndentTwips));
+            rows.Add(BuildMergedRow(revision, RevisionRunProps));
         }
 
         if (footer.ShowOfficeColumns)
@@ -83,7 +87,7 @@ public static class FooterInjector
                 EscapeXml(offices[0].Label),
                 EscapeXml(offices[1].Label),
                 bold: true,
-                layout.FooterLeftIndentTwips));
+                leftIndentTwips: 0));
         }
 
         if (footer.ShowAddresses)
@@ -92,11 +96,11 @@ public static class FooterInjector
                 EscapeXml(offices[0].Address),
                 EscapeXml(offices[1].Address),
                 bold: false,
-                layout.FooterLeftIndentTwips));
+                leftIndentTwips: 0));
         }
 
         if (footer.ShowDividerLine)
-            rows.Add(BuildDividerRow(layout.FooterLeftIndentTwips));
+            rows.Add(BuildDividerRow(leftIndentTwips: 0));
 
         if (footer.ShowContacts)
         {
@@ -104,30 +108,37 @@ public static class FooterInjector
                 BuildContactLine(offices[0]),
                 BuildContactLine(offices[1]),
                 bold: false,
-                layout.FooterLeftIndentTwips));
+                leftIndentTwips: 0));
         }
 
-        rows.Add(BuildMergedRow(string.Empty, fontSize: 16, bold: false, layout.FooterLeftIndentTwips));
+        rows.Add(BuildMergedRow(string.Empty, SpacerRunProps));
 
         return $"""
                   <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
                   <w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-                    {BuildFooterTable(rows)}
+                    {BuildFooterTable(rows, layout.FooterLeftIndentTwips)}
                   </w:ftr>
                   """;
     }
 
-    private static string BuildFooterTable(IEnumerable<string> rows) =>
+    private static string BuildFooterTable(IEnumerable<string> rows, int leftIndentTwips) =>
         $"""
          <w:tbl>
            <w:tblPr>
              <w:tblW w:w="5000" w:type="pct"/>
+             <w:tblInd w:w="{leftIndentTwips}" w:type="dxa"/>
              <w:tblLayout w:type="fixed"/>
+             <w:tblCellMar>
+               <w:top w:w="0" w:type="dxa"/>
+               <w:left w:w="0" w:type="dxa"/>
+               <w:bottom w:w="0" w:type="dxa"/>
+               <w:right w:w="0" w:type="dxa"/>
+             </w:tblCellMar>
              <w:tblLook w:val="04A0" w:firstRow="1" w:lastRow="0" w:firstColumn="1" w:lastColumn="0" w:noHBand="0" w:noVBand="1"/>
            </w:tblPr>
            <w:tblGrid>
-             <w:gridCol w:w="4819"/>
-             <w:gridCol w:w="4819"/>
+             <w:gridCol w:w="{ColumnWidthTwips}"/>
+             <w:gridCol w:w="{ColumnWidthTwips}"/>
            </w:tblGrid>
            {string.Concat(rows)}
          </w:tbl>
@@ -138,42 +149,38 @@ public static class FooterInjector
         var runProps = bold ? BoldRunProps : NormalRunProps;
         return $"""
                   <w:tr>
-                    {BuildTableCell(left, runProps, leftIndentTwips)}
-                    {BuildTableCell(right, runProps, leftIndentTwips)}
+                    {BuildTableCell(left, runProps, ColumnWidthTwips)}
+                    {BuildTableCell(right, runProps, ColumnWidthTwips)}
                   </w:tr>
                   """;
     }
 
-    private static string BuildMergedRow(string text, int fontSize, bool bold, int leftIndentTwips)
-    {
-        var runProps = bold
-            ? $"<w:rPr><w:sz w:val=\"{fontSize}\"/><w:szCs w:val=\"12\"/><w:b/></w:rPr>"
-            : $"<w:rPr><w:sz w:val=\"{fontSize}\"/><w:szCs w:val=\"12\"/></w:rPr>";
-
-        return $"""
-                  <w:tr>
-                    <w:tc>
-                      <w:tcPr><w:gridSpan w:val="2"/></w:tcPr>
-                      <w:p>
-                        <w:pPr>
-                          <w:ind w:left="{leftIndentTwips}"/>
-                          <w:jc w:val="both"/>
-                        </w:pPr>
-                        <w:r>{runProps}<w:t xml:space="preserve">{text}</w:t></w:r>
-                      </w:p>
-                    </w:tc>
-                  </w:tr>
-                  """;
-    }
+    private static string BuildMergedRow(string text, string runProps) =>
+        $"""
+         <w:tr>
+           <w:tc>
+             <w:tcPr>
+               <w:gridSpan w:val="2"/>
+               <w:tcW w:w="{ContentWidthTwips}" w:type="dxa"/>
+             </w:tcPr>
+             <w:p>
+               <w:pPr><w:jc w:val="both"/></w:pPr>
+               <w:r>{runProps}<w:t xml:space="preserve">{text}</w:t></w:r>
+             </w:p>
+           </w:tc>
+         </w:tr>
+         """;
 
     private static string BuildDividerRow(int leftIndentTwips) =>
         $"""
          <w:tr>
            <w:tc>
-             <w:tcPr><w:gridSpan w:val="2"/></w:tcPr>
+             <w:tcPr>
+               <w:gridSpan w:val="2"/>
+               <w:tcW w:w="{ContentWidthTwips}" w:type="dxa"/>
+             </w:tcPr>
              <w:p>
                <w:pPr>
-                 <w:ind w:left="{leftIndentTwips}"/>
                  <w:pBdr>
                    <w:top w:val="single" w:sz="12" w:space="1" w:color="231F20"/>
                  </w:pBdr>
@@ -183,19 +190,25 @@ public static class FooterInjector
          </w:tr>
          """;
 
-    private static string BuildTableCell(string text, string runProps, int leftIndentTwips) =>
+    private static string BuildTableCell(string text, string runProps, int widthTwips) =>
         $"""
          <w:tc>
-           <w:tcPr><w:vAlign w:val="top"/></w:tcPr>
+           <w:tcPr>
+             <w:tcW w:w="{widthTwips}" w:type="dxa"/>
+             <w:vAlign w:val="top"/>
+           </w:tcPr>
            <w:p>
-             <w:pPr>
-               <w:ind w:left="{leftIndentTwips}"/>
-               <w:jc w:val="both"/>
-             </w:pPr>
+             <w:pPr><w:jc w:val="both"/></w:pPr>
              <w:r>{runProps}<w:t xml:space="preserve">{text}</w:t></w:r>
            </w:p>
          </w:tc>
          """;
+
+    private const string RevisionRunProps =
+        "<w:rPr><w:sz w:val=\"14\"/><w:szCs w:val=\"12\"/></w:rPr>";
+
+    private const string SpacerRunProps =
+        "<w:rPr><w:sz w:val=\"16\"/><w:szCs w:val=\"16\"/></w:rPr>";
 
     private const string BoldRunProps =
         "<w:rPr><w:rFonts w:ascii=\"Tahoma\" w:hAnsi=\"Tahoma\" w:cs=\"Tahoma\"/><w:b/><w:color w:val=\"231F20\"/><w:w w:val=\"80\"/><w:sz w:val=\"16\"/><w:szCs w:val=\"16\"/></w:rPr>";

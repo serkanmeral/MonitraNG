@@ -157,6 +157,14 @@ foreach ($p in @($tpl.parameters)) {
         dataType = [string]$p.dataType
         valueSourceMode = [string]$p.valueSourceMode
     }
+    if ($p.defaultValue) { $entry.defaultValue = [string]$p.defaultValue }
+    if ($p.format) { $entry.format = [string]$p.format }
+    if ($p.contextBinding) {
+        $cb = @{ path = [string]$p.contextBinding.path }
+        if ($p.contextBinding.fallbackPath) { $cb.fallbackPath = [string]$p.contextBinding.fallbackPath }
+        if ($p.contextBinding.format) { $cb.format = [string]$p.contextBinding.format }
+        $entry.contextBinding = $cb
+    }
     if ($p.incremental) {
         $entry.incremental = @{
             format = [string]$p.incremental.format
@@ -168,7 +176,10 @@ foreach ($p in @($tpl.parameters)) {
     }
     $params += $entry
 }
-Invoke-Json -Method PUT -Uri "$templatesBase/$templateId/parameters" -Body @{ parameters = $params } | Out-Null
+$paramBody = @{ parameters = $params }
+if ($tpl.primaryContextType) { $paramBody.primaryContextType = [string]$tpl.primaryContextType }
+if ($tpl.generationProfile) { $paramBody.generationProfile = [string]$tpl.generationProfile }
+Invoke-Json -Method PUT -Uri "$templatesBase/$templateId/parameters" -Body $paramBody | Out-Null
 Write-Host "OK parameters ($($params.Count))" -ForegroundColor Green
 
 Invoke-Json -Method PUT -Uri "$templatesBase/$templateId/letterhead" -Body @{

@@ -67,8 +67,19 @@ function New-BodyParagraph([string]$text, [string]$align = "both") {
 "@
 }
 
-# Belge adı (Uygunluk Belgesi) ve docNo header'da — gövde doğrudan alan satırlarıyla başlar.
+function New-BulletParagraph([string]$text, [string]$align = "both") {
+    $t = Escape-Xml("    • $text")
+    return @"
+<w:p>
+  <w:pPr><w:jc w:val="$align"/></w:pPr>
+  <w:r><w:rPr><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:t xml:space="preserve">$t</w:t></w:r>
+</w:p>
+"@
+}
+
+# Belge adı antette; docNo gövde + antet.
 $bodyInner = @"
+$(New-FieldLine "Belge Numarası" "{{docNo}}")
 $(New-FieldLine "İş Paketi No" "{{workPackageNo}}")
 $(New-FieldLine "Düzenlenme Tarihi" "{{issueDate}}")
 $(New-FieldLine "Firma Bilgileri" "{{customerName}}")
@@ -78,10 +89,12 @@ $(New-FieldLine "Teknik Resim No" "{{drawingNo}} ({{drawingRef}})")
 $(New-FieldLine "TR Revizyon No" "{{drawingRevision}}")
 $(New-FieldLine "Parça Adedi" "{{partQuantity}}")
 $(New-FieldLine "Parça Seri No" "{{serialNo}}")
-$(New-BodyParagraph "{{complianceStatement}}")
-$(New-BodyParagraph "{{leakTestStatement}}")
-$(New-BodyParagraph "Açıklamalar:" "both")
-$(New-BodyParagraph "{{attachmentsNote}}")
+$(New-BodyParagraph "{{orderNo}} numaralı siparişinizde belirtilen ürünlerin {{drawingRef}} {{drawingRevision}} numaralı teknik resimde belirtilen isterlere uygun olarak üretildiğini beyan ederiz.")
+$(New-BulletParagraph "{{drawingRef}} Rev {{drawingRevision}} Not {{leakTestNoteNo}}'de belirtilen sızdırmazlık test isterinin %100 test edildiğini ve {{leakTestPressureMbar}} mbar test kriterini sağladığını beyan ederiz.")
+$(New-BodyParagraph "Açıklamalar:")
+$(New-BulletParagraph "Üretimde kullanılan malzemelerin uygunluk belgeleri,")
+$(New-BulletParagraph "Üretimde kullanılan malzemelerin sıcaklık kayıtları,")
+$(New-BulletParagraph "Boya uygunluk belgesi verilmiştir.")
 $(New-BodyParagraph "ODAK KOMPOZİT TEKNOLOJİLERİ A.Ş." "center")
 $(New-BodyParagraph "{{signatoryName}}" "center")
 $(New-BodyParagraph "{{signatoryTitle}}" "center")

@@ -162,6 +162,14 @@ public sealed class DocumentTemplatesController : ControllerBase
     public async Task<IActionResult> Publish(string id, CancellationToken ct) =>
         Ok(await _templates.PublishAsync(id, ct));
 
+    /// <summary>Yayınlanmış şablonu taslağa alır; belge üretimi yeniden yayınlanana kadar durur.</summary>
+    [HttpPost("{id}/unpublish")]
+    [ProducesResponseType(typeof(TemplateDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Unpublish(string id, CancellationToken ct) =>
+        Ok(await _templates.UnpublishAsync(id, ct));
+
     [HttpPut("{id}/parameters")]
     [ProducesResponseType(typeof(TemplateDetailDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

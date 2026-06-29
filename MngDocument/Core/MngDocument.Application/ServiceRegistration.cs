@@ -20,6 +20,7 @@ public static class ServiceRegistration
             s.Wopi = settings.Wopi;
             s.Keeper = settings.Keeper;
             s.FooterProfile = settings.FooterProfile;
+            s.DocumentGeneration = settings.DocumentGeneration;
         });
 
         return services;

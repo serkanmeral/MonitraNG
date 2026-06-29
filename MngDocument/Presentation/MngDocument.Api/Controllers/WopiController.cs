@@ -19,11 +19,16 @@ public sealed class WopiController : ControllerBase
     };
 
     private readonly ITemplateEditorService _editor;
+    private readonly IResourceEditorService _resourceEditor;
     private readonly IWopiSessionStore _sessions;
 
-    public WopiController(ITemplateEditorService editor, IWopiSessionStore sessions)
+    public WopiController(
+        ITemplateEditorService editor,
+        IResourceEditorService resourceEditor,
+        IWopiSessionStore sessions)
     {
         _editor = editor;
+        _resourceEditor = resourceEditor;
         _sessions = sessions;
     }
 
@@ -34,7 +39,9 @@ public sealed class WopiController : ControllerBase
         if (session is null)
             return Unauthorized();
 
-        var info = await _editor.GetCheckFileInfoAsync(id, session, ct);
+        var info = !string.IsNullOrWhiteSpace(session.ResourceId)
+            ? await _resourceEditor.GetCheckFileInfoAsync(id, session, ct)
+            : await _editor.GetCheckFileInfoAsync(id, session, ct);
         return Content(JsonSerializer.Serialize(info, WopiJsonOptions), "application/json");
     }
 
@@ -45,7 +52,9 @@ public sealed class WopiController : ControllerBase
         if (session is null)
             return Unauthorized();
 
-        var bytes = await _editor.GetFileContentsAsync(id, session, ct);
+        var bytes = !string.IsNullOrWhiteSpace(session.ResourceId)
+            ? await _resourceEditor.GetFileContentsAsync(id, session, ct)
+            : await _editor.GetFileContentsAsync(id, session, ct);
         return File(bytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     }
 
@@ -61,7 +70,10 @@ public sealed class WopiController : ControllerBase
         var content = ms.ToArray();
 
         var versionBefore = session.Version;
-        await _editor.SaveFileContentsAsync(id, session, content, access_token, ct);
+        if (!string.IsNullOrWhiteSpace(session.ResourceId))
+            await _resourceEditor.SaveFileContentsAsync(id, session, content, access_token, ct);
+        else
+            await _editor.SaveFileContentsAsync(id, session, content, access_token, ct);
 
         var refreshed = _sessions.GetSession(access_token);
         var version = refreshed?.Version ?? versionBefore;

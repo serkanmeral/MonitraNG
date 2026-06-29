@@ -753,5 +753,39 @@
         "unique": false
       }
     ]
+  },
+  {
+    "name": "dm_generation_counters",
+    "description": "Document Intelligence - incremental counter state for template generation",
+    "category": "b2f1c0a4-9d3e-4a87-bf21-7c5e9a0d1e34",
+    "forceSchema": true,
+    "logging": "none",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "counterKey",
+        "title": "Counter key",
+        "mandatory": true,
+        "unique": true,
+        "isArray": false
+      },
+      {
+        "fieldType": "number",
+        "name": "value",
+        "title": "Current value",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false,
+        "defaultValue": 0
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_counterKey",
+        "fields": { "counterKey": 1 },
+        "unique": true
+      }
+    ]
   }
 ]

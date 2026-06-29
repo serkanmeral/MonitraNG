@@ -3,6 +3,7 @@ using MngDocument.Application.Configuration;
 using MngDocument.Application.Interfaces;
 using MngDocument.Infrastructure.Clients;
 using MngDocument.Infrastructure.Services;
+using MngDocument.Infrastructure.Services.Generation;
 
 namespace MngDocument.Infrastructure;
 
@@ -39,11 +40,16 @@ public static class ServiceRegistration
         services.AddScoped<ITemplateCategoryService, TemplateCategoryService>();
         services.AddScoped<IDocumentTemplateService, DocumentTemplateService>();
         services.AddScoped<ITemplateEditorService, TemplateEditorService>();
+        services.AddScoped<IResourceEditorService, ResourceEditorService>();
         services.AddScoped<IDomainLogoProvider, DomainLogoProvider>();
         services.AddScoped<ITemplateLetterheadApplier, TemplateLetterheadApplier>();
         services.AddScoped<ITemplateFooterApplier, TemplateFooterApplier>();
         services.AddScoped<ITemplateBrandingApplier, TemplateBrandingApplier>();
         services.AddScoped<IDocumentRenderService, GotenbergDocumentRenderService>();
+        services.AddScoped<DocumentContextLoader>();
+        services.AddScoped<DocumentIncrementalAllocator>();
+        services.AddScoped<DocumentParameterResolver>();
+        services.AddScoped<IDocumentGenerationService, DocumentGenerationService>();
         services.AddSingleton<IWopiSessionStore, InMemoryWopiSessionStore>();
 
         return services;

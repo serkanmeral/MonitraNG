@@ -1,0 +1,45 @@
+{
+  "sections": {
+    "packageContext": "İş paketi bağlamı",
+    "lineCommercial": "Kalem - ticari ve teknik",
+    "quality": "Kalite ve uygunluk",
+    "shipment": "Sevkiyat özeti"
+  },
+  "statusStrip": {
+    "lineDeliveryDate": "Kalem termin",
+    "shippedSummary": "Sevk durumu",
+    "cocDocNo": "Uygunluk belgesi",
+    "issueDate": "Rapor tarihi"
+  },
+  "labels": {
+    "docNoPrefix": "Belge no:",
+    "footerNote": "Bu rapor MonitraNG Document Intelligence üzerinden otomatik üretilmiştir. Son güncelleme: {{generatedAt}}"
+  },
+  "packageRows": [
+    { "label": "İş paketi no", "value": "{{workPackageNo}}" },
+    { "label": "İş paketi adı", "value": "{{workPackageName}}" },
+    { "label": "Müşteri", "value": "{{customerName}}" },
+    { "label": "Paket termin", "value": "{{packageDeliveryDate}}" }
+  ],
+  "lineRows": [
+    { "label": "Kalem no", "value": "K{{lineNo}}" },
+    { "label": "Müşteri PO / sipariş", "value": "{{orderNo}}" },
+    { "label": "Parça tanımı", "value": "{{partDescription}}" },
+    { "label": "Teknik resim no", "value": "{{drawingNo}}" },
+    { "label": "TR revizyon", "value": "{{drawingRevision}}" },
+    { "label": "Sipariş miktarı", "value": "{{partQuantity}}" },
+    { "label": "Kalem termin", "value": "{{lineDeliveryDate}}" }
+  ],
+  "qualityRows": [
+    { "label": "Kalite isterleri (not)", "value": "{{qualityReqs}}" },
+    { "label": "FAI gerekli", "value": "{{isFai}}" },
+    { "label": "FAI tamamlandı", "value": "{{isFaiComplete}}" },
+    { "label": "Uygunluk belgesi no", "value": "{{cocDocNo}}" },
+    { "label": "CoC üretim tarihi", "value": "{{cocGeneratedAt}}" }
+  ],
+  "shipmentRows": [
+    { "label": "Sevk özeti", "value": "{{shippedSummary}}" },
+    { "label": "Sevkiyat tarihi", "value": "{{shipmentDate}}" },
+    { "label": "Sevkiyat adresi", "value": "{{shipmentAddress}}" }
+  ]
+}

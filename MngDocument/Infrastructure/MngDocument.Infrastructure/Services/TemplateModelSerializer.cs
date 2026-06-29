@@ -7,6 +7,14 @@ public sealed class TemplateModelDocument
 {
     public string SchemaVersion { get; set; } = TemplateModelSerializer.CurrentSchemaVersion;
 
+    /// <summary>Primary context type for parameter context bindings (e.g. odak.siparis.line).</summary>
+    [JsonPropertyName("primaryContextType")]
+    public string? PrimaryContextType { get; set; }
+
+    /// <summary>Document generation profile code this template is eligible for (e.g. odak.coc.fromLine).</summary>
+    [JsonPropertyName("generationProfile")]
+    public string? GenerationProfile { get; set; }
+
     [JsonPropertyName("letterhead")]
     public TemplateLetterheadModel? Letterhead { get; set; }
 
@@ -58,8 +66,41 @@ public sealed class TemplateParameterModel
     public string Label { get; set; } = string.Empty;
     public string DataType { get; set; } = "text";
     public string ValueSourceMode { get; set; } = "manual";
+    public string? DefaultValue { get; set; }
+    public string? Format { get; set; }
     public TemplateIncrementalModel? Incremental { get; set; }
-    public TemplateSourceBindingModel? SourceBinding { get; set; }
+
+    /// <summary>DOCX region binding (designer paragraph selection).</summary>
+    [JsonPropertyName("docBinding")]
+    public TemplateDocBindingModel? DocBinding { get; set; }
+
+    /// <summary>Legacy JSON name — migrated to <see cref="DocBinding"/> on read.</summary>
+    [JsonPropertyName("sourceBinding")]
+    public TemplateDocBindingModel? SourceBinding
+    {
+        get => DocBinding;
+        set => DocBinding ??= value;
+    }
+
+    [JsonPropertyName("contextBinding")]
+    public TemplateContextBindingModel? ContextBinding { get; set; }
+}
+
+public sealed class TemplateDocBindingModel
+{
+    public string RegionKind { get; set; } = "paragraph";
+    public int ParagraphIndex { get; set; }
+    public string? OriginalText { get; set; }
+    public int? CharStart { get; set; }
+    public int? CharEnd { get; set; }
+}
+
+public sealed class TemplateContextBindingModel
+{
+    public string Path { get; set; } = string.Empty;
+    public string? FallbackPath { get; set; }
+    public string? DefaultValue { get; set; }
+    public string? Format { get; set; }
 }
 
 public sealed class TemplateIncrementalModel
@@ -71,18 +112,9 @@ public sealed class TemplateIncrementalModel
     public string ResetPolicy { get; set; } = "none";
 }
 
-public sealed class TemplateSourceBindingModel
-{
-    public string RegionKind { get; set; } = "paragraph";
-    public int ParagraphIndex { get; set; }
-    public string? OriginalText { get; set; }
-    public int? CharStart { get; set; }
-    public int? CharEnd { get; set; }
-}
-
 public static class TemplateModelSerializer
 {
-    public const string CurrentSchemaVersion = "1.3";
+    public const string CurrentSchemaVersion = "1.4";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -291,7 +323,7 @@ public static class TemplateModelSerializer
         Label = "Belge Adı",
         DataType = "text",
         ValueSourceMode = "manual",
-        SourceBinding = new TemplateSourceBindingModel
+        DocBinding = new TemplateDocBindingModel
         {
             RegionKind = "header",
             ParagraphIndex = 0,
@@ -313,7 +345,7 @@ public static class TemplateModelSerializer
             ScopeKey = LetterheadConstants.DomainScopeKey,
             ResetPolicy = "yearly"
         },
-        SourceBinding = new TemplateSourceBindingModel
+        DocBinding = new TemplateDocBindingModel
         {
             RegionKind = "header",
             ParagraphIndex = 0,
@@ -327,7 +359,7 @@ public static class TemplateModelSerializer
         Label = "Oluşturulma Tarihi",
         DataType = "datetime",
         ValueSourceMode = "generated",
-        SourceBinding = new TemplateSourceBindingModel
+        DocBinding = new TemplateDocBindingModel
         {
             RegionKind = "header",
             ParagraphIndex = 0,

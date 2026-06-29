@@ -19,6 +19,8 @@ public sealed class CreateTemplateFromReferenceRequest
 
 public sealed class UpdateTemplateParametersRequest
 {
+    public string? PrimaryContextType { get; set; }
+    public string? GenerationProfile { get; set; }
     public IReadOnlyList<TemplateParameterDto>? Parameters { get; set; }
 }
 

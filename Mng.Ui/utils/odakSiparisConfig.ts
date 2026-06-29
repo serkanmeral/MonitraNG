@@ -232,6 +232,16 @@ export interface OdakLineRow {
   totalCost?: number;
   currency?: string;
   legacyLineId?: string;
+  cocDiResourceId?: string;
+  cocDocNo?: string;
+  cocGeneratedAt?: string;
+  cocTemplateCode?: string;
+  cocTemplateName?: string;
+  activityDiResourceId?: string;
+  activityDocNo?: string;
+  activityGeneratedAt?: string;
+  activityTemplateCode?: string;
+  activityTemplateName?: string;
 }
 
 export type OdakNcrStatus =

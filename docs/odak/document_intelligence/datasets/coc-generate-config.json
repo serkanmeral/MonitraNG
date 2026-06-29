@@ -1,0 +1,13 @@
+{
+  "templateCode": "COC-STANDARD",
+  "documentName": "Uygunluk Belgesi",
+  "signatoryName": "GİZEM CANDAŞ",
+  "signatoryTitle": "KALİTE KONTROL YÖNETİCİSİ",
+  "diFolderPath": ["Odak", "CoC"],
+  "datasets": {
+    "lines": "odak_siparis_kalemleri",
+    "packages": "odak_is_paketleri",
+    "customers": "odak_musteriler",
+    "products": "odak_urunler"
+  }
+}

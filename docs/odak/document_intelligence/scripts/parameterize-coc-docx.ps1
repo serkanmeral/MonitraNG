@@ -1,10 +1,9 @@
-# CoC gövde metnindeki örnek/sabit değerleri {{paramKey}} placeholder'a çevirir.
-# Font/run yapısına dokunmaz; yalnızca w:t metin düğümleri ve gereksiz paragraflar güncellenir.
-# İsteğe bağlı: legacy gömülü header/footer parçalarını kaldırır (API antet/altbilgi için).
+# CoC DOCX: ornek degerleri {{paramKey}} placeholder'a cevirir.
+# Font/run yapisini korur — yalnizca ilgili w:t metin dugumlerinin icerigi degisir.
+# Uygunluk beyani / sizdirimlazlik gibi paragraflarin run bolunmesi ayni kalir.
 #
-# Kullanım:
+# Kullanim:
 #   .\parameterize-coc-docx.ps1 -InputDocx ..\sample\ODK-COC-prod-current.docx -OutputDocx ..\sample\ODK-COC-template-seed.docx
-#   .\parameterize-coc-docx.ps1 -InputDocx in.docx -OutputDocx out.docx -KeepLegacyBranding
 
 param(
     [Parameter(Mandatory = $true)]
@@ -83,6 +82,109 @@ function Remove-ParagraphContaining {
     return $false
 }
 
+function Apply-TextNodeRules {
+    param(
+        [System.Xml.XmlDocument]$Doc,
+        [System.Xml.XmlNamespaceManager]$Ns,
+        [array]$Rules
+    )
+    foreach ($node in @($Doc.SelectNodes('//w:body//w:t', $Ns))) {
+        $text = [string]$node.InnerText
+        if ([string]::IsNullOrWhiteSpace($text)) { continue }
+
+        foreach ($rule in $Rules) {
+            if ($text -match $rule.Match) {
+                $newText = if ($rule.Value -is [scriptblock]) { & $rule.Value $text } else { [string]$rule.Value }
+                if ($newText -ne $text) {
+                    Update-TextNode -Node $node -NewText $newText
+                }
+                break
+            }
+        }
+    }
+}
+
+function Test-BodyHasDocNoField {
+    param([System.Xml.XmlDocument]$Doc, [System.Xml.XmlNamespaceManager]$Ns)
+    foreach ($p in @($Doc.SelectNodes('//w:body/w:p', $Ns))) {
+        $t = ($p.SelectNodes('.//w:t', $Ns) | ForEach-Object { $_.InnerText }) -join ''
+        if ($t -match '(?i)belge\s*numara') { return $true }
+    }
+    return $false
+}
+
+function Add-DocNoFieldParagraph {
+    param([System.Xml.XmlDocument]$Doc, [System.Xml.XmlNamespaceManager]$Ns)
+    $body = $Doc.SelectSingleNode('//w:body', $Ns)
+    if (-not $body) { throw 'document.xml body yok' }
+    $frag = @'
+<w:p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:pPr><w:jc w:val="both"/></w:pPr>
+  <w:r><w:rPr><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:t xml:space="preserve">Belge Numarası         : {{docNo}}</w:t></w:r>
+</w:p>
+'@
+    $fragDoc = New-Object System.Xml.XmlDocument
+    $fragDoc.LoadXml($frag)
+    $imported = $Doc.ImportNode($fragDoc.DocumentElement, $true)
+    [void]$body.InsertBefore($imported, $body.FirstChild)
+}
+
+$fieldRules = @(
+    @{ Match = '(?i)belge\s*numara\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{docNo}}') } }
+    @{ Match = '(?i)paketi\s*no\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{workPackageNo}}') } }
+    @{ Match = '(?i)zenlenme\s*tarihi\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{issueDate}}') } }
+    @{ Match = '(?i)firma\s*bilgileri\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{customerName}}') } }
+    @{ Match = '(?i)sipari\S*\s*no\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{orderNo}}') } }
+    @{ Match = '(?i)par\S*a\s+t\S*\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{partDescription}}') } }
+    @{ Match = '(?i)teknik\s*resim\s*no\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{drawingNo}} ({{drawingRef}})') } }
+    @{ Match = '(?i)revizyon\s*no\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{drawingRevision}}') } }
+    @{ Match = '(?i)adedi\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{partQuantity}}') } }
+    @{ Match = '(?i)seri\s*no\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{serialNo}}') } }
+)
+
+$narrativeRules = @(
+    @{
+        Match = '(?i)sipari\S*inizde|belirtilen\s+\S*r\S*nlerin'
+        Value = {
+            param($m)
+            $m = $m -replace '(?i)\bODK-COC-\d{2}-\d+\b', '{{docNo}}'
+            $m = $m -replace '(?i)\b23Y\d+\w*\b', '{{orderNo}}'
+            $m = $m -replace '(?i)GN-\d{4}-\d{4}', '{{drawingRef}}'
+            $m
+        }
+    }
+    @{
+        Match = '(?i)teknik\s*resimde|\S*retildi\S*\s*beyan'
+        Value = {
+            param($m)
+            $m -replace '(?i)\bREV\s*AA\b', '{{drawingRevision}}'
+        }
+    }
+    @{
+        Match = '(?i)^GN-\d{4}-\d{4}(\s*)$'
+        Value = { param($m) ($m -replace '(?i)^GN-\d{4}-\d{4}(\s*)$', '{{drawingRef}}$1') }
+    }
+    @{
+        Match = '(?i)s\S*zd\S*rmazl\S*k\s*test|mbar\s*test'
+        Value = {
+            param($m)
+            $m = $m -replace '(?i)\bGN-\d{4}-\d{4}\b', '{{drawingRef}}'
+            $m = $m -replace '(?i)\bRev\s*AA\b', 'Rev {{drawingRevision}}'
+            $m = $m -replace '(?i)Not\s*\d+', 'Not {{leakTestNoteNo}}'
+            $m = $m -replace '(?i)\b50\s*mbar\b', '{{leakTestPressureMbar}} mbar'
+            $m
+        }
+    }
+    @{
+        Match = '(?i)^g[iı]zem\s+canda'
+        Value = '{{signatoryName}}'
+    }
+    @{
+        Match = '(?i)kalite\s*kontrol'
+        Value = '{{signatoryTitle}}'
+    }
+)
+
 $tmp = Join-Path $env:TEMP "coc-param-$([Guid]::NewGuid().ToString('N'))"
 New-Item -ItemType Directory -Path $tmp | Out-Null
 try {
@@ -101,83 +203,15 @@ try {
 
     [void](Remove-ParagraphContaining -Doc $doc -Ns $ns -Predicate {
             param($t)
-            $t -match '(?i)belge\s*numara'
+            $t -match '(?i)^\s*uygunluk\s*belges'
         })
 
-    $textNodes = @($doc.SelectNodes('//w:body//w:t', $ns))
-    $replacements = @(
-        @{ Match = '(?i)paketi\s*no\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{workPackageNo}}') } }
-        @{ Match = '(?i)zenlenme\s*tarihi\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{issueDate}}') } }
-        @{ Match = '(?i)firma\s*bilgileri\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{customerName}}') } }
-        @{ Match = '(?i)sipari\S*\s*no\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{orderNo}}') } }
-        @{ Match = '(?i)tanim\S*\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{partDescription}}') } }
-        @{ Match = '(?i)teknik\s*resim\s*no\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{drawingNo}} ({{drawingRef}})') } }
-        @{ Match = '(?i)revizyon\s*no\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{drawingRevision}}') } }
-        @{ Match = '(?i)adedi\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{partQuantity}}') } }
-        @{ Match = '(?i)seri\s*no\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{serialNo}}') } }
-    )
-
-    foreach ($node in $textNodes) {
-        $text = [string]$node.InnerText
-        if ([string]::IsNullOrWhiteSpace($text)) { continue }
-
-        $handled = $false
-        foreach ($rule in $replacements) {
-            if ($text -match $rule.Match) {
-                $newText = if ($rule.Value -is [scriptblock]) { & $rule.Value $text } else { $rule.Value }
-                Update-TextNode -Node $node -NewText $newText
-                $handled = $true
-                break
-            }
-        }
-        if ($handled) { continue }
-
-        if ($text -match '(?i)POLARIZOR\s+BOYNUZ') {
-            Update-TextNode -Node $node -NewText ($text -replace '(?i)(:\s*).+$', ': {{partDescription}}')
-            continue
-        }
-        if ($text -match '(?i)sipari\S*inizde|belirtilen\s+\S*r\S*nlerin') {
-            Update-TextNode -Node $node -NewText '{{complianceStatement}}'
-            continue
-        }
-        if ($text -match '(?i)teknik\s*resimde|\S*retildi\S*\s*beyan') {
-            Update-TextNode -Node $node -NewText ''
-            continue
-        }
-        if ($text -match '(?i)s\S*zd\S*rmazl\S*k\s*test|mbar\s*test') {
-            Update-TextNode -Node $node -NewText '{{leakTestStatement}}'
-            continue
-        }
-        if ($text -match '(?i)^GN-\d{4}-\d{4}\s*$') {
-            Update-TextNode -Node $node -NewText ''
-            continue
-        }
-        if ($text -match '(?i)^a[cç][ıi]klamalar\s*:') { continue }
-        if ($text -match '(?i)malzemelerin\s*uygunluk') {
-            Update-TextNode -Node $node -NewText '{{attachmentsNote}}'
-            continue
-        }
-        if ($text -match '(?i)malzemelerin\s*s\S*cak|boya\s*uygunluk') {
-            Update-TextNode -Node $node -NewText ''
-            continue
-        }
-        if ($text -match '(?i)^g[iı]zem\s+canda') {
-            Update-TextNode -Node $node -NewText '{{signatoryName}}'
-            continue
-        }
-        if ($text -match '(?i)kalite\s*kontrol') {
-            Update-TextNode -Node $node -NewText '{{signatoryTitle}}'
-            continue
-        }
+    if (-not (Test-BodyHasDocNoField -Doc $doc -Ns $ns)) {
+        Add-DocNoFieldParagraph -Doc $doc -Ns $ns
     }
 
-    # Birden fazla attachmentsNote node varsa yalnızca birincisini tut
-    $attachmentNodes = @($doc.SelectNodes('//w:body//w:t', $ns) | Where-Object { $_.InnerText -eq '{{attachmentsNote}}' })
-    if ($attachmentNodes.Count -gt 1) {
-        for ($i = 1; $i -lt $attachmentNodes.Count; $i++) {
-            Update-TextNode -Node $attachmentNodes[$i] -NewText ''
-        }
-    }
+    Apply-TextNodeRules -Doc $doc -Ns $ns -Rules $fieldRules
+    Apply-TextNodeRules -Doc $doc -Ns $ns -Rules $narrativeRules
 
     $settings = New-Object System.Xml.XmlWriterSettings
     $settings.Encoding = New-Object System.Text.UTF8Encoding($false)

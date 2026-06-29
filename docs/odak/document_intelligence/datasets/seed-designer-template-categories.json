@@ -14,6 +14,16 @@
     ]
   },
   {
+    "name": "Operasyon Belgeleri",
+    "description": "Kalem yaşam döngüsü ve operasyonel rapor şablonları",
+    "children": [
+      {
+        "name": "Kalem Activity / Yaşam Döngüsü",
+        "description": "Kalem activity raporu ve iç özet belgeleri"
+      }
+    ]
+  },
+  {
     "name": "Operasyon Formları",
     "description": "İş emri, onay ve operasyonel form çıktıları",
     "children": [

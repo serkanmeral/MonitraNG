@@ -8,6 +8,7 @@ import {
   diGetTemplate,
   diGetTemplateEditorSession,
   diPublishTemplate,
+  diUnpublishTemplate,
 } from '@/services/documentIntelligenceService';
 import type { DiTemplateDetail } from '@/types/apps/documentIntelligence';
 
@@ -30,11 +31,14 @@ const notify = ref<string | null>(null);
 
 const publishDialog = ref(false);
 const publishing = ref(false);
+const unpublishDialog = ref(false);
+const unpublishing = ref(false);
 
 const isPublished = computed(
   () => (template.value?.status ?? '').toLowerCase() === 'published'
 );
 const isDraft = computed(() => !isPublished.value);
+const viewOnly = computed(() => isPublished.value);
 
 const breadcrumbs = computed(() => [
   { title: t('documentIntelligence.menuTitle'), to: '/apps/document-intelligence' },
@@ -69,12 +73,8 @@ async function loadEditor() {
   try {
     template.value = await diGetTemplate(id);
 
-    if (isPublished.value) {
-      return;
-    }
-
     const session = await diGetTemplateEditorSession(id);
-    editorReadOnly.value = session.readOnly;
+    editorReadOnly.value = session.readOnly || isPublished.value;
     editorUrl.value = session.editorUrl || null;
   } catch (e: unknown) {
     const message = diExtractMessage(e, t('documentIntelligence.designer.errors.load'));
@@ -96,6 +96,10 @@ function openPublishDialog() {
   publishDialog.value = true;
 }
 
+function openUnpublishDialog() {
+  unpublishDialog.value = true;
+}
+
 async function submitPublish() {
   const id = templateId.value;
   if (!id) return;
@@ -107,11 +111,32 @@ async function submitPublish() {
     template.value = await diPublishTemplate(id);
     publishDialog.value = false;
     editorUrl.value = null;
+    editorReadOnly.value = true;
     notify.value = t('documentIntelligence.published');
+    await loadEditor();
   } catch (e: unknown) {
     error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.publish'));
   } finally {
     publishing.value = false;
+  }
+}
+
+async function submitUnpublish() {
+  const id = templateId.value;
+  if (!id) return;
+
+  unpublishing.value = true;
+  error.value = null;
+  notify.value = null;
+  try {
+    template.value = await diUnpublishTemplate(id);
+    unpublishDialog.value = false;
+    notify.value = t('documentIntelligence.designer.unpublished');
+    await loadEditor();
+  } catch (e: unknown) {
+    error.value = diExtractMessage(e, t('documentIntelligence.designer.errors.unpublish'));
+  } finally {
+    unpublishing.value = false;
   }
 }
 
@@ -139,14 +164,24 @@ onMounted(loadEditor);
         >
           {{
             isDraft
-              ? t('documentIntelligence.draft')
-              : t('documentIntelligence.designer.statusPublished')
+              ? t('documentIntelligence.designer.statusDraft')
+              : t('documentIntelligence.designer.statusActive')
           }}
         </v-chip>
       </div>
       <div class="d-flex ga-2 flex-wrap">
         <v-btn variant="text" class="text-none" @click="backToList">
           {{ t('documentIntelligence.designer.backToList') }}
+        </v-btn>
+        <v-btn
+          v-if="isPublished"
+          color="warning"
+          variant="tonal"
+          class="text-none"
+          prepend-icon="mdi-lock-open-variant-outline"
+          @click="openUnpublishDialog"
+        >
+          {{ t('documentIntelligence.designer.unpublishToEdit') }}
         </v-btn>
         <v-btn
           v-if="isDraft"
@@ -156,7 +191,7 @@ onMounted(loadEditor);
           prepend-icon="mdi-publish"
           @click="openPublishDialog"
         >
-          {{ t('documentIntelligence.publish') }}
+          {{ t('documentIntelligence.designer.activateForGeneration') }}
         </v-btn>
         <v-btn
           v-if="isDraft"
@@ -187,7 +222,7 @@ onMounted(loadEditor);
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-3" />
 
     <v-alert
-      v-else-if="isPublished"
+      v-else-if="viewOnly"
       type="info"
       variant="tonal"
       class="mb-3 rounded-lg"
@@ -195,17 +230,8 @@ onMounted(loadEditor);
       {{ t('documentIntelligence.designer.publishedReadOnlyHint') }}
     </v-alert>
 
-    <v-alert
-      v-else-if="editorReadOnly"
-      type="warning"
-      variant="tonal"
-      class="mb-3 rounded-lg"
-    >
-      {{ t('documentIntelligence.designer.editorReadOnlyHint') }}
-    </v-alert>
-
     <DiCollaboraEditor
-      v-if="!loading && isDraft"
+      v-if="!loading && editorUrl"
       :editor-url="editorUrl"
       :loading="editorLoading"
       :error="editorError"
@@ -215,7 +241,7 @@ onMounted(loadEditor);
     <v-dialog v-model="publishDialog" max-width="480">
       <v-card rounded="lg">
         <v-card-title class="text-h6 font-weight-bold">
-          {{ t('documentIntelligence.publish') }}
+          {{ t('documentIntelligence.designer.activateForGeneration') }}
         </v-card-title>
         <v-divider />
         <v-card-text class="pa-4 text-body-2">
@@ -238,7 +264,39 @@ onMounted(loadEditor);
             :loading="publishing"
             @click="submitPublish"
           >
-            {{ t('documentIntelligence.publish') }}
+            {{ t('documentIntelligence.designer.activateForGeneration') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="unpublishDialog" max-width="520">
+      <v-card rounded="lg">
+        <v-card-title class="text-h6 font-weight-bold">
+          {{ t('documentIntelligence.designer.unpublishToEdit') }}
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="pa-4 text-body-2">
+          {{
+            t('documentIntelligence.designer.unpublishConfirm', {
+              name: template?.name ?? '',
+            })
+          }}
+        </v-card-text>
+        <v-divider />
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="unpublishDialog = false">
+            {{ t('documentIntelligence.cancel') }}
+          </v-btn>
+          <v-btn
+            color="warning"
+            variant="flat"
+            class="text-none"
+            :loading="unpublishing"
+            @click="submitUnpublish"
+          >
+            {{ t('documentIntelligence.designer.unpublishToEdit') }}
           </v-btn>
         </v-card-actions>
       </v-card>

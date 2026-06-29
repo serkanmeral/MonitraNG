@@ -16,7 +16,10 @@ public static class DocxPlaceholderMerger
         @"\{\{([a-zA-Z][a-zA-Z0-9_]*)\}\}",
         RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-    public static byte[] Merge(byte[] docxBytes, IReadOnlyDictionary<string, string> values)
+    public static byte[] Merge(
+        byte[] docxBytes,
+        IReadOnlyDictionary<string, string> values,
+        IReadOnlySet<string>? preservePlaceholderKeys = null)
     {
         using var input = new MemoryStream(docxBytes, writable: false);
         using var output = new MemoryStream();
@@ -33,7 +36,7 @@ public static class DocxPlaceholderMerger
                 if (DocxPlaceholderScanner.IsScannablePart(entry.FullName))
                 {
                     var doc = XDocument.Load(inStream);
-                    MergeInXmlDocument(doc, values);
+                    MergeInXmlDocument(doc, values, preservePlaceholderKeys);
                     doc.Save(outStream);
                 }
                 else
@@ -46,29 +49,33 @@ public static class DocxPlaceholderMerger
         return output.ToArray();
     }
 
-    internal static void MergeInXmlDocument(XDocument doc, IReadOnlyDictionary<string, string> values)
+    internal static void MergeInXmlDocument(
+        XDocument doc,
+        IReadOnlyDictionary<string, string> values,
+        IReadOnlySet<string>? preservePlaceholderKeys = null)
     {
         foreach (var textNode in doc.Descendants(W + "t").ToList())
         {
-            var replaced = ReplaceTokens(textNode.Value, values);
+            var replaced = ReplaceTokens(textNode.Value, values, preservePlaceholderKeys);
             if (replaced != textNode.Value)
                 textNode.Value = replaced;
         }
 
         foreach (var paragraph in doc.Descendants(W + "p").ToList())
-            NormalizeSplitPlaceholdersInParagraph(paragraph, values);
+            NormalizeSplitPlaceholdersInParagraph(paragraph, values, preservePlaceholderKeys);
     }
 
     private static void NormalizeSplitPlaceholdersInParagraph(
         XElement paragraph,
-        IReadOnlyDictionary<string, string> values)
+        IReadOnlyDictionary<string, string> values,
+        IReadOnlySet<string>? preservePlaceholderKeys)
     {
         var textNodes = paragraph.Descendants(W + "t").ToList();
         if (textNodes.Count == 0)
             return;
 
         var combined = string.Concat(textNodes.Select(t => t.Value));
-        var replaced = ReplaceTokens(combined, values);
+        var replaced = ReplaceTokens(combined, values, preservePlaceholderKeys);
         if (combined == replaced)
             return;
 
@@ -77,7 +84,10 @@ public static class DocxPlaceholderMerger
             textNodes[i].Value = string.Empty;
     }
 
-    private static string ReplaceTokens(string text, IReadOnlyDictionary<string, string> values)
+    private static string ReplaceTokens(
+        string text,
+        IReadOnlyDictionary<string, string> values,
+        IReadOnlySet<string>? preservePlaceholderKeys)
     {
         if (string.IsNullOrEmpty(text) || !text.Contains("{{", StringComparison.Ordinal))
             return text;
@@ -85,16 +95,38 @@ public static class DocxPlaceholderMerger
         return PlaceholderRegex.Replace(text, match =>
         {
             var key = match.Groups[1].Value;
+            if (ShouldPreservePlaceholder(key, preservePlaceholderKeys))
+                return match.Value;
+
             if (values.TryGetValue(key, out var value))
-                return value ?? string.Empty;
+                return string.IsNullOrWhiteSpace(value) ? match.Value : value;
 
             foreach (var kv in values)
             {
-                if (string.Equals(kv.Key, key, StringComparison.OrdinalIgnoreCase))
-                    return kv.Value ?? string.Empty;
+                if (!string.Equals(kv.Key, key, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                return string.IsNullOrWhiteSpace(kv.Value) ? match.Value : kv.Value;
             }
 
             return match.Value;
         });
+    }
+
+    private static bool ShouldPreservePlaceholder(string key, IReadOnlySet<string>? preservePlaceholderKeys)
+    {
+        if (preservePlaceholderKeys is null || preservePlaceholderKeys.Count == 0)
+            return false;
+
+        if (preservePlaceholderKeys.Contains(key))
+            return true;
+
+        foreach (var candidate in preservePlaceholderKeys)
+        {
+            if (string.Equals(candidate, key, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
     }
 }
