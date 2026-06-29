@@ -38,7 +38,12 @@ Odak **kalem belgeleri** (CoC + Activity), **LINE-ACTIVITY-STD** şablon tasarı
 
 - Activity DOCX: sevkiyat satır tablosu, timeline, computed parametreler.
 - Parametre scanner uyarısı (33 incomplete `{` — footer/header XML, fonksiyonel).
-- `mngdocument` deploy sonrası bool Evet/Hayır canlı doğrulama.
+- Test deploy **bekliyor** — otomatik sync SSH kimlik doğrulama hatası (`Permission denied`); manuel çalıştırılmalı.
+
+## Git
+
+- **Commit:** `de245f1f` — `feat(document-intelligence): kalem belgeleri, activity sablonu ve sablon unpublish`
+- **Push:** GitHub + GitLab `main` ✅ (29 Haz 2026)
 
 ## Sonraki Adımlar (yeni oturum)
 
@@ -59,4 +64,11 @@ Odak **kalem belgeleri** (CoC + Activity), **LINE-ACTIVITY-STD** şablon tasarı
 
 ## Nerede Kalmıştık
 
-Belge tasarımı oturumu hedeflerine ulaşıldı. Yeni chat’te **antet** ve **parametre yönetimi** ile devam edilecek. Test’e `mngdocument` + `mngui` deploy (unpublish API + UI) gerekebilir.
+Belge tasarımı oturumu hedeflerine ulaşıldı. Yeni chat’te **antet** ve **parametre yönetimi** ile devam edilecek.
+
+**Test deploy (henüz yapılmadı):**
+```powershell
+.\scripts\odak\sync-odak-source.ps1 -Server 192.168.20.20 -Paths @('MngDocument','Mng.Ui','docs/odak/document_intelligence')
+.\scripts\odak\deploy-odak-apps.ps1 -Server 192.168.20.20 -Services mngdocument,mngui -NoCache
+```
+Unpublish API + bool Evet/Hayır + kalem belgeleri UI bu deploy sonrası test’te doğrulanmalı.

@@ -3,39 +3,35 @@
 > ## 🚀 Yeni chat başlangıç prompt'u (kopyala-yapıştır)
 >
 > ```
-> MonitraNG / Document Intelligence (MngDocument + Belge tasarımcısı UI) modülünde çalışıyoruz.
+> MonitraNG / Odak Document Intelligence belge tasarımı oturumuna devam ediyoruz.
 > Repo: c:\Users\monitra\Dev\MonitraNG\MonitraNG
 >
-> Başlamadan önce şu checkpoint dosyalarını oku ve kısa bir "kaldığımız yer" özeti ver:
-> - docs/odak/document_intelligence/DEVAM.md (ana plan)
-> - docs/MngDocument/current_status.md (backend oturum özeti)
+> Önce oku:
+> - docs/MngDocument/current_status.md
+> - docs/odak/document_intelligence/DEVAM.md
 >
-> DURUM (26 Haz 2026 akşam):
-> - Sayfa yapısı ✅ — PUT /templates/{id}/page-structure (margin + antet + altbilgi)
-> - Footer tablo ✅ — FooterInjector 2 sütun; antet {{documentName}} parametresi
-> - Prod deploy ✅ — mngdocument + mngui @ 192.168.20.8
-> - COC-STANDARD ✅ — update-coc-template-prod.ps1 -SkipParameterize (18 placeholder)
-> - Sırada: Collabora UAT (footer tablo tutamaçları), D2 incremental docNo, parametre UI
+> Durum (29 Haz 2026):
+> - LINE-ACTIVITY-STD test'te published; Activity/CoC kalem belgeleri çalışıyor
+> - Şablon unpublish API + UI (görüntüle / kilidi aç) — commit de245f1f
+> - Test deploy EKSİK: sync-odak-source -Paths @('MngDocument','Mng.Ui') sonra deploy-odak-apps -Services mngdocument,mngui -NoCache
 >
-> ÇALIŞMA KURALLARI:
-> - Yanıtlar Türkçe.
-> - Backend deploy: sync-odak-prod.ps1 + deploy-odak-prod.ps1 -Services mngdocument
-> - UI deploy: yalnızca açıkça istenince; Dockerfile NODE_OPTIONS=4096 gerekli
-> - Token prod: get-operationcore-token-prod.ps1 → operationcore_dg_token_prod.txt
+> Bu oturumda hedef: ANTET yönetimi ve PARAMETRE yönetimi (designer placeholder envanteri, context binding, letterhead ince ayar).
 >
-> DEVAM.md + current_status okuyup özetle; bir sonraki adımı sor.
+> Test: 192.168.20.20:5040 | Token: docs/odak/operationcore/scripts/load-operationcore-token.ps1
 > ```
 
-**Son güncelleme:** 26 Haziran 2026 (**Sayfa yapısı + footer tablo + prod deploy**)
-**Durum:** **D1-designer ✅ prod** · **Sayfa yapısı API/UI ✅** · **COC-STANDARD prod güncellendi** · **Sırada: UAT + D2**
+**Son güncelleme:** 29 Haziran 2026 (**Kalem belgeleri + Activity şablonu + unpublish**)
+**Durum:** **D1-designer ✅** · **Sayfa yapısı ✅** · **Kalem belgeleri (CoC+Activity) ✅** · **LINE-ACTIVITY-STD ✅ test** · **Sırada: antet + parametre yönetimi**
 
-> **⭐ KALDIĞIMIZ YER (26 Haz 2026 — oturum sonu):**
-> - **Backend:** `PageLayoutInjector`, `FooterInjector` (2 sütun tablo), `UpdatePageStructureAsync`, schema 1.3, `documentName` sistem parametresi.
-> - **UI:** `DiTemplatePageStructureForm` — designer diyaloglarında antet/altbilgi/kenar boşlukları tek panel; `diUpdateTemplatePageStructure`.
-> - **Prod:** `mngdocument` + `mngui` deploy edildi. CoC: WOPI upload + `page-structure` PUT OK.
-> - **Doğrulama bekliyor:** Collabora editörde footer tablo sütun tutamaçları; placeholder uyarısı (`docNo` run bölünmesi — fonksiyonel).
-> - **Sıradaki:** D2 incremental numara · parametre tanımı UI · isteğe bağlı blank-create'e pageLayout.
-> - **Detay:** [docs/MngDocument/current_status.md](../../MngDocument/current_status.md) · **Prod:** [PROD_OPERATIONS_AND_MIGRATION.md](./PROD_OPERATIONS_AND_MIGRATION.md)
+> **⭐ KALDIĞIMIZ YER (29 Haz 2026 — oturum sonu):**
+> - **Backend:** Generation profilleri (`odak.coc.fromLine`, `odak.line.activity.fromLine`), bool→Evet/Hayır, `POST /templates/{id}/unpublish`.
+> - **Activity şablonu:** `LINE-ACTIVITY-STD` — profesyonel DOCX, Türkçe karakter düzeltmesi, test'te published.
+> - **UI Odak:** Kalem Belgeleri sekmesi (CoC + Activity), deep link `/apps/document-intelligence/r/{id}`.
+> - **UI Tasarımcı:** Üretimde aktif / Düzenlenebilir; published → görüntüle (salt okunur) + kilidi aç (unpublish).
+> - **Git:** `de245f1f` pushed main ✅
+> - **Test deploy bekliyor:** unpublish API + UI canlı doğrulama (SSH sync bu oturumda başarısız).
+> - **Sıradaki oturum:** antet yönetimi · parametre yönetimi UI (placeholder envanteri, context binding, D2 docNo).
+> - **Detay:** [docs/MngDocument/current_status.md](../../MngDocument/current_status.md)
 
 **Ana plan:** [MonitraNG_Document_Intelligence_Planning.md](MonitraNG_Document_Intelligence_Planning.md) · **Prod / taşıma:** [PROD_OPERATIONS_AND_MIGRATION.md](PROD_OPERATIONS_AND_MIGRATION.md) · **Faz 1 dataset'leri:** [datasets/documentintelligence_datasets_phase1.json](datasets/documentintelligence_datasets_phase1.json)
 
