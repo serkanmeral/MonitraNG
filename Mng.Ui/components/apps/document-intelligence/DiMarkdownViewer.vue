@@ -1,14 +1,46 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, inject } from 'vue';
 import { renderMarkdown } from '@/utils/markdown';
+import { DI_RESOURCE_PREVIEW_KEY } from '@/composables/useDiResourcePreview';
+import {
+  parseDiResourceIdFromAnchor,
+  rewriteDiInternalLinksInHtml,
+} from '@/utils/diResourceLink';
 
-const props = defineProps<{
-  content: string;
-  emptyLabel?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    content: string;
+    emptyLabel?: string;
+    /** false ise iç link tıklaması yakalanmaz (salt metin önizleme). */
+    interactiveInternalLinks?: boolean;
+  }>(),
+  { interactiveInternalLinks: true }
+);
 
-const html = computed(() => renderMarkdown(props.content));
+const preview = inject(DI_RESOURCE_PREVIEW_KEY, null);
+
+const html = computed(() => {
+  const base = renderMarkdown(props.content);
+  if (!base || props.interactiveInternalLinks === false || !preview) return base;
+  return rewriteDiInternalLinksInHtml(base);
+});
+
 const isEmpty = computed(() => !props.content || !props.content.trim());
+
+function onBodyClick(event: MouseEvent) {
+  if (props.interactiveInternalLinks === false || !preview) return;
+
+  const anchor = (event.target as HTMLElement | null)?.closest('a');
+  if (!anchor || !(anchor instanceof HTMLAnchorElement)) return;
+
+  const resourceId = parseDiResourceIdFromAnchor(anchor);
+  if (!resourceId) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+
+  void preview.openResourceById(resourceId, event);
+}
 </script>
 
 <template>
@@ -17,7 +49,12 @@ const isEmpty = computed(() => !props.content || !props.content.trim());
       {{ emptyLabel || '—' }}
     </div>
     <!-- renderMarkdown DOMPurify ile sanitize edilmiş HTML döner -->
-    <div v-else class="di-md-viewer__body" v-html="html" />
+    <div
+      v-else
+      class="di-md-viewer__body"
+      v-html="html"
+      @click.capture="onBodyClick"
+    />
   </div>
 </template>
 
@@ -41,7 +78,15 @@ const isEmpty = computed(() => !props.content || !props.content.trim());
 .di-md-viewer__body :deep(ul),
 .di-md-viewer__body :deep(ol) { padding-left: 1.5rem; margin: 0.5em 0; }
 .di-md-viewer__body :deep(li) { margin: 0.2em 0; }
-.di-md-viewer__body :deep(a) { color: rgb(var(--v-theme-primary)); text-decoration: underline; }
+.di-md-viewer__body :deep(a) {
+  color: rgb(var(--v-theme-primary));
+  text-decoration: underline;
+  cursor: pointer;
+}
+.di-md-viewer__body :deep(a.di-internal-resource-link),
+.di-md-viewer__body :deep(a[data-di-resource-id]) {
+  text-decoration-style: dotted;
+}
 .di-md-viewer__body :deep(code) {
   background: rgba(var(--v-theme-on-surface), 0.08);
   padding: 0.1em 0.35em;

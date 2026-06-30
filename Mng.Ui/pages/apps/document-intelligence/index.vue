@@ -8,6 +8,7 @@ import DiPermissionsDialog from '@/components/apps/document-intelligence/DiPermi
 import DiFilePreviewDialog from '@/components/apps/document-intelligence/DiFilePreviewDialog.vue';
 import DiResourceEditorDialog from '@/components/apps/document-intelligence/DiResourceEditorDialog.vue';
 import DiLinkedWorkItemsPanel from '@/components/apps/document-intelligence/DiLinkedWorkItemsPanel.vue';
+import DiResourcePreviewProvider from '@/components/apps/document-intelligence/DiResourcePreviewProvider.vue';
 import { isDiPreviewable, isDiDocxEditable } from '@/utils/diFilePreview';
 import {
   DI_HOME_PATH,
@@ -28,6 +29,7 @@ import {
   diGetBootstrap,
   diGetBrowseContext,
   diGetBreadcrumb,
+  diGetById,
   diGetMarkdownContent,
   diCreateFolder,
   diCreateMarkdown,
@@ -542,8 +544,14 @@ function openPermissions(resource: DiResource) {
 }
 
 async function onPermissionsChanged() {
-  // Yetki değişince görünürlük değişebilir: ağaç + içerik + seçili klasör tazelenir.
   await refreshWorkspace();
+  if (openDoc.value?.id) {
+    try {
+      openDoc.value = await diGetById(openDoc.value.id);
+    } catch {
+      /* açık doküman artık görünmüyor olabilir */
+    }
+  }
 }
 
 // --- Dosya yükleme ---
@@ -732,6 +740,7 @@ watch(
 </script>
 
 <template>
+  <DiResourcePreviewProvider :on-download="downloadFile">
   <div>
     <BaseBreadcrumb :title="t('documentIntelligence.title')" :breadcrumbs="breadcrumbs" />
 
@@ -957,7 +966,11 @@ watch(
 
               <v-progress-linear v-if="docLoading" indeterminate color="primary" class="mb-2" />
 
-              <DiMarkdownEditor v-if="docMode === 'edit'" v-model="editContent" />
+              <DiMarkdownEditor
+                v-if="docMode === 'edit'"
+                v-model="editContent"
+                :current-resource-id="openDoc?.id ?? null"
+              />
               <DiMarkdownViewer v-else :content="docContent" :empty-label="t('documentIntelligence.emptyDoc')" />
 
               <DiLinkedWorkItemsPanel
@@ -1391,6 +1404,7 @@ watch(
     />
 
   </div>
+  </DiResourcePreviewProvider>
 </template>
 
 <style scoped>

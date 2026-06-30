@@ -2,13 +2,19 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import DiMarkdownViewer from '@/components/apps/document-intelligence/DiMarkdownViewer.vue';
+import DiResourcePreviewProvider from '@/components/apps/document-intelligence/DiResourcePreviewProvider.vue';
+import DiPickResourceDialog from '@/components/apps/document-intelligence/DiPickResourceDialog.vue';
+import { buildDiResourceMarkdownHref } from '@/utils/diResourceLink';
+import { DI_RESOURCE_TYPE, type DiResource } from '@/types/apps/documentIntelligence';
 
 const props = withDefaults(
   defineProps<{
     modelValue: string;
     showPreview?: boolean;
+    /** Düzenlenen dokümanın kendisine link vermeyi engelle. */
+    currentResourceId?: string | null;
   }>(),
-  { modelValue: '', showPreview: true }
+  { modelValue: '', showPreview: true, currentResourceId: null }
 );
 
 const emit = defineEmits<{ 'update:modelValue': [string] }>();
@@ -16,6 +22,7 @@ const emit = defineEmits<{ 'update:modelValue': [string] }>();
 const { t } = useAppI18n();
 const textareaRef = ref<HTMLTextAreaElement | null>(null);
 const localPreview = ref(props.showPreview);
+const pickDialogOpen = ref(false);
 
 const content = computed({
   get: () => props.modelValue,
@@ -28,6 +35,10 @@ watch(
     localPreview.value = v;
   }
 );
+
+function resourceLabel(r: DiResource): string {
+  return r.type === DI_RESOURCE_TYPE.markdown ? r.title || r.name : r.name;
+}
 
 // Seçili metnin etrafına / başına markdown söz dizimi ekleyen yardımcılar.
 function surround(before: string, after = before) {
@@ -49,6 +60,31 @@ function surround(before: string, after = before) {
   });
 }
 
+function insertMarkdownLink(label: string, href: string) {
+  const el = textareaRef.value;
+  const value = content.value;
+  const linkText = `[${label}](${href})`;
+
+  if (!el) {
+    content.value = `${value}${linkText}`;
+    return;
+  }
+
+  const start = el.selectionStart ?? value.length;
+  const end = el.selectionEnd ?? value.length;
+  const selected = value.slice(start, end);
+  const text = selected || label;
+  const snippet = `[${text}](${href})`;
+  const next = `${value.slice(0, start)}${snippet}${value.slice(end)}`;
+  content.value = next;
+
+  void nextTick(() => {
+    el.focus();
+    const pos = start + snippet.length;
+    el.setSelectionRange(pos, pos);
+  });
+}
+
 function prefixLine(prefix: string) {
   const el = textareaRef.value;
   const value = content.value;
@@ -66,6 +102,15 @@ function prefixLine(prefix: string) {
     el.setSelectionRange(pos, pos);
   });
 }
+
+function onResourcePicked(resource: DiResource) {
+  insertMarkdownLink(resourceLabel(resource), buildDiResourceMarkdownHref(resource.id));
+}
+
+const excludeResourceIds = computed(() => {
+  const id = props.currentResourceId?.trim();
+  return id ? [id] : [];
+});
 
 defineExpose({ focus: () => textareaRef.value?.focus() });
 </script>
@@ -94,6 +139,13 @@ defineExpose({ focus: () => textareaRef.value?.focus() });
       <v-btn size="x-small" variant="text" icon="mdi-format-list-numbered" :title="t('documentIntelligence.editor.orderedList')" @click="prefixLine('1. ')" />
       <v-btn size="x-small" variant="text" icon="mdi-format-quote-close" :title="t('documentIntelligence.editor.quote')" @click="prefixLine('> ')" />
       <v-btn size="x-small" variant="text" icon="mdi-link" :title="t('documentIntelligence.editor.link')" @click="surround('[', '](https://)')" />
+      <v-btn
+        size="x-small"
+        variant="text"
+        icon="mdi-file-link"
+        :title="t('documentIntelligence.internalLink.linkToDocument')"
+        @click="pickDialogOpen = true"
+      />
       <v-spacer />
       <v-btn
         size="x-small"
@@ -115,10 +167,16 @@ defineExpose({ focus: () => textareaRef.value?.focus() });
         spellcheck="false"
         :placeholder="t('documentIntelligence.editor.placeholder')"
       />
-      <div v-if="localPreview" class="di-md-editor__preview">
+      <DiResourcePreviewProvider v-if="localPreview" flat class="di-md-editor__preview">
         <DiMarkdownViewer :content="content" :empty-label="t('documentIntelligence.editor.previewEmpty')" />
-      </div>
+      </DiResourcePreviewProvider>
     </div>
+
+    <DiPickResourceDialog
+      v-model="pickDialogOpen"
+      :exclude-resource-ids="excludeResourceIds"
+      @pick="onResourcePicked"
+    />
   </div>
 </template>
 
@@ -155,5 +213,6 @@ defineExpose({ focus: () => textareaRef.value?.focus() });
   padding: 14px 18px;
   overflow: auto;
   max-height: 600px;
+  display: block;
 }
 </style>

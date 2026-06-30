@@ -5,11 +5,11 @@ import { useAuthStore } from '@/stores/auth';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
+  diGetById,
   diGetPermissions,
   diSetPermissions,
   diBreakInheritance,
   diRestoreInheritance,
-
 } from '@/services/documentIntelligenceService';
 import {
   DI_PERMISSION_ACTIONS,
@@ -25,7 +25,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean];
-  /** Yetki durumu değiştiğinde (kaydet/kır/geri yükle) parent ağacı/içeriği tazelesin. */
   changed: [];
   notify: [text: string, color: 'success' | 'error' | 'info'];
 }>();
@@ -34,12 +33,13 @@ const { t } = useAppI18n();
 const panelError = usePanelErrorNotify('errors.dg.generic');
 const authStore = useAuthStore();
 
+const EDITOR_PRESET = ['view', 'create', 'edit', 'upload', 'download'] as const;
+
 const open = computed({
   get: () => props.modelValue,
   set: (v: boolean) => emit('update:modelValue', v),
 });
 
-// Aksiyon meta (etiketler i18n ile template'te çözülür).
 const actionMeta = [
   { key: 'view', color: 'info' },
   { key: 'create', color: 'success' },
@@ -55,24 +55,39 @@ const perms = ref<DiFolderPermissions | null>(null);
 const loading = ref(false);
 const saving = ref(false);
 const busy = ref(false);
+const anchorFolderName = ref<string | null>(null);
 
 const groups = ref<Array<{ id: string; name: string }>>([]);
 const loadingGroups = ref(false);
-
-// groupName -> { action -> boolean } (yalnızca miras kırıkken düzenlenebilir)
 const matrix = ref<Record<string, Record<string, boolean>>>({});
 
 const inheritanceBroken = computed(() => perms.value?.inheritanceBroken === true);
 
-// Manager kullanıcılar "admins" grubunu göremez (mevcut PermissionEditor deseni).
+const effectiveAnchorId = computed(() => perms.value?.effectiveAnchorId?.trim() || null);
+
+/** Bu klasör miras alıyor ama üstte kırık anchor var → asıl kısıtlama oradan gelir. */
+const restrictedByParentAnchor = computed(
+  () => !inheritanceBroken.value && effectiveAnchorId.value != null
+);
+
+const effective = computed(() => perms.value?.effective ?? null);
+
+const effectiveActionKeys = [
+  { key: 'view', prop: 'canView' as const, color: 'info' },
+  { key: 'create', prop: 'canCreate' as const, color: 'success' },
+  { key: 'edit', prop: 'canEdit' as const, color: 'warning' },
+  { key: 'delete', prop: 'canDelete' as const, color: 'error' },
+  { key: 'upload', prop: 'canUpload' as const, color: 'primary' },
+  { key: 'download', prop: 'canDownload' as const, color: 'secondary' },
+  { key: 'move', prop: 'canMove' as const, color: 'primary' },
+  { key: 'share', prop: 'canShare' as const, color: 'info' },
+];
+
 const filteredGroups = computed(() => {
   if (authStore.isAdmin) return groups.value;
   return groups.value.filter((g) => g.name.toLowerCase() !== 'admins');
 });
 
-// Matriste gösterilecek satırlar: MngKeeper grupları ∪ mevcut izin kayıtlarındaki gruplar.
-// Böylece keeper'da olmayan/silinen ya da filtrelenen (ör. admin olmayanlar için "admins")
-// ama kaydı bulunan gruplar da görünür — "tanımladığım izinleri göremiyorum" sorununu önler.
 const displayGroups = computed(() => {
   const map = new Map<string, { id: string; name: string; fromKeeper: boolean }>();
   for (const g of filteredGroups.value) {
@@ -95,9 +110,7 @@ function emptyActionRow(): Record<string, boolean> {
 
 function buildMatrix(source: DiGroupPermission[]) {
   const next: Record<string, Record<string, boolean>> = {};
-  // Tüm görünür gruplar için boş satır (keeper ∪ kayıtlı gruplar)
   for (const g of displayGroups.value) next[g.name] = emptyActionRow();
-  // Kayıtlı grupları işaretle
   for (const gp of source) {
     if (!gp.groupName) continue;
     if (!next[gp.groupName]) next[gp.groupName] = emptyActionRow();
@@ -106,6 +119,19 @@ function buildMatrix(source: DiGroupPermission[]) {
     }
   }
   matrix.value = next;
+}
+
+async function loadAnchorName(anchorId: string | null) {
+  if (!anchorId) {
+    anchorFolderName.value = null;
+    return;
+  }
+  try {
+    const folder = await diGetById(anchorId);
+    anchorFolderName.value = folder.name || anchorId;
+  } catch {
+    anchorFolderName.value = anchorId;
+  }
 }
 
 async function loadGroups() {
@@ -142,9 +168,11 @@ async function loadPermissions() {
   try {
     perms.value = await diGetPermissions(props.folderId);
     buildMatrix(perms.value.groups);
+    await loadAnchorName(perms.value.effectiveAnchorId);
   } catch (e) {
     emit('notify', panelError(e, 'documentIntelligence.permissions.errors.load'), 'error');
     perms.value = null;
+    anchorFolderName.value = null;
   } finally {
     loading.value = false;
   }
@@ -161,7 +189,6 @@ watch(
   { immediate: true },
 );
 
-// Gruplar/izinler sonradan yüklenirse matris satırlarını yeniden kur.
 watch(displayGroups, () => {
   if (perms.value) buildMatrix(perms.value.groups);
 });
@@ -169,9 +196,7 @@ watch(displayGroups, () => {
 function toggleAction(groupName: string, action: string, value: boolean) {
   const row = { ...(matrix.value[groupName] ?? emptyActionRow()) };
   row[action] = value;
-  // "view" baz erişim: başka aksiyon işaretlendiğinde view de açılsın.
   if (value && action !== 'view') row.view = true;
-  // Yeni nesne atayarak reaktiviteyi garanti et.
   matrix.value = { ...matrix.value, [groupName]: row };
 }
 
@@ -183,9 +208,25 @@ function setAllForGroup(groupName: string, value: boolean) {
   matrix.value = { ...matrix.value, [groupName]: row };
 }
 
+function applyPresetToAll(actions: readonly string[]) {
+  const next = { ...matrix.value };
+  for (const g of displayGroups.value) {
+    const row = emptyActionRow();
+    for (const a of actions) row[a] = true;
+    next[g.name] = row;
+  }
+  matrix.value = next;
+}
+
 function groupHasAny(groupName: string): boolean {
   const row = matrix.value[groupName];
   return row ? DI_PERMISSION_ACTIONS.some((a) => row[a]) : false;
+}
+
+function clearAllGroups() {
+  const next = { ...matrix.value };
+  for (const g of displayGroups.value) next[g.name] = emptyActionRow();
+  matrix.value = next;
 }
 
 async function save() {
@@ -202,6 +243,7 @@ async function save() {
     }
     perms.value = await diSetPermissions(props.folderId, { groups: payloadGroups });
     buildMatrix(perms.value.groups);
+    await loadAnchorName(perms.value.effectiveAnchorId);
     emit('notify', t('documentIntelligence.permissions.saved'), 'success');
     emit('changed');
   } catch (e) {
@@ -217,6 +259,7 @@ async function breakInheritance() {
   try {
     perms.value = await diBreakInheritance(props.folderId);
     buildMatrix(perms.value.groups);
+    await loadAnchorName(perms.value.effectiveAnchorId);
     emit('notify', t('documentIntelligence.permissions.inheritanceBrokenMsg'), 'success');
     emit('changed');
   } catch (e) {
@@ -232,6 +275,7 @@ async function restoreInheritance() {
   try {
     perms.value = await diRestoreInheritance(props.folderId);
     buildMatrix(perms.value.groups);
+    await loadAnchorName(perms.value.effectiveAnchorId);
     emit('notify', t('documentIntelligence.permissions.inheritanceRestoredMsg'), 'success');
     emit('changed');
   } catch (e) {
@@ -243,7 +287,7 @@ async function restoreInheritance() {
 </script>
 
 <template>
-  <v-dialog v-model="open" max-width="860" scrollable>
+  <v-dialog v-model="open" max-width="920" scrollable>
     <v-card rounded="lg">
       <v-card-title class="d-flex align-center text-subtitle-1 font-weight-bold">
         <v-icon size="20" class="mr-2">mdi-shield-account-outline</v-icon>
@@ -260,7 +304,44 @@ async function restoreInheritance() {
         </div>
 
         <template v-else>
-          <!-- Miras durumu -->
+          <!-- Geçerli kullanıcının etkin yetkisi -->
+          <v-sheet v-if="effective" variant="outlined" rounded="lg" class="pa-3 mb-4">
+            <div class="text-caption text-medium-emphasis mb-2">
+              {{ t('documentIntelligence.permissions.yourEffective') }}
+            </div>
+            <div class="d-flex flex-wrap ga-2">
+              <v-chip
+                v-for="a in effectiveActionKeys"
+                :key="a.key"
+                size="small"
+                :color="effective[a.prop] ? a.color : undefined"
+                :variant="effective[a.prop] ? 'flat' : 'outlined'"
+              >
+                {{ t('documentIntelligence.permissions.actions.' + a.key) }}
+              </v-chip>
+            </div>
+            <p v-if="!effective.canEdit" class="text-caption text-warning mt-2 mb-0">
+              {{ t('documentIntelligence.permissions.noEditHint') }}
+            </p>
+            <p v-if="!effective.canEdit && authStore.userGroups.length" class="text-caption text-medium-emphasis mb-0">
+              {{ t('documentIntelligence.permissions.yourJwtGroups', { groups: authStore.userGroups.join(', ') }) }}
+            </p>
+          </v-sheet>
+
+          <v-alert
+            v-if="restrictedByParentAnchor"
+            type="warning"
+            variant="tonal"
+            density="comfortable"
+            class="mb-4"
+          >
+            {{
+              t('documentIntelligence.permissions.restrictedByParent', {
+                folder: anchorFolderName || effectiveAnchorId,
+              })
+            }}
+          </v-alert>
+
           <v-alert
             :type="inheritanceBroken ? 'warning' : 'info'"
             variant="tonal"
@@ -269,9 +350,13 @@ async function restoreInheritance() {
           >
             <div class="d-flex align-center flex-wrap ga-2">
               <span class="text-body-2">
-                {{ inheritanceBroken
-                  ? t('documentIntelligence.permissions.brokenInfo')
-                  : t('documentIntelligence.permissions.inheritedInfo') }}
+                {{
+                  inheritanceBroken
+                    ? t('documentIntelligence.permissions.brokenInfo')
+                    : restrictedByParentAnchor
+                      ? t('documentIntelligence.permissions.inheritedFromAnchor')
+                      : t('documentIntelligence.permissions.inheritedInfo')
+                }}
               </span>
               <v-spacer />
               <v-btn
@@ -309,46 +394,103 @@ async function restoreInheritance() {
             {{ t('documentIntelligence.permissions.noGroups') }}
           </div>
 
-          <div v-else class="di-perm-table-wrap">
-            <v-table density="compact" class="di-perm-table">
-              <thead>
-                <tr>
-                  <th class="text-left" style="min-width: 160px">{{ t('documentIntelligence.permissions.group') }}</th>
-                  <th v-for="a in actionMeta" :key="a.key" class="text-center" style="min-width: 78px">
-                    {{ t('documentIntelligence.permissions.actions.' + a.key) }}
-                  </th>
-                  <th class="text-center" style="min-width: 96px">{{ t('documentIntelligence.permissions.all') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="g in displayGroups" :key="g.name">
-                  <td>
-                    <v-chip size="small" variant="flat" color="primary">{{ g.name }}</v-chip>
-                  </td>
-                  <td v-for="a in actionMeta" :key="a.key" class="text-center">
-                    <v-checkbox
-                      :model-value="matrix[g.name]?.[a.key] || false"
-                      :disabled="!inheritanceBroken"
-                      :color="a.color"
-                      density="compact"
-                      hide-details
-                      @update:model-value="(val) => toggleAction(g.name, a.key, val === true)"
-                    />
-                  </td>
-                  <td class="text-center">
-                    <v-btn-toggle density="compact" variant="text" divided>
-                      <v-btn size="x-small" :disabled="!inheritanceBroken" @click="setAllForGroup(g.name, true)">
-                        {{ t('documentIntelligence.permissions.grantAll') }}
-                      </v-btn>
-                      <v-btn size="x-small" :disabled="!inheritanceBroken || !groupHasAny(g.name)" @click="setAllForGroup(g.name, false)">
-                        {{ t('documentIntelligence.permissions.clear') }}
-                      </v-btn>
-                    </v-btn-toggle>
-                  </td>
-                </tr>
-              </tbody>
-            </v-table>
-          </div>
+          <template v-else>
+            <div v-if="inheritanceBroken" class="d-flex flex-wrap align-center ga-2 mb-3">
+              <span class="text-caption text-medium-emphasis mr-1">
+                {{ t('documentIntelligence.permissions.bulkActions') }}
+              </span>
+              <v-btn
+                size="small"
+                variant="tonal"
+                color="primary"
+                class="text-none"
+                prepend-icon="mdi-pencil-outline"
+                @click="applyPresetToAll(EDITOR_PRESET)"
+              >
+                {{ t('documentIntelligence.permissions.grantEditorAll') }}
+              </v-btn>
+              <v-btn
+                size="small"
+                variant="tonal"
+                class="text-none"
+                prepend-icon="mdi-check-all"
+                @click="applyPresetToAll(DI_PERMISSION_ACTIONS)"
+              >
+                {{ t('documentIntelligence.permissions.grantFullAll') }}
+              </v-btn>
+              <v-btn
+                size="small"
+                variant="text"
+                class="text-none"
+                prepend-icon="mdi-close-circle-outline"
+                @click="clearAllGroups"
+              >
+                {{ t('documentIntelligence.permissions.clearAll') }}
+              </v-btn>
+            </div>
+
+            <div class="di-perm-table-wrap">
+              <v-table density="compact" class="di-perm-table">
+                <thead>
+                  <tr>
+                    <th class="di-perm-sticky-left text-left" style="min-width: 220px">
+                      {{ t('documentIntelligence.permissions.group') }}
+                    </th>
+                    <th
+                      v-for="a in actionMeta"
+                      :key="a.key"
+                      class="text-center di-perm-action-col"
+                    >
+                      {{ t('documentIntelligence.permissions.actions.' + a.key) }}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="g in displayGroups" :key="g.name">
+                    <td class="di-perm-sticky-left">
+                      <div class="d-flex align-center flex-wrap ga-1 py-1">
+                        <v-chip size="small" variant="flat" color="primary" class="flex-shrink-0">
+                          {{ g.name }}
+                        </v-chip>
+                        <v-btn
+                          size="x-small"
+                          variant="tonal"
+                          color="primary"
+                          class="text-none px-2"
+                          :disabled="!inheritanceBroken"
+                          :title="t('documentIntelligence.permissions.grantAll')"
+                          @click="setAllForGroup(g.name, true)"
+                        >
+                          <v-icon size="14" start>mdi-check-all</v-icon>
+                          {{ t('documentIntelligence.permissions.grantAll') }}
+                        </v-btn>
+                        <v-btn
+                          size="x-small"
+                          variant="text"
+                          class="text-none px-1"
+                          :disabled="!inheritanceBroken || !groupHasAny(g.name)"
+                          :title="t('documentIntelligence.permissions.clear')"
+                          @click="setAllForGroup(g.name, false)"
+                        >
+                          {{ t('documentIntelligence.permissions.clear') }}
+                        </v-btn>
+                      </div>
+                    </td>
+                    <td v-for="a in actionMeta" :key="a.key" class="text-center di-perm-action-col">
+                      <v-checkbox
+                        :model-value="matrix[g.name]?.[a.key] || false"
+                        :disabled="!inheritanceBroken"
+                        :color="a.color"
+                        density="compact"
+                        hide-details
+                        @update:model-value="(val) => toggleAction(g.name, a.key, val === true)"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </v-table>
+            </div>
+          </template>
 
           <p v-if="!inheritanceBroken" class="text-caption text-medium-emphasis mt-3 mb-0">
             {{ t('documentIntelligence.permissions.editHint') }}
@@ -378,17 +520,39 @@ async function restoreInheritance() {
 
 <style scoped>
 .di-perm-table-wrap {
-  max-height: 50vh;
+  max-height: 52vh;
   overflow: auto;
   border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
   border-radius: 8px;
 }
+
+.di-perm-table {
+  min-width: 720px;
+}
+
 .di-perm-table thead th {
   position: sticky;
   top: 0;
   background-color: rgb(var(--v-theme-surface));
-  z-index: 1;
+  z-index: 2;
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.di-perm-sticky-left {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background-color: rgb(var(--v-theme-surface));
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.06);
+}
+
+.di-perm-table thead th.di-perm-sticky-left {
+  z-index: 3;
+}
+
+.di-perm-action-col {
+  min-width: 72px;
   white-space: nowrap;
 }
 </style>
