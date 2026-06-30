@@ -18,6 +18,7 @@ export interface Group {
   description?: string;
   memberCount: number;
   isActive: boolean;
+  includeInApplication?: boolean;
   createdAt: string | Date;
   updatedAt?: string | Date | null;
   createdBy?: string;
@@ -41,6 +42,12 @@ function mapApiGroupToGroup(group: Record<string, unknown>): Group {
         ? Boolean(group.isActive)
         : group.IsActive !== undefined
           ? Boolean(group.IsActive)
+          : true,
+    includeInApplication:
+      group.includeInApplication !== undefined
+        ? Boolean(group.includeInApplication)
+        : group.IncludeInApplication !== undefined
+          ? Boolean(group.IncludeInApplication)
           : true,
     createdAt: (group.createdAt || group.CreatedAt || new Date()) as string | Date,
     updatedAt: (group.updatedAt || group.UpdatedAt || null) as string | Date | null,
@@ -92,6 +99,7 @@ export const useGroupStore = defineStore('group', {
       pageSize?: number; 
       search?: string;
       isActive?: boolean;
+      includeInApplication?: boolean;
     }) {
       this.loading = true;
       this.error = null;
@@ -102,6 +110,9 @@ export const useGroupStore = defineStore('group', {
         if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
         if (params?.search) queryParams.append('searchTerm', params.search);
         if (params?.isActive !== undefined) queryParams.append('isActive', params.isActive.toString());
+        if (params?.includeInApplication !== undefined) {
+          queryParams.append('includeInApplication', params.includeInApplication.toString());
+        }
         
         const url = `/group${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
         
@@ -195,6 +206,52 @@ export const useGroupStore = defineStore('group', {
       }
     },
 
+    /** Picker / atama formları — yalnızca aktif ve uygulama kapsamındaki gruplar. */
+    async fetchGroupsForSelection(params?: {
+      page?: number;
+      pageSize?: number;
+      search?: string;
+    }) {
+      return this.fetchGroups({
+        ...params,
+        isActive: true,
+        includeInApplication: true,
+      });
+    },
+
+    /** Toplu etiket çözümü (modal picker, chip gösterimi). */
+    async fetchGroupsByIds(ids: string[]): Promise<Group[]> {
+      const unique = [...new Set(ids.map((id) => String(id ?? '').trim()).filter(Boolean))];
+      if (!unique.length) return [];
+
+      const response = await fetchFromMngKeeper('/group/by-ids', 'POST', { Ids: unique });
+      if (response.IsSuccess === false) {
+        throw new Error(response.ErrorMessage || 'Gruplar çözümlenemedi');
+      }
+
+      const groupsArray = (response.groups || response.Groups || []) as Record<string, unknown>[];
+      const mapped: Group[] = [];
+      for (const item of groupsArray) {
+        const group = mapApiGroupToGroup({
+          groupId: item.groupId ?? item.GroupId,
+          id: item.groupId ?? item.GroupId,
+          name: item.name ?? item.Name ?? '',
+          isActive: item.isActive ?? item.IsActive ?? true,
+          memberCount: item.memberCount ?? item.MemberCount ?? 0,
+        });
+        const idx = this.groups.findIndex(
+          (g) => g.id === group.id || g.groupId === group.groupId
+        );
+        if (idx >= 0) {
+          this.groups[idx] = { ...this.groups[idx], ...group };
+        } else {
+          this.groups.push(group);
+        }
+        mapped.push(group);
+      }
+      return mapped;
+    },
+
     async fetchGroupById(groupId: string) {
       this.loading = true;
       this.error = null;
@@ -251,17 +308,26 @@ export const useGroupStore = defineStore('group', {
       }
     },
 
-    async updateGroup(groupId: string, groupData: { name: string; description?: string; isActive?: boolean; permissions?: string[] }) {
+    async updateGroup(groupId: string, groupData: {
+      name: string;
+      description?: string;
+      isActive?: boolean;
+      includeInApplication?: boolean;
+      permissions?: string[];
+    }) {
       this.loading = true;
       this.error = null;
       
       try {
-        const requestBody = {
+        const requestBody: Record<string, unknown> = {
           Name: groupData.name,
           Description: groupData.description || '',
           IsActive: groupData.isActive !== undefined ? groupData.isActive : true,
           Permissions: groupData.permissions || [],
         };
+        if (groupData.includeInApplication !== undefined) {
+          requestBody.IncludeInApplication = groupData.includeInApplication;
+        }
         
         const response = await fetchFromMngKeeper(`/group/${groupId}`, 'PUT', requestBody);
         
@@ -272,6 +338,30 @@ export const useGroupStore = defineStore('group', {
         return response;
       } catch (err: any) {
         this.error = err.message || 'Grup güncellenirken bir hata oluştu.';
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async updateGroupApplicationScope(groupId: string, includeInApplication: boolean) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await fetchFromMngKeeper(
+          `/group/${groupId}/application-scope`,
+          'PATCH',
+          { includeInApplication }
+        );
+        if (response.isSuccess === false || response.IsSuccess === false) {
+          throw new Error(response.errorMessage || response.ErrorMessage || 'Grup kapsamı güncellenemedi');
+        }
+        if (this.currentGroup && (this.currentGroup.id === groupId || this.currentGroup.groupId === groupId)) {
+          this.currentGroup.includeInApplication = includeInApplication;
+        }
+        return response;
+      } catch (err: any) {
+        this.error = err.message || 'Grup kapsamı güncellenirken bir hata oluştu.';
         throw err;
       } finally {
         this.loading = false;

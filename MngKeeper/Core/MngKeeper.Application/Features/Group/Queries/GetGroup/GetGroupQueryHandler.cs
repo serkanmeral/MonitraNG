@@ -80,6 +80,7 @@ namespace MngKeeper.Application.Features.Group.Queries.GetGroup
                     Description = group.Description,
                     Permissions = group.Permissions,
                     IsActive = group.IsActive,
+                    IncludeInApplication = group.IncludeInApplication,
                     MemberCount = memberCount,
                     CreatedAt = group.CreatedAt,
                     UpdatedAt = group.UpdatedAt,

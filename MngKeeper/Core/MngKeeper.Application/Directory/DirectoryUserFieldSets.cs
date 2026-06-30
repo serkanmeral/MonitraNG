@@ -7,7 +7,7 @@ namespace MngKeeper.Application.Directory;
 
 /// <summary>
 /// Directory sync'in yazdığı alanlar (USER_SOURCES.md whitelist).
-/// Uygulama alanları (photoUrl, gender, title, department, phoneNumber) korunur.
+/// Uygulama alanları (photoUrl, photoSource, gender, title, department, phoneNumber) korunur.
 /// </summary>
 public static class DirectoryUserFieldSets
 {
@@ -21,7 +21,7 @@ public static class DirectoryUserFieldSets
     /// <summary>Directory kullanıcı — PUT /api/user ile düzenlenebilir uygulama alanları.</summary>
     public static readonly IReadOnlySet<string> EditableByApplication = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
-        "photoUrl", "gender", "title", "department", "phoneNumber",
+        "photoUrl", "gender", "title", "department", "phoneNumber", "includeInApplication",
     };
 
     public static void ApplyDirectoryFields(
@@ -56,7 +56,8 @@ public static class DirectoryUserFieldSets
             CreatedAt = syncedAt,
             CreatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser,
             Gender = Gender.NotSpecified,
-            Roles = new List<string>()
+            Roles = new List<string>(),
+            IncludeInApplication = ApplicationScopeDefaults.DefaultForSource(UserProvisioningSource.Directory),
         };
         ApplyDirectoryFields(user, source, groupNames, syncedAt);
         return user;

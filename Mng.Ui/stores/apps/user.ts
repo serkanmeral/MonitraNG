@@ -32,7 +32,9 @@ export interface User {
   gender?: Gender | 'NotSpecified' | 'Male' | 'Female'; // Cinsiyet
   phoneNumber?: string | null; // Telefon Numarası
   photoUrl?: string | null; // Profil Fotoğrafı URL (MinIO)
+  photoSource?: 'None' | 'Directory' | 'Manual' | string | null;
   isActive: boolean;
+  includeInApplication?: boolean;
   groups: string[];
   roles?: string[];
   createdAt: string | Date;
@@ -68,6 +70,8 @@ function mapApiUserToUser(user: Record<string, unknown>, existingUser?: User): U
     user.phoneNumber !== undefined ? user.phoneNumber : user.PhoneNumber;
   const photoUrlFromApi =
     user.photoUrl !== undefined ? user.photoUrl : user.PhotoUrl;
+  const photoSourceFromApi =
+    user.photoSource !== undefined ? user.photoSource : user.PhotoSource;
 
   return {
     id: primaryId,
@@ -86,6 +90,7 @@ function mapApiUserToUser(user: Record<string, unknown>, existingUser?: User): U
       | string
       | null,
     photoUrl: preserveNullableField(photoUrlFromApi, existingUser?.photoUrl) as string | null,
+    photoSource: (photoSourceFromApi ?? existingUser?.photoSource ?? 'None') as User['photoSource'],
     gender:
       user.gender !== undefined
         ? (user.gender as Gender)
@@ -97,6 +102,12 @@ function mapApiUserToUser(user: Record<string, unknown>, existingUser?: User): U
         ? Boolean(user.isActive)
         : user.IsActive !== undefined
           ? Boolean(user.IsActive)
+          : true,
+    includeInApplication:
+      user.includeInApplication !== undefined
+        ? Boolean(user.includeInApplication)
+        : user.IncludeInApplication !== undefined
+          ? Boolean(user.IncludeInApplication)
           : true,
     groups: (user.groups || user.Groups || existingUser?.groups || []) as string[],
     roles: (user.roles || user.Roles || []) as string[],
@@ -200,11 +211,12 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    async fetchUsers(params?: { 
-      page?: number; 
-      pageSize?: number; 
+    async fetchUsers(params?: {
+      page?: number;
+      pageSize?: number;
       search?: string;
       isActive?: boolean;
+      includeInApplication?: boolean;
       sortBy?: string;
       sortOrder?: 'asc' | 'desc';
     }) {
@@ -217,6 +229,9 @@ export const useUserStore = defineStore('user', {
         if (params?.pageSize) queryParams.append('pageSize', params.pageSize.toString());
         if (params?.search) queryParams.append('searchTerm', params.search); // API'de searchTerm kullanılıyor
         if (params?.isActive !== undefined) queryParams.append('isActive', params.isActive.toString());
+        if (params?.includeInApplication !== undefined) {
+          queryParams.append('includeInApplication', params.includeInApplication.toString());
+        }
         if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
         if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
         
@@ -442,6 +457,53 @@ export const useUserStore = defineStore('user', {
       }
     },
 
+    /** Picker / atama formları — yalnızca aktif ve uygulama kapsamındaki kullanıcılar. */
+    async fetchUsersForSelection(params?: {
+      page?: number;
+      pageSize?: number;
+      search?: string;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
+    }) {
+      return this.fetchUsers({
+        ...params,
+        isActive: true,
+        includeInApplication: true,
+      });
+    },
+
+    /** Toplu etiket çözümü (modal picker, chip gösterimi). */
+    async fetchUsersByIds(ids: string[]): Promise<User[]> {
+      const unique = [...new Set(ids.map((id) => String(id ?? '').trim()).filter(Boolean))];
+      if (!unique.length) return [];
+
+      const response = await fetchFromMngKeeper('/user/by-ids', 'POST', { Ids: unique });
+      if (response.IsSuccess === false) {
+        throw new Error(response.ErrorMessage || 'Kullanıcılar çözümlenemedi');
+      }
+
+      const usersArray = (response.users || response.Users || []) as Record<string, unknown>[];
+      const mapped: User[] = [];
+      for (const item of usersArray) {
+        const user = mapApiUserToUser({
+          id: item.userId ?? item.UserId,
+          userId: item.userId ?? item.UserId,
+          keycloakUserId: item.keycloakUserId ?? item.KeycloakUserId,
+          username: item.username ?? item.Username ?? '',
+          email: item.email ?? item.Email ?? '',
+          firstName: item.firstName ?? item.FirstName ?? '',
+          lastName: item.lastName ?? item.LastName ?? '',
+          title: item.title ?? item.Title ?? null,
+          isActive: item.isActive ?? item.IsActive ?? true,
+          domainId: '',
+          groups: [],
+        });
+        this.mergeResolvedUserProfile(user);
+        mapped.push(user);
+      }
+      return mapped;
+    },
+
     async updateUser(userId: string, userData: {
       username?: string;
       email?: string;
@@ -453,6 +515,7 @@ export const useUserStore = defineStore('user', {
       phoneNumber?: string;
       photoUrl?: string;
       isActive?: boolean;
+      includeInApplication?: boolean;
       groups?: string[];
       roles?: string[];
     }) {
@@ -516,6 +579,10 @@ export const useUserStore = defineStore('user', {
           lastName: userData.lastName || userBeingUpdated.lastName || '',
           gender: genderInt, // Integer value (0, 1, 2)
           isActive: userData.isActive !== undefined ? userData.isActive : (userBeingUpdated.isActive ?? true),
+          includeInApplication:
+            userData.includeInApplication !== undefined
+              ? userData.includeInApplication
+              : (userBeingUpdated.includeInApplication ?? true),
         };
         
         // Only include nullable fields if explicitly provided in userData

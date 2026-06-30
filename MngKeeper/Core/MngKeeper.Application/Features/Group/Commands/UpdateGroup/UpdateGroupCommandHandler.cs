@@ -173,6 +173,7 @@ namespace MngKeeper.Application.Features.Group.Commands.UpdateGroup
                 existingGroup.Description = request.Description;
                 existingGroup.Permissions = request.Permissions;
                 existingGroup.IsActive = request.IsActive;
+                existingGroup.IncludeInApplication = request.IncludeInApplication;
                 existingGroup.UpdatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser; // TODO: Get from current user context
                 existingGroup.UpdatedAt = DateTime.UtcNow;
 

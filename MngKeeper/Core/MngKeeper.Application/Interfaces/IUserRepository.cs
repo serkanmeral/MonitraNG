@@ -31,6 +31,7 @@ namespace MngKeeper.Application.Interfaces
             string domainId,
             string? searchTerm = null,
             bool? isActive = null,
+            bool? includeInApplication = null,
             string? sortBy = null,
             string? sortOrder = null);
         
@@ -43,6 +44,7 @@ namespace MngKeeper.Application.Interfaces
             int pageSize,
             string? searchTerm = null,
             bool? isActive = null,
+            bool? includeInApplication = null,
             string? sortBy = null,
             string? sortOrder = null);
         

@@ -54,6 +54,7 @@ namespace MngKeeper.Application.Features.User.Queries.GetUsers
                     request.PageSize,
                     request.SearchTerm,
                     request.IsActive,
+                    request.IncludeInApplication,
                     request.SortBy,
                     request.SortOrder);
 

@@ -1,8 +1,7 @@
 <script setup lang="ts">
 /** Sol panel: Temel bilgiler formu (name, title, description, slug, isDefault, isActive, permissions) */
-import { computed, ref, onMounted } from 'vue';
-import { useAuthStore } from '@/stores/auth';
-import { fetchFromMngKeeper } from '@/services/apiService';
+import { computed } from 'vue';
+import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import type { DashboardFormData } from './types';
 
 const props = defineProps<{
@@ -14,56 +13,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: DashboardFormData];
 }>();
-
-const authStore = useAuthStore();
-
-// Groups for permissions
-const groups = ref<Array<{ id: string; name: string; isActive: boolean }>>([]);
-const loadingGroups = ref(false);
-
-// Filtered groups - Manager kullanıcılar "admins" grubunu göremez
-const filteredGroups = computed(() => {
-  if (authStore.isAdmin) {
-    return groups.value.filter(g => g.isActive);
-  }
-  return groups.value.filter(g => g.isActive && g.name.toLowerCase() !== 'admins');
-});
-
-// Load groups
-const loadGroups = async () => {
-  loadingGroups.value = true;
-  try {
-    const response = await fetchFromMngKeeper('/group?page=1&pageSize=1000', 'GET');
-    let loadedGroups: any[] = [];
-    
-    if (response && Array.isArray(response)) {
-      loadedGroups = response;
-    } else if (response?.groups && Array.isArray(response.groups)) {
-      loadedGroups = response.groups;
-    } else if (response?.data && Array.isArray(response.data)) {
-      loadedGroups = response.data;
-    } else if (response?.Groups && Array.isArray(response.Groups)) {
-      loadedGroups = response.Groups;
-    }
-    
-    groups.value = loadedGroups.filter((g: any) => {
-      const isActive = g.isActive !== undefined ? g.isActive : (g.IsActive !== undefined ? g.IsActive : true);
-      return isActive !== false;
-    });
-  } catch {
-    groups.value = [];
-  } finally {
-    loadingGroups.value = false;
-  }
-};
-
-// Group options for select
-const groupOptions = computed(() => {
-  return filteredGroups.value.map(g => ({
-    title: g.name,
-    value: g.name,
-  }));
-});
 
 // Selected groups for view permissions
 const viewGroups = computed({
@@ -107,11 +56,6 @@ function update<K extends keyof DashboardFormData>(key: K, value: DashboardFormD
 }
 
 const lbl = (key: string) => props.t?.(`dashboards.builder.form.${key}`) ?? key;
-
-// Load groups on mount
-onMounted(() => {
-  loadGroups();
-});
 </script>
 
 <template>
@@ -195,30 +139,21 @@ onMounted(() => {
         <v-alert type="info" variant="tonal" density="compact" class="mb-4">
           {{ t?.('dashboards.builder.form.permissionsHint') || 'Dashboard\'ı görüntüleyebilecek ve düzenleyebilecek grupları seçin. Hiçbir grup seçilmezse, tüm kullanıcılar erişebilir. Admin kullanıcılar her zaman tüm dashboard\'ları görebilir ve düzenleyebilir.' }}
         </v-alert>
-        
+
         <!-- View Permissions -->
         <div class="mb-4">
           <div class="text-caption text-medium-emphasis mb-2">
             {{ t?.('dashboards.builder.form.viewPermissions') || 'Görüntüleme Yetkisi' }}
           </div>
-          <v-select
+          <MngDirectoryPickerField
             v-model="viewGroups"
-            :items="groupOptions"
-            :label="t?.('dashboards.builder.form.viewGroups') || 'Görüntüleme Grupları'"
+            entity="group"
+            group-value-key="name"
             multiple
-            chips
-            closable-chips
-            variant="outlined"
+            :label="t?.('dashboards.builder.form.viewGroups') || 'Görüntüleme Grupları'"
             density="compact"
-            :loading="loadingGroups"
             :disabled="disabled"
-            hint="Birden fazla grup seçebilirsiniz"
-            persistent-hint
-          >
-            <template #prepend-inner>
-              <v-icon>mdi-eye</v-icon>
-            </template>
-          </v-select>
+          />
         </div>
 
         <!-- Edit Permissions -->
@@ -226,24 +161,15 @@ onMounted(() => {
           <div class="text-caption text-medium-emphasis mb-2">
             {{ t?.('dashboards.builder.form.editPermissions') || 'Düzenleme Yetkisi' }}
           </div>
-          <v-select
+          <MngDirectoryPickerField
             v-model="editGroups"
-            :items="groupOptions"
-            :label="t?.('dashboards.builder.form.editGroups') || 'Düzenleme Grupları'"
+            entity="group"
+            group-value-key="name"
             multiple
-            chips
-            closable-chips
-            variant="outlined"
+            :label="t?.('dashboards.builder.form.editGroups') || 'Düzenleme Grupları'"
             density="compact"
-            :loading="loadingGroups"
             :disabled="disabled"
-            hint="Birden fazla grup seçebilirsiniz"
-            persistent-hint
-          >
-            <template #prepend-inner>
-              <v-icon>mdi-pencil</v-icon>
-            </template>
-          </v-select>
+          />
         </div>
       </v-card-text>
     </v-card>

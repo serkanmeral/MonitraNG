@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
-import { useGroupStore } from '@/stores/apps/group';
+import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import {
   defaultOdakPackagePoDocumentAccessConfig,
   type OdakPackagePoDocumentAccessConfig,
@@ -15,7 +15,6 @@ import {
 
 const { t } = useAppI18n();
 const panelError = usePanelErrorNotify('errors.dg.generic');
-const groupStore = useGroupStore();
 
 const loading = ref(true);
 const saving = ref(false);
@@ -24,21 +23,11 @@ const successMessage = ref('');
 const rowId = ref<string | null>(null);
 const config = ref<OdakPackagePoDocumentAccessConfig>(defaultOdakPackagePoDocumentAccessConfig());
 
-const groupItems = computed(() =>
-  (groupStore.groups ?? [])
-    .map((g) => ({
-      value: g.name ?? g.groupName ?? '',
-      title: g.name ?? g.groupName ?? '',
-    }))
-    .filter((g) => g.value)
-);
-
 async function load() {
   loading.value = true;
   errorMessage.value = '';
   successMessage.value = '';
   try {
-    await groupStore.fetchAllGroups();
     const resp = await loadOdakPackagePoDocumentAccessConfig();
     config.value = resp.config;
     rowId.value = resp.rowId;
@@ -83,17 +72,12 @@ onMounted(() => {
     </v-alert>
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
 
-    <v-autocomplete
+    <MngDirectoryPickerField
       v-model="config.restrictedViewerGroups"
-      :items="groupItems"
-      :label="t('odakSiparis.packages.settings.poDocumentAccess.groupsLabel')"
-      :hint="t('odakSiparis.packages.settings.poDocumentAccess.groupsHint')"
-      persistent-hint
+      entity="group"
+      group-value-key="name"
       multiple
-      chips
-      closable-chips
-      variant="outlined"
-      density="comfortable"
+      :label="t('odakSiparis.packages.settings.poDocumentAccess.groupsLabel')"
       :disabled="loading || saving"
       class="mb-4"
     />

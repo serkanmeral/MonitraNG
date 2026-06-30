@@ -12,6 +12,7 @@ using MngKeeper.Application.Features.User.Queries.GetUsersByIds;
 using MngKeeper.Application.Features.User.Queries.ExportUsers;
 using MngKeeper.Api.Attributes;
 using MngKeeper.Application.Interfaces;
+using MngKeeper.Application.Directory;
 
 namespace MngKeeper.Api.Controllers
 {
@@ -24,6 +25,7 @@ namespace MngKeeper.Api.Controllers
         private readonly IMinioService _minioService;
         private readonly IDomainRepository _domainRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IUserPhotoProfileService _photoProfileService;
         private readonly IPasswordResetTokenRepository _passwordResetTokenRepository;
         private readonly INotifierService _notifierService;
         private readonly IConfiguration _configuration;
@@ -34,6 +36,7 @@ namespace MngKeeper.Api.Controllers
             IMinioService minioService, 
             IDomainRepository domainRepository,
             IUserRepository userRepository,
+            IUserPhotoProfileService photoProfileService,
             IPasswordResetTokenRepository passwordResetTokenRepository,
             INotifierService notifierService,
             IConfiguration configuration,
@@ -43,6 +46,7 @@ namespace MngKeeper.Api.Controllers
             _minioService = minioService;
             _domainRepository = domainRepository;
             _userRepository = userRepository;
+            _photoProfileService = photoProfileService;
             _passwordResetTokenRepository = passwordResetTokenRepository;
             _notifierService = notifierService;
             _configuration = configuration;
@@ -82,6 +86,7 @@ namespace MngKeeper.Api.Controllers
             [FromQuery] int pageSize = 10,
             [FromQuery] string? searchTerm = null,
             [FromQuery] bool? isActive = null,
+            [FromQuery] bool? includeInApplication = null,
             [FromQuery] string? sortBy = null,
             [FromQuery] string? sortOrder = null)
         {
@@ -91,6 +96,7 @@ namespace MngKeeper.Api.Controllers
                 PageSize = pageSize,
                 SearchTerm = searchTerm,
                 IsActive = isActive,
+                IncludeInApplication = includeInApplication,
                 SortBy = sortBy,
                 SortOrder = sortOrder
             };
@@ -257,35 +263,24 @@ namespace MngKeeper.Api.Controllers
                     return BadRequest(new { error = "Domain not found." });
                 }
 
-                // Convert DatabaseName to MinIO bucket name (replace underscore with hyphen)
-                // DatabaseName format: mng_{domainName} (e.g., "mng_meral")
-                // MinIO bucket name format: mng-{domainName} (e.g., "mng-meral")
-                // MinIO bucket names cannot contain underscores, only lowercase letters, numbers, dots, and hyphens
-                var bucketName = domain.DatabaseName.ToLower().Replace("_", "-"); // e.g., "mng_meral" -> "mng-meral"
-                // Object path: data/users/{userId}/photo.{ext}
-                var objectName = $"data/users/{userId}/photo{extension}";
-
-                // Upload to MinIO
-                using var stream = file.OpenReadStream();
-                var success = await _minioService.PutObjectAsync(
-                    bucketName,
-                    objectName,
-                    stream,
-                    file.ContentType
-                );
-
-                if (!success)
+                var user = await _userRepository.GetByIdAsync(userId, claims.DomainId);
+                if (user == null)
                 {
-                    _logger.LogError("Failed to upload photo to MinIO for user {UserId}", userId);
-                    return StatusCode(500, new { error = "Failed to upload photo." });
+                    return NotFound(new { error = "User not found." });
                 }
 
-                // Build photo URL (proxy URL format: /keeper/api/user/{userId}/photo)
-                var photoUrl = $"/keeper/api/user/{userId}/photo";
+                await using var stream = file.OpenReadStream();
+                await _photoProfileService.PersistManualUploadAsync(
+                    user,
+                    domain,
+                    stream,
+                    file.ContentType.ToLower());
 
-                _logger.LogInformation("Photo uploaded successfully for user {UserId} to {ObjectName}", userId, objectName);
+                var photoUrl = UserPhotoProfileHelper.BuildPhotoUrl(userId);
 
-                return Ok(new { photoUrl, url = photoUrl, fileUrl = photoUrl });
+                _logger.LogInformation("Photo uploaded successfully for user {UserId}", userId);
+
+                return Ok(new { photoUrl, url = photoUrl, fileUrl = photoUrl, photoSource = "Manual" });
             }
             catch (Exception ex)
             {
@@ -384,56 +379,23 @@ namespace MngKeeper.Api.Controllers
                     return BadRequest(new { error = "Domain information not found in token." });
                 }
 
-                // Get domain to retrieve DatabaseName (which is the MinIO bucket name: mng_{domainName})
                 var domain = await _domainRepository.GetByIdAsync(claims.DomainId);
                 if (domain == null)
                 {
                     return BadRequest(new { error = "Domain not found." });
                 }
 
-                // Convert DatabaseName to MinIO bucket name (replace underscore with hyphen)
-                // DatabaseName format: mng_{domainName} (e.g., "mng_meral")
-                // MinIO bucket name format: mng-{domainName} (e.g., "mng-meral")
-                var bucketName = domain.DatabaseName.ToLower().Replace("_", "-");
-                
-                // Try to delete photo from MinIO (try different extensions)
-                var extensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
-                bool deletedFromMinIO = false;
-                
-                foreach (var ext in extensions)
+                var user = await _userRepository.GetByIdAsync(userId, claims.DomainId);
+                if (user == null)
                 {
-                    var objectName = $"data/users/{userId}/photo{ext}";
-                    var deleted = await _minioService.RemoveObjectAsync(bucketName, objectName);
-                    if (deleted)
-                    {
-                        deletedFromMinIO = true;
-                        _logger.LogInformation("Photo deleted from MinIO: {BucketName}/{ObjectName}", bucketName, objectName);
-                        break; // Found and deleted, no need to try other extensions
-                    }
+                    return NotFound(new { error = "User not found." });
                 }
-                
-                if (!deletedFromMinIO)
-                {
-                    _logger.LogWarning("Photo not found in MinIO for user {UserId}, continuing with database update", userId);
-                }
-                
-                // Update user's photoUrl to null in database
-                var command = new UpdateUserCommand
-                {
-                    UserId = userId,
-                    PhotoUrl = null
-                };
-                
-                var response = await _mediator.Send(command);
-                
-                if (!response.IsSuccess)
-                {
-                    return BadRequest(response);
-                }
+
+                await _photoProfileService.PersistPhotoRemovalAsync(user, domain);
 
                 _logger.LogInformation("Photo removed successfully for user {UserId}", userId);
 
-                return Ok(new { message = "Photo removed successfully." });
+                return Ok(new { message = "Photo removed successfully.", photoSource = "None" });
             }
             catch (Exception ex)
             {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
-import OcPersonPickerAutocomplete from '@/components/apps/operation-core/OcPersonPickerAutocomplete.vue';
+import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import {
   ODAK_SIPARIS_NOTIFICATION_EVENT_TYPES,
   newOdakNotificationPolicyDraft,
@@ -100,8 +100,9 @@ function submit() {
           </v-col>
         </v-row>
 
-        <OcPersonPickerAutocomplete
+        <MngDirectoryPickerField
           v-model="draft.recipientPersonIds"
+          entity="user"
           :label="t('odakSiparis.packages.settings.notifications.fieldRecipients')"
           multiple
           class="mb-3"

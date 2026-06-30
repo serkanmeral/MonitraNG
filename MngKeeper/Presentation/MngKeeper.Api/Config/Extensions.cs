@@ -169,6 +169,7 @@ public static class Extensions
         // Directory sync (K2)
         services.AddSingleton<MngKeeper.Application.Interfaces.IDirectorySyncCoordinator, MngKeeper.Infrastructure.Services.DirectorySyncCoordinator>();
         services.AddScoped<MngKeeper.Application.Interfaces.IKeycloakToMongoSyncService, MngKeeper.Infrastructure.Services.KeycloakToMongoSyncService>();
+        services.AddScoped<MngKeeper.Application.Interfaces.IUserPhotoProfileService, MngKeeper.Infrastructure.Services.UserPhotoProfileService>();
 
         services.AddHttpContextAccessor();
     }

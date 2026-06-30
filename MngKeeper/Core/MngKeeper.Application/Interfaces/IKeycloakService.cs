@@ -32,6 +32,12 @@ namespace MngKeeper.Application.Interfaces
         Task<IReadOnlyList<KeycloakRealmUserSnapshot>> ListRealmUsersAsync(string realmName, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<KeycloakRealmGroupSnapshot>> ListRealmGroupsAsync(string realmName, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<string>> GetUserGroupNamesAsync(string realmName, string userId, CancellationToken cancellationToken = default);
+
+        /// <summary>Keycloak/LDAP kullanıcı profil fotoğrafı (thumbnailPhoto vb.).</summary>
+        Task<KeycloakUserPhotoData?> GetRealmUserPhotoAsync(
+            string realmName,
+            string keycloakUserId,
+            CancellationToken cancellationToken = default);
     }
 
     public class RealmInfo

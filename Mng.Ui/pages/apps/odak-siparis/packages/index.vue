@@ -43,6 +43,10 @@ import {
   type OdakPackageLineStats,
   type OdakPackageListSort,
 } from '@/utils/odakSiparisService';
+import {
+  collectPersonIdsFromPackageRows,
+  fetchPersonLabelMap,
+} from '@/utils/odakSiparisPackagePersonnel';
 import type { OdakCustomerDialogMode } from '@/utils/odakSiparisCustomerService';
 import type { OdakPackageDialogMode } from '@/utils/odakSiparisPackageService';
 import { exportOdakPackagesToCsv, ODAK_PACKAGE_EXPORT_MAX } from '@/utils/odakSiparisPackageExport';
@@ -74,6 +78,7 @@ const listConfig = ref<OdakPackageListConfig>(defaultOdakPackageListConfig());
 const fieldPolicies = ref<OdakFieldPoliciesBlob>({ policiesByField: {} });
 const { canViewListColumn } = useOdakPackageFieldAccess(fieldPolicies);
 const customerLabels = ref<Record<string, string>>({});
+const personLabels = ref<Record<string, string>>({});
 const relationFilterOptions = ref<Record<string, { value: string; title: string }[]>>({});
 const activeListFilters = ref<AfListFilter[]>([]);
 const totalCount = ref(0);
@@ -113,7 +118,7 @@ function columnTitle(fieldName: string, _listKey: string): string {
 }
 
 function listCellContext() {
-  return { customerLabels: customerLabels.value, lineStats: lineStats.value };
+  return { customerLabels: customerLabels.value, personLabels: personLabels.value, lineStats: lineStats.value };
 }
 
 const genericListColumns = computed(() =>
@@ -259,6 +264,10 @@ async function fetchPackages() {
 
     items.value = [...resp.items];
     totalCount.value = resp.total ?? items.value.length;
+    const personIds = collectPersonIdsFromPackageRows(items.value as Record<string, unknown>[]);
+    if (personIds.length) {
+      personLabels.value = { ...personLabels.value, ...(await fetchPersonLabelMap(personIds)) };
+    }
     const pageIds = items.value.map((x) => packageDataId(x)).filter(Boolean);
     const needsPoCols = configurableHeaders.value.some(
       (h) => h.key === 'customerPo' || h.key === 'projectNo'

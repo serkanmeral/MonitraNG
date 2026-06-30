@@ -191,7 +191,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                 existingUser.Department = request.Department;
                 existingUser.Gender = request.Gender;
                 existingUser.PhoneNumber = request.PhoneNumber;
-                existingUser.PhotoUrl = request.PhotoUrl;
+                UserPhotoProfileHelper.ApplyPhotoUrlFromRequest(existingUser, request.PhotoUrl);
                 
                 // Convert group IDs to group names (User.Groups stores group names, not IDs)
                 // Only update groups if GroupIds is explicitly provided (not null)
@@ -259,6 +259,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                 }
                 
                 existingUser.IsActive = request.IsActive;
+                existingUser.IncludeInApplication = request.IncludeInApplication;
                 existingUser.UpdatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser; // TODO: Get from current user context
                 existingUser.UpdatedAt = DateTime.UtcNow;
 
@@ -322,6 +323,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                     PhotoUrl = updatedUser.PhotoUrl,
                     GroupIds = updatedUser.Groups,
                     IsActive = updatedUser.IsActive,
+                    IncludeInApplication = updatedUser.IncludeInApplication,
                     UpdatedAt = updatedUser.UpdatedAt ?? DateTime.UtcNow,
                     IsSuccess = true
                 };
@@ -347,7 +349,8 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
             existingUser.Department = request.Department;
             existingUser.Gender = request.Gender;
             existingUser.PhoneNumber = request.PhoneNumber;
-            existingUser.PhotoUrl = request.PhotoUrl;
+            UserPhotoProfileHelper.ApplyPhotoUrlFromRequest(existingUser, request.PhotoUrl);
+            existingUser.IncludeInApplication = request.IncludeInApplication;
             existingUser.UpdatedBy = MngKeeper.Application.Common.Constants.SystemConstants.SystemUser;
             existingUser.UpdatedAt = DateTime.UtcNow;
 
@@ -397,6 +400,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
                 PhotoUrl = updatedUser.PhotoUrl,
                 GroupIds = updatedUser.Groups,
                 IsActive = updatedUser.IsActive,
+                IncludeInApplication = updatedUser.IncludeInApplication,
                 UpdatedAt = updatedUser.UpdatedAt ?? DateTime.UtcNow,
                 IsSuccess = true
             };

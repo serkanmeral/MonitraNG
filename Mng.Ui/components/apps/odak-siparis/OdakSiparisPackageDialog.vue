@@ -17,6 +17,11 @@ import {
   type OdakPackageDialogMode,
   type OdakPackageFormModel,
 } from '@/utils/odakSiparisPackageService';
+import {
+  loadDesignPersonnelSelectOptions,
+  loadManufacturePersonnelSelectOptions,
+  ensurePersonnelOptionsIncludeSelected,
+} from '@/utils/odakSiparisPackagePersonnel';
 import { packageDisplayNo } from '@/utils/odakSiparisService';
 
 const props = defineProps<{
@@ -39,6 +44,8 @@ const saving = ref(false);
 const errorMessage = ref('');
 const customerItems = ref<{ value: string; title: string }[]>([]);
 const customerContactItems = ref<{ value: string; title: string }[]>([]);
+const designPersonnelItems = ref<{ value: string; title: string }[]>([]);
+const manufacturePersonnelItems = ref<{ value: string; title: string }[]>([]);
 const skipContactReset = ref(false);
 const form = reactive<OdakPackageFormModel>(emptyPackageFormModel());
 const fieldPolicies = ref<OdakFieldPoliciesBlob>({ policiesByField: {} });
@@ -62,11 +69,15 @@ function fieldReadonly(fieldKey: string): boolean {
 }
 
 const showCustomerContactsGroup = computed(
-  () =>
-    fieldVisible('customerContactId') ||
-    fieldVisible('designContactId') ||
-    fieldVisible('manufactureContactId')
+  () => fieldVisible('customerContactId')
 );
+
+const showOdakPersonnelGroup = computed(
+  () => fieldVisible('designContactId') || fieldVisible('manufactureContactId')
+);
+
+const designPersonnelPoolEmpty = computed(() => designPersonnelItems.value.length === 0);
+const manufacturePersonnelPoolEmpty = computed(() => manufacturePersonnelItems.value.length === 0);
 
 const isEdit = computed(() => props.mode === 'edit');
 
@@ -85,18 +96,29 @@ async function loadCustomerContacts(customerId: string | null, keepSelection = f
   customerContactItems.value = await loadCustomerContactOptions(customerId);
   if (!keepSelection) {
     form.customerContactId = null;
-    form.designContactId = null;
-    form.manufactureContactId = null;
     return;
   }
-  const selectedIds = [form.customerContactId, form.designContactId, form.manufactureContactId].filter(
-    (id): id is string => !!id
-  );
-  for (const id of selectedIds) {
-    if (!customerContactItems.value.some((c) => c.value === id)) {
-      customerContactItems.value = [{ value: id, title: id }, ...customerContactItems.value];
-    }
+  const selectedId = form.customerContactId;
+  if (selectedId && !customerContactItems.value.some((c) => c.value === selectedId)) {
+    customerContactItems.value = [{ value: selectedId, title: selectedId }, ...customerContactItems.value];
   }
+}
+
+async function loadOdakPersonnelOptions(keepSelection = false) {
+  let designItems = await loadDesignPersonnelSelectOptions();
+  let manufactureItems = await loadManufacturePersonnelSelectOptions();
+  if (keepSelection) {
+    designItems = await ensurePersonnelOptionsIncludeSelected(designItems, form.designContactId);
+    manufactureItems = await ensurePersonnelOptionsIncludeSelected(
+      manufactureItems,
+      form.manufactureContactId
+    );
+  } else {
+    form.designContactId = null;
+    form.manufactureContactId = null;
+  }
+  designPersonnelItems.value = designItems;
+  manufacturePersonnelItems.value = manufactureItems;
 }
 
 async function loadDialog() {
@@ -112,6 +134,7 @@ async function loadDialog() {
       Object.assign(form, emptyPackageFormModel());
       existingRow.value = null;
       customerContactItems.value = [];
+      await loadOdakPersonnelOptions(false);
       return;
     }
     const id = props.packageId;
@@ -124,7 +147,10 @@ async function loadDialog() {
     if (!full) throw new Error(t('odakSiparis.packages.dialog.notFound'));
     Object.assign(form, packageRowToFormModel(full));
     existingRow.value = full;
-    await loadCustomerContacts(form.customerId, true);
+    await Promise.all([
+      loadCustomerContacts(form.customerId, true),
+      loadOdakPersonnelOptions(true),
+    ]);
     const cid = form.customerId;
     if (cid && !customerItems.value.some((c) => c.value === cid)) {
       const label = props.seedRow ? String(props.seedRow.name ?? cid) : cid;
@@ -265,7 +291,7 @@ watch(
                   {{ t('odakSiparis.packages.dialog.customerContactsGroup') }}
                 </div>
               </v-col>
-              <v-col v-if="fieldVisible('customerContactId')" cols="12" md="4">
+              <v-col v-if="fieldVisible('customerContactId')" cols="12" md="6">
                 <v-select
                   v-model="form.customerContactId"
                   :items="customerContactItems"
@@ -279,37 +305,52 @@ watch(
                   hide-details="auto"
                 />
               </v-col>
-              <v-col v-if="fieldVisible('designContactId')" cols="12" md="4">
+              <v-col v-if="!form.customerId && fieldVisible('customerContactId')" cols="12">
+                <div class="text-caption text-medium-emphasis">
+                  {{ t('odakSiparis.packages.dialog.selectCustomerFirst') }}
+                </div>
+              </v-col>
+            </template>
+            <template v-if="showOdakPersonnelGroup">
+              <v-col cols="12">
+                <div class="text-subtitle-2 font-weight-medium mb-1">
+                  {{ t('odakSiparis.packages.dialog.odakPersonnelGroup') }}
+                </div>
+              </v-col>
+              <v-col v-if="fieldVisible('designContactId')" cols="12" md="6">
                 <v-select
                   v-model="form.designContactId"
-                  :items="customerContactItems"
+                  :items="designPersonnelItems"
                   item-title="title"
                   item-value="value"
                   :label="t('odakSiparis.detail.fields.designResponsible')"
-                  :disabled="!form.customerId || fieldReadonly('designContactId')"
+                  :disabled="designPersonnelPoolEmpty || fieldReadonly('designContactId')"
                   variant="outlined"
                   density="comfortable"
                   clearable
                   hide-details="auto"
                 />
               </v-col>
-              <v-col v-if="fieldVisible('manufactureContactId')" cols="12" md="4">
+              <v-col v-if="fieldVisible('manufactureContactId')" cols="12" md="6">
                 <v-select
                   v-model="form.manufactureContactId"
-                  :items="customerContactItems"
+                  :items="manufacturePersonnelItems"
                   item-title="title"
                   item-value="value"
                   :label="t('odakSiparis.detail.fields.manufactureResponsible')"
-                  :disabled="!form.customerId || fieldReadonly('manufactureContactId')"
+                  :disabled="manufacturePersonnelPoolEmpty || fieldReadonly('manufactureContactId')"
                   variant="outlined"
                   density="comfortable"
                   clearable
                   hide-details="auto"
                 />
               </v-col>
-              <v-col v-if="!form.customerId" cols="12">
+              <v-col
+                v-if="designPersonnelPoolEmpty || manufacturePersonnelPoolEmpty"
+                cols="12"
+              >
                 <div class="text-caption text-medium-emphasis">
-                  {{ t('odakSiparis.packages.dialog.selectCustomerFirst') }}
+                  {{ t('odakSiparis.packages.dialog.personnelPoolEmpty') }}
                 </div>
               </v-col>
             </template>

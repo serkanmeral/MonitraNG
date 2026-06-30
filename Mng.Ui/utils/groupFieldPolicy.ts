@@ -4,6 +4,7 @@ export interface GroupCapabilities {
   canEdit: boolean;
   canDelete: boolean;
   canManageMembers: boolean;
+  canChangeApplicationScope?: boolean;
 }
 
 export interface GroupProvisioningFields {
@@ -20,6 +21,7 @@ export function normalizeGroupCapabilities(
     canEdit: Boolean(raw.canEdit ?? raw.CanEdit ?? true),
     canDelete: Boolean(raw.canDelete ?? raw.CanDelete ?? true),
     canManageMembers: Boolean(raw.canManageMembers ?? raw.CanManageMembers ?? true),
+    canChangeApplicationScope: Boolean(raw.canChangeApplicationScope ?? raw.CanChangeApplicationScope ?? true),
   };
 }
 
@@ -72,4 +74,11 @@ export function canManageGroupMembers(
 ): boolean {
   if (group?.capabilities?.canManageMembers === false) return false;
   return !isDirectoryGroup(group);
+}
+
+export function canChangeGroupApplicationScope(
+  group: GroupProvisioningFields | null | undefined
+): boolean {
+  if (group?.capabilities?.canChangeApplicationScope === false) return false;
+  return true;
 }

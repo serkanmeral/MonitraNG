@@ -9,6 +9,7 @@ namespace MngKeeper.Application.Features.Group.Queries.GetGroups
         public int PageSize { get; set; } = 10;
         public string? SearchTerm { get; set; }
         public bool? IsActive { get; set; }
+        public bool? IncludeInApplication { get; set; }
     }
 
     public class GetGroupsResponse

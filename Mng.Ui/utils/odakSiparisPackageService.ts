@@ -22,6 +22,7 @@ import {
   customerContactIdFromRow,
   fetchContactSelectOptions,
 } from '@/utils/odakSiparisCustomerContactService';
+import { personIdFromRow } from '@/utils/odakSiparisPackagePersonnel';
 
 export type OdakPackageDialogMode = 'create' | 'edit';
 
@@ -69,8 +70,8 @@ export function packageRowToFormModel(row: OdakPackageRow): OdakPackageFormModel
     name: row.name ?? '',
     customerId: customerIdFromRow(row) || null,
     customerContactId: customerContactIdFromRow(row.customerContactId) || null,
-    designContactId: customerContactIdFromRow(row.designContactId) || null,
-    manufactureContactId: customerContactIdFromRow(row.manufactureContactId) || null,
+    designContactId: personIdFromRow(row.designContactId) || null,
+    manufactureContactId: personIdFromRow(row.manufactureContactId) || null,
     status: row.status === 'closed' ? 'closed' : 'open',
     beginDate: toDateInputValue(row.beginDate),
     deliveryDate: toDateInputValue(row.deliveryDate),

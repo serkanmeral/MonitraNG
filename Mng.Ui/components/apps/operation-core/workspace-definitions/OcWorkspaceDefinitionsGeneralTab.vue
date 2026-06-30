@@ -3,8 +3,8 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { useOcWorkspaceCatalogInject } from '@/composables/useOcWorkspaceCatalog';
+import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import { ocGetWorkspace, ocUpdateWorkspace } from '@/services/operationCoreService';
-import { useGroupStore } from '@/stores/apps/group';
 import type { OpWorkspaceDetail } from '@/types/apps/operationCore';
 import { OC_WORKSPACE_TYPE_VALUES } from '@/types/apps/operationCore';
 
@@ -14,7 +14,6 @@ const props = defineProps<{
 
 const { t, locale } = useAppI18n();
 const panelError = usePanelErrorNotify('errors.dg.generic');
-const groupStore = useGroupStore();
 const catalog = useOcWorkspaceCatalogInject();
 
 /** i18n message compiler `{seq:D4}` gibi süslü parantezleri parse edemez; hint doğrudan metin. */
@@ -48,19 +47,6 @@ const workspaceTypeItems = computed(() =>
     title: t(`operationCore.workspaceDefinitions.general.workspaceType.${value}`),
   }))
 );
-
-const groupItems = computed(() =>
-  (groupStore.groups || []).map((g) => ({
-    title: g.name,
-    value: g.id || g.groupId,
-  }))
-);
-
-onMounted(() => {
-  if (!groupStore.groups?.length) {
-    void groupStore.fetchGroups();
-  }
-});
 
 async function loadWorkspace() {
   if (!props.workspaceId) return;
@@ -224,48 +210,33 @@ async function saveGeneral() {
       </p>
       <v-row dense>
         <v-col cols="12" md="4">
-          <v-select
+          <MngDirectoryPickerField
             v-model="form.viewGroups"
-            :items="groupItems"
-            item-title="title"
-            item-value="value"
+            entity="group"
+            multiple
             :label="t('operationCore.workspaceDefinitions.general.fieldViewGroups')"
-            variant="outlined"
             density="compact"
-            multiple
-            chips
-            closable-chips
-            clearable
+            variant="outlined"
           />
         </v-col>
         <v-col cols="12" md="4">
-          <v-select
+          <MngDirectoryPickerField
             v-model="form.editGroups"
-            :items="groupItems"
-            item-title="title"
-            item-value="value"
-            :label="t('operationCore.workspaceDefinitions.general.fieldEditGroups')"
-            variant="outlined"
-            density="compact"
+            entity="group"
             multiple
-            chips
-            closable-chips
-            clearable
+            :label="t('operationCore.workspaceDefinitions.general.fieldEditGroups')"
+            density="compact"
+            variant="outlined"
           />
         </v-col>
         <v-col cols="12" md="4">
-          <v-select
+          <MngDirectoryPickerField
             v-model="form.adminGroups"
-            :items="groupItems"
-            item-title="title"
-            item-value="value"
-            :label="t('operationCore.workspaceDefinitions.general.fieldAdminGroups')"
-            variant="outlined"
-            density="compact"
+            entity="group"
             multiple
-            chips
-            closable-chips
-            clearable
+            :label="t('operationCore.workspaceDefinitions.general.fieldAdminGroups')"
+            density="compact"
+            variant="outlined"
           />
         </v-col>
       </v-row>

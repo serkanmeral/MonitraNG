@@ -14,7 +14,6 @@ import { ocListDatasetPage } from '@/services/operationCoreService';
 import { useAutomatedFormsStore } from '@/stores/apps/automatedForms';
 import { useDatasetStore } from '@/stores/apps/dataset';
 import { useUserStore } from '@/stores/apps/user';
-import { useGroupStore } from '@/stores/apps/group';
 import { useAuthStore } from '@/stores/auth';
 import { useLocaleStore } from '@/stores/locale';
 import { fetchFromDataGateway, fetchBlobFromDataGateway, getDataGatewayProxyUrl } from '@/services/apiService';
@@ -43,7 +42,6 @@ const router = useRouter();
 const formStore = useAutomatedFormsStore();
 const datasetStore = useDatasetStore();
 const userStore = useUserStore();
-const groupStore = useGroupStore();
 const authStore = useAuthStore();
 const localeStore = useLocaleStore();
 
@@ -68,7 +66,6 @@ const tableOptions = ref({
 // Liste filtreleri (gelişmiş — yalnızca filterable sütunlar)
 const activeListFilters = ref<AfListFilter[]>([]);
 const relationFilterOptions = ref<Record<string, { value: string; title: string }[]>>({});
-const groupFilterOptions = ref<Record<string, { value: string; title: string }[]>>({});
 /** Liste relation sütunları: fieldName → (__dataId → görünen etiket) */
 const relationListLabelCache = ref<Record<string, Record<string, string>>>({});
 
@@ -203,7 +200,6 @@ async function loadFilterLookupOptions() {
 
   const relationConfig = form.value.formConfig?.relationFieldConfig ?? {};
   const nextRelation: Record<string, { value: string; title: string }[]> = {};
-  const nextGroup: Record<string, { value: string; title: string }[]> = {};
 
   for (const col of filterableColumns.value) {
     const field = dataset.value.fields.find((f: { name: string }) => f.name === col.key);
@@ -227,22 +223,9 @@ async function loadFilterLookupOptions() {
         nextRelation[col.key] = [];
       }
     }
-
-    if (col.kind === 'group') {
-      try {
-        await groupStore.fetchGroups({ page: 1, pageSize: 500 });
-        nextGroup[col.key] = groupStore.groups.map((g) => ({
-          value: g.id,
-          title: g.name,
-        }));
-      } catch {
-        nextGroup[col.key] = [];
-      }
-    }
   }
 
   relationFilterOptions.value = nextRelation;
-  groupFilterOptions.value = nextGroup;
 }
 
 function getEffectiveListDisplayField(fieldName: string): string {
@@ -635,7 +618,6 @@ watch(
       dataItems.value = [];
       activeListFilters.value = [];
       relationFilterOptions.value = {};
-      groupFilterOptions.value = {};
       relationListLabelCache.value = {};
       searchQuery.value = '';
       tableOptions.value.page = 1;
@@ -2599,7 +2581,6 @@ const getFormDescription = (): string => {
         v-if="form && dataset && filterableColumns.length > 0"
         :columns="filterableColumns"
         :relation-options-by-key="relationFilterOptions"
-        :group-options-by-key="groupFilterOptions"
         @update:filters="onListFiltersUpdate"
         @advanced-open="loadFilterLookupOptions"
       />

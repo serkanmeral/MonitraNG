@@ -50,7 +50,7 @@ export function useOcPersonPicker() {
   }
 
   function mapUsersFromStore(): OcPersonPickerItem[] {
-    return userStore.activeUsers
+    return userStore.users
       .map((u) => mapUserToOcPersonPickerItem(u))
       .filter((x): x is OcPersonPickerItem => x != null);
   }
@@ -64,10 +64,9 @@ export function useOcPersonPicker() {
     else loading.value = true;
 
     try {
-      await userStore.fetchUsers({
+      await userStore.fetchUsersForSelection({
         page: nextPage,
         pageSize: OC_PERSON_PICKER_PAGE_SIZE,
-        isActive: true,
         search: options.search.trim() || undefined,
       });
 

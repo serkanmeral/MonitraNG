@@ -44,8 +44,20 @@ namespace MngKeeper.Domain.Entities
         [BsonElement("photoUrl")]
         public string? PhotoUrl { get; set; }
 
+        [BsonElement("photoSource")]
+        [BsonRepresentation(BsonType.Int32)]
+        public UserPhotoSource PhotoSource { get; set; } = UserPhotoSource.None;
+
+        /// <summary>Directory kaynaklı fotoğrafın SHA-256 özeti (değişim tespiti).</summary>
+        [BsonElement("directoryPhotoHash")]
+        public string? DirectoryPhotoHash { get; set; }
+
         [BsonElement("isActive")]
         public bool IsActive { get; set; } = true;
+
+        /// <summary>MonitraNG uygulama kapsamında mı (picker/liste + login). Sync yazmaz.</summary>
+        [BsonElement("includeInApplication")]
+        public bool IncludeInApplication { get; set; } = true;
 
         [BsonElement("groups")]
         public List<string> Groups { get; set; } = new();

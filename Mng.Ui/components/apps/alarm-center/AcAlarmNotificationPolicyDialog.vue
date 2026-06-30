@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
-import OcPersonPickerAutocomplete from '@/components/apps/operation-core/OcPersonPickerAutocomplete.vue';
+import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import type { AlarmNotificationPolicy } from '@/types/apps/alarmNotificationPolicy';
 import type { AlarmRule } from '@/types/apps/alarm';
 import {
@@ -201,8 +201,9 @@ function submit() {
           {{ t('alarmCenter.notificationPolicies.sectionDelivery') }}
         </div>
 
-        <OcPersonPickerAutocomplete
+        <MngDirectoryPickerField
           v-model="draft.recipientPersonIds"
+          entity="user"
           multiple
           show-required-mark
           :label="t('alarmCenter.notificationPolicies.fieldRecipients')"

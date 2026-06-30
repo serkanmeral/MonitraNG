@@ -5,4 +5,5 @@ public class GroupCapabilitiesDto
   public bool CanEdit { get; set; }
   public bool CanDelete { get; set; }
   public bool CanManageMembers { get; set; }
+  public bool CanChangeApplicationScope { get; set; } = true;
 }

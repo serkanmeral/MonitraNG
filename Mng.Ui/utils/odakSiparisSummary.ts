@@ -7,6 +7,7 @@ import {
   packageStatusLabel,
 } from '@/utils/odakSiparisService';
 import { customerContactLabelFromRow } from '@/utils/odakSiparisCustomerContactService';
+import { personLabelFromRow } from '@/utils/odakSiparisPackagePersonnel';
 
 export type OdakPackageSummaryRow = {
   label: string;
@@ -33,11 +34,24 @@ function contactSummaryValue(contactField: unknown, legacyId?: string): string {
   return '—';
 }
 
+function personSummaryValue(
+  personField: unknown,
+  legacyId: string | undefined,
+  personLabels: Record<string, string>
+): string {
+  if (personField != null && personField !== '') {
+    return personLabelFromRow(personField, personLabels);
+  }
+  if (legacyId != null && legacyId !== '') return String(legacyId);
+  return '—';
+}
+
 /** Detay sayfasi ve liste expanded-row ozeti icin ortak alan listesi. */
 export function buildOdakPackageSummaryRows(
   pkg: OdakPackageRow,
   customerLabels: Record<string, string>,
-  t: (key: string) => string
+  t: (key: string) => string,
+  personLabels: Record<string, string> = {}
 ): OdakPackageSummaryRow[] {
   const customerId = customerIdFromRow(pkg);
   const customerLabel = customerLabelFromRow(pkg, customerLabels);
@@ -57,11 +71,11 @@ export function buildOdakPackageSummaryRows(
     },
     {
       label: t('odakSiparis.detail.fields.designResponsible'),
-      value: contactSummaryValue(pkg.designContactId, pkg.legacyDesignResponsibleId),
+      value: personSummaryValue(pkg.designContactId, pkg.legacyDesignResponsibleId, personLabels),
     },
     {
       label: t('odakSiparis.detail.fields.manufactureResponsible'),
-      value: contactSummaryValue(pkg.manufactureContactId, pkg.legacyManufactureResponsibleId),
+      value: personSummaryValue(pkg.manufactureContactId, pkg.legacyManufactureResponsibleId, personLabels),
     },
     { label: t('odakSiparis.detail.fields.partCount'), value: formatOdakNumber(pkg.partCount) },
     { label: t('odakSiparis.detail.fields.stockCount'), value: formatOdakNumber(pkg.stockCount) },

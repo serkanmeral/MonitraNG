@@ -2,6 +2,7 @@ using MongoDB.Driver;
 using MngKeeper.Application.Common;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Domain.Entities;
+using MngKeeper.Application.Directory;
 using MngKeeper.Domain.Enums;
 using MngKeeper.Application.Common.DTOs;
 using Microsoft.Extensions.Logging;
@@ -63,7 +64,14 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                 Gender = doc.Contains("gender") && !doc["gender"].IsBsonNull ? (Gender)doc["gender"].AsInt32 : Gender.NotSpecified,
                 PhoneNumber = doc.Contains("phoneNumber") && !doc["phoneNumber"].IsBsonNull ? doc["phoneNumber"].AsString : null,
                 PhotoUrl = doc.Contains("photoUrl") && !doc["photoUrl"].IsBsonNull ? doc["photoUrl"].AsString : null,
+                PhotoSource = doc.Contains("photoSource") && !doc["photoSource"].IsBsonNull
+                    ? (UserPhotoSource)doc["photoSource"].AsInt32
+                    : UserPhotoSource.None,
+                DirectoryPhotoHash = doc.Contains("directoryPhotoHash") && !doc["directoryPhotoHash"].IsBsonNull
+                    ? doc["directoryPhotoHash"].AsString
+                    : null,
                 IsActive = doc.GetValue("isActive", true).AsBoolean,
+                IncludeInApplication = ApplicationScopeDefaults.ResolveFromDocument(doc),
                 Groups = doc.GetValue("groups", new BsonArray()).AsBsonArray.Select(x => x.AsString).ToList(),
                 Roles = doc.GetValue("roles", new BsonArray()).AsBsonArray.Select(x => x.AsString).ToList(),
                 CreatedAt = doc.GetValue("createdAt", DateTime.UtcNow).ToUniversalTime(),
@@ -182,7 +190,10 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                     ["gender"] = (int)entity.Gender,
                     ["phoneNumber"] = string.IsNullOrEmpty(entity.PhoneNumber) ? BsonNull.Value : entity.PhoneNumber,
                     ["photoUrl"] = string.IsNullOrEmpty(entity.PhotoUrl) ? BsonNull.Value : entity.PhotoUrl,
+                    ["photoSource"] = (int)entity.PhotoSource,
+                    ["directoryPhotoHash"] = string.IsNullOrEmpty(entity.DirectoryPhotoHash) ? BsonNull.Value : entity.DirectoryPhotoHash,
                     ["isActive"] = entity.IsActive,
+                    ["includeInApplication"] = entity.IncludeInApplication,
                     ["groups"] = new BsonArray(entity.Groups ?? new List<string>()),
                     ["roles"] = new BsonArray(entity.Roles ?? new List<string>()),
                     ["createdAt"] = entity.CreatedAt,
@@ -227,7 +238,10 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                     ["gender"] = (int)entity.Gender,
                     ["phoneNumber"] = string.IsNullOrEmpty(entity.PhoneNumber) ? BsonNull.Value : entity.PhoneNumber,
                     ["photoUrl"] = string.IsNullOrEmpty(entity.PhotoUrl) ? BsonNull.Value : entity.PhotoUrl,
+                    ["photoSource"] = (int)entity.PhotoSource,
+                    ["directoryPhotoHash"] = string.IsNullOrEmpty(entity.DirectoryPhotoHash) ? BsonNull.Value : entity.DirectoryPhotoHash,
                     ["isActive"] = entity.IsActive,
+                    ["includeInApplication"] = entity.IncludeInApplication,
                     ["groups"] = new BsonArray(entity.Groups ?? new List<string>()),
                     ["roles"] = new BsonArray(entity.Roles ?? new List<string>()),
                     ["createdAt"] = entity.CreatedAt,
@@ -411,6 +425,7 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             string domainId,
             string? searchTerm = null,
             bool? isActive = null,
+            bool? includeInApplication = null,
             string? sortBy = null,
             string? sortOrder = null)
         {
@@ -436,6 +451,11 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                 if (isActive.HasValue)
                 {
                     filter &= filterBuilder.Eq("isActive", isActive.Value);
+                }
+
+                if (includeInApplication.HasValue)
+                {
+                    filter &= ApplicationScopeMongoFilters.IncludeInApplicationEquals(includeInApplication.Value);
                 }
 
                 // Build sort definition
@@ -477,6 +497,7 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             int pageSize,
             string? searchTerm = null,
             bool? isActive = null,
+            bool? includeInApplication = null,
             string? sortBy = null,
             string? sortOrder = null)
         {
@@ -502,6 +523,11 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                 if (isActive.HasValue)
                 {
                     filter &= filterBuilder.Eq("isActive", isActive.Value);
+                }
+
+                if (includeInApplication.HasValue)
+                {
+                    filter &= ApplicationScopeMongoFilters.IncludeInApplicationEquals(includeInApplication.Value);
                 }
 
                 // Get total count

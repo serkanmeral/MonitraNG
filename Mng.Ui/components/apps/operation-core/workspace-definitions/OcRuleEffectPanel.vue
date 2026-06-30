@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
-import OcPersonPickerAutocomplete from '@/components/apps/operation-core/OcPersonPickerAutocomplete.vue';
+import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import OcFormPolicyDefaultValueInput from '@/components/apps/operation-core/workspace-definitions/OcFormPolicyDefaultValueInput.vue';
 import type { OcConditionFieldOption } from '@/utils/ocConditionClauses';
 import type {
@@ -141,9 +141,10 @@ watch(
         class="mb-3"
         @update:model-value="emit('update:automationAction', $event)"
       />
-      <OcPersonPickerAutocomplete
+      <MngDirectoryPickerField
         v-if="automationAction === 'addWatcher'"
         :model-value="watcher"
+        entity="user"
         density="comfortable"
         class="mb-3"
         @update:model-value="emit('update:watcher', $event)"
@@ -207,9 +208,10 @@ watch(
         class="mb-3"
         @update:model-value="emit('update:defaultField', $event)"
       />
-      <OcPersonPickerAutocomplete
+      <MngDirectoryPickerField
         v-if="defaultAction === 'setAssignee'"
         :model-value="assignee"
+        entity="user"
         density="comfortable"
         class="mb-3"
         @update:model-value="emit('update:assignee', $event)"

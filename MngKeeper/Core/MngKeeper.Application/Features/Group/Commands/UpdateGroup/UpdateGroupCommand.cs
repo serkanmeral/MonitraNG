@@ -9,6 +9,7 @@ namespace MngKeeper.Application.Features.Group.Commands.UpdateGroup
         public string Description { get; set; } = string.Empty;
         public List<string> Permissions { get; set; } = new();
         public bool IsActive { get; set; } = true;
+        public bool IncludeInApplication { get; set; } = true;
         
         /// <summary>
         /// Custom data dictionary - MngDataGateway MongoDB'ye sync edilecek

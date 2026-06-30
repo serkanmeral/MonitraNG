@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
-import OcPersonPickerAutocomplete from '@/components/apps/operation-core/OcPersonPickerAutocomplete.vue';
+import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import type { OcBoardListFilter } from '@/types/apps/operationCore';
 import { collectPersonIdsFromValue } from '@/utils/ocPersonPicker';
 
@@ -27,7 +27,7 @@ const props = defineProps<{
   typeOptions: { value: string; title: string }[];
   /** Pool relation alanları için key → option listesi (value=__dataId, title=ad). */
   relationOptionsByKey?: Record<string, { value: string; title: string }[]>;
-  /** Grup alanları (personGroups/group + assignmentGroups) için key → option listesi (value=grup id, title=grup adı). */
+  /** @deprecated Merkezi MngDirectoryPickerField kullanılıyor; geriye dönük uyumluluk için bırakıldı. */
   groupOptionsByKey?: Record<string, { value: string; title: string }[]>;
   /** Pool tags alanları için key → mevcut etiket değerleri (combobox önerileri; serbest giriş açık). */
   tagOptionsByKey?: Record<string, string[]>;
@@ -76,7 +76,11 @@ function isCatalogKind(kind: OcBoardFilterKind | null): boolean {
 }
 
 function isSelectKind(kind: OcBoardFilterKind | null): boolean {
-  return isCatalogKind(kind) || kind === 'relation' || kind === 'group';
+  return isCatalogKind(kind) || kind === 'relation';
+}
+
+function isGroupField(field: string): boolean {
+  return kindOf(field) === 'group';
 }
 
 function catalogOptions(kind: OcBoardFilterKind): { value: string; title: string }[] {
@@ -173,7 +177,6 @@ function catalogOptionsForField(field: string): { value: string; title: string }
   if (!kind) return [];
   if (isCatalogKind(kind)) return catalogOptions(kind);
   if (kind === 'relation') return props.relationOptionsByKey?.[field] ?? [];
-  if (kind === 'group') return props.groupOptionsByKey?.[field] ?? [];
   return [];
 }
 
@@ -413,13 +416,33 @@ watch(
               hide-details
               clearable
             />
-            <OcPersonPickerAutocomplete
-              v-else-if="isPersonField(row.field)"
+            <MngDirectoryPickerField
+              v-else-if="isGroupField(row.field) && isMultiCatalogOp(row.operator)"
               v-model="row.value"
+              entity="group"
+              multiple
               :label="t('operationCore.board.filters.advanced.value')"
               density="compact"
               variant="outlined"
-              :hide-details="true"
+              hide-details
+            />
+            <MngDirectoryPickerField
+              v-else-if="isGroupField(row.field)"
+              v-model="row.value"
+              entity="group"
+              :label="t('operationCore.board.filters.advanced.value')"
+              density="compact"
+              variant="outlined"
+              hide-details
+            />
+            <MngDirectoryPickerField
+              v-else-if="isPersonField(row.field)"
+              v-model="row.value"
+              entity="user"
+              :label="t('operationCore.board.filters.advanced.value')"
+              density="compact"
+              variant="outlined"
+              hide-details
             />
             <v-text-field
               v-else-if="isNumberField(row.field)"

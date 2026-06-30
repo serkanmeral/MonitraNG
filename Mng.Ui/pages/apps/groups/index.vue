@@ -67,6 +67,7 @@ const tableOptions = ref({
 const headers = computed(() => [
   { title: t('groups.table.name'), key: 'name', sortable: true },
   { title: t('groups.table.source'), key: 'provisioningSource', sortable: false },
+  { title: t('groups.applicationScope.column'), key: 'includeInApplication', sortable: false },
   { title: t('groups.table.memberCount'), key: 'memberCount', sortable: true },
   { title: t('groups.table.createdAt'), key: 'createdAt', sortable: true },
   { title: t('groups.table.actions'), key: 'actions', sortable: false, align: 'end' },
@@ -421,6 +422,12 @@ const formatDate = (date: string | Date | null | undefined) => {
             :color="provisioningSourceChipColor(item.provisioningSource)"
           >
             {{ t(groupProvisioningSourceLabelKey(item.provisioningSource)) }}
+          </v-chip>
+        </template>
+
+        <template v-slot:item.includeInApplication="{ value }">
+          <v-chip :color="value ? 'primary' : 'warning'" size="small" variant="tonal">
+            {{ value ? t('groups.applicationScope.inApp') : t('groups.applicationScope.hidden') }}
           </v-chip>
         </template>
 

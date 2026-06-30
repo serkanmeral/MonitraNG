@@ -11,7 +11,7 @@ public class UserFieldPolicyService : IUserFieldPolicyService
   private static readonly string[] PolicyFieldNames =
   {
     "username", "email", "firstName", "lastName", "groups", "isActive",
-    "photoUrl", "gender", "title", "department", "phoneNumber",
+    "photoUrl", "gender", "title", "department", "phoneNumber", "includeInApplication",
   };
 
   public UserCapabilitiesDto GetCapabilities(User user)

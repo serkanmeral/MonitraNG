@@ -87,15 +87,18 @@ namespace MngKeeper.Application.Features.Auth.Commands.GetToken
                 var user = await _userRepository.GetByUsernameAsync(actualUsername, domain.Id);
                 if (user != null && user.DomainId == domain.Id)
                 {
-                    if (!user.IsActive)
+                    if (!UserLoginEligibility.CanAuthenticate(user))
                     {
-                        _logger.LogWarning("Inactive user attempted to get token: {Username} in domain: {Domain}", 
+                        _logger.LogWarning(
+                            "User blocked from token (inactive or out of application scope): {Username} in domain: {Domain}",
                             actualUsername, domain.Name);
                         
                         return new GetTokenResponse
                         {
                             IsSuccess = false,
-                            ErrorMessage = "User account is inactive"
+                            ErrorMessage = user.IsActive
+                                ? "User account is not in application scope"
+                                : "User account is inactive"
                         };
                     }
                 }
@@ -159,6 +162,17 @@ namespace MngKeeper.Application.Features.Auth.Commands.GetToken
                         domain.RealmName, actualUsername, cancellationToken);
                     if (kcUser != null)
                         user = await _userRepository.GetByUsernameAsync(kcUser.Username, domain.Id);
+                }
+
+                if (user != null && !UserLoginEligibility.CanAuthenticate(user))
+                {
+                    return new GetTokenResponse
+                    {
+                        IsSuccess = false,
+                        ErrorMessage = user.IsActive
+                            ? "User account is not in application scope"
+                            : "User account is inactive"
+                    };
                 }
 
                 var isAdmin = await AuthPrivilegeHelper.ResolveIsAdminAsync(

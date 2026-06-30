@@ -80,7 +80,7 @@
     {
       "fieldType": "select",
       "name": "qcfStatus",
-      "title": "QCF durumu",
+      "title": "KKF durumu",
       "mandatory": false,
       "unique": false,
       "isArray": false,
@@ -99,7 +99,7 @@
     {
       "fieldType": "text",
       "name": "qcfReferenceNo",
-      "title": "QCF referans no",
+      "title": "KKF referans no",
       "mandatory": false,
       "unique": false,
       "isArray": false,
@@ -108,7 +108,7 @@
     {
       "fieldType": "text",
       "name": "qcfNotes",
-      "title": "QCF notlari",
+      "title": "KKF notlari",
       "mandatory": false,
       "unique": false,
       "isArray": false,

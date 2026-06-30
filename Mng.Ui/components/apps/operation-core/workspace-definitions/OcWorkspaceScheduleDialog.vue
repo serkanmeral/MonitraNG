@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
-import { useOcPersonPicker } from '@/composables/useOcPersonPicker';
-import { useUserStore } from '@/stores/apps/user';
-import OcPersonPickerAutocomplete from '@/components/apps/operation-core/OcPersonPickerAutocomplete.vue';
+import { useKeeperUserPicker } from '@/composables/useKeeperUserPicker';
+import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import OcScheduleTimingWizard from '@/components/apps/operation-core/workspace-definitions/OcScheduleTimingWizard.vue';
 import {
   buildMultiWeeklyQuartzCron,
@@ -12,7 +11,6 @@ import {
   OC_SCHEDULE_WEEKDAY_KEYS,
   type OcScheduleWeekdayKey,
 } from '@/utils/ocScheduleCron';
-import { mapUserToOcPersonPickerItem } from '@/utils/ocPersonPicker';
 
 export type OcScheduleFormModel = {
   name: string;
@@ -46,8 +44,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
-const personPicker = useOcPersonPicker();
-const userStore = useUserStore();
+const userPicker = useKeeperUserPicker();
 
 const timingWizardRef = ref<InstanceType<typeof OcScheduleTimingWizard> | null>(null);
 const validationAlertRef = ref<HTMLElement | null>(null);
@@ -96,11 +93,7 @@ const whenSummary = computed(() =>
 
 const assigneePreview = computed(() => {
   if (!form.value.assignee) return t('operationCore.workspaceDefinitions.scheduled.livePreviewAssigneeEmpty');
-  const fromPicker = personPicker.items.value.find((i) => i.value === form.value.assignee);
-  if (fromPicker?.title) return fromPicker.title;
-  const user = userStore.getUserById(form.value.assignee);
-  const mapped = user ? mapUserToOcPersonPickerItem(user) : null;
-  return mapped?.title ?? form.value.assignee;
+  return userPicker.labelFor(form.value.assignee) || form.value.assignee;
 });
 
 const livePreviewLines = computed(() => [
@@ -144,7 +137,7 @@ watch(
   () => props.modelValue,
   (open) => {
     if (open && form.value.assignee) {
-      void personPicker.ensureSelectedIds([form.value.assignee]);
+      void userPicker.ensureSelectedLabels([form.value.assignee]);
     }
   }
 );
@@ -152,13 +145,13 @@ watch(
 watch(
   () => form.value.assignee,
   (id) => {
-    if (id) void personPicker.ensureSelectedIds([id]);
+    if (id) void userPicker.ensureSelectedLabels([id]);
   }
 );
 
 function setForm(next: OcScheduleFormModel) {
   form.value = { ...next };
-  if (next.assignee) void personPicker.ensureSelectedIds([next.assignee]);
+  if (next.assignee) void userPicker.ensureSelectedLabels([next.assignee]);
 }
 
 function resetForm(defaults?: Partial<OcScheduleFormModel>) {
@@ -375,8 +368,9 @@ defineExpose({ setForm, resetForm, validationError });
                 auto-grow
                 class="mb-3"
               />
-              <OcPersonPickerAutocomplete
+              <MngDirectoryPickerField
                 v-model="form.assignee"
+                entity="user"
                 :label="t('operationCore.workspaceDefinitions.scheduled.fieldAssignee')"
                 show-required-mark
                 class="mb-3"

@@ -17,6 +17,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
         public string? PhotoUrl { get; set; }
         public List<string>? GroupIds { get; set; } // Nullable: if null, preserve existing groups; if empty list, clear groups; if has items, update groups
         public bool IsActive { get; set; } = true;
+        public bool IncludeInApplication { get; set; } = true;
         
         /// <summary>
         /// Custom data dictionary - MngDataGateway MongoDB'ye sync edilecek
@@ -39,6 +40,7 @@ namespace MngKeeper.Application.Features.User.Commands.UpdateUser
         public string? PhotoUrl { get; set; }
         public List<string> GroupIds { get; set; } = new();
         public bool IsActive { get; set; }
+        public bool IncludeInApplication { get; set; }
         public DateTime UpdatedAt { get; set; }
         public bool IsSuccess { get; set; }
         public string? ErrorMessage { get; set; }

@@ -414,6 +414,13 @@
       "editHint": "Bu grup kurumsal dizinden gelir; ad, açıklama ve durum burada değiştirilemez.",
       "membersManagedExternally": "Grup üyelikleri Active Directory / Keycloak senkronu ile yönetilir; üye ekleyemez veya çıkaramazsınız."
     },
+    "applicationScope": {
+      "column": "Uygulama kapsamı",
+      "includeInApplication": "MonitraNG'de kullan",
+      "includeInApplicationHint": "Kapalıyken listede ve seçicilerde görünmez; giriş yapılamaz.",
+      "inApp": "Kapsamda",
+      "hidden": "Saklı"
+    },
     "table": {
       "name": "Grup Adı",
       "source": "Kaynak",
@@ -740,6 +747,13 @@
       "fieldReadOnly": "Bu alan kurumsal dizinden gelir; burada değiştirilemez.",
       "groupsManagedExternally": "Gruplar Active Directory / Keycloak senkronu ile yönetilir.",
       "editHint": "Kimlik ve grup bilgileri dizinden gelir. Aşağıdaki MonitraNG profil alanlarını güncelleyebilirsiniz."
+    },
+    "applicationScope": {
+      "column": "Uygulama kapsamı",
+      "includeInApplication": "MonitraNG'de kullan",
+      "includeInApplicationHint": "Kapalıyken listede ve seçicilerde görünmez; giriş yapılamaz.",
+      "inApp": "Kapsamda",
+      "hidden": "Saklı"
     },
     "table": {
       "username": "Kullanıcı Adı",
@@ -3834,8 +3848,10 @@
         "editTitle": "İş paketi düzenle — {no}",
         "missingId": "Paket kimliği bulunamadı.",
         "notFound": "İş paketi yüklenemedi.",
-        "selectCustomerFirst": "Önce müşteri seçin; kişiler müşteriye göre listelenir.",
-        "customerContactsGroup": "Müşteri sorumluları"
+        "selectCustomerFirst": "Önce müşteri seçin; müşteri sorumlusu müşteriye bağlı kişilerden listelenir.",
+        "customerContactsGroup": "Müşteri sorumluları",
+        "odakPersonnelGroup": "Odak sorumluları",
+        "personnelPoolEmpty": "Tasarım / üretim sorumlusu listesi boş. İş Paketi Ayarları → Odak personeli sekmesinden personel tanımlayın."
       },
       "validation": {
         "packageNoRequired": "İş paketi numarası zorunludur.",
@@ -3877,6 +3893,7 @@
         "saved": "Ayarlar kaydedildi.",
         "tabs": {
           "listColumns": "Liste sütunları",
+          "personnel": "Odak personeli",
           "notifications": "Bildirimler",
           "poDocumentAccess": "PO belge erişimi",
           "fieldPolicies": "Alan yetkileri"
@@ -4072,6 +4089,13 @@
           "hint": "Yetkilendirilmiş PO PDF alanındaki belgeleri yalnızca seçilen gruplar görebilir ve indirebilir. Genel alan tüm paket okuyucularına açıktır; yükleme/düzenleme için Alan yetkileri sekmesini kullanın.",
           "groupsLabel": "Yetkilendirilmiş PO PDF görüntüleyici grupları",
           "groupsHint": "Boş bırakılırsa yetkilendirilmiş alanı kimse göremez."
+        },
+        "personnel": {
+          "hint": "İş paketi formunda Tasarım ve Üretim sorumlusu alanlarında seçilebilecek Odak personelini Keycloak (Keeper) kullanıcılarından belirleyin.",
+          "designPersonnel": "Tasarım sorumluları",
+          "designPersonnelHint": "Yeni veya düzenlenen iş paketlerinde Tasarım Sorumlusu alanında listelenecek kişiler.",
+          "manufacturePersonnel": "Üretim sorumluları",
+          "manufacturePersonnelHint": "Yeni veya düzenlenen iş paketlerinde Üretim Sorumlusu alanında listelenecek kişiler."
         }
       }
     },
@@ -4613,7 +4637,7 @@
         "shipmentDate": "Sevkiyat Tarihi",
         "status": "Durum",
         "lineQty": "Toplam Miktar",
-        "qcfStatus": "QCF",
+        "qcfStatus": "KKF",
         "controlType": "Denetim Tipi"
       },
       "fields": {
@@ -4623,10 +4647,10 @@
         "controlType": "Denetim tipi",
         "shipmentAddress": "Sevkiyat adresi",
         "notes": "Notlar",
-        "qcfGroup": "Sevkiyat kalite formu (QCF)",
-        "qcfStatus": "QCF durumu",
-        "qcfReferenceNo": "QCF referans no",
-        "qcfNotes": "QCF notları"
+        "qcfGroup": "Sevkiyat kalite formu (KKF)",
+        "qcfStatus": "KKF durumu",
+        "qcfReferenceNo": "KKF referans no",
+        "qcfNotes": "KKF notları"
       },
       "dialog": {
         "createTitle": "Yeni sevkiyat",
@@ -7364,6 +7388,32 @@
         "description": "Workspace ve board'lar üzerinden iş öğelerini yönetin; geçişler, kurallar ve profil MngOperations runtime'ından gelir.",
         "linkWorkspace": "Çalışma alanı"
       }
+    }
+  },
+  "directoryPicker": {
+    "select": "Seç",
+    "cancel": "İptal",
+    "clear": "Temizle",
+    "user": {
+      "placeholder": "Kullanıcı seçmek için tıklayın",
+      "open": "Kullanıcı seç",
+      "dialogTitle": "Kullanıcı seç",
+      "searchHint": "Ad, kullanıcı adı veya e-posta ile arayın…",
+      "empty": "Kullanıcı bulunamadı.",
+      "columnName": "Ad Soyad",
+      "columnUsername": "Kullanıcı adı",
+      "columnEmail": "E-posta",
+      "columnDepartment": "Departman"
+    },
+    "group": {
+      "placeholder": "Grup seçmek için tıklayın",
+      "open": "Grup seç",
+      "dialogTitle": "Grup seç",
+      "searchHint": "Grup adı ile arayın…",
+      "empty": "Grup bulunamadı.",
+      "columnName": "Grup adı",
+      "columnDescription": "Açıklama",
+      "columnMembers": "Üye sayısı"
     }
   },
   "errors": {

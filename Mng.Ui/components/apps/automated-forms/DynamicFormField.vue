@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, watch } from 'vue';
 import { useDatasetStore } from '@/stores/apps/dataset';
-import { useUserStore } from '@/stores/apps/user';
-import { useGroupStore } from '@/stores/apps/group';
 import { useFieldLabel } from '@/composables/useFieldLabel';
 import { useAfRelationPicker } from '@/composables/useAfRelationPicker';
 import FileUploadField from './FileUploadField.vue';
 import OcRichTextEditor from '@/components/apps/operation-core/OcRichTextEditor.client.vue';
+import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import {
   parseAfStaticSelectItems,
   resolveChoiceWidget,
@@ -38,8 +37,6 @@ const emit = defineEmits<{
 }>();
 
 const datasetStore = useDatasetStore();
-const userStore = useUserStore();
-const groupStore = useGroupStore();
 const { getFieldLabel } = useFieldLabel();
 
 // Get field label with translation support
@@ -205,24 +202,6 @@ const relationLoading = computed(() => relationPicker.loading.value);
 
 const allowAllRelationItems = () => true;
 
-// Users options
-const usersOptions = computed(() => {
-  return userStore.users.map(user => ({
-    title: `${user.firstName} ${user.lastName} (${user.username})`,
-    value: user.id,
-    subtitle: user.email,
-  }));
-});
-
-// Groups options
-const groupsOptions = computed(() => {
-  return groupStore.groups.map(group => ({
-    title: group.name,
-    value: group.id,
-    subtitle: group.description || '',
-  }));
-});
-
 const loadRelationOptions = async (search = '') => {
   if (props.field.fieldType !== 'relation' || !props.field.relationDataset) return;
   await relationPicker.fetchPage(search);
@@ -234,36 +213,10 @@ const onRelationSearch = (query: string) => {
   relationPicker.onSearchUpdate(query);
 };
 
-// Load users if field type is persons
-const loadUsers = async () => {
-  if (props.field.fieldType !== 'persons') return;
-  // Always load users to ensure we have the latest data
-  // The userStore might have cached users, but we want fresh data for the form
-  try {
-    await userStore.fetchUsers({ page: 1, pageSize: 1000 });
-  } catch (error) {
-    console.error('Error loading users:', error);
-  }
-};
-
-// Load groups if field type is personGroups
-const loadGroups = async () => {
-  if (props.field.fieldType !== 'personGroups' || groupStore.groups.length > 0) return;
-  try {
-    await groupStore.fetchGroups({ page: 1, pageSize: 1000 });
-  } catch (error) {
-    console.error('Error loading groups:', error);
-  }
-};
-
-// Watch field type and load options
+// Watch field type and load relation options
 watch(() => props.field.fieldType, () => {
   if (props.field.fieldType === 'relation') {
     loadRelationOptions();
-  } else if (props.field.fieldType === 'persons') {
-    loadUsers();
-  } else if (props.field.fieldType === 'personGroups') {
-    loadGroups();
   }
 }, { immediate: true });
 
@@ -700,122 +653,28 @@ const rules = computed(() => {
   </v-autocomplete>
   
   <!-- Persons Field -->
-  <v-select
-    v-else-if="field.fieldType === 'persons' && useSelectForChoice"
+  <MngDirectoryPickerField
+    v-else-if="field.fieldType === 'persons'"
     v-model="localValue"
-    :items="usersOptions"
-    item-title="title"
-    item-value="value"
-    :label="fieldLabel"
-    :hint="field.description"
-    :persistent-hint="!!field.description"
-    :required="field.mandatory"
-    :readonly="readonly"
-    :disabled="disabled"
+    entity="user"
     :multiple="field.isArray"
-    :rules="rules"
+    :label="fieldLabel"
+    :disabled="disabled || readonly"
     :error-messages="errorMessages"
-    variant="outlined"
-    clearable
-    chips
-    closable-chips
     density="comfortable"
-  >
-    <template v-slot:prepend-inner>
-      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
-    </template>
-    <template #item="{ props, item }">
-      <v-list-item v-bind="props" :subtitle="item.raw.subtitle"></v-list-item>
-    </template>
-  </v-select>
+  />
 
-  <v-autocomplete
-    v-else-if="field.fieldType === 'persons' && !useSelectForChoice"
-    v-model="localValue"
-    :items="usersOptions"
-    item-title="title"
-    item-value="value"
-    :label="fieldLabel"
-    :hint="field.description"
-    :persistent-hint="!!field.description"
-    :required="field.mandatory"
-    :readonly="readonly"
-    :disabled="disabled"
-    :multiple="field.isArray"
-    :rules="rules"
-    :error-messages="errorMessages"
-    variant="outlined"
-    clearable
-    chips
-    closable-chips
-    density="comfortable"
-  >
-    <template v-slot:prepend-inner>
-      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
-    </template>
-    <template #item="{ props, item }">
-      <v-list-item v-bind="props" :subtitle="item.raw.subtitle"></v-list-item>
-    </template>
-  </v-autocomplete>
-  
   <!-- Person Groups Field -->
-  <v-select
-    v-else-if="field.fieldType === 'personGroups' && useSelectForChoice"
+  <MngDirectoryPickerField
+    v-else-if="field.fieldType === 'personGroups'"
     v-model="localValue"
-    :items="groupsOptions"
-    item-title="title"
-    item-value="value"
-    :label="fieldLabel"
-    :hint="field.description"
-    :persistent-hint="!!field.description"
-    :required="field.mandatory"
-    :readonly="readonly"
-    :disabled="disabled"
+    entity="group"
     :multiple="field.isArray"
-    :rules="rules"
-    :error-messages="errorMessages"
-    variant="outlined"
-    clearable
-    chips
-    closable-chips
-    density="comfortable"
-  >
-    <template v-slot:prepend-inner>
-      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
-    </template>
-    <template #item="{ props, item }">
-      <v-list-item v-bind="props" :subtitle="item.raw.subtitle"></v-list-item>
-    </template>
-  </v-select>
-
-  <v-autocomplete
-    v-else-if="field.fieldType === 'personGroups' && !useSelectForChoice"
-    v-model="localValue"
-    :items="groupsOptions"
-    item-title="title"
-    item-value="value"
     :label="fieldLabel"
-    :hint="field.description"
-    :persistent-hint="!!field.description"
-    :required="field.mandatory"
-    :readonly="readonly"
-    :disabled="disabled"
-    :multiple="field.isArray"
-    :rules="rules"
+    :disabled="disabled || readonly"
     :error-messages="errorMessages"
-    variant="outlined"
-    clearable
-    chips
-    closable-chips
     density="comfortable"
-  >
-    <template v-slot:prepend-inner>
-      <v-icon :icon="fieldTypeIcon" size="20" class="text-medium-emphasis mr-2"></v-icon>
-    </template>
-    <template #item="{ props, item }">
-      <v-list-item v-bind="props" :subtitle="item.raw.subtitle"></v-list-item>
-    </template>
-  </v-autocomplete>
+  />
   
   <!-- Incremental Field (Read-only) -->
   <v-text-field

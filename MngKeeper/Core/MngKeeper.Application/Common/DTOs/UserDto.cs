@@ -16,7 +16,9 @@ namespace MngKeeper.Application.Common.DTOs
         public Gender Gender { get; set; } = Gender.NotSpecified;
         public string? PhoneNumber { get; set; }
         public string? PhotoUrl { get; set; }
+        public string PhotoSource { get; set; } = "None";
         public bool IsActive { get; set; }
+        public bool IncludeInApplication { get; set; } = true;
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public string CreatedBy { get; set; } = string.Empty;

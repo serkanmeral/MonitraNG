@@ -9,7 +9,8 @@ import {
   ocListStates,
   ocListStatesForWorkspace,
 } from '@/services/operationCoreService';
-import { useOcPersonPicker, type OcPersonPickerApi } from '@/composables/useOcPersonPicker';
+import { useKeeperGroupPicker, type KeeperGroupPickerApi } from '@/composables/useKeeperGroupPicker';
+import { useKeeperUserPicker, type KeeperUserPickerApi } from '@/composables/useKeeperUserPicker';
 import { useOcDatasetPicker, type OcDatasetPickerApi, type OcDatasetPickerConfig } from '@/composables/useOcDatasetPicker';
 import { collectPersonIdsFromValue } from '@/utils/ocPersonPicker';
 import {
@@ -19,7 +20,6 @@ import {
   resolveOcDynamicFieldWidget,
   resolveRelationDataset,
 } from '@/utils/ocDynamicFormField';
-import { useGroupStore } from '@/stores/apps/group';
 import { resolveOcFormFieldType } from '@/utils/ocFormFieldLabels';
 import {
   extractLookupStoredValue,
@@ -33,8 +33,6 @@ import {
 
 export type OcSelectItem = { title: string; value: string; subtitle?: string };
 
-const PERSONS_LOADING_KEY = '__personUsers__';
-
 function resolveFieldLookup(
   fieldKey: string,
   meta?: OcFormFieldRuntimeDto | null
@@ -45,7 +43,7 @@ function resolveFieldLookup(
 
 /**
  * Form alanları için relation / core select listelerini yükler.
- * `persons` alanları: `useOcPersonPicker` (arama + sayfalama).
+ * `persons` / grup alanları: Keeper modal directory picker.
  */
 export function useOcDynamicFormLookups(
   workspaceId: Ref<string | undefined>,
@@ -54,14 +52,13 @@ export function useOcDynamicFormLookups(
   options?: { readonly?: Ref<boolean> }
 ) {
   const isReadonly = () => options?.readonly?.value === true;
-  const personPickers = new Map<string, OcPersonPickerApi>();
+  const userDirectoryPickers = new Map<string, KeeperUserPickerApi>();
+  const groupDirectoryPickers = new Map<string, KeeperGroupPickerApi>();
   const datasetPickers = new Map<string, OcDatasetPickerApi>();
 
-  const groupStore = useGroupStore();
   const priorityItems = ref<OcSelectItem[]>([]);
   const stateItems = ref<OcSelectItem[]>([]);
   const boardItems = ref<OcSelectItem[]>([]);
-  const groupItems = ref<OcSelectItem[]>([]);
   const typeItems = ref<OcSelectItem[]>([]);
   const relationItemsByKey = ref<Record<string, OcSelectItem[]>>({});
   const loadingKeys = ref<Set<string>>(new Set());
@@ -78,6 +75,14 @@ export function useOcDynamicFormLookups(
     if (!ctx?.fields) return [];
     return Object.keys(ctx.fields).filter((key) =>
       isOcPersonsUserPickerField(key, ctx.fields[key])
+    );
+  }
+
+  function groupFieldKeys(): string[] {
+    const ctx = context.value;
+    if (!ctx?.fields) return [];
+    return Object.keys(ctx.fields).filter((key) =>
+      isOcGroupPickerField(key, ctx.fields[key])
     );
   }
 
@@ -239,42 +244,57 @@ export function useOcDynamicFormLookups(
         .map((key) => datasetPickerForField(key).ensureSelectedLabels(selectedIdsForDatasetField(key)))
     );
   }
-  function pickerForField(fieldKey: string): OcPersonPickerApi {
-    let picker = personPickers.get(fieldKey);
+  function userDirectoryPickerForField(fieldKey: string): KeeperUserPickerApi {
+    let picker = userDirectoryPickers.get(fieldKey);
     if (!picker) {
-      picker = useOcPersonPicker();
-      personPickers.set(fieldKey, picker);
+      picker = useKeeperUserPicker();
+      userDirectoryPickers.set(fieldKey, picker);
     }
     return picker;
+  }
+
+  function groupDirectoryPickerForField(fieldKey: string): KeeperGroupPickerApi {
+    let picker = groupDirectoryPickers.get(fieldKey);
+    if (!picker) {
+      picker = useKeeperGroupPicker();
+      groupDirectoryPickers.set(fieldKey, picker);
+    }
+    return picker;
+  }
+
+  /** @deprecated OcPersonPickerAutocomplete yerine userDirectoryPickerForField kullanın. */
+  function pickerForField(fieldKey: string): KeeperUserPickerApi {
+    return userDirectoryPickerForField(fieldKey);
   }
 
   function selectedIdsForField(fieldKey: string): string[] {
     return collectPersonIdsFromValue(formModel?.value?.[fieldKey]);
   }
 
-  async function initPersonPicker() {
-    loadingKeys.value = new Set(loadingKeys.value).add(PERSONS_LOADING_KEY);
-    try {
-      await Promise.all(
-        personFieldKeys().map(async (key) => {
-          const picker = pickerForField(key);
-          await picker.resetAndFetch('');
-          await picker.ensureSelectedIds(selectedIdsForField(key));
-        })
-      );
-    } finally {
-      const next = new Set(loadingKeys.value);
-      next.delete(PERSONS_LOADING_KEY);
-      loadingKeys.value = next;
-    }
+  function selectedGroupIdsForField(fieldKey: string): string[] {
+    return collectPersonIdsFromValue(formModel?.value?.[fieldKey]);
   }
 
-  async function syncPersonPickerSelection() {
-    await Promise.all(
-      personFieldKeys().map((key) =>
-        pickerForField(key).ensureSelectedIds(selectedIdsForField(key))
-      )
-    );
+  async function initDirectoryPickers() {
+    await Promise.all([
+      ...personFieldKeys().map((key) =>
+        userDirectoryPickerForField(key).ensureSelectedLabels(selectedIdsForField(key))
+      ),
+      ...groupFieldKeys().map((key) =>
+        groupDirectoryPickerForField(key).ensureSelectedLabels(selectedGroupIdsForField(key))
+      ),
+    ]);
+  }
+
+  async function syncDirectoryPickerSelection() {
+    await Promise.all([
+      ...personFieldKeys().map((key) =>
+        userDirectoryPickerForField(key).ensureSelectedLabels(selectedIdsForField(key))
+      ),
+      ...groupFieldKeys().map((key) =>
+        groupDirectoryPickerForField(key).ensureSelectedLabels(selectedGroupIdsForField(key))
+      ),
+    ]);
   }
 
   async function reload() {
@@ -286,8 +306,8 @@ export function useOcDynamicFormLookups(
     const keys = fieldKeysNeedingLookups();
     const tasks: Promise<void>[] = [];
 
-    if (needsPersonUsers(keys)) {
-      tasks.push(initPersonPicker());
+    if (needsPersonUsers(keys) || needsGroups(keys)) {
+      tasks.push(initDirectoryPickers());
     }
 
     if (needsPriority(keys)) {
@@ -314,21 +334,6 @@ export function useOcDynamicFormLookups(
         ocListBoardsForWorkspace(ws).then((rows) => {
           boardItems.value = rows.map((b) => ({ title: b.name, value: b.__dataId }));
         })
-      );
-    }
-
-    if (needsGroups(keys)) {
-      tasks.push(
-        (async () => {
-          if (!groupStore.groups?.length) {
-            await groupStore.fetchGroups({ pageSize: 500 });
-          }
-          groupItems.value = groupStore.activeGroups.map((g) => ({
-            title: g.name,
-            value: g.id || g.groupId,
-            subtitle: g.description?.trim() || undefined,
-          }));
-        })()
       );
     }
 
@@ -379,11 +384,8 @@ export function useOcDynamicFormLookups(
 
   function selectItemsForField(fieldKey: string): OcSelectItem[] {
     const meta = context.value?.fields[fieldKey];
-    if (isOcGroupPickerField(fieldKey, meta)) {
-      return groupItems.value;
-    }
-    if (isOcPersonsUserPickerField(fieldKey, meta)) {
-      return pickerForField(fieldKey).items.value;
+    if (isOcGroupPickerField(fieldKey, meta) || isOcPersonsUserPickerField(fieldKey, meta)) {
+      return [];
     }
     if (fieldKey === 'priorityId') return priorityItems.value;
     if (fieldKey === 'boardId') return boardItems.value;
@@ -398,10 +400,10 @@ export function useOcDynamicFormLookups(
       return loadingKeys.value.has('typeId');
     }
     if (isOcGroupPickerField(fieldKey, meta)) {
-      return groupStore.loading;
+      return groupDirectoryPickerForField(fieldKey).loading.value;
     }
     if (isOcPersonsUserPickerField(fieldKey, meta)) {
-      return loadingKeys.value.has(PERSONS_LOADING_KEY) || pickerForField(fieldKey).loading.value;
+      return userDirectoryPickerForField(fieldKey).loading.value;
     }
     if (isDatasetPickerField(fieldKey, meta)) {
       return datasetPickerForField(fieldKey).loading.value;
@@ -411,6 +413,10 @@ export function useOcDynamicFormLookups(
 
   function isPersonField(fieldKey: string): boolean {
     return isOcPersonsUserPickerField(fieldKey, context.value?.fields[fieldKey]);
+  }
+
+  function isGroupField(fieldKey: string): boolean {
+    return isOcGroupPickerField(fieldKey, context.value?.fields[fieldKey]);
   }
 
   function isDatasetPickerFieldForKey(fieldKey: string): boolean {
@@ -439,8 +445,8 @@ export function useOcDynamicFormLookups(
       formModel,
       () => {
         if (isReadonly()) return;
-        if (!personFieldKeys().length) return;
-        void syncPersonPickerSelection();
+        if (!personFieldKeys().length && !groupFieldKeys().length) return;
+        void syncDirectoryPickerSelection();
       },
       { deep: true }
     );
@@ -513,10 +519,13 @@ export function useOcDynamicFormLookups(
     boardItems,
     relationItemsByKey,
     pickerForField,
+    userDirectoryPickerForField,
+    groupDirectoryPickerForField,
     datasetPickerForField,
     selectItemsForField,
     isLoadingField,
     isPersonField,
+    isGroupField,
     isDatasetPickerFieldForKey,
     isFieldDisabledByDependsOn,
     selectPresentationForField,

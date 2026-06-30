@@ -74,6 +74,7 @@ namespace MngKeeper.Infrastructure.Services
                     ["firstName"] = user.FirstName,
                     ["lastName"] = user.LastName,
                     ["isActive"] = user.IsActive,
+                    ["includeInApplication"] = user.IncludeInApplication,
                     ["domainId"] = user.DomainId,
                     ["groups"] = new BsonArray(user.Groups ?? new List<string>()),
                     ["__syncInfo"] = new BsonDocument
@@ -197,6 +198,8 @@ namespace MngKeeper.Infrastructure.Services
                     ["permissions"] = new BsonArray(group.Permissions ?? new List<string>()),
                     ["domainId"] = group.DomainId,
                     ["keycloakGroupId"] = keycloakGroupId,
+                    ["isActive"] = group.IsActive,
+                    ["includeInApplication"] = group.IncludeInApplication,
                     ["__syncInfo"] = new BsonDocument
                     {
                         ["lastSyncedAt"] = DateTime.UtcNow,

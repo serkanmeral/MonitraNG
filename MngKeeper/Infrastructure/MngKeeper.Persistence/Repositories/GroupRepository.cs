@@ -2,6 +2,7 @@ using MongoDB.Driver;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Domain.Entities;
 using MngKeeper.Application.Common.DTOs;
+using MngKeeper.Application.Directory;
 using MngKeeper.Domain.Enums;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
@@ -55,6 +56,7 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                         ? doc["keycloakGroupId"].AsString
                         : string.Empty,
                 IsActive = doc.GetValue("isActive", true).AsBoolean,
+                IncludeInApplication = ApplicationScopeDefaults.ResolveFromDocument(doc),
                 CreatedAt = doc.GetValue("createdAt", DateTime.UtcNow).ToUniversalTime(),
                 CreatedBy = doc.GetValue("createdBy", "").AsString,
                 UpdatedAt = doc.GetValue("updatedAt", BsonNull.Value).IsBsonNull ? null : doc.GetValue("updatedAt").ToUniversalTime(),
@@ -125,6 +127,7 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                     ["domainId"] = entity.DomainId,
                     ["keycloakGroupId"] = string.IsNullOrWhiteSpace(entity.KeycloakGroupId) ? string.Empty : entity.KeycloakGroupId,
                     ["isActive"] = entity.IsActive,
+                    ["includeInApplication"] = entity.IncludeInApplication,
                     ["createdAt"] = entity.CreatedAt,
                     ["createdBy"] = entity.CreatedBy,
                     ["updatedAt"] = entity.UpdatedAt.HasValue ? entity.UpdatedAt.Value : BsonNull.Value,
@@ -157,6 +160,7 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                     .Set("name", (BsonValue)entity.Name)
                     .Set("permissions", new BsonArray(entity.Permissions ?? new List<string>()))
                     .Set("isActive", (BsonValue)entity.IsActive)
+                    .Set("includeInApplication", entity.IncludeInApplication)
                     .Set("updatedAt", entity.UpdatedAt.HasValue ? (BsonValue)entity.UpdatedAt.Value : BsonNull.Value);
                 
                 // Handle description (can be null or empty)
@@ -269,7 +273,8 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
         public async Task<IEnumerable<Group>> GetAllByDomainIdAsync(
             string domainId,
             string? searchTerm = null,
-            bool? isActive = null)
+            bool? isActive = null,
+            bool? includeInApplication = null)
         {
             try
             {
@@ -291,6 +296,11 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                 if (isActive.HasValue)
                 {
                     filter &= filterBuilder.Eq("isActive", isActive.Value);
+                }
+
+                if (includeInApplication.HasValue)
+                {
+                    filter &= ApplicationScopeMongoFilters.IncludeInApplicationEquals(includeInApplication.Value);
                 }
 
                 // Get all documents (no pagination)
@@ -309,7 +319,8 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             int page,
             int pageSize,
             string? searchTerm = null,
-            bool? isActive = null)
+            bool? isActive = null,
+            bool? includeInApplication = null)
         {
             try
             {
@@ -331,6 +342,11 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                 if (isActive.HasValue)
                 {
                     filter &= filterBuilder.Eq("isActive", isActive.Value);
+                }
+
+                if (includeInApplication.HasValue)
+                {
+                    filter &= ApplicationScopeMongoFilters.IncludeInApplicationEquals(includeInApplication.Value);
                 }
 
                 // Get total count

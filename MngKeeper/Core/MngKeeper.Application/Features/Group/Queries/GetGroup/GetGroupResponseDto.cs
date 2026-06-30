@@ -9,6 +9,7 @@ namespace MngKeeper.Application.Features.Group.Queries.GetGroup
         public string Description { get; set; } = string.Empty;
         public List<string> Permissions { get; set; } = new();
         public bool IsActive { get; set; }
+        public bool IncludeInApplication { get; set; } = true;
         public int MemberCount { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }

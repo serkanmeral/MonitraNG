@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import OcPersonPickerAutocomplete from '@/components/apps/operation-core/OcPersonPickerAutocomplete.vue';
+import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import { ocListDataset } from '@/services/operationCoreService';
 import { resolveOcCoreFieldType } from '@/utils/ocFormFieldLabels';
 import {
@@ -223,15 +223,15 @@ function onSelectUpdate(value: unknown) {
     clearable
     @update:model-value="onSelectUpdate"
   />
-  <OcPersonPickerAutocomplete
+  <MngDirectoryPickerField
     v-else-if="isPersonWidget"
     v-model="model"
+    entity="user"
     :multiple="selectMultiple"
     :label="fieldLabel"
     :density="density"
     :variant="fieldVariant"
     hide-details
-    menu-context="dialog"
   />
   <v-text-field
     v-else

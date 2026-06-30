@@ -12,6 +12,13 @@ public class KeycloakRealmUserSnapshot
     public string? FederationLink { get; set; }
 }
 
+public class KeycloakUserPhotoData
+{
+    public byte[] Bytes { get; set; } = Array.Empty<byte>();
+    public string ContentType { get; set; } = "image/jpeg";
+    public string Extension { get; set; } = ".jpg";
+}
+
 public class KeycloakRealmGroupSnapshot
 {
     public string Id { get; set; } = string.Empty;

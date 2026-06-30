@@ -8,7 +8,6 @@ import OcWorkspaceBoardDialog from '@/components/apps/operation-core/workspace-d
 import {
   ocCreateBoard,
   ocDeleteBoard,
-
   ocListBoardsForWorkspace,
   ocListDashboardsForWorkspace,
   ocListFormsForWorkspace,
@@ -17,7 +16,6 @@ import {
   ocListStateFlowsForWorkspace,
   ocUpdateBoard,
 } from '@/services/operationCoreService';
-import { useGroupStore } from '@/stores/apps/group';
 import type { OpBoard, OpField, OpPriority, OpState, OpStateFlow, OpWorkItemType } from '@/types/apps/operationCore';
 
 const props = defineProps<{
@@ -27,7 +25,6 @@ const props = defineProps<{
 const { t } = useAppI18n();
 const panelError = usePanelErrorNotify('errors.dg.generic');
 const metaCache = useOcWorkspaceMetadataCacheReload(() => props.workspaceId);
-const groupStore = useGroupStore();
 const catalog = useOcWorkspaceCatalogInject();
 
 const loading = ref(true);
@@ -50,13 +47,6 @@ const profileItems = ref<{ value: string; title: string }[]>([]);
 const typeItems = ref<{ value: string; title: string }[]>([]);
 const priorityItems = ref<{ value: string; title: string }[]>([]);
 const enabledStateIds = ref<string[]>([]);
-
-const groupItems = computed(() =>
-  (groupStore.groups || []).map((g) => ({
-    title: g.name,
-    value: g.id || g.groupId,
-  }))
-);
 
 const stateTitleById = computed(
   () => new Map(stateItems.value.map((s) => [s.value, s.title]))
@@ -202,12 +192,6 @@ async function confirmDelete() {
     deleting.value = false;
   }
 }
-
-onMounted(() => {
-  if (!groupStore.groups?.length) {
-    void groupStore.fetchGroups();
-  }
-});
 </script>
 
 <template>
@@ -319,7 +303,6 @@ onMounted(() => {
       :profile-items="profileItems"
       :type-items="typeItems"
       :priority-items="priorityItems"
-      :group-items="groupItems"
       :enabled-state-ids="enabledStateIds"
       :saving="saving"
       @save="onDialogSave"

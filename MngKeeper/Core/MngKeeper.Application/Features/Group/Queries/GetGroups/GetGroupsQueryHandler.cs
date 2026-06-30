@@ -55,7 +55,8 @@ namespace MngKeeper.Application.Features.Group.Queries.GetGroups
                     request.Page,
                     request.PageSize,
                     request.SearchTerm,
-                    request.IsActive);
+                    request.IsActive,
+                    request.IncludeInApplication);
 
                 // Calculate member count for each group
                 var groupDtos = new List<GetGroupsResponseDto>();
@@ -71,6 +72,7 @@ namespace MngKeeper.Application.Features.Group.Queries.GetGroups
                         Description = g.Description,
                         Permissions = g.Permissions,
                         IsActive = g.IsActive,
+                        IncludeInApplication = g.IncludeInApplication,
                         MemberCount = memberCount,
                         CreatedAt = g.CreatedAt,
                         UpdatedAt = g.UpdatedAt,

@@ -16,6 +16,10 @@ import {
   customerIdFromRow,
 } from '@/utils/odakSiparisService';
 import { buildOdakPackageSummaryRows } from '@/utils/odakSiparisSummary';
+import {
+  collectPersonIdsFromPackageRows,
+  fetchPersonLabelMap,
+} from '@/utils/odakSiparisPackagePersonnel';
 
 const props = defineProps<{
   packageRow: OdakPackageRow;
@@ -50,6 +54,7 @@ const activeTab = ref<ExpandTab>(props.initialTab ?? tabFromRouteQuery());
 const loading = ref(false);
 const errorMessage = ref('');
 const pkg = ref<OdakPackageRow | null>(null);
+const personLabels = ref<Record<string, string>>({});
 const linesRefreshKey = ref(0);
 
 const packageId = computed(() => packageDataId(props.packageRow));
@@ -58,7 +63,7 @@ const customerId = computed(() => customerIdFromRow(pkg.value ?? props.packageRo
 
 const summaryRows = computed(() => {
   const p = pkg.value ?? props.packageRow;
-  return buildOdakPackageSummaryRows(p, props.customerLabels, t);
+  return buildOdakPackageSummaryRows(p, props.customerLabels, t, personLabels.value);
 });
 
 async function loadPackage() {
@@ -68,6 +73,9 @@ async function loadPackage() {
   errorMessage.value = '';
   try {
     pkg.value = (await fetchOdakPackageById(id)) ?? props.packageRow;
+    const row = pkg.value ?? props.packageRow;
+    const ids = collectPersonIdsFromPackageRows([row as Record<string, unknown>]);
+    personLabels.value = ids.length ? await fetchPersonLabelMap(ids) : {};
   } catch (e: unknown) {
     errorMessage.value = panelError(e, 'errors.dg.generic');
     pkg.value = props.packageRow;

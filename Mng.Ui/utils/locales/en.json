@@ -381,6 +381,13 @@
       "editHint": "This group comes from the corporate directory; name, description, and status cannot be changed here.",
       "membersManagedExternally": "Group membership is managed via Active Directory / Keycloak sync; you cannot add or remove members here."
     },
+    "applicationScope": {
+      "column": "Application scope",
+      "includeInApplication": "Use in MonitraNG",
+      "includeInApplicationHint": "When off, hidden from pickers and lists; login is blocked.",
+      "inApp": "In scope",
+      "hidden": "Hidden"
+    },
     "table": {
       "name": "Group Name",
       "source": "Source",
@@ -708,6 +715,13 @@
       "fieldReadOnly": "This field comes from the corporate directory and cannot be changed here.",
       "groupsManagedExternally": "Groups are managed via Active Directory / Keycloak sync.",
       "editHint": "Identity and group data come from the directory. You can update MonitraNG profile fields below."
+    },
+    "applicationScope": {
+      "column": "Application scope",
+      "includeInApplication": "Use in MonitraNG",
+      "includeInApplicationHint": "When off, hidden from pickers and lists; login is blocked.",
+      "inApp": "In scope",
+      "hidden": "Hidden"
     },
     "table": {
       "username": "Username",
@@ -3821,8 +3835,10 @@
         "editTitle": "Edit work package — {no}",
         "missingId": "Package id not found.",
         "notFound": "Could not load work package.",
-        "selectCustomerFirst": "Select a customer first; contacts are listed per customer.",
-        "customerContactsGroup": "Customer responsibles"
+        "selectCustomerFirst": "Select a customer first; the customer contact is listed from that customer's contacts.",
+        "customerContactsGroup": "Customer responsibles",
+        "odakPersonnelGroup": "Odak responsibles",
+        "personnelPoolEmpty": "Design / manufacturing responsible lists are empty. Configure personnel under Work Package Settings → Odak personnel."
       },
       "validation": {
         "packageNoRequired": "Work package number is required.",
@@ -3864,6 +3880,7 @@
         "saved": "Settings saved.",
         "tabs": {
           "listColumns": "List columns",
+          "personnel": "Odak personnel",
           "notifications": "Notifications",
           "poDocumentAccess": "PO document access",
           "fieldPolicies": "Field permissions"
@@ -3984,6 +4001,13 @@
           "hint": "Only selected groups can view and download files in the restricted PO PDF section. The global section is visible to everyone who can read the work package; use Field permissions to control upload/edit access.",
           "groupsLabel": "Restricted PO PDF viewer groups",
           "groupsHint": "If empty, no one can view the restricted section."
+        },
+        "personnel": {
+          "hint": "Define Odak personnel (Keycloak / Keeper users) available for Design and Manufacturing responsible fields on the work package form.",
+          "designPersonnel": "Design responsibles",
+          "designPersonnelHint": "Users listed in the Design responsible field when creating or editing work packages.",
+          "manufacturePersonnel": "Manufacturing responsibles",
+          "manufacturePersonnelHint": "Users listed in the Manufacturing responsible field when creating or editing work packages."
         }
       }
     },
@@ -4525,7 +4549,7 @@
         "shipmentDate": "Shipment Date",
         "status": "Status",
         "lineQty": "Total Qty",
-        "qcfStatus": "QCF",
+        "qcfStatus": "KKF",
         "controlType": "Control Type"
       },
       "fields": {
@@ -4535,10 +4559,10 @@
         "controlType": "Control type",
         "shipmentAddress": "Shipment address",
         "notes": "Notes",
-        "qcfGroup": "Shipment quality form (QCF)",
-        "qcfStatus": "QCF status",
-        "qcfReferenceNo": "QCF reference no",
-        "qcfNotes": "QCF notes"
+        "qcfGroup": "Shipment quality form (KKF)",
+        "qcfStatus": "KKF status",
+        "qcfReferenceNo": "KKF reference no",
+        "qcfNotes": "KKF notes"
       },
       "dialog": {
         "createTitle": "New shipment",
@@ -7239,6 +7263,32 @@
         "event": "Event",
         "schedule": "Schedule"
       }
+    }
+  },
+  "directoryPicker": {
+    "select": "Select",
+    "cancel": "Cancel",
+    "clear": "Clear",
+    "user": {
+      "placeholder": "Click to select users",
+      "open": "Select user",
+      "dialogTitle": "Select user",
+      "searchHint": "Search by name, username or email…",
+      "empty": "No users found.",
+      "columnName": "Name",
+      "columnUsername": "Username",
+      "columnEmail": "Email",
+      "columnDepartment": "Department"
+    },
+    "group": {
+      "placeholder": "Click to select groups",
+      "open": "Select group",
+      "dialogTitle": "Select group",
+      "searchHint": "Search by group name…",
+      "empty": "No groups found.",
+      "columnName": "Group name",
+      "columnDescription": "Description",
+      "columnMembers": "Members"
     }
   },
   "errors": {

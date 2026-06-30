@@ -29,7 +29,7 @@ const groupStore = useGroupStore();
 const groupId = route.params.id as string;
 
 const currentGroupRef = computed(() => groupStore.currentGroup);
-const { isDirectory, canEdit, sourceLabelKey, sourceChipColor } =
+const { isDirectory, canEdit, canChangeApplicationScope, sourceLabelKey, sourceChipColor } =
   useGroupFieldPolicies(currentGroupRef);
 
 const page = computed(() => ({ title: t('groups.edit.title') }));
@@ -59,6 +59,7 @@ const formData = ref({
   name: '',
   description: '',
   isActive: true,
+  includeInApplication: true,
 });
 
 // Validation schema
@@ -80,6 +81,7 @@ const loadGroup = async () => {
         name: group.name || '',
         description: group.description || '',
         isActive: group.isActive !== undefined ? group.isActive : true,
+        includeInApplication: group.includeInApplication !== false,
       };
     }
   } catch (error: any) {
@@ -105,13 +107,17 @@ const onSubmit = async (values: any) => {
   
   try {
     // FormData'dan değerleri al (v-model ile güncelleniyor)
-    const groupData = {
-      name: formData.value.name,
-      description: formData.value.description || undefined,
-      isActive: formData.value.isActive,
-    };
-    
-    await groupStore.updateGroup(groupId, groupData);
+    if (isDirectory.value) {
+      await groupStore.updateGroupApplicationScope(groupId, formData.value.includeInApplication);
+    } else {
+      const groupData = {
+        name: formData.value.name,
+        description: formData.value.description || undefined,
+        isActive: formData.value.isActive,
+        includeInApplication: formData.value.includeInApplication,
+      };
+      await groupStore.updateGroup(groupId, groupData);
+    }
     
     // Success - redirect to list with refresh parameter
     router.push({ path: '/apps/groups', query: { refresh: Date.now() } });
@@ -194,6 +200,18 @@ const onSubmit = async (values: any) => {
                 hide-details
                 class="mt-4"
                 :disabled="!canEdit"
+              />
+            </v-col>
+
+            <!-- Application scope -->
+            <v-col v-if="canChangeApplicationScope" cols="12" md="4">
+              <v-switch
+                v-model="formData.includeInApplication"
+                :label="t('groups.applicationScope.includeInApplication')"
+                :hint="t('groups.applicationScope.includeInApplicationHint')"
+                persistent-hint
+                color="primary"
+                class="mt-4"
               />
             </v-col>
 

@@ -3,10 +3,10 @@ import { ref, computed, onMounted, watch } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import ProjectWorkflowEditor from '@/components/apps/task-manager/ProjectWorkflowEditor.vue';
 import ProjectIssueCreateLayoutEditor from '@/components/apps/task-manager/ProjectIssueCreateLayoutEditor.vue';
+import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import { useTaskManagerStore } from '@/stores/apps/taskManager';
 import { useAuthStore } from '@/stores/auth';
 import { useUserStore } from '@/stores/apps/user';
-import { useGroupStore } from '@/stores/apps/group';
 import type {
   TmProject,
   TmProjectPermissions,
@@ -38,7 +38,6 @@ const router = useRouter();
 const store = useTaskManagerStore();
 const auth = useAuthStore();
 const userStore = useUserStore();
-const groupStore = useGroupStore();
 
 const canEditIssueCreateLayout = computed(() => auth.isManager);
 
@@ -454,15 +453,6 @@ watch(
   { deep: true }
 );
 
-const userItems = computed(() =>
-  userStore.users.map((u) => ({
-    title: `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.username || u.id,
-    value: u.id || u.userId,
-    subtitle: u.email ?? '',
-  }))
-);
-
-/** Yeni görev formu önizlemesi — seçimlerle süzülmüş listeler */
 const previewIssueTypeItems = computed(() => {
   const p = projectForLayout.value;
   if (!p) return [];
@@ -492,13 +482,6 @@ const previewUserItems = computed(() =>
   userStore.users.map((u) => ({
     title: `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.username || u.id,
     value: u.id || u.userId,
-  }))
-);
-
-const groupItems = computed(() =>
-  (groupStore.groups || []).map((g) => ({
-    title: g.name,
-    value: g.id || g.groupId,
   }))
 );
 
@@ -540,7 +523,6 @@ async function bootstrap() {
     await store.loadLookups();
     await store.loadFieldDefinitions().catch(() => {});
     await userStore.fetchUsers({ page: 1, pageSize: 500, isActive: true }).catch(() => {});
-    await groupStore.fetchGroups({ page: 1, pageSize: 200 }).catch(() => {});
 
     if (props.mode === 'edit' && props.projectId) {
       await store.loadProjects();
@@ -766,15 +748,11 @@ function fieldDefScopeTag(fd: TmFieldDefinition): string {
                 <v-textarea v-model="general.description" :label="mt('taskManager.description', 'Açıklama')" rows="3" variant="outlined" />
               </v-col>
               <v-col cols="12" md="6">
-                <v-autocomplete
+                <MngDirectoryPickerField
                   v-model="general.lead"
-                  :items="userItems"
-                  item-title="title"
-                  item-value="value"
-                  clearable
-                  variant="outlined"
-                  density="comfortable"
+                  entity="user"
                   :label="mt('taskManager.projectLead', 'Proje lideri')"
+                  density="comfortable"
                 />
               </v-col>
               <v-col cols="12" md="6">
@@ -998,90 +976,60 @@ function fieldDefScopeTag(fd: TmFieldDefinition): string {
               <v-expansion-panel>
                 <v-expansion-panel-title>{{ mt('taskManager.permView', 'Görüntüleme') }}</v-expansion-panel-title>
                 <v-expansion-panel-text>
-                  <v-autocomplete
+                  <MngDirectoryPickerField
                     v-model="permissions.view.personIds"
-                    :items="userItems"
-                    item-title="title"
-                    item-value="value"
+                    entity="user"
                     multiple
-                    chips
-                    closable-chips
-                    variant="outlined"
-                    density="comfortable"
                     class="mb-3"
                     :label="mt('taskManager.permPersons', 'Kullanıcılar')"
-                  />
-                  <v-autocomplete
-                    v-model="permissions.view.groupIds"
-                    :items="groupItems"
-                    item-title="title"
-                    item-value="value"
-                    multiple
-                    chips
-                    closable-chips
-                    variant="outlined"
                     density="comfortable"
+                  />
+                  <MngDirectoryPickerField
+                    v-model="permissions.view.groupIds"
+                    entity="group"
+                    multiple
                     :label="mt('taskManager.permGroups', 'Gruplar')"
+                    density="comfortable"
                   />
                 </v-expansion-panel-text>
               </v-expansion-panel>
               <v-expansion-panel>
                 <v-expansion-panel-title>{{ mt('taskManager.permEdit', 'Düzenleme') }}</v-expansion-panel-title>
                 <v-expansion-panel-text>
-                  <v-autocomplete
+                  <MngDirectoryPickerField
                     v-model="permissions.edit.personIds"
-                    :items="userItems"
-                    item-title="title"
-                    item-value="value"
+                    entity="user"
                     multiple
-                    chips
-                    closable-chips
-                    variant="outlined"
-                    density="comfortable"
                     class="mb-3"
                     :label="mt('taskManager.permPersons', 'Kullanıcılar')"
-                  />
-                  <v-autocomplete
-                    v-model="permissions.edit.groupIds"
-                    :items="groupItems"
-                    item-title="title"
-                    item-value="value"
-                    multiple
-                    chips
-                    closable-chips
-                    variant="outlined"
                     density="comfortable"
+                  />
+                  <MngDirectoryPickerField
+                    v-model="permissions.edit.groupIds"
+                    entity="group"
+                    multiple
                     :label="mt('taskManager.permGroups', 'Gruplar')"
+                    density="comfortable"
                   />
                 </v-expansion-panel-text>
               </v-expansion-panel>
               <v-expansion-panel>
                 <v-expansion-panel-title>{{ mt('taskManager.permAdmin', 'Yönetim') }}</v-expansion-panel-title>
                 <v-expansion-panel-text>
-                  <v-autocomplete
+                  <MngDirectoryPickerField
                     v-model="permissions.admin.personIds"
-                    :items="userItems"
-                    item-title="title"
-                    item-value="value"
+                    entity="user"
                     multiple
-                    chips
-                    closable-chips
-                    variant="outlined"
-                    density="comfortable"
                     class="mb-3"
                     :label="mt('taskManager.permPersons', 'Kullanıcılar')"
-                  />
-                  <v-autocomplete
-                    v-model="permissions.admin.groupIds"
-                    :items="groupItems"
-                    item-title="title"
-                    item-value="value"
-                    multiple
-                    chips
-                    closable-chips
-                    variant="outlined"
                     density="comfortable"
+                  />
+                  <MngDirectoryPickerField
+                    v-model="permissions.admin.groupIds"
+                    entity="group"
+                    multiple
                     :label="mt('taskManager.permGroups', 'Gruplar')"
+                    density="comfortable"
                   />
                 </v-expansion-panel-text>
               </v-expansion-panel>

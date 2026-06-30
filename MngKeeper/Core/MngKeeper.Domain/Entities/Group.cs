@@ -28,6 +28,10 @@ namespace MngKeeper.Domain.Entities
         [BsonElement("isActive")]
         public bool IsActive { get; set; } = true;
 
+        /// <summary>MonitraNG uygulama kapsamında mı (picker/liste). Sync yazmaz.</summary>
+        [BsonElement("includeInApplication")]
+        public bool IncludeInApplication { get; set; } = true;
+
         [BsonElement("createdAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

@@ -681,7 +681,7 @@ namespace MngKeeper.Infrastructure.Services
                 {
                     // Default: count all active users
                     var allUsers = await _userRepository.GetByDomainIdAsync(domain.Id);
-                    var activeUserCount = allUsers.Count(u => u.IsActive);
+                    var activeUserCount = allUsers.Count(u => u.IsActive && u.IncludeInApplication);
                     
                     // Cache for 5 minutes
                     await _redisService.SetAsync(cacheKey, activeUserCount, TimeSpan.FromMinutes(5));
@@ -698,7 +698,7 @@ namespace MngKeeper.Infrastructure.Services
                 _logger.LogInformation("GetActiveUserCount: Domain: {DomainName}, Total: {Total}, Active: {Active}, Inactive: {Inactive}, Definition.IsActive: {DefIsActive}, LastLoginDays: {LastLoginDays}", 
                     domainName, totalUsers, activeUsers, inactiveUsers, definition.IsActive, definition.LastLoginDays);
                 
-                var filteredUsers = allDomainUsers.Where(u => u.IsActive == definition.IsActive);
+                var filteredUsers = allDomainUsers.Where(u => u.IsActive == definition.IsActive && u.IncludeInApplication);
                 var afterIsActiveFilter = filteredUsers.Count();
                 _logger.LogInformation("GetActiveUserCount: After IsActive filter (== {DefIsActive}), Count: {Count}", definition.IsActive, afterIsActiveFilter);
 

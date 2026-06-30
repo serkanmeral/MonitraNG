@@ -16,6 +16,7 @@ public class GroupFieldPolicyService : IGroupFieldPolicyService
         CanEdit = false,
         CanDelete = false,
         CanManageMembers = false,
+        CanChangeApplicationScope = true,
       };
     }
 
@@ -24,6 +25,7 @@ public class GroupFieldPolicyService : IGroupFieldPolicyService
       CanEdit = true,
       CanDelete = true,
       CanManageMembers = true,
+      CanChangeApplicationScope = true,
     };
   }
 }

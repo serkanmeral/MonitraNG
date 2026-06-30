@@ -3,6 +3,7 @@ using MediatR;
 using MngKeeper.Api.Attributes;
 using MngKeeper.Application.Features.Group.Commands.CreateGroup;
 using MngKeeper.Application.Features.Group.Commands.UpdateGroup;
+using MngKeeper.Application.Features.Group.Commands.UpdateGroupApplicationScope;
 using MngKeeper.Application.Features.Group.Commands.DeleteGroup;
 using MngKeeper.Application.Features.Group.Queries.GetGroups;
 using MngKeeper.Application.Features.Group.Queries.GetGroup;
@@ -42,14 +43,16 @@ namespace MngKeeper.Api.Controllers
             [FromQuery] int page = 1, 
             [FromQuery] int pageSize = 10,
             [FromQuery] string? searchTerm = null,
-            [FromQuery] bool? isActive = null)
+            [FromQuery] bool? isActive = null,
+            [FromQuery] bool? includeInApplication = null)
         {
             var query = new GetGroupsQuery 
             { 
                 Page = page, 
                 PageSize = pageSize,
                 SearchTerm = searchTerm,
-                IsActive = isActive
+                IsActive = isActive,
+                IncludeInApplication = includeInApplication,
             };
             var response = await _mediator.Send(query);
             
@@ -93,6 +96,19 @@ namespace MngKeeper.Api.Controllers
             if (!response.IsSuccess)
                 return BadRequest(response);
 
+            return Ok(response);
+        }
+
+        /// <summary>Kurumsal ve yerel gruplar — yalnızca MonitraNG uygulama kapsamı flag'i.</summary>
+        [HttpPatch("{groupId}/application-scope")]
+        public async Task<ActionResult<UpdateGroupApplicationScopeResponse>> UpdateGroupApplicationScope(
+            string groupId,
+            [FromBody] UpdateGroupApplicationScopeCommand command)
+        {
+            command.GroupId = groupId;
+            var response = await _mediator.Send(command);
+            if (!response.IsSuccess)
+                return BadRequest(response);
             return Ok(response);
         }
 

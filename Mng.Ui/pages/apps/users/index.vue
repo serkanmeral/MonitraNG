@@ -67,6 +67,7 @@ const headers = computed(() => [
   { title: t('users.table.email'), key: 'email', sortable: true },
   { title: t('users.table.fullName'), key: 'fullName', sortable: true },
   { title: t('users.table.status'), key: 'isActive', sortable: true },
+  { title: t('users.applicationScope.column'), key: 'includeInApplication', sortable: false },
   { title: t('users.table.groups'), key: 'groups', sortable: false },
   { title: t('users.table.createdAt'), key: 'createdAt', sortable: true },
   { title: t('users.table.actions'), key: 'actions', sortable: false, align: 'end' },
@@ -564,6 +565,12 @@ const formatDate = (date: string | Date | null | undefined) => {
         <template v-slot:item.isActive="{ value }">
           <v-chip :color="value ? 'success' : 'error'" size="small" variant="flat">
             {{ value ? t('users.status.active') : t('users.status.inactive') }}
+          </v-chip>
+        </template>
+
+        <template v-slot:item.includeInApplication="{ value }">
+          <v-chip :color="value ? 'primary' : 'warning'" size="small" variant="tonal">
+            {{ value ? t('users.applicationScope.inApp') : t('users.applicationScope.hidden') }}
           </v-chip>
         </template>
 

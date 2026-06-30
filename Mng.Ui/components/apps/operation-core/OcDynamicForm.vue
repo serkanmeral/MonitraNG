@@ -25,7 +25,7 @@ const contextRef = toRef(props, 'context');
 const workspaceId = computed(() => props.context.workspaceId);
 const readonlyRef = computed(() => props.readonly === true);
 
-const { selectItemsForField, isLoadingField, isPersonField, pickerForField, isDatasetPickerFieldForKey, datasetPickerForField, isFieldDisabledByDependsOn, selectPresentationForField } = useOcDynamicFormLookups(
+const { selectItemsForField, isLoadingField, isPersonField, isGroupField, userDirectoryPickerForField, groupDirectoryPickerForField, isDatasetPickerFieldForKey, datasetPickerForField, isFieldDisabledByDependsOn, selectPresentationForField } = useOcDynamicFormLookups(
   workspaceId,
   contextRef,
   model,
@@ -147,7 +147,8 @@ function setFieldValue(key: string, value: unknown) {
                   :select-loading="isLoadingField(fieldKey)"
                   :select-presentation="selectPresentationForField(fieldKey)"
                   :select-depends-on-blocked="isFieldDisabledByDependsOn(fieldKey)"
-                  :person-picker="isPersonField(fieldKey) ? pickerForField(fieldKey) : undefined"
+                  :user-directory-picker="isPersonField(fieldKey) ? userDirectoryPickerForField(fieldKey) : undefined"
+                  :group-directory-picker="isGroupField(fieldKey) ? groupDirectoryPickerForField(fieldKey) : undefined"
                   :dataset-picker="isDatasetPickerFieldForKey(fieldKey) ? datasetPickerForField(fieldKey) : undefined"
                   :group-names="groupNames"
                   :field-display="fieldDisplays?.[fieldKey]"

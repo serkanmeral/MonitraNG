@@ -2,6 +2,7 @@ import { fetchFromDataGateway } from '@/services/apiService';
 import { ocListDatasetPage } from '@/services/operationCoreService';
 import { afListFiltersToQueryString, type AfListFilter } from '@/utils/afListFilters';
 import { ODAK_SIPARIS_CONFIG, type OdakPackageRow } from '@/utils/odakSiparisConfig';
+import { personLabelFromRow } from '@/utils/odakSiparisPackagePersonnel';
 
 /** VDataTable slot item may be raw row or `{ raw: row }` depending on table variant. */
 export function resolveDataTableRow<T extends Record<string, unknown>>(
@@ -125,6 +126,7 @@ export function contactLabelFromRow(
 
 export interface PackageListCellContext {
   customerLabels: Record<string, string>;
+  personLabels: Record<string, string>;
   lineStats: Map<string, OdakPackageLineStats>;
 }
 
@@ -146,9 +148,9 @@ export function packageListCellRaw(
     case 'customerContact':
       return contactLabelFromRow(item, 'customerContactId');
     case 'designContact':
-      return contactLabelFromRow(item, 'designContactId');
+      return personLabelFromRow(item.designContactId, ctx.personLabels);
     case 'manufactureContact':
-      return contactLabelFromRow(item, 'manufactureContactId');
+      return personLabelFromRow(item.manufactureContactId, ctx.personLabels);
     case 'customerPo':
       return stats?.customerPoNos || '—';
     case 'projectNo':

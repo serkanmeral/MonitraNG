@@ -18,6 +18,7 @@ public class KeycloakToMongoSyncService : IKeycloakToMongoSyncService
     private readonly IKeycloakService _keycloakService;
     private readonly IDirectorySyncCoordinator _coordinator;
     private readonly DirectorySyncSettings _directorySyncSettings;
+    private readonly IUserPhotoProfileService _photoProfileService;
     private readonly ILogger<KeycloakToMongoSyncService> _logger;
 
     public KeycloakToMongoSyncService(
@@ -26,6 +27,7 @@ public class KeycloakToMongoSyncService : IKeycloakToMongoSyncService
         IGroupRepository groupRepository,
         IKeycloakService keycloakService,
         IDirectorySyncCoordinator coordinator,
+        IUserPhotoProfileService photoProfileService,
         IOptions<MngKeeperSettings> settings,
         ILogger<KeycloakToMongoSyncService> logger)
     {
@@ -34,6 +36,7 @@ public class KeycloakToMongoSyncService : IKeycloakToMongoSyncService
         _groupRepository = groupRepository;
         _keycloakService = keycloakService;
         _coordinator = coordinator;
+        _photoProfileService = photoProfileService;
         _directorySyncSettings = settings.Value.DirectorySync;
         _logger = logger;
     }
@@ -143,6 +146,9 @@ public class KeycloakToMongoSyncService : IKeycloakToMongoSyncService
 
             if (!DirectoryUserSyncComparer.ShouldSyncFromKeycloak(existing, kcUser, groupNames))
             {
+                if (existing != null)
+                    await TrySyncUserPhotoAsync(existing, domain, cancellationToken);
+
                 result.IsSuccess = true;
                 result.Code = "unchanged";
                 result.Message = "Mongo user already matches Keycloak.";
@@ -152,10 +158,12 @@ public class KeycloakToMongoSyncService : IKeycloakToMongoSyncService
             }
 
             var syncedAt = DateTime.UtcNow;
+            User? syncedUser;
             if (existing == null)
             {
                 var user = DirectoryUserFieldSets.CreateDirectoryUser(domain.Id, kcUser, groupNames, syncedAt);
                 await _userRepository.AddAsync(user);
+                syncedUser = user;
                 result.UsersCreated = 1;
             }
             else
@@ -170,8 +178,12 @@ public class KeycloakToMongoSyncService : IKeycloakToMongoSyncService
 
                 DirectoryUserFieldSets.ApplyDirectoryFields(existing, kcUser, groupNames, syncedAt);
                 await _userRepository.UpdateAsync(existing);
+                syncedUser = existing;
                 result.UsersUpdated = 1;
             }
+
+            if (syncedUser != null)
+                await TrySyncUserPhotoAsync(syncedUser, domain, cancellationToken);
 
             result.IsSuccess = true;
             result.Code = "success";
@@ -251,6 +263,7 @@ public class KeycloakToMongoSyncService : IKeycloakToMongoSyncService
                         DomainId = resolvedDomainId,
                         KeycloakGroupId = kcGroup.Id,
                         IsActive = true,
+                        IncludeInApplication = ApplicationScopeDefaults.DefaultForSource(UserProvisioningSource.Directory),
                         ProvisioningSource = UserProvisioningSource.Directory,
                         DirectorySyncedAt = syncedAt,
                         CreatedAt = syncedAt,
@@ -342,12 +355,14 @@ public class KeycloakToMongoSyncService : IKeycloakToMongoSyncService
                 {
                     var user = DirectoryUserFieldSets.CreateDirectoryUser(resolvedDomainId, kcUser, groupNames, syncedAt);
                     await _userRepository.AddAsync(user);
+                    await TrySyncUserPhotoAsync(user, domain, cancellationToken);
                     result.UsersCreated++;
                 }
                 else
                 {
                     DirectoryUserFieldSets.ApplyDirectoryFields(existing, kcUser, groupNames, syncedAt);
                     await _userRepository.UpdateAsync(existing);
+                    await TrySyncUserPhotoAsync(existing, domain, cancellationToken);
                     result.UsersUpdated++;
                 }
             }
@@ -424,5 +439,25 @@ public class KeycloakToMongoSyncService : IKeycloakToMongoSyncService
             return byName;
 
         return await _domainRepository.GetByRealmNameAsync(key);
+    }
+
+    private async Task TrySyncUserPhotoAsync(
+        User user,
+        MngKeeper.Domain.Entities.Domain domain,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (await _photoProfileService.TryImportDirectoryPhotoAsync(user, domain, cancellationToken))
+                await _userRepository.UpdateAsync(user);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Directory photo sync skipped for user {UserId} ({Username})",
+                user.Id,
+                user.Username);
+        }
     }
 }

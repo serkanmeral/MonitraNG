@@ -61,6 +61,7 @@ const formData = ref({
   firstName: '',
   lastName: '',
   isActive: true,
+  includeInApplication: true,
   selectedGroups: [] as string[],
   title: null as string | null,
   department: null as string | null,
@@ -121,6 +122,7 @@ const loadUser = async () => {
         firstName: user.firstName || '',
         lastName: user.lastName || '',
         isActive: user.isActive,
+        includeInApplication: user.includeInApplication !== false,
         selectedGroups: user.groups || [],
         title: user.title || null,
         department: user.department || null,
@@ -217,6 +219,12 @@ const onSubmit = async (values: any) => {
 
     if (fieldEditable('isActive')) userData.isActive = formData.value.isActive;
     else userData.isActive = currentUser.isActive;
+
+    if (fieldEditable('includeInApplication')) {
+      userData.includeInApplication = formData.value.includeInApplication;
+    } else {
+      userData.includeInApplication = currentUser.includeInApplication !== false;
+    }
 
     if (canManageGroups.value && groupsChanged) {
       userData.groups = selectedGroups;
@@ -433,6 +441,17 @@ const onSubmit = async (values: any) => {
                 :label="t('users.edit.fields.isActive')"
                 color="success"
                 hide-details
+              />
+            </v-col>
+
+            <!-- Application scope -->
+            <v-col v-if="fieldEditable('includeInApplication')" cols="12" md="6">
+              <v-switch
+                v-model="formData.includeInApplication"
+                :label="t('users.applicationScope.includeInApplication')"
+                :hint="t('users.applicationScope.includeInApplicationHint')"
+                persistent-hint
+                color="primary"
               />
             </v-col>
 

@@ -14,7 +14,7 @@ import {
   ocUpdateStateFlow,
   ocUpdateWorkspace,
 } from '@/services/operationCoreService';
-import { useGroupStore } from '@/stores/apps/group';
+import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import { OC_FORM_LAYOUT_CORE_FIELD_KEYS } from '@/utils/ocFieldDefinitions';
 import { resolveOcFieldDisplayLabel } from '@/utils/ocFormFieldLabels';
 import type { OpField, OpState, OpStateFlow, OpStateFlowTransition } from '@/types/apps/operationCore';
@@ -26,7 +26,6 @@ const props = defineProps<{
 const { t } = useAppI18n();
 const panelError = usePanelErrorNotify('errors.dg.generic');
 const metaCache = useOcWorkspaceMetadataCacheReload(() => props.workspaceId);
-const groupStore = useGroupStore();
 
 const loading = ref(true);
 const saving = ref(false);
@@ -90,12 +89,6 @@ const fieldKeyItems = computed(() => {
   return items.sort((a, b) => a.title.localeCompare(b.title));
 });
 
-const groupItems = computed(() =>
-  groupStore.groups
-    .filter((g) => g.isActive)
-    .map((g) => ({ value: g.id, title: g.name }))
-);
-
 const tableHeaders = computed(() => [
   { title: t('operationCore.workspaceDefinitions.flows.colName'), key: 'name', sortable: true },
   { title: t('operationCore.workspaceDefinitions.flows.colInitialState'), key: 'initialStateId', sortable: false },
@@ -150,9 +143,6 @@ async function loadAll() {
     states.value = stateRows;
     poolFields.value = fieldRows;
     workspaceDefaultFlowId.value = ws?.defaultStateFlowId ?? null;
-    if (!groupStore.groups.length) {
-      await groupStore.fetchGroups({ pageSize: 500 });
-    }
   } catch (e: unknown) {
     errorLocal.value = panelError(e, 'operationCore.workspaceDefinitions.flows.loadError');
   } finally {
@@ -548,21 +538,18 @@ async function confirmDelete() {
                 />
               </v-col>
               <v-col cols="12" md="6">
-                <v-select
+                <MngDirectoryPickerField
                   v-model="tr.permissionGroups"
-                  :items="groupItems"
-                  item-title="title"
-                  item-value="value"
-                  :label="t('operationCore.workspaceDefinitions.flows.fieldPermissionGroups')"
-                  :hint="t('operationCore.workspaceDefinitions.flows.permissionGroupsHint')"
-                  persistent-hint
+                  entity="group"
                   multiple
-                  chips
-                  closable-chips
-                  clearable
+                  :label="t('operationCore.workspaceDefinitions.flows.fieldPermissionGroups')"
                   density="compact"
-                  :no-data-text="t('operationCore.workspaceDefinitions.flows.noGroups')"
+                  variant="outlined"
+                  hide-details="auto"
                 />
+                <p class="text-caption text-medium-emphasis mt-1 mb-0">
+                  {{ t('operationCore.workspaceDefinitions.flows.permissionGroupsHint') }}
+                </p>
               </v-col>
             </v-row>
           </v-card>

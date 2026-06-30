@@ -3,6 +3,11 @@ import {
   mergeOdakPackagePoDocumentAccessConfig,
   type OdakPackagePoDocumentAccessConfig,
 } from '@/utils/odakSiparisPoDocumentAccess';
+import {
+  defaultOdakPackagePersonnelConfig,
+  mergeOdakPackagePersonnelConfig,
+  type OdakPackagePersonnelConfig,
+} from '@/utils/odakSiparisPackagePersonnel';
 import { ODAK_SIPARIS_CONFIG } from '@/utils/odakSiparisConfig';
 import type { OdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
 import {
@@ -34,7 +39,8 @@ export type OdakHubSettingsScope =
   | 'field_policies'
   | 'lines_field_policies'
   | 'shipments_field_policies'
-  | 'package_po_document_access';
+  | 'package_po_document_access'
+  | 'package_odak_personnel';
 
 export type OdakHubListSettingsScope = 'packages_list' | 'lines_list' | 'shipments_list';
 
@@ -283,6 +289,7 @@ let runtimeCache: OdakPackageHubRuntimeSettings | null = null;
 let runtimeCacheAt = 0;
 const listConfigOnlyCache = new Map<OdakHubListSettingsScope, { config: OdakHubListConfig; at: number }>();
 let poDocumentAccessCache: { config: OdakPackagePoDocumentAccessConfig; at: number } | null = null;
+let personnelCache: { config: OdakPackagePersonnelConfig; at: number } | null = null;
 const RUNTIME_CACHE_MS = 30_000;
 
 export async function loadOdakPackageHubRuntimeSettings(
@@ -311,6 +318,7 @@ export function invalidateOdakPackageHubSettingsCache(): void {
   listConfigOnlyCache.clear();
   fieldPoliciesOnlyCache.clear();
   poDocumentAccessCache = null;
+  personnelCache = null;
 }
 
 export async function loadOdakPackageListConfigOnly(): Promise<OdakPackageListConfig> {
@@ -406,5 +414,43 @@ export async function loadOdakPackagePoDocumentAccessOnly(
   }
   const resp = await loadOdakPackagePoDocumentAccessConfig();
   poDocumentAccessCache = { config: resp.config, at: now };
+  return resp.config;
+}
+
+export async function loadOdakPackagePersonnelConfig(): Promise<{
+  config: OdakPackagePersonnelConfig;
+  rowId: string | null;
+}> {
+  const row = await loadHubRow('package_odak_personnel');
+  const parsed = row ? parseConfigJson(row.configJson) : null;
+  return {
+    config: mergeOdakPackagePersonnelConfig(parsed),
+    rowId: row?.__dataId ?? null,
+  };
+}
+
+export async function saveOdakPackagePersonnelConfig(
+  config: OdakPackagePersonnelConfig,
+  rowId: string | null
+): Promise<string> {
+  const body = {
+    scope: 'package_odak_personnel' as const,
+    configJson: JSON.stringify({ packagePersonnel: config }),
+  };
+  if (rowId) {
+    await ocUpdate(ODAK_SIPARIS_CONFIG.hubSettingsDataset, rowId, body);
+    return rowId;
+  }
+  const created = (await ocCreate(ODAK_SIPARIS_CONFIG.hubSettingsDataset, body)) as Record<string, unknown>;
+  return hubDataId(created);
+}
+
+export async function loadOdakPackagePersonnelOnly(force = false): Promise<OdakPackagePersonnelConfig> {
+  const now = Date.now();
+  if (!force && personnelCache && now - personnelCache.at < RUNTIME_CACHE_MS) {
+    return personnelCache.config;
+  }
+  const resp = await loadOdakPackagePersonnelConfig();
+  personnelCache = { config: resp.config, at: now };
   return resp.config;
 }

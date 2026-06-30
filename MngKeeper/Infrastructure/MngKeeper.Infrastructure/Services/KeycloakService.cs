@@ -1299,38 +1299,40 @@ namespace MngKeeper.Infrastructure.Services
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
             const int pageSize = 100;
+            var totalCount = await GetRealmResourceCountAsync(realmName, "users", cancellationToken);
             var all = new List<KeycloakRealmUserSnapshot>();
             var first = 0;
 
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var path = $"admin/realms/{realmName}/users?first={first}&max={pageSize}";
-                var response = await _httpClient.GetAsync(BuildEndpointPath(path), cancellationToken);
-                if (!response.IsSuccessStatusCode)
-                {
-                    var error = await response.Content.ReadAsStringAsync(cancellationToken);
-                    _logger.LogError("ListRealmUsers failed for {Realm}. Status={Status}, Error={Error}",
-                        realmName, response.StatusCode, error);
-                    throw new InvalidOperationException($"Keycloak list users failed: {response.StatusCode}");
-                }
 
-                var json = await response.Content.ReadAsStringAsync(cancellationToken);
-                var page = JsonSerializer.Deserialize<JsonElement[]>(json) ?? Array.Empty<JsonElement>();
+                if (totalCount >= 0 && first >= totalCount)
+                    break;
+
+                var max = pageSize;
+                if (totalCount >= 0)
+                    max = Math.Min(pageSize, totalCount - first);
+
+                if (max <= 0)
+                    break;
+
+                var path = $"admin/realms/{realmName}/users?first={first}&max={max}";
+                var page = await FetchRealmUserPageAsync(realmName, path, first, max, cancellationToken);
                 if (page.Length == 0)
                     break;
 
                 foreach (var el in page)
-                {
                     all.Add(MapUserSnapshot(el));
-                }
 
-                if (page.Length < pageSize)
+                first += page.Length;
+                if (page.Length < max)
                     break;
-                first += pageSize;
             }
 
-            _logger.LogInformation("Listed {Count} users from Keycloak realm {Realm}", all.Count, realmName);
+            _logger.LogInformation(
+                "Listed {Count} users from Keycloak realm {Realm} (reportedTotal={Total})",
+                all.Count, realmName, totalCount >= 0 ? totalCount.ToString() : "unknown");
             return all;
         }
 
@@ -1342,38 +1344,40 @@ namespace MngKeeper.Infrastructure.Services
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
 
             const int pageSize = 100;
+            var totalCount = await GetRealmResourceCountAsync(realmName, "groups", cancellationToken);
             var all = new List<KeycloakRealmGroupSnapshot>();
             var first = 0;
 
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var path = $"admin/realms/{realmName}/groups?first={first}&max={pageSize}";
-                var response = await _httpClient.GetAsync(BuildEndpointPath(path), cancellationToken);
-                if (!response.IsSuccessStatusCode)
-                {
-                    var error = await response.Content.ReadAsStringAsync(cancellationToken);
-                    _logger.LogError("ListRealmGroups failed for {Realm}. Status={Status}, Error={Error}",
-                        realmName, response.StatusCode, error);
-                    throw new InvalidOperationException($"Keycloak list groups failed: {response.StatusCode}");
-                }
 
-                var json = await response.Content.ReadAsStringAsync(cancellationToken);
-                var page = JsonSerializer.Deserialize<JsonElement[]>(json) ?? Array.Empty<JsonElement>();
+                if (totalCount >= 0 && first >= totalCount)
+                    break;
+
+                var max = pageSize;
+                if (totalCount >= 0)
+                    max = Math.Min(pageSize, totalCount - first);
+
+                if (max <= 0)
+                    break;
+
+                var path = $"admin/realms/{realmName}/groups?first={first}&max={max}";
+                var page = await FetchRealmGroupPageAsync(realmName, path, first, max, cancellationToken);
                 if (page.Length == 0)
                     break;
 
                 foreach (var el in page)
-                {
                     all.Add(MapGroupSnapshot(el));
-                }
 
-                if (page.Length < pageSize)
+                first += page.Length;
+                if (page.Length < max)
                     break;
-                first += pageSize;
             }
 
-            _logger.LogInformation("Listed {Count} groups from Keycloak realm {Realm}", all.Count, realmName);
+            _logger.LogInformation(
+                "Listed {Count} groups from Keycloak realm {Realm} (reportedTotal={Total})",
+                all.Count, realmName, totalCount >= 0 ? totalCount.ToString() : "unknown");
             return all;
         }
 
@@ -1403,6 +1407,272 @@ namespace MngKeeper.Infrastructure.Services
                 .Where(name => !string.IsNullOrWhiteSpace(name))
                 .Select(name => name!)
                 .ToList();
+        }
+
+        public async Task<KeycloakUserPhotoData?> GetRealmUserPhotoAsync(
+            string realmName,
+            string keycloakUserId,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(keycloakUserId))
+                return null;
+
+            await EnsureAdminTokenAsync();
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _adminToken);
+
+            var fromAttributes = await TryReadPhotoFromUserAttributesAsync(
+                realmName, keycloakUserId, cancellationToken);
+            if (fromAttributes != null)
+                return fromAttributes;
+
+            return await TryReadPhotoFromProfilePictureEndpointAsync(
+                realmName, keycloakUserId, cancellationToken);
+        }
+
+        private async Task<KeycloakUserPhotoData?> TryReadPhotoFromUserAttributesAsync(
+            string realmName,
+            string keycloakUserId,
+            CancellationToken cancellationToken)
+        {
+            var response = await _httpClient.GetAsync(
+                BuildEndpointPath($"admin/realms/{realmName}/users/{keycloakUserId}"),
+                cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            using var doc = JsonDocument.Parse(json);
+            if (!doc.RootElement.TryGetProperty("attributes", out var attributes)
+                || attributes.ValueKind != JsonValueKind.Object)
+            {
+                return null;
+            }
+
+            foreach (var attr in attributes.EnumerateObject())
+            {
+                if (attr.Value.ValueKind != JsonValueKind.Array || attr.Value.GetArrayLength() == 0)
+                    continue;
+
+                var raw = attr.Value[0].GetString();
+                if (string.IsNullOrWhiteSpace(raw))
+                    continue;
+
+                if (!IsLikelyPhotoAttributeName(attr.Name))
+                    continue;
+
+                var decoded = TryDecodePhotoValue(raw);
+                if (decoded != null)
+                    return decoded;
+            }
+
+            return null;
+        }
+
+        private async Task<KeycloakUserPhotoData?> TryReadPhotoFromProfilePictureEndpointAsync(
+            string realmName,
+            string keycloakUserId,
+            CancellationToken cancellationToken)
+        {
+            var response = await _httpClient.GetAsync(
+                BuildEndpointPath($"admin/realms/{realmName}/users/{keycloakUserId}/profile/picture"),
+                cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+            if (bytes.Length == 0)
+                return null;
+
+            var contentType = response.Content.Headers.ContentType?.MediaType ?? "image/jpeg";
+            return new KeycloakUserPhotoData
+            {
+                Bytes = bytes,
+                ContentType = contentType,
+                Extension = contentType.Contains("png", StringComparison.OrdinalIgnoreCase) ? ".png" : ".jpg",
+            };
+        }
+
+        private static bool IsLikelyPhotoAttributeName(string attributeName)
+        {
+            return attributeName.Equals("thumbnailPhoto", StringComparison.OrdinalIgnoreCase)
+                || attributeName.Equals("jpegPhoto", StringComparison.OrdinalIgnoreCase)
+                || attributeName.Equals("photo", StringComparison.OrdinalIgnoreCase)
+                || attributeName.Equals("picture", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static KeycloakUserPhotoData? TryDecodePhotoValue(string raw)
+        {
+            var trimmed = raw.Trim();
+            byte[]? bytes = null;
+            string contentType = "image/jpeg";
+
+            if (trimmed.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+            {
+                var comma = trimmed.IndexOf(',');
+                if (comma > 0)
+                {
+                    var meta = trimmed[..comma];
+                    if (meta.Contains("png", StringComparison.OrdinalIgnoreCase))
+                        contentType = "image/png";
+                    else if (meta.Contains("webp", StringComparison.OrdinalIgnoreCase))
+                        contentType = "image/webp";
+
+                    try
+                    {
+                        bytes = Convert.FromBase64String(trimmed[(comma + 1)..]);
+                    }
+                    catch (FormatException)
+                    {
+                        return null;
+                    }
+                }
+            }
+            else
+            {
+                try
+                {
+                    bytes = Convert.FromBase64String(trimmed);
+                }
+                catch (FormatException)
+                {
+                    return null;
+                }
+            }
+
+            if (bytes == null || bytes.Length == 0)
+                return null;
+
+            if (bytes.Length >= 4 && bytes[0] == 0x89 && bytes[1] == 0x50)
+                contentType = "image/png";
+            else if (bytes.Length >= 12
+                && bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46)
+                contentType = "image/webp";
+
+            return new KeycloakUserPhotoData
+            {
+                Bytes = bytes,
+                ContentType = contentType,
+                Extension = contentType switch
+                {
+                    "image/png" => ".png",
+                    "image/webp" => ".webp",
+                    _ => ".jpg",
+                },
+            };
+        }
+
+        private async Task<int> GetRealmResourceCountAsync(
+            string realmName,
+            string resource,
+            CancellationToken cancellationToken)
+        {
+            var response = await _httpClient.GetAsync(
+                BuildEndpointPath($"admin/realms/{realmName}/{resource}/count"),
+                cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogWarning(
+                    "Keycloak {Resource} count unavailable for realm {Realm}. Status={Status}, Error={Error}",
+                    resource, realmName, response.StatusCode, error);
+                return -1;
+            }
+
+            var json = (await response.Content.ReadAsStringAsync(cancellationToken)).Trim();
+            if (int.TryParse(json, out var plainCount))
+                return plainCount;
+
+            try
+            {
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind == JsonValueKind.Number)
+                    return doc.RootElement.GetInt32();
+
+                if (doc.RootElement.ValueKind == JsonValueKind.Object
+                    && doc.RootElement.TryGetProperty("count", out var countProp)
+                    && countProp.ValueKind == JsonValueKind.Number)
+                {
+                    return countProp.GetInt32();
+                }
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Keycloak {Resource} count response not parseable for realm {Realm}: {Json}",
+                    resource, realmName, json);
+            }
+
+            return -1;
+        }
+
+        private async Task<JsonElement[]> FetchRealmUserPageAsync(
+            string realmName,
+            string path,
+            int first,
+            int max,
+            CancellationToken cancellationToken)
+        {
+            var response = await _httpClient.GetAsync(BuildEndpointPath(path), cancellationToken);
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError(
+                    "ListRealmUsers failed for {Realm} first={First} max={Max}. Status={Status}, Error={Error}",
+                    realmName, first, max, response.StatusCode, json);
+                throw new InvalidOperationException($"Keycloak list users failed: {response.StatusCode}");
+            }
+
+            try
+            {
+                return JsonSerializer.Deserialize<JsonElement[]>(json) ?? Array.Empty<JsonElement>();
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Keycloak list users returned invalid JSON for realm {Realm} first={First} max={Max} bytes={Bytes}",
+                    realmName, first, max, json.Length);
+                throw new InvalidOperationException(
+                    $"Keycloak list users returned invalid JSON (first={first}, max={max}): {ex.Message}", ex);
+            }
+        }
+
+        private async Task<JsonElement[]> FetchRealmGroupPageAsync(
+            string realmName,
+            string path,
+            int first,
+            int max,
+            CancellationToken cancellationToken)
+        {
+            var response = await _httpClient.GetAsync(BuildEndpointPath(path), cancellationToken);
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError(
+                    "ListRealmGroups failed for {Realm} first={First} max={Max}. Status={Status}, Error={Error}",
+                    realmName, first, max, response.StatusCode, json);
+                throw new InvalidOperationException($"Keycloak list groups failed: {response.StatusCode}");
+            }
+
+            try
+            {
+                return JsonSerializer.Deserialize<JsonElement[]>(json) ?? Array.Empty<JsonElement>();
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Keycloak list groups returned invalid JSON for realm {Realm} first={First} max={Max} bytes={Bytes}",
+                    realmName, first, max, json.Length);
+                throw new InvalidOperationException(
+                    $"Keycloak list groups returned invalid JSON (first={first}, max={max}): {ex.Message}", ex);
+            }
         }
 
         private static KeycloakRealmUserSnapshot MapUserSnapshot(JsonElement el)

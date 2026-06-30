@@ -49,6 +49,7 @@ namespace MngKeeper.Application.Features.User.Queries.ExportUsers
                     claims.DomainId,
                     request.SearchTerm,
                     request.IsActive,
+                    includeInApplication: null,
                     request.SortBy,
                     request.SortOrder);
 

@@ -302,21 +302,7 @@ function collectGroupIds(value: unknown): string[] {
   return s ? [s] : [];
 }
 
-// Grup filtresi opsiyonları: değer=grup id, başlık=grup adı (MO Groups map'i = yüklü satırlardan toplanır).
-// Tüm grup alanları (assignmentGroups + grup pool) aynı havuz adlarını paylaşır; her key'e aynı liste verilir.
-const groupOptions = computed<{ value: string; title: string }[]>(() =>
-  Object.entries(boardGroups.value)
-    .map(([id, display]) => ({ value: id, title: display?.name?.trim() || id }))
-    .sort((a, b) => a.title.localeCompare(b.title, 'tr'))
-);
-
-const groupOptionsByKey = computed<Record<string, { value: string; title: string }[]>>(() => {
-  const keys = ['assignmentGroups', ...groupPoolKeySet.value];
-  const opts = groupOptions.value;
-  const out: Record<string, { value: string; title: string }[]> = {};
-  for (const key of keys) out[key] = opts;
-  return out;
-});
+// Grup filtresi: merkezi MngDirectoryPickerField (OcBoardListFilters içinde).
 
 const numberPoolKeySet = computed(
   () =>
@@ -1052,7 +1038,6 @@ onUnmounted(() => {
               :priority-options="priorityFilterOptions"
               :type-options="typeFilterOptions"
               :relation-options-by-key="relationOptionsByKey"
-              :group-options-by-key="groupOptionsByKey"
               :tag-options-by-key="tagOptionsByKey"
               @update:filters="onFiltersUpdate"
               @advanced-open="onFiltersPanelOpen"

@@ -15,7 +15,7 @@ import {
 
   ocListRulesForWorkspace,
 } from '@/services/operationCoreService';
-import OcPersonPickerAutocomplete from '@/components/apps/operation-core/OcPersonPickerAutocomplete.vue';
+import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import type { OpRule } from '@/types/apps/operationCore';
 
 const props = withDefaults(
@@ -380,9 +380,10 @@ async function confirmDelete() {
               density="comfortable"
               class="mb-2"
             />
-            <OcPersonPickerAutocomplete
+            <MngDirectoryPickerField
               v-if="createForm.defaultAction === 'setAssignee'"
               v-model="createForm.defaultValue"
+              entity="user"
               density="comfortable"
               hide-details
             />

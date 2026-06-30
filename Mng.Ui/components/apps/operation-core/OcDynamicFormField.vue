@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
-import type { OcPersonPickerApi } from '@/composables/useOcPersonPicker';
+import type { KeeperGroupPickerApi } from '@/composables/useKeeperGroupPicker';
+import type { KeeperUserPickerApi } from '@/composables/useKeeperUserPicker';
 import type { OcDatasetPickerApi } from '@/composables/useOcDatasetPicker';
 import type { OcFieldBehaviorDto, OcFormFieldRuntimeDto } from '@/types/apps/operationCore';
 import type { OcSelectItem } from '@/composables/useOcDynamicFormLookups';
@@ -14,7 +15,7 @@ import {
 } from '@/utils/ocDynamicFormField';
 import { resolveOcFormFieldType } from '@/utils/ocFormFieldLabels';
 import { parseOcLookupFromFieldOptions } from '@/utils/ocLookupFieldOptions';
-import OcPersonPickerAutocomplete from '@/components/apps/operation-core/OcPersonPickerAutocomplete.vue';
+import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import OcLookupDatasetPickerField from '@/components/apps/operation-core/OcLookupDatasetPickerField.client.vue';
 import OcTagSelector from '@/components/apps/operation-core/OcTagSelector.vue';
 import OcRichTextEditor from '@/components/apps/operation-core/OcRichTextEditor.client.vue';
@@ -33,8 +34,9 @@ const props = defineProps<{
   selectPresentation?: 'dropdown' | 'autocomplete' | 'picker';
   /** dependsOn üst alanı boşken devre dışı */
   selectDependsOnBlocked?: boolean;
-  personPicker?: OcPersonPickerApi;
-  datasetPicker?: OcDatasetPickerApi;
+    userDirectoryPicker?: KeeperUserPickerApi;
+    groupDirectoryPicker?: KeeperGroupPickerApi;
+    datasetPicker?: OcDatasetPickerApi;
   /** Grup id → ad (readonly grup alanlarında ham id yerine ad göstermek için; profil sağlar). */
   groupNames?: Record<string, string>;
   /** MO'da çözülmüş görünen metin (relation/person/katalog) — readonly'de lookup yerine gösterilir. */
@@ -154,6 +156,12 @@ const readonlyDisplayText = computed(() => {
   return String(props.fieldDisplay ?? '').trim() || '—';
 });
 
+const isDirectoryGroupWidget = computed(
+  () =>
+    (widget.value === 'groupSelect' || widget.value === 'groupSelectMulti') &&
+    !useReadonlyDisplay.value
+);
+
 const selectMultiple = computed(
   () =>
     isMulti.value ||
@@ -238,13 +246,31 @@ function onSelectUpdate(value: unknown) {
     </template>
   </v-text-field>
 
-  <OcPersonPickerAutocomplete
-    v-else-if="isPersonsWidget && personPicker"
+  <MngDirectoryPickerField
+    v-else-if="isPersonsWidget && userDirectoryPicker"
     v-model="model"
+    entity="user"
     :multiple="selectMultiple"
     :disabled="fieldDisabled"
-    :external-picker="personPicker"
-    :menu-context="preview ? 'dialog' : 'default'"
+    :external-picker="userDirectoryPicker"
+    :density="'comfortable'"
+    :variant="'outlined'"
+    :label="label"
+    :show-required-mark="behavior.required"
+    :error="showFieldError"
+    :error-messages="fieldErrorMessages"
+    :field-class="fieldClass"
+  />
+
+  <MngDirectoryPickerField
+    v-else-if="isDirectoryGroupWidget && groupDirectoryPicker"
+    v-model="model"
+    entity="group"
+    :multiple="selectMultiple"
+    :disabled="fieldDisabled"
+    :external-picker="groupDirectoryPicker"
+    :density="'comfortable'"
+    :variant="'outlined'"
     :label="label"
     :show-required-mark="behavior.required"
     :error="showFieldError"

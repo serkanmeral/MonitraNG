@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
-import OcPersonPickerAutocomplete from '@/components/apps/operation-core/OcPersonPickerAutocomplete.vue';
+import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import type { AfFilterColumn, AfListFilter, AfListFilterKind } from '@/utils/afListFilters';
 
 interface AdvancedRow {
@@ -14,6 +14,7 @@ interface AdvancedRow {
 const props = defineProps<{
   columns: AfFilterColumn[];
   relationOptionsByKey?: Record<string, { value: string; title: string }[]>;
+  /** @deprecated Merkezi MngDirectoryPickerField kullanılıyor. */
   groupOptionsByKey?: Record<string, { value: string; title: string }[]>;
 }>();
 
@@ -59,7 +60,11 @@ function kindOf(field: string): AfListFilterKind | null {
 }
 
 function isSelectKind(kind: AfListFilterKind | null): boolean {
-  return kind === 'select' || kind === 'relation' || kind === 'group';
+  return kind === 'select' || kind === 'relation';
+}
+
+function isGroupField(field: string): boolean {
+  return kindOf(field) === 'group';
 }
 
 const fieldOptions = computed(() =>
@@ -111,9 +116,6 @@ function selectOptionsForField(field: string): { value: string; title: string }[
   if (kind === 'select') return col?.selectItems ?? [];
   if (kind === 'relation') {
     return sortFilterSelectOptions(props.relationOptionsByKey?.[field] ?? []);
-  }
-  if (kind === 'group') {
-    return sortFilterSelectOptions(props.groupOptionsByKey?.[field] ?? []);
   }
   return [];
 }
@@ -343,13 +345,33 @@ watch(
               hide-details
               clearable
             />
-            <OcPersonPickerAutocomplete
-              v-else-if="isPersonField(row.field)"
+            <MngDirectoryPickerField
+              v-else-if="isGroupField(row.field) && isMultiSelectOp(row.operator)"
               v-model="row.value"
+              entity="group"
+              multiple
               :label="t('operationCore.board.filters.advanced.value')"
               density="compact"
               variant="outlined"
-              :hide-details="true"
+              hide-details
+            />
+            <MngDirectoryPickerField
+              v-else-if="isGroupField(row.field)"
+              v-model="row.value"
+              entity="group"
+              :label="t('operationCore.board.filters.advanced.value')"
+              density="compact"
+              variant="outlined"
+              hide-details
+            />
+            <MngDirectoryPickerField
+              v-else-if="isPersonField(row.field)"
+              v-model="row.value"
+              entity="user"
+              :label="t('operationCore.board.filters.advanced.value')"
+              density="compact"
+              variant="outlined"
+              hide-details
             />
             <v-text-field
               v-else-if="isNumberField(row.field)"

@@ -1,12 +1,6 @@
 import { computed, type Ref } from 'vue';
 import type { Group } from '@/stores/apps/group';
-import {
-  canDeleteGroup,
-  canEditGroup,
-  canManageGroupMembers,
-  groupProvisioningSourceLabelKey,
-  isDirectoryGroup,
-} from '@/utils/groupFieldPolicy';
+import { canChangeGroupApplicationScope, canDeleteGroup, canEditGroup, canManageGroupMembers, groupProvisioningSourceLabelKey, isDirectoryGroup } from '@/utils/groupFieldPolicy';
 import { provisioningSourceChipColor } from '@/utils/provisioningSourceUi';
 
 export function useGroupFieldPolicies(group: Ref<Group | null | undefined>) {
@@ -16,6 +10,7 @@ export function useGroupFieldPolicies(group: Ref<Group | null | undefined>) {
   const canEdit = computed(() => canEditGroup(group.value));
   const canDelete = computed(() => canDeleteGroup(group.value));
   const canManageMembers = computed(() => canManageGroupMembers(group.value));
+  const canChangeApplicationScope = computed(() => canChangeGroupApplicationScope(group.value));
 
   const sourceLabelKey = computed(() =>
     groupProvisioningSourceLabelKey(group.value?.provisioningSource)
@@ -30,6 +25,7 @@ export function useGroupFieldPolicies(group: Ref<Group | null | undefined>) {
     canEdit,
     canDelete,
     canManageMembers,
+    canChangeApplicationScope,
     sourceLabelKey,
     sourceChipColor,
   };

@@ -51,22 +51,20 @@
       "relationDataset": "odak_musteri_kisileri"
     },
     {
-      "fieldType": "relation",
+      "fieldType": "persons",
       "name": "designContactId",
-      "title": "Musteri tasarim sorumlusu",
+      "title": "Tasarim sorumlusu (Odak)",
       "mandatory": false,
       "unique": false,
-      "isArray": false,
-      "relationDataset": "odak_musteri_kisileri"
+      "isArray": false
     },
     {
-      "fieldType": "relation",
+      "fieldType": "persons",
       "name": "manufactureContactId",
-      "title": "Musteri uretim sorumlusu",
+      "title": "Uretim sorumlusu (Odak)",
       "mandatory": false,
       "unique": false,
-      "isArray": false,
-      "relationDataset": "odak_musteri_kisileri"
+      "isArray": false
     },
     {
       "fieldType": "select",

@@ -6,6 +6,7 @@ import type { User, Gender } from '@/stores/apps/user';
 import { useUserFieldPolicies } from '@/composables/useUserFieldPolicies';
 import PhotoUpload from '@/components/apps/profile/PhotoUpload.vue';
 import AvatarDisplay from '@/components/apps/profile/AvatarDisplay.vue';
+import { fetchFromMngKeeper } from '@/services/apiService';
 import * as yup from 'yup';
 
 // Get i18n instance for legacy mode
@@ -94,6 +95,20 @@ const {
   sourceLabelKey,
   sourceChipColor,
 } = useUserFieldPolicies(profileUser);
+
+const photoSourceHint = computed(() => {
+  const src = userStore.currentUser?.photoSource ?? profileUser.value?.photoSource ?? 'None';
+  if (src === 'Directory') {
+    return 'Fotoğraf kurumsal dizinden (Active Directory) alınmıştır. İsterseniz kendi fotoğrafınızı yükleyebilirsiniz.';
+  }
+  if (src === 'Manual') {
+    return 'Kendi yüklediğiniz fotoğraf kullanılıyor; dizin senkronizasyonu bunu değiştirmez.';
+  }
+  if (isDirectory.value) {
+    return 'Active Directory\'de profil fotoğrafınız yoksa buradan yükleyebilirsiniz.';
+  }
+  return '';
+});
 
 // Get current user
 const currentUser = computed(() => {
@@ -475,6 +490,7 @@ const handlePhotoUploaded = async (photoUrl: string) => {
       const cacheBustUrl = `${photoUrl}?t=${Date.now()}`;
       if (userStore.currentUser) {
         userStore.currentUser.photoUrl = cacheBustUrl;
+        userStore.currentUser.photoSource = 'Manual';
       }
       
       // Also update formData to ensure it's in sync
@@ -500,13 +516,21 @@ const handlePhotoUploaded = async (photoUrl: string) => {
 // Photo remove handler
 const handlePhotoRemove = async () => {
   if (!currentUser.value) return;
-  
+
+  let userId = userStore.currentUser?.id;
+  if (!userId) {
+    showSnackbar(t('profile.messages.saveError'), 'error');
+    return;
+  }
+
   try {
     isLoading.value = true;
+    await fetchFromMngKeeper(`/user/${userId}/photo`, 'DELETE');
     formData.value.photoUrl = null;
-    await userStore.updateUser(currentUser.value.id, {
-      photoUrl: null,
-    });
+    if (userStore.currentUser) {
+      userStore.currentUser.photoUrl = null;
+      userStore.currentUser.photoSource = 'None';
+    }
     showSnackbar(t('profile.messages.photoRemoveSuccess'), 'success');
   } catch (error: any) {
     console.error('Error removing photo:', error);
@@ -579,6 +603,9 @@ const formatDate = (date: string | Date | null | undefined) => {
             <p class="text-caption text-center mt-2 text-medium-emphasis">
               {{ t('profile.photo.maxSize') }}<br />
               {{ t('profile.photo.formats') }}
+            </p>
+            <p v-if="photoSourceHint" class="text-caption text-center mt-2 text-medium-emphasis">
+              {{ photoSourceHint }}
             </p>
           </div>
         </v-card-item>

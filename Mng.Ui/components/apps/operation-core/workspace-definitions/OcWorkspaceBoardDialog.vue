@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import OcWorkspaceBoardColumnEditor from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceBoardColumnEditor.vue';
 import OcWorkspaceBoardListScopeEditor from '@/components/apps/operation-core/workspace-definitions/OcWorkspaceBoardListScopeEditor.vue';
+import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import type {
   OpBoard,
   OpBoardColumnConfig,
@@ -56,7 +57,6 @@ const props = defineProps<{
   profileItems: { value: string; title: string }[];
   typeItems: { value: string; title: string }[];
   priorityItems: { value: string; title: string }[];
-  groupItems: { value: string; title: string }[];
   enabledStateIds: string[];
   saving?: boolean;
 }>();
@@ -516,33 +516,23 @@ defineExpose({ setFormFromBoard, emptyForm });
                   </div>
                   <v-row dense>
                     <v-col cols="12" md="6">
-                      <v-select
+                      <MngDirectoryPickerField
                         v-model="form.viewGroups"
-                        :items="groupItems"
-                        item-title="title"
-                        item-value="value"
-                        :label="t('operationCore.workspaceDefinitions.boards.fieldViewGroups')"
-                        variant="outlined"
-                        density="compact"
+                        entity="group"
                         multiple
-                        chips
-                        closable-chips
-                        clearable
+                        :label="t('operationCore.workspaceDefinitions.boards.fieldViewGroups')"
+                        density="compact"
+                        variant="outlined"
                       />
                     </v-col>
                     <v-col cols="12" md="6">
-                      <v-select
+                      <MngDirectoryPickerField
                         v-model="form.editGroups"
-                        :items="groupItems"
-                        item-title="title"
-                        item-value="value"
-                        :label="t('operationCore.workspaceDefinitions.boards.fieldEditGroups')"
-                        variant="outlined"
-                        density="compact"
+                        entity="group"
                         multiple
-                        chips
-                        closable-chips
-                        clearable
+                        :label="t('operationCore.workspaceDefinitions.boards.fieldEditGroups')"
+                        density="compact"
+                        variant="outlined"
                       />
                     </v-col>
                   </v-row>

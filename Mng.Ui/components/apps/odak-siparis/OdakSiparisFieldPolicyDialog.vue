@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
-import { useGroupStore } from '@/stores/apps/group';
+import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import {
   newOdakFieldPolicyId,
   type OdakFieldPolicy,
@@ -29,20 +29,12 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useAppI18n();
-const groupStore = useGroupStore();
 
 const scope = ref<OdakFieldPolicyScope>('always');
 const groups = ref<string[]>([]);
 const visible = ref(true);
 const readonly = ref(true);
 const clauses = ref<{ id: string; fieldKey: string; operator: 'eq' | 'ne'; value: unknown }[]>([]);
-
-const groupItems = computed(() =>
-  (groupStore.groups ?? []).map((g) => ({
-    value: g.name ?? g.groupName ?? '',
-    title: g.name ?? g.groupName ?? '',
-  })).filter((g) => g.value)
-);
 
 watch(
   () => [props.modelValue, props.policy?.id] as const,
@@ -105,10 +97,6 @@ function save() {
   emit('save', policy);
   close();
 }
-
-onMounted(() => {
-  void groupStore.fetchAllGroups();
-});
 </script>
 
 <template>
@@ -123,18 +111,13 @@ onMounted(() => {
       </v-card-title>
       <v-divider />
       <v-card-text class="pt-4">
-        <v-select
+        <MngDirectoryPickerField
           v-model="groups"
-          :items="groupItems"
-          item-title="title"
-          item-value="value"
-          :label="t('odakSiparis.packages.settings.fieldPolicies.groups')"
-          :hint="t('odakSiparis.packages.settings.fieldPolicies.groupsHint')"
+          entity="group"
+          group-value-key="name"
           multiple
-          chips
-          closable-chips
+          :label="t('odakSiparis.packages.settings.fieldPolicies.groups')"
           density="comfortable"
-          persistent-hint
           class="mb-4"
         />
 

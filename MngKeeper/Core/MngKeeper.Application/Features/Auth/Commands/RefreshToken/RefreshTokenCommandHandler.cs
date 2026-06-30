@@ -1,7 +1,7 @@
 using MediatR;
+using MngKeeper.Application.Common;
 using MngKeeper.Application.Interfaces;
 using Microsoft.Extensions.Logging;
-using MngKeeper.Application.Common;
 
 namespace MngKeeper.Application.Features.Auth.Commands.RefreshToken
 {
@@ -77,6 +77,17 @@ namespace MngKeeper.Application.Features.Auth.Commands.RefreshToken
                 var refreshUser = !string.IsNullOrEmpty(refreshUsername)
                     ? await _userRepository.GetByUsernameAsync(refreshUsername, domain.Id)
                     : null;
+
+                if (refreshUser != null && !UserLoginEligibility.CanAuthenticate(refreshUser))
+                {
+                    return new RefreshTokenResponse
+                    {
+                        IsSuccess = false,
+                        ErrorMessage = refreshUser.IsActive
+                            ? "User account is not in application scope"
+                            : "User account is inactive"
+                    };
+                }
 
                 var isAdmin = !string.IsNullOrEmpty(refreshUsername)
                     ? await AuthPrivilegeHelper.ResolveIsAdminAsync(
