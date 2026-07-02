@@ -3,7 +3,7 @@
 
 param(
     [string]$TokenFile = "",
-    [switch]$AutoRefresh = $true
+    [switch]$AutoRefresh = $false
 )
 
 $useProd = ($env:MNG_OC_USE_PROD_TOKEN -eq "1")

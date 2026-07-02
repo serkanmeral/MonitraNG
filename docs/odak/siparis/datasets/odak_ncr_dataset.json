@@ -28,10 +28,28 @@
       "validation": { "maxLength": 20 }
     },
     {
+      "fieldType": "select",
+      "name": "recordScope",
+      "title": "Kayit kapsami",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": "Paketli",
+      "options": {
+        "lookup": {
+          "source": "static",
+          "staticItems": [
+            { "value": "Paketli", "label": "Is paketine bagli" },
+            { "value": "Genel", "label": "Genel uygunsuzluk" }
+          ]
+        }
+      }
+    },
+    {
       "fieldType": "relation",
       "name": "parentPackageId",
       "title": "Is paketi",
-      "mandatory": true,
+      "mandatory": false,
       "unique": false,
       "isArray": false,
       "relationDataset": "odak_is_paketleri"
@@ -239,6 +257,15 @@
       "validation": { "maxLength": 200 }
     },
     {
+      "fieldType": "text",
+      "name": "supplierRef",
+      "title": "Tedarikci / kaynak",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 200 }
+    },
+    {
       "fieldType": "datetime",
       "name": "closureDate",
       "title": "Kapanis tarihi",
@@ -266,6 +293,7 @@
     }
   ],
   "indexList": [
+    { "name": "idx_odak_ncr_record_scope", "fields": { "recordScope": 1, "ncDate": -1 }, "unique": false },
     { "name": "idx_odak_ncr_parent_package", "fields": { "parentPackageId": 1 }, "unique": false },
     { "name": "idx_odak_ncr_nc_status", "fields": { "ncStatus": 1 }, "unique": false },
     { "name": "idx_odak_ncr_legacy", "fields": { "legacyNcrId": 1 }, "unique": true }

@@ -17,9 +17,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const gatewayUrl = config.public.gatewayUrl as string | undefined;
+  const odakHost = process.env.ODAK_HOST?.trim() || '192.168.20.20';
   const fullUrl = gatewayUrl
     ? `${gatewayUrl}/notifier/api/${path}`
-    : `http://192.168.20.20:5070/api/${path}`;
+    : `http://${odakHost}:5070/api/${path}`;
 
   const query = getQuery(event);
   const queryString = new URLSearchParams(query as Record<string, string>).toString();

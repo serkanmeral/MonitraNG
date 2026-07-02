@@ -3,6 +3,7 @@ import { fetchFromMngKeeper } from '@/services/apiService';
 import { useAuthStore } from '@/stores/auth';
 import {
   mapProvisioningFieldsFromApi,
+  isDirectoryUser,
   type UserCapabilities,
   type UserFieldPolicyItem,
 } from '@/utils/userFieldPolicy';
@@ -558,12 +559,14 @@ export const useUserStore = defineStore('user', {
         // IMPORTANT: Use userData.username if provided, otherwise use userBeingUpdated.username
         // This ensures we're updating the correct user, not the logged-in user
         const username = userData.username || userBeingUpdated.username || '';
-        const email = userData.email || userBeingUpdated.email || '';
-        
+        const email = userData.email ?? userBeingUpdated.email ?? '';
+        const directoryUser = isDirectoryUser(userBeingUpdated);
+
         if (!username) {
           throw new Error('Kullanıcı adı bulunamadı');
         }
-        if (!email) {
+        // Directory kullanıcılar LDAP'ta mail olmayabilir; backend null/empty email kabul eder.
+        if (!email && !directoryUser) {
           throw new Error('Email bulunamadı');
         }
         

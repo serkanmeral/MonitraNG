@@ -41,15 +41,8 @@ $headers = @{
 
 function Invoke-Dg {
     param([string]$Method, [string]$Uri, [object]$Body = $null)
-    $p = @{ Uri = $Uri; Method = $Method; Headers = $headers; ErrorAction = "Stop" }
-    if ($Uri.StartsWith("https://") -and (Get-Command Invoke-RestMethod).Parameters.ContainsKey("SkipCertificateCheck")) {
-        $p.SkipCertificateCheck = $true
-    }
-    if ($null -ne $Body) {
-        $p.Body = if ($Body -is [string]) { $Body } else { $Body | ConvertTo-Json -Depth 10 -Compress }
-        $p.ContentType = "application/json"
-    }
-    return Invoke-RestMethod @p
+    $skipCert = $Uri.StartsWith("https://") -and (Get-Command Invoke-RestMethod).Parameters.ContainsKey("SkipCertificateCheck")
+    return Invoke-DgRestMethod -Method $Method -Uri $Uri -Headers $headers -Body $Body -JsonDepth 10 -SkipCertificateCheck:$skipCert
 }
 
 function Get-DataId {

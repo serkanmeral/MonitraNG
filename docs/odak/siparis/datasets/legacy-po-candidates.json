@@ -1,5 +1,4 @@
 {
-  "uploadRootExists": true,
   "candidates": [
     {
       "legacyPackageId": "835",
@@ -7970,8 +7969,9 @@
       "absolutePath": null
     }
   ],
-  "fileFoundCount": 7,
-  "exportedAt": "2026-06-20T08:41:34.2314471Z",
+  "candidateCount": 664,
   "legacyUploadRoot": "C:\\Users\\monitra\\kalite-legacy-local\\uploads",
-  "candidateCount": 664
+  "fileFoundCount": 7,
+  "exportedAt": "2026-07-01T22:11:49.8796917Z",
+  "uploadRootExists": true
 }

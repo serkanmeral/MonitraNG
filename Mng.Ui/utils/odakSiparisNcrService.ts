@@ -3,8 +3,10 @@ import { ocCreate, ocListDatasetPage, ocUpdate } from '@/services/operationCoreS
 import {
   ODAK_FAI_STATUS_OPTIONS,
   ODAK_NCR_STATUS_OPTIONS,
+  ODAK_RECORD_SCOPE_OPTIONS,
   ODAK_SIPARIS_CONFIG,
   type OdakNcrRow,
+  type OdakRecordScope,
 } from '@/utils/odakSiparisConfig';
 import { formatOdakDate, buildRelationInFilter, packageDataId } from '@/utils/odakSiparisService';
 import { fromDateInputValue, toDateInputValue } from '@/utils/odakSiparisDateUtils';
@@ -27,6 +29,68 @@ export function ncrDataId(row: OdakNcrRow | Record<string, unknown>): string {
 
 export function buildNcrByParentPackageFilter(parentPackageId: string): string {
   return `parentPackageId:eq:${parentPackageId}`;
+}
+
+export function buildNcrByRecordScopeFilter(scope: OdakRecordScope): string {
+  return `recordScope:eq:${scope}`;
+}
+
+export type OdakNcrScopeTab = 'all' | 'package' | 'general';
+export type OdakNcrStatusTab = 'open' | 'all';
+
+export interface OdakNcrListQuery {
+  scopeTab?: OdakNcrScopeTab;
+  statusTab?: OdakNcrStatusTab;
+  search?: string;
+  page?: number;
+  limit?: number;
+  sort?: string;
+}
+
+export function normalizeNcrRecordScope(value: unknown): OdakRecordScope {
+  const key = String(value ?? '').trim();
+  if (key === 'Genel') return 'Genel';
+  return 'Paketli';
+}
+
+export function ncrRecordScopeLabel(value: unknown): string {
+  const normalized = normalizeNcrRecordScope(value);
+  return ODAK_RECORD_SCOPE_OPTIONS.find((o) => o.value === normalized)?.title ?? normalized;
+}
+
+export function buildNcrListFilter(query: OdakNcrListQuery): string | undefined {
+  const parts: string[] = [];
+  const scopeTab = query.scopeTab ?? 'all';
+  if (scopeTab === 'package') parts.push('recordScope:eq:Paketli');
+  if (scopeTab === 'general') parts.push('recordScope:eq:Genel');
+  const search = (query.search ?? '').trim();
+  if (search) {
+    parts.push(`descriptor:contains:${search}`);
+  }
+  return parts.length ? parts.join(',') : undefined;
+}
+
+export async function fetchOdakNcrsPage(query: OdakNcrListQuery): Promise<{
+  items: OdakNcrRow[];
+  total: number;
+}> {
+  const limit = query.limit ?? 20;
+  const page = query.page ?? 1;
+  const filter = buildNcrListFilter(query);
+  const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.ncrDataset, {
+    filter,
+    sort: query.sort ?? '-ncDate',
+    skip: (page - 1) * limit,
+    limit,
+  });
+  let items = (resp.items ?? []) as OdakNcrRow[];
+  if (query.statusTab === 'open') {
+    items = items.filter((row) => normalizeNcrStatus(row.ncStatus) !== 'Kapalı');
+  }
+  return {
+    items,
+    total: Number(resp.total ?? items.length),
+  };
 }
 
 export function buildNcrByParentPackagesFilter(parentPackageIds: string[]): string | undefined {
@@ -103,6 +167,7 @@ export interface OdakNcrFormModel {
   errorCode: string;
   ncAction: string;
   responsible: string;
+  supplierRef: string;
   closureDate: string;
   notes: string;
 }
@@ -124,6 +189,7 @@ export function emptyNcrFormModel(partial?: Partial<OdakNcrFormModel>): OdakNcrF
     errorCode: partial?.errorCode ?? '',
     ncAction: partial?.ncAction ?? '',
     responsible: partial?.responsible ?? '',
+    supplierRef: partial?.supplierRef ?? '',
     closureDate: partial?.closureDate ?? '',
     notes: partial?.notes ?? '',
   };
@@ -146,6 +212,7 @@ export function ncrRowToFormModel(row: OdakNcrRow): OdakNcrFormModel {
     errorCode: row.errorCode ?? '',
     ncAction: row.ncAction ?? '',
     responsible: row.responsible ?? '',
+    supplierRef: row.supplierRef ?? '',
     closureDate: toDateInputValue(row.closureDate),
     notes: row.notes ?? '',
   });
@@ -153,10 +220,11 @@ export function ncrRowToFormModel(row: OdakNcrRow): OdakNcrFormModel {
 
 export function formModelToNcrPayload(
   form: OdakNcrFormModel,
-  packageId: string
+  packageId?: string
 ): Record<string, unknown> {
-  return {
-    parentPackageId: packageId,
+  const isGeneral = !packageId?.trim();
+  const body: Record<string, unknown> = {
+    recordScope: isGeneral ? 'Genel' : 'Paketli',
     ncStatus: form.ncStatus || 'Değerlendirme Bekleniyor',
     ncDate: fromDateInputValue(form.ncDate),
     controlType: form.controlType.trim() || null,
@@ -172,9 +240,14 @@ export function formModelToNcrPayload(
     errorCode: form.errorCode.trim() || null,
     ncAction: form.ncAction.trim() || null,
     responsible: form.responsible.trim() || null,
+    supplierRef: form.supplierRef.trim() || null,
     closureDate: fromDateInputValue(form.closureDate),
     notes: form.notes.trim() || null,
   };
+  if (!isGeneral) {
+    body.parentPackageId = packageId;
+  }
+  return body;
 }
 
 export async function fetchOdakNcrById(ncrId: string): Promise<OdakNcrRow | null> {
@@ -206,8 +279,8 @@ export async function listNcrsForPackages(parentPackageIds: string[]): Promise<O
 }
 
 export async function createOdakNcr(
-  packageId: string,
-  form: OdakNcrFormModel
+  form: OdakNcrFormModel,
+  packageId?: string
 ): Promise<string | null> {
   const body = formModelToNcrPayload(form, packageId);
   const created = await ocCreate(ODAK_SIPARIS_CONFIG.ncrDataset, body);
@@ -216,8 +289,8 @@ export async function createOdakNcr(
 
 export async function updateOdakNcr(
   ncrId: string,
-  packageId: string,
-  form: OdakNcrFormModel
+  form: OdakNcrFormModel,
+  packageId?: string
 ): Promise<void> {
   const body = formModelToNcrPayload(form, packageId);
   await ocUpdate(ODAK_SIPARIS_CONFIG.ncrDataset, ncrId, body);

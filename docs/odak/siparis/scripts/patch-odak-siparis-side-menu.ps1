@@ -3,6 +3,8 @@
 # Usage (repo kokunden):
 #   .\docs\odak\operationcore\scripts\get-operationcore-token.ps1
 #   .\docs\odak\siparis\scripts\patch-odak-siparis-side-menu.ps1
+#   $env:MNG_OC_USE_PROD_TOKEN = "1"; .\docs\odak\operationcore\scripts\get-operationcore-token-prod.ps1
+#   .\docs\odak\siparis\scripts\patch-odak-siparis-side-menu.ps1 -BaseUrl "http://192.168.20.8:5040"
 
 param(
     [string]$BaseUrl = "http://192.168.20.20:5040",
@@ -13,6 +15,7 @@ $ErrorActionPreference = "Stop"
 $scriptDir = $PSScriptRoot
 $ocScriptDir = Join-Path (Split-Path (Split-Path $scriptDir -Parent) -Parent) "operationcore\scripts"
 $loadTokenScript = Join-Path $ocScriptDir "load-operationcore-token.ps1"
+. (Join-Path $scriptDir "lib\DgMigrationCommon.ps1")
 
 if (-not (Test-Path $loadTokenScript)) { throw "Token script yok: $loadTokenScript" }
 
@@ -21,7 +24,6 @@ if ([string]::IsNullOrEmpty($token)) { throw "Token alinamadi." }
 
 $headers = @{
     Authorization  = "Bearer $token"
-    "Content-Type" = "application/json"
 }
 
 $dataPath = "/data/api/v1/data/@side_menu"
@@ -70,15 +72,17 @@ Write-Host "  $($items.Count) kayit (limit 10000)" -ForegroundColor Gray
 function Invoke-MenuPut {
     param([string]$Id, [hashtable]$Body)
     if ($WhatIf) { Write-Host "WhatIf PUT $Id" -ForegroundColor Yellow; return }
-    $json = $Body | ConvertTo-Json -Depth 12 -Compress
-    Invoke-RestMethod -Uri "$BaseUrl$dataPath/$Id" -Headers $headers -Method PUT -Body $json | Out-Null
+    $json = ConvertTo-Utf8JsonBody -Object $Body -Depth 12
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
+    Invoke-RestMethod -Uri "$BaseUrl$dataPath/$Id" -Headers $headers -Method PUT -Body $bytes -ContentType "application/json; charset=utf-8" | Out-Null
 }
 
 function Invoke-MenuPost {
     param([hashtable]$Body)
     if ($WhatIf) { Write-Host "WhatIf POST $($Body.pageCode)" -ForegroundColor Yellow; return $null }
-    $json = $Body | ConvertTo-Json -Depth 12 -Compress
-    return Invoke-RestMethod -Uri "$BaseUrl$dataPath" -Headers $headers -Method POST -Body $json
+    $json = ConvertTo-Utf8JsonBody -Object $Body -Depth 12
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
+    return Invoke-RestMethod -Uri "$BaseUrl$dataPath" -Headers $headers -Method POST -Body $bytes -ContentType "application/json; charset=utf-8"
 }
 
 function Upsert-MenuItem {
@@ -191,4 +195,40 @@ Upsert-MenuItem -AllItems $items -Label "Aktörler" -FindExisting {
     permissions = $defaultPerms
 } | Out-Null
 
-Write-Host "`nTamamlandi -> /apps/odak-siparis/packages , /apps/odak-siparis/customers" -ForegroundColor Cyan
+Upsert-MenuItem -AllItems $items -Label "Sevkiyat Listesi" -FindExisting {
+    $_.pageCode -eq "odakSiparis.globalShipments.menuTitle" -or $_.to -eq "/apps/odak-siparis/shipments"
+} -Body @{
+    order       = 269
+    itemType    = "item"
+    level       = 1
+    parentId    = $headerId
+    pageType    = "user"
+    pageCode    = "odakSiparis.globalShipments.menuTitle"
+    title       = "Sevkiyat Listesi"
+    icon        = "TruckDeliveryIcon"
+    iconType    = "tabler"
+    to          = "/apps/odak-siparis/shipments"
+    type        = "internal"
+    disabled    = $false
+    permissions = $defaultPerms
+} | Out-Null
+
+Upsert-MenuItem -AllItems $items -Label "Uygunsuzluklar" -FindExisting {
+    $_.pageCode -eq "odakSiparis.globalNcr.menuTitle" -or $_.to -eq "/apps/odak-siparis/quality/ncr"
+} -Body @{
+    order       = 270
+    itemType    = "item"
+    level       = 1
+    parentId    = $headerId
+    pageType    = "user"
+    pageCode    = "odakSiparis.globalNcr.menuTitle"
+    title       = "Uygunsuzluklar"
+    icon        = "AlertTriangleIcon"
+    iconType    = "tabler"
+    to          = "/apps/odak-siparis/quality/ncr"
+    type        = "internal"
+    disabled    = $false
+    permissions = $defaultPerms
+} | Out-Null
+
+Write-Host "`nTamamlandi -> /apps/odak-siparis/packages , /apps/odak-siparis/customers , /apps/odak-siparis/shipments , /apps/odak-siparis/quality/ncr" -ForegroundColor Cyan

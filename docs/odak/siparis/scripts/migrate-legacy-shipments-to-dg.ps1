@@ -5,12 +5,14 @@
 #   .\migrate-legacy-shipments-to-dg.ps1
 #   .\migrate-legacy-shipments-to-dg.ps1 -DryRun
 #   .\migrate-legacy-shipments-to-dg.ps1 -PackageNo "2023-027"   # tek paket POC
+#   .\migrate-legacy-shipments-to-dg.ps1 -RepairText   # mevcut kayitlarda metin alanlarini duzelt
 
 param(
     [string]$LegacyJsonPath = "",
     [string]$BaseUrl = "http://192.168.20.20:5040",
     [switch]$UseGateway = $true,
     [switch]$DryRun,
+    [switch]$RepairText,
     [string]$PackageNo = ""
 )
 
@@ -18,6 +20,7 @@ $ErrorActionPreference = "Stop"
 $scriptDir = $PSScriptRoot
 $repoRoot = (Resolve-Path (Join-Path $scriptDir "../../../..")).Path
 . (Join-Path $scriptDir "lib/DgMigrationCommon.ps1")
+. (Join-Path $scriptDir "lib/UpdateOdakLineShippedQuantities.ps1")
 
 if ([string]::IsNullOrEmpty($LegacyJsonPath)) {
     $LegacyJsonPath = Join-Path $scriptDir "..\datasets\legacy-shipments-export.json"
@@ -31,26 +34,58 @@ if (-not (Test-Path $LegacyJsonPath)) {
     throw "JSON yok: $LegacyJsonPath — once export-legacy-shipments-from-mysql.ps1"
 }
 
-$token = & $ocTokenScript
+$token = (& $ocTokenScript).Trim()
 if ([string]::IsNullOrEmpty($token)) { throw "Token alinamadi." }
 
-$headers = @{
+function Update-MigrationToken {
+    param([switch]$ForceRefresh)
+    if ($ForceRefresh) {
+        Write-Host "  Token yenileniyor (Keycloak)..." -ForegroundColor Yellow
+        $script:token = (& $ocTokenScript -AutoRefresh).Trim()
+    }
+    else {
+        $tokenFile = if ($env:MNG_OC_USE_PROD_TOKEN -eq "1") { "$env:TEMP\operationcore_dg_token_prod.txt" } else { "$env:TEMP\operationcore_dg_token.txt" }
+        if (Test-Path $tokenFile) {
+            $script:token = (Get-Content $tokenFile -Raw).Trim()
+        }
+        else {
+            $script:token = (& $ocTokenScript -AutoRefresh:$false).Trim()
+        }
+        if ([string]::IsNullOrEmpty($script:token)) {
+            Write-Host "  Token yenileniyor (Keycloak)..." -ForegroundColor Yellow
+            $script:token = (& $ocTokenScript -AutoRefresh).Trim()
+        }
+    }
+    if ([string]::IsNullOrEmpty($script:token)) { throw "Token alinamadi." }
+    $script:headers["Authorization"] = "Bearer $($script:token)"
+}
+
+$script:headers = @{
     "Authorization" = "Bearer $token"
     "Content-Type"  = "application/json"
 }
+$script:token = $token
 [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
 
 function Invoke-Dg {
     param([string]$Method, [string]$Uri, [object]$Body = $null)
-    $p = @{ Uri = $Uri; Method = $Method; Headers = $headers; ErrorAction = "Stop" }
-    if ($Uri.StartsWith("https://") -and (Get-Command Invoke-RestMethod).Parameters.ContainsKey("SkipCertificateCheck")) {
-        $p.SkipCertificateCheck = $true
+    for ($attempt = 0; $attempt -lt 2; $attempt++) {
+        # Proactive: reload token from file before each call (avoids stale JWT without Keycloak round-trip)
+        Update-MigrationToken
+        $skipCert = $Uri.StartsWith("https://") -and (Get-Command Invoke-RestMethod).Parameters.ContainsKey("SkipCertificateCheck")
+        try {
+            return Invoke-DgRestMethod -Method $Method -Uri $Uri -Headers $script:headers -Body $Body -JsonDepth 10 -SkipCertificateCheck:$skipCert
+        }
+        catch {
+            $detail = [string]$_.Exception.Message
+            if ($attempt -eq 0 -and ($detail -match '401|Unauthorized')) {
+                Write-Host "  401 — Keycloak token yenileniyor..." -ForegroundColor Yellow
+                Update-MigrationToken -ForceRefresh
+                continue
+            }
+            throw
+        }
     }
-    if ($null -ne $Body) {
-        $p.Body = if ($Body -is [string]) { $Body } else { $Body | ConvertTo-Json -Depth 10 -Compress }
-        $p.ContentType = "application/json"
-    }
-    return Invoke-RestMethod @p
 }
 
 function Get-DataId {
@@ -130,10 +165,24 @@ foreach ($it in $items) {
 
 Write-Host "`n=== migrate-legacy-shipments-to-dg ===" -ForegroundColor Cyan
 Write-Host "Kaynak: $($shipments.Count) shipment, $($items.Count) item" -ForegroundColor Gray
+Write-Host "DryRun: $DryRun  RepairText: $RepairText" -ForegroundColor Gray
 
 $packageMap = Load-LegacyIdMap -InvokeDg ${function:Invoke-Dg} -BaseUrl $BaseUrl -DataPath $dataPath -Dataset "odak_is_paketleri" -LegacyField "legacyPackageId"
-$lineMap = Load-LegacyIdMap -InvokeDg ${function:Invoke-Dg} -BaseUrl $BaseUrl -DataPath $dataPath -Dataset "odak_siparis_kalemleri" -LegacyField "legacyLineId"
-$shipmentMap = @{}
+Write-Host "Prod sevkiyat map yukleniyor..." -ForegroundColor Gray
+$shipmentMap = Load-LegacyIdMap -InvokeDg ${function:Invoke-Dg} -BaseUrl $BaseUrl -DataPath $dataPath -Dataset "odak_sevkiyatlar" -LegacyField "legacyShipmentId"
+Write-Host "  prod sevkiyat: $($shipmentMap.Count)" -ForegroundColor Gray
+if ($RepairText) {
+    Write-Host "RepairText: kalem map atlaniyor" -ForegroundColor Gray
+    $lineMap = @{}
+    $shipmentItemMap = @{}
+}
+else {
+    $lineMap = Load-LegacyIdMap -InvokeDg ${function:Invoke-Dg} -BaseUrl $BaseUrl -DataPath $dataPath -Dataset "odak_siparis_kalemleri" -LegacyField "legacyLineId"
+    Write-Host "  kalem map: $($lineMap.Count)" -ForegroundColor Gray
+    Write-Host "Prod sevkiyat kalemi map yukleniyor..." -ForegroundColor Gray
+    $shipmentItemMap = Load-LegacyIdMap -InvokeDg ${function:Invoke-Dg} -BaseUrl $BaseUrl -DataPath $dataPath -Dataset "odak_sevkiyat_kalemleri" -LegacyField "legacyShipmentItemId"
+    Write-Host "  prod sevkiyat kalemi: $($shipmentItemMap.Count)" -ForegroundColor Gray
+}
 
 if ($PackageNo) {
     $filterUri = '{0}{1}/odak_is_paketleri?filter={2}&limit=5' -f $BaseUrl, $dataPath, [Uri]::EscapeDataString("packageNo:eq:$PackageNo")
@@ -156,27 +205,39 @@ $results = @()
 $ok = 0
 $skip = 0
 $fail = 0
+$repaired = 0
 $affectedPackages = @{}
 
+$shipIndex = 0
 foreach ($s in $shipments) {
+    $shipIndex++
+    if ($shipIndex % 100 -eq 0) {
+        Write-Host "  sevkiyat $shipIndex / $($shipments.Count) (ok=$ok skip=$skip fail=$fail)" -ForegroundColor DarkGray
+    }
+    if ($shipIndex % 500 -eq 0) {
+        Update-MigrationToken -ForceRefresh
+    }
     $legacyShipId = [string]$s.id
+    if ($RepairText -and -not $shipmentMap.ContainsKey($legacyShipId)) { continue }
     $legacyPkgId = [string]$s.package_id
-    if (-not $legacyPkgId) {
-        $results += @{ legacyShipmentId = $legacyShipId; status = "skip"; message = "package_id yok" }
-        $skip++; continue
+    $isGeneral = [string]::IsNullOrWhiteSpace($legacyPkgId)
+
+    $existingShipId = if ($shipmentMap.ContainsKey($legacyShipId)) { $shipmentMap[$legacyShipId] } else {
+        Find-DgByLegacyId -Map $shipmentMap -LegacyId $legacyShipId -Dataset "odak_sevkiyatlar" -LegacyField "legacyShipmentId"
     }
 
-    $dgPackageId = $packageMap[$legacyPkgId]
-    if (-not $dgPackageId) {
-        $results += @{ legacyShipmentId = $legacyShipId; status = "skip"; message = "DG paket yok legacyPackageId=$legacyPkgId" }
-        $skip++; continue
+    $dgPackageId = $null
+    if (-not $isGeneral) {
+        $dgPackageId = $packageMap[$legacyPkgId]
+        if (-not $dgPackageId -and -not ($RepairText -and $existingShipId)) {
+            $results += @{ legacyShipmentId = $legacyShipId; status = "skip"; message = "DG paket yok legacyPackageId=$legacyPkgId" }
+            $skip++; continue
+        }
     }
-
-    $existingShipId = Find-DgByLegacyId -Map $shipmentMap -LegacyId $legacyShipId -Dataset "odak_sevkiyatlar" -LegacyField "legacyShipmentId"
 
     $qcf = $qcfByShipment[$legacyShipId]
     $body = @{
-        parentPackageId   = $dgPackageId
+        recordScope       = if ($isGeneral) { "Genel" } else { "Paketli" }
         legacyShipmentId  = $legacyShipId
         waybillNo         = if ($s.shipment_no) { Limit-LegacyText $s.shipment_no 64 } elseif ($s.bill_no) { Limit-LegacyText $s.bill_no 64 } else { $null }
         status            = Map-ShipmentStatus ([string]$s.status)
@@ -187,17 +248,38 @@ foreach ($s in $shipments) {
         qcfReferenceNo    = if ($qcf -and $qcf.qcf_no) { Limit-LegacyText $qcf.qcf_no 64 } elseif ($qcf -and $qcf.form_no) { Limit-LegacyText $qcf.form_no 64 } else { $null }
         qcfNotes          = $null
     }
+    if (-not $isGeneral) {
+        $body.parentPackageId = $dgPackageId
+    }
+    if ($isGeneral -and $s.descript) {
+        $body.headerDescription = Limit-LegacyText $s.descript 2000
+    }
     if ($s.shipment_date) {
         $d = To-IsoDate ([string]$s.shipment_date)
         if ($d) { $body.shipmentDate = $d }
     }
 
     if ($DryRun) {
+        if ($existingShipId -and $RepairText) { $repaired++ }
         $results += @{ legacyShipmentId = $legacyShipId; packageId = $dgPackageId; status = "dry-run"; waybillNo = $body.waybillNo }
         $ok++; continue
     }
 
     try {
+        if ($existingShipId -and $RepairText) {
+            $textFields = @("waybillNo", "controlType", "shipmentAddress", "notes", "headerDescription", "qcfReferenceNo", "qcfStatus")
+            $patch = @{}
+            foreach ($f in $textFields) {
+                if ($body.ContainsKey($f) -and $null -ne $body[$f]) { $patch[$f] = $body[$f] }
+            }
+            if ($patch.Count -gt 0) {
+                Invoke-Dg -Method PUT -Uri ('{0}{1}/odak_sevkiyatlar/{2}' -f $BaseUrl, $dataPath, $existingShipId) -Body $patch | Out-Null
+                $repaired++
+            }
+            $results += @{ legacyShipmentId = $legacyShipId; status = "repaired"; waybillNo = $body.waybillNo }
+            $ok++; continue
+        }
+
         if ($existingShipId) {
             Invoke-Dg -Method PUT -Uri ('{0}{1}/odak_sevkiyatlar/{2}' -f $BaseUrl, $dataPath, $existingShipId) -Body $body | Out-Null
             $dgShipId = $existingShipId
@@ -212,26 +294,43 @@ foreach ($s in $shipments) {
             throw "DG shipment id alinamadi"
         }
 
-        # Mevcut satirlari sil (idempotent re-run)
-        $filter = "parentShipmentId:eq:$dgShipId"
-        $listUri = '{0}{1}/odak_sevkiyat_kalemleri?filter={2}&limit=500' -f $BaseUrl, $dataPath, [Uri]::EscapeDataString($filter)
-        $existingLines = @()
-        try {
-            $lr = Invoke-Dg -Method GET -Uri $listUri
-            if ($lr -is [Array]) { $existingLines = @($lr) }
-            elseif ($lr.items) { $existingLines = @($lr.items) }
-        }
-        catch { }
-        foreach ($el in $existingLines) {
-            $eid = $el.__dataId; if (-not $eid) { $eid = $el.dataId }
-            if ($eid) {
-                Invoke-Dg -Method DELETE -Uri ('{0}{1}/odak_sevkiyat_kalemleri/{2}' -f $BaseUrl, $dataPath, $eid) | Out-Null
+        function Upsert-ShipmentItem {
+            param([string]$LegacyItemId, [hashtable]$LineBody)
+            $existingItemId = if ($shipmentItemMap.ContainsKey($LegacyItemId)) {
+                $shipmentItemMap[$LegacyItemId]
+            }
+            else {
+                Find-DgByLegacyId -Map $shipmentItemMap -LegacyId $LegacyItemId -Dataset "odak_sevkiyat_kalemleri" -LegacyField "legacyShipmentItemId"
+            }
+            if ($existingItemId) {
+                Invoke-Dg -Method PUT -Uri ('{0}{1}/odak_sevkiyat_kalemleri/{2}' -f $BaseUrl, $dataPath, $existingItemId) -Body $LineBody | Out-Null
+            }
+            else {
+                $createdItem = Invoke-Dg -Method POST -Uri ('{0}{1}/odak_sevkiyat_kalemleri' -f $BaseUrl, $dataPath) -Body $LineBody
+                $newId = Get-DataId $createdItem
+                if ($newId) { $shipmentItemMap[$LegacyItemId] = [string]$newId }
             }
         }
 
         $shipItems = @($itemsByShipment[$legacyShipId])
+        $lineIndex = 0
         foreach ($it in $shipItems) {
             $legacyItemId = [string]$it.id
+            $lineIndex++
+
+            if ($isGeneral) {
+                $desc = if ($s.descript) { Limit-LegacyText $s.descript 500 } else { "Sevkiyat kalemi $lineIndex" }
+                $lineBody = @{
+                    parentShipmentId     = $dgShipId
+                    lineMode             = "Serbest"
+                    shippedQuantity      = [double]$it.shipment_count
+                    lineDescription      = $desc
+                    legacyShipmentItemId = $legacyItemId
+                }
+                Upsert-ShipmentItem -LegacyItemId $legacyItemId -LineBody $lineBody
+                continue
+            }
+
             $legacyLineId = [string]$it.packageitem_id
             $dgLineId = $lineMap[$legacyLineId]
             if (-not $dgLineId) {
@@ -241,6 +340,7 @@ foreach ($s in $shipments) {
 
             $lineBody = @{
                 parentShipmentId      = $dgShipId
+                lineMode              = "SiparisKalemi"
                 parentPackageId       = $dgPackageId
                 parentLineId          = $dgLineId
                 shippedQuantity       = [double]$it.shipment_count
@@ -255,11 +355,13 @@ foreach ($s in $shipments) {
             }
             catch { }
 
-            Invoke-Dg -Method POST -Uri ('{0}{1}/odak_sevkiyat_kalemleri' -f $BaseUrl, $dataPath) -Body $lineBody | Out-Null
+            Upsert-ShipmentItem -LegacyItemId $legacyItemId -LineBody $lineBody
         }
 
-        $affectedPackages[$dgPackageId] = $true
-        $results += @{ legacyShipmentId = $legacyShipId; dgShipmentId = $dgShipId; status = "ok"; waybillNo = $body.waybillNo }
+        if (-not $isGeneral -and $dgPackageId) {
+            $affectedPackages[$dgPackageId] = $true
+        }
+        $results += @{ legacyShipmentId = $legacyShipId; dgShipmentId = $dgShipId; status = "ok"; waybillNo = $body.waybillNo; recordScope = $body.recordScope }
         $ok++
     }
     catch {
@@ -268,70 +370,23 @@ foreach ($s in $shipments) {
     }
 }
 
-# Tamamlanan sevkiyatlardan kalem shippedQuantity guncelle
-if (-not $DryRun -and $affectedPackages.Count -gt 0) {
-    Write-Host "`nKalem sevk miktarlari guncelleniyor ($($affectedPackages.Count) paket)..." -ForegroundColor Yellow
-    foreach ($pkgId in $affectedPackages.Keys) {
-        $shUri = '{0}{1}/odak_sevkiyatlar?filter={2}&limit=500' -f $BaseUrl, $dataPath, [Uri]::EscapeDataString("parentPackageId:eq:$pkgId")
-        $shipRows = @()
-        try {
-            $sr = Invoke-Dg -Method GET -Uri $shUri
-            if ($sr -is [Array]) { $shipRows = @($sr) }
-            elseif ($sr.items) { $shipRows = @($sr.items) }
-        }
-        catch { continue }
-
-        $completedIds = @($shipRows | Where-Object { (Map-ShipmentStatus ([string]$_.status)) -eq "Tamamlandi" } | ForEach-Object {
-            $id = $_.__dataId; if (-not $id) { $id = $_.dataId }
-            $id
-        } | Where-Object { $_ })
-
-        $lineQty = @{}
-        foreach ($cs in $completedIds) {
-            $siUri = '{0}{1}/odak_sevkiyat_kalemleri?filter={2}&limit=500' -f $BaseUrl, $dataPath, [Uri]::EscapeDataString("parentShipmentId:eq:$cs")
-            try {
-                $sir = Invoke-Dg -Method GET -Uri $siUri
-                $siRows = @()
-                if ($sir -is [Array]) { $siRows = @($sir) }
-                elseif ($sir.items) { $siRows = @($sir.items) }
-                foreach ($si in $siRows) {
-                    $lid = Get-RelationId $si.parentLineId
-                    if (-not $lid) { continue }
-                    $q = [double]$si.shippedQuantity
-                    if (-not $lineQty.ContainsKey($lid)) { $lineQty[$lid] = 0.0 }
-                    $lineQty[$lid] += $q
-                }
-            }
-            catch { }
-        }
-
-        $lineUri = '{0}{1}/odak_siparis_kalemleri?filter={2}&limit=500' -f $BaseUrl, $dataPath, [Uri]::EscapeDataString("parentPackageId:eq:$pkgId")
-        try {
-            $lr = Invoke-Dg -Method GET -Uri $lineUri
-            $lines = @()
-            if ($lr -is [Array]) { $lines = @($lr) }
-            elseif ($lr.items) { $lines = @($lr.items) }
-            foreach ($line in $lines) {
-                $lid = $line.__dataId; if (-not $lid) { $lid = $line.dataId }
-                if (-not $lid) { continue }
-                $shipped = if ($lineQty.ContainsKey([string]$lid)) { $lineQty[[string]$lid] } else { 0.0 }
-                Invoke-Dg -Method PUT -Uri ('{0}{1}/odak_siparis_kalemleri/{2}' -f $BaseUrl, $dataPath, $lid) -Body @{ shippedQuantity = $shipped } | Out-Null
-            }
-        }
-        catch { Write-Warning "Paket $pkgId kalem guncelleme: $_" }
-    }
+# Tamamlanan sevkiyatlardan kalem shippedQuantity guncelle (list API)
+if (-not $DryRun) {
+    Invoke-OdakLineShippedQuantityBackfill -InvokeDg ${function:Invoke-Dg} -BaseUrl $BaseUrl -DataPath $dataPath | Out-Null
 }
 
 $report = @{
     migratedAt = (Get-Date).ToUniversalTime().ToString("o")
     dryRun     = [bool]$DryRun
+    repairText = [bool]$RepairText
     packageNo  = $PackageNo
     ok         = $ok
     skip       = $skip
     fail       = $fail
+    repaired   = $repaired
     results    = $results
 }
 $report | ConvertTo-Json -Depth 6 | Set-Content -Path $reportPath -Encoding UTF8
 
-Write-Host "`nTamamlandi: OK=$ok SKIP=$skip FAIL=$fail" -ForegroundColor Cyan
+Write-Host "`nTamamlandi: OK=$ok SKIP=$skip FAIL=$fail REPAIRED=$repaired" -ForegroundColor Cyan
 Write-Host "Rapor: $reportPath" -ForegroundColor Gray

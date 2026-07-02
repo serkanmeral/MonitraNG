@@ -253,9 +253,6 @@ $i = 0
 
 foreach ($p in $pkgList) {
     $i++
-    if ($i % 40 -eq 0) {
-        Update-DgMigrationToken -AuthContext $dgAuth
-    }
     $legacyPackageId = [string]$p[0]
     $packageNo = [string]$p[1]
     if ($i % 25 -eq 0 -or $i -eq 1) {

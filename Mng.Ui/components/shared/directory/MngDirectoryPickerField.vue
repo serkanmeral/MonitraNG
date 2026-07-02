@@ -5,7 +5,7 @@ import {
   useKeeperDirectoryPicker,
   type KeeperDirectoryPickerApi,
 } from '@/composables/useKeeperDirectoryPicker';
-import { collectDirectoryIdsFromValue, type KeeperDirectoryEntity, type KeeperGroupValueKey } from '@/utils/keeperDirectoryPicker';
+import { collectDirectoryIdsFromValue, KEEPER_DIRECTORY_PICKER_SELECT_ALL_MAX, type KeeperDirectoryEntity, type KeeperGroupValueKey } from '@/utils/keeperDirectoryPicker';
 
 const props = withDefaults(
   defineProps<{
@@ -50,9 +50,22 @@ const draftSelection = ref<string[]>([]);
 const tableSearch = ref('');
 const tablePage = ref(1);
 const tableItemsPerPage = ref(20);
+const selectingAll = ref(false);
 
-const tableLoading = computed(() => picker.value.loading.value);
+const tableLoading = computed(() => picker.value.loading.value || selectingAll.value);
 const tableTotal = computed(() => picker.value.totalItems.value);
+
+const selectAllCount = computed(() =>
+  Math.min(tableTotal.value || 0, KEEPER_DIRECTORY_PICKER_SELECT_ALL_MAX)
+);
+
+const selectAllLabel = computed(() => {
+  const count = selectAllCount.value;
+  if (count > 0) {
+    return t('directoryPicker.selectAllCount', { count });
+  }
+  return t('directoryPicker.selectAll');
+});
 
 const selectedIds = computed(() => collectDirectoryIdsFromValue(model.value));
 
@@ -206,6 +219,27 @@ function onDraftSelectionUpdate(value: unknown) {
   if (!props.multiple || !Array.isArray(value)) return;
   draftSelection.value = value.map((v) => String(v));
 }
+
+function clearDraftSelection() {
+  draftSelection.value = [];
+}
+
+async function selectAllMatching() {
+  if (!props.multiple || selectingAll.value) return;
+
+  selectingAll.value = true;
+  try {
+    const rows = await picker.value.fetchAllMatchingRows();
+    const set = new Set(draftSelection.value);
+    for (const row of rows) {
+      set.add(row.value);
+    }
+    draftSelection.value = [...set];
+    await picker.value.ensureSelectedLabels(draftSelection.value);
+  } finally {
+    selectingAll.value = false;
+  }
+}
 </script>
 
 <template>
@@ -308,6 +342,36 @@ function onDraftSelectionUpdate(value: unknown) {
             class="mb-3"
             @update:model-value="onTableSearchUpdate"
           />
+
+          <div
+            v-if="multiple"
+            class="d-flex flex-wrap align-center ga-2 mb-3"
+          >
+            <v-btn
+              size="small"
+              variant="tonal"
+              color="primary"
+              :loading="selectingAll"
+              :disabled="!selectAllCount || tableLoading"
+              @click="selectAllMatching"
+            >
+              {{ selectAllLabel }}
+            </v-btn>
+            <v-btn
+              size="small"
+              variant="text"
+              :disabled="!draftSelection.length || selectingAll"
+              @click="clearDraftSelection"
+            >
+              {{ t('directoryPicker.clearSelection') }}
+            </v-btn>
+            <span
+              v-if="draftSelection.length"
+              class="text-caption text-medium-emphasis"
+            >
+              {{ t('directoryPicker.selectedCount', { count: draftSelection.length }) }}
+            </span>
+          </div>
 
           <v-data-table-server
             :page="tablePage"

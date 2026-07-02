@@ -22,7 +22,7 @@ import {
 const props = defineProps<{
   modelValue: boolean;
   mode: OdakNcrDialogMode;
-  packageId: string;
+  packageId?: string;
   packageNo?: string;
   ncrId?: string;
   seedRow?: OdakNcrRow | null;
@@ -45,6 +45,7 @@ const form = reactive<OdakNcrFormModel>(emptyNcrFormModel());
 const lineItems = ref<{ value: string; title: string }[]>([]);
 
 const readonly = computed(() => internalMode.value === 'view');
+const isGeneralMode = computed(() => !props.packageId?.trim());
 const statusItems = computed(() =>
   ODAK_NCR_STATUS_OPTIONS.map((o) => ({ value: o.value, title: o.title }))
 );
@@ -126,9 +127,9 @@ async function saveNcr() {
   saving.value = true;
   try {
     if (internalMode.value === 'create') {
-      await createOdakNcr(props.packageId, form);
+      await createOdakNcr(form, props.packageId || undefined);
     } else if (props.ncrId) {
-      await updateOdakNcr(props.ncrId, props.packageId, form);
+      await updateOdakNcr(props.ncrId, form, props.packageId || undefined);
     }
     emit('saved');
     closeDialog();
@@ -252,7 +253,7 @@ watch(
               density="compact"
             />
           </v-col>
-          <v-col cols="12" sm="6">
+          <v-col v-if="!isGeneralMode" cols="12" sm="6">
             <v-select
               v-model="form.parentLineId"
               :items="lineItems"
@@ -335,6 +336,15 @@ watch(
             <v-text-field
               v-model="form.responsible"
               :label="t('odakSiparis.quality.ncr.fields.responsible')"
+              :readonly="readonly"
+              variant="outlined"
+              density="compact"
+            />
+          </v-col>
+          <v-col v-if="isGeneralMode" cols="12" sm="6">
+            <v-text-field
+              v-model="form.supplierRef"
+              :label="t('odakSiparis.quality.ncr.fields.supplierRef')"
               :readonly="readonly"
               variant="outlined"
               density="compact"

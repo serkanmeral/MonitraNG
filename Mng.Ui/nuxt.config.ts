@@ -6,7 +6,8 @@ import vuetify, { transformAssetUrls } from "vite-plugin-vuetify";
 const { resolve } = createResolver(import.meta.url);
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
-const ODAK_HOST = "192.168.20.20";
+/** Dev varsayılan host; .env → ODAK_HOST veya GATEWAY_URL ile override edilir. */
+const ODAK_HOST = process.env.ODAK_HOST?.trim() || "192.168.20.20";
 
 function resolveGatewayUrl(): string {
   if (process.env.GATEWAY_URL?.trim()) return process.env.GATEWAY_URL.trim();

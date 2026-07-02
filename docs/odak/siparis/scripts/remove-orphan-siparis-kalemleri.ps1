@@ -16,16 +16,13 @@ $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "../../../..")).Path
 . (Join-Path $PSScriptRoot "lib/DgMigrationCommon.ps1")
 
 $dataPath = if ($UseGateway) { "/data/api/v1/data" } else { "/api/v1/data" }
-$token = & (Join-Path $repoRoot "docs/odak/operationcore/scripts/load-operationcore-token.ps1")
-$headers = @{ Authorization = "Bearer $token" }
+$ocTokenScript = Join-Path $repoRoot "docs/odak/operationcore/scripts/load-operationcore-token.ps1"
+$dgAuth = Initialize-DgMigrationHeaders -TokenScriptPath $ocTokenScript
+$headers = $dgAuth.Headers
 
 function Invoke-Dg {
     param([string]$Method, [string]$Uri)
-    $p = @{ Uri = $Uri; Method = $Method; Headers = $headers; ErrorAction = "Stop" }
-    if ($Uri.StartsWith("https://") -and (Get-Command Invoke-RestMethod).Parameters.ContainsKey("SkipCertificateCheck")) {
-        $p.SkipCertificateCheck = $true
-    }
-    Invoke-RestMethod @p
+    return Invoke-DgMigrationApi -AuthContext $dgAuth -Method $Method -Uri $Uri -RetryOnUnauthorized
 }
 
 function Test-OrphanLine {

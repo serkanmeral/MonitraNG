@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import { useUserStore } from '@/stores/apps/user';
 import {
+  fetchAllMatchingDirectoryRows,
   KEEPER_DIRECTORY_PICKER_PAGE_SIZE,
   mapUserToDirectoryRow,
   type KeeperDirectoryPickerRow,
@@ -126,6 +127,31 @@ export function useKeeperUserPicker() {
     return labelCache.value[id] ?? id;
   }
 
+  async function fetchAllMatchingRows(): Promise<KeeperDirectoryPickerRow[]> {
+    if (import.meta.server) return [];
+
+    const search = searchTerm.value.trim() || undefined;
+    const savedPage = page.value;
+    const savedPageSize = itemsPerPage.value;
+
+    const rows = await fetchAllMatchingDirectoryRows({
+      totalItems: totalItems.value,
+      getBatchTotal: () => userStore.totalCount ?? totalItems.value,
+      fetchBatch: async (batchPage, batchSize) => {
+        await userStore.fetchUsersForSelection({
+          page: batchPage,
+          pageSize: batchSize,
+          search,
+        });
+        return mapUsersFromStore();
+      },
+    });
+
+    cacheLabels(rows);
+    await fetchPage({ page: savedPage, itemsPerPage: savedPageSize, search: searchTerm.value });
+    return rows;
+  }
+
   return {
     entity: 'user' as const,
     items,
@@ -139,6 +165,7 @@ export function useKeeperUserPicker() {
     onSearchUpdate,
     onTableOptionsUpdate,
     ensureSelectedLabels,
+    fetchAllMatchingRows,
   };
 }
 

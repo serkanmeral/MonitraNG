@@ -190,6 +190,8 @@ const CUSTOMER_LABEL_CACHE_TTL_MS = 600_000;
 let customerLabelCache: { map: Record<string, string>; expiresAt: number } | null = null;
 let customerLabelInflight: Promise<Record<string, string>> | null = null;
 let customerRelationOptionsCache: { items: { value: string; title: string }[]; expiresAt: number } | null = null;
+let packageRelationOptionsCache: { items: { value: string; title: string }[]; expiresAt: number } | null = null;
+const PACKAGE_RELATION_OPTIONS_CACHE_TTL_MS = 5 * 60 * 1000;
 
 async function loadCustomerLabelMap(customersOnly = false): Promise<Record<string, string>> {
   const map: Record<string, string> = {};
@@ -239,6 +241,10 @@ export function invalidateOdakSiparisCustomerCache(): void {
   customerRelationOptionsCache = null;
 }
 
+export function invalidateOdakSiparisPackageRelationCache(): void {
+  packageRelationOptionsCache = null;
+}
+
 /** Combobox / autocomplete — unvan A→Z (Türkçe locale). */
 export function customerLabelMapToRelationOptions(
   map: Record<string, string>
@@ -260,6 +266,52 @@ export async function fetchCustomerRelationOptions(
   const items = customerLabelMapToRelationOptions(map);
   customerRelationOptionsCache = { items, expiresAt: now + CUSTOMER_LABEL_CACHE_TTL_MS };
   return items;
+}
+
+/** Gelişmiş filtre — parentPackageId relation combobox (paket no + ad). */
+export function packageRowsToRelationOptions(
+  rows: OdakPackageRow[]
+): { value: string; title: string }[] {
+  return rows
+    .map((row) => {
+      const value = packageDataId(row);
+      if (!value) return null;
+      const no = packageDisplayNo(row);
+      const name = row.name?.trim();
+      const title = name ? `${no} — ${name}` : no;
+      return { value, title };
+    })
+    .filter((item): item is { value: string; title: string } => item != null)
+    .sort((a, b) => a.title.localeCompare(b.title, 'tr', { numeric: true, sensitivity: 'base' }));
+}
+
+export async function fetchPackageRelationOptions(
+  forceRefresh = false
+): Promise<{ value: string; title: string }[]> {
+  const now = Date.now();
+  if (!forceRefresh && packageRelationOptionsCache && packageRelationOptionsCache.expiresAt > now) {
+    return packageRelationOptionsCache.items;
+  }
+  const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.packagesDataset, {
+    sort: 'packageNo',
+    limit: 5000,
+  });
+  const items = packageRowsToRelationOptions((resp.items ?? []) as OdakPackageRow[]);
+  packageRelationOptionsCache = { items, expiresAt: now + PACKAGE_RELATION_OPTIONS_CACHE_TTL_MS };
+  return items;
+}
+
+/** Müşteriye bağlı iş paketi kimlikleri (sevkiyat listesi müşteri filtresi). */
+export async function fetchPackageIdsByCustomerId(customerId: string): Promise<string[]> {
+  const id = customerId.trim();
+  if (!id) return [];
+  const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.packagesDataset, {
+    filter: `customerId:eq:${id}`,
+    limit: 5000,
+  });
+  return ((resp.items ?? []) as OdakPackageRow[])
+    .map((row) => packageDataId(row))
+    .filter(Boolean);
 }
 
 export interface OdakPackageListSort {

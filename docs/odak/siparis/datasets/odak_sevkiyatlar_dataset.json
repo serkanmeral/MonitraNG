@@ -1,18 +1,54 @@
 {
   "name": "odak_sevkiyatlar",
-  "description": "Odak Siparis — is paketi sevkiyat header (shipments karsiligi)",
+  "description": "Odak Siparis — sevkiyat header (paketli + genel, shipments karsiligi)",
   "forceSchema": true,
   "logging": "self",
   "publish_mode": "none",
   "fields": [
     {
-      "fieldType": "relation",
-      "name": "parentPackageId",
-      "title": "Is paketi",
+      "fieldType": "select",
+      "name": "recordScope",
+      "title": "Kayit kapsami",
       "mandatory": true,
       "unique": false,
       "isArray": false,
+      "defaultValue": "Paketli",
+      "options": {
+        "lookup": {
+          "source": "static",
+          "staticItems": [
+            { "value": "Paketli", "label": "Is paketine bagli" },
+            { "value": "Genel", "label": "Genel sevkiyat" }
+          ]
+        }
+      }
+    },
+    {
+      "fieldType": "relation",
+      "name": "parentPackageId",
+      "title": "Is paketi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
       "relationDataset": "odak_is_paketleri"
+    },
+    {
+      "fieldType": "relation",
+      "name": "customerId",
+      "title": "Musteri",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_musteriler"
+    },
+    {
+      "fieldType": "text",
+      "name": "headerDescription",
+      "title": "Sevkiyat icerigi (ozet)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 2000 }
     },
     {
       "fieldType": "text",
@@ -126,8 +162,18 @@
   ],
   "indexList": [
     {
+      "name": "idx_recordScope",
+      "fields": { "recordScope": 1, "shipmentDate": -1 },
+      "unique": false
+    },
+    {
       "name": "idx_parentPackageId",
       "fields": { "parentPackageId": 1, "shipmentDate": -1 },
+      "unique": false
+    },
+    {
+      "name": "idx_customerId",
+      "fields": { "customerId": 1, "shipmentDate": -1 },
       "unique": false
     },
     {

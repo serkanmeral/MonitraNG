@@ -8,6 +8,54 @@ import {
 } from '@/utils/ocPersonPicker';
 
 export const KEEPER_DIRECTORY_PICKER_PAGE_SIZE = 20;
+/** Sunucu tarafı "hepsini seç" üst sınırı (mevcut arama filtresine göre). */
+export const KEEPER_DIRECTORY_PICKER_SELECT_ALL_MAX = 500;
+
+/**
+ * Sunucu sayfalı directory picker için mevcut arama filtresine uyan tüm satırları getirir.
+ */
+export async function fetchAllMatchingDirectoryRows(options: {
+  totalItems: number;
+  fetchBatch: (page: number, pageSize: number) => Promise<KeeperDirectoryPickerRow[]>;
+  getBatchTotal?: () => number;
+  maxItems?: number;
+  batchSize?: number;
+}): Promise<KeeperDirectoryPickerRow[]> {
+  const cap = Math.min(
+    options.totalItems || 0,
+    options.maxItems ?? KEEPER_DIRECTORY_PICKER_SELECT_ALL_MAX
+  );
+  if (cap <= 0) return [];
+
+  const batchSize = Math.min(options.batchSize ?? 100, cap);
+  const all: KeeperDirectoryPickerRow[] = [];
+  const seen = new Set<string>();
+  let currentPage = 1;
+
+  while (all.length < cap) {
+    const batch = await options.fetchBatch(currentPage, batchSize);
+    if (!batch.length) break;
+
+    for (const row of batch) {
+      if (seen.has(row.value)) continue;
+      seen.add(row.value);
+      all.push(row);
+      if (all.length >= cap) break;
+    }
+
+    const reportedTotal = options.getBatchTotal?.() ?? options.totalItems;
+    if (
+      batch.length < batchSize ||
+      all.length >= cap ||
+      currentPage * batchSize >= (reportedTotal || 0)
+    ) {
+      break;
+    }
+    currentPage++;
+  }
+
+  return all;
+}
 
 export type KeeperDirectoryEntity = 'user' | 'group';
 

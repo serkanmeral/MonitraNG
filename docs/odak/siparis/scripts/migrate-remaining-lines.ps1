@@ -73,10 +73,7 @@ foreach ($item in $itemRows) {
     $n++
     if ($n % 500 -eq 0) { Write-Host "  ... $n / $($itemRows.Count)" -ForegroundColor Gray }
 
-    if ($n % 200 -eq 0) {
-        Update-DgMigrationToken -AuthContext $dgAuth
-    }
-
+    # Token dosyadan okunur; 401 olursa Invoke-DgMigrationApi ForceRefresh yapar
     $legacyLineId = [string]$item[0]
     $legacyPkgId = [string]$item[1]
     $lineNo = To-IntOrNull $item[3]

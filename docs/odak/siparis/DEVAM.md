@@ -1,9 +1,11 @@
 # Odak Sipariş — Devam noktası (checkpoint)
 
-**Son güncelleme:** 18 Haziran 2026  
-**Durum:** ✅ Faz 1 kalite deploy · ✅ Faz 1b PO PDF (genel/yetkilendirilmiş) · ✅ Kalite isterleri master + kalem · ⏳ Faz 1b fiyat alanları · ⏳ Tam PO migrasyon
+**Son güncelleme:** 1 Temmuz 2026  
+**Durum:** ✅ Sevkiyat hub UI · ✅ Go-live verify scriptleri · ⏳ Canlı geçiş veri + UAT · ⏳ Tam PO migrasyon
 
-> **⭐ KALDIĞIMIZ YER:** **Kalite isterleri** tamamlandı (UI + DG dataset + deploy): müşteri bazlı master (`odak_musteri_kalite_isterleri`), şablon kataloğu, kalem `qualityRequirementIds` çoklu seçim, FAI otomasyonu (kullanıcı kapatabilir). **Sonraki:** fiyat alanları · tam PO PDF migrasyon · legacy `quality_reqs` metninden master'a taşıma (opsiyonel) · MO köprüsü.
+> **⭐ KALDIĞIMIZ YER (1 Tem 2026):** **Canlı geçiş kapsamı** dokümante edildi → [CANLI_GECIS_KAPSAMI.md](./CANLI_GECIS_KAPSAMI.md). `verify-odak-go-live-readiness.ps1`, sevkiyat `-RepairText`, prod pipeline 9 adım hazır. **Sonraki:** test ortamında verify koşusu → BLOCKER kapatma → UAT. Güncel oturum: [current_status.md](./current_status.md).
+
+> **Önceki checkpoint (18 Haz):** Kalite isterleri master + kalem UI deploy edildi. Fiyat alanları ve tam PO PDF hâlâ bekliyor.
 
 ---
 

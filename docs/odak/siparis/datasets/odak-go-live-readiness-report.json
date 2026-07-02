@@ -1,0 +1,62 @@
+{
+  "mojibake": {
+    "ratio": 0.0,
+    "hits": 0,
+    "sampled": 120
+  },
+  "dg": {
+    "lines": 2757,
+    "shipments": 3775,
+    "packages": 823,
+    "poDocumentPackages": 7,
+    "shipmentItems": 4254,
+    "ncr": 556,
+    "capa": 25,
+    "firms": 87
+  },
+  "poPdf": {
+    "coveragePercent": 1.1,
+    "candidates": 664
+  },
+  "warnings": [
+    {
+      "id": "po_pdf",
+      "message": "PO PDF kapsami dusuk (1.1% < 85%)"
+    }
+  ],
+  "ready": false,
+  "legacy": {
+    "shipments": 3776,
+    "lines": 2767,
+    "shipmentItems": 6981,
+    "capa": 110,
+    "ncr": 556,
+    "packages": 824,
+    "firms": 87
+  },
+  "baseUrl": "http://192.168.20.8:5040",
+  "blockers": [
+    {
+      "id": "packages",
+      "message": "Paket sayisi eslesmiyor (Legacy=824 DG=823 beklenen~825)"
+    },
+    {
+      "id": "lines",
+      "message": "Kalem sayisi eslesmiyor (Legacy=2767 DG=2757 hedef~2769)"
+    },
+    {
+      "id": "shipments",
+      "message": "Sevkiyat migrasyonu eksik (Legacy=3776 DG=3775)"
+    },
+    {
+      "id": "shipment_items",
+      "message": "Sevkiyat kalemi eksik (Legacy=6981 DG=4254)"
+    },
+    {
+      "id": "capa",
+      "message": "CAPA migrasyonu eksik (Legacy=110 DG=25)"
+    }
+  ],
+  "checkedAt": "2026-07-02T00:47:21.8760638Z",
+  "strict": false
+}

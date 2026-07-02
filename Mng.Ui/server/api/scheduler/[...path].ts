@@ -3,12 +3,13 @@
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig();
 
+  const odakHost = process.env.ODAK_HOST?.trim() || '192.168.20.20';
   const schedulerUrl =
     process.env.SERVER_SCHEDULER_URL ||
     process.env.SCHEDULER_URL ||
     config.serverSchedulerUrl ||
     config.public.schedulerUrl ||
-    'http://192.168.20.20:5090';
+    `http://${odakHost}:5090`;
 
   let path = getRouterParam(event, 'path') || '';
   const method = getMethod(event);

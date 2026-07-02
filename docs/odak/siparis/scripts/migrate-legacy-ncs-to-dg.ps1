@@ -30,26 +30,48 @@ if (-not (Test-Path $LegacyJsonPath)) {
     throw "JSON yok: $LegacyJsonPath — once export-legacy-ncs-from-mysql.ps1"
 }
 
-$token = & $ocTokenScript
+$token = (& $ocTokenScript).Trim()
 if ([string]::IsNullOrEmpty($token)) { throw "Token alinamadi." }
 
-$headers = @{
+function Update-MigrationToken {
+    param([switch]$ForceRefresh)
+    if ($ForceRefresh) {
+        $script:token = (& $ocTokenScript -AutoRefresh).Trim()
+    }
+    else {
+        $script:token = (& $ocTokenScript -AutoRefresh:$false).Trim()
+        if ([string]::IsNullOrEmpty($script:token)) {
+            $script:token = (& $ocTokenScript -AutoRefresh).Trim()
+        }
+    }
+    if ([string]::IsNullOrEmpty($script:token)) { throw "Token alinamadi." }
+    $script:headers["Authorization"] = "Bearer $($script:token)"
+}
+
+$script:headers = @{
     "Authorization" = "Bearer $token"
     "Content-Type"  = "application/json"
 }
+$script:token = $token
 [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
 
 function Invoke-Dg {
     param([string]$Method, [string]$Uri, [object]$Body = $null)
-    $p = @{ Uri = $Uri; Method = $Method; Headers = $headers; ErrorAction = "Stop" }
-    if ($Uri.StartsWith("https://") -and (Get-Command Invoke-RestMethod).Parameters.ContainsKey("SkipCertificateCheck")) {
-        $p.SkipCertificateCheck = $true
+    for ($attempt = 0; $attempt -lt 2; $attempt++) {
+        $skipCert = $Uri.StartsWith("https://") -and (Get-Command Invoke-RestMethod).Parameters.ContainsKey("SkipCertificateCheck")
+        try {
+            return Invoke-DgRestMethod -Method $Method -Uri $Uri -Headers $script:headers -Body $Body -JsonDepth 10 -SkipCertificateCheck:$skipCert
+        }
+        catch {
+            $detail = [string]$_.Exception.Message
+            if ($attempt -eq 0 -and ($detail -match '401|Unauthorized')) {
+                Write-Host "  Token yenileniyor (401)..." -ForegroundColor Yellow
+                Update-MigrationToken -ForceRefresh
+                continue
+            }
+            throw
+        }
     }
-    if ($null -ne $Body) {
-        $p.Body = if ($Body -is [string]) { $Body } else { $Body | ConvertTo-Json -Depth 10 -Compress }
-        $p.ContentType = "application/json"
-    }
-    return Invoke-RestMethod @p
 }
 
 function Get-DataId {
@@ -83,17 +105,24 @@ function Map-CapaStatus {
 }
 
 function Build-NcrBody {
-    param($nc, [string]$LegacyNcrId, [string]$ParentPackageId)
+    param($nc, [string]$LegacyNcrId, [string]$ParentPackageId = "")
     $descriptor = Limit-LegacyText $nc.descriptor 500
     if ([string]::IsNullOrWhiteSpace($descriptor) -or $descriptor.Trim().Length -lt 2) {
         $descriptor = if ($nc.nc_no) { "NCR $([string]$nc.nc_no)" } else { "NCR $LegacyNcrId" }
     }
 
+    $isGeneral = [string]::IsNullOrWhiteSpace($ParentPackageId)
     $body = @{
-        legacyNcrId     = $LegacyNcrId
-        parentPackageId = $ParentPackageId
-        ncStatus        = if ($nc.nc_status) { Limit-LegacyText $nc.nc_status 200 } else { "Değerlendirme Bekleniyor" }
-        descriptor      = $descriptor.Trim()
+        legacyNcrId  = $LegacyNcrId
+        recordScope  = if ($isGeneral) { "Genel" } else { "Paketli" }
+        ncStatus     = if ($nc.nc_status) { Limit-LegacyText $nc.nc_status 200 } else { "Değerlendirme Bekleniyor" }
+        descriptor   = $descriptor.Trim()
+    }
+    if (-not $isGeneral) {
+        $body.parentPackageId = $ParentPackageId
+    }
+    if ($isGeneral -and $nc.responsible) {
+        $body.supplierRef = Limit-LegacyText $nc.responsible 200
     }
     if ($nc.nc_no) { $body.legacyNcNo = [string]$nc.nc_no }
     if ($nc.nc_date) { $d = To-IsoDate ([string]$nc.nc_date); if ($d) { $body.ncDate = $d } }
@@ -170,7 +199,51 @@ foreach ($nc in $ncsList) {
 
     if ([string]::IsNullOrWhiteSpace($legacyPackageId)) {
         $report.ncr.noPackage++
-        $report.ncrFailures += @{ legacyNcrId = $legacyNcrId; reason = "empty_package_id" }
+        if ($script:NcrLegacyMap.ContainsKey($legacyNcrId)) {
+            if ($RepairText) {
+                $body = Build-NcrBody -nc $nc -LegacyNcrId $legacyNcrId
+                $textFields = @("ncStatus", "descriptor", "explanation", "notes", "ncAction", "responsible", "errorCode", "faiStatus", "controlType", "productCode", "jobNo", "supplierRef")
+                $patch = @{}
+                foreach ($f in $textFields) {
+                    if ($body.ContainsKey($f) -and $null -ne $body[$f]) { $patch[$f] = $body[$f] }
+                }
+                if ($patch.Count -gt 0 -and -not $DryRun) {
+                    $dgId = $script:NcrLegacyMap[$legacyNcrId]
+                    try {
+                        Invoke-Dg -Method PUT -Uri "$BaseUrl$dataPath/odak_ncr/$dgId" -Body $patch | Out-Null
+                        $report.ncr.repaired++
+                    }
+                    catch {
+                        $report.ncrFailures += @{ legacyNcrId = $legacyNcrId; reason = "repair_failed"; detail = "$_" }
+                    }
+                }
+                elseif ($patch.Count -gt 0) {
+                    $report.ncr.repaired++
+                }
+            }
+            else {
+                $report.ncr.skippedExisting++
+            }
+            continue
+        }
+        $body = Build-NcrBody -nc $nc -LegacyNcrId $legacyNcrId
+        if ($DryRun) {
+            Write-Host "[DRY NCR-GENEL] legacy=$legacyNcrId" -ForegroundColor Yellow
+            $report.ncr.created++
+        }
+        else {
+            try {
+                $resp = Invoke-Dg -Method POST -Uri "$BaseUrl$dataPath/odak_ncr" -Body $body
+                $dgId = Get-DataId $resp
+                $ncrMapping[$legacyNcrId] = $dgId
+                $script:NcrLegacyMap[$legacyNcrId] = $dgId
+                $report.ncr.created++
+            }
+            catch {
+                $report.ncr.failed++
+                $report.ncrFailures += @{ legacyNcrId = $legacyNcrId; reason = "create_failed"; detail = "$_" }
+            }
+        }
         continue
     }
 

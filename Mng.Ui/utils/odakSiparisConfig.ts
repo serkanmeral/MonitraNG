@@ -280,11 +280,19 @@ export const ODAK_CAPA_STATUS_OPTIONS = [
   { value: 'Kapali', title: 'Kapalı' },
 ] as const;
 
+export type OdakRecordScope = 'Paketli' | 'Genel';
+
+export const ODAK_RECORD_SCOPE_OPTIONS = [
+  { value: 'Paketli' as const, title: 'İş paketine bağlı' },
+  { value: 'Genel' as const, title: 'Genel' },
+];
+
 export interface OdakNcrRow {
   __dataId?: string;
   dataId?: string;
   ncrNo?: string;
   legacyNcNo?: string;
+  recordScope?: OdakRecordScope | string;
   parentPackageId?: unknown;
   parentLineId?: unknown;
   ncStatus?: OdakNcrStatus | string;
@@ -306,6 +314,7 @@ export interface OdakNcrRow {
   errorCode?: string;
   ncAction?: string;
   responsible?: string;
+  supplierRef?: string;
   closureDate?: string;
   notes?: string;
   legacyNcrId?: string;
@@ -330,7 +339,10 @@ export const ODAK_QCF_STATUS_OPTIONS = [
 export interface OdakShipmentRow {
   __dataId?: string;
   dataId?: string;
+  recordScope?: OdakRecordScope | string;
   parentPackageId?: unknown;
+  customerId?: unknown;
+  headerDescription?: string;
   waybillNo?: string;
   shipmentDate?: string;
   status?: OdakShipmentStatus | string;
@@ -348,6 +360,7 @@ export interface OdakShipmentLineRow {
   __dataId?: string;
   dataId?: string;
   parentShipmentId?: unknown;
+  lineMode?: 'SiparisKalemi' | 'Serbest' | string;
   parentPackageId?: unknown;
   parentLineId?: unknown;
   shippedQuantity?: number;

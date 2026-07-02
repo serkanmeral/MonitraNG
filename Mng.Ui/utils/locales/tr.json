@@ -190,6 +190,8 @@
     },
     "odakSiparis.packages.menuTitle": "İş Paketleri",
     "odakSiparis.customers.menuTitle": "Aktörler",
+    "odakSiparis.globalShipments.menuTitle": "Sevkiyat Listesi",
+    "odakSiparis.globalNcr.menuTitle": "Uygunsuzluklar",
     "securityManagement.menuHeader": "Güvenlik Yönetimi",
     "alarmCenter.menuTitle": "Alarm Merkezi",
     "siemCenter.dashboard.menuTitle": "SIEM Güvenlik Paneli",
@@ -4387,6 +4389,7 @@
       },
       "ncr": {
         "summary": "{count} NCR · {open} açık",
+        "summaryOpen": "{count} açık",
         "add": "NCR ekle",
         "empty": "Bu iş paketine bağlı NCR kaydı yok.",
         "deleteTitle": "NCR sil",
@@ -4416,6 +4419,7 @@
           "errorCode": "Hata kodu",
           "ncAction": "Aksiyon",
           "responsible": "Sorumlu",
+          "supplierRef": "Tedarikçi / kaynak",
           "closureDate": "Kapanış tarihi",
           "notes": "Notlar"
         },
@@ -4663,6 +4667,63 @@
         "lineSelect": "Sipariş kalemi",
         "shippedQty": "Sevk miktarı",
         "lineHint": "Sipariş: {quantity} · Sevk edilen: {shipped} · Kalan: {remaining}"
+      }
+    },
+    "globalShipments": {
+      "title": "Sevkiyat Listesi",
+      "menuTitle": "Sevkiyat Listesi",
+      "addGeneral": "Genel sevkiyat ekle",
+      "searchWaybill": "İrsaliye no ara…",
+      "tabs": {
+        "all": "Tümü",
+        "package": "İş paketli",
+        "general": "Genel",
+        "statusAll": "Tüm durumlar",
+        "completed": "Tamamlanan",
+        "planned": "Planlanan"
+      },
+      "columns": {
+        "scope": "Kapsam",
+        "content": "İçerik özeti"
+      },
+      "fields": {
+        "customerId": "Müşteri",
+        "headerDescription": "Sevkiyat içeriği",
+        "lineDescription": "Kalem tanımı"
+      },
+      "dialog": {
+        "createTitle": "Yeni genel sevkiyat",
+        "editTitle": "Genel sevkiyat düzenle",
+        "linesTitle": "Sevk kalemleri (serbest)",
+        "addLine": "Kalem ekle"
+      },
+      "expand": {
+        "packageTitle": "Bağlı iş paketi",
+        "openPackage": "Pakete git",
+        "fullContent": "İçerik özeti (tam metin)",
+        "linesTitle": "Sevk kalemleri",
+        "noLines": "Bu sevkiyata bağlı kalem kaydı yok.",
+        "noPackage": "İş paketine bağlı değil (genel sevkiyat)"
+      },
+      "filters": {
+        "parentPackage": "İş paketi",
+        "customerHint": "Paketli sevkiyatlar iş paketindeki müşteriye göre bulunur. Genel sevkiyatta müşteri yalnızca kayıtta customerId doluysa gelir (çoğu legacy genel kayıtta boş olabilir)."
+      }
+    },
+    "globalNcr": {
+      "title": "Uygunsuzluklar",
+      "menuTitle": "Uygunsuzluklar",
+      "addGeneral": "Genel NCR ekle",
+      "searchDescriptor": "Tanım ara…",
+      "tabs": {
+        "all": "Tümü",
+        "package": "İş paketli",
+        "general": "Genel",
+        "open": "Açık",
+        "statusAll": "Tüm durumlar"
+      },
+      "columns": {
+        "scope": "Kapsam"
       }
     }
   },
@@ -7394,6 +7455,10 @@
     "select": "Seç",
     "cancel": "İptal",
     "clear": "Temizle",
+    "selectAll": "Hepsini seç",
+    "selectAllCount": "Hepsini seç ({count})",
+    "clearSelection": "Seçimi temizle",
+    "selectedCount": "{count} seçili",
     "user": {
       "placeholder": "Kullanıcı seçmek için tıklayın",
       "open": "Kullanıcı seç",

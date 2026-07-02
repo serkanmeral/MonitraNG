@@ -436,81 +436,24 @@ const handleCancel = () => {
   isEditing.value = false;
 };
 
-// Photo upload handler
+// Photo upload handler — POST /user/{id}/photo zaten MinIO + DB kaydını yapar.
 const handlePhotoUploaded = async (photoUrl: string) => {
-  formData.value.photoUrl = photoUrl;
-  // Auto-save photo
-  if (currentUser.value) {
-    try {
-      // MUST use userStore.currentUser.id (MongoDB ObjectId), not Keycloak sub
-      // If userStore.currentUser doesn't exist, fetch it first
-      let userId = userStore.currentUser?.id;
-      
-      if (!userId) {
-        // Try to find user in backend by username/email
-        const searchTerm = currentUser.value.username || currentUser.value.email || authStore.userInfo?.username || authStore.userInfo?.email || '';
-        if (searchTerm) {
-          await userStore.fetchUsers({ search: searchTerm, pageSize: 10 });
-          const foundUser = userStore.users.find(u => 
-            u.username === currentUser.value?.username || 
-            u.email === currentUser.value?.email ||
-            u.username === authStore.userInfo?.username ||
-            u.email === authStore.userInfo?.email
-          );
-          
-          if (foundUser) {
-            userId = foundUser.id;
-            userStore.currentUser = foundUser;
-          }
-        }
-      }
-      
-      if (!userId) {
-        throw new Error('User ID not found. Please refresh the page.');
-      }
-      
-      // Update user with photoUrl - include all current user data to prevent data loss
-      // Backend requires username and email, and we need to preserve other fields
-      // Use currentUser.value as source of truth, fallback to formData if needed
-      const response = await userStore.updateUser(userId, {
-        username: currentUser.value.username || authStore.userInfo?.username || authStore.userInfo?.preferred_username || '',
-        email: formData.value.email || currentUser.value.email || authStore.userInfo?.email || '',
-        firstName: currentUser.value.firstName || formData.value.firstName || '',
-        lastName: currentUser.value.lastName || formData.value.lastName || '',
-        title: currentUser.value.title ?? formData.value.title ?? null,
-        department: currentUser.value.department ?? formData.value.department ?? null,
-        gender: currentUser.value.gender || formData.value.gender || 'NotSpecified',
-        phoneNumber: currentUser.value.phoneNumber ?? formData.value.phoneNumber ?? null,
-        photoUrl: photoUrl,
-      });
-      
-      
-      // Force reactivity: explicitly update currentUser.photoUrl
-      // Add cache-busting query parameter to force browser to reload the image
-      const cacheBustUrl = `${photoUrl}?t=${Date.now()}`;
-      if (userStore.currentUser) {
-        userStore.currentUser.photoUrl = cacheBustUrl;
-        userStore.currentUser.photoSource = 'Manual';
-      }
-      
-      // Also update formData to ensure it's in sync
-      formData.value.photoUrl = cacheBustUrl;
-      
-      // After image loads, update to clean URL (without cache bust parameter)
-      // This ensures the URL is clean for future updates
-      setTimeout(() => {
-        if (userStore.currentUser) {
-          userStore.currentUser.photoUrl = photoUrl;
-        }
-        formData.value.photoUrl = photoUrl;
-      }, 500);
-      
-      showSnackbar(t('profile.messages.photoUploadSuccess'), 'success');
-    } catch (error) {
-      console.error('Error saving photo:', error);
-      showSnackbar(t('profile.messages.photoUploadError'), 'error');
-    }
+  const cacheBustUrl = `${photoUrl}?t=${Date.now()}`;
+  formData.value.photoUrl = cacheBustUrl;
+
+  if (userStore.currentUser) {
+    userStore.currentUser.photoUrl = cacheBustUrl;
+    userStore.currentUser.photoSource = 'Manual';
   }
+
+  setTimeout(() => {
+    formData.value.photoUrl = photoUrl;
+    if (userStore.currentUser) {
+      userStore.currentUser.photoUrl = photoUrl;
+    }
+  }, 500);
+
+  showSnackbar(t('profile.messages.photoUploadSuccess'), 'success');
 };
 
 // Photo remove handler

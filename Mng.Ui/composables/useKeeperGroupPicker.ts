@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import { useGroupStore } from '@/stores/apps/group';
 import {
+  fetchAllMatchingDirectoryRows,
   KEEPER_DIRECTORY_PICKER_PAGE_SIZE,
   mapGroupToDirectoryRow,
   type KeeperDirectoryPickerRow,
@@ -153,6 +154,31 @@ export function useKeeperGroupPicker(options?: KeeperGroupPickerOptions) {
     return labelCache.value[id] ?? id;
   }
 
+  async function fetchAllMatchingRows(): Promise<KeeperDirectoryPickerRow[]> {
+    if (import.meta.server) return [];
+
+    const search = searchTerm.value.trim() || undefined;
+    const savedPage = page.value;
+    const savedPageSize = itemsPerPage.value;
+
+    const rows = await fetchAllMatchingDirectoryRows({
+      totalItems: totalItems.value,
+      getBatchTotal: () => groupStore.totalCount ?? totalItems.value,
+      fetchBatch: async (batchPage, batchSize) => {
+        await groupStore.fetchGroupsForSelection({
+          page: batchPage,
+          pageSize: batchSize,
+          search,
+        });
+        return mapGroupsFromStore();
+      },
+    });
+
+    cacheLabels(rows);
+    await fetchPage({ page: savedPage, itemsPerPage: savedPageSize, search: searchTerm.value });
+    return rows;
+  }
+
   return {
     entity: 'group' as const,
     items,
@@ -166,6 +192,7 @@ export function useKeeperGroupPicker(options?: KeeperGroupPickerOptions) {
     onSearchUpdate,
     onTableOptionsUpdate,
     ensureSelectedLabels,
+    fetchAllMatchingRows,
   };
 }
 

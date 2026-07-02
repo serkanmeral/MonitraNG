@@ -1,6 +1,6 @@
 {
   "name": "odak_sevkiyat_kalemleri",
-  "description": "Odak Siparis — sevkiyat satirlari (shipmentitems karsiligi)",
+  "description": "Odak Siparis — sevkiyat satirlari (siparis kalemi veya serbest)",
   "forceSchema": true,
   "logging": "self",
   "publish_mode": "none",
@@ -15,10 +15,28 @@
       "relationDataset": "odak_sevkiyatlar"
     },
     {
+      "fieldType": "select",
+      "name": "lineMode",
+      "title": "Kalem modu",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": "SiparisKalemi",
+      "options": {
+        "lookup": {
+          "source": "static",
+          "staticItems": [
+            { "value": "SiparisKalemi", "label": "Siparis kalemi" },
+            { "value": "Serbest", "label": "Serbest kalem" }
+          ]
+        }
+      }
+    },
+    {
       "fieldType": "relation",
       "name": "parentPackageId",
       "title": "Is paketi",
-      "mandatory": true,
+      "mandatory": false,
       "unique": false,
       "isArray": false,
       "relationDataset": "odak_is_paketleri"
@@ -27,7 +45,7 @@
       "fieldType": "relation",
       "name": "parentLineId",
       "title": "Siparis kalemi",
-      "mandatory": true,
+      "mandatory": false,
       "unique": false,
       "isArray": false,
       "relationDataset": "odak_siparis_kalemleri"
@@ -83,6 +101,11 @@
     {
       "name": "idx_parentLineId",
       "fields": { "parentLineId": 1 },
+      "unique": false
+    },
+    {
+      "name": "idx_lineMode",
+      "fields": { "lineMode": 1 },
       "unique": false
     },
     {

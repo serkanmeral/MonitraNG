@@ -7269,6 +7269,10 @@
     "select": "Select",
     "cancel": "Cancel",
     "clear": "Clear",
+    "selectAll": "Select all",
+    "selectAllCount": "Select all ({count})",
+    "clearSelection": "Clear selection",
+    "selectedCount": "{count} selected",
     "user": {
       "placeholder": "Click to select users",
       "open": "Select user",

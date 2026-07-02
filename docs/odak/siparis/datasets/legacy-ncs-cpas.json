@@ -1,4 +1,211 @@
 {
+  "source": {
+    "host": "127.0.0.1",
+    "engine": "mysql",
+    "port": 3307,
+    "db": "kalite"
+  },
+  "cpasCount": 110,
+  "ncsCount": 556,
+  "cpasNcs": [
+    {
+      "nc_id": 207,
+      "cpa_id": 2
+    },
+    {
+      "nc_id": 222,
+      "cpa_id": 5
+    },
+    {
+      "nc_id": 223,
+      "cpa_id": 5
+    },
+    {
+      "nc_id": 224,
+      "cpa_id": 5
+    },
+    {
+      "nc_id": 225,
+      "cpa_id": 5
+    },
+    {
+      "nc_id": 226,
+      "cpa_id": 5
+    },
+    {
+      "nc_id": 227,
+      "cpa_id": 5
+    },
+    {
+      "nc_id": 228,
+      "cpa_id": 5
+    },
+    {
+      "nc_id": 231,
+      "cpa_id": 5
+    },
+    {
+      "nc_id": 232,
+      "cpa_id": 5
+    },
+    {
+      "nc_id": 233,
+      "cpa_id": 5
+    },
+    {
+      "nc_id": 234,
+      "cpa_id": 5
+    },
+    {
+      "nc_id": 235,
+      "cpa_id": 5
+    },
+    {
+      "nc_id": 236,
+      "cpa_id": 5
+    },
+    {
+      "nc_id": 237,
+      "cpa_id": 5
+    },
+    {
+      "nc_id": 238,
+      "cpa_id": 6
+    },
+    {
+      "nc_id": 243,
+      "cpa_id": 6
+    },
+    {
+      "nc_id": 251,
+      "cpa_id": 7
+    },
+    {
+      "nc_id": 294,
+      "cpa_id": 11
+    },
+    {
+      "nc_id": 310,
+      "cpa_id": 16
+    },
+    {
+      "nc_id": 324,
+      "cpa_id": 18
+    },
+    {
+      "nc_id": 331,
+      "cpa_id": 18
+    },
+    {
+      "nc_id": 336,
+      "cpa_id": 18
+    },
+    {
+      "nc_id": 320,
+      "cpa_id": 17
+    },
+    {
+      "nc_id": 344,
+      "cpa_id": 19
+    },
+    {
+      "nc_id": 347,
+      "cpa_id": 20
+    },
+    {
+      "nc_id": 346,
+      "cpa_id": 21
+    },
+    {
+      "nc_id": 352,
+      "cpa_id": 21
+    },
+    {
+      "nc_id": 349,
+      "cpa_id": 22
+    },
+    {
+      "nc_id": 350,
+      "cpa_id": 22
+    },
+    {
+      "nc_id": 358,
+      "cpa_id": 31
+    },
+    {
+      "nc_id": 362,
+      "cpa_id": 32
+    },
+    {
+      "nc_id": 383,
+      "cpa_id": 47
+    },
+    {
+      "nc_id": 384,
+      "cpa_id": 47
+    },
+    {
+      "nc_id": 410,
+      "cpa_id": 69
+    },
+    {
+      "nc_id": 408,
+      "cpa_id": 70
+    },
+    {
+      "nc_id": 409,
+      "cpa_id": 70
+    },
+    {
+      "nc_id": 449,
+      "cpa_id": 71
+    },
+    {
+      "nc_id": 450,
+      "cpa_id": 71
+    },
+    {
+      "nc_id": 471,
+      "cpa_id": 75
+    },
+    {
+      "nc_id": 465,
+      "cpa_id": 76
+    },
+    {
+      "nc_id": 553,
+      "cpa_id": 97
+    },
+    {
+      "nc_id": 561,
+      "cpa_id": 98
+    },
+    {
+      "nc_id": 574,
+      "cpa_id": 99
+    },
+    {
+      "nc_id": 575,
+      "cpa_id": 99
+    },
+    {
+      "nc_id": 577,
+      "cpa_id": 99
+    },
+    {
+      "nc_id": 578,
+      "cpa_id": 99
+    },
+    {
+      "nc_id": 576,
+      "cpa_id": 100
+    },
+    {
+      "nc_id": 621,
+      "cpa_id": 107
+    }
+  ],
+  "exportedAt": "2026-07-01T22:18:08.9405174Z",
   "exportFormat": "mysql-json-object-v1",
   "cpas": [
     {
@@ -1982,8 +2189,6 @@
       "second_followup_date": null
     }
   ],
-  "exportedAt": "2026-06-20T09:04:55.7959478Z",
-  "ncsCount": 556,
   "ncs": [
     {
       "id": 1,
@@ -16441,210 +16646,5 @@
       "rework_count": null,
       "observe_count": null
     }
-  ],
-  "source": {
-    "db": "kalite",
-    "port": 3307,
-    "host": "127.0.0.1",
-    "engine": "mysql"
-  },
-  "cpasNcs": [
-    {
-      "nc_id": 207,
-      "cpa_id": 2
-    },
-    {
-      "nc_id": 222,
-      "cpa_id": 5
-    },
-    {
-      "nc_id": 223,
-      "cpa_id": 5
-    },
-    {
-      "nc_id": 224,
-      "cpa_id": 5
-    },
-    {
-      "nc_id": 225,
-      "cpa_id": 5
-    },
-    {
-      "nc_id": 226,
-      "cpa_id": 5
-    },
-    {
-      "nc_id": 227,
-      "cpa_id": 5
-    },
-    {
-      "nc_id": 228,
-      "cpa_id": 5
-    },
-    {
-      "nc_id": 231,
-      "cpa_id": 5
-    },
-    {
-      "nc_id": 232,
-      "cpa_id": 5
-    },
-    {
-      "nc_id": 233,
-      "cpa_id": 5
-    },
-    {
-      "nc_id": 234,
-      "cpa_id": 5
-    },
-    {
-      "nc_id": 235,
-      "cpa_id": 5
-    },
-    {
-      "nc_id": 236,
-      "cpa_id": 5
-    },
-    {
-      "nc_id": 237,
-      "cpa_id": 5
-    },
-    {
-      "nc_id": 238,
-      "cpa_id": 6
-    },
-    {
-      "nc_id": 243,
-      "cpa_id": 6
-    },
-    {
-      "nc_id": 251,
-      "cpa_id": 7
-    },
-    {
-      "nc_id": 294,
-      "cpa_id": 11
-    },
-    {
-      "nc_id": 310,
-      "cpa_id": 16
-    },
-    {
-      "nc_id": 324,
-      "cpa_id": 18
-    },
-    {
-      "nc_id": 331,
-      "cpa_id": 18
-    },
-    {
-      "nc_id": 336,
-      "cpa_id": 18
-    },
-    {
-      "nc_id": 320,
-      "cpa_id": 17
-    },
-    {
-      "nc_id": 344,
-      "cpa_id": 19
-    },
-    {
-      "nc_id": 347,
-      "cpa_id": 20
-    },
-    {
-      "nc_id": 346,
-      "cpa_id": 21
-    },
-    {
-      "nc_id": 352,
-      "cpa_id": 21
-    },
-    {
-      "nc_id": 349,
-      "cpa_id": 22
-    },
-    {
-      "nc_id": 350,
-      "cpa_id": 22
-    },
-    {
-      "nc_id": 358,
-      "cpa_id": 31
-    },
-    {
-      "nc_id": 362,
-      "cpa_id": 32
-    },
-    {
-      "nc_id": 383,
-      "cpa_id": 47
-    },
-    {
-      "nc_id": 384,
-      "cpa_id": 47
-    },
-    {
-      "nc_id": 410,
-      "cpa_id": 69
-    },
-    {
-      "nc_id": 408,
-      "cpa_id": 70
-    },
-    {
-      "nc_id": 409,
-      "cpa_id": 70
-    },
-    {
-      "nc_id": 449,
-      "cpa_id": 71
-    },
-    {
-      "nc_id": 450,
-      "cpa_id": 71
-    },
-    {
-      "nc_id": 471,
-      "cpa_id": 75
-    },
-    {
-      "nc_id": 465,
-      "cpa_id": 76
-    },
-    {
-      "nc_id": 553,
-      "cpa_id": 97
-    },
-    {
-      "nc_id": 561,
-      "cpa_id": 98
-    },
-    {
-      "nc_id": 574,
-      "cpa_id": 99
-    },
-    {
-      "nc_id": 575,
-      "cpa_id": 99
-    },
-    {
-      "nc_id": 577,
-      "cpa_id": 99
-    },
-    {
-      "nc_id": 578,
-      "cpa_id": 99
-    },
-    {
-      "nc_id": 576,
-      "cpa_id": 100
-    },
-    {
-      "nc_id": 621,
-      "cpa_id": 107
-    }
-  ],
-  "cpasCount": 110
+  ]
 }

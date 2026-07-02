@@ -84,8 +84,12 @@ function isMultiSelectOp(op: string): boolean {
   return op === 'in' || op === 'nin';
 }
 
-function isSelectField(field: string): boolean {
-  return isSelectKind(kindOf(field));
+function isRelationField(field: string): boolean {
+  return kindOf(field) === 'relation';
+}
+
+function isStaticSelectField(field: string): boolean {
+  return kindOf(field) === 'select';
 }
 
 function isPersonField(field: string): boolean {
@@ -306,8 +310,37 @@ watch(
             />
           </v-col>
           <v-col cols="11" sm="4" md="5">
+            <v-autocomplete
+              v-if="isRelationField(row.field) && isMultiSelectOp(row.operator)"
+              v-model="row.value"
+              :items="selectOptionsForField(row.field)"
+              item-title="title"
+              item-value="value"
+              :label="t('operationCore.board.filters.advanced.value')"
+              variant="outlined"
+              density="compact"
+              hide-details
+              multiple
+              chips
+              closable-chips
+              clearable
+              auto-select-first
+            />
+            <v-autocomplete
+              v-else-if="isRelationField(row.field)"
+              v-model="row.value"
+              :items="selectOptionsForField(row.field)"
+              item-title="title"
+              item-value="value"
+              :label="t('operationCore.board.filters.advanced.value')"
+              variant="outlined"
+              density="compact"
+              hide-details
+              clearable
+              auto-select-first
+            />
             <v-select
-              v-if="isSelectField(row.field) && isMultiSelectOp(row.operator)"
+              v-else-if="isStaticSelectField(row.field) && isMultiSelectOp(row.operator)"
               v-model="row.value"
               :items="selectOptionsForField(row.field)"
               item-title="title"
@@ -322,7 +355,7 @@ watch(
               clearable
             />
             <v-select
-              v-else-if="isSelectField(row.field)"
+              v-else-if="isStaticSelectField(row.field)"
               v-model="row.value"
               :items="selectOptionsForField(row.field)"
               item-title="title"

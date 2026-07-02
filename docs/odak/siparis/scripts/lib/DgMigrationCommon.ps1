@@ -5,15 +5,17 @@ function Sanitize-LegacyText {
     if ($null -eq $Value) { return $null }
     $text = [string]$Value
     if ([string]::IsNullOrEmpty($text)) { return $text }
-    # Fix mojibake: UTF-8 bytes previously interpreted as ISO-8859-1 (common with Turkish "ı", "ş", etc.)
-    $latin = [System.Text.Encoding]::GetEncoding("ISO-8859-1")
-    $utf8 = [System.Text.Encoding]::UTF8
-    try {
-        $bytes = $latin.GetBytes($text)
-        $fixed = $utf8.GetString($bytes)
-        if (-not [string]::IsNullOrWhiteSpace($fixed)) { $text = $fixed }
+    # Fix mojibake only when text looks like UTF-8 bytes misread as ISO-8859-1 (e.g. "Ã§", "Ä±", "ÅŸ")
+    if ($text -match 'Ã.|Ä.|Å.|â€|ï¿½') {
+        $latin = [System.Text.Encoding]::GetEncoding("ISO-8859-1")
+        $utf8 = [System.Text.Encoding]::UTF8
+        try {
+            $bytes = $latin.GetBytes($text)
+            $fixed = $utf8.GetString($bytes)
+            if (-not [string]::IsNullOrWhiteSpace($fixed)) { $text = $fixed }
+        }
+        catch { }
     }
-    catch { }
     $sb = New-Object System.Text.StringBuilder
     foreach ($ch in $text.ToCharArray()) {
         $code = [int]$ch
@@ -52,10 +54,125 @@ function Initialize-DgMigrationHeaders {
 }
 
 function Update-DgMigrationToken {
-    param([hashtable]$AuthContext)
-    $token = & $AuthContext.TokenScript
+    param(
+        [hashtable]$AuthContext,
+        [switch]$ForceRefresh
+    )
+    if ($ForceRefresh) {
+        $token = & $AuthContext.TokenScript -AutoRefresh
+        if ([string]::IsNullOrEmpty($token)) {
+            Write-Host "  ForceRefresh basarisiz; dosyadan okunuyor..." -ForegroundColor Yellow
+            $token = & $AuthContext.TokenScript -AutoRefresh:$false
+        }
+    }
+    else {
+        $token = & $AuthContext.TokenScript -AutoRefresh:$false
+        if ([string]::IsNullOrEmpty($token)) {
+            $token = & $AuthContext.TokenScript -AutoRefresh
+        }
+    }
     if ([string]::IsNullOrEmpty($token)) { throw "Token alinamadi." }
     $AuthContext.Headers.Authorization = "Bearer $token"
+}
+
+function ConvertTo-Utf8JsonBody {
+    param(
+        [object]$Object,
+        [int]$Depth = 20
+    )
+    if ($Object -is [string]) {
+        return [string]$Object
+    }
+    return ($Object | ConvertTo-Json -Depth $Depth -Compress)
+}
+
+function ConvertTo-Utf8JsonBytes {
+    param(
+        [object]$Object,
+        [int]$Depth = 20
+    )
+    $json = ConvertTo-Utf8JsonBody -Object $Object -Depth $Depth
+    return [System.Text.Encoding]::UTF8.GetBytes($json)
+}
+
+# Invoke-RestMethod string Body uses system default encoding on Windows and corrupts Turkish chars.
+function Set-RestMethodUtf8JsonBody {
+    param(
+        [hashtable]$Parameters,
+        [object]$Body,
+        [int]$Depth = 20
+    )
+    if ($Body -is [byte[]]) {
+        $Parameters.Body = $Body
+    }
+    elseif ($Body -is [string]) {
+        $Parameters.Body = [System.Text.Encoding]::UTF8.GetBytes([string]$Body)
+    }
+    else {
+        $Parameters.Body = ConvertTo-Utf8JsonBytes -Object $Body -Depth $Depth
+    }
+    $Parameters.ContentType = "application/json; charset=utf-8"
+}
+
+function Invoke-DgRestMethod {
+    param(
+        [Parameter(Mandatory = $true)][string]$Method,
+        [Parameter(Mandatory = $true)][string]$Uri,
+        [hashtable]$Headers = @{},
+        [object]$Body = $null,
+        [int]$JsonDepth = 20,
+        [switch]$SkipCertificateCheck
+    )
+    $handler = [System.Net.Http.HttpClientHandler]::new()
+    if ($SkipCertificateCheck -or $Uri.StartsWith("https://")) {
+        $handler.ServerCertificateCustomValidationCallback = { param($sender, $cert, $chain, $errors) $true }
+    }
+    $client = [System.Net.Http.HttpClient]::new($handler)
+    try {
+        $httpMethod = [System.Net.Http.HttpMethod]::new($Method.ToUpperInvariant())
+        $request = [System.Net.Http.HttpRequestMessage]::new($httpMethod, $Uri)
+        foreach ($key in $Headers.Keys) {
+            $val = [string]$Headers[$key]
+            if ($key -eq "Authorization") {
+                if ($val -match "^Bearer\s+(.+)$") {
+                    $request.Headers.Authorization = [System.Net.Http.Headers.AuthenticationHeaderValue]::new("Bearer", $matches[1])
+                }
+            }
+            elseif ($key -ne "Content-Type") {
+                [void]$request.Headers.TryAddWithoutValidation($key, $val)
+            }
+        }
+        if ($null -ne $Body) {
+            $json = if ($Body -is [string]) { [string]$Body } else { ConvertTo-Utf8JsonBody -Object $Body -Depth $JsonDepth }
+            $request.Content = [System.Net.Http.StringContent]::new($json, [System.Text.Encoding]::UTF8, "application/json")
+        }
+        $response = $client.SendAsync($request).ConfigureAwait($false).GetAwaiter().GetResult()
+        $content = $response.Content.ReadAsStringAsync().ConfigureAwait($false).GetAwaiter().GetResult()
+        if (-not $response.IsSuccessStatusCode) {
+            throw "HTTP $([int]$response.StatusCode): $content"
+        }
+        if ([string]::IsNullOrWhiteSpace($content)) { return $null }
+        return ($content | ConvertFrom-Json)
+    }
+    finally {
+        $client.Dispose()
+        $handler.Dispose()
+    }
+}
+
+function Write-Utf8JsonFile {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)]$Object,
+        [int]$Depth = 8
+    )
+    $dir = Split-Path $Path -Parent
+    if ($dir -and -not (Test-Path $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    }
+    $json = $Object | ConvertTo-Json -Depth $Depth
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText($Path, $json, $utf8NoBom)
 }
 
 function Invoke-DgMigrationApi {
@@ -67,23 +184,15 @@ function Invoke-DgMigrationApi {
         [switch]$RetryOnUnauthorized
     )
     for ($attempt = 0; $attempt -lt 2; $attempt++) {
-        $p = @{ Uri = $Uri; Method = $Method; Headers = $AuthContext.Headers; ErrorAction = "Stop" }
-        if ($Uri.StartsWith("https://") -and (Get-Command Invoke-RestMethod).Parameters.ContainsKey("SkipCertificateCheck")) {
-            $p.SkipCertificateCheck = $true
-        }
-        if ($null -ne $Body) {
-            $p.Body = if ($Body -is [string]) { $Body } else { $Body | ConvertTo-Json -Depth 20 -Compress }
-            $p.ContentType = "application/json"
-        }
+        $skipCert = $Uri.StartsWith("https://") -and (Get-Command Invoke-RestMethod).Parameters.ContainsKey("SkipCertificateCheck")
         try {
-            return Invoke-RestMethod @p
+            return Invoke-DgRestMethod -Method $Method -Uri $Uri -Headers $AuthContext.Headers -Body $Body -SkipCertificateCheck:$skipCert
         }
         catch {
             $detail = [string]$_.Exception.Message
-            if ($_.ErrorDetails -and $_.ErrorDetails.Message) { $detail = [string]$_.ErrorDetails.Message }
             if ($RetryOnUnauthorized -and $attempt -eq 0 -and ($detail -match '401|Unauthorized')) {
                 Write-Host "  Token yenileniyor (401)..." -ForegroundColor Yellow
-                Update-DgMigrationToken -AuthContext $AuthContext
+                Update-DgMigrationToken -AuthContext $AuthContext -ForceRefresh
                 continue
             }
             throw
@@ -142,6 +251,7 @@ function Load-LegacyIdMap {
     $map = @{}
     $skip = 0
     $limit = 500
+    Write-Host "  Map yukleniyor: $Dataset ..." -ForegroundColor Gray
     while ($true) {
         $uri = '{0}{1}/{2}?skip={3}&limit={4}' -f $BaseUrl, $DataPath, $Dataset, $skip, $limit
         $raw = & $InvokeDg -Method GET -Uri $uri
@@ -157,6 +267,7 @@ function Load-LegacyIdMap {
             $id = $item.__dataId; if (-not $id) { $id = $item.dataId }
             if ($id) { $map[$legacy] = [string]$id }
         }
+        Write-Host "    $Dataset skip=$skip +$($items.Count) (toplam $($map.Count))" -ForegroundColor DarkGray
         if ($items.Count -lt $limit) { break }
         $skip += $limit
     }

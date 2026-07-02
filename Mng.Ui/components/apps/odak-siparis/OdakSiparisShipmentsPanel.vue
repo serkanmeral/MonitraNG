@@ -28,10 +28,9 @@ import { useOdakFieldAccess } from '@/composables/useOdakFieldAccess';
 import {
   countCompletedShipments,
   deleteOdakShipment,
-  listShipmentLinesForShipment,
+  fetchShipmentLineQtyMap,
   listShipmentsForPackage,
   shipmentDataId,
-  sumShipmentLineQuantities,
   type OdakShipmentDialogMode,
 } from '@/utils/odakSiparisShipmentService';
 import { EditIcon, EyeIcon, PlusIcon, RefreshIcon, TrashIcon } from 'vue-tabler-icons';
@@ -103,24 +102,23 @@ async function loadItems() {
   if (!props.packageId) return;
   loading.value = true;
   errorMessage.value = '';
+  lineQtyByShipment.value = new Map();
+  let rows: OdakShipmentRow[] = [];
   try {
-    items.value = await listShipmentsForPackage(props.packageId);
-    const qtyMap = new Map<string, number>();
-    await Promise.all(
-      items.value.map(async (row) => {
-        const id = shipmentDataId(row);
-        if (!id) return;
-        const lines = await listShipmentLinesForShipment(id);
-        qtyMap.set(id, sumShipmentLineQuantities(lines));
-      })
-    );
-    lineQtyByShipment.value = qtyMap;
+    rows = await listShipmentsForPackage(props.packageId);
+    items.value = rows;
   } catch (e: unknown) {
     errorMessage.value = panelError(e, 'errors.dg.generic');
     items.value = [];
-    lineQtyByShipment.value = new Map();
   } finally {
     loading.value = false;
+  }
+  const ids = rows.map((row) => shipmentDataId(row)).filter(Boolean);
+  if (!ids.length) return;
+  try {
+    lineQtyByShipment.value = await fetchShipmentLineQtyMap(ids);
+  } catch {
+    lineQtyByShipment.value = new Map();
   }
 }
 

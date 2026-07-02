@@ -1,10 +1,13 @@
 import { fetchFromDataGateway } from '@/services/apiService';
 import { ocCreate, ocDelete, ocListDatasetPage, ocUpdate } from '@/services/operationCoreService';
+import { afListFiltersToQueryString, type AfListFilter } from '@/utils/afListFilters';
 import {
   ODAK_QCF_STATUS_OPTIONS,
+  ODAK_RECORD_SCOPE_OPTIONS,
   ODAK_SHIPMENT_STATUS_OPTIONS,
   ODAK_SIPARIS_CONFIG,
   type OdakLineRow,
+  type OdakRecordScope,
   type OdakShipmentLineRow,
   type OdakShipmentRow,
 } from '@/utils/odakSiparisConfig';
@@ -17,7 +20,7 @@ import { loadOdakShipmentFieldPoliciesOnly } from '@/utils/odakSiparisHubSetting
 import { useAuthStore } from '@/stores/auth';
 import { lineDataId, listLinesForPackage } from '@/utils/odakSiparisLineService';
 import { dispatchOdakPackageNotification } from '@/utils/odakSiparisNotificationDispatch';
-import { formatOdakDate, fetchOdakPackageById, packageDataId } from '@/utils/odakSiparisService';
+import { formatOdakDate, fetchCustomerLabelMap, fetchOdakPackageById, fetchPackageIdsByCustomerId, packageDataId } from '@/utils/odakSiparisService';
 
 export type OdakShipmentDialogMode = 'view' | 'create' | 'edit';
 
@@ -43,8 +46,308 @@ export function buildShipmentsByParentPackageFilter(parentPackageId: string): st
   return `parentPackageId:eq:${parentPackageId}`;
 }
 
+export function buildShipmentsByRecordScopeFilter(scope: OdakRecordScope): string {
+  return `recordScope:eq:${scope}`;
+}
+
+export type OdakShipmentScopeTab = 'all' | 'package' | 'general';
+export type OdakShipmentStatusTab = 'planned' | 'completed' | 'all';
+
+export interface OdakShipmentListQuery {
+  scopeTab?: OdakShipmentScopeTab;
+  statusTab?: OdakShipmentStatusTab;
+  search?: string;
+  page?: number;
+  limit?: number;
+  sort?: string;
+  advancedFilters?: AfListFilter[];
+}
+
+export function normalizeRecordScope(value: unknown): OdakRecordScope {
+  const key = String(value ?? '').trim();
+  if (key === 'Genel') return 'Genel';
+  return 'Paketli';
+}
+
+export function recordScopeLabel(value: unknown): string {
+  const normalized = normalizeRecordScope(value);
+  return ODAK_RECORD_SCOPE_OPTIONS.find((o) => o.value === normalized)?.title ?? normalized;
+}
+
+export function buildShipmentListFilter(query: OdakShipmentListQuery): string | undefined {
+  return composeShipmentListFilterString({
+    scopeTab: query.scopeTab ?? 'all',
+    statusTab: query.statusTab ?? 'all',
+    search: query.search,
+    advancedFilters: query.advancedFilters ?? [],
+  });
+}
+
+const SHIPMENT_PACKAGE_IN_CHUNK_SIZE = 35;
+const SHIPMENT_CUSTOMER_MERGE_FETCH_CAP = 5000;
+
+interface ShipmentFilterComposeInput {
+  scopeTab: OdakShipmentScopeTab;
+  statusTab: OdakShipmentStatusTab;
+  search?: string;
+  advancedFilters: AfListFilter[];
+  extraClauses?: string[];
+  skipWaybillIfAdvanced?: boolean;
+}
+
+function composeShipmentListFilterString(input: ShipmentFilterComposeInput): string | undefined {
+  const parts: string[] = [];
+  if (input.scopeTab === 'package') parts.push('recordScope:eq:Paketli');
+  if (input.scopeTab === 'general') parts.push('recordScope:eq:Genel');
+  if (input.statusTab === 'planned') parts.push('status:eq:Planlandi');
+  if (input.statusTab === 'completed') parts.push('status:eq:Tamamlandi');
+
+  const advanced = afListFiltersToQueryString(input.advancedFilters);
+  if (advanced) parts.push(advanced);
+  if (input.extraClauses?.length) parts.push(...input.extraClauses);
+
+  const search = (input.search ?? '').trim();
+  const skipWaybill = input.skipWaybillIfAdvanced ?? true;
+  if (search && (!skipWaybill || !advanced.includes('waybillNo:'))) {
+    parts.push(`waybillNo:contains:${search}`);
+  }
+  return parts.length ? parts.join(',') : undefined;
+}
+
+function chunkStringIds(ids: string[], chunkSize: number): string[][] {
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    chunks.push(ids.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
+
+function buildRelationInFilterClause(field: string, ids: string[]): string | undefined {
+  const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))];
+  if (!unique.length) return undefined;
+  if (unique.length === 1) return `${field}:eq:${unique[0]}`;
+  return `${field}:in:${JSON.stringify(unique)}`;
+}
+
+function shipmentDateSortKey(row: OdakShipmentRow): number {
+  const raw = row.shipmentDate;
+  if (!raw) return 0;
+  const t = new Date(String(raw)).getTime();
+  return Number.isNaN(t) ? 0 : t;
+}
+
+function mergeShipmentRowsSorted(rows: OdakShipmentRow[]): OdakShipmentRow[] {
+  const byId = new Map<string, OdakShipmentRow>();
+  for (const row of rows) {
+    const id = shipmentDataId(row);
+    if (id) byId.set(id, row);
+  }
+  return [...byId.values()].sort((a, b) => shipmentDateSortKey(b) - shipmentDateSortKey(a));
+}
+
+async function resolveCustomerIdForShipmentFilter(rawValue: string): Promise<string> {
+  const trimmed = rawValue.trim();
+  if (!trimmed) return '';
+  if (/^[a-f0-9]{24}$/i.test(trimmed) || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed)) {
+    return trimmed;
+  }
+  const map = await fetchCustomerLabelMap();
+  const exact = Object.entries(map).find(
+    ([, title]) => title.localeCompare(trimmed, 'tr', { sensitivity: 'base' }) === 0
+  );
+  if (exact) return exact[0];
+  const partial = Object.entries(map).find(([, title]) =>
+    title.toLocaleLowerCase('tr-TR').includes(trimmed.toLocaleLowerCase('tr-TR'))
+  );
+  return partial?.[0] ?? trimmed;
+}
+
+interface ResolvedShipmentCustomerFilter {
+  filters: AfListFilter[];
+  packageIds: string[];
+  customerId: string;
+  scopeTab: OdakShipmentScopeTab;
+  forceEmpty: boolean;
+}
+
+async function resolveShipmentCustomerFilter(
+  query: OdakShipmentListQuery
+): Promise<ResolvedShipmentCustomerFilter | null> {
+  const scopeTab = query.scopeTab ?? 'all';
+  const customerFilter = (query.advancedFilters ?? []).find((f) => f.field === 'customerId' && f.value?.trim());
+  if (!customerFilter) return null;
+
+  const rest = (query.advancedFilters ?? []).filter((f) => f !== customerFilter);
+  const customerId = await resolveCustomerIdForShipmentFilter(customerFilter.value);
+  if (!customerId) {
+    return { filters: rest, packageIds: [], customerId: '', scopeTab, forceEmpty: true };
+  }
+
+  if (scopeTab === 'general') {
+    return {
+      filters: [...rest, { field: 'customerId', operator: 'eq', value: customerId }],
+      packageIds: [],
+      customerId,
+      scopeTab,
+      forceEmpty: false,
+    };
+  }
+
+  const packageIds = await fetchPackageIdsByCustomerId(customerId);
+  if (scopeTab === 'package' && !packageIds.length) {
+    return { filters: rest, packageIds: [], customerId, scopeTab, forceEmpty: true };
+  }
+
+  return {
+    filters: rest,
+    packageIds,
+    customerId,
+    scopeTab,
+    forceEmpty: false,
+  };
+}
+
+async function fetchOdakShipmentsPageSimple(
+  query: OdakShipmentListQuery,
+  advancedFilters: AfListFilter[]
+): Promise<{ items: OdakShipmentRow[]; total: number }> {
+  const limit = query.limit ?? 20;
+  const page = query.page ?? 1;
+  const filter = buildShipmentListFilter({ ...query, advancedFilters });
+  const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.shipmentsDataset, {
+    filter,
+    sort: query.sort ?? '-shipmentDate',
+    skip: (page - 1) * limit,
+    limit,
+  });
+  const items = (resp.items ?? []) as OdakShipmentRow[];
+  const total = resp.total && resp.total > 0 ? resp.total : items.length;
+  return { items, total };
+}
+
+async function fetchOdakShipmentsPageByCustomer(
+  query: OdakShipmentListQuery,
+  resolved: ResolvedShipmentCustomerFilter
+): Promise<{ items: OdakShipmentRow[]; total: number }> {
+  const limit = query.limit ?? 20;
+  const page = query.page ?? 1;
+  const sort = query.sort ?? '-shipmentDate';
+  const { scopeTab, filters, packageIds, customerId } = resolved;
+
+  type BranchSpec = { scopeTab: OdakShipmentScopeTab; extraClauses: string[] };
+  const branches: BranchSpec[] = [];
+
+  if (packageIds.length && scopeTab !== 'general') {
+    for (const chunk of chunkStringIds(packageIds, SHIPMENT_PACKAGE_IN_CHUNK_SIZE)) {
+      const clause = buildRelationInFilterClause('parentPackageId', chunk);
+      if (clause) {
+        branches.push({
+          scopeTab: scopeTab === 'all' ? 'all' : 'package',
+          extraClauses: [clause],
+        });
+      }
+    }
+  }
+
+  if ((scopeTab === 'general' || scopeTab === 'all') && customerId) {
+    branches.push({
+      scopeTab: 'general',
+      extraClauses: [`customerId:eq:${customerId}`],
+    });
+  }
+
+  if (!branches.length) return { items: [], total: 0 };
+
+  const branchResults = await Promise.all(
+    branches.map(async (branch) => {
+      const filter = composeShipmentListFilterString({
+        scopeTab: branch.scopeTab,
+        statusTab: query.statusTab ?? 'all',
+        search: query.search,
+        advancedFilters: filters,
+        extraClauses: branch.extraClauses,
+      });
+      const neededForPage = Math.min(page * limit, SHIPMENT_CUSTOMER_MERGE_FETCH_CAP);
+      const perBranchLimit = Math.min(
+        SHIPMENT_CUSTOMER_MERGE_FETCH_CAP,
+        Math.max(neededForPage, limit)
+      );
+      const [countResp, dataResp] = await Promise.all([
+        ocListDatasetPage(ODAK_SIPARIS_CONFIG.shipmentsDataset, {
+          filter,
+          sort,
+          skip: 0,
+          limit: 1,
+        }),
+        ocListDatasetPage(ODAK_SIPARIS_CONFIG.shipmentsDataset, {
+          filter,
+          sort,
+          skip: 0,
+          limit: perBranchLimit,
+        }),
+      ]);
+      const branchTotal = countResp.total && countResp.total > 0 ? countResp.total : 0;
+      const rows = (dataResp.items ?? []) as OdakShipmentRow[];
+      return { branchTotal, rows };
+    })
+  );
+
+  let total = 0;
+  const branchRows: OdakShipmentRow[] = [];
+  for (const result of branchResults) {
+    total += result.branchTotal;
+    branchRows.push(...result.rows);
+  }
+
+  const merged = mergeShipmentRowsSorted(branchRows);
+  const skip = (page - 1) * limit;
+  return { items: merged.slice(skip, skip + limit), total };
+}
+
+export async function fetchOdakShipmentsPage(query: OdakShipmentListQuery): Promise<{
+  items: OdakShipmentRow[];
+  total: number;
+}> {
+  const customerResolved = await resolveShipmentCustomerFilter(query);
+  if (customerResolved?.forceEmpty) return { items: [], total: 0 };
+  if (customerResolved) {
+    return fetchOdakShipmentsPageByCustomer(query, customerResolved);
+  }
+  return fetchOdakShipmentsPageSimple(query, query.advancedFilters ?? []);
+}
+
 export function buildShipmentLinesByShipmentFilter(shipmentId: string): string {
   return `parentShipmentId:eq:${shipmentId}`;
+}
+
+export function buildShipmentLinesByShipmentsFilter(shipmentIds: string[]): string | undefined {
+  const ids = shipmentIds.map((id) => id.trim()).filter(Boolean);
+  if (!ids.length) return undefined;
+  return `parentShipmentId:in:${JSON.stringify(ids)}`;
+}
+
+/** Single request (or chunked) line qty totals for list views — avoids N+1 parentShipmentId:eq calls. */
+export async function fetchShipmentLineQtyMap(shipmentIds: string[]): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  const ids = shipmentIds.map((id) => id.trim()).filter(Boolean);
+  if (!ids.length) return map;
+
+  const chunkSize = 50;
+  for (let offset = 0; offset < ids.length; offset += chunkSize) {
+    const chunk = ids.slice(offset, offset + chunkSize);
+    const filter = buildShipmentLinesByShipmentsFilter(chunk);
+    const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.shipmentLinesDataset, {
+      filter,
+      limit: 2000,
+    });
+    for (const line of (resp.items ?? []) as OdakShipmentLineRow[]) {
+      const shipId = resolveRelationId(line.parentShipmentId);
+      if (!shipId) continue;
+      const qty = Number(line.shippedQuantity) || 0;
+      map.set(shipId, (map.get(shipId) ?? 0) + qty);
+    }
+  }
+  return map;
 }
 
 export function buildShipmentLinesByPackageFilter(parentPackageId: string): string {
@@ -106,6 +409,12 @@ export function lineLabelFromShipmentLine(raw: unknown): string {
 export interface OdakShipmentLineDraft {
   parentLineId: string;
   shippedQuantity: number;
+  lineDescription?: string;
+}
+
+export interface OdakGeneralShipmentLineDraft {
+  lineDescription: string;
+  shippedQuantity: number;
 }
 
 export interface OdakShipmentFormModel {
@@ -119,6 +428,21 @@ export interface OdakShipmentFormModel {
   qcfReferenceNo: string;
   qcfNotes: string;
   lines: OdakShipmentLineDraft[];
+}
+
+export interface OdakGeneralShipmentFormModel {
+  customerId: string;
+  headerDescription: string;
+  waybillNo: string;
+  shipmentDate: string;
+  status: string;
+  controlType: string;
+  shipmentAddress: string;
+  notes: string;
+  qcfStatus: string;
+  qcfReferenceNo: string;
+  qcfNotes: string;
+  lines: OdakGeneralShipmentLineDraft[];
 }
 
 export function emptyShipmentFormModel(partial?: Partial<OdakShipmentFormModel>): OdakShipmentFormModel {
@@ -152,6 +476,7 @@ export function shipmentHeaderToFormModel(row: OdakShipmentRow): Omit<OdakShipme
 
 function headerFormToPayload(form: Omit<OdakShipmentFormModel, 'lines'>, packageId: string): Record<string, unknown> {
   return {
+    recordScope: 'Paketli',
     parentPackageId: packageId,
     waybillNo: form.waybillNo.trim() || null,
     shipmentDate: fromDateInputValue(form.shipmentDate),
@@ -288,6 +613,7 @@ async function createShipmentLineRecords(
     const line = lineMap.get(draft.parentLineId);
     await ocCreate(ODAK_SIPARIS_CONFIG.shipmentLinesDataset, {
       parentShipmentId: shipmentId,
+      lineMode: 'SiparisKalemi',
       parentPackageId: packageId,
       parentLineId: draft.parentLineId,
       shippedQuantity: draft.shippedQuantity,
@@ -444,4 +770,111 @@ export function remainingQuantityForLine(line: OdakLineRow, shippedQuantity: num
   const qty = Number(line.quantity) || 0;
   const shipped = Number(shippedQuantity) || 0;
   return Math.max(0, qty - shipped);
+}
+
+export function emptyGeneralShipmentFormModel(
+  partial?: Partial<OdakGeneralShipmentFormModel>
+): OdakGeneralShipmentFormModel {
+  return {
+    customerId: partial?.customerId ?? '',
+    headerDescription: partial?.headerDescription ?? '',
+    waybillNo: partial?.waybillNo ?? '',
+    shipmentDate: partial?.shipmentDate ?? '',
+    status: partial?.status ?? 'Planlandi',
+    controlType: partial?.controlType ?? '',
+    shipmentAddress: partial?.shipmentAddress ?? '',
+    notes: partial?.notes ?? '',
+    qcfStatus: partial?.qcfStatus ?? 'Yok',
+    qcfReferenceNo: partial?.qcfReferenceNo ?? '',
+    qcfNotes: partial?.qcfNotes ?? '',
+    lines: partial?.lines?.length
+      ? partial.lines.map((l) => ({ ...l }))
+      : [{ lineDescription: '', shippedQuantity: 1 }],
+  };
+}
+
+function generalHeaderToPayload(form: OdakGeneralShipmentFormModel): Record<string, unknown> {
+  return {
+    recordScope: 'Genel',
+    customerId: form.customerId.trim() || null,
+    headerDescription: form.headerDescription.trim() || null,
+    waybillNo: form.waybillNo.trim() || null,
+    shipmentDate: fromDateInputValue(form.shipmentDate),
+    status: normalizeShipmentStatus(form.status),
+    controlType: form.controlType.trim() || null,
+    shipmentAddress: form.shipmentAddress.trim() || null,
+    notes: form.notes.trim() || null,
+    qcfStatus: normalizeQcfStatus(form.qcfStatus),
+    qcfReferenceNo: form.qcfReferenceNo.trim() || null,
+    qcfNotes: form.qcfNotes.trim() || null,
+  };
+}
+
+async function createGeneralShipmentLineRecords(
+  shipmentId: string,
+  drafts: OdakGeneralShipmentLineDraft[]
+): Promise<void> {
+  for (const draft of drafts) {
+    if (!draft.lineDescription.trim() || draft.shippedQuantity <= 0) continue;
+    await ocCreate(ODAK_SIPARIS_CONFIG.shipmentLinesDataset, {
+      parentShipmentId: shipmentId,
+      lineMode: 'Serbest',
+      lineDescription: draft.lineDescription.trim(),
+      shippedQuantity: draft.shippedQuantity,
+    });
+  }
+}
+
+export async function createGeneralOdakShipment(form: OdakGeneralShipmentFormModel): Promise<string | null> {
+  const drafts = form.lines.filter((l) => l.lineDescription.trim() && l.shippedQuantity > 0);
+  if (!drafts.length) throw new Error('En az bir serbest kalem girilmelidir.');
+  if (!form.headerDescription.trim() && !form.waybillNo.trim()) {
+    throw new Error('İrsaliye no veya sevkiyat içeriği zorunludur.');
+  }
+
+  let header = generalHeaderToPayload(form);
+  header = await applyShipmentFieldPolicyToPayload(header);
+  const created = await ocCreate(ODAK_SIPARIS_CONFIG.shipmentsDataset, header);
+  const shipmentId = shipmentDataId(created as Record<string, unknown>);
+  if (!shipmentId) return null;
+  await createGeneralShipmentLineRecords(shipmentId, drafts);
+  return shipmentId;
+}
+
+export async function updateGeneralOdakShipment(
+  shipmentId: string,
+  form: OdakGeneralShipmentFormModel
+): Promise<void> {
+  const drafts = form.lines.filter((l) => l.lineDescription.trim() && l.shippedQuantity > 0);
+  if (!drafts.length) throw new Error('En az bir serbest kalem girilmelidir.');
+
+  const existing = await fetchOdakShipmentById(shipmentId);
+  let header = generalHeaderToPayload(form);
+  header = await applyShipmentFieldPolicyToPayload(header, existing ?? null);
+  await ocUpdate(ODAK_SIPARIS_CONFIG.shipmentsDataset, shipmentId, header);
+  await deleteShipmentLineRecords(shipmentId);
+  await createGeneralShipmentLineRecords(shipmentId, drafts);
+}
+
+export async function deleteGeneralOdakShipment(shipmentId: string): Promise<void> {
+  await deleteShipmentLineRecords(shipmentId);
+  await ocDelete(ODAK_SIPARIS_CONFIG.shipmentsDataset, shipmentId);
+}
+
+export async function loadGeneralShipmentFormModel(shipmentId: string): Promise<OdakGeneralShipmentFormModel | null> {
+  const header = await fetchOdakShipmentById(shipmentId);
+  if (!header) return null;
+  const items = await listShipmentLinesForShipment(shipmentId);
+  const lines: OdakGeneralShipmentLineDraft[] = items.length
+    ? items.map((item) => ({
+        lineDescription: item.lineDescription ?? '',
+        shippedQuantity: Number(item.shippedQuantity) || 0,
+      }))
+    : [{ lineDescription: header.headerDescription ?? '', shippedQuantity: 1 }];
+  return emptyGeneralShipmentFormModel({
+    customerId: resolveRelationId(header.customerId),
+    headerDescription: header.headerDescription ?? '',
+    ...shipmentHeaderToFormModel(header),
+    lines,
+  });
 }

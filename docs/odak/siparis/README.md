@@ -29,6 +29,8 @@ Odak müşterisinin eski **Kalite** (CakePHP) uygulamasındaki **müşteri sipar
 | [MIMARI_KARAR.md](./MIMARI_KARAR.md) | Workspace + dataset hibrit modeli |
 | [DOKUMAN_PAKETI_NOTU.md](./DOKUMAN_PAKETI_NOTU.md) | **Döküman paketi** fikri (NAS yükü · taslak) |
 | [DEVAM.md](./DEVAM.md) | Oturum checkpoint · Faz 1 ilerleme |
+| **[CANLI_GECIS_KAPSAMI.md](./CANLI_GECIS_KAPSAMI.md)** | **Canlı geçiş BLOCKER/WARN · sprint · scriptler** |
+| [current_status.md](./current_status.md) | Son oturum durumu (1 Tem 2026) |
 | [VERI_MIGRASYON_PLANI.md](./VERI_MIGRASYON_PLANI.md) | Tablo → hedef eşlemesi |
 | [NATIVE_LOCAL_PLAN.md](./NATIVE_LOCAL_PLAN.md) | **Lokal çalışan ortam** (PHP+MySQL, WSL/Docker yok) |
 | [DOCKER_LOCAL_PLAN.md](./DOCKER_LOCAL_PLAN.md) | Docker Desktop (WSL gerekir — bu makinede bloklu) |
