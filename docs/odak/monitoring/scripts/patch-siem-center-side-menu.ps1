@@ -2,10 +2,10 @@
 # Header: Güvenlik Yönetimi
 #   - Alarm Merkezi → /apps/alarm-center/alarms
 #   - SIEM Güvenlik Paneli → /apps/siem-center
-# Not: Alarm kurallari ve güvenlik olaylari menude degil; sayfa icinden erisilir.
+#   - Güvenlik olaylari → /apps/siem-center/events (pageType=user; grup yetkisi side menu'den)
 # Usage (repo kokunden):
-#   .\docs\odak\operationcore\scripts\get-operationcore-token.ps1
-#   .\docs\odak\monitoring\scripts\patch-siem-center-side-menu.ps1
+#   Test:  .\docs\odak\monitoring\scripts\patch-siem-center-side-menu.ps1
+#   Prod:  $env:MNG_OC_USE_PROD_TOKEN='1'; .\docs\odak\monitoring\scripts\patch-siem-center-side-menu.ps1 -BaseUrl http://192.168.20.8:5040
 
 param(
     [string]$BaseUrl = "http://192.168.20.20:5040",
@@ -48,8 +48,10 @@ function Get-ItemId($row) {
 function Get-MenuItems($response) {
     if ($null -eq $response) { return @() }
     if ($response -is [System.Array]) { return ,$response }
+    if ($null -ne $response.data) { return ,@($response.data) }
     if ($null -ne $response.items) { return ,@($response.items) }
-    return ,@($response)
+    if ($null -ne $response.pageCode -or $null -ne $response.__dataId) { return ,@($response) }
+    return @()
 }
 
 Write-Host "Side menu listeleniyor..." -ForegroundColor Cyan
@@ -163,6 +165,7 @@ if ($null -eq $headerOrder) {
 }
 $alarmItemOrder = $headerOrder + 1
 $siemItemOrder = $headerOrder + 2
+$eventsItemOrder = $headerOrder + 3
 
 # --- Header: Güvenlik Yönetimi ---
 $headerResult = Upsert-MenuItem -AllItems $items -Label "Güvenlik Yönetimi header" -FindExisting {
@@ -235,13 +238,30 @@ Upsert-MenuItem -AllItems $items -Label "SIEM Güvenlik Paneli" -FindExisting {
     disabled  = $false
 } | Out-Null
 
-# --- Kaldir: eski alarm header, kurallar, olaylar menu ---
+# --- Güvenlik olayları (grup yetkisi side menu permissions ile) ---
+Upsert-MenuItem -AllItems $items -Label "Güvenlik olayları" -FindExisting {
+    $_.pageCode -eq "siemCenter.events.menuTitle" -or
+    $_.to -eq "/apps/siem-center/events"
+} -Body @{
+    order     = $eventsItemOrder
+    itemType  = "item"
+    level     = 1
+    parentId  = $headerId
+    pageType  = "user"
+    pageCode  = "siemCenter.events.menuTitle"
+    title     = "Güvenlik olayları"
+    icon      = "ListSearchIcon"
+    iconType  = "tabler"
+    to        = "/apps/siem-center/events"
+    type      = "internal"
+    disabled  = $false
+} | Out-Null
+
+# --- Kaldir: eski alarm header, kurallar menu (olaylar kalir) ---
 $removeRows = $items | Where-Object {
     ($_.itemType -eq "header" -and $_.pageCode -eq "alarmCenter.menuHeader" -and (Get-ItemId $_) -ne $headerId) -or
     $_.pageCode -eq "alarmCenter.rules.menuTitle" -or
-    $_.to -eq "/apps/alarm-center/rules" -or
-    $_.pageCode -eq "siemCenter.events.menuTitle" -or
-    $_.to -eq "/apps/siem-center/events"
+    $_.to -eq "/apps/alarm-center/rules"
 }
 foreach ($row in $removeRows) {
     $rowId = Get-ItemId $row

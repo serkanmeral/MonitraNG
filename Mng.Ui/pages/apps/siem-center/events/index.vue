@@ -4,12 +4,12 @@ import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import AcSecEventsExplorer from '@/components/apps/siem-center/AcSecEventsExplorer.vue';
 import { useSiemCenterBreadcrumbs } from '@/composables/useSiemCenterBreadcrumbs';
 import { useAppI18n } from '@/composables/useAppI18n';
-import { useAuthStore } from '@/stores/auth';
+import { usePagePermissions } from '@/composables/usePagePermissions';
 
 definePageMeta({ layout: 'default' });
 
 const { t } = useAppI18n();
-const auth = useAuthStore();
+const { canView } = usePagePermissions();
 
 const { breadcrumbs } = useSiemCenterBreadcrumbs({
   subPage: true,
@@ -19,8 +19,15 @@ const { breadcrumbs } = useSiemCenterBreadcrumbs({
   })),
 });
 
-onMounted(() => {
-  if (!auth.isManager) {
+onMounted(async () => {
+  const { useSideMenuStore } = await import('@/stores/apps/sideMenu');
+  const menuStore = useSideMenuStore();
+  try {
+    await menuStore.loadMenuItems(false);
+  } catch {
+    // fallback: middleware already checked route access
+  }
+  if (!canView.value) {
     void navigateTo('/unauthorized');
   }
 });
