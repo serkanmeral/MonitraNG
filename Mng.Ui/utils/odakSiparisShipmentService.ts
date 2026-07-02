@@ -38,6 +38,14 @@ export function shipmentDataId(row: OdakShipmentRow | Record<string, unknown>): 
   return packageDataId(row);
 }
 
+/** Native UI kayitlari — legacyShipmentId unique index (max 32) icin benzersiz id. */
+export function newNativeLegacyShipmentId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID().replace(/-/g, '');
+  }
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`.slice(0, 32);
+}
+
 export function shipmentLineDataId(row: OdakShipmentLineRow | Record<string, unknown>): string {
   return packageDataId(row);
 }
@@ -61,6 +69,51 @@ export interface OdakShipmentListQuery {
   limit?: number;
   sort?: string;
   advancedFilters?: AfListFilter[];
+}
+
+/** Default filters for the global shipments list (Genel scope + planned/completed). */
+export const ODAK_GLOBAL_SHIPMENTS_DEFAULT_FILTERS: AfListFilter[] = [
+  { field: 'recordScope', operator: 'in', value: 'Genel' },
+  { field: 'status', operator: 'in', value: 'Planlandi,Tamamlandi' },
+];
+
+export function deriveScopeTabFromAdvancedFilters(filters: AfListFilter[]): OdakShipmentScopeTab {
+  const scopeFilter = filters.find((f) => f.field === 'recordScope' && f.value?.trim());
+  if (!scopeFilter) return 'all';
+
+  const values = scopeFilter.value
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
+
+  if (scopeFilter.operator === 'eq') {
+    if (values[0] === 'Genel') return 'general';
+    if (values[0] === 'Paketli') return 'package';
+    return 'all';
+  }
+
+  if (scopeFilter.operator === 'in') {
+    const hasGenel = values.includes('Genel');
+    const hasPaketli = values.includes('Paketli');
+    if (hasGenel && !hasPaketli) return 'general';
+    if (hasPaketli && !hasGenel) return 'package';
+    return 'all';
+  }
+
+  if (scopeFilter.operator === 'nin') {
+    const excludesGenel = values.includes('Genel');
+    const excludesPaketli = values.includes('Paketli');
+    if (excludesGenel && !excludesPaketli) return 'package';
+    if (excludesPaketli && !excludesGenel) return 'general';
+    return 'all';
+  }
+
+  if (scopeFilter.operator === 'ne') {
+    if (values[0] === 'Genel') return 'package';
+    if (values[0] === 'Paketli') return 'general';
+  }
+
+  return 'all';
 }
 
 export function normalizeRecordScope(value: unknown): OdakRecordScope {
@@ -162,6 +215,10 @@ async function resolveCustomerIdForShipmentFilter(rawValue: string): Promise<str
   return partial?.[0] ?? trimmed;
 }
 
+function stripRecordScopeFilters(filters: AfListFilter[]): AfListFilter[] {
+  return filters.filter((f) => f.field !== 'recordScope');
+}
+
 interface ResolvedShipmentCustomerFilter {
   filters: AfListFilter[];
   packageIds: string[];
@@ -173,7 +230,10 @@ interface ResolvedShipmentCustomerFilter {
 async function resolveShipmentCustomerFilter(
   query: OdakShipmentListQuery
 ): Promise<ResolvedShipmentCustomerFilter | null> {
-  const scopeTab = query.scopeTab ?? 'all';
+  const scopeTab =
+    query.scopeTab && query.scopeTab !== 'all'
+      ? query.scopeTab
+      : deriveScopeTabFromAdvancedFilters(query.advancedFilters ?? []);
   const customerFilter = (query.advancedFilters ?? []).find((f) => f.field === 'customerId' && f.value?.trim());
   if (!customerFilter) return null;
 
@@ -183,17 +243,20 @@ async function resolveShipmentCustomerFilter(
     return { filters: rest, packageIds: [], customerId: '', scopeTab, forceEmpty: true };
   }
 
+  const packageIds = await fetchPackageIdsByCustomerId(customerId);
+
+  // Legacy sevkiyatlarda customerId yalnizca bazi genel kayitlarda; cogu musteri is paketinde.
+  // Kapsam=Genel olsa bile musteri filtresi paket baglantisi uzerinden aranir.
   if (scopeTab === 'general') {
     return {
-      filters: [...rest, { field: 'customerId', operator: 'eq', value: customerId }],
-      packageIds: [],
+      filters: rest,
+      packageIds,
       customerId,
       scopeTab,
-      forceEmpty: false,
+      forceEmpty: packageIds.length === 0,
     };
   }
 
-  const packageIds = await fetchPackageIdsByCustomerId(customerId);
   if (scopeTab === 'package' && !packageIds.length) {
     return { filters: rest, packageIds: [], customerId, scopeTab, forceEmpty: true };
   }
@@ -234,25 +297,34 @@ async function fetchOdakShipmentsPageByCustomer(
   const sort = query.sort ?? '-shipmentDate';
   const { scopeTab, filters, packageIds, customerId } = resolved;
 
-  type BranchSpec = { scopeTab: OdakShipmentScopeTab; extraClauses: string[] };
+  type BranchSpec = {
+    scopeTab: OdakShipmentScopeTab;
+    extraClauses: string[];
+    advancedFilters: AfListFilter[];
+  };
   const branches: BranchSpec[] = [];
 
-  if (packageIds.length && scopeTab !== 'general') {
+  if (packageIds.length) {
+    const packageFilters =
+      scopeTab === 'general' ? stripRecordScopeFilters(filters) : filters;
     for (const chunk of chunkStringIds(packageIds, SHIPMENT_PACKAGE_IN_CHUNK_SIZE)) {
       const clause = buildRelationInFilterClause('parentPackageId', chunk);
       if (clause) {
         branches.push({
           scopeTab: scopeTab === 'all' ? 'all' : 'package',
           extraClauses: [clause],
+          advancedFilters: packageFilters,
         });
       }
     }
   }
 
-  if ((scopeTab === 'general' || scopeTab === 'all') && customerId) {
+  // Genel kayitta customerId dolu yeni sevkiyatlar (legacy disi)
+  if (scopeTab === 'all' && customerId) {
     branches.push({
       scopeTab: 'general',
       extraClauses: [`customerId:eq:${customerId}`],
+      advancedFilters: filters,
     });
   }
 
@@ -262,9 +334,9 @@ async function fetchOdakShipmentsPageByCustomer(
     branches.map(async (branch) => {
       const filter = composeShipmentListFilterString({
         scopeTab: branch.scopeTab,
-        statusTab: query.statusTab ?? 'all',
+        statusTab: 'all',
         search: query.search,
-        advancedFilters: filters,
+        advancedFilters: branch.advancedFilters,
         extraClauses: branch.extraClauses,
       });
       const neededForPage = Math.min(page * limit, SHIPMENT_CUSTOMER_MERGE_FETCH_CAP);
@@ -478,6 +550,7 @@ function headerFormToPayload(form: Omit<OdakShipmentFormModel, 'lines'>, package
   return {
     recordScope: 'Paketli',
     parentPackageId: packageId,
+    legacyShipmentId: newNativeLegacyShipmentId(),
     waybillNo: form.waybillNo.trim() || null,
     shipmentDate: fromDateInputValue(form.shipmentDate),
     status: normalizeShipmentStatus(form.status),
@@ -542,14 +615,96 @@ export function sumShipmentLineQuantities(lines: OdakShipmentLineRow[]): number 
   return lines.reduce((sum, row) => sum + (Number(row.shippedQuantity) || 0), 0);
 }
 
-async function loadLineMap(packageId: string): Promise<Map<string, OdakLineRow>> {
-  const lines = await listLinesForPackage(packageId);
+export interface OdakShipmentQtySummary {
+  /** Bu sevkiyattaki sevk miktarları toplamı */
+  shippedQty: number;
+  /** Bağlı sipariş kalemlerinin sipariş miktarı toplamı */
+  orderQty: number;
+  /** Bu sevkiyat satırında: orderQty − shippedQty (bu sevk kaydında karşılanmayan miktar) */
+  remainingQty: number;
+}
+
+export function buildParentLineMap(lines: OdakLineRow[]): Map<string, OdakLineRow> {
   const map = new Map<string, OdakLineRow>();
   for (const line of lines) {
     const id = lineDataId(line);
     if (id) map.set(id, line);
   }
   return map;
+}
+
+export function buildShipmentQtySummaryMap(
+  shipmentLines: OdakShipmentLineRow[],
+  parentLineMap: Map<string, OdakLineRow>
+): Map<string, OdakShipmentQtySummary> {
+  const scratch = new Map<
+    string,
+    { shippedQty: number; orderQty: number; seenParentIds: Set<string> }
+  >();
+
+  for (const sl of shipmentLines) {
+    const shipId = resolveRelationId(sl.parentShipmentId);
+    if (!shipId) continue;
+
+    let entry = scratch.get(shipId);
+    if (!entry) {
+      entry = { shippedQty: 0, orderQty: 0, seenParentIds: new Set() };
+      scratch.set(shipId, entry);
+    }
+
+    entry.shippedQty += Number(sl.shippedQuantity) || 0;
+
+    const parentId = resolveRelationId(sl.parentLineId);
+    if (!parentId || entry.seenParentIds.has(parentId)) continue;
+    entry.seenParentIds.add(parentId);
+
+    const parent = parentLineMap.get(parentId);
+    if (!parent) continue;
+    entry.orderQty += Number(parent.quantity) || 0;
+  }
+
+  const result = new Map<string, OdakShipmentQtySummary>();
+  for (const [shipId, entry] of scratch) {
+    result.set(shipId, {
+      shippedQty: entry.shippedQty,
+      orderQty: entry.orderQty,
+      remainingQty: Math.max(0, entry.orderQty - entry.shippedQty),
+    });
+  }
+  return result;
+}
+
+export interface OdakShipmentLineQtyView {
+  line: OdakShipmentLineRow;
+  orderQty: number | null;
+  shippedQty: number;
+  remainingQty: number | null;
+  unit: string;
+}
+
+export function buildShipmentLineQtyViews(
+  shipmentLines: OdakShipmentLineRow[],
+  parentLineMap: Map<string, OdakLineRow>
+): OdakShipmentLineQtyView[] {
+  return shipmentLines.map((line) => {
+    const parentId = resolveRelationId(line.parentLineId);
+    const parent = parentId ? parentLineMap.get(parentId) : undefined;
+    const orderQty = parent != null ? Number(parent.quantity) || 0 : null;
+    const shippedQty = Number(line.shippedQuantity) || 0;
+    return {
+      line,
+      orderQty,
+      shippedQty,
+      remainingQty:
+        orderQty != null ? Math.max(0, orderQty - shippedQty) : null,
+      unit: String(parent?.unit ?? '').trim(),
+    };
+  });
+}
+
+async function loadLineMap(packageId: string): Promise<Map<string, OdakLineRow>> {
+  const lines = await listLinesForPackage(packageId);
+  return buildParentLineMap(lines);
 }
 
 export async function validateShipmentLines(
@@ -659,6 +814,29 @@ export async function recalculatePackageLineShippedQuantities(packageId: string)
     const current = Number(line.shippedQuantity) || 0;
     if (Math.abs(current - shipped) < 0.0001) continue;
     await ocUpdate(ODAK_SIPARIS_CONFIG.linesDataset, lineId, { shippedQuantity: shipped });
+    line.shippedQuantity = shipped;
+  }
+
+  let totalQuantity = 0;
+  let totalShipped = 0;
+  for (const line of lines) {
+    totalQuantity += Number(line.quantity) || 0;
+    const lineId = lineDataId(line);
+    const shipped = lineId ? (shippedByLine.get(lineId) ?? 0) : 0;
+    totalShipped += shipped;
+  }
+  const stockCount = Math.max(0, totalQuantity - totalShipped);
+
+  const pkg = await fetchOdakPackageById(packageId);
+  if (pkg) {
+    const currentShipped = Number(pkg.shippedCount) || 0;
+    const currentStock = Number(pkg.stockCount) || 0;
+    if (Math.abs(currentShipped - totalShipped) >= 0.0001 || Math.abs(currentStock - stockCount) >= 0.0001) {
+      await ocUpdate(ODAK_SIPARIS_CONFIG.packagesDataset, packageId, {
+        shippedCount: totalShipped,
+        stockCount,
+      });
+    }
   }
 }
 
@@ -772,6 +950,26 @@ export function remainingQuantityForLine(line: OdakLineRow, shippedQuantity: num
   return Math.max(0, qty - shipped);
 }
 
+export interface OdakLineQuantityAggregate {
+  totalQuantity: number;
+  totalShipped: number;
+  totalRemaining: number;
+}
+
+export function aggregateLineQuantities(lines: OdakLineRow[]): OdakLineQuantityAggregate {
+  let totalQuantity = 0;
+  let totalShipped = 0;
+  for (const line of lines) {
+    totalQuantity += Number(line.quantity) || 0;
+    totalShipped += Number(line.shippedQuantity) || 0;
+  }
+  return {
+    totalQuantity,
+    totalShipped,
+    totalRemaining: Math.max(0, totalQuantity - totalShipped),
+  };
+}
+
 export function emptyGeneralShipmentFormModel(
   partial?: Partial<OdakGeneralShipmentFormModel>
 ): OdakGeneralShipmentFormModel {
@@ -796,6 +994,7 @@ export function emptyGeneralShipmentFormModel(
 function generalHeaderToPayload(form: OdakGeneralShipmentFormModel): Record<string, unknown> {
   return {
     recordScope: 'Genel',
+    legacyShipmentId: newNativeLegacyShipmentId(),
     customerId: form.customerId.trim() || null,
     headerDescription: form.headerDescription.trim() || null,
     waybillNo: form.waybillNo.trim() || null,
@@ -838,6 +1037,15 @@ export async function createGeneralOdakShipment(form: OdakGeneralShipmentFormMod
   const shipmentId = shipmentDataId(created as Record<string, unknown>);
   if (!shipmentId) return null;
   await createGeneralShipmentLineRecords(shipmentId, drafts);
+  const createdRow = await fetchOdakShipmentById(shipmentId);
+  if (createdRow) {
+    void import('@/utils/odakSiparisNotificationDispatch').then(({ dispatchOdakGlobalShipmentNotification }) =>
+      dispatchOdakGlobalShipmentNotification(createdRow, {
+        actorPersonId: useAuthStore().userInfo?.mng_person_id ?? null,
+        lineCount: drafts.length,
+      })
+    );
+  }
   return shipmentId;
 }
 

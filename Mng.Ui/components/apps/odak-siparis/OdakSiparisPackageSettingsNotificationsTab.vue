@@ -4,15 +4,37 @@ import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import OdakSiparisNotificationPolicyDialog from '@/components/apps/odak-siparis/OdakSiparisNotificationPolicyDialog.vue';
 import { listActiveMailTemplateOptions } from '@/services/notifier/mailTemplates';
+import { odakNotificationEventLabelTr } from '@/utils/odakSiparisSettingsLabels';
 import {
   createOdakNotificationPolicy,
   deleteOdakNotificationPolicy,
   invalidateOdakNotificationPoliciesCache,
-  listOdakNotificationPolicies,
+  listOdakNotificationPoliciesForEvents,
+  ODAK_GLOBAL_SHIPMENT_DEFAULT_MAIL_TEMPLATE,
+  ODAK_GLOBAL_SHIPMENT_NOTIFICATION_EVENT,
+  ODAK_GLOBAL_SHIPMENT_NOTIFICATION_EVENT_TYPES,
+  ODAK_PACKAGE_NOTIFICATION_EVENT_TYPES,
   updateOdakNotificationPolicy,
   type OdakNotificationPolicyDraft,
   type OdakSiparisNotificationPolicy,
 } from '@/utils/odakSiparisNotificationPolicies';
+
+const props = withDefaults(
+  defineProps<{
+    eventTypes?: readonly string[];
+    defaultEventType?: string;
+    defaultTemplateKey?: string;
+    hintKey?: string;
+    i18nPrefix?: string;
+  }>(),
+  {
+    eventTypes: () => [...ODAK_PACKAGE_NOTIFICATION_EVENT_TYPES],
+    defaultEventType: 'PackageCreated',
+    defaultTemplateKey: '',
+    hintKey: 'odakSiparis.packages.settings.notifications.hint',
+    i18nPrefix: 'odakSiparis.packages.settings.notifications',
+  }
+);
 
 const { t } = useAppI18n();
 const panelError = usePanelErrorNotify('errors.dg.generic');
@@ -28,12 +50,20 @@ const editingPolicy = ref<OdakSiparisNotificationPolicy | null>(null);
 const deleteDialog = ref(false);
 const deleteTarget = ref<OdakSiparisNotificationPolicy | null>(null);
 
+function label(key: string): string {
+  return t(`${props.i18nPrefix}.${key}`);
+}
+
+function eventLabel(eventType: string): string {
+  return odakNotificationEventLabelTr(eventType);
+}
+
 const headers = computed(() => [
-  { title: t('odakSiparis.packages.settings.notifications.colName'), key: 'name', sortable: true },
-  { title: t('odakSiparis.packages.settings.notifications.colEvent'), key: 'eventType', sortable: true },
-  { title: t('odakSiparis.packages.settings.notifications.colRecipients'), key: 'recipients', sortable: false },
-  { title: t('odakSiparis.packages.settings.notifications.colTemplate'), key: 'template', sortable: false },
-  { title: t('odakSiparis.packages.settings.notifications.colStatus'), key: 'isActive', sortable: true, width: 96 },
+  { title: label('colName'), key: 'name', sortable: true },
+  { title: label('colEvent'), key: 'eventType', sortable: true },
+  { title: label('colRecipients'), key: 'recipients', sortable: false },
+  { title: label('colTemplate'), key: 'template', sortable: false },
+  { title: label('colStatus'), key: 'isActive', sortable: true, width: 96 },
   { title: '', key: 'actions', sortable: false, align: 'end' as const },
 ]);
 
@@ -41,7 +71,7 @@ async function load() {
   loading.value = true;
   errorMessage.value = '';
   try {
-    policies.value = await listOdakNotificationPolicies();
+    policies.value = await listOdakNotificationPoliciesForEvents(props.eventTypes);
     emailTemplateItems.value = await listActiveMailTemplateOptions();
   } catch (e: unknown) {
     errorMessage.value = panelError(e, 'errors.dg.generic');
@@ -101,25 +131,33 @@ async function doDelete() {
   }
 }
 
+const dialogDefaultTemplateKey = computed(() => {
+  if (props.defaultTemplateKey) return props.defaultTemplateKey;
+  if (props.defaultEventType === ODAK_GLOBAL_SHIPMENT_NOTIFICATION_EVENT) {
+    return ODAK_GLOBAL_SHIPMENT_DEFAULT_MAIL_TEMPLATE;
+  }
+  return '';
+});
+
 onMounted(() => void load());
 </script>
 
 <template>
   <div>
     <v-alert type="info" variant="tonal" density="compact" class="mb-4">
-      {{ t('odakSiparis.packages.settings.notifications.hint') }}
+      {{ t(hintKey) }}
     </v-alert>
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">{{ errorMessage }}</v-alert>
 
     <div class="d-flex mb-3">
       <v-btn color="primary" variant="flat" prepend-icon="mdi-plus" @click="openCreate">
-        {{ t('odakSiparis.packages.settings.notifications.addPolicy') }}
+        {{ label('addPolicy') }}
       </v-btn>
     </div>
 
     <v-data-table :headers="headers" :items="policies" :loading="loading" density="compact" class="border rounded-md">
       <template #item.eventType="{ item }">
-        {{ t(`odakSiparis.packages.settings.notifications.eventTypes.${item.eventType}`, item.eventType) }}
+        {{ eventLabel(item.eventType) }}
       </template>
       <template #item.recipients="{ item }">
         {{ item.recipientPersonIds.length }}
@@ -129,7 +167,7 @@ onMounted(() => void load());
       </template>
       <template #item.isActive="{ item }">
         <v-chip :color="item.isActive ? 'success' : 'default'" size="small" variant="tonal">
-          {{ item.isActive ? t('odakSiparis.packages.settings.notifications.active') : t('odakSiparis.packages.settings.notifications.inactive') }}
+          {{ item.isActive ? label('active') : label('inactive') }}
         </v-chip>
       </template>
       <template #item.actions="{ item }">
@@ -142,14 +180,18 @@ onMounted(() => void load());
       v-model="dialogOpen"
       :policy="editingPolicy"
       :email-template-items="emailTemplateItems"
+      :allowed-event-types="[...eventTypes]"
+      :default-event-type="defaultEventType"
+      :default-template-key="dialogDefaultTemplateKey"
+      :i18n-prefix="i18nPrefix"
       :saving="saving"
       @save="onSave"
     />
 
     <v-dialog v-model="deleteDialog" max-width="420">
       <v-card>
-        <v-card-title>{{ t('odakSiparis.packages.settings.notifications.deleteTitle') }}</v-card-title>
-        <v-card-text>{{ t('odakSiparis.packages.settings.notifications.deleteConfirm') }}</v-card-text>
+        <v-card-title>{{ label('deleteTitle') }}</v-card-title>
+        <v-card-text>{{ label('deleteConfirm') }}</v-card-text>
         <v-card-actions>
           <v-spacer />
           <v-btn variant="text" @click="deleteDialog = false">{{ t('odakSiparis.packages.cancel') }}</v-btn>

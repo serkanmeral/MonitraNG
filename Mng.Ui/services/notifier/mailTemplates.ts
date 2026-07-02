@@ -4,6 +4,22 @@ import { useAuthStore } from '@/stores/auth';
 
 export const MAIL_TEMPLATES_DATASET = '@mail_templates';
 
+export const MAIL_TEMPLATE_DEFAULT_PAGE_SIZE = 25;
+export const MAIL_TEMPLATE_PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
+
+export interface MailTemplateListQuery {
+  skip?: number;
+  limit?: number;
+  activeOnly?: boolean;
+  category?: string | null;
+  search?: string;
+}
+
+export interface MailTemplateListResult {
+  items: MailTemplate[];
+  total: number;
+}
+
 export interface MailTemplatePreviewOptions {
   subject?: string | null;
   bodyHtmlOverride?: string | null;
@@ -104,19 +120,70 @@ function datasetUrl(suffix = ''): string {
   return suffix ? `${base}/${encodeURIComponent(suffix)}` : base;
 }
 
+function readListTotal(response: unknown, items: unknown[]): number {
+  if (Array.isArray(response)) {
+    const arr = response as unknown[] & { _totalCount?: number };
+    if (typeof arr._totalCount === 'number' && Number.isFinite(arr._totalCount)) {
+      return arr._totalCount;
+    }
+  }
+  if (response && typeof response === 'object' && !Array.isArray(response)) {
+    const obj = response as Record<string, unknown>;
+    const totalRaw = obj.total ?? obj.totalCount ?? obj.count ?? obj.TotalCount;
+    if (typeof totalRaw === 'number' && Number.isFinite(totalRaw)) {
+      return totalRaw;
+    }
+  }
+  return items.length;
+}
+
+function mapMailTemplateRows(raw: unknown): MailTemplate[] {
+  return parseDgArray(raw)
+    .map((r) => mapMailTemplate(r))
+    .filter((t) => t.__dataId && t.templateKey && t.name);
+}
+
+export async function listMailTemplatesPage(query: MailTemplateListQuery = {}): Promise<MailTemplateListResult> {
+  const skip = Math.max(0, query.skip ?? 0);
+  const limit = Math.min(1000, Math.max(1, query.limit ?? MAIL_TEMPLATE_DEFAULT_PAGE_SIZE));
+  const params = new URLSearchParams({
+    skip: String(skip),
+    limit: String(limit),
+    sort: 'category:asc,templateKey:asc',
+  });
+  const filters: string[] = [];
+  if (query.activeOnly) filters.push('isActive:eq:true');
+  if (query.category) filters.push(`category:eq:${query.category}`);
+  if (filters.length) params.set('filter', filters.join(','));
+  const search = query.search?.trim();
+  if (search) params.set('search', search);
+
+  const raw = await fetchFromDataGateway(`${datasetUrl()}?${params.toString()}`, 'GET');
+  const items = mapMailTemplateRows(raw);
+  return { items, total: readListTotal(raw, items) };
+}
+
+export async function listMailTemplateCategoryOptions(): Promise<string[]> {
+  const rows = await listMailTemplates();
+  const categories = new Set<string>(['custom', 'system']);
+  for (const row of rows) {
+    const category = row.category?.trim();
+    if (category) categories.add(category);
+  }
+  return [...categories].sort((a, b) => a.localeCompare(b, 'tr'));
+}
+
 export async function listMailTemplates(options?: {
   activeOnly?: boolean;
   category?: string;
 }): Promise<MailTemplate[]> {
-  const params = new URLSearchParams({ limit: '200', sort: 'category:asc,templateKey:asc' });
+  const params = new URLSearchParams({ limit: '500', sort: 'category:asc,templateKey:asc' });
   const filters: string[] = [];
   if (options?.activeOnly) filters.push('isActive:eq:true');
   if (options?.category) filters.push(`category:eq:${options.category}`);
   if (filters.length) params.set('filter', filters.join(','));
   const raw = await fetchFromDataGateway(`${datasetUrl()}?${params.toString()}`, 'GET');
-  return parseDgArray(raw)
-    .map((r) => mapMailTemplate(r))
-    .filter((t) => t.__dataId && t.templateKey && t.name);
+  return mapMailTemplateRows(raw);
 }
 
 export async function listActiveMailTemplateOptions(): Promise<{ value: string; title: string }[]> {

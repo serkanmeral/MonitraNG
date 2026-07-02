@@ -40,6 +40,7 @@ export type OdakHubScopeConfigMap = {
   packages_list: OdakHubListConfig;
   lines_list: OdakHubListConfig;
   shipments_list: OdakHubListConfig;
+  global_shipments_list: OdakHubListConfig;
   field_policies: OdakFieldPoliciesBlob;
   lines_field_policies: OdakFieldPoliciesBlob;
   shipments_field_policies: OdakFieldPoliciesBlob;
@@ -51,6 +52,7 @@ export const ODAK_HUB_SETTINGS_SCOPES: OdakHubSettingsScope[] = [
   'packages_list',
   'lines_list',
   'shipments_list',
+  'global_shipments_list',
   'field_policies',
   'lines_field_policies',
   'shipments_field_policies',
@@ -58,7 +60,12 @@ export const ODAK_HUB_SETTINGS_SCOPES: OdakHubSettingsScope[] = [
   'package_odak_personnel',
 ];
 
-const LIST_SCOPES = new Set<OdakHubSettingsScope>(['packages_list', 'lines_list', 'shipments_list']);
+const LIST_SCOPES = new Set<OdakHubSettingsScope>([
+  'packages_list',
+  'lines_list',
+  'shipments_list',
+  'global_shipments_list',
+]);
 const FIELD_POLICY_SCOPES = new Set<OdakHubSettingsScope>([
   'field_policies',
   'lines_field_policies',
@@ -163,13 +170,16 @@ export const useOdakSiparisHubSettingsStore = defineStore('odakSiparisHubSetting
     packageListConfig: (state): OdakPackageListConfig =>
       state.scopes.packages_list.config as OdakPackageListConfig,
 
+    globalShipmentsListConfig: (state): OdakHubListConfig =>
+      state.scopes.global_shipments_list.config as OdakHubListConfig,
+
     packageFieldPolicies: (state): OdakFieldPoliciesBlob =>
       state.scopes.field_policies.config as OdakFieldPoliciesBlob,
 
     scopeReady:
       (state) =>
       (scope: OdakHubSettingsScope): boolean =>
-        state.bootstrapStatus === 'ready' && state.scopes[scope].status === 'ready',
+        state.scopes[scope].status === 'ready',
 
     scopeSaving:
       (state) =>
@@ -179,14 +189,12 @@ export const useOdakSiparisHubSettingsStore = defineStore('odakSiparisHubSetting
     canSaveScope:
       (state) =>
       (scope: OdakHubSettingsScope): boolean =>
-        state.bootstrapStatus === 'ready' &&
         state.scopes[scope].status === 'ready',
 
     canEditScope:
       (state) =>
       (scope: OdakHubSettingsScope): boolean =>
-        state.bootstrapStatus === 'ready' &&
-        (state.scopes[scope].status === 'ready' || state.scopes[scope].status === 'saving'),
+        state.scopes[scope].status === 'ready' || state.scopes[scope].status === 'saving',
 
     isScopeDirty:
       (state) =>
@@ -288,6 +296,29 @@ export const useOdakSiparisHubSettingsStore = defineStore('odakSiparisHubSetting
 
     async ensureReady(force = false) {
       await this.bootstrap(force);
+    },
+
+    /** Tek scope yükle (ayar sayfası / liste — tüm hub bootstrap yerine). */
+    async ensureScopeReady(scope: OdakHubSettingsScope, force = false) {
+      const slice = this.scopes[scope];
+      if (!force && slice.status === 'ready') {
+        return;
+      }
+
+      slice.status = 'loading';
+      slice.error = null;
+      try {
+        const loaded = await fetchScopeFromServer(scope);
+        this.applyScopeLoaded(scope, loaded.config, loaded.rowId);
+        this.loadedAt = Date.now();
+        if (this.bootstrapStatus === 'idle') {
+          this.bootstrapStatus = 'ready';
+        }
+      } catch (e: unknown) {
+        slice.status = 'error';
+        slice.error = e instanceof Error ? e.message : String(e);
+        throw e;
+      }
     },
 
     async reloadScope(scope: OdakHubSettingsScope) {

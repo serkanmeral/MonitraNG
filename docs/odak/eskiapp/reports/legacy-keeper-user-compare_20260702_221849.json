@@ -1,0 +1,1691 @@
+{
+  "summary": {
+    "legacyTotal": 111,
+    "keeperTotal": 122,
+    "matched": 14,
+    "matchedByUsername": 13,
+    "matchedByNameExact": 1,
+    "matchedByNameFirstLast": 0,
+    "legacyOnly": 97,
+    "legacyOnlyActive": 14,
+    "legacyOnlyInactive": 83,
+    "keeperOnly": 109,
+    "keeperOnlyActive": 62,
+    "keeperOnlyLikelyDuplicate": 57,
+    "ambiguous": 0,
+    "generatedAt": "2026-07-02 22:18:49",
+    "legacyServer": "192.168.20.30",
+    "keeperBaseUrl": "http://192.168.20.8:5040"
+  },
+  "matched": [
+    {
+      "matchType": "username",
+      "legacyId": 2,
+      "legacyUsername": "ikuru",
+      "legacyName": "İnci Doğru Kuru",
+      "legacyActive": true,
+      "keeperUserId": "6a2257d16723c2bd54eec3aa",
+      "keeperUsername": "ikuru",
+      "keeperName": "İnci Kuru",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "usernameMatch": true,
+      "nameExactMatch": false,
+      "nameFirstLastMatch": true
+    },
+    {
+      "matchType": "username",
+      "legacyId": 3,
+      "legacyUsername": "okaragul",
+      "legacyName": "Osman Karagül",
+      "legacyActive": true,
+      "keeperUserId": "6a2257d26723c2bd54eec3b4",
+      "keeperUsername": "okaragul",
+      "keeperName": "Osman Karagül",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "usernameMatch": true,
+      "nameExactMatch": true,
+      "nameFirstLastMatch": true
+    },
+    {
+      "matchType": "username",
+      "legacyId": 118,
+      "legacyUsername": "mkucuk",
+      "legacyName": "Murat Küçük",
+      "legacyActive": true,
+      "keeperUserId": "6a2257d16723c2bd54eec3b2",
+      "keeperUsername": "mkucuk",
+      "keeperName": "Murat Küçük",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "usernameMatch": true,
+      "nameExactMatch": true,
+      "nameFirstLastMatch": true
+    },
+    {
+      "matchType": "username",
+      "legacyId": 154,
+      "legacyUsername": "eyenicelik",
+      "legacyName": "Esra Yeniçelik",
+      "legacyActive": true,
+      "keeperUserId": "6a2257d16723c2bd54eec3a6",
+      "keeperUsername": "eyenicelik",
+      "keeperName": "Esra Yeniçelik",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "usernameMatch": true,
+      "nameExactMatch": true,
+      "nameFirstLastMatch": true
+    },
+    {
+      "matchType": "username",
+      "legacyId": 162,
+      "legacyUsername": "ahusan",
+      "legacyName": "Anıl Hüsan",
+      "legacyActive": true,
+      "keeperUserId": "6a2257d16723c2bd54eec39b",
+      "keeperUsername": "ahusan",
+      "keeperName": "Anıl Hüşan",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "usernameMatch": true,
+      "nameExactMatch": true,
+      "nameFirstLastMatch": true
+    },
+    {
+      "matchType": "username",
+      "legacyId": 164,
+      "legacyUsername": "agezer",
+      "legacyName": "Ahmet Emin Gezer",
+      "legacyActive": true,
+      "keeperUserId": "6a2257d16723c2bd54eec39a",
+      "keeperUsername": "agezer",
+      "keeperName": "Ahmet Emin Gezer",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "usernameMatch": true,
+      "nameExactMatch": true,
+      "nameFirstLastMatch": true
+    },
+    {
+      "matchType": "username",
+      "legacyId": 168,
+      "legacyUsername": "mcolak",
+      "legacyName": "Miray  Çolak",
+      "legacyActive": true,
+      "keeperUserId": "6a2257d16723c2bd54eec3b1",
+      "keeperUsername": "mcolak",
+      "keeperName": "Miray Çolak",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "usernameMatch": true,
+      "nameExactMatch": true,
+      "nameFirstLastMatch": true
+    },
+    {
+      "matchType": "username",
+      "legacyId": 169,
+      "legacyUsername": "mcolak",
+      "legacyName": "MİRAY NUR ÇOLAK",
+      "legacyActive": false,
+      "keeperUserId": "6a2257d16723c2bd54eec3b1",
+      "keeperUsername": "mcolak",
+      "keeperName": "Miray Çolak",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "usernameMatch": true,
+      "nameExactMatch": false,
+      "nameFirstLastMatch": true
+    },
+    {
+      "matchType": "username",
+      "legacyId": 172,
+      "legacyUsername": "enalbat",
+      "legacyName": "Nurşah Elif Nalbat",
+      "legacyActive": true,
+      "keeperUserId": "6a2257d16723c2bd54eec3a3",
+      "keeperUsername": "enalbat",
+      "keeperName": "Elif Nalbat",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "usernameMatch": true,
+      "nameExactMatch": false,
+      "nameFirstLastMatch": false
+    },
+    {
+      "matchType": "name_exact",
+      "legacyId": 176,
+      "legacyUsername": "cngulten",
+      "legacyName": "Cansu Nur Gülten",
+      "legacyActive": true,
+      "keeperUserId": "6a2257d16723c2bd54eec39e",
+      "keeperUsername": "cgulten",
+      "keeperName": "Cansu Nur Gülten",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "usernameMatch": false,
+      "nameExactMatch": true,
+      "nameFirstLastMatch": true
+    },
+    {
+      "matchType": "username",
+      "legacyId": 177,
+      "legacyUsername": "mboztepe",
+      "legacyName": "Merve Boztepe",
+      "legacyActive": true,
+      "keeperUserId": "6a2257d16723c2bd54eec3ae",
+      "keeperUsername": "mboztepe",
+      "keeperName": "Merve Boztepe",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "usernameMatch": true,
+      "nameExactMatch": true,
+      "nameFirstLastMatch": true
+    },
+    {
+      "matchType": "username",
+      "legacyId": 178,
+      "legacyUsername": "haydin",
+      "legacyName": "Hanife Özcan Aydın",
+      "legacyActive": true,
+      "keeperUserId": "6a2257d16723c2bd54eec3a8",
+      "keeperUsername": "haydin",
+      "keeperName": "Hanife Aydın",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "usernameMatch": true,
+      "nameExactMatch": false,
+      "nameFirstLastMatch": true
+    },
+    {
+      "matchType": "username",
+      "legacyId": 181,
+      "legacyUsername": "egayret",
+      "legacyName": "Eren Gayret",
+      "legacyActive": true,
+      "keeperUserId": "6a2257d16723c2bd54eec3a2",
+      "keeperUsername": "egayret",
+      "keeperName": "Eren Gayret",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "usernameMatch": true,
+      "nameExactMatch": true,
+      "nameFirstLastMatch": true
+    },
+    {
+      "matchType": "username",
+      "legacyId": 182,
+      "legacyUsername": "akutluca",
+      "legacyName": "Ayhan Kutluca",
+      "legacyActive": true,
+      "keeperUserId": "6a2257d16723c2bd54eec39c",
+      "keeperUsername": "akutluca",
+      "keeperName": "Ayhan Kutluca",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "usernameMatch": true,
+      "nameExactMatch": true,
+      "nameFirstLastMatch": true
+    }
+  ],
+  "legacyOnly": [
+    {
+      "legacyId": 1,
+      "legacyUsername": "admin",
+      "legacyName": "Admin",
+      "legacyActive": true
+    },
+    {
+      "legacyId": 4,
+      "legacyUsername": "ntatlakoglu",
+      "legacyName": "Nazan Tatlakoğlu",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 5,
+      "legacyUsername": "gakcay",
+      "legacyName": "Günseli Akçay",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 6,
+      "legacyUsername": "gkarakurt",
+      "legacyName": "Gizem Karakurt",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 7,
+      "legacyUsername": "ihisitemiz",
+      "legacyName": "İsmail Hakkı İşitemiz",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 8,
+      "legacyUsername": "etopcu",
+      "legacyName": "Emre Topçu",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 9,
+      "legacyUsername": "hsendil",
+      "legacyName": "Halil Şendil",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 10,
+      "legacyUsername": "eoguz",
+      "legacyName": "Engin Berk Oğuz",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 11,
+      "legacyUsername": "mtarcan",
+      "legacyName": "Murat Tarcan",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 12,
+      "legacyUsername": "edemiroglu",
+      "legacyName": "Emin Demiroğlu",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 13,
+      "legacyUsername": "tkekec",
+      "legacyName": "Tayfun Kekeç",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 14,
+      "legacyUsername": "mdemir",
+      "legacyName": "Murat Demir",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 15,
+      "legacyUsername": "averim",
+      "legacyName": "Ayşegül Verim",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 16,
+      "legacyUsername": "bkirikkayaoglu",
+      "legacyName": "Bayram Kırıkkayaoğlu",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 17,
+      "legacyUsername": "okarakadioglu",
+      "legacyName": "Osman Karakadıoğlu",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 18,
+      "legacyUsername": "iuzun",
+      "legacyName": "İlhan Uzun",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 19,
+      "legacyUsername": "bboyraz",
+      "legacyName": "Burkay Boyraz",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 69,
+      "legacyUsername": "icinli",
+      "legacyName": "İsmail Cinli",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 70,
+      "legacyUsername": "ekoc",
+      "legacyName": "Emre Melih Koç",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 71,
+      "legacyUsername": "gatay",
+      "legacyName": "Gökhan Atay",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 72,
+      "legacyUsername": "aozcan",
+      "legacyName": "Aslıhan Özcan Öcalan",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 73,
+      "legacyUsername": "bozben",
+      "legacyName": "Burak Özben",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 74,
+      "legacyUsername": "gokutan",
+      "legacyName": "Gökhan Okutan",
+      "legacyActive": true
+    },
+    {
+      "legacyId": 95,
+      "legacyUsername": "scakmak",
+      "legacyName": "Sadık Çakmak",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 96,
+      "legacyUsername": "zsanlı",
+      "legacyName": "Zeki Şanlı",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 97,
+      "legacyUsername": "btaban",
+      "legacyName": "Burak Taban",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 98,
+      "legacyUsername": "egencosmanoglu",
+      "legacyName": "Enes  Gençosmanoğlu",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 100,
+      "legacyUsername": "syolal",
+      "legacyName": "Soner Yolal",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 101,
+      "legacyUsername": "agunes",
+      "legacyName": "Aylin Güneş",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 102,
+      "legacyUsername": "bgundogdu",
+      "legacyName": "Bora Ümit Gündoğdu",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 104,
+      "legacyUsername": "ccandemir",
+      "legacyName": "Cihan Candemir",
+      "legacyActive": true
+    },
+    {
+      "legacyId": 105,
+      "legacyUsername": "svarol",
+      "legacyName": "Serkan Varol",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 106,
+      "legacyUsername": "syildiz",
+      "legacyName": "Serkan Yıldız",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 107,
+      "legacyUsername": "aerel",
+      "legacyName": "Abdullah Erel",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 108,
+      "legacyUsername": "aaydugdu",
+      "legacyName": "Ahmet Aydoğdu",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 109,
+      "legacyUsername": "dakkaya",
+      "legacyName": "Devrim Akkaya",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 110,
+      "legacyUsername": "agulcu",
+      "legacyName": "Abdülsamet Gülcü",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 111,
+      "legacyUsername": "myerlitas",
+      "legacyName": "Muhammet Yerlitaş",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 112,
+      "legacyUsername": "yyalcinalp",
+      "legacyName": "Yiğit Yalçınalp",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 113,
+      "legacyUsername": "mcevik",
+      "legacyName": "Mehmet Çevik",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 114,
+      "legacyUsername": "lerarslan",
+      "legacyName": "Levent Erarslan",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 115,
+      "legacyUsername": "atiras",
+      "legacyName": "Ahmet Eren Tıraş",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 116,
+      "legacyUsername": "fkoca",
+      "legacyName": "Ferdi Koca",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 117,
+      "legacyUsername": "okocturk",
+      "legacyName": "Onur Koçtürk",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 119,
+      "legacyUsername": "auzun",
+      "legacyName": "Adem Uzun",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 120,
+      "legacyUsername": "hbilsel",
+      "legacyName": "Hasan Bilsel",
+      "legacyActive": true
+    },
+    {
+      "legacyId": 121,
+      "legacyUsername": "rucan",
+      "legacyName": "Resul Uçan",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 122,
+      "legacyUsername": "akaradas",
+      "legacyName": "Ahmet Karadaş",
+      "legacyActive": true
+    },
+    {
+      "legacyId": 123,
+      "legacyUsername": "ygulyazi",
+      "legacyName": "Yemliha Gülyazı",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 124,
+      "legacyUsername": "sdelibas",
+      "legacyName": "Samet Delibaş",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 125,
+      "legacyUsername": "rakoz",
+      "legacyName": "Recep Aköz",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 126,
+      "legacyUsername": "uyuce",
+      "legacyName": "Ufuk Yüce",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 127,
+      "legacyUsername": "osimsek",
+      "legacyName": "Oğulcan Şimşek",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 128,
+      "legacyUsername": "eegioglu",
+      "legacyName": "Ecevit Eğioğlu",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 129,
+      "legacyUsername": "ecurebal",
+      "legacyName": "Erkan Cürebal",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 130,
+      "legacyUsername": "eer",
+      "legacyName": "Emre Er",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 131,
+      "legacyUsername": "bsahbaz",
+      "legacyName": "Buse Şahbaz",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 132,
+      "legacyUsername": "oagoren",
+      "legacyName": "Oğuzhan Ağören",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 133,
+      "legacyUsername": "ckaratas",
+      "legacyName": "Ceren İlkim Karataş",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 134,
+      "legacyUsername": "megioglu",
+      "legacyName": "Mevlüt Eğioğlu",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 135,
+      "legacyUsername": "bcetin",
+      "legacyName": "Burak Çetin",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 136,
+      "legacyUsername": "tkarabulut",
+      "legacyName": "Temam Karabulut",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 137,
+      "legacyUsername": "aaltintas",
+      "legacyName": "Abdullah Altıntaş",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 138,
+      "legacyUsername": "sbuyukgullu",
+      "legacyName": "Samet Büyükgüllü",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 139,
+      "legacyUsername": "eyazdiran",
+      "legacyName": "Ercüment Yazdıran",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 140,
+      "legacyUsername": "osener",
+      "legacyName": "Özgür Sener",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 141,
+      "legacyUsername": "hkar",
+      "legacyName": "Hüseyin Kar",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 142,
+      "legacyUsername": "bkumru",
+      "legacyName": "Barış Kumru",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 143,
+      "legacyUsername": "bkirac",
+      "legacyName": "Burak Kıraç",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 144,
+      "legacyUsername": "mak",
+      "legacyName": "Muhammed Ak",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 145,
+      "legacyUsername": "agulyazi",
+      "legacyName": "Ali İhsan Gülyazı",
+      "legacyActive": true
+    },
+    {
+      "legacyId": 146,
+      "legacyUsername": "akislalioglu",
+      "legacyName": "Ahmet Kışlalıoğlu",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 147,
+      "legacyUsername": "sgulal",
+      "legacyName": "Sabriye Gülal",
+      "legacyActive": true
+    },
+    {
+      "legacyId": 148,
+      "legacyUsername": "oozger",
+      "legacyName": "Ömer Özger",
+      "legacyActive": true
+    },
+    {
+      "legacyId": 149,
+      "legacyUsername": "bcandemir",
+      "legacyName": "Barış Candemir",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 150,
+      "legacyUsername": "bgokgoz",
+      "legacyName": "Büşra Nur Gökgöz",
+      "legacyActive": true
+    },
+    {
+      "legacyId": 151,
+      "legacyUsername": "ebakir",
+      "legacyName": "Eren Bakır",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 152,
+      "legacyUsername": "bkucuk",
+      "legacyName": "Bilal Küçük",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 153,
+      "legacyUsername": "mckucuk",
+      "legacyName": "Mertcan Küçük",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 155,
+      "legacyUsername": "ksaydin",
+      "legacyName": "Kürşad Serdar Aydın",
+      "legacyActive": true
+    },
+    {
+      "legacyId": 156,
+      "legacyUsername": "hsarikaya",
+      "legacyName": "Halit Sarikaya",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 157,
+      "legacyUsername": "bomurlu",
+      "legacyName": "Büşra Ömürlü",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 158,
+      "legacyUsername": "fyel",
+      "legacyName": "Fırat Yel",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 159,
+      "legacyUsername": "eoner",
+      "legacyName": "Emir Can Öner",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 160,
+      "legacyUsername": "gyildiz",
+      "legacyName": "Gamze Yıldız",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 161,
+      "legacyUsername": "bmenc",
+      "legacyName": "Berkay Menç",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 163,
+      "legacyUsername": "akose",
+      "legacyName": "Alihan Köse",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 165,
+      "legacyUsername": "acaliskan",
+      "legacyName": "Alperen Çalışkan",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 166,
+      "legacyUsername": "bcaner",
+      "legacyName": "Bahri Caner",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 167,
+      "legacyUsername": "mdemirkazik",
+      "legacyName": "Mustafa Demirkazik",
+      "legacyActive": true
+    },
+    {
+      "legacyId": 170,
+      "legacyUsername": "eyıldız",
+      "legacyName": "EMRULLAH YILDIZ",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 171,
+      "legacyUsername": "kozturk",
+      "legacyName": "Kaan Öztürk",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 173,
+      "legacyUsername": "asortac",
+      "legacyName": "Ahmet Samil Ortac",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 174,
+      "legacyUsername": "uatakli",
+      "legacyName": "Umut  Ataklı",
+      "legacyActive": false
+    },
+    {
+      "legacyId": 175,
+      "legacyUsername": "saydin",
+      "legacyName": "Sadi  Aydın",
+      "legacyActive": true
+    },
+    {
+      "legacyId": 179,
+      "legacyUsername": "adguzel",
+      "legacyName": "Arhan Doruk  Güzel",
+      "legacyActive": true
+    },
+    {
+      "legacyId": 180,
+      "legacyUsername": "gkarakus",
+      "legacyName": "Gülce Karakuş",
+      "legacyActive": true
+    }
+  ],
+  "keeperOnly": [
+    {
+      "keeperUserId": "6a1072ad69221f812f97b2b8",
+      "keeperUsername": "administrator",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf68",
+      "keeperUsername": "ahmet emin gezer",
+      "keeperName": "Ahmet Emin Gezer",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf69",
+      "keeperUsername": "anıl hüşan",
+      "keeperName": "Anıl Hüşan",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf6a",
+      "keeperUsername": "ayhan kutluca",
+      "keeperName": "Ayhan Kutluca",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a26b5c86723c2bd54eec3cb",
+      "keeperUsername": "ayildiz",
+      "keeperName": "Sıtkı Aytaç Yıldız",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf6b",
+      "keeperUsername": "bc-001",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d16723c2bd54eec39d",
+      "keeperUsername": "bc-001$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf6c",
+      "keeperUsername": "canan koç",
+      "keeperName": "Canan Koç",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf6d",
+      "keeperUsername": "cansu nur gülten",
+      "keeperName": "Cansu Nur Gülten",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a2257d16723c2bd54eec39f",
+      "keeperUsername": "ckoc",
+      "keeperName": "Canan Koç",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a34dae16723c2bd54eec3d9",
+      "keeperUsername": "cnc",
+      "keeperName": "cnc",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf6e",
+      "keeperUsername": "dba01",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d16723c2bd54eec3a0",
+      "keeperUsername": "dba01$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf6f",
+      "keeperUsername": "dummy",
+      "keeperName": "Dummy",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf70",
+      "keeperUsername": "dummy2",
+      "keeperName": "dummy2",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf71",
+      "keeperUsername": "ec-001",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d16723c2bd54eec3a1",
+      "keeperUsername": "ec-001$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a2cf1e06723c2bd54eec3ce",
+      "keeperUsername": "ec-002$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf72",
+      "keeperUsername": "elif nalbat",
+      "keeperName": "Elif Nalbat",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf73",
+      "keeperUsername": "eren gayret",
+      "keeperName": "Eren Gayret",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf74",
+      "keeperUsername": "erp-destek",
+      "keeperName": "erp-destek",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a2fe2386723c2bd54eec3d7",
+      "keeperUsername": "erp-test",
+      "keeperName": "erp",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf75",
+      "keeperUsername": "erp-user",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a2257d16723c2bd54eec3a4",
+      "keeperUsername": "erp-user$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf76",
+      "keeperUsername": "esra yeniçelik",
+      "keeperName": "Esra Yeniçelik",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf77",
+      "keeperUsername": "exchange",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d16723c2bd54eec3a5",
+      "keeperUsername": "exchange$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf78",
+      "keeperUsername": "fatih kosger",
+      "keeperName": "Fatih Kosger",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a2257d16723c2bd54eec3a7",
+      "keeperUsername": "fkosger",
+      "keeperName": "Fatih Kosger",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a280e506723c2bd54eec3cd",
+      "keeperUsername": "fs$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf79",
+      "keeperUsername": "guest",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2fcd216723c2bd54eec3d0",
+      "keeperUsername": "haktas",
+      "keeperName": "Hazal Aktaş",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf7a",
+      "keeperUsername": "hanife aydın",
+      "keeperName": "Hanife Aydın",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6aca47158ef1ddddf7b",
+      "keeperUsername": "ik-pc-001",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d16723c2bd54eec3a9",
+      "keeperUsername": "ik-pc-001$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf7c",
+      "keeperUsername": "i̇nci kuru",
+      "keeperName": "İnci Kuru",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a225ed96723c2bd54eec3c6",
+      "keeperUsername": "k.kesim",
+      "keeperName": "kumas kesim",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2fdb306723c2bd54eec3d3",
+      "keeperUsername": "kalite-test",
+      "keeperName": "kalite",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf7d",
+      "keeperUsername": "kağan bardakçı",
+      "keeperName": "Kağan Bardakçı",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a2257d16723c2bd54eec3ab",
+      "keeperUsername": "kbardakci",
+      "keeperName": "Kağan Bardakçı",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf7e",
+      "keeperUsername": "krbtgt",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d16723c2bd54eec3ac",
+      "keeperUsername": "ksengul",
+      "keeperName": "Kubilay Şengül",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf7f",
+      "keeperUsername": "kubilay şengül",
+      "keeperName": "Kubilay Şengül",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf80",
+      "keeperUsername": "ldap-user",
+      "keeperName": "ldap-user",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2cf8e86723c2bd54eec3cf",
+      "keeperUsername": "licensing$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a2257d16723c2bd54eec3ad",
+      "keeperUsername": "m.altay",
+      "keeperName": "Mustafa Altay",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf81",
+      "keeperUsername": "mc-001",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d16723c2bd54eec3af",
+      "keeperUsername": "mc-001$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf82",
+      "keeperUsername": "mc-002",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d16723c2bd54eec3b0",
+      "keeperUsername": "mc-002$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf83",
+      "keeperUsername": "merve boztepe",
+      "keeperName": "Merve Boztepe",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf84",
+      "keeperUsername": "miray çolak",
+      "keeperName": "Miray Çolak",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf85",
+      "keeperUsername": "monitra",
+      "keeperName": "monitra",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2273f06723c2bd54eec3ca",
+      "keeperUsername": "montaj",
+      "keeperName": "montaj",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf86",
+      "keeperUsername": "murat küçük",
+      "keeperName": "Murat Küçük",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf87",
+      "keeperUsername": "mustafa altay",
+      "keeperName": "Mustafa Altay",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a2257d26723c2bd54eec3b3",
+      "keeperUsername": "o.ozcan",
+      "keeperName": "Ömer Özcan",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a0f8fd13d6ba5d774ee37c7",
+      "keeperUsername": "odak_admin",
+      "keeperName": "Admin odak",
+      "keeperActive": true,
+      "keeperSource": "Local",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf88",
+      "keeperUsername": "osman karagül",
+      "keeperName": "Osman Karagül",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf89",
+      "keeperUsername": "pc-001",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d26723c2bd54eec3b5",
+      "keeperUsername": "pc-001$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf8a",
+      "keeperUsername": "pc-002",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d26723c2bd54eec3b6",
+      "keeperUsername": "pc-002$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf8b",
+      "keeperUsername": "pc-003",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d26723c2bd54eec3b7",
+      "keeperUsername": "pc-003$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf8c",
+      "keeperUsername": "pc-004",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d26723c2bd54eec3b8",
+      "keeperUsername": "pc-004$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf8d",
+      "keeperUsername": "pc-005",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d26723c2bd54eec3b9",
+      "keeperUsername": "pc-005$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf8e",
+      "keeperUsername": "pc-006",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d26723c2bd54eec3ba",
+      "keeperUsername": "pc-006$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf8f",
+      "keeperUsername": "pc-007",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d26723c2bd54eec3bb",
+      "keeperUsername": "pc-007$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf90",
+      "keeperUsername": "pc-008",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d26723c2bd54eec3bc",
+      "keeperUsername": "pc-008$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf91",
+      "keeperUsername": "pc-009",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d26723c2bd54eec3bd",
+      "keeperUsername": "pc-009$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a1d34f95c30f88db5eb7e98",
+      "keeperUsername": "pc-010",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d26723c2bd54eec3be",
+      "keeperUsername": "pc-010$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a1d82515c30f88db5eb7e9a",
+      "keeperUsername": "pc-011",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d26723c2bd54eec3bf",
+      "keeperUsername": "pc-011$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a2fdb306723c2bd54eec3d6",
+      "keeperUsername": "pc-012$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a328c406723c2bd54eec3d8",
+      "keeperUsername": "pc-013$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf92",
+      "keeperUsername": "pc-talasli",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d26723c2bd54eec3c0",
+      "keeperUsername": "pc-talasli$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a2fdb306723c2bd54eec3d2",
+      "keeperUsername": "planlama-test",
+      "keeperName": "planlama",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf93",
+      "keeperUsername": "safetica_dlp",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d26723c2bd54eec3c1",
+      "keeperUsername": "safetica_dlp$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a2257d26723c2bd54eec3c2",
+      "keeperUsername": "sakgun",
+      "keeperName": "Sibel Akgün",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2fdb306723c2bd54eec3d4",
+      "keeperUsername": "salma-test",
+      "keeperName": "salma",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a10dac7aa230804ea3c3c7b",
+      "keeperUsername": "serkan meral",
+      "keeperName": "Serkan Meral",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a2262026723c2bd54eec3c9",
+      "keeperUsername": "serkan.meral",
+      "keeperName": "Serkan Meral",
+      "keeperActive": true,
+      "keeperSource": "Local",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf95",
+      "keeperUsername": "sibel akgün",
+      "keeperName": "Sibel Akgün",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf96",
+      "keeperUsername": "talasli",
+      "keeperName": "talasli",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2fdb306723c2bd54eec3d1",
+      "keeperUsername": "tasarim-test",
+      "keeperName": "tasarim",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a26bcd06723c2bd54eec3cc",
+      "keeperUsername": "temiz-oda",
+      "keeperName": "temiz-oda",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf97",
+      "keeperUsername": "terminal",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d26723c2bd54eec3c3",
+      "keeperUsername": "terminal$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a0f987f3d6ba5d774ee37cb",
+      "keeperUsername": "test.user1",
+      "keeperName": "Test User1",
+      "keeperActive": true,
+      "keeperSource": "Local",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a0f98803d6ba5d774ee37cc",
+      "keeperUsername": "test.user2",
+      "keeperName": "Test User2",
+      "keeperActive": true,
+      "keeperSource": "Local",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a0f98803d6ba5d774ee37cd",
+      "keeperUsername": "test.user3",
+      "keeperName": "Test User3",
+      "keeperActive": true,
+      "keeperSource": "Local",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a0f98823d6ba5d774ee37ce",
+      "keeperUsername": "test.user4",
+      "keeperName": "Test User4",
+      "keeperActive": true,
+      "keeperSource": "Local",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a0f98833d6ba5d774ee37cf",
+      "keeperUsername": "test.user5",
+      "keeperName": "Test User5",
+      "keeperActive": true,
+      "keeperSource": "Local",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a1368c1c63b4d8a4a4fbb66",
+      "keeperUsername": "wac",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d26723c2bd54eec3c4",
+      "keeperUsername": "wac$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a10d6ada47158ef1ddddf99",
+      "keeperUsername": "win-o4fuo01qbhb",
+      "keeperName": "",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a2257d26723c2bd54eec3c5",
+      "keeperUsername": "win-o4fuo01qbhb$",
+      "keeperName": "",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    },
+    {
+      "keeperUserId": "6a2fdb306723c2bd54eec3d5",
+      "keeperUsername": "yonetim-test",
+      "keeperName": "yonetim",
+      "keeperActive": true,
+      "keeperSource": "Directory",
+      "likelyDuplicate": false
+    },
+    {
+      "keeperUserId": "6a1d58205c30f88db5eb7e99",
+      "keeperUsername": "ömer özcan",
+      "keeperName": "Ömer Özcan",
+      "keeperActive": false,
+      "keeperSource": "Directory",
+      "likelyDuplicate": true
+    }
+  ],
+  "ambiguous": []
+}

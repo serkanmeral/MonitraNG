@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { storeToRefs } from 'pinia';
 import { VueDraggableNext } from 'vue-draggable-next';
 import OdakSiparisListColumnFormatDialog from '@/components/apps/odak-siparis/OdakSiparisListColumnFormatDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
@@ -20,7 +19,6 @@ const props = defineProps({
 const { t } = useAppI18n();
 const panelError = usePanelErrorNotify('errors.dg.generic');
 const hubStore = useOdakSiparisHubSettingsStore();
-const { bootstrapStatus } = storeToRefs(hubStore);
 
 const hubScope = computed(() => props.scope as OdakHubListSettingsScope);
 const errorMessage = ref('');
@@ -30,9 +28,10 @@ const listConfig = computed(
   () => hubStore.scopes[hubScope.value].config as OdakHubListConfig
 );
 
-const loading = computed(
-  () => bootstrapStatus.value === 'loading' || !hubStore.scopeReady(hubScope.value)
-);
+const loading = computed(() => {
+  const status = hubStore.scopes[hubScope.value].status;
+  return status === 'loading' || status === 'idle';
+});
 const saving = computed(() => hubStore.scopeSaving(hubScope.value));
 const canSave = computed(() => hubStore.canSaveScope(hubScope.value));
 const canEdit = computed(() => hubStore.canEditScope(hubScope.value));
@@ -143,7 +142,7 @@ function resetDefaults() {
           <v-switch v-model="element.visible" :disabled="!canEdit" :label="t('odakSiparis.packages.settings.listColumns.visible')" hide-details density="compact" color="primary" />
           <v-switch v-model="element.sortable" :disabled="!canEdit" :label="t('odakSiparis.packages.settings.listColumns.sortable')" hide-details density="compact" />
           <v-switch
-            v-if="scope === 'packages_list'"
+            v-if="scope === 'packages_list' || scope === 'global_shipments_list'"
             v-model="element.filterable"
             :disabled="!canEdit"
             :label="t('odakSiparis.packages.settings.listColumns.filterable')"

@@ -86,7 +86,7 @@ function Get-TotalCount {
 function Test-LooksLikeMojibake {
     param([string]$Text)
     if ([string]::IsNullOrWhiteSpace($Text)) { return $false }
-    return ($Text -match 'Ã.|Ä.|Å.|â€|ï¿½')
+    return ($Text -match '[?�]|Ã.|Ä.|Å.|â€|ï¿½')
 }
 
 function Get-DgSampleTexts {
@@ -265,8 +265,10 @@ $mojibakeChecked = 0
 $mojibakeHits = 0
 $mojibakeRatio = 0.0
 if (-not $SkipMojibakeCheck) {
-    $perDataset = [math]::Max(20, [int]($MojibakeSampleSize / 3))
+    $perDataset = [math]::Max(15, [int]($MojibakeSampleSize / 5))
     $samples = @()
+    $samples += Get-DgSampleTexts -Dataset "odak_is_paketleri" -Fields @("name", "notes", "deliveryAddress") -MaxRows $perDataset
+    $samples += Get-DgSampleTexts -Dataset "odak_musteriler" -Fields @("unvan") -MaxRows $perDataset
     $samples += Get-DgSampleTexts -Dataset "odak_siparis_kalemleri" -Fields @("description", "notes") -MaxRows $perDataset
     $samples += Get-DgSampleTexts -Dataset "odak_ncr" -Fields @("descriptor", "explanation", "notes") -MaxRows $perDataset
     $samples += Get-DgSampleTexts -Dataset "odak_sevkiyatlar" -Fields @("notes", "headerDescription", "shipmentAddress") -MaxRows $perDataset
@@ -277,7 +279,7 @@ if (-not $SkipMojibakeCheck) {
     }
     Write-Host "Orneklenen metin: $mojibakeChecked  Mojibake: $mojibakeHits  Oran: $mojibakeRatio (max $MaxMojibakeRatio)" -ForegroundColor $(if ($mojibakeRatio -le $MaxMojibakeRatio) { "Green" } else { "Yellow" })
     if ($mojibakeHits -gt 0) {
-        Write-Host "  Onarim: migrate-legacy-ncs-to-dg.ps1 -RepairText ; migrate-legacy-shipments-to-dg.ps1 -RepairText" -ForegroundColor Gray
+        Write-Host "  Onarim: repair-odak-package-text.ps1 ; repair-odak-musteri-unvan.ps1 ; migrate-legacy-ncs-to-dg.ps1 -RepairText ; migrate-legacy-shipments-to-dg.ps1 -RepairText" -ForegroundColor Gray
     }
     $mojOk = ($mojibakeChecked -eq 0) -or ($mojibakeRatio -le $MaxMojibakeRatio)
     Add-Check -Id "mojibake" -Level "WARN" -Message "Turkce mojibake orani yuksek ($mojibakeHits/$mojibakeChecked)" -Passed:$mojOk

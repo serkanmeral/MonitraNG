@@ -1,10 +1,15 @@
 /**
- * Odak Sipariş — paket ayarları sayfası: yalnızca isManager.
+ * Odak Sipariş — paket ayarları sayfası: yalnızca manager.
  */
-export default defineNuxtRouteMiddleware(() => {
+import { ensureAuthUserReady, userHasManagerRole } from '@/utils/authRoles';
+
+export default defineNuxtRouteMiddleware(async () => {
   if (import.meta.server) return;
+
   const auth = useAuthStore();
-  if (!auth.isManager) {
+  await ensureAuthUserReady(auth);
+
+  if (!userHasManagerRole(auth.userInfo)) {
     return navigateTo('/apps/odak-siparis/packages');
   }
 });

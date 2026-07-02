@@ -26,6 +26,11 @@ import {
   type OdakPackageListConfig,
 } from '@/utils/odakSiparisPackageListSettings';
 import {
+  defaultOdakGlobalShipmentListConfig,
+  mergeOdakGlobalShipmentListConfig,
+  type OdakGlobalShipmentListConfig,
+} from '@/utils/odakSiparisGlobalShipmentListSettings';
+import {
   defaultOdakShipmentListConfig,
   mergeOdakShipmentListConfig,
   type OdakShipmentListConfig,
@@ -37,13 +42,18 @@ export type OdakHubSettingsScope =
   | 'packages_list'
   | 'lines_list'
   | 'shipments_list'
+  | 'global_shipments_list'
   | 'field_policies'
   | 'lines_field_policies'
   | 'shipments_field_policies'
   | 'package_po_document_access'
   | 'package_odak_personnel';
 
-export type OdakHubListSettingsScope = 'packages_list' | 'lines_list' | 'shipments_list';
+export type OdakHubListSettingsScope =
+  | 'packages_list'
+  | 'lines_list'
+  | 'shipments_list'
+  | 'global_shipments_list';
 
 export type OdakHubFieldPoliciesScope = 'field_policies' | 'lines_field_policies' | 'shipments_field_policies';
 
@@ -148,6 +158,7 @@ const LIST_SCOPE_MERGE: Record<
   packages_list: mergeOdakPackageListConfig,
   lines_list: mergeOdakLineListConfig,
   shipments_list: mergeOdakShipmentListConfig,
+  global_shipments_list: mergeOdakGlobalShipmentListConfig,
 };
 
 export async function loadOdakHubListConfig(scope: OdakHubListSettingsScope): Promise<{
@@ -365,6 +376,10 @@ export async function loadOdakShipmentListConfigOnly(force = false) {
   return loadOdakHubListConfigOnly('shipments_list', force) as Promise<OdakShipmentListConfig>;
 }
 
+export async function loadOdakGlobalShipmentListConfigOnly(force = false) {
+  return loadOdakHubListConfigOnly('global_shipments_list', force) as Promise<OdakGlobalShipmentListConfig>;
+}
+
 /** Varsayılan hub list yapılandırmaları (scope kaydı yoksa). */
 export function defaultOdakHubListConfig(scope: OdakHubListSettingsScope): OdakHubListConfig {
   switch (scope) {
@@ -374,6 +389,8 @@ export function defaultOdakHubListConfig(scope: OdakHubListSettingsScope): OdakH
       return defaultOdakLineListConfig();
     case 'shipments_list':
       return defaultOdakShipmentListConfig();
+    case 'global_shipments_list':
+      return defaultOdakGlobalShipmentListConfig();
   }
 }
 

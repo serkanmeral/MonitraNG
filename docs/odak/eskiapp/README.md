@@ -15,6 +15,7 @@
 | **DB salt okunur mod** | [scripts/enable-legacy-kalite-db-readonly.ps1](./scripts/enable-legacy-kalite-db-readonly.ps1) |
 | SSH / sunucu erişimi | [SERVER_ACCESS.md](./SERVER_ACCESS.md) |
 | Uygulama özeti, menü, veri modeli | [../siparis/LEGACY_KALITE_OVERVIEW.md](../siparis/LEGACY_KALITE_OVERVIEW.md) |
+| **Legacy ↔ Keeper kullanıcı karşılaştırma** | **[LEGACY_KEEPER_USER_COMPARE.md](./LEGACY_KEEPER_USER_COMPARE.md)** · son rapor: [reports/legacy-keeper-user-compare_LATEST.md](./reports/legacy-keeper-user-compare_LATEST.md) |
 | Sipariş migrasyon planı | [../siparis/README.md](../siparis/README.md) |
 | Lokal çalıştırma (PHP+MySQL) | [../siparis/NATIVE_LOCAL_PLAN.md](../siparis/NATIVE_LOCAL_PLAN.md) |
 

@@ -5,9 +5,25 @@ export const ODAK_SIPARIS_NOTIFICATION_EVENT_TYPES = [
   'PackageCreated',
   'PackageUpdated',
   'ShipmentCompleted',
+  'GlobalShipmentCreated',
 ] as const;
 
 export type OdakSiparisNotificationEventType = (typeof ODAK_SIPARIS_NOTIFICATION_EVENT_TYPES)[number];
+
+/** İş paketi ayarları — bildirim politikası olayları. */
+export const ODAK_PACKAGE_NOTIFICATION_EVENT_TYPES = [
+  'PackageCreated',
+  'PackageUpdated',
+  'ShipmentCompleted',
+] as const satisfies readonly OdakSiparisNotificationEventType[];
+
+export const ODAK_GLOBAL_SHIPMENT_NOTIFICATION_EVENT = 'GlobalShipmentCreated' as const;
+
+export const ODAK_GLOBAL_SHIPMENT_NOTIFICATION_EVENT_TYPES = [
+  ODAK_GLOBAL_SHIPMENT_NOTIFICATION_EVENT,
+] as const satisfies readonly OdakSiparisNotificationEventType[];
+
+export const ODAK_GLOBAL_SHIPMENT_DEFAULT_MAIL_TEMPLATE = 'odak-global-shipment-created';
 
 export type OdakPackageUpdateTriggerMode = 'always' | 'fields';
 export type OdakShipmentTriggerMode = 'transition' | 'toStatus' | 'always';
@@ -242,6 +258,14 @@ export async function listOdakNotificationPolicies(): Promise<OdakSiparisNotific
   return rows
     .map((r) => normalizeOdakNotificationPolicy(r as Record<string, unknown>))
     .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+}
+
+export async function listOdakNotificationPoliciesForEvents(
+  eventTypes: readonly string[]
+): Promise<OdakSiparisNotificationPolicy[]> {
+  const allowed = new Set(eventTypes);
+  const all = await listOdakNotificationPolicies();
+  return all.filter((p) => allowed.has(p.eventType));
 }
 
 export async function createOdakNotificationPolicy(

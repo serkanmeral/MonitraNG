@@ -34,6 +34,13 @@ function Limit-LegacyText {
     return $text.Substring(0, $MaxLength)
 }
 
+function Test-SuspiciousLegacyText {
+    param([string]$Text)
+    if ([string]::IsNullOrWhiteSpace($Text)) { return $false }
+    if ($Text -match '[?�]|Ã.|Ä.|Å.|â€|ï¿½') { return $true }
+    return $false
+}
+
 # Backward-compatible alias used by migrate-remaining-lines.ps1
 function Sanitize-JsonText {
     param([object]$Value)

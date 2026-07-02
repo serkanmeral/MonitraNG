@@ -6,6 +6,7 @@ import { listContactsForCustomer } from '@/utils/odakSiparisCustomerContactServi
 import { listQualityReqsForCustomer } from '@/utils/odakSiparisCustomerQualityReqService';
 import { countOpenNcrs, listNcrsForPackages } from '@/utils/odakSiparisNcrService';
 import {
+  aggregateLineQuantities,
   countCompletedShipments,
   listShipmentsForPackage,
   listShipmentLinesForPackage,
@@ -31,6 +32,7 @@ export interface OdakPackageDashboardMetrics {
   partCount: number;
   stockCount: number;
   shippedCount: number;
+  remainingQuantity: number;
   fulfillmentPct: number | null;
   shipmentTotal: number;
   shipmentCompleted: number;
@@ -169,11 +171,13 @@ export async function fetchPackageDashboardMetrics(
   ]);
 
   const lineStats = lineStatsMap.get(packageId);
+  const lineAggregate = aggregateLineQuantities(lines);
   const lineCount = row?.lineCount ?? lineStats?.lineCount ?? lines.length;
   const partCount = Number(row?.partCount) || 0;
   const stockCount = Number(row?.stockCount) || 0;
   const shippedFromLines = sumShipmentLineQuantities(shipmentLines);
-  const shippedCount = Number(row?.shippedCount) || shippedFromLines || 0;
+  const shippedCount = Number(row?.shippedCount) || lineAggregate.totalShipped || shippedFromLines || 0;
+  const remainingQuantity = lineAggregate.totalRemaining;
 
   const daysLeft = daysUntilDelivery(row?.deliveryDate);
   const status = String(row?.status ?? 'open');
@@ -188,6 +192,7 @@ export async function fetchPackageDashboardMetrics(
     partCount,
     stockCount,
     shippedCount,
+    remainingQuantity,
     fulfillmentPct: fulfillmentPercent(partCount, shippedCount),
     shipmentTotal: shipments.length,
     shipmentCompleted: countCompletedShipments(shipments),

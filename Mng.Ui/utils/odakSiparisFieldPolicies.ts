@@ -153,7 +153,7 @@ const LINE_LIST_KEY_TO_FIELD: Record<string, string> = {
   quantity: 'quantity',
   unit: 'unit',
   shippedQuantity: 'shippedQuantity',
-  remainingQuantity: 'remainingQuantity',
+  remainingQuantity: 'quantity',
   deliveryDate: 'deliveryDate',
   shipmentDate: 'shipmentDate',
   shipmentAddress: 'shipmentAddress',
@@ -170,7 +170,9 @@ const SHIPMENT_LIST_KEY_TO_FIELD: Record<string, string> = {
   waybillNo: 'waybillNo',
   shipmentDate: 'shipmentDate',
   status: 'status',
-  lineQty: 'lineQty',
+  orderQty: 'quantity',
+  lineQty: 'shippedQuantity',
+  remainingQty: 'quantity',
   qcfStatus: 'qcfStatus',
   controlType: 'controlType',
   shipmentAddress: 'shipmentAddress',
@@ -360,6 +362,37 @@ function policyConditionsMatch(policy: OdakFieldPolicy, record: Record<string, u
   return clauses.every((c) => clauseMatches(c, record));
 }
 
+function visibilityPolicySpecificity(policy: OdakFieldVisibilityPolicy): number {
+  let score = policy.groups.length > 0 ? 10 : 0;
+  if (policy.scope === 'conditional') score += 5;
+  return score;
+}
+
+/** Grup/koşul eşleşmesine göre görünürlük — liste sütunu ve form aynı kaynağı kullanır. */
+function resolveFieldVisibility(
+  policies: OdakFieldPolicy[],
+  matching: OdakFieldPolicy[]
+): boolean {
+  const visibilityAll = policies.filter((p): p is OdakFieldVisibilityPolicy => p.kind === 'visibility');
+  if (!visibilityAll.length) return true;
+
+  const matchingVisibility = matching.filter((p): p is OdakFieldVisibilityPolicy => p.kind === 'visibility');
+
+  if (matchingVisibility.length) {
+    const winner = [...matchingVisibility].sort(
+      (a, b) => visibilityPolicySpecificity(b) - visibilityPolicySpecificity(a)
+    )[0];
+    return winner.visible;
+  }
+
+  // Grup-bazlı "görünür" kuralı var ama kullanıcı eşleşmedi → allow-list, gizle
+  if (visibilityAll.some((p) => p.visible && p.groups.length > 0)) {
+    return false;
+  }
+
+  return true;
+}
+
 export interface OdakFieldAccess {
   visible: boolean;
   editable: boolean;
@@ -379,14 +412,11 @@ export function resolveOdakFieldAccess(
   const matching = policies.filter(
     (p) => groupMatches(p.groups, userGroups) && policyConditionsMatch(p, record)
   );
-  if (!matching.length) {
-    return { visible: true, editable: true };
-  }
 
-  let visible = true;
+  const visible = resolveFieldVisibility(policies, matching);
+
   let editable = true;
   for (const p of matching) {
-    if (p.kind === 'visibility' && p.visible === false) visible = false;
     if (p.kind === 'readonly' && p.readonly === true) editable = false;
   }
   if (!visible) editable = false;
@@ -441,6 +471,14 @@ export function filterPayloadByFieldAccess(
   for (const [key, value] of Object.entries(payload)) {
     const access = resolveOdakFieldAccess(key, userGroups, record, blob);
     if (access.editable) out[key] = value;
+  }
+  // Birim fiyat düzenlenebiliyorsa para cinsi de kayda girmeli (aynı satırda seçiliyor).
+  if (
+    resolveOdakFieldAccess('unitCost', userGroups, record, blob).editable &&
+    payload.currency !== undefined &&
+    !('currency' in out)
+  ) {
+    out.currency = payload.currency;
   }
   return out;
 }

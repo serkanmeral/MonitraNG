@@ -22,7 +22,7 @@ import {
   ODAK_LINE_LIST_KEY_TO_FIELD,
   type OdakLineListConfig,
 } from '@/utils/odakSiparisLineListSettings';
-import type { OdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
+import { defaultOdakLineFieldPoliciesBlob, type OdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
 import { useOdakFieldAccess } from '@/composables/useOdakFieldAccess';
 import { odakLineSettingsFieldLabelTr } from '@/utils/odakSiparisSettingsLabels';
 import { buildOdakLineExpandSummaryRows } from '@/utils/odakSiparisLineSummary';
@@ -175,7 +175,7 @@ onMounted(() => {
       fieldPolicies.value = blob;
     })
     .catch(() => {
-      fieldPolicies.value = { policiesByField: {} };
+      fieldPolicies.value = defaultOdakLineFieldPoliciesBlob();
     });
   void loadLines();
 });

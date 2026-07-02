@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import type { AfFilterColumn, AfListFilter, AfListFilterKind } from '@/utils/afListFilters';
@@ -16,6 +16,10 @@ const props = defineProps<{
   relationOptionsByKey?: Record<string, { value: string; title: string }[]>;
   /** @deprecated Merkezi MngDirectoryPickerField kullanılıyor. */
   groupOptionsByKey?: Record<string, { value: string; title: string }[]>;
+  /** Seed advanced filter rows on mount (e.g. page default list scope). */
+  initialFilters?: AfListFilter[];
+  /** Open the advanced filter panel on mount. */
+  initialPanelOpen?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -178,6 +182,25 @@ function onRowOperatorChange(row: AdvancedRow) {
 function clearAll() {
   advancedRows.value = [];
 }
+
+function filtersToRows(filters: AfListFilter[]): AdvancedRow[] {
+  return filters.map((f) => {
+    const kind = kindOf(f.field);
+    let value: unknown = f.value;
+    if (kind && isSelectKind(kind) && isMultiSelectOp(f.operator)) {
+      value = f.value.split(',').map((v) => v.trim()).filter(Boolean);
+    }
+    return { id: ++rowSeq, field: f.field, operator: f.operator, value };
+  });
+}
+
+function seedInitialFilters() {
+  if (!props.initialFilters?.length || advancedRows.value.length) return;
+  advancedRows.value = filtersToRows(props.initialFilters);
+  if (props.initialPanelOpen) panelOpen.value = true;
+}
+
+onBeforeMount(() => seedInitialFilters());
 
 function buildFilters(): AfListFilter[] {
   const out: AfListFilter[] = [];

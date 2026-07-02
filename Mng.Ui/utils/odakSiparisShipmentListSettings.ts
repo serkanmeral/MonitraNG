@@ -22,7 +22,9 @@ import {
   qcfStatusLabel,
   shipmentDataId,
   shipmentStatusLabel,
+  type OdakShipmentQtySummary,
 } from '@/utils/odakSiparisShipmentService';
+import { formatOdakNumber } from '@/utils/odakSiparisService';
 
 export type OdakShipmentListColumnConfig = import('@/utils/odakSiparisHubListConfig').OdakHubListColumnConfig;
 export type OdakShipmentListConfig = OdakHubListConfig;
@@ -31,13 +33,15 @@ export const ODAK_SHIPMENT_LIST_FIELD_CATALOG: OdakHubListFieldDef[] = [
   { fieldName: 'waybillNo', listKey: 'waybillNo', defaultVisible: true, defaultSortable: true, defaultFilterable: false, defaultOrder: 1, width: 140 },
   { fieldName: 'shipmentDate', listKey: 'shipmentDate', defaultVisible: true, defaultSortable: true, defaultFilterable: false, defaultOrder: 2, width: 110 },
   { fieldName: 'status', listKey: 'status', defaultVisible: true, defaultSortable: true, defaultFilterable: false, defaultOrder: 3, width: 120 },
-  { fieldName: 'lineQty', listKey: 'lineQty', defaultVisible: true, defaultSortable: false, defaultFilterable: false, defaultOrder: 4, width: 100 },
-  { fieldName: 'qcfStatus', listKey: 'qcfStatus', defaultVisible: true, defaultSortable: false, defaultFilterable: false, defaultOrder: 5, width: 120 },
-  { fieldName: 'controlType', listKey: 'controlType', defaultVisible: true, defaultSortable: false, defaultFilterable: false, defaultOrder: 6, width: 120 },
-  { fieldName: 'shipmentAddress', listKey: 'shipmentAddress', defaultVisible: false, defaultSortable: false, defaultFilterable: false, defaultOrder: 7 },
-  { fieldName: 'notes', listKey: 'notes', defaultVisible: false, defaultSortable: false, defaultFilterable: false, defaultOrder: 8 },
-  { fieldName: 'qcfReferenceNo', listKey: 'qcfReferenceNo', defaultVisible: false, defaultSortable: false, defaultFilterable: false, defaultOrder: 9, width: 120 },
-  { fieldName: 'qcfNotes', listKey: 'qcfNotes', defaultVisible: false, defaultSortable: false, defaultFilterable: false, defaultOrder: 10 },
+  { fieldName: 'orderQty', listKey: 'orderQty', defaultVisible: true, defaultSortable: false, defaultFilterable: false, defaultOrder: 4, width: 128 },
+  { fieldName: 'lineQty', listKey: 'lineQty', defaultVisible: true, defaultSortable: false, defaultFilterable: false, defaultOrder: 5, width: 96 },
+  { fieldName: 'remainingQty', listKey: 'remainingQty', defaultVisible: true, defaultSortable: false, defaultFilterable: false, defaultOrder: 6, width: 120 },
+  { fieldName: 'qcfStatus', listKey: 'qcfStatus', defaultVisible: true, defaultSortable: false, defaultFilterable: false, defaultOrder: 7, width: 120 },
+  { fieldName: 'controlType', listKey: 'controlType', defaultVisible: true, defaultSortable: false, defaultFilterable: false, defaultOrder: 8, width: 120 },
+  { fieldName: 'shipmentAddress', listKey: 'shipmentAddress', defaultVisible: false, defaultSortable: false, defaultFilterable: false, defaultOrder: 9 },
+  { fieldName: 'notes', listKey: 'notes', defaultVisible: false, defaultSortable: false, defaultFilterable: false, defaultOrder: 10 },
+  { fieldName: 'qcfReferenceNo', listKey: 'qcfReferenceNo', defaultVisible: false, defaultSortable: false, defaultFilterable: false, defaultOrder: 11, width: 120 },
+  { fieldName: 'qcfNotes', listKey: 'qcfNotes', defaultVisible: false, defaultSortable: false, defaultFilterable: false, defaultOrder: 12 },
 ];
 
 export const ODAK_SHIPMENT_LIST_FIELD_TO_KEY = buildFieldToListKeyMap(ODAK_SHIPMENT_LIST_FIELD_CATALOG);
@@ -82,6 +86,22 @@ export function fieldNameFromShipmentListKey(sortKey: string): string {
 
 export interface ShipmentListCellContext {
   lineQtyByShipmentId?: Map<string, number>;
+  qtySummaryByShipmentId?: Map<string, OdakShipmentQtySummary>;
+}
+
+function qtySummaryForRow(
+  row: OdakShipmentRow,
+  ctx?: ShipmentListCellContext
+): OdakShipmentQtySummary | undefined {
+  const id = shipmentDataId(row);
+  if (!id) return undefined;
+  const summary = ctx?.qtySummaryByShipmentId?.get(id);
+  if (summary) return summary;
+  const shipped = ctx?.lineQtyByShipmentId?.get(id);
+  if (shipped != null) {
+    return { shippedQty: shipped, orderQty: 0, remainingQty: 0 };
+  }
+  return undefined;
 }
 
 export function shipmentListCellRaw(
@@ -96,10 +116,19 @@ export function shipmentListCellRaw(
       return formatShipmentDate(row.shipmentDate);
     case 'status':
       return shipmentStatusLabel(row.status);
+    case 'orderQty': {
+      const summary = qtySummaryForRow(row, ctx);
+      return summary && summary.orderQty > 0 ? formatOdakNumber(summary.orderQty) : '—';
+    }
     case 'lineQty': {
-      const id = shipmentDataId(row);
-      const qty = id ? ctx?.lineQtyByShipmentId?.get(id) : undefined;
-      return qty != null ? String(qty) : '—';
+      const summary = qtySummaryForRow(row, ctx);
+      return summary ? formatOdakNumber(summary.shippedQty) : '—';
+    }
+    case 'remainingQty': {
+      const summary = qtySummaryForRow(row, ctx);
+      if (!summary) return '—';
+      if (summary.orderQty <= 0 && summary.shippedQty <= 0) return '—';
+      return formatOdakNumber(summary.remainingQty);
     }
     case 'qcfStatus':
       return qcfStatusLabel(row.qcfStatus);

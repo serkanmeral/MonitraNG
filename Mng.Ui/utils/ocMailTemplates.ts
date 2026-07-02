@@ -106,7 +106,7 @@ export function buildMailTemplatePayload(draft: OcMailTemplateDraft, isEdit: boo
     variables: vars,
     layoutKey: draft.layoutKey.trim() || 'default',
     locale: draft.locale.trim() || 'tr',
-    category: draft.category || 'custom',
+    category: (draft.category || 'custom').trim() || 'custom',
     tags: draft.tags.filter(Boolean),
     isActive: draft.isActive,
   };

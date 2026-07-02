@@ -1,6 +1,6 @@
 import type { OdakLineRow } from '@/utils/odakSiparisConfig';
 import { formatQualityRequirementsSummary } from '@/utils/odakSiparisCustomerQualityReqService';
-import { formatOdakDate, formatOdakNumber } from '@/utils/odakSiparisService';
+import { formatOdakCurrencyAmount, formatOdakDate, formatOdakNumber } from '@/utils/odakSiparisService';
 import { productLabelFromRow } from '@/utils/odakSiparisLineService';
 
 export type OdakLineSummaryRow = { label: string; value: string };
@@ -37,8 +37,18 @@ export function buildOdakLineExpandSummaryRows(
     optionalLineRow(t, 'odakSiparis.lines.fields.qualityReqs', line.qualityReqs),
     { label: t('odakSiparis.lines.fields.isFai'), value: boolLabel(line.isFai) },
     { label: t('odakSiparis.lines.fields.isFaiComplete'), value: boolLabel(line.isFaiComplete) },
-    optionalLineRow(t, 'odakSiparis.lines.fields.unitCost', line.unitCost),
-    optionalLineRow(t, 'odakSiparis.lines.fields.totalCost', line.totalCost),
+    line.unitCost != null && line.unitCost !== ''
+      ? {
+          label: t('odakSiparis.lines.fields.unitCost'),
+          value: formatOdakCurrencyAmount(line.unitCost, line.currency),
+        }
+      : null,
+    line.totalCost != null && line.totalCost !== ''
+      ? {
+          label: t('odakSiparis.lines.fields.totalCost'),
+          value: formatOdakCurrencyAmount(line.totalCost, line.currency),
+        }
+      : null,
     optionalLineRow(t, 'odakSiparis.lines.fields.currency', line.currency),
   ].filter(Boolean) as OdakLineSummaryRow[];
 

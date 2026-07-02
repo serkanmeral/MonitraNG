@@ -103,6 +103,45 @@
         }
       },
       "isActive": true
+    },
+    {
+      "templateKey": "odak-global-shipment-created",
+      "name": "Odak — Genel sevkiyat olusturuldu",
+      "description": "Yeni genel sevkiyat kaydi (GlobalShipmentCreated). Politika: odak_siparis_notification_policies eventType=GlobalShipmentCreated.",
+      "subject": "[{{shipment.waybillNo}}] Yeni genel sevkiyat",
+      "bodyHtml": "<h1 style=\"font-size:20px;margin:0 0 12px;\">Yeni genel sevkiyat</h1><p><strong>{{shipment.waybillNo}}</strong> irsaliye numarali genel sevkiyat kaydi olusturuldu.</p><div class=\"info-box\"><h2 class=\"info-box-title\">Sevkiyat bilgileri</h2><p><strong>Irsaliye no:</strong> {{shipment.waybillNo}}</p><p><strong>Icerik:</strong> {{shipment.headerDescription}}</p><p><strong>Sevk tarihi:</strong> {{shipment.shipmentDate}}</p><p><strong>Durum:</strong> {{shipment.status}}</p><p><strong>Kapsam:</strong> {{shipment.recordScope}}</p><p><strong>Kalem sayisi:</strong> {{shipment.lineCount}}</p></div><p style=\"color:#666;font-size:14px;\">Olay: {{event.type}} — {{event.timestamp}}</p>",
+      "variables": [
+        "event.type",
+        "event.timestamp",
+        "shipment.waybillNo",
+        "shipment.headerDescription",
+        "shipment.shipmentDate",
+        "shipment.status",
+        "shipment.recordScope",
+        "shipment.lineCount"
+      ],
+      "layoutKey": "default",
+      "locale": "tr",
+      "category": "odak-siparis",
+      "tags": ["odak-siparis", "shipment", "GlobalShipmentCreated", "global"],
+      "sampleContext": {
+        "event": { "type": "GlobalShipmentCreated", "timestamp": "2026-07-02T16:30:00Z" },
+        "shipment": {
+          "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+          "waybillNo": "IRS-2026-8842",
+          "headerDescription": "Kompozit panel seti — genel sevkiyat",
+          "shipmentDate": "02.07.2026",
+          "status": "Planlandi",
+          "recordScope": "Genel",
+          "controlType": "—",
+          "lineCount": 3
+        },
+        "domain": {
+          "displayName": "Odak Kompozit Teknolojileri A.S.",
+          "logoUrl": "https://img-kariyer.mncdn.com/mnresize/150/150/UploadFiles/Clients/SquareLogo/983/ai_kk_274983_6022024014542.png"
+        }
+      },
+      "isActive": true
     }
   ]
 }

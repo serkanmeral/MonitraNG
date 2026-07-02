@@ -2,14 +2,18 @@
 import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
-import type { OdakPackageRow, OdakShipmentLineRow, OdakShipmentRow } from '@/utils/odakSiparisConfig';
+import type { OdakLineRow, OdakPackageRow, OdakShipmentRow } from '@/utils/odakSiparisConfig';
+import { listLinesForPackage } from '@/utils/odakSiparisLineService';
+import { formatOdakNumber } from '@/utils/odakSiparisService';
 import {
-  customerLabelFromRow,
   fetchOdakPackageById,
   packageDataId,
   packageDisplayNo,
+  shipmentCustomerLabel,
 } from '@/utils/odakSiparisService';
 import {
+  buildParentLineMap,
+  buildShipmentLineQtyViews,
   fetchOdakShipmentById,
   formatShipmentDate,
   listShipmentLinesForShipment,
@@ -19,13 +23,24 @@ import {
   shipmentDataId,
   shipmentStatusLabel,
   sumShipmentLineQuantities,
+  type OdakShipmentLineQtyView,
 } from '@/utils/odakSiparisShipmentService';
 
-const props = defineProps<{
-  shipmentRow: OdakShipmentRow;
-  customerLabels: Record<string, string>;
-  refreshToken?: number;
-}>();
+const props = withDefaults(
+  defineProps<{
+    shipmentRow: OdakShipmentRow;
+    customerLabels: Record<string, string>;
+    refreshToken?: number;
+    /** İş paketi expand panelinde — paket kartını tekrar gösterme */
+    embeddedInPackage?: boolean;
+    /** Sipariş kalemi miktarları için parent line lookup */
+    packageId?: string;
+  }>(),
+  {
+    embeddedInPackage: false,
+    packageId: '',
+  }
+);
 
 const { t } = useAppI18n();
 const panelError = usePanelErrorNotify('errors.dg.generic');
@@ -34,7 +49,7 @@ const loading = ref(false);
 const errorMessage = ref('');
 const header = ref<OdakShipmentRow | null>(null);
 const packageRow = ref<OdakPackageRow | null>(null);
-const lines = ref<OdakShipmentLineRow[]>([]);
+const lineViews = ref<OdakShipmentLineQtyView[]>([]);
 
 const panelKey = computed(() => `${shipmentDataId(props.shipmentRow)}|${props.refreshToken ?? 0}`);
 
@@ -45,9 +60,12 @@ const contentText = computed(() => {
   return (row.headerDescription || row.notes || '').trim() || '—';
 });
 
-const customerLabel = computed(() => customerLabelFromRow(displayHeader.value, props.customerLabels));
+const customerLabel = computed(() =>
+  shipmentCustomerLabel(displayHeader.value, packageRow.value, props.customerLabels)
+);
 
-const packageId = computed(() => {
+const resolvedPackageId = computed(() => {
+  if (props.packageId?.trim()) return props.packageId.trim();
   const raw = displayHeader.value.parentPackageId;
   if (raw == null) return '';
   if (typeof raw === 'string') return raw.trim();
@@ -63,19 +81,27 @@ const packageLabel = computed(() => {
     return t('odakSiparis.globalShipments.expand.noPackage');
   }
   const pkg = packageRow.value;
-  if (!pkg) return packageId.value ? '…' : '—';
+  if (!pkg) return resolvedPackageId.value ? '…' : '—';
   const no = packageDisplayNo(pkg);
   const name = pkg.name?.trim();
   return name ? `${no} — ${name}` : no;
 });
 
 const packageRoute = computed(() => {
-  const id = packageId.value;
+  const id = resolvedPackageId.value;
   if (!id) return undefined;
   return `/apps/odak-siparis/packages?expand=${encodeURIComponent(id)}`;
 });
 
-const lineQtyTotal = computed(() => sumShipmentLineQuantities(lines.value));
+const lineQtyTotal = computed(() => sumShipmentLineQuantities(lineViews.value.map((v) => v.line)));
+
+const orderQtyTotal = computed(() =>
+  lineViews.value.reduce((sum, v) => sum + (v.orderQty ?? 0), 0)
+);
+
+const remainingQtyTotal = computed(() =>
+  lineViews.value.reduce((sum, v) => sum + (v.remainingQty ?? 0), 0)
+);
 
 const detailFields = computed(() => {
   const row = displayHeader.value;
@@ -94,6 +120,15 @@ const detailFields = computed(() => {
   ];
 });
 
+function formatQty(value: number | null | undefined): string {
+  if (value == null) return '—';
+  return formatOdakNumber(value);
+}
+
+function lineRowKey(view: OdakShipmentLineQtyView): string {
+  return packageDataId(view.line) || `${view.line.lineNo}-${view.line.lineDescription}`;
+}
+
 async function loadPanel() {
   const id = shipmentDataId(props.shipmentRow);
   if (!id) return;
@@ -101,28 +136,26 @@ async function loadPanel() {
   errorMessage.value = '';
   header.value = null;
   packageRow.value = null;
-  lines.value = [];
+  lineViews.value = [];
   try {
     const [loadedHeader, loadedLines] = await Promise.all([
       fetchOdakShipmentById(id),
       listShipmentLinesForShipment(id),
     ]);
     header.value = loadedHeader ?? props.shipmentRow;
-    lines.value = loadedLines;
-    const parentRaw = header.value.parentPackageId;
-    let pkgId = '';
-    if (parentRaw != null) {
-      if (typeof parentRaw === 'string') pkgId = parentRaw.trim();
-      else if (typeof parentRaw === 'object') {
-        const o = parentRaw as Record<string, unknown>;
-        pkgId = String(o.__dataId ?? o.dataId ?? o.id ?? '').trim();
-      } else {
-        pkgId = String(parentRaw).trim();
-      }
-    }
+
+    const pkgId = resolvedPackageId.value;
+    let parentLineMap = new Map<string, OdakLineRow>();
     if (pkgId) {
-      packageRow.value = await fetchOdakPackageById(pkgId);
+      const [pkg, packageLines] = await Promise.all([
+        fetchOdakPackageById(pkgId),
+        listLinesForPackage(pkgId),
+      ]);
+      packageRow.value = pkg ?? null;
+      parentLineMap = buildParentLineMap(packageLines);
     }
+
+    lineViews.value = buildShipmentLineQtyViews(loadedLines, parentLineMap);
   } catch (e: unknown) {
     errorMessage.value = panelError(e, 'errors.dg.generic');
     header.value = props.shipmentRow;
@@ -147,11 +180,14 @@ watch(
       {{ errorMessage }}
     </v-alert>
 
-    <div v-if="normalizeRecordScope(displayHeader.recordScope) === 'Paketli'" class="mb-4">
+    <div
+      v-if="!embeddedInPackage && normalizeRecordScope(displayHeader.recordScope) === 'Paketli'"
+      class="mb-4"
+    >
       <div class="text-caption text-medium-emphasis mb-1">
         {{ t('odakSiparis.globalShipments.expand.packageTitle') }}
       </div>
-      <div class="d-flex flex-wrap align-center ga-2">
+      <div class="d-flex flex-wrap align-center ga-2 mb-1">
         <span class="text-body-2 font-weight-medium">{{ packageLabel }}</span>
         <v-btn
           v-if="packageRoute"
@@ -163,9 +199,13 @@ watch(
           {{ t('odakSiparis.globalShipments.expand.openPackage') }}
         </v-btn>
       </div>
+      <div v-if="customerLabel !== '—'" class="text-body-2">
+        <span class="text-caption text-medium-emphasis">{{ t('odakSiparis.packages.columns.customer') }}:</span>
+        <span class="font-weight-medium ms-1">{{ customerLabel }}</span>
+      </div>
     </div>
 
-    <div class="mb-4">
+    <div v-if="!embeddedInPackage" class="mb-4">
       <div class="text-caption text-medium-emphasis mb-1">
         {{ t('odakSiparis.globalShipments.expand.fullContent') }}
       </div>
@@ -179,33 +219,55 @@ watch(
         <div class="text-caption text-medium-emphasis">{{ field.label }}</div>
         <div class="text-body-2 text-break">{{ field.value }}</div>
       </v-col>
-      <v-col cols="12" sm="6" md="4" lg="3">
+    </v-row>
+
+    <v-row dense class="mb-3">
+      <v-col cols="12">
+        <div class="text-caption text-medium-emphasis odak-shipment-expand-qty-hint">
+          {{ t('odakSiparis.shipments.expand.qtyHint') }}
+        </div>
+      </v-col>
+      <v-col cols="6" sm="4" md="3">
+        <div class="text-caption text-medium-emphasis">{{ t('odakSiparis.shipments.columns.orderQty') }}</div>
+        <div class="text-body-2 tabular-nums font-weight-medium">{{ formatQty(orderQtyTotal) }}</div>
+      </v-col>
+      <v-col cols="6" sm="4" md="3">
         <div class="text-caption text-medium-emphasis">{{ t('odakSiparis.shipments.columns.lineQty') }}</div>
-        <div class="text-body-2 tabular-nums">{{ lineQtyTotal || '—' }}</div>
+        <div class="text-body-2 tabular-nums font-weight-medium">{{ formatQty(lineQtyTotal) }}</div>
+      </v-col>
+      <v-col cols="6" sm="4" md="3">
+        <div class="text-caption text-medium-emphasis">{{ t('odakSiparis.shipments.columns.remainingQty') }}</div>
+        <div class="text-body-2 tabular-nums font-weight-medium">{{ formatQty(remainingQtyTotal) }}</div>
       </v-col>
     </v-row>
 
     <v-divider class="my-3" />
 
-    <div class="text-subtitle-2 mb-2">{{ t('odakSiparis.globalShipments.expand.linesTitle') }}</div>
-    <v-table v-if="lines.length" density="compact" class="odak-shipment-expand-lines border rounded-md">
+    <div class="text-subtitle-2 mb-2">{{ t('odakSiparis.shipments.expand.linesTitle') }}</div>
+    <v-table v-if="lineViews.length" density="compact" class="odak-shipment-expand-lines border rounded-md">
       <thead>
         <tr>
           <th class="text-left" style="width: 56px">#</th>
           <th class="text-left">{{ t('odakSiparis.globalShipments.fields.lineDescription') }}</th>
-          <th class="text-end" style="width: 120px">{{ t('odakSiparis.shipments.dialog.shippedQty') }}</th>
+          <th class="text-end" style="width: 96px">{{ t('odakSiparis.shipments.columns.orderQty') }}</th>
+          <th class="text-end" style="width: 96px">{{ t('odakSiparis.shipments.columns.lineQty') }}</th>
+          <th class="text-end" style="width: 96px">{{ t('odakSiparis.shipments.columns.remainingQty') }}</th>
+          <th class="text-center" style="width: 72px">{{ t('odakSiparis.lines.fields.unit') }}</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="line in lines" :key="packageDataId(line) || `${line.lineNo}-${line.lineDescription}`">
-          <td>{{ line.lineNo ?? '—' }}</td>
-          <td class="text-break">{{ line.lineDescription?.trim() || '—' }}</td>
-          <td class="text-end tabular-nums">{{ line.shippedQuantity ?? '—' }}</td>
+        <tr v-for="view in lineViews" :key="lineRowKey(view)">
+          <td>{{ view.line.lineNo ?? '—' }}</td>
+          <td class="text-break">{{ view.line.lineDescription?.trim() || '—' }}</td>
+          <td class="text-end tabular-nums">{{ formatQty(view.orderQty) }}</td>
+          <td class="text-end tabular-nums">{{ formatQty(view.shippedQty) }}</td>
+          <td class="text-end tabular-nums">{{ formatQty(view.remainingQty) }}</td>
+          <td class="text-center">{{ view.unit || '—' }}</td>
         </tr>
       </tbody>
     </v-table>
     <div v-else class="text-body-2 text-medium-emphasis">
-      {{ t('odakSiparis.globalShipments.expand.noLines') }}
+      {{ t('odakSiparis.shipments.expand.noLines') }}
     </div>
   </div>
 </template>
@@ -219,6 +281,10 @@ watch(
 .odak-shipment-expand-content {
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.odak-shipment-expand-qty-hint {
+  line-height: 1.35;
 }
 
 .odak-shipment-expand-lines :deep(th),

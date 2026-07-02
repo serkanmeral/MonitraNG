@@ -20,6 +20,7 @@ const props = defineProps<{
   modelValue: boolean;
   template: MailTemplate | null;
   saving?: boolean;
+  categoryOptions?: string[];
 }>();
 
 const emit = defineEmits<{
@@ -58,6 +59,17 @@ const sanitizedPreviewHtml = computed(() => {
 const inferredVariables = computed(() =>
   extractPlaceholderPaths(draft.value.subject, draft.value.bodyHtml).join(', ')
 );
+
+const categoryItems = computed(() => {
+  const values = new Set<string>(['custom', 'system']);
+  for (const option of props.categoryOptions ?? []) {
+    const trimmed = option.trim();
+    if (trimmed) values.add(trimmed);
+  }
+  const current = draft.value.category.trim();
+  if (current) values.add(current);
+  return [...values].sort((a, b) => a.localeCompare(b, 'tr'));
+});
 
 watch(
   () => [props.modelValue, props.template?.__dataId] as const,
@@ -143,6 +155,18 @@ async function runPreview() {
               v-model="draft.name"
               :label="t('notifier.mailTemplates.fieldName')"
               density="comfortable"
+            />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-combobox
+              v-model="draft.category"
+              :items="categoryItems"
+              :label="t('notifier.mailTemplates.fieldCategory')"
+              :hint="t('notifier.mailTemplates.fieldCategoryHint')"
+              persistent-hint
+              density="comfortable"
+              :disabled="isSystem"
+              clearable
             />
           </v-col>
         </v-row>

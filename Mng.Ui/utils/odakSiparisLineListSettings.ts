@@ -18,7 +18,7 @@ import {
   ODAK_LINE_LIST_DEFAULT_FORMATS,
   withDefaultListColumnFormats,
 } from '@/utils/odakSiparisHubListDefaultFormats';
-import { formatOdakDate, formatOdakNumber } from '@/utils/odakSiparisService';
+import { formatOdakCurrencyAmount, formatOdakDate, formatOdakNumber } from '@/utils/odakSiparisService';
 import { remainingQuantityForLine } from '@/utils/odakSiparisShipmentService';
 
 export type OdakLineListColumnConfig = import('@/utils/odakSiparisHubListConfig').OdakHubListColumnConfig;
@@ -137,9 +137,9 @@ export function lineListCellRaw(row: OdakLineRow, listKey: string): string {
     case 'isFaiComplete':
       return row.isFaiComplete ? 'Evet' : 'Hayır';
     case 'unitCost':
-      return formatOdakNumber(row.unitCost);
+      return formatOdakCurrencyAmount(row.unitCost, row.currency);
     case 'totalCost':
-      return formatOdakNumber(row.totalCost);
+      return formatOdakCurrencyAmount(row.totalCost, row.currency);
     case 'currency':
       return String(row.currency ?? '').trim() || '—';
     default:

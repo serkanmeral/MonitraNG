@@ -17,6 +17,11 @@ import {
 } from '@/utils/odakSiparisService';
 import { buildOdakPackageSummaryRows } from '@/utils/odakSiparisSummary';
 import {
+  aggregateLineQuantities,
+  type OdakLineQuantityAggregate,
+} from '@/utils/odakSiparisShipmentService';
+import { listLinesForPackage } from '@/utils/odakSiparisLineService';
+import {
   collectPersonIdsFromPackageRows,
   fetchPersonLabelMap,
 } from '@/utils/odakSiparisPackagePersonnel';
@@ -56,6 +61,8 @@ const errorMessage = ref('');
 const pkg = ref<OdakPackageRow | null>(null);
 const personLabels = ref<Record<string, string>>({});
 const linesRefreshKey = ref(0);
+const dashboardRefreshKey = ref(0);
+const lineQuantityAggregate = ref<OdakLineQuantityAggregate | null>(null);
 
 const packageId = computed(() => packageDataId(props.packageRow));
 
@@ -63,7 +70,13 @@ const customerId = computed(() => customerIdFromRow(pkg.value ?? props.packageRo
 
 const summaryRows = computed(() => {
   const p = pkg.value ?? props.packageRow;
-  return buildOdakPackageSummaryRows(p, props.customerLabels, t, personLabels.value);
+  return buildOdakPackageSummaryRows(
+    p,
+    props.customerLabels,
+    t,
+    personLabels.value,
+    lineQuantityAggregate.value
+  );
 });
 
 async function loadPackage() {
@@ -74,8 +87,15 @@ async function loadPackage() {
   try {
     pkg.value = (await fetchOdakPackageById(id)) ?? props.packageRow;
     const row = pkg.value ?? props.packageRow;
-    const ids = collectPersonIdsFromPackageRows([row as Record<string, unknown>]);
-    personLabels.value = ids.length ? await fetchPersonLabelMap(ids) : {};
+    const [labels, lines] = await Promise.all([
+      (async () => {
+        const ids = collectPersonIdsFromPackageRows([row as Record<string, unknown>]);
+        return ids.length ? fetchPersonLabelMap(ids) : {};
+      })(),
+      listLinesForPackage(id),
+    ]);
+    personLabels.value = labels;
+    lineQuantityAggregate.value = aggregateLineQuantities(lines);
   } catch (e: unknown) {
     errorMessage.value = panelError(e, 'errors.dg.generic');
     pkg.value = props.packageRow;
@@ -108,6 +128,8 @@ watch(activeTab, (tab) => {
 
 function onShipmentSaved() {
   linesRefreshKey.value += 1;
+  dashboardRefreshKey.value += 1;
+  void loadPackage();
 }
 </script>
 
@@ -173,7 +195,7 @@ function onShipmentSaved() {
 
     <div v-if="activeTab === 'dashboard'">
       <OdakSiparisPackageDashboardPanel
-        :key="`${packageId}-dashboard`"
+        :key="`${packageId}-dashboard-${dashboardRefreshKey}`"
         :package-id="packageId"
         :package-row="pkg ?? packageRow"
         :customer-labels="customerLabels"

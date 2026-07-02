@@ -3787,6 +3787,11 @@
       "filterActiveOnly": "Yalnızca aktif",
       "filterCategory": "Kategori",
       "filterCategoryAll": "Tümü",
+      "search": "Ara (anahtar, ad, konu)",
+      "refresh": "Yenile",
+      "statTotal": "Toplam {count} şablon",
+      "empty": "Şablon bulunamadı",
+      "emptyHint": "Filtreleri temizleyin veya yeni şablon ekleyin.",
       "categorySystem": "Sistem",
       "categoryCustom": "Özel",
       "colKey": "Anahtar",
@@ -3800,6 +3805,8 @@
       "fieldTemplateKey": "Template anahtarı",
       "fieldTemplateKeyHint": "Benzersiz; politikalar ve send-template bu değeri kullanır",
       "fieldName": "Görünen ad",
+      "fieldCategory": "Kategori",
+      "fieldCategoryHint": "Mevcut kategoriden seçin veya yeni bir ad yazın (ör. odak-siparis). Yeni kategori, ilk şablonda bu adla kaydedildiğinde oluşur.",
       "fieldDescription": "Açıklama",
       "fieldSubject": "Konu satırı",
       "fieldBodyHtml": "HTML fragment (body)",
@@ -4031,7 +4038,8 @@
           "eventTypes": {
             "PackageCreated": "İş paketi oluşturuldu",
             "PackageUpdated": "İş paketi güncellendi",
-            "ShipmentCompleted": "Sevkiyat tamamlandı"
+            "ShipmentCompleted": "Sevkiyat tamamlandı",
+            "GlobalShipmentCreated": "Yeni genel sevkiyat"
           }
         },
         "fieldPolicies": {
@@ -4289,6 +4297,7 @@
         "partCount": "Parça Sayısı",
         "stockCount": "Stok Sayısı",
         "shippedCount": "Sevk Sayısı",
+        "remainingQuantity": "Kalan Miktar",
         "lineCount": "Kalem sayısı",
         "beginDate": "Başlangıç",
         "deliveryDate": "Termin",
@@ -4577,6 +4586,7 @@
         "quantity": "Miktar",
         "unit": "Birim",
         "shippedQuantity": "Sevk Miktarı",
+        "remainingQuantity": "Kalan Miktar",
         "qualityReqs": "Ek not (kalite)",
         "qualityRequirementIds": "Uygulanan kalite isterleri",
         "isFai": "FAI yapılacak",
@@ -4645,9 +4655,16 @@
         "waybillNo": "İrsaliye No",
         "shipmentDate": "Sevkiyat Tarihi",
         "status": "Durum",
-        "lineQty": "Toplam Miktar",
+        "orderQty": "Sipariş miktarı (kalem)",
+        "lineQty": "Bu sevkte",
+        "remainingQty": "Bu sevkte kalan",
         "qcfStatus": "KKF",
         "controlType": "Denetim Tipi"
+      },
+      "columnHints": {
+        "orderQty": "Bağlı sipariş kaleminin tam sipariş miktarı. Aynı kalem birden fazla sevkiyatta görünür; satırlar toplanmaz.",
+        "lineQty": "Yalnızca bu irsaliyede sevk edilen miktar.",
+        "remainingQty": "Bu sevkiyat kaydında henüz sevk edilmeyen: sipariş miktarı − bu sevkte."
       },
       "fields": {
         "waybillNo": "İrsaliye no",
@@ -4672,6 +4689,18 @@
         "lineSelect": "Sipariş kalemi",
         "shippedQty": "Sevk miktarı",
         "lineHint": "Sipariş: {quantity} · Sevk edilen: {shipped} · Kalan: {remaining}"
+      },
+      "expand": {
+        "linesTitle": "Sevk kalemleri",
+        "noLines": "Bu sevkiyata bağlı kalem kaydı yok.",
+        "qtyHint": "Bu irsaliyeye özel miktarlar. Kalemin paket geneli kalanı Kalemler sekmesinde görünür."
+      },
+      "listFooter": {
+        "title": "Paket geneli",
+        "hint": "Tüm sipariş kalemlerinin toplamı. Liste satırları veya sayfa toplamı ile karıştırmayın.",
+        "orderQty": "Sipariş toplamı",
+        "shippedQty": "Sevk edilen",
+        "remainingQty": "Pakette kalan"
       }
     },
     "globalShipments": {
@@ -4712,7 +4741,47 @@
       },
       "filters": {
         "parentPackage": "İş paketi",
-        "customerHint": "Paketli sevkiyatlar iş paketindeki müşteriye göre bulunur. Genel sevkiyatta müşteri yalnızca kayıtta customerId doluysa gelir (çoğu legacy genel kayıtta boş olabilir)."
+        "customerHint": "Müşteri filtresi iş paketine bağlı sevkiyatları bulur (müşteri bilgisi pakette). Genel sevkiyat kaydında customerId genelde boştur.",
+        "customerScopeHint": "Müşteri seçildiğinde sonuçlar iş paketinden gelir; listede Paketli kayıtlar da görünebilir (Kapsam=Genel koşulu bu aramada uygulanmaz)."
+      },
+      "settings": {
+        "title": "Sevkiyat Listesi Ayarları",
+        "backToList": "Listeye dön",
+        "save": "Kaydet",
+        "saved": "Ayarlar kaydedildi",
+        "tabs": {
+          "listColumns": "Liste yapısı",
+          "notifications": "Bildirimler"
+        },
+        "listColumns": {
+          "hint": "Global sevkiyat listesinde görünecek sütunları, sıralama ve biçimlendirme seçeneklerini buradan yönetin."
+        },
+        "notifications": {
+          "hint": "Genel sevkiyat oluşturulduğunda e-posta bildirimi göndermek için politika tanımlayın. İş paketi sevkiyat bildirimleri paket ayarlarından yönetilir.",
+          "addPolicy": "Politika ekle",
+          "editPolicy": "Politikayı düzenle",
+          "deleteTitle": "Politikayı sil",
+          "deleteConfirm": "Bu bildirim politikasını silmek istediğinize emin misiniz?",
+          "colName": "Ad",
+          "colEvent": "Olay",
+          "colRecipients": "Alıcılar",
+          "colTemplate": "Şablon",
+          "colStatus": "Durum",
+          "active": "Aktif",
+          "inactive": "Pasif",
+          "fieldName": "Politika adı",
+          "fieldDescription": "Açıklama",
+          "fieldEvent": "Olay türü",
+          "fieldPriority": "Öncelik",
+          "fieldRecipients": "Alıcılar (Keeper kullanıcıları)",
+          "fieldTemplate": "E-posta şablonu",
+          "fieldSubject": "E-posta konusu",
+          "fieldActive": "Aktif",
+          "excludeActor": "İşlemi yapan kişiyi hariç tut",
+          "eventTypes": {
+            "GlobalShipmentCreated": "Yeni genel sevkiyat"
+          }
+        }
       }
     },
     "globalNcr": {

@@ -158,6 +158,10 @@ watch(
                 <div class="text-h6 font-weight-bold">{{ metrics.shippedCount || '—' }}</div>
               </div>
               <div>
+                <div class="text-caption text-medium-emphasis">{{ t('odakSiparis.detail.fields.remainingQuantity') }}</div>
+                <div class="text-h6 font-weight-bold">{{ metrics.remainingQuantity ?? '—' }}</div>
+              </div>
+              <div>
                 <div class="text-caption text-medium-emphasis">{{ t('odakSiparis.detail.fields.stockCount') }}</div>
                 <div class="text-h6 font-weight-bold">{{ metrics.stockCount || '—' }}</div>
               </div>

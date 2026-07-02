@@ -1,0 +1,6000 @@
+{
+  "skipped": 0,
+  "changes": [
+    {
+      "dataId": "a870e4db-e02a-4924-a470-127aa1400927",
+      "packageNo": "2012-007",
+      "legacyPackageId": "3",
+      "fields": {
+        "name": {
+          "from": "Kompozit Par�a �retimi",
+          "to": "Kompozit Parça Üretimi"
+        }
+      }
+    },
+    {
+      "dataId": "8323b57e-9410-4e0d-aab9-fe70bbe383e4",
+      "packageNo": "2012-011",
+      "legacyPackageId": "8",
+      "fields": {
+        "name": {
+          "from": "Cmm �l��m�",
+          "to": "Cmm Ölçümü"
+        }
+      }
+    },
+    {
+      "dataId": "c8655429-7624-48d1-bd91-66c7ed247258",
+      "packageNo": "2012-012",
+      "legacyPackageId": "9",
+      "fields": {
+        "name": {
+          "from": "Atak Projesi Cmm �l��m�",
+          "to": "Atak Projesi Cmm Ölçümü"
+        }
+      }
+    },
+    {
+      "dataId": "c24cdc7d-feee-4d0a-82af-c3b4e42ff1c2",
+      "packageNo": "2012-001",
+      "legacyPackageId": "10",
+      "fields": {
+        "name": {
+          "from": "B�y�ksehir Amblem",
+          "to": "Büyükşehir Amblem"
+        }
+      }
+    },
+    {
+      "dataId": "f390a1f1-eda5-44d4-83c2-113c868855db",
+      "packageNo": "2012-009",
+      "legacyPackageId": "11",
+      "fields": {
+        "name": {
+          "from": "Akim Transformat�r Kati Modeli",
+          "to": "Akım Transformatör Katı Modeli"
+        }
+      }
+    },
+    {
+      "dataId": "3921ab3c-7a8e-464b-aa29-e108bf456aea",
+      "packageNo": "2013-004",
+      "legacyPackageId": "14",
+      "fields": {
+        "name": {
+          "from": "Ara U� Bushing",
+          "to": "Ara Uç Bushıng"
+        }
+      }
+    },
+    {
+      "dataId": "2b21943f-680b-4fbc-981a-0eacfc2aa070",
+      "packageNo": "2013-008",
+      "legacyPackageId": "17",
+      "fields": {
+        "name": {
+          "from": "Ara U� Bushing",
+          "to": "Ara Uç Bushıng"
+        }
+      }
+    },
+    {
+      "dataId": "c874b89f-96a6-4e72-9d8d-284b9b73d9f1",
+      "packageNo": "2013-001",
+      "legacyPackageId": "23",
+      "fields": {
+        "name": {
+          "from": "Ara U� Bushing",
+          "to": "Ara Uç Bushıng"
+        }
+      }
+    },
+    {
+      "dataId": "c028badb-8f31-4db5-aa48-6305ece17b51",
+      "packageNo": "2013-011",
+      "legacyPackageId": "24",
+      "fields": {
+        "name": {
+          "from": "Ara U� Bushing",
+          "to": "Ara Uç Bushing"
+        }
+      }
+    },
+    {
+      "dataId": "aebb32fc-36d3-49d5-9451-6f5f04ee3115",
+      "packageNo": "2014-002",
+      "legacyPackageId": "30",
+      "fields": {
+        "name": {
+          "from": "Ara U� Bushing",
+          "to": "Ara Uç Bushıng"
+        }
+      }
+    },
+    {
+      "dataId": "bb60ef1c-f894-4dbb-962b-f569060f3961",
+      "packageNo": "2014-018",
+      "legacyPackageId": "31",
+      "fields": {
+        "name": {
+          "from": "Sandivi� Plaka 2",
+          "to": "Sandiviç Plaka 2"
+        }
+      }
+    },
+    {
+      "dataId": "0675e22a-aa22-4568-b43b-c794cd00e090",
+      "packageNo": "2014-012",
+      "legacyPackageId": "34",
+      "fields": {
+        "name": {
+          "from": "Ara U� Bushing Siparisi-Dellitohr",
+          "to": "Ara Uç Bushing Siparişi-Dellitohr"
+        }
+      }
+    },
+    {
+      "dataId": "3694e754-5f0f-4c54-bc3a-da2937c55d19",
+      "packageNo": "2014-015",
+      "legacyPackageId": "37",
+      "fields": {
+        "name": {
+          "from": "Ara U� Bushing ",
+          "to": "Ara Uç Bushing "
+        }
+      }
+    },
+    {
+      "dataId": "56111230-0cdd-492f-a89a-bf8286d455be",
+      "packageNo": "2014-008",
+      "legacyPackageId": "38",
+      "fields": {
+        "name": {
+          "from": "Ara U� Bushing",
+          "to": "Ara Uç Bushing"
+        }
+      }
+    },
+    {
+      "dataId": "5753e520-72cd-40e6-81c3-a3d16f54bfe3",
+      "packageNo": "2014-010",
+      "legacyPackageId": "41",
+      "fields": {
+        "name": {
+          "from": "Sandivi� Test Plakasi",
+          "to": "Sandiviç Test Plakası"
+        }
+      }
+    },
+    {
+      "dataId": "566be365-b706-48d5-a9d9-a160de0e9dc1",
+      "packageNo": "2014-005",
+      "legacyPackageId": "43",
+      "fields": {
+        "name": {
+          "from": "Ara U� Bushing",
+          "to": "Ara Uç Bushing"
+        }
+      }
+    },
+    {
+      "dataId": "e9c25674-df92-4455-8a92-0d23a4252bfd",
+      "packageNo": "2014-023",
+      "legacyPackageId": "44",
+      "fields": {
+        "name": {
+          "from": "Ara U� Bushing ",
+          "to": "Ara Uç Bushing "
+        }
+      }
+    },
+    {
+      "dataId": "a7543518-6846-4244-9f50-a641ddfd48ab",
+      "packageNo": "2014-017",
+      "legacyPackageId": "45",
+      "fields": {
+        "name": {
+          "from": "Bilyali El Bombasi G�vdesi",
+          "to": "Bilyalı El Bombası Gövdesi"
+        }
+      }
+    },
+    {
+      "dataId": "d97670bd-cec5-422b-85cd-d2e63b9e00e7",
+      "packageNo": "2014-021",
+      "legacyPackageId": "48",
+      "fields": {
+        "name": {
+          "from": "Ara U� Bushing",
+          "to": "Ara Uç Bushing"
+        }
+      }
+    },
+    {
+      "dataId": "81ba3406-eee2-45be-a5f6-25a46ea38242",
+      "packageNo": "2015-004",
+      "legacyPackageId": "49",
+      "fields": {
+        "name": {
+          "from": "93731 Faaliyeti Kanat ve Kupon �retimi",
+          "to": "93731 Faaliyeti Kanat ve Kupon Üretimi"
+        }
+      }
+    },
+    {
+      "dataId": "b8430dc6-65ec-4f53-8b4f-883aac197b24",
+      "packageNo": "2015-019",
+      "legacyPackageId": "53",
+      "fields": {
+        "name": {
+          "from": "Rtm Kupon �retimi",
+          "to": "Rtm Kupon Üretimi"
+        }
+      }
+    },
+    {
+      "dataId": "1d10980b-3995-4e3c-b399-789fe4c57415",
+      "packageNo": "2015-016",
+      "legacyPackageId": "60",
+      "fields": {
+        "name": {
+          "from": "Ara U� Bushing ",
+          "to": "Ara Uç Bushing "
+        }
+      }
+    },
+    {
+      "dataId": "95002093-9557-41cb-82be-bd98929c4390",
+      "packageNo": "2015-006",
+      "legacyPackageId": "61",
+      "fields": {
+        "name": {
+          "from": "Ara U� Bushing ",
+          "to": "Ara Uç Bushing "
+        }
+      }
+    },
+    {
+      "dataId": "26b4fc5e-75ff-486e-854e-cf6274742291",
+      "packageNo": "2015-013",
+      "legacyPackageId": "62",
+      "fields": {
+        "name": {
+          "from": "�ekme Plakalari",
+          "to": "Çekme Plakaları"
+        }
+      }
+    },
+    {
+      "dataId": "f5a81cd1-d7ab-4c09-bc7d-3bb41c24be49",
+      "packageNo": "2016-018",
+      "legacyPackageId": "73",
+      "fields": {
+        "name": {
+          "from": "Kompozit Back Rest(Deneme �alismasi)",
+          "to": "Kompozit Back Rest(Deneme Çalışması)"
+        }
+      }
+    },
+    {
+      "dataId": "bd28598c-1945-41aa-b057-e251d3cf6812",
+      "packageNo": "2016-004",
+      "legacyPackageId": "84",
+      "fields": {
+        "name": {
+          "from": "93443 Kontrol Y�zeyi-Sabit Kanat",
+          "to": "93443 Kontrol Yüzeyi-Sabit Kanat"
+        }
+      }
+    },
+    {
+      "dataId": "6caa8136-6023-4723-8091-b28b27c13775",
+      "packageNo": "2016-017",
+      "legacyPackageId": "86",
+      "fields": {
+        "name": {
+          "from": "Kompozit Numune �retimi",
+          "to": "Kompozit Numune Üretimi"
+        }
+      }
+    },
+    {
+      "dataId": "7224c64f-0e5a-4f96-bb76-18e8c6c0c615",
+      "packageNo": "2016-001",
+      "legacyPackageId": "88",
+      "fields": {
+        "name": {
+          "from": "Kompozit G�vde",
+          "to": "Kompozit Gövde"
+        }
+      }
+    },
+    {
+      "dataId": "ff65136f-6c47-4f48-b6f4-d98b9b287f93",
+      "packageNo": "2017-004",
+      "legacyPackageId": "95",
+      "fields": {
+        "name": {
+          "from": "Arge �alismalari",
+          "to": "Arge Çalışmaları"
+        }
+      }
+    },
+    {
+      "dataId": "99e2fed5-e654-4c0e-af54-83f038123bd3",
+      "packageNo": "ARG1703",
+      "legacyPackageId": "114",
+      "fields": {
+        "name": {
+          "from": "Ar�elik Atlantic Freezer ",
+          "to": "Arçelik Atlantic Freezer "
+        }
+      }
+    },
+    {
+      "dataId": "4f39ad76-6d38-44e0-a0e8-2d18f15747ef",
+      "packageNo": "ARG1704",
+      "legacyPackageId": "118",
+      "fields": {
+        "name": {
+          "from": "ERMAN KARAKO�-C�ZDAN",
+          "to": "ERMAN KARAKOÇ-CÜZDAN"
+        }
+      }
+    },
+    {
+      "dataId": "8755d78f-129b-4e8b-8288-bcfab318f80b",
+      "packageNo": "ARG1705",
+      "legacyPackageId": "119",
+      "fields": {
+        "name": {
+          "from": "ODT� ARA�",
+          "to": "ODTÜ ARAÇ"
+        }
+      }
+    },
+    {
+      "dataId": "38bef362-05ac-488f-a039-5b735e5c45f5",
+      "packageNo": "ARG1706",
+      "legacyPackageId": "120",
+      "fields": {
+        "name": {
+          "from": "YTU Y�ZGAR PALI",
+          "to": "YTU YÜZGAR PALİ"
+        }
+      }
+    },
+    {
+      "dataId": "9bed9162-0598-4b8e-ab76-d81a7516a1b3",
+      "packageNo": "2017-019",
+      "legacyPackageId": "124",
+      "fields": {
+        "name": {
+          "from": "Karab�k �niversitesi Test Plakasi",
+          "to": "Karabük Üniversitesi Test Plakası"
+        }
+      }
+    },
+    {
+      "dataId": "200525c5-2054-4389-8a83-96d04c29709e",
+      "packageNo": "2018-009",
+      "legacyPackageId": "138",
+      "fields": {
+        "name": {
+          "from": "8520 ORTA G�VDE TITANYUM K�K B�L�M� IMALATI",
+          "to": "8520 ORTA GÖVDE TİTANYUM KÖK BÖLÜMÜ İMALATI"
+        }
+      }
+    },
+    {
+      "dataId": "c056e2c5-87ab-4a40-ab6d-cc0e144ddd35",
+      "packageNo": "2018-012",
+      "legacyPackageId": "143",
+      "fields": {
+        "name": {
+          "from": "�ift Delikli Kompozit Numune hazirlanmasi hizmet alimi",
+          "to": "Çift Delikli Kompozit Numune hazırlanması hizmet alımı"
+        }
+      }
+    },
+    {
+      "dataId": "56fdb23c-3584-4b6f-818d-d723e14bcb10",
+      "packageNo": "2018-017",
+      "legacyPackageId": "146",
+      "fields": {
+        "name": {
+          "from": "SOM KANAT�IK",
+          "to": "SOM KANATÇIK"
+        }
+      }
+    },
+    {
+      "dataId": "81af7088-284b-410a-b426-48e2598c8251",
+      "packageNo": "2018-016",
+      "legacyPackageId": "147",
+      "fields": {
+        "name": {
+          "from": "YENI NESIL TEMEL EGITIM U�AGI (HURKUS B)",
+          "to": "YENI NESIL TEMEL EGITIM UÇAGI (HURKUS B)"
+        }
+      }
+    },
+    {
+      "dataId": "51992e77-5fde-4a96-aa8e-d630d0624f7b",
+      "packageNo": "2018-018",
+      "legacyPackageId": "148",
+      "fields": {
+        "name": {
+          "from": "SYRM yanma odasi �zerine rejeneratif sogutma kanallarinin dolgulanmasi",
+          "to": "SYRM yanma odası üzerine rejeneratif soğutma kanallarının dolgulanması"
+        }
+      }
+    },
+    {
+      "dataId": "23a895c1-18fd-4986-9309-462f116acc9c",
+      "packageNo": "2018-019",
+      "legacyPackageId": "149",
+      "fields": {
+        "name": {
+          "from": "8520 K�K B�L�M�, ORTA G�VDE",
+          "to": "8520 KÖK BÖLÜMÜ, ORTA GÖVDE"
+        }
+      }
+    },
+    {
+      "dataId": "c13ca166-1045-4b0f-8fa0-07589ec50ead",
+      "packageNo": "2018-021",
+      "legacyPackageId": "152",
+      "fields": {
+        "name": {
+          "from": "HURKUS KOKPIT PAR�ALARI �RETIMI",
+          "to": "HURKUŞ KOKPİT PARÇALARI ÜRETİMİ"
+        }
+      }
+    },
+    {
+      "dataId": "8d6f650a-9a9a-4b7b-abe0-54a6b7e33fe2",
+      "packageNo": "2018-022",
+      "legacyPackageId": "155",
+      "fields": {
+        "name": {
+          "from": "9120 STOP  �RETIMI (5 SET)",
+          "to": "9120 STOP  ÜRETİMİ (5 SET)"
+        }
+      }
+    },
+    {
+      "dataId": "521eed05-36d1-4b4c-b344-b17afcb6d172",
+      "packageNo": "2018-023",
+      "legacyPackageId": "156",
+      "fields": {
+        "name": {
+          "from": "HURKUS KOKPIT PAR�ALARI �RETIMI",
+          "to": "HURKUŞ KOKPİT PARÇALARI ÜRETİMİ"
+        }
+      }
+    },
+    {
+      "dataId": "a55dc8ce-03f8-4074-906f-8b1ffde6eea2",
+      "packageNo": "2018-024",
+      "legacyPackageId": "157",
+      "fields": {
+        "notes": {
+          "from": "11.01.2023 tarihinde REV15 tarafimiza iletilmistir.RS den boya alindigindan 4.kalem fiyati g�ncellenmistir.\\r\\n27.04.2023 tarihinde REV23 tarafimiza iletilmistir.Test maliyetleri eklenmistir.\\r\\n09.05.2023 tarihinde REV24 yayinlanmistir.Satin Alma Sorumlusu degismistir.",
+          "to": "11.01.2023 tarihinde REV15 tarafımıza iletilmiştir.RS den boya alındığından 4.kalem fiyatı güncellenmiştir.\\r\\n27.04.2023 tarihinde REV23 tarafımıza iletilmiştir.Test maliyetleri eklenmiştir.\\r\\n09.05.2023 tarihinde REV24 yayınlanmıştır.Satın Alma Sorumlusu değişmiştir."
+        }
+      }
+    },
+    {
+      "dataId": "16a8cebb-b7e4-4279-9e4b-7f8ff9cce94e",
+      "packageNo": "2018-025",
+      "legacyPackageId": "158",
+      "fields": {
+        "name": {
+          "from": "Test Plakasi �retimi",
+          "to": "Test Plakası Üretimi"
+        }
+      }
+    },
+    {
+      "dataId": "acc7388e-7133-431d-9634-21789b9db936",
+      "packageNo": "2018-027",
+      "legacyPackageId": "160",
+      "fields": {
+        "name": {
+          "from": "K�tle Esdeger DUMMY �l�er Blogu �retimi",
+          "to": "Kütle Eşdeğer DUMMY Ölçer Bloğu Üretimi"
+        }
+      }
+    },
+    {
+      "dataId": "b9898463-30f2-45ea-84be-7541c5ac08ca",
+      "packageNo": "2018-029",
+      "legacyPackageId": "162",
+      "fields": {
+        "name": {
+          "from": "HURKUS KOKPIT PAR�ALARI �RETIMI",
+          "to": "HURKUŞ KOKPİT PARÇALARI ÜRETİMİ"
+        }
+      }
+    },
+    {
+      "dataId": "5581d1c2-d203-40aa-8103-f36acb8c0563",
+      "packageNo": "2018-030",
+      "legacyPackageId": "163",
+      "fields": {
+        "name": {
+          "from": "Fadec Mount ve Airbox �retimi",
+          "to": "Fadec Mount ve Airbox Üretimi"
+        }
+      }
+    },
+    {
+      "dataId": "07072774-725d-4555-888e-ab12be43e304",
+      "packageNo": "2018-031",
+      "legacyPackageId": "164",
+      "fields": {
+        "name": {
+          "from": "SOM Kanat Y�kleme Testi",
+          "to": "SOM Kanat Yükleme Testi"
+        }
+      }
+    },
+    {
+      "dataId": "4bb4166e-8385-4f17-b4fc-a67867052e72",
+      "packageNo": "2018-032",
+      "legacyPackageId": "165",
+      "fields": {
+        "name": {
+          "from": "SOM Kanat�ik Yapistirma Fikst�r� Imalati",
+          "to": "SOM Kanatçık Yapıştırma Fikstürü İmalatı"
+        }
+      }
+    },
+    {
+      "dataId": "4dacecd6-2216-4238-81d3-e1347ba3ecf2",
+      "packageNo": "2018-033",
+      "legacyPackageId": "166",
+      "fields": {
+        "name": {
+          "from": "00038676-FSN H�cum Kenari Trimlenmis Kompozit Sabit Kanat Fason Kalemi",
+          "to": "00038676-FSN Hücum Kenarı Trimlenmiş Kompozit Sabit Kanat Fason Kalemi"
+        }
+      }
+    },
+    {
+      "dataId": "8c01f0e2-e796-44f8-8e69-2c465be68367",
+      "packageNo": "2018-036",
+      "legacyPackageId": "169",
+      "fields": {
+        "name": {
+          "from": "COSMETIC PANEL FRONT RHS Deneme �retimi",
+          "to": "COSMETIC PANEL FRONT RHS Deneme Üretimi"
+        }
+      }
+    },
+    {
+      "dataId": "cd9ecd2f-6ab6-4b8d-ab20-77ecca944104",
+      "packageNo": "2018-038",
+      "legacyPackageId": "174",
+      "fields": {
+        "name": {
+          "from": "ASELSAN D�NEMSEL ISBIRLIGI",
+          "to": "ASELSAN DÖNEMSEL İŞBİRLİĞİ"
+        }
+      }
+    },
+    {
+      "dataId": "a079bb17-69a1-42fa-b3f1-e0d27c764728",
+      "packageNo": "2019-004",
+      "legacyPackageId": "178",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        },
+        "name": {
+          "from": "Kompozit S2 Glass Plaka �retimi",
+          "to": "Kompozit S2 Glass Plaka Üretimi"
+        }
+      }
+    },
+    {
+      "dataId": "fe0a488c-cb59-4747-b6d9-ed2ceca6fd96",
+      "packageNo": "2019-008",
+      "legacyPackageId": "182",
+      "fields": {
+        "name": {
+          "from": "Kompozit Par�a �retimi ve Talasli Imalat",
+          "to": "Kompozit Parça Üretimi ve Talaşlı İmalat"
+        }
+      }
+    },
+    {
+      "dataId": "f09fcb84-95ad-4a6d-a7cc-1d03920cb10e",
+      "packageNo": "2019-011",
+      "legacyPackageId": "184",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "71b717a1-2bd7-4551-8806-09fe63d55e22",
+      "packageNo": "2019-012",
+      "legacyPackageId": "185",
+      "fields": {
+        "name": {
+          "from": "Kompozit Par�a �retimi ve Talasli Imalat 26.04.2019",
+          "to": "Kompozit Parça Üretimi ve Talaşlı İmalat 26.04.2019"
+        }
+      }
+    },
+    {
+      "dataId": "6eb01bd4-a035-4e8f-a509-c2dc923ab589",
+      "packageNo": "2019-013",
+      "legacyPackageId": "186",
+      "fields": {
+        "name": {
+          "from": "MM-7778-0267 SPIRAL ANTEN SASE �RETIMI (4 Adet)",
+          "to": "MM-7778-0267 SPİRAL ANTEN ŞASE ÜRETİMİ (4 Adet)"
+        }
+      }
+    },
+    {
+      "dataId": "92e0e596-c4aa-484d-99f4-6bffe8325934",
+      "packageNo": "2019-010",
+      "legacyPackageId": "187",
+      "fields": {
+        "notes": {
+          "from": "SATIN ALMA SORUMLUSU G�NCELLENMISTIR.07.06.2024 REV19\\r\\nREV20-11.07.2024 DE YAYINLANMISTIR.",
+          "to": "SATIN ALMA SORUMLUSU GÜNCELLENMİŞTİR.07.06.2024 REV19\\r\\nREV20-11.07.2024 DE YAYINLANMIŞTIR."
+        }
+      }
+    },
+    {
+      "dataId": "91eb103f-0abc-43c8-8009-b676bb3f46b9",
+      "packageNo": "2019-015",
+      "legacyPackageId": "189",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "10ed85fa-d8d1-40b3-902b-fdae8b6f712a",
+      "packageNo": "2019-017",
+      "legacyPackageId": "191",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN -Macunk�y SST Ambari",
+          "to": "ASELSAN -Macunköy SST Ambarı"
+        }
+      }
+    },
+    {
+      "dataId": "ce845e61-a5c6-4e5c-8e1c-18a3a7bda627",
+      "packageNo": "2019-018",
+      "legacyPackageId": "192",
+      "fields": {
+        "deliveryAddress": {
+          "from": "MUSTAFA KEMAL MAHALLESI 2151.CADDE NO:3/A 06530 �ANKAYA - ANKARA",
+          "to": "MUSTAFA KEMAL MAHALLESİ 2151.CADDE NO:3/A 06530 ÇANKAYA - ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "afabb19b-9964-496b-90f1-75127739514f",
+      "packageNo": "2019-021",
+      "legacyPackageId": "193",
+      "fields": {
+        "name": {
+          "from": "MD-7775-0007 �RETIMI",
+          "to": "MD-7775-0007 ÜRETİMİ"
+        }
+      }
+    },
+    {
+      "dataId": "7b8881c4-4fcf-487e-bf9f-14c60e3c719e",
+      "packageNo": "2019-020",
+      "legacyPackageId": "195",
+      "fields": {
+        "name": {
+          "from": "SFCL �RETIMI",
+          "to": "SFCL ÜRETİMİ"
+        }
+      }
+    },
+    {
+      "dataId": "85187454-ce92-462f-acdf-f672d1ae535f",
+      "packageNo": "2019-022",
+      "legacyPackageId": "196",
+      "fields": {
+        "name": {
+          "from": "7560 HAVA ALIGI �RETIMI",
+          "to": "7560 HAVA ALIĞI ÜRETİMİ"
+        }
+      }
+    },
+    {
+      "dataId": "f1907a64-02f9-42fe-b0f5-c6b72c70d000",
+      "packageNo": "2019-024",
+      "legacyPackageId": "198",
+      "fields": {
+        "name": {
+          "from": "00052337-FSN �K Kanat Y�kleme Testi",
+          "to": "00052337-FSN ÇK Kanat Yükleme Testi"
+        }
+      }
+    },
+    {
+      "dataId": "c218256b-0be7-4ff6-bddf-6eec3940f8f4",
+      "packageNo": "2019-025",
+      "legacyPackageId": "199",
+      "fields": {
+        "deliveryAddress": {
+          "from": "MUSTAFA KEMAL MAHALLESI 2151.CADDE NO:3/A 06530 �ANKAYA - ANKARA",
+          "to": "MUSTAFA KEMAL MAHALLESİ 2151.CADDE NO:3/A 06530 ÇANKAYA - ANKARA"
+        },
+        "name": {
+          "from": "ALPAGU IHA �RETIMI",
+          "to": "ALPAGU İHA ÜRETİMİ"
+        }
+      }
+    },
+    {
+      "dataId": "f6930bf7-c55e-4c2a-9507-fa03a0cd3923",
+      "packageNo": "2019-026",
+      "legacyPackageId": "200",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN Rehis Ambari G�LBASI",
+          "to": "ASELSAN Rehis Ambarı GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "538ff616-81b2-46fe-beac-e946f26436e7",
+      "packageNo": "2019-029",
+      "legacyPackageId": "203",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        },
+        "name": {
+          "from": "7560 Islah Edilen Par�alar",
+          "to": "7560 Islah Edilen Parçalar"
+        }
+      }
+    },
+    {
+      "dataId": "9154b097-ad71-43f1-9348-62c97298cdf0",
+      "packageNo": "2019-034",
+      "legacyPackageId": "207",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "0009c18d-f9b5-4afd-bfed-033711952040",
+      "packageNo": "2019-035",
+      "legacyPackageId": "208",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN REHIS AMBARI G�LBASI",
+          "to": "ASELSAN REHIS AMBARI GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "366735a6-bc23-4709-bef6-6c04e8347dd4",
+      "packageNo": "2020-004",
+      "legacyPackageId": "209",
+      "fields": {
+        "name": {
+          "from": "AVCI Kompozit G�vde Isleme",
+          "to": "AVCI Kompozit Gövde İşleme"
+        }
+      }
+    },
+    {
+      "dataId": "38b883f0-8dfc-49b5-9b17-d2ab6bf85088",
+      "packageNo": "2020-003",
+      "legacyPackageId": "210",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "11908bb9-5567-4804-9167-194727000b1f",
+      "packageNo": "2020-001",
+      "legacyPackageId": "212",
+      "fields": {
+        "name": {
+          "from": "ASELSAN D�NEMSEL ISBIRLIGI",
+          "to": "ASELSAN DÖNEMSEL İŞBİRLİĞİ"
+        }
+      }
+    },
+    {
+      "dataId": "0c22bf98-5fd2-435a-bb81-08dd9ed543e6",
+      "packageNo": "2020-008",
+      "legacyPackageId": "216",
+      "fields": {
+        "name": {
+          "from": "Ara U� Busingi",
+          "to": "Ara Uç Buşingi"
+        }
+      }
+    },
+    {
+      "dataId": "83be264c-f4fe-43fd-9d5a-3e7d51265e1d",
+      "packageNo": "2020-010",
+      "legacyPackageId": "218",
+      "fields": {
+        "deliveryAddress": {
+          "from": "TUSAS MOTOR SANAYII A.S. �EVRE YOLU NO: 356 26003 ESKISEHIR",
+          "to": "TUSAŞ MOTOR SANAYİİ A.Ş. ÇEVRE YOLU NO: 356 26003 ESKİŞEHİR"
+        }
+      }
+    },
+    {
+      "dataId": "36fcd990-8544-4c30-99b3-14af36ec4422",
+      "packageNo": "2020-015",
+      "legacyPackageId": "222",
+      "fields": {
+        "name": {
+          "from": "LGTF Kompozit Sabit Kanat �retimi",
+          "to": "LGTF Kompozit Sabit Kanat Üretimi"
+        }
+      }
+    },
+    {
+      "dataId": "e82c3eb0-a890-4300-808a-c07ed986715c",
+      "packageNo": "2020-016",
+      "legacyPackageId": "223",
+      "fields": {
+        "deliveryAddress": {
+          "from": "TUSAS MOTOR SANAYII A.S. �EVRE YOLU NO: 356 26003 ESKISEHIR",
+          "to": "TUSAŞ MOTOR SANAYİİ A.Ş. ÇEVRE YOLU NO: 356 26003 ESKİŞEHİR"
+        }
+      }
+    },
+    {
+      "dataId": "3c7d4e24-06e0-4541-9337-965a5560a7d7",
+      "packageNo": "2020-017",
+      "legacyPackageId": "224",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "506f9316-a45c-4a62-8081-e541663b0fc2",
+      "packageNo": "2020-014",
+      "legacyPackageId": "226",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "f5097e71-559e-432b-8469-e1dec7205ebd",
+      "packageNo": "2020-020",
+      "legacyPackageId": "227",
+      "fields": {
+        "name": {
+          "from": "Muhtelif Kompozit Par�a Isleme",
+          "to": "Muhtelif Kompozit Parça İşleme"
+        }
+      }
+    },
+    {
+      "dataId": "c8c4c186-b02b-4245-a0d4-a4e8ba74c387",
+      "packageNo": "2020-021",
+      "legacyPackageId": "228",
+      "fields": {
+        "deliveryAddress": {
+          "from": "MUSTAFA KEMAL MAHALLESI 2151.CADDE NO:3/A 06530 �ANKAYA - ANKARA",
+          "to": "MUSTAFA KEMAL MAHALLESİ 2151.CADDE NO:3/A 06530 ÇANKAYA - ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "7f849713-a7b1-4b8f-8ff8-c950221b09ec",
+      "packageNo": "2020-024",
+      "legacyPackageId": "230",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        },
+        "name": {
+          "from": "T�p �n Kapagi",
+          "to": "Tüp Ön Kapağı"
+        }
+      }
+    },
+    {
+      "dataId": "48402892-2c64-4f59-be3d-ca6545827eb7",
+      "packageNo": "2020-028",
+      "legacyPackageId": "235",
+      "fields": {
+        "name": {
+          "from": "10118588 IRST STB KOMPOZIT R�ZGARLIK",
+          "to": "10118588 IRST STB KOMPOZİT RÜZGARLIK"
+        }
+      }
+    },
+    {
+      "dataId": "8be53d89-3667-4d2d-8c2f-fdf0d18ad7b8",
+      "packageNo": "2020-029",
+      "legacyPackageId": "236",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN - G�LBASI REHIS AMBARI",
+          "to": "ASELSAN - GÖLBAŞI REHIS AMBARI"
+        }
+      }
+    },
+    {
+      "dataId": "598e3a82-ff64-4c4e-ab0b-87f9bc775432",
+      "packageNo": "2020-030",
+      "legacyPackageId": "237",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        },
+        "name": {
+          "from": "YO-G�vde Yalitimi, 3B Yalitim Kaba Fason Kalemi",
+          "to": "YO-Gövde Yalıtımı, 3B Yalıtım Kaba Fason Kalemi"
+        }
+      }
+    },
+    {
+      "dataId": "c1e189e6-be61-4f49-9b25-6de39be382f0",
+      "packageNo": "2020-032",
+      "legacyPackageId": "238",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "12bc6083-2409-4af1-97e9-ca25c16812e2",
+      "packageNo": "2020-031",
+      "legacyPackageId": "243",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "5ee93b26-0220-4f3a-b4dd-4dff178c95f6",
+      "packageNo": "2020-038",
+      "legacyPackageId": "245",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "3a9f9f1a-7cf3-4f47-897e-eb1a5f875ad0",
+      "packageNo": "2020-039",
+      "legacyPackageId": "246",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�lbasi Tesisleri",
+          "to": "ASELSAN Gölbaşı Tesisleri"
+        },
+        "notes": {
+          "from": "20.kalem silinmistir.40KU77790001 numarali is emri i�in talep edilen miktar 20'den 3'e azaltilmis olup bakiye 17 adet i�in 40KU77790005 numarali is emri\\r\\nolusturulmustur. 11.12.2023",
+          "to": "20.kalem silinmiştir.40KU77790001 numaralı is emri için talep edilen miktar 20’den 3’e azaltılmıs olup bakiye 17 adet için 40KU77790005 numaralı is emri\\r\\nolusturulmustur. 11.12.2023"
+        },
+        "name": {
+          "from": "AB-0000-3270 REV AA TAKIMININ �RETILMESI",
+          "to": "AB-0000-3270 REV AA TAKIMININ ÜRETİLMESİ"
+        }
+      }
+    },
+    {
+      "dataId": "d3e641fa-b877-4a45-be2a-4c2d036d30d9",
+      "packageNo": "2020-040",
+      "legacyPackageId": "247",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI REHIS AMBARI",
+          "to": "ASELSAN GÖLBAŞI REHIS AMBARI"
+        }
+      }
+    },
+    {
+      "dataId": "38278e32-493a-4b27-87fe-71af8d7786dc",
+      "packageNo": "2020-041",
+      "legacyPackageId": "248",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN -MACUNK�Y TESISLERI SST AMBARI",
+          "to": "ASELSAN -MACUNKÖY TESİSLERİ SST AMBARI"
+        }
+      }
+    },
+    {
+      "dataId": "1b07dc13-9401-4839-aaf5-b723d23b5c7b",
+      "packageNo": "2020-046",
+      "legacyPackageId": "252",
+      "fields": {
+        "deliveryAddress": {
+          "from": "MUSTAFA KEMAL MAHALLESI 2151.CADDE NO:3/A 06530 �ANKAYA - ANKARA",
+          "to": "MUSTAFA KEMAL MAHALLESİ 2151.CADDE NO:3/A 06530 ÇANKAYA - ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "6ab7886c-a45c-4365-9710-4da8eeefdcc7",
+      "packageNo": "2020-047",
+      "legacyPackageId": "253",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "f394ded0-24e6-48cd-b59d-c14ffef05e08",
+      "packageNo": "2020-048",
+      "legacyPackageId": "254",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        },
+        "name": {
+          "from": "Atmaca Metal Par�a",
+          "to": "Atmaca Metal Parça"
+        }
+      }
+    },
+    {
+      "dataId": "bda71b22-9973-4695-a422-a0f665dfae49",
+      "packageNo": "2020-050",
+      "legacyPackageId": "256",
+      "fields": {
+        "name": {
+          "from": "MN-0000-3775 REV AA K.BLADE (BEDELSIZ �RETIM)",
+          "to": "MN-0000-3775 REV AA K.BLADE (BEDELSIZ ÜRETİM)"
+        }
+      }
+    },
+    {
+      "dataId": "93752a72-94fb-49bd-b8ad-5cfc0c2f6151",
+      "packageNo": "2020-055",
+      "legacyPackageId": "262",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-REHIS Ambari-G�LBASI",
+          "to": "ASELSAN-REHIS Ambarı-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "bde27269-d3e5-46cc-8cd5-19a8fc19c367",
+      "packageNo": "2021-002",
+      "legacyPackageId": "263",
+      "fields": {
+        "deliveryAddress": {
+          "from": "REHIS Ambari-G�lbasi",
+          "to": "REHIS Ambarı-Gölbaşı"
+        }
+      }
+    },
+    {
+      "dataId": "0a39caeb-0af8-490f-9f2d-b0c754a925c7",
+      "packageNo": "2021-003",
+      "legacyPackageId": "264",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "dc304c8f-4c61-48f0-90ed-9c3045c44b6f",
+      "packageNo": "2021-004",
+      "legacyPackageId": "265",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI REHIS AMBARI",
+          "to": "ASELSAN GÖLBAŞI REHİS AMBARI"
+        },
+        "name": {
+          "from": "MN-0000-3414 REVAA  PAR�A KOMPOZIT KAM�I ANTEN KILIF KONIK ",
+          "to": "MN-0000-3414 REVAA  PARÇA KOMPOZİT KAMÇI ANTEN KILIF KONİK "
+        }
+      }
+    },
+    {
+      "dataId": "1f59c603-528b-49ad-90d8-a842cf46a12d",
+      "packageNo": "2021-001",
+      "legacyPackageId": "266",
+      "fields": {
+        "name": {
+          "from": "ASELSAN D�nemsel Isbirligi",
+          "to": "ASELSAN Dönemsel İşbirliği"
+        }
+      }
+    },
+    {
+      "dataId": "9c21a164-64c7-4c81-93f8-5f4e91c6238e",
+      "packageNo": "2021-005",
+      "legacyPackageId": "267",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "8013c181-ad03-4b78-b467-199003009e78",
+      "packageNo": "2021-008",
+      "legacyPackageId": "270",
+      "fields": {
+        "deliveryAddress": {
+          "from": "MUSTAFA KEMAL MAHALLESI 2151.CADDE NO:3/A 06530 �ANKAYA - ANKARA",
+          "to": "MUSTAFA KEMAL MAHALLESİ 2151.CADDE NO:3/A 06530 ÇANKAYA - ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "3e326756-261a-4160-b541-2c534346054a",
+      "packageNo": "2021-016",
+      "legacyPackageId": "278",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-MACUNK�Y",
+          "to": "ASELSAN-MACUNKÖY"
+        }
+      }
+    },
+    {
+      "dataId": "2ce19578-d093-41a2-9eee-7c37f66b780c",
+      "packageNo": "2021-017",
+      "legacyPackageId": "279",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�lbasi",
+          "to": "ASELSAN-Gölbaşı"
+        }
+      }
+    },
+    {
+      "dataId": "ad07a388-a609-4c1c-8bb5-a5646861b6e4",
+      "packageNo": "2021-027",
+      "legacyPackageId": "289",
+      "fields": {
+        "name": {
+          "from": "SABIT KANAT B�T�N�",
+          "to": "SABİT KANAT BÜTÜNÜ"
+        }
+      }
+    },
+    {
+      "dataId": "f213f761-043b-443e-bd7e-b18720c351f5",
+      "packageNo": "2021-030",
+      "legacyPackageId": "292",
+      "fields": {
+        "name": {
+          "from": "IRST STB KOMPOZIT R�ZGARLIK",
+          "to": "IRST STB KOMPOZİT RÜZGARLIK"
+        }
+      }
+    },
+    {
+      "dataId": "d1a00172-fa6e-4e3f-8290-b94ff86e5526",
+      "packageNo": "2021-031",
+      "legacyPackageId": "293",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "9db74fff-f467-4645-bee8-85d4ba35d560",
+      "packageNo": "2021-034",
+      "legacyPackageId": "296",
+      "fields": {
+        "deliveryAddress": {
+          "from": "MUSTAFA KEMAL MAHALLESI 2151.CADDE NO:3/A 06530 �ANKAYA - ANKARA",
+          "to": "MUSTAFA KEMAL MAHALLESİ 2151.CADDE NO:3/A 06530 ÇANKAYA - ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "24b0521a-7a01-4a44-a5d1-4c12f16b67c5",
+      "packageNo": "2021-036",
+      "legacyPackageId": "298",
+      "fields": {
+        "deliveryAddress": {
+          "from": "TUSAS MOTOR SANAYII A.S. �EVRE YOLU NO: 356 26003 ESKISEHIR",
+          "to": "TUSAŞ MOTOR SANAYİİ A.Ş. ÇEVRE YOLU NO: 356 26003 ESKİŞEHİR"
+        }
+      }
+    },
+    {
+      "dataId": "9273683a-56f9-46f4-b1ae-60e393ed9cfe",
+      "packageNo": "2021-037",
+      "legacyPackageId": "299",
+      "fields": {
+        "deliveryAddress": {
+          "from": "TUSAS MOTOR SANAYII A.S. �EVRE YOLU NO: 356 26003 ESKISEHIR",
+          "to": "TUSAŞ MOTOR SANAYİİ A.Ş. ÇEVRE YOLU NO: 356 26003 ESKİŞEHİR"
+        }
+      }
+    },
+    {
+      "dataId": "ff86942f-837e-429a-bc1a-ebfdc88a1c6b",
+      "packageNo": "2021-040",
+      "legacyPackageId": "302",
+      "fields": {
+        "name": {
+          "from": "Aktif Dinleme-T�mlesik-Acar",
+          "to": "Aktif Dinleme-Tümleşik-Acar"
+        }
+      }
+    },
+    {
+      "dataId": "a7df87a5-014b-4897-8b07-c563fcff1abd",
+      "packageNo": "2021-041",
+      "legacyPackageId": "303",
+      "fields": {
+        "deliveryAddress": {
+          "from": "TUSAS MOTOR SANAYII A.S. �EVRE YOLU NO: 356 26003 ESKISEHIR",
+          "to": "TUSAŞ MOTOR SANAYİİ A.Ş. ÇEVRE YOLU NO: 356 26003 ESKİŞEHİR"
+        }
+      }
+    },
+    {
+      "dataId": "f709eb68-38d3-4535-a0a8-b3b57f0ceb3a",
+      "packageNo": "2021-044",
+      "legacyPackageId": "306",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�lbasi",
+          "to": "ASELSAN-Gölbaşı"
+        },
+        "name": {
+          "from": "KAM�I-POLARIZOR-ANTEN-T�MLESIK ",
+          "to": "KAMÇI-POLARİZOR-ANTEN-TÜMLEŞİK "
+        }
+      }
+    },
+    {
+      "dataId": "934fbd1a-5a86-4f5d-82bb-99577036b05e",
+      "packageNo": "2021-045",
+      "legacyPackageId": "307",
+      "fields": {
+        "name": {
+          "from": "G�vde,HA",
+          "to": "Gövde,HA"
+        }
+      }
+    },
+    {
+      "dataId": "278d5e76-3802-4552-b84a-55647919fe27",
+      "packageNo": "2021-046",
+      "legacyPackageId": "308",
+      "fields": {
+        "name": {
+          "from": "ASELSAN-MGEO D�nemsel Isbirligi",
+          "to": "ASELSAN-MGEO Dönemsel İşbirliği"
+        }
+      }
+    },
+    {
+      "dataId": "fa8a98f4-ed8d-4323-b3c5-caf1ef59569d",
+      "packageNo": "2021-048",
+      "legacyPackageId": "310",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "70600b4d-82b1-4aba-baa8-ea4dc562c0ae",
+      "packageNo": "2021-049",
+      "legacyPackageId": "311",
+      "fields": {
+        "name": {
+          "from": "AB-7642-0002-MEKANIK ISLEM _ MN-7792-0005 �RETILMESI",
+          "to": "AB-7642-0002-MEKANİK İŞLEM _ MN-7792-0005 ÜRETİLMESİ"
+        }
+      }
+    },
+    {
+      "dataId": "85687f0b-c4df-4d56-8118-b8768fffaebf",
+      "packageNo": "2021-050",
+      "legacyPackageId": "312",
+      "fields": {
+        "name": {
+          "from": "BNWC61-S�NGER ",
+          "to": "BNWC61-SÜNGER "
+        }
+      }
+    },
+    {
+      "dataId": "88c4e8a9-c489-434c-9665-2f779deece08",
+      "packageNo": "2021-051",
+      "legacyPackageId": "313",
+      "fields": {
+        "name": {
+          "from": "T�MLESIK + MUHAFAZA",
+          "to": "TÜMLEŞİK + MUHAFAZA"
+        }
+      }
+    },
+    {
+      "dataId": "2bffb382-c605-4f0f-ad05-09885df5cc9d",
+      "packageNo": "2021-053",
+      "legacyPackageId": "315",
+      "fields": {
+        "notes": {
+          "from": "TERMIN TARIHLERI ve BIRIM FIYATLARI G�NCELLENMISTIR.14.10.2022",
+          "to": "TERMİN TARİHLERİ ve BİRİM FİYATLARI GÜNCELLENMİŞTİR.14.10.2022"
+        }
+      }
+    },
+    {
+      "dataId": "ff6adddf-fa8d-4ec3-89cc-3e7ab3145ace",
+      "packageNo": "2021-054",
+      "legacyPackageId": "316",
+      "fields": {
+        "name": {
+          "from": "SABIT KANAT B�T�N�",
+          "to": "SABİT KANAT BÜTÜNÜ"
+        }
+      }
+    },
+    {
+      "dataId": "ea2ca63a-6fd3-4826-8a96-3bb72f19d3a7",
+      "packageNo": "2021-055",
+      "legacyPackageId": "317",
+      "fields": {
+        "name": {
+          "from": "RADOM ve KAM�I",
+          "to": "RADOM ve KAMÇI"
+        }
+      }
+    },
+    {
+      "dataId": "8bc0cc94-1d04-4fc1-a40b-4acad1530998",
+      "packageNo": "2021-057",
+      "legacyPackageId": "319",
+      "fields": {
+        "name": {
+          "from": "KAM�I-POLARIZOR-IHOR-AKTIF DINLEME-RADOM",
+          "to": "KAMÇI-POLARIZOR-IHOR-AKTİF DİNLEME-RADOM"
+        },
+        "notes": {
+          "from": "12.06.2023 DE REV.EDILMISTIR.TERMIN VE SATIR NOLARI G�NCELLENMISTIR.",
+          "to": "12.06.2023 DE REV.EDİLMİŞTİR.TERMİN VE SATIR NOLARI GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "351243ff-c777-49cd-8a13-0b94af63a7e9",
+      "packageNo": "2021-058",
+      "legacyPackageId": "320",
+      "fields": {
+        "name": {
+          "from": "G�vde,HA",
+          "to": "Gövde,HA"
+        }
+      }
+    },
+    {
+      "dataId": "85f95675-8edf-4051-8c2c-ab191d7e2ade",
+      "packageNo": "2021-059",
+      "legacyPackageId": "321",
+      "fields": {
+        "notes": {
+          "from": "REV02 - 30.11.2022 \\r\\nBirim fiyat -termin tarihleri g�ncellenmistir.",
+          "to": "REV02 - 30.11.2022 \\r\\nBirim fiyat -termin tarihleri güncellenmiştir."
+        }
+      }
+    },
+    {
+      "dataId": "7634c63a-3b3e-4b46-bbde-19c23e137214",
+      "packageNo": "2021-063",
+      "legacyPackageId": "325",
+      "fields": {
+        "name": {
+          "from": "BLADE-KAM�I-IHOR",
+          "to": "BLADE-KAMÇI-IHOR"
+        }
+      }
+    },
+    {
+      "dataId": "bbfad1f8-bd6a-4f14-8d74-9eb4cfc111cc",
+      "packageNo": "2022-003",
+      "legacyPackageId": "332",
+      "fields": {
+        "name": {
+          "from": "HF-KAM�I-RADOM",
+          "to": "HF-KAMÇI-RADOM"
+        }
+      }
+    },
+    {
+      "dataId": "026efb78-6d6e-4a7a-adc7-2f5e96438307",
+      "packageNo": "2022-004",
+      "legacyPackageId": "333",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI (Rehis) Tesisleri-Idari Ambar ",
+          "to": "ASELSAN GÖLBAŞI (Rehis) Tesisleri-İdari Ambar "
+        },
+        "notes": {
+          "from": "Termin tarihleri -Tanimlar g�ncellenmistir.",
+          "to": "Termin tarihleri -Tanımlar güncellenmiştir."
+        }
+      }
+    },
+    {
+      "dataId": "12516c34-d0fe-46eb-8e59-4ddd71144e26",
+      "packageNo": "2022-005",
+      "legacyPackageId": "334",
+      "fields": {
+        "name": {
+          "from": "SABIT KANAT B�T�N�",
+          "to": "SABİT KANAT BÜTÜNÜ"
+        }
+      }
+    },
+    {
+      "dataId": "7cbe14fe-2420-484a-ae56-2bfe7cdc06bd",
+      "packageNo": "2022-009",
+      "legacyPackageId": "338",
+      "fields": {
+        "name": {
+          "from": "MN-0000-3414 _KAM�I ONARIM",
+          "to": "MN-0000-3414 _KAMÇI ONARIM"
+        }
+      }
+    },
+    {
+      "dataId": "c27984cf-73fd-44a1-bf76-a1b5953fde88",
+      "packageNo": "2022-012",
+      "legacyPackageId": "341",
+      "fields": {
+        "deliveryAddress": {
+          "from": "MUSTAFA KEMAL MAHALLESI 2151.CADDE NO:3/A 06530 �ANKAYA - ANKARA",
+          "to": "MUSTAFA KEMAL MAHALLESİ 2151.CADDE NO:3/A 06530 ÇANKAYA - ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "c7f9ad20-3cfe-49b3-a29c-93a67588cc71",
+      "packageNo": "2022-013",
+      "legacyPackageId": "342",
+      "fields": {
+        "deliveryAddress": {
+          "from": "MUSTAFA KEMAL MAHALLESI 2151.CADDE NO:3/A 06530 �ANKAYA - ANKARA",
+          "to": "MUSTAFA KEMAL MAHALLESİ 2151.CADDE NO:3/A 06530 ÇANKAYA - ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "00ef0243-7551-4698-a2bc-42b33acf67f6",
+      "packageNo": "2022-014",
+      "legacyPackageId": "343",
+      "fields": {
+        "deliveryAddress": {
+          "from": "MUSTAFA KEMAL MAHALLESI 2151.CADDE NO:3/A 06530 �ANKAYA - ANKARA",
+          "to": "MUSTAFA KEMAL MAHALLESİ 2151.CADDE NO:3/A 06530 ÇANKAYA - ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "cfbff999-e644-4655-bc6c-0079576911ee",
+      "packageNo": "2022-017",
+      "legacyPackageId": "346",
+      "fields": {
+        "notes": {
+          "from": "Termin tarihleri g�ncellenmistir.",
+          "to": "Termin tarihleri güncellenmiştir."
+        }
+      }
+    },
+    {
+      "dataId": "bae66de2-1d81-4b48-bf7a-d504c1e7ee64",
+      "packageNo": "2022-021",
+      "legacyPackageId": "350",
+      "fields": {
+        "name": {
+          "from": "MN-0000-3414 _KAM�I ONARIM",
+          "to": "MN-0000-3414 _KAMÇI ONARIM"
+        }
+      }
+    },
+    {
+      "dataId": "108d6855-d826-472e-9dbe-0468ca4fa958",
+      "packageNo": "2022-024",
+      "legacyPackageId": "353",
+      "fields": {
+        "deliveryAddress": {
+          "from": "MUSTAFA KEMAL MAHALLESI 2151.CADDE NO:3/A 06530 �ANKAYA - ANKARA",
+          "to": "MUSTAFA KEMAL MAHALLESİ 2151.CADDE NO:3/A 06530 ÇANKAYA - ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "0cedbbb2-f7cf-49fd-832a-45425f22158d",
+      "packageNo": "2022-025",
+      "legacyPackageId": "354",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        },
+        "notes": {
+          "from": "06.07.2022 REV 01 - 40. ve 220. KALEMLER SILINMISTIR.\\r\\n17.11.2023 REV02 - TERMIN ve 14.KALEM FIYAT G�NLENMISTIR.",
+          "to": "06.07.2022 REV 01 - 40. ve 220. KALEMLER SİLİNMİŞTİR.\\r\\n17.11.2023 REV02 - TERMİN ve 14.KALEM FİYAT GÜNLENMİŞTİR."
+        },
+        "name": {
+          "from": "BLADE-HF-KARETTA-KAM�I ve DIGERLERI",
+          "to": "BLADE-HF-KARETTA-KAMÇI ve DİĞERLERİ"
+        }
+      }
+    },
+    {
+      "dataId": "0d533b02-ba4b-404a-91fd-491d107e6868",
+      "packageNo": "2022-026",
+      "legacyPackageId": "355",
+      "fields": {
+        "name": {
+          "from": "SABIT KANAT B�T�N�",
+          "to": "SABİT KANAT BÜTÜNÜ"
+        }
+      }
+    },
+    {
+      "dataId": "07557b8e-6667-44bb-98a4-fed4f9745a74",
+      "packageNo": "2022-027",
+      "legacyPackageId": "356",
+      "fields": {
+        "name": {
+          "from": "HF MIL-KARETTA-TAMIR/S�K�M ISLEMLERI",
+          "to": "HF MIL-KARETTA-TAMİR/SÖKÜM İŞLEMLERİ"
+        }
+      }
+    },
+    {
+      "dataId": "6c787f26-7732-4735-9909-42f5c0b1e757",
+      "packageNo": "2022-030",
+      "legacyPackageId": "359",
+      "fields": {
+        "notes": {
+          "from": "19.09.2022 tarihinde rev edilmistir.Sevk tarihleri ve birim fiyatlari g�ncellenmistir.",
+          "to": "19.09.2022 tarihinde rev edilmiştir.Sevk tarihleri ve birim fiyatları güncellenmiştir."
+        }
+      }
+    },
+    {
+      "dataId": "23511b91-9864-4ccf-a136-fa7c5a9a4d63",
+      "packageNo": "2022-033",
+      "legacyPackageId": "362",
+      "fields": {
+        "name": {
+          "from": "10128465 KULAKLIK G�VDESI, HMD",
+          "to": "10128465 KULAKLIK GÖVDESİ, HMD"
+        }
+      }
+    },
+    {
+      "dataId": "4e44f83d-01a7-490a-9c85-636d64ff7de1",
+      "packageNo": "2022-038",
+      "legacyPackageId": "367",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "0780b00c-6d84-48e5-89ef-a09a927fb8b3",
+      "packageNo": "2022-039",
+      "legacyPackageId": "368",
+      "fields": {
+        "notes": {
+          "from": "216769 numarali siparisteki 90 adet �r�n�n boya konfig�rarasyonu degistigi i�in ilgili siparis iptal edilmis ve ilk etapta 40 adet -006 konfig�rasyonunda boyanmasi i�in 228182 numarali siparis olusturulmustur.(08.11.2022)",
+          "to": "216769 numaralı siparişteki 90 adet ürünün boya konfigürarasyonu değiştiği için ilgili sipariş iptal edilmiş ve ilk etapta 40 adet -006 konfigürasyonunda boyanması için 228182 numaralı sipariş oluşturulmuştur.(08.11.2022)"
+        }
+      }
+    },
+    {
+      "dataId": "6b2f3669-2b76-484f-86f5-af6893772f4f",
+      "packageNo": "2022-040",
+      "legacyPackageId": "369",
+      "fields": {
+        "name": {
+          "from": "AR22-U2400110-006 Doruk 2 �st par�a",
+          "to": "AR22-U2400110-006 Doruk 2 üst parça"
+        }
+      }
+    },
+    {
+      "dataId": "f81272b1-737b-4038-a755-894746d92262",
+      "packageNo": "2022-041",
+      "legacyPackageId": "370",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "450e1538-26a1-4501-87b3-60d7dffd3eeb",
+      "packageNo": "2022-042",
+      "legacyPackageId": "371",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        },
+        "notes": {
+          "from": "13.06.2023 de REV10 yayinlanmistir.Satin Alma Sorumlusu-Par�a Rev no degismistir.Termin tarihi g�ncellenmemistir.\\r\\n18.09.2023 de REV14 yayinlanmistir.Rev no degismistir.Termin tarihi g�ncellenmemistir.",
+          "to": "13.06.2023 de REV10 yayınlanmıştır.Satın Alma Sorumlusu-Parça Rev no değişmiştir.Termin tarihi güncellenmemiştir.\\r\\n18.09.2023 de REV14 yayınlanmıştır.Rev no değişmiştir.Termin tarihi güncellenmemiştir."
+        }
+      }
+    },
+    {
+      "dataId": "345fccf0-b58f-42b2-b7f0-d45deef4f2eb",
+      "packageNo": "2022-044",
+      "legacyPackageId": "373",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "b19e1f62-55df-4219-bf3b-3211117be796",
+      "packageNo": "2022-045",
+      "legacyPackageId": "374",
+      "fields": {
+        "name": {
+          "from": "HAVA ALIGI B�T�N� Fason Kalemi",
+          "to": "HAVA ALIĞI BÜTÜNÜ Fason Kalemi"
+        },
+        "notes": {
+          "from": "13.02.2024 de rev17 olarak tarafimiza bildirilmistir.RevD04-Fason Kalemi-sayi 11 adet-termin tarihi g�ncellenerek yayinlanmistir.\\r\\nRevize tarihi:12.02.2024 / Termin Tarihi :01.11.2023 :(\\r\\nRev19 ile (22.05.2024) 2.kalem eklenmistir.\\r\\nRev20 12.09.2024\\r\\nRev21 09.10.2024-PAR�A REVD05 olmustur.",
+          "to": "13.02.2024 de rev17 olarak tarafımıza bildirilmiştir.RevD04-Fason Kalemi-sayı 11 adet-termin tarihi güncellenerek yayınlanmıştır.\\r\\nRevize tarihi:12.02.2024 / Termin Tarihi :01.11.2023 :(\\r\\nRev19 ile (22.05.2024) 2.kalem eklenmiştir.\\r\\nRev20 12.09.2024\\r\\nRev21 09.10.2024-PARÇA REVD05 olmuştur."
+        }
+      }
+    },
+    {
+      "dataId": "e1b7b957-fe3d-48a0-967e-ed11ba048171",
+      "packageNo": "2022-049",
+      "legacyPackageId": "378",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "4a5ae604-b642-48d5-afc2-10e5c851d3f8",
+      "packageNo": "2022-050",
+      "legacyPackageId": "379",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "a5167def-f6bc-44ec-9c33-610f2c1355a5",
+      "packageNo": "2022-055",
+      "legacyPackageId": "384",
+      "fields": {
+        "name": {
+          "from": "AL�MINYUM BAL PETEGI",
+          "to": "ALÜMİNYUM BAL PETEĞİ"
+        }
+      }
+    },
+    {
+      "dataId": "abf42bda-4e88-4853-9f58-d2839ac68829",
+      "packageNo": "2022-056",
+      "legacyPackageId": "385",
+      "fields": {
+        "name": {
+          "from": "T�MLESIK+KARETTA",
+          "to": "TÜMLEŞİK+KARETTA"
+        }
+      }
+    },
+    {
+      "dataId": "5f095a04-8c64-4a83-a8fa-16c225c6c577",
+      "packageNo": "2022-058",
+      "legacyPackageId": "387",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        },
+        "name": {
+          "from": "KOMPOZIT HAVA ALIGI KAPAGI KALIP ve FIKST�R TASARIMI ve �RETIMI",
+          "to": "KOMPOZİT HAVA ALIĞI KAPAĞI KALIP ve FİKSTÜR TASARIMI ve ÜRETİMİ"
+        }
+      }
+    },
+    {
+      "dataId": "82b04a87-1a71-40e1-a885-632f4d09d92e",
+      "packageNo": "2022-061",
+      "legacyPackageId": "390",
+      "fields": {
+        "name": {
+          "from": "SABIT KANAT B�T�N�",
+          "to": "SABİT KANAT BÜTÜNÜ"
+        }
+      }
+    },
+    {
+      "dataId": "69c6611f-4e98-41b5-b0b3-8481bc18abaf",
+      "packageNo": "2022-062",
+      "legacyPackageId": "391",
+      "fields": {
+        "name": {
+          "from": "AVCI G�VDE",
+          "to": "AVCI GÖVDE"
+        }
+      }
+    },
+    {
+      "dataId": "f750aaeb-a82c-45b5-9507-0ffbdff041c8",
+      "packageNo": "2022-064",
+      "legacyPackageId": "393",
+      "fields": {
+        "name": {
+          "from": "MN-0000-4163 - YILDIRIM �UBUGU",
+          "to": "MN-0000-4163 - YILDIRIM ÇUBUĞU"
+        },
+        "notes": {
+          "from": "Par�a sayisi artirilmistir.",
+          "to": "Parça sayısı artırılmıştır."
+        }
+      }
+    },
+    {
+      "dataId": "29d1e707-e937-4069-982c-efeafc6b2684",
+      "packageNo": "2022-065",
+      "legacyPackageId": "394",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "0ed79cbd-3661-4a1e-8a06-c438088020ae",
+      "packageNo": "2022-066",
+      "legacyPackageId": "395",
+      "fields": {
+        "name": {
+          "from": "MN-7799-0029 - B�Y�K POLARIZOR K�P�K",
+          "to": "MN-7799-0029 - BÜYÜK POLARİZOR KÖPÜK"
+        }
+      }
+    },
+    {
+      "dataId": "fa5d027f-98dd-468b-8f44-98f7412876ba",
+      "packageNo": "2022-067",
+      "legacyPackageId": "396",
+      "fields": {
+        "notes": {
+          "from": "S�ZLESMESI TARAFIMIZA G�NDERILMEMISTIR.PORTALDAKI BILGILERLE KALEMLER DOLDURULMUSTUR.(10.11.2022)\\r\\nS�ZLESME REV02 OLARAK 28.11.2022 DE TARAFIMIZA G�NDERILMISTIR.",
+          "to": "SÖZLEŞMESİ TARAFIMIZA GÖNDERİLMEMİŞTİR.PORTALDAKİ BİLGİLERLE KALEMLER DOLDURULMUŞTUR.(10.11.2022)\\r\\nSÖZLEŞME REV02 OLARAK 28.11.2022 DE TARAFIMIZA GÖNDERİLMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "60768b2b-0af9-4ad3-b9b5-179f166db416",
+      "packageNo": "2022-069",
+      "legacyPackageId": "398",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "9cd38bf6-2350-4356-bd53-4fc03e16dbed",
+      "packageNo": "2022-071",
+      "legacyPackageId": "400",
+      "fields": {
+        "name": {
+          "from": "MN-7799-0029 - B�Y�K POLARIZOR K�P�K",
+          "to": "MN-7799-0029 - BÜYÜK POLARİZOR KÖPÜK"
+        }
+      }
+    },
+    {
+      "dataId": "a52529b0-57a5-45a5-bd79-20041fe814c7",
+      "packageNo": "2022-075",
+      "legacyPackageId": "404",
+      "fields": {
+        "name": {
+          "from": "HAVA ALIGI B�T�N� - �AKIR",
+          "to": "HAVA ALIĞI BÜTÜNÜ - ÇAKIR"
+        },
+        "notes": {
+          "from": "14.01.2023 tarihinde revize edilmistir.Fakat termin tarihleri g�ncellenmemistir.Kalite provizyonlari g�ncellenmistir.",
+          "to": "14.01.2023 tarihinde revize edilmiştir.Fakat termin tarihleri güncellenmemiştir.Kalite provizyonları güncellenmiştir."
+        }
+      }
+    },
+    {
+      "dataId": "c1d36a06-1399-4866-a8e6-989a76b65f0c",
+      "packageNo": "2022-076",
+      "legacyPackageId": "405",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI Tesisleri-REHIS Ambarlari",
+          "to": "ASELSAN GÖLBAŞI Tesisleri-REHIS Ambarları"
+        }
+      }
+    },
+    {
+      "dataId": "612f0348-7b96-4345-a396-4023bccb6a31",
+      "packageNo": "2022-077",
+      "legacyPackageId": "406",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI Tesisleri-REHIS Ambarlari",
+          "to": "ASELSAN GÖLBAŞI Tesisleri-REHIS Ambarları"
+        }
+      }
+    },
+    {
+      "dataId": "b1d206cf-6c29-43e7-8c88-4fe7ce9220c5",
+      "packageNo": "2022-078",
+      "legacyPackageId": "407",
+      "fields": {
+        "notes": {
+          "from": "216769  (2022-039) numarali siparisteki 90 adet �r�n�n boya konfig�rasyonu degistigi i�in ilgili siparis iptal edilmis ve ilk etapta 40 adet -006 konfig�rasyonunda boyanmasi i�in  bu 228182 numarali siparis olusturulmustur. ",
+          "to": "216769  (2022-039) numaralı siparişteki 90 adet ürünün boya konfigürasyonu değiştiği için ilgili sipariş iptal edilmiş ve ilk etapta 40 adet -006 konfigürasyonunda boyanması için  bu 228182 numaralı sipariş oluşturulmuştur. "
+        }
+      }
+    },
+    {
+      "dataId": "db932521-c43f-4917-bfeb-9f69ce804b88",
+      "packageNo": "2022-079",
+      "legacyPackageId": "408",
+      "fields": {
+        "deliveryAddress": {
+          "from": "G�LBASI",
+          "to": "GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "c7cc6193-2def-42a3-a2c2-d5d7d5fa5c4f",
+      "packageNo": "2022-080",
+      "legacyPackageId": "409",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI Tesisleri-REHIS Ambarlari",
+          "to": "ASELSAN GÖLBAŞI Tesisleri-REHIS Ambarları"
+        }
+      }
+    },
+    {
+      "dataId": "ca192bee-2377-43bf-bf37-d71e1e00d53c",
+      "packageNo": "2022-081",
+      "legacyPackageId": "410",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI tesisleri - REHIS ambarlari",
+          "to": "ASELSAN GÖLBASI tesisleri - REHIS ambarları"
+        }
+      }
+    },
+    {
+      "dataId": "878adc44-18a9-4947-96bf-cdc73b36b685",
+      "packageNo": "2022-082",
+      "legacyPackageId": "411",
+      "fields": {
+        "name": {
+          "from": "MGEO-Kask Prototip �retimi",
+          "to": "MGEO-Kask Prototip Üretimi"
+        }
+      }
+    },
+    {
+      "dataId": "c1c248ff-190b-464d-9545-4c37ee5b48e2",
+      "packageNo": "2022-083",
+      "legacyPackageId": "412",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI Tesisleri-REHIS Ambarlari",
+          "to": "ASELSAN-GÖLBAŞI Tesisleri-REHIS Ambarları"
+        },
+        "notes": {
+          "from": "25.09.2023 de revize siparis tarafimiza g�nderilmistir. Termin tarihi ve kalem sayisi degismistir.(9.-10.-11. kalemler eklenmistir.)",
+          "to": "25.09.2023 de revize sipariş tarafımıza gönderilmiştir. Termin tarihi ve kalem sayısı değişmiştir.(9.-10.-11. kalemler eklenmiştir.)"
+        }
+      }
+    },
+    {
+      "dataId": "050eb2bf-6fe2-485a-85dc-8cd8ea1d4242",
+      "packageNo": "2022-084",
+      "legacyPackageId": "413",
+      "fields": {
+        "name": {
+          "from": "B.POLARIZ�R + DAKR_Onarim",
+          "to": "B.POLARİZÖR + DAKR_Onarım"
+        }
+      }
+    },
+    {
+      "dataId": "fdca6f36-03f0-4172-baf3-9e31664f694b",
+      "packageNo": "2022-085",
+      "legacyPackageId": "414",
+      "fields": {
+        "name": {
+          "from": "SOM-PROTOTIP PREPREG �RETIMI",
+          "to": "SOM-PROTOTİP PREPREG ÜRETİMİ"
+        },
+        "notes": {
+          "from": "29.05.2024 de Rev01 olarak g�ncellenmistir. (Birim fiyatlari degistirilmistir) \\r\\nBet�l Hanimin onayi ile fatura edilerek siparis kapatilmistir.10.06.2024 - ODK2024000000209",
+          "to": "29.05.2024 de Rev01 olarak güncellenmiştir. (Birim fiyatları değiştirilmiştir) \\r\\nBetül Hanımın onayı ile fatura edilerek sipariş kapatılmıştır.10.06.2024 - ODK2024000000209"
+        }
+      }
+    },
+    {
+      "dataId": "31aa8bc6-c9b7-4940-85c9-d8407c547416",
+      "packageNo": "2022-086",
+      "legacyPackageId": "415",
+      "fields": {
+        "notes": {
+          "from": "23.05.2024 DE REV SIPARIS GELMISTIR.(BIR KALEM IPTAL EDILMISTIR.7 ADET - 2. KALEM TERMIN TARIHI G�NCELLENMISTIR.)",
+          "to": "23.05.2024 DE REV SİPARİŞ GELMİŞTİR.(BİR KALEM İPTAL EDİLMİŞTİR.7 ADET - 2. KALEM TERMİN TARİHİ GÜNCELLENMİŞTİR.)"
+        }
+      }
+    },
+    {
+      "dataId": "0927430a-7dd1-4a8d-96f2-a53cd064e869",
+      "packageNo": "2022-087",
+      "legacyPackageId": "416",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "58be4532-4dd8-4bd9-8752-3bc8c549198e",
+      "packageNo": "2022-089",
+      "legacyPackageId": "418",
+      "fields": {
+        "notes": {
+          "from": "Firmadan alt malzeme geldik�e �retim yapilabilmektedir.",
+          "to": "Firmadan alt malzeme geldikçe üretim yapılabilmektedir."
+        }
+      }
+    },
+    {
+      "dataId": "fbb47f4a-fe98-4866-b19b-57baf823c79f",
+      "packageNo": "2022-090",
+      "legacyPackageId": "419",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "5670d672-26f9-452e-947f-06dabe986209",
+      "packageNo": "2022-091",
+      "legacyPackageId": "420",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "0a6c284e-bf60-4407-905f-6e0e11b3f6a3",
+      "packageNo": "2022-093",
+      "legacyPackageId": "422",
+      "fields": {
+        "notes": {
+          "from": "10.05.2023 DE OSMAN BEYIN BILGISINDE 4.KALEM IPTAL EDILMISTIR.REV.SIPARIS GELMEMISTIR.\\r\\n25.05.2023 DE IPTAL KALEM I�IN MAIL GELMISTIR.\\r\\n14.06.2023 DE REVIZYON SIPARIS GELMISTIR.(TERMIN TARIHLERI G�NCELLENMIS VE 4.KALEM IPTAL EDILMISTIR)\\r\\n07.02.2025 DE REVIZYON SIPARIS GELMISTIR.( 8.KALEM IPTAL EDILMIS VE IS PAKETI KAPATILMISTIR)",
+          "to": "10.05.2023 DE OSMAN BEYİN BİLGİSİNDE 4.KALEM İPTAL EDİLMİŞTİR.REV.SİPARİŞ GELMEMİŞTİR.\\r\\n25.05.2023 DE İPTAL KALEM İÇİN MAİL GELMİŞTİR.\\r\\n14.06.2023 DE REVİZYON SİPARİŞ GELMİŞTİR.(TERMİN TARİHLERİ GÜNCELLENMİŞ VE 4.KALEM İPTAL EDİLMİŞTİR)\\r\\n07.02.2025 DE REVİZYON SİPARİŞ GELMİŞTİR.( 8.KALEM İPTAL EDİLMİŞ VE İŞ PAKETİ KAPATILMIŞTIR)"
+        }
+      }
+    },
+    {
+      "dataId": "51e5bdd6-85bd-4e9b-977f-68a2f932683e",
+      "packageNo": "2022-094",
+      "legacyPackageId": "423",
+      "fields": {
+        "name": {
+          "from": "10125322 G�NESLiK,OMTTZA",
+          "to": "10125322 GÜNESLiK,OMTTZA"
+        }
+      }
+    },
+    {
+      "dataId": "06ff633d-81ed-4262-bc0f-be7ab468a61a",
+      "packageNo": "2022-096",
+      "legacyPackageId": "425",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "baa62968-b04e-4aea-a53d-d5f93ea91296",
+      "packageNo": "2022-097",
+      "legacyPackageId": "426",
+      "fields": {
+        "notes": {
+          "from": "Termin Tarihi ve fiyat g�ncellenmistir.",
+          "to": "Termin Tarihi ve fiyat güncellenmiştir."
+        }
+      }
+    },
+    {
+      "dataId": "6a910c8f-b091-4852-a587-0928ff2e1443",
+      "packageNo": "2022-098",
+      "legacyPackageId": "427",
+      "fields": {
+        "notes": {
+          "from": "KALITE G�VENCE SARTLARI G�NCELLENMISTIR.REV04 - 05.04.2023",
+          "to": "KALİTE GÜVENCE ŞARTLARI GÜNCELLENMİŞTİR.REV04 - 05.04.2023"
+        }
+      }
+    },
+    {
+      "dataId": "96da0dfd-6f97-4feb-9bd2-dd25a7c7cfee",
+      "packageNo": "2023-001",
+      "legacyPackageId": "429",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "6542d011-dca1-495d-8837-3556ec1fa765",
+      "packageNo": "2023-002",
+      "legacyPackageId": "430",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "c43ca12f-a32c-43dd-a7c3-5e3ed21fbba6",
+      "packageNo": "2023-003",
+      "legacyPackageId": "431",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "013c1ca7-7f3b-49b4-af81-5246006ab0dd",
+      "packageNo": "2023-006",
+      "legacyPackageId": "434",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "2b5d3a0a-9d58-4311-a58b-389428a00f87",
+      "packageNo": "2023-008",
+      "legacyPackageId": "436",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "0001103f-7a43-4f58-82d8-15481c046fdf",
+      "packageNo": "2023-009",
+      "legacyPackageId": "437",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�lbasi",
+          "to": "ASELSAN-Gölbaşı"
+        }
+      }
+    },
+    {
+      "dataId": "8f17e1eb-f58c-4141-bb40-0bc28ef68324",
+      "packageNo": "2023-010",
+      "legacyPackageId": "438",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�lbasi",
+          "to": "ASELSAN-Gölbaşı"
+        }
+      }
+    },
+    {
+      "dataId": "26c3ada0-222a-4413-9e86-a70679a55732",
+      "packageNo": "2023-011",
+      "legacyPackageId": "439",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�lbasi",
+          "to": "ASELSAN-Gölbaşı"
+        }
+      }
+    },
+    {
+      "dataId": "bb64f1ab-6964-4eb2-b548-e4ed2a4899c3",
+      "packageNo": "2023-012",
+      "legacyPackageId": "440",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "e3da4c1c-f72b-4ab9-9bbe-f36eeac196b9",
+      "packageNo": "2023-013",
+      "legacyPackageId": "441",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "72c9ca31-0b19-4367-8caa-99b0e2305106",
+      "packageNo": "2023-014",
+      "legacyPackageId": "442",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "7681e1e7-7485-4665-bce9-719f59f276c9",
+      "packageNo": "2023-015",
+      "legacyPackageId": "443",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "78bf2b93-e328-47cf-bc1a-98783909b4d8",
+      "packageNo": "2023-016",
+      "legacyPackageId": "444",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "9a394138-9d21-4ecc-9df1-36088f14765d",
+      "packageNo": "2023-017",
+      "legacyPackageId": "445",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "9367836f-c544-43ae-95aa-f0138f05a3b6",
+      "packageNo": "2023-018",
+      "legacyPackageId": "446",
+      "fields": {
+        "name": {
+          "from": "AVCI ve G�NESLIK",
+          "to": "AVCI ve GÜNEŞLİK"
+        }
+      }
+    },
+    {
+      "dataId": "ac00fa00-bfc0-42a8-a6c5-921c062b5ed3",
+      "packageNo": "2023-019",
+      "legacyPackageId": "447",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        },
+        "name": {
+          "from": "T�MLESIK+HF ve DIGERLERI",
+          "to": "TÜMLEŞİK+HF ve DİĞERLERİ"
+        }
+      }
+    },
+    {
+      "dataId": "eac9af16-f997-4203-bb8f-92b1f56d781a",
+      "packageNo": "2023-020",
+      "legacyPackageId": "448",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "9e4c6f76-4e0c-4678-a364-42fe54791e09",
+      "packageNo": "2023-021",
+      "legacyPackageId": "449",
+      "fields": {
+        "name": {
+          "from": "KAPORTA_G�VDE,HA",
+          "to": "KAPORTA_GÖVDE,HA"
+        }
+      }
+    },
+    {
+      "dataId": "b01a6cd0-dc7c-4d35-b5b2-d7db87c12ad9",
+      "packageNo": "2023-022",
+      "legacyPackageId": "450",
+      "fields": {
+        "name": {
+          "from": "10118588 IRST STB KOMPOZiT R�ZGARLIK",
+          "to": "10118588 IRST STB KOMPOZiT RÜZGARLIK"
+        }
+      }
+    },
+    {
+      "dataId": "8c6f6a21-e088-4b6a-95e0-74ce95b3eec3",
+      "packageNo": "2023-023",
+      "legacyPackageId": "451",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "dcea5ce1-eeb2-46e9-8e2a-590c5fa1fedd",
+      "packageNo": "2023-024",
+      "legacyPackageId": "452",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN -G�LBASI",
+          "to": "ASELSAN -GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "6555bfca-8018-4493-bfa4-6132cc9db2a1",
+      "packageNo": "2023-025",
+      "legacyPackageId": "453",
+      "fields": {
+        "notes": {
+          "from": "11.06.2024 TARIHINDE BILGILENDIRME YAPILMISTIR.TERMIN TARIHI G�NCELLENMEMISTIR.",
+          "to": "11.06.2024 TARİHİNDE BİLGİLENDİRME YAPILMIŞTIR.TERMİN TARİHİ GÜNCELLENMEMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "e9bb413e-4652-48c7-9d23-c178fdc57a97",
+      "packageNo": "2023-026",
+      "legacyPackageId": "454",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "17.09.2024 TARIHINDE\\\" IPTAL EDILEN KALEMLER \\\" SIPARISTEN �IKARILARAK REVIZE EDILMISTIR.\\r\\nMALZEME 2023 YILINDA SEVK EDILMIS VE IS PAKETI KAPATILMISTIR.",
+          "to": "17.09.2024 TARİHİNDE\\\" İPTAL EDİLEN KALEMLER \\\" SİPARİŞTEN ÇIKARILARAK REVİZE EDİLMİŞTİR.\\r\\nMALZEME 2023 YILINDA SEVK EDİLMİŞ VE İŞ PAKETİ KAPATILMIŞTIR."
+        }
+      }
+    },
+    {
+      "dataId": "48abc0f9-6e91-4b8b-bb94-05ba95d546ab",
+      "packageNo": "2023-028",
+      "legacyPackageId": "456",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "db346e91-982d-4642-97bc-c38496c5a340",
+      "packageNo": "2023-029",
+      "legacyPackageId": "457",
+      "fields": {
+        "deliveryAddress": {
+          "from": "MUSTAFA KEMAL MAHALLESI 2151.CADDE NO:3/A 06530 �ANKAYA - ANKARA",
+          "to": "MUSTAFA KEMAL MAHALLESİ 2151.CADDE NO:3/A 06530 ÇANKAYA - ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "7607769d-6760-4661-ab8e-96b2b294536f",
+      "packageNo": "2023-030",
+      "legacyPackageId": "458",
+      "fields": {
+        "deliveryAddress": {
+          "from": "MUSTAFA KEMAL MAHALLESI 2151.CADDE NO:3/A 06530 �ANKAYA - ANKARA",
+          "to": "MUSTAFA KEMAL MAHALLESİ 2151.CADDE NO:3/A 06530 ÇANKAYA - ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "e0ed9eca-c9ef-4364-a02d-cc93aaa31ce7",
+      "packageNo": "2023-031",
+      "legacyPackageId": "459",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "2.KALEMIN TERMIN TARIHI G�NCELLENMISTIR.",
+          "to": "2.KALEMİN TERMİN TARİHİ GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "c559a2e2-1cb7-48ea-b0da-2cf5be8e58e7",
+      "packageNo": "2023-032",
+      "legacyPackageId": "460",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        },
+        "notes": {
+          "from": "13.11.2025 REV01 ILE , BEDELSIZ SAS KALEM NO :40 EKLENMISTIR.TERMIN TARIHI VE TOPLAM ADET G�NCELLENMISTIR.",
+          "to": "13.11.2025 REV01 İLE , BEDELSİZ SAS KALEM NO :40 EKLENMİŞTİR.TERMİN TARİHİ VE TOPLAM ADET GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "a98d68da-919f-47a3-a835-82558c0fec71",
+      "packageNo": "2023-034",
+      "legacyPackageId": "462",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        },
+        "notes": {
+          "from": "25.09.2023 de fiyati revize edilmistir.(Portalda mevcut).Siparisi beklenmektedir.\\r\\n03.10.2023 de  siparis (Rev02 olarak) gelmistir. (Termin tarihi g�ncellenmemistir.)",
+          "to": "25.09.2023 de fiyatı revize edilmiştir.(Portalda mevcut).Siparişi beklenmektedir.\\r\\n03.10.2023 de  sipariş (Rev02 olarak) gelmiştir. (Termin tarihi güncellenmemiştir.)"
+        },
+        "name": {
+          "from": "YO.BETA-YALITILMIS G�VDE KOMPLESI",
+          "to": "YO.BETA-YALITILMIŞ GÖVDE KOMPLESİ"
+        }
+      }
+    },
+    {
+      "dataId": "26cf4fc2-a477-43ec-bb06-d8e37fcb72a0",
+      "packageNo": "2023-035",
+      "legacyPackageId": "463",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        },
+        "notes": {
+          "from": "07.09.2023 DE REV04 OLARAK SIPARIS EMRI G�NDERILMISTIR.KALEMLERIN REV NO LARI G�NCELLENMISTIR.(D02 OLMUSTUR)\\r\\n23.10.2023 DE REV05 OLARAK SIPARIS EMRI G�NDERILMISTIR.KALEMLERIN REV NO LARI G�NCELLENMISTIR.(D03 OLMUSTUR)TERMIN TARIHI G�NCELLENMISTIR.",
+          "to": "07.09.2023 DE REV04 OLARAK SİPARİŞ EMRİ GÖNDERİLMİŞTİR.KALEMLERİN REV NO LARI GÜNCELLENMİŞTİR.(D02 OLMUŞTUR)\\r\\n23.10.2023 DE REV05 OLARAK SİPARİŞ EMRİ GÖNDERİLMİŞTİR.KALEMLERİN REV NO LARI GÜNCELLENMİŞTİR.(D03 OLMUŞTUR)TERMİN TARİHİ GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "b4c4b968-f05a-4223-ae22-a8f5b9aa8f42",
+      "packageNo": "2023-037",
+      "legacyPackageId": "465",
+      "fields": {
+        "name": {
+          "from": "TASIYICI k�rleme islemi",
+          "to": "TASIYICI kürleme islemi"
+        },
+        "notes": {
+          "from": "�alismasi daha �nce yapilan ve 5. Ana Bakima teslim edilen �r�nd�r.\\r\\nSiparis emrinin gelmesi ile fatura edilmistir.",
+          "to": "Çalışması daha önce yapılan ve 5. Ana Bakıma teslim edilen üründür.\\r\\nSipariş emrinin gelmesi ile fatura edilmiştir."
+        }
+      }
+    },
+    {
+      "dataId": "a7092207-b351-4541-99a4-3a4bcba712c3",
+      "packageNo": "2023-038",
+      "legacyPackageId": "466",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        },
+        "notes": {
+          "from": "29.02.2024- FIYAT-TOPLAM SAYI-TERMIN TARIHI G�NCELLENMISTIR.\\r\\n23.05.2024-TOPLAM SAYI-TERMIN TARIHI G�NCELLENMISTIR.",
+          "to": "29.02.2024- FİYAT-TOPLAM SAYI-TERMİN TARİHİ GÜNCELLENMİŞTİR.\\r\\n23.05.2024-TOPLAM SAYI-TERMİN TARİHİ GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "14a69f41-c71c-423b-99c9-28445cb69bc0",
+      "packageNo": "2023-039",
+      "legacyPackageId": "467",
+      "fields": {
+        "notes": {
+          "from": "Termin Tarihi g�ncellenmistir.RevD03 olarak d�zenlenmistir.",
+          "to": "Termin Tarihi güncellenmiştir.RevD03 olarak düzenlenmiştir."
+        }
+      }
+    },
+    {
+      "dataId": "5323d718-a165-4522-8a62-ced29371a41a",
+      "packageNo": "2023-040",
+      "legacyPackageId": "468",
+      "fields": {
+        "name": {
+          "from": "TEPEG�Z",
+          "to": "TEPEGÖZ"
+        }
+      }
+    },
+    {
+      "dataId": "58fa09db-f3a0-474e-a1fd-64d8876c4398",
+      "packageNo": "2023-042",
+      "legacyPackageId": "470",
+      "fields": {
+        "name": {
+          "from": "YAN KAPAK_EK� KAPAGI",
+          "to": "YAN KAPAK_EKÜ KAPAĞI"
+        },
+        "notes": {
+          "from": "07.09.2023 DE REV04 YAYINLANMISTIR.\\r\\nPAR�A REV NOLARI VE TERMIN TARIHLERI G�NCELLENMISTIR",
+          "to": "07.09.2023 DE REV04 YAYINLANMIŞTIR.\\r\\nPARÇA REV NOLARI VE TERMİN TARİHLERİ GÜNCELLENMİŞTİR"
+        }
+      }
+    },
+    {
+      "dataId": "5ade8e78-5276-42f6-b129-52ade6066bf9",
+      "packageNo": "2023-043",
+      "legacyPackageId": "471",
+      "fields": {
+        "name": {
+          "from": "SIRTLIK ,�N - ARKA_HAVA ALIGI KAPAGI",
+          "to": "SIRTLIK ,ÖN - ARKA_HAVA ALIĞI KAPAĞI"
+        },
+        "notes": {
+          "from": "17.03.2025 / REV29 YAYINLANMISTIR.TERMIN TARIHLERI G�NCELLENMISTIR.3.KALEM FIYATI REVIZE EDILMISTIR.",
+          "to": "17.03.2025 / REV29 YAYINLANMIŞTIR.TERMİN TARİHLERİ GÜNCELLENMİŞTİR.3.KALEM FİYATI REVİZE EDİLMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "cacafe95-327a-4256-896b-8eba3964fac0",
+      "packageNo": "2023-044",
+      "legacyPackageId": "472",
+      "fields": {
+        "name": {
+          "from": "T�P �N KAPAGI",
+          "to": "TÜP ÖN KAPAĞI"
+        }
+      }
+    },
+    {
+      "dataId": "40c55992-218e-4478-8daf-1e9558fb5ae3",
+      "packageNo": "2023-045",
+      "legacyPackageId": "473",
+      "fields": {
+        "name": {
+          "from": "00194424 G�VDE, HA, P03",
+          "to": "00194424 GÖVDE, HA, P03"
+        },
+        "notes": {
+          "from": "28.09.2023 DE SIPARIS IPTAL EDILMIS YERINE 255985 NOLU (2023-079) SIPARIS A�ILMISTIR.",
+          "to": "28.09.2023 DE SİPARİŞ İPTAL EDİLMİŞ YERİNE 255985 NOLU (2023-079) SİPARİŞ AÇILMIŞTIR."
+        }
+      }
+    },
+    {
+      "dataId": "eaeeea0c-a602-452f-bb98-dbaae81db5b1",
+      "packageNo": "2023-046",
+      "legacyPackageId": "474",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-REHIS AMBARLARI-G�LBASI",
+          "to": "ASELSAN-REHIS AMBARLARI-GÖLBAŞI"
+        },
+        "name": {
+          "from": "MN-7725-0015_0016_0017_0018_0019 EMICI K�P�K",
+          "to": "MN-7725-0015_0016_0017_0018_0019 EMİCİ KÖPÜK"
+        }
+      }
+    },
+    {
+      "dataId": "9803c14f-63e2-493a-8b57-36e6a72ee496",
+      "packageNo": "2023-047",
+      "legacyPackageId": "475",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        },
+        "notes": {
+          "from": "SIPARISI BEKLENMEKTEDIR.\\r\\n16.05.2023 TARIHINDE SIPARIS GELMISTIR.\\r\\n07.06.2024 REV08 YAYINLANMISTIR. SON IKI KALEM I�IN TERMIN TARIHI G�NCELLENMISTIR.\\r\\n04.07.2024 REV09 YAYINLANMISTIR.TERMIN TARIHI G�NCELLENMISTIR.\\r\\n12.09.2024 REV14 YAYINLANMISTIR.TERMIN TARIHI G�NCELLENMISTIR.\\r\\n06.12.2024 REV17 YAYINLANMISTIR.TERMIN TARIHI G�NCELLENMISTIR.",
+          "to": "SİPARİŞİ BEKLENMEKTEDİR.\\r\\n16.05.2023 TARİHİNDE SİPARİŞ GELMİŞTİR.\\r\\n07.06.2024 REV08 YAYINLANMIŞTIR. SON İKİ KALEM İÇİN TERMİN TARİHİ GÜNCELLENMİŞTİR.\\r\\n04.07.2024 REV09 YAYINLANMIŞTIR.TERMİN TARİHİ GÜNCELLENMİŞTİR.\\r\\n12.09.2024 REV14 YAYINLANMIŞTIR.TERMİN TARİHİ GÜNCELLENMİŞTİR.\\r\\n06.12.2024 REV17 YAYINLANMIŞTIR.TERMİN TARİHİ GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "1379be95-e09f-489e-8f38-b1d45d1d776a",
+      "packageNo": "2023-048",
+      "legacyPackageId": "476",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "c4d9ddaf-0490-48e2-8d8d-3365d4e7e76e",
+      "packageNo": "2023-049",
+      "legacyPackageId": "477",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN -REHIS AMBARLARI-G�LBASI",
+          "to": "ASELSAN -REHIS AMBARLARI-GÖLBAŞI"
+        },
+        "notes": {
+          "from": "TOPLAM SAYI VE KALEM NOLARI DEGISMISTIR.12.05.2023\\r\\nTARIHLER G�NCELLENMISTIR.17.05.2023\\r\\nTARIHLER VE KALEMLERIN SIRALAMASI G�NCELLENMISTIR.16.08.2023",
+          "to": "TOPLAM SAYI VE KALEM NOLARI DEĞİŞMİŞTİR.12.05.2023\\r\\nTARİHLER GÜNCELLENMİŞTİR.17.05.2023\\r\\nTARİHLER VE KALEMLERİN SIRALAMASI GÜNCELLENMİŞTİR.16.08.2023"
+        }
+      }
+    },
+    {
+      "dataId": "fc0b669d-a596-4aa1-9698-8e747c1066f0",
+      "packageNo": "2023-050",
+      "legacyPackageId": "478",
+      "fields": {
+        "notes": {
+          "from": "TAKIP AMA�LI ONARIM SIPARISIDIR.",
+          "to": "TAKİP AMAÇLI ONARIM SİPARİSİDİR."
+        }
+      }
+    },
+    {
+      "dataId": "0acbea9d-a3a4-4c8d-83f0-12df11cff2c6",
+      "packageNo": "2023-051",
+      "legacyPackageId": "479",
+      "fields": {
+        "name": {
+          "from": "T�P �N KAPAGI_REWORK",
+          "to": "TÜP ÖN KAPAĞI_REWORK"
+        }
+      }
+    },
+    {
+      "dataId": "eee8189f-a97b-4fc1-b82e-f49171cfc29d",
+      "packageNo": "2023-052",
+      "legacyPackageId": "480",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "5ad3db23-4c98-4737-9318-67a9abf1bec7",
+      "packageNo": "2023-053",
+      "legacyPackageId": "481",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "ba4ef07a-2588-4db4-b411-4d75e13700fc",
+      "packageNo": "2023-054",
+      "legacyPackageId": "482",
+      "fields": {
+        "name": {
+          "from": "HAVA ALIGI B�T�N� Fason Kalemi",
+          "to": "HAVA ALIĞI BÜTÜNÜ Fason Kalemi"
+        },
+        "notes": {
+          "from": "14.11.2023 tarihinde Rev05 olarak siparis g�ncellenmistir. Tarafimiza 08.02.2024 tarihinde bildirilmistir.( Tek kalem iki kaleme ayrilayarak-REVD04 - YD kalemi FSN Kalemi olacak seklide revize edilmistir.)\\r\\n12.05.2024 tarihinde Rev06 olarak siparis g�ncellenmistir.",
+          "to": "14.11.2023 tarihinde Rev05 olarak sipariş güncellenmiştir. Tarafımıza 08.02.2024 tarihinde bildirilmiştir.( Tek kalem iki kaleme ayrılayarak-REVD04 - YD kalemi FSN Kalemi olacak şeklide revize edilmiştir.)\\r\\n12.05.2024 tarihinde Rev06 olarak sipariş güncellenmiştir."
+        }
+      }
+    },
+    {
+      "dataId": "34bad462-3783-4ed4-991a-95647724f3fb",
+      "packageNo": "2023-055",
+      "legacyPackageId": "483",
+      "fields": {
+        "notes": {
+          "from": "SADECE 1.KALEM �RETIMI YAPILACAGINDAN DIGER KALEM GIRILMEMISTIR.",
+          "to": "SADECE 1.KALEM ÜRETİMİ YAPILACAĞINDAN DİĞER KALEM GİRİLMEMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "e7ab6a80-1e78-4846-8b20-4c75d1faa511",
+      "packageNo": "2023-057",
+      "legacyPackageId": "485",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "42a6b58c-e023-487b-9f7b-b14768d806c6",
+      "packageNo": "2023-058",
+      "legacyPackageId": "486",
+      "fields": {
+        "name": {
+          "from": "10125322 G�NESLIK,KARAKURT",
+          "to": "10125322 GÜNESLİK,KARAKURT"
+        }
+      }
+    },
+    {
+      "dataId": "49c6a819-47c1-46e2-b75d-15f26c0bcfb4",
+      "packageNo": "2023-059",
+      "legacyPackageId": "487",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "1d16b962-c3df-4f41-bcbe-4f2a6b27debe",
+      "packageNo": "2023-060",
+      "legacyPackageId": "488",
+      "fields": {
+        "name": {
+          "from": "G�vde, HA",
+          "to": "Gövde, HA"
+        },
+        "notes": {
+          "from": "19.06.2023 de Kalite provizyonlari revize edilmis siparis tarafima iletilmistir.(Rev01)\\r\\n05.07.2024/REV04 -Termin Tarihi 08.07.2024 olarak g�ncellenmistr.\\r\\n07.08.2024/REV05\\r\\n19.08.2024/REV06 Termin tarihi g�ncellenmistir.\\r\\n13.09.2024 / REV08 \\r\\n15.06.2025/REV16\\r\\n08.07.2025/REV17\\r\\n03.10.2025/REV20 Termin tarihi ve par�a RevP02 olarak g�ncellenmistir.\\r\\n08.12.2025/REV23 Satin alma sorumlusu g�ncellenmistir.",
+          "to": "19.06.2023 de Kalite provizyonları revize edilmiş sipariş tarafıma iletilmiştir.(Rev01)\\r\\n05.07.2024/REV04 -Termin Tarihi 08.07.2024 olarak güncellenmiştr.\\r\\n07.08.2024/REV05\\r\\n19.08.2024/REV06 Termin tarihi güncellenmiştir.\\r\\n13.09.2024 / REV08 \\r\\n15.06.2025/REV16\\r\\n08.07.2025/REV17\\r\\n03.10.2025/REV20 Termin tarihi ve parça RevP02 olarak güncellenmiştir.\\r\\n08.12.2025/REV23 Satın alma sorumlusu güncellenmiştir."
+        }
+      }
+    },
+    {
+      "dataId": "0971ea4a-8dd7-4628-8eb8-d7d31832ed3a",
+      "packageNo": "2023-061",
+      "legacyPackageId": "489",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "940a62d9-c8ca-473b-9483-4c79e8373597",
+      "packageNo": "2023-062",
+      "legacyPackageId": "490",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "55f0c18e-e8cd-46ed-b499-3445aba78504",
+      "packageNo": "2023-063",
+      "legacyPackageId": "491",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "f4f2fa81-d577-4678-ae5d-889e129adb1e",
+      "packageNo": "2023-065",
+      "legacyPackageId": "493",
+      "fields": {
+        "deliveryAddress": {
+          "from": "TURAN G�NES BULV.HILAL MAH.677.SOKAK NO:9 YILDIZ/ANKARA",
+          "to": "TURAN GÜNEŞ BULV.HİLAL MAH.677.SOKAK NO:9 YILDIZ/ANKARA"
+        },
+        "notes": {
+          "from": "Adet sayisi 262 den 260 olarak d�zenlenmistir.07.12.2023",
+          "to": "Adet sayısı 262 den 260 olarak düzenlenmiştir.07.12.2023"
+        }
+      }
+    },
+    {
+      "dataId": "217889dd-d1da-4476-8dc4-163d030da4bc",
+      "packageNo": "2023-066",
+      "legacyPackageId": "494",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "20.12.2024/Rev01 Termin tarihleri/toplam adet (35 adetten 34 adede d�s�r�lm�st�r.Eski siparisteki 1.kalem iptal edilmistir.) ve sira numaralari degismistir.",
+          "to": "20.12.2024/Rev01 Termin tarihleri/toplam adet (35 adetten 34 adede düşürülmüştür.Eski siparişteki 1.kalem iptal edilmiştir.) ve sıra numaraları değişmiştir."
+        }
+      }
+    },
+    {
+      "dataId": "39106ff3-bd73-4715-b333-25934a7eeb41",
+      "packageNo": "2023-067",
+      "legacyPackageId": "495",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "ae830e1a-1326-40f7-9804-d0f2d6e13d01",
+      "packageNo": "2023-068",
+      "legacyPackageId": "496",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "14.07.2023 DE FIYAT REVIZE EDILEREK YENI SIPARIS G�NDERILMISTIR.",
+          "to": "14.07.2023 DE FİYAT REVİZE EDİLEREK YENİ SİPARİŞ GÖNDERİLMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "b4818367-c689-46aa-9ad2-ca4f9e4a061d",
+      "packageNo": "2023-069",
+      "legacyPackageId": "497",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI Tesisleri",
+          "to": "ASELSAN GÖLBAŞI Tesisleri"
+        }
+      }
+    },
+    {
+      "dataId": "6a1711bd-cd39-446d-9e8c-ceb8436a3ec1",
+      "packageNo": "2023-070",
+      "legacyPackageId": "498",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "name": {
+          "from": "G�m�s K�rleme Islemi",
+          "to": "Gümüs Kürleme İslemi"
+        }
+      }
+    },
+    {
+      "dataId": "1e637d09-08ac-484a-8a15-3711a1598f9d",
+      "packageNo": "2023-071",
+      "legacyPackageId": "499",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "159ad7e4-2bef-443b-aa65-1216b9e0ae0c",
+      "packageNo": "2023-072",
+      "legacyPackageId": "500",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN g�lbasi",
+          "to": "ASELSAN gölbaşı"
+        }
+      }
+    },
+    {
+      "dataId": "7fbc587d-b0d2-469b-8f98-cd5620d8f764",
+      "packageNo": "2023-073",
+      "legacyPackageId": "501",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN MACUNK�Y Tesisleri-SST Ambarlari",
+          "to": "ASELSAN MACUNKÖY Tesisleri-SST Ambarları"
+        },
+        "notes": {
+          "from": "****SIPARIS IPTAL EDILDI/EDILECEK****\\r\\nSIPARIS REVIZE EDILMISTIR. 13.03.2024 (Kalip revizyonu iptal edilmis, miktar g�ncellenmistir. Siparis 2024 yilina sarktigi i�in birim fiyat ve termin tarihi g�ncellenmistir.)",
+          "to": "****SİPARİŞ İPTAL EDİLDİ/EDİLECEK****\\r\\nSİPARİŞ REVİZE EDİLMİŞTİR. 13.03.2024 (Kalıp revizyonu iptal edilmiş, miktar güncellenmiştir. Sipariş 2024 yılına sarktığı için birim fiyat ve termin tarihi güncellenmistir.)"
+        }
+      }
+    },
+    {
+      "dataId": "55a94bbb-2119-4f43-93be-750666d38f1e",
+      "packageNo": "2023-074",
+      "legacyPackageId": "502",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "e7b02607-4586-4ecf-9ece-844d5a33eb28",
+      "packageNo": "2023-076",
+      "legacyPackageId": "504",
+      "fields": {
+        "name": {
+          "from": "0128465-KULAKLIK G�VDESI",
+          "to": "0128465-KULAKLIK GÖVDESİ"
+        }
+      }
+    },
+    {
+      "dataId": "d4f1037b-6a58-4ac4-96a8-4c0d275ed37a",
+      "packageNo": "2023-077",
+      "legacyPackageId": "505",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "23Y00050FA ve 23Y00038FA Siparisleri Kapsaminda Revize Fiyat Talebi i�in a�ilan siparistir.( Sandiklarin i�in olusan fiyat farki)",
+          "to": "23Y00050FA ve 23Y00038FA Siparişleri Kapsamında Revize Fiyat Talebi için açılan sipariştir.( Sandıkların için oluşan fiyat farkı)"
+        }
+      }
+    },
+    {
+      "dataId": "065c74e1-b10e-4ed7-8171-e27f888cff77",
+      "packageNo": "2023-078",
+      "legacyPackageId": "506",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "c9ee7d4a-5f68-4ed2-8016-aa03734e756b",
+      "packageNo": "2023-079",
+      "legacyPackageId": "507",
+      "fields": {
+        "name": {
+          "from": "G�VDE, HA,Fason Kalemi",
+          "to": "GÖVDE, HA,Fason Kalemi"
+        },
+        "notes": {
+          "from": "2023-045 NOLU ISPAKETINE AIT SIPARIS  IPTAL EDILMIS YERINE GELEN SIPARISE BU ISPAKETI A�ILMISTIR.\\r\\n08.08.2024/REV05 SATIN ALMA SORUMLUSU DEGISMISTIR.",
+          "to": "2023-045 NOLU İŞPAKETİNE AİT SİPARİŞ  İPTAL EDİLMİŞ YERİNE GELEN SİPARİŞE BU İŞPAKETİ AÇILMIŞTIR.\\r\\n08.08.2024/REV05 SATIN ALMA SORUMLUSU DEĞİŞMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "d8587f61-48f3-44ce-8a87-ea05ea20e89f",
+      "packageNo": "2023-080",
+      "legacyPackageId": "508",
+      "fields": {
+        "deliveryAddress": {
+          "from": "MUSTAFA KEMAL MAHALLESI 2151.CADDE NO:3/A 06530 �ANKAYA - ANKARA",
+          "to": "MUSTAFA KEMAL MAHALLESİ 2151.CADDE NO:3/A 06530 ÇANKAYA - ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "0a1214c9-fac6-4458-8eda-8659d97265de",
+      "packageNo": "2023-081",
+      "legacyPackageId": "509",
+      "fields": {
+        "notes": {
+          "from": "13.02.2024 de rev03 olarak tarafimiza bildirilmistir.RevD03 ve Termin tarihleri g�ncellenmistir.",
+          "to": "13.02.2024 de rev03 olarak tarafımıza bildirilmiştir.RevD03 ve Termin tarihleri güncellenmiştir."
+        }
+      }
+    },
+    {
+      "dataId": "3b433c7a-69f5-4d28-93fb-071bd2ef3347",
+      "packageNo": "2023-084",
+      "legacyPackageId": "512",
+      "fields": {
+        "name": {
+          "from": "DIS G�VDE HB, �AKIR Fason Kalemi",
+          "to": "DIŞ GÖVDE HB, ÇAKIR Fason Kalemi"
+        }
+      }
+    },
+    {
+      "dataId": "75539e53-4e2a-4c6b-9db2-4ef580b16558",
+      "packageNo": "2023-085",
+      "legacyPackageId": "513",
+      "fields": {
+        "deliveryAddress": {
+          "from": "G�LBASI",
+          "to": "GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "8b4b4322-2e9c-4522-9e9b-1dc195cb31e0",
+      "packageNo": "2023-086",
+      "legacyPackageId": "514",
+      "fields": {
+        "deliveryAddress": {
+          "from": "G�LBASI",
+          "to": "GÖLBAŞI"
+        },
+        "notes": {
+          "from": "06.10.2023 tarihinde montaj teknisyenimiz Sel�uk Turna tarafindan G�lbasi tesisinde ilgili par�anin onarimi yapilmistir.",
+          "to": "06.10.2023 tarihinde montaj teknisyenimiz Selçuk Turna tarafından Gölbaşı tesisinde ilgili parçanın onarımı yapılmıştır."
+        }
+      }
+    },
+    {
+      "dataId": "4d6cdd40-b5fa-4a48-8956-fe85019aa2c0",
+      "packageNo": "2023-087",
+      "legacyPackageId": "515",
+      "fields": {
+        "deliveryAddress": {
+          "from": "G�LBASI",
+          "to": "GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "87746825-c7e5-44b7-a771-686957ee490c",
+      "packageNo": "2023-088",
+      "legacyPackageId": "516",
+      "fields": {
+        "deliveryAddress": {
+          "from": "G�LBASI",
+          "to": "GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "7ade1c29-723a-43cc-8411-618f441e0a4e",
+      "packageNo": "2023-089",
+      "legacyPackageId": "517",
+      "fields": {
+        "notes": {
+          "from": "05.07.2024 REV05/TERMIN TARIHI G�NCELLENMISTIR.REVD03 OLMUSTUR.\\r\\n06.08.2024/REV07/TERMIN TARIHI G�NCELLENMISTIR.PAR�A NO -REV NO-PAR�A ADI  G�NCELLENMISTIR.\\r\\n07.10.2024/REV08/PAR�A REVD02 OLMUSTUR.\\r\\n11.10.2024/rev09\\r\\n03.04.2025/REV10",
+          "to": "05.07.2024 REV05/TERMİN TARİHİ GÜNCELLENMİŞTİR.REVD03 OLMUŞTUR.\\r\\n06.08.2024/REV07/TERMİN TARİHİ GÜNCELLENMİŞTİR.PARÇA NO -REV NO-PARÇA ADI  GÜNCELLENMİŞTİR.\\r\\n07.10.2024/REV08/PARÇA REVD02 OLMUŞTUR.\\r\\n11.10.2024/rev09\\r\\n03.04.2025/REV10"
+        }
+      }
+    },
+    {
+      "dataId": "4b2cfb33-9b56-461b-b9fc-955a65e0055e",
+      "packageNo": "2023-091",
+      "legacyPackageId": "519",
+      "fields": {
+        "deliveryAddress": {
+          "from": "G�LBASI",
+          "to": "GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "d8a3d3b8-46c5-409e-8562-f41866bf4581",
+      "packageNo": "2023-092",
+      "legacyPackageId": "520",
+      "fields": {
+        "deliveryAddress": {
+          "from": "G�LBASI",
+          "to": "GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "be6c981b-85fb-4304-bf75-ef92dfe1a32f",
+      "packageNo": "2023-093",
+      "legacyPackageId": "521",
+      "fields": {
+        "name": {
+          "from": "Y�ZER SOMUN BAGLANTI PAR�ASI, �AKIR",
+          "to": "YÜZER SOMUN BAĞLANTI PARÇASI, ÇAKIR"
+        }
+      }
+    },
+    {
+      "dataId": "052a9479-fa9f-4144-b314-79d4185feef3",
+      "packageNo": "2023-095",
+      "legacyPackageId": "524",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN - G�LBASI",
+          "to": "ASELSAN - GÖLBAŞI"
+        },
+        "notes": {
+          "from": "11.12.2023 tarihinde 5.kalem eklenerek revize edilmistir .Par�a sayisi arttirilmistir.",
+          "to": "11.12.2023 tarihinde 5.kalem eklenerek revize edilmiştir .Parça sayısı arttırılmıştır."
+        }
+      }
+    },
+    {
+      "dataId": "e26301c6-94ed-45ea-87c6-5b5148d7d321",
+      "packageNo": "2023-096",
+      "legacyPackageId": "525",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN -g�lbasi",
+          "to": "ASELSAN -gölbaşı"
+        }
+      }
+    },
+    {
+      "dataId": "352c6a02-959a-4091-9f61-7b945a91075e",
+      "packageNo": "2023-097",
+      "legacyPackageId": "526",
+      "fields": {
+        "name": {
+          "from": "T�P �N KAPAGI",
+          "to": "TÜP ÖN KAPAĞI"
+        },
+        "notes": {
+          "from": "08.06.2024 tarihli REV05 halidir. Termin tarihi 01.06.2024 !!!! olarak g�ncellenmistir.",
+          "to": "08.06.2024 tarihli REV05 halidir. Termin tarihi 01.06.2024 !!!! olarak güncellenmiştir."
+        }
+      }
+    },
+    {
+      "dataId": "41963574-0c7b-4fd5-9cff-035b5d8fb0d6",
+      "packageNo": "2023-099",
+      "legacyPackageId": "528",
+      "fields": {
+        "deliveryAddress": {
+          "from": "MUSTAFA KEMAL MAHALLESI 2151.CADDE NO:3/A 06530 �ANKAYA - ANKARA",
+          "to": "MUSTAFA KEMAL MAHALLESİ 2151.CADDE NO:3/A 06530 ÇANKAYA - ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "ae921e9f-2936-4c1c-89d2-1d80acf42642",
+      "packageNo": "2023-100",
+      "legacyPackageId": "529",
+      "fields": {
+        "deliveryAddress": {
+          "from": "G�LBASI",
+          "to": "GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "18d20cb9-0ff8-4599-8de4-06934ab283f5",
+      "packageNo": "2023-101",
+      "legacyPackageId": "530",
+      "fields": {
+        "deliveryAddress": {
+          "from": "G�LBASI",
+          "to": "GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "0de1b4b6-254f-4002-9dd0-67ae20a64d30",
+      "packageNo": "2023-102",
+      "legacyPackageId": "531",
+      "fields": {
+        "notes": {
+          "from": "Termin Tarihi-RevD02 -Kalite G�vence isterleri g�ncellenmistir.",
+          "to": "Termin Tarihi-RevD02 -Kalite Güvence isterleri güncellenmiştir."
+        }
+      }
+    },
+    {
+      "dataId": "9963cd93-dd6b-4425-9b9b-f03407b7020c",
+      "packageNo": "2024-001",
+      "legacyPackageId": "532",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "20.09.2025/REV01/1.KALEM IPTAL EDILMISTIR.\\r\\n28.02.2026/REV02/KALEM SAYISI 11 DEN 6 ADEDE D�S�R�LM�S,TERMIN TARIHLERI G�NCELLENMISTIR.\\r\\n",
+          "to": "20.09.2025/REV01/1.KALEM İPTAL EDİLMİŞTİR.\\r\\n28.02.2026/REV02/KALEM SAYISI 11 DEN 6 ADEDE DÜŞÜRÜLMÜŞ,TERMİN TARİHLERİ GÜNCELLENMİŞTİR.\\r\\n"
+        }
+      }
+    },
+    {
+      "dataId": "760a6bf6-fb4e-4abe-995b-37482583808e",
+      "packageNo": "2024-004",
+      "legacyPackageId": "535",
+      "fields": {
+        "notes": {
+          "from": "Ocak 2024 de netlestirildiginden bu yil is paketi a�ilmistir.\\r\\n2022-058 nolu is paketinin takibi i�in a�ilan bedelsiz siparistir.\\r\\n08.03.2024 tarihinde sevk edilen 20 adedin faturasi kesilmistir. (ODK2024-092)  7 adet 2022-058 den daha �nce g�nderildiginden bu proje kapatilmistir. ",
+          "to": "Ocak 2024 de netleştirildiğinden bu yıl iş paketi açılmıştır.\\r\\n2022-058 nolu iş paketinin takibi için açılan bedelsiz sipariştir.\\r\\n08.03.2024 tarihinde sevk edilen 20 adedin faturası kesilmiştir. (ODK2024-092)  7 adet 2022-058 den daha önce gönderildiğinden bu proje kapatılmıştır. "
+        }
+      }
+    },
+    {
+      "dataId": "95014bb3-6c82-4704-8559-0c969024ead6",
+      "packageNo": "2024-005",
+      "legacyPackageId": "536",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�lbasi",
+          "to": "ASELSAN Gölbaşı"
+        },
+        "notes": {
+          "from": "RW DURUMUNUN INCELENMESI I�IN BEDELSIZ BAGLANMISTIR. REVIZE EDILECEKTIR. 07.02.2024\\r\\nFIYATLI HALI REV01 OLARAK TARAFIMIZA BILDIRILMISTIR.19.02.2024",
+          "to": "RW DURUMUNUN İNCELENMESİ İÇİN BEDELSİZ BAGLANMISTIR. REVİZE EDİLECEKTİR. 07.02.2024\\r\\nFİYATLI HALİ REV01 OLARAK TARAFIMIZA BİLDİRİLMİŞTİR.19.02.2024"
+        }
+      }
+    },
+    {
+      "dataId": "98974156-4992-4a0e-b0e6-c02b86eb0f46",
+      "packageNo": "2024-006",
+      "legacyPackageId": "537",
+      "fields": {
+        "deliveryAddress": {
+          "from": "G�LBASI",
+          "to": "GÖLBAŞI"
+        },
+        "notes": {
+          "from": "26.02.2024 DE FIYAT G�NCELLENMISTIR.",
+          "to": "26.02.2024 DE FİYAT GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "6d31e8c1-af43-4354-a251-e72bde1c39b3",
+      "packageNo": "2024-007",
+      "legacyPackageId": "538",
+      "fields": {
+        "name": {
+          "from": "G�m�s K�rleme Islemi",
+          "to": "Gümüs Kürleme İslemi"
+        }
+      }
+    },
+    {
+      "dataId": "92e71c58-6324-4236-81a5-ddddba72b8e5",
+      "packageNo": "2024-008",
+      "legacyPackageId": "539",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        },
+        "name": {
+          "from": "A�ILIR KANAT SISTEMI YD Kalemi",
+          "to": "AÇILIR KANAT SİSTEMİ YD Kalemi"
+        }
+      }
+    },
+    {
+      "dataId": "fc0e9f88-4de9-457f-9e8a-953ba6aa6338",
+      "packageNo": "2024-009",
+      "legacyPackageId": "540",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "0e534ee0-8675-4e16-a857-bcdb7253c0fb",
+      "packageNo": "2024-010",
+      "legacyPackageId": "541",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "Termin tarihleri ile beraber 3.kalem malzeme tanimi g�ncellemistir.07.06.2024",
+          "to": "Termin tarihleri ile beraber 3.kalem malzeme tanımı güncellemiştir.07.06.2024"
+        }
+      }
+    },
+    {
+      "dataId": "eebfd835-9561-4973-b05f-cd9cabac6060",
+      "packageNo": "2024-012",
+      "legacyPackageId": "543",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "name": {
+          "from": "G�m�s Boyama Islemi",
+          "to": "Gümüs Boyama İslemi"
+        }
+      }
+    },
+    {
+      "dataId": "3cb309dc-1cc3-4743-81e1-3e6000c794b5",
+      "packageNo": "2024-013",
+      "legacyPackageId": "544",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "0f575096-7104-4e40-89a1-bb20dce7566a",
+      "packageNo": "2024-014",
+      "legacyPackageId": "545",
+      "fields": {
+        "notes": {
+          "from": "05.07.2024 REV06/TERMIN TARIHI G�NCELLENMISTIR.\\r\\n03.04.2025 REV15/TERMIN TARIHI G�NCELLENMISTIR.",
+          "to": "05.07.2024 REV06/TERMİN TARİHİ GÜNCELLENMİŞTİR.\\r\\n03.04.2025 REV15/TERMİN TARİHİ GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "dad0d674-d53c-4eb7-9c3c-200c6d7d2873",
+      "packageNo": "2024-015",
+      "legacyPackageId": "546",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        },
+        "name": {
+          "from": "KUYRUK KAPAGI ve SIRTLIK ARKA B�T�N�",
+          "to": "KUYRUK KAPAĞI ve SIRTLIK ARKA BÜTÜNÜ"
+        }
+      }
+    },
+    {
+      "dataId": "fb6a91f6-232b-40c0-aa2c-01c26d219eae",
+      "packageNo": "2024-016",
+      "legacyPackageId": "547",
+      "fields": {
+        "notes": {
+          "from": "BEDELSIZ OLARAK A�ILAN SIPARISTIR.ONARIM TAKIBI I�IN A�ILMISTIR.�R�N BIZE GELDIKTEN SONRA TEKLIF VERILECEK.",
+          "to": "BEDELSİZ OLARAK AÇILAN SİPARİŞTİR.ONARIM TAKİBİ İÇİN AÇILMIŞTIR.ÜRÜN BİZE GELDİKTEN SONRA TEKLİF VERİLECEK."
+        }
+      }
+    },
+    {
+      "dataId": "f5147d8d-f3c4-4ce7-bd05-bd01f9b20b1f",
+      "packageNo": "2024-017",
+      "legacyPackageId": "548",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN - G�lbasi",
+          "to": "ASELSAN - Gölbaşı"
+        }
+      }
+    },
+    {
+      "dataId": "929c3dce-abf1-4048-938e-0dd0c91da971",
+      "packageNo": "2024-018",
+      "legacyPackageId": "549",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "28.11.2025 REV01 ILE KALEM SAYISI VE TERMIN G�NCELLENMISTIR.",
+          "to": "28.11.2025 REV01 İLE KALEM SAYISI VE TERMİN GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "a86612ba-0efe-4172-9380-5d70be80c16f",
+      "packageNo": "2024-019",
+      "legacyPackageId": "550",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "9aa75b4a-5d41-4bb7-84af-78ad969a4829",
+      "packageNo": "2024-020",
+      "legacyPackageId": "551",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "656d4ce6-9f9b-47bf-941c-8bf431e0e4c2",
+      "packageNo": "2024-021",
+      "legacyPackageId": "552",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "0ece3eaf-7e20-476e-96f7-300ea32ee499",
+      "packageNo": "2024-023",
+      "legacyPackageId": "554",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "2023 YILINDA A�ILMISTIR.FAKAT BIZE PDF OLARAK 19.03.2024 DE G�NDERILMISTIR.",
+          "to": "2023 YILINDA AÇILMIŞTIR.FAKAT BİZE PDF OLARAK 19.03.2024 DE GÖNDERİLMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "ead5c145-8db8-46e8-a52f-d8fc3889aca5",
+      "packageNo": "2024-024",
+      "legacyPackageId": "555",
+      "fields": {
+        "notes": {
+          "from": "17.04.2024-REV01 - FIYAT G�NCELLENMISTIR.\\r\\n07.06.2024-REV03\\r\\n09.08.2024-REV06 TERMIN TARIHI - 006 PAR�A NO ; 005 OLARAK G�NCELLENMISTIR.AYRICA SIPARIS SATIR NOLARI DA G�NCELLENMISTIR.",
+          "to": "17.04.2024-REV01 - FİYAT GÜNCELLENMİŞTİR.\\r\\n07.06.2024-REV03\\r\\n09.08.2024-REV06 TERMİN TARİHİ - 006 PARÇA NO ; 005 OLARAK GÜNCELLENMİŞTİR.AYRICA SİPARİŞ SATIR NOLARI DA GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "e6f89b20-402c-4974-8b06-179213ccf3f5",
+      "packageNo": "2024-025",
+      "legacyPackageId": "556",
+      "fields": {
+        "notes": {
+          "from": "Kalite G�vence isterlerinden KM (K) kaldirilmistir. 02.04.2024-Rev01",
+          "to": "Kalite Güvence isterlerinden KM (K) kaldırılmıştır. 02.04.2024-Rev01"
+        }
+      }
+    },
+    {
+      "dataId": "b3f4ff0b-2eff-44b6-bb7b-d18613669391",
+      "packageNo": "2024-026",
+      "legacyPackageId": "557",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "name": {
+          "from": "K�P�K ",
+          "to": "KÖPÜK "
+        }
+      }
+    },
+    {
+      "dataId": "5f5ea2fe-1c33-4ff0-bd25-b47cdf9d4c9f",
+      "packageNo": "2024-027",
+      "legacyPackageId": "558",
+      "fields": {
+        "notes": {
+          "from": "Karbon Fiber Kumas alimi i�in a�ilan siparistir. �demesi alinmistir. 03.04.2024",
+          "to": "Karbon Fiber Kumaş alımı için açılan sipariştir. Ödemesi alınmıştır. 03.04.2024"
+        }
+      }
+    },
+    {
+      "dataId": "35c8f9c3-26e3-4675-a834-a16054c536d7",
+      "packageNo": "2024-028",
+      "legacyPackageId": "559",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN- G�LBASI",
+          "to": "ASELSAN- GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "2468a46f-8d6b-481b-b46d-cf9e6332b460",
+      "packageNo": "2024-031",
+      "legacyPackageId": "562",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        },
+        "notes": {
+          "from": "TAKIP AMA�LI ONARIM SIPARISIDIR. ASELSAN , TARAFIMIZCA INCELEME SONRASI BEDEL BILDIRIMI  YAPACAKTIR. DEGERLENDIRILEREK\\r\\nILERLENECEKTIR.",
+          "to": "TAKİP AMAÇLI ONARIM SİPARİŞİDİR. ASELSAN , TARAFIMIZCA İNCELEME SONRASI BEDEL BİLDİRİMİ  YAPACAKTIR. DEGERLENDİRİLEREK\\r\\nİLERLENECEKTİR."
+        }
+      }
+    },
+    {
+      "dataId": "6f1dc344-8aac-45cf-827c-dd68ca09fbfe",
+      "packageNo": "2024-032",
+      "legacyPackageId": "563",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "902d8a10-2dcc-4078-9aab-9d28ea71004c",
+      "packageNo": "2024-033",
+      "legacyPackageId": "564",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�LBASI",
+          "to": "ASELSAN-GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "017f9f8b-7e47-481d-ba49-d04bd4fc628a",
+      "packageNo": "2024-037",
+      "legacyPackageId": "565",
+      "fields": {
+        "notes": {
+          "from": "07.06.2024 REV03\\r\\n09.08.2024 REV07/ PAR�A NO 005 OLMUSTUR.M�STERI PO SATIR NOLARI ve TERMIN TARIHLERI DEGISMISTIR.\\r\\n12.09.2024/REV08\\r\\n08.10.2024/REV09",
+          "to": "07.06.2024 REV03\\r\\n09.08.2024 REV07/ PARÇA NO 005 OLMUŞTUR.MÜŞTERİ PO SATIR NOLARI ve TERMİN TARİHLERİ DEĞİŞMİŞTİR.\\r\\n12.09.2024/REV08\\r\\n08.10.2024/REV09"
+        }
+      }
+    },
+    {
+      "dataId": "14ffd168-dcab-47e4-9e8e-bf0af223a68c",
+      "packageNo": "2024-035",
+      "legacyPackageId": "566",
+      "fields": {
+        "notes": {
+          "from": "SIPARIS PORTALDAN ALINMISTIR.PDF HALI BEKLENMEKTEDIR.07.05.2024\\r\\n08.05.2024 DE SIPARIS GELMISTIR.\\r\\n21.05.2024 DE IPTAL EDILMIS YERINE 2024-041 IS PAKETI A�ILMISTIR.",
+          "to": "SİPARİŞ PORTALDAN ALINMIŞTIR.PDF HALİ BEKLENMEKTEDİR.07.05.2024\\r\\n08.05.2024 DE SİPARİŞ GELMİŞTİR.\\r\\n21.05.2024 DE İPTAL EDİLMİŞ YERİNE 2024-041 İŞ PAKETİ AÇILMIŞTIR."
+        }
+      }
+    },
+    {
+      "dataId": "25887ea0-11f7-4b40-8943-4f01f45be796",
+      "packageNo": "2024-036",
+      "legacyPackageId": "567",
+      "fields": {
+        "name": {
+          "from": "ALT KAPAK-�ST KAPAK,MG",
+          "to": "ALT KAPAK-ÜST KAPAK,MG"
+        }
+      }
+    },
+    {
+      "dataId": "e2371672-43c9-44a2-a917-c29de2b6f7bd",
+      "packageNo": "2024-038",
+      "legacyPackageId": "569",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI tesisleri - REHIS ambarlari",
+          "to": "ASELSAN GÖLBASI tesisleri - REHIS ambarları"
+        }
+      }
+    },
+    {
+      "dataId": "18924dcd-8658-476f-b852-43dbb294f2a1",
+      "packageNo": "2024-040",
+      "legacyPackageId": "571",
+      "fields": {
+        "deliveryAddress": {
+          "from": "G�LBASI",
+          "to": "GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "534327ea-c07a-416f-bba5-18042d9d4ae8",
+      "packageNo": "2024-041",
+      "legacyPackageId": "572",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        },
+        "notes": {
+          "from": "2024-035 IPTAL EDILMIS YERINE BU ISPAKETI A�ILMISTIR.\\r\\n07.06.2024 DE TERMIN TARIHI G�NCELLENMISTIR.\\r\\n08.07.2024 DE REV04 YAYINLANMISTIR.PAR�A SAYISI , SATIN ALMA SORUMLUSU VE TERMIN TARIHI G�NCELLENMISTIR.\\r\\n11.07.2024 DE REV05 YAYINLANMISTIR.TERMIN TARIHI: 01.08.2024 OLARAK G�NCELLENMISTIR.",
+          "to": "2024-035 İPTAL EDİLMİŞ YERİNE BU İŞPAKETİ AÇILMIŞTIR.\\r\\n07.06.2024 DE TERMİN TARİHİ GÜNCELLENMİŞTİR.\\r\\n08.07.2024 DE REV04 YAYINLANMIŞTIR.PARÇA SAYISI , SATIN ALMA SORUMLUSU VE TERMİN TARİHİ GÜNCELLENMİŞTİR.\\r\\n11.07.2024 DE REV05 YAYINLANMIŞTIR.TERMİN TARİHİ: 01.08.2024 OLARAK GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "976af354-a482-4b06-8224-badd86210b8b",
+      "packageNo": "2024-044",
+      "legacyPackageId": "575",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI ",
+          "to": "ASELSAN GÖLBAŞI "
+        },
+        "name": {
+          "from": "K�P�K ",
+          "to": "KÖPÜK "
+        }
+      }
+    },
+    {
+      "dataId": "37a91bff-d4e5-427b-bc8d-d345634eac9a",
+      "packageNo": "2024-045",
+      "legacyPackageId": "576",
+      "fields": {
+        "name": {
+          "from": "MEKANIK TESTLER I�IN NUMUNE �RETIMI",
+          "to": "MEKANİK TESTLER İÇİN NUMUNE ÜRETİMİ"
+        }
+      }
+    },
+    {
+      "dataId": "23e4c622-6f55-4a2c-94e1-1d95848a8448",
+      "packageNo": "2024-046",
+      "legacyPackageId": "577",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN - G�lbasi",
+          "to": "ASELSAN - Gölbaşı"
+        }
+      }
+    },
+    {
+      "dataId": "c64103d7-64f4-470f-8ed6-922eb7074ae0",
+      "packageNo": "2024-047",
+      "legacyPackageId": "578",
+      "fields": {
+        "notes": {
+          "from": "07.08.2025/rev07satir nolari g�ncellenmistir.",
+          "to": "07.08.2025/rev07satır noları güncellenmiştir."
+        }
+      }
+    },
+    {
+      "dataId": "923e1a58-e9ca-41e3-a6e5-4bf8832b59bd",
+      "packageNo": "2024-049",
+      "legacyPackageId": "580",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "�ncesinde malzeme g�nderilmisti. Siparisi gelince fatura edilmis ve siparis kapatilmistir.",
+          "to": "Öncesinde malzeme gönderilmişti. Siparişi gelince fatura edilmiş ve sipariş kapatılmıştır."
+        }
+      }
+    },
+    {
+      "dataId": "a8e420be-45eb-457f-b9bf-28ace6bc9242",
+      "packageNo": "2024-050",
+      "legacyPackageId": "581",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "3e85fdff-ef09-45b2-b2aa-6967bd5e7a50",
+      "packageNo": "2024-051",
+      "legacyPackageId": "582",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "31ce9d99-17bc-4964-8048-7ca31ad49886",
+      "packageNo": "2024-052",
+      "legacyPackageId": "583",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "c954b486-8fbc-49bf-b672-88acf7d2f3a5",
+      "packageNo": "2024-053",
+      "legacyPackageId": "584",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "290325dd-f2a0-41ce-af6c-724a1de4dc29",
+      "packageNo": "2024-054",
+      "legacyPackageId": "585",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "a8311abd-f30e-4fcb-b10b-6e0c3879f9ee",
+      "packageNo": "2024-055",
+      "legacyPackageId": "586",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "79331065-a29f-42f8-8ca2-165dfbbb4189",
+      "packageNo": "2024-057",
+      "legacyPackageId": "587",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "3e65ebbe-a605-4e7e-bf1a-17b4ff2b8630",
+      "packageNo": "2024-058",
+      "legacyPackageId": "589",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "b51d6de7-3af1-438f-b352-2f26541b2d6b",
+      "packageNo": "2024-059",
+      "legacyPackageId": "590",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "3d4d4ad4-4260-40bc-9274-9912d8ebaca6",
+      "packageNo": "2024-060",
+      "legacyPackageId": "591",
+      "fields": {
+        "name": {
+          "from": "G�vde, HA, Fason Kalemi",
+          "to": "Gövde, HA, Fason Kalemi"
+        }
+      }
+    },
+    {
+      "dataId": "fb30ddcc-016f-4edc-86ae-80d104ab5f7c",
+      "packageNo": "2024-061",
+      "legacyPackageId": "592",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "f27d1c1b-82d0-49fb-b853-ada34dbef5c2",
+      "packageNo": "2024-062",
+      "legacyPackageId": "593",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "318a2d26-f6d5-44f2-a536-f21bf156ba28",
+      "packageNo": "2024-063",
+      "legacyPackageId": "594",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "Termin tarihi , fiyat ve satin alma sorumlusu g�ncellenmistir.05.02.2025",
+          "to": "Termin tarihi , fiyat ve satın alma sorumlusu güncellenmiştir.05.02.2025"
+        }
+      }
+    },
+    {
+      "dataId": "f82e678f-d2a6-40cd-b68b-7ba62028c13f",
+      "packageNo": "2024-064",
+      "legacyPackageId": "595",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "17.09.2024 tarihinde iptal olan kalemler �ikarilarak siparis revize edilmistir.",
+          "to": "17.09.2024 tarihinde iptal olan kalemler çıkarılarak sipariş revize edilmiştir."
+        }
+      }
+    },
+    {
+      "dataId": "a051f376-7ae2-4e09-b7c8-dfe2fac7a238",
+      "packageNo": "2024-065",
+      "legacyPackageId": "596",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        },
+        "notes": {
+          "from": "07.06.2024 DE KOM2024-385 NOLU IRSALIYE ILE SEVK EDILEN MALZEMELER I�IN A�ILAN SIPARISTIR. 26.07.2024 DE FATURA EDILEREK IS PAKETI KAPATILMISTIR.",
+          "to": "07.06.2024 DE KOM2024-385 NOLU İRSALİYE İLE SEVK EDİLEN MALZEMELER İÇİN AÇILAN SİPARİŞTİR. 26.07.2024 DE FATURA EDİLEREK İŞ PAKETİ KAPATILMIŞTIR."
+        },
+        "name": {
+          "from": "�IP KESIMI",
+          "to": "ÇİP KESİMİ"
+        }
+      }
+    },
+    {
+      "dataId": "317d88c8-a9cb-4ee9-a09a-f3cbfce543f4",
+      "packageNo": "2024-066",
+      "legacyPackageId": "597",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "4fe147a7-18ce-493d-ac72-5275aa1a29a4",
+      "packageNo": "2024-067",
+      "legacyPackageId": "598",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "181e5aac-7edf-45ec-9469-a995a2279029",
+      "packageNo": "2024-070",
+      "legacyPackageId": "601",
+      "fields": {
+        "name": {
+          "from": "SABIT KANAT B�T�N�",
+          "to": "SABİT KANAT BÜTÜNÜ"
+        }
+      }
+    },
+    {
+      "dataId": "d9e5c0a6-64e7-4501-876b-5265cc7624dc",
+      "packageNo": "2024-071",
+      "legacyPackageId": "602",
+      "fields": {
+        "name": {
+          "from": "T�P �N KAPAGI",
+          "to": "TÜP ÖN KAPAĞI"
+        }
+      }
+    },
+    {
+      "dataId": "6a8a42a1-6b75-449b-b217-3a11d2c59d7b",
+      "packageNo": "2024-072",
+      "legacyPackageId": "603",
+      "fields": {
+        "name": {
+          "from": "R�ZGARLIK",
+          "to": "RÜZGARLIK"
+        }
+      }
+    },
+    {
+      "dataId": "4c9e2364-3a2f-4ae2-8c09-097e84ee62d9",
+      "packageNo": "2024-074",
+      "legacyPackageId": "605",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�lbasi",
+          "to": "ASELSAN Gölbaşı"
+        },
+        "notes": {
+          "from": "TAKIP AMA�LI ONARIM SIPARISIDIR.",
+          "to": "TAKİP AMAÇLI ONARIM SİPARİŞİDİR."
+        }
+      }
+    },
+    {
+      "dataId": "8f9d1a51-be47-41a7-b188-31b9b4da84e0",
+      "packageNo": "2024-076",
+      "legacyPackageId": "607",
+      "fields": {
+        "name": {
+          "from": "LAN�ER",
+          "to": "LANÇER"
+        }
+      }
+    },
+    {
+      "dataId": "6aa9540f-38d3-499a-ac5a-687d38d2f399",
+      "packageNo": "2024-078",
+      "legacyPackageId": "609",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�lbasi",
+          "to": "ASELSAN Gölbaşı"
+        },
+        "notes": {
+          "from": "5 adet g�nderilmistir. �nce 4 adet i�in siparis gelmis sonra kalan 1 adet i�in siparis geldiginden 2 ayri siparis ve 2 ayri fatura mevcuttur.",
+          "to": "5 adet gönderilmiştir. Önce 4 adet için sipariş gelmiş sonra kalan 1 adet için sipariş geldiğinden 2 ayrı sipariş ve 2 ayrı fatura mevcuttur."
+        },
+        "name": {
+          "from": "G�M�S BOYAMA ISLEMI",
+          "to": "GÜMÜŞ BOYAMA İŞLEMİ"
+        }
+      }
+    },
+    {
+      "dataId": "d3c138cc-71e9-4356-a3c8-58f1fb2b0d2d",
+      "packageNo": "2024-079",
+      "legacyPackageId": "610",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "3071b810-9100-4330-9a1b-9301c5b5a7c1",
+      "packageNo": "2024-080",
+      "legacyPackageId": "611",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "d1a76e26-b474-4072-b24a-7b5df76a4c51",
+      "packageNo": "2024-081",
+      "legacyPackageId": "612",
+      "fields": {
+        "notes": {
+          "from": "00096568-005 _ 009 olarak ve malzeme adi ile termin tarihi g�ncellenmistir. (14.11.2024-Rev01)",
+          "to": "00096568-005 _ 009 olarak ve malzeme adı ile termin tarihi güncellenmiştir. (14.11.2024-Rev01)"
+        }
+      }
+    },
+    {
+      "dataId": "1b5ed478-3406-4305-8542-94af63229f96",
+      "packageNo": "2024-082",
+      "legacyPackageId": "613",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "929b79cb-02a9-4717-ad91-d6e1a27f5fb0",
+      "packageNo": "2024-083",
+      "legacyPackageId": "614",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "42d6dee2-1c46-4ffa-8325-223a1b796251",
+      "packageNo": "2024-084",
+      "legacyPackageId": "615",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-MACUNK�Y TESISLERI-SST AMBARLARI",
+          "to": "ASELSAN-MACUNKÖY TESİSLERİ-SST AMBARLARI"
+        }
+      }
+    },
+    {
+      "dataId": "bbd4268f-4e8a-4335-9c5b-d17e9403947b",
+      "packageNo": "2024-086",
+      "legacyPackageId": "617",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "410bd4f0-7cbb-4c4d-a2d2-f8a57089ba97",
+      "packageNo": "2024-087",
+      "legacyPackageId": "618",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "b45e0506-5bb4-4a86-8664-991059b0f28f",
+      "packageNo": "2024-088",
+      "legacyPackageId": "619",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "65739c9c-a4c7-4516-b326-d953040436d4",
+      "packageNo": "2024-089",
+      "legacyPackageId": "620",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "eab3fed3-b530-4a78-96aa-98af8df27fda",
+      "packageNo": "2024-090",
+      "legacyPackageId": "621",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "a77125a1-57bd-4efb-a201-8171256d1c79",
+      "packageNo": "2024-091",
+      "legacyPackageId": "622",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "c3c919bd-4929-49a1-a504-bb58df540162",
+      "packageNo": "2024-092",
+      "legacyPackageId": "623",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "name": {
+          "from": "MN-0000-3297_KAM�I ve DIGERLERI",
+          "to": "MN-0000-3297_KAMÇI ve DİĞERLERİ"
+        }
+      }
+    },
+    {
+      "dataId": "3d234fc2-45d1-4d4b-b8f4-8c476a39638c",
+      "packageNo": "2024-093",
+      "legacyPackageId": "624",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "0cdff71e-538a-4fd0-a7ef-f0ed1d6a9635",
+      "packageNo": "2024-094",
+      "legacyPackageId": "625",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "02b5deb0-9203-4ac9-9ef8-58f5a3144517",
+      "packageNo": "2024-095",
+      "legacyPackageId": "626",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "f6d7e33d-3910-4571-8a7a-168fb2882f38",
+      "packageNo": "2024-096",
+      "legacyPackageId": "627",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "30972673-5fde-4ec4-b1b3-0b396bef3709",
+      "packageNo": "2024-097",
+      "legacyPackageId": "628",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�lbasi",
+          "to": "ASELSAN Gölbaşı"
+        }
+      }
+    },
+    {
+      "dataId": "cd60bf9a-e8fe-4411-826a-353751bd3482",
+      "packageNo": "2024-098",
+      "legacyPackageId": "629",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "04.09.2025 REV01 KALEM SAYISI VE TERMIN TARIHI G�NCELLENMISTIR.",
+          "to": "04.09.2025 REV01 KALEM SAYISI VE TERMİN TARİHİ GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "94e10804-0331-422e-8fc2-49e42603594e",
+      "packageNo": "2024-099",
+      "legacyPackageId": "630",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "83bb2280-aa66-407f-a8bc-399f9420df35",
+      "packageNo": "2024-100",
+      "legacyPackageId": "631",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "7063568a-ad38-4c00-90c1-693a17423702",
+      "packageNo": "2024-101",
+      "legacyPackageId": "632",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "30.06.2025 REV01 IS EMRI NUMARASI VERILEREK KALEMLER D�ZENLENMIS,TERMIN TARIHI G�NCELLENMISTIR.",
+          "to": "30.06.2025 REV01 İŞ EMRİ NUMARASI VERİLEREK KALEMLER DÜZENLENMİŞ,TERMİN TARİHİ GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "3171c503-5cf5-47ab-b419-052f35330e48",
+      "packageNo": "2024-102",
+      "legacyPackageId": "633",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN SST Ambari-Macunk�y",
+          "to": "ASELSAN SST Ambarı-Macunköy"
+        },
+        "name": {
+          "from": "U�an G�sterim D�zenegi",
+          "to": "Uçan Gösterim Düzeneği"
+        }
+      }
+    },
+    {
+      "dataId": "23e2b8b9-18d5-4160-bd4b-b7a887109156",
+      "packageNo": "2024-103",
+      "legacyPackageId": "634",
+      "fields": {
+        "name": {
+          "from": "�N KAPAK B�T�N�",
+          "to": "ÖN KAPAK BÜTÜNÜ"
+        },
+        "notes": {
+          "from": "PORTALLARINDAKI KALEMLERE UYGUN OLARAK SEVK EDILMISTIR.TOPLAM ADET �ZERINDEN KAPATILMISTIR.",
+          "to": "PORTALLARINDAKİ KALEMLERE UYGUN OLARAK SEVK EDİLMİŞTİR.TOPLAM ADET ÜZERİNDEN KAPATILMIŞTIR."
+        }
+      }
+    },
+    {
+      "dataId": "3782b819-01b4-480c-b073-82c9b00325d7",
+      "packageNo": "2024-104",
+      "legacyPackageId": "635",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN SST-G�lbasi",
+          "to": "ASELSAN SST-Gölbaşı"
+        },
+        "notes": {
+          "from": "�ncesinde sevki yapilan malzemeler fatura edilerek siparis kapanmistir. (20.11.2024 tarihinde ODK2024000000400 nolu fatura d�zenlenmistir.)",
+          "to": "Öncesinde sevki yapılan malzemeler fatura edilerek sipariş kapanmıştır. (20.11.2024 tarihinde ODK2024000000400 nolu fatura düzenlenmiştir.)"
+        }
+      }
+    },
+    {
+      "dataId": "56759855-d826-44d9-bca9-66dc5ef73e46",
+      "packageNo": "2024-105",
+      "legacyPackageId": "636",
+      "fields": {
+        "name": {
+          "from": "G�VDE, HA,Fason Kalemi",
+          "to": "GÖVDE, HA,Fason Kalemi"
+        }
+      }
+    },
+    {
+      "dataId": "2b80cd8e-d587-4974-847a-a66fcd5e67d8",
+      "packageNo": "2024-106",
+      "legacyPackageId": "637",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "f5110b40-5196-49e3-a2bf-b1d8c5185a22",
+      "packageNo": "2024-107",
+      "legacyPackageId": "638",
+      "fields": {
+        "name": {
+          "from": "SABIT KANAT B�T�N�",
+          "to": "SABİT KANAT BÜTÜNÜ"
+        }
+      }
+    },
+    {
+      "dataId": "30179fda-fb64-463c-86ad-0437c42008da",
+      "packageNo": "2024-109",
+      "legacyPackageId": "640",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        },
+        "name": {
+          "from": "�N KAPAK ",
+          "to": "ÖN KAPAK "
+        }
+      }
+    },
+    {
+      "dataId": "2b568132-068a-47a4-8495-59e219014152",
+      "packageNo": "2025-001",
+      "legacyPackageId": "641",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN Macunk�y Tesisleri-SST Ambarlari",
+          "to": "ASELSAN Macunköy Tesisleri-SST Ambarları"
+        },
+        "notes": {
+          "from": "15 adet kompozit halka siparisidir. Miktar 1 set belirtildigi i�in birim fiyat olarak 15 adedin toplam fiyati yazilmistir.\\r\\n15 adet sevki tamamlaninca 1 set olarak fatura edilecektir.",
+          "to": "15 adet kompozit halka siparisidir. Miktar 1 set belirtildigi için birim fiyat olarak 15 adedin toplam fiyatı yazılmıstır.\\r\\n15 adet sevki tamamlanınca 1 set olarak fatura edilecektir."
+        }
+      }
+    },
+    {
+      "dataId": "007c1f7e-97d8-4fbe-998b-613b94c109b1",
+      "packageNo": "2025-002",
+      "legacyPackageId": "642",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI-REHIS Ambarlari",
+          "to": "ASELSAN GÖLBAŞI-REHIS Ambarları"
+        }
+      }
+    },
+    {
+      "dataId": "efe28184-1a77-4acc-950b-3c312065b9c0",
+      "packageNo": "2025-003",
+      "legacyPackageId": "643",
+      "fields": {
+        "notes": {
+          "from": "30.04.2025 REV04 - 2.KALEM EKLENMIS-TERMIN TARIHLERI G�NCELLENMISTIR.",
+          "to": "30.04.2025 REV04 - 2.KALEM EKLENMİŞ-TERMİN TARİHLERİ GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "4bd5bae0-211d-4d48-8696-41147a375f19",
+      "packageNo": "2025-004",
+      "legacyPackageId": "644",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "c9a0f660-2f29-4bc3-b588-0ff5270434a1",
+      "packageNo": "2025-005",
+      "legacyPackageId": "645",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN MACUNK�Y Tesisleri-SST Ambarlari",
+          "to": "ASELSAN MACUNKÖY Tesisleri-SST Ambarları"
+        }
+      }
+    },
+    {
+      "dataId": "c97ac8dc-13b9-473a-80c1-62f6489715ff",
+      "packageNo": "2025-006",
+      "legacyPackageId": "646",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "Termin tarihi-6.kalemin birim fiyati g�ncellenmistir.05.02.2025\\r\\nTermin tarihleri - kalem sayisi g�ncellenmistir.27.06.2025\\r\\nTermin tarihleri - kalem sayisi g�ncellenmistir.04.09.2025",
+          "to": "Termin tarihi-6.kalemin birim fiyatı güncellenmiştir.05.02.2025\\r\\nTermin tarihleri - kalem sayısı güncellenmiştir.27.06.2025\\r\\nTermin tarihleri - kalem sayısı güncellenmiştir.04.09.2025"
+        }
+      }
+    },
+    {
+      "dataId": "ec4d25c6-b58e-4486-b364-68b9b66c609a",
+      "packageNo": "2025-007",
+      "legacyPackageId": "647",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "187abece-874f-48bf-851e-5248cb64a608",
+      "packageNo": "2025-008",
+      "legacyPackageId": "648",
+      "fields": {
+        "deliveryAddress": {
+          "from": "G�LBASI",
+          "to": "GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "178e1a13-f7e5-4a9f-a2f6-64caa2b9adf3",
+      "packageNo": "2025-009",
+      "legacyPackageId": "649",
+      "fields": {
+        "deliveryAddress": {
+          "from": "G�LBASI",
+          "to": "GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "5b12ce5a-9532-4836-a253-83508e721ea6",
+      "packageNo": "2025-010",
+      "legacyPackageId": "650",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "fddda232-6525-4c12-8eea-d558ffd2ba4d",
+      "packageNo": "2025-011",
+      "legacyPackageId": "651",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "19.03.2025-REV01-3.KALEM MALZEMENIN FIYATI G�NCELLENMISTIR.\\r\\n23.05.2025-REV02-TERMIN TARIHI G�NCELLENMISTIR.",
+          "to": "19.03.2025-REV01-3.KALEM MALZEMENİN FİYATI GÜNCELLENMİŞTİR.\\r\\n23.05.2025-REV02-TERMİN TARİHİ GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "2aa8e732-8c4f-4e61-8159-8a03a7659bfc",
+      "packageNo": "2025-012",
+      "legacyPackageId": "652",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "9a3477de-d759-43ba-95e3-6a69a3c1d803",
+      "packageNo": "2025-013",
+      "legacyPackageId": "653",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "6bd51ce7-1a64-433e-bebc-61d259c533b3",
+      "packageNo": "2025-014",
+      "legacyPackageId": "654",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "af3e8f2a-f9d4-41f1-8182-d05622540fb3",
+      "packageNo": "2025-015",
+      "legacyPackageId": "655",
+      "fields": {
+        "name": {
+          "from": "ALPAGUT G�VDE KALIPLARI",
+          "to": "ALPAGUT GÖVDE KALIPLARI"
+        }
+      }
+    },
+    {
+      "dataId": "ac7f9a74-c7d9-4cf2-9e50-a79440addaf6",
+      "packageNo": "2025-016",
+      "legacyPackageId": "656",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ODT�",
+          "to": "ODTÜ"
+        }
+      }
+    },
+    {
+      "dataId": "17d4dcff-2544-486b-8648-0ef5eef52f93",
+      "packageNo": "2025-017",
+      "legacyPackageId": "657",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "954428cc-f288-4ab2-8e3c-74c9ce204ee5",
+      "packageNo": "2025-020",
+      "legacyPackageId": "660",
+      "fields": {
+        "notes": {
+          "from": "04.07.2025 REV07 3.KALEM TERMIN TARIHI G�NCELLENMISTIR.\\r\\n14.01.2026 REV18",
+          "to": "04.07.2025 REV07 3.KALEM TERMİN TARİHİ GÜNCELLENMİŞTİR.\\r\\n14.01.2026 REV18"
+        }
+      }
+    },
+    {
+      "dataId": "c0def35f-430f-44b6-9ed3-4f5be3bdf5aa",
+      "packageNo": "2025-021",
+      "legacyPackageId": "661",
+      "fields": {
+        "name": {
+          "from": "T�P �N KAPAGI",
+          "to": "TÜP ÖN KAPAĞI"
+        }
+      }
+    },
+    {
+      "dataId": "9d11e3bb-050b-41ae-b7e1-ef37565f209d",
+      "packageNo": "2025-022",
+      "legacyPackageId": "662",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "76c60078-3594-4c34-95b1-65b92f6b447c",
+      "packageNo": "2025-023",
+      "legacyPackageId": "663",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "03.03.2025 REV01-1 KALEM EKLENMISTIR.\\r\\n28.04.2025 REV02 - TERMIN TARIHLERI G�NCELLENMISTIR.\\r\\n02.09.2025 REV03 - TERMIN TARIHLERI VE KALEMLER G�NCELLENMISTIR.\\r\\n17.10.2025 REV04 - TERMIN TARIHLERI VE KALEMLER G�NCELLENMISTIR.BEDELSIZ KALEM EKLENMISTIR.\\r\\n12.02.2026 REV05- TERMIN TARIHLERI VE KALEMLER G�NCELLENMISTIR.BEDELSIZ 1. KALEM EKLENMISTIR.",
+          "to": "03.03.2025 REV01-1 KALEM EKLENMİŞTİR.\\r\\n28.04.2025 REV02 - TERMİN TARİHLERİ GÜNCELLENMİŞTİR.\\r\\n02.09.2025 REV03 - TERMİN TARİHLERİ VE KALEMLER GÜNCELLENMİŞTİR.\\r\\n17.10.2025 REV04 - TERMİN TARİHLERİ VE KALEMLER GÜNCELLENMİŞTİR.BEDELSİZ KALEM EKLENMİŞTİR.\\r\\n12.02.2026 REV05- TERMİN TARİHLERİ VE KALEMLER GÜNCELLENMİŞTİR.BEDELSİZ 1. KALEM EKLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "7f51bbdf-4229-4f0d-a6b5-010861ca70ec",
+      "packageNo": "2025-024",
+      "legacyPackageId": "664",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "2167963f-9d6e-466c-afcd-03bf7eced1d6",
+      "packageNo": "2025-025",
+      "legacyPackageId": "665",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "886fcdd4-f4a3-4941-bb74-efac77564d9a",
+      "packageNo": "2025-026",
+      "legacyPackageId": "666",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�lbasi",
+          "to": "ASELSAN Gölbaşı"
+        }
+      }
+    },
+    {
+      "dataId": "b4521a86-f65e-484c-a357-f2968a89cc77",
+      "packageNo": "2025-027",
+      "legacyPackageId": "667",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "10.04.2025 REV01 / TERMIN TARIHI G�NCELENMISTIR.",
+          "to": "10.04.2025 REV01 / TERMİN TARİHİ GÜNCELENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "996a662b-4463-4039-b498-7efa6499a4a1",
+      "packageNo": "2025-028",
+      "legacyPackageId": "668",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "0ff6f267-a351-4ebe-86fd-ad9ed778b3cd",
+      "packageNo": "2025-029",
+      "legacyPackageId": "669",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "a8297eae-57e9-45fc-b8b6-ecb170ac002d",
+      "packageNo": "2025-030",
+      "legacyPackageId": "670",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "02d9737a-f3f3-4ff2-b529-cd1ebdc1507c",
+      "packageNo": "2025-031",
+      "legacyPackageId": "671",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "082fdea2-dd74-4845-864a-3e7a9bef3c99",
+      "packageNo": "2025-033",
+      "legacyPackageId": "672",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "7eeb6e54-cfc0-433d-8ef9-dbf4b1506c9e",
+      "packageNo": "2025-032",
+      "legacyPackageId": "673",
+      "fields": {
+        "name": {
+          "from": "FIM S�REKLILIK TEST TECHIZATI",
+          "to": "FIM SÜREKLİLİK TEST TECHIZATI"
+        }
+      }
+    },
+    {
+      "dataId": "7e756c6c-705e-4d38-a512-69226e8fd66e",
+      "packageNo": "2025-034",
+      "legacyPackageId": "674",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "name": {
+          "from": "G�m�s Boyama Islemi",
+          "to": "Gümüs Boyama İslemi"
+        }
+      }
+    },
+    {
+      "dataId": "8374fa9a-d03a-460c-9339-965b760b58ad",
+      "packageNo": "2025-035",
+      "legacyPackageId": "675",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "a7d33f2d-36aa-4334-a24a-0aa052e07d12",
+      "packageNo": "2025-036",
+      "legacyPackageId": "676",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "3b2ecc1d-5cf5-4d73-9abe-072b54d127b3",
+      "packageNo": "2025-037",
+      "legacyPackageId": "677",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "57774b45-2c52-40bf-8d2c-4f98e01b567a",
+      "packageNo": "2025-038",
+      "legacyPackageId": "678",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "7081fac2-c5b1-4f61-a98a-3921abca6510",
+      "packageNo": "2025-039",
+      "legacyPackageId": "679",
+      "fields": {
+        "name": {
+          "from": "SABIT KANAT B�T�N�",
+          "to": "SABİT KANAT BÜTÜNÜ"
+        }
+      }
+    },
+    {
+      "dataId": "78932f6c-3b7b-41e2-b365-b0c5685d94d5",
+      "packageNo": "2025-040",
+      "legacyPackageId": "680",
+      "fields": {
+        "name": {
+          "from": "G�VDE, HA,Fason Kalemi",
+          "to": "GÖVDE, HA,Fason Kalemi"
+        }
+      }
+    },
+    {
+      "dataId": "c0201487-b947-4f82-8f6b-dda218972f51",
+      "packageNo": "2025-041",
+      "legacyPackageId": "681",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "003807d9-8b68-4f24-8046-30e5b0b04bc0",
+      "packageNo": "2025-042",
+      "legacyPackageId": "682",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "da07410b-a7cd-494b-a256-2ae2580d9a7d",
+      "packageNo": "2025-043",
+      "legacyPackageId": "683",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN-G�lbasi",
+          "to": "ASELSAN-Gölbaşı"
+        }
+      }
+    },
+    {
+      "dataId": "ab77b3ce-ec17-4f3d-a276-fb42707b37fb",
+      "packageNo": "2025-045",
+      "legacyPackageId": "685",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "59d11b64-ca25-4030-b348-a004b4f72cca",
+      "packageNo": "2025-047",
+      "legacyPackageId": "686",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "3fcd78d7-1ca7-4cf4-b772-df0e31e384be",
+      "packageNo": "2025-046",
+      "legacyPackageId": "687",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "ab4dbeef-fa8d-44ef-b594-fd2879db5c73",
+      "packageNo": "2025-048",
+      "legacyPackageId": "688",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "14b91c98-3c50-4e5e-8602-06ad1eb59128",
+      "packageNo": "2025-050",
+      "legacyPackageId": "690",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "6262faf9-5134-44cc-ac15-82d5f94153b1",
+      "packageNo": "2025-051",
+      "legacyPackageId": "691",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "cd453dad-ed40-455e-ae13-abdeeb0b9856",
+      "packageNo": "2025-052",
+      "legacyPackageId": "692",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "5ce4fa66-6ba5-4fb6-bc7d-f5000a95ffba",
+      "packageNo": "2025-053",
+      "legacyPackageId": "693",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "0bb63bbb-89bd-4d87-ad57-8e6c7a134d81",
+      "packageNo": "2025-054",
+      "legacyPackageId": "694",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "18.04.2025/rev01\\\" onarim \\\" tanimli kalemler eklenmistir.\\r\\n13.05.2025/rev02 \\\"onarim \\\" tanimli kalemleri �ikarilmistir.\\r\\n23.05.2025/rev03 kalem numaralari degismistir.\\r\\n01.12.2025/rev04 1.kalem 17 adet olarak ve termin tarihleri g�ncellenmistir.",
+          "to": "18.04.2025/rev01\\\" onarım \\\" tanımlı kalemler eklenmiştir.\\r\\n13.05.2025/rev02 \\\"onarım \\\" tanımlı kalemleri çıkarılmıştır.\\r\\n23.05.2025/rev03 kalem numaraları değişmiştir.\\r\\n01.12.2025/rev04 1.kalem 17 adet olarak ve termin tarihleri güncellenmiştir."
+        }
+      }
+    },
+    {
+      "dataId": "caa3ea73-d7ee-4533-994c-99e2de240ad7",
+      "packageNo": "2025-055",
+      "legacyPackageId": "695",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "e3a6fc91-add0-4642-a92b-8cf17025c188",
+      "packageNo": "2025-056",
+      "legacyPackageId": "696",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "53214e07-6f07-45f5-8f35-c1cc93739af2",
+      "packageNo": "2025-057",
+      "legacyPackageId": "697",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "a246078e-d850-4667-8b98-0046836e9a0e",
+      "packageNo": "2025-058",
+      "legacyPackageId": "698",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "e374cb55-9538-44cb-a051-d1aad25cd57a",
+      "packageNo": "2025-060",
+      "legacyPackageId": "700",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "28.02.2026 REV01 KALEM SIRASI VE TERMIN TARIHI G�NCELLENMISTIR.",
+          "to": "28.02.2026 REV01 KALEM SIRASI VE TERMİN TARİHİ GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "f6c4f6ec-4b04-498a-a0bf-777fe1057241",
+      "packageNo": "2025-061",
+      "legacyPackageId": "701",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "23.05.2025 REV01 KALEM SIRA NUMARALARI G�NCELLENMISTIR.",
+          "to": "23.05.2025 REV01 KALEM SIRA NUMARALARI GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "cab85586-ab3d-4fc1-81bf-3bbaa773a71a",
+      "packageNo": "2025-062",
+      "legacyPackageId": "702",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "c15a1bb3-e601-4f29-9b83-827a99d61541",
+      "packageNo": "2025-063",
+      "legacyPackageId": "703",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "cfd3e0b2-fb70-4618-9be8-d743648ed716",
+      "packageNo": "2025-064",
+      "legacyPackageId": "704",
+      "fields": {
+        "deliveryAddress": {
+          "from": "1.ORGANIZE SANAYI B�LGESI ALTINORDU CAD.NO:14 SINCAN / ANKARA",
+          "to": "1.ORGANİZE SANAYİ BÖLGESİ ALTINORDU CAD.NO:14 SİNCAN / ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "471ce806-c21b-4fe4-94ff-fb3858099baf",
+      "packageNo": "2025-065",
+      "legacyPackageId": "705",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        },
+        "name": {
+          "from": "G�vde HA Fikst�r",
+          "to": "Gövde HA Fikstür"
+        }
+      }
+    },
+    {
+      "dataId": "93833114-8a9f-4669-9f2b-4ba92a55da7a",
+      "packageNo": "2025-068",
+      "legacyPackageId": "708",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "be0ef724-302c-49cf-ae9a-e1c8f268625f",
+      "packageNo": "2025-069",
+      "legacyPackageId": "709",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�lbasi",
+          "to": "ASELSAN Gölbaşı"
+        },
+        "notes": {
+          "from": "26.12.2025 REV01 TERMIN TARIHLERI G�NCELLENMSTIR.21.KALEM (1 ADET) IPTAL EDILMISTIR.",
+          "to": "26.12.2025 REV01 TERMİN TARİHLERİ GÜNCELLENMŞTİR.21.KALEM (1 ADET) İPTAL EDİLMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "a4cbfab4-8c82-4a2b-9532-982714adace1",
+      "packageNo": "2025-070",
+      "legacyPackageId": "710",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "7d88820e-08f9-4458-984d-6ed5385466dc",
+      "packageNo": "2025-072",
+      "legacyPackageId": "712",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "ae27f0ac-d192-4a87-8bdc-f693049ebb31",
+      "packageNo": "2025-073",
+      "legacyPackageId": "713",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "3d183cfa-7d2e-44c1-a4b0-5e02e6dc317b",
+      "packageNo": "2025-074",
+      "legacyPackageId": "714",
+      "fields": {
+        "name": {
+          "from": "G�VDE, HA,Fason Kalemi",
+          "to": "GÖVDE, HA,Fason Kalemi"
+        }
+      }
+    },
+    {
+      "dataId": "746038fc-2336-42d5-8f06-31b0defc62c5",
+      "packageNo": "2025-076",
+      "legacyPackageId": "716",
+      "fields": {
+        "deliveryAddress": {
+          "from": "G�LBASI",
+          "to": "GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "723cc37b-52e3-4bfa-b331-7933cd13a186",
+      "packageNo": "2025-077",
+      "legacyPackageId": "717",
+      "fields": {
+        "deliveryAddress": {
+          "from": "G�LBASI",
+          "to": "GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "590d15ce-f032-4148-90fe-248d0572dc37",
+      "packageNo": "2025-079",
+      "legacyPackageId": "719",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "name": {
+          "from": "AC-7790-0004 Takimin �retilmesi",
+          "to": "AC-7790-0004 Takımın Üretilmesi"
+        }
+      }
+    },
+    {
+      "dataId": "7a7a2f85-5ac2-4fc8-a610-e9b391003e28",
+      "packageNo": "2025-080",
+      "legacyPackageId": "720",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "e09162fb-5d5a-44e9-80c9-c01f639a12e0",
+      "packageNo": "2025-081",
+      "legacyPackageId": "721",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "14.01.2026 REV01 2. ve 3.KALEM EKLENMISTIR.TERMIN TARIHLERI G�NCELLENMISTIR.\\r\\n23.01.2026 REV02",
+          "to": "14.01.2026 REV01 2. ve 3.KALEM EKLENMİŞTİR.TERMİN TARİHLERİ GÜNCELLENMİŞTİR.\\r\\n23.01.2026 REV02"
+        }
+      }
+    },
+    {
+      "dataId": "174bd4cc-63c9-4a4f-a96f-02f68c4d48cf",
+      "packageNo": "2025-082",
+      "legacyPackageId": "722",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "ba16b2c1-6e7c-461d-b17b-a22ee3c4e2b7",
+      "packageNo": "2025-083",
+      "legacyPackageId": "723",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�lbasi Tesisleri - SST Ambarlari",
+          "to": "ASELSAN Gölbası Tesisleri - SST Ambarları"
+        },
+        "name": {
+          "from": "U�an G�sterim Test D�zenegi",
+          "to": "Uçan Gösterim Test Düzenegi"
+        }
+      }
+    },
+    {
+      "dataId": "b670388a-286d-481d-b453-8c469e6ff3a5",
+      "packageNo": "2025-084",
+      "legacyPackageId": "724",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "f489d65d-de6d-4f69-8a2f-74203976be21",
+      "packageNo": "2025-085",
+      "legacyPackageId": "725",
+      "fields": {
+        "name": {
+          "from": "Harp Basligi �akir ",
+          "to": "Harp Başlığı Çakır "
+        }
+      }
+    },
+    {
+      "dataId": "edae7c05-d1a1-4499-ac8d-e2571696fcf6",
+      "packageNo": "2025-086",
+      "legacyPackageId": "726",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "72c7aad1-d1aa-4d99-b837-c69464b773d2",
+      "packageNo": "2025-087",
+      "legacyPackageId": "727",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "9229aa06-ceb2-4c4b-b6ac-8b0bbefe6ee3",
+      "packageNo": "2025-088",
+      "legacyPackageId": "728",
+      "fields": {
+        "name": {
+          "from": "10118588-KOMPOZIT R�ZGARLIK",
+          "to": "10118588-KOMPOZİT RÜZGARLIK"
+        }
+      }
+    },
+    {
+      "dataId": "64ade780-8628-40c8-ba00-18c1627b9b62",
+      "packageNo": "2025-089",
+      "legacyPackageId": "729",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "17.12.2025 REV02 KALEMLER G�NCELLENMISTIR.",
+          "to": "17.12.2025 REV02 KALEMLER GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "e49a3e11-c772-43be-a306-748e1a81ad96",
+      "packageNo": "2025-091",
+      "legacyPackageId": "731",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "327b7b52-65ac-447c-af40-77ec4091437f",
+      "packageNo": "2025-092",
+      "legacyPackageId": "732",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "20.09.2025/REV01/TERMIN TARIHLERI G�NCELLENMIS, 1.KALEM BEDELSIZ OLARAK DEGISTIRILMISTIR.",
+          "to": "20.09.2025/REV01/TERMİN TARİHLERİ GÜNCELLENMİŞ, 1.KALEM BEDELSİZ OLARAK DEĞİŞTİRİLMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "7a3ff1df-ca45-45e2-843d-81f59cd2e3ab",
+      "packageNo": "2025-095",
+      "legacyPackageId": "735",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "12.01.2026 REV01 TERMIN TARIHLERI G�NCELLENMISTIR.TOPLAM ADET DEGISMISTIR. (330 / 323 )",
+          "to": "12.01.2026 REV01 TERMİN TARİHLERİ GÜNCELLENMİŞTİR.TOPLAM ADET DEĞİŞMİŞTİR. (330 / 323 )"
+        }
+      }
+    },
+    {
+      "dataId": "e9f39b3a-3f56-4397-b87d-e301ab48bd10",
+      "packageNo": "2025-096",
+      "legacyPackageId": "736",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "303d1305-be9c-47d6-ac13-3ba7fda361bf",
+      "packageNo": "2025-097",
+      "legacyPackageId": "737",
+      "fields": {
+        "deliveryAddress": {
+          "from": "�ANKIRI YOLU 7.KM 06750 AKYURT / ANKARA",
+          "to": "ÇANKIRI YOLU 7.KM 06750 AKYURT / ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "7c06b8fd-8f63-4690-9008-3d3302c7de82",
+      "packageNo": "2025-098",
+      "legacyPackageId": "738",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "26.12.2025 REV01 166 ADETTEN 163 ADET I�IN REVIZE EDILMISTIR.",
+          "to": "26.12.2025 REV01 166 ADETTEN 163 ADET İÇİN REVİZE EDİLMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "b20a6908-e0a7-4f89-b0d6-ef6518c89f60",
+      "packageNo": "2025-099",
+      "legacyPackageId": "739",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "6826f222-b1e4-41b1-8f15-fdba43bcd70f",
+      "packageNo": "2025-100",
+      "legacyPackageId": "740",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "3c5a2c1b-226e-406f-8fa5-3d8d0f2c9c80",
+      "packageNo": "2025-101",
+      "legacyPackageId": "741",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "041fdf9e-152d-4bed-9c09-d580c56f45e8",
+      "packageNo": "2025-102",
+      "legacyPackageId": "742",
+      "fields": {
+        "name": {
+          "from": "G�VDE, HA,Fason Kalemi",
+          "to": "GÖVDE, HA,Fason Kalemi"
+        },
+        "notes": {
+          "from": "16.09.2025 DE REV03 OLARAK SIPARIS TARAFIMIZA ULASMISTIR.\\r\\n16.09.2025 DE REV04 -BIRIM FIYATI G�NCELLENMISTIR.",
+          "to": "16.09.2025 DE REV03 OLARAK SİPARİŞ TARAFIMIZA ULAŞMIŞTIR.\\r\\n16.09.2025 DE REV04 -BİRİM FİYATI GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "23b1434b-39c1-4701-aa05-41980dc8d3f1",
+      "packageNo": "2025-103",
+      "legacyPackageId": "743",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI-SST AMBARI",
+          "to": "ASELSAN GÖLBAŞI-SST AMBARI"
+        }
+      }
+    },
+    {
+      "dataId": "2534b4da-7c3e-4d5e-abb7-c674f9236c89",
+      "packageNo": "2025-112",
+      "legacyPackageId": "752",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�lbasi",
+          "to": "ASELSAN Gölbaşı"
+        },
+        "notes": {
+          "from": "TAMIR AMA�LI G�NDERILMISTIR.",
+          "to": "TAMİR AMAÇLI GÖNDERİLMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "2686a5f0-93fc-44e8-9217-6537cbed1bc0",
+      "packageNo": "2025-113",
+      "legacyPackageId": "753",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�lbasi",
+          "to": "ASELSAN Gölbaşı"
+        },
+        "notes": {
+          "from": "TAMIR AMA�LI G�NDERILMISTIR.",
+          "to": "TAMİR AMAÇLI GÖNDERİLMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "ce8af2e0-a44c-40a7-8318-36b155de94b6",
+      "packageNo": "2025-114",
+      "legacyPackageId": "754",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "TAMIR AMA�LI G�NDERILMISTIR.",
+          "to": "TAMİR AMAÇLI GÖNDERİLMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "4db9b2fc-9569-42b3-89a8-7c6e04a53c6b",
+      "packageNo": "2025-115",
+      "legacyPackageId": "755",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "TAMIR AMA�LI G�NDERILMISTIR.",
+          "to": "TAMİR AMAÇLI GÖNDERİLMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "e078af98-61d5-4907-8d1a-e8ce83bbf392",
+      "packageNo": "2025-116",
+      "legacyPackageId": "756",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "4d27abea-7fee-429e-b674-24970192eed2",
+      "packageNo": "2025-117",
+      "legacyPackageId": "757",
+      "fields": {
+        "name": {
+          "from": "G�VDE, HA,Fason Kalemi_Bedelsiz",
+          "to": "GÖVDE, HA,Fason Kalemi_Bedelsiz"
+        }
+      }
+    },
+    {
+      "dataId": "6412f76d-cc34-4422-92fe-2e388d9a2fda",
+      "packageNo": "2025-118",
+      "legacyPackageId": "758",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "8fdaedb0-d3a6-4213-8315-865f2f78ef53",
+      "packageNo": "2025-119",
+      "legacyPackageId": "759",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "31.01.2026 REV01 TERMIN TARIHLERI G�NCELLENMISTIR.2.KALEM EKLENMISTIR.\\r\\n12.02.2026 REV02 PAR�A SAYISI G�NCELLENMISTIR.",
+          "to": "31.01.2026 REV01 TERMİN TARİHLERİ GÜNCELLENMİŞTİR.2.KALEM EKLENMİŞTİR.\\r\\n12.02.2026 REV02 PARÇA SAYISI GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "a69f3d91-c367-4f07-8556-4d759b16d4ab",
+      "packageNo": "2025-120",
+      "legacyPackageId": "760",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "ab4db205-5660-4fac-a4e7-e39023746cca",
+      "packageNo": "2025-121",
+      "legacyPackageId": "761",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "TAMIR AMA�LI G�NDERILMISTIR.",
+          "to": "TAMİR AMAÇLI GÖNDERİLMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "641c51e8-2425-42e1-adef-a55703ef48a4",
+      "packageNo": "2025-122",
+      "legacyPackageId": "762",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "2d77fd5a-0085-4f5b-b3f6-837b7deb630f",
+      "packageNo": "2025-123",
+      "legacyPackageId": "763",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "2ba4a517-4789-493e-bf28-a68bb330540e",
+      "packageNo": "2025-125",
+      "legacyPackageId": "765",
+      "fields": {
+        "name": {
+          "from": "�AKIR, SABIT KANAT KEP_Bedelsiz",
+          "to": "ÇAKIR, SABİT KANAT KEP_Bedelsiz"
+        }
+      }
+    },
+    {
+      "dataId": "91ace838-c71d-4bec-bf38-353cc13cd8da",
+      "packageNo": "2025-127",
+      "legacyPackageId": "767",
+      "fields": {
+        "name": {
+          "from": "G�VDE, HA, P05 Fason Kalemi_Bedelsiz",
+          "to": "GÖVDE, HA, P05 Fason Kalemi_Bedelsiz"
+        }
+      }
+    },
+    {
+      "dataId": "27644a10-6585-4098-a26d-2766bd429ccb",
+      "packageNo": "2025-128",
+      "legacyPackageId": "768",
+      "fields": {
+        "name": {
+          "from": "G�vde, HA, Fason Kalemi_Bedelsiz",
+          "to": "Gövde, HA, Fason Kalemi_Bedelsiz"
+        }
+      }
+    },
+    {
+      "dataId": "d1aef2b8-ca59-4353-9294-7ad982750f52",
+      "packageNo": "2025-129",
+      "legacyPackageId": "769",
+      "fields": {
+        "name": {
+          "from": "DIS G�VDE HB, �AKIR",
+          "to": "DIŞ GÖVDE HB, ÇAKIR"
+        }
+      }
+    },
+    {
+      "dataId": "6e02e3e7-5322-4dfe-a706-21ea82b3364f",
+      "packageNo": "2025-132",
+      "legacyPackageId": "772",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "0e2ee7d4-c280-48f7-bf77-2d00b7cc48be",
+      "packageNo": "2025-133",
+      "legacyPackageId": "773",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "22f9ae90-550c-42f1-b167-6a32019fbc33",
+      "packageNo": "2025-134",
+      "legacyPackageId": "774",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "129dba63-3550-4757-bccd-2be660912fc3",
+      "packageNo": "2025-136",
+      "legacyPackageId": "776",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "24.02.2026 rev01 toplam par�a sayisi g�ncellenmistir.",
+          "to": "24.02.2026 rev01 toplam parça sayısı güncellenmiştir."
+        }
+      }
+    },
+    {
+      "dataId": "8ea8a03a-e621-4443-92de-28813d7a8e6c",
+      "packageNo": "2025-137",
+      "legacyPackageId": "777",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "75cb58aa-161e-4eaa-9d77-b487a9e7e912",
+      "packageNo": "2025-138",
+      "legacyPackageId": "778",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "4972cb7e-6579-44d6-a5d2-ef0fb3fdc75d",
+      "packageNo": "2025-139",
+      "legacyPackageId": "779",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "TAMIR AMA�LIDIR.",
+          "to": "TAMİR AMAÇLIDIR."
+        }
+      }
+    },
+    {
+      "dataId": "abb71ff6-6dfc-4a1c-b1b2-86cce16e6100",
+      "packageNo": "2025-140",
+      "legacyPackageId": "780",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "TAMIR AMA�LIDIR.",
+          "to": "TAMİR AMAÇLIDIR."
+        }
+      }
+    },
+    {
+      "dataId": "5f704549-7e6d-488a-b03b-18e6782ad606",
+      "packageNo": "2025-141",
+      "legacyPackageId": "781",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "d6928337-a182-4506-97b3-b721f415f2cf",
+      "packageNo": "2025-142",
+      "legacyPackageId": "782",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "dd4ca243-cedb-44f0-92ec-720cb4b5f764",
+      "packageNo": "2025-143",
+      "legacyPackageId": "783",
+      "fields": {
+        "deliveryAddress": {
+          "from": "KEMALPASA MAHALLESI SEHIT Y�ZBASI ADEM KUTLU SOKAK NO:21 06780 ELMADAG, ANKARA",
+          "to": "KEMALPAŞA MAHALLESİ ŞEHİT YÜZBAŞI ADEM KUTLU SOKAK NO:21 06780 ELMADAĞ, ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "3621a496-c90e-4f44-8362-6d10e999f81f",
+      "packageNo": "2025-145",
+      "legacyPackageId": "785",
+      "fields": {
+        "name": {
+          "from": "HAVA ALIGI B�T�N�",
+          "to": "HAVA ALIĞI BÜTÜNÜ"
+        }
+      }
+    },
+    {
+      "dataId": "5f91cf8f-55d8-4cbb-999d-dfd834c437c5",
+      "packageNo": "2025-146",
+      "legacyPackageId": "786",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "97267c60-72b6-4afb-bcc8-14127e3fa43a",
+      "packageNo": "2025-147",
+      "legacyPackageId": "787",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "ebc76c93-b5da-4d17-a360-0b43353ef0d8",
+      "packageNo": "2025-148",
+      "legacyPackageId": "788",
+      "fields": {
+        "name": {
+          "from": "10118588-KOMPOZIT R�ZGARLIK",
+          "to": "10118588-KOMPOZİT RÜZGARLIK"
+        }
+      }
+    },
+    {
+      "dataId": "c3ce3e8b-3bf1-4d16-b942-787f504fdaf9",
+      "packageNo": "2025-149",
+      "legacyPackageId": "789",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "name": {
+          "from": "KELEP�E",
+          "to": "KELEPÇE"
+        }
+      }
+    },
+    {
+      "dataId": "f6d0d081-d7fb-44b2-9d1d-a566ee033714",
+      "packageNo": "2025-154",
+      "legacyPackageId": "794",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "06.12.2025 REV01 5.KALEM (BEDELSIZ) EKLENMISTIR.\\r\\n12.01.2026 REV02 PAR�A SAYISI G�NCELLENMISTIR.",
+          "to": "06.12.2025 REV01 5.KALEM (BEDELSİZ) EKLENMİŞTİR.\\r\\n12.01.2026 REV02 PARÇA SAYISI GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "1338b713-3ff0-4117-b2f0-c9dfe1d080b2",
+      "packageNo": "2025-155",
+      "legacyPackageId": "795",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "197f2aef-1db5-41b6-a197-ac68b8f01877",
+      "packageNo": "2025-157",
+      "legacyPackageId": "797",
+      "fields": {
+        "name": {
+          "from": "R�ZGARLIK",
+          "to": "RÜZGARLIK"
+        }
+      }
+    },
+    {
+      "dataId": "f13f7ac7-7662-46c0-88b6-111e0c9a79a9",
+      "packageNo": "2025-159",
+      "legacyPackageId": "799",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�lbasi",
+          "to": "ASELSAN Gölbaşı"
+        }
+      }
+    },
+    {
+      "dataId": "7cf4ee25-3682-4a39-a386-40939fffd52c",
+      "packageNo": "2025-160",
+      "legacyPackageId": "800",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "0014d8df-9d3e-47a8-8fa2-a7ac9634004a",
+      "packageNo": "2025-166",
+      "legacyPackageId": "802",
+      "fields": {
+        "name": {
+          "from": "MEKANIK FIM S�REKLILIK TEST TECHIZATI",
+          "to": "MEKANİK FIM SÜREKLİLİK TEST TECHIZATI"
+        },
+        "notes": {
+          "from": "05.01.2026 REV01 FIYAT G�NCELLENMISTIR.",
+          "to": "05.01.2026 REV01 FİYAT GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "74970ffb-56a9-4ffc-8a29-cdd6d609284c",
+      "packageNo": "2025-163",
+      "legacyPackageId": "803",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "f0e84c1c-8f39-46e7-8bc9-b7f0bd0f344e",
+      "packageNo": "2025-164",
+      "legacyPackageId": "804",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "3effe941-19f7-4154-a9f9-dcc87259a52a",
+      "packageNo": "2025-165",
+      "legacyPackageId": "805",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "PORTALDAKI SIPARIS 8 ADET OLARAK G�NCELLENMISTIR. 8.KALEM EKLENMISTIR.",
+          "to": "PORTALDAKİ SİPARİŞ 8 ADET OLARAK GÜNCELLENMİŞTİR. 8.KALEM EKLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "584d1ff8-f9b4-44af-b230-88b5de5f189b",
+      "packageNo": "2025-162",
+      "legacyPackageId": "806",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        },
+        "notes": {
+          "from": "26.01.2026 REV01 TERMIN TARIHLERI G�NCELLENMISTIR.",
+          "to": "26.01.2026 REV01 TERMİN TARİHLERİ GÜNCELLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "f84893f4-e323-4e4b-ab51-70bdda1f782d",
+      "packageNo": "2025-167",
+      "legacyPackageId": "807",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "f87c572b-1619-4240-939a-e945ec821210",
+      "packageNo": "2025-168",
+      "legacyPackageId": "808",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "086a8059-c6e1-4c7e-bf34-e118cbdb6152",
+      "packageNo": "2026-004",
+      "legacyPackageId": "817",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�lbasi",
+          "to": "ASELSAN Gölbaşı"
+        }
+      }
+    },
+    {
+      "dataId": "89e89e5e-248d-41f2-932d-ecd3819f8933",
+      "packageNo": "2026-007",
+      "legacyPackageId": "820",
+      "fields": {
+        "name": {
+          "from": "G�VDE, HA, CIF",
+          "to": "GÖVDE, HA, CİF"
+        }
+      }
+    },
+    {
+      "dataId": "6b5c383b-3f91-40aa-8c57-325de34e5945",
+      "packageNo": "2026-008",
+      "legacyPackageId": "821",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "01788c0b-b99e-4354-91b5-9ca723263f2a",
+      "packageNo": "2026-009",
+      "legacyPackageId": "822",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN G�LBASI",
+          "to": "ASELSAN GÖLBAŞI"
+        }
+      }
+    },
+    {
+      "dataId": "b38a0091-65e7-4185-9ea1-823e568b91c4",
+      "packageNo": "2026-010",
+      "legacyPackageId": "823",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN MACUNK�Y TESISLERI-SST AMBARLARI",
+          "to": "ASELSAN MACUNKÖY TESİSLERİ-SST AMBARLARI"
+        }
+      }
+    },
+    {
+      "dataId": "558a1176-98a8-4d1c-9cd6-d751fbd56ea3",
+      "packageNo": "2026-011",
+      "legacyPackageId": "824",
+      "fields": {
+        "deliveryAddress": {
+          "from": "1.ORGANIZE SANAYI B�LGESI ALTINORDU CAD.NO:14 SINCAN / ANKARA",
+          "to": "1.ORGANİZE SANAYİ BÖLGESİ ALTINORDU CAD.NO:14 SİNCAN / ANKARA"
+        }
+      }
+    },
+    {
+      "dataId": "39e2ddb0-d87e-44fd-8c10-2d170982c6f6",
+      "packageNo": "2026-012",
+      "legacyPackageId": "825",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN MACUNK�Y Tesisleri - HBT Ambari",
+          "to": "ASELSAN MACUNKÖY Tesisleri - HBT Ambarı"
+        }
+      }
+    },
+    {
+      "dataId": "a7bbf1db-6e96-4238-8e3c-774b7111e305",
+      "packageNo": "2026-013",
+      "legacyPackageId": "826",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN MACUNK�Y tesisleri - SST ambarlari",
+          "to": "ASELSAN MACUNKÖY tesisleri - SST ambarları"
+        },
+        "name": {
+          "from": "ARGE-25-9840-0138_D�NEMSEL",
+          "to": "ARGE-25-9840-0138_DÖNEMSEL"
+        }
+      }
+    },
+    {
+      "dataId": "f325b123-59b3-48b8-90de-461a46f3d17d",
+      "packageNo": "2026-014",
+      "legacyPackageId": "827",
+      "fields": {
+        "notes": {
+          "from": "20.04.2026 REV03 KALEM SAYISI G�NCLLENMISTIR.",
+          "to": "20.04.2026 REV03 KALEM SAYISI GÜNCLLENMİŞTİR."
+        }
+      }
+    },
+    {
+      "dataId": "e2fc75f5-ec9c-4892-b093-b8bd48f322a3",
+      "packageNo": "2026-019",
+      "legacyPackageId": "832",
+      "fields": {
+        "deliveryAddress": {
+          "from": "ASELSAN MACUNK�Y TESISLERI-HBT AMBARI",
+          "to": "ASELSAN MACUNKÖY TESİSLERİ-HBT AMBARI"
+        }
+      }
+    }
+  ],
+  "fields": [
+    "name",
+    "notes",
+    "deliveryAddress"
+  ],
+  "dryRun": false,
+  "alreadyOk": 322,
+  "patchedRows": 504,
+  "patchedFields": 614,
+  "scanned": 826,
+  "noSource": 0
+}

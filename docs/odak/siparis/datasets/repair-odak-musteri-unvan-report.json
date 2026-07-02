@@ -1,0 +1,143 @@
+{
+  "noSource": 0,
+  "skipped": 0,
+  "changes": [
+    {
+      "kod": "MUS-143",
+      "legacyFirmId": "143",
+      "dataId": "0e34e63c-51f6-4121-bfe2-0b625ff1bff0",
+      "to": "METİN YÖNEY BOYA",
+      "from": "METIN Y�NEY BOYA"
+    },
+    {
+      "kod": "MUS-235",
+      "legacyFirmId": "235",
+      "dataId": "3a6bd34e-0d65-4b04-98c4-560f09d485ad",
+      "to": "BATMAN ÜNİVERSİTESİ",
+      "from": "BATMAN �NIVERSITESI"
+    },
+    {
+      "kod": "MUS-236",
+      "legacyFirmId": "236",
+      "dataId": "26b8a784-e009-456e-a123-9364773070da",
+      "to": "COŞKUNÖZ",
+      "from": "COSKUN�Z"
+    },
+    {
+      "kod": "MUS-243",
+      "legacyFirmId": "243",
+      "dataId": "d0f0b55f-9f77-41ad-ac53-d4ffa40c143a",
+      "to": "GAZİ ÜNİVERSİTESİ",
+      "from": "GAZI �NIVERSITESI"
+    },
+    {
+      "kod": "MUS-245",
+      "legacyFirmId": "245",
+      "dataId": "cb2a336b-9876-40d8-90b9-abc707d45146",
+      "to": "HALİLCAN TOKSÖZ",
+      "from": "HALILCAN TOKS�Z"
+    },
+    {
+      "kod": "MUS-251",
+      "legacyFirmId": "251",
+      "dataId": "8a111427-51c1-4ddd-ad97-7b291930dad4",
+      "to": "ÖSAK",
+      "from": "�SAK"
+    },
+    {
+      "kod": "MUS-252",
+      "legacyFirmId": "252",
+      "dataId": "7134d0fe-4822-46d9-b884-077fcfcae808",
+      "to": "ÖZTAŞ",
+      "from": "�ZTAS"
+    },
+    {
+      "kod": "MUS-267",
+      "legacyFirmId": "267",
+      "dataId": "4f4eed64-75ad-46b7-a343-31e38793ffa0",
+      "to": "YÜKSEL KOMPOZİT",
+      "from": "Y�KSEL KOMPOZIT"
+    },
+    {
+      "kod": "MUS-269",
+      "legacyFirmId": "269",
+      "dataId": "34cf9fa0-6fb8-4f0f-810a-820e3117ee83",
+      "to": "ARÇELİK",
+      "from": "AR�ELIK"
+    },
+    {
+      "kod": "MUS-383",
+      "legacyFirmId": "383",
+      "dataId": "fd98fd36-74af-4d5b-be07-efde9997771f",
+      "to": "TÜBİTAK SAGE",
+      "from": "T�BITAK SAGE"
+    },
+    {
+      "kod": "MUS-398",
+      "legacyFirmId": "398",
+      "dataId": "05a7b50b-2bc0-4dec-8f11-c0bdeae12f9e",
+      "to": "ANKARA ÜNİVERSİTESİ BAP",
+      "from": "ANKARA �NIVERSITESI BAP"
+    },
+    {
+      "kod": "MUS-486",
+      "legacyFirmId": "486",
+      "dataId": "69460318-6825-4155-9802-c76772840586",
+      "to": "SABANCI ÜNİVERSİTESİ",
+      "from": "SABANCI �NIVERSITESI"
+    },
+    {
+      "kod": "MUS-503",
+      "legacyFirmId": "503",
+      "dataId": "c49ad1d0-c726-4f82-87fe-90347299993f",
+      "to": "Fİ MÜHENDİSLİK",
+      "from": "FI M�HENDISLIK"
+    },
+    {
+      "kod": "MUS-520",
+      "legacyFirmId": "520",
+      "dataId": "88524f34-039e-4a25-b297-2a95b22d8c9d",
+      "to": "ODTÜ",
+      "from": "ODT�"
+    },
+    {
+      "kod": "MUS-528",
+      "legacyFirmId": "528",
+      "dataId": "5d5171a2-d756-46ef-bbfc-15face7452fb",
+      "to": "ÖZ-SAN OTO",
+      "from": "�Z-SAN OTO"
+    },
+    {
+      "kod": "MUS-574",
+      "legacyFirmId": "574",
+      "dataId": "8fd97f2a-1038-47b8-9149-0cffa649e7e6",
+      "to": "BAŞARAN POLİÜRETAN MAKİNE",
+      "from": "BASARAN POLI�RETAN MAKINE"
+    },
+    {
+      "kod": "MUS-599",
+      "legacyFirmId": "599",
+      "dataId": "9a937a5e-5d7e-4d31-802c-ab7a045ad19e",
+      "to": "DÖKSAN ISIL İŞLEM A.Ş.",
+      "from": "D�KSAN ISIL ISLEM A.S."
+    },
+    {
+      "kod": "MUS-657",
+      "legacyFirmId": "657",
+      "dataId": "e3de8975-dc84-4862-9dcb-8c99b3161f01",
+      "to": "MASKE İŞ SAĞLIĞI VE GÜVENLİK",
+      "from": "MASKE IS SAGLIGI VE G�VENLIK"
+    },
+    {
+      "kod": "MUS-756",
+      "legacyFirmId": "756",
+      "dataId": "94487d69-a35c-46e5-a34f-ede60ee38fd7",
+      "to": "ODTÜ SGDB",
+      "from": "ODT� SGDB"
+    }
+  ],
+  "dryRun": false,
+  "scanned": 87,
+  "patched": 19,
+  "alreadyOk": 68
+}

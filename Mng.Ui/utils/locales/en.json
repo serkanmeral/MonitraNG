@@ -3772,6 +3772,11 @@
       "filterActiveOnly": "Active only",
       "filterCategory": "Category",
       "filterCategoryAll": "All",
+      "search": "Search (key, name, subject)",
+      "refresh": "Refresh",
+      "statTotal": "{count} templates total",
+      "empty": "No templates found",
+      "emptyHint": "Clear filters or add a new template.",
       "categorySystem": "System",
       "categoryCustom": "Custom",
       "colKey": "Key",
@@ -3785,6 +3790,8 @@
       "fieldTemplateKey": "Template key",
       "fieldTemplateKeyHint": "Unique; used by policies and send-template",
       "fieldName": "Display name",
+      "fieldCategory": "Category",
+      "fieldCategoryHint": "Pick an existing category or type a new name (e.g. odak-siparis). A new category is created when you save the first template with that name.",
       "fieldDescription": "Description",
       "fieldSubject": "Subject line",
       "fieldBodyHtml": "HTML fragment (body)",
@@ -4199,6 +4206,7 @@
         "partCount": "Part Count",
         "stockCount": "Stock Count",
         "shippedCount": "Shipped Count",
+        "remainingQuantity": "Remaining Qty",
         "lineCount": "Line count",
         "beginDate": "Start",
         "deliveryDate": "Due",
@@ -4485,6 +4493,7 @@
         "quantity": "Quantity",
         "unit": "Unit",
         "shippedQuantity": "Shipped Qty",
+        "remainingQuantity": "Remaining Qty",
         "qualityReqs": "Additional note (quality)",
         "qualityRequirementIds": "Applied quality requirements",
         "isFai": "FAI required",
@@ -4553,9 +4562,16 @@
         "waybillNo": "Waybill No",
         "shipmentDate": "Shipment Date",
         "status": "Status",
-        "lineQty": "Total Qty",
+        "orderQty": "Order qty (line)",
+        "lineQty": "This shipment",
+        "remainingQty": "Unshipped here",
         "qcfStatus": "KKF",
         "controlType": "Control Type"
+      },
+      "columnHints": {
+        "orderQty": "Full order quantity for the linked line. The same line may appear on multiple shipments; do not sum these rows.",
+        "lineQty": "Quantity shipped on this waybill only.",
+        "remainingQty": "Not shipped on this record: order qty − this shipment."
       },
       "fields": {
         "waybillNo": "Waybill no",
@@ -4580,6 +4596,18 @@
         "lineSelect": "Order line",
         "shippedQty": "Shipped qty",
         "lineHint": "Order: {quantity} · Shipped: {shipped} · Remaining: {remaining}"
+      },
+      "expand": {
+        "linesTitle": "Shipment lines",
+        "noLines": "No line records linked to this shipment.",
+        "qtyHint": "Quantities for this waybill only. Package-level remaining qty is on the Lines tab."
+      },
+      "listFooter": {
+        "title": "Package total",
+        "hint": "Totals across all order lines. Do not sum list rows or the current page.",
+        "orderQty": "Order total",
+        "shippedQty": "Shipped total",
+        "remainingQty": "Remaining in package"
       }
     }
   },

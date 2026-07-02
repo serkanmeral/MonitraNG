@@ -96,14 +96,17 @@ export const ODAK_LINE_LIST_DEFAULT_FORMATS: Record<string, AfListColumnFormat> 
   quantity: ODAK_LIST_INTEGER_NUMBER,
   shippedQuantity: ODAK_LIST_INTEGER_NUMBER,
   remainingQuantity: ODAK_LINE_REMAINING_QTY_FORMAT,
-  unitCost: ODAK_LIST_CURRENCY_TRY,
-  totalCost: ODAK_LIST_CURRENCY_TRY,
+  // unitCost/totalCost — satır currency alanı lineListCellRaw içinde formatlanır
+  unitCost: { type: 'none' },
+  totalCost: { type: 'none' },
 };
 
 export const ODAK_SHIPMENT_LIST_DEFAULT_FORMATS: Record<string, AfListColumnFormat> = {
   waybillNo: ODAK_LIST_PRIMARY_COLOR,
   status: ODAK_SHIPMENT_STATUS_FORMAT,
+  orderQty: ODAK_LIST_INTEGER_NUMBER,
   lineQty: ODAK_LIST_INTEGER_NUMBER,
+  remainingQty: ODAK_LINE_REMAINING_QTY_FORMAT,
   qcfStatus: ODAK_SHIPMENT_QCF_STATUS_FORMAT,
 };
 

@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { loginToMngKeeper, refreshMngKeeperToken, revokeMngKeeperToken, type TokenResponse } from "@/services/apiService";
 import { decodeJwt } from "jose";
+import { userHasManagerRole } from "@/utils/authRoles";
 import { isTokenExpired, shouldUseSecureCookie } from "@/utils/tokenUtils";
 import type { Domain } from "@/composables/useDomain";
 import { useDomain } from "@/composables/useDomain";
@@ -50,10 +51,7 @@ export const useAuthStore = defineStore("auth", {
     isAdmin: (state): boolean => {
       return state.userInfo?.isAdmin === true || false;
     },
-    isManager: (state): boolean => {
-      // Admin users automatically have Manager privileges
-      return state.userInfo?.isAdmin === true || state.userInfo?.is_manager === true || false;
-    },
+    isManager: (state): boolean => userHasManagerRole(state.userInfo),
     userGroups: (state): string[] => {
       // Try multiple possible field names for user groups
       const groups = state.userInfo?.user_groups 

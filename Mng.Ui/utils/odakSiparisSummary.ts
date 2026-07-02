@@ -6,6 +6,7 @@ import {
   formatOdakNumber,
   packageStatusLabel,
 } from '@/utils/odakSiparisService';
+import type { OdakLineQuantityAggregate } from '@/utils/odakSiparisShipmentService';
 import { customerContactLabelFromRow } from '@/utils/odakSiparisCustomerContactService';
 import { personLabelFromRow } from '@/utils/odakSiparisPackagePersonnel';
 
@@ -51,7 +52,8 @@ export function buildOdakPackageSummaryRows(
   pkg: OdakPackageRow,
   customerLabels: Record<string, string>,
   t: (key: string) => string,
-  personLabels: Record<string, string> = {}
+  personLabels: Record<string, string> = {},
+  lineAggregate?: OdakLineQuantityAggregate | null
 ): OdakPackageSummaryRow[] {
   const customerId = customerIdFromRow(pkg);
   const customerLabel = customerLabelFromRow(pkg, customerLabels);
@@ -80,6 +82,14 @@ export function buildOdakPackageSummaryRows(
     { label: t('odakSiparis.detail.fields.partCount'), value: formatOdakNumber(pkg.partCount) },
     { label: t('odakSiparis.detail.fields.stockCount'), value: formatOdakNumber(pkg.stockCount) },
     { label: t('odakSiparis.detail.fields.shippedCount'), value: formatOdakNumber(pkg.shippedCount) },
+    ...(lineAggregate != null
+      ? [
+          {
+            label: t('odakSiparis.detail.fields.remainingQuantity'),
+            value: formatOdakNumber(lineAggregate.totalRemaining),
+          },
+        ]
+      : []),
     { label: t('odakSiparis.detail.fields.lineCount'), value: formatOdakNumber(pkg.lineCount) },
     { label: t('odakSiparis.detail.fields.beginDate'), value: formatOdakDate(pkg.beginDate) },
     { label: t('odakSiparis.detail.fields.deliveryDate'), value: formatOdakDate(pkg.deliveryDate) },

@@ -1,12 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AfListFilters from '@/components/apps/automated-forms/AfListFilters.vue';
 import OdakSiparisGeneralShipmentDialog from '@/components/apps/odak-siparis/OdakSiparisGeneralShipmentDialog.vue';
 import OdakSiparisShipmentExpandPanel from '@/components/apps/odak-siparis/OdakSiparisShipmentExpandPanel.vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
+import { useOdakFieldAccess } from '@/composables/useOdakFieldAccess';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
+import { useAuthStore } from '@/stores/auth';
+import { useOdakSiparisHubSettingsStore } from '@/stores/apps/odakSiparisHubSettings';
 import type { AfFilterColumn, AfListFilter } from '@/utils/afListFilters';
+import {
+  applyListColumnFormatting,
+  getListColumnCellStyle,
+} from '@/utils/afListColumnFormat';
 import {
   ODAK_DATA_TABLE_EXPAND_COLUMN,
   ODAK_DATA_TABLE_STICKY_ACTIONS_HEADER,
@@ -16,10 +23,23 @@ import {
   ODAK_SUB_LIST_TABLE_CLASS,
   type OdakShipmentRow,
 } from '@/utils/odakSiparisConfig';
+import type { OdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
 import {
-  customerLabelFromRow,
+  buildGlobalShipmentListHeaders,
+  buildGlobalShipmentListSort,
+  fieldNameFromGlobalShipmentListKey,
+  globalShipmentContentFull,
+  globalShipmentListCellRaw,
+  listSortKeyFromGlobalShipmentField,
+  ODAK_GLOBAL_SHIPMENT_LIST_KEY_TO_FIELD,
+  type GlobalShipmentListSort,
+} from '@/utils/odakSiparisGlobalShipmentListSettings';
+import { loadOdakShipmentFieldPoliciesOnly } from '@/utils/odakSiparisHubSettingsService';
+import { odakGlobalShipmentSettingsFieldLabelTr } from '@/utils/odakSiparisSettingsLabels';
+import {
   fetchCustomerLabelMap,
   fetchCustomerRelationOptions,
+  fetchPackageCustomerLabelMap,
   fetchPackageRelationOptions,
   resolveDataTableRow,
 } from '@/utils/odakSiparisService';
@@ -27,35 +47,41 @@ import {
   deleteGeneralOdakShipment,
   fetchOdakShipmentsPage,
   fetchShipmentLineQtyMap,
-  formatShipmentDate,
   normalizeRecordScope,
-  recordScopeLabel,
+  ODAK_GLOBAL_SHIPMENTS_DEFAULT_FILTERS,
   shipmentDataId,
-  shipmentStatusLabel,
   type OdakShipmentDialogMode,
-  type OdakShipmentScopeTab,
-  type OdakShipmentStatusTab,
 } from '@/utils/odakSiparisShipmentService';
-import { EditIcon, EyeIcon, PlusIcon, RefreshIcon, TrashIcon } from 'vue-tabler-icons';
+import { EditIcon, EyeIcon, PlusIcon, RefreshIcon, SettingsIcon, TrashIcon } from 'vue-tabler-icons';
 
 definePageMeta({ layout: 'default' });
 
 const { t } = useAppI18n();
+const auth = useAuthStore();
+const hubStore = useOdakSiparisHubSettingsStore();
+const route = useRoute();
 const panelError = usePanelErrorNotify('errors.dg.generic');
 
-const scopeTab = ref<OdakShipmentScopeTab>('all');
-const statusTab = ref<OdakShipmentStatusTab>('all');
 const searchQuery = ref('');
 const loading = ref(false);
 const errorMessage = ref('');
 const items = ref<OdakShipmentRow[]>([]);
 const lineQtyByShipment = ref<Map<string, number>>(new Map());
 const customerLabels = ref<Record<string, string>>({});
-const activeListFilters = ref<AfListFilter[]>([]);
+const packageCustomerLabels = ref<Record<string, string>>({});
+const activeListFilters = ref<AfListFilter[]>([...ODAK_GLOBAL_SHIPMENTS_DEFAULT_FILTERS]);
 const relationFilterOptions = ref<Record<string, { value: string; title: string }[]>>({});
 const totalCount = ref(0);
 const tablePage = ref(1);
 const tableItemsPerPage = ref(20);
+const tableSortBy = ref<GlobalShipmentListSort[]>([{ key: 'shipmentDate', order: 'desc' }]);
+const hubSortInitialized = ref(false);
+/** İlk yükleme tamamlanana kadar tablo/filtre event'lerinin çift fetch tetiklemesini engeller. */
+const pageDataInitialized = ref(false);
+
+const listConfig = computed(() => hubStore.globalShipmentsListConfig);
+const fieldPolicies = ref<OdakFieldPoliciesBlob>({ policiesByField: {} });
+const { canViewListColumn } = useOdakFieldAccess(fieldPolicies, ODAK_GLOBAL_SHIPMENT_LIST_KEY_TO_FIELD);
 
 const dialogOpen = ref(false);
 const dialogMode = ref<OdakShipmentDialogMode>('view');
@@ -71,17 +97,6 @@ const expandRefreshToken = ref(0);
 
 /** Tablo hücresinde gösterilecek içerik özeti uzunluğu; tam metin expand panelde. */
 const CONTENT_SUMMARY_MAX = 80;
-
-function truncateText(text: string | null | undefined, maxLength = CONTENT_SUMMARY_MAX): string {
-  const value = String(text ?? '').trim();
-  if (!value) return '—';
-  if (value.length <= maxLength) return value;
-  return `${value.slice(0, maxLength)}…`;
-}
-
-function contentSummaryFromRow(row: OdakShipmentRow): string {
-  return truncateText(row.headerDescription || row.notes);
-}
 
 function toggleExpand(item: { raw: OdakShipmentRow; __dataId?: string }) {
   const row = resolveDataTableRow(item);
@@ -100,18 +115,6 @@ const breadcrumbs = computed(() => [
   { text: t('breadcrumbs.home'), disabled: false, href: '/dashboards/analytical' },
   { text: t('odakSiparis.module'), disabled: false, href: '/apps/odak-siparis/packages' },
   { text: t('odakSiparis.globalShipments.title'), disabled: true, href: '#' },
-]);
-
-const scopeTabs = computed(() => [
-  { value: 'all' as const, label: t('odakSiparis.globalShipments.tabs.all') },
-  { value: 'package' as const, label: t('odakSiparis.globalShipments.tabs.package') },
-  { value: 'general' as const, label: t('odakSiparis.globalShipments.tabs.general') },
-]);
-
-const statusTabs = computed(() => [
-  { value: 'all' as const, label: t('odakSiparis.globalShipments.tabs.statusAll') },
-  { value: 'completed' as const, label: t('odakSiparis.globalShipments.tabs.completed') },
-  { value: 'planned' as const, label: t('odakSiparis.globalShipments.tabs.planned') },
 ]);
 
 const shipmentFilterColumns = computed<AfFilterColumn[]>(() => [
@@ -177,9 +180,15 @@ const shipmentFilterColumns = computed<AfFilterColumn[]>(() => [
 
 function onListFiltersUpdate(filters: AfListFilter[]) {
   activeListFilters.value = filters;
+  if (!pageDataInitialized.value) return;
   if (tablePage.value !== 1) tablePage.value = 1;
   else void loadItems();
 }
+
+const showCustomerScopeHint = computed(() => {
+  const filters = activeListFilters.value;
+  return filters.some((f) => f.field === 'customerId' && f.value?.trim());
+});
 
 async function loadFilterRelationOptions() {
   const [customers, packages] = await Promise.all([
@@ -192,50 +201,69 @@ async function loadFilterRelationOptions() {
   };
 }
 
+function columnTitle(fieldName: string, _listKey: string): string {
+  return odakGlobalShipmentSettingsFieldLabelTr(fieldName);
+}
+
+function listCellContext() {
+  return {
+    lineQtyByShipmentId: lineQtyByShipment.value,
+    customerLabels: customerLabels.value,
+    packageCustomerLabels: packageCustomerLabels.value,
+    contentSummaryMax: CONTENT_SUMMARY_MAX,
+  };
+}
+
+function columnConfigForListKey(listKey: string) {
+  const fieldName = fieldNameFromGlobalShipmentListKey(listKey);
+  return listConfig.value.columns.find((c) => c.fieldName === fieldName);
+}
+
+function cellDisplayValue(raw: string, listKey: string, row: OdakShipmentRow): string {
+  const col = columnConfigForListKey(listKey);
+  return applyListColumnFormatting(raw, col?.format);
+}
+
+function cellStyle(listKey: string, raw: string, row: OdakShipmentRow): Record<string, string> {
+  const col = columnConfigForListKey(listKey);
+  const fieldName = fieldNameFromGlobalShipmentListKey(listKey);
+  return getListColumnCellStyle(raw, fieldName, col?.format, row as Record<string, unknown>);
+}
+
+const configurableHeaders = computed(() =>
+  buildGlobalShipmentListHeaders(listConfig.value, columnTitle, (listKey) => canViewListColumn(listKey))
+);
+
 const headers = computed(() => [
   { ...ODAK_DATA_TABLE_EXPAND_COLUMN },
-  { title: t('odakSiparis.shipments.columns.waybillNo'), key: 'waybillNo', width: 118, minWidth: 118 },
-  { title: t('odakSiparis.globalShipments.columns.scope'), key: 'scopeLabel', width: 156, minWidth: 156 },
-  {
-    title: t('odakSiparis.globalShipments.columns.content'),
-    key: 'headerDescription',
-    minWidth: 220,
-  },
-  {
-    title: t('odakSiparis.packages.columns.customer'),
-    key: 'customerLabel',
-    width: 140,
-    minWidth: 120,
-  },
-  { title: t('odakSiparis.shipments.columns.shipmentDate'), key: 'shipmentDate', width: 112, minWidth: 112 },
-  { title: t('odakSiparis.shipments.columns.status'), key: 'status', width: 118, minWidth: 118 },
-  { title: t('odakSiparis.shipments.columns.lineQty'), key: 'lineQty', width: 88, minWidth: 88, align: 'end' as const },
+  ...configurableHeaders.value,
   {
     title: t('odakSiparis.packages.columns.actions'),
     key: 'actions',
     width: 120,
     minWidth: 120,
+    sortable: false,
     ...ODAK_DATA_TABLE_STICKY_ACTIONS_HEADER,
   },
 ]);
 
+const SPECIAL_LIST_KEYS = new Set([
+  'waybillNo',
+  'scopeLabel',
+  'customerLabel',
+  'headerDescription',
+  'lineQty',
+]);
+
+const genericListColumns = computed(() =>
+  configurableHeaders.value.filter((h) => !SPECIAL_LIST_KEYS.has(h.key))
+);
+
 const tableItems = computed(() =>
-  items.value.map((row) => {
-    const id = shipmentDataId(row);
-    return {
-      raw: row,
-      __dataId: id,
-      waybillNo: row.waybillNo || '—',
-      scopeLabel: recordScopeLabel(row.recordScope),
-      headerDescription: row.headerDescription || row.notes || '—',
-      headerDescriptionSummary: contentSummaryFromRow(row),
-      headerDescriptionFull: (row.headerDescription || row.notes || '').trim(),
-      customerLabel: customerLabelFromRow(row, customerLabels.value),
-      shipmentDate: formatShipmentDate(row.shipmentDate),
-      status: shipmentStatusLabel(row.status),
-      lineQty: id ? lineQtyByShipment.value.get(id) ?? '—' : '—',
-    };
-  })
+  items.value.map((row) => ({
+    raw: row,
+    __dataId: shipmentDataId(row),
+  }))
 );
 
 async function loadLineQuantities(rows: OdakShipmentRow[]) {
@@ -260,15 +288,15 @@ async function loadItems() {
     const [labels, resp] = await Promise.all([
       fetchCustomerLabelMap(),
       fetchOdakShipmentsPage({
-        scopeTab: scopeTab.value,
-        statusTab: statusTab.value,
         search: searchQuery.value.trim(),
         page: tablePage.value,
         limit: tableItemsPerPage.value,
+        sort: buildGlobalShipmentListSort(tableSortBy.value),
         advancedFilters: activeListFilters.value,
       }),
     ]);
     customerLabels.value = labels;
+    packageCustomerLabels.value = await fetchPackageCustomerLabelMap(labels);
     rows = resp.items;
     items.value = rows;
     totalCount.value = resp.total;
@@ -315,10 +343,81 @@ async function executeDelete() {
   }
 }
 
-watch([scopeTab, statusTab, tablePage, tableItemsPerPage], () => void loadItems());
-watch(searchQuery, () => {
-  tablePage.value = 1;
+async function applyHubSortDefaults() {
+  if (hubSortInitialized.value) return;
+  const sortField = listConfig.value.defaultSortBy ?? 'shipmentDate';
+  const sortKey = listSortKeyFromGlobalShipmentField(sortField);
+  tableSortBy.value = [{ key: sortKey, order: listConfig.value.defaultSortOrder ?? 'desc' }];
+  hubSortInitialized.value = true;
+}
+
+type TableOptions = {
+  page: number;
+  itemsPerPage: number;
+  sortBy?: GlobalShipmentListSort[];
+};
+
+function onTableOptions(options: TableOptions) {
+  if (!pageDataInitialized.value) return;
+  const nextSort =
+    Array.isArray(options.sortBy) && options.sortBy.length
+      ? options.sortBy
+      : [{ key: 'shipmentDate', order: 'desc' as const }];
+  const sortChanged = JSON.stringify(nextSort) !== JSON.stringify(tableSortBy.value);
+  const nextSize = options.itemsPerPage;
+  const sizeChanged = nextSize !== tableItemsPerPage.value;
+  let nextPage = options.page;
+  if (sortChanged || sizeChanged) nextPage = 1;
+  const pageChanged = nextPage !== tablePage.value;
+  if (!sortChanged && !pageChanged && !sizeChanged) return;
+  expandedIds.value = [];
+  tableSortBy.value = nextSort;
+  tablePage.value = nextPage;
+  tableItemsPerPage.value = nextSize;
   void loadItems();
+}
+
+function onPageShow(event: PageTransitionEvent) {
+  if (event.persisted) {
+    hubSortInitialized.value = false;
+    void hubStore.ensureScopeReady('global_shipments_list', true).then(() => {
+      void applyHubSortDefaults().then(() => loadItems());
+    });
+  }
+}
+
+async function initShipmentsPage() {
+  pageDataInitialized.value = false;
+  await hubStore.ensureScopeReady('global_shipments_list', false);
+  await applyHubSortDefaults();
+  void loadOdakShipmentFieldPoliciesOnly()
+    .then((blob) => {
+      fieldPolicies.value = blob;
+    })
+    .catch(() => {
+      fieldPolicies.value = { policiesByField: {} };
+    });
+  await loadFilterRelationOptions();
+  await loadItems();
+  pageDataInitialized.value = true;
+}
+
+watch(
+  () => route.fullPath,
+  (path, previousPath) => {
+    if (path === '/apps/odak-siparis/shipments' && previousPath?.includes('/shipments/settings')) {
+      hubSortInitialized.value = false;
+      void hubStore.ensureScopeReady('global_shipments_list', true).then(() => {
+        void applyHubSortDefaults().then(() => loadItems());
+      });
+    }
+  }
+);
+
+watch(searchQuery, () => {
+  if (!pageDataInitialized.value) return;
+  if (tablePage.value !== 1) tablePage.value = 1;
+  else void loadItems();
 });
 watch(expandedIds, (ids) => {
   if (ids.length > 1) {
@@ -326,7 +425,18 @@ watch(expandedIds, (ids) => {
   }
 });
 
-onMounted(() => void loadItems());
+onMounted(() => {
+  if (import.meta.client) {
+    window.addEventListener('pageshow', onPageShow);
+  }
+  void initShipmentsPage();
+});
+
+onBeforeUnmount(() => {
+  if (import.meta.client) {
+    window.removeEventListener('pageshow', onPageShow);
+  }
+});
 </script>
 
 <template>
@@ -335,17 +445,17 @@ onMounted(() => void loadItems());
   <v-card elevation="10">
     <v-card-text>
       <div class="d-flex flex-wrap align-center ga-3 mb-4">
-        <v-btn-toggle v-model="scopeTab" mandatory density="compact" color="primary" variant="outlined">
-          <v-btn v-for="tab in scopeTabs" :key="tab.value" :value="tab.value" size="small">
-            {{ tab.label }}
-          </v-btn>
-        </v-btn-toggle>
-        <v-btn-toggle v-model="statusTab" mandatory density="compact" color="primary" variant="outlined">
-          <v-btn v-for="tab in statusTabs" :key="tab.value" :value="tab.value" size="small">
-            {{ tab.label }}
-          </v-btn>
-        </v-btn-toggle>
         <v-spacer />
+        <v-btn
+          v-if="auth.isManager"
+          variant="tonal"
+          color="primary"
+          size="small"
+          to="/apps/odak-siparis/shipments/settings"
+        >
+          <SettingsIcon size="18" class="mr-1" />
+          {{ t('odakSiparis.globalShipments.settings.title') }}
+        </v-btn>
         <v-text-field
           v-model="searchQuery"
           :label="t('odakSiparis.globalShipments.searchWaybill')"
@@ -367,12 +477,19 @@ onMounted(() => void loadItems());
         class="mb-2"
         :columns="shipmentFilterColumns"
         :relation-options-by-key="relationFilterOptions"
+        :initial-filters="ODAK_GLOBAL_SHIPMENTS_DEFAULT_FILTERS"
+        :initial-panel-open="true"
         @update:filters="onListFiltersUpdate"
         @advanced-open="loadFilterRelationOptions"
       />
-      <p class="text-caption text-medium-emphasis mb-4">
-        {{ t('odakSiparis.globalShipments.filters.customerHint') }}
-      </p>
+      <div class="mb-4">
+        <p class="text-caption text-medium-emphasis mb-1">
+          {{ t('odakSiparis.globalShipments.filters.customerHint') }}
+        </p>
+        <p v-if="showCustomerScopeHint" class="text-caption text-medium-emphasis mb-0">
+          {{ t('odakSiparis.globalShipments.filters.customerScopeHint') }}
+        </p>
+      </div>
 
       <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-3">
         {{ errorMessage }}
@@ -380,19 +497,21 @@ onMounted(() => void loadItems());
 
       <div class="odak-shipments-list-scroll">
         <v-data-table-server
-          v-model:page="tablePage"
-          v-model:items-per-page="tableItemsPerPage"
           v-model:expanded="expandedIds"
           :headers="headers"
           :items="tableItems"
           :items-length="totalCount"
           :loading="loading"
+          :page="tablePage"
+          :items-per-page="tableItemsPerPage"
+          :sort-by="tableSortBy"
           item-value="__dataId"
           show-expand
           :expand-on-click="false"
           density="compact"
           class="border rounded-md odak-shipments-list-table"
           :class="ODAK_SUB_LIST_TABLE_CLASS"
+          @update:options="onTableOptions"
         >
           <template #expanded-row="{ columns, item }">
             <tr>
@@ -412,32 +531,90 @@ onMounted(() => void loadItems());
             <a
               href="#"
               class="text-primary text-decoration-none font-weight-medium odak-shipments-cell-ellipsis"
-              :title="String(item.waybillNo)"
+              :style="cellStyle('waybillNo', globalShipmentListCellRaw(item.raw, 'waybillNo', listCellContext()), item.raw)"
+              :title="globalShipmentListCellRaw(item.raw, 'waybillNo', listCellContext())"
               @click.prevent="toggleExpand(item)"
             >
-              {{ item.waybillNo }}
+              {{
+                cellDisplayValue(
+                  globalShipmentListCellRaw(item.raw, 'waybillNo', listCellContext()),
+                  'waybillNo',
+                  item.raw
+                )
+              }}
             </a>
           </template>
           <template #item.scopeLabel="{ item }">
-            <span class="odak-shipments-cell-ellipsis" :title="String(item.scopeLabel)">
-              {{ item.scopeLabel }}
+            <span
+              class="odak-shipments-cell-ellipsis"
+              :style="cellStyle('scopeLabel', globalShipmentListCellRaw(item.raw, 'scopeLabel', listCellContext()), item.raw)"
+              :title="globalShipmentListCellRaw(item.raw, 'scopeLabel', listCellContext())"
+            >
+              {{
+                cellDisplayValue(
+                  globalShipmentListCellRaw(item.raw, 'scopeLabel', listCellContext()),
+                  'scopeLabel',
+                  item.raw
+                )
+              }}
             </span>
           </template>
           <template #item.headerDescription="{ item }">
             <span
               class="odak-shipments-cell-ellipsis"
-              :title="item.headerDescriptionFull || undefined"
+              :style="cellStyle('headerDescription', globalShipmentListCellRaw(item.raw, 'headerDescription', listCellContext()), item.raw)"
+              :title="globalShipmentContentFull(item.raw) || undefined"
             >
-              {{ item.headerDescriptionSummary }}
+              {{
+                cellDisplayValue(
+                  globalShipmentListCellRaw(item.raw, 'headerDescription', listCellContext()),
+                  'headerDescription',
+                  item.raw
+                )
+              }}
             </span>
           </template>
           <template #item.customerLabel="{ item }">
-            <span class="odak-shipments-cell-ellipsis" :title="String(item.customerLabel)">
-              {{ item.customerLabel }}
+            <span
+              class="odak-shipments-cell-ellipsis"
+              :style="cellStyle('customerLabel', globalShipmentListCellRaw(item.raw, 'customerLabel', listCellContext()), item.raw)"
+              :title="globalShipmentListCellRaw(item.raw, 'customerLabel', listCellContext())"
+            >
+              {{
+                cellDisplayValue(
+                  globalShipmentListCellRaw(item.raw, 'customerLabel', listCellContext()),
+                  'customerLabel',
+                  item.raw
+                )
+              }}
             </span>
           </template>
           <template #item.lineQty="{ item }">
-            <span class="d-block text-end tabular-nums">{{ item.lineQty }}</span>
+            <span
+              class="d-block text-end tabular-nums"
+              :style="cellStyle('lineQty', globalShipmentListCellRaw(item.raw, 'lineQty', listCellContext()), item.raw)"
+            >
+              {{
+                cellDisplayValue(
+                  globalShipmentListCellRaw(item.raw, 'lineQty', listCellContext()),
+                  'lineQty',
+                  item.raw
+                )
+              }}
+            </span>
+          </template>
+          <template v-for="col in genericListColumns" :key="col.key" #[`item.${col.key}`]="{ item }">
+            <span
+              :style="cellStyle(col.key, globalShipmentListCellRaw(item.raw, col.key, listCellContext()), item.raw)"
+            >
+              {{
+                cellDisplayValue(
+                  globalShipmentListCellRaw(item.raw, col.key, listCellContext()),
+                  col.key,
+                  item.raw
+                )
+              }}
+            </span>
           </template>
           <template #item.actions="{ item }">
             <div class="d-inline-flex align-center justify-end ga-1">

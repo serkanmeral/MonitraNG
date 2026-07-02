@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import OcMailTemplateDialog from '@/components/apps/notifier/OcMailTemplateDialog.vue';
 import {
   createMailTemplate,
   deleteMailTemplate,
-  listMailTemplates,
+  listMailTemplatesPage,
+  listMailTemplateCategoryOptions,
+  MAIL_TEMPLATE_DEFAULT_PAGE_SIZE,
+  MAIL_TEMPLATE_PAGE_SIZE_OPTIONS,
   updateMailTemplate,
 } from '@/services/notifier/mailTemplates';
 import type { MailTemplate } from '@/types/apps/mailTemplates';
@@ -20,50 +23,105 @@ const errorLocal = ref<string | null>(null);
 const successLocal = ref<string | null>(null);
 const activeOnly = ref(false);
 const categoryFilter = ref<string | null>(null);
+const searchQuery = ref('');
+const page = ref(1);
+const itemsPerPage = ref(MAIL_TEMPLATE_DEFAULT_PAGE_SIZE);
+const total = ref(0);
+const suppressPageWatch = ref(false);
 
 const templates = ref<MailTemplate[]>([]);
 const dialog = ref(false);
 const editing = ref<MailTemplate | null>(null);
 const deleteDialog = ref(false);
 const deleteTarget = ref<MailTemplate | null>(null);
+const categoryOptions = ref<string[]>([]);
 
 const categoryItems = computed(() => [
   { value: null, title: t('notifier.mailTemplates.filterCategoryAll') },
-  { value: 'system', title: t('notifier.mailTemplates.categorySystem') },
-  { value: 'custom', title: t('notifier.mailTemplates.categoryCustom') },
+  ...categoryOptions.value.map((value) => ({
+    value,
+    title: categoryFilterLabel(value),
+  })),
 ]);
 
-const filtered = computed(() => {
-  let list = templates.value;
-  if (activeOnly.value) list = list.filter((x) => x.isActive !== false);
-  if (categoryFilter.value) list = list.filter((x) => x.category === categoryFilter.value);
-  return list;
-});
+function categoryFilterLabel(value: string): string {
+  if (value === 'system') return t('notifier.mailTemplates.categorySystem');
+  if (value === 'custom') return t('notifier.mailTemplates.categoryCustom');
+  return value;
+}
+
+const skip = computed(() => (page.value - 1) * itemsPerPage.value);
+
+const pageCount = computed(() => Math.max(1, Math.ceil(total.value / itemsPerPage.value)));
 
 const headers = computed(() => [
-  { title: t('notifier.mailTemplates.colKey'), key: 'templateKey', sortable: true },
-  { title: t('notifier.mailTemplates.colName'), key: 'name', sortable: true },
+  { title: t('notifier.mailTemplates.colKey'), key: 'templateKey', sortable: false },
+  { title: t('notifier.mailTemplates.colName'), key: 'name', sortable: false },
   { title: t('notifier.mailTemplates.colSubject'), key: 'subject', sortable: false },
-  { title: t('notifier.mailTemplates.colCategory'), key: 'category', sortable: true, width: 100 },
-  { title: t('notifier.mailTemplates.colStatus'), key: 'isActive', sortable: true, width: 96 },
+  { title: t('notifier.mailTemplates.colCategory'), key: 'category', sortable: false, width: 100 },
+  { title: t('notifier.mailTemplates.colStatus'), key: 'isActive', sortable: false, width: 96 },
   { title: t('notifier.mailTemplates.colActions'), key: 'actions', sortable: false, align: 'end' as const },
 ]);
 
-async function loadAll() {
+async function loadPage() {
   loading.value = true;
   errorLocal.value = null;
   try {
-    templates.value = await listMailTemplates();
+    const result = await listMailTemplatesPage({
+      skip: skip.value,
+      limit: itemsPerPage.value,
+      activeOnly: activeOnly.value,
+      category: categoryFilter.value,
+      search: searchQuery.value.trim() || undefined,
+    });
+    templates.value = result.items;
+    total.value = result.total;
+
+    if (total.value > 0 && page.value > pageCount.value) {
+      suppressPageWatch.value = true;
+      page.value = pageCount.value;
+      suppressPageWatch.value = false;
+      await loadPage();
+    }
   } catch (e: unknown) {
     errorLocal.value = e instanceof Error ? e.message : t('notifier.mailTemplates.loadError');
+    templates.value = [];
+    total.value = 0;
   } finally {
     loading.value = false;
   }
 }
 
-onMounted(() => {
-  void loadAll();
+function resetPageAndLoad() {
+  page.value = 1;
+  void loadPage();
+}
+
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
+watch(searchQuery, () => {
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => resetPageAndLoad(), 350);
 });
+
+watch([activeOnly, categoryFilter], () => resetPageAndLoad());
+
+watch([page, itemsPerPage], () => {
+  if (suppressPageWatch.value) return;
+  void loadPage();
+});
+
+onMounted(() => {
+  void loadCategoryOptions();
+  void loadPage();
+});
+
+async function loadCategoryOptions() {
+  try {
+    categoryOptions.value = await listMailTemplateCategoryOptions();
+  } catch {
+    categoryOptions.value = ['custom', 'system'];
+  }
+}
 
 function openCreate() {
   editing.value = null;
@@ -89,10 +147,12 @@ async function saveTemplate(payload: Record<string, unknown>) {
       await updateMailTemplate(editing.value.__dataId, payload);
     } else {
       await createMailTemplate(payload);
+      page.value = 1;
     }
     dialog.value = false;
     successLocal.value = t('notifier.mailTemplates.saveSuccess');
-    await loadAll();
+    await loadCategoryOptions();
+    await loadPage();
   } catch (e: unknown) {
     errorLocal.value = e instanceof Error ? e.message : t('notifier.mailTemplates.saveError');
   } finally {
@@ -108,7 +168,7 @@ async function removeTemplate() {
     await deleteMailTemplate(deleteTarget.value.__dataId);
     deleteDialog.value = false;
     successLocal.value = t('notifier.mailTemplates.deleteSuccess');
-    await loadAll();
+    await loadPage();
   } catch (e: unknown) {
     errorLocal.value = e instanceof Error ? e.message : t('notifier.mailTemplates.deleteError');
   } finally {
@@ -132,6 +192,15 @@ async function removeTemplate() {
     </div>
 
     <div class="d-flex flex-wrap align-center ga-3 mb-4">
+      <v-text-field
+        v-model="searchQuery"
+        :label="t('notifier.mailTemplates.search')"
+        prepend-inner-icon="mdi-magnify"
+        density="compact"
+        hide-details
+        clearable
+        style="min-width: 220px; max-width: 320px"
+      />
       <v-select
         v-model="categoryFilter"
         :items="categoryItems"
@@ -149,23 +218,36 @@ async function removeTemplate() {
         hide-details
         color="primary"
       />
+      <v-btn variant="tonal" prepend-icon="mdi-refresh" :loading="loading" @click="loadPage">
+        {{ t('notifier.mailTemplates.refresh') }}
+      </v-btn>
       <v-spacer />
+      <v-chip v-if="total > 0" variant="tonal" size="small">
+        {{ t('notifier.mailTemplates.statTotal', { count: total }) }}
+      </v-chip>
       <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">
         {{ t('notifier.mailTemplates.addTemplate') }}
       </v-btn>
     </div>
 
-    <v-card v-if="loading" variant="outlined" rounded="lg" class="pa-8 text-center">
-      <v-progress-circular indeterminate color="primary" />
+    <v-card v-if="!loading && total === 0" variant="outlined" rounded="lg" class="pa-8 text-center">
+      <v-icon icon="mdi-email-outline" size="48" color="primary" class="mb-3 opacity-60" />
+      <div class="text-h6 font-weight-bold mb-2">{{ t('notifier.mailTemplates.empty') }}</div>
+      <p class="text-body-2 text-medium-emphasis mb-0">{{ t('notifier.mailTemplates.emptyHint') }}</p>
     </v-card>
 
     <v-card v-else variant="outlined" rounded="lg">
-      <v-data-table
+      <v-data-table-server
+        v-model:page="page"
+        v-model:items-per-page="itemsPerPage"
         :headers="headers"
-        :items="filtered"
+        :items="templates"
+        :items-length="total"
+        :items-per-page-options="[...MAIL_TEMPLATE_PAGE_SIZE_OPTIONS]"
+        :loading="loading"
         item-value="__dataId"
         density="comfortable"
-        hide-default-footer
+        class="oc-mail-templates-table"
       >
         <template #[`item.templateKey`]="{ item }">
           <code class="text-body-2">{{ item.templateKey }}</code>
@@ -198,14 +280,20 @@ async function removeTemplate() {
             />
           </div>
         </template>
-      </v-data-table>
+      </v-data-table-server>
     </v-card>
 
     <p class="text-caption text-medium-emphasis mt-4 mb-0">
       {{ t('notifier.mailTemplates.technicalFootnote') }}
     </p>
 
-    <OcMailTemplateDialog v-model="dialog" :template="editing" :saving="saving" @save="saveTemplate" />
+    <OcMailTemplateDialog
+      v-model="dialog"
+      :template="editing"
+      :category-options="categoryOptions"
+      :saving="saving"
+      @save="saveTemplate"
+    />
 
     <v-dialog v-model="deleteDialog" max-width="440">
       <v-card rounded="lg">

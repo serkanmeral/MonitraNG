@@ -27,6 +27,7 @@ import {
   type OdakLineFormModel,
   type OdakLineDialogMode,
 } from '@/utils/odakSiparisLineService';
+import { remainingQuantityForLine } from '@/utils/odakSiparisShipmentService';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -91,6 +92,10 @@ const showQuantityGroup = computed(
   () => fieldVisible('quantity') || fieldVisible('unit') || fieldVisible('shippedQuantity')
 );
 
+const remainingQuantityDisplay = computed(() =>
+  remainingQuantityForLine(form as OdakLineRow, Number(form.shippedQuantity) || 0)
+);
+
 const showQualityGroup = computed(
   () =>
     fieldVisible('qualityRequirementIds') ||
@@ -106,6 +111,16 @@ const showShipmentGroup = computed(
 const showCostGroup = computed(
   () => fieldVisible('unitCost') || fieldVisible('totalCost') || fieldVisible('currency')
 );
+
+const showUnitCostWithCurrency = computed(() => fieldVisible('unitCost'));
+
+const showCurrencyOnly = computed(
+  () => !fieldVisible('unitCost') && fieldVisible('currency')
+);
+
+function isCurrencyReadonly(): boolean {
+  return isFieldReadonly('currency') && isFieldReadonly('unitCost');
+}
 
 const dialogTitle = computed(() => {
   const pkg = props.packageNo ? ` · ${props.packageNo}` : '';
@@ -413,7 +428,7 @@ watch(
             </v-card-subtitle>
             <v-card-text class="pt-0">
               <v-row dense>
-                <v-col v-if="fieldVisible('quantity')" cols="12" sm="4">
+                <v-col v-if="fieldVisible('quantity')" cols="12" sm="3">
                   <v-text-field
                     v-model.number="form.quantity"
                     :label="t('odakSiparis.lines.fields.quantity')"
@@ -424,7 +439,7 @@ watch(
                     hide-details
                   />
                 </v-col>
-                <v-col v-if="fieldVisible('unit')" cols="12" sm="4">
+                <v-col v-if="fieldVisible('unit')" cols="12" sm="3">
                   <v-select
                     v-model="form.unit"
                     :items="unitItems"
@@ -437,10 +452,20 @@ watch(
                     hide-details
                   />
                 </v-col>
-                <v-col v-if="fieldVisible('shippedQuantity')" cols="12" sm="4">
+                <v-col v-if="fieldVisible('shippedQuantity')" cols="12" sm="3">
                   <v-text-field
                     :model-value="form.shippedQuantity ?? 0"
                     :label="t('odakSiparis.lines.fields.shippedQuantity')"
+                    readonly
+                    variant="outlined"
+                    density="comfortable"
+                    hide-details
+                  />
+                </v-col>
+                <v-col v-if="fieldVisible('quantity')" cols="12" sm="3">
+                  <v-text-field
+                    :model-value="remainingQuantityDisplay"
+                    :label="t('odakSiparis.lines.fields.remainingQuantity')"
                     readonly
                     variant="outlined"
                     density="comfortable"
@@ -560,29 +585,33 @@ watch(
                 </v-card-subtitle>
                 <v-card-text class="pt-0">
                   <v-row dense>
-                    <v-col v-if="fieldVisible('unitCost')" cols="12" sm="6">
-                      <v-text-field
-                        v-model.number="form.unitCost"
-                        :label="t('odakSiparis.lines.fields.unitCost')"
-                        :readonly="isFieldReadonly('unitCost')"
-                        variant="outlined"
-                        density="comfortable"
-                        type="number"
-                        hide-details
-                      />
+                    <v-col v-if="showUnitCostWithCurrency" cols="12">
+                      <div class="d-flex flex-column flex-sm-row ga-3 align-sm-end">
+                        <v-text-field
+                          v-model.number="form.unitCost"
+                          :label="t('odakSiparis.lines.fields.unitCost')"
+                          :readonly="isFieldReadonly('unitCost')"
+                          variant="outlined"
+                          density="comfortable"
+                          type="number"
+                          hide-details
+                          class="flex-grow-1"
+                        />
+                        <v-select
+                          v-model="form.currency"
+                          :items="currencyItems"
+                          item-title="title"
+                          item-value="value"
+                          :label="t('odakSiparis.lines.fields.currency')"
+                          :readonly="isCurrencyReadonly()"
+                          variant="outlined"
+                          density="comfortable"
+                          hide-details
+                          class="unit-cost-currency-select"
+                        />
+                      </div>
                     </v-col>
-                    <v-col v-if="fieldVisible('totalCost')" cols="12" sm="6">
-                      <v-text-field
-                        v-model.number="form.totalCost"
-                        :label="t('odakSiparis.lines.fields.totalCost')"
-                        readonly
-                        variant="outlined"
-                        density="comfortable"
-                        type="number"
-                        hide-details
-                      />
-                    </v-col>
-                    <v-col v-if="fieldVisible('currency')" cols="12">
+                    <v-col v-else-if="showCurrencyOnly" cols="12" sm="4">
                       <v-select
                         v-model="form.currency"
                         :items="currencyItems"
@@ -592,6 +621,17 @@ watch(
                         :readonly="isFieldReadonly('currency')"
                         variant="outlined"
                         density="comfortable"
+                        hide-details
+                      />
+                    </v-col>
+                    <v-col v-if="fieldVisible('totalCost')" cols="12" sm="4">
+                      <v-text-field
+                        v-model.number="form.totalCost"
+                        :label="t('odakSiparis.lines.fields.totalCost')"
+                        readonly
+                        variant="outlined"
+                        density="comfortable"
+                        type="number"
                         hide-details
                       />
                     </v-col>
@@ -637,5 +677,11 @@ watch(
   font-size: 0.8125rem;
   letter-spacing: 0.02em;
   color: rgb(var(--v-theme-primary));
+}
+
+.unit-cost-currency-select {
+  flex: 0 0 auto;
+  min-width: 112px;
+  max-width: 140px;
 }
 </style>

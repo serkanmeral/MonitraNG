@@ -45,6 +45,32 @@ export function formatOdakNumber(v: unknown): string {
   return String(v);
 }
 
+const ODAK_CURRENCY_SYMBOLS: Record<string, string> = {
+  TRY: '₺',
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+};
+
+export function odakCurrencySymbol(currency: unknown): string {
+  const key = String(currency ?? 'TRY')
+    .trim()
+    .toUpperCase();
+  return ODAK_CURRENCY_SYMBOLS[key] ?? key;
+}
+
+/** Birim/toplam maliyet — satır para cinsine göre sembol + TR sayı biçimi. */
+export function formatOdakCurrencyAmount(value: unknown, currency?: unknown): string {
+  if (value == null || value === '') return '—';
+  const num = Number(value);
+  if (Number.isNaN(num)) return String(value);
+  const formatted = num.toLocaleString('tr-TR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return `${odakCurrencySymbol(currency)} ${formatted}`;
+}
+
 export function customerIdFromRow(row: OdakPackageRow | Record<string, unknown>): string {
   return resolveRelationId((row as OdakPackageRow).customerId);
 }
@@ -106,6 +132,35 @@ export function customerLabelFromRow(
   const id = resolveRelationId(raw);
   if (id && customerLabels[id]) return customerLabels[id];
   return id || '—';
+}
+
+/** Shipment list/expand — müşteri önce kayıtta, yoksa bağlı iş paketinden. */
+export function shipmentCustomerLabel(
+  shipment: Record<string, unknown>,
+  packageRow: OdakPackageRow | null | undefined,
+  customerLabels: Record<string, string>
+): string {
+  const directId = customerIdFromRow(shipment);
+  if (directId) return customerLabelFromRow(shipment, customerLabels);
+  if (packageRow) return customerLabelFromRow(packageRow, customerLabels);
+  return '—';
+}
+
+function parentPackageIdFromRow(row: Record<string, unknown>): string {
+  return resolveRelationId((row as OdakPackageRow).parentPackageId);
+}
+
+/** Shipment list table — paketId → müşteri etiketi map ile (N+1 paket fetch yok). */
+export function shipmentListCustomerLabel(
+  shipment: Record<string, unknown>,
+  customerLabels: Record<string, string>,
+  packageCustomerLabels: Record<string, string>
+): string {
+  const directId = customerIdFromRow(shipment);
+  if (directId) return customerLabelFromRow(shipment, customerLabels);
+  const pkgId = parentPackageIdFromRow(shipment);
+  if (pkgId && packageCustomerLabels[pkgId]) return packageCustomerLabels[pkgId];
+  return '—';
 }
 
 export function contactLabelFromRow(
@@ -191,7 +246,14 @@ let customerLabelCache: { map: Record<string, string>; expiresAt: number } | nul
 let customerLabelInflight: Promise<Record<string, string>> | null = null;
 let customerRelationOptionsCache: { items: { value: string; title: string }[]; expiresAt: number } | null = null;
 let packageRelationOptionsCache: { items: { value: string; title: string }[]; expiresAt: number } | null = null;
+let packageCustomerLabelCache: {
+  map: Record<string, string>;
+  customerLabelsRef: string;
+  expiresAt: number;
+} | null = null;
+let packageCustomerLabelInflight: Promise<Record<string, string>> | null = null;
 const PACKAGE_RELATION_OPTIONS_CACHE_TTL_MS = 5 * 60 * 1000;
+const PACKAGE_CUSTOMER_LABEL_CACHE_TTL_MS = 5 * 60 * 1000;
 
 async function loadCustomerLabelMap(customersOnly = false): Promise<Record<string, string>> {
   const map: Record<string, string> = {};
@@ -239,6 +301,56 @@ export async function fetchCustomerLabelMap(forceRefresh = false): Promise<Recor
 export function invalidateOdakSiparisCustomerCache(): void {
   customerLabelCache = null;
   customerRelationOptionsCache = null;
+  packageCustomerLabelCache = null;
+}
+
+/** is_paketleri listesinden packageId → müşteri unvan map (sevkiyat listesi sütunu). */
+export async function fetchPackageCustomerLabelMap(
+  customerLabels: Record<string, string>,
+  forceRefresh = false
+): Promise<Record<string, string>> {
+  const labelsKey = Object.keys(customerLabels).sort().join('|');
+  const now = Date.now();
+  if (
+    !forceRefresh &&
+    packageCustomerLabelCache &&
+    packageCustomerLabelCache.expiresAt > now &&
+    packageCustomerLabelCache.customerLabelsRef === labelsKey
+  ) {
+    return packageCustomerLabelCache.map;
+  }
+  if (!forceRefresh && packageCustomerLabelInflight) {
+    return packageCustomerLabelInflight;
+  }
+
+  packageCustomerLabelInflight = (async () => {
+    const map: Record<string, string> = {};
+    try {
+      const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.packagesDataset, {
+        limit: 5000,
+      });
+      for (const row of resp.items ?? []) {
+        const pkgId = packageDataId(row as Record<string, unknown>);
+        const cid = customerIdFromRow(row as OdakPackageRow);
+        if (!pkgId || !cid) continue;
+        map[pkgId] = customerLabels[cid] ?? cid;
+      }
+    } catch {
+      // Liste yine gosterilir
+    }
+    packageCustomerLabelCache = {
+      map,
+      customerLabelsRef: labelsKey,
+      expiresAt: Date.now() + PACKAGE_CUSTOMER_LABEL_CACHE_TTL_MS,
+    };
+    return map;
+  })();
+
+  try {
+    return await packageCustomerLabelInflight;
+  } finally {
+    packageCustomerLabelInflight = null;
+  }
 }
 
 export function invalidateOdakSiparisPackageRelationCache(): void {
@@ -305,11 +417,12 @@ export async function fetchPackageRelationOptions(
 export async function fetchPackageIdsByCustomerId(customerId: string): Promise<string[]> {
   const id = customerId.trim();
   if (!id) return [];
+  // DG relation filter is unreliable — scan packages client-side (see DgMigrationCommon.ps1).
   const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.packagesDataset, {
-    filter: `customerId:eq:${id}`,
     limit: 5000,
   });
   return ((resp.items ?? []) as OdakPackageRow[])
+    .filter((row) => customerIdFromRow(row) === id)
     .map((row) => packageDataId(row))
     .filter(Boolean);
 }
