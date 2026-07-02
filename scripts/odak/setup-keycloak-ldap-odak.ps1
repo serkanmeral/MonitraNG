@@ -170,8 +170,8 @@ def create_ldap_provider():
         "config": {
             "enabled": ["true"],
             "priority": ["0"],
-            "fullSyncPeriod": ["-1"],
-            "changedSyncPeriod": ["-1"],
+            "fullSyncPeriod": ["86400"],
+            "changedSyncPeriod": ["3600"],
             "cachePolicy": ["DEFAULT"],
             "evictionDay": [],
             "evictionHour": [],
@@ -247,7 +247,7 @@ def create_default_mappers(pid):
             "ldap.attribute": ["mail"],
             "user.model.attribute": ["email"],
             "read.only": ["true"],
-            "always.read.value.from.ldap": ["false"],
+            "always.read.value.from.ldap": ["true"],
             "is.mandatory.in.ldap": ["false"],
         }),
         ("first name", "user-attribute-ldap-mapper", {

@@ -21,9 +21,12 @@ internal static class SecEventDashboardAggregator
         return (from, to, hourStarts);
     }
 
+    /// <summary>Dashboard window uses ingestedAt so panel reflects arrivals even when @timestamp is ahead (NxLog local-time skew).</summary>
+    public const string DashboardTimeField = "ingestedAt";
+
     public static BsonDocument[] BuildPipeline(DateTime from, DateTime to, bool excludeUnknown)
     {
-        var match = new BsonDocument("@timestamp", new BsonDocument
+        var match = new BsonDocument(DashboardTimeField, new BsonDocument
         {
             { "$gte", new BsonDateTime(from) },
             { "$lte", new BsonDateTime(to) },
@@ -74,7 +77,7 @@ internal static class SecEventDashboardAggregator
                             {
                                 "_id", new BsonDocument("$dateTrunc", new BsonDocument
                                 {
-                                    { "date", "$@timestamp" },
+                                    { "date", $"${DashboardTimeField}" },
                                     { "unit", "hour" },
                                     { "timezone", "UTC" },
                                 })

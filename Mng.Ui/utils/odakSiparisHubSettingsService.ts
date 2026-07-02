@@ -30,7 +30,8 @@ import {
   mergeOdakShipmentListConfig,
   type OdakShipmentListConfig,
 } from '@/utils/odakSiparisShipmentListSettings';
-import { ocCreate, ocListDataset, ocUpdate } from '@/services/operationCoreService';
+import { ocCreate, ocListDataset, ocUpdate, parseSingleDgRecordId } from '@/services/operationCoreService';
+import { dgExtractMessage } from '@/utils/dgErrorUtils';
 
 export type OdakHubSettingsScope =
   | 'packages_list'
@@ -69,16 +70,75 @@ function parseConfigJson<T>(json: unknown): T | null {
   }
 }
 
+function mapHubRow(scope: OdakHubSettingsScope, row: Record<string, unknown>): OdakHubSettingsRow {
+  return {
+    __dataId: hubDataId(row),
+    scope,
+    configJson: String(row.configJson ?? row.ConfigJson ?? '{}'),
+  };
+}
+
+function isDuplicateScopeError(error: unknown): boolean {
+  const msg = dgExtractMessage(error, '').toLowerCase();
+  return (
+    msg.includes('benzersiz') ||
+    msg.includes('unique') ||
+    msg.includes('duplicate') ||
+    msg.includes('already in use') ||
+    msg.includes('zaten kullan')
+  );
+}
+
 async function loadHubRow(scope: OdakHubSettingsScope): Promise<OdakHubSettingsRow | null> {
-  const filter = encodeURIComponent(`scope:eq:${scope}`);
+  // buildQuery URLSearchParams zaten encode eder — burada encodeURIComponent kullanma (cift encode filtreyi bozar).
+  const filter = `scope:eq:${scope}`;
   const rows = await ocListDataset(ODAK_SIPARIS_CONFIG.hubSettingsDataset, { filter, limit: 1 });
   const first = rows[0] as Record<string, unknown> | undefined;
-  if (!first) return null;
-  return {
-    __dataId: hubDataId(first),
-    scope,
-    configJson: String(first.configJson ?? first.ConfigJson ?? '{}'),
-  };
+  if (first) return mapHubRow(scope, first);
+
+  // Fallback: kucuk dataset — scope ile client-side eslestir
+  const allRows = await ocListDataset(ODAK_SIPARIS_CONFIG.hubSettingsDataset, { limit: 50 });
+  const match = allRows.find((row) => String((row as Record<string, unknown>).scope ?? '') === scope) as
+    | Record<string, unknown>
+    | undefined;
+  return match ? mapHubRow(scope, match) : null;
+}
+
+/** Upsert hub row by scope — avoids duplicate create when rowId was lost after tab remount. */
+async function saveHubRow(
+  scope: OdakHubSettingsScope,
+  configJson: string,
+  rowId: string | null
+): Promise<string> {
+  const body = { scope, configJson };
+  const normalizedRowId = rowId?.trim() || null;
+
+  if (normalizedRowId) {
+    await ocUpdate(ODAK_SIPARIS_CONFIG.hubSettingsDataset, normalizedRowId, body);
+    return normalizedRowId;
+  }
+
+  const existing = await loadHubRow(scope);
+  if (existing?.__dataId) {
+    await ocUpdate(ODAK_SIPARIS_CONFIG.hubSettingsDataset, existing.__dataId, body);
+    return existing.__dataId;
+  }
+
+  try {
+    const created = await ocCreate(ODAK_SIPARIS_CONFIG.hubSettingsDataset, body);
+    const createdId = parseSingleDgRecordId(created);
+    if (createdId) return createdId;
+  } catch (error: unknown) {
+    if (!isDuplicateScopeError(error)) throw error;
+  }
+
+  const reloaded = await loadHubRow(scope);
+  if (reloaded?.__dataId) {
+    await ocUpdate(ODAK_SIPARIS_CONFIG.hubSettingsDataset, reloaded.__dataId, body);
+    return reloaded.__dataId;
+  }
+
+  throw new Error(`Hub ayar kaydi kaydedilemedi (scope=${scope})`);
 }
 
 const LIST_SCOPE_MERGE: Record<
@@ -107,16 +167,7 @@ export async function saveOdakHubListConfig(
   config: OdakHubListConfig,
   rowId: string | null
 ): Promise<string> {
-  const body = {
-    scope,
-    configJson: JSON.stringify({ listConfig: config }),
-  };
-  if (rowId) {
-    await ocUpdate(ODAK_SIPARIS_CONFIG.hubSettingsDataset, rowId, body);
-    return rowId;
-  }
-  const created = (await ocCreate(ODAK_SIPARIS_CONFIG.hubSettingsDataset, body)) as Record<string, unknown>;
-  return hubDataId(created);
+  return saveHubRow(scope, JSON.stringify({ listConfig: config }), rowId);
 }
 
 export async function loadOdakPackageListConfig(): Promise<{
@@ -190,16 +241,7 @@ export async function saveOdakHubFieldPoliciesBlob(
   blob: OdakFieldPoliciesBlob,
   rowId: string | null
 ): Promise<string> {
-  const body = {
-    scope,
-    configJson: JSON.stringify({ fieldPolicies: blob }),
-  };
-  if (rowId) {
-    await ocUpdate(ODAK_SIPARIS_CONFIG.hubSettingsDataset, rowId, body);
-    return rowId;
-  }
-  const created = (await ocCreate(ODAK_SIPARIS_CONFIG.hubSettingsDataset, body)) as Record<string, unknown>;
-  return hubDataId(created);
+  return saveHubRow(scope, JSON.stringify({ fieldPolicies: blob }), rowId);
 }
 
 export async function loadOdakFieldPoliciesBlob(): Promise<{
@@ -244,32 +286,14 @@ export async function saveOdakShipmentFieldPoliciesBlob(
   return saveOdakHubFieldPoliciesBlob('shipments_field_policies', blob, rowId);
 }
 
-const fieldPoliciesOnlyCache = new Map<
-  OdakHubFieldPoliciesScope,
-  { blob: OdakFieldPoliciesBlob; at: number }
->();
-
 export async function loadOdakHubFieldPoliciesOnly(
   scope: OdakHubFieldPoliciesScope,
   force = false
 ): Promise<OdakFieldPoliciesBlob> {
-  const now = Date.now();
-  if (!force) {
-    const cached = fieldPoliciesOnlyCache.get(scope);
-    if (cached && now - cached.at < RUNTIME_CACHE_MS) {
-      return cached.blob;
-    }
-    if (scope === 'field_policies' && runtimeCache && now - runtimeCacheAt < RUNTIME_CACHE_MS) {
-      return runtimeCache.fieldPolicies;
-    }
-  }
-  const resp = await loadOdakHubFieldPoliciesBlob(scope);
-  fieldPoliciesOnlyCache.set(scope, { blob: resp.blob, at: now });
-  if (scope === 'field_policies' && runtimeCache) {
-    runtimeCache = { ...runtimeCache, fieldPolicies: resp.blob };
-    runtimeCacheAt = now;
-  }
-  return resp.blob;
+  const { useOdakSiparisHubSettingsStore } = await import('@/stores/apps/odakSiparisHubSettings');
+  const store = useOdakSiparisHubSettingsStore();
+  await store.ensureReady(force);
+  return store.fieldPoliciesBlob(scope);
 }
 
 export async function loadOdakLineFieldPoliciesOnly(force = false) {
@@ -285,69 +309,50 @@ export interface OdakPackageHubRuntimeSettings {
   fieldPolicies: OdakFieldPoliciesBlob;
 }
 
-let runtimeCache: OdakPackageHubRuntimeSettings | null = null;
-let runtimeCacheAt = 0;
-const listConfigOnlyCache = new Map<OdakHubListSettingsScope, { config: OdakHubListConfig; at: number }>();
-let poDocumentAccessCache: { config: OdakPackagePoDocumentAccessConfig; at: number } | null = null;
-let personnelCache: { config: OdakPackagePersonnelConfig; at: number } | null = null;
-const RUNTIME_CACHE_MS = 30_000;
-
 export async function loadOdakPackageHubRuntimeSettings(
   force = false
 ): Promise<OdakPackageHubRuntimeSettings> {
-  const now = Date.now();
-  if (!force && runtimeCache && now - runtimeCacheAt < RUNTIME_CACHE_MS) {
-    return runtimeCache;
-  }
-  const [list, fields] = await Promise.all([
-    loadOdakPackageListConfig(),
-    loadOdakHubFieldPoliciesBlob('field_policies'),
-  ]);
-  runtimeCache = {
-    listConfig: list.config,
-    fieldPolicies: fields.blob,
+  const { useOdakSiparisHubSettingsStore } = await import('@/stores/apps/odakSiparisHubSettings');
+  const store = useOdakSiparisHubSettingsStore();
+  await store.ensureReady(force);
+  return {
+    listConfig: store.packageListConfig,
+    fieldPolicies: store.packageFieldPolicies,
   };
-  runtimeCacheAt = now;
-  listConfigOnlyCache.set('packages_list', { config: list.config, at: now });
-  return runtimeCache;
 }
 
+/** @deprecated Use hub settings store invalidate(); kept for compatibility. */
 export function invalidateOdakPackageHubSettingsCache(): void {
-  runtimeCache = null;
-  runtimeCacheAt = 0;
-  listConfigOnlyCache.clear();
-  fieldPoliciesOnlyCache.clear();
-  poDocumentAccessCache = null;
-  personnelCache = null;
+  void import('@/stores/apps/odakSiparisHubSettings').then(({ useOdakSiparisHubSettingsStore }) => {
+    useOdakSiparisHubSettingsStore().invalidate();
+  });
 }
 
-export async function loadOdakPackageListConfigOnly(): Promise<OdakPackageListConfig> {
-  const settings = await loadOdakPackageHubRuntimeSettings();
-  return settings.listConfig;
+/** @deprecated Use hub settings store ensureReady(force). */
+export function clearOdakPackageHubSettingsMemoryCache(): void {
+  invalidateOdakPackageHubSettingsCache();
+}
+
+/** @deprecated Store handles freshness; no-op. */
+export function consumeOdakHubSettingsDirtyFlag(): boolean {
+  return false;
+}
+
+export async function loadOdakPackageListConfigOnly(force = false): Promise<OdakPackageListConfig> {
+  const { useOdakSiparisHubSettingsStore } = await import('@/stores/apps/odakSiparisHubSettings');
+  const store = useOdakSiparisHubSettingsStore();
+  await store.ensureReady(force);
+  return store.packageListConfig;
 }
 
 export async function loadOdakHubListConfigOnly(
   scope: OdakHubListSettingsScope,
   force = false
 ): Promise<OdakHubListConfig> {
-  const now = Date.now();
-  if (!force) {
-    const cached = listConfigOnlyCache.get(scope);
-    if (cached && now - cached.at < RUNTIME_CACHE_MS) {
-      return cached.config;
-    }
-    if (scope === 'packages_list' && runtimeCache && now - runtimeCacheAt < RUNTIME_CACHE_MS) {
-      return runtimeCache.listConfig;
-    }
-  }
-
-  const resp = await loadOdakHubListConfig(scope);
-  listConfigOnlyCache.set(scope, { config: resp.config, at: now });
-  if (scope === 'packages_list' && runtimeCache) {
-    runtimeCache = { ...runtimeCache, listConfig: resp.config as OdakPackageListConfig };
-    runtimeCacheAt = now;
-  }
-  return resp.config;
+  const { useOdakSiparisHubSettingsStore } = await import('@/stores/apps/odakSiparisHubSettings');
+  const store = useOdakSiparisHubSettingsStore();
+  await store.ensureReady(force);
+  return store.listConfig(scope);
 }
 
 export async function loadOdakLineListConfigOnly(force = false) {
@@ -393,28 +398,20 @@ export async function saveOdakPackagePoDocumentAccessConfig(
   config: OdakPackagePoDocumentAccessConfig,
   rowId: string | null
 ): Promise<string> {
-  const body = {
-    scope: 'package_po_document_access' as const,
-    configJson: JSON.stringify({ poDocumentAccess: config }),
-  };
-  if (rowId) {
-    await ocUpdate(ODAK_SIPARIS_CONFIG.hubSettingsDataset, rowId, body);
-    return rowId;
-  }
-  const created = (await ocCreate(ODAK_SIPARIS_CONFIG.hubSettingsDataset, body)) as Record<string, unknown>;
-  return hubDataId(created);
+  return saveHubRow(
+    'package_po_document_access',
+    JSON.stringify({ poDocumentAccess: config }),
+    rowId
+  );
 }
 
 export async function loadOdakPackagePoDocumentAccessOnly(
   force = false
 ): Promise<OdakPackagePoDocumentAccessConfig> {
-  const now = Date.now();
-  if (!force && poDocumentAccessCache && now - poDocumentAccessCache.at < RUNTIME_CACHE_MS) {
-    return poDocumentAccessCache.config;
-  }
-  const resp = await loadOdakPackagePoDocumentAccessConfig();
-  poDocumentAccessCache = { config: resp.config, at: now };
-  return resp.config;
+  const { useOdakSiparisHubSettingsStore } = await import('@/stores/apps/odakSiparisHubSettings');
+  const store = useOdakSiparisHubSettingsStore();
+  await store.ensureReady(force);
+  return store.poDocumentAccessConfig;
 }
 
 export async function loadOdakPackagePersonnelConfig(): Promise<{
@@ -433,24 +430,16 @@ export async function saveOdakPackagePersonnelConfig(
   config: OdakPackagePersonnelConfig,
   rowId: string | null
 ): Promise<string> {
-  const body = {
-    scope: 'package_odak_personnel' as const,
-    configJson: JSON.stringify({ packagePersonnel: config }),
-  };
-  if (rowId) {
-    await ocUpdate(ODAK_SIPARIS_CONFIG.hubSettingsDataset, rowId, body);
-    return rowId;
-  }
-  const created = (await ocCreate(ODAK_SIPARIS_CONFIG.hubSettingsDataset, body)) as Record<string, unknown>;
-  return hubDataId(created);
+  return saveHubRow(
+    'package_odak_personnel',
+    JSON.stringify({ packagePersonnel: config }),
+    rowId
+  );
 }
 
 export async function loadOdakPackagePersonnelOnly(force = false): Promise<OdakPackagePersonnelConfig> {
-  const now = Date.now();
-  if (!force && personnelCache && now - personnelCache.at < RUNTIME_CACHE_MS) {
-    return personnelCache.config;
-  }
-  const resp = await loadOdakPackagePersonnelConfig();
-  personnelCache = { config: resp.config, at: now };
-  return resp.config;
+  const { useOdakSiparisHubSettingsStore } = await import('@/stores/apps/odakSiparisHubSettings');
+  const store = useOdakSiparisHubSettingsStore();
+  await store.ensureReady(force);
+  return store.personnelConfig;
 }

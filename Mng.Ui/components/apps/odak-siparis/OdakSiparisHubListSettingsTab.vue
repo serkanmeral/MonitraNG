@@ -1,33 +1,42 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { computed, ref } from 'vue';
+import { storeToRefs } from 'pinia';
 import { VueDraggableNext } from 'vue-draggable-next';
 import OdakSiparisListColumnFormatDialog from '@/components/apps/odak-siparis/OdakSiparisListColumnFormatDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
+import { useOdakSiparisHubSettingsStore } from '@/stores/apps/odakSiparisHubSettings';
 import { isActiveListColumnFormat, type AfListColumnFormat } from '@/utils/afListColumnFormat';
 import type { OdakHubListColumnConfig, OdakHubListConfig } from '@/utils/odakSiparisHubListConfig';
+import type { OdakHubListSettingsScope } from '@/utils/odakSiparisHubSettingsService';
 import { odakPackageSettingsFormatTypeLabelTr } from '@/utils/odakSiparisSettingsLabels';
-import { invalidateOdakPackageHubSettingsCache } from '@/utils/odakSiparisHubSettingsService';
 
 const props = defineProps({
   scope: { type: String, required: true },
   hintKey: { type: String, required: true },
   fieldLabel: { type: Function, required: true },
-  defaultConfig: { type: Function, required: true },
-  mergeConfig: { type: Function, required: true },
-  loadConfig: { type: Function, required: true },
-  saveConfig: { type: Function, required: true },
 });
 
 const { t } = useAppI18n();
 const panelError = usePanelErrorNotify('errors.dg.generic');
+const hubStore = useOdakSiparisHubSettingsStore();
+const { bootstrapStatus } = storeToRefs(hubStore);
 
-const loading = ref(true);
-const saving = ref(false);
+const hubScope = computed(() => props.scope as OdakHubListSettingsScope);
 const errorMessage = ref('');
 const successMessage = ref('');
-const rowId = ref<string | null>(null);
-const listConfig = ref<OdakHubListConfig>((props.defaultConfig as () => OdakHubListConfig)());
+
+const listConfig = computed(
+  () => hubStore.scopes[hubScope.value].config as OdakHubListConfig
+);
+
+const loading = computed(
+  () => bootstrapStatus.value === 'loading' || !hubStore.scopeReady(hubScope.value)
+);
+const saving = computed(() => hubStore.scopeSaving(hubScope.value));
+const canSave = computed(() => hubStore.canSaveScope(hubScope.value));
+const canEdit = computed(() => hubStore.canEditScope(hubScope.value));
+
 const formatDialogOpen = ref(false);
 const formatColumn = ref<OdakHubListColumnConfig | null>(null);
 
@@ -73,46 +82,22 @@ function reorderColumns() {
   });
 }
 
-async function load() {
-  loading.value = true;
-  errorMessage.value = '';
-  successMessage.value = '';
-  try {
-    const resp = await (props.loadConfig as () => Promise<{ config: OdakHubListConfig; rowId: string | null }>)();
-    listConfig.value = (props.mergeConfig as (saved: unknown) => OdakHubListConfig)({ listConfig: resp.config });
-    rowId.value = resp.rowId;
-  } catch (e: unknown) {
-    errorMessage.value = panelError(e, 'errors.dg.generic');
-    listConfig.value = (props.defaultConfig as () => OdakHubListConfig)();
-  } finally {
-    loading.value = false;
-  }
-}
-
 async function save() {
+  if (!canSave.value) return;
   reorderColumns();
-  saving.value = true;
   errorMessage.value = '';
   successMessage.value = '';
   try {
-    rowId.value = await (props.saveConfig as (config: OdakHubListConfig, rowId: string | null) => Promise<string>)(
-      listConfig.value,
-      rowId.value
-    );
-    invalidateOdakPackageHubSettingsCache();
+    await hubStore.saveScope(hubScope.value);
     successMessage.value = t('odakSiparis.packages.settings.saved');
   } catch (e: unknown) {
     errorMessage.value = panelError(e, 'errors.dg.generic');
-  } finally {
-    saving.value = false;
   }
 }
 
 function resetDefaults() {
-  listConfig.value = (props.defaultConfig as () => OdakHubListConfig)();
+  hubStore.resetListScopeToDefaults(hubScope.value);
 }
-
-onMounted(() => void load());
 </script>
 
 <template>
@@ -149,16 +134,18 @@ onMounted(() => void load());
             variant="tonal"
             size="small"
             :color="isActiveListColumnFormat(element.format) ? 'primary' : undefined"
+            :disabled="!canEdit"
             @click="openFormatDialog(element)"
           >
             <v-icon start size="18">mdi-format-paint</v-icon>
             {{ t('odakSiparis.packages.settings.listColumns.editFormat') }}
           </v-btn>
-          <v-switch v-model="element.visible" :label="t('odakSiparis.packages.settings.listColumns.visible')" hide-details density="compact" color="primary" />
-          <v-switch v-model="element.sortable" :label="t('odakSiparis.packages.settings.listColumns.sortable')" hide-details density="compact" />
+          <v-switch v-model="element.visible" :disabled="!canEdit" :label="t('odakSiparis.packages.settings.listColumns.visible')" hide-details density="compact" color="primary" />
+          <v-switch v-model="element.sortable" :disabled="!canEdit" :label="t('odakSiparis.packages.settings.listColumns.sortable')" hide-details density="compact" />
           <v-switch
             v-if="scope === 'packages_list'"
             v-model="element.filterable"
+            :disabled="!canEdit"
             :label="t('odakSiparis.packages.settings.listColumns.filterable')"
             hide-details
             density="compact"
@@ -186,9 +173,9 @@ onMounted(() => void load());
     />
 
     <div class="d-flex ga-2 mt-4">
-      <v-btn variant="tonal" @click="resetDefaults">{{ t('odakSiparis.packages.settings.listColumns.reset') }}</v-btn>
+      <v-btn variant="tonal" :disabled="!canEdit" @click="resetDefaults">{{ t('odakSiparis.packages.settings.listColumns.reset') }}</v-btn>
       <v-spacer />
-      <v-btn color="primary" variant="flat" :loading="saving" @click="save">{{ t('odakSiparis.packages.settings.save') }}</v-btn>
+      <v-btn color="primary" variant="flat" :loading="saving" :disabled="!canSave" @click="save">{{ t('odakSiparis.packages.settings.save') }}</v-btn>
     </div>
   </div>
 </template>

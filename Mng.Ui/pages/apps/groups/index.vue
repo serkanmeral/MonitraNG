@@ -7,7 +7,7 @@ import { useGroupStore } from '@/stores/apps/group';
 import { useAuthStore } from '@/stores/auth';
 import {
   canDeleteGroup,
-  canEditGroup,
+  canOpenGroupEditPage,
   groupProvisioningSourceLabelKey,
 } from '@/utils/groupFieldPolicy';
 import { provisioningSourceChipColor } from '@/utils/provisioningSourceUi';
@@ -54,6 +54,7 @@ const showDeleteDialog = ref(false);
 const groupToDelete = ref<string | null>(null);
 const deleteError = ref('');
 const statusFilter = ref<string>('all'); // all, active, inactive
+const applicationScopeFilter = ref<string>('all'); // all, inApp, hidden
 const isExporting = ref(false);
 const exportError = ref('');
 
@@ -89,6 +90,7 @@ const fetchGroups = async (options?: any) => {
     pageSize?: number;
     search?: string;
     isActive?: boolean;
+    includeInApplication?: boolean;
   } = {
     page: currentOptions.page || 1,
     pageSize: currentOptions.itemsPerPage || 10,
@@ -104,6 +106,12 @@ const fetchGroups = async (options?: any) => {
     params.isActive = true;
   } else if (statusFilter.value === 'inactive') {
     params.isActive = false;
+  }
+
+  if (applicationScopeFilter.value === 'inApp') {
+    params.includeInApplication = true;
+  } else if (applicationScopeFilter.value === 'hidden') {
+    params.includeInApplication = false;
   }
   
   // Fetch groups with new parameters
@@ -131,7 +139,7 @@ watch(
 
 // Watch for search and status filter changes
 let searchTimeout: ReturnType<typeof setTimeout> | null = null;
-watch([search, statusFilter], () => {
+watch([search, statusFilter, applicationScopeFilter], () => {
   // Reset to first page when filter changes
   if (tableOptions.value.page !== 1) {
     tableOptions.value.page = 1;
@@ -288,7 +296,7 @@ const formatDate = (date: string | Date | null | undefined) => {
             variant="outlined"
             density="compact"
             hide-details
-            style="max-width: 300px;"
+            style="min-width: 280px; max-width: 420px; flex: 1 1 280px;"
             clearable
           />
           
@@ -303,7 +311,21 @@ const formatDate = (date: string | Date | null | undefined) => {
             variant="outlined"
             density="compact"
             hide-details
-            style="max-width: 150px;"
+            style="min-width: 140px; max-width: 160px;"
+          />
+
+          <v-select
+            v-model="applicationScopeFilter"
+            :items="[
+              { title: t('groups.applicationScope.filterAll'), value: 'all' },
+              { title: t('groups.applicationScope.inApp'), value: 'inApp' },
+              { title: t('groups.applicationScope.hidden'), value: 'hidden' },
+            ]"
+            :label="t('groups.applicationScope.filterLabel')"
+            variant="outlined"
+            density="compact"
+            hide-details
+            style="min-width: 160px; max-width: 200px;"
           />
         </div>
         
@@ -460,7 +482,7 @@ const formatDate = (date: string | Date | null | undefined) => {
               <v-tooltip activator="parent" location="top">{{ t('groups.table.view') }}</v-tooltip>
             </v-btn>
             <v-btn
-              v-if="canEditGroup(item)"
+              v-if="canOpenGroupEditPage(item)"
               icon
               size="small"
               variant="text"

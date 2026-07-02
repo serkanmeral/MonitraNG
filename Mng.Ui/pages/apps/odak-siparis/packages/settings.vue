@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import { storeToRefs } from 'pinia';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import OdakSiparisPackageSettingsListColumnsTab from '@/components/apps/odak-siparis/OdakSiparisPackageSettingsListColumnsTab.vue';
 import OdakSiparisPackageSettingsFieldPoliciesTab from '@/components/apps/odak-siparis/OdakSiparisPackageSettingsFieldPoliciesTab.vue';
@@ -7,6 +8,11 @@ import OdakSiparisPackageSettingsNotificationsTab from '@/components/apps/odak-s
 import OdakSiparisPackageSettingsPoDocumentAccessTab from '@/components/apps/odak-siparis/OdakSiparisPackageSettingsPoDocumentAccessTab.vue';
 import OdakSiparisPackageSettingsPersonnelTab from '@/components/apps/odak-siparis/OdakSiparisPackageSettingsPersonnelTab.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
+import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
+import {
+  ODAK_HUB_SETTINGS_SCOPES,
+  useOdakSiparisHubSettingsStore,
+} from '@/stores/apps/odakSiparisHubSettings';
 
 definePageMeta({
   layout: 'default',
@@ -14,7 +20,12 @@ definePageMeta({
 });
 
 const { t } = useAppI18n();
+const panelError = usePanelErrorNotify('errors.dg.generic');
+const hubStore = useOdakSiparisHubSettingsStore();
+const { bootstrapStatus, bootstrapError } = storeToRefs(hubStore);
+
 const activeTab = ref('listColumns');
+const loadError = ref('');
 
 const page = { title: t('odakSiparis.packages.settings.title') };
 const breadcrumbs = [
@@ -31,6 +42,29 @@ const tabs = [
   { value: 'poDocumentAccess', label: t('odakSiparis.packages.settings.tabs.poDocumentAccess') },
   { value: 'fieldPolicies', label: t('odakSiparis.packages.settings.tabs.fieldPolicies') },
 ];
+
+const isLoading = computed(() => bootstrapStatus.value === 'loading');
+
+onMounted(async () => {
+  loadError.value = '';
+  try {
+    await hubStore.bootstrap(true);
+  } catch (e: unknown) {
+    loadError.value = panelError(e, 'errors.dg.generic');
+  }
+});
+
+onBeforeRouteLeave((_to, _from, next) => {
+  const dirtyScopes = ODAK_HUB_SETTINGS_SCOPES.filter((scope) => hubStore.isScopeDirty(scope));
+  if (!dirtyScopes.length) {
+    next();
+    return;
+  }
+  const ok = window.confirm(
+    'Kaydedilmemis hub ayar degisiklikleri var. Sayfadan ayrilmak istediginize emin misiniz?'
+  );
+  next(ok);
+});
 </script>
 
 <template>
@@ -51,7 +85,18 @@ const tabs = [
       </v-tabs>
 
       <v-card-text class="pa-4 pa-md-6">
-        <v-window v-model="activeTab">
+        <v-alert
+          v-if="loadError || bootstrapError"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          {{ loadError || bootstrapError }}
+        </v-alert>
+        <v-progress-linear v-if="isLoading" indeterminate color="primary" class="mb-4" />
+
+        <v-window v-model="activeTab" eager>
           <v-window-item value="listColumns">
             <OdakSiparisPackageSettingsListColumnsTab />
           </v-window-item>

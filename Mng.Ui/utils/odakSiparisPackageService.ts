@@ -1,4 +1,4 @@
-import { ocCreate, ocUpdate } from '@/services/operationCoreService';
+import { ocCreate, ocUpdate, parseSingleDgRecord, parseSingleDgRecordId } from '@/services/operationCoreService';
 import { useAuthStore } from '@/stores/auth';
 import { ODAK_SIPARIS_CONFIG, type OdakPackageRow } from '@/utils/odakSiparisConfig';
 import {
@@ -104,6 +104,11 @@ export function formModelToPackagePayload(form: OdakPackageFormModel): Record<st
   };
 }
 
+/** Hub-native packages — DG schema maxLength 32, unique legacy key. */
+export function generateNewLegacyPackageId(): string {
+  return crypto.randomUUID().replace(/-/g, '');
+}
+
 export async function loadPackageFormContext(): Promise<{ value: string; title: string }[]> {
   return fetchCustomerRelationOptions();
 }
@@ -118,15 +123,25 @@ export async function loadPackageForEdit(packageId: string): Promise<OdakPackage
 }
 
 export async function createOdakPackage(form: OdakPackageFormModel): Promise<string | null> {
-  const body = formModelToPackagePayload(form);
+  const body = {
+    ...formModelToPackagePayload(form),
+    legacyPackageId: generateNewLegacyPackageId(),
+    lineCount: 0,
+  };
   const created = await ocCreate(ODAK_SIPARIS_CONFIG.packagesDataset, body);
-  const o = created as Record<string, unknown>;
-  const id = packageDataId(o) || null;
-  if (id) {
-    void dispatchOdakPackageNotification('PackageCreated', o as OdakPackageRow, {
-      actorPersonId: useAuthStore().userInfo?.mng_person_id ?? null,
-    });
-  }
+  const record = parseSingleDgRecord(created) ?? (created as Record<string, unknown>);
+  const id = parseSingleDgRecordId(created) || packageDataId(record) || null;
+
+  const pkgForNotification = {
+    ...body,
+    ...record,
+    __dataId: id ?? record.__dataId ?? record.dataId,
+  } as OdakPackageRow;
+
+  void dispatchOdakPackageNotification('PackageCreated', pkgForNotification, {
+    actorPersonId: useAuthStore().userInfo?.mng_person_id ?? null,
+  });
+
   return id;
 }
 

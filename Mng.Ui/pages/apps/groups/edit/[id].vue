@@ -243,13 +243,13 @@ const onSubmit = async (values: any) => {
               {{ t('groups.edit.cancel') }}
             </v-btn>
             <v-btn
-              v-if="canEdit"
+              v-if="canEdit || canChangeApplicationScope"
               color="primary"
               variant="flat"
               type="submit"
               :loading="loading"
             >
-              {{ t('groups.edit.save') }}
+              {{ isDirectory ? t('groups.applicationScope.saveScope') : t('groups.edit.save') }}
             </v-btn>
           </div>
         </v-form>

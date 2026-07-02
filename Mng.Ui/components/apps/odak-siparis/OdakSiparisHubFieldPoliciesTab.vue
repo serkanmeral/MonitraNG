@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
+import { storeToRefs } from 'pinia';
 import OdakSiparisFieldPolicyDialog from '@/components/apps/odak-siparis/OdakSiparisFieldPolicyDialog.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
+import { useOdakSiparisHubSettingsStore } from '@/stores/apps/odakSiparisHubSettings';
 import {
-  emptyOdakFieldPoliciesBlob,
   policiesForOdakField,
   setPoliciesForOdakField,
   type OdakFieldPolicy,
@@ -12,7 +13,6 @@ import {
   type OdakFieldPoliciesBlob,
 } from '@/utils/odakSiparisFieldPolicies';
 import type { OdakHubFieldPoliciesScope } from '@/utils/odakSiparisHubSettingsService';
-import { invalidateOdakPackageHubSettingsCache } from '@/utils/odakSiparisHubSettingsService';
 
 const props = defineProps({
   scope: { type: String, required: true },
@@ -22,19 +22,26 @@ const props = defineProps({
   conditionFieldKeys: { type: Array as () => string[], required: true },
   defaultConditionField: { type: String, default: 'status' },
   enumFieldOptions: { type: Object as () => Record<string, { value: string; title: string }[]>, default: () => ({}) },
-  loadPolicies: { type: Function, required: true },
-  savePolicies: { type: Function, required: true },
 });
 
 const { t } = useAppI18n();
 const panelError = usePanelErrorNotify('errors.dg.generic');
+const hubStore = useOdakSiparisHubSettingsStore();
+const { bootstrapStatus } = storeToRefs(hubStore);
 
-const loading = ref(true);
-const saving = ref(false);
+const hubScope = computed(() => props.scope as OdakHubFieldPoliciesScope);
 const errorMessage = ref('');
 const successMessage = ref('');
-const rowId = ref<string | null>(null);
-const blob = ref<OdakFieldPoliciesBlob>(emptyOdakFieldPoliciesBlob());
+
+const blob = computed(() => hubStore.scopes[hubScope.value].config as OdakFieldPoliciesBlob);
+
+const loading = computed(
+  () => bootstrapStatus.value === 'loading' || !hubStore.scopeReady(hubScope.value)
+);
+const saving = computed(() => hubStore.scopeSaving(hubScope.value));
+const canSave = computed(() => hubStore.canSaveScope(hubScope.value));
+const canEdit = computed(() => hubStore.canEditScope(hubScope.value));
+
 const selectedField = ref<string>(props.fieldKeys[0] ?? '');
 const dialogOpen = ref(false);
 const dialogKind = ref<OdakFieldPolicyKind>('visibility');
@@ -82,7 +89,7 @@ function openEdit(policy: OdakFieldPolicy) {
 
 function removePolicy(policy: OdakFieldPolicy) {
   const list = policiesForOdakField(blob.value, selectedField.value).filter((p) => p.id !== policy.id);
-  blob.value = setPoliciesForOdakField(blob.value, selectedField.value, list);
+  hubStore.setFieldPoliciesBlob(hubScope.value, setPoliciesForOdakField(blob.value, selectedField.value, list));
 }
 
 function onPolicySave(policy: OdakFieldPolicy) {
@@ -90,48 +97,20 @@ function onPolicySave(policy: OdakFieldPolicy) {
   const idx = list.findIndex((p) => p.id === policy.id);
   if (idx >= 0) list[idx] = policy;
   else list.push(policy);
-  blob.value = setPoliciesForOdakField(blob.value, selectedField.value, list);
-}
-
-async function load() {
-  loading.value = true;
-  errorMessage.value = '';
-  try {
-    const resp = await (
-      props.loadPolicies as () => Promise<{ blob: OdakFieldPoliciesBlob; rowId: string | null }>
-    )();
-    blob.value = resp.blob;
-    rowId.value = resp.rowId;
-    if (!props.fieldKeys.includes(selectedField.value)) {
-      selectedField.value = props.fieldKeys[0] ?? '';
-    }
-  } catch (e: unknown) {
-    errorMessage.value = panelError(e, 'errors.dg.generic');
-  } finally {
-    loading.value = false;
-  }
+  hubStore.setFieldPoliciesBlob(hubScope.value, setPoliciesForOdakField(blob.value, selectedField.value, list));
 }
 
 async function save() {
-  saving.value = true;
+  if (!canSave.value) return;
   errorMessage.value = '';
   successMessage.value = '';
   try {
-    rowId.value = await (
-      props.savePolicies as (blob: OdakFieldPoliciesBlob, rowId: string | null) => Promise<string>
-    )(blob.value, rowId.value);
-    invalidateOdakPackageHubSettingsCache();
+    await hubStore.saveScope(hubScope.value);
     successMessage.value = t('odakSiparis.packages.settings.saved');
   } catch (e: unknown) {
     errorMessage.value = panelError(e, 'errors.dg.generic');
-  } finally {
-    saving.value = false;
   }
 }
-
-onMounted(() => void load());
-
-void (props.scope as OdakHubFieldPoliciesScope);
 </script>
 
 <template>
@@ -141,6 +120,7 @@ void (props.scope as OdakHubFieldPoliciesScope);
     </v-alert>
     <v-alert v-if="errorMessage" type="error" variant="tonal" density="compact" class="mb-4">{{ errorMessage }}</v-alert>
     <v-alert v-if="successMessage" type="success" variant="tonal" density="compact" class="mb-4">{{ successMessage }}</v-alert>
+    <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
 
     <v-row>
       <v-col cols="12" md="4">
@@ -151,16 +131,17 @@ void (props.scope as OdakHubFieldPoliciesScope);
             :value="item.value"
             :title="item.title"
             :active="selectedField === item.value"
+            :disabled="!canEdit"
             @click="selectedField = item.value"
           />
         </v-list>
       </v-col>
       <v-col cols="12" md="8">
         <div class="d-flex flex-wrap ga-2 mb-3">
-          <v-btn size="small" variant="tonal" @click="openAdd('visibility')">
+          <v-btn size="small" variant="tonal" :disabled="!canEdit" @click="openAdd('visibility')">
             {{ t('odakSiparis.packages.settings.fieldPolicies.addVisibility') }}
           </v-btn>
-          <v-btn size="small" variant="tonal" @click="openAdd('readonly')">
+          <v-btn size="small" variant="tonal" :disabled="!canEdit" @click="openAdd('readonly')">
             {{ t('odakSiparis.packages.settings.fieldPolicies.addReadonly') }}
           </v-btn>
         </div>
@@ -179,8 +160,8 @@ void (props.scope as OdakHubFieldPoliciesScope);
             <span v-else>{{ item.readonly ? t('odakSiparis.packages.settings.fieldPolicies.readonly') : t('odakSiparis.packages.settings.fieldPolicies.editable') }}</span>
           </template>
           <template #item.actions="{ item }">
-            <v-btn icon="mdi-pencil" size="x-small" variant="text" @click="openEdit(item)" />
-            <v-btn icon="mdi-delete" size="x-small" variant="text" color="error" @click="removePolicy(item)" />
+            <v-btn icon="mdi-pencil" size="x-small" variant="text" :disabled="!canEdit" @click="openEdit(item)" />
+            <v-btn icon="mdi-delete" size="x-small" variant="text" color="error" :disabled="!canEdit" @click="removePolicy(item)" />
           </template>
         </v-data-table>
       </v-col>
@@ -188,7 +169,7 @@ void (props.scope as OdakHubFieldPoliciesScope);
 
     <div class="d-flex mt-4">
       <v-spacer />
-      <v-btn color="primary" variant="flat" :loading="saving" @click="save">{{ t('odakSiparis.packages.settings.save') }}</v-btn>
+      <v-btn color="primary" variant="flat" :loading="saving" :disabled="!canSave" @click="save">{{ t('odakSiparis.packages.settings.save') }}</v-btn>
     </div>
 
     <OdakSiparisFieldPolicyDialog

@@ -5,7 +5,7 @@
 
 import { getAccessToken } from '@/services/apiService';
 import { useAuthStore } from '@/stores/auth';
-import { useUserStore } from '@/stores/apps/user';
+import { useUserStore, type User } from '@/stores/apps/user';
 import type { OdakPackageRow } from '@/utils/odakSiparisConfig';
 import {
   listOdakNotificationPolicies,
@@ -34,19 +34,26 @@ async function notifierSendTemplate(body: Record<string, unknown>): Promise<void
   });
 }
 
+function emailsFromUsers(users: User[], excludeActorId: string | null | undefined): string[] {
+  const emails = new Set<string>();
+  for (const user of users) {
+    const id = (user.id || user.userId || '').trim();
+    if (excludeActorId && id === excludeActorId) continue;
+    const email = user.email?.trim();
+    if (email) emails.add(email);
+  }
+  return [...emails];
+}
+
 function resolveRecipientEmails(
   personIds: string[],
   excludeActorId: string | null | undefined,
   userStore: ReturnType<typeof useUserStore>
 ): string[] {
-  const emails = new Set<string>();
-  for (const id of personIds) {
-    if (excludeActorId && id === excludeActorId) continue;
-    const user = userStore.users.find((u) => u.id === id || u.sub === id);
-    const email = user?.email?.trim();
-    if (email) emails.add(email);
-  }
-  return [...emails];
+  const users = personIds
+    .map((id) => userStore.users.find((u) => u.id === id || u.userId === id || u.sub === id))
+    .filter((u): u is User => u != null);
+  return emailsFromUsers(users, excludeActorId);
 }
 
 function buildMailContext(
@@ -67,7 +74,10 @@ function buildMailContext(
       : null,
     shipment:
       ctx.shipmentPreviousStatus != null || ctx.shipmentNewStatus != null
-        ? { fromStatus: ctx.shipmentPreviousStatus, toStatus: ctx.shipmentNewStatus }
+        ? {
+            fromStatus: ctx.shipmentPreviousStatus?.trim() || '—',
+            toStatus: ctx.shipmentNewStatus?.trim() || '—',
+          }
         : null,
     changedFields: ctx.changedFields ?? [],
   };
@@ -80,23 +90,33 @@ async function dispatchPolicies(
   ctx: OdakNotificationDispatchContext
 ): Promise<void> {
   const userStore = useUserStore();
-  if (!userStore.users.length) {
-    try {
-      await userStore.fetchUsers({ limit: 500 });
-    } catch {
-      /* best effort */
-    }
-  }
 
   const matching = policies.filter((p) => odakNotificationPolicyMatchesEvent(p, eventType, ctx));
   for (const policy of matching) {
     const templateKey = policy.emailTemplateKey?.trim();
     if (!templateKey) continue;
-    const to = resolveRecipientEmails(
-      policy.recipientPersonIds,
-      policy.excludeActor ? ctx.actorPersonId : null,
-      userStore
-    );
+
+    const recipientIds = policy.recipientPersonIds ?? [];
+    if (!recipientIds.length) continue;
+
+    let resolvedUsers: User[] = [];
+    try {
+      resolvedUsers = await userStore.fetchUsersByIds(recipientIds);
+    } catch {
+      if (!userStore.users.length) {
+        try {
+          await userStore.fetchUsers({ pageSize: 500 });
+        } catch {
+          /* best effort */
+        }
+      }
+    }
+
+    const excludeActor = policy.excludeActor ? ctx.actorPersonId : null;
+    const to =
+      resolvedUsers.length > 0
+        ? emailsFromUsers(resolvedUsers, excludeActor)
+        : resolveRecipientEmails(recipientIds, excludeActor, userStore);
     if (!to.length) continue;
     try {
       await notifierSendTemplate({

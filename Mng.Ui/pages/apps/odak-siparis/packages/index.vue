@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AfListFilters from '@/components/apps/automated-forms/AfListFilters.vue';
 import OdakSiparisCustomerDialog from '@/components/apps/odak-siparis/OdakSiparisCustomerDialog.vue';
 import OdakSiparisCustomerDrawer from '@/components/apps/odak-siparis/OdakSiparisCustomerDrawer.vue';
@@ -9,6 +9,7 @@ import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import { useOdakPackageFieldAccess } from '@/composables/useOdakPackageFieldAccess';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useAuthStore } from '@/stores/auth';
+import { useOdakSiparisHubSettingsStore } from '@/stores/apps/odakSiparisHubSettings';
 import { ocDelete } from '@/services/operationCoreService';
 import type { AfFilterColumn, AfListFilter } from '@/utils/afListFilters';
 import {
@@ -17,14 +18,11 @@ import {
 } from '@/utils/afListColumnFormat';
 import { ODAK_SIPARIS_CONFIG, ODAK_DATA_TABLE_EXPAND_COLUMN, type OdakPackageRow } from '@/utils/odakSiparisConfig';
 import type { OdakFieldPoliciesBlob } from '@/utils/odakSiparisFieldPolicies';
-import { loadOdakPackageHubRuntimeSettings } from '@/utils/odakSiparisHubSettingsService';
 import {
   buildPackageFilterColumns,
   buildPackageListHeaders,
-  defaultOdakPackageListConfig,
   fieldNameFromListSortKey,
   listSortKeyFromField,
-  type OdakPackageListConfig,
 } from '@/utils/odakSiparisPackageListSettings';
 import {
   customerIdFromRow,
@@ -57,6 +55,7 @@ definePageMeta({ layout: 'default' });
 
 const { t } = useAppI18n();
 const auth = useAuthStore();
+const hubStore = useOdakSiparisHubSettingsStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -74,8 +73,8 @@ const loading = ref(false);
 const errorMessage = ref('');
 const items = ref<OdakPackageRow[]>([]);
 const lineStats = ref<Map<string, OdakPackageLineStats>>(new Map());
-const listConfig = ref<OdakPackageListConfig>(defaultOdakPackageListConfig());
-const fieldPolicies = ref<OdakFieldPoliciesBlob>({ policiesByField: {} });
+const listConfig = computed(() => hubStore.packageListConfig);
+const fieldPolicies = computed(() => hubStore.packageFieldPolicies as OdakFieldPoliciesBlob);
 const { canViewListColumn } = useOdakPackageFieldAccess(fieldPolicies);
 const customerLabels = ref<Record<string, string>>({});
 const personLabels = ref<Record<string, string>>({});
@@ -86,6 +85,7 @@ const tablePage = ref(1);
 const tableItemsPerPage = ref(20);
 const tableItemsPerPageOptions = [10, 20, 50, 100];
 const tableSortBy = ref<OdakPackageListSort[]>([{ key: 'displayNo', order: 'desc' }]);
+const hubSortInitialized = ref(false);
 const expandedIds = ref<string[]>([]);
 const expandActiveTab = ref<ExpandTab>('summary');
 const expandRefreshToken = ref(0);
@@ -484,19 +484,17 @@ watch(searchQuery, (v) => {
   scheduleFetch();
 });
 
-async function loadHubSettings() {
-  try {
-    const settings = await loadOdakPackageHubRuntimeSettings();
-    listConfig.value = settings.listConfig;
-    fieldPolicies.value = settings.fieldPolicies;
-    const sortField = settings.listConfig.defaultSortBy ?? 'packageNo';
-    const sortKey = listSortKeyFromField(sortField);
-    tableSortBy.value = [
-      { key: sortKey, order: settings.listConfig.defaultSortOrder ?? 'desc' },
-    ];
-  } catch {
-    listConfig.value = defaultOdakPackageListConfig();
-    fieldPolicies.value = { policiesByField: {} };
+async function applyHubSortDefaults() {
+  if (hubSortInitialized.value) return;
+  const sortField = listConfig.value.defaultSortBy ?? 'packageNo';
+  const sortKey = listSortKeyFromField(sortField);
+  tableSortBy.value = [{ key: sortKey, order: listConfig.value.defaultSortOrder ?? 'desc' }];
+  hubSortInitialized.value = true;
+}
+
+function onPageShow(event: PageTransitionEvent) {
+  if (event.persisted) {
+    void hubStore.ensureReady(true).then(() => applyHubSortDefaults());
   }
 }
 
@@ -512,11 +510,36 @@ onMounted(() => {
     pendingCustomerFilterId.value = customerId.trim();
     statusTab.value = 'all';
   }
+  if (import.meta.client) {
+    window.addEventListener('pageshow', onPageShow);
+  }
   void initPackagesPage();
 });
 
+onBeforeUnmount(() => {
+  if (import.meta.client) {
+    window.removeEventListener('pageshow', onPageShow);
+  }
+});
+
+watch(
+  () => route.fullPath,
+  (path, previousPath) => {
+    if (path === '/apps/odak-siparis/packages' && previousPath && previousPath !== path) {
+      void hubStore.ensureReady(false).then(() => applyHubSortDefaults());
+    }
+  }
+);
+
+async function refreshPackagesPage() {
+  await hubStore.ensureReady(true);
+  await applyHubSortDefaults();
+  await fetchPackages();
+}
+
 async function initPackagesPage() {
-  await loadHubSettings();
+  await hubStore.ensureReady(false);
+  await applyHubSortDefaults();
   await ensureCustomerLabels();
   if (pendingCustomerFilterId.value) {
     activeListFilters.value = [
@@ -558,7 +581,7 @@ async function initPackagesPage() {
         <v-btn variant="tonal" color="primary" prepend-icon="mdi-view-dashboard-outline" @click="openGlobalDashboard">
           {{ t('odakSiparis.dashboard.global.openFromPackages') }}
         </v-btn>
-        <v-btn icon variant="outlined" size="small" :loading="loading" @click="fetchPackages">
+        <v-btn icon variant="outlined" size="small" :loading="loading" @click="refreshPackagesPage">
           <RefreshIcon size="18" />
         </v-btn>
         <v-btn

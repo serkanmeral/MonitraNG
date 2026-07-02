@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using MngReactor.Application.Models.SecEvents;
 
@@ -5,6 +6,59 @@ namespace MngReactor.Persistence.Services.SecEvents.Parsers;
 
 internal static class SecEventParseHelpers
 {
+    /// <summary>
+    /// NxLog EventTime is typically host-local (no offset). Assume Europe/Istanbul when unspecified.
+    /// Falls back to receivedAt when parsed time is implausibly ahead of ingest (clock skew).
+    /// </summary>
+    public static DateTime ParseNxlogEventTimeUtc(string text, DateTime receivedAtUtc)
+    {
+        var received = receivedAtUtc.Kind == DateTimeKind.Utc
+            ? receivedAtUtc
+            : receivedAtUtc.ToUniversalTime();
+
+        if (string.IsNullOrWhiteSpace(text)
+            || !DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out var local))
+            return received;
+
+        var utc = ConvertLocalEventTimeToUtc(local);
+        if (utc > received.AddMinutes(2))
+            return received;
+
+        return utc;
+    }
+
+    private static DateTime ConvertLocalEventTimeToUtc(DateTime local)
+    {
+        var unspecified = local.Kind switch
+        {
+            DateTimeKind.Utc => local,
+            DateTimeKind.Local => local.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(local, DateTimeKind.Unspecified),
+        };
+
+        if (unspecified.Kind == DateTimeKind.Utc)
+            return unspecified;
+
+        foreach (var zoneId in new[] { "Europe/Istanbul", "Turkey Standard Time" })
+        {
+            try
+            {
+                var tz = TimeZoneInfo.FindSystemTimeZoneById(zoneId);
+                return TimeZoneInfo.ConvertTimeToUtc(unspecified, tz);
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                // try next id (Linux vs Windows)
+            }
+            catch (InvalidTimeZoneException)
+            {
+                // try next id
+            }
+        }
+
+        return DateTime.SpecifyKind(unspecified, DateTimeKind.Local).ToUniversalTime();
+    }
+
     public static string GetRawText(JsonElement raw) =>
         raw.ValueKind switch
         {

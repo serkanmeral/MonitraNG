@@ -8,10 +8,6 @@ import {
   ODAK_SHIPMENT_POLICY_FIELD_KEYS,
 } from '@/utils/odakSiparisFieldPolicies';
 import {
-  loadOdakHubFieldPoliciesBlob,
-  saveOdakHubFieldPoliciesBlob,
-} from '@/utils/odakSiparisHubSettingsService';
-import {
   odakLineSettingsFieldLabelTr,
   odakPackageSettingsFieldLabelTr,
   odakShipmentSettingsFieldLabelTr,
@@ -55,7 +51,7 @@ const qcfStatusItems = [
       <v-tab v-for="tab in fieldTabs" :key="tab.value" :value="tab.value">{{ tab.label }}</v-tab>
     </v-tabs>
 
-    <v-window v-model="activeFieldTab">
+    <v-window v-model="activeFieldTab" eager>
       <v-window-item value="field_policies">
         <OdakSiparisHubFieldPoliciesTab
           scope="field_policies"
@@ -65,8 +61,6 @@ const qcfStatusItems = [
           :condition-field-keys="['status', 'partCount', 'stockCount', 'beginDate', 'deliveryDate', 'poVersion']"
           default-condition-field="status"
           :enum-field-options="{ status: packageStatusItems }"
-          :load-policies="() => loadOdakHubFieldPoliciesBlob('field_policies')"
-          :save-policies="(blob, rowId) => saveOdakHubFieldPoliciesBlob('field_policies', blob, rowId)"
         />
       </v-window-item>
       <v-window-item value="lines_field_policies">
@@ -81,8 +75,6 @@ const qcfStatusItems = [
             isFai: lineBooleanItems,
             isFaiComplete: lineBooleanItems,
           }"
-          :load-policies="() => loadOdakHubFieldPoliciesBlob('lines_field_policies')"
-          :save-policies="(blob, rowId) => saveOdakHubFieldPoliciesBlob('lines_field_policies', blob, rowId)"
         />
       </v-window-item>
       <v-window-item value="shipments_field_policies">
@@ -97,8 +89,6 @@ const qcfStatusItems = [
             status: shipmentStatusItems,
             qcfStatus: qcfStatusItems,
           }"
-          :load-policies="() => loadOdakHubFieldPoliciesBlob('shipments_field_policies')"
-          :save-policies="(blob, rowId) => saveOdakHubFieldPoliciesBlob('shipments_field_policies', blob, rowId)"
         />
       </v-window-item>
     </v-window>

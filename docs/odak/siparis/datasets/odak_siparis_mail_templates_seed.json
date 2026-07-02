@@ -1,0 +1,108 @@
+{
+  "_comment": "POST /api/v1/data/@mail_templates — Odak Siparis is paketi bildirim sablonlari. Context: odakSiparisNotificationDispatch.buildMailContext",
+  "dataset": "@mail_templates",
+  "records": [
+    {
+      "templateKey": "odak-package-created",
+      "name": "Odak — Is paketi olusturuldu",
+      "description": "Yeni is paketi kaydi (PackageCreated). Politika: odak_siparis_notification_policies eventType=PackageCreated.",
+      "subject": "[{{package.displayNo}}] Yeni is paketi: {{package.name}}",
+      "bodyHtml": "<h1 style=\"font-size:20px;margin:0 0 12px;\">Yeni is paketi</h1><p><strong>{{package.displayNo}}</strong> numarali is paketi sisteme eklendi.</p><div class=\"info-box\"><h2 class=\"info-box-title\">Paket bilgileri</h2><p><strong>Paket no:</strong> {{package.displayNo}}</p><p><strong>Isim:</strong> {{package.name}}</p><p><strong>Durum:</strong> {{package.status}}</p></div><p style=\"color:#666;font-size:14px;\">Olay: {{event.type}} — {{event.timestamp}}</p>",
+      "variables": [
+        "event.type",
+        "event.timestamp",
+        "package.displayNo",
+        "package.name",
+        "package.status"
+      ],
+      "layoutKey": "default",
+      "locale": "tr",
+      "category": "odak-siparis",
+      "tags": ["odak-siparis", "package", "PackageCreated"],
+      "sampleContext": {
+        "event": { "type": "PackageCreated", "timestamp": "2026-07-02T10:30:00Z" },
+        "package": {
+          "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "packageNo": "IP-2026-0042",
+          "displayNo": "IP-2026-0042",
+          "name": "Havacilik kompozit panel seti",
+          "status": "open"
+        },
+        "domain": {
+          "displayName": "Odak Kompozit Teknolojileri A.S.",
+          "logoUrl": "https://img-kariyer.mncdn.com/mnresize/150/150/UploadFiles/Clients/SquareLogo/983/ai_kk_274983_6022024014542.png"
+        }
+      },
+      "isActive": true
+    },
+    {
+      "templateKey": "odak-package-updated",
+      "name": "Odak — Is paketi guncellendi",
+      "description": "Is paketi alan guncellemesi (PackageUpdated). watchedFields politika ile sinirlanir.",
+      "subject": "[{{package.displayNo}}] Is paketi guncellendi: {{package.name}}",
+      "bodyHtml": "<h1 style=\"font-size:20px;margin:0 0 12px;\">Is paketi guncellendi</h1><p><strong>{{package.displayNo}}</strong> — <em>{{package.name}}</em></p><div class=\"info-box\"><h2 class=\"info-box-title\">Guncel durum</h2><p><strong>Durum:</strong> {{package.status}}</p></div><p style=\"color:#666;font-size:14px;\">Olay: {{event.type}} — {{event.timestamp}}</p>",
+      "variables": [
+        "event.type",
+        "event.timestamp",
+        "package.displayNo",
+        "package.name",
+        "package.status"
+      ],
+      "layoutKey": "default",
+      "locale": "tr",
+      "category": "odak-siparis",
+      "tags": ["odak-siparis", "package", "PackageUpdated"],
+      "sampleContext": {
+        "event": { "type": "PackageUpdated", "timestamp": "2026-07-02T11:15:00Z" },
+        "package": {
+          "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "packageNo": "IP-2026-0042",
+          "displayNo": "IP-2026-0042",
+          "name": "Havacilik kompozit panel seti",
+          "status": "open"
+        },
+        "changedFields": ["deliveryDate", "notes"],
+        "domain": {
+          "displayName": "Odak Kompozit Teknolojileri A.S.",
+          "logoUrl": "https://img-kariyer.mncdn.com/mnresize/150/150/UploadFiles/Clients/SquareLogo/983/ai_kk_274983_6022024014542.png"
+        }
+      },
+      "isActive": true
+    },
+    {
+      "templateKey": "odak-shipment-completed",
+      "name": "Odak — Sevkiyat durumu",
+      "description": "Sevkiyat olayi (ShipmentCompleted). shipment.fromStatus / toStatus politika ile filtrelenir.",
+      "subject": "[{{package.displayNo}}] Sevkiyat: {{shipment.toStatus}}",
+      "bodyHtml": "<h1 style=\"font-size:20px;margin:0 0 12px;\">Sevkiyat bildirimi</h1><p><strong>{{package.displayNo}}</strong> — {{package.name}}</p><div class=\"info-box\"><h2 class=\"info-box-title\">Sevkiyat durumu</h2><p><strong>Onceki:</strong> {{shipment.fromStatus}}</p><p><strong>Yeni:</strong> {{shipment.toStatus}}</p></div><p style=\"color:#666;font-size:14px;\">Olay: {{event.type}} — {{event.timestamp}}</p>",
+      "variables": [
+        "event.type",
+        "event.timestamp",
+        "package.displayNo",
+        "package.name",
+        "shipment.fromStatus",
+        "shipment.toStatus"
+      ],
+      "layoutKey": "default",
+      "locale": "tr",
+      "category": "odak-siparis",
+      "tags": ["odak-siparis", "shipment", "ShipmentCompleted"],
+      "sampleContext": {
+        "event": { "type": "ShipmentCompleted", "timestamp": "2026-07-02T14:00:00Z" },
+        "package": {
+          "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "packageNo": "IP-2026-0042",
+          "displayNo": "IP-2026-0042",
+          "name": "Havacilik kompozit panel seti",
+          "status": "open"
+        },
+        "shipment": { "fromStatus": "Planlandi", "toStatus": "Tamamlandi" },
+        "domain": {
+          "displayName": "Odak Kompozit Teknolojileri A.S.",
+          "logoUrl": "https://img-kariyer.mncdn.com/mnresize/150/150/UploadFiles/Clients/SquareLogo/983/ai_kk_274983_6022024014542.png"
+        }
+      },
+      "isActive": true
+    }
+  ]
+}

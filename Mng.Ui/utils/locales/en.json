@@ -383,8 +383,11 @@
     },
     "applicationScope": {
       "column": "Application scope",
+      "filterLabel": "Application scope",
+      "filterAll": "All",
       "includeInApplication": "Use in MonitraNG",
       "includeInApplicationHint": "When off, hidden from pickers and lists; login is blocked.",
+      "saveScope": "Save scope",
       "inApp": "In scope",
       "hidden": "Hidden"
     },
@@ -718,6 +721,8 @@
     },
     "applicationScope": {
       "column": "Application scope",
+      "filterLabel": "Application scope",
+      "filterAll": "All",
       "includeInApplication": "Use in MonitraNG",
       "includeInApplicationHint": "When off, hidden from pickers and lists; login is blocked.",
       "inApp": "In scope",

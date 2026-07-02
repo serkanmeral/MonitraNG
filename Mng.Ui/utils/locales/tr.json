@@ -418,8 +418,11 @@
     },
     "applicationScope": {
       "column": "Uygulama kapsamı",
+      "filterLabel": "Uygulama kapsamı",
+      "filterAll": "Tümü",
       "includeInApplication": "MonitraNG'de kullan",
       "includeInApplicationHint": "Kapalıyken listede ve seçicilerde görünmez; giriş yapılamaz.",
+      "saveScope": "Kapsamı kaydet",
       "inApp": "Kapsamda",
       "hidden": "Saklı"
     },
@@ -752,6 +755,8 @@
     },
     "applicationScope": {
       "column": "Uygulama kapsamı",
+      "filterLabel": "Uygulama kapsamı",
+      "filterAll": "Tümü",
       "includeInApplication": "MonitraNG'de kullan",
       "includeInApplicationHint": "Kapalıyken listede ve seçicilerde görünmez; giriş yapılamaz.",
       "inApp": "Kapsamda",

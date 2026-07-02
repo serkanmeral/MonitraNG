@@ -245,9 +245,8 @@ public sealed partial class WindowsNxlogJsonParser : ISecEventParser
         if (root.TryGetProperty("EventTime", out var eventTime) && eventTime.ValueKind == JsonValueKind.String)
         {
             var text = eventTime.GetString();
-            if (!string.IsNullOrWhiteSpace(text)
-                && DateTime.TryParse(text, null, System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal, out var parsed))
-                return parsed;
+            if (!string.IsNullOrWhiteSpace(text))
+                return SecEventParseHelpers.ParseNxlogEventTimeUtc(text, fallback);
         }
 
         if (root.TryGetProperty("TimeCreated", out var created) && created.ValueKind == JsonValueKind.String)

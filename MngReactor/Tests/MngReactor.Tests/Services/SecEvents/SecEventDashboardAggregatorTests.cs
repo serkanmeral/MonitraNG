@@ -51,6 +51,16 @@ public sealed class SecEventDashboardAggregatorTests
     }
 
     [Fact]
+    public void BuildPipeline_UsesIngestedAtForWindow()
+    {
+        var from = new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc);
+        var to = from.AddHours(24);
+        var pipeline = SecEventDashboardAggregator.BuildPipeline(from, to, excludeUnknown: true);
+        var json = pipeline[0].ToJson();
+        Assert.Contains(SecEventDashboardAggregator.DashboardTimeField, json);
+    }
+
+    [Fact]
     public void BuildWindow_ReturnsRequestedBucketCount()
     {
         var (_, _, hourStarts) = SecEventDashboardAggregator.BuildWindow(24);

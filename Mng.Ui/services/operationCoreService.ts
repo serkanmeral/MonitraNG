@@ -87,6 +87,10 @@ export function parseSingleDgRecord(response: unknown): Record<string, unknown> 
   }
   if (response && typeof response === 'object') {
     const obj = response as Record<string, unknown>;
+    const data = obj.data ?? obj.Data;
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      return data as Record<string, unknown>;
+    }
     if (Array.isArray(obj.items) && obj.items[0] && typeof obj.items[0] === 'object') {
       return obj.items[0] as Record<string, unknown>;
     }
@@ -96,6 +100,13 @@ export function parseSingleDgRecord(response: unknown): Record<string, unknown> 
     return obj;
   }
   return null;
+}
+
+export function parseSingleDgRecordId(response: unknown): string | null {
+  const record = parseSingleDgRecord(response);
+  if (!record) return null;
+  const id = String(record.__dataId ?? record.dataId ?? '').trim();
+  return id || null;
 }
 
 /** DG hata gövdesinden okunabilir mesaj çıkarır */

@@ -1,61 +1,42 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
+import { storeToRefs } from 'pinia';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
-import {
-  defaultOdakPackagePoDocumentAccessConfig,
-  type OdakPackagePoDocumentAccessConfig,
-} from '@/utils/odakSiparisPoDocumentAccess';
-import {
-  invalidateOdakPackageHubSettingsCache,
-  loadOdakPackagePoDocumentAccessConfig,
-  saveOdakPackagePoDocumentAccessConfig,
-} from '@/utils/odakSiparisHubSettingsService';
+import { useOdakSiparisHubSettingsStore } from '@/stores/apps/odakSiparisHubSettings';
 
 const { t } = useAppI18n();
 const panelError = usePanelErrorNotify('errors.dg.generic');
+const hubStore = useOdakSiparisHubSettingsStore();
+const { bootstrapStatus } = storeToRefs(hubStore);
 
-const loading = ref(true);
-const saving = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
-const rowId = ref<string | null>(null);
-const config = ref<OdakPackagePoDocumentAccessConfig>(defaultOdakPackagePoDocumentAccessConfig());
 
-async function load() {
-  loading.value = true;
-  errorMessage.value = '';
-  successMessage.value = '';
-  try {
-    const resp = await loadOdakPackagePoDocumentAccessConfig();
-    config.value = resp.config;
-    rowId.value = resp.rowId;
-  } catch (e: unknown) {
-    errorMessage.value = panelError(e, 'errors.dg.generic');
-  } finally {
-    loading.value = false;
-  }
-}
+const restrictedViewerGroups = computed({
+  get: () => hubStore.poDocumentAccessConfig.restrictedViewerGroups,
+  set: (groups: string[]) => hubStore.setPoDocumentRestrictedGroups(groups),
+});
+
+const loading = computed(
+  () => bootstrapStatus.value === 'loading' || !hubStore.scopeReady('package_po_document_access')
+);
+const saving = computed(() => hubStore.scopeSaving('package_po_document_access'));
+const canSave = computed(() => hubStore.canSaveScope('package_po_document_access'));
+const canEdit = computed(() => hubStore.canEditScope('package_po_document_access'));
 
 async function save() {
-  saving.value = true;
+  if (!canSave.value) return;
   errorMessage.value = '';
   successMessage.value = '';
   try {
-    rowId.value = await saveOdakPackagePoDocumentAccessConfig(config.value, rowId.value);
-    invalidateOdakPackageHubSettingsCache();
+    await hubStore.saveScope('package_po_document_access');
     successMessage.value = t('odakSiparis.packages.settings.saved');
   } catch (e: unknown) {
     errorMessage.value = panelError(e, 'errors.dg.generic');
-  } finally {
-    saving.value = false;
   }
 }
-
-onMounted(() => {
-  void load();
-});
 </script>
 
 <template>
@@ -73,17 +54,17 @@ onMounted(() => {
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
 
     <MngDirectoryPickerField
-      v-model="config.restrictedViewerGroups"
+      v-model="restrictedViewerGroups"
       entity="group"
       group-value-key="name"
       multiple
       :label="t('odakSiparis.packages.settings.poDocumentAccess.groupsLabel')"
-      :disabled="loading || saving"
+      :disabled="!canEdit"
       class="mb-4"
     />
 
     <div class="d-flex justify-end">
-      <v-btn color="primary" variant="flat" :loading="saving" :disabled="loading" @click="save">
+      <v-btn color="primary" variant="flat" :loading="saving" :disabled="!canSave" @click="save">
         {{ t('odakSiparis.packages.settings.save') }}
       </v-btn>
     </div>

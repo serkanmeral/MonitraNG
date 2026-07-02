@@ -51,6 +51,7 @@ const showDeleteDialog = ref(false);
 const userToDelete = ref<string | null>(null);
 const deleteError = ref('');
 const statusFilter = ref<string>('all'); // all, active, inactive
+const applicationScopeFilter = ref<string>('all'); // all, inApp, hidden
 const isExporting = ref(false);
 const exportError = ref('');
 
@@ -95,6 +96,7 @@ const serverItemsLength = computed(() => {
       pageSize?: number;
       search?: string;
       isActive?: boolean;
+      includeInApplication?: boolean;
       sortBy?: string;
       sortOrder?: 'asc' | 'desc';
     } = {
@@ -112,6 +114,12 @@ const serverItemsLength = computed(() => {
       params.isActive = true;
     } else if (statusFilter.value === 'inactive') {
       params.isActive = false;
+    }
+
+    if (applicationScopeFilter.value === 'inApp') {
+      params.includeInApplication = true;
+    } else if (applicationScopeFilter.value === 'hidden') {
+      params.includeInApplication = false;
     }
     
     // Add sorting if exists
@@ -227,7 +235,7 @@ watch(
 
 // Watch for search and status filter changes
 let searchTimeout: ReturnType<typeof setTimeout> | null = null;
-watch([search, statusFilter], () => {
+watch([search, statusFilter, applicationScopeFilter], () => {
   // Reset to first page when filter changes
   if (tableOptions.value.page !== 1) {
     tableOptions.value.page = 1;
@@ -410,7 +418,7 @@ const formatDate = (date: string | Date | null | undefined) => {
             variant="outlined"
             density="compact"
             hide-details
-            style="max-width: 300px;"
+            style="min-width: 280px; max-width: 420px; flex: 1 1 280px;"
             clearable
           />
           
@@ -425,7 +433,21 @@ const formatDate = (date: string | Date | null | undefined) => {
             variant="outlined"
             density="compact"
             hide-details
-            style="max-width: 150px;"
+            style="min-width: 140px; max-width: 160px;"
+          />
+
+          <v-select
+            v-model="applicationScopeFilter"
+            :items="[
+              { title: t('users.applicationScope.filterAll'), value: 'all' },
+              { title: t('users.applicationScope.inApp'), value: 'inApp' },
+              { title: t('users.applicationScope.hidden'), value: 'hidden' },
+            ]"
+            :label="t('users.applicationScope.filterLabel')"
+            variant="outlined"
+            density="compact"
+            hide-details
+            style="min-width: 160px; max-width: 200px;"
           />
         </div>
         

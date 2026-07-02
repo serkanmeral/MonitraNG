@@ -29,7 +29,7 @@ const groupStore = useGroupStore();
 const groupId = route.params.id as string;
 
 const currentGroupRef = computed(() => groupStore.currentGroup);
-const { canEdit, canManageMembers, sourceLabelKey, sourceChipColor } =
+const { canEdit, canChangeApplicationScope, canManageMembers, sourceLabelKey, sourceChipColor } =
   useGroupFieldPolicies(currentGroupRef);
 
 const page = computed(() => ({ title: t('groups.details.title') }));
@@ -129,7 +129,7 @@ const onUserManagementUpdated = async () => {
             <UserPlusIcon class="mr-2" size="18" />
             {{ t('groups.details.userManagement') }}
           </v-btn>
-          <v-btn v-if="canEdit" color="primary" @click="editGroup" flat>
+          <v-btn v-if="canEdit || canChangeApplicationScope" color="primary" @click="editGroup" flat>
             <EditIcon class="mr-2" size="18" />
             {{ t('groups.details.edit') }}
           </v-btn>

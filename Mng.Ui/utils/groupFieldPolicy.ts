@@ -82,3 +82,10 @@ export function canChangeGroupApplicationScope(
   if (group?.capabilities?.canChangeApplicationScope === false) return false;
   return true;
 }
+
+/** Liste/detay → düzenleme sayfası (AD gruplarında yalnızca uygulama kapsamı). */
+export function canOpenGroupEditPage(
+  group: GroupProvisioningFields | null | undefined
+): boolean {
+  return canEditGroup(group) || canChangeGroupApplicationScope(group);
+}

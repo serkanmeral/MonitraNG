@@ -37,6 +37,37 @@ services:
       - MngReactorSettings__Mqtt__Host=mosquitto
       - MngReactorSettings__ObservationPublish__Enabled=true
 
+  mngengine:
+    ports:
+      - "5037:5037"
+      - "5514:5514/udp"
+      # IT merkezi toplayici portlari (NxLog JSON / FortiGate syslog) — relay yerine dogrudan dinleme
+      - "1514:1514/udp"
+      - "1541:1541/udp"
+      - "1542:1542/udp"
+      - "541:541/udp"
+      - "542:542/udp"
+    environment:
+      - MngEngine__SecEventQueue__UdpPort=5514
+      - MngEngine__SecEventQueue__UdpListeners__0__UdpPort=5514
+      - MngEngine__SecEventQueue__UdpListeners__0__SourceType=endpoint
+      - MngEngine__SecEventQueue__UdpListeners__0__SourceProduct=linux-syslog
+      - MngEngine__SecEventQueue__UdpListeners__1__UdpPort=1514
+      - MngEngine__SecEventQueue__UdpListeners__1__SourceType=ad
+      - MngEngine__SecEventQueue__UdpListeners__1__SourceProduct=windows-nxlog
+      - MngEngine__SecEventQueue__UdpListeners__2__UdpPort=1541
+      - MngEngine__SecEventQueue__UdpListeners__2__SourceType=ad
+      - MngEngine__SecEventQueue__UdpListeners__2__SourceProduct=windows-nxlog
+      - MngEngine__SecEventQueue__UdpListeners__3__UdpPort=1542
+      - MngEngine__SecEventQueue__UdpListeners__3__SourceType=ad
+      - MngEngine__SecEventQueue__UdpListeners__3__SourceProduct=windows-nxlog
+      - MngEngine__SecEventQueue__UdpListeners__4__UdpPort=541
+      - MngEngine__SecEventQueue__UdpListeners__4__SourceType=firewall
+      - MngEngine__SecEventQueue__UdpListeners__4__SourceProduct=fortigate
+      - MngEngine__SecEventQueue__UdpListeners__5__UdpPort=542
+      - MngEngine__SecEventQueue__UdpListeners__5__SourceType=firewall
+      - MngEngine__SecEventQueue__UdpListeners__5__SourceProduct=fortigate
+
   mnghub:
     ports:
       - "5020:5020"

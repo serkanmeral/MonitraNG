@@ -1,61 +1,47 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
+import { storeToRefs } from 'pinia';
 import MngDirectoryPickerField from '@/components/shared/directory/MngDirectoryPickerField.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
-import {
-  defaultOdakPackagePersonnelConfig,
-  type OdakPackagePersonnelConfig,
-} from '@/utils/odakSiparisPackagePersonnel';
-import {
-  invalidateOdakPackageHubSettingsCache,
-  loadOdakPackagePersonnelConfig,
-  saveOdakPackagePersonnelConfig,
-} from '@/utils/odakSiparisHubSettingsService';
+import { useOdakSiparisHubSettingsStore } from '@/stores/apps/odakSiparisHubSettings';
 
 const { t } = useAppI18n();
 const panelError = usePanelErrorNotify('errors.dg.generic');
+const hubStore = useOdakSiparisHubSettingsStore();
+const { bootstrapStatus } = storeToRefs(hubStore);
 
-const loading = ref(true);
-const saving = ref(false);
 const errorMessage = ref('');
 const successMessage = ref('');
-const rowId = ref<string | null>(null);
-const config = ref<OdakPackagePersonnelConfig>(defaultOdakPackagePersonnelConfig());
 
-async function load() {
-  loading.value = true;
-  errorMessage.value = '';
-  successMessage.value = '';
-  try {
-    const resp = await loadOdakPackagePersonnelConfig();
-    config.value = resp.config;
-    rowId.value = resp.rowId;
-  } catch (e: unknown) {
-    errorMessage.value = panelError(e, 'errors.dg.generic');
-  } finally {
-    loading.value = false;
-  }
-}
+const designPersonnelIds = computed({
+  get: () => hubStore.personnelConfig.designPersonnelIds,
+  set: (ids: string[]) => hubStore.setDesignPersonnelIds(ids),
+});
+
+const manufacturePersonnelIds = computed({
+  get: () => hubStore.personnelConfig.manufacturePersonnelIds,
+  set: (ids: string[]) => hubStore.setManufacturePersonnelIds(ids),
+});
+
+const loading = computed(
+  () => bootstrapStatus.value === 'loading' || !hubStore.scopeReady('package_odak_personnel')
+);
+const saving = computed(() => hubStore.scopeSaving('package_odak_personnel'));
+const canSave = computed(() => hubStore.canSaveScope('package_odak_personnel'));
+const canEdit = computed(() => hubStore.canEditScope('package_odak_personnel'));
 
 async function save() {
-  saving.value = true;
+  if (!canSave.value) return;
   errorMessage.value = '';
   successMessage.value = '';
   try {
-    rowId.value = await saveOdakPackagePersonnelConfig(config.value, rowId.value);
-    invalidateOdakPackageHubSettingsCache();
+    await hubStore.saveScope('package_odak_personnel');
     successMessage.value = t('odakSiparis.packages.settings.saved');
   } catch (e: unknown) {
     errorMessage.value = panelError(e, 'errors.dg.generic');
-  } finally {
-    saving.value = false;
   }
 }
-
-onMounted(() => {
-  void load();
-});
 </script>
 
 <template>
@@ -73,11 +59,11 @@ onMounted(() => {
     <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
 
     <MngDirectoryPickerField
-      v-model="config.designPersonnelIds"
+      v-model="designPersonnelIds"
       entity="user"
       :label="t('odakSiparis.packages.settings.personnel.designPersonnel')"
       multiple
-      :disabled="loading || saving"
+      :disabled="!canEdit"
       class="mb-2"
     />
     <p class="text-caption text-medium-emphasis mb-4">
@@ -85,11 +71,11 @@ onMounted(() => {
     </p>
 
     <MngDirectoryPickerField
-      v-model="config.manufacturePersonnelIds"
+      v-model="manufacturePersonnelIds"
       entity="user"
       :label="t('odakSiparis.packages.settings.personnel.manufacturePersonnel')"
       multiple
-      :disabled="loading || saving"
+      :disabled="!canEdit"
       class="mb-2"
     />
     <p class="text-caption text-medium-emphasis mb-4">
@@ -97,7 +83,7 @@ onMounted(() => {
     </p>
 
     <div class="d-flex justify-end">
-      <v-btn color="primary" variant="flat" :loading="saving" :disabled="loading" @click="save">
+      <v-btn color="primary" variant="flat" :loading="saving" :disabled="!canSave" @click="save">
         {{ t('odakSiparis.packages.settings.save') }}
       </v-btn>
     </div>
