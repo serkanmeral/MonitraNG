@@ -2,11 +2,20 @@
 
 ## Son Çalışılan Konu
 
-Odak **kalem belgeleri** (CoC + Activity), **LINE-ACTIVITY-STD** şablon tasarımı, belge üretimi (generation profiles), parametre uyarıları, DI deep link, şablon **görüntüle / kilidi aç** akışı.
+**Birleşik ürün roadmap + Workflow sınırı:** [DI_PRODUCT_ROADMAP.md](../odak/document_intelligence/DI_PRODUCT_ROADMAP.md) (Faz D-WF dahil) · [ODAK_MO_VS_WORKFLOW_SCENARIOS.md](../odak/workflow/ODAK_MO_VS_WORKFLOW_SCENARIOS.md) — 15 Odak senaryosu, DI’da workflow’a yaslanılacak yerler, event sözleşmesi.
+
+Önceki implementasyon oturumu: Odak **kalem belgeleri** (CoC + Activity), **LINE-ACTIVITY-STD** şablon tasarımı, belge üretimi (generation profiles), parametre uyarıları, DI deep link, şablon **görüntüle / kilidi aç** akışı.
 
 ## Tamamlanan İşler (bu oturum)
 
-### Belge üretimi (backend)
+### Planlama (3 Tem 2026)
+- **DI_PRODUCT_ROADMAP.md** — birleşik faz planı: P, D, **D-BR**, D-E, **D-WF**, D-P, D-S, D-N, D5, S, Pr, AI, M.
+- **Faz D-BR** — paylaşımlı antet kataloğu (D-BR1) + opsiyonel kapak sayfası (D-BR2); üretimde seçim.
+- **ODAK_MO_VS_WORKFLOW_SCENARIOS.md** — MO / Alarm / DI / Workflow karar matrisi (15 senaryo).
+- **D-WF dilimleri:** D-WF0 event publish → D-WF1 CoC onay → D-WF2 lifecycle API → D-WF3 haftalık rapor dağıtımı → D-WF4 AI düşük güven onayı.
+- **Sınır:** D-N1 tek mail Notifier’da; onay + çok adım + gecikme Workflow’da.
+
+### Belge üretimi (backend) — önceki oturum
 - `DocumentGenerationService` — merge, placeholder koruma, `HasParameterWarnings`, tanımsız/boş parametre analizi.
 - Generation profilleri: `odak.coc.fromLine`, `odak.line.activity.fromLine` (`appsettings.json`).
 - `DocumentContextCatalog` — kalem/paket/sevkiyat/CoC/activity alanları.
@@ -47,9 +56,12 @@ Odak **kalem belgeleri** (CoC + Activity), **LINE-ACTIVITY-STD** şablon tasarı
 
 ## Sonraki Adımlar (yeni oturum)
 
-1. **Antet yönetimi** — letterhead seçenekleri, önizleme, şablon başına ince ayar.
+1. **D-BR1 — Antet kataloğu** — paylaşımlı tanımlar, şablon varsayılanı, üretimde seçim (roadmap §8).
 2. **Parametre yönetimi UI** — placeholder envanteri, context binding, incremental docNo (D2), designer parametre diyalogu iyileştirme.
-3. İsteğe bağlı: published şablon salt okunur önizleme iyileştirmeleri.
+3. **D-BR2** — kapak sayfası kataloğu (opsiyonel üretim seçimi).
+4. **D-E1–E2** — Collabora pre-gate (home_mode 20/10 limit tamponu).
+5. **D-WF0** — `document.generated` event publish; CoC için D-N1 vs D-WF1 ayrımını netleştir.
+6. Odak senaryo matrisi (#12 CoC onay, #15 haftalık rapor) — paydaş doğrulaması.
 
 ## Önemli Notlar
 
@@ -60,7 +72,7 @@ Odak **kalem belgeleri** (CoC + Activity), **LINE-ACTIVITY-STD** şablon tasarı
 
 ## Son Güncelleme
 
-**29 Haziran 2026** — Activity şablon tasarımı, kalem belgeleri, unpublish akışı tamamlandı; sırada antet + parametre yönetimi.
+**3 Temmuz 2026** — Birleşik DI roadmap (+ D-WF, **D-BR** antet/kapak) planlandı. Implementasyon sırası: antet katalog (D-BR1) + parametre → D-E → D-P → D-N/D-WF0.
 
 ## Nerede Kalmıştık
 

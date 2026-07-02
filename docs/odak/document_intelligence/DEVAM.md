@@ -30,10 +30,10 @@
 > - **UI Tasarımcı:** Üretimde aktif / Düzenlenebilir; published → görüntüle (salt okunur) + kilidi aç (unpublish).
 > - **Git:** `de245f1f` pushed main ✅
 > - **Test deploy bekliyor:** unpublish API + UI canlı doğrulama (SSH sync bu oturumda başarısız).
-> - **Sıradaki oturum:** antet yönetimi · parametre yönetimi UI (placeholder envanteri, context binding, D2 docNo).
+> - **Sıradaki oturum:** **D-BR1** antet kataloğu (roadmap §8) · parametre yönetimi UI (placeholder envanteri, context binding, D2 docNo).
 > - **Detay:** [docs/MngDocument/current_status.md](../../MngDocument/current_status.md)
 
-**Ana plan:** [MonitraNG_Document_Intelligence_Planning.md](MonitraNG_Document_Intelligence_Planning.md) · **Prod / taşıma:** [PROD_OPERATIONS_AND_MIGRATION.md](PROD_OPERATIONS_AND_MIGRATION.md) · **Faz 1 dataset'leri:** [datasets/documentintelligence_datasets_phase1.json](datasets/documentintelligence_datasets_phase1.json)
+**Ana plan:** [MonitraNG_Document_Intelligence_Planning.md](MonitraNG_Document_Intelligence_Planning.md) · **Ürün roadmap (birleşik):** [DI_PRODUCT_ROADMAP.md](DI_PRODUCT_ROADMAP.md) (Faz D-WF dahil) · **MO vs Workflow (Odak):** [ODAK_MO_VS_WORKFLOW_SCENARIOS.md](../workflow/ODAK_MO_VS_WORKFLOW_SCENARIOS.md) · **Prod / taşıma:** [PROD_OPERATIONS_AND_MIGRATION.md](PROD_OPERATIONS_AND_MIGRATION.md) · **Faz 1 dataset'leri:** [datasets/documentintelligence_datasets_phase1.json](datasets/documentintelligence_datasets_phase1.json)
 
 ---
 

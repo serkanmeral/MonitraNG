@@ -27,7 +27,7 @@
 |-------|-------------|--------|--------------|
 | **Genel** | Workspace kimliği + temel yetki grupları | 🟡 | `viewGroups` / `editGroups` / `adminGroups` UI yok |
 | **Değerler** | `enabled*Ids` + katalog CRUD | ✅ | — |
-| **Durum akışı** | Flow + geçişler | 🟡 | `requiredFields`, geçiş `permissions` editörü yok |
+| **Durum akışı** | Flow + geçişler | 🟡 | E1-P2 ✅ (`requiredFields`, permissions); **görsel editör backlog** → [OC_UI_STATE_FLOW_UX_PLANNING.md](./OC_UI_STATE_FLOW_UX_PLANNING.md) |
 | **Formlar** | Layout + alan politikaları v1 | ✅ | İnce UX (§10 backlog — form politikası); operasyonel öncelik düşük |
 | **Board'lar** | Runtime board tanımı | 🟡 | Kolon `defaultTransitionKey`, profil/tip varsayılanları, board grupları |
 | **Politikalar** | `fieldPolicies` | ✅ | W2 `typeId`/`boardId` scope — backlog (Faz 1.1); **P-UX** ✅ |

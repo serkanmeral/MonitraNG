@@ -8,6 +8,8 @@ Modülün ilk amacı müşterinin öncelikli ihtiyacı olan kaynak ağacı, klas
 
 Bu doküman CursorAI veya benzeri geliştirme asistanlarına doğrudan verilebilecek şekilde hazırlanmıştır.
 
+**Ürün yol haritası (Sayfa · Döküman · Sheet · Sunum · Parametre · Kurumsal kimlik D-BR · Zamanlama · Bildirim · Workflow D-WF · AI):** [DI_PRODUCT_ROADMAP.md](./DI_PRODUCT_ROADMAP.md) · **MO vs Workflow (Odak):** [ODAK_MO_VS_WORKFLOW_SCENARIOS.md](../workflow/ODAK_MO_VS_WORKFLOW_SCENARIOS.md)
+
 ---
 
 ## 2. Ürün Konumlandırması

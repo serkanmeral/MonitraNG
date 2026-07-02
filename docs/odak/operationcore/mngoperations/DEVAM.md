@@ -1,8 +1,10 @@
 # MngOperations & Operation Core UI — Devam noktası (checkpoint)
 
-**Son güncelleme:** 12 Haziran 2026 (**OC-BOARD-PERF** ✅ · **NCR/CAPA seed** ✅ · commit `68974b4`)  
-**Durum:** Board liste açılış network dedupe deploy ✅ · Workspace otomasyonu planlama tamam — **SW-A0** bekliyor (kod yok)
+**Son güncelleme:** 3 Temmuz 2026 (**Durum akışı UX planlama notu** · önceki: OC-BOARD-PERF ✅ · SW-A0 bekliyor)  
+**Durum:** Board liste açılış network dedupe deploy ✅ · Workspace otomasyonu planlama tamam — **SW-A0** bekliyor (kod yok) · **Durum akışı görsel UX** — tartışma kaydı, implementasyon bekliyor
 
+> **⭐ KALDIĞIMIZ YER (3 Tem 2026 — planlama):** Workspace config **Durum akışı** için görsel/kullanıcı dostu editör ihtiyacı tartışıldı; karar + implementasyon **ertelendi**. Notlar: [../ui/OC_UI_STATE_FLOW_UX_PLANNING.md](../ui/OC_UI_STATE_FLOW_UX_PLANNING.md) (WF-UX0…4 faz taslağı, açık kararlar, mimari sınır). **Sıra gelince:** pilot workspace + WF-UX0 spike.
+>
 > **⭐ KALDIĞIMIZ YER (12 Haz 2026 — mola):** Odak Üretim **NCR/CAPA** seed + **OcBoardPanel** performans paketi canlı. **UI commit zinciri:** `774d823` (seed + loading panel) → `2bdd432` (stale list) → `730e585` (paralel context+list, lazy relation) → `68974b4` (katalog DG atla, `ocGetWorkspace` dedupe, çift list engeli). Kullanıcı network sonrası **OK** dedi. **Sıradaki:** [../../is_surecleri/DEVAM.md](../../is_surecleri/DEVAM.md) öncelikleri (NCR lifecycle test, SW-A0…). **Yeni chat:** bu DEVAM ⭐ + is_surecleri DEVAM ⭐.
 >
 > **⭐ KALDIĞIMIZ YER (11 Haz 2026 — otomasyon planlama v0.2 kapanışı):** **Workspace otomasyonu** planlaması tamamlandı. **Model:** 2 olay (WI duruma geldi · alarm şema) × 2 aksiyon (iş oluştur MVP · döküman faz 2). **Kararlar:** **Otomatik işler** ayrı sekme; `op_workspace_automations` tek kayıt; şablon + **alan eşlemesi** + varsayılan **`parentItemId`**; idempotency `none`; hata → geçiş kalır. **Dokümanlar:** [WORKSPACE_AUTOMATION_PLANNING.md](./WORKSPACE_AUTOMATION_PLANNING.md) (v0.2), [OC_UI_WORKSPACE_AUTOMATIONS.md](../ui/OC_UI_WORKSPACE_AUTOMATIONS.md). Odak referans: `hold_quality` + uygunsuz → NCR. **Implementasyon başlamadı.** **Sıradaki:** **SW-A0** (dataset `op_workspace_automations` + generator) → SW-A1 (MO) → SW-A2 (UI) → SW-A3 (Odak seed/E2E).
