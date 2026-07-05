@@ -320,7 +320,7 @@ export interface OdakTrainingListQuery {
   limit?: number;
 }
 
-async function fetchOdakTrainingsFiltered(query: Pick<OdakTrainingListQuery, 'tab' | 'year' | 'search'> = {}): Promise<OdakTrainingRow[]> {
+export async function fetchOdakTrainingsFiltered(query: Pick<OdakTrainingListQuery, 'tab' | 'year' | 'search'> = {}): Promise<OdakTrainingRow[]> {
   const tab = query.tab ?? 'plan';
   const year = query.year === undefined ? null : query.year;
   const search = query.search?.trim() ?? '';
