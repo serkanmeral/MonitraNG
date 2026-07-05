@@ -427,36 +427,22 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             bool? isActive = null,
             bool? includeInApplication = null,
             string? sortBy = null,
-            string? sortOrder = null)
+            string? sortOrder = null,
+            UserProvisioningSource? provisioningSource = null,
+            string? groupId = null,
+            string? groupIds = null)
         {
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filterBuilder = Builders<BsonDocument>.Filter;
-                var filter = filterBuilder.Eq("domainId", domainId);
-
-                // Apply search filter (case-insensitive regex)
-                if (!string.IsNullOrWhiteSpace(searchTerm))
-                {
-                    var searchFilter = filterBuilder.Or(
-                        filterBuilder.Regex("username", new BsonRegularExpression(searchTerm, "i")),
-                        filterBuilder.Regex("email", new BsonRegularExpression(searchTerm, "i")),
-                        filterBuilder.Regex("firstName", new BsonRegularExpression(searchTerm, "i")),
-                        filterBuilder.Regex("lastName", new BsonRegularExpression(searchTerm, "i"))
-                    );
-                    filter &= searchFilter;
-                }
-
-                // Apply active filter
-                if (isActive.HasValue)
-                {
-                    filter &= filterBuilder.Eq("isActive", isActive.Value);
-                }
-
-                if (includeInApplication.HasValue)
-                {
-                    filter &= ApplicationScopeMongoFilters.IncludeInApplicationEquals(includeInApplication.Value);
-                }
+                var filter = await BuildUserListFilterAsync(
+                    domainId,
+                    searchTerm,
+                    isActive,
+                    includeInApplication,
+                    provisioningSource,
+                    groupId,
+                    groupIds);
 
                 // Build sort definition
                 var sortBuilder = Builders<BsonDocument>.Sort;
@@ -499,36 +485,22 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             bool? isActive = null,
             bool? includeInApplication = null,
             string? sortBy = null,
-            string? sortOrder = null)
+            string? sortOrder = null,
+            UserProvisioningSource? provisioningSource = null,
+            string? groupId = null,
+            string? groupIds = null)
         {
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filterBuilder = Builders<BsonDocument>.Filter;
-                var filter = filterBuilder.Eq("domainId", domainId);
-
-                // Apply search filter (case-insensitive regex)
-                if (!string.IsNullOrWhiteSpace(searchTerm))
-                {
-                    var searchFilter = filterBuilder.Or(
-                        filterBuilder.Regex("username", new BsonRegularExpression(searchTerm, "i")),
-                        filterBuilder.Regex("email", new BsonRegularExpression(searchTerm, "i")),
-                        filterBuilder.Regex("firstName", new BsonRegularExpression(searchTerm, "i")),
-                        filterBuilder.Regex("lastName", new BsonRegularExpression(searchTerm, "i"))
-                    );
-                    filter &= searchFilter;
-                }
-
-                // Apply active filter
-                if (isActive.HasValue)
-                {
-                    filter &= filterBuilder.Eq("isActive", isActive.Value);
-                }
-
-                if (includeInApplication.HasValue)
-                {
-                    filter &= ApplicationScopeMongoFilters.IncludeInApplicationEquals(includeInApplication.Value);
-                }
+                var filter = await BuildUserListFilterAsync(
+                    domainId,
+                    searchTerm,
+                    isActive,
+                    includeInApplication,
+                    provisioningSource,
+                    groupId,
+                    groupIds);
 
                 // Get total count
                 var totalCount = await collection.CountDocumentsAsync(filter);
@@ -582,6 +554,83 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                     PageSize = pageSize
                 };
             }
+        }
+
+        private async Task<FilterDefinition<BsonDocument>> BuildUserListFilterAsync(
+            string domainId,
+            string? searchTerm,
+            bool? isActive,
+            bool? includeInApplication,
+            UserProvisioningSource? provisioningSource,
+            string? groupId,
+            string? groupIds)
+        {
+            var filterBuilder = Builders<BsonDocument>.Filter;
+            var filter = filterBuilder.Eq("domainId", domainId);
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var searchFilter = filterBuilder.Or(
+                    filterBuilder.Regex("username", new BsonRegularExpression(searchTerm, "i")),
+                    filterBuilder.Regex("email", new BsonRegularExpression(searchTerm, "i")),
+                    filterBuilder.Regex("firstName", new BsonRegularExpression(searchTerm, "i")),
+                    filterBuilder.Regex("lastName", new BsonRegularExpression(searchTerm, "i"))
+                );
+                filter &= searchFilter;
+            }
+
+            if (isActive.HasValue)
+            {
+                filter &= filterBuilder.Eq("isActive", isActive.Value);
+            }
+
+            if (includeInApplication.HasValue)
+            {
+                filter &= ApplicationScopeMongoFilters.IncludeInApplicationEquals(includeInApplication.Value);
+            }
+
+            if (provisioningSource.HasValue)
+            {
+                filter &= ProvisioningSourceMongoFilters.Equals(filterBuilder, provisioningSource.Value);
+            }
+
+            var groupIdList = new List<string>();
+            if (!string.IsNullOrWhiteSpace(groupId))
+            {
+                groupIdList.Add(groupId.Trim());
+            }
+            if (!string.IsNullOrWhiteSpace(groupIds))
+            {
+                groupIdList.AddRange(
+                    groupIds.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+            }
+
+            if (groupIdList.Count > 0)
+            {
+                var groupNames = new List<string>();
+                foreach (var gid in groupIdList.Distinct(StringComparer.Ordinal))
+                {
+                    var group = await _groupRepository.GetByIdAsync(gid, domainId);
+                    if (group != null)
+                    {
+                        groupNames.Add(group.Name);
+                    }
+                }
+
+                if (groupNames.Count == 1)
+                {
+                    filter &= filterBuilder.AnyEq("groups", groupNames[0]);
+                }
+                else if (groupNames.Count > 1)
+                {
+                    var groupFilters = groupNames
+                        .Select(name => filterBuilder.AnyEq("groups", name))
+                        .ToList();
+                    filter &= filterBuilder.Or(groupFilters);
+                }
+            }
+
+            return filter;
         }
 
         private static void WriteEmailField(BsonDocument document, string? email)

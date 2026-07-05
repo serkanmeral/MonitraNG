@@ -274,36 +274,19 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             string domainId,
             string? searchTerm = null,
             bool? isActive = null,
-            bool? includeInApplication = null)
+            bool? includeInApplication = null,
+            UserProvisioningSource? provisioningSource = null)
         {
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filterBuilder = Builders<BsonDocument>.Filter;
-                var filter = filterBuilder.Eq("domainId", domainId);
+                var filter = BuildGroupListFilter(
+                    domainId,
+                    searchTerm,
+                    isActive,
+                    includeInApplication,
+                    provisioningSource);
 
-                // Apply search filter (case-insensitive regex)
-                if (!string.IsNullOrWhiteSpace(searchTerm))
-                {
-                    var searchFilter = filterBuilder.Or(
-                        filterBuilder.Regex("name", new BsonRegularExpression(searchTerm, "i")),
-                        filterBuilder.Regex("description", new BsonRegularExpression(searchTerm, "i"))
-                    );
-                    filter &= searchFilter;
-                }
-
-                // Apply active filter
-                if (isActive.HasValue)
-                {
-                    filter &= filterBuilder.Eq("isActive", isActive.Value);
-                }
-
-                if (includeInApplication.HasValue)
-                {
-                    filter &= ApplicationScopeMongoFilters.IncludeInApplicationEquals(includeInApplication.Value);
-                }
-
-                // Get all documents (no pagination)
                 var docs = await collection.Find(filter).ToListAsync();
                 return docs.Select(doc => MapBsonDocumentToGroup(doc)).Where(g => g != null).Cast<Group>();
             }
@@ -320,42 +303,45 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
             int pageSize,
             string? searchTerm = null,
             bool? isActive = null,
-            bool? includeInApplication = null)
+            bool? includeInApplication = null,
+            string? sortBy = null,
+            string? sortOrder = null,
+            UserProvisioningSource? provisioningSource = null)
         {
             try
             {
                 var collection = await GetCollectionAsync(domainId);
-                var filterBuilder = Builders<BsonDocument>.Filter;
-                var filter = filterBuilder.Eq("domainId", domainId);
+                var filter = BuildGroupListFilter(
+                    domainId,
+                    searchTerm,
+                    isActive,
+                    includeInApplication,
+                    provisioningSource);
 
-                // Apply search filter (case-insensitive regex)
-                if (!string.IsNullOrWhiteSpace(searchTerm))
-                {
-                    var searchFilter = filterBuilder.Or(
-                        filterBuilder.Regex("name", new BsonRegularExpression(searchTerm, "i")),
-                        filterBuilder.Regex("description", new BsonRegularExpression(searchTerm, "i"))
-                    );
-                    filter &= searchFilter;
-                }
-
-                // Apply active filter
-                if (isActive.HasValue)
-                {
-                    filter &= filterBuilder.Eq("isActive", isActive.Value);
-                }
-
-                if (includeInApplication.HasValue)
-                {
-                    filter &= ApplicationScopeMongoFilters.IncludeInApplicationEquals(includeInApplication.Value);
-                }
-
-                // Get total count
                 var totalCount = await collection.CountDocumentsAsync(filter);
 
-                // Apply pagination
+                var sortBuilder = Builders<BsonDocument>.Sort;
+                SortDefinition<BsonDocument>? sortDefinition = null;
+
+                if (!string.IsNullOrWhiteSpace(sortBy))
+                {
+                    var isAscending = string.IsNullOrWhiteSpace(sortOrder) ||
+                                     sortOrder.Equals("asc", StringComparison.OrdinalIgnoreCase);
+
+                    sortDefinition = isAscending
+                        ? sortBuilder.Ascending(sortBy)
+                        : sortBuilder.Descending(sortBy);
+                }
+
                 var skip = (page - 1) * pageSize;
-                var docs = await collection
-                    .Find(filter)
+                var findQuery = collection.Find(filter);
+
+                if (sortDefinition != null)
+                {
+                    findQuery = findQuery.Sort(sortDefinition);
+                }
+
+                var docs = await findQuery
                     .Skip(skip)
                     .Limit(pageSize)
                     .ToListAsync();
@@ -381,6 +367,43 @@ namespace MngKeeper.Infrastructure.Persistence.Repositories
                     PageSize = pageSize
                 };
             }
+        }
+
+        private static FilterDefinition<BsonDocument> BuildGroupListFilter(
+            string domainId,
+            string? searchTerm,
+            bool? isActive,
+            bool? includeInApplication,
+            UserProvisioningSource? provisioningSource)
+        {
+            var filterBuilder = Builders<BsonDocument>.Filter;
+            var filter = filterBuilder.Eq("domainId", domainId);
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var searchFilter = filterBuilder.Or(
+                    filterBuilder.Regex("name", new BsonRegularExpression(searchTerm, "i")),
+                    filterBuilder.Regex("description", new BsonRegularExpression(searchTerm, "i"))
+                );
+                filter &= searchFilter;
+            }
+
+            if (isActive.HasValue)
+            {
+                filter &= filterBuilder.Eq("isActive", isActive.Value);
+            }
+
+            if (includeInApplication.HasValue)
+            {
+                filter &= ApplicationScopeMongoFilters.IncludeInApplicationEquals(includeInApplication.Value);
+            }
+
+            if (provisioningSource.HasValue)
+            {
+                filter &= ProvisioningSourceMongoFilters.Equals(filterBuilder, provisioningSource.Value);
+            }
+
+            return filter;
         }
 
         public async Task<bool> ExistsByNameAsync(string name, string domainId)

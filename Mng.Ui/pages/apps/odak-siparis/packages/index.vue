@@ -42,7 +42,7 @@ import {
   type OdakPackageListSort,
 } from '@/utils/odakSiparisService';
 import {
-  collectPersonIdsFromPackageRows,
+  collectPersonIdsForPackageLabelResolution,
   fetchPersonLabelMap,
 } from '@/utils/odakSiparisPackagePersonnel';
 import type { OdakCustomerDialogMode } from '@/utils/odakSiparisCustomerService';
@@ -264,7 +264,7 @@ async function fetchPackages() {
 
     items.value = [...resp.items];
     totalCount.value = resp.total ?? items.value.length;
-    const personIds = collectPersonIdsFromPackageRows(items.value as Record<string, unknown>[]);
+    const personIds = collectPersonIdsForPackageLabelResolution(items.value as Record<string, unknown>[]);
     if (personIds.length) {
       personLabels.value = { ...personLabels.value, ...(await fetchPersonLabelMap(personIds)) };
     }

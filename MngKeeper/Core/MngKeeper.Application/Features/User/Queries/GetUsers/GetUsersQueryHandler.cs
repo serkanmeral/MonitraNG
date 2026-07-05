@@ -56,7 +56,10 @@ namespace MngKeeper.Application.Features.User.Queries.GetUsers
                     request.IsActive,
                     request.IncludeInApplication,
                     request.SortBy,
-                    request.SortOrder);
+                    request.SortOrder,
+                    request.ProvisioningSource,
+                    request.GroupId,
+                    request.GroupIds);
 
                 var userDtos = queryResult.Items
                     .Select(u => UserDtoMapper.ToDto(u, _fieldPolicyService))

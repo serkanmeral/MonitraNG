@@ -1,0 +1,1442 @@
+{
+  "contacts": [
+    {
+      "id": "1",
+      "firm_id": "306",
+      "ad": "Salih KINAY",
+      "position": "",
+      "tel": "",
+      "email": "salih@endustriteknik.com"
+    },
+    {
+      "id": "2",
+      "firm_id": "311",
+      "ad": "NEDİM CELASUN",
+      "position": "BÖLGE MD.YARD.",
+      "tel": "0531 161 15 89 ",
+      "email": "legacy-contact-2@odak.local"
+    },
+    {
+      "id": "3",
+      "firm_id": "40",
+      "ad": "Gözde  Gökler",
+      "position": "",
+      "tel": "",
+      "email": "gozde.gokler@metyx.com"
+    },
+    {
+      "id": "4",
+      "firm_id": "40",
+      "ad": "Merve Güçlü",
+      "position": "",
+      "tel": "",
+      "email": "merve.guclu@metyx.com"
+    },
+    {
+      "id": "5",
+      "firm_id": "40",
+      "ad": "Burcu  Çakır",
+      "position": "Kalite",
+      "tel": "",
+      "email": "burcu.cakir@metyx.com"
+    },
+    {
+      "id": "6",
+      "firm_id": "40",
+      "ad": "Mustafa  Saklı",
+      "position": "Kalite",
+      "tel": "",
+      "email": "mustafa.sakli@metyx.com"
+    },
+    {
+      "id": "7",
+      "firm_id": "107",
+      "ad": "Murat Coşkun  Akengin",
+      "position": "",
+      "tel": "",
+      "email": "murat.akengin@tila.co"
+    },
+    {
+      "id": "8",
+      "firm_id": "107",
+      "ad": "Özge  Coşar",
+      "position": "",
+      "tel": "",
+      "email": "imex@tila.co"
+    },
+    {
+      "id": "9",
+      "firm_id": "107",
+      "ad": "Ebru  Yılmaz",
+      "position": "",
+      "tel": "",
+      "email": "ebru.yilmaz@tila.co"
+    },
+    {
+      "id": "10",
+      "firm_id": "231",
+      "ad": "Fazlı Civelek",
+      "position": "Otomativ Grubu- Satış Müdürü",
+      "tel": "+90 543 478 76 96",
+      "email": "fazli@kemipaz.com.tr"
+    },
+    {
+      "id": "11",
+      "firm_id": "231",
+      "ad": "Mitat Alagöz",
+      "position": "",
+      "tel": "",
+      "email": "alagoz@kemipaz.com.tr"
+    },
+    {
+      "id": "12",
+      "firm_id": "231",
+      "ad": "Öncel Mocan",
+      "position": "",
+      "tel": "",
+      "email": "oncel.mocan@kemipaz.com.tr"
+    },
+    {
+      "id": "13",
+      "firm_id": "231",
+      "ad": "Musa Altıntaş",
+      "position": "",
+      "tel": "",
+      "email": "musa@kemipaz.com.tr"
+    },
+    {
+      "id": "14",
+      "firm_id": "231",
+      "ad": "Tülay Alagöz",
+      "position": "",
+      "tel": "",
+      "email": "tulay@kemipaz.com.tr"
+    },
+    {
+      "id": "15",
+      "firm_id": "111",
+      "ad": "Işıl Dikmen",
+      "position": "",
+      "tel": "",
+      "email": "idikmen@kimar.com.tr"
+    },
+    {
+      "id": "16",
+      "firm_id": "111",
+      "ad": "Zeynep  KARAGÖZ",
+      "position": "",
+      "tel": "",
+      "email": "zkaragoz@duratek.com.tr"
+    },
+    {
+      "id": "17",
+      "firm_id": "14",
+      "ad": "Dilek Sağır",
+      "position": "Satış Yöneticisi ",
+      "tel": "+90 (541) 324 61 46",
+      "email": "dilek.sagir@biesterfeld.com.tr"
+    },
+    {
+      "id": "18",
+      "firm_id": "214",
+      "ad": "Tolga  Turgut",
+      "position": "",
+      "tel": "",
+      "email": "tolga.durgut@altek.com.tr"
+    },
+    {
+      "id": "19",
+      "firm_id": "258",
+      "ad": "YASEMİN  EROL",
+      "position": "",
+      "tel": "+ 90 312 811 18 00/ 2261",
+      "email": "yasemin.erol@tai.com.tr"
+    },
+    {
+      "id": "20",
+      "firm_id": "255",
+      "ad": "Mehmet Sarı",
+      "position": "Satınalma",
+      "tel": "0312 860 55 00 / 2589",
+      "email": "msari@roketsan.com.tr"
+    },
+    {
+      "id": "21",
+      "firm_id": "255",
+      "ad": "Osman  Sarıışık",
+      "position": "Proje",
+      "tel": "0312 860 55 00",
+      "email": "osariisik@roketsan.com.tr"
+    },
+    {
+      "id": "22",
+      "firm_id": "233",
+      "ad": "Aydın Taşdelen",
+      "position": "Satınalma Sorumlusu",
+      "tel": "05336381661",
+      "email": "atasdelen@aselsan.com.tr"
+    },
+    {
+      "id": "23",
+      "firm_id": "140",
+      "ad": "Hülya  DAŞGIN",
+      "position": "Üretim Sorumlusu / Kimya Mühendisi",
+      "tel": "",
+      "email": "kalite@mekasan.com.tr"
+    },
+    {
+      "id": "24",
+      "firm_id": "306",
+      "ad": "Yasin Şahan",
+      "position": "Girdi Kontrol Sorumlusu",
+      "tel": "+90 312 395 27 38 -98 ",
+      "email": "yasin@endustriteknik.com"
+    },
+    {
+      "id": "25",
+      "firm_id": "306",
+      "ad": "Gamze  Özcan Coşkun",
+      "position": "Kalite Sistem Müdürü",
+      "tel": "",
+      "email": "gamze@endustriteknik.com"
+    },
+    {
+      "id": "26",
+      "firm_id": "318",
+      "ad": "Ayşe Bacik",
+      "position": "",
+      "tel": "",
+      "email": "ayse@gunebakan.com"
+    },
+    {
+      "id": "27",
+      "firm_id": "197",
+      "ad": "Gözde  Balta",
+      "position": "Uzman Biyolog",
+      "tel": "0507 484 97 75",
+      "email": "gozdebalta@bclab.com.tr"
+    },
+    {
+      "id": "28",
+      "firm_id": "45",
+      "ad": "Ekin Bora",
+      "position": "",
+      "tel": "",
+      "email": "ekin@nevamarine.com"
+    },
+    {
+      "id": "29",
+      "firm_id": "45",
+      "ad": "Nurettin Çalışkan",
+      "position": "",
+      "tel": "+90 533 733 9416",
+      "email": "nurettin@nevamarine.com"
+    },
+    {
+      "id": "30",
+      "firm_id": "92",
+      "ad": "Ali Güneş",
+      "position": "",
+      "tel": "+90 541 489 17 59",
+      "email": "legacy-contact-30@odak.local"
+    },
+    {
+      "id": "31",
+      "firm_id": "37",
+      "ad": "MUHAMMET  İŞLER",
+      "position": "SATIŞ MÜDÜRÜ",
+      "tel": "0532 244 77 47",
+      "email": "misler@omm.com.tr"
+    },
+    {
+      "id": "32",
+      "firm_id": "255",
+      "ad": "Emre Turhan",
+      "position": "Yan Sanayi Alımları Birimi",
+      "tel": "0312 860 55 00 / 2581",
+      "email": "eturhan@roketsan.com.tr"
+    },
+    {
+      "id": "33",
+      "firm_id": "255",
+      "ad": "Türkan İlksen  Demir Gündoğdu",
+      "position": "İmalat ve TAM Alımları Mühendisi",
+      "tel": "(312) 860 55 00 / 2591",
+      "email": "ilksen.demir@roketsan.com.tr"
+    },
+    {
+      "id": "34",
+      "firm_id": "333",
+      "ad": "Fahrettin",
+      "position": "",
+      "tel": "",
+      "email": "legacy-contact-34@odak.local"
+    },
+    {
+      "id": "35",
+      "firm_id": "255",
+      "ad": "Zuhal Nalbat İşler",
+      "position": "Satınalma Sorumlusu",
+      "tel": "0312 860 55 00 / 2590",
+      "email": "zuhal.isler@roketsan.com.tr"
+    },
+    {
+      "id": "36",
+      "firm_id": "255",
+      "ad": "Koray Aykaç",
+      "position": "Satınalma Sorumlusu",
+      "tel": "(0312) 860 55 00 / 2594",
+      "email": "koray.aykac@roketsan.com.tr"
+    },
+    {
+      "id": "37",
+      "firm_id": "258",
+      "ad": "Muhammet Karataş",
+      "position": "Sevkiyat",
+      "tel": "+90 554 511 27 06",
+      "email": "legacy-contact-37@odak.local"
+    },
+    {
+      "id": "38",
+      "firm_id": "258",
+      "ad": "Latif Karataş",
+      "position": "Sevkiyat",
+      "tel": "+90 554 922 16 61",
+      "email": "legacy-contact-38@odak.local"
+    },
+    {
+      "id": "39",
+      "firm_id": "15",
+      "ad": "Ufuk",
+      "position": "",
+      "tel": "0530 782 74 36",
+      "email": "legacy-contact-39@odak.local"
+    },
+    {
+      "id": "40",
+      "firm_id": "15",
+      "ad": "Erhan",
+      "position": "",
+      "tel": "0530 341 90 45",
+      "email": "legacy-contact-40@odak.local"
+    },
+    {
+      "id": "41",
+      "firm_id": "255",
+      "ad": "Ali Nureddin Argun",
+      "position": "Satınalma Sorumlusu",
+      "tel": "03128605500-2635",
+      "email": "ali.argun@roketsan.com.tr"
+    },
+    {
+      "id": "42",
+      "firm_id": "255",
+      "ad": "Halit Savaş",
+      "position": "Satınalma Sorumlusu",
+      "tel": "0312 860 55 00",
+      "email": "halit.savas@roketsan.com.tr"
+    },
+    {
+      "id": "43",
+      "firm_id": "258",
+      "ad": "Ömer Altundağ",
+      "position": "Üretim Planlama Kontrol",
+      "tel": "",
+      "email": "omer.altundag@tai.com.tr"
+    },
+    {
+      "id": "45",
+      "firm_id": "255",
+      "ad": "Emre  Özaslan",
+      "position": "",
+      "tel": "",
+      "email": "emre.ozaslan@roketsan.com.tr"
+    },
+    {
+      "id": "46",
+      "firm_id": "233",
+      "ad": "Kezban Akgül",
+      "position": "Savunma Sistem Teknolojileri Sektör Başkanlığı -Üretim ve Tedarik Kalite Yönetim Müdürlüğü ",
+      "tel": "0312 592 22 88 ",
+      "email": "kakgul@aselsan.com.tr"
+    },
+    {
+      "id": "47",
+      "firm_id": "40",
+      "ad": "Bahhattin  Sendoğan",
+      "position": "",
+      "tel": "",
+      "email": "bahattin.sendogan@metyx.com"
+    },
+    {
+      "id": "48",
+      "firm_id": "217",
+      "ad": "Ekrem  Ayan",
+      "position": "",
+      "tel": "",
+      "email": "muhasebe@bestek.com.tr"
+    },
+    {
+      "id": "49",
+      "firm_id": "356",
+      "ad": "Adem Düztaş",
+      "position": "",
+      "tel": "+90 535 986 08 11",
+      "email": "legacy-contact-49@odak.local"
+    },
+    {
+      "id": "50",
+      "firm_id": "15",
+      "ad": "Türkan  Özdoğan",
+      "position": "Kalite kontrol SAtış & Destek Mühendisi",
+      "tel": "+90 232 433 72 30 / 1251",
+      "email": "t.ozdogan@bilginoglu-endustri.com.tr"
+    },
+    {
+      "id": "51",
+      "firm_id": "255",
+      "ad": "Tayfun Durmaz",
+      "position": "Kompozit Üretim Proses Mühendisi ",
+      "tel": "",
+      "email": "tayfun.durmaz@roketsan.com.tr"
+    },
+    {
+      "id": "52",
+      "firm_id": "255",
+      "ad": "T. İlksen Demir",
+      "position": "Satınalma Sorumlusu/ Uzman Mühendis",
+      "tel": "+ 90(312)860 55 00 / 2591",
+      "email": "ILKSEN.DEMIR@ROKETSAN.COM.TR"
+    },
+    {
+      "id": "53",
+      "firm_id": "258",
+      "ad": "Aydın Meydan",
+      "position": "Üretim Planlama Kontrol",
+      "tel": "0 532 607 89 14",
+      "email": "aydin.meydan@tai.com.tr"
+    },
+    {
+      "id": "54",
+      "firm_id": "358",
+      "ad": "Hakan",
+      "position": "",
+      "tel": "+90 532 471 34 42",
+      "email": "legacy-contact-54@odak.local"
+    },
+    {
+      "id": "55",
+      "firm_id": "233",
+      "ad": "Erhan Çakmak",
+      "position": "Satınalma Uzmanı",
+      "tel": "0 312 592 82596",
+      "email": "erhancakmak@aselsan.com.tr"
+    },
+    {
+      "id": "56",
+      "firm_id": "233",
+      "ad": "Rafet Karaman",
+      "position": "",
+      "tel": "",
+      "email": "rkaraman@aselsan.com.tr"
+    },
+    {
+      "id": "57",
+      "firm_id": "261",
+      "ad": "Ahmet Umur Durak",
+      "position": "Mühendis-Satınalma",
+      "tel": "0 222 211 2485",
+      "email": "ahmetumur.durak@tei.com.tr"
+    },
+    {
+      "id": "58",
+      "firm_id": "364",
+      "ad": "İrem Filiz",
+      "position": "",
+      "tel": "",
+      "email": "Irem.Kiran@clariant.com"
+    },
+    {
+      "id": "59",
+      "firm_id": "364",
+      "ad": "Ömer",
+      "position": "",
+      "tel": "",
+      "email": "Omer.Seckin@clariant.com"
+    },
+    {
+      "id": "60",
+      "firm_id": "306",
+      "ad": "Şahika Kabukcuoğlu",
+      "position": "Kalite Sistem Sorumlusu/ Quality System Responsible",
+      "tel": "117",
+      "email": "skabukcuoglu@estyuzeykaplama.com"
+    },
+    {
+      "id": "61",
+      "firm_id": "368",
+      "ad": "Tuğba Ünlü",
+      "position": "Satış & Pazarlama",
+      "tel": "0554 540 32 31",
+      "email": "legacy-contact-61@odak.local"
+    },
+    {
+      "id": "62",
+      "firm_id": "367",
+      "ad": "Ömer Keser",
+      "position": "",
+      "tel": "0541 394 2938",
+      "email": "omer.keser@ybdsavunma.com"
+    },
+    {
+      "id": "63",
+      "firm_id": "55",
+      "ad": "Meryem Bacak ŞAHAN",
+      "position": "",
+      "tel": "",
+      "email": "kalite@seykoc.com.tr"
+    },
+    {
+      "id": "64",
+      "firm_id": "55",
+      "ad": "Şahin  ARSLAN",
+      "position": "Kalite Kontrol",
+      "tel": "",
+      "email": "kalite@seykoc.com.tr"
+    },
+    {
+      "id": "65",
+      "firm_id": "258",
+      "ad": "Şeyma Koç",
+      "position": "Saha Mühendisi",
+      "tel": "+90 312 811 18 00 / 3026",
+      "email": "seyma.koc@tai.com.tr"
+    },
+    {
+      "id": "66",
+      "firm_id": "255",
+      "ad": "Özge  Öğüt",
+      "position": "Proje Koordinatörü -Deniz Füze Sistemleri ",
+      "tel": "+ 90(312)860 55 00 / 6116",
+      "email": "ozge.alkusak@roketsan.com.tr"
+    },
+    {
+      "id": "68",
+      "firm_id": "233",
+      "ad": "Sebahattin  Akyüz",
+      "position": "",
+      "tel": "+90 312 592 2273",
+      "email": "sakyuz@aselsan.com.tr"
+    },
+    {
+      "id": "69",
+      "firm_id": "258",
+      "ad": "Volkan Bilgin",
+      "position": "Üretim Planlama Kontrol",
+      "tel": "0 312 811 18 00 / 15218",
+      "email": "volkan.bilgin@tai.com.tr"
+    },
+    {
+      "id": "70",
+      "firm_id": "233",
+      "ad": "Mustafa  Bekar",
+      "position": "",
+      "tel": "0505 941 67 23",
+      "email": "mbekar@aselsan.com.tr"
+    },
+    {
+      "id": "71",
+      "firm_id": "64",
+      "ad": "Murat Gökçe",
+      "position": "Muhasebe Sorumlusu",
+      "tel": "",
+      "email": "murat@togaysan.com.tr"
+    },
+    {
+      "id": "72",
+      "firm_id": "233",
+      "ad": "Ethem Derman",
+      "position": "Satınalma Sorumlusu",
+      "tel": "0 312 592 6784",
+      "email": "ederman@aselsan.com.tr"
+    },
+    {
+      "id": "73",
+      "firm_id": "231",
+      "ad": "Gökhan Köse",
+      "position": "Satış Görevlisi",
+      "tel": "",
+      "email": "gokhan.kose@kemipaz.com.tr"
+    },
+    {
+      "id": "74",
+      "firm_id": "233",
+      "ad": "Korcan Küçükateş",
+      "position": "",
+      "tel": "",
+      "email": "kkucukates@aselsan.com.tr"
+    },
+    {
+      "id": "75",
+      "firm_id": "64",
+      "ad": "Yılmaz  Kılıç",
+      "position": "",
+      "tel": "",
+      "email": "yilmaz@togaysan.com.tr"
+    },
+    {
+      "id": "76",
+      "firm_id": "258",
+      "ad": "Nihal  Taşçı Yılmaz",
+      "position": "Yardımcı Sanayi Montaj, Sac Metal Ve Kompozit İmalat Sözleşmeler Yardımcı Sanayi Operasyonları",
+      "tel": "+90 (312) 8111800 / 19941",
+      "email": "nyilmaz@tai.com.tr"
+    },
+    {
+      "id": "77",
+      "firm_id": "55",
+      "ad": "Cansu Gençer Özkan",
+      "position": "Muhasebe",
+      "tel": "0542 742 56 67",
+      "email": "cansu.ozkan@seykoc.com.tr"
+    },
+    {
+      "id": "78",
+      "firm_id": "255",
+      "ad": "Erdal Sapancı",
+      "position": "",
+      "tel": "",
+      "email": "erdal.sapanci@roketsan.com.tr"
+    },
+    {
+      "id": "79",
+      "firm_id": "233",
+      "ad": "Ahmet Muaz ATEŞ",
+      "position": "Tasarım Mühendisi",
+      "tel": "0 505 359 05 28",
+      "email": "mates@aselsan.com.tr"
+    },
+    {
+      "id": "80",
+      "firm_id": "82",
+      "ad": "Hacer Hanım",
+      "position": "",
+      "tel": "+90 530 525 9726",
+      "email": "legacy-contact-80@odak.local"
+    },
+    {
+      "id": "81",
+      "firm_id": "258",
+      "ad": "Hamdi Yurdakul",
+      "position": "",
+      "tel": "",
+      "email": "legacy-contact-81@odak.local"
+    },
+    {
+      "id": "82",
+      "firm_id": "261",
+      "ad": "Çetin ENSER",
+      "position": "Uzman Mühendis-Pistonlu Motorlar",
+      "tel": "",
+      "email": "legacy-contact-82@odak.local"
+    },
+    {
+      "id": "83",
+      "firm_id": "255",
+      "ad": "Anıl Alkan",
+      "position": "Satınalma Sorumlusu",
+      "tel": "90 312 860 55 00 / 2612",
+      "email": "anil.alkan@roketsan.com.tr"
+    },
+    {
+      "id": "84",
+      "firm_id": "233",
+      "ad": "Oğuz DOĞAN",
+      "position": "",
+      "tel": "",
+      "email": "legacy-contact-84@odak.local"
+    },
+    {
+      "id": "85",
+      "firm_id": "378",
+      "ad": "ALİ GÜNEŞ",
+      "position": "",
+      "tel": "05414891759",
+      "email": "legacy-contact-85@odak.local"
+    },
+    {
+      "id": "86",
+      "firm_id": "233",
+      "ad": "Murat ALPARSLAN",
+      "position": "Ring/Dönemsel işbirliği kapsamında gönderilen ürünleri",
+      "tel": "0530 206 53 34",
+      "email": "legacy-contact-86@odak.local"
+    },
+    {
+      "id": "87",
+      "firm_id": "383",
+      "ad": "Melek Çınar",
+      "position": "Satınalma Birimi",
+      "tel": "0 312 590 91 44",
+      "email": "melek.cinar@tubitak.gov.tr"
+    },
+    {
+      "id": "88",
+      "firm_id": "255",
+      "ad": "Alican Dakak",
+      "position": "Yansanayi Alımları Mühendisi",
+      "tel": "0 312 860 55 00",
+      "email": "alican.dakak@roketsan.com.tr"
+    },
+    {
+      "id": "89",
+      "firm_id": "255",
+      "ad": "Zeynep  Özden Yaşa",
+      "position": "",
+      "tel": "0312 860 55 00/ 7223",
+      "email": "legacy-contact-89@odak.local"
+    },
+    {
+      "id": "90",
+      "firm_id": "141",
+      "ad": "Eda YAPRAK",
+      "position": "",
+      "tel": "+90 312 504 91 99",
+      "email": "legacy-contact-90@odak.local"
+    },
+    {
+      "id": "91",
+      "firm_id": "233",
+      "ad": "Rıza Turalı",
+      "position": "Satınalma Uzmanı",
+      "tel": "0 312 592 6000",
+      "email": "legacy-contact-91@odak.local"
+    },
+    {
+      "id": "92",
+      "firm_id": "255",
+      "ad": "Önder Aran",
+      "position": "Satınalma Uzmanı",
+      "tel": "(312) 860 55 00 / 2598",
+      "email": "onder.aran@roketsan.com.tr"
+    },
+    {
+      "id": "93",
+      "firm_id": "233",
+      "ad": "Yekta Cem Başarır",
+      "position": "Satınalma Birimi",
+      "tel": "(312) 592 6000 - 89919",
+      "email": "ycbasarir@aselsan.com.tr"
+    },
+    {
+      "id": "94",
+      "firm_id": "395",
+      "ad": "Okan KASIM",
+      "position": "Kıdemli Satınalma Uzmanı",
+      "tel": "0312 266 3550 /437",
+      "email": "okan.kasim@stm.com.tr"
+    },
+    {
+      "id": "95",
+      "firm_id": "397",
+      "ad": "Selda GÖÇMEN",
+      "position": "Satınalma Sorumlusu",
+      "tel": "0312 354 4057",
+      "email": "selda@rmssavunma.com"
+    },
+    {
+      "id": "96",
+      "firm_id": "255",
+      "ad": "Bilge ÖZKARA",
+      "position": "Satınalma Uzmanı",
+      "tel": "0 312 860 55 00 / 2588",
+      "email": "bilge.ozkara@roketsan.com.tr"
+    },
+    {
+      "id": "97",
+      "firm_id": "398",
+      "ad": "Ali Gencer",
+      "position": "Akademisyen",
+      "tel": "",
+      "email": "aligencer06@gmail.com"
+    },
+    {
+      "id": "98",
+      "firm_id": "395",
+      "ad": "Duru Can ORAL",
+      "position": "Uçuş Bilimleri Grup Lideri",
+      "tel": "03122663550/476",
+      "email": "dcanoral@stm.com.tr"
+    },
+    {
+      "id": "99",
+      "firm_id": "255",
+      "ad": "Arda YÜKSEL",
+      "position": "Kalite",
+      "tel": "0312 860 55 00/ 2937",
+      "email": "legacy-contact-99@odak.local"
+    },
+    {
+      "id": "100",
+      "firm_id": "258",
+      "ad": "Göksun Mutlu Turgut",
+      "position": "Kalite Mühendisliği Kalite Sistemleri",
+      "tel": "+90 (312) 8111800/3250",
+      "email": "gturgut@tai.com.tr"
+    },
+    {
+      "id": "101",
+      "firm_id": "233",
+      "ad": "Orkun Tarak",
+      "position": "MGEO Tedarik Birimi",
+      "tel": "0 312 592 6000 / 89788",
+      "email": "orkuntarak@aselsan.com.tr"
+    },
+    {
+      "id": "102",
+      "firm_id": "255",
+      "ad": "Muammer Demiralp",
+      "position": "Yansanayi Alımları Mühendisi",
+      "tel": "0312 860 55 00/ 2599",
+      "email": "legacy-contact-102@odak.local"
+    },
+    {
+      "id": "103",
+      "firm_id": "233",
+      "ad": "Olgun Hatipoğlu",
+      "position": "Uzman Mühendis",
+      "tel": "0 312 592 6000",
+      "email": "ohatiboglu@aselsan.com.tr"
+    },
+    {
+      "id": "104",
+      "firm_id": "261",
+      "ad": "Yıldırım YILMAZ",
+      "position": "Mühendis-Satınalma",
+      "tel": "0 222 211 2303",
+      "email": "yidirim.yilmaz@tei.com.tr"
+    },
+    {
+      "id": "105",
+      "firm_id": "255",
+      "ad": "Ertuğ  VARMAN",
+      "position": "Satınalma Mühendisi",
+      "tel": "+ 90(312)860 55 00 / 2658",
+      "email": "ertug.varman@roketsan.com.tr"
+    },
+    {
+      "id": "106",
+      "firm_id": "255",
+      "ad": "Muzaffer Cihan GÖKÇAY",
+      "position": "Satınalma Yöneticisi",
+      "tel": "0312 860 55 00/ 2585",
+      "email": "cihan.gokcay@roketsan.com.tr"
+    },
+    {
+      "id": "107",
+      "firm_id": "255",
+      "ad": "Özlem ÇETİN",
+      "position": "Satınalma Mühendisi",
+      "tel": "+90 312 860 55 00 / 2665",
+      "email": "ozlem.cetin@roketsan.com.tr"
+    },
+    {
+      "id": "108",
+      "firm_id": "255",
+      "ad": "Abdurrahman Özdemir",
+      "position": "Satınalma Uzmanı",
+      "tel": "0 312 860 5500 /2666",
+      "email": "abdurrahman.ozdemir@roketsan.com.tr"
+    },
+    {
+      "id": "109",
+      "firm_id": "255",
+      "ad": "Ertunç ALTUNCU",
+      "position": "Satınalma Sorumlusu",
+      "tel": "0312 860 55 00 / 2546",
+      "email": "ertunc.altuncu@roketsan.com.tr"
+    },
+    {
+      "id": "110",
+      "firm_id": "255",
+      "ad": "Burak ERDOĞAN",
+      "position": "Satınalma Mühendisi",
+      "tel": "0(312) 860 55 00-2579",
+      "email": "burak.erdogan@roketsan.com.tr"
+    },
+    {
+      "id": "111",
+      "firm_id": "233",
+      "ad": "Murat ARSLAN",
+      "position": "Satınalma Mühendisi",
+      "tel": "0 312 592 6000 / 80251",
+      "email": "marslan@aselsan.com.tr"
+    },
+    {
+      "id": "112",
+      "firm_id": "395",
+      "ad": "Çağatay  Adsız",
+      "position": "Kıdemli Satınalma Uzmanı",
+      "tel": "03122663550/617",
+      "email": "cagatay.adsiz@stm.com.tr"
+    },
+    {
+      "id": "113",
+      "firm_id": "255",
+      "ad": "Kaan Reyhan",
+      "position": "Arge Alımları Lideri",
+      "tel": "3128605500/2681",
+      "email": "kaan.reyhan@roketsan.com.tr"
+    },
+    {
+      "id": "114",
+      "firm_id": "441",
+      "ad": "Bahadır YALÇIN",
+      "position": "İş Geliştirme Müdürü",
+      "tel": "0539 768 13 13",
+      "email": "bahadir.yalcin@tranten.com.tr"
+    },
+    {
+      "id": "115",
+      "firm_id": "450",
+      "ad": "MUSTAFA  ÇUKADAR",
+      "position": "FİRMA MÜDÜRÜ",
+      "tel": "05332546179",
+      "email": "legacy-contact-115@odak.local"
+    },
+    {
+      "id": "116",
+      "firm_id": "255",
+      "ad": "Batuhan DİRİL",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-116@odak.local"
+    },
+    {
+      "id": "117",
+      "firm_id": "258",
+      "ad": "EMRE  GÜRCAN",
+      "position": "Satınalma Sorumlusu",
+      "tel": "8111800",
+      "email": "emre.gurcan1@tai.com.tr"
+    },
+    {
+      "id": "118",
+      "firm_id": "258",
+      "ad": "Hasan Yavuz",
+      "position": "Satınalma Sorumlusu",
+      "tel": "8111800 / 15207",
+      "email": "hasan.yavuz@tai.com.tr"
+    },
+    {
+      "id": "119",
+      "firm_id": "233",
+      "ad": "Bahanur  GÜLCAN",
+      "position": "Satınalma Sorumlusu",
+      "tel": "5926000 / 89667",
+      "email": "legacy-contact-119@odak.local"
+    },
+    {
+      "id": "120",
+      "firm_id": "395",
+      "ad": "İsmail Gökhan GÜROL",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-120@odak.local"
+    },
+    {
+      "id": "121",
+      "firm_id": "233",
+      "ad": "Ozan Can Atak",
+      "position": "Satınalma Sorumlusu",
+      "tel": "+90 312 592 60 00 / 89731",
+      "email": "ocatak@aselsan.com.tr"
+    },
+    {
+      "id": "122",
+      "firm_id": "14",
+      "ad": "Zeynep Civan",
+      "position": "Kalite Kontrol",
+      "tel": "",
+      "email": "zeynep.civan@biesterfeld.com.tr"
+    },
+    {
+      "id": "124",
+      "firm_id": "233",
+      "ad": "Fatih  ASSAV",
+      "position": "Satınalma Sorumlusu",
+      "tel": "0312 592 60 00 / 80528",
+      "email": "legacy-contact-124@odak.local"
+    },
+    {
+      "id": "125",
+      "firm_id": "233",
+      "ad": "Emir Can Nakışçı",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-125@odak.local"
+    },
+    {
+      "id": "126",
+      "firm_id": "255",
+      "ad": "Furkan  Oral",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-126@odak.local"
+    },
+    {
+      "id": "127",
+      "firm_id": "233",
+      "ad": "Anıl AKAN",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-127@odak.local"
+    },
+    {
+      "id": "129",
+      "firm_id": "233",
+      "ad": "Volkan KAYALI",
+      "position": "Satınalma Sorumlusu",
+      "tel": "5926000/88609",
+      "email": "legacy-contact-129@odak.local"
+    },
+    {
+      "id": "130",
+      "firm_id": "267",
+      "ad": "Oğuz ÇAĞLAYIK",
+      "position": "Operasyonlar Direktörü",
+      "tel": "640 10 45",
+      "email": "ocaglayik@yukselct.com"
+    },
+    {
+      "id": "131",
+      "firm_id": "486",
+      "ad": "Kadir Yener",
+      "position": "",
+      "tel": "",
+      "email": "legacy-contact-131@odak.local"
+    },
+    {
+      "id": "132",
+      "firm_id": "233",
+      "ad": "Alper COSKUN",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-132@odak.local"
+    },
+    {
+      "id": "133",
+      "firm_id": "255",
+      "ad": "Başak MERT",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-133@odak.local"
+    },
+    {
+      "id": "134",
+      "firm_id": "233",
+      "ad": "Ersin İnce",
+      "position": "Satınalma Sorumlusu",
+      "tel": "5926000/84049",
+      "email": "legacy-contact-134@odak.local"
+    },
+    {
+      "id": "135",
+      "firm_id": "255",
+      "ad": "Melda Betül ŞEN",
+      "position": "Satınalma Sorumlusu",
+      "tel": "860 55 00",
+      "email": "legacy-contact-135@odak.local"
+    },
+    {
+      "id": "136",
+      "firm_id": "255",
+      "ad": "Bahattin Bahadır Demir",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-136@odak.local"
+    },
+    {
+      "id": "137",
+      "firm_id": "503",
+      "ad": "Doğan Eyüpoğlu",
+      "position": "",
+      "tel": "544 347 96 71",
+      "email": "legacy-contact-137@odak.local"
+    },
+    {
+      "id": "138",
+      "firm_id": "258",
+      "ad": "Muhittin Can Canıtez",
+      "position": "",
+      "tel": "",
+      "email": "legacy-contact-138@odak.local"
+    },
+    {
+      "id": "139",
+      "firm_id": "233",
+      "ad": "Mehmet Genç",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-139@odak.local"
+    },
+    {
+      "id": "140",
+      "firm_id": "255",
+      "ad": "İbrahim KAMALI",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-140@odak.local"
+    },
+    {
+      "id": "141",
+      "firm_id": "255",
+      "ad": "Emre Dağıdır",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-141@odak.local"
+    },
+    {
+      "id": "142",
+      "firm_id": "520",
+      "ad": "ÖZGÜN ŞENER",
+      "position": "",
+      "tel": "",
+      "email": "legacy-contact-142@odak.local"
+    },
+    {
+      "id": "143",
+      "firm_id": "255",
+      "ad": "Baran Doğan",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-143@odak.local"
+    },
+    {
+      "id": "144",
+      "firm_id": "255",
+      "ad": "Ali Barış Saraç",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-144@odak.local"
+    },
+    {
+      "id": "145",
+      "firm_id": "255",
+      "ad": "İremsu Özcan",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-145@odak.local"
+    },
+    {
+      "id": "146",
+      "firm_id": "763",
+      "ad": "Bilgen Kubilay",
+      "position": "Satınalma Sorumlusu",
+      "tel": "312 441 42 20",
+      "email": "legacy-contact-146@odak.local"
+    },
+    {
+      "id": "147",
+      "firm_id": "233",
+      "ad": "Gökhan Sayın",
+      "position": "Rehis Ring",
+      "tel": "0 535 493 60 69",
+      "email": "legacy-contact-147@odak.local"
+    },
+    {
+      "id": "148",
+      "firm_id": "255",
+      "ad": "Emre Seçgin",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-148@odak.local"
+    },
+    {
+      "id": "149",
+      "firm_id": "255",
+      "ad": "Tarık Karaca",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-149@odak.local"
+    },
+    {
+      "id": "150",
+      "firm_id": "481",
+      "ad": "Emrah Sarıyıldız",
+      "position": "Satınalma Yöneticisi",
+      "tel": "",
+      "email": "legacy-contact-150@odak.local"
+    },
+    {
+      "id": "151",
+      "firm_id": "255",
+      "ad": "Mustafa Turhan",
+      "position": "Satınalma Sorumlusu",
+      "tel": "312 860 55 00",
+      "email": "legacy-contact-151@odak.local"
+    },
+    {
+      "id": "152",
+      "firm_id": "255",
+      "ad": "Ahmet Kemal TATAR",
+      "position": "Satınalma Sorumlusu",
+      "tel": "312 860 55 00",
+      "email": "legacy-contact-152@odak.local"
+    },
+    {
+      "id": "153",
+      "firm_id": "233",
+      "ad": "Mustafa Çiftçi",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-153@odak.local"
+    },
+    {
+      "id": "154",
+      "firm_id": "233",
+      "ad": "Arif Tanış",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-154@odak.local"
+    },
+    {
+      "id": "155",
+      "firm_id": "233",
+      "ad": "Şevval Buse Çoban",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-155@odak.local"
+    },
+    {
+      "id": "156",
+      "firm_id": "520",
+      "ad": "Batuhan Doğan",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-156@odak.local"
+    },
+    {
+      "id": "157",
+      "firm_id": "255",
+      "ad": "Doğukan  Yılmaz",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-157@odak.local"
+    },
+    {
+      "id": "158",
+      "firm_id": "255",
+      "ad": "Gizem ERKAN",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-158@odak.local"
+    },
+    {
+      "id": "159",
+      "firm_id": "802",
+      "ad": "Hüseyin Barın",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-159@odak.local"
+    },
+    {
+      "id": "160",
+      "firm_id": "233",
+      "ad": "İSA YİĞİT",
+      "position": "Satınalma Sorumlusu",
+      "tel": "312 860 55 00",
+      "email": "legacy-contact-160@odak.local"
+    },
+    {
+      "id": "161",
+      "firm_id": "233",
+      "ad": "Aladdin  Demirkan",
+      "position": "Satınalma Sorumlusu",
+      "tel": "312 592 60 00",
+      "email": "legacy-contact-161@odak.local"
+    },
+    {
+      "id": "162",
+      "firm_id": "255",
+      "ad": "Muhammed Aydın",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-162@odak.local"
+    },
+    {
+      "id": "163",
+      "firm_id": "233",
+      "ad": "Davuthan Kozan",
+      "position": "Satınalma Sorumlusu",
+      "tel": "312 592 60 00 / 80839",
+      "email": "legacy-contact-163@odak.local"
+    },
+    {
+      "id": "164",
+      "firm_id": "255",
+      "ad": "NİRAY ŞEYMA  AYDIN",
+      "position": "Planlama",
+      "tel": "",
+      "email": "legacy-contact-164@odak.local"
+    },
+    {
+      "id": "165",
+      "firm_id": "255",
+      "ad": "Kubilay Duman",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-165@odak.local"
+    },
+    {
+      "id": "166",
+      "firm_id": "233",
+      "ad": "A.Ulaş DEMİREZER",
+      "position": "Satınalma Sorumlusu",
+      "tel": "312 592 60 00 / 86983",
+      "email": "udemirezer@aselsan.com"
+    },
+    {
+      "id": "167",
+      "firm_id": "255",
+      "ad": "BESTE BABAOĞLU DOLANBAY",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-167@odak.local"
+    },
+    {
+      "id": "168",
+      "firm_id": "255",
+      "ad": "AHMET ODACI",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-168@odak.local"
+    },
+    {
+      "id": "169",
+      "firm_id": "821",
+      "ad": "Ahmet GÜL",
+      "position": "Satınalma Sorumlusu",
+      "tel": "532 088 26 71",
+      "email": "agul@melsis.com.tr"
+    },
+    {
+      "id": "170",
+      "firm_id": "404",
+      "ad": "Anıl  İLGÜN",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-170@odak.local"
+    },
+    {
+      "id": "171",
+      "firm_id": "834",
+      "ad": "Tuğçe ASAR",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-171@odak.local"
+    },
+    {
+      "id": "172",
+      "firm_id": "255",
+      "ad": "GAMZE ACURA",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-172@odak.local"
+    },
+    {
+      "id": "173",
+      "firm_id": "842",
+      "ad": "CEM BEKTAŞOĞLU",
+      "position": "Satınalma Sorumlusu",
+      "tel": "312 847 51 30",
+      "email": "legacy-contact-173@odak.local"
+    },
+    {
+      "id": "174",
+      "firm_id": "233",
+      "ad": "Sude Zeliha HAVAN",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-174@odak.local"
+    },
+    {
+      "id": "175",
+      "firm_id": "255",
+      "ad": "BURHAN GAFFAROĞLU",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-175@odak.local"
+    },
+    {
+      "id": "176",
+      "firm_id": "233",
+      "ad": "KEZİBAN UÇAR",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-176@odak.local"
+    },
+    {
+      "id": "177",
+      "firm_id": "233",
+      "ad": "SEZGİ  SIZMAZ",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-177@odak.local"
+    },
+    {
+      "id": "178",
+      "firm_id": "233",
+      "ad": "Serhat ŞİRİNAT",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-178@odak.local"
+    },
+    {
+      "id": "179",
+      "firm_id": "255",
+      "ad": "ALİ ERTÜRK",
+      "position": "Satınalma Sorumlusu",
+      "tel": "312 860 55 00",
+      "email": "legacy-contact-179@odak.local"
+    },
+    {
+      "id": "180",
+      "firm_id": "233",
+      "ad": "SÜMEYYE KUM",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-180@odak.local"
+    },
+    {
+      "id": "181",
+      "firm_id": "233",
+      "ad": "MUSTAFA TAŞKIN",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-181@odak.local"
+    },
+    {
+      "id": "182",
+      "firm_id": "233",
+      "ad": "M.SİNAN BULMUŞ",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-182@odak.local"
+    },
+    {
+      "id": "183",
+      "firm_id": "233",
+      "ad": "SAMET TÖNGELCİ",
+      "position": "Satınalma Sorumlusu",
+      "tel": "",
+      "email": "legacy-contact-183@odak.local"
+    }
+  ],
+  "count": 179,
+  "exportedAt": "2026-07-05T15:37:27.2239364Z",
+  "source": {
+    "engine": "sql-dump",
+    "sqlDump": "C:\\Users\\monitra\\kalite-legacy-docker\\db\\init\\01-kalite.sql"
+  }
+}

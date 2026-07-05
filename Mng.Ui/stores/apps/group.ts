@@ -94,16 +94,19 @@ export const useGroupStore = defineStore('group', {
   },
 
   actions: {
-    async fetchGroups(params?: { 
-      page?: number; 
-      pageSize?: number; 
+    async fetchGroups(params?: {
+      page?: number;
+      pageSize?: number;
       search?: string;
       isActive?: boolean;
       includeInApplication?: boolean;
+      provisioningSource?: number;
+      sortBy?: string;
+      sortOrder?: 'asc' | 'desc';
     }) {
       this.loading = true;
       this.error = null;
-      
+
       try {
         const queryParams = new URLSearchParams();
         if (params?.page) queryParams.append('page', params.page.toString());
@@ -113,6 +116,11 @@ export const useGroupStore = defineStore('group', {
         if (params?.includeInApplication !== undefined) {
           queryParams.append('includeInApplication', params.includeInApplication.toString());
         }
+        if (params?.provisioningSource !== undefined) {
+          queryParams.append('provisioningSource', params.provisioningSource.toString());
+        }
+        if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+        if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
         
         const url = `/group${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
         

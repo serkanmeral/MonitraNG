@@ -67,6 +67,14 @@
       "isArray": false
     },
     {
+      "fieldType": "persons",
+      "name": "responsibleContactId",
+      "title": "ODAK is paketi sorumlusu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
       "fieldType": "select",
       "name": "status",
       "title": "Durum",

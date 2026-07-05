@@ -1,17 +1,33 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useLocaleStore } from '@/stores/locale';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
+import AfListFilters from '@/components/apps/automated-forms/AfListFilters.vue';
 import { useGroupStore } from '@/stores/apps/group';
 import { useAuthStore } from '@/stores/auth';
+import { useKeeperListSettingsStore } from '@/stores/apps/keeperListSettings';
+import { applyHubDefaultSort } from '@/composables/useKeeperConfigurableList';
 import {
   canDeleteGroup,
   canOpenGroupEditPage,
   groupProvisioningSourceLabelKey,
 } from '@/utils/groupFieldPolicy';
 import { provisioningSourceChipColor } from '@/utils/provisioningSourceUi';
-import { EditIcon, EyeIcon, TrashIcon, PlusIcon, UsersIcon, RefreshIcon, DownloadIcon } from 'vue-tabler-icons';
+import type { AfListFilter } from '@/utils/afListFilters';
+import { keeperListFiltersToFetchParams } from '@/utils/keeperListFilters';
+import {
+  buildKeeperGroupFilterColumns,
+  buildKeeperGroupListHeaders,
+  KEEPER_GROUP_LIST_FIELD_TO_KEY,
+  keeperGroupBackendSortField,
+} from '@/utils/keeperGroupListSettings';
+import { buildKeeperVisibleListColumns } from '@/utils/keeperUserListSettings';
+import { keeperGroupListCellRaw, keeperGroupListFieldLabel } from '@/utils/keeperListCellService';
+import {
+  applyListColumnFormatting,
+  getListColumnCellStyle,
+} from '@/utils/afListColumnFormat';
+import { EditIcon, EyeIcon, TrashIcon, PlusIcon, RefreshIcon, DownloadIcon, SettingsIcon } from 'vue-tabler-icons';
 
 // Get i18n instance for legacy mode
 const nuxtApp = useNuxtApp();
@@ -26,9 +42,9 @@ const t = (key: string, params?: any) => {
   }
   return key;
 };
-const localeStore = useLocaleStore();
 const groupStore = useGroupStore();
 const authStore = useAuthStore();
+const keeperListStore = useKeeperListSettingsStore();
 const router = useRouter();
 const route = useRoute();
 
@@ -53,10 +69,22 @@ const selectedGroups = ref([]);
 const showDeleteDialog = ref(false);
 const groupToDelete = ref<string | null>(null);
 const deleteError = ref('');
-const statusFilter = ref<string>('all'); // all, active, inactive
-const applicationScopeFilter = ref<string>('all'); // all, inApp, hidden
 const isExporting = ref(false);
 const exportError = ref('');
+const activeListFilters = ref<AfListFilter[]>([]);
+
+const listConfig = computed(() => keeperListStore.groupListConfig);
+
+const groupFilterColumns = computed(() =>
+  buildKeeperGroupFilterColumns(listConfig.value, (fieldName) => keeperGroupListFieldLabel(fieldName, t), t)
+);
+
+const genericListColumns = computed(() =>
+  buildKeeperVisibleListColumns(listConfig.value, KEEPER_GROUP_LIST_FIELD_TO_KEY, [
+    'provisioningSource',
+    'actions',
+  ])
+);
 
 // Server-side pagination options
 const tableOptions = ref({
@@ -66,12 +94,10 @@ const tableOptions = ref({
 });
 
 const headers = computed(() => [
-  { title: t('groups.table.name'), key: 'name', sortable: true },
-  { title: t('groups.table.source'), key: 'provisioningSource', sortable: false },
-  { title: t('groups.applicationScope.column'), key: 'includeInApplication', sortable: false },
-  { title: t('groups.table.memberCount'), key: 'memberCount', sortable: true },
-  { title: t('groups.table.createdAt'), key: 'createdAt', sortable: true },
-  { title: t('groups.table.actions'), key: 'actions', sortable: false, align: 'end' },
+  ...buildKeeperGroupListHeaders(listConfig.value, (fieldName) =>
+    keeperGroupListFieldLabel(fieldName, t)
+  ),
+  { title: t('groups.table.actions'), key: 'actions', sortable: false, align: 'end' as const },
 ]);
 
 // Computed: Server items length (reactive)
@@ -79,42 +105,33 @@ const serverItemsLength = computed(() => {
   return groupStore.totalCount || 0;
 });
 
-  // Fetch groups function
 const fetchGroups = async (options?: any) => {
-  // Use provided options or current tableOptions
   const currentOptions = options || tableOptions.value;
-  
-  // Build query parameters for server-side pagination/filtering
+
   const params: {
     page?: number;
     pageSize?: number;
     search?: string;
     isActive?: boolean;
     includeInApplication?: boolean;
+    provisioningSource?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
   } = {
     page: currentOptions.page || 1,
     pageSize: currentOptions.itemsPerPage || 10,
+    ...keeperListFiltersToFetchParams(activeListFilters.value, search.value),
   };
-  
-  // Add search term if exists
-  if (search.value && search.value.trim()) {
-    params.search = search.value.trim();
-  }
-  
-  // Add status filter if not 'all'
-  if (statusFilter.value === 'active') {
-    params.isActive = true;
-  } else if (statusFilter.value === 'inactive') {
-    params.isActive = false;
+
+  if (currentOptions.sortBy?.length) {
+    const sortOption = currentOptions.sortBy[0];
+    const backendField = keeperGroupBackendSortField(sortOption.key);
+    if (backendField) {
+      params.sortBy = backendField;
+      params.sortOrder = sortOption.order || 'asc';
+    }
   }
 
-  if (applicationScopeFilter.value === 'inApp') {
-    params.includeInApplication = true;
-  } else if (applicationScopeFilter.value === 'hidden') {
-    params.includeInApplication = false;
-  }
-  
-  // Fetch groups with new parameters
   try {
     await groupStore.fetchGroups(params);
   } catch (error) {
@@ -122,44 +139,71 @@ const fetchGroups = async (options?: any) => {
   }
 };
 
+function listCellRaw(item: Record<string, unknown>, listKey: string): string {
+  return keeperGroupListCellRaw(item as Parameters<typeof keeperGroupListCellRaw>[0], listKey, t);
+}
+
+function columnConfigForListKey(listKey: string) {
+  const fieldName =
+    Object.entries(KEEPER_GROUP_LIST_FIELD_TO_KEY).find(([, key]) => key === listKey)?.[0] ?? listKey;
+  return listConfig.value.columns.find((c) => c.fieldName === fieldName);
+}
+
+function cellDisplayValue(raw: string, listKey: string): string {
+  return applyListColumnFormatting(raw, columnConfigForListKey(listKey)?.format);
+}
+
+function cellStyle(
+  listKey: string,
+  raw: string,
+  item: Record<string, unknown>
+): Record<string, string> {
+  const fieldName =
+    Object.entries(KEEPER_GROUP_LIST_FIELD_TO_KEY).find(([, key]) => key === listKey)?.[0] ?? listKey;
+  const col = listConfig.value.columns.find((c) => c.fieldName === fieldName);
+  return getListColumnCellStyle(raw, fieldName, col?.format, item);
+}
+
+function isStatusScopeColumn(listKey: string): boolean {
+  return listKey === 'isActive' || listKey === 'includeInApplication';
+}
+
+function onListFiltersUpdate(filters: AfListFilter[]) {
+  activeListFilters.value = filters;
+  if (tableOptions.value.page !== 1) {
+    tableOptions.value.page = 1;
+  }
+  void fetchGroups();
+}
+
 // Flag to prevent watch from triggering on initial load
 const isInitialLoad = ref(true);
 
 // Watch tableOptions for changes (pagination, itemsPerPage, sorting)
 watch(
-  () => [tableOptions.value.page, tableOptions.value.itemsPerPage],
+  () => [tableOptions.value.page, tableOptions.value.itemsPerPage, tableOptions.value.sortBy],
   () => {
-    // Skip initial load (handled in onMounted)
-    if (isInitialLoad.value) {
-      return;
-    }
+    if (isInitialLoad.value) return;
     fetchGroups();
-  }
+  },
+  { deep: true }
 );
 
-// Watch for search and status filter changes
 let searchTimeout: ReturnType<typeof setTimeout> | null = null;
-watch([search, statusFilter, applicationScopeFilter], () => {
-  // Reset to first page when filter changes
+watch(search, () => {
   if (tableOptions.value.page !== 1) {
     tableOptions.value.page = 1;
   }
-  
-  // Debounce search input (500ms)
-  if (searchTimeout) {
-    clearTimeout(searchTimeout);
-  }
+  if (searchTimeout) clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
     fetchGroups();
   }, 500);
 });
 
 onMounted(async () => {
-  // Manager/Admin kontrolü
-  if (!authStore.isManager) {
-  }
-  
-  // Initial load
+  keeperListStore.ensureReady();
+  applyHubDefaultSort(listConfig.value, KEEPER_GROUP_LIST_FIELD_TO_KEY, tableOptions);
+
   isInitialLoad.value = true;
   await fetchGroups();
   isInitialLoad.value = false;
@@ -193,19 +237,10 @@ const exportGroups = async (format: 'csv' | 'xlsx') => {
     const params: {
       search?: string;
       isActive?: boolean;
-    } = {};
-    
-    // Add search term if exists
-    if (search.value && search.value.trim()) {
-      params.search = search.value.trim();
-    }
-    
-    // Add status filter if not 'all'
-    if (statusFilter.value === 'active') {
-      params.isActive = true;
-    } else if (statusFilter.value === 'inactive') {
-      params.isActive = false;
-    }
+      includeInApplication?: boolean;
+    } = {
+      ...keeperListFiltersToFetchParams(activeListFilters.value, search.value),
+    };
     
     await groupStore.exportGroups(format, params);
     
@@ -257,28 +292,6 @@ const confirmDelete = async () => {
     }
   }
 };
-
-const formatDate = (date: string | Date | null | undefined) => {
-  if (!date) return '-';
-  try {
-    const localeMap: Record<string, string> = {
-      tr: 'tr-TR',
-      en: 'en-US',
-      fr: 'fr-FR',
-      ar: 'ar-SA',
-      zh: 'zh-CN',
-    };
-    const locale = localeMap[localeStore.locale] || 'tr-TR';
-    
-    return new Date(date).toLocaleDateString(locale, {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-  } catch {
-    return '-';
-  }
-};
 </script>
 
 <template>
@@ -288,7 +301,7 @@ const formatDate = (date: string | Date | null | undefined) => {
     <v-card-item>
       <!-- Search and Actions -->
       <div class="d-flex justify-space-between align-center mb-4 flex-wrap ga-3">
-        <div class="d-flex ga-3 align-center flex-wrap">
+        <div class="d-flex ga-3 align-center flex-wrap flex-grow-1">
           <v-text-field
             v-model="search"
             prepend-inner-icon="mdi-magnify"
@@ -296,40 +309,21 @@ const formatDate = (date: string | Date | null | undefined) => {
             variant="outlined"
             density="compact"
             hide-details
-            style="min-width: 280px; max-width: 420px; flex: 1 1 280px;"
+            style="min-width: 220px; max-width: 320px"
             clearable
           />
-          
-          <v-select
-            v-model="statusFilter"
-            :items="[
-              { title: t('groups.list.statusAll'), value: 'all' },
-              { title: t('groups.list.statusActive'), value: 'active' },
-              { title: t('groups.list.statusInactive'), value: 'inactive' },
-            ]"
-            :label="t('groups.list.status')"
-            variant="outlined"
-            density="compact"
-            hide-details
-            style="min-width: 140px; max-width: 160px;"
-          />
-
-          <v-select
-            v-model="applicationScopeFilter"
-            :items="[
-              { title: t('groups.applicationScope.filterAll'), value: 'all' },
-              { title: t('groups.applicationScope.inApp'), value: 'inApp' },
-              { title: t('groups.applicationScope.hidden'), value: 'hidden' },
-            ]"
-            :label="t('groups.applicationScope.filterLabel')"
-            variant="outlined"
-            density="compact"
-            hide-details
-            style="min-width: 160px; max-width: 200px;"
-          />
         </div>
-        
-        <div class="d-flex ga-2">
+
+        <div class="d-flex ga-2 flex-wrap">
+          <v-btn
+            v-if="authStore.isManager"
+            variant="outlined"
+            size="small"
+            to="/apps/groups/settings"
+          >
+            <SettingsIcon size="18" class="mr-1" />
+            {{ t('groups.listSettings.title') }}
+          </v-btn>
           <v-menu>
             <template v-slot:activator="{ props }">
               <v-btn
@@ -381,6 +375,13 @@ const formatDate = (date: string | Date | null | undefined) => {
         </div>
       </div>
 
+      <div class="mb-4">
+        <AfListFilters
+          :columns="groupFilterColumns"
+          @update:filters="onListFiltersUpdate"
+        />
+      </div>
+
       <!-- Manager/Admin Warning -->
       <v-alert
         v-if="!authStore.isManager"
@@ -430,13 +431,6 @@ const formatDate = (date: string | Date | null | undefined) => {
         class="border rounded-md"
         hide-default-footer
       >
-        <!-- Name Column -->
-        <template v-slot:item.name="{ item }">
-          <span class="text-subtitle-1 font-weight-medium">
-            {{ item.name }}
-          </span>
-        </template>
-
         <template v-slot:item.provisioningSource="{ item }">
           <v-chip
             size="small"
@@ -447,24 +441,13 @@ const formatDate = (date: string | Date | null | undefined) => {
           </v-chip>
         </template>
 
-        <template v-slot:item.includeInApplication="{ value }">
-          <v-chip :color="value ? 'primary' : 'warning'" size="small" variant="tonal">
-            {{ value ? t('groups.applicationScope.inApp') : t('groups.applicationScope.hidden') }}
-          </v-chip>
-        </template>
-
-        <!-- Member Count Column -->
-        <template v-slot:item.memberCount="{ value }">
-          <div class="d-flex align-center ga-2">
-            <UsersIcon size="18" />
-            <span class="text-subtitle-1">{{ value || 0 }}</span>
-          </div>
-        </template>
-
-        <!-- Created At Column -->
-        <template v-slot:item.createdAt="{ value }">
-          <span class="text-caption">
-            {{ formatDate(value) }}
+        <template v-for="col in genericListColumns" :key="col.key" #[`item.${col.key}`]="{ item }">
+          <span
+            class="keeper-list-formatted-cell"
+            :class="{ 'keeper-list-formatted-cell--pill': isStatusScopeColumn(col.key) }"
+            :style="cellStyle(col.key, listCellRaw(item, col.key), item)"
+          >
+            {{ cellDisplayValue(listCellRaw(item, col.key), col.key) }}
           </span>
         </template>
 
@@ -603,4 +586,15 @@ const formatDate = (date: string | Date | null | undefined) => {
     </v-card>
   </v-dialog>
 </template>
+
+<style scoped>
+.keeper-list-formatted-cell--pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+</style>
 

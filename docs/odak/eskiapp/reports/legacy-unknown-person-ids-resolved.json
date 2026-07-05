@@ -1,0 +1,42 @@
+{
+  "generatedAt": "2026-07-05 18:27:27",
+  "legacyIds": [
+    "220",
+    "225",
+    "250"
+  ],
+  "employees": [
+    {
+      "id": "220",
+      "name": "Alihan",
+      "surname": "Köse",
+      "status": "0"
+    },
+    {
+      "id": "225",
+      "name": "Ahmet Emin",
+      "surname": "Gezer",
+      "status": "1"
+    },
+    {
+      "id": "250",
+      "name": "Ahmet Şamil",
+      "surname": "Ortaç",
+      "status": "0"
+    }
+  ],
+  "users": [],
+  "tables": [
+    "contacts",
+    "cpas_employees",
+    "employees",
+    "employees_events",
+    "employees_ncs",
+    "employees_reports",
+    "employees_trainings",
+    "roles_users",
+    "users",
+    "users_warnings",
+    "users_watches"
+  ]
+}

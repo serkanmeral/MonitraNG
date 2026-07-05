@@ -1,0 +1,10 @@
+{
+  "description": "Manuel legacyKaliteUserId -> keeperUserId eslestirmeleri (username degisimi / AD duplicate)",
+  "mappings": [
+    {
+      "legacyKaliteUserId": "",
+      "keeperUserId": "",
+      "note": "ornek: oozger -> o.ozcan"
+    }
+  ]
+}

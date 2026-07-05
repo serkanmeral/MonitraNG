@@ -218,6 +218,9 @@ export const useUserStore = defineStore('user', {
       search?: string;
       isActive?: boolean;
       includeInApplication?: boolean;
+      provisioningSource?: number;
+      groupId?: string;
+      groupIds?: string[];
       sortBy?: string;
       sortOrder?: 'asc' | 'desc';
     }) {
@@ -233,6 +236,11 @@ export const useUserStore = defineStore('user', {
         if (params?.includeInApplication !== undefined) {
           queryParams.append('includeInApplication', params.includeInApplication.toString());
         }
+        if (params?.provisioningSource !== undefined) {
+          queryParams.append('provisioningSource', params.provisioningSource.toString());
+        }
+        if (params?.groupId) queryParams.append('groupId', params.groupId);
+        if (params?.groupIds?.length) queryParams.append('groupIds', params.groupIds.join(','));
         if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
         if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
         

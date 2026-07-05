@@ -52,6 +52,7 @@ export interface OdakPackageRow {
   customerContactId?: unknown;
   designContactId?: unknown;
   manufactureContactId?: unknown;
+  responsibleContactId?: unknown;
   status?: OdakPackageStatus | string;
   closedAt?: string | null;
   beginDate?: string;

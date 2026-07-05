@@ -1,5 +1,6 @@
 using MediatR;
 using MngKeeper.Application.Common.DTOs;
+using MngKeeper.Domain.Enums;
 
 namespace MngKeeper.Application.Features.User.Queries.GetUsers
 {
@@ -12,6 +13,9 @@ namespace MngKeeper.Application.Features.User.Queries.GetUsers
         public bool? IncludeInApplication { get; set; }
         public string? SortBy { get; set; }
         public string? SortOrder { get; set; } // "asc" or "desc"
+        public UserProvisioningSource? ProvisioningSource { get; set; }
+        public string? GroupId { get; set; }
+        public string? GroupIds { get; set; }
     }
 
     public class GetUsersResponse

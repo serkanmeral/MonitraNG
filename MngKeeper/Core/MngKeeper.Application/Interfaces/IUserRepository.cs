@@ -1,5 +1,6 @@
 using MngKeeper.Domain.Entities;
 using MngKeeper.Application.Common.DTOs;
+using MngKeeper.Domain.Enums;
 
 namespace MngKeeper.Application.Interfaces
 {
@@ -33,7 +34,10 @@ namespace MngKeeper.Application.Interfaces
             bool? isActive = null,
             bool? includeInApplication = null,
             string? sortBy = null,
-            string? sortOrder = null);
+            string? sortOrder = null,
+            UserProvisioningSource? provisioningSource = null,
+            string? groupId = null,
+            string? groupIds = null);
         
         /// <summary>
         /// Get users by domain with pagination, search, filtering and sorting support
@@ -46,7 +50,10 @@ namespace MngKeeper.Application.Interfaces
             bool? isActive = null,
             bool? includeInApplication = null,
             string? sortBy = null,
-            string? sortOrder = null);
+            string? sortOrder = null,
+            UserProvisioningSource? provisioningSource = null,
+            string? groupId = null,
+            string? groupIds = null);
         
         Task<bool> ExistsByUsernameAsync(string username, string domainId);
         Task<bool> ExistsByEmailAsync(string email, string domainId);

@@ -408,6 +408,11 @@
       "warning": "Uyarı",
       "warningMessage": "Bu sayfaya erişim için manager veya admin yetkisi gereklidir. Grup yönetimi işlemlerini gerçekleştirmek için lütfen bir yönetici ile iletişime geçin."
     },
+    "listSettings": {
+      "title": "Liste Ayarları",
+      "backToList": "Grup listesine dön",
+      "hint": "Sütun görünürlüğü, sıralama, filtre ve hücre biçimlendirme ayarları bu domain için tarayıcıda saklanır."
+    },
     "source": {
       "local": "Yerel",
       "directory": "Kurumsal"
@@ -429,6 +434,8 @@
     "table": {
       "name": "Grup Adı",
       "source": "Kaynak",
+      "description": "Açıklama",
+      "status": "Durum",
       "memberCount": "Kişi Sayısı",
       "createdAt": "Oluşturulma",
       "actions": "İşlemler",
@@ -738,6 +745,19 @@
       "cancel": "İptal"
     }
   },
+  "keeper": {
+    "listSettings": {
+      "visible": "Görünür",
+      "sortable": "Sıralanabilir",
+      "filterable": "Filtrelenebilir",
+      "format": "Biçim",
+      "noFormat": "Biçim yok",
+      "save": "Kaydet",
+      "resetDefaults": "Varsayılanlara dön",
+      "saved": "Liste ayarları kaydedildi.",
+      "unsavedConfirm": "Kaydedilmemiş liste ayarı değişiklikleri var. Sayfadan ayrılmak istediğinize emin misiniz?"
+    }
+  },
   "users": {
     "title": "Kullanıcı Yönetimi",
     "breadcrumbs": {
@@ -829,6 +849,11 @@
     },
     "groups": {
       "none": "Grup yok"
+    },
+    "listSettings": {
+      "title": "Liste Ayarları",
+      "backToList": "Kullanıcı listesine dön",
+      "hint": "Sütun görünürlüğü, sıralama, filtre ve hücre biçimlendirme ayarları bu domain için tarayıcıda saklanır."
     },
     "details": {
       "title": "Kullanıcı Detayı",

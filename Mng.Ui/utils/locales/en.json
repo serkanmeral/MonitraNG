@@ -373,6 +373,11 @@
       "warning": "Warning",
       "warningMessage": "Manager or admin permission is required to access this page. Please contact an administrator to perform group management operations."
     },
+    "listSettings": {
+      "title": "List Settings",
+      "backToList": "Back to group list",
+      "hint": "Column visibility, sorting, filters, and cell formatting are stored in the browser for this domain."
+    },
     "source": {
       "local": "Local",
       "directory": "Corporate"
@@ -394,6 +399,8 @@
     "table": {
       "name": "Group Name",
       "source": "Source",
+      "description": "Description",
+      "status": "Status",
       "memberCount": "Member Count",
       "createdAt": "Created At",
       "actions": "Actions",
@@ -704,6 +711,19 @@
       "cancel": "Cancel"
     }
   },
+  "keeper": {
+    "listSettings": {
+      "visible": "Visible",
+      "sortable": "Sortable",
+      "filterable": "Filterable",
+      "format": "Format",
+      "noFormat": "No format",
+      "save": "Save",
+      "resetDefaults": "Reset to defaults",
+      "saved": "List settings saved.",
+      "unsavedConfirm": "You have unsaved list setting changes. Leave this page?"
+    }
+  },
   "users": {
     "title": "User Management",
     "breadcrumbs": {
@@ -795,6 +815,11 @@
     },
     "groups": {
       "none": "No groups"
+    },
+    "listSettings": {
+      "title": "List Settings",
+      "backToList": "Back to user list",
+      "hint": "Column visibility, sorting, filters, and cell formatting are stored in the browser for this domain."
     },
     "details": {
       "title": "User Details",

@@ -9,6 +9,7 @@ import {
 import type { OdakLineQuantityAggregate } from '@/utils/odakSiparisShipmentService';
 import { customerContactLabelFromRow } from '@/utils/odakSiparisCustomerContactService';
 import { personLabelFromRow } from '@/utils/odakSiparisPackagePersonnel';
+import { legacyPersonLabel } from '@/utils/odakSiparisLegacyPersonMap';
 
 export type OdakPackageSummaryRow = {
   label: string;
@@ -18,20 +19,19 @@ export type OdakPackageSummaryRow = {
   customerId?: string;
 };
 
-function optionalSummaryRow(
-  t: (key: string) => string,
-  labelKey: string,
-  value: unknown
-): OdakPackageSummaryRow | null {
-  if (value == null || value === '') return null;
-  return { label: t(labelKey), value: String(value) };
-}
-
-function contactSummaryValue(contactField: unknown, legacyId?: string): string {
+function contactSummaryValue(
+  contactField: unknown,
+  legacyId?: string,
+  legacyContactLabels: Record<string, string> = {}
+): string {
   if (contactField != null && contactField !== '') {
     return customerContactLabelFromRow(contactField);
   }
-  if (legacyId != null && legacyId !== '') return String(legacyId);
+  if (legacyId != null && legacyId !== '') {
+    const label = legacyContactLabels[String(legacyId)];
+    if (label) return label;
+    return String(legacyId);
+  }
   return '—';
 }
 
@@ -43,6 +43,8 @@ function personSummaryValue(
   if (personField != null && personField !== '') {
     return personLabelFromRow(personField, personLabels);
   }
+  const fromLegacy = legacyPersonLabel(legacyId, personLabels);
+  if (fromLegacy) return fromLegacy;
   if (legacyId != null && legacyId !== '') return String(legacyId);
   return '—';
 }
@@ -53,7 +55,8 @@ export function buildOdakPackageSummaryRows(
   customerLabels: Record<string, string>,
   t: (key: string) => string,
   personLabels: Record<string, string> = {},
-  lineAggregate?: OdakLineQuantityAggregate | null
+  lineAggregate?: OdakLineQuantityAggregate | null,
+  legacyContactLabels: Record<string, string> = {}
 ): OdakPackageSummaryRow[] {
   const customerId = customerIdFromRow(pkg);
   const customerLabel = customerLabelFromRow(pkg, customerLabels);
@@ -69,7 +72,7 @@ export function buildOdakPackageSummaryRows(
     },
     {
       label: t('odakSiparis.detail.fields.customerContact'),
-      value: contactSummaryValue(pkg.customerContactId, pkg.legacyContactId),
+      value: contactSummaryValue(pkg.customerContactId, pkg.legacyContactId, legacyContactLabels),
     },
     {
       label: t('odakSiparis.detail.fields.designResponsible'),
@@ -78,6 +81,10 @@ export function buildOdakPackageSummaryRows(
     {
       label: t('odakSiparis.detail.fields.manufactureResponsible'),
       value: personSummaryValue(pkg.manufactureContactId, pkg.legacyManufactureResponsibleId, personLabels),
+    },
+    {
+      label: t('odakSiparis.detail.fields.packageResponsible'),
+      value: personSummaryValue(pkg.responsibleContactId, pkg.legacyResponsibleId, personLabels),
     },
     { label: t('odakSiparis.detail.fields.partCount'), value: formatOdakNumber(pkg.partCount) },
     { label: t('odakSiparis.detail.fields.stockCount'), value: formatOdakNumber(pkg.stockCount) },
@@ -96,11 +103,6 @@ export function buildOdakPackageSummaryRows(
     { label: t('odakSiparis.detail.fields.deliveryAddress'), value: pkg.deliveryAddress ?? '—' },
     { label: t('odakSiparis.detail.fields.notes'), value: pkg.notes ?? '—' },
   ];
-
-  const legacyRows = [
-    optionalSummaryRow(t, 'odakSiparis.detail.fields.packageResponsible', pkg.legacyResponsibleId),
-  ].filter(Boolean) as OdakPackageSummaryRow[];
-  rows.push(...legacyRows);
 
   const createdAt = pkg.__createdAt ?? pkg.legacyCreatedAt;
   const updatedAt = pkg.__updatedAt ?? pkg.legacyUpdatedAt;

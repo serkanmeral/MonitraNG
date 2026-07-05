@@ -8,6 +8,7 @@ using MngKeeper.Application.Features.Group.Commands.DeleteGroup;
 using MngKeeper.Application.Features.Group.Queries.GetGroups;
 using MngKeeper.Application.Features.Group.Queries.GetGroup;
 using MngKeeper.Application.Features.Group.Queries.GetGroupsByIds;
+using MngKeeper.Domain.Enums;
 using MngKeeper.Application.Features.Group.Queries.ExportGroups;
 using MngKeeper.Application.Interfaces;
 
@@ -44,8 +45,17 @@ namespace MngKeeper.Api.Controllers
             [FromQuery] int pageSize = 10,
             [FromQuery] string? searchTerm = null,
             [FromQuery] bool? isActive = null,
-            [FromQuery] bool? includeInApplication = null)
+            [FromQuery] bool? includeInApplication = null,
+            [FromQuery] int? provisioningSource = null,
+            [FromQuery] string? sortBy = null,
+            [FromQuery] string? sortOrder = null)
         {
+            UserProvisioningSource? sourceFilter = null;
+            if (provisioningSource.HasValue && Enum.IsDefined(typeof(UserProvisioningSource), provisioningSource.Value))
+            {
+                sourceFilter = (UserProvisioningSource)provisioningSource.Value;
+            }
+
             var query = new GetGroupsQuery 
             { 
                 Page = page, 
@@ -53,6 +63,9 @@ namespace MngKeeper.Api.Controllers
                 SearchTerm = searchTerm,
                 IsActive = isActive,
                 IncludeInApplication = includeInApplication,
+                ProvisioningSource = sourceFilter,
+                SortBy = sortBy,
+                SortOrder = sortOrder,
             };
             var response = await _mediator.Send(query);
             

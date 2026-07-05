@@ -90,6 +90,7 @@ function Get-SqlTableFieldCount {
         "firms" { return 19 }
         "packages" { return 27 }
         "packageitems" { return 23 }
+        "contacts" { return 14 }
         default { return 0 }
     }
 }

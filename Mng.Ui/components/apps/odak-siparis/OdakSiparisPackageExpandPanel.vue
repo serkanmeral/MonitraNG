@@ -22,9 +22,10 @@ import {
 } from '@/utils/odakSiparisShipmentService';
 import { listLinesForPackage } from '@/utils/odakSiparisLineService';
 import {
-  collectPersonIdsFromPackageRows,
+  collectPersonIdsForPackageLabelResolution,
   fetchPersonLabelMap,
 } from '@/utils/odakSiparisPackagePersonnel';
+import { fetchLegacyCustomerContactLabelMap } from '@/utils/odakSiparisCustomerContactService';
 
 const props = defineProps<{
   packageRow: OdakPackageRow;
@@ -60,6 +61,7 @@ const loading = ref(false);
 const errorMessage = ref('');
 const pkg = ref<OdakPackageRow | null>(null);
 const personLabels = ref<Record<string, string>>({});
+const legacyContactLabels = ref<Record<string, string>>({});
 const linesRefreshKey = ref(0);
 const dashboardRefreshKey = ref(0);
 const lineQuantityAggregate = ref<OdakLineQuantityAggregate | null>(null);
@@ -75,7 +77,8 @@ const summaryRows = computed(() => {
     props.customerLabels,
     t,
     personLabels.value,
-    lineQuantityAggregate.value
+    lineQuantityAggregate.value,
+    legacyContactLabels.value
   );
 });
 
@@ -87,14 +90,19 @@ async function loadPackage() {
   try {
     pkg.value = (await fetchOdakPackageById(id)) ?? props.packageRow;
     const row = pkg.value ?? props.packageRow;
-    const [labels, lines] = await Promise.all([
+    const [labels, legacyContacts, lines] = await Promise.all([
       (async () => {
-        const ids = collectPersonIdsFromPackageRows([row as Record<string, unknown>]);
+        const ids = collectPersonIdsForPackageLabelResolution([row as Record<string, unknown>]);
         return ids.length ? fetchPersonLabelMap(ids) : {};
+      })(),
+      (async () => {
+        const legacyId = String(row.legacyContactId ?? '').trim();
+        return legacyId ? fetchLegacyCustomerContactLabelMap([legacyId]) : {};
       })(),
       listLinesForPackage(id),
     ]);
     personLabels.value = labels;
+    legacyContactLabels.value = legacyContacts;
     lineQuantityAggregate.value = aggregateLineQuantities(lines);
   } catch (e: unknown) {
     errorMessage.value = panelError(e, 'errors.dg.generic');

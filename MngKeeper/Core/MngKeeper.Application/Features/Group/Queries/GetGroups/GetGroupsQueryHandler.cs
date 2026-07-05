@@ -56,7 +56,10 @@ namespace MngKeeper.Application.Features.Group.Queries.GetGroups
                     request.PageSize,
                     request.SearchTerm,
                     request.IsActive,
-                    request.IncludeInApplication);
+                    request.IncludeInApplication,
+                    request.SortBy,
+                    request.SortOrder,
+                    request.ProvisioningSource);
 
                 // Calculate member count for each group
                 var groupDtos = new List<GetGroupsResponseDto>();

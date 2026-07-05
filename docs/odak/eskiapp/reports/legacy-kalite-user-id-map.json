@@ -1,0 +1,249 @@
+{
+  "description": "legacyKaliteUserId -> Keeper userId (__dataId) mapping for Odak legacy archive users",
+  "entries": {
+    "11": {
+      "legacyName": "Murat Tarcan",
+      "legacyKaliteUsername": "mtarcan",
+      "source": "legacy_import",
+      "customData": {
+        "legacyImportBatch": "2026-07-05",
+        "legacyKaliteUserId": "11",
+        "legacyImport": true,
+        "legacyImportSource": "kalite.users",
+        "personKind": "legacy_archive",
+        "legacyKaliteUsername": "mtarcan"
+      },
+      "keeperUserId": "6a4a7624647fce4a6fd43248",
+      "legacyKaliteUserId": "11",
+      "legacyImport": true
+    },
+    "3": {
+      "legacyKaliteUserId": "3",
+      "legacyKaliteUsername": "okaragul",
+      "legacyName": "Osman Karagül",
+      "keeperUserId": "6a2257d26723c2bd54eec3b4",
+      "source": "compare_matched",
+      "legacyImport": false
+    },
+    "18": {
+      "legacyName": "İlhan Uzun",
+      "legacyKaliteUsername": "iuzun",
+      "source": "legacy_import",
+      "customData": {
+        "legacyImportBatch": "2026-07-05",
+        "legacyKaliteUserId": "18",
+        "legacyImport": true,
+        "legacyImportSource": "kalite.users",
+        "personKind": "legacy_archive",
+        "legacyKaliteUsername": "iuzun"
+      },
+      "keeperUserId": "6a4a7625647fce4a6fd4324c",
+      "legacyKaliteUserId": "18",
+      "legacyImport": true
+    },
+    "10": {
+      "legacyName": "Engin Berk Oğuz",
+      "legacyKaliteUsername": "eoguz",
+      "source": "legacy_import",
+      "customData": {
+        "legacyImportBatch": "2026-07-05",
+        "legacyKaliteUserId": "10",
+        "legacyImport": true,
+        "legacyImportSource": "kalite.users",
+        "personKind": "legacy_archive",
+        "legacyKaliteUsername": "eoguz"
+      },
+      "keeperUserId": "6a4a7623647fce4a6fd43245",
+      "legacyKaliteUserId": "10",
+      "legacyImport": true
+    },
+    "118": {
+      "legacyKaliteUserId": "118",
+      "legacyKaliteUsername": "mkucuk",
+      "legacyName": "Murat Küçük",
+      "keeperUserId": "6a2257d16723c2bd54eec3b2",
+      "source": "compare_matched",
+      "legacyImport": false
+    },
+    "17": {
+      "legacyName": "Osman Karakadıoğlu",
+      "legacyKaliteUsername": "okarakadioglu",
+      "source": "legacy_import",
+      "customData": {
+        "legacyImportBatch": "2026-07-05",
+        "legacyKaliteUserId": "17",
+        "legacyImport": true,
+        "legacyImportSource": "kalite.users",
+        "personKind": "legacy_archive",
+        "legacyKaliteUsername": "okarakadioglu"
+      },
+      "keeperUserId": "6a4a7624647fce4a6fd4324b",
+      "legacyKaliteUserId": "17",
+      "legacyImport": true
+    },
+    "250": {
+      "legacyKaliteEmployeeId": "250",
+      "legacyEmployeeName": "Ahmet Şamil Ortaç",
+      "username": "legacy-e250",
+      "keeperUserId": "6a4a77d9647fce4a6fd43250",
+      "source": "legacy_employee_import",
+      "legacyImport": true,
+      "customData": {
+        "personKind": "legacy_archive",
+        "legacyEmployeeName": "Ahmet Şamil Ortaç",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true,
+        "legacyKaliteEmployeeId": "250"
+      }
+    },
+    "12": {
+      "legacyName": "Emin Demiroğlu",
+      "legacyKaliteUsername": "edemiroglu",
+      "source": "legacy_import",
+      "customData": {
+        "legacyImportBatch": "2026-07-05",
+        "legacyKaliteUserId": "12",
+        "legacyImport": true,
+        "legacyImportSource": "kalite.users",
+        "personKind": "legacy_archive",
+        "legacyKaliteUsername": "edemiroglu"
+      },
+      "keeperUserId": "6a4a7624647fce4a6fd43249",
+      "legacyKaliteUserId": "12",
+      "legacyImport": true
+    },
+    "123": {
+      "legacyName": "Yemliha Gülyazı",
+      "legacyKaliteUsername": "ygulyazi",
+      "source": "legacy_import",
+      "customData": {
+        "legacyImportBatch": "2026-07-05",
+        "legacyKaliteUserId": "123",
+        "legacyImport": true,
+        "legacyImportSource": "kalite.users",
+        "personKind": "legacy_archive",
+        "legacyKaliteUsername": "ygulyazi"
+      },
+      "keeperUserId": "6a4a7625647fce4a6fd4324e",
+      "legacyKaliteUserId": "123",
+      "legacyImport": true
+    },
+    "101": {
+      "legacyName": "Aylin Güneş",
+      "legacyKaliteUsername": "agunes",
+      "source": "legacy_import",
+      "customData": {
+        "legacyImportBatch": "2026-07-05",
+        "legacyKaliteUserId": "101",
+        "legacyImport": true,
+        "legacyImportSource": "kalite.users",
+        "personKind": "legacy_archive",
+        "legacyKaliteUsername": "agunes"
+      },
+      "keeperUserId": "6a4a7624647fce4a6fd4324a",
+      "legacyKaliteUserId": "101",
+      "legacyImport": true
+    },
+    "97": {
+      "legacyName": "Burak Taban",
+      "legacyKaliteUsername": "btaban",
+      "source": "legacy_import",
+      "customData": {
+        "legacyImportBatch": "2026-07-05",
+        "legacyKaliteUserId": "97",
+        "legacyImport": true,
+        "legacyImportSource": "kalite.users",
+        "personKind": "legacy_archive",
+        "legacyKaliteUsername": "btaban"
+      },
+      "keeperUserId": "6a4a7625647fce4a6fd4324d",
+      "legacyKaliteUserId": "97",
+      "legacyImport": true
+    },
+    "160": {
+      "legacyName": "Gamze Yıldız",
+      "legacyKaliteUsername": "gyildiz",
+      "source": "legacy_import",
+      "customData": {
+        "legacyImportBatch": "2026-07-05",
+        "legacyKaliteUserId": "160",
+        "legacyImport": true,
+        "legacyImportSource": "kalite.users",
+        "personKind": "legacy_archive",
+        "legacyKaliteUsername": "gyildiz"
+      },
+      "keeperUserId": "6a4a7623647fce4a6fd43246",
+      "legacyKaliteUserId": "160",
+      "legacyImport": true
+    },
+    "9": {
+      "legacyName": "Halil Şendil",
+      "legacyKaliteUsername": "hsendil",
+      "source": "legacy_import",
+      "customData": {
+        "legacyImportBatch": "2026-07-05",
+        "legacyKaliteUserId": "9",
+        "legacyImport": true,
+        "legacyImportSource": "kalite.users",
+        "personKind": "legacy_archive",
+        "legacyKaliteUsername": "hsendil"
+      },
+      "keeperUserId": "6a4a7623647fce4a6fd43244",
+      "legacyKaliteUserId": "9",
+      "legacyImport": true
+    },
+    "225": {
+      "legacyKaliteEmployeeId": "225",
+      "legacyEmployeeName": "Ahmet Emin Gezer",
+      "keeperUserId": "6a2257d16723c2bd54eec39a",
+      "source": "employee_manual_mapping",
+      "legacyImport": false,
+      "note": "Ahmet Emin Gezer — employees.id=225, users.agezer"
+    },
+    "220": {
+      "legacyKaliteEmployeeId": "220",
+      "legacyEmployeeName": "Alihan Köse",
+      "username": "legacy-e220",
+      "keeperUserId": "6a4a77d9647fce4a6fd4324f",
+      "source": "legacy_employee_import",
+      "legacyImport": true,
+      "customData": {
+        "personKind": "legacy_archive",
+        "legacyEmployeeName": "Alihan Köse",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true,
+        "legacyKaliteEmployeeId": "220"
+      }
+    },
+    "180": {
+      "legacyName": "Gülce Karakuş",
+      "legacyKaliteUsername": "gkarakus",
+      "source": "legacy_import",
+      "customData": {
+        "legacyImportBatch": "2026-07-05",
+        "legacyKaliteUserId": "180",
+        "legacyImport": true,
+        "legacyImportSource": "kalite.users",
+        "personKind": "legacy_archive",
+        "legacyKaliteUsername": "gkarakus"
+      },
+      "keeperUserId": "6a4a7624647fce4a6fd43247",
+      "legacyKaliteUserId": "180",
+      "legacyImport": true
+    }
+  },
+  "meta": {
+    "importBatch": "2026-07-05",
+    "employeeProvision": {
+      "dryRun": false,
+      "failed": 0,
+      "manual": 1,
+      "skipped": 0,
+      "created": 2
+    },
+    "resolvedFile": "C:\\Users\\monitra\\Dev\\MonitraNG\\MonitraNG\\docs\\odak\\eskiapp\\reports\\legacy-unknown-person-ids-resolved.json"
+  },
+  "generatedAt": "2026-07-05 18:28:04"
+}

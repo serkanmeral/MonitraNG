@@ -13,6 +13,7 @@ using MngKeeper.Application.Features.User.Queries.ExportUsers;
 using MngKeeper.Api.Attributes;
 using MngKeeper.Application.Interfaces;
 using MngKeeper.Application.Directory;
+using MngKeeper.Domain.Enums;
 
 namespace MngKeeper.Api.Controllers
 {
@@ -87,9 +88,18 @@ namespace MngKeeper.Api.Controllers
             [FromQuery] string? searchTerm = null,
             [FromQuery] bool? isActive = null,
             [FromQuery] bool? includeInApplication = null,
+            [FromQuery] int? provisioningSource = null,
+            [FromQuery] string? groupId = null,
+            [FromQuery] string? groupIds = null,
             [FromQuery] string? sortBy = null,
             [FromQuery] string? sortOrder = null)
         {
+            UserProvisioningSource? sourceFilter = null;
+            if (provisioningSource.HasValue && Enum.IsDefined(typeof(UserProvisioningSource), provisioningSource.Value))
+            {
+                sourceFilter = (UserProvisioningSource)provisioningSource.Value;
+            }
+
             var query = new GetUsersQuery 
             { 
                 Page = page, 
@@ -97,6 +107,9 @@ namespace MngKeeper.Api.Controllers
                 SearchTerm = searchTerm,
                 IsActive = isActive,
                 IncludeInApplication = includeInApplication,
+                ProvisioningSource = sourceFilter,
+                GroupId = groupId,
+                GroupIds = groupIds,
                 SortBy = sortBy,
                 SortOrder = sortOrder
             };

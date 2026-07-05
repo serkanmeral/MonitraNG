@@ -1,5 +1,6 @@
 using MngKeeper.Domain.Entities;
 using MngKeeper.Application.Common.DTOs;
+using MngKeeper.Domain.Enums;
 
 namespace MngKeeper.Application.Interfaces
 {
@@ -27,7 +28,10 @@ namespace MngKeeper.Application.Interfaces
             int pageSize,
             string? searchTerm = null,
             bool? isActive = null,
-            bool? includeInApplication = null);
+            bool? includeInApplication = null,
+            string? sortBy = null,
+            string? sortOrder = null,
+            UserProvisioningSource? provisioningSource = null);
         
         /// <summary>
         /// Get all groups by domain (without pagination) with search and filtering support - for export purposes
@@ -36,7 +40,8 @@ namespace MngKeeper.Application.Interfaces
             string domainId,
             string? searchTerm = null,
             bool? isActive = null,
-            bool? includeInApplication = null);
+            bool? includeInApplication = null,
+            UserProvisioningSource? provisioningSource = null);
         
         Task<bool> ExistsByNameAsync(string name, string domainId);
     }

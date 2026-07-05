@@ -1,5 +1,6 @@
 using MediatR;
 using MngKeeper.Application.Common.DTOs;
+using MngKeeper.Domain.Enums;
 
 namespace MngKeeper.Application.Features.Group.Queries.GetGroups
 {
@@ -10,6 +11,9 @@ namespace MngKeeper.Application.Features.Group.Queries.GetGroups
         public string? SearchTerm { get; set; }
         public bool? IsActive { get; set; }
         public bool? IncludeInApplication { get; set; }
+        public string? SortBy { get; set; }
+        public string? SortOrder { get; set; }
+        public UserProvisioningSource? ProvisioningSource { get; set; }
     }
 
     public class GetGroupsResponse

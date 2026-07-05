@@ -8,6 +8,7 @@ import {
   mapUserToOcPersonPickerItem,
   type OcPersonPickerItem,
 } from '@/utils/ocPersonPicker';
+import { collectLegacyPersonKeeperIds } from '@/utils/odakSiparisLegacyPersonMap';
 
 export interface OdakPackagePersonnelConfig {
   /** Tasarım sorumlusu adayı Keeper kullanıcı kimlikleri */
@@ -69,7 +70,11 @@ export function personLabelFromRow(raw: unknown, labels: Record<string, string> 
 
 export function collectPersonIdsFromPackageRows(
   rows: Array<Record<string, unknown>>,
-  fields: Array<'designContactId' | 'manufactureContactId'> = ['designContactId', 'manufactureContactId']
+  fields: Array<'designContactId' | 'manufactureContactId' | 'responsibleContactId'> = [
+    'designContactId',
+    'manufactureContactId',
+    'responsibleContactId',
+  ]
 ): string[] {
   const ids = new Set<string>();
   for (const row of rows) {
@@ -77,6 +82,34 @@ export function collectPersonIdsFromPackageRows(
       const id = personIdFromRow(row[field]);
       if (id) ids.add(id);
     }
+  }
+  return [...ids];
+}
+
+const LEGACY_PERSON_FIELD_KEYS = [
+  'legacyDesignResponsibleId',
+  'legacyManufactureResponsibleId',
+  'legacyResponsibleId',
+] as const;
+
+function collectLegacyPersonIdsFromPackageRows(rows: Array<Record<string, unknown>>): string[] {
+  const ids = new Set<string>();
+  for (const row of rows) {
+    for (const field of LEGACY_PERSON_FIELD_KEYS) {
+      const raw = String(row[field] ?? '').trim();
+      if (raw && /^\d+$/.test(raw)) ids.add(raw);
+    }
+  }
+  return [...ids];
+}
+
+/** Keeper person alanlari + legacy ID map uzerinden cozulecek keeper id'leri. */
+export function collectPersonIdsForPackageLabelResolution(
+  rows: Array<Record<string, unknown>>
+): string[] {
+  const ids = new Set(collectPersonIdsFromPackageRows(rows));
+  for (const keeperId of collectLegacyPersonKeeperIds(collectLegacyPersonIdsFromPackageRows(rows))) {
+    ids.add(keeperId);
   }
   return [...ids];
 }

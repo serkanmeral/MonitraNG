@@ -189,3 +189,50 @@ export async function deleteOdakCustomerContact(contactId: string): Promise<void
   if (!contactId) return;
   await ocDelete(ODAK_SIPARIS_CONFIG.customerContactsDataset, contactId);
 }
+
+let legacyContactLabelCache: Record<string, string> | null = null;
+let legacyContactLabelLoadPromise: Promise<Record<string, string>> | null = null;
+
+/** legacyContactId -> goruntulenecek etiket (odak_musteri_kisileri uzerinden). */
+export async function fetchLegacyCustomerContactLabelMap(
+  legacyContactIds: string[] = []
+): Promise<Record<string, string>> {
+  const requested = new Set(legacyContactIds.map((id) => String(id ?? '').trim()).filter(Boolean));
+
+  if (!legacyContactLabelLoadPromise) {
+    legacyContactLabelLoadPromise = (async () => {
+      const map: Record<string, string> = {};
+      let skip = 0;
+      const limit = 500;
+      while (true) {
+        const resp = await ocListDatasetPage(ODAK_SIPARIS_CONFIG.customerContactsDataset, {
+          skip,
+          limit,
+        });
+        const items = (resp.items ?? []) as OdakCustomerContactRow[];
+        for (const row of items) {
+          const legacyId = String(row.legacyContactId ?? '').trim();
+          if (legacyId) map[legacyId] = formatContactSelectLabel(row);
+        }
+        if (items.length < limit) break;
+        skip += limit;
+      }
+      legacyContactLabelCache = map;
+      return map;
+    })();
+  }
+
+  const fullMap = await legacyContactLabelLoadPromise;
+  if (!requested.size) return { ...fullMap };
+
+  const filtered: Record<string, string> = {};
+  for (const id of requested) {
+    if (fullMap[id]) filtered[id] = fullMap[id];
+  }
+  return filtered;
+}
+
+export function invalidateLegacyCustomerContactLabelCache(): void {
+  legacyContactLabelCache = null;
+  legacyContactLabelLoadPromise = null;
+}

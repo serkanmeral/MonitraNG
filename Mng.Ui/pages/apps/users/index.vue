@@ -1,13 +1,29 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useLocaleStore } from '@/stores/locale';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
+import AfListFilters from '@/components/apps/automated-forms/AfListFilters.vue';
 import { useUserStore } from '@/stores/apps/user';
 import { useAuthStore } from '@/stores/auth';
+import { useKeeperListSettingsStore } from '@/stores/apps/keeperListSettings';
+import { applyHubDefaultSort } from '@/composables/useKeeperConfigurableList';
 import { canDeleteUser, userProvisioningSourceLabelKey } from '@/utils/userFieldPolicy';
 import { provisioningSourceChipColor } from '@/utils/provisioningSourceUi';
-import { EditIcon, EyeIcon, TrashIcon, UserPlusIcon, RefreshIcon, DownloadIcon } from 'vue-tabler-icons';
+import type { AfListFilter } from '@/utils/afListFilters';
+import { keeperListFiltersToFetchParams } from '@/utils/keeperListFilters';
+import {
+  buildKeeperUserFilterColumns,
+  buildKeeperUserListHeaders,
+  buildKeeperVisibleListColumns,
+  KEEPER_USER_LIST_FIELD_TO_KEY,
+  keeperUserBackendSortField,
+} from '@/utils/keeperUserListSettings';
+import { keeperUserListCellRaw, keeperUserListFieldLabel } from '@/utils/keeperListCellService';
+import {
+  applyListColumnFormatting,
+  getListColumnCellStyle,
+} from '@/utils/afListColumnFormat';
+import { EditIcon, EyeIcon, TrashIcon, UserPlusIcon, RefreshIcon, DownloadIcon, SettingsIcon } from 'vue-tabler-icons';
 
 // Get i18n instance for legacy mode
 const nuxtApp = useNuxtApp();
@@ -25,7 +41,7 @@ const t = (key: string, params?: any) => {
 
 const userStore = useUserStore();
 const authStore = useAuthStore();
-const localeStore = useLocaleStore();
+const keeperListStore = useKeeperListSettingsStore();
 const router = useRouter();
 const route = useRoute();
 
@@ -50,10 +66,23 @@ const selectedUsers = ref([]);
 const showDeleteDialog = ref(false);
 const userToDelete = ref<string | null>(null);
 const deleteError = ref('');
-const statusFilter = ref<string>('all'); // all, active, inactive
-const applicationScopeFilter = ref<string>('all'); // all, inApp, hidden
 const isExporting = ref(false);
 const exportError = ref('');
+const activeListFilters = ref<AfListFilter[]>([]);
+
+const listConfig = computed(() => keeperListStore.userListConfig);
+
+const userFilterColumns = computed(() =>
+  buildKeeperUserFilterColumns(listConfig.value, (fieldName) => keeperUserListFieldLabel(fieldName, t), t)
+);
+
+const genericListColumns = computed(() =>
+  buildKeeperVisibleListColumns(listConfig.value, KEEPER_USER_LIST_FIELD_TO_KEY, [
+    'provisioningSource',
+    'groups',
+    'actions',
+  ])
+);
 
 // Server-side pagination options
 const tableOptions = ref({
@@ -63,15 +92,10 @@ const tableOptions = ref({
 });
 
 const headers = computed(() => [
-  { title: t('users.table.username'), key: 'username', sortable: true },
-  { title: t('users.table.source'), key: 'provisioningSource', sortable: false },
-  { title: t('users.table.email'), key: 'email', sortable: true },
-  { title: t('users.table.fullName'), key: 'fullName', sortable: true },
-  { title: t('users.table.status'), key: 'isActive', sortable: true },
-  { title: t('users.applicationScope.column'), key: 'includeInApplication', sortable: false },
-  { title: t('users.table.groups'), key: 'groups', sortable: false },
-  { title: t('users.table.createdAt'), key: 'createdAt', sortable: true },
-  { title: t('users.table.actions'), key: 'actions', sortable: false, align: 'end' },
+  ...buildKeeperUserListHeaders(listConfig.value, (fieldName) =>
+    keeperUserListFieldLabel(fieldName, t)
+  ),
+  { title: t('users.table.actions'), key: 'actions', sortable: false, align: 'end' as const },
 ]);
 
 // Computed: Full name (for display only)
@@ -87,67 +111,76 @@ const serverItemsLength = computed(() => {
   return userStore.totalCount || 0;
 });
 
-  // Fetch users function
   const fetchUsers = async () => {
-    // Always use current tableOptions.value to ensure we have the latest values
-    // Build query parameters for server-side pagination/filtering
     const params: {
       page?: number;
       pageSize?: number;
       search?: string;
       isActive?: boolean;
       includeInApplication?: boolean;
+      provisioningSource?: number;
+      groupId?: string;
+      groupIds?: string[];
       sortBy?: string;
       sortOrder?: 'asc' | 'desc';
     } = {
       page: tableOptions.value.page || 1,
       pageSize: tableOptions.value.itemsPerPage || 10,
+      ...keeperListFiltersToFetchParams(activeListFilters.value, search.value),
     };
-    
-    // Add search term if exists
-    if (search.value && search.value.trim()) {
-      params.search = search.value.trim();
-    }
-    
-    // Add status filter if not 'all'
-    if (statusFilter.value === 'active') {
-      params.isActive = true;
-    } else if (statusFilter.value === 'inactive') {
-      params.isActive = false;
-    }
 
-    if (applicationScopeFilter.value === 'inApp') {
-      params.includeInApplication = true;
-    } else if (applicationScopeFilter.value === 'hidden') {
-      params.includeInApplication = false;
-    }
-    
-    // Add sorting if exists
     if (tableOptions.value.sortBy && tableOptions.value.sortBy.length > 0) {
-      const sortOption = tableOptions.value.sortBy[0]; // Vuetify supports single sort
-      // Map frontend field names to backend field names
-      const fieldMapping: Record<string, string> = {
-        'username': 'username',
-        'email': 'email',
-        'fullName': 'firstName', // Backend uses firstName for sorting
-        'isActive': 'isActive',
-        'createdAt': 'createdAt',
-      };
-      
-      const backendField = fieldMapping[sortOption.key] || sortOption.key;
+      const sortOption = tableOptions.value.sortBy[0];
+      const backendField = keeperUserBackendSortField(sortOption.key);
       if (backendField) {
         params.sortBy = backendField;
         params.sortOrder = sortOption.order || 'asc';
       }
     }
-    
-    // Fetch users with new parameters
+
     try {
       await userStore.fetchUsers(params);
     } catch (error) {
       console.error('Error loading users:', error);
     }
   };
+
+function listCellRaw(item: Record<string, unknown>, listKey: string): string {
+  return keeperUserListCellRaw(item as Parameters<typeof keeperUserListCellRaw>[0], listKey, t);
+}
+
+function columnConfigForListKey(listKey: string) {
+  const fieldName =
+    Object.entries(KEEPER_USER_LIST_FIELD_TO_KEY).find(([, key]) => key === listKey)?.[0] ?? listKey;
+  return listConfig.value.columns.find((c) => c.fieldName === fieldName);
+}
+
+function cellDisplayValue(raw: string, listKey: string): string {
+  return applyListColumnFormatting(raw, columnConfigForListKey(listKey)?.format);
+}
+
+function cellStyle(
+  listKey: string,
+  raw: string,
+  item: Record<string, unknown>
+): Record<string, string> {
+  const fieldName =
+    Object.entries(KEEPER_USER_LIST_FIELD_TO_KEY).find(([, key]) => key === listKey)?.[0] ?? listKey;
+  const col = listConfig.value.columns.find((c) => c.fieldName === fieldName);
+  return getListColumnCellStyle(raw, fieldName, col?.format, item);
+}
+
+function isStatusScopeColumn(listKey: string): boolean {
+  return listKey === 'isActive' || listKey === 'includeInApplication';
+}
+
+function onListFiltersUpdate(filters: AfListFilter[]) {
+  activeListFilters.value = filters;
+  if (tableOptions.value.page !== 1) {
+    tableOptions.value.page = 1;
+  }
+  void fetchUsers();
+}
 
   // Handle table options update (when user changes page or items per page)
   const handleTableOptionsUpdate = (newOptions: any) => {
@@ -233,31 +266,22 @@ watch(
   { deep: true }
 );
 
-// Watch for search and status filter changes
+// Watch for search changes
 let searchTimeout: ReturnType<typeof setTimeout> | null = null;
-watch([search, statusFilter, applicationScopeFilter], () => {
-  // Reset to first page when filter changes
+watch(search, () => {
   if (tableOptions.value.page !== 1) {
     tableOptions.value.page = 1;
   }
-  
-  // Debounce search input (500ms)
-  if (searchTimeout) {
-    clearTimeout(searchTimeout);
-  }
+  if (searchTimeout) clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
     fetchUsers();
   }, 500);
 });
 
 onMounted(async () => {
-  // Manager/Admin kontrolü
-  if (!authStore.isManager) {
-    // İsteğe bağlı: Kullanıcıyı başka bir sayfaya yönlendirebilirsiniz
-    // router.push('/dashboards/analytical');
-  }
-  
-  // Initial load
+  keeperListStore.ensureReady();
+  applyHubDefaultSort(listConfig.value, KEEPER_USER_LIST_FIELD_TO_KEY, tableOptions);
+
   isInitialLoad.value = true;
   await fetchUsers();
   isInitialLoad.value = false;
@@ -291,34 +315,19 @@ const exportUsers = async (format: 'csv' | 'xlsx' | 'json') => {
     const params: {
       search?: string;
       isActive?: boolean;
+      includeInApplication?: boolean;
+      provisioningSource?: number;
+      groupId?: string;
+      groupIds?: string[];
       sortBy?: string;
       sortOrder?: 'asc' | 'desc';
-    } = {};
-    
-    // Add search term if exists
-    if (search.value && search.value.trim()) {
-      params.search = search.value.trim();
-    }
-    
-    // Add status filter if not 'all'
-    if (statusFilter.value === 'active') {
-      params.isActive = true;
-    } else if (statusFilter.value === 'inactive') {
-      params.isActive = false;
-    }
-    
-    // Add sorting if exists
+    } = {
+      ...keeperListFiltersToFetchParams(activeListFilters.value, search.value),
+    };
+
     if (tableOptions.value.sortBy && tableOptions.value.sortBy.length > 0) {
       const sortOption = tableOptions.value.sortBy[0];
-      const fieldMapping: Record<string, string> = {
-        'username': 'username',
-        'email': 'email',
-        'fullName': 'firstName',
-        'isActive': 'isActive',
-        'createdAt': 'createdAt',
-      };
-      
-      const backendField = fieldMapping[sortOption.key] || sortOption.key;
+      const backendField = keeperUserBackendSortField(sortOption.key);
       if (backendField) {
         params.sortBy = backendField;
         params.sortOrder = sortOption.order || 'asc';
@@ -380,27 +389,6 @@ const confirmDelete = async () => {
   }
 };
 
-const formatDate = (date: string | Date | null | undefined) => {
-  if (!date) return '-';
-  try {
-    const localeMap: Record<string, string> = {
-      tr: 'tr-TR',
-      en: 'en-US',
-      fr: 'fr-FR',
-      ar: 'ar-SA',
-      zh: 'zh-CN',
-    };
-    const locale = localeMap[localeStore.locale] || 'tr-TR';
-    
-    return new Date(date).toLocaleDateString(locale, {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-  } catch {
-    return '-';
-  }
-};
 </script>
 
 <template>
@@ -410,7 +398,7 @@ const formatDate = (date: string | Date | null | undefined) => {
     <v-card-item>
       <!-- Search and Actions -->
       <div class="d-flex justify-space-between align-center mb-4 flex-wrap ga-3">
-        <div class="d-flex ga-3 align-center flex-wrap">
+        <div class="d-flex ga-3 align-center flex-wrap flex-grow-1">
           <v-text-field
             v-model="search"
             prepend-inner-icon="mdi-magnify"
@@ -418,40 +406,21 @@ const formatDate = (date: string | Date | null | undefined) => {
             variant="outlined"
             density="compact"
             hide-details
-            style="min-width: 280px; max-width: 420px; flex: 1 1 280px;"
+            style="min-width: 220px; max-width: 320px"
             clearable
           />
-          
-          <v-select
-            v-model="statusFilter"
-            :items="[
-              { title: t('users.status.all'), value: 'all' },
-              { title: t('users.status.active'), value: 'active' },
-              { title: t('users.status.inactive'), value: 'inactive' },
-            ]"
-            :label="t('users.status.label')"
-            variant="outlined"
-            density="compact"
-            hide-details
-            style="min-width: 140px; max-width: 160px;"
-          />
-
-          <v-select
-            v-model="applicationScopeFilter"
-            :items="[
-              { title: t('users.applicationScope.filterAll'), value: 'all' },
-              { title: t('users.applicationScope.inApp'), value: 'inApp' },
-              { title: t('users.applicationScope.hidden'), value: 'hidden' },
-            ]"
-            :label="t('users.applicationScope.filterLabel')"
-            variant="outlined"
-            density="compact"
-            hide-details
-            style="min-width: 160px; max-width: 200px;"
-          />
         </div>
-        
-        <div class="d-flex ga-2">
+
+        <div class="d-flex ga-2 flex-wrap">
+          <v-btn
+            v-if="authStore.isManager"
+            variant="outlined"
+            size="small"
+            to="/apps/users/settings"
+          >
+            <SettingsIcon size="18" class="mr-1" />
+            {{ t('users.listSettings.title') }}
+          </v-btn>
           <v-menu>
             <template v-slot:activator="{ props }">
               <v-btn
@@ -507,6 +476,13 @@ const formatDate = (date: string | Date | null | undefined) => {
             {{ t('users.buttons.newUser') }}
           </v-btn>
         </div>
+      </div>
+
+      <div class="mb-4">
+        <AfListFilters
+          :columns="userFilterColumns"
+          @update:filters="onListFiltersUpdate"
+        />
       </div>
 
       <!-- Manager/Admin Warning -->
@@ -576,26 +552,6 @@ const formatDate = (date: string | Date | null | undefined) => {
           </v-chip>
         </template>
 
-        <!-- Full Name Column -->
-        <template v-slot:item.fullName="{ item }">
-          <span class="text-subtitle-1 font-weight-medium">
-            {{ item.fullName }}
-          </span>
-        </template>
-
-        <!-- Status Column -->
-        <template v-slot:item.isActive="{ value }">
-          <v-chip :color="value ? 'success' : 'error'" size="small" variant="flat">
-            {{ value ? t('users.status.active') : t('users.status.inactive') }}
-          </v-chip>
-        </template>
-
-        <template v-slot:item.includeInApplication="{ value }">
-          <v-chip :color="value ? 'primary' : 'warning'" size="small" variant="tonal">
-            {{ value ? t('users.applicationScope.inApp') : t('users.applicationScope.hidden') }}
-          </v-chip>
-        </template>
-
         <!-- Groups Column -->
         <template v-slot:item.groups="{ item }">
           <div class="d-flex ga-1 flex-wrap">
@@ -614,10 +570,13 @@ const formatDate = (date: string | Date | null | undefined) => {
           </div>
         </template>
 
-        <!-- Created At Column -->
-        <template v-slot:item.createdAt="{ value }">
-          <span class="text-caption">
-            {{ formatDate(value) }}
+        <template v-for="col in genericListColumns" :key="col.key" #[`item.${col.key}`]="{ item }">
+          <span
+            class="keeper-list-formatted-cell"
+            :class="{ 'keeper-list-formatted-cell--pill': isStatusScopeColumn(col.key) }"
+            :style="cellStyle(col.key, listCellRaw(item, col.key), item)"
+          >
+            {{ cellDisplayValue(listCellRaw(item, col.key), col.key) }}
           </span>
         </template>
 
@@ -752,4 +711,15 @@ const formatDate = (date: string | Date | null | undefined) => {
     </v-card>
   </v-dialog>
 </template>
+
+<style scoped>
+.keeper-list-formatted-cell--pill {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+</style>
 

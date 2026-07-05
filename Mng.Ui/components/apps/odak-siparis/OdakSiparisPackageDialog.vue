@@ -292,7 +292,7 @@ watch(
                 </div>
               </v-col>
               <v-col v-if="fieldVisible('customerContactId')" cols="12" md="6">
-                <v-select
+                <v-autocomplete
                   v-model="form.customerContactId"
                   :items="customerContactItems"
                   item-title="title"
