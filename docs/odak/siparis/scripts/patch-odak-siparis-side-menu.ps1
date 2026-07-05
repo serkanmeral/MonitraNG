@@ -267,8 +267,6 @@ Upsert-MenuItem -AllItems $items -Label "Personel Egitim Gecmisi" -FindExisting 
     permissions = $defaultPerms
 } | Out-Null
 
-} | Out-Null
-
 Upsert-MenuItem -AllItems $items -Label "Egitim Birimleri" -FindExisting {
     $_.pageCode -eq "odakSiparis.egitim.divisions.menuTitle" -or $_.to -eq "/apps/odak-egitim/divisions"
 } -Body @{
