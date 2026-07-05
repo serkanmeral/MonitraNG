@@ -43,7 +43,7 @@ function Build-CocMergeValuesFromLine {
     )
 
     $values = @{}
-    if ($DocNo) { $values['docNo'] = $DocNo }
+    if ($DocNo) { $values['poDocNo'] = $DocNo }
     if ($Package.packageNo) { $values['workPackageNo'] = [string]$Package.packageNo.Trim() }
     if ($Customer.unvan) { $values['customerName'] = [string]$Customer.unvan.Trim() }
     if ($Line.customerPoNo) { $values['orderNo'] = [string]$Line.customerPoNo.Trim() }

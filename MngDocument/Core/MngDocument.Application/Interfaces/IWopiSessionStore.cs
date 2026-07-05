@@ -3,8 +3,10 @@ namespace MngDocument.Application.Interfaces;
 public sealed class WopiSession
 {
     public required string TemplateId { get; init; }
-    /// <summary>Dolu ise WOPI oturumu <c>dm_resources</c> dosyası içindir (<see cref="TemplateId"/> boş olmalı).</summary>
+    /// <summary>Dolu ise WOPI oturumu <c>dm_resources</c> dosyası içindir.</summary>
     public string? ResourceId { get; init; }
+    /// <summary>Dolu ise WOPI oturumu antet tasarım DOCX içindir.</summary>
+    public string? LetterheadId { get; init; }
     public bool ReadOnly { get; init; }
     public required string UserId { get; init; }
     public required string UserName { get; init; }

@@ -7,6 +7,7 @@ public sealed class TemplateLetterheadDto
     public bool ShowDocumentName { get; init; }
     public bool ShowDocumentNumber { get; init; }
     public bool ShowGeneratedAt { get; init; }
+    public bool ShowCreatePerson { get; init; }
 }
 
 public sealed class UpdateTemplateLetterheadRequest

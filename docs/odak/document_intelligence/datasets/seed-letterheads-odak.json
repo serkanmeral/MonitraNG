@@ -1,0 +1,140 @@
+{
+  "defaultSettings": {
+    "headerFields": {
+      "documentName": true,
+      "docNo": true,
+      "generatedAt": true,
+      "createPerson": false
+    },
+    "generalDocNo": {
+      "enabled": true,
+      "format": "ODK-{yyyy}-{0:D3}",
+      "scopeMode": "letterhead",
+      "scopeKey": null,
+      "resetPolicy": "yearly",
+      "startValue": 1,
+      "incrementStep": 1
+    },
+    "footer": {
+      "enabled": true,
+      "tableRows": 2,
+      "tableColumns": 2
+    },
+    "legacyOdakFooter": {
+      "enabled": true,
+      "showFormRevision": true,
+      "showOfficeColumns": true,
+      "showAddresses": true,
+      "showContacts": true,
+      "showDividerLine": false
+    },
+    "pageLayout": {
+      "marginTopTwips": 1440,
+      "marginRightTwips": 1797,
+      "marginBottomTwips": 1440,
+      "marginLeftTwips": 1797,
+      "headerDistanceTwips": 709,
+      "footerDistanceTwips": 658,
+      "footerLeftIndentTwips": -567
+    }
+  },
+  "letterheads": [
+    {
+      "code": "ODK-STD",
+      "name": "ODK Standart Antet",
+      "description": "Logo, belge adi, numara ve uretim tarihi — CoC/Activity varsayilan.",
+      "isDefault": true,
+      "isActive": true,
+      "letterhead": {
+        "enabled": true,
+        "showLogo": true,
+        "showDocumentName": true,
+        "showDocumentNumber": true,
+        "showGeneratedAt": true
+      },
+      "settings": {
+        "headerFields": {
+          "documentName": true,
+          "docNo": true,
+          "generatedAt": true,
+          "createPerson": false
+        },
+        "generalDocNo": {
+          "enabled": true,
+          "format": "ODK-{yyyy}-{0:D3}",
+          "scopeMode": "letterhead",
+          "scopeKey": null,
+          "resetPolicy": "yearly",
+          "startValue": 1,
+          "incrementStep": 1
+        },
+        "footer": {
+          "enabled": true,
+          "showFormRevision": true,
+          "showOfficeColumns": true,
+          "showAddresses": true,
+          "showContacts": true,
+          "showDividerLine": false
+        },
+        "pageLayout": {
+          "marginTopTwips": 1440,
+          "marginRightTwips": 1797,
+          "marginBottomTwips": 1440,
+          "marginLeftTwips": 1797,
+          "headerDistanceTwips": 709,
+          "footerDistanceTwips": 658,
+          "footerLeftIndentTwips": -567
+        }
+      }
+    },
+    {
+      "code": "ODK-MINIMAL",
+      "name": "ODK Minimal Antet",
+      "description": "Logo olmadan; belge adi, numara ve tarih.",
+      "isDefault": false,
+      "isActive": true,
+      "letterhead": {
+        "enabled": true,
+        "showLogo": false,
+        "showDocumentName": true,
+        "showDocumentNumber": true,
+        "showGeneratedAt": true
+      },
+      "settings": {
+        "headerFields": {
+          "documentName": true,
+          "docNo": true,
+          "generatedAt": true,
+          "createPerson": false
+        },
+        "generalDocNo": {
+          "enabled": true,
+          "format": "ODK-{yyyy}-{0:D3}",
+          "scopeMode": "letterhead",
+          "scopeKey": null,
+          "resetPolicy": "yearly",
+          "startValue": 1,
+          "incrementStep": 1
+        },
+        "footer": {
+          "enabled": true,
+          "showFormRevision": true,
+          "showOfficeColumns": true,
+          "showAddresses": true,
+          "showContacts": true,
+          "showDividerLine": false
+        },
+        "pageLayout": {
+          "marginTopTwips": 1440,
+          "marginRightTwips": 1797,
+          "marginBottomTwips": 1440,
+          "marginLeftTwips": 1797,
+          "headerDistanceTwips": 709,
+          "footerDistanceTwips": 658,
+          "footerLeftIndentTwips": -567
+        }
+      }
+    }
+  ],
+  "templateCodes": ["COC-STANDARD", "LINE-ACTIVITY-STD"]
+}

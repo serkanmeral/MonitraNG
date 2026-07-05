@@ -22,6 +22,11 @@ public class HttpRequestContext : IRequestContext
     public string? Username =>
         User?.FindFirst("preferred_username")?.Value ?? User?.FindFirst(ClaimTypes.Name)?.Value;
 
+    public string? DisplayName =>
+        User?.FindFirst("name")?.Value
+        ?? User?.FindFirst(ClaimTypes.GivenName)?.Value
+        ?? Username;
+
     public string? DomainId => User?.FindFirst("domain_id")?.Value;
 
     public string? DomainName => User?.FindFirst("domain_name")?.Value;

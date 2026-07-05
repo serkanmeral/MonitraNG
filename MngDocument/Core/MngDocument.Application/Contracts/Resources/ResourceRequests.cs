@@ -69,6 +69,13 @@ public sealed class CreateFileResourceRequest
 
     /// <summary>Orijinal dosya adı (MinIO metadata'sı; indirmede dosya adı olarak kullanılır).</summary>
     public string? OriginalFileName { get; set; }
+
+    public string? Origin { get; set; }
+    public string? TemplateId { get; set; }
+    public string? TemplateCode { get; set; }
+    public string? GenerationProfile { get; set; }
+    public string? LetterheadId { get; set; }
+    public string? DocumentNo { get; set; }
 }
 
 /// <summary>

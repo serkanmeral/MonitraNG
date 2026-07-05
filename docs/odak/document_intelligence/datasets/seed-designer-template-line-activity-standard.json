@@ -40,8 +40,8 @@
         "defaultValue": "Kalem Activity Raporu"
       },
       {
-        "key": "docNo",
-        "label": "Belge Numarası",
+        "key": "poDocNo",
+        "label": "İş Paketi Belge Numarası (Activity)",
         "dataType": "text",
         "valueSourceMode": "incremental",
         "incremental": {

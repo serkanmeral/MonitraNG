@@ -1,9 +1,9 @@
 # Document Intelligence — Ürün Yol Haritası
 
 **Durum:** Planlama (birleşik roadmap)  
-**Son güncelleme:** 3 Temmuz 2026  
+**Son güncelleme:** 6 Temmuz 2026  
 **Kapsam:** Sayfa · Döküman · Sheet · Sunum · Parametreler · Kurumsal kimlik (D-BR) · Zamanlama · Bildirim · Collabora oturum yönetimi · Workflow entegrasyonu (D-WF) · AI  
-**İlişkili:** [MonitraNG_Document_Intelligence_Planning.md](./MonitraNG_Document_Intelligence_Planning.md) · [DEVAM.md](./DEVAM.md) · [ODAK_MO_VS_WORKFLOW_SCENARIOS.md](../workflow/ODAK_MO_VS_WORKFLOW_SCENARIOS.md) · [KURUMSAL_ICERIK_SUNUM.md](./KURUMSAL_ICERIK_SUNUM.md) · [docs/MngDocument/current_status.md](../../MngDocument/current_status.md)
+**İlişkili:** [MonitraNG_Document_Intelligence_Planning.md](./MonitraNG_Document_Intelligence_Planning.md) · [DEVAM.md](./DEVAM.md) · [LETTERHEAD_CATALOG_MIGRATION_PROD.md](./LETTERHEAD_CATALOG_MIGRATION_PROD.md) · [ODAK_MO_VS_WORKFLOW_SCENARIOS.md](../workflow/ODAK_MO_VS_WORKFLOW_SCENARIOS.md) · [docs/MngDocument/current_status.md](../../MngDocument/current_status.md)
 
 ---
 
@@ -58,6 +58,7 @@ Her **Döküman** üç yoldan oluşabilir:
 | Grup bazlı klasör yetkisi + miras | ✅ |
 | Döküman: DOCX upload, Collabora edit (WOPI) | ✅ |
 | Belge Tasarımcısı: şablon, parametre (skaler), antet/footer (şablona gömülü) | ✅ D1 |
+| **Paylaşımlı antet kataloğu (`dm_letterheads`) + Collabora tasarım + tablo footer** | ✅ **D-BR1 Sprint A** (test) |
 | Otomatik üretim: CoC + Activity generation profilleri | ✅ |
 | Şablon publish/unpublish | ✅ |
 | System / Öğreticiler seed içerik | ✅ |
@@ -77,7 +78,7 @@ Her **Döküman** üç yoldan oluşabilir:
 | Döküman bildirimleri | 🔲 Faz D-N |
 | OC WorkItem ↔ doküman (tam UI) | 🔲 Faz D5 |
 | Collabora oturum görünürlüğü / limit (D-E) | 🔲 Faz D-E |
-| Paylaşımlı antet & kapak kataloğu; üretimde seçim | 🔲 Faz D-BR |
+| Paylaşımlı antet & kapak kataloğu; üretimde seçim | 🟡 **D-BR1 kısmi** (katalog ✅ · üretim seçimi 🔲) |
 | Workflow entegrasyonu (onaylı yayın, dağıtım) | 🔲 Faz D-WF |
 | AI: extract, tag, özet, benzer, asistan | 🔲 Faz AI |
 
@@ -322,11 +323,12 @@ scheduleId (zamanlı üretimde)
 
 ### 8.4 D-BR dilimleri
 
-| Dilim | Kapsam | Öncelik |
-|-------|--------|---------|
-| **D-BR1** | Antet kataloğu + admin UI + şablon varsayılanı + üretimde seçim | P0 |
-| **D-BR2** | Kapak kataloğu + üretimde opsiyonel seçim | P1 |
-| **D-BR3** | Paylaşımlı altbilgi kataloğu (opsiyonel; footer şablonda kalabilir) | P2 |
+| Dilim | Kapsam | Öncelik | Durum |
+|-------|--------|---------|-------|
+| **D-BR1a** | `dm_letterheads` + API + admin UI + Collabora tasarım + tablo footer skeleton + design merge | P0 | ✅ Sprint A (Odak test) |
+| **D-BR1b** | Şablon varsayılanı + **üretimde antet seçimi** + prod migration | P0 | 🔲 |
+| **D-BR2** | Kapak kataloğu + üretimde opsiyonel seçim | P1 | 🔲 |
+| **D-BR3** | Paylaşımlı altbilgi kataloğu (opsiyonel; footer şablonda kalabilir) | P2 | ➖ Tablo footer modeli ile birleşti |
 
 **Bağımlılık:** Faz D üretim kanalları (`manual` / `system`); D-BR2, D-BR1 sonrası. D-S haftalık rapor + kapak = güçlü demo senaryosu.
 

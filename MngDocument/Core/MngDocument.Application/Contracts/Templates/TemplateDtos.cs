@@ -29,6 +29,9 @@ public class TemplateSummaryDto
 public sealed class TemplateDetailDto : TemplateSummaryDto
 {
     public string SchemaVersion { get; init; } = "1.0";
+    public string? PrimaryContextType { get; init; }
+    public string? GenerationProfile { get; init; }
+    public string? DefaultLetterheadId { get; init; }
     public TemplatePageLayoutDto? PageLayout { get; init; }
     public TemplateLetterheadDto? Letterhead { get; init; }
     public TemplateFooterDto? Footer { get; init; }

@@ -9,6 +9,7 @@ public interface ITemplateLetterheadApplier
         byte[] docxBytes,
         string documentName,
         TemplateLetterheadModel letterhead,
+        byte[]? designDocxBytes,
         string? bearerToken,
         CancellationToken ct = default);
 }
@@ -26,11 +27,19 @@ public sealed class TemplateLetterheadApplier : ITemplateLetterheadApplier
         byte[] docxBytes,
         string documentName,
         TemplateLetterheadModel letterhead,
+        byte[]? designDocxBytes,
         string? bearerToken,
         CancellationToken ct = default)
     {
         if (!letterhead.Enabled)
             return docxBytes;
+
+        if (designDocxBytes is { Length: > 0 })
+        {
+            var merged = LetterheadDesignMerger.ApplyHeader(docxBytes, designDocxBytes);
+            if (LetterheadDesignMerger.HasAppliedHeader(merged))
+                return merged;
+        }
 
         DomainLogoResult? logo = null;
         if (letterhead.ShowLogo)

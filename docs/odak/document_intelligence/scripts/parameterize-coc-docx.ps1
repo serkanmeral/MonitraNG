@@ -120,7 +120,7 @@ function Add-DocNoFieldParagraph {
     $frag = @'
 <w:p xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:pPr><w:jc w:val="both"/></w:pPr>
-  <w:r><w:rPr><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:t xml:space="preserve">Belge Numarası         : {{docNo}}</w:t></w:r>
+  <w:r><w:rPr><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:t xml:space="preserve">Belge Numarası         : {{poDocNo}}</w:t></w:r>
 </w:p>
 '@
     $fragDoc = New-Object System.Xml.XmlDocument
@@ -130,7 +130,7 @@ function Add-DocNoFieldParagraph {
 }
 
 $fieldRules = @(
-    @{ Match = '(?i)belge\s*numara\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{docNo}}') } }
+    @{ Match = '(?i)belge\s*numara\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{poDocNo}}') } }
     @{ Match = '(?i)paketi\s*no\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{workPackageNo}}') } }
     @{ Match = '(?i)zenlenme\s*tarihi\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{issueDate}}') } }
     @{ Match = '(?i)firma\s*bilgileri\s*:\s*.+$'; Value = { param($m) ($m -replace '(?i)(:\s*).+$', ': {{customerName}}') } }

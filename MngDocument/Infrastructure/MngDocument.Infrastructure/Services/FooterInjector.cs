@@ -21,6 +21,7 @@ public static class FooterInjector
         "http://schemas.openxmlformats.org/package/2006/relationships";
 
     private const string FooterPartPath = "word/footer1.xml";
+    internal const string FooterPartPathValue = "word/footer1.xml";
     internal const string FooterReferenceRelId = "rIdFooter1";
 
     // ODK-COC-23-202.docx printable width (pgSz.w - pgMar.left - pgMar.right)
@@ -32,27 +33,8 @@ public static class FooterInjector
         if (!request.Footer.Enabled)
             return docxBytes;
 
-        using var input = new MemoryStream(docxBytes, writable: false);
-        using var output = new MemoryStream();
-        using (var readArchive = new ZipArchive(input, ZipArchiveMode.Read, leaveOpen: true))
-        using (var writeArchive = new ZipArchive(output, ZipArchiveMode.Create, leaveOpen: true))
-        {
-            var documentXml = ReadEntryText(readArchive, "word/document.xml");
-
-            foreach (var entry in readArchive.Entries)
-            {
-                if (IsReplacedPart(entry.FullName))
-                    continue;
-                CopyEntry(entry, writeArchive);
-            }
-
-            WriteEntry(writeArchive, FooterPartPath, BuildFooterXml(request));
-            WriteEntry(writeArchive, "word/_rels/document.xml.rels", BuildDocumentRels(readArchive));
-            WriteEntry(writeArchive, "word/document.xml", InjectFooterReference(documentXml));
-            WriteEntry(writeArchive, "[Content_Types].xml", BuildContentTypes(readArchive));
-        }
-
-        return output.ToArray();
+        var footerXml = BuildFooterXml(request);
+        return FooterPartInstaller.Apply(docxBytes, footerXml);
     }
 
     private static bool IsReplacedPart(string path)
@@ -225,6 +207,12 @@ public static class FooterInjector
             parts.Add($"Faks: {office.Fax.Trim()}");
         return EscapeXml(string.Join("     ", parts));
     }
+
+    internal static string BuildDocumentRelsPublic(ZipArchive archive) => BuildDocumentRels(archive);
+
+    internal static string InjectFooterReferencePublic(string documentXml) => InjectFooterReference(documentXml);
+
+    internal static string BuildContentTypesPublic(ZipArchive archive) => BuildContentTypes(archive);
 
     private static string BuildDocumentRels(ZipArchive archive)
     {

@@ -1,4 +1,4 @@
-import type { DiTemplatePageLayout } from '@/types/apps/documentIntelligence';
+import type { DiTemplateFooter, DiTemplatePageLayout } from '@/types/apps/documentIntelligence';
 
 /** Word twips per centimetre (ODK reference). */
 export const DI_TWIPS_PER_CM = 567;
@@ -19,6 +19,17 @@ export function diTwipsToCm(twips: number): number {
 
 export function diCmToTwips(cm: number): number {
   return Math.round(cm * DI_TWIPS_PER_CM);
+}
+
+export function diCreateDefaultFooter(): DiTemplateFooter {
+  return {
+    enabled: true,
+    showFormRevision: true,
+    showOfficeColumns: true,
+    showAddresses: true,
+    showContacts: true,
+    showDividerLine: false,
+  };
 }
 
 export function diCreateDefaultPageLayout(): DiTemplatePageLayout {

@@ -20,15 +20,18 @@ public sealed class WopiController : ControllerBase
 
     private readonly ITemplateEditorService _editor;
     private readonly IResourceEditorService _resourceEditor;
+    private readonly ILetterheadEditorService _letterheadEditor;
     private readonly IWopiSessionStore _sessions;
 
     public WopiController(
         ITemplateEditorService editor,
         IResourceEditorService resourceEditor,
+        ILetterheadEditorService letterheadEditor,
         IWopiSessionStore sessions)
     {
         _editor = editor;
         _resourceEditor = resourceEditor;
+        _letterheadEditor = letterheadEditor;
         _sessions = sessions;
     }
 
@@ -41,7 +44,9 @@ public sealed class WopiController : ControllerBase
 
         var info = !string.IsNullOrWhiteSpace(session.ResourceId)
             ? await _resourceEditor.GetCheckFileInfoAsync(id, session, ct)
-            : await _editor.GetCheckFileInfoAsync(id, session, ct);
+            : !string.IsNullOrWhiteSpace(session.LetterheadId)
+                ? await _letterheadEditor.GetCheckFileInfoAsync(id, session, ct)
+                : await _editor.GetCheckFileInfoAsync(id, session, ct);
         return Content(JsonSerializer.Serialize(info, WopiJsonOptions), "application/json");
     }
 
@@ -54,7 +59,9 @@ public sealed class WopiController : ControllerBase
 
         var bytes = !string.IsNullOrWhiteSpace(session.ResourceId)
             ? await _resourceEditor.GetFileContentsAsync(id, session, ct)
-            : await _editor.GetFileContentsAsync(id, session, ct);
+            : !string.IsNullOrWhiteSpace(session.LetterheadId)
+                ? await _letterheadEditor.GetFileContentsAsync(id, session, ct)
+                : await _editor.GetFileContentsAsync(id, session, ct);
         return File(bytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     }
 
@@ -72,6 +79,8 @@ public sealed class WopiController : ControllerBase
         var versionBefore = session.Version;
         if (!string.IsNullOrWhiteSpace(session.ResourceId))
             await _resourceEditor.SaveFileContentsAsync(id, session, content, access_token, ct);
+        else if (!string.IsNullOrWhiteSpace(session.LetterheadId))
+            await _letterheadEditor.SaveFileContentsAsync(id, session, content, access_token, ct);
         else
             await _editor.SaveFileContentsAsync(id, session, content, access_token, ct);
 

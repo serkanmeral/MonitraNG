@@ -1,39 +1,42 @@
 # Document Intelligence (MngDocument) — Devam noktası (checkpoint)
 
+**Son güncelleme:** 6 Temmuz 2026 (**D-BR1 antet katalog + tablo footer skeleton + Collabora tasarım**)
+**Durum:** **D-BR1 Sprint A ✅ (test)** · **Prod migration hazır** · **Sırada: prod kurulum veya Sprint B (context catalog)**
+
 > ## 🚀 Yeni chat başlangıç prompt'u (kopyala-yapıştır)
 >
 > ```
-> MonitraNG / Odak Document Intelligence belge tasarımı oturumuna devam ediyoruz.
+> MonitraNG Document Intelligence — antet katalog (D-BR1) oturumuna devam.
 > Repo: c:\Users\monitra\Dev\MonitraNG\MonitraNG
 >
 > Önce oku:
 > - docs/MngDocument/current_status.md
+> - docs/odak/document_intelligence/LETTERHEAD_CATALOG_MIGRATION_PROD.md
 > - docs/odak/document_intelligence/DEVAM.md
 >
-> Durum (29 Haz 2026):
-> - LINE-ACTIVITY-STD test'te published; Activity/CoC kalem belgeleri çalışıyor
-> - Şablon unpublish API + UI (görüntüle / kilidi aç) — commit de245f1f
-> - Test deploy EKSİK: sync-odak-source -Paths @('MngDocument','Mng.Ui') sonra deploy-odak-apps -Services mngdocument,mngui -NoCache
+> Durum (6 Tem 2026):
+> - D-BR1 Sprint A tamam: dm_letterheads, antet UI, header/footer Collabora skeleton (tablo footer)
+> - Odak test (192.168.20.20): ODK Test Antet 1 header + boş footer tablosu doğrulandı
+> - Prod migration dokümanı hazır; prod deploy henüz yapılmadı
 >
-> Bu oturumda hedef: ANTET yönetimi ve PARAMETRE yönetimi (designer placeholder envanteri, context binding, letterhead ince ayar).
+> Sıradaki seçenekler:
+> 1) Prod migration uygula (LETTERHEAD_CATALOG_MIGRATION_PROD.md)
+> 2) Üretim dialogunda antet seçimi (D-BR1 kalan)
+> 3) Sprint B: dm_document_context_types dataset
 >
-> Test: 192.168.20.20:5040 | Token: docs/odak/operationcore/scripts/load-operationcore-token.ps1
+> Test: 192.168.20.20:5040 | Prod: 192.168.20.8:5040
+> Token: docs/odak/operationcore/scripts/load-operationcore-token.ps1
 > ```
 
-**Son güncelleme:** 29 Haziran 2026 (**Kalem belgeleri + Activity şablonu + unpublish**)
-**Durum:** **D1-designer ✅** · **Sayfa yapısı ✅** · **Kalem belgeleri (CoC+Activity) ✅** · **LINE-ACTIVITY-STD ✅ test** · **Sırada: antet + parametre yönetimi**
-
-> **⭐ KALDIĞIMIZ YER (29 Haz 2026 — oturum sonu):**
-> - **Backend:** Generation profilleri (`odak.coc.fromLine`, `odak.line.activity.fromLine`), bool→Evet/Hayır, `POST /templates/{id}/unpublish`.
-> - **Activity şablonu:** `LINE-ACTIVITY-STD` — profesyonel DOCX, Türkçe karakter düzeltmesi, test'te published.
-> - **UI Odak:** Kalem Belgeleri sekmesi (CoC + Activity), deep link `/apps/document-intelligence/r/{id}`.
-> - **UI Tasarımcı:** Üretimde aktif / Düzenlenebilir; published → görüntüle (salt okunur) + kilidi aç (unpublish).
-> - **Git:** `de245f1f` pushed main ✅
-> - **Test deploy bekliyor:** unpublish API + UI canlı doğrulama (SSH sync bu oturumda başarısız).
-> - **Sıradaki oturum:** **D-BR1** antet kataloğu (roadmap §8) · parametre yönetimi UI (placeholder envanteri, context binding, D2 docNo).
+> **⭐ KALDIĞIMIZ YER (6 Tem 2026 — oturum sonu):**
+> - **Antet katalog:** `dm_letterheads`, CRUD API, Collabora WOPI tasarım, tablo footer (satır×sütun), header skeleton.
+> - **Model:** Footer Collabora'da düzenlenir; programmatic overlay kaldırıldı; üretimde design DOCX merge.
+> - **UI:** Antet listesi/modal (tablo boyutu), tasarım özeti paneli; Odak boolean footer toggle'ları kaldırıldı.
+> - **Odak test deploy ✅** · **Prod migration rehberi ✅** (`LETTERHEAD_CATALOG_MIGRATION_PROD.md`)
+> - **Sıradaki:** Prod kurulum VEYA üretim antet seçimi VEYA Sprint B (context catalog dataset).
 > - **Detay:** [docs/MngDocument/current_status.md](../../MngDocument/current_status.md)
 
-**Ana plan:** [MonitraNG_Document_Intelligence_Planning.md](MonitraNG_Document_Intelligence_Planning.md) · **Ürün roadmap (birleşik):** [DI_PRODUCT_ROADMAP.md](DI_PRODUCT_ROADMAP.md) (Faz D-WF dahil) · **MO vs Workflow (Odak):** [ODAK_MO_VS_WORKFLOW_SCENARIOS.md](../workflow/ODAK_MO_VS_WORKFLOW_SCENARIOS.md) · **Prod / taşıma:** [PROD_OPERATIONS_AND_MIGRATION.md](PROD_OPERATIONS_AND_MIGRATION.md) · **Faz 1 dataset'leri:** [datasets/documentintelligence_datasets_phase1.json](datasets/documentintelligence_datasets_phase1.json)
+**Ana plan:** [MonitraNG_Document_Intelligence_Planning.md](MonitraNG_Document_Intelligence_Planning.md) · **Ürün roadmap (birleşik):** [DI_PRODUCT_ROADMAP.md](DI_PRODUCT_ROADMAP.md) · **Antet prod migration:** [LETTERHEAD_CATALOG_MIGRATION_PROD.md](LETTERHEAD_CATALOG_MIGRATION_PROD.md) · **MO vs Workflow (Odak):** [ODAK_MO_VS_WORKFLOW_SCENARIOS.md](../workflow/ODAK_MO_VS_WORKFLOW_SCENARIOS.md) · **Prod / taşıma:** [PROD_OPERATIONS_AND_MIGRATION.md](PROD_OPERATIONS_AND_MIGRATION.md)
 
 ---
 

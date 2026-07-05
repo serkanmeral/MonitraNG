@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Options;
 using MngDocument.Application.Configuration;
+using MngDocument.Application.Contracts.Letterheads;
 using MngDocument.Application.Contracts.Generation;
 using MngDocument.Application.Contracts.Resources;
 using MngDocument.Application.Exceptions;
@@ -20,6 +21,9 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
     private readonly DocumentContextLoader _contextLoader;
     private readonly DocumentParameterResolver _parameterResolver;
     private readonly DocumentGenerationSettings _generationSettings;
+    private readonly ITemplateBrandingApplier _brandingApplier;
+    private readonly ILetterheadService _letterheads;
+    private readonly LetterheadHeaderValueEnricher _headerEnricher;
 
     public DocumentGenerationService(
         IMngDataGatewayClient dg,
@@ -27,7 +31,10 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
         IRequestContext ctx,
         DocumentContextLoader contextLoader,
         DocumentParameterResolver parameterResolver,
-        IOptions<MngDocumentSettings> settings)
+        IOptions<MngDocumentSettings> settings,
+        ITemplateBrandingApplier brandingApplier,
+        ILetterheadService letterheads,
+        LetterheadHeaderValueEnricher headerEnricher)
     {
         _dg = dg;
         _resources = resources;
@@ -35,6 +42,9 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
         _contextLoader = contextLoader;
         _parameterResolver = parameterResolver;
         _generationSettings = settings.Value.DocumentGeneration ?? new DocumentGenerationSettings();
+        _brandingApplier = brandingApplier;
+        _letterheads = letterheads;
+        _headerEnricher = headerEnricher;
     }
 
     private string? Token => _ctx.BearerToken;
@@ -120,6 +130,21 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             null,
             ct);
 
+        var letterheadResolve = await _letterheads.ResolveAsync(
+            model.DefaultLetterheadId,
+            TemplateModelSerializer.ToLetterheadDto(model.Letterhead),
+            ct);
+        var letterheadEntry = await TryLoadLetterheadEntryAsync(letterheadResolve, ct);
+        await _headerEnricher.EnrichAsync(
+            values,
+            model,
+            letterheadEntry,
+            templateRow.name,
+            _ctx,
+            allocateCounters: false,
+            Token,
+            ct);
+
         var docxBytes = await LoadTemplateDocxAsync(templateRow, ct);
         var placeholderAnalysis = AnalyzePlaceholders(docxBytes, model, values);
 
@@ -174,10 +199,50 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
 
         ValidateTemplateForProfile(profile, templateRow, model);
 
+        var letterheadResolve = await _letterheads.ResolveAsync(
+            model.DefaultLetterheadId,
+            TemplateModelSerializer.ToLetterheadDto(model.Letterhead),
+            ct);
+        var letterheadEntry = await TryLoadLetterheadEntryAsync(letterheadResolve, ct);
+        await _headerEnricher.EnrichAsync(
+            values,
+            model,
+            letterheadEntry,
+            templateRow.name,
+            _ctx,
+            allocateCounters: true,
+            Token,
+            ct);
+
         var docxBytes = await LoadTemplateDocxAsync(templateRow, ct);
         var placeholderAnalysis = AnalyzePlaceholders(docxBytes, model, values);
+
+        var letterheadModel = letterheadResolve.Letterhead is { Enabled: true }
+            ? TemplateModelSerializer.ToLetterheadModel(letterheadResolve.Letterhead)
+            : null;
+        var (footerModel, pageLayout) = LetterheadBrandingResolver.Resolve(letterheadResolve, model);
+
+        var branded = docxBytes;
+        if (letterheadModel is not null || footerModel is not null || !string.IsNullOrWhiteSpace(letterheadResolve.LetterheadId))
+        {
+            var letterheadDesignDocx = await TryLoadLetterheadDesignDocxAsync(letterheadEntry, ct);
+            var letterheadSettings = !string.IsNullOrWhiteSpace(letterheadResolve.LetterheadId)
+                ? letterheadResolve.Settings
+                : null;
+            branded = await _brandingApplier.ApplyAsync(
+                docxBytes,
+                templateRow.name ?? string.Empty,
+                letterheadModel,
+                footerModel,
+                pageLayout,
+                letterheadDesignDocx,
+                letterheadSettings,
+                Token,
+                ct);
+        }
+
         var merged = DocxPlaceholderMerger.Merge(
-            docxBytes,
+            branded,
             values,
             placeholderAnalysis.PreservePlaceholderKeys);
         var remainingPlaceholders = DocumentPlaceholderAnalysis.ScanRemainingPlaceholderKeys(merged);
@@ -189,6 +254,7 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             .ToList();
 
         var parentFolderId = await EnsureFolderPathAsync(folderSegments, ct);
+        var businessDocNo = ResolveBusinessDocNo(values);
         var saved = await _resources.CreateFileResourceAsync(new CreateFileResourceRequest
         {
             ParentId = parentFolderId,
@@ -197,13 +263,18 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             MimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             Extension = ".docx",
             Size = merged.Length,
-            Content = Convert.ToBase64String(merged)
+            Content = Convert.ToBase64String(merged),
+            Origin = "system",
+            TemplateId = templateRow.__dataId,
+            TemplateCode = templateRow.code ?? templateCode,
+            GenerationProfile = profile.Code,
+            LetterheadId = letterheadResolve.LetterheadId,
+            DocumentNo = businessDocNo
         }, ct);
 
         await WritebackAsync(profile, contextId, templateRow, templateCode, values, saved.Id, ct);
 
         var generatedAt = DateTime.UtcNow;
-        values.TryGetValue("docNo", out var docNo);
 
         return new GenerateDocumentResultDto
         {
@@ -212,7 +283,10 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             ContextId = contextId,
             TemplateId = templateRow.__dataId ?? string.Empty,
             TemplateCode = templateRow.code ?? profile.TemplateCode,
-            DocNo = docNo,
+            LetterheadId = letterheadResolve.LetterheadId,
+            LetterheadCode = letterheadResolve.LetterheadCode,
+            LetterheadName = letterheadResolve.LetterheadName,
+            DocNo = businessDocNo,
             ResourceId = saved.Id,
             FileName = fileName,
             FolderPath = folderSegments,
@@ -275,6 +349,25 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
         EnrichPatternTokens(values, contextTree);
 
         return (templateRow, model, values);
+    }
+
+    private async Task<LetterheadDto?> TryLoadLetterheadEntryAsync(
+        LetterheadResolveResult resolve,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(resolve.LetterheadId))
+            return null;
+
+        return await _letterheads.TryGetByIdAsync(resolve.LetterheadId, ct);
+    }
+
+    private async Task<byte[]?> TryLoadLetterheadDesignDocxAsync(LetterheadDto? letterhead, CancellationToken ct)
+    {
+        if (letterhead is not { HasDesign: true }
+            || string.IsNullOrWhiteSpace(letterhead.DesignStoragePath))
+            return null;
+
+        return await _dg.DownloadFileAsync(letterhead.DesignStoragePath, Token, ct);
     }
 
     private static string ResolveTemplateCode(
@@ -456,8 +549,8 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
                     payload["cocDiResourceId"] = resourceId;
                     break;
                 case "cocdocno":
-                    if (values.TryGetValue("docNo", out var docNo))
-                        payload["cocDocNo"] = docNo;
+                    if (ResolveBusinessDocNo(values) is { } cocDocNo)
+                        payload["cocDocNo"] = cocDocNo;
                     break;
                 case "cocgeneratedat":
                     payload["cocGeneratedAt"] = DateTime.UtcNow;
@@ -472,7 +565,7 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
                     payload["activityDiResourceId"] = resourceId;
                     break;
                 case "activitydocno":
-                    if (values.TryGetValue("docNo", out var activityDocNo))
+                    if (ResolveBusinessDocNo(values) is { } activityDocNo)
                         payload["activityDocNo"] = activityDocNo;
                     break;
                 case "activitygeneratedat":
@@ -498,6 +591,19 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             payload,
             Token,
             ct);
+    }
+
+    private static string? ResolveBusinessDocNo(IReadOnlyDictionary<string, string> values)
+    {
+        if (values.TryGetValue(LetterheadConstants.PoDocNoKey, out var poDocNo)
+            && !string.IsNullOrWhiteSpace(poDocNo))
+            return poDocNo;
+
+        if (values.TryGetValue(LetterheadConstants.DocNoKey, out var docNo)
+            && !string.IsNullOrWhiteSpace(docNo))
+            return docNo;
+
+        return null;
     }
 
     private DocumentGenerationProfileSettings ResolveProfile(string? profileCode)

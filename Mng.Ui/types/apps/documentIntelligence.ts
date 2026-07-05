@@ -388,6 +388,9 @@ export interface DiGenerateDocumentResult {
   contextId: string;
   templateId: string;
   templateCode: string;
+  letterheadId?: string | null;
+  letterheadCode?: string | null;
+  letterheadName?: string | null;
   docNo?: string | null;
   resourceId: string;
   fileName: string;
@@ -423,10 +426,83 @@ export interface DiDocumentGenerationPreview {
 
 export interface DiTemplateDetail extends DiTemplateSummary {
   schemaVersion: string;
+  defaultLetterheadId?: string | null;
   letterhead: DiTemplateLetterhead | null;
   footer: DiTemplateFooter | null;
   pageLayout: DiTemplatePageLayout | null;
   parameters: DiTemplateParameter[];
+}
+
+export interface DiLetterheadHeaderFields {
+  documentName: boolean;
+  docNo: boolean;
+  generatedAt: boolean;
+  createPerson: boolean;
+}
+
+export interface DiLetterheadGeneralDocNo {
+  enabled: boolean;
+  format: string;
+  scopeMode: 'letterhead' | 'global' | 'custom';
+  scopeKey?: string | null;
+  resetPolicy: string;
+  startValue: number;
+  incrementStep: number;
+}
+
+export interface DiLetterheadFooterSettings {
+  enabled: boolean;
+  tableRows: number;
+  tableColumns: number;
+}
+
+export interface DiLetterheadSettings {
+  headerFields: DiLetterheadHeaderFields;
+  generalDocNo: DiLetterheadGeneralDocNo;
+  footer: DiLetterheadFooterSettings;
+  pageLayout: DiTemplatePageLayout;
+}
+
+export interface DiLetterhead {
+  id: string;
+  name: string;
+  code: string;
+  description: string | null;
+  isDefault: boolean;
+  isActive: boolean;
+  letterhead: DiTemplateLetterhead;
+  settings: DiLetterheadSettings;
+  designStoragePath?: string | null;
+  designFileName?: string | null;
+  hasDesign?: boolean;
+  createdBy: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface DiLetterheadListResult {
+  items: DiLetterhead[];
+  total: number;
+}
+
+export interface DiCreateLetterheadRequest {
+  name: string;
+  code: string;
+  description?: string | null;
+  isDefault?: boolean;
+  isActive?: boolean;
+  letterhead: DiTemplateLetterhead;
+  settings?: DiLetterheadSettings;
+}
+
+export interface DiUpdateLetterheadRequest {
+  name: string;
+  code: string;
+  description?: string | null;
+  isDefault?: boolean;
+  isActive?: boolean;
+  letterhead: DiTemplateLetterhead;
+  settings?: DiLetterheadSettings;
 }
 
 export interface DiTemplatePageLayout {
@@ -536,8 +612,18 @@ export interface DiUpdateTemplateLetterheadRequest {
 
 export interface DiUpdateTemplatePageStructureRequest {
   pageLayout?: DiTemplatePageLayout | null;
-  letterhead?: DiTemplateLetterhead | null;
+  defaultLetterheadId?: string | null;
   footer?: DiTemplateFooter | null;
+}
+
+export interface DiLetterheadDesignSession {
+  letterheadId: string;
+  editorUrl: string;
+  accessToken: string;
+  wopiSrc: string;
+  readOnly: boolean;
+  designFooterSource?: 'design' | 'pending' | 'disabled' | 'custom' | 'blocks' | 'legacy' | 'programmatic' | string;
+  footerPreviewLines?: string[];
 }
 
 export interface DiTemplateEditorSession {

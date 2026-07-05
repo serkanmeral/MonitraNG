@@ -21,6 +21,9 @@ public sealed class GenerateDocumentResultDto
     public string ContextId { get; init; } = string.Empty;
     public string TemplateId { get; init; } = string.Empty;
     public string TemplateCode { get; init; } = string.Empty;
+    public string? LetterheadId { get; init; }
+    public string? LetterheadCode { get; init; }
+    public string? LetterheadName { get; init; }
     public string? DocNo { get; init; }
     public string ResourceId { get; init; } = string.Empty;
     public string FileName { get; init; } = string.Empty;

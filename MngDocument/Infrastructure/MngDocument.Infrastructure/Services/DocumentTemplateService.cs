@@ -7,6 +7,7 @@ using MngDocument.Application.Interfaces;
 using MngDocument.Application.Models;
 using MngDocument.Domain.Constants;
 using MngDocument.Infrastructure.Helpers;
+using MngDocument.Infrastructure.Services.Generation;
 
 namespace MngDocument.Infrastructure.Services;
 
@@ -26,19 +27,22 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
     private readonly IResourceService _resources;
     private readonly IDocumentRenderService _render;
     private readonly ITemplateBrandingApplier _brandingApplier;
+    private readonly ILetterheadService _letterheads;
 
     public DocumentTemplateService(
         IMngDataGatewayClient dg,
         IRequestContext ctx,
         IResourceService resources,
         IDocumentRenderService render,
-        ITemplateBrandingApplier brandingApplier)
+        ITemplateBrandingApplier brandingApplier,
+        ILetterheadService letterheads)
     {
         _dg = dg;
         _ctx = ctx;
         _resources = resources;
         _render = render;
         _brandingApplier = brandingApplier;
+        _letterheads = letterheads;
     }
 
     private string? Token => _ctx.BearerToken;
@@ -247,20 +251,33 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
 
         var model = TemplateModelSerializer.Parse(existing.modelJson);
 
-        if (request.Letterhead is not null)
+        if (request.DefaultLetterheadId is not null)
         {
-            var letterheadModel = TemplateModelSerializer.ToLetterheadModel(request.Letterhead)
-                                  ?? new TemplateLetterheadModel();
-            if (letterheadModel.Enabled)
+            var defaultId = string.IsNullOrWhiteSpace(request.DefaultLetterheadId)
+                ? null
+                : request.DefaultLetterheadId.Trim();
+            if (defaultId is not null)
+                await _letterheads.EnsureActiveAsync(defaultId, ct);
+
+            model.DefaultLetterheadId = defaultId;
+            model.Letterhead = null;
+
+            if (defaultId is not null)
             {
-                model.Letterhead = letterheadModel;
-                model.Parameters = TemplateModelSerializer.EnsureLetterheadParameters(
-                    letterheadModel,
-                    model.Parameters);
+                var resolved = await _letterheads.ResolveAsync(defaultId, null, ct);
+                if (resolved.Letterhead is { Enabled: true })
+                {
+                    var letterheadModel = TemplateModelSerializer.ToLetterheadModel(resolved.Letterhead);
+                    if (letterheadModel is not null)
+                    {
+                        model.Parameters = TemplateModelSerializer.EnsureLetterheadParameters(
+                            letterheadModel,
+                            model.Parameters);
+                    }
+                }
             }
             else
             {
-                model.Letterhead = new TemplateLetterheadModel { Enabled = false };
                 model.Parameters = TemplateModelSerializer.RemoveSystemLetterheadParameters(model.Parameters);
             }
         }
@@ -1074,10 +1091,15 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
             return template;
 
         var model = TemplateModelSerializer.Parse(template.modelJson);
-        var letterheadEnabled = model.Letterhead is { Enabled: true };
-        var footerEnabled = model.Footer is { Enabled: true };
-        var pageLayout = model.PageLayout ?? TemplatePageLayoutModel.CreateDefault();
-        if (!letterheadEnabled && !footerEnabled && model.PageLayout is null)
+        var letterheadResolve = await _letterheads.ResolveAsync(
+            model.DefaultLetterheadId,
+            TemplateModelSerializer.ToLetterheadDto(model.Letterhead),
+            ct);
+        var letterheadEnabled = letterheadResolve.Letterhead is { Enabled: true }
+            ? TemplateModelSerializer.ToLetterheadModel(letterheadResolve.Letterhead)
+            : null;
+        var (footerModel, pageLayout) = LetterheadBrandingResolver.Resolve(letterheadResolve, model);
+        if (letterheadEnabled is null && footerModel is null && model.PageLayout is null)
             return template;
 
         var fileName = TemplateFileNameHelper.ResolveDisplayFileName(
@@ -1085,12 +1107,18 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
             template.code,
             template.sourceFileName);
         var docx = await TemplateDocxUpdater.LoadDocxAsync(_dg, template, Token, ct);
+        var letterheadDesignDocx = await TryLoadLetterheadDesignDocxAsync(model, ct);
+        var letterheadSettings = !string.IsNullOrWhiteSpace(letterheadResolve.LetterheadId)
+            ? letterheadResolve.Settings
+            : null;
         var withBranding = await _brandingApplier.ApplyAsync(
             docx,
             template.name ?? string.Empty,
-            letterheadEnabled ? model.Letterhead : null,
-            footerEnabled ? model.Footer : null,
+            letterheadEnabled,
+            footerModel,
             pageLayout,
+            letterheadDesignDocx,
+            letterheadSettings,
             Token,
             ct);
 
@@ -1108,6 +1136,35 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
 
     private static TemplateModelDocument ParseModel(string? modelJson) =>
         TemplateModelSerializer.Parse(modelJson);
+
+    private async Task<TemplateLetterheadModel?> ResolveBrandingLetterheadAsync(
+        TemplateModelDocument model,
+        CancellationToken ct)
+    {
+        var resolved = await _letterheads.ResolveAsync(
+            model.DefaultLetterheadId,
+            TemplateModelSerializer.ToLetterheadDto(model.Letterhead),
+            ct);
+        if (resolved.Letterhead is not { Enabled: true })
+            return null;
+
+        return TemplateModelSerializer.ToLetterheadModel(resolved.Letterhead);
+    }
+
+    private async Task<byte[]?> TryLoadLetterheadDesignDocxAsync(
+        TemplateModelDocument model,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(model.DefaultLetterheadId))
+            return null;
+
+        var letterhead = await _letterheads.TryGetByIdAsync(model.DefaultLetterheadId, ct);
+        if (letterhead is not { HasDesign: true }
+            || string.IsNullOrWhiteSpace(letterhead.DesignStoragePath))
+            return null;
+
+        return await _dg.DownloadFileAsync(letterhead.DesignStoragePath, Token, ct);
+    }
 
     private async Task<DmDocumentTemplate> LoadTemplateOrThrowAsync(string id, CancellationToken ct)
     {
@@ -1172,6 +1229,7 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
             SchemaVersion = model.SchemaVersion,
             PrimaryContextType = model.PrimaryContextType,
             GenerationProfile = model.GenerationProfile,
+            DefaultLetterheadId = model.DefaultLetterheadId,
             Letterhead = TemplateModelSerializer.ToLetterheadDto(model.Letterhead),
             Footer = TemplateModelSerializer.ToFooterDto(model.Footer),
             PageLayout = TemplateModelSerializer.ToPageLayoutDto(model.PageLayout),

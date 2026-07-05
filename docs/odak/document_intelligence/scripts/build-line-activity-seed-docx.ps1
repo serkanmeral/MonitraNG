@@ -241,7 +241,7 @@ $bodyInner = @"
 $(New-Paragraph (New-Run "K{{lineNo}} - {{partDescription}}" 28 $ColorNavy $true) "left" 0 80)
 $(New-Paragraph ((New-Run "{{workPackageNo}}" 22 $ColorBody $true) + (New-Run " | {{workPackageName}}" 22 $ColorMuted $false)) "left" 0 60)
 $(New-Paragraph (New-Run "{{customerName}}" 20 $ColorLabel $false) "left" 0 160)
-$(New-Paragraph (New-Run "$($labels.docNoPrefix) {{docNo}}" 18 $ColorMuted $false) "right" 0 200)
+$(New-Paragraph (New-Run "$($labels.docNoPrefix) {{poDocNo}}" 18 $ColorMuted $false) "right" 0 200)
 $(New-StatusStrip)
 $(New-Spacer 200)
 $(New-SectionHeading $sections.packageContext)

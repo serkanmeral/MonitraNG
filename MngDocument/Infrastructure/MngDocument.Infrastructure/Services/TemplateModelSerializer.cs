@@ -15,6 +15,9 @@ public sealed class TemplateModelDocument
     [JsonPropertyName("generationProfile")]
     public string? GenerationProfile { get; set; }
 
+    [JsonPropertyName("defaultLetterheadId")]
+    public string? DefaultLetterheadId { get; set; }
+
     [JsonPropertyName("letterhead")]
     public TemplateLetterheadModel? Letterhead { get; set; }
 
@@ -35,6 +38,7 @@ public sealed class TemplateLetterheadModel
     public bool ShowDocumentName { get; set; }
     public bool ShowDocumentNumber { get; set; }
     public bool ShowGeneratedAt { get; set; }
+    public bool ShowCreatePerson { get; set; }
 }
 
 public sealed class TemplateFooterModel
@@ -114,7 +118,7 @@ public sealed class TemplateIncrementalModel
 
 public static class TemplateModelSerializer
 {
-    public const string CurrentSchemaVersion = "1.4";
+    public const string CurrentSchemaVersion = "1.5";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -204,6 +208,9 @@ public static class TemplateModelSerializer
         if (letterhead.ShowGeneratedAt)
             UpsertSystemParameter(list, CreateGeneratedAtParameter());
 
+        if (letterhead.ShowCreatePerson)
+            UpsertSystemParameter(list, CreateCreatePersonParameter());
+
         return list;
     }
 
@@ -218,7 +225,8 @@ public static class TemplateModelSerializer
             ShowLogo = dto.ShowLogo,
             ShowDocumentName = dto.ShowDocumentName,
             ShowDocumentNumber = dto.ShowDocumentNumber,
-            ShowGeneratedAt = dto.ShowGeneratedAt
+            ShowGeneratedAt = dto.ShowGeneratedAt,
+            ShowCreatePerson = dto.ShowCreatePerson
         };
     }
 
@@ -233,7 +241,8 @@ public static class TemplateModelSerializer
             ShowLogo = model.ShowLogo,
             ShowDocumentName = model.ShowDocumentName,
             ShowDocumentNumber = model.ShowDocumentNumber,
-            ShowGeneratedAt = model.ShowGeneratedAt
+            ShowGeneratedAt = model.ShowGeneratedAt,
+            ShowCreatePerson = model.ShowCreatePerson
         };
     }
 
@@ -306,7 +315,16 @@ public static class TemplateModelSerializer
     private static bool IsSystemLetterheadKey(string key) =>
         string.Equals(key, LetterheadConstants.DocNoKey, StringComparison.OrdinalIgnoreCase)
         || string.Equals(key, LetterheadConstants.GeneratedAtKey, StringComparison.OrdinalIgnoreCase)
-        || string.Equals(key, LetterheadConstants.DocumentNameKey, StringComparison.OrdinalIgnoreCase);
+        || string.Equals(key, LetterheadConstants.DocumentNameKey, StringComparison.OrdinalIgnoreCase)
+        || string.Equals(key, LetterheadConstants.CreatePersonKey, StringComparison.OrdinalIgnoreCase);
+
+    internal static bool IsHeaderBoundLetterheadDocNo(TemplateParameterModel param) =>
+        string.Equals(param.Key, LetterheadConstants.DocNoKey, StringComparison.OrdinalIgnoreCase)
+        && string.Equals(param.DocBinding?.RegionKind, "header", StringComparison.OrdinalIgnoreCase);
+
+    internal static bool IsHeaderBoundLetterheadCreatePerson(TemplateParameterModel param) =>
+        string.Equals(param.Key, LetterheadConstants.CreatePersonKey, StringComparison.OrdinalIgnoreCase)
+        && string.Equals(param.DocBinding?.RegionKind, "header", StringComparison.OrdinalIgnoreCase);
 
     private static void UpsertSystemParameter(List<TemplateParameterModel> list, TemplateParameterModel param)
     {
@@ -366,16 +384,34 @@ public static class TemplateModelSerializer
             OriginalText = LetterheadConstants.GeneratedAtToken
         }
     };
+
+    private static TemplateParameterModel CreateCreatePersonParameter() => new()
+    {
+        Key = LetterheadConstants.CreatePersonKey,
+        Label = "Oluşturan",
+        DataType = "text",
+        ValueSourceMode = "manual",
+        DocBinding = new TemplateDocBindingModel
+        {
+            RegionKind = "header",
+            ParagraphIndex = 0,
+            OriginalText = LetterheadConstants.CreatePersonToken
+        }
+    };
 }
 
 public static class LetterheadConstants
 {
     public const string DocNoKey = "docNo";
+    public const string PoDocNoKey = "poDocNo";
     public const string GeneratedAtKey = "generatedAt";
     public const string DocumentNameKey = "documentName";
     public const string DocNoToken = "{{docNo}}";
+    public const string PoDocNoToken = "{{poDocNo}}";
     public const string GeneratedAtToken = "{{generatedAt}}";
     public const string DocumentNameToken = "{{documentName}}";
+    public const string CreatePersonKey = "createPerson";
+    public const string CreatePersonToken = "{{createPerson}}";
     public const string DefaultDocNoFormat = "ODK-{yyyy}-{0:D3}";
     public const string DomainScopeKey = "domain";
 }

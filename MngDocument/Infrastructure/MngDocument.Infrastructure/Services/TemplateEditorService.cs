@@ -101,6 +101,8 @@ public sealed class TemplateEditorService : ITemplateEditorService
             letterheadModel is { Enabled: true } ? letterheadModel : null,
             footerModel is { Enabled: true } ? footerModel : null,
             model.PageLayout,
+            letterheadDesignDocx: null,
+            letterheadSettings: null,
             Token,
             ct);
 
@@ -339,7 +341,8 @@ public sealed class TemplateEditorService : ITemplateEditorService
 
     private static void EnsureTemplateSession(string templateId, WopiSession session)
     {
-        if (!string.IsNullOrWhiteSpace(session.ResourceId))
+        if (!string.IsNullOrWhiteSpace(session.ResourceId)
+            || !string.IsNullOrWhiteSpace(session.LetterheadId))
             throw DocumentException.NotFound("WOPI oturumu geçersiz.");
 
         if (!string.Equals(templateId, session.TemplateId, StringComparison.Ordinal))

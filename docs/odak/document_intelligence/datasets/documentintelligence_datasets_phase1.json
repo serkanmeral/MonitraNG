@@ -787,5 +787,141 @@
         "unique": true
       }
     ]
+  },
+  {
+    "name": "dm_letterheads",
+    "description": "Document Intelligence - paylasimli antet katalogu (D-BR1).",
+    "category": "b2f1c0a4-9d3e-4a87-bf21-7c5e9a0d1e34",
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Antet adi",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "code",
+        "title": "Antet kodu",
+        "mandatory": true,
+        "unique": true,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Aciklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "bool",
+        "name": "isDefault",
+        "title": "Varsayilan antet",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "defaultValue": false
+      },
+      {
+        "fieldType": "bool",
+        "name": "isActive",
+        "title": "Aktif",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "defaultValue": true
+      },
+      {
+        "fieldType": "text",
+        "name": "letterheadJson",
+        "title": "Antet tanimi (JSON)",
+        "mandatory": true,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "settingsJson",
+        "title": "Antet ayarlari (JSON)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "file",
+        "name": "designFile",
+        "title": "Antet tasarim DOCX",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "designStoragePath",
+        "title": "Antet tasarim dosya yolu",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "designFileName",
+        "title": "Antet tasarim dosya adi",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "createdBy",
+        "title": "Olusturan",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "createdAt",
+        "title": "Olusturma zamani",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "updatedBy",
+        "title": "Guncelleyen",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "updatedAt",
+        "title": "Guncelleme zamani",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_letterhead_code",
+        "fields": { "code": 1 },
+        "unique": true
+      },
+      {
+        "name": "idx_letterhead_isDefault",
+        "fields": { "isDefault": 1 },
+        "unique": false
+      }
+    ]
   }
 ]

@@ -45,6 +45,13 @@ public class DmResource
     /// <summary>DG audit izi. <c>showHistory=true</c> ile döner; ilk <c>create</c> ve son <c>update</c> kaydından oluşturan/güncelleyen türetilir.</summary>
     [JsonPropertyName("__history")]
     public List<DmHistoryEntry>? __history { get; set; }
+
+    public string? origin { get; set; }
+    public string? templateId { get; set; }
+    public string? templateCode { get; set; }
+    public string? generationProfile { get; set; }
+    public string? letterheadId { get; set; }
+    public string? documentNo { get; set; }
 }
 
 /// <summary>

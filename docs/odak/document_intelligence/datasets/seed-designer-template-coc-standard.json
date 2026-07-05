@@ -40,8 +40,8 @@
         "defaultValue": "Uygunluk Belgesi"
       },
       {
-        "key": "docNo",
-        "label": "Belge Numarası",
+        "key": "poDocNo",
+        "label": "İş Paketi Belge Numarası (CoC)",
         "dataType": "text",
         "valueSourceMode": "incremental",
         "incremental": {

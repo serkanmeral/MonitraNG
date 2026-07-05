@@ -12,5 +12,6 @@ public static class DmDatasets
     public const string ResourceLinks = "dm_resource_links";
     public const string TemplateCategories = "dm_template_categories";
     public const string DocumentTemplates = "dm_document_templates";
+    public const string Letterheads = "dm_letterheads";
     public const string GenerationCounters = "dm_generation_counters";
 }

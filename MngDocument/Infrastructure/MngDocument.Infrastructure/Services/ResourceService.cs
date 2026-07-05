@@ -454,6 +454,19 @@ public class ResourceService : IResourceService
             ["currentVersionNumber"] = 1
         };
 
+        if (!string.IsNullOrWhiteSpace(request.Origin))
+            payload["origin"] = request.Origin.Trim();
+        if (!string.IsNullOrWhiteSpace(request.TemplateId))
+            payload["templateId"] = request.TemplateId.Trim();
+        if (!string.IsNullOrWhiteSpace(request.TemplateCode))
+            payload["templateCode"] = request.TemplateCode.Trim();
+        if (!string.IsNullOrWhiteSpace(request.GenerationProfile))
+            payload["generationProfile"] = request.GenerationProfile.Trim();
+        if (!string.IsNullOrWhiteSpace(request.LetterheadId))
+            payload["letterheadId"] = request.LetterheadId.Trim();
+        if (!string.IsNullOrWhiteSpace(request.DocumentNo))
+            payload["documentNo"] = request.DocumentNo.Trim();
+
         var created = await _dg.CreateAsync<DmResource>(DmDatasets.Resources, payload, Token, ct);
         return await ToDtoWithEffectiveAsync(created, ct);
     }
@@ -805,6 +818,12 @@ public class ResourceService : IResourceService
             Status = ResourceStatus.Normalize(r.status),
             FilePath = filePath,
             FileName = fileName,
+            Origin = r.origin,
+            TemplateId = r.templateId,
+            TemplateCode = r.templateCode,
+            GenerationProfile = r.generationProfile,
+            LetterheadId = r.letterheadId,
+            DocumentNo = r.documentNo,
             CreatedAt = CreatedFrom(r.__history)?.timestamp,
             CreatedBy = CreatedFrom(r.__history)?.userEmail,
             UpdatedAt = UpdatedFrom(r.__history)?.timestamp,

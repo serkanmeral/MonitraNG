@@ -13,6 +13,8 @@ public class MngDocumentSettings
     public WopiSettings Wopi { get; set; } = new();
     public KeeperSettings Keeper { get; set; } = new();
     public DomainFooterProfileSettings FooterProfile { get; set; } = new();
+    /// <summary>When true and footerBlocks empty, applies legacy Odak FooterInjector + FooterProfile.</summary>
+    public bool LegacyOdakFooterEnabled { get; set; } = true;
     public DocumentGenerationSettings DocumentGeneration { get; set; } = new();
 }
 

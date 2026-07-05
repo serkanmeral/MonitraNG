@@ -2,16 +2,21 @@
 import { computed, onMounted, ref } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DiCollaboraEditor from '@/components/apps/document-intelligence/DiCollaboraEditor.vue';
+import DiTemplatePageStructureForm from '@/components/apps/document-intelligence/DiTemplatePageStructureForm.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import {
-
   diGetTemplate,
   diGetTemplateEditorSession,
+  diListLetterheads,
   diPublishTemplate,
   diUnpublishTemplate,
+  diUpdateTemplatePageStructure,
 } from '@/services/documentIntelligenceService';
-import type { DiTemplateDetail } from '@/types/apps/documentIntelligence';
+import type {
+  DiLetterhead,
+  DiTemplateDetail,
+} from '@/types/apps/documentIntelligence';
 
 definePageMeta({ layout: 'default' });
 
@@ -36,11 +41,27 @@ const publishing = ref(false);
 const unpublishDialog = ref(false);
 const unpublishing = ref(false);
 
+const letterheads = ref<DiLetterhead[]>([]);
+const letterheadsLoading = ref(false);
+const defaultLetterheadId = ref<string | null>(null);
+const applyingPageStructure = ref(false);
+const pageStructureExpanded = ref<number | undefined>(undefined);
+
 const isPublished = computed(
   () => (template.value?.status ?? '').toLowerCase() === 'published'
 );
 const isDraft = computed(() => !isPublished.value);
 const viewOnly = computed(() => isPublished.value);
+
+const letterheadSelectOptions = computed(() =>
+  letterheads.value
+    .filter((item) => item.isActive)
+    .map((item) => ({
+      value: item.id,
+      title: item.name,
+      subtitle: item.code,
+    }))
+);
 
 const breadcrumbs = computed(() => [
   { title: t('documentIntelligence.menuTitle'), to: '/apps/document-intelligence' },
@@ -56,6 +77,30 @@ const listPath = computed(() => {
   return '/apps/document-intelligence/designer';
 });
 
+function resolveCatalogDefaultLetterheadId(items: DiLetterhead[]): string | null {
+  const catalogDefault = items.find((item) => item.isDefault && item.isActive);
+  if (catalogDefault) return catalogDefault.id;
+  const firstActive = items.find((item) => item.isActive);
+  return firstActive?.id ?? null;
+}
+
+function syncPageStructureFromTemplate(detail: DiTemplateDetail) {
+  defaultLetterheadId.value =
+    detail.defaultLetterheadId ?? resolveCatalogDefaultLetterheadId(letterheads.value);
+}
+
+async function loadLetterheads() {
+  letterheadsLoading.value = true;
+  try {
+    const res = await diListLetterheads(true);
+    letterheads.value = res.items;
+  } catch {
+    letterheads.value = [];
+  } finally {
+    letterheadsLoading.value = false;
+  }
+}
+
 async function loadEditor() {
   const id = templateId.value;
   if (!id) {
@@ -68,12 +113,12 @@ async function loadEditor() {
   editorLoading.value = true;
   error.value = null;
   editorError.value = null;
-  notify.value = null;
   editorUrl.value = null;
   editorReadOnly.value = false;
 
   try {
     template.value = await diGetTemplate(id);
+    syncPageStructureFromTemplate(template.value);
 
     const session = await diGetTemplateEditorSession(id);
     editorReadOnly.value = session.readOnly || isPublished.value;
@@ -87,6 +132,28 @@ async function loadEditor() {
   } finally {
     loading.value = false;
     editorLoading.value = false;
+  }
+}
+
+async function applyPageStructure() {
+  const id = templateId.value;
+  if (!id || !isDraft.value) return;
+
+  applyingPageStructure.value = true;
+  error.value = null;
+  notify.value = null;
+
+  try {
+    template.value = await diUpdateTemplatePageStructure(id, {
+      defaultLetterheadId: defaultLetterheadId.value,
+    });
+    syncPageStructureFromTemplate(template.value);
+    notify.value = t('documentIntelligence.designer.pageStructureApplied');
+    await loadEditor();
+  } catch (e: unknown) {
+    error.value = panelError(e, 'documentIntelligence.designer.errors.pageStructure');
+  } finally {
+    applyingPageStructure.value = false;
   }
 }
 
@@ -142,7 +209,10 @@ async function submitUnpublish() {
   }
 }
 
-onMounted(loadEditor);
+onMounted(async () => {
+  await loadLetterheads();
+  await loadEditor();
+});
 </script>
 
 <template>
@@ -231,6 +301,39 @@ onMounted(loadEditor);
     >
       {{ t('documentIntelligence.designer.publishedReadOnlyHint') }}
     </v-alert>
+
+    <v-expansion-panels
+      v-if="isDraft && template && !loading"
+      v-model="pageStructureExpanded"
+      class="mb-3"
+      rounded="lg"
+    >
+      <v-expansion-panel elevation="1">
+        <v-expansion-panel-title class="text-subtitle-2 font-weight-bold">
+          {{ t('documentIntelligence.designer.pageStructure.title') }}
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <DiTemplatePageStructureForm
+            v-model:default-letterhead-id="defaultLetterheadId"
+            :letterhead-options="letterheadSelectOptions"
+            :loading="letterheadsLoading"
+            draft-hint
+          />
+          <div class="d-flex justify-end mt-4">
+            <v-btn
+              color="primary"
+              variant="flat"
+              class="text-none"
+              prepend-icon="mdi-file-document-refresh-outline"
+              :loading="applyingPageStructure"
+              @click="applyPageStructure"
+            >
+              {{ t('documentIntelligence.designer.applyPageStructure') }}
+            </v-btn>
+          </div>
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+    </v-expansion-panels>
 
     <DiCollaboraEditor
       v-if="!loading && editorUrl"

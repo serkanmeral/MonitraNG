@@ -26,6 +26,12 @@ public sealed record ResourceDto
 
     /// <summary>Yüklenen dosyanın orijinal adı (yalnızca <c>type=file</c>).</summary>
     public string? FileName { get; init; }
+    public string? Origin { get; init; }
+    public string? TemplateId { get; init; }
+    public string? TemplateCode { get; init; }
+    public string? GenerationProfile { get; init; }
+    public string? LetterheadId { get; init; }
+    public string? DocumentNo { get; init; }
     public DateTime? CreatedAt { get; init; }
     public string? CreatedBy { get; init; }
     public DateTime? UpdatedAt { get; init; }

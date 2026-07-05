@@ -77,9 +77,9 @@ function New-BulletParagraph([string]$text, [string]$align = "both") {
 "@
 }
 
-# Belge adı antette; docNo gövde + antet.
+# Belge adı antette; poDocNo gövdede, docNo antette (letterhead ayarı).
 $bodyInner = @"
-$(New-FieldLine "Belge Numarası" "{{docNo}}")
+$(New-FieldLine "Belge Numarası" "{{poDocNo}}")
 $(New-FieldLine "İş Paketi No" "{{workPackageNo}}")
 $(New-FieldLine "Düzenlenme Tarihi" "{{issueDate}}")
 $(New-FieldLine "Firma Bilgileri" "{{customerName}}")

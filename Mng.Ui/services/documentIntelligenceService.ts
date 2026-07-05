@@ -46,18 +46,27 @@ import {
   type DiTemplateLetterhead,
   type DiTemplateFooter,
   type DiTemplatePageLayout,
+  type DiLetterhead,
+  type DiLetterheadListResult,
+  type DiLetterheadSettings,
+  type DiLetterheadHeaderFields,
+  type DiLetterheadGeneralDocNo,
+  type DiLetterheadDesignSession,
+  type DiCreateLetterheadRequest,
+  type DiUpdateLetterheadRequest,
   type DiDocumentContextType,
   type DiGenerateDocumentRequest,
   type DiGenerateDocumentResult,
   type DiDocumentGenerationStatus,
   type DiDocumentGenerationPreview,
 } from '@/types/apps/documentIntelligence';
-import { diNormalizePageLayout } from '@/utils/diPageLayout';
+import { diCreateDefaultFooter, diCreateDefaultPageLayout, diNormalizePageLayout } from '@/utils/diPageLayout';
 
 const BASE = '/api/v1/resources';
 const LINKS_BASE = '/api/v1';
 const TEMPLATES_BASE = '/api/v1/templates';
 const TEMPLATE_CATEGORIES_BASE = '/api/v1/template-categories';
+const LETTERHEADS_BASE = '/api/v1/letterheads';
 const GENERATE_BASE = '/api/v1/generate';
 
 function asRecord(raw: unknown): Record<string, unknown> {
@@ -608,10 +617,123 @@ function mapTemplateDetail(raw: unknown): DiTemplateDetail {
     schemaVersion: str(o, 'schemaVersion') ?? '1.0',
     primaryContextType: summary.primaryContextType ?? str(o, 'primaryContextType'),
     generationProfile: summary.generationProfile ?? str(o, 'generationProfile'),
+    defaultLetterheadId: str(o, 'defaultLetterheadId'),
     letterhead: mapTemplateLetterhead(o.letterhead),
     footer: mapTemplateFooter(o.footer),
     pageLayout: mapTemplatePageLayout(o.pageLayout),
     parameters: Array.isArray(paramsRaw) ? paramsRaw.map(mapTemplateParameter) : [],
+  };
+}
+
+function mapLetterheadHeaderFields(raw: unknown): DiLetterheadHeaderFields {
+  const o = asRecord(raw);
+  return {
+    documentName: o.documentName !== false,
+    docNo: o.docNo !== false,
+    generatedAt: o.generatedAt !== false,
+    createPerson: Boolean(o.createPerson),
+  };
+}
+
+function mapLetterheadGeneralDocNo(raw: unknown): DiLetterheadGeneralDocNo {
+  const o = asRecord(raw);
+  const scopeModeRaw = str(o, 'scopeMode') ?? 'letterhead';
+  const scopeMode =
+    scopeModeRaw === 'global' || scopeModeRaw === 'custom' ? scopeModeRaw : 'letterhead';
+  return {
+    enabled: o.enabled !== false,
+    format: str(o, 'format') ?? '{yyyy}-{0:D4}',
+    scopeMode,
+    scopeKey: str(o, 'scopeKey'),
+    resetPolicy: str(o, 'resetPolicy') ?? 'yearly',
+    startValue: num(o, 'startValue') ?? 1,
+    incrementStep: num(o, 'incrementStep') ?? 1,
+  };
+}
+
+function mapLetterheadFooterSettings(raw: unknown): DiLetterheadFooterSettings {
+  const o = asRecord(raw);
+  if ('tableRows' in o || 'tableColumns' in o) {
+    return {
+      enabled: o.enabled === true,
+      tableRows: Math.max(1, Math.min(12, num(o, 'tableRows') ?? 1)),
+      tableColumns: Math.max(1, Math.min(6, num(o, 'tableColumns') ?? 1)),
+    };
+  }
+  // Legacy Odak boolean footer → default 2×2 table when enabled
+  const legacyEnabled = o.enabled !== false;
+  return {
+    enabled: legacyEnabled,
+    tableRows: legacyEnabled ? 2 : 1,
+    tableColumns: legacyEnabled ? 2 : 1,
+  };
+}
+
+function mapLetterheadSettings(raw: unknown): DiLetterheadSettings {
+  const o = asRecord(raw);
+  return {
+    headerFields: mapLetterheadHeaderFields(o.headerFields),
+    generalDocNo: mapLetterheadGeneralDocNo(o.generalDocNo),
+    footer: mapLetterheadFooterSettings(o.footer),
+    pageLayout: mapTemplatePageLayout(o.pageLayout) ?? diCreateDefaultPageLayout(),
+  };
+}
+
+export function diCreateDefaultLetterheadFooterSettings(): DiLetterheadFooterSettings {
+  return {
+    enabled: false,
+    tableRows: 1,
+    tableColumns: 1,
+  };
+}
+
+export function diCreateDefaultLetterheadSettings(): DiLetterheadSettings {
+  return {
+    headerFields: {
+      documentName: true,
+      docNo: true,
+      generatedAt: true,
+      createPerson: false,
+    },
+    generalDocNo: {
+      enabled: true,
+      format: '{yyyy}-{0:D4}',
+      scopeMode: 'letterhead',
+      scopeKey: null,
+      resetPolicy: 'yearly',
+      startValue: 1,
+      incrementStep: 1,
+    },
+    footer: diCreateDefaultLetterheadFooterSettings(),
+    pageLayout: diCreateDefaultPageLayout(),
+  };
+}
+
+function mapLetterhead(raw: unknown): DiLetterhead {
+  const o = asRecord(raw);
+  const letterheadRaw = o.letterhead;
+  const letterhead = mapTemplateLetterhead(letterheadRaw) ?? {
+    enabled: true,
+    showLogo: true,
+    showDocumentName: true,
+    showDocumentNumber: true,
+    showGeneratedAt: true,
+  };
+  return {
+    id: str(o, 'id') ?? '',
+    name: str(o, 'name') ?? '',
+    code: str(o, 'code') ?? '',
+    description: str(o, 'description'),
+    isDefault: Boolean(o.isDefault),
+    isActive: o.isActive !== false,
+    letterhead,
+    settings: mapLetterheadSettings(o.settings ?? {}),
+    designStoragePath: str(o, 'designStoragePath'),
+    designFileName: str(o, 'designFileName'),
+    hasDesign: Boolean(o.hasDesign) || Boolean(str(o, 'designStoragePath')),
+    createdBy: str(o, 'createdBy'),
+    createdAt: str(o, 'createdAt'),
+    updatedAt: str(o, 'updatedAt'),
   };
 }
 
@@ -898,6 +1020,63 @@ export async function diUpdateTemplatePageStructure(
   return mapTemplateDetail(raw);
 }
 
+export async function diListLetterheads(activeOnly = false): Promise<DiLetterheadListResult> {
+  const query = activeOnly ? '?activeOnly=true' : '';
+  const raw = await fetchFromDocuments(`${LETTERHEADS_BASE}${query}`, 'GET');
+  const o = asRecord(raw);
+  const itemsRaw = Array.isArray(o.items) ? o.items : [];
+  return {
+    items: itemsRaw.map(mapLetterhead),
+    total: num(o, 'total') ?? itemsRaw.length,
+  };
+}
+
+export async function diGetLetterhead(id: string): Promise<DiLetterhead> {
+  const raw = await fetchFromDocuments(`${LETTERHEADS_BASE}/${encodeURIComponent(id)}`, 'GET');
+  return mapLetterhead(raw);
+}
+
+export async function diGetLetterheadDesignSession(id: string): Promise<DiLetterheadDesignSession> {
+  const raw = await fetchFromDocuments(
+    `${LETTERHEADS_BASE}/${encodeURIComponent(id)}/design-session`,
+    'GET'
+  );
+  const o = asRecord(raw);
+  const previewRaw = o.footerPreviewLines;
+  return {
+    letterheadId: str(o, 'letterheadId') ?? id,
+    editorUrl: str(o, 'editorUrl') ?? '',
+    accessToken: str(o, 'accessToken') ?? '',
+    wopiSrc: str(o, 'wopiSrc') ?? '',
+    readOnly: Boolean(o.readOnly),
+    designFooterSource: str(o, 'designFooterSource') ?? 'programmatic',
+    footerPreviewLines: Array.isArray(previewRaw)
+      ? previewRaw.filter((line): line is string => typeof line === 'string')
+      : [],
+  };
+}
+
+export async function diCreateLetterhead(request: DiCreateLetterheadRequest): Promise<DiLetterhead> {
+  const raw = await fetchFromDocuments(LETTERHEADS_BASE, 'POST', request);
+  return mapLetterhead(raw);
+}
+
+export async function diUpdateLetterhead(
+  id: string,
+  request: DiUpdateLetterheadRequest
+): Promise<DiLetterhead> {
+  const raw = await fetchFromDocuments(
+    `${LETTERHEADS_BASE}/${encodeURIComponent(id)}`,
+    'PUT',
+    request
+  );
+  return mapLetterhead(raw);
+}
+
+export async function diDeleteLetterhead(id: string): Promise<void> {
+  await fetchFromDocuments(`${LETTERHEADS_BASE}/${encodeURIComponent(id)}`, 'DELETE');
+}
+
 export async function diPublishTemplate(templateId: string): Promise<DiTemplateDetail> {
   const raw = await fetchFromDocuments(
     `${TEMPLATES_BASE}/${encodeURIComponent(templateId)}/publish`,
@@ -947,6 +1126,9 @@ function mapGenerateResult(raw: unknown): DiGenerateDocumentResult {
     contextId: str(o, 'contextId') ?? '',
     templateId: str(o, 'templateId') ?? '',
     templateCode: str(o, 'templateCode') ?? '',
+    letterheadId: str(o, 'letterheadId'),
+    letterheadCode: str(o, 'letterheadCode'),
+    letterheadName: str(o, 'letterheadName'),
     docNo: str(o, 'docNo'),
     resourceId: str(o, 'resourceId') ?? '',
     fileName: str(o, 'fileName') ?? '',

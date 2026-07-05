@@ -38,17 +38,21 @@ public static class ServiceRegistration
         services.AddScoped<IResourceService, ResourceService>();
         services.AddScoped<IResourceLinkService, ResourceLinkService>();
         services.AddScoped<ITemplateCategoryService, TemplateCategoryService>();
+        services.AddScoped<ILetterheadService, LetterheadService>();
+        services.AddScoped<ILetterheadEditorService, LetterheadEditorService>();
         services.AddScoped<IDocumentTemplateService, DocumentTemplateService>();
         services.AddScoped<ITemplateEditorService, TemplateEditorService>();
         services.AddScoped<IResourceEditorService, ResourceEditorService>();
         services.AddScoped<IDomainLogoProvider, DomainLogoProvider>();
         services.AddScoped<ITemplateLetterheadApplier, TemplateLetterheadApplier>();
         services.AddScoped<ITemplateFooterApplier, TemplateFooterApplier>();
+        services.AddScoped<ILetterheadFooterApplier, LetterheadFooterApplier>();
         services.AddScoped<ITemplateBrandingApplier, TemplateBrandingApplier>();
         services.AddScoped<IDocumentRenderService, GotenbergDocumentRenderService>();
         services.AddScoped<DocumentContextLoader>();
         services.AddScoped<DocumentIncrementalAllocator>();
         services.AddScoped<DocumentParameterResolver>();
+        services.AddScoped<LetterheadHeaderValueEnricher>();
         services.AddScoped<IDocumentGenerationService, DocumentGenerationService>();
         services.AddSingleton<IWopiSessionStore, InMemoryWopiSessionStore>();
 

@@ -96,6 +96,8 @@ public static class LetterheadInjector
             rightLines.Add(LetterheadConstants.DocNoToken);
         if (lh.ShowGeneratedAt)
             rightLines.Add(LetterheadConstants.GeneratedAtToken);
+        if (lh.ShowCreatePerson)
+            rightLines.Add(LetterheadConstants.CreatePersonToken);
         var right = rightLines.Count > 0
             ? BuildTextParagraph(EscapeXml(string.Join("\n", rightLines)), align: "right")
             : BuildTextParagraph(string.Empty);

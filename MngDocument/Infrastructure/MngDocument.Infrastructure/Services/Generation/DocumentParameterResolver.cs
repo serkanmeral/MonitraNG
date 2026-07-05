@@ -30,6 +30,12 @@ public sealed class DocumentParameterResolver
             if (string.IsNullOrWhiteSpace(key))
                 continue;
 
+            if (TemplateModelSerializer.IsHeaderBoundLetterheadDocNo(param))
+                continue;
+
+            if (TemplateModelSerializer.IsHeaderBoundLetterheadCreatePerson(param))
+                continue;
+
             if (overrides is not null && overrides.TryGetValue(key, out var overrideValue))
             {
                 values[key] = overrideValue ?? string.Empty;

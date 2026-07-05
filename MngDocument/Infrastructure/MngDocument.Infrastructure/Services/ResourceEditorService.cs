@@ -207,7 +207,8 @@ public sealed class ResourceEditorService : IResourceEditorService
 
     private static void EnsureResourceSession(string resourceId, WopiSession session)
     {
-        if (string.IsNullOrWhiteSpace(session.ResourceId))
+        if (string.IsNullOrWhiteSpace(session.ResourceId)
+            || !string.IsNullOrWhiteSpace(session.LetterheadId))
             throw DocumentException.NotFound("WOPI oturumu geçersiz.");
 
         if (!string.Equals(resourceId, session.ResourceId, StringComparison.Ordinal))

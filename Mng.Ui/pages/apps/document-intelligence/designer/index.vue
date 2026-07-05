@@ -18,6 +18,7 @@ import {
 
   diGetTemplate,
   diGetTemplateCategoryTree,
+  diListLetterheads,
   diListTemplates,
   diPublishTemplate,
   diUnpublishTemplate,
@@ -26,14 +27,11 @@ import {
   diUpdateTemplatePageStructure,
 } from '@/services/documentIntelligenceService';
 import type {
-  DiTemplateFooter,
-  DiTemplateLetterhead,
-  DiTemplatePageLayout,
   DiTemplateParameter,
   DiTemplateSummary,
   DiTreeNode,
+  DiLetterhead,
 } from '@/types/apps/documentIntelligence';
-import { diCreateDefaultPageLayout } from '@/utils/diPageLayout';
 import {
   LayoutSidebarLeftCollapseIcon,
   LayoutSidebarLeftExpandIcon,
@@ -70,25 +68,11 @@ const tableHeaders = computed(() => [
   { title: t('documentIntelligence.designer.columnActions'), key: 'actions', sortable: false, align: 'end' as const, width: '260px' },
 ]);
 
-function createDefaultFooter(): DiTemplateFooter {
-  return {
-    enabled: false,
-    showFormRevision: true,
-    showOfficeColumns: true,
-    showAddresses: true,
-    showContacts: true,
-    showDividerLine: false,
-  };
-}
-
-function createDefaultLetterhead(): DiTemplateLetterhead {
-  return {
-    enabled: false,
-    showLogo: true,
-    showDocumentName: true,
-    showDocumentNumber: true,
-    showGeneratedAt: true,
-  };
+function resolveCatalogDefaultLetterheadId(items: DiLetterhead[]): string | null {
+  const catalogDefault = items.find((item) => item.isDefault && item.isActive);
+  if (catalogDefault) return catalogDefault.id;
+  const firstActive = items.find((item) => item.isActive);
+  return firstActive?.id ?? null;
 }
 
 function isDraftTemplate(tpl: DiTemplateSummary): boolean {
@@ -126,9 +110,7 @@ const deletingCategory = ref(false);
 const newTemplateDialog = ref(false);
 const newTemplateName = ref('');
 const newTemplateCode = ref('');
-const newTemplateLetterhead = ref<DiTemplateLetterhead>(createDefaultLetterhead());
-const newTemplateFooter = ref<DiTemplateFooter>(createDefaultFooter());
-const newTemplatePageLayout = ref<DiTemplatePageLayout>(diCreateDefaultPageLayout());
+const newTemplateDefaultLetterheadId = ref<string | null>(null);
 const creatingTemplate = ref(false);
 
 const deleteTemplateDialog = ref(false);
@@ -139,9 +121,7 @@ const editTemplateDialog = ref(false);
 const templateToEdit = ref<DiTemplateSummary | null>(null);
 const editTemplateName = ref('');
 const editTemplateCode = ref('');
-const editTemplateLetterhead = ref<DiTemplateLetterhead>(createDefaultLetterhead());
-const editTemplateFooter = ref<DiTemplateFooter>(createDefaultFooter());
-const editTemplatePageLayout = ref<DiTemplatePageLayout>(diCreateDefaultPageLayout());
+const editDefaultLetterheadId = ref<string | null>(null);
 const editLetterheadLoading = ref(false);
 const savingTemplateMetadata = ref(false);
 
@@ -160,9 +140,7 @@ const copyTargetCategoryId = ref<string | null>(null);
 const copyTemplateName = ref('');
 const copyTemplateCode = ref('');
 const copyTemplateDescription = ref('');
-const copyTemplateLetterhead = ref<DiTemplateLetterhead>(createDefaultLetterhead());
-const copyTemplateFooter = ref<DiTemplateFooter>(createDefaultFooter());
-const copyTemplatePageLayout = ref<DiTemplatePageLayout>(diCreateDefaultPageLayout());
+const copyDefaultLetterheadId = ref<string | null>(null);
 const copySourceParameters = ref<DiTemplateParameter[]>([]);
 const copyBrandingLoading = ref(false);
 const copyingTemplate = ref(false);
@@ -174,6 +152,19 @@ const uploading = ref(false);
 
 const parametersDialog = ref(false);
 const templateForParameters = ref<DiTemplateSummary | null>(null);
+
+const letterheads = ref<DiLetterhead[]>([]);
+const letterheadsLoading = ref(false);
+
+const letterheadSelectOptions = computed(() =>
+  letterheads.value
+    .filter((item) => item.isActive)
+    .map((item) => ({
+      value: item.id,
+      title: item.name,
+      subtitle: item.code,
+    }))
+);
 
 const selectedCategoryName = computed(() => {
   if (!selectedCategoryId.value) return '';
@@ -242,6 +233,18 @@ function findNodeName(nodes: DiTreeNode[], id: string): string | null {
   return null;
 }
 
+async function loadLetterheads() {
+  letterheadsLoading.value = true;
+  try {
+    const res = await diListLetterheads(true);
+    letterheads.value = res.items;
+  } catch {
+    letterheads.value = [];
+  } finally {
+    letterheadsLoading.value = false;
+  }
+}
+
 async function loadCategoryTree() {
   categoryTreeLoading.value = true;
   error.value = null;
@@ -282,8 +285,7 @@ async function selectCategory(categoryId: string | null) {
 function openNewTemplateDialog() {
   newTemplateName.value = '';
   newTemplateCode.value = '';
-  newTemplateLetterhead.value = createDefaultLetterhead();
-  newTemplateFooter.value = createDefaultFooter();
+  newTemplateDefaultLetterheadId.value = resolveCatalogDefaultLetterheadId(letterheads.value);
   newTemplateDialog.value = true;
 }
 
@@ -300,9 +302,10 @@ async function submitNewTemplate() {
   error.value = null;
   notify.value = null;
   try {
-    const letterhead = newTemplateLetterhead.value.enabled ? { ...newTemplateLetterhead.value } : null;
-    const footer = newTemplateFooter.value.enabled ? { ...newTemplateFooter.value } : null;
-    await diCreateBlankTemplate({ categoryId, name, code, letterhead, footer });
+    const created = await diCreateBlankTemplate({ categoryId, name, code });
+    await diUpdateTemplatePageStructure(created.id, {
+      defaultLetterheadId: newTemplateDefaultLetterheadId.value,
+    });
     newTemplateDialog.value = false;
     await refreshTemplates();
     notify.value = t('documentIntelligence.designer.blankCreated');
@@ -399,9 +402,7 @@ function openEditTemplateDialog(tpl: DiTemplateSummary) {
   templateToEdit.value = tpl;
   editTemplateName.value = tpl.name;
   editTemplateCode.value = tpl.code ?? '';
-  editTemplateLetterhead.value = createDefaultLetterhead();
-  editTemplateFooter.value = createDefaultFooter();
-  editTemplatePageLayout.value = diCreateDefaultPageLayout();
+  editDefaultLetterheadId.value = null;
   editLetterheadLoading.value = isDraftTemplate(tpl);
   editTemplateDialog.value = true;
 
@@ -414,15 +415,7 @@ async function loadEditTemplateBranding(templateId: string) {
   editLetterheadLoading.value = true;
   try {
     const detail = await diGetTemplate(templateId);
-    if (detail.letterhead) {
-      editTemplateLetterhead.value = { ...detail.letterhead };
-    }
-    if (detail.footer) {
-      editTemplateFooter.value = { ...detail.footer };
-    }
-    if (detail.pageLayout) {
-      editTemplatePageLayout.value = { ...detail.pageLayout };
-    }
+    editDefaultLetterheadId.value = detail.defaultLetterheadId ?? resolveCatalogDefaultLetterheadId(letterheads.value);
   } catch {
     // Branding is optional; metadata dialog still works without it.
   } finally {
@@ -446,9 +439,7 @@ async function submitEditTemplateMetadata() {
     await diUpdateTemplateMetadata(tpl.id, { name, code });
     if (isDraftTemplate(tpl)) {
       await diUpdateTemplatePageStructure(tpl.id, {
-        pageLayout: { ...editTemplatePageLayout.value },
-        letterhead: { ...editTemplateLetterhead.value },
-        footer: { ...editTemplateFooter.value },
+        defaultLetterheadId: editDefaultLetterheadId.value,
       });
     }
     editTemplateDialog.value = false;
@@ -493,9 +484,7 @@ function openCopyTemplateDialog(tpl: DiTemplateSummary) {
   copyTemplateName.value = suggestCopyName(tpl.name);
   copyTemplateCode.value = suggestCopyCode(tpl.code);
   copyTemplateDescription.value = '';
-  copyTemplateLetterhead.value = createDefaultLetterhead();
-  copyTemplateFooter.value = createDefaultFooter();
-  copyTemplatePageLayout.value = diCreateDefaultPageLayout();
+  copyDefaultLetterheadId.value = null;
   copySourceParameters.value = [];
   copyBrandingLoading.value = true;
   copyTemplateDialog.value = true;
@@ -508,15 +497,8 @@ async function loadCopyTemplateDefaults(templateId: string) {
   try {
     const detail = await diGetTemplate(templateId);
     copyTemplateDescription.value = detail.description ?? '';
-    if (detail.letterhead) {
-      copyTemplateLetterhead.value = { ...detail.letterhead };
-    }
-    if (detail.footer) {
-      copyTemplateFooter.value = { ...detail.footer };
-    }
-    if (detail.pageLayout) {
-      copyTemplatePageLayout.value = { ...detail.pageLayout };
-    }
+    copyDefaultLetterheadId.value =
+      detail.defaultLetterheadId ?? resolveCatalogDefaultLetterheadId(letterheads.value);
     copySourceParameters.value = detail.parameters ?? [];
   } catch {
     // Defaults are enough to proceed.
@@ -544,9 +526,9 @@ async function submitCopyTemplate() {
       name,
       code,
       description: copyTemplateDescription.value.trim() || null,
-      letterhead: { ...copyTemplateLetterhead.value },
-      footer: { ...copyTemplateFooter.value },
-      pageLayout: { ...copyTemplatePageLayout.value },
+    });
+    await diUpdateTemplatePageStructure(created.id, {
+      defaultLetterheadId: copyDefaultLetterheadId.value,
     });
     copyTemplateDialog.value = false;
     templateToCopy.value = null;
@@ -705,7 +687,7 @@ async function submitUpload() {
 }
 
 onMounted(async () => {
-  await loadCategoryTree();
+  await Promise.all([loadCategoryTree(), loadLetterheads()]);
   const categoryId = typeof route.query.categoryId === 'string' ? route.query.categoryId : '';
   if (categoryId) {
     await selectCategory(categoryId);
@@ -721,6 +703,9 @@ onMounted(async () => {
       <p class="text-body-2 text-medium-emphasis mb-0">
         {{ t('documentIntelligence.designer.subtitle') }}
       </p>
+      <v-btn variant="text" class="text-none" to="/apps/document-intelligence/designer/letterheads">
+        {{ t('documentIntelligence.letterheads.title') }}
+      </v-btn>
       <v-btn variant="text" class="text-none" to="/apps/document-intelligence">
         {{ t('documentIntelligence.designer.backToResources') }}
       </v-btn>
@@ -992,9 +977,9 @@ onMounted(async () => {
 
           <v-divider class="my-4" />
           <DiTemplatePageStructureForm
-            v-model:letterhead="newTemplateLetterhead"
-            v-model:footer="newTemplateFooter"
-            v-model:page-layout="newTemplatePageLayout"
+            v-model:default-letterhead-id="newTemplateDefaultLetterheadId"
+            :letterhead-options="letterheadSelectOptions"
+            :loading="letterheadsLoading"
           />
         </v-card-text>
         <v-divider />
@@ -1049,11 +1034,10 @@ onMounted(async () => {
           <template v-if="templateToEdit && isDraftTemplate(templateToEdit)">
             <v-divider class="my-4" />
             <DiTemplatePageStructureForm
-              v-model:letterhead="editTemplateLetterhead"
-              v-model:footer="editTemplateFooter"
-              v-model:page-layout="editTemplatePageLayout"
+              v-model:default-letterhead-id="editDefaultLetterheadId"
+              :letterhead-options="letterheadSelectOptions"
               draft-hint
-              :loading="editLetterheadLoading"
+              :loading="editLetterheadLoading || letterheadsLoading"
             />
           </template>
         </v-card-text>
@@ -1158,9 +1142,9 @@ onMounted(async () => {
           <template v-else>
             <v-divider class="my-4" />
             <DiTemplatePageStructureForm
-              v-model:letterhead="copyTemplateLetterhead"
-              v-model:footer="copyTemplateFooter"
-              v-model:page-layout="copyTemplatePageLayout"
+              v-model:default-letterhead-id="copyDefaultLetterheadId"
+              :letterhead-options="letterheadSelectOptions"
+              :loading="copyBrandingLoading || letterheadsLoading"
             />
           </template>
         </v-card-text>
