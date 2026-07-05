@@ -60,6 +60,31 @@ function Get-LegacyEmployeeArchiveUsername {
     return "legacy-e$LegacyKaliteEmployeeId"
 }
 
+function Get-LegacyEmployeeMapStorageKey {
+    param([string]$LegacyKaliteEmployeeId)
+    return "e$LegacyKaliteEmployeeId"
+}
+
+function Repair-LegacyKaliteUserIdMapEmployeeKeys {
+    param([hashtable]$Entries)
+    $toMove = @()
+    foreach ($key in @($Entries.Keys)) {
+        $entry = $Entries[$key]
+        $eid = [string]$entry.legacyKaliteEmployeeId
+        $uid = [string]$entry.legacyKaliteUserId
+        if (-not $eid -or $uid) { continue }
+        $targetKey = Get-LegacyEmployeeMapStorageKey -LegacyKaliteEmployeeId $eid
+        if ([string]$key -eq $targetKey) { continue }
+        $toMove += @{ From = [string]$key; To = $targetKey; Entry = $entry }
+    }
+    foreach ($move in $toMove) {
+        if ($Entries.ContainsKey($move.To)) { continue }
+        $Entries[$move.To] = $move.Entry
+        $Entries.Remove($move.From) | Out-Null
+    }
+    return $toMove.Count
+}
+
 function Split-LegacyDisplayName {
     param([string]$LegacyName)
     $text = ($LegacyName ?? "").Trim()

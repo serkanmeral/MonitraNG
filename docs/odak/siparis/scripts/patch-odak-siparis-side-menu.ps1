@@ -231,4 +231,99 @@ Upsert-MenuItem -AllItems $items -Label "Uygunsuzluklar" -FindExisting {
     permissions = $defaultPerms
 } | Out-Null
 
-Write-Host "`nTamamlandi -> /apps/odak-siparis/packages , /apps/odak-siparis/customers , /apps/odak-siparis/shipments , /apps/odak-siparis/quality/ncr" -ForegroundColor Cyan
+Upsert-MenuItem -AllItems $items -Label "Egitim" -FindExisting {
+    $_.pageCode -eq "odakSiparis.egitim.menuTitle" -or $_.pageCode -eq "odakEgitim.trainings.menuTitle" -or $_.to -eq "/apps/odak-egitim/trainings" -or $_.to -eq "/apps/odak-egitim"
+} -Body @{
+    order       = 271
+    itemType    = "item"
+    level       = 1
+    parentId    = $headerId
+    pageType    = "user"
+    pageCode    = "odakSiparis.egitim.menuTitle"
+    title       = "Eğitim"
+    icon        = "SchoolIcon"
+    iconType    = "tabler"
+    to          = "/apps/odak-egitim/trainings"
+    type        = "internal"
+    disabled    = $false
+    permissions = $defaultPerms
+} | Out-Null
+
+Upsert-MenuItem -AllItems $items -Label "Personel Egitim Gecmisi" -FindExisting {
+    $_.pageCode -eq "odakSiparis.egitim.personTrainings.menuTitle" -or $_.to -eq "/apps/odak-egitim/person-trainings"
+} -Body @{
+    order       = 272
+    itemType    = "item"
+    level       = 1
+    parentId    = $headerId
+    pageType    = "user"
+    pageCode    = "odakSiparis.egitim.personTrainings.menuTitle"
+    title       = "Personel Eğitim Geçmişi"
+    icon        = "HistoryIcon"
+    iconType    = "tabler"
+    to          = "/apps/odak-egitim/person-trainings"
+    type        = "internal"
+    disabled    = $false
+    permissions = $defaultPerms
+} | Out-Null
+
+} | Out-Null
+
+Upsert-MenuItem -AllItems $items -Label "Egitim Birimleri" -FindExisting {
+    $_.pageCode -eq "odakSiparis.egitim.divisions.menuTitle" -or $_.to -eq "/apps/odak-egitim/divisions"
+} -Body @{
+    order       = 273
+    itemType    = "item"
+    level       = 1
+    parentId    = $headerId
+    pageType    = "user"
+    pageCode    = "odakSiparis.egitim.divisions.menuTitle"
+    title       = "Birimler"
+    icon        = "BuildingIcon"
+    iconType    = "tabler"
+    to          = "/apps/odak-egitim/divisions"
+    type        = "internal"
+    disabled    = $false
+    permissions = $defaultPerms
+} | Out-Null
+
+Upsert-MenuItem -AllItems $items -Label "Egitim Istatistik" -FindExisting {
+    $_.pageCode -eq "odakSiparis.egitim.stats.menuTitle" -or $_.to -eq "/apps/odak-egitim/stats"
+} -Body @{
+    order       = 274
+    itemType    = "item"
+    level       = 1
+    parentId    = $headerId
+    pageType    = "user"
+    pageCode    = "odakSiparis.egitim.stats.menuTitle"
+    title       = "Eğitim İstatistikleri"
+    icon        = "ChartBarIcon"
+    iconType    = "tabler"
+    to          = "/apps/odak-egitim/stats"
+    type        = "internal"
+    disabled    = $false
+    permissions = $defaultPerms
+} | Out-Null
+
+# Eski bagimsiz "Odak Egitim" basligini kaldir (Odak Siparis altina tasindi)
+$legacyHeader = $items | Where-Object { $_.pageCode -eq "odakEgitim.menuHeader" } | Select-Object -First 1
+$legacyHeaderId = Get-ItemId $legacyHeader
+if ($legacyHeaderId) {
+    Write-Host "DISABLE legacy Odak Egitim header ($legacyHeaderId)..." -ForegroundColor Yellow
+    if (-not $WhatIf) {
+        Invoke-MenuPut -Id $legacyHeaderId -Body @{
+            order       = [int]$legacyHeader.order
+            itemType    = "header"
+            level       = 0
+            parentId    = $null
+            pageType    = "user"
+            pageCode    = "odakEgitim.menuHeader"
+            header      = "Odak Eğitim"
+            disabled    = $true
+            type        = "internal"
+            permissions = $defaultPerms
+        }
+    }
+}
+
+Write-Host "`nTamamlandi -> ... /apps/odak-egitim/trainings , person-trainings , divisions , stats" -ForegroundColor Cyan

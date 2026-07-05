@@ -19,19 +19,24 @@ function Split-SqlTuples {
     $inString = $false
     for ($i = 0; $i -lt $Body.Length; $i++) {
         $c = $Body[$i]
-        if ($c -eq "'" -and -not $inString) {
+        if ($inString) {
+            if ($c -eq '\') {
+                if ($i + 1 -lt $Body.Length) { $i++ }
+                continue
+            }
+            if ($c -eq "'") {
+                if ($i + 1 -lt $Body.Length -and $Body[$i + 1] -eq "'") {
+                    $i++
+                    continue
+                }
+                $inString = $false
+            }
+            continue
+        }
+        if ($c -eq "'") {
             $inString = $true
             continue
         }
-        if ($c -eq "'" -and $inString) {
-            if ($i + 1 -lt $Body.Length -and $Body[$i + 1] -eq "'") {
-                $i++
-                continue
-            }
-            $inString = $false
-            continue
-        }
-        if ($inString) { continue }
 
         if ($c -eq '(') {
             if ($depth -eq 0) { $start = $i }
@@ -50,7 +55,47 @@ function Split-SqlTuples {
 
 function Split-SqlFields {
     param([string]$Inner)
-    return [regex]::Split($Inner, ",(?=(?:[^']*'[^']*')*[^']*$)")
+    if ([string]::IsNullOrWhiteSpace($Inner)) { return @() }
+    $fields = [System.Collections.Generic.List[string]]::new()
+    $sb = New-Object System.Text.StringBuilder
+    $inString = $false
+    for ($i = 0; $i -lt $Inner.Length; $i++) {
+        $c = $Inner[$i]
+        if ($inString) {
+            [void]$sb.Append($c)
+            if ($c -eq '\') {
+                if ($i + 1 -lt $Inner.Length) {
+                    $i++
+                    [void]$sb.Append($Inner[$i])
+                }
+                continue
+            }
+            if ($c -eq "'") {
+                if ($i + 1 -lt $Inner.Length -and $Inner[$i + 1] -eq "'") {
+                    $i++
+                    [void]$sb.Append("'")
+                    continue
+                }
+                $inString = $false
+            }
+            continue
+        }
+        if ($c -eq "'") {
+            $inString = $true
+            [void]$sb.Append($c)
+            continue
+        }
+        if ($c -eq ',') {
+            $fields.Add($sb.ToString())
+            $sb.Clear() | Out-Null
+            continue
+        }
+        [void]$sb.Append($c)
+    }
+    if ($sb.Length -gt 0 -or $fields.Count -gt 0) {
+        $fields.Add($sb.ToString())
+    }
+    return @($fields)
 }
 
 function Parse-SqlValue {
@@ -59,7 +104,15 @@ function Parse-SqlValue {
     $s = $Raw.Trim()
     if ($s -eq 'NULL') { return $null }
     if ($s.StartsWith("'") -and $s.EndsWith("'")) {
-        return $s.Substring(1, $s.Length - 2).Replace("''", "'")
+        $inner = $s.Substring(1, $s.Length - 2)
+        $inner = $inner.Replace("''", "'")
+        # MySQL dump backslash escapes (e.g. \' inside strings)
+        $inner = $inner -replace "\\'", "'"
+        $inner = $inner -replace '\\r\\n', "`r`n"
+        $inner = $inner -replace '\\n', "`n"
+        $inner = $inner -replace '\\r', "`r"
+        $inner = $inner -replace '\\t', "`t"
+        return $inner
     }
     return $s
 }
@@ -91,6 +144,11 @@ function Get-SqlTableFieldCount {
         "packages" { return 27 }
         "packageitems" { return 23 }
         "contacts" { return 14 }
+        "divisions" { return 2 }
+        "trainings" { return 16 }
+        "employees" { return 21 }
+        "employees_trainings" { return 5 }
+        "users" { return 18 }
         default { return 0 }
     }
 }
@@ -105,29 +163,19 @@ function Read-SqlInsertRows {
     Write-Host "  Parse: $TableName ..." -ForegroundColor Gray
 
     $expectedFields = Get-SqlTableFieldCount -TableName $TableName
-    $parts = $body -split '\),\('
     $rows = @()
+    $tuples = Split-SqlTuples -Body $body
 
-    for ($i = 0; $i -lt $parts.Count; $i++) {
-        $j = $i
-        $inner = $parts[$j].Trim().Trim("()")
-        while ($true) {
-            $fields = @(Split-SqlFields $inner | ForEach-Object { Parse-SqlValue $_ })
-            if ($expectedFields -le 0 -or $fields.Count -ge $expectedFields -or $j -ge ($parts.Count - 1)) {
-                break
-            }
-            $j++
-            $inner = $inner + "),(" + $parts[$j].Trim().Trim("()")
-        }
-
+    foreach ($tuple in $tuples) {
+        $inner = $tuple.Trim().Trim("()")
+        if ([string]::IsNullOrWhiteSpace($inner)) { continue }
+        $fields = @(Split-SqlFields $inner | ForEach-Object { Parse-SqlValue $_ })
         if ($expectedFields -gt 0 -and $fields.Count -ge $expectedFields) {
             $rows += ,@($fields[0..($expectedFields - 1)])
         }
         elseif ($expectedFields -le 0 -and $fields.Count -gt 0) {
             $rows += ,@($fields)
         }
-
-        $i = $j
     }
     return $rows
 }

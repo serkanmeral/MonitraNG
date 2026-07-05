@@ -1,0 +1,71 @@
+{
+  "name": "odak_egitim_katilimlari",
+  "description": "Odak Egitim — egitim katilimci kaydi (legacy employees_trainings, F39)",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "legacyEmployeeTrainingId",
+      "title": "Legacy employees_trainings.id",
+      "mandatory": false,
+      "unique": true,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    },
+    {
+      "fieldType": "relation",
+      "name": "parentTrainingId",
+      "title": "Egitim",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_egitimler"
+    },
+    {
+      "fieldType": "persons",
+      "name": "personelId",
+      "title": "Katilimci (Keeper)",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "bool",
+      "name": "katildi",
+      "title": "Katildi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": true
+    },
+    {
+      "fieldType": "bool",
+      "name": "etkin",
+      "title": "Etkin",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "notlar",
+      "title": "Notlar",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 1000 }
+    }
+  ],
+  "indexList": [
+    { "name": "idx_legacyEmployeeTrainingId", "fields": { "legacyEmployeeTrainingId": 1 }, "unique": true },
+    { "name": "idx_parentTrainingId", "fields": { "parentTrainingId": 1 }, "unique": false },
+    { "name": "idx_personelId", "fields": { "personelId": 1 }, "unique": false },
+    {
+      "name": "idx_training_person_unique",
+      "fields": { "parentTrainingId": 1, "personelId": 1 },
+      "unique": true
+    }
+  ]
+}

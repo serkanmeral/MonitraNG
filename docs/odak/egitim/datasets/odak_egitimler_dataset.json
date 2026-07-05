@@ -1,0 +1,151 @@
+{
+  "name": "odak_egitimler",
+  "description": "Odak Egitim — egitim plani / katilim ust kaydi (legacy trainings, F19)",
+  "forceSchema": true,
+  "logging": "self",
+  "publish_mode": "none",
+  "fields": [
+    {
+      "fieldType": "text",
+      "name": "legacyTrainingId",
+      "title": "Legacy trainings.id",
+      "mandatory": false,
+      "unique": true,
+      "isArray": false,
+      "validation": { "maxLength": 32 }
+    },
+    {
+      "fieldType": "text",
+      "name": "egitimNo",
+      "title": "Egitim no",
+      "mandatory": true,
+      "unique": true,
+      "isArray": false,
+      "validation": { "minLength": 1, "maxLength": 64 }
+    },
+    {
+      "fieldType": "text",
+      "name": "baslik",
+      "title": "Baslik",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "validation": { "minLength": 1, "maxLength": 255 }
+    },
+    {
+      "fieldType": "text",
+      "name": "konu",
+      "title": "Konu",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 2000 }
+    },
+    {
+      "fieldType": "relation",
+      "name": "birimId",
+      "title": "Ilgili birim",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "relationDataset": "odak_birimler"
+    },
+    {
+      "fieldType": "text",
+      "name": "egitimVeren",
+      "title": "Egitimi veren",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 100 }
+    },
+    {
+      "fieldType": "datetime",
+      "name": "planlananTarih",
+      "title": "Planlanan egitim tarihi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "datetime",
+      "name": "gerceklesenTarih",
+      "title": "Gerceklesen egitim tarihi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "number",
+      "name": "sureDakika",
+      "title": "Sure (dakika)",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false
+    },
+    {
+      "fieldType": "text",
+      "name": "konum",
+      "title": "Konum",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 255 }
+    },
+    {
+      "fieldType": "text",
+      "name": "egitimAmaci",
+      "title": "Egitim amaci",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 500 }
+    },
+    {
+      "fieldType": "text",
+      "name": "degerlendirmeYontemi",
+      "title": "Etkinlik degerlendirme yontemi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "validation": { "maxLength": 500 }
+    },
+    {
+      "fieldType": "number",
+      "name": "toplamCalisanSayisi",
+      "title": "Toplam calisan sayisi",
+      "mandatory": false,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": 0
+    },
+    {
+      "fieldType": "select",
+      "name": "durum",
+      "title": "Durum",
+      "mandatory": true,
+      "unique": false,
+      "isArray": false,
+      "defaultValue": "Planlandi",
+      "options": {
+        "lookup": {
+          "source": "static",
+          "staticItems": [
+            { "value": "Planlandi", "label": "Planlandi" },
+            { "value": "Tamamlandi", "label": "Tamamlandi" },
+            { "value": "Iptal", "label": "Iptal" }
+          ]
+        }
+      }
+    }
+  ],
+  "indexList": [
+    { "name": "idx_legacyTrainingId", "fields": { "legacyTrainingId": 1 }, "unique": true },
+    { "name": "idx_egitimNo", "fields": { "egitimNo": 1 }, "unique": true },
+    { "name": "idx_baslik", "fields": { "baslik": 1 }, "unique": false },
+    { "name": "idx_birimId", "fields": { "birimId": 1 }, "unique": false },
+    { "name": "idx_planlananTarih", "fields": { "planlananTarih": 1 }, "unique": false },
+    { "name": "idx_gerceklesenTarih", "fields": { "gerceklesenTarih": 1 }, "unique": false },
+    { "name": "idx_durum", "fields": { "durum": 1 }, "unique": false }
+  ]
+}

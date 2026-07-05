@@ -1,45 +1,632 @@
 {
+  "meta": {
+    "egitimProvision": {
+      "employeeCreated": 1,
+      "failed": 0,
+      "userCreated": 4,
+      "mappedExisting": 0,
+      "skipped": 0
+    },
+    "gapReportPath": "C:\\Users\\monitra\\Dev\\MonitraNG\\MonitraNG\\docs\\odak\\egitim\\scripts\\..\\datasets\\legacy-egitim-person-gap-report.json",
+    "importBatch": "2026-07-05"
+  },
   "description": "legacyKaliteUserId -> Keeper userId (__dataId) mapping for Odak legacy archive users",
   "entries": {
-    "11": {
-      "legacyName": "Murat Tarcan",
-      "legacyKaliteUsername": "mtarcan",
+    "140": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "osener",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "140",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "osener",
+      "legacyImport": true,
+      "legacyKaliteUserId": "140",
+      "keeperUserId": "6a4a8c4bf1690f8387ec77e9",
+      "legacyName": "Özgür Şener"
+    },
+    "115": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "atiras",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "115",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "atiras",
+      "legacyImport": true,
+      "legacyKaliteUserId": "115",
+      "keeperUserId": "6a4a8c47f1690f8387ec77d2",
+      "legacyName": "Ahmet Eren Tıraş"
+    },
+    "150": {
+      "legacyKaliteUsername": "bgokgoz",
+      "legacyImport": true,
+      "legacyName": "Büşra Nur Gökgöz",
+      "source": "legacy_egitim_import",
+      "keeperUserId": "6a4a8ce2f1690f8387ec780e",
+      "legacyKaliteUserId": "150"
+    },
+    "97": {
+      "legacyName": "Burak Taban",
+      "legacyKaliteUsername": "btaban",
       "source": "legacy_import",
       "customData": {
         "legacyImportBatch": "2026-07-05",
-        "legacyKaliteUserId": "11",
+        "legacyKaliteUserId": "97",
         "legacyImport": true,
         "legacyImportSource": "kalite.users",
         "personKind": "legacy_archive",
-        "legacyKaliteUsername": "mtarcan"
+        "legacyKaliteUsername": "btaban"
       },
-      "keeperUserId": "6a4a7624647fce4a6fd43248",
-      "legacyKaliteUserId": "11",
+      "keeperUserId": "6a4a7625647fce4a6fd4324d",
+      "legacyKaliteUserId": "97",
       "legacyImport": true
     },
-    "3": {
-      "legacyKaliteUserId": "3",
-      "legacyKaliteUsername": "okaragul",
-      "legacyName": "Osman Karagül",
-      "keeperUserId": "6a2257d26723c2bd54eec3b4",
+    "105": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "svarol",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "105",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "svarol",
+      "legacyImport": true,
+      "legacyKaliteUserId": "105",
+      "keeperUserId": "6a4a8c44f1690f8387ec77c9",
+      "legacyName": "Serkan Varol"
+    },
+    "6": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "gkarakurt",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "6",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "gkarakurt",
+      "legacyImport": true,
+      "legacyKaliteUserId": "6",
+      "keeperUserId": "6a4a8c41f1690f8387ec77b5",
+      "legacyName": "Gizem Candaş"
+    },
+    "e151": {
+      "legacyEmployeeName": "Ayberk Özcan",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Ayberk Özcan",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "151",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "151",
+      "keeperUserId": "6a4a8c4df1690f8387ec77f3",
+      "username": "legacy-e151"
+    },
+    "100": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "syolal",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "100",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "syolal",
+      "legacyImport": true,
+      "legacyKaliteUserId": "100",
+      "keeperUserId": "6a4a8c44f1690f8387ec77c6",
+      "legacyName": "Soner Yolal"
+    },
+    "e183": {
+      "legacyEmployeeName": "Murat  Gülyazı",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Murat  Gülyazı",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "183",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "183",
+      "keeperUserId": "6a4a8c51f1690f8387ec7809",
+      "username": "legacy-e183"
+    },
+    "125": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "rakoz",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "125",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "rakoz",
+      "legacyImport": true,
+      "legacyKaliteUserId": "125",
+      "keeperUserId": "6a4a8c48f1690f8387ec77da",
+      "legacyName": "Recep Aköz"
+    },
+    "e152": {
+      "legacyEmployeeName": "Salih  Karatobak",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Salih  Karatobak",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "152",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "152",
+      "keeperUserId": "6a4a8c4df1690f8387ec77f4",
+      "username": "legacy-e152"
+    },
+    "71": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "gatay",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "71",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "gatay",
+      "legacyImport": true,
+      "legacyKaliteUserId": "71",
+      "keeperUserId": "6a4a8c42f1690f8387ec77bf",
+      "legacyName": "Gökhan Atay"
+    },
+    "137": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "aaltintas",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "137",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "aaltintas",
+      "legacyImport": true,
+      "legacyKaliteUserId": "137",
+      "keeperUserId": "6a4a8c4bf1690f8387ec77e6",
+      "legacyName": "Abdullah Altıntaş"
+    },
+    "121": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "rucan",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "121",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "rucan",
+      "legacyImport": true,
+      "legacyKaliteUserId": "121",
+      "keeperUserId": "6a4a8c48f1690f8387ec77d7",
+      "legacyName": "Resul Uçan"
+    },
+    "5": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "gakcay",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "5",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "gakcay",
+      "legacyImport": true,
+      "legacyKaliteUserId": "5",
+      "keeperUserId": "6a4a8c40f1690f8387ec77b4",
+      "legacyName": "Günseli Akçay"
+    },
+    "e171": {
+      "legacyEmployeeName": "Haydar Gülsoy",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Haydar Gülsoy",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "171",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "171",
+      "keeperUserId": "6a4a8c50f1690f8387ec7800",
+      "username": "legacy-e171"
+    },
+    "123": {
+      "legacyName": "Yemliha Gülyazı",
+      "legacyKaliteUsername": "ygulyazi",
+      "source": "legacy_import",
+      "customData": {
+        "legacyImportBatch": "2026-07-05",
+        "legacyKaliteUserId": "123",
+        "legacyImport": true,
+        "legacyImportSource": "kalite.users",
+        "personKind": "legacy_archive",
+        "legacyKaliteUsername": "ygulyazi"
+      },
+      "keeperUserId": "6a4a7625647fce4a6fd4324e",
+      "legacyKaliteUserId": "123",
+      "legacyImport": true
+    },
+    "72": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "aozcan",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "72",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "aozcan",
+      "legacyImport": true,
+      "legacyKaliteUserId": "72",
+      "keeperUserId": "6a4a8c43f1690f8387ec77c0",
+      "legacyName": "Aslıhan Özcan Öcalan"
+    },
+    "148": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "oozger",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "148",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "oozger",
+      "legacyImport": true,
+      "legacyKaliteUserId": "148",
+      "keeperUserId": "6a4a8c4cf1690f8387ec77f0",
+      "legacyName": "Ömer Özger"
+    },
+    "69": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "icinli",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "69",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "icinli",
+      "legacyImport": true,
+      "legacyKaliteUserId": "69",
+      "keeperUserId": "6a4a8c42f1690f8387ec77bd",
+      "legacyName": "İsmail Cinli"
+    },
+    "73": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "bozben",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "73",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "bozben",
+      "legacyImport": true,
+      "legacyKaliteUserId": "73",
+      "keeperUserId": "6a4a8c43f1690f8387ec77c1",
+      "legacyName": "Burak Özben"
+    },
+    "98": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "egencosmanoglu",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "98",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "egencosmanoglu",
+      "legacyImport": true,
+      "legacyKaliteUserId": "98",
+      "keeperUserId": "6a4a8c44f1690f8387ec77c5",
+      "legacyName": "Enes  Gençosmanoğlu"
+    },
+    "122": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "akaradas",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "122",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "akaradas",
+      "legacyImport": true,
+      "legacyKaliteUserId": "122",
+      "keeperUserId": "6a4a8c48f1690f8387ec77d8",
+      "legacyName": "Ahmet Karadaş"
+    },
+    "134": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "megioglu",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "134",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "megioglu",
+      "legacyImport": true,
+      "legacyKaliteUserId": "134",
+      "keeperUserId": "6a4a8c4af1690f8387ec77e3",
+      "legacyName": "Mevlüt Eğioğlu"
+    },
+    "147": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "sgulal",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "147",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "sgulal",
+      "legacyImport": true,
+      "legacyKaliteUserId": "147",
+      "keeperUserId": "6a4a8c4cf1690f8387ec77ef",
+      "legacyName": "Sabriye  Gülal"
+    },
+    "e220": {
+      "legacyKaliteEmployeeId": "220",
+      "legacyEmployeeName": "Alihan Köse",
+      "username": "legacy-e220",
+      "keeperUserId": "6a4a77d9647fce4a6fd4324f",
+      "source": "legacy_employee_import",
+      "legacyImport": true,
+      "customData": {
+        "personKind": "legacy_archive",
+        "legacyEmployeeName": "Alihan Köse",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true,
+        "legacyKaliteEmployeeId": "220"
+      }
+    },
+    "149": {
+      "legacyKaliteUsername": "bcandemir",
+      "legacyImport": true,
+      "legacyName": "Barış Candemir",
+      "source": "legacy_egitim_import",
+      "keeperUserId": "6a4a8ce1f1690f8387ec780c",
+      "legacyKaliteUserId": "149"
+    },
+    "e172": {
+      "legacyEmployeeName": "Alp Eren  Çelik",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Alp Eren  Çelik",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "172",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "172",
+      "keeperUserId": "6a4a8c50f1690f8387ec7801",
+      "username": "legacy-e172"
+    },
+    "15": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "averim",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "15",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "averim",
+      "legacyImport": true,
+      "legacyKaliteUserId": "15",
+      "keeperUserId": "6a4a8c42f1690f8387ec77ba",
+      "legacyName": "Ayşegül Verim"
+    },
+    "e161": {
+      "legacyEmployeeName": "Kenan  Baraz",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Kenan  Baraz",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "161",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "161",
+      "keeperUserId": "6a4a8c4ef1690f8387ec77fa",
+      "username": "legacy-e161"
+    },
+    "104": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "ccandemir",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "104",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "ccandemir",
+      "legacyImport": true,
+      "legacyKaliteUserId": "104",
+      "keeperUserId": "6a4a8c44f1690f8387ec77c8",
+      "legacyName": "Cihan Candemir"
+    },
+    "118": {
+      "legacyKaliteUserId": "118",
+      "legacyKaliteUsername": "mkucuk",
+      "legacyName": "Murat Küçük",
+      "keeperUserId": "6a2257d16723c2bd54eec3b2",
       "source": "compare_matched",
       "legacyImport": false
     },
-    "18": {
-      "legacyName": "İlhan Uzun",
-      "legacyKaliteUsername": "iuzun",
-      "source": "legacy_import",
+    "e178": {
+      "legacyEmployeeName": "Volkan Aysu",
+      "source": "legacy_egitim_employee_import",
       "customData": {
-        "legacyImportBatch": "2026-07-05",
-        "legacyKaliteUserId": "18",
-        "legacyImport": true,
-        "legacyImportSource": "kalite.users",
+        "legacyEmployeeName": "Volkan Aysu",
         "personKind": "legacy_archive",
-        "legacyKaliteUsername": "iuzun"
+        "legacyKaliteEmployeeId": "178",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
       },
-      "keeperUserId": "6a4a7625647fce4a6fd4324c",
-      "legacyKaliteUserId": "18",
-      "legacyImport": true
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "178",
+      "keeperUserId": "6a4a8c51f1690f8387ec7805",
+      "username": "legacy-e178"
+    },
+    "113": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "mcevik",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "113",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "mcevik",
+      "legacyImport": true,
+      "legacyKaliteUserId": "113",
+      "keeperUserId": "6a4a8c46f1690f8387ec77d0",
+      "legacyName": "Mehmet Çevik"
+    },
+    "114": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "lerarslan",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "114",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "lerarslan",
+      "legacyImport": true,
+      "legacyKaliteUserId": "114",
+      "keeperUserId": "6a4a8c46f1690f8387ec77d1",
+      "legacyName": "Levent Erarslan"
+    },
+    "133": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "ckaratas",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "133",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "ckaratas",
+      "legacyImport": true,
+      "legacyKaliteUserId": "133",
+      "keeperUserId": "6a4a8c4af1690f8387ec77e2",
+      "legacyName": "Ceren İlkim Karataş"
+    },
+    "155": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "ksaydin",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "155",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "ksaydin",
+      "legacyImport": true,
+      "legacyKaliteUserId": "155",
+      "keeperUserId": "6a4a8c4ef1690f8387ec77f5",
+      "legacyName": "Kürşad Serdar Aydın"
+    },
+    "106": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "syildiz",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "106",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "syildiz",
+      "legacyImport": true,
+      "legacyKaliteUserId": "106",
+      "keeperUserId": "6a4a8c45f1690f8387ec77ca",
+      "legacyName": "Serkan Yıldız"
+    },
+    "129": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "ecurebal",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "129",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "ecurebal",
+      "legacyImport": true,
+      "legacyKaliteUserId": "129",
+      "keeperUserId": "6a4a8c49f1690f8387ec77de",
+      "legacyName": "Erkan Cürebal"
+    },
+    "7": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "ihisitemiz",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "7",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "ihisitemiz",
+      "legacyImport": true,
+      "legacyKaliteUserId": "7",
+      "keeperUserId": "6a4a8c41f1690f8387ec77b6",
+      "legacyName": "İsmail Hakkı İşitemiz"
     },
     "10": {
       "legacyName": "Engin Berk Oğuz",
@@ -57,31 +644,447 @@
       "legacyKaliteUserId": "10",
       "legacyImport": true
     },
-    "118": {
-      "legacyKaliteUserId": "118",
-      "legacyKaliteUsername": "mkucuk",
-      "legacyName": "Murat Küçük",
-      "keeperUserId": "6a2257d16723c2bd54eec3b2",
-      "source": "compare_matched",
-      "legacyImport": false
+    "e184": {
+      "legacyEmployeeName": "Yusuf Dalkıran",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Yusuf Dalkıran",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "184",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "184",
+      "keeperUserId": "6a4a8c52f1690f8387ec780a",
+      "username": "legacy-e184"
     },
-    "17": {
-      "legacyName": "Osman Karakadıoğlu",
-      "legacyKaliteUsername": "okarakadioglu",
+    "e156": {
+      "legacyEmployeeName": "Furkan  Köseci",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Furkan  Köseci",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "156",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "156",
+      "keeperUserId": "6a4a8c4ef1690f8387ec77f6",
+      "username": "legacy-e156"
+    },
+    "152": {
+      "legacyKaliteUsername": "bkucuk",
+      "legacyImport": true,
+      "legacyName": "Bilal Küçük",
+      "source": "legacy_egitim_import",
+      "keeperUserId": "6a4a8ce2f1690f8387ec7810",
+      "legacyKaliteUserId": "152"
+    },
+    "e225": {
+      "legacyKaliteEmployeeId": "225",
+      "legacyEmployeeName": "Ahmet Emin Gezer",
+      "keeperUserId": "6a2257d16723c2bd54eec39a",
+      "source": "employee_manual_mapping",
+      "legacyImport": false,
+      "note": "Ahmet Emin Gezer — employees.id=225, users.agezer"
+    },
+    "119": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "auzun",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "119",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "auzun",
+      "legacyImport": true,
+      "legacyKaliteUserId": "119",
+      "keeperUserId": "6a4a8c47f1690f8387ec77d5",
+      "legacyName": "Adem Uzun"
+    },
+    "e179": {
+      "legacyEmployeeName": "Hatice  Güçlü Nazlı",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Hatice  Güçlü Nazlı",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "179",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "179",
+      "keeperUserId": "6a4a8c51f1690f8387ec7806",
+      "username": "legacy-e179"
+    },
+    "e150": {
+      "legacyEmployeeName": "Ulaş Cem Gülal",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Ulaş Cem Gülal",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "150",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "150",
+      "keeperUserId": "6a4a8c4df1690f8387ec77f2",
+      "username": "legacy-e150"
+    },
+    "74": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "gokutan",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "74",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "gokutan",
+      "legacyImport": true,
+      "legacyKaliteUserId": "74",
+      "keeperUserId": "6a4a8c43f1690f8387ec77c2",
+      "legacyName": "Gökhan Okutan"
+    },
+    "9": {
+      "legacyName": "Halil Şendil",
+      "legacyKaliteUsername": "hsendil",
       "source": "legacy_import",
       "customData": {
         "legacyImportBatch": "2026-07-05",
-        "legacyKaliteUserId": "17",
+        "legacyKaliteUserId": "9",
         "legacyImport": true,
         "legacyImportSource": "kalite.users",
         "personKind": "legacy_archive",
-        "legacyKaliteUsername": "okarakadioglu"
+        "legacyKaliteUsername": "hsendil"
       },
-      "keeperUserId": "6a4a7624647fce4a6fd4324b",
-      "legacyKaliteUserId": "17",
+      "keeperUserId": "6a4a7623647fce4a6fd43244",
+      "legacyKaliteUserId": "9",
       "legacyImport": true
     },
-    "250": {
+    "8": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "etopcu",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "8",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "etopcu",
+      "legacyImport": true,
+      "legacyKaliteUserId": "8",
+      "keeperUserId": "6a4a8c41f1690f8387ec77b7",
+      "legacyName": "Emre Topçu"
+    },
+    "160": {
+      "legacyName": "Gamze Yıldız",
+      "legacyKaliteUsername": "gyildiz",
+      "source": "legacy_import",
+      "customData": {
+        "legacyImportBatch": "2026-07-05",
+        "legacyKaliteUserId": "160",
+        "legacyImport": true,
+        "legacyImportSource": "kalite.users",
+        "personKind": "legacy_archive",
+        "legacyKaliteUsername": "gyildiz"
+      },
+      "keeperUserId": "6a4a7623647fce4a6fd43246",
+      "legacyKaliteUserId": "160",
+      "legacyImport": true
+    },
+    "110": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "agulcu",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "110",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "agulcu",
+      "legacyImport": true,
+      "legacyKaliteUserId": "110",
+      "keeperUserId": "6a4a8c46f1690f8387ec77ce",
+      "legacyName": "Abdülsamet Gülcü"
+    },
+    "19": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "bboyraz",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "19",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "bboyraz",
+      "legacyImport": true,
+      "legacyKaliteUserId": "19",
+      "keeperUserId": "6a4a8c42f1690f8387ec77bc",
+      "legacyName": "Burkay Boyraz"
+    },
+    "127": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "osimsek",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "127",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "osimsek",
+      "legacyImport": true,
+      "legacyKaliteUserId": "127",
+      "keeperUserId": "6a4a8c48f1690f8387ec77dc",
+      "legacyName": "Oğulcan Şimşek"
+    },
+    "120": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "hbilsel",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "120",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "hbilsel",
+      "legacyImport": true,
+      "legacyKaliteUserId": "120",
+      "keeperUserId": "6a4a8c47f1690f8387ec77d6",
+      "legacyName": "Hasan Bilsel"
+    },
+    "95": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "scakmak",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "95",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "scakmak",
+      "legacyImport": true,
+      "legacyKaliteUserId": "95",
+      "keeperUserId": "6a4a8c43f1690f8387ec77c3",
+      "legacyName": "Sadık Çakmak"
+    },
+    "131": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "bsahbaz",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "131",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "bsahbaz",
+      "legacyImport": true,
+      "legacyKaliteUserId": "131",
+      "keeperUserId": "6a4a8c49f1690f8387ec77e0",
+      "legacyName": "Buse Şahbaz"
+    },
+    "e158": {
+      "legacyEmployeeName": "Beytullah Gündoğar",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Beytullah Gündoğar",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "158",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "158",
+      "keeperUserId": "6a4a8c4ef1690f8387ec77f8",
+      "username": "legacy-e158"
+    },
+    "e168": {
+      "legacyEmployeeName": "Oğuz  Erol",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Oğuz  Erol",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "168",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "168",
+      "keeperUserId": "6a4a8c4ff1690f8387ec77ff",
+      "username": "legacy-e168"
+    },
+    "126": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "uyuce",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "126",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "uyuce",
+      "legacyImport": true,
+      "legacyKaliteUserId": "126",
+      "keeperUserId": "6a4a8c48f1690f8387ec77db",
+      "legacyName": "Ufuk Yüce"
+    },
+    "151": {
+      "legacyKaliteUsername": "ebakir",
+      "legacyImport": true,
+      "legacyName": "Eren Bakır",
+      "source": "legacy_egitim_import",
+      "keeperUserId": "6a4a8ce2f1690f8387ec780f",
+      "legacyKaliteUserId": "151"
+    },
+    "109": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "dakkaya",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "109",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "dakkaya",
+      "legacyImport": true,
+      "legacyKaliteUserId": "109",
+      "keeperUserId": "6a4a8c45f1690f8387ec77cd",
+      "legacyName": "Devrim Akkaya"
+    },
+    "135": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "bcetin",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "135",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "bcetin",
+      "legacyImport": true,
+      "legacyKaliteUserId": "135",
+      "keeperUserId": "6a4a8c4af1690f8387ec77e4",
+      "legacyName": "Burak Çelik"
+    },
+    "102": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "bgundogdu",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "102",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "bgundogdu",
+      "legacyImport": true,
+      "legacyKaliteUserId": "102",
+      "keeperUserId": "6a4a8c44f1690f8387ec77c7",
+      "legacyName": "Bora Ümit Gündoğdu"
+    },
+    "18": {
+      "legacyName": "İlhan Uzun",
+      "legacyKaliteUsername": "iuzun",
+      "source": "legacy_import",
+      "customData": {
+        "legacyImportBatch": "2026-07-05",
+        "legacyKaliteUserId": "18",
+        "legacyImport": true,
+        "legacyImportSource": "kalite.users",
+        "personKind": "legacy_archive",
+        "legacyKaliteUsername": "iuzun"
+      },
+      "keeperUserId": "6a4a7625647fce4a6fd4324c",
+      "legacyKaliteUserId": "18",
+      "legacyImport": true
+    },
+    "124": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "sdelibas",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "124",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "sdelibas",
+      "legacyImport": true,
+      "legacyKaliteUserId": "124",
+      "keeperUserId": "6a4a8c48f1690f8387ec77d9",
+      "legacyName": "Samet Delibaş"
+    },
+    "143": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "bkirac",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "143",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "bkirac",
+      "legacyImport": true,
+      "legacyKaliteUserId": "143",
+      "keeperUserId": "6a4a8c4cf1690f8387ec77eb",
+      "legacyName": "Burak Kıraç"
+    },
+    "130": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "eer",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "130",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "eer",
+      "legacyImport": true,
+      "legacyKaliteUserId": "130",
+      "keeperUserId": "6a4a8c49f1690f8387ec77df",
+      "legacyName": "Emre Er"
+    },
+    "136": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "tkarabulut",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "136",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "tkarabulut",
+      "legacyImport": true,
+      "legacyKaliteUserId": "136",
+      "keeperUserId": "6a4a8c4af1690f8387ec77e5",
+      "legacyName": "Temam Karabulut"
+    },
+    "e250": {
       "legacyKaliteEmployeeId": "250",
       "legacyEmployeeName": "Ahmet Şamil Ortaç",
       "username": "legacy-e250",
@@ -113,21 +1116,229 @@
       "legacyKaliteUserId": "12",
       "legacyImport": true
     },
-    "123": {
-      "legacyName": "Yemliha Gülyazı",
-      "legacyKaliteUsername": "ygulyazi",
-      "source": "legacy_import",
+    "e163": {
+      "legacyEmployeeName": "Halil İbrahim Mutlu",
+      "source": "legacy_egitim_employee_import",
       "customData": {
-        "legacyImportBatch": "2026-07-05",
-        "legacyKaliteUserId": "123",
-        "legacyImport": true,
-        "legacyImportSource": "kalite.users",
+        "legacyEmployeeName": "Halil İbrahim Mutlu",
         "personKind": "legacy_archive",
-        "legacyKaliteUsername": "ygulyazi"
+        "legacyKaliteEmployeeId": "163",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
       },
-      "keeperUserId": "6a4a7625647fce4a6fd4324e",
-      "legacyKaliteUserId": "123",
-      "legacyImport": true
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "163",
+      "keeperUserId": "6a4a8c4ff1690f8387ec77fc",
+      "username": "legacy-e163"
+    },
+    "e162": {
+      "legacyEmployeeName": "Murat  Han",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Murat  Han",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "162",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "162",
+      "keeperUserId": "6a4a8c4ff1690f8387ec77fb",
+      "username": "legacy-e162"
+    },
+    "145": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "agulyazi",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "145",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "agulyazi",
+      "legacyImport": true,
+      "legacyKaliteUserId": "145",
+      "keeperUserId": "6a4a8c4cf1690f8387ec77ed",
+      "legacyName": "Ali İhsan  Gülyazı"
+    },
+    "e149": {
+      "legacyEmployeeName": "Yasin  Güler",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Yasin  Güler",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "149",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "149",
+      "keeperUserId": "6a4a8c4df1690f8387ec77f1",
+      "username": "legacy-e149"
+    },
+    "e165": {
+      "legacyEmployeeName": "Fazlı  Gülyazı",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Fazlı  Gülyazı",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "165",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "165",
+      "keeperUserId": "6a4a8c4ff1690f8387ec77fe",
+      "username": "legacy-e165"
+    },
+    "e182": {
+      "legacyEmployeeName": "Hasan Akçay",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Hasan Akçay",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "182",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "182",
+      "keeperUserId": "6a4a8c51f1690f8387ec7808",
+      "username": "legacy-e182"
+    },
+    "e175": {
+      "legacyEmployeeName": "Özgür Yeter",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Özgür Yeter",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "175",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "175",
+      "keeperUserId": "6a4a8c50f1690f8387ec7802",
+      "username": "legacy-e175"
+    },
+    "117": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "okocturk",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "117",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "okocturk",
+      "legacyImport": true,
+      "legacyKaliteUserId": "117",
+      "keeperUserId": "6a4a8c47f1690f8387ec77d4",
+      "legacyName": "Onur Koçtürk"
+    },
+    "e177": {
+      "legacyEmployeeName": "Kaya Koçak",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Kaya Koçak",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "177",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "177",
+      "keeperUserId": "6a4a8c50f1690f8387ec7804",
+      "username": "legacy-e177"
+    },
+    "16": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "bkirikkayaoglu",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "16",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "bkirikkayaoglu",
+      "legacyImport": true,
+      "legacyKaliteUserId": "16",
+      "keeperUserId": "6a4a8c42f1690f8387ec77bb",
+      "legacyName": "Bayram Kırıkkayaoğlu"
+    },
+    "132": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "oagoren",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "132",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "oagoren",
+      "legacyImport": true,
+      "legacyKaliteUserId": "132",
+      "keeperUserId": "6a4a8c4af1690f8387ec77e1",
+      "legacyName": "Oğuzhan Ağören"
+    },
+    "153": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "mckucuk",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "153",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "mckucuk",
+      "legacyImport": true,
+      "legacyKaliteUserId": "153",
+      "keeperUserId": "6a4a8c50f1690f8387ec7803",
+      "legacyName": "Mertcan Küçük"
+    },
+    "96": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "zsanlı",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "96",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "zsanlı",
+      "legacyImport": true,
+      "legacyKaliteUserId": "96",
+      "keeperUserId": "6a4a8c43f1690f8387ec77c4",
+      "legacyName": "Zeki Şanlı"
+    },
+    "141": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "hkar",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "141",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "hkar",
+      "legacyImport": true,
+      "legacyKaliteUserId": "141",
+      "keeperUserId": "6a4a8c4bf1690f8387ec77ea",
+      "legacyName": "Hüseyin Kar"
     },
     "101": {
       "legacyName": "Aylin Güneş",
@@ -145,77 +1356,77 @@
       "legacyKaliteUserId": "101",
       "legacyImport": true
     },
-    "97": {
-      "legacyName": "Burak Taban",
-      "legacyKaliteUsername": "btaban",
-      "source": "legacy_import",
+    "138": {
+      "source": "legacy_egitim_import",
       "customData": {
-        "legacyImportBatch": "2026-07-05",
-        "legacyKaliteUserId": "97",
-        "legacyImport": true,
-        "legacyImportSource": "kalite.users",
+        "legacyKaliteUsername": "sbuyukgullu",
         "personKind": "legacy_archive",
-        "legacyKaliteUsername": "btaban"
-      },
-      "keeperUserId": "6a4a7625647fce4a6fd4324d",
-      "legacyKaliteUserId": "97",
-      "legacyImport": true
-    },
-    "160": {
-      "legacyName": "Gamze Yıldız",
-      "legacyKaliteUsername": "gyildiz",
-      "source": "legacy_import",
-      "customData": {
+        "legacyKaliteUserId": "138",
+        "legacyImportSource": "kalite.users.egitim",
         "legacyImportBatch": "2026-07-05",
-        "legacyKaliteUserId": "160",
-        "legacyImport": true,
-        "legacyImportSource": "kalite.users",
-        "personKind": "legacy_archive",
-        "legacyKaliteUsername": "gyildiz"
+        "legacyImport": true
       },
-      "keeperUserId": "6a4a7623647fce4a6fd43246",
-      "legacyKaliteUserId": "160",
-      "legacyImport": true
-    },
-    "9": {
-      "legacyName": "Halil Şendil",
-      "legacyKaliteUsername": "hsendil",
-      "source": "legacy_import",
-      "customData": {
-        "legacyImportBatch": "2026-07-05",
-        "legacyKaliteUserId": "9",
-        "legacyImport": true,
-        "legacyImportSource": "kalite.users",
-        "personKind": "legacy_archive",
-        "legacyKaliteUsername": "hsendil"
-      },
-      "keeperUserId": "6a4a7623647fce4a6fd43244",
-      "legacyKaliteUserId": "9",
-      "legacyImport": true
-    },
-    "225": {
-      "legacyKaliteEmployeeId": "225",
-      "legacyEmployeeName": "Ahmet Emin Gezer",
-      "keeperUserId": "6a2257d16723c2bd54eec39a",
-      "source": "employee_manual_mapping",
-      "legacyImport": false,
-      "note": "Ahmet Emin Gezer — employees.id=225, users.agezer"
-    },
-    "220": {
-      "legacyKaliteEmployeeId": "220",
-      "legacyEmployeeName": "Alihan Köse",
-      "username": "legacy-e220",
-      "keeperUserId": "6a4a77d9647fce4a6fd4324f",
-      "source": "legacy_employee_import",
+      "legacyKaliteUsername": "sbuyukgullu",
       "legacyImport": true,
+      "legacyKaliteUserId": "138",
+      "keeperUserId": "6a4a8c4bf1690f8387ec77e7",
+      "legacyName": "Samet Büyükgüllü"
+    },
+    "e164": {
+      "legacyEmployeeName": "Utku Karakaya",
+      "source": "legacy_egitim_employee_import",
       "customData": {
+        "legacyEmployeeName": "Utku Karakaya",
         "personKind": "legacy_archive",
-        "legacyEmployeeName": "Alihan Köse",
+        "legacyKaliteEmployeeId": "164",
         "legacyImportSource": "kalite.employees",
         "legacyImportBatch": "2026-07-05",
-        "legacyImport": true,
-        "legacyKaliteEmployeeId": "220"
-      }
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "164",
+      "keeperUserId": "6a4a8c4ff1690f8387ec77fd",
+      "username": "legacy-e164"
+    },
+    "e181": {
+      "legacyEmployeeName": "Satılmış Aksoy",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Satılmış Aksoy",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "181",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "181",
+      "keeperUserId": "6a4a8c51f1690f8387ec7807",
+      "username": "legacy-e181"
+    },
+    "e155": {
+      "legacyImport": true,
+      "legacyEmployeeName": "Mertcan Kırdar",
+      "legacyKaliteEmployeeId": "155",
+      "source": "legacy_egitim_employee_import",
+      "username": "legacy-e155",
+      "keeperUserId": "6a4a8ce2f1690f8387ec780d"
+    },
+    "139": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "eyazdiran",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "139",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "eyazdiran",
+      "legacyImport": true,
+      "legacyKaliteUserId": "139",
+      "keeperUserId": "6a4a8c4bf1690f8387ec77e8",
+      "legacyName": "Ercüment Yazdiran"
     },
     "180": {
       "legacyName": "Gülce Karakuş",
@@ -232,18 +1443,255 @@
       "keeperUserId": "6a4a7624647fce4a6fd43247",
       "legacyKaliteUserId": "180",
       "legacyImport": true
+    },
+    "17": {
+      "legacyName": "Osman Karakadıoğlu",
+      "legacyKaliteUsername": "okarakadioglu",
+      "source": "legacy_import",
+      "customData": {
+        "legacyImportBatch": "2026-07-05",
+        "legacyKaliteUserId": "17",
+        "legacyImport": true,
+        "legacyImportSource": "kalite.users",
+        "personKind": "legacy_archive",
+        "legacyKaliteUsername": "okarakadioglu"
+      },
+      "keeperUserId": "6a4a7624647fce4a6fd4324b",
+      "legacyKaliteUserId": "17",
+      "legacyImport": true
+    },
+    "111": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "myerlitas",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "111",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "myerlitas",
+      "legacyImport": true,
+      "legacyKaliteUserId": "111",
+      "keeperUserId": "6a4a8c46f1690f8387ec77cf",
+      "legacyName": "Muhammet Yerlitaş"
+    },
+    "3": {
+      "legacyKaliteUserId": "3",
+      "legacyKaliteUsername": "okaragul",
+      "legacyName": "Osman Karagül",
+      "keeperUserId": "6a2257d26723c2bd54eec3b4",
+      "source": "compare_matched",
+      "legacyImport": false
+    },
+    "144": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "mak",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "144",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "mak",
+      "legacyImport": true,
+      "legacyKaliteUserId": "144",
+      "keeperUserId": "6a4a8c4cf1690f8387ec77ec",
+      "legacyName": "Muhammed Ak"
+    },
+    "e157": {
+      "legacyEmployeeName": "Faruk Akpınar",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Faruk Akpınar",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "157",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "157",
+      "keeperUserId": "6a4a8c4ef1690f8387ec77f7",
+      "username": "legacy-e157"
+    },
+    "128": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "eegioglu",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "128",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "eegioglu",
+      "legacyImport": true,
+      "legacyKaliteUserId": "128",
+      "keeperUserId": "6a4a8c49f1690f8387ec77dd",
+      "legacyName": "Ecevit Eğioğlu"
+    },
+    "14": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "mdemir",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "14",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "mdemir",
+      "legacyImport": true,
+      "legacyKaliteUserId": "14",
+      "keeperUserId": "6a4a8c41f1690f8387ec77b9",
+      "legacyName": "Murat Demir"
+    },
+    "4": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "ntatlakoglu",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "4",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "ntatlakoglu",
+      "legacyImport": true,
+      "legacyKaliteUserId": "4",
+      "keeperUserId": "6a4a8c40f1690f8387ec77b3",
+      "legacyName": "Nazan Tatlakoğlu"
+    },
+    "13": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "tkekec",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "13",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "tkekec",
+      "legacyImport": true,
+      "legacyKaliteUserId": "13",
+      "keeperUserId": "6a4a8c41f1690f8387ec77b8",
+      "legacyName": "Tayfun Kekeç"
+    },
+    "116": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "fkoca",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "116",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "fkoca",
+      "legacyImport": true,
+      "legacyKaliteUserId": "116",
+      "keeperUserId": "6a4a8c47f1690f8387ec77d3",
+      "legacyName": "Ferdi Koca"
+    },
+    "70": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "ekoc",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "70",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "ekoc",
+      "legacyImport": true,
+      "legacyKaliteUserId": "70",
+      "keeperUserId": "6a4a8c42f1690f8387ec77be",
+      "legacyName": "Emre Melih Koç"
+    },
+    "e159": {
+      "legacyEmployeeName": "Muharrem Eren",
+      "source": "legacy_egitim_employee_import",
+      "customData": {
+        "legacyEmployeeName": "Muharrem Eren",
+        "personKind": "legacy_archive",
+        "legacyKaliteEmployeeId": "159",
+        "legacyImportSource": "kalite.employees",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyImport": true,
+      "legacyKaliteEmployeeId": "159",
+      "keeperUserId": "6a4a8c4ef1690f8387ec77f9",
+      "username": "legacy-e159"
+    },
+    "11": {
+      "legacyName": "Murat Tarcan",
+      "legacyKaliteUsername": "mtarcan",
+      "source": "legacy_import",
+      "customData": {
+        "legacyImportBatch": "2026-07-05",
+        "legacyKaliteUserId": "11",
+        "legacyImport": true,
+        "legacyImportSource": "kalite.users",
+        "personKind": "legacy_archive",
+        "legacyKaliteUsername": "mtarcan"
+      },
+      "keeperUserId": "6a4a7624647fce4a6fd43248",
+      "legacyKaliteUserId": "11",
+      "legacyImport": true
+    },
+    "107": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "aerel",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "107",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "aerel",
+      "legacyImport": true,
+      "legacyKaliteUserId": "107",
+      "keeperUserId": "6a4a8c45f1690f8387ec77cb",
+      "legacyName": "Abdullah Erel"
+    },
+    "108": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "aaydugdu",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "108",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "aaydugdu",
+      "legacyImport": true,
+      "legacyKaliteUserId": "108",
+      "keeperUserId": "6a4a8c45f1690f8387ec77cc",
+      "legacyName": "Ahmet Aydoğdu"
+    },
+    "146": {
+      "source": "legacy_egitim_import",
+      "customData": {
+        "legacyKaliteUsername": "akislalioglu",
+        "personKind": "legacy_archive",
+        "legacyKaliteUserId": "146",
+        "legacyImportSource": "kalite.users.egitim",
+        "legacyImportBatch": "2026-07-05",
+        "legacyImport": true
+      },
+      "legacyKaliteUsername": "akislalioglu",
+      "legacyImport": true,
+      "legacyKaliteUserId": "146",
+      "keeperUserId": "6a4a8c4cf1690f8387ec77ee",
+      "legacyName": "Ahmet Kışlalıoğlu"
     }
   },
-  "meta": {
-    "importBatch": "2026-07-05",
-    "employeeProvision": {
-      "dryRun": false,
-      "failed": 0,
-      "manual": 1,
-      "skipped": 0,
-      "created": 2
-    },
-    "resolvedFile": "C:\\Users\\monitra\\Dev\\MonitraNG\\MonitraNG\\docs\\odak\\eskiapp\\reports\\legacy-unknown-person-ids-resolved.json"
-  },
-  "generatedAt": "2026-07-05 18:28:04"
+  "generatedAt": "2026-07-05 19:57:49"
 }

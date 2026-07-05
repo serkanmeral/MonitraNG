@@ -157,6 +157,10 @@
     },
     "odakSiparis.packages.menuTitle": "Work Packages",
     "odakSiparis.customers.menuTitle": "Actors",
+    "odakSiparis.egitim.menuTitle": "Training",
+    "odakSiparis.egitim.personTrainings.menuTitle": "Person training history",
+    "odakSiparis.egitim.divisions.menuTitle": "Divisions",
+    "odakSiparis.egitim.stats.menuTitle": "Training statistics",
     "securityManagement.menuHeader": "Security Management",
     "alarmCenter.menuTitle": "Alarm Center",
     "siemCenter.dashboard.menuTitle": "SIEM Security Panel",
@@ -4633,6 +4637,180 @@
         "orderQty": "Order total",
         "shippedQty": "Shipped total",
         "remainingQty": "Remaining in package"
+      }
+    }
+  },
+  "odakEgitim": {
+    "module": "Odak Training",
+    "common": {
+      "cancel": "Cancel",
+      "save": "Save",
+      "add": "Add",
+      "edit": "Edit",
+      "delete": "Delete",
+      "actions": "Actions",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "nav": {
+      "trainings": "Trainings",
+      "personTrainings": "Person training history",
+      "divisions": "Divisions",
+      "stats": "Statistics"
+    },
+    "trainings": {
+      "title": "Trainings",
+      "menuTitle": "Trainings",
+      "panelTitle": "F19 — Training Plan",
+      "panelSubtitle": "Planned and completed training records",
+      "detailTitle": "Training Attendance Form",
+      "add": "Add training",
+      "search": "Search trainings…",
+      "yearFilter": "Year",
+      "allYears": "All years",
+      "notFound": "Training record not found.",
+      "deleteTitle": "Delete training",
+      "deleteConfirm": "Are you sure you want to delete this training record?",
+      "paginationSummary": "{from}–{to} of {total}",
+      "export": "Export",
+      "totalPersonHoursValue": "{hours} hours ({count} attendees)",
+      "tabs": {
+        "plan": "Planned",
+        "complete": "Completed",
+        "all": "All"
+      },
+      "columns": {
+        "egitimNo": "Training No",
+        "baslik": "Title",
+        "birim": "Division",
+        "egitimVeren": "Trainer",
+        "planlananTarih": "Planned date",
+        "gerceklesenTarih": "Actual date",
+        "durum": "Status",
+        "katilimciSayisi": "Participants"
+      },
+      "fields": {
+        "baslik": "Title",
+        "konu": "Subject",
+        "birim": "Division",
+        "egitimVeren": "Trainer",
+        "konum": "Location",
+        "planlananTarih": "Planned date",
+        "gerceklesenTarih": "Actual date",
+        "sureDakika": "Duration (minutes)",
+        "toplamCalisanSayisi": "Total staff count",
+        "toplamHarcananSure": "Total time spent (attendees)",
+        "egitimAmaci": "Training goal",
+        "degerlendirmeYontemi": "Effectiveness evaluation method",
+        "durum": "Status"
+      },
+      "validation": {
+        "baslikRequired": "Title is required."
+      },
+      "dialog": {
+        "createTitle": "Add training",
+        "editTitle": "Edit training — {no}",
+        "missingId": "Training id not found."
+      }
+    },
+    "participants": {
+      "title": "Participants",
+      "titleWithCount": "Participants ({count})",
+      "add": "Add participant",
+      "addTitle": "Add participant",
+      "selectPerson": "Select person (Keeper)",
+      "alreadyAdded": "This person is already on the participant list.",
+      "empty": "No participants yet.",
+      "legacyEmptyHint": "Legacy migration includes participant records only for trainings from 2017–2022. Trainings from 2023 onward may have an empty participant list.",
+      "columns": {
+        "name": "Name",
+        "katildi": "Attended",
+        "etkin": "Effective"
+      }
+    },
+    "personTrainings": {
+      "title": "Person training history",
+      "menuTitle": "Person training history",
+      "panelTitle": "Person — training history",
+      "panelSubtitle": "Select a Keeper person to view their training participation records",
+      "selectPerson": "Select person (Keeper)",
+      "selectHint": "Select a person to view their training history.",
+      "summary": "{name} — {count} training record(s)",
+      "summaryWithHours": "{name} — {count} training record(s), {hours} hours total",
+      "empty": "No training participation records found for this person."
+    },
+    "divisions": {
+      "title": "Divisions",
+      "menuTitle": "Divisions",
+      "panelTitle": "Training divisions",
+      "panelSubtitle": "Unit / department definitions used in training plans",
+      "add": "Add division",
+      "search": "Search divisions…",
+      "empty": "No division records found.",
+      "deleteTitle": "Delete division",
+      "deleteConfirm": "Delete this division? Linked trainings may be affected.",
+      "tabs": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "all": "All"
+      },
+      "fields": {
+        "kod": "Division code",
+        "ad": "Division name",
+        "aktif": "Active",
+        "legacyDivisionId": "Legacy ID"
+      },
+      "validation": {
+        "kodRequired": "Division code is required.",
+        "kodMax": "Division code must be at most 32 characters.",
+        "adRequired": "Division name is required."
+      },
+      "dialog": {
+        "createTitle": "Add division",
+        "editTitle": "Edit division — {kod}",
+        "missingId": "Division id not found."
+      }
+    },
+    "stats": {
+      "title": "Training statistics",
+      "menuTitle": "Training statistics",
+      "byDivisionTitle": "Trainings by division",
+      "byYearTitle": "Trainings by year",
+      "yearFilter": "Year",
+      "monthlyHoursTitle": "{year} training hours statistics",
+      "monthlyHoursHint": "Legacy formula: monthly participation rows × (training duration in hours / total staff count). Completed trainings only.",
+      "columns": {
+        "year": "Year",
+        "planned": "Planned",
+        "completed": "Completed",
+        "trainingCount": "Trainings",
+        "month": "Month",
+        "monthlyHours": "Monthly training hours",
+        "cumulativeHours": "Cumulative training hours",
+        "durationHours": "Duration (hours)"
+      },
+      "monthNames": {
+        "1": "January",
+        "2": "February",
+        "3": "March",
+        "4": "April",
+        "5": "May",
+        "6": "June",
+        "7": "July",
+        "8": "August",
+        "9": "September",
+        "10": "October",
+        "11": "November",
+        "12": "December"
+      },
+      "cards": {
+        "trainings": "Total trainings",
+        "planned": "Planned",
+        "completed": "Completed",
+        "participations": "Participation rows",
+        "participants": "Distinct participants",
+        "divisions": "Active divisions",
+        "yearTrainingHours": "{year} training hours"
       }
     }
   },

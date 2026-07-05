@@ -192,6 +192,10 @@
     "odakSiparis.customers.menuTitle": "Aktörler",
     "odakSiparis.globalShipments.menuTitle": "Sevkiyat Listesi",
     "odakSiparis.globalNcr.menuTitle": "Uygunsuzluklar",
+    "odakSiparis.egitim.menuTitle": "Eğitim",
+    "odakSiparis.egitim.personTrainings.menuTitle": "Personel Eğitim Geçmişi",
+    "odakSiparis.egitim.divisions.menuTitle": "Birimler",
+    "odakSiparis.egitim.stats.menuTitle": "Eğitim İstatistikleri",
     "securityManagement.menuHeader": "Güvenlik Yönetimi",
     "alarmCenter.menuTitle": "Alarm Merkezi",
     "siemCenter.dashboard.menuTitle": "SIEM Güvenlik Paneli",
@@ -4823,6 +4827,180 @@
       },
       "columns": {
         "scope": "Kapsam"
+      }
+    }
+  },
+  "odakEgitim": {
+    "module": "Odak Eğitim",
+    "common": {
+      "cancel": "İptal",
+      "save": "Kaydet",
+      "add": "Ekle",
+      "edit": "Düzenle",
+      "delete": "Sil",
+      "actions": "Eylemler",
+      "yes": "Evet",
+      "no": "Hayır"
+    },
+    "nav": {
+      "trainings": "Eğitimler",
+      "personTrainings": "Personel Eğitim Geçmişi",
+      "divisions": "Birimler",
+      "stats": "İstatistik"
+    },
+    "trainings": {
+      "title": "Eğitimler",
+      "menuTitle": "Eğitimler",
+      "panelTitle": "F19 — Eğitim Planı",
+      "panelSubtitle": "Planlanan ve tamamlanan eğitim kayıtları",
+      "detailTitle": "Eğitim Katılım Formu",
+      "add": "Eğitim Ekle",
+      "search": "Eğitim ara…",
+      "yearFilter": "Yıl",
+      "allYears": "Tüm yıllar",
+      "notFound": "Eğitim kaydı bulunamadı.",
+      "deleteTitle": "Eğitimi sil",
+      "deleteConfirm": "Bu eğitim kaydını silmek istediğinize emin misiniz?",
+      "paginationSummary": "{from}–{to} / {total} kayıt",
+      "export": "Dışa Aktar",
+      "totalPersonHoursValue": "{hours} saat ({count} katılımcı)",
+      "tabs": {
+        "plan": "Planlanan Eğitimler",
+        "complete": "Tamamlanan Eğitimler",
+        "all": "Tüm Eğitimler"
+      },
+      "columns": {
+        "egitimNo": "Eğitim No",
+        "baslik": "Başlık",
+        "birim": "Birim",
+        "egitimVeren": "Eğitimi Veren",
+        "planlananTarih": "Planlanan Tarih",
+        "gerceklesenTarih": "Gerçekleşen Tarih",
+        "durum": "Durum",
+        "katilimciSayisi": "Katılımcı"
+      },
+      "fields": {
+        "baslik": "Başlık",
+        "konu": "Konu",
+        "birim": "İlgili Birim",
+        "egitimVeren": "Eğitimi Veren",
+        "konum": "Konum",
+        "planlananTarih": "Planlanan Eğitim Tarihi",
+        "gerceklesenTarih": "Gerçekleşen Eğitim Tarihi",
+        "sureDakika": "Süre (dakika)",
+        "toplamCalisanSayisi": "Toplam Çalışan Sayısı",
+        "toplamHarcananSure": "Toplam Harcanan Süre (katılımcılar)",
+        "egitimAmaci": "Eğitim Amacı",
+        "degerlendirmeYontemi": "Etkinlik Değerlendirme Yöntemi",
+        "durum": "Durum"
+      },
+      "validation": {
+        "baslikRequired": "Başlık zorunludur."
+      },
+      "dialog": {
+        "createTitle": "Eğitim Ekle",
+        "editTitle": "Eğitim Düzenle — {no}",
+        "missingId": "Eğitim kimliği bulunamadı."
+      }
+    },
+    "participants": {
+      "title": "Katılımcılar",
+      "titleWithCount": "Katılımcılar ({count})",
+      "add": "Katılımcı Ekle",
+      "addTitle": "Katılımcı ekle",
+      "selectPerson": "Personel seç (Keeper)",
+      "alreadyAdded": "Bu personel zaten katılımcı listesinde.",
+      "empty": "Henüz katılımcı eklenmedi.",
+      "legacyEmptyHint": "Legacy veri aktarımında katılımcı kayıtları yalnızca 2017–2022 eğitimleri için mevcuttur. 2023 ve sonrası eğitimlerde katılımcı listesi boş olabilir.",
+      "columns": {
+        "name": "Ad",
+        "katildi": "Katıldı",
+        "etkin": "Etkin"
+      }
+    },
+    "personTrainings": {
+      "title": "Personel Eğitim Geçmişi",
+      "menuTitle": "Personel Eğitim Geçmişi",
+      "panelTitle": "Personel — Aldığı Eğitimler",
+      "panelSubtitle": "Keeper personeli seçerek katıldığı eğitim kayıtlarını görüntüleyin",
+      "selectPerson": "Personel seç (Keeper)",
+      "selectHint": "Eğitim geçmişini görmek için bir personel seçin.",
+      "summary": "{name} — {count} eğitim kaydı",
+      "summaryWithHours": "{name} — {count} eğitim kaydı, toplam {hours} saat",
+      "empty": "Bu personel için eğitim katılım kaydı bulunamadı."
+    },
+    "divisions": {
+      "title": "Birimler",
+      "menuTitle": "Birimler",
+      "panelTitle": "Eğitim Birimleri",
+      "panelSubtitle": "Eğitim planında kullanılan birim / bölüm tanımları",
+      "add": "Birim Ekle",
+      "search": "Birim ara…",
+      "empty": "Birim kaydı bulunamadı.",
+      "deleteTitle": "Birimi sil",
+      "deleteConfirm": "Bu birim kaydını silmek istediğinize emin misiniz? İlişkili eğitimler etkilenebilir.",
+      "tabs": {
+        "active": "Aktif",
+        "inactive": "Pasif",
+        "all": "Tümü"
+      },
+      "fields": {
+        "kod": "Birim Kodu",
+        "ad": "Birim Adı",
+        "aktif": "Aktif",
+        "legacyDivisionId": "Legacy ID"
+      },
+      "validation": {
+        "kodRequired": "Birim kodu zorunludur.",
+        "kodMax": "Birim kodu en fazla 32 karakter olabilir.",
+        "adRequired": "Birim adı zorunludur."
+      },
+      "dialog": {
+        "createTitle": "Birim Ekle",
+        "editTitle": "Birim Düzenle — {kod}",
+        "missingId": "Birim kimliği bulunamadı."
+      }
+    },
+    "stats": {
+      "title": "Eğitim İstatistikleri",
+      "menuTitle": "Eğitim İstatistikleri",
+      "byDivisionTitle": "Birime göre eğitim sayısı",
+      "byYearTitle": "Yıla göre eğitim özeti",
+      "yearFilter": "Yıl",
+      "monthlyHoursTitle": "{year} yılı eğitim saati istatistikleri",
+      "monthlyHoursHint": "Legacy formül: aylık katılım kaydı × (eğitim süresi saat / toplam çalışan sayısı). Yalnızca tamamlanan eğitimler.",
+      "columns": {
+        "year": "Yıl",
+        "planned": "Planlanan",
+        "completed": "Tamamlanan",
+        "trainingCount": "Eğitim",
+        "month": "Ay",
+        "monthlyHours": "Aylık Eğitim Saat",
+        "cumulativeHours": "Toplam Eğitim Saat",
+        "durationHours": "Süre (saat)"
+      },
+      "monthNames": {
+        "1": "Ocak",
+        "2": "Şubat",
+        "3": "Mart",
+        "4": "Nisan",
+        "5": "Mayıs",
+        "6": "Haziran",
+        "7": "Temmuz",
+        "8": "Ağustos",
+        "9": "Eylül",
+        "10": "Ekim",
+        "11": "Kasım",
+        "12": "Aralık"
+      },
+      "cards": {
+        "trainings": "Toplam eğitim",
+        "planned": "Planlanan",
+        "completed": "Tamamlanan",
+        "participations": "Katılım kaydı",
+        "participants": "Farklı katılımcı",
+        "divisions": "Aktif birim",
+        "yearTrainingHours": "{year} eğitim saati"
       }
     }
   },

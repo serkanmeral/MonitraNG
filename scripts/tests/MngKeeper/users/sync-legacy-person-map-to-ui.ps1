@@ -7,17 +7,32 @@ $ErrorActionPreference = "Stop"
 . (Join-Path $PSScriptRoot "lib/LegacyArchiveUserCommon.ps1")
 
 $mapState = Load-LegacyKaliteUserIdMap
+$mapEntriesForSync = @{}
+foreach ($key in $mapState.entries.Keys) { $mapEntriesForSync[$key] = $mapState.entries[$key] }
+Repair-LegacyKaliteUserIdMapEmployeeKeys -Entries $mapEntriesForSync | Out-Null
 $keeperByLegacyId = @{}
 $labelsByLegacyId = @{}
 
-foreach ($key in $mapState.entries.Keys) {
-    $e = $mapState.entries[$key]
+foreach ($key in $mapEntriesForSync.Keys) {
+    $e = $mapEntriesForSync[$key]
     $keeperId = [string]$e.keeperUserId
     if (-not $keeperId -or $keeperId -eq "DRY-RUN") { continue }
-    $legacyKey = [string]$key
-    $keeperByLegacyId[$legacyKey] = $keeperId
     $label = [string]($e.legacyName ?? $e.legacyEmployeeName ?? "")
-    if ($label) { $labelsByLegacyId[$legacyKey] = $label }
+    $uid = [string]$e.legacyKaliteUserId
+    $eid = [string]$e.legacyKaliteEmployeeId
+    if ($uid) {
+        $keeperByLegacyId[$uid] = $keeperId
+        if ($label) { $labelsByLegacyId[$uid] = $label }
+    }
+    elseif ($eid) {
+        $keeperByLegacyId[$eid] = $keeperId
+        if ($label) { $labelsByLegacyId[$eid] = $label }
+    }
+    else {
+        $legacyKey = [string]$key
+        $keeperByLegacyId[$legacyKey] = $keeperId
+        if ($label) { $labelsByLegacyId[$legacyKey] = $label }
+    }
 }
 
 $outPath = Join-Path $LegacyArchiveRepoRoot "Mng.Ui/utils/odakSiparisLegacyPersonMap.ts"
