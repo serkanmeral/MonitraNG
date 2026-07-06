@@ -1584,7 +1584,7 @@
   },
   "welcome": {
     "title": "Home",
-    "subtitle": "Shortcuts to MonitraNG modules. Cards are added here as each module is completed.",
+    "subtitle": "Quick access to modules you are allowed to use; track pending work and recent visits from here.",
     "breadcrumbs": {
       "home": "Home"
     },
@@ -1598,24 +1598,116 @@
       "guest": "User",
       "domain": "Domain",
       "groups": "Groups",
+      "lastLogin": "Last login",
       "roleAdmin": "System administrator",
       "roleManager": "Manager",
       "roleUser": "User"
     },
+    "actions": {
+      "title": "Today",
+      "pendingApprovals": {
+        "title": "Pending approvals",
+        "count": "{count} approval(s) waiting",
+        "viewAll": "Go to approvals"
+      },
+      "activeAlarms": {
+        "title": "Active alarms",
+        "count": "{count} open alarm(s)",
+        "viewAll": "Go to alarms"
+      },
+      "assignedTasks": {
+        "title": "Assigned to me",
+        "count": "{count} task(s)",
+        "empty": "No open tasks assigned to you.",
+        "viewAll": "Go to tasks"
+      },
+      "license": {
+        "title": "License status",
+        "expired": "Domain license is invalid or expired.",
+        "expiring": "License expires in {days} day(s).",
+        "userLimit": "User quota is nearly full ({active}/{max}).",
+        "viewDomain": "Domain settings"
+      }
+    },
+    "recent": {
+      "title": "Continue",
+      "empty": "No recent pages yet. Open a module from the side menu and it will appear here."
+    },
+    "empty": {
+      "noModules": "No modules are available for your account yet. Contact your administrator for menu access."
+    },
+    "groups": {
+      "operation": "Operations",
+      "monitoring": "Monitoring & security",
+      "platform": "Platform",
+      "domainApps": "Applications"
+    },
     "modules": {
       "title": "Modules",
-      "hint": "Shortcut cards for ready modules",
-      "comingSoon": "Other modules (monitoring, datasets, reports, etc.) will appear here as cards when they are ready.",
+      "hint": "Modules you can access",
+      "fallback": {
+        "title": "Application",
+        "description": "Module available from the side menu.",
+        "linkOpen": "Open"
+      },
       "taskManager": {
         "title": "Task Manager",
         "description": "Work with projects, boards, and issues; manage statuses, issue types, and priorities from shared pools.",
         "linkWorkspace": "Workspace",
+        "linkAssigned": "Assigned to me",
         "linkHub": "Task hub"
       },
       "operationCore": {
         "title": "Operation Core",
         "description": "Manage work items through workspaces and boards; transitions, rules, and profile come from the MngOperations runtime.",
-        "linkWorkspace": "Workspace"
+        "linkWorkspace": "Workspace",
+        "linkApprovals": "Pending approvals"
+      },
+      "automationCenter": {
+        "title": "Automation Center",
+        "description": "Define workflows and manage automation scenarios.",
+        "linkWorkflows": "Workflows",
+        "linkHub": "Hub"
+      },
+      "monitoring": {
+        "title": "Monitoring",
+        "description": "Monitor assets, agents, and organization tree; access control panel and map views.",
+        "linkControl": "Control panel",
+        "linkMap": "Map"
+      },
+      "alarmCenter": {
+        "title": "Alarm Center",
+        "description": "View active alarms; manage alarm rules and notification policies.",
+        "linkAlarms": "Alarms",
+        "linkRules": "Rules"
+      },
+      "siemCenter": {
+        "title": "SIEM Center",
+        "description": "Monitor security events; access the SIEM dashboard and reference docs.",
+        "linkDashboard": "Security dashboard",
+        "linkReference": "Reference"
+      },
+      "datasets": {
+        "title": "Datasets",
+        "description": "Define dataset schemas and manage your data models.",
+        "linkList": "Datasets"
+      },
+      "documentIntelligence": {
+        "title": "Document Intelligence",
+        "description": "Create letterheads, templates, and document designs.",
+        "linkDesigner": "Designer"
+      },
+      "odakEgitim": {
+        "title": "Odak Training",
+        "description": "Training programs, divisions, and statistics.",
+        "linkTrainings": "Trainings",
+        "linkStats": "Statistics"
+      },
+      "odakSiparis": {
+        "title": "Odak Orders",
+        "description": "Manage packages and shipment processes.",
+        "linkPackages": "Packages",
+        "linkShipments": "Shipments"
       }
     }
   },

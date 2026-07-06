@@ -7855,7 +7855,7 @@
   },
   "welcome": {
     "title": "Ana sayfa",
-    "subtitle": "MonitraNG modüllerine buradan kısa yollarla ulaşabilirsiniz. Tamamlanan her modül için kartlar zamanla eklenecektir.",
+    "subtitle": "Yetkili olduğunuz modüllere kısa yoldan ulaşın; bekleyen işlerinizi ve son ziyaretlerinizi buradan takip edin.",
     "breadcrumbs": {
       "home": "Ana sayfa"
     },
@@ -7869,24 +7869,116 @@
       "guest": "Kullanıcı",
       "domain": "Domain",
       "groups": "Gruplar",
+      "lastLogin": "Son giriş",
       "roleAdmin": "Sistem yöneticisi",
       "roleManager": "Yönetici",
       "roleUser": "Kullanıcı"
     },
+    "actions": {
+      "title": "Bugün",
+      "pendingApprovals": {
+        "title": "Bekleyen onaylar",
+        "count": "{count} onay bekliyor",
+        "viewAll": "Onaylara git"
+      },
+      "activeAlarms": {
+        "title": "Aktif alarmlar",
+        "count": "{count} açık alarm",
+        "viewAll": "Alarmlara git"
+      },
+      "assignedTasks": {
+        "title": "Bana atanan görevler",
+        "count": "{count} görev",
+        "empty": "Size atanan açık görev görünmüyor.",
+        "viewAll": "Görevlere git"
+      },
+      "license": {
+        "title": "Lisans durumu",
+        "expired": "Domain lisansı geçersiz veya süresi dolmuş.",
+        "expiring": "Lisans {days} gün içinde sona erecek.",
+        "userLimit": "Kullanıcı kotası dolmak üzere ({active}/{max}).",
+        "viewDomain": "Domain ayarları"
+      }
+    },
+    "recent": {
+      "title": "Devam et",
+      "empty": "Henüz kayıtlı sayfa yok. Sol menüden bir modüle girdikten sonra burada görünür."
+    },
+    "empty": {
+      "noModules": "Henüz erişiminiz olan modül bulunmuyor. Menü ve yetkileriniz için yöneticinize başvurun."
+    },
+    "groups": {
+      "operation": "Operasyon",
+      "monitoring": "İzleme ve güvenlik",
+      "platform": "Platform",
+      "domainApps": "Uygulamalar"
+    },
     "modules": {
       "title": "Modüller",
-      "hint": "Hazır modüller için kısayol kartları",
-      "comingSoon": "Diğer modüller (izleme, veri setleri, raporlar vb.) tamamlandıkça bu sayfaya kart olarak eklenecektir.",
+      "hint": "Yetkiniz olan modüller",
+      "fallback": {
+        "title": "Uygulama",
+        "description": "Side menu üzerinden erişilebilen modül.",
+        "linkOpen": "Aç"
+      },
       "taskManager": {
         "title": "Görev Yöneticisi",
         "description": "Projeler, board'lar ve görevler üzerinde çalışın; durum havuzu, görev tipleri ve öncelikleri ortak tanımlardan yönetin.",
         "linkWorkspace": "Çalışma alanı",
+        "linkAssigned": "Bana atananlar",
         "linkHub": "Görevler merkezi"
       },
       "operationCore": {
         "title": "Operasyon Merkezi",
         "description": "Workspace ve board'lar üzerinden iş öğelerini yönetin; geçişler, kurallar ve profil MngOperations runtime'ından gelir.",
-        "linkWorkspace": "Çalışma alanı"
+        "linkWorkspace": "Çalışma alanı",
+        "linkApprovals": "Bekleyen onaylar"
+      },
+      "automationCenter": {
+        "title": "Otomasyon Merkezi",
+        "description": "İş akışlarını tanımlayın ve otomasyon senaryolarını yönetin.",
+        "linkWorkflows": "İş akışları",
+        "linkHub": "Merkez"
+      },
+      "monitoring": {
+        "title": "İzleme",
+        "description": "Varlıkları, agent'ları ve organizasyon ağacını izleyin; kontrol paneli ve harita görünümlerine erişin.",
+        "linkControl": "Kontrol paneli",
+        "linkMap": "Harita"
+      },
+      "alarmCenter": {
+        "title": "Alarm Merkezi",
+        "description": "Aktif alarmları görüntüleyin; alarm kuralları ve bildirim politikalarını yönetin.",
+        "linkAlarms": "Alarmlar",
+        "linkRules": "Kurallar"
+      },
+      "siemCenter": {
+        "title": "SIEM Merkezi",
+        "description": "Güvenlik olaylarını izleyin; SIEM paneli ve referans dokümantasyonuna erişin.",
+        "linkDashboard": "Güvenlik paneli",
+        "linkReference": "Referans"
+      },
+      "datasets": {
+        "title": "Veri setleri",
+        "description": "Dataset şemalarını tanımlayın ve veri modellerinizi yönetin.",
+        "linkList": "Veri setleri"
+      },
+      "documentIntelligence": {
+        "title": "Doküman Zekâsı",
+        "description": "Antet, şablon ve doküman tasarımlarını oluşturun.",
+        "linkDesigner": "Tasarımcı"
+      },
+      "odakEgitim": {
+        "title": "Odak Eğitim",
+        "description": "Eğitim programları, bölümler ve istatistikler.",
+        "linkTrainings": "Eğitimler",
+        "linkStats": "İstatistikler"
+      },
+      "odakSiparis": {
+        "title": "Odak Sipariş",
+        "description": "Paket ve sevkiyat süreçlerini yönetin.",
+        "linkPackages": "Paketler",
+        "linkShipments": "Sevkiyatlar"
       }
     }
   },

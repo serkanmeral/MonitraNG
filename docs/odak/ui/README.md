@@ -10,7 +10,8 @@ Bu klasör, Odak ortamında **Mng.Ui** ile ilgili UI kararları ve kısa rehberl
 
 | Doküman | Konu |
 |---------|------|
-| [WELCOME_HOME.md](./WELCOME_HOME.md) | Ana sayfa (welcome / home) yapısı ve yeni modül kartı ekleme |
+| [WELCOME_HOME.md](./WELCOME_HOME.md) | Ana sayfa mimarisi, dosyalar, deploy |
+| [DEVAM.md](./DEVAM.md) | Welcome page durum, kaldığımız yer, test checklist |
 | [../operationcore/ui/README.md](../operationcore/ui/README.md) | OC UI plan indeksi |
 | [../operationcore/ui/OC_UI_NAVIGATION_AND_TM_INSPIRATION.md](../operationcore/ui/OC_UI_NAVIGATION_AND_TM_INSPIRATION.md) | TM ilhamı, side menu, breadcrumb |
 

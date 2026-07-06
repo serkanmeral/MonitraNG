@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useNuxtApp } from '#app';
 import { useLocaleStore } from '@/stores/locale';
+import { recordWelcomeRecentNavigation } from '@/composables/useRecentPages';
 import Icon from '../Icon.vue';
 
 interface Props {
@@ -108,6 +109,12 @@ const menuSubCaption = computed(() => {
 const needsTooltip = computed(() => {
   return true;
 });
+
+function onMenuClick() {
+  const to = props.item.to;
+  if (!to || props.item.type === 'external') return;
+  recordWelcomeRecentNavigation(to, menuTitle.value);
+}
 </script>
 
 <template>
@@ -125,6 +132,7 @@ const needsTooltip = computed(() => {
                 :disabled="item.disabled"
                 :target="item.type === 'external' ? '_blank' : ''"
                 v-scroll-to="{ el: '#top' }"
+                @click="onMenuClick"
             >
                 <!---If icon-->
                 <template v-slot:prepend>
