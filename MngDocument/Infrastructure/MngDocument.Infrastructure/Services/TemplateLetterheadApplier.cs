@@ -36,7 +36,7 @@ public sealed class TemplateLetterheadApplier : ITemplateLetterheadApplier
 
         if (designDocxBytes is { Length: > 0 })
         {
-            var merged = LetterheadDesignMerger.ApplyHeader(docxBytes, designDocxBytes);
+            var merged = LetterheadDesignMerger.EnsureHeaderWithMediaFromDesign(docxBytes, designDocxBytes);
             if (LetterheadDesignMerger.HasAppliedHeader(merged))
                 return merged;
         }

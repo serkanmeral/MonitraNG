@@ -239,6 +239,12 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
                 letterheadSettings,
                 Token,
                 ct);
+
+            if (letterheadDesignDocx is { Length: > 0 }
+                && LetterheadDesignMerger.HasBrokenHeaderImages(branded))
+            {
+                branded = LetterheadDesignMerger.EnsureHeaderWithMediaFromDesign(branded, letterheadDesignDocx);
+            }
         }
 
         var merged = DocxPlaceholderMerger.Merge(
@@ -471,7 +477,32 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             path = resolvedPath;
         }
 
-        return await _dg.DownloadFileAsync(path!, Token, ct);
+        var bytes = await _dg.DownloadFileAsync(path!, Token, ct);
+        return await EnsureTemplateHeaderMediaAsync(template, bytes, ct);
+    }
+
+    private async Task<byte[]> EnsureTemplateHeaderMediaAsync(
+        DmDocumentTemplate template,
+        byte[] docxBytes,
+        CancellationToken ct)
+    {
+        if (!LetterheadDesignMerger.HasBrokenHeaderImages(docxBytes))
+            return docxBytes;
+
+        var model = TemplateModelSerializer.Parse(template.modelJson);
+        if (string.IsNullOrWhiteSpace(model.DefaultLetterheadId))
+            return docxBytes;
+
+        var letterheadRow = await _dg.GetByIdAsync<DmLetterhead>(
+            DmDatasets.Letterheads,
+            model.DefaultLetterheadId,
+            Token,
+            ct);
+        if (letterheadRow is null || string.IsNullOrWhiteSpace(letterheadRow.designStoragePath))
+            return docxBytes;
+
+        var designBytes = await _dg.DownloadFileAsync(letterheadRow.designStoragePath, Token, ct);
+        return LetterheadDesignMerger.EnsureHeaderWithMediaFromDesign(docxBytes, designBytes);
     }
 
     private async Task<(string Path, string? FileName)> ResolveStoragePathFallbackAsync(

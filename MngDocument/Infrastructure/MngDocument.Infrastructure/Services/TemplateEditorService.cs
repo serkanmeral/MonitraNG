@@ -366,17 +366,48 @@ public sealed class TemplateEditorService : ITemplateEditorService
 
     private async Task<byte[]> GetDocxBytesAsync(DmDocumentTemplate template, string token, CancellationToken ct)
     {
+        byte[] bytes;
         if (!string.IsNullOrWhiteSpace(template.sourceStoragePath))
-            return await _dg.DownloadFileAsync(template.sourceStoragePath, token, ct);
+            bytes = await _dg.DownloadFileAsync(template.sourceStoragePath, token, ct);
+        else
+        {
+            var (path, _) = DgFileFieldReader.Read(template);
+            if (!string.IsNullOrWhiteSpace(path))
+                bytes = await _dg.DownloadFileAsync(path!, token, ct);
+            else
+                throw DocumentException.Validation(
+                    "SOURCE_FILE_MISSING",
+                    "Template source file is missing.",
+                    "Şablon dosyası bulunamadı.");
+        }
 
-        var (path, _) = DgFileFieldReader.Read(template);
-        if (!string.IsNullOrWhiteSpace(path))
-            return await _dg.DownloadFileAsync(path!, token, ct);
+        return await RepairTemplateHeaderMediaAsync(template, bytes, token, ct);
+    }
 
-        throw DocumentException.Validation(
-            "SOURCE_FILE_MISSING",
-            "Template source file is missing.",
-            "Şablon dosyası bulunamadı.");
+    private async Task<byte[]> RepairTemplateHeaderMediaAsync(
+        DmDocumentTemplate template,
+        byte[] docxBytes,
+        string token,
+        CancellationToken ct)
+    {
+        if (!LetterheadDesignMerger.HasBrokenHeaderImages(docxBytes))
+            return docxBytes;
+
+        var model = TemplateModelSerializer.Parse(template.modelJson);
+        if (string.IsNullOrWhiteSpace(model.DefaultLetterheadId))
+            return docxBytes;
+
+        // WOPI calls have no HTTP Authorization header — use session DataGatewayToken only.
+        var letterheadRow = await _dg.GetByIdAsync<DmLetterhead>(
+            DmDatasets.Letterheads,
+            model.DefaultLetterheadId,
+            token,
+            ct);
+        if (letterheadRow is null || string.IsNullOrWhiteSpace(letterheadRow.designStoragePath))
+            return docxBytes;
+
+        var designBytes = await _dg.DownloadFileAsync(letterheadRow.designStoragePath, token, ct);
+        return LetterheadDesignMerger.EnsureHeaderWithMediaFromDesign(docxBytes, designBytes);
     }
 
     private static DmDocumentTemplate EnsureCreated(DmDocumentTemplate created)

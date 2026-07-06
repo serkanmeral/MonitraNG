@@ -19,6 +19,13 @@ public static class LetterheadDesignMerger
 
     private sealed record PrimaryHeaderSelection(string SourceHeaderPartPath, string? SourceHeaderRelsPath);
 
+    /// <summary>Applies design header parts and copies missing embedded media.</summary>
+    public static byte[] EnsureHeaderWithMediaFromDesign(byte[] targetDocxBytes, byte[] designDocxBytes)
+    {
+        var merged = ApplyHeader(targetDocxBytes, designDocxBytes);
+        return RepairHeaderMediaFromDesign(merged, designDocxBytes);
+    }
+
     public static byte[] ApplyHeader(byte[] targetDocxBytes, byte[] designDocxBytes)
     {
         using var designInput = new MemoryStream(designDocxBytes, writable: false);
@@ -361,8 +368,115 @@ public static class LetterheadDesignMerger
         using var stream = entry.Open();
         using var reader = new StreamReader(stream, Encoding.UTF8);
         var xml = reader.ReadToEnd();
-        return Regex.IsMatch(xml, "<w:t[^>]*>\\s*\\S", RegexOptions.CultureInvariant);
+        return HeaderXmlHasContent(xml);
     }
+
+    /// <summary>Header references an embedded image that is missing from the package.</summary>
+    internal static bool HasBrokenHeaderImages(byte[] docxBytes)
+    {
+        using var input = new MemoryStream(docxBytes, writable: false);
+        using var archive = new ZipArchive(input, ZipArchiveMode.Read, leaveOpen: true);
+        var headerEntry = DocxZipHelper.GetEntry(archive, TargetHeaderPartPath);
+        if (headerEntry is null)
+            return false;
+
+        using var stream = headerEntry.Open();
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        var headerXml = reader.ReadToEnd();
+        if (!headerXml.Contains("a:blip", StringComparison.OrdinalIgnoreCase)
+            && !headerXml.Contains(":blip", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        var relsEntry = DocxZipHelper.GetEntry(archive, TargetHeaderRelsPath);
+        if (relsEntry is null)
+            return true;
+
+        using var relsStream = relsEntry.Open();
+        using var relsReader = new StreamReader(relsStream, Encoding.UTF8);
+        var relsXml = relsReader.ReadToEnd();
+
+        foreach (var mediaPath in ExtractRelationshipTargets(relsXml, "media/"))
+        {
+            var normalized = DocxZipHelper.NormalizeEntryPath($"word/{mediaPath}");
+            if (DocxZipHelper.GetEntry(archive, normalized) is null)
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>Copies missing header-linked media parts from a letterhead design DOCX.</summary>
+    internal static byte[] RepairHeaderMediaFromDesign(byte[] docxBytes, byte[] designDocxBytes)
+    {
+        if (!HasBrokenHeaderImages(docxBytes))
+            return docxBytes;
+
+        using var designInput = new MemoryStream(designDocxBytes, writable: false);
+        using var designArchive = new ZipArchive(designInput, ZipArchiveMode.Read, leaveOpen: true);
+
+        var mediaToCopy = new List<string>();
+        using (var targetInput = new MemoryStream(docxBytes, writable: false))
+        using (var targetArchive = new ZipArchive(targetInput, ZipArchiveMode.Read, leaveOpen: true))
+        {
+            var relsEntry = DocxZipHelper.GetEntry(targetArchive, TargetHeaderRelsPath);
+            if (relsEntry is null)
+                return docxBytes;
+
+            using var relsStream = relsEntry.Open();
+            using var relsReader = new StreamReader(relsStream, Encoding.UTF8);
+            foreach (var mediaPath in ExtractRelationshipTargets(relsReader.ReadToEnd(), "media/"))
+            {
+                var normalized = DocxZipHelper.NormalizeEntryPath($"word/{mediaPath}");
+                if (DocxZipHelper.GetEntry(targetArchive, normalized) is null
+                    && DocxZipHelper.GetEntry(designArchive, normalized) is not null)
+                    mediaToCopy.Add(normalized);
+            }
+        }
+
+        if (mediaToCopy.Count == 0)
+            return docxBytes;
+
+        using var input = new MemoryStream(docxBytes, writable: false);
+        using var output = new MemoryStream();
+        using (var readArchive = new ZipArchive(input, ZipArchiveMode.Read, leaveOpen: true))
+        using (var writeArchive = new ZipArchive(output, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            foreach (var entry in readArchive.Entries)
+                CopyEntry(entry, writeArchive);
+
+            foreach (var mediaPath in mediaToCopy)
+            {
+                var source = DocxZipHelper.GetRequiredEntry(designArchive, mediaPath);
+                CopyEntryToPath(source, writeArchive, mediaPath);
+            }
+
+            var ctPath = "[Content_Types].xml";
+            var ctXml = ReadEntryText(readArchive, ctPath);
+            var ctDoc = XDocument.Parse(ctXml);
+            var ctRoot = ctDoc.Root ?? throw new InvalidOperationException("Invalid content types.");
+            foreach (var mediaPath in mediaToCopy)
+            {
+                var extension = Path.GetExtension(mediaPath).TrimStart('.');
+                if (string.Equals(extension, "png", StringComparison.OrdinalIgnoreCase))
+                    AddDefault(ctRoot, "png", "image/png");
+                else if (string.Equals(extension, "jpeg", StringComparison.OrdinalIgnoreCase)
+                         || string.Equals(extension, "jpg", StringComparison.OrdinalIgnoreCase))
+                    AddDefault(ctRoot, "jpeg", "image/jpeg");
+
+                AddOverride(ctRoot, "/" + mediaPath, ResolveMediaContentType(extension));
+            }
+
+            WriteEntry(writeArchive, ctPath, ctDoc.Declaration + ctDoc.ToString(SaveOptions.DisableFormatting));
+        }
+
+        return output.ToArray();
+    }
+
+    private static bool HeaderXmlHasContent(string headerXml) =>
+        Regex.IsMatch(headerXml, "<w:t[^>]*>\\s*\\S", RegexOptions.CultureInvariant)
+        || headerXml.Contains("a:blip", StringComparison.OrdinalIgnoreCase)
+        || headerXml.Contains(":blip", StringComparison.OrdinalIgnoreCase)
+        || headerXml.Contains("wp:docPr", StringComparison.OrdinalIgnoreCase);
 
     private static PrimaryHeaderSelection? ResolvePrimaryHeader(ZipArchive designArchive)
     {
@@ -379,16 +493,16 @@ public static class LetterheadDesignMerger
         var preferred = TryResolveDefaultHeaderPart(designArchive);
         if (preferred is not null
             && headerParts.Contains(preferred, StringComparer.OrdinalIgnoreCase)
-            && !IsHeaderEmpty(designArchive, preferred))
+            && HeaderPartHasContent(designArchive, preferred))
         {
             return CreateSelection(preferred);
         }
 
         var richest = headerParts
-            .OrderByDescending(part => MeasureHeaderTextLength(designArchive, part))
+            .OrderByDescending(part => MeasureHeaderRichness(designArchive, part))
             .First();
 
-        if (MeasureHeaderTextLength(designArchive, richest) == 0)
+        if (MeasureHeaderRichness(designArchive, richest) == 0)
             return CreateSelection(headerParts[0]);
 
         return CreateSelection(richest);
@@ -450,6 +564,15 @@ public static class LetterheadDesignMerger
             }
         }
 
+        foreach (var entry in designArchive.Entries)
+        {
+            var normalized = DocxZipHelper.NormalizeEntryPath(entry.FullName);
+            if (!normalized.StartsWith("word/media/", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            parts.Add((normalized, normalized));
+        }
+
         return parts
             .GroupBy(p => p.TargetPath, StringComparer.OrdinalIgnoreCase)
             .Select(g => g.First())
@@ -479,8 +602,34 @@ public static class LetterheadDesignMerger
             .Sum(m => m.Groups[1].Value.Trim().Length);
     }
 
+    private static int MeasureHeaderRichness(ZipArchive archive, string headerPartPath)
+    {
+        var entry = DocxZipHelper.GetEntry(archive, headerPartPath);
+        if (entry is null)
+            return 0;
+
+        using var stream = entry.Open();
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        var xml = reader.ReadToEnd();
+        var score = MeasureHeaderTextLength(archive, headerPartPath);
+        if (HeaderXmlHasContent(xml))
+            score += 1000;
+        return score;
+    }
+
+    private static bool HeaderPartHasContent(ZipArchive archive, string headerPartPath)
+    {
+        var entry = DocxZipHelper.GetEntry(archive, headerPartPath);
+        if (entry is null)
+            return false;
+
+        using var stream = entry.Open();
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        return HeaderXmlHasContent(reader.ReadToEnd());
+    }
+
     private static bool IsHeaderEmpty(ZipArchive archive, string headerPartPath) =>
-        MeasureHeaderTextLength(archive, headerPartPath) == 0;
+        !HeaderPartHasContent(archive, headerPartPath);
 
     private static IEnumerable<string> ExtractRelationshipTargets(string relsXml, string targetPrefix)
     {
