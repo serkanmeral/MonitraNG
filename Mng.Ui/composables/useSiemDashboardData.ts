@@ -1,7 +1,7 @@
 import type { SecEventDashboardSummary } from '@/types/apps/secEvent';
 import type { AlarmDashboardSnapshot } from '@/types/apps/alarm';
-import { secEventDashboardSummary } from '@/services/secEventService';
-import { alarmDashboardSnapshot } from '@/services/alarmService';
+import { secEventDashboardSummary, invalidateSecEventDashboardSummaryCache } from '@/services/secEventService';
+import { alarmDashboardSnapshot, invalidateAlarmDashboardSnapshotCache } from '@/services/alarmService';
 
 export interface SiemDashboardPayload {
   events: SecEventDashboardSummary;
@@ -16,6 +16,8 @@ let inflight: Promise<SiemDashboardPayload> | null = null;
 
 export function invalidateSiemDashboardCache(): void {
   cachedPayload = null;
+  invalidateSecEventDashboardSummaryCache();
+  invalidateAlarmDashboardSnapshotCache();
 }
 
 export async function fetchSiemDashboardPayload(options?: {

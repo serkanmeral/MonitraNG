@@ -59,6 +59,7 @@ public static class AppBootstrapper
 
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddHttpClient();
+        builder.Services.AddMemoryCache();
 
         var legacySettings = settings.ToLegacy();
         builder.Services.AddSingleton<IOptions<MngReactor.Persistence.Settings.MngReactorSettings>>(Options.Create(legacySettings));

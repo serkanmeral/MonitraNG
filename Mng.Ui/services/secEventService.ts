@@ -119,17 +119,69 @@ function normalizeDashboardSummary(raw: Record<string, unknown>): SecEventDashbo
   };
 }
 
+const DASHBOARD_SUMMARY_CACHE_TTL_MS = 60_000;
+
+interface DashboardSummaryCacheEntry {
+  key: string;
+  summary: SecEventDashboardSummary;
+  fetchedAt: number;
+}
+
+let dashboardSummaryCache: DashboardSummaryCacheEntry | null = null;
+let dashboardSummaryInflight: Promise<SecEventDashboardSummary> | null = null;
+let dashboardSummaryInflightKey: string | null = null;
+
+function dashboardSummaryCacheKey(options?: {
+  rangeHours?: number;
+  excludeUnknown?: boolean;
+}): string {
+  const rangeHours = options?.rangeHours ?? 24;
+  const excludeUnknown = options?.excludeUnknown !== false;
+  return `${rangeHours}:${excludeUnknown}`;
+}
+
+export function invalidateSecEventDashboardSummaryCache(): void {
+  dashboardSummaryCache = null;
+}
+
 export async function secEventDashboardSummary(options?: {
   rangeHours?: number;
   excludeUnknown?: boolean;
 }): Promise<SecEventDashboardSummary> {
-  const qs = buildQuery({
-    rangeHours: options?.rangeHours ?? 24,
-    excludeUnknown: options?.excludeUnknown ?? true,
-  });
-  const raw = await $fetch<Record<string, unknown>>(`/api/reactor/v1/sec-events/dashboard-summary${qs}`, {
-    method: 'GET',
-    headers: await authHeaders(),
-  });
-  return normalizeDashboardSummary(raw);
+  const cacheKey = dashboardSummaryCacheKey(options);
+  const now = Date.now();
+
+  if (
+    dashboardSummaryCache
+    && dashboardSummaryCache.key === cacheKey
+    && now - dashboardSummaryCache.fetchedAt < DASHBOARD_SUMMARY_CACHE_TTL_MS
+  ) {
+    return dashboardSummaryCache.summary;
+  }
+
+  if (dashboardSummaryInflight && dashboardSummaryInflightKey === cacheKey) {
+    return dashboardSummaryInflight;
+  }
+
+  dashboardSummaryInflightKey = cacheKey;
+  dashboardSummaryInflight = (async () => {
+    const qs = buildQuery({
+      rangeHours: options?.rangeHours ?? 24,
+      excludeUnknown: options?.excludeUnknown ?? true,
+    });
+    const raw = await $fetch<Record<string, unknown>>(`/api/reactor/v1/sec-events/dashboard-summary${qs}`, {
+      method: 'GET',
+      headers: await authHeaders(),
+    });
+    const summary = normalizeDashboardSummary(raw);
+    dashboardSummaryCache = { key: cacheKey, summary, fetchedAt: Date.now() };
+    return summary;
+  })();
+
+  try {
+    return await dashboardSummaryInflight;
+  } finally {
+    dashboardSummaryInflight = null;
+    dashboardSummaryInflightKey = null;
+  }
 }

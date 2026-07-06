@@ -1,7 +1,9 @@
 using System.Collections.Concurrent;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using MngReactor.Application.Abstractions.SecEvents;
 using MngReactor.Application.Configuration;
@@ -18,16 +20,25 @@ public sealed class SecEventsRepository : ISecEventsRepository
 
     private readonly IMongoClient _mongoClient;
     private readonly ILogger<SecEventsRepository> _logger;
+    private readonly IMemoryCache _cache;
     private readonly int _hotTtlDays;
+    private readonly int _dashboardSummaryCacheSeconds;
+    private readonly bool _useDashboardHourlyRollup;
+    private readonly SecEventHourlyRollupStore _rollupStore;
 
     public SecEventsRepository(
         IMongoClient mongoClient,
         IOptions<MngReactorSettings> options,
+        IMemoryCache cache,
         ILogger<SecEventsRepository> logger)
     {
         _mongoClient = mongoClient;
+        _cache = cache;
         _logger = logger;
         _hotTtlDays = options?.Value?.SecEvents?.HotTtlDays ?? 60;
+        _dashboardSummaryCacheSeconds = options?.Value?.SecEvents?.DashboardSummaryCacheSeconds ?? 60;
+        _useDashboardHourlyRollup = options?.Value?.SecEvents?.UseDashboardHourlyRollup ?? true;
+        _rollupStore = new SecEventHourlyRollupStore(mongoClient);
     }
 
     public async Task<int> InsertManyAsync(
@@ -74,6 +85,18 @@ public sealed class SecEventsRepository : ISecEventsRepository
             }
         }
 
+        if (inserted > 0 && _useDashboardHourlyRollup)
+        {
+            try
+            {
+                await _rollupStore.IncrementFromDocumentsAsync(domain, docs, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "sec_events hourly rollup increment basarisiz, database={Db}", databaseName);
+            }
+        }
+
         _logger.LogDebug("sec_events: {Count} dokuman yazildi, database={Db}", inserted, databaseName);
         return inserted;
     }
@@ -96,14 +119,52 @@ public sealed class SecEventsRepository : ISecEventsRepository
         var skip = SecEventQueryFilterBuilder.NormalizeSkip(filter.Skip);
         var limit = SecEventQueryFilterBuilder.NormalizeLimit(filter.Limit);
 
-        var total = await collection.CountDocumentsAsync(mongoFilter, cancellationToken: cancellationToken);
-        var docs = await collection
-            .Find(mongoFilter)
-            .Project(Builders<BsonDocument>.Projection.Exclude("raw"))
-            .Sort(Builders<BsonDocument>.Sort.Descending("@timestamp"))
-            .Skip(skip)
-            .Limit(limit)
-            .ToListAsync(cancellationToken);
+        var renderedFilter = mongoFilter.Render(
+            new RenderArgs<BsonDocument>(
+                BsonSerializer.SerializerRegistry.GetSerializer<BsonDocument>(),
+                BsonSerializer.SerializerRegistry));
+
+        var pipeline = new[]
+        {
+            new BsonDocument("$match", renderedFilter),
+            new BsonDocument("$facet", new BsonDocument
+            {
+                {
+                    "items", new BsonArray
+                    {
+                        new BsonDocument("$project", new BsonDocument("raw", 0)),
+                        new BsonDocument("$sort", new BsonDocument("@timestamp", -1)),
+                        new BsonDocument("$skip", skip),
+                        new BsonDocument("$limit", limit),
+                    }
+                },
+                {
+                    "total", new BsonArray
+                    {
+                        new BsonDocument("$count", "n"),
+                    }
+                },
+            }),
+        };
+
+        var facetRoot = await collection.Aggregate<BsonDocument>(pipeline)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var docs = facetRoot is not null
+            && facetRoot.TryGetValue("items", out var itemsVal)
+            && itemsVal.IsBsonArray
+            ? itemsVal.AsBsonArray.Where(x => x.IsBsonDocument).Select(x => x.AsBsonDocument).ToList()
+            : [];
+
+        long total = 0;
+        if (facetRoot is not null
+            && facetRoot.TryGetValue("total", out var totalVal)
+            && totalVal.IsBsonArray
+            && totalVal.AsBsonArray.Count > 0
+            && totalVal.AsBsonArray[0].IsBsonDocument)
+        {
+            total = totalVal.AsBsonArray[0].AsBsonDocument.GetValue("n", 0).ToInt64();
+        }
 
         var items = docs.Select(d => SecEventBsonReader.ToListItem(d)).ToList();
         return new SecEventQueryResult { Items = items, Total = total };
@@ -136,6 +197,31 @@ public sealed class SecEventsRepository : ISecEventsRepository
     {
         var rangeHours = Math.Clamp(request?.RangeHours ?? 24, 1, 168);
         var excludeUnknown = request?.ExcludeUnknown ?? true;
+
+        if (string.IsNullOrWhiteSpace(domain) || _dashboardSummaryCacheSeconds <= 0)
+            return await LoadDashboardSummaryCoreAsync(domain, rangeHours, excludeUnknown, cancellationToken);
+
+        var cacheKey = BuildDashboardSummaryCacheKey(domain, rangeHours, excludeUnknown);
+        if (_cache.TryGetValue(cacheKey, out SecEventDashboardSummary? cached) && cached is not null)
+            return cached;
+
+        var summary = await LoadDashboardSummaryCoreAsync(domain, rangeHours, excludeUnknown, cancellationToken);
+        _cache.Set(cacheKey, summary, TimeSpan.FromSeconds(_dashboardSummaryCacheSeconds));
+        return summary;
+    }
+
+    private static string BuildDashboardSummaryCacheKey(string domain, int rangeHours, bool excludeUnknown)
+    {
+        var normalizedDomain = domain.Trim().ToLowerInvariant();
+        return $"sec_events:dashboard:{normalizedDomain}:{rangeHours}:{excludeUnknown}";
+    }
+
+    private async Task<SecEventDashboardSummary> LoadDashboardSummaryCoreAsync(
+        string domain,
+        int rangeHours,
+        bool excludeUnknown,
+        CancellationToken cancellationToken)
+    {
         var (from, to, hourStarts) = SecEventDashboardAggregator.BuildWindow(rangeHours);
 
         if (string.IsNullOrWhiteSpace(domain))
@@ -155,6 +241,20 @@ public sealed class SecEventsRepository : ISecEventsRepository
         var database = _mongoClient.GetDatabase(databaseName);
         await EnsureIndexesOnceAsync(database, databaseName, cancellationToken);
         await EnsureTtlIndexOnceAsync(database, databaseName, cancellationToken);
+
+        if (_useDashboardHourlyRollup)
+        {
+            var rollupSummary = await _rollupStore.TryBuildSummaryAsync(
+                domain, rangeHours, excludeUnknown, cancellationToken);
+            if (rollupSummary is not null)
+            {
+                _logger.LogDebug(
+                    "dashboard-summary rollup hit, domain={Domain}, rangeHours={Range}",
+                    domain,
+                    rangeHours);
+                return rollupSummary;
+            }
+        }
 
         var collection = database.GetCollection<BsonDocument>(CollectionName);
         var pipeline = SecEventDashboardAggregator.BuildPipeline(from, to, excludeUnknown);
@@ -187,7 +287,15 @@ public sealed class SecEventsRepository : ISecEventsRepository
                 new CreateIndexOptions { Name = "idx_eventAction_timestamp" }),
             new(
                 Builders<BsonDocument>.IndexKeys.Ascending("network.srcIp").Descending("@timestamp"),
-                new CreateIndexOptions { Name = "idx_networkSrcIp_timestamp" })
+                new CreateIndexOptions { Name = "idx_networkSrcIp_timestamp" }),
+            new(
+                Builders<BsonDocument>.IndexKeys.Descending(SecEventDashboardAggregator.DashboardTimeField),
+                new CreateIndexOptions { Name = "idx_ingestedAt_desc" }),
+            new(
+                Builders<BsonDocument>.IndexKeys
+                    .Descending(SecEventDashboardAggregator.DashboardTimeField)
+                    .Ascending("event.action"),
+                new CreateIndexOptions { Name = "idx_ingestedAt_eventAction" }),
         };
 
         try

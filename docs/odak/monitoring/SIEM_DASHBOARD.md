@@ -1,8 +1,9 @@
 # SIEM güvenlik paneli (dashboard MVP)
 
-**Durum:** ✅ MVP + U1–U10 senaryo kartları (4 Haz 2026)  
+**Durum:** ✅ MVP + U1–U10 senaryo kartları (4 Haz 2026) · **Prod perf ✅** (7 Tem 2026 — rollup ~0,18 sn)  
 **Route:** `/apps/siem-center`  
-**Menü:** **Güvenlik Merkezi → Güvenlik paneli**
+**Menü:** **Güvenlik Merkezi → Güvenlik paneli**  
+**Performans planı:** [SIEM_DASHBOARD_PERFORMANCE_PLAN.md](./SIEM_DASHBOARD_PERFORMANCE_PLAN.md)
 
 ---
 
@@ -43,6 +44,7 @@ Deploy: [../deploy/README.md](../deploy/README.md) — `sync-odak-source.ps1 -Pa
 | `Cannot read properties of undefined (reading 'map')` | Reactor yanıtı bozuk / `hourly` yok | nginx `/api/reactor/` + API normalize |
 | `401` dashboard-summary | JWT header yok | `secEventService` → `authHeaders()` |
 | `405` `/api/widgets/batch` | Statik deploy'da BFF yok | Beklenen; client fallback |
+| `504` dashboard-summary / panel yüklenmiyor | Mongo COLLSCAN (ingestedAt indeks yok) + yüksek hacim | [SIEM_DASHBOARD_PERFORMANCE_PLAN.md §3](./SIEM_DASHBOARD_PERFORMANCE_PLAN.md) · `hotfix-prod-sec-events-ingestedat-index.ps1` |
 | Keeper locale `404` | MinIO'da locale dosyası yok | Zararsız; build-time locale kullanılır |
 
 ## Özet (legacy not)

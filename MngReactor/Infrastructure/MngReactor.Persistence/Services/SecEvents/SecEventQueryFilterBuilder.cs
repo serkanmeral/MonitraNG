@@ -19,7 +19,7 @@ internal static class SecEventQueryFilterBuilder
             var from = filter.From.Value.Kind == DateTimeKind.Utc
                 ? filter.From.Value
                 : filter.From.Value.ToUniversalTime();
-            clauses.Add(builder.Gte("@timestamp", new BsonDateTime(from)));
+            clauses.Add(builder.Gte(SecEventDashboardAggregator.DashboardTimeField, new BsonDateTime(from)));
         }
 
         if (filter.To.HasValue)
@@ -27,7 +27,7 @@ internal static class SecEventQueryFilterBuilder
             var to = filter.To.Value.Kind == DateTimeKind.Utc
                 ? filter.To.Value
                 : filter.To.Value.ToUniversalTime();
-            clauses.Add(builder.Lte("@timestamp", new BsonDateTime(to)));
+            clauses.Add(builder.Lte(SecEventDashboardAggregator.DashboardTimeField, new BsonDateTime(to)));
         }
 
         if (!string.IsNullOrWhiteSpace(filter.SourceType))

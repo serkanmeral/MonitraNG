@@ -4,6 +4,7 @@
 **Son güncelleme:** 3 Haziran 2026
 **Özet:** §1 çerçeve · **§2 önerilen ilkeler (okunacak bölüm)** · §3+ SLO/ölçüm/kapılar
 **İlişki:**
+- [SIEM_DASHBOARD_PERFORMANCE_PLAN.md](./SIEM_DASHBOARD_PERFORMANCE_PLAN.md) — **Güvenlik paneli** prod olay teşhisi + Faz 0–6 uygulama planı (6 Tem 2026)
 - [SIEM_THROUGHPUT_AND_QUEUES.md](./SIEM_THROUGHPUT_AND_QUEUES.md) — kuyruk, backpressure
 - [MONITORING_OBSERVABILITY.md](../../content/monitoring_plans/MONITORING_OBSERVABILITY.md) — OpenTelemetry (servis içi)
 - [SIEM_FAZ1_SPIKE.md](./SIEM_FAZ1_SPIKE.md) — ilk ölçüm spike'ı

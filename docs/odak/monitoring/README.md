@@ -37,6 +37,7 @@ Müşteri ortamında **güvenlik odaklı izleme / SIEM-hafif** çözümünün pl
 | [SIEM_PERFORMANCE_PLAN.md](./SIEM_PERFORMANCE_PLAN.md) | **§2 mimari öneriler**, SLO, profiller, benchmark, quality gates | ✅ plan |
 | [SIEM_EVENTS_UI.md](./SIEM_EVENTS_UI.md) | Güvenlik olay arama UI (MVP) | ✅ |
 | [SIEM_DASHBOARD.md](./SIEM_DASHBOARD.md) | Güvenlik paneli (dashboard MVP) | ✅ |
+| [SIEM_DASHBOARD_PERFORMANCE_PLAN.md](./SIEM_DASHBOARD_PERFORMANCE_PLAN.md) | **Panel performans planı** · prod olay teşhisi · Faz 0–6 | ▶️ Faz 1 bekliyor |
 | [SIEM_LOGALARM_PARITY_ROADMAP.md](./SIEM_LOGALARM_PARITY_ROADMAP.md) | LogAlarm parite yol haritası | ✅ plan |
 | [SIEM_WEF_WEC_INGEST.md](./SIEM_WEF_WEC_INGEST.md) | WEF→WEC → Engine HTTP batch | ✅ S5 |
 | [SIEM_WEF_WEC_FORWARDER.md](./SIEM_WEF_WEC_FORWARDER.md) | WEC GPO + forwarder şablonu (NxLog / PS) | ✅ B2 |

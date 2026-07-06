@@ -91,18 +91,68 @@ export async function alarmGet(alarmId: string): Promise<AlarmSummary> {
   return normalizeAlarmSummary(raw);
 }
 
+const DASHBOARD_SNAPSHOT_CACHE_TTL_MS = 60_000;
+
+interface DashboardSnapshotCacheEntry {
+  key: string;
+  snapshot: AlarmDashboardSnapshot;
+  fetchedAt: number;
+}
+
+let dashboardSnapshotCache: DashboardSnapshotCacheEntry | null = null;
+let dashboardSnapshotInflight: Promise<AlarmDashboardSnapshot> | null = null;
+let dashboardSnapshotInflightKey: string | null = null;
+
+function dashboardSnapshotCacheKey(query: AlarmDashboardSnapshotQuery = {}): string {
+  const rangeHours = query.rangeHours ?? 24;
+  const minSeverity = query.minSeverity ?? 6;
+  const openLimit = query.openLimit ?? 15;
+  return `${rangeHours}:${minSeverity}:${openLimit}`;
+}
+
+export function invalidateAlarmDashboardSnapshotCache(): void {
+  dashboardSnapshotCache = null;
+}
+
 export async function alarmDashboardSnapshot(
   query: AlarmDashboardSnapshotQuery = {},
 ): Promise<AlarmDashboardSnapshot> {
-  const qs = buildQuery({
-    rangeHours: query.rangeHours ?? 24,
-    minSeverity: query.minSeverity ?? 6,
-    openLimit: query.openLimit ?? 15,
-  });
-  return await $fetch<AlarmDashboardSnapshot>(`/api/alarm/v1/alarms/dashboard-snapshot${qs}`, {
-    method: 'GET',
-    headers: domainHeaders(),
-  });
+  const cacheKey = dashboardSnapshotCacheKey(query);
+  const now = Date.now();
+
+  if (
+    dashboardSnapshotCache
+    && dashboardSnapshotCache.key === cacheKey
+    && now - dashboardSnapshotCache.fetchedAt < DASHBOARD_SNAPSHOT_CACHE_TTL_MS
+  ) {
+    return dashboardSnapshotCache.snapshot;
+  }
+
+  if (dashboardSnapshotInflight && dashboardSnapshotInflightKey === cacheKey) {
+    return dashboardSnapshotInflight;
+  }
+
+  dashboardSnapshotInflightKey = cacheKey;
+  dashboardSnapshotInflight = (async () => {
+    const qs = buildQuery({
+      rangeHours: query.rangeHours ?? 24,
+      minSeverity: query.minSeverity ?? 6,
+      openLimit: query.openLimit ?? 15,
+    });
+    const snapshot = await $fetch<AlarmDashboardSnapshot>(`/api/alarm/v1/alarms/dashboard-snapshot${qs}`, {
+      method: 'GET',
+      headers: domainHeaders(),
+    });
+    dashboardSnapshotCache = { key: cacheKey, snapshot, fetchedAt: Date.now() };
+    return snapshot;
+  })();
+
+  try {
+    return await dashboardSnapshotInflight;
+  } finally {
+    dashboardSnapshotInflight = null;
+    dashboardSnapshotInflightKey = null;
+  }
 }
 
 export interface AlarmTrendBucket {

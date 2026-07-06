@@ -19,4 +19,14 @@ public class SecEventsSettings
     /// Tam ham mesajı (raw) Mongo'da sakla. false ise yalnızca rawPreview (512 byte).
     /// </summary>
     public bool PersistFullRaw { get; set; } = false;
+
+    /// <summary>
+    /// GET dashboard-summary yanıt önbelleği (saniye). 0 = kapalı.
+    /// </summary>
+    public int DashboardSummaryCacheSeconds { get; set; } = 60;
+
+    /// <summary>
+    /// Saatlik rollup koleksiyonundan dashboard-summary oku (Faz 2.2). Veri yoksa aggregation fallback.
+    /// </summary>
+    public bool UseDashboardHourlyRollup { get; set; } = true;
 }

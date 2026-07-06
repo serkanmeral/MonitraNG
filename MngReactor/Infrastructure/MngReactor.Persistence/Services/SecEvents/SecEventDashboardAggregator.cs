@@ -44,6 +44,12 @@ internal static class SecEventDashboardAggregator
         return
         [
             new BsonDocument("$match", match),
+            new BsonDocument("$project", new BsonDocument
+            {
+                { DashboardTimeField, 1 },
+                { "event.action", 1 },
+                { "baseline.newFlowPair", 1 },
+            }),
             new BsonDocument("$facet", new BsonDocument
             {
                 {

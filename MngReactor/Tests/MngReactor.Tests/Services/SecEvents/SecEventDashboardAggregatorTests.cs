@@ -56,8 +56,12 @@ public sealed class SecEventDashboardAggregatorTests
         var from = new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc);
         var to = from.AddHours(24);
         var pipeline = SecEventDashboardAggregator.BuildPipeline(from, to, excludeUnknown: true);
-        var json = pipeline[0].ToJson();
-        Assert.Contains(SecEventDashboardAggregator.DashboardTimeField, json);
+
+        Assert.Equal(3, pipeline.Length);
+        Assert.Contains(SecEventDashboardAggregator.DashboardTimeField, pipeline[0].ToJson());
+        Assert.True(pipeline[1].Contains("$project"));
+        Assert.Contains("event.action", pipeline[1].ToJson());
+        Assert.True(pipeline[2].Contains("$facet"));
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using MngReactor.Application.Configuration;
@@ -19,6 +20,7 @@ public sealed class SecEventsRepositoryEdgeTests
         var sut = new SecEventsRepository(
             client.Object,
             Options.Create(new MngReactorSettings()),
+            new MemoryCache(new MemoryCacheOptions()),
             NullLogger<SecEventsRepository>.Instance);
 
         var inserted = await sut.InsertManyAsync("  ", [SampleDoc()]);
@@ -34,6 +36,7 @@ public sealed class SecEventsRepositoryEdgeTests
         var sut = new SecEventsRepository(
             client.Object,
             Options.Create(new MngReactorSettings()),
+            new MemoryCache(new MemoryCacheOptions()),
             NullLogger<SecEventsRepository>.Instance);
 
         var inserted = await sut.InsertManyAsync("odak", []);
