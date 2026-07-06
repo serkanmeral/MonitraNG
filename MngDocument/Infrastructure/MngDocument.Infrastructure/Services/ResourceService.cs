@@ -6,6 +6,7 @@ using MngDocument.Application.Contracts.Resources;
 using MngDocument.Application.Exceptions;
 using MngDocument.Application.Interfaces;
 using MngDocument.Application.Models;
+using MngDocument.Application.Utilities;
 using MngDocument.Domain.Constants;
 
 namespace MngDocument.Infrastructure.Services;
@@ -287,7 +288,7 @@ public class ResourceService : IResourceService
             payload["status"] = request.IsDraft.Value ? ResourceStatus.Draft : ResourceStatus.Published;
 
         var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
-        await WriteVersionAsync(id, newVersion, request.Content ?? string.Empty, "update", ct);
+        await WriteVersionAsync(id, newVersion, request.Content ?? string.Empty, ResolveChangeNote(request.ChangeNote, "update"), ct);
         return ToDto(updated, snapshot.Resolve(updated));
     }
 
@@ -485,6 +486,7 @@ public class ResourceService : IResourceService
         var items = page.Items
             .Select(MapRow)
             .Where(r => snapshot.Resolve(r).CanView)
+            .Where(r => r.type != ResourceType.Markdown || ResourceStatus.Normalize(r.status) == ResourceStatus.Published)
             .Select(r => ToDto(r, snapshot.Resolve(r)))
             .ToList();
         return new ResourceListResult { Items = items, Total = items.Count };
@@ -530,7 +532,72 @@ public class ResourceService : IResourceService
         };
     }
 
+    public async Task<ResourceListResult> GetMarkdownBacklinksAsync(string id, CancellationToken ct = default)
+    {
+        var rid = id?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(rid))
+            throw DocumentException.NotFound();
+
+        var target = await LoadOrThrowAsync(rid, ct);
+        if (target.type != ResourceType.Markdown)
+        {
+            throw DocumentException.Validation(
+                "NOT_MARKDOWN",
+                "Resource is not a markdown document.",
+                "Kaynak bir markdown doküman değil.");
+        }
+
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(target, ResourceAction.View);
+
+        var candidates = await QueryAllMarkdownAsync(ct);
+        var items = candidates
+            .Where(r => !string.Equals(r.__dataId, rid, StringComparison.OrdinalIgnoreCase))
+            .Where(r => MarkdownLinkHelper.ContentLinksToResource(r.content, rid))
+            .Where(r => snapshot.Resolve(r).CanView)
+            .Select(r => ToDto(r, snapshot.Resolve(r)))
+            .OrderBy(r => r.Title ?? r.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return new ResourceListResult { Items = items, Total = items.Count };
+    }
+
     // ----- helpers -----
+
+    private static string ResolveChangeNote(string? userNote, string fallback)
+    {
+        var trimmed = userNote?.Trim();
+        if (string.IsNullOrEmpty(trimmed))
+            return fallback;
+
+        const int maxLen = 500;
+        return trimmed.Length <= maxLen ? trimmed : trimmed[..maxLen];
+    }
+
+    private async Task<List<DmResource>> QueryAllMarkdownAsync(CancellationToken ct)
+    {
+        const int pageSize = 500;
+        const int maxRows = 10_000;
+        var all = new List<DmResource>();
+        var skip = 0;
+
+        while (skip < maxRows)
+        {
+            var match = new Dictionary<string, object?> { ["type"] = ResourceType.Markdown };
+            var query = $"limit={pageSize}&skip={skip}&expand=false&showHistory=false";
+            var page = await _dg.QueryPageAsync(DmDatasets.Resources, match, query, Token, ct);
+            if (page.Items.Count == 0)
+                break;
+
+            all.AddRange(page.Items.Select(MapRow));
+            if (page.Items.Count < pageSize)
+                break;
+
+            skip += pageSize;
+        }
+
+        return all;
+    }
 
     private static string? NormalizeParentId(string? parentId) =>
         string.IsNullOrWhiteSpace(parentId) ? null : parentId;

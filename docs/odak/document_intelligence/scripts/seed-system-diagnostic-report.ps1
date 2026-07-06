@@ -65,6 +65,12 @@ function Read-Md($fileName) {
 
 function Find-SystemFolderId {
     $roots = Get-Items (Invoke-DocApi -Method GET -Path "/children")
+    $sayfalar = $roots | Where-Object { $_.type -eq "folder" -and $_.name -eq "Sayfalar" } | Select-Object -First 1
+    if ($sayfalar) {
+        $under = Get-Items (Invoke-DocApi -Method GET -Path "/children?parentId=$($sayfalar.id)")
+        $nested = $under | Where-Object { $_.type -eq "folder" -and $_.name -eq "System" } | Select-Object -First 1
+        if ($nested) { return $nested.id }
+    }
     $folder = $roots | Where-Object { $_.type -eq "folder" -and $_.name -eq "System" } | Select-Object -First 1
     if (-not $folder) { throw "System klasoru bulunamadi. Once seed-system-release-notes.ps1 calistirin." }
     return $folder.id
@@ -118,4 +124,4 @@ $systemId = Find-SystemFolderId
 Ensure-Markdown -ParentId $systemId -Title "Diagnostic Raporu" -FileName "diagnostic-raporu.md"
 
 Write-Host "`nTamamlandi." -ForegroundColor Cyan
-Write-Host "UI: Dokumanlar > System > Diagnostic Raporu" -ForegroundColor Cyan
+Write-Host "UI: Dokumanlar > Sayfalar > System > Diagnostic Raporu (veya kok > System)" -ForegroundColor Cyan

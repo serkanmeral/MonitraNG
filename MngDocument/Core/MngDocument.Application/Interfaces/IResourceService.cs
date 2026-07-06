@@ -51,4 +51,7 @@ public interface IResourceService
 
     /// <summary>Kullanıcının düzenleyebildiği taslak markdown kayıtları (widget P2).</summary>
     Task<ResourceListResult> GetDraftsAsync(int limit, CancellationToken ct = default);
+
+    /// <summary>Markdown içeriğinde bu sayfaya DI iç linki veren kaynaklar (backlink).</summary>
+    Task<ResourceListResult> GetMarkdownBacklinksAsync(string id, CancellationToken ct = default);
 }

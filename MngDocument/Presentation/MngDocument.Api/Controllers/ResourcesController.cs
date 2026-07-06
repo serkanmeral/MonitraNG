@@ -168,6 +168,13 @@ public class ResourcesController : ControllerBase
     public async Task<IActionResult> RestoreMarkdownVersion(string id, int versionNumber, CancellationToken ct) =>
         Ok(await _resources.RestoreMarkdownVersionAsync(id, versionNumber, ct));
 
+    /// <summary>Bu sayfaya markdown iç linki veren diğer sayfalar (backlink).</summary>
+    [HttpGet("markdown/{id}/backlinks")]
+    [ProducesResponseType(typeof(ResourceListResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetMarkdownBacklinks(string id, CancellationToken ct) =>
+        Ok(await _resources.GetMarkdownBacklinksAsync(id, ct));
+
     /// <summary>Collabora editör oturumu (DOCX dosyaları, iframe URL + WOPI token).</summary>
     [HttpGet("{id}/editor-session")]
     [ProducesResponseType(typeof(ResourceEditorSessionDto), StatusCodes.Status200OK)]

@@ -44,6 +44,12 @@ function isExpanded(id: string) {
 }
 
 const isRoot = props.depth == null || props.depth === 0;
+
+const TOP_AREA_FOLDER_NAMES = new Set(['Sayfalar', 'Dökümanlar']);
+
+function isTopAreaFolder(name: string): boolean {
+  return isRoot && TOP_AREA_FOLDER_NAMES.has(name);
+}
 </script>
 
 <template>
@@ -74,7 +80,11 @@ const isRoot = props.depth == null || props.depth === 0;
         </div>
         <div v-for="node in nodes" :key="node.id" class="di-tree__node">
           <div
-            :class="['di-tree__row', { 'di-tree__row--selected': selectedId === node.id }]"
+            :class="[
+              'di-tree__row',
+              { 'di-tree__row--selected': selectedId === node.id },
+              { 'di-tree__row--area-root': isTopAreaFolder(node.name) },
+            ]"
             @click="emit('select', node.id)"
           >
             <v-btn
@@ -89,8 +99,19 @@ const isRoot = props.depth == null || props.depth === 0;
               <ChevronRightIcon v-else size="18" />
             </v-btn>
             <span v-else class="di-tree__chevron-spacer mr-1" />
-            <FolderIcon size="18" class="mr-2 di-tree__icon-folder flex-shrink-0" />
-            <span class="text-body-2 text-truncate flex-grow-1">{{ node.name }}</span>
+            <FolderIcon
+              size="18"
+              :class="[
+                'mr-2 flex-shrink-0',
+                isTopAreaFolder(node.name) ? 'di-tree__icon-area' : 'di-tree__icon-folder',
+              ]"
+            />
+            <span
+              :class="[
+                'text-truncate flex-grow-1',
+                isTopAreaFolder(node.name) ? 'text-body-2 font-weight-bold' : 'text-body-2',
+              ]"
+            >{{ node.name }}</span>
           </div>
           <div v-show="isExpanded(node.id) && node.children.length" class="di-tree__nested">
             <DiResourceTree
@@ -180,6 +201,12 @@ const isRoot = props.depth == null || props.depth === 0;
   padding-left: 8px;
 }
 .di-tree__icon-root {
+  color: rgb(var(--v-theme-primary));
+}
+.di-tree__row--area-root {
+  background-color: rgba(var(--v-theme-primary), 0.04);
+}
+.di-tree__icon-area {
   color: rgb(var(--v-theme-primary));
 }
 .di-tree__icon-folder {

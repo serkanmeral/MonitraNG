@@ -92,8 +92,9 @@ else {
 }
 
 if (-not $SkipResources) {
-    Invoke-Step -Title "5/6 MonitraNG tutorials (dm_resources)" -ScriptName "seed-monitrang-tutorials.ps1" -ExtraParams @{ Server = $Server }
-    Invoke-Step -Title "6/6 Side menu entry" -ScriptName "patch-document-side-menu.ps1"
+    Invoke-Step -Title "5/7 Ust klasorler (Sayfalar / Dokumanlar)" -ScriptName "seed-resource-root-folders.ps1" -ExtraParams @{ Server = $Server }
+    Invoke-Step -Title "6/7 MonitraNG tutorials (dm_resources)" -ScriptName "seed-monitrang-tutorials.ps1" -ExtraParams @{ Server = $Server }
+    Invoke-Step -Title "7/7 Side menu entry" -ScriptName "patch-document-side-menu.ps1"
 }
 else {
     Write-Host "SKIP resources + side menu (SkipResources)" -ForegroundColor Yellow

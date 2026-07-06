@@ -348,6 +348,16 @@ export async function diRestoreMarkdownVersion(id: string, versionNumber: number
   return mapResource(raw);
 }
 
+/** Bu sayfaya markdown iç linki veren diğer sayfalar (backlink). */
+export async function diGetMarkdownBacklinks(id: string): Promise<DiResourceListResult> {
+  const raw = await fetchFromDocuments(`${BASE}/markdown/${encodeURIComponent(id)}/backlinks`, 'GET');
+  const o = asRecord(raw);
+  const itemsRaw = o.items ?? o.Items;
+  const items = Array.isArray(itemsRaw) ? itemsRaw.map(mapResource) : [];
+  const total = num(o, 'total') ?? num(o, 'Total') ?? items.length;
+  return { items, total };
+}
+
 export async function diCreateFileResource(request: DiCreateFileResourceRequest): Promise<DiResource> {
   const raw = await fetchFromDocuments(`${BASE}/file`, 'POST', request);
   return mapResource(raw);

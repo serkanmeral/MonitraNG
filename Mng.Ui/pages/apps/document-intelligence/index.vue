@@ -2,12 +2,19 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DiResourceTree from '@/components/apps/document-intelligence/DiResourceTree.vue';
+import DiDiscoveryHome from '@/components/apps/document-intelligence/DiDiscoveryHome.vue';
+import DiAreaIndexBanner from '@/components/apps/document-intelligence/DiAreaIndexBanner.vue';
+import DiResourceTagsEditor from '@/components/apps/document-intelligence/DiResourceTagsEditor.vue';
 import DiMarkdownViewer from '@/components/apps/document-intelligence/DiMarkdownViewer.vue';
 import DiMarkdownEditor from '@/components/apps/document-intelligence/DiMarkdownEditor.vue';
 import DiPermissionsDialog from '@/components/apps/document-intelligence/DiPermissionsDialog.vue';
 import DiFilePreviewDialog from '@/components/apps/document-intelligence/DiFilePreviewDialog.vue';
 import DiResourceEditorDialog from '@/components/apps/document-intelligence/DiResourceEditorDialog.vue';
 import DiLinkedWorkItemsPanel from '@/components/apps/document-intelligence/DiLinkedWorkItemsPanel.vue';
+import DiBacklinksPanel from '@/components/apps/document-intelligence/DiBacklinksPanel.vue';
+import DiSavePageDialog from '@/components/apps/document-intelligence/DiSavePageDialog.vue';
+import type { DiSavePageMode } from '@/components/apps/document-intelligence/DiSavePageDialog.vue';
+import DiMarkdownVersionHistoryDialog from '@/components/apps/document-intelligence/DiMarkdownVersionHistoryDialog.vue';
 import DiResourcePreviewProvider from '@/components/apps/document-intelligence/DiResourcePreviewProvider.vue';
 import { isDiPreviewable, isDiDocxEditable } from '@/utils/diFilePreview';
 import {
@@ -40,9 +47,6 @@ import {
   diSearch,
   diCreateFileResource,
   diFetchFileBlob,
-  diGetMarkdownVersions,
-  diGetMarkdownVersionContent,
-  diRestoreMarkdownVersion,
   diErrorStatus,
 } from '@/services/documentIntelligenceService';
 import {
@@ -52,9 +56,19 @@ import {
   type DiBreadcrumb,
   type DiResourceBrowseContext,
   type DiResourceBootstrap,
-  type DiMarkdownVersion,
   type DiEffectivePermission,
 } from '@/types/apps/documentIntelligence';
+import {
+  DI_PAGE_TEMPLATE_DEFINITIONS,
+  getDiPageTemplateContent,
+  type DiPageTemplateId,
+} from '@/utils/diPageTemplates';
+import {
+  diPageResourceIcon,
+  diPageResourceLabel,
+  findDiAreaIndexPage,
+  isDiTopAreaFolder,
+} from '@/utils/diPageResource';
 
 definePageMeta({ layout: 'default' });
 
@@ -96,7 +110,11 @@ const docVersion = ref(0);
 const docMode = ref<'view' | 'edit'>('view');
 const docLoading = ref(false);
 const editContent = ref('');
+const editTags = ref<string[]>([]);
 const saving = ref(false);
+
+// Etiket filtresi (klasör listesi)
+const activeTagFilter = ref<string | null>(null);
 
 // Arama
 const searchQuery = ref('');
@@ -124,6 +142,7 @@ const folderDialog = ref(false);
 const folderName = ref('');
 const docDialog = ref(false);
 const docTitle = ref('');
+const docTemplate = ref<DiPageTemplateId>('blank');
 const renameDialog = ref(false);
 const renameTarget = ref<DiResource | null>(null);
 const renameName = ref('');
@@ -137,12 +156,11 @@ const busy = ref(false);
 
 // Sürüm geçmişi
 const historyDialog = ref(false);
-const versions = ref<DiMarkdownVersion[]>([]);
-const versionsLoading = ref(false);
-const selectedVersion = ref<number | null>(null);
-const versionContent = ref('');
-const versionContentLoading = ref(false);
-const restoringVersion = ref<number | null>(null);
+
+// Kaydet diyaloğu (changeNote)
+const saveDialog = ref(false);
+const saveDialogMode = ref<DiSavePageMode>('save');
+const pendingSaveAsDraft = ref(false);
 
 // Yetkiler (izin diyaloğu)
 const permissionsDialog = ref(false);
@@ -185,8 +203,90 @@ const flatFolders = computed(() => {
   return out;
 });
 
-const folderChildren = computed(() => children.value.filter((c) => c.type === 'folder'));
-const docChildren = computed(() => children.value.filter((c) => c.type !== 'folder'));
+const folderChildren = computed(() => filteredChildren.value.filter((c) => c.type === 'folder'));
+
+const areaIndexPage = computed(() => {
+  if (!selectedFolder.value || !isDiTopAreaFolder(selectedFolder.value.name)) return null;
+  return findDiAreaIndexPage(children.value);
+});
+
+const pageChildren = computed(() => {
+  const pages = filteredChildren.value.filter((c) => c.type === 'markdown');
+  const indexPage = areaIndexPage.value;
+  if (!indexPage) return pages;
+  return pages.filter((p) => p.id !== indexPage.id);
+});
+const formalDocumentChildren = computed(() =>
+  filteredChildren.value.filter((c) => c.type === 'file' && isFormalDocument(c))
+);
+const otherFileChildren = computed(() =>
+  filteredChildren.value.filter((c) => c.type === 'file' && !isFormalDocument(c))
+);
+
+function resourceMatchesTagFilter(resource: DiResource): boolean {
+  if (!activeTagFilter.value) return true;
+  const needle = activeTagFilter.value.toLowerCase();
+  return (resource.tags ?? []).some((tag) => tag.toLowerCase() === needle);
+}
+
+const filteredChildren = computed(() => {
+  if (!activeTagFilter.value) return children.value;
+  return children.value.filter((item) => item.type === 'folder' || resourceMatchesTagFilter(item));
+});
+
+const folderTagOptions = computed(() => {
+  const set = new Set<string>();
+  for (const item of children.value) {
+    if (item.type === 'folder') continue;
+    for (const tag of item.tags ?? []) {
+      if (tag.trim()) set.add(tag.trim());
+    }
+  }
+  return [...set].sort((a, b) => a.localeCompare(b, 'tr'));
+});
+
+type BrowseContentSection = {
+  key: string;
+  labelKey: string;
+  items: DiResource[];
+};
+
+const contentSections = computed<BrowseContentSection[]>(() => {
+  const sections: BrowseContentSection[] = [];
+  if (pageChildren.value.length) {
+    sections.push({
+      key: 'pages',
+      labelKey: 'documentIntelligence.pagesSection',
+      items: pageChildren.value,
+    });
+  }
+  if (formalDocumentChildren.value.length) {
+    sections.push({
+      key: 'formalDocuments',
+      labelKey: 'documentIntelligence.formalDocumentsSection',
+      items: formalDocumentChildren.value,
+    });
+  }
+  if (otherFileChildren.value.length) {
+    sections.push({
+      key: 'files',
+      labelKey: 'documentIntelligence.filesSection',
+      items: otherFileChildren.value,
+    });
+  }
+  return sections;
+});
+
+const showDiscovery = computed(
+  () => !searchActive.value && mainMode.value === 'browse' && selectedFolderId.value === null
+);
+
+const pageTemplateOptions = computed(() =>
+  DI_PAGE_TEMPLATE_DEFINITIONS.map((item) => ({
+    value: item.id,
+    title: t(item.labelKey),
+  }))
+);
 
 // --- Yetki gating ---
 // Seçili klasörün (kök ise açık varsayılan) etkin yetkisi — üst bar buton kontrolü.
@@ -252,6 +352,7 @@ async function loadFolderPath(folderId: string | null) {
 
 async function selectFolder(folderId: string | null, options?: { syncUrl?: boolean }) {
   searchActive.value = false;
+  activeTagFilter.value = null;
   mainMode.value = 'browse';
   selectedFolderId.value = folderId;
   openDoc.value = null;
@@ -315,51 +416,18 @@ function backToFolder() {
   selectFolder(openDoc.value?.parentId ?? null);
 }
 
-// --- Sürüm geçmişi ---
-async function openHistory() {
+function onDocTagClick(tag: string) {
+  activeTagFilter.value = tag;
+  void backToFolder();
+}
+
+function openHistory() {
   if (!openDoc.value) return;
   historyDialog.value = true;
-  selectedVersion.value = null;
-  versionContent.value = '';
-  versionsLoading.value = true;
-  try {
-    versions.value = await diGetMarkdownVersions(openDoc.value.id);
-  } catch (e) {
-    notifyError(e, 'documentIntelligence.errors.versionsLoad');
-    versions.value = [];
-  } finally {
-    versionsLoading.value = false;
-  }
 }
 
-async function previewVersion(v: DiMarkdownVersion) {
-  if (!openDoc.value) return;
-  selectedVersion.value = v.versionNumber;
-  versionContentLoading.value = true;
-  try {
-    const c = await diGetMarkdownVersionContent(openDoc.value.id, v.versionNumber);
-    versionContent.value = c.content;
-  } catch (e) {
-    notifyError(e, 'documentIntelligence.errors.versionLoad');
-    versionContent.value = '';
-  } finally {
-    versionContentLoading.value = false;
-  }
-}
-
-async function restoreVersion(v: DiMarkdownVersion) {
-  if (!openDoc.value || v.isCurrent) return;
-  restoringVersion.value = v.versionNumber;
-  try {
-    const restored = await diRestoreMarkdownVersion(openDoc.value.id, v.versionNumber);
-    historyDialog.value = false;
-    notify(t('documentIntelligence.versionRestored', { n: v.versionNumber }), 'success');
-    await openMarkdown(restored);
-  } catch (e) {
-    notifyError(e, 'documentIntelligence.errors.versionRestore');
-  } finally {
-    restoringVersion.value = null;
-  }
+async function onVersionRestored(restored: DiResource) {
+  await openMarkdown(restored);
 }
 
 function formatDateTime(iso: string | null): string {
@@ -373,6 +441,7 @@ function formatDateTime(iso: string | null): string {
 
 function startEdit() {
   editContent.value = docContent.value;
+  editTags.value = [...(openDoc.value?.tags ?? [])];
   docMode.value = 'edit';
 }
 
@@ -380,20 +449,40 @@ function cancelEdit() {
   docMode.value = 'view';
 }
 
-async function saveEdit(asDraft = false) {
-  if (!openDoc.value) return;
+function openSaveDialog(asDraft: boolean) {
+  if (asDraft) {
+    saveDialogMode.value = 'draft';
+  } else if (openDoc.value?.status === 'draft') {
+    saveDialogMode.value = 'publish';
+  } else {
+    saveDialogMode.value = 'save';
+  }
+  pendingSaveAsDraft.value = asDraft;
+  saveDialog.value = true;
+}
+
+async function confirmSaveEdit(changeNote: string) {
+  const ok = await saveEdit(pendingSaveAsDraft.value, changeNote);
+  if (ok) saveDialog.value = false;
+}
+
+async function saveEdit(asDraft = false, changeNote = ''): Promise<boolean> {
+  if (!openDoc.value) return false;
   saving.value = true;
   try {
     const updated = await diUpdateMarkdown(openDoc.value.id, {
       content: editContent.value,
+      tags: editTags.value,
       expectedVersionNumber: docVersion.value,
       isDraft: asDraft,
+      changeNote: changeNote || null,
     });
     docContent.value = editContent.value;
     docVersion.value = updated.currentVersionNumber || docVersion.value + 1;
     openDoc.value = updated;
     docMode.value = 'view';
     notify(asDraft ? t('documentIntelligence.draftSaved') : t('documentIntelligence.published'), 'success');
+    return true;
   } catch (e) {
     if (diErrorStatus(e) === 409) {
       notify(t('documentIntelligence.errors.conflict'), 'error');
@@ -402,6 +491,7 @@ async function saveEdit(asDraft = false) {
     } else {
       notifyError(e, 'documentIntelligence.errors.save');
     }
+    return false;
   } finally {
     saving.value = false;
   }
@@ -431,6 +521,7 @@ async function submitFolder() {
 
 function openDocDialog() {
   docTitle.value = '';
+  docTemplate.value = 'blank';
   docDialog.value = true;
 }
 
@@ -439,9 +530,14 @@ async function submitDoc(asDraft = false) {
   if (!title) return;
   busy.value = true;
   try {
-    const created = await diCreateMarkdown({ title, content: '', parentId: selectedFolderId.value, isDraft: asDraft });
+    const created = await diCreateMarkdown({
+      title,
+      content: getDiPageTemplateContent(docTemplate.value),
+      parentId: selectedFolderId.value,
+      isDraft: asDraft,
+    });
     docDialog.value = false;
-    notify(t('documentIntelligence.docCreated'), 'success');
+    notify(t('documentIntelligence.pageCreated'), 'success');
     await refreshListing();
     await openMarkdown(created);
     startEdit();
@@ -680,9 +776,27 @@ function clearSearch() {
   searchResults.value = [];
 }
 
+function onDiscoverySearch(q: string) {
+  searchQuery.value = q;
+  void runSearch();
+}
+
+function isFormalDocument(resource: DiResource): boolean {
+  const ext = (resource.extension || '').toLowerCase();
+  const mime = resource.mimeType || '';
+  return mime.includes('word') || ['doc', 'docx'].includes(ext);
+}
+
+function resourceTypeLabel(resource: DiResource): string | null {
+  if (resource.type === 'markdown') return t('documentIntelligence.typePage');
+  if (resource.type === 'file' && isFormalDocument(resource)) return t('documentIntelligence.typeDocument');
+  if (resource.type === 'file') return t('documentIntelligence.typeFile');
+  return null;
+}
+
 function resourceIcon(resource: DiResource): string {
   if (resource.type === 'folder') return 'mdi-folder';
-  if (resource.type === 'markdown') return 'mdi-language-markdown-outline';
+  if (resource.type === 'markdown') return diPageResourceIcon(resource);
   const mime = resource.mimeType || '';
   const ext = (resource.extension || '').toLowerCase();
   if (mime.startsWith('image/')) return 'mdi-file-image-outline';
@@ -695,7 +809,7 @@ function resourceIcon(resource: DiResource): string {
 }
 
 function resourceLabel(resource: DiResource): string {
-  return resource.type === 'markdown' ? resource.title || resource.name : resource.name;
+  return diPageResourceLabel(resource);
 }
 
 function formatSize(bytes: number | null): string {
@@ -852,10 +966,10 @@ watch(
               variant="flat"
               size="small"
               class="text-none"
-              prepend-icon="mdi-file-document-plus-outline"
+              prepend-icon="mdi-book-plus-outline"
               @click="openDocDialog"
             >
-              {{ t('documentIntelligence.newDocument') }}
+              {{ t('documentIntelligence.newPage') }}
             </v-btn>
             <v-btn
               v-if="currentPerm.canUpload"
@@ -881,6 +995,7 @@ watch(
                   {{ t('documentIntelligence.clearSearch') }}
                 </v-btn>
               </div>
+              <p class="text-caption text-medium-emphasis mb-2">{{ t('documentIntelligence.searchPublishedHint') }}</p>
               <v-progress-linear v-if="searching" indeterminate color="primary" class="mb-2" />
               <v-list v-if="searchResults.length" lines="two" class="py-0">
                 <v-list-item
@@ -918,7 +1033,7 @@ watch(
               </div>
 
               <div class="d-flex align-center mb-3 flex-wrap ga-2">
-                <v-icon icon="mdi-language-markdown-outline" color="primary" class="mr-1" />
+                <v-icon :icon="diPageResourceIcon(openDoc)" color="primary" class="mr-1" />
                 <h3 class="text-h5 font-weight-bold mr-2">{{ resourceLabel(openDoc) }}</h3>
                 <v-chip size="x-small" variant="tonal">v{{ docVersion }}</v-chip>
                 <v-chip v-if="openDoc.status === 'draft'" size="x-small" variant="flat" color="warning" class="ml-1" prepend-icon="mdi-file-document-edit-outline">
@@ -940,10 +1055,10 @@ watch(
                   <v-btn size="small" variant="text" class="text-none" :disabled="saving" @click="cancelEdit">
                     {{ t('documentIntelligence.cancel') }}
                   </v-btn>
-                  <v-btn size="small" variant="text" class="text-none" :loading="saving" prepend-icon="mdi-file-document-edit-outline" @click="saveEdit(true)">
+                  <v-btn size="small" variant="text" class="text-none" :loading="saving" prepend-icon="mdi-file-document-edit-outline" @click="openSaveDialog(true)">
                     {{ t('documentIntelligence.saveAsDraft') }}
                   </v-btn>
-                  <v-btn size="small" color="primary" variant="flat" class="text-none" :loading="saving" prepend-icon="mdi-content-save" @click="saveEdit(false)">
+                  <v-btn size="small" color="primary" variant="flat" class="text-none" :loading="saving" prepend-icon="mdi-content-save" @click="openSaveDialog(false)">
                     {{ openDoc.status === 'draft' ? t('documentIntelligence.publish') : t('documentIntelligence.save') }}
                   </v-btn>
                 </template>
@@ -964,16 +1079,36 @@ watch(
                 </span>
               </div>
 
+              <div v-if="docMode === 'view'" class="mb-3">
+                <DiResourceTagsEditor
+                  :model-value="openDoc.tags ?? []"
+                  readonly
+                  clickable
+                  density="compact"
+                  @tag-click="onDocTagClick"
+                />
+              </div>
+              <div v-else class="mb-3">
+                <DiResourceTagsEditor v-model="editTags" density="compact" />
+              </div>
+
               <v-progress-linear v-if="docLoading" indeterminate color="primary" class="mb-2" />
 
               <DiMarkdownEditor
                 v-if="docMode === 'edit'"
                 v-model="editContent"
                 :current-resource-id="openDoc?.id ?? null"
+                :upload-parent-id="openDoc?.parentId ?? selectedFolderId"
+                :can-upload="openDoc?.permissions.canUpload ?? currentPerm.canUpload"
               />
-              <DiMarkdownViewer v-else :content="docContent" :empty-label="t('documentIntelligence.emptyDoc')" />
+              <DiMarkdownViewer v-else :content="docContent" :empty-label="t('documentIntelligence.emptyPage')" />
 
               <DiLinkedWorkItemsPanel
+                v-if="openDoc && docMode !== 'edit'"
+                :resource-id="openDoc.id"
+                class="mt-4"
+              />
+              <DiBacklinksPanel
                 v-if="openDoc && docMode !== 'edit'"
                 :resource-id="openDoc.id"
                 class="mt-4"
@@ -1002,6 +1137,43 @@ watch(
                   <span v-else class="di-crumb di-crumb--current">{{ t('documentIntelligence.allDocuments') }}</span>
                 </nav>
 
+                <DiDiscoveryHome
+                  v-if="showDiscovery"
+                  :tree="tree"
+                  @select-folder="selectFolder"
+                  @open-resource="openResource"
+                  @search="onDiscoverySearch"
+                />
+
+                <DiAreaIndexBanner
+                  v-if="areaIndexPage && selectedFolder"
+                  :index-page="areaIndexPage"
+                  :area-name="selectedFolder.name"
+                  @open="openResource"
+                />
+
+                <div v-if="folderTagOptions.length" class="d-flex align-center flex-wrap ga-2 mb-3">
+                  <span class="text-caption text-medium-emphasis">{{ t('documentIntelligence.tags.filterLabel') }}</span>
+                  <v-chip
+                    size="small"
+                    :variant="activeTagFilter === null ? 'flat' : 'outlined'"
+                    :color="activeTagFilter === null ? 'primary' : undefined"
+                    @click="activeTagFilter = null"
+                  >
+                    {{ t('documentIntelligence.tags.all') }}
+                  </v-chip>
+                  <v-chip
+                    v-for="tag in folderTagOptions"
+                    :key="tag"
+                    size="small"
+                    :variant="activeTagFilter === tag ? 'flat' : 'outlined'"
+                    :color="activeTagFilter === tag ? 'primary' : undefined"
+                    @click="activeTagFilter = activeTagFilter === tag ? null : tag"
+                  >
+                    {{ tag }}
+                  </v-chip>
+                </div>
+
                 <div
                   class="di-browse-body position-relative"
                   :class="{ 'di-browse-body--loading': childrenLoading }"
@@ -1019,12 +1191,14 @@ watch(
                     </div>
                   </v-overlay>
 
-                  <div v-if="!children.length && !childrenLoading" class="text-center py-12">
+                  <div v-if="!filteredChildren.length && !childrenLoading" class="text-center py-12">
                     <v-icon icon="mdi-folder-open-outline" size="56" class="text-medium-emphasis mb-2" />
-                    <div class="text-body-1 text-medium-emphasis">{{ t('documentIntelligence.emptyFolder') }}</div>
+                    <div class="text-body-1 text-medium-emphasis">
+                      {{ activeTagFilter ? t('documentIntelligence.tags.noMatches') : t('documentIntelligence.emptyFolder') }}
+                    </div>
                   </div>
 
-                  <template v-else-if="children.length">
+                  <template v-else-if="filteredChildren.length">
                 <!-- Klasörler -->
                 <div v-if="folderChildren.length" class="mb-4">
                   <div class="text-caption text-medium-emphasis mb-2">{{ t('documentIntelligence.folders') }}</div>
@@ -1051,83 +1225,91 @@ watch(
                   </v-row>
                 </div>
 
-                <!-- Dokümanlar / dosyalar -->
-                <div v-if="docChildren.length">
-                  <div class="text-caption text-medium-emphasis mb-2">{{ t('documentIntelligence.documents') }}</div>
-                  <v-list class="py-0">
-                    <v-list-item
-                      v-for="d in docChildren"
-                      :key="d.id"
-                      rounded="lg"
-                      class="mb-1 border di-doc-row"
-                      @click="openResource(d)"
-                    >
-                      <template #prepend>
-                        <v-icon :icon="resourceIcon(d)" color="primary" />
-                      </template>
-                      <v-list-item-title>
-                        {{ resourceLabel(d) }}
-                        <v-chip v-if="d.type === 'markdown' && d.status === 'draft'" size="x-small" variant="flat" color="warning" class="ml-1">
-                          {{ t('documentIntelligence.draft') }}
-                        </v-chip>
-                      </v-list-item-title>
-                      <v-list-item-subtitle v-if="d.description || (d.type === 'file' && d.size)">
-                        <span v-if="d.description">{{ d.description }}</span>
-                        <span v-if="d.type === 'file' && d.size" class="text-medium-emphasis">
-                          {{ d.description ? ' · ' : '' }}{{ formatSize(d.size) }}
-                        </span>
-                      </v-list-item-subtitle>
-                      <template #append>
-                        <v-btn
-                          v-if="d.type === 'file' && d.permissions.canDownload && isDiDocxEditable(d)"
-                          icon
-                          size="x-small"
-                          variant="text"
-                          :title="t('documentIntelligence.openInEditor')"
-                          @click.stop="openFileEditor(d)"
-                        >
-                          <v-icon size="18">mdi-file-document-edit-outline</v-icon>
-                        </v-btn>
-                        <v-btn
-                          v-if="d.type === 'file' && d.permissions.canDownload && isDiPreviewable(d)"
-                          icon
-                          size="x-small"
-                          variant="text"
-                          :title="t('documentIntelligence.preview')"
-                          @click.stop="openFilePreview(d)"
-                        >
-                          <v-icon size="18">mdi-file-eye-outline</v-icon>
-                        </v-btn>
-                        <v-btn
-                          v-if="d.type === 'file' && d.permissions.canDownload"
-                          icon
-                          size="x-small"
-                          variant="text"
-                          :loading="downloadingId === d.id"
-                          :title="t('documentIntelligence.download')"
-                          @click.stop="downloadFile(d)"
-                        >
-                          <v-icon size="18">mdi-download</v-icon>
-                        </v-btn>
-                        <v-menu location="bottom end">
-                          <template #activator="{ props: menuProps }">
-                            <v-btn icon size="x-small" variant="text" v-bind="menuProps" @click.stop>
-                              <v-icon size="18">mdi-dots-vertical</v-icon>
-                            </v-btn>
-                          </template>
-                          <v-list density="compact">
-                            <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiDocxEditable(d)" prepend-icon="mdi-file-document-edit-outline" :title="t('documentIntelligence.openInEditor')" @click="openFileEditor(d)" />
-                            <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiPreviewable(d)" prepend-icon="mdi-file-eye-outline" :title="t('documentIntelligence.preview')" @click="openFilePreview(d)" />
-                            <v-list-item v-if="d.type === 'file' && d.permissions.canDownload" prepend-icon="mdi-download" :title="t('documentIntelligence.download')" @click="downloadFile(d)" />
-                            <v-list-item v-if="d.permissions.canEdit" prepend-icon="mdi-pencil-box-outline" :title="t('documentIntelligence.rename')" @click="openRename(d)" />
-                            <v-list-item v-if="d.permissions.canMove" prepend-icon="mdi-folder-move-outline" :title="t('documentIntelligence.move')" @click="openMove(d)" />
-                            <v-list-item v-if="d.permissions.canDelete" prepend-icon="mdi-delete-outline" :title="t('documentIntelligence.delete')" base-color="error" @click="openDelete(d)" />
-                          </v-list>
-                        </v-menu>
-                      </template>
-                    </v-list-item>
-                  </v-list>
-                </div>
+                <!-- Sayfalar / dökümanlar / dosyalar -->
+                <template v-for="section in contentSections">
+                  <div v-if="section.items.length" :key="section.key" class="mb-4">
+                    <div class="text-caption text-medium-emphasis mb-2">{{ t(section.labelKey) }}</div>
+                    <v-list class="py-0">
+                      <v-list-item
+                        v-for="d in section.items"
+                        :key="d.id"
+                        rounded="lg"
+                        class="mb-1 border di-doc-row"
+                        @click="openResource(d)"
+                      >
+                        <template #prepend>
+                          <v-icon :icon="resourceIcon(d)" color="primary" />
+                        </template>
+                        <v-list-item-title>
+                          {{ resourceLabel(d) }}
+                          <v-chip v-if="d.type === 'markdown' && d.status === 'draft'" size="x-small" variant="flat" color="warning" class="ml-1">
+                            {{ t('documentIntelligence.draft') }}
+                          </v-chip>
+                        </v-list-item-title>
+                        <v-list-item-subtitle v-if="d.description || resourceTypeLabel(d) || (d.type === 'file' && d.size) || (d.tags?.length)">
+                          <span v-if="resourceTypeLabel(d)" class="text-medium-emphasis">{{ resourceTypeLabel(d) }}</span>
+                          <span v-if="d.description">
+                            {{ resourceTypeLabel(d) ? ' · ' : '' }}{{ d.description }}
+                          </span>
+                          <span v-if="d.type === 'file' && d.size" class="text-medium-emphasis">
+                            {{ d.description || resourceTypeLabel(d) ? ' · ' : '' }}{{ formatSize(d.size) }}
+                          </span>
+                          <span v-if="d.tags?.length" class="text-medium-emphasis">
+                            {{ (d.description || resourceTypeLabel(d) || (d.type === 'file' && d.size)) ? ' · ' : '' }}{{ d.tags.join(', ') }}
+                          </span>
+                        </v-list-item-subtitle>
+                        <template #append>
+                          <v-btn
+                            v-if="d.type === 'file' && d.permissions.canDownload && isDiDocxEditable(d)"
+                            icon
+                            size="x-small"
+                            variant="text"
+                            :title="t('documentIntelligence.openInEditor')"
+                            @click.stop="openFileEditor(d)"
+                          >
+                            <v-icon size="18">mdi-file-document-edit-outline</v-icon>
+                          </v-btn>
+                          <v-btn
+                            v-if="d.type === 'file' && d.permissions.canDownload && isDiPreviewable(d)"
+                            icon
+                            size="x-small"
+                            variant="text"
+                            :title="t('documentIntelligence.preview')"
+                            @click.stop="openFilePreview(d)"
+                          >
+                            <v-icon size="18">mdi-file-eye-outline</v-icon>
+                          </v-btn>
+                          <v-btn
+                            v-if="d.type === 'file' && d.permissions.canDownload"
+                            icon
+                            size="x-small"
+                            variant="text"
+                            :loading="downloadingId === d.id"
+                            :title="t('documentIntelligence.download')"
+                            @click.stop="downloadFile(d)"
+                          >
+                            <v-icon size="18">mdi-download</v-icon>
+                          </v-btn>
+                          <v-menu location="bottom end">
+                            <template #activator="{ props: menuProps }">
+                              <v-btn icon size="x-small" variant="text" v-bind="menuProps" @click.stop>
+                                <v-icon size="18">mdi-dots-vertical</v-icon>
+                              </v-btn>
+                            </template>
+                            <v-list density="compact">
+                              <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiDocxEditable(d)" prepend-icon="mdi-file-document-edit-outline" :title="t('documentIntelligence.openInEditor')" @click="openFileEditor(d)" />
+                              <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiPreviewable(d)" prepend-icon="mdi-file-eye-outline" :title="t('documentIntelligence.preview')" @click="openFilePreview(d)" />
+                              <v-list-item v-if="d.type === 'file' && d.permissions.canDownload" prepend-icon="mdi-download" :title="t('documentIntelligence.download')" @click="downloadFile(d)" />
+                              <v-list-item v-if="d.permissions.canEdit" prepend-icon="mdi-pencil-box-outline" :title="t('documentIntelligence.rename')" @click="openRename(d)" />
+                              <v-list-item v-if="d.permissions.canMove" prepend-icon="mdi-folder-move-outline" :title="t('documentIntelligence.move')" @click="openMove(d)" />
+                              <v-list-item v-if="d.permissions.canDelete" prepend-icon="mdi-delete-outline" :title="t('documentIntelligence.delete')" base-color="error" @click="openDelete(d)" />
+                            </v-list>
+                          </v-menu>
+                        </template>
+                      </v-list-item>
+                    </v-list>
+                  </div>
+                </template>
                   </template>
                 </div>
               </div>
@@ -1162,19 +1344,30 @@ watch(
       </v-card>
     </v-dialog>
 
-    <!-- Yeni doküman -->
+    <!-- Yeni sayfa -->
     <v-dialog v-model="docDialog" max-width="420">
       <v-card rounded="lg">
-        <v-card-title class="text-subtitle-1 font-weight-bold">{{ t('documentIntelligence.newDocument') }}</v-card-title>
+        <v-card-title class="text-subtitle-1 font-weight-bold">{{ t('documentIntelligence.newPage') }}</v-card-title>
         <v-card-text>
           <v-text-field
             v-model="docTitle"
-            :label="t('documentIntelligence.docTitle')"
+            :label="t('documentIntelligence.pageTitle')"
             variant="outlined"
             density="comfortable"
             autofocus
             hide-details
+            class="mb-3"
             @keydown.enter="submitDoc(false)"
+          />
+          <v-select
+            v-model="docTemplate"
+            :items="pageTemplateOptions"
+            item-title="title"
+            item-value="value"
+            :label="t('documentIntelligence.templates.label')"
+            variant="outlined"
+            density="comfortable"
+            hide-details
           />
         </v-card-text>
         <v-card-actions>
@@ -1311,77 +1504,19 @@ watch(
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="historyDialog" max-width="980" scrollable>
-      <v-card rounded="lg">
-        <v-card-title class="d-flex align-center text-subtitle-1 font-weight-bold">
-          <v-icon size="20" class="mr-2">mdi-history</v-icon>
-          {{ t('documentIntelligence.versionHistory') }}
-          <v-spacer />
-          <v-btn icon="mdi-close" variant="text" size="small" @click="historyDialog = false" />
-        </v-card-title>
-        <v-divider />
-        <v-card-text class="pa-0">
-          <div class="d-flex di-history">
-            <div class="di-history-list">
-              <div v-if="versionsLoading" class="d-flex justify-center pa-6">
-                <v-progress-circular indeterminate size="28" color="primary" />
-              </div>
-              <div v-else-if="!versions.length" class="text-medium-emphasis text-body-2 pa-4 text-center">
-                {{ t('documentIntelligence.noVersions') }}
-              </div>
-              <v-list v-else density="compact" nav>
-                <v-list-item
-                  v-for="v in versions"
-                  :key="v.versionNumber"
-                  :active="selectedVersion === v.versionNumber"
-                  rounded="lg"
-                  @click="previewVersion(v)"
-                >
-                  <template #prepend>
-                    <v-avatar size="28" :color="v.isCurrent ? 'primary' : 'grey-lighten-1'" class="text-caption">
-                      v{{ v.versionNumber }}
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title class="text-body-2">
-                    {{ formatDateTime(v.createdAt) || ('v' + v.versionNumber) }}
-                    <v-chip v-if="v.isCurrent" size="x-small" color="primary" variant="tonal" class="ml-1">
-                      {{ t('documentIntelligence.currentVersion') }}
-                    </v-chip>
-                  </v-list-item-title>
-                  <v-list-item-subtitle class="text-caption">
-                    <span v-if="v.createdBy">{{ v.createdBy }}</span>
-                    <span v-if="v.changeNote"> · {{ v.changeNote }}</span>
-                  </v-list-item-subtitle>
-                  <template #append>
-                    <v-btn
-                      v-if="!v.isCurrent"
-                      size="x-small"
-                      variant="tonal"
-                      color="primary"
-                      class="text-none"
-                      :loading="restoringVersion === v.versionNumber"
-                      @click.stop="restoreVersion(v)"
-                    >
-                      {{ t('documentIntelligence.restore') }}
-                    </v-btn>
-                  </template>
-                </v-list-item>
-              </v-list>
-            </div>
-            <v-divider vertical />
-            <div class="di-history-preview pa-4">
-              <div v-if="versionContentLoading" class="d-flex justify-center pa-6">
-                <v-progress-circular indeterminate size="28" color="primary" />
-              </div>
-              <div v-else-if="selectedVersion === null" class="text-medium-emphasis text-body-2 d-flex align-center justify-center fill-height">
-                {{ t('documentIntelligence.selectVersionHint') }}
-              </div>
-              <DiMarkdownViewer v-else :content="versionContent" :empty-label="t('documentIntelligence.emptyDoc')" />
-            </div>
-          </div>
-        </v-card-text>
-      </v-card>
-    </v-dialog>
+    <DiSavePageDialog
+      v-model="saveDialog"
+      :mode="saveDialogMode"
+      :loading="saving"
+      @confirm="confirmSaveEdit"
+    />
+
+    <DiMarkdownVersionHistoryDialog
+      v-model="historyDialog"
+      :resource-id="openDoc?.id ?? null"
+      :can-restore="openDoc?.permissions.canEdit ?? false"
+      @restored="onVersionRestored"
+    />
 
     <!-- Klasör yetkileri -->
     <DiPermissionsDialog
@@ -1410,18 +1545,6 @@ watch(
 <style scoped>
 .di-layout {
   min-height: 600px;
-}
-.di-history {
-  height: 65vh;
-}
-.di-history-list {
-  width: 340px;
-  flex-shrink: 0;
-  overflow: auto;
-}
-.di-history-preview {
-  flex: 1 1 auto;
-  overflow: auto;
 }
 .di-tree-panel {
   border-right: 1px solid rgba(var(--v-theme-on-surface), 0.08);

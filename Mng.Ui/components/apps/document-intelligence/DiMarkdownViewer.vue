@@ -5,6 +5,7 @@ import { DI_RESOURCE_PREVIEW_KEY } from '@/composables/useDiResourcePreview';
 import {
   parseDiResourceIdFromAnchor,
   rewriteDiInternalLinksInHtml,
+  rewriteDiFileImagesInHtml,
 } from '@/utils/diResourceLink';
 
 const props = withDefaults(
@@ -21,8 +22,10 @@ const preview = inject(DI_RESOURCE_PREVIEW_KEY, null);
 
 const html = computed(() => {
   const base = renderMarkdown(props.content);
-  if (!base || props.interactiveInternalLinks === false || !preview) return base;
-  return rewriteDiInternalLinksInHtml(base);
+  if (!base) return base;
+  let next = rewriteDiFileImagesInHtml(base);
+  if (props.interactiveInternalLinks === false || !preview) return next;
+  return rewriteDiInternalLinksInHtml(next);
 });
 
 const isEmpty = computed(() => !props.content || !props.content.trim());
@@ -74,9 +77,25 @@ function onBodyClick(event: MouseEvent) {
 .di-md-viewer__body :deep(h1) { font-size: 1.7rem; }
 .di-md-viewer__body :deep(h2) { font-size: 1.4rem; }
 .di-md-viewer__body :deep(h3) { font-size: 1.2rem; }
+.di-md-viewer__body :deep(h4) { font-size: 1.05rem; }
 .di-md-viewer__body :deep(p) { margin: 0.5em 0; }
 .di-md-viewer__body :deep(ul),
 .di-md-viewer__body :deep(ol) { padding-left: 1.5rem; margin: 0.5em 0; }
+.di-md-viewer__body :deep(ul.contains-task-list) {
+  list-style: none;
+  padding-left: 0.25rem;
+}
+.di-md-viewer__body :deep(li.task-list-item) {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  list-style: none;
+}
+.di-md-viewer__body :deep(li.task-list-item input[type='checkbox']) {
+  margin-top: 0.35em;
+  flex-shrink: 0;
+  pointer-events: none;
+}
 .di-md-viewer__body :deep(li) { margin: 0.2em 0; }
 .di-md-viewer__body :deep(a) {
   color: rgb(var(--v-theme-primary));

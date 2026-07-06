@@ -97,6 +97,13 @@ function Read-Md($fileName) {
     return [System.IO.File]::ReadAllText($path, $utf8)
 }
 
+function Get-SayfalarFolderId {
+    $roots = Get-Items (Invoke-DocApi -Method GET -Path "/children")
+    $folder = $roots | Where-Object { $_.type -eq "folder" -and $_.name -eq "Sayfalar" } | Select-Object -First 1
+    if ($folder) { return $folder.id }
+    return $null
+}
+
 function Ensure-Folder {
     param(
         [string]$Name,
@@ -213,8 +220,16 @@ Write-Host "Gateway: $BaseUrl" -ForegroundColor Cyan
 Write-Host "Manager klasoru: $ManagerGroupName" -ForegroundColor Cyan
 Write-Host "========================================`n" -ForegroundColor Cyan
 
-# 1) Klasor agaci
-$monitraNgId = Ensure-Folder -Name "MonitraNG"
+# 1) Klasor agaci (Sayfalar/ altinda veya legacy kok)
+$sayfalarId = Get-SayfalarFolderId
+if ($sayfalarId) {
+    Write-Host "Sayfalar klasoru bulundu (id=$sayfalarId)" -ForegroundColor Green
+    $monitraNgId = Ensure-Folder -Name "MonitraNG" -ParentId $sayfalarId
+}
+else {
+    Write-Host "Sayfalar klasoru yok — legacy kok (once seed-resource-root-folders.ps1 onerilir)" -ForegroundColor Yellow
+    $monitraNgId = Ensure-Folder -Name "MonitraNG"
+}
 $ogreticilerId = Ensure-Folder -Name "Öğreticiler" -ParentId $monitraNgId
 $managerId = Ensure-Folder -Name "Manager" -ParentId $ogreticilerId
 
@@ -234,5 +249,10 @@ Ensure-Markdown -ParentId $managerId `
     -Publish
 
 Write-Host "`nTamamlandi." -ForegroundColor Cyan
-Write-Host "UI: Dokumanlar > MonitraNG > Ogreticiler" -ForegroundColor Cyan
+if ($sayfalarId) {
+    Write-Host "UI: Dokumanlar > Sayfalar > MonitraNG > Ogreticiler" -ForegroundColor Cyan
+}
+else {
+    Write-Host "UI: Dokumanlar > MonitraNG > Ogreticiler" -ForegroundColor Cyan
+}
 Write-Host "Yonetici rehberi: ... > Ogreticiler > Manager (grup: $ManagerGroupName)" -ForegroundColor Cyan

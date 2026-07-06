@@ -1,9 +1,9 @@
 # Document Intelligence — Prod işlemleri ve test ortamına taşıma
 
 **Modül:** MngDocument (Document Intelligence)  
-**Son güncelleme:** 6 Temmuz 2026  
+**Son güncelleme:** 6 Temmuz 2026 (akşam)  
 **Checkpoint özeti:** [DEVAM.md](./DEVAM.md)  
-**Antet katalog prod migration:** [LETTERHEAD_CATALOG_MIGRATION_PROD.md](./LETTERHEAD_CATALOG_MIGRATION_PROD.md)  
+**Prod migration (D-BR1 + Faz P):** [LETTERHEAD_CATALOG_MIGRATION_PROD.md](./LETTERHEAD_CATALOG_MIGRATION_PROD.md)  
 **Ana plan:** [MonitraNG_Document_Intelligence_Planning.md](./MonitraNG_Document_Intelligence_Planning.md)
 
 Bu doküman, **şu an prod’da (`192.168.20.8`) yürütülen** DI / Belge Tasarımcısı işlerini, dataset’leri ve script’leri tek yerde toplar. Test sunucusu (`192.168.20.20`) ayağa kalktığında aynı adımların tekrarlanması için kontrol listesi niteliğindedir.
@@ -171,6 +171,33 @@ pwsh -File .\scripts\odak\deploy-odak-prod.ps1 -Services gotenberg,mngdocument -
 ```
 
 **Not:** Parametre tanımı UI’si bu altyapıdan **sonra** devam eder; önce Gotenberg ayakta olmalı.
+
+### D-BR1 Sprint A — Antet katalog (6 Tem 2026)
+
+- `dm_letterheads`, Collabora tasarım, tablo footer skeleton.
+- Prod migration: [LETTERHEAD_CATALOG_MIGRATION_PROD.md](./LETTERHEAD_CATALOG_MIGRATION_PROD.md) §1–§10.
+
+### Faz P — Sayfa (6 Tem 2026, tamamlandı)
+
+**Backend (MngDocument):** `changeNote`, backlink API, `recent` / `drafts`, aramada yalnızca yayınlanmış sayfalar.
+
+**UI (Mng.Ui — prod deploy gerekli):**
+
+- Keşif ekranı (son, taslak, alan kısayolları, arama)
+- Markdown editör (split önizleme, şablon, tablo, görsel, iç link)
+- Etiket UI + klasör filtresi
+- Alan giriş sayfası banner (`Sayfalar` / `Dökümanlar`)
+- Sürüm geçmişi + deep link; backlink paneli; kayıt notu diyaloğu
+- **Kaldırıldı:** WYSIWYG «Zengin» editör modu
+
+**Prod checklist:** [LETTERHEAD_CATALOG_MIGRATION_PROD.md §11](./LETTERHEAD_CATALOG_MIGRATION_PROD.md)
+
+**Deploy:**
+
+```powershell
+.\scripts\odak\sync-odak-prod.ps1 -Paths @('MngDocument','Mng.Ui','ApplicationResources/mng_apps')
+.\scripts\odak\deploy-odak-prod.ps1 -Services mngdocument,mngui -NoCache
+```
 
 ---
 

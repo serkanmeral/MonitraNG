@@ -87,6 +87,13 @@ function Read-Md($fileName) {
     return [System.IO.File]::ReadAllText($path, $utf8)
 }
 
+function Get-SayfalarFolderId {
+    $roots = Get-Items (Invoke-DocApi -Method GET -Path "/children")
+    $folder = $roots | Where-Object { $_.type -eq "folder" -and $_.name -eq "Sayfalar" } | Select-Object -First 1
+    if ($folder) { return $folder.id }
+    return $null
+}
+
 function Ensure-Folder {
     param(
         [string]$Name,
@@ -203,7 +210,15 @@ Write-Host "Gateway: $BaseUrl" -ForegroundColor Cyan
 Write-Host "System klasoru: $ManagerGroupName" -ForegroundColor Cyan
 Write-Host "========================================`n" -ForegroundColor Cyan
 
-$systemId = Ensure-Folder -Name "System"
+$sayfalarId = Get-SayfalarFolderId
+if ($sayfalarId) {
+    Write-Host "Sayfalar klasoru bulundu (id=$sayfalarId)" -ForegroundColor Green
+    $systemId = Ensure-Folder -Name "System" -ParentId $sayfalarId
+}
+else {
+    Write-Host "Sayfalar klasoru yok — legacy kok (once seed-resource-root-folders.ps1 onerilir)" -ForegroundColor Yellow
+    $systemId = Ensure-Folder -Name "System"
+}
 Set-RestrictedFolderPermissions -FolderId $systemId -GroupName $ManagerGroupName -GroupId $managerGroupId
 
 Write-Host "`nMarkdown dokumanlari..." -ForegroundColor Cyan
@@ -213,4 +228,9 @@ Ensure-Markdown -ParentId $systemId `
     -Publish
 
 Write-Host "`nTamamlandi." -ForegroundColor Cyan
-Write-Host "UI: Dokumanlar > System > Surum Notlari (grup: $ManagerGroupName)" -ForegroundColor Cyan
+if ($sayfalarId) {
+    Write-Host "UI: Dokumanlar > Sayfalar > System > Surum Notlari (grup: $ManagerGroupName)" -ForegroundColor Cyan
+}
+else {
+    Write-Host "UI: Dokumanlar > System > Surum Notlari (grup: $ManagerGroupName)" -ForegroundColor Cyan
+}

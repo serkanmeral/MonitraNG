@@ -48,6 +48,11 @@ public sealed class UpdateMarkdownRequest
     /// Doküman durumu: <c>true</c> = taslak, <c>false</c> = yayınla. <c>null</c> ise mevcut durum korunur.
     /// </summary>
     public bool? IsDraft { get; set; }
+
+    /// <summary>
+    /// Sürüm kaydına yazılacak değişiklik notu. Boşsa varsayılan <c>update</c> kullanılır.
+    /// </summary>
+    public string? ChangeNote { get; set; }
 }
 
 /// <summary>

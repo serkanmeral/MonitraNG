@@ -174,6 +174,8 @@ export interface DiUpdateMarkdownRequest {
   expectedVersionNumber: number;
   /** true=taslak, false=yayınla, undefined=mevcut durumu koru. */
   isDraft?: boolean | null;
+  /** Sürüm geçmişine yazılacak değişiklik notu (opsiyonel). */
+  changeNote?: string | null;
 }
 
 /** Bir grup için verilen yetki aksiyonları. */

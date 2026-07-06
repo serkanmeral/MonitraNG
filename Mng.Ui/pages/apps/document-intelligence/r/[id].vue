@@ -5,13 +5,19 @@ import DiMarkdownViewer from '@/components/apps/document-intelligence/DiMarkdown
 import DiMarkdownEditor from '@/components/apps/document-intelligence/DiMarkdownEditor.vue';
 import DiFilePreviewDialog from '@/components/apps/document-intelligence/DiFilePreviewDialog.vue';
 import DiResourceEditorDialog from '@/components/apps/document-intelligence/DiResourceEditorDialog.vue';
+import DiResourceTagsEditor from '@/components/apps/document-intelligence/DiResourceTagsEditor.vue';
 import DiLinkedWorkItemsPanel from '@/components/apps/document-intelligence/DiLinkedWorkItemsPanel.vue';
+import DiBacklinksPanel from '@/components/apps/document-intelligence/DiBacklinksPanel.vue';
+import DiSavePageDialog from '@/components/apps/document-intelligence/DiSavePageDialog.vue';
+import type { DiSavePageMode } from '@/components/apps/document-intelligence/DiSavePageDialog.vue';
+import DiMarkdownVersionHistoryDialog from '@/components/apps/document-intelligence/DiMarkdownVersionHistoryDialog.vue';
 import DiResourcePreviewProvider from '@/components/apps/document-intelligence/DiResourcePreviewProvider.vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useAppToast } from '@/composables/useAppToast';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import { isDiDocxEditable, isDiPreviewable } from '@/utils/diFilePreview';
 import { DI_HOME_PATH, buildDiFolderUrl } from '@/utils/diResourceLink';
+import { diPageResourceIcon, diPageResourceLabel } from '@/utils/diPageResource';
 import {
   diErrorStatus,
   diFetchFileBlob,
@@ -46,11 +52,17 @@ const showMarkdown = ref(false);
 const docVersion = ref(0);
 const docMode = ref<'view' | 'edit'>('view');
 const editContent = ref('');
+const editTags = ref<string[]>([]);
 const saving = ref(false);
+
+const saveDialog = ref(false);
+const saveDialogMode = ref<DiSavePageMode>('save');
+const pendingSaveAsDraft = ref(false);
+const historyDialog = ref(false);
 
 function resourceLabel(r: DiResource | null): string {
   if (!r) return '…';
-  return r.type === 'markdown' ? r.title || r.name : r.name;
+  return diPageResourceLabel(r);
 }
 
 const breadcrumbs = computed(() => [
@@ -171,6 +183,7 @@ async function loadResource() {
 
 function startEdit() {
   editContent.value = markdownContent.value;
+  editTags.value = [...(resource.value?.tags ?? [])];
   docMode.value = 'edit';
 }
 
@@ -178,20 +191,40 @@ function cancelEdit() {
   docMode.value = 'view';
 }
 
-async function saveEdit(asDraft = false) {
-  if (!resource.value) return;
+function openSaveDialog(asDraft: boolean) {
+  if (asDraft) {
+    saveDialogMode.value = 'draft';
+  } else if (resource.value?.status === 'draft') {
+    saveDialogMode.value = 'publish';
+  } else {
+    saveDialogMode.value = 'save';
+  }
+  pendingSaveAsDraft.value = asDraft;
+  saveDialog.value = true;
+}
+
+async function confirmSaveEdit(changeNote: string) {
+  const ok = await saveEdit(pendingSaveAsDraft.value, changeNote);
+  if (ok) saveDialog.value = false;
+}
+
+async function saveEdit(asDraft = false, changeNote = ''): Promise<boolean> {
+  if (!resource.value) return false;
   saving.value = true;
   try {
     const updated = await diUpdateMarkdown(resource.value.id, {
       content: editContent.value,
+      tags: editTags.value,
       expectedVersionNumber: docVersion.value,
       isDraft: asDraft,
+      changeNote: changeNote || null,
     });
     markdownContent.value = editContent.value;
     docVersion.value = updated.currentVersionNumber || docVersion.value + 1;
     resource.value = updated;
     docMode.value = 'view';
     notify(asDraft ? t('documentIntelligence.draftSaved') : t('documentIntelligence.published'), 'success');
+    return true;
   } catch (e: unknown) {
     if (diErrorStatus(e) === 409) {
       notify(t('documentIntelligence.errors.conflict'), 'error');
@@ -200,9 +233,15 @@ async function saveEdit(asDraft = false) {
     } else {
       notify(panelError(e, 'documentIntelligence.errors.save'), 'error');
     }
+    return false;
   } finally {
     saving.value = false;
   }
+}
+
+async function onVersionRestored(restored: DiResource) {
+  resource.value = restored;
+  await loadMarkdownContent(restored);
 }
 
 function onEditorOpenChange(open: boolean) {
@@ -286,7 +325,7 @@ watch(resourceId, () => {
 
       <template v-else-if="showMarkdown && resource">
         <div class="d-flex align-center flex-wrap ga-2 mb-3">
-          <v-icon icon="mdi-language-markdown-outline" color="primary" class="mr-1" />
+          <v-icon :icon="diPageResourceIcon(resource)" color="primary" class="mr-1" />
           <h3 class="text-h5 font-weight-bold mr-2">{{ resourceLabel(resource) }}</h3>
           <v-chip size="x-small" variant="tonal">v{{ docVersion }}</v-chip>
           <v-chip
@@ -310,6 +349,15 @@ watch(resourceId, () => {
             >
               {{ t('documentIntelligence.edit') }}
             </v-btn>
+            <v-btn
+              size="small"
+              variant="text"
+              class="text-none"
+              prepend-icon="mdi-history"
+              @click="historyDialog = true"
+            >
+              {{ t('documentIntelligence.history') }}
+            </v-btn>
           </template>
           <template v-else>
             <v-btn size="small" variant="text" class="text-none" :disabled="saving" @click="cancelEdit">
@@ -321,7 +369,7 @@ watch(resourceId, () => {
               class="text-none"
               :loading="saving"
               prepend-icon="mdi-file-document-edit-outline"
-              @click="saveEdit(true)"
+              @click="openSaveDialog(true)"
             >
               {{ t('documentIntelligence.saveAsDraft') }}
             </v-btn>
@@ -332,7 +380,7 @@ watch(resourceId, () => {
               class="text-none"
               :loading="saving"
               prepend-icon="mdi-content-save"
-              @click="saveEdit(false)"
+              @click="openSaveDialog(false)"
             >
               {{ resource.status === 'draft' ? t('documentIntelligence.publish') : t('documentIntelligence.save') }}
             </v-btn>
@@ -349,18 +397,32 @@ watch(resourceId, () => {
           {{ t('documentIntelligence.viewOnlyHint') }}
         </v-alert>
 
+        <div v-if="docMode === 'view'" class="mb-3">
+          <DiResourceTagsEditor :model-value="resource.tags ?? []" readonly density="compact" />
+        </div>
+        <div v-else class="mb-3">
+          <DiResourceTagsEditor v-model="editTags" density="compact" />
+        </div>
+
         <v-progress-linear v-if="markdownLoading" indeterminate color="primary" class="mb-2" />
         <DiMarkdownEditor
           v-else-if="docMode === 'edit'"
           v-model="editContent"
           :current-resource-id="resource.id"
+          :upload-parent-id="resource.parentId"
+          :can-upload="resource.permissions.canUpload"
         />
         <DiMarkdownViewer
           v-else
           :content="markdownContent"
-          :empty-label="t('documentIntelligence.emptyDoc')"
+          :empty-label="t('documentIntelligence.emptyPage')"
         />
         <DiLinkedWorkItemsPanel
+          v-if="docMode !== 'edit'"
+          :resource-id="resource.id"
+          class="mt-4"
+        />
+        <DiBacklinksPanel
           v-if="docMode !== 'edit'"
           :resource-id="resource.id"
           class="mt-4"
@@ -398,6 +460,20 @@ watch(resourceId, () => {
       :model-value="previewOpen"
       :resource="resource"
       @update:model-value="onPreviewOpenChange"
+    />
+
+    <DiSavePageDialog
+      v-model="saveDialog"
+      :mode="saveDialogMode"
+      :loading="saving"
+      @confirm="confirmSaveEdit"
+    />
+
+    <DiMarkdownVersionHistoryDialog
+      v-model="historyDialog"
+      :resource-id="resource?.id ?? null"
+      :can-restore="resource?.permissions.canEdit ?? false"
+      @restored="onVersionRestored"
     />
 
   </div>

@@ -1,5 +1,7 @@
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+import { getDataGatewayProxyUrlWithAuth } from '@/services/apiService';
+import { parseDiFilePathFromMarkdownHref } from '@/utils/diResourceLink';
 
 // Markdown -> güvenli HTML. Render client tarafında yapılır (DOMPurify DOM gerektirir).
 // İçerik MngDocument'te ham markdown olarak saklanır; XSS'e karşı sanitize edilir.
@@ -8,6 +10,21 @@ marked.setOptions({
   gfm: true,
   breaks: true,
 });
+
+/** di-fp: gömülü görselleri render öncesi DG proxy URL'sine çevirir (DOMPurify bilinmeyen şemayı siler). */
+function preprocessDiFileImageMarkdown(markdown: string): string {
+  return markdown.replace(
+    /!\[([^\]]*)\]\((di-fp:[^)\s]+)\)/gi,
+    (full, alt, href) => {
+      const filePath = parseDiFilePathFromMarkdownHref(href);
+      if (!filePath) return full;
+      const url = getDataGatewayProxyUrlWithAuth(
+        `/api/v1/files/download?filePath=${encodeURIComponent(filePath)}`
+      );
+      return `![${alt}](${url})`;
+    }
+  );
+}
 
 const ALLOWED_TAGS = [
   'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
@@ -33,7 +50,8 @@ const ALLOWED_ATTR = [
 export function renderMarkdown(markdown: string | null | undefined): string {
   if (!markdown) return '';
   if (!import.meta.client) return '';
-  const rawHtml = marked.parse(markdown, { async: false }) as string;
+  const prepared = preprocessDiFileImageMarkdown(markdown);
+  const rawHtml = marked.parse(prepared, { async: false }) as string;
   const clean = DOMPurify.sanitize(rawHtml, {
     ALLOWED_TAGS,
     ALLOWED_ATTR,

@@ -1,14 +1,27 @@
-# Antet Kataloğu (D-BR1) — Production Kurulum ve Migration
+# Document Intelligence — Production Kurulum ve Migration
 
-**Modül:** MngDocument (Document Intelligence)  
-**Son güncelleme:** 6 Temmuz 2026  
-**İlişkili:** [DI_PRODUCT_ROADMAP.md](./DI_PRODUCT_ROADMAP.md) §8 · [current_status.md](../../MngDocument/current_status.md) · [PROD_OPERATIONS_AND_MIGRATION.md](./PROD_OPERATIONS_AND_MIGRATION.md)
+**Modül:** MngDocument + Mng.Ui (Document Intelligence)  
+**Son güncelleme:** 6 Temmuz 2026 (akşam — Faz P tamamlandı)  
+**İlişkili:** [DI_PRODUCT_ROADMAP.md](./DI_PRODUCT_ROADMAP.md) · [PROD_OPERATIONS_AND_MIGRATION.md](./PROD_OPERATIONS_AND_MIGRATION.md) · [current_status.md](../../MngDocument/current_status.md)
 
-Bu doküman, **paylaşımlı antet kataloğu** (D-BR1 Sprint A) özelliğinin production ortamına (`192.168.20.8`) kurulması için adım adım migration rehberidir.
+Bu doküman, production ortamına (`192.168.20.8`) **tek seferde uygulanacak** DI release paketinin kurulum ve migration rehberidir.
 
 ---
 
-## 1. Özet — Ne değişti?
+## 0. Bu release paketi (6 Tem 2026)
+
+| Dilim | Bileşen | Prod'da gerekli |
+|-------|---------|-----------------|
+| **D-BR1 Sprint A** | Paylaşımlı antet kataloğu (`dm_letterheads`, Collabora tasarım, tablo footer) | `mngdocument` + dataset seed |
+| **Faz P — Sayfa** | Markdown editör, keşif, etiket, changeNote, backlink, sürüm geçmişi, alan giriş sayfası | `mngdocument` + **`mngui`** |
+| **Faz P — bilinçli hariç** | WYSIWYG / «Zengin» editör | Kaldırıldı — yalnızca Markdown editör |
+| **Faz P — erteli** | Sayfa yorumu, izle/bildirim | Bu release'e dahil değil |
+
+**Önemli:** Faz P yalnızca UI deploy ile **tam çalışmaz** — `changeNote`, backlink, `recent`/`drafts`, aramada taslak filtresi için **MngDocument** de deploy edilmelidir.
+
+---
+
+## 1. Özet — D-BR1 antet (ne değişti?)
 
 | Alan | Eski | Yeni |
 |------|------|------|
@@ -41,7 +54,7 @@ Bu doküman, **paylaşımlı antet kataloğu** (D-BR1 Sprint A) özelliğinin pr
 # Repo kökünden
 $Prod = "192.168.20.8"
 
-# 1) Kaynak senkron
+# 1) Kaynak senkron (D-BR1 + Faz P)
 .\scripts\odak\sync-odak-prod.ps1 -Paths @(
   'MngDocument',
   'Mng.Ui',
@@ -49,13 +62,22 @@ $Prod = "192.168.20.8"
   'docs/odak/document_intelligence'
 )
 
-# 2) Backend + UI + Collabora bağımlılıkları
+# 2) Backend + UI (+ Collabora — antet tasarımı için)
 .\scripts\odak\deploy-odak-prod.ps1 -Services mngdocument,mngui,collabora -NoCache
 
 # 3) Sağlık
 curl -s -o /dev/null -w "%{http_code}" "http://${Prod}:5040/health"
 curl -s -o /dev/null -w "%{http_code}" "http://${Prod}:5040/documents/api/v1/rendering/status"
 ```
+
+**Yalnızca UI güncellemesi** (backend zaten güncelse):
+
+```powershell
+.\scripts\odak\sync-odak-prod.ps1 -Paths @('Mng.Ui','ApplicationResources/mng_apps')
+.\scripts\odak\deploy-odak-prod.ps1 -Services mngui -NoCache
+```
+
+**UI erişim:** `http://192.168.20.8:3000` — deploy sonrası tarayıcı önbelleğini temizleyin veya hard refresh.
 
 **appsettings (prod) — kontrol edin:**
 
@@ -250,3 +272,71 @@ Test'te doğrulanmış adımlar prod'da aynı script parametreleriyle tekrarlan�
 2. CoC + Activity üretim smoke (header + footer görünürlük)
 3. Üretim dialog antet seçimi (kod hazır olunca)
 4. `LegacyOdakFooterEnabled=false` kararı — tüm antetler tablo modeline geçince
+
+---
+
+## 11. Faz P — Sayfa (UI + API)
+
+### 11.1 Backend (MngDocument)
+
+| Özellik | API / davranış |
+|---------|----------------|
+| Kayıt notu | `PUT .../markdown/{id}` → `changeNote` (opsiyonel) |
+| Backlink | `GET .../markdown/{id}/backlinks` |
+| Son sayfalar | `GET .../recent?limit=` (yalnızca **yayınlanmış**) |
+| Taslaklarım | `GET .../drafts?limit=` |
+| Arama | `GET .../search?q=` — markdown **taslakları hariç** |
+
+Dataset: `dm_resource_versions` alanı `changeNote` — `setup-document-intelligence-datasets.ps1` idempotent günceller.
+
+**Doğrulama (prod token):**
+
+```powershell
+$token = (Get-Content "$env:TEMP\operationcore_dg_token_prod.txt" -Raw).Trim()
+$h = @{ Authorization = "Bearer $token" }
+Invoke-RestMethod "http://192.168.20.8:5040/documents/api/v1/resources/recent?limit=5" -Headers $h
+Invoke-RestMethod "http://192.168.20.8:5040/documents/api/v1/resources/drafts?limit=5" -Headers $h
+```
+
+### 11.2 UI (Mng.Ui)
+
+| Özellik | Konum |
+|---------|--------|
+| Keşif ana ekranı | `/apps/document-intelligence` — son sayfalar, taslaklar, alan kısayolları, arama |
+| Alan giriş sayfası | **Sayfalar** / **Dökümanlar** klasöründe `Giriş` banner |
+| Markdown editör | Split önizleme, şablon, tablo, görsel, iç link picker |
+| changeNote | Kaydet / yayınla diyaloğu |
+| Backlink paneli | Sayfa görünümü — «Bu sayfaya link verenler» |
+| Sürüm geçmişi | Ana ekran + deep link (`/r/{id}`) |
+| Etiketler | Sayfa meta + klasör etiket filtresi |
+| Terminoloji | Kullanıcıya «Sayfa»; markdown ikonu kaldırıldı |
+| **Kaldırıldı** | «Zengin» / WYSIWYG editör modu |
+
+### 11.3 İçerik seed (opsiyonel — yeni tenant / eksik kök yapı)
+
+Kök alan klasörleri ve giriş sayfaları yoksa:
+
+```powershell
+$env:DI_GATEWAY = "http://192.168.20.8:5040"
+$env:DI_TOKEN = (& .\docs\odak\operationcore\scripts\load-operationcore-token-prod.ps1).Trim()
+.\docs\odak\document_intelligence\scripts\seed-resource-root-folders.ps1
+```
+
+Oluşturur: `Sayfalar/`, `Dökümanlar/` + `sayfalar-giris.md`, `dokumanlar-giris.md`.
+
+Mevcut prod ağacında zaten varsa script atlanır (idempotent).
+
+### 11.4 Faz P prod checklist
+
+- [ ] `mngdocument` deploy — recent / drafts / backlinks / changeNote API
+- [ ] `mngui` deploy — keşif, editör, backlink, sürüm geçmişi UI
+- [ ] Dokümanlar → Keşfet → arama (taslak gelmemeli)
+- [ ] Sayfa kaydet → «Ne değişti?» → geçmişte görünür
+- [ ] Sayfalar klasörü → «Giriş» banner → giriş sayfası açılır
+- [ ] Editörde «Markdown | Zengin» toggle **yok** (beklenen)
+
+### 11.5 Geri alma (Faz P)
+
+1. Önceki `mngui` + `mngdocument` image deploy
+2. Dataset geri alma gerekmez; `changeNote` alanı boş kalabilir
+3. Eski UI'da backlink/keşif yok — işlev kaybı, veri kaybı yok

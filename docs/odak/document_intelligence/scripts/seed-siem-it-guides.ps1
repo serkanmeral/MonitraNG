@@ -53,6 +53,13 @@ function Get-Items($response) {
     return , @($response)
 }
 
+function Get-SayfalarFolderId {
+    $roots = Get-Items (Invoke-DocApi -Method GET -Path "/children")
+    $folder = $roots | Where-Object { $_.type -eq "folder" -and $_.name -eq "Sayfalar" } | Select-Object -First 1
+    if ($folder) { return $folder.id }
+    return $null
+}
+
 function Ensure-Folder {
     param([string]$Name, [string]$ParentId = $null)
     $siblings = if ($ParentId) {
@@ -112,7 +119,13 @@ function Ensure-Markdown {
 Write-Host "`n=== SIEM IT rehberleri seed ===" -ForegroundColor Cyan
 Write-Host "Gateway: $BaseUrl`n" -ForegroundColor DarkGray
 
-$monitraNgId = Ensure-Folder -Name "MonitraNG"
+$sayfalarId = Get-SayfalarFolderId
+if ($sayfalarId) {
+    $monitraNgId = Ensure-Folder -Name "MonitraNG" -ParentId $sayfalarId
+}
+else {
+    $monitraNgId = Ensure-Folder -Name "MonitraNG"
+}
 $ogreticilerId = Ensure-Folder -Name "Öğreticiler" -ParentId $monitraNgId
 $itId = Ensure-Folder -Name "IT ve Güvenlik" -ParentId $ogreticilerId
 
@@ -121,4 +134,9 @@ Ensure-Markdown -ParentId $itId `
     -FileName "guvenlik-merkezi-linux-rsyslog-kurulumu.md"
 
 Write-Host "`nTamamlandi." -ForegroundColor Green
-Write-Host "UI: Dokumanlar > MonitraNG > Ogreticiler > IT ve Guvenlik" -ForegroundColor Cyan
+if ($sayfalarId) {
+    Write-Host "UI: Dokumanlar > Sayfalar > MonitraNG > Ogreticiler > IT ve Guvenlik" -ForegroundColor Cyan
+}
+else {
+    Write-Host "UI: Dokumanlar > MonitraNG > Ogreticiler > IT ve Guvenlik" -ForegroundColor Cyan
+}

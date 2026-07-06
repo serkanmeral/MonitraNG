@@ -13,6 +13,7 @@ import { diGetById, diGetMarkdownContent } from '@/services/documentIntelligence
 import { DI_RESOURCE_TYPE, type DiResource } from '@/types/apps/documentIntelligence';
 import { isDiDocxEditable, isDiPreviewable } from '@/utils/diFilePreview';
 import { buildDiResourceUrl } from '@/utils/diResourceLink';
+import { diPageResourceIcon } from '@/utils/diPageResource';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -152,7 +153,7 @@ watch(
           :title="t('documentIntelligence.internalLink.back')"
           @click="goBack"
         />
-        <v-icon icon="mdi-language-markdown-outline" color="primary" size="20" />
+        <v-icon :icon="resource ? diPageResourceIcon(resource) : 'mdi-book-open-page-variant-outline'" color="primary" size="20" />
         <span class="text-subtitle-1 font-weight-bold text-truncate flex-grow-1 di-min-w-0">
           {{ title }}
         </span>
@@ -185,7 +186,7 @@ watch(
         <DiMarkdownViewer
           v-else
           :content="content"
-          :empty-label="t('documentIntelligence.emptyDoc')"
+          :empty-label="t('documentIntelligence.emptyPage')"
         />
       </v-card-text>
     </v-card>

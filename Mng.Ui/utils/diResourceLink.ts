@@ -1,4 +1,9 @@
+import { getDataGatewayProxyUrlWithAuth } from '@/services/apiService';
+
 export const DI_HOME_PATH = '/apps/document-intelligence';
+
+/** Markdown görsel embed: DG filePath (di-fp: encoded path). */
+export const DI_FILE_PATH_MARKDOWN_PREFIX = 'di-fp:';
 
 const DI_RESOURCE_PATH_RE = /\/apps\/document-intelligence\/r\/([^/?#]+)/i;
 
@@ -12,6 +17,21 @@ export function buildDiResourceUrl(resourceId: string): string {
 /** Markdown editöründe kullanılacak göreli DI iç link URL'si. */
 export function buildDiResourceMarkdownHref(resourceId: string): string {
   return buildDiResourceUrl(resourceId);
+}
+
+/** Yüklenen dosya görselleri için markdown img hedefi (kalıcı filePath). */
+export function buildDiFilePathMarkdownHref(filePath: string): string {
+  return `${DI_FILE_PATH_MARKDOWN_PREFIX}${encodeURIComponent(filePath.trim())}`;
+}
+
+export function parseDiFilePathFromMarkdownHref(href: string | null | undefined): string | null {
+  const trimmed = (href ?? '').trim();
+  if (!trimmed.startsWith(DI_FILE_PATH_MARKDOWN_PREFIX)) return null;
+  try {
+    return decodeURIComponent(trimmed.slice(DI_FILE_PATH_MARKDOWN_PREFIX.length));
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -43,6 +63,24 @@ export function parseDiResourceIdFromHref(href: string | null | undefined): stri
 
 export function isDiInternalResourceHref(href: string | null | undefined): boolean {
   return parseDiResourceIdFromHref(href) != null;
+}
+
+/** Render sonrası di-fp: img src → kimlik doğrulamalı indirme URL'si. */
+export function rewriteDiFileImagesInHtml(html: string): string {
+  if (!import.meta.client || !html) return html;
+
+  const root = document.createElement('div');
+  root.innerHTML = html;
+  root.querySelectorAll('img[src]').forEach((node) => {
+    const img = node as HTMLImageElement;
+    const filePath = parseDiFilePathFromMarkdownHref(img.getAttribute('src'));
+    if (!filePath) return;
+    img.src = getDataGatewayProxyUrlWithAuth(
+      `/api/v1/files/download?filePath=${encodeURIComponent(filePath)}`
+    );
+    img.loading = 'lazy';
+  });
+  return root.innerHTML;
 }
 
 /** Render sonrası DI iç linklerini modal tıklaması için işaretler (Vue Router navigasyonunu engeller). */
