@@ -1,7 +1,7 @@
 import { ref, type InjectionKey } from 'vue';
 import { diGetById } from '@/services/documentIntelligenceService';
 import { DI_RESOURCE_TYPE, type DiResource } from '@/types/apps/documentIntelligence';
-import { isDiDocxEditable, isDiPreviewable } from '@/utils/diFilePreview';
+import { isDiOfficeEditable, isDiPreviewable } from '@/utils/diFilePreview';
 import { buildDiFolderUrl, buildDiResourceUrl } from '@/utils/diResourceLink';
 
 export type DiResourcePreviewContext = {
@@ -53,7 +53,7 @@ export function useDiResourcePreview(options?: { onDownload?: (resource: DiResou
     }
 
     if (resource.type === DI_RESOURCE_TYPE.file) {
-      if (isDiDocxEditable(resource)) {
+      if (isDiOfficeEditable(resource)) {
         editorResource.value = resource;
         editorOpen.value = true;
         return;

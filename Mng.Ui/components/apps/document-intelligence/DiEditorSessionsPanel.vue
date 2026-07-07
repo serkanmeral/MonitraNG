@@ -25,6 +25,7 @@ const revokingToken = ref<string | null>(null);
 const stats = ref<DiEditorSessionStats | null>(null);
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let unsubscribeBroadcast: (() => void) | undefined;
+let refreshSeq = 0;
 
 const capacityLabel = computed(() => {
   const s = stats.value;
@@ -68,20 +69,30 @@ function formatDateTime(iso: string | null | undefined): string {
   }
 }
 
-function kindLabel(kind: string): string {
-  const key = `documentIntelligence.editorSessions.kind.${kind}` as const;
+function kindLabel(session: { kind: string; officeKind?: string | null }): string {
+  const office = session.officeKind?.trim();
+  if (session.kind === 'resource' && office) {
+    const officeKey = `documentIntelligence.editorSessions.officeKind.${office}` as const;
+    const officeLabel = t(officeKey);
+    if (officeLabel !== officeKey) return officeLabel;
+  }
+
+  const key = `documentIntelligence.editorSessions.kind.${session.kind}` as const;
   const translated = t(key);
-  return translated === key ? kind : translated;
+  return translated === key ? session.kind : translated;
 }
 
 async function refresh(silent = false) {
+  const seq = ++refreshSeq;
   if (!silent) loading.value = true;
   try {
-    stats.value = await diGetEditorSessionStats();
+    const next = await diGetEditorSessionStats();
+    if (seq !== refreshSeq) return;
+    stats.value = next;
   } catch (e: unknown) {
     if (!silent) panelError(e, 'documentIntelligence.editorSessions.errors.load');
   } finally {
-    if (!silent) loading.value = false;
+    if (!silent && seq === refreshSeq) loading.value = false;
   }
 }
 
@@ -123,7 +134,7 @@ async function revokeSession(accessToken: string | null | undefined) {
 }
 
 watch(dialogOpen, (open) => {
-  if (open) void refresh();
+  if (open) void refresh(stats.value != null);
 });
 
 onMounted(() => {
@@ -270,7 +281,7 @@ onUnmounted(() => {
                     <td class="text-truncate" style="max-width: 240px">
                       {{ session.displayName || session.resourceId || session.templateId || session.letterheadId || '—' }}
                     </td>
-                    <td>{{ kindLabel(session.kind) }}</td>
+                    <td>{{ kindLabel(session) }}</td>
                     <td>
                       <v-chip
                         v-if="session.readOnly"

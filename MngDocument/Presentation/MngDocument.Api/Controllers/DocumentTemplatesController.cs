@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MngDocument.Application.Contracts.Generation;
 using MngDocument.Application.Contracts.Rendering;
 using MngDocument.Application.Contracts.Templates;
 using MngDocument.Application.Interfaces;
@@ -16,13 +17,16 @@ public sealed class DocumentTemplatesController : ControllerBase
 {
     private readonly IDocumentTemplateService _templates;
     private readonly ITemplateEditorService _editor;
+    private readonly IDocumentGenerationService _generation;
 
     public DocumentTemplatesController(
         IDocumentTemplateService templates,
-        ITemplateEditorService editor)
+        ITemplateEditorService editor,
+        IDocumentGenerationService generation)
     {
         _templates = templates;
         _editor = editor;
+        _generation = generation;
     }
 
     [HttpGet]
@@ -179,6 +183,43 @@ public sealed class DocumentTemplatesController : ControllerBase
         [FromBody] UpdateTemplateParametersRequest request,
         CancellationToken ct) =>
         Ok(await _templates.UpdateParametersAsync(id, request, ct));
+
+    /// <summary>Şablondan manuel döküman üretimi — merge + antet + kaynak ağacına kayıt (D4).</summary>
+    [HttpPost("{id}/generate")]
+    [ProducesResponseType(typeof(GenerateDocumentResultDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GenerateFromTemplate(
+        string id,
+        [FromBody] GenerateFromTemplateRequest request,
+        CancellationToken ct)
+    {
+        var result = await _generation.GenerateFromTemplateAsync(id, request, ct);
+        return StatusCode(StatusCodes.Status201Created, result);
+    }
+
+    /// <summary>Şablondan üretim önizlemesi — parametre çözümlemesi (D4).</summary>
+    [HttpPost("{id}/preview-generation")]
+    [ProducesResponseType(typeof(DocumentGenerationPreviewDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> PreviewGenerationFromTemplate(
+        string id,
+        [FromBody] PreviewFromTemplateRequest? request,
+        CancellationToken ct) =>
+        Ok(await _generation.PreviewFromTemplateAsync(id, request, ct));
+
+    /// <summary>Şablondan üretim Collabora önizlemesi — merge + antet + salt okunur WOPI oturumu (D4).</summary>
+    [HttpPost("{id}/preview-session")]
+    [ProducesResponseType(typeof(TemplateGenerationPreviewSessionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> PreviewSessionFromTemplate(
+        string id,
+        [FromBody] PreviewFromTemplateRequest? request,
+        CancellationToken ct) =>
+        Ok(await _generation.CreatePreviewSessionFromTemplateAsync(id, request, ct));
 
     /// <summary>Şablon DOCX → merge → PDF (LibreOffice/Gotenberg). Altyapı smoke / önizleme.</summary>
     [HttpPost("{id}/render/pdf")]

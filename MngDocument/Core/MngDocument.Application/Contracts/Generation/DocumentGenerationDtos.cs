@@ -79,3 +79,45 @@ public sealed class DocumentGenerationPreviewDto
     public IReadOnlyList<string> UndefinedParameterKeys { get; init; } = Array.Empty<string>();
     public IReadOnlyList<string> UnresolvedParameterKeys { get; init; } = Array.Empty<string>();
 }
+
+/// <summary>DI ağacında şablondan manuel döküman üretimi (D4).</summary>
+public sealed class GenerateFromTemplateRequest
+{
+    /// <summary>Hedef klasör (<c>dm_resources</c> folder id).</summary>
+    public string ParentFolderId { get; set; } = string.Empty;
+
+    /// <summary>Kaynak ağacında görünen ad; boşsa dosya adından türetilir.</summary>
+    public string? DocumentName { get; set; }
+
+    /// <summary>Parametre anahtar → değer (manual/context override).</summary>
+    public Dictionary<string, string>? Overrides { get; set; }
+}
+
+/// <summary>Şablondan üretim önizlemesi — parametre çözümlemesi (D4).</summary>
+public sealed class PreviewFromTemplateRequest
+{
+    public Dictionary<string, string>? Overrides { get; set; }
+
+    /// <summary>true ise incremental sayaçlar ayrılır (varsayılan false).</summary>
+    public bool AllocateCounters { get; set; }
+
+    /// <summary>Önizlemede antet başlığı vb. için döküman adı.</summary>
+    public string? DocumentName { get; set; }
+}
+
+/// <summary>Şablondan üretim Collabora önizleme oturumu (merge + antet, salt okunur).</summary>
+public sealed class TemplateGenerationPreviewSessionDto
+{
+    public string TemplateId { get; init; } = string.Empty;
+    public string EditorUrl { get; init; } = string.Empty;
+    public string AccessToken { get; init; } = string.Empty;
+    public string WopiSrc { get; init; } = string.Empty;
+    public bool ReadOnly { get; init; } = true;
+    public string ProfileCode { get; init; } = string.Empty;
+    public IReadOnlyDictionary<string, string> Values { get; init; }
+        = new Dictionary<string, string>();
+    public IReadOnlyList<string> MissingKeys { get; init; } = Array.Empty<string>();
+    public IReadOnlyList<string> UndefinedParameterKeys { get; init; } = Array.Empty<string>();
+    public IReadOnlyList<string> UnresolvedParameterKeys { get; init; } = Array.Empty<string>();
+    public IReadOnlyList<string> RemainingPlaceholderKeys { get; init; } = Array.Empty<string>();
+}

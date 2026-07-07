@@ -740,7 +740,8 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
         var mergeValues = BuildMergeValues(
             detail.Parameters,
             scan.Placeholders.Select(p => p.Key).ToList(),
-            request?.Values);
+            request?.Values,
+            request?.PreserveMissingPlaceholders ?? false);
 
         return await _render.MergeAndConvertToPdfAsync(docxBytes, mergeValues, ct);
     }
@@ -748,8 +749,24 @@ public sealed class DocumentTemplateService : IDocumentTemplateService
     private static Dictionary<string, string> BuildMergeValues(
         IReadOnlyList<TemplateParameterDto> parameters,
         IReadOnlyList<string> placeholderKeys,
-        Dictionary<string, string>? overrides)
+        Dictionary<string, string>? overrides,
+        bool preserveMissingPlaceholders = false)
     {
+        if (preserveMissingPlaceholders)
+        {
+            var previewMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (overrides is null)
+                return previewMap;
+
+            foreach (var kv in overrides)
+            {
+                if (!string.IsNullOrWhiteSpace(kv.Value))
+                    previewMap[kv.Key] = kv.Value.Trim();
+            }
+
+            return previewMap;
+        }
+
         var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var key in placeholderKeys)

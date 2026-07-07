@@ -30,6 +30,8 @@ public sealed class EditorSessionItemDto
     public string? LetterheadId { get; init; }
     /// <summary>resource | template | letterhead</summary>
     public string Kind { get; init; } = string.Empty;
+    /// <summary>Office içerik profili: document | sheet | presentation (yalnızca editörde açılan dosyalar).</summary>
+    public string? OfficeKind { get; init; }
     public string? DisplayName { get; init; }
     public string UserId { get; init; } = string.Empty;
     public string UserName { get; init; } = string.Empty;

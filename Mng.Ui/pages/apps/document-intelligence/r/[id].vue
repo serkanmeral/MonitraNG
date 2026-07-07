@@ -16,12 +16,13 @@ import DiResourcePreviewProvider from '@/components/apps/document-intelligence/D
 import { useAppI18n } from '@/composables/useAppI18n';
 import { useAppToast } from '@/composables/useAppToast';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
-import { isDiDocxEditable, isDiManagedDocument, isDiPreviewable } from '@/utils/diFilePreview';
+import { isDiOfficePdfExportable, isDiOfficeEditable, isDiManagedDocument, isDiPreviewable } from '@/utils/diFilePreview';
 import { DI_HOME_PATH, buildDiFolderUrl } from '@/utils/diResourceLink';
 import { diPageResourceIcon, diPageResourceLabel } from '@/utils/diPageResource';
 import {
   diErrorStatus,
   diFetchFileBlob,
+  diFetchResourceExportPdf,
   diGetBreadcrumb,
   diGetById,
   diGetMarkdownContent,
@@ -62,6 +63,7 @@ const saveDialogMode = ref<DiSavePageMode>('save');
 const pendingSaveAsDraft = ref(false);
 const historyDialog = ref(false);
 const fileHistoryDialog = ref(false);
+const exportingPdf = ref(false);
 
 function resourceLabel(r: DiResource | null): string {
   if (!r) return '…';
@@ -129,6 +131,28 @@ async function downloadFile(r: DiResource) {
   }
 }
 
+async function downloadPdfExport(r: DiResource) {
+  if (!r.permissions.canDownload) return;
+  exportingPdf.value = true;
+  try {
+    const blob = await diFetchResourceExportPdf(r.id);
+    const base = r.fileName || r.name || 'document';
+    const pdfName = base.replace(/\.(docx|xlsx|pptx)$/i, '.pdf');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = pdfName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (e: unknown) {
+    errorMessage.value = panelError(e, 'documentIntelligence.generateFromTemplate.errors.exportPdf');
+  } finally {
+    exportingPdf.value = false;
+  }
+}
+
 async function loadMarkdownContent(r: DiResource) {
   showMarkdown.value = true;
   docMode.value = 'view';
@@ -157,7 +181,7 @@ async function openLoadedResource(r: DiResource) {
     return;
   }
 
-  if (isDiDocxEditable(r)) {
+  if (isDiOfficeEditable(r)) {
     showDocxDetail.value = true;
     docVersion.value = r.currentVersionNumber ?? 0;
     const editQuery = route.query.edit === '1' || route.query.edit === 'true';
@@ -514,6 +538,17 @@ watch(resourceId, () => {
             @click="fileHistoryDialog = true"
           >
             {{ t('documentIntelligence.history') }}
+          </v-btn>
+          <v-btn
+            v-if="resource.permissions.canDownload && isDiOfficePdfExportable(resource)"
+            size="small"
+            variant="text"
+            class="text-none"
+            prepend-icon="mdi-file-pdf-box"
+            :loading="exportingPdf"
+            @click="downloadPdfExport(resource)"
+          >
+            {{ t('documentIntelligence.exportPdf') }}
           </v-btn>
           <v-btn
             v-if="resource.permissions.canDownload"

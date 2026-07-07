@@ -566,7 +566,7 @@ public class ResourceService : IResourceService
     public async Task<IReadOnlyList<MarkdownVersionDto>> GetFileVersionsAsync(string id, CancellationToken ct = default)
     {
         var resource = await LoadOrThrowAsync(id, ct);
-        EnsureManagedDocxFile(resource);
+        EnsureManagedOfficeFile(resource);
 
         var snapshot = await _perms.LoadSnapshotAsync(ct);
         snapshot.EnsureCan(resource, ResourceAction.View);
@@ -580,7 +580,7 @@ public class ResourceService : IResourceService
         CancellationToken ct = default)
     {
         var resource = await LoadOrThrowAsync(id, ct);
-        EnsureManagedDocxFile(resource);
+        EnsureManagedOfficeFile(resource);
 
         var snapshot = await _perms.LoadSnapshotAsync(ct);
         snapshot.EnsureCan(resource, ResourceAction.View);
@@ -606,20 +606,21 @@ public class ResourceService : IResourceService
         if (resource is null || resource.__dataId is null)
             throw DocumentException.NotFound("Dosya bulunamadı.");
 
-        EnsureManagedDocxFile(resource);
+        EnsureManagedOfficeFile(resource);
         return await ReadFileVersionBytesAsync(resource, versionNumber, dataGatewayToken, ct);
     }
 
     public async Task<ResourceDto> RestoreFileVersionAsync(string id, int versionNumber, CancellationToken ct = default)
     {
         var existing = await LoadOrThrowAsync(id, ct);
-        EnsureManagedDocxFile(existing);
+        EnsureManagedOfficeFile(existing);
 
         var snapshot = await _perms.LoadSnapshotAsync(ct);
         snapshot.EnsureCan(existing, ResourceAction.Edit);
 
         var (bytes, fileName) = await ReadFileVersionBytesAsync(existing, versionNumber, null, ct);
         var newVersion = (existing.currentVersionNumber ?? 1) + 1;
+        var profile = ResolveManagedOfficeProfile(existing);
 
         var filePayload = new Dictionary<string, object?>
         {
@@ -632,8 +633,8 @@ public class ResourceService : IResourceService
             ["file"] = filePayload,
             ["currentVersionNumber"] = newVersion,
             ["size"] = bytes.LongLength,
-            ["mimeType"] = DocxMime,
-            ["extension"] = "docx"
+            ["mimeType"] = profile.MimeType,
+            ["extension"] = profile.Extension
         };
 
         var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
@@ -648,7 +649,7 @@ public class ResourceService : IResourceService
         CancellationToken ct = default)
     {
         var existing = await LoadOrThrowAsync(id, ct);
-        EnsureManagedDocxFile(existing);
+        EnsureManagedOfficeFile(existing);
 
         var snapshot = await _perms.LoadSnapshotAsync(ct);
         snapshot.EnsureCan(existing, ResourceAction.Edit);
@@ -700,8 +701,9 @@ public class ResourceService : IResourceService
         if (existing is null || existing.__dataId is null)
             throw DocumentException.NotFound("Dosya bulunamadı.");
 
-        EnsureManagedDocxFile(existing);
+        EnsureManagedOfficeFile(existing);
 
+        var profile = ResolveManagedOfficeProfile(existing);
         var currentVersion = existing.currentVersionNumber ?? 1;
         var newVersion = currentVersion + 1;
 
@@ -715,14 +717,83 @@ public class ResourceService : IResourceService
         {
             ["file"] = filePayload,
             ["size"] = content.LongLength,
-            ["mimeType"] = DocxMime,
-            ["extension"] = "docx",
+            ["mimeType"] = profile.MimeType,
+            ["extension"] = profile.Extension,
             ["currentVersionNumber"] = newVersion
         };
 
         await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, dataGatewayToken, ct);
         await WriteFileVersionAsync(id, newVersion, content, fileName, "save", ct, dataGatewayToken);
         return newVersion;
+    }
+
+    public Task<ResourceDto> CreateNativeSheetAsync(CreateNativeOfficeRequest request, CancellationToken ct = default) =>
+        CreateNativeOfficeAsync(request, ManagedOfficeKind.Sheet, ct);
+
+    public Task<ResourceDto> CreateNativePresentationAsync(CreateNativeOfficeRequest request, CancellationToken ct = default) =>
+        CreateNativeOfficeAsync(request, ManagedOfficeKind.Presentation, ct);
+
+    private async Task<ResourceDto> CreateNativeOfficeAsync(
+        CreateNativeOfficeRequest request,
+        ManagedOfficeKind kind,
+        CancellationToken ct)
+    {
+        ValidateName(request.Name);
+        var profile = ManagedOfficeProfiles.Get(kind);
+        var displayName = request.Name.Trim();
+        var fileName = ManagedOfficeProfiles.EnsureFileNameHasExtension(displayName, profile);
+
+        var documentNo = string.IsNullOrWhiteSpace(request.DocumentNo)
+            ? DeriveDocumentNoFromName(displayName)
+            : request.DocumentNo.Trim();
+        await EnsureDocumentNoUniqueAsync(documentNo, ct);
+
+        var officeBytes = ManagedOfficeEmptyFactory.CreateBlank(kind);
+
+        return await CreateFileResourceCoreAsync(new CreateFileResourceRequest
+        {
+            ParentId = request.ParentId,
+            Name = displayName,
+            OriginalFileName = fileName,
+            Description = request.Description,
+            Tags = request.Tags,
+            MimeType = profile.MimeType,
+            Extension = "." + profile.Extension,
+            Size = officeBytes.Length,
+            Content = Convert.ToBase64String(officeBytes),
+            Origin = ResourceOrigin.Native,
+            DocumentNo = documentNo
+        }, ct, ResourceAction.Create);
+    }
+
+    private static string DeriveDocumentNoFromName(string name)
+    {
+        var stem = Path.GetFileNameWithoutExtension(name.Trim());
+        var sb = new System.Text.StringBuilder();
+        var pendingDash = false;
+
+        foreach (var c in stem)
+        {
+            if (char.IsLetterOrDigit(c))
+            {
+                if (pendingDash && sb.Length > 0)
+                {
+                    sb.Append('-');
+                    pendingDash = false;
+                }
+
+                sb.Append(char.ToUpperInvariant(c));
+            }
+            else if (c is ' ' or '-' or '_' or '.')
+            {
+                pendingDash = sb.Length > 0;
+            }
+        }
+
+        var code = sb.ToString().Trim('-');
+        return string.IsNullOrEmpty(code)
+            ? "DOC-" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()
+            : code;
     }
 
     public Task<ResourceDto> CreateFileResourceAsync(CreateFileResourceRequest request, CancellationToken ct = default) =>
@@ -1171,6 +1242,73 @@ public class ResourceService : IResourceService
 
         var baseName = !string.IsNullOrWhiteSpace(storedName) ? storedName! : resource.name ?? "document.docx";
         var pdfName = Path.GetFileNameWithoutExtension(baseName) + ".pdf";
+        return (pdfBytes, pdfName);
+    }
+
+    public async Task<(byte[] PdfBytes, string FileName)> GetFileExportPdfAsync(string id, CancellationToken ct = default)
+    {
+        var resource = await LoadOrThrowAsync(id, ct);
+        if (!string.Equals(resource.type, ResourceType.File, StringComparison.OrdinalIgnoreCase))
+        {
+            throw DocumentException.Validation(
+                "NOT_FILE",
+                "Resource is not a file.",
+                "Kaynak bir dosya değil.");
+        }
+
+        var ext = (resource.extension ?? string.Empty).Trim().TrimStart('.');
+        var mime = resource.mimeType ?? string.Empty;
+        if (!ManagedOfficeProfiles.TryResolve(ext, mime, out var profile))
+        {
+            throw DocumentException.Validation(
+                "UNSUPPORTED_EXPORT",
+                "Only DOCX, XLSX and PPTX files can be exported as PDF.",
+                "Yalnızca DOCX, XLSX ve PPTX dosyaları PDF olarak dışa aktarılabilir.");
+        }
+
+        if (profile.Kind is ManagedOfficeKind.Sheet or ManagedOfficeKind.Presentation
+            && !ResourceOrigin.IsManagedDocument(resource.origin))
+        {
+            throw DocumentException.Validation(
+                "UNSUPPORTED_EXPORT",
+                "Only managed sheets and presentations can be exported as PDF.",
+                "Yalnızca yönetilen sheet ve sunumlar PDF olarak dışa aktarılabilir.");
+        }
+
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(resource, ResourceAction.View);
+        var effective = snapshot.Resolve(resource);
+        if (!effective.CanDownload)
+            throw DocumentException.Forbidden("PDF indirmek için indirme yetkisi gerekir.");
+
+        var (path, storedName) = ReadFileField(resource.file);
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw DocumentException.Validation(
+                "FILE_MISSING",
+                "File content is missing.",
+                "Dosya içeriği bulunamadı.");
+        }
+
+        var fileBytes = await _dg.DownloadFileAsync(path, Token, ct);
+        var sourceName = !string.IsNullOrWhiteSpace(storedName)
+            ? storedName!
+            : ManagedOfficeProfiles.EnsureFileNameHasExtension(resource.name ?? resource.title, profile);
+        byte[] pdfBytes;
+        try
+        {
+            pdfBytes = await _render.ConvertOfficeFileToPdfAsync(fileBytes, sourceName, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Office to PDF export conversion failed for resource {ResourceId}", id);
+            throw DocumentException.ServiceUnavailable(
+                "EXPORT_CONVERSION_FAILED",
+                "Document could not be converted to PDF.",
+                "Dosya PDF olarak dışa aktarılamadı.");
+        }
+
+        var pdfName = Path.GetFileNameWithoutExtension(sourceName) + ".pdf";
         return (pdfBytes, pdfName);
     }
 
@@ -1688,16 +1826,17 @@ public class ResourceService : IResourceService
         if (string.IsNullOrWhiteSpace(fileName))
         {
             var (_, storedName) = ReadFileField(resource.file);
-            fileName = storedName ?? resource.name ?? resource.title ?? "document.docx";
+            var profile = ResolveManagedOfficeProfile(resource);
+            fileName = storedName ?? resource.name ?? resource.title ?? profile.DefaultFileName;
         }
 
-        if (!fileName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
-            fileName += ".docx";
+        var resolvedProfile = ResolveManagedOfficeProfile(resource);
+        fileName = ManagedOfficeProfiles.EnsureFileNameHasExtension(fileName, resolvedProfile);
 
         return (bytes, fileName);
     }
 
-    private static void EnsureManagedDocxFile(DmResource resource)
+    private static void EnsureManagedOfficeFile(DmResource resource)
     {
         if (!string.Equals(resource.type, ResourceType.File, StringComparison.OrdinalIgnoreCase))
         {
@@ -1715,18 +1854,26 @@ public class ResourceService : IResourceService
                 "Kaynak yönetilen bir döküman değil.");
         }
 
-        var ext = (resource.extension ?? string.Empty).Trim().TrimStart('.');
-        var mime = resource.mimeType ?? string.Empty;
-        var isDocx = string.Equals(ext, "docx", StringComparison.OrdinalIgnoreCase)
-            || mime.Contains("wordprocessingml", StringComparison.OrdinalIgnoreCase);
-
-        if (!isDocx)
+        if (!ManagedOfficeProfiles.TryResolve(resource.extension, resource.mimeType, out _))
         {
             throw DocumentException.Validation(
                 "UNSUPPORTED_FILE_TYPE",
-                "Only DOCX managed documents support version history.",
-                "Sürüm geçmişi yalnızca DOCX dökümanlar için desteklenir.");
+                "Only DOCX, XLSX and PPTX managed documents support version history.",
+                "Sürüm geçmişi yalnızca DOCX, XLSX ve PPTX dökümanlar için desteklenir.");
         }
+    }
+
+    private static ManagedOfficeProfile ResolveManagedOfficeProfile(DmResource resource)
+    {
+        if (!ManagedOfficeProfiles.TryResolve(resource.extension, resource.mimeType, out var profile))
+        {
+            throw DocumentException.Validation(
+                "UNSUPPORTED_FILE_TYPE",
+                "Unsupported managed office file type.",
+                "Desteklenmeyen Office dosya türü.");
+        }
+
+        return profile;
     }
 
     private static List<TreeNodeDto> BuildTree(IReadOnlyList<DmResource> folders)

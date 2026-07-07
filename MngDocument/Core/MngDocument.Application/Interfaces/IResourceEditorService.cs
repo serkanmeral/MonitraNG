@@ -31,6 +31,12 @@ public interface IResourceEditorService
         WopiSession session,
         CancellationToken ct = default);
 
+    /// <summary>WOPI GetFile — içerik + MIME (DOCX / XLSX / PPTX).</summary>
+    Task<(byte[] Content, string ContentType)> GetFileWithContentTypeAsync(
+        string resourceId,
+        WopiSession session,
+        CancellationToken ct = default);
+
     Task SaveFileContentsAsync(
         string resourceId,
         WopiSession session,

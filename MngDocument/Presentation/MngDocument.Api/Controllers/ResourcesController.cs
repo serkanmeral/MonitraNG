@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using MngDocument.Application.Contracts.EditorSessions;
 using MngDocument.Application.Contracts.Resources;
 using MngDocument.Application.Interfaces;
+using MngDocument.Domain.Constants;
 
 namespace MngDocument.Api.Controllers;
 
@@ -254,31 +255,35 @@ public class ResourcesController : ControllerBase
         CancellationToken ct = default) =>
         Ok(await _resourceEditor.CreateEditorSessionAsync(id, readOnly, bypassLock, postMessageOrigin, ct));
 
-    /// <summary>Yönetilen DOCX sürüm geçmişi (içerik hariç, en yeni önce).</summary>
+    /// <summary>Yönetilen Office dosyası (DOCX/XLSX/PPTX) sürüm geçmişi (içerik hariç, en yeni önce).</summary>
     [HttpGet("{id}/versions")]
     [ProducesResponseType(typeof(IReadOnlyList<MarkdownVersionDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetFileVersions(string id, CancellationToken ct) =>
         Ok(await _resources.GetFileVersionsAsync(id, ct));
 
-    /// <summary>Belirli bir DOCX sürümünü indirir.</summary>
+    /// <summary>Belirli bir Office sürümünü indirir.</summary>
     [HttpGet("{id}/versions/{versionNumber:int}/download")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DownloadFileVersion(string id, int versionNumber, CancellationToken ct)
     {
         var (bytes, fileName) = await _resources.GetFileVersionContentAsync(id, versionNumber, ct);
-        return File(bytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", fileName);
+        var ext = Path.GetExtension(fileName);
+        var contentType = ManagedOfficeProfiles.TryResolve(ext, null, out var profile)
+            ? profile.MimeType
+            : "application/octet-stream";
+        return File(bytes, contentType, fileName);
     }
 
-    /// <summary>Belirli bir DOCX sürümünü salt okunur Collabora oturumunda açar.</summary>
+    /// <summary>Belirli bir Office sürümünü salt okunur Collabora oturumunda açar.</summary>
     [HttpGet("{id}/versions/{versionNumber:int}/preview-session")]
     [ProducesResponseType(typeof(ResourceEditorSessionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetVersionPreviewSession(string id, int versionNumber, CancellationToken ct) =>
         Ok(await _resourceEditor.CreateVersionPreviewSessionAsync(id, versionNumber, ct));
 
-    /// <summary>Eski bir DOCX sürümünü yeni sürüm olarak geri yükler.</summary>
+    /// <summary>Eski bir Office sürümünü yeni sürüm olarak geri yükler.</summary>
     [HttpPost("{id}/versions/{versionNumber:int}/restore")]
     [ProducesResponseType(typeof(ResourceDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -286,7 +291,7 @@ public class ResourcesController : ControllerBase
     public async Task<IActionResult> RestoreFileVersion(string id, int versionNumber, CancellationToken ct) =>
         Ok(await _resources.RestoreFileVersionAsync(id, versionNumber, ct));
 
-    /// <summary>Belirli bir DOCX sürümünün değişiklik notunu günceller.</summary>
+    /// <summary>Belirli bir Office sürümünün değişiklik notunu günceller.</summary>
     [HttpPatch("{id}/versions/{versionNumber:int}")]
     [ProducesResponseType(typeof(MarkdownVersionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -316,9 +321,42 @@ public class ResourcesController : ControllerBase
     [ProducesResponseType(typeof(ResourceDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> CreateNativeDocument([FromBody] CreateNativeDocumentRequest request, CancellationToken ct)
+    public Task<IActionResult> CreateNativeDocument([FromBody] CreateNativeDocumentRequest request, CancellationToken ct) =>
+        CreateNativeDocumentCoreAsync(request, ct);
+
+    /// <summary><c>POST documents</c> ile aynı — roadmap alias.</summary>
+    [HttpPost("documents/native")]
+    [ProducesResponseType(typeof(ResourceDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public Task<IActionResult> CreateNativeDocumentAlias([FromBody] CreateNativeDocumentRequest request, CancellationToken ct) =>
+        CreateNativeDocumentCoreAsync(request, ct);
+
+    private async Task<IActionResult> CreateNativeDocumentCoreAsync(CreateNativeDocumentRequest request, CancellationToken ct)
     {
         var created = await _resources.CreateNativeDocumentAsync(request, ct);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+    }
+
+    /// <summary>Boş native XLSX (sheet) oluşturur (<c>origin=native</c>).</summary>
+    [HttpPost("sheets/native")]
+    [ProducesResponseType(typeof(ResourceDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CreateNativeSheet([FromBody] CreateNativeOfficeRequest request, CancellationToken ct)
+    {
+        var created = await _resources.CreateNativeSheetAsync(request, ct);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+    }
+
+    /// <summary>Boş native PPTX (sunum) oluşturur (<c>origin=native</c>).</summary>
+    [HttpPost("presentations/native")]
+    [ProducesResponseType(typeof(ResourceDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CreateNativePresentation([FromBody] CreateNativeOfficeRequest request, CancellationToken ct)
+    {
+        var created = await _resources.CreateNativePresentationAsync(request, ct);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
@@ -331,6 +369,18 @@ public class ResourcesController : ControllerBase
     public async Task<IActionResult> GetFilePreviewPdf(string id, CancellationToken ct)
     {
         var (pdfBytes, fileName) = await _resources.GetFilePreviewPdfAsync(id, ct);
+        return File(pdfBytes, "application/pdf", fileName);
+    }
+
+    /// <summary>Yönetilen DOCX / XLSX / PPTX kaynağını PDF olarak dışa aktarır (Gotenberg).</summary>
+    [HttpGet("{id}/export/pdf")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> GetFileExportPdf(string id, CancellationToken ct)
+    {
+        var (pdfBytes, fileName) = await _resources.GetFileExportPdfAsync(id, ct);
         return File(pdfBytes, "application/pdf", fileName);
     }
 

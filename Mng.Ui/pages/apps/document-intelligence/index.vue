@@ -19,11 +19,12 @@ import DiMarkdownVersionHistoryDialog from '@/components/apps/document-intellige
 import DiFileVersionHistoryDialog from '@/components/apps/document-intelligence/DiFileVersionHistoryDialog.vue';
 import DiResourceInfoDialog from '@/components/apps/document-intelligence/DiResourceInfoDialog.vue';
 import DiCloneResourceDialog from '@/components/apps/document-intelligence/DiCloneResourceDialog.vue';
+import DiGenerateFromTemplateDialog from '@/components/apps/document-intelligence/DiGenerateFromTemplateDialog.vue';
 import DiEditorSessionsPanel from '@/components/apps/document-intelligence/DiEditorSessionsPanel.vue';
 import DiEditorLockDialog from '@/components/apps/document-intelligence/DiEditorLockDialog.vue';
 import DiFolderPickerList from '@/components/apps/document-intelligence/DiFolderPickerList.vue';
 import DiResourcePreviewProvider from '@/components/apps/document-intelligence/DiResourcePreviewProvider.vue';
-import { isDiPreviewable, isDiDocxEditable, isDiManagedDocument, isDiCloneable } from '@/utils/diFilePreview';
+import { isDiPreviewable, isDiOfficePdfExportable, isDiOfficeEditable, isDiManagedDocument, isDiCloneable, isDiSheet, isDiPresentation } from '@/utils/diFilePreview';
 import { useDiLazyFolderTree } from '@/composables/useDiLazyFolderTree';
 import {
   DI_HOME_PATH,
@@ -59,13 +60,17 @@ import {
   diSearch,
   diCreateFileResource,
   diCreateNativeDocument,
+  diCreateNativeSheet,
+  diCreateNativePresentation,
   diListLetterheads,
   diGetLetterhead,
   diFetchFileBlob,
+  diFetchResourceExportPdf,
   diErrorStatus,
 } from '@/services/documentIntelligenceService';
 import {
   diFullPermission,
+  type DiGenerateDocumentResult,
   type DiResource,
   type DiBreadcrumb,
   type DiResourceBrowseContext,
@@ -186,8 +191,15 @@ const docDialog = ref(false);
 const docTitle = ref('');
 const docTemplate = ref<DiPageTemplateId>('blank');
 const nativeDocDialog = ref(false);
+const nativeSheetDialog = ref(false);
+const nativePresentationDialog = ref(false);
+const generateFromTemplateDialog = ref(false);
 const nativeDocName = ref('');
 const nativeDocCode = ref('');
+const nativeSheetName = ref('');
+const nativeSheetCode = ref('');
+const nativePresentationName = ref('');
+const nativePresentationCode = ref('');
 const nativeDocLetterheadId = ref<string | null>(null);
 const nativeDocLetterhead = ref<DiLetterhead | null>(null);
 const nativeDocHeaderFields = ref<DiLetterheadHeaderFields>({
@@ -760,6 +772,100 @@ async function submitNativeDoc() {
   }
 }
 
+function openNativeSheetDialog() {
+  nativeSheetName.value = '';
+  nativeSheetCode.value = '';
+  nativeSheetDialog.value = true;
+}
+
+async function submitNativeSheet() {
+  const name = nativeSheetName.value.trim();
+  if (!name) return;
+  const documentNo = nativeSheetCode.value.trim() || null;
+  busy.value = true;
+  try {
+    const created = await diCreateNativeSheet({
+      parentId: selectedFolderId.value,
+      name,
+      documentNo,
+    });
+    nativeSheetDialog.value = false;
+    notify(t('documentIntelligence.nativeSheetCreated'), 'success');
+    await refreshListing();
+    await navigateTo(buildDiResourceUrl(created.id));
+  } catch (e) {
+    notifyError(e, 'documentIntelligence.errors.create');
+  } finally {
+    busy.value = false;
+  }
+}
+
+function openNativePresentationDialog() {
+  nativePresentationName.value = '';
+  nativePresentationCode.value = '';
+  nativePresentationDialog.value = true;
+}
+
+async function submitNativePresentation() {
+  const name = nativePresentationName.value.trim();
+  if (!name) return;
+  const documentNo = nativePresentationCode.value.trim() || null;
+  busy.value = true;
+  try {
+    const created = await diCreateNativePresentation({
+      parentId: selectedFolderId.value,
+      name,
+      documentNo,
+    });
+    nativePresentationDialog.value = false;
+    notify(t('documentIntelligence.nativePresentationCreated'), 'success');
+    await refreshListing();
+    await navigateTo(buildDiResourceUrl(created.id));
+  } catch (e) {
+    notifyError(e, 'documentIntelligence.errors.create');
+  } finally {
+    busy.value = false;
+  }
+}
+
+function openGenerateFromTemplateDialog() {
+  if (!selectedFolderId.value) {
+    notify(t('documentIntelligence.generateFromTemplate.selectFolderHint'), 'info');
+    return;
+  }
+  generateFromTemplateDialog.value = true;
+}
+
+async function onGenerateFromTemplateCreated(result: DiGenerateDocumentResult) {
+  generateFromTemplateDialog.value = false;
+  await refreshListing();
+  if (result.resourceId) {
+    await navigateTo(buildDiResourceUrl(result.resourceId));
+  }
+}
+
+async function downloadPdfExport(resource: DiResource) {
+  if (!resource.permissions.canDownload) return;
+  downloadingId.value = resource.id;
+  try {
+    const blob = await diFetchResourceExportPdf(resource.id);
+    const base = resource.fileName || resource.name || 'document';
+    const pdfName = base.replace(/\.(docx|xlsx|pptx)$/i, '.pdf');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = pdfName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    notifyError(e, 'documentIntelligence.generateFromTemplate.errors.exportPdf');
+  } finally {
+    downloadingId.value = null;
+  }
+}
+
 // --- Yeniden adlandır ---
 function openRename(resource: DiResource) {
   renameTarget.value = resource;
@@ -1008,7 +1114,11 @@ function onDiscoverySearch(q: string) {
 
 function resourceTypeLabel(resource: DiResource): string | null {
   if (resource.type === 'markdown') return t('documentIntelligence.typePage');
-  if (resource.type === 'file' && isDiManagedDocument(resource)) return t('documentIntelligence.typeDocument');
+  if (resource.type === 'file' && isDiManagedDocument(resource)) {
+    if (isDiSheet(resource)) return t('documentIntelligence.typeSpreadsheet');
+    if (isDiPresentation(resource)) return t('documentIntelligence.typePresentation');
+    return t('documentIntelligence.typeDocument');
+  }
   if (resource.type === 'file') return t('documentIntelligence.typeFile');
   return null;
 }
@@ -1237,6 +1347,39 @@ watch(
               @click="openNativeDocDialog"
             >
               {{ t('documentIntelligence.newNativeDocument') }}
+            </v-btn>
+            <v-btn
+              v-if="currentPerm.canCreate"
+              color="primary"
+              variant="tonal"
+              size="small"
+              class="text-none"
+              prepend-icon="mdi-file-excel-box"
+              @click="openNativeSheetDialog"
+            >
+              {{ t('documentIntelligence.newNativeSheet') }}
+            </v-btn>
+            <v-btn
+              v-if="currentPerm.canCreate"
+              color="primary"
+              variant="tonal"
+              size="small"
+              class="text-none"
+              prepend-icon="mdi-file-powerpoint-box"
+              @click="openNativePresentationDialog"
+            >
+              {{ t('documentIntelligence.newNativePresentation') }}
+            </v-btn>
+            <v-btn
+              v-if="currentPerm.canCreate"
+              color="primary"
+              variant="tonal"
+              size="small"
+              class="text-none"
+              prepend-icon="mdi-file-document-plus-outline"
+              @click="openGenerateFromTemplateDialog"
+            >
+              {{ t('documentIntelligence.generateFromTemplate.menu') }}
             </v-btn>
             <v-btn
               v-if="currentPerm.canUpload"
@@ -1531,7 +1674,7 @@ watch(
                         </v-list-item-subtitle>
                         <template #append>
                           <v-btn
-                            v-if="d.type === 'file' && d.permissions.canDownload && isDiDocxEditable(d)"
+                            v-if="d.type === 'file' && d.permissions.canDownload && isDiOfficeEditable(d)"
                             icon
                             size="x-small"
                             variant="text"
@@ -1571,9 +1714,10 @@ watch(
                               <v-list-item prepend-icon="mdi-information-outline" :title="t('documentIntelligence.resourceInfoTitle')" @click="openResourceInfo(d)" />
                               <v-list-item v-if="d.permissions.canEdit" prepend-icon="mdi-tag-outline" :title="t('documentIntelligence.tags.editTitle')" @click="openResourceTags(d)" />
                               <v-list-item v-if="isDiCloneable(d)" prepend-icon="mdi-content-copy" :title="t('documentIntelligence.clone')" @click="openClone(d)" />
-                              <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiDocxEditable(d)" prepend-icon="mdi-history" :title="t('documentIntelligence.versionHistory')" @click="openFileHistory(d)" />
-                              <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiDocxEditable(d)" prepend-icon="mdi-open-in-new" :title="t('documentIntelligence.openInEditor')" @click="openFileEditorInNewTab(d)" />
+                              <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiOfficeEditable(d)" prepend-icon="mdi-history" :title="t('documentIntelligence.versionHistory')" @click="openFileHistory(d)" />
+                              <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiOfficeEditable(d)" prepend-icon="mdi-open-in-new" :title="t('documentIntelligence.openInEditor')" @click="openFileEditorInNewTab(d)" />
                               <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiPreviewable(d)" prepend-icon="mdi-file-eye-outline" :title="t('documentIntelligence.preview')" @click="openFilePreview(d)" />
+                              <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiOfficePdfExportable(d)" prepend-icon="mdi-file-pdf-box" :title="t('documentIntelligence.exportPdf')" @click="downloadPdfExport(d)" />
                               <v-list-item v-if="d.type === 'file' && d.permissions.canDownload" prepend-icon="mdi-download" :title="t('documentIntelligence.download')" @click="downloadFile(d)" />
                               <v-list-item v-if="d.permissions.canEdit" prepend-icon="mdi-pencil-box-outline" :title="t('documentIntelligence.rename')" @click="openRename(d)" />
                               <v-list-item v-if="d.permissions.canMove" prepend-icon="mdi-folder-move-outline" :title="t('documentIntelligence.move')" @click="openMove(d)" />
@@ -1788,6 +1932,84 @@ watch(
       </v-card>
     </v-dialog>
 
+    <!-- Yeni elektronik tablo (native XLSX) -->
+    <v-dialog v-model="nativeSheetDialog" max-width="480">
+      <v-card rounded="lg">
+        <v-card-title class="text-subtitle-1 font-weight-bold">{{ t('documentIntelligence.newNativeSheet') }}</v-card-title>
+        <v-card-text>
+          <v-text-field
+            v-model="nativeSheetCode"
+            :label="t('documentIntelligence.documentNoLabel')"
+            :hint="t('documentIntelligence.nativeSheetCodeHint')"
+            persistent-hint
+            density="comfortable"
+            variant="outlined"
+            class="mb-3"
+          />
+          <v-text-field
+            v-model="nativeSheetName"
+            :label="t('documentIntelligence.nativeSheetNameLabel')"
+            density="comfortable"
+            variant="outlined"
+            autofocus
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="nativeSheetDialog = false">{{ t('documentIntelligence.cancel') }}</v-btn>
+          <v-btn
+            color="primary"
+            variant="flat"
+            class="text-none"
+            :loading="busy"
+            :disabled="!nativeSheetName.trim()"
+            @click="submitNativeSheet"
+          >
+            {{ t('documentIntelligence.create') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Yeni sunum (native PPTX) -->
+    <v-dialog v-model="nativePresentationDialog" max-width="480">
+      <v-card rounded="lg">
+        <v-card-title class="text-subtitle-1 font-weight-bold">{{ t('documentIntelligence.newNativePresentation') }}</v-card-title>
+        <v-card-text>
+          <v-text-field
+            v-model="nativePresentationCode"
+            :label="t('documentIntelligence.documentNoLabel')"
+            :hint="t('documentIntelligence.nativePresentationCodeHint')"
+            persistent-hint
+            density="comfortable"
+            variant="outlined"
+            class="mb-3"
+          />
+          <v-text-field
+            v-model="nativePresentationName"
+            :label="t('documentIntelligence.nativePresentationNameLabel')"
+            density="comfortable"
+            variant="outlined"
+            autofocus
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="nativePresentationDialog = false">{{ t('documentIntelligence.cancel') }}</v-btn>
+          <v-btn
+            color="primary"
+            variant="flat"
+            class="text-none"
+            :loading="busy"
+            :disabled="!nativePresentationName.trim()"
+            @click="submitNativePresentation"
+          >
+            {{ t('documentIntelligence.create') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- Dosya yükle -->
     <v-dialog v-model="fileDialog" max-width="460">
       <v-card rounded="lg">
@@ -1954,6 +2176,12 @@ watch(
       :status="editorLockStatus"
       @update:model-value="onEditorLockDialogUpdate"
       @choose="onEditorLockChoose"
+    />
+
+    <DiGenerateFromTemplateDialog
+      v-model="generateFromTemplateDialog"
+      :parent-folder-id="selectedFolderId"
+      @created="onGenerateFromTemplateCreated"
     />
 
   </div>

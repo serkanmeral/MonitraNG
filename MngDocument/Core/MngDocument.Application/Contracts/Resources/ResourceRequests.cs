@@ -113,6 +113,23 @@ public sealed class CreateNativeDocumentRequest
 }
 
 /// <summary>
+/// Boş XLSX / PPTX (managed office) oluşturma — antet uygulanmaz.
+/// </summary>
+public sealed class CreateNativeOfficeRequest
+{
+    public string? ParentId { get; set; }
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// İş kodu (<c>dm_resources.documentNo</c>). Boş bırakılırsa dosya adından üretilir.
+    /// </summary>
+    public string? DocumentNo { get; set; }
+
+    public string? Description { get; set; }
+    public List<string>? Tags { get; set; }
+}
+
+/// <summary>
 /// Bir klasörün grup bazlı yetki matrisini değiştirir. Yalnızca yetki mirası kırık (anchor)
 /// klasörlerde uygulanır. Listede yer almayan gruplar kaldırılır; boş <see cref="GroupPermissionInput.Permissions"/>
 /// olan gruplar da kaldırılır.

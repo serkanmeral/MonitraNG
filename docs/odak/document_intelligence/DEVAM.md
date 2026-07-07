@@ -1,7 +1,7 @@
 # Document Intelligence (MngDocument) — Devam noktası (checkpoint)
 
-**Son güncelleme:** 7 Temmuz 2026 gece (**D-E ✅ · D2 ✅ · sırada D4**)
-**Durum:** **Faz P ✅** · **D-BR1 ✅** · **D-META/CREATE/FILE-PREV ✅** · **D-PERF ✅** · **D-E ✅** · **D2 ✅** · **Test deploy ✅**
+**Son güncelleme:** 8 Temmuz 2026 gece (**O-0…Pr2 ✅ · sırada D-BR2 / CoC smoke**)
+**Durum:** **Faz P ✅** · **D4 ✅** · **Managed Office O-0→Pr2 ✅** · **Test deploy ✅** (mngdocument; mngui bu oturum)
 
 > ## 🚀 Yeni chat başlangıç prompt'u (kopyala-yapıştır)
 >
@@ -14,24 +14,25 @@
 > - docs/odak/document_intelligence/DEVAM.md
 > - docs/odak/document_intelligence/DI_PRODUCT_ROADMAP.md
 >
-> Durum (7 Tem 2026 gece):
-> - D-META / D-CREATE / D-FILE-PREV ✅ (c5880739) — prod smoke 9/9
-> - D-PERF lazy tree + permission cache + pagination ✅ (dff51a2c)
-> - D-E1–E3 + döküman kilidi ✅
-> - D2 döküman sürüm UX ✅ — changeNote, kapat-kaydet-not, PostMessageOrigin
-> - Test deploy: mngdocument + mngui @ 192.168.20.20
-> - Sırada: **D4** (manuel üretim / merge / PDF) → D-BR2 → CoC smoke
+> Durum (8 Tem 2026 gece):
+> - D4 manuel şablondan üretim ✅
+> - **Managed Office O-0 → O-1 → S1 → S2 → Pr1 → Pr2 ✅**
+> - Editör oturumları: officeKind tür sütunu + hızlı yenileme ✅
+> - Demo: Collabora XLSX/PPTX müşteri sunumu (`publish-collabora-demos.ps1`)
+> - Test deploy: mngdocument @ 192.168.20.20; mngui deploy sırada
+> - Sırada: **D-BR2** veya **CoC smoke**
 >
 > Test: 192.168.20.20:5040 | Prod: 192.168.20.8:5040
 > Token prod: load-operationcore-token-prod.ps1
 > Smoke: scripts/tests/MngDocument/smoke-di-meta-create-preview-prod.ps1
 > ```
 
-> **⭐ KALDIĞIMIZ YER (7 Tem 2026 gece):**
-> - **D-E + D2** tamamlandı — editör oturum/kilitleme + Collabora sürüm UX (kaydet, not, kapat akışı)
-> - Test ortamına `mngdocument` + `mngui` deploy edildi
-> - Sırada **D4** (manuel şablondan üretim, merge, PDF), sonra **D-BR2**, CoC smoke
-> - Roadmap §25: [DI_PRODUCT_ROADMAP.md](./DI_PRODUCT_ROADMAP.md)
+> **⭐ KALDIĞIMIZ YER (8 Tem 2026 gece):**
+> - **Managed Office (O-0…Pr2)** tamamlandı — docx/xlsx/pptx native, Collabora, sürüm, PDF
+> - **Pr1** sunum menüsü açıldı; **Pr2** smoke geçti
+> - Editör oturumları tür sütunu + performans düzeltmesi
+> - Sırada **D-BR2** (kapak) veya **CoC/Activity smoke**
+> - Detay: [SHEET_ROADMAP.md](./SHEET_ROADMAP.md) · [DI_PRODUCT_ROADMAP.md §15–16](./DI_PRODUCT_ROADMAP.md)
 
 **Ana plan:** [MonitraNG_Document_Intelligence_Planning.md](MonitraNG_Document_Intelligence_Planning.md) · **Ürün roadmap (birleşik):** [DI_PRODUCT_ROADMAP.md](DI_PRODUCT_ROADMAP.md) · **Antet prod migration:** [LETTERHEAD_CATALOG_MIGRATION_PROD.md](LETTERHEAD_CATALOG_MIGRATION_PROD.md) · **MO vs Workflow (Odak):** [ODAK_MO_VS_WORKFLOW_SCENARIOS.md](../workflow/ODAK_MO_VS_WORKFLOW_SCENARIOS.md) · **Prod / taşıma:** [PROD_OPERATIONS_AND_MIGRATION.md](PROD_OPERATIONS_AND_MIGRATION.md)
 
@@ -448,18 +449,104 @@ $env:DI_TOKEN = (Get-Content "$env:TEMP\operationcore_dg_token.txt" -Raw).Trim()
 
 ---
 
+---
+
+## D4 — Şablondan manuel üretim (8 Temmuz 2026) ✅
+
+**Hedef:** Yayımlanmış şablondan parametre formu ile `origin=manual` döküman üretimi; merge + antet; Collabora salt okunur önizleme; PDF indirme.
+
+### Backend (MngDocument)
+
+| Bileşen | Açıklama |
+|---------|----------|
+| `POST /templates/{id}/generate` | Merge + antet + `dm_resources` kayıt (`profile=di.manual`) |
+| `POST /templates/{id}/preview-generation` | Parametre çözümlemesi |
+| `POST /templates/{id}/preview-session` | Merge + antet → geçici WOPI → Collabora readonly |
+| `GET /resources/{id}/export/pdf` | Üretilen DOCX → PDF (Gotenberg) |
+| `WopiSession.EphemeralContentBytes` | Önizleme DOCX bellekte (TTL ile temizlenir) |
+| `RenderTemplatePdfRequest.PreserveMissingPlaceholders` | PDF smoke hattı için kısmi merge |
+
+### UI (Mng.Ui)
+
+| Bileşen | Açıklama |
+|---------|----------|
+| `DiGenerateFromTemplateDialog` | Şablon seç, parametre formu, Collabora önizleme, üret |
+| `document-intelligence/index.vue` | «Şablondan döküman» toolbar |
+| `r/[id].vue` + liste menüsü | «PDF indir» |
+| `diCreateTemplateGenerationPreviewSession` | Collabora önizleme oturumu |
+
+### Deploy ve doğrulama
+
+```powershell
+.\scripts\odak\sync-odak-source.ps1 -Paths MngDocument,Mng.Ui,ApplicationResources/mng_apps
+.\scripts\odak\deploy-odak-apps.ps1 -Services mngdocument -NoCache
+.\scripts\odak\deploy-odak-apps.ps1 -Services mngui -NoCache
+.\docs\odak\operationcore\scripts\get-operationcore-token.ps1
+.\scripts\tests\MngDocument\smoke-d4-generate-from-template-test.ps1
+```
+
+- Test: `192.168.20.20:5040` — **mngdocument + mngui** deploy (8 Tem)
+- Smoke: preview-generation → preview-session → generate → export/pdf ✅
+
+### Bilinçli sınırlar
+
+- Önizleme kayıt oluşturmaz; üretim `generate` ile ağaca eklenir.
+- Incremental parametreler önizlemede sayaç ayrılmaz (`AllocateCounters=false` varsayılan).
+- Prod deploy henüz yapılmadı.
+
+---
+
+---
+
+## Managed Office — O-0…Pr2 (8 Temmuz 2026) ✅
+
+**Hedef:** DOCX omurgasını xlsx/pptx için genellemek; Collabora Calc/Impress; sürüm + PDF.
+
+### Tamamlanan dilimler
+
+| Dilim | Özet |
+|-------|------|
+| **O-0** | `ManagedOfficeProfiles`, `EnsureManagedOfficeFile`, `MinimalXlsxFactory`, `MinimalPptxFactory`, dinamik WOPI MIME |
+| **O-1** | `POST …/documents\|sheets\|presentations/native`, `CreateNativeOfficeAsync` |
+| **S1** | UI «Yeni elektronik tablo», `isDiSheet`, smoke sheet |
+| **S2** | `export/pdf` (Gotenberg office→PDF), UI PDF menüsü, `smoke-sheet-native-test.ps1` |
+| **Pr1** | UI «Yeni sunum», `diCreateNativePresentation`, tür etiketleri |
+| **Pr2** | Sunum sürüm/PDF doğrulama, `smoke-presentation-pr2-test.ps1` |
+
+### Ek (aynı oturum)
+
+- **Editör oturumları:** `officeKind` (Döküman / Elektronik tablo / Sunum); DG toplu `$in` sorgusu ile hızlı yenileme
+- **Demo dosyaları:** `CollaboraDemoXlsxFactory`, `CollaboraDemoPptxFactory`, `scripts/tests/MngDocument/demo/publish-collabora-demos.ps1`
+
+### Smoke
+
+```powershell
+.\scripts\tests\MngDocument\smoke-sheet-native-test.ps1
+.\scripts\tests\MngDocument\smoke-presentation-native-test.ps1
+.\scripts\tests\MngDocument\smoke-presentation-pr2-test.ps1
+```
+
+### Deploy test
+
+- `mngdocument` @ `192.168.20.20` ✅ (8 Tem gece, birden fazla deploy)
+- `mngui` — lokal `npm run dev` + bu oturum sonu deploy
+
+---
+
 ## Sıradaki iş (genel backlog)
 
 1. ~~**D-META + D-CREATE + D-FILE-PREV**~~ ✅
 2. ~~**D-PERF-1/2/3**~~ ✅
 3. ~~**D-E1–E3 + kilitleme**~~ ✅
 4. ~~**D2** — döküman sürüm UX~~ ✅
-5. **D4** — merge/PDF, manuel üretim UX ← **sıradaki**
-6. **D-BR2** — kapak sayfası kataloğu
-7. **CoC/Activity uçtan uca smoke**
-8. **D-N1** — `document.generated` bildirim maili
-9. **Faz M** — döküman lifecycle (onaylı yayın, arşiv)
-10. **Sprint B** — `dm_document_context_types` dataset
-11. **D-E4** — Redis WOPI store (opsiyonel)
+5. ~~**D4** — merge/PDF, manuel üretim UX, Collabora önizleme~~ ✅
+6. ~~**Faz S + Pr — Managed Office (O-0 → Pr2)**~~ ✅ — [SHEET_ROADMAP.md](./SHEET_ROADMAP.md)
+7. **D-BR2** — kapak sayfası kataloğu
+8. **CoC/Activity uçtan uca smoke**
+9. **S3 / Pr3** — şablondan sheet/sunum (senaryo)
+10. **D-N1** — `document.generated` bildirim maili
+11. **Faz M** — döküman lifecycle (onaylı yayın, arşiv)
+12. **Sprint B** — `dm_document_context_types` dataset
+13. **D-E4** — Redis WOPI store (opsiyonel)
 
-**Son commit (DI):** `f8f655ca` — D-E + D2 (editör oturum/kilitleme + sürüm UX) · test deploy ✅
+**Son deploy (DI):** 8 Tem 2026 — `mngdocument` @ test ✅ · `mngui` deploy bu oturum

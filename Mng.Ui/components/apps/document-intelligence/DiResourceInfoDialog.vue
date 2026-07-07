@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
-import { isDiManagedDocument } from '@/utils/diFilePreview';
+import { isDiManagedDocument, isDiSheet, isDiPresentation } from '@/utils/diFilePreview';
 import { diPageResourceLabel } from '@/utils/diPageResource';
 import type { DiResource } from '@/types/apps/documentIntelligence';
 
@@ -42,7 +42,11 @@ function formatSize(bytes: number | null): string {
 
 function resourceTypeKey(r: DiResource): string {
   if (r.type === 'markdown') return 'documentIntelligence.typePage';
-  if (isDiManagedDocument(r)) return 'documentIntelligence.typeDocument';
+  if (isDiManagedDocument(r)) {
+    if (isDiSheet(r)) return 'documentIntelligence.typeSpreadsheet';
+    if (isDiPresentation(r)) return 'documentIntelligence.typePresentation';
+    return 'documentIntelligence.typeDocument';
+  }
   if (r.type === 'file') return 'documentIntelligence.typeFile';
   return 'documentIntelligence.typePage';
 }

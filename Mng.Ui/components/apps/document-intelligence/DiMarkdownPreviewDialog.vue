@@ -11,7 +11,7 @@ import {
 } from '@/composables/useDiResourcePreview';
 import { diGetById, diGetMarkdownContent } from '@/services/documentIntelligenceService';
 import { DI_RESOURCE_TYPE, type DiResource } from '@/types/apps/documentIntelligence';
-import { isDiDocxEditable, isDiPreviewable } from '@/utils/diFilePreview';
+import { isDiOfficeEditable, isDiPreviewable } from '@/utils/diFilePreview';
 import { buildDiResourceUrl } from '@/utils/diResourceLink';
 import { diPageResourceIcon } from '@/utils/diPageResource';
 
@@ -86,7 +86,7 @@ async function openLinkedResource(resourceId: string, event?: MouseEvent) {
       return;
     }
     if (linked.type === DI_RESOURCE_TYPE.file) {
-      if (isDiDocxEditable(linked)) {
+      if (isDiOfficeEditable(linked)) {
         editorResource.value = linked;
         editorOpen.value = true;
         return;

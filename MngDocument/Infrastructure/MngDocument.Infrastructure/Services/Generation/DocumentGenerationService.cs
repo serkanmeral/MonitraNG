@@ -15,6 +15,8 @@ namespace MngDocument.Infrastructure.Services.Generation;
 
 public sealed class DocumentGenerationService : IDocumentGenerationService
 {
+    internal const string ManualProfileCode = "di.manual";
+
     private readonly IMngDataGatewayClient _dg;
     private readonly IResourceService _resources;
     private readonly IRequestContext _ctx;
@@ -24,6 +26,7 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
     private readonly ITemplateBrandingApplier _brandingApplier;
     private readonly ILetterheadService _letterheads;
     private readonly LetterheadHeaderValueEnricher _headerEnricher;
+    private readonly ITemplateEditorService _templateEditor;
 
     public DocumentGenerationService(
         IMngDataGatewayClient dg,
@@ -34,7 +37,8 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
         IOptions<MngDocumentSettings> settings,
         ITemplateBrandingApplier brandingApplier,
         ILetterheadService letterheads,
-        LetterheadHeaderValueEnricher headerEnricher)
+        LetterheadHeaderValueEnricher headerEnricher,
+        ITemplateEditorService templateEditor)
     {
         _dg = dg;
         _resources = resources;
@@ -45,6 +49,7 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
         _brandingApplier = brandingApplier;
         _letterheads = letterheads;
         _headerEnricher = headerEnricher;
+        _templateEditor = templateEditor;
     }
 
     private string? Token => _ctx.BearerToken;
@@ -302,6 +307,322 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             UnresolvedParameterKeys = placeholderAnalysis.UnresolvedParameterKeys,
             RemainingPlaceholderKeys = remainingPlaceholders
         };
+    }
+
+    public async Task<DocumentGenerationPreviewDto> PreviewFromTemplateAsync(
+        string templateId,
+        PreviewFromTemplateRequest? request,
+        CancellationToken ct = default)
+    {
+        var (templateRow, model, values, placeholderAnalysis) = await BuildManualTemplateValuesAsync(
+            templateId,
+            request?.Overrides,
+            allocateCounters: request?.AllocateCounters ?? false,
+            documentName: null,
+            ct);
+
+        var missing = model.Parameters
+            .Where(p => !values.TryGetValue(p.Key, out var v) || string.IsNullOrWhiteSpace(v))
+            .Select(p => p.Key)
+            .ToList();
+
+        return new DocumentGenerationPreviewDto
+        {
+            ProfileCode = ManualProfileCode,
+            ContextType = string.Empty,
+            ContextId = string.Empty,
+            Values = values,
+            MissingKeys = missing,
+            UndefinedParameterKeys = placeholderAnalysis.UndefinedParameterKeys,
+            UnresolvedParameterKeys = placeholderAnalysis.UnresolvedParameterKeys
+        };
+    }
+
+    public async Task<TemplateGenerationPreviewSessionDto> CreatePreviewSessionFromTemplateAsync(
+        string templateId,
+        PreviewFromTemplateRequest? request,
+        CancellationToken ct = default)
+    {
+        var documentName = request?.DocumentName?.Trim();
+        var (templateRow, model, values, placeholderAnalysis) = await BuildManualTemplateValuesAsync(
+            templateId,
+            request?.Overrides,
+            allocateCounters: request?.AllocateCounters ?? false,
+            documentName,
+            ct);
+
+        var docxBytes = await LoadTemplateDocxAsync(templateRow, ct);
+        var mergedDocx = await MergeAndBrandAsync(templateRow, model, values, docxBytes, placeholderAnalysis, ct);
+        var remainingPlaceholders = DocumentPlaceholderAnalysis.ScanRemainingPlaceholderKeys(mergedDocx);
+        var fileName = ResolveManualFileName(documentName, values, templateRow);
+
+        var session = await _templateEditor.CreateEphemeralPreviewSessionAsync(
+            templateRow.__dataId ?? templateId,
+            mergedDocx,
+            fileName,
+            ct);
+
+        var missing = model.Parameters
+            .Where(p => !values.TryGetValue(p.Key, out var v) || string.IsNullOrWhiteSpace(v))
+            .Select(p => p.Key)
+            .ToList();
+
+        return new TemplateGenerationPreviewSessionDto
+        {
+            TemplateId = session.TemplateId,
+            EditorUrl = session.EditorUrl,
+            AccessToken = session.AccessToken,
+            WopiSrc = session.WopiSrc,
+            ReadOnly = session.ReadOnly,
+            ProfileCode = ManualProfileCode,
+            Values = values,
+            MissingKeys = missing,
+            UndefinedParameterKeys = placeholderAnalysis.UndefinedParameterKeys,
+            UnresolvedParameterKeys = placeholderAnalysis.UnresolvedParameterKeys,
+            RemainingPlaceholderKeys = remainingPlaceholders
+        };
+    }
+
+    public async Task<GenerateDocumentResultDto> GenerateFromTemplateAsync(
+        string templateId,
+        GenerateFromTemplateRequest request,
+        CancellationToken ct = default)
+    {
+        var parentFolderId = request.ParentFolderId?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(parentFolderId))
+        {
+            throw DocumentException.Validation(
+                "PARENT_FOLDER_REQUIRED",
+                "Target folder id is required.",
+                "Hedef klasör zorunludur.");
+        }
+
+        var documentName = request.DocumentName?.Trim();
+        var (templateRow, model, values, placeholderAnalysis) = await BuildManualTemplateValuesAsync(
+            templateId,
+            request.Overrides,
+            allocateCounters: true,
+            documentName,
+            ct);
+
+        var docxBytes = await LoadTemplateDocxAsync(templateRow, ct);
+        var mergedDocx = await MergeAndBrandAsync(templateRow, model, values, docxBytes, placeholderAnalysis, ct);
+        var remainingPlaceholders = DocumentPlaceholderAnalysis.ScanRemainingPlaceholderKeys(mergedDocx);
+
+        var fileName = ResolveManualFileName(documentName, values, templateRow);
+        var displayName = ResolveManualDisplayName(documentName, fileName);
+        var letterheadResolve = await _letterheads.ResolveAsync(
+            model.DefaultLetterheadId,
+            TemplateModelSerializer.ToLetterheadDto(model.Letterhead),
+            ct);
+
+        var saved = await _resources.CreateFileResourceAsync(new CreateFileResourceRequest
+        {
+            ParentId = parentFolderId,
+            Name = displayName,
+            OriginalFileName = fileName,
+            MimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            Extension = ".docx",
+            Size = mergedDocx.Length,
+            Content = Convert.ToBase64String(mergedDocx),
+            Origin = ResourceOrigin.Manual,
+            TemplateId = templateRow.__dataId,
+            TemplateCode = templateRow.code,
+            GenerationProfile = ManualProfileCode,
+            LetterheadId = letterheadResolve.LetterheadId,
+            DocumentNo = ResolveBusinessDocNo(values)
+        }, ct);
+
+        var generatedAt = DateTime.UtcNow;
+
+        return new GenerateDocumentResultDto
+        {
+            ProfileCode = ManualProfileCode,
+            ContextType = string.Empty,
+            ContextId = string.Empty,
+            TemplateId = templateRow.__dataId ?? string.Empty,
+            TemplateCode = templateRow.code ?? string.Empty,
+            LetterheadId = letterheadResolve.LetterheadId,
+            LetterheadCode = letterheadResolve.LetterheadCode,
+            LetterheadName = letterheadResolve.LetterheadName,
+            DocNo = ResolveBusinessDocNo(values),
+            ResourceId = saved.Id,
+            FileName = fileName,
+            FolderPath = Array.Empty<string>(),
+            GeneratedAt = generatedAt,
+            ResolvedValues = values,
+            UndefinedParameterKeys = placeholderAnalysis.UndefinedParameterKeys,
+            UnresolvedParameterKeys = placeholderAnalysis.UnresolvedParameterKeys,
+            RemainingPlaceholderKeys = remainingPlaceholders
+        };
+    }
+
+    private async Task<(DmDocumentTemplate Template, TemplateModelDocument Model, Dictionary<string, string> Values, DocumentPlaceholderAnalysis.Result PlaceholderAnalysis)> BuildManualTemplateValuesAsync(
+        string templateId,
+        Dictionary<string, string>? overrides,
+        bool allocateCounters,
+        string? documentName,
+        CancellationToken ct)
+    {
+        var templateRow = await LoadTemplateByIdAsync(templateId, ct);
+        EnsureTemplatePublished(templateRow);
+
+        var model = TemplateModelSerializer.Parse(templateRow.modelJson);
+        var emptyContext = new JsonObject();
+        var values = await _parameterResolver.ResolveAsync(
+            model,
+            emptyContext,
+            profileDefaults: null,
+            overrides,
+            Token,
+            ct);
+
+        if (!string.IsNullOrWhiteSpace(documentName))
+            values[LetterheadConstants.DocumentNameKey] = documentName.Trim();
+
+        var letterheadResolve = await _letterheads.ResolveAsync(
+            model.DefaultLetterheadId,
+            TemplateModelSerializer.ToLetterheadDto(model.Letterhead),
+            ct);
+        var letterheadEntry = await TryLoadLetterheadEntryAsync(letterheadResolve, ct);
+        await _headerEnricher.EnrichAsync(
+            values,
+            model,
+            letterheadEntry,
+            templateRow.name,
+            _ctx,
+            allocateCounters,
+            Token,
+            ct);
+
+        var docxBytes = await LoadTemplateDocxAsync(templateRow, ct);
+        var placeholderAnalysis = AnalyzePlaceholders(docxBytes, model, values);
+
+        return (templateRow, model, values, placeholderAnalysis);
+    }
+
+    private async Task<byte[]> MergeAndBrandAsync(
+        DmDocumentTemplate templateRow,
+        TemplateModelDocument model,
+        Dictionary<string, string> values,
+        byte[] docxBytes,
+        DocumentPlaceholderAnalysis.Result placeholderAnalysis,
+        CancellationToken ct)
+    {
+        var letterheadResolve = await _letterheads.ResolveAsync(
+            model.DefaultLetterheadId,
+            TemplateModelSerializer.ToLetterheadDto(model.Letterhead),
+            ct);
+
+        var letterheadModel = letterheadResolve.Letterhead is { Enabled: true }
+            ? TemplateModelSerializer.ToLetterheadModel(letterheadResolve.Letterhead)
+            : null;
+        var (footerModel, pageLayout) = LetterheadBrandingResolver.Resolve(letterheadResolve, model);
+
+        var branded = docxBytes;
+        if (letterheadModel is not null || footerModel is not null || !string.IsNullOrWhiteSpace(letterheadResolve.LetterheadId))
+        {
+            var letterheadEntry = await TryLoadLetterheadEntryAsync(letterheadResolve, ct);
+            var letterheadDesignDocx = await TryLoadLetterheadDesignDocxAsync(letterheadEntry, ct);
+            var letterheadSettings = !string.IsNullOrWhiteSpace(letterheadResolve.LetterheadId)
+                ? letterheadResolve.Settings
+                : null;
+            branded = await _brandingApplier.ApplyAsync(
+                docxBytes,
+                templateRow.name ?? string.Empty,
+                letterheadModel,
+                footerModel,
+                pageLayout,
+                letterheadDesignDocx,
+                letterheadSettings,
+                Token,
+                ct);
+
+            if (letterheadDesignDocx is { Length: > 0 }
+                && LetterheadDesignMerger.HasBrokenHeaderImages(branded))
+            {
+                branded = LetterheadDesignMerger.EnsureHeaderWithMediaFromDesign(branded, letterheadDesignDocx);
+            }
+        }
+
+        return DocxPlaceholderMerger.Merge(
+            branded,
+            values,
+            placeholderAnalysis.PreservePlaceholderKeys);
+    }
+
+    private static void EnsureTemplatePublished(DmDocumentTemplate templateRow)
+    {
+        var status = templateRow.status?.Trim() ?? string.Empty;
+        if (!string.Equals(status, TemplateStatus.Published, StringComparison.OrdinalIgnoreCase))
+        {
+            throw DocumentException.Validation(
+                "TEMPLATE_NOT_PUBLISHED",
+                "Template must be published before document generation.",
+                "Belge üretimi için şablon yayımlanmış olmalıdır.");
+        }
+    }
+
+    private static string ResolveManualFileName(
+        string? documentName,
+        IReadOnlyDictionary<string, string> values,
+        DmDocumentTemplate template)
+    {
+        if (!string.IsNullOrWhiteSpace(documentName))
+        {
+            var baseName = SanitizeFileStem(documentName.Trim());
+            return baseName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase)
+                ? baseName
+                : baseName + ".docx";
+        }
+
+        if (values.TryGetValue(LetterheadConstants.DocNoKey, out var docNo) && !string.IsNullOrWhiteSpace(docNo))
+            return $"{SanitizeFileStem(docNo)}.docx";
+
+        var code = template.code?.Trim();
+        if (string.IsNullOrWhiteSpace(code))
+            code = template.name?.Trim() ?? "document";
+
+        return $"{SanitizeFileStem(code)}-{DateTime.UtcNow:yyyyMMdd-HHmmss}.docx";
+    }
+
+    private static string ResolveManualDisplayName(string? documentName, string fileName)
+    {
+        if (!string.IsNullOrWhiteSpace(documentName))
+            return documentName.Trim();
+
+        return Path.GetFileNameWithoutExtension(fileName);
+    }
+
+    private static string SanitizeFileStem(string value)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var chars = value.Select(ch => invalid.Contains(ch) ? '_' : ch).ToArray();
+        var stem = new string(chars).Trim();
+        return string.IsNullOrWhiteSpace(stem) ? "document" : stem;
+    }
+
+    private async Task<DmDocumentTemplate> LoadTemplateByIdAsync(string templateId, CancellationToken ct)
+    {
+        var id = templateId?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            throw DocumentException.Validation(
+                "TEMPLATE_ID_REQUIRED",
+                "Template id is required.",
+                "Şablon kimliği zorunludur.");
+        }
+
+        var row = await _dg.GetByIdAsync<DmDocumentTemplate>(DmDatasets.DocumentTemplates, id, Token, ct);
+        if (row is null || string.IsNullOrWhiteSpace(row.__dataId))
+        {
+            throw DocumentException.Validation(
+                "TEMPLATE_NOT_FOUND",
+                $"Template not found: {id}",
+                $"Şablon bulunamadı.");
+        }
+
+        return row;
     }
 
     private static DocumentPlaceholderAnalysis.Result AnalyzePlaceholders(

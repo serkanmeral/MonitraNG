@@ -189,27 +189,7 @@ public sealed class TemplateEditorService : ITemplateEditorService
 
         var ttl = TimeSpan.FromMinutes(Math.Clamp(_settings.Wopi.SessionMinutes, 15, 1440));
         var accessToken = _editorSessions.BeginSession(session, ttl);
-
-        var wopiHost = _settings.Wopi.HostBaseUrl.TrimEnd('/');
-        var wopiSrc = $"{wopiHost}/wopi/files/{Uri.EscapeDataString(id)}";
-
-        var collaboraBase = _settings.Collabora.PublicBaseUrl.TrimEnd('/');
-        var editorPath = _settings.Collabora.EditorPath.StartsWith('/')
-            ? _settings.Collabora.EditorPath
-            : $"/{_settings.Collabora.EditorPath}";
-
-        var editorUrl = new StringBuilder()
-            .Append(collaboraBase)
-            .Append(editorPath)
-            .Append("?WOPISrc=")
-            .Append(WebUtility.UrlEncode(wopiSrc))
-            .Append("&access_token=")
-            .Append(WebUtility.UrlEncode(accessToken))
-            .Append(readOnly ? "&permission=readonly" : "&permission=edit")
-            .Append("&lang=tr")
-            .Append("&ui_defaults=")
-            .Append(WebUtility.UrlEncode("UIMode=compact;TextSidebar=true;TextStatusbar=false"))
-            .ToString();
+        var (editorUrl, wopiSrc) = BuildEditorUrls(id, accessToken, readOnly);
 
         return new TemplateEditorSessionDto
         {
@@ -221,14 +201,95 @@ public sealed class TemplateEditorService : ITemplateEditorService
         };
     }
 
+    public async Task<TemplateEditorSessionDto> CreateEphemeralPreviewSessionAsync(
+        string templateId,
+        byte[] content,
+        string fileName,
+        CancellationToken ct = default)
+    {
+        EnsureCollaboraEnabled();
+
+        var id = templateId?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(id))
+            throw DocumentException.NotFound();
+
+        if (content is not { Length: > 0 })
+        {
+            throw DocumentException.Validation(
+                "PREVIEW_CONTENT_EMPTY",
+                "Preview content is empty.",
+                "Önizleme içeriği boş.");
+        }
+
+        if (string.IsNullOrWhiteSpace(Token))
+        {
+            throw DocumentException.Validation(
+                "AUTH_REQUIRED",
+                "Bearer token is required.",
+                "Oturum doğrulaması gerekli.");
+        }
+
+        await _templates.GetByIdAsync(id, ct);
+
+        var userId = _ctx.UserId ?? _ctx.Username ?? "anonymous";
+        var userName = _ctx.Username ?? userId;
+        var displayFileName = string.IsNullOrWhiteSpace(fileName) ? DefaultFileName : fileName.Trim();
+
+        var session = new WopiSession
+        {
+            TemplateId = id,
+            UserId = userId,
+            UserName = userName,
+            DataGatewayToken = Token,
+            Version = "1",
+            ReadOnly = true,
+            EphemeralContentBytes = content,
+            EphemeralFileName = displayFileName
+        };
+
+        var ttl = TimeSpan.FromMinutes(Math.Clamp(_settings.Wopi.SessionMinutes, 15, 1440));
+        var accessToken = _editorSessions.BeginSession(session, ttl);
+        var (editorUrl, wopiSrc) = BuildEditorUrls(id, accessToken, readOnly: true);
+
+        return new TemplateEditorSessionDto
+        {
+            TemplateId = id,
+            EditorUrl = editorUrl,
+            AccessToken = accessToken,
+            WopiSrc = wopiSrc,
+            ReadOnly = true
+        };
+    }
+
     public async Task<WopiCheckFileInfoDto> GetCheckFileInfoAsync(
         string templateId,
         WopiSession session,
         CancellationToken ct = default)
     {
         EnsureTemplateSession(templateId, session);
+        if (TryResolveEphemeralContent(session, out var ephemeralBytes, out var ephemeralFileName))
+        {
+            return new WopiCheckFileInfoDto
+            {
+                BaseFileName = ephemeralFileName,
+                Size = ephemeralBytes.LongLength,
+                OwnerId = session.UserId,
+                UserId = session.UserId,
+                UserFriendlyName = session.UserName,
+                Version = session.Version,
+                SupportsUpdate = false,
+                UserCanWrite = false,
+                UserCanNotWriteRelative = false,
+                SupportsLocks = false,
+                SupportsRename = false,
+                UserCanRename = false,
+                PostMessageOrigin = WopiCollaboraHelper.ResolvePostMessageOrigin(session, _settings.Collabora)
+            };
+        }
+
         var template = await LoadTemplateAsync(templateId, session.DataGatewayToken, ct);
-        var readOnly = string.Equals(template.status, TemplateStatus.Published, StringComparison.OrdinalIgnoreCase);
+        var readOnly = session.ReadOnly
+            || string.Equals(template.status, TemplateStatus.Published, StringComparison.OrdinalIgnoreCase);
         var fileName = TemplateFileNameHelper.ResolveDisplayFileName(
             template.name,
             template.code,
@@ -259,6 +320,9 @@ public sealed class TemplateEditorService : ITemplateEditorService
         CancellationToken ct = default)
     {
         EnsureTemplateSession(templateId, session);
+        if (TryResolveEphemeralContent(session, out var ephemeralBytes, out _))
+            return ephemeralBytes;
+
         var template = await LoadTemplateAsync(templateId, session.DataGatewayToken, ct);
         return await GetDocxBytesAsync(template, session.DataGatewayToken, ct);
     }
@@ -271,6 +335,14 @@ public sealed class TemplateEditorService : ITemplateEditorService
         CancellationToken ct = default)
     {
         EnsureTemplateSession(templateId, session);
+        if (session.ReadOnly || session.EphemeralContentBytes is { Length: > 0 })
+        {
+            throw DocumentException.Validation(
+                "READ_ONLY",
+                "File is read-only.",
+                "Dosya salt okunur.");
+        }
+
         var template = await LoadTemplateAsync(templateId, session.DataGatewayToken, ct);
         TemplateDraftGuard.EnsureDraft(template);
         var fileName = TemplateFileNameHelper.ResolveDisplayFileName(
@@ -341,6 +413,51 @@ public sealed class TemplateEditorService : ITemplateEditorService
                 "Collabora editor is not enabled.",
                 "Belge editörü etkin değil.");
         }
+    }
+
+    private static bool TryResolveEphemeralContent(
+        WopiSession session,
+        out byte[] bytes,
+        out string fileName)
+    {
+        if (session.EphemeralContentBytes is { Length: > 0 } ephemeral)
+        {
+            bytes = ephemeral;
+            fileName = string.IsNullOrWhiteSpace(session.EphemeralFileName)
+                ? DefaultFileName
+                : session.EphemeralFileName.Trim();
+            return true;
+        }
+
+        bytes = Array.Empty<byte>();
+        fileName = DefaultFileName;
+        return false;
+    }
+
+    private (string EditorUrl, string WopiSrc) BuildEditorUrls(string templateId, string accessToken, bool readOnly)
+    {
+        var wopiHost = _settings.Wopi.HostBaseUrl.TrimEnd('/');
+        var wopiSrc = $"{wopiHost}/wopi/files/{Uri.EscapeDataString(templateId)}";
+
+        var collaboraBase = _settings.Collabora.PublicBaseUrl.TrimEnd('/');
+        var editorPath = _settings.Collabora.EditorPath.StartsWith('/')
+            ? _settings.Collabora.EditorPath
+            : $"/{_settings.Collabora.EditorPath}";
+
+        var editorUrl = new StringBuilder()
+            .Append(collaboraBase)
+            .Append(editorPath)
+            .Append("?WOPISrc=")
+            .Append(WebUtility.UrlEncode(wopiSrc))
+            .Append("&access_token=")
+            .Append(WebUtility.UrlEncode(accessToken))
+            .Append(readOnly ? "&permission=readonly" : "&permission=edit")
+            .Append("&lang=tr")
+            .Append("&ui_defaults=")
+            .Append(WebUtility.UrlEncode("UIMode=compact;TextSidebar=true;TextStatusbar=false"))
+            .ToString();
+
+        return (editorUrl, wopiSrc);
     }
 
     private static void EnsureTemplateSession(string templateId, WopiSession session)

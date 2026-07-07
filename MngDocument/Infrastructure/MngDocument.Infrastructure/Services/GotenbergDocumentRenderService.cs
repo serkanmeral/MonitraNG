@@ -82,10 +82,16 @@ public sealed class GotenbergDocumentRenderService : IDocumentRenderService
     public byte[] MergePlaceholders(byte[] docxBytes, IReadOnlyDictionary<string, string> values) =>
         DocxPlaceholderMerger.Merge(docxBytes, values);
 
-    public async Task<byte[]> ConvertDocxToPdfAsync(byte[] docxBytes, CancellationToken ct = default)
+    public async Task<byte[]> ConvertDocxToPdfAsync(byte[] docxBytes, CancellationToken ct = default) =>
+        await ConvertOfficeFileToPdfAsync(docxBytes, "document.docx", ct);
+
+    public async Task<byte[]> ConvertOfficeFileToPdfAsync(
+        byte[] fileBytes,
+        string fileName,
+        CancellationToken ct = default)
     {
         EnsureEnabled();
-        using var content = BuildDocxMultipart(docxBytes);
+        using var content = BuildOfficeMultipart(fileBytes, fileName);
         var client = CreateClient();
         using var response = await client.PostAsync("/forms/libreoffice/convert", content, ct);
         if (!response.IsSuccessStatusCode)
@@ -122,13 +128,24 @@ public sealed class GotenbergDocumentRenderService : IDocumentRenderService
         return client;
     }
 
-    private static MultipartFormDataContent BuildDocxMultipart(byte[] docxBytes)
+    private static MultipartFormDataContent BuildOfficeMultipart(byte[] fileBytes, string fileName)
     {
+        var safeName = string.IsNullOrWhiteSpace(fileName) ? "document.docx" : Path.GetFileName(fileName);
         var content = new MultipartFormDataContent();
-        var fileContent = new ByteArrayContent(docxBytes);
-        fileContent.Headers.ContentType = new MediaTypeHeaderValue(
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-        content.Add(fileContent, "files", "document.docx");
+        var fileContent = new ByteArrayContent(fileBytes);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(ResolveMimeType(safeName));
+        content.Add(fileContent, "files", safeName);
         return content;
+    }
+
+    private static string ResolveMimeType(string fileName)
+    {
+        var ext = Path.GetExtension(fileName).TrimStart('.').ToLowerInvariant();
+        return ext switch
+        {
+            "xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            _ => "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        };
     }
 }

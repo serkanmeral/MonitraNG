@@ -11,6 +11,27 @@ const TEXT_EXTS = [
   'ini', 'conf', 'env', 'html', 'htm', 'css', 'js', 'ts', 'sql',
 ];
 const DOCX_EXTS = ['docx'];
+const SHEET_EXTS = ['xlsx', 'xls'];
+const PRESENTATION_EXTS = ['pptx', 'ppt'];
+
+function isOfficeExtension(resource: DiResource, exts: string[], mimeToken: string): boolean {
+  const ext = resExt(resource);
+  if (exts.includes(ext)) return true;
+  const mime = (resource.mimeType ?? '').toLowerCase();
+  return mime.includes(mimeToken);
+}
+
+function isDocxExtension(resource: DiResource): boolean {
+  return isOfficeExtension(resource, DOCX_EXTS, 'wordprocessingml');
+}
+
+function isSheetExtension(resource: DiResource): boolean {
+  return isOfficeExtension(resource, SHEET_EXTS, 'spreadsheetml');
+}
+
+function isPresentationExtension(resource: DiResource): boolean {
+  return isOfficeExtension(resource, PRESENTATION_EXTS, 'presentationml');
+}
 
 /** Görsel/PDF için boyut tavanı (bayt). Üzerindeyse önizleme yerine indir önerilir. */
 export const DI_PREVIEW_MAX_BYTES = 25 * 1024 * 1024; // 25 MB
@@ -23,13 +44,6 @@ function resExt(resource: DiResource): string {
   const name = resource.fileName ?? resource.name ?? '';
   const dot = name.lastIndexOf('.');
   return dot >= 0 ? name.slice(dot + 1).toLowerCase().trim() : '';
-}
-
-function isDocxExtension(resource: DiResource): boolean {
-  const ext = resExt(resource);
-  if (DOCX_EXTS.includes(ext)) return true;
-  const mime = (resource.mimeType ?? '').toLowerCase();
-  return mime.includes('wordprocessingml');
 }
 
 /** Uzantı → MIME tipi. DG bazen `application/octet-stream` döndürür; iframe/img
@@ -111,6 +125,30 @@ export function isDiDocxEditable(resource: DiResource): boolean {
   if (!isDiManagedDocument(resource)) return false;
   if (!resource.hasContent && !resource.filePath) return false;
   return isDocxExtension(resource);
+}
+
+/** Yönetilen XLSX (elektronik tablo) mi? */
+export function isDiSheet(resource: DiResource): boolean {
+  if (!isDiManagedDocument(resource)) return false;
+  return isSheetExtension(resource);
+}
+
+/** Yönetilen PPTX (sunum) mi? */
+export function isDiPresentation(resource: DiResource): boolean {
+  if (!isDiManagedDocument(resource)) return false;
+  return isPresentationExtension(resource);
+}
+
+/** Collabora editöründe açılabilir yönetilen Office dosyası mı? (DOCX / XLSX / PPTX) */
+export function isDiOfficeEditable(resource: DiResource): boolean {
+  if (!isDiManagedDocument(resource)) return false;
+  if (!resource.hasContent && !resource.filePath) return false;
+  return isDocxExtension(resource) || isSheetExtension(resource) || isPresentationExtension(resource);
+}
+
+/** Gotenberg export/pdf ile PDF indirilebilir yönetilen Office dosyası mı? */
+export function isDiOfficePdfExportable(resource: DiResource): boolean {
+  return isDiOfficeEditable(resource);
 }
 
 /** Klonlanabilir kaynak mı? (markdown veya yönetilen DOCX — upload hariç) */

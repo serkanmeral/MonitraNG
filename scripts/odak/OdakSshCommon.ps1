@@ -16,6 +16,9 @@ function Import-OdakEnvFile {
         if ($line -match '^\s*(\w+)\s*=\s*(.+)\s*$') {
             $name = $matches[1]
             $value = $matches[2].Trim().Trim('"').Trim("'")
+            # Ortam değişkeni zaten set ise .env dosyası ezmesin (agent / $env:ODAK_SSH_PASSWORD önceliği)
+            if ($name -eq 'ODAK_SSH_PASSWORD' -and -not [string]::IsNullOrWhiteSpace($env:ODAK_SSH_PASSWORD)) { return }
+            if ($name -eq 'ODAK_PROD_SSH_PASSWORD' -and -not [string]::IsNullOrWhiteSpace($env:ODAK_PROD_SSH_PASSWORD)) { return }
             Set-Item -Path "env:$name" -Value $value -Force
         }
     }

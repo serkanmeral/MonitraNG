@@ -304,6 +304,15 @@ export interface DiCreateNativeDocumentRequest {
   selectedHeaderFields?: DiLetterheadHeaderFields | null;
 }
 
+export interface DiCreateNativeOfficeRequest {
+  parentId?: string | null;
+  name: string;
+  /** Boş bırakılırsa sunucu dosya adından üretir. */
+  documentNo?: string | null;
+  description?: string | null;
+  tags?: string[];
+}
+
 /** Ağaç kökü için sanal düğüm kimliği (UI). */
 export const DI_ROOT_ID = '__di_root__';
 
@@ -513,6 +522,32 @@ export interface DiDocumentGenerationPreview {
   missingKeys: string[];
   undefinedParameterKeys: string[];
   unresolvedParameterKeys: string[];
+}
+
+export interface DiGenerateFromTemplateRequest {
+  parentFolderId: string;
+  documentName?: string | null;
+  overrides?: Record<string, string>;
+}
+
+export interface DiPreviewFromTemplateRequest {
+  overrides?: Record<string, string>;
+  allocateCounters?: boolean;
+  documentName?: string | null;
+}
+
+export interface DiTemplateGenerationPreviewSession {
+  templateId: string;
+  editorUrl: string;
+  accessToken: string;
+  wopiSrc: string;
+  readOnly: boolean;
+  profileCode: string;
+  values: Record<string, string>;
+  missingKeys: string[];
+  undefinedParameterKeys: string[];
+  unresolvedParameterKeys: string[];
+  remainingPlaceholderKeys: string[];
 }
 
 export interface DiTemplateDetail extends DiTemplateSummary {
@@ -783,6 +818,7 @@ export interface DiEditorSessionItem {
   templateId?: string | null;
   letterheadId?: string | null;
   kind: string;
+  officeKind?: string | null;
   displayName?: string | null;
   userId: string;
   userName: string;

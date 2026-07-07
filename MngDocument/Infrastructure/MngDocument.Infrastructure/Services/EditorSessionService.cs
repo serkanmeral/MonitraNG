@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.Options;
 using MngDocument.Application.Configuration;
 using MngDocument.Application.Contracts.EditorSessions;
@@ -10,6 +11,11 @@ namespace MngDocument.Infrastructure.Services;
 
 public sealed class EditorSessionService : IEditorSessionService
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     private readonly IWopiSessionStore _sessions;
     private readonly IRequestContext _ctx;
     private readonly IMngDataGatewayClient _dg;
@@ -200,30 +206,38 @@ public sealed class EditorSessionService : IEditorSessionService
         if (string.IsNullOrWhiteSpace(token) || items.Count == 0)
             return;
 
-        var resourceNames = new Dictionary<string, string>(StringComparer.Ordinal);
-        var templateNames = new Dictionary<string, string>(StringComparer.Ordinal);
-        var letterheadNames = new Dictionary<string, string>(StringComparer.Ordinal);
+        var resourceIds = items
+            .Select(i => i.ResourceId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.Ordinal)
+            .Cast<string>()
+            .ToList();
+        var templateIds = items
+            .Select(i => i.TemplateId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.Ordinal)
+            .Cast<string>()
+            .ToList();
+        var letterheadIds = items
+            .Select(i => i.LetterheadId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.Ordinal)
+            .Cast<string>()
+            .ToList();
 
-        foreach (var id in items.Select(i => i.ResourceId).Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.Ordinal)!)
-        {
-            var row = await _dg.GetByIdAsync<DmResource>(DmDatasets.Resources, id!, token, ct);
-            if (row is not null)
-                resourceNames[id!] = ResolveResourceLabel(row);
-        }
+        // Tekil GetById yerine toplu sorgu — N oturumda N sıralı DG çağrısı yapılıyordu (yavaş yenileme).
+        var resourceTask = LoadResourcesByIdsAsync(resourceIds, token, ct);
+        var templateTask = LoadTemplatesByIdsAsync(templateIds, token, ct);
+        var letterheadTask = LoadLetterheadsByIdsAsync(letterheadIds, token, ct);
+        await Task.WhenAll(resourceTask, templateTask, letterheadTask);
 
-        foreach (var id in items.Select(i => i.TemplateId).Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.Ordinal)!)
-        {
-            var row = await _dg.GetByIdAsync<DmDocumentTemplate>(DmDatasets.DocumentTemplates, id!, token, ct);
-            if (row is not null)
-                templateNames[id!] = row.name?.Trim() ?? row.code?.Trim() ?? id!;
-        }
-
-        foreach (var id in items.Select(i => i.LetterheadId).Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.Ordinal)!)
-        {
-            var row = await _dg.GetByIdAsync<DmLetterhead>(DmDatasets.Letterheads, id!, token, ct);
-            if (row is not null)
-                letterheadNames[id!] = row.name?.Trim() ?? row.code?.Trim() ?? id!;
-        }
+        var resourceRows = await resourceTask;
+        var templateNames = await templateTask;
+        var letterheadNames = await letterheadTask;
+        var resourceNames = resourceRows.ToDictionary(
+            kv => kv.Key,
+            kv => ResolveResourceLabel(kv.Value),
+            StringComparer.Ordinal);
 
         for (var i = 0; i < items.Count; i++)
         {
@@ -236,6 +250,13 @@ public sealed class EditorSessionService : IEditorSessionService
                 _ => item.ResourceId ?? item.TemplateId ?? item.LetterheadId
             };
 
+            string? officeKind = item.Kind switch
+            {
+                "resource" when item.ResourceId is not null && resourceRows.TryGetValue(item.ResourceId, out var resource) =>
+                    ResolveOfficeKind(resource.extension, resource.mimeType),
+                _ => null
+            };
+
             items[i] = new EditorSessionItemDto
             {
                 AccessToken = item.AccessToken,
@@ -244,6 +265,7 @@ public sealed class EditorSessionService : IEditorSessionService
                 TemplateId = item.TemplateId,
                 LetterheadId = item.LetterheadId,
                 Kind = item.Kind,
+                OfficeKind = officeKind,
                 DisplayName = displayName,
                 UserId = item.UserId,
                 UserName = item.UserName,
@@ -252,6 +274,114 @@ public sealed class EditorSessionService : IEditorSessionService
                 LastSeenAt = item.LastSeenAt
             };
         }
+    }
+
+    private async Task<Dictionary<string, DmResource>> LoadResourcesByIdsAsync(
+        IReadOnlyList<string> ids,
+        string token,
+        CancellationToken ct)
+    {
+        var map = new Dictionary<string, DmResource>(StringComparer.Ordinal);
+        if (ids.Count == 0)
+            return map;
+
+        var page = await _dg.QueryPageAsync(
+            DmDatasets.Resources,
+            new Dictionary<string, object?>
+            {
+                ["__dataId"] = new Dictionary<string, object?> { ["$in"] = ids.ToArray() }
+            },
+            $"limit={ids.Count}",
+            token,
+            ct);
+
+        foreach (var row in page.Items)
+        {
+            var resource = MapQueryRow<DmResource>(row);
+            if (resource?.__dataId is { } dataId && !string.IsNullOrWhiteSpace(dataId))
+                map[dataId] = resource;
+        }
+
+        return map;
+    }
+
+    private async Task<Dictionary<string, string>> LoadTemplatesByIdsAsync(
+        IReadOnlyList<string> ids,
+        string token,
+        CancellationToken ct)
+    {
+        var map = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (ids.Count == 0)
+            return map;
+
+        var page = await _dg.QueryPageAsync(
+            DmDatasets.DocumentTemplates,
+            new Dictionary<string, object?>
+            {
+                ["__dataId"] = new Dictionary<string, object?> { ["$in"] = ids.ToArray() }
+            },
+            $"limit={ids.Count}",
+            token,
+            ct);
+
+        foreach (var row in page.Items)
+        {
+            var template = MapQueryRow<DmDocumentTemplate>(row);
+            if (template?.__dataId is not { } dataId || string.IsNullOrWhiteSpace(dataId))
+                continue;
+            map[dataId] = template.name?.Trim() ?? template.code?.Trim() ?? dataId;
+        }
+
+        return map;
+    }
+
+    private async Task<Dictionary<string, string>> LoadLetterheadsByIdsAsync(
+        IReadOnlyList<string> ids,
+        string token,
+        CancellationToken ct)
+    {
+        var map = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (ids.Count == 0)
+            return map;
+
+        var page = await _dg.QueryPageAsync(
+            DmDatasets.Letterheads,
+            new Dictionary<string, object?>
+            {
+                ["__dataId"] = new Dictionary<string, object?> { ["$in"] = ids.ToArray() }
+            },
+            $"limit={ids.Count}",
+            token,
+            ct);
+
+        foreach (var row in page.Items)
+        {
+            var letterhead = MapQueryRow<DmLetterhead>(row);
+            if (letterhead?.__dataId is not { } dataId || string.IsNullOrWhiteSpace(dataId))
+                continue;
+            map[dataId] = letterhead.name?.Trim() ?? letterhead.code?.Trim() ?? dataId;
+        }
+
+        return map;
+    }
+
+    private static T? MapQueryRow<T>(Dictionary<string, object?> row) where T : class
+    {
+        var json = JsonSerializer.Serialize(row, JsonOptions);
+        return JsonSerializer.Deserialize<T>(json, JsonOptions);
+    }
+
+    private static string? ResolveOfficeKind(string? extension, string? mimeType)
+    {
+        if (!ManagedOfficeProfiles.TryResolve(extension, mimeType, out var profile))
+            return null;
+
+        return profile.Kind switch
+        {
+            ManagedOfficeKind.Sheet => "sheet",
+            ManagedOfficeKind.Presentation => "presentation",
+            _ => "document"
+        };
     }
 
     private static string ResolveResourceLabel(DmResource resource)

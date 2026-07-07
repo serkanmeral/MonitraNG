@@ -8,6 +8,12 @@ public interface ITemplateEditorService
 
     Task<TemplateEditorSessionDto> CreateEditorSessionAsync(string templateId, CancellationToken ct = default);
 
+    Task<TemplateEditorSessionDto> CreateEphemeralPreviewSessionAsync(
+        string templateId,
+        byte[] content,
+        string fileName,
+        CancellationToken ct = default);
+
     Task<WopiCheckFileInfoDto> GetCheckFileInfoAsync(string templateId, WopiSession session, CancellationToken ct = default);
 
     Task<byte[]> GetFileContentsAsync(string templateId, WopiSession session, CancellationToken ct = default);

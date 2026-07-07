@@ -18,6 +18,10 @@ public sealed class WopiSession
     public DateTime LastSeenAt { get; set; } = DateTime.UtcNow;
     /// <summary>Collabora PostMessage hedefi — tarayıcı <c>window.location.origin</c>.</summary>
     public string? PostMessageOrigin { get; init; }
+    /// <summary>Dolu ise WOPI yanıtı bu geçici DOCX baytlarından okunur (üretim önizlemesi).</summary>
+    public byte[]? EphemeralContentBytes { get; init; }
+    /// <summary><see cref="EphemeralContentBytes"/> için görünen dosya adı.</summary>
+    public string? EphemeralFileName { get; init; }
 }
 
 public sealed class WopiActiveSession

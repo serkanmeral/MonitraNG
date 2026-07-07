@@ -15,8 +15,6 @@ namespace MngDocument.Infrastructure.Services;
 
 public sealed class ResourceEditorService : IResourceEditorService
 {
-    private static readonly HashSet<string> DocxExtensions = new(StringComparer.OrdinalIgnoreCase) { "docx" };
-    private const string DocxMime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
     private readonly IMngDataGatewayClient _dg;
     private readonly IRequestContext _ctx;
@@ -78,7 +76,7 @@ public sealed class ResourceEditorService : IResourceEditorService
         }
 
         var resource = await LoadOrThrowAsync(id, ct);
-        EnsureDocxFile(resource);
+        EnsureManagedOfficeFile(resource);
         EnsureManagedDocument(resource);
 
         var snapshot = await _perms.LoadSnapshotAsync(ct);
@@ -161,7 +159,7 @@ public sealed class ResourceEditorService : IResourceEditorService
         }
 
         var resource = await LoadOrThrowAsync(id, ct);
-        EnsureDocxFile(resource);
+        EnsureManagedOfficeFile(resource);
         EnsureManagedDocument(resource);
 
         var snapshot = await _perms.LoadSnapshotAsync(ct);
@@ -209,10 +207,10 @@ public sealed class ResourceEditorService : IResourceEditorService
     {
         EnsureResourceSession(resourceId, session);
         var resource = await LoadOrThrowAsync(resourceId, session.DataGatewayToken, ct);
-        EnsureDocxFile(resource);
+        EnsureManagedOfficeFile(resource);
 
         var fileName = ResolveFileName(resource);
-        var bytes = await ResolveDocxBytesAsync(resourceId, resource, session, ct);
+        var bytes = await ResolveOfficeBytesAsync(resourceId, resource, session, ct);
 
         return new WopiCheckFileInfoDto
         {
@@ -239,8 +237,21 @@ public sealed class ResourceEditorService : IResourceEditorService
     {
         EnsureResourceSession(resourceId, session);
         var resource = await LoadOrThrowAsync(resourceId, session.DataGatewayToken, ct);
-        EnsureDocxFile(resource);
-        return await ResolveDocxBytesAsync(resourceId, resource, session, ct);
+        EnsureManagedOfficeFile(resource);
+        return await ResolveOfficeBytesAsync(resourceId, resource, session, ct);
+    }
+
+    public async Task<(byte[] Content, string ContentType)> GetFileWithContentTypeAsync(
+        string resourceId,
+        WopiSession session,
+        CancellationToken ct = default)
+    {
+        EnsureResourceSession(resourceId, session);
+        var resource = await LoadOrThrowAsync(resourceId, session.DataGatewayToken, ct);
+        EnsureManagedOfficeFile(resource);
+        var profile = ResolveOfficeProfile(resource);
+        var bytes = await ResolveOfficeBytesAsync(resourceId, resource, session, ct);
+        return (bytes, profile.MimeType);
     }
 
     public async Task SaveFileContentsAsync(
@@ -255,7 +266,7 @@ public sealed class ResourceEditorService : IResourceEditorService
             throw DocumentException.Validation("READ_ONLY", "File is read-only.", "Dosya salt okunur.");
 
         var resource = await LoadOrThrowAsync(resourceId, session.DataGatewayToken, ct);
-        EnsureDocxFile(resource);
+        EnsureManagedOfficeFile(resource);
 
         var fileName = ResolveFileName(resource);
         var newVersion = await _resources.SaveManagedDocumentFileAsync(
@@ -298,7 +309,7 @@ public sealed class ResourceEditorService : IResourceEditorService
         return (editorUrl, wopiSrc);
     }
 
-    private async Task<byte[]> ResolveDocxBytesAsync(
+    private async Task<byte[]> ResolveOfficeBytesAsync(
         string resourceId,
         DmResource resource,
         WopiSession session,
@@ -314,7 +325,7 @@ public sealed class ResourceEditorService : IResourceEditorService
             return bytes;
         }
 
-        return await GetDocxBytesAsync(resource, session.DataGatewayToken, ct);
+        return await GetOfficeBytesAsync(resource, session.DataGatewayToken, ct);
     }
 
     private void EnsureCollaboraEnabled()
@@ -338,7 +349,7 @@ public sealed class ResourceEditorService : IResourceEditorService
             throw DocumentException.NotFound("WOPI oturumu geçersiz.");
     }
 
-    private static void EnsureDocxFile(DmResource resource)
+    private static void EnsureManagedOfficeFile(DmResource resource)
     {
         if (!string.Equals(resource.type, ResourceType.File, StringComparison.OrdinalIgnoreCase))
         {
@@ -348,18 +359,26 @@ public sealed class ResourceEditorService : IResourceEditorService
                 "Kaynak bir dosya değil.");
         }
 
-        var ext = (resource.extension ?? string.Empty).Trim().TrimStart('.');
-        var mime = resource.mimeType ?? string.Empty;
-        var isDocx = DocxExtensions.Contains(ext)
-            || mime.Contains("wordprocessingml", StringComparison.OrdinalIgnoreCase);
-
-        if (!isDocx)
+        if (!ManagedOfficeProfiles.TryResolve(resource.extension, resource.mimeType, out _))
         {
             throw DocumentException.Validation(
                 "UNSUPPORTED_FILE_TYPE",
-                "Only DOCX files can be opened in the editor.",
-                "Editörde yalnızca DOCX dosyaları açılabilir.");
+                "Only DOCX, XLSX and PPTX files can be opened in the editor.",
+                "Editörde yalnızca DOCX, XLSX ve PPTX dosyaları açılabilir.");
         }
+    }
+
+    private static ManagedOfficeProfile ResolveOfficeProfile(DmResource resource)
+    {
+        if (!ManagedOfficeProfiles.TryResolve(resource.extension, resource.mimeType, out var profile))
+        {
+            throw DocumentException.Validation(
+                "UNSUPPORTED_FILE_TYPE",
+                "Unsupported managed office file type.",
+                "Desteklenmeyen Office dosya türü.");
+        }
+
+        return profile;
     }
 
     private static void EnsureManagedDocument(DmResource resource)
@@ -389,7 +408,7 @@ public sealed class ResourceEditorService : IResourceEditorService
         return resource;
     }
 
-    private async Task<byte[]> GetDocxBytesAsync(DmResource resource, string token, CancellationToken ct)
+    private async Task<byte[]> GetOfficeBytesAsync(DmResource resource, string token, CancellationToken ct)
     {
         var (path, _) = ReadFileField(resource.file);
         if (string.IsNullOrWhiteSpace(path))
@@ -409,10 +428,9 @@ public sealed class ResourceEditorService : IResourceEditorService
         if (!string.IsNullOrWhiteSpace(fileName))
             return fileName!;
 
-        var name = resource.name ?? resource.title ?? "document.docx";
-        if (!name.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
-            name += ".docx";
-        return name;
+        var profile = ResolveOfficeProfile(resource);
+        var name = resource.name ?? resource.title ?? profile.DefaultFileName;
+        return ManagedOfficeProfiles.EnsureFileNameHasExtension(name, profile);
     }
 
     private static (string? Path, string? Name) ReadFileField(JsonElement? file)

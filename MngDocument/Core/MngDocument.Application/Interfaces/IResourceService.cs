@@ -108,8 +108,13 @@ public interface IResourceService
     Task<ResourceDto> CreateFileResourceAsync(CreateFileResourceRequest request, CancellationToken ct = default);
 
     Task<ResourceDto> CreateNativeDocumentAsync(CreateNativeDocumentRequest request, CancellationToken ct = default);
+    Task<ResourceDto> CreateNativeSheetAsync(CreateNativeOfficeRequest request, CancellationToken ct = default);
+    Task<ResourceDto> CreateNativePresentationAsync(CreateNativeOfficeRequest request, CancellationToken ct = default);
 
     Task<(byte[] PdfBytes, string FileName)> GetFilePreviewPdfAsync(string id, CancellationToken ct = default);
+
+    /// <summary>DOCX kaynağını PDF olarak dışa aktarır (native/manual/system/upload).</summary>
+    Task<(byte[] PdfBytes, string FileName)> GetFileExportPdfAsync(string id, CancellationToken ct = default);
 
     Task<ResourceListResult> SearchAsync(string query, int skip, int limit, CancellationToken ct = default);
 

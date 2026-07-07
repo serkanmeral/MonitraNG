@@ -13,4 +13,7 @@ public sealed class RenderTemplatePdfRequest
 {
     /// <summary>Placeholder anahtar → değer. Boş bırakılırsa tanımlı parametre etiketleri veya anahtar adı kullanılır.</summary>
     public Dictionary<string, string>? Values { get; init; }
+
+    /// <summary>true ise yalnızca verilen değerler merge edilir; eksik anahtarlar DOCX'te {{key}} olarak kalır (önizleme).</summary>
+    public bool PreserveMissingPlaceholders { get; init; }
 }

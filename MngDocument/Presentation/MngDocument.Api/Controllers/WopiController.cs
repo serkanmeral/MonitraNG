@@ -57,11 +57,15 @@ public sealed class WopiController : ControllerBase
         if (session is null)
             return Unauthorized();
 
-        var bytes = !string.IsNullOrWhiteSpace(session.ResourceId)
-            ? await _resourceEditor.GetFileContentsAsync(id, session, ct)
-            : !string.IsNullOrWhiteSpace(session.LetterheadId)
-                ? await _letterheadEditor.GetFileContentsAsync(id, session, ct)
-                : await _editor.GetFileContentsAsync(id, session, ct);
+        if (!string.IsNullOrWhiteSpace(session.ResourceId))
+        {
+            var (content, contentType) = await _resourceEditor.GetFileWithContentTypeAsync(id, session, ct);
+            return File(content, contentType);
+        }
+
+        var bytes = !string.IsNullOrWhiteSpace(session.LetterheadId)
+            ? await _letterheadEditor.GetFileContentsAsync(id, session, ct)
+            : await _editor.GetFileContentsAsync(id, session, ct);
         return File(bytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     }
 

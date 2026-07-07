@@ -842,31 +842,35 @@ Yetki: doküman view + WorkItem view birlikte kontrol.
 
 ---
 
-## 15. Faz S — Sheet
+## 15. Faz S — Sheet ✅ (çekirdek)
 
 **Hedef:** Excel merkezileştirme; Döküman ile aynı yetki/sürüm mantığı.
 
-| Dilim | Kapsam |
-|-------|--------|
-| S1 | `ResourceEditorService` xlsx + Collabora Calc |
-| S2 | Sürüm UI, upload, indirme |
-| S3 | Kurumsal senaryolar (fiyat, kapasite, plan) — şablondan sheet üretimi opsiyonel |
+**Detay plan:** [SHEET_ROADMAP.md](./SHEET_ROADMAP.md) — **Managed Office** (O-0) üzerinde; PPTX ile ortak mimari.  
+**Durum (8 Tem 2026 gece):** O-0, O-1, S1, S2 ✅
 
-**Tahmini süre:** 3–5 hafta (D WOPI olgunlaştıktan sonra)
+| Dilim | Kapsam | Durum |
+|-------|--------|-------|
+| **O-0** | WOPI genelleme: docx + xlsx + **pptx profili** | ✅ |
+| **O-1** | Ortak native API + UI `isDi*` / menü iskeleti | ✅ |
+| S1 | Native xlsx + Collabora Calc | ✅ |
+| S2 | Sürüm UX, export/pdf | ✅ |
+| S3 | Şablondan sheet (senaryo; P1) | backlog |
 
 ---
 
-## 16. Faz Pr — Sunum
+## 16. Faz Pr — Sunum ✅ (çekirdek)
 
-**Hedef:** PPTX merkezileştirme.
+**Hedef:** PPTX merkezileştirme; Sheet ile **aynı O-0** katmanı — ayrı WOPI yazılmaz.
 
-| Dilim | Kapsam |
-|-------|--------|
-| Pr1 | pptx Collabora Impress |
-| Pr2 | Upload, versiyon, yetki |
-| Pr3 | Kurumsal arşiv senaryoları |
+**Detay plan:** [SHEET_ROADMAP.md § Pr](./SHEET_ROADMAP.md) (Sheet ile birleşik)  
+**Durum (8 Tem 2026 gece):** Pr1, Pr2 ✅
 
-**Tahmini süre:** 2–4 hafta (Sheet sonrası)
+| Dilim | Kapsam | Durum |
+|-------|--------|-------|
+| Pr1 | Native pptx + Collabora Impress | ✅ |
+| Pr2 | Sürüm UX, export/pdf (S2 simetrisi) | ✅ |
+| Pr3 | Şablondan sunum / kurumsal arşiv (P2) | backlog |
 
 **Ürün mesajı:** Word · Excel · Sunum — tek platform, aynı kurallar ([KURUMSAL_ICERIK_SUNUM.md](./KURUMSAL_ICERIK_SUNUM.md)).
 

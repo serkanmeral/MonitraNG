@@ -19,7 +19,7 @@ import {
 } from '@/services/documentIntelligenceService';
 import { DI_HOME_PATH } from '@/utils/diResourceLink';
 import { diPageResourceLabel } from '@/utils/diPageResource';
-import { isDiDocxEditable } from '@/utils/diFilePreview';
+import { isDiOfficeEditable } from '@/utils/diFilePreview';
 import type { DiResource, DiResourceEditorOpenOptions } from '@/types/apps/documentIntelligence';
 
 definePageMeta({ layout: 'default' });
@@ -142,7 +142,7 @@ async function loadEditor(options?: DiResourceEditorOpenOptions) {
 
   try {
     const r = await diGetById(id);
-    if (!isDiDocxEditable(r)) {
+    if (!isDiOfficeEditable(r)) {
       error.value = t('documentIntelligence.errors.editorSession');
       return;
     }

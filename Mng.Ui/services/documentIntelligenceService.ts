@@ -5,6 +5,7 @@ import {
   type DiBreadcrumb,
   type DiCreateFileResourceRequest,
   type DiCreateNativeDocumentRequest,
+  type DiCreateNativeOfficeRequest,
   type DiCreateFolderRequest,
   type DiCreateMarkdownRequest,
   type DiCreateResourceLinkRequest,
@@ -71,6 +72,9 @@ import {
   type DiGenerateDocumentResult,
   type DiDocumentGenerationStatus,
   type DiDocumentGenerationPreview,
+  type DiGenerateFromTemplateRequest,
+  type DiPreviewFromTemplateRequest,
+  type DiTemplateGenerationPreviewSession,
 } from '@/types/apps/documentIntelligence';
 import { diCreateDefaultFooter, diCreateDefaultPageLayout, diNormalizePageLayout } from '@/utils/diPageLayout';
 
@@ -607,6 +611,16 @@ export async function diCreateFileResource(request: DiCreateFileResourceRequest)
 
 export async function diCreateNativeDocument(request: DiCreateNativeDocumentRequest): Promise<DiResource> {
   const raw = await fetchFromDocuments(`${BASE}/documents`, 'POST', request);
+  return mapResource(raw);
+}
+
+export async function diCreateNativeSheet(request: DiCreateNativeOfficeRequest): Promise<DiResource> {
+  const raw = await fetchFromDocuments(`${BASE}/sheets/native`, 'POST', request);
+  return mapResource(raw);
+}
+
+export async function diCreateNativePresentation(request: DiCreateNativeOfficeRequest): Promise<DiResource> {
+  const raw = await fetchFromDocuments(`${BASE}/presentations/native`, 'POST', request);
   return mapResource(raw);
 }
 
@@ -1334,6 +1348,7 @@ export async function diGetEditorSessionStats(): Promise<DiEditorSessionStats> {
             templateId: str(s, 'templateId'),
             letterheadId: str(s, 'letterheadId'),
             kind: str(s, 'kind') ?? '',
+            officeKind: str(s, 'officeKind'),
             displayName: str(s, 'displayName'),
             userId: str(s, 'userId') ?? '',
             userName: str(s, 'userName') ?? '',
@@ -1674,6 +1689,162 @@ export async function diGetDocumentGenerationStatus(
 export async function diGenerateDocument(request: DiGenerateDocumentRequest): Promise<DiGenerateDocumentResult> {
   const raw = await fetchFromDocuments(GENERATE_BASE, 'POST', request);
   return mapGenerateResult(raw);
+}
+
+function mapGenerationPreview(raw: unknown): DiDocumentGenerationPreview {
+  const o = asRecord(raw);
+  const valuesRaw = o.values;
+  const missingRaw = o.missingKeys;
+  return {
+    profileCode: str(o, 'profileCode') ?? '',
+    contextType: str(o, 'contextType') ?? '',
+    contextId: str(o, 'contextId') ?? '',
+    values:
+      valuesRaw && typeof valuesRaw === 'object'
+        ? Object.fromEntries(
+            Object.entries(valuesRaw as Record<string, unknown>).map(([k, v]) => [k, String(v ?? '')])
+          )
+        : {},
+    missingKeys: Array.isArray(missingRaw) ? missingRaw.map((x) => String(x)) : [],
+    undefinedParameterKeys: strArray(o.undefinedParameterKeys),
+    unresolvedParameterKeys: strArray(o.unresolvedParameterKeys),
+  };
+}
+
+/** Şablondan manuel üretim — parametre önizlemesi (D4). */
+export async function diPreviewFromTemplateGeneration(
+  templateId: string,
+  request?: DiPreviewFromTemplateRequest
+): Promise<DiDocumentGenerationPreview> {
+  const raw = await fetchFromDocuments(
+    `${TEMPLATES_BASE}/${encodeURIComponent(templateId)}/preview-generation`,
+    'POST',
+    request ?? {}
+  );
+  return mapGenerationPreview(raw);
+}
+
+/** Şablondan üretim Collabora önizlemesi — merge + antet + salt okunur oturum (D4). */
+export async function diCreateTemplateGenerationPreviewSession(
+  templateId: string,
+  request?: DiPreviewFromTemplateRequest
+): Promise<DiTemplateGenerationPreviewSession> {
+  const raw = await fetchFromDocuments(
+    `${TEMPLATES_BASE}/${encodeURIComponent(templateId)}/preview-session`,
+    'POST',
+    request ?? {}
+  );
+  const o = asRecord(raw);
+  const valuesRaw = o.values;
+  const values: Record<string, string> = {};
+  if (valuesRaw && typeof valuesRaw === 'object' && !Array.isArray(valuesRaw)) {
+    for (const [key, value] of Object.entries(valuesRaw as Record<string, unknown>)) {
+      values[key] = String(value ?? '');
+    }
+  }
+  return {
+    templateId: str(o, 'templateId') ?? templateId,
+    editorUrl: str(o, 'editorUrl') ?? '',
+    accessToken: str(o, 'accessToken') ?? '',
+    wopiSrc: str(o, 'wopiSrc') ?? '',
+    readOnly: o.readOnly !== false,
+    profileCode: str(o, 'profileCode') ?? '',
+    values,
+    missingKeys: strArray(o.missingKeys),
+    undefinedParameterKeys: strArray(o.undefinedParameterKeys),
+    unresolvedParameterKeys: strArray(o.unresolvedParameterKeys),
+    remainingPlaceholderKeys: strArray(o.remainingPlaceholderKeys),
+  };
+}
+
+/** Şablondan manuel döküman üretimi — merge + kaynak ağacına kayıt (D4). */
+export async function diGenerateFromTemplate(
+  templateId: string,
+  request: DiGenerateFromTemplateRequest
+): Promise<DiGenerateDocumentResult> {
+  const raw = await fetchFromDocuments(
+    `${TEMPLATES_BASE}/${encodeURIComponent(templateId)}/generate`,
+    'POST',
+    request
+  );
+  return mapGenerateResult(raw);
+}
+
+/** Şablon DOCX → merge → PDF (smoke / önizleme). */
+export async function diRenderTemplatePdf(
+  templateId: string,
+  options?: { values?: Record<string, string>; preserveMissingPlaceholders?: boolean }
+): Promise<Blob> {
+  const authStore = useAuthStore();
+  try {
+    await authStore.ensureValidToken();
+  } catch {
+    // devam et
+  }
+  const token = getAccessToken();
+  if (!token) {
+    throw new Error('Access token bulunamadı. Lütfen tekrar giriş yapın.');
+  }
+  const path = `${TEMPLATES_BASE}/${encodeURIComponent(templateId)}/render/pdf`;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const serverPath = cleanPath.replace(/^\/api\/v1\//, 'v1/');
+  const fullUrl = `/api/documents/${serverPath}`;
+  const body: Record<string, unknown> = {};
+  if (options?.values && Object.keys(options.values).length > 0) {
+    body.values = options.values;
+  }
+  if (options?.preserveMissingPlaceholders) {
+    body.preserveMissingPlaceholders = true;
+  }
+  const res = await fetch(fullUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/pdf',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+    credentials: 'same-origin',
+  });
+  if (!res.ok) {
+    const msg = await res.text().catch(() => res.statusText);
+    const err: any = new Error(msg || `Request failed: ${res.status}`);
+    err.statusCode = res.status;
+    err.status = res.status;
+    throw err;
+  }
+  return await res.blob();
+}
+
+/** DOCX kaynağını PDF olarak indirir (native/manual/system/upload — D4). */
+export async function diFetchResourceExportPdf(resourceId: string): Promise<Blob> {
+  const authStore = useAuthStore();
+  try {
+    await authStore.ensureValidToken();
+  } catch {
+    // devam et
+  }
+  const token = getAccessToken();
+  if (!token) {
+    throw new Error('Access token bulunamadı. Lütfen tekrar giriş yapın.');
+  }
+  const path = `${BASE}/${encodeURIComponent(resourceId)}/export/pdf`;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const serverPath = cleanPath.replace(/^\/api\/v1\//, 'v1/');
+  const fullUrl = `/api/documents/${serverPath}`;
+  const res = await fetch(fullUrl, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/pdf' },
+    credentials: 'same-origin',
+  });
+  if (!res.ok) {
+    const msg = await res.text().catch(() => res.statusText);
+    const err: any = new Error(msg || `Request failed: ${res.status}`);
+    err.statusCode = res.status;
+    err.status = res.status;
+    throw err;
+  }
+  return await res.blob();
 }
 
 /** MngDocument/HTTP hata gövdesinden `code` döndürür (guard ayrımı için, örn. RESOURCE_HAS_CHILDREN). */
