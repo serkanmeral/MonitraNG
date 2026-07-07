@@ -2,12 +2,15 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MngDocument.Application.Configuration;
+using MngDocument.Application.Contracts.Letterheads;
 using MngDocument.Application.Contracts.Resources;
+using MngDocument.Application.Contracts.Templates;
 using MngDocument.Application.Exceptions;
 using MngDocument.Application.Interfaces;
 using MngDocument.Application.Models;
 using MngDocument.Application.Utilities;
 using MngDocument.Domain.Constants;
+using MngDocument.Infrastructure.Services.Generation;
 
 namespace MngDocument.Infrastructure.Services;
 
@@ -23,10 +26,17 @@ public class ResourceService : IResourceService
     };
 
     private const string ListQuery = "limit=1000&expand=false&showHistory=true";
+    private const string TreeFolderListQuery = "limit=500&expand=false&showHistory=false&sort=name";
+    private const string DocxMime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
     private readonly IMngDataGatewayClient _dg;
     private readonly IRequestContext _ctx;
     private readonly IPermissionService _perms;
+    private readonly ILetterheadService _letterheads;
+    private readonly ITagService _tags;
+    private readonly ITemplateBrandingApplier _brandingApplier;
+    private readonly LetterheadHeaderValueEnricher _headerEnricher;
+    private readonly IDocumentRenderService _render;
     private readonly MngDocumentSettings _settings;
     private readonly ILogger<ResourceService> _logger;
 
@@ -34,12 +44,22 @@ public class ResourceService : IResourceService
         IMngDataGatewayClient dg,
         IRequestContext ctx,
         IPermissionService perms,
+        ILetterheadService letterheads,
+        ITagService tags,
+        ITemplateBrandingApplier brandingApplier,
+        LetterheadHeaderValueEnricher headerEnricher,
+        IDocumentRenderService render,
         IOptions<MngDocumentSettings> settings,
         ILogger<ResourceService> logger)
     {
         _dg = dg;
         _ctx = ctx;
         _perms = perms;
+        _letterheads = letterheads;
+        _tags = tags;
+        _brandingApplier = brandingApplier;
+        _headerEnricher = headerEnricher;
+        _render = render;
         _settings = settings.Value;
         _logger = logger;
     }
@@ -48,20 +68,68 @@ public class ResourceService : IResourceService
 
     public async Task<IReadOnlyList<TreeNodeDto>> GetTreeAsync(CancellationToken ct = default)
     {
-        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        var snapshot = await _perms.LoadSnapshotAsync(ct, PermissionSnapshotScope.Full);
         return BuildTreeFromSnapshot(snapshot);
+    }
+
+    public Task<IReadOnlyList<TreeNodeDto>> GetTreeRootsAsync(CancellationToken ct = default) =>
+        QueryLazyTreeFolderNodesAsync(null, ct);
+
+    public Task<IReadOnlyList<TreeNodeDto>> GetTreeChildrenAsync(string? parentId, CancellationToken ct = default) =>
+        QueryLazyTreeFolderNodesAsync(NormalizeParentId(parentId), ct);
+
+    public async Task<TreePathDto> GetTreePathAsync(string folderId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(folderId))
+        {
+            throw DocumentException.Validation(
+                "FOLDER_ID_REQUIRED",
+                "Folder id is required.",
+                "Klasör id gerekli.");
+        }
+
+        var resource = await LoadOrThrowAsync(folderId.Trim(), ct);
+        if (!string.Equals(resource.type, ResourceType.Folder, StringComparison.OrdinalIgnoreCase))
+        {
+            throw DocumentException.Validation(
+                "NOT_A_FOLDER",
+                "Resource is not a folder.",
+                "Kaynak bir klasör değil.");
+        }
+
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(resource, ResourceAction.View);
+
+        var breadcrumb = await BuildBreadcrumbAsync(resource, ct);
+        var segments = new List<TreePathSegmentDto> { new() { ParentId = null, Nodes = await QueryLazyTreeFolderNodesAsync(null, snapshot, ct) } };
+
+        foreach (var crumb in breadcrumb)
+        {
+            segments.Add(new TreePathSegmentDto
+            {
+                ParentId = crumb.Id,
+                Nodes = await QueryLazyTreeFolderNodesAsync(crumb.Id, snapshot, ct)
+            });
+        }
+
+        return new TreePathDto
+        {
+            Breadcrumb = breadcrumb,
+            Segments = segments
+        };
     }
 
     public async Task<ResourceBootstrapDto> GetBootstrapAsync(string? folderId = null, CancellationToken ct = default)
     {
         var snapshot = await _perms.LoadSnapshotAsync(ct);
-        var tree = BuildTreeFromSnapshot(snapshot);
+        var treeRoots = await QueryLazyTreeFolderNodesAsync(null, snapshot, ct);
         var children = await QueryChildrenAsync(NormalizeParentId(folderId), snapshot, ct);
         var (breadcrumb, selectedFolder) = await ResolveFolderContextAsync(folderId, snapshot, ct);
 
         return new ResourceBootstrapDto
         {
-            Tree = tree,
+            TreeRoots = treeRoots,
+            Tree = Array.Empty<TreeNodeDto>(),
             Children = children,
             Breadcrumb = breadcrumb,
             SelectedFolder = selectedFolder
@@ -109,6 +177,7 @@ public class ResourceService : IResourceService
         ValidateName(request.Name);
         await EnsureCanOnParentAsync(request.ParentId, ResourceAction.Create, ct);
         var ancestorIds = await ResolveAncestorsForChildAsync(request.ParentId, ct);
+        var tags = await ResolveTagsAsync(request.Tags, ct);
 
         var payload = new Dictionary<string, object?>
         {
@@ -118,7 +187,7 @@ public class ResourceService : IResourceService
             ["name"] = request.Name.Trim(),
             ["title"] = request.Name.Trim(),
             ["description"] = request.Description,
-            ["tags"] = request.Tags ?? new List<string>(),
+            ["tags"] = tags,
             ["currentVersionNumber"] = 1
         };
 
@@ -143,6 +212,25 @@ public class ResourceService : IResourceService
         var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
         if (resource.type == ResourceType.Folder)
             _perms.InvalidateSnapshotCache();
+        return ToDto(updated, snapshot.Resolve(updated));
+    }
+
+    public async Task<ResourceDto> UpdateMetadataAsync(string id, UpdateResourceMetadataRequest request, CancellationToken ct = default)
+    {
+        var resource = await LoadOrThrowAsync(id, ct);
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(resource, ResourceAction.Edit);
+
+        var payload = new Dictionary<string, object?>();
+        if (request.Tags is not null)
+            payload["tags"] = await ResolveTagsAsync(request.Tags, ct);
+        if (request.Description is not null)
+            payload["description"] = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim();
+
+        if (payload.Count == 0)
+            return ToDto(resource, snapshot.Resolve(resource));
+
+        var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
         return ToDto(updated, snapshot.Resolve(updated));
     }
 
@@ -224,6 +312,7 @@ public class ResourceService : IResourceService
         ValidateContentLength(request.Content);
         await EnsureCanOnParentAsync(request.ParentId, ResourceAction.Create, ct);
         var ancestorIds = await ResolveAncestorsForChildAsync(request.ParentId, ct);
+        var tags = await ResolveTagsAsync(request.Tags, ct);
 
         var payload = new Dictionary<string, object?>
         {
@@ -233,7 +322,7 @@ public class ResourceService : IResourceService
             ["name"] = request.Title.Trim(),
             ["title"] = request.Title.Trim(),
             ["description"] = request.Description,
-            ["tags"] = request.Tags ?? new List<string>(),
+            ["tags"] = tags,
             ["content"] = request.Content,
             ["contentType"] = ResourceContentType.Markdown,
             ["extension"] = "md",
@@ -283,7 +372,7 @@ public class ResourceService : IResourceService
         if (request.Description != null)
             payload["description"] = request.Description;
         if (request.Tags != null)
-            payload["tags"] = request.Tags;
+            payload["tags"] = await ResolveTagsAsync(request.Tags, ct);
         if (request.IsDraft.HasValue)
             payload["status"] = request.IsDraft.Value ? ResourceStatus.Draft : ResourceStatus.Published;
 
@@ -379,7 +468,7 @@ public class ResourceService : IResourceService
         var snapshot = await _perms.LoadSnapshotAsync(ct);
         snapshot.EnsureCan(resource, ResourceAction.View);
 
-        var version = await LoadVersionOrThrowAsync(id, versionNumber, ct);
+        var version = await LoadVersionOrThrowAsync(id, versionNumber, null, ct);
         DmHistoryEntry? audit = null;
         if (version.createdAt is null && version.createdBy is null)
         {
@@ -405,7 +494,7 @@ public class ResourceService : IResourceService
         var snapshot = await _perms.LoadSnapshotAsync(ct);
         snapshot.EnsureCan(existing, ResourceAction.Edit);
 
-        var version = await LoadVersionOrThrowAsync(id, versionNumber, ct);
+        var version = await LoadVersionOrThrowAsync(id, versionNumber, null, ct);
         var content = version.contentSnapshot ?? string.Empty;
 
         var newVersion = (existing.currentVersionNumber ?? 1) + 1;
@@ -421,13 +510,142 @@ public class ResourceService : IResourceService
         return ToDto(updated, snapshot.Resolve(updated));
     }
 
-    public async Task<ResourceDto> CreateFileResourceAsync(CreateFileResourceRequest request, CancellationToken ct = default)
+    public async Task<IReadOnlyList<MarkdownVersionDto>> GetFileVersionsAsync(string id, CancellationToken ct = default)
+    {
+        var resource = await LoadOrThrowAsync(id, ct);
+        EnsureManagedDocxFile(resource);
+
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(resource, ResourceAction.View);
+
+        return await ListVersionDtosAsync(resource, ct);
+    }
+
+    public async Task<(byte[] Content, string FileName)> GetFileVersionContentAsync(
+        string id,
+        int versionNumber,
+        CancellationToken ct = default)
+    {
+        var resource = await LoadOrThrowAsync(id, ct);
+        EnsureManagedDocxFile(resource);
+
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(resource, ResourceAction.View);
+
+        return await ReadFileVersionBytesAsync(resource, versionNumber, null, ct);
+    }
+
+    public async Task<(byte[] Content, string FileName)> GetFileVersionContentForEditorAsync(
+        string id,
+        int versionNumber,
+        string dataGatewayToken,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(dataGatewayToken))
+        {
+            throw DocumentException.Validation(
+                "AUTH_REQUIRED",
+                "Bearer token is required.",
+                "Oturum doğrulaması gerekli.");
+        }
+
+        var resource = await _dg.GetByIdAsync<DmResource>(DmDatasets.Resources, id, dataGatewayToken, ct);
+        if (resource is null || resource.__dataId is null)
+            throw DocumentException.NotFound("Dosya bulunamadı.");
+
+        EnsureManagedDocxFile(resource);
+        return await ReadFileVersionBytesAsync(resource, versionNumber, dataGatewayToken, ct);
+    }
+
+    public async Task<ResourceDto> RestoreFileVersionAsync(string id, int versionNumber, CancellationToken ct = default)
+    {
+        var existing = await LoadOrThrowAsync(id, ct);
+        EnsureManagedDocxFile(existing);
+
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(existing, ResourceAction.Edit);
+
+        var (bytes, fileName) = await ReadFileVersionBytesAsync(existing, versionNumber, null, ct);
+        var newVersion = (existing.currentVersionNumber ?? 1) + 1;
+
+        var filePayload = new Dictionary<string, object?>
+        {
+            ["content"] = Convert.ToBase64String(bytes),
+            ["originalFileName"] = fileName
+        };
+
+        var payload = new Dictionary<string, object?>
+        {
+            ["file"] = filePayload,
+            ["currentVersionNumber"] = newVersion,
+            ["size"] = bytes.LongLength,
+            ["mimeType"] = DocxMime,
+            ["extension"] = "docx"
+        };
+
+        var updated = await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, Token, ct);
+        await WriteFileVersionAsync(id, newVersion, bytes, fileName, $"restore from v{versionNumber}", ct);
+        return ToDto(updated, snapshot.Resolve(updated));
+    }
+
+    public async Task<int> SaveManagedDocumentFileAsync(
+        string id,
+        byte[] content,
+        string fileName,
+        string dataGatewayToken,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(dataGatewayToken))
+        {
+            throw DocumentException.Validation(
+                "AUTH_REQUIRED",
+                "Bearer token is required.",
+                "Oturum doğrulaması gerekli.");
+        }
+
+        var existing = await _dg.GetByIdAsync<DmResource>(DmDatasets.Resources, id, dataGatewayToken, ct);
+        if (existing is null || existing.__dataId is null)
+            throw DocumentException.NotFound("Dosya bulunamadı.");
+
+        EnsureManagedDocxFile(existing);
+
+        var currentVersion = existing.currentVersionNumber ?? 1;
+        var newVersion = currentVersion + 1;
+
+        var filePayload = new Dictionary<string, object?>
+        {
+            ["content"] = Convert.ToBase64String(content),
+            ["originalFileName"] = fileName
+        };
+
+        var payload = new Dictionary<string, object?>
+        {
+            ["file"] = filePayload,
+            ["size"] = content.LongLength,
+            ["mimeType"] = DocxMime,
+            ["extension"] = "docx",
+            ["currentVersionNumber"] = newVersion
+        };
+
+        await _dg.UpdateAsync<DmResource>(DmDatasets.Resources, id, payload, dataGatewayToken, ct);
+        await WriteFileVersionAsync(id, newVersion, content, fileName, "save", ct, dataGatewayToken);
+        return newVersion;
+    }
+
+    public Task<ResourceDto> CreateFileResourceAsync(CreateFileResourceRequest request, CancellationToken ct = default) =>
+        CreateFileResourceCoreAsync(request, ct, ResourceAction.Upload);
+
+    private async Task<ResourceDto> CreateFileResourceCoreAsync(
+        CreateFileResourceRequest request,
+        CancellationToken ct,
+        string parentAction,
+        string? initialVersionChangeNote = null)
     {
         ValidateName(request.Name);
         if (string.IsNullOrWhiteSpace(request.Content))
             throw DocumentException.Validation("CONTENT_REQUIRED", "File content is required.", "Dosya içeriği zorunludur.");
 
-        await EnsureCanOnParentAsync(request.ParentId, ResourceAction.Upload, ct);
+        await EnsureCanOnParentAsync(request.ParentId, parentAction, ct);
         var ancestorIds = await ResolveAncestorsForChildAsync(request.ParentId, ct);
 
         // DG dm_resources.file (fieldType=file) alanı: { content (base64), originalFileName } verildiğinde
@@ -438,6 +656,8 @@ public class ResourceService : IResourceService
             ["originalFileName"] = string.IsNullOrWhiteSpace(request.OriginalFileName) ? request.Name.Trim() : request.OriginalFileName
         };
 
+        var tags = await ResolveTagsAsync(request.Tags, ct);
+
         var payload = new Dictionary<string, object?>
         {
             ["type"] = ResourceType.File,
@@ -446,7 +666,7 @@ public class ResourceService : IResourceService
             ["name"] = request.Name.Trim(),
             ["title"] = request.Name.Trim(),
             ["description"] = request.Description,
-            ["tags"] = request.Tags ?? new List<string>(),
+            ["tags"] = tags,
             ["contentType"] = ResourceContentType.Binary,
             ["mimeType"] = request.MimeType,
             ["extension"] = request.Extension,
@@ -457,6 +677,8 @@ public class ResourceService : IResourceService
 
         if (!string.IsNullOrWhiteSpace(request.Origin))
             payload["origin"] = request.Origin.Trim();
+        else
+            payload["origin"] = ResourceOrigin.Upload;
         if (!string.IsNullOrWhiteSpace(request.TemplateId))
             payload["templateId"] = request.TemplateId.Trim();
         if (!string.IsNullOrWhiteSpace(request.TemplateCode))
@@ -469,7 +691,394 @@ public class ResourceService : IResourceService
             payload["documentNo"] = request.DocumentNo.Trim();
 
         var created = await _dg.CreateAsync<DmResource>(DmDatasets.Resources, payload, Token, ct);
+
+        var origin = !string.IsNullOrWhiteSpace(request.Origin) ? request.Origin.Trim() : ResourceOrigin.Upload;
+        if (ResourceOrigin.IsManagedDocument(origin))
+        {
+            var bytes = Convert.FromBase64String(request.Content);
+            var fileName = string.IsNullOrWhiteSpace(request.OriginalFileName) ? request.Name.Trim() : request.OriginalFileName;
+            if (!fileName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
+                fileName += ".docx";
+            await WriteFileVersionAsync(
+                created.__dataId!,
+                1,
+                bytes,
+                fileName,
+                initialVersionChangeNote ?? "initial",
+                ct);
+        }
+
         return await ToDtoWithEffectiveAsync(created, ct);
+    }
+
+    public async Task<ResourceDto> CloneResourceAsync(string id, CloneResourceRequest request, CancellationToken ct = default)
+    {
+        ValidateName(request.Name);
+        var source = await LoadOrThrowAsync(id, ct);
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(source, ResourceAction.View);
+
+        if (IsCloneableMarkdown(source))
+            return await CloneMarkdownResourceAsync(source, request, snapshot, ct);
+
+        if (IsCloneableManagedDocx(source))
+            return await CloneManagedDocxResourceAsync(source, request, snapshot, ct);
+
+        throw DocumentException.Validation(
+            "NOT_CLONEABLE",
+            "Resource type cannot be cloned.",
+            "Bu kaynak klonlanamaz.");
+    }
+
+    private async Task<ResourceDto> CloneMarkdownResourceAsync(
+        DmResource source,
+        CloneResourceRequest request,
+        PermissionSnapshot snapshot,
+        CancellationToken ct)
+    {
+        var content = source.content ?? string.Empty;
+        ValidateContentLength(content);
+        await EnsureCanOnParentAsync(request.ParentId, ResourceAction.Create, ct);
+
+        var ancestorIds = await ResolveAncestorsForChildAsync(request.ParentId, ct);
+        var title = request.Name.Trim();
+        var isDraft = ResourceStatus.Normalize(source.status) == ResourceStatus.Draft;
+        var sourceLabel = CloneSourceLabel(source);
+
+        var payload = new Dictionary<string, object?>
+        {
+            ["type"] = ResourceType.Markdown,
+            ["parentId"] = request.ParentId,
+            ["ancestorIds"] = ancestorIds,
+            ["name"] = title,
+            ["title"] = title,
+            ["tags"] = new List<string>(),
+            ["content"] = content,
+            ["contentType"] = ResourceContentType.Markdown,
+            ["extension"] = "md",
+            ["mimeType"] = "text/markdown",
+            ["size"] = (long)content.Length,
+            ["currentVersionNumber"] = 1,
+            ["status"] = isDraft ? ResourceStatus.Draft : ResourceStatus.Published
+        };
+
+        var created = await _dg.CreateAsync<DmResource>(DmDatasets.Resources, payload, Token, ct);
+        await WriteVersionAsync(created.__dataId!, 1, content, $"clone from {sourceLabel}", ct);
+        return ToDto(created, snapshot.Resolve(created));
+    }
+
+    private async Task<ResourceDto> CloneManagedDocxResourceAsync(
+        DmResource source,
+        CloneResourceRequest request,
+        PermissionSnapshot snapshot,
+        CancellationToken ct)
+    {
+        ValidateDocumentNo(request.DocumentNo);
+        var documentNo = request.DocumentNo!.Trim();
+        await EnsureDocumentNoUniqueAsync(documentNo, ct);
+
+        var effective = snapshot.Resolve(source);
+        if (!effective.CanDownload)
+            throw DocumentException.Forbidden("Klonlamak için indirme yetkisi gerekir.");
+
+        var (path, storedName) = ReadFileField(source.file);
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw DocumentException.Validation(
+                "FILE_MISSING",
+                "File content is missing.",
+                "Dosya içeriği bulunamadı.");
+        }
+
+        var docxBytes = await _dg.DownloadFileAsync(path, Token, ct);
+        var displayName = request.Name.Trim();
+        var fileName = !string.IsNullOrWhiteSpace(storedName)
+            ? storedName!
+            : displayName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase)
+                ? displayName
+                : $"{displayName}.docx";
+
+        var sourceOrigin = string.IsNullOrWhiteSpace(source.origin)
+            ? ResourceOrigin.Native
+            : source.origin.Trim();
+        var sourceLabel = CloneSourceLabel(source);
+        return await CreateFileResourceCoreAsync(new CreateFileResourceRequest
+        {
+            ParentId = request.ParentId,
+            Name = displayName,
+            OriginalFileName = fileName,
+            MimeType = DocxMime,
+            Extension = ".docx",
+            Size = docxBytes.LongLength,
+            Content = Convert.ToBase64String(docxBytes),
+            Origin = sourceOrigin,
+            TemplateId = source.templateId,
+            TemplateCode = source.templateCode,
+            GenerationProfile = source.generationProfile,
+            LetterheadId = source.letterheadId,
+            DocumentNo = documentNo,
+            Tags = new List<string>()
+        }, ct, ResourceAction.Create, $"clone from {sourceLabel}");
+    }
+
+    private static bool IsCloneableMarkdown(DmResource resource) =>
+        string.Equals(resource.type, ResourceType.Markdown, StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsCloneableManagedDocx(DmResource resource)
+    {
+        if (!string.Equals(resource.type, ResourceType.File, StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        if (!ResourceOrigin.IsManagedDocument(resource.origin))
+            return false;
+
+        var ext = (resource.extension ?? string.Empty).Trim().TrimStart('.');
+        var mime = resource.mimeType ?? string.Empty;
+        return string.Equals(ext, "docx", StringComparison.OrdinalIgnoreCase)
+            || mime.Contains("wordprocessingml", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string CloneSourceLabel(DmResource source)
+    {
+        if (IsCloneableMarkdown(source))
+            return source.title ?? source.name ?? source.__dataId ?? "unknown";
+
+        return source.documentNo ?? source.name ?? source.__dataId ?? "unknown";
+    }
+
+    public async Task<ResourceDto> CreateNativeDocumentAsync(CreateNativeDocumentRequest request, CancellationToken ct = default)
+    {
+        ValidateName(request.Name);
+        ValidateDocumentNo(request.DocumentNo);
+        var documentNo = request.DocumentNo.Trim();
+        await EnsureDocumentNoUniqueAsync(documentNo, ct);
+
+        var displayName = request.Name.Trim();
+        var fileName = displayName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase)
+            ? displayName
+            : $"{displayName}.docx";
+
+        var docxBytes = MinimalDocxFactory.CreateBlank();
+        string? letterheadId = null;
+
+        if (!string.IsNullOrWhiteSpace(request.LetterheadId))
+        {
+            letterheadId = request.LetterheadId.Trim();
+            await _letterheads.EnsureActiveAsync(letterheadId, ct);
+
+            var letterheadEntry = await _letterheads.GetByIdAsync(letterheadId, ct);
+            var capabilities = letterheadEntry.Settings.HeaderFields;
+            var effectiveHeader = ResolveNativeHeaderFields(capabilities, request.SelectedHeaderFields);
+
+            var letterheadResolve = await _letterheads.ResolveAsync(letterheadId, null, ct);
+            byte[]? letterheadDesignDocx = null;
+            if (letterheadEntry.HasDesign && !string.IsNullOrWhiteSpace(letterheadEntry.DesignStoragePath))
+                letterheadDesignDocx = await _dg.DownloadFileAsync(letterheadEntry.DesignStoragePath, Token, ct);
+
+            var templateModel = new TemplateModelDocument
+            {
+                PageLayout = TemplatePageLayoutModel.CreateDefault()
+            };
+            var baseLetterheadModel = letterheadResolve.Letterhead is { Enabled: true }
+                ? TemplateModelSerializer.ToLetterheadModel(letterheadResolve.Letterhead)
+                : null;
+            var letterheadModel = baseLetterheadModel is not null
+                ? LetterheadSettingsSerializer.ApplyHeaderFields(baseLetterheadModel, effectiveHeader)
+                : null;
+
+            var brandingSettings = CloneLetterheadSettingsWithHeaderFields(letterheadEntry.Settings, effectiveHeader);
+            var (footerModel, pageLayout) = LetterheadBrandingResolver.Resolve(
+                new LetterheadResolveResult
+                {
+                    Letterhead = letterheadResolve.Letterhead,
+                    Settings = brandingSettings,
+                    LetterheadId = letterheadResolve.LetterheadId,
+                    LetterheadCode = letterheadResolve.LetterheadCode,
+                    LetterheadName = letterheadResolve.LetterheadName,
+                    Footer = letterheadResolve.Footer,
+                    PageLayout = letterheadResolve.PageLayout
+                },
+                templateModel);
+
+            docxBytes = await _brandingApplier.ApplyAsync(
+                docxBytes,
+                displayName,
+                letterheadModel,
+                footerModel,
+                pageLayout,
+                letterheadDesignDocx,
+                brandingSettings,
+                Token,
+                ct);
+
+            if (letterheadDesignDocx is { Length: > 0 }
+                && LetterheadDesignMerger.HasBrokenHeaderImages(docxBytes))
+            {
+                docxBytes = LetterheadDesignMerger.EnsureHeaderWithMediaFromDesign(docxBytes, letterheadDesignDocx);
+            }
+
+            var enrichLetterhead = CloneLetterheadDtoWithSettings(letterheadEntry, brandingSettings);
+            var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            await _headerEnricher.EnrichAsync(
+                values,
+                templateModel,
+                enrichLetterhead,
+                displayName,
+                _ctx,
+                allocateCounters: true,
+                Token,
+                ct);
+
+            if (effectiveHeader.DocumentName)
+                values[LetterheadConstants.DocumentNameKey] = displayName;
+
+            ApplyUnselectedHeaderClears(values, capabilities, effectiveHeader);
+            docxBytes = DocxPlaceholderMerger.Merge(docxBytes, values);
+        }
+
+        return await CreateFileResourceCoreAsync(new CreateFileResourceRequest
+        {
+            ParentId = request.ParentId,
+            Name = displayName,
+            OriginalFileName = fileName,
+            Description = request.Description,
+            Tags = request.Tags,
+            MimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            Extension = ".docx",
+            Size = docxBytes.Length,
+            Content = Convert.ToBase64String(docxBytes),
+            Origin = ResourceOrigin.Native,
+            LetterheadId = letterheadId,
+            DocumentNo = documentNo
+        }, ct, ResourceAction.Create);
+    }
+
+    private static LetterheadHeaderFieldsDto ResolveNativeHeaderFields(
+        LetterheadHeaderFieldsDto capabilities,
+        LetterheadHeaderFieldsDto? userSelection)
+    {
+        var selection = userSelection ?? capabilities;
+        return new LetterheadHeaderFieldsDto
+        {
+            DocumentName = capabilities.DocumentName && selection.DocumentName,
+            DocNo = capabilities.DocNo && selection.DocNo,
+            GeneratedAt = capabilities.GeneratedAt && selection.GeneratedAt,
+            CreatePerson = capabilities.CreatePerson && selection.CreatePerson
+        };
+    }
+
+    private static LetterheadSettingsDto CloneLetterheadSettingsWithHeaderFields(
+        LetterheadSettingsDto source,
+        LetterheadHeaderFieldsDto headerFields) =>
+        new()
+        {
+            HeaderFields = headerFields,
+            GeneralDocNo = source.GeneralDocNo,
+            Footer = source.Footer,
+            LegacyOdakFooter = source.LegacyOdakFooter,
+            FooterBlocks = source.FooterBlocks,
+            PageLayout = source.PageLayout
+        };
+
+    private static LetterheadDto CloneLetterheadDtoWithSettings(LetterheadDto source, LetterheadSettingsDto settings) =>
+        new()
+        {
+            Id = source.Id,
+            Name = source.Name,
+            Code = source.Code,
+            Description = source.Description,
+            IsDefault = source.IsDefault,
+            IsActive = source.IsActive,
+            Letterhead = source.Letterhead,
+            Settings = settings,
+            DesignStoragePath = source.DesignStoragePath,
+            DesignFileName = source.DesignFileName,
+            HasDesign = source.HasDesign,
+            CreatedBy = source.CreatedBy,
+            CreatedAt = source.CreatedAt,
+            UpdatedAt = source.UpdatedAt
+        };
+
+    private static void ApplyUnselectedHeaderClears(
+        Dictionary<string, string> values,
+        LetterheadHeaderFieldsDto capabilities,
+        LetterheadHeaderFieldsDto effective)
+    {
+        if (capabilities.DocumentName && !effective.DocumentName)
+            values[LetterheadConstants.DocumentNameKey] = string.Empty;
+        if (capabilities.DocNo && !effective.DocNo)
+            values[LetterheadConstants.DocNoKey] = string.Empty;
+        if (capabilities.GeneratedAt && !effective.GeneratedAt)
+            values[LetterheadConstants.GeneratedAtKey] = string.Empty;
+        if (capabilities.CreatePerson && !effective.CreatePerson)
+            values[LetterheadConstants.CreatePersonKey] = string.Empty;
+    }
+
+    public async Task<(byte[] PdfBytes, string FileName)> GetFilePreviewPdfAsync(string id, CancellationToken ct = default)
+    {
+        var resource = await LoadOrThrowAsync(id, ct);
+        if (!string.Equals(resource.type, ResourceType.File, StringComparison.OrdinalIgnoreCase))
+        {
+            throw DocumentException.Validation(
+                "NOT_FILE",
+                "Resource is not a file.",
+                "Kaynak bir dosya değil.");
+        }
+
+        var origin = string.IsNullOrWhiteSpace(resource.origin) ? ResourceOrigin.Upload : resource.origin.Trim();
+        if (ResourceOrigin.IsManagedDocument(origin))
+        {
+            throw DocumentException.Validation(
+                "PREVIEW_NOT_AVAILABLE",
+                "Managed documents are not previewed via PDF conversion.",
+                "Bu döküman PDF önizleme ile görüntülenemez.");
+        }
+
+        var ext = (resource.extension ?? string.Empty).Trim().TrimStart('.');
+        var mime = resource.mimeType ?? string.Empty;
+        var isDocx = string.Equals(ext, "docx", StringComparison.OrdinalIgnoreCase)
+                     || mime.Contains("wordprocessingml", StringComparison.OrdinalIgnoreCase);
+        if (!isDocx)
+        {
+            throw DocumentException.Validation(
+                "UNSUPPORTED_PREVIEW",
+                "Only DOCX files can be previewed as PDF.",
+                "Yalnızca DOCX dosyaları PDF olarak önizlenebilir.");
+        }
+
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(resource, ResourceAction.View);
+        var effective = snapshot.Resolve(resource);
+        if (!effective.CanDownload)
+            throw DocumentException.Forbidden("Önizleme için indirme yetkisi gerekir.");
+
+        var (path, storedName) = ReadFileField(resource.file);
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw DocumentException.Validation(
+                "FILE_MISSING",
+                "File content is missing.",
+                "Dosya içeriği bulunamadı.");
+        }
+
+        var docxBytes = await _dg.DownloadFileAsync(path, Token, ct);
+        byte[] pdfBytes;
+        try
+        {
+            pdfBytes = await _render.ConvertDocxToPdfAsync(docxBytes, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "DOCX to PDF preview conversion failed for resource {ResourceId}", id);
+            throw DocumentException.ServiceUnavailable(
+                "PREVIEW_CONVERSION_FAILED",
+                "Document could not be converted to PDF.",
+                "Dosya PDF olarak önizlenemedi. İndirmeyi deneyin.");
+        }
+
+        var baseName = !string.IsNullOrWhiteSpace(storedName) ? storedName! : resource.name ?? "document.docx";
+        var pdfName = Path.GetFileNameWithoutExtension(baseName) + ".pdf";
+        return (pdfBytes, pdfName);
     }
 
     public async Task<ResourceListResult> SearchAsync(string query, int skip, int limit, CancellationToken ct = default)
@@ -608,6 +1217,75 @@ public class ResourceService : IResourceService
             .Where(f => snapshot.Resolve(f).CanView)
             .ToList();
         return BuildTree(folders);
+    }
+
+    private Task<IReadOnlyList<TreeNodeDto>> QueryLazyTreeFolderNodesAsync(string? parentId, CancellationToken ct) =>
+        QueryLazyTreeFolderNodesAsync(parentId, null, ct);
+
+    private async Task<IReadOnlyList<TreeNodeDto>> QueryLazyTreeFolderNodesAsync(
+        string? parentId,
+        PermissionSnapshot? snapshot,
+        CancellationToken ct)
+    {
+        snapshot ??= await _perms.LoadSnapshotAsync(ct);
+
+        var match = new Dictionary<string, object?>
+        {
+            ["type"] = ResourceType.Folder,
+            ["parentId"] = parentId
+        };
+        var page = await _dg.QueryPageAsync(DmDatasets.Resources, match, TreeFolderListQuery, Token, ct);
+
+        var folders = page.Items
+            .Select(MapRow)
+            .Where(f => f.__dataId is not null && snapshot.Resolve(f).CanView)
+            .OrderBy(f => f.name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var hasChildren = await ResolveFolderHasChildrenAsync(
+            folders.Select(f => f.__dataId!).ToList(),
+            snapshot,
+            ct);
+
+        return folders
+            .Select(f => new TreeNodeDto
+            {
+                Id = f.__dataId!,
+                Name = f.name ?? string.Empty,
+                ParentId = f.parentId,
+                HasChildren = hasChildren.Contains(f.__dataId!),
+                Children = new List<TreeNodeDto>()
+            })
+            .ToList();
+    }
+
+    private async Task<HashSet<string>> ResolveFolderHasChildrenAsync(
+        IReadOnlyList<string> folderIds,
+        PermissionSnapshot snapshot,
+        CancellationToken ct)
+    {
+        if (folderIds.Count == 0)
+            return new HashSet<string>(StringComparer.Ordinal);
+
+        var match = new Dictionary<string, object?>
+        {
+            ["type"] = ResourceType.Folder,
+            ["parentId"] = new Dictionary<string, object?> { ["$in"] = folderIds }
+        };
+        var page = await _dg.QueryPageAsync(DmDatasets.Resources, match, TreeFolderListQuery, Token, ct);
+
+        var parentsWithVisibleChild = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var row in page.Items)
+        {
+            var child = MapRow(row);
+            if (string.IsNullOrWhiteSpace(child.parentId))
+                continue;
+            if (!snapshot.Resolve(child).CanView)
+                continue;
+            parentsWithVisibleChild.Add(child.parentId);
+        }
+
+        return parentsWithVisibleChild;
     }
 
     private async Task<ResourceListResult> QueryChildrenAsync(
@@ -786,13 +1464,153 @@ public class ResourceService : IResourceService
         }
     }
 
+    private async Task WriteFileVersionAsync(
+        string resourceId,
+        int versionNumber,
+        byte[] content,
+        string fileName,
+        string changeNote,
+        CancellationToken ct,
+        string? dataGatewayToken = null)
+    {
+        var token = dataGatewayToken ?? Token;
+        var payload = new Dictionary<string, object?>
+        {
+            ["resourceId"] = resourceId,
+            ["versionNumber"] = versionNumber,
+            ["changeNote"] = changeNote,
+            ["contentSnapshot"] = Convert.ToBase64String(content),
+            ["filePathSnapshot"] = fileName,
+            ["size"] = content.LongLength,
+            ["mimeType"] = DocxMime,
+            ["createdBy"] = _ctx.Username,
+            ["createdAt"] = DateTime.UtcNow
+        };
+
+        try
+        {
+            await _dg.CreateAsync<Dictionary<string, object?>>(DmDatasets.ResourceVersions, payload, token, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to write file version {Version} for resource {ResourceId}", versionNumber, resourceId);
+        }
+    }
+
+    private async Task<IReadOnlyList<MarkdownVersionDto>> ListVersionDtosAsync(DmResource resource, CancellationToken ct)
+    {
+        var currentVersion = resource.currentVersionNumber ?? 1;
+        var auditMap = BuildVersionAuditMap(resource.__history);
+        var match = new Dictionary<string, object?> { ["resourceId"] = resource.__dataId! };
+        var page = await _dg.QueryPageAsync(DmDatasets.ResourceVersions, match, ListQuery, Token, ct);
+
+        return page.Items
+            .Select(MapVersionRow)
+            .OrderByDescending(v => v.versionNumber ?? 0)
+            .Select(v =>
+            {
+                auditMap.TryGetValue(v.versionNumber ?? 0, out var audit);
+                return new MarkdownVersionDto
+                {
+                    VersionNumber = v.versionNumber ?? 0,
+                    ChangeNote = v.changeNote,
+                    Size = v.size,
+                    CreatedAt = v.createdAt ?? CreatedFrom(v.__history)?.timestamp ?? audit?.timestamp,
+                    CreatedBy = v.createdBy ?? CreatedFrom(v.__history)?.userEmail ?? audit?.userEmail,
+                    IsCurrent = (v.versionNumber ?? 0) == currentVersion
+                };
+            })
+            .ToList();
+    }
+
+    private async Task<(byte[] Content, string FileName)> ReadFileVersionBytesAsync(
+        DmResource resource,
+        int versionNumber,
+        string? dataGatewayToken,
+        CancellationToken ct)
+    {
+        var version = await LoadVersionOrThrowAsync(resource.__dataId!, versionNumber, dataGatewayToken, ct);
+        var base64 = version.contentSnapshot;
+        if (string.IsNullOrWhiteSpace(base64))
+        {
+            throw DocumentException.Validation(
+                "VERSION_CONTENT_MISSING",
+                "Version file snapshot is missing.",
+                "Sürüm dosya içeriği bulunamadı.");
+        }
+
+        byte[] bytes;
+        try
+        {
+            bytes = Convert.FromBase64String(base64);
+        }
+        catch (FormatException)
+        {
+            throw DocumentException.Validation(
+                "VERSION_CONTENT_INVALID",
+                "Version file snapshot is invalid.",
+                "Sürüm dosya içeriği geçersiz.");
+        }
+
+        var fileName = version.filePathSnapshot;
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            var (_, storedName) = ReadFileField(resource.file);
+            fileName = storedName ?? resource.name ?? resource.title ?? "document.docx";
+        }
+
+        if (!fileName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
+            fileName += ".docx";
+
+        return (bytes, fileName);
+    }
+
+    private static void EnsureManagedDocxFile(DmResource resource)
+    {
+        if (!string.Equals(resource.type, ResourceType.File, StringComparison.OrdinalIgnoreCase))
+        {
+            throw DocumentException.Validation(
+                "NOT_FILE",
+                "Resource is not a file.",
+                "Kaynak bir dosya değil.");
+        }
+
+        if (!ResourceOrigin.IsManagedDocument(resource.origin))
+        {
+            throw DocumentException.Validation(
+                "NOT_MANAGED_DOCUMENT",
+                "Resource is not a managed document.",
+                "Kaynak yönetilen bir döküman değil.");
+        }
+
+        var ext = (resource.extension ?? string.Empty).Trim().TrimStart('.');
+        var mime = resource.mimeType ?? string.Empty;
+        var isDocx = string.Equals(ext, "docx", StringComparison.OrdinalIgnoreCase)
+            || mime.Contains("wordprocessingml", StringComparison.OrdinalIgnoreCase);
+
+        if (!isDocx)
+        {
+            throw DocumentException.Validation(
+                "UNSUPPORTED_FILE_TYPE",
+                "Only DOCX managed documents support version history.",
+                "Sürüm geçmişi yalnızca DOCX dökümanlar için desteklenir.");
+        }
+    }
+
     private static List<TreeNodeDto> BuildTree(IReadOnlyList<DmResource> folders)
     {
         var nodes = folders
             .Where(f => f.__dataId is not null)
             .ToDictionary(
                 f => f.__dataId!,
-                f => new TreeNodeDto { Id = f.__dataId!, Name = f.name ?? string.Empty, ParentId = f.parentId });
+                f => new TreeNodeDto
+                {
+                    Id = f.__dataId!,
+                    Name = f.name ?? string.Empty,
+                    ParentId = f.parentId,
+                    HasChildren = false,
+                    Children = new List<TreeNodeDto>()
+                });
 
         var roots = new List<TreeNodeDto>();
         foreach (var folder in folders)
@@ -806,6 +1624,9 @@ public class ResourceService : IResourceService
             else
                 roots.Add(node);
         }
+
+        foreach (var node in nodes.Values)
+            node.HasChildren = node.Children.Count > 0;
 
         SortTree(roots);
         return roots;
@@ -847,14 +1668,19 @@ public class ResourceService : IResourceService
         return history.LastOrDefault(h => string.Equals(h.operation, "update", StringComparison.OrdinalIgnoreCase));
     }
 
-    private async Task<DmResourceVersion> LoadVersionOrThrowAsync(string id, int versionNumber, CancellationToken ct)
+    private async Task<DmResourceVersion> LoadVersionOrThrowAsync(
+        string id,
+        int versionNumber,
+        string? dataGatewayToken,
+        CancellationToken ct)
     {
+        var token = dataGatewayToken ?? Token;
         var match = new Dictionary<string, object?>
         {
             ["resourceId"] = id,
             ["versionNumber"] = versionNumber
         };
-        var page = await _dg.QueryPageAsync(DmDatasets.ResourceVersions, match, ListQuery, Token, ct);
+        var page = await _dg.QueryPageAsync(DmDatasets.ResourceVersions, match, ListQuery, token, ct);
         var version = page.Items.Select(MapVersionRow).FirstOrDefault();
         if (version is null)
             throw DocumentException.NotFound();
@@ -914,10 +1740,45 @@ public class ResourceService : IResourceService
         return (string.IsNullOrWhiteSpace(path) ? null : path, string.IsNullOrWhiteSpace(name) ? null : name);
     }
 
+    private async Task EnsureDocumentNoUniqueAsync(string documentNo, CancellationToken ct)
+    {
+        var match = new Dictionary<string, object?> { ["documentNo"] = documentNo.Trim() };
+        var page = await _dg.QueryPageAsync(
+            DmDatasets.Resources,
+            match,
+            "limit=1&expand=false&showHistory=false",
+            Token,
+            ct);
+        if (page.Items.Count > 0)
+        {
+            throw DocumentException.Conflict(
+                "DOCUMENT_NO_EXISTS",
+                "Document number already exists.",
+                "Döküman kodu zaten kullanılıyor.");
+        }
+    }
+
+    private async Task<List<string>> ResolveTagsAsync(IReadOnlyList<string>? tags, CancellationToken ct)
+    {
+        var normalized = await _tags.NormalizeActiveTagNamesAsync(tags, ct);
+        return normalized.ToList();
+    }
+
     private static void ValidateName(string? name)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw DocumentException.Validation("NAME_REQUIRED", "Name is required.", "İsim zorunludur.");
+    }
+
+    private static void ValidateDocumentNo(string? documentNo)
+    {
+        if (string.IsNullOrWhiteSpace(documentNo))
+        {
+            throw DocumentException.Validation(
+                "DOCUMENT_NO_REQUIRED",
+                "Document code is required.",
+                "Döküman kodu zorunludur.");
+        }
     }
 
     private void ValidateContentLength(string? content)

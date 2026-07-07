@@ -1,8 +1,10 @@
-import { fetchFromDocuments, fetchBlobFromDataGateway } from '@/services/apiService';
+import { fetchFromDocuments, fetchBlobFromDataGateway, getAccessToken } from '@/services/apiService';
+import { useAuthStore } from '@/stores/auth';
 import {
   diFullPermission,
   type DiBreadcrumb,
   type DiCreateFileResourceRequest,
+  type DiCreateNativeDocumentRequest,
   type DiCreateFolderRequest,
   type DiCreateMarkdownRequest,
   type DiCreateResourceLinkRequest,
@@ -17,6 +19,7 @@ import {
   type DiMarkdownVersion,
   type DiMarkdownVersionContent,
   type DiMoveRequest,
+  type DiCloneResourceRequest,
   type DiRenameRequest,
   type DiResource,
   type DiResourceBootstrap,
@@ -24,6 +27,7 @@ import {
   type DiResourceListResult,
   type DiSetFolderPermissionsRequest,
   type DiTreeNode,
+  type DiTreePath,
   type DiUpdateMarkdownRequest,
   type DiCreateTemplateFromSourceRequest,
   type DiCreateTemplateFromReferenceRequest,
@@ -54,6 +58,11 @@ import {
   type DiLetterheadDesignSession,
   type DiCreateLetterheadRequest,
   type DiUpdateLetterheadRequest,
+  type DiTag,
+  type DiTagListResult,
+  type DiCreateTagRequest,
+  type DiUpdateTagRequest,
+  type DiUpdateResourceMetadataRequest,
   type DiDocumentContextType,
   type DiGenerateDocumentRequest,
   type DiGenerateDocumentResult,
@@ -67,6 +76,7 @@ const LINKS_BASE = '/api/v1';
 const TEMPLATES_BASE = '/api/v1/templates';
 const TEMPLATE_CATEGORIES_BASE = '/api/v1/template-categories';
 const LETTERHEADS_BASE = '/api/v1/letterheads';
+const TAGS_BASE = '/api/v1/tags';
 const GENERATE_BASE = '/api/v1/generate';
 
 function asRecord(raw: unknown): Record<string, unknown> {
@@ -126,6 +136,12 @@ function mapResource(raw: unknown): DiResource {
     status: str(o, 'status') ?? 'published',
     filePath: str(o, 'filePath'),
     fileName: str(o, 'fileName'),
+    origin: str(o, 'origin'),
+    letterheadId: str(o, 'letterheadId'),
+    documentNo: str(o, 'documentNo'),
+    templateId: str(o, 'templateId'),
+    templateCode: str(o, 'templateCode'),
+    generationProfile: str(o, 'generationProfile'),
     createdAt: str(o, 'createdAt'),
     createdBy: str(o, 'createdBy'),
     updatedAt: str(o, 'updatedAt'),
@@ -162,7 +178,31 @@ function mapTreeNode(raw: unknown): DiTreeNode {
     id: str(o, 'id') ?? '',
     name: str(o, 'name') ?? '',
     parentId: str(o, 'parentId'),
+    hasChildren: Boolean(o.hasChildren),
     children: Array.isArray(childrenRaw) ? childrenRaw.map(mapTreeNode) : [],
+  };
+}
+
+function mapTreePath(raw: unknown): DiTreePath {
+  const o = asRecord(raw);
+  const breadcrumbRaw = o.breadcrumb;
+  const segmentsRaw = o.segments;
+  return {
+    breadcrumb: Array.isArray(breadcrumbRaw)
+      ? breadcrumbRaw.map((r) => {
+          const b = asRecord(r);
+          return { id: str(b, 'id') ?? '', name: str(b, 'name') ?? '' };
+        })
+      : [],
+    segments: Array.isArray(segmentsRaw)
+      ? segmentsRaw.map((r) => {
+          const s = asRecord(r);
+          return {
+            parentId: str(s, 'parentId'),
+            nodes: Array.isArray(s.nodes) ? s.nodes.map(mapTreeNode) : [],
+          };
+        })
+      : [],
   };
 }
 
@@ -172,10 +212,29 @@ function mapListResult(raw: unknown): DiResourceListResult {
   return { items, total: num(o, 'total') ?? items.length };
 }
 
-/** Klasör ağacı (yalnızca klasörler, iç içe). */
+/** Klasör ağacı (yalnızca klasörler, iç içe — tam ağaç, geriye dönük). */
 export async function diGetTree(): Promise<DiTreeNode[]> {
   const raw = await fetchFromDocuments(`${BASE}/tree`, 'GET');
   return Array.isArray(raw) ? raw.map(mapTreeNode) : [];
+}
+
+/** Lazy tree kök seviyesi. */
+export async function diGetTreeRoots(): Promise<DiTreeNode[]> {
+  const raw = await fetchFromDocuments(`${BASE}/tree/roots`, 'GET');
+  return Array.isArray(raw) ? raw.map(mapTreeNode) : [];
+}
+
+/** Lazy tree: bir klasörün alt klasörleri. parentId null ise kök. */
+export async function diGetTreeChildren(parentId: string | null): Promise<DiTreeNode[]> {
+  const qs = parentId ? `?parentId=${encodeURIComponent(parentId)}` : '';
+  const raw = await fetchFromDocuments(`${BASE}/tree/children${qs}`, 'GET');
+  return Array.isArray(raw) ? raw.map(mapTreeNode) : [];
+}
+
+/** Derin link: breadcrumb + yol boyunca kardeş klasör segmentleri. */
+export async function diGetTreePath(folderId: string): Promise<DiTreePath> {
+  const raw = await fetchFromDocuments(`${BASE}/tree/path?folderId=${encodeURIComponent(folderId)}`, 'GET');
+  return mapTreePath(raw);
 }
 
 function mapBootstrap(raw: unknown): DiResourceBootstrap {
@@ -183,8 +242,16 @@ function mapBootstrap(raw: unknown): DiResourceBootstrap {
   const childrenRaw = o.children;
   const breadcrumbRaw = o.breadcrumb;
   const selectedRaw = o.selectedFolder;
+  const treeRootsRaw = o.treeRoots;
+  const treeRaw = o.tree;
+  const treeRoots = Array.isArray(treeRootsRaw)
+    ? treeRootsRaw.map(mapTreeNode)
+    : Array.isArray(treeRaw)
+      ? treeRaw.map(mapTreeNode)
+      : [];
   return {
-    tree: Array.isArray(o.tree) ? o.tree.map(mapTreeNode) : [],
+    treeRoots,
+    tree: Array.isArray(treeRaw) ? treeRaw.map(mapTreeNode) : treeRoots,
     children: mapListResult(childrenRaw),
     breadcrumb: Array.isArray(breadcrumbRaw)
       ? breadcrumbRaw.map((r) => {
@@ -280,8 +347,22 @@ export async function diRename(id: string, request: DiRenameRequest): Promise<Di
   return mapResource(raw);
 }
 
+export async function diUpdateResourceMetadata(
+  id: string,
+  request: DiUpdateResourceMetadataRequest
+): Promise<DiResource> {
+  const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(id)}/metadata`, 'PATCH', request);
+  return mapResource(raw);
+}
+
 export async function diMove(id: string, request: DiMoveRequest): Promise<DiResource> {
   const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(id)}/move`, 'PUT', request);
+  return mapResource(raw);
+}
+
+/** Markdown sayfa veya manual DOCX klonlar. */
+export async function diCloneResource(id: string, request: DiCloneResourceRequest): Promise<DiResource> {
+  const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(id)}/clone`, 'POST', request);
   return mapResource(raw);
 }
 
@@ -348,6 +429,93 @@ export async function diRestoreMarkdownVersion(id: string, versionNumber: number
   return mapResource(raw);
 }
 
+/** Yönetilen DOCX sürüm geçmişi (içerik hariç, en yeni önce). */
+export async function diGetFileVersions(id: string): Promise<DiMarkdownVersion[]> {
+  const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(id)}/versions`, 'GET');
+  if (!Array.isArray(raw)) return [];
+  return raw.map((r) => {
+    const o = asRecord(r);
+    return {
+      versionNumber: num(o, 'versionNumber') ?? 0,
+      changeNote: str(o, 'changeNote'),
+      size: num(o, 'size'),
+      createdAt: str(o, 'createdAt'),
+      createdBy: str(o, 'createdBy'),
+      isCurrent: Boolean(o.isCurrent),
+    };
+  });
+}
+
+/** Belirli bir DOCX sürümünü blob olarak indirir. */
+export async function diDownloadFileVersion(
+  resourceId: string,
+  versionNumber: number,
+  suggestedFileName?: string | null,
+): Promise<{ blob: Blob; fileName: string }> {
+  const authStore = useAuthStore();
+  try {
+    await authStore.ensureValidToken();
+  } catch {
+    // devam et
+  }
+  const token = getAccessToken();
+  if (!token) {
+    throw new Error('Access token bulunamadı. Lütfen tekrar giriş yapın.');
+  }
+  const path = `${BASE}/${encodeURIComponent(resourceId)}/versions/${versionNumber}/download`;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const serverPath = cleanPath.replace(/^\/api\/v1\//, 'v1/');
+  const fullUrl = `/api/documents/${serverPath}`;
+  const res = await fetch(fullUrl, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+    credentials: 'same-origin',
+  });
+  if (!res.ok) {
+    const msg = await res.text().catch(() => res.statusText);
+    const err: any = new Error(msg || `Request failed: ${res.status}`);
+    err.statusCode = res.status;
+    err.status = res.status;
+    throw err;
+  }
+  const blob = await res.blob();
+  const headerName = parseContentDispositionFileName(res.headers.get('content-disposition'));
+  const fileName = headerName || suggestedFileName || `document-v${versionNumber}.docx`;
+  return { blob, fileName };
+}
+
+/** Eski bir DOCX sürümünü yeni sürüm olarak geri yükler. */
+export async function diRestoreFileVersion(id: string, versionNumber: number): Promise<DiResource> {
+  const raw = await fetchFromDocuments(`${BASE}/${encodeURIComponent(id)}/versions/${versionNumber}/restore`, 'POST');
+  return mapResource(raw);
+}
+
+/** Belirli bir DOCX sürümünü salt okunur Collabora oturumunda açar. */
+export async function diGetFileVersionPreviewSession(
+  resourceId: string,
+  versionNumber: number,
+): Promise<DiResourceEditorSession> {
+  const raw = await fetchFromDocuments(
+    `${BASE}/${encodeURIComponent(resourceId)}/versions/${versionNumber}/preview-session`,
+    'GET',
+  );
+  return mapResourceEditorSession(raw, resourceId);
+}
+
+function parseContentDispositionFileName(header: string | null): string | null {
+  if (!header) return null;
+  const utf8Match = /filename\*=UTF-8''([^;]+)/i.exec(header);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1].trim());
+    } catch {
+      return utf8Match[1].trim();
+    }
+  }
+  const plainMatch = /filename="?([^";]+)"?/i.exec(header);
+  return plainMatch?.[1]?.trim() || null;
+}
+
 /** Bu sayfaya markdown iç linki veren diğer sayfalar (backlink). */
 export async function diGetMarkdownBacklinks(id: string): Promise<DiResourceListResult> {
   const raw = await fetchFromDocuments(`${BASE}/markdown/${encodeURIComponent(id)}/backlinks`, 'GET');
@@ -361,6 +529,42 @@ export async function diGetMarkdownBacklinks(id: string): Promise<DiResourceList
 export async function diCreateFileResource(request: DiCreateFileResourceRequest): Promise<DiResource> {
   const raw = await fetchFromDocuments(`${BASE}/file`, 'POST', request);
   return mapResource(raw);
+}
+
+export async function diCreateNativeDocument(request: DiCreateNativeDocumentRequest): Promise<DiResource> {
+  const raw = await fetchFromDocuments(`${BASE}/documents`, 'POST', request);
+  return mapResource(raw);
+}
+
+/** Yüklenen DOCX dosyasını sunucuda PDF'e dönüştürüp blob olarak döndürür. */
+export async function diFetchResourcePreviewPdf(resourceId: string): Promise<Blob> {
+  const authStore = useAuthStore();
+  try {
+    await authStore.ensureValidToken();
+  } catch {
+    // devam et
+  }
+  const token = getAccessToken();
+  if (!token) {
+    throw new Error('Access token bulunamadı. Lütfen tekrar giriş yapın.');
+  }
+  const path = `${BASE}/${encodeURIComponent(resourceId)}/preview/pdf`;
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const serverPath = cleanPath.replace(/^\/api\/v1\//, 'v1/');
+  const fullUrl = `/api/documents/${serverPath}`;
+  const res = await fetch(fullUrl, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+    credentials: 'same-origin',
+  });
+  if (!res.ok) {
+    const msg = await res.text().catch(() => res.statusText);
+    const err: any = new Error(msg || `Request failed: ${res.status}`);
+    err.statusCode = res.status;
+    err.status = res.status;
+    throw err;
+  }
+  return await res.blob();
 }
 
 /** Yüklenen dosyayı DG üzerinden blob olarak indirir (binary MngDocument'ten geçmez). */
@@ -495,11 +699,13 @@ function mapTemplateCategory(raw: unknown): DiTemplateCategory {
 function mapCategoryTreeNode(raw: unknown): DiTreeNode {
   const o = asRecord(raw);
   const childrenRaw = o.children;
+  const children = Array.isArray(childrenRaw) ? childrenRaw.map(mapCategoryTreeNode) : [];
   return {
     id: str(o, 'id') ?? '',
     name: str(o, 'name') ?? '',
     parentId: str(o, 'parentId'),
-    children: Array.isArray(childrenRaw) ? childrenRaw.map(mapCategoryTreeNode) : [],
+    hasChildren: children.length > 0,
+    children,
   };
 }
 
@@ -1085,6 +1291,44 @@ export async function diUpdateLetterhead(
 
 export async function diDeleteLetterhead(id: string): Promise<void> {
   await fetchFromDocuments(`${LETTERHEADS_BASE}/${encodeURIComponent(id)}`, 'DELETE');
+}
+
+function mapTag(raw: unknown): DiTag {
+  const o = asRecord(raw);
+  return {
+    id: str(o, 'id') ?? '',
+    name: str(o, 'name') ?? '',
+    color: str(o, 'color'),
+    description: str(o, 'description'),
+    isActive: o.isActive !== false,
+    createdBy: str(o, 'createdBy'),
+    createdAt: str(o, 'createdAt'),
+    updatedAt: str(o, 'updatedAt'),
+  };
+}
+
+export async function diListTags(activeOnly = false): Promise<DiTagListResult> {
+  const query = activeOnly ? '?activeOnly=true' : '';
+  const raw = await fetchFromDocuments(`${TAGS_BASE}${query}`, 'GET');
+  const o = asRecord(raw);
+  const itemsRaw = Array.isArray(o.items) ? o.items : Array.isArray(o.Items) ? o.Items : [];
+  const items = itemsRaw.map(mapTag);
+  const total = num(o, 'total') ?? num(o, 'Total') ?? items.length;
+  return { items, total };
+}
+
+export async function diCreateTag(request: DiCreateTagRequest): Promise<DiTag> {
+  const raw = await fetchFromDocuments(TAGS_BASE, 'POST', request);
+  return mapTag(raw);
+}
+
+export async function diUpdateTag(id: string, request: DiUpdateTagRequest): Promise<DiTag> {
+  const raw = await fetchFromDocuments(`${TAGS_BASE}/${encodeURIComponent(id)}`, 'PUT', request);
+  return mapTag(raw);
+}
+
+export async function diDeleteTag(id: string): Promise<void> {
+  await fetchFromDocuments(`${TAGS_BASE}/${encodeURIComponent(id)}`, 'DELETE');
 }
 
 export async function diPublishTemplate(templateId: string): Promise<DiTemplateDetail> {

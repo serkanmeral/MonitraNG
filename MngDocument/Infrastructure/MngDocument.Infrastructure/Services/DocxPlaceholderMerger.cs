@@ -99,14 +99,14 @@ public static class DocxPlaceholderMerger
                 return match.Value;
 
             if (values.TryGetValue(key, out var value))
-                return string.IsNullOrWhiteSpace(value) ? match.Value : value;
+                return value;
 
             foreach (var kv in values)
             {
                 if (!string.Equals(kv.Key, key, StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                return string.IsNullOrWhiteSpace(kv.Value) ? match.Value : kv.Value;
+                return kv.Value;
             }
 
             return match.Value;

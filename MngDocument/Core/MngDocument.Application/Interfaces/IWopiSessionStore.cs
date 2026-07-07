@@ -12,6 +12,8 @@ public sealed class WopiSession
     public required string UserName { get; init; }
     public required string DataGatewayToken { get; init; }
     public string Version { get; set; } = "1";
+    /// <summary>Dolu ise WOPI yanıtı bu sürüm anlık görüntüsünden okunur (salt okunur önizleme).</summary>
+    public int? PreviewVersionNumber { get; init; }
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 }
 

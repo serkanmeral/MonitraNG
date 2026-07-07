@@ -39,6 +39,7 @@ public static class ServiceRegistration
         services.AddScoped<IResourceLinkService, ResourceLinkService>();
         services.AddScoped<ITemplateCategoryService, TemplateCategoryService>();
         services.AddScoped<ILetterheadService, LetterheadService>();
+        services.AddScoped<ITagService, TagService>();
         services.AddScoped<ILetterheadEditorService, LetterheadEditorService>();
         services.AddScoped<IDocumentTemplateService, DocumentTemplateService>();
         services.AddScoped<ITemplateEditorService, TemplateEditorService>();

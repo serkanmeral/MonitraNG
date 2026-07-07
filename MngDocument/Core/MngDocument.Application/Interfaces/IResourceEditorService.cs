@@ -7,6 +7,12 @@ public interface IResourceEditorService
 {
     Task<ResourceEditorSessionDto> CreateEditorSessionAsync(string resourceId, CancellationToken ct = default);
 
+    /// <summary>Belirli bir sürümü salt okunur Collabora oturumunda açar.</summary>
+    Task<ResourceEditorSessionDto> CreateVersionPreviewSessionAsync(
+        string resourceId,
+        int versionNumber,
+        CancellationToken ct = default);
+
     Task<WopiCheckFileInfoDto> GetCheckFileInfoAsync(
         string resourceId,
         WopiSession session,

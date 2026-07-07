@@ -11,11 +11,14 @@ namespace MngDocument.Application.Interfaces;
 public interface IPermissionService
 {
     /// <summary>
-    /// Geçerli kullanıcı için tüm klasör + izin kayıtlarını tek seferde yükleyip bellekte
-    /// çözüm yapan anlık görüntü kurar (tree/children/search filtreleme + tek kaynak kontrolü).
+    /// Geçerli kullanıcı için izin anlık görüntüsü kurar.
+    /// Varsayılan <see cref="PermissionSnapshotScope.Lean"/> — anchor klasörler + tüm ACL kayıtları.
+    /// Legacy tam ağaç için <see cref="PermissionSnapshotScope.Full"/>.
     /// Aynı HTTP isteği içinde önbelleğe alınır.
     /// </summary>
-    Task<PermissionSnapshot> LoadSnapshotAsync(CancellationToken ct = default);
+    Task<PermissionSnapshot> LoadSnapshotAsync(
+        CancellationToken ct = default,
+        PermissionSnapshotScope scope = PermissionSnapshotScope.Lean);
 
     /// <summary>İstek önbelleğindeki snapshot'ı sıfırlar (izin/klasör yapısı değişiminden sonra).</summary>
     void InvalidateSnapshotCache();

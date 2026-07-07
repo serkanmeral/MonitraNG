@@ -31,4 +31,7 @@ public class DocumentException : Exception
         string messageTr = "Bu işlem için yetkiniz yok.",
         string message = "You do not have permission for this action.") =>
         new("FORBIDDEN", message, messageTr, 403);
+
+    public static DocumentException ServiceUnavailable(string code, string message, string messageTr) =>
+        new(code, message, messageTr, 503);
 }

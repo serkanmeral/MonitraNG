@@ -167,6 +167,66 @@
         "isArray": false,
         "relationDataset": null,
         "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "origin",
+        "title": "Kaynak kokeni (upload|native|manual|system)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "templateId",
+        "title": "Sablon id (uretim)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "templateCode",
+        "title": "Sablon kodu (uretim)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "generationProfile",
+        "title": "Uretim profili kodu",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "letterheadId",
+        "title": "Antet katalog id",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
+      },
+      {
+        "fieldType": "text",
+        "name": "documentNo",
+        "title": "Kod (domain benzersiz)",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "relationDataset": null,
+        "incrementalOptions": null
       }
     ],
     "validations": [],
@@ -175,6 +235,22 @@
       {
         "name": "idx_parentId",
         "fields": {
+          "parentId": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_parentId_type",
+        "fields": {
+          "parentId": 1,
+          "type": 1
+        },
+        "unique": false
+      },
+      {
+        "name": "idx_type_parentId",
+        "fields": {
+          "type": 1,
           "parentId": 1
         },
         "unique": false
@@ -192,6 +268,14 @@
           "type": 1
         },
         "unique": false
+      },
+      {
+        "name": "idx_documentNo",
+        "fields": {
+          "documentNo": 1
+        },
+        "unique": true,
+        "sparse": true
       }
     ]
   },
@@ -921,6 +1005,88 @@
         "name": "idx_letterhead_isDefault",
         "fields": { "isDefault": 1 },
         "unique": false
+      }
+    ]
+  },
+  {
+    "name": "dm_tags",
+    "description": "Document Intelligence - etiket katalogu (D-TAGS).",
+    "category": "b2f1c0a4-9d3e-4a87-bf21-7c5e9a0d1e34",
+    "forceSchema": false,
+    "logging": "self",
+    "publish_mode": "none",
+    "fields": [
+      {
+        "fieldType": "text",
+        "name": "name",
+        "title": "Etiket adi",
+        "mandatory": true,
+        "unique": true,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "color",
+        "title": "Renk",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "description",
+        "title": "Aciklama",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "bool",
+        "name": "isActive",
+        "title": "Aktif",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false,
+        "defaultValue": true
+      },
+      {
+        "fieldType": "text",
+        "name": "createdBy",
+        "title": "Olusturan",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "createdAt",
+        "title": "Olusturma zamani",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "text",
+        "name": "updatedBy",
+        "title": "Guncelleyen",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      },
+      {
+        "fieldType": "datetime",
+        "name": "updatedAt",
+        "title": "Guncelleme zamani",
+        "mandatory": false,
+        "unique": false,
+        "isArray": false
+      }
+    ],
+    "indexList": [
+      {
+        "name": "idx_tag_name",
+        "fields": { "name": 1 },
+        "unique": true
       }
     ]
   }

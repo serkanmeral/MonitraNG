@@ -5,9 +5,9 @@ using MngDocument.Domain.Constants;
 namespace MngDocument.Application.Models;
 
 /// <summary>
-/// Geçerli kullanıcı için yetki çözümünün anlık görüntüsü: tüm klasörler (anchor tespiti için)
-/// + tüm grup izin kayıtları bellekte tutulur, böylece tree/children/search gibi çoklu kaynak
-/// filtrelemesinde tekrar DG sorgusu yapılmadan etkin yetki hesaplanır.
+/// Geçerli kullanıcı için yetki çözümünün anlık görüntüsü: anchor klasörler (miras kırık)
+/// + tüm grup izin kayıtları bellekte tutulur. Tam kapsamda (<see cref="PermissionSnapshotScope.Full"/>)
+/// tüm klasörler de yüklenir (legacy tam ağaç).
 ///
 /// Model (SharePoint benzeri): bir kaynağın etkin yetkisi, kendisi + <c>ancestorIds</c> zincirinde
 /// tabandan yukarı en yakın <c>permissionsBroken=true</c> klasörün (anchor) ACL'idir. Zincirde hiç
@@ -48,7 +48,10 @@ public sealed class PermissionSnapshot
         _isManager = isManager;
     }
 
-    /// <summary>Tüm klasörler (tree kurulumunda yeniden yüklemeden kullanmak için).</summary>
+    /// <summary>
+    /// Snapshot kapsamına göre klasör listesi: Lean = anchor klasörler;
+    /// Full = tüm klasörler (legacy tam ağaç).
+    /// </summary>
     public IReadOnlyList<DmResource> AllFolders { get; }
 
     public bool IsAdmin => _isAdmin;

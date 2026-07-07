@@ -21,6 +21,7 @@ public sealed class ResourceEditorService : IResourceEditorService
     private readonly IRequestContext _ctx;
     private readonly IWopiSessionStore _sessions;
     private readonly IPermissionService _perms;
+    private readonly IResourceService _resources;
     private readonly MngDocumentSettings _settings;
 
     public ResourceEditorService(
@@ -28,12 +29,14 @@ public sealed class ResourceEditorService : IResourceEditorService
         IRequestContext ctx,
         IWopiSessionStore sessions,
         IPermissionService perms,
+        IResourceService resources,
         IOptions<MngDocumentSettings> settings)
     {
         _dg = dg;
         _ctx = ctx;
         _sessions = sessions;
         _perms = perms;
+        _resources = resources;
         _settings = settings.Value;
     }
 
@@ -57,6 +60,7 @@ public sealed class ResourceEditorService : IResourceEditorService
 
         var resource = await LoadOrThrowAsync(id, ct);
         EnsureDocxFile(resource);
+        EnsureManagedDocument(resource);
 
         var snapshot = await _perms.LoadSnapshotAsync(ct);
         snapshot.EnsureCan(resource, ResourceAction.View);
@@ -73,33 +77,13 @@ public sealed class ResourceEditorService : IResourceEditorService
             UserId = userId,
             UserName = userName,
             DataGatewayToken = Token,
-            Version = "1",
+            Version = (resource.currentVersionNumber ?? 1).ToString(),
             ReadOnly = readOnly
         };
 
         var ttl = TimeSpan.FromMinutes(Math.Clamp(_settings.Wopi.SessionMinutes, 15, 1440));
         var accessToken = _sessions.CreateSession(session, ttl);
-
-        var wopiHost = _settings.Wopi.HostBaseUrl.TrimEnd('/');
-        var wopiSrc = $"{wopiHost}/wopi/files/{Uri.EscapeDataString(id)}";
-
-        var collaboraBase = _settings.Collabora.PublicBaseUrl.TrimEnd('/');
-        var editorPath = _settings.Collabora.EditorPath.StartsWith('/')
-            ? _settings.Collabora.EditorPath
-            : $"/{_settings.Collabora.EditorPath}";
-
-        var editorUrl = new StringBuilder()
-            .Append(collaboraBase)
-            .Append(editorPath)
-            .Append("?WOPISrc=")
-            .Append(WebUtility.UrlEncode(wopiSrc))
-            .Append("&access_token=")
-            .Append(WebUtility.UrlEncode(accessToken))
-            .Append(readOnly ? "&permission=readonly" : "&permission=edit")
-            .Append("&lang=tr")
-            .Append("&ui_defaults=")
-            .Append(WebUtility.UrlEncode("UIMode=compact;TextSidebar=true;TextStatusbar=false"))
-            .ToString();
+        var (editorUrl, wopiSrc) = BuildEditorUrls(id, accessToken, readOnly);
 
         return new ResourceEditorSessionDto
         {
@@ -108,6 +92,75 @@ public sealed class ResourceEditorService : IResourceEditorService
             AccessToken = accessToken,
             WopiSrc = wopiSrc,
             ReadOnly = readOnly
+        };
+    }
+
+    public async Task<ResourceEditorSessionDto> CreateVersionPreviewSessionAsync(
+        string resourceId,
+        int versionNumber,
+        CancellationToken ct = default)
+    {
+        EnsureCollaboraEnabled();
+
+        var id = resourceId?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(id))
+            throw DocumentException.NotFound();
+
+        if (versionNumber <= 0)
+        {
+            throw DocumentException.Validation(
+                "INVALID_VERSION",
+                "Version number must be positive.",
+                "Geçersiz sürüm numarası.");
+        }
+
+        if (string.IsNullOrWhiteSpace(Token))
+        {
+            throw DocumentException.Validation(
+                "AUTH_REQUIRED",
+                "Bearer token is required.",
+                "Oturum doğrulaması gerekli.");
+        }
+
+        var resource = await LoadOrThrowAsync(id, ct);
+        EnsureDocxFile(resource);
+        EnsureManagedDocument(resource);
+
+        var snapshot = await _perms.LoadSnapshotAsync(ct);
+        snapshot.EnsureCan(resource, ResourceAction.View);
+        var effective = snapshot.Resolve(resource);
+        if (!effective.CanDownload)
+            throw DocumentException.Forbidden("Önizleme için indirme yetkisi gerekir.");
+
+        // Sürüm var mı (snapshot yoksa erken hata)?
+        await _resources.GetFileVersionContentForEditorAsync(id, versionNumber, Token, ct);
+
+        var userId = _ctx.UserId ?? _ctx.Username ?? "anonymous";
+        var userName = _ctx.Username ?? userId;
+
+        var session = new WopiSession
+        {
+            TemplateId = string.Empty,
+            ResourceId = id,
+            UserId = userId,
+            UserName = userName,
+            DataGatewayToken = Token,
+            Version = versionNumber.ToString(),
+            PreviewVersionNumber = versionNumber,
+            ReadOnly = true
+        };
+
+        var ttl = TimeSpan.FromMinutes(Math.Clamp(_settings.Wopi.SessionMinutes, 15, 1440));
+        var accessToken = _sessions.CreateSession(session, ttl);
+        var (editorUrl, wopiSrc) = BuildEditorUrls(id, accessToken, readOnly: true);
+
+        return new ResourceEditorSessionDto
+        {
+            ResourceId = id,
+            EditorUrl = editorUrl,
+            AccessToken = accessToken,
+            WopiSrc = wopiSrc,
+            ReadOnly = true
         };
     }
 
@@ -121,7 +174,7 @@ public sealed class ResourceEditorService : IResourceEditorService
         EnsureDocxFile(resource);
 
         var fileName = ResolveFileName(resource);
-        var bytes = await GetDocxBytesAsync(resource, session.DataGatewayToken, ct);
+        var bytes = await ResolveDocxBytesAsync(resourceId, resource, session, ct);
 
         return new WopiCheckFileInfoDto
         {
@@ -148,7 +201,7 @@ public sealed class ResourceEditorService : IResourceEditorService
         EnsureResourceSession(resourceId, session);
         var resource = await LoadOrThrowAsync(resourceId, session.DataGatewayToken, ct);
         EnsureDocxFile(resource);
-        return await GetDocxBytesAsync(resource, session.DataGatewayToken, ct);
+        return await ResolveDocxBytesAsync(resourceId, resource, session, ct);
     }
 
     public async Task SaveFileContentsAsync(
@@ -159,39 +212,70 @@ public sealed class ResourceEditorService : IResourceEditorService
         CancellationToken ct = default)
     {
         EnsureResourceSession(resourceId, session);
-        if (session.ReadOnly)
+        if (session.ReadOnly || session.PreviewVersionNumber is not null)
             throw DocumentException.Validation("READ_ONLY", "File is read-only.", "Dosya salt okunur.");
 
         var resource = await LoadOrThrowAsync(resourceId, session.DataGatewayToken, ct);
         EnsureDocxFile(resource);
 
         var fileName = ResolveFileName(resource);
-        var filePayload = new Dictionary<string, object?>
-        {
-            ["content"] = Convert.ToBase64String(content),
-            ["originalFileName"] = fileName
-        };
-
-        var payload = new Dictionary<string, object?>
-        {
-            ["file"] = filePayload,
-            ["size"] = content.LongLength,
-            ["mimeType"] = DocxMime,
-            ["extension"] = "docx"
-        };
-
-        await _dg.UpdateAsync<DmResource>(
-            DmDatasets.Resources,
+        var newVersion = await _resources.SaveManagedDocumentFileAsync(
             resourceId,
-            payload,
+            content,
+            fileName,
             session.DataGatewayToken,
             ct);
 
-        var newVersion = (long.TryParse(session.Version, out var current) ? current + 1 : 2).ToString();
+        var newVersionText = newVersion.ToString();
         if (!string.IsNullOrWhiteSpace(accessToken))
-            _sessions.BumpVersion(accessToken, newVersion);
+            _sessions.BumpVersion(accessToken, newVersionText);
         else
-            session.Version = newVersion;
+            session.Version = newVersionText;
+    }
+
+    private (string EditorUrl, string WopiSrc) BuildEditorUrls(string resourceId, string accessToken, bool readOnly)
+    {
+        var wopiHost = _settings.Wopi.HostBaseUrl.TrimEnd('/');
+        var wopiSrc = $"{wopiHost}/wopi/files/{Uri.EscapeDataString(resourceId)}";
+
+        var collaboraBase = _settings.Collabora.PublicBaseUrl.TrimEnd('/');
+        var editorPath = _settings.Collabora.EditorPath.StartsWith('/')
+            ? _settings.Collabora.EditorPath
+            : $"/{_settings.Collabora.EditorPath}";
+
+        var editorUrl = new StringBuilder()
+            .Append(collaboraBase)
+            .Append(editorPath)
+            .Append("?WOPISrc=")
+            .Append(WebUtility.UrlEncode(wopiSrc))
+            .Append("&access_token=")
+            .Append(WebUtility.UrlEncode(accessToken))
+            .Append(readOnly ? "&permission=readonly" : "&permission=edit")
+            .Append("&lang=tr")
+            .Append("&ui_defaults=")
+            .Append(WebUtility.UrlEncode("UIMode=compact;TextSidebar=true;TextStatusbar=false"))
+            .ToString();
+
+        return (editorUrl, wopiSrc);
+    }
+
+    private async Task<byte[]> ResolveDocxBytesAsync(
+        string resourceId,
+        DmResource resource,
+        WopiSession session,
+        CancellationToken ct)
+    {
+        if (session.PreviewVersionNumber is int versionNumber)
+        {
+            var (bytes, _) = await _resources.GetFileVersionContentForEditorAsync(
+                resourceId,
+                versionNumber,
+                session.DataGatewayToken,
+                ct);
+            return bytes;
+        }
+
+        return await GetDocxBytesAsync(resource, session.DataGatewayToken, ct);
     }
 
     private void EnsureCollaboraEnabled()
@@ -236,6 +320,18 @@ public sealed class ResourceEditorService : IResourceEditorService
                 "UNSUPPORTED_FILE_TYPE",
                 "Only DOCX files can be opened in the editor.",
                 "Editörde yalnızca DOCX dosyaları açılabilir.");
+        }
+    }
+
+    private static void EnsureManagedDocument(DmResource resource)
+    {
+        var origin = resource.origin?.Trim() ?? string.Empty;
+        if (!ResourceOrigin.IsManagedDocument(origin))
+        {
+            throw DocumentException.Validation(
+                "UPLOAD_NOT_EDITABLE",
+                "Uploaded files cannot be opened in the editor.",
+                "Yüklenen dosyalar editörde açılamaz.");
         }
     }
 

@@ -109,6 +109,7 @@ public class DmResourceVersion
     public int? versionNumber { get; set; }
     public string? changeNote { get; set; }
     public string? contentSnapshot { get; set; }
+    public string? filePathSnapshot { get; set; }
     public long? size { get; set; }
     public string? mimeType { get; set; }
 

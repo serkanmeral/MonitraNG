@@ -27,7 +27,8 @@ public sealed class PermissionService : IPermissionService
     private readonly IMngDataGatewayClient _dg;
     private readonly IRequestContext _ctx;
     private readonly ILogger<PermissionService> _logger;
-    private PermissionSnapshot? _requestSnapshot;
+    private PermissionSnapshot? _leanSnapshot;
+    private PermissionSnapshot? _fullSnapshot;
 
     public PermissionService(IMngDataGatewayClient dg, IRequestContext ctx, ILogger<PermissionService> logger)
     {
@@ -38,19 +39,20 @@ public sealed class PermissionService : IPermissionService
 
     private string? Token => _ctx.BearerToken;
 
-    public void InvalidateSnapshotCache() => _requestSnapshot = null;
-
-    public async Task<PermissionSnapshot> LoadSnapshotAsync(CancellationToken ct = default)
+    public void InvalidateSnapshotCache()
     {
-        if (_requestSnapshot is not null)
-            return _requestSnapshot;
+        _leanSnapshot = null;
+        _fullSnapshot = null;
+    }
 
-        var folderPage = await _dg.QueryPageAsync(
-            DmDatasets.Resources,
-            new Dictionary<string, object?> { ["type"] = ResourceType.Folder },
-            SnapshotListQuery,
-            Token,
-            ct);
+    public async Task<PermissionSnapshot> LoadSnapshotAsync(
+        CancellationToken ct = default,
+        PermissionSnapshotScope scope = PermissionSnapshotScope.Lean)
+    {
+        if (scope == PermissionSnapshotScope.Full && _fullSnapshot is not null)
+            return _fullSnapshot;
+        if (scope == PermissionSnapshotScope.Lean && _leanSnapshot is not null)
+            return _leanSnapshot;
 
         var permPage = await _dg.QueryPageAsync(
             DmDatasets.ResourcePermissions,
@@ -59,11 +61,41 @@ public sealed class PermissionService : IPermissionService
             Token,
             ct);
 
-        var folders = folderPage.Items.Select(MapResource).ToList();
         var perms = permPage.Items.Select(MapPermission).ToList();
 
-        _requestSnapshot = new PermissionSnapshot(folders, perms, _ctx.UserGroups, _ctx.IsAdmin, _ctx.IsManager);
-        return _requestSnapshot;
+        IReadOnlyList<DmResource> folders;
+        if (scope == PermissionSnapshotScope.Full)
+        {
+            var folderPage = await _dg.QueryPageAsync(
+                DmDatasets.Resources,
+                new Dictionary<string, object?> { ["type"] = ResourceType.Folder },
+                SnapshotListQuery,
+                Token,
+                ct);
+            folders = folderPage.Items.Select(MapResource).ToList();
+        }
+        else
+        {
+            var anchorPage = await _dg.QueryPageAsync(
+                DmDatasets.Resources,
+                new Dictionary<string, object?>
+                {
+                    ["type"] = ResourceType.Folder,
+                    ["permissionsBroken"] = true
+                },
+                SnapshotListQuery,
+                Token,
+                ct);
+            folders = anchorPage.Items.Select(MapResource).ToList();
+        }
+
+        var snapshot = new PermissionSnapshot(folders, perms, _ctx.UserGroups, _ctx.IsAdmin, _ctx.IsManager);
+        if (scope == PermissionSnapshotScope.Full)
+            _fullSnapshot = snapshot;
+        else
+            _leanSnapshot = snapshot;
+
+        return snapshot;
     }
 
     public async Task<FolderPermissionsDto> GetFolderPermissionsAsync(string folderId, CancellationToken ct = default)

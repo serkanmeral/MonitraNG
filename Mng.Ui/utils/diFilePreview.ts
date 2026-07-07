@@ -1,4 +1,5 @@
 import type { DiResource } from '@/types/apps/documentIntelligence';
+import { DI_RESOURCE_ORIGIN } from '@/types/apps/documentIntelligence';
 
 /** İnline önizlenebilir dosya türü. `none` = sadece indir. */
 export type DiFilePreviewKind = 'image' | 'pdf' | 'text' | 'none';
@@ -9,6 +10,7 @@ const TEXT_EXTS = [
   'txt', 'md', 'markdown', 'csv', 'tsv', 'log', 'json', 'xml', 'yaml', 'yml',
   'ini', 'conf', 'env', 'html', 'htm', 'css', 'js', 'ts', 'sql',
 ];
+const DOCX_EXTS = ['docx'];
 
 /** Görsel/PDF için boyut tavanı (bayt). Üzerindeyse önizleme yerine indir önerilir. */
 export const DI_PREVIEW_MAX_BYTES = 25 * 1024 * 1024; // 25 MB
@@ -21,6 +23,13 @@ function resExt(resource: DiResource): string {
   const name = resource.fileName ?? resource.name ?? '';
   const dot = name.lastIndexOf('.');
   return dot >= 0 ? name.slice(dot + 1).toLowerCase().trim() : '';
+}
+
+function isDocxExtension(resource: DiResource): boolean {
+  const ext = resExt(resource);
+  if (DOCX_EXTS.includes(ext)) return true;
+  const mime = (resource.mimeType ?? '').toLowerCase();
+  return mime.includes('wordprocessingml');
 }
 
 /** Uzantı → MIME tipi. DG bazen `application/octet-stream` döndürür; iframe/img
@@ -43,8 +52,35 @@ export function diPreviewMime(resource: DiResource): string | null {
   return EXT_MIME[resExt(resource)] ?? null;
 }
 
+/** Yüklenen dosya mı? (<c>origin=upload</c> veya legacy boş origin). */
+export function isDiUploadedFile(resource: DiResource): boolean {
+  if (resource.type !== 'file') return false;
+  const origin = (resource.origin ?? '').trim();
+  return !origin || origin === DI_RESOURCE_ORIGIN.upload;
+}
+
+/** Collabora editöründe açılabilen yönetilen döküman mı? */
+export function isDiManagedDocument(resource: DiResource): boolean {
+  if (resource.type !== 'file') return false;
+  const origin = (resource.origin ?? '').trim();
+  return origin === DI_RESOURCE_ORIGIN.native
+    || origin === DI_RESOURCE_ORIGIN.manual
+    || origin === DI_RESOURCE_ORIGIN.system;
+}
+
+/** Gotenberg ile PDF önizlenebilir yüklenmiş DOCX mi? */
+export function isDiUploadDocxPreviewable(resource: DiResource): boolean {
+  return isDiUploadedFile(resource) && isDocxExtension(resource);
+}
+
+/** Sunucu tarafı PDF dönüşümü ile önizleme mi? */
+export function isDiServerRenderedPdfPreview(resource: DiResource): boolean {
+  return isDiUploadDocxPreviewable(resource);
+}
+
 /** Uzantıya göre önizleme türünü (boyut sınırı dikkate alınmadan) döndürür. */
 export function diPreviewKindByExt(resource: DiResource): DiFilePreviewKind {
+  if (isDiUploadDocxPreviewable(resource)) return 'pdf';
   const ext = resExt(resource);
   if (IMAGE_EXTS.includes(ext)) return 'image';
   if (PDF_EXTS.includes(ext)) return 'pdf';
@@ -70,14 +106,16 @@ export function isDiPreviewable(resource: DiResource): boolean {
   return diPreviewKind(resource) !== 'none';
 }
 
-const DOCX_EXTS = ['docx'];
-
 /** Collabora editöründe açılabilir DOCX dosyası mı? */
 export function isDiDocxEditable(resource: DiResource): boolean {
-  if (resource.type !== 'file') return false;
+  if (!isDiManagedDocument(resource)) return false;
   if (!resource.hasContent && !resource.filePath) return false;
-  const ext = resExt(resource);
-  if (DOCX_EXTS.includes(ext)) return true;
-  const mime = (resource.mimeType ?? '').toLowerCase();
-  return mime.includes('wordprocessingml');
+  return isDocxExtension(resource);
+}
+
+/** Klonlanabilir kaynak mı? (markdown veya yönetilen DOCX — upload hariç) */
+export function isDiCloneable(resource: DiResource): boolean {
+  if (resource.type === 'markdown') return true;
+  if (!isDiManagedDocument(resource)) return false;
+  return isDocxExtension(resource);
 }

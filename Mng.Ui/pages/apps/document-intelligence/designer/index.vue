@@ -706,6 +706,9 @@ onMounted(async () => {
       <v-btn variant="text" class="text-none" to="/apps/document-intelligence/designer/letterheads">
         {{ t('documentIntelligence.letterheads.title') }}
       </v-btn>
+      <v-btn variant="text" class="text-none" to="/apps/document-intelligence/designer/tags">
+        {{ t('documentIntelligence.tagsCatalog.title') }}
+      </v-btn>
       <v-btn variant="text" class="text-none" to="/apps/document-intelligence">
         {{ t('documentIntelligence.designer.backToResources') }}
       </v-btn>

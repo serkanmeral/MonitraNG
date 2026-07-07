@@ -270,7 +270,7 @@ public sealed class DocumentGenerationService : IDocumentGenerationService
             Extension = ".docx",
             Size = merged.Length,
             Content = Convert.ToBase64String(merged),
-            Origin = "system",
+            Origin = ResourceOrigin.Manual,
             TemplateId = templateRow.__dataId,
             TemplateCode = templateRow.code ?? templateCode,
             GenerationProfile = profile.Code,

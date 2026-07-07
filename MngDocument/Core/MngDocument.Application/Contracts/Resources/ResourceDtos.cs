@@ -105,7 +105,22 @@ public sealed record TreeNodeDto
     public string Id { get; init; } = string.Empty;
     public string Name { get; init; } = string.Empty;
     public string? ParentId { get; init; }
+    /// <summary>Alt klasör var mı (lazy tree; <see cref="Children"/> yüklenmemiş olabilir).</summary>
+    public bool HasChildren { get; set; }
     public List<TreeNodeDto> Children { get; init; } = new();
+}
+
+/// <summary>Derin link: breadcrumb yolu boyunca her seviyenin kardeş klasör listesi.</summary>
+public sealed record TreePathSegmentDto
+{
+    public string? ParentId { get; init; }
+    public IReadOnlyList<TreeNodeDto> Nodes { get; init; } = Array.Empty<TreeNodeDto>();
+}
+
+public sealed record TreePathDto
+{
+    public IReadOnlyList<BreadcrumbDto> Breadcrumb { get; init; } = Array.Empty<BreadcrumbDto>();
+    public IReadOnlyList<TreePathSegmentDto> Segments { get; init; } = Array.Empty<TreePathSegmentDto>();
 }
 
 /// <summary>Breadcrumb / yol bilgisi.</summary>
@@ -127,6 +142,10 @@ public sealed record ResourceListResult
 /// </summary>
 public sealed record ResourceBootstrapDto
 {
+    /// <summary>Lazy tree kök seviyesi (yalnızca birinci seviye klasörler).</summary>
+    public IReadOnlyList<TreeNodeDto> TreeRoots { get; init; } = Array.Empty<TreeNodeDto>();
+
+    /// <summary>Eski tam ağaç (geriye dönük; yeni UI <see cref="TreeRoots"/> kullanır).</summary>
     public IReadOnlyList<TreeNodeDto> Tree { get; init; } = Array.Empty<TreeNodeDto>();
     public ResourceListResult Children { get; init; } = new();
     public IReadOnlyList<BreadcrumbDto> Breadcrumb { get; init; } = Array.Empty<BreadcrumbDto>();

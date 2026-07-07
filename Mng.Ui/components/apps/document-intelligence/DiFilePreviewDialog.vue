@@ -3,8 +3,8 @@ import { computed, ref, watch } from 'vue';
 import { useAppI18n } from '@/composables/useAppI18n';
 import { usePanelErrorNotify } from '@/composables/useApiErrorNotify';
 import DiLinkedWorkItemsPanel from '@/components/apps/document-intelligence/DiLinkedWorkItemsPanel.vue';
-import { diFetchFileBlob } from '@/services/documentIntelligenceService';
-import { diPreviewKind, diPreviewMime } from '@/utils/diFilePreview';
+import { diFetchFileBlob, diFetchResourcePreviewPdf } from '@/services/documentIntelligenceService';
+import { diPreviewKind, diPreviewMime, isDiServerRenderedPdfPreview } from '@/utils/diFilePreview';
 import type { DiResource } from '@/types/apps/documentIntelligence';
 
 const props = defineProps<{
@@ -45,9 +45,16 @@ async function loadPreview(resource: DiResource) {
   revoke();
   error.value = null;
   const k = diPreviewKind(resource);
-  if (k === 'none' || !resource.filePath) return;
+  if (k === 'none') return;
   loading.value = true;
   try {
+    if (isDiServerRenderedPdfPreview(resource)) {
+      const blob = await diFetchResourcePreviewPdf(resource.id);
+      const typed = blob.type !== 'application/pdf' ? new Blob([blob], { type: 'application/pdf' }) : blob;
+      objectUrl.value = URL.createObjectURL(typed);
+      return;
+    }
+    if (!resource.filePath) return;
     const blob = await diFetchFileBlob(resource.filePath);
     if (k === 'text') {
       textContent.value = await blob.text();

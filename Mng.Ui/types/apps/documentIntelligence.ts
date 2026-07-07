@@ -9,6 +9,16 @@ export const DI_RESOURCE_TYPE = {
 
 export type DiResourceType = (typeof DI_RESOURCE_TYPE)[keyof typeof DI_RESOURCE_TYPE];
 
+/** dm_resources.origin değerleri. */
+export const DI_RESOURCE_ORIGIN = {
+  upload: 'upload',
+  native: 'native',
+  manual: 'manual',
+  system: 'system',
+} as const;
+
+export type DiResourceOrigin = (typeof DI_RESOURCE_ORIGIN)[keyof typeof DI_RESOURCE_ORIGIN];
+
 /** Yetki aksiyonları (dm_resource_permissions.permissions). */
 export const DI_PERMISSION_ACTIONS = [
   'view',
@@ -71,6 +81,13 @@ export interface DiResource {
   filePath: string | null;
   /** Yüklenen dosyanın orijinal adı (yalnızca type=file). */
   fileName: string | null;
+  /** Kaynak kökeni: upload | native | manual | system (yalnızca type=file). */
+  origin: string | null;
+  letterheadId: string | null;
+  documentNo: string | null;
+  templateId: string | null;
+  templateCode: string | null;
+  generationProfile: string | null;
   createdAt: string | null;
   createdBy: string | null;
   updatedAt: string | null;
@@ -79,12 +96,25 @@ export interface DiResource {
   permissions: DiEffectivePermission;
 }
 
-/** Sol panel ağaç düğümü (yalnızca klasörler, iç içe). */
+/** Sol panel ağaç düğümü (yalnızca klasörler). */
 export interface DiTreeNode {
   id: string;
   name: string;
   parentId: string | null;
+  /** Alt klasör var mı (lazy tree). */
+  hasChildren: boolean;
   children: DiTreeNode[];
+}
+
+/** Lazy tree derin link segmenti. */
+export interface DiTreePathSegment {
+  parentId: string | null;
+  nodes: DiTreeNode[];
+}
+
+export interface DiTreePath {
+  breadcrumb: DiBreadcrumb[];
+  segments: DiTreePathSegment[];
 }
 
 /** Breadcrumb / yol bilgisi. */
@@ -100,6 +130,9 @@ export interface DiResourceListResult {
 
 /** İlk yükleme / tam yenileme (tek API çağrısı). */
 export interface DiResourceBootstrap {
+  /** Lazy tree kök seviyesi. */
+  treeRoots: DiTreeNode[];
+  /** Geriye dönük tam ağaç (boş olabilir). */
   tree: DiTreeNode[];
   children: DiResourceListResult;
   breadcrumb: DiBreadcrumb[];
@@ -154,6 +187,49 @@ export interface DiRenameRequest {
 
 export interface DiMoveRequest {
   newParentId?: string | null;
+}
+
+export interface DiUpdateResourceMetadataRequest {
+  tags?: string[];
+  description?: string | null;
+}
+
+export interface DiCloneResourceRequest {
+  parentId?: string | null;
+  name: string;
+  /** Manual DOCX için zorunlu */
+  documentNo?: string | null;
+}
+
+/** dm_tags katalog kaydı. */
+export interface DiTag {
+  id: string;
+  name: string;
+  color: string | null;
+  description: string | null;
+  isActive: boolean;
+  createdBy: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface DiTagListResult {
+  items: DiTag[];
+  total: number;
+}
+
+export interface DiCreateTagRequest {
+  name: string;
+  color?: string | null;
+  description?: string | null;
+  isActive?: boolean;
+}
+
+export interface DiUpdateTagRequest {
+  name: string;
+  color?: string | null;
+  description?: string | null;
+  isActive?: boolean;
 }
 
 export interface DiCreateMarkdownRequest {
@@ -213,6 +289,19 @@ export interface DiCreateFileResourceRequest {
   content: string;
   /** Orijinal dosya adı (indirmede kullanılır). */
   originalFileName?: string | null;
+}
+
+export interface DiCreateNativeDocumentRequest {
+  parentId?: string | null;
+  name: string;
+  /** İş kodu (documentNo); domain geneli benzersiz. */
+  documentNo: string;
+  description?: string | null;
+  tags?: string[];
+  /** Boş/null → antetsiz boş DOCX. */
+  letterheadId?: string | null;
+  /** Antet seçildiyse doldurulacak header parametreleri. */
+  selectedHeaderFields?: DiLetterheadHeaderFields | null;
 }
 
 /** Ağaç kökü için sanal düğüm kimliği (UI). */

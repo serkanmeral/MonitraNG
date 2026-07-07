@@ -5,7 +5,7 @@ import DiMarkdownViewer from '@/components/apps/document-intelligence/DiMarkdown
 import DiMarkdownEditor from '@/components/apps/document-intelligence/DiMarkdownEditor.vue';
 import DiFilePreviewDialog from '@/components/apps/document-intelligence/DiFilePreviewDialog.vue';
 import DiResourceEditorDialog from '@/components/apps/document-intelligence/DiResourceEditorDialog.vue';
-import DiResourceTagsEditor from '@/components/apps/document-intelligence/DiResourceTagsEditor.vue';
+import DiTagPicker from '@/components/apps/document-intelligence/DiTagPicker.vue';
 import DiLinkedWorkItemsPanel from '@/components/apps/document-intelligence/DiLinkedWorkItemsPanel.vue';
 import DiBacklinksPanel from '@/components/apps/document-intelligence/DiBacklinksPanel.vue';
 import DiSavePageDialog from '@/components/apps/document-intelligence/DiSavePageDialog.vue';
@@ -398,10 +398,10 @@ watch(resourceId, () => {
         </v-alert>
 
         <div v-if="docMode === 'view'" class="mb-3">
-          <DiResourceTagsEditor :model-value="resource.tags ?? []" readonly density="compact" />
+          <DiTagPicker :model-value="resource.tags ?? []" readonly density="compact" />
         </div>
         <div v-else class="mb-3">
-          <DiResourceTagsEditor v-model="editTags" density="compact" />
+          <DiTagPicker v-model="editTags" density="compact" />
         </div>
 
         <v-progress-linear v-if="markdownLoading" indeterminate color="primary" class="mb-2" />

@@ -9,38 +9,67 @@ const props = defineProps<{
   selectedId: string | null;
   rootLabel: string;
   emptyLabel?: string;
-  /** Özyineleme derinliği (iç kullanım). */
   depth?: number;
+  /** Lazy: parentId ile alt klasörleri yükler. */
+  loadChildren?: (parentId: string) => Promise<DiTreeNode[]>;
+  /** parentId null = kök seviyesi yükleniyor. */
+  isLoading?: (parentId: string | null) => boolean;
+  /** Derin link: bu düğümler başlangıçta açık. */
+  initialExpandedIds?: string[];
 }>();
 
 const emit = defineEmits<{
   select: [folderId: string | null];
 }>();
 
-// Genişletme durumu yalnızca kök bileşende tutulur; alt bileşenler kendi state'ini yönetir.
 const expandedIds = ref<Set<string>>(new Set([DI_ROOT_ID]));
+const loadingNodeIds = ref<Set<string>>(new Set());
 
 watch(
-  () => props.nodes,
-  () => {
-    // İlk yüklemede kökü ve birinci seviyeyi aç.
+  () => props.initialExpandedIds,
+  (ids) => {
+    if (!ids?.length) return;
     const next = new Set(expandedIds.value);
     next.add(DI_ROOT_ID);
-    props.nodes.forEach((n) => next.add(n.id));
+    for (const id of ids) next.add(id);
     expandedIds.value = next;
   },
-  { immediate: true }
+  { immediate: true },
 );
 
-function toggle(id: string) {
-  const next = new Set(expandedIds.value);
-  if (next.has(id)) next.delete(id);
-  else next.add(id);
-  expandedIds.value = next;
+function showChevron(node: DiTreeNode): boolean {
+  return node.hasChildren || (node.children?.length ?? 0) > 0;
 }
 
 function isExpanded(id: string) {
   return expandedIds.value.has(id);
+}
+
+function isNodeLoading(id: string | null) {
+  if (props.isLoading?.(id)) return true;
+  if (id && loadingNodeIds.value.has(id)) return true;
+  return false;
+}
+
+async function toggle(id: string, node?: DiTreeNode) {
+  const next = new Set(expandedIds.value);
+  if (next.has(id)) {
+    next.delete(id);
+    expandedIds.value = next;
+    return;
+  }
+
+  if (node && props.loadChildren && node.hasChildren && !(node.children?.length)) {
+    loadingNodeIds.value.add(node.id);
+    try {
+      node.children = await props.loadChildren(node.id);
+    } finally {
+      loadingNodeIds.value.delete(node.id);
+    }
+  }
+
+  next.add(id);
+  expandedIds.value = next;
 }
 
 const isRoot = props.depth == null || props.depth === 0;
@@ -54,7 +83,6 @@ function isTopAreaFolder(name: string): boolean {
 
 <template>
   <div :class="['di-tree', { 'di-tree--root': isRoot }]">
-    <!-- Kök "Dokümanlar" düğümü yalnızca en üst seviyede -->
     <template v-if="isRoot">
       <div
         :class="['di-tree__row di-tree__row--root', { 'di-tree__row--selected': selectedId === null }]"
@@ -75,7 +103,10 @@ function isTopAreaFolder(name: string): boolean {
       </div>
 
       <div v-show="isExpanded(DI_ROOT_ID)" class="di-tree__children">
-        <div v-if="!nodes.length" class="di-tree__empty py-1 text-caption text-medium-emphasis">
+        <div v-if="isNodeLoading(null)" class="di-tree__empty py-1 text-caption text-medium-emphasis">
+          <v-progress-circular indeterminate size="14" width="2" class="mr-2" />
+        </div>
+        <div v-else-if="!nodes.length" class="di-tree__empty py-1 text-caption text-medium-emphasis">
           {{ emptyLabel || '—' }}
         </div>
         <div v-for="node in nodes" :key="node.id" class="di-tree__node">
@@ -88,12 +119,13 @@ function isTopAreaFolder(name: string): boolean {
             @click="emit('select', node.id)"
           >
             <v-btn
-              v-if="node.children.length"
+              v-if="showChevron(node)"
               class="di-tree__chevron mr-1"
               icon
               size="x-small"
               variant="text"
-              @click.stop="toggle(node.id)"
+              :loading="isNodeLoading(node.id)"
+              @click.stop="toggle(node.id, node)"
             >
               <ChevronDownIcon v-if="isExpanded(node.id)" size="18" />
               <ChevronRightIcon v-else size="18" />
@@ -113,12 +145,19 @@ function isTopAreaFolder(name: string): boolean {
               ]"
             >{{ node.name }}</span>
           </div>
-          <div v-show="isExpanded(node.id) && node.children.length" class="di-tree__nested">
+          <div v-show="isExpanded(node.id) && (node.children?.length || isNodeLoading(node.id))" class="di-tree__nested">
+            <div v-if="isNodeLoading(node.id) && !(node.children?.length)" class="di-tree__empty py-1 text-caption text-medium-emphasis pl-6">
+              <v-progress-circular indeterminate size="14" width="2" class="mr-2" />
+            </div>
             <DiResourceTree
+              v-else-if="node.children?.length"
               :nodes="node.children"
               :selected-id="selectedId"
               :root-label="rootLabel"
               :depth="(depth ?? 0) + 1"
+              :load-children="loadChildren"
+              :is-loading="isLoading"
+              :initial-expanded-ids="initialExpandedIds"
               @select="emit('select', $event)"
             />
           </div>
@@ -126,7 +165,6 @@ function isTopAreaFolder(name: string): boolean {
       </div>
     </template>
 
-    <!-- Alt seviyeler: kök satırı olmadan yalnızca düğümler -->
     <template v-else>
       <div v-for="node in nodes" :key="node.id" class="di-tree__node">
         <div
@@ -134,12 +172,13 @@ function isTopAreaFolder(name: string): boolean {
           @click="emit('select', node.id)"
         >
           <v-btn
-            v-if="node.children.length"
+            v-if="showChevron(node)"
             class="di-tree__chevron mr-1"
             icon
             size="x-small"
             variant="text"
-            @click.stop="toggle(node.id)"
+            :loading="isNodeLoading(node.id)"
+            @click.stop="toggle(node.id, node)"
           >
             <ChevronDownIcon v-if="isExpanded(node.id)" size="18" />
             <ChevronRightIcon v-else size="18" />
@@ -148,12 +187,19 @@ function isTopAreaFolder(name: string): boolean {
           <FolderIcon size="18" class="mr-2 di-tree__icon-folder flex-shrink-0" />
           <span class="text-body-2 text-truncate flex-grow-1">{{ node.name }}</span>
         </div>
-        <div v-show="isExpanded(node.id) && node.children.length" class="di-tree__nested">
+        <div v-show="isExpanded(node.id) && (node.children?.length || isNodeLoading(node.id))" class="di-tree__nested">
+          <div v-if="isNodeLoading(node.id) && !(node.children?.length)" class="di-tree__empty py-1 text-caption text-medium-emphasis pl-6">
+            <v-progress-circular indeterminate size="14" width="2" class="mr-2" />
+          </div>
           <DiResourceTree
+            v-else-if="node.children?.length"
             :nodes="node.children"
             :selected-id="selectedId"
             :root-label="rootLabel"
             :depth="(depth ?? 0) + 1"
+            :load-children="loadChildren"
+            :is-loading="isLoading"
+            :initial-expanded-ids="initialExpandedIds"
             @select="emit('select', $event)"
           />
         </div>

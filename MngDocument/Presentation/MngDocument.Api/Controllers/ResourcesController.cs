@@ -37,6 +37,25 @@ public class ResourcesController : ControllerBase
     public async Task<IActionResult> GetTree(CancellationToken ct) =>
         Ok(await _resources.GetTreeAsync(ct));
 
+    /// <summary>Lazy tree kök seviyesi.</summary>
+    [HttpGet("tree/roots")]
+    [ProducesResponseType(typeof(IReadOnlyList<TreeNodeDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetTreeRoots(CancellationToken ct) =>
+        Ok(await _resources.GetTreeRootsAsync(ct));
+
+    /// <summary>Lazy tree: bir klasörün alt klasörleri. parentId boşsa kök.</summary>
+    [HttpGet("tree/children")]
+    [ProducesResponseType(typeof(IReadOnlyList<TreeNodeDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetTreeChildren([FromQuery] string? parentId, CancellationToken ct) =>
+        Ok(await _resources.GetTreeChildrenAsync(parentId, ct));
+
+    /// <summary>Derin link: breadcrumb + yol boyunca kardeş klasör segmentleri.</summary>
+    [HttpGet("tree/path")]
+    [ProducesResponseType(typeof(TreePathDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetTreePath([FromQuery] string folderId, CancellationToken ct) =>
+        Ok(await _resources.GetTreePathAsync(folderId, ct));
+
     /// <summary>İlk yükleme / yenileme: ağaç + içerik listesi (tek permission snapshot). folderId verilirse breadcrumb + seçili klasör dahil.</summary>
     [HttpGet("bootstrap")]
     [ProducesResponseType(typeof(ResourceBootstrapDto), StatusCodes.Status200OK)]
@@ -106,12 +125,31 @@ public class ResourcesController : ControllerBase
     public async Task<IActionResult> Rename(string id, [FromBody] RenameResourceRequest request, CancellationToken ct) =>
         Ok(await _resources.RenameAsync(id, request, ct));
 
+    [HttpPatch("{id}/metadata")]
+    [ProducesResponseType(typeof(ResourceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateMetadata(string id, [FromBody] UpdateResourceMetadataRequest request, CancellationToken ct) =>
+        Ok(await _resources.UpdateMetadataAsync(id, request, ct));
+
     [HttpPut("{id}/move")]
     [ProducesResponseType(typeof(ResourceDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Move(string id, [FromBody] MoveResourceRequest request, CancellationToken ct) =>
         Ok(await _resources.MoveAsync(id, request, ct));
+
+    /// <summary>Markdown sayfa veya manual DOCX klonlar.</summary>
+    [HttpPost("{id}/clone")]
+    [ProducesResponseType(typeof(ResourceDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Clone(string id, [FromBody] CloneResourceRequest request, CancellationToken ct)
+    {
+        var created = await _resources.CloneResourceAsync(id, request, ct);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+    }
 
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -182,6 +220,38 @@ public class ResourcesController : ControllerBase
     public async Task<IActionResult> GetEditorSession(string id, CancellationToken ct) =>
         Ok(await _resourceEditor.CreateEditorSessionAsync(id, ct));
 
+    /// <summary>Yönetilen DOCX sürüm geçmişi (içerik hariç, en yeni önce).</summary>
+    [HttpGet("{id}/versions")]
+    [ProducesResponseType(typeof(IReadOnlyList<MarkdownVersionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetFileVersions(string id, CancellationToken ct) =>
+        Ok(await _resources.GetFileVersionsAsync(id, ct));
+
+    /// <summary>Belirli bir DOCX sürümünü indirir.</summary>
+    [HttpGet("{id}/versions/{versionNumber:int}/download")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DownloadFileVersion(string id, int versionNumber, CancellationToken ct)
+    {
+        var (bytes, fileName) = await _resources.GetFileVersionContentAsync(id, versionNumber, ct);
+        return File(bytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", fileName);
+    }
+
+    /// <summary>Belirli bir DOCX sürümünü salt okunur Collabora oturumunda açar.</summary>
+    [HttpGet("{id}/versions/{versionNumber:int}/preview-session")]
+    [ProducesResponseType(typeof(ResourceEditorSessionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetVersionPreviewSession(string id, int versionNumber, CancellationToken ct) =>
+        Ok(await _resourceEditor.CreateVersionPreviewSessionAsync(id, versionNumber, ct));
+
+    /// <summary>Eski bir DOCX sürümünü yeni sürüm olarak geri yükler.</summary>
+    [HttpPost("{id}/versions/{versionNumber:int}/restore")]
+    [ProducesResponseType(typeof(ResourceDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RestoreFileVersion(string id, int versionNumber, CancellationToken ct) =>
+        Ok(await _resources.RestoreFileVersionAsync(id, versionNumber, ct));
+
     /// <summary>
     /// Yüklenen dosya için metadata kaydı oluşturur. UI dönen <c>id</c> ile DG
     /// <c>POST /data/api/v1/files/upload</c> (datasetName=dm_resources, fieldName=file, recordId=id)
@@ -194,6 +264,29 @@ public class ResourcesController : ControllerBase
     {
         var created = await _resources.CreateFileResourceAsync(request, ct);
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+    }
+
+    /// <summary>Native DOCX döküman oluşturur (<c>origin=native</c>, antet uygulanır).</summary>
+    [HttpPost("documents")]
+    [ProducesResponseType(typeof(ResourceDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CreateNativeDocument([FromBody] CreateNativeDocumentRequest request, CancellationToken ct)
+    {
+        var created = await _resources.CreateNativeDocumentAsync(request, ct);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+    }
+
+    /// <summary>Yüklenen DOCX dosyasını PDF'e dönüştürerek önizleme sağlar (Gotenberg).</summary>
+    [HttpGet("{id}/preview/pdf")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> GetFilePreviewPdf(string id, CancellationToken ct)
+    {
+        var (pdfBytes, fileName) = await _resources.GetFilePreviewPdfAsync(id, ct);
+        return File(pdfBytes, "application/pdf", fileName);
     }
 
     // ----- Grup bazlı klasör yetkilendirmesi + miras -----

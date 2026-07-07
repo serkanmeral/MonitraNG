@@ -1,3 +1,5 @@
+using MngDocument.Application.Contracts.Letterheads;
+
 namespace MngDocument.Application.Contracts.Resources;
 
 public sealed class CreateFolderRequest
@@ -84,6 +86,33 @@ public sealed class CreateFileResourceRequest
 }
 
 /// <summary>
+/// Yeni native DOCX döküman oluşturur (<c>origin=native</c>). Antet opsiyonel;
+/// seçilen antet header parametreleri oluşturma anında doldurulur.
+/// </summary>
+public sealed class CreateNativeDocumentRequest
+{
+    public string? ParentId { get; set; }
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>
+    /// İş kodu (<c>dm_resources.documentNo</c>). Domain geneli benzersiz; antet docNo'dan bağımsızdır.
+    /// </summary>
+    public string DocumentNo { get; set; } = string.Empty;
+
+    public string? Description { get; set; }
+    public List<string>? Tags { get; set; }
+
+    /// <summary>Opsiyonel antet katalog id. Boşsa antetsiz boş DOCX oluşturulur.</summary>
+    public string? LetterheadId { get; set; }
+
+    /// <summary>
+    /// Antet seçildiyse hangi header parametrelerinin doldurulacağı.
+    /// Boşsa antet tanımındaki <see cref="Letterheads.LetterheadHeaderFieldsDto"/> varsayılanları kullanılır.
+    /// </summary>
+    public LetterheadHeaderFieldsDto? SelectedHeaderFields { get; set; }
+}
+
+/// <summary>
 /// Bir klasörün grup bazlı yetki matrisini değiştirir. Yalnızca yetki mirası kırık (anchor)
 /// klasörlerde uygulanır. Listede yer almayan gruplar kaldırılır; boş <see cref="GroupPermissionInput.Permissions"/>
 /// olan gruplar da kaldırılır.
@@ -98,4 +127,24 @@ public sealed class GroupPermissionInput
     public string? GroupId { get; set; }
     public string GroupName { get; set; } = string.Empty;
     public List<string> Permissions { get; set; } = new();
+}
+
+/// <summary>Kaynak metadata güncellemesi (etiketler, açıklama).</summary>
+public sealed class UpdateResourceMetadataRequest
+{
+    public List<string>? Tags { get; set; }
+    public string? Description { get; set; }
+}
+
+/// <summary>Markdown sayfa veya manual DOCX klonlama isteği.</summary>
+public sealed class CloneResourceRequest
+{
+    /// <summary>Hedef klasör. <c>null</c> ise kök.</summary>
+    public string? ParentId { get; set; }
+
+    /// <summary>Yeni ad / başlık.</summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>Manual DOCX için yeni iş kodu (<c>documentNo</c>). Markdown için yok sayılır.</summary>
+    public string? DocumentNo { get; set; }
 }

@@ -4,7 +4,8 @@ import BaseBreadcrumb from '@/components/shared/BaseBreadcrumb.vue';
 import DiResourceTree from '@/components/apps/document-intelligence/DiResourceTree.vue';
 import DiDiscoveryHome from '@/components/apps/document-intelligence/DiDiscoveryHome.vue';
 import DiAreaIndexBanner from '@/components/apps/document-intelligence/DiAreaIndexBanner.vue';
-import DiResourceTagsEditor from '@/components/apps/document-intelligence/DiResourceTagsEditor.vue';
+import DiTagPicker from '@/components/apps/document-intelligence/DiTagPicker.vue';
+import DiResourceTagsDialog from '@/components/apps/document-intelligence/DiResourceTagsDialog.vue';
 import DiMarkdownViewer from '@/components/apps/document-intelligence/DiMarkdownViewer.vue';
 import DiMarkdownEditor from '@/components/apps/document-intelligence/DiMarkdownEditor.vue';
 import DiPermissionsDialog from '@/components/apps/document-intelligence/DiPermissionsDialog.vue';
@@ -15,8 +16,13 @@ import DiBacklinksPanel from '@/components/apps/document-intelligence/DiBacklink
 import DiSavePageDialog from '@/components/apps/document-intelligence/DiSavePageDialog.vue';
 import type { DiSavePageMode } from '@/components/apps/document-intelligence/DiSavePageDialog.vue';
 import DiMarkdownVersionHistoryDialog from '@/components/apps/document-intelligence/DiMarkdownVersionHistoryDialog.vue';
+import DiFileVersionHistoryDialog from '@/components/apps/document-intelligence/DiFileVersionHistoryDialog.vue';
+import DiResourceInfoDialog from '@/components/apps/document-intelligence/DiResourceInfoDialog.vue';
+import DiCloneResourceDialog from '@/components/apps/document-intelligence/DiCloneResourceDialog.vue';
+import DiFolderPickerList from '@/components/apps/document-intelligence/DiFolderPickerList.vue';
 import DiResourcePreviewProvider from '@/components/apps/document-intelligence/DiResourcePreviewProvider.vue';
-import { isDiPreviewable, isDiDocxEditable } from '@/utils/diFilePreview';
+import { isDiPreviewable, isDiDocxEditable, isDiManagedDocument, isDiCloneable } from '@/utils/diFilePreview';
+import { useDiLazyFolderTree } from '@/composables/useDiLazyFolderTree';
 import {
   DI_HOME_PATH,
   buildDiResourceUrl,
@@ -46,17 +52,21 @@ import {
   diDelete,
   diSearch,
   diCreateFileResource,
+  diCreateNativeDocument,
+  diListLetterheads,
+  diGetLetterhead,
   diFetchFileBlob,
   diErrorStatus,
 } from '@/services/documentIntelligenceService';
 import {
   diFullPermission,
-  type DiTreeNode,
   type DiResource,
   type DiBreadcrumb,
   type DiResourceBrowseContext,
   type DiResourceBootstrap,
   type DiEffectivePermission,
+  type DiLetterhead,
+  type DiLetterheadHeaderFields,
 } from '@/types/apps/documentIntelligence';
 import {
   DI_PAGE_TEMPLATE_DEFINITIONS,
@@ -92,7 +102,15 @@ const {
 });
 
 // --- Durum ---
-const tree = ref<DiTreeNode[]>([]);
+const {
+  treeRoots,
+  setRoots,
+  invalidateAll,
+  loadChildren: loadLazyTreeChildren,
+  hydrateTreePath,
+  isParentLoading,
+} = useDiLazyFolderTree();
+const treeExpandedIds = ref<string[]>([]);
 const treeLoading = ref(false);
 const selectedFolderId = ref<string | null>(null);
 const selectedFolder = ref<DiResource | null>(null);
@@ -143,12 +161,26 @@ const folderName = ref('');
 const docDialog = ref(false);
 const docTitle = ref('');
 const docTemplate = ref<DiPageTemplateId>('blank');
+const nativeDocDialog = ref(false);
+const nativeDocName = ref('');
+const nativeDocCode = ref('');
+const nativeDocLetterheadId = ref<string | null>(null);
+const nativeDocLetterhead = ref<DiLetterhead | null>(null);
+const nativeDocHeaderFields = ref<DiLetterheadHeaderFields>({
+  documentName: true,
+  docNo: true,
+  generatedAt: true,
+  createPerson: false,
+});
+const letterheadOptions = ref<DiLetterhead[]>([]);
 const renameDialog = ref(false);
 const renameTarget = ref<DiResource | null>(null);
 const renameName = ref('');
 const moveDialog = ref(false);
 const moveTarget = ref<DiResource | null>(null);
 const moveDestId = ref<string | null>(null);
+const cloneDialog = ref(false);
+const cloneTarget = ref<DiResource | null>(null);
 const deleteDialog = ref(false);
 const deleteTarget = ref<DiResource | null>(null);
 const deleteForce = ref(false);
@@ -156,6 +188,12 @@ const busy = ref(false);
 
 // Sürüm geçmişi
 const historyDialog = ref(false);
+const fileHistoryDialog = ref(false);
+const fileHistoryTarget = ref<DiResource | null>(null);
+const infoDialog = ref(false);
+const infoTarget = ref<DiResource | null>(null);
+const tagsDialog = ref(false);
+const tagsTarget = ref<DiResource | null>(null);
 
 // Kaydet diyaloğu (changeNote)
 const saveDialog = ref(false);
@@ -188,21 +226,6 @@ const breadcrumbs = computed(() => {
   return [...base, ...folderPath.value.map((b, i) => ({ title: b.name, disabled: i === folderPath.value.length - 1 }))];
 });
 
-// Taşıma hedefleri için düz klasör listesi (kendisi + alt ağacı hariç).
-const flatFolders = computed(() => {
-  const out: { id: string; name: string; depth: number }[] = [];
-  const excludeId = moveTarget.value?.id;
-  function walk(nodes: DiTreeNode[], depth: number) {
-    for (const n of nodes) {
-      if (n.id === excludeId) continue; // kendi alt ağacına taşımayı engelle
-      out.push({ id: n.id, name: n.name, depth });
-      if (n.children.length) walk(n.children, depth + 1);
-    }
-  }
-  walk(tree.value, 0);
-  return out;
-});
-
 const folderChildren = computed(() => filteredChildren.value.filter((c) => c.type === 'folder'));
 
 const areaIndexPage = computed(() => {
@@ -217,10 +240,10 @@ const pageChildren = computed(() => {
   return pages.filter((p) => p.id !== indexPage.id);
 });
 const formalDocumentChildren = computed(() =>
-  filteredChildren.value.filter((c) => c.type === 'file' && isFormalDocument(c))
+  filteredChildren.value.filter((c) => c.type === 'file' && isDiManagedDocument(c))
 );
 const otherFileChildren = computed(() =>
-  filteredChildren.value.filter((c) => c.type === 'file' && !isFormalDocument(c))
+  filteredChildren.value.filter((c) => c.type === 'file' && !isDiManagedDocument(c))
 );
 
 function resourceMatchesTagFilter(resource: DiResource): boolean {
@@ -307,8 +330,17 @@ function applyBrowseContext(ctx: DiResourceBrowseContext) {
 }
 
 function applyBootstrap(boot: DiResourceBootstrap) {
-  tree.value = boot.tree;
+  setRoots(boot.treeRoots);
   applyBrowseContext(boot);
+}
+
+async function hydrateDeepLinkTree(folderId: string) {
+  const path = await hydrateTreePath(folderId);
+  treeExpandedIds.value = path.breadcrumb.map((b) => b.id);
+}
+
+function loadTreeChildren(parentId: string) {
+  return loadLazyTreeChildren(parentId);
 }
 
 /** Ağaç + geçerli klasör içeriği (mutasyon / yetki değişimi sonrası). */
@@ -316,7 +348,13 @@ async function refreshWorkspace() {
   treeLoading.value = true;
   childrenLoading.value = true;
   try {
-    applyBootstrap(await diGetBootstrap(selectedFolderId.value));
+    invalidateAll();
+    treeExpandedIds.value = [];
+    const boot = await diGetBootstrap(selectedFolderId.value);
+    applyBootstrap(boot);
+    if (selectedFolderId.value) {
+      await hydrateDeepLinkTree(selectedFolderId.value);
+    }
   } catch (e) {
     notifyError(e, 'documentIntelligence.errors.treeLoad');
   } finally {
@@ -424,6 +462,33 @@ function onDocTagClick(tag: string) {
 function openHistory() {
   if (!openDoc.value) return;
   historyDialog.value = true;
+}
+
+function openFileHistory(resource: DiResource) {
+  fileHistoryTarget.value = resource;
+  fileHistoryDialog.value = true;
+}
+
+async function onFileVersionRestored(_restored: DiResource) {
+  await refreshListing();
+}
+
+function openResourceInfo(resource: DiResource) {
+  infoTarget.value = resource;
+  infoDialog.value = true;
+}
+
+function openResourceTags(resource: DiResource) {
+  tagsTarget.value = resource;
+  tagsDialog.value = true;
+}
+
+async function onResourceTagsSaved(updated: DiResource) {
+  notify(t('documentIntelligence.saved'), 'success');
+  if (openDoc.value?.id === updated.id) {
+    openDoc.value = { ...openDoc.value, tags: updated.tags };
+  }
+  await refreshListing();
 }
 
 async function onVersionRestored(restored: DiResource) {
@@ -548,6 +613,67 @@ async function submitDoc(asDraft = false) {
   }
 }
 
+function openNativeDocDialog() {
+  nativeDocName.value = '';
+  nativeDocCode.value = '';
+  nativeDocLetterheadId.value = null;
+  nativeDocLetterhead.value = null;
+  nativeDocHeaderFields.value = {
+    documentName: true,
+    docNo: true,
+    generatedAt: true,
+    createPerson: false,
+  };
+  nativeDocDialog.value = true;
+  void loadLetterheadOptions();
+}
+
+async function loadLetterheadOptions() {
+  try {
+    const res = await diListLetterheads(true);
+    letterheadOptions.value = res.items;
+  } catch (e) {
+    notifyError(e, 'documentIntelligence.errors.letterheadsLoad');
+  }
+}
+
+async function onNativeLetterheadChange(letterheadId: string | null) {
+  nativeDocLetterhead.value = null;
+  if (!letterheadId) return;
+  try {
+    const lh = await diGetLetterhead(letterheadId);
+    nativeDocLetterhead.value = lh;
+    nativeDocHeaderFields.value = { ...lh.settings.headerFields };
+  } catch (e) {
+    notifyError(e, 'documentIntelligence.errors.letterheadsLoad');
+  }
+}
+
+async function submitNativeDoc() {
+  const name = nativeDocName.value.trim();
+  const documentNo = nativeDocCode.value.trim();
+  if (!name || !documentNo) return;
+  const letterheadId = nativeDocLetterheadId.value?.trim() || null;
+  busy.value = true;
+  try {
+    const created = await diCreateNativeDocument({
+      parentId: selectedFolderId.value,
+      name,
+      documentNo,
+      letterheadId,
+      selectedHeaderFields: letterheadId ? { ...nativeDocHeaderFields.value } : null,
+    });
+    nativeDocDialog.value = false;
+    notify(t('documentIntelligence.nativeDocumentCreated'), 'success');
+    await refreshListing();
+    await navigateTo(buildDiResourceUrl(created.id));
+  } catch (e) {
+    notifyError(e, 'documentIntelligence.errors.create');
+  } finally {
+    busy.value = false;
+  }
+}
+
 // --- Yeniden adlandır ---
 function openRename(resource: DiResource) {
   renameTarget.value = resource;
@@ -595,6 +721,19 @@ async function submitMove() {
     notifyError(e, 'documentIntelligence.errors.move');
   } finally {
     busy.value = false;
+  }
+}
+
+function openClone(resource: DiResource) {
+  cloneTarget.value = resource;
+  cloneDialog.value = true;
+}
+
+async function onCloned(created: DiResource) {
+  notify(t('documentIntelligence.cloned'), 'success');
+  await refreshWorkspace();
+  if (created.type === 'markdown') {
+    await openMarkdown(created);
   }
 }
 
@@ -781,15 +920,9 @@ function onDiscoverySearch(q: string) {
   void runSearch();
 }
 
-function isFormalDocument(resource: DiResource): boolean {
-  const ext = (resource.extension || '').toLowerCase();
-  const mime = resource.mimeType || '';
-  return mime.includes('word') || ['doc', 'docx'].includes(ext);
-}
-
 function resourceTypeLabel(resource: DiResource): string | null {
   if (resource.type === 'markdown') return t('documentIntelligence.typePage');
-  if (resource.type === 'file' && isFormalDocument(resource)) return t('documentIntelligence.typeDocument');
+  if (resource.type === 'file' && isDiManagedDocument(resource)) return t('documentIntelligence.typeDocument');
   if (resource.type === 'file') return t('documentIntelligence.typeFile');
   return null;
 }
@@ -819,6 +952,24 @@ function formatSize(bytes: number | null): string {
   return `${Math.round((bytes / Math.pow(1024, i)) * 10) / 10} ${units[i]}`;
 }
 
+function buildResourceSubtitle(resource: DiResource): string {
+  const parts: string[] = [];
+  const typeLabel = resourceTypeLabel(resource);
+  if (typeLabel) parts.push(typeLabel);
+  if (resource.description) parts.push(resource.description);
+  if (resource.type === 'file' && resource.size) parts.push(formatSize(resource.size));
+  if (resource.tags?.length) parts.push(resource.tags.join(', '));
+  const auditParts: string[] = [];
+  if (resource.updatedBy) auditParts.push(resource.updatedBy);
+  if (resource.updatedAt) auditParts.push(formatDateTime(resource.updatedAt));
+  if (auditParts.length) parts.push(auditParts.join(' · '));
+  return parts.join(' · ');
+}
+
+function hasResourceSubtitle(resource: DiResource): boolean {
+  return buildResourceSubtitle(resource).length > 0;
+}
+
 onMounted(async () => {
   const legacyId = parseLegacyResourceIdQuery(route.query as Record<string, unknown>);
   if (legacyId) {
@@ -831,8 +982,12 @@ onMounted(async () => {
   try {
     const folderId = parseFolderIdQuery(route.query as Record<string, unknown>);
     const initialFolder = folderId === undefined ? null : folderId;
-    applyBootstrap(await diGetBootstrap(initialFolder));
+    const boot = await diGetBootstrap(initialFolder);
+    applyBootstrap(boot);
     selectedFolderId.value = initialFolder;
+    if (initialFolder) {
+      await hydrateDeepLinkTree(initialFolder);
+    }
   } catch (e) {
     notifyError(e, 'documentIntelligence.errors.treeLoad');
   } finally {
@@ -849,6 +1004,9 @@ watch(
     if (folderId === undefined) return;
     if (selectedFolderId.value === folderId) return;
     await selectFolder(folderId, { syncUrl: false });
+    if (folderId) {
+      await hydrateDeepLinkTree(folderId);
+    }
   }
 );
 </script>
@@ -888,10 +1046,13 @@ watch(
           <div class="pa-2 di-tree-scroll">
             <v-progress-linear v-if="treeLoading" indeterminate color="primary" class="mb-2" />
             <DiResourceTree
-              :nodes="tree"
+              :nodes="treeRoots"
               :selected-id="selectedFolderId"
               :root-label="t('documentIntelligence.allDocuments')"
               :empty-label="t('documentIntelligence.noFolders')"
+              :load-children="loadTreeChildren"
+              :is-loading="isParentLoading"
+              :initial-expanded-ids="treeExpandedIds"
               @select="selectFolder"
             />
           </div>
@@ -972,6 +1133,17 @@ watch(
               {{ t('documentIntelligence.newPage') }}
             </v-btn>
             <v-btn
+              v-if="currentPerm.canCreate"
+              color="primary"
+              variant="tonal"
+              size="small"
+              class="text-none"
+              prepend-icon="mdi-file-word-box"
+              @click="openNativeDocDialog"
+            >
+              {{ t('documentIntelligence.newNativeDocument') }}
+            </v-btn>
+            <v-btn
               v-if="currentPerm.canUpload"
               color="primary"
               variant="tonal"
@@ -1047,6 +1219,16 @@ watch(
                   <v-btn size="small" variant="text" class="text-none" prepend-icon="mdi-history" @click="openHistory">
                     {{ t('documentIntelligence.history') }}
                   </v-btn>
+                  <v-btn
+                    v-if="isDiCloneable(openDoc)"
+                    size="small"
+                    variant="text"
+                    class="text-none"
+                    prepend-icon="mdi-content-copy"
+                    @click="openClone(openDoc)"
+                  >
+                    {{ t('documentIntelligence.clone') }}
+                  </v-btn>
                   <v-btn v-if="openDoc.permissions.canEdit" size="small" variant="text" class="text-none" icon="mdi-pencil-box-outline" :title="t('documentIntelligence.rename')" @click="openRename(openDoc)" />
                   <v-btn v-if="openDoc.permissions.canMove" size="small" variant="text" class="text-none" icon="mdi-folder-move-outline" :title="t('documentIntelligence.move')" @click="openMove(openDoc)" />
                   <v-btn v-if="openDoc.permissions.canDelete" size="small" variant="text" color="error" class="text-none" icon="mdi-delete-outline" :title="t('documentIntelligence.delete')" @click="openDelete(openDoc)" />
@@ -1080,7 +1262,7 @@ watch(
               </div>
 
               <div v-if="docMode === 'view'" class="mb-3">
-                <DiResourceTagsEditor
+                <DiTagPicker
                   :model-value="openDoc.tags ?? []"
                   readonly
                   clickable
@@ -1089,7 +1271,7 @@ watch(
                 />
               </div>
               <div v-else class="mb-3">
-                <DiResourceTagsEditor v-model="editTags" density="compact" />
+                <DiTagPicker v-model="editTags" density="compact" />
               </div>
 
               <v-progress-linear v-if="docLoading" indeterminate color="primary" class="mb-2" />
@@ -1139,7 +1321,7 @@ watch(
 
                 <DiDiscoveryHome
                   v-if="showDiscovery"
-                  :tree="tree"
+                  :tree="treeRoots"
                   @select-folder="selectFolder"
                   @open-resource="openResource"
                   @search="onDiscoverySearch"
@@ -1242,21 +1424,15 @@ watch(
                         </template>
                         <v-list-item-title>
                           {{ resourceLabel(d) }}
+                          <v-chip v-if="isDiManagedDocument(d) && d.documentNo" size="x-small" variant="tonal" color="primary" class="ml-1">
+                            {{ d.documentNo }}
+                          </v-chip>
                           <v-chip v-if="d.type === 'markdown' && d.status === 'draft'" size="x-small" variant="flat" color="warning" class="ml-1">
                             {{ t('documentIntelligence.draft') }}
                           </v-chip>
                         </v-list-item-title>
-                        <v-list-item-subtitle v-if="d.description || resourceTypeLabel(d) || (d.type === 'file' && d.size) || (d.tags?.length)">
-                          <span v-if="resourceTypeLabel(d)" class="text-medium-emphasis">{{ resourceTypeLabel(d) }}</span>
-                          <span v-if="d.description">
-                            {{ resourceTypeLabel(d) ? ' · ' : '' }}{{ d.description }}
-                          </span>
-                          <span v-if="d.type === 'file' && d.size" class="text-medium-emphasis">
-                            {{ d.description || resourceTypeLabel(d) ? ' · ' : '' }}{{ formatSize(d.size) }}
-                          </span>
-                          <span v-if="d.tags?.length" class="text-medium-emphasis">
-                            {{ (d.description || resourceTypeLabel(d) || (d.type === 'file' && d.size)) ? ' · ' : '' }}{{ d.tags.join(', ') }}
-                          </span>
+                        <v-list-item-subtitle v-if="hasResourceSubtitle(d)">
+                          {{ buildResourceSubtitle(d) }}
                         </v-list-item-subtitle>
                         <template #append>
                           <v-btn
@@ -1297,6 +1473,10 @@ watch(
                               </v-btn>
                             </template>
                             <v-list density="compact">
+                              <v-list-item prepend-icon="mdi-information-outline" :title="t('documentIntelligence.resourceInfoTitle')" @click="openResourceInfo(d)" />
+                              <v-list-item v-if="d.permissions.canEdit" prepend-icon="mdi-tag-outline" :title="t('documentIntelligence.tags.editTitle')" @click="openResourceTags(d)" />
+                              <v-list-item v-if="isDiCloneable(d)" prepend-icon="mdi-content-copy" :title="t('documentIntelligence.clone')" @click="openClone(d)" />
+                              <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiDocxEditable(d)" prepend-icon="mdi-history" :title="t('documentIntelligence.versionHistory')" @click="openFileHistory(d)" />
                               <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiDocxEditable(d)" prepend-icon="mdi-file-document-edit-outline" :title="t('documentIntelligence.openInEditor')" @click="openFileEditor(d)" />
                               <v-list-item v-if="d.type === 'file' && d.permissions.canDownload && isDiPreviewable(d)" prepend-icon="mdi-file-eye-outline" :title="t('documentIntelligence.preview')" @click="openFilePreview(d)" />
                               <v-list-item v-if="d.type === 'file' && d.permissions.canDownload" prepend-icon="mdi-download" :title="t('documentIntelligence.download')" @click="downloadFile(d)" />
@@ -1383,6 +1563,109 @@ watch(
       </v-card>
     </v-dialog>
 
+    <!-- Yeni döküman (native DOCX) -->
+    <v-dialog v-model="nativeDocDialog" max-width="520">
+      <v-card rounded="lg">
+        <v-card-title class="text-subtitle-1 font-weight-bold">{{ t('documentIntelligence.newNativeDocument') }}</v-card-title>
+        <v-card-text>
+          <v-text-field
+            v-model="nativeDocCode"
+            :label="t('documentIntelligence.documentNoLabel')"
+            :hint="t('documentIntelligence.documentNoHint')"
+            variant="outlined"
+            density="comfortable"
+            persistent-hint
+            autofocus
+            class="mb-3"
+            @keydown.enter="submitNativeDoc"
+          />
+          <v-text-field
+            v-model="nativeDocName"
+            :label="t('documentIntelligence.nativeDocumentNameLabel')"
+            variant="outlined"
+            density="comfortable"
+            hide-details
+            class="mb-3"
+            @keydown.enter="submitNativeDoc"
+          />
+          <v-select
+            v-model="nativeDocLetterheadId"
+            :items="letterheadOptions"
+            item-title="name"
+            item-value="id"
+            :label="t('documentIntelligence.letterheadOptionalLabel')"
+            variant="outlined"
+            density="comfortable"
+            hide-details
+            clearable
+            class="mb-3"
+            :no-data-text="t('documentIntelligence.noLetterheads')"
+            @update:model-value="onNativeLetterheadChange"
+          />
+          <template v-if="nativeDocLetterhead">
+            <div class="text-caption text-medium-emphasis mb-2">
+              {{ t('documentIntelligence.nativeDocHeaderParamsHint') }}
+            </div>
+            <v-checkbox
+              v-if="nativeDocLetterhead.settings.headerFields.documentName"
+              v-model="nativeDocHeaderFields.documentName"
+              :label="t('documentIntelligence.nativeDocParamDocumentName')"
+              density="compact"
+              hide-details
+              class="mt-0 pt-0"
+            />
+            <p
+              v-if="nativeDocHeaderFields.documentName && nativeDocLetterhead.settings.headerFields.documentName"
+              class="text-caption text-medium-emphasis mb-2 ms-8"
+            >
+              {{ t('documentIntelligence.nativeDocDocumentNameAutoHint') }}
+            </p>
+            <v-checkbox
+              v-if="nativeDocLetterhead.settings.headerFields.docNo"
+              v-model="nativeDocHeaderFields.docNo"
+              :label="t('documentIntelligence.nativeDocParamDocNo')"
+              density="compact"
+              hide-details
+              class="mt-0 pt-0"
+            />
+            <v-checkbox
+              v-if="nativeDocLetterhead.settings.headerFields.generatedAt"
+              v-model="nativeDocHeaderFields.generatedAt"
+              :label="t('documentIntelligence.nativeDocParamGeneratedAt')"
+              density="compact"
+              hide-details
+              class="mt-0 pt-0"
+            />
+            <v-checkbox
+              v-if="nativeDocLetterhead.settings.headerFields.createPerson"
+              v-model="nativeDocHeaderFields.createPerson"
+              :label="t('documentIntelligence.nativeDocParamCreatePerson')"
+              density="compact"
+              hide-details
+              class="mt-0 pt-0"
+            />
+          </template>
+          <p v-else class="text-caption text-medium-emphasis mb-0">
+            {{ t('documentIntelligence.nativeDocNoLetterheadHint') }}
+          </p>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" class="text-none" @click="nativeDocDialog = false">{{ t('documentIntelligence.cancel') }}</v-btn>
+          <v-btn
+            color="primary"
+            variant="flat"
+            class="text-none"
+            :loading="busy"
+            :disabled="!nativeDocName.trim() || !nativeDocCode.trim()"
+            @click="submitNativeDoc"
+          >
+            {{ t('documentIntelligence.create') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <!-- Dosya yükle -->
     <v-dialog v-model="fileDialog" max-width="460">
       <v-card rounded="lg">
@@ -1451,26 +1734,12 @@ watch(
       <v-card rounded="lg">
         <v-card-title class="text-subtitle-1 font-weight-bold">{{ t('documentIntelligence.move') }}</v-card-title>
         <v-card-text>
-          <v-list density="compact" class="di-move-list border rounded-lg">
-            <v-list-item
-              :active="moveDestId === null"
-              prepend-icon="mdi-folder-home-outline"
-              :title="t('documentIntelligence.allDocuments')"
-              @click="moveDestId = null"
-            />
-            <v-list-item
-              v-for="f in flatFolders"
-              :key="f.id"
-              :active="moveDestId === f.id"
-              :title="f.name"
-              @click="moveDestId = f.id"
-            >
-              <template #prepend>
-                <span :style="{ display: 'inline-block', width: f.depth * 14 + 'px' }" />
-                <v-icon size="18" class="mr-2">mdi-folder-outline</v-icon>
-              </template>
-            </v-list-item>
-          </v-list>
+          <DiFolderPickerList
+            v-model="moveDestId"
+            :exclude-subtree-id="moveTarget?.type === 'folder' ? moveTarget.id : null"
+            :load-children="loadLazyTreeChildren"
+            :is-loading="isParentLoading"
+          />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -1481,6 +1750,15 @@ watch(
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <DiCloneResourceDialog
+      v-model="cloneDialog"
+      :resource="cloneTarget"
+      :load-children="loadLazyTreeChildren"
+      :is-loading="isParentLoading"
+      :loading="busy"
+      @cloned="onCloned"
+    />
 
     <!-- Sil -->
     <v-dialog v-model="deleteDialog" max-width="440">
@@ -1517,6 +1795,17 @@ watch(
       :can-restore="openDoc?.permissions.canEdit ?? false"
       @restored="onVersionRestored"
     />
+
+    <DiFileVersionHistoryDialog
+      v-model="fileHistoryDialog"
+      :resource="fileHistoryTarget"
+      :can-restore="fileHistoryTarget?.permissions.canEdit ?? false"
+      @restored="onFileVersionRestored"
+    />
+
+    <DiResourceInfoDialog v-model="infoDialog" :resource="infoTarget" />
+
+    <DiResourceTagsDialog v-model="tagsDialog" :resource="tagsTarget" @saved="onResourceTagsSaved" />
 
     <!-- Klasör yetkileri -->
     <DiPermissionsDialog

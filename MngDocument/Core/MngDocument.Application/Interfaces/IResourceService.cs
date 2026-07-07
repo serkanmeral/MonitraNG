@@ -10,6 +10,15 @@ public interface IResourceService
 {
     Task<IReadOnlyList<TreeNodeDto>> GetTreeAsync(CancellationToken ct = default);
 
+    /// <summary>Lazy tree kök seviyesi.</summary>
+    Task<IReadOnlyList<TreeNodeDto>> GetTreeRootsAsync(CancellationToken ct = default);
+
+    /// <summary>Lazy tree: bir klasörün alt klasörleri.</summary>
+    Task<IReadOnlyList<TreeNodeDto>> GetTreeChildrenAsync(string? parentId, CancellationToken ct = default);
+
+    /// <summary>Derin link: breadcrumb + yol boyunca her seviyenin kardeş klasörleri.</summary>
+    Task<TreePathDto> GetTreePathAsync(string folderId, CancellationToken ct = default);
+
     /// <summary>Ağaç + kök veya <paramref name="folderId"/> altı içerik (tek permission snapshot).</summary>
     Task<ResourceBootstrapDto> GetBootstrapAsync(string? folderId = null, CancellationToken ct = default);
 
@@ -26,9 +35,14 @@ public interface IResourceService
 
     Task<ResourceDto> RenameAsync(string id, RenameResourceRequest request, CancellationToken ct = default);
 
+    Task<ResourceDto> UpdateMetadataAsync(string id, UpdateResourceMetadataRequest request, CancellationToken ct = default);
+
     Task<ResourceDto> MoveAsync(string id, MoveResourceRequest request, CancellationToken ct = default);
 
     Task DeleteAsync(string id, bool force, CancellationToken ct = default);
+
+    /// <summary>Markdown sayfa veya manual DOCX klonlar (etiket/açıklama kopyalanmaz).</summary>
+    Task<ResourceDto> CloneResourceAsync(string id, CloneResourceRequest request, CancellationToken ct = default);
 
     Task<ResourceDto> CreateMarkdownAsync(CreateMarkdownRequest request, CancellationToken ct = default);
 
@@ -42,7 +56,35 @@ public interface IResourceService
 
     Task<ResourceDto> RestoreMarkdownVersionAsync(string id, int versionNumber, CancellationToken ct = default);
 
+    /// <summary>Yönetilen DOCX sürüm geçmişi (içerik hariç).</summary>
+    Task<IReadOnlyList<MarkdownVersionDto>> GetFileVersionsAsync(string id, CancellationToken ct = default);
+
+    /// <summary>Belirli bir DOCX sürümünün binary içeriği.</summary>
+    Task<(byte[] Content, string FileName)> GetFileVersionContentAsync(string id, int versionNumber, CancellationToken ct = default);
+
+    /// <summary>WOPI sürüm önizlemesi — oturum açılırken yetki doğrulanır; DG token ile sürüm baytları.</summary>
+    Task<(byte[] Content, string FileName)> GetFileVersionContentForEditorAsync(
+        string id,
+        int versionNumber,
+        string dataGatewayToken,
+        CancellationToken ct = default);
+
+    /// <summary>Eski bir DOCX sürümünü yeni sürüm olarak geri yükler.</summary>
+    Task<ResourceDto> RestoreFileVersionAsync(string id, int versionNumber, CancellationToken ct = default);
+
+    /// <summary>Collabora WOPI kaydı: dosyayı günceller, sürüm yazar; yeni sürüm numarasını döner.</summary>
+    Task<int> SaveManagedDocumentFileAsync(
+        string id,
+        byte[] content,
+        string fileName,
+        string dataGatewayToken,
+        CancellationToken ct = default);
+
     Task<ResourceDto> CreateFileResourceAsync(CreateFileResourceRequest request, CancellationToken ct = default);
+
+    Task<ResourceDto> CreateNativeDocumentAsync(CreateNativeDocumentRequest request, CancellationToken ct = default);
+
+    Task<(byte[] PdfBytes, string FileName)> GetFilePreviewPdfAsync(string id, CancellationToken ct = default);
 
     Task<ResourceListResult> SearchAsync(string query, int skip, int limit, CancellationToken ct = default);
 
